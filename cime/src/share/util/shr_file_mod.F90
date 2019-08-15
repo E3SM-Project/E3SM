@@ -61,6 +61,9 @@ MODULE shr_file_mod
   public :: shr_file_setLogLevel  ! Reset the logging debug level
   public :: shr_file_getLogUnit   ! Get the log unit number
   public :: shr_file_getLogLevel  ! Get the logging debug level
+#if defined NEMO_IN_CCSM
+   public :: shr_file_maxUnit      ! Max unit number to give
+#endif
 
   ! !PUBLIC DATA MEMBERS:
 
@@ -901,12 +904,12 @@ CONTAINS
     !-------------------------------------------------------------------------------
     ! Notes: Caller must be sure it's a valid unit number
     !-------------------------------------------------------------------------------
-
-    if (s_loglev > 1 .and. s_logunit-unit /= 0) then
+#if DEBUG
+    if (s_loglev > 2 .and. s_logunit-unit /= 0) then
        write(s_logunit,*) subName,': reset log unit number from/to ',s_logunit, unit
        write(     unit,*) subName,': reset log unit number from/to ',s_logunit, unit
     endif
-
+#endif
     s_logunit = unit
 
   END SUBROUTINE shr_file_setLogUnit

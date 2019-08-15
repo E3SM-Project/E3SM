@@ -173,6 +173,11 @@ contains
     character(len=*),parameter :: subname='ncd_pio_openfile' ! subroutine name
     !-----------------------------------------------------------------------
 
+    if (masterproc) then
+       write(iulog,*) trim(subname),' opening ', trim(fname), file%fh
+       call shr_sys_flush(iulog)
+    endif
+
     ierr = pio_openfile(pio_subsystem, file, io_type, fname, mode)
 
     if(ierr/= PIO_NOERR) then
@@ -723,8 +728,8 @@ contains
        lxtype = xtype
     end if
     if (masterproc .and. debug > 1) then
-       write(iulog,*) 'Error in defining variable = ', trim(varname)
-       write(iulog,*) subname//' ',trim(varname),lxtype,ndims,ldimid(1:ndims)
+       write(iulog,*) trim(subname),' Defining variable = ', trim(varname)
+       write(iulog,*) trim(subname),' ',trim(varname),lxtype,ndims,ldimid(1:ndims)
     endif
 
     if (ndims >  0) then 

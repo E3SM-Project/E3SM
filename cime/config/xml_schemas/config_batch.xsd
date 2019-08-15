@@ -24,11 +24,12 @@
   <xs:element name="batch_mail_type_flag" type="xs:string"/>
   <xs:element name="batch_mail_type" type="xs:string"/>
   <xs:element name="batch_mail_default" type="xs:string"/>
-  <xs:element name="template" type="xs:NCName"/>
+  <xs:element name="template" type="xs:anyURI"/>
   <xs:element name="task_count" type="xs:integer"/>
   <xs:element name="walltime" type="xs:string"/>
   <xs:element name="dependency" type="xs:string"/>
   <xs:element name="prereq" type="xs:string"/>
+  <xs:element name="unknown_queue_directives" type="xs:string"/>
 
   <!-- complex elements -->
 
@@ -36,7 +37,7 @@
     <xs:complexType>
       <xs:sequence>
         <xs:element ref="batch_system" maxOccurs="unbounded" />
-        <xs:element ref="batch_jobs"/>
+        <xs:element ref="batch_jobs" minOccurs="0" maxOccurs="1"/>
       </xs:sequence>
       <xs:attribute ref="version" use="required"/>
     </xs:complexType>
@@ -96,6 +97,14 @@
   <!-- directives: A list of fields to provide in the script directives section,
        be careful that these do not conflict with submit_args above -->
         <xs:element minOccurs="0" maxOccurs="unbounded" ref="directives"/>
+
+  <!-- unknown_queue_directives: If the queue is not a known queue on
+       this machine, this specifies the queue name for which directives
+       are taken. i.e., assume that all unknown queues use the same
+       directives as this queue. (If this element is not present then
+       unknown queues use directives for the default queue on this
+       machine.) -->
+        <xs:element minOccurs="0" ref="unknown_queue_directives"/>
 
   <!-- queues: The list of queue options for this machine, not all system queues need be listed
        attributes of this field include walltimemin, walltimemax, nodemin and nodemax and strict
@@ -162,7 +171,7 @@
   <xs:element name="queue">
     <xs:complexType>
       <xs:simpleContent>
-        <xs:extension base="xs:NCName">
+        <xs:extension base="xs:string">
           <xs:attribute name="default" type="xs:boolean"/>
           <xs:attribute name="strict" type="xs:boolean"/>
           <xs:attribute name="nodemax" type="xs:integer"/>

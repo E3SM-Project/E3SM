@@ -100,7 +100,7 @@ subroutine dcmip2012_test1_1(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
       z = H  * log(1.0d0/hvcoord%etai(k))
       p = p0 * hvcoord%etai(k)
       call test1_advection_deformation(time,lon,lat,p,z,zcoords,u,v,w,T,phis,ps,rho,q(1),q(2),q(3),q(4))
-      call set_state_i(u,v,w,T,ps,phis,p,dp,zi(k),g, i,j,k,elem(ie),n0,n1)
+      call set_state_i(u,v,w,T,ps,phis,p,zi(k),g, i,j,k,elem(ie),n0,n1)
 
       ! get vertical derivative of p at point i,j,k
       dp_dn = ddn_hyai(k)*p0 + ddn_hybi(k)*ps
@@ -168,8 +168,7 @@ subroutine dcmip2012_test1_2(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
       z = H  * log(1.0d0/hvcoord%etai(k))
       p = p0 * hvcoord%etai(k)
       call test1_advection_hadley(time,lon,lat,p,z,zcoords,u,v,w,T,phis,ps,rho,q(1),q(2))
-      dp = pressure_thickness(ps,k,hvcoord)
-      call set_state_i(u,v,w,T,ps,phis,p,dp,zi(k),g, i,j,k,elem(ie),n0,n1)
+      call set_state_i(u,v,w,T,ps,phis,p,zi(k),g, i,j,k,elem(ie),n0,n1)
 
 
       ! get vertical derivative of p at point i,j,k
@@ -241,8 +240,7 @@ subroutine dcmip2012_test1_3(elem,hybrid,hvcoord,nets,nete,time,n0,n1,deriv)
         hyai=hvcoord%hyai(k); hybi=hvcoord%hybi(k)
         lon  = elem(ie)%spherep(i,j)%lon; lat  = elem(ie)%spherep(i,j)%lat
         call test1_advection_orography (lon,lat,p,z,zcoords,cfv,use_eta,hyai,hybi,gc,u,v,w,t,phis,ps,rho,q(1),q(2),q(3),q(4))
-        dp = pressure_thickness(ps,k,hvcoord)
-        call set_state_i(u,v,w,T,ps,phis,p,dp,zi(k),g, i,j,k,elem(ie),n0,n1)
+        call set_state_i(u,v,w,T,ps,phis,p,zi(k),g, i,j,k,elem(ie),n0,n1)
         p_i(i,j) = p
         u_i(i,j) = u
         v_i(i,j) = v
@@ -303,12 +301,11 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
      do k=1,nlevp; do j=1,np; do i=1,np
         call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
         call test2_steady_state_mountain(lon,lat,p,z,zcoords,use_eta,hyai,hybi,u,v,w,T,phis,ps,rho,q(1))
-        dp = pressure_thickness(ps,k,hvcoord)
         !let's get an analytical \phi
         he = (T0 - T)/gamma
-        call set_state_i(u,v,w,T,ps,phis,p,dp,he,g, i,j,k,elem(ie),1,nt)
+        call set_state_i(u,v,w,T,ps,phis,p,he,g, i,j,k,elem(ie),1,nt)
      enddo; enddo; enddo; 
-     call tests_finalize(elem(ie),hvcoord,1,nt)
+     call tests_finalize(elem(ie),hvcoord)
   enddo
   
   end subroutine dcmip2012_test2_0
@@ -365,10 +362,9 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
      do k=1,nlevp; do j=1,np; do i=1,np
         call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
         call test2_schaer_mountain(lon,lat,p,z,zcoords,use_eta,hyai,hybi,shear,u,v,w,T,phis,ps,rho,q(1))
-        dp = pressure_thickness(ps,k,hvcoord)
-        call set_state_i(u,v,w,T,ps,phis,p,dp,z,g, i,j,k,elem(ie),1,nt)
+        call set_state_i(u,v,w,T,ps,phis,p,z,g, i,j,k,elem(ie),1,nt)
      enddo; enddo; enddo; 
-     call tests_finalize(elem(ie),hvcoord,1,nt)
+     call tests_finalize(elem(ie),hvcoord)
   enddo
 
   ! store initial velocity fields for use in sponge layer
@@ -431,11 +427,10 @@ subroutine mtest_init(elem,hybrid,hvcoord,nets,nete,testid)
      do k=1,nlevp; do j=1,np; do i=1,np
         call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
         call mtest_state(lon,lat,p,z,hyai,hybi,u,v,w,T,phis,ps,rho,testid)
-        dp = pressure_thickness(ps,k,hvcoord)
-        call set_state_i(u,v,w,T,ps,phis,p,dp,z,g, i,j,k,elem(ie),1,nt)
+        call set_state_i(u,v,w,T,ps,phis,p,z,g, i,j,k,elem(ie),1,nt)
         
      enddo; enddo; enddo; 
-     call tests_finalize(elem(ie),hvcoord,1,nt)
+     call tests_finalize(elem(ie),hvcoord)
   enddo
 
   ! store initial velocity fields for use in sponge layer
@@ -535,10 +530,9 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
      do k=1,nlevp; do j=1,np; do i=1,np
         call get_coordinates(lat,lon,hyai,hybi, i,j,k,elem(ie),hvcoord)
         call test3_gravity_wave(lon,lat,p,z,zcoords,use_eta,hyai,hybi,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q(1))
-        dp = pressure_thickness(ps,k,hvcoord)
-        call set_state_i(u,v,w,T,ps,phis,p,dp,zi(k),g, i,j,k,elem(ie),1,nt)
+        call set_state_i(u,v,w,T,ps,phis,p,zi(k),g, i,j,k,elem(ie),1,nt)
      enddo; enddo; enddo; 
-     call tests_finalize(elem(ie),hvcoord,1,nt)
+     call tests_finalize(elem(ie),hvcoord)
   enddo
 
 end subroutine
@@ -594,13 +588,12 @@ subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
         call test4_baroclinic_wave(dcmip4_moist,dcmip4_X,lon,lat,&
                                    pressure,z,zcoords,u,v,w,T,phis,ps,rho,q,q1,q2)
         qarray(1)=q; qarray(2)=q1; qarray(3)=q2;
-        dp = pressure_thickness(ps,k,hvcoord)
-        call set_state_i(u,v,w,T,ps,phis,pressure,dp,z,g, i,j,k,elem(ie),1,nt)
+        call set_state_i(u,v,w,T,ps,phis,pressure,z,g, i,j,k,elem(ie),1,nt)
 
       enddo; enddo; enddo; 
 
 
-    call tests_finalize(elem(ie),hvcoord,1,nt)
+    call tests_finalize(elem(ie),hvcoord)
   enddo ! ie loop
 end subroutine dcmip2012_test4_init
 

@@ -86,8 +86,8 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> import io
         >>> s = io.StringIO()
         >>> CMakeMacroWriter(s).set_variable("foo", "bar")
-        >>> s.getvalue()
-        u'set(foo "bar")\\n'
+        >>> str(s.getvalue())
+        'set(foo "bar")\\n'
         """
         value_transformed = self._transform_value(value)
         self.write_line("set(" + name + ' "' + value_transformed + '")')
@@ -98,8 +98,8 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> import io
         >>> s = io.StringIO()
         >>> CMakeMacroWriter(s).start_ifeq("foo", "bar")
-        >>> s.getvalue()
-        u'if("foo" STREQUAL "bar")\\n'
+        >>> str(s.getvalue())
+        'if("foo" STREQUAL "bar")\\n'
         """
         self.write_line('if("' + left + '" STREQUAL "' + right + '")')
         self.indent_right()
@@ -113,8 +113,8 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> writer.start_ifeq("foo", "bar")
         >>> writer.set_variable("foo2", "bar2")
         >>> writer.end_ifeq()
-        >>> s.getvalue()
-        u'if("foo" STREQUAL "bar")\\n  set(foo2 "bar2")\\nendif()\\n'
+        >>> str(s.getvalue())
+        'if("foo" STREQUAL "bar")\\n  set(foo2 "bar2")\\nendif()\\n'
         """
         self.indent_left()
         self.write_line("endif()")

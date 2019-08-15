@@ -132,12 +132,11 @@ class MacroWriterBase(object):
 
         A trailing newline is added, whether or not the input has one.
         """
-        self.output.write(str(self.indent_string() + line + "\n"))
+        self.output.write(u"{}{}\n".format(self.indent_string(), line))
 
     @abstractmethod
     def environment_variable_string(self, name):
         """Return an environment variable reference."""
-        pass
 
     @abstractmethod
     def shell_command_strings(self, command):
@@ -166,17 +165,14 @@ class MacroWriterBase(object):
         if post is not None:
             writer.write(post)
         """
-        pass
 
     @abstractmethod
     def variable_string(self, name):
         """Return a string to refer to a variable with the given name."""
-        pass
 
     @abstractmethod
     def set_variable(self, name, value):
         """Write out a statement setting a variable to some value."""
-        pass
 
     def append_variable(self, name, value):
         """Write out a statement appending a value to a string variable."""
@@ -190,9 +186,7 @@ class MacroWriterBase(object):
         The arguments to this method are compared, and the block is entered
         only if they are equal.
         """
-        pass
 
     @abstractmethod
     def end_ifeq(self):
         """Write out a statement to end a block started with start_ifeq."""
-        pass

@@ -140,7 +140,7 @@ ICP    cice performance test
     SPINUP tests
 ======================================================================
 
-SSP    smoke CLM spinup test (only valid for CLM compsets with CLM45 and CN or BGC)  (TODO - change to SPL)
+SSP    smoke CLM spinup test (only valid for CLM compsets with CN or BGC)  (TODO - change to SPL)
        do an initial spin test (setting CLM_BLDNML_OTPS to -bgc_spinup_on)
          write restarts at the end of the run
          short term archiving is on

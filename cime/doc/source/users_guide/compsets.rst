@@ -55,7 +55,7 @@ A compset longname has this form::
 
 Supported values for each element of the longname::
 
-  TIME = model time period (e.g. 1850, 2000, 20TR, RCP8...)
+  TIME = model time period (e.g. 1850, 2000, 20TR, SSP585...)
 
   CIME supports the following values for ATM,LND,ICE,OCN,ROF,GLC,WAV and ESP.
   ATM  = [DATM, SATM, XATM]

@@ -8,15 +8,18 @@ module mesh_mod
   use physical_constants, only : DD_PI
   use control_mod, only : MAX_FILE_LEN
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use netcdf ! _EXTERNAL
+#endif
 
   implicit none
   logical, public           :: MeshUseMeshFile = .false.
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   public  :: MeshOpen           ! Must be called first
 
   
   integer, parameter :: MXSTLN = 32
-
+#endif
   ! ===============================
   ! Public methods for mesh_mod
   ! ===============================
@@ -26,6 +29,7 @@ module mesh_mod
   public  :: MeshCubeTopology   ! called afer MeshOpen
   public  :: MeshCubeTopologyCoords   ! called afer MeshOpen
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   public  :: MeshSetCoordinates ! called after MeshCubeTopology    
   public  :: MeshPrint          ! show the contents of the Mesh after it has been loaded into the module
   public  :: MeshClose  
@@ -81,9 +85,15 @@ module mesh_mod
   ! Not used will eliminate later
   private :: get_block_ids
 
+  ! Efficient SFC.
+  private :: mesh_init_sfc_from_centroids_orig, mesh_init_sfc_from_centroids, mesh_theta2idx, gen_mesh_data
+  public :: test_mesh_init_sfc_from_centroids
+
+#endif
 
 contains
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
 !======================================================================
 !  subroutine handle_error
 !======================================================================
@@ -110,7 +120,7 @@ contains
 
     status = nf90_open(p_mesh_file_name, NF90_NOWRITE, p_ncid)
     if(status /= nf90_NoErr) call handle_error(status, __FILE__, __LINE__)
- 
+
     MeshUseMeshFile = .true. 
 
   end subroutine open_mesh_file
@@ -641,7 +651,7 @@ contains
     implicit none
     integer            , intent(in)  :: element_nodes(:,:)
     integer,             intent(in)  :: face_numbers    (p_number_elements)
-    real,                intent(out) :: centroids       (p_number_elements,2)
+    real(kind=real_kind),intent(out) :: centroids       (p_number_elements,2)
     real(kind=real_kind)             :: coordinates(4,3) 
     real(kind=real_kind)             :: cube_coor  (4,2) 
     integer                          :: i, j, node_numbers(4)
@@ -674,19 +684,15 @@ contains
   subroutine initialize_space_filling_curve(GridVertex, element_nodes)
     use gridgraph_mod, only   : GridVertex_t
     use parallel_mod,  only   : abortmp
-    use spacecurve_mod, only  : GenspaceCurve
     
     implicit none
     type (GridVertex_t), intent(inout) :: GridVertex(:)
     integer            , intent(in)    :: element_nodes(:,:)
     
-    integer,allocatable                :: Mesh2(:,:),Mesh2_map(:,:),sfcij(:,:)
-    
-    real                               :: centroids(p_number_elements,2)
+    real(kind=real_kind)               :: centroids(p_number_elements,2)
     integer                            :: face_numbers(p_number_elements)
-    real                               :: x, y, h
-    integer                            :: i, j, i2, j2, ne, ne2
-    integer                            :: sfc_index, face, nelem
+    real(kind=real_kind)               :: h
+    integer                            :: i, sfcidx(p_number_elements)
     
     if (SIZE(GridVertex) /= p_number_elements) then
        call abortmp('initialize_space_filling_curve:Element count check failed &
@@ -704,16 +710,37 @@ contains
     
     if (h<.00001) call abortmp('initialize_space_filling_curve: Unreasonably small element found. less than .00001')
     
-    ne = CEILING(0.5*DD_PI/(h/2));
+    call mesh_init_sfc_from_centroids(p_number_elements, face_numbers, centroids, h, sfcidx)
     
+    do i = 1, p_number_elements
+       GridVertex(i)%SpaceCurve = sfcidx(i)
+       if (-1==GridVertex(i)%SpaceCurve) then
+          write (*,*) " Error in projecting element ",i," to space filling curve."
+          write (*,*) " Face:",face_numbers(i)
+          write (*,*) " Centroid:",centroids(i,:)
+       end if
+    end do    
+  end subroutine initialize_space_filling_curve
+
+  subroutine mesh_init_sfc_from_centroids_orig(nelem, face_numbers, centroids, h, sfcidx)
+    use spacecurve_mod, only  : GenspaceCurve
+
+    integer, intent(in) :: nelem, face_numbers(nelem)
+    real(kind=real_kind), intent(in) :: centroids(nelem,2), h
+    integer, intent(out) :: sfcidx(nelem)
+    integer, allocatable :: Mesh2(:,:), Mesh2_map(:,:), sfcij(:,:)
+    integer :: ne, ne2, sfc_index, i, j, i2, j2, face
+    real(kind=real_kind) :: x, y
+    real(kind=real_kind), parameter :: pi = 3.141592653589793116d0
+    integer, parameter :: nfaces = 6
+
+    ne = ceiling(pi/h);
     ! find the smallest ne2 which is a power of 2 and ne2>ne
-    ne2=2**ceiling( log(real(ne))/log(2d0) )
-    if (ne2<ne) call abortmp('initialize_space_filling_curve: Fatel SFC error')
-    
+    ne2=2**ceiling(log(real(ne))/log(2d0))
+
     allocate(Mesh2(ne2,ne2))
     allocate(Mesh2_map(ne2,ne2))
     allocate(sfcij(0:ne2*ne2,2))
-    
     ! create a reverse index array for Mesh2
     ! j = Mesh2(i,j) 
     ! (i,j) = (sfcij(j,1),sfci(j,2)) 
@@ -725,24 +752,21 @@ contains
           sfcij(j,2)=j2
        enddo
     enddo
-    
-    
-    GridVertex(:)%SpaceCurve=-1
-    sfc_index   = 0
+    sfc_index = 0
     do face = 1,nfaces
-       ! associate every element on the ne x ne mesh (Mesh)
-       ! with its closest element on the ne2 x ne2 mesh (Mesh2)
-       ! Store this as a map from Mesh2 -> Mesh in Mesh2_map.
-       ! elements in Mesh2 which are not mapped get assigned a value of 0
-       Mesh2_map=0
-       do i=1,p_number_elements
+       ! associate every element on the ne x ne mesh (Mesh) with its closest
+       ! element on the ne2 x ne2 mesh (Mesh2) Store this as a map from Mesh2 ->
+       ! Mesh in Mesh2_map.  elements in Mesh2 which are not mapped get assigned
+       ! a value of 0
+       Mesh2_map = 0
+       do i=1,nelem
           if (face_numbers(i) == face ) then
              x = centroids(i,1)
              y = centroids(i,2)
              ! map this element to an (i2,j2) element
-             ! [ -DD_PI/4, DD_PI/4 ]  -> [ 0, ne2 ]
-             i2=nint( (0.5 + 2.0*x/DD_PI)*ne2 + .5 )
-             j2=nint( (0.5 + 2.0*y/DD_PI)*ne2 + .5 )
+             ! [ -pi/4, pi/4 ]  -> [ 0, ne2 ]
+             i2 = nint( (0.5 + 2.0*x/pi)*ne2 + .5 )
+             j2 = nint( (0.5 + 2.0*y/pi)*ne2 + .5 )
              if (face == 4 .or. face == 6 )               i2 = ne2-i2+1
              if (face == 1 .or. face == 2 .or. face == 6) j2 = ne2-j2+1
              if (i2<1  ) i2=1
@@ -751,38 +775,179 @@ contains
              if (j2>ne2) j2=ne2
              Mesh2_map(i2,j2)=i
           end if
-       end do
-       
-       ! generate a SFC for Mesh with the same ordering as the 
-       ! elements in Mesh2 which map to Mesh.
-       do j=0,ne2*ne2-1
-          i2=sfcij(j,1)
-          j2=sfcij(j,2)
-          i=Mesh2_map(i2,j2)
-          if (i/=0) then
+       end do       
+       ! generate a SFC for Mesh with the same ordering as the elements in Mesh2
+       ! which map to Mesh.
+       do j = 0, ne2*ne2-1
+          i2 = sfcij(j,1)
+          j2 = sfcij(j,2)
+          i = Mesh2_map(i2,j2)
+          if (i /= 0) then
              ! (i2,j2) element maps to element
-             GridVertex(i)%SpaceCurve=sfc_index
-             sfc_index=sfc_index+1
+             sfcidx(i) = sfc_index
+             sfc_index = sfc_index+1
           endif
        enddo
     enddo
     deallocate(Mesh2)
     deallocate(Mesh2_map)
     deallocate(sfcij)
-    
-    if (minval(GridVertex(:)%SpaceCurve) == -1) then
-       do i=1,p_number_elements
-          if (-1==GridVertex(i)%SpaceCurve) then
-             write (*,*) " Error in projecting element ",i," to space filling curve."
-             write (*,*) " Face:",face_numbers(i)
-             write (*,*) " Centroid:",centroids(i,:)
-          end if
+  end subroutine mesh_init_sfc_from_centroids_orig
+
+  function mesh_theta2idx(x, ne) result(i)
+    real(kind=real_kind), intent(in) :: x
+    integer, intent(in) :: ne
+    real(kind=real_kind), parameter :: pi = 3.141592653589793116d0, half = 0.5d0
+    integer :: i
+
+    i = nint((half + 2*x/pi)*ne + half)
+    if (i < 1) i = 1
+    if (i > ne) i = ne
+  end function mesh_theta2idx
+
+  subroutine mesh_init_sfc_from_centroids(nelem, face_numbers, centroids, h, sfcidx)
+    use spacecurve_mod, only : sfcmap_t, sfcmap_init, sfcmap_pos2i, sfcmap_finalize
+    use sort_mod, only : sortints
+
+    integer, intent(in) :: nelem, face_numbers(nelem)
+    real(kind=real_kind), intent(in) :: centroids(nelem,2), h
+    integer, intent(out) :: sfcidx(nelem)
+    real(kind=real_kind), parameter :: pi = 3.141592653589793116d0
+    integer, parameter :: nfaces = 6
+    type (sfcmap_t) :: sfcmap
+    integer :: ne, ne2, i, face, i2, j2, pos(2), o, sfc, ne2sq
+    real(kind=real_kind) :: x, y
+    integer, allocatable :: inds(:,:)
+
+    ne = ceiling(pi/h);
+    ! find the smallest ne2 which is a power of 2 and ne2>ne. could instead use
+    ! find_next_factorable for a smaller ne2.
+    ne2 = 2**ceiling(log(real(ne))/log(2d0))
+    ne2sq = ne2*ne2
+    print *,'ne,ne2',ne,ne2
+
+    o = sfcmap_init(ne2, sfcmap)
+    allocate(inds(2,nelem))
+    do i = 1, nelem
+       face = face_numbers(i)
+       x = centroids(i,1)
+       y = centroids(i,2)
+       i2 = mesh_theta2idx(x, ne2)
+       j2 = mesh_theta2idx(y, ne2)
+       if (face == 4 .or. face == 6)                i2 = ne2-i2+1
+       if (face == 1 .or. face == 2 .or. face == 6) j2 = ne2-j2+1
+       pos = (/ i2, j2 /)
+       inds(2,i) = i
+       o = sfcmap_pos2i(sfcmap, pos, sfc)
+       inds(1,i) = ne2*ne2*(face-1) + sfc
+    end do
+    call sortints(inds)
+    do i = 1, nelem
+       sfcidx(inds(2,i)) = i-1
+    end do
+    deallocate(inds)
+    call sfcmap_finalize(sfcmap)
+  end subroutine mesh_init_sfc_from_centroids
+
+  subroutine gen_mesh_data(nx, ny, centroids, h)
+    integer, intent(in) :: nx, ny
+    real(kind=real_kind), intent(out) :: centroids(ny,nx,2), h
+    integer :: iy, ix, d, i, j, iy1, ix1
+    real(kind=real_kind) :: dx, dy, xo, yo, x, y, r(2), pmin(2), pmax(2), x0, y0, x1, y1
+    real(kind=real_kind), parameter :: pi = 3.141592653589793116d0, delta = 0.01d0
+
+    dx = 1.0d0 / (nx-1)
+    dy = 1.0d0 / (ny-1)
+
+    pmin = (/ 1, 1 /)
+    pmax = (/ 0, 0 /)
+
+    ! Generate an interesting mesh.
+    do ix = 1, nx
+       do iy = 1, ny
+          call random_number(r)
+          r = 2*(r - 0.5d0)
+          xo = (ix-1)*dx
+          yo = (iy-1)*dy
+          x = xo + 0.2*dx*r(1) + 0.1d0*cos(pi*yo)
+          y = yo + 0.2*dy*r(2) + 0.1d0*sin(pi*xo)
+          centroids(iy,ix,:) = (/ x, y /)
+          do d = 1, 2
+             pmin(d) = min(pmin(d), centroids(iy,ix,d))
+             pmax(d) = max(pmax(d), centroids(iy,ix,d))
+          end do
        end do
-       call abortmp('initialize_space_filling_curve: Vertex not on SpaceCurve')
-    end if
-    
-  end subroutine initialize_space_filling_curve
-  
+    end do
+    ! Normalize it to fit in (0,1)x(0,1)
+    do ix = 1, nx
+       do iy = 1, ny
+          do d = 1, 2
+             centroids(iy,ix,d) = delta + (centroids(iy,ix,d) - pmin(d)) / &
+                  (2*delta + (pmax(d) - pmin(d)))
+          end do
+       end do
+    end do
+    ! Get the smallest element dimension.
+    h = 1
+    do ix = 1, nx
+       do iy = 1, ny
+          x0 = centroids(iy,ix,1)
+          y0 = centroids(iy,ix,2)
+          do i = -1, 1
+             do j = -1, 1
+                if (i == 0 .and. j == 0) cycle
+                ix1 = modulo(ix + i - 1, nx) + 1
+                iy1 = modulo(iy + j - 1, ny) + 1
+                x1 = centroids(iy1,ix1,1)
+                y1 = centroids(iy1,ix1,2)
+                h = min(h, sqrt((x1 - x0)**2 + (y1 - y0)**2))
+             end do
+          end do
+       end do
+    end do
+    ! Scale to [-pi/4, pi/4]
+    do ix = 1, nx
+       do iy = 1, ny
+          do d = 1, 2
+             centroids(iy,ix,d) = 0.5d0*pi*(centroids(iy,ix,d) - 0.5d0)
+          end do
+       end do
+    end do
+  end subroutine gen_mesh_data
+
+  subroutine test_mesh_init_sfc_from_centroids(nx, ny)
+    integer, intent(in) :: nx, ny
+    real(kind=real_kind), allocatable :: centroids(:,:)
+    integer, allocatable :: face_numbers(:), sfcidxo(:), sfcidxn(:)
+    real(kind=real_kind) :: start, finish
+    real(kind=real_kind) :: h
+    integer :: i, nelem
+
+    nelem = nx*ny
+    allocate(centroids(nelem,2), face_numbers(nelem), &
+         sfcidxo(nelem), sfcidxn(nelem))
+    do i = 1, nelem
+       face_numbers(i) = modulo(i, 6) + 1
+    end do
+    call gen_mesh_data(nx, ny, centroids, h)
+    !call mesh_print(nx, ny, centroids, h, 'centroids.hy')
+    call cpu_time(start)
+    call mesh_init_sfc_from_centroids_orig(nelem, face_numbers, centroids, h, sfcidxo)
+    call cpu_time(finish)
+    print *, 'orig',finish-start
+    call cpu_time(start)
+    call mesh_init_sfc_from_centroids(nelem, face_numbers, centroids, h, sfcidxn)
+    call cpu_time(finish)
+    print *, 'new ',finish-start
+    do i = 1, nelem
+       if (sfcidxo(i) /= sfcidxn(i)) then
+          print '(a,i6,i6,i6,i3,i6,i6)','ERROR',i,nx,ny,face_numbers(i),sfcidxo(i),sfcidxn(i)
+          exit
+       end if
+    end do
+    deallocate(centroids, face_numbers, sfcidxo, sfcidxn)
+  end subroutine test_mesh_init_sfc_from_centroids
+
 !======================================================================
 ! subroutine find_corner_neighbors
 !======================================================================
@@ -883,7 +1048,7 @@ contains
                             !there can be at most max_corner element of these
              
              a_corner_elems = 0
-             a_corner_elems = elem_neighbor(elem_nbr_start : elem_nbr_start + cnt -1)
+             a_corner_elems(1:cnt) = elem_neighbor(elem_nbr_start : elem_nbr_start + cnt -1)
              !corner-sides(2) is clockwise of corner_side(1)
              corner_array= 0
              orig_pos = 0
@@ -1148,6 +1313,8 @@ contains
 !======================================================================
 ! subroutine MeshCubeTopologyCoords
 !======================================================================
+#endif
+
    subroutine MeshCubeTopologyCoords(GridEdge, GridVertex, coord_dim1, coord_dim2, coord_dim3, coord_dimension)
     use parallel_mod,           only : abortmp
     use dimensions_mod,         only : np,  max_elements_attached_to_node
@@ -1172,6 +1339,7 @@ contains
     real(kind=real_kind),allocatable, intent(inout) :: coord_dim3(:)
     integer, intent(inout) :: coord_dimension
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     real (kind=real_kind)            :: x,y,z, rangex
     real(kind=real_kind)             :: coordinates(4,3)
     real(kind=real_kind)             :: centroid(3)
@@ -1420,6 +1588,7 @@ contains
     if(partmethod .eq. SFCURVE) then
         call initialize_space_filling_curve(GridVertex, element_nodes)
     endif
+#endif
   end subroutine MeshCubeTopologyCoords
 
 !======================================================================
@@ -1439,6 +1608,7 @@ contains
     type (GridEdge_t),   intent(inout) :: GridEdge(:)
     type (GridVertex_t), intent(inout) :: GridVertex(:)
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     real(kind=real_kind)             :: coordinates(4,3) 
     real(kind=real_kind)             :: centroid(3)
     type (cartesian3D_t)             :: face_center
@@ -1535,6 +1705,7 @@ contains
     enddo
 
     call initialize_space_filling_curve(GridVertex, element_nodes)
+#endif
   end subroutine MeshCubeTopology
 
 !======================================================================
@@ -1549,6 +1720,7 @@ contains
     implicit none
 
     type (element_t), intent(inout)  :: elem(:)
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     integer                          :: connectivity(p_number_elements,4)
     integer                          :: node_multiplicity(p_number_nodes)
     integer                          :: face_no, i, k, l
@@ -1587,6 +1759,7 @@ contains
       elem(k)%corners(:)%x         = cube_coor(:,1)
       elem(k)%corners(:)%y         = cube_coor(:,2)
     end do
+#endif
   end subroutine MeshSetCoordinates
 
 !======================================================================
@@ -1596,6 +1769,7 @@ contains
     use parallel_mod, only : abortmp
     implicit none
     integer                     :: nedge
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     if (0 == p_number_blocks)  call abortmp('MeshCubeEdgeCount called before MeshOpenMesh')
     if (MeshUseMeshFile) then
       ! should be the same as SUM(SIZE(GridVertex(i)%nbrs(j)%n),i=1:p_number_elements,j=1:nInnerElemEdge)
@@ -1604,27 +1778,30 @@ contains
     else
       call abortmp('Error in MeshCubeEdgeCount: Should not call for non-exodus mesh file.')
     endif
-
+#endif
   end function MeshCubeEdgeCount
 
   function MeshCubeElemCount()  result(nelem)
     use parallel_mod, only : abortmp
     implicit none
     integer                     :: nelem
+#ifndef HOMME_WITHOUT_PIOLIBRARY
     if (0 == p_number_blocks)  call abortmp('MeshCubeElemCount called before MeshOpenMesh')
     if (MeshUseMeshFile) then
       nelem = p_number_elements
     else
       call abortmp('Error in MeshCubeElemCount: Should not call for non-exodus mesh file.')
     end if
+#endif
   end function MeshCubeElemCount
 
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   subroutine test_private_methods
     implicit none
     integer                          :: element_nodes(p_number_elements, 4)
     call mesh_connectivity (element_nodes)
   end subroutine test_private_methods
-
+#endif
 
 end module mesh_mod
 

@@ -8,7 +8,6 @@ rotate_grid = 0
 ne=30
 ndays=1
 qsize = 40
-nmax         = 360
 statefreq=360
 disable_diagnostics = .true.
 restartfreq   = 43200

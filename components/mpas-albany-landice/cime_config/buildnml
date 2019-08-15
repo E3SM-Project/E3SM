@@ -38,6 +38,7 @@ def buildnml(case, caseroot, compname):
     run_refdate       = case.get_value("RUN_REFDATE")
     run_reftod        = case.get_value("RUN_REFTOD")
     mali_use_albany   = case.get_value("MALI_USE_ALBANY")
+    mali_dynamic      = case.get_value("MALI_DYNAMIC")
     stream_name       = 'streams.landice'
     albany_input_name = 'albany_input.xml'
 
@@ -53,7 +54,11 @@ def buildnml(case, caseroot, compname):
     grid_prefix = ''
     decomp_prefix = ''
 
-    if glc_grid == 'mpas.gis20km':
+    if glc_grid == 'mpas.aisgis20km':
+        grid_date += '20190326'
+        grid_prefix += 'aisgis20km'
+        decomp_prefix += 'mpasli.graph.info.'
+    elif glc_grid == 'mpas.gis20km':
         grid_date += '150922'
         grid_prefix += 'gis20km'
         decomp_prefix += 'mpasli.graph.info.'
@@ -126,6 +131,7 @@ def buildnml(case, caseroot, compname):
         sysmod += " -glc_grid '{}'".format(glc_grid)
         sysmod += " -ntasks_glc '{}'".format(ntasks_glc)
         sysmod += " -ninst_glc '{}'".format(ninst_glc_real)
+        sysmod += " -mali_dynamic '{}'".format(mali_dynamic)
 
         run_cmd_no_fail(sysmod, from_dir=maliconf_dir)
 

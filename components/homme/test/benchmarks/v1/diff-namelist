@@ -1,0 +1,32 @@
+
+file1=v1-ne120-sl.nl
+file2=v1-ne120.nl
+#file2=v1-ne120-thetal-h-sl.nl
+
+
+echo "Comparing namelists ${file1}, ${file2}"
+
+diff <( sed 's/=/ = /' ${file1} | awk '/^[ \t]*[[:alnum:]]/ { print $1, $3 }' | sort ) <(sed 's/=/ = /' ${file2} | awk '/^[ \t]*[[:alnum:]]/ { print $1, $3 }' | sort )
+
+echo " "
+
+echo "Finding redeclared vars in ${file1}..."
+sed 's/=/ = /' ${file1} | awk '/^[ \t]*[[:alnum:]]/ { print $1 }' | sort | uniq -d && echo "Above are redeclared variables if any."
+
+echo " "
+
+echo "Finding redeclared vars in ${file2}..."
+sed 's/=/ = /' ${file2} | awk '/^[ \t]*[[:alnum:]]/ { print $1 }' | sort | uniq -d && echo "Above are redeclared variables if any."
+
+
+echo " "
+
+echo "Now look for doubles in each file"
+for file in ./*.nl
+do
+  echo "in file ${file}"
+  sed 's/=/ = /' ${file} | awk '/^[ \t]*[[:alnum:]]/ { print $1 }' | sort | uniq -d && echo "Above are redeclared variables if any."
+done
+
+
+

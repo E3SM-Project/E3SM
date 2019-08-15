@@ -5,13 +5,16 @@ of the tests in one or more test suites
 
 from __future__ import print_function
 from CIME.XML.standard_module_setup import *
+from CIME.XML.expected_fails_file import ExpectedFailsFile
 from CIME.test_status import TestStatus
 import os
 import sys
 from collections import defaultdict
 
 def cs_status(test_paths, summary=False, fails_only=False,
-              count_fails_phase_list=None, out=sys.stdout):
+              count_fails_phase_list=None,
+              expected_fails_filepath=None,
+              out=sys.stdout):
     """Print the test statuses of all tests in test_paths. The default
     is to print to stdout, but this can be overridden with the 'out'
     argument.
@@ -27,6 +30,10 @@ def cs_status(test_paths, summary=False, fails_only=False,
     total number of tests that have not PASSed this phase (this includes
     PENDs and FAILs). (This is typically used with the fails_only
     option, but it can also be used without that option.)
+
+    If expected_fails_filepath is provided, it should be a string giving
+    the full path to a file listing expected failures for this test
+    suite. Expected failures are then labeled as such in the output.
     """
     expect(not (summary and fails_only),
            "Cannot have both summary and fails_only")
@@ -35,6 +42,7 @@ def cs_status(test_paths, summary=False, fails_only=False,
     if count_fails_phase_list is None:
         count_fails_phase_list = []
     non_pass_counts = dict.fromkeys(count_fails_phase_list, 0)
+    xfails = _get_xfails(expected_fails_filepath)
     test_id_output = defaultdict(str)
     test_id_counts = defaultdict(int)
     for test_path in test_paths:
@@ -50,7 +58,8 @@ def cs_status(test_paths, summary=False, fails_only=False,
                 output = _overall_output(ts, "  {test_name} (Overall: {status}) details:\n")
             output += ts.phase_statuses_dump(prefix="    ",
                                              skip_passes=fails_only,
-                                             skip_phase_list=count_fails_phase_list)
+                                             skip_phase_list=count_fails_phase_list,
+                                             xfails=xfails.get(ts.get_name()))
             if count_fails_phase_list:
                 ts.increment_non_pass_counts(non_pass_counts)
 
@@ -68,6 +77,21 @@ def cs_status(test_paths, summary=False, fails_only=False,
         print('Non-PASS results for select phases:', file=out)
         for phase in count_fails_phase_list:
             print('{} non-passes: {}'.format(phase, non_pass_counts[phase]), file=out)
+
+def _get_xfails(expected_fails_filepath):
+    """Returns a dictionary of ExpectedFails objects, where the keys are test names
+
+    expected_fails_filepath should be either a string giving the path to
+    the file containing expected failures, or None. If None, then this
+    returns an empty dictionary (as if expected_fails_filepath were
+    pointing to a file with no expected failures listed).
+    """
+    if expected_fails_filepath is not None:
+        expected_fails_file = ExpectedFailsFile(expected_fails_filepath)
+        xfails = expected_fails_file.get_expected_fails()
+    else:
+        xfails = {}
+    return xfails
 
 def _overall_output(ts, format_str):
     """Returns a string giving the overall test status

@@ -12,7 +12,9 @@ module rof_comp_mct
                                 shr_file_getLogUnit, shr_file_getLogLevel, &
                                 shr_file_getUnit, shr_file_setIO
   use shr_const_mod    , only : SHR_CONST_REARTH
+  use shr_taskmap_mod  , only : shr_taskmap_write
   use seq_cdata_mod    , only : seq_cdata, seq_cdata_setptrs
+  use seq_comm_mct     , only : info_taskmap_comp
   use seq_timemgr_mod  , only : seq_timemgr_EClockGetData, seq_timemgr_StopAlarmIsOn, &
                                 seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockDateInSync
   use seq_infodata_mod , only : seq_infodata_type, seq_infodata_GetData, seq_infodata_PutData, &
@@ -22,11 +24,14 @@ module rof_comp_mct
   use RunoffMod        , only : rtmCTL, TRunoff
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
-                                inst_index, inst_suffix, inst_name, RtmVarSet
+                                inst_index, inst_suffix, inst_name, RtmVarSet, wrmflag
   use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
-  use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size, advance_timestep 
+  use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
+
+  use WRM_type_mod     , only : StorWater
+
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
                                 index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
@@ -34,6 +39,7 @@ module rof_comp_mct
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
+
   use mct_mod
   use ESMF
 !
@@ -89,6 +95,8 @@ contains
     integer :: lsize                                 ! size of attribute vector
     integer :: g,i,j,n                               ! indices
     logical :: exists                                ! true if file exists
+    logical :: no_taskmap_output                     ! true then do not write out task-to-node mapping
+    logical :: verbose_taskmap_output                ! true then use verbose task-to-node mapping format
     integer :: nsrest                                ! restart type
     integer :: ref_ymd                               ! reference date (YYYYMMDD)
     integer :: ref_tod                               ! reference time of day (sec)
@@ -107,6 +115,8 @@ contains
     character(len=SHR_KIND_CL) :: hostname           ! hostname of machine running on
     character(len=SHR_KIND_CL) :: version            ! Model version
     character(len=SHR_KIND_CL) :: username           ! user running the model
+    character(len=8)           :: c_inst_index       ! instance number
+    character(len=8)           :: c_npes             ! number of pes
     character(len=32), parameter :: sub = 'rof_init_mct'
     character(len=*),  parameter :: format = "('("//trim(sub)//") :',A)"
     !---------------------------------------------------------------------------
@@ -154,6 +164,44 @@ contains
        write(iulog,*) ' mosart iam  = ',iam
        write(iulog,*) ' inst_name = ',trim(inst_name)
     endif
+
+    ! Identify SMP nodes and process/SMP mapping for this instance.
+    ! (Assume that processor names are SMP node names on SMP clusters.)
+    write(c_inst_index,'(i8)') inst_index
+
+    if (info_taskmap_comp > 0) then
+
+       no_taskmap_output = .false.
+
+       if (info_taskmap_comp == 1) then
+          verbose_taskmap_output = .false.
+       else
+          verbose_taskmap_output = .true.
+       endif
+
+       write(c_npes,'(i8)') npes
+
+       if (masterproc) then
+          write(iulog,'(/,3A)') &
+             trim(adjustl(c_npes)), &
+             ' pes participating in computation of MOSART instance #', &
+             trim(adjustl(c_inst_index))
+          call shr_sys_flush(iulog)
+       endif
+
+    else
+
+       no_taskmap_output = .true.
+       verbose_taskmap_output = .false.
+
+    endif
+
+    call t_startf("shr_taskmap_write")
+    call shr_taskmap_write(iulog, mpicom_rof,                    &
+                           'ROF #'//trim(adjustl(c_inst_index)), &
+                           verbose=verbose_taskmap_output,       &
+                           no_output=no_taskmap_output           )
+    call t_stopf("shr_taskmap_write")
 
     ! Initialize mosart
     call seq_timemgr_EClockGetData(EClock,                               &
@@ -299,7 +347,6 @@ contains
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
-    call advance_timestep()
     call Rtmrun(rstwr,nlend,rdate)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)

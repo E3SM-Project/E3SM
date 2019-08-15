@@ -9,7 +9,7 @@ module ExternalModelPTMMod
   use abortutils                   , only : endrun
   use shr_kind_mod                 , only : r8 => shr_kind_r8
   use shr_log_mod                  , only : errMsg => shr_log_errMsg
-  use ExternalModelInterfaceDataMod, only : emi_data_list, emi_data
+  use EMI_DataMod, only : emi_data_list, emi_data
   use decompMod                    , only : bounds_type
   use mpp_varctl                   , only : iulog
   use ExternalModelBaseType        , only : em_base_type
@@ -747,7 +747,7 @@ contains
     call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , snow_area)
     call this%thermal_mpp%MeshComputeVolume          (imesh)
 
-    call this%thermal_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, snow_nconn,  &
+    call this%thermal_mpp%CreateAndAddConnectionSet(imesh, CONN_SET_INTERNAL, snow_nconn,  &
          snow_conn_id_up, snow_conn_id_dn, snow_conn_dist_up, snow_conn_dist_dn, &
          snow_conn_area, snow_conn_type)
 
@@ -796,7 +796,7 @@ contains
     call this%thermal_mpp%MeshSetGeometricAttributes (imesh, VAR_AREA , soil_area)
     call this%thermal_mpp%MeshComputeVolume          (imesh)
 
-    call this%thermal_mpp%MeshSetConnectionSet(imesh, CONN_SET_INTERNAL, soil_nconn,  &
+    call this%thermal_mpp%CreateAndAddConnectionSet(imesh, CONN_SET_INTERNAL, soil_nconn,  &
          soil_conn_id_up, soil_conn_id_dn, soil_conn_dist_up, soil_conn_dist_dn, &
          soil_conn_area, soil_conn_type)
 
@@ -1481,11 +1481,11 @@ contains
 
              ! Save data for internal SoE auxvars
              temperature_1d(idx) = l2e_th2osfc(c)
-             dz_1d(idx)          = 1.0e-3*l2e_h2osfc(c)
+             dz_1d(idx)          = 1.0e-3*l2e_h2osfc(c)/l2e_frac_h2osfc(c)
              is_active_1d(idx)   = .true.
              frac_1d(idx)        = l2e_frac_h2osfc(c)
-             dist_up_1d(idx)     = dz_1d(idx)/2.d0
-             dist_dn_1d(idx)     = dz_1d(idx)/2.d0
+             dist_up_1d(idx)     = dz_1d(idx)/2.d0/l2e_frac_h2osfc(c)
+             dist_dn_1d(idx)     = dz_1d(idx)/2.d0/l2e_frac_h2osfc(c)
 
              ! Index for boundary SoE auxvars
              idx                 = (c-begc) + 1

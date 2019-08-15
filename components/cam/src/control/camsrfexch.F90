@@ -425,6 +425,8 @@ subroutine cam_export(state,cam_out,pbuf)
    integer :: ncol
    integer :: prec_dp_idx, snow_dp_idx, prec_sh_idx, snow_sh_idx
    integer :: prec_sed_idx,snow_sed_idx,prec_pcw_idx,snow_pcw_idx
+   integer :: vmag_gust_idx
+   real(r8) :: umb(pcols), vmb(pcols),vmag(pcols)
 
    real(r8), pointer :: prec_dp(:)                 ! total precipitation   from ZM convection
    real(r8), pointer :: snow_dp(:)                 ! snow from ZM   convection
@@ -434,6 +436,8 @@ subroutine cam_export(state,cam_out,pbuf)
    real(r8), pointer :: snow_sed(:)                ! snow from ZM   convection
    real(r8), pointer :: prec_pcw(:)                ! total precipitation   from Hack convection
    real(r8), pointer :: snow_pcw(:)                ! snow from Hack   convection
+   real(r8), pointer :: vmag_gust(:)
+
    !-----------------------------------------------------------------------
 
    lchnk = state%lchnk
@@ -447,6 +451,7 @@ subroutine cam_export(state,cam_out,pbuf)
    snow_sed_idx = pbuf_get_index('SNOW_SED')
    prec_pcw_idx = pbuf_get_index('PREC_PCW')
    snow_pcw_idx = pbuf_get_index('SNOW_PCW')
+   vmag_gust_idx = pbuf_get_index('vmag_gust')
 
    call pbuf_get_field(pbuf, prec_dp_idx, prec_dp)
    call pbuf_get_field(pbuf, snow_dp_idx, snow_dp)
@@ -456,13 +461,19 @@ subroutine cam_export(state,cam_out,pbuf)
    call pbuf_get_field(pbuf, snow_sed_idx, snow_sed)
    call pbuf_get_field(pbuf, prec_pcw_idx, prec_pcw)
    call pbuf_get_field(pbuf, snow_pcw_idx, snow_pcw)
+   call pbuf_get_field(pbuf, vmag_gust_idx, vmag_gust)
+
+!PMA adds gustiness to surface scheme c20181128
 
    do i=1,ncol
+      umb(i)           = state%u(i,pver)
+      vmb(i)           = state%v(i,pver)
+      vmag(i)          = max(1.e-5_r8,sqrt( umb(i)**2._r8 + vmb(i)**2._r8))
       cam_out%tbot(i)  = state%t(i,pver)
       cam_out%thbot(i) = state%t(i,pver) * state%exner(i,pver)
       cam_out%zbot(i)  = state%zm(i,pver)
-      cam_out%ubot(i)  = state%u(i,pver)
-      cam_out%vbot(i)  = state%v(i,pver)
+      cam_out%ubot(i)  = state%u(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
+      cam_out%vbot(i)  = state%v(i,pver) * ((vmag_gust(i)+vmag(i))/vmag(i))
       cam_out%pbot(i)  = state%pmid(i,pver)
       cam_out%rho(i)   = cam_out%pbot(i)/(rair*cam_out%tbot(i))
       psm1(i,lchnk)    = state%ps(i)

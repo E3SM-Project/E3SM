@@ -132,7 +132,7 @@ subroutine getinterpncdata( NCID, camlat, camlon, TimeIdx, &
          usable_var = .true.
       endif
 
-      if ( dim_name .EQ. 'lon' ) then
+      if ( dim_name .EQ. 'lon' .or. dim_name .EQ. 'ncol') then
          start( i ) = lonIdx
          count( i ) = 1           ! Extract a single value
          dims_set = dims_set + 1

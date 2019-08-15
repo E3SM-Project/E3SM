@@ -17,9 +17,10 @@ module SurfaceRadiationMod
   use SurfaceAlbedoType , only : surfalb_type
   use SolarAbsorbedType , only : solarabs_type
   use GridcellType      , only : grc_pp  
-  use TopounitType      , only : top_af  
+  use TopounitDataType  , only : top_af  
   use LandunitType      , only : lun_pp                
-  use ColumnType        , only : col_pp                
+  use ColumnType        , only : col_pp
+  use ColumnDataType    , only : col_ws  
   use VegetationType    , only : veg_pp
   use landunit_varcon   , only : istdlak
 
@@ -388,8 +389,8 @@ contains
           forc_solad      =>    top_af%solad                      , & ! Input:  [real(r8) (:,:) ] direct beam radiation (W/m**2)        
           forc_solai      =>    top_af%solai                      , & ! Input:  [real(r8) (:,:) ] diffuse radiation (W/m**2)            
 
-          snow_depth      =>    waterstate_vars%snow_depth_col    , & ! Input:  [real(r8) (:)   ] snow height (m)                         
-          frac_sno        =>    waterstate_vars%frac_sno_col      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
+          snow_depth      =>    col_ws%snow_depth    , & ! Input:  [real(r8) (:)   ] snow height (m)                         
+          frac_sno        =>    col_ws%frac_sno      , & ! Input:  [real(r8) (:)   ] fraction of ground covered by snow (0 to 1)
           
           nrad            =>    surfalb_vars%nrad_patch           , & ! Input:  [integer  (:)   ] number of canopy layers, above snow for radiative transfer
           coszen          =>    surfalb_vars%coszen_col           , & ! Input:  [real(r8) (:)   ] column cosine of solar zenith angle            

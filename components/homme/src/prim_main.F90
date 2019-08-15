@@ -15,14 +15,18 @@ program prim_main
                               omp_get_num_threads, omp_get_max_threads
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init, nstep=>nextOutputStep
   use dimensions_mod,   only: nelemd, qsize
-  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype, integration, statefreq, tstep_type
-  use domain_mod,       only: domain1d_t, decompose
+  use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype
+  use domain_mod,       only: domain1d_t
   use element_mod,      only: element_t
-  use common_io_mod,    only: output_dir
+  use common_io_mod,    only: output_dir, infilenames
   use common_movie_mod, only: nextoutputstep
   use perf_mod,         only: t_initf, t_prf, t_finalizef, t_startf, t_stopf ! _EXTERNAL
   use restart_io_mod ,  only: restartheader_t, writerestart
   use hybrid_mod,       only: hybrid_create
+#if (defined MODEL_THETA_L && defined ARKODE)
+  use arkode_mod,       only: calc_nonlinear_stats, finalize_nonlinear_stats
+#endif
+  use compose_test_mod, only: compose_test
 
 #ifdef VERTICAL_INTERPOLATION
   use netcdf_interp_mod, only: netcdf_interp_init, netcdf_interp_write, netcdf_interp_finish
@@ -30,9 +34,10 @@ program prim_main
 
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
-  use interpolate_driver_mod, only : interpolate_driver
+  use interpolate_driver_mod, only : interpolate_driver, pio_read_phis
 #else
   use prim_movie_mod,   only : prim_movie_output, prim_movie_finish,prim_movie_init
+  use interpolate_driver_mod, only : pio_read_phis
 #endif
 
   implicit none
@@ -134,6 +139,9 @@ program prim_main
      call haltmp('interpolation complete')
   end if
 #endif
+  ! this should really be called from test_mod.F90, but it has be be called outside
+  ! the threaded region
+  if (infilenames(1)/='') call pio_read_phis(elem,hybrid%par)
 
   if(par%masterproc) print *,"Primitive Equation Initialization..."
 #if (defined HORIZ_OPENMP)
@@ -153,7 +161,7 @@ program prim_main
   !$OMP END PARALLEL
 #endif
 
-  
+
   ! Here we get sure the directory specified
   ! in the input namelist file in the 
   ! variable 'output_dir' does exist.
@@ -184,6 +192,7 @@ program prim_main
   if(par%masterproc) print *,"I/O init..."
 ! initialize history files.  filename constructed with restart time
 ! so we have to do this after ReadRestart in prim_init2 above
+  call t_startf('prim_io_init')
 #ifdef VERTICAL_INTERPOLATION
   call netcdf_interp_init(elem, hybrid, hvcoord)
 #elif defined PIO_INTERP
@@ -191,6 +200,7 @@ program prim_main
 #else
   call prim_movie_init( elem, par, hvcoord, tl )
 #endif
+  call t_stopf('prim_io_init')
 
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
@@ -204,6 +214,7 @@ program prim_main
 #endif
   endif
 
+  call compose_test(par, hvcoord, dom_mt, elem)
 
   if(par%masterproc) print *,"Entering main timestepping loop"
   call t_startf('prim_main_loop')
@@ -238,8 +249,8 @@ program prim_main
      ! ============================================================
      ! Write restart files if required 
      ! ============================================================
-     if((restartfreq > 0) .and. (MODULO(tl%nstep,restartfreq) ==0)) then 
-        call WriteRestart(elem, ithr,1,nelemd,tl)
+     if(restartfreq > 0) then
+         if (MODULO(tl%nstep,restartfreq) ==0) call WriteRestart(elem,ithr,1,nelemd,tl)
      endif
   end do !end of while tl%nstep < nEndStep
   call t_stopf('prim_main_loop')
@@ -256,6 +267,11 @@ program prim_main
   call prim_movie_finish
 #endif
 
+#if (defined MODEL_THETA_L && defined ARKODE)
+  if (calc_nonlinear_stats) then
+    call finalize_nonlinear_stats(par%comm, par%rank, par%root, par%nprocs)
+  endif
+#endif
 
   call t_stopf('Total')
   if(par%masterproc) print *,"writing timing data"
@@ -264,11 +280,3 @@ program prim_main
   call t_finalizef()
   call haltmp("exiting program...")
 end program prim_main
-
-
-
-
-
-
-
-

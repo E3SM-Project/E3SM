@@ -35,7 +35,7 @@ contains
     ! read CN and BGC shared parameters
     !
 
-    use CNSharedParamsMod       , only : CNParamsReadShared
+    use SharedParamsMod       , only : ParamsReadShared
 
     use clm_varctl              , only : paramfile, iulog
     use spmdMod                 , only : masterproc
@@ -67,7 +67,7 @@ contains
     !
     ! some parameters (eg. organic_max) are used in non-CN, non-BGC cases
     !
-    call CNParamsReadShared(ncid)
+    call ParamsReadShared(ncid)
 
 
   end subroutine CNParamsSharedReadFile
@@ -76,19 +76,19 @@ contains
   subroutine readPrivateParameters
     ! read CN and BGC shared parameters
     !
-    use CNAllocationMod          , only : readCNAllocParams    
-    use CNDecompMod              , only : readCNDecompParams
-    use CNDecompCascadeBGCMod    , only : readCNDecompBgcParams
-    use CNDecompCascadeCNMod     , only : readCNDecompCnParams
-    use CNPhenologyMod           , only : readCNPhenolParams
+    use AllocationMod          , only : readCNAllocParams    
+    use SoilLittDecompMod              , only : readSoilLittDecompParams
+    use DecompCascadeBGCMod    , only : readDecompBGCParams
+    use DecompCascadeCNMod     , only : readDecompCNParams
+    use PhenologyMod             , only : readPhenolParams
     use CNPhenologyBeTRMod       , only : readCNPhenolBeTRParams
-    use CNMRespMod               , only : readCNMRespParams
-    use CNNDynamicsMod           , only : readCNNDynamicsParams
-    use CNGapMortalityMod        , only : readCNGapMortParams 
+    use MaintenanceRespMod               , only : readMaintenanceRespParams
+    use NitrogenDynamicsMod           , only : readNitrogenDynamicsParams
+    use GapMortalityMod          , only : readGapMortParams 
     use CNGapMortalityBeTRMod    , only : readCNGapMortBeTRParams
-    use CNNitrifDenitrifMod      , only : readCNNitrifDenitrifParams
-    use CNSoilLittVertTranspMod  , only : readCNSoilLittVertTranspParams
-    use ch4Mod                   , only : readCH4Params
+    use CNNitrifDenitrifMod      , only : readNitrifDenitrifParams
+    use SoilLittVertTranspMod    , only : readSoilLittVertTranspParams
+    use CH4Mod                   , only : readCH4Params
     use clm_varctl               , only : paramfile, iulog, use_betr
     use spmdMod                  , only : masterproc
     use fileutils                , only : getfil
@@ -131,18 +131,18 @@ contains
 
        call readCNAllocParams(ncid)
        if(.not. is_active_betr_bgc) then
-         call readCNDecompParams(ncid)
+         call readSoilLittDecompParams(ncid)
          if (use_century_decomp) then
-            call readCNDecompBgcParams(ncid)
+            call readDecompBGCParams(ncid)
          else
-            call readCNDecompCnParams(ncid)
+            call readDecompCNParams(ncid)
          end if
        
          if (use_nitrif_denitrif) then
-            call readCNNitrifDenitrifParams(ncid)
+            call readNitrifDenitrifParams(ncid)
          end if
 
-         call readCNSoilLittVertTranspParams(ncid)
+         call readSoilLittVertTranspParams(ncid)
        
          if (use_lch4) then
             call readCH4Params (ncid)
@@ -154,14 +154,14 @@ contains
        if(is_active_betr_bgc)then
          call readCNPhenolBeTRParams(ncid)
        else
-         call readCNPhenolParams(ncid)
+         call readPhenolParams(ncid)
        endif
-       call readCNMRespParams (ncid)
-       call readCNNDynamicsParams (ncid)
+       call readMaintenanceRespParams (ncid)
+       call readNitrogenDynamicsParams (ncid)
        if(is_active_betr_bgc)then
          call readCNGapMortBeTRParams (ncid)
        else
-         call readCNGapMortParams (ncid)
+         call readGapMortParams (ncid)
        endif
     end if
 

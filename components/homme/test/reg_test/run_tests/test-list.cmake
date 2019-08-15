@@ -14,8 +14,12 @@ SET(HOMME_TESTS
   baro2d-imp.cmake
   thetah-test22.cmake
   thetanh-test22.cmake
+  preqx-TC-ftype4.cmake
+  thetah-TC-ftype4.cmake
   thetah-TC.cmake
   thetanh-TC.cmake
+  thetanh-TC-nudiv.cmake
+  thetanh-TC-nutop.cmake
   thetanhwet-TC.cmake
   templates.cmake
 )

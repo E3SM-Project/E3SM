@@ -11,11 +11,11 @@ source /etc/profile.d/modules.sh
 
 module reset
 module unload netcdf
-module swap intel intel/17.0.1
+module swap intel intel/19.0.2
+module switch mpt mpt/2.19
 module load cmake/3.7.2
-module load netcdf-mpi/4.4.1.1
-module load pnetcdf/1.8.1
-module switch mpt mpt/2.16
+module load netcdf-mpi/4.6.1
+module load pnetcdf/1.11.0
 echo "MODULE LIST..."
 module list
 
@@ -31,10 +31,10 @@ fi
 cd "$PIO_DASHBOARD_ROOT"
 
 if [ ! -d src ]; then
-  git clone --branch develop https://github.com/PARALLELIO/ParallelIO src
+  git clone https://github.com/PARALLELIO/ParallelIO src
 fi
 cd src
-git checkout develop
-git pull origin develop
+git checkout master
+git pull origin master
 
 ctest -S CTestScript.cmake,${model} -VV

@@ -158,7 +158,7 @@ module clm_varctl
   ! used to override an error check on reading in restart files
   logical, public :: override_bgc_restart_mismatch_dump = .false. 
 
-  ! Set in CNAllocationInit (TODO - had to move it here to avoid circular dependency)
+  ! Set in AllocationInit (TODO - had to move it here to avoid circular dependency)
   logical, private:: carbon_only      
   logical, private:: carbonnitrogen_only      
   logical, private:: carbonphosphorus_only      
@@ -302,9 +302,9 @@ module clm_varctl
   logical, public :: use_vichydro        = .false.
   logical, public :: use_century_decomp  = .false.
   logical, public :: use_cn              = .false.
-  logical, public :: use_cndv            = .false.
   logical, public :: use_crop            = .false.
   logical, public :: use_snicar_frc      = .false.
+  logical, public :: use_snicar_ad       = .false.
   logical, public :: use_vancouver       = .false.
   logical, public :: use_mexicocity      = .false.
   logical, public :: use_noio            = .false.
@@ -323,6 +323,11 @@ module clm_varctl
   ! PETSc-based thermal model switches
   !----------------------------------------------------------
   logical, public :: use_petsc_thermal_model = .false.
+
+  !----------------------------------------------------------
+  ! Stub EM switches
+  !----------------------------------------------------------
+  logical          , public :: use_em_stub = .false.
 
   !----------------------------------------------------------
   ! To retrieve namelist
@@ -356,6 +361,15 @@ module clm_varctl
   character(len=256), public :: domain_decomp_type    = 'round_robin'
 
   !-----------------------------------------------------------------------
+  ! flux limiter for phenology flux calculation
+  logical, public :: use_pheno_flux_limiter = .false.
+
+  ! Soil erosion
+  !-----------------------------------------------------------------------
+  logical, public :: use_erosion    = .false.
+  logical, public :: ero_ccycle     = .false.
+
+  !-----------------------------------------------------------------------
   ! bgc & pflotran interface
   !
   logical, public :: use_clm_interface  = .false.
@@ -378,6 +392,16 @@ module clm_varctl
    character(len=fname_len), public :: aero_file      = ' '    ! aerosol deposition file for CPL_BYPASS mode
 
 
+  !----------------------------------------------------------
+  ! Budgets
+  !----------------------------------------------------------
+   logical, public :: do_budgets   = .false.
+   integer, public :: budget_inst  = 0
+   integer, public :: budget_daily = 0
+   integer, public :: budget_month = 1
+   integer, public :: budget_ann   = 1
+   integer, public :: budget_ltann = 1
+   integer, public :: budget_ltend = 0
 contains
 
   !---------------------------------------------------------------------------

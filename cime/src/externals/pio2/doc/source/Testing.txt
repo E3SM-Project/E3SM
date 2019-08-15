@@ -1,29 +1,24 @@
-/******************************************************************************
- *
- * 
- *
- * Copyright (C) 2009 
- *
- * Permission to use, copy, modify, and distribute this software and its
- * documentation under the terms of the GNU General Public License is hereby 
- * granted. No representations are made about the suitability of this software 
- * for any purpose. It is provided "as is" without express or implied warranty.
- * See the GNU General Public License for more details.
- *
- * Documents produced by Doxygen are derivative works derived from the
- * input used in their production; they are not affected by this license.
- *
- */ /*! \page test Testing
+/*! \page test Cmake Testing Information
 
-## Building PIO2 Tests
+## Building PIO Tests
 
-To build both the Unit and Performance tests for PIO2, follow the general instructions for building PIO2 in either the [Installation](@ref install) page or the [Machine Walk-Through](@ref mach_walkthrough) page. During the Build step after (or instead of) the **make** command, type **make tests**. 
+To build both the Unit and Performance tests for PIO, follow the
+general instructions for building PIO in either the
+[Installation](@ref install) page or the [Machine Walk-Through](@ref
+mach_walkthrough) page. During the Build step after (or instead of)
+the **make** command, type **make tests**.
 
-## PIO2 Unit Tests
+## PIO Unit Tests
 
-The Parallel IO library comes with more than 20 built-in unit tests to verify that the library is installed and working correctly. These tests utilize the _CMake_ and _CTest_ automation framework. Because the Parallel IO library is built for parallel applications, the unit tests should be run in a parallel environment. The simplest way to do this is to submit a PBS job to run the **ctest** command. 
+The Parallel IO library comes with more than 20 built-in unit tests to
+verify that the library is installed and working correctly. These
+tests utilize the _CMake_ and _CTest_ automation framework. Because
+the Parallel IO library is built for parallel applications, the unit
+tests should be run in a parallel environment. The simplest way to do
+this is to submit a PBS job to run the **ctest** command.
 
-For a library built into the example directory `/scratch/user/PIO_build/`, an example PBS script would be:
+For a library built into the example directory
+`/scratch/user/PIO_build/`, an example PBS script would be:
 
       #!/bin/bash
 
@@ -101,12 +96,18 @@ On Yellowstone, the unit tests can run using the **execca** or **execgy** comman
       > setenv DAV_CORES 4
       > execca ctest
 
-## PIO2 Performance Test
+## PIO Performance Test
 
-To run the performance tests, you will need to add two files to the **tests/performance** subdirectory of the PIO build directory. First, you will need a decomp file. You can download one from our google code page here: 
-https://svn-ccsm-piodecomps.cgd.ucar.edu/trunk/ . 
-You can use any of these files, and save them to your home or base work directory. Secondly, you will need to add a namelist file, named "pioperf.nl". Save this file in the directory with your **pioperf** executable (this is found in the **tests/performance** subdirectory of the PIO build directory).
+To run the performance tests, you will need to add two files to the
+**tests/performance** subdirectory of the PIO build directory. First,
+you will need a decomp file. You can download one from our google code
+page here: https://svn-ccsm-piodecomps.cgd.ucar.edu/trunk/ .
 
+You can use any of these files, and save them to your home or base
+work directory. Secondly, you will need to add a namelist file, named
+"pioperf.nl". Save this file in the directory with your **pioperf**
+executable (this is found in the **tests/performance** subdirectory of
+the PIO build directory).
 
 The contents of the namelist file should look like:
 
@@ -124,7 +125,11 @@ The contents of the namelist file should look like:
      
      /
 
-Here, the second line ("decompfile") points to the path for your decomp file (wherever you saved it). For the rest of the lines, each item added to the list adds another test to be run. For instance, to test all of the types of supported IO, your pio_typenames would look like:
+Here, the second line ("decompfile") points to the path for your
+decomp file (wherever you saved it). For the rest of the lines, each
+item added to the list adds another test to be run. For instance, to
+test all of the types of supported IO, your pio_typenames would look
+like:
 
      pio_typenames = 'pnetcdf','netcdf','netcdf4p','netcdf4c'
 
@@ -140,7 +145,10 @@ To test with both of the rearranger algorithms:
 
      rearrangers = 1,2
 
-(Each rearranger is a different algorithm for converting from data in memory to data in a file on disk. The first one, BOX, is the older method from PIO1, the second, SUBSET, is a newer method that seems to be more efficient in large numbers of tasks)
+(Each rearranger is a different algorithm for converting from data in
+memory to data in a file on disk. The first one, BOX, is the older
+method from PIO1, the second, SUBSET, is a newer method that seems to
+be more efficient in large numbers of tasks)
 
 To test with different numbers of variables:
 
@@ -148,7 +156,9 @@ To test with different numbers of variables:
 
 (The more variables you use, the higher data throughput goes, usually)
 
-To run, submit a job with 'pioperf' as the executable, and at least as many tasks as you have specified in the decomposition file. On yellowstone, a submit script could look like:
+To run, submit a job with 'pioperf' as the executable, and at least as
+many tasks as you have specified in the decomposition file. On
+yellowstone, a submit script could look like:
 
      #!/bin/tcsh
 
@@ -171,11 +181,23 @@ RESULT: write       BOX         4        30         2       16.9905924688
 
 You can decode this as:
 1. Read/write describes the io operation performed
+
 2. BOX/SUBSET is the algorithm for the rearranger (as described above)
-3. 4 [1-4] is the io library used for the operation. The options here are [1] Parallel-netcdf [2] NetCDF3 [3] NetCDF4-Compressed [4] NetCDF4-Parallel
-4. 30 [any number] is the number of io-specific tasks used in the operation. Must be less than the number of MPI tasks used in the test.
-5. 2 [any number] is the number of variables read or written during the operation
-6. 16.9905924688 [any number] is the Data Rate of the operation in MB/s. This is the important value for determining performance of the system. The higher this numbre is, the better the PIO2 library is performing for the given operation.
+
+3. 4 [1-4] is the io library used for the operation. The options here
+are [1] Parallel-netcdf [2] NetCDF3 [3] NetCDF4-Compressed [4]
+NetCDF4-Parallel
+
+4. 30 [any number] is the number of io-specific tasks used in the
+operation. Must be less than the number of MPI tasks used in the test.
+
+5. 2 [any number] is the number of variables read or written during
+the operation
+
+6. 16.9905924688 [any number] is the Data Rate of the operation in
+MB/s. This is the important value for determining performance of the
+system. The higher this numbre is, the better the PIO2 library is
+performing for the given operation.
 
 _Last updated: 05-17-2016_
 */

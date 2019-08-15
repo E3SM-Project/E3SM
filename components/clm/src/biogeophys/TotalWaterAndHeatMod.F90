@@ -11,19 +11,21 @@ module TotalWaterAndHeatMod
   use decompMod          , only : bounds_type
   use clm_varcon         , only : cpice, cpliq, denh2o, tfrz, hfus, aquifer_water_baseline
   use clm_varpar         , only : nlevgrnd, nlevsoi, nlevurb, nlevlak
-  use ColumnType         , only : col_pp
-  use LandunitType       , only : lun_pp
   use subgridAveMod      , only : p2c
   use SoilHydrologyType  , only : soilhydrology_type
   use WaterstateType     , only : waterstate_type
   use UrbanParamsType    , only : urbanparams_type
   use SoilStateType      , only : soilstate_type
   use TemperatureType    , only : temperature_type
+  use LakeStateType      , only : lakestate_type
   use column_varcon      , only : icol_roof, icol_sunwall, icol_shadewall
   use column_varcon      , only : icol_road_perv, icol_road_imperv
   use landunit_varcon    , only : istdlak, istsoil,istcrop,istwet,istice,istice_mec
+  use LandunitType       , only : lun_pp
+  use ColumnType         , only : col_pp
+  use ColumnDataType     , only : col_es, col_ws
   use VegetationType     , only : veg_pp
-  use LakeStateType      , only : lakestate_type
+  use VegetationDataType , only : veg_ws 
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -201,13 +203,13 @@ contains
     associate( &
          snl          =>    col_pp%snl                        , & ! Input:  [integer  (:)   ]  negative number of snow layers
          
-         h2osfc       =>    waterstate_inst%h2osfc_col     , & ! Input:  [real(r8) (:)   ]  surface water (mm)
-         h2osno       =>    waterstate_inst%h2osno_col     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
-         h2ocan_patch =>    waterstate_inst%h2ocan_patch   , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O)
+         h2osfc       =>    col_ws%h2osfc     , & ! Input:  [real(r8) (:)   ]  surface water (mm)
+         h2osno       =>    col_ws%h2osno     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
+         h2ocan_patch =>    veg_ws%h2ocan   , & ! Input:  [real(r8) (:)   ]  canopy water (mm H2O)
 !         snocan_patch =>    waterstate_inst%snocan_patch   , & ! Input:  [real(r8) (:)   ]  canopy snow water (mm H2O)
-         h2osoi_ice   =>    waterstate_inst%h2osoi_ice_col , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
-         h2osoi_liq   =>    waterstate_inst%h2osoi_liq_col , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
-         total_plant_stored_h2o => waterstate_inst%total_plant_stored_h2o_col, & 
+         h2osoi_ice   =>    col_ws%h2osoi_ice , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
+         h2osoi_liq   =>    col_ws%h2osoi_liq , & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         total_plant_stored_h2o => col_ws%total_plant_stored_h2o, & 
                                                                ! Input:  [real(r8) (:,:) ] plant internal stored water (mm H2O)
          wa           =>    soilhydrology_inst%wa_col        & ! Input:  [real(r8) (:)   ] water in the unconfined aquifer (mm)
          )
@@ -337,9 +339,9 @@ contains
     associate( &
          snl          =>    col_pp%snl                        , & ! Input:  [integer  (:)   ]  negative number of snow layers
          
-         h2osno       =>    waterstate_inst%h2osno_col     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
-         h2osoi_ice   =>    waterstate_inst%h2osoi_ice_col , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
-         h2osoi_liq   =>    waterstate_inst%h2osoi_liq_col   & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
+         h2osno       =>    col_ws%h2osno     , & ! Input:  [real(r8) (:)   ]  snow water (mm H2O)
+         h2osoi_ice   =>    col_ws%h2osoi_ice , & ! Input:  [real(r8) (:,:) ]  ice lens (kg/m2)
+         h2osoi_liq   =>    col_ws%h2osoi_liq   & ! Input:  [real(r8) (:,:) ]  liquid water (kg/m2)
          )
 
     do fc = 1, num_lakec
@@ -447,15 +449,15 @@ contains
          cv_improad   => urbanparams_inst%cv_improad, & ! heat capacity of urban impervious road (J/m^3/K)
          watsat       => soilstate_inst%watsat_col, & ! volumetric soil water at saturation (porosity)
          csol         => soilstate_inst%csol_col, & ! heat capacity, soil solids (J/m**3/Kelvin)
-         t_soisno     => temperature_inst%t_soisno_col, & ! soil temperature (Kelvin)
-         t_h2osfc     => temperature_inst%t_h2osfc_col, & ! surface water temperature (Kelvin)
-         h2osoi_liq   => waterstate_inst%h2osoi_liq_col, & ! liquid water (kg/m2)
-         h2osoi_ice   => waterstate_inst%h2osoi_ice_col, & ! frozen water (kg/m2)
-         h2osno       => waterstate_inst%h2osno_col, & ! snow water (mm H2O)
-         h2osfc       => waterstate_inst%h2osfc_col, & ! surface water (mm H2O)
-         h2ocan_patch => waterstate_inst%h2ocan_patch, & ! canopy water (mm H2O)
+         t_soisno     => col_es%t_soisno, & ! soil temperature (Kelvin)
+         t_h2osfc     => col_es%t_h2osfc, & ! surface water temperature (Kelvin)
+         h2osoi_liq   => col_ws%h2osoi_liq, & ! liquid water (kg/m2)
+         h2osoi_ice   => col_ws%h2osoi_ice, & ! frozen water (kg/m2)
+         h2osno       => col_ws%h2osno, & ! snow water (mm H2O)
+         h2osfc       => col_ws%h2osfc, & ! surface water (mm H2O)
+         h2ocan_patch => veg_ws%h2ocan, & ! canopy water (mm H2O)
 !         snocan_patch => waterstate_inst%snocan_patch, & ! canopy snow water (mm H2O)
-         total_plant_stored_h2o_col => waterstate_inst%total_plant_stored_h2o_col, & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
+         total_plant_stored_h2o_col => col_ws%total_plant_stored_h2o, & ! Input: [real(r8) (:)   ]  water mass in plant tissues (kg m-2)
          wa           => soilhydrology_inst%wa_col & ! water in the unconfined aquifer (mm)
          )
 
@@ -680,10 +682,10 @@ contains
          dz           => col_pp%dz, &  ! layer depth (m)
          watsat       => soilstate_inst%watsat_col, & ! volumetric soil water at saturation (porosity)
          csol         => soilstate_inst%csol_col, & ! heat capacity, soil solids (J/m**3/Kelvin)
-         t_soisno     => temperature_inst%t_soisno_col, & ! soil temperature (Kelvin)
-         h2osoi_liq   => waterstate_inst%h2osoi_liq_col, & ! liquid water (kg/m2)
-         h2osoi_ice   => waterstate_inst%h2osoi_ice_col, & ! frozen water (kg/m2)
-         h2osno       => waterstate_inst%h2osno_col & ! snow water (mm H2O)
+         t_soisno     => col_es%t_soisno, & ! soil temperature (Kelvin)
+         h2osoi_liq   => col_ws%h2osoi_liq, & ! liquid water (kg/m2)
+         h2osoi_ice   => col_ws%h2osoi_ice, & ! frozen water (kg/m2)
+         h2osno       => col_ws%h2osno & ! snow water (mm H2O)
          )
 
     do fc = 1, num_lakec

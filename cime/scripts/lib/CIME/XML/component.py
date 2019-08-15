@@ -216,14 +216,14 @@ class Component(EntryID):
         (False, None)
         >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "?")
         (True, ['DATM'])
-        >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1")
+        >>> obj._get_description_match("1850_DATM_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1") # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: Expected exactly one modifer found 0 in ['DATM']
-        >>> obj._get_description_match("1850_DATM%CRU%HSI_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1")
+        CIMEError: ERROR: Expected exactly one modifer found 0 in ['DATM']
+        >>> obj._get_description_match("1850_DATM%CRU%HSI_Barn",set(["DATM"]), set(["DATM","CRU","HSI"]), "1") # doctest: +IGNORE_EXCEPTION_DETAIL
         Traceback (most recent call last):
         ...
-        SystemExit: ERROR: Expected exactly one modifer found 2 in ['DATM', 'CRU', 'HSI']
+        CIMEError: ERROR: Expected exactly one modifer found 2 in ['DATM', 'CRU', 'HSI']
         >>> obj._get_description_match("1850_CAM50%WCCM%RCO2_Barn",set(["CAM50", "WCCM"]), set(["CAM50","WCCM","RCO2"]), "*")
         (True, ['CAM50', 'WCCM', 'RCO2'])
 

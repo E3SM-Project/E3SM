@@ -28,8 +28,8 @@ def main(argv):
     opts_dict={}
     
     # Defaults
-    opts_dict['tag'] = 'cesm2_0_beta08'
-    opts_dict['compset'] = 'F2000'
+    opts_dict['tag'] = 'cesm2_0_beta10'
+    opts_dict['compset'] = 'F2000climo'
     opts_dict['mach'] = 'cheyenne'
     opts_dict['esize'] = 350
     opts_dict['tslice'] = 1
@@ -57,6 +57,10 @@ def main(argv):
     st = opts_dict['esize']
     esize = int(st)
 
+
+    if opts_dict['popens' == True]:
+        print "Error: Please use pyEnsSumPop.py for a POP ensemble (not --popens)."
+        sys.exit()
 
     if not (opts_dict['tag'] and opts_dict['compset'] and opts_dict['mach'] or opts_dict['res']):
        print 'Please specify --tag, --compset, --mach and --res options'
@@ -148,7 +152,7 @@ def main(argv):
             o_files.append(Nio.open_file(input_dir+'/' + onefile,"r"))
         else:
             if me.get_rank()==0:
-               print "COULD NOT LOCATE FILE "+ input_dir + onefile + "! EXITING...."
+               print "COULD NOT LOCATE FILE ", input_dir+'/'+onefile , "! EXITING...."
             sys.exit() 
 
     # Store dimensions of the input fields
@@ -244,7 +248,7 @@ def main(argv):
     #       print 'vars_dict',k,vars_dict[k].typecode()
 
     str_size = 0
-
+a
     d2_var_names = []
     d3_var_names = []
     num_2d = 0
@@ -312,7 +316,7 @@ def main(argv):
 
     if me.get_rank() == 0 and (verbose == True):
         print "Creating ", this_sumfile, "  ..."
-    if(me.get_rank() ==0 | opts_dict["popens"]):
+    if(me.get_rank() ==0 ):
         if os.path.exists(this_sumfile):
             os.unlink(this_sumfile)
 
@@ -454,7 +458,7 @@ def main(argv):
         pyEnsLib.calculate_maxnormens(opts_dict,var3_list_loc)
         pyEnsLib.calculate_maxnormens(opts_dict,var2_list_loc)
 
-    if opts_dict['mpi_enable'] & ( not opts_dict['popens']):
+    if opts_dict['mpi_enable']:
 
         if not opts_dict['cumul']:
             # Gather the 3d variable results from all processors to the master processor
@@ -492,7 +496,7 @@ def main(argv):
             gmall=np.concatenate((temp1,temp2),axis=0)
             gmall=pyEnsLib.gather_npArray_pop(gmall,me,(me.get_size(),len(d3_var_names)+len(d2_var_names)))
     # Assign to file:
-    if me.get_rank() == 0 | opts_dict['popens'] :
+    if me.get_rank() == 0] :
         if not opts_dict['cumul']:
             gmall=np.concatenate((gm3d,gm2d),axis=0)
             if not opts_dict['gmonly']:

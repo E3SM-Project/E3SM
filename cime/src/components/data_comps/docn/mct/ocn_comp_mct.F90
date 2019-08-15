@@ -8,6 +8,7 @@ module ocn_comp_mct
   use seq_cdata_mod   , only: seq_cdata, seq_cdata_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_putdata, seq_infodata_getdata
   use seq_comm_mct    , only: seq_comm_inst, seq_comm_name, seq_comm_suffix
+  use seq_timemgr_mod , only: seq_timemgr_RestartAlarmIsOn, seq_timemgr_EClockGetData
   use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_strdata_mod , only: shr_strdata_type
   use shr_file_mod    , only: shr_file_getunit, shr_file_getlogunit, shr_file_getloglevel
@@ -33,19 +34,17 @@ module ocn_comp_mct
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type(shr_strdata_type) :: SDOCN
-  integer(IN)            :: mpicom              ! mpi communicator
-  integer(IN)            :: my_task             ! my task in mpi communicator mpicom
-  integer                :: inst_index          ! number of current instance (ie. 1)
-  character(len=16)      :: inst_name           ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)      :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
-  integer(IN)            :: logunit             ! logging unit number
-  integer(IN)            :: compid              ! mct comp id
-  logical                :: read_restart        ! start from restart
-
-  character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
+  type(shr_strdata_type)  :: SDOCN
+  integer(IN)             :: mpicom              ! mpi communicator
+  integer(IN)             :: my_task             ! my task in mpi communicator mpicom
+  integer                 :: inst_index          ! number of current instance (ie. 1)
+  character(len=16)       :: inst_name           ! fullname of current instance (ie. "lnd_0001")
+  character(len=16)       :: inst_suffix         ! char string associated with instance (ie. "_0001" or "")
+  integer(IN)             :: logunit             ! logging unit number
+  integer(IN)             :: compid              ! mct comp id
+  logical                 :: read_restart        ! start from restart
   integer(IN) , parameter :: master_task=0 ! task number of master task
-  character(*), parameter :: subName = "(ocn_init_mct) "
+  integer     , parameter :: dbug = 10
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -67,6 +66,7 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
+    integer           :: phase                     ! phase of method
     logical           :: ocn_present               ! flag
     logical           :: ocn_prognostic            ! flag
     logical           :: ocnrof_prognostic         ! flag
@@ -76,6 +76,7 @@ CONTAINS
     logical           :: scmMode = .false.         ! single column mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
+    character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"
     character(*), parameter :: subName = "(ocn_init_mct) "
     !-------------------------------------------------------------------------------
 
@@ -115,6 +116,7 @@ CONTAINS
 
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
+    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logUnit)
 
     !----------------------------------------------------------------------------
@@ -163,6 +165,16 @@ CONTAINS
          ocn_ny=SDOCN%nyg )
 
     !----------------------------------------------------------------------------
+    ! diagnostics
+    !----------------------------------------------------------------------------
+
+    if (dbug > 1) then
+       if (my_task == master_task) then
+          call mct_aVect_info(2, o2x, istr="initial diag"//':AV')
+       end if
+    endif
+
+    !----------------------------------------------------------------------------
     ! Reset shr logging to original values
     !----------------------------------------------------------------------------
 
@@ -176,6 +188,7 @@ CONTAINS
   end subroutine ocn_init_mct
 
   !===============================================================================
+
   subroutine ocn_run_mct( EClock, cdata,  x2o, o2x)
 
     ! !DESCRIPTION: run method for docn model
@@ -191,15 +204,19 @@ CONTAINS
     type(seq_infodata_type), pointer :: infodata
     type(mct_gsMap)        , pointer :: gsMap
     type(mct_gGrid)        , pointer :: ggrid
-    integer(IN)                      :: shrlogunit   ! original log unit
-    integer(IN)                      :: shrloglev    ! original log level
-    character(CL)                    :: case_name    ! case name
+    integer(IN)                      :: shrlogunit    ! original log unit
+    integer(IN)                      :: shrloglev     ! original log level
+    character(CL)                    :: case_name     ! case name
+    logical                          :: write_restart ! restart alarm is ringing
+    integer(IN)                      :: currentYMD    ! model date
+    integer(IN)                      :: currentTOD    ! model sec into model date
     character(*), parameter :: subName = "(ocn_run_mct) "
     !-------------------------------------------------------------------------------
 
     ! Reset shr logging to my log file
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_getLogLevel(shrloglev)
+    call shr_file_setLogLevel(max(shrloglev,1))
     call shr_file_setLogUnit (logUnit)
 
     call seq_cdata_setptrs(cdata, &
@@ -209,14 +226,24 @@ CONTAINS
 
     call seq_infodata_GetData(infodata, case_name=case_name)
 
-    ! Note that docn_comp_run is already called
+    write_restart = seq_timemgr_RestartAlarmIsOn(EClock)
+
+    ! For mct - the component clock is advance at the beginning of the time interval
+    call seq_timemgr_EClockGetData( EClock, curr_ymd=CurrentYMD, curr_tod=CurrentTOD)
+
     call docn_comp_run(EClock, x2o, o2x, &
-         SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
-         inst_suffix, logunit, read_restart, case_name)
+       SDOCN, gsmap, ggrid, mpicom, compid, my_task, master_task, &
+       inst_suffix, logunit, read_restart, write_restart, &
+       currentYMD, currentTOD, case_name=case_name)
+
+    if (dbug > 1) then
+       if (my_task == master_task) then
+          call mct_aVect_info(2, o2x, istr="run diag"//':AV')
+       end if
+    endif
 
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-    call shr_sys_flush(logunit)
 
   end subroutine ocn_run_mct
 

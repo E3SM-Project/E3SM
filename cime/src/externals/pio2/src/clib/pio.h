@@ -4,7 +4,7 @@
  * @author Jim Edwards
  * @date  2014
  *
- * @see http://code.google.com/p/parallelio/
+ * @see https://github.com/NCAR/ParallelIO
  */
 
 #ifndef _PIO_H_
@@ -14,6 +14,7 @@
 #include <stdbool.h>
 #include <string.h> /* memcpy */
 #include <mpi.h>
+#include <uthash.h>
 
 #ifdef _NETCDF
 #include <netcdf.h>
@@ -33,8 +34,14 @@
 #endif
 
 /** PIO_OFFSET is an integer type of size sufficient to represent the
- * size (in bytes) of the largest file supported by MPI. */
+ * size (in bytes) of the largest file supported by MPI. This is not
+ * actually used by the code. */
 #define PIO_OFFSET MPI_OFFSET
+
+/** PIO_OFFSET is defined as MPI_Offset, which is defined in
+ * pio_internal.h as long long. This is what is used throughout the C
+ * code. */
+
 #define PIO_Offset MPI_Offset
 
 /** The maximum number of variables allowed in a netCDF file. */
@@ -49,66 +56,68 @@
 
 /** Used in the decomposition netCDF file. */
 
-/* Holds the version of the decomposition file. */
+/** Holds the version of the decomposition file. */
 #define DECOMP_VERSION_ATT_NAME "PIO_library_version"
 
-/* Holds the maximum length of any task map. */
+/** Holds the maximum length of any task map. */
 #define DECOMP_MAX_MAPLEN_ATT_NAME "max_maplen"
 
-/* Name of title attribute. */
+/** Name of title attribute in decomposition file. */
 #define DECOMP_TITLE_ATT_NAME "title"
 
-/* Name of history attribute. */
+/** Name of history attribute in decomposition file. */
 #define DECOMP_HISTORY_ATT_NAME "history"
 
-/* Name of source attribute. */
+/** Name of source attribute in decomposition file. */
 #define DECOMP_SOURCE_ATT_NAME "source"
 
-/* Name of array order (C or Fortran) attribute. */
+/** Name of array order (C or Fortran) attribute in decomposition
+ * file. */
 #define DECOMP_ORDER_ATT_NAME "array_order"
 
-/* Name of backtrace attribute. */
+/** Name of backtrace attribute in decomposition file. */
+
 #define DECOMP_BACKTRACE_ATT_NAME "backtrace"
 
-/* Name for the dim dim in decomp file. */
+/** Name for the dim dim in decomp file. */
 #define DECOMP_DIM_DIM "dims"
 
-/* Name for the npes dim in decomp file. */
+/** Name for the npes dim in decomp file. */
 #define DECOMP_TASK_DIM_NAME "task"
 
-/* Name for the npes dim in decomp file. */
+/** Name for the npes dim in decomp file. */
 #define DECOMP_MAPELEM_DIM_NAME "map_element"
 
+/** Name for the number of dimensions dim in decomp file. */
 #define DECOMP_NDIMS "ndims"
 
-/* Name of var in decomp file that holds global array sizes. */
+/** Name of var in decomp file that holds global array sizes. */
 #define DECOMP_GLOBAL_SIZE_VAR_NAME "global_size"
 
-/* Name of var in decomp file that holds the length of the map for
+/** Name of var in decomp file that holds the length of the map for
  * each task. */
 #define DECOMP_MAPLEN_VAR_NAME "maplen"
 
-/* Name of var in decomp file that holds map. */
+/** Name of var in decomp file that holds map. */
 #define DECOMP_MAP_VAR_NAME "map"
 
-/* String used to indicate a decomposition file is in C
+/** String used to indicate a decomposition file is in C
  * array-order. */
 #define DECOMP_C_ORDER_STR "C"
 
-/* String used to indicate a decomposition file is in Fortran
+/** String used to indicate a decomposition file is in Fortran
  * array-order. */
 #define DECOMP_FORTRAN_ORDER_STR "Fortran"
-
 
 /**
  * Variable description structure.
  */
 typedef struct var_desc_t
 {
-    /* Variable ID. */
+    /** Variable ID. */
     int varid;
 
-    /* Non-zero if this is a record var (i.e. uses unlimited
+    /** Non-zero if this is a record var (i.e. uses unlimited
      * dimension). */
     int rec_var;
 
@@ -119,10 +128,10 @@ typedef struct var_desc_t
     /** ID of each outstanding pnetcdf request for this variable. */
     int *request;
 
-    /** Number of requests bending with pnetcdf. */
+    /** Number of requests pending with pnetcdf. */
     int nreqs;
 
-    /* Holds the fill value of this var. */
+    /** Holds the fill value of this var. */
     void *fillvalue;
 
     /** Non-zero if fill mode is turned on for this var. */
@@ -144,8 +153,9 @@ typedef struct var_desc_t
     /** The size in bytes of a datum of MPI type mpitype. */
     int mpi_type_size;
 
-    /** Pointer to next var in list. */
-    struct var_desc_t *next;
+    /** Hash table entry. */
+    UT_hash_handle hh;
+
 } var_desc_t;
 
 /**
@@ -208,7 +218,7 @@ enum PIO_REARR_COMM_FC_DIR
     PIO_REARR_COMM_FC_2D_DISABLE
 };
 
-/* Constant to indicate unlimited requests. */
+/** Constant to indicate unlimited requests for the rearranger. */
 #define PIO_REARR_COMM_UNLIMITED_PEND_REQ -1
 
 /**
@@ -267,6 +277,13 @@ typedef struct io_desc_t
      * 1-based mappings to the global array for that task. */
     PIO_Offset *map;
 
+    /** If the map passed in is not monotonically increasing
+     *  then map is sorted and remap is an array of original
+     * indices of map. */
+
+    /** Remap. */
+    int *remap;
+
     /** Number of tasks involved in the communication between comp and
      * io tasks. */
     int nrecvs;
@@ -278,7 +295,7 @@ typedef struct io_desc_t
      * dimensions. */
     int ndims;
 
-    /** An array of size ndims with the length of each dimension. */
+    /** An array of size ndims with the global length of each dimension. */
     int *dimlen;
 
     /** The actual number of IO tasks participating. */
@@ -293,6 +310,9 @@ typedef struct io_desc_t
     /** Does this decomp leave holes in the field (true) or write
      * everywhere (false) */
     bool needsfill;
+
+    /** If the map is not monotonically increasing we will need to sort it. */
+    bool needssort;
 
     /** The maximum number of bytes of this iodesc before flushing. */
     int maxbytes;
@@ -371,8 +391,9 @@ typedef struct io_desc_t
      * group. */
     MPI_Comm subset_comm;
 
-    /** Pointer to the next io_desc_t in the list. */
-    struct io_desc_t *next;
+    /** Hash table entry. */
+    UT_hash_handle hh;
+
 } io_desc_t;
 
 /**
@@ -400,7 +421,7 @@ typedef struct iosystem_desc_t
     MPI_Comm comp_comm;
 
     /** This is an MPI inter communicator between IO communicator and
-     * computation communicator. */
+     * computation communicator, only used for async mode. */
     MPI_Comm intercomm;
 
     /** This is a copy (but not an MPI copy) of either the comp (for
@@ -519,8 +540,11 @@ typedef struct wmulti_buffer
     /** Pointer to the data. */
     void *data;
 
-    /** Pointer to the next multi-buffer in the list. */
-    struct wmulti_buffer *next;
+    /** uthash handle for hash of buffers */
+    int htid;
+
+    /** Hash table entry. */
+    UT_hash_handle hh;
 } wmulti_buffer;
 
 /**
@@ -554,7 +578,7 @@ typedef struct file_desc_t
 
     /** The wmulti_buffer is used to aggregate multiple variables with
      * the same communication pattern prior to a write. */
-    struct wmulti_buffer buffer;
+    struct wmulti_buffer *buffer;
 
     /** Data buffer for this file. */
     void *iobuf;
@@ -562,8 +586,8 @@ typedef struct file_desc_t
     /** PIO data type. */
     int pio_type;
 
-    /** Pointer to the next file_desc_t in the list of open files. */
-    struct file_desc_t *next;
+    /** Hash table entry. */
+    UT_hash_handle hh;
 
     /** True if this task should participate in IO (only true for one
      * task with netcdf serial files. */
@@ -748,11 +772,16 @@ enum PIO_ERROR_HANDLERS
 #define PIO_EINDEP  (-203)
 #endif /* _PNETCDF */
 
-/** Define error codes for PIO. */
+/** The first error code for PIO. */
 #define PIO_FIRST_ERROR_CODE (-500)
+
+/** Bad IOTYPE error. */
 #define PIO_EBADIOTYPE  (-500)
 
-/** ??? */
+/** Variable dimensions do not match in a multivar call. */
+#define PIO_EVARDIMMISMATCH (-501)
+
+/** Request null. */
 #define PIO_REQ_NULL (NC_REQ_NULL-1)
 
 #if defined(__cplusplus)
@@ -804,12 +833,19 @@ extern "C" {
                         int *num_procs_per_comp, int **proc_list, MPI_Comm *io_comm, MPI_Comm *comp_comm,
                         int rearranger, int *iosysidp);
 
-    int PIOc_Init_Intercomm(int component_count, MPI_Comm peer_comm, MPI_Comm *comp_comms,
-                            MPI_Comm io_comm, int *iosysidp);
+    /* How many IO tasks in this iosysid? */
     int PIOc_get_numiotasks(int iosysid, int *numiotasks);
+
+    /* Initialize PIO for intracomm mode. */
     int PIOc_Init_Intracomm(MPI_Comm comp_comm, int num_iotasks, int stride, int base, int rearr,
                             int *iosysidp);
+
+    /** Shut down an iosystem and free all associated resources. Use
+     * PIOc_free_iosystem() instead. */
     int PIOc_finalize(int iosysid);
+
+    /* Shut down an iosystem and free all associated resources. */
+    int PIOc_free_iosystem(int iosysid);
 
     /* Set error handling for entire io system. */
     int PIOc_Set_IOSystem_Error_Handling(int iosysid, int method);
@@ -817,23 +853,43 @@ extern "C" {
     /* Set error handling for entire io system. */
     int PIOc_set_iosystem_error_handling(int iosysid, int method, int *old_method);
 
+    /* Determine whether this is IO task. */
     int PIOc_iam_iotask(int iosysid, bool *ioproc);
+
+    /* What is the iorank? */
     int PIOc_iotask_rank(int iosysid, int *iorank);
+
+    /* Is this iosystem active? */
     int PIOc_iosystem_is_active(int iosysid, bool *active);
+
+    /* Is this IOTYPE available? */
     int PIOc_iotype_available(int iotype);
+
+    /* Set the options for the rearranger. */
     int PIOc_set_rearr_opts(int iosysid, int comm_type, int fcd,
                             bool enable_hs_c2i, bool enable_isend_c2i,
                             int max_pend_req_c2i,
                             bool enable_hs_i2c, bool enable_isend_i2c,
                             int max_pend_req_i2c);
-    /* Distributed data. */
+
+    /* Increment record number. */
     int PIOc_advanceframe(int ncid, int varid);
+
+    /* Set the record number. */
     int PIOc_setframe(int ncid, int varid, int frame);
+
+    /* Write a distributed array. */
     int PIOc_write_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *array,
                           void *fillvalue);
+
+    /* Write multiple darrays. */
     int PIOc_write_darray_multi(int ncid, const int *varids, int ioid, int nvars, PIO_Offset arraylen,
                                 void *array, const int *frame, void **fillvalue, bool flushtodisk);
+
+    /* Read distributed array. */
     int PIOc_read_darray(int ncid, int varid, int ioid, PIO_Offset arraylen, void *array);
+
+    /* Get size of local distributed array. */
     int PIOc_get_local_array_size(int ioid);
 
     /* Handling files. */
@@ -899,7 +955,6 @@ extern "C" {
                              int deflate_level);
     int PIOc_inq_var_deflate(int ncid, int varid, int *shufflep, int *deflatep,
                              int *deflate_levelp);
-    int PIOc_inq_var_szip(int ncid, int varid, int *options_maskp, int *pixels_per_blockp);
     int PIOc_def_var_chunking(int ncid, int varid, int storage, const PIO_Offset *chunksizesp);
     int PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizesp);
     int PIOc_def_var_endian(int ncid, int varid, int endian);
@@ -1140,68 +1195,56 @@ extern "C" {
                                 const PIO_Offset *count, const PIO_Offset *stride,
                                 const unsigned long long *op);
 
-    /* Varm functions are deprecated and should be used with extreme
-     * caution or not at all. Varm functions are not supported in
-     * async mode. */
-    int PIOc_put_varm(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                      const PIO_Offset *stride, const PIO_Offset *imap, const void *buf,
-                      PIO_Offset bufcount, MPI_Datatype buftype);
-    int PIOc_get_varm_schar(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap, signed char *buf);
-    int PIOc_put_varm_uchar(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap,
+    /* Data reads - vard. */
+    int PIOc_get_vard(int ncid, int varid, int decompid, const PIO_Offset recnum, void *buf);
+    int PIOc_get_vard_text(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                           char *buf);
+    int PIOc_get_vard_schar(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            signed char *buf);
+    int PIOc_get_vard_short(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            short *buf);
+    int PIOc_get_vard_int(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                          int *buf);
+    int PIOc_get_vard_float(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            float *buf);
+    int PIOc_get_vard_double(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                             double *buf);
+    int PIOc_get_vard_uchar(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            unsigned char *buf);
+    int PIOc_get_vard_ushort(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                             unsigned short *buf);
+    int PIOc_get_vard_uint(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                           unsigned int *buf);
+    int PIOc_get_vard_longlong(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                               long long *buf);
+    int PIOc_get_vard_ulonglong(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                                unsigned long long *buf);
+
+    /* Data writes - vard. */
+    int PIOc_put_vard(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                      const void *buf);
+    int PIOc_put_vard_text(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                           const char *op);
+    int PIOc_put_vard_schar(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            const signed char *op);
+    int PIOc_put_vard_short(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            const short *op);
+    int PIOc_put_vard_int(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                          const int *op);
+    int PIOc_put_vard_float(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                            const float *op);
+    int PIOc_put_vard_double(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                             const double *op);
+    int PIOc_put_vard_uchar(int ncid, int varid, int decompid, const PIO_Offset recnum,
                             const unsigned char *op);
-    int PIOc_put_varm_short(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap, const short *op);
-    int PIOc_get_varm_short(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap, short *buf);
-    int PIOc_get_varm_ulonglong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                                const PIO_Offset *stride, const PIO_Offset *imap, unsigned long long *buf);
-    int PIOc_get_varm_ushort(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                             const PIO_Offset *stride, const PIO_Offset *imap, unsigned short *buf);
-    int PIOc_get_varm_longlong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                               const PIO_Offset *stride, const PIO_Offset *imap, long long *buf);
-    int PIOc_put_varm_text(int ncid, int varid, const PIO_Offset *start,
-                           const PIO_Offset *count, const PIO_Offset *stride,
-                           const PIO_Offset *imap, const char *op);
-    int PIOc_put_varm_ushort(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                             const PIO_Offset *stride, const PIO_Offset *imap, const unsigned short *op);
-    int PIOc_put_varm_ulonglong(int ncid, int varid, const PIO_Offset *start,
-                                const PIO_Offset *count, const PIO_Offset *stride,
-                                const PIO_Offset *imap, const unsigned long long *op);
-    int PIOc_put_varm_int(int ncid, int varid, const PIO_Offset *start,
-                          const PIO_Offset *count, const PIO_Offset *stride,
-                          const PIO_Offset *imap, const int *op);
-    int PIOc_put_varm_float(int ncid, int varid, const PIO_Offset *start,
-                            const PIO_Offset *count, const PIO_Offset *stride,
-                            const PIO_Offset *imap, const float *op);
-    int PIOc_put_varm_long(int ncid, int varid, const PIO_Offset *start,
-                           const PIO_Offset *count, const PIO_Offset *stride,
-                           const PIO_Offset *imap, const long *op);
-    int PIOc_put_varm_uint(int ncid, int varid, const PIO_Offset *start,
-                           const PIO_Offset *count, const PIO_Offset *stride,
-                           const PIO_Offset *imap, const unsigned int *op);
-    int PIOc_put_varm_double(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                             const PIO_Offset *stride, const PIO_Offset *imap, const double *op);
-    int PIOc_put_varm_schar(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap, const signed char *op);
-    int PIOc_put_varm_longlong(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                               const PIO_Offset *stride, const PIO_Offset *imap, const long long *op);
-    int PIOc_get_varm_double(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                             const PIO_Offset *stride, const PIO_Offset *imap, double *buf);
-    int PIOc_get_varm_text(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                           const PIO_Offset *stride, const PIO_Offset *imap, char *buf);
-    int PIOc_get_varm_int(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                          const PIO_Offset *stride, const PIO_Offset *imap, int *buf);
-    int PIOc_get_varm_uint(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                           const PIO_Offset *stride, const PIO_Offset *imap, unsigned int *buf);
-    int PIOc_get_varm(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                      const PIO_Offset *stride, const PIO_Offset *imap, void *buf,
-                      PIO_Offset bufcount, MPI_Datatype buftype);
-    int PIOc_get_varm_float(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                            const PIO_Offset *stride, const PIO_Offset *imap, float *buf);
-    int PIOc_get_varm_long(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                           const PIO_Offset *stride, const PIO_Offset *imap, long *buf);
+    int PIOc_put_vard_ushort(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                             const unsigned short *op);
+    int PIOc_put_vard_uint(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                           const unsigned int *op);
+    int PIOc_put_vard_longlong(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                               const long long *op);
+    int PIOc_put_vard_ulonglong(int ncid, int varid, int decompid, const PIO_Offset recnum,
+                                const unsigned long long *op);
 #if defined(__cplusplus)
 }
 #endif

@@ -122,6 +122,9 @@ integer :: npccn_idx, rndst_idx, nacon_idx
 
 logical  :: separate_dust = .false.
 logical  :: liqcf_fix
+real(r8), parameter :: unset_r8   = huge(1.0_r8)
+real(r8) :: wsubmin = unset_r8 !PMA sets a much lower lower bound
+
 
 contains
 !=========================================================================================
@@ -346,13 +349,14 @@ subroutine microp_aero_readnl(nlfile)
 
    ! Namelist variables
    real(r8) :: microp_aero_bulk_scale = 2._r8  ! prescribed aerosol bulk sulfur scale factor
+   real(r8) :: microp_aero_wsubmin  = 0.2_r8
    integer  :: microp_aero_wsub_scheme = 1     ! updraft velocity parameterization option for ice nucleation
  
    ! Local variables
    integer :: unitn, ierr
    character(len=*), parameter :: subname = 'microp_aero_readnl'
 
-   namelist /microp_aero_nl/ microp_aero_bulk_scale, microp_aero_wsub_scheme 
+   namelist /microp_aero_nl/ microp_aero_bulk_scale, microp_aero_wsub_scheme,microp_aero_wsubmin
 
    !-----------------------------------------------------------------------------
 
@@ -374,11 +378,13 @@ subroutine microp_aero_readnl(nlfile)
    ! Broadcast namelist variable
    call mpibcast(microp_aero_bulk_scale, 1, mpir8, 0, mpicom)
    call mpibcast(microp_aero_wsub_scheme, 1, mpiint, 0, mpicom)
+   call mpibcast(microp_aero_wsubmin,     1, mpir8, 0, mpicom)
 #endif
 
    ! set local variables
    bulk_scale = microp_aero_bulk_scale
    icenul_wsub_scheme = microp_aero_wsub_scheme
+   wsubmin = microp_aero_wsubmin
 
    call nucleate_ice_cam_readnl(nlfile)
    call hetfrz_classnuc_cam_readnl(nlfile)
@@ -599,7 +605,11 @@ subroutine microp_aero_run ( &
    end select
 
    ! Set minimum values above top_lev.
-   wsub(:ncol,:top_lev-1)  = 0.20_r8
+
+   !PMA no longer needs the minimum value that is designed for CAM5-UW scheme which 
+   !produces very low values
+
+   wsub(:ncol,:top_lev-1)  = wsubmin
    wsubi(:ncol,:top_lev-1) = 0.001_r8
    wsig(:ncol,:top_lev-1)  = 0.001_r8
 
@@ -632,7 +642,7 @@ subroutine microp_aero_run ( &
             endif
          endif
 
-         wsub(i,k)  = max(0.20_r8, wsub(i,k))
+         wsub(i,k)  = max(wsubmin, wsub(i,k))
 
       end do
    end do

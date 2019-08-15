@@ -48,7 +48,10 @@ def main(argv):
 
     #default is verification mode (3 runs)
     run_type = 'verify'
-    clone_count = 2
+    if opts_dict['ect'] == 'pop' :
+        clone_count = 0
+    else:
+        clone_count = 2
 
     uf = opts_dict['uf']
 
@@ -60,14 +63,18 @@ def main(argv):
         if ens_size > 999:
             print 'Error: cannot have an ensemble size greater than 999.'
             sys.exit()
-
-    #generate 3 random pertlims for verify
+        print('STATUS: ensemble size = ' + str(ens_size))
+    
+    #generate random pertlim(s) for verify
     if run_type == 'verify':
-        if uf:
-            end_range = 350
-        else:
-            end_range = 150
-        rand_ints = random_pick(3, end_range)
+        if opts_dict['ect'] == 'pop':
+            rand_ints = random_pick(1, 40)
+        else: #cam
+            if uf:
+                end_range = 350
+            else:
+                end_range = 150
+            rand_ints = random_pick(3, end_range)
         
     #now create cases
     print('STATUS: creating first case ...')
@@ -81,75 +88,103 @@ def main(argv):
     #first case
     single_case(opts_dict, case_flags, stat_dir)
 
-    #now clone
-    print('STATUS: cloning additional cases ...')
+    #clone?
+    if (clone_count > 0):
 
-    #scripts dir
-    print("STATUS: stat_dir = " + stat_dir)
-    ret = os.chdir(stat_dir)
-    ret = os.chdir('../../scripts')
-    scripts_dir = os.getcwd()
-    print ("STATUS: scripts dir = " + scripts_dir)
+        #now clone
+        print('STATUS: cloning additional cases ...')
 
-    #we know case name ends in '.000' (already checked)
-    clone_case = opts_dict['case']
-    case_pfx = clone_case[:-4]
+        #scripts dir
+        print("STATUS: stat_dir = " + stat_dir)
+        ret = os.chdir(stat_dir)
+        ret = os.chdir('../../scripts')
+        scripts_dir = os.getcwd()
+        print ("STATUS: scripts dir = " + scripts_dir)
 
-    for i in range(1, clone_count + 1): #1: clone_count
-        if run_type == 'verify':
-           this_pertlim = get_pertlim_uf(rand_ints[i])
-        else: #full ensemble
-           this_pertlim = get_pertlim_uf(i)
+        #we know case name ends in '.000' (already checked)
+        clone_case = opts_dict['case']
+        case_pfx = clone_case[:-4]
 
-        iens = '{0:03d}'.format(i)
-        new_case = case_pfx + "." + iens
+        for i in range(1, clone_count + 1): #1: clone_count
+            if run_type == 'verify':
+                this_pertlim = get_pertlim_uf(rand_ints[i])
+            else: #full ensemble
+                this_pertlim = get_pertlim_uf(i)
 
-        os.chdir(scripts_dir)
-        print ("STATUS: creating new cloned case: " + new_case)
+            iens = '{0:03d}'.format(i)
+            new_case = case_pfx + "." + iens
 
-        clone_args = " --keepexe --case " + new_case + " --clone " + clone_case
-        print ("        with args: " + clone_args)
+            os.chdir(scripts_dir)
+            print ("STATUS: creating new cloned case: " + new_case)
 
-        command = scripts_dir + "/create_clone" + clone_args
-        ret = os.system(command)
+            clone_args = " --keepexe --case " + new_case + " --clone " + clone_case
+            print ("        with args: " + clone_args)
 
-        print ("STATUS: running setup for new cloned case: " + new_case)
-        os.chdir(new_case)
-        command = './case.setup'
-        ret = os.system(command)
-
-        #modify the perlim in the file
-        if run_type == 'verify': #remove old pertlim first
-            f = open("user_nl_cam","r+")
-            all_lines = f.readlines()
-            f.seek(0)
-            for line in all_lines:
-                if line.find("pertlim") == -1:
-                    f.write(line)
-            f.truncate()
-            f.close()
-            text = "pertlim = " + this_pertlim
-        else:
-            text = "\npertlim = " + this_pertlim
-
-        #now append new pertlim
-        with open("user_nl_cam", "a") as f:
-            f.write(text)
-
-        #preview namelists
-        command = './preview_namelists'
-        ret = os.system(command)
-    
-        #submit?
-        if opts_dict["ns"] == False:
-            command = './case.submit'
+            command = scripts_dir + "/create_clone" + clone_args
             ret = os.system(command)
+
+            print ("STATUS: running setup for new cloned case: " + new_case)
+            os.chdir(new_case)
+            command = './case.setup'
+            ret = os.system(command)
+
+            #adjust perturbation
+            if opts_dict['ect'] == 'pop':
+                if run_type == 'verify': #remove old init_ts_perturb
+                    f = open("user_nl_pop","r+")
+                    all_lines = f.readlines()
+                    f.seek(0)
+                    for line in all_lines:
+                        if line.find("init_ts_perturb") == -1:
+                            f.write(line)
+                    f.truncate()
+                    f.close()
+                    text = "init_ts_perturb = " + this_pertlim
+                else:
+                    text = "\ninit_ts_perturb = " + this_pertlim
+
+                #now append new pertlim
+                with open("user_nl_pop", "a") as f:
+                    f.write(text)
+
+            else:
+                if run_type == 'verify': #remove old pertlim first
+                    f = open("user_nl_cam","r+")
+                    all_lines = f.readlines()
+                    f.seek(0)
+                    for line in all_lines:
+                        if line.find("pertlim") == -1:
+                            f.write(line)
+                    f.truncate()
+                    f.close()
+                    text = "pertlim = " + this_pertlim
+                else:
+                    text = "\npertlim = " + this_pertlim
+
+                #now append new pertlim
+                with open("user_nl_cam", "a") as f:
+                    f.write(text)
+
+
+            #preview namelists
+            command = './preview_namelists'
+            ret = os.system(command)
+    
+            #submit?
+            if opts_dict["ns"] == False:
+                command = './case.submit'
+                ret = os.system(command)
 
     #Final output
     if run_type == "verify":
-        print ("STATUS: ---VERIFICATION CASES COMPLETE---")
-        print ("Set up three cases using the following pertlim values:")
-        print get_pertlim_uf(rand_ints[0]) + '   ' + get_pertlim_uf(rand_ints[1]) + "   " + get_pertlim_uf(rand_ints[2])
+        if opts_dict['ect'] == 'pop':
+            print ("STATUS: ---POP-ECT VERIFICATION CASE COMPLETE---")
+            print ("Set up one case using the following init_ts_perturb value:")
+            print get_pertlim_uf(rand_ints[0])
+        else:
+            print ("STATUS: ---CAM-ECT VERIFICATION CASES COMPLETE---")
+            print ("Set up three cases using the following pertlim values:")
+            print get_pertlim_uf(rand_ints[0]) + '   ' + get_pertlim_uf(rand_ints[1]) + "   " + get_pertlim_uf(rand_ints[2])
     else:
        print ("STATUS: --ENSEMBLE CASES COMPLETE---")
 

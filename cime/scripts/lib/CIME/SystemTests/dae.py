@@ -83,13 +83,15 @@ class DAE(SystemTestsCompareTwo):
         # End for
 
         # CONTINUE_RUN ends up TRUE, set it back in case this is a re-run.
-        self._case.set_value("CONTINUE_RUN", False)
-        # Turn off post DA in case this is a re-run
-        for comp in self._case.get_values("COMP_CLASSES"):
-            if comp == "ESP":
-                continue
-            else:
-                self._case.set_value("DATA_ASSIMILATION_{}".format(comp), False)
+        with self._case:
+            self._case.set_value("CONTINUE_RUN", False)
+            # Turn off post DA in case this is a re-run
+            for comp in self._case.get_values("COMP_CLASSES"):
+                if comp == "ESP":
+                    continue
+                else:
+                    self._case.set_value("DATA_ASSIMILATION_{}".format(comp), False)
+
         # Start normal run here
         self._activate_case1()
         SystemTestsCompareTwo.run_phase(self)

@@ -21,7 +21,7 @@ class ERS(SystemTestsCommon):
         expect(stop_n > 0, "Bad STOP_N: {:d}".format(stop_n))
 
         expect(stop_n > 2, "ERROR: stop_n value {:d} too short".format(stop_n))
-        logger.info("doing an {} {} initial test with restart file at {} {}".format(str(stop_n), stop_option, str(rest_n), stop_option))
+        logger.info("doing an {0} {1} initial test with restart file at {2} {1}".format(str(stop_n), stop_option, str(rest_n)))
         self.run_indv()
 
     def _ers_second_phase(self):

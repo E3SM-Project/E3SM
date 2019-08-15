@@ -37,9 +37,11 @@ the NCL scripts, 'pop_frc*.ncl'. You will need to edit the script and
 point to the POP and coupler (popmac and cplmac) climatological files.
 
 pop_frc_mlt.ncl*   -> uses mixed-layer temperature to derive the Q-flux
+
 pop_frc_mlann.ncl  -> uses mixed-layer temperature to derive the Q-flux
                       also produces velocities and salinities averaged
                       over the annual mean ml depth
+
 pop_frc_interp.ncl -> Interpolates the data onto a standard 1x1d grid
 
 * recommended script

@@ -29,8 +29,10 @@ module VOCEmissionMod
   use SoilStateType      , only : soilstate_type
   use SolarAbsorbedType  , only : solarabs_type
   use TemperatureType    , only : temperature_type
-  use TopounitType       , only : top_as, top_af
+  use TopounitDataType   , only : top_as, top_af
+  use ColumnDataType     , only : col_ws
   use VegetationType     , only : veg_pp                
+  use VegetationDataType , only : veg_es  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -472,8 +474,8 @@ contains
          !sandfrac     => soilstate_vars%sandfrac_col           , & ! Input:  [real(r8) (:)   ]  fraction of soil that is sand                     
          !watsat       => soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity) (nlevgrnd)
          !sucsat       => soilstate_vars%sucsat_col             , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm) (nlevgrnd)            
-         !h2osoi_vol   => waterstate_vars%h2osoi_vol_col        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (m3/m3)                   
-         !h2osoi_ice   => waterstate_vars%h2osoi_ice_col        , & ! Input:  [real(r8) (:,:) ]  ice soil content (kg/m3)                        
+         !h2osoi_vol   => col_ws%h2osoi_vol        , & ! Input:  [real(r8) (:,:) ]  volumetric soil water (m3/m3)                   
+         !h2osoi_ice   => col_ws%h2osoi_ice        , & ! Input:  [real(r8) (:,:) ]  ice soil content (kg/m3)                        
          
          forc_solad    => top_af%solad                          , & ! Input:  [real(r8) (:,:) ]  direct beam radiation (W/m**2)            
          forc_solai    => top_af%solai                          , & ! Input:  [real(r8) (:,:) ]  diffuse radiation     (W/m**2)            
@@ -492,9 +494,9 @@ contains
          cisun_z       => photosyns_vars%cisun_z_patch          , & ! Input:  [real(r8) (:,:) ]  sunlit intracellular CO2 (Pa)
          cisha_z       => photosyns_vars%cisha_z_patch          , & ! Input:  [real(r8) (:,:) ]  shaded intracellular CO2 (Pa)
          
-         t_veg         => temperature_vars%t_veg_patch          , & ! Input:  [real(r8) (:)   ]  pft vegetation temperature (Kelvin)
-         t_veg24       => temperature_vars%t_veg24_patch        , & ! Input:  [real(r8) (:)   ]  avg pft vegetation temperature for last 24 hrs
-         t_veg240      => temperature_vars%t_veg240_patch       , & ! Input:  [real(r8) (:)   ]  avg pft vegetation temperature for last 240 hrs
+         t_veg         => veg_es%t_veg          , & ! Input:  [real(r8) (:)   ]  pft vegetation temperature (Kelvin)
+         t_veg24       => veg_es%t_veg24        , & ! Input:  [real(r8) (:)   ]  avg pft vegetation temperature for last 24 hrs
+         t_veg240      => veg_es%t_veg240       , & ! Input:  [real(r8) (:)   ]  avg pft vegetation temperature for last 240 hrs
          
          Eopt_out      => vocemis_vars%Eopt_out_patch           , & ! Output: [real(r8) (:)   ]                                                    
          topt_out      => vocemis_vars%topt_out_patch           , & ! Output: [real(r8) (:)   ]                                                    
@@ -945,7 +947,7 @@ contains
 
     ! Activity factor for leaf age (Guenther et al., 2006)
     !-----------------------------
-    ! If not CNDV elai is constant therefore gamma_a=1.0
+    ! If bgc not active, then elai is constant therefore gamma_a=1.0
     ! gamma_a set to unity for evergreens (Patches 1, 2, 4, 5)
     ! Note that we assume here that the time step is shorter than the number of 
     !days after budbreak required to induce isoprene emissions (ti=12 days) and 

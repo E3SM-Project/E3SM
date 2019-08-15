@@ -548,19 +548,23 @@ add_default($nl, 'start_type');
 my $dyn = $cfg->get('dyn');
 if ($dyn =~ /se/) {add_default($nl, 'vect_map', 'val'=>'cart3d');}
 
+if ($dyn =~ /se/) {
+  my $npg = $cfg->get('npg');
+  my $se_fv_nphys = $nl->get_value('se_fv_nphys');
+  if (defined($se_fv_nphys) and $se_fv_nphys != $npg) {
+    die "$ProgName - ERROR: se_fv_nphys should not be set by the user\n";
+  }
+  add_default($nl, 'se_fv_nphys', 'val'=>$npg);
+}
+
 # Adiabatic or Ideal physics
 my $phys = $cfg->get('phys');
 if ($phys eq 'adiabatic') { add_default($nl, 'atm_adiabatic',  'val'=>'.true.'); }
 if ($phys eq 'ideal')     { add_default($nl, 'atm_ideal_phys', 'val'=>'.true.'); }
 
 # Aqua planet 
-
-my $aqua_flag = $cfg->get('ocn');
+my $aqua_mode = $cfg->get('aquaplanet');
 my $nl_aqua_flag = $nl->get_value('aqua_planet');
-
-if ($aqua_flag  eq 'aquaplanet') {
-    $aqua_mode = 1;
-}
 
 # Consistency check between configuration and namelist variables used for aquaplanet.
 if ($aqua_mode and defined $nl_aqua_flag  and ($nl_aqua_flag  =~ m/$FALSE/io)) {
@@ -3327,8 +3331,8 @@ if ( $chem ) {
 
     # drydep_srf_file is only needed for prognostic MAM when the grid is unstructured.
     # structured grids can do interpolation on the fly.
-    if ($chem =~ /_mam/ and $dyn =~ /se/) {
-	add_default($nl, 'drydep_srf_file');
+    if ($chem =~ /_mam/ and $dyn =~ /se/ and !$aqua_mode ) {
+      add_default($nl, 'drydep_srf_file');
     }
 }
 
@@ -3509,6 +3513,7 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'clubb_tk2');
    add_default($nl, 'clubb_wpxp_L_thresh');
    add_default($nl, 'relvar_fix');
+   add_default($nl, 'clubb_use_sgv');
 }
 
 add_default($nl, 'do_aerocom_ind3');
@@ -3579,6 +3584,7 @@ add_default($nl, 'zmconv_tiedke_add');
 add_default($nl, 'zmconv_cape_cin');
 add_default($nl, 'zmconv_mx_bot_lyr_adj');
 add_default($nl, 'zmconv_dmpdz');
+add_default($nl, 'zmconv_tp_fac');
 
 # moist convection rainwater coefficients
 add_default($nl, 'hkconv_cmftau');

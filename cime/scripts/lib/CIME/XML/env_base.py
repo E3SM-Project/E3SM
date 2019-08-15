@@ -9,16 +9,16 @@ logger = logging.getLogger(__name__)
 
 class EnvBase(EntryID):
 
-    def __init__(self, case_root, infile, schema=None):
+    def __init__(self, case_root, infile, schema=None, read_only=False):
         if case_root is None:
             case_root = os.getcwd()
-
+        self._caseroot = case_root
         if os.path.isabs(infile):
             fullpath = infile
         else:
             fullpath = os.path.join(case_root, infile)
 
-        EntryID.__init__(self, fullpath, schema=schema, read_only=False)
+        EntryID.__init__(self, fullpath, schema=schema, read_only=read_only)
 
         self._id_map = None
         self._group_map = None

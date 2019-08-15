@@ -6,7 +6,7 @@
 
 module basic_tests
 
-  use pio 
+  use pio
   use global_vars
 
   Implicit None
@@ -53,7 +53,7 @@ module basic_tests
         err_msg = "Could not create " // trim(filename)
         call mpi_abort(MPI_COMM_WORLD, 0, ret_val2)
       end if
-      
+
       call mpi_barrier(mpi_comm_world,ret_val)
       ! netcdf files need to end define mode before closing
       if (is_netcdf(iotype)) then
@@ -215,6 +215,16 @@ module basic_tests
           call mpi_abort(MPI_COMM_WORLD, 0, ret_val2)
         end if
 
+        ret_val = PIO_put_att(pio_file, pio_var, '_FillValue', -1)
+        if (ret_val .ne. PIO_NOERR) then
+          ! Error in PIO_def_var
+          err_msg = "Could not define _FillValue attribute"
+          call PIO_closefile(pio_file)
+          call mpi_abort(MPI_COMM_WORLD, 0, ret_val2)
+        end if
+
+
+
         ! Leave define mode
         ret_val = PIO_enddef(pio_file)
         if (ret_val .ne. PIO_NOERR) then
@@ -290,11 +300,11 @@ module basic_tests
            call mpi_abort(MPI_COMM_WORLD, 0, ret_val2)
         end if
         ret_val = PIO_set_log_level(0)
-        
+
         ! Close file
         call PIO_closefile(pio_file)
       end if
-        
+
       call mpi_barrier(MPI_COMM_WORLD,ret_val)
 
       ! Try to open standard binary file as netcdf (if iotype = netcdf)
@@ -304,6 +314,7 @@ module basic_tests
 
         ret_val = PIO_openfile(pio_iosystem, pio_file, iotype, &
                                "not_netcdf.ieee", PIO_nowrite)
+
         if (ret_val.eq.PIO_NOERR) then
           ! Error in PIO_openfile
           err_msg = "Opened a non-netcdf file as netcdf"

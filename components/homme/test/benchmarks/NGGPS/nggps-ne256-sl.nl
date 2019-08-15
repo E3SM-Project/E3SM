@@ -15,12 +15,10 @@ disable_diagnostics = .true.
 restartfreq   = 43200
 restartfile   = "./R0001"
 runtype       = 0
+theta_hydrostatic_mode=.true.
+theta_advect_form = 1
 tstep=40
-
-!rsplit=3
-!qsplit = 1
-
-cubed_sphere_map=2
+semi_lagrange_nearest_point_lev=100
 rsplit = 1
 qsplit = 8
 transport_alg = 12
@@ -32,7 +30,7 @@ integration   = "explicit"
 nu=7e11
 nu_div=7e11
 nu_p=7e11
-nu_q=7e11
+nu_q=0
 nu_s=7e11
 nu_top = 0e5
 se_ftype     = 0

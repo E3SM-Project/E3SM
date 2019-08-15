@@ -184,8 +184,8 @@ class EntryID(GenericXML):
 
     def _get_valid_values(self, node):
         valid_values = self.get_element_text("valid_values", root=node)
-        valid_values_list = None
-        if valid_values is not None:
+        valid_values_list = []
+        if valid_values:
             valid_values_list = [item.lstrip() for item in valid_values.split(',')]
         return valid_values_list
 
@@ -234,7 +234,7 @@ class EntryID(GenericXML):
         type_str = self._get_type_info(node)
         str_value = convert_to_string(value, type_str, vid)
 
-        if valid_values is not None and not str_value.startswith('$'):
+        if valid_values and not str_value.startswith('$'):
             expect(str_value in valid_values, "Did not find {} in valid values for {}: {}".format(value, vid, valid_values))
         return str_value
 

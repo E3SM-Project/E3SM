@@ -25,6 +25,38 @@ logger = logging.getLogger(__name__)
 
 _array_size_re = re.compile(r'^(?P<type>[^(]+)\((?P<size>[^)]+)\)$')
 
+class CaseInsensitiveDict(dict):
+
+    """Basic case insensitive dict with strings only keys.
+        From https://stackoverflow.com/a/27890005 """
+
+    proxy = {}
+
+    def __init__(self, data):
+        dict.__init__(self)
+        self.proxy = dict((k.lower(), k) for k in data)
+        for k in data:
+            self[k] = data[k]
+
+    def __contains__(self, k):
+        return k.lower() in self.proxy
+
+    def __delitem__(self, k):
+        key = self.proxy[k.lower()]
+        super(CaseInsensitiveDict, self).__delitem__(key)
+        del self.proxy[k.lower()]
+
+    def __getitem__(self, k):
+        key = self.proxy[k.lower()]
+        return super(CaseInsensitiveDict, self).__getitem__(key)
+
+    def get(self, k, default=None):
+        return self[k] if k in self else default
+
+    def __setitem__(self, k, v):
+        super(CaseInsensitiveDict, self).__setitem__(k, v)
+        self.proxy[k.lower()] = k
+
 class NamelistDefinition(EntryID):
 
     """Class representing variable definitions for a namelist.
@@ -54,7 +86,7 @@ class NamelistDefinition(EntryID):
         self._entry_ids = []
         self._valid_values = {}
         self._entry_types = {}
-        self._group_names = {}
+        self._group_names = CaseInsensitiveDict({})
         self._nodes = {}
 
     def set_nodes(self, skip_groups=None):
@@ -65,6 +97,7 @@ class NamelistDefinition(EntryID):
         default_nodes = []
         for node in self.get_children("entry"):
             name = self.get(node, "id")
+            expect(name == name.lower(),"ERROR id field in this file must be lowercase, id={}".format(name))
             skip_default_entry = self.get(node, "skip_default_entry") == "true"
             per_stream_entry = self.get(node, "per_stream_entry") == "true"
             set_node_values = False
@@ -260,7 +293,6 @@ class NamelistDefinition(EntryID):
         appear in the namelist (even for scalar variables, in which case the
         length of the list is always 1).
         """
-        name = name.lower()
         # Separate into a type, optional length, and optional size.
         type_, max_len, size = self.split_type_string(name)
         invalid = []
@@ -305,7 +337,9 @@ class NamelistDefinition(EntryID):
         return True
 
     def _expect_variable_in_definition(self, name, variable_template):
-        """Used to get a better error message for an unexpected variable."""
+        """Used to get a better error message for an unexpected variable.
+             case insensitve match"""
+
         expect(name in self._entry_ids,
                (variable_template + " is not in the namelist definition.").format(str(name)))
 
@@ -320,6 +354,19 @@ class NamelistDefinition(EntryID):
         if user_cannot_modify is not None:
             expect(False,
                    "Cannot change {} in user_nl file: {}".format(name, user_cannot_modify))
+    def _generate_variable_template(self, filename):
+        # Improve error reporting when a file name is provided.
+        if filename is None:
+            variable_template = "Variable {!r}"
+        else:
+            # for the next step we want the name of the original user_nl file not the internal one
+            # We do this by extracting the component name from the filepath string
+            if "Buildconf" in filename and "namelist_infile" in filename:
+                msgfn = "user_nl_" + (filename.split(os.sep)[-2])[:-4]
+            else:
+                msgfn = filename
+            variable_template = "Variable {!r} from file " + repr(str(msgfn))
+        return variable_template
 
     def validate(self, namelist,filename=None):
         """Validate a namelist object against this definition.
@@ -327,11 +374,7 @@ class NamelistDefinition(EntryID):
         The optional `filename` argument can be used to assist in error
         reporting when the namelist comes from a specific, known file.
         """
-        # Improve error reporting when a file name is provided.
-        if filename is None:
-            variable_template = "Variable {!r}"
-        else:
-            variable_template = "Variable {!r} from file " + repr(str(filename))
+        variable_template = self._generate_variable_template(filename)
 
         # Iterate through variables.
         for group_name in namelist.get_group_names():
@@ -366,10 +409,7 @@ class NamelistDefinition(EntryID):
         reporting when the namelist comes from a specific, known file.
         """
         # Improve error reporting when a file name is provided.
-        if filename is None:
-            variable_template = "Variable {!s}"
-        else:
-            variable_template = "Variable {!r} from file " + repr(str(filename))
+        variable_template = self._generate_variable_template(filename)
         groups = {}
         for variable_name in dict_:
             variable_lc = variable_name.lower()

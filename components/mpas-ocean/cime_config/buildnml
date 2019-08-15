@@ -185,13 +185,27 @@ def buildnml(case, caseroot, compname):
         ic_prefix += 'ocean.RRS.15-5km'
         decomp_date += '151209'
         decomp_prefix += 'mpas-o.graph.info.'
+    elif ocn_grid == 'oARRM60to10':
+        ic_date += '180715'
+        ic_prefix += 'ocean.ARRM60to10'
+        decomp_date += '180723'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to10.190129.nc'
+        analysis_mask_file += 'ARRM60to10_SingleRegionAtlanticWTransportTransects_masks.nc'
+    elif ocn_grid == 'oARRM60to6':
+        ic_date += '180803'
+        ic_prefix += 'ocean.ARRM60to6'
+        decomp_date += '180820'
+        decomp_prefix += 'mpas-o.graph.info.'
+        restoring_file += 'sss.monthlyClimatology.PHC2_salx.2004_08_03.ARRM60to6.190214.nc'
+        analysis_mask_file += 'ARRM60to6_SingleRegionAtlanticWTransportTransects_masks.nc'
 
     #--------------------------------------------------------------------
-    # Set OCN_FORCING = core_forced_restoring if restoring file is available
+    # Set OCN_FORCING = datm_forced_restoring if restoring file is available
     #--------------------------------------------------------------------
-    if ocn_forcing == 'core_forced':
+    if ocn_forcing == 'datm_forced':
         if restoring_file != '':
-            ocn_forcing = 'core_forced_restoring'
+            ocn_forcing = 'datm_forced_restoring'
         else:
             logger.warning("WARNING: Should be running with salinity restoring on!")
             logger.warning("         But no file available for this grid.")
@@ -217,7 +231,7 @@ def buildnml(case, caseroot, compname):
         if analysis_mask_file != '':
             input_list.write("moc = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, analysis_mask_file))
 
-        if ocn_forcing == 'core_forced_restoring':
+        if ocn_forcing == 'datm_forced_restoring':
             input_list.write("sss = {}/ocn/mpas-o/{}/{}\n".format(din_loc_root, ocn_mask, restoring_file))
 
         if eco_forcing_file != '':
@@ -443,7 +457,7 @@ def buildnml(case, caseroot, compname):
         lines.append('the analysis data.')
         lines.append('-->')
         lines.append('')
-        if ocn_forcing == 'core_forced_restoring':
+        if ocn_forcing == 'datm_forced_restoring':
             lines.append('<stream name="surface_salinity_monthly_data"')
             lines.append('       type="input"')
             lines.append('       filename_template="{}/ocn/mpas-o/{}/{}"'.format(din_loc_root, ocn_mask, restoring_file))
@@ -635,7 +649,7 @@ def buildnml(case, caseroot, compname):
         lines.append('        filename_template="mpaso.hist.am.eddyProductVariables.$Y-$M-$D.nc"')
         lines.append('        filename_interval="00-01-00_00:00:00"')
         lines.append('        reference_time="01-01-01_00:00:00"')
-        lines.append('        output_interval="none"')
+        lines.append('        output_interval="00-01-00_00:00:00"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        packages="eddyProductVariablesAMPKG">')
         lines.append('')
@@ -856,6 +870,8 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="velocityMeridionalSquared"/>')
         lines.append('    <var name="velocityZonalTimesTemperature"/>')
         lines.append('    <var name="velocityMeridionalTimesTemperature"/>')
+        lines.append('    <var_array name="activeTracerVerticalAdvectionTopFlux"/>')
+        lines.append('    <var_array name="activeTracerHorizontalAdvectionEdgeFlux"/>')
         if ocn_iceberg == 'true':
             lines.append('    <var name="icebergHeatFlux"/>')
             lines.append('    <var name="icebergFreshWaterFlux"/>')
@@ -949,6 +965,108 @@ def buildnml(case, caseroot, compname):
 
         lines.append('</stream>')
         lines.append('')
+        lines.append('<stream name="timeSeriesStatsMonthlyMaxOutput"')
+        lines.append('        type="output"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('        io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsMonthlyMax.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsMonthlyMaxAMPKG"')
+        lines.append('        runtime_format="single_file">')
+        lines.append('')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="ssh"/>')
+        lines.append('    <var name="windStressZonal"/>')
+        lines.append('    <var name="windStressMeridional"/>')
+        lines.append('    <var name="tThreshMLD"/>')
+        lines.append('    <var name="dThreshMLD"/>')
+        lines.append('    <var_struct name="tracersSurfaceFlux"/>')
+        lines.append('    <var name="penetrativeTemperatureFlux"/>')
+        lines.append('    <var name="latentHeatFlux"/>')
+        lines.append('    <var name="sensibleHeatFlux"/>')
+        lines.append('    <var name="longWaveHeatFluxUp"/>')
+        lines.append('    <var name="longWaveHeatFluxDown"/>')
+        lines.append('    <var name="seaIceHeatFlux"/>')
+        if ocn_iceberg == 'true':
+            lines.append('    <var name="icebergHeatFlux"/>')
+
+        lines.append('    <var name="shortWaveHeatFlux"/>')
+        lines.append('    <var name="evaporationFlux"/>')
+        lines.append('    <var name="seaIceSalinityFlux"/>')
+        lines.append('    <var name="seaIceFreshWaterFlux"/>')
+        if ocn_iceberg == 'true':
+            lines.append('    <var name="icebergFreshWaterFlux"/>')
+
+        lines.append('    <var name="riverRunoffFlux"/>')
+        lines.append('    <var name="iceRunoffFlux"/>')
+        lines.append('    <var name="rainFlux"/>')
+        lines.append('    <var name="snowFlux"/>')
+        lines.append('    <var name="boundaryLayerDepth"/>')
+        lines.append('    <var name="landIceFreshwaterFlux"/>')
+        lines.append('    <var name="landIceHeatFlux"/>')
+        lines.append('    <var name="heatFluxToLandIce"/>')
+        lines.append('    <var name="surfaceBuoyancyForcing"/>')
+        lines.append('    <var name="boundaryLayerDepthSmooth"/>')
+        lines.append('    <var name="SSHSquared"/>')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsMonthlyMinOutput"')
+        lines.append('        type="output"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('        io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('        filename_template="mpaso.hist.am.timeSeriesStatsMonthlyMin.$Y-$M-$D.nc"')
+        lines.append('        filename_interval="00-01-00_00:00:00"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="00-01-00_00:00:00"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        packages="timeSeriesStatsMonthlyMinAMPKG"')
+        lines.append('        runtime_format="single_file">')
+        lines.append('')
+        lines.append('    <var name="daysSinceStartOfSim"/>')
+        lines.append('    <var name="ssh"/>')
+        lines.append('    <var name="windStressZonal"/>')
+        lines.append('    <var name="windStressMeridional"/>')
+        lines.append('    <var name="tThreshMLD"/>')
+        lines.append('    <var name="dThreshMLD"/>')
+        lines.append('    <var_struct name="tracersSurfaceFlux"/>')
+        lines.append('    <var name="penetrativeTemperatureFlux"/>')
+        lines.append('    <var name="latentHeatFlux"/>')
+        lines.append('    <var name="sensibleHeatFlux"/>')
+        lines.append('    <var name="longWaveHeatFluxUp"/>')
+        lines.append('    <var name="longWaveHeatFluxDown"/>')
+        lines.append('    <var name="seaIceHeatFlux"/>')
+        if ocn_iceberg == 'true':
+            lines.append('    <var name="icebergHeatFlux"/>')
+
+        lines.append('    <var name="shortWaveHeatFlux"/>')
+        lines.append('    <var name="evaporationFlux"/>')
+        lines.append('    <var name="seaIceSalinityFlux"/>')
+        lines.append('    <var name="seaIceFreshWaterFlux"/>')
+        if ocn_iceberg == 'true':
+            lines.append('    <var name="icebergFreshWaterFlux"/>')
+
+        lines.append('    <var name="riverRunoffFlux"/>')
+        lines.append('    <var name="iceRunoffFlux"/>')
+        lines.append('    <var name="rainFlux"/>')
+        lines.append('    <var name="snowFlux"/>')
+        lines.append('    <var name="boundaryLayerDepth"/>')
+        lines.append('    <var name="landIceFreshwaterFlux"/>')
+        lines.append('    <var name="landIceHeatFlux"/>')
+        lines.append('    <var name="heatFluxToLandIce"/>')
+        lines.append('    <var name="surfaceBuoyancyForcing"/>')
+        lines.append('    <var name="boundaryLayerDepthSmooth"/>')
+        lines.append('    <var name="SSHSquared"/>')
+        lines.append('</stream>')
+        lines.append('')
         lines.append('<stream name="timeSeriesStatsClimatologyOutput"')
         lines.append('        type="output"')
         lines.append('        io_type="{}"'.format(ocn_pio_typename))
@@ -999,6 +1117,38 @@ def buildnml(case, caseroot, compname):
         lines.append('        clobber_mode="truncate"')
         lines.append('        input_interval="none"')
         lines.append('        packages="timeSeriesStatsMonthlyAMPKG"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none">')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsMonthlyMaxRestart"')
+        lines.append('        type="input;output"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('        io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsMonthlyMax.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        input_interval="none"')
+        lines.append('        packages="timeSeriesStatsMonthlyMaxAMPKG"')
+        lines.append('        reference_time="01-01-01_00:00:00"')
+        lines.append('        output_interval="none">')
+        lines.append('</stream>')
+        lines.append('')
+        lines.append('<stream name="timeSeriesStatsMonthlyMinRestart"')
+        lines.append('        type="input;output"')
+        if ocn_grid.startswith("oRRS1"):
+            lines.append('        io_type="pnetcdf,cdf5"')
+        else:
+            lines.append('        io_type="{}"'.format(ocn_pio_typename))
+
+        lines.append('        filename_template="mpaso.rst.am.timeSeriesStatsMonthlyMin.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_interval="output_interval"')
+        lines.append('        clobber_mode="truncate"')
+        lines.append('        input_interval="none"')
+        lines.append('        packages="timeSeriesStatsMonthlyMinAMPKG"')
         lines.append('        reference_time="01-01-01_00:00:00"')
         lines.append('        output_interval="none">')
         lines.append('</stream>')

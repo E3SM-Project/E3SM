@@ -2,9 +2,9 @@ module ColumnMod
 
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
-  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak
+  use clm_varpar     , only : nlevsno, nlevgrnd, nlevlak, nlevslp
   use clm_varcon     , only : spval, ispval
-  use ColumnType     , only : column_physical_properties_type, col_pp
+  use ColumnType     , only : col_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -89,6 +89,10 @@ contains
        idx = idx + 1; if (.not. isnan(col_pp%z_lake(c,j))) values(idx) = col_pp%z_lake(c,j)
     enddo
 
+    do j = 1,nlevslp
+       idx = idx + 1; if (.not. isnan(col_pp%hslp_p10(c,j))) values(idx) = col_pp%hslp_p10(c,j) 
+    enddo
+
   end subroutine GetValuesForColumn
 
   !------------------------------------------------------------------------
@@ -160,6 +164,10 @@ contains
 
     do j = 1,nlevlak
        idx = idx + 1; col_pp%z_lake(c,j) = values(idx)
+    enddo
+
+    do j = 1,nlevslp
+       idx = idx + 1; col_pp%hslp_p10(c,j) = values(idx)
     enddo
 
   end subroutine SetValuesForColumn

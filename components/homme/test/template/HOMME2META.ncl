@@ -21,11 +21,14 @@ print("input: "+template+" output:"+output)
  
 
 fin   = addfile(template,"r")   ;
+if (ne .gt. 512) then
+  setfileoption("nc","Format","NetCDF4")
+  ;setfileoption("nc","Format","NetCDF4Classic")
+end if
 fout  = addfile(output,"c")   ;
 
 grid_size = dimsizes(fin->lat)
 print("grid_size = "+grid_size)
-grid_rank = 1 
 
 print("lon min/max = "+min(fin->lon)+" "+max(fin->lon))
 print("lat min/max = "+min(fin->lat)+" "+max(fin->lat))
@@ -36,10 +39,10 @@ print("lat min/max = "+min(fin->lat)+" "+max(fin->lat))
 ;grid_area@units = "radians^2"
 
 if (isfilevar(fin,"corners")) then
+  print("reading corners...")
   dims=dimsizes(fin->corners)
   corners = new ( (/4,dims(1)/), "integer")
   do k=0,3
-;   corners(:,k) = (/fin->corners(k,:)/)
     corners(k,:) = (/fin->corners(k,:)/)
   end do 
   corners!0 = "ncorners"
@@ -48,15 +51,18 @@ end if
 
 
 ; write the 'title' global attribute
+print("writing attributes...")
 fout@title = "ne"+ne+"np"+np
 fout@Created_by = "HOMME2META.ncl mt 2011"
 fout@history = "HOMME2META.ncl mt 2011"
 
 ; write all the data to the output field:
+print("writing coords...")
 fout->lat = fin->lat
 fout->lon = fin->lon
 fout->area = fin->area
 if (isfilevar(fin,"corners")) then
+  print("writing corner metadata...")
   fout->element_corners = corners
 end if
 

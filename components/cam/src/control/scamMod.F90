@@ -22,6 +22,7 @@ module scamMod
   use string_utils, only: to_lower
   use cam_abortutils,   only: endrun
   use phys_control, only: phys_getopts
+  use dycore, only: dycore_is
 !
   implicit none
 
@@ -107,6 +108,7 @@ module scamMod
   real(r8), public ::      precobs(1)          ! observed precipitation 
   real(r8), public ::      lhflxobs(1)         ! observed surface latent heat flux 
   real(r8), public ::      shflxobs(1)         ! observed surface sensible heat flux
+  real(r8), public ::      heat_glob_scm(1)    ! global energy fixer 
   real(r8), public ::      q1obs(plev)         ! observed apparent heat source
   real(r8), public ::      q2obs(plev)         ! observed apparent heat sink
   real(r8), public ::      tdiff(plev)         ! model minus observed temp 
@@ -186,6 +188,7 @@ module scamMod
   logical*4, public ::  precip_off    ! turn off precipitation processes
   logical*4, public ::  use_camiop    ! use cam generated forcing 
   logical*4, public ::  use_3dfrc     ! use 3d forcing
+  logical*4, public ::  have_heat_glob ! dataset contains global energy fixer
 
   character(len=200), public ::  scm_clubb_iop_name   ! IOP name for CLUBB
 
@@ -226,7 +229,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(scm_iop_srf_prop_out) )scm_iop_srf_prop_out  = .false.
    if ( present(scm_relaxation_out) )   scm_relaxation_out  = .false.
    if ( present(scm_relaxation_low_out) ) scm_relaxation_low_out = 1050.0_r8
-   if ( present(scm_relaxation_high_out) ) scm_relaxation_high_out = 0.e3   
+   if ( present(scm_relaxation_high_out) ) scm_relaxation_high_out = 0.e3_r8   
    if ( present(scm_diurnal_avg_out) )  scm_diurnal_avg_out = .false.
    if ( present(scm_crm_mode_out) )     scm_crm_mode_out  = .false.
    if ( present(scm_observed_aero_out)) scm_observed_aero_out = .false.
@@ -327,17 +330,26 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
            call endrun('SCAM_SETOPTS: must specify IOP file for single column mode')
         endif
         call wrap_open (iopfile, NF90_NOWRITE, ncid)
-        call wrap_inq_dimid( ncid, 'lon', londimid   )
-        call wrap_inq_dimid( ncid, 'lat', latdimid   )
-        call wrap_inq_dimlen( ncid, londimid, lonsiz   )
-        call wrap_inq_dimlen( ncid, latdimid, latsiz   )
-        call wrap_inq_varid( ncid, 'lon', lonid   )
-        call wrap_inq_varid( ncid, 'lat', latid   )
-        if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'CAM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
+	
+	if ( nf90_inquire_attribute( ncid, NF90_GLOBAL, 'CAM_GENERATED_FORCING', attnum=i ).EQ. NF90_NOERR ) then
            use_camiop = .true.
         else
            use_camiop = .false.
         endif
+	
+	if (dycore_is('SE') .and. use_camiop) then
+	  call wrap_inq_dimid( ncid, 'ncol', londimid   )
+	  call wrap_inq_dimlen( ncid, londimid, lonsiz   )
+	  latsiz=lonsiz
+	else 
+	  call wrap_inq_dimid( ncid, 'lon', londimid   )
+          call wrap_inq_dimid( ncid, 'lat', latdimid   )
+          call wrap_inq_dimlen( ncid, londimid, lonsiz   )
+          call wrap_inq_dimlen( ncid, latdimid, latsiz   )
+	endif
+
+        call wrap_inq_varid( ncid, 'lon', lonid   )
+        call wrap_inq_varid( ncid, 'lat', latid   )
 
         if (present (scmlat_in) .and. present (scmlon_in) )then
            scmlat=scmlat_in
@@ -362,7 +374,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
 !!$                    write(iulog,*)'Using specified SCMLAT and SCMLON for all boundary data'
 !!$                 endif
                  call shr_scam_GetCloseLatLon(ncid,scmlat,scmlon,ioplat,ioplon,latidx,lonidx)
-                 if (ioplon.lt.0) ioplon=ioplon+360._r8
+                 if (ioplon.lt. 0._r8) ioplon=ioplon+360._r8
                  scmlat=ioplat
                  scmlon=ioplon
                  write(iulog,*)'For CAM Generated IOP using closest dataset lat and lon'
@@ -555,6 +567,12 @@ subroutine setiopupdate
           doiter=.false.
         endif
       enddo
+      
+      ! Check to make sure we didn't overshoot at the last 
+      !  IOP timestep.  
+      if (iopTimeIdx .gt. ntime) then
+        iopTimeIdx = ntime
+      endif      
 
       if (doiopupdate) then
 
@@ -874,9 +892,16 @@ endif !scm_observed_aero
    call wrap_inq_dimid(ncid, 'lev', levid)
    call wrap_inq_dimid(ncid, 'time', timeid)
 
-   strt4(1) = closelonidx
-   strt4(2) = closelatidx
-   strt4(3) = iopTimeIdx
+   if (dycore_is('SE') .and. use_camiop) then
+     strt4(1) = closelonidx
+     strt4(2) = iopTimeIdx
+     strt4(3) = 1
+   else 
+     strt4(1) = closelonidx
+     strt4(2) = closelatidx
+     strt4(3) = iopTimeIdx
+   endif      
+
    strt4(4) = 1
    cnt4(1)  = 1
    cnt4(2)  = 1
@@ -918,11 +943,11 @@ endif !scm_observed_aero
 !
 
      total_levs = nlev+1
-     dplevs(nlev+1) = psobs/100 ! ps is expressed in pascals
+     dplevs(nlev+1) = psobs/100.0_r8 ! ps is expressed in pascals
      do i= nlev, 1, -1
        if ( dplevs(i) .GT. psobs/100.0_r8) then
          total_levs = i
-         dplevs(i) = psobs/100
+         dplevs(i) = psobs/100.0_r8
        end if
      end do
      if (.not. use_camiop ) then
@@ -1429,7 +1454,19 @@ endif !scm_observed_aero
      else
        call wrap_get_vara_realx (ncid,varid,strt4,cnt4,tground)
        have_tg = .true.
-     endif 
+     endif
+     
+     ! If camiop is used, then need to read in the global
+     !   energy fixer
+     if (use_camiop) then 
+       status = nf90_inq_varid( ncid, 'heat_glob', varid   )
+       if (status .ne. nf90_noerr) then
+         have_heat_glob = .false.
+       else
+         call wrap_get_vara_realx (ncid,varid,strt4,cnt4,heat_glob_scm)
+         have_heat_glob = .true.
+       endif
+     endif
    
      status = nf90_inq_varid( ncid, 'lhflx', varid   )
      if ( status .ne. nf90_noerr ) then
