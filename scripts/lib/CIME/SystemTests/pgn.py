@@ -50,35 +50,13 @@ class PGN(SystemTestsCommon):
         """
         initialize an object interface to the PGN test
         """
-        super(PGN, self).__init__(self, case)
+        super(PGN, self).__init__(case)
 
     def build_phase(self, sharedlib_only=False, model_only=False):
         ninst = NUMBER_INITIAL_CONDITIONS * len(PERTURBATIONS)
         logger.debug('PGN_INFO: number of instance: '+str(ninst))
 
-        # Find number of instance in the default setup
         default_ninst = self._case.get_value("NINST_ATM")
-
-        # Sanity check: see if NINST is same for all model components, otherwise
-        # exit with error
-        for comp in self._case.get_values("COMP_CLASSES"):
-            if comp != 'CPL':
-                iinst = self._case.get_value("NINST_{}".format(comp))
-                expect(default_ninst == iinst,
-                       "ERROR: component {}  NINST({}) is different from  component"
-                       " ATM NINST({}).".format(comp, iinst, default_ninst))
-
-        # ------------------------------------------------------
-        # Setup multi-instances for model components:
-        # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        # Set the model for multi-instance ONLY if NINST == 1
-        # for all model components. This is because, for
-        # NINST > 1 (e.g. rebuilding an old case) the following
-        # loop will increase the ntasks to a multiple of ninst
-        # (requiring a clean build again). We hit this issue if
-        # we launch ./case.build in the case directory of PGN
-        # test
-        # ------------------------------------------------------
 
         if default_ninst == 1:  # if multi-instance is not already set
             # Only want this to happen once. It will impact the sharedlib build
@@ -109,7 +87,7 @@ class PGN(SystemTestsCommon):
 
         iinst = 1
         for icond in range(1, NUMBER_INITIAL_CONDITIONS + 1):
-            fatm_in = os.path.join(csmdata_atm, INIT_COND_FILE_TEMPLATE.format('atm', 'i', icond))
+            fatm_in = os.path.join(csmdata_atm, INIT_COND_FILE_TEMPLATE.format('cam', 'i', icond))
             flnd_in = os.path.join(csmdata_lnd, INIT_COND_FILE_TEMPLATE.format('clm2', 'r', icond))
             for iprt in PERTURBATIONS.values():
                 with open('user_nl_cam_{:04d}'.format(iinst), 'w') as atmnlfile, \
@@ -118,20 +96,12 @@ class PGN(SystemTestsCommon):
                     atmnlfile.write("ncdata  = '{}' \n".format(fatm_in))
                     lndnlfile.write("finidat = '{}' \n".format(flnd_in))
 
-                    # atm model output
                     atmnlfile.write("avgflag_pertape = 'I' \n")
                     atmnlfile.write("nhtfrq = 1 \n")
                     atmnlfile.write("mfilt  = 2  \n")
                     atmnlfile.write("ndens  = 1  \n")
                     atmnlfile.write("pergro_mods  = .true. \n")
                     atmnlfile.write("pergro_test_active = .true. \n")
-
-                    # atmnlfile.write("empty_htapes = .true. \n")
-                    # atmnlfile.write("fincl1 = 'PS','U','V','T','Q','CLDLIQ',"
-                    #                 "'CLDICE','NUMLIQ','NUMICE','num_a1',"
-                    #                 "'num_a2','num_a3','LANDFRAC' \n")
-                    # atmnlfile.write("phys_debug_lat = 41.3495891345")
-                    # atmnlfile.write("phys_debug_lon = 45.0" )
 
                     if iprt != 0.0:
                         atmnlfile.write("pertlim = {} \n".format(iprt))
@@ -190,7 +160,6 @@ class PGN(SystemTestsCommon):
                     "ninit": NUMBER_INITIAL_CONDITIONS,
                     "init-file-template": INIT_COND_FILE_TEMPLATE,
                     "instance-file-template": INSTANCE_FILE_TEMPLATE,
-
                 }
             }
 
@@ -224,7 +193,7 @@ class PGN(SystemTestsCommon):
         logger.debug("PGN_INFO: Case name is:{}".format(casename))
 
         for icond in range(NUMBER_INITIAL_CONDITIONS):
-            for iprt, (prt, prt_name) in enumerate(PERTURBATIONS.items()):
+            for iprt, (prt_name, prt_value) in enumerate(PERTURBATIONS.items()):
                 iinst = pg._sub2instance(icond, iprt, len(PERTURBATIONS))
                 fname = os.path.join(rundir, INSTANCE_FILE_TEMPLATE.format(casename + '.', iinst, ''))
                 renamed_fname = re.sub(r'\.nc$', '_{}.nc'.format(prt_name), fname)
@@ -244,9 +213,8 @@ class PGN(SystemTestsCommon):
     def _generate_baseline(self):
         super(PGN, self)._generate_baseline()
 
-        base_root = self._case.get_value("BASELINE_ROOT")
-        base_gen = self._case.get_value("BASEGEN_CASE")
-        base_dir = os.path.join(base_root, base_gen)
+        basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"),
+                                   self._case.get_value("BASEGEN_CASE"))
 
         rundir = self._case.get_value("RUNDIR")
         casename = self._case.get_value("CASE")
@@ -274,7 +242,7 @@ class PGN(SystemTestsCommon):
         cld_rmse = np.reshape(rmse.RMSE.values, (NUMBER_INITIAL_CONDITIONS, nprt - 1, nvar))
 
         pg.rmse_writer(os.path.join(rundir, FCLD_NC),
-                       cld_rmse, PERTURBATIONS.keys(), var_list, INIT_COND_FILE_TEMPLATE)
+                       cld_rmse, list(PERTURBATIONS.keys()), var_list, INIT_COND_FILE_TEMPLATE)
 
-        logger.debug("PGN_INFO:copy:{} to {}".format(FCLD_NC, base_dir))
-        shutil.copy(os.path.join(rundir, FCLD_NC), base_dir)
+        logger.debug("PGN_INFO:copy:{} to {}".format(FCLD_NC, basegen_dir))
+        shutil.copy(os.path.join(rundir, FCLD_NC), basegen_dir)
