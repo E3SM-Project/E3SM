@@ -81,7 +81,11 @@ module five_intr
 	     up2_idx, &
 	     vp2_idx, &
 	     upwp_idx, &
-	     vpwp_idx 
+	     vpwp_idx, &
+             thlm_idx, &      
+             rtm_idx, &         
+             um_idx, &           
+             vm_idx	      
      
   integer :: five_bot_k, five_top_k ! indicees where
                                     ! levels are added
@@ -189,7 +193,12 @@ module five_intr
     call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), up2_idx)
     call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vp2_idx)    
     call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), upwp_idx)
-    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vpwp_idx)    
+    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vpwp_idx)   
+    call pbuf_add_field('THLM',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), thlm_idx)
+    call pbuf_add_field('RTM',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), rtm_idx)
+    call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), um_idx)
+    call pbuf_add_field('VM',         'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vm_idx)    
+     
   
   end subroutine five_register_e3sm 
   

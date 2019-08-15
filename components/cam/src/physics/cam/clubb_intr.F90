@@ -330,6 +330,11 @@ module clubb_intr
     call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vp2_idx)    
     call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), upwp_idx)
     call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vpwp_idx) 
+    
+    call pbuf_add_field('THLM',       'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), thlm_idx)
+    call pbuf_add_field('RTM',        'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), rtm_idx)
+    call pbuf_add_field('UM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), um_idx)
+    call pbuf_add_field('VM',         'global', dtype_r8, (/pcols,pverp,dyn_time_lvls/), vm_idx)    
 #endif         
      
 #ifdef FIVE
@@ -1383,10 +1388,6 @@ end subroutine clubb_init_cnst
    real(r8) :: wprcp(pcols,pverp_clubb)               ! CLUBB liquid water flux                       [m/s kg/kg]
    real(r8) :: wpthvp_diag(pcols,pverp_clubb)              ! CLUBB buoyancy flux                           [W/m^2]
    real(r8) :: rvm(pcols,pverp)
-   real(r8) :: thlm(pcols,pverp)
-   real(r8) :: rtm(pcols,pverp)
-   real(r8) :: um(pcols,pverp)
-   real(r8) :: vm(pcols,pverp)
    real(r8) :: dlf2(pcols,pver)                 ! Detraining cld H20 from shallow convection    [kg/kg/day]
    real(r8) :: eps                              ! Rv/Rd                                         [-]
    real(r8) :: dum1                             ! dummy variable                                [units vary]
@@ -1445,6 +1446,11 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: thlp2    ! temperature variance                         [K^2]
    real(r8), pointer, dimension(:,:) :: up2      ! east-west wind variance                      [m^2/s^2]
    real(r8), pointer, dimension(:,:) :: vp2      ! north-south wind variance                    [m^2/s^2]
+
+   real(r8), pointer, dimension(:,:) :: thlm     ! mean temperature                             [K]
+   real(r8), pointer, dimension(:,:) :: rtm      ! mean moisture mixing ratio                   [kg/kg]
+   real(r8), pointer, dimension(:,:) :: um       ! mean east-west wind                          [m/s]
+   real(r8), pointer, dimension(:,:) :: vm       ! mean north-south wind                        [m/s]
 
 !  Note that the pointers for "thlm", "rtm", "um", and "vm" are removed, as they were deemed 
 !   not neccessary since these variables are always initialized from E3SM state, thus no need
@@ -1675,6 +1681,11 @@ end subroutine clubb_init_cnst
    
    call pbuf_get_field(pbuf, tke_idx,     tke)
    call pbuf_get_field(pbuf, qrl_idx,     qrl)
+
+   call pbuf_get_field(pbuf, thlm_idx,    thlm,    start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
+   call pbuf_get_field(pbuf, rtm_idx,     rtm,     start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
+   call pbuf_get_field(pbuf, um_idx,      um,      start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))
+   call pbuf_get_field(pbuf, vm_idx,      vm,      start=(/1,1,itim_old/), kount=(/pcols,pverp_clubb,1/))   
 
    call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
@@ -1979,15 +1990,11 @@ end subroutine clubb_init_cnst
       !  but don't "flip" these yet, as potential interpolation
       !  to the FIVE grid needs to be done
       do k=1,pver
-         p_in_Pa(k+1)         = state1%pmid(i,pver-k+1)                              ! Pressure profile
-         exner(k+1)           = 1._r8/exner_clubb(i,pver-k+1)
-         rho_ds_zt(k+1)       = invrs_gravit*state1%pdel(i,pver-k+1)/dz_g(pver-k+1)
-         invrs_rho_ds_zt(k+1) = 1._r8/(rho_ds_zt(k+1))                               ! Inverse ds rho at thermo
-         rho(i,k+1)           = rho_ds_zt(k+1)                                       ! rho on thermo 
-         thv_ds_zt(k+1)       = thv(i,pver-k+1)                                      ! thetav on thermo
-         rfrzm(k+1)           = state1%q(i,pver-k+1,ixcldice)   
-         radf(k+1)            = radf_clubb(i,pver-k+1)
-         qrl_clubb(k+1)       = qrl(i,pver-k+1)/(cpair*state1%pdel(i,pver-k+1))
+         exner(k)           = 1._r8/exner_clubb(i,k)
+         rho_ds_zt(k)       = (1._r8/gravit)*(state1%pdel(i,k)/dz_g(k))
+         invrs_rho_ds_zt(k) = 1._r8/(rho_ds_zt(k))                               ! Inverse ds rho at thermo
+         rho(i,k)           = rho_ds_zt(k)                                       ! rho on thermo 
+         thv_ds_zt(k)       = thv(i,k)                                      ! thetav on thermo
       enddo
       
       do k=1,pver_clubb
