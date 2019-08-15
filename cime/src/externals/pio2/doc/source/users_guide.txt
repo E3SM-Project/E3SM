@@ -12,6 +12,7 @@ releases.
  - @ref decomp
  - @ref error
  - @ref examp
+ - @ref netcdf_integration
  - @ref faq
  - @ref api
  - @ref c_api

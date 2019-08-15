@@ -40,15 +40,14 @@ env:
     - LDFLAGS='-L/usr/lib'
   
 script:
-  - ls -l /usr/include
   - autoreconf -i
-  - export CFLAGS='-std=c99  -fsanitize=address -fno-omit-frame-pointer'
+  - export CFLAGS='-std=c99  -fsanitize=address -fno-omit-frame-pointer -Werror'
   - export FFLAGS='-fsanitize=address -fno-omit-frame-pointer'
-  - export FCFLAGS='-fsanitize=address -fno-omit-frame-pointer'
+  - export FCFLAGS='-fsanitize=address -fno-omit-frame-pointer -Werror'
   - export DISTCHECK_CONFIGURE_FLAGS='--enable-fortran'
   - ./configure --enable-fortran --enable-developer-docs
-  - make
   - make -j distcheck
+  - make -j distclean
   - rm -rf build
   - mkdir build
   - cd build
