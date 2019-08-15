@@ -2136,6 +2136,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
+   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
 </compiler>
 
 <compiler MACH="badger" COMPILER="gnu">
@@ -2170,15 +2171,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <CXX_LIBS>
     <base>-lstdc++ -lmpi_cxx</base>
   </CXX_LIBS>
-  <CFLAGS>
-    <base>compile_threaded="TRUE"> -qopenmp</base>
-  </CFLAGS>
-  <FFLAGS>
-    <base>compile_threaded="TRUE"> -qopenmp</base>
-  </FFLAGS>
-  <LDFLAGS>
-    <base>compile_threaded="TRUE"> -qopenmp</base>
-  </LDFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH>
 </compiler>
 
 <compiler MACH="userdefined">
