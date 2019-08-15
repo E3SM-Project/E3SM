@@ -29,6 +29,7 @@ module docn_comp_mod
   use docn_shr_mod   , only: rest_file      ! namelist input
   use docn_shr_mod   , only: rest_file_strm ! namelist input
   use docn_shr_mod   , only: nullstr
+  use docn_shr_mod   , only: sst_constant_value
 
   ! !PUBLIC TYPES:
   implicit none
@@ -455,7 +456,7 @@ CONTAINS
 
     call t_startf('docn_strdata_advance')
     call shr_strdata_advance(SDOCN, target_ymd, target_tod, mpicom, 'docn')
-    call t_stopf('docn_strdata_advance')
+    call t_stopf('docn_strdata_advancfe')
 
     !--- copy streams to o2x ---
     call t_barrierf('docn_scatter_BARRIER', mpicom)
@@ -520,6 +521,15 @@ CONTAINS
              o2x%rAttr(kswp ,n) = swp
           end if
        enddo
+
+    case('SST_AQUAP_CONSTANT')
+       lsize = mct_avect_lsize(o2x)
+       ! Zero out the attribute vector except for temperature
+       do n = 1,lsize
+          o2x%rAttr(:,n) = 0.0_r8
+          ! o2x%rAttr(kt,n) = 300.0_r8
+          o2x%rAttr(kt,n) = sst_constant_value
+       end do
 
     case('IAF')
        lsize = mct_avect_lsize(o2x)

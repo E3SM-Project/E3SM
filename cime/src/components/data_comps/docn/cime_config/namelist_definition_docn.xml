@@ -644,4 +644,17 @@
     </values>
   </entry>
 
+  <entry id="sst_constant_value" per_stream_entry="true">
+    <type>real(30)</type>
+    <category>docn</category>
+    <group>docn_nml</group>
+    <desc>
+      Value of constant SST (K) for idealized experiments 
+      when data ocean mode is sst_aquap_constant
+    </desc>
+    <values>
+      <value>-1.0</value>
+    </values>
+  </entry>
+
 </entry_id>
