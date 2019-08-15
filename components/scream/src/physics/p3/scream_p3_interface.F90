@@ -73,13 +73,13 @@ contains
 
   end subroutine p3_init_f90
   !====================================================================!
-  subroutine p3_main_f90 (dtime,q,qdp) bind(c)
+  subroutine p3_main_f90 (dtime,q) bind(c)
     use micro_p3,       only: p3_main
 
 !    real, intent(in) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM      kg/kg
     real(kind=c_real), intent(in)    :: dtime ! Timestep 
     real(kind=c_real), intent(inout) :: q(pcols,pver,qsize) ! Tracer mass concentrations from SCREAM kg/kg
-    real(kind=c_real), intent(in)    :: qdp(pcols,2,4,pver) ! Tracer mass concentrations from SCREAM kg/kg
+!    real(kind=c_real), intent(in)    :: qdp(pcols,2,4,pver) ! Tracer mass concentrations from SCREAM kg/kg
     !INTERNAL VARIABLES
     real(kind=c_real) :: th(pcols,pver)         !potential temperature  K
     real(kind=c_real) :: dzq(pcols,pver)        !geometric layer thickness              m
@@ -262,7 +262,7 @@ contains
     end do  
 
     test = test + dtime
-    print '(a15,f16.8,4e16.8)', 'P3 run = ', test, qtest, sum(q(1,:,:1)), sum(qv), sum(qdp(:,:,:,:))
+    print '(a15,f16.8,3e16.8)', 'P3 run = ', test, qtest, sum(q(1,:,:1)), sum(qv)!, sum(qdp(:,:,:,:))
 
   end subroutine p3_main_f90
   !====================================================================!

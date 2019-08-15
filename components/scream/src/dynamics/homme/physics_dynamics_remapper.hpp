@@ -327,7 +327,7 @@ setup_boundary_exchange () {
 
   int num_2d = 0;
   int num_3d = 0;
-  for (int i=0; i<this->get_num_fields(); ++i) {
+  for (int i=0; i<this->m_num_registered_fields; ++i) {
     const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
     const auto lt = get_layout_type(layout);
     switch (lt) {
@@ -357,7 +357,7 @@ setup_boundary_exchange () {
   m_be->set_num_fields(0,num_2d,num_3d);
 
   // If some fields are already bound, set them in the bd exchange
-  for (int i=0; i<this->get_num_fields(); ++i) {
+  for (int i=0; i<this->m_num_registered_fields; ++i) {
     const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
     const auto& dims = layout.dims();
     const auto lt = get_layout_type(layout);
