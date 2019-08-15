@@ -368,15 +368,15 @@ CONTAINS
        nete=dom_mt(ithr)%end
        hybrid = hybrid_create(par,ithr,hthreads)
 
-       if (.not. use_3dfrc) then
-         do n=1,se_nsplit
+!       if (.not. use_3dfrc) then
+!         do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
-           call t_startf("prim_run_sybcycle")
-           call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
-               tstep, single_column, TimeLevel, hvcoord, n)
-           call t_stopf("prim_run_sybcycle")
-         end do
-       endif
+!           call t_startf("prim_run_sybcycle")
+!           call prim_run_subcycle(dyn_state%elem,hybrid,nets,nete,&
+!               tstep, single_column, TimeLevel, hvcoord, n)
+!           call t_stopf("prim_run_sybcycle")
+!         end do
+!       endif
 
        if (single_column) then
          call apply_SC_forcing(dyn_state%elem,hvcoord,TimeLevel,3,.false.,nets,nete)
