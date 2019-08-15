@@ -262,8 +262,6 @@ bind_field (const int ifield, const field_type& src, const field_type& tgt) {
   scream_require_msg(src.is_allocated(), "Error! Source field is not yet allocated.\n");
   scream_require_msg(tgt.is_allocated(), "Error! Target field is not yet allocated.\n");
 
-  do_bind_field(ifield,src,tgt);
-
   m_fields_are_bound[ifield] = true;
 
   // Assume all good
@@ -271,6 +269,8 @@ bind_field (const int ifield, const field_type& src, const field_type& tgt) {
   for (auto bound : m_fields_are_bound) {
     m_all_fields_are_bound &= bound;
   }
+
+  do_bind_field(ifield,src,tgt);
 }
 
 template<typename ScalarType, typename DeviceType>
