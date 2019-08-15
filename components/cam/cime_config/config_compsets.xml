@@ -328,7 +328,7 @@
   <!-- *********************************** -->
   <compset>
     <alias>F-EAMv1-RCEMIP</alias>
-    <lname>2000_CAM5%RCE_SLND_SICE_DOCN%AQP-CONST_SROF_SGLC_SWAV</lname>
+    <lname>2000_CAM5%RCE_SLND_SICE_DOCN%AQPCONST_SROF_SGLC_SWAV</lname>
   </compset>
 
   <!-- *********************************** -->
