@@ -64,7 +64,7 @@ contains
 !  routine ocn_init_setup_hurricane
 !
 !> \brief   Setup for this initial condition
-!> \author  Steven Brus 
+!> \author  Steven Brus
 !> \date    01/08/19
 !> \details
 !>  This routine sets up the initial conditions for this case.
@@ -90,7 +90,7 @@ contains
     real (kind=RKIND) :: dlon, dlat, dw
     real (kind=RKIND) :: maxBottomDepth, globalMaxBottomDepth
     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
-    real (kind=RKIND), parameter :: pi = 4.0_RKIND*ATAN(1.0_RKIND) 
+    real (kind=RKIND), parameter :: pi = 4.0_RKIND*ATAN(1.0_RKIND)
 
     ! Define config variable pointers
     character (len=StrKIND), pointer :: config_init_configuration, config_vertical_grid
@@ -104,7 +104,7 @@ contains
 
     ! Define variable pointers
     logical, pointer :: on_a_sphere
-    integer, dimension(:), pointer :: maxLevelCell 
+    integer, dimension(:), pointer :: maxLevelCell
     real (kind=RKIND), dimension(:), pointer :: ssh
     real (kind=RKIND), dimension(:), pointer :: refBottomDepth, refZMid, &
          vertCoordMovementWeights, bottomDepth, bottomDepthObserved, &
@@ -157,10 +157,10 @@ contains
       block_ptr => block_ptr % next
     end do
     maxBottomDepth = -1.0_RKIND*maxBottomDepth
- 
+
     ! Enforce max bottom depth from namelist option
-    call mpas_dmpar_max_real(domain % dminfo, maxBottomDepth, globalMaxBottomDepth) 
-    if (config_hurricane_max_depth < globalMaxBottomDepth) then 
+    call mpas_dmpar_max_real(domain % dminfo, maxBottomDepth, globalMaxBottomDepth)
+    if (config_hurricane_max_depth < globalMaxBottomDepth) then
        globalMaxBottomDepth = config_hurricane_max_depth
     end if
 
@@ -214,23 +214,23 @@ contains
        do iCell = 1, nCellsSolve
 
           ! Set ssh
-          ssh(iCell) = 0.0_RKIND 
+          ssh(iCell) = 0.0_RKIND
 
           ! enforce minimum and maximum bottom depth
           bottomDepth(iCell) = max(config_hurricane_min_depth, -1.0_RKIND*bottomDepthObserved(iCell))
           bottomDepth(iCell) = min(bottomDepth(iCell),globalMaxBottomDepth)
- 
+
           ! Flatten out Bermuda
           if ((lonCell(iCell) > (-66.0_RKIND+360.0_RKIND)*pi/180.0_RKIND .and. &
                lonCell(iCell) < (-62.0_RKIND+360.0_RKIND)*pi/180.0_RKIND)  .and. &
               (latCell(iCell) >  30.0_RKIND*pi/180.0_RKIND .and. &
                latCell(iCell) <  34.0_RKIND*pi/180.0_RKIND)) then
-            
+
             bottomDepth(iCell) = globalMaxBottomDepth
           end if
 
           ! Set up vertical grid
-          maxLevelCell(iCell) = nVertLevels         
+          maxLevelCell(iCell) = nVertLevels
           if (nVertLevels > 10) then
             ! z-star
             do k = 1, nVertLevels
@@ -251,7 +251,7 @@ contains
           end if
 
           ! set layer thicknesses
-          do k = 1, nVertLevels 
+          do k = 1, nVertLevels
             restingThickness(k, iCell) = layerThickness(k, iCell)
           end do
 
