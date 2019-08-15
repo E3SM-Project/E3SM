@@ -4241,10 +4241,10 @@
     </values>
   </entry>
 
-  <entry id="shr_flux_mct_albdif">
+  <entry id="seq_flux_mct_albdif">
     <type>real</type>
-    <category>shr_flux_mct</category>
-    <group>shr_flux_mct_inparm</group>
+    <category>seq_flux_mct</category>
+    <group>seq_flux_mct_inparm</group>
     <desc>
        Surface albedo for direct radiation
     </desc>
@@ -4254,10 +4254,10 @@
     </values>
   </entry>
 
-  <entry id="shr_flux_mct_albdir">
+  <entry id="seq_flux_mct_albdir">
     <type>real</type>
-    <category>shr_flux_mct</category>
-    <group>shr_flux_mct_inparm</group>
+    <category>seq_flux_mct</category>
+    <group>seq_flux_mct_inparm</group>
     <desc>
        Surface albedo for diffuse radiation
     </desc>

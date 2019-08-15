@@ -109,8 +109,8 @@ module seq_flux_mct
   real(r8),parameter :: const_deg2rad = const_pi/180.0_r8  ! deg to rads
 
   ! albedo reference variables - set via namelist
-  real(r8)  :: shr_flux_mct_albdif  ! albedo, diffuse
-  real(r8)  :: shr_flux_mct_albdir  ! albedo, direct
+  real(r8)  :: seq_flux_mct_albdif  ! albedo, diffuse
+  real(r8)  :: seq_flux_mct_albdir  ! albedo, direct
 
   ! Coupler field indices
 
@@ -476,7 +476,7 @@ contains
 
     character(len=256) :: cime_model
 
-    namelist /shr_flux_mct_inparm/ shr_flux_mct_albdif, shr_flux_mct_albdir
+    namelist /seq_flux_mct_inparm/ seq_flux_mct_albdif, seq_flux_mct_albdir
 
     character(len=*),parameter :: subname = '(seq_flux_readnl_mct) '
 
@@ -488,26 +488,23 @@ contains
     ! Read in namelist 
     !---------------------------------------------------------------------------
 
-
-     shr_flux_mct_albdif = 0.06_r8  ! 60 deg reference albedo, diffuse
-     shr_flux_mct_albdir = 0.07_r8  ! 60 deg reference albedo, direct
-
-
      unitn = shr_file_getUnit()
-     write(logunit,"(A)") subname//': read shr_flux_mct_inparm namelist from: '&
+     write(logunit,"(A)") subname//': read seq_flux_mct_inparm namelist from: '&
           //trim(nmlfile)
      open( unitn, file=trim(nmlfile), status='old' )
      ierr = 1
-     read(unitn,nml=shr_flux_mct_inparm,iostat=ierr)
+     read(unitn,nml=seq_flux_mct_inparm,iostat=ierr)
+
      if (ierr < 0) then
         call shr_sys_abort( &
              subname//"ERROR: namelist read returns an EOF or EOR condition" )
      end if
+
      close(unitn)
      call shr_file_freeUnit( unitn )
 
-     call shr_mpi_bcast(shr_flux_mct_albdif, mpicom)
-     call shr_mpi_bcast(shr_flux_mct_albdir, mpicom)
+     call shr_mpi_bcast(seq_flux_mct_albdif, mpicom)
+     call shr_mpi_bcast(seq_flux_mct_albdir, mpicom)
 
   end subroutine seq_flux_readnl_mct
 
@@ -814,10 +811,10 @@ contains
     if (flux_albav) then
 
        do n=1,nloc_o
-          anidr = shr_flux_mct_albdir
-          avsdr = shr_flux_mct_albdir
-          anidf = shr_flux_mct_albdif
-          avsdf = shr_flux_mct_albdif
+          anidr = seq_flux_mct_albdir
+          avsdr = seq_flux_mct_albdir
+          anidf = seq_flux_mct_albdif
+          avsdf = seq_flux_mct_albdif
 
           ! Albedo is now function of latitude (will be new implementation)
           !rlat = const_deg2rad * lats(n)
@@ -877,8 +874,8 @@ contains
                      (cosz         - 0.500_r8 ) *   &
                      (cosz         - 1.000_r8 )  )
                 avsdr = anidr
-                anidf = shr_flux_mct_albdif
-                avsdf = shr_flux_mct_albdif
+                anidf = seq_flux_mct_albdif
+                avsdf = seq_flux_mct_albdif
              else !--- dark side of earth ---
                 anidr = 1.0_r8
                 avsdr = 1.0_r8
