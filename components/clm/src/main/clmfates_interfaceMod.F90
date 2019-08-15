@@ -975,7 +975,6 @@ contains
       type(bounds_type) :: bounds_clump
       integer           :: nc
       integer           :: nclumps
-      integer           :: nlevsoil
       type(fates_bounds_type) :: fates_bounds
       type(fates_bounds_type) :: fates_clump
       integer                 :: c   ! HLM column index
