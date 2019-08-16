@@ -1026,17 +1026,8 @@ contains
     error = .false.
     !
     ! Store level indices for interpolation.
-    ! If all indices for this level have been found,
-    ! do the interpolation
+    ! Once all indices have been found, do the interpolation
     !
-    !do k=1,nlev-1
-    !   do i=1,ncol
-    !      if ((.not. found(i)) .and. zmid(i,k)>zout .and. zout>=zmid(i,k+1)) then
-    !         found(i) = .true.
-    !         kupper(i) = k
-    !      end if
-    !   end do
-    !end do
 
     k = nlev-1
     do while ( (any(found(:) == .false.) == .true.) .and. k>=1 )
@@ -1051,9 +1042,9 @@ contains
     
     
     !
-    ! If we've fallen through the k=1,nlev-1 loop, we cannot interpolate and
+    ! If we've fallen through the k-loop, we cannot interpolate and
     ! must extrapolate from the bottom or top data level for at least some
-    ! of the longitude points.
+    ! of the columns.
     !
     do i=1,ncol
        if (zout >= zmid(i,1)) then
