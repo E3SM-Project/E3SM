@@ -210,6 +210,8 @@ int main(int argc, char **argv)
     /* Finalize the MPI library. */
     if ((ret = pio_test_finalize(&test_comm)))
         return ret;
+    /* if ((ret = pio_test_finalize2(&test_comm, TEST_NAME))) */
+    /*     return ret; */
 
     printf("%d %s SUCCESS!!\n", my_rank, TEST_NAME);
 
