@@ -20,6 +20,12 @@
 #ifdef TIMING
 #include <gptl.h>
 #endif
+#ifdef USE_MPE
+#include <mpe.h>
+#endif /* USE_MPE */
+
+/** The name of this program. */
+#define TEST_NAME "examplePio"
 
 /** The length of our 1-d data array. */
 static const int LEN = 16;
@@ -179,7 +185,16 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
 	  this->ntasks == 8 || this->ntasks == 16))
 	this->errorHandler(this, "Number of processors must be 1, 2, 4, 8, or 16!",
 			   ERR_CODE);
-    
+
+/* #ifdef USE_MPE */
+/*     /\* If MPE logging is being used, then initialize it. *\/ */
+/*     { */
+/*         int ret; */
+/*         if ((ret = MPE_Init_log())) */
+/*             return NULL; */
+/*     } */
+/* #endif /\* USE_MPE *\/ */
+
     /*
     ** set up PIO for rest of example
     */
@@ -458,6 +473,7 @@ struct examplePioClass* epc_cleanUp( struct examplePioClass* this )
     
     PIOc_freedecomp(this->pioIoSystem, this->iodescNCells);
     PIOc_free_iosystem(this->pioIoSystem);
+
     MPI_Finalize();
     
     return this;
@@ -587,7 +603,7 @@ int main(int argc, char* argv[])
     if ((ret = GPTLinitialize ()))
       return ret;
 #endif    
-    
+
     pioExInst->init(pioExInst);
     pioExInst->createDecomp(pioExInst);
     pioExInst->createFile(pioExInst);
@@ -595,6 +611,12 @@ int main(int argc, char* argv[])
     pioExInst->writeVar(pioExInst);
     pioExInst->readVar(pioExInst);
     pioExInst->closeFile(pioExInst);
+
+/* #ifdef USE_MPE */
+/*     if ((ret = MPE_Finish_log("examplePio"))) */
+/*         return ret; */
+/* #endif /\* USE_MPE *\/ */
+
     pioExInst->cleanUp(pioExInst);
     
 #ifdef TIMING    

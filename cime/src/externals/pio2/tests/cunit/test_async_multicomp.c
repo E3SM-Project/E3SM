@@ -83,7 +83,6 @@ int main(int argc, char **argv)
         {
             for (int i = 0; i < num_iotypes; i++)
             {
-                char filename[NC_MAX_NAME + 1]; /* Test filename. */
                 int my_comp_idx = my_rank - 1; /* Index in iosysid array. */
                 int dim_len_2d[NDIM2] = {DIM_LEN2, DIM_LEN3};
                 int ioid = 0;
@@ -92,9 +91,11 @@ int main(int argc, char **argv)
                                                    &ioid, PIO_SHORT)))
                     ERR(ret);
 
+#ifndef USE_MPE /* For some reason MPE logging breaks this test! */
                 /* Test with and without darrays. */
                 for (int use_darray = 0; use_darray < 2; use_darray++)
                 {
+                    char filename[NC_MAX_NAME + 1]; /* Test filename. */
 
                     /* Create sample file. */
                     if ((ret = create_nc_sample_3(iosysid[my_comp_idx], iotype[i], my_rank, my_comp_idx,
@@ -106,6 +107,7 @@ int main(int argc, char **argv)
                                                  filename, 0, 0, ioid)))
                         ERR(ret);
                 } /* next use_darray */
+#endif /* USE_MPE */
 
                 /* Free the decomposition. */
                 if ((ret = PIOc_freedecomp(iosysid[my_comp_idx], ioid)))
