@@ -576,7 +576,7 @@ def _generate_baseline_impl(case, baseline_dir=None, allow_baseline_overwrite=Fa
     testname = case.get_value("TESTCASE")
     testopts = parse_test_name(case.get_value("CASEBASEID"))[1]
     testopts = [] if testopts is None else testopts
-    expect(num_gen > 0 or (testname == "PFS" or "B" in testopts),
+    expect(num_gen > 0 or (testname in ["PFS", "TSC"] or "B" in testopts),
            "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
 
     if get_model() == "e3sm":
