@@ -53,7 +53,6 @@ module ocn_gm
    real (kind=RKIND), pointer :: config_Redi_bottom_layer_tapering_depth
    logical, pointer :: config_gm_lat_variable_c2
    logical, pointer :: config_gm_kappa_lat_depth_variable
-   logical, pointer :: config_gm_kappa_lat_variable
    real (kind=RKIND), pointer :: config_gm_min_stratification_ratio
    real (kind=RKIND), pointer :: config_gm_min_phase_speed
    real (kind=RKIND), parameter :: epsGM = 1.0e-12_RKIND
@@ -108,7 +107,7 @@ contains
          gmStreamFuncTopOfCell, dDensityDzTopOfEdge, dDensityDzTopOfCell, relativeSlopeTapering, relativeSlopeTaperingCell, &
          areaCellSum, kappaGM3D
 
-      real(kind=RKIND), dimension(:), pointer   :: boundaryLayerDepth, gmBolusKappa,  cGMphaseSpeed, kappaGM2D, bottomDepth
+      real(kind=RKIND), dimension(:), pointer   :: boundaryLayerDepth, gmBolusKappa,  cGMphaseSpeed, bottomDepth
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
@@ -131,7 +130,6 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
 
       call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
-      call mpas_pool_get_array(diagnosticsPool, 'kappaGM2D', kappaGM2D)
       call mpas_pool_get_array(diagnosticsPool, 'kappaGM3D', kappaGM3D)
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
@@ -586,38 +584,10 @@ contains
 
                kappaGM3D(k,iEdge) = gmBolusKappa(iEdge)*max(config_gm_min_stratification_ratio, &
                        BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND))
-               if(kappaGM3D(k,iEdge) <= 0) then
-                     print *, 'val = ',kappaGM3D(k,iEdge),k,iEdge
-                     stop
-                   endif
             enddo
          enddo
          !$omp end do
-
-         if (config_gm_kappa_lat_variable) then
-           !$omp do schedule(runtime) private(cell1, cell2, k, kappaSum, ltSum)
-            do iEdge = 1, nEdges
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
-
-               kappaSum = 0.0_RKIND
-               ltSum = 0.0_RKIND
-               do k=1,maxLevelEdgeTop(iEdge)
-                  kappaSum = kappaSum + layerThicknessEdge(k,iEdge)*kappaGM3D(k,iEdge)
-                  ltSum = ltSum + layerThicknessEdge(k,iEdge)
-               enddo
-
-               kappaGM2D(iEdge) = kappaSum / ltSum 
-               !over write the kappa 3d variable
-               kappaGM3D(:,iEdge) = kappaGM2D(iEdge)
-
-            enddo
-            !$omp end do
-         endif
-
       endif
-
-      !next do the 2d bit, just average it for now
 
       nEdges = nEdgesArray( 3 )
 
@@ -850,7 +820,6 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_Redi_bottom_layer_tapering_depth',config_Redi_bottom_layer_tapering_depth)
       call mpas_pool_get_config(ocnConfigs, 'config_gm_lat_variable_c2',config_gm_lat_variable_c2)
       call mpas_pool_get_config(ocnConfigs, 'config_gm_kappa_lat_depth_variable', config_gm_kappa_lat_depth_variable)
-      call mpas_pool_get_config(ocnConfigs, 'config_gm_kappa_lat_variable', config_gm_kappa_lat_variable)
       call mpas_pool_get_config(ocnConfigs, 'config_gm_min_stratification_ratio', config_gm_min_stratification_ratio)
       call mpas_pool_get_config(ocnConfigs, 'config_gm_min_phase_speed', config_gm_min_phase_speed)
 
