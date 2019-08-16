@@ -88,6 +88,7 @@ _TESTS = {
         "tests" : (
             "PGN_P1x1.ne4_ne4.FC5AV1C-L",
             "TSC.ne4_ne4.FC5AV1C-L",
+            "MVK_PL.ne4_ne4.FC5AV1C-L",
             )
         },
 
