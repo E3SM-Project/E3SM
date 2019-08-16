@@ -21,6 +21,7 @@ module HydrologyDrainageMod
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_ws, col_wf
   use VegetationType    , only : veg_pp
+  use ExternalModelInterfaceMod  , only : EMI_Driver
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -39,7 +40,7 @@ contains
        num_urbanc, filter_urbanc,         &
        num_do_smb_c, filter_do_smb_c,     &
        atm2lnd_vars, glc2lnd_vars, temperature_vars,    &
-       soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars, ep_betr)
+       soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars)
     !
     ! !DESCRIPTION:
     ! Calculates soil/snow hydrology with drainage (subsurface runoff)
@@ -53,7 +54,7 @@ contains
     use clm_time_manager , only : get_step_size, get_nstep
     use SoilHydrologyMod , only : CLMVICMap, Drainage
     use clm_varctl       , only : use_vsfm
-    use BeTRSimulationALM, only : betr_simulation_alm_type
+!    use BeTRSimulationALM, only : betr_simulation_alm_type
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -72,7 +73,7 @@ contains
     type(soilstate_type)     , intent(inout) :: soilstate_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
-    class(betr_simulation_alm_type), intent(inout) :: ep_betr
+!    class(betr_simulation_alm_type), intent(inout) :: ep_betr
     !
     ! !LOCAL VARIABLES:
     integer  :: g,t,l,c,j,fc               ! indices

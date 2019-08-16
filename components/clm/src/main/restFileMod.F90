@@ -16,7 +16,7 @@ module restFileMod
   use histFileMod          , only : hist_restart_ncd
   use clm_varpar           , only : crop_prog
   use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
-  use clm_varctl           , only : create_glacier_mec_landunit, iulog 
+  use clm_varctl           , only : create_glacier_mec_landunit, iulog
   use clm_varcon           , only : c13ratio, c14ratio
   use clm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
   use CH4Mod               , only : ch4_type
@@ -25,7 +25,7 @@ module restFileMod
   use CNStateType          , only : cnstate_type
   use CNNitrogenFluxType   , only : nitrogenflux_type
   use CNNitrogenStateType  , only : nitrogenstate_type
-  
+
   use PhosphorusFluxType     , only : phosphorusflux_type
   use PhosphorusStateType    , only : phosphorusstate_type
 
@@ -37,7 +37,7 @@ module restFileMod
   use FrictionVelocityType , only : frictionvel_type
   use LakeStateType        , only : lakestate_type
   use PhotosynthesisType   , only : photosyns_type
-  use SoilHydrologyType    , only : soilhydrology_type  
+  use SoilHydrologyType    , only : soilhydrology_type
   use SoilStateType        , only : soilstate_type
   use SolarAbsorbedType    , only : solarabs_type
   use SurfaceAlbedoType    , only : surfalb_type
@@ -48,14 +48,14 @@ module restFileMod
   use lnd2atmType          , only : lnd2atm_type
   use glc2lndMod           , only : glc2lnd_type
   use lnd2glcMod           , only : lnd2glc_type
-  use BeTRTracerType       , only : BeTRTracer_Type    
+  use BeTRTracerType       , only : BeTRTracer_Type
   use TracerStateType      , only : TracerState_type
   use TracerFluxType       , only : TracerFlux_Type
   use tracercoefftype      , only : tracercoeff_type
   use ncdio_pio            , only : file_desc_t, ncd_pio_createfile, ncd_pio_openfile, ncd_global
   use ncdio_pio            , only : ncd_pio_closefile, ncd_defdim, ncd_putatt, ncd_enddef, check_dim
   use ncdio_pio            , only : check_att, ncd_getatt
-  use BeTRSimulationALM    , only : betr_simulation_alm_type
+  use EMIBeTRSimulation    , only : emi_betr_simulation_type
   use CropType             , only : crop_type
   use GridcellDataType     , only : grc_wf
   use LandunitDataType     , only : lun_es, lun_ws
@@ -69,7 +69,7 @@ module restFileMod
   use VegetationDataType   , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType   , only : veg_ns, veg_nf
   use VegetationDataType   , only : veg_ps, veg_pf
-  
+
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -84,7 +84,7 @@ module restFileMod
   public :: restFile_filename        ! Sets restart filename
   !
   ! !PRIVATE MEMBER FUNCTIONS:
-  private :: restFile_read_pfile     
+  private :: restFile_read_pfile
   private :: restFile_write_pfile       ! Writes restart pointer file
   private :: restFile_closeRestart      ! Close restart file and write restart pointer file
   private :: restFile_dimset
@@ -126,7 +126,7 @@ contains
     implicit none
     !
     ! !ARGUMENTS:
-    type(bounds_type)              , intent(in)    :: bounds          
+    type(bounds_type)              , intent(in)    :: bounds
     character(len=*)               , intent(in)    :: file             ! output netcdf restart file
     type(atm2lnd_type)             , intent(in)    :: atm2lnd_vars
     type(aerosol_type)             , intent(in)    :: aerosol_vars
@@ -152,7 +152,7 @@ contains
     type(waterflux_type)           , intent(in)    :: waterflux_vars
     type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)      , intent(in)    :: phosphorusflux_vars
-    class(betr_simulation_alm_type), intent(inout):: ep_betr
+    class(emi_betr_simulation_type), intent(inout):: ep_betr
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     type(crop_type)                , intent(inout) :: crop_vars
     character(len=*)               , intent(in), optional :: rdate     ! restart file time stamp for name
@@ -213,13 +213,13 @@ contains
     call solarabs_vars%restart (bounds, ncid, flag='define')
 
     call waterflux_vars%restart (bounds, ncid, flag='define')
-    
+
     call grc_wf%Restart (bounds, ncid, flag='define')
 
     call col_wf%Restart (bounds, ncid, flag='define')
-    
+
     call veg_wf%Restart (bounds, ncid, flag='define')
-    
+
     call lun_es%Restart (bounds, ncid, flag='define')
 
     call col_es%Restart (bounds, ncid, flag='define')
@@ -228,11 +228,11 @@ contains
 
     call waterstate_vars%restart (bounds, ncid, flag='define', &
          watsat_col=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
-    
+
     call lun_ws%Restart (bounds, ncid, flag='define')
 
     call col_ws%Restart (bounds, ncid, flag='define', &
-         watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))    
+         watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
 
     call veg_ws%Restart (bounds, ncid, flag='define')
 
@@ -271,7 +271,7 @@ contains
 
        call col_cf%Restart(bounds, ncid, flag='define')
        call veg_cf%Restart(bounds, ncid, flag='define')
-       
+
        call col_ns%Restart(bounds, ncid, flag='define', cnstate_vars=cnstate_vars)
        call veg_ns%Restart(bounds, ncid, flag='define')
 
@@ -320,7 +320,7 @@ contains
        call ep_betr%BeTRRestart(bounds, ncid, flag='define')
     endif
 
-    if (present(rdate)) then 
+    if (present(rdate)) then
        call hist_restart_ncd (bounds, ncid, flag='define', rdate=rdate )
     end if
 
@@ -333,7 +333,7 @@ contains
     ! --------------------------------------------
     ! Write restart file variables
     ! --------------------------------------------
-    
+
     call timemgr_restart_io( ncid, flag='write' )
 
     call SubgridRest(bounds, ncid, flag='write' )
@@ -363,7 +363,7 @@ contains
     call solarabs_vars%restart (bounds, ncid, flag='write')
 
     call waterflux_vars%restart (bounds, ncid, flag='write')
-    
+
     call grc_wf%Restart (bounds, ncid, flag='write')
 
     call col_wf%Restart (bounds, ncid, flag='write')
@@ -383,7 +383,7 @@ contains
 
     call col_ws%Restart (bounds, ncid, flag='write', &
          watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
-    
+
     call veg_ws%Restart (bounds, ncid, flag='write')
 
     call aerosol_vars%restart (bounds, ncid,  flag='write', &
@@ -485,21 +485,21 @@ contains
     ! --------------------------------------------
     ! Close restart file and write restart pointer file
     ! --------------------------------------------
-    
+
     call restFile_close( ncid )
     call restFile_closeRestart( file )
-    
+
     ! Write restart pointer file
-    
+
     if ( ptrfile ) call restFile_write_pfile( file )
-    
+
     ! Write out diagnostic info
 
     if (masterproc) then
        write(iulog,*) 'Successfully wrote out restart data at nstep = ',get_nstep()
        write(iulog,'(72a1)') ("-",i=1,60)
     end if
-    
+
   end subroutine restFile_write
 
   !-----------------------------------------------------------------------
@@ -529,7 +529,7 @@ contains
     !
     ! !ARGUMENTS:
     character(len=*)               , intent(in)    :: file  ! output netcdf restart file
-    type(bounds_type)              , intent(in)    :: bounds  
+    type(bounds_type)              , intent(in)    :: bounds
     type(atm2lnd_type)             , intent(inout) :: atm2lnd_vars
     type(aerosol_type)             , intent(inout) :: aerosol_vars
     type(canopystate_type)         , intent(inout) :: canopystate_vars
@@ -554,7 +554,7 @@ contains
     type(waterflux_type)           , intent(inout) :: waterflux_vars
     type(phosphorusstate_type)     , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)      , intent(inout) :: phosphorusflux_vars
-    class(betr_simulation_alm_type), intent(inout) :: ep_betr
+    class(emi_betr_simulation_type), intent(inout) :: ep_betr
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     type(glc2lnd_type)             , intent(inout) :: glc2lnd_vars
     type(crop_type)                , intent(inout) :: crop_vars
@@ -617,7 +617,7 @@ contains
     call solarabs_vars%restart (bounds, ncid, flag='read')
 
     call waterflux_vars%restart (bounds, ncid, flag='read')
-    
+
     call grc_wf%Restart (bounds, ncid, flag='read')
 
     call col_wf%Restart (bounds, ncid, flag='read')
@@ -642,7 +642,7 @@ contains
 
     call aerosol_vars%restart (bounds, ncid, flag='read', &
          h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
-         h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:) ) 
+         h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:) )
 
     call surfalb_vars%restart (bounds, ncid,  flag='read', &
          tlai_patch=canopystate_vars%tlai_patch(bounds%begp:bounds%endp), &
@@ -729,16 +729,16 @@ contains
     if (use_betr) then
        call ep_betr%BeTRRestart(bounds, ncid, flag='read')
     endif
-        
+
     call hist_restart_ncd (bounds, ncid, flag='read')
 
     call WaterBudget_Restart(bounds, ncid, flag='read')
 
     ! Do error checking on file
-    
+
     call restFile_check_consistency(bounds, ncid)
 
-    ! Close file 
+    ! Close file
 
     call subgridRest_read_cleanup
     call restFile_close( ncid )
@@ -770,27 +770,27 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: status                      ! return status
-    integer :: length                      ! temporary          
+    integer :: length                      ! temporary
     character(len=256) :: ftest,ctest      ! temporaries
     !-----------------------------------------------------------------------
 
     ! Continue run:
-    ! Restart file pathname is read restart pointer file 
+    ! Restart file pathname is read restart pointer file
 
     if (nsrest==nsrContinue) then
        call restFile_read_pfile( path )
        call getfil( path, file, 0 )
     end if
 
-    ! Branch run: 
+    ! Branch run:
     ! Restart file pathname is obtained from namelist "nrevsn"
-    ! Check case name consistency (case name must be different for branch run, 
+    ! Check case name consistency (case name must be different for branch run,
     ! unless namelist specification states otherwise)
 
     if (nsrest==nsrBranch) then
        length = len_trim(nrevsn)
        if (nrevsn(length-2:length) == '.nc') then
-          path = trim(nrevsn) 
+          path = trim(nrevsn)
        else
           path = trim(nrevsn) // '.nc'
        end if
@@ -809,7 +809,7 @@ contains
                   ' ctest = ',trim(ctest), &
                   ' ftest = ',trim(ftest)
           end if
-          call endrun(msg=errMsg(__FILE__, __LINE__)) 
+          call endrun(msg=errMsg(__FILE__, __LINE__))
        end if
     end if
 
@@ -836,10 +836,10 @@ contains
     character(len=256) :: locfn   ! Restart pointer file name
     !-----------------------------------------------------------------------
 
-    ! Obtain the restart file from the restart pointer file. 
-    ! For restart runs, the restart pointer file contains the full pathname 
-    ! of the restart file. For branch runs, the namelist variable 
-    ! [nrevsn] contains the full pathname of the restart file. 
+    ! Obtain the restart file from the restart pointer file.
+    ! For restart runs, the restart pointer file contains the full pathname
+    ! of the restart file. For branch runs, the namelist variable
+    ! [nrevsn] contains the full pathname of the restart file.
     ! New history files are always created for branch runs.
 
     if (masterproc) then
@@ -941,7 +941,7 @@ contains
        ! Create new netCDF file (in define mode) and set fill mode
        ! to "no fill" to optimize performance
 
-       if (masterproc) then	
+       if (masterproc) then
           write(iulog,*)
           write(iulog,*)'restFile_open: writing restart dataset at ',&
                trim(file), ' at nstep = ',get_nstep()
@@ -971,7 +971,7 @@ contains
     use clm_varctl, only : caseid, inst_suffix
     !
     ! !ARGUMENTS:
-    character(len=*), intent(in) :: rdate   ! input date for restart file name 
+    character(len=*), intent(in) :: rdate   ! input date for restart file name
     !-----------------------------------------------------------------------
 
     restFile_filename = "./"//trim(caseid)//".clm2"//trim(inst_suffix)//&
@@ -1038,7 +1038,7 @@ contains
     call ncd_defdim(ncid , 'numrad'  , numrad         ,  dimid)
     call ncd_defdim(ncid , 'levcan'  , nlevcan        ,  dimid)
     call ncd_defdim(ncid , 'string_length', 64        ,  dimid)
-    call ncd_defdim(ncid , 'levtrc'  , nlevtrc_full   ,  dimid)    
+    call ncd_defdim(ncid , 'levtrc'  , nlevtrc_full   ,  dimid)
     if (create_glacier_mec_landunit) then
        call ncd_defdim(ncid , 'glc_nec', maxpatch_glcmec, dimid)
     end if
@@ -1096,7 +1096,7 @@ contains
 
     character(len=*), parameter :: subname = 'restFile_add_ilun_metadata'
     !-----------------------------------------------------------------------
-    
+
     do ltype = 1, max_lunit
        attname = att_prefix // landunit_names(ltype)
        call ncd_putatt(ncid, ncd_global, attname, ltype)
@@ -1121,18 +1121,18 @@ contains
 
     character(len=*), parameter :: subname = 'restFile_add_icol_metadata'
     !-----------------------------------------------------------------------
-    
+
     ! Unlike ilun and ipft, the column names currently do not exist in column_varcon.
     ! This is partly because of the trickiness of encoding column values for crop &
     ! icemec.
 
-    call ncd_putatt(ncid, ncd_global, att_prefix // 'vegetated_or_bare_soil', 1) 
-    call ncd_putatt(ncid, ncd_global, att_prefix // 'crop'                  , 2) 
+    call ncd_putatt(ncid, ncd_global, att_prefix // 'vegetated_or_bare_soil', 1)
+    call ncd_putatt(ncid, ncd_global, att_prefix // 'crop'                  , 2)
     call ncd_putatt(ncid, ncd_global, att_prefix // 'crop_noncompete'       , '2*100+m, m=cft_lb,cft_ub')
-    call ncd_putatt(ncid, ncd_global, att_prefix // 'landice'               , 3) 
-    call ncd_putatt(ncid, ncd_global, att_prefix // 'landice_multiple_elevation_classes', '4*100+m, m=1,glcnec')  
-    call ncd_putatt(ncid, ncd_global, att_prefix // 'deep_lake'             , 5) 
-    call ncd_putatt(ncid, ncd_global, att_prefix // 'wetland'               , 6) 
+    call ncd_putatt(ncid, ncd_global, att_prefix // 'landice'               , 3)
+    call ncd_putatt(ncid, ncd_global, att_prefix // 'landice_multiple_elevation_classes', '4*100+m, m=1,glcnec')
+    call ncd_putatt(ncid, ncd_global, att_prefix // 'deep_lake'             , 5)
+    call ncd_putatt(ncid, ncd_global, att_prefix // 'wetland'               , 6)
     call ncd_putatt(ncid, ncd_global, att_prefix // 'urban_roof'            , icol_roof)
     call ncd_putatt(ncid, ncd_global, att_prefix // 'urban_sunwall'         , icol_sunwall)
     call ncd_putatt(ncid, ncd_global, att_prefix // 'urban_shadewall'       , icol_shadewall)
@@ -1161,7 +1161,7 @@ contains
 
     character(len=*), parameter :: subname = 'restFile_add_ipft_metadata'
     !-----------------------------------------------------------------------
-    
+
     do ptype = natpft_lb, mxpft
        attname = att_prefix // pftname(ptype)
        call ncd_putatt(ncid, ncd_global, attname, ptype)
@@ -1210,7 +1210,7 @@ contains
     call check_dim(ncid, 'levsno'  , nlevsno)
     call check_dim(ncid, 'levgrnd' , nlevgrnd)
     call check_dim(ncid, 'levurb'  , nlevurb)
-    call check_dim(ncid, 'levlak'  , nlevlak) 
+    call check_dim(ncid, 'levlak'  , nlevlak)
 
   end subroutine restFile_dimcheck
 
@@ -1261,10 +1261,10 @@ contains
     logical :: check_finidat_fsurdat_consistency ! whether to check consistency between fsurdat on finidat file and current fsurdat
     logical :: check_finidat_year_consistency    ! whether to check consistency between year on finidat file and current year
     logical :: check_finidat_pct_consistency     ! whether to check consistency between pct_pft on finidat file and surface dataset
-    
+
     character(len=*), parameter :: subname = 'restFile_check_consistency'
     !-----------------------------------------------------------------------
-    
+
     call restFile_read_consistency_nl( &
          check_finidat_fsurdat_consistency, &
          check_finidat_year_consistency, &
@@ -1368,10 +1368,10 @@ contains
     character(len=fname_len) :: fsurdat_rest  ! fsurdat from the restart file (includes full path)
     character(len=fname_len) :: filename_cur  ! current fsurdat file name
     character(len=fname_len) :: filename_rest ! fsurdat file name from restart file (does NOT include full path)
-    
+
     character(len=*), parameter :: subname = 'restFile_check_fsurdat'
     !-----------------------------------------------------------------------
-    
+
     ! Only do this check for a transient run. The problem with doing this check for a non-
     ! transient run is the transition from transient to non-transient: It is legitimate to
     ! run with an 1850 surface dataset and a pftdyn file, then use the restart file from
@@ -1433,7 +1433,7 @@ contains
 
     character(len=*), parameter :: subname = 'restFile_check_year'
     !-----------------------------------------------------------------------
-    
+
     ! Only do this check for a transient run
     if (get_flanduse_timeseries() /= ' ') then
        ! Determine if the restart file was generated from a transient run; if so, we will
@@ -1453,7 +1453,7 @@ contains
 
           flanduse_timeseries_rest = ' '
        end if
-       
+
        ! If the restart file was generated from a transient run, then confirm that the
        ! year of the restart file matches the current model year.
        if (flanduse_timeseries_rest /= ' ') then
@@ -1488,6 +1488,3 @@ contains
 
 
 end module restFileMod
-
-
-

@@ -21,6 +21,7 @@ Module HydrologyNoDrainageMod
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ws
   use VegetationType    , only : veg_pp
+  use ExternalModelInterfaceMod  , only : EMI_Driver
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -43,7 +44,7 @@ contains
        atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
        waterflux_vars, waterstate_vars, &
        soilhydrology_vars, aerosol_vars, &
-       soil_water_retention_curve, ep_betr, &
+       soil_water_retention_curve, &
        alm_fates)
     !
     ! !DESCRIPTION:
@@ -77,7 +78,7 @@ contains
     use SoilHydrologyMod     , only : DrainageVSFM
     use SoilWaterMovementMod , only : Compute_EffecRootFrac_And_VertTranSink_Default
     use CLMFatesInterfaceMod , only : hlm_fates_interface_type
-    use BeTRSimulationALM    , only : betr_simulation_alm_type
+!    use BeTRSimulationALM    , only : betr_simulation_alm_type
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
@@ -102,7 +103,7 @@ contains
     type(aerosol_type)       , intent(inout) :: aerosol_vars
     type(soilhydrology_type) , intent(inout) :: soilhydrology_vars
     class(soil_water_retention_curve_type), intent(in) :: soil_water_retention_curve
-    class(betr_simulation_alm_type), intent(inout) :: ep_betr
+!    class(betr_simulation_alm_type), intent(inout) :: ep_betr
     type(hlm_fates_interface_type) , intent(inout) :: alm_fates
     !
     ! !LOCAL VARIABLES:

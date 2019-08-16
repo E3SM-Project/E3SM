@@ -261,7 +261,6 @@ module ExternalModelBETRMod
 
     integer :: index_l2e_filter_nolakec
     integer :: index_l2e_filter_num_nolakec
-    class(emi_betr_simulation_type), pointer :: ep_betr
   contains
      procedure, public :: Populate_L2E_Init_List  => EM_BETR_Populate_L2E_Init_List
      procedure, public :: Populate_L2E_List       => EM_BETR_Populate_L2E_List

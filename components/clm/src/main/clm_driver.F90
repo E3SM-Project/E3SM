@@ -801,7 +801,7 @@ contains
             filter(nc)%num_nosnowc, filter(nc)%nosnowc,                      &
             atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
             waterflux_vars, waterstate_vars, soilhydrology_vars, aerosol_vars, &
-            soil_water_retention_curve, ep_betr,                             &
+            soil_water_retention_curve,                                      &
             alm_fates)
 
        !  Calculate column-integrated aerosol masses, and
@@ -1110,7 +1110,7 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,             &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,         &
             atm2lnd_vars, glc2lnd_vars, temperature_vars,         &
-            soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars,ep_betr)
+            soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars)
 
        else
 
@@ -1120,7 +1120,7 @@ contains
             filter(nc)%num_urbanc, filter(nc)%urbanc,         &
             filter(nc)%num_do_smb_c, filter(nc)%do_smb_c,     &
             atm2lnd_vars, glc2lnd_vars, temperature_vars,     &
-            soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars,ep_betr)
+            soilhydrology_vars, soilstate_vars, waterstate_vars, waterflux_vars)
 
        end if
 

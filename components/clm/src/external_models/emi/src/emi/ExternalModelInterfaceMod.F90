@@ -17,6 +17,7 @@ module ExternalModelInterfaceMod
   use ExternalModelPTMMod                   , only : em_ptm_type
 #endif
   use ExternalModelFATESMod                 , only : em_fates_type
+  use ExternalModelBETRMod                  , only : em_BETR_type
   use ExternalModelStubMod                  , only : em_stub_type
   use EMI_TemperatureType_ExchangeMod       , only : EMI_Pack_TemperatureType_at_Column_Level_for_EM
   use EMI_TemperatureType_ExchangeMod       , only : EMI_Unpack_TemperatureType_at_Column_Level_from_EM
@@ -34,7 +35,9 @@ module ExternalModelInterfaceMod
   use EMI_ColumnType_Exchange               , only : EMI_Pack_ColumnType_for_EM
   use EMI_Filter_Exchange                   , only : EMI_Pack_Filter_for_EM
   use EMI_Landunit_Exchange                 , only : EMI_Pack_Landunit_for_EM
+  use ColumnDataType                        , only : column_carbon_state
   use EMI_CNCarbonStateType_ExchangeMod
+
   !
   implicit none
   !
@@ -60,7 +63,7 @@ module ExternalModelInterfaceMod
 #endif
   class(em_fates_type)               , pointer :: em_fates
   class(em_stub_type)                , pointer :: em_stub(:)
-
+  class(em_BETR_type)                , pointer :: em_betr
   public :: EMI_Determine_Active_EMs
   public :: EMI_Init_EM
   public :: EMI_Driver
@@ -110,6 +113,7 @@ contains
     if (use_betr) then
        num_em            = num_em + 1
        index_em_betr     = num_em
+       allocate(em_betr)
     endif
 
     ! Is PFLOTRAN active?
@@ -197,8 +201,8 @@ contains
     use clm_instMod           , only : waterflux_inst
     use clm_instMod           , only : waterstate_inst
 #endif
-    use ExternalModelBETRMod  , only : EM_BETR_Populate_L2E_List
-    use ExternalModelBETRMod  , only : EM_BETR_Populate_E2L_List
+!    use ExternalModelBETRMod  , only : EM_BETR_Populate_L2E_List
+!    use ExternalModelBETRMod  , only : EM_BETR_Populate_E2L_List
     use decompMod             , only : get_clump_bounds
     use ColumnType            , only : col_pp
     use LandunitType          , only : lun_pp
@@ -239,8 +243,8 @@ contains
        !       ALM and FATES
        do clump_rank = 1, nclumps
           iem = (index_em_betr-1)*nclumps + clump_rank
-          call EM_BETR_Populate_L2E_List(l2e_driver_list(iem))
-          call EM_BETR_Populate_E2L_List(e2l_driver_list(iem))
+          call em_betr%Populate_L2E_List(l2e_driver_list(iem))
+          call em_betr%Populate_E2L_List(e2l_driver_list(iem))
        enddo
 
        !$OMP PARALLEL DO PRIVATE (clump_rank, iem, bounds_clump)
@@ -725,7 +729,6 @@ contains
     use CanopyStateType        , only : canopystate_type
     use EnergyFluxType         , only : energyflux_type
     use CNCarbonStateType      , only : carbonstate_type
-    use ExternalModelBETRMod   , only : EM_BETR_Solve
     use decompMod              , only : get_clump_bounds
     !
     implicit none
@@ -751,7 +754,7 @@ contains
     type(atm2lnd_type)       , optional , intent(inout) :: atm2lnd_vars
     type(canopystate_type)   , optional , intent(inout) :: canopystate_vars
     type(energyflux_type)    , optional , intent(inout) :: energyflux_vars
-    type(carbonstate_type)   , optional , intent(inout) :: carbonstate_vars
+    type(column_carbon_state), optional , intent(inout) :: carbonstate_vars
     !
     integer          :: index_em
     real(r8)         :: dtime
@@ -955,7 +958,7 @@ contains
 
     select case (em_id)
     case (EM_ID_BETR)
-       call EM_BETR_Solve(em_stage, dtime, nstep, bounds_clump, l2e_driver_list(iem), &
+       call em_betr%Solve(em_stage, dtime, nstep, clump_rank, l2e_driver_list(iem), &
             e2l_driver_list(iem), bounds_clump)
 
     case (EM_ID_FATES)
