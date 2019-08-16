@@ -1030,7 +1030,7 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete)
     real (kind=real_kind)  :: p(np,np,nlev),dp(np,np,nlev)
     real (kind=real_kind)  :: ph(np,np,nlev+1)
     real (kind=real_kind)  :: phi(np,np,nlev)
-    real (kind=real_kind)  :: temp(np,np,nlev)
+    real (kind=real_kind)  :: temp(np,np,nlev),ps(np,np)
     
     real (kind=real_kind),parameter  ::    RR      = 1.0d0/3.0d0,                         & ! horizontal half width divided by 'a'
                              ZZ      = 1000.0d0,                        & ! vertical half width
@@ -1060,12 +1060,10 @@ subroutine asp_baroclinic(elem,hybrid,hvcoord,nets,nete)
              temp(i,j,k) = temperature(lon,lat,hvcoord%etam(k),rotate_grid)
           enddo
           elem(ie)%state%phis(i,j) = surface_geopotential(lon,lat,rotate_grid)
-          elem(ie)%state%ps_v(i,j,:) = p0
+          ps(i,j)=p0
        enddo
        enddo
-       do idex=1,timelevels
-          call set_thermostate(elem(ie),temp,hvcoord,idex,1)
-       enddo
+       call set_thermostate(elem(ie),ps,temp,hvcoord)
     enddo
 
 
@@ -1147,7 +1145,7 @@ endif
 
 
 if (qsize>=5) then
-   idex=5
+   do idex = 5, qsize
 
    perturb_lon = perturbation_longitude*deg2rad
    perturb_lat = perturbation_latitude*deg2rad
@@ -1199,6 +1197,7 @@ if (qsize>=5) then
       enddo
    enddo
 
+end do
 endif
 
 end subroutine
@@ -1256,7 +1255,7 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
     real (kind=real_kind)  :: p(np,np,nlev),dp(np,np,nlev)
     real (kind=real_kind)  :: ph(np,np,nlev+1)
     real (kind=real_kind)  :: phi(np,np,nlev)
-    real (kind=real_kind)  :: temperature(np,np,nlev)
+    real (kind=real_kind)  :: temperature(np,np,nlev),ps(np,np)
     integer :: i,j,k,ie,idex
 
     if (hybrid%masterthread) write(iulog,*) 'initializing pure tracer advection tests'
@@ -1274,16 +1273,15 @@ subroutine asp_tracer(elem,hybrid,hvcoord,nets,nete)
                   surface_pressure, q5, q6)
 
              elem(ie)%state%phis(i,j) = surface_geopotential
-             elem(ie)%state%ps_v(i,j,:) = surface_pressure
+             !elem(ie)%state%ps_v(i,j,:) = surface_pressure
              !elem(ie)%state%T(i,j,k,:)  = temperature
              elem(ie)%state%v(i,j,1,k,:) = u_wind
              elem(ie)%state%v(i,j,2,k,:) = v_wind
           enddo
        enddo
        enddo
-       do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
-       enddo
+       ps=surface_pressure
+       call set_thermostate(elem(ie),ps,temperature,hvcoord)
     enddo
 
     ! now compute PHI, needed to init tracers:	
@@ -1352,7 +1350,7 @@ subroutine asp_rossby(elem,hybrid,hvcoord,nets,nete)
     real (kind=real_kind)  :: p(np,np,nlev),dp(np,np,nlev)
     real (kind=real_kind)  :: ph(np,np,nlev+1)
     real (kind=real_kind)  :: phi(np,np,nlev)
-    real (kind=real_kind)  :: temperature(np,np,nlev)
+    real (kind=real_kind)  :: temperature(np,np,nlev),ps(np,np)
     integer :: i,j,k,ie,idex
 
     if (hybrid%masterthread) write(iulog,*) 'initializing ASP Rossby Haurwitz test'
@@ -1397,9 +1395,8 @@ subroutine asp_rossby(elem,hybrid,hvcoord,nets,nete)
           enddo
        enddo
        enddo
-       do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
-       enddo
+       ps=surface_pressure
+       call set_thermostate(elem(ie),ps,temperature,hvcoord)
     enddo
 
 
@@ -1419,7 +1416,7 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
 
 !   local
     real (kind=real_kind)  :: lat,lon,eta(nlev),height,q5,q6
-    real (kind=real_kind)  :: u_wind,v_wind,temperature(np,np,nlev)
+    real (kind=real_kind)  :: u_wind,v_wind,temperature(np,np,nlev),ps(np,np)
     real (kind=real_kind)  :: surface_geopotential, surface_pressure, p
     integer :: i,j,k,ie,idex
 
@@ -1438,7 +1435,7 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
                   surface_pressure)
              if (k==1) then
                 elem(ie)%state%phis(i,j) = surface_geopotential
-                elem(ie)%state%ps_v(i,j,:) = surface_pressure
+                !elem(ie)%state%ps_v(i,j,:) = surface_pressure
              endif
              elem(ie)%state%v(i,j,1,k,:) = u_wind
              elem(ie)%state%v(i,j,2,k,:) = v_wind
@@ -1446,9 +1443,8 @@ subroutine asp_mountain(elem,hybrid,hvcoord,nets,nete)
           enddo
        enddo
        enddo
-       do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
-       enddo
+       ps=surface_pressure
+       call set_thermostate(elem(ie),ps,temperature,hvcoord)
     enddo
 
 
@@ -1471,7 +1467,7 @@ subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
     real (kind=real_kind)  :: lat,lon,eta(nlev),height,dz,q5,q6
     real (kind=real_kind)  :: u_wind,v_wind,temperature(np,np,nlev)
     real (kind=real_kind)  :: surface_geopotential, surface_pressure
-    real (kind=real_kind)  :: p(np,np,nlev),dp(np,np,nlev)
+    real (kind=real_kind)  :: p(np,np,nlev),dp(np,np,nlev),ps(np,np)
     real (kind=real_kind)  :: ph(np,np,nlev+1)
     real (kind=real_kind)  :: phi(np,np,nlev)
     integer :: i,j,k,ie,idex
@@ -1493,7 +1489,7 @@ subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
                            surface_pressure)
              if (k.eq.1) then
                 elem(ie)%state%phis(i,j) = surface_geopotential
-                elem(ie)%state%ps_v(i,j,:) = surface_pressure
+                !elem(ie)%state%ps_v(i,j,:) = surface_pressure
              endif
              elem(ie)%state%v(i,j,1,k,:) = u_wind
              elem(ie)%state%v(i,j,2,k,:) = v_wind
@@ -1502,9 +1498,8 @@ subroutine asp_gravity_wave(elem,hybrid,hvcoord,nets,nete,choice)
 
        enddo
        enddo
-       do idex=1,timelevels
-          call set_thermostate(elem(ie),temperature,hvcoord,idex,1)
-       enddo
+       ps=surface_pressure
+       call set_thermostate(elem(ie),ps,temperature,hvcoord)
     enddo
 
 

@@ -6,7 +6,7 @@ my $component = "mpas-ocean";
 my $component_dir = "ocn";
 my $component_driver = "ocean_cesm_driver";
 my $core = "ocean";
-my $esm = "ACME";
+my $esm = "E3SM";
 
 if ($#ARGV == -1) {
     die " ERROR $component buildlib: must specify a caseroot input argument";

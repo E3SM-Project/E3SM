@@ -1,7 +1,15 @@
 #define __PIO_FILE__ 'piodarray'
 !>
 !! @file
-!! @brief Read and write routines for decomposed data.
+!! Read and write routines for decomposed data.
+!>
+!! @defgroup PIO_write_darray Write from Distributed Arrays
+!! The overloaded PIO_write_darray writes a distributed array to
+!! disk in Fortran.
+!!
+!! @defgroup PIO_read_darray Read to Distributed Arrays
+!! The overloaded PIO_read_darray function reads a distributed array
+!! from disk in Fortran.
 !<
 module piodarray
   use pio_types, only : file_desc_t, io_desc_t, var_desc_t
@@ -16,11 +24,6 @@ module piodarray
   private
   public :: pio_read_darray, pio_write_darray, pio_set_buffer_size_limit
 
-
-!>
-!! @defgroup PIO_write_darray PIO_write_darray
-!! @brief The overloaded PIO_write_darray writes a distributed array to disk.
-!<
   interface PIO_write_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5,6,7
@@ -29,11 +32,6 @@ module piodarray
      module procedure write_darray_multi_1d_{TYPE}
   end interface
 
-
-!>
-!! @defgroup PIO_read_darray PIO_read_darray
-!! @brief The overloaded PIO_read_darray function reads a distributed array from disk.
-!<
   interface PIO_read_darray
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5,6,7
@@ -42,10 +40,6 @@ module piodarray
 
 
   character(len=*), parameter, private  :: modName='piodarray'
-
-#ifdef MEMCHK
-integer :: msize, rss, mshare, mtext, mstack, lastrss=0
-#endif
 
 interface
    integer(C_INT) function PIOc_write_darray(ncid, vid, ioid, arraylen, array, fillvalue) &
@@ -65,9 +59,9 @@ interface
         bind(C,name="PIOc_write_darray_multi")
      use iso_c_binding
      integer(C_INT), value :: ncid
+     integer(C_INT), value :: nvars
      integer(C_INT) :: vid(nvars)
      integer(C_INT), value :: ioid
-     integer(C_INT), value :: nvars
      integer(C_SIZE_T), value :: arraylen
      type(c_ptr), value :: array
      type(C_PTR), value :: fillvalue
@@ -88,7 +82,7 @@ end interface
 
 
 contains
-
+  !> Set buffer size limit.
   subroutine pio_set_buffer_size_limit(limit)
     integer(PIO_OFFSET_KIND), intent(in) :: limit
     integer(PIO_OFFSET_KIND) :: oldval
@@ -107,16 +101,11 @@ contains
   end subroutine pio_set_buffer_size_limit
 
 ! TYPE real,int,double
+  !> 1D write_darray for type {TYPE}. Writes a 2-d slab of TYPE to a
+  !! netcdf file.
+  !<
   subroutine write_darray_1d_cinterface_{TYPE} (File,varDesc,ioDesc, arraylen, array, iostat, fillval)
     use iso_c_binding
-    ! !DESCRIPTION:
-    !  Writes a 2-d slab of TYPE to a netcdf file.
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
-
     type (File_desc_t), intent(inout) :: &
          File                   ! file information
 
@@ -151,16 +140,9 @@ contains
   end subroutine write_darray_1d_cinterface_{TYPE}
 
 ! TYPE real,int,double
+  !> 1D write_darray_multi for type {TYPE}. Writes a 2-d slab of TYPE to a netcdf file.
   subroutine write_darray_multi_1d_cinterface_{TYPE} (File,varDesc,ioDesc,nvars,arraylen, array, iostat, fillval)
     use iso_c_binding
-    ! !DESCRIPTION:
-    !  Writes a 2-d slab of TYPE to a netcdf file.
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
-
     type (File_desc_t), intent(inout) :: &
          File                   ! file information
 
@@ -198,27 +180,19 @@ contains
   end subroutine write_darray_multi_1d_cinterface_{TYPE}
 
 ! TYPE real,int,double
-!>
-!! @public
-!! @ingroup PIO_write_darray
-!! @brief Writes a 1D array of type {TYPE}.
-!! @details
-!! @param File    \ref file_desc_t
-!! @param varDesc \ref var_desc_t
-!! @param ioDesc  \ref io_desc_t
-!! @param array  : The data to be written
-!! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
-!! @param fillval : An optional fill value to fill holes in the data written
-!<
+  !>
+  !! @ingroup PIO_write_darray
+  !! Writes a 1D array of type {TYPE}. Writes a block of TYPE to a netcdf file.
+  !!
+  !! @param File    \ref file_desc_t
+  !! @param varDesc \ref var_desc_t
+  !! @param ioDesc  \ref io_desc_t
+  !! @param array  : The data to be written
+  !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
+  !! @param fillval : An optional fill value to fill holes in the data written
+  !! @author Jim Edwards
+  !<
   subroutine write_darray_multi_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
-    ! !DESCRIPTION:
-    !  Writes a block of TYPE to a netcdf file.
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
-
     type (File_desc_t), intent(inout) :: &
          File                   ! file information
 
@@ -244,15 +218,8 @@ contains
   end subroutine write_darray_multi_1d_{TYPE}
 
 ! TYPE real,int,double
+  !> Writes a block of TYPE to a netcdf file.
   subroutine write_darray_1d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
-    ! !DESCRIPTION:
-    !  Writes a block of TYPE to a netcdf file.
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
-
     type (File_desc_t), intent(inout) :: &
          File                   ! file information
 
@@ -276,21 +243,19 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 2,3,4,5,6,7
-!>
-!! @public
-!! @ingroup PIO_write_darray
-!! @brief Writes a {DIMS}D array of type {TYPE}.
-!! @details
-!! @param File @ref file_desc_t
-!! @param varDesc @ref var_desc_t
-!! @param ioDesc  @ref io_desc_t
-!! @param array  : The data to be written
-!! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
-!! @param fillval : An optional fill value to fill holes in the data written
-!<
+  !>
+  !! @ingroup PIO_write_darray
+  !! Writes a {DIMS}D array of type {TYPE}.
+  !!
+  !! @param File @ref file_desc_t
+  !! @param varDesc @ref var_desc_t
+  !! @param ioDesc  @ref io_desc_t
+  !! @param array  : The data to be written
+  !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
+  !! @param fillval : An optional fill value to fill holes in the data written
+  !! @author Jim Edwards
+  !<
   subroutine write_darray_{DIMS}d_{TYPE} (File,varDesc,ioDesc, array, iostat, fillval)
-    ! !INPUT PARAMETERS:
-
     type (File_desc_t), intent(inout) :: &
          File                   ! file information
 
@@ -331,27 +296,20 @@ contains
 
 ! TYPE real,int,double
 ! DIMS 1,2,3,4,5,6,7
-!>
-!! @public
-!! @ingroup PIO_read_darray
-!! @brief Read distributed array of type {TYPE} from a netCDF variable of {DIMS} dimension(s).
-!! @details
-!! @param File @ref file_desc_t
-!! @param varDesc @ref var_desc_t
-!! @param ioDesc @ref io_desc_t
-!! @param array  : The read data
-!! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
-!<
+  !>
+  !! @ingroup PIO_read_darray
+  !! Read distributed array of type {TYPE} from a netCDF variable of {DIMS} dimension(s).
+  !!
+  !! @param File @ref file_desc_t
+  !! @param varDesc @ref var_desc_t
+  !! @param ioDesc @ref io_desc_t
+  !! @param array  : The read data
+  !! @param iostat : The status returned from this routine (see \ref PIO_seterrorhandling for details)
+  !! @author Jim Edwards
+  !<
   subroutine read_darray_{DIMS}d_{TYPE} (File,varDesc, ioDesc, array, iostat)
     use iso_c_binding
 !    use ifcore, only: tracebackqq
-    ! !DESCRIPTION:
-    !  Reads a slab of TYPE from a netcdf file.
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
 
     type (File_desc_t), intent(inout) :: &
          File                   ! file information
@@ -373,16 +331,9 @@ contains
   end subroutine read_darray_{DIMS}d_{TYPE}
 
 ! TYPE real,int,double
-
+  !> Internal read_darray for type {TYPE}
   subroutine read_darray_internal_{TYPE} (ncid, varid, ioid, alen, array, iostat)
     use iso_c_binding
-    ! !DESCRIPTION:
-    !  Reads a slab of TYPE from a netcdf file.
-    !
-    ! !REVISION HISTORY:
-    !  same as module
-
-    ! !INPUT PARAMETERS:
     integer, intent(in) :: ncid, varid, ioid
     integer(C_SIZE_T), intent(in) :: alen
 

@@ -21,11 +21,14 @@ runtype       = RUNTYPE
 tstep         = TSTEP
 integration   = "explicit"
 nu            = NU1
-nu_s          = NU2
-nu_p          = NUP
-!nu_top = 2.5e5
+nu_s          = NU1
+nu_p          = NU1
+nu_q          = NU1
+nu_div        = NU2
+nu_top = 2.5e5
 hypervis_order = 2
-hypervis_subcycle = 1
+hypervis_subcycle = 2
+se_ftype=0
 /
 &vert_nl
 vform         = "ccm"
@@ -38,7 +41,7 @@ output_timeunits=1,0,2    ! 1=days, 2=hours, 3=seconds
 output_frequency=1,0,0    ! 0 to disable
 output_start_time=600,0,0
 output_end_time=30000,999999999,0
-output_varnames1='u','v','T','zeta','div','ps','geos'
+output_varnames1='u','v','T','zeta','div','ps','geos','omega'
 !output_varnames1='u','v','T','zeta','ps','Q','DIFFT'
 ! debug output
 output_varnames2='u','v','T','zeta','div','ps','geo','dp3d','geos','Th'
@@ -51,11 +54,3 @@ io_stride = 32
 profile_outpe_num = 100
 profile_single_file		= .true.
 /
-
-
-
-
-
-
-
-

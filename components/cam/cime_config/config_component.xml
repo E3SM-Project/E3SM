@@ -28,7 +28,7 @@
 
   <entry id="CAM_TARGET">
          <type>char</type>
-         <valid_values>preqx,preqx_kokkos,preqx_acc</valid_values>
+         <valid_values>preqx,preqx_kokkos,preqx_acc,theta-l</valid_values>
          <default_value>preqx</default_value>
          <group>build_component_cam</group>
          <file>env_build.xml</file>
@@ -106,9 +106,15 @@
       <value compset="CAM[45]%SCAM"   >-scam</value>
       <value compset="AR97_CAM[45]"   >-phys cam5 -scam -nlev 72 -clubb_sgs -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates</value>
       <value compset="_CAM.%L60"      >-nlev 60</value>
+      <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+
+      <!-- Simple/idealized configurations -->
       <value compset="_CAM%IDEAL"     >-phys ideal</value>              
       <value compset="_CAM%ADIAB"     >-phys adiabatic</value>              
-      <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+
+      <!-- Aquaplanet -->
+      <value compset="_CAM5%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
+
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
@@ -233,6 +239,8 @@
       <value compset="AR97_CAM[45]"     >scam_arm97</value>
       <value compset="SCAM_CAM5"        >scam_generic</value>
       <value compset="PIPD_CAM5"        >1850-PD_cam5</value>
+      <!-- Aqua planet -->
+      <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>
@@ -337,6 +345,20 @@
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
   </description>
+
+  <!-- Aqua planet uses this for setting orbital parameters -->
+  <entry id="CAM_USER_MODS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <values match="last">
+    <value compset="DOCN%AQP">$SRCROOT/components/cam/cime_config/usermods_dirs/aquap</value>
+    <value compset="DOCN%SOMAQP">$SRCROOT/components/cam/cime_config/usermods_dirs/aquap</value>
+    </values>
+    <group>run_component_cam</group>
+    <file>env_case.xml</file>
+    <desc>User mods to apply to specific compset matches. </desc>
+  </entry>
 
   <help>
     =========================================

@@ -22,40 +22,37 @@ module shr_ndep_mod
 CONTAINS
 !====================================================================================
 
-  subroutine shr_ndep_readnl(NLFilename, ndep_fields, ndep_nflds)
+  subroutine shr_ndep_readnl(NLFilename, ndep_nflds)
 
     !========================================================================
     ! reads ndep_inparm namelist and sets up driver list of fields for
     ! atmosphere -> land and atmosphere -> ocn communications.
     !========================================================================
 
-    use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
-    use shr_nl_mod   , only : shr_nl_find_group_name
-    use ESMF         , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
+    use shr_file_mod        , only : shr_file_getUnit, shr_file_freeUnit
+    use shr_nl_mod          , only : shr_nl_find_group_name
+    use ESMF                , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
     use shr_nuopc_utils_mod , only : shr_nuopc_utils_chkerr
 
-    implicit none
-
+    ! input/output variables
     character(len=*), intent(in)  :: NLFilename ! Namelist filename
-    character(len=*), intent(out) :: ndep_fields
     integer         , intent(out) :: ndep_nflds
 
     !----- local -----
-    type(ESMF_VM) :: vm
-    integer :: i                ! Indices
-    integer :: unitn            ! namelist unit number
-    integer :: ierr             ! error code
-    integer :: tmp(1)
-    logical :: exists           ! if file exists or not
-    character(len=8) :: token   ! dry dep field name to add
-    integer :: rc
-    integer, parameter :: maxspc = 100             ! Maximum number of species
-    character(len=32)  :: ndep_list(maxspc) = ''   ! List of ndep species
-    integer :: localpet
-    !----- formats -----
+    type(ESMF_VM)      :: vm
+    integer            :: i                      ! Indices
+    integer            :: unitn                  ! namelist unit number
+    integer            :: ierr                   ! error code
+    integer            :: tmp(1)
+    logical            :: exists                 ! if file exists or not
+    integer            :: rc
+    integer, parameter :: maxspc = 100           ! Maximum number of species
+    character(len=32)  :: ndep_list(maxspc) = '' ! List of ndep species
+    integer            :: localpet
     character(*),parameter :: subName = '(shr_ndep_read) '
     character(*),parameter :: F00   = "('(shr_ndep_read) ',8a)"
     character(*),parameter :: FI1   = "('(shr_ndep_init) ',a,I2)"
+    ! ------------------------------------------------------------------
 
     namelist /ndep_inparm/ ndep_list
 
@@ -106,22 +103,6 @@ CONTAINS
     call ESMF_VMBroadcast(vm, tmp, 1, 0, rc=rc)
     ndep_nflds=tmp(1)
     if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ndep_fields = ' '
-
-    if(ndep_nflds > 0) then
-       call ESMF_VMBroadcast(vm, ndep_list, 32*ndep_nflds, 0, rc=rc)
-       if (shr_nuopc_utils_ChkErr(rc,__LINE__,u_FILE_u)) return
-       ! Loop over species to fill list of fields to communicate for ndep
-       do i=1,ndep_nflds
-          if ( len_trim(ndep_list(i))==0 ) exit
-          if ( i == 1 ) then
-             ndep_fields = 'Faxa_' // trim(ndep_list(i))
-          else
-             ndep_fields = trim(ndep_fields)//':'//'Faxa_' // trim(ndep_list(i))
-          endif
-       enddo
-    end if
 
   end subroutine shr_ndep_readnl
 

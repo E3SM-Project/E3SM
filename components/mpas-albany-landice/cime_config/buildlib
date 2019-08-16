@@ -6,7 +6,7 @@ my $component = "mpas-albany-landice";
 my $component_dir = "glc";
 my $component_driver = "glc_cesm_driver";
 my $core = "landice";
-my $esm = "ACME";
+my $esm = "E3SM";
 
 if ($#ARGV == -1) {
     die " ERROR $component buildlib: must specify a caseroot input argument";
@@ -70,7 +70,7 @@ if (defined $ENV{MPAS_TOOL_DIR}) {
 if ( $MALI_USE_ALBANY eq "TRUE" ) {
         print "Building MALI with Albany support.\n";
         $bldcmd .= ' ALBANY=true';
-        # Note MPAS_EXTERNAL_LIBS is not needed since ACME is doing the linking!
+        # Note MPAS_EXTERNAL_LIBS is not needed since E3SM is doing the linking!
 }
 
 print "Compiling MALI with this command: $bldcmd \n";

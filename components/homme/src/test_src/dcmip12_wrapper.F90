@@ -305,7 +305,7 @@ subroutine dcmip2012_test2_0(elem,hybrid,hvcoord,nets,nete)
         he = (T0 - T)/gamma
         call set_state_i(u,v,w,T,ps,phis,p,he,g, i,j,k,elem(ie),1,nt)
      enddo; enddo; enddo; 
-     call tests_finalize(elem(ie),hvcoord,1,nt)
+     call tests_finalize(elem(ie),hvcoord)
   enddo
   
   end subroutine dcmip2012_test2_0
@@ -364,7 +364,7 @@ subroutine dcmip2012_test2_x(elem,hybrid,hvcoord,nets,nete,shear)
         call test2_schaer_mountain(lon,lat,p,z,zcoords,use_eta,hyai,hybi,shear,u,v,w,T,phis,ps,rho,q(1))
         call set_state_i(u,v,w,T,ps,phis,p,z,g, i,j,k,elem(ie),1,nt)
      enddo; enddo; enddo; 
-     call tests_finalize(elem(ie),hvcoord,1,nt)
+     call tests_finalize(elem(ie),hvcoord)
   enddo
 
   ! store initial velocity fields for use in sponge layer
@@ -430,7 +430,7 @@ subroutine mtest_init(elem,hybrid,hvcoord,nets,nete,testid)
         call set_state_i(u,v,w,T,ps,phis,p,z,g, i,j,k,elem(ie),1,nt)
         
      enddo; enddo; enddo; 
-     call tests_finalize(elem(ie),hvcoord,1,nt)
+     call tests_finalize(elem(ie),hvcoord)
   enddo
 
   ! store initial velocity fields for use in sponge layer
@@ -532,7 +532,7 @@ subroutine dcmip2012_test3(elem,hybrid,hvcoord,nets,nete)
         call test3_gravity_wave(lon,lat,p,z,zcoords,use_eta,hyai,hybi,u,v,w,T,T_mean,phis,ps,rho,rho_mean,q(1))
         call set_state_i(u,v,w,T,ps,phis,p,zi(k),g, i,j,k,elem(ie),1,nt)
      enddo; enddo; enddo; 
-     call tests_finalize(elem(ie),hvcoord,1,nt)
+     call tests_finalize(elem(ie),hvcoord)
   enddo
 
 end subroutine
@@ -593,7 +593,7 @@ subroutine dcmip2012_test4_init(elem,hybrid,hvcoord,nets,nete)
       enddo; enddo; enddo; 
 
 
-    call tests_finalize(elem(ie),hvcoord,1,nt)
+    call tests_finalize(elem(ie),hvcoord)
   enddo ! ie loop
 end subroutine dcmip2012_test4_init
 

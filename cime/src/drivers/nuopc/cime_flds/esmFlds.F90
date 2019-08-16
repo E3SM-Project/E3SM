@@ -33,14 +33,13 @@ module esmflds
   integer , public, parameter :: mapconsd       = 3
   integer , public, parameter :: mappatch       = 4
   integer , public, parameter :: mapfcopy       = 5
-  integer , public, parameter :: mapfiler       = 6
-  integer , public, parameter :: mapnstod       = 7 ! nearest source to destination
-  integer , public, parameter :: mapnstod_consd = 8 ! nearest source to destination followed by conservative dst
-  integer , public, parameter :: mapnstod_consf = 9 ! nearest source to destination followed by conservative frac
-  integer , public, parameter :: nmappers       = 9
+  integer , public, parameter :: mapnstod       = 6 ! nearest source to destination
+  integer , public, parameter :: mapnstod_consd = 7 ! nearest source to destination followed by conservative dst
+  integer , public, parameter :: mapnstod_consf = 8 ! nearest source to destination followed by conservative frac
+  integer , public, parameter :: nmappers       = 8
 
   character(len=*) , public, parameter :: mapnames(nmappers) = & 
-       (/'bilnr', 'consf', 'consd', 'patch', 'fcopy', 'filer', 'nstod', 'nstod_consd', 'nstod_consf'/)
+       (/'bilnr', 'consf', 'consd', 'patch', 'fcopy', 'nstod', 'nstod_consd', 'nstod_consf'/)
 
   !-----------------------------------------------
   ! Set coupling mode
@@ -803,7 +802,7 @@ contains
     !-----------------------------------------------------------
 
     !---------------------------------------
-    ! Document mapping (also add albedo and aoflux) - move this routine to esmFlds.F90
+    ! Document mapping (also add albedo and aoflux) 
     !---------------------------------------
 
     ! Loop over src components

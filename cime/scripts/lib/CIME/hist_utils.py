@@ -3,7 +3,7 @@ Functions for actions pertaining to history files.
 """
 from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT, TEST_STATUS_FILENAME
-from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy, SharedArea
+from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy, SharedArea, parse_test_name
 
 import logging, os, re, filecmp
 logger = logging.getLogger(__name__)
@@ -237,7 +237,8 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
 
     return one_not_two, two_not_one, match_ups
 
-def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_suffix=""):
+def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_suffix="",
+                   ignore_fieldlist_diffs=False):
     if from_dir1 == from_dir2:
         expect(suffix1 != suffix2, "Comparing files to themselves?")
 
@@ -278,7 +279,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
         for hist1, hist2 in match_ups:
             success, cprnc_log_file, cprnc_comment = cprnc(model, hist1, hist2, case, from_dir1,
                                                            multiinst_driver_compare=multiinst_driver_compare,
-                                                           outfile_suffix=outfile_suffix)
+                                                           outfile_suffix=outfile_suffix,
+                                                           ignore_fieldlist_diffs=ignore_fieldlist_diffs)
             if success:
                 comments += "    {} matched {}\n".format(hist1, hist2)
             else:
@@ -304,21 +306,27 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
 
     return all_success, comments
 
-def compare_test(case, suffix1, suffix2):
+def compare_test(case, suffix1, suffix2, ignore_fieldlist_diffs=False):
     """
     Compares two sets of component history files in the testcase directory
 
     case - The case containing the hist files to compare
     suffix1 - The suffix that identifies the first batch of hist files
     suffix1 - The suffix that identifies the second batch of hist files
+    ignore_fieldlist_diffs (bool): If True, then: If the two cases differ only in their
+        field lists (i.e., all shared fields are bit-for-bit, but one case has some
+        diagnostic fields that are missing from the other case), treat the two cases as
+        identical.
 
     returns (SUCCESS, comments)
     """
     rundir   = case.get_value("RUNDIR")
 
-    return _compare_hists(case, rundir, rundir, suffix1, suffix2)
+    return _compare_hists(case, rundir, rundir, suffix1, suffix2,
+                          ignore_fieldlist_diffs=ignore_fieldlist_diffs)
 
-def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, outfile_suffix=""):
+def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, outfile_suffix="",
+          ignore_fieldlist_diffs=False):
     """
     Run cprnc to compare two individual nc files
 
@@ -329,6 +337,10 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
     outfile_suffix - if non-blank, then the output file name ends with this
         suffix (with a '.' added before the given suffix).
         Use None to avoid permissions issues in the case dir.
+    ignore_fieldlist_diffs (bool): If True, then: If the two cases differ only in their
+        field lists (i.e., all shared fields are bit-for-bit, but one case has some
+        diagnostic fields that are missing from the other case), treat the two cases as
+        identical.
 
     returns (True if the files matched, log_name, comment)
         where 'comment' is either an empty string or one of the module-level constants
@@ -376,8 +388,11 @@ def cprnc(model, file1, file2, case, rundir, multiinst_driver_compare=False, out
             elif "the two files seem to be DIFFERENT" in out:
                 files_match = False
             elif "the two files DIFFER only in their field lists" in out:
-                files_match = False
-                comment = CPRNC_FIELDLISTS_DIFFER
+                if ignore_fieldlist_diffs:
+                    files_match = True
+                else:
+                    files_match = False
+                    comment = CPRNC_FIELDLISTS_DIFFER
             else:
                 expect(False, "Did not find an expected summary string in cprnc output")
     else:
@@ -414,8 +429,10 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
     if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
-            last_line = open(bless_log, "r").readlines()[-1]
-            comments += "\n  Most recent bless: {}".format(last_line)
+            lines = open(bless_log, "r").readlines()
+            if lines:
+                last_line = lines[-1]
+                comments += "\n  Most recent bless: {}".format(last_line)
 
     return success, comments
 
@@ -557,7 +574,10 @@ def _generate_baseline_impl(case, baseline_dir=None, allow_baseline_overwrite=Fa
         safe_copy(newestcpllogfile, os.path.join(basegen_dir, "{}.log.gz".format(cplname)), preserve_meta=False)
 
     testname = case.get_value("TESTCASE")
-    expect(num_gen > 0 or testname == "PFS", "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
+    testopts = parse_test_name(case.get_value("CASEBASEID"))[1]
+    testopts = [] if testopts is None else testopts
+    expect(num_gen > 0 or (testname in ["PFS", "TSC"] or "B" in testopts),
+           "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
 
     if get_model() == "e3sm":
         bless_log = os.path.join(basegen_dir, BLESS_LOG_NAME)
@@ -584,7 +604,7 @@ def get_ts_synopsis(comments):
     >>> get_ts_synopsis('big error\n')
     'big error'
     >>> get_ts_synopsis('stuff\n    File foo had a different field list from bar with suffix baz\nPass\n')
-    'FIELDLIST field lists differ'
+    'FIELDLIST field lists differ (otherwise bit-for-bit)'
     >>> get_ts_synopsis('stuff\n    File foo had no compare counterpart in bar with suffix baz\nPass\n')
     'ERROR BFAIL some baseline files were missing'
     >>> get_ts_synopsis('stuff\n    File foo had a different field list from bar with suffix baz\n    File foo had no compare counterpart in bar with suffix baz\nPass\n')
@@ -631,7 +651,7 @@ def get_ts_synopsis(comments):
                 # line, which we don't want.
                 return "MULTIPLE ISSUES: field lists differ and some baseline files were missing"
             elif has_fieldlist_differences:
-                return "FIELDLIST field lists differ"
+                return "FIELDLIST field lists differ (otherwise bit-for-bit)"
             elif has_bfails:
                 return "ERROR {} some baseline files were missing".format(TEST_NO_BASELINES_COMMENT)
             else:

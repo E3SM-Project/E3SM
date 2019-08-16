@@ -65,6 +65,9 @@
 
 <!-- ALE_vertical_grid -->
 <config_vert_coord_movement>'uniform_stretching'</config_vert_coord_movement>
+<config_ALE_thickness_proportionality>'restingThickness_times_weights'</config_ALE_thickness_proportionality>
+<config_vert_taper_weight_depth_1>250.0</config_vert_taper_weight_depth_1>
+<config_vert_taper_weight_depth_2>500.0</config_vert_taper_weight_depth_2>
 <config_use_min_max_thickness>.false.</config_use_min_max_thickness>
 <config_min_thickness>1.0</config_min_thickness>
 <config_max_thickness_factor>6.0</config_max_thickness_factor>
@@ -107,9 +110,9 @@
 <!-- hmix_del2 -->
 <config_use_mom_del2>.false.</config_use_mom_del2>
 <config_use_mom_del2 ocn_grid="oEC60to30">.true.</config_use_mom_del2>
-<config_use_mom_del2 ocn_grid="oEC60to30v3">.true.</config_use_mom_del2> 
-<config_use_mom_del2 ocn_grid="oEC60to30wLI">.true.</config_use_mom_del2> 
-<config_use_mom_del2 ocn_grid="oEC60to30v3wLI">.true.</config_use_mom_del2> 
+<config_use_mom_del2 ocn_grid="oEC60to30v3">.true.</config_use_mom_del2>
+<config_use_mom_del2 ocn_grid="oEC60to30wLI">.true.</config_use_mom_del2>
+<config_use_mom_del2 ocn_grid="oEC60to30v3wLI">.true.</config_use_mom_del2>
 <config_use_tracer_del2>.false.</config_use_tracer_del2>
 <config_mom_del2>10.0</config_mom_del2>
 <config_mom_del2 ocn_grid="oEC60to30">1000.0</config_mom_del2>
@@ -171,7 +174,7 @@
 <config_Redi_bottom_layer_tapering_depth>0.0</config_Redi_bottom_layer_tapering_depth>
 <config_GM_Bolus_kappa_function>'constant'</config_GM_Bolus_kappa_function>
 <config_standardGM_tracer_kappa>1800.0</config_standardGM_tracer_kappa>
-<config_standardGM_tracer_kappa ocn_grid="oEC60to30v3wLI" ocn_forcing="datm_forced_restoring" >600.0</config_standardGM_tracer_kappa>
+<config_standardGM_tracer_kappa ocn_forcing="datm_forced_restoring" ocn_grid="oEC60to30v3wLI">600.0</config_standardGM_tracer_kappa>
 <config_GM_Bolus_kappa_min>0.0</config_GM_Bolus_kappa_min>
 <config_GM_Bolus_kappa_max>600.0</config_GM_Bolus_kappa_max>
 <config_GM_Bolus_cell_size_min>20e3</config_GM_Bolus_cell_size_min>
@@ -606,11 +609,23 @@
 <config_AM_lagrPartTrack_input_stream>'lagrPartTrackInput'</config_AM_lagrPartTrack_input_stream>
 <config_AM_lagrPartTrack_write_on_startup>.false.</config_AM_lagrPartTrack_write_on_startup>
 <config_AM_lagrPartTrack_filter_number>0</config_AM_lagrPartTrack_filter_number>
+<config_AM_lagrPartTrack_timeIntegration>2</config_AM_lagrPartTrack_timeIntegration>
 <config_AM_lagrPartTrack_reset_criteria>'none'</config_AM_lagrPartTrack_reset_criteria>
 <config_AM_lagrPartTrack_reset_global_timestamp>'0000_00:00:00'</config_AM_lagrPartTrack_reset_global_timestamp>
 <config_AM_lagrPartTrack_region_stream>'lagrPartTrackRegions'</config_AM_lagrPartTrack_region_stream>
 <config_AM_lagrPartTrack_reset_if_outside_region>.false.</config_AM_lagrPartTrack_reset_if_outside_region>
 <config_AM_lagrPartTrack_reset_if_inside_region>.false.</config_AM_lagrPartTrack_reset_if_inside_region>
+<config_AM_lagrPartTrack_sample_horizontal_interp>.true.</config_AM_lagrPartTrack_sample_horizontal_interp>
+<config_AM_lagrPartTrack_sample_temperature>.true.</config_AM_lagrPartTrack_sample_temperature>
+<config_AM_lagrPartTrack_sample_salinity>.true.</config_AM_lagrPartTrack_sample_salinity>
+<config_AM_lagrPartTrack_sample_DIC>.false.</config_AM_lagrPartTrack_sample_DIC>
+<config_AM_lagrPartTrack_sample_ALK>.false.</config_AM_lagrPartTrack_sample_ALK>
+<config_AM_lagrPartTrack_sample_PO4>.false.</config_AM_lagrPartTrack_sample_PO4>
+<config_AM_lagrPartTrack_sample_NO3>.false.</config_AM_lagrPartTrack_sample_NO3>
+<config_AM_lagrPartTrack_sample_SiO3>.false.</config_AM_lagrPartTrack_sample_SiO3>
+<config_AM_lagrPartTrack_sample_NH4>.false.</config_AM_lagrPartTrack_sample_NH4>
+<config_AM_lagrPartTrack_sample_Fe>.false.</config_AM_lagrPartTrack_sample_Fe>
+<config_AM_lagrPartTrack_sample_O2>.false.</config_AM_lagrPartTrack_sample_O2>
 
 <!-- AM_eliassenPalm -->
 <config_AM_eliassenPalm_enable>.false.</config_AM_eliassenPalm_enable>
@@ -755,6 +770,34 @@
 <config_AM_timeSeriesStatsClimatology_reset_intervals>'1000-00-00_00:00:00;1000-00-00_00:00:00;1000-00-00_00:00:00;1000-00-00_00:00:00'</config_AM_timeSeriesStatsClimatology_reset_intervals>
 <config_AM_timeSeriesStatsClimatology_backward_output_offset>'00-03-00_00:00:00'</config_AM_timeSeriesStatsClimatology_backward_output_offset>
 
+<!-- AM_timeSeriesStatsMonthlyMax -->
+<config_AM_timeSeriesStatsMonthlyMax_enable>.true.</config_AM_timeSeriesStatsMonthlyMax_enable>
+<config_AM_timeSeriesStatsMonthlyMax_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthlyMax_compute_on_startup>
+<config_AM_timeSeriesStatsMonthlyMax_write_on_startup>.false.</config_AM_timeSeriesStatsMonthlyMax_write_on_startup>
+<config_AM_timeSeriesStatsMonthlyMax_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsMonthlyMax_compute_interval>
+<config_AM_timeSeriesStatsMonthlyMax_output_stream>'timeSeriesStatsMonthlyMaxOutput'</config_AM_timeSeriesStatsMonthlyMax_output_stream>
+<config_AM_timeSeriesStatsMonthlyMax_restart_stream>'none'</config_AM_timeSeriesStatsMonthlyMax_restart_stream>
+<config_AM_timeSeriesStatsMonthlyMax_operation>'max'</config_AM_timeSeriesStatsMonthlyMax_operation>
+<config_AM_timeSeriesStatsMonthlyMax_reference_times>'initial_time'</config_AM_timeSeriesStatsMonthlyMax_reference_times>
+<config_AM_timeSeriesStatsMonthlyMax_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsMonthlyMax_duration_intervals>
+<config_AM_timeSeriesStatsMonthlyMax_repeat_intervals>'reset_interval'</config_AM_timeSeriesStatsMonthlyMax_repeat_intervals>
+<config_AM_timeSeriesStatsMonthlyMax_reset_intervals>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthlyMax_reset_intervals>
+<config_AM_timeSeriesStatsMonthlyMax_backward_output_offset>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthlyMax_backward_output_offset>
+
+<!-- AM_timeSeriesStatsMonthlyMin -->
+<config_AM_timeSeriesStatsMonthlyMin_enable>.true.</config_AM_timeSeriesStatsMonthlyMin_enable>
+<config_AM_timeSeriesStatsMonthlyMin_compute_on_startup>.false.</config_AM_timeSeriesStatsMonthlyMin_compute_on_startup>
+<config_AM_timeSeriesStatsMonthlyMin_write_on_startup>.false.</config_AM_timeSeriesStatsMonthlyMin_write_on_startup>
+<config_AM_timeSeriesStatsMonthlyMin_compute_interval>'00-00-00_01:00:00'</config_AM_timeSeriesStatsMonthlyMin_compute_interval>
+<config_AM_timeSeriesStatsMonthlyMin_output_stream>'timeSeriesStatsMonthlyMinOutput'</config_AM_timeSeriesStatsMonthlyMin_output_stream>
+<config_AM_timeSeriesStatsMonthlyMin_restart_stream>'none'</config_AM_timeSeriesStatsMonthlyMin_restart_stream>
+<config_AM_timeSeriesStatsMonthlyMin_operation>'min'</config_AM_timeSeriesStatsMonthlyMin_operation>
+<config_AM_timeSeriesStatsMonthlyMin_reference_times>'initial_time'</config_AM_timeSeriesStatsMonthlyMin_reference_times>
+<config_AM_timeSeriesStatsMonthlyMin_duration_intervals>'repeat_interval'</config_AM_timeSeriesStatsMonthlyMin_duration_intervals>
+<config_AM_timeSeriesStatsMonthlyMin_repeat_intervals>'reset_interval'</config_AM_timeSeriesStatsMonthlyMin_repeat_intervals>
+<config_AM_timeSeriesStatsMonthlyMin_reset_intervals>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthlyMin_reset_intervals>
+<config_AM_timeSeriesStatsMonthlyMin_backward_output_offset>'00-01-00_00:00:00'</config_AM_timeSeriesStatsMonthlyMin_backward_output_offset>
+
 <!-- AM_timeSeriesStatsCustom -->
 <config_AM_timeSeriesStatsCustom_enable>.false.</config_AM_timeSeriesStatsCustom_enable>
 <config_AM_timeSeriesStatsCustom_compute_on_startup>.false.</config_AM_timeSeriesStatsCustom_compute_on_startup>
@@ -816,12 +859,7 @@
 <config_AM_transectTransport_transect_group>'all'</config_AM_transectTransport_transect_group>
 
 <!-- AM_eddyProductVariables -->
-<config_AM_eddyProductVariables_enable>.false.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oEC60to30v3">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oEC60to30v3wLI">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oRRS30to10v3">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oRRS30to10v3wLI">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oRRS18to6v3">.true.</config_AM_eddyProductVariables_enable>
+<config_AM_eddyProductVariables_enable>.true.</config_AM_eddyProductVariables_enable>
 <config_AM_eddyProductVariables_compute_interval>'0000-00-00_01:00:00'</config_AM_eddyProductVariables_compute_interval>
 <config_AM_eddyProductVariables_output_stream>'eddyProductVariablesOutput'</config_AM_eddyProductVariables_output_stream>
 <config_AM_eddyProductVariables_compute_on_startup>.true.</config_AM_eddyProductVariables_compute_on_startup>

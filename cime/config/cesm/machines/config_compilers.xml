@@ -80,14 +80,14 @@ using a fortran linker.
   </INCLDIR>
   <FFLAGS>
     <append MODEL="fv3gfs"> $(FC_AUTO_R8) </append>
-    <append MODEL="mom"> $(FC_AUTO_R8) </append>
+    <append MODEL="mom"> $(FC_AUTO_R8) -Duse_LARGEFILE</append>
   </FFLAGS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
 </compiler>
 
 <compiler COMPILER="cray">
   <CFLAGS>
-    <append compile_threaded="false"> -h noomp </append>
+    <append compile_threaded="FALSE"> -h noomp </append>
     <append DEBUG="TRUE"> -g -O0 </append>
     <append DEBUG="FALSE"> -O2 </append>
   </CFLAGS>
@@ -102,7 +102,7 @@ using a fortran linker.
   </FC_AUTO_R8>
   <FFLAGS>
     <base> -f free -N 255  -h byteswapio -x dir </base>
-    <append compile_threaded="false"> -h noomp </append>
+    <append compile_threaded="FALSE"> -h noomp </append>
     <append DEBUG="TRUE"> -g -O0 -K trap=fp  -m1 </append>
     <append DEBUG="FALSE"> -O2,ipa2 -em </append>
   </FFLAGS>
@@ -118,7 +118,7 @@ using a fortran linker.
 <compiler COMPILER="gnu">
   <CFLAGS>
     <base> -std=gnu99 </base>
-    <append compile_threaded="true"> -fopenmp </append>
+    <append compile_threaded="TRUE"> -fopenmp </append>
     <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=invalid,zero,overflow -fcheck=bounds </append>
     <append DEBUG="FALSE"> -O </append>
   </CFLAGS>
@@ -134,7 +134,7 @@ using a fortran linker.
     <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
        so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
     <base>  -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
-    <append compile_threaded="true"> -fopenmp </append>
+    <append compile_threaded="TRUE"> -fopenmp </append>
     <!-- Ideally, we would also have 'invalid' in the ffpe-trap list. But at
          least with some versions of gfortran (confirmed with 5.4.0, 6.3.0 and
          7.1.0), gfortran's isnan (which is called in cime via the
@@ -154,7 +154,7 @@ using a fortran linker.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="true"> -fopenmp </append>
+    <append compile_threaded="TRUE"> -fopenmp </append>
   </LDFLAGS>
   <MPICC> mpicc  </MPICC>
   <MPICXX> mpicxx </MPICXX>
@@ -169,8 +169,8 @@ using a fortran linker.
   <CFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 </base>
     <append DEBUG="FALSE"> -O3  </append>
-    <append compile_threaded="true"> -qsmp=omp </append>
-    <append DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </append>
+    <append compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </CFLAGS>
   <CPPDEFS>
     <!-- http://publib.boulder.ibm.com/infocenter/comphelp/v7v91/index.jsp
@@ -199,9 +199,9 @@ using a fortran linker.
   <FFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 </base>
     <append DEBUG="FALSE"> -O2 -qstrict -qinline=auto </append>
-    <append compile_threaded="true"> -qsmp=omp </append>
+    <append compile_threaded="TRUE"> -qsmp=omp </append>
     <append DEBUG="TRUE"> -qinitauto=7FF7FFFF -qflttrap=ov:zero:inv:en </append>
-    <append DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
     <append DEBUG="TRUE" MODEL="pop"> -C </append>
   </FFLAGS>
   <FIXEDFLAGS>
@@ -212,15 +212,15 @@ using a fortran linker.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="true"> -qsmp=omp </append>
-    <append DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </append>
+    <append compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </LDFLAGS>
 </compiler>
 
 <compiler COMPILER="intel">
   <CFLAGS>
     <base>  -qno-opt-dynamic-align -fp-model precise -std=gnu99 </base>
-    <append compile_threaded="true"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
@@ -237,13 +237,12 @@ using a fortran linker.
   </FC_AUTO_R8>
   <FFLAGS>
     <base> -qno-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source  </base>
-    <append compile_threaded="true"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
-    <append compile_threaded="true"> -qopenmp </append>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed  </base>
@@ -252,7 +251,7 @@ using a fortran linker.
     <base> -free </base>
   </FREEFLAGS>
   <LDFLAGS>
-    <append compile_threaded="true"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp </append>
   </LDFLAGS>
   <MPICC> mpicc  </MPICC>
   <MPICXX> mpicxx </MPICXX>
@@ -293,7 +292,7 @@ using a fortran linker.
     <!-- The "-gline" option is nice, but it doesn't work with OpenMP.         -->
     <!-- Runtime checks with OpenMP (in fact, all OpenMP cases) are WIP.       -->
     <append DEBUG="TRUE"> -C=all -g -time -f2003 -ieee=stop </append>
-    <append DEBUG="TRUE" compile_threaded="false"> -gline </append>
+    <append DEBUG="TRUE" compile_threaded="FALSE"> -gline </append>
     <!-- The SLAP library (which is part of the CISM build) has many instances of
        arguments being passed to different types. So disable argument type
        checking when building CISM. This can be removed once we remove SLAP from
@@ -301,13 +300,7 @@ using a fortran linker.
     <append MODEL="cism"> -mismatch_all </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base>-Wp,-macro=no_com -convert=BIG_ENDIAN -indirect $ENV{CIMEROOT}/config/cesm/machines/nag_mpi_argument.txt</base>
-    <append DEBUG="FALSE"> -ieee=full     </append>
-    <!-- Hack! If DEBUG="TRUE", put runtime checks in FFLAGS, but not into     -->
-    <!-- FFLAGS_NOOPT, allowing strict checks to be removed from files by      -->
-    <!-- having them use FFLAGS_NOOPT in Depends.nag                           -->
-    <append DEBUG="TRUE"> -g -time -f2003 -ieee=stop </append>
-    <append DEBUG="TRUE" compile_threaded="false"> -gline        </append>
+    <base> -O0 </base>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -fixed </base>
@@ -320,12 +313,20 @@ using a fortran linker.
   <MPIFC> mpif90 </MPIFC>
   <SCC> gcc </SCC>
   <SFC> nagfor </SFC>
+
+  <LDFLAGS>
+    <append> -lpthread </append>
+  </LDFLAGS>
+  <CONFIG_ARGS>
+    <append> FCLIBS="-Wl,--as-needed,--allow-shlib-undefined  -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts" </append>
+  </CONFIG_ARGS>
 </compiler>
+
 
 <compiler COMPILER="pgi">
   <CFLAGS>
     <base> -gopt  -time </base>
-    <append compile_threaded="true"> -mp </append>
+    <append compile_threaded="TRUE"> -mp </append>
   </CFLAGS>
   <CPPDEFS>
     <!-- http://www.pgroup.com/resources/docs.htm                                              -->
@@ -361,7 +362,7 @@ using a fortran linker.
   </FC_AUTO_R8>
   <FFLAGS>
     <base>  -i4 -gopt  -time -Mextend -byteswapio -Mflushz -Kieee  </base>
-    <append compile_threaded="true"> -mp </append>
+    <append compile_threaded="TRUE"> -mp </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
     <append MODEL="datm"> -Mnovect </append>
     <append MODEL="dlnd"> -Mnovect </append>
@@ -371,8 +372,7 @@ using a fortran linker.
     <append MODEL="docn"> -Mnovect </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
-    <base> -O0 -g -Ktrap=fp -Mbounds -Kieee  </base>
-    <append compile_threaded="true"> -mp </append>
+    <base> -O0 </base>
   </FFLAGS_NOOPT>
   <FIXEDFLAGS>
     <base> -Mfixed </base>
@@ -389,7 +389,7 @@ using a fortran linker.
   <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
     <base> -time -Wl,--allow-multiple-definition </base>
-    <append compile_threaded="true"> -mp </append>
+    <append compile_threaded="TRUE"> -mp </append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpicxx </MPICXX>
@@ -432,8 +432,8 @@ using a fortran linker.
   <FFLAGS>
     <base> -g -qfullpath -qmaxmem=-1 -qspillsize=2500 -qextname=flush </base>
     <append DEBUG="FALSE"> -O3 -qstrict -qinline=auto </append>
-    <append DEBUG="FALSE" compile_threaded="true"> -qsmp=omp </append>
-    <append DEBUG="TRUE" compile_threaded="true"> -qsmp=omp:noopt </append>
+    <append DEBUG="FALSE" compile_threaded="TRUE"> -qsmp=omp </append>
+    <append DEBUG="TRUE" compile_threaded="TRUE"> -qsmp=omp:noopt </append>
   </FFLAGS>
   <LDFLAGS>
     <base>  -Wl,--relax -Wl,--allow-multiple-definition </base>
@@ -467,7 +467,7 @@ using a fortran linker.
 
 <compiler OS="Darwin" COMPILER="intel">
   <FFLAGS>
-    <append compile_threaded="false"> -heap-arrays </append>
+    <append compile_threaded="FALSE"> -heap-arrays </append>
   </FFLAGS>
 </compiler>
 
@@ -495,6 +495,65 @@ using a fortran linker.
   <FFLAGS>
     <append>  -xHost </append>
   </FFLAGS>
+  <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
+  <MPICC MPILIB="mpich2">mpiicc</MPICC>
+  <MPIFC MPILIB="mpich2">mpiifort</MPIFC>
+  <SCC>icc</SCC>
+  <SFC>ifort</SFC>
+  <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
+</compiler>
+
+<compiler MACH="aleph" COMPILER="intel">
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CFLAGS>
+    <append> -xCORE-AVX2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -xCORE-AVX2 </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </append>
+  </SLIBS>
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <LDFLAGS>
+    <append>-mkl </append>
+  </LDFLAGS>
+</compiler>
+
+<compiler MACH="athena">
+  <CPPDEFS>
+    <!-- these flags enable nano timers -->
+    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
+  <AR>xiar</AR>
+  <ARFLAGS>
+    <base>cru</base>
+  </ARFLAGS>
+</compiler>
+
+<compiler MACH="athena" COMPILER="intel">
+  <CFLAGS>
+    <append>  -xHost </append>
+  </CFLAGS>
+  <CPPDEFS>
+    <append> -DINTEL_MKL -DHAVE_SSE2 </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append>  -xHost </append>
+  </FFLAGS>
+  <FFLAGS>
+    <append MODEL="nemo"> $(FC_AUTO_R8) -O3 -assume norealloc_lhs </append>
+  </FFLAGS>
+  <SLIBS>
+    <append> $SHELL{${NETCDF_PATH}/bin/nc-config --flibs}</append>
+  </SLIBS>
   <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
   <MPICC MPILIB="mpich2">mpiicc</MPICC>
   <MPIFC MPILIB="mpich2">mpiifort</MPIFC>
@@ -588,10 +647,10 @@ using a fortran linker.
   <CMAKE_OPTS>
     <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
   </CMAKE_OPTS>
-  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
-  <PFUNIT_PATH MPILIB="mpt" compile_threaded="true">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
-  <!-- Bug in the intel/17.0.1 compiler requires this, remove this line when compiler is updated -->
-  <HAS_F2008_CONTIGUOUS>FALSE</HAS_F2008_CONTIGUOUS>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
+  <PFUNIT_PATH MPILIB="mpt" compile_threaded="TRUE">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_MPI_openMP</PFUNIT_PATH>
+  <!-- SET to FALSE for intel 17 and 18 TRUE otherwise -->
+  <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
 </compiler>
 
 <compiler MACH="cheyenne" COMPILER="pgi">
@@ -717,7 +776,7 @@ using a fortran linker.
 <compiler MACH="eastwind" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append compile_threaded="false"> -nomp </append>
+    <append compile_threaded="FALSE"> -nomp </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
@@ -727,10 +786,10 @@ using a fortran linker.
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append compile_threaded="false"> -nomp </append>
+    <append compile_threaded="FALSE"> -nomp </append>
   </FFLAGS>
   <LDFLAGS>
-    <append compile_threaded="false"> -nomp </append>
+    <append compile_threaded="FALSE"> -nomp </append>
   </LDFLAGS>
   <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
@@ -899,20 +958,7 @@ using a fortran linker.
   <SLIBS>
     <append MPILIB="mvapich2"> -mkl=cluster </append>
   </SLIBS>
-  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">/fs/cgd/csm/tools/pFUnit/pFUnit3.2.8_hobart_Intel15.0.2_noMPI_noOpenMP</PFUNIT_PATH>
-</compiler>
-
-<compiler MACH="hobart" COMPILER="nag">
-  <CPPDEFS>
-    <!-- needed for nag pio build.. -->
-    <append> -DNO_C_SIZEOF </append>
-  </CPPDEFS>
-  <LDFLAGS>
-    <append> -lpthread</append>
-  </LDFLAGS>
-  <SLIBS>
-    <append> -L/usr/local/nag/lib/NAG_Fortran </append>
-  </SLIBS>
+  <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">/fs/cgd/csm/tools/pFUnit/pFUnit3.2.8_hobart_Intel15.0.2_noMPI_noOpenMP</PFUNIT_PATH>
 </compiler>
 
 <compiler MACH="hobart" COMPILER="pgi">
@@ -1084,7 +1130,7 @@ using a fortran linker.
   <SLIBS>
     <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
-  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_1_0r/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="pleiades-has">
@@ -1098,7 +1144,7 @@ using a fortran linker.
   <SLIBS>
     <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
-  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_1_0r/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="pleiades-ivy">
@@ -1112,7 +1158,7 @@ using a fortran linker.
   <SLIBS>
     <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
-  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_1_0r/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="pleiades-san">
@@ -1126,7 +1172,7 @@ using a fortran linker.
   <SLIBS>
     <append>-L$ENV{NETCDF}/lib -lnetcdff -lnetcdf</append>
   </SLIBS>
-  <ESMF_LIBDIR>/home6/fvitt/esmf_7_0_0/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
+  <ESMF_LIBDIR>/home6/fvitt/esmf_7_1_0r/esmf/lib/libO/Linux.intel.64.mpi.default</ESMF_LIBDIR>
 </compiler>
 
 <compiler MACH="sandiatoss3" COMPILER="intel">

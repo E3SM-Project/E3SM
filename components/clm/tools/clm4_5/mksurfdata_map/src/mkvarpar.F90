@@ -17,6 +17,7 @@ module mkvarpar
   save
 !
   integer, parameter :: nlevsoi = 10  ! number of soil layers
+  integer, parameter :: nlevslp = 11  ! number of slope percentile levels
   integer, parameter :: numstdpft = 16! number of standard PFT types
   integer, parameter :: numstdcft = 2 ! of the number of standard PFT types, how many are crop (CFT)
   integer, parameter :: noveg   = 0   ! value for non-vegetated pft

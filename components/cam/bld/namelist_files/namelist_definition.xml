@@ -1128,13 +1128,6 @@ IEFLX fixer options
 Default: 0
 </entry>
 
-<entry id="l_ieflx_fix" type="logical"  category="fixers"
-       group="phys_ctl_nl" valid_values="">
-Whether or not to turn on IEFLX fixer
-Default: false
-</entry>
-
-
 <!-- Gravity Wave Drag -->
 
 <entry id="use_gw_oro" type="logical" category="gw_drag"
@@ -1173,6 +1166,12 @@ Default: set by build-namelist.
 Force the stress due to gravity waves to be zero at the top of the model.
 In the low-top model, this helps to conserve momentum and produce a QBO.
 Default: set by build-namelist.
+</entry>
+
+<entry id="gw_convect_hcf" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Heating rate conversion factor associated with convective gravity waves
+Default: 20.0
 </entry>
 
 <entry id="effgw_beres" type="real" category="gw_drag"
@@ -2529,6 +2528,12 @@ Default: set by build-namelist
 <entry id="zmconv_trigmem" type="logical" category="conv"
        group="zmconv_nl" valid_values="" >
 Trigger and memory option in ZM deep convection scheme.
+Default: FALSE
+</entry>
+
+<entry id="zmconv_trigdcape_ull" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+DCAPE trigger along with unrestricted launching level for ZM deep convection scheme.
 Default: FALSE
 </entry>
 
@@ -5808,11 +5813,12 @@ Default: Set by build-namelist.
 </entry>
 
 <entry id="se_limiter_option" type="integer" category="se"
-       group="ctl_nl" valid_values="0,4,8" >
+       group="ctl_nl" valid_values="0,4,8,9" >
 Limiter used for horizontal tracer advection:
 0: None
 4: Sign-preserving limiter.
 8: Monotone limiter.
+9: CAAS monotone limiter.
 Default: Set by build-namelist (probably 8).
 </entry>
 
@@ -5872,6 +5878,7 @@ tstep_type=2  RK2-SSP 3 stage (as used by tracers)
 tstep_type=3  classic Runga-Kutta (RK) 3 stage
 tstep_type=4  Kinnmark&Gray Runga-Kutta (RK) 4 stage
 tstep_type=5  Kinnmark&Gray Runga-Kutta (RK) 5 stage (3rd order accurate in time)
+tstep_type=7  Kinnmark&Gray Runga-Kutta IMEX
 Default: Set by build-namelist.
 </entry>
 
@@ -5889,8 +5896,14 @@ Number of hyperviscosity subcycles per dynamics timestep.
 Default: Set by build-namelist (probably 2).
 </entry>
 
+<entry id="hypervis_subcycle_tom" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of viscosity subcycles per dynamics timestep.
+Default in homme: 0 (does not use time split wrt HV).
+</entry>
+
 <entry id="hypervis_subcycle_q" type="integer" category="se"
-       group="ctl_nl" valid_values="1" >
+       group="ctl_nl" valid_values="" >
 Number of hyperviscosity subcycles done in tracer advection code.
 The only supported value in CAM is 1.
 Default: Set by build-namelist.
@@ -5985,7 +5998,72 @@ Number of vertical threads.
 Default: 1.
 </entry>
 
+<entry id="theta_hydrostatic_mode" type="logical" category="se"
+       group="ctl_nl" valid_values="" >
+Indicates hydrostatic regime for atm. theta-l model.
+Default: true. 
+</entry>
 
+<entry id="theta_advect_form" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Indicates form of eqn. for vtheta in theta-l model.
+0 is conservation form, 1 is expanded div form.
+Default: 0.
+</entry>
+	
+<entry id="cubed_sphere_map" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Defines which map is used for ref. element in homme.
+Default for preqx target: 0.
+</entry>
+
+<entry id="transport_alg" type="integer" category="se"
+       group="ctl_nl" valid_values="0,12" >
+Tracer transport algorithm:
+0: Eulerian flux-form.
+12: COMPOSE semi-Lagrangian.
+</entry>
+
+<entry id="semi_lagrange_cdr_alg" type="integer" category="se"
+       group="ctl_nl" valid_values="2,3,20,30" >
+Constrained density reconstuctor (CDR) for property preservation:
+2: QLT
+3: CAAS
+20: QLT with superlevels of 8 levels.
+30: CAAS with superlevels of 8 levels.
+Default: 20
+</entry>
+
+<entry id="semi_lagrange_cdr_check" type="logical" category="se"
+       group="ctl_nl" valid_values="">
+Correctness check the CDR.
+Default: False
+</entry>
+
+<entry id="semi_lagrange_nearest_point_lev" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of levels, counting from the top, that are allowed to use the
+nearest point in the halo to the departure point, when necessary.
+Default: 0
+</entry>
+
+<!-- Physics grid -->
+
+<entry id="se_fv_nphys" type="integer" category="se"
+       group="dyn_se_inparm" valid_values="" >
+Number of equally-spaced horizontal physics points per spectral
+element. A number greater than zero will define [se_fv_nphys] equally
+spaced physics points in each direction (e.g., se_fv_nphys = 2 will
+result in 4 equally-spaced physics points per element).
+Default: 0 = feature disabled, use dynamics GLL points.
+</entry>
+
+<entry id="semi_lagrange_hv_q" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of tracers, starting from 1, to which to apply hyperviscosity. For
+example, to apply hyperviscosity to moisture, the first tracer, set the value to
+1. Hyperviscosity is applied using nu_q as the coefficient.
+</entry>
 
 <!-- CAM I/O  -->
 

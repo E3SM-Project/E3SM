@@ -8,7 +8,7 @@
   <xs:attribute name="COMPILER" type="xs:token"/>
   <xs:attribute name="OS" type="xs:token"/>
   <xs:attribute name="MACH" type="xs:token"/>
-  <xs:attribute name="compile_threaded" type="xs:boolean"/>
+  <xs:attribute name="compile_threaded" type="upperBoolean"/>
   <xs:attribute name="DEBUG" type="upperBoolean"/>
   <xs:attribute name="MODEL" type="xs:token"/>
   <xs:attribute name="MPILIB" type="xs:token"/>

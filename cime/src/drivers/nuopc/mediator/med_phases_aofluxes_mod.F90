@@ -1,11 +1,14 @@
 module med_phases_aofluxes_mod
 
   use med_constants_mod     , only : R8, CL, CX
-  use med_constants_mod     , only : dbug_flag => med_constants_dbug_flag
-  use med_internalstate_mod , only : mastertask
-  use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
-  use shr_nuopc_methods_mod , only : chkerr => shr_nuopc_methods_chkerr
-  use shr_nuopc_methods_mod , only : fldchk => shr_nuopc_methods_FB_FldChk
+  use med_internalstate_mod , only : mastertask, logunit
+  use med_constants_mod     , only : dbug_flag    => med_constants_dbug_flag
+  use shr_nuopc_utils_mod   , only : memcheck     => shr_nuopc_memcheck
+  use shr_nuopc_utils_mod   , only : chkerr       => shr_nuopc_utils_chkerr
+  use shr_nuopc_methods_mod , only : FB_fldchk    => shr_nuopc_methods_FB_FldChk
+  use shr_nuopc_methods_mod , only : FB_GetFldPtr => shr_nuopc_methods_FB_GetFldPtr
+  use shr_nuopc_methods_mod , only : FB_diagnose  => shr_nuopc_methods_FB_diagnose
+  use shr_nuopc_methods_mod , only : FB_init      => shr_nuopc_methods_FB_init
 
   implicit none
   private
@@ -20,7 +23,6 @@ module med_phases_aofluxes_mod
   ! Private routines
   !--------------------------------------------------------------------------
 
-  private :: med_phases_aofluxes_init
   private :: med_aofluxes_init
   private :: med_aofluxes_run
 
@@ -72,13 +74,13 @@ module med_phases_aofluxes_mod
 
      ! Fields that are not obtained via GetFldPtr
      real(R8) , pointer :: uGust       (:) ! wind gust
+     logical            :: created         ! has this data type been created
   end type aoflux_type
 
   ! The following three variables are obtained as attributes from gcomp
   logical       :: flds_wiso  ! use case
   logical       :: compute_atm_dens
   logical       :: compute_atm_thbot
-  character(3)  :: aoflux_grid
   character(*), parameter :: u_FILE_u = &
        __FILE__
 
@@ -86,104 +88,16 @@ module med_phases_aofluxes_mod
 contains
 !================================================================================
 
-  subroutine med_phases_aofluxes_init(gcomp, aoflux, rc)
-
-    use ESMF                  , only : ESMF_GridComp, ESMF_VM, ESMF_VMGet, ESMF_GridCompGet
-    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LOGERR_PASSTHRU
-    use ESMF                  , only : ESMF_SUCCESS, ESMF_LogFoundError
-    use NUOPC                 , only : NUOPC_CompAttributeGet
-    use esmFlds               , only : compatm, compocn
-    use med_internalstate_mod , only : InternalState, mastertask
-    use shr_nuopc_scalars_mod , only : flds_scalar_name
-    use shr_nuopc_scalars_mod , only : flds_scalar_num
-    use perf_mod              , only : t_startf, t_stopf
-
-    !-----------------------------------------------------------------------
-    ! Initialize ocn/atm flux calculations
-    !-----------------------------------------------------------------------
-
-    ! input/output variables
-    type(ESMF_GridComp)               :: gcomp
-    type(aoflux_type) , intent(inout) :: aoflux
-    integer           , intent(out)   :: rc
-
-    ! Local variables
-    character(3)        :: aoflux_grid
-    character(len=256)  :: cvalue
-    type(InternalState) :: is_local
-    integer             :: localPet
-    type(ESMF_VM)       :: vm
-    integer             :: dbrc
-    character(len=*),parameter :: subname='(med_phases_aofluxes_init)'
-    !---------------------------------------
-    call t_startf('MED:'//subname)
-
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
-    rc = ESMF_SUCCESS
-
-    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
-    mastertask = .false.
-    if (localPet == 0) mastertask=.true.
-
-    ! Get the internal state from Component.
-    nullify(is_local%wrap)
-    call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! Determine src and dst comps depending on the aoflux_grid setting
-
-    call NUOPC_CompAttributeGet(gcomp, name='aoflux_grid', value=cvalue, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) aoflux_grid
-
-    if (trim(aoflux_grid) == 'ocn') then
-
-       ! Create FBMed_aoflux_o (field bundle on the ocean grid)
-       call med_aofluxes_init(gcomp, aoflux, &
-            FBAtm=is_local%wrap%FBImp(compatm,compocn), &
-            FBOcn=is_local%wrap%FBImp(compocn,compocn), &
-            FBFrac=is_local%wrap%FBfrac(compocn), &
-            FBMed_aoflux=is_local%wrap%FBMed_aoflux_o, &
-            rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    else if (trim(aoflux_grid) == 'atm') then
-
-       ! Create FBMed_aoflux_a (field bundle on the atmosphere grid)
-       call med_aofluxes_init(gcomp, aoflux, &
-            FBAtm=is_local%wrap%FBImp(compatm,compatm), &
-            FBOcn=is_local%wrap%FBImp(compocn,compatm), &
-            FBFrac=is_local%wrap%FBfrac(compatm), &
-            FBMed_aoflux=is_local%wrap%FBMed_aoflux_a, &
-            rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    else
-
-       call ESMF_LogWrite(trim(subname)//' aoflux_grid = '//trim(aoflux_grid)//' not available', &
-            ESMF_LOGMSG_INFO, rc=dbrc)
-       return
-
-    end if
-    call t_stopf('MED:'//subname)
-
-  end subroutine med_phases_aofluxes_init
-
-!================================================================================
-
   subroutine med_phases_aofluxes_run(gcomp, rc)
 
     use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_GridCompGet
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
+    use ESMF                  , only : ESMF_FieldBundleIsCreated
     use NUOPC                 , only : NUOPC_IsConnected, NUOPC_CompAttributeGet
     use med_internalstate_mod , only : InternalState
     use med_map_mod           , only : med_map_FB_Regrid_Norm
-    use esmFlds               , only : fldListFr
-    use esmFlds               , only : compatm, compocn, compname
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
+    use esmFlds               , only : shr_nuopc_fldList_GetNumFlds, shr_nuopc_fldList_GetFldNames
+    use esmFlds               , only : fldListFr, fldListMed_aoflux, compatm, compocn, compname
     use perf_mod              , only : t_startf, t_stopf
 
     !-----------------------------------------------------------------------
@@ -196,101 +110,77 @@ contains
 
     ! local variables
     type(InternalState)     :: is_local
-    type(ESMF_Clock)        :: clock
-    character(CL)           :: cvalue
-    character(CL)           :: aoflux_grid
     type(aoflux_type), save :: aoflux
     logical, save           :: first_call = .true.
-    integer                 :: dbrc
     character(len=*),parameter :: subname='(med_phases_aofluxes)'
     !---------------------------------------
-    call t_startf('MED:'//subname)
 
-    if (dbug_flag > 5) then
-       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
-    endif
     rc = ESMF_SUCCESS
-    call shr_nuopc_memcheck(subname, 5, mastertask)
-    ! Get the clock from the mediator Component
-    call ESMF_GridCompGet(gcomp, clock=clock, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Get the internal state from the mediator Component.
     nullify(is_local%wrap)
     call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    ! Initialize aoflux instance
     if (first_call) then
-       call med_phases_aofluxes_init(gcomp, aoflux, rc)
+       ! If field bundles have been created for the ocean/atmosphere flux computation
+       if ( ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_a, rc=rc) .and. &
+            ESMF_FieldBundleIsCreated(is_local%wrap%FBMed_aoflux_o, rc=rc)) then
+
+          ! Allocate memoroy for the aoflux module data type (mediator atm/ocn field bundle on the ocean grid)
+          call med_aofluxes_init(gcomp, aoflux, &
+               FBAtm=is_local%wrap%FBImp(compatm,compocn), &
+               FBOcn=is_local%wrap%FBImp(compocn,compocn), &
+               FBFrac=is_local%wrap%FBfrac(compocn), &
+               FBMed_aoflux=is_local%wrap%FBMed_aoflux_o, rc=rc)
+          if (chkerr(rc,__LINE__,u_FILE_u)) return
+          aoflux%created = .true.
+       else
+          aoflux%created = .false.
+       end if
+
+       ! Now set first_call to .false.
        first_call = .false.
     end if
 
-    ! Determine source and destination comps depending on the aoflux_grid setting
-    call NUOPC_CompAttributeGet(gcomp, name='aoflux_grid', value=cvalue, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) aoflux_grid
-
-    if (trim(aoflux_grid) == 'ocn') then
-
-       ! TODO(mvertens, 2019-01-12): ONLY regrid atm import fields that are needed for the atm/ocn flux calculation
-
-       ! Regrid atm import field bundle from atm to ocn grid as input for ocn/atm flux calculation
-       call med_map_FB_Regrid_Norm( &
-            fldListFr(compatm)%flds, compatm, compocn, &
-            is_local%wrap%FBImp(compatm,compatm), &
-            is_local%wrap%FBImp(compatm,compocn), &
-            is_local%wrap%FBFrac(compatm), &
-            is_local%wrap%FBNormOne(compatm,compocn,:), &
-            is_local%wrap%RH(compatm,compocn,:), &
-            string=trim(compname(compatm))//'2'//trim(compname(compocn)), rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       ! Calculate atm/ocn fluxes on the destination grid
-       call med_aofluxes_run(gcomp, aoflux, rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBMed_aoflux_o, &
-               string=trim(subname) //' FBAMed_aoflux_o' , rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-       end if
-
-    else if (trim(aoflux_grid) == 'atm') then
-
-       call med_map_FB_Regrid_Norm( &
-            fldListFr(compocn)%flds, compocn, compatm, &
-            is_local%wrap%FBImp(compocn,compocn), &
-            is_local%wrap%FBImp(compocn,compatm), &
-            is_local%wrap%FBFrac(compocn), &
-            is_local%wrap%FBNormOne(compocn,compatm,:), &
-            is_local%wrap%RH(compocn,compatm,:), &
-            string=trim(compname(compocn))//'2'//trim(compname(compatm)), rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImp(compocn,compatm), &
-               string=trim(subname) //' FBImp('//trim(compname(compocn))//','//trim(compname(compatm))//') ', rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-       end if
-
-       ! Calculate atm/ocn fluxes on the destination grid
-       call med_aofluxes_run(gcomp, aoflux, rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-       if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImp(compocn,compatm), &
-               string=trim(subname) //' FBImp('//trim(compname(compocn))//','//trim(compname(compatm))//') ', rc=rc)
-          if (chkerr(rc,__LINE__,u_FILE_u)) return
-       end if
-
-    else
-
-       call ESMF_LogWrite(trim(subname)//' aoflux_grid = '//trim(aoflux_grid)//' not available', &
-            ESMF_LOGMSG_INFO, rc=dbrc)
-       return
-
+    ! Return if there is no aoflux has not been created
+    if (.not. aoflux%created) then
+       RETURN
     end if
+
+    ! Start time timer
+    call t_startf('MED:'//subname)
+
+    if (dbug_flag > 5) then
+       call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
+    endif
+
+    call memcheck(subname, 5, mastertask)
+
+    ! TODO(mvertens, 2019-01-12): ONLY regrid atm import fields that are needed for the atm/ocn flux calculation
+
+    ! Regrid atm import field bundle from atm to ocn grid as input for ocn/atm flux calculation
+    call med_map_FB_Regrid_Norm( &
+         fldListFr(compatm)%flds, compatm, compocn, &
+         is_local%wrap%FBImp(compatm,compatm), &
+         is_local%wrap%FBImp(compatm,compocn), &
+         is_local%wrap%FBFrac(compatm), &
+         is_local%wrap%FBFrac(compocn), &
+         is_local%wrap%FBNormOne(compatm,compocn,:), &
+         is_local%wrap%RH(compatm,compocn,:), &
+         string=trim(compname(compatm))//'2'//trim(compname(compocn)), rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    ! Calculate atm/ocn fluxes on the destination grid
+    call med_aofluxes_run(gcomp, aoflux, rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    if (dbug_flag > 1) then
+       call FB_diagnose(is_local%wrap%FBMed_aoflux_o, &
+            string=trim(subname) //' FBAMed_aoflux_o' , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    end if
+
     call t_stopf('MED:'//subname)
 
   end subroutine med_phases_aofluxes_run
@@ -299,13 +189,12 @@ contains
 
   subroutine med_aofluxes_init(gcomp, aoflux, FBAtm, FBOcn, FBFrac, FBMed_aoflux, rc)
 
-    use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError
-    use ESMF                  , only : ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU
-    use ESMF                  , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_VM
-    use ESMF                  , only : ESMF_Field, ESMF_FieldGet, ESMF_FieldBundle, ESMF_VMGet
-    use NUOPC                 , only : NUOPC_CompAttributeGet
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
-    use perf_mod              , only : t_startf, t_stopf
+    use ESMF     , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_LogFoundError
+    use ESMF     , only : ESMF_SUCCESS, ESMF_LOGERR_PASSTHRU
+    use ESMF     , only : ESMF_GridComp, ESMF_GridCompGet, ESMF_VM
+    use ESMF     , only : ESMF_Field, ESMF_FieldGet, ESMF_FieldBundle, ESMF_VMGet
+    use NUOPC    , only : NUOPC_CompAttributeGet
+    use perf_mod , only : t_startf, t_stopf
 
     !-----------------------------------------------------------------------
     ! Initialize pointers to the module variables
@@ -321,7 +210,6 @@ contains
     integer                , intent(out)   :: rc
 
     ! local variables
-    type(ESMF_VM)            :: vm
     integer                  :: iam
     integer                  :: n
     integer                  :: lsize
@@ -329,23 +217,15 @@ contains
     real(R8), pointer        :: ifrac(:)
     character(CL)            :: cvalue
     logical                  :: flds_wiso  ! use case
-    integer                  :: dbrc
     character(len=CX)        :: tmpstr
     character(*),parameter   :: subName =   '(med_aofluxes_init) '
     !-----------------------------------------------------------------------
 
-    call t_startf('MED:'//subname)
-
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": called", ESMF_LOGMSG_INFO)
     endif
     rc = ESMF_SUCCESS
-    call shr_nuopc_memcheck(subname, 5, mastertask)
-    ! The following is for debugging
-    call ESMF_GridCompGet(gcomp, vm=vm, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call ESMF_VMGet(vm, localPet=iam, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call memcheck(subname, 5, mastertask)
 
     !----------------------------------
     ! get attributes that are set as module variables
@@ -355,47 +235,43 @@ contains
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
     read(cvalue,*) flds_wiso
 
-    call NUOPC_CompAttributeGet(gcomp, name='aoflux_grid', value=cvalue, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    read(cvalue,*) aoflux_grid
-
     !----------------------------------
     ! atm/ocn fields
     !----------------------------------
 
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='So_tref', fldptr1=aoflux%tref, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='So_tref', fldptr1=aoflux%tref, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='So_qref', fldptr1=aoflux%qref, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='So_qref', fldptr1=aoflux%qref, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='So_ustar', fldptr1=aoflux%ustar, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='So_ustar', fldptr1=aoflux%ustar, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='So_re', fldptr1=aoflux%re, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='So_re', fldptr1=aoflux%re, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='So_ssq', fldptr1=aoflux%ssq, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='So_ssq', fldptr1=aoflux%ssq, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='So_u10', fldptr1=aoflux%u10, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='So_u10', fldptr1=aoflux%u10, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='So_duu10n', fldptr1=aoflux%duu10n, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='So_duu10n', fldptr1=aoflux%duu10n, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_taux', fldptr1=aoflux%taux, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='Faox_taux', fldptr1=aoflux%taux, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_tauy', fldptr1=aoflux%tauy, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='Faox_tauy', fldptr1=aoflux%tauy, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_lat', fldptr1=aoflux%lat, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='Faox_lat', fldptr1=aoflux%lat, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_sen', fldptr1=aoflux%sen, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='Faox_sen', fldptr1=aoflux%sen, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_evap', fldptr1=aoflux%evap, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='Faox_evap', fldptr1=aoflux%evap, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     lsize = size(aoflux%evap)
     if (flds_wiso) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_evap_16O', fldptr1=aoflux%evap_16O, rc=rc)
+       call FB_GetFldPtr(FBMed_aoflux, fldname='Faox_evap_16O', fldptr1=aoflux%evap_16O, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_evap_18O', fldptr1=aoflux%evap_18O, rc=rc)
+       call FB_GetFldPtr(FBMed_aoflux, fldname='Faox_evap_18O', fldptr1=aoflux%evap_18O, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_evap_HDO', fldptr1=aoflux%evap_HDO, rc=rc)
+       call FB_GetFldPtr(FBMed_aoflux, fldname='Faox_evap_HDO', fldptr1=aoflux%evap_HDO, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     else
        allocate(aoflux%evap_16O(lsize)); aoflux%evap_16O(:) = 0._R8
@@ -403,27 +279,27 @@ contains
        allocate(aoflux%evap_HDO(lsize)); aoflux%evap_HDO(:) = 0._R8
     end if
 
-    call shr_nuopc_methods_FB_GetFldPtr(FBMed_aoflux, fldname='Faox_lwup', fldptr1=aoflux%lwup, rc=rc)
+    call FB_GetFldPtr(FBMed_aoflux, fldname='Faox_lwup', fldptr1=aoflux%lwup, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------
     ! Ocn import fields
     !----------------------------------
 
-    call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_omask', fldptr1=aoflux%rmask, rc=rc)
+    call FB_GetFldPtr(FBOcn, fldname='So_omask', fldptr1=aoflux%rmask, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_t', fldptr1=aoflux%tocn, rc=rc)
+    call FB_GetFldPtr(FBOcn, fldname='So_t', fldptr1=aoflux%tocn, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_u', fldptr1=aoflux%uocn, rc=rc)
+    call FB_GetFldPtr(FBOcn, fldname='So_u', fldptr1=aoflux%uocn, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_v', fldptr1=aoflux%vocn, rc=rc)
+    call FB_GetFldPtr(FBOcn, fldname='So_v', fldptr1=aoflux%vocn, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     if (flds_wiso) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_roce_16O', fldptr1=aoflux%roce_16O, rc=rc)
+       call FB_GetFldPtr(FBOcn, fldname='So_roce_16O', fldptr1=aoflux%roce_16O, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_roce_18O', fldptr1=aoflux%roce_18O, rc=rc)
+       call FB_GetFldPtr(FBOcn, fldname='So_roce_18O', fldptr1=aoflux%roce_18O, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBOcn, fldname='So_roce_HDO', fldptr1=aoflux%roce_HDO, rc=rc)
+       call FB_GetFldPtr(FBOcn, fldname='So_roce_HDO', fldptr1=aoflux%roce_HDO, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     else
        allocate(aoflux%roce_16O(lsize)); aoflux%roce_16O(:) = 0._R8
@@ -435,18 +311,18 @@ contains
     ! Atm import fields
     !----------------------------------
 
-    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_z', fldptr1=aoflux%zbot, rc=rc)
+    call FB_GetFldPtr(FBAtm, fldname='Sa_z', fldptr1=aoflux%zbot, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_u', fldptr1=aoflux%ubot, rc=rc)
+    call FB_GetFldPtr(FBAtm, fldname='Sa_u', fldptr1=aoflux%ubot, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_v', fldptr1=aoflux%vbot, rc=rc)
+    call FB_GetFldPtr(FBAtm, fldname='Sa_v', fldptr1=aoflux%vbot, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_tbot', fldptr1=aoflux%tbot, rc=rc)
+    call FB_GetFldPtr(FBAtm, fldname='Sa_tbot', fldptr1=aoflux%tbot, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! bottom level potential temperature will need to be computed if not received from the atm
-    if (fldchk(FBAtm, 'Sa_ptem', rc=rc)) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_ptem', fldptr1=aoflux%thbot, rc=rc)
+    if (FB_fldchk(FBAtm, 'Sa_ptem', rc=rc)) then
+       call FB_GetFldPtr(FBAtm, fldname='Sa_ptem', fldptr1=aoflux%thbot, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        compute_atm_thbot = .false.
     else
@@ -455,8 +331,8 @@ contains
     end if
 
     ! bottom level density will need to be computed if not received from the atm
-    if (fldchk(FBAtm, 'Sa_dens', rc=rc)) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_dens', fldptr1=aoflux%dens, rc=rc)
+    if (FB_fldchk(FBAtm, 'Sa_dens', rc=rc)) then
+       call FB_GetFldPtr(FBAtm, fldname='Sa_dens', fldptr1=aoflux%dens, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        compute_atm_dens = .false.
     else
@@ -466,18 +342,18 @@ contains
 
     ! if either density or potential temperature are computed, will need bottom level pressure
     if (compute_atm_dens .or. compute_atm_thbot) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_pbot', fldptr1=aoflux%pbot, rc=rc)
+       call FB_GetFldPtr(FBAtm, fldname='Sa_pbot', fldptr1=aoflux%pbot, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_shum', fldptr1=aoflux%shum, rc=rc)
+    call FB_GetFldPtr(FBAtm, fldname='Sa_shum', fldptr1=aoflux%shum, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     if (flds_wiso) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_shum_16O', fldptr1=aoflux%shum_16O, rc=rc)
+       call FB_GetFldPtr(FBAtm, fldname='Sa_shum_16O', fldptr1=aoflux%shum_16O, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_shum_18O', fldptr1=aoflux%shum_18O, rc=rc)
+       call FB_GetFldPtr(FBAtm, fldname='Sa_shum_18O', fldptr1=aoflux%shum_18O, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Sa_shum_HDO', fldptr1=aoflux%shum_HDO, rc=rc)
+       call FB_GetFldPtr(FBAtm, fldname='Sa_shum_HDO', fldptr1=aoflux%shum_HDO, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     else
        allocate(aoflux%shum_16O(lsize)); aoflux%shum_16O(:) = 0._R8
@@ -486,8 +362,8 @@ contains
     end if
 
     ! Optional field used for gust parameterization
-    if ( fldchk(FBAtm, 'Faxa_rainc', rc=rc)) then
-       call shr_nuopc_methods_FB_GetFldPtr(FBAtm, fldname='Faxa_rainc', fldptr1=aoflux%prec_gust, rc=rc)
+    if ( FB_fldchk(FBAtm, 'Faxa_rainc', rc=rc)) then
+       call FB_GetFldPtr(FBAtm, fldname='Faxa_rainc', fldptr1=aoflux%prec_gust, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        aoflux%prec_gust(:) =  0.0_R8
     end if
@@ -517,14 +393,14 @@ contains
 
     ! TODO: need to check if this logic is correct
     ! then check ofrac + ifrac
-    ! call shr_nuopc_methods_FB_getFldPtr(FBFrac , fldname='ofrac' , fldptr1=ofrac, rc=rc)
+    ! call FB_getFldPtr(FBFrac , fldname='ofrac' , fldptr1=ofrac, rc=rc)
     ! if (chkerr(rc,__LINE__,u_FILE_u)) return
-    ! call shr_nuopc_methods_FB_getFldPtr(FBFrac , fldname='ifrac' , fldptr1=ifrac, rc=rc)
+    ! call FB_getFldPtr(FBFrac , fldname='ifrac' , fldptr1=ifrac, rc=rc)
     ! if (chkerr(rc,__LINE__,u_FILE_u)) return
     ! where (ofrac(:) + ifrac(:) <= 0.0_R8) mask(:) = 0
 
     if (dbug_flag > 5) then
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
     endif
     call t_stopf('MED:'//subname)
 
@@ -564,6 +440,7 @@ contains
     logical,save            :: first_call = .true.
     character(*),parameter  :: subName = '(med_aofluxes_run) '
     !-----------------------------------------------------------------------
+
     call t_startf('MED:'//subname)
 
     !----------------------------------
@@ -650,7 +527,7 @@ contains
     end if
 
     call shr_flux_atmocn (&
-         lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, aoflux%prec_gust, gust_fac, &
+         lsize, aoflux%zbot, aoflux%ubot, aoflux%vbot, aoflux%thbot, &
          aoflux%shum, aoflux%shum_16O, aoflux%shum_HDO, aoflux%shum_18O, aoflux%dens , &
          aoflux%tbot, aoflux%uocn, aoflux%vocn, &
          aoflux%tocn, aoflux%mask, aoflux%sen, aoflux%lat, aoflux%lwup, &

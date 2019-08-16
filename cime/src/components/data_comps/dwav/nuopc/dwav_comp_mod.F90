@@ -1,9 +1,4 @@
-#ifdef AIX
-@PROCESS ALIAS_SIZE(805306368)
-#endif
 module dwav_comp_mod
-
-  ! !USES:
 
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE
@@ -13,9 +8,7 @@ module dwav_comp_mod
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
   use mct_mod               , only : mct_avect_init, mct_avect_lsize
   use shr_sys_mod           , only : shr_sys_abort
-  use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX
-  use shr_string_mod        , only : shr_string_listGetName
+  use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod           , only : shr_sys_abort
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod           , only : shr_mpi_bcast
@@ -26,16 +19,14 @@ module dwav_comp_mod
   use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
-  use shr_cal_mod           , only : shr_cal_calendarname
-  use shr_cal_mod           , only : shr_cal_datetod2string
-  use shr_nuopc_scalars_mod , only : flds_scalar_name
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type
-  use dshr_nuopc_mod        , only : dshr_fld_add
+  use shr_cal_mod           , only : shr_cal_calendarname, shr_cal_datetod2string
+  use dshr_methods_mod      , only : ChkErr
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_export
   use dwav_shr_mod          , only : datamode       ! namelist input
   use dwav_shr_mod          , only : rest_file      ! namelist input
   use dwav_shr_mod          , only : rest_file_strm ! namelist input
   use dwav_shr_mod          , only : nullstr
+  use dwav_shr_mod          , only : SDWAV
 
   ! !PUBLIC TYPES:
   implicit none
@@ -48,16 +39,18 @@ module dwav_comp_mod
   public :: dwav_comp_advertise
   public :: dwav_comp_init
   public :: dwav_comp_run
-  public :: dwav_comp_final
+  public :: dwav_comp_export
 
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
 
+  type(mct_aVect)             :: x2w
+  type(mct_aVect)             :: w2x
   character(len=CS), pointer  :: avifld(:) ! character array for field names coming from streams
   character(len=CS), pointer  :: avofld(:) ! character array for field names to be sent/received from mediator
-  character(len=CXX)          :: flds_w2x_mod
-  character(len=CXX)          :: flds_x2w_mod
+  character(CXX)              :: flds_w2x = ''
+  character(CXX)              :: flds_x2w = ''
   character(len=*), parameter :: rpfile = 'rpointer.wav'
   character(*)    , parameter :: u_FILE_u = &
        __FILE__
@@ -66,10 +59,9 @@ module dwav_comp_mod
 contains
 !===============================================================================
 
-  subroutine dwav_comp_advertise(importState, exportState, &
+  subroutine dwav_comp_advertise(importState, exportState, flds_scalar_name, &
        wav_present, wav_prognostic, &
-       fldsFrWav_num, fldsFrWav, fldsToWav_num, fldsToWav, &
-       flds_w2x, flds_x2w, rc)
+       fldsFrWav_num, fldsFrWav, fldsToWav_num, fldsToWav, rc)
 
     ! 1. determine export and import fields to advertise to mediator
     ! 2. determine translation of fields from streams to export/import fields
@@ -77,14 +69,13 @@ contains
     ! input/output arguments
     type(ESMF_State)                   :: importState
     type(ESMF_State)                   :: exportState
+    character(len=*)     , intent(in)  :: flds_scalar_name 
     logical              , intent(in)  :: wav_present
     logical              , intent(in)  :: wav_prognostic
     integer              , intent(out) :: fldsFrWav_num
     type (fld_list_type) , intent(out) :: fldsFrWav(:)
     integer              , intent(out) :: fldsToWav_num
     type (fld_list_type) , intent(out) :: fldsToWav(:)
-    character(len=*)     , intent(out) :: flds_w2x
-    character(len=*)     , intent(out) :: flds_x2w
     integer              , intent(out) :: rc
 
     ! local variables
@@ -121,30 +112,20 @@ contains
 
     do n = 1,fldsFrWav_num
        call NUOPC_Advertise(exportState, standardName=fldsFrWav(n)%stdname, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
-
-    !-------------------
-    ! Save flds_w2x and flds_x2w as module variables for use in debugging
-    !-------------------
-
-    flds_x2w_mod = trim(flds_x2w)
-    flds_w2x_mod = trim(flds_w2x)
 
   end subroutine dwav_comp_advertise
 
   !===============================================================================
 
-  subroutine dwav_comp_init(x2w, w2x, &
-       SDWAV, mpicom, compid, my_task, master_task, &
+  subroutine dwav_comp_init(mpicom, compid, my_task, master_task, &
        inst_suffix, logunit, read_restart, &
-       target_ymd, target_tod, calendar, mesh)
+       target_ymd, target_tod, calendar, mesh, nxg, nyg)
 
     ! !DESCRIPTION: initialize dwav model
 
     ! !INPUT/OUTPUT PARAMETERS:
-    type(mct_aVect)        , intent(inout) :: x2w, w2x     ! input/output attribute vectors
-    type(shr_strdata_type) , intent(inout) :: SDWAV        ! model
     integer                , intent(in)    :: mpicom       ! mpi communicator
     integer                , intent(in)    :: compid       ! mct comp id
     integer                , intent(in)    :: my_task      ! my task in mpi communicator mpicom
@@ -156,6 +137,7 @@ contains
     integer                , intent(in)    :: target_tod   ! model sec into model date
     character(len=*)       , intent(in)    :: calendar     ! calendar type
     type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh
+    integer                , intent(out)   :: nxg, nyg
 
     !--- local variables ---
     integer                      :: n,k       ! generic counters
@@ -203,24 +185,24 @@ contains
 
     ! obtain the distgrid from the mesh that was read in
     call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine global index space for my processor
     allocate(gindex(lsize))
     call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine global size of distgrid
     call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     allocate(elementCountPTile(tileCount))
     call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     gsize = 0
     do n = 1,size(elementCountPTile)
        gsize = gsize + elementCountPTile(n)
@@ -248,11 +230,11 @@ contains
 
     ! obtain mesh lats and lons
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
     allocate(xc(numOwnedElements), yc(numOwnedElements))
     call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (numOwnedElements /= lsize) then
        call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
     end if
@@ -309,7 +291,7 @@ contains
     deallocate(domlon, domlat)
 
     !----------------------------------------------------------------------------
-    ! Initialize SDLND attributes for streams and mapping of streams to model domain
+    ! Initialize SDWAV attributes for streams and mapping of streams to model domain
     !----------------------------------------------------------------------------
 
     call shr_strdata_init_streams(SDWAV, compid, mpicom, my_task)
@@ -323,10 +305,15 @@ contains
 
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
 
-    call mct_avect_init(w2x, rlist=flds_w2x_mod, lsize=lsize)
+    call mct_avect_init(w2x, rlist=flds_w2x, lsize=lsize)
     call mct_avect_zero(w2x)
-    call mct_avect_init(x2w, rlist=flds_x2w_mod, lsize=lsize)
-    call mct_avect_zero(x2w)
+
+    ! no import state for now
+    ! call mct_avect_init(x2w, rlist=flds_x2w, lsize=lsize)
+    ! call mct_avect_zero(x2w)
+
+    nxg = SDWAV%nxg
+    nyg = SDWAV%nyg
 
     !----------------------------------------------------------------------------
     ! Read restart
@@ -372,8 +359,7 @@ contains
     !----------------------------------------------------------------------------
 
     write_restart = .false.
-    call dwav_comp_run(x2w, w2x, &
-         SDWAV, mpicom, my_task, master_task, &
+    call dwav_comp_run(mpicom, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
          target_ymd, target_tod)
 
@@ -387,29 +373,27 @@ contains
 
   !===============================================================================
 
-  subroutine dwav_comp_run(x2w, w2x, &
-       SDWAV, mpicom, my_task, master_task, &
+  subroutine dwav_comp_run(mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, case_name)
 
-    ! DESCRIPTION:  run method for dwav model
+    ! ----------------------------
+    ! run method for dwav model
+    ! ----------------------------
 
     ! input/output parameters:
-    type(mct_aVect)        , intent(inout) :: x2w
-    type(mct_aVect)        , intent(inout) :: w2x
-    type(shr_strdata_type) , intent(inout) :: SDWAV
-    integer                , intent(in)    :: mpicom           ! mpi communicator
-    integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
-    integer                , intent(in)    :: master_task      ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
-    integer                , intent(in)    :: logunit          ! logging unit number
-    logical                , intent(in)    :: read_restart     ! start from restart
-    logical                , intent(in)    :: write_restart    ! write restart
-    integer(IN)            , intent(in)    :: target_ymd
-    integer(IN)            , intent(in)    :: target_tod
-    character(CL)          , intent(in), optional :: case_name ! case name
+    integer          , intent(in)    :: mpicom           ! mpi communicator
+    integer          , intent(in)    :: my_task          ! my task in mpi communicator mpicom
+    integer          , intent(in)    :: master_task      ! task number of master task
+    character(len=*) , intent(in)    :: inst_suffix      ! char string associated with instance
+    integer          , intent(in)    :: logunit          ! logging unit number
+    logical          , intent(in)    :: read_restart     ! start from restart
+    logical          , intent(in)    :: write_restart    ! write restart
+    integer          , intent(in)    :: target_ymd
+    integer          , intent(in)    :: target_tod
+    character(CL)    , intent(in), optional :: case_name ! case name
 
-    !--- local ---
+    ! local variables
     integer                 :: n                     ! indices
     integer                 :: idt                   ! integer timestep
     integer                 :: nu                    ! unit number
@@ -489,36 +473,36 @@ contains
 
     call t_stopf('dwav')
 
-    !----------------------------------------------------------------------------
-    ! Reset shr logging to original values
-    !----------------------------------------------------------------------------
     call t_stopf('DWAV_RUN')
 
   end subroutine dwav_comp_run
 
   !===============================================================================
 
-  subroutine dwav_comp_final(my_task, master_task, logunit)
+  subroutine dwav_comp_export(exportState, rc)
 
-    ! !DESCRIPTION:  finalize method for dwav model
+    ! input/output variables
+    type(ESMF_State)     :: exportState
+    integer, intent(out) :: rc
 
-    ! !INPUT/OUTPUT PARAMETERS:
-    integer , intent(in) :: my_task     ! my task in mpi communicator mpicom
-    integer , intent(in) :: master_task ! task number of master task
-    integer , intent(in) :: logunit     ! logging unit number
+    ! local variables
+    integer            :: k
+    !----------------------------------------------------------------
 
-    !--- formats ---
-    character(*), parameter :: F00   = "('(dwav_comp_final) ',8a)"
-    character(*), parameter :: F91   = "('(dwav_comp_final) ',73('-'))"
-    character(*), parameter :: subName = "(dwav_comp_final) "
-    !-------------------------------------------------------------------------------
+    rc = ESMF_SUCCESS
 
-    if (my_task == master_task) then
-       write(logunit,F91)
-       write(logunit,F00) 'dwav: end of main integration loop'
-       write(logunit,F91)
-    end if
+    k = mct_aVect_indexRA(w2x, "Sw_lamult")
+    call dshr_export(w2x%rattr(k,:), exportState, "Sw_lamult", rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-  end subroutine dwav_comp_final
+    k = mct_aVect_indexRA(w2x, "Sw_ustokes")
+    call dshr_export(w2x%rattr(k,:), exportState, "Sw_ustokes", rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    k = mct_aVect_indexRA(w2x, "Sw_vstokes")
+    call dshr_export(w2x%rattr(k,:), exportState, "Sw_vstokes", rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dwav_comp_export
 
 end module dwav_comp_mod

@@ -1,7 +1,7 @@
 module med_phases_prep_atm_mod
 
   !-----------------------------------------------------------------------------
-  ! Mediator Phase
+  ! Mediator phases for preparing atm export from mediator
   !-----------------------------------------------------------------------------
 
   implicit none
@@ -9,7 +9,7 @@ module med_phases_prep_atm_mod
 
   public  :: med_phases_prep_atm
 
-  character(*)      , parameter :: u_FILE_u  = &
+  character(*), parameter :: u_FILE_u  = &
        __FILE__
 
 !-----------------------------------------------------------------------------
@@ -18,24 +18,25 @@ contains
 
     subroutine med_phases_prep_atm(gcomp, rc)
 
-      ! Prepares the ATM import Fields.
-
       use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
       use ESMF                  , only : ESMF_FieldBundleGet, ESMF_GridCompGet, ESMF_ClockGet, ESMF_TimeGet
       use ESMF                  , only : ESMF_GridComp, ESMF_Clock, ESMF_Time, ESMF_ClockPrint
-      use med_constants_mod     , only : R8
       use esmFlds               , only : compatm, compocn, compice, ncomps, compname
       use esmFlds               , only : fldListFr, fldListTo
       use esmFlds               , only : fldListMed_aoflux
       use esmFlds               , only : coupling_mode
-      use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
-      use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
-      use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
-      use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-      use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_GetFldPtr
-      use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FldChk
-      use shr_nuopc_utils_mod   , only : shr_nuopc_memcheck
-      use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
+      use med_constants_mod     , only : R8
+      use med_constants_mod     , only : dbug_flag       => med_constants_dbug_flag
+      use shr_nuopc_utils_mod   , only : memcheck        => shr_nuopc_memcheck
+      use shr_nuopc_utils_mod   , only : chkerr          => shr_nuopc_utils_ChkErr
+      use shr_nuopc_methods_mod , only : FB_fldchk       => shr_nuopc_methods_FB_FldChk
+      use shr_nuopc_methods_mod , only : FB_GetFldPtr    => shr_nuopc_methods_FB_GetFldPtr
+      use shr_nuopc_methods_mod , only : FB_diagnose     => shr_nuopc_methods_FB_diagnose
+      use shr_nuopc_methods_mod , only : FB_init         => shr_nuopc_methods_FB_init
+      use shr_nuopc_methods_mod , only : FB_rest         => shr_nuopc_methods_FB_reset
+      use shr_nuopc_methods_mod , only : FB_getNumFlds   => shr_nuopc_methods_FB_getNumFlds
+      use shr_nuopc_methods_mod , only : State_GetScalar => shr_nuopc_methods_State_GetScalar
+      use shr_nuopc_methods_mod , only : State_SetScalar => shr_nuopc_methods_State_SetScalar
       use med_merge_mod         , only : med_merge_auto
       use med_map_mod           , only : med_map_FB_Regrid_Norm
       use med_internalstate_mod , only : InternalState, mastertask
@@ -53,15 +54,17 @@ contains
       type(InternalState)        :: is_local
       real(R8), pointer          :: dataPtr1(:),dataPtr2(:)
       integer                    :: i, j, n, n1, ncnt
-      logical,save               :: first_call = .true.
       integer                    :: dbrc
       character(len=*),parameter :: subname='(med_phases_prep_atm)'
       !-------------------------------------------------------------------------------
 
       call t_startf('MED:'//subname)
-      call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
-      call shr_nuopc_memcheck(subname, 3, mastertask)
       rc = ESMF_SUCCESS
+
+      if (dbug_flag > 5) then
+         call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO, rc=dbrc)
+      end if
+      call memcheck(subname, 3, mastertask)
 
       !---------------------------------------
       ! --- Get the internal state
@@ -69,7 +72,7 @@ contains
 
       nullify(is_local%wrap)
       call ESMF_GridCompGetInternalState(gcomp, is_local, rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+      if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
       !---------------------------------------
       !--- Count the number of fields outside of scalar data, if zero, then return
@@ -79,7 +82,7 @@ contains
       ! fieldCount is 0 and not 1 here
 
       call ESMF_FieldBundleGet(is_local%wrap%FBExp(compatm), fieldCount=ncnt, rc=rc)
-      if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+      if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
       if (ncnt == 0) then
          call ESMF_LogWrite(trim(subname)//": only scalar data is present in FBexp(compatm), returning", &
@@ -90,17 +93,17 @@ contains
          !--- Get the current time from the clock
          !---------------------------------------
          call ESMF_GridCompGet(gcomp, clock=clock)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         if (ChkErr(rc,__LINE__,u_FILE_u)) return
          call ESMF_ClockGet(clock,currtime=time,rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         if (ChkErr(rc,__LINE__,u_FILE_u)) return
          call ESMF_TimeGet(time,timestring=timestr)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         if (ChkErr(rc,__LINE__,u_FILE_u)) return
          call ESMF_LogWrite(trim(subname)//": time = "//trim(timestr), ESMF_LOGMSG_INFO, rc=dbrc)
          if (dbug_flag > 1) then
             if (mastertask) then
                call ESMF_ClockPrint(clock, options="currTime", &
                     preString="-------->"//trim(subname)//" mediating for: ", rc=rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               if (ChkErr(rc,__LINE__,u_FILE_u)) return
             end if
          end if
 
@@ -114,10 +117,11 @@ contains
                     is_local%wrap%FBImp(n1,n1), &
                     is_local%wrap%FBImp(n1,compatm), &
                     is_local%wrap%FBFrac(n1), &
+                    is_local%wrap%FBFrac(compatm), &
                     is_local%wrap%FBNormOne(n1,compatm,:), &
                     is_local%wrap%RH(n1,compatm,:), &
                     string=trim(compname(n1))//'2'//trim(compname(compatm)), rc=rc)
-               if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+               if (ChkErr(rc,__LINE__,u_FILE_u)) return
             endif
          enddo
 
@@ -139,10 +143,11 @@ contains
                  is_local%wrap%FBMed_aoflux_o, &
                  is_local%wrap%FBMed_aoflux_a, &
                  is_local%wrap%FBFrac(compocn), &
+                 is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBNormOne(compocn,compatm,:), &
                  is_local%wrap%RH(compocn,compatm,:), &
                  string='FBMed_aoflux_o_To_FBMEd_aoflux_a', rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
          endif
 
          !---------------------------------------
@@ -153,55 +158,55 @@ contains
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
                  FBMed1=is_local%wrap%FBMed_ocnalb_a, &
-                 FBMed2=is_local%wrap%FBMed_aoflux_a, &
-                 document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                 FBMed2=is_local%wrap%FBMed_aoflux_a, rc=rc)
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
          else if (trim(coupling_mode) == 'nems_orig') then
             call med_merge_auto(trim(compname(compatm)), &
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
                  is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
-                 FBMed1=is_local%wrap%FBMed_aoflux_a, &
-                 document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                 FBMed1=is_local%wrap%FBMed_aoflux_a, rc=rc)
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
          else if (trim(coupling_mode) == 'nems_frac') then
             call med_merge_auto(trim(compname(compatm)), &
                  is_local%wrap%FBExp(compatm), is_local%wrap%FBFrac(compatm), &
-                 is_local%wrap%FBImp(:,compatm), fldListTo(compatm), &
-                 document=first_call, string='(merge_to_atm)', mastertask=mastertask, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+                 is_local%wrap%FBImp(:,compatm), fldListTo(compatm), rc=rc)
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
          end if
 
-         call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(compatm), string=trim(subname)//' FBexp(compatm) ', rc=rc)
-         if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         if (dbug_flag > 1) then
+            call FB_diagnose(is_local%wrap%FBExp(compatm), &
+                 string=trim(subname)//' FBexp(compatm) ', rc=rc)
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
+         end if
 
          !---------------------------------------
          !--- custom calculations
          !---------------------------------------
 
          ! set fractions to send back to atm
-         if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compatm), 'So_ofrac', rc=rc)) then
-            call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compatm), 'So_ofrac', dataptr1, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBFrac(compatm), 'ofrac', dataptr2, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         if (FB_FldChk(is_local%wrap%FBExp(compatm), 'So_ofrac', rc=rc)) then
+            call FB_GetFldPtr(is_local%wrap%FBExp(compatm), 'So_ofrac', dataptr1, rc=rc)
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
+            call FB_GetFldPtr(is_local%wrap%FBFrac(compatm), 'ofrac', dataptr2, rc=rc)
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
             do n = 1,size(dataptr1)
                dataptr1(n) = dataptr2(n)
             end do
          end if
-         if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compatm), 'Si_ifrac', rc=rc)) then
-            call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compatm), 'Si_ifrac', dataptr1, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBFrac(compatm), 'ifrac', dataptr2, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         if (FB_FldChk(is_local%wrap%FBExp(compatm), 'Si_ifrac', rc=rc)) then
+            call FB_GetFldPtr(is_local%wrap%FBExp(compatm), 'Si_ifrac', dataptr1, rc=rc)
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
+            call FB_GetFldPtr(is_local%wrap%FBFrac(compatm), 'ifrac', dataptr2, rc=rc)
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
             do n = 1,size(dataptr1)
                dataptr1(n) = dataptr2(n)
             end do
          end if
-         if (shr_nuopc_methods_FB_FldChk(is_local%wrap%FBExp(compatm), 'Sl_lfrac', rc=rc)) then
-            call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBExp(compatm), 'Sl_lfrac', dataptr1, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
-            call shr_nuopc_methods_FB_GetFldPtr(is_local%wrap%FBFrac(compatm), 'lfrac', dataptr2, rc=rc)
-            if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+         if (FB_FldChk(is_local%wrap%FBExp(compatm), 'Sl_lfrac', rc=rc)) then
+            call FB_GetFldPtr(is_local%wrap%FBExp(compatm), 'Sl_lfrac', dataptr1, rc=rc)
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
+            call FB_GetFldPtr(is_local%wrap%FBFrac(compatm), 'lfrac', dataptr2, rc=rc)
+            if (ChkErr(rc,__LINE__,u_FILE_u)) return
             do n = 1,size(dataptr1)
                dataptr1(n) = dataptr2(n)
             end do
@@ -217,10 +222,11 @@ contains
          !--- clean up
          !---------------------------------------
 
-         first_call = .false.
       endif
 
-      call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      if (dbug_flag > 5) then
+         call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO, rc=dbrc)
+      end if
       call t_stopf('MED:'//subname)
 
     end subroutine med_phases_prep_atm

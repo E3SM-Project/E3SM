@@ -33,6 +33,15 @@
     <schema>$CIMEROOT/config/xml_schemas/config_batch.xsd</schema>
   </entry>
 
+  <entry id="WORKFLOW_SPEC_FILE">
+    <type>char</type>
+    <default_value>$CIMEROOT/config/$MODEL/machines/config_workflow.xml</default_value>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing workflow (for documentation only - DO NOT EDIT)</desc>
+    <schema>$CIMEROOT/config/xml_schemas/config_workflow.xsd</schema>
+  </entry>
+
   <entry id="INPUTDATA_SPEC_FILE">
     <type>char</type>
     <default_value>$CIMEROOT/config/$MODEL/config_inputdata.xml</default_value>
@@ -360,6 +369,19 @@
       <value component="dglc">$CIMEROOT/src/components/data_comps/dglc/cime_config/config_component.xml</value>
       <value component="sglc">$CIMEROOT/src/components/stub_comps/sglc/cime_config/config_component.xml</value>
       <value component="xglc">$CIMEROOT/src/components/xcpl_comps/xglc/cime_config/config_component.xml</value>
+    </values>
+    <group>case_last</group>
+    <file>env_case.xml</file>
+    <desc>file containing specification of component specific definitions and values(for documentation only - DO NOT EDIT)</desc>
+    <schema version="2.0">$CIMEROOT/config/xml_schemas/entry_id.xsd</schema>
+    <schema version="3.0">$CIMEROOT/config/xml_schemas/entry_id_version3.xsd</schema>
+  </entry>
+
+  <entry id="CONFIG_IAC_FILE">
+    <type>char</type>
+    <default_value>unset</default_value>
+    <values>
+      <value component="siac">$CIMEROOT/src/components/stub_comps/siac/cime_config/config_component.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

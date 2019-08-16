@@ -47,13 +47,26 @@ def buildlib(bldroot, installpath, case):
 ###############################################################################
     caseroot = case.get_value("CASEROOT")
     pio_version = case.get_value("PIO_VERSION")
+    # If variable PIO_VERSION_MAJOR is defined in the environment then
+    # we assume that PIO is installed on the system
+    # and expect to find
+    # PIO_LIBDIR, PIO_INCDIR, PIO_TYPENAME_VALID_VALUES
+    # also defined in the environment.  In this case we
+    # will use the installed pio and not build it here.
+    installed_pio_version = os.environ.get("PIO_VERSION_MAJOR")
+    logger.info("pio_version_major = {} pio_version = {}".format(installed_pio_version, pio_version))
+    if installed_pio_version is not None and int(installed_pio_version) == pio_version:
+        logger.info("Using installed PIO library")
+        _set_pio_valid_values(case, os.environ.get("PIO_TYPENAME_VALID_VALUES"))
+        return
+
     pio_model = "pio{}".format(pio_version)
     pio_dir = os.path.join(bldroot, pio_model)
     if not os.path.isdir(pio_dir):
         os.makedirs(pio_dir)
     casetools = case.get_value("CASETOOLS")
     cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
-    stdargs = get_standard_makefile_args(case)
+    stdargs = get_standard_makefile_args(case, shared_lib=True)
 
     gmake_opts = "{pio_dir}/Makefile -C {pio_dir} CASEROOT={caseroot} MODEL={pio_model} USER_CMAKE_OPTS={cmake_opts} "\
         "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} "\
@@ -129,19 +142,22 @@ def buildlib(bldroot, installpath, case):
         valid_values += ",pnetcdf"
     if netcdf4_parallel_found:
         valid_values += ",netcdf4p,netcdf4c"
-    logger.warning("Updating valid_values for PIO_TYPENAME: {}".format(valid_values))
+    _set_pio_valid_values(case, valid_values)
 
-    case.set_valid_values("PIO_TYPENAME",valid_values)
+
+def _set_pio_valid_values(case, valid_values):
     # nothing means use the general default
     valid_values += ",nothing"
+    logger.warning("Updating valid_values for PIO_TYPENAME: {}".format(valid_values))
+    env_run = case.get_env("run")
+    env_run.set_valid_values("PIO_TYPENAME",valid_values)
 
     for comp in case.get_values("COMP_CLASSES"):
         comp_pio_typename = "{}_PIO_TYPENAME".format(comp)
-        case.set_valid_values(comp_pio_typename,valid_values)
         current_value = case.get_value(comp_pio_typename)
         if current_value not in valid_values:
             logger.warning("Resetting PIO_TYPENAME to netcdf for component {}".format(comp))
-            case.set_value(comp_pio_typename,"netcdf")
+            env_run.set_value(comp_pio_typename,"netcdf")
 
 def _main(argv, documentation):
     bldroot, installpath, caseroot = parse_command_line(argv, documentation)

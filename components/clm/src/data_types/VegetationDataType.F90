@@ -6,7 +6,7 @@ module VegetationDataType
   ! -------------------------------------------------------- 
   !
   use shr_kind_mod    , only : r8 => shr_kind_r8
-  use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=)
+  use shr_infnan_mod  , only : nan => shr_infnan_nan, assignment(=),isnan => shr_infnan_isnan
   use shr_const_mod   , only : SHR_CONST_PDB
   use shr_log_mod     , only : errMsg => shr_log_errMsg
   use spmdMod         , only : masterproc
@@ -366,6 +366,8 @@ module VegetationDataType
     real(r8), pointer :: qflx_dew_snow      (:)   => null() ! surface dew added to snow pack (mm H2O /s) [+]
     real(r8), pointer :: qflx_dew_grnd      (:)   => null() ! ground surface dew formation (mm H2O /s) [+]
     real(r8), pointer :: qflx_prec_intr     (:)   => null() ! interception of precipitation [mm/s]
+    real(r8), pointer :: qflx_dirct_rain    (:)   => null() ! direct through rainfall [mm/s]
+    real(r8), pointer :: qflx_leafdrip      (:)   => null() ! leaf rain drip [mm/s]
     real(r8), pointer :: qflx_ev_snow       (:)   => null() ! evaporation heat flux from snow       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
     real(r8), pointer :: qflx_ev_soil       (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
     real(r8), pointer :: qflx_ev_h2osfc     (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
@@ -2486,9 +2488,8 @@ module VegetationDataType
                 this%grainc(p)            = 0._r8 
                 this%grainc_storage(p)    = 0._r8 
                 this%grainc_xfer(p)       = 0._r8 
-                this%cropseedc_deficit(p) = 0._r8
              end if
-
+             this%cropseedc_deficit(p) = 0._r8
              ! calculate totvegc explicitly so that it is available for the isotope 
              ! code on the first time step.
 
@@ -3887,8 +3888,8 @@ module VegetationDataType
              this%grainn(p)            = 0._r8
              this%grainn_storage(p)    = 0._r8
              this%grainn_xfer(p)       = 0._r8
-             this%cropseedn_deficit(p) = 0._r8
           end if
+          this%cropseedn_deficit(p) = 0._r8
           this%frootn(p)            = 0._r8
           this%frootn_storage(p)    = 0._r8
           this%frootn_xfer(p)       = 0._r8
@@ -4552,8 +4553,8 @@ module VegetationDataType
              this%grainp(p)            = 0._r8
              this%grainp_storage(p)    = 0._r8
              this%grainp_xfer(p)       = 0._r8
-             this%cropseedp_deficit(p) = 0._r8
           end if
+          this%cropseedp_deficit(p) = 0._r8
           this%frootp(p)            = 0._r8
           this%frootp_storage(p)    = 0._r8
           this%frootp_xfer(p)       = 0._r8
@@ -5345,6 +5346,8 @@ module VegetationDataType
     allocate(this%qflx_dew_snow          (begp:endp))             ; this%qflx_dew_snow        (:)   = nan
     allocate(this%qflx_dew_grnd          (begp:endp))             ; this%qflx_dew_grnd        (:)   = nan
     allocate(this%qflx_prec_intr         (begp:endp))             ; this%qflx_prec_intr       (:)   = nan
+    allocate(this%qflx_dirct_rain        (begp:endp))             ; this%qflx_dirct_rain      (:)   = nan
+    allocate(this%qflx_leafdrip          (begp:endp))             ; this%qflx_leafdrip        (:)   = nan
     allocate(this%qflx_ev_snow           (begp:endp))             ; this%qflx_ev_snow         (:)   = nan
     allocate(this%qflx_ev_soil           (begp:endp))             ; this%qflx_ev_soil         (:)   = nan
     allocate(this%qflx_ev_h2osfc         (begp:endp))             ; this%qflx_ev_h2osfc       (:)   = nan
@@ -5365,6 +5368,16 @@ module VegetationDataType
     call hist_addfld1d (fname='QINTR', units='mm/s',  &
          avgflag='A', long_name='interception', &
          ptr_patch=this%qflx_prec_intr, set_lake=0._r8)
+
+    this%qflx_dirct_rain(begp:endp) = spval
+    call hist_addfld1d (fname='QWTRGH', units='mm/s',  &
+         avgflag='A', long_name='direct rain throughfall', &
+         ptr_patch=this%qflx_dirct_rain, c2l_scale_type='urbanf', default='inactive')
+
+    this%qflx_leafdrip(begp:endp) = spval
+    call hist_addfld1d (fname='QWDRIP', units='mm/s',  &
+         avgflag='A', long_name='leaf rain drip', &
+         ptr_patch=this%qflx_leafdrip, c2l_scale_type='urbanf', default='inactive')
 
     this%qflx_prec_grnd(begp:endp) = spval
     call hist_addfld1d (fname='QDRIP', units='mm/s',  &
@@ -9630,12 +9643,12 @@ module VegetationDataType
        this%hrv_nloss_litter(i)                    = value_patch
        this%sen_nloss_litter(i)                    = value_patch
        this%crop_seedn_to_leaf(i)                  = value_patch
+       this%livestemn_to_litter(i)                 = value_patch
     end do
 
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%livestemn_to_litter(i)              = value_patch
           this%grainn_to_food(i)                   = value_patch
           this%grainn_xfer_to_grainn(i)            = value_patch
           this%npool_to_grainn(i)                  = value_patch
@@ -10734,12 +10747,12 @@ module VegetationDataType
        this%fire_ploss_litter(i)                   = value_patch
        this%hrv_ploss_litter(i)                    = value_patch
        this%sen_ploss_litter(i)                    = value_patch
+       this%livestemp_to_litter(i)                 = value_patch
     end do
 
     if ( crop_prog )then
        do fi = 1,num_patch
           i = filter_patch(fi)
-          this%livestemp_to_litter(i)              = value_patch
           this%grainp_to_food(i)                   = value_patch
           this%grainp_xfer_to_grainp(i)            = value_patch
           this%ppool_to_grainp(i)                  = value_patch

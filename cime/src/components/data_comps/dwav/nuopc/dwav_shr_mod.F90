@@ -23,6 +23,9 @@ module dwav_shr_mod
   ! Public data
   !--------------------------------------------------------------------------
 
+  ! stream data type
+  type(shr_strdata_type), public :: SDWAV
+
   ! input namelist variables
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
@@ -39,7 +42,7 @@ CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   subroutine dwav_shr_read_namelists(filename, mpicom, my_task, master_task, &
-       logunit, SDWAV, wav_present, wav_prognostic)
+       logunit, wav_present, wav_prognostic)
 
     ! !DESCRIPTION: Read in dwav namelists
     implicit none
@@ -50,7 +53,6 @@ CONTAINS
     integer(IN)            , intent(in)    :: my_task           ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task       ! task number of master task
     integer(IN)            , intent(in)    :: logunit           ! logging unit number
-    type(shr_strdata_type) , intent(inout) :: SDWAV
     logical                , intent(out)   :: wav_present       ! flag
     logical                , intent(out)   :: wav_prognostic    ! flag
 
@@ -105,7 +107,7 @@ CONTAINS
     ! Read dshr namelist
     !----------------------------------------------------------------------------
 
-    call shr_strdata_readnml(SDWAV,trim(filename),mpicom=mpicom)
+    call shr_strdata_readnml(SDWAV, trim(filename), mpicom=mpicom)
 
     !----------------------------------------------------------------------------
     ! Determine and validate datamode

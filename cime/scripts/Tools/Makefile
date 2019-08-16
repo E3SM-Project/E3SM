@@ -72,9 +72,6 @@ endif
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
   USE_CXX = TRUE
 endif
-ifeq ($(strip $(USE_KOKKOS)), TRUE)
-   USE_CXX = TRUE
-endif
 
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
@@ -94,7 +91,10 @@ include $(CASEROOT)/Macros.make
 
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifeq ($(strip $(DEBUG)),TRUE)
-   #CPPDEFS += -DDEBUG
+  # e3sm still has components that cannot build with -DDEBUG
+  ifeq ($(CIME_MODEL),cesm)
+    CPPDEFS += -DDEBUG
+  endif
 else
    CPPDEFS += -DNDEBUG
 endif
@@ -106,14 +106,6 @@ endif
 
 ifeq ($(COMP_INTERFACE), nuopc)
    CPPDEFS += -DNUOPC_INTERFACE
-   CPPDEFS += -DESMFUSE_$(COMP_ATM)
-   CPPDEFS += -DESMFUSE_$(COMP_LND)
-   CPPDEFS += -DESMFUSE_$(COMP_OCN)
-   CPPDEFS += -DESMFUSE_$(COMP_ICE)
-   CPPDEFS += -DESMFUSE_$(COMP_ROF)
-   CPPDEFS += -DESMFUSE_$(COMP_WAV)
-   CPPDEFS += -DESMFUSE_$(COMP_GLC)
-   CPPDEFS += -DESMFUSE_$(COMP_ESP)
 else
    CPPDEFS += -DMCT_INTERFACE
 endif
@@ -131,42 +123,13 @@ endif
 ifeq ($(strip $(PIO_VERSION)),1)
   CPPDEFS += -DPIO1
 else
-  USE_CXX = true
+  USE_CXX = TRUE
 endif
 
 ifeq (,$(SHAREDPATH))
   SHAREDPATH = $(COMPILER)/$(MPILIB)/$(DEBUGDIR)/$(THREADDIR)/$(COMP_INTERFACE)
   INSTALL_SHAREDPATH = $(EXEROOT)/$(SHAREDPATH)
 endif
-
-include $(CASEROOT)/Macros.make
-
-ifeq ($(strip $(USE_FMS)), TRUE)
-  SLIBS += -lfms
-endif
-
-# Decide whether to use a C++ or Fortran linker, based on whether we
-# are using any C++ code and the compiler-dependent CXX_LINKER variable
-ifeq ($(USE_CXX), TRUE)
-  # The following is essentially an "if... elseif... else", but gmake
-  # 3.80 and earlier doesn't support elseif
-  ifeq ($(CXX_LINKER), CXX)
-    LD := $(MPICXX)
-  endif
-  ifeq ($(CXX_LINKER), FORTRAN)
-    LD := $(MPIFC)
-  endif
-endif
-# Use this if LD has not already been defined.
-ifeq ($(origin LD), default)
-  ifeq ($(strip $(MPILIB)),mpi-serial)
-    LD := $(SFC)
-  else
-    LD := $(MPIFC)
-  endif
-endif
-
-
 
 ifeq ($(USE_CXX), TRUE)
   ifeq ($(SUPPORTS_CXX), FALSE)
@@ -300,7 +263,7 @@ endif
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
   include $(INSTALL_SHAREDPATH)/Makefile.kokkos
   SLIBS += $(KOKKOS_LIBS)
-  CFLAGS += $(KOKKOS_CXXFLAGS)
+  CXXFLAGS += $(KOKKOS_CXXFLAGS)
   CXX_LDFLAGS += $(KOKKOS_LDFLAGS)
 endif
 
@@ -367,6 +330,57 @@ ifeq ($(USE_ESMF_LIB), TRUE)
   SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
+# Stub libraries do not need to be built for nuopc driver
+# so it will override these settings on the command line
+ATM_PRESENT ?= TRUE
+ICE_PRESENT ?= TRUE
+LND_PRESENT ?= TRUE
+OCN_PRESENT ?= TRUE
+ROF_PRESENT ?= TRUE
+GLC_PRESENT ?= TRUE
+WAV_PRESENT ?= TRUE
+ESP_PRESENT ?= TRUE
+IAC_PRESENT ?= TRUE
+ifeq ($(ULIBDEP),$(null))
+  ifneq ($(LIBROOT),$(null))
+    ifeq ($(ATM_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libatm.a
+      CPPDEFS += -DATM_PRESENT
+    endif
+    ifeq ($(ICE_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libice.a
+      CPPDEFS += -DICE_PRESENT
+    endif
+    ifeq ($(LND_PRESENT),TRUE)
+      ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
+      CPPDEFS += -DLND_PRESENT
+    endif
+    ifeq ($(OCN_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libocn.a
+      CPPDEFS += -DOCN_PRESENT
+    endif
+    ifeq ($(ROF_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/librof.a
+      CPPDEFS += -DROF_PRESENT
+    endif
+    ifeq ($(GLC_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libglc.a
+      CPPDEFS += -DGLC_PRESENT
+    endif
+    ifeq ($(WAV_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libwav.a
+      CPPDEFS += -DWAV_PRESENT
+    endif
+    ifeq ($(ESP_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libesp.a
+      CPPDEFS += -DESP_PRESENT
+    endif
+    ifeq ($(IAC_PRESENT),TRUE)
+      ULIBDEP += $(LIBROOT)/libiac.a
+    endif
+  endif
+endif
+
 ifdef CPRE
   FPPDEFS := $(subst $(comma),\\$(comma),$(CPPDEFS))
   FPPDEFS := $(patsubst -D%,$(CPRE)%,$(FPPDEFS))
@@ -420,6 +434,20 @@ else
     LIB_MPI := $(MPI_PATH)/lib
   endif
 endif
+LD := $(MPIFC)
+# Decide whether to use a C++ or Fortran linker, based on whether we
+# are using any C++ code and the compiler-dependent CXX_LINKER variable
+ifeq ($(USE_CXX), TRUE)
+  # The following is essentially an "if... elseif... else", but gmake
+  # 3.80 and earlier doesn't support elseif
+  ifeq ($(CXX_LINKER), CXX)
+    LD := $(MPICXX)
+  endif
+  ifeq ($(CXX_LINKER), FORTRAN)
+    LD := $(MPIFC)
+  endif
+endif
+
 CSM_SHR_INCLUDE:=$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/include
 # This is needed so that dependancies are found
 VPATH+=$(CSM_SHR_INCLUDE)
@@ -457,40 +485,23 @@ ifdef INC_MOAB
 endif
 
 ifeq ($(MODEL),driver)
-  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj
-# nagfor and gcc have incompatible LDFLAGS.
-# nagfor requires the weird "-Wl,-Wl,," syntax.
-# If done in config_compilers.xml, we break MCT.
-  ifeq ($(strip $(COMPILER)),nag)
-     ifeq ($(NETCDF_SEPARATE), FALSE)
-       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF)
-     else ifeq ($(NETCDF_SEPARATE), TRUE)
-       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_C)
-       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_FORTRAN)
-     endif
-  endif
-else
-  ifeq ($(strip $(COMPILER)),nag)
-    ifeq ($(DEBUG), TRUE)
-      ifeq ($(strip $(MACH)),hobart)
-       # GCC needs to be able to link to
-       # nagfor runtime to get autoconf
-       # tests to work.
-         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
-         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts
-       endif
-    endif
-  endif
+  INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj -I$(EXEROOT)/iac/obj
 endif
-
 
 ifndef MCT_LIBDIR
   MCT_LIBDIR=$(INSTALL_SHAREDPATH)/lib
 endif
 
-ifndef PIO_LIBDIR
-  PIO_LIBDIR=$(INSTALL_SHAREDPATH)/lib
+ifdef PIO_LIBDIR
+  ifeq ($(PIO_VERSION),$(PIO_VERSION_MAJOR))
+    INCLDIR += -I$(PIO_INCDIR)
+    SLIBS += -L$(PIO_LIBDIR)
+  else
+    # If PIO_VERSION_MAJOR doesnt match, build from source
+    unexport PIO_LIBDIR
+  endif
 endif
+PIO_LIBDIR ?= $(INSTALL_SHAREDPATH)/lib
 
 ifndef GPTL_LIBDIR
   GPTL_LIBDIR=$(INSTALL_SHAREDPATH)/lib
@@ -513,7 +524,7 @@ INCLDIR +=	-I$(INSTALL_SHAREDPATH)/include
 # Use the MCT dir for the cache for all configure calls because it is the first one
 #
 CFLAGS+=$(CPPDEFS)
-CXXFLAGS+=$(CFLAGS)
+CXXFLAGS+=$(CPPDEFS)
 CONFIG_ARGS +=  CC="$(CC)" FC="$(FC)" MPICC="$(MPICC)" \
                 MPIFC="$(MPIFC)" FCFLAGS="$(FFLAGS) $(FREEFLAGS) $(INCLDIR)" \
                 CPPDEFS="$(CPPDEFS)" CFLAGS="$(CFLAGS) -I.. $(INCLDIR)" \
@@ -526,14 +537,8 @@ else ifeq ($(NETCDF_SEPARATE), TRUE)
   CONFIG_ARGS += NETCDF_PATH=$(NETCDF_C_PATH)
 endif
 
-ifeq ($(COMPILER),nag)
-  CONFIG_ARGS += LIBS="$(SLIBS)"
-endif
-
 FFLAGS += $(FPPDEFS)
 FFLAGS_NOOPT += $(FPPDEFS)
-
-
 
 ifeq ($(findstring -cosp,$(CAM_CONFIG_OPTS)),-cosp)
   # The following is for the COSP simulator code:
@@ -548,10 +553,10 @@ ifeq ($(MODEL),cam)
   # Until mods are made to read the data from files, just remove optimization from
   # their compilation.
 rrtmg_lw_k_g.o: rrtmg_lw_k_g.f90
-	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FFLAGS_NOOPT) $<
 
 rrtmg_sw_k_g.o: rrtmg_sw_k_g.f90
-	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+	$(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FFLAGS_NOOPT) $<
 
 
 ifdef COSP_LIBDIR
@@ -681,7 +686,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(EXTRA_PIO_FPPDEFS) $(IN
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
-              -D PIO_USE_MALLOC:BOOL=ON \
+              -D PIO_USE_MALLOC:BOOL=OFF \
 	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries
@@ -834,31 +839,23 @@ else
     INCLUDE_DIR = $(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/include
   endif
 endif
-ifeq ($(ULIBDEP),$(null))
-   ifneq ($(LIBROOT),$(null))
-     ULIBDEP += $(LIBROOT)/libatm.a
-     ULIBDEP += $(LIBROOT)/libice.a
-     ULIBDEP += $(LNDLIBDIR)/$(LNDLIB)
-     INCLDIR += -I$(LNDOBJDIR)
-     ULIBDEP += $(LIBROOT)/libocn.a
-     ULIBDEP += $(LIBROOT)/librof.a
-     ULIBDEP += $(LIBROOT)/libglc.a
-     ULIBDEP += $(LIBROOT)/libwav.a
-     ULIBDEP += $(LIBROOT)/libesp.a
-     ifeq ($(COMP_GLC), cism)
-       ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
-       ifeq ($(CISM_USE_TRILINOS), TRUE)
-         ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
-       endif
-     endif
-     ifeq ($(OCN_SUBMODEL),moby)
-       ULIBDEP += $(LIBROOT)/libmoby.a
-     endif
-   endif
+ifeq ($(LND_PRESENT),TRUE)
+  INCLDIR += -I$(LNDOBJDIR)
+endif
+ifeq ($(COMP_GLC), cism)
+  ULIBDEP += $(CISM_LIBDIR)/libglimmercismfortran.a
+  ifeq ($(CISM_USE_TRILINOS), TRUE)
+    ULIBDEP += $(CISM_LIBDIR)/libglimmercismcpp.a
+  endif
+endif
+ifeq ($(OCN_SUBMODEL),moby)
+  ULIBDEP += $(LIBROOT)/libmoby.a
 endif
 
 ifdef COSP_LIBDIR
-  ULIBDEP += $(COSP_LIBDIR)/libcosp.a
+  ifeq ($(CIME_MODEL),cesm)
+    ULIBDEP += $(COSP_LIBDIR)/libcosp.a
+  endif
 endif
 
 
@@ -942,6 +939,9 @@ clean_dependsocn:
 clean_dependswav:
 	$(RM) -f $(EXEROOT)/wav/obj/Srcfiles
 
+clean_dependsiac:
+	$(RM) -f $(EXEROOT)/iac/obj/Srcfiles
+
 clean_dependsglc:
 	$(RM) -f $(EXEROOT)/glc/obj/Srcfiles
 
@@ -960,7 +960,7 @@ clean_dependslnd:
 clean_dependscsmshare:
 	$(RM) -f $(SHAREDLIBROOT)/$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share/Srcfiles
 
-clean_depends: clean_dependsatm clean_dependscpl clean_dependswav clean_dependsglc clean_dependsice clean_dependsrof clean_dependslnd clean_dependscsmshare clean_dependsesp
+clean_depends: clean_dependsatm clean_dependscpl clean_dependswav clean_dependsglc clean_dependsice clean_dependsrof clean_dependslnd clean_dependscsmshare clean_dependsesp clean_dependsiac
 
 
 cleanatm:
@@ -977,6 +977,10 @@ cleanocn:
 cleanwav:
 	$(RM) -f $(LIBROOT)/libwav.a
 	$(RM) -fr $(EXEROOT)/wav/obj
+
+cleaniac:
+	$(RM) -f $(LIBROOT)/libiac.a
+	$(RM) -fr $(EXEROOT)/iac/obj
 
 cleanesp:
 	$(RM) -f $(LIBROOT)/libesp.a
@@ -1014,7 +1018,7 @@ cleangptl:
 	$(RM) -f $(GPTLLIB)
 	$(RM) -fr $(SHAREDLIBROOT)/$(SHAREDPATH)/gptl
 
-clean: cleanatm cleanocn cleanwav cleanglc cleanice cleanrof cleanlnd cleanesp
+clean: cleanatm cleanocn cleanwav cleanglc cleanice cleanrof cleanlnd cleanesp cleaniac
 
 realclean: clean cleancsmshare cleanpio cleanmct cleangptl
 
@@ -1025,4 +1029,7 @@ ifeq (,$(findstring clean,$(MAKECMDGOALS)))
     -include Depends $(CASEROOT)/Depends.$(COMPILER) $(CASEROOT)/Depends.$(MACH) $(CASEROOT)/Depends.$(MACH).$(COMPILER)
 endif
 endif
+endif
+ifeq ($(MODEL),csm_share)
+  shr_assert_mod.mod: shr_assert_mod.o
 endif

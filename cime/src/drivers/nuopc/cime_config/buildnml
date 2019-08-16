@@ -72,6 +72,11 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     #----------------------------------------------------
     nmlgen.init_defaults(infile, config)
 
+    if case.get_value('MEDIATOR_READ_RESTART'):
+        nmlgen.set_value('mediator_read_restart', value='.true.')
+    else:
+        nmlgen.set_value('mediator_read_restart', value='.false.')
+
     #--------------------------------
     # Overwrite: set brnch_retain_casename
     #--------------------------------
@@ -304,6 +309,7 @@ def _create_runseq(case, coupling_times):
         # Determine if there is a user run sequence file in CASEROOT, use it
         shutil.copy(user_file, rundir)
         shutil.copy(user_file, os.path.join(caseroot,"CaseDocs"))
+        logger.info("NUOPC run sequence: copying custom run sequence from case root")
 
     else:
 
@@ -337,11 +343,14 @@ def _create_runseq(case, coupling_times):
             # for Q (aquaplanet) compsets
             runseq_input = os.path.join(input_dir, 'nuopc_runseq_Q')
 
-        elif ( (comp_atm == 'datm' and comp_ocn == "mom"  and comp_ice == "dice") or 
-               (comp_atm == 'datm' and comp_ocn == "mom"  and comp_ice == "cice") or
+        elif ( (comp_atm == 'datm' and (comp_ocn == "mom" or comp_ocn == 'pop')  and comp_ice == "dice") or 
+               (comp_atm == 'datm' and (comp_ocn == "mom" or comp_ocn == 'pop')  and comp_ice == "cice") or
                (comp_atm == 'datm' and comp_ocn == "docn" and comp_ice == "cice")):
             # for C, G and D compsets
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D')
+            if comp_wav == 'ww':
+                runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D_ww3')
+            else:
+                runseq_input = os.path.join(input_dir, 'nuopc_runseq_C_G_D_swav')
 
         elif (comp_atm == 'datm' and comp_lnd == "clm"):
             # for I compsets
@@ -358,8 +367,13 @@ def _create_runseq(case, coupling_times):
                 runseq_input = os.path.join(input_dir, 'nuopc_runseq_B')
 
         elif (comp_atm == 'fv3gfs' and comp_ocn == "mom" and comp_ice == 'cice'):
-            # for NEMS fully coupled 
-            runseq_input = os.path.join(input_dir, 'nuopc_runseq_NEMS')
+            # for NEMS fully coupled
+            if case.get_value("CONTINUE_RUN") or case.get_value("MEDIATOR_READ_RESTART"):
+                logger.info("NUOPC run sequence: warm start (concurrent)")
+                runseq_input = os.path.join(input_dir, 'nuopc_runseq_NEMS.warm')
+            else:
+                logger.info("NUOPC run sequence: cold start (sequential)")
+                runseq_input = os.path.join(input_dir, 'nuopc_runseq_NEMS.cold')
 
         else:
             # default
@@ -531,7 +545,7 @@ def buildnml(case, caseroot, component):
 
     # copy fd.yaml to rundir
     cimeroot = case.get_value("CIMEROOT")
-    fd_dir = os.path.join(cimeroot, "src","drivers","nuopc","cime_flds")
+    fd_dir = os.path.join(cimeroot, "src","drivers","nuopc","mediator")
     filename = os.path.join(fd_dir,"fd.yaml")
     shutil.copy(filename, rundir)
 

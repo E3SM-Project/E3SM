@@ -22,8 +22,6 @@ class FTP(GenericServer):
 
         self._ftp_server = address
 
-        self._ftp_server = address
-
         stat = self.ftp.login(user, passwd)
         logger.debug("login stat {}".format(stat))
         if "Login successful" not in stat:

@@ -4,9 +4,10 @@ module med_internalstate_mod
   ! Mediator Internal State Datatype.
   !-----------------------------------------------------------------------------
 
-  use ESMF    , only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
-  use ESMF    , only : ESMF_VM
-  use esmFlds , only : ncomps, nmappers
+  use ESMF              , only : ESMF_RouteHandle, ESMF_FieldBundle, ESMF_State
+  use ESMF              , only : ESMF_VM
+  use esmFlds           , only : ncomps, nmappers
+  use med_constants_mod , only : CL
 
   implicit none
   private
@@ -54,7 +55,21 @@ module med_internalstate_mod
     logical                :: comp_present(ncomps)               ! comp present flag
     logical                :: med_coupling_active(ncomps,ncomps) ! computes the active coupling
 
-    ! Import/export States and field bundles
+    ! Mediator vm
+    type(ESMF_VM) :: vm
+
+    ! Global nx,ny dimensions of input arrays (needed for mediator history output)
+    integer :: nx(ncomps), ny(ncomps)
+
+    ! Import/Export Scalars
+    character(len=CL) :: flds_scalar_name = ''
+    integer           :: flds_scalar_num = 0
+    integer           :: flds_scalar_index_nx = 0
+    integer           :: flds_scalar_index_ny = 0
+    integer           :: flds_scalar_index_nextsw_cday = 0
+    integer           :: flds_scalar_index_precip_factor = 0
+
+    ! Import/export States and field bundles (the field bundles have the scalar fields removed)
     type(ESMF_State)       :: NStateImp(ncomps)                  ! Import data from various component, on their grid
     type(ESMF_State)       :: NStateExp(ncomps)                  ! Export data to various component, on their grid
     type(ESMF_FieldBundle) :: FBImp(ncomps,ncomps)               ! Import data from various components interpolated to various grids
@@ -81,11 +96,6 @@ module med_internalstate_mod
     ! Accumulators for import field bundles
     type(ESMF_FieldBundle) :: FBImpAccum(ncomps,ncomps)          ! Accumulator for various components import
     integer                :: FBImpAccumCnt(ncomps)              ! Accumulator counter for each FBImpAccum
-
-    ! Connectors
-    integer                :: conn_prep_cnt(ncomps)              ! Connector prep count
-    integer                :: conn_post_cnt(ncomps)              ! Connector post count
-    type(ESMF_VM)          :: vm
 
  end type InternalStateStruct
 

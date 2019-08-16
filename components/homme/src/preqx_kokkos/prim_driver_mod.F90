@@ -16,6 +16,7 @@ module prim_driver_mod
   public :: prim_init2
   public :: prim_run_subcycle
   public :: prim_finalize
+  public :: deriv1
 
   private :: generate_global_to_local
   private :: init_cxx_connectivity_internal
@@ -109,7 +110,7 @@ module prim_driver_mod
                                  nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg, &
                                  hypervis_order, hypervis_subcycle, hypervis_scaling,    &
                                  ftype, prescribed_wind, moisture, disable_diagnostics,  &
-                                 use_cpstar, use_semi_lagrange_transport
+                                 use_cpstar, transport_alg
     use dimensions_mod,   only : qsize, nelemd, np, qsize
     use element_mod,      only : element_t
     use element_state,    only : elem_state_v, elem_state_temp, elem_state_dp3d,       &
@@ -228,6 +229,7 @@ module prim_driver_mod
     real (kind=real_kind), target, dimension(np,np)         :: elem_mp, elem_fcor, elem_spheremp
     real (kind=real_kind), target, dimension(np,np)         :: elem_rspheremp, elem_metdet, elem_state_phis
     real (kind=real_kind), target, dimension(np,np,3,2)     :: elem_vec_sph2cart
+    logical :: use_semi_lagrange_transport
 
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
     type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr
@@ -248,6 +250,7 @@ module prim_driver_mod
     call init_derivative_c(c_loc(dvv))
 
     ! Fill the simulation params structures in C++
+    use_semi_lagrange_transport = transport_alg > 0
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
                                    hypervis_order, hypervis_subcycle, hypervis_scaling,           &

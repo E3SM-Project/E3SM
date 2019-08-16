@@ -12,6 +12,7 @@ module EcosystemDynMod
   use perf_mod            , only : t_startf, t_stopf
   use spmdMod             , only : masterproc
   use clm_varctl          , only : use_century_decomp
+  use clm_varctl          , only : use_erosion
   use CNStateType         , only : cnstate_type
   use CNCarbonFluxType    , only : carbonflux_type
   use CNCarbonStateType   , only : carbonstate_type
@@ -33,6 +34,7 @@ module EcosystemDynMod
   use FrictionVelocityType, only : frictionvel_type
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
+  use SedFluxType         , only : sedflux_type
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
   use ColumnDataType      , only : col_ns, col_nf
@@ -46,7 +48,8 @@ module EcosystemDynMod
   use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
   use VerticalProfileMod   , only : decomp_vertprofiles
   use AllocationMod     , only : nu_com_nfix, nu_com_phosphatase
-  use clm_varctl          , only : nu_com
+  use clm_varctl          , only : nu_com, use_pheno_flux_limiter
+  use PhenologyFLuxLimitMod , only : phenology_flux_limiter, InitPhenoFluxLimiter
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -89,6 +92,9 @@ contains
        call C14_init_BombSpike()
     end if
 
+    if(use_pheno_flux_limiter)then
+      call InitPhenoFluxLimiter()
+    endif
   end subroutine EcosystemDynInit
 
 
@@ -495,7 +501,7 @@ contains
        atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
        photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-       phosphorusflux_vars,phosphorusstate_vars)
+       phosphorusflux_vars, phosphorusstate_vars, sedflux_vars)
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-2 of EcosystemDynNoLeaching
@@ -512,7 +518,7 @@ contains
 !    use NitrogenDynamicsMod         , only: NitrogenDeposition,NitrogenFixation, NitrogenFert, CNSoyfix
 !    use MaintenanceRespMod             , only: MaintenanceResp
 !    use SoilLittDecompMod            , only: SoilLittDecompAlloc
-    use PhenologyMod         , only: Phenology
+    use PhenologyMod         , only: Phenology, CNLitterToColumn
     use GrowthRespMod             , only: GrowthResp
     use CarbonStateUpdate1Mod     , only: CarbonStateUpdate1,CarbonStateUpdate0
     use NitrogenStateUpdate1Mod     , only: NitrogenStateUpdate1
@@ -522,6 +528,7 @@ contains
     use NitrogenStateUpdate2Mod     , only: NitrogenStateUpdate2, NitrogenStateUpdate2h
     use PhosphorusStateUpdate2Mod       , only: PhosphorusStateUpdate2, PhosphorusStateUpdate2h
     use FireMod              , only: FireArea, FireFluxes
+    use ErosionMod           , only: ErosionFluxes
     use CarbonStateUpdate3Mod     , only: CarbonStateUpdate3
     use CarbonIsoFluxMod          , only: CarbonIsoFlux1, CarbonIsoFlux2, CarbonIsoFlux2h, CarbonIsoFlux3
     use C14DecayMod          , only: C14Decay, C14BombSpike
@@ -571,6 +578,7 @@ contains
 !
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
+    type(sedflux_type)       , intent(in)    :: sedflux_vars
 
     !-----------------------------------------------------------------------
 
@@ -668,6 +676,22 @@ contains
        end if
        call t_stopf('CNUpdate0')
 
+       !--------------------------------------------
+       if(use_pheno_flux_limiter)then
+         call t_startf('phenology_flux_limiter')
+         call phenology_flux_limiter(bounds, num_soilc, filter_soilc,&
+           num_soilp, filter_soilp, crop_vars, cnstate_vars,  &
+           veg_cf, veg_cs, &
+           c13_veg_cf, c13_veg_cs, &
+           c14_veg_cf, c14_veg_cs, &
+           veg_nf, veg_ns, veg_pf, veg_ps)
+         call t_stopf('phenology_flux_limiter')
+       endif
+       call t_startf('CNLitterToColumn')
+       call CNLitterToColumn(num_soilc, filter_soilc, &
+         cnstate_vars, carbonflux_vars, nitrogenflux_vars,phosphorusflux_vars)
+
+       call t_stopf('CNLitterToColumn')
        !--------------------------------------------
        ! Update1
        !--------------------------------------------
@@ -815,6 +839,12 @@ contains
        call FireFluxes(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             cnstate_vars, carbonstate_vars, nitrogenstate_vars, &
             carbonflux_vars,nitrogenflux_vars,phosphorusstate_vars,phosphorusflux_vars)
+
+       if ( use_erosion ) then
+            call ErosionFluxes(bounds, num_soilc, filter_soilc, soilstate_vars, sedflux_vars, &
+                 carbonstate_vars, nitrogenstate_vars, phosphorusstate_vars, carbonflux_vars, &
+                 nitrogenflux_vars, phosphorusflux_vars)
+       end if
 
        call t_stopf('CNUpdate2')
 

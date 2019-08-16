@@ -80,7 +80,7 @@ dsd.o          : array_lib.o math_lib.o calc_Re.o
 format_input.o : array_lib.o
 math_lib.o                : array_lib.o mrgrnk.o
 radar_simulator.o         : array_lib.o math_lib.o mrgrnk.o optics_lib.o \
-	                         radar_simulator_types.o
+	                         radar_simulator_types.o scale_LUTs_io.o
 radar_simulator_init.o    : radar_simulator_types.o
 scale_LUTs_io.o           : radar_simulator_types.o
 zeff.o                    : math_lib.o optics_lib.o
