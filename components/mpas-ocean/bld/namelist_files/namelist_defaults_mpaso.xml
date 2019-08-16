@@ -182,6 +182,10 @@
 <config_Redi_kappa>0.0</config_Redi_kappa>
 <config_gravWaveSpeed_trunc>0.3</config_gravWaveSpeed_trunc>
 <config_max_relative_slope>0.01</config_max_relative_slope>
+<config_gm_min_phase_speed>0.1</config_gm_min_phase_speed>
+<config_gm_min_stratification_ratio>0.1</config_gm_min_stratification_ratio>
+<config_gm_kappa_lat_depth_variable>.true.</config_gm_kappa_lat_depth_variable>
+<config_gm_lat_variable_c2>.true.</config_gm_lat_variable_c2>
 
 <!-- hmix_del2_tensor -->
 <config_use_mom_del2_tensor>.false.</config_use_mom_del2_tensor>
