@@ -673,7 +673,7 @@ contains
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_advection_mod,   only: prim_advec_init2
-    use model_init_mod,       only: model_init2, vertical_mesh_init2
+    use model_init_mod,       only: model_init2
     use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
     use control_mod,          only: smooth_phis_numcycle
 
@@ -751,9 +751,6 @@ contains
 
   end interface
 #endif
-
-    ! model specific vertical mesh initialization
-    call vertical_mesh_init2(elem,nets,nete,hybrid,hvcoord)
 
     if (topology == "cube") then
        call test_global_integral(elem, hybrid,nets,nete)
