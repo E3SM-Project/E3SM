@@ -2131,7 +2131,7 @@ contains
 !===========================================================================================================
 !===========================================================================================================
   subroutine compute_stage_value_dirk(np1,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
+       deriv,nets,nete,maxiter,itertol,dt_e)
   !===================================================================================
   ! this subroutine solves a stage value equation for a DIRK method which takes the form
   !
@@ -2142,6 +2142,7 @@ contains
   !===================================================================================
   integer, intent(in) :: np1,qn0,nets,nete
   real*8, intent(in) :: dt2
+  real*8, optional, intent(in) :: dt_e
   integer :: maxiter
   real*8 :: itertol
 
@@ -2188,7 +2189,7 @@ contains
   call t_startf('compute_stage_value_dirk')
   do ie=nets,nete
     w_n0 = elem(ie)%state%w_i(:,:,:,np1)
-    phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)
+    phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)  
     itercount=0
 
     ! approximate the initial error of f(x) \approx 0
@@ -2198,8 +2199,10 @@ contains
     phis => elem(ie)%state%phis(:,:)
 
     ! add in w_explicit to initial guess:
-
     phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) + dt2*g*elem(ie)%state%w_i(:,:,1:nlev,np1)
+!    phi_np1(:,:,nlev) = phi_np1(:,:,nlev) + dt2*&
+!         (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+!             elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))
 
     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
 
