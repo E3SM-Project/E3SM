@@ -3720,9 +3720,8 @@
 			/>
 	</var_struct>
 
-<!-- Include init modes registry file -->
-#include "mode_init/Registry.xml"
-
+<!-- Include registry files from subdirectories -->
 #include "tracer_groups/Registry_tracers.xml"
 #include "analysis_members/Registry_analysis_members.xml"
+#include "mode_init/Registry.xml"
 </registry>
