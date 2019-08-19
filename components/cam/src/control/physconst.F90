@@ -219,7 +219,11 @@ contains
          end if
          rga         = 1._r8/gravit 
          ra          = 1._r8/rearth
-         omega       = 2.0_R8*pi/sday
+         if (sday==0.0_r8) then
+            omega    = 0.9_r8
+         else
+            omega    = 2.0_R8*pi/sday
+         end if
          cpvir       = cpwv/cpair - 1._r8
          epsilo      = mwh2o/mwdry      
          
