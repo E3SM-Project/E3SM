@@ -70,9 +70,9 @@ protected:
   std::map<std::string,const_field_type>  m_p3_fields_in;
   std::map<std::string,field_type>        m_p3_fields_out;
 
-  Comm m_p3_comm;
+  util::TimeStamp   m_current_ts;
+  Comm              m_p3_comm;
 
-  util::TimeStamp                         m_time;
 }; // class P3Microphysics
 
 } // namespace scream

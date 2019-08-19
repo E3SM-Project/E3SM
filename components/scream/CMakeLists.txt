@@ -15,6 +15,7 @@ MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 # Set the scream base and src directory, to be used across subfolders
 SET (SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 SET (SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+SET (SCREAM_DATA_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/data)
 
 # Add the ./cmake folder to cmake path
 SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)

@@ -120,6 +120,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     auto atm_proc = m_atm_processes[iproc];
     atm_proc->set_grids(grids_manager);
+    const auto proc_name = atm_proc->name();
 
     auto& remap_in = m_inputs_remappers[iproc];
     auto& remap_out = m_outputs_remappers[iproc];

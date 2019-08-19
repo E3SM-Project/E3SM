@@ -42,21 +42,23 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   FieldLayout vector3d_layout { {CO,VR,VL}, {nc,QSZ,NVL} };
   FieldLayout tracers_state_layout { {CO,TL,VR,VL}, {nc,2,4,NVL} };
   FieldLayout scalar_state_3d_mid_layout { {CO,TL,VL} , {nc,2,NVL}};
+  FieldLayout q_forcing_layout  { {CO,VR,VL}, {nc,4,NVL} };
 
   // set requirements
 //  m_required_fields.emplace("P3_req_test",  scalar3d_layout,   units::one, "Physics");
 //  m_required_fields.emplace("ASD_req_test",  scalar3d_layout,   units::one, "Physics");
-//  m_required_fields.emplace("dp"         , scalar_state_3d_mid_layout,      Pa, "Physics");
-//  m_required_fields.emplace("qdp"        , tracers_state_layout,      Qdp, "Physics");
+  m_required_fields.emplace("dp"         , scalar_state_3d_mid_layout,      Pa, "Physics");
+  m_required_fields.emplace("qdp"        , tracers_state_layout,           Qdp, grid->name());
   // set computed
 //  m_computed_fields.emplace("P3_comq_test", scalar3d_layout, units::one, "Physics");
   m_computed_fields.emplace("q"           , vector3d_layout,          Q, "Physics");
+  m_computed_fields.emplace("FQ"          , q_forcing_layout,         Q, grid->name());
 
 }
 // =========================================================================================
 void P3Microphysics::initialize (const util::TimeStamp& t0)
 {
-  m_time = t0;
+  m_current_ts = t0;
   auto q_ptr = m_p3_fields_out.at("q").get_view().data();
 
   p3_init_f90 (q_ptr);
@@ -67,13 +69,15 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
 void P3Microphysics::run (const double dt)
 {
   auto q_ptr = m_p3_fields_out.at("q").get_view().data();
-//  auto qdp_ptr = m_p3_fields_in.at("qdp").get_view().data();
-//  auto dp_ptr = m_p3_fields_in.at("dp").get_view().data();
+  auto FQ_ptr = m_p3_fields_out.at("FQ").get_view().data();
+  auto dp_ptr = m_p3_fields_in.at("dp").get_view().data();
+  auto qdp_ptr = m_p3_fields_in.at("qdp").get_view().data();
 
-  p3_main_f90 (dt,q_ptr); //,qdp_ptr);
+  p3_main_f90 (dt,q_ptr,FQ_ptr,qdp_ptr);
 
-  m_time += dt;
-  m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(m_time);
+  m_current_ts += dt;
+  m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(m_current_ts);
+  m_p3_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(m_current_ts);
 }
 // =========================================================================================
 void P3Microphysics::finalize()
@@ -97,6 +101,9 @@ void P3Microphysics::set_required_field_impl (const Field<const Real, device_typ
   // no need to store a scream field here; we could simply set the view ptr
   // in the Homme's view, and be done with it.
   m_p3_fields_in.emplace(f.get_header().get_identifier().name(),f);
+
+  // Add myself as customer to the field
+  f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
 }
 
 void P3Microphysics::set_computed_field_impl (const Field<      Real, device_type>& f) {
@@ -105,6 +112,9 @@ void P3Microphysics::set_computed_field_impl (const Field<      Real, device_typ
   // no need to store a scream field here; we could simply set the view ptr
   // in the Homme's view, and be done with it.
   m_p3_fields_out.emplace(f.get_header().get_identifier().name(),f);
+
+  // Add myself as provider for the field
+  f.get_header_ptr()->get_tracking().add_provider(weak_from_this());
 }
 
 } // namespace scream
