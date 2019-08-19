@@ -6,7 +6,7 @@ my $component = "mpas-albany-landice";
 my $component_dir = "glc";
 my $component_driver = "glc_cesm_driver";
 my $core = "landice";
-my $esm = "ACME";
+my $esm = "E3SM";
 
 if ($#ARGV == -1) {
     die " ERROR $component buildlib: must specify a caseroot input argument";

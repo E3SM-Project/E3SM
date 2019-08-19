@@ -23,7 +23,7 @@
 
 echo "----- Setting environment variables..."
 
-export USER=ligocki
+export USER=mjac
 export PROJECT=m1041
 export MACHINE=cori-knl
 export REPO_ROOT=/project/projectdirs/$PROJECT/$USER/e3sm_repos
@@ -43,24 +43,26 @@ fi
 
 echo "----- Download repo..."
 
-# export REPO_NAME=maint-1.2.`date +"%Y%m%d"`
-# export REPO_NAME=maint-1.2
-export REPO_NAME=danfmartin/glc/bisicles_ngd
-export E3SM_ROOT=$REPO_ROOT/$REPO_NAME/E3SM
+###### export REPO_NAME=maint-1.2.`date +"%Y%m%d"`
+###### export REPO_NAME=maint-1.2
+#####export REPO_NAME=danfmartin/glc/bisicles_ngd
+#####export E3SM_ROOT=$REPO_ROOT/$REPO_NAME/E3SM
+#####
+#####if [ ! -d "$REPO_ROOT/$REPO_NAME" ]; then
+#####	mkdir -p $REPO_ROOT/$REPO_NAME
+#####	cd $REPO_ROOT/$REPO_NAME
+#####	git clone git@github.com:E3SM-Project/E3SM.git
+#####	cd E3SM
+#####	git checkout origin/$REPO_NAME
+#####	git submodule update --init
+#####else
+#####	cd $REPO_ROOT/$REPO_NAME/E3SM
+######	git fetch
+######	git reset --hard origin/$REPO_NAME
+######	git submodule update --init	
+#####fi
 
-if [ ! -d "$REPO_ROOT/$REPO_NAME" ]; then
-	mkdir -p $REPO_ROOT/$REPO_NAME
-	cd $REPO_ROOT/$REPO_NAME
-	git clone git@github.com:E3SM-Project/E3SM.git
-	cd E3SM
-	git checkout origin/$REPO_NAME
-	git submodule update --init
-else
 	cd $REPO_ROOT/$REPO_NAME/E3SM
-#	git fetch
-#	git reset --hard origin/$REPO_NAME
-#	git submodule update --init	
-fi
 
 #####################################################################
 # Define case:
