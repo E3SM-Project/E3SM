@@ -486,8 +486,16 @@ struct TestP3Func
     int nerr = 0;
     TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
+  
+      errors = 0; 
+
+      // Test values at the melting point of H20 @ 1e5 Pa 
       Spack temps(C::Tmelt);
-      Spack pressures(C::Tmelt);
+      Spack pressures(1e5);
+      Scalar correct_sat_ice_p = 610.7960763188032; 
+      Scalar correct_sat_liq_p = 610.7960763188032; 
+      Scalar correct_mix_ice_r = 0.003822318507864685;
+      Scalar correct_mix_liq_r = 0.003822318507864685;
 
       Spack sat_ice_p = Functions::polysvp1(temps, true);
       Spack sat_liq_p = Functions::polysvp1(temps, false);
@@ -495,8 +503,17 @@ struct TestP3Func
       Spack mix_ice_r = Functions::qv_sat(temps, pressures, true);
       Spack mix_liq_r = Functions::qv_sat(temps, pressures, false);
 
-      // TODO: how to test?
-      errors = 0;
+      for(int s =0; s < sat_ice_p.n; ++s){
+       //std::cout << sat_ice_p[s]  - correct_sat_ice_p << "\n";
+       // Test vapor poressures 
+       if (abs(sat_ice_p[s] - correct_sat_ice_p) > 1e-8 ) {errors++;}
+       if (abs(sat_liq_p[s] - correct_sat_liq_p) > 1e-8 ) {errors++;}
+       //Test mixing-ratios 
+       if (abs(mix_ice_r[s] -  correct_mix_ice_r) > 1e-8 ) {errors++;}
+       if (abs(mix_liq_r[s] -  correct_mix_liq_r) > 1e-8 ) {errors++;}
+      }
+
+
     }, nerr);
 
     Kokkos::fence();
