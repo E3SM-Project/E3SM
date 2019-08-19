@@ -503,14 +503,54 @@ struct TestP3Func
       Spack mix_ice_r = Functions::qv_sat(temps, pressures, true);
       Spack mix_liq_r = Functions::qv_sat(temps, pressures, false);
 
-      for(int s =0; s < sat_ice_p.n; ++s){
-       //std::cout << sat_ice_p[s]  - correct_sat_ice_p << "\n";
-       // Test vapor poressures 
-       if (abs(sat_ice_p[s] - correct_sat_ice_p) > 1e-8 ) {errors++;}
-       if (abs(sat_liq_p[s] - correct_sat_liq_p) > 1e-8 ) {errors++;}
+      for(int s = 0; s < sat_ice_p.n; ++s){
+       // Test vapor pressure
+       if (abs(sat_ice_p[s] - correct_sat_ice_p) > C::Tol ) {errors++;}
+       if (abs(sat_liq_p[s] - correct_sat_liq_p) > C::Tol) {errors++;}
        //Test mixing-ratios 
-       if (abs(mix_ice_r[s] -  correct_mix_ice_r) > 1e-8 ) {errors++;}
-       if (abs(mix_liq_r[s] -  correct_mix_liq_r) > 1e-8 ) {errors++;}
+       if (abs(mix_ice_r[s] -  correct_mix_ice_r) > C::Tol ) {errors++;}
+       if (abs(mix_liq_r[s] -  correct_mix_liq_r) >C::Tol ) {errors++;}
+      }
+
+      for(int s = 0; s < sat_ice_p.n; ++s){temps[s] = 243.15;}
+      correct_sat_ice_p = 37.98530141245404;
+      correct_sat_liq_p = 50.98455924912173; 
+      correct_mix_ice_r = 0.00023634717905493638;
+      correct_mix_liq_r = 0.0003172707211143376;
+
+      sat_ice_p = Functions::polysvp1(temps, true);
+      sat_liq_p = Functions::polysvp1(temps, false);
+      mix_ice_r = Functions::qv_sat(temps, pressures, true);
+      mix_liq_r = Functions::qv_sat(temps, pressures, false);
+
+      for(int s = 0; s < sat_ice_p.n; ++s){
+       // Test vapor pressure
+       if (abs(sat_ice_p[s] - correct_sat_ice_p) > C::Tol ) {errors++;}
+       if (abs(sat_liq_p[s] - correct_sat_liq_p) > C::Tol) {errors++;}
+       //Test mixing-ratios 
+       if (abs(mix_ice_r[s] -  correct_mix_ice_r) > C::Tol ) {errors++;}
+       if (abs(mix_liq_r[s] -  correct_mix_liq_r) >C::Tol ) {errors++;}
+      }
+
+      for(int s= 0; s < sat_ice_p.n; ++s){temps[s] = 303.15;}
+      correct_sat_ice_p = 4242.757341329608;
+      correct_sat_liq_p = 4242.757341329608; 
+      correct_mix_ice_r = 0.0275579183092878;
+      correct_mix_liq_r = 0.0275579183092878;
+
+      sat_ice_p = Functions::polysvp1(temps, true);
+      sat_liq_p = Functions::polysvp1(temps, false);
+
+      mix_ice_r = Functions::qv_sat(temps, pressures, true);
+      mix_liq_r = Functions::qv_sat(temps, pressures, false);
+
+      for(int s = 0; s < sat_ice_p.n; ++s){
+       // Test vapor pressure
+       if (abs(sat_ice_p[s] - correct_sat_ice_p) > C::Tol ) {errors++;}
+       if (abs(sat_liq_p[s] - correct_sat_liq_p) > C::Tol) {errors++;}
+       //Test mixing-ratios 
+       if (abs(mix_ice_r[s] -  correct_mix_ice_r) > C::Tol ) {errors++;}
+       if (abs(mix_liq_r[s] -  correct_mix_liq_r) >C::Tol ) {errors++;}
       }
 
 
