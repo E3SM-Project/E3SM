@@ -339,6 +339,7 @@ subroutine modal_aer_opt_init()
 
  
 !!== KZ_INSITU
+   call addfld ('SSAVISdry',horiz_only,    'A','  ','SSAVISdry', flag_xyfill=.true.)
 !!== KZ_INSITU
 
 if (history_amwg) then 
@@ -394,7 +395,6 @@ if (history_amwg) then
       call add_default ('AODABSdry'      , 1, ' ')
       call add_default ('AODABSdryFine'  , 1, ' ')
       call add_default ('SSAVISdry'      , 1, ' ')
-      call add_default ('SSAVISdryFine'  , 1, ' ')
       call add_default ('EXTINCT440'     , 1, ' ')
       call add_default ('EXTINCT870'     , 1, ' ')
       call add_default ('EXTINCT40'      , 1, ' ')
