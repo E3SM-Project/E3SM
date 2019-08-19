@@ -1039,7 +1039,7 @@ int PIOc_get_var1_ushort(int ncid, int varid, const PIO_Offset *index, unsigned 
 int PIOc_get_var1_short(int ncid, int varid, const PIO_Offset *index, short *buf)
 {
     int ret = PIOc_get_var1_tc(ncid, varid, index, NC_SHORT, buf);
-    LOG((1, "PIOc_get_var1_short returned %d", ret));
+    PLOG((1, "PIOc_get_var1_short returned %d", ret));
     return ret;
 }
 

@@ -1,5 +1,5 @@
 !-------------------------------------------------------------------------------
-! $Id: clip_explicit.F90 7315 2014-09-30 20:49:54Z schemena@uwm.edu $
+! $Id$
 !===============================================================================
 module clip_explicit
 
@@ -11,6 +11,7 @@ module clip_explicit
             clip_covar, & 
             clip_covar_level, & 
             clip_variance, & 
+            clip_variance_level, & 
             clip_skewness, &
             clip_skewness_core
 
@@ -71,15 +72,6 @@ module clip_explicit
 
     use clubb_precision, only: & 
         core_rknd ! Variable(s)
-
-    use stats_type_utilities, only: &
-       stat_modify ! Procedure(s)
-
-    use stats_variables, only: & 
-        iwprtp_bt, &  ! Variable(s)
-        iwpthlp_bt, &
-        stats_zm, &
-        l_stats_samp
 
     implicit none
 
@@ -151,23 +143,6 @@ module clip_explicit
     ! The third instance of w'r_t' clipping takes place after
     ! w'^2 is updated in advance_wp2_wp3.
 
-    ! Include effect of clipping in wprtp time tendency budget term.
-    if ( l_stats_samp ) then
-    
-      ! if wprtp_cl_num == 1 do nothing since
-      ! iwprtp_bt stat_begin_update is called outside of this method
-      
-      if ( wprtp_cl_num == 2 ) then
-        ! wprtp total time tendency (effect of clipping)
-        call stat_modify( iwprtp_bt,  -wprtp / dt,  & ! intent(in)
-                          stats_zm )                               ! intent(inout)
-      elseif ( wprtp_cl_num == 3 ) then
-        ! wprtp total time tendency (effect of clipping)
-        call stat_modify( iwprtp_bt, -wprtp / dt,  & ! intent(in)
-                          stats_zm )                               ! intent(inout)
-      endif
-    endif
-
     ! Used within subroutine clip_covar.
     if ( wprtp_cl_num == 1 ) then
       l_first_clip_ts = .true.
@@ -184,21 +159,6 @@ module clip_explicit
     call clip_covar( clip_wprtp, l_first_clip_ts,   & ! intent(in) 
                      l_last_clip_ts, dt, wp2, rtp2, & ! intent(in)
                      wprtp, wprtp_chnge )             ! intent(inout)
-
-    if ( l_stats_samp ) then
-      if ( wprtp_cl_num == 1 ) then
-        ! wprtp total time tendency (effect of clipping)
-        call stat_modify( iwprtp_bt,  wprtp / dt,  & ! intent(in)
-                          stats_zm )                              ! intent(inout)
-      elseif ( wprtp_cl_num == 2 ) then
-        ! wprtp total time tendency (effect of clipping)
-        call stat_modify( iwprtp_bt, wprtp / dt,  & ! intent(in)
-                          stats_zm )                              ! intent(inout)
-      ! if wprtp_cl_num == 3 do nothing since
-      ! iwprtp_bt stat_end_update is called outside of this method
-      
-      endif
-    endif
 
 
     !!! Clipping for w'th_l'
@@ -220,23 +180,6 @@ module clip_explicit
     ! The third instance of w'th_l' clipping takes place after
     ! w'^2 is updated in advance_wp2_wp3.
 
-    ! Include effect of clipping in wpthlp time tendency budget term.
-    if ( l_stats_samp ) then
-    
-      ! if wpthlp_cl_num == 1 do nothing since
-      ! iwpthlp_bt stat_begin_update is called outside of this method
-      
-      if ( wpthlp_cl_num == 2 ) then
-        ! wpthlp total time tendency (effect of clipping)
-        call stat_modify( iwpthlp_bt, -wpthlp / dt,  & ! intent(in)
-                          stats_zm )                                 ! intent(inout)
-      elseif ( wpthlp_cl_num == 3 ) then
-        ! wpthlp total time tendency (effect of clipping)
-        call stat_modify( iwpthlp_bt, -wpthlp / dt,  & ! intent(in)
-                          stats_zm )                                 ! intent(inout)
-      endif
-    endif
-
     ! Used within subroutine clip_covar.
     if ( wpthlp_cl_num == 1 ) then
       l_first_clip_ts = .true.
@@ -253,23 +196,6 @@ module clip_explicit
     call clip_covar( clip_wpthlp, l_first_clip_ts,   & ! intent(in)
                      l_last_clip_ts, dt, wp2, thlp2, & ! intent(in)
                      wpthlp, wpthlp_chnge )            ! intent(inout)
-
-
-    if ( l_stats_samp ) then
-      if ( wpthlp_cl_num == 1 ) then
-        ! wpthlp total time tendency (effect of clipping)
-        call stat_modify( iwpthlp_bt, wpthlp / dt,  & ! intent(in)
-                          stats_zm )                                ! intent(inout)
-      elseif ( wpthlp_cl_num == 2 ) then
-        ! wpthlp total time tendency (effect of clipping)
-        call stat_modify( iwpthlp_bt, wpthlp / dt,  & ! intent(in)
-                          stats_zm )                                ! intent(inout)
-                          
-      ! if wpthlp_cl_num == 3 do nothing since
-      ! iwpthlp_bt stat_end_update is called outside of this method
-      
-      endif
-    endif
 
 
     !!! Clipping for w'sclr'
@@ -451,7 +377,11 @@ module clip_explicit
         gr ! Variable(s)
 
     use constants_clubb, only: &
-        max_mag_correlation ! Constant(s)
+        max_mag_correlation,      & ! Constant(s)
+        max_mag_correlation_flux
+
+    use model_flags, only: &
+        l_predict_upwp_vpwp ! Variable(s)
 
     use clubb_precision, only: & 
         core_rknd ! Variable(s)
@@ -463,9 +393,11 @@ module clip_explicit
 
     use stats_variables, only: & 
         stats_zm,  & ! Variable(s)
-        iwprtp_cl, & 
-        iwpthlp_cl, & 
-        irtpthlp_cl, & 
+        iwprtp_cl, &
+        iwpthlp_cl, &
+        irtpthlp_cl, &
+        iupwp_cl, &
+        ivpwp_cl, &
         l_stats_samp
 
     implicit none
@@ -493,7 +425,11 @@ module clip_explicit
       xpyp_chnge  ! Net change in x'y' due to clipping [{x units}*{y units}]
 
 
-    ! Local Variable
+    ! Local Variables
+    real( kind = core_rknd ) ::  & 
+      max_mag_corr, &    ! Maximum magnitude of a correlation allowed
+      xpyp_bound
+
     integer :: k  ! Array index
 
     integer :: & 
@@ -508,6 +444,18 @@ module clip_explicit
       ixpyp_cl = iwpthlp_cl
     case ( clip_rtpthlp )   ! rtpthlp clipping budget term
       ixpyp_cl = irtpthlp_cl
+    case ( clip_upwp )   ! upwp clipping budget term
+      if ( l_predict_upwp_vpwp ) then
+        ixpyp_cl = iupwp_cl
+      else
+        ixpyp_cl = 0
+      endif ! l_predict_upwp_vpwp
+    case ( clip_vpwp )   ! vpwp clipping budget term
+      if ( l_predict_upwp_vpwp ) then
+        ixpyp_cl = ivpwp_cl
+      else
+        ixpyp_cl = 0
+      endif ! l_predict_upwp_vpwp
     case default   ! scalars (or upwp/vpwp) are involved
       ixpyp_cl = 0
     end select
@@ -521,6 +469,15 @@ module clip_explicit
       endif
     endif
 
+    ! When clipping for wprtp or wpthlp, use the special value for
+    ! max_mag_correlation_flux.  For all other correlations, use
+    ! max_mag_correlation.
+    if ( ( solve_type == clip_wprtp ) .or. ( solve_type == clip_wpthlp ) ) then
+       max_mag_corr = max_mag_correlation_flux
+    else ! All other covariances
+       max_mag_corr = max_mag_correlation
+    endif ! solve_type
+
     ! The value of x'y' at the surface (or lower boundary) is a set value that
     ! is either specified or determined elsewhere in a surface subroutine.  It
     ! is ensured elsewhere that the correlation between x and y at the surface
@@ -532,33 +489,33 @@ module clip_explicit
     ! not be conserved, therefore it should never be added.
     do k = 2, gr%nz-1, 1
 
+      xpyp_bound = max_mag_corr * sqrt( xp2(k) * yp2(k) )
+
       ! Clipping for xpyp at an upper limit corresponding with a correlation
-      ! between x and y of max_mag_correlation.
-      if ( xpyp(k) >  max_mag_correlation * sqrt( xp2(k) * yp2(k) ) ) then
+      ! between x and y of max_mag_corr.
+      if ( xpyp(k) > xpyp_bound ) then
 
-        xpyp_chnge(k) =  max_mag_correlation * sqrt( xp2(k) * yp2(k) ) - xpyp(k)
+        xpyp_chnge(k) = xpyp_bound - xpyp(k)
+        xpyp(k) = xpyp_bound 
 
-        xpyp(k) =  max_mag_correlation * sqrt( xp2(k) * yp2(k) )
+      ! Clipping for xpyp at a lower limit corresponding with a correlation
+      ! between x and y of -max_mag_corr.
+      else if ( xpyp(k) < -xpyp_bound ) then
 
-        ! Clipping for xpyp at a lower limit corresponding with a correlation
-        ! between x and y of -max_mag_correlation.
-      elseif ( xpyp(k) < -max_mag_correlation * sqrt( xp2(k) * yp2(k) ) ) then
-
-        xpyp_chnge(k) = -max_mag_correlation * sqrt( xp2(k) * yp2(k) ) - xpyp(k)
-
-        xpyp(k) = -max_mag_correlation * sqrt( xp2(k) * yp2(k) )
+        xpyp_chnge(k) = -xpyp_bound - xpyp(k)
+        xpyp(k) = -xpyp_bound 
 
       else
 
         xpyp_chnge(k) = 0.0_core_rknd
 
-      endif
+      end if
 
     enddo ! k = 2..gr%nz
 
     ! Since there is no covariance clipping at the upper or lower boundaries,
     ! the change in x'y' due to covariance clipping at those levels is 0.
-    xpyp_chnge(1)       = 0.0_core_rknd
+    xpyp_chnge(1)     = 0.0_core_rknd
     xpyp_chnge(gr%nz) = 0.0_core_rknd
 
     if ( l_stats_samp ) then
@@ -568,7 +525,6 @@ module clip_explicit
         call stat_modify( ixpyp_cl, xpyp / dt, stats_zm )
       endif
     endif
-
 
     return
   end subroutine clip_covar
@@ -619,8 +575,12 @@ module clip_explicit
     !-----------------------------------------------------------------------
 
     use constants_clubb, only: &
-        max_mag_correlation, & ! Constant(s)
+        max_mag_correlation,      & ! Constant(s)
+        max_mag_correlation_flux, &
         zero
+
+    use model_flags, only: &
+        l_predict_upwp_vpwp ! Variable(s)
 
     use clubb_precision, only: & 
         core_rknd ! Variable(s)
@@ -632,9 +592,11 @@ module clip_explicit
 
     use stats_variables, only: & 
         stats_zm,  & ! Variable(s)
-        iwprtp_cl, & 
-        iwpthlp_cl, & 
-        irtpthlp_cl, & 
+        iwprtp_cl, &
+        iwpthlp_cl, &
+        irtpthlp_cl, &
+        iupwp_cl, &
+        ivpwp_cl, &
         l_stats_samp
 
     implicit none
@@ -663,7 +625,10 @@ module clip_explicit
       xpyp_chnge  ! Net change in <x'y'> due to clipping  [{x units}*{y units}]
 
 
-    ! Local Variable
+    ! Local Variables
+    real( kind = core_rknd ) ::  & 
+      max_mag_corr    ! Maximum magnitude of a correlation allowed
+
     integer :: & 
       ixpyp_cl    ! Statistics index
 
@@ -675,6 +640,18 @@ module clip_explicit
       ixpyp_cl = iwpthlp_cl
     case ( clip_rtpthlp )   ! rtpthlp clipping budget term
       ixpyp_cl = irtpthlp_cl
+    case ( clip_upwp )   ! upwp clipping budget term
+      if ( l_predict_upwp_vpwp ) then
+        ixpyp_cl = iupwp_cl
+      else
+        ixpyp_cl = 0
+      endif ! l_predict_upwp_vpwp
+    case ( clip_vpwp )   ! vpwp clipping budget term
+      if ( l_predict_upwp_vpwp ) then
+        ixpyp_cl = ivpwp_cl
+      else
+        ixpyp_cl = 0
+      endif ! l_predict_upwp_vpwp
     case default   ! scalars (or upwp/vpwp) are involved
       ixpyp_cl = 0
     end select
@@ -690,6 +667,15 @@ module clip_explicit
        endif
     endif
 
+    ! When clipping for wprtp or wpthlp, use the special value for
+    ! max_mag_correlation_flux.  For all other correlations, use
+    ! max_mag_correlation.
+    if ( ( solve_type == clip_wprtp ) .or. ( solve_type == clip_wpthlp ) ) then
+       max_mag_corr = max_mag_correlation_flux
+    else ! All other covariances
+       max_mag_corr = max_mag_correlation
+    endif ! solve_type
+
     ! The value of x'y' at the surface (or lower boundary) is a set value that
     ! is either specified or determined elsewhere in a surface subroutine.  It
     ! is ensured elsewhere that the correlation between x and y at the surface
@@ -701,20 +687,20 @@ module clip_explicit
     ! not be conserved, therefore it should never be added.
 
     ! Clipping for xpyp at an upper limit corresponding with a correlation
-    ! between x and y of max_mag_correlation.
-    if ( xpyp >  max_mag_correlation * sqrt( xp2 * yp2 ) ) then
+    ! between x and y of max_mag_corr.
+    if ( xpyp > max_mag_corr * sqrt( xp2 * yp2 ) ) then
 
-        xpyp_chnge =  max_mag_correlation * sqrt( xp2 * yp2 ) - xpyp
+        xpyp_chnge = max_mag_corr * sqrt( xp2 * yp2 ) - xpyp
 
-        xpyp =  max_mag_correlation * sqrt( xp2 * yp2 )
+        xpyp = max_mag_corr * sqrt( xp2 * yp2 )
 
     ! Clipping for xpyp at a lower limit corresponding with a correlation
-    ! between x and y of -max_mag_correlation.
-    elseif ( xpyp < -max_mag_correlation * sqrt( xp2 * yp2 ) ) then
+    ! between x and y of -max_mag_corr.
+    elseif ( xpyp < -max_mag_corr * sqrt( xp2 * yp2 ) ) then
 
-        xpyp_chnge = -max_mag_correlation * sqrt( xp2 * yp2 ) - xpyp
+        xpyp_chnge = -max_mag_corr * sqrt( xp2 * yp2 ) - xpyp
 
-        xpyp = -max_mag_correlation * sqrt( xp2 * yp2 )
+        xpyp = -max_mag_corr * sqrt( xp2 * yp2 )
 
     else
 
@@ -845,6 +831,100 @@ module clip_explicit
   end subroutine clip_variance
 
   !=============================================================================
+  subroutine clip_variance_level( solve_type, dt, threshold, level, &
+                                  xp2 )
+
+    ! Description:
+    ! Clipping the value of variance x'^2 based on a minimum threshold value.
+    ! The threshold value must be greater than or equal to 0.  This clipping is
+    ! done at a single vertical level.
+    !
+    ! The values of x'^2 are found on the momentum levels.
+    !
+    ! The following variances are found in the code:
+    !
+    ! r_t'^2, th_l'^2, u'^2, v'^2, sclr'^2, (computed in advance_xp2_xpyp);
+    ! w'^2 (computed in advance_wp2_wp3).
+
+    ! References:
+    ! None
+    !-----------------------------------------------------------------------
+
+    use clubb_precision, only: & 
+        core_rknd ! Variable(s)
+
+    use stats_type_utilities, only: & 
+        stat_begin_update_pt,  & ! Procedure(s)
+        stat_end_update_pt
+
+    use stats_variables, only: & 
+        stats_zm,  & ! Variable(s)
+        iwp2_cl, & 
+        irtp2_cl, & 
+        ithlp2_cl, & 
+        iup2_cl, & 
+        ivp2_cl, & 
+        l_stats_samp
+
+    implicit none
+
+    ! Input Variables
+    integer, intent(in) :: & 
+      solve_type  ! Variable being solved; used for STATS.
+
+    real( kind = core_rknd ), intent(in) :: & 
+      dt          ! Model timestep; used here for STATS     [s]
+
+    real( kind = core_rknd ), intent(in) :: & 
+      threshold   ! Minimum value of x'^2                   [{x units}^2]
+
+    integer, intent(in) :: &
+      level       ! Vertical level index
+
+    ! Output Variable
+    real( kind = core_rknd ), intent(inout) :: & 
+      xp2         ! Variance of x, x'^2 (momentum levels)   [{x units}^2]
+
+    integer :: & 
+      ixp2_cl
+
+    ! ---- Begin Code ----
+
+    select case ( solve_type )
+    case ( clip_wp2 )   ! wp2 clipping budget term
+      ixp2_cl = iwp2_cl
+    case ( clip_rtp2 )   ! rtp2 clipping budget term
+      ixp2_cl = irtp2_cl
+    case ( clip_thlp2 )   ! thlp2 clipping budget term
+      ixp2_cl = ithlp2_cl
+    case ( clip_up2 )   ! up2 clipping budget term
+      ixp2_cl = iup2_cl
+    case ( clip_vp2 )   ! vp2 clipping budget term
+      ixp2_cl = ivp2_cl
+    case default   ! scalars are involved
+      ixp2_cl = 0
+    end select
+
+
+    if ( l_stats_samp ) then
+       call stat_begin_update_pt( ixp2_cl, level, xp2 / dt, stats_zm )
+    endif
+
+    ! Limit the value of x'^2 at threshold.
+    if ( xp2 < threshold ) then
+       xp2 = threshold
+    endif
+
+    if ( l_stats_samp ) then
+       call stat_end_update_pt( ixp2_cl, level, xp2 / dt, stats_zm )
+    endif
+
+
+    return
+
+  end subroutine clip_variance_level
+
+  !=============================================================================
   subroutine clip_skewness( dt, sfc_elevation, wp2_zt, wp3 )
 
     ! Description:
@@ -941,8 +1021,8 @@ module clip_explicit
     use grid_class, only: & 
       gr ! Variable(s)
 
-    use constants_clubb, only: &
-      Skw_max_mag_sqd ! [-]
+    use parameters_tunable, only: &
+      Skw_max_mag ! [-]
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
@@ -1004,7 +1084,7 @@ module clip_explicit
       else                          ! Clip skewness consistently with a.
        !wp3_upper_lim(k) =  4.5_core_rknd * wp2_zt(k)**(3.0_core_rknd/2.0_core_rknd)
        !wp3_lower_lim(k) = -4.5_core_rknd * wp2_zt(k)**(3.0_core_rknd/2.0_core_rknd)
-        wp3_lim_sqd(k) = Skw_max_mag_sqd * wp2_zt_cubed(k) ! Skw_max_mag = 4.5_core_rknd^2
+        wp3_lim_sqd(k) = Skw_max_mag**2 * wp2_zt_cubed(k) ! Skw_max_mag = 4.5_core_rknd^2
       endif
     enddo
 

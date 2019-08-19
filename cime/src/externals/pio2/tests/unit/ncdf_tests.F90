@@ -268,7 +268,6 @@ Contains
     ! Local Vars
     character(len=str_len) :: filename
     integer                :: iotype, ret_val
-    integer                :: ret_val1
 
     ! Data used to test writing
     integer,          dimension(2) :: data_to_write, compdof
@@ -282,10 +281,6 @@ Contains
     integer :: shuffle
     integer :: deflate
     integer :: my_deflate_level, deflate_level, deflate_level_2
-
-    ! These will be used to test the chunksizes for netCDF-4 files.
-    integer :: storage
-    integer, dimension(1) :: chunksizes
 
     ! These will be used to set chunk cache sizes in netCDF-4/HDF5
     ! files.

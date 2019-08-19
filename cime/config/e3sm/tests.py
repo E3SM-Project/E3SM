@@ -88,6 +88,7 @@ _TESTS = {
         "tests" : (
             "PGN_P1x1.ne4_ne4.FC5AV1C-L",
             "TSC.ne4_ne4.FC5AV1C-L",
+            "MVK_PL.ne4_ne4.FC5AV1C-L",
             )
         },
 
@@ -217,6 +218,8 @@ _TESTS = {
                  "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
                  "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype4",
                  "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_sl",
+                 "ERS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype2",
+                 "ERS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
                  )
     },
 

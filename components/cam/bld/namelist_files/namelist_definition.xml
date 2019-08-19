@@ -1168,6 +1168,12 @@ In the low-top model, this helps to conserve momentum and produce a QBO.
 Default: set by build-namelist.
 </entry>
 
+<entry id="gw_convect_hcf" type="real" category="gw_drag"
+       group="gw_drag_nl" valid_values="" >
+Heating rate conversion factor associated with convective gravity waves
+Default: 20.0
+</entry>
+
 <entry id="effgw_beres" type="real" category="gw_drag"
        group="gw_drag_nl" valid_values="" >
 Efficiency associated with convective gravity waves from the Beres
@@ -2522,6 +2528,12 @@ Default: set by build-namelist
 <entry id="zmconv_trigmem" type="logical" category="conv"
        group="zmconv_nl" valid_values="" >
 Trigger and memory option in ZM deep convection scheme.
+Default: FALSE
+</entry>
+
+<entry id="zmconv_trigdcape_ull" type="logical" category="conv"
+       group="zmconv_nl" valid_values="" >
+DCAPE trigger along with unrestricted launching level for ZM deep convection scheme.
 Default: FALSE
 </entry>
 

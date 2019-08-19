@@ -50,7 +50,7 @@ class WGET(GenericServer):
         logger.debug(output)
         logger.debug(errput)
         if (stat != 0):
-            logging.warning("wget failed with output: {} and errput {}\n".format(output, errput))
+            logging.warning("wget failed with output: {} and errput {}\n".format(output.encode('utf-8'), errput.encode('utf-8')))
             # wget puts an empty file if it fails.
             try:
                 os.remove(full_path)

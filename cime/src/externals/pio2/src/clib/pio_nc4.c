@@ -169,9 +169,9 @@ PIOc_inq_var_deflate(int ncid, int varid, int *shufflep, int *deflatep,
                 mpierr = MPI_Bcast(&deflate_level_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
             if (deflate_level_present && !mpierr)
                 mpierr = MPI_Bcast(deflate_levelp, 1, MPI_INT, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_inq_var_deflate ncid = %d varid = %d shuffle_present = %d deflate_present = %d "
-                 "deflate_level_present = %d", ncid, varid, shuffle_present, deflate_present,
-                 deflate_level_present));
+            PLOG((2, "PIOc_inq_var_deflate ncid = %d varid = %d shuffle_present = %d deflate_present = %d "
+                  "deflate_level_present = %d", ncid, varid, shuffle_present, deflate_present,
+                  deflate_level_present));
         }
 
         /* Handle MPI errors. */
@@ -242,8 +242,8 @@ PIOc_def_var_chunking(int ncid, int varid, int storage, const PIO_Offset *chunks
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_def_var_chunking ncid = %d varid = %d storage = %d", ncid,
-         varid, storage));
+    PLOG((1, "PIOc_def_var_chunking ncid = %d varid = %d storage = %d", ncid,
+          varid, storage));
 
     /* Find the info about this file. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -260,7 +260,7 @@ PIOc_def_var_chunking(int ncid, int varid, int storage, const PIO_Offset *chunks
     if (!ios->async || !ios->ioproc)
         if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
             return check_netcdf(file, ierr, __FILE__, __LINE__);
-    LOG((2, "PIOc_def_var_chunking first ndims = %d", ndims));
+    PLOG((2, "PIOc_def_var_chunking first ndims = %d", ndims));
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
     if (ios->async)
@@ -286,8 +286,8 @@ PIOc_def_var_chunking(int ncid, int varid, int storage, const PIO_Offset *chunks
             if (!mpierr && chunksizes_present)
                 mpierr = MPI_Bcast((PIO_Offset *)chunksizesp, ndims, MPI_OFFSET, ios->compmaster,
                                    ios->intercomm);
-            LOG((2, "PIOc_def_var_chunking ncid = %d varid = %d storage = %d ndims = %d chunksizes_present = %d",
-                 ncid, varid, storage, ndims, chunksizes_present));
+            PLOG((2, "PIOc_def_var_chunking ncid = %d varid = %d storage = %d ndims = %d chunksizes_present = %d",
+                  ncid, varid, storage, ndims, chunksizes_present));
         }
 
         /* Handle MPI errors. */
@@ -301,7 +301,7 @@ PIOc_def_var_chunking(int ncid, int varid, int storage, const PIO_Offset *chunks
             check_mpi(NULL, file, mpierr, __FILE__, __LINE__);
     }
 
-    LOG((2, "PIOc_def_var_chunking ndims = %d", ndims));
+    PLOG((2, "PIOc_def_var_chunking ndims = %d", ndims));
 
     /* If this is an IO task, then call the netCDF function. */
     if (ios->ioproc)
@@ -365,7 +365,7 @@ PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizes
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
     int ndims; /* The number of dimensions in the variable. */
 
-    LOG((1, "PIOc_inq_var_chunking ncid = %d varid = %d"));
+    PLOG((1, "PIOc_inq_var_chunking ncid = %d varid = %d"));
 
     /* Get the file info. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -383,7 +383,7 @@ PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizes
         /* Find the number of dimensions of this variable. */
         if ((ierr = PIOc_inq_varndims(ncid, varid, &ndims)))
             return pio_err(ios, file, ierr, __FILE__, __LINE__);
-        LOG((2, "ndims = %d", ndims));
+        PLOG((2, "ndims = %d", ndims));
     }
 
     /* If async is in use, and this is not an IO task, bcast the parameters. */
@@ -408,8 +408,8 @@ PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizes
                 mpierr = MPI_Bcast(&ndims, 1, MPI_INT, ios->compmaster, ios->intercomm);
             if (!mpierr)
                 mpierr = MPI_Bcast(&chunksizes_present, 1, MPI_CHAR, ios->compmaster, ios->intercomm);
-            LOG((2, "PIOc_inq_var_chunking ncid = %d varid = %d storage_present = %d chunksizes_present = %d",
-                 ncid, varid, storage_present, chunksizes_present));
+            PLOG((2, "PIOc_inq_var_chunking ncid = %d varid = %d storage_present = %d chunksizes_present = %d",
+                  ncid, varid, storage_present, chunksizes_present));
         }
 
         /* Handle MPI errors. */
@@ -443,7 +443,7 @@ PIOc_inq_var_chunking(int ncid, int varid, int *storagep, PIO_Offset *chunksizes
                 }
         }
 #endif
-        LOG((2, "ierr = %d", ierr));
+        PLOG((2, "ierr = %d", ierr));
     }
 
     /* Broadcast and check the return code. */
@@ -572,7 +572,7 @@ PIOc_inq_var_endian(int ncid, int varid, int *endianp)
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_inq_var_endian ncid = %d varid = %d"));
+    PLOG((1, "PIOc_inq_var_endian ncid = %d varid = %d"));
 
     /* Get the file info. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -666,8 +666,8 @@ PIOc_set_chunk_cache(int iosysid, int iotype, PIO_Offset size, PIO_Offset nelems
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_set_chunk_cache iosysid = %d iotype = %d size = %d nelems = %d preemption = %g",
-         iosysid, iotype, size, nelems, preemption));
+    PLOG((1, "PIOc_set_chunk_cache iosysid = %d iotype = %d size = %d nelems = %d preemption = %g",
+          iosysid, iotype, size, nelems, preemption));
 
     /* Get the IO system info. */
     if (!(ios = pio_get_iosystem_from_id(iosysid)))
@@ -710,7 +710,7 @@ PIOc_set_chunk_cache(int iosysid, int iotype, PIO_Offset size, PIO_Offset nelems
     if (ios->ioproc)
     {
 #ifdef _NETCDF4
-        LOG((2, "calling nc_chunk_cache"));
+        PLOG((2, "calling nc_chunk_cache"));
         if (iotype == PIO_IOTYPE_NETCDF4P)
             ierr = nc_set_chunk_cache(size, nelems, preemption);
         else
@@ -725,7 +725,7 @@ PIOc_set_chunk_cache(int iosysid, int iotype, PIO_Offset size, PIO_Offset nelems
     if (ierr)
         check_netcdf2(ios, NULL, ierr, __FILE__, __LINE__);
 
-    LOG((2, "PIOc_set_chunk_cache complete!"));
+    PLOG((2, "PIOc_set_chunk_cache complete!"));
     return PIO_NOERR;
 }
 
@@ -768,7 +768,7 @@ PIOc_get_chunk_cache(int iosysid, int iotype, PIO_Offset *sizep, PIO_Offset *nel
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_get_chunk_cache iosysid = %d iotype = %d", iosysid, iotype));
+    PLOG((1, "PIOc_get_chunk_cache iosysid = %d iotype = %d", iosysid, iotype));
 
     /* Get the io system info. */
     if (!(ios = pio_get_iosystem_from_id(iosysid)))
@@ -802,8 +802,8 @@ PIOc_get_chunk_cache(int iosysid, int iotype, PIO_Offset *sizep, PIO_Offset *nel
             if (!mpierr)
                 mpierr = MPI_Bcast(&preemption_present, 1, MPI_CHAR, ios->compmaster,
                                    ios->intercomm);
-            LOG((2, "PIOc_get_chunk_cache size_present = %d nelems_present = %d "
-                 "preemption_present = %d ", size_present, nelems_present, preemption_present));
+            PLOG((2, "PIOc_get_chunk_cache size_present = %d nelems_present = %d "
+                  "preemption_present = %d ", size_present, nelems_present, preemption_present));
         }
 
         /* Handle MPI errors. */
@@ -823,34 +823,34 @@ PIOc_get_chunk_cache(int iosysid, int iotype, PIO_Offset *sizep, PIO_Offset *nel
             if (!ios->io_rank)
                 ierr = nc_get_chunk_cache((size_t *)sizep, (size_t *)nelemsp, preemptionp);
 #endif
-        LOG((2, "nc_get_chunk_cache called ierr = %d", ierr));
+        PLOG((2, "nc_get_chunk_cache called ierr = %d", ierr));
     }
 
     /* Broadcast and check the return code. */
     if ((mpierr = MPI_Bcast(&ierr, 1, MPI_INT, ios->ioroot, ios->my_comm)))
         return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
-    LOG((2, "bcast complete ierr = %d sizep = %d", ierr, sizep));
+    PLOG((2, "bcast complete ierr = %d sizep = %d", ierr, sizep));
     if (ierr)
         return check_netcdf(NULL, ierr, __FILE__, __LINE__);
 
     if (sizep)
     {
-        LOG((2, "bcasting size = %d ios->ioroot = %d", *sizep, ios->ioroot));
+        PLOG((2, "bcasting size = %d ios->ioroot = %d", *sizep, ios->ioroot));
         if ((mpierr = MPI_Bcast(sizep, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
             return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
-        LOG((2, "bcast size = %d", *sizep));
+        PLOG((2, "bcast size = %d", *sizep));
     }
     if (nelemsp)
     {
         if ((mpierr = MPI_Bcast(nelemsp, 1, MPI_OFFSET, ios->ioroot, ios->my_comm)))
             return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
-        LOG((2, "bcast complete nelems = %d", *nelemsp));
+        PLOG((2, "bcast complete nelems = %d", *nelemsp));
     }
     if (preemptionp)
     {
         if ((mpierr = MPI_Bcast(preemptionp, 1, MPI_FLOAT, ios->ioroot, ios->my_comm)))
             return check_mpi(ios, NULL, mpierr, __FILE__, __LINE__);
-        LOG((2, "bcast complete preemption = %d", *preemptionp));
+        PLOG((2, "bcast complete preemption = %d", *preemptionp));
     }
 
     return PIO_NOERR;
@@ -976,7 +976,7 @@ PIOc_get_var_chunk_cache(int ncid, int varid, PIO_Offset *sizep, PIO_Offset *nel
     int ierr;              /* Return code from function calls. */
     int mpierr = MPI_SUCCESS, mpierr2;  /* Return code from MPI function codes. */
 
-    LOG((1, "PIOc_get_var_chunk_cache ncid = %d varid = %d"));
+    PLOG((1, "PIOc_get_var_chunk_cache ncid = %d varid = %d"));
 
     /* Get the file info. */
     if ((ierr = pio_get_file(ncid, &file)))
@@ -1011,8 +1011,8 @@ PIOc_get_var_chunk_cache(int ncid, int varid, PIO_Offset *sizep, PIO_Offset *nel
             if (!mpierr)
                 mpierr = MPI_Bcast(&preemption_present, 1, MPI_CHAR, ios->compmaster,
                                    ios->intercomm);
-            LOG((2, "PIOc_get_var_chunk_cache size_present = %d nelems_present = %d "
-                 "preemption_present = %d ", size_present, nelems_present, preemption_present));
+            PLOG((2, "PIOc_get_var_chunk_cache size_present = %d nelems_present = %d "
+                  "preemption_present = %d ", size_present, nelems_present, preemption_present));
         }
 
         /* Handle MPI errors. */

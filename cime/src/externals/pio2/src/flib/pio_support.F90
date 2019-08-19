@@ -35,7 +35,7 @@ contains
     integer(kind=pio_offset_kind), optional, intent(in) :: ilen
     integer :: i, slen
     if(present(ilen)) then
-       slen = ilen
+       slen = int(ilen)
     else
        slen = len(istr)
     endif
@@ -166,6 +166,7 @@ contains
          integer(C_INT), value, intent(in) :: f90_comm
        end function PIOc_writemap_from_f90
     end interface
+    if (present(punit)) continue ! to suppress warning
     ndims = size(gdims)
     err = PIOc_writemap_from_f90(trim(file)//C_NULL_CHAR, ndims, gdims, int(size(dof),C_SIZE_T), dof, comm)
 
@@ -207,7 +208,7 @@ contains
          integer(C_INT), value, intent(in) :: f90_comm
        end function PIOc_readmap_from_f90
     end interface
-
+    if (present(punit)) continue ! to suppress warning
     ierr = PIOc_readmap_from_f90(trim(file)//C_NULL_CHAR, ndims, tgdims, maplen, tmap, comm);
 
     call c_f_pointer(tgdims, gdims, (/ndims/))
