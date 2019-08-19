@@ -248,8 +248,8 @@ subroutine modal_aer_opt_init()
    
    call addfld ('ASY',       (/ 'lev' /),'A',' ','Asymetry parameter', flag_xyfill=.true.)
    call addfld ('ASYdry',    (/ 'lev' /),'A',' ','ASYdry',             flag_xyfill=.true.)
-   call addfld ('ASYdryFine',(/ 'lev' /),'A',' ','ASYdryFine',         flag_xyfill=.true.)
    
+   call addfld ('A2EXTINCT',   horiz_only,'A','/m','EXT  ',     flag_xyfill=.true.)
    call addfld ('A2EXTINCT440',horiz_only,'A','/m','EXT_440  ', flag_xyfill=.true.)
    call addfld ('A2EXTINCT870',horiz_only,'A','/m','EXT_870  ', flag_xyfill=.true.)
    call addfld ('A2EXTINCT40', horiz_only,'A','/m','EXT_RH40 ', flag_xyfill=.true.)
@@ -262,6 +262,7 @@ subroutine modal_aer_opt_init()
    call addfld ('A2EXTINCT870dry',horiz_only, 'A','/m','EXT_870dry', flag_xyfill=.true.)
    call addfld ('A2EXTINCTdryFine',horiz_only,'A','/m','EXT_dryfine', flag_xyfill=.true.)
    
+   call addfld ('A2ABSORB',   horiz_only,'A','/m','ABS  ',     flag_xyfill=.true.)
    call addfld ('A2ABSORB440',horiz_only,'A','/m','ABS_440  ', flag_xyfill=.true.)
    call addfld ('A2ABSORB870',horiz_only,'A','/m','ABS_870  ', flag_xyfill=.true.)
    call addfld ('A2ABSORB40', horiz_only,'A','/m','ABS_RH40 ', flag_xyfill=.true.)
@@ -276,7 +277,6 @@ subroutine modal_aer_opt_init()
    
    call addfld ('A2ASY',       horiz_only,'A',' ','Asymetry parameter', flag_xyfill=.true.)
    call addfld ('A2ASYdry',    horiz_only,'A',' ','ASYdry',             flag_xyfill=.true.)
-   call addfld ('A2ASYdryFine',horiz_only,'A',' ','ASYdryFine',         flag_xyfill=.true.)
    
 !!== KZ_INSITU
    call addfld ('AODVIS',horiz_only,    'A','  ','Aerosol optical depth 550 nm', flag_xyfill=.true.)
@@ -408,31 +408,6 @@ if (history_amwg) then
       call add_default ('EXTINCTdryFine' , 1, ' ')
       call add_default ('ASY'            , 1, ' ')
       call add_default ('ASYdry'         , 1, ' ')
-      
-      call add_default ('A2ABSORB440'      , 1, ' ')
-      call add_default ('A2ABSORB870'      , 1, ' ')
-      call add_default ('A2ABSORB40'       , 1, ' ')
-      call add_default ('A2ABSORB55'       , 1, ' ')
-      call add_default ('A2ABSORB65'       , 1, ' ')
-      call add_default ('A2ABSORB75'       , 1, ' ')
-      call add_default ('A2ABSORB85'       , 1, ' ')
-      call add_default ('A2ABSORBdry'      , 1, ' ')
-      call add_default ('A2ABSORB440dry'   , 1, ' ')
-      call add_default ('A2ABSORB870dry'   , 1, ' ')
-      call add_default ('A2ABSORBdryFine'  , 1, ' ')
-      call add_default ('A2EXTINCT440'     , 1, ' ')
-      call add_default ('A2EXTINCT870'     , 1, ' ')
-      call add_default ('A2EXTINCT40'      , 1, ' ')
-      call add_default ('A2EXTINCT55'      , 1, ' ')
-      call add_default ('A2EXTINCT65'      , 1, ' ')
-      call add_default ('A2EXTINCT75'      , 1, ' ')
-      call add_default ('A2EXTINCT85'      , 1, ' ')
-      call add_default ('A2EXTINCTdry'     , 1, ' ')
-      call add_default ('A2EXTINCT440dry'  , 1, ' ')
-      call add_default ('A2EXTINCT870dry'  , 1, ' ')
-      call add_default ('A2EXTINCTdryFine' , 1, ' ')
-      call add_default ('A2ASY'            , 1, ' ')
-      call add_default ('A2ASYdry'         , 1, ' ')
       
 !!== KZ_INSITU
       call add_default ('AODMODE1'     , 1, ' ')
@@ -1311,13 +1286,6 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    call outfld('ABSORB'//diag(list_idx),   absorb,  pcols, lchnk)
    call outfld('AODVIS'//diag(list_idx),   aodvis,  pcols, lchnk)
    call outfld('AODABS'//diag(list_idx),   aodabs,  pcols, lchnk)
-!!== KZ_INSITU
-   call outfld('EXTINCT440'//diag(list_idx),  extinct440, pcols, lchnk)
-   call outfld('EXTINCT870'//diag(list_idx),  extinct870, pcols, lchnk)
-   call outfld('ABSORB440'//diag(list_idx),   absorb440,  pcols, lchnk)
-   call outfld('ABSORB870'//diag(list_idx),   absorb870,  pcols, lchnk)
-   call outfld('ASY'//diag(list_idx),   gavis,  pcols, lchnk)
-!!== KZ_INSITU
 
    ! These diagnostics are output only for climate list
    if (list_idx == 0) then
@@ -1365,6 +1333,22 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 #endif
        end do
 
+!!== KZ_INSITU
+      call outfld('EXTINCT440',  extinct440, pcols, lchnk)
+      call outfld('EXTINCT870',  extinct870, pcols, lchnk)
+      call outfld('ABSORB440',   absorb440,  pcols, lchnk)
+      call outfld('ABSORB870',   absorb870,  pcols, lchnk)
+      call outfld('ASY',         gavis,      pcols, lchnk)
+      
+      call outfld('A2EXTINCT',     extinct(:,pver),    pcols, lchnk)
+      call outfld('A2ABSORB',      absorb(:,pver),     pcols, lchnk)
+      call outfld('A2EXTINCT440',  extinct440(:,pver), pcols, lchnk)
+      call outfld('A2EXTINCT870',  extinct870(:,pver), pcols, lchnk)
+      call outfld('A2ABSORB440',   absorb440(:,pver),  pcols, lchnk)
+      call outfld('A2ABSORB870',   absorb870(:,pver),  pcols, lchnk)
+      call outfld('A2ASY',         gavis(:,pver),      pcols, lchnk)
+!!== KZ_INSITU
+   
       call outfld('SSAVIS',        ssavis,        pcols, lchnk)
 
       call outfld('AODUV',         aoduv,         pcols, lchnk)
@@ -1853,24 +1837,24 @@ subroutine modal_aero_sw_dry(list_idx, state, pbuf, nnite, idxnite, is_cmip6_vol
    end do
 
 !!== KZ_INSITU
-   call outfld('EXTINCTdry'//diag(list_idx),  extinct, pcols, lchnk)
-   call outfld('ABSORBdry'//diag(list_idx),   absorb,  pcols, lchnk)
-   call outfld('EXTINCT440dry'//diag(list_idx),  extinct440, pcols, lchnk)
-   call outfld('EXTINCT870dry'//diag(list_idx),  extinct870, pcols, lchnk)
-   call outfld('ABSORB440dry'//diag(list_idx),   absorb440,  pcols, lchnk)
-   call outfld('ABSORB870dry'//diag(list_idx),   absorb870,  pcols, lchnk)
-   call outfld('ASYdry'//diag(list_idx),      gavis,  pcols, lchnk)
+   call outfld('EXTINCTdry',     extinct, pcols, lchnk)
+   call outfld('ABSORBdry',      absorb,  pcols, lchnk)
+   call outfld('EXTINCT440dry',  extinct440, pcols, lchnk)
+   call outfld('EXTINCT870dry',  extinct870, pcols, lchnk)
+   call outfld('ABSORB440dry',   absorb440,  pcols, lchnk)
+   call outfld('ABSORB870dry',   absorb870,  pcols, lchnk)
+   call outfld('ASYdry',         gavis,  pcols, lchnk)
    
-   call outfld('A2EXTINCTdry'//diag(list_idx),  extinct(:,pver), pcols, lchnk)
-   call outfld('A2ABSORBdry'//diag(list_idx),   absorb(:,pver),  pcols, lchnk)
-   call outfld('A2EXTINCT440dry'//diag(list_idx),  extinct440(:,pver), pcols, lchnk)
-   call outfld('A2EXTINCT870dry'//diag(list_idx),  extinct870(:,pver), pcols, lchnk)
-   call outfld('A2ABSORB440dry'//diag(list_idx),   absorb440(:,pver),  pcols, lchnk)
-   call outfld('A2ABSORB870dry'//diag(list_idx),   absorb870(:,pver),  pcols, lchnk)
-   call outfld('A2ASYdry'//diag(list_idx),      gavis(:,pver),  pcols, lchnk)
+   call outfld('A2EXTINCTdry',     extinct(:,pver),    pcols, lchnk)
+   call outfld('A2ABSORBdry',      absorb(:,pver),     pcols, lchnk)
+   call outfld('A2EXTINCT440dry',  extinct440(:,pver), pcols, lchnk)
+   call outfld('A2EXTINCT870dry',  extinct870(:,pver), pcols, lchnk)
+   call outfld('A2ABSORB440dry',   absorb440(:,pver),  pcols, lchnk)
+   call outfld('A2ABSORB870dry',   absorb870(:,pver),  pcols, lchnk)
+   call outfld('A2ASYdry',         gavis(:,pver),      pcols, lchnk)
    
-   call outfld('AODVISdry'//diag(list_idx),   aodvis,  pcols, lchnk)
-   call outfld('AODABSdry'//diag(list_idx),   aodabs,  pcols, lchnk)
+   call outfld('AODVISdry',        aodvis,  pcols, lchnk)
+   call outfld('AODABSdry',        aodabs,  pcols, lchnk)
 !!== KZ_INSITU
 
       do i = 1, ncol
@@ -2251,49 +2235,49 @@ subroutine modal_aero_sw_rhfix(list_idx, state, pbuf, nnite, idxnite, is_cmip6_v
 !!== KZ_INSITU
       select case (irh)
       case(1)
-         call outfld('EXTINCT40'//diag(list_idx),  extinct, pcols, lchnk)
-         call outfld('ABSORB40'//diag(list_idx),   absorb,  pcols, lchnk)
-         call outfld('AODVIS40'//diag(list_idx),   aodvis,  pcols, lchnk)
+         call outfld('EXTINCT40',  extinct, pcols, lchnk)
+         call outfld('ABSORB40',   absorb,  pcols, lchnk)
+         call outfld('AODVIS40',   aodvis,  pcols, lchnk)
       case(2)
-         call outfld('EXTINCT55'//diag(list_idx),  extinct, pcols, lchnk)
-         call outfld('ABSORB55'//diag(list_idx),   absorb,  pcols, lchnk)
-         call outfld('AODVIS55'//diag(list_idx),   aodvis,  pcols, lchnk)
+         call outfld('EXTINCT55',  extinct, pcols, lchnk)
+         call outfld('ABSORB55',   absorb,  pcols, lchnk)
+         call outfld('AODVIS55',   aodvis,  pcols, lchnk)
       case(3)
-         call outfld('EXTINCT65'//diag(list_idx),  extinct, pcols, lchnk)
-         call outfld('ABSORB65'//diag(list_idx),   absorb,  pcols, lchnk)
-         call outfld('AODVIS65'//diag(list_idx),   aodvis,  pcols, lchnk)
+         call outfld('EXTINCT65',  extinct, pcols, lchnk)
+         call outfld('ABSORB65',   absorb,  pcols, lchnk)
+         call outfld('AODVIS65',   aodvis,  pcols, lchnk)
       case(4)
-         call outfld('EXTINCT75'//diag(list_idx),  extinct, pcols, lchnk)
-         call outfld('ABSORB75'//diag(list_idx),   absorb,  pcols, lchnk)
-         call outfld('AODVIS75'//diag(list_idx),   aodvis,  pcols, lchnk)
+         call outfld('EXTINCT75',  extinct, pcols, lchnk)
+         call outfld('ABSORB75',   absorb,  pcols, lchnk)
+         call outfld('AODVIS75',   aodvis,  pcols, lchnk)
       case(5)
-         call outfld('EXTINCT85'//diag(list_idx),  extinct, pcols, lchnk)
-         call outfld('ABSORB85'//diag(list_idx),   absorb,  pcols, lchnk)
-         call outfld('AODVIS85'//diag(list_idx),   aodvis,  pcols, lchnk)
+         call outfld('EXTINCT85',  extinct, pcols, lchnk)
+         call outfld('ABSORB85',   absorb,  pcols, lchnk)
+         call outfld('AODVIS85',   aodvis,  pcols, lchnk)
       end select
       
 
       select case (irh)
       case(1)
-         call outfld('A2EXTINCT40'//diag(list_idx),  extinct(:,pver), pcols, lchnk)
-         call outfld('A2ABSORB40'//diag(list_idx),   absorb(:,pver),  pcols, lchnk)
+         call outfld('A2EXTINCT40',  extinct(:,pver), pcols, lchnk)
+         call outfld('A2ABSORB40',   absorb(:,pver),  pcols, lchnk)
       case(2)
-         call outfld('A2EXTINCT55'//diag(list_idx),  extinct(:,pver), pcols, lchnk)
-         call outfld('A2ABSORB55'//diag(list_idx),   absorb(:,pver),  pcols, lchnk)
+         call outfld('A2EXTINCT55',  extinct(:,pver), pcols, lchnk)
+         call outfld('A2ABSORB55',   absorb(:,pver),  pcols, lchnk)
       case(3)
-         call outfld('A2EXTINCT65'//diag(list_idx),  extinct(:,pver), pcols, lchnk)
-         call outfld('A2ABSORB65'//diag(list_idx),   absorb(:,pver),  pcols, lchnk)
+         call outfld('A2EXTINCT65',  extinct(:,pver), pcols, lchnk)
+         call outfld('A2ABSORB65',   absorb(:,pver),  pcols, lchnk)
       case(4)
-         call outfld('A2EXTINCT75'//diag(list_idx),  extinct(:,pver), pcols, lchnk)
-         call outfld('A2ABSORB75'//diag(list_idx),   absorb(:,pver),  pcols, lchnk)
+         call outfld('A2EXTINCT75',  extinct(:,pver), pcols, lchnk)
+         call outfld('A2ABSORB75',   absorb(:,pver),  pcols, lchnk)
       case(5)
-         call outfld('A2EXTINCT85'//diag(list_idx),  extinct(:,pver), pcols, lchnk)
-         call outfld('A2ABSORB85'//diag(list_idx),   absorb(:,pver),  pcols, lchnk)
+         call outfld('A2EXTINCT85',  extinct(:,pver), pcols, lchnk)
+         call outfld('A2ABSORB85',   absorb(:,pver),  pcols, lchnk)
       end select
       
 !!== KZ_INSITU
 
-   end if
+   end if !! if (list_idx == 0) then
 
 end subroutine modal_aero_sw_rhfix
 
@@ -2465,19 +2449,17 @@ subroutine modal_aero_sw_dry_fine(list_idx, state, pbuf, nnite, idxnite, is_cmip
 
    do m = 1, nmodes
 
+!!== KZ_INSITU
       call rad_cnst_get_info(0, m, mode_type=str32)
 
       if (trim(str32).ne.'coarse') then 
+!!== KZ_INSITU
 
       ! diagnostics for visible band for each mode
       aodmode(1:ncol)     = 0.0_r8
 
-      dgnumwet => dgnumdry_m(:,:,m)
-
-!!BUGFIX
-!!    qaerwat  => qaerwat_m(:,:,m)
-
 !!== KZ_INSITU
+      dgnumwet => dgnumdry_m(:,:,m)
       qaerwat(:,:) = 0._r8 
 !!== KZ_INSITU
 
@@ -2659,15 +2641,16 @@ subroutine modal_aero_sw_dry_fine(list_idx, state, pbuf, nnite, idxnite, is_cmip
       aodabs(idxnite(i))    = fillvalue
    end do
 
-   call outfld('EXTINCTdryFine'//diag(list_idx),  extinct, pcols, lchnk)
-   call outfld('ABSORBdryFine'//diag(list_idx),   absorb,  pcols, lchnk)
-   call outfld('AODVISdryFine'//diag(list_idx),   aodvis,  pcols, lchnk)
-   call outfld('AODABSdryFine'//diag(list_idx),   aodabs,  pcols, lchnk)
+   call outfld('EXTINCTdryFine',  extinct, pcols, lchnk)
+   call outfld('ABSORBdryFine',   absorb,  pcols, lchnk)
+   
+   call outfld('AODVISdryFine',   aodvis,  pcols, lchnk)
+   call outfld('AODABSdryFine',   aodabs,  pcols, lchnk)
 
-   call outfld('A2EXTINCTdryFine'//diag(list_idx),  extinct(:,pver), pcols, lchnk)
-   call outfld('A2ABSORBdryFine'//diag(list_idx),   absorb(:,pver),  pcols, lchnk)
+   call outfld('A2EXTINCTdryFine',  extinct(:,pver), pcols, lchnk)
+   call outfld('A2ABSORBdryFine',   absorb(:,pver),  pcols, lchnk)
 
-   end if
+   end if !! if (list_idx == 0) then
 
 end subroutine modal_aero_sw_dry_fine
 
