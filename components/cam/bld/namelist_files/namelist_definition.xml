@@ -478,6 +478,14 @@
        Default: none
        </entry>
 
+<!-- JS ADD -->
+<entry id="Nudge_Method" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Method to perform Nudging analyses.
+       Default: none
+       </entry>
+<!-- JS END -->
+
 <!-- Aerosols: Data (CAM version) -->
 
 <entry id="bndtvaer" type="char*256" input_pathname="abs" category="aero_data_cam"
@@ -4435,6 +4443,58 @@ Default: .false.
 Seasalt aerosol emission tuning factor
 Default: set by build-namelist.
 </entry>
+
+<!-- aer_aw -->
+
+<entry id="aer_aw_scheme" type="integer" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+0 - default MAM scheme; 1 - k-kohler ; 2 - M7 (Jacobson 1996); 3 - M7 (Jacobson 2005)
+Default: 0
+</entry>
+
+<entry id="aer_aw_rh_max" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+the maximum rh to solve for water uptake process
+Default: 0.98
+</entry>
+
+<entry id="aer_aw_mam_rh_min" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+the minimum rh below which wet radius is equal to dry radius, used for MAM
+Default: 0.35
+</entry>
+
+<entry id="aer_aw_m7_rh_min" type="real" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+the minimum rh below which wet radius is equal to dry radius, used for M7
+Default: 0.45
+</entry>
+
+<entry id="aer_aw_l_hysteresis" type="logical" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+TRUE if hysteresis effect is considered for MAM
+Default: .true.
+</entry>
+
+<entry id="aer_aw_l_rh_clearsky" type="logical" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+TRUE if clear-sky RH is used for water uptake process
+Default: .true.
+</entry>
+
+<entry id="aer_aw_l_m7_rh_min" type="logical" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+FALSE if RHmin and highest molality are not considered
+Default: .false.
+</entry>
+
+<entry id="aer_aw_insitu_diag" type="logical" category="cam_chem"
+       group="aerosol_nl" valid_values="" >
+TRUE if do aerocom insitu diagnostics
+Default: .false.
+</entry>
+
+<!-- end of aer_aw -->
 
 <entry id="airpl_emis_file" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
