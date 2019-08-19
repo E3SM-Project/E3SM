@@ -10,6 +10,7 @@
 #include <thread>
 #include <array>
 #include <algorithm>
+#include <random>
 
 namespace {
 
@@ -447,32 +448,85 @@ static void unittest_upwind () {
 
 struct TestTableIce {
 
-  static void run()
+  static void test_read_lookup_tables()
   {
-    // Read in ice tables
+    // Read in ice tables, just want to be sure it doesn't crash
     view_itab_table itab;
     view_itabcol_table itabcol;
     Functions::init_kokkos_ice_lookup_tables(itab, itabcol);
+  }
+
+  template <typename View>
+  static void init_table_linear_dimension(View& table, int linear_dimension)
+  {
+    // set up views
+    using NonConstView = typename View::non_const_type;
+    const auto view_device = NonConstView("non const view");
+    const auto view_host   = Kokkos::create_mirror_view(view_device);
+
+    std::default_random_engine generator;
+    std::uniform_real_distribution<Real> val_dist(0.0,100.0);
+
+    // populate lin-dim-0 with random values, make sure values are linear
+    // in the linear_dimension
+    for (int i = 0; i < table.extent(0); ++i) {
+      for(int j = 0; j < table.extent(1); ++j) {
+        for (int k = 0; k < table.extent(2); ++k) {
+          for (int l = 0; l < table.extent(3); ++l) {
+            int dims[] = {i, j, k, l};
+            if (dims[linear_dimension] == 0) {
+              view_host(i, j, k, l) = val_dist(generator);
+            }
+            else {
+              dims[linear_dimension] -= 1;
+              view_host(i, j, k, l) = view_host(dims[0], dims[1], dims[2], dims[3]) + 1.0;
+            }
+          }
+        }
+      }
+    }
+
+    // Copy back to device
+    Kokkos::deep_copy(view_device, view_host);
+    table = view_device;
+  }
+
+  static void run()
+  {
+    view_itab_table itab;
+    init_table_linear_dimension(itab, 0);
 
     int nerr = 0;
-    TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
+    TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(itab.extent(0), itab.extent(1)));
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
-      Smask qiti_gt_small(true);
+      int i = team.league_rank();
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(team, itab.extent(1)), [&] (const int& j) {
 
-      // Init packs to same value, TODO: how to pick use values?
-      Spack qitot(0.1), nitot(0.2), qirim(0.3), rhop(0.4), qr(0.5), nr(0.6);
+        for (int k = 0; k < itab.extent(2); ++k) {
+          for (int l = 0; l < itab.extent(3); ++l) {
+            Scalar table_val = itab(i, j, k, l);
+            Smask qiti_gt_small(true);
 
-      TableIce ti;
-      TableRain tr;
-      Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
-      Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
+            // Init packs to same value, TODO: how to pick use values?
+            Spack qitot(0.1), nitot(0.2), qirim(0.3), rhop(0.4), qr(0.5), nr(0.6);
 
-      Spack proc1 = Functions::apply_table_ice(qiti_gt_small, 1, itab, ti);
-      Spack proc2 = Functions::apply_table_coll(qiti_gt_small, 1, itabcol, ti, tr);
+            TableIce ti;
+            TableRain tr;
+            Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
+            //Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
 
-      // TODO: how to test?
+            Spack proc1 = Functions::apply_table_ice(qiti_gt_small, 1, itab, ti);
+            //Spack proc2 = Functions::apply_table_coll(qiti_gt_small, 1, itabcol, ti, tr);
+
+            // TODO: how to test?
+          }
+        }
+      });
       errors = 0;
+
     }, nerr);
+
+    view_itabcol_table itabcol;
 
     Kokkos::fence();
     REQUIRE(nerr == 0);
@@ -537,6 +591,7 @@ TEST_CASE("p3_upwind", "[p3_functions]")
 
 TEST_CASE("p3_ice_tables", "[p3_functions]")
 {
+  UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::test_read_lookup_tables();
   UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::run();
 }
 
