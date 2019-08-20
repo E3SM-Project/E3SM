@@ -417,7 +417,7 @@ ifeq ($(MODEL),driver)
 else
   ifeq ($(strip $(COMPILER)),nag)
     ifeq ($(DEBUG), TRUE)
-      ifeq ($(strip $(MACH)),hobart)
+      ifneq (,$(filter $(strip $(MACH)),hobart izumi))
        # GCC needs to be able to link to
        # nagfor runtime to get autoconf
        # tests to work.
