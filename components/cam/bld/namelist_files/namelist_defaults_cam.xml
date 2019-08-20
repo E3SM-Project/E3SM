@@ -901,6 +901,7 @@
 <!-- SHOC_SGS -->
 <do_shoc_sgs                 > .false. </do_shoc_sgs>
 <do_shoc_sgs   shoc_sgs="1"  > .true. </do_shoc_sgs>
+<shoc_timestep               > 300.0D0 </shoc_timestep>
 
 <!-- CLUBB options -->
 <clubb_rainevap_turb                              > .false. </clubb_rainevap_turb>

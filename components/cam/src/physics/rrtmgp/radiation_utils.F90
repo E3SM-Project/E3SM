@@ -285,6 +285,7 @@ contains
 
    subroutine handle_error(error_message, stop_on_error)
       use cam_abortutils, only: endrun
+      use cam_logfile, only: iulog
       character(len=*), intent(in) :: error_message
       logical, intent(in), optional :: stop_on_error
       logical :: stop_on_error_local = .true.
@@ -302,8 +303,10 @@ contains
       ! nothing and return silently.
       if (len(trim(error_message)) > 0) then
          if (stop_on_error_local) then
-            call endrun(module_name // ': ' // error_message)
-         end if
+           call endrun(module_name // ': ' // error_message)
+         else
+	   write(iulog,*) 'WARNING: ', error_message
+	 end if
       end if
    end subroutine handle_error
 
