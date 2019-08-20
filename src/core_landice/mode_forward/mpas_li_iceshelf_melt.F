@@ -983,6 +983,7 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:,:), pointer :: TFocean
       real (kind=RKIND), dimension(:), pointer :: zOcean
       real (kind=RKIND), dimension(:), pointer :: TFdraft
+      real (kind=RKIND), dimension(:), pointer :: deltaT
       integer, dimension(:), pointer :: basinNumber
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: areaCell
@@ -990,8 +991,9 @@ module li_iceshelf_melt
       integer, parameter :: nBasins = 32
       integer, dimension(:), pointer :: cellMask
       real(kind=RKIND), dimension(nBasins*2) :: localSums, globalSums
-      real (kind=RKIND), dimension(:), pointer :: Kbasin
+      real (kind=RKIND), pointer :: gamma0
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
+      real (kind=RKIND) :: coef
 
       err = 0
 
@@ -1074,16 +1076,19 @@ module li_iceshelf_melt
 
          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
 
-         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_Kbasin', Kbasin)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_gamma0', gamma0)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_basin', basinNumber)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_TFdraft', TFdraft)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_deltaT', deltaT)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
          floatingBasalMassBal(:) = 0.0_RKIND
+         coef = gamma0 * cste / scyr * rhoi
          do iCell = 1, nCellsSolve
             if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
-               floatingBasalMassBal(iCell) = Kbasin(iCell) * cste * TFdraft(iCell) * mean_TF(basinNumber(iCell)+1)
+               floatingBasalMassBal(iCell) = coef * (TFdraft(iCell) + deltaT(iCell)) * &
+                  (mean_TF(basinNumber(iCell)+1) + deltaT(iCell))
             endif
          enddo
 
