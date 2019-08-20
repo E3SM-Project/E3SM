@@ -116,10 +116,10 @@ CONTAINS
         ! Map dynamics state to FV physics grid
         !-----------------------------------------------------------------------
         call t_startf('dyn_to_fv_phys')
-        if (se_fv_phys_remap_alg == 1) then
-        call dyn_to_fv_phys(elem,ps_tmp(1:nphys_sq,:),zs_tmp(1:nphys_sq,:),     &
-                                 T_tmp(1:nphys_sq,:,:),uv_tmp(1:nphys_sq,:,:,:),&
-                                 om_tmp(1:nphys_sq,:,:),q_tmp(1:nphys_sq,:,:,:))
+        if (se_fv_phys_remap_alg == 0) then
+          call dyn_to_fv_phys(elem,ps_tmp(1:nphys_sq,:),zs_tmp(1:nphys_sq,:),     &
+               T_tmp(1:nphys_sq,:,:),uv_tmp(1:nphys_sq,:,:,:),&
+               om_tmp(1:nphys_sq,:,:),q_tmp(1:nphys_sq,:,:,:))
         else
           call gfr_dyn_to_fv_phys(par, dom_mt, tl_f, hvcoord, elem, ps_tmp, zs_tmp, &
                T_tmp, uv_tmp, om_tmp, q_tmp)
@@ -479,11 +479,11 @@ CONTAINS
     if (par%dynproc) then
       if (fv_nphys > 0) then
         call t_startf('fv_phys_to_dyn')
-        if (se_fv_phys_remap_alg == 0) then
         ! Map FV physics state to dynamics grid
-        call fv_phys_to_dyn(elem,T_tmp(1:nphys_sq,:,:),   &
-                                 uv_tmp(1:nphys_sq,:,:,:),&
-                                 q_tmp(1:nphys_sq,:,:,:))
+        if (se_fv_phys_remap_alg == 0) then
+          call fv_phys_to_dyn(elem,T_tmp(1:nphys_sq,:,:),   &
+               uv_tmp(1:nphys_sq,:,:,:),&
+               q_tmp(1:nphys_sq,:,:,:))
         else
           dtime = get_step_size()
           call gfr_fv_phys_to_dyn(par, dom_mt, TimeLevel%n0, dtime, hvcoord, elem, T_tmp, &
