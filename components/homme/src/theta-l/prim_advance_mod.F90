@@ -2287,6 +2287,9 @@ contains
   ! It is assumed that un0 has the value of y and the computed value of gi is stored at
   ! unp1
   !===================================================================================
+
+  use physical_constants, only : p0, kappa, Rgas
+
   integer, intent(in) :: np1,qn0,nets,nete
   real*8, intent(in) :: dt2
   integer :: maxiter
@@ -2329,9 +2332,13 @@ contains
   integer :: location(2)
 
 
+  real (kind=real_kind) :: exnerpi(np,np,nlev), dpds(np,np,nlev), pi_i(np,np,nlevp), pi(np,np,nlev)
 
   itercountmax=0
   itererrmax=0.d0
+
+!print *, tl%nstep
+!stop
 
   call t_startf('compute_stage_value_dirk')
   do ie=nets,nete
@@ -2345,10 +2352,31 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
+!guess 1
 #if 0
     ! add in w_explicit to initial guess:
     phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) + dt2*g*elem(ie)%state%w_i(:,:,1:nlev,np1)
 #endif
+
+!guess 2
+#if 1
+    ! hydrostatic pressure
+    pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+    do k=1,nlev
+       pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+    enddo
+    do k=1,nlev
+       pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
+    enddo
+
+    exnerpi = (pi/p0)**kappa
+    dpds =  Rgas * vtheta_dp * exnerpi / pi
+
+    do k=nlev,1,-1
+       phi_np1(:,:,k) = phi_np1(:,:,k+1) + dpds(:,:,k)
+    enddo
+#endif
+
 
 !if((elem(ie)%globalid == 1721).and.(tl%nstep == 209810))then
 !    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
@@ -2358,6 +2386,18 @@ contains
     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
     spherep=elem(ie)%spherep)
 !endif
+
+!check mu now
+#if 0
+!if((elem(ie)%globalid == 1721)) then !.and.(tl%nstep == 209810))then
+do i=1,np
+do j=1,np
+do k=1,nlev
+print *,i,j,'k=',k,'mu=',dpnh_dp_i(i,j,k)
+enddo;enddo; enddo
+stop
+!endif
+#endif
 
     dp3d_i(:,:,1) = dp3d(:,:,1)
     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -2522,6 +2562,25 @@ enddo
 !enddo; enddo
 stop
 endif
+#endif
+
+
+!INVESTIGATE INIT GUESS, 1st step after restart
+!mu during iteration, TSTEP BEFORE CRASH!
+!crash tstep is 209810
+#if 1
+if((elem(ie)%globalid == 1721).and.(tl%nstep == 207360))then
+print *, 'MAX ITERATION IS', itercount
+print *,'-------------------- PHI '
+!do j=1,np; do i=1,np
+i=1;j=1;
+do k=1,nlevp
+write(*,1099)'  phig1(',i,',',j,',',k,')=',phi_np1(i,j,k),';'
+enddo
+!enddo; enddo
+stop
+endif
+1099 format (A8,I1,A1,I1,A1,I2,A2,E23.15,A1)
 #endif
 
 
