@@ -9,8 +9,8 @@
 # init namelists in the default_inputs directory after a successful build of
 # the ocean model.
 [namelists]
-forward = FULL_PATH_TO_MPAS_MODEL_REPO/namelist.ocean.forward
-init    = FULL_PATH_TO_MPAS_MODEL_REPO/namelist.ocean.init
+forward = FULL_PATH_TO_MPAS_MODEL_REPO/namelist.ocean
+init    = FULL_PATH_TO_MPAS_MODEL_REPO/namelist.ocean
 
 # The streams section defines paths to template streams files that will be used
 # to generate specific streams files. Typically these will point to the forward and
