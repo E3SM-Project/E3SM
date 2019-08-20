@@ -533,24 +533,54 @@ struct TestTableIce {
   }
 };
 
+
+
 struct TestP3Func
 {
+
+  KOKKOS_FUNCTION  static void saturation_tests(const Scalar& temperature, const Scalar& pressure, const Scalar& correct_sat_ice_p, 
+    const Scalar& correct_sat_liq_p, const Scalar&  correct_mix_ice_r, const Scalar& correct_mix_liq_r, int& errors ){
+
+    const Spack temps(temperature); 
+    const Spack pres(pressure); 
+
+    Spack sat_ice_p = Functions::polysvp1(temps, true);
+    Spack sat_liq_p = Functions::polysvp1(temps, false);
+
+    Spack mix_ice_r = Functions::qv_sat(temps, pres, true);
+    Spack mix_liq_r = Functions::qv_sat(temps, pres, false);
+
+    for(int s = 0; s < sat_ice_p.n; ++s){
+      // Test vapor pressure
+      if (abs(sat_ice_p[s] - correct_sat_ice_p) > C::Tol ) {errors++;}
+      if (abs(sat_liq_p[s] - correct_sat_liq_p) > C::Tol) {errors++;}
+      //Test mixing-ratios 
+      if (abs(mix_ice_r[s] -  correct_mix_ice_r) > C::Tol ) {errors++;}
+      if (abs(mix_liq_r[s] -  correct_mix_liq_r) > C::Tol ) {errors++;}
+    }
+  }
+
+
   static void run()
   {
     int nerr = 0;
     TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
-      Spack temps(C::Tmelt);
-      Spack pressures(C::Tmelt);
+  
+      errors = 0; 
 
-      Spack sat_ice_p = Functions::polysvp1(temps, true);
-      Spack sat_liq_p = Functions::polysvp1(temps, false);
+      // Test values @ the melting point of H20 @ 1e5 Pa 
+      saturation_tests(C::Tmelt, 1e5, 610.7960763188032, 610.7960763188032, 
+         0.003822318507864685,  0.003822318507864685, errors);
 
-      Spack mix_ice_r = Functions::qv_sat(temps, pressures, true);
-      Spack mix_liq_r = Functions::qv_sat(temps, pressures, false);
+      //Test vaules @ 243.15K @ 1e5 Pa 
+      saturation_tests(243.15, 1e5, 37.98530141245404, 50.98455924912173, 
+         0.00023634717905493638,  0.0003172707211143376, errors);
 
-      // TODO: how to test?
-      errors = 0;
+      //Test values @ 303.15 @ 1e5 Pa  
+      saturation_tests(303.15, 1e5, 4242.757341329608, 4242.757341329608, 
+        0.0275579183092878, 0.0275579183092878, errors);
+
     }, nerr);
 
     Kokkos::fence();
