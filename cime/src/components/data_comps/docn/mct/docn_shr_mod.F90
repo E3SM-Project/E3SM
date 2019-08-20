@@ -129,7 +129,8 @@ CONTAINS
 
     ! Special logic for prescribed aquaplanet
 
-    if (datamode(1:9) == 'SST_AQUAP' .and. trim(datamode) /= 'SST_AQUAPFILE') then
+    if (datamode(1:9) == 'SST_AQUAP' .and. trim(datamode) /= 'SST_AQUAPFILE'     &
+                                     .and. trim(datamode) /= 'SST_AQUAP_CONSTANT') then
        ! First determine the prescribed aquaplanet option
        if (len_trim(datamode) == 10) then
           read(datamode(10:10),'(i1)') aquap_option
@@ -143,15 +144,15 @@ CONTAINS
 
     ! Validate mode
 
-    if (trim(datamode) == 'NULL'          .or. &
-         trim(datamode) == 'SSTDATA'       .or. &
-         trim(datamode) == 'SST_AQUAPANAL' .or. &
-         trim(datamode) == 'SST_AQUAPFILE' .or. &
-         trim(datamode) == 'SST_CONSTANT'  .or. &
-         trim(datamode) == 'COPYALL'       .or. &
-         trim(datamode) == 'IAF'           .or. &
-         trim(datamode) == 'SOM'           .or. &
-         trim(datamode) == 'SOM_AQUAP') then
+    if (trim(datamode) == 'NULL'                 .or. &
+        trim(datamode) == 'SSTDATA'              .or. &
+        trim(datamode) == 'SST_AQUAPANAL'        .or. &
+        trim(datamode) == 'SST_AQUAPFILE'        .or. &
+        trim(datamode) == 'SST_AQUAP_CONSTANT'   .or. &
+        trim(datamode) == 'COPYALL'              .or. &
+        trim(datamode) == 'IAF'                  .or. &
+        trim(datamode) == 'SOM'                  .or. &
+        trim(datamode) == 'SOM_AQUAP') then
        if (my_task == master_task) then
           write(logunit,F00) ' docn datamode = ',trim(datamode)
        end if

@@ -173,7 +173,8 @@ CONTAINS
        call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
             scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar)
     else
-       if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
+       if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or.&
+           datamode == 'SOM_AQUAP' .or. datamode == 'SST_AQUAP_CONSTANT' ) then
           ! Special logic for either prescribed or som aquaplanet - overwrite and
           call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, reset_domain_mask=.true.)
        else
@@ -527,9 +528,14 @@ CONTAINS
        ! Zero out the attribute vector except for temperature
        do n = 1,lsize
           o2x%rAttr(:,n) = 0.0_r8
-          ! o2x%rAttr(kt,n) = 300.0_r8
-          o2x%rAttr(kt,n) = sst_constant_value
        end do
+       ! Set temperature and re-set omask
+       do n = 1,lsize
+          o2x%rAttr(kt,n) = sst_constant_value
+          if (ksomask /= 0) then
+             o2x%rAttr(ksomask, n) = ggrid%data%rAttr(kfrac,n)
+          end if
+       enddo
 
     case('IAF')
        lsize = mct_avect_lsize(o2x)
