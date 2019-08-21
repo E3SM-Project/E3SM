@@ -306,7 +306,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         testdir = os.path.join(cls._testroot, 'testcreatenewcase')
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        args =  " --case %s --compset X --output-root %s --handle-preexisting-dirs=r --debug " % (testdir, cls._testroot)
+        args =  " --case %s --compset X --output-root %s --handle-preexisting-dirs=r " % (testdir, cls._testroot)
         if TEST_COMPILER is not None:
             args = args +  " --compiler %s"%TEST_COMPILER
         if TEST_MPILIB is not None:
@@ -767,7 +767,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         testdir = os.path.join(cls._testroot, 'testcreatenewcase_bad_compset')
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        args =  " --case %s --compset InvalidCompsetName --output-root %s --handle-preexisting-dirs=r --debug " % (testdir, cls._testroot)
+        args =  " --case %s --compset InvalidCompsetName --output-root %s --handle-preexisting-dirs=r " % (testdir, cls._testroot)
         if model == "cesm":
             args += " --run-unsupported"
         if TEST_COMPILER is not None:
@@ -783,7 +783,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         run_cmd_assert_result(self, "./create_newcase %s"%(args),
                               from_dir=SCRIPT_DIR, expected_stat=1)
         self.assertFalse(os.path.exists(testdir))
-
 
     @classmethod
     def tearDownClass(cls):
