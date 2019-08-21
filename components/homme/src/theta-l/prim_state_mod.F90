@@ -152,10 +152,6 @@ contains
     integer :: max_itercnt_g
     real (kind=real_kind) :: max_itererr_g
 
-
-    integer :: max_itercnt_g
-    real (kind=real_kind) :: avg_itercnt_g,max_itererr_g
-
     call t_startf('prim_printstate')
     if (hybrid%masterthread) then 
        if (Time_at(tl%nstep) <= 3600) then
@@ -669,11 +665,6 @@ contains
     IEvert1=0; PEhorz1=0; PEhorz2=0; PEvert1=0; PEvert2=0; 
     KEH1=0; KEH2=0;  KEV1=0; KEV2=0;  KEwH1=0; KEwH2=0; KEwH3=0;  KEwV1=0; KEwV2=0; 
 #endif
-    max_itercnt_g=parallelmax(max_itercnt_perstep,hybrid)
-    max_itererr_g=parallelmax(max_itererr_perstep,hybrid)
-    avg_itercnt_g =parallelmax(avg_itercnt,hybrid)
-    avg_itercnt=0  ! reset each statefreq
-
     max_itercnt_g=parallelmax(max_itercnt,hybrid)
     max_itererr_g=parallelmax(max_itererr,hybrid)
     max_itercnt=0 ; max_itererr=0 ! reset max counters each statefreq output
