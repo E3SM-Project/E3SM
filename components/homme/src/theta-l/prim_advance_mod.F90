@@ -289,10 +289,15 @@ contains
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-
+#if 0
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
-
+#else
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,eta_ave_w,1d0,0d0,1d0)
+      call compute_stage_value_dirk(np1,qn0,dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+#endif
 !================================================================================
     elseif (tstep_type == 8) then ! IMKG253, might be more efficient than IMKG254, might be a teeny bit bad at coarse resolution
 
@@ -469,7 +474,7 @@ contains
     nstep = tl%nstep
 
     ! dirk settings
-    maxiter=10
+    maxiter=100
     itertol=1e-12
 
     ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
@@ -1513,6 +1518,7 @@ contains
   real (kind=real_kind) ::  vtemp(np,np,2,nlev)       ! generic gradient storage
   real (kind=real_kind), dimension(np,np) :: sdot_sum ! temporary field
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
+  real (kind=real_kind) :: wh(np,np,nlev),wh_i(np,np,nlevp)  ! w hydrostatic
   integer :: i,j,k,kptr,ie, nlyr_tot
 
   call t_startf('compute_andor_apply_rhs')
@@ -2079,6 +2085,29 @@ contains
         elem(ie)%state%v(:,:,2,nlev,np1) =  elem(ie)%state%v(:,:,2,nlev,np1) -&
              scale1*dt2*(dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,2)/2
 
+
+        ! add in wh component 
+        do k=2,nlev
+           v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0) + &
+                dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,n0) ) / (2*dp3d_i(:,:,k))
+           v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
+                dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (2*dp3d_i(:,:,k))
+        end do
+
+        do k=1,nlev
+           wh(:,:,k) = (elem(ie)%state%v(:,:,1,k,n0)*elem(ie)%derived%gradphis(:,:,1) + &
+                        elem(ie)%state%v(:,:,2,k,n0)*elem(ie)%derived%gradphis(:,:,2))&
+                        *hvcoord%hybm(k)/g  
+        enddo
+        wh_i(:,:,1)=0
+        wh_i(:,:,nlevp)=0
+        do k=2,nlev
+           wh_i(:,:,k)=(wh(:,:,k-1)+wh(:,:,k))/2
+        enddo
+        elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) +&
+             dt2*g*(1-scale2)*wh_i(:,:,1:nlev)
+
+
 #ifdef ENERGY_DIAGNOSTICS
         ! add in boundary term to T2 and S2 diagnostics:
         if (compute_diagnostics) then
@@ -2131,7 +2160,7 @@ contains
 !===========================================================================================================
 !===========================================================================================================
   subroutine compute_stage_value_dirk(np1,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol,dt_e)
+       deriv,nets,nete,maxiter,itertol)
   !===================================================================================
   ! this subroutine solves a stage value equation for a DIRK method which takes the form
   !
@@ -2142,7 +2171,6 @@ contains
   !===================================================================================
   integer, intent(in) :: np1,qn0,nets,nete
   real*8, intent(in) :: dt2
-  real*8, optional, intent(in) :: dt_e
   integer :: maxiter
   real*8 :: itertol
 
@@ -2172,6 +2200,8 @@ contains
   real (kind=real_kind) :: norminfr0(np,np),norminfJ0(np,np)
   real (kind=real_kind) :: maxnorminfJ0r0
   real (kind=real_kind) :: alpha1(np,np),alpha2(np,np)
+  real (kind=real_kind) :: wh(np,np,nlev)  ! w hydrostatic
+  real (kind=real_kind) :: wh_i(np,np,nlevp)  ! w hydrostatic
 
   real (kind=real_kind) :: Jac2D(nlev,np,np)  , Jac2L(nlev-1,np,np)
   real (kind=real_kind) :: Jac2U(nlev-1,np,np)
@@ -2198,24 +2228,28 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-    ! add in w_explicit to initial guess:
-    phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) + dt2*g*elem(ie)%state%w_i(:,:,1:nlev,np1)
-!    phi_np1(:,:,nlev) = phi_np1(:,:,nlev) + dt2*&
-!         (elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
-!             elem(ie)%state%v(:,:,2,nlev,np1)*elem(ie)%derived%gradphis(:,:,2))
-
-    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
-
-    dp3d_i(:,:,1) = dp3d(:,:,1)
-    dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
-    do k=2,nlev
-       dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
-    end do
-
-   ! we first compute the initial Jacobian J0 and residual r0 and their infinity norms
     do k=1,nlev
-     Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
-       - dt2*g*w_n0(:,:,k) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,k))
+       wh(:,:,k) = (elem(ie)%state%v(:,:,1,k,np1)*elem(ie)%derived%gradphis(:,:,1) + &
+                    elem(ie)%state%v(:,:,2,k,np1)*elem(ie)%derived%gradphis(:,:,2))&
+                    *hvcoord%hybm(k)/g  
+    enddo
+    wh_i(:,:,1)=0
+    wh_i(:,:,nlevp)=0
+    do k=2,nlev
+       wh_i(:,:,k)=(wh(:,:,k-1)+wh(:,:,k))/2
+    enddo
+    
+    ! add in w_explicit to initial guess:
+    phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) + dt2*g*&
+         (elem(ie)%state%w_i(:,:,1:nlev,np1)-wh_i(:,:,1:nlev))
+
+    ! initial residual
+    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
+    elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
+         (1.0-dpnh_dp_i(:,:,1:nlev))
+    do k=1,nlev
+         Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
+              - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
     enddo
 
      norminfr0=0.d0
@@ -2225,6 +2259,15 @@ contains
 !       1d-6,hvcoord,dpnh_dp_i,vtheta_dp)
       ! here's the call to the exact Jacobian
      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
+
+
+! TODO: switch to max error, remove dp3d_i
+    dp3d_i(:,:,1) = dp3d(:,:,1)
+    dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+    do k=2,nlev
+       dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+    end do
+
 
     ! compute dp3d-weighted infinity norms of the initial Jacobian and residual
      do i=1,np
@@ -2286,7 +2329,7 @@ contains
       ! update right-hand side of phi
       do k=1,nlev
          Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
-              - dt2*g*w_n0(:,:,k) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,k))
+              - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
       enddo
       ! compute relative errors
       itererrtemp=0.d0
@@ -2305,7 +2348,7 @@ contains
     end do ! end do for the do while loop
 
     if (itercount >= maxiter) then
-      write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met'
+      write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',itererr
     end if
     itercountmax=max(itercount,itercountmax)
     itererrmax=max(itererrmax,itererr)
