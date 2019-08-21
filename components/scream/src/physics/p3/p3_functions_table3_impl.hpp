@@ -160,7 +160,7 @@ void Functions<S,D>
         int j_idx = 0;
         for (int j = 0; j < 15; ++j) {
           in >> dum_s;
-          if (j > 2 && j != 10) {
+          if (j > 1 && j != 10) {
             itab_h(jj, ii, i, j_idx++) = dum_s;
           }
         }
