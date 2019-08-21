@@ -5,6 +5,7 @@
 #include "share/scream_kokkos.hpp"
 #include "share/scream_pack.hpp"
 #include "physics/p3/p3_functions.hpp"
+#include "physics/p3/p3_functions_f90.hpp"
 #include "share/util/scream_kokkos_utils.hpp"
 
 #include <thread>
@@ -448,12 +449,41 @@ static void unittest_upwind () {
 
 struct TestTableIce {
 
-  static void test_read_lookup_tables()
+  static void test_read_lookup_tables_bfb()
   {
     // Read in ice tables, just want to be sure it doesn't crash
     view_itab_table itab;
     view_itabcol_table itabcol;
     Functions::init_kokkos_ice_lookup_tables(itab, itabcol);
+
+    // Get data from fortran
+    P3InitAFortranData d;
+    p3_init_a(d);
+
+    // Copy device data to host
+    const auto itab_host = Kokkos::create_mirror_view(itab);
+    const auto itabcol_host = Kokkos::create_mirror_view(itabcol);
+    Kokkos::deep_copy(itab_host, itab);
+    Kokkos::deep_copy(itabcol_host, itabcol);
+
+    // Compare (on host)
+    for (int i = 0; i < itab_host.extent(0); ++i) {
+      for (int j = 0; j < itab_host.extent(1); ++j) {
+        for (int k = 0; k < itab_host.extent(2); ++k) {
+
+          for (int l = 0; l < itab_host.extent(3); ++l) {
+            REQUIRE(itab_host(i, j, k, l) == d.itab(i, j, k, l));
+          }
+
+          for (int l = 0; l < itabcol_host.extent(3); ++l) {
+            for (int m = 0; m < itabcol_host.extent(4); ++m) {
+              REQUIRE(itabcol_host(i, j, k, l, m) == d.itabcol(i, j, k, l, m));
+            }
+          }
+
+        }
+      }
+    }
   }
 
   template <typename View>
@@ -491,7 +521,12 @@ struct TestTableIce {
     table = view_device;
   }
 
-  static void run()
+  static void run_bfb()
+  {
+    
+  }
+
+  static void run_phys()
   {
     view_itab_table itab;
     init_table_linear_dimension(itab, 0);
@@ -533,16 +568,14 @@ struct TestTableIce {
   }
 };
 
-
-
 struct TestP3Func
 {
 
-  KOKKOS_FUNCTION  static void saturation_tests(const Scalar& temperature, const Scalar& pressure, const Scalar& correct_sat_ice_p, 
+  KOKKOS_FUNCTION  static void saturation_tests(const Scalar& temperature, const Scalar& pressure, const Scalar& correct_sat_ice_p,
     const Scalar& correct_sat_liq_p, const Scalar&  correct_mix_ice_r, const Scalar& correct_mix_liq_r, int& errors ){
 
-    const Spack temps(temperature); 
-    const Spack pres(pressure); 
+    const Spack temps(temperature);
+    const Spack pres(pressure);
 
     Spack sat_ice_p = Functions::polysvp1(temps, true);
     Spack sat_liq_p = Functions::polysvp1(temps, false);
@@ -554,31 +587,30 @@ struct TestP3Func
       // Test vapor pressure
       if (abs(sat_ice_p[s] - correct_sat_ice_p) > C::Tol ) {errors++;}
       if (abs(sat_liq_p[s] - correct_sat_liq_p) > C::Tol) {errors++;}
-      //Test mixing-ratios 
+      //Test mixing-ratios
       if (abs(mix_ice_r[s] -  correct_mix_ice_r) > C::Tol ) {errors++;}
       if (abs(mix_liq_r[s] -  correct_mix_liq_r) > C::Tol ) {errors++;}
     }
   }
-
 
   static void run()
   {
     int nerr = 0;
     TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
-  
-      errors = 0; 
 
-      // Test values @ the melting point of H20 @ 1e5 Pa 
-      saturation_tests(C::Tmelt, 1e5, 610.7960763188032, 610.7960763188032, 
+      errors = 0;
+
+      // Test values @ the melting point of H20 @ 1e5 Pa
+      saturation_tests(C::Tmelt, 1e5, 610.7960763188032, 610.7960763188032,
          0.003822318507864685,  0.003822318507864685, errors);
 
-      //Test vaules @ 243.15K @ 1e5 Pa 
-      saturation_tests(243.15, 1e5, 37.98530141245404, 50.98455924912173, 
+      //Test vaules @ 243.15K @ 1e5 Pa
+      saturation_tests(243.15, 1e5, 37.98530141245404, 50.98455924912173,
          0.00023634717905493638,  0.0003172707211143376, errors);
 
-      //Test values @ 303.15 @ 1e5 Pa  
-      saturation_tests(303.15, 1e5, 4242.757341329608, 4242.757341329608, 
+      //Test values @ 303.15 @ 1e5 Pa
+      saturation_tests(303.15, 1e5, 4242.757341329608, 4242.757341329608,
         0.0275579183092878, 0.0275579183092878, errors);
 
     }, nerr);
@@ -621,8 +653,8 @@ TEST_CASE("p3_upwind", "[p3_functions]")
 
 TEST_CASE("p3_ice_tables", "[p3_functions]")
 {
-  UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::test_read_lookup_tables();
-  UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::run();
+  UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::test_read_lookup_tables_bfb();
+  UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::run_phys();
 }
 
 TEST_CASE("p3_functions", "[p3_functions]")

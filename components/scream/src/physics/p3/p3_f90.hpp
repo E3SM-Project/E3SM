@@ -14,13 +14,12 @@ namespace p3 {
 struct FortranData {
   typedef std::shared_ptr<FortranData> Ptr;
 
-  typedef Kokkos::HostSpace ExeSpace;
-  typedef Kokkos::LayoutLeft Layout;
-  typedef Real Scalar;
+  using KT     = KokkosTypes<HostDevice>;
+  using Scalar = Real;
 
-  using Array1 = Kokkos::View<Scalar*, Layout, ExeSpace>;
-  using Array2 = Kokkos::View<Scalar**, Layout, ExeSpace>;
-  using Array3 = Kokkos::View<Scalar***, Layout, ExeSpace>;
+  using Array1 = typename KT::template lview<Scalar*>;
+  using Array2 = typename KT::template lview<Scalar**>;
+  using Array3 = typename KT::template lview<Scalar***>;
 
   bool log_predictNc;
   const Int ncol, nlev;

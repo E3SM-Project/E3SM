@@ -34,6 +34,7 @@ struct Functions
 
   static constexpr ScalarT LOOKUP_TABLE_1A_DUM1_C = 1.0/(0.1*std::log10(261.7));
 
+  static constexpr const char* P3_LOOKUP_BASE = "p3_lookup_table_1.dat-v";
   static constexpr const char* P3_VERSION = "2.8.2";
 
   //

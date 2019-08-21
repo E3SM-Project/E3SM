@@ -55,6 +55,10 @@ struct KokkosTypes
   template <typename DataType>
   using view = Kokkos::View<DataType, Layout, Device>;
 
+  // left-layout views, may be useful for interacting with fortran
+  template <typename DataType>
+  using lview = Kokkos::View<DataType, Kokkos::LayoutLeft, Device>;
+
   template <typename Scalar>
   using view_1d = view<Scalar*>;
 

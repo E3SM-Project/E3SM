@@ -121,7 +121,7 @@ contains
          pratot,prctot,p3_tend_out,mu_c,lamc)
   end subroutine p3_main_c
 
-   
+
   subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RhoH2O, &
                  MWH2O, MWdry, gravit, LatVap, LatIce,        &
                  CpLiq, Tmelt, Pi, iulog_in, masterproc_in) bind(C)
@@ -151,5 +151,15 @@ contains
     call micro_p3_utils_init(Cpair,Rair,RH2O,RhoH2O,MWH2O,MWdry,gravit,LatVap,LatIce, &
                    CpLiq,Tmelt,Pi,iulog,masterproc)
   end subroutine micro_p3_utils_init_c
+
+  subroutine p3_init_a_c(itab_c, itabcol_c) bind(C)
+    use micro_p3, only: p3_get_ice_tables
+    use micro_p3_utils, only: densize,rimsize,isize,tabsize,rcollsize,colltabsize
+
+    real(kind=c_real), intent(out), dimension(densize,rimsize,isize,tabsize) :: itab_c
+    real(kind=c_real), intent(out), dimension(densize,rimsize,isize,rcollsize,colltabsize) :: itabcol_c
+
+    call p3_get_ice_tables(itab_c, itabcol_c)
+  end subroutine p3_init_a_c
 
 end module micro_p3_iso_c

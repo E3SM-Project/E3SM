@@ -8,6 +8,7 @@ include(Sourcelist_utils)
 
 set(P3_SRCS
   p3_f90.cpp
+  p3_functions_f90.cpp
   p3_ic_cases.cpp
   micro_p3_iso_c.f90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/micro_p3.F90
@@ -20,17 +21,6 @@ list(APPEND P3_SRCS ${share_sources})
 if (NOT CUDA_BUILD)
   list(APPEND P3_SRCS p3_functions_upwind.cpp p3_functions_table3.cpp p3_functions_find.cpp p3_functions.cpp)
 endif()
-
-set(P3_HEADERS
-  p3_f90.hpp
-  p3_ic_cases.hpp
-  p3_constants.hpp
-  p3_functions_upwind_impl.hpp
-  p3_functions_table3_impl.hpp
-  p3_functions.hpp
-  p3_functions_find_impl.hpp
-  p3_functions_impl.hpp
-)
 
 # link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})
 add_library(p3 ${P3_SRCS})

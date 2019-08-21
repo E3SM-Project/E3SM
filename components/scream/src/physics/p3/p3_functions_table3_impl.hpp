@@ -141,8 +141,7 @@ void Functions<S,D>
   // read in ice microphysics table into host views
   //
 
-  static const char* namebase = "p3_lookup_table_1.dat-v";
-  std::string filename = std::string(namebase) + std::string(P3_VERSION);
+  std::string filename = std::string(P3_LOOKUP_BASE) + std::string(P3_VERSION);
 
   std::ifstream in(filename);
 
