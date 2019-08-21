@@ -2226,6 +2226,16 @@ contains
         elem(ie)%state%v(:,:,2,nlev,np1) =  elem(ie)%state%v(:,:,2,nlev,np1) -&
              scale1*dt2*(dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,2)/2
 
+
+
+#if 0
+!print mu at the end of explicit stage
+     call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),elem(ie)%state%dp3d(:,:,:,np1),&
+        elem(ie)%state%phinh_i(:,:,:,np1),pnh,exner,dpnh_dp_i,caller='CAAR', spherep=elem(ie)%spherep)
+print *, 'END IF EXPLICIT STAGE ', dpnh_dp_i(1,1,72)
+#endif
+
+
 #ifdef ENERGY_DIAGNOSTICS
         ! add in boundary term to T2 and S2 diagnostics:
         if (compute_diagnostics) then
@@ -2277,6 +2287,8 @@ contains
 !===========================================================================================================
 !===========================================================================================================
 !===========================================================================================================
+
+!ORIGINAL
   subroutine compute_stage_value_dirk(np1,qn0,dt2,elem,hvcoord,hybrid,&
        deriv,nets,nete,maxiter,itertol,tl)
   !===================================================================================
@@ -2337,9 +2349,6 @@ contains
   itercountmax=0
   itererrmax=0.d0
 
-!print *, tl%nstep
-!stop
-
   call t_startf('compute_stage_value_dirk')
   do ie=nets,nete
     w_n0 = elem(ie)%state%w_i(:,:,:,np1)
@@ -2359,7 +2368,7 @@ contains
 #endif
 
 !guess 2
-#if 1
+#if 0
     ! hydrostatic pressure
     pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
     do k=1,nlev
@@ -2552,7 +2561,9 @@ endif
 !mu during iteration, TSTEP BEFORE CRASH!
 !crash tstep is 209810
 #if 0
-if((elem(ie)%globalid == 1721).and.(tl%nstep == 209809))then
+!if((elem(ie)%globalid == 1721).and.(tl%nstep == 209809))then
+!mu when inig guess is printed
+if((elem(ie)%globalid == 1721).and.(tl%nstep == 207360))then
 print *,'-------------------- ITERATION OF MU'
 !do j=1,np; do i=1,np
 i=1;j=1;
@@ -2560,7 +2571,7 @@ do k=1,nlevp
 write(*,109)'   mu(',itercount,',',i,',',j,',',k,')=',dpnh_dp_i(i,j,k),';'
 enddo
 !enddo; enddo
-stop
+!stop
 endif
 #endif
 
@@ -2568,14 +2579,14 @@ endif
 !INVESTIGATE INIT GUESS, 1st step after restart
 !mu during iteration, TSTEP BEFORE CRASH!
 !crash tstep is 209810
-#if 1
+#if 0
 if((elem(ie)%globalid == 1721).and.(tl%nstep == 207360))then
 print *, 'MAX ITERATION IS', itercount
 print *,'-------------------- PHI '
 !do j=1,np; do i=1,np
 i=1;j=1;
 do k=1,nlevp
-write(*,1099)'  phig1(',i,',',j,',',k,')=',phi_np1(i,j,k),';'
+write(*,1099)'phig2(',i,',',j,',',k,')=',(phi_np1(i,j,k)-phi_np1(i,j,73))/1000.0,';'
 enddo
 !enddo; enddo
 stop
@@ -2666,6 +2677,608 @@ write(*,110) '  gps(',i,',',j,',',2,')=',elem(ie)%derived%gradphis(i,j,2),';'
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk
+!ORIGINAL
+
+
+
+
+
+
+
+
+
+
+
+
+
+  subroutine compute_stage_value_dirk_(np1,qn0,dt2,elem,hvcoord,hybrid,deriv,nets,nete,maxiter,itertol,tl)
+
+  use physical_constants, only : p0, kappa, Rgas
+
+  integer, intent(in) :: np1,qn0,nets,nete
+  real*8, intent(in) :: dt2
+  integer :: maxiter
+  real*8 :: itertol
+
+  type (hvcoord_t)     , intent(in) :: hvcoord
+  type (hybrid_t)      , intent(in) :: hybrid
+  type (element_t)     , intent(inout), target :: elem(:)
+  type (derivative_t)  , intent(in) :: deriv
+  type (TimeLevel_t)   , intent(in), optional            :: tl
+
+  ! local
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
+  real (kind=real_kind), pointer, dimension(:,:,:)   :: vtheta_dp
+  real (kind=real_kind), pointer, dimension(:,:)   :: phis
+  real (kind=real_kind) :: JacD(nlev,np,np)  , JacL(nlev-1,np,np)
+  real (kind=real_kind) :: JacU(nlev-1,np,np), JacU2(nlev-2,np,np)
+  real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
+  real (kind=real_kind) :: dp3d_i(np,np,nlevp)
+  real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
+  real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
+  real (kind=real_kind) :: w_n0(np,np,nlevp)
+  real (kind=real_kind) :: phi_n0(np,np,nlevp)
+  real (kind=real_kind) :: Ipiv(nlev,np,np)
+  real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
+  real (kind=real_kind) :: itererr,itererrtemp(np,np)
+  real (kind=real_kind) :: itererrmax
+  real (kind=real_kind) :: norminfr0(np,np),norminfJ0(np,np)
+  real (kind=real_kind) :: maxnorminfJ0r0
+  real (kind=real_kind) :: alpha1(np,np),alpha2(np,np)
+
+  real (kind=real_kind) :: Jac2D(nlev,np,np)  , Jac2L(nlev-1,np,np)
+  real (kind=real_kind) :: Jac2U(nlev-1,np,np)
+
+  real (kind=real_kind) :: dphi(nlev)
+
+  integer :: i,j,k,l,ie,itercount,info(np,np),itercountmax
+  integer :: nsafe
+  integer :: location(2)
+
+  real (kind=real_kind) :: exnerpi(np,np,nlev), dpds(np,np,nlev), pi_i(np,np,nlevp), pi(np,np,nlev), aa
+
+  real (kind=real_kind) :: savewn0(np,np,nlevp), savephin0(np,np,nlevp),guess1(np,np,nlevp), guess2(np,np,nlevp), guess0(np,np,nlevp),&
+                           mu1(np,np,nlev), mu2(np,np,nlev), mu0(np,np,nlev)
+  integer :: numi0, numi1, numi2
+
+  itercountmax=0
+  itererrmax=0.d0
+
+  call t_startf('compute_stage_value_dirk')
+  do ie=nets,nete
+
+    phis => elem(ie)%state%phis(:,:)
+    dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
+    vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,np1)
+    phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)
+    phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
+
+    !save fields for future attempts
+    savewn0 = elem(ie)%state%w_i(:,:,:,np1)
+    savephin0 = elem(ie)%state%phinh_i(:,:,:,np1)
+
+#if 1
+!!!! GUESS 0
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !setup each iteration this way:
+    elem(ie)%state%w_i(:,:,:,np1) = savewn0
+    elem(ie)%state%phinh_i(:,:,:,np1) = savephin0
+    w_n0 = elem(ie)%state%w_i(:,:,:,np1)
+
+    itercount=0
+
+!guess 1
+#if 0
+    ! add in w_explicit to initial guess:
+    phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) +dt2*g*elem(ie)%state%w_i(:,:,1:nlev,np1)
+#endif
+
+!guess 2
+#if 0
+    ! hydrostatic pressure
+    pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+    do k=1,nlev
+       pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+    enddo
+    do k=1,nlev
+       pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
+    enddo
+
+    exnerpi = (pi/p0)**kappa
+    dpds =  Rgas * vtheta_dp * exnerpi / pi
+
+    do k=nlev,1,-1
+       phi_np1(:,:,k) = phi_np1(:,:,k+1) + dpds(:,:,k)
+    enddo
+#endif
+
+    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
+    spherep=elem(ie)%spherep)
+
+    dp3d_i(:,:,1) = dp3d(:,:,1)
+    dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+    do k=2,nlev
+       dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+    end do
+
+   ! we first compute the initial Jacobian J0 and residual r0 and their infinity
+   ! norms
+    do k=1,nlev
+     Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
+       - dt2*g*w_n0(:,:,k) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,k))
+    enddo
+
+     norminfr0=0.d0
+     norminfJ0=0.d0
+
+     call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
+
+    ! compute dp3d-weighted infinity norms of the initial Jacobian and residual
+     do i=1,np
+     do j=1,np
+       itererrtemp(i,j)=0
+       do k=1,nlev
+        norminfr0(i,j)=max(norminfr0(i,j),abs(Fn(i,j,k)) *dp3d_i(i,j,k))
+        if (k.eq.1) then
+          norminfJ0(i,j) =max(norminfJ0(i,j),(dp3d_i(i,j,k)*abs(JacD(k,i,j))+dp3d_i(i,j,k+1))*abs(JacU(k,i,j)))
+        elseif (k.eq.nlev) then
+!temp fix for membug
+!          norminfJ0(i,j) =
+!          max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+abs(JacD(k,i,j))*dp3d(i,j,k)))
+          norminfJ0(i,j) = max(norminfJ0(i,j),( abs(JacD(k,i,j))*dp3d(i,j,k)))
+        else
+          norminfJ0(i,j) =max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+dp3d_i(i,j,k)*abs(JacD(k,i,j))+&
+            dp3d_i(i,j,k+1)*abs(JacU(k,i,j))))
+        end if
+        itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k)**2.d0 *dp3d_i(i,j,k)
+      end do
+      itererrtemp(i,j)=sqrt(itererrtemp(i,j))
+    end do
+    end do
+
+    maxnorminfJ0r0=max(maxval(norminfJ0(:,:)),maxval(norminfr0(:,:)))
+    itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
+
+    do while ((itercount < maxiter).and.(itererr > itertol))
+
+      info(:,:) = 0
+
+      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
+
+      do i=1,np
+      do j=1,np
+        x(1:nlev,i,j) = -Fn(i,j,1:nlev)  !+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
+        call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j),Ipiv(:,i,j), info(i,j) )
+        ! Tridiagonal solve
+        call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
+        ! update approximate solution of phi
+        phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j)
+
+        do nsafe=1,8
+           if (all(phi_np1(i,j,1:nlev) > phi_np1(i,j,2:nlevp))) exit
+           ! remove the last netwon increment, try reduced increment
+           phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) - x(1:nlev,i,j)/(2**nsafe)
+        enddo
+        if (nsafe>1) print *,'WARNING: reducing newton increment, nsafe=',nsafe
+        ! if nsafe>1, code will probably crash soon
+        ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
+      end do
+      end do
+      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2',&
+      spherep=elem(ie)%spherep)
+
+      ! update approximate solution of w
+      elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
+        (1.0-dpnh_dp_i(:,:,1:nlev))
+      ! update right-hand side of phi
+      do k=1,nlev
+         Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
+              - dt2*g*w_n0(:,:,k) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,k))
+      enddo
+
+      ! compute relative errors
+      itererrtemp=0.d0
+      do i=1,np
+      do j=1,np
+        do k=1,nlev
+          itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k)**2.d0 *dp3d_i(i,j,k)
+        end do
+        itererrtemp(i,j)=sqrt(itererrtemp(i,j))
+      end do
+      end do
+      itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
+
+      ! update iteration count and error measure
+      itercount=itercount+1
+
+    end do ! end do for the do while loop
+
+    guess0(:,:,:) = elem(ie)%state%phinh_i(:,:,:,np1)
+    mu0(:,:,:) = dpnh_dp_i(:,:,1:nlev)
+    numi0 = itercount-1
+#endif
+
+#if 0
+!!!! GUESS 1
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !setup each iteration this way:
+    elem(ie)%state%w_i(:,:,:,np1) = savewn0
+    elem(ie)%state%phinh_i(:,:,:,np1) = savephin0
+    w_n0 = elem(ie)%state%w_i(:,:,:,np1)
+
+    itercount=0
+
+!guess 1
+#if 1
+    ! add in w_explicit to initial guess:
+    phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) + dt2*g*elem(ie)%state%w_i(:,:,1:nlev,np1)
+#endif
+
+!guess 2
+#if 0
+    ! hydrostatic pressure
+    pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+    do k=1,nlev
+       pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+    enddo
+    do k=1,nlev
+       pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
+    enddo
+
+    exnerpi = (pi/p0)**kappa
+    dpds =  Rgas * vtheta_dp * exnerpi / pi
+
+    do k=nlev,1,-1
+       phi_np1(:,:,k) = phi_np1(:,:,k+1) + dpds(:,:,k)
+    enddo
+#endif
+
+    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
+    spherep=elem(ie)%spherep)
+
+    dp3d_i(:,:,1) = dp3d(:,:,1)
+    dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+    do k=2,nlev
+       dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+    end do
+
+   ! we first compute the initial Jacobian J0 and residual r0 and their infinity
+   ! norms
+    do k=1,nlev
+     Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
+       - dt2*g*w_n0(:,:,k) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,k))
+    enddo
+
+     norminfr0=0.d0
+     norminfJ0=0.d0
+
+     call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
+
+    ! compute dp3d-weighted infinity norms of the initial Jacobian and residual
+     do i=1,np
+     do j=1,np
+       itererrtemp(i,j)=0
+       do k=1,nlev
+        norminfr0(i,j)=max(norminfr0(i,j),abs(Fn(i,j,k)) *dp3d_i(i,j,k))
+        if (k.eq.1) then
+          norminfJ0(i,j) =max(norminfJ0(i,j),(dp3d_i(i,j,k)*abs(JacD(k,i,j))+dp3d_i(i,j,k+1))*abs(JacU(k,i,j)))
+        elseif (k.eq.nlev) then
+!temp fix for membug
+!          norminfJ0(i,j) =
+!          max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+abs(JacD(k,i,j))*dp3d(i,j,k)))
+          norminfJ0(i,j) = max(norminfJ0(i,j),( abs(JacD(k,i,j))*dp3d(i,j,k)))
+        else
+          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+dp3d_i(i,j,k)*abs(JacD(k,i,j))+&
+            dp3d_i(i,j,k+1)*abs(JacU(k,i,j))))
+        end if
+        itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k)**2.d0 *dp3d_i(i,j,k)
+      end do
+      itererrtemp(i,j)=sqrt(itererrtemp(i,j))
+    end do
+    end do
+
+    maxnorminfJ0r0=max(maxval(norminfJ0(:,:)),maxval(norminfr0(:,:)))
+    itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
+
+    do while ((itercount < maxiter).and.(itererr > itertol))
+
+      info(:,:) = 0
+
+      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
+
+      do i=1,np
+      do j=1,np
+        x(1:nlev,i,j) = -Fn(i,j,1:nlev)  !+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
+        call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j), info(i,j) )
+        ! Tridiagonal solve
+        call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
+        ! update approximate solution of phi
+        phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j)
+
+        do nsafe=1,8
+           if (all(phi_np1(i,j,1:nlev) > phi_np1(i,j,2:nlevp))) exit
+           ! remove the last netwon increment, try reduced increment
+           phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) - x(1:nlev,i,j)/(2**nsafe)
+        enddo
+        if (nsafe>1) print *,'WARNING: reducing newton increment, nsafe=',nsafe
+        ! if nsafe>1, code will probably crash soon
+        ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
+      end do
+      end do
+      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2',&
+      spherep=elem(ie)%spherep)
+
+      ! update approximate solution of w
+      elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
+        (1.0-dpnh_dp_i(:,:,1:nlev))
+      ! update right-hand side of phi
+      do k=1,nlev
+         Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
+              - dt2*g*w_n0(:,:,k) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,k))
+      enddo
+
+      ! compute relative errors
+      itererrtemp=0.d0
+      do i=1,np
+      do j=1,np
+        do k=1,nlev
+          itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k)**2.d0 *dp3d_i(i,j,k)
+        end do
+        itererrtemp(i,j)=sqrt(itererrtemp(i,j))
+      end do
+      end do
+      itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
+
+      ! update iteration count and error measure
+      itercount=itercount+1
+
+    end do ! end do for the do while loop
+
+    guess1(:,:,:) = elem(ie)%state%phinh_i(:,:,:,np1)
+    mu1(:,:,:) = dpnh_dp_i(:,:,1:nlev)
+    numi1 = itercount-1
+#endif
+
+
+#if 0
+!!!! GUESS 2
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !setup each iteration this way:
+    elem(ie)%state%w_i(:,:,:,np1) = savewn0
+    elem(ie)%state%phinh_i(:,:,:,np1) = savephin0
+    w_n0 = elem(ie)%state%w_i(:,:,:,np1)
+
+    itercount=0
+
+!guess 1
+#if 0
+    ! add in w_explicit to initial guess:
+    phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) +dt2*g*elem(ie)%state%w_i(:,:,1:nlev,np1)
+#endif
+
+!guess 2
+#if 1
+    ! hydrostatic pressure
+    pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+    do k=1,nlev
+       pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+    enddo
+    do k=1,nlev
+       pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
+    enddo
+
+    exnerpi = (pi/p0)**kappa
+    dpds =  Rgas * vtheta_dp * exnerpi / pi
+
+    do k=nlev,1,-1
+       phi_np1(:,:,k) = phi_np1(:,:,k+1) + dpds(:,:,k)
+    enddo
+#endif
+
+    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
+    spherep=elem(ie)%spherep)
+
+    dp3d_i(:,:,1) = dp3d(:,:,1)
+    dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+    do k=2,nlev
+       dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+    end do
+
+   ! we first compute the initial Jacobian J0 and residual r0 and their infinity
+   ! norms
+    do k=1,nlev
+     Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
+       - dt2*g*w_n0(:,:,k) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,k))
+    enddo
+
+     norminfr0=0.d0
+     norminfJ0=0.d0
+
+     call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
+
+    ! compute dp3d-weighted infinity norms of the initial Jacobian and residual
+     do i=1,np
+     do j=1,np
+       itererrtemp(i,j)=0
+       do k=1,nlev
+        norminfr0(i,j)=max(norminfr0(i,j),abs(Fn(i,j,k)) *dp3d_i(i,j,k))
+        if (k.eq.1) then
+          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k)*abs(JacD(k,i,j))+dp3d_i(i,j,k+1))*abs(JacU(k,i,j)))
+        elseif (k.eq.nlev) then
+!temp fix for membug
+!          norminfJ0(i,j) =
+!          max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+abs(JacD(k,i,j))*dp3d(i,j,k)))
+          norminfJ0(i,j) = max(norminfJ0(i,j),( abs(JacD(k,i,j))*dp3d(i,j,k)))
+        else
+          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+dp3d_i(i,j,k)*abs(JacD(k,i,j))+&
+            dp3d_i(i,j,k+1)*abs(JacU(k,i,j))))
+        end if
+        itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k)**2.d0 *dp3d_i(i,j,k)
+      end do
+      itererrtemp(i,j)=sqrt(itererrtemp(i,j))
+    end do
+    end do
+
+    maxnorminfJ0r0=max(maxval(norminfJ0(:,:)),maxval(norminfr0(:,:)))
+    itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
+
+    do while ((itercount < maxiter).and.(itererr > itertol))
+
+      info(:,:) = 0
+
+      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
+
+      do i=1,np
+      do j=1,np
+        x(1:nlev,i,j) = -Fn(i,j,1:nlev)  !+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
+        call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j), info(i,j) )
+        ! Tridiagonal solve
+        call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
+        ! update approximate solution of phi
+        phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j)
+
+        do nsafe=1,8
+           if (all(phi_np1(i,j,1:nlev) > phi_np1(i,j,2:nlevp))) exit
+           ! remove the last netwon increment, try reduced increment
+           phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) - x(1:nlev,i,j)/(2**nsafe)
+        enddo
+        if (nsafe>1) print *,'WARNING: reducing newton increment, nsafe=',nsafe
+        ! if nsafe>1, code will probably crash soon
+        ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
+      end do
+      end do
+      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2',&
+      spherep=elem(ie)%spherep)
+
+      ! update approximate solution of w
+      elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
+        (1.0-dpnh_dp_i(:,:,1:nlev))
+      ! update right-hand side of phi
+      do k=1,nlev
+         Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
+              - dt2*g*w_n0(:,:,k) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,k))
+      enddo
+
+      ! compute relative errors
+      itererrtemp=0.d0
+      do i=1,np
+      do j=1,np
+        do k=1,nlev
+          itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k)**2.d0 *dp3d_i(i,j,k)
+        end do
+        itererrtemp(i,j)=sqrt(itererrtemp(i,j))
+      end do
+      end do
+      itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
+
+      ! update iteration count and error measure
+      itercount=itercount+1
+
+    end do ! end do for the do while loop
+
+    guess2(:,:,:) = elem(ie)%state%phinh_i(:,:,:,np1)
+    mu2(:,:,:) = dpnh_dp_i(:,:,1:nlev)
+    numi2 = itercount-1
+#endif
+
+
+!!!! COMPARE GUESSES
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+#if 0
+aa=maxval(abs(guess0 - guess1))
+if(aa > 1e-7) then
+print *, 'max|g0-g1| = ', aa, ' at my GID ', elem(ie)%GlobalID
+endif
+
+aa=maxval(abs(guess0 - guess2))
+if(aa > 1e-7) then
+print *, 'max|g0-g2| = ', aa, ' at my GID ', elem(ie)%GlobalID
+endif
+
+aa=maxval(abs(guess1 - guess2))
+if(aa > 1e-7) then
+print *, 'max|g1-g2| = ', aa, ' at my GID ', elem(ie)%GlobalID
+endif
+
+!now see if we can get pt where mu is away from 1
+aa=maxval(abs(mu0))
+if(aa > 30.0) then
+print *, 'max|mu0| = ', aa, ' at my GID ', elem(ie)%GlobalID
+endif
+aa=maxval(abs(mu1))
+if(aa > 30.0) then
+print *, 'max|mu1| = ', aa, ' at my GID ', elem(ie)%GlobalID
+endif
+aa=maxval(abs(mu2))
+if(aa > 30.0) then
+print *, 'max|mu2| = ', aa, ' at my GID ', elem(ie)%GlobalID
+endif
+#endif
+
+
+!mu during iteration, TSTEP BEFORE CRASH!
+!crash tstep is 209810
+#if 0
+!if((elem(ie)%globalid == 1721).and.(tl%nstep == 209809))then
+!mu when inig guess is printed
+!if((elem(ie)%globalid == 1721))then
+print *,'-------------------- MU', elem(ie)%globalid
+!do j=1,np; do i=1,np
+i=1;j=1;k=nlev
+print *,'   mu(nlev)=',dpnh_dp_i(i,j,k)
+!enddo; enddo
+!stop
+!endif
+#endif
+
+#if 0
+print *, 'iter count ', numi0, numi1, numi2
+#endif
+
+    if (itercount >= maxiter) then
+
+      location=maxloc(itererrtemp)
+      i=location(1); j=location(2)
+
+110 format (A6,I1,A1,I1,A1,I2,A2,E23.15,A1)  !E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
+
+      call abortmp('Error: nonlinear solver failed b/c max iteration count was met')
+    end if
+    itercountmax=max(itercount,itercountmax)
+    itererrmax=max(itererrmax,itererr)
+  end do ! end do for the ie=nets,nete loop
+
+  ! return max iteraitons and max error
+  maxiter=itercountmax
+  itertol=itererrmax
+  call t_stopf('compute_stage_value_dirk')
+
+  end subroutine compute_stage_value_dirk_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
