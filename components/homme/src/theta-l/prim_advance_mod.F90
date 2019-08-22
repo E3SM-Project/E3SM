@@ -2195,7 +2195,7 @@ contains
   real (kind=real_kind) :: dphi(nlev)
   real (kind=real_kind) :: wgdtmax
   integer :: maxiter
-  real*8 :: itertol,deltaerr
+  real*8 :: itertol,deltaerr,reserr
 
   integer :: i,j,k,l,ie,info(np,np)
   integer :: nsafe
@@ -2209,9 +2209,6 @@ contains
   do ie=nets,nete
     w_n0 = elem(ie)%state%w_i(:,:,:,np1)
     wgdtmax=max(1d0,maxval(abs(w_n0)))*abs(dt2)*g
-    ! this should be k dependent, but max error is usually at surface do dont
-    ! bother to reduce error for small k
-    wgdtmax = max(wgdtmax , max(g,maxval( abs(elem(ie)%state%phinh_i(:,:,nlevp,np1)))) )
     phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)  
 
     ! approximate the initial error of f(x) \approx 0
@@ -2298,29 +2295,31 @@ contains
       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
         (1.0-dpnh_dp_i(:,:,1:nlev))
       ! update right-hand side of phi
-      itererr=0
+      deltaerr=0
+      reserr=0
       do k=1,nlev
          Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
               - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
          ! delta residual:
          do i=1,np
          do j=1,np
-            deltaerr=abs(x(k,i,j))/max(g,abs(phi_n0(i,j,k)))
-            itererr=max(itererr,deltaerr)
+            deltaerr=max(deltaerr, abs(x(k,i,j))/max(g,abs(phi_n0(i,j,k))) )
+            reserr=max(reserr,    abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(phi_n0(i,j,k)))))
          enddo
          enddo
       enddo
       ! take the smaller of norm of the newton increment or the norm of resedual
-      itererr=min(itererr, maxval(abs(Fn))/wgdtmax )
+      itererr=min(reserr,deltaerr)
 
       ! update iteration count and error measure
       itercount=itercount+1
     end do ! end do for the do while loop
 
     if (itercount >= maxiter) then
-      write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',itererr
+      write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',reserr,deltaerr
       do k=1,nlev
-         print *,k,maxval(abs(Fn(:,:,k)))/wgdtmax
+         i=1 ; j=1
+         print *,k,( abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(phi_n0(i,j,k)))) )
       enddo
     end if
   end do ! end do for the ie=nets,nete loop
