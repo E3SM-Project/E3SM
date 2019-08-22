@@ -103,11 +103,6 @@ contains
     np1   = tl%np1
     nstep = tl%nstep
 
-    ! dirk settings
-    maxiter=10
-    itertol=1e-12
-
-
     ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
     call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
 
@@ -472,10 +467,6 @@ contains
     n0    = tl%n0
     np1   = tl%np1
     nstep = tl%nstep
-
-    ! dirk settings
-    maxiter=100
-    itertol=1e-12
 
     ! get timelevel for accessing tracer mass Qdp() to compute virtual temperature
     call TimeLevel_Qdp(tl, qsplit, qn0)  ! compute current Qdp() timelevel
@@ -2160,7 +2151,7 @@ contains
 !===========================================================================================================
 !===========================================================================================================
   subroutine compute_stage_value_dirk(np1,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol)
+       deriv,nets,nete,itercount,itererr)
   !===================================================================================
   ! this subroutine solves a stage value equation for a DIRK method which takes the form
   !
@@ -2171,8 +2162,8 @@ contains
   !===================================================================================
   integer, intent(in) :: np1,qn0,nets,nete
   real*8, intent(in) :: dt2
-  integer :: maxiter
-  real*8 :: itertol
+  integer :: itercount
+  real*8 :: itererr
 
   type (hvcoord_t)     , intent(in) :: hvcoord
   type (hybrid_t)      , intent(in) :: hybrid
@@ -2195,11 +2186,6 @@ contains
   real (kind=real_kind) :: phi_n0(np,np,nlevp)    
   real (kind=real_kind) :: Ipiv(nlev,np,np)
   real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
-  real (kind=real_kind) :: itererr,itererrtemp(np,np)
-  real (kind=real_kind) :: itererrmax
-  real (kind=real_kind) :: norminfr0(np,np),norminfJ0(np,np)
-  real (kind=real_kind) :: maxnorminfJ0r0
-  real (kind=real_kind) :: alpha1(np,np),alpha2(np,np)
   real (kind=real_kind) :: wh(np,np,nlev)  ! w hydrostatic
   real (kind=real_kind) :: wh_i(np,np,nlevp)  ! w hydrostatic
 
@@ -2207,20 +2193,26 @@ contains
   real (kind=real_kind) :: Jac2U(nlev-1,np,np)
 
   real (kind=real_kind) :: dphi(nlev)
+  real (kind=real_kind) :: wgdtmax
+  integer :: maxiter
+  real*8 :: itertol,deltaerr
 
-  integer :: i,j,k,l,ie,itercount,info(np,np),itercountmax
+  integer :: i,j,k,l,ie,info(np,np)
   integer :: nsafe
-
-
-
-  itercountmax=0
-  itererrmax=0.d0
-
   call t_startf('compute_stage_value_dirk')
+
+  ! dirk settings
+  maxiter=20
+  itertol=1e-15
+  
+
   do ie=nets,nete
     w_n0 = elem(ie)%state%w_i(:,:,:,np1)
+    wgdtmax=max(1d0,maxval(abs(w_n0)))*abs(dt2)*g
+    ! this should be k dependent, but max error is usually at surface do dont
+    ! bother to reduce error for small k
+    wgdtmax = max(wgdtmax , max(g,maxval( abs(elem(ie)%state%phinh_i(:,:,nlevp,np1)))) )
     phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)  
-    itercount=0
 
     ! approximate the initial error of f(x) \approx 0
     dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
@@ -2239,9 +2231,19 @@ contains
        wh_i(:,:,k)=(wh(:,:,k-1)+wh(:,:,k))/2
     enddo
     
-    ! add in w_explicit to initial guess:
-    phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) + dt2*g*&
-         (elem(ie)%state%w_i(:,:,1:nlev,np1)-wh_i(:,:,1:nlev))
+    do k=1,nlev
+       do j=1,np
+          do i=1,np
+             if ((phi_np1(i,j,k)-phi_np1(i,j,k+1)) < g) then
+                write(iulog,*) 'WARNING:IMEX inital PHI is bad, delta z < 1m. ie,i,j,k=',ie,i,j,k
+                write(iulog,*) 'phi(i,j,k)=  ',phi_np1(i,j,k)
+                write(iulog,*) 'phi(i,j,k+1)=',phi_np1(i,j,k+1)
+                phi_np1(i,j,k)=g+phi_np1(i,j,k+1)
+             endif
+          enddo
+       enddo
+    enddo
+    
 
     ! initial residual
     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
@@ -2252,8 +2254,6 @@ contains
               - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
     enddo
 
-     norminfr0=0.d0
-     norminfJ0=0.d0
       ! Here's how to call inexact Jacobian
 !     call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt2,dp3d,phi_np1,pnh,0,&
 !       1d-6,hvcoord,dpnh_dp_i,vtheta_dp)
@@ -2261,37 +2261,8 @@ contains
      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
 
 
-! TODO: switch to max error, remove dp3d_i
-    dp3d_i(:,:,1) = dp3d(:,:,1)
-    dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
-    do k=2,nlev
-       dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
-    end do
-
-
-    ! compute dp3d-weighted infinity norms of the initial Jacobian and residual
-     do i=1,np
-     do j=1,np
-       itererrtemp(i,j)=0 
-       do k=1,nlev
-        norminfr0(i,j)=max(norminfr0(i,j),abs(Fn(i,j,k)) *dp3d_i(i,j,k))
-        if (k.eq.1) then
-          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k)*abs(JacD(k,i,j))+dp3d_i(i,j,k+1))*abs(JacU(k,i,j)))
-        elseif (k.eq.nlev) then
-          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+abs(JacD(k,i,j))*dp3d(i,j,k)))
-        else
-          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+dp3d_i(i,j,k)*abs(JacD(k,i,j))+ &
-            dp3d_i(i,j,k+1)*abs(JacU(k,i,j))))
-        end if
-        itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k)**2.d0 *dp3d_i(i,j,k)
-      end do
-      itererrtemp(i,j)=sqrt(itererrtemp(i,j))
-    end do
-    end do
-
-    maxnorminfJ0r0=max(maxval(norminfJ0(:,:)),maxval(norminfr0(:,:)))
-    itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
-    
+    itererr=maxval(abs(Fn))/wgdtmax
+    itercount=0
     do while ((itercount < maxiter).and.(itererr > itertol))
 
       info(:,:) = 0
@@ -2327,21 +2298,20 @@ contains
       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
         (1.0-dpnh_dp_i(:,:,1:nlev))
       ! update right-hand side of phi
+      itererr=0
       do k=1,nlev
          Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
               - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
+         ! delta residual:
+         do i=1,np
+         do j=1,np
+            deltaerr=abs(x(k,i,j))/max(g,abs(phi_n0(i,j,k)))
+            itererr=max(itererr,deltaerr)
+         enddo
+         enddo
       enddo
-      ! compute relative errors
-      itererrtemp=0.d0
-      do i=1,np
-      do j=1,np
-        do k=1,nlev
-          itererrtemp(i,j)=itererrtemp(i,j)+Fn(i,j,k)**2.d0 *dp3d_i(i,j,k)
-        end do
-        itererrtemp(i,j)=sqrt(itererrtemp(i,j))
-      end do
-      end do
-      itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
+      ! take the smaller of norm of the newton increment or the norm of resedual
+      itererr=min(itererr, maxval(abs(Fn))/wgdtmax )
 
       ! update iteration count and error measure
       itercount=itercount+1
@@ -2349,16 +2319,17 @@ contains
 
     if (itercount >= maxiter) then
       write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',itererr
+      do k=1,nlev
+         print *,k,maxval(abs(Fn(:,:,k)))/wgdtmax
+      enddo
     end if
-    itercountmax=max(itercount,itercountmax)
-    itererrmax=max(itererrmax,itererr)
   end do ! end do for the ie=nets,nete loop
 
   ! keep track of running  max iteraitons and max error (reset after each diagnostics output)
-  max_itercnt=max(itercountmax,max_itercnt)
-  max_itererr=max(itererrmax,max_itererr)
+  max_itercnt=max(itercount,max_itercnt)
+  max_itererr=max(itererr,max_itererr)
 
-
+   
   call t_stopf('compute_stage_value_dirk')
 
   end subroutine compute_stage_value_dirk
