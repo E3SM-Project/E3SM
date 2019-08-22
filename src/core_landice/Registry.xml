@@ -1014,9 +1014,9 @@ is the value of that variable from the *previous* time level!
                 <var name="ismip6shelfMelt_basin" type="integer" dimensions="nCells" units="" default_value="1" 
                      packages="ismip6Melt" description="basin number mask for ISMIP6 melt forcing, input to model"
                 />
-                <var name="ismip6shelfMelt_gamma0" type="real" dimensions="ONE" units="m yr^{-1}" default_value="14477.3367602277"
+                <var name="ismip6shelfMelt_gamma0" type="real" dimensions="" units="m yr^{-1}" default_value="0.0"
                      packages="ismip6Melt"
-                     description="gamma0 value prescribed for ISMIP6 ice-shelf melting method, input to model"
+                     description="gamma0 value prescribed for ISMIP6 ice-shelf melting method, input to model.  Defaults to 0 so that missing input value will zero melt field."
                 />
                 <var name="ismip6shelfMelt_deltaT" type="real" dimensions="nCells" units="K" default_value="0.0"
                      packages="ismip6Melt"
