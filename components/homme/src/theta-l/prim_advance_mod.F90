@@ -266,6 +266,8 @@ contains
       max_itercnt_perstep = 0
       max_itererr_perstep = 0.0
 
+#if 1
+
       a1 = 1/4d0
       a2 = 1/6d0
       a3 = 3/8d0
@@ -293,6 +295,7 @@ contains
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol,tl)
+
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
@@ -324,15 +327,67 @@ contains
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
       maxiter=mi
       itertol=1e-12
+
+!print *, 'BEFORE LAST DIRK_________________________________________________________'
+
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol,tl)
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
+#if 1
+     call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
+    deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
+#else
+     call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
+    deriv,nets,nete,.false.,eta_ave_w,1d0,0d0,1d0)
+     call compute_stage_value_dirk(np1,qn0,dt,elem,hvcoord,hybrid,&
+       deriv,nets,nete,maxiter,itertol)
+#endif
 
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
+
+#endif
+
+
+
+#if 0
+       ! Ullrich 3nd order 5 stage:   CFL=sqrt( 4^2 -1) = 3.87
+       ! u1 = u0 + dt/5 RHS(u0)  (save u1 in timelevel nm1)
+       call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/5,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,eta_ave_w/4,1.d0,1.d0,1.d0)
+       ! u2 = u0 + dt/5 RHS(u1)
+       call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt/5,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
+       ! u3 = u0 + dt/3 RHS(u2)
+       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/3,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
+       ! u4 = u0 + 2dt/3 RHS(u3)
+       call compute_andor_apply_rhs(np1,n0,np1,qn0,2*dt/3,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,1.d0,1.d0)
+       ! compute (5*u1/4 - u0/4) in timelevel nm1:
+       do ie=nets,nete
+          elem(ie)%state%v(:,:,:,:,nm1)= (5*elem(ie)%state%v(:,:,:,:,nm1) &
+               - elem(ie)%state%v(:,:,:,:,n0) ) /4
+          elem(ie)%state%vtheta_dp(:,:,:,nm1)=(5*elem(ie)%state%vtheta_dp(:,:,:,nm1) &
+               - elem(ie)%state%vtheta_dp(:,:,:,n0) )/4
+          elem(ie)%state%dp3d(:,:,:,nm1)= (5*elem(ie)%state%dp3d(:,:,:,nm1) &
+                  - elem(ie)%state%dp3d(:,:,:,n0) )/4
+          elem(ie)%state%w_i(:,:,1:nlevp,nm1)=(5*elem(ie)%state%w_i(:,:,1:nlevp,nm1) &
+                  - elem(ie)%state%w_i(:,:,1:nlevp,n0) )/4
+          elem(ie)%state%phinh_i(:,:,1:nlev,nm1)=(5*elem(ie)%state%phinh_i(:,:,1:nlev,nm1) &
+                  - elem(ie)%state%phinh_i(:,:,1:nlev,n0) )/4
+       enddo
+       ! u5 = (5*u1/4 - u0/4) + 3dt/4 RHS(u4)
+       call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,1.d0,1.d0)
+
+
+      call compute_stage_value_dirk(np1,qn0,dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol,tl)
+#endif
+
+
 !================================================================================
     elseif (tstep_type == 8) then ! IMKG253, might be more efficient than IMKG254, might be a teeny bit bad at coarse resolution
 
@@ -2288,6 +2343,11 @@ print *, 'END IF EXPLICIT STAGE ', dpnh_dp_i(1,1,72)
 !===========================================================================================================
 !===========================================================================================================
 
+!#define ORIGD
+#define DEBUGD
+
+
+#ifdef ORIGD
 !ORIGINAL
   subroutine compute_stage_value_dirk(np1,qn0,dt2,elem,hvcoord,hybrid,&
        deriv,nets,nete,maxiter,itertol,tl)
@@ -2368,7 +2428,7 @@ print *, 'END IF EXPLICIT STAGE ', dpnh_dp_i(1,1,72)
 #endif
 
 !guess 2
-#if 0
+#if 1
     ! hydrostatic pressure
     pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
     do k=1,nlev
@@ -2678,6 +2738,7 @@ write(*,110) '  gps(',i,',',j,',',2,')=',elem(ie)%derived%gradphis(i,j,2),';'
 
   end subroutine compute_stage_value_dirk
 !ORIGINAL
+#endif
 
 
 
@@ -2688,10 +2749,9 @@ write(*,110) '  gps(',i,',',j,',',2,')=',elem(ie)%derived%gradphis(i,j,2),';'
 
 
 
+#ifdef DEBUGD
 
-
-
-  subroutine compute_stage_value_dirk_(np1,qn0,dt2,elem,hvcoord,hybrid,deriv,nets,nete,maxiter,itertol,tl)
+  subroutine compute_stage_value_dirk(np1,qn0,dt2,elem,hvcoord,hybrid,deriv,nets,nete,maxiter,itertol,tl)
 
   use physical_constants, only : p0, kappa, Rgas
 
@@ -2734,7 +2794,7 @@ write(*,110) '  gps(',i,',',j,',',2,')=',elem(ie)%derived%gradphis(i,j,2),';'
 
   integer :: i,j,k,l,ie,itercount,info(np,np),itercountmax
   integer :: nsafe
-  integer :: location(2)
+  integer :: location(2), loc(3)
 
   real (kind=real_kind) :: exnerpi(np,np,nlev), dpds(np,np,nlev), pi_i(np,np,nlevp), pi(np,np,nlev), aa
 
@@ -2899,7 +2959,7 @@ write(*,110) '  gps(',i,',',j,',',2,')=',elem(ie)%derived%gradphis(i,j,2),';'
     numi0 = itercount-1
 #endif
 
-#if 0
+#if 1
 !!!! GUESS 1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !setup each iteration this way:
@@ -3041,7 +3101,7 @@ write(*,110) '  gps(',i,',',j,',',2,')=',elem(ie)%derived%gradphis(i,j,2),';'
 #endif
 
 
-#if 0
+#if 1
 !!!! GUESS 2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !setup each iteration this way:
@@ -3186,20 +3246,31 @@ write(*,110) '  gps(',i,',',j,',',2,')=',elem(ie)%derived%gradphis(i,j,2),';'
 !!!! COMPARE GUESSES
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#if 0
+#if 1
 aa=maxval(abs(guess0 - guess1))
-if(aa > 1e-7) then
+if(aa > 1e-6) then
 print *, 'max|g0-g1| = ', aa, ' at my GID ', elem(ie)%GlobalID
+loc = maxloc(abs(guess0 - guess1))
+print *, 'VALUES in question are ', guess0(loc(1),loc(2),loc(3)),guess1(loc(1),loc(2),loc(3)), &
+guess0(loc(1),loc(2),loc(3))-guess1(loc(1),loc(2),loc(3))
 endif
 
 aa=maxval(abs(guess0 - guess2))
-if(aa > 1e-7) then
+if(aa > 1e-6) then
 print *, 'max|g0-g2| = ', aa, ' at my GID ', elem(ie)%GlobalID
+loc = maxloc(abs(guess0 - guess2))
+print *, 'VALUES in question are ',&
+guess0(loc(1),loc(2),loc(3)),guess2(loc(1),loc(2),loc(3)), &
+guess0(loc(1),loc(2),loc(3))-guess2(loc(1),loc(2),loc(3))
 endif
 
 aa=maxval(abs(guess1 - guess2))
-if(aa > 1e-7) then
+if(aa > 1e-6) then
 print *, 'max|g1-g2| = ', aa, ' at my GID ', elem(ie)%GlobalID
+loc = maxloc(abs(guess1 - guess2))
+print *, 'VALUES in question are ',&
+guess1(loc(1),loc(2),loc(3)),guess2(loc(1),loc(2),loc(3)), &
+guess1(loc(1),loc(2),loc(3))-guess2(loc(1),loc(2),loc(3))
 endif
 
 !now see if we can get pt where mu is away from 1
@@ -3255,11 +3326,11 @@ print *, 'iter count ', numi0, numi1, numi2
   itertol=itererrmax
   call t_stopf('compute_stage_value_dirk')
 
-  end subroutine compute_stage_value_dirk_
+  end subroutine compute_stage_value_dirk
 
 
 
-
+#endif 
 
 
 
