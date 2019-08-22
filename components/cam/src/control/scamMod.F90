@@ -445,7 +445,8 @@ subroutine setiopupdate
    integer  ntime
    integer bdate, bdate_varID
    integer STATUS
-   integer next_date, next_sec, last_date, last_sec
+   integer next_date, next_sec, last_date, last_sec, &
+           next_date_print, next_sec_print
    integer :: ncsec,ncdate                      ! current time of day,date
    integer :: yr, mon, day                      ! year, month, and day component
    integer :: start_ymd,start_tod
@@ -553,16 +554,17 @@ subroutine setiopupdate
 
       doiopupdate = .false.
       iopTimeIdx = iopTimeIdx
-      i=0
       doiter=.true.
       do while(doiter)
-        call timemgr_time_inc(bdate, 0, next_date, next_sec,inc_s=tsec(iopTimeIdx+i+1))
+        call timemgr_time_inc(bdate, 0, next_date, next_sec,inc_s=tsec(iopTimeIdx+1))
         if (ncdate .gt. next_date .or. (ncdate .eq. next_date &
           .and. ncsec .ge. next_sec)) then
 
           doiopupdate=.true.
-          i=i+1
           iopTimeIdx=iopTimeIdx+1
+	  
+	  next_sec_print = next_sec
+	  next_date_print = next_date
         else
           doiter=.false.
         endif
@@ -579,7 +581,7 @@ subroutine setiopupdate
           write(iulog,*) 'iopTimeIdx =', iopTimeIdx
           write(iulog,*) 'nstep = ',get_nstep()
           write(iulog,*) 'ncdate=',ncdate,' ncsec=',ncsec
-          write(iulog,*) 'next_date=',next_date,' next_sec=',next_sec
+          write(iulog,*) 'next_date=',next_date_print,' next_sec=',next_sec_print
           write(iulog,*)'******* do iop update'
       endif
 
