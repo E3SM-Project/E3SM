@@ -137,6 +137,7 @@ _TESTS = {
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850.clm-bgcexp",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.clm-bgcexp",
+            "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
             )
         },
 
