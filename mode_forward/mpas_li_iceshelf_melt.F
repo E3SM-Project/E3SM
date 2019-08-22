@@ -988,12 +988,13 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: areaCell
       real (kind=RKIND), dimension(:), allocatable :: mean_TF, IS_area
-      integer, parameter :: nBasins = 32
+      integer, parameter :: maxNumBasins = 32
       integer, dimension(:), pointer :: cellMask
-      real(kind=RKIND), dimension(nBasins*2) :: localSums, globalSums
+      real(kind=RKIND), dimension(maxNumBasins*2) :: localSums, globalSums
       real (kind=RKIND), pointer :: gamma0
       real (kind=RKIND), dimension(:), pointer :: floatingBasalMassBal
       real (kind=RKIND) :: coef
+      integer :: i
 
       err = 0
 
@@ -1001,8 +1002,8 @@ module li_iceshelf_melt
       call mpas_pool_get_config(liConfigs, 'config_ocean_density', rhosw)
       cste = (rhosw*cp_seawater/(rhoi*latent_heat_ice))**2  ! in K^(-2)
 
-      allocate(mean_TF(nBasins))
-      allocate(IS_area(nBasins))
+      allocate(mean_TF(maxNumBasins))
+      allocate(IS_area(maxNumBasins))
 
       block => domain % blocklist
       do while (associated(block))
@@ -1020,10 +1021,12 @@ module li_iceshelf_melt
 
          ! Get basin numbers
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_basin', basinNumber)
-         if (maxval(basinNumber)+1 > nBasins) then
-            call mpas_log_write("Field ismip6shelfMelt_basin contains a value greater than the hard-coded value" // &
-               "for nBasins in iceshelf_melt_ismip6.  Please adjust nBasins and recompile or correct input data.", MPAS_LOG_ERR)
-         end if
+
+! NOTE: Would need to do a global max for this check to work
+!         if (maxval(basinNumber)+1 > maxNumBasins) then
+!            call mpas_log_write("Field ismip6shelfMelt_basin contains a value greater than the hard-coded value" // &
+!               "for maxNumBasins in iceshelf_melt_ismip6.  Please adjust maxNumBasins and recompile or correct input data.", MPAS_LOG_ERR)
+!         end if
 
          ! Get shelf draft and mask
          call mpas_pool_get_array(geometryPool, 'lowerSurface', lowerSurface)
@@ -1045,6 +1048,14 @@ module li_iceshelf_melt
                   if ( zOcean(kk) >= lowerSurface(iCell) )  ksup = kk
                enddo
                kinf = ksup + 1
+               if ((zOcean(ksup)-zOcean(kinf)) == 0) then
+                  call mpas_log_write("iceshelf_melt_ismip6: Invalid value for zOcean. " // &
+                       "ksup=$i kinf=$i zOcean(ksup)=$r zOcean(kinf)=$r", MPAS_LOG_ERR, intArgs=(/ksup, kinf/), &
+                       realArgs=(/zOcean(ksup), zOcean(kinf) /) )
+                  err = ior(err, 1)
+               endif
+               !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean=$r",realArgs=(/zOcean(kinf),TFocean(kinf,iCell)/),intArgs=(/kinf/))
+               !call mpas_log_write("ksup=$i, zOcean(ksup)=$r, TFocean=$r",realArgs=(/zOcean(ksup),TFocean(ksup,iCell)/),intArgs=(/ksup/))
                TFdraft(iCell) = ( (zOcean(ksup)-lowerSurface(iCell)) * TFocean(kinf, iCell) &
                   + (lowerSurface(iCell)-zOcean(kinf)) * TFocean(ksup, iCell) ) / (zOcean(ksup)-zOcean(kinf))
 
@@ -1061,12 +1072,20 @@ module li_iceshelf_melt
       enddo   ! associated(block)
 
       ! global sum mean_TF and IS_area
-      localSums(1:nBasins) = mean_TF
-      localSums(nBasins+1:2*nBasins) = IS_area
-      call mpas_dmpar_sum_real_array(domain % dminfo, 2*nBasins, localSums(:), globalSums(:))
-      mean_TF = globalSums(1:nBasins)
-      IS_area = globalSums(nBasins+1:2*nBasins)
-      mean_TF = mean_TF / IS_area ! actual mean TF per basin
+      localSums(1:maxNumBasins) = mean_TF(:)
+      localSums(maxNumBasins+1:2*maxNumBasins) = IS_area(:)
+      call mpas_dmpar_sum_real_array(domain % dminfo, 2*maxNumBasins, localSums(:), globalSums(:))
+      mean_TF(:) = globalSums(1:maxNumBasins)
+      IS_area(:) = globalSums(maxNumBasins+1:2*maxNumBasins)
+      do i = 1, maxNumBasins
+         if (IS_area(i) > 0.0_RKIND) then
+            mean_TF(i) = mean_TF(i) / IS_area(i) ! actual mean TF per basin
+            call mpas_log_write("basin=$i, mean_TF=$r", intArgs=(/i-1/), realArgs=(/mean_TF(i)/))
+         else ! avoid divide by zero for invalid indices
+            mean_TF(i) = 0.0_RKIND
+         endif
+      enddo
+
 
       ! Now calculate melt rate
       block => domain % blocklist
@@ -1083,11 +1102,12 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
+         call mpas_log_write("iceshelf_melt_ismip6: gamma0=$r", realArgs=(/gamma0/))
          floatingBasalMassBal(:) = 0.0_RKIND
          coef = gamma0 * cste / scyr * rhoi
          do iCell = 1, nCellsSolve
             if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
-               floatingBasalMassBal(iCell) = coef * (TFdraft(iCell) + deltaT(iCell)) * &
+               floatingBasalMassBal(iCell) = -1.0_RKIND * coef * (TFdraft(iCell) + deltaT(iCell)) * &
                   (mean_TF(basinNumber(iCell)+1) + deltaT(iCell))
             endif
          enddo
