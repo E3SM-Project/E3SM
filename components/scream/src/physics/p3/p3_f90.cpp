@@ -119,11 +119,15 @@ void micro_p3_utils_init () {
 }
 
 void p3_init () {
-  micro_p3_utils_init();
-  static const char* dir = ".";
-  Int info;
-  p3_init_c(&dir, &info);
-  scream_require_msg(info == 0, "p3_init_c returned info " << info);
+  static bool is_init = false;
+  if (!is_init) {
+    micro_p3_utils_init();
+    static const char* dir = ".";
+    Int info;
+    p3_init_c(&dir, &info);
+    scream_require_msg(info == 0, "p3_init_c returned info " << info);
+    is_init = true;
+  }
 }
 
 void p3_main (const FortranData& d) {

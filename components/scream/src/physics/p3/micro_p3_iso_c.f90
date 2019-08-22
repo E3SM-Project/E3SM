@@ -152,14 +152,39 @@ contains
                    CpLiq,Tmelt,Pi,iulog,masterproc)
   end subroutine micro_p3_utils_init_c
 
-  subroutine p3_init_a_c(itab_c, itabcol_c) bind(C)
-    use micro_p3, only: p3_get_ice_tables
+  subroutine p3_init_a_c(itab_c, itabcoll_c) bind(C)
+    use micro_p3, only: itab, itabcoll
     use micro_p3_utils, only: densize,rimsize,isize,tabsize,rcollsize,colltabsize
 
     real(kind=c_real), intent(out), dimension(densize,rimsize,isize,tabsize) :: itab_c
-    real(kind=c_real), intent(out), dimension(densize,rimsize,isize,rcollsize,colltabsize) :: itabcol_c
+    real(kind=c_real), intent(out), dimension(densize,rimsize,isize,rcollsize,colltabsize) :: itabcoll_c
 
-    call p3_get_ice_tables(itab_c, itabcol_c)
+    itab_c(:,:,:,:) = itab(:,:,:,:)
+    itabcoll_c(:,:,:,:,:) = itabcoll(:,:,:,:,:)
   end subroutine p3_init_a_c
+
+  subroutine find_lookuptable_indices_1a_c(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
+       qitot,nitot,qirim,rhop) bind(C)
+    use micro_p3, only: find_lookupTable_indices_1a
+    use micro_p3_utils, only: densize,rimsize,isize
+
+    ! arguments:
+    integer(kind=c_int), intent(out) :: dumi,dumjj,dumii,dumzz
+    real(kind=c_real),   intent(out) :: dum1,dum4,dum5,dum6
+    real(kind=c_real), value, intent(in)  :: qitot,nitot,qirim,rhop
+
+    call find_lookupTable_indices_1a(dumi, dumjj, dumii, dumzz, dum1, dum4, dum5, dum6,      &
+         isize, rimsize, densize, qitot, nitot, qirim, rhop)
+  end subroutine find_lookuptable_indices_1a_c
+
+  subroutine access_lookup_table_c(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc) bind(C)
+    use micro_p3, only: access_lookup_table
+
+    integer(kind=c_int), value, intent(in) :: dumjj, dumii, dumi, index
+    real(kind=c_real), value, intent(in) :: dum1, dum4, dum5
+    real(kind=c_real), intent(out) :: proc
+
+    call access_lookup_table(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc)
+  end subroutine access_lookup_table_c
 
 end module micro_p3_iso_c

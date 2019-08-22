@@ -57,27 +57,27 @@ module micro_p3
 
   public  :: p3_init,p3_main
 
-  private :: polysvp1,find_lookupTable_indices_1a,find_lookupTable_indices_1b, &
+  ! protected items should be treated as private for everyone except tests
+
+  protected :: polysvp1,find_lookupTable_indices_1a,find_lookupTable_indices_1b, &
        find_lookupTable_indices_3,get_cloud_dsd2, &
        get_rain_dsd2,calc_bulkRhoRime,impose_max_total_Ni,check_values,qv_sat, & 
        ice_cldliq_collection, ice_rain_collection, ice_self_collection, & 
        ice_melting, ice_cldliq_wet_growth, calc_ice_relaxation_timescale, & 
        calc_rime_density, cldliq_immersion_freezing, rain_immersion_freezing
 
- 
+  real(rtype),protected :: e0
 
-  real(rtype),private :: e0
-
-  real(rtype), private, dimension(densize,rimsize,isize,tabsize) :: itab   !ice lookup table values
+  real(rtype), protected, dimension(densize,rimsize,isize,tabsize) :: itab   !ice lookup table values
 
   !ice lookup table values for ice-rain collision/collection
-  double precision, private, dimension(densize,rimsize,isize,rcollsize,colltabsize)    :: itabcoll
+  double precision, protected, dimension(densize,rimsize,isize,rcollsize,colltabsize)    :: itabcoll
 
   ! lookup table values for rain shape parameter mu_r
-  real(rtype), private, dimension(150) :: mu_r_table
+  real(rtype), protected, dimension(150) :: mu_r_table
 
   ! lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
-  real(rtype), private, dimension(300,10) :: vn_table,vm_table,revap_table
+  real(rtype), protected, dimension(300,10) :: vn_table,vm_table,revap_table
 contains
 
   !==================================================================================================!
@@ -208,18 +208,6 @@ contains
    return
 
   end subroutine p3_set_tables
-
-  subroutine p3_get_ice_tables(itab_user, itabcoll_user)
-    ! This can be called after p3_init_a
-    implicit none
-    real(rtype), dimension(densize,rimsize,isize,tabsize), intent(out) :: itab_user
-    real(rtype), dimension(densize,rimsize,isize,rcollsize,colltabsize), intent(out) :: itabcoll_user
-
-    itab_user(:,:,:,:) = itab(:,:,:,:)
-    itabcoll_user(:,:,:,:,:) = itabcoll(:,:,:,:,:)
-
-    return
-  end subroutine p3_get_ice_tables
 
   SUBROUTINE p3_init_b()
     implicit none
@@ -1788,6 +1776,16 @@ contains
     ! get final process rate
     proc   = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
 
+(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc)
+
+    implicit none
+
+    real(rtype)    :: dum1,dum4,dum5,proc,iproc1,gproc1,tmp1,tmp2
+    integer :: dumjj,dumii,dumi,index
+
+
+    print '("JGFF access_lookup_table: dum1=",E20.3," dum4=",E20.3," dum5=",E20.3," rhop=",E20.3", dumi=",I0," dumjj=",I0," dumii=",I0," dumzz=",I0," dum1=",E20.3," dum4=",E20.3", dum5=",E20.3," dum6=",E20.3)', qitot, nitot, qirim, rhop, dumi, dumjj, dumii, dumzz, dum1, dum4, dum5, dum6
+
    return
 
   END SUBROUTINE access_lookup_table
@@ -2008,6 +2006,8 @@ contains
     dum6  = -99
     dumzz = -99
 
+    print '("JGFF find_lookupTable_indices_1a: qitot=",E20.3," nitot=",E20.3," qirim=",E20.3," rhop=",E20.3", dumi=",I0," dumjj=",I0," dumii=",I0," dumzz=",I0," dum1=",E20.3," dum4=",E20.3", dum5=",E20.3," dum6=",E20.3)', qitot, nitot, qirim, rhop, dumi, dumjj, dumii, dumzz, dum1, dum4, dum5, dum6
+
    return
 
   end subroutine find_lookupTable_indices_1a
@@ -2050,6 +2050,8 @@ contains
        dumj  = 1
        dum3  = 1._rtype
     endif
+
+    print '("JGFF find_lookupTable_indices_1b: qr=",E20.3," nr=",E20.3," dum3==",E20.3," dumj=",I0)', qr, nr, dum3, dumj
 
    return
 

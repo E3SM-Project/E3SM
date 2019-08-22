@@ -451,7 +451,7 @@ struct TestTableIce {
 
   static void test_read_lookup_tables_bfb()
   {
-    // Read in ice tables, just want to be sure it doesn't crash
+    // Read in ice tables
     view_itab_table itab;
     view_itabcol_table itabcol;
     Functions::init_kokkos_ice_lookup_tables(itab, itabcol);
@@ -467,16 +467,16 @@ struct TestTableIce {
     Kokkos::deep_copy(itabcol_host, itabcol);
 
     // Compare (on host)
-    for (int i = 0; i < itab_host.extent(0); ++i) {
-      for (int j = 0; j < itab_host.extent(1); ++j) {
-        for (int k = 0; k < itab_host.extent(2); ++k) {
+    for (size_t i = 0; i < itab_host.extent(0); ++i) {
+      for (size_t j = 0; j < itab_host.extent(1); ++j) {
+        for (size_t k = 0; k < itab_host.extent(2); ++k) {
 
-          for (int l = 0; l < itab_host.extent(3); ++l) {
+          for (size_t l = 0; l < itab_host.extent(3); ++l) {
             REQUIRE(itab_host(i, j, k, l) == d.itab(i, j, k, l));
           }
 
-          for (int l = 0; l < itabcol_host.extent(3); ++l) {
-            for (int m = 0; m < itabcol_host.extent(4); ++m) {
+          for (size_t l = 0; l < itabcol_host.extent(3); ++l) {
+            for (size_t m = 0; m < itabcol_host.extent(4); ++m) {
               REQUIRE(itabcol_host(i, j, k, l, m) == d.itabcol(i, j, k, l, m));
             }
           }
@@ -499,11 +499,11 @@ struct TestTableIce {
 
     // populate lin-dim-0 with random values, make sure values are linear
     // in the linear_dimension
-    for (int i = 0; i < table.extent(0); ++i) {
-      for(int j = 0; j < table.extent(1); ++j) {
-        for (int k = 0; k < table.extent(2); ++k) {
-          for (int l = 0; l < table.extent(3); ++l) {
-            int dims[] = {i, j, k, l};
+    for (size_t i = 0; i < table.extent(0); ++i) {
+      for(size_t j = 0; j < table.extent(1); ++j) {
+        for (size_t k = 0; k < table.extent(2); ++k) {
+          for (size_t l = 0; l < table.extent(3); ++l) {
+            size_t dims[] = {i, j, k, l};
             if (dims[linear_dimension] == 0) {
               view_host(i, j, k, l) = val_dist(generator);
             }
@@ -523,7 +523,87 @@ struct TestTableIce {
 
   static void run_bfb()
   {
-    
+    // Read in ice tables
+    view_itab_table itab;
+    view_itabcol_table itabcol;
+    Functions::init_kokkos_ice_lookup_tables(itab, itabcol);
+
+    static constexpr Int max_pack_size = 16;
+    REQUIRE(Spack::n <= max_pack_size);
+
+    // Load some lookup inputs, need at least one per pack value
+    LookupIceData d[max_pack_size] = {
+      {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
+      {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
+      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
+      {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
+
+      {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
+      {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
+      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
+      {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
+
+      {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
+      {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
+      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
+      {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
+
+      {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
+      {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
+      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
+      {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02}
+    };
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      find_lookuptable_indices_1a(d[i]);
+    }
+
+    // Run the lookup from a kernel and copy results back to host
+    view_1d<IntSmallPack> int_results("int results", 4);
+    view_1d<Spack> real_results("real results", 4);
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+      Smask qiti_gt_small(true);
+
+      // Init packs
+      TableIce ti;
+      Spack qitot, nitot, qirim, rhop, qr(0.5), nr(0.6);
+      for(Int s = 0; s < Spack::n; ++s) {
+        qitot[s] = d[s].qitot;
+        nitot[s] = d[s].nitot;
+        qirim[s] = d[s].qirim;
+        rhop[s]  = d[s].rhop;
+      }
+
+      Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
+
+      int_results(0) = ti.dumi;
+      int_results(1) = ti.dumjj;
+      int_results(2) = ti.dumii;
+      int_results(3) = ti.dumzz;
+
+      real_results(0) = ti.dum1;
+      real_results(1) = ti.dum4;
+      real_results(2) = ti.dum5;
+      real_results(3) = ti.dum6;
+    });
+    auto int_results_mirror  = Kokkos::create_mirror_view(int_results);
+    auto real_results_mirror = Kokkos::create_mirror_view(real_results);
+    Kokkos::deep_copy(int_results_mirror, int_results);
+    Kokkos::deep_copy(real_results_mirror, real_results);
+
+    // Validate results
+    for(int s = 0; s < Spack::n; ++s) {
+      REQUIRE(int_results_mirror(0)[s] == d[s].dumi);
+      REQUIRE(int_results_mirror(1)[s] == d[s].dumjj);
+      REQUIRE(int_results_mirror(2)[s] == d[s].dumii);
+      REQUIRE(int_results_mirror(3)[s] == d[s].dumzz);
+
+      REQUIRE(real_results_mirror(0)[s] == d[s].dum1);
+      REQUIRE(real_results_mirror(1)[s] == d[s].dum4);
+      REQUIRE(real_results_mirror(2)[s] == d[s].dum5);
+      REQUIRE(real_results_mirror(3)[s] == d[s].dum6);
+    }
   }
 
   static void run_phys()
@@ -537,8 +617,8 @@ struct TestTableIce {
       int i = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, itab.extent(1)), [&] (const int& j) {
 
-        for (int k = 0; k < itab.extent(2); ++k) {
-          for (int l = 0; l < itab.extent(3); ++l) {
+        for (size_t k = 0; k < itab.extent(2); ++k) {
+          for (size_t l = 0; l < itab.extent(3); ++l) {
             Scalar table_val = itab(i, j, k, l);
             Smask qiti_gt_small(true);
 
@@ -655,6 +735,7 @@ TEST_CASE("p3_ice_tables", "[p3_functions]")
 {
   UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::test_read_lookup_tables_bfb();
   UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::run_phys();
+  UnitWrap::UnitTest<scream::DefaultDevice>::TestTableIce::run_bfb();
 }
 
 TEST_CASE("p3_functions", "[p3_functions]")
