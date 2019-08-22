@@ -2133,7 +2133,7 @@
     <domain name="r05">
       <nx>720</nx>
       <ny>360</ny>
-      <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.r05_oEC60to30v3.190418.nc</file>
+      <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_oEC60to30v3.190418.nc</file>
       <desc>r05 is 1/2 degree river routing grid:</desc>
     </domain>
 
@@ -2147,7 +2147,7 @@
       <nx>2880</nx>
       <ny>1440</ny>
       <desc>r0125 is 1/8 degree river routing grid:</desc>
-      <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.clm/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
+      <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
     </domain>
 
     <domain name="mp120v1">
