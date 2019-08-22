@@ -984,6 +984,36 @@
       <mask>oEC60to30v3</mask>
     </model_grid>
 
+    <model_grid alias="ne30_r05_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">oEC60to30v3_ICG</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30_r0125_oECv3" compset="(CAM5.+CLM.+MPASO)">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">oEC60to30v3</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
+    <model_grid alias="ne30_r0125_oECv3_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">oEC60to30v3_ICG</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30v3</mask>
+    </model_grid>
+
     <model_grid alias="ne30_oECv3wLI_ICG" compset="(CAM5.+CLM.+MPASO%SPUNUP)">
       <grid name="atm">ne30np4</grid>
       <grid name="lnd">ne30np4</grid>
@@ -2469,6 +2499,13 @@
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r05_conserve.190418.nc</map>
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_conserve.190418.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_conserve.190418.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne30np4" lnd_grid="r0125">
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r0125_mono.190801.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r0125_mono.190801.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne30np4/map_r0125_to_ne30np4_highorder.190801.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne30np4/map_r0125_to_ne30np4_highorder.190801.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne60np4" ocn_grid="gx1v6">
