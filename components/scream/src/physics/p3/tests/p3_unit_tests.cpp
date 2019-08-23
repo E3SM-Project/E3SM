@@ -532,7 +532,7 @@ struct TestTableIce {
     REQUIRE(Spack::n <= max_pack_size);
 
     // Load some lookup inputs, need at least one per pack value
-    LookupIceData d[max_pack_size] = {
+    LookupIceData lid[max_pack_size] = {
       {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
       {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
       {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
@@ -554,14 +554,38 @@ struct TestTableIce {
       {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02}
     };
 
+    static constexpr Int access_table_index = 2;
+    AccessLookupTableData altd[max_pack_size] = {
+      {lid[0], access_table_index},
+      {lid[1], access_table_index},
+      {lid[2], access_table_index},
+      {lid[3], access_table_index},
+
+      {lid[4], access_table_index},
+      {lid[5], access_table_index},
+      {lid[6], access_table_index},
+      {lid[7], access_table_index},
+
+      {lid[8], access_table_index},
+      {lid[9], access_table_index},
+      {lid[10], access_table_index},
+      {lid[11], access_table_index},
+
+      {lid[12], access_table_index},
+      {lid[13], access_table_index},
+      {lid[14], access_table_index},
+      {lid[15], access_table_index}
+    };
+
     // Get data from fortran
     for (Int i = 0; i < max_pack_size; ++i) {
-      find_lookuptable_indices_1a(d[i]);
+      find_lookuptable_indices_1a(lid[i]);
+      access_lookup_table(altd[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
     view_1d<IntSmallPack> int_results("int results", 4);
-    view_1d<Spack> real_results("real results", 4);
+    view_1d<Spack> real_results("real results", 5);
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
       Smask qiti_gt_small(true);
 
@@ -569,13 +593,14 @@ struct TestTableIce {
       TableIce ti;
       Spack qitot, nitot, qirim, rhop, qr(0.5), nr(0.6);
       for(Int s = 0; s < Spack::n; ++s) {
-        qitot[s] = d[s].qitot;
-        nitot[s] = d[s].nitot;
-        qirim[s] = d[s].qirim;
-        rhop[s]  = d[s].rhop;
+        qitot[s] = lid[s].qitot;
+        nitot[s] = lid[s].nitot;
+        qirim[s] = lid[s].qirim;
+        rhop[s]  = lid[s].rhop;
       }
 
       Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
+      Spack ice_result = Functions::apply_table_ice(qiti_gt_small, access_table_index-1, itab, ti);
 
       int_results(0) = ti.dumi;
       int_results(1) = ti.dumjj;
@@ -586,6 +611,8 @@ struct TestTableIce {
       real_results(1) = ti.dum4;
       real_results(2) = ti.dum5;
       real_results(3) = ti.dum6;
+
+      real_results(4) = ice_result;
     });
     auto int_results_mirror  = Kokkos::create_mirror_view(int_results);
     auto real_results_mirror = Kokkos::create_mirror_view(real_results);
@@ -594,15 +621,18 @@ struct TestTableIce {
 
     // Validate results
     for(int s = 0; s < Spack::n; ++s) {
-      REQUIRE(int_results_mirror(0)[s] == d[s].dumi);
-      REQUIRE(int_results_mirror(1)[s] == d[s].dumjj);
-      REQUIRE(int_results_mirror(2)[s] == d[s].dumii);
-      REQUIRE(int_results_mirror(3)[s] == d[s].dumzz);
+      // +1 for O vs 1-based indexing
+      REQUIRE(int_results_mirror(0)[s]+1 == lid[s].dumi);
+      REQUIRE(int_results_mirror(1)[s]+1 == lid[s].dumjj);
+      REQUIRE(int_results_mirror(2)[s]+1 == lid[s].dumii);
+      REQUIRE(int_results_mirror(3)[s]+1 == lid[s].dumzz);
 
-      REQUIRE(real_results_mirror(0)[s] == d[s].dum1);
-      REQUIRE(real_results_mirror(1)[s] == d[s].dum4);
-      REQUIRE(real_results_mirror(2)[s] == d[s].dum5);
-      REQUIRE(real_results_mirror(3)[s] == d[s].dum6);
+      REQUIRE(real_results_mirror(0)[s] == lid[s].dum1);
+      REQUIRE(real_results_mirror(1)[s] == lid[s].dum4);
+      REQUIRE(real_results_mirror(2)[s] == lid[s].dum5);
+      REQUIRE(real_results_mirror(3)[s] == lid[s].dum6);
+
+      REQUIRE(real_results_mirror(4)[s] == altd[s].proc);
     }
   }
 
@@ -627,10 +657,10 @@ struct TestTableIce {
 
             TableIce ti;
             TableRain tr;
-            Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
+            //Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
             //Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
 
-            Spack proc1 = Functions::apply_table_ice(qiti_gt_small, 1, itab, ti);
+            //Spack proc1 = Functions::apply_table_ice(qiti_gt_small, 1, itab, ti);
             //Spack proc2 = Functions::apply_table_coll(qiti_gt_small, 1, itabcol, ti, tr);
 
             // TODO: how to test?

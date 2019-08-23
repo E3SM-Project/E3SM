@@ -1748,7 +1748,6 @@ contains
     ! get value at current density index
 
     ! first interpolate for current rimed fraction index
-
     iproc1 = itab(dumjj,dumii,dumi,index)+(dum1-real(dumi))*(itab(dumjj,dumii,       &
          dumi+1,index)-itab(dumjj,dumii,dumi,index))
 
@@ -1775,16 +1774,6 @@ contains
 
     ! get final process rate
     proc   = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
-
-(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc)
-
-    implicit none
-
-    real(rtype)    :: dum1,dum4,dum5,proc,iproc1,gproc1,tmp1,tmp2
-    integer :: dumjj,dumii,dumi,index
-
-
-    print '("JGFF access_lookup_table: dum1=",E20.3," dum4=",E20.3," dum5=",E20.3," rhop=",E20.3", dumi=",I0," dumjj=",I0," dumii=",I0," dumzz=",I0," dum1=",E20.3," dum4=",E20.3", dum5=",E20.3," dum6=",E20.3)', qitot, nitot, qirim, rhop, dumi, dumjj, dumii, dumzz, dum1, dum4, dum5, dum6
 
    return
 
@@ -2051,7 +2040,7 @@ contains
        dum3  = 1._rtype
     endif
 
-    print '("JGFF find_lookupTable_indices_1b: qr=",E20.3," nr=",E20.3," dum3==",E20.3," dumj=",I0)', qr, nr, dum3, dumj
+    !print '("JGFF find_lookupTable_indices_1b: qr=",E20.3," nr=",E20.3," dum3==",E20.3," dumj=",I0)', qr, nr, dum3, dumj
 
    return
 

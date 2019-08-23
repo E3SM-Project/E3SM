@@ -48,13 +48,13 @@ void find_lookuptable_indices_1a(LookupIceData& d);
 struct AccessLookupTableData
 {
   // Inputs
-  LookupIceData lid;
+  LookupIceData& lid;
   Int index;
 
   // Outputs
   Real proc;
 
-  AccessLookupTableData(LookupIceData lid_, Int index_) : lid(lid_), index(index_) {}
+  AccessLookupTableData(LookupIceData& lid_, Int index_) : lid(lid_), index(index_) {}
 };
 void access_lookup_table(AccessLookupTableData& d);
 

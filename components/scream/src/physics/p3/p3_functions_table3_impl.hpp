@@ -245,6 +245,12 @@ void Functions<S,D>
       t.dum6[s]  = -99;
       t.dumzz[s] = -99;
     }
+
+    // adjust for 0-based indexing
+    t.dumi -= 1;
+    t.dumjj -= 1;
+    t.dumii -= 1;
+    t.dumzz -= 1;
   }
 }
 
@@ -287,31 +293,31 @@ typename Functions<S,D>::Spack Functions<S,D>
     // get value at current density index
 
     // first interpolate for current rimed fraction index
-    Scalar iproc1 = itab(t.dumjj[s], t.dumii[s], t.dumi[s], index) + (t.dum1[s]-t.dumi[s]) *
+    Scalar iproc1 = itab(t.dumjj[s], t.dumii[s], t.dumi[s], index) + (t.dum1[s]-t.dumi[s]-1) *
       (itab(t.dumjj[s], t.dumii[s], t.dumi[s]+1, index) - itab(t.dumjj[s], t.dumii[s], t.dumi[s], index));
 
     // linearly interpolate to get process rates for rimed fraction index + 1
-    Scalar gproc1 = itab(t.dumjj[s], t.dumii[s]+1, t.dumi[s], index) + (t.dum1[s]-t.dumi[s]) *
+    Scalar gproc1 = itab(t.dumjj[s], t.dumii[s]+1, t.dumi[s], index) + (t.dum1[s]-t.dumi[s]-1) *
       (itab(t.dumjj[s], t.dumii[s]+1, t.dumi[s]+1, index) - itab(t.dumjj[s], t.dumii[s]+1, t.dumi[s], index));
 
-    Scalar tmp1   = iproc1 + (t.dum4[s]-t.dumii[s]) * (gproc1-iproc1);
+    Scalar tmp1   = iproc1 + (t.dum4[s]-t.dumii[s]-1) * (gproc1-iproc1);
 
     // get value at density index + 1
 
     // first interpolate for current rimed fraction index
 
-    iproc1 = itab(t.dumjj[s]+1, t.dumii[s], t.dumi[s], index) + (t.dum1[s]-t.dumi[s]) *
+    iproc1 = itab(t.dumjj[s]+1, t.dumii[s], t.dumi[s], index) + (t.dum1[s]-t.dumi[s]-1) *
       (itab(t.dumjj[s]+1, t.dumii[s], t.dumi[s]+1, index) - itab(t.dumjj[s]+1, t.dumii[s], t.dumi[s], index));
 
     // linearly interpolate to get process rates for rimed fraction index + 1
 
-    gproc1 = itab(t.dumjj[s]+1, t.dumii[s]+1, t.dumi[s], index) + (t.dum1[s]-t.dumi[s]) *
+    gproc1 = itab(t.dumjj[s]+1, t.dumii[s]+1, t.dumi[s], index) + (t.dum1[s]-t.dumi[s]-1) *
       (itab(t.dumjj[s]+1, t.dumii[s]+1, t.dumi[s]+1, index)-itab(t.dumjj[s]+1, t.dumii[s]+1, t.dumi[s], index));
 
-    Scalar tmp2 = iproc1+(t.dum4[s] - t.dumii[s]) * (gproc1-iproc1);
+    Scalar tmp2 = iproc1+(t.dum4[s] - t.dumii[s] - 1) * (gproc1-iproc1);
 
     // get final process rate
-    proc[s] = tmp1 + (t.dum5[s] - t.dumjj[s]) * (tmp2-tmp1);
+    proc[s] = tmp1 + (t.dum5[s] - t.dumjj[s] - 1) * (tmp2-tmp1);
   }
   return proc;
 }
