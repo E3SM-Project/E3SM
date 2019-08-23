@@ -2092,7 +2092,7 @@ contains
         do k=2,nlev
            wh_i(:,:,k) = (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
                 v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
-                *hvcoord%hybm(k)/g  
+                *hvcoord%hybi(k)/g  
         enddo
         elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) +&
              dt2*g*(1-scale2)*wh_i(:,:,1:nlev)
@@ -2229,7 +2229,7 @@ contains
     do k=2,nlev
        wh_i(:,:,k) = (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
             v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
-            *hvcoord%hybm(k)/g  
+            *hvcoord%hybi(k)/g  
     enddo
     
     do k=1,nlev
