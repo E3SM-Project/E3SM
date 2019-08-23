@@ -2146,6 +2146,12 @@ contains
   ! It is assumed that un0 has the value of y and the computed value of gi is stored at
   ! unp1
   !===================================================================================
+
+!#define GUESSMU
+#ifdef GUESSMU
+  use physical_constants, only : p0, kappa, Rgas
+#endif
+
   integer, intent(in) :: np1,qn0,nets,nete
   real*8, intent(in) :: dt2
   integer :: itercount
@@ -2184,6 +2190,11 @@ contains
 
   integer :: i,j,k,l,ie,info(np,np)
   integer :: nsafe
+
+#ifdef GUESSMU
+  real (kind=real_kind) :: exnerpi(np,np,nlev), dpds(np,np,nlev), pi_i(np,np,nlevp), pi(np,np,nlev)
+#endif
+
   call t_startf('compute_stage_value_dirk')
 
   ! dirk settings
@@ -2234,6 +2245,24 @@ contains
        enddo
     enddo
     
+
+#ifdef GUESSMU
+    ! hydrostatic pressure
+    pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+    do k=1,nlev
+       pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+    enddo
+    do k=1,nlev
+       pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
+    enddo
+    exnerpi = (pi/p0)**kappa
+    dpds =  Rgas * vtheta_dp * exnerpi / pi
+
+    do k=nlev,1,-1
+       phi_np1(:,:,k) = phi_np1(:,:,k+1) + dpds(:,:,k)
+    enddo
+#endif
+
 
     ! initial residual
     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
