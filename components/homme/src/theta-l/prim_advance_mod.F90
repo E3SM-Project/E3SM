@@ -1509,7 +1509,6 @@ contains
   real (kind=real_kind) ::  vtemp(np,np,2,nlev)       ! generic gradient storage
   real (kind=real_kind), dimension(np,np) :: sdot_sum ! temporary field
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
-  real (kind=real_kind) :: wh_i(np,np,nlevp)  ! w hydrostatic
   integer :: i,j,k,kptr,ie, nlyr_tot
 
   call t_startf('compute_andor_apply_rhs')
@@ -1728,10 +1727,20 @@ contains
         w_tens(:,:,k) = (-w_vadv_i(:,:,k) - v_gradw_i(:,:,k))*scale1 - scale2*g*(1-dpnh_dp_i(:,:,k) )
 
         ! phi - tendency on interfaces
+        ! vtemp(:,:,:,k) = gradphinh_i(:,:,:,k) + &
+        !    (scale2-1)*hvcoord%hybi(k)*elem(ie)%derived%gradphis(:,:,:)
         v_gradphinh_i(:,:,k) = v_i(:,:,1,k)*gradphinh_i(:,:,1,k) &
              +v_i(:,:,2,k)*gradphinh_i(:,:,2,k) 
         phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
+        if (scale2/=1) then
+           ! add imex phi_h splitting 
+           ! use approximate phi_h = hybi*phis 
+           ! could also use true hydrostatic pressure, but this requires extra DSS in dirk()
+           phi_tens(:,:,k) =  phi_tens(:,:,k)+(1-scale2)*(&
+                v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
+                v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2) )*hvcoord%hybi(k)
+        endif
      end do
 
 
@@ -2075,28 +2084,6 @@ contains
              scale1*dt2*(dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,1)/2
         elem(ie)%state%v(:,:,2,nlev,np1) =  elem(ie)%state%v(:,:,2,nlev,np1) -&
              scale1*dt2*(dpnh_dp_i(:,:,nlevp)-1)*elem(ie)%derived%gradphis(:,:,2)/2
-
-
-        ! add in wh component 
-        dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
-        v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,n0)  
-        v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,n0)
-        do k=2,nlev
-           v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0) + &
-                dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,n0) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
-           v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
-                dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
-        end do
-        wh_i(:,:,1)=0
-        wh_i(:,:,nlevp)=0
-        do k=2,nlev
-           wh_i(:,:,k) = (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
-                v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
-                *hvcoord%hybi(k)/g  
-        enddo
-        elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) +&
-             dt2*g*(1-scale2)*wh_i(:,:,1:nlev)
-
 
 #ifdef ENERGY_DIAGNOSTICS
         ! add in boundary term to T2 and S2 diagnostics:
