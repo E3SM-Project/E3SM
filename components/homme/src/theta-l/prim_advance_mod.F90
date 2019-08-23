@@ -2217,6 +2217,9 @@ contains
             v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
             *hvcoord%hybi(k)/g  
     enddo
+
+    ! use hydrostatic for initial guess
+    call phi_from_eos(hvcoord,elem(ie)%state%phis,elem(ie)%state%vtheta_dp(:,:,:,np1),dp3d,phi_np1)
     
     do k=1,nlev
        do j=1,np
