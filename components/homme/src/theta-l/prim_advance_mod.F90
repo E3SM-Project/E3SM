@@ -2078,13 +2078,6 @@ contains
 
 
         ! add in wh component 
-        do k=2,nlev
-           v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0) + &
-                dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,n0) ) / (2*dp3d_i(:,:,k))
-           v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
-                dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (2*dp3d_i(:,:,k))
-        end do
-
         do k=1,nlev
            wh(:,:,k) = (elem(ie)%state%v(:,:,1,k,n0)*elem(ie)%derived%gradphis(:,:,1) + &
                         elem(ie)%state%v(:,:,2,k,n0)*elem(ie)%derived%gradphis(:,:,2))&
@@ -2203,7 +2196,7 @@ contains
 
   ! dirk settings
   maxiter=20
-  itertol=1e-15
+  itertol=5e-15
   
 
   do ie=nets,nete
