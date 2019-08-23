@@ -2215,7 +2215,6 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-    dp3d=elem(ie)%state%dp3d(:,:,:,np1)
     v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,np1)  
     v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,np1)
     do k=2,nlev
