@@ -355,7 +355,7 @@ This allows using a different mpirun command to launch unit tests
 
   <machine MACH="cheyenne">
     <DESC>NCAR SGI platform, os is Linux, 36 pes/node, batch system is PBS</DESC>
-    <NODENAME_REGEX>.*.cheyenne.ucar.edu</NODENAME_REGEX>
+    <NODENAME_REGEX>.*.?cheyenne\d?.ucar.edu</NODENAME_REGEX>
     <!-- MPT sometimes timesout at model start time, the next two lines cause
     case_run.py to detect the timeout and retry FORCE_SPARE_NODES times -->
     <MPIRUN_RETRY_REGEX>MPT: xmpi_net_accept_timeo/accept() timeout</MPIRUN_RETRY_REGEX>
