@@ -1509,7 +1509,7 @@ contains
   real (kind=real_kind) ::  vtemp(np,np,2,nlev)       ! generic gradient storage
   real (kind=real_kind), dimension(np,np) :: sdot_sum ! temporary field
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
-  real (kind=real_kind) :: wh(np,np,nlev),wh_i(np,np,nlevp)  ! w hydrostatic
+  real (kind=real_kind) :: wh_i(np,np,nlevp)  ! w hydrostatic
   integer :: i,j,k,kptr,ie, nlyr_tot
 
   call t_startf('compute_andor_apply_rhs')
@@ -2078,15 +2078,21 @@ contains
 
 
         ! add in wh component 
-        do k=1,nlev
-           wh(:,:,k) = (elem(ie)%state%v(:,:,1,k,n0)*elem(ie)%derived%gradphis(:,:,1) + &
-                        elem(ie)%state%v(:,:,2,k,n0)*elem(ie)%derived%gradphis(:,:,2))&
-                        *hvcoord%hybm(k)/g  
-        enddo
+        dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
+        v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,n0)  
+        v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,n0)
+        do k=2,nlev
+           v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0) + &
+                dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,n0) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
+           v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
+                dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
+        end do
         wh_i(:,:,1)=0
         wh_i(:,:,nlevp)=0
         do k=2,nlev
-           wh_i(:,:,k)=(wh(:,:,k-1)+wh(:,:,k))/2
+           wh_i(:,:,k) = (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
+                v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
+                *hvcoord%hybm(k)/g  
         enddo
         elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) +&
              dt2*g*(1-scale2)*wh_i(:,:,1:nlev)
@@ -2172,15 +2178,14 @@ contains
   real (kind=real_kind) :: JacD(nlev,np,np)  , JacL(nlev-1,np,np)
   real (kind=real_kind) :: JacU(nlev-1,np,np), JacU2(nlev-2,np,np)
   real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
-  real (kind=real_kind) :: dp3d_i(np,np,nlevp)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
   real (kind=real_kind) :: w_n0(np,np,nlevp)    
   real (kind=real_kind) :: phi_n0(np,np,nlevp)    
   real (kind=real_kind) :: Ipiv(nlev,np,np)
   real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
-  real (kind=real_kind) :: wh(np,np,nlev)  ! w hydrostatic
   real (kind=real_kind) :: wh_i(np,np,nlevp)  ! w hydrostatic
+  real (kind=real_kind) :: v_i(np,np,2,nlevp)  ! w hydrostatic
 
   real (kind=real_kind) :: Jac2D(nlev,np,np)  , Jac2L(nlev-1,np,np)
   real (kind=real_kind) :: Jac2U(nlev-1,np,np)
@@ -2196,7 +2201,7 @@ contains
 
   ! dirk settings
   maxiter=20
-  itertol=5e-15
+  itertol=1e-14
   
 
   do ie=nets,nete
@@ -2210,15 +2215,21 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-    do k=1,nlev
-       wh(:,:,k) = (elem(ie)%state%v(:,:,1,k,np1)*elem(ie)%derived%gradphis(:,:,1) + &
-                    elem(ie)%state%v(:,:,2,k,np1)*elem(ie)%derived%gradphis(:,:,2))&
-                    *hvcoord%hybm(k)/g  
-    enddo
+    dp3d=elem(ie)%state%dp3d(:,:,:,np1)
+    v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,np1)  
+    v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,np1)
+    do k=2,nlev
+       v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,np1) + &
+            dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,np1) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
+       v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,np1) + &
+            dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,np1) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
+    end do
     wh_i(:,:,1)=0
     wh_i(:,:,nlevp)=0
     do k=2,nlev
-       wh_i(:,:,k)=(wh(:,:,k-1)+wh(:,:,k))/2
+       wh_i(:,:,k) = (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
+            v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
+            *hvcoord%hybm(k)/g  
     enddo
     
     do k=1,nlev
