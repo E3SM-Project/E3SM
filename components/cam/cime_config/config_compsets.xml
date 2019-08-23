@@ -207,6 +207,11 @@
   </compset>
 
   <compset>
+    <alias>F2010SC5-CMIP6</alias>
+    <lname>2010S_CAM5%CMIP6_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>FC5ATMMODCOSP</alias>
     <lname>2000_CAM5%ATMMODCOSP_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
