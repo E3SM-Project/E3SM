@@ -12,7 +12,7 @@ module component_type_mod
   use seq_comm_mct     , only: seq_comm_namelen
   use seq_comm_mct     , only: num_inst_atm, num_inst_lnd, num_inst_rof
   use seq_comm_mct     , only: num_inst_ocn, num_inst_ice, num_inst_glc
-  use seq_comm_mct     , only: num_inst_wav, num_inst_esp
+  use seq_comm_mct     , only: num_inst_wav, num_inst_esp, num_inst_iac
   use mct_mod
 
   implicit none
@@ -92,7 +92,6 @@ module component_type_mod
      logical                         :: iamroot_compid
      logical                         :: present ! true => component is present and not stub
      integer                         :: nthreads_compid
-     integer                         :: instn
      character(len=CL)               :: suffix
      character(len=1)                :: oneletterid
      character(len=3)                :: ntype
@@ -113,8 +112,9 @@ module component_type_mod
   type(component_type), target :: glc(num_inst_glc)
   type(component_type), target :: wav(num_inst_wav)
   type(component_type), target :: esp(num_inst_esp)
+  type(component_type), target :: iac(num_inst_iac)
 
-  public :: atm, lnd, rof, ocn, ice, glc, wav, esp
+  public :: atm, lnd, rof, ocn, ice, glc, wav, esp, iac
 
   !===============================================================================
 

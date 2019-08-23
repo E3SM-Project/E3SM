@@ -23,7 +23,7 @@ from CIME.XML.env_mach_specific import EnvMachSpecific
 logger = logging.getLogger(__name__)
 
 def configure(machobj, output_dir, macros_format, compiler, mpilib, debug,
-              sysos, unit_testing=False):
+              comp_interface, sysos, unit_testing=False):
     """Add Macros, Depends, and env_mach_specific files to a directory.
 
     Arguments:
@@ -46,36 +46,35 @@ def configure(machobj, output_dir, macros_format, compiler, mpilib, debug,
 
     _copy_depends_files(machobj.get_machine_name(), machobj.machines_dir, output_dir, compiler)
     _generate_env_mach_specific(output_dir, machobj, compiler, mpilib,
-                                debug, sysos, unit_testing)
+                                debug, comp_interface, sysos, unit_testing)
 
 def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
     """
     Copy any system or compiler Depends files if they do not exist in the output directory
     If there is a match for Depends.machine_name.compiler copy that and ignore the others
     """
-    dfile = os.path.join(machines_dir, "Depends.{}.{}".format(machine_name,compiler))
-    outputdfile = os.path.join(output_dir, "Depends.{}.{}".format(machine_name,compiler))
-    if os.path.isfile(dfile):
-        if not os.path.isfile(outputdfile):
-            safe_copy(dfile, outputdfile)
-    else:
-        for dep in (machine_name, compiler):
-            dfile = os.path.join(machines_dir, "Depends.{}".format(dep))
-            outputdfile = os.path.join(output_dir, "Depends.{}".format(dep))
-            if os.path.isfile(dfile) and not os.path.isfile(outputdfile):
+    for suffix in [machine_name, compiler, "{}.{}".format(machine_name, compiler)]:
+        for extra_suffix in ["", ".cmake"]:
+            basename = "Depends.{}{}".format(suffix, extra_suffix)
+            dfile = os.path.join(machines_dir, basename)
+            outputdfile = os.path.join(output_dir, basename)
+            if os.path.isfile(dfile) and not os.path.exists(outputdfile):
                 safe_copy(dfile, outputdfile)
 
 class FakeCase(object):
 
-    def __init__(self, compiler, mpilib, debug):
-        self._vals = {"COMPILER":compiler, "MPILIB":mpilib, "DEBUG":debug}
+    def __init__(self, compiler, mpilib, debug, comp_interface):
+        # PIO_VERSION is needed to parse config_machines.xml but isn't otherwise used
+        # by FakeCase
+        self._vals = {"COMPILER":compiler, "MPILIB":mpilib, "DEBUG":debug,
+                      "COMP_INTERFACE":comp_interface, "PIO_VERSION":2}
 
     def get_value(self, attrib):
         expect(attrib in self._vals, "FakeCase does not support getting value of '%s'" % attrib)
         return self._vals[attrib]
 
 def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
-                                sysos, unit_testing):
+                                comp_interface, sysos, unit_testing):
     """
     env_mach_specific generation.
     """
@@ -86,7 +85,7 @@ def _generate_env_mach_specific(output_dir, machobj, compiler, mpilib, debug,
     ems_file = EnvMachSpecific(output_dir, unit_testing=unit_testing)
     ems_file.populate(machobj)
     ems_file.write()
-    fake_case = FakeCase(compiler, mpilib, debug)
+    fake_case = FakeCase(compiler, mpilib, debug, comp_interface)
     ems_file.load_env(fake_case)
     for shell in ('sh', 'csh'):
         ems_file.make_env_mach_specific_file(shell, fake_case)

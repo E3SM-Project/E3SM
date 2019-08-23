@@ -48,7 +48,7 @@ Examples:
 
 from standard_script_setup import *
 
-from CIME.utils import expect, convert_to_type, append_case_status
+from CIME.utils import expect, convert_to_type, append_case_status, get_batch_script_for_job
 from CIME.case import Case
 
 import re
@@ -143,8 +143,28 @@ def xmlchange_single_value(case, xmlid, xmlval, subgroup, append, force, dryrun)
         xmlval = convert_to_type(xmlval, type_str, xmlid)
 
     if not dryrun:
-        newval = case.set_value(xmlid, xmlval, subgroup, ignore_type=force)
-        expect(newval is not None,"No variable \"%s\" found"%xmlid)
+        result = case.set_value(xmlid, xmlval, subgroup, ignore_type=force, return_file=True)
+        expect(result is not None,"No variable \"%s\" found"%xmlid)
+        filename = result[1]
+
+        setup_already_run = os.path.exists(get_batch_script_for_job(case.get_primary_job()))
+        build_already_run = case.get_value("BUILD_COMPLETE")
+
+        if filename.endswith("env_build.xml") and build_already_run:
+            logger.info(
+"""For your changes to take effect, run:
+./case.build --clean-all
+./case.build""")
+
+        elif filename.endswith("env_mach_pes.xml"):
+            if setup_already_run:
+                logger.info("For your changes to take effect, run:\n./case.setup --reset")
+            if build_already_run:
+                if not setup_already_run:
+                    logger.info("For your changes to take effect, run:")
+
+                logger.info("./case.build --clean-all\n./case.build")
+
     else:
         logger.warning("'%s' = '%s'" , xmlid , xmlval )
 

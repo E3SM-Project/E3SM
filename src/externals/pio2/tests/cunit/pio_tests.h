@@ -7,7 +7,7 @@
 
 #ifndef _PIO_TESTS_H
 #define _PIO_TESTS_H
-
+#include <pio_error.h>
 #include <unistd.h> /* Include this for the sleep function. */
 #include <assert.h>
 
@@ -15,6 +15,27 @@
 #ifdef TIMING
 #include <gptl.h>
 #endif
+
+#ifdef USE_MPE
+#include <mpe.h>
+#endif /* USE_MPE */
+
+#ifdef USE_MPE
+/* These are for the event numbers array used to log various events in
+ * the program with the MPE library, which produces output for the
+ * Jumpshot program. */
+#define TEST_NUM_EVENTS 6
+#define TEST_INIT 0
+#define TEST_DECOMP 1
+#define TEST_CREATE 2
+#define TEST_DARRAY_WRITE 3
+#define TEST_CLOSE 4
+#define TEST_CALCULATE 5
+
+int init_mpe_test_logging(int my_rank, int test_event[][TEST_NUM_EVENTS]);
+void test_start_mpe_log(int state);
+void test_stop_mpe_log(int state, const char *msg);
+#endif /* USE_MPE */
 
 /** The number of possible output netCDF output flavors available to
  * the ParallelIO library. */
@@ -60,32 +81,6 @@
 #define NUM_PIO_TYPES_TO_TEST 6
 #endif /* _NETCDF4 */
 
-/** Handle MPI errors. This should only be used with MPI library
- * function calls. */
-#define MPIERR(e) do {                                                  \
-        MPI_Error_string(e, err_buffer, &resultlen);                    \
-        fprintf(stderr, "MPI error, line %d, file %s: %s\n", __LINE__, __FILE__, err_buffer); \
-        MPI_Finalize();                                                 \
-        return ERR_AWFUL;                                               \
-    } while (0)
-
-/** Handle non-MPI errors by finalizing the MPI library and exiting
- * with an exit code. */
-#define ERR(e) do {                                                     \
-        fprintf(stderr, "%d Error %d in %s, line %d\n", my_rank, e, __FILE__, __LINE__); \
-        MPI_Finalize();                                                 \
-        return e;                                                       \
-    } while (0)
-
-/** Global err buffer for MPI. When there is an MPI error, this buffer
- * is used to store the error message that is associated with the MPI
- * error. */
-char err_buffer[MPI_MAX_ERROR_STRING];
-
-/** This is the length of the most recent MPI error message, stored
- * int the global error string. */
-int resultlen;
-
 /* Function prototypes. */
 int pio_test_init2(int argc, char **argv, int *my_rank, int *ntasks, int min_ntasks,
                    int max_ntasks, int log_level, MPI_Comm *test_comm);
@@ -109,6 +104,7 @@ int check_nc_sample_4(int iosysid, int iotype, int my_rank, int my_comp_idx,
 int get_iotypes(int *num_flavors, int *flavors);
 int get_iotype_name(int iotype, char *name);
 int pio_test_finalize(MPI_Comm *test_comm);
+int pio_test_finalize2(MPI_Comm *test_comm, const char *test_name);
 int test_async2(int my_rank, int num_flavors, int *flavor, MPI_Comm test_comm,
                 int component_count, int num_io_procs, int target_ntasks, char *test_name);
 int test_no_async2(int my_rank, int num_flavors, int *flavor, MPI_Comm test_comm, int target_ntasks,

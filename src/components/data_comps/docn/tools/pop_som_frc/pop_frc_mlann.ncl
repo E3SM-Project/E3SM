@@ -139,14 +139,6 @@ begin
  T2 = Tin
  T2(0,:,:) = Tin(11,:,:)
  T2(1:11,:,:) = Tin(0:10,:,:)
-;hblt1 = hblttmp
-;hblt1(0:10,:,:) = hblttmp(1:11,:,:)
-;hblt1(11,:,:) = hblttmp(0,:,:)
-;hblt2 = hblttmp
-;hblt2(0,:,:) = hblttmp(11,:,:)
-;hblt2(1:11,:,:) = hblttmp(0:10,:,:)
-;dT = T1*hblt1-T2*hblt2
-;release = rcp_sw*dT / (86400.*365./6.)
  dT = T1-T2
  release = rcp_sw*dT*hblttmp / (86400.*365./6.)
 
@@ -163,7 +155,7 @@ begin
  print(err)
  glob = avg(err)
  print(glob)
-;ocnheat = ocnheat - dble2flt(glob)
+ ocnheat = ocnheat - dble2flt(glob)
 
  T = new(dimsizes(Tin),typeof(Tin))
  S = new(dimsizes(Sin),typeof(Sin))

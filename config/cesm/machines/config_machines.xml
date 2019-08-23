@@ -358,7 +358,7 @@ This allows using a different mpirun command to launch unit tests
     <NODENAME_REGEX>.*.?cheyenne\d?.ucar.edu</NODENAME_REGEX>
     <!-- MPT sometimes timesout at model start time, the next two lines cause
     case_run.py to detect the timeout and retry FORCE_SPARE_NODES times -->
-    <MPIRUN_RETRY_REGEX>MPT: xmpi_net_accept_timeo/accept() timeout</MPIRUN_RETRY_REGEX>
+    <MPIRUN_RETRY_REGEX>MPT: Launcher network accept (MPI_LAUNCH_TIMEOUT) timed out</MPIRUN_RETRY_REGEX>
     <MPIRUN_RETRY_COUNT>10</MPIRUN_RETRY_COUNT>
     <OS>LINUX</OS>
     <COMPILERS>intel,gnu,pgi</COMPILERS>
@@ -381,7 +381,6 @@ This allows using a different mpirun command to launch unit tests
     <mpirun mpilib="default">
       <executable>mpiexec_mpt</executable>
       <arguments>
-	<!-- for mpt/2.19 the -p needs to preceed -np -->
 	<arg name="labelstdout">-p "%g:"</arg>
 	<arg name="num_tasks"> -np {{ total_tasks }}</arg>
 	<!-- the omplace argument needs to be last -->
@@ -422,24 +421,24 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">ncarenv/1.2</command>
       </modules>
       <modules compiler="intel">
-	<command name="load">intel/17.0.1</command>
+	<command name="load">intel/19.0.2</command>
 	<command name="load">esmf_libs</command>
 	<command name="load">mkl</command>
       </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="mct">
+        <command name="load">esmf-7.1.0r-defio-mpi-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="mct">
+        <command name="load">esmf-7.1.0r-defio-mpi-O</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="mct">
+        <command name="load">esmf-7.1.0r-ncdfio-uni-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
+        <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
+      </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE">
-	<command name="load">esmf-7.1.0r-defio-mpi-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE">
-	<command name="load">esmf-7.1.0r-defio-mpi-O</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE">
-	<command name="load">esmf-7.1.0r-ncdfio-uni-g</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE">
-	<command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
       </modules>
       <modules compiler="gnu">
         <command name="load">gnu/7.3.0</command>
@@ -473,11 +472,11 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.6.1</command>
       </modules>
+      <modules compiler="intel" mpilib="mpi-serial">
+	<command name="load">netcdf/4.6.1</command>
+      </modules>
       <modules compiler="pgi" mpilib="mpi-serial">
 	<command name="load">netcdf/4.6.3</command>
-      </modules>
-      <modules compiler="intel" mpilib="mpi-serial">
-	<command name="load">netcdf/4.5.0</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -487,12 +486,82 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
     </environment_variables>
+    <environment_variables comp_interface="nuopc" DEBUG="FALSE">
+      <env name="ESMFMKFILE">/glade/work/dunlap/ESMF-INSTALL/8.0.0bs38/lib/libO/Linux.intel.64.mpt.default/esmf.mk</env>
+    </environment_variables>
+    <environment_variables comp_interface="nuopc" DEBUG="TRUE">
+      <env name="ESMFMKFILE">/glade/work/dunlap/ESMF-INSTALL/8.0.0bs38/lib/libg/Linux.intel.64.mpt.default/esmf.mk</env>
+    </environment_variables>
+    <environment_variables comp_interface="nuopc">
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
+      <env name="UGCSINPUTPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/2012010100/gfs/fcst</env>
+      <env name="UGCSFIXEDFILEPATH">/glade/work/turuncu/FV3GFS/fix_am</env>
+      <env name="UGCSADDONPATH">/glade/work/turuncu/FV3GFS/addon</env>
+    </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
     <environment_variables queue="share">
       <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_USE_ARRAY">false</env>
+    </environment_variables>
+    <resource_limits>
+      <resource name="RLIMIT_STACK">-1</resource>
+    </resource_limits>
+  </machine>
+
+  <machine MACH="coeus">
+    <DESC>
+      Portland State University Coeus Cluster Dec 2019 CentOS 7
+    </DESC>
+    <NODENAME_REGEX>(login[1,2].cluster|compute[0-9]*.cluster)</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>mvapich2</MPILIBS>
+    <PROJECT>none</PROJECT>
+    <CIME_OUTPUT_ROOT>$ENV{CESMDATAROOT}/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
+    <CCSM_CPRNC>/vol/apps/hpc/src/cesm-2.1.0/cime/tools/cprnc/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>oit-rc-groups@pdx.edu</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>20</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
+    <mpirun mpilib="mvapich2">
+      <executable>srun</executable>
+      <arguments>
+        <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
+        <arg name="cpu_bind">--cpu_bind=sockets --cpu_bind=verbose</arg>
+        <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="perl"></init_path>
+      <init_path lang="python"></init_path>
+      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
+      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
+      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
+      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <modules>
+        <command name="purge"/>
+      </modules>
+      <modules compiler="gnu">
+        <command name="load">gcc-6.3.0</command>
+        <command name="load">mvapich2-2.2-psm/gcc-6.3.0</command>
+        <command name="load">General/netcdf/4.4.1.1/gcc-6.3.0</command>
+        <command name="load">Python/2.7.13/gcc-6.3.0</command>
+      </modules>
+    </module_system>
+    <environment_variables>
+      <env name="OMP_STACKSIZE">256M</env>
+      <env name="NETCDF_HOME">/vol/apps/hpc/stow/netcdf/4.4.1.1/gcc-6.3.0/</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
@@ -946,6 +1015,12 @@ This allows using a different mpirun command to launch unit tests
 	<command name="switch">intel intel/18.0.1.163</command>
 	<command name="rm">cray-libsci</command>
 	<command name="use">/global/project/projectdirs/ccsm1/modulefiles/edison</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" >
+	<command name="load">esmf/7.1.0r-defio-intel18.0.1.163-mpi-O</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" >
+	<command name="load">esmf/6.3.0rp1-defio-intel17.0-mpiuni-O</command>
       </modules>
       <modules compiler="cray">
 	<command name="load">PrgEnv-cray</command>
@@ -2244,6 +2319,7 @@ This allows using a different mpirun command to launch unit tests
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
+    <PROJECT>TG-ATM180016</PROJECT>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
@@ -2257,9 +2333,15 @@ This allows using a different mpirun command to launch unit tests
     <MAX_MPITASKS_PER_NODE>48</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="impi">
       <executable>ibrun</executable>
+      <arguments>
+	<arg name="ntasks"> -n {{ total_tasks }} </arg>
+      </arguments>
     </mpirun>
     <mpirun mpilib="mvapich2">
       <executable>ibrun</executable>
+      <arguments>
+	<arg name="ntasks"> -n {{ total_tasks }} </arg>
+      </arguments>
     </mpirun>
     <module_system type="module">
       <init_path lang="perl">/opt/apps/lmod/lmod/init/perl</init_path>
@@ -2274,18 +2356,18 @@ This allows using a different mpirun command to launch unit tests
         <command name="purge"></command>
         <command name="load">TACC</command>
         <command name="load">python/2.7.13</command>
-        <command name="load">intel/17.0.4</command>
+        <command name="load">intel/18.0.2</command>
         <command name="load">cmake/3.10.2</command>
       </modules>
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3b</command>
-        <command name="load">pnetcdf/1.8.1</command>
+        <command name="load">pnetcdf/1.11.0</command>
         <command name="load">parallel-netcdf/4.3.3.1</command>
       </modules>
       <modules mpilib="impi">
         <command name="rm">mvapich2</command>
-        <command name="load">impi/17.0.3</command>
-        <command name="load">pnetcdf/1.8.1</command>
+        <command name="load">impi/18.0.2</command>
+        <command name="load">pnetcdf/1.11.0</command>
         <command name="load">parallel-netcdf/4.3.3.1</command>
       </modules>
       <modules mpilib="mpi-serial">
@@ -2295,7 +2377,18 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables>
       <env name="OMP_STACKSIZE">256M</env>
      </environment_variables>
+    <environment_variables comp_interface="nuopc" mpilib="impi">
+      <env name="ESMFMKFILE">/work/01118/tg803972/stampede2/ESMF-INSTALL/8.0.0bs38/lib/libO/Linux.intel.64.intelmpi.default/esmf.mk</env>
+    </environment_variables>
+    <environment_variables comp_interface="nuopc">
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
+      <env name="UGCSINPUTPATH">/work/06242/tg855414/stampede2/FV3GFS/benchmark-inputs/2012010100/gfs/fcst</env>
+      <env name="UGCSFIXEDFILEPATH">/work/06242/tg855414/stampede2/FV3GFS/fix_am</env>
+      <env name="UGCSADDONPATH">/work/06242/tg855414/stampede2/FV3GFS/addon</env>
+    </environment_variables>
   </machine>
+
 
   <machine MACH="stampede2-knl">
     <DESC>Intel Xeon Phi 7250 ("Knights Landing") , batch system is SLURM</DESC>
@@ -2337,13 +2430,13 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3b</command>
-        <command name="load">pnetcdf/1.8.1</command>
+        <command name="load">pnetcdf/1.11.0</command>
         <command name="load">parallel-netcdf/4.3.3.1</command>
       </modules>
       <modules mpilib="impi">
         <command name="rm">mvapich2</command>
         <command name="load">impi/17.0.3</command>
-        <command name="load">pnetcdf/1.8.1</command>
+        <command name="load">pnetcdf/1.11.0</command>
         <command name="load">parallel-netcdf/4.3.3.1</command>
       </modules>
       <modules mpilib="mpi-serial">
@@ -2371,13 +2464,13 @@ This allows using a different mpirun command to launch unit tests
     <CCSM_CPRNC>/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/cesmdataroot/tools/cprnc</CCSM_CPRNC>
     <GMAKE>make</GMAKE>
     <GMAKE_J>8</GMAKE_J>
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>cseg</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
     <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
     <mpirun mpilib="default">
-      <executable>mpirun</executable>
+      <executable>srun</executable>
       <arguments>
 	<arg name="num_tasks">-n $TOTALPES</arg>
       </arguments>
@@ -2392,15 +2485,23 @@ This allows using a different mpirun command to launch unit tests
       <cmd_path lang="csh">module</cmd_path>
       <cmd_path lang="python">/apps/lmod/lmod/libexec/lmod python</cmd_path>
       <modules compiler="intel">
-	<command name="purge"/>
-	<command name="load">intel</command>
-	<command name="load">impi/5.1.1.109</command>
-	<command name="load">netcdf/4.3.0</command>
-	<command name="load">pnetcdf</command>
-	<command name="use">/scratch4/NCEPDEV/nems/noscrub/emc.nemspara/soft/modulefiles</command>
-	<command name="load">esmf/8.0.0bs15</command>
+        <command name="purge"/>
+        <command name="load">intel/15.1.133</command>
+        <command name="load">impi/5.1.1.109</command>
+        <command name="load">netcdf/4.3.0</command>
+        <command name="load">pnetcdf</command>
+        <command name="use">/scratch4/NCEPDEV/nems/noscrub/emc.nemspara/soft/modulefiles</command>
+	<command name="load">yaml-cpp</command>
+        <command name="load">esmf/8.0.0bs29g</command>
       </modules>
     </module_system>
+    <environment_variables comp_interface="nuopc">
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
+      <env name="UGCSINPUTPATH">/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/INPUTDATA/benchmark-inputs/2012010100/gfs/fcst</env>
+      <env name="UGCSFIXEDFILEPATH">/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/INPUTDATA/fix_am</env>
+      <env name="UGCSADDONPATH">/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/INPUTDATA/addon</env>
+    </environment_variables>
   </machine>
 
   <machine MACH="theta">

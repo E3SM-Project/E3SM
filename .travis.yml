@@ -3,7 +3,7 @@ language: python
 before_install:
   - sudo apt-get install -y libxml2-utils
 
-install: 
+install:
   - pip install pylint
 
 python:
@@ -13,7 +13,7 @@ python:
 env:
   - CIME_MODEL=cesm
 
-script: cd scripts/tests; ./scripts_regression_tests.py --machine centos7-linux   A_RunUnitTests B_CheckCode G_TestMacrosBasic H_TestMakeMacros I_TestCMakeMacros 
+script: cd scripts/tests; ./scripts_regression_tests.py --machine centos7-linux   A_RunUnitTests B_CheckCode G_TestMacrosBasic H_TestMakeMacros I_TestCMakeMacros
 
 # In addition to building PRs, also run the build on the following branches whenever
 # it's pushed
@@ -21,4 +21,4 @@ branches:
   only:
   - master
   - maint-5.6
-
+  - nuopc-cmeps

@@ -154,7 +154,7 @@ class MacroConditionTree(object): # pylint: disable=too-many-instance-attributes
             for cond_val in self._branches:
                 if cond_val is None:
                     continue
-                env_ref = writer.environment_variable_string(condition)
+                env_ref = writer.variable_string(condition)
                 writer.start_ifeq(env_ref, cond_val)
                 self._branches[cond_val].write_out(writer)
                 writer.end_ifeq()

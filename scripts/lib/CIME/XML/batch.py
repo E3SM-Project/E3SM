@@ -93,11 +93,6 @@ class Batch(GenericXML):
         if node is not None:
             value = self.text(node)
 
-        if value is None:
-            # if all else fails
-            #pylint: disable=assignment-from-none
-            value = GenericXML.get_value(self, name, attribute, resolved, subgroup)
-
         if resolved:
             if value is not None:
                 value = self.get_resolved_value(value)

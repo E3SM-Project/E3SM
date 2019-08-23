@@ -122,7 +122,7 @@ END SUBROUTINE
 
 ! Test block cyclic interface
 ! Write with one decomp and read with another
-! Test all combs 
+! Test all combs
 ! - no rearrage read + no rearrange write
 ! - rearrage read + no rearrange write
 ! - no rearrage read + rearrange write
@@ -130,7 +130,7 @@ END SUBROUTINE
 PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
 PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_rd_1d_bc
   implicit none
-  type(var_desc_t)  :: pio_var
+  type(var_desc_t)  :: pio_var1, pio_var2
   type(file_desc_t) :: pio_file
   character(len=PIO_TF_MAX_STR_LEN) :: filename
   type(io_desc_t) :: wr_iodesc, rd_iodesc
@@ -139,7 +139,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_rd_1d_bc
   PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, wbuf, exp_val
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
@@ -185,32 +185,41 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_rd_1d_bc
       filename = "test_pio_decomp_simple_tests.testfile"
       do i=1,num_iotypes
         PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
-        ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
+        ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
         PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
 
         ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
         PIO_TF_CHECK_ERR(ierr, "Failed to define a dim : " // trim(filename))
 
-        ierr = PIO_def_var(pio_file, 'PIO_TF_test_var', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var)
+        ierr = PIO_def_var(pio_file, 'PIO_TF_test_var1', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var1)
+        PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
+
+        ierr = PIO_def_var(pio_file, 'PIO_TF_test_var2', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var2)
         PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
 
         ierr = PIO_enddef(pio_file)
         PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))
 
         ! Write the variable out
-        call PIO_write_darray(pio_file, pio_var, wr_iodesc, wbuf, ierr)
+        call PIO_write_darray(pio_file, pio_var1, wr_iodesc, wbuf, ierr)
+        PIO_TF_CHECK_ERR(ierr, "Failed to write darray : " // trim(filename))
+
+        wbuf = wbuf + 200
+
+        ! Write the variable out
+        call PIO_write_darray(pio_file, pio_var2, wr_iodesc, wbuf, ierr)
         PIO_TF_CHECK_ERR(ierr, "Failed to write darray : " // trim(filename))
 
         call PIO_syncfile(pio_file)
 
         rbuf = 0
-        call PIO_read_darray(pio_file, pio_var, rd_iodesc, rbuf, ierr)
+        call PIO_read_darray(pio_file, pio_var1, rd_iodesc, rbuf, ierr)
         PIO_TF_CHECK_ERR(ierr, "Failed to read darray : " // trim(filename))
 
         PIO_TF_CHECK_VAL((rbuf, exp_val), "Got wrong val")
 
         call PIO_closefile(pio_file)
-        
+        wbuf = wbuf - 200
         call PIO_deletefile(pio_tf_iosystem_, filename);
       end do
 
@@ -240,7 +249,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_with_holes
   PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, wbuf, exp_val
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
@@ -254,7 +263,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_with_holes
   allocate(exp_val(count(1)))
   do i=1,count(1)
     wbuf(i) = start(1) + i - 1
-    compdof(i) = wbuf(i)
+    compdof(i) = int(wbuf(i))
     exp_val(i) = wbuf(i)
   end do
 
@@ -266,7 +275,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_with_holes
   filename = "test_pio_decomp_simple_tests.testfile"
   do i=1,num_iotypes
     PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
-    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER) 
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
     PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
 
     ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
@@ -290,7 +299,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_with_holes
     PIO_TF_CHECK_VAL((rbuf, exp_val), "Got wrong val")
 
     call PIO_closefile(pio_file)
-    
+
     call PIO_deletefile(pio_tf_iosystem_, filename);
   end do
 
@@ -304,3 +313,116 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_with_holes
   deallocate(rbuf)
   deallocate(wbuf)
 PIO_TF_AUTO_TEST_SUB_END nc_wr_1d_bc_with_holes
+
+PIO_TF_TEMPLATE<PIO_TF_PREDEF_TYPENAME PIO_TF_DATA_TYPE, PIO_TF_PREDEF_TYPENAME PIO_TF_FC_DATA_TYPE>
+PIO_TF_AUTO_TEST_SUB_BEGIN nc_wr_1d_bc_random
+  use mpi, only : MPI_INT
+  implicit none
+  type(var_desc_t)  :: pio_var1, pio_var2
+  type(file_desc_t) :: pio_file
+  character(len=PIO_TF_MAX_STR_LEN) :: filename
+  type(io_desc_t) :: wr_iodesc
+  integer, dimension(:), allocatable :: compdof, gcompdof
+  integer, dimension(1) :: count
+  PIO_TF_FC_DATA_TYPE, dimension(:), allocatable :: rbuf, wbuf
+  integer, dimension(1) :: dims
+  integer :: pio_dim
+  integer :: i, j, ierr
+  integer :: tmp
+  real :: u
+  ! iotypes = valid io types
+  integer, dimension(:), allocatable :: iotypes
+  character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
+  integer :: num_iotypes
+
+  ! Set the decomposition for writing data - random order same local size
+  count(1) = 4
+  dims(1) = count(1)*pio_tf_world_sz_
+  if(pio_tf_world_rank_ == 0) then
+     allocate(gcompdof(dims(1)))
+     gcompdof = 0
+     do i=1,dims(1)
+        gcompdof(i) = i
+     enddo
+     do i=dims(1),1,-1
+        call random_number(u)
+        j = CEILING(real(i)*u)
+        tmp = gcompdof(j)
+        gcompdof(j) = gcompdof(i)
+        gcompdof(i) = tmp
+     enddo
+  endif
+  allocate(compdof(count(1)))
+  call mpi_scatter(gcompdof, count(1), MPI_INT, compdof, 4, MPI_INT, 0, pio_tf_comm_, ierr)
+  if(allocated(gcompdof)) deallocate(gcompdof)
+  allocate(rbuf(count(1)))
+  allocate(wbuf(count(1)))
+  do i=1,count(1)
+    wbuf(i) = compdof(i)
+  end do
+
+  call PIO_initdecomp(pio_tf_iosystem_, PIO_TF_DATA_TYPE, dims, compdof, wr_iodesc)
+  deallocate(compdof)
+
+  num_iotypes = 0
+  call PIO_TF_Get_nc_iotypes(iotypes, iotype_descs, num_iotypes)
+  filename = "test_pio_decomp_simple_tests.testfile"
+  do i=1,num_iotypes
+    PIO_TF_LOG(0,*) "Testing : PIO_TF_DATA_TYPE : ", iotype_descs(i)
+    ierr = PIO_createfile(pio_tf_iosystem_, pio_file, iotypes(i), filename, PIO_CLOBBER)
+    PIO_TF_CHECK_ERR(ierr, "Could not create file " // trim(filename))
+
+    ierr = PIO_def_dim(pio_file, 'PIO_TF_test_dim', dims(1), pio_dim)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a dim : " // trim(filename))
+
+    ierr = PIO_def_var(pio_file, 'PIO_TF_test_var1', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var1)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
+
+    ierr = PIO_def_var(pio_file, 'PIO_TF_test_var2', PIO_TF_DATA_TYPE, (/pio_dim/), pio_var2)
+    PIO_TF_CHECK_ERR(ierr, "Failed to define a var : " // trim(filename))
+
+    ierr = PIO_enddef(pio_file)
+    PIO_TF_CHECK_ERR(ierr, "Failed to end redef mode : " // trim(filename))
+
+    ! Write the variable out
+    call PIO_write_darray(pio_file, pio_var1, wr_iodesc, wbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to write darray : " // trim(filename))
+
+    wbuf = wbuf + 200
+
+    call PIO_write_darray(pio_file, pio_var2, wr_iodesc, wbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to write darray : " // trim(filename))
+
+    call PIO_syncfile(pio_file)
+
+
+    call PIO_read_darray(pio_file, pio_var1, wr_iodesc, rbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to read darray : " // trim(filename))
+
+    wbuf = wbuf - 200
+
+    PIO_TF_CHECK_VAL((rbuf, wbuf), "Got wrong val")
+
+    wbuf = wbuf + 200
+
+    call PIO_read_darray(pio_file, pio_var2, wr_iodesc, rbuf, ierr)
+    PIO_TF_CHECK_ERR(ierr, "Failed to read darray : " // trim(filename))
+
+    PIO_TF_CHECK_VAL((rbuf, wbuf), "Got wrong val")
+
+    call PIO_closefile(pio_file)
+
+    wbuf = wbuf + 200
+
+    call PIO_deletefile(pio_tf_iosystem_, filename);
+  end do
+
+  if(allocated(iotypes)) then
+    deallocate(iotypes)
+    deallocate(iotype_descs)
+  end if
+
+  call PIO_freedecomp(pio_tf_iosystem_, wr_iodesc)
+  deallocate(rbuf)
+  deallocate(wbuf)
+PIO_TF_AUTO_TEST_SUB_END nc_wr_1d_bc_random

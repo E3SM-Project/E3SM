@@ -1,3 +1,3 @@
 #! /bin/bash
 
-<PATH>/cs.status "$@" <TESTROOT>/*.<TESTID>/TestStatus
+<PATH>/cs.status <EXTRA_ARGS> "$@" <TESTROOT>/*.<TESTID>/TestStatus

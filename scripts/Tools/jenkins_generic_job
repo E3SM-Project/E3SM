@@ -42,7 +42,8 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     CIME.utils.setup_standard_logging_options(parser)
 
     default_baseline = CIME.utils.get_current_branch(repo=CIME.utils.get_cime_root())
-    default_baseline = default_baseline.replace(".", "_").replace("/", "_") # Dots or slashes will mess things up
+    if default_baseline is not None:
+        default_baseline = default_baseline.replace(".", "_").replace("/", "_") # Dots or slashes will mess things up
 
     parser.add_argument("-g", "--generate-baselines", action="store_true",
                         help="Generate baselines")
@@ -64,6 +65,9 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 
     parser.add_argument("-b", "--baseline-name", default=default_baseline,
                         help="Baseline name for baselines to use. Also impacts dashboard job name. Useful for testing a branch other than next or master")
+
+    parser.add_argument("-B", "--baseline-root",
+                        help="Baseline area for baselines to use. Default will be config_machine value for machine")
 
     parser.add_argument("-O", "--override-baseline-name",
                         help="Force comparison with these baseines without impacting dashboard or test-id.")
@@ -116,19 +120,22 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     args.scratch_root = machine.get_value("CIME_OUTPUT_ROOT") if args.scratch_root is None else args.scratch_root
     args.compiler = machine.get_default_compiler() if args.compiler is None else args.compiler
 
+    expect(args.baseline_name is not None,
+           "Failed to probe baseline_name from git branch, please provide one. It is essential for formulating the test-id even if baseline comparisons are not being done")
+
     if args.override_baseline_name is None:
         args.override_baseline_name = args.baseline_name
 
     return args.generate_baselines, args.submit_to_cdash, args.no_batch, args.baseline_name, args.cdash_build_name, \
-        args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.scratch_root, args.parallel_jobs, args.walltime, args.machine, args.compiler, args.override_baseline_name
+        args.cdash_project, args.test_suite, args.cdash_build_group, args.baseline_compare, args.scratch_root, args.parallel_jobs, args.walltime, args.machine, args.compiler, args.override_baseline_name, args.baseline_root
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler, real_baseline_name = \
+    generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler, real_baseline_name, baseline_root = \
         parse_command_line(sys.argv, description)
 
-    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler, real_baseline_name)
+    sys.exit(0 if jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch, baseline_name, cdash_build_name, cdash_project, test_suite, cdash_build_group, baseline_compare, scratch_root, parallel_jobs, walltime, machine, compiler, real_baseline_name, baseline_root)
              else CIME.utils.TESTS_FAILED_ERR_CODE)
 
 ###############################################################################

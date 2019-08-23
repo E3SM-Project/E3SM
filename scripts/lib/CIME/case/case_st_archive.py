@@ -52,6 +52,7 @@ def _datetime_str(_date):
     """
     Returns the standard format associated with filenames.
 
+    >>> from CIME.date import date
     >>> _datetime_str(date(5, 8, 22))
     '0005-08-22-00000'
     >>> _datetime_str(get_file_date("0011-12-09-00435"))
@@ -68,6 +69,7 @@ def _datetime_str_mpas(_date):
     """
     Returns the mpas format associated with filenames.
 
+    >>> from CIME.date import date
     >>> _datetime_str_mpas(date(5, 8, 22))
     '0005-08-22_00:00:00'
     >>> _datetime_str_mpas(get_file_date("0011-12-09-00435"))
@@ -257,7 +259,7 @@ def _archive_history_files(archive, archive_entry,
     # run directory are those that are needed for restarts
 
     for suffix in archive.get_hist_file_extensions(archive_entry):
-        if compname.find('mpas') == 0:
+        if compname.find('mpas') == 0 or compname == 'mali':
             newsuffix =                    compname + r'\d*'
         else:
             newsuffix = casename + r'\.' + compname + r'_?' + r'\d*'
@@ -418,7 +420,7 @@ def _archive_restarts_date_comp(case, casename, rundir, archive, archive_entry,
     for suffix in archive.get_rest_file_extensions(archive_entry):
 #        logger.debug("suffix is {} ninst {}".format(suffix, ninst))
         restfiles = ""
-        if compname.find("mpas") == 0:
+        if compname.find('mpas') == 0 or compname == 'mali':
             pattern = compname + r'\.' + suffix + r'\.' + '_'.join(datename_str.rsplit('-', 1))
             pfile = re.compile(pattern)
             restfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
@@ -830,6 +832,8 @@ def test_env_archive(self, testdir="env_archive_test"):
         compname = self.get_value("COMP_{}".format(comp))
         if (compname == 's'+comp.lower() or compname == 'x'+comp.lower()) and comp != 'ESP':
             logger.info("Not testing component {}".format(comp))
+            components.remove(comp)
+        elif comp == 'ESP' and self.get_value('MODEL') == 'e3sm':
             components.remove(comp)
         else:
             if compname == 'cpl':

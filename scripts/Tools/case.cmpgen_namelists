@@ -52,7 +52,7 @@ def _main_func(description):
 ###############################################################################
     caseroot, compare, generate, compare_name, generate_name, baseline_root \
         = parse_command_line(sys.argv, description)
-    with Case(caseroot, read_only=True) as case:
+    with Case(caseroot, read_only=False) as case:
         success = case.case_cmpgen_namelists(compare, generate, compare_name, generate_name, baseline_root)
 
     sys.exit(0 if success else CIME.utils.TESTS_FAILED_ERR_CODE)

@@ -1,10 +1,12 @@
-/** @file 
+/** @file
  *
  * This is the template for the config.h file, which is created at
  * build-time by cmake.
  */
 #ifndef _PIO_CONFIG_
 #define _PIO_CONFIG_
+/* Set to avoid warning in intel19 compiler wrt strnlen */
+#define _GNU_SOURCE
 
 /** The major part of the version number. */
 #define PIO_VERSION_MAJOR @VERSION_MAJOR@
@@ -27,5 +29,7 @@
 
 /* buffer size for darray data. */
 #define PIO_BUFFER_SIZE @PIO_BUFFER_SIZE@
+
+#define USE_VARD @USE_VARD@
 
 #endif /* _PIO_CONFIG_ */

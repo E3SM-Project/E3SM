@@ -67,7 +67,7 @@ def apply_user_mods(caseroot, user_mods_path, keepexe=None):
                         logger.info("Adding SourceMod to case {}".format(case_source_mods))
                     try:
                         safe_copy(source_mods, case_source_mods)
-                    except:
+                    except Exception:
                         expect(False, "Could not write file {} in caseroot {}".format(case_source_mods,caseroot))
 
         # create xmlchange_cmnds and shell_commands in caseroot
