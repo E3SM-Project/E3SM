@@ -26,8 +26,14 @@ module gllfvremap_mod
        one = 1.0_real_kind, two = 2.0_real_kind, &
        four = 4.0_real_kind, eps = epsilon(1.0_real_kind)
 
-  ! Data type and functions for high-order, shape-preserving FV <-> GLL remap.
-  type, public :: GllFvRemap_t
+  ! Type for special case of pg1.
+  type, private :: Pg1SolverData_t
+     real(kind=real_kind) :: Achol(np*np,np*np), B(4,np*np), s(np*np), sts
+  end type Pg1SolverData_t
+
+  ! Top-level data type and functions for high-order, shape-preserving FV <->
+  ! GLL remap.
+  type, private :: GllFvRemap_t
      integer :: nphys, npi
      logical :: check, have_fv_topo_file_phis
      real(kind=real_kind) :: tolfac ! for checking
@@ -55,25 +61,34 @@ module gllfvremap_mod
           phis(:,:)
      type (spherical_polar_t), allocatable :: &
           spherep_f(:,:,:) ! (nphys,nphys,nelemd)
+     type (Pg1SolverData_t) :: pg1sd
   end type GllFvRemap_t
 
   type (GllFvRemap_t), private :: gfr
 
   ! Main API.
   public :: &
+       ! Initialize this module.
        gfr_init, &
+       ! Clean up this module.
        gfr_finish, &
+       ! Remap GLL state to FV grid.
        gfr_dyn_to_fv_phys, &
+       ! Remap FV tendencies or state to GLL grid.
        gfr_fv_phys_to_dyn, &
+       ! Remap phis.
        gfr_dyn_to_fv_phys_topo, &
        gfr_fv_phys_to_dyn_topo, &
-       gfr_f2g_dss
+       ! If nphys == 1, reconstruct the field to boost the OOA. If
+       ! nphys > 1, returns immediately.
+       gfr_pg1_reconstruct_topo, & ! call after the gfr_fv_phys_to_dyn_topo and the DSS
+       gfr_pg1_reconstruct ! call after gfr_fv_phys_to_dyn and the DSS
 
   ! For testing.
   public :: &
        gfr_test, &
        gfr_g2f_scalar, gfr_f2g_scalar, gfr_f_get_latlon, gfr_f_get_cartesian3d, &
-       gfr_g_make_nonnegative, gfr_dyn_to_fv_phys_topo_elem
+       gfr_g_make_nonnegative, gfr_dyn_to_fv_phys_topo_elem, gfr_f2g_dss
 
   interface gfr_dyn_to_fv_phys
      module procedure gfr_dyn_to_fv_phys_hybrid
@@ -146,6 +161,8 @@ contains
          gfr%phis(nphys2,nelemd), gfr%spherep_f(nphys,nphys,nelemd))
     call gfr_init_fv_metdet(elem, gfr)
     call gfr_init_geometry(elem, gfr)
+
+    if (nphys == 1) call gfr_pg1_init(gfr)
   end subroutine gfr_init
 
   subroutine gfr_finish()
@@ -251,6 +268,10 @@ contains
     q_adjustment = ftype >= 1 .and. ftype <= 4
     qsize = size(q,3)
 
+    ! In the FV -> GLL direction, nphys = 1 for OOA > 1 is a special
+    ! case. Thus, nf == 1 and nf > 1 appears in several places in the
+    ! following.
+
     do ie = nets,nete
        call calc_dp(hvcoord, elem(ie)%state%ps_v(:,:,nt), dp)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, dp, dp_fv)
@@ -275,10 +296,17 @@ contains
                   dp*elem(ie)%state%Q(:,:,:,qi), wr1)
              !   FV Q_ten = FV Q1 - FV Q0
              wr1(:nf,:nf,:) = reshape(q(:ncol,:,qi,ie), (/nf,nf,nlev/)) - wr1(:nf,:nf,:)
-             ! GLL Q_ten
-             call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wr1, wr2)
-             ! GLL Q1
-             elem(ie)%derived%FQ(:,:,:,qi) = elem(ie)%state%Q(:,:,:,qi) + wr2
+             if (nf > 1) then
+                ! GLL Q_ten
+                call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wr1, wr2)
+                ! GLL Q1
+                elem(ie)%derived%FQ(:,:,:,qi) = elem(ie)%state%Q(:,:,:,qi) + wr2
+             else
+                ! GLL Q_ten
+                do k = 1,nlev
+                   elem(ie)%derived%FQ(:,:,k,qi) = wr1(1,1,k)
+                end do
+             end if
              ! Get limiter bounds.
              do k = 1,nlev
                 gfr%qmin(k,qi,ie) = minval(q(:ncol,k,qi,ie))
@@ -288,10 +316,17 @@ contains
              ! FV Q_ten
              wr1(:nf,:nf,:) = reshape(q(:ncol,:,qi,ie), (/nf,nf,nlev/))
              wr1(:nf,:nf,:) = dt*wr1(:nf,:nf,:)/dp_fv(:nf,:nf,:)
-             ! GLL Q_ten
-             call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wr1, wr2)
-             ! GLL Q1
-             elem(ie)%derived%FQ(:,:,:,qi) = elem(ie)%state%Q(:,:,:,qi) + wr2
+             if (nf > 1) then
+                ! GLL Q_ten
+                call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wr1, wr2)
+                ! GLL Q1
+                elem(ie)%derived%FQ(:,:,:,qi) = elem(ie)%state%Q(:,:,:,qi) + wr2
+             else
+                ! GLL Q_ten
+                do k = 1,nlev
+                   elem(ie)%derived%FQ(:,:,k,qi) = wr1(1,1,k)
+                end do
+             end if
              ! GLL Q0 -> FV Q0
              call gfr_g2f_mixing_ratio(gfr, ie, elem(ie)%metdet, dp, dp_fv, &
                   dp*elem(ie)%state%Q(:,:,:,qi), wr2)
@@ -309,6 +344,8 @@ contains
     ! Halo exchange limiter bounds.
     call gfr_f2g_mixing_ratios_he(hybrid, nets, nete, gfr%qmin(:,:,nets:nete), &
          gfr%qmax(:,:,nets:nete))
+
+    if (nf == 1) return
 
     do ie = nets,nete
        call calc_dp(hvcoord, elem(ie)%state%ps_v(:,:,nt), dp)
@@ -397,8 +434,12 @@ contains
        wr(:nf,:nf,1) = reshape(phis(:ncol,ie), (/nf,nf/))
        gfr%qmin(:,:,ie) = minval(wr(:nf,:nf,1))
        gfr%qmax(:,:,ie) = maxval(wr(:nf,:nf,1))
-       call gfr_f2g_scalar(ie, elem(ie)%metdet, wr(:,:,1:1), wr(:,:,2:2))
-       elem(ie)%state%phis = wr(:,:,2)
+       if (nf > 1) then
+          call gfr_f2g_scalar(ie, elem(ie)%metdet, wr(:,:,1:1), wr(:,:,2:2))
+          elem(ie)%state%phis = wr(:,:,2)
+       else
+          elem(ie)%state%phis = wr(1,1,1)
+       end if
     end do
 
     if (hybrid%par%dynproc) then
@@ -406,19 +447,22 @@ contains
             gfr%qmax(:,:,nets:nete))
     end if
 
-    do ie = nets,nete
-       if (gfr%check) wr(:,:,1) = elem(ie)%state%phis
-       call limiter_clip_and_sum(np, elem(ie)%spheremp, gfr%qmin(1,1,ie), &
-            gfr%qmax(1,1,ie), ones(:,:,1), elem(ie)%state%phis)
-       if (gfr%check) then
-          if (gfr%qmin(1,1,ie) < zero) then
-             write(iulog,*) 'gfr> topo min:', hybrid%par%rank, hybrid%ithr, ie, gfr%qmin(1,1,ie)
+    if (nf > 1) then
+       do ie = nets,nete
+          if (gfr%check) wr(:,:,1) = elem(ie)%state%phis
+          call limiter_clip_and_sum(np, elem(ie)%spheremp, gfr%qmin(1,1,ie), &
+               gfr%qmax(1,1,ie), ones(:,:,1), elem(ie)%state%phis)
+          if (gfr%check) then
+             if (gfr%qmin(1,1,ie) < zero) then
+                write(iulog,*) 'gfr> topo min:', hybrid%par%rank, hybrid%ithr, ie, &
+                     gfr%qmin(1,1,ie), 'ERROR'
+             end if
+             wr(:,:,2) = elem(ie)%state%phis
+             call check_f2g_mixing_ratio(gfr, hybrid, ie, 1, elem, gfr%qmin(:1,1,ie), &
+                  gfr%qmax(:1,1,ie), ones, wr(:,:,:1), wr(:,:,2:))
           end if
-          wr(:,:,2) = elem(ie)%state%phis
-          call check_f2g_mixing_ratio(gfr, hybrid, ie, 1, elem, gfr%qmin(:1,1,ie), &
-               gfr%qmax(:1,1,ie), ones, wr(:,:,:1), wr(:,:,2:))
-       end if
-    end do
+       end do
+    end if
 
     do ie = nets,nete
        elem(ie)%state%phis = elem(ie)%state%phis*elem(ie)%spheremp*elem(ie)%rspheremp
@@ -823,17 +867,7 @@ contains
           end do
        end if
        ! Interpolate from npi to np; if npi = np, this is just the Id matrix.
-       do fj = 1,np
-          do fi = 1,np
-             accum = zero
-             do gj = 1,npi
-                do gi = 1,npi
-                   accum = accum + gfr%interp(gi,gj,fi,fj)*x(gi,gj)
-                end do
-             end do
-             g(fi,fj) = accum
-          end do
-       end do
+       call apply_interp(gfr%interp, np, npi, x, g)
     elseif (nf < npi) then
        ! Finish the projection.
        do gj = 1,np
@@ -843,6 +877,27 @@ contains
        end do
     end if
   end subroutine gfr_f2g_remapd_op
+
+  subroutine apply_interp(interp, np, npi, x, y)
+    real(kind=real_kind), intent(in) :: interp(:,:,:,:), x(:,:)
+    integer, intent(in) :: np, npi
+    real(kind=real_kind), intent(out) :: y(:,:)
+
+    integer :: gi, gj, fi, fj, info
+    real(kind=real_kind) :: accum
+
+    do fj = 1,np
+       do fi = 1,np
+          accum = zero
+          do gj = 1,npi
+             do gi = 1,npi
+                accum = accum + gfr%interp(gi,gj,fi,fj)*x(gi,gj)
+             end do
+          end do
+          y(fi,fj) = accum
+       end do
+    end do
+  end subroutine apply_interp
 
   subroutine gfr_init_fv_metdet(elem, gfr)
     type (element_t), intent(in) :: elem(:)
@@ -971,9 +1026,10 @@ contains
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), g(:,:,:)
     real(kind=real_kind), intent(out) :: f(:,:,:)
 
-    integer :: k
+    integer :: nlev, k
 
-    do k = 1, size(g,3)
+    nlev = size(g,3)
+    do k = 1, nlev
        call gfr_g2f_remapd(gfr, gll_metdet, gfr%fv_metdet(:,ie), g(:,:,k), f(:,:,k))
     end do
   end subroutine gfr_g2f_scalar
@@ -1174,50 +1230,42 @@ contains
     type (element_t), intent(inout) :: elem(:)
     integer, intent(in) :: nets, nete
 
-    integer :: ie, q, k
+    integer :: ie, q, k, npack
 
+    npack = (qsize + 3)*nlev
     do ie = nets, nete
        do q = 1,qsize
           do k = 1,nlev
              elem(ie)%derived%FQ(:,:,k,q) = elem(ie)%derived%FQ(:,:,k,q)*elem(ie)%spheremp(:,:)
           end do
        end do
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FQ, qsize*nlev, 0, npack)
        do q = 1,2
           do k = 1,nlev
              elem(ie)%derived%FM(:,:,q,k) = elem(ie)%derived%FM(:,:,q,k)*elem(ie)%spheremp(:,:)
           end do
        end do
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FM, 2*nlev, qsize*nlev, npack)
        do k = 1,nlev
           elem(ie)%derived%FT(:,:,k) = elem(ie)%derived%FT(:,:,k)*elem(ie)%spheremp(:,:)
        end do
-    end do
-    do ie = nets, nete
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FQ, qsize*nlev, 0, qsize*nlev)
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FT, nlev, (qsize+2)*nlev, npack)
     end do
     call bndry_exchangeV(hybrid, edge_g)
     do ie = nets, nete
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FQ, qsize*nlev, 0, qsize*nlev)
-    end do
-    do ie = nets, nete
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FM, 2*nlev, 0, 3*nlev)
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FT, nlev, 2*nlev, 3*nlev)
-    end do
-    call bndry_exchangeV(hybrid, edge_g)
-    do ie = nets, nete
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FM, 2*nlev, 0, 3*nlev)
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FT, nlev, 2*nlev, 3*nlev)
-    end do
-    do ie = nets, nete
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FQ, qsize*nlev, 0, npack)
        do q = 1,qsize
           do k = 1,nlev
              elem(ie)%derived%FQ(:,:,k,q) = elem(ie)%derived%FQ(:,:,k,q)*elem(ie)%rspheremp(:,:)
           end do
        end do
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FM, 2*nlev, qsize*nlev, npack)
        do q = 1,2
           do k = 1,nlev
              elem(ie)%derived%FM(:,:,q,k) = elem(ie)%derived%FM(:,:,q,k)*elem(ie)%rspheremp(:,:)
           end do
        end do
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FT, nlev, (qsize+2)*nlev, npack)
        do k = 1,nlev
           elem(ie)%derived%FT(:,:,k) = elem(ie)%derived%FT(:,:,k)*elem(ie)%rspheremp(:,:)
        end do
@@ -1412,11 +1460,11 @@ contains
        mass_g = sum(elem(ie)%spheremp*dp(:,:,k)*q_g(:,:,k))
        if (qmin_f < qmin_g - 10*eps*den .or. qmax_f > qmax_g + 10*eps*den) then
           write(iulog,*) 'gfr> g2f mixing ratio limits:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &
-               qmin_g, qmin_f-qmin_g, qmax_f-qmax_g, qmax_g, mass_f, mass_g
+               qmin_g, qmin_f-qmin_g, qmax_f-qmax_g, qmax_g, mass_f, mass_g, 'ERROR'
        end if
        if (abs(mass_f - mass_g) > gfr%tolfac*20*eps*max(mass_f, mass_g)) then
           write(iulog,*) 'gfr> g2f mixing ratio mass:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &
-               qmin_g, qmax_g, mass_f, mass_g
+               qmin_g, qmax_g, mass_f, mass_g, 'ERROR'
        end if
     end do
   end subroutine check_g2f_mixing_ratio
@@ -1442,14 +1490,14 @@ contains
        den = gfr%tolfac*max(1e-10, maxval(abs(q0_g(:,:,k))))
        if (qmin_g < qmin_f - 50*eps*den .or. qmax_g > qmax_f + 50*eps*den) then
           write(iulog,*) 'gfr> f2g mixing ratio limits:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &
-               qmin_f, qmin_g-qmin_f, qmax_g-qmax_f, qmax_f, mass0, mass1
+               qmin_f, qmin_g-qmin_f, qmax_g-qmax_f, qmax_f, mass0, mass1, 'ERROR'
        end if
        mass0 = sum(elem(ie)%spheremp*dp(:,:,k)*q0_g(:,:,k))
        mass1 = sum(elem(ie)%spheremp*dp(:,:,k)*q1_g(:,:,k))
        den = sum(elem(ie)%spheremp*dp(:,:,k)*maxval(abs(q0_g(:,:,k))))
        if (abs(mass1 - mass0) > gfr%tolfac*20*eps*den) then
           write(iulog,*) 'gfr> f2g mixing ratio mass:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &
-               qmin_f, qmin_g, qmax_g, qmax_f, mass0, mass1
+               qmin_f, qmin_g, qmax_g, qmax_f, mass0, mass1, 'ERROR'
        end if
     end do
   end subroutine check_f2g_mixing_ratio
@@ -1483,6 +1531,284 @@ contains
     end do
   end subroutine check_nonnegative
 
+  subroutine gfr_pg1_init(gfr)
+    type (GllFvRemap_t), intent(inout) :: gfr
+
+    real(kind=real_kind) :: Mnp2(np*np,4), wr(np*np)
+    integer :: i, j, k, info, n
+
+    if (gfr%nphys /= 1) return
+
+    call make_mass_matrix_2d(np, np, gfr%pg1sd%Achol)
+    call make_mass_matrix_2d(np, 2, Mnp2)
+
+    n = np*np
+
+    call dpotrf('u', n, gfr%pg1sd%Achol, size(gfr%pg1sd%Achol,1), info)
+    if (info /= 0) print *, 'gfr ERROR> dpotrf returned', info
+
+    do i = 1,n
+       gfr%pg1sd%B(:,i) = Mnp2(i,:)
+    end do
+
+    ! Constraint vector c is just w_gg(gfr%pg1sd%inner), so don't store it explicitly.
+    gfr%pg1sd%s = reshape(gfr%w_gg(:np,:np), (/np*np/))
+
+    ! Form R's = c
+    call dtrtrs('u', 't', 'n', n, 1, gfr%pg1sd%Achol, size(gfr%pg1sd%Achol,1), &
+         gfr%pg1sd%s, np*np, info)
+    if (info /= 0) print *, 'gfr ERROR> dtrtrs returned', info
+    gfr%pg1sd%sts = sum(gfr%pg1sd%s*gfr%pg1sd%s)
+  end subroutine gfr_pg1_init
+
+  subroutine gfr_pg1_solve(gfr, s, g)
+    type (GllFvRemap_t), intent(in) :: gfr
+    type (Pg1SolverData_t), intent(in) :: s
+    real(kind=real_kind), intent(inout) :: g(:,:)
+
+    real(kind=real_kind) :: x(np*np), mass, wr(4)
+    integer :: np2, i, n, info
+
+    np2 = np*np
+    n = np2
+
+    ! Form RHS.
+    wr(1) = g(1,1); wr(2) = g(np,1); wr(3) = g(1,np); wr(4) = g(np,np)
+    do i = 1,n
+       x(i) = sum(s%B(:4,i)*wr(:4))
+    end do
+    mass = sum(gfr%w_gg*g)
+
+    ! Solve R'z = b.
+    call dtrtrs('u', 't', 'n', n, 1, s%Achol, size(s%Achol,1), x, np*np, info)
+    ! Assemble z + (d - s'z)/(s's) s.
+    x(:n) = x(:n) + ((mass - sum(s%s(:n)*x(:n)))/s%sts)*s%s(:n)
+    ! Solve R x = z + (d - s'z)/(s's) s.
+    call dtrtrs('u', 'n', 'n', n, 1, s%Achol, size(s%Achol,1), x, np*np, info)
+
+    ! Extract g(I).
+    g = reshape(x(:n), (/np,np/))
+  end subroutine gfr_pg1_solve
+
+  subroutine make_mass_matrix_2d(np1, np2, M, npq_in)
+    ! Full mass matrix for a 2D element.
+
+    use quadrature_mod, only : gausslobatto, quadrature_t
+
+    integer, intent(in) :: np1, np2
+    real(kind=real_kind), intent(out) :: M(:,:)
+    integer, intent(in), optional :: npq_in
+
+    type (quadrature_t) :: gll1, gll2, quad
+    real(kind=real_kind) :: iv1(np1), jv1(np1), iv2(np2), jv2(np2), ir, jr
+    integer :: np1sq, np2sq, npq, i1, j1, k1, i2, j2, k2, iq, jq
+
+    npq = (np1 + np2 + 2)/2
+    if (present(npq_in)) npq = npq_in
+
+    np1sq = np1*np1
+    np2sq = np2*np2
+
+    gll1 = gausslobatto(np1)
+    gll2 = gausslobatto(np2)
+    quad = gausslobatto(npq)
+
+    M(:np1sq,:np2sq) = zero
+
+    do jq = 1,npq
+       jr = quad%points(jq)
+       call eval_lagrange_bases(gll1, np1, jr, jv1)
+       call eval_lagrange_bases(gll2, np2, jr, jv2)
+       do iq = 1,npq
+          ir = quad%points(iq)
+          call eval_lagrange_bases(gll1, np1, ir, iv1)
+          call eval_lagrange_bases(gll2, np2, ir, iv2)
+          do j2 = 1,np2
+             do i2 = 1,np2
+                k2 = (j2-1)*np2 + i2
+                do j1 = 1,np1
+                   do i1 = 1,np1
+                      k1 = (j1-1)*np1 + i1
+                      M(k1,k2) = M(k1,k2) + &
+                           quad%weights(iq)*quad%weights(jq)* &
+                           iv1(i1)*iv2(i2)*jv1(j1)*jv2(j2)
+                   end do
+                end do
+             end do
+          end do
+       end do
+    end do
+    
+    call gll_cleanup(quad)
+    call gll_cleanup(gll2)
+    call gll_cleanup(gll1)
+  end subroutine make_mass_matrix_2d
+
+  subroutine gfr_pg1_reconstruct_topo(hybrid, elem, nets, nete)
+    use kinds, only: iulog
+    use edge_mod, only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
+    use bndry_mod, only: bndry_exchangev
+
+    type (hybrid_t), intent(in) :: hybrid
+    type (element_t), intent(inout) :: elem(:)
+    integer, intent(in), optional :: nets, nete
+
+    real(kind=real_kind) :: wr(np,np,2), ones(np,np,1)
+    integer :: ie, nf, ncol
+
+    if (gfr%nphys /= 1) return
+
+    ones = one
+
+    do ie = nets,nete
+       wr(:,:,1) = elem(ie)%state%phis
+       call gfr_pg1_g_reconstruct_scalar(gfr, ie, elem(ie)%metdet, wr(:,:,:1))
+       elem(ie)%state%phis = wr(:,:,1)
+       call limiter_clip_and_sum(np, elem(ie)%spheremp, gfr%qmin(1,1,ie), &
+            gfr%qmax(1,1,ie), ones(:,:,1), elem(ie)%state%phis)
+       if (gfr%check) then
+          if (gfr%qmin(1,1,ie) < zero) then
+             write(iulog,*) 'gfr> topo min:', hybrid%par%rank, hybrid%ithr, ie, &
+                  gfr%qmin(1,1,ie), 'ERROR'
+          end if
+          wr(:,:,2) = elem(ie)%state%phis
+          call check_f2g_mixing_ratio(gfr, hybrid, ie, 1, elem, gfr%qmin(:1,1,ie), &
+               gfr%qmax(:1,1,ie), ones, wr(:,:,1:1), wr(:,:,2:2))
+       end if
+    end do
+
+    if (hybrid%par%dynproc) then
+       do ie = nets, nete
+          elem(ie)%state%phis = elem(ie)%state%phis*elem(ie)%spheremp(:,:)
+          call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
+       end do
+       call bndry_exchangeV(hybrid, edge_g)
+       do ie = nets, nete
+          call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
+          elem(ie)%state%phis = elem(ie)%state%phis*elem(ie)%rspheremp(:,:)
+       end do
+    end if
+  end subroutine gfr_pg1_reconstruct_topo
+
+  subroutine gfr_pg1_reconstruct(hybrid, nt, dt, hvcoord, elem, nets, nete)
+    use dimensions_mod, only: nlev, qsize
+    use hybvcoord_mod, only: hvcoord_t
+    use physical_constants, only: p0, kappa
+    use control_mod, only: ftype
+
+    type (hybrid_t), intent(in) :: hybrid
+    integer, intent(in) :: nt
+    real(kind=real_kind), intent(in) :: dt
+    type (hvcoord_t), intent(in) :: hvcoord
+    type (element_t), intent(inout) :: elem(:)
+    integer, intent(in), optional :: nets, nete
+
+    real(kind=real_kind), dimension(np,np,nlev) :: dp, p, wr1
+    real(kind=real_kind) :: qmin, qmax
+    integer :: ie, k, qi
+    logical :: q_adjustment
+
+    if (gfr%nphys /= 1) return
+
+    q_adjustment = ftype >= 1 .and. ftype <= 4
+
+    do ie = nets,nete
+       call calc_dp(hvcoord, elem(ie)%state%ps_v(:,:,nt), dp)
+
+       call calc_p(hvcoord, elem(ie)%state%ps_v(:,:,nt), p)
+       wr1 = (p/p0)**kappa
+       elem(ie)%derived%FT = elem(ie)%derived%FT*wr1
+       call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, dp, &
+            elem(ie)%derived%FT)
+       elem(ie)%derived%FT = elem(ie)%derived%FT/wr1
+
+       call gfr_pg1_g_reconstruct_vector(gfr, ie, elem, elem(ie)%derived%FM)
+
+       do qi = 1,qsize
+          ! Reconstruct Q_ten.
+          call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, dp, &
+               elem(ie)%derived%FQ(:,:,:,qi))
+          ! GLL Q.
+          elem(ie)%derived%FQ(:,:,:,qi) = elem(ie)%derived%FQ(:,:,:,qi) + &
+               elem(ie)%state%Q(:,:,:,qi)
+          if (gfr%check) wr1 = elem(ie)%derived%FQ(:,:,:,qi)
+          do k = 1,nlev
+             ! Augment bounds with GLL Q0 bounds.
+             gfr%qmin(k,qi,ie) = min(minval(elem(ie)%state%Q(:,:,k,qi)), gfr%qmin(k,qi,ie))
+             gfr%qmax(k,qi,ie) = max(maxval(elem(ie)%state%Q(:,:,k,qi)), gfr%qmax(k,qi,ie))
+             call limiter_clip_and_sum(np, gfr%w_gg*elem(ie)%metdet, gfr%qmin(k,qi,ie), &
+                  gfr%qmax(k,qi,ie), dp(:,:,k), elem(ie)%derived%FQ(:,:,k,qi))
+          end do
+          if (gfr%check) then
+             call check_f2g_mixing_ratio(gfr, hybrid, ie, qi, elem, gfr%qmin(:,qi,ie), &
+                  gfr%qmax(:,qi,ie), dp, wr1, elem(ie)%derived%FQ(:,:,:,qi))
+          end if
+          if (.not. q_adjustment) then
+             ! Convert to a tendency.
+             elem(ie)%derived%FQ(:,:,:,qi) = &
+                  dp*(elem(ie)%derived%FQ(:,:,:,qi) - elem(ie)%state%Q(:,:,:,qi))/dt
+          end if
+       end do
+    end do
+
+    call gfr_f2g_dss(hybrid, elem, nets, nete)
+  end subroutine gfr_pg1_reconstruct
+
+  subroutine gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
+    type (GllFvRemap_t), intent(in) :: gfr
+    integer, intent(in) :: ie
+    real(kind=real_kind), intent(in) :: gll_metdet(:,:)
+    real(kind=real_kind), intent(inout) :: g(:,:,:)
+
+    integer :: nlev, k
+
+    nlev = size(g,3)
+    do k = 1, nlev
+       g(:,:,k) = g(:,:,k)*gll_metdet
+       call gfr_pg1_solve(gfr, gfr%pg1sd, g(:,:,k))
+       g(:,:,k) = g(:,:,k)/gll_metdet
+    end do
+  end subroutine gfr_pg1_g_reconstruct_scalar
+
+  subroutine gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, gll_metdet, dp, g)
+    type (GllFvRemap_t), intent(in) :: gfr
+    integer, intent(in) :: ie
+    real(kind=real_kind), intent(in) :: gll_metdet(:,:), dp(:,:,:)
+    real(kind=real_kind), intent(inout) :: g(:,:,:)
+
+    real(kind=real_kind) wr(np*np)
+    integer :: nlev, k, edgeidx
+
+    g = dp*g
+    call gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
+    g = g/dp
+  end subroutine gfr_pg1_g_reconstruct_scalar_dp
+
+  subroutine gfr_pg1_g_reconstruct_vector(gfr, ie, elem, v)
+    type (GllFvRemap_t), intent(in) :: gfr
+    integer, intent(in) :: ie
+    type (element_t), intent(in) :: elem(:)
+    real(kind=real_kind), intent(inout) :: v(:,:,:,:)
+
+    real(kind=real_kind) :: wr(np,np,2)
+    integer :: nlev, k, d
+
+    nlev = size(v,4)
+    do k = 1,nlev
+       ! sphere -> ref
+       do d = 1,2
+          wr(:,:,d) = elem(ie)%Dinv(:,:,d,1)*v(:,:,1,k) + elem(ie)%Dinv(:,:,d,2)*v(:,:,2,k)
+       end do
+       do d = 1,2
+          call gfr_pg1_g_reconstruct_scalar(gfr, ie, elem(ie)%metdet, wr(:,:,d:d))
+       end do
+       ! ref -> sphere
+       do d = 1,2
+          v(:,:,d,k) = elem(ie)%D(:,:,d,1)*wr(:,:,1) + elem(ie)%D(:,:,d,2)*wr(:,:,2)
+       end do
+    end do
+  end subroutine gfr_pg1_g_reconstruct_vector
+
   subroutine check(par, dom_mt, gfr, elem, verbose)
     use kinds, only: iulog
     use parallel_mod, only: parallel_t
@@ -1503,8 +1829,8 @@ contains
     logical, intent(in) :: verbose
 
     real(kind=real_kind) :: a, b, rd, x, y, f0(np,np), f1(np,np), g(np,np), &
-         wrk(np,np), qmin, qmax, qmin1, qmax1
-    integer :: nf, nf2, ie, i, j, iremap, info, ilimit
+         wrk(np,np), qmin, qmax, qmin1, qmax1, wr1(np,np,1)
+    integer :: nf, nf2, ie, i, j, iremap, info, ilimit, it
     real(kind=real_kind), allocatable :: Qdp_fv(:,:,:), ps_v_fv(:,:,:), &
          qmins(:,:,:), qmaxs(:,:,:)
     logical :: limit
@@ -1586,9 +1912,9 @@ contains
           do ie = nets, nete
              call gfr_g2f_remapd(gfr, elem(ie)%metdet, gfr%fv_metdet(:,ie), &
                   elem(ie)%state%ps_v(:,:,1)*elem(ie)%state%Q(:,:,1,1), Qdp_fv(:,:,ie))
+             call gfr_g2f_remapd(gfr, elem(ie)%metdet, gfr%fv_metdet(:,ie), &
+                  elem(ie)%state%ps_v(:,:,1), ps_v_fv(:,:,ie))
              if (limit) then
-                call gfr_g2f_remapd(gfr, elem(ie)%metdet, gfr%fv_metdet(:,ie), &
-                     elem(ie)%state%ps_v(:,:,1), ps_v_fv(:,:,ie))
                 qmin = minval(elem(ie)%state%Q(:,:,1,1))
                 qmax = maxval(elem(ie)%state%Q(:,:,1,1))
                 wrk(:nf,:nf) = Qdp_fv(:nf,:nf,ie)/ps_v_fv(:nf,:nf,ie)
@@ -1607,32 +1933,59 @@ contains
              end do
              ! 2b. Halo exchange q bounds.
              call neighbor_minmax(hybrid, edgeAdvQminmax, nets, nete, qmins, qmaxs)
-          endif
-          ! 2c. Remap
-          do ie = nets, nete
-             wrk = elem(ie)%state%Q(:,:,1,1)
-             call gfr_f2g_remapd(gfr, elem(ie)%metdet, gfr%fv_metdet(:,ie), &
-                  Qdp_fv(:,:,ie), elem(ie)%state%Q(:,:,1,1))
-             elem(ie)%state%Q(:,:,1,1) = elem(ie)%state%Q(:,:,1,1)/elem(ie)%state%ps_v(:,:,1)
-             if (limit) then
+             ! 2c. Augment bounds with current values.
+             do ie = nets, nete
+                wrk = elem(ie)%state%Q(:,:,1,1)
                 qmins(1,1,ie) = min(qmins(1,1,ie), minval(wrk))
-                qmaxs(1,1,ie) = max(qmaxs(1,1,ie), maxval(wrk))
-                call limiter_clip_and_sum(np, elem(ie)%spheremp, & ! same as w_gg*gll_metdet
-                     qmins(1,1,ie), qmaxs(1,1,ie), elem(ie)%state%ps_v(:,:,1), &
-                     elem(ie)%state%Q(:,:,1,1))
+                qmaxs(1,1,ie) = max(qmaxs(1,1,ie), maxval(wrk))                
+             end do
+          endif
+          ! 2d. Remap
+          if (nf == 1) then
+             do ie = nets, nete
+                elem(ie)%state%Q(:,:,1,1) = Qdp_fv(1,1,ie)/ps_v_fv(1,1,ie)
+             end do
+          else
+             do ie = nets, nete
+                call gfr_f2g_remapd(gfr, elem(ie)%metdet, gfr%fv_metdet(:,ie), &
+                     Qdp_fv(:,:,ie), elem(ie)%state%Q(:,:,1,1))
+                elem(ie)%state%Q(:,:,1,1) = elem(ie)%state%Q(:,:,1,1)/elem(ie)%state%ps_v(:,:,1)
+                if (limit) then
+                   call limiter_clip_and_sum(np, elem(ie)%spheremp, & ! same as w_gg*gll_metdet
+                        qmins(1,1,ie), qmaxs(1,1,ie), elem(ie)%state%ps_v(:,:,1), &
+                        elem(ie)%state%Q(:,:,1,1))
+                end if
+             end do
+          end if
+          do it = 1,2
+             ! 3. DSS
+             do ie = nets, nete
+                elem(ie)%state%Q(:,:,1,1) = &
+                     elem(ie)%state%ps_v(:,:,1)*elem(ie)%state%Q(:,:,1,1)*elem(ie)%spheremp(:,:)
+                call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,1,1), 1, 0, 1)
+             end do
+             call bndry_exchangeV(hybrid, edge_g)
+             do ie = nets, nete
+                call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,1,1), 1, 0, 1)
+                elem(ie)%state%Q(:,:,1,1) = &
+                     (elem(ie)%state%Q(:,:,1,1)*elem(ie)%rspheremp(:,:))/elem(ie)%state%ps_v(:,:,1)
+             end do
+             if (it == 2 .or. nf > 1) exit
+             ! 4. pg1 OOA boost.
+             if (nf == 1) then
+                do ie = nets, nete
+                   if (limit) then
+                      qmins(1,1,ie) = min(minval(elem(ie)%state%Q(:,:,1,1)), qmins(1,1,ie))
+                      qmaxs(1,1,ie) = max(maxval(elem(ie)%state%Q(:,:,1,1)), qmaxs(1,1,ie))
+                   end if
+                   call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, &
+                        elem(ie)%state%ps_v(:,:,:1), elem(ie)%state%Q(:,:,:1,1))
+                   if (limit) then
+                      call limiter_clip_and_sum(np, gfr%w_gg*elem(ie)%metdet, qmins(1,1,ie), &
+                           qmaxs(1,1,ie), elem(ie)%state%ps_v(:,:,1), elem(ie)%state%Q(:,:,1,1))
+                   end if
+                end do
              end if
-          end do
-          ! 3. DSS
-          do ie = nets, nete
-             elem(ie)%state%Q(:,:,1,1) = &
-                  elem(ie)%state%ps_v(:,:,1)*elem(ie)%state%Q(:,:,1,1)*elem(ie)%spheremp(:,:)
-             call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,1,1), 1, 0, 1)
-          end do
-          call bndry_exchangeV(hybrid, edge_g)
-          do ie = nets, nete
-             call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%Q(:,:,1,1), 1, 0, 1)
-             elem(ie)%state%Q(:,:,1,1) = &
-                  (elem(ie)%state%Q(:,:,1,1)*elem(ie)%rspheremp(:,:))/elem(ie)%state%ps_v(:,:,1)
           end do
        end do
        ! 5. Compute error.
