@@ -25,9 +25,10 @@ module prim_advance_mod
   use edge_mod,           only: edge_g, edgevpack_nlyr, edgevunpack_nlyr
   use edgetype_mod,       only: EdgeBuffer_t,  EdgeDescriptor_t, edgedescriptor_t
   use element_mod,        only: element_t
-  use element_state,      only: nu_scale_top, nlev_tom, max_itercnt, max_itererr
+  use element_state,      only: nu_scale_top, nlev_tom, max_itercnt, max_deltaerr,max_reserr
   use element_ops,        only: set_theta_ref, state0, get_R_star
-  use eos,                only: pnh_and_exner_from_eos,phi_from_eos,get_dirk_jacobian
+  use eos,                only: pnh_and_exner_from_eos,pnh_and_exner_from_eos2,phi_from_eos,&
+       get_dirk_jacobian,get_dirk_jacobian2
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
   use kinds,              only: iulog, real_kind
@@ -2162,14 +2163,15 @@ contains
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
   real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
   real (kind=real_kind), pointer, dimension(:,:,:)   :: vtheta_dp
-  real (kind=real_kind), pointer, dimension(:,:)   :: phis
   real (kind=real_kind) :: JacD(nlev,np,np)  , JacL(nlev-1,np,np)
   real (kind=real_kind) :: JacU(nlev-1,np,np), JacU2(nlev-2,np,np)
   real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)     ! exner nh pressure
   real (kind=real_kind) :: w_n0(np,np,nlevp)    
-  real (kind=real_kind) :: phi_n0(np,np,nlevp)    
+  real (kind=real_kind) :: dphi(np,np,nlev)    
+  real (kind=real_kind) :: dphi_n0(np,np,nlev)    
+  real (kind=real_kind) :: delta_phi(np,np,nlevp)    ! phi_np1-phi_n0
   real (kind=real_kind) :: Ipiv(nlev,np,np)
   real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
   real (kind=real_kind) :: wh_i(np,np,nlevp)  ! w hydrostatic
@@ -2178,7 +2180,6 @@ contains
   real (kind=real_kind) :: Jac2D(nlev,np,np)  , Jac2L(nlev-1,np,np)
   real (kind=real_kind) :: Jac2U(nlev-1,np,np)
 
-  real (kind=real_kind) :: dphi(nlev)
   real (kind=real_kind) :: wgdtmax
   integer :: maxiter
   real*8 :: itertol,deltaerr,reserr
@@ -2198,21 +2199,23 @@ contains
   ! dirk settings
   maxiter=20
   itertol=1e-14
-  
+  !itertol=2e-15
+  delta_phi(:,:,nlevp)=0
+  v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,np1)  
+  v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,np1)
 
   do ie=nets,nete
     w_n0 = elem(ie)%state%w_i(:,:,:,np1)
     wgdtmax=max(1d0,maxval(abs(w_n0)))*abs(dt2)*g
-    phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)  
 
     ! approximate the initial error of f(x) \approx 0
     dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
     vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,np1)
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
-    phis => elem(ie)%state%phis(:,:)
+    do k=1,nlev
+       dphi_n0(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
+    enddo
 
-    v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,np1)  
-    v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,np1)
     do k=2,nlev
        v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,np1) + &
             dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,np1) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
@@ -2220,43 +2223,46 @@ contains
             dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,np1) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
     end do
     wh_i(:,:,1)=0
-    wh_i(:,:,nlevp)=0
+    wh_i(:,:,nlevp)=elem(ie)%state%w_i(:,:,nlevp,np1)
     do k=2,nlev
        wh_i(:,:,k) = (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
             v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
             *hvcoord%hybi(k)/g  
     enddo
 
+#if 1
+    dphi = dphi_n0  ! initial guess
+#else
     ! use hydrostatic for initial guess
-    !call phi_from_eos(hvcoord,elem(ie)%state%phis,elem(ie)%state%vtheta_dp(:,:,:,np1),dp3d,phi_np1)
+    call phi_from_eos(hvcoord,elem(ie)%state%phis,vtheta_dp,dp3d,phi_np1)
+    do k=1,nlev  
+       dphi(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
+    enddo
+#endif
     
     do k=1,nlev
        do j=1,np
           do i=1,np
-             if ((phi_np1(i,j,k)-phi_np1(i,j,k+1)) < g) then
+             if ( dphi(i,j,k)  > -g) then
                 write(iulog,*) 'WARNING:IMEX inital PHI is bad, delta z < 1m. ie,i,j,k=',ie,i,j,k
-                write(iulog,*) 'phi(i,j,k)=  ',phi_np1(i,j,k)
-                write(iulog,*) 'phi(i,j,k+1)=',phi_np1(i,j,k+1)
-                phi_np1(i,j,k)=g+phi_np1(i,j,k+1)
+                write(iulog,*) 'dphi(i,j,k)=  ',dphi(i,j,k)
+                dphi(i,j,k)=-g
              endif
           enddo
        enddo
     enddo
 
     ! initial residual
-    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
+    call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk1')
     elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
          (1.0-dpnh_dp_i(:,:,1:nlev))
-    do k=1,nlev
-         Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
-              - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
+    do k=nlev,1,-1 ! scan
+       delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
     enddo
-
-      ! Here's how to call inexact Jacobian
-!     call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt2,dp3d,phi_np1,pnh,0,&
-!       1d-6,hvcoord,dpnh_dp_i,vtheta_dp)
-      ! here's the call to the exact Jacobian
-     call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
+    do k=1,nlev
+       Fn(:,:,k) = delta_phi(:,:,k) &
+            - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
+    enddo
 
 
     itererr=maxval(abs(Fn))/wgdtmax
@@ -2265,10 +2271,10 @@ contains
 
       info(:,:) = 0
       ! Here's how to call inexact Jacobian
-!      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,0,&
+!      call get_dirk_jacobian2(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,0,&
 !       1d-4,hvcoord,dpnh_dp_i,vtheta_dp)
       ! here's the call to the exact Jacobian
-       call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
+       call get_dirk_jacobian2(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,1)
 
  
       do i=1,np
@@ -2286,34 +2292,45 @@ contains
         ! Tridiagonal solve
         call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
         ! update approximate solution of phi
-        phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + x(1:nlev,i,j)
+        do k=1,nlev-1
+           dphi(i,j,k)=dphi(i,j,k) + x(k+1,i,j)-x(k,i,j)
+        enddo
+        dphi(i,j,nlev)=dphi(i,j,nlev) + (0 - x(k,i,j) )
 
         do nsafe=1,8
-           if (all(phi_np1(i,j,1:nlev) > phi_np1(i,j,2:nlevp))) exit
+           if (all(dphi(i,j,1:nlev) < 0 ))  exit
            ! remove the last netwon increment, try reduced increment
-           phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) - x(1:nlev,i,j)/(2**nsafe)
+           do k=1,nlev-1
+              dphi(i,j,k)=dphi(i,j,k) - (x(k+1,i,j)-x(k,i,j))/(2**nsafe)
+           enddo
+           dphi(i,j,nlev)=dphi(i,j,nlev) - (0-x(k,i,j))/(2**nsafe)
         enddo
         if (nsafe>1) write(iulog,*) 'WARNING:IMEX reducing newton increment, nsafe=',nsafe
         ! if nsafe>1, code will probably crash soon
         ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
       end do
       end do
-      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2')
-
+      call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk2')
+      
       ! update approximate solution of w
       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
-        (1.0-dpnh_dp_i(:,:,1:nlev))
-      ! update right-hand side of phi
+           (1.0-dpnh_dp_i(:,:,1:nlev))
+
       deltaerr=0
       reserr=0
+      do k=nlev,1,-1  ! scan
+         delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
+      enddo
       do k=1,nlev
-         Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
+         Fn(:,:,k) = delta_phi(:,:,k) &
               - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
+      enddo
+      do k=1,nlev
          ! delta residual:
          do i=1,np
          do j=1,np
-            deltaerr=max(deltaerr, abs(x(k,i,j))/max(g,abs(phi_n0(i,j,k))) )
-            reserr=max(reserr,    abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(phi_n0(i,j,k)))))
+            deltaerr=max(deltaerr, abs(x(k,i,j))/max(g,abs(dphi_n0(i,j,k))) )
+            reserr=max(reserr,    abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(dphi_n0(i,j,k)))))
          enddo
          enddo
       enddo
@@ -2324,18 +2341,25 @@ contains
       itercount=itercount+1
     end do ! end do for the do while loop
 
+    ! final phi_np1
+    do k=nlev,1,-1  ! scan
+       phi_np1(:,:,k) = phi_np1(:,:,k+1)-dphi(:,:,k)
+    enddo
+
+    ! keep track of running  max iteraitons and max error (reset after each diagnostics output)
+    max_itercnt=max(itercount,max_itercnt)
+    max_deltaerr=max(deltaerr,max_deltaerr)
+    max_reserr=max(reserr,max_reserr)
+    
     if (itercount >= maxiter) then
       write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',reserr,deltaerr
       do k=1,nlev
          i=1 ; j=1
-         print *,k,( abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(phi_n0(i,j,k)))) )
+         print *,k,( abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(dphi_n0(i,j,k)))) )
       enddo
     end if
   end do ! end do for the ie=nets,nete loop
 
-  ! keep track of running  max iteraitons and max error (reset after each diagnostics output)
-  max_itercnt=max(itercount,max_itercnt)
-  max_itererr=max(itererr,max_itererr)
 
    
   call t_stopf('compute_stage_value_dirk')
