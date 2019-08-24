@@ -2185,6 +2185,13 @@ contains
 
   integer :: i,j,k,l,ie,info(np,np)
   integer :: nsafe
+#undef NEWTONCOND
+#ifdef NEWTONCOND
+  real*8 :: DLANGT  ! external
+  real (kind=real_kind) :: anorm,rcond,work(2*nlev),minrcond
+  integer :: iwork(nlev),info2
+  minrcond=1e10
+#endif
 
   call t_startf('compute_stage_value_dirk')
 
@@ -2267,7 +2274,15 @@ contains
       do i=1,np
       do j=1,np
         x(1:nlev,i,j) = -Fn(i,j,1:nlev)  !+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
+#ifdef NEWTONCOND
+        anorm=DLANGT('1-norm', nlev, JacL(:,i,j),jacD(:,i,j),jacU(:,i,j))
+        call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j), info )
+        call DGTCON('1',nlev,JacL(:,i,j),JacD(:,i,j),JacU(:,i,j),jacU2(:,i,j),Ipiv(:,i,j),&
+              ANORM, RCOND, WORK, IWORK, info2 )
+        print *,'rcond = ',rcond
+#else
         call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j), info(i,j) )
+#endif
         ! Tridiagonal solve
         call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
         ! update approximate solution of phi
