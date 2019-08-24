@@ -96,13 +96,12 @@ CONTAINS
     use prim_driver_mod,  only: prim_init1
     use parallel_mod,     only: par, initmp
     use namelist_mod,     only: readnl
-    use control_mod,      only: runtype, qsplit, rsplit, se_fv_phys_remap_alg
+    use control_mod,      only: runtype, qsplit, rsplit
     use time_mod,         only: tstep
     use phys_control,     only: use_gw_front
     use physics_buffer,   only: pbuf_add_field, dtype_r8
     use ppgrid,           only: pcols, pver
     use cam_abortutils,   only : endrun
-    use gllfvremap_mod,   only: gfr_init
 
     ! PARAMETERS:
     type(file_desc_t),   intent(in)  :: fh       ! PIO file handle for initial or restart file
@@ -211,7 +210,6 @@ CONTAINS
     ! Initialize FV physics grid variables
     if (fv_nphys > 0) then
       call fv_physgrid_init()
-      if (se_fv_phys_remap_alg == 1) call gfr_init(par, elem, fv_nphys)
     end if
 
     ! Define the CAM grids (this has to be after dycore spinup).
