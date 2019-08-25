@@ -361,15 +361,10 @@ implicit none
         e=0
         e(:,:,k)=1
         dphi_temp(:,:,:) = dphi(:,:,:)
-#undef NEWTON_DPHI
-#ifdef NEWTON_DPHI
-        dphi_temp(:,:,k) = dphi(:,:,k) + epsie*e(:,:,k)
-#else
         ! dphi_tmp(k)= ( phi(k+1)-(phi(k)+eps ) = dphi(k)-eps
         ! dphi_tmp(k-1)= ( phi(k)+eps-(phi(k-1) ) = dphi(k-1)+eps
         dphi_temp(:,:,k) = dphi(:,:,k) - epsie*e(:,:,k)
         if (k>1) dphi_temp(:,:,k-1) = dphi(:,:,k-1) + epsie*e(:,:,k)
-#endif
 
         if (theta_hydrostatic_mode) then
            !dpnh_dp_i_epsie(:,:,:)=1.d0
@@ -378,12 +373,7 @@ implicit none
            call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi_temp,pnh,exner,dpnh_dp_i_epsie,'get_dirk_jacobian')
            delta_mu(:,:,:)=(g*dt2)**2*(dpnh_dp_i(:,:,:)-dpnh_dp_i_epsie(:,:,:))/epsie
         end if
-#ifdef NEWTON_DPHI
-        do k2=1,nlev
-           ds(:,:,k2) = delta_mu(:,:,k2+1) -  delta_mu(:,:,k2)
-        enddo
-        delta_mu(:,:,1:nlev)=ds(:,:,1:nlev)
-#endif
+
         JacD(k,:,:) = 1 +  delta_mu(:,:,k)
         if (k.eq.1) then
            JacL(k,:,:) =   delta_mu(:,:,k+1)

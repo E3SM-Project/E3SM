@@ -2255,16 +2255,6 @@ contains
     call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk1')
     elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
          (1.0-dpnh_dp_i(:,:,1:nlev))
-! to test NEWTON_DPHI, also need to set in eos.F90
-! not yet coded for analytic jacobian
-#undef NEWTON_DPHI
-#ifdef NEWTON_DPHI
-    do k=1,nlev
-       Fn(:,:,k) = (dphi(:,:,k)-dphi_n0(:,:,k)) - dt2*g*(&
-            (elem(ie)%state%w_i(:,:,k+1,np1)-wh_i(:,:,k+1)) -  &
-            (elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k)) )
-    enddo
-#else
     do k=nlev,1,-1 ! scan
        delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
     enddo
@@ -2272,22 +2262,17 @@ contains
        Fn(:,:,k) = delta_phi(:,:,k) &
             - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
     enddo
-#endif
+
 
     itererr=maxval(abs(Fn))/wgdtmax
     itercount=0
     do while ((itercount < maxiter).and.(itererr > itertol))
 
       info(:,:) = 0
-#ifdef NEWTON_DPHI
-      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,0,&
-       1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
-#else
       ! numerical J:
       !call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
       ! analytic J:
       call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,1) 
-#endif
  
       do i=1,np
       do j=1,np
@@ -2304,25 +2289,18 @@ contains
         ! Tridiagonal solve
         call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
         ! update approximate solution of phi
-#ifdef NEWTON_DPHI
-        dphi(i,j,:)=dphi(i,j,:)+x(:,i,j)
-#else
         do k=1,nlev-1
            dphi(i,j,k)=dphi(i,j,k) + x(k+1,i,j)-x(k,i,j)
         enddo
         dphi(i,j,nlev)=dphi(i,j,nlev) + (0 - x(k,i,j) )
-#endif
+
         do nsafe=1,8
            if (all(dphi(i,j,1:nlev) < 0 ))  exit
            ! remove the last netwon increment, try reduced increment
-#ifdef NEWTON_DPHI
-           dphi(i,j,:)=dphi(i,j,:) - x(:,i,j)/(2**nsafe)
-#else
            do k=1,nlev-1
               dphi(i,j,k)=dphi(i,j,k) - (x(k+1,i,j)-x(k,i,j))/(2**nsafe)
            enddo
            dphi(i,j,nlev)=dphi(i,j,nlev) - (0-x(k,i,j))/(2**nsafe)
-#endif
         enddo
         if (nsafe>1) write(iulog,*) 'WARNING:IMEX reducing newton increment, nsafe=',nsafe
         ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
@@ -2336,13 +2314,6 @@ contains
 
       deltaerr=0
       reserr=0
-#ifdef NEWTON_DPHI
-      do k=1,nlev
-         Fn(:,:,k) = (dphi(:,:,k)-dphi_n0(:,:,k)) - dt2*g*(&
-              (elem(ie)%state%w_i(:,:,k+1,np1)-wh_i(:,:,k+1)) -  &
-              (elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k)) )
-      enddo
-#else
       do k=nlev,1,-1  ! scan
          delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
       enddo
@@ -2350,7 +2321,6 @@ contains
          Fn(:,:,k) = delta_phi(:,:,k) &
               - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
       enddo
-#endif
 
       do k=1,nlev
          ! delta residual:
