@@ -2122,7 +2122,8 @@ contains
         enddo
 #endif
      endif
-     call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%spheremp,hvcoord%dp0)
+     call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
+          elem(ie)%spheremp,hvcoord%dp0)
   end do
   call t_stopf('compute_andor_apply_rhs')
 
@@ -2180,9 +2181,9 @@ contains
   real (kind=real_kind) :: Jac2D(nlev,np,np)  , Jac2L(nlev-1,np,np)
   real (kind=real_kind) :: Jac2U(nlev-1,np,np)
 
-  real (kind=real_kind) :: wgdtmax
+  real (kind=real_kind) :: wgdtmax,mingdz
   integer :: maxiter
-  real*8 :: itertol,deltaerr,reserr,rcond,min_rcond,anorm
+  real*8 :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm
 
   integer :: i,j,k,l,ie,info(np,np)
   integer :: nsafe
@@ -2197,7 +2198,8 @@ contains
 
   ! dirk settings
   maxiter=20
-  itertol=1e-14
+  deltatol=1e-14  ! exit if newton increment < deltatol
+  restol=2e-11    ! exit if residual < restol  
   delta_phi(:,:,nlevp)=0
   v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,np1)  
   v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,np1)
@@ -2214,6 +2216,9 @@ contains
     do k=1,nlev
        dphi_n0(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
     enddo
+    !  condition number normilzation
+    !  scaling by this makes the residual the same for 26L and 72L
+    mingdz =minval(abs(dphi_n0))/(g*300)  
 
     do k=2,nlev
        v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,np1) + &
@@ -2264,9 +2269,12 @@ contains
     enddo
 
 
-    itererr=maxval(abs(Fn))/wgdtmax
+    reserr=mingdz*maxval(abs(Fn))/wgdtmax
+    deltaerr=2*deltatol
     itercount=0
-    do while ((itercount < maxiter).and.(itererr > itertol))
+    do while (itercount < maxiter) 
+      if (reserr < restol) exit
+      if (deltaerr<deltatol) exit
 
       info(:,:) = 0
       ! numerical J:
@@ -2327,12 +2335,10 @@ contains
          do i=1,np
          do j=1,np
             deltaerr=max(deltaerr, abs(x(k,i,j))/max(g,abs(dphi_n0(i,j,k))) )
-            reserr=max(reserr,    abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(dphi_n0(i,j,k)))))
+            reserr=max(reserr,  mingdz*abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(dphi_n0(i,j,k)))))
          enddo
          enddo
       enddo
-      ! take the smaller of norm of the newton increment or the norm of resedual
-      itererr=min(reserr,deltaerr)
 
       ! update iteration count and error measure
       itercount=itercount+1
@@ -2348,12 +2354,13 @@ contains
     max_deltaerr=max(deltaerr,max_deltaerr)
     max_reserr=max(reserr,max_reserr)
     min_rcond=min(rcond,min_rcond)
+    itererr=min(max_reserr,max_deltaerr) ! passed back to ARKODE
     
     if (itercount >= maxiter) then
-      write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',reserr,deltaerr,min_rcond
+      write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',deltaerr,reserr
       do k=1,nlev
          i=1 ; j=1
-         print *,k,( abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(dphi_n0(i,j,k)))) )
+         !print *,k,( abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(dphi_n0(i,j,k)))) )
       enddo
     end if
   end do ! end do for the ie=nets,nete loop
@@ -2367,7 +2374,7 @@ contains
 
 
 
-  subroutine limiter_dp3d_k(Q,spheremp,dp0)
+  subroutine limiter_dp3d_k(dp3d,vtheta_dp,spheremp,dp0)
   ! mass conserving column limiter (1D only)
   !
   ! if dp3d < dp3d_thresh*hvcoord%dp0 then apply vertical mixing 
@@ -2377,7 +2384,8 @@ contains
   ! long remap timesteps
   !
   implicit none
-  real (kind=real_kind), intent(inout) :: Q(np,np,nlev)
+  real (kind=real_kind), intent(inout) :: dp3d(np,np,nlev)
+  real (kind=real_kind), intent(inout) :: vtheta_dp(np,np,nlev)
   real (kind=real_kind), intent(in) :: dp0(nlev)
   real (kind=real_kind), intent(in) :: spheremp(np,np)  !  density
 
@@ -2391,19 +2399,20 @@ contains
   ! first check if limter is needed, and print warning
   warn=.false. 
   do k=1,nlev
-     if ( minval(Q(:,:,k)) < dp3d_thresh*dp0(k)) then
+     if ( minval(dp3d(:,:,k)) < dp3d_thresh*dp0(k)) then
         write(iulog,*) 'WARNING:CAAR: dp3d too small. dt_remap may be too large'
-        write(iulog,*) 'k,dp3d(k), dp0: ',k,minval(Q(:,:,k)),dp0(k)
+        write(iulog,*) 'k,dp3d(k), dp0: ',k,minval(dp3d(:,:,k)),dp0(k)
         warn=.true.
      endif
   enddo
 
   if (warn) then
+  vtheta_dp(:,:,:)=vtheta_dp(:,:,:)/dp3d(:,:,:)
   do j = 1 , np
      do i = 1 , np
-        if ( minval(Q(i,j,:) - dp3d_thresh*dp0(:)) < 0 ) then
+        if ( minval(dp3d(i,j,:) - dp3d_thresh*dp0(:)) < 0 ) then
            ! subtract min, multiply in by weights
-           Qcol(:) = (Q(i,j,:) - dp3d_thresh*dp0(:))*spheremp(i,j)
+           Qcol(:) = (dp3d(i,j,:) - dp3d_thresh*dp0(:))*spheremp(i,j)
            mass = 0
            do k = 1,nlev 
               mass = mass + Qcol(k)
@@ -2424,10 +2433,11 @@ contains
            if ( mass_new > 0 ) Qcol(:) = Qcol(:) * abs(mass) / mass_new
            if ( mass     < 0 ) Qcol(:) = -Qcol(:)
            ! 
-           Q(i,j,:) = Qcol(:)/spheremp(i,j) + dp3d_thresh*dp0(:)
+           dp3d(i,j,:) = Qcol(:)/spheremp(i,j) + dp3d_thresh*dp0(:)
         endif
      enddo
   enddo
+  vtheta_dp(:,:,:)=vtheta_dp(:,:,:)*dp3d(:,:,:)
   endif
   end subroutine limiter_dp3d_k
 
