@@ -28,7 +28,7 @@ module prim_advance_mod
   use element_state,      only: nu_scale_top, nlev_tom, max_itercnt, max_deltaerr,max_reserr
   use element_ops,        only: set_theta_ref, state0, get_R_star
   use eos,                only: pnh_and_exner_from_eos,pnh_and_exner_from_eos2,phi_from_eos,&
-       get_dirk_jacobian,get_dirk_jacobian2
+                                get_dirk_jacobian
   use hybrid_mod,         only: hybrid_t
   use hybvcoord_mod,      only: hvcoord_t
   use kinds,              only: iulog, real_kind
@@ -2182,16 +2182,15 @@ contains
 
   real (kind=real_kind) :: wgdtmax
   integer :: maxiter
-  real*8 :: itertol,deltaerr,reserr
+  real*8 :: itertol,deltaerr,reserr,rcond,min_rcond,anorm
 
   integer :: i,j,k,l,ie,info(np,np)
   integer :: nsafe
 #undef NEWTONCOND
 #ifdef NEWTONCOND
   real*8 :: DLANGT  ! external
-  real (kind=real_kind) :: anorm,rcond,work(2*nlev),minrcond
+  real (kind=real_kind) :: work(2*nlev)
   integer :: iwork(nlev),info2
-  minrcond=1e10
 #endif
 
   call t_startf('compute_stage_value_dirk')
@@ -2199,10 +2198,10 @@ contains
   ! dirk settings
   maxiter=20
   itertol=1e-14
-  !itertol=2e-15
   delta_phi(:,:,nlevp)=0
   v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,np1)  
   v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,np1)
+  min_rcond=1e20
 
   do ie=nets,nete
     w_n0 = elem(ie)%state%w_i(:,:,:,np1)
@@ -2256,6 +2255,16 @@ contains
     call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk1')
     elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
          (1.0-dpnh_dp_i(:,:,1:nlev))
+! to test NEWTON_DPHI, also need to set in eos.F90
+! not yet coded for analytic jacobian
+#undef NEWTON_DPHI
+#ifdef NEWTON_DPHI
+    do k=1,nlev
+       Fn(:,:,k) = (dphi(:,:,k)-dphi_n0(:,:,k)) - dt2*g*(&
+            (elem(ie)%state%w_i(:,:,k+1,np1)-wh_i(:,:,k+1)) -  &
+            (elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k)) )
+    enddo
+#else
     do k=nlev,1,-1 ! scan
        delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
     enddo
@@ -2263,50 +2272,59 @@ contains
        Fn(:,:,k) = delta_phi(:,:,k) &
             - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
     enddo
-
+#endif
 
     itererr=maxval(abs(Fn))/wgdtmax
     itercount=0
     do while ((itercount < maxiter).and.(itererr > itertol))
 
       info(:,:) = 0
-      ! Here's how to call inexact Jacobian
-!      call get_dirk_jacobian2(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,0,&
-!       1d-4,hvcoord,dpnh_dp_i,vtheta_dp)
-      ! here's the call to the exact Jacobian
-       call get_dirk_jacobian2(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,1)
-
+#ifdef NEWTON_DPHI
+      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,0,&
+       1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
+#else
+      ! numerical J:
+      !call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
+      ! analytic J:
+      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,1) 
+#endif
  
       do i=1,np
       do j=1,np
         x(1:nlev,i,j) = -Fn(i,j,1:nlev)  !+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
 #ifdef NEWTONCOND
+        ! nlev condition number: 500e3 with phi, 850e3 with dphi
         anorm=DLANGT('1-norm', nlev, JacL(:,i,j),jacD(:,i,j),jacU(:,i,j))
         call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j), info )
         call DGTCON('1',nlev,JacL(:,i,j),JacD(:,i,j),JacU(:,i,j),jacU2(:,i,j),Ipiv(:,i,j),&
               ANORM, RCOND, WORK, IWORK, info2 )
-        print *,'rcond = ',rcond
 #else
         call DGTTRF(nlev, JacL(:,i,j), JacD(:,i,j),JacU(:,i,j),JacU2(:,i,j), Ipiv(:,i,j), info(i,j) )
 #endif
         ! Tridiagonal solve
         call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
         ! update approximate solution of phi
+#ifdef NEWTON_DPHI
+        dphi(i,j,:)=dphi(i,j,:)+x(:,i,j)
+#else
         do k=1,nlev-1
            dphi(i,j,k)=dphi(i,j,k) + x(k+1,i,j)-x(k,i,j)
         enddo
         dphi(i,j,nlev)=dphi(i,j,nlev) + (0 - x(k,i,j) )
-
+#endif
         do nsafe=1,8
            if (all(dphi(i,j,1:nlev) < 0 ))  exit
            ! remove the last netwon increment, try reduced increment
+#ifdef NEWTON_DPHI
+           dphi(i,j,:)=dphi(i,j,:) - x(:,i,j)/(2**nsafe)
+#else
            do k=1,nlev-1
               dphi(i,j,k)=dphi(i,j,k) - (x(k+1,i,j)-x(k,i,j))/(2**nsafe)
            enddo
            dphi(i,j,nlev)=dphi(i,j,nlev) - (0-x(k,i,j))/(2**nsafe)
+#endif
         enddo
         if (nsafe>1) write(iulog,*) 'WARNING:IMEX reducing newton increment, nsafe=',nsafe
-        ! if nsafe>1, code will probably crash soon
         ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
       end do
       end do
@@ -2318,6 +2336,13 @@ contains
 
       deltaerr=0
       reserr=0
+#ifdef NEWTON_DPHI
+      do k=1,nlev
+         Fn(:,:,k) = (dphi(:,:,k)-dphi_n0(:,:,k)) - dt2*g*(&
+              (elem(ie)%state%w_i(:,:,k+1,np1)-wh_i(:,:,k+1)) -  &
+              (elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k)) )
+      enddo
+#else
       do k=nlev,1,-1  ! scan
          delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
       enddo
@@ -2325,6 +2350,8 @@ contains
          Fn(:,:,k) = delta_phi(:,:,k) &
               - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
       enddo
+#endif
+
       do k=1,nlev
          ! delta residual:
          do i=1,np
@@ -2350,17 +2377,19 @@ contains
     max_itercnt=max(itercount,max_itercnt)
     max_deltaerr=max(deltaerr,max_deltaerr)
     max_reserr=max(reserr,max_reserr)
+    min_rcond=min(rcond,min_rcond)
     
     if (itercount >= maxiter) then
-      write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',reserr,deltaerr
+      write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',reserr,deltaerr,min_rcond
       do k=1,nlev
          i=1 ; j=1
          print *,k,( abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(dphi_n0(i,j,k)))) )
       enddo
     end if
   end do ! end do for the ie=nets,nete loop
-
-
+#ifdef NEWTONCOND
+  if (hybrid%masterthread) print *,'max J condition number (mpi task0): ',1/min_rcond
+#endif
    
   call t_stopf('compute_stage_value_dirk')
 
