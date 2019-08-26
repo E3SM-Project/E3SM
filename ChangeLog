@@ -66,8 +66,64 @@ M       src/share/util/shr_orb_mod.F90
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 8-26-2019
+Tag: cime5.6.22
+Answer Changes: None
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Fix nag on izumi.
+    - Update for cori modules.
+    - Update regex to match changing cheyenne login name.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+b37b70c3b Merge pull request #3207 from ESMCI/fischer/nag
+8d2fa1ec6 Merge pull request #3212 from ESMCI/fischer/cori_updates
+7f8173207 Merge pull request #3214 from ESMCI/fischer/cheyenne_hostname
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/Makefile
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 8-14-2019
+Tag: cime5.6.21
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Update config_machines to update pgi software stack on cheyenne
+    - If filename is abspath use for filepath.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+80ae90470 Merge pull request #3202 from ESMCI/fischer/cheyenne_pgi
+1c3da2440 Merge pull request #3200 from jedwards4b/aquap_fix
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/nmlgen.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 7-23-2019
-Tag: cime5.6.10
+Tag: cime5.6.20
 Answer Changes: None
 Tests: scripts_regression_tests 
 Dependencies:
