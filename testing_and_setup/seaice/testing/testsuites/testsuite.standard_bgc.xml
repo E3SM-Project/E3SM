@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <testsuite name="standard">
 	<configuration name="standard_bgc">
-		<domain name="domain_QU240km">
-			<test name="regression"/>
+		<domain name="domain_QU120km_polar">
 			<test name="parallelism"/>
 			<test name="restartability">
 			      <option name="bgc" value="True"/>

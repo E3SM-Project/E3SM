@@ -204,8 +204,8 @@
     config_iron_saturation_small_plankton = 0.2
     config_iron_saturation_phaeocystis = 0.1
     config_fraction_spilled_to_DON = 0.6
-    config_degredation_of_DON = 0.03
-    config_fraction_DON_ammonium = 0.25
+    config_degredation_of_DON = 0.07
+    config_fraction_DON_ammonium = 1.0
     config_fraction_loss_to_saccharids = 0.4
     config_fraction_loss_to_lipids = 0.4
     config_fraction_exudation_to_saccharids = 1.0
@@ -219,7 +219,7 @@
     config_excreted_fraction = 0.5
     config_fraction_mortality_to_ammonium = 0.5
     config_fraction_iron_remineralized = 0.3
-    config_nitrification_rate = 0.0
+    config_nitrification_rate = 0.046
     config_desorption_loss_particulate_iron = 3065.0
     config_maximum_loss_fraction = 0.9
     config_maximum_ratio_iron_to_saccharids = 0.2
