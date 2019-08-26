@@ -1083,7 +1083,8 @@ module five_intr
       i5 = i5 + 1
     enddo
     
-    c1(:) = 0._r8
+    c0(:) = 0._r8
+    c2(:) = 0._r8
     c2(:) = 0._r8
     c3(:) = 0._r8
     ic1(:) = 0._r8
@@ -1113,7 +1114,7 @@ module five_intr
       ic2(k) = 1.0_r8 / c2(k) 
       ic3(k) = 1.0_r8 / c3(k)            
     enddo
-   
+ 
     ! add flag computed?
     
     ! Mass weight inout value

@@ -485,7 +485,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, &
    real (r8)  :: q_five_d(np,np,pver_five,pcnst,nelemd) 
 
    integer (kind=int_kind)  :: lchnk, ioff, ilyr
-   integer :: nncols, ncols, n, m, icol, ierr
+   integer :: nncols, ncols, n, m, icol, ierr, kptr, pvertot
    integer :: pgcols(pcols), idmb1(1), idmb2(1), idmb3(1)
 
    integer :: tsize                 ! amount of data per grid point passed to physics
@@ -567,8 +567,10 @@ subroutine stepon_run3(dtime, cam_out, phys_state, &
 
     tsize = 3 + pcnst
 
-    block_buf_nrecs_five = block_buf_nrecs/(pver+1)*(pver_five+1)
-    chunk_buf_nrecs_five = chunk_buf_nrecs/(pver+1)*(pver_five+1)
+    block_buf_nrecs_five = block_buf_nrecs/(pver+1)
+    block_buf_nrecs_five = block_buf_nrecs_five*(pver_five+1)
+    chunk_buf_nrecs_five = chunk_buf_nrecs/(pver+1)
+    chunk_buf_nrecs_five = chunk_buf_nrecs_five*(pver_five+1)
 
     allocate( bbuffer(tsize*block_buf_nrecs_five) )
     allocate( cbuffer(tsize*chunk_buf_nrecs_five) )
@@ -636,42 +638,65 @@ subroutine stepon_run3(dtime, cam_out, phys_state, &
 
              end do
 
-          end do
+          end do !ie
        endif
 
        deallocate( bbuffer )
        deallocate( cbuffer )
 
-
    call t_startf('putUniquePoints')
    if (par%dynproc) then
+
    do ie=1,nelemd
        nncols = elem(ie)%idxP%NumUniquePts
-       call putUniquePoints(elem(ie)%idxP, pver_five, t_five_global(1:nncols,:,ie), t_five_d(:,:,:,ie))
-       call putUniquePoints(elem(ie)%idxP, pver_five, u_five_global(1:nncols,:,ie), u_five_d(:,:,:,ie))
-       call putUniquePoints(elem(ie)%idxP, pver_five, v_five_global(1:nncols,:,ie), v_five_d(:,:,:,ie))
-     do m = 1, pcnst
-       call putUniquePoints(elem(ie)%idxP, pver_five, q_five_global(1:nncols,:,m,ie), q_five_d(:,:,:,m,ie))
-     end do
+       call putUniquePoints(elem(ie)%idxP, pver_five, t_five_global(1:nncols,1:pver_five,ie), t_five_d(:,:,1:pver_five,ie))
+       call putUniquePoints(elem(ie)%idxP, pver_five, u_five_global(1:nncols,1:pver_five,ie), u_five_d(:,:,1:pver_five,ie))
+       call putUniquePoints(elem(ie)%idxP, pver_five, v_five_global(1:nncols,1:pver_five,ie), v_five_d(:,:,1:pver_five,ie))
+!     do m = 1, pcnst
+       call putUniquePoints(elem(ie)%idxP, pver_five, pcnst, q_five_global(1:nncols,1:pver_five,1:pcnst,ie), q_five_d(:,:,1:pver_five,1:pcnst,ie))
+!     end do
+   end do
 ! Necessary for boundary points
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, t_five_d(:,:,:,ie), pver_five, 0, pver_five)
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, u_five_d(:,:,:,ie), pver_five, 0, pver_five)
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, v_five_d(:,:,:,ie), pver_five, 0, pver_five)
-     do m = 1, pcnst
-       call edgeVpack_nlyr(edge_g, elem(ie)%desc, q_five_d(:,:,:,m,ie), pver_five, 0, pver_five)
-     end do
+   do ie=1,nelemd
+       kptr = 0
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, t_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
+   call bndry_exchangeV(par, edge_g)
+   do ie = 1, nelemd 
+       kptr = 0
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, t_five_d(:,:,:,ie), pver_five, kptr, pver_five)
    end do
 
+   do ie=1,nelemd
+       kptr = 0
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, u_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
    call bndry_exchangeV(par, edge_g)
-
-! Necessary for boundary points
    do ie = 1, nelemd 
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, t_five_d(:,:,:,ie), pver_five, 0, pver_five)
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, u_five_d(:,:,:,ie), pver_five, 0, pver_five)
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, v_five_d(:,:,:,ie), pver_five, 0, pver_five)
-     do m = 1, pcnst
-       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, q_five_d(:,:,:,m,ie), pver_five, 0, pver_five)
-     end do
+       kptr = 0
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, u_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
+
+   do ie=1,nelemd
+       kptr = 0
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, v_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
+   call bndry_exchangeV(par, edge_g)
+   do ie = 1, nelemd 
+       kptr = 0
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, v_five_d(:,:,:,ie), pver_five, kptr, pver_five)
+   end do
+
+   do m = 1, pcnst
+   do ie=1,nelemd
+       kptr = 0
+       call edgeVpack_nlyr(edge_g, elem(ie)%desc, q_five_d(:,:,:,m,ie), pver_five, kptr, pver_five)
+   end do
+   call bndry_exchangeV(par, edge_g)
+   do ie = 1, nelemd 
+       kptr = 0
+       call edgeVunpack_nlyr(edge_g, elem(ie)%desc, q_five_d(:,:,:,m,ie), pver_five, kptr, pver_five)
+   end do
    end do
 
    endif
@@ -679,14 +704,6 @@ subroutine stepon_run3(dtime, cam_out, phys_state, &
 
    endif ! local_dp_map
  
-!   do j=1,np
-!      do i=1,np
-!      do ie = 1, nelemd
-!      print *, 'HHLEE', ie,t_five_d(i,j,pver_five,ie),dyn_in%elem(ie)%state%T(i,j,pver,TimeLevel%n0 ) 
-!      end do
-!      end do
-!   end do
-  
 #endif
 
 #if (defined BFB_CAM_SCAM_IOP)   

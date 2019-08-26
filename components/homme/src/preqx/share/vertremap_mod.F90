@@ -47,6 +47,7 @@ contains
   use ppgrid,         only: pver, pverp
 ! HHLEE 20190521
 #ifdef FIVE
+  use time_manager,   only: is_first_step, get_nstep
   use shr_kind_mod,   only: r8=>shr_kind_r8
   use physconst,      only: rair, gravit
   use five_intr,      only: pver_five, pverp_five, &
@@ -69,6 +70,7 @@ contains
   real (kind=real_kind), dimension(np,np,nlev,2)  :: ttmp
   real (kind=real_kind), dimension(np,np,pverp)   :: eta_dot_dpdn
 #ifdef FIVE
+  integer :: nstep           ! Current timestep number.
   real(r8),  intent(in) :: t_five(np,np,pver_five,nelemd)
   real(r8),  intent(in) :: u_five(np,np,pver_five,nelemd)
   real(r8),  intent(in) :: v_five(np,np,pver_five,nelemd)
@@ -152,6 +154,8 @@ contains
   !
 
 #ifdef FIVE
+  nstep = get_nstep()
+
   pint_host = 0.
   pmid_host = 0.
   ttmp_five = 0.
@@ -231,7 +235,7 @@ contains
         dp_five(:,:,k) = pint_five(:,:,k+1)-pint_five(:,:,k)
         pmid_five(:,:,k) = (pint_five(:,:,k)+pint_five(:,:,k+1))/2.0
         pdel_five(:,:,k) = pint_five(:,:,k+1)-pint_five(:,:,k)
-   enddo
+     enddo
 
      do i=1,np
      do j=1,np
@@ -248,6 +252,7 @@ contains
      enddo
 
 ! ----- syncronize FIVE variables
+
      do i=1,np
      do j=1,np
         call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
@@ -314,9 +319,10 @@ contains
              state_Q(i,j,1:pver,1),state_Q(i,j,1:pver,2),pdel_host(i,j,1:pver),pver,hvcoord%ps0,&
              zm_host(i,j,1:pver),zi_host(i,j,1:pver+1))
 
+
       call compute_five_heights(pmid_five(i,j,:),pint_five(i,j,:),t_five(i,j,:,ie),&
-             q_five(i,j,:,1,ie),q_five(i,j,:,2,ie),pdel_five(i,j,:),pver_five,hvcoord%ps0,&
-             zm_five(i,j,:),zi_five(i,j,:))
+                q_five(i,j,:,1,ie),q_five(i,j,:,2,ie),pdel_five(i,j,:),pver_five,hvcoord%ps0,&
+                zm_five(i,j,:),zi_five(i,j,:))
     enddo
     enddo
 
@@ -352,6 +358,7 @@ contains
         do q=1,qsize
           Qtmp_five_old(i,j,k,q) = q_five(i,j,k,q,ie) + dt * q_five_tend(i,j,k,q,ie)
           Qtmp_five_old(i,j,k,q) = max(Qtmp_five_old(i,j,k,q),0._r8)
+          Qtmp_five(i,j,k,q) = Qtmp_five_old(i,j,k,q)*dp_star_five(i,j,k)
         enddo
 
       enddo
@@ -361,25 +368,29 @@ contains
 #endif
 
 #ifdef FIVE
+
      if (rsplit>0) then
-goto 9999
-     do i=1,np
-     do j=1,np
-! get t, v, u, dp. In the future, they shoudl pass from pbuf, like T_five
 
-        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
-        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,1,:,np1),utmp_five(i,j,:),pver,pver_five)
-        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,2,:,np1),vtmp_five(i,j,:),pver,pver_five)
-       do q = 1, qsize
-         state_Q(i,j,:,q) = elem(ie)%state%Qdp(i,j,:,q,np1_qdp) / dp_star(i,j,:) 
-         call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),state_Q(i,j,:,q),Qtmp_five(i,j,:,q),pver,pver_five)
-         Qtmp_five_old(i,j,:,q) = Qtmp_five(i,j,:,q)
-         Qtmp_five(i,j,:,q) = Qtmp_five(i,j,:,q)*dp_star_five(i,j,:)
-
-       enddo 
-     enddo 
-     enddo
-9999 continue
+!     if (is_first_step()) then
+!     do i=1,np
+!     do j=1,np
+!
+!        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
+!        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,1,:,np1),utmp_five(i,j,:),pver,pver_five)
+!        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,2,:,np1),vtmp_five(i,j,:),pver,pver_five)
+!       do q = 1, qsize
+!         state_Q(i,j,:,q) = elem(ie)%state%Qdp(i,j,:,q,np1_qdp) / dp_star(i,j,:) 
+!         call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),state_Q(i,j,:,q),Qtmp_five(i,j,:,q),pver,pver_five)
+!         Qtmp_five_old(i,j,:,q) = Qtmp_five(i,j,:,q)
+!         Qtmp_five(i,j,:,q) = Qtmp_five(i,j,:,q)*dp_star_five(i,j,:)
+!
+!       enddo 
+!     enddo 
+!     enddo
+!        ttmp_five_old = ttmp_five 
+!        utmp_five_old = utmp_five
+!        vtmp_five_old = vtmp_five
+!     endif ! is_first_step
 
      if (single_column) then
      do i=1,np
@@ -397,8 +408,6 @@ goto 9999
      enddo
      endif
 
-!        ttmp_five_old = ttmp_five 
-!        ttmp_five = ttmp_five*dp_star_five
         ttmp_five = ttmp_five_old*dp_star_five
         call t_startf('vertical_remap1_FIVE_1')
         call remap1(ttmp_five,np,pver_five,1,dp_star_five,dp_five)
@@ -406,8 +415,6 @@ goto 9999
         ttmp_five = ttmp_five/dp_five
         ttmp_five_tend = (ttmp_five - ttmp_five_old)/dt
 
-!        utmp_five_old = utmp_five
-!        utmp_five = utmp_five*dp_star_five
         utmp_five = utmp_five_old * dp_star_five
         call t_startf('vertical_remap1_FIVE_2')
         call remap1(utmp_five,np,pver_five,1,dp_star_five,dp_five)
@@ -415,8 +422,6 @@ goto 9999
         utmp_five = utmp_five/dp_five
         utmp_five_tend = (utmp_five - utmp_five_old)/dt
 
-!        vtmp_five_old = vtmp_five
-!        vtmp_five = vtmp_five*dp_star_five
         vtmp_five = vtmp_five_old * dp_star_five
         call t_startf('vertical_remap1_FIVE_3')
         call remap1(vtmp_five,np,pver_five,1,dp_star_five,dp_five)
@@ -426,14 +431,24 @@ goto 9999
 
      if (qsize>0) then
        
-       do q = 1, qsize
-         Qtmp_five(:,:,:,q) = Qtmp_five_old(:,:,:,q)*dp_star_five(:,:,:)
-       end do
        call t_startf('vertical_remap1_FIVE_4')
        call remap1(Qtmp_five,np,pver_five,qsize,dp_star_five,dp_five)
        call t_stopf('vertical_remap1_FIVE_4')
 
      endif
+
+     if (minval(ttmp_five) .le. 0) then
+        do k=1,pver_five
+        do i=1,np
+        do j=1,np
+           if (ttmp_five(i,j,k) .le. 0) then
+              print *,"HHLEE after remap",i, j, k, ttmp_five(i,j,k), ttmp_five_old(i,j,k)
+           endif
+        enddo
+        enddo
+        enddo
+     endif
+
 
 
 ! update to remap temperature 
@@ -533,17 +548,6 @@ goto 9999
 #endif
 
      endif
-!     do i=1,np
-!     do j=1,np
-!     do k=1,pver
-!     do q =1, qsize
-!        if (state_Q(i,j,k,q) .ne. 0. .or. state_Qup(i,j,k,q) .ne. 0.) then
-!        print *, 'HHLEE LS', elem(ie)%state%t(i,j,1,np1)
-!        endif
-!     end do
-!     end do
-!     end do
-!     end do
 
   enddo
   call t_stopf('vertical_remap')
