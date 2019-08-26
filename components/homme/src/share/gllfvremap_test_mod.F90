@@ -2,13 +2,6 @@
 #include "config.h"
 #endif
 
-!todo
-! - adjust FV cell center for v computation to match dyn_grid::fv_physgrid_init
-! - analyze and opt perf
-! - test with HORIZ_OPENMP off
-! - ftype other than 2,4: unit tests
-! - np4-np2 instead of np4-pg1
-
 module gllfvremap_test_mod
   ! Test gllfvremap's main API.
 
