@@ -234,6 +234,8 @@ contains
        call endrun( sub//' ERROR: unknown starttype' )
     end if
 
+    ! Temporarily force 
+    single_column = .false. 
     call clm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
                         brnch_retain_casename_in=brnch_retain_casename,         &
                         single_column_in=single_column, scmlat_in=scmlat,       &

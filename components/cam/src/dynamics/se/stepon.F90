@@ -252,7 +252,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
-   if (.not. single_column) then 
+!   if (.not. single_column) then 
      do ie=1,nelemd
        kptr=0
 #ifdef MODEL_THETA_L
@@ -266,7 +266,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
        kptr=kptr+nlev
        call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
      end do
-   endif
+!   endif
 
    call bndry_exchangeV(par, edgebuf)
 
@@ -275,7 +275,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    rec2dt = 1._r8/dtime
 
    do ie=1,nelemd
-     if (.not. single_column) then
+!     if (.not. single_column) then
        kptr=0
 #ifdef MODEL_THETA_L
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
@@ -288,7 +288,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
        kptr=kptr+nlev
 
        call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
-     endif
+!     endif
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 

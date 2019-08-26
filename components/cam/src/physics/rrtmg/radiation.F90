@@ -1436,9 +1436,9 @@ end function radiation_nextsw_cday
           ! Convert upward longwave flux units to CGS
           !
           do i=1,ncol
-             lwupcgs(i) = cam_in%lwup(i)*1000._r8
-             if(single_column.and.scm_crm_mode.and.have_tg) &
-                  lwupcgs(i) = 1000*stebol*tground(1)**4
+             !lwupcgs(i) = cam_in%lwup(i)*1000._r8
+             !if(single_column.and.scm_crm_mode.and.have_tg) &
+             lwupcgs(i) = 1000.0_r8*stebol*tground(1)**4
           end do
 
           call rad_cnst_get_call_list(active_calls)
