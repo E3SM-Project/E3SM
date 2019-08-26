@@ -35,7 +35,7 @@
 ! variables and outputs expected in E3SM.                                                  !
 !__________________________________________________________________________________________!
 
-!#define USE_CPP_P3
+#define USE_CPP_P3
 
 module micro_p3
 
@@ -1747,6 +1747,9 @@ contains
     real(rtype)    :: dum1,dum4,dum5,proc,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumi,index
 
+#ifdef USE_CPP_P3
+    call access_lookup_table_f(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc)
+#else
     ! get value at current density index
 
     ! first interpolate for current rimed fraction index
@@ -1776,9 +1779,8 @@ contains
 
     ! get final process rate
     proc   = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
-
    return
-
+#endif
   END SUBROUTINE access_lookup_table
 
   !------------------------------------------------------------------------------------------!
@@ -1790,6 +1792,9 @@ contains
     real(rtype)    :: dum1,dum3,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumj,dumi,index
 
+#ifdef USE_CPP_P3
+    call access_lookup_table_coll_f(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
+#else
     ! This subroutine interpolates lookup table values for rain/ice collection processes
 
     ! current density index
@@ -1849,7 +1854,7 @@ contains
     proc    = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
 
    return
-
+#endif
   END SUBROUTINE access_lookup_table_coll
 
   !==========================================================================================!
@@ -2024,6 +2029,9 @@ contains
     real(rtype)                 :: dumlr
     real(rtype)                 :: real_rcollsize
 
+#ifdef USE_CPP_P3
+    call find_lookupTable_indices_1b_f(dumj,dum3,qr,nr)
+#else
     !------------------------------------------------------------------------------------------!
     real_rcollsize = real(rcollsize)
     ! find index for scaled mean rain size
@@ -2044,6 +2052,7 @@ contains
     endif
 
    return
+#endif
 
   end subroutine find_lookupTable_indices_1b
 

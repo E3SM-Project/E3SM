@@ -13,6 +13,22 @@
 namespace scream {
 namespace p3 {
 
+struct P3GlobalForFortran
+{
+  using P3F = Functions<Real, HostDevice>;
+
+  using view_itab_table = typename P3F::view_itab_table;
+  using view_itabcol_table = typename P3F::view_itabcol_table;
+
+  static bool is_init;
+  static view_itab_table* itab;
+  static view_itabcol_table* itabcol;
+
+  static void init();
+
+  static void deinit();
+};
+
 struct P3InitAFortranData
 {
   // Must use Host as device, f90 code might not be able to use Device memory
@@ -66,6 +82,12 @@ struct LookupIceDataB
 };
 void find_lookuptable_indices_1b(LookupIceDataB& d);
 
+extern "C" {
+
+void find_lookuptable_indices_1b_f_(Int* dumj, Real* dum3, Real* qr, Real* nr);
+
+}
+
 struct AccessLookupTableData
 {
   // Inputs
@@ -78,6 +100,13 @@ struct AccessLookupTableData
   AccessLookupTableData(LookupIceData& lid_, Int index_) : lid(lid_), index(index_) {}
 };
 void access_lookup_table(AccessLookupTableData& d);
+
+extern "C" {
+
+void access_lookup_table_f_(Int* dumjj, Int* dumii, Int* dumi, Int* index,
+                            Real* dum1, Real* dum4, Real* dum5, Real* proc);
+
+}
 
 struct AccessLookupTableCollData
 {

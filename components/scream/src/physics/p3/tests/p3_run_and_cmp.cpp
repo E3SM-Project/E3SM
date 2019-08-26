@@ -5,6 +5,7 @@
 #include "share/scream_assert.hpp"
 
 #include "physics/p3/p3_f90.hpp"
+#include "physics/p3/p3_functions_f90.hpp"
 #include "physics/p3/p3_ic_cases.hpp"
 
 #include <vector>
@@ -191,6 +192,7 @@ int main (int argc, char** argv) {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
       nerr += bln.run_and_cmp(baseline_fn, tol);
     }
+    P3GlobalForFortran::deinit();
   } scream::finalize_scream_session();
 
   return nerr != 0 ? 1 : 0;

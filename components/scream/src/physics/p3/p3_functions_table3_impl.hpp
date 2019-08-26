@@ -247,7 +247,7 @@ void Functions<S,D>
     }
 
     // adjust for 0-based indexing
-    t.dumi -= 1;
+    t.dumi  -= 1;
     t.dumjj -= 1;
     t.dumii -= 1;
     t.dumzz -= 1;

@@ -27,6 +27,30 @@ interface
     real(kind=c_real),   intent(in)  :: qitot,nitot,qirim,rhop
   end subroutine find_lookuptable_indices_1a_f_
 
+  subroutine find_lookuptable_indices_1b_f_(dumj,dum3,qr,nr) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int), intent(out) :: dumj
+    real(kind=c_real),   intent(out) :: dum3
+    real(kind=c_real),   intent(in) :: qr, nr
+  end subroutine find_lookuptable_indices_1b_f_
+
+  subroutine access_lookup_table_f(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int), intent(in) :: dumjj, dumii, dumi, index
+    real(kind=c_real),   intent(in) :: dum1, dum4, dum5
+    real(kind=c_real),   intent(out) :: proc
+  end subroutine access_lookup_table_f
+
+  subroutine access_lookup_table_coll_f(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int), intent(in) :: dumjj,dumii,dumj,dumi,index
+    real(kind=c_real),   intent(in) :: dum1,dum3,dum4,dum5
+    real(kind=c_real),   intent(out) :: proc
+  end subroutine access_lookup_table_coll_f
+
 end interface
 
 contains
