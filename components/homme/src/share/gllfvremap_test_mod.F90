@@ -89,6 +89,13 @@ contains
   end subroutine get_state
 
   subroutine set_gll_state(hvcoord, elem, nt1, nt2)
+    ! Set all quantities used in gfr_dyn_to_fv_phys and gfr_fv_phys_to_dyn to
+    ! C^inf functions for convergence testing (as well as property preservation
+    ! testing, but the C^inf part is needed only for convergence testing).
+    !   The C^inf functions are various sinusoidal 3D functions from which the
+    ! values on the 2D sphere are extracted. This is an easy way to get a C^inf
+    ! function on the sphere.
+
     use dimensions_mod, only: nlev, qsize
     use physical_constants, only: g, dd_pi
     use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
@@ -497,64 +504,6 @@ contains
           end if
        end if
     end do
-
-    !! Test 4.
-    ! Expensive test to determine mass conservation quality over many
-    ! iterations.
-#if 0
-    if (nphys /= 2 .or. ftype == 0) return
-    do ie = nets,nete
-       call set_gll_state(hvcoord, elem(ie), nt1, nt2)
-    end do
-    do tl = 1,100000
-       call gfr_dyn_to_fv_phys(hybrid, nt2, hvcoord, elem, nets, nete, &
-            pg_data%ps, pg_data%zs, pg_data%T, pg_data%uv, pg_data%omega_p, pg_data%q)
-       do ie = nets,nete
-          pg_data%q(:ncol,:,:,ie) = two*pg_data%q(:ncol,:,:,ie)
-       end do
-       call gfr_fv_phys_to_dyn(hybrid, nt2, zero, hvcoord, elem, nets, nete, &
-            pg_data%T, pg_data%uv, pg_data%q)       
-       call gfr_f2g_dss(hybrid, elem, nets, nete)
-       call gfr_pg1_reconstruct(hybrid, nt, dt, hvcoord, elem, nets, nete)
-       do ie = nets,nete
-          do k = 1,nlev
-             wr(:,:,k) = elem(ie)%spheremp
-          end do
-          call get_temperature(elem(ie), wr1, hvcoord, nt1)
-          ! T
-          global_shared_buf(ie,2) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
-          global_shared_buf(ie,1) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*elem(ie)%derived%FT(:,:,1))
-          ! theta
-          wr1 = wr1*(elem(ie)%state%dp3d(:,:,:,nt1)/p0)**kappa
-          global_shared_buf(ie,4) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
-          wr1 = elem(ie)%derived%FT
-          wr1 = wr1*(elem(ie)%state%dp3d(:,:,:,nt1)/p0)**kappa
-          global_shared_buf(ie,3) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)*wr1(:,:,1))
-          ! qv
-          q = 1
-          global_shared_buf(ie,5) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
-               elem(ie)%derived%FQ(:,:,1,q))
-          global_shared_buf(ie,6) = sum(wr(:,:,1)*elem(ie)%state%dp3d(:,:,1,nt1)* &
-               two*elem(ie)%state%Q(:,:,1,q))
-       end do
-       call wrap_repro_sum(nvars=6, comm=hybrid%par%comm)
-       if (hybrid%masterthread .and. (tl < 50 .or. modulo(tl-1, 1000) == 0)) then
-          if (tl == 1) then
-             a = global_shared_sum(2)
-             b = global_shared_sum(4)
-             c = global_shared_sum(6)
-          end if
-          print '(a,i9,a,es12.4,es12.4,a,es12.4,es12.4,a,es12.4,es12.4)', 'gfrtemp>', tl, &
-               ' T', a, (global_shared_sum(1) - a)/a, &
-               ' th', b, (global_shared_sum(3) - b)/b, &
-               ' qv', b, (global_shared_sum(5) - c)/c
-       end if
-       do ie = nets,nete
-          elem(ie)%state%T(:,:,:,nt2) = elem(ie)%derived%FT
-          elem(ie)%state%Q = half*elem(ie)%derived%FQ
-       end do
-    end do
-#endif
   end subroutine run
 
   subroutine gfr_check_api(hybrid, nets, nete, hvcoord, elem)

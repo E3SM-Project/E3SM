@@ -176,6 +176,9 @@ contains
 
     gfr%have_fv_topo_file_phis = .false.
     gfr%nphys = nphys
+    ! npi is the internal GLL np parameter. The high-order remap operator remaps
+    ! from FV to npi-GLL grids, then interpolates from npi-GLL to np-GLL
+    ! grids. In the case of nphys=1, npi must be 2 for GLL to make sense.
     gfr%npi = max(2, nphys)
     nphys2 = nphys*nphys
 
