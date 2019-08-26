@@ -2181,7 +2181,7 @@ contains
   real (kind=real_kind) :: Jac2D(nlev,np,np)  , Jac2L(nlev-1,np,np)
   real (kind=real_kind) :: Jac2U(nlev-1,np,np)
 
-  real (kind=real_kind) :: wgdtmax,mingdz
+  real (kind=real_kind) :: wgdtmax
   integer :: maxiter
   real*8 :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm
 
@@ -2198,8 +2198,10 @@ contains
 
   ! dirk settings
   maxiter=20
-  deltatol=1e-14  ! exit if newton increment < deltatol
-  restol=2e-11    ! exit if residual < restol  
+  deltatol=1e-13  ! exit if newton increment < deltatol
+  !restol=1e-13    ! exit if residual < restol  
+                   ! condition number and thus residual depends strongly on dt and min(dz)
+                   ! more work needed to exit iteration early based on residual error
   delta_phi(:,:,nlevp)=0
   v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,np1)  
   v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,np1)
@@ -2216,9 +2218,6 @@ contains
     do k=1,nlev
        dphi_n0(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
     enddo
-    !  condition number normilzation
-    !  scaling by this makes the residual the same for 26L and 72L
-    mingdz =minval(abs(dphi_n0))/(g*300)  
 
     do k=2,nlev
        v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,np1) + &
@@ -2269,12 +2268,8 @@ contains
     enddo
 
 
-    reserr=mingdz*maxval(abs(Fn))/wgdtmax
-    deltaerr=2*deltatol
     itercount=0
     do while (itercount < maxiter) 
-      if (reserr < restol) exit
-      if (deltaerr<deltatol) exit
 
       info(:,:) = 0
       ! numerical J:
@@ -2320,8 +2315,6 @@ contains
       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
            (1.0-dpnh_dp_i(:,:,1:nlev))
 
-      deltaerr=0
-      reserr=0
       do k=nlev,1,-1  ! scan
          delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
       enddo
@@ -2329,19 +2322,22 @@ contains
          Fn(:,:,k) = delta_phi(:,:,k) &
               - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
       enddo
+      reserr=maxval(abs(Fn))/wgdtmax   ! residual error in phi tendency, relative to source term gw
 
+      deltaerr=0
       do k=1,nlev
          ! delta residual:
          do i=1,np
          do j=1,np
             deltaerr=max(deltaerr, abs(x(k,i,j))/max(g,abs(dphi_n0(i,j,k))) )
-            reserr=max(reserr,  mingdz*abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(dphi_n0(i,j,k)))))
          enddo
          enddo
       enddo
 
       ! update iteration count and error measure
       itercount=itercount+1
+      !if (reserr < restol) exit
+      if (deltaerr<deltatol) exit
     end do ! end do for the do while loop
 
     ! final phi_np1
@@ -2360,7 +2356,7 @@ contains
       write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',deltaerr,reserr
       do k=1,nlev
          i=1 ; j=1
-         !print *,k,( abs(Fn(i,j,k))/max(wgdtmax,max(g,abs(dphi_n0(i,j,k)))) )
+         !print *,k,( abs(Fn(i,j,k))/wgdtmax
       enddo
     end if
   end do ! end do for the ie=nets,nete loop
