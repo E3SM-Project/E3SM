@@ -1436,8 +1436,8 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8) :: naai_five(pcols,pver_five)      ! ice nucleation number
    real(r8) :: naai_hom_five(pcols,pver_five)      ! ice nucleation number
    real(r8) :: npccn_five(pcols,pver_five)     ! liquid activation number tendency
-   real(r8) :: rndst_five(pcols,pver_five,size(rndst, 3))
-   real(r8) :: nacon_five(pcols,pver_five,size(nacon, 3))
+   real(r8) :: rndst_five(pcols,pver_five,size(rndst,3))
+   real(r8) :: nacon_five(pcols,pver_five,size(nacon,3))
 
    real(r8) :: vtrmc_five_low(pcols,pver)
    real(r8) :: cmeliq_five_low(pcols,pver)
