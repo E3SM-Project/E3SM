@@ -288,7 +288,7 @@ contains
 
     !---------------------------------------------------------------
     ! Description
-    ! Accumulate land input to river component
+    ! Accumulate atmosphere input to river component
     !
     ! Arguments
     character(len=*), intent(in) :: timer
