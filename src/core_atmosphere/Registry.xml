@@ -2824,7 +2824,7 @@
                      description="tendency of potential temperature due to short wave radiation"/>
 
                 <var name="rthratenlw" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
-                     description="tendency of potential temperature due to short wave radiation"/>
+                     description="tendency of potential temperature due to long wave radiation"/>
         </var_struct>
 
 
