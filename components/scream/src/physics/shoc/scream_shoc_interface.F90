@@ -104,7 +104,7 @@ contains
 
     inv_cp = 1.0_rtype/cpair
 
-    qtest = sum(q(1,:,:1))
+    qtest = sum(q)
     ncol = pcols
 
 
@@ -147,7 +147,7 @@ contains
 
     test = test + dtime
     FQ(1,1,1) = 9e9
-    print '(a15,f16.8,5e16.8)', 'SHOC run = ', test, qtest, sum(q(1,:,:1)), sum(qv), sum(FQ(:,:,:)), sum(qdp)
+    print '(a15,f16.8,5e16.8)', 'SHOC run = ', test, qtest, sum(q), sum(qv), sum(FQ(:,:,:)), sum(qdp)
 
   end subroutine shoc_main_f90
   !====================================================================!

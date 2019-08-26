@@ -41,9 +41,9 @@ TEST_CASE("p3-shoc-coupled", "") {
   proc_params.set("Number of Entries",2);
   proc_params.set<std::string>("Schedule Type","Sequential");
 
-  auto& p0 = proc_params.sublist("Process 0");
+  auto& p0 = proc_params.sublist("Process 1");
   p0.set<std::string>("Process Name", "P3");
-  auto& p1 = proc_params.sublist("Process 1");
+  auto& p1 = proc_params.sublist("Process 0");
   p1.set<std::string>("Process Name", "SHOC");
 
   auto& gm_params = ad_params.sublist("Grids Manager");

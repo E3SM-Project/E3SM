@@ -32,7 +32,7 @@ TEST_CASE("scream_homme_p3", "scream_homme_p3") {
   auto& p0 = params.sublist("Process 0");
   p0.set<std::string>("Process Name", "dynamics");
   auto& p1 = params.sublist("Process 1");
-  p1.set<std::string>("Process Name", "p3");
+  p1.set<std::string>("Process Name", "P3");
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","Dynamics Driven");
@@ -46,7 +46,7 @@ TEST_CASE("scream_homme_p3", "scream_homme_p3") {
   std::cout << "Create factory...";
   auto& proc_factory = AtmosphereProcessFactory::instance();
   proc_factory.register_product("dynamics",&create_atmosphere_process<HommeDynamics>);
-  proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
+  proc_factory.register_product("P3",&create_atmosphere_process<P3Microphysics>);
 
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
