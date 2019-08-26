@@ -29,19 +29,14 @@ MODULE MOSART_heat_mod
         
         integer, intent(in) :: iunit
         real(r8), intent(in) :: theDeltaT        
-        !if(TUnit%fdir(iunit) >= 0 .and. TUnit%areaTotal(iunit) > TINYVALUE1) then
             THeat%Tqsur(iunit) = THeat%Tqsur(iunit)
             ! adjust surface runoff temperature estimated based on the top-layer soil temperature, i.e., no less than freezing point
             if(THeat%Tqsur(iunit) < 273.15_r8-TINYVALUE1) then
-                !write(unit=1821,fmt=*)  'Tqsub error at hillslopeHeat, ', iunit, THeat%Tqsur(iunit), THeat%Tqsub(iunit)
                 THeat%Tqsur(iunit) = 273.15_r8
-            !else
-                !write(unit=1822,fmt=*)  'Tqsur good at hillslopeHeat, ', iunit, THeat%Tqsur(iunit), THeat%Tqsub(iunit)
             end if
             
             THeat%Tqsub(iunit) = THeat%Tqsub(iunit)
             if(THeat%Tqsub(iunit) < 273.15_r8-TINYVALUE1) then
-                !write(unit=1822,fmt=*)  'Tqsub error at hillslopeHeat, ', iunit, THeat%Tqsur(iunit), THeat%Tqsub(iunit)
                 THeat%Tqsub(iunit) = 273.15_r8
             end if
         !end if
@@ -71,7 +66,6 @@ MODULE MOSART_heat_mod
             THeat%deltaH_t(iunit) = theDeltaT * (THeat%Hs_t(iunit) + THeat%Hl_t(iunit) + THeat%He_t(iunit) + THeat%Hc_t(iunit) + THeat%Hh_t(iunit))
             ! change of energy due to advective heat flux
             THeat%deltaM_t(iunit) = theDeltaT * (THeat%Ha_h2t(iunit)-cr_advectheat(Qsur + Qsub, THeat%Tt(iunit)))
-        !end if
     end subroutine subnetworkHeat
 
     subroutine subnetworkHeat_simple(iunit, theDeltaT)
