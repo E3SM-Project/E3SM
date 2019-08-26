@@ -1065,6 +1065,7 @@ module five_intr
       i5 = i5 + 1
     enddo
     
+    c0(:) = 0._r8
     c1(:) = 0._r8
     c2(:) = 0._r8
     c3(:) = 0._r8
