@@ -56,9 +56,7 @@ if ( $ne == 15 ) then
  endif
  if ( $ne == 30 ) then
     # 1 degree    H model, 20 nodes, 30min for 1600days
-    set tstep = 150  # H model
-    #set tstep = 300  # H model
-    #set tstep = 72  # NH model. edit namelist to turn on NH
+    set tstep = 300  # H model
     set nu = 1e15       # 1.5e15 crashed, 1.6e15 ran
     set nu_div = 1e15
 
