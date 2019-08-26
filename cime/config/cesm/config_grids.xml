@@ -954,6 +954,13 @@
       <mask>gx1v7</mask>
     </model_grid>
 
+    <model_grid alias="ne120pg3_ne120pg3_mt13" not_compset="_POP">
+      <grid name="atm">ne120np4.pg3</grid>
+      <grid name="lnd">ne120np4.pg3</grid>
+      <grid name="ocnice">ne120np4.pg3</grid>
+      <mask>tx0.1v3</mask>
+    </model_grid>
+
     <model_grid alias="ne240pg3_ne240pg3_mg17" not_compset="_POP|_CLM">
       <grid name="atm">ne240np4.pg3</grid>
       <grid name="lnd">ne240np4.pg3</grid>
@@ -966,6 +973,13 @@
       <grid name="lnd">ne120np4.pg3</grid>
       <grid name="ocnice">gx1v7</grid>
       <mask>gx1v7</mask>
+    </model_grid>
+
+    <model_grid alias="ne120pg3_t13">
+      <grid name="atm">ne120np4.pg3</grid>
+      <grid name="lnd">ne120np4.pg3</grid>
+      <grid name="ocnice">gx1v7</grid>
+      <mask>tx0.1v3</mask>
     </model_grid>
 
     <!--  spectral element grids with 4x4 FVM physics grid -->
@@ -1455,6 +1469,8 @@
       <nx>777600</nx> <ny>1</ny>
       <file grid="atm|lnd" mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120np4.pg3_gx1v7.190718.nc</file>
       <file grid="ocnice"  mask="gx1v7">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120np4.pg3_gx1v7.190718.nc</file>
+      <file grid="atm|lnd" mask="tx0.1v3">$DIN_LOC_ROOT/share/domains/domain.lnd.ne120np4.pg3_tx0.1v3.190820.nc</file>
+      <file grid="ocnice"  mask="tx0.1v3">$DIN_LOC_ROOT/share/domains/domain.ocn.ne120np4.pg3_tx0.1v3.190820.nc</file>
       <desc>ne120np4.pg3 is a Spectral Elem 0.25-deg grid with a 3x3 FVM physics grid:</desc>
       <support>EXPERIMENTAL FVM physics grid</support>
     </domain>
