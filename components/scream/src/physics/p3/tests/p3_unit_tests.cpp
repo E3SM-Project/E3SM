@@ -554,6 +554,28 @@ struct TestTableIce {
       {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02}
     };
 
+    LookupIceDataB lidb[max_pack_size] = {
+      {0.263E-05, 0.100E+07},
+      {0.100E-01, 0.100E+07},
+      {0.000E+00, 0.100E-15},
+      {0.263E-05, 0.100E+07},
+
+      {0.263E-05, 0.100E+07},
+      {0.100E-01, 0.100E+07},
+      {0.000E+00, 0.100E-15},
+      {0.263E-05, 0.100E+07},
+
+      {0.263E-05, 0.100E+07},
+      {0.100E-01, 0.100E+07},
+      {0.000E+00, 0.100E-15},
+      {0.263E-05, 0.100E+07},
+
+      {0.263E-05, 0.100E+07},
+      {0.100E-01, 0.100E+07},
+      {0.000E+00, 0.100E-15},
+      {0.263E-05, 0.100E+07}
+    };
+
     static constexpr Int access_table_index = 2;
     AccessLookupTableData altd[max_pack_size] = {
       {lid[0], access_table_index},
@@ -577,42 +599,78 @@ struct TestTableIce {
       {lid[15], access_table_index}
     };
 
+    AccessLookupTableCollData altcd[max_pack_size] = {
+      {lid[0], lidb[0], access_table_index},
+      {lid[1], lidb[1], access_table_index},
+      {lid[2], lidb[2], access_table_index},
+      {lid[3], lidb[3], access_table_index},
+
+      {lid[4], lidb[4], access_table_index},
+      {lid[5], lidb[5], access_table_index},
+      {lid[6], lidb[6], access_table_index},
+      {lid[7], lidb[7], access_table_index},
+
+      {lid[8], lidb[8], access_table_index},
+      {lid[9], lidb[9], access_table_index},
+      {lid[10], lidb[10], access_table_index},
+      {lid[11], lidb[11], access_table_index},
+
+      {lid[12], lidb[12], access_table_index},
+      {lid[13], lidb[13], access_table_index},
+      {lid[14], lidb[14], access_table_index},
+      {lid[15], lidb[15], access_table_index}
+    };
+
     // Get data from fortran
     for (Int i = 0; i < max_pack_size; ++i) {
       find_lookuptable_indices_1a(lid[i]);
+      find_lookuptable_indices_1b(lidb[i]);
       access_lookup_table(altd[i]);
+      access_lookup_table_coll(altcd[i]);
     }
 
     // Run the lookup from a kernel and copy results back to host
-    view_1d<IntSmallPack> int_results("int results", 4);
-    view_1d<Spack> real_results("real results", 5);
+    view_1d<IntSmallPack> int_results("int results", 5);
+    view_1d<Spack> real_results("real results", 7);
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
       Smask qiti_gt_small(true);
 
       // Init packs
       TableIce ti;
-      Spack qitot, nitot, qirim, rhop, qr(0.5), nr(0.6);
+      TableRain tr;
+      Spack qitot, nitot, qirim, rhop, qr, nr;
       for(Int s = 0; s < Spack::n; ++s) {
         qitot[s] = lid[s].qitot;
         nitot[s] = lid[s].nitot;
         qirim[s] = lid[s].qirim;
         rhop[s]  = lid[s].rhop;
+
+        qr[s]    = lidb[s].qr;
+        nr[s]    = lidb[s].nr;
       }
 
       Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
+      Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
       Spack ice_result = Functions::apply_table_ice(qiti_gt_small, access_table_index-1, itab, ti);
+      Spack rain_result = Functions::apply_table_coll(qiti_gt_small, access_table_index-1, itabcol, ti, tr);
 
       int_results(0) = ti.dumi;
       int_results(1) = ti.dumjj;
       int_results(2) = ti.dumii;
       int_results(3) = ti.dumzz;
 
+      int_results(4) = tr.dumj;
+
       real_results(0) = ti.dum1;
       real_results(1) = ti.dum4;
       real_results(2) = ti.dum5;
       real_results(3) = ti.dum6;
 
-      real_results(4) = ice_result;
+      real_results(4) = tr.dum3;
+
+      real_results(5) = ice_result;
+
+      real_results(6) = rain_result;
     });
     auto int_results_mirror  = Kokkos::create_mirror_view(int_results);
     auto real_results_mirror = Kokkos::create_mirror_view(real_results);
@@ -627,12 +685,18 @@ struct TestTableIce {
       REQUIRE(int_results_mirror(2)[s]+1 == lid[s].dumii);
       REQUIRE(int_results_mirror(3)[s]+1 == lid[s].dumzz);
 
+      REQUIRE(int_results_mirror(4)[s]+1 == lidb[s].dumj);
+
       REQUIRE(real_results_mirror(0)[s] == lid[s].dum1);
       REQUIRE(real_results_mirror(1)[s] == lid[s].dum4);
       REQUIRE(real_results_mirror(2)[s] == lid[s].dum5);
       REQUIRE(real_results_mirror(3)[s] == lid[s].dum6);
 
-      REQUIRE(real_results_mirror(4)[s] == altd[s].proc);
+      REQUIRE(real_results_mirror(4)[s] == lidb[s].dum3);
+
+      REQUIRE(real_results_mirror(5)[s] == altd[s].proc);
+
+      REQUIRE(real_results_mirror(6)[s] == altcd[s].proc);
     }
   }
 

@@ -7,6 +7,11 @@
 using scream::Real;
 using scream::Int;
 
+//
+// A C++ interface to micro_p3 fortran calls and vice versa
+//
+
+
 extern "C" {
 
 void p3_init_a_c(Real* itab, Real* itabcol);
@@ -15,8 +20,13 @@ void find_lookuptable_indices_1a_c(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
                                    Real* dum1, Real* dum4, Real* dum5, Real* dum6,
                                    Real qitot, Real nitot, Real qirim, Real rhop);
 
+void find_lookuptable_indices_1b_c(Int* dumj, Real* dum3, Real qr, Real nr);
+
 void access_lookup_table_c(Int dumjj, Int dumii, Int dumi, Int index,
                            Real dum1, Real dum4, Real dum5, Real* proc);
+
+void access_lookup_table_coll_c(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
+                                Real dum1, Real dum3, Real dum4, Real dum5, Real* proc);
 
 }
 
@@ -37,11 +47,54 @@ void find_lookuptable_indices_1a(LookupIceData& d)
                                 d.qitot, d.nitot, d.qirim, d.rhop);
 }
 
+void find_lookuptable_indices_1b(LookupIceDataB& d)
+{
+  p3_init();
+  find_lookuptable_indices_1b_c(&d.dumj, &d.dum3, d.qr, d.nr);
+}
+
 void access_lookup_table(AccessLookupTableData& d)
 {
   p3_init(); // need to initialize p3 first so that tables are loaded
   access_lookup_table_c(d.lid.dumjj, d.lid.dumii, d.lid.dumi, d.index,
                         d.lid.dum1, d.lid.dum4, d.lid.dum5, &d.proc);
+}
+
+void access_lookup_table_coll(AccessLookupTableCollData& d)
+{
+  p3_init();
+  access_lookup_table_coll_c(d.lid.dumjj, d.lid.dumii, d.lidb.dumj, d.lid.dumi, d.index,
+                             d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
+}
+
+extern "C" {
+
+void find_lookuptable_indices_1a_f_(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
+                                    Real* dum1, Real* dum4, Real* dum5, Real* dum6,
+                                    Real* qitot_, Real* nitot_, Real* qirim_, Real* rhop_)
+{
+  using P3F = Functions<Real, HostDevice>;
+
+  typename P3F::Smask qiti_gt_small(true);
+  typename P3F::Spack qitot(*qitot_);
+  typename P3F::Spack nitot(*nitot_);
+  typename P3F::Spack qirim(*qirim_);
+  typename P3F::Spack rhop(*rhop_);
+  typename P3F::TableIce t;
+  P3F::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t);
+
+  // adjust for 1-based indexing
+  *dumi = t.dumi[0] + 1;
+  *dumjj = t.dumjj[0] + 1;
+  *dumii = t.dumii[0] + 1;
+  *dumzz = t.dumzz[0] + 1;
+
+  *dum1 = t.dum1[0];
+  *dum4 = t.dum4[0];
+  *dum5 = t.dum5[0];
+  *dum6 = t.dum6[0];
+}
+
 }
 
 } // namespace p3

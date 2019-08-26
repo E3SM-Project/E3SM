@@ -35,6 +35,8 @@
 ! variables and outputs expected in E3SM.                                                  !
 !__________________________________________________________________________________________!
 
+!#define USE_CPP_P3
+
 module micro_p3
 
    ! get real kind from utils
@@ -1788,7 +1790,6 @@ contains
     real(rtype)    :: dum1,dum3,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumj,dumi,index
 
-
     ! This subroutine interpolates lookup table values for rain/ice collection processes
 
     ! current density index
@@ -1953,6 +1954,10 @@ contains
     integer, intent(in)  :: isize,rimsize,densize
     real(rtype),    intent(in)  :: qitot,nitot,qirim,rhop
 
+#ifdef USE_CPP_P3
+    call find_lookuptable_indices_1a_f(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
+         qitot,nitot,qirim,rhop)
+#else
     !------------------------------------------------------------------------------------------!
 
     ! find index for qi (normalized ice mass mixing ratio = qitot/nitot)
@@ -1995,10 +2000,8 @@ contains
     dum6  = -99
     dumzz = -99
 
-    print '("JGFF find_lookupTable_indices_1a: qitot=",E20.3," nitot=",E20.3," qirim=",E20.3," rhop=",E20.3", dumi=",I0," dumjj=",I0," dumii=",I0," dumzz=",I0," dum1=",E20.3," dum4=",E20.3", dum5=",E20.3," dum6=",E20.3)', qitot, nitot, qirim, rhop, dumi, dumjj, dumii, dumzz, dum1, dum4, dum5, dum6
-
    return
-
+#endif
   end subroutine find_lookupTable_indices_1a
 
   !======================================================================================!
@@ -2039,8 +2042,6 @@ contains
        dumj  = 1
        dum3  = 1._rtype
     endif
-
-    !print '("JGFF find_lookupTable_indices_1b: qr=",E20.3," nr=",E20.3," dum3==",E20.3," dumj=",I0)', qr, nr, dum3, dumj
 
    return
 

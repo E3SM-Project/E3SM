@@ -279,6 +279,9 @@ void Functions<S,D>
 
     t.dumj.set(qiti_gt_small && !gt_small, 1);
     t.dum3.set(qiti_gt_small && !gt_small, 1.0);
+
+    // adjust for 0-based indexing
+    t.dumj -= 1;
   }
 }
 
@@ -335,65 +338,65 @@ typename Functions<S,D>::Spack Functions<S,D>
 
     // current rime fraction index
     Scalar dproc1  = itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s], index) +
-      (ti.dum1[s] - ti.dumi[s]) *
+      (ti.dum1[s] - ti.dumi[s] - 1) *
       (itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s]+1, tr.dumj[s], index) -
        itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s], index));
 
     Scalar dproc2  = itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s]+1, index) +
-      (ti.dum1[s] - ti.dumi[s])*
+      (ti.dum1[s] - ti.dumi[s] - 1)*
       (itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s]+1, tr.dumj[s]+1, index) -
        itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s]+1, index));
 
-    Scalar iproc1  = dproc1+(tr.dum3[s] - tr.dumj[s]) * (dproc2 - dproc1);
+    Scalar iproc1  = dproc1+(tr.dum3[s] - tr.dumj[s] - 1) * (dproc2 - dproc1);
 
     // rime fraction index + 1
 
     dproc1  = itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index) +
-      (ti.dum1[s] - ti.dumi[s]) *
+      (ti.dum1[s] - ti.dumi[s] - 1) *
       (itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s], index) -
        itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index));
 
     dproc2  = itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index) +
-      (ti.dum1[s] - ti.dumi[s]) *
+      (ti.dum1[s] - ti.dumi[s] - 1) *
       (itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s]+1, index) -
        itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index));
 
-    Scalar gproc1  = dproc1+(tr.dum3[s] - tr.dumj[s]) * (dproc2-dproc1);
-    Scalar tmp1    = iproc1+(ti.dum4[s] - ti.dumii[s]) * (gproc1-iproc1);
+    Scalar gproc1  = dproc1+(tr.dum3[s] - tr.dumj[s] - 1) * (dproc2-dproc1);
+    Scalar tmp1    = iproc1+(ti.dum4[s] - ti.dumii[s] - 1) * (gproc1-iproc1);
 
     // density index + 1
 
     // current rime fraction index
 
     dproc1  = itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s], index) +
-      (ti.dum1[s] - ti.dumi[s])*
+      (ti.dum1[s] - ti.dumi[s] - 1)*
       (itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s]+1, tr.dumj[s], index) -
        itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s], index));
 
     dproc2  = itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s]+1, index) +
-      (ti.dum1[s] - ti.dumi[s]) *
+      (ti.dum1[s] - ti.dumi[s] - 1) *
       (itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s]+1, tr.dumj[s]+1, index) -
        itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s]+1,index));
 
-    iproc1  = dproc1 + (tr.dum3[s] - tr.dumj[s]) * (dproc2-dproc1);
+    iproc1  = dproc1 + (tr.dum3[s] - tr.dumj[s] - 1) * (dproc2-dproc1);
 
     // rime fraction index + 1
 
     dproc1  = itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index) +
-      (ti.dum1[s] - ti.dumi[s])*
+      (ti.dum1[s] - ti.dumi[s] - 1)*
       (itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s], index) -
        itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index));
 
     dproc2  = itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index) +
-      (ti.dum1[s] - ti.dumi[s]) *
+      (ti.dum1[s] - ti.dumi[s] - 1) *
       (itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s]+1, index) -
        itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index));
 
-    gproc1  = dproc1 + (tr.dum3[s] - tr.dumj[s]) * (dproc2-dproc1);
-    Scalar tmp2    = iproc1 + (ti.dum4[s] - ti.dumii[s]) * (gproc1-iproc1);
+    gproc1  = dproc1 + (tr.dum3[s] - tr.dumj[s] - 1) * (dproc2-dproc1);
+    Scalar tmp2    = iproc1 + (ti.dum4[s] - ti.dumii[s] - 1) * (gproc1-iproc1);
 
     // interpolate over density to get final values
-    proc    = tmp1+(ti.dum5[s] - ti.dumjj[s]) * (tmp2-tmp1);
+    proc[s]    = tmp1+(ti.dum5[s] - ti.dumjj[s] - 1) * (tmp2-tmp1);
   }
   return proc;
 }
