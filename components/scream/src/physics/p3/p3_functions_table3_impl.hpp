@@ -208,7 +208,7 @@ void Functions<S,D>
 
       // set limits (to make sure the calculated index doesn't exceed range of lookup table)
       t.dum1[s] = util::min<Scalar>(t.dum1[s], ISIZE);
-      t.dum1[s] = util::max(t.dum1[s], 1.0);
+      t.dum1[s] = util::max(t.dum1[s], sp(1.));
       t.dumi[s] = util::max(1, t.dumi[s]);
       t.dumi[s] = util::min(ISIZE, t.dumi[s]);
 
@@ -218,7 +218,7 @@ void Functions<S,D>
 
       // set limits
       t.dum4[s]  = util::min<Scalar>(t.dum4[s], RIMSIZE);
-      t.dum4[s]  = util::max<Scalar>(t.dum4[s], 1);
+      t.dum4[s]  = util::max<Scalar>(t.dum4[s], sp(1.));
       t.dumii[s] = util::max(1, t.dumii[s]);
       t.dumii[s] = util::min(RIMSIZE-1, t.dumii[s]);
     }
@@ -272,13 +272,13 @@ void Functions<S,D>
 
       // set limits
       t.dum3[s] = util::min<Scalar>(t.dum3[s], RCOLLSIZE);
-      t.dum3[s] = util::max(t.dum3[s], 1.0);
+      t.dum3[s] = util::max(t.dum3[s], sp(1.));
       t.dumj[s] = util::max(1, t.dumj[s]);
       t.dumj[s] = util::min(RCOLLSIZE-1, t.dumj[s]);
     }
 
     t.dumj.set(qiti_gt_small && !gt_small, 1);
-    t.dum3.set(qiti_gt_small && !gt_small, 1.0);
+    t.dum3.set(qiti_gt_small && !gt_small, 1.);
 
     // adjust for 0-based indexing
     t.dumj -= 1;

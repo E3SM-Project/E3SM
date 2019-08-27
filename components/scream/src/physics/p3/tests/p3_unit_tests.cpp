@@ -713,7 +713,6 @@ struct TestTableIce {
 
         for (size_t k = 0; k < itab.extent(2); ++k) {
           for (size_t l = 0; l < itab.extent(3); ++l) {
-            Scalar table_val = itab(i, j, k, l);
             Smask qiti_gt_small(true);
 
             // Init packs to same value, TODO: how to pick use values?
@@ -721,10 +720,10 @@ struct TestTableIce {
 
             TableIce ti;
             TableRain tr;
-            //Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
-            //Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
+            Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
+            Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
 
-            //Spack proc1 = Functions::apply_table_ice(qiti_gt_small, 1, itab, ti);
+            /*Spack proc1 = */ Functions::apply_table_ice(qiti_gt_small, 1, itab, ti);
             //Spack proc2 = Functions::apply_table_coll(qiti_gt_small, 1, itabcol, ti, tr);
 
             // TODO: how to test?
