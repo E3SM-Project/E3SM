@@ -21,20 +21,20 @@ class Stream(GenericXML):
         schema = None
         GenericXML.__init__(self, infile, schema=schema)
 
-    def get_value(self, name, attribute=None, resolved=True, subgroup=None):
+    def get_value(self, item, attribute=None, resolved=True, subgroup=None):
         """
         Get Value of fields in a stream.xml file
         """
         expect(subgroup is None, "This class does not support subgroups")
         value = None
         node = None
-        if name.startswith("domain"):
+        if item.startswith("domain"):
             node = self.scan_child("domainInfo")
-        elif name.startswith("data"):
+        elif item.startswith("data"):
             node = self.scan_child("fieldInfo")
-        if name.endswith("filepath"):
+        if item.endswith("filepath"):
             node = self.scan_child("filePath", root=node)
-        elif name.endswith("filenames"):
+        elif item.endswith("filenames"):
             node = self.scan_child("fileNames", root=node)
         if node is not None:
             value = self.text(node).strip()
@@ -42,12 +42,12 @@ class Stream(GenericXML):
         if value is None:
             # if all else fails
             #pylint: disable=assignment-from-none
-            value = GenericXML.get_value(self, name, attribute, resolved, subgroup)
+            value = GenericXML.get_value(self, item, attribute, resolved, subgroup)
 
         if resolved:
             if value is not None:
                 value = self.get_resolved_value(value)
-            elif name in os.environ:
-                value = os.environ[name]
+            elif item in os.environ:
+                value = os.environ[item]
 
         return value
