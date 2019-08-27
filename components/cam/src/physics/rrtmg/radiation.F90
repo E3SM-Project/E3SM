@@ -1094,20 +1094,24 @@ end function radiation_nextsw_cday
     call zenith (calday, clat, clon, coszrs, ncol, dt_avg)
     
     do i = 1,ncol
-      if (coszrs(i) > 0.0_r8)  then
-        asdir(i) = (.026_r8/(coszrs(i)**1.7_r8 + 0.065_r8)) +   &
-                     (.150_r8*(coszrs(i)         - 0.100_r8 ) *   &
-                     (coszrs(i)         - 0.500_r8 ) *   &
-                     (coszrs(i)         - 1.000_r8 )  )
-	asdif(i) = asdir(i)
-	aldir(i) = asdir(i)
-	aldif(i) = asdir(i)
-      else
-        asdir(i) = 1.0_r8
-        asdif(i) = 1.0_r8
-        aldir(i) = 1.0_r8
-        aldif(i) = 1.0_r8
-      endif
+!      if (coszrs(i) > 0.0_r8)  then
+!        asdir(i) = (.026_r8/(coszrs(i)**1.7_r8 + 0.065_r8)) +   &
+!                     (.150_r8*(coszrs(i)         - 0.100_r8 ) *   &
+!                     (coszrs(i)         - 0.500_r8 ) *   &
+!                     (coszrs(i)         - 1.000_r8 )  )
+!	asdif(i) = asdir(i)
+!	aldir(i) = asdir(i)
+!	aldif(i) = asdir(i)
+!      else
+!        asdir(i) = 1.0_r8
+!        asdif(i) = 1.0_r8
+!        aldir(i) = 1.0_r8
+!        aldif(i) = 1.0_r8
+!      endif
+      asdir(i)=cam_in%asdir(i)
+      asdif(i)=cam_in%asdif(i)
+      aldir(i)=cam_in%aldir(i)
+      aldif(i)=cam_in%aldif(i)
     enddo    
     
     if (swrad_off) then
