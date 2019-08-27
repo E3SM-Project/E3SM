@@ -74,6 +74,7 @@ class Run():
             # We just call it manually with the parameter object param.
             params = self.parser.select(param, params)
 
+
             final_params.extend(params)
 
         self.parser.check_values_of_params(final_params)
@@ -117,7 +118,13 @@ class Run():
             # make a deepcopy first.
             parent = copy.deepcopy(parent)
             self._remove_attrs_with_default_values(parent)
-            parameters[i] += parent
+            #parameters[i] += parent
+            for attr in dir(parent):
+                if not attr.startswith('_') and not hasattr(parameters[i], attr):
+                    # This attr of parent is a user-defined one and does not
+                    # already exist in the parameters[i] parameter object.
+                    attr_value = getattr(parent, attr)
+                    setattr(parameters[i], attr, attr_value)
 
 
     def _add_attrs_with_default_values(self, param):
