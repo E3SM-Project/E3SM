@@ -984,6 +984,7 @@ module li_iceshelf_melt
       real (kind=RKIND), dimension(:), pointer :: zOcean
       real (kind=RKIND), dimension(:), pointer :: TFdraft
       real (kind=RKIND), dimension(:), pointer :: deltaT
+      real (kind=RKIND), dimension(:), pointer :: ismip6shelfMelt_offset
       integer, dimension(:), pointer :: basinNumber
       real (kind=RKIND), dimension(:), pointer :: lowerSurface
       real (kind=RKIND), dimension(:), pointer :: areaCell
@@ -1099,6 +1100,7 @@ module li_iceshelf_melt
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_basin', basinNumber)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_TFdraft', TFdraft)
          call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_deltaT', deltaT)
+         call mpas_pool_get_array(geometryPool, 'ismip6shelfMelt_offset', ismip6shelfMelt_offset)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
 
@@ -1108,7 +1110,7 @@ module li_iceshelf_melt
          do iCell = 1, nCellsSolve
             if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
                floatingBasalMassBal(iCell) = -1.0_RKIND * coef * (TFdraft(iCell) + deltaT(iCell)) * &
-                  (mean_TF(basinNumber(iCell)+1) + deltaT(iCell))
+                  (mean_TF(basinNumber(iCell)+1) + deltaT(iCell)) + ismip6shelfMelt_offset(iCell)
             endif
          enddo
 
