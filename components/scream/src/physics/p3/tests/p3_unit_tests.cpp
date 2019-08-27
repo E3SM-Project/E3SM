@@ -756,13 +756,17 @@ struct TestP3Func
     Spack mix_ice_r = Functions::qv_sat(temps, pres, true);
     Spack mix_liq_r = Functions::qv_sat(temps, pres, false);
 
+    // The correct results were computed with double precision, so we need
+    // significantly greater tolerance for single precision.
+    Scalar tol = util::is_single_precision<Scalar>::value ? C::Tol*100 : C::Tol;
+
     for(int s = 0; s < sat_ice_p.n; ++s){
       // Test vapor pressure
-      if (abs(sat_ice_p[s] - correct_sat_ice_p) > C::Tol ) {errors++;}
-      if (abs(sat_liq_p[s] - correct_sat_liq_p) > C::Tol) {errors++;}
+      if (abs(sat_ice_p[s] - correct_sat_ice_p) > tol ) {errors++;}
+      if (abs(sat_liq_p[s] - correct_sat_liq_p) > tol)  {errors++;}
       //Test mixing-ratios
-      if (abs(mix_ice_r[s] -  correct_mix_ice_r) > C::Tol ) {errors++;}
-      if (abs(mix_liq_r[s] -  correct_mix_liq_r) > C::Tol ) {errors++;}
+      if (abs(mix_ice_r[s] -  correct_mix_ice_r) > tol ) {errors++;}
+      if (abs(mix_liq_r[s] -  correct_mix_liq_r) > tol ) {errors++;}
     }
   }
 
