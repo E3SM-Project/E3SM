@@ -22,7 +22,7 @@ from collections import OrderedDict
 import CIME.test_status
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
-from CIME.utils import expect
+from CIME.utils import expect, append_testlog
 
 import evv4esm  # pylint: disable=import-error
 from evv4esm.extensions import pg  # pylint: disable=import-error
@@ -173,13 +173,27 @@ class PGN(SystemTestsCommon):
             with open(os.path.join(evv_out_dir, 'index.json'), 'r') as evv_f:
                 evv_status = json.load(evv_f)
 
+            comments = ""
             for evv_elem in evv_status['Data']['Elements']:
                 if evv_elem['Type'] == 'ValSummary' \
                         and evv_elem['TableTitle'] == 'Perturbation growth test':
+                    comments = "; ".join("{}: {}".format(key, val) for key, val
+                                         in evv_elem['Data'][test_name][''].items())
                     if evv_elem['Data'][test_name]['']['Test status'].lower() == 'pass':
                         self._test_status.set_status(CIME.test_status.BASELINE_PHASE,
                                                      CIME.test_status.TEST_PASS_STATUS)
-                        break
+                    break
+
+            status = self._test_status.get_status(CIME.test_status.BASELINE_PHASE)
+            comments = "{} {} for test '{}'.\n" \
+                       "    {}\n" \
+                       "    EVV results can be viewed at: {}\n" \
+                       "    EVV viewing instructions can be found at: " \
+                       "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/" \
+                       "climate_reproducibility/README.md#test-passfail-and-extended-output" \
+                       "".format(CIME.test_status.BASELINE_PHASE, status, test_name, comments, evv_out_dir)
+
+            append_testlog(comments, self._orig_caseroot)
 
     def run_phase(self):
         logger.debug("PGN_INFO: RUN PHASE")
