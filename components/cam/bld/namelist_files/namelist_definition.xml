@@ -4388,9 +4388,9 @@ Turn off microphysics computation.
 Default: FALSE
 </entry>
 
-<entry id="do_small_planet" type="logical" category="scam"
+<entry id="do_iop_scream" type="logical" category="scam"
        group="cam_inparm" valid_values="">
-Set to TRUE to turn on small planet mode.
+Set to TRUE to turn on IOP-SCREAM mode.
 Default: FALSE
 </entry>
 

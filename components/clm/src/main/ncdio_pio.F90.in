@@ -1274,7 +1274,7 @@ contains
     integer           :: status             ! error code
     logical           :: varpresent         ! if true, variable is on tape
     logical           :: found              ! if true, found lat/lon dims on file
-    logical           :: small_planet_test
+    logical           :: iop_scream_test
     character(len=32) :: vname              ! variable error checking
     type(var_desc_t)  :: vardesc            ! local vardesc pointer
     {VTYPE} :: temp(1)
@@ -1285,7 +1285,7 @@ contains
 
     start(:) = 0
     count(:) = 0
-    small_planet_test = .true.
+    iop_scream_test = .true.
 
     if (flag == 'read') then
 
@@ -1305,7 +1305,7 @@ contains
        if (varpresent) then      
        
 !          if (single_column) then
-	  if (small_planet_test) then
+	  if (iop_scream_test) then
              call scam_field_offsets(ncid,'undefined', vardesc,&
                   start, count, found=found, posNOTonfile=posNOTonfile)
              if ( found )then
@@ -1505,7 +1505,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: count1(1)   ! netcdf count index        
     integer                          :: status     ! error code  
     logical                          :: varpresent ! if true, variable is on tape
-    logical                          :: small_planet_test
+    logical                          :: iop_scream_test
     integer                , pointer :: idata(:)   ! Temporary integer data to send to file
     integer                , pointer :: compDOF(:)
     type(iodesc_plus_type) , pointer :: iodesc_plus
@@ -1538,8 +1538,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-	  small_planet_test = .true.
-          if (small_planet_test) then
+	  iop_scream_test = .true.
+          if (iop_scream_test) then
 !          if (single_column) then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid,clmlevel,vardesc,start,count)
@@ -1786,7 +1786,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer           :: start3(3)   ! netcdf start index
     integer           :: count3(3)   ! netcdf count index
     logical           :: varpresent ! if true, variable is on tape
-    logical           :: small_planet_test
+    logical           :: iop_scream_test
     integer           :: lb1,lb2
     integer           :: ub1,ub2
     integer           :: offset
@@ -1798,7 +1798,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
     start(:)=0
     count(:)=0
-    small_planet_test = .true.
+    iop_scream_test = .true.
 
     clmlevel = dim1name      
 
@@ -1832,7 +1832,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        if (varpresent) then
           write(*,*) 'CLM_SCM_VARNAME2dpre', varname
 !          if (single_column) then
-          if (small_planet_test) then
+          if (iop_scream_test) then
              start(:) = 1 ; count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
 	     write(*,*) 'CLM_SCM_VARNAME2d', varname
@@ -2066,14 +2066,14 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: count4(4)   ! netcdf count index        
     integer                          :: datsize
     logical                          :: varpresent ! if true, variable is on tape
-    logical                          :: small_planet_test
+    logical                          :: iop_scream_test
     type(iodesc_plus_type) , pointer :: iodesc_plus
     type(var_desc_t)                 :: vardesc
     character(len=*),parameter :: subname='ncd_io_3d_{TYPE}' ! subroutine name
     !-----------------------------------------------------------------------
 
     clmlevel = dim1name  
-    small_planet_test = .true.    
+    iop_scream_test = .true.    
 
     if (masterproc .and. debug > 1) then
        write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(clmlevel)
@@ -2085,7 +2085,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        if (varpresent) then
          write(*,*) 'CLM_SCM_VARNAME3dpre', varname
 !          if (single_column) then
-          if (small_planet_test) then
+          if (iop_scream_test) then
              start(:) = 1 
              count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)

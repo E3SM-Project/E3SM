@@ -164,7 +164,7 @@ logical  :: scm_observed_aero
 logical  :: swrad_off
 logical  :: lwrad_off
 logical  :: precip_off
-logical  :: do_small_planet
+logical  :: do_iop_scream
 
 contains
 
@@ -315,7 +315,7 @@ contains
                          scm_relaxation_low, scm_relaxation_high, &
                          scm_diurnal_avg,scm_crm_mode,scm_clubb_iop_name, &
                          scm_observed_aero,swrad_off,lwrad_off, precip_off, &
-			 do_small_planet
+			 do_iop_scream
 
 !-----------------------------------------------------------------------
 
@@ -359,7 +359,7 @@ contains
         swrad_off_out=swrad_off, &
         lwrad_off_out=lwrad_off, &
         precip_off_out=precip_off, &
-	do_small_planet_out=do_small_planet, &
+	do_iop_scream_out=do_iop_scream, &
         scm_clubb_iop_name_out=scm_clubb_iop_name)
    end if
 
@@ -437,7 +437,7 @@ contains
                             swrad_off_in=swrad_off, &
                             lwrad_off_in=lwrad_off, &
                             precip_off_in=precip_off, &
-			    do_small_planet_in=do_small_planet,&
+			    do_iop_scream_in=do_iop_scream,&
                             scm_clubb_iop_name_in=scm_clubb_iop_name)
       end if
    endif

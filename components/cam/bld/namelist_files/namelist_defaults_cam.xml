@@ -1390,7 +1390,7 @@
 <iopfile dyn="eul">atm/cam/scam/iop/ARM95_4scam.nc</iopfile>
 
 <!-- SCREAM Small Planet -->
-<omega small_planet="1">0.D0</omega> 
+<omega iop_scream="1">0.D0</omega> 
 
 <!-- physics loadbalance -->
 <phys_loadbalance dyn="se"> 2 </phys_loadbalance>

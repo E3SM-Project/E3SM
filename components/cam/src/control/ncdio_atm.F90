@@ -18,7 +18,7 @@ module ncdio_atm
   use shr_scam_mod,   only: shr_scam_getCloseLatLon  ! Standardized system subroutines
   use spmd_utils,     only: masterproc
   use cam_abortutils, only: endrun
-  use scamMod,        only: scmlat,scmlon,single_column,do_small_planet
+  use scamMod,        only: scmlat,scmlon,single_column,do_iop_scream
   use cam_logfile,    only: iulog
   !
   ! !PUBLIC TYPES:
@@ -215,7 +215,7 @@ contains
         strt(1) = lonidx
         ierr = pio_get_var(ncid, varid, strt, cnt, field)
 
-      else if (do_small_planet) then
+      else if (do_iop_scream) then
       
         cnt_scm(1) = 1
 	cnt_scm(2) = 1 
@@ -426,7 +426,7 @@ contains
           cnt = arraydimsize
           call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
 
-          if (do_small_planet) then
+          if (do_iop_scream) then
 	  
 !	    if (masterproc) then 
 	    

@@ -174,7 +174,7 @@ OPTIONS
      
   Options relevent to SCREAM small planet mode:
   
-     -small_planet   
+     -iop_scream   
 
   CAM parallelization:
 
@@ -380,7 +380,7 @@ GetOptions(
     "res=s"                     => \$opts{'res'},
     "rof=s"                     => \$opts{'rof'},
     "scam"                      => \$opts{'scam'},
-    "small_planet"              => \$opts{'small_planet'},
+    "iop_scream"                => \$opts{'iop_scream'},
     "s|silent"                  => \$opts{'silent'},
     "smp!"                      => \$opts{'smp'},
     "spmd!"                     => \$opts{'spmd'},
@@ -1259,20 +1259,20 @@ if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Small Planet Mode
-if (defined $opts{'small_planet'}) {
-    $cfg_ref->set('small_planet', 1);
+if (defined $opts{'iop_scream'}) {
+    $cfg_ref->set('iop_scream', 1);
 }
-my $small_planet = $cfg_ref->get('small_planet') ? "ON" : "OFF";
+my $iop_scream = $cfg_ref->get('iop_scream') ? "ON" : "OFF";
 
-# Currently only Spectral Element dycores support SCREAM small planet
-if ($small_planet eq 'ON' and $dyn_pkg ne 'se') {
+# Currently only Spectral Element dycores support IOP-SCREAM
+if ($iop_scream eq 'ON' and $dyn_pkg ne 'se') {
     die <<"EOF";
-**  ERROR: Small Planet mode only works with Spectral Element dycore.
+**  ERROR: IOP-SCREAM mode only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
 EOF
 }
 
-if ($print>=2) { print "SCREAM Small Planet mode: $small_planet$eol"; }
+if ($print>=2) { print "IOP-SCREAM mode: $iop_scream$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Generate IOP
