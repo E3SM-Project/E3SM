@@ -2018,7 +2018,7 @@
        if (tr_bgc_DON) then
        do n = 1, n_don   
           DON_r(n) =  kn_bac(n)/secday * DONin(n) * dt
-          DON_s(n) =  graze_N*f_don(n)*fr_graze_s * dt 
+          DON_s(n) =  (c1 - fr_graze_s + fr_graze_e*fr_graze_s)* graze_N * dt !fr_graze_N*f_don(n)*fr_graze_s * dt 
           Zoo_s_s = Zoo_s_s - DON_s(n)
           Zoo_s_b = Zoo_s_b + DON_r(n)*(c1-f_don_Am(n))
           Am_s = Am_s + DON_r(n)*f_don_Am(n)
