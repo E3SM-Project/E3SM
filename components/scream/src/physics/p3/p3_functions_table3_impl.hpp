@@ -152,7 +152,7 @@ void Functions<S,D>
   scream_require_msg(version_val == P3_VERSION, "Bad " << filename << ", expected version " << P3_VERSION << ", but got " << version_val);
 
   // read tables
-  Scalar dum_s; int dum_i;
+  double dum_s; int dum_i; // dum_s needs to be double to stream correctly
   for (int jj = 0; jj < DENSIZE; ++jj) {
     for (int ii = 0; ii < RIMSIZE; ++ii) {
       for (int i = 0; i < ISIZE; ++i) {

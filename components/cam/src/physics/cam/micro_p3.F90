@@ -40,7 +40,7 @@
 module micro_p3
 
    ! get real kind from utils
-   use micro_p3_utils, only: rtype
+   use micro_p3_utils, only: rtype,rtype8
 
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,rhow,kr,kc,aimm,mi0,nccnst,  &
@@ -115,8 +115,14 @@ contains
     character(len=16), intent(in) :: version_p3            !version number of P3 package
     character(len=1024)           :: lookup_file_1         !lookup table, maini
     character(len=1024)           :: version_header_table_1             !version number read from header, table 1
-    integer                       :: i,j,ii,jj
-    real(rtype)                   :: dum
+    integer                       :: i,j,ii,jj,j_idx,k
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    real(rtype8)                  :: dum,dumk1,dumk2
+    real(rtype8), dimension(12)   :: dumk
+#else
+    real(rtype)                   :: dum,dumk1,dumk2
+    real(rtype), dimension(12)    :: dumk
+#endif
     integer                       :: dumi
     character(len=1024)           :: dumstr
 
@@ -126,7 +132,6 @@ contains
 
     !------------------------------------------------------------------------------------------!
 
-    
     ! saturation pressure at T = 0 C
     e0    = polysvp1(zerodegc,0)
 
@@ -155,19 +160,17 @@ contains
     do jj = 1,densize
        do ii = 1,rimsize
           do i = 1,isize
-             read(10,*) dumi,dumi,dum,dum,itab(jj,ii,i,1),itab(jj,ii,i,2),           &
-                  itab(jj,ii,i,3),itab(jj,ii,i,4),itab(jj,ii,i,5),                 &
-                  itab(jj,ii,i,6),itab(jj,ii,i,7),itab(jj,ii,i,8),dum,             &
-                  itab(jj,ii,i,9),itab(jj,ii,i,10),itab(jj,ii,i,11),               &
-                  itab(jj,ii,i,12)
+             read(10,*) dumi,dumi,dum,dum,dumk(1),dumk(2),           &
+                  dumk(3),dumk(4),dumk(5),dumk(6),dumk(7),dumk(8),dum,                 &
+                  dumk(9),dumk(10),dumk(11),dumk(12)
+             itab(jj,ii,i,:) = dumk(:)
           enddo
           ! read in table for ice-rain collection
           do i = 1,isize
              do j = 1,rcollsize
-                read(10,*) dumi,dumi,dum,dum,dum,itabcoll(jj,ii,i,j,1),              &
-                     itabcoll(jj,ii,i,j,2),dum
-                itabcoll(jj,ii,i,j,1) = dlog10(itabcoll(jj,ii,i,j,1))
-                itabcoll(jj,ii,i,j,2) = dlog10(itabcoll(jj,ii,i,j,2))
+                read(10,*) dumi,dumi,dum,dum,dum,dumk1,dumk2,dum
+                itabcoll(jj,ii,i,j,1) = dlog10(dumk1)
+                itabcoll(jj,ii,i,j,2) = dlog10(dumk2)
              enddo
           enddo
        enddo
