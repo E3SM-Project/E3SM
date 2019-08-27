@@ -19,7 +19,6 @@ class Stream(GenericXML):
         if files is None:
             files = Files()
         schema = None
-        print("Reading file {}".format(infile))
         GenericXML.__init__(self, infile, schema=schema)
 
     def get_value(self, name, attribute=None, resolved=True, subgroup=None):
