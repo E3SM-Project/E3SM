@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_case_desc>Conditions to simulate 2010 land-use</use_case_desc>
+
+<sim_year>2015</sim_year>
+
+<sim_year_range>constant</sim_year_range>
+
+<stream_year_first_ndep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_first_ndep>
+<stream_year_last_ndep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_last_ndep>
+
+<stream_year_first_pdep phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_first_pdep>
+<stream_year_last_pdep  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_last_pdep>
+
+<stream_year_first_popdens phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_first_popdens>
+<stream_year_last_popdens  phys="clm4_5" use_cn=".true." ndepsrc="stream" >2015</stream_year_last_popdens>
+
+<!-- CMIP6 DECK compsets -->
+<fsurdat hgrid="ne30np4" >lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025.nc </fsurdat>
+<finidat hgrid="ne30np4" >lnd/clm2/initdata_map/20180716.DECKv1b_A3.ne30_oEC.edison.clm2.r.2010-01-01-00000.nc </finidat>
+
+</namelist_defaults>
