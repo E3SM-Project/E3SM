@@ -187,7 +187,7 @@ contains
   END SUBROUTINE p3_init_a
 
   subroutine p3_get_tables(mu_r_user, revap_user, vn_user, vm_user)
-    ! This can be called after of p3_init_b.
+    ! This can be called after p3_init_b.
     implicit none
     real(rtype), dimension(150), intent(out) :: mu_r_user
     real(rtype), dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
