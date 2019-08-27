@@ -708,7 +708,7 @@ struct TestTableIce {
     int nerr = 0;
     TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(itab.extent(0), itab.extent(1)));
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
-      int i = team.league_rank();
+      //int i = team.league_rank();
       Kokkos::parallel_for(Kokkos::TeamThreadRange(team, itab.extent(1)), [&] (const int& j) {
 
         for (size_t k = 0; k < itab.extent(2); ++k) {

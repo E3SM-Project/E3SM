@@ -23,13 +23,6 @@ template <typename Real> struct is_single_precision {};
 template <> struct is_single_precision<float> { enum : bool { value = true }; };
 template <> struct is_single_precision<double> { enum : bool { value = false }; };
 
-// macro for floating point literals that match the scream precision
-#ifdef SCREAM_DOUBLE_PRECISION
-#define sp(val) val
-#else
-#define sp(val) val##F
-#endif
-
 bool eq(const std::string& a, const char* const b1, const char* const b2 = 0);
 
 // A templated class to return a human-readable name for a type (defaults to type_info implementation)
