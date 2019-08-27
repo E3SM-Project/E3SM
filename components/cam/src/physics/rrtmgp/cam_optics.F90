@@ -765,7 +765,7 @@ contains
       end do
 
       ! Check values
-      call handle_error(optics_out%validate())
+      call handle_error(optics_out%validate(), stop_on_error=.false.)
       
    end subroutine set_aerosol_optics_sw
 

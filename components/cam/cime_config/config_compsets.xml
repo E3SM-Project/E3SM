@@ -305,7 +305,7 @@
   <compset>
     <alias>F-EAMv1-AQP7</alias>
     <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP7_SROF_SGLC_SWAV</lname>
-  </compset>
+  </compset> 
   <compset>
     <alias>F-EAMv1-AQP8</alias>
     <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQP8_SROF_SGLC_SWAV</lname>
@@ -322,10 +322,29 @@
     <alias>F-EAMv1-AQPFILE</alias>
     <lname>2000_CAM5%AQUA_SLND_SICE_DOCN%AQPFILE_SROF_SGLC_SWAV</lname>
   </compset>
+  
+  <!-- *********************************** -->
+  <!-- SCREAM compsets -->
+  <!-- *********************************** -->  
+  
+  <compset>
+    <alias>FSCREAM-LR</alias>
+    <lname>2000_CAM5%SCREAM-LR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset> 
+  
+  <compset>
+    <alias>FSCREAM-HR</alias>
+    <lname>2000_CAM5%SCREAM-HR_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset> 
 
   <!-- *********************************** -->
   <!-- idealized / adiabatic -->
   <!-- *********************************** -->
+  
+  <compset>
+    <alias>FSCRAV1C-L</alias>
+    <lname>2000_SCREAM%AV1C-L_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>  
 
   <compset>
     <alias>FIDEAL</alias>

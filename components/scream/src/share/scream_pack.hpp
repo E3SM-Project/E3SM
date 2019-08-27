@@ -405,6 +405,7 @@ OnlyPack<Pack> shift_left (const typename Pack::scalar& pp1, const Pack& p) {
   scream_mask_gen_bin_op_sp(op)
 
 scream_mask_gen_bin_op_all(==)
+scream_mask_gen_bin_op_all(!=)
 scream_mask_gen_bin_op_all(>=)
 scream_mask_gen_bin_op_all(<=)
 scream_mask_gen_bin_op_all(>)

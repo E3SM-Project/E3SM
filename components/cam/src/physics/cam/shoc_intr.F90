@@ -69,10 +69,6 @@ module shoc_intr
   real(r8), parameter :: tke_tol = 0.0004_r8
 
   real(r8), parameter :: &
-      host_dx = 100000._r8, &           ! Host model deltax [m]
-      host_dy = 100000._r8              ! Host model deltay [m]
-  
-  real(r8), parameter :: &
       theta0   = 300._r8, &             ! Reference temperature                     [K]
       ts_nudge = 86400._r8, &           ! Time scale for u/v nudging (not used)     [s]
       p0_shoc = 100000._r8, &
@@ -92,8 +88,11 @@ module shoc_intr
   logical            :: micro_do_icesupersat
   
   character(len=16)  :: eddy_scheme      ! Default set in phys_control.F90
-  character(len=16)  :: deep_scheme      ! Default set in phys_control.F90  
+  character(len=16)  :: deep_scheme      ! Default set in phys_control.F90 
   
+  real(r8), parameter :: unset_r8 = huge(1.0_r8)
+  
+  real(r8) :: shoc_timestep = unset_r8  ! Default SHOC timestep set in namelist
   real(r8) :: dp1
   
   integer :: edsclr_dim
@@ -204,7 +203,38 @@ end function shoc_implements_cnst
   !   (currently none)                                                 !
   !------------------------------------------------------------------- !  
 
+    use units,           only: getunit, freeunit
+    use namelist_utils,  only: find_group_name
+    use cam_abortutils,  only: endrun
+    use mpishorthand
+
     character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
+    
+    integer :: iunit, read_status
+    
+    namelist /shocpbl_diff_nl/ shoc_timestep
+    
+    !  Read namelist to determine if SHOC history should be called
+    if (masterproc) then
+      iunit = getunit()
+      open( iunit, file=trim(nlfile), status='old' )
+
+      call find_group_name(iunit, 'shocpbl_diff_nl', status=read_status)
+      if (read_status == 0) then
+         read(unit=iunit, nml=shocpbl_diff_nl, iostat=read_status)
+         if (read_status /= 0) then
+            call endrun('shoc_readnl:  error reading namelist')
+         end if
+      end if
+
+      close(unit=iunit)
+      call freeunit(iunit)
+    end if    
+    
+#ifdef SPMD
+! Broadcast namelist variables
+      call mpibcast(shoc_timestep,           1,   mpir8,   0, mpicom)
+#endif
   
   end subroutine shoc_readnl   
   
@@ -287,6 +317,7 @@ end function shoc_implements_cnst
       call pbuf_set_field(pbuf2d, wthv_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, tkh_idx, 0.0_r8) 
       call pbuf_set_field(pbuf2d, tk_idx, 0.0_r8) 
+      call pbuf_set_field(pbuf2d, fice_idx, 0.0_r8)
       
       call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
       
@@ -442,7 +473,8 @@ end function shoc_implements_cnst
     use hb_diff,                   only: pblintd
     use trb_mtn_stress,            only: compute_tms
     use shoc,           only: shoc_main
-    use cam_history,    only: outfld   
+    use cam_history,    only: outfld
+    use scamMod,        only: single_column   
  
     implicit none
     
@@ -660,7 +692,7 @@ end function shoc_implements_cnst
    !  instances when a 5 min time step will not be possible (based on 
    !  host model time step or on macro-micro sub-stepping   
    
-   dtime = 300.0_r8  
+   dtime = shoc_timestep 
    
    !  Now check to see if dtime is greater than the host model 
    !    (or sub stepped) time step.  If it is, then simply 
@@ -696,15 +728,19 @@ end function shoc_implements_cnst
    !  host time step divided by SHOC time step  
    nadv = max(hdtime/dtime,1._r8)
 
-   ! Set grid space, in meters.  Note this should be changed to a more
-   !  dynamic calcuation to allow for regional grids etc
-   host_dx_in(:) = host_dx
-   host_dy_in(:) = host_dy
+   ! Set grid space, in meters. If SCM, set to a grid size representative
+   !  of a typical GCM.  Otherwise, compute locally.    
+   if (single_column) then
+     host_dx_in(:) = 100000._r8
+     host_dy_in(:) = 100000._r8
+   else
+     call grid_size(state1, host_dx_in, host_dy_in)
+   endif
  
    minqn = 0._r8
    newfice(:,:) = 0._r8
-   where(state1%q(:ncol,:pver,3) .gt. minqn) &
-       newfice(:ncol,:pver) = state1%q(:ncol,:pver,3)/(state1%q(:ncol,:pver,2)+state1%q(:ncol,:pver,3))  
+   where(state1%q(:ncol,:pver,ixcldice) .gt. minqn) &
+       newfice(:ncol,:pver) = state1%q(:ncol,:pver,ixcldice)/(state1%q(:ncol,:pver,ixcldliq)+state1%q(:ncol,:pver,ixcldice))  
        
    do k=1,pver
      do i=1,ncol
@@ -1241,6 +1277,41 @@ end function shoc_implements_cnst
 
 #endif    
     return         
-  end subroutine shoc_tend_e3sm      
+  end subroutine shoc_tend_e3sm   
+  
+  subroutine grid_size(state, grid_dx, grid_dy)
+  ! Determine the size of the grid for each of the columns in state
+
+  use phys_grid,       only: get_area_p
+  use shr_const_mod,   only: shr_const_pi
+  use physics_types,   only: physics_state
+  use ppgrid,          only: pver, pverp, pcols
+ 
+  type(physics_state), intent(in) :: state
+  real(r8), intent(out)           :: grid_dx(pcols), grid_dy(pcols)   ! E3SM grid [m]
+
+  real(r8), parameter :: earth_ellipsoid1 = 111132.92_r8 ! World Geodetic System 1984 (WGS84) 
+                                                         ! first coefficient, meters per degree longitude at equator
+  real(r8), parameter :: earth_ellipsoid2 = 559.82_r8 ! second expansion coefficient for WGS84 ellipsoid
+  real(r8), parameter :: earth_ellipsoid3 = 1.175_r8 ! third expansion coefficient for WGS84 ellipsoid
+
+  real(r8) :: mpdeglat, column_area, degree
+  integer  :: i
+
+  do i=1,state%ncol
+      ! determine the column area in radians
+      column_area = get_area_p(state%lchnk,i)
+      ! convert to degrees
+      degree = sqrt(column_area)*(180._r8/shr_const_pi)
+       
+      ! Now find meters per degree latitude
+      ! Below equation finds distance between two points on an ellipsoid, derived from expansion
+      !  taking into account ellipsoid using World Geodetic System (WGS84) reference 
+      mpdeglat = earth_ellipsoid1 - earth_ellipsoid2 * cos(2._r8*state%lat(i)) + earth_ellipsoid3 * cos(4._r8*state%lat(i))
+      grid_dx(i) = mpdeglat * degree
+      grid_dy(i) = grid_dx(i) ! Assume these are the same
+  enddo   
+
+  end subroutine grid_size      
 
 end module shoc_intr

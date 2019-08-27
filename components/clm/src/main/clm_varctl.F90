@@ -364,6 +364,11 @@ module clm_varctl
   ! flux limiter for phenology flux calculation
   logical, public :: use_pheno_flux_limiter = .false.
 
+  ! Soil erosion
+  !-----------------------------------------------------------------------
+  logical, public :: use_erosion    = .false.
+  logical, public :: ero_ccycle     = .false.
+
   !-----------------------------------------------------------------------
   ! bgc & pflotran interface
   !

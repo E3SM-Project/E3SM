@@ -127,6 +127,9 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
                ${CMAKE_BINARY_DIR}/tests/diffTol.py COPYONLY)
 
+# create list of all executables needed by tests
+ADD_CUSTOM_TARGET(test-execs)
+
 ADD_CUSTOM_TARGET(check 
                   COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
 

@@ -225,6 +225,8 @@ contains
           qflx_prec_intr       => veg_wf%qflx_prec_intr      , & ! Output: [real(r8) (:)   ]  interception of precipitation [mm/s]    
           qflx_prec_grnd       => veg_wf%qflx_prec_grnd      , & ! Output: [real(r8) (:)   ]  water onto ground including canopy runoff [kg/(m2 s)]
           qflx_rain_grnd       => veg_wf%qflx_rain_grnd      , & ! Output: [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
+          qflx_dirct_rain      => veg_wf%qflx_dirct_rain     , & ! Output: [real(r8) (:)   ]  direct rain throughfall on ground (mm H2O/s) 
+          qflx_leafdrip        => veg_wf%qflx_leafdrip       , & ! Output: [real(r8) (:)   ]  leap rain drip on ground (mm H2O/s)
           qflx_irrig           => veg_wf%qflx_irrig            & ! Output: [real(r8) (:)   ]  irrigation amount (mm/s)                
           )
 
@@ -318,14 +320,20 @@ contains
              if (frac_veg_nosno(p) == 0) then
                 qflx_prec_grnd_snow(p) = forc_snow(t)
                 qflx_prec_grnd_rain(p) = forc_rain(t)
+                qflx_dirct_rain(p) = forc_rain(t)
+                qflx_leafdrip(p) = 0._r8
              else
                 qflx_prec_grnd_snow(p) = qflx_through_snow(p) + (qflx_candrip(p) * fracsnow(p))
                 qflx_prec_grnd_rain(p) = qflx_through_rain(p) + (qflx_candrip(p) * fracrain(p))
+                qflx_dirct_rain(p) = qflx_through_rain(p)
+                qflx_leafdrip(p) = qflx_candrip(p) * fracrain(p)
              end if
              ! Urban sunwall and shadewall have no intercepted precipitation
           else
              qflx_prec_grnd_snow(p) = 0.
              qflx_prec_grnd_rain(p) = 0.
+             qflx_dirct_rain(p) = 0._r8
+             qflx_leafdrip(p) = 0._r8
           end if
 
           ! Determine whether we're irrigating here; set qflx_irrig appropriately

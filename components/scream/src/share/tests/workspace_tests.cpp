@@ -1,3 +1,7 @@
+#ifdef _OPENMP
+# include <omp.h>
+#endif
+
 #include <catch2/catch.hpp>
 
 #include "share/scream_workspace.hpp"
@@ -168,120 +172,129 @@ static void unittest_workspace()
     }
 
 #ifndef KOKKOS_ENABLE_CUDA
-    // Test weird take/release permutations.
-    for (int r = 0; r < 3; ++r) {
-      int take_order[]    = {0, 1, 2, 3};
-      int release_order[] = {-3, -2, -1, 0};
-
-      do {
-        for (int w = 0; w < num_ws; ++w) {
-          char buf[8] = "ws";
-          buf[2] = 48 + take_order[w]; // 48 is offset to integers in ascii
-          wssub[take_order[w]] = ws.take(buf);
-        }
-        team.team_barrier();
-
-        for (int w = 0; w < num_ws; ++w) {
-          Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ints_per_ws), [&] (Int i) {
-            wssub[w](i) = i * w;
-          });
-        }
-
-        team.team_barrier();
-
-        // verify stuff
-        for (int w = 0; w < num_ws; ++w) {
-          Kokkos::single(Kokkos::PerTeam(team), [&] () {
-            char buf[8] = "ws";
-            buf[2] = 48 + w; // 48 is offset to integers in ascii
-#ifndef NDEBUG
-            if (util::strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
-            if (ws.get_num_used() != 4) ++nerrs_local;
+#ifdef WS_EXPENSIVE_TEST
+    if (true)
+#else
+    if (omp_get_max_threads() == 2) // the test below is expensive, we don't want all threads sweeps to run it
 #endif
-            for (int i = 0; i < ints_per_ws; ++i) {
-              if (wssub[w](i) != i*w) ++nerrs_local;
-            }
-          });
-        }
-
-        team.team_barrier();
-
-        for (int w = 0; w < num_ws; ++w) {
-          ws.release(wssub[release_order[w] * -1]);
-        }
-
-        team.team_barrier();
-
-        std::next_permutation(release_order, release_order+4);
-
-      } while (std::next_permutation(take_order, take_order+4));
-    }
-    ws.reset();
-
-    // Test weird take/release permutations.
     {
-      int actions[] = {-3, -2, -1, 1, 2, 3};
-      bool exp_active[] = {false, false, false, false};
+      // Test weird take/release permutations.
+      for (int r = 0; r < 3; ++r) {
+        int take_order[]    = {0, 1, 2, 3};
+        int release_order[] = {-3, -2, -1, 0};
 
-      do {
-        for (int a = 0; a < 6; ++a) {
-          int action = actions[a];
-          if (action < 0) {
-            action *= -1;
-            if (exp_active[action]) {
-              ws.release(wssub[action]);
-              exp_active[action] = false;
-            }
-          }
-          else {
-            if (!exp_active[action]) {
-              char buf[8] = "ws";
-              buf[2] = 48 + action; // 48 is offset to integers in ascii
-              wssub[action] = ws.take(buf);
-              exp_active[action] = true;
-            }
-          }
-        }
-
-        for (int w = 0; w < num_ws; ++w) {
-          if (exp_active[w]) {
-            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ints_per_ws), [&] (Int i) {
-              wssub[w](i) = i * w;
-            });
-          }
-        }
-
-        team.team_barrier();
-
-        // verify stuff
-        Kokkos::single(Kokkos::PerTeam(team), [&] () {
-#ifndef NDEBUG
-          int exp_num_active = 0;
-#endif
+        do {
           for (int w = 0; w < num_ws; ++w) {
             char buf[8] = "ws";
-            buf[2] = 48 + w; // 48 is offset to integers in ascii
-            if (exp_active[w]) {
+            buf[2] = 48 + take_order[w]; // 48 is offset to integers in ascii
+            wssub[take_order[w]] = ws.take(buf);
+          }
+          team.team_barrier();
+
+          for (int w = 0; w < num_ws; ++w) {
+            Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ints_per_ws), [&] (Int i) {
+                wssub[w](i) = i * w;
+              });
+          }
+
+          team.team_barrier();
+
+          // verify stuff
+          for (int w = 0; w < num_ws; ++w) {
+            Kokkos::single(Kokkos::PerTeam(team), [&] () {
+                char buf[8] = "ws";
+                buf[2] = 48 + w; // 48 is offset to integers in ascii
 #ifndef NDEBUG
-              if (util::strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
-              ++exp_num_active;
-              if (!ws.template is_active<int>(wssub[w])) ++nerrs_local;
+                if (util::strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
+                if (ws.get_num_used() != 4) ++nerrs_local;
 #endif
-              for (int i = 0; i < ints_per_ws; ++i) {
-                if (wssub[w](i) != i*w) ++nerrs_local;
+                for (int i = 0; i < ints_per_ws; ++i) {
+                  if (wssub[w](i) != i*w) ++nerrs_local;
+                }
+              });
+          }
+
+          team.team_barrier();
+
+          for (int w = 0; w < num_ws; ++w) {
+            ws.release(wssub[release_order[w] * -1]);
+          }
+
+          team.team_barrier();
+
+          std::next_permutation(release_order, release_order+4);
+
+        } while (std::next_permutation(take_order, take_order+4));
+      }
+      ws.reset();
+
+      // Test weird take/release permutations.
+#ifdef WS_EXPENSIVE_TEST
+      {
+        int actions[] = {-3, -2, -1, 1, 2, 3};
+        bool exp_active[] = {false, false, false, false};
+
+        do {
+          for (int a = 0; a < 6; ++a) {
+            int action = actions[a];
+            if (action < 0) {
+              action *= -1;
+              if (exp_active[action]) {
+                ws.release(wssub[action]);
+                exp_active[action] = false;
+              }
+            }
+            else {
+              if (!exp_active[action]) {
+                char buf[8] = "ws";
+                buf[2] = 48 + action; // 48 is offset to integers in ascii
+                wssub[action] = ws.take(buf);
+                exp_active[action] = true;
               }
             }
           }
+
+          for (int w = 0; w < num_ws; ++w) {
+            if (exp_active[w]) {
+              Kokkos::parallel_for(Kokkos::TeamThreadRange(team, ints_per_ws), [&] (Int i) {
+                  wssub[w](i) = i * w;
+                });
+            }
+          }
+
+          team.team_barrier();
+
+          // verify stuff
+          Kokkos::single(Kokkos::PerTeam(team), [&] () {
 #ifndef NDEBUG
-          if (ws.get_num_used() != exp_num_active) ++nerrs_local;
+              int exp_num_active = 0;
 #endif
-        });
+              for (int w = 0; w < num_ws; ++w) {
+                char buf[8] = "ws";
+                buf[2] = 48 + w; // 48 is offset to integers in ascii
+                if (exp_active[w]) {
+#ifndef NDEBUG
+                  if (util::strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
+                  ++exp_num_active;
+                  if (!ws.template is_active<int>(wssub[w])) ++nerrs_local;
+#endif
+                  for (int i = 0; i < ints_per_ws; ++i) {
+                    if (wssub[w](i) != i*w) ++nerrs_local;
+                  }
+                }
+              }
+#ifndef NDEBUG
+              if (ws.get_num_used() != exp_num_active) ++nerrs_local;
+#endif
+            });
 
-        team.team_barrier();
+          team.team_barrier();
 
-      } while (std::next_permutation(actions, actions + 6));
+        } while (std::next_permutation(actions, actions + 6));
+      }
+#endif
+      ws.reset();
     }
-    ws.reset();
 #endif
 
     total_errs += nerrs_local;

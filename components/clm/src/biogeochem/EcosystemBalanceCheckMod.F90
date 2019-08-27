@@ -27,6 +27,8 @@ module EcosystemBalanceCheckMod
   use subgridAveMod       , only : p2c, c2g
   use PhosphorusFluxType  , only : phosphorusflux_type
   use PhosphorusStateType , only : phosphorusstate_type
+  ! soil erosion
+  use clm_varctl          , only : use_erosion, ero_ccycle
   ! bgc interface & pflotran:
   use clm_varctl          , only : use_pflotran, pf_cmode, pf_hmode
   ! forest fertilization experiment
@@ -209,6 +211,7 @@ contains
          col_prod1c_loss           =>    col_cf%prod1c_loss               , & ! Input:  [real(r8) (:) ]  (gC/m2/s) crop leafc harvested
          col_hrv_xsmrpool_to_atm   =>    col_cf%hrv_xsmrpool_to_atm       , & ! Input:  [real(r8) (:) ]  (gC/m2/s) excess MR pool harvest mortality
          som_c_leached             =>    col_cf%som_c_leached             , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss from vertical transport
+         som_c_yield               =>    col_cf%somc_yield                , & ! Input:  [real(r8) (:) ]  (gC/m^2/s)total SOM C loss by erosion
          col_decompc_delta         =>    col_cf%externalc_to_decomp_delta , & ! Input:  [real(r8) (:) ]  (gC/m2/s) summarized net change of whole column C i/o to decomposing pool bwtn time-step
          hrv_deadstemc_to_prod10c  =>    col_cf%hrv_deadstemc_to_prod10c  , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 10-year product pool
          hrv_deadstemc_to_prod100c =>    col_cf%hrv_deadstemc_to_prod100c , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 100-year product pool
@@ -246,6 +249,11 @@ contains
          ! subtract leaching flux
          col_coutputs = col_coutputs - som_c_leached(c)
 
+         ! add erosion flux
+         if (ero_ccycle) then
+            col_coutputs = col_coutputs + som_c_yield(c)
+         end if
+
          ! calculate the total column-level carbon balance error for this time step
          col_errcb(c) = (col_cinputs - col_coutputs)*dt - (col_endcb(c) - col_begcb(c))
 
@@ -281,6 +289,10 @@ contains
             write(iulog,*)'begcb                 = ',col_begcb(c)
             write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
             write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
+
+            if (ero_ccycle) then
+               write(iulog,*)'erosion               = ',som_c_yield(c)*dt
+            end if
 
             if (use_pflotran .and. pf_cmode) then
                write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
@@ -341,6 +353,7 @@ contains
          hrv_deadstemn_to_prod10n  =>    col_nf%hrv_deadstemn_to_prod10n  , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 10-year product pool
          hrv_deadstemn_to_prod100n =>    col_nf%hrv_deadstemn_to_prod100n , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 100-year product pool
          som_n_leached             =>    col_nf%som_n_leached             , & ! Input:  [real(r8) (:)]  total SOM N loss from vertical transport
+         som_n_yield               =>    col_nf%somn_yield                , & ! Input:  [real(r8) (:)]  total SOM N loss by erosion
          supplement_to_plantn      =>    veg_nf%supplement_to_plantn      , &
          ! pflotran:
          col_decompn_delta         =>    col_nf%externaln_to_decomp_delta , & ! Input: [real(r8) (:) ] (gN/m2/s) summarized net change of whole column N i/o to decomposing pool bwtn time-step
@@ -423,6 +436,11 @@ contains
          
          col_noutputs(c) = col_noutputs(c) - som_n_leached(c)
 
+         ! subtracted erosion flux
+         if (ero_ccycle) then
+            col_noutputs(c) = col_noutputs(c) + som_n_yield(c)
+         end if
+
          ! calculate the total column-level nitrogen balance error for this time step
          col_errnb(c) = (col_ninputs(c) - col_noutputs(c))*dt - &
               (col_endnb(c) - col_begnb(c))
@@ -463,6 +481,10 @@ contains
             write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
          endif
          write(iulog,*)'fire                  = ',col_fire_nloss(c)*dt
+
+         if (ero_ccycle) then
+            write(iulog,*)'erosion               = ',som_n_yield(c)*dt
+         end if
 
          if (use_pflotran .and. pf_cmode) then
             write(iulog,*)'pf_delta_decompn      = ',col_decompn_delta(c)*dt
@@ -519,6 +541,11 @@ contains
          primp_to_labilep          => col_pf%primp_to_labilep          , &
          secondp_to_occlp          => col_pf%secondp_to_occlp          , &
          fert_p_to_sminp           => col_pf%fert_p_to_sminp           , &
+         som_p_yield               => col_pf%somp_yield                , & ! Input:  [real(r8) (:)]  SOM P pool loss by erosion (gP/m^2/s)
+         labilep_yield             => col_pf%labilep_yield             , & ! Input:  [real(r8) (:)]  soil labile mineral P loss by erosion (gP/m^s/s)
+         secondp_yield             => col_pf%secondp_yield             , & ! Input:  [real(r8) (:)]  soil secondary mineral P loss by erosion (gP/m^s/s)
+         occlp_yield               => col_pf%occlp_yield               , & ! Input:  [real(r8) (:)]  soil occluded mineral P loss by erosion (gP/m^s/s)
+         primp_yield               => col_pf%primp_yield               , & ! Input:  [real(r8) (:)]  soil primary mineral P loss by erosion (gP/m^s/s)
          supplement_to_plantp      => veg_pf%supplement_to_plantp          , &
          col_prod1p_loss           => col_pf%prod1p_loss               , & ! Input:  [real(r8) (:) ]  (gP/m2/s) crop leafc harvested 
          col_pinputs               => col_pf%pinputs                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
@@ -631,6 +658,12 @@ contains
          end if
 
          col_poutputs(c) = col_poutputs(c) + col_prod1p_loss(c)
+
+         ! soil erosion
+         if (ero_ccycle) then
+            col_poutputs(c) = col_poutputs(c) + som_p_yield(c) + labilep_yield(c) + &
+               secondp_yield(c) !+ occlp_yield(c) + primp_yield(c)
+         end if
          
          ! calculate the total column-level phosphorus balance error for this time step
          col_errpb(c) = (col_pinputs(c) - col_poutputs(c))*dt - &
@@ -653,6 +686,10 @@ contains
          write(iulog,*)'input mass  = ',col_pinputs(c)*dt
          write(iulog,*)'output mass = ',col_poutputs(c)*dt
          write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
+         if (ero_ccycle) then
+            write(iulog,*)'SOP erosion = ',som_p_yield(c)*dt
+            write(iulog,*)'SIP erosion = ',(labilep_yield(c)+secondp_yield(c)+occlp_yield(c)+primp_yield(c))*dt
+         end if
          call endrun(msg=errMsg(__FILE__, __LINE__))
       end if
 
