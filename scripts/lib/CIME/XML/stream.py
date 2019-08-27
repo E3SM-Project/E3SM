@@ -38,7 +38,7 @@ class Stream(GenericXML):
         elif name.endswith("filenames"):
             node = self.scan_child("fileNames", root=node)
         if node is not None:
-            value = self.text(node)
+            value = self.text(node).strip()
 
         if value is None:
             # if all else fails
