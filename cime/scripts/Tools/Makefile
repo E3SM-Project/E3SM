@@ -600,19 +600,24 @@ $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
 	$(CONFIG_SHELL) $(CIMEROOT)/src/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/src/externals/mct/mpi-serial
 
-ifndef PIO_SRCROOT
-  PIO_SRCROOT = $(CIMEROOT)/src/externals
+ifndef IO_LIB_SRCROOT
+  ifndef PIO_SRCROOT
+    PIO_SRCROOT = $(CIMEROOT)/src/externals
+  endif
+
+  ifeq ($(PIO_VERSION),2)
+    PIO_SRC_DIR = $(PIO_SRCROOT)/pio2
+  else
+    ifneq ("$(wildcard $(PIO_SRCROOT)/pio1/pio)", "")
+      PIO_SRC_DIR = $(PIO_SRCROOT)/pio1
+    else
+      PIO_SRC_DIR = $(PIO_SRCROOT)/pio1/pio
+    endif
+  endif
+else
+  PIO_SRC_DIR = $(IO_LIB_SRCROOT)/$(IO_LIB_v$(PIO_VERSION)_SRCDIR)
 endif
 
-ifeq ($(PIO_VERSION),2)
-  PIO_SRC_DIR = $(PIO_SRCROOT)/pio2
-else
-  ifneq ("$(wildcard $(PIO_SRCROOT)/pio1/pio)", "")
-    PIO_SRC_DIR = $(PIO_SRCROOT)/pio1
-  else
-    PIO_SRC_DIR = $(PIO_SRCROOT)/pio1/pio
-  endif
-endif
 
 ifeq ($(PIO_VERSION),2)
 # This is a pio2 library
