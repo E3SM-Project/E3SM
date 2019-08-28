@@ -202,49 +202,41 @@ void Functions<S,D>
   // dum1 = (log10(qitot/nitot)+18.)/(0.1*log10(261.7))-10.
 
   if (qiti_gt_small.any()) {
-    scream_masked_loop(qiti_gt_small, s) {
-      t.dum1[s] = (std::log10(qitot[s]/nitot[s])+18) * P3C::lookup_table_1a_dum1_c - 10; // For computational efficiency
-      t.dumi[s] = static_cast<int>(t.dum1[s]);
+    t.dum1 = (pack::log10(qitot/nitot)+18) * P3C::lookup_table_1a_dum1_c - 10; // For computational efficiency
+    t.dumi = pack::pack_cast<int>(t.dum1);
 
-      // set limits (to make sure the calculated index doesn't exceed range of lookup table)
-      t.dum1[s] = util::min<Scalar>(t.dum1[s], P3C::isize);
-      t.dum1[s] = util::max(t.dum1[s], static_cast<Scalar>(1.));
-      t.dumi[s] = util::max(1, t.dumi[s]);
-      t.dumi[s] = util::min(P3C::isize, t.dumi[s]);
+    // set limits (to make sure the calculated index doesn't exceed range of lookup table)
+    t.dum1 = pack::min(t.dum1, static_cast<Scalar>(P3C::isize));
+    t.dum1 = pack::max(t.dum1, static_cast<Scalar>(1.));
+    t.dumi = pack::max(1, t.dumi);
+    t.dumi = pack::min(P3C::isize, t.dumi);
 
-      // find index for rime mass fraction
-      t.dum4[s]  = (qirim[s]/qitot[s])*3 + 1;
-      t.dumii[s] = static_cast<int>(t.dum4[s]);
+    // find index for rime mass fraction
+    t.dum4  = (qirim/qitot)*3 + 1;
+    t.dumii = pack::pack_cast<int>(t.dum4);
 
-      // set limits
-      t.dum4[s]  = util::min<Scalar>(t.dum4[s], P3C::rimsize);
-      t.dum4[s]  = util::max<Scalar>(t.dum4[s], static_cast<Scalar>(1.));
-      t.dumii[s] = util::max(1, t.dumii[s]);
-      t.dumii[s] = util::min(P3C::rimsize-1, t.dumii[s]);
-    }
+    // set limits
+    t.dum4  = pack::min(t.dum4, static_cast<Scalar>(P3C::rimsize));
+    t.dum4  = pack::max(t.dum4, static_cast<Scalar>(1.));
+    t.dumii = pack::max(1, t.dumii);
+    t.dumii = pack::min(P3C::rimsize-1, t.dumii);
 
     // find index for bulk rime density
     // (account for uneven spacing in lookup table for density)
     const auto rhop_le_650 = qiti_gt_small && (rhop <= 650);
     const auto rhop_gt_650 = qiti_gt_small && (rhop > 650);
-    scream_masked_loop(rhop_le_650, s) {
-      t.dum5[s] = (rhop[s]-50)*0.005 + 1;
-    }
-    scream_masked_loop(rhop_gt_650, s) {
-      t.dum5[s] = (rhop[s]-650)*0.004 + 4;
-    }
+    t.dum5.set(rhop_le_650, (rhop-50)*0.005 + 1);
+    t.dum5.set(rhop_gt_650, (rhop-650)*0.004 + 4);
 
     // set limits
-    scream_masked_loop(qiti_gt_small, s) {
-      t.dumjj[s] = static_cast<int>(t.dum5[s]);
-      t.dum5[s]  = util::min<Scalar>(t.dum5[s], P3C::densize);
-      t.dum5[s]  = util::max<Scalar>(t.dum5[s], 1);
-      t.dumjj[s] = util::max(1, t.dumjj[s]);
-      t.dumjj[s] = util::min(P3C::densize-1, t.dumjj[s]);
+    t.dumjj = pack::pack_cast<int>(t.dum5);
+    t.dum5  = pack::min(t.dum5, static_cast<Scalar>(P3C::densize));
+    t.dum5  = pack::max(t.dum5, static_cast<Scalar>(1));
+    t.dumjj = pack::max(1, t.dumjj);
+    t.dumjj = pack::min(P3C::densize-1, t.dumjj);
 
-      t.dum6[s]  = -99;
-      t.dumzz[s] = -99;
-    }
+    t.dum6  = -99;
+    t.dumzz = -99;
 
     // adjust for 0-based indexing
     t.dumi  -= 1;
@@ -262,20 +254,18 @@ void Functions<S,D>
   if (qiti_gt_small.any()) {
     // find index for scaled mean rain size
     // if no rain, then just choose dumj = 1 and do not calculate rain-ice collection processes
-    Smask gt_small = qr > C::QSMALL && nr > 0.0;
-    Smask gt_both = gt_small && qiti_gt_small;
-    scream_masked_loop(gt_both, s) {
-      // calculate scaled mean size for consistency with ice lookup table
-      Scalar dumlr = std::pow(qr[s]/(C::Pi * C::RHOW * nr[s]), C::THIRD);
-      t.dum3[s] = (std::log10(1.0*dumlr) + 5.0)*10.70415;
-      t.dumj[s] = static_cast<int>(t.dum3[s]);
+    auto gt_small = qr > C::QSMALL && nr > 0.0;
 
-      // set limits
-      t.dum3[s] = util::min<Scalar>(t.dum3[s], P3C::rcollsize);
-      t.dum3[s] = util::max(t.dum3[s], static_cast<Scalar>(1.));
-      t.dumj[s] = util::max(1, t.dumj[s]);
-      t.dumj[s] = util::min(P3C::rcollsize-1, t.dumj[s]);
-    }
+    // calculate scaled mean size for consistency with ice lookup table
+    auto dumlr = pack::pow(qr/(C::Pi * C::RHOW * nr), C::THIRD);
+    t.dum3 = (pack::log10(1.0*dumlr) + 5.0)*10.70415;
+    t.dumj = pack::pack_cast<int>(t.dum3);
+
+    // set limits
+    t.dum3 = pack::min(t.dum3, static_cast<Scalar>(P3C::rcollsize));
+    t.dum3 = pack::max(t.dum3, static_cast<Scalar>(1.));
+    t.dumj = pack::max(1, t.dumj);
+    t.dumj = pack::min(P3C::rcollsize-1, t.dumj);
 
     t.dumj.set(qiti_gt_small && !gt_small, 1);
     t.dum3.set(qiti_gt_small && !gt_small, 1.);
@@ -292,36 +282,39 @@ typename Functions<S,D>::Spack Functions<S,D>
                   const TableIce& t)
 {
   Spack proc;
-  scream_masked_loop(qiti_gt_small, s) {
+  IntSmallPack idxpk(index);
+
+  if (qiti_gt_small.any()) {
     // get value at current density index
 
     // first interpolate for current rimed fraction index
-    Scalar iproc1 = itab(t.dumjj[s], t.dumii[s], t.dumi[s], index) + (t.dum1[s]-t.dumi[s]-1) *
-      (itab(t.dumjj[s], t.dumii[s], t.dumi[s]+1, index) - itab(t.dumjj[s], t.dumii[s], t.dumi[s], index));
+    auto iproc1 = pack::index(itab, t.dumjj, t.dumii, t.dumi, idxpk) + (t.dum1-pack::pack_cast<Scalar>(t.dumi)-1) *
+      (pack::index(itab, t.dumjj, t.dumii, t.dumi+1, idxpk) - pack::index(itab, t.dumjj, t.dumii, t.dumi, idxpk));
 
     // linearly interpolate to get process rates for rimed fraction index + 1
-    Scalar gproc1 = itab(t.dumjj[s], t.dumii[s]+1, t.dumi[s], index) + (t.dum1[s]-t.dumi[s]-1) *
-      (itab(t.dumjj[s], t.dumii[s]+1, t.dumi[s]+1, index) - itab(t.dumjj[s], t.dumii[s]+1, t.dumi[s], index));
+    auto gproc1 = pack::index(itab, t.dumjj, t.dumii+1, t.dumi, idxpk) + (t.dum1-pack::pack_cast<Scalar>(t.dumi)-1) *
+      (pack::index(itab, t.dumjj, t.dumii+1, t.dumi+1, idxpk) - pack::index(itab, t.dumjj, t.dumii+1, t.dumi, idxpk));
 
-    Scalar tmp1   = iproc1 + (t.dum4[s]-t.dumii[s]-1) * (gproc1-iproc1);
+    auto tmp1   = iproc1 + (t.dum4-pack::pack_cast<Scalar>(t.dumii)-1) * (gproc1-iproc1);
 
     // get value at density index + 1
 
     // first interpolate for current rimed fraction index
 
-    iproc1 = itab(t.dumjj[s]+1, t.dumii[s], t.dumi[s], index) + (t.dum1[s]-t.dumi[s]-1) *
-      (itab(t.dumjj[s]+1, t.dumii[s], t.dumi[s]+1, index) - itab(t.dumjj[s]+1, t.dumii[s], t.dumi[s], index));
+    iproc1 = pack::index(itab, t.dumjj+1, t.dumii, t.dumi, idxpk) + (t.dum1-pack::pack_cast<Scalar>(t.dumi)-1) *
+      (pack::index(itab, t.dumjj+1, t.dumii, t.dumi+1, idxpk) - pack::index(itab, t.dumjj+1, t.dumii, t.dumi, idxpk));
 
     // linearly interpolate to get process rates for rimed fraction index + 1
 
-    gproc1 = itab(t.dumjj[s]+1, t.dumii[s]+1, t.dumi[s], index) + (t.dum1[s]-t.dumi[s]-1) *
-      (itab(t.dumjj[s]+1, t.dumii[s]+1, t.dumi[s]+1, index)-itab(t.dumjj[s]+1, t.dumii[s]+1, t.dumi[s], index));
+    gproc1 = pack::index(itab, t.dumjj+1, t.dumii+1, t.dumi, idxpk) + (t.dum1-pack::pack_cast<Scalar>(t.dumi)-1) *
+      (pack::index(itab, t.dumjj+1, t.dumii+1, t.dumi+1, idxpk)-pack::index(itab, t.dumjj+1, t.dumii+1, t.dumi, idxpk));
 
-    Scalar tmp2 = iproc1+(t.dum4[s] - t.dumii[s] - 1) * (gproc1-iproc1);
+    auto tmp2 = iproc1+(t.dum4 - pack::pack_cast<Scalar>(t.dumii) - 1) * (gproc1-iproc1);
 
     // get final process rate
-    proc[s] = tmp1 + (t.dum5[s] - t.dumjj[s] - 1) * (tmp2-tmp1);
+    proc = tmp1 + (t.dum5 - pack::pack_cast<Scalar>(t.dumjj) - 1) * (tmp2-tmp1);
   }
+
   return proc;
 }
 
@@ -332,71 +325,72 @@ typename Functions<S,D>::Spack Functions<S,D>
                    const TableIce& ti, const TableRain& tr)
 {
   Spack proc;
-  scream_masked_loop(qiti_gt_small, s) {
+  IntSmallPack idxpk(index);
 
+  if (qiti_gt_small.any()) {
     // current density index
 
     // current rime fraction index
-    Scalar dproc1  = itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s], index) +
-      (ti.dum1[s] - ti.dumi[s] - 1) *
-      (itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s]+1, tr.dumj[s], index) -
-       itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s], index));
+    auto dproc1  = pack::index(itabcoll, ti.dumjj, ti.dumii, ti.dumi, tr.dumj, idxpk) +
+      (ti.dum1 - pack::pack_cast<Scalar>(ti.dumi) - 1) *
+      (pack::index(itabcoll, ti.dumjj, ti.dumii, ti.dumi+1, tr.dumj, idxpk) -
+       pack::index(itabcoll, ti.dumjj, ti.dumii, ti.dumi, tr.dumj, idxpk));
 
-    Scalar dproc2  = itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s]+1, index) +
-      (ti.dum1[s] - ti.dumi[s] - 1)*
-      (itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s]+1, tr.dumj[s]+1, index) -
-       itabcoll(ti.dumjj[s], ti.dumii[s], ti.dumi[s], tr.dumj[s]+1, index));
+    auto dproc2  = pack::index(itabcoll, ti.dumjj, ti.dumii, ti.dumi, tr.dumj+1, idxpk) +
+      (ti.dum1 - pack::pack_cast<Scalar>(ti.dumi) - 1)*
+      (pack::index(itabcoll, ti.dumjj, ti.dumii, ti.dumi+1, tr.dumj+1, idxpk) -
+       pack::index(itabcoll, ti.dumjj, ti.dumii, ti.dumi, tr.dumj+1, idxpk));
 
-    Scalar iproc1  = dproc1+(tr.dum3[s] - tr.dumj[s] - 1) * (dproc2 - dproc1);
+    auto iproc1  = dproc1+(tr.dum3 - pack::pack_cast<Scalar>(tr.dumj) - 1) * (dproc2 - dproc1);
 
     // rime fraction index + 1
 
-    dproc1  = itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index) +
-      (ti.dum1[s] - ti.dumi[s] - 1) *
-      (itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s], index) -
-       itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index));
+    dproc1  = pack::index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj, idxpk) +
+      (ti.dum1 - pack::pack_cast<Scalar>(ti.dumi) - 1) *
+      (pack::index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi+1, tr.dumj, idxpk) -
+       pack::index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj, idxpk));
 
-    dproc2  = itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index) +
-      (ti.dum1[s] - ti.dumi[s] - 1) *
-      (itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s]+1, index) -
-       itabcoll(ti.dumjj[s], ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index));
+    dproc2  = pack::index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk) +
+      (ti.dum1 - pack::pack_cast<Scalar>(ti.dumi) - 1) *
+      (pack::index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi+1, tr.dumj+1, idxpk) -
+       pack::index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk));
 
-    Scalar gproc1  = dproc1+(tr.dum3[s] - tr.dumj[s] - 1) * (dproc2-dproc1);
-    Scalar tmp1    = iproc1+(ti.dum4[s] - ti.dumii[s] - 1) * (gproc1-iproc1);
+    auto gproc1  = dproc1+(tr.dum3 - pack::pack_cast<Scalar>(tr.dumj) - 1) * (dproc2-dproc1);
+    auto tmp1    = iproc1+(ti.dum4 - pack::pack_cast<Scalar>(ti.dumii) - 1) * (gproc1-iproc1);
 
     // density index + 1
 
     // current rime fraction index
 
-    dproc1  = itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s], index) +
-      (ti.dum1[s] - ti.dumi[s] - 1)*
-      (itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s]+1, tr.dumj[s], index) -
-       itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s], index));
+    dproc1  = pack::index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj, idxpk) +
+      (ti.dum1 - pack::pack_cast<Scalar>(ti.dumi) - 1)*
+      (pack::index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi+1, tr.dumj, idxpk) -
+       pack::index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj, idxpk));
 
-    dproc2  = itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s]+1, index) +
-      (ti.dum1[s] - ti.dumi[s] - 1) *
-      (itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s]+1, tr.dumj[s]+1, index) -
-       itabcoll(ti.dumjj[s]+1, ti.dumii[s], ti.dumi[s], tr.dumj[s]+1,index));
+    dproc2  = pack::index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj+1, idxpk) +
+      (ti.dum1 - pack::pack_cast<Scalar>(ti.dumi) - 1) *
+      (pack::index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi+1, tr.dumj+1, idxpk) -
+       pack::index(itabcoll, ti.dumjj+1, ti.dumii, ti.dumi, tr.dumj+1, idxpk));
 
-    iproc1  = dproc1 + (tr.dum3[s] - tr.dumj[s] - 1) * (dproc2-dproc1);
+    iproc1  = dproc1 + (tr.dum3 - pack::pack_cast<Scalar>(tr.dumj) - 1) * (dproc2-dproc1);
 
     // rime fraction index + 1
 
-    dproc1  = itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index) +
-      (ti.dum1[s] - ti.dumi[s] - 1)*
-      (itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s], index) -
-       itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s], index));
+    dproc1  = pack::index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj, idxpk) +
+      (ti.dum1 - pack::pack_cast<Scalar>(ti.dumi) - 1)*
+      (pack::index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi+1, tr.dumj, idxpk) -
+       pack::index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj, idxpk));
 
-    dproc2  = itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index) +
-      (ti.dum1[s] - ti.dumi[s] - 1) *
-      (itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s]+1, tr.dumj[s]+1, index) -
-       itabcoll(ti.dumjj[s]+1, ti.dumii[s]+1, ti.dumi[s], tr.dumj[s]+1, index));
+    dproc2  = pack::index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk) +
+      (ti.dum1 - pack::pack_cast<Scalar>(ti.dumi) - 1) *
+      (pack::index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi+1, tr.dumj+1, idxpk) -
+       pack::index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk));
 
-    gproc1  = dproc1 + (tr.dum3[s] - tr.dumj[s] - 1) * (dproc2-dproc1);
-    Scalar tmp2    = iproc1 + (ti.dum4[s] - ti.dumii[s] - 1) * (gproc1-iproc1);
+    gproc1  = dproc1 + (tr.dum3 - pack::pack_cast<Scalar>(tr.dumj) - 1) * (dproc2-dproc1);
+    auto tmp2    = iproc1 + (ti.dum4 - pack::pack_cast<Scalar>(ti.dumii) - 1) * (gproc1-iproc1);
 
     // interpolate over density to get final values
-    proc[s]    = tmp1+(ti.dum5[s] - ti.dumjj[s] - 1) * (tmp2-tmp1);
+    proc    = tmp1+(ti.dum5 - pack::pack_cast<Scalar>(ti.dumjj) - 1) * (tmp2-tmp1);
   }
   return proc;
 }

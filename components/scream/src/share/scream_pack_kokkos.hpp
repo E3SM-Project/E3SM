@@ -32,6 +32,36 @@ index (const Array2& a, const IdxPack& i0, const IdxPack& i1,
   return p;
 }
 
+template<typename Array3, typename IdxPack> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<IdxPack, Pack<typename Array3::non_const_value_type, IdxPack::n> >
+index (const Array3& a, const IdxPack& i0, const IdxPack& i1, const IdxPack& i2,
+       typename std::enable_if<Array3::Rank == 3>::type* = nullptr) {
+  Pack<typename Array3::non_const_value_type, IdxPack::n> p;
+  vector_simd for (int i = 0; i < IdxPack::n; ++i)
+    p[i] = a(i0[i], i1[i], i2[i]);
+  return p;
+}
+
+template<typename Array4, typename IdxPack> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<IdxPack, Pack<typename Array4::non_const_value_type, IdxPack::n> >
+index (const Array4& a, const IdxPack& i0, const IdxPack& i1, const IdxPack& i2, const IdxPack& i3,
+       typename std::enable_if<Array4::Rank == 4>::type* = nullptr) {
+  Pack<typename Array4::non_const_value_type, IdxPack::n> p;
+  vector_simd for (int i = 0; i < IdxPack::n; ++i)
+    p[i] = a(i0[i], i1[i], i2[i], i3[i]);
+  return p;
+}
+
+template<typename Array5, typename IdxPack> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<IdxPack, Pack<typename Array5::non_const_value_type, IdxPack::n> >
+index (const Array5& a, const IdxPack& i0, const IdxPack& i1, const IdxPack& i2, const IdxPack& i3, const IdxPack& i4,
+       typename std::enable_if<Array5::Rank == 5>::type* = nullptr) {
+  Pack<typename Array5::non_const_value_type, IdxPack::n> p;
+  vector_simd for (int i = 0; i < IdxPack::n; ++i)
+    p[i] = a(i0[i], i1[i], i2[i], i3[i], i4[i]);
+  return p;
+}
+
 // Index a scalar array with Pack indices, returning a two compatible Packs of array
 // values, one with the indexes shifted by Shift. This is useful for implementing
 // functions like:

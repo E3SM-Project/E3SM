@@ -264,6 +264,7 @@ scream_pack_gen_unary_stdfn(log)
 scream_pack_gen_unary_stdfn(log10)
 scream_pack_gen_unary_stdfn(tgamma)
 
+
 template <typename Pack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<Pack, typename Pack::scalar> min (const Pack& p) {
   typename Pack::scalar v(p[0]);
@@ -276,6 +277,13 @@ OnlyPackReturn<Pack, typename Pack::scalar> max (const Pack& p) {
   typename Pack::scalar v(p[0]);
   vector_simd for (int i = 0; i < Pack::n; ++i) v = util::max(v, p[i]);
   return v;
+}
+
+template <typename T, typename PackT> KOKKOS_INLINE_FUNCTION
+Pack<T, PackT::n> pack_cast(const PackT& p) {
+  Pack<T, PackT::n> result;
+  vector_simd for (int i = 0; i < PackT::n; ++i) result[i] = static_cast<T>(p[i]);
+  return result;
 }
 
 // min(init, min(p(mask)))
