@@ -207,6 +207,11 @@ module lapack_wrap
 
     use clubb_precision, only: &
       core_rknd ! Variable(s)
+#ifndef NDEBUG
+#if defined(ARCH_MIC_KNL) && defined(CPRINTEL)
+    use, intrinsic :: ieee_exceptions
+#endif
+#endif
 
     use error_code, only: &
       err_code,                    & ! Error Indicator
@@ -257,8 +262,20 @@ module lapack_wrap
 !-----------------------------------------------------------------------
 
     if ( kind( diag(1) ) == dp ) then
+#ifndef NDEBUG
+#if defined(ARCH_MIC_KNL) && defined(CPRINTEL)
+      ! when floating-point exceptions are turned on, this call was failing with a div-by-zero on KNL with Intel/MKL. Solution 
+      ! was to turn off exceptions only here at this call (and only for machine with ARCH_MIC_KNL defined) (github 1183)
+      call ieee_set_halting_mode(IEEE_DIVIDE_BY_ZERO, .false.) ! Turn off stopping on div-by-zero only
+#endif
+#endif
       call dgtsv( ndim, nrhs, subd(2:ndim), diag, supd(1:ndim-1),  & 
                   rhs, ndim, info )
+#ifndef NDEBUG
+#if defined(ARCH_MIC_KNL) && defined(CPRINTEL)
+      call ieee_set_halting_mode(IEEE_DIVIDE_BY_ZERO, .true.) ! Turn back on stopping on div-by-zero only
+#endif
+#endif
 
     else if ( kind( diag(1) ) == sp ) then
       call sgtsv( ndim, nrhs, subd(2:ndim), diag, supd(1:ndim-1),  & 
