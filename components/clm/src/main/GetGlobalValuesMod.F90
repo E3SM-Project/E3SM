@@ -9,6 +9,7 @@ module GetGlobalValuesMod
   ! PUBLIC MEMBER FUNCTIONS:
 
   public :: GetGlobalIndex
+  public :: GetGlobalIndexArray
   public :: GetGlobalWrite
   !-----------------------------------------------------------------------
 
@@ -61,6 +62,60 @@ contains
     deallocate(gsmap_ordered)
 
   end function GetGlobalIndex
+
+  !-----------------------------------------------------------------------
+  function GetGlobalIndexArray(decomp_index, bounds1, bounds2, clmlevel)
+
+    !----------------------------------------------------------------
+    ! Description
+    ! Determine global index space value for target array at given clmlevel
+    !
+    ! Uses:
+    use shr_log_mod, only: errMsg => shr_log_errMsg
+    use decompMod  , only: bounds_type, get_clmlevel_gsmap, get_proc_bounds
+    use spmdMod    , only: iam
+    use clm_varcon , only: nameg, namel, namec, namep
+    use clm_varctl , only: iulog
+    use mct_mod
+    !
+    ! Arguments 
+    integer                 , intent(in) :: bounds1
+    integer                 , intent(in) :: bounds2
+    integer, dimension(bounds1:bounds2), intent(in) :: decomp_index
+    character(len=*)        , intent(in) :: clmlevel
+    integer, dimension(bounds1:bounds2)  :: GetGlobalIndexArray
+    !
+    ! Local Variables:
+    type(bounds_type)             :: bounds_proc   ! processor bounds
+    type(mct_gsMap),pointer       :: gsmap         ! global seg map
+    integer, pointer,dimension(:) :: gsmap_ordered ! gsmap ordered points
+    integer                       :: beg_index     ! beginning proc index for clmlevel
+    integer                       :: i
+    !----------------------------------------------------------------
+
+    call get_proc_bounds(bounds_proc)
+
+    if (trim(clmlevel) == nameg) then
+       beg_index = bounds_proc%begg
+    else if (trim(clmlevel) == namel) then
+       beg_index = bounds_proc%begl
+    else if (trim(clmlevel) == namec) then
+       beg_index = bounds_proc%begc
+    else if (trim(clmlevel) == namep) then
+       beg_index = bounds_proc%begp
+    else
+       call shr_sys_abort('clmlevel of '//trim(clmlevel)//' not supported' // &
+            errmsg(__FILE__, __LINE__))
+    end if
+
+    call get_clmlevel_gsmap(clmlevel=trim(clmlevel), gsmap=gsmap)
+    call mct_gsMap_orderedPoints(gsmap, iam, gsmap_ordered)
+    do i=bounds1,bounds2
+       GetGlobalIndexArray(i) = gsmap_ordered(decomp_index(i) - beg_index + 1)
+    enddo
+    deallocate(gsmap_ordered)
+
+  end function GetGlobalIndexArray
 
   !-----------------------------------------------------------------------
   subroutine GetGlobalWrite(decomp_index, clmlevel)
