@@ -23,19 +23,20 @@ struct Functions
   //
   // ---------- P3 constants ---------
   //
+  struct P3C {
+    // Constants for ice lookup tables
+    static constexpr int    densize     = 5;
+    static constexpr int    rimsize     = 4;
+    static constexpr int    isize       = 50;
+    static constexpr int    tabsize     = 12; // number of quantities used from lookup table
+    static constexpr int    rcollsize   = 30;
+    static constexpr int    coltabsize  = 2;  // number of ice-rain collection  quantities used from lookup table
 
-  // Constants for ice lookup tables
-  static constexpr int    DENSIZE     = 5;
-  static constexpr int    RIMSIZE     = 4;
-  static constexpr int    ISIZE       = 50;
-  static constexpr int    TABSIZE     = 12; // number of quantities used from lookup table
-  static constexpr int    RCOLLSIZE   = 30;
-  static constexpr int    COLTABSIZE  = 2;  // number of ice-rain collection  quantities used from lookup table
+    static constexpr ScalarT lookup_table_1a_dum1_c = 1.0/(0.1*std::log10(261.7));
 
-  static constexpr ScalarT LOOKUP_TABLE_1A_DUM1_C = 1.0/(0.1*std::log10(261.7));
-
-  static constexpr const char* P3_LOOKUP_BASE = "p3_lookup_table_1.dat-v";
-  static constexpr const char* P3_VERSION = "2.8.2";
+    static constexpr const char* p3_lookup_base = "p3_lookup_table_1.dat-v";
+    static constexpr const char* p3_version = "2.8.2";
+  };
 
   //
   // ------- Types --------
@@ -100,10 +101,10 @@ struct Functions
   using view_2d_table = typename KT::template view_2d_table<Scalar, G::VTABLE_DIM0, G::VTABLE_DIM1>;
 
   // ice lookup table values
-  using view_itab_table    = typename KT::template view<const Scalar[DENSIZE][RIMSIZE][ISIZE][TABSIZE]>;
+  using view_itab_table    = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::tabsize]>;
 
   // ice lookup table values for ice-rain collision/collection
-  using view_itabcol_table = typename KT::template view<const Scalar[DENSIZE][RIMSIZE][ISIZE][RCOLLSIZE][COLTABSIZE]>;
+  using view_itabcol_table = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::coltabsize]>;
 
   //
   // --------- Functions ---------
@@ -239,7 +240,7 @@ struct Functions
 };
 
 template <typename ScalarT, typename DeviceT>
-constexpr int Functions<ScalarT, DeviceT>::ISIZE;
+constexpr int Functions<ScalarT, DeviceT>::P3C::isize;
 
 } // namespace p3
 } // namespace scream

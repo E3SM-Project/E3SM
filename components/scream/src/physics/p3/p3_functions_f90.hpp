@@ -33,8 +33,10 @@ struct P3InitAFortranData
 {
   // Must use Host as device, f90 code might not be able to use Device memory
   using P3F = Functions<Real, HostDevice>;
-  using view_itab_table = typename P3F::KT::template lview<Real[P3F::DENSIZE][P3F::RIMSIZE][P3F::ISIZE][P3F::TABSIZE]>;
-  using view_itabcol_table = typename P3F::KT::template lview<Real[P3F::DENSIZE][P3F::RIMSIZE][P3F::ISIZE][P3F::RCOLLSIZE][P3F::COLTABSIZE]>;
+  using P3C = typename P3F::P3C;
+
+  using view_itab_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::tabsize]>;
+  using view_itabcol_table = typename P3F::KT::template lview<Real[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::coltabsize]>;
 
   // Need to be LayoutLeft to be fortran compatible
   view_itab_table itab;
