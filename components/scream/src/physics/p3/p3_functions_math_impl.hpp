@@ -1,5 +1,5 @@
-#ifndef P3_FUNCTIONS_IMPL_HPP
-#define P3_FUNCTIONS_IMPL_HPP
+#ifndef P3_FUNCTIONS_MATH_IMPL_HPP
+#define P3_FUNCTIONS_MATH_IMPL_HPP
 
 #include "p3_functions.hpp"
 

@@ -248,7 +248,7 @@ constexpr int Functions<ScalarT, DeviceT>::P3C::isize;
 // If a GPU build, make all code available to the translation unit; otherwise,
 // ETI is used.
 #ifdef KOKKOS_ENABLE_CUDA
-# include "p3_functions_impl.hpp"
+# include "p3_functions_math_impl.hpp"
 # include "p3_functions_table3_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
