@@ -63,9 +63,9 @@ void find_lookuptable_indices_1a(LookupIceData& d);
 
 extern "C" {
 
-void find_lookuptable_indices_1a_f_(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
-                                    Real* dum1, Real* dum4, Real* dum5, Real* dum6,
-                                    Real* qitot, Real* nitot, Real* qirim, Real* rhop);
+void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
+                                   Real* dum1, Real* dum4, Real* dum5, Real* dum6,
+                                   Real qitot, Real nitot, Real qirim, Real rhop);
 
 }
 
@@ -84,7 +84,7 @@ void find_lookuptable_indices_1b(LookupIceDataB& d);
 
 extern "C" {
 
-void find_lookuptable_indices_1b_f_(Int* dumj, Real* dum3, Real* qr, Real* nr);
+void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr, Real nr);
 
 }
 
@@ -103,8 +103,8 @@ void access_lookup_table(AccessLookupTableData& d);
 
 extern "C" {
 
-void access_lookup_table_f_(Int* dumjj, Int* dumii, Int* dumi, Int* index,
-                            Real* dum1, Real* dum4, Real* dum5, Real* proc);
+void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
+                           Real dum1, Real dum4, Real dum5, Real* proc);
 
 }
 
@@ -121,6 +121,14 @@ struct AccessLookupTableCollData
   AccessLookupTableCollData(LookupIceData& lid_, LookupIceDataB& lidb_, Int index_) : lid(lid_), lidb(lidb_), index(index_) {}
 };
 void access_lookup_table_coll(AccessLookupTableCollData& d);
+
+extern "C" {
+
+void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
+                                Real dum1, Real dum3, Real dum4, Real dum5, Real* proc);
+
+}
+
 
 }  // namespace p3
 }  // namespace scream

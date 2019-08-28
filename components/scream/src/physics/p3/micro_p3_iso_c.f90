@@ -17,23 +17,23 @@ module micro_p3_iso_c
 
 interface
 
-  subroutine find_lookuptable_indices_1a_f_(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
+  subroutine find_lookuptable_indices_1a_f(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
        qitot,nitot,qirim,rhop) bind(C)
     use iso_c_binding
 
     ! arguments:
     integer(kind=c_int), intent(out) :: dumi,dumjj,dumii,dumzz
     real(kind=c_real),   intent(out) :: dum1,dum4,dum5,dum6
-    real(kind=c_real),   intent(in)  :: qitot,nitot,qirim,rhop
-  end subroutine find_lookuptable_indices_1a_f_
+    real(kind=c_real),   value, intent(in)  :: qitot,nitot,qirim,rhop
+  end subroutine find_lookuptable_indices_1a_f
 
-  subroutine find_lookuptable_indices_1b_f_(dumj,dum3,qr,nr) bind(C)
+  subroutine find_lookuptable_indices_1b_f(dumj,dum3,qr,nr) bind(C)
     use iso_c_binding
 
     integer(kind=c_int), intent(out) :: dumj
     real(kind=c_real),   intent(out) :: dum3
     real(kind=c_real),   intent(in) :: qr, nr
-  end subroutine find_lookuptable_indices_1b_f_
+  end subroutine find_lookuptable_indices_1b_f
 
   subroutine access_lookup_table_f(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc) bind(C)
     use iso_c_binding

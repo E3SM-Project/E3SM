@@ -1315,15 +1315,21 @@ contains
 
   SUBROUTINE access_lookup_table(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: access_lookup_table_f
+#endif
+
     implicit none
 
     real(rtype)    :: dum1,dum4,dum5,proc,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumi,index
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
     if (use_cxx) then
        call access_lookup_table_f(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc)
 
     else
+#endif
        ! get value at current density index
 
        ! first interpolate for current rimed fraction index
@@ -1354,22 +1360,30 @@ contains
        ! get final process rate
        proc   = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
        return
+#ifdef SCREAM_CONFIG_IS_CMAKE
     endif
+#endif
   END SUBROUTINE access_lookup_table
 
   !------------------------------------------------------------------------------------------!
   SUBROUTINE access_lookup_table_coll(dumjj,dumii,dumj,dumi,index,dum1,dum3,          &
        dum4,dum5,proc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: access_lookup_table_coll_f
+#endif
+
     implicit none
 
     real(rtype)    :: dum1,dum3,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumj,dumi,index
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
     if (use_cxx) then
        call access_lookup_table_coll_f(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
 
     else
+#endif
        ! This subroutine interpolates lookup table values for rain/ice collection processes
 
        ! current density index
@@ -1429,7 +1443,9 @@ contains
        proc    = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
 
        return
+#ifdef SCREAM_CONFIG_IS_CMAKE
     endif
+#endif
   END SUBROUTINE access_lookup_table_coll
 
   !==========================================================================================!
@@ -1525,6 +1541,9 @@ contains
     !------------------------------------------------------------------------------------------!
     ! Finds indices in 3D ice (only) lookup table
     !------------------------------------------------------------------------------------------!
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: find_lookuptable_indices_1a_f
+#endif
 
     implicit none
 
@@ -1534,11 +1553,13 @@ contains
     integer, intent(in)  :: isize,rimsize,densize
     real(rtype),    intent(in)  :: qitot,nitot,qirim,rhop
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
     if (use_cxx) then
        call find_lookuptable_indices_1a_f(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
             qitot,nitot,qirim,rhop)
 
     else
+#endif
        !------------------------------------------------------------------------------------------!
 
        ! find index for qi (normalized ice mass mixing ratio = qitot/nitot)
@@ -1582,7 +1603,9 @@ contains
        dumzz = -99
 
        return
+#ifdef SCREAM_CONFIG_IS_CMAKE
     endif
+#endif
   end subroutine find_lookupTable_indices_1a
 
   !======================================================================================!
@@ -1592,6 +1615,9 @@ contains
     !------------------------------------------------------------------------------------------!
     ! Finds indices in 3D rain lookup table
     !------------------------------------------------------------------------------------------!
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: find_lookuptable_indices_1b_f
+#endif
 
     implicit none
 
@@ -1605,10 +1631,12 @@ contains
     real(rtype)                 :: dumlr
     real(rtype)                 :: real_rcollsize
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
     if (use_cxx) then
        call find_lookupTable_indices_1b_f(dumj,dum3,qr,nr)
 
     else
+#endif
        !------------------------------------------------------------------------------------------!
        real_rcollsize = real(rcollsize)
        ! find index for scaled mean rain size
@@ -1629,7 +1657,9 @@ contains
        endif
 
        return
+#ifdef SCREAM_CONFIG_IS_CMAKE
     endif
+#endif
 
   end subroutine find_lookupTable_indices_1b
 

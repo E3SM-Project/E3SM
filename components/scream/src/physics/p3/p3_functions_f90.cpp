@@ -99,19 +99,17 @@ void P3GlobalForFortran::deinit()
   }
 }
 
-extern "C" {
-
-void find_lookuptable_indices_1a_f_(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
-                                    Real* dum1, Real* dum4, Real* dum5, Real* dum6,
-                                    Real* qitot_, Real* nitot_, Real* qirim_, Real* rhop_)
+void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
+                                   Real* dum1, Real* dum4, Real* dum5, Real* dum6,
+                                   Real qitot_, Real nitot_, Real qirim_, Real rhop_)
 {
   using P3F = Functions<Real, HostDevice>;
 
   typename P3F::Smask qiti_gt_small(true);
-  typename P3F::Spack qitot(*qitot_);
-  typename P3F::Spack nitot(*nitot_);
-  typename P3F::Spack qirim(*qirim_);
-  typename P3F::Spack rhop(*rhop_);
+  typename P3F::Spack qitot(qitot_);
+  typename P3F::Spack nitot(nitot_);
+  typename P3F::Spack qirim(qirim_);
+  typename P3F::Spack rhop(rhop_);
   typename P3F::TableIce t;
   P3F::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t);
 
@@ -127,13 +125,13 @@ void find_lookuptable_indices_1a_f_(Int* dumi, Int* dumjj, Int* dumii, Int* dumz
   *dum6 = t.dum6[0];
 }
 
-void find_lookuptable_indices_1b_f_(Int* dumj, Real* dum3, Real* qr_, Real* nr_)
+void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr_, Real nr_)
 {
   using P3F = Functions<Real, HostDevice>;
 
   typename P3F::Smask qiti_gt_small(true);
-  typename P3F::Spack qr(*qr_);
-  typename P3F::Spack nr(*nr_);
+  typename P3F::Spack qr(qr_);
+  typename P3F::Spack nr(nr_);
   typename P3F::TableRain t;
   P3F::lookup_rain(qiti_gt_small, qr, nr, t);
 
@@ -143,8 +141,8 @@ void find_lookuptable_indices_1b_f_(Int* dumj, Real* dum3, Real* qr_, Real* nr_)
   *dum3 = t.dum3[0];
 }
 
-void access_lookup_table_f_(Int* dumjj, Int* dumii, Int* dumi, Int* index,
-                            Real* dum1, Real* dum4, Real* dum5, Real* proc)
+void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
+                           Real dum1, Real dum4, Real dum5, Real* proc)
 {
   using P3F = Functions<Real, HostDevice>;
 
@@ -154,21 +152,21 @@ void access_lookup_table_f_(Int* dumjj, Int* dumii, Int* dumi, Int* index,
   typename P3F::TableIce t;
 
   // Adjust for 0-based indexing
-  t.dumi  = *dumi  - 1;
-  t.dumjj = *dumjj - 1;
-  t.dumii = *dumii - 1;
+  t.dumi  = dumi  - 1;
+  t.dumjj = dumjj - 1;
+  t.dumii = dumii - 1;
 
-  int adjusted_index = *index - 1;
+  int adjusted_index = index - 1;
 
-  t.dum1 = *dum1;
-  t.dum4 = *dum4;
-  t.dum5 = *dum5;
+  t.dum1 = dum1;
+  t.dum4 = dum4;
+  t.dum5 = dum5;
 
   *proc = P3F::apply_table_ice(qiti_gt_small, adjusted_index, *P3GlobalForFortran::itab, t)[0];
 }
 
-void access_lookup_table_coll_f_(Int* dumjj, Int* dumii, Int* dumj, Int* dumi, Int* index,
-                                 Real* dum1, Real* dum3, Real* dum4, Real* dum5, Real* proc)
+void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
+                                Real dum1, Real dum3, Real dum4, Real dum5, Real* proc)
 {
   using P3F = Functions<Real, HostDevice>;
 
@@ -179,21 +177,19 @@ void access_lookup_table_coll_f_(Int* dumjj, Int* dumii, Int* dumj, Int* dumi, I
   typename P3F::TableRain tr;
 
   // Adjust for 0-based indexing
-  ti.dumi  = *dumi  - 1;
-  ti.dumjj = *dumjj - 1;
-  ti.dumii = *dumii - 1;
-  tr.dumj  = *dumj  - 1;
+  ti.dumi  = dumi  - 1;
+  ti.dumjj = dumjj - 1;
+  ti.dumii = dumii - 1;
+  tr.dumj  = dumj  - 1;
 
-  int adjusted_index = *index - 1;
+  int adjusted_index = index - 1;
 
-  ti.dum1 = *dum1;
-  ti.dum4 = *dum4;
-  ti.dum5 = *dum5;
-  tr.dum3 = *dum3;
+  ti.dum1 = dum1;
+  ti.dum4 = dum4;
+  ti.dum5 = dum5;
+  tr.dum3 = dum3;
 
   *proc = P3F::apply_table_coll(qiti_gt_small, adjusted_index, *P3GlobalForFortran::itabcol, ti, tr)[0];
-}
-
 }
 
 } // namespace p3
