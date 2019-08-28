@@ -72,6 +72,7 @@ def run_diag(parameter):
             # Average over selected region, and average
             # over months to get the yearly mean.
             test_domain = cdutil.averager(test_domain,axis = 'xy')
+            cdutil.setTimeBoundsMonthly(test_domain)
             test_domain_year = cdutil.YEAR(test_domain)
             #add back attributes since they got lost after applying cdutil.YEAR
             test_domain_year.long_name = test.long_name
@@ -97,6 +98,8 @@ def run_diag(parameter):
                 ref_domain = utils.general.select_region(region, ref, land_frac, ocean_frac, parameter)
 
                 ref_domain = cdutil.averager(ref_domain,axis = 'xy')
+                cdutil.setTimeBoundsMonthly(ref_domain)
+                print('Start and end time for selected time slices for ref data: ', ref_domain.getTime().asComponentTime()[0],ref_domain.getTime().asComponentTime()[-1])
                 ref_domain_year = cdutil.YEAR(ref_domain)
                 ref_domain_year.ref_name = ref_name
                 save_data[ref_name] = ref_domain_year.asma().tolist()
