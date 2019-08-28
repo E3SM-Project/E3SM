@@ -509,34 +509,40 @@ contains
     type (hvcoord_t) , intent(in) :: hvcoord
     integer, intent(in) :: nets, nete
 
-    integer :: nphys, ftype_in, ftype_idx
+    integer :: nphys, ftype_in, ftype_idx, boost_idx
+    logical :: boost_pg1
 
     ftype_in = ftype
 
     do nphys = 1, np
        do ftype_idx = 1,2
-          ! This is meant to be called before threading starts.
-          if (hybrid%ithr == 0) then
-             ftype = 2
-             if (ftype_idx == 2) ftype = 0
-             ! check=.true. means that the remap routines to
-             ! element-level verification of properties and output
-             ! messages if a property fails.
-             call gfr_init(hybrid%par, elem, nphys, check=.true.)
-             call init(nphys)
-          end if
-          !$omp barrier
-          
-          call run(hybrid, hvcoord, elem, nets, nete, nphys, .false.)
-          call run(hybrid, hvcoord, elem, nets, nete, nphys, .true.)
+          do boost_idx = 1,2
+             if (nphys > 1 .and. boost_idx > 1) exit
+             boost_pg1 = boost_idx == 2
 
-          ! This is meant to be called after threading ends.
-          !$omp barrier
-          if (hybrid%ithr == 0) then
-             call gfr_finish()
-             call finish()
-          end if
-          !$omp barrier
+             ! This is meant to be called before threading starts.
+             if (hybrid%ithr == 0) then
+                ftype = 2
+                if (ftype_idx == 2) ftype = 0
+                ! check=.true. means that the remap routines to
+                ! element-level verification of properties and output
+                ! messages if a property fails.
+                call gfr_init(hybrid%par, elem, nphys, .true., boost_pg1)
+                call init(nphys)
+             end if
+             !$omp barrier
+
+             call run(hybrid, hvcoord, elem, nets, nete, nphys, .false.)
+             call run(hybrid, hvcoord, elem, nets, nete, nphys, .true.)
+
+             ! This is meant to be called after threading ends.
+             !$omp barrier
+             if (hybrid%ithr == 0) then
+                call gfr_finish()
+                call finish()
+             end if
+             !$omp barrier
+          end do
        end do
     end do
 

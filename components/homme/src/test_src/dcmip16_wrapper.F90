@@ -166,7 +166,7 @@ subroutine dcmip2016_test1_pg(elem,hybrid,hvcoord,nets,nete,nphys)
   if (hybrid%ithr == 0) then
      ncol = nphys*nphys
      pg_data%nphys = nphys
-     call gfr_init(hybrid%par, elem, nphys)
+     call gfr_init(hybrid%par, elem, nphys, boost_pg1=.true.)
      allocate(pg_data%ps(ncol,nelemd), pg_data%zs(ncol,nelemd), pg_data%T(ncol,nlev,nelemd), &
           pg_data%omega_p(ncol,nlev,nelemd), pg_data%uv(ncol,2,nlev,nelemd), &
           pg_data%q(ncol,nlev,qsize,nelemd))

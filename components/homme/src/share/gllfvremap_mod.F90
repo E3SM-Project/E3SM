@@ -28,6 +28,10 @@ module gllfvremap_mod
   !   This module works with cubed_sphere_map 0 and 2, but only 2 will
   ! work in the fully coupled E3SM.
   !   This module supports all ftype values 0 to 4.
+  !   We find in practice that pg1 is too coarse. To see this, run the
+  ! Homme-standalone test dcmip2016_test1_pg1 and compare results with
+  ! dcmip2016_test1_pg2 and dcmip2016_test1 (np4). pg2 and np4 fields are nearly
+  ! identical out to day 30, whereas pg1 fields differ visibly.
   !
   ! AMB 2019/07 Initial
 
@@ -75,7 +79,7 @@ module gllfvremap_mod
   ! GLL remap.
   type, private :: GllFvRemap_t
      integer :: nphys, npi
-     logical :: check, have_fv_topo_file_phis
+     logical :: check, have_fv_topo_file_phis, boost_pg1
      real(kind=real_kind) :: tolfac ! for checking
      real(kind=real_kind) :: &
           ! Node or cell weights
@@ -129,12 +133,22 @@ module gllfvremap_mod
      module procedure gfr_fv_phys_to_dyn_topo_dom_mt
   end interface gfr_fv_phys_to_dyn_topo
 
+  interface gfr_pg1_reconstruct
+     module procedure gfr_pg1_reconstruct_hybrid
+     module procedure gfr_pg1_reconstruct_dom_mt
+  end interface gfr_pg1_reconstruct
+
+  interface gfr_pg1_reconstruct_topo
+     module procedure gfr_pg1_reconstruct_topo_hybrid
+     module procedure gfr_pg1_reconstruct_topo_dom_mt
+  end interface gfr_pg1_reconstruct_topo
+
 contains
 
   ! ----------------------------------------------------------------------
   ! Public API.
 
-  subroutine gfr_init(par, elem, nphys, check)
+  subroutine gfr_init(par, elem, nphys, check, boost_pg1)
     ! Initialize the gfr internal data structure.
     !   nphys is N in pgN.
     !   check is optional and defaults to false. It will produce very
@@ -151,7 +165,7 @@ contains
     type (parallel_t), intent(in) :: par
     type (element_t), intent(in) :: elem(:)
     integer, intent(in) :: nphys
-    logical, intent(in), optional :: check
+    logical, intent(in), optional :: check, boost_pg1
 
     real(real_kind) :: R(npsq,nphys_max*nphys_max), tau(npsq)
     integer :: nphys2
@@ -159,9 +173,24 @@ contains
     gfr%check = .false.
     if (present(check)) gfr%check = check
 
+    gfr%boost_pg1 = .false.
+    if (present(boost_pg1)) gfr%boost_pg1 = boost_pg1    
+
     gfr%tolfac = one
-    if (par%masterproc) &
-         write(iulog,  '(a,i3,a,l2,a,i2)') 'gfr> init nphys', nphys, ' check', gfr%check, ' ftype', ftype
+    if (par%masterproc) then
+       write(iulog, '(a,i3,a,l2,a,i2,a,l2)') 'gfr> init nphys', nphys, ' check', gfr%check, &
+            ' ftype', ftype, ' boost_pg1', gfr%boost_pg1
+       if (nphys == 1) then
+          ! Document state of pg1. dcmip2016_test1 shows it is too coarse. For
+          ! boost_pg1 = true, stepon's DSS loop needs to be separated from its
+          ! tendency application loop.
+          write(iulog,*), 'gfr> Warning: pg1 is too coarse; see comments at top of gllfvremap_mod.F90'
+          if (.not. gfr%boost_pg1) then
+             write(iulog,*), 'gfr> Warning: If you want to try pg1, use the boosted-accuracy &
+                  boost_pg1 option and call gfr_pg1_reconstruct(_topo).'
+          end if
+       end if
+    end if
 
     if (nphys > np) then
        ! The FV -> GLL map is defined only if nphys <= np. If we ever are
@@ -199,7 +228,7 @@ contains
     call gfr_init_fv_metdet(elem, gfr)
     call gfr_init_geometry(elem, gfr)
 
-    if (nphys == 1) call gfr_pg1_init(gfr)
+    if (nphys == 1 .and. gfr%boost_pg1) call gfr_pg1_init(gfr)
   end subroutine gfr_init
 
   subroutine gfr_finish()
@@ -310,10 +339,6 @@ contains
     q_adjustment = ftype >= 1 .and. ftype <= 4
     qsize = size(q,3)
 
-    ! In the FV -> GLL direction, nphys = 1 for OOA > 1 is a special
-    ! case. Thus, nf == 1 and nf > 1 appears in several places in the
-    ! following.
-
     do ie = nets,nete
        call calc_dp(hvcoord, elem(ie)%state%ps_v(:,:,nt), dp)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, dp, dp_fv)
@@ -338,7 +363,7 @@ contains
                   dp*elem(ie)%state%Q(:,:,:,qi), wr1)
              !   FV Q_ten = FV Q1 - FV Q0
              wr1(:nf,:nf,:) = reshape(q(:ncol,:,qi,ie), (/nf,nf,nlev/)) - wr1(:nf,:nf,:)
-             if (nf > 1) then
+             if (nf > 1 .or. .not. gfr%boost_pg1) then
                 ! GLL Q_ten
                 call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wr1, wr2)
                 ! GLL Q1
@@ -358,7 +383,7 @@ contains
              ! FV Q_ten
              wr1(:nf,:nf,:) = reshape(q(:ncol,:,qi,ie), (/nf,nf,nlev/))
              wr1(:nf,:nf,:) = dt*wr1(:nf,:nf,:)/dp_fv(:nf,:nf,:)
-             if (nf > 1) then
+             if (nf > 1 .or. .not. gfr%boost_pg1) then
                 ! GLL Q_ten
                 call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wr1, wr2)
                 ! GLL Q1
@@ -387,7 +412,7 @@ contains
     call gfr_f2g_mixing_ratios_he(hybrid, nets, nete, gfr%qmin(:,:,nets:nete), &
          gfr%qmax(:,:,nets:nete))
 
-    if (nf == 1) return
+    if (nf == 1 .and. gfr%boost_pg1) return
 
     do ie = nets,nete
        call calc_dp(hvcoord, elem(ie)%state%ps_v(:,:,nt), dp)
@@ -474,7 +499,7 @@ contains
             gfr%qmax(:,:,nets:nete))
     end if
 
-    if (nf > 1) then
+    if (nf > 1 .or. .not. gfr%boost_pg1) then
        do ie = nets,nete
           if (gfr%check) wr(:,:,1) = elem(ie)%state%phis
           call limiter_clip_and_sum(np, elem(ie)%spheremp, gfr%qmin(1,1,ie), &
@@ -1472,7 +1497,7 @@ contains
     call gll_cleanup(gll1)
   end subroutine make_mass_matrix_2d
 
-  subroutine gfr_pg1_reconstruct_topo(hybrid, elem, nets, nete)
+  subroutine gfr_pg1_reconstruct_topo_hybrid(hybrid, elem, nets, nete)
     use kinds, only: iulog
     use edge_mod, only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
     use bndry_mod, only: bndry_exchangev
@@ -1484,7 +1509,7 @@ contains
     real(kind=real_kind) :: wr(np,np,2), ones(np,np,1)
     integer :: ie, nf, ncol
 
-    if (gfr%nphys /= 1) return
+    if (gfr%nphys /= 1 .or. .not. gfr%boost_pg1) return
 
     ones = one
 
@@ -1516,9 +1541,9 @@ contains
           elem(ie)%state%phis = elem(ie)%state%phis*elem(ie)%rspheremp(:,:)
        end do
     end if
-  end subroutine gfr_pg1_reconstruct_topo
+  end subroutine gfr_pg1_reconstruct_topo_hybrid
 
-  subroutine gfr_pg1_reconstruct(hybrid, nt, dt, hvcoord, elem, nets, nete)
+  subroutine gfr_pg1_reconstruct_hybrid(hybrid, nt, dt, hvcoord, elem, nets, nete)
     use dimensions_mod, only: nlev, qsize
     use hybvcoord_mod, only: hvcoord_t
     use physical_constants, only: p0, kappa
@@ -1536,7 +1561,7 @@ contains
     integer :: ie, k, qi
     logical :: q_adjustment
 
-    if (gfr%nphys /= 1) return
+    if (gfr%nphys /= 1 .or. .not. gfr%boost_pg1) return
 
     q_adjustment = ftype >= 1 .and. ftype <= 4
 
@@ -1580,7 +1605,7 @@ contains
     end do
 
     call gfr_f2g_dss(hybrid, elem, nets, nete)
-  end subroutine gfr_pg1_reconstruct
+  end subroutine gfr_pg1_reconstruct_hybrid
 
   subroutine gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
     type (GllFvRemap_t), intent(in) :: gfr
@@ -1636,6 +1661,54 @@ contains
        end do
     end do
   end subroutine gfr_pg1_g_reconstruct_vector
+
+  subroutine gfr_pg1_reconstruct_dom_mt(par, dom_mt, nt, dt, hvcoord, elem)
+    use parallel_mod, only: parallel_t
+    use domain_mod, only: domain1d_t
+    use thread_mod, only: hthreads
+    use hybvcoord_mod, only: hvcoord_t
+
+    type (parallel_t), intent(in) :: par
+    type (domain1d_t), intent(in) :: dom_mt(:)
+    integer, intent(in) :: nt
+    real(kind=real_kind), intent(in) :: dt
+    type (hvcoord_t), intent(in) :: hvcoord
+    type (element_t), intent(inout) :: elem(:)
+
+    type (hybrid_t) :: hybrid
+    integer :: nets, nete
+    
+#ifdef HORIZ_OPENMP
+    !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
+#endif
+    call gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
+    call gfr_pg1_reconstruct_hybrid(hybrid, nt, dt, hvcoord, elem, nets, nete)
+#ifdef HORIZ_OPENMP
+    !$omp end parallel
+#endif
+  end subroutine gfr_pg1_reconstruct_dom_mt
+
+  subroutine gfr_pg1_reconstruct_topo_dom_mt(par, dom_mt, elem)
+    use parallel_mod, only: parallel_t
+    use domain_mod, only: domain1d_t
+    use thread_mod, only: hthreads
+
+    type (parallel_t), intent(in) :: par
+    type (domain1d_t), intent(in) :: dom_mt(:)
+    type (element_t), intent(inout) :: elem(:)
+
+    type (hybrid_t) :: hybrid
+    integer :: nets, nete
+    
+#ifdef HORIZ_OPENMP
+    !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
+#endif
+    call gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
+    call gfr_pg1_reconstruct_topo_hybrid(hybrid, elem, nets, nete)
+#ifdef HORIZ_OPENMP
+    !$omp end parallel
+#endif
+  end subroutine gfr_pg1_reconstruct_topo_dom_mt
 
   ! ----------------------------------------------------------------------
   ! Internal helpers.
@@ -2055,7 +2128,7 @@ contains
              end do
           endif
           ! 2d. Remap
-          if (nf == 1) then
+          if (nf == 1 .and. gfr%boost_pg1) then
              do ie = nets, nete
                 elem(ie)%state%Q(:,:,1,1) = Qdp_fv(1,1,ie)/ps_v_fv(1,1,ie)
              end do
@@ -2086,7 +2159,7 @@ contains
              end do
              if (it == 2 .or. nf > 1) exit
              ! 4. pg1 OOA boost.
-             if (nf == 1) then
+             if (nf == 1 .and. gfr%boost_pg1) then
                 do ie = nets, nete
                    if (limit) then
                       qmins(1,1,ie) = min(minval(elem(ie)%state%Q(:,:,1,1)), qmins(1,1,ie))
@@ -2156,19 +2229,25 @@ contains
     type (element_t), intent(inout) :: elem(:)
     type (hvcoord_t) , intent(in) :: hvcoord
 
-    integer :: nphys
+    integer :: nphys, bi
+    logical :: boost_pg1
 
     do nphys = 1, np
-       ! This is meant to be called before threading starts.
-       if (hybrid%ithr == 0) call gfr_init(hybrid%par, elem, nphys)
-       !$omp barrier
+       do bi = 1,2
+          if (nphys > 1 .and. bi > 1) exit
+          boost_pg1 = bi == 2
 
-       call check(hybrid%par, dom_mt, gfr, elem, .false.)
+          ! This is meant to be called before threading starts.
+          if (hybrid%ithr == 0) call gfr_init(hybrid%par, elem, nphys, .true., boost_pg1)
+          !$omp barrier
 
-       ! This is meant to be called after threading ends.
-       !$omp barrier
-       if (hybrid%ithr == 0) call gfr_finish()
-       !$omp barrier
+          call check(hybrid%par, dom_mt, gfr, elem, .false.)
+
+          ! This is meant to be called after threading ends.
+          !$omp barrier
+          if (hybrid%ithr == 0) call gfr_finish()
+          !$omp barrier
+       end do
     end do
   end subroutine gfr_test
 end module gllfvremap_mod
