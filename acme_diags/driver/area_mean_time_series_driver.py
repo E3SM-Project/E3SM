@@ -89,6 +89,7 @@ def run_diag(parameter):
 
                 ref = ref_data.get_timeseries_variable(var)
                 print('Start and end time for selected time slices for ref data: ', ref.getTime().asComponentTime()[0],ref.getTime().asComponentTime()[-1])
+                print('ref shape',ref.shape, ref.long_name, ref.units)
 
                 
                 # TODO: Will this work if ref and test are timeseries data,

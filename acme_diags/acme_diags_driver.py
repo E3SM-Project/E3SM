@@ -20,12 +20,17 @@ import traceback
 import subprocess
 import cdp.cdp_run
 import acme_diags
+import cdms2.tvariable 
 from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.parser import SET_TO_PARSER
 from acme_diags.parser.core_parser import CoreParser
 from acme_diags.viewer.main import create_viewer
 from acme_diags.driver import utils
 from acme_diags import container
+
+
+# turn off MPI in cdms2 -- not currently supported by e3sm_diags
+cdms2.tvariable.HAVE_MPI = False
 
 
 def get_default_diags_path(set_name, run_type, print_path=True):
