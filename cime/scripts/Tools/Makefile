@@ -486,6 +486,29 @@ endif
 
 ifeq ($(MODEL),driver)
   INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj -I$(EXEROOT)/iac/obj
+# nagfor and gcc have incompatible LDFLAGS.
+# nagfor requires the weird "-Wl,-Wl,," syntax.
+# If done in config_compilers.xml, we break MCT.
+  ifeq ($(strip $(COMPILER)),nag)
+     ifeq ($(NETCDF_SEPARATE), false)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF)
+     else ifeq ($(NETCDF_SEPARATE), true)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_C)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_FORTRAN)
+     endif
+  endif
+else
+  ifeq ($(strip $(COMPILER)),nag)
+    ifeq ($(DEBUG), TRUE)
+      ifneq (,$(filter $(strip $(MACH)),hobart izumi))
+       # GCC needs to be able to link to
+       # nagfor runtime to get autoconf
+       # tests to work.
+         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts
+       endif
+    endif
+  endif
 endif
 
 ifndef MCT_LIBDIR
@@ -590,6 +613,18 @@ ifdef LIB_MPI
    else
       SLIBS += -L$(LIB_MPI) -l$(MPI_LIB_NAME)
    endif
+endif
+
+# For compiling and linking with external ESMF.
+# If linking to external ESMF library then include esmf.mk
+# ESMF_F90COMPILEPATHS
+# ESMF_F90LINKPATHS
+# ESMF_F90LINKRPATHS
+# ESMF_F90ESMFLINKLIBS
+ifeq ($(USE_ESMF_LIB), TRUE)
+  -include $(CCSM_ESMFMKFILE)
+  FFLAGS += $(ESMF_F90COMPILEPATHS)
+  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
 # Add PETSc libraries
