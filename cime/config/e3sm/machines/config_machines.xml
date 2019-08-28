@@ -1823,6 +1823,7 @@
 	     <command name="load">perl/5.20.0</command>
 	     <command name="load">cmake/3.3.0</command>
 	     <command name="load">python/2.7.8</command>
+	     <command name="load">svn/1.11.1</command>
 	   </modules>
 	   <modules compiler="intel">
 	     <command name="load">intel/15.0.1</command>
