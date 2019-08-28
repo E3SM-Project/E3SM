@@ -6,7 +6,7 @@ from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob, hashlib
+import glob, hashlib, shutil
 
 logger = logging.getLogger(__name__)
 # The inputdata_checksum.dat file will be read into this hash if it's available
@@ -132,7 +132,10 @@ def _download_if_in_repo(server, input_data_root, rel_path, isdirectory=False):
             # this is intended to prevent a race condition in which
             # one case attempts to use a refdir before another one has
             # completed the download
-            os.rename(full_path+".tmp",full_path)
+            if success:
+                os.rename(full_path+".tmp",full_path)
+            else:
+                shutil.rmtree(full_path+".tmp")
         else:
             success = server.getfile(rel_path, full_path)
     return success
@@ -354,8 +357,8 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
     For file in filename perform a chksum and compare the result to that stored in
     the local checksumfile, if isdirectory chksum all files in the directory of form *.*
     """
+    hashfile = os.path.join(rundir, local_chksum_file)
     if not chksum_hash:
-        hashfile = os.path.join(rundir, local_chksum_file)
         if not os.path.isfile(hashfile):
             expect(False, "Failed to find or download file {}".format(hashfile))
 

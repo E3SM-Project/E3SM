@@ -1,6 +1,254 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 8-26-2019
+Tag: cime5.6.22
+Answer Changes: None
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Fix nag on izumi.
+    - Update for cori modules.
+    - Update regex to match changing cheyenne login name.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+b37b70c3b Merge pull request #3207 from ESMCI/fischer/nag
+8d2fa1ec6 Merge pull request #3212 from ESMCI/fischer/cori_updates
+7f8173207 Merge pull request #3214 from ESMCI/fischer/cheyenne_hostname
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/Makefile
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 8-14-2019
+Tag: cime5.6.21
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Update config_machines to update pgi software stack on cheyenne
+    - If filename is abspath use for filepath.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+80ae90470 Merge pull request #3202 from ESMCI/fischer/cheyenne_pgi
+1c3da2440 Merge pull request #3200 from jedwards4b/aquap_fix
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/nmlgen.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 7-23-2019
+Tag: cime5.6.20
+Answer Changes: None
+Tests: scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Fix mkDepends issue with shr_assert_mod.
+    - Server 0 file length fix.
+    - Avoid undefined variable error.
+    - More workflow updates.
+    - Adds a --ensemble option to create_clone.
+    - Workflow development.
+    - Fix error in job_id
+    - Put correct wallclock format for cheyenne.
+    - Changes to continue workflow development.
+    - Aleph port.
+    - Add nemo.
+    - presaero file for SSP1-2.6
+    - Add workflow xml.
+    - Avoid divide by 0 when timing file is bad.
+
+User interface changes: 
+    - Add --ensemble to generate_cylc_workflow generating an ensemble driver 
+      for cylc workflow, this driver is generated in the first ensemble member 
+      and controls all members from a single cylc suite.
+    - Adds --ensemble to create_clone, to use this option the original case 
+      must end in one or more integers, so for example if the case is named 
+      case.001 and --ensemble 4 is used you will get case.002, case.003, case.004 
+      created.
+    - Adds support for external workflow engine cylc.
+    - New file for SSP1-2.6.
+    - Adds a --workflow-case option to create_newcase.
+
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+35e24bb50 Merge pull request #3179 from jedwards4b/mkDepends_fix
+3e0b00a6d Merge pull request #3176 from jedwards4b/Server0filelengthfix
+5f5408d4e avoid undefined variable error
+c5bd8567c Merge pull request #3173 from jedwards4b/jedwards/more_workflow
+12ca87021 Merge pull request #3169 from jedwards4b/ensemble_clone
+a2a48c423 Merge pull request #3168 from jedwards4b/jedwards/workflow_development
+802bf0dd1 fix error in job_id
+ba17f31f0 Merge pull request #3164 from jedwards4b/maint-5.6_cheyenne_wallclock_fix
+35b78be10 Merge pull request #3160 from jedwards4b/workflow_changes
+09c0a969e Merge pull request #3159 from jedwards4b/aleph_port
+735053ce7 Merge pull request #3153 from ESMCI/peano/nemo
+2e842025c Merge pull request #3152 from ekluzek/presaerossp2126
+fc70da142 Merge pull request #3125 from jedwards4b/add_workflow_xml
+958190cf2 Merge pull request #3138 from jedwards4b/timing_0_fix
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_files.xml
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_batch.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+A	config/cesm/machines/config_workflow.xml
+A	config/cesm/machines/cylc_suite.rc.template
+M	config/config_headers.xml
+M	config/e3sm/config_files.xml
+M	config/e3sm/machines/config_batch.xml
+A	config/e3sm/machines/config_workflow.xml
+M	config/xml_schemas/config_batch.xsd
+M	config/xml_schemas/config_compilers_v2.xsd
+A	config/xml_schemas/config_workflow.xsd
+M	scripts/Tools/Makefile
+A	scripts/Tools/generate_cylc_workflow.py
+M	scripts/Tools/mkDepends
+M	scripts/Tools/preview_run
+M	scripts/create_clone
+M	scripts/create_newcase
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/XML/batch.py
+M	scripts/lib/CIME/XML/env_base.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_mach_specific.py
+A	scripts/lib/CIME/XML/env_workflow.py
+M	scripts/lib/CIME/XML/generic_xml.py
+A	scripts/lib/CIME/XML/workflow.py
+M	scripts/lib/CIME/aprun.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_clone.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/lib/CIME/case/case_st_archive.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/build_scripts/buildlib.csm_share
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/share/timing/Makefile
+M	src/share/util/shr_file_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 6-6-2019
+Tag: cime5.6.19
+Answer Changes: None
+Tests: scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Remove changes to case_run, fix a module issue on cori-knl.
+    - Fix was not py2 compatible, this one is.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+1adcdeb Merge pull request #3136 from jedwards4b/cori_and_case_run
+40615b7 Merge pull request #3134 from jedwards4b/encodefixagain
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/case/case_run.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 6-5-2019
+Tag: cime5.6.18
+Answer Changes: Round Off for centos7-linux and cori
+Tests: scripts_regression_tests on cori and cheyenne
+Dependencies:
+
+Brief Summary:
+   - Update modules for centos7-linux, fix py3 error in case_run.py.
+   - Update modules on cori-haswell and cori-knl.
+   - Add test_release as a test category consulted to determine if a compset -- grid combination is supported.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+6704570 Merge pull request #3133 from jedwards4b/centos7-update
+d40e715 Merge pull request #3132 from jedwards4b/cori_update
+d86457d Merge pull request #3128 from gold2718/add_test_release
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_run.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 5-29-2019
+Tag: cime5.6.17
+Answer Changes: None
+Tests:  Manually ran archive_metadata
+        By hand
+Dependencies:
+
+Brief Summary:
+    - Update archive_metadata strip to lstrip.
+    - Correct error messages from wget interface.
+    - Fix README
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+bacf1db Merge pull request #3122 from bertinia/maint-5.6_archive_metadata
+c050233 Merge pull request #3119 from jedwards4b/wget_message_fix
+bd7e7fd fix README
+
+Modified files: git diff --name-status [previous_tag]
+M       ChangeLog
+M       scripts/Tools/archive_metadata
+M       scripts/lib/CIME/Servers/wget.py
+M       tools/statistical_ensemble_test/README
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 5-15-2019
 Tag: cime5.6.16
 Answer Changes: climate-changing -- new datasets

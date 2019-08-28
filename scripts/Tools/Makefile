@@ -161,9 +161,8 @@ ifdef CPRE
   CONTIGUOUS_FLAG := $(patsubst -D%,$(CPRE)%,$(CONTIGUOUS_FLAG))
 endif
 
-ifndef AR
-   AR := ar
-endif
+AR ?= ar
+ARFLAGS ?= -r
 
 ifdef NETCDF_C_PATH
   ifndef NETCDF_FORTRAN_PATH
@@ -418,7 +417,7 @@ ifeq ($(MODEL),driver)
 else
   ifeq ($(strip $(COMPILER)),nag)
     ifeq ($(DEBUG), TRUE)
-      ifeq ($(strip $(MACH)),hobart)
+      ifneq (,$(filter $(strip $(MACH)),hobart izumi))
        # GCC needs to be able to link to
        # nagfor runtime to get autoconf
        # tests to work.
@@ -541,6 +540,10 @@ ifdef LIB_MPI
    else
       SLIBS += -L$(LIB_MPI) -l$(MPI_LIB_NAME)
    endif
+endif
+
+ifdef XIOS_PATH
+  SLIBS += -L$(XIOS_PATH)/lib -lxios -lstdc++
 endif
 
 # For compiling and linking with external ESMF.
@@ -871,7 +874,7 @@ $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
 	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(LDFLAGS)
 
 $(COMPLIB): $(OBJS)
-	$(AR) -r $(COMPLIB) $(OBJS)
+	$(AR) $(ARFLAGS) $(COMPLIB) $(OBJS)
 
 .c.o:
 	$(CC) -c $(INCLDIR) $(INCS) $(CFLAGS)  $<
