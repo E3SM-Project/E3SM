@@ -71,7 +71,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
     din_loc_root = case.get_value("DIN_LOC_ROOT")
     testcase     = case.get_value("TESTCASE")
     expect(not (not os.path.isdir(din_loc_root) and testcase != "SBN"),
-           "inputdata root is not a directory: {}".format(din_loc_root))
+           "inputdata root is not a directory or is not readable: {}".format(din_loc_root))
 
     # Remove batch scripts
     if reset or clean:
