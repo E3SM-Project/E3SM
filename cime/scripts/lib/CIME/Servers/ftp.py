@@ -7,6 +7,7 @@ from CIME.Servers.generic_server import GenericServer
 from ftplib import FTP as FTPpy
 from ftplib import all_errors as all_ftp_errors
 
+
 logger = logging.getLogger(__name__)
 # I think that multiple inheritence would be useful here, but I couldnt make it work
 # in a py2/3 compatible way.
@@ -50,6 +51,8 @@ class FTP(GenericServer):
         try:
             stat = self.ftp.retrbinary('RETR {}'.format(rel_path), open(full_path, "wb").write)
         except all_ftp_errors:
+            if os.path.isfile(full_path):
+                os.remove(full_path)
             logger.warning("ERROR from ftp server, trying next server")
             return False
 
