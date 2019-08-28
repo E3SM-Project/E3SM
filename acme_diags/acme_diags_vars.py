@@ -20,9 +20,6 @@ from acme_diags.derivations.acme import derived_variables
 # turn off MPI in cdms2 -- not currently supported by e3sm_diags
 cdms2.tvariable.HAVE_MPI = False
 
-DUMMY_FILE_PATH = '/Users/shaheen2/test_model_data_for_acme_diags/20161118.beta0.FC5COSP.ne30_ne30.edison_ANN_climo.nc'
-
-
 def main():
     vars_in_e3sm_diags = list_of_vars_in_e3sm_diags()
     vars_with_derived_vars = sorted(check_for_derived_vars(vars_in_e3sm_diags))
