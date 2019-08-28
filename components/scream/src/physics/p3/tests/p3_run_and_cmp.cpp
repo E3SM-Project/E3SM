@@ -63,7 +63,7 @@ struct Baseline {
         params_.push_back({ic::Factory::mixed, 1800, it, log_predictNc});
   }
 
-  Int generate_baseline (const std::string& filename) {
+  Int generate_baseline (const std::string& filename, bool use_fortran) {
     auto fid = FILEPtr(fopen(filename.c_str(), "w"));
     scream_require_msg( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
@@ -71,7 +71,7 @@ struct Baseline {
       // Run reference p3 on this set of parameters.
       const auto d = ic::Factory::create(ps.ic, ic_ncol);
       set_params(ps, *d);
-      p3_init();
+      p3_init(use_fortran);
       p3_main(*d);
       // Save the fields to the baseline file.
       write(fid, d);
@@ -79,7 +79,7 @@ struct Baseline {
     return nerr;
   }
 
-  Int run_and_cmp (const std::string& filename, const double& tol) {
+  Int run_and_cmp (const std::string& filename, const double& tol, bool use_fortran) {
     auto fid = FILEPtr(fopen(filename.c_str(), "r"));
     scream_require_msg( fid, "generate_baseline can't read " << filename);
     Int nerr = 0, ne;
@@ -93,7 +93,7 @@ struct Baseline {
       {
         const auto d = ic::Factory::create(ps.ic, ic_ncol);
         set_params(ps, *d);
-        p3_init();
+        p3_init(use_fortran);
         p3_main(*d);
         ne = compare("ref", tol, d_ref, d);
         if (ne) std::cout << "Ref impl failed.\n";
@@ -167,14 +167,16 @@ int main (int argc, char** argv) {
       argv[0] << " [options] baseline-filename\n"
       "Options:\n"
       "  -g        Generate baseline file.\n"
+      "  -f        Use fortran impls instead of c++.\n"
       "  -t <tol>  Tolerance for relative error.\n";
     return 1;
   }
 
-  bool generate = false;
+  bool generate = false, use_fortran = false;
   scream::Real tol = 0;
   for (int i = 1; i < argc-1; ++i) {
     if (util::eq(argv[i], "-g", "--generate")) generate = true;
+    if (util::eq(argv[i], "-f", "--fortran")) use_fortran = true;
     if (util::eq(argv[i], "-t", "--tol")) {
       expect_another_arg(i, argc);
       ++i;
@@ -190,10 +192,10 @@ int main (int argc, char** argv) {
     Baseline bln;
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
-      nerr += bln.generate_baseline(baseline_fn);
+      nerr += bln.generate_baseline(baseline_fn, use_fortran);
     } else {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
-      nerr += bln.run_and_cmp(baseline_fn, tol);
+      nerr += bln.run_and_cmp(baseline_fn, tol, use_fortran);
     }
     P3GlobalForFortran::deinit();
   } scream::finalize_scream_session();

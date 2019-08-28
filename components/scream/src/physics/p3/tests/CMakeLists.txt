@@ -5,8 +5,9 @@ CreateUnitTest(p3_tests "p3_tests.cpp;p3_unit_tests.cpp" "${NEED_LIBS}" THREADS 
 
 CreateUnitTest(p3_run_and_cmp "p3_run_and_cmp.cpp" "${NEED_LIBS}" THREADS ${SCREAM_TEST_MAX_THREADS} EXE_ARGS "${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline" DEP p3_tests_ut_np1_omp1 OPTIONAL EXCLUDE_MAIN_CPP)
 
+# By default, baselines should be created using all fortran
 add_custom_target(p3_baseline
-  COMMAND $<TARGET_FILE:p3_run_and_cmp> -g ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
+  COMMAND $<TARGET_FILE:p3_run_and_cmp> -f -g ${SCREAM_TEST_DATA_DIR}/p3_run_and_cmp.baseline)
 
 add_dependencies(baseline p3_baseline)
 

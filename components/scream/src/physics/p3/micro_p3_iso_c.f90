@@ -171,6 +171,13 @@ contains
          vap_ice_exchange, vap_cld_exchange)
   end subroutine p3_main_c
 
+  subroutine p3_use_cxx_c(arg_use_cxx) bind(C)
+    use micro_p3, only: use_cxx
+
+    logical(kind=c_bool), value, intent(in) :: arg_use_cxx
+
+    use_cxx = arg_use_cxx
+  end subroutine p3_use_cxx_c
 
   subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RhoH2O, &
                  MWH2O, MWdry, gravit, LatVap, LatIce,        &

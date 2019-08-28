@@ -33,15 +33,24 @@ void access_lookup_table_coll_c(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 namespace scream {
 namespace p3 {
 
+//
+// In all C++ -> Fortran bridge functions. You should see p3_init(true). P3 needs
+// to be initialized since most of its function depend on global tables to be
+// populated. The 'true' argument is to set p3 to use its fortran implementations
+// instead of calling back to C++. We want this behavior since it doesn't make much
+// sense for C++ to bridge over to fortran only to have fortran bridge back to C++.
+// If the client wanted the C++ implementation, they should just call it directly.
+//
+
 void p3_init_a(P3InitAFortranData& d)
 {
-  p3_init(); // need to initialize p3 first so that tables are loaded
+  p3_init(true); // need to initialize p3 first so that tables are loaded
   p3_init_a_c(d.itab.data(), d.itabcol.data());
 }
 
 void find_lookuptable_indices_1a(LookupIceData& d)
 {
-  p3_init(); // need to initialize p3 first so that tables are loaded
+  p3_init(true); // need to initialize p3 first so that tables are loaded
   find_lookuptable_indices_1a_c(&d.dumi, &d.dumjj, &d.dumii, &d.dumzz,
                                 &d.dum1, &d.dum4, &d.dum5, &d.dum6,
                                 d.qitot, d.nitot, d.qirim, d.rhop);
@@ -49,20 +58,20 @@ void find_lookuptable_indices_1a(LookupIceData& d)
 
 void find_lookuptable_indices_1b(LookupIceDataB& d)
 {
-  p3_init();
+  p3_init(true);
   find_lookuptable_indices_1b_c(&d.dumj, &d.dum3, d.qr, d.nr);
 }
 
 void access_lookup_table(AccessLookupTableData& d)
 {
-  p3_init(); // need to initialize p3 first so that tables are loaded
+  p3_init(true); // need to initialize p3 first so that tables are loaded
   access_lookup_table_c(d.lid.dumjj, d.lid.dumii, d.lid.dumi, d.index,
                         d.lid.dum1, d.lid.dum4, d.lid.dum5, &d.proc);
 }
 
 void access_lookup_table_coll(AccessLookupTableCollData& d)
 {
-  p3_init();
+  p3_init(true);
   access_lookup_table_coll_c(d.lid.dumjj, d.lid.dumii, d.lidb.dumj, d.lid.dumi, d.index,
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
 }

@@ -61,7 +61,7 @@ private:
   void init(const FortranData::Ptr& d);
 };
 
-void p3_init();
+void p3_init(bool use_fortran=false);
 void p3_main(const FortranData& d);
 
 // We will likely want to remove these checks in the future, as we're not tied

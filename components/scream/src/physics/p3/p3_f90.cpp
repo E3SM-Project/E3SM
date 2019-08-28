@@ -12,6 +12,7 @@ extern "C" {
                  Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce, 
                  Real CpLiq, Real Tmelt, Real Pi, Int iulog, bool masterproc);
   void p3_init_c(const char** lookup_file_dir, int* info);
+  void p3_use_cxx_c(bool use_cxx);
   void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th,
                  Real* qv, Real dt, Real* qitot, Real* qirim,
                  Real* nitot, Real* birim, Real* pres,
@@ -124,7 +125,7 @@ void micro_p3_utils_init () {
                  c::CpLiq, c::Tmelt, c::Pi, c::iulog, c::masterproc);
 }
 
-void p3_init () {
+void p3_init (bool use_fortran) {
   static bool is_init = false;
   if (!is_init) {
     micro_p3_utils_init();
@@ -134,6 +135,7 @@ void p3_init () {
     scream_require_msg(info == 0, "p3_init_c returned info " << info);
     is_init = true;
   }
+  p3_use_cxx_c(!use_fortran);
 }
 
 void p3_main (const FortranData& d) {
