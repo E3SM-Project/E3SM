@@ -142,6 +142,7 @@ struct Functions
   static Spack apply_table(const Smask& qr_gt_small, const view_2d_table& table,
                            const Table3& t);
 
+  // Apply TableIce data to the ice tables to return a value.
   KOKKOS_FUNCTION
   static Spack apply_table_ice(const Smask& qiti_gt_small, const int& index, const view_itab_table& itab,
                                const TableIce& t);
