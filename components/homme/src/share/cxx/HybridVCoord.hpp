@@ -57,7 +57,7 @@ public:
 
   bool m_inited;
 
-  // This reference dp is computed several times in the code, so we decide
+  // This reference p is computed several times in the code, so we decide
   KOKKOS_INLINE_FUNCTION
   void compute_dp_ref (const KernelVariables& kv,
                        const ExecViewUnmanaged<const Real[NP][NP]>& ps,
