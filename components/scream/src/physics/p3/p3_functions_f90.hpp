@@ -13,6 +13,11 @@
 namespace scream {
 namespace p3 {
 
+//
+// Singleton for holding the same global data that are maintained in
+// micro_p3, but for use in C++. This data is necessary to complete
+// the "bridge" when calling C++ from micro_p3.
+//
 struct P3GlobalForFortran
 {
   using P3F = Functions<Real, HostDevice>;
@@ -20,13 +25,20 @@ struct P3GlobalForFortran
   using view_itab_table = typename P3F::view_itab_table;
   using view_itabcol_table = typename P3F::view_itabcol_table;
 
-  static bool is_init;
-  static view_itab_table* itab;
-  static view_itabcol_table* itabcol;
+  view_itab_table* itab;
+  view_itabcol_table* itabcol;
 
-  static void init();
+  static const P3GlobalForFortran& get();
 
+  // All kokkos views must be destructed before Kokkos::finalize
   static void deinit();
+
+  P3GlobalForFortran(const P3GlobalForFortran&) = delete;
+  P3GlobalForFortran& operator=(const P3GlobalForFortran&) = delete;
+
+ private:
+  P3GlobalForFortran();
+  ~P3GlobalForFortran() = default;
 };
 
 struct P3InitAFortranData

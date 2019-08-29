@@ -149,8 +149,7 @@ struct Functions
 
   // Interpolates lookup table values for rain/ice collection processes
   KOKKOS_FUNCTION
-  static Spack apply_table_coll(const Smask& qiti_gt_small, const int& index, const view_itabcol_table& itabcoll
-,
+  static Spack apply_table_coll(const Smask& qiti_gt_small, const int& index, const view_itabcol_table& itabcoll,
                                 const TableIce& ti, const TableRain& tr);
 
   // -- Sedimentation time step

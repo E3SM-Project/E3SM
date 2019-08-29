@@ -1327,42 +1327,39 @@ contains
 #ifdef SCREAM_CONFIG_IS_CMAKE
     if (use_cxx) then
        call access_lookup_table_f(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc)
-
-    else
-#endif
-       ! get value at current density index
-
-       ! first interpolate for current rimed fraction index
-       iproc1 = itab(dumjj,dumii,dumi,index)+(dum1-real(dumi))*(itab(dumjj,dumii,       &
-            dumi+1,index)-itab(dumjj,dumii,dumi,index))
-
-       ! linearly interpolate to get process rates for rimed fraction index + 1
-
-       gproc1 = itab(dumjj,dumii+1,dumi,index)+(dum1-real(dumi))*(itab(dumjj,dumii+1,   &
-            dumi+1,index)-itab(dumjj,dumii+1,dumi,index))
-
-       tmp1   = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
-
-       ! get value at density index + 1
-
-       ! first interpolate for current rimed fraction index
-
-       iproc1 = itab(dumjj+1,dumii,dumi,index)+(dum1-real(dumi))*(itab(dumjj+1,dumii,   &
-            dumi+1,index)-itab(dumjj+1,dumii,dumi,index))
-
-       ! linearly interpolate to get process rates for rimed fraction index + 1
-
-       gproc1 = itab(dumjj+1,dumii+1,dumi,index)+(dum1-real(dumi))*(itab(dumjj+1,       &
-            dumii+1,dumi+1,index)-itab(dumjj+1,dumii+1,dumi,index))
-
-       tmp2   = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
-
-       ! get final process rate
-       proc   = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
        return
-#ifdef SCREAM_CONFIG_IS_CMAKE
     endif
 #endif
+    ! get value at current density index
+
+    ! first interpolate for current rimed fraction index
+    iproc1 = itab(dumjj,dumii,dumi,index)+(dum1-real(dumi))*(itab(dumjj,dumii,       &
+         dumi+1,index)-itab(dumjj,dumii,dumi,index))
+
+    ! linearly interpolate to get process rates for rimed fraction index + 1
+
+    gproc1 = itab(dumjj,dumii+1,dumi,index)+(dum1-real(dumi))*(itab(dumjj,dumii+1,   &
+         dumi+1,index)-itab(dumjj,dumii+1,dumi,index))
+
+    tmp1   = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
+
+    ! get value at density index + 1
+
+    ! first interpolate for current rimed fraction index
+
+    iproc1 = itab(dumjj+1,dumii,dumi,index)+(dum1-real(dumi))*(itab(dumjj+1,dumii,   &
+         dumi+1,index)-itab(dumjj+1,dumii,dumi,index))
+
+    ! linearly interpolate to get process rates for rimed fraction index + 1
+
+    gproc1 = itab(dumjj+1,dumii+1,dumi,index)+(dum1-real(dumi))*(itab(dumjj+1,       &
+         dumii+1,dumi+1,index)-itab(dumjj+1,dumii+1,dumi,index))
+
+    tmp2   = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
+
+    ! get final process rate
+    proc   = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
+    return
   END SUBROUTINE access_lookup_table
 
   !------------------------------------------------------------------------------------------!
@@ -1381,71 +1378,68 @@ contains
 #ifdef SCREAM_CONFIG_IS_CMAKE
     if (use_cxx) then
        call access_lookup_table_coll_f(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
-
-    else
-#endif
-       ! This subroutine interpolates lookup table values for rain/ice collection processes
-
-       ! current density index
-
-       ! current rime fraction index
-       dproc1  = itabcoll(dumjj,dumii,dumi,dumj,index)+(dum1-real(dumi))*                &
-            (itabcoll(dumjj,dumii,dumi+1,dumj,index)-itabcoll(dumjj,dumii,dumi,    &
-            dumj,index))
-
-       dproc2  = itabcoll(dumjj,dumii,dumi,dumj+1,index)+(dum1-real(dumi))*             &
-            (itabcoll(dumjj,dumii,dumi+1,dumj+1,index)-itabcoll(dumjj,dumii,dumi,  &
-            dumj+1,index))
-
-       iproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
-
-       ! rime fraction index + 1
-
-       dproc1  = itabcoll(dumjj,dumii+1,dumi,dumj,index)+(dum1-real(dumi))*             &
-            (itabcoll(dumjj,dumii+1,dumi+1,dumj,index)-itabcoll(dumjj,dumii+1,     &
-            dumi,dumj,index))
-
-       dproc2  = itabcoll(dumjj,dumii+1,dumi,dumj+1,index)+(dum1-real(dumi))*           &
-            (itabcoll(dumjj,dumii+1,dumi+1,dumj+1,index)-itabcoll(dumjj,dumii+1,   &
-            dumi,dumj+1,index))
-
-       gproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
-       tmp1    = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
-
-       ! density index + 1
-
-       ! current rime fraction index
-
-       dproc1  = itabcoll(dumjj+1,dumii,dumi,dumj,index)+(dum1-real(dumi))*             &
-            (itabcoll(dumjj+1,dumii,dumi+1,dumj,index)-itabcoll(dumjj+1,dumii,     &
-            dumi,dumj,index))
-
-       dproc2  = itabcoll(dumjj+1,dumii,dumi,dumj+1,index)+(dum1-real(dumi))*           &
-            (itabcoll(dumjj+1,dumii,dumi+1,dumj+1,index)-itabcoll(dumjj+1,dumii,   &
-            dumi,dumj+1,index))
-
-       iproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
-
-       ! rime fraction index + 1
-
-       dproc1  = itabcoll(dumjj+1,dumii+1,dumi,dumj,index)+(dum1-real(dumi))*           &
-            (itabcoll(dumjj+1,dumii+1,dumi+1,dumj,index)-itabcoll(dumjj+1,dumii+1, &
-            dumi,dumj,index))
-
-       dproc2  = itabcoll(dumjj+1,dumii+1,dumi,dumj+1,index)+(dum1-real(dumi))*         &
-            (itabcoll(dumjj+1,dumii+1,dumi+1,dumj+1,index)-itabcoll(dumjj+1,       &
-            dumii+1,dumi,dumj+1,index))
-
-       gproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
-       tmp2    = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
-
-       ! interpolate over density to get final values
-       proc    = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
-
        return
-#ifdef SCREAM_CONFIG_IS_CMAKE
     endif
 #endif
+    ! This subroutine interpolates lookup table values for rain/ice collection processes
+
+    ! current density index
+
+    ! current rime fraction index
+    dproc1  = itabcoll(dumjj,dumii,dumi,dumj,index)+(dum1-real(dumi))*                &
+         (itabcoll(dumjj,dumii,dumi+1,dumj,index)-itabcoll(dumjj,dumii,dumi,    &
+         dumj,index))
+
+    dproc2  = itabcoll(dumjj,dumii,dumi,dumj+1,index)+(dum1-real(dumi))*             &
+         (itabcoll(dumjj,dumii,dumi+1,dumj+1,index)-itabcoll(dumjj,dumii,dumi,  &
+         dumj+1,index))
+
+    iproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
+
+    ! rime fraction index + 1
+
+    dproc1  = itabcoll(dumjj,dumii+1,dumi,dumj,index)+(dum1-real(dumi))*             &
+         (itabcoll(dumjj,dumii+1,dumi+1,dumj,index)-itabcoll(dumjj,dumii+1,     &
+         dumi,dumj,index))
+
+    dproc2  = itabcoll(dumjj,dumii+1,dumi,dumj+1,index)+(dum1-real(dumi))*           &
+         (itabcoll(dumjj,dumii+1,dumi+1,dumj+1,index)-itabcoll(dumjj,dumii+1,   &
+         dumi,dumj+1,index))
+
+    gproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
+    tmp1    = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
+
+    ! density index + 1
+
+    ! current rime fraction index
+
+    dproc1  = itabcoll(dumjj+1,dumii,dumi,dumj,index)+(dum1-real(dumi))*             &
+         (itabcoll(dumjj+1,dumii,dumi+1,dumj,index)-itabcoll(dumjj+1,dumii,     &
+         dumi,dumj,index))
+
+    dproc2  = itabcoll(dumjj+1,dumii,dumi,dumj+1,index)+(dum1-real(dumi))*           &
+         (itabcoll(dumjj+1,dumii,dumi+1,dumj+1,index)-itabcoll(dumjj+1,dumii,   &
+         dumi,dumj+1,index))
+
+    iproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
+
+    ! rime fraction index + 1
+
+    dproc1  = itabcoll(dumjj+1,dumii+1,dumi,dumj,index)+(dum1-real(dumi))*           &
+         (itabcoll(dumjj+1,dumii+1,dumi+1,dumj,index)-itabcoll(dumjj+1,dumii+1, &
+         dumi,dumj,index))
+
+    dproc2  = itabcoll(dumjj+1,dumii+1,dumi,dumj+1,index)+(dum1-real(dumi))*         &
+         (itabcoll(dumjj+1,dumii+1,dumi+1,dumj+1,index)-itabcoll(dumjj+1,       &
+         dumii+1,dumi,dumj+1,index))
+
+    gproc1  = dproc1+(dum3-real(dumj))*(dproc2-dproc1)
+    tmp2    = iproc1+(dum4-real(dumii))*(gproc1-iproc1)
+
+    ! interpolate over density to get final values
+    proc    = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
+
+    return
   END SUBROUTINE access_lookup_table_coll
 
   !==========================================================================================!
@@ -1557,55 +1551,52 @@ contains
     if (use_cxx) then
        call find_lookuptable_indices_1a_f(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
             qitot,nitot,qirim,rhop)
-
-    else
-#endif
-       !------------------------------------------------------------------------------------------!
-
-       ! find index for qi (normalized ice mass mixing ratio = qitot/nitot)
-       !             dum1 = (log10(qitot)+16.)/0.70757  !orig
-       !             dum1 = (log10(qitot)+16.)*1.41328
-       ! we are inverting this equation from the lookup table to solve for i:
-       ! qitot/nitot=261.7**((i+10)*0.1)*1.e-18
-       !dum1 = (log10(qitot/nitot)+18.)/(0.1*log10(261.7))-10.
-       dum1 = (log10(qitot/nitot)+18._rtype)*lookup_table_1a_dum1_c-10._rtype ! For computational efficiency
-       dumi = int(dum1)
-       ! set limits (to make sure the calculated index doesn't exceed range of lookup table)
-       dum1 = min(dum1,real(isize))
-       dum1 = max(dum1,1.)
-       dumi = max(1,dumi)
-       dumi = min(isize-1,dumi)
-
-       ! find index for rime mass fraction
-       dum4  = (qirim/qitot)*3._rtype + 1._rtype
-       dumii = int(dum4)
-       ! set limits
-       dum4  = min(dum4,real(rimsize))
-       dum4  = max(dum4,1._rtype)
-       dumii = max(1,dumii)
-       dumii = min(rimsize-1,dumii)
-
-       ! find index for bulk rime density
-       ! (account for uneven spacing in lookup table for density)
-       if (rhop.le.650._rtype) then
-          dum5 = (rhop-50._rtype)*0.005_rtype + 1._rtype
-       else
-          dum5 =(rhop-650._rtype)*0.004_rtype + 4._rtype
-       endif
-       dumjj = int(dum5)
-       ! set limits
-       dum5  = min(dum5,real(densize))
-       dum5  = max(dum5,1._rtype)
-       dumjj = max(1,dumjj)
-       dumjj = min(densize-1,dumjj)
-
-       dum6  = -99
-       dumzz = -99
-
        return
-#ifdef SCREAM_CONFIG_IS_CMAKE
     endif
 #endif
+    !------------------------------------------------------------------------------------------!
+    
+    ! find index for qi (normalized ice mass mixing ratio = qitot/nitot)
+    !             dum1 = (log10(qitot)+16.)/0.70757  !orig
+    !             dum1 = (log10(qitot)+16.)*1.41328
+    ! we are inverting this equation from the lookup table to solve for i:
+    ! qitot/nitot=261.7**((i+10)*0.1)*1.e-18
+    !dum1 = (log10(qitot/nitot)+18.)/(0.1*log10(261.7))-10.
+    dum1 = (log10(qitot/nitot)+18._rtype)*lookup_table_1a_dum1_c-10._rtype ! For computational efficiency
+    dumi = int(dum1)
+    ! set limits (to make sure the calculated index doesn't exceed range of lookup table)
+    dum1 = min(dum1,real(isize))
+    dum1 = max(dum1,1.)
+    dumi = max(1,dumi)
+    dumi = min(isize-1,dumi)
+
+    ! find index for rime mass fraction
+    dum4  = (qirim/qitot)*3._rtype + 1._rtype
+    dumii = int(dum4)
+    ! set limits
+    dum4  = min(dum4,real(rimsize))
+    dum4  = max(dum4,1._rtype)
+    dumii = max(1,dumii)
+    dumii = min(rimsize-1,dumii)
+
+    ! find index for bulk rime density
+    ! (account for uneven spacing in lookup table for density)
+    if (rhop.le.650._rtype) then
+       dum5 = (rhop-50._rtype)*0.005_rtype + 1._rtype
+    else
+       dum5 =(rhop-650._rtype)*0.004_rtype + 4._rtype
+    endif
+    dumjj = int(dum5)
+    ! set limits
+    dum5  = min(dum5,real(densize))
+    dum5  = max(dum5,1._rtype)
+    dumjj = max(1,dumjj)
+    dumjj = min(densize-1,dumjj)
+
+    dum6  = -99
+    dumzz = -99
+
+    return
   end subroutine find_lookupTable_indices_1a
 
   !======================================================================================!
@@ -1634,32 +1625,29 @@ contains
 #ifdef SCREAM_CONFIG_IS_CMAKE
     if (use_cxx) then
        call find_lookupTable_indices_1b_f(dumj,dum3,qr,nr)
-
-    else
-#endif
-       !------------------------------------------------------------------------------------------!
-       real_rcollsize = real(rcollsize)
-       ! find index for scaled mean rain size
-       ! if no rain, then just choose dumj = 1 and do not calculate rain-ice collection processes
-       if (qr.ge.qsmall .and. nr.gt.0._rtype) then
-          ! calculate scaled mean size for consistency with ice lookup table
-          dumlr = (qr/(pi*rhow*nr))**thrd
-          dum3  = (log10(1._rtype*dumlr)+5._rtype)*10.70415_rtype
-          dumj  = int(dum3)
-          ! set limits
-          dum3  = min(dum3,real_rcollsize)
-          dum3  = max(dum3,1._rtype)
-          dumj  = max(1,dumj)
-          dumj  = min(rcollsize-1,dumj)
-       else
-          dumj  = 1
-          dum3  = 1._rtype
-       endif
-
        return
-#ifdef SCREAM_CONFIG_IS_CMAKE
     endif
 #endif
+    !------------------------------------------------------------------------------------------!
+    real_rcollsize = real(rcollsize)
+    ! find index for scaled mean rain size
+    ! if no rain, then just choose dumj = 1 and do not calculate rain-ice collection processes
+    if (qr.ge.qsmall .and. nr.gt.0._rtype) then
+       ! calculate scaled mean size for consistency with ice lookup table
+       dumlr = (qr/(pi*rhow*nr))**thrd
+       dum3  = (log10(1._rtype*dumlr)+5._rtype)*10.70415_rtype
+       dumj  = int(dum3)
+       ! set limits
+       dum3  = min(dum3,real_rcollsize)
+       dum3  = max(dum3,1._rtype)
+       dumj  = max(1,dumj)
+       dumj  = min(rcollsize-1,dumj)
+    else
+       dumj  = 1
+       dum3  = 1._rtype
+    endif
+
+    return
 
   end subroutine find_lookupTable_indices_1b
 
