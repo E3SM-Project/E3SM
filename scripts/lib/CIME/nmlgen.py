@@ -434,15 +434,13 @@ class NamelistGenerator(object):
         user_stream_path = os.path.join(caseroot, "user_"+os.path.basename(stream_path))
 
         # Use the user's stream file, or create one if necessary.
-        if os.path.exists(user_stream_path):
-            safe_copy(user_stream_path, stream_path)
-
         config = config.copy()
         config["stream"] = stream
 
 
         # Stream-specific configuration.
-        if os.path.isfile(stream_path):
+        if os.path.exists(user_stream_path):
+            safe_copy(user_stream_path, stream_path)
             strmobj = Stream(infile=stream_path)
             domain_filepath = strmobj.get_value("domainInfo/filePath")
             data_filepath = strmobj.get_value("fieldInfo/filePath")
