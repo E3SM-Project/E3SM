@@ -332,8 +332,7 @@ TEST_CASE("p3_ice_tables", "[p3_functions]")
 
   TTI::test_read_lookup_tables_bfb();
   TTI::run_phys();
-  TTI
-::run_bfb();
+  TTI::run_bfb();
 }
 
 }
