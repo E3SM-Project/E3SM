@@ -238,6 +238,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    real(r8) :: dp(np,np,nlev),fq,fq0,qn0, ftmp(npsq,nlev,2)
    real(r8) :: tmp_dyn(np,np,nlev,nelemd)
    real(r8) :: fmtmp(np,np,nlev)
+   real(r8) :: p_tmp(np,np,nlev)      ! temporary pressure for DYN_OMEGA output
+   real(r8) :: om_tmp(np,np,nlev)     ! temporary omega for DYN_OMEGA output
    real(r8) :: dtime
    integer :: nlev_tot
    nlev_tot=(3+pcnst)*nlev
@@ -457,8 +459,15 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call outfld('DYN_Q'     ,dyn_in%elem(ie)%state%Q(:,:,:,1)       ,npsq,ie)
       call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
       call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
-      call outfld('DYN_OMEGA' ,dyn_in%elem(ie)%derived%omega_p(:,:,:) ,npsq,ie)
       call outfld('DYN_PS'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
+      ! Multiply omega_p by pressure t get omega for output
+      p_tmp(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0 + dyn_in%elem(ie)%state%dp3d(:,:,1,tl_f)/2
+      do k = 2,nlev
+         p_tmp(:,:,k) = p_tmp(:,:,k-1) + ( dyn_in%elem(ie)%state%dp3d(:,:,k-1,tl_f) &
+                                          +dyn_in%elem(ie)%state%dp3d(:,:,k  ,tl_f) )/2
+         om_tmp(:,:,k) = dyn_in%elem(ie)%derived%omega_p(:,:,k) * p_tmp(:,:,k)
+      enddo
+      call outfld('DYN_OMEGA',om_tmp(:,:,:),npsq,ie)
    end do
    
    
