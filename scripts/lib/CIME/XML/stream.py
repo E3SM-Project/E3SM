@@ -28,14 +28,10 @@ class Stream(GenericXML):
         expect(subgroup is None, "This class does not support subgroups")
         value = None
         node = None
-        if item.startswith("domain"):
-            node = self.scan_child("domainInfo")
-        elif item.startswith("data"):
-            node = self.scan_child("fieldInfo")
-        if item.endswith("filepath"):
-            node = self.scan_child("filePath", root=node)
-        elif item.endswith("filenames"):
-            node = self.scan_child("fileNames", root=node)
+        names = item.split('/')
+        node = None
+        for name in names:
+            node = self.scan_child(name, root=node)
         if node is not None:
             value = self.text(node).strip()
 

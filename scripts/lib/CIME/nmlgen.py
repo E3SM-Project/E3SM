@@ -435,10 +435,10 @@ class NamelistGenerator(object):
         # Stream-specific configuration.
         if os.path.isfile(stream_path):
             strmobj = Stream(infile=stream_path)
-            domain_filepath = strmobj.get_value("domain_filepath")
-            data_filepath = strmobj.get_value("data_filepath")
-            domain_filenames = strmobj.get_value("domain_filenames")
-            data_filenames = strmobj.get_value("data_filenames")
+            domain_filepath = strmobj.get_value("domainInfo/filePath")
+            data_filepath = strmobj.get_value("fieldInfo/filePath")
+            domain_filenames = strmobj.get_value("domainInfo/fileNames")
+            data_filenames = strmobj.get_value("fieldInfo/fileNames")
         else:
             # Figure out the details of this stream.
             if stream in ("prescribed", "copyall"):
