@@ -34,7 +34,7 @@ namespace scream {
 namespace p3 {
 
 //
-// In all C++ -> Fortran bridge functions. You should see p3_init(true). P3 needs
+// In all C++ -> Fortran bridge functions you should see p3_init(true). P3 needs
 // to be initialized since most of its function depend on global tables to be
 // populated. The 'true' argument is to set p3 to use its fortran implementations
 // instead of calling back to C++. We want this behavior since it doesn't make much
