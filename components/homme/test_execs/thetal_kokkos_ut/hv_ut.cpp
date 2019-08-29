@@ -4,7 +4,9 @@
 
 #include "Types.hpp"
 #include "Context.hpp"
-#include "Elements.hpp"
+#include "ElementsGeometry.hpp"
+#include "ElementsState.hpp"
+#include "ElementsDerivedState.hpp"
 #include "FunctorsBuffersManager.hpp"
 #include "HybridVCoord.hpp"
 #include "HyperviscosityFunctorImpl.hpp"
@@ -41,9 +43,11 @@ void cleanup_f90();
 
 class HVFTester : public HyperviscosityFunctorImpl {
 public:
-  HVFTester (const SimulationParams& params,
-             const Elements&         elements)
-   : HyperviscosityFunctorImpl(params,elements)
+  HVFTester (const SimulationParams&     params,
+             const ElementsGeometry&     geometry,
+             const ElementsState&        state,
+             const ElementsDerivedState& derived)
+   : HyperviscosityFunctorImpl(params,geometry,state,derived)
   {}
 
   ~HVFTester () = default;
@@ -152,15 +156,20 @@ TEST_CASE("hvf", "biharmonic") {
 
   // Create and init elements
   const int num_elems = c.get<Connectivity>().get_num_local_elements();
-  auto& elements = c.create<Elements>();
-  auto& geo = elements.m_geometry;
-  auto& state = elements.m_state;
-  elements.init(num_elems,/*constHV = */ false); // False, so tensorVisc is present
-  state.random_init(num_elems,seed,rpdf(engine),hvcoord);
-  geo.random_init(num_elems,seed);
+
+  auto& geo = c.create<ElementsGeometry>();
+  geo.init(num_elems,false);
+  geo.randomize(seed);
+
+  auto& state = c.create<ElementsState>();
+  state.init(num_elems);
+  state.randomize(seed,rpdf(engine),hvcoord.ps0);
+
+  auto& derived = c.create<ElementsDerivedState>();
+  derived.init(num_elems);
+  derived.randomize(seed,rpdf(engine));
 
   // Init f90
-
   auto d     = Kokkos::create_mirror_view(geo.m_d);
   auto dinv  = Kokkos::create_mirror_view(geo.m_dinv);
   auto spmp = Kokkos::create_mirror_view(geo.m_spheremp);
@@ -198,13 +207,13 @@ TEST_CASE("hvf", "biharmonic") {
   auto& sphop = c.create<SphereOperators>();
   FunctorsBuffersManager fbm;
 
-  sphop.setup(elements.m_geometry,ref_FE);
+  sphop.setup(geo,ref_FE);
   if (!bmm.is_connectivity_set ()) {
     bmm.set_connectivity(c.get_ptr<Connectivity>());
   }
 
   // Create the HVF tester
-  HVFTester hvf(params,elements);
+  HVFTester hvf(params,geo,state,derived);
   fbm.request_size( hvf.requested_buffer_size() );
   fbm.allocate();
   hvf.init_buffers(fbm);
@@ -228,7 +237,7 @@ TEST_CASE("hvf", "biharmonic") {
           params.nu_ratio2 = 1.0;
         }else{
           params.nu_ratio1 = ratio;
-          params.nu_ratio2 = ratio;
+          params.nu_ratio2 = 1.0;
         }
       }else{
         params.nu_ratio1 = 1.0;

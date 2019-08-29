@@ -25,12 +25,13 @@ public:
 
   ExecViewManaged<Real * [NUM_TIME_LEVELS][NP][NP]> m_ps_v;
 
-  ElementsState() = default;
+  ElementsState() : m_num_elems(0) {}
 
   void init(const int num_elems);
 
-  void random_init(const int num_elems, const int seed, const Real max_pressure = 1.0);
-  void random_init(const int num_elems, const int seed, const Real max_pressure, const HybridVCoord& hvcoord);
+  void randomize(const int seed);
+  void randomize(const int seed, const Real max_pressure);
+  void randomize(const int seed, const Real max_pressure, const Real ps0);
 
   KOKKOS_INLINE_FUNCTION
   int num_elems() const { return m_num_elems; }

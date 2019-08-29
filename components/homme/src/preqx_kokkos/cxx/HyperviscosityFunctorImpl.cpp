@@ -16,16 +16,18 @@ namespace Homme
 {
 
 HyperviscosityFunctorImpl::
-HyperviscosityFunctorImpl (const SimulationParams&       params,
-                           const Elements&               elements)
+HyperviscosityFunctorImpl (const SimulationParams&     params,
+                           const ElementsGeometry&     geometry,
+                           const ElementsState&        state,
+                           const ElementsDerivedState& derived)
  : m_data       (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
- , m_state      (elements.m_state)
- , m_derived    (elements.m_derived)
- , m_geometry   (elements.m_geometry)
+ , m_state      (state)
+ , m_derived    (derived)
+ , m_geometry   (geometry)
  , m_sphere_ops (Context::singleton().get<SphereOperators>())
- , m_policy_update_states (0, elements.num_elems()*NP*NP*NUM_LEV)
- , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(elements.num_elems()))
- , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(elements.num_elems()))
+ , m_policy_update_states (0, state.num_elems()*NP*NP*NUM_LEV)
+ , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(state.num_elems()))
+ , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(state.num_elems()))
 {
   // Sanity check
   assert(params.params_set);
@@ -36,7 +38,6 @@ HyperviscosityFunctorImpl (const SimulationParams&       params,
     ExecViewManaged<Scalar[NUM_LEV]>::HostMirror h_nu_scale_top;
     h_nu_scale_top = Kokkos::create_mirror_view(m_nu_scale_top);
 
-    constexpr int NUM_BIHARMONIC_PHYSICAL_LEVELS = 3;
     Kokkos::Array<Real,NUM_BIHARMONIC_PHYSICAL_LEVELS> lev_nu_scale_top = { 4.0, 2.0, 1.0 };
     for (int phys_lev=0; phys_lev<NUM_BIHARMONIC_PHYSICAL_LEVELS; ++phys_lev) {
       const int ilev = phys_lev / VECTOR_SIZE;

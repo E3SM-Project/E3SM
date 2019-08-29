@@ -82,8 +82,10 @@ public:
   struct TagApplyInvMass {};
   struct TagHyperPreExchange {};
 
-  HyperviscosityFunctorImpl (const SimulationParams&       params,
-                             const Elements&               elements);
+  HyperviscosityFunctorImpl (const SimulationParams&     params,
+                             const ElementsGeometry&     geometry,
+                             const ElementsState&        state,
+                             const ElementsDerivedState& elements);
 
   int requested_buffer_size () const;
   void init_buffers    (const FunctorsBuffersManager& fbm);

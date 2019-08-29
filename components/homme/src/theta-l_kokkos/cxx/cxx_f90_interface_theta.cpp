@@ -38,9 +38,8 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const int& time_step_type, const int& qsize, const int& state_frequency,
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
                                const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling, const double& dcmip16_mu,
-                               const int& ftype, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
-                               const bool& use_cpstar, const bool& use_semi_lagrangian_transport, const bool& theta_hydrostatic_mode,
-                               const int& theta_adv_form)
+                               const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
+                               const bool& use_cpstar, const bool& use_semi_lagrangian_transport, const bool& theta_hydrostatic_mode)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
@@ -375,7 +374,7 @@ void init_elements_2d_c (const int& ie,
   const SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  e.m_geometry.init(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,phis,tensorvisc,vec_sph2cart,consthv);
+  e.m_geometry.set_elem_data(ie,D,Dinv,fcor,spheremp,rspheremp,metdet,metinv,phis,tensorvisc,vec_sph2cart,consthv);
 
   // Note: yes, we *could* compute gradphis from grad, but at the time of this call,
   //       we do not yet have the SphereOperators functor initialized. For simplicity,
@@ -407,7 +406,7 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
   auto& params  = Context::singleton().get<SimulationParams>();
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
   
-  diagnostics.init(elements.m_state, elements.m_geometry, hvcoord, params.theta_hydrostatic_mode,
+  diagnostics.init(elements.m_state, hvcoord, params.theta_hydrostatic_mode,
                    elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
                    elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
 }

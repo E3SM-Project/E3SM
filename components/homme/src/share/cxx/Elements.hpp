@@ -37,12 +37,12 @@ public:
   ElementsDerivedState  m_derived;
   ElementsForcing       m_forcing;
 
-  Elements () : m_inited(false) {}
+  Elements () : m_num_elems(0), m_inited(false) {}
 
   int num_elems () const { return m_num_elems; }
 
   void init (const int num_elems, const bool consthv);
-  void random_init (const int num_elems, const int seed, const Real max_pressure = 1.0);
+  void randomize (const int seed, const Real max_pressure = 1.0);
 
   bool inited () const { return m_inited; }
 

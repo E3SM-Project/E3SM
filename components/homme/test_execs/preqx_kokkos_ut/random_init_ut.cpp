@@ -21,7 +21,8 @@ TEST_CASE("dp3d_intervals", "Testing Elements::random_init") {
 
   std::random_device rd;
   const int seed = rd();
-  state.random_init(num_elems, seed, max_pressure);
+  state.init(num_elems);
+  state.randomize(seed, max_pressure);
   HostViewManaged<Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV]> dp3d("host dp3d",
                                                                     num_elems);
   Kokkos::deep_copy(dp3d, state.m_dp3d);
@@ -53,7 +54,9 @@ TEST_CASE("d_dinv_check", "Testing Elements::random_init") {
   const int seed = rd();
 
   ElementsGeometry geometry;
-  geometry.random_init(num_elems,seed);
+  geometry.init(num_elems,false);
+  geometry.randomize(seed);
+
   HostViewManaged<Real * [2][2][NP][NP]> d("host d", num_elems);
   HostViewManaged<Real * [2][2][NP][NP]> dinv("host dinv", num_elems);
   Kokkos::deep_copy(d, geometry.m_d);

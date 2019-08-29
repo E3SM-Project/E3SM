@@ -406,12 +406,13 @@ TEST_CASE("remap_interface", "vertical remap") {
 
   Elements elements;
   seed = rd();
-  elements.random_init(num_elems,seed);
+  elements.init(num_elems,seed);
+  elements.randomize(seed);
 
   Tracers tracers;
   tracers.init(num_elems,QSIZE_D);
   seed = rd();
-  tracers.random_init(seed);
+  tracers.randomize(seed);
 
   HybridVCoord hvcoord;
   seed = rd();

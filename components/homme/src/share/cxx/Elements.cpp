@@ -13,6 +13,9 @@
 namespace Homme {
 
 void Elements::init(const int num_elems, const bool consthv) {
+  // Sanity check
+  assert (num_elems>0);
+
   m_num_elems = num_elems;
 
   m_geometry.init(num_elems,consthv);
@@ -24,11 +27,12 @@ void Elements::init(const int num_elems, const bool consthv) {
 }
 
 //test for tensor hv is needed
-void Elements::random_init(const int num_elems, const int seed, const Real max_pressure) {
-  m_num_elems = num_elems;
+void Elements::randomize(const int seed, const Real max_pressure) {
+  // Check elements were inited
+  assert(m_num_elems>0);
 
-  m_geometry.random_init(num_elems,seed);
-  m_state.random_init(num_elems,seed,max_pressure);
+  m_geometry.randomize(seed);
+  m_state.randomize(seed,max_pressure);
 
   Real dp3d_min = std::numeric_limits<Real>::max();
   for (int ie = 0; ie < m_num_elems; ++ie) {
@@ -51,7 +55,7 @@ void Elements::random_init(const int num_elems, const int seed, const Real max_p
     }
   }
 
-  m_derived.random_init(num_elems,seed,dp3d_min);
+  m_derived.randomize(seed,dp3d_min);
 
   m_inited = true;
 }

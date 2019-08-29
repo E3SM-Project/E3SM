@@ -17,7 +17,7 @@ struct Tracers {
 
   void init (const int num_elems, const int num_tracers);
 
-  void random_init(const int seed);
+  void randomize(const int seed);
 
   void pull_qdp(CF90Ptr &state_qdp);
   void push_qdp(F90Ptr &state_qdp) const;

@@ -14,6 +14,9 @@
 namespace Homme {
 
 void ElementsDerivedState::init(const int num_elems) {
+  // Sanity check
+  assert (num_elems>0);
+
   m_num_elems = num_elems;
 
   m_omega_p = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("Omega P", m_num_elems);
@@ -29,8 +32,12 @@ void ElementsDerivedState::init(const int num_elems) {
   m_dpdiss_ave        = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("derived_dpdiss_ave", m_num_elems);
 }
 
-void ElementsDerivedState::random_init(const int num_elems, const int seed, const Real dp3d_min) {
-  init(num_elems);
+void ElementsDerivedState::randomize(const int seed, const Real dp3d_min) {
+  // Check derived state was inited
+  assert (m_num_elems>0);
+
+  // Sanity check
+  assert (dp3d_min>0);
 
   // arbitrary minimum value to generate
   constexpr const Real min_value = 0.015625;

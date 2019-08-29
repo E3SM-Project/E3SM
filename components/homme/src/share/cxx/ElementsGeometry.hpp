@@ -41,21 +41,22 @@ public:
   ExecViewManaged<Real * [2][2][NP][NP]> m_d;
   ExecViewManaged<Real * [2][2][NP][NP]> m_dinv;
 
-  ElementsGeometry() = default;
+  ElementsGeometry() : m_num_elems(0) {}
 
-  void init(const int num_elems, const bool consthv);
+  void init (const int num_elems, const bool consthv);
 
-  void random_init(const int num_elems, const int seed);
+  void randomize (const int seed);
 
   KOKKOS_INLINE_FUNCTION
   int num_elems() const { return m_num_elems; }
 
   // Fill the exec space views with data coming from F90 pointers
-  void init (const int ie, CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
-             CF90Ptr& spheremp, CF90Ptr& rspheremp,
-             CF90Ptr& metdet, CF90Ptr& metinv, 
-             CF90Ptr& phis, CF90Ptr& tensorvisc,
-             CF90Ptr& vec_sph2cart, const bool consthv);
+  void set_elem_data (const int ie,
+                      CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
+                      CF90Ptr& spheremp, CF90Ptr& rspheremp,
+                      CF90Ptr& metdet, CF90Ptr& metinv,
+                      CF90Ptr& phis, CF90Ptr& tensorvisc,
+                      CF90Ptr& vec_sph2cart, const bool consthv);
 
 
 private:

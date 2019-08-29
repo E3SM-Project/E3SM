@@ -9,7 +9,9 @@
 #include "FunctorsBuffersManager.hpp"
 
 #include "Context.hpp"
-#include "Elements.hpp"
+#include "ElementsGeometry.hpp"
+#include "ElementsState.hpp"
+#include "ElementsDerivedState.hpp"
 #include "SimulationParams.hpp"
 
 namespace Homme
@@ -19,9 +21,11 @@ HyperviscosityFunctor::HyperviscosityFunctor ()
 {
   auto& c = Context::singleton();
   auto& params   = c.get<SimulationParams>();
-  auto& elements = c.get<Elements>();
+  auto& geometry = c.get<ElementsGeometry>();
+  auto& state    = c.get<ElementsState>();
+  auto& derived  = c.get<ElementsDerivedState>();
 
-  m_hvf_impl.reset (new HyperviscosityFunctorImpl(params,elements));
+  m_hvf_impl.reset (new HyperviscosityFunctorImpl(params,geometry,state,derived));
 }
 
 HyperviscosityFunctor::~HyperviscosityFunctor ()

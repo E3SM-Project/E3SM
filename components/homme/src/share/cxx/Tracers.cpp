@@ -24,6 +24,10 @@ Tracers::Tracers(const int num_elems, const int num_tracers)
 
 void Tracers::init(const int num_elems, const int num_tracers)
 {
+  // Sanity check
+  assert(num_elems>0);
+  assert(num_tracers>=0);
+
   ne = num_elems;
   nt = num_tracers;
 
@@ -37,7 +41,10 @@ void Tracers::init(const int num_elems, const int num_tracers)
   m_inited = true;
 }
 
-void Tracers::random_init(const int seed) {
+void Tracers::randomize(const int seed) {
+  // Check tracers were inited
+  assert (m_inited);
+
   constexpr Real min_value = 0.015625;
   std::mt19937_64 engine(seed);
   std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
@@ -45,8 +52,8 @@ void Tracers::random_init(const int seed) {
   genRandArray(qdp, engine, random_dist);
   genRandArray(qtens_biharmonic, engine, random_dist);
   genRandArray(qlim, engine, random_dist);
-
-  m_inited = true;
+  genRandArray(fq, engine, random_dist);
+  genRandArray(Q, engine, random_dist);
 }
 
 void Tracers::pull_qdp(CF90Ptr &state_qdp) {

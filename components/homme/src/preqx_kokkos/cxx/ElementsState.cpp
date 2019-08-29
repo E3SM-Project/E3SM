@@ -17,6 +17,9 @@
 namespace Homme {
 
 void ElementsState::init(const int num_elems) {
+  // Sanity check
+  assert (num_elems>0);
+
   m_num_elems = num_elems;
 
   m_v    = ExecViewManaged<Scalar * [NUM_TIME_LEVELS][2][NP][NP][NUM_LEV]>("Horizontal Velocity", m_num_elems);
@@ -26,18 +29,20 @@ void ElementsState::init(const int num_elems) {
   m_ps_v = ExecViewManaged<Real * [NUM_TIME_LEVELS][NP][NP]>("PS_V", m_num_elems);
 }
 
-//test for tensor hv is needed
-void ElementsState::random_init(const int num_elems, const int seed, const Real max_pressure) {
-  HybridVCoord hv;
-  hv.random_init(seed);
-  random_init(num_elems,seed, max_pressure,hv);
+void ElementsState::randomize(const int seed) {
+  randomize(seed,1.0);
 }
 
-void ElementsState::random_init(const int num_elems, const int seed, const Real max_pressure, const HybridVCoord& hvcoord) {
+void ElementsState::randomize(const int seed, const Real max_pressure) {
+  randomize(seed,max_pressure,max_pressure/100);
+}
+
+void ElementsState::randomize(const int seed, const Real max_pressure, const Real ps0) {
+  // Check state was inited
+  assert (m_num_elems>0);
+
   // arbitrary minimum value to generate and minimum determinant allowed
   constexpr const Real min_value = 0.015625;
-  // 1 is for const hv
-  init(num_elems);
   std::mt19937_64 engine(seed);
   std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
 
@@ -46,7 +51,7 @@ void ElementsState::random_init(const int num_elems, const int seed, const Real 
 
   // Generate ps_v so that it is >> ps0.
   // Note: make sure you init hvcoord before calling this method!
-  genRandArray(m_ps_v, engine, std::uniform_real_distribution<Real>(100*hvcoord.ps0,1000*hvcoord.ps0));
+  genRandArray(m_ps_v, engine, std::uniform_real_distribution<Real>(100*ps0,1000*ps0));
 
   // This ensures the pressure in a single column is monotonically increasing
   // and has fixed upper and lower values

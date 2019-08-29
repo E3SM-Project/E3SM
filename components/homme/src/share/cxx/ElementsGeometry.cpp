@@ -17,6 +17,8 @@
 namespace Homme {
 
 void ElementsGeometry::init(const int num_elems, const bool consthv) {
+  // Sanity check
+  assert (num_elems>0);
 
   m_num_elems = num_elems;
   m_consthv   = consthv;
@@ -44,11 +46,17 @@ void ElementsGeometry::init(const int num_elems, const bool consthv) {
   m_dinv = ExecViewManaged<Real * [2][2][NP][NP]>("DInv - inverse of matrix D", m_num_elems);
 }
 
-void ElementsGeometry::init (const int ie,
-                             CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
-                             CF90Ptr& spheremp, CF90Ptr& rspheremp,
-                             CF90Ptr& metdet, CF90Ptr& metinv, CF90Ptr& phis,
-                             CF90Ptr& tensorvisc, CF90Ptr& vec_sph2cart, const bool consthv) {
+void ElementsGeometry::
+set_elem_data (const int ie,
+               CF90Ptr& D, CF90Ptr& Dinv, CF90Ptr& fcor,
+               CF90Ptr& spheremp, CF90Ptr& rspheremp,
+               CF90Ptr& metdet, CF90Ptr& metinv, CF90Ptr& phis,
+               CF90Ptr& tensorvisc, CF90Ptr& vec_sph2cart, const bool consthv) {
+  // Check geometry was inited
+  assert (m_num_elems>0);
+
+  // Check input
+  assert (ie>=0 && ie<m_num_elems);
 
   using ScalarView   = ExecViewUnmanaged<Real [NP][NP]>;
   using TensorView   = ExecViewUnmanaged<Real [2][2][NP][NP]>;
@@ -144,10 +152,9 @@ void ElementsGeometry::init (const int ie,
   }
 }
 
-//test for tensor hv is needed
-void ElementsGeometry::random_init(int num_elems, const int seed) {
-  // For testing, we enable tensor viscosity (since we may need it in the test)
-  init (num_elems, false);
+void ElementsGeometry::randomize(const int seed) {
+  // Check geometry was inited
+  assert (m_num_elems>0);
 
   // Arbitrary minimum value to generate and minimum determinant allowed
   constexpr const Real min_value = 0.015625;

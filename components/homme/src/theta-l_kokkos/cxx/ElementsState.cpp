@@ -42,78 +42,97 @@ void ElementsState::init(const int num_elems) {
   StateStorage::init_storage(num_elems);
 }
 
-//test for tensor hv is needed
-void ElementsState::random_init(const int num_elems, const int seed, const Real max_pressure) {
-  HybridVCoord hv;
-  hv.random_init(seed);
-  random_init(num_elems,seed,max_pressure,hv);
+void ElementsState::randomize(const int seed) {
+  randomize(seed,1.0);
 }
 
-void ElementsState::random_init(const int num_elems, const int seed, 
-                                const Real max_pressure, const HybridVCoord& hvcoord) {
-  // arbitrary minimum value to generate and minimum determinant allowed
+void ElementsState::randomize(const int seed, const Real max_pressure) {
+  randomize(seed,max_pressure,max_pressure/100);
+}
+
+void ElementsState::randomize(const int seed,
+                              const Real max_pressure,
+                              const Real ps0) {
+  // Check elements were inited
+  assert (m_num_elems>0);
+
+  // Check data makes sense
+  assert (max_pressure>ps0);
+  assert (ps0>0);
+
+  // Arbitrary minimum value to generate
   constexpr const Real min_value = 0.015625;
 
-  // We may re-init elements in a unit test. If so, don't reallocate, since it could mess up
-  // the Context structure.
-  if (m_num_elems==0) {
-    init(num_elems);
-  }
   std::mt19937_64 engine(seed);
   std::uniform_real_distribution<Real> random_dist(min_value, 1.0 / min_value);
 
   genRandArray(m_v,         engine, random_dist);
   genRandArray(m_w_i,       engine, random_dist);
   genRandArray(m_vtheta_dp, engine, random_dist);
-  genRandArray(m_phinh_i,   engine, random_dist);
+  // Note: to avoid errors in the equation of state, we need phi to be increasing.
+  //       Rather than using a constraint (which may call the function many times,
+  //       we simply ask that there are no duplicates, then we sort it later.
+  auto sort_and_chek = [](const ExecViewManaged<Scalar[NUM_LEV_P]>::HostMirror v)->bool {
+    Real* start = reinterpret_cast<Real*>(v.data());
+    Real* end   = reinterpret_cast<Real*>(v.data()) + NUM_LEV_P*VECTOR_SIZE;
+    std::sort(start,end);
+    std::reverse(start,end);
+    auto it = std::unique(start,end);
+    return it==end;
+  };
+  for (int ie=0; ie<m_num_elems; ++ie) {
+    for (int itl=0; itl<NUM_TIME_LEVELS; ++itl) {
+      for (int igp=0; igp<NP; ++igp) {
+        for (int jgp=0; jgp<NP; ++ jgp) {
+          genRandArray(Homme::subview(m_phinh_i,ie,itl,igp,jgp),engine,random_dist,sort_and_chek);
+        }
+      }
+    }
+  }
 
   // Generate ps_v so that it is >> ps0.
-  // Note: make sure you init hvcoord before calling this method!
-  genRandArray(m_ps_v, engine, std::uniform_real_distribution<Real>(100*hvcoord.ps0,1000*hvcoord.ps0));
+  genRandArray(m_ps_v, engine, std::uniform_real_distribution<Real>(100*ps0,1000*ps0));
 
   // This ensures the pressure in a single column is monotonically increasing
   // and has fixed upper and lower values
   const auto make_pressure_partition = [=](
-      HostViewUnmanaged<Scalar[NUM_LEV]> pt_pressure) {
+      HostViewUnmanaged<Scalar[NUM_LEV]> pt_dp) {
+
+    Real* start = reinterpret_cast<Real*>(pt_dp.data());
+    Real* end   = start+NUM_PHYSICAL_LEV;
+    HostViewUnmanaged<Real[NUM_PHYSICAL_LEV]> dp(start);
+
     // Put in monotonic order
-    std::sort(
-        reinterpret_cast<Real *>(pt_pressure.data()),
-        reinterpret_cast<Real *>(pt_pressure.data() + pt_pressure.size()));
-    // Ensure none of the values are repeated
-    for (int level = NUM_PHYSICAL_LEV - 1; level > 0; --level) {
-      const int prev_ilev = (level - 1) / VECTOR_SIZE;
-      const int prev_vlev = (level - 1) % VECTOR_SIZE;
-      const int cur_ilev = level / VECTOR_SIZE;
-      const int cur_vlev = level % VECTOR_SIZE;
-      // Need to try again if these are the same or if the thickness is too
-      // small
-      if (pt_pressure(cur_ilev)[cur_vlev] <=
-          pt_pressure(prev_ilev)[prev_vlev] +
-              min_value * std::numeric_limits<Real>::epsilon()) {
+    std::sort(start, end);
+
+    // Check for no repetitions
+    if (std::unique(start,end)!=end) {
+      return false;
+    }
+
+    // Fix minimum pressure
+    dp(0) = min_value;
+
+    // Compute dp from p (we assume p(last interface)=max_pressure)
+    for (int i=0; i<NUM_PHYSICAL_LEV-1; ++i) {
+      dp(i) = dp(i+1)-dp(i);
+    }
+    dp(NUM_PHYSICAL_LEV-1) = max_pressure-dp(NUM_PHYSICAL_LEV-1);
+
+    // Check that dp>=dp_min
+    const Real min_dp = std::numeric_limits<Real>::epsilon()*1000;
+    for (auto it=start; it!=end; ++it) {
+      if (*it < min_dp) {
         return false;
       }
     }
-    // We know the minimum thickness of a layer is min_value * epsilon
-    // (due to floating point), so set the bottom layer thickness to that,
-    // and subtract that from the top layer
-    // This ensures that the total sum is max_pressure
-    pt_pressure(0)[0] = min_value * std::numeric_limits<Real>::epsilon();
-    const int top_ilev = (NUM_PHYSICAL_LEV - 1) / VECTOR_SIZE;
-    const int top_vlev = (NUM_PHYSICAL_LEV - 1) % VECTOR_SIZE;
-    // Note that this may not actually change the top level pressure
-    // This is okay, because we only need to approximately sum to max_pressure
-    pt_pressure(top_ilev)[top_vlev] = max_pressure - pt_pressure(0)[0];
-    for (int e_vlev = top_vlev + 1; e_vlev < VECTOR_SIZE; ++e_vlev) {
-      pt_pressure(top_ilev)[e_vlev] = std::numeric_limits<Real>::quiet_NaN();
+
+    // Fill remainder of last vector pack with quiet nan's
+    Real* alloc_end = start+NUM_LEV*VECTOR_SIZE;
+    for (auto it=end; it!=alloc_end; ++it) {
+      *it = std::numeric_limits<Real>::quiet_NaN();
     }
-    // Now compute the interval thicknesses
-    for (int level = NUM_PHYSICAL_LEV - 1; level > 0; --level) {
-      const int prev_ilev = (level - 1) / VECTOR_SIZE;
-      const int prev_vlev = (level - 1) % VECTOR_SIZE;
-      const int cur_ilev = level / VECTOR_SIZE;
-      const int cur_vlev = level % VECTOR_SIZE;
-      pt_pressure(cur_ilev)[cur_vlev] -= pt_pressure(prev_ilev)[prev_vlev];
-    }
+
     return true;
   };
 

@@ -188,9 +188,6 @@ contains
 
   end subroutine biharmonic_wk_theta_f90
 
-  subroutine save_state_f90 () bind(c)
-  end subroutine save_state_f90
-
   subroutine cleanup_f90 () bind(c)
     use edge_mod_base, only : FreeEdgeBuffer
     use element_state, only : deallocate_element_arrays

@@ -29,11 +29,11 @@ public:
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>   m_dpdiss_biharmonic; // mean dp dissipation tendency, if nu_p>0
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>   m_dpdiss_ave;        // mean dp used to compute psdiss_tens
 
-  ElementsDerivedState() = default;
+  ElementsDerivedState() : m_num_elems(0) {}
 
-  void init(const int num_elems);
+  void init (const int num_elems);
 
-  void random_init(const int num_elems, const int seed, const Real dp3d_min);
+  void randomize(const int seed, const Real dp3d_min);
 
   KOKKOS_INLINE_FUNCTION
   int num_elems() const { return m_num_elems; }

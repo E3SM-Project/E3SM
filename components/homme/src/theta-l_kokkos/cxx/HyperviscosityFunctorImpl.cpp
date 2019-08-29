@@ -18,18 +18,20 @@ namespace Homme
 {
 
 HyperviscosityFunctorImpl::
-HyperviscosityFunctorImpl (const SimulationParams&       params,
-                           const Elements&               elements)
+HyperviscosityFunctorImpl (const SimulationParams&     params,
+                           const ElementsGeometry&     geometry,
+                           const ElementsState&        state,
+                           const ElementsDerivedState& derived)
  : m_data (params.hypervis_subcycle,params.nu_ratio1,params.nu_ratio2,params.nu_top,params.nu,params.nu_p,params.nu_s,params.hypervis_scaling)
- , m_state   (elements.m_state)
- , m_derived (elements.m_derived)
- , m_geometry (elements.m_geometry)
+ , m_state   (state)
+ , m_derived (derived)
+ , m_geometry (geometry)
  , m_sphere_ops (Context::singleton().get<SphereOperators>())
  , m_hvcoord (Context::singleton().get<HybridVCoord>())
- , m_policy_ref_states (Homme::get_default_team_policy<ExecSpace,TagRefStates>(elements.num_elems()))
- , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(elements.num_elems()))
- , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(elements.num_elems()))
- , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(elements.num_elems()))
+ , m_policy_ref_states (Homme::get_default_team_policy<ExecSpace,TagRefStates>(state.num_elems()))
+ , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(state.num_elems()))
+ , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(state.num_elems()))
+ , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(state.num_elems()))
 {
   // Sanity check
   assert(params.params_set);
@@ -61,11 +63,12 @@ HyperviscosityFunctorImpl (const SimulationParams&       params,
 }
 
 int HyperviscosityFunctorImpl::requested_buffer_size () const {
-  constexpr int size_mid_scalar =   NP*NP*NUM_LEV;
-  constexpr int size_mid_vector = 2*NP*NP*NUM_LEV_P;
-  constexpr int size_int_scalar =   NP*NP*NUM_LEV_P;
-  constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV;
-  constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV;
+  constexpr int size_mid_scalar =   NP*NP*NUM_LEV*VECTOR_SIZE;
+  constexpr int size_mid_vector = 2*NP*NP*NUM_LEV*VECTOR_SIZE;
+  constexpr int size_int_scalar =   NP*NP*NUM_LEV_P*VECTOR_SIZE;
+  constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
+  constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
+  constexpr int size_2d_scalar  =   NP*NP;
 
   const int nelems = m_geometry.num_elems();
   const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
@@ -74,11 +77,11 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   // Even though we don't compute wtens at last interface, it makes
   // the code MUCH cleaner when computing the heating term, cause
   // we can then use ColumnOps to average w*wtens
-  return nelems*(7*size_mid_scalar + size_mid_vector + size_int_scalar) + 
-         nteams*(4*size_bhm_scalar + size_bhm_vector + size_int_scalar);
+  return nelems*(6*size_mid_scalar + size_mid_vector + 2*size_int_scalar) + 
+         nteams*(4*size_bhm_scalar + size_bhm_vector + size_int_scalar + size_2d_scalar);
 #else
-  return nelems*(8*size_mid_scalar + size_mid_vector) + 
-         nteams*(4*size_bhm_scalar + size_bhm_vector + size_int_scalar);
+  return nelems*(7*size_mid_scalar + size_mid_vector + size_int_scalar) + 
+         nteams*(4*size_bhm_scalar + size_bhm_vector + size_int_scalar + size_2d_scalar);
 #endif
 }
 
@@ -113,7 +116,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   mem += size_mid_scalar*nelems;
 
   m_buffers.phi_i_ref = decltype(m_buffers.phi_i_ref)(mem,nelems);
-  mem += size_mid_scalar*nelems;
+  mem += size_int_scalar*nelems;
 
   m_buffers.wtens = decltype(m_buffers.wtens)(mem,nelems);
 #ifdef XX_NONBFB_COMING

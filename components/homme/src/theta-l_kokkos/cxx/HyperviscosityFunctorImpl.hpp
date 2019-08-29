@@ -7,7 +7,9 @@
 #ifndef HOMMEXX_HYPERVISCOSITY_FUNCTOR_IMPL_HPP
 #define HOMMEXX_HYPERVISCOSITY_FUNCTOR_IMPL_HPP
 
-#include "Elements.hpp"
+#include "ElementsGeometry.hpp"
+#include "ElementsState.hpp"
+#include "ElementsDerivedState.hpp"
 #include "ColumnOps.hpp"
 #include "EquationOfState.hpp"
 #include "ElementOps.hpp"
@@ -102,8 +104,10 @@ public:
   struct TagApplyInvMass {};
   struct TagHyperPreExchange {};
 
-  HyperviscosityFunctorImpl (const SimulationParams& params,
-                             const Elements&         elements);
+  HyperviscosityFunctorImpl (const SimulationParams&     params,
+                             const ElementsGeometry&     geometry,
+                             const ElementsState&        state,
+                             const ElementsDerivedState& derived);
 
   int requested_buffer_size () const;
   void init_buffers (const FunctorsBuffersManager& fbm);
@@ -326,7 +330,7 @@ public:
       auto& p     = vtheta_ref;
       if (m_theta_hydrostatic_mode) {
         auto p_i = Homme::subview(m_buffers.p_i,kv.team_idx,igp,jgp);
-        m_eos.compute_hydrostatic_p(kv,dp,p_i,p);
+        m_elem_ops.compute_hydrostatic_p(kv,dp,p_i,p);
         m_eos.compute_exner(kv,p,exner);
       } else {
         auto vtheta_provider = [&](const int ilev)->Scalar {

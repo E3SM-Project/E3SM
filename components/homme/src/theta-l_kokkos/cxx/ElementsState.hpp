@@ -38,8 +38,9 @@ public:
 
   void init(const int num_elems);
 
-  void random_init(const int num_elems, const int seed, const Real max_pressure = 1.0);
-  void random_init(const int num_elems, const int seed, const Real max_pressure, const HybridVCoord& hvcoord);
+  void randomize(const int seed);
+  void randomize(const int seed, const Real max_pressure);
+  void randomize(const int seed, const Real max_pressure, const Real ps0);
 
   // Copies current state into m_state0
   void save_state();
