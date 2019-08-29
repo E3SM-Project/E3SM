@@ -258,6 +258,7 @@ void Functions<S,D>
 
     // calculate scaled mean size for consistency with ice lookup table
     auto dumlr = pack::pow(qr/(C::Pi * C::RHOW * nr), C::THIRD);
+    dumlr.set(!gt_small, 1); // get rid of bad values
     t.dum3 = (pack::log10(1.0*dumlr) + 5.0)*10.70415;
     t.dumj = pack::pack_cast<int>(t.dum3);
 
