@@ -15,7 +15,7 @@ from CIME.namelist import Namelist, parse, \
     character_literal_to_string, string_to_character_literal, \
     expand_literal_list, compress_literal_list, merge_literal_lists
 from CIME.XML.namelist_definition import NamelistDefinition
-from CIME.utils import expect
+from CIME.utils import expect, safe_copy
 from CIME.XML.stream import Stream
 
 logger = logging.getLogger(__name__)
@@ -415,7 +415,7 @@ class NamelistGenerator(object):
                     new_lines.append(new_line)
         return "\n".join(new_lines)
 
-    def create_stream_file_and_update_shr_strdata_nml(self, config, #pylint:disable=too-many-locals
+    def create_stream_file_and_update_shr_strdata_nml(self, config, caseroot, #pylint:disable=too-many-locals
                            stream, stream_path, data_list_path):
         """Write the pseudo-XML file corresponding to a given stream.
 
@@ -428,6 +428,15 @@ class NamelistGenerator(object):
         `stream_path` - Path to write the stream file to.
         `data_list_path` - Path of file to append input data information to.
         """
+
+        if os.path.exists(stream_path):
+            os.unlink(stream_path)
+        user_stream_path = os.path.join(caseroot, "user_"+os.path.basename(stream_path))
+
+        # Use the user's stream file, or create one if necessary.
+        if os.path.exists(user_stream_path):
+            safe_copy(user_stream_path, stream_path)
+
         config = config.copy()
         config["stream"] = stream
 
