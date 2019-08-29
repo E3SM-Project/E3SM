@@ -87,6 +87,8 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
         inst_stream = stream + inst_string
         logger.debug("DROF stream is {}".format(inst_stream))
         stream_path = os.path.join(confdir, "drof.streams.txt." + inst_stream)
+        if os.path.exists(stream_path):
+            os.unlink(stream_path)
         user_stream_path = os.path.join(case.get_case_root(),
                                         "user_drof.streams.txt." + inst_stream)
 
