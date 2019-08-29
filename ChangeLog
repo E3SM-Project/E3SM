@@ -1,6 +1,29 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 8-29-2019
+Tag: cime5.8.9
+Answer Changes: None
+Tests:  scripts_regression_tests --compiler nag, SMS_D_Ln9.f19_f19_mg17.QPC6.izumi_nag
+Dependencies:
+
+Brief Summary:
+    - Fix nag compiler for CAM.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+    - 6026ca341 Merge pull request #3219 from ESMCI/fischer/nag
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/Depends.nag
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 8-26-2019
 Tag: cime5.8.8
 Answer Changes: None
