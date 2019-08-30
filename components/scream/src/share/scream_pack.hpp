@@ -279,13 +279,6 @@ OnlyPackReturn<Pack, typename Pack::scalar> max (const Pack& p) {
   return v;
 }
 
-template <typename T, typename PackT> KOKKOS_INLINE_FUNCTION
-Pack<T, PackT::n> pack_cast(const PackT& p) {
-  Pack<T, PackT::n> result;
-  vector_simd for (int i = 0; i < PackT::n; ++i) result[i] = static_cast<T>(p[i]);
-  return result;
-}
-
 // min(init, min(p(mask)))
 template <typename Pack> KOKKOS_INLINE_FUNCTION
 OnlyPackReturn<Pack, typename Pack::scalar>

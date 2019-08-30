@@ -252,7 +252,7 @@ struct TestPack {
     test_pack_gen_unary_stdfn(tgamma);
 
     test_mask_gen_bin_op_all(==);
-    test_mask_gen_bin_op_all(!=); 
+    test_mask_gen_bin_op_all(!=);
     test_mask_gen_bin_op_all(>=);
     test_mask_gen_bin_op_all(<=);
     test_mask_gen_bin_op_all(>);
