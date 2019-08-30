@@ -30,7 +30,8 @@ module prim_cxx_driver_base
     use kinds,            only : iulog, real_kind
     use parallel_mod,     only : parallel_t
     use time_mod,         only : TimeLevel_t, TimeLevel_init
-    use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, prim_init1_cleanup, &
+    use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, &
+                                 prim_init1_cleanup, prim_init1_buffers,      &
                                  MetaVertex, GridEdge, deriv1
 #ifndef CAM
     use prim_driver_base, only : prim_init1_no_cam
@@ -83,6 +84,11 @@ module prim_cxx_driver_base
 
     ! Cleanup the tmp stuff used in prim_init1_geometry
     call prim_init1_cleanup()
+
+    ! ==================================
+    ! Initialize the buffers for exchanges
+    ! ==================================
+    call prim_init1_buffers(elem,par)
 
     ! ==================================
     ! Initialize element pointers
