@@ -11,11 +11,14 @@ import os
 import json
 import logging
 
+from distutils import dir_util
+
 import CIME.test_status
+import CIME.utils
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
 from CIME.hist_utils import rename_all_hist_files, _get_all_hist_files
-from CIME.utils import safe_copy, SharedArea, append_testlog
+from CIME.XML.machines import Machines
 
 import evv4esm  # pylint: disable=import-error
 from evv4esm.__main__ import main as evv  # pylint: disable=import-error
@@ -163,20 +166,34 @@ class TSC(SystemTestsCommon):
                     break
 
             status = self._test_status.get_status(CIME.test_status.BASELINE_PHASE)
+            mach_name = self._case.get_value("MACH")
+            mach_obj = Machines(machine=mach_name)
+            htmlroot = CIME.utils.get_htmlroot(mach_obj)
+            urlroot = CIME.utils.get_urlroot(mach_obj)
+            if htmlroot is not None:
+                with CIME.utils.SharedArea():
+                    dir_util.copy_tree(evv_out_dir, os.path.join(htmlroot, 'evv', case_name), preserve_mode=False)
+                if urlroot is None:
+                    urlroot = "[{}_URL]".format(mach_name.capitalize())
+                viewing = "{}/evv/{}/index.html".format(urlroot, case_name)
+            else:
+                viewing = "{}\n" \
+                          "    EVV viewing instructions can be found at: " \
+                          "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/" \
+                          "climate_reproducibility/README.md#test-passfail-and-extended-output" \
+                          "".format(evv_out_dir)
+
             comments = "{} {} for test '{}'.\n" \
                        "    {}\n" \
-                       "    EVV results can be viewed at: {}\n" \
-                       "    EVV viewing instructions can be found at: " \
-                       "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/" \
-                       "climate_reproducibility/README.md#test-passfail-and-extended-output" \
-                       "".format(CIME.test_status.BASELINE_PHASE, status, test_name, comments, evv_out_dir)
+                       "    EVV results can be viewed at:\n" \
+                       "        {}".format(CIME.test_status.BASELINE_PHASE, status, test_name, comments, viewing)
 
-            append_testlog(comments, self._orig_caseroot)
+            CIME.utils.append_testlog(comments, self._orig_caseroot)
 
     def _generate_baseline(self):
         super(TSC, self)._generate_baseline()
 
-        with SharedArea():
+        with CIME.utils.SharedArea():
             basegen_dir = os.path.join(self._case.get_value("BASELINE_ROOT"),
                                        self._case.get_value("BASEGEN_CASE"))
 
@@ -192,4 +209,4 @@ class TSC(SystemTestsCommon):
                 if os.path.exists(baseline):
                     os.remove(baseline)
 
-                safe_copy(hist, baseline, preserve_meta=False)
+                CIME.utils.safe_copy(hist, baseline, preserve_meta=False)
