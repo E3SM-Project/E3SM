@@ -15,14 +15,18 @@ import json
 import shutil
 import logging
 
+from collections import OrderedDict
+from distutils import dir_util
+
 import pandas as pd
 import numpy as np
-from collections import OrderedDict
+
 
 import CIME.test_status
+import CIME.utils
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
 from CIME.case.case_setup import case_setup
-from CIME.utils import expect, append_testlog
+from CIME.XML.machines import Machines
 
 import evv4esm  # pylint: disable=import-error
 from evv4esm.extensions import pg  # pylint: disable=import-error
@@ -118,8 +122,8 @@ class PGN(SystemTestsCommon):
         rundir = self._case.get_value("RUNDIR")
         prg_fname = 'pergro_ptend_names.txt'
         var_file = os.path.join(rundir, prg_fname)
-        expect(os.path.isfile(var_file),
-               "File {} does not exist in: {}".format(prg_fname, rundir))
+        CIME.utils.expect(os.path.isfile(var_file),
+                          "File {} does not exist in: {}".format(prg_fname, rundir))
 
         with open(var_file, 'r') as fvar:
             var_list = fvar.readlines()
@@ -185,15 +189,29 @@ class PGN(SystemTestsCommon):
                     break
 
             status = self._test_status.get_status(CIME.test_status.BASELINE_PHASE)
+            mach_name = self._case.get_value("MACH")
+            mach_obj = Machines(machine=mach_name)
+            htmlroot = CIME.utils.get_htmlroot(mach_obj)
+            urlroot = CIME.utils.get_urlroot(mach_obj)
+            if htmlroot is not None:
+                with CIME.utils.SharedArea():
+                    dir_util.copy_tree(evv_out_dir, os.path.join(htmlroot, 'evv', case_name), preserve_mode=False)
+                if urlroot is None:
+                    urlroot = "[{}_URL]".format(mach_name.capitalize())
+                viewing = "{}/evv/{}/index.html".format(urlroot, case_name)
+            else:
+                viewing = "{}\n" \
+                          "    EVV viewing instructions can be found at: " \
+                          "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/" \
+                          "climate_reproducibility/README.md#test-passfail-and-extended-output" \
+                          "".format(evv_out_dir)
+
             comments = "{} {} for test '{}'.\n" \
                        "    {}\n" \
-                       "    EVV results can be viewed at: {}\n" \
-                       "    EVV viewing instructions can be found at: " \
-                       "        https://github.com/E3SM-Project/E3SM/blob/master/cime/scripts/" \
-                       "climate_reproducibility/README.md#test-passfail-and-extended-output" \
-                       "".format(CIME.test_status.BASELINE_PHASE, status, test_name, comments, evv_out_dir)
+                       "    EVV results can be viewed at:\n" \
+                       "        {}".format(CIME.test_status.BASELINE_PHASE, status, test_name, comments, viewing)
 
-            append_testlog(comments, self._orig_caseroot)
+            CIME.utils.append_testlog(comments, self._orig_caseroot)
 
     def run_phase(self):
         logger.debug("PGN_INFO: RUN PHASE")
@@ -217,8 +235,8 @@ class PGN(SystemTestsCommon):
                 try:
                     shutil.move(fname, renamed_fname)
                 except IOError:
-                    expect(os.path.isfile(renamed_fname),
-                           "ERROR: File {} does not exist".format(renamed_fname))
+                    CIME.utils.expect(os.path.isfile(renamed_fname),
+                                      "ERROR: File {} does not exist".format(renamed_fname))
                     logger.debug("PGN_INFO: Renamed file already exists:"
                                  "{}".format(renamed_fname))
 
