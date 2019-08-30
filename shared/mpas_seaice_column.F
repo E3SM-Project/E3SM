@@ -5138,6 +5138,29 @@ contains
        ! set all indices for biogeochemistry including parent, ancestor and ancestor mask
        call init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
 
+    else
+       allocate(tracerObject % index_algaeConc(1))
+       allocate(tracerObject % index_algalCarbon(1))
+       allocate(tracerObject % index_algalChlorophyll(1))
+       allocate(tracerObject % index_DOCConc(1))
+       allocate(tracerObject % index_DONConc(1))
+       allocate(tracerObject % index_DICConc(1))
+       allocate(tracerObject % index_dissolvedIronConc(1))
+       allocate(tracerObject % index_particulateIronConc(1))
+       allocate(tracerObject % index_verticalAerosolsConc(1))
+
+       allocate(tracerObject % index_algaeConcLayer(1))
+       allocate(tracerObject % index_algalCarbonLayer(1))
+       allocate(tracerObject % index_algalChlorophyllLayer(1))
+       allocate(tracerObject % index_DOCConcLayer(1))
+       allocate(tracerObject % index_DONConcLayer(1))
+       allocate(tracerObject % index_DICConcLayer(1))
+       allocate(tracerObject % index_dissolvedIronConcLayer(1))
+       allocate(tracerObject % index_particulateIronConcLayer(1))
+       allocate(tracerObject % index_verticalAerosolsConcLayer(1))
+       allocate(tracerObject % index_verticalAerosolsConcShortwave(1))
+       allocate(tracerObject % index_LayerIndexToDataArray(1))
+       allocate(tracerObject % index_LayerIndexToBioIndex(1))
     endif
 
     ! allocate tracer arrays
