@@ -1545,7 +1545,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
             // Check that this margin location is not below sea level!
             if (bedTopographyData[iV] < 0.0) { // This check is probably redundant...
                thicknessData[iV] = eps*3.0; // insert special value here to make identifying these points easier in exo output
-               elevationData[iV] = (rho_ocean / rho_ice - 1.0) * thicknessData[iV];  // floating surface
+               elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surface
             }
          }
       } else {
@@ -1561,7 +1561,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
             //for (int i = 0; i < dirichletNodesIDs.size(); i++)
             //            std::cout << dirichletNodesIDs.at(i) << ' ';  // print entire list of Diri nodes for debugging.
             thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
-            elevationData[iV] = (rho_ocean / rho_ice - 1.0) * thicknessData[iV];  // floating surface
+            elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surface
           }
         } // if below sea level
       }  // floating or not
@@ -2157,21 +2157,32 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     std::cout << "Writing mesh to albany.msh." << std::endl;
     // msh file
     std::ofstream outfile;
+    outfile.precision(15);
     outfile.open ("albany.msh", std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
 
        int nVerticesBoundaryEdge = 0;
-       for (int index = 0; index < nVertices; index++) {
+       for (int index = 0; index < nEdges; index++) {
           if (isBoundaryEdge[index]) nVerticesBoundaryEdge += 1;
        }
-       std::vector<int> verticesOnBoundaryEdge;
-       verticesOnBoundaryEdge.resize(2 * nVerticesBoundaryEdge);
+
+       //creating set from vector so that we can find elements in the set in log time
+       std::set<int> floatingEdgesSet;
+       for (int i = 0; i < floatingEdgesIds.size(); i++)
+         floatingEdgesSet.insert(floatingEdgesIds[i]);
+
+
+       std::vector<int> boundaryEdges; //list of edge vertices and edge label
+       boundaryEdges.resize(3 * nVerticesBoundaryEdge);
        int iVerticesBoundaryEdge = 0;
-       for (int index = 0; index < nVertices; index++) {
+       for (int index = 0; index < nEdges; index++) {
           if (isBoundaryEdge[index]) {
-             verticesOnBoundaryEdge[0 + 2 * iVerticesBoundaryEdge] = verticesOnEdge[0 + 2 * index];
-             verticesOnBoundaryEdge[1 + 2 * iVerticesBoundaryEdge] = verticesOnEdge[1 + 2 * index];
-             iVerticesBoundaryEdge += 1;
+             boundaryEdges[0 + 3 * iVerticesBoundaryEdge] = verticesOnEdge[0 + 2 * index];
+             boundaryEdges[1 + 3 * iVerticesBoundaryEdge] = verticesOnEdge[1 + 2 * index];
+             auto search = floatingEdgesSet.find(indexToEdgeID[index]);  //slow but executed only when printing
+             //boundary edges labels: 2 if floating, 1 otherwise
+             boundaryEdges[2 + 3 * iVerticesBoundaryEdge] = (search != floatingEdgesSet.end()) ? 2 : 1;
+             iVerticesBoundaryEdge ++;
           }
        }
        //std::cout<<"final count: "<<iVerticesBoundaryEdge << "  nVerticesBoundaryEdge="<<nVerticesBoundaryEdge<<std::endl;
@@ -2181,14 +2192,19 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
 
        for (int index = 0; index < nVertices; index++) { //coordinates lines
           int iCell = vertexToFCell[index];
-          outfile << xCell_F[iCell] / unit_length << " " << yCell_F[iCell] / unit_length << " " << isVertexBoundary[index] << "\n"  ;
+          //setting boundary vertices labels, 2 for dirichlet nodes, 1 otherwise
+          bool isDirichletVertex = dirichletCellsMask_F[(nLayers+1)*iCell] != 0;
+          int vertexLabel = (!isVertexBoundary[index]) ? 0 :
+                            isDirichletVertex ? 3 : 1;
+
+          outfile << xCell_F[iCell] / unit_length << " " << yCell_F[iCell] / unit_length << " " << vertexLabel << "\n"  ;
        }
 
        for (int index = 0; index < nTriangles; index++) //triangles lines
         outfile << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by Albany LandIce, so giving dummy value
 
        for (int index = 0; index < nVerticesBoundaryEdge; index++) // boundary edges lines
-       outfile <<  verticesOnBoundaryEdge[0 + 2 * index] + 1 << " " << verticesOnBoundaryEdge[1 + 2 * index] + 1 << " " << 1 << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
+       outfile <<  boundaryEdges[0 + 3 * index] + 1 << " " << boundaryEdges[1 + 3 * index] + 1 << " " << boundaryEdges[2 + 3 * index] << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
 
        outfile.close();
        }
@@ -2282,6 +2298,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     std::string filename = filenamebase+".ascii";
     std::cout << "Writing " << filename << std::endl;
     std::ofstream outfile;
+    outfile.precision(15);
     outfile.open (filename.c_str(), std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
        outfile << nVertices << "\n";  //number of vertices on first line
