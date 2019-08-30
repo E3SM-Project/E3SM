@@ -14,7 +14,7 @@
   runtype           = 0                         ! 0 => new run
   tstep             = 450                      ! largest timestep in seconds
   integration       = 'explicit'                ! explicit time integration
-  tstep_type        = 7
+  tstep_type        = 5
   rsplit            = ${HOMME_TEST_RSPLIT}
   qsplit            = ${HOMME_TEST_QSPLIT}
   nu                = 3e16                      ! default= 1e15*(ne30/ne8)**3.2 = 6.9e16
