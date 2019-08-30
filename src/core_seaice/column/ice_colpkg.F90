@@ -394,9 +394,12 @@
       use ice_constants_colpkg, only: iyear_AD, eccen, obliqr, lambm0, &
          mvelpp, obliq, mvelp, decln, eccf, log_print
 
-#ifndef CCSMCOUPLED
+#ifdef CCSMCOUPLED
+      use shr_orb_mod, only: shr_orb_params
+#else
       use ice_orbital, only: shr_orb_params
 #endif
+
 
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, abort the model
@@ -408,7 +411,10 @@
       iyear_AD  = 1950
       log_print = .false.   ! if true, write out orbital parameters
 
-#ifndef CCSMCOUPLED
+#ifdef CCSMCOUPLED
+      call shr_orb_params( iyear_AD, eccen , obliq , mvelp    , &
+                           obliqr  , lambm0, mvelpp, log_print)
+#else
       call shr_orb_params( iyear_AD, eccen , obliq , mvelp    , &
                            obliqr  , lambm0, mvelpp, log_print, &
                            l_stop, stop_label)
