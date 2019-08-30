@@ -14,7 +14,7 @@
 namespace Homme
 {
 
-void DiagnosticsTheta::init (const ElementsState& state, const ElementsGeometry& geometry,
+void DiagnosticsTheta::init (const ElementsState& state,
                              const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
                              F90Ptr& elem_state_q_ptr,
                              F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
@@ -26,6 +26,9 @@ void DiagnosticsTheta::init (const ElementsState& state, const ElementsGeometry&
   m_state    = state;
   m_hvcoord  = hvcoord;
   m_theta_hydrostatic_mode = theta_hydrostatic_mode;
+
+  m_eos.init(m_theta_hydrostatic_mode,m_hvcoord);
+  m_elem_ops.init(m_hvcoord);
 
   h_IEner  = HostViewUnmanaged<Real*[4][NP][NP]>(elem_accum_iener_ptr, m_num_elems);
   h_KEner  = HostViewUnmanaged<Real*[4][NP][NP]>(elem_accum_kener_ptr, m_num_elems);

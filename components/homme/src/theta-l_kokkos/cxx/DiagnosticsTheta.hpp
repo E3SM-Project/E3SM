@@ -8,6 +8,7 @@
 #include "ElementsState.hpp"
 #include "ColumnOps.hpp"
 #include "EquationOfState.hpp"
+#include "ElementOps.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
 #include "utilities/SubviewUtils.hpp"
@@ -34,7 +35,7 @@ private:
   };
 
 public:
-  void init (const ElementsState& state, const ElementsGeometry& geometry,
+  void init (const ElementsState& state,
              const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
              F90Ptr& elem_state_q_ptr,
              F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
@@ -93,9 +94,9 @@ public:
       // Compute exner and pnh
       if (m_theta_hydrostatic_mode) {
         // Use phi_i to store the temporary p_i
-        m_eos.compute_hydrostatic_p(kv,Homme::subview(dpt1,igp,jgp),
-                                       Homme::subview(phi_i,igp,jgp),
-                                       Homme::subview(pnh,igp,jgp));
+        m_elem_ops.compute_hydrostatic_p(kv,Homme::subview(dpt1,igp,jgp),
+                                            Homme::subview(phi_i,igp,jgp),
+                                            Homme::subview(pnh,igp,jgp));
         m_eos.compute_exner(kv,Homme::subview(pnh,igp,jgp),
                                Homme::subview(exner,igp,jgp));
 
@@ -170,6 +171,7 @@ private:
 
   HybridVCoord      m_hvcoord;
   EquationOfState   m_eos;
+  ElementOps        m_elem_ops;
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
   ColumnOps         m_col_ops;

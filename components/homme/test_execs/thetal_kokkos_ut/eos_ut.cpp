@@ -4,6 +4,7 @@
 #include <random>
 
 #include "EquationOfState.hpp"
+#include "ElementOps.hpp"
 #include "Types.hpp"
 
 #include "utilities/TestUtils.hpp"
@@ -81,6 +82,8 @@ TEST_CASE("eos", "eos") {
 
   ColumnOps col_ops;
   EquationOfState eos;
+  ElementOps elem_ops;
+  elem_ops.init(hvcoord);
 
   SECTION ("pnh_and_exner") {
     for (bool hydrostatic : {false,true}) {
@@ -128,7 +131,7 @@ TEST_CASE("eos", "eos") {
             auto dp  = Homme::subview(dp_cxx,kv.ie,igp,jgp);
             auto p_i = Homme::subview(p_i_cxx,kv.ie,igp,jgp);
 
-            eos.compute_hydrostatic_p(kv,dp,p_i,pnh);
+            elem_ops.compute_hydrostatic_p(kv,dp,p_i,pnh);
             eos.compute_exner(kv,pnh,exner);
           } else {
             // Compute pnh and exner
@@ -187,11 +190,6 @@ TEST_CASE("eos", "eos") {
           for (int jgp=0; jgp<NP; ++jgp) {
             for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
               REQUIRE (exner_cxx_ie(igp,jgp,k) == exner_f90(ie,k,igp,jgp));
-if (pnh_cxx_ie(igp,jgp,k) != pnh_f90(ie,k,igp,jgp)) {
-  printf("ie,igp,jgp,k: %d, %d, %d, %d\n",ie,k,igp,jgp);
-  printf("pnh_cxx: %3.20f\n",pnh_cxx_ie(igp,jgp,k));
-  printf("pnh_f90: %3.20f\n",pnh_f90(ie,k,igp,jgp));
-}
               REQUIRE (pnh_cxx_ie(igp,jgp,k) == pnh_f90(ie,k,igp,jgp));
               REQUIRE (dpnhdp_cxx_ie(igp,jgp,k) == dpnh_dp_i_f90(ie,k,igp,jgp));
             }

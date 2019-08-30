@@ -20,6 +20,12 @@ module geometry_interface_mod
 
   integer :: nelemd
 
+  public :: initmp_f90
+  public :: init_cube_geometry_f90
+  public :: init_connectivity_f90
+  public :: init_c_connectivity_f90
+  public :: cleanup_geometry_f90
+
 #include <mpif.h>
 
 contains
@@ -167,8 +173,17 @@ contains
   end subroutine init_c_connectivity_f90
 
   subroutine cleanup_geometry_f90 () bind(c)
-    use schedtype_mod, only : Schedule
+    use schedtype_mod,  only : Schedule
+    use gridgraph_mod,  only : deallocate_gridvertex_nbrs
+    use dimensions_mod, only : nelem
+    !
+    ! Locals
+    !
+    integer :: ie
 
+    do ie=1,nelem
+      call deallocate_gridvertex_nbrs(GridVertex(ie))
+    enddo
     deallocate(elem)
     deallocate(GridVertex)
     deallocate(GridEdge)

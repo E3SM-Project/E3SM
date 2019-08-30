@@ -39,6 +39,24 @@ public:
     }
   }
 
+  KOKKOS_INLINE_FUNCTION
+  void compute_hydrostatic_p (const KernelVariables& kv,
+                              const ExecViewUnmanaged<const Scalar[NUM_LEV  ]>& dp,
+                              const ExecViewUnmanaged<      Scalar[NUM_LEV_P]>& p_i,
+                              const ExecViewUnmanaged<      Scalar[NUM_LEV  ]>& pi) const
+  {
+    p_i(0)[0] = m_hvcoord.hybrid_ai0*m_hvcoord.ps0;
+    m_col_ops.column_scan_mid_to_int<true>(kv,dp,p_i);
+#ifdef XX_NONBFB_COMING
+    m_col_ops.compute_midpoint_values(kv,p_i,pi);
+#else
+    Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                         [&](const int ilev) {
+      pi(ilev) = p_i(ilev) + dp(ilev)/2;
+    });
+#endif
+  }
+
   template<typename InputProvider>
   KOKKOS_INLINE_FUNCTION
   void compute_theta_ref (const KernelVariables& kv,

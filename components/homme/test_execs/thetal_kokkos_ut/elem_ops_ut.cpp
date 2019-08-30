@@ -17,6 +17,11 @@ void init_f90 (const Real* hyai_ptr, const Real& ps0);
 void set_theta_ref_f90(const int& num_elems,
                        const Real*& dp,
                        Real*& theta_ref);
+
+void compute_r_star_f90(const int& num_elems,
+                        const bool& moist,
+                        const Real*& Q,
+                        Real*& R_star);
 } // extern "C"
 
 // ============= ELEMENT OPS ================ //
@@ -24,6 +29,7 @@ void set_theta_ref_f90(const int& num_elems,
 TEST_CASE("elem_ops", "elem_ops") {
 
   constexpr int num_elems = 2;
+  auto policy = Homme::get_default_team_policy<ExecSpace>(num_elems);
 
   std::random_device rd;
   const int seed = rd();
@@ -37,6 +43,7 @@ TEST_CASE("elem_ops", "elem_ops") {
   decltype(hvcoord.hybrid_ai)::HostMirror hyai = Kokkos::create_mirror_view(hvcoord.hybrid_ai);
   Kokkos::deep_copy(hyai,hvcoord.hybrid_ai);
   const Real* hyai_ptr = hyai.data();
+  init_f90(hyai_ptr,hvcoord.ps0);
 
   // F90 and CXX views (and host mirrors of cxx views)
   HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]>  dp_f90("",num_elems);
@@ -49,8 +56,57 @@ TEST_CASE("elem_ops", "elem_ops") {
 
   auto h_theta_ref = Kokkos::create_mirror_view(theta_ref_cxx);
 
-  ElementOps elem_ops;
   ColumnOps  col_ops;
+  ElementOps elem_ops;
+  elem_ops.init(hvcoord);
+
+  SECTION("r_star") {
+    for (bool moist : {false, true}) {
+
+      // Use some existing buffers
+      auto Q_cxx = theta_ref_cxx;
+      auto Q_f90 = theta_ref_f90;
+      auto R_f90 = dp_f90;
+      genRandArray(Q_cxx,engine,pdf);
+      sync_to_host(Q_cxx,Q_f90);
+
+      // Run cxx version
+      Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const TeamMember& team) {
+        KernelVariables kv(team);
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                             [&](const int idx) {
+          const int igp = idx / NP;
+          const int jgp = idx % NP;
+
+          auto Q = Homme::subview(Q_cxx,kv.ie,igp,jgp);
+          auto R = Homme::subview(dp_cxx,kv.ie,igp,jgp);
+
+          elem_ops.get_R_star(kv,moist,Q,R);
+        });
+      });
+
+      // Run f90 version
+      const Real* Q_ptr = Q_f90.data();
+      Real* R_ptr = R_f90.data();
+      compute_r_star_f90(num_elems,moist,Q_ptr,R_ptr);
+    
+      // Compare answers
+      auto R_cxx = Kokkos::create_mirror_view(dp_cxx);
+      Kokkos::deep_copy(R_cxx,dp_cxx);
+
+      for (int ie=0; ie<num_elems; ++ie) {
+        for (int igp=0; igp<NP; ++igp) {
+          for (int jgp=0; jgp<NP; ++jgp) {
+            for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+              const int ilev = k / VECTOR_SIZE;
+              const int ivec = k % VECTOR_SIZE;
+              REQUIRE (R_cxx(ie,igp,jgp,ilev)[ivec] == R_f90(ie,k,igp,jgp));
+            }
+          }
+        }
+      }
+    }
+  }
 
   SECTION("theta_ref") {
     // Create random inputs
@@ -61,15 +117,11 @@ TEST_CASE("elem_ops", "elem_ops") {
     sync_to_host(dp_cxx,dp_f90);
 
     // Run fortran version
-    init_f90(hyai_ptr,hvcoord.ps0);
     const Real* dp_f90_ptr = dp_f90.data();
     Real* theta_ref_f90_ptr = theta_ref_f90.data();
     set_theta_ref_f90(num_elems,dp_f90_ptr,theta_ref_f90_ptr);
 
-    // Run cxx versino
-    elem_ops.init(hvcoord);
-
-    auto policy = Homme::get_default_team_policy<ExecSpace>(num_elems);
+    // Run cxx version
     Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
@@ -93,8 +145,8 @@ TEST_CASE("elem_ops", "elem_ops") {
     // Compare answers
     Kokkos::deep_copy(h_theta_ref,theta_ref_cxx);
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<num_elems; ++igp) {
-        for (int jgp=0; jgp<num_elems; ++jgp) {
+      for (int igp=0; igp<NP; ++igp) {
+        for (int jgp=0; jgp<NP; ++jgp) {
           for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
             const int ilev = k / VECTOR_SIZE;
             const int ivec = k % VECTOR_SIZE;
