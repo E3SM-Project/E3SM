@@ -498,6 +498,7 @@
     <values match="last">
       <value compset="^2000">367.0</value>
       <value compset="DATM.*_POP2%[^_]*ECO">284.317</value>
+      <value compset="DATM.*_POP2%[^_]*ECOCESM20">284.7</value>
     </values>
     <group>run_co2</group>
     <file>env_run.xml</file>
