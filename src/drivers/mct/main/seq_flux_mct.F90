@@ -483,25 +483,30 @@ contains
     !-------------------------------------------------------------------------------
 
     call seq_comm_setptrs(ID,mpicom=mpicom)
+    if (seq_comm_iamroot(ID)) then
 
-    !---------------------------------------------------------------------------
-    ! Read in namelist 
-    !---------------------------------------------------------------------------
+       !---------------------------------------------------------------------------
+       ! Read in namelist 
+       !---------------------------------------------------------------------------
 
-     unitn = shr_file_getUnit()
-     write(logunit,"(A)") subname//': read seq_flux_mct_inparm namelist from: '&
-          //trim(nmlfile)
-     open( unitn, file=trim(nmlfile), status='old' )
-     ierr = 1
-     read(unitn,nml=seq_flux_mct_inparm,iostat=ierr)
+        unitn = shr_file_getUnit()
+        write(logunit,"(A)") subname//': read seq_flux_mct_inparm namelist from: '&
+             //trim(nmlfile)
+        open( unitn, file=trim(nmlfile), status='old' )
+        ierr = 1
+        read(unitn,nml=seq_flux_mct_inparm,iostat=ierr)
 
-     if (ierr < 0) then
-        call shr_sys_abort( &
-             subname//"ERROR: namelist read returns an EOF or EOR condition" )
+        write(0,*) ' at Point 1, seq_flux_mct_albdif=',seq_flux_mct_albdif,' seq_flux_mct_albdir=',seq_flux_mct_albdir
+
+        if (ierr < 0) then
+           call shr_sys_abort( &
+                subname//"ERROR: namelist read returns an EOF or EOR condition" )
+        end if
+
+        close(unitn)
+        call shr_file_freeUnit( unitn )
+
      end if
-
-     close(unitn)
-     call shr_file_freeUnit( unitn )
 
      call shr_mpi_bcast(seq_flux_mct_albdif, mpicom)
      call shr_mpi_bcast(seq_flux_mct_albdir, mpicom)
