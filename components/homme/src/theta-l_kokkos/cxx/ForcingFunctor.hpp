@@ -48,7 +48,11 @@ public:
     m_tracers  = c.get<Tracers>();
     m_hvcoord  = c.get<HybridVCoord>();
 
+    // TODO: this may change, depending on the simulation params
+    m_adjust_ps = true;
+
     m_eos.init(m_hydrostatic,m_hvcoord);
+    m_elem_ops.init(m_hvcoord);
 
     // Check everything is init-ed
     assert (m_state.num_elems()>0);
@@ -82,10 +86,10 @@ public:
 
     Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
 
-    m_tn1 = decltype(m_Rstar)(mem,num_elems);
+    m_tn1 = decltype(m_tn1)(mem,num_elems);
     mem += mid_size*num_elems;
 
-    m_dp = decltype(m_dp)(mem,num_elems);
+    m_dp_adj = decltype(m_dp_adj)(mem,num_elems);
     mem += mid_size*num_elems;
 
     m_pnh = decltype(m_pnh)(mem,num_elems);
@@ -94,14 +98,13 @@ public:
     m_exner = decltype(m_exner)(mem,num_teams);
     mem += mid_size*num_teams;
 
-    m_Rstar = decltype(m_exner)(mem,num_teams);
+    m_Rstar = decltype(m_Rstar)(mem,num_teams);
     mem += mid_size*num_teams;
 
     m_pi_i = decltype(m_pi_i)(mem,num_teams);
   }
 
   void states_forcing (const Real dt, const int np1) {
-
     m_dt = dt;
     m_np1 = np1;
 
@@ -118,11 +121,11 @@ public:
       const int igp  = idx / NP;
       const int jgp  = idx % NP;
 
-      auto fm_x = Homme::subviewConst(m_forcing.m_fm,kv.ie,0,igp,jgp);
-      auto fm_y = Homme::subviewConst(m_forcing.m_fm,kv.ie,1,igp,jgp);
-      auto fm_z = Homme::subviewConst(m_forcing.m_fm,kv.ie,2,igp,jgp);
-      auto fvtheta = Homme::subviewConst(m_forcing.m_fvtheta,kv.ie,igp,jgp);
-      auto fphi    = Homme::subviewConst(m_forcing.m_fphi,kv.ie,igp,jgp);
+      const auto fm_x = Homme::subviewConst(m_forcing.m_fm,kv.ie,0,igp,jgp);
+      const auto fm_y = Homme::subviewConst(m_forcing.m_fm,kv.ie,1,igp,jgp);
+      const auto fm_z = Homme::subviewConst(m_forcing.m_fm,kv.ie,2,igp,jgp);
+      const auto fvtheta = Homme::subviewConst(m_forcing.m_fvtheta,kv.ie,igp,jgp);
+      const auto fphi    = Homme::subviewConst(m_forcing.m_fphi,kv.ie,igp,jgp);
 
       auto u      = Homme::subview(m_state.m_v,kv.ie,m_np1,0,igp,jgp);
       auto v      = Homme::subview(m_state.m_v,kv.ie,m_np1,1,igp,jgp);
@@ -141,10 +144,12 @@ public:
       });
 
       // Fix w at the surface
-      constexpr int last_int_pack = ColInfo<NUM_INTERFACE_LEV>::LastPack;
-      constexpr int last_int_vec_end = ColInfo<NUM_INTERFACE_LEV>::LastVecEnd;
-      constexpr int last_mid_pack = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
-      constexpr int last_mid_vec_end = ColInfo<NUM_PHYSICAL_LEV>::LastVecEnd;
+      using MidInfo = ColInfo<NUM_PHYSICAL_LEV>;
+      using IntInfo = ColInfo<NUM_INTERFACE_LEV>;
+      constexpr int last_int_pack    = IntInfo::LastPack;
+      constexpr int last_int_vec_end = IntInfo::LastVecEnd;
+      constexpr int last_mid_pack    = MidInfo::LastPack;
+      constexpr int last_mid_vec_end = MidInfo::LastVecEnd;
 
       w(last_int_pack)[last_int_vec_end] =
         u(last_mid_pack)[last_mid_vec_end]*m_geometry.m_gradphis(kv.ie,0,igp,jgp) +
@@ -152,11 +157,12 @@ public:
     });
   }
 
-  void tracers_forcing (const Real dt, const int np1, const int np1_qdp, const MoistDry moisture) {
+  void tracers_forcing (const Real dt, const int np1, const int np1_qdp, const bool adjustment, const MoistDry moisture) {
     m_dt = dt;
     m_np1 = np1;
     m_np1_qdp = np1_qdp;
-    m_moist = moisture==MoistDry::MOIST;
+    m_adjustment = adjustment;
+    m_moist = (moisture==MoistDry::MOIST);
 
     Kokkos::parallel_for("temperature, NH perturb press, FQps",m_policy_tracers_pre,*this);
     Kokkos::fence();
@@ -168,6 +174,42 @@ public:
     Kokkos::fence();
   }
 
+  Real compute_fqdt (const int& k,
+                     const ExecViewUnmanaged<Scalar[NUM_LEV]>& fq,
+                     const ExecViewUnmanaged<Scalar[NUM_LEV]>& qdp) const {
+    const int ilev = k / VECTOR_SIZE;
+    const int ivec = k % VECTOR_SIZE;
+    Real fqdt = m_dt * fq(ilev)[ivec];
+    const Real& qdp_s = qdp(ilev)[ivec];
+    if (qdp_s + fqdt < 0.0 && fqdt < 0.0) {
+      if (qdp_s < 0.0) {
+        fqdt = 0.0;
+      } else {
+        fqdt = -qdp_s;
+      }
+    }
+    return fqdt;
+  }
+
+  Scalar compute_fqdt_pack (const int& ilev,
+                            const ExecViewUnmanaged<Scalar[NUM_LEV]>& fq,
+                            const ExecViewUnmanaged<Scalar[NUM_LEV]>& qdp) const {
+    Scalar fqdt = m_dt * fq(ilev);
+    const Scalar& qdp_s = qdp(ilev);
+    // NOTE: here is where masks for simd operations would be handy
+    VECTOR_SIMD_LOOP
+    for (int iv=0; iv<VECTOR_SIZE; ++iv) {
+      if (qdp_s[iv] + fqdt[iv] < 0.0 && fqdt[iv] < 0.0) {
+        if (qdp_s[iv] < 0.0) {
+          fqdt[iv] = 0.0;
+        } else {
+          fqdt[iv] = -qdp_s[iv];
+        }
+      }
+    }
+    return fqdt;
+  }
+
   KOKKOS_INLINE_FUNCTION
   void operator () (const TagTracersPre&, const TeamMember& team) const {
     KernelVariables kv(team);
@@ -177,11 +219,8 @@ public:
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
-      auto dp = Homme::subview(m_dp,kv.ie,igp,jgp);
-      Real& ps_v = m_state.m_ps_v(kv.ie,m_np1,igp,jgp);
-
-      // Compute dp from current ps_v
-      m_hvcoord.compute_dp_ref(kv,ps_v, dp);
+      auto dp = Homme::subview(m_state.m_dp3d,kv.ie,m_np1,igp,jgp);
+      Real& ps = m_state.m_ps_v(kv.ie,m_np1,igp,jgp);
 
       // The hydrostatic pressure in compute_pnh_and_exner in EOS is only used
       // for the theta_hydrostatic_mode case. So only compute it then
@@ -190,18 +229,21 @@ public:
       auto pnh    = Homme::subview(m_pnh,kv.ie,igp,jgp);
       auto exner  = Homme::subview(m_exner,kv.team_idx,igp,jgp);
       if (m_hydrostatic) {
-        auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
-        m_eos.compute_hydrostatic_p(kv,dp,p_i,pnh);
+      auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
+        m_elem_ops.compute_hydrostatic_p(kv,dp,p_i,pnh);
         m_eos.compute_exner(kv,pnh,exner);
       } else {
         m_eos.compute_pnh_and_exner(kv,vtheta,phinh,pnh,exner);
       }
-      // Compute pprime, store in pnh
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-        pnh(ilev) -= (m_hvcoord.ps0*m_hvcoord.hybrid_am(ilev) +
-                      ps_v*m_hvcoord.hybrid_bm(ilev));
-      });
+
+      if (m_moist) {
+        // Compute pprime=pnh-pi, store in pnh (this is 0 for hydrostatic mode)
+        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                             [&](const int ilev) {
+          pnh(ilev) -= m_hvcoord.ps0*m_hvcoord.hybrid_am(ilev) +
+                                 ps *m_hvcoord.hybrid_bm(ilev);
+        });
+      }
 
       // Compute Rstar
       auto Rstar = Homme::subview(m_Rstar,kv.team_idx,igp,jgp);
@@ -217,32 +259,43 @@ public:
       });
 
       if (m_moist) {
-        // This conserves the dry mass in the process of forcing tracer 0
-        Real ps_v_forcing = 0.0;
-
         auto fq = Homme::subview(m_tracers.fq,kv.ie,0,igp,jgp);
+        auto q = Homme::subview(m_tracers.Q,kv.ie,0,igp,jgp);
         auto qdp = Homme::subview(m_tracers.qdp,kv.ie,m_np1_qdp,0,igp,jgp);
-        Dispatch<ExecSpace>::parallel_reduce(
+        auto dp_adj = Homme::subview(m_dp_adj,kv.ie,igp,jgp);
+        if (m_adjustment) {
+          Dispatch<ExecSpace>::parallel_reduce(
             kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
             [&](const int &k, Real &accumulator) {
               const int ilev = k / VECTOR_SIZE;
-              const int vlev = k % VECTOR_SIZE;
-              Real v1 = m_dt * fq(ilev)[vlev];
-              const Real& qdp_s = qdp(ilev)[vlev];
-              if (qdp_s + v1 < 0.0 && v1 < 0.0) {
-                if (qdp_s < 0.0) {
-                  v1 = 0.0;
-                } else {
-                  v1 = -qdp_s;
-                }
-              }
-              accumulator += v1;
-            },
-            ps_v_forcing);
-        ps_v += ps_v_forcing;
+              const int ivec = k % VECTOR_SIZE;
+              accumulator += dp(ilev)[ivec]*(fq(ilev)[ivec]-q(ilev)[ivec]);
+            },ps);
+          if (!m_adjust_ps) {
+            Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                                 [&](const int ilev) {
+              dp_adj(ilev) = dp(ilev) + dp(ilev)*(fq(ilev)-q(ilev));
+            });
+          }
+        } else {
+          Real ps_forcing = 0.0;
+          Dispatch<ExecSpace>::parallel_reduce(
+            kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
+            [&](const int &k, Real &accumulator) {
+              accumulator += compute_fqdt(k,fq,qdp)/m_dt;
+            },ps_forcing);
+          ps += ps_forcing*m_dt;
+          if (!m_adjust_ps) {
+            Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                                 [&](const int& ilev) {
+              dp_adj(ilev) = dp(ilev) + compute_fqdt_pack(ilev,fq,qdp);
+            });
+          }
+        }
 
-        // Now update dp
-        m_hvcoord.compute_dp_ref(kv,ps_v,dp);
+        if (m_adjust_ps) {
+          m_hvcoord.compute_dp_ref(kv,ps,dp_adj);
+        }
       }
     });
   }
@@ -255,31 +308,26 @@ public:
       const int igp = idx / NP;
       const int jgp = idx % NP;
 
-      auto qdp = Homme::subview(m_tracers.qdp,kv.ie,m_np1_qdp,kv.iq,igp,jgp);
-      auto fq  = Homme::subview(m_tracers.fq, kv.ie,kv.iq,igp,jgp);
-      auto Q   = Homme::subview(m_tracers.Q, kv.ie,kv.iq,igp,jgp);
-      auto dp  = Homme::subview(m_dp, kv.ie,igp,jgp);
+      auto qdp    = Homme::subview(m_tracers.qdp,kv.ie,m_np1_qdp,kv.iq,igp,jgp);
+      auto fq     = Homme::subview(m_tracers.fq, kv.ie,kv.iq,igp,jgp);
+      auto Q      = Homme::subview(m_tracers.Q, kv.ie,kv.iq,igp,jgp);
+      auto dp     = Homme::subview(m_state.m_dp3d, kv.ie,m_np1,igp,jgp);
+      auto dp_adj = Homme::subview(m_dp_adj, kv.ie,igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-        Scalar v1 = m_dt*fq(ilev);
-        Scalar& qdp_s = qdp(ilev);
-        // TODO: here is where masked loops as done in scream::Pack would be useful
-        VECTOR_SIMD_LOOP
-        for (int iv=0; iv<VECTOR_SIZE; ++iv) {
-          if (qdp_s[iv] + v1[iv] < 0.0 && v1[iv] < 0.0) {
-            if (qdp_s[iv] < 0.0) {
-              v1[iv] = 0.0;
-            } else {
-              v1[iv] = -qdp_s[iv];
-            }
-          }
+        Scalar& qdp_ilev = qdp(ilev);
+        if (m_adjustment) {
+          qdp_ilev = dp(ilev)*fq(ilev);
+        } else {
+          qdp_ilev += compute_fqdt_pack(ilev,fq,qdp);
         }
-        // Not sure if the above loop is guaranteed to vectorize,
-        // so I pull out
-        qdp_s += v1;
+
+        if (m_moist) {
+          dp(ilev) = dp_adj(ilev);
+        }
 
         // Update tracers concentration
-        Q(ilev) = qdp_s/dp(ilev);
+        Q(ilev) = qdp_ilev/dp(ilev);
       });
     });
   }
@@ -301,26 +349,49 @@ public:
       auto tn1    = Homme::subview(m_tn1,kv.ie,igp,jgp);
       auto pnh    = Homme::subview(m_pnh,kv.ie,igp,jgp);
       auto exner  = Homme::subview(m_exner,kv.team_idx,igp,jgp);
-      auto dp     = Homme::subview(m_dp,kv.ie,igp,jgp);
+      auto dp     = Homme::subview(m_state.m_dp3d,kv.ie,m_np1,igp,jgp);
+      auto dp_adj = Homme::subview(m_dp_adj,kv.ie,igp,jgp);
       auto ft     = Homme::subview(m_forcing.m_ft,kv.ie,igp,jgp);
+      auto fphi   = Homme::subview(m_forcing.m_fphi,kv.ie,igp,jgp);
+      const Real ps = m_state.m_ps_v(kv.ie,m_np1,igp,jgp);
+
+      if (m_moist) {
+        // Need to update pnh and exner. Currently, pnh is storing pnh-pi
+
+        if (m_adjust_ps) {
+          Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                               [&](const int ilev) {
+            pnh(ilev) += m_hvcoord.ps0*m_hvcoord.hybrid_am(ilev) +
+                                   ps *m_hvcoord.hybrid_bm(ilev);
+          });
+        } else {
+          // Compute hydrostatic p from dp. Store in exner, then add to pnh
+          auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
+          m_elem_ops.compute_hydrostatic_p(kv,dp,p_i,exner);
+          Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                               [&](const int ilev) {
+            pnh(ilev) += exner(ilev);
+          });
+        }
+        
+        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                             [&](const int ilev) {
+          exner(ilev) = pow(pnh(ilev)/PhysicalConstants::p0,PhysicalConstants::kappa);
+        });
+      }
+
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
 
         // Update temperature
         tn1(ilev) += m_dt*ft(ilev);
       
-        // Update pnh and recompute exner
-        pnh(ilev) += m_hvcoord.ps0*m_hvcoord.hybrid_am(ilev) + 
-                     m_state.m_ps_v(kv.ie,m_np1,igp,jgp)*m_hvcoord.hybrid_bm(ilev);
-        exner(ilev) = pow(pnh(ilev)/PhysicalConstants::p0,PhysicalConstants::kappa);
-
         // Compute theta, store in tn1.
         tn1(ilev) = (Rstar(ilev)/PhysicalConstants::Rgas)*tn1(ilev)*dp(ilev)/exner(ilev);
       });
 
       // Compute phi as fcn of new theta, store in fphi
       auto phi_i  = Homme::subview(m_state.m_phinh_i,kv.ie,m_np1,igp,jgp);
-      auto fphi   = Homme::subview(m_forcing.m_fphi,kv.ie,igp,jgp);
       using Info = ColInfo<NUM_INTERFACE_LEV>;
       fphi(Info::LastPack)[Info::LastVecEnd] = phi_i(Info::LastPack)[Info::LastVecEnd];
       auto integrand_provider = [&](const int ilev)->Scalar {
@@ -339,7 +410,7 @@ public:
 
       // Last level
       Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-        fphi(Info::LastPack) = (fphi(Info::LastPack) - phi_i(Info::LastPack)) / m_dt;
+        fphi(Info::LastPack)[Info::LastVecEnd] = (fphi(Info::LastPack)[Info::LastVecEnd] - phi_i(Info::LastPack)[Info::LastVecEnd]) / m_dt;
       });
     });
   }
@@ -357,7 +428,7 @@ private:
   EquationOfState   m_eos;
 
   ExecViewUnmanaged<Scalar*[NP][NP][NUM_LEV]>   m_Rstar;
-  ExecViewUnmanaged<Scalar*[NP][NP][NUM_LEV]>   m_dp;
+  ExecViewUnmanaged<Scalar*[NP][NP][NUM_LEV]>   m_dp_adj;
   ExecViewUnmanaged<Scalar*[NP][NP][NUM_LEV]>   m_pnh;
   ExecViewUnmanaged<Scalar*[NP][NP][NUM_LEV_P]> m_pi_i;
   ExecViewUnmanaged<Scalar*[NP][NP][NUM_LEV]>   m_exner;
@@ -368,6 +439,8 @@ private:
   int m_np1_qdp;
   bool m_moist;
   bool m_hydrostatic;
+  bool m_adjustment;
+  bool m_adjust_ps;
   Real m_dt;
 
   Kokkos::TeamPolicy<ExecSpace,TagStates>       m_policy_states;

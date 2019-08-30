@@ -22,8 +22,8 @@ void apply_cam_forcing(const Real dt) {
   const auto& tl = Context::singleton().get<TimeLevel>();
   auto& ff = Context::singleton().get<ForcingFunctor>();
  
-  ff.tracers_forcing(dt,tl.n0,tl.n0_qdp,p.moisture);
-  ff.states_forcing(dt,tl.np1);
+  ff.tracers_forcing(dt,tl.n0,tl.n0_qdp,false,p.moisture);
+  ff.states_forcing(dt,tl.n0);
 
   GPTLstop("ApplyCAMForcing");
 }
