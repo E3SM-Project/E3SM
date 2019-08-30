@@ -8,8 +8,8 @@
 
 namespace {
 
-template <typename View, int rank>
-using OnlyRank = typename std::enable_if<View::Rank == rank>::type;
+template <typename View, int rank, typename T = void>
+using OnlyRank = typename std::enable_if<View::Rank == rank, T>::type;
 
 template <typename View>
 void fill(const View& a)
@@ -33,113 +33,77 @@ void compare (const VA& a, const VB& b) {
   for (int i = 0; i < spana; ++i) REQUIRE(rawa[i] == rawb[i]);
 }
 
+#define make_get_index(rank, ...)                                         \
+template<typename View, typename IdxPack, OnlyRank<View, rank, int> = 0 > \
+KOKKOS_INLINE_FUNCTION                                                    \
+scream::pack::Pack<typename View::traits::value_type, IdxPack::n> get_index(const View& data, IdxPack idx[View::Rank]) { return index(data, __VA_ARGS__); }
+
+#define make_get_data(rank, ...)                                        \
+template<typename View, typename IdxPack, OnlyRank<View, rank, int> = 0 > \
+KOKKOS_INLINE_FUNCTION                                                  \
+typename View::traits::value_type get_data(const View& data, IdxPack idx[View::Rank], int slot) { return data(__VA_ARGS__); }
+
+make_get_index(1, idx[0])
+make_get_data(1, idx[0][slot])
+make_get_index(2, idx[0], idx[1])
+make_get_data(2, idx[0][slot], idx[1][slot])
+make_get_index(3, idx[0], idx[1], idx[2])
+make_get_data(3, idx[0][slot], idx[1][slot], idx[2][slot])
+make_get_index(4, idx[0], idx[1], idx[2], idx[3])
+make_get_data(4, idx[0][slot], idx[1][slot], idx[2][slot], idx[3][slot])
+make_get_index(5, idx[0], idx[1], idx[2], idx[3], idx[4])
+make_get_data(5, idx[0][slot], idx[1][slot], idx[2][slot], idx[3][slot], idx[4][slot])
+
+template<int Packn, typename View>
+void do_index_test(const View& data)
+{
+  static constexpr int pack_size = Packn;
+  using IdxPack = scream::pack::Pack<int, pack_size>;
+  fill(data);
+  IdxPack idx[View::Rank];
+  for (int r = 0; r < View::Rank; ++r) {
+    for (int i = 0; i < pack_size; ++i) { idx[r][i] = (r+2)*i; } // 2*i, 3*i, etc as rank increases
+  }
+
+  int nerr = 0;
+  Kokkos::parallel_reduce(
+    1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
+      const auto data_idx = get_index(data, idx);
+      for (int i = 0; i < pack_size; ++i)
+        if (data_idx[i] != get_data(data, idx, i))
+          ++nerr;
+    },
+    nerr);
+  REQUIRE(nerr == 0);
+}
+
 TEST_CASE("index", "scream::pack") {
   using scream::pack::scalarize;
   using scream::pack::Pack;
 
   {
-    static constexpr int pack_size = 16;
-    using IdxPack = Pack<int, pack_size>;
     Kokkos::View<double*> data("data", 100);
-    fill(data);
-    IdxPack idx;
-    for (int i = 0; i < pack_size; ++i) idx[i] = 2*i;
-    int nerr = 0;
-    Kokkos::parallel_reduce(
-      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
-        const auto data_idx = index(data, idx);
-        for (int i = 0; i < pack_size; ++i)
-          if (data_idx[i] != idx[i])
-            ++nerr;
-      },
-      nerr);
-    REQUIRE(nerr == 0);
+    do_index_test<16>(data);
   }
 
   {
-    static constexpr int pack_size = 8;
-    using IdxPack = Pack<int, pack_size>;
     Kokkos::View<double**> data("data", 19, 24);
-    fill(data);
-    IdxPack i0, i1;
-    for (int i = 0; i < pack_size; ++i) i0[i] = 2*i;
-    for (int i = 0; i < pack_size; ++i) i1[i] = 3*i;
-    int nerr = 0;
-    Kokkos::parallel_reduce(
-      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
-        const auto data_idx = index(data, i0, i1);
-        for (int i = 0; i < pack_size; ++i)
-          if (data_idx[i] != data(i0[i], i1[i]))
-            ++nerr;
-      },
-      nerr);
-    REQUIRE(nerr == 0);
+    do_index_test<8>(data);
   }
 
   {
-    static constexpr int pack_size = 4;
-    using IdxPack = Pack<int, pack_size>;
     Kokkos::View<double***> data("data", 9, 13, 17);
-    fill(data);
-    IdxPack i0, i1, i2;
-    for (int i = 0; i < pack_size; ++i) i0[i] = 2*i;
-    for (int i = 0; i < pack_size; ++i) i1[i] = 3*i;
-    for (int i = 0; i < pack_size; ++i) i2[i] = 4*i;
-    int nerr = 0;
-    Kokkos::parallel_reduce(
-      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
-        const auto data_idx = index(data, i0, i1, i2);
-        for (int i = 0; i < pack_size; ++i)
-          if (data_idx[i] != data(i0[i], i1[i], i2[i]))
-            ++nerr;
-      },
-      nerr);
-    REQUIRE(nerr == 0);
+    do_index_test<4>(data);
   }
 
   {
-    static constexpr int pack_size = 2;
-    using IdxPack = Pack<int, pack_size>;
     Kokkos::View<double****> data("data", 5, 10, 10, 15);
-    fill(data);
-    IdxPack i0, i1, i2, i3;
-    for (int i = 0; i < pack_size; ++i) i0[i] = 2*i;
-    for (int i = 0; i < pack_size; ++i) i1[i] = 3*i;
-    for (int i = 0; i < pack_size; ++i) i2[i] = 4*i;
-    for (int i = 0; i < pack_size; ++i) i3[i] = 5*i;
-    int nerr = 0;
-    Kokkos::parallel_reduce(
-      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
-        const auto data_idx = index(data, i0, i1, i2, i3);
-        for (int i = 0; i < pack_size; ++i)
-          if (data_idx[i] != data(i0[i], i1[i], i2[i], i3[i]))
-            ++nerr;
-      },
-      nerr);
-    REQUIRE(nerr == 0);
+    do_index_test<2>(data);
   }
 
   {
-    static constexpr int pack_size = 1;
-    using IdxPack = Pack<int, pack_size>;
     Kokkos::View<double*****> data("data", 5, 5, 5, 10, 10);
-    fill(data);
-    IdxPack i0, i1, i2, i3, i4;
-    for (int i = 0; i < pack_size; ++i) i0[i] = 2*i;
-    for (int i = 0; i < pack_size; ++i) i1[i] = 3*i;
-    for (int i = 0; i < pack_size; ++i) i2[i] = 4*i;
-    for (int i = 0; i < pack_size; ++i) i3[i] = 5*i;
-    for (int i = 0; i < pack_size; ++i) i4[i] = 6*i;
-    int nerr = 0;
-    Kokkos::parallel_reduce(
-      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
-        const auto data_idx = index(data, i0, i1, i2, i3, i4);
-        for (int i = 0; i < pack_size; ++i)
-          if (data_idx[i] != data(i0[i], i1[i], i2[i], i3[i], i4[i]))
-            ++nerr;
-      },
-      nerr);
-    REQUIRE(nerr == 0);
+    do_index_test<1>(data);
   }
 }
 
