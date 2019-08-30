@@ -12,41 +12,25 @@ template <typename View, int rank>
 using OnlyRank = typename std::enable_if<View::Rank == rank>::type;
 
 template <typename View>
-OnlyRank<View, 1> fill (const View& a) {
+void fill(const View& a)
+{
   const auto m = Kokkos::create_mirror_view(a);
-  for (int i = 0; i < m.extent_int(0); ++i)
-    m(i) = i;
-  Kokkos::deep_copy(a, m);
-}
-
-template <typename View>
-OnlyRank<View, 2> fill (const View& a) {
-  const auto m = Kokkos::create_mirror_view(a);
-  for (int i = 0; i < m.extent_int(0); ++i)
-    for (int j = 0; j < m.extent_int(1); ++j)
-      m(i,j) = j*m.extent_int(0) + i;
+  int span = m.span();
+  auto raw = m.data();
+  for (int i = 0; i < span; ++i) raw[i] = i;
   Kokkos::deep_copy(a, m);
 }
 
 template <typename VA, typename VB>
-OnlyRank<VA, 1> compare (const VA& a, const VB& b) {
+void compare (const VA& a, const VB& b) {
   const auto ma = Kokkos::create_mirror_view(a);
   const auto mb = Kokkos::create_mirror_view(b);
   Kokkos::deep_copy(ma, a);
   Kokkos::deep_copy(mb, b);
-  for (int i = 0; i < ma.extent_int(0); ++i)
-    REQUIRE(ma(i) == mb(i));
-}
-
-template <typename VA, typename VB>
-OnlyRank<VA, 2> compare (const VA& a, const VB& b) {
-  const auto ma = Kokkos::create_mirror_view(a);
-  const auto mb = Kokkos::create_mirror_view(b);
-  Kokkos::deep_copy(ma, a);
-  Kokkos::deep_copy(mb, b);
-  for (int i = 0; i < ma.extent_int(0); ++i)
-    for (int j = 0; j < ma.extent_int(1); ++j)
-      REQUIRE(ma(i,j) == mb(i,j));
+  int spana = ma.span(), spanb = mb.span();
+  auto rawa = ma.data(); auto rawb = mb.data();
+  REQUIRE(spana == spanb);
+  for (int i = 0; i < spana; ++i) REQUIRE(rawa[i] == rawb[i]);
 }
 
 TEST_CASE("index", "scream::pack") {
@@ -86,6 +70,72 @@ TEST_CASE("index", "scream::pack") {
         const auto data_idx = index(data, i0, i1);
         for (int i = 0; i < pack_size; ++i)
           if (data_idx[i] != data(i0[i], i1[i]))
+            ++nerr;
+      },
+      nerr);
+    REQUIRE(nerr == 0);
+  }
+
+  {
+    static constexpr int pack_size = 4;
+    using IdxPack = Pack<int, pack_size>;
+    Kokkos::View<double***> data("data", 9, 13, 17);
+    fill(data);
+    IdxPack i0, i1, i2;
+    for (int i = 0; i < pack_size; ++i) i0[i] = 2*i;
+    for (int i = 0; i < pack_size; ++i) i1[i] = 3*i;
+    for (int i = 0; i < pack_size; ++i) i2[i] = 4*i;
+    int nerr = 0;
+    Kokkos::parallel_reduce(
+      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
+        const auto data_idx = index(data, i0, i1, i2);
+        for (int i = 0; i < pack_size; ++i)
+          if (data_idx[i] != data(i0[i], i1[i], i2[i]))
+            ++nerr;
+      },
+      nerr);
+    REQUIRE(nerr == 0);
+  }
+
+  {
+    static constexpr int pack_size = 2;
+    using IdxPack = Pack<int, pack_size>;
+    Kokkos::View<double****> data("data", 5, 10, 10, 15);
+    fill(data);
+    IdxPack i0, i1, i2, i3;
+    for (int i = 0; i < pack_size; ++i) i0[i] = 2*i;
+    for (int i = 0; i < pack_size; ++i) i1[i] = 3*i;
+    for (int i = 0; i < pack_size; ++i) i2[i] = 4*i;
+    for (int i = 0; i < pack_size; ++i) i3[i] = 5*i;
+    int nerr = 0;
+    Kokkos::parallel_reduce(
+      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
+        const auto data_idx = index(data, i0, i1, i2, i3);
+        for (int i = 0; i < pack_size; ++i)
+          if (data_idx[i] != data(i0[i], i1[i], i2[i], i3[i]))
+            ++nerr;
+      },
+      nerr);
+    REQUIRE(nerr == 0);
+  }
+
+  {
+    static constexpr int pack_size = 1;
+    using IdxPack = Pack<int, pack_size>;
+    Kokkos::View<double*****> data("data", 5, 5, 5, 10, 10);
+    fill(data);
+    IdxPack i0, i1, i2, i3, i4;
+    for (int i = 0; i < pack_size; ++i) i0[i] = 2*i;
+    for (int i = 0; i < pack_size; ++i) i1[i] = 3*i;
+    for (int i = 0; i < pack_size; ++i) i2[i] = 4*i;
+    for (int i = 0; i < pack_size; ++i) i3[i] = 5*i;
+    for (int i = 0; i < pack_size; ++i) i4[i] = 6*i;
+    int nerr = 0;
+    Kokkos::parallel_reduce(
+      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
+        const auto data_idx = index(data, i0, i1, i2, i3, i4);
+        for (int i = 0; i < pack_size; ++i)
+          if (data_idx[i] != data(i0[i], i1[i], i2[i], i3[i], i4[i]))
             ++nerr;
       },
       nerr);
