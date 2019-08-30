@@ -19,6 +19,7 @@ module element_state
 #else
   integer, public, parameter :: timelevels = 3
 #endif
+  integer, public, parameter :: diagtimes = 6
 
   ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
   integer, public               :: max_itercnt_perstep
@@ -29,6 +30,7 @@ module element_state
 
   ! pressure based TOM sponge layer
   real (kind=real_kind),public :: nu_scale_top(nlev)
+  integer, public              :: nlev_tom
 
 
   ! arrays for all state, derived, and accum quantities that need to be passed back and forth to CXX
@@ -187,11 +189,11 @@ contains
     allocate(elem_derived_omega_p (np,np,nlev,nelemd) )
 
     ! Accum
-    allocate(elem_accum_kener     (np,np,        4,nelemd) )
-    allocate(elem_accum_pener     (np,np,        4,nelemd) )
-    allocate(elem_accum_iener     (np,np,        4,nelemd) )
-    allocate(elem_accum_qvar      (np,np,qsize_d,4,nelemd) )
-    allocate(elem_accum_qmass     (np,np,qsize_d,4,nelemd) )
+    allocate(elem_accum_kener     (np,np,        diagtimes,nelemd) )
+    allocate(elem_accum_pener     (np,np,        diagtimes,nelemd) )
+    allocate(elem_accum_iener     (np,np,        diagtimes,nelemd) )
+    allocate(elem_accum_qvar      (np,np,qsize_d,diagtimes,nelemd) )
+    allocate(elem_accum_qmass     (np,np,qsize_d,diagtimes,nelemd) )
     allocate(elem_accum_Q1mass    (np,np,qsize_d,  nelemd) )
 
     ! Forcing
