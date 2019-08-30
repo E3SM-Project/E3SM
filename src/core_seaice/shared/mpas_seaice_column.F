@@ -1670,7 +1670,8 @@ contains
        abortMessage = ""
 
        !$omp parallel do default(shared) private(iCategory,iAerosol,northernHemisphereMask,&
-       !$omp&  specificSnowAerosol,specificIceAerosol,abortMessage) reduction(.or.:abortFlag)
+       !$omp&  abortMessage) firstprivate(specificSnowAerosol,specificIceAerosol) &
+       !$omp&  reduction(.or.:abortFlag)
        do iCell = 1, nCellsSolve
 
           ! initial state values
@@ -2102,8 +2103,9 @@ contains
        abortFlag = .false.
        abortMessage = ""
 
-       !$omp parallel do default(shared) private(iCategory,newlyFormedIceLogical,iBioTracers,iBioData,&
-       !$omp&   oceanBioConcentrationsUsed,abortMessage) reduction(.or.:abortFlag)
+       !$omp parallel do default(shared) private(iCategory,iBioTracers,iBioData,&
+       !$omp&   abortMessage) firstprivate(newlyFormedIceLogical,oceanBioConcentrationsUsed) &
+       !$omp&   reduction(.or.:abortFlag)
        do iCell = 1, nCellsSolve
 
           ! newly formed ice
@@ -2883,7 +2885,8 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
-       !$omp parallel do default(shared) private(iCategory,iAerosol,aerosolsArray,lonCellColumn)
+       !$omp parallel do default(shared) firstprivate(aerosolsArray,index_shortwaveAerosol) &
+       !$omp&                                 private(iCategory,iAerosol,lonCellColumn)
        do iCell = 1, nCellsSolve
 
           ! set aerosols array
