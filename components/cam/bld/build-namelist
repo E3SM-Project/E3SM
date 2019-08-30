@@ -3995,6 +3995,9 @@ if ($cfg->get('camiop')) {
     add_default($nl, 'nhtfrq', 'val'=>'0,1');
 }
 
+# constant solar zenith angle (default is -1 = disabled)
+add_default($nl, 'constant_zenith_deg');
+
 # Spectral Element dycore
 # ============
 

@@ -20,6 +20,8 @@
 <solar_htng_spctrl_scl>.true. </solar_htng_spctrl_scl>
 <solar_data_type      >FIXED  </solar_data_type>
 
+<constant_zenith_deg>-1</constant_zenith_deg>
+
 <!-- ------------------------------------------------------------------------------------------ -->
 <!-- Revised physics constants for ape experiments (from CAM5/6 use case) -->
 <!-- ------------------------------------------------------------------------------------------ -->
