@@ -9,6 +9,7 @@
 
 #include <Kokkos_Core.hpp>
 #include <cmath>
+#include "Types.hpp"
 
 namespace Homme
 {

@@ -121,7 +121,6 @@ SET(THETAL_DEPS_F90
   ${SRC_DIR}/interp_movie_mod.F90
   ${SRC_DIR}/netcdf_io_mod.F90
   ${SRC_DIR}/pio_io_mod.F90
-  ${SRC_DIR}/prim_main.F90 
   ${SRC_DIR}/prim_movie_mod.F90
   ${SRC_DIR}/theta_restart_mod.F90
   ${SRC_DIR}/repro_sum_mod.F90
