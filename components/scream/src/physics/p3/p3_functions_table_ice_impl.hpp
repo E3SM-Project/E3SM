@@ -217,7 +217,7 @@ typename Functions<S,D>::Spack Functions<S,D>
   Spack proc;
   IntSmallPack idxpk(index);
 
-  if (qiti_gt_small.any()) return proc;
+  if (!qiti_gt_small.any()) return proc;
 
   // current density index
 
