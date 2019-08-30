@@ -310,9 +310,10 @@ public:
   KOKKOS_INLINE_FUNCTION
   void column_scan (const KernelVariables& kv,
                     const InputProvider& input_provider,
-                    const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum) const
+                    const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
+                    const Real s0 = 0.0) const
   {
-    column_scan_impl<ExecSpace,Forward,Inclusive,LENGTH>(kv,input_provider,sum);
+    column_scan_impl<ExecSpace,Forward,Inclusive,LENGTH>(kv,input_provider,sum,s0);
   }
 
   template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename InputProvider>
