@@ -24,7 +24,6 @@ Options
 | -d, --dev       | Specify a path to the MPAS checkout to be tested.             |
 +-----------------+---------------------------------------------------------------+
 | -b              | [optional]:                                                   |
-|                 |                                                               |
 | --base          | Specify a path to the MPAS checkout to be                     |
 |                 | tested against, in the case of regression tests. If this      |
 |                 | option is not specified, only tests that do not require       |
