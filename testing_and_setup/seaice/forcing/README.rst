@@ -19,7 +19,7 @@ monthly AOMIP climatologies.
 
 .. code::
 
-   Usage: python create_atmos_forcing.py configFilename
+   > python create_atmos_forcing.py configFilename
 
 where configFilename is a python config file with the following example format:
 
@@ -84,7 +84,7 @@ This script creates ocean forcing using CESM output.
 
 .. code::
 
-   Usage: python create_ocean_forcing.py configFilename
+   > python create_ocean_forcing.py configFilename
 
 where configFilename is a python config file with the following example format:
 
