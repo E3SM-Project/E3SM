@@ -16,33 +16,33 @@ Usage
 Options
 =======
 
-+-----------------+---------------------------------------------------------------+
-| Name            | Description                                                   |
-+=================+===============================================================|
-| -h              | Display the help screen which describes the available options.|
-+-----------------+---------------------------------------------------------------+
-| -d, --dev       | Specify a path to the MPAS checkout to be tested.             |
-+-----------------+---------------------------------------------------------------+
-| -b, --base      | [optional]: Specify a path to the MPAS checkout to be.        |
-|                 | tested against, in the case of regression tests. If this      |
-|                 | option is not specified, only tests that do not require       |
-|                 | a base MPAS checkout to check against will be performed.      |
-+-----------------+---------------------------------------------------------------+
-| -t, --testsuite | [optional, default: /testsuites/testsuite.standard.xml]:      |
-|                 | Specify the testsuite for the testing system to test          |
-|                 | with.                                                         |
-+-----------------+---------------------------------------------------------------+
-| -o, --domaindir | [optional, default: env variable                              |
-|                 | MPAS_SEAICE_DOMAINS_DIR]: This specifies the domains          |
-|                 | directory for the system to use to get domain files to        |
-|                 | build testing cases with.                                     |
-+-----------------+---------------------------------------------------------------+
-| -a, --avail     | [optional]: List the tests that have been implemented.        |
-+-----------------+---------------------------------------------------------------+
-| -c, --check     | [optional]: This option set namelist options which will       |
-|                 | cause MPAS-Seaice to fail all the tests. This is for          |
-|                 | testing the testing system.                                   |
-+-----------------+---------------------------------------------------------------+
++-----------------+----------------------------------------------------------------+
+| Name            | Description                                                    |
++=================+================================================================|
+| -h              | Display the help screen which describes the available options. |
++-----------------+----------------------------------------------------------------+
+| -d, --dev       | Specify a path to the MPAS checkout to be tested.              |
++-----------------+----------------------------------------------------------------+
+| -b, --base      | [optional]: Specify a path to the MPAS checkout to be.         |
+|                 | tested against, in the case of regression tests. If this       |
+|                 | option is not specified, only tests that do not require        |
+|                 | a base MPAS checkout to check against will be performed.       |
++-----------------+----------------------------------------------------------------+
+| -t, --testsuite | [optional, default: /testsuites/testsuite.standard.xml]:       |
+|                 | Specify the testsuite for the testing system to test           |
+|                 | with.                                                          |
++-----------------+----------------------------------------------------------------+
+| -o, --domaindir | [optional, default: env variable                               |
+|                 | MPAS_SEAICE_DOMAINS_DIR]: This specifies the domains           |
+|                 | directory for the system to use to get domain files to         |
+|                 | build testing cases with.                                      |
++-----------------+----------------------------------------------------------------+
+| -a, --avail     | [optional]: List the tests that have been implemented.         |
++-----------------+----------------------------------------------------------------+
+| -c, --check     | [optional]: This option set namelist options which will        |
+|                 | cause MPAS-Seaice to fail all the tests. This is for           |
+|                 | testing the testing system.                                    |
++-----------------+----------------------------------------------------------------+
 
 Testsuite .xml files
 ====================
