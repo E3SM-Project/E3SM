@@ -10,19 +10,22 @@ Usage
 
 .. code::
 
-   > test_mpas-seaice.py [-h] -d MPASDEVELOPMENTDIR [-b MPASBASEDIR] [-t TESTSUITE] [-o DOMAINSDIR] [-a] [-c]
+   > test_mpas-seaice.py [-h] -d MPASDEVELOPMENTDIR [-b MPASBASEDIR]
+                         [-t TESTSUITE] [-o DOMAINSDIR] [-a] [-c]
 
 Options
 =======
 
 +-----------------+---------------------------------------------------------------+
 | Name            | Description                                                   |
-+-----------------+---------------------------------------------------------------+
++=================+===============================================================|
 | -h              | Display the help screen which describes the available options.|
 +-----------------+---------------------------------------------------------------+
 | -d, --dev       | Specify a path to the MPAS checkout to be tested.             |
 +-----------------+---------------------------------------------------------------+
-| -b, --base      | [optional]: Specify a path to the MPAS checkout to be         |
+| -b              | [optional]:                                                   |
+|                 |                                                               |
+| --base          | Specify a path to the MPAS checkout to be                     |
 |                 | tested against, in the case of regression tests. If this      |
 |                 | option is not specified, only tests that do not require       |
 |                 | a base MPAS checkout to check against will be performed.      |
@@ -64,17 +67,17 @@ file that specifies the configurations (namelist and streams file), domains
        </configuration>
    </testsuite>
 
-This example specifies a series of tests ("regression", "parallelism" and
-"restartability") to be performed with the "domain_QU120km" domain and the
-"standard_physics" configuration. Test suites are stored in
-MPAS/testing_and_setup/seaice/testing within the MPAS repo.
+This example specifies a series of tests (**regression**, **parallelism** and
+**restartability**) to be performed with the **domain_QU120km** domain and the
+**standard_physics** configuration. Test suites are stored in
+``MPAS/testing_and_setup/seaice/testing`` within the MPAS repo.
 
 Configurations
 ==============
 
 The testing system uses configurations (i.e. namelist and stream file pairs)
 listed in the testsuite xml file in the test runs that it performs. The
-files are stored in the repository at MPAS/testing_and_setup/seaice/configurations.
+files are stored in the repository at ``MPAS/testing_and_setup/seaice/configurations``.
 
 Domains
 =======
@@ -82,16 +85,14 @@ Domains
 The testing system uses domains listed in the testsuite xml file. The domain
 provides grid, forcing and graph files for the testing runs. The system being
 used must have a directory containg various domain directories. These
-directories must contain "get_domain.py" script files to allow the testing
+directories must contain ``get_domain.py`` script files to allow the testing
 system to set up runs.
 
 Available Tests
 ===============
 
 1. **Regression**: Bit reproducibility is tested between the dev and base MPAS checkouts.
-
 2. **Parallelism**: Bit reproducibility is tested between different processor counts for the same
 dev MPAS checkout.
-
 3. **Restartability**: Bit reproducibility is tested between a standard run and a run with a restart
 half way through.
