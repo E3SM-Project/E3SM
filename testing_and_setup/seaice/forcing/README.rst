@@ -49,10 +49,15 @@ Six-hourly air temperature, velocity and specific humidity comes from CORE-II.
 Data files can be obtained from
 https://data1.gfdl.noaa.gov/nomads/forms/core/COREv2/CIAF_v2.html
 To generate forcing for a given year YYYY, the following files are required:
+
 * ${dataDirSixHourly}/t_10/t_10.YYYY.*.nc
+
 * ${dataDirSixHourly}/q_10/q_10.YYYY.*.nc
+
 * ${dataDirSixHourly}/u_10/u_10.YYYY.*.nc
+
 * ${dataDirSixHourly}/v_10/v_10.YYYY.*.nc
+
 where ${dataDirSixHourly} is the local location of the six hourly data.
 
 AOMIP climatologies
@@ -60,12 +65,14 @@ AOMIP climatologies
 
 Monthly climatologies of cloudiness and precipitation comes from AOMIP.
 The following data files are required:
+
 * ${dataDirMonthly}/cldf.omip.nc
+
 * ${dataDirMonthly}/prec.nmyr.nc
+
 where ${dataDirMonthly} is the local location of the monthly data.
 These files can be obtained from:
-https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/forcing/
-MPAS-Seaice_clim_data.tar.gz
+https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/forcing/MPAS-Seaice_clim_data.tar.gz
 
 
 create_ocean_forcing.py
@@ -104,5 +111,4 @@ gx1 input data
 
 This script requires a gx1 grid file and ocean mixed file as input. These can be
 obtained from:
-https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/forcing/
-MPAS-Seaice_clim_data.tar.gz
+https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/forcing/MPAS-Seaice_clim_data.tar.gz
