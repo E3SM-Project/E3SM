@@ -34,25 +34,25 @@ void compare (const VA& a, const VB& b) {
 }
 
 #define make_get_index(rank, ...)                                         \
-template<typename View, typename IdxPack, OnlyRank<View, rank, int> = 0 > \
+template<typename View, typename IdxView, OnlyRank<View, rank, int> = 0 > \
 KOKKOS_INLINE_FUNCTION                                                    \
-scream::pack::Pack<typename View::traits::value_type, IdxPack::n> get_index(const View& data, IdxPack idx[View::Rank]) { return index(data, __VA_ARGS__); }
+scream::pack::Pack<typename View::traits::value_type, IdxView::traits::value_type::n> get_index(const View& data, const IdxView& idx) { return index(data, __VA_ARGS__); }
 
 #define make_get_data(rank, ...)                                        \
-template<typename View, typename IdxPack, OnlyRank<View, rank, int> = 0 > \
+template<typename View, typename IdxView, OnlyRank<View, rank, int> = 0 > \
 KOKKOS_INLINE_FUNCTION                                                  \
-typename View::traits::value_type get_data(const View& data, IdxPack idx[View::Rank], int slot) { return data(__VA_ARGS__); }
+typename View::traits::value_type get_data(const View& data, const IdxView& idx, int slot) { return data(__VA_ARGS__); }
 
-make_get_index(1, idx[0])
-make_get_data(1, idx[0][slot])
-make_get_index(2, idx[0], idx[1])
-make_get_data(2, idx[0][slot], idx[1][slot])
-make_get_index(3, idx[0], idx[1], idx[2])
-make_get_data(3, idx[0][slot], idx[1][slot], idx[2][slot])
-make_get_index(4, idx[0], idx[1], idx[2], idx[3])
-make_get_data(4, idx[0][slot], idx[1][slot], idx[2][slot], idx[3][slot])
-make_get_index(5, idx[0], idx[1], idx[2], idx[3], idx[4])
-make_get_data(5, idx[0][slot], idx[1][slot], idx[2][slot], idx[3][slot], idx[4][slot])
+make_get_index(1, idx(0))
+make_get_data(1, idx(0)[slot])
+make_get_index(2, idx(0), idx(1))
+make_get_data(2, idx(0)[slot], idx(1)[slot])
+make_get_index(3, idx(0), idx(1), idx(2))
+make_get_data(3, idx(0)[slot], idx(1)[slot], idx(2)[slot])
+make_get_index(4, idx(0), idx(1), idx(2), idx(3))
+make_get_data(4, idx(0)[slot], idx(1)[slot], idx(2)[slot], idx(3)[slot])
+make_get_index(5, idx(0), idx(1), idx(2), idx(3), idx(4))
+make_get_data(5, idx(0)[slot], idx(1)[slot], idx(2)[slot], idx(3)[slot], idx(4)[slot])
 
 template<int Packn, typename View>
 void do_index_test(const View& data)
@@ -60,10 +60,10 @@ void do_index_test(const View& data)
   static constexpr int pack_size = Packn;
   using IdxPack = scream::pack::Pack<int, pack_size>;
   fill(data);
-  IdxPack idx[View::Rank];
-  for (int r = 0; r < View::Rank; ++r) {
-    for (int i = 0; i < pack_size; ++i) { idx[r][i] = (r+2)*i; } // 2*i, 3*i, etc as rank increases
-  }
+  Kokkos::View<IdxPack[View::Rank]> idx("idx");
+  Kokkos::parallel_for(View::Rank, KOKKOS_LAMBDA(const int r) {
+    for (int i = 0; i < pack_size; ++i) { idx(r)[i] = (r+2)*i; } // 2*i, 3*i, etc as rank increases
+  });
 
   int nerr = 0;
   Kokkos::parallel_reduce(
