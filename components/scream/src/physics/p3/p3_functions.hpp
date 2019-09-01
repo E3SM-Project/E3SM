@@ -25,14 +25,14 @@ struct Functions
   //
   struct P3C {
     // Constants for ice lookup tables
-    static constexpr int    densize     = 5;
-    static constexpr int    rimsize     = 4;
-    static constexpr int    isize       = 50;
-    static constexpr int    tabsize     = 12; // number of quantities used from lookup table
-    static constexpr int    rcollsize   = 30;
-    static constexpr int    coltabsize  = 2;  // number of ice-rain collection  quantities used from lookup table
-
-    static constexpr ScalarT lookup_table_1a_dum1_c = 1.0/(0.1*std::log10(261.7));
+    enum {
+      densize     = 5,
+      rimsize     = 4,
+      isize       = 50,
+      tabsize     = 12, // number of quantities used from lookup table
+      rcollsize   = 30,
+      coltabsize  = 2,  // number of ice-rain collection  quantities used from lookup table
+    };
 
     static constexpr const char* p3_lookup_base = "p3_lookup_table_1.dat-v";
     static constexpr const char* p3_version = "2.8.2";
@@ -238,9 +238,6 @@ struct Functions
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
 };
-
-template <typename ScalarT, typename DeviceT>
-constexpr int Functions<ScalarT, DeviceT>::P3C::isize;
 
 } // namespace p3
 } // namespace scream
