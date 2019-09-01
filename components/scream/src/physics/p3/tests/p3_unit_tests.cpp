@@ -59,9 +59,9 @@ struct UnitWrap::UnitTest<D>::TestP3Func
     Kokkos::parallel_reduce("TestTableIce::run", policy, KOKKOS_LAMBDA(const MemberType& team, int& errors) {
 
       errors = 0;
-
+      const auto tmelt = C::Tmelt;
       // Test values @ the melting point of H20 @ 1e5 Pa
-      saturation_tests(C::Tmelt, 1e5, 610.7960763188032, 610.7960763188032,
+      saturation_tests(tmelt, 1e5, 610.7960763188032, 610.7960763188032,
          0.003822318507864685,  0.003822318507864685, errors);
 
       //Test vaules @ 243.15K @ 1e5 Pa

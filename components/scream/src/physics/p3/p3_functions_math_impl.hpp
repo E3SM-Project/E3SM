@@ -31,7 +31,8 @@ Functions<S,D>::polysvp1(const Spack& t, const bool ice)
 
   Spack dt = pack::max(t - 273.16, -80.0);
   Spack result;
-  Smask ice_mask = (t < C::Tmelt) && ice;
+  const auto tmelt = C::Tmelt;
+  Smask ice_mask = (t < tmelt) && ice;
   Smask liq_mask = !ice_mask;
 
   // -------------------------------------------
@@ -58,7 +59,8 @@ Functions<S,D>::qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice)
   Spack e_pres; // saturation vapor pressure [Pa]
 
   e_pres = polysvp1(t_atm, ice);
-  return C::ep_2 * e_pres / pack::max(p_atm-e_pres, 1.e-3);
+  const auto ep_2 = C::ep_2;
+  return ep_2 * e_pres / pack::max(p_atm-e_pres, 1.e-3);
 }
 
 

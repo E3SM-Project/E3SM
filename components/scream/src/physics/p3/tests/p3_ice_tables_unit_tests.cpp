@@ -216,15 +216,15 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
       TableIce ti;
       TableRain tr;
       Spack qitot, nitot, qirim, rhop, qr, nr;
-      for(Int s = 0; s < Spack::n; ++s) {
-        qitot[s] = lid[s].qitot;
-        nitot[s] = lid[s].nitot;
-        qirim[s] = lid[s].qirim;
-        rhop[s]  = lid[s].rhop;
+      // for(Int s = 0; s < Spack::n; ++s) {
+      //   qitot[s] = lid[s].qitot;
+      //   nitot[s] = lid[s].nitot;
+      //   qirim[s] = lid[s].qirim;
+      //   rhop[s]  = lid[s].rhop;
 
-        qr[s]    = lidb[s].qr;
-        nr[s]    = lidb[s].nr;
-      }
+      //   qr[s]    = lidb[s].qr;
+      //   nr[s]    = lidb[s].nr;
+      // }
 
       Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
       Functions::lookup_rain(qiti_gt_small, qr, nr, tr);

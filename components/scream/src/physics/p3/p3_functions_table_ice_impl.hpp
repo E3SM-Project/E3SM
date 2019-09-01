@@ -145,7 +145,8 @@ void Functions<S,D>
 
   // find index for scaled mean rain size
   // if no rain, then just choose dumj = 1 and do not calculate rain-ice collection processes
-  const auto gt_small = qr > C::QSMALL && nr > 0.0;
+  const auto qsmall = C::QSMALL;
+  const auto gt_small = qr > qsmall && nr > 0.0;
 
   // calculate scaled mean size for consistency with ice lookup table
   auto dumlr = pack::pow(qr/(C::Pi * C::RHOW * nr), C::THIRD);
