@@ -169,7 +169,7 @@ contains
      real(r8) :: snowmelt(bounds%begc:bounds%endc)
      integer  :: j
 	 
-	 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! Tian
+	 !--------------------------------------------------- ! initializing variables used to adjust irrigation on local processer
      real(r8) :: qflx_irrig_grid(bounds%begg:bounds%endg)      ! irrigation at grid level [mm/s] 
      real(r8) :: irrig_rate_grid(bounds%begg:bounds%endg)
      
@@ -181,7 +181,6 @@ contains
      integer :: currentg
      integer :: gridnum
      real(r8) :: adjust_f
-     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
      !-----------------------------------------------------------------------
 
      associate(                                                     & 
@@ -258,7 +257,7 @@ contains
        
        dtime = get_step_size()
 	   
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! temp solution for the irrigation mapping issue, if ELM and MOSART share the same grid, no such problem
+       !--------------- temp solution for the irrigation mapping issue, if ELM and MOSART share the same grid, no such problem
        gridnum = bounds%endg - bounds%begg + 1 !number of grid on this processer
         do pp = bounds%begp,bounds%endp          
              if (irrig_rate (pp) /= irrig_rate(pp)) then  !change NAN (if any) to zero so that the grid level irrig_rate can be calculated 
@@ -277,7 +276,9 @@ contains
             qflx_irrig_grid(gg) = 0
          end do
         
-        ! loop the pft and assign irrig_rate to qflx_irrig based on n_irrig_steps_left(p), which will be zero if current pft doesn't need irrigation or the current time is out of irrigation schedule
+        ! loop the pft and assign irrig_rate to qflx_irrig based on n_irrig_steps_left(p), 
+        ! which will be zero if current pft doesn't need irrigation or the current time 
+        ! is out of irrigation schedule
          do f = 1, num_nolakep
           p = filter_nolakep(f)
           g = pgridcell(p)
@@ -327,7 +328,7 @@ contains
         if (adjust_f < 1.0e-3_r8) then
             adjust_f = 1 ! if irrigated area is too small, don't adjust because it would generate huge irrigation rate in a very small area
         end if            
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!       
+       !----------------- temp solution ends here     
 
        ! Start pft loop
 
@@ -450,10 +451,10 @@ contains
                    qflx_surf_irrig(p) = atm2lnd_vars%supply_grc(g)/adjust_f
                end if      
                
-               !!!!!!!!!!!!!! use supply_frac to calculate surf_irrg
+               !-- use supply_frac to calculate surf_irrg
                !qflx_surf_irrig(p) = qflx_irrig(p) * supply_frac(g)			
                !qflx_over_supply(p) = 0
-               !!!!!!!!!!!!!!!!!!!!!!!!    
+               !--    
                
                 !if (g .eq. 3761) then       ! debug
                 !  write(iulog,*)'ttt1',g,p,qflx_irrig(p),atm2lnd_vars%supply_grc(g), adjust_f, pgwgt(p), qflx_surf_irrig(p),qflx_over_supply(p),qflx_real_irrig(p)
@@ -472,19 +473,21 @@ contains
                    qflx_real_irrig(p) = qflx_irrig(p)
                end if
                
-                   qflx_grnd_irrig(p) = qflx_real_irrig(p) - qflx_surf_irrig(p) !groundwater irrigation may be less than 'ldomain%f_grd(g)*qflx_irrig(p)' if real irrigation is greater than demand
-                   qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p) + qflx_over_supply(p) !applying irrigation, the over supply is included to balance water
-               
+                   qflx_grnd_irrig(p) = qflx_real_irrig(p) - qflx_surf_irrig(p)
+                   !groundwater irrigation may be less than 'ldomain%f_grd(g)*qflx_irrig(p)' if real irrigation is greater than demand
+                   qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p) + qflx_real_irrig(p) + qflx_over_supply(p)
+                   !applying irrigation, the over supply is included to balance water             
                
              else !this pft doesn't need water             
                qflx_prec_grnd_rain(p) = qflx_prec_grnd_rain(p)
-               qflx_real_irrig(p) = 0! this should be zero, just leave it here for testing added by Tian 2/27/2018
+               qflx_real_irrig(p) = 0 ! this should be zero, just leave it here for testing
                qflx_surf_irrig(p) = 0
                qflx_grnd_irrig(p) = 0
                qflx_over_supply(p) = 0
-               !if (qflx_irrig(p) > 0) then
-               !  write(iulog,*)'Tian warning warning irrigp>0 but irrigg is not',qflx_irrig(p),qflx_irrig_grid(g)
-               !end if 
+               
+               if (qflx_irrig(p) > 0) then
+                 write(iulog,*)'warning irrigp>0 but irrigg is not',qflx_irrig(p),qflx_irrig_grid(g)
+               end if 
              end if		
                 
           else  ! one way coupling

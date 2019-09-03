@@ -5370,11 +5370,6 @@ module VegetationDataType
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_wf
     !-----------------------------------------------------------------------
-    !this%qflx_irrig(begp:endp) = spval
-    !call hist_addfld1d (fname='QIRRIG', units='mm/s', &
-    !     avgflag='A', long_name='water added through irrigation', &
-    !     ptr_patch=this%qflx_irrig)
-		 
     this%qflx_irrig_patch(begp:endp) = spval
     call hist_addfld1d (fname='QIRRIG_ORIG', units='mm/s', &
          avgflag='A', long_name='Original total irrigation water demand (surface + ground)', &
