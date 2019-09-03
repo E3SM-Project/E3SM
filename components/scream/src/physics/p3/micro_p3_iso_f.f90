@@ -10,9 +10,7 @@ module micro_p3_iso_f
 #endif
 
 !
-! This file contains bridges between micro_p3 fortran and scream c++ p3. subroutines ending in
-! "_c" are intended to used as a c->fortran bridge, subroutines ending in "_f_" are intended to be
-! used a fortran->c bridge.
+! This file contains bridges from micro_p3 fortran to scream c++.
 !
 
 interface
