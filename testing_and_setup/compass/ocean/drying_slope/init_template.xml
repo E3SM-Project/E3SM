@@ -1,0 +1,55 @@
+<template>
+	<namelist>
+		<option name="config_ocean_run_mode">'init'</option>
+		<option name="config_init_configuration">'tidal_boundary'</option>
+		<option name="config_tidal_boundary_layer_type">'zstar'</option>
+		<option name="config_vert_levels">-1</option>
+		<option name="config_tidal_boundary_vert_levels">100</option>
+		<option name="config_tidal_boundary_left_bottom_depth">0.0</option>
+		<option name="config_tidal_start_dry">.true.</option>
+		<option name="config_use_wetting_drying">.true.</option>
+		<option name="config_drying_min_cell_height">1.000001e-3</option>
+		<option name="config_use_tidal_forcing">.true.</option>
+		<option name="config_write_cull_cell_mask">.false.</option>
+	</namelist>
+
+	<streams>
+		<stream name="input_init">
+			<attribute name="filename_template">mesh.nc</attribute>
+		</stream>
+		<stream name="forcing_data_init">
+			<attribute name="type">output</attribute>
+			<attribute name="filename_template">forcing.nc</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<add_contents>
+				<member name="tidalInputMask" type="var"/>
+			</add_contents>
+		</stream>
+		<stream name="output_init">
+			<attribute name="type">output</attribute>
+			<attribute name="output_interval">0000_00:01:00</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">ocean.nc</attribute>
+			<add_contents>
+				<member name="input_init" type="stream"/>
+				<member name="tracers" type="var_struct"/>
+				<member name="refZMid" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="restingThickness" type="var"/>
+				<member name="surfaceStress" type="var"/>
+				<member name="atmosphericPressure" type="var"/>
+				<member name="boundaryLayerDepth" type="var"/>
+				<member name="refBottomDepth" type="var"/>
+				<member name="bottomDepth" type="var"/>
+				<member name="bottomDepthObserved" type="var"/>
+				<member name="maxLevelCell" type="var"/>
+				<member name="vertCoordMovementWeights" type="var"/>
+				<member name="edgeMask" type="var"/>
+				<member name="tidalInputMask" type="var"/>
+				<member name="ssh" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+</template>
