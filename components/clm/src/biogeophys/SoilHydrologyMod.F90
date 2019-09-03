@@ -699,17 +699,6 @@ contains
           !--  water table is below the soil column  --------------------------------------
 		  g = col_pp%gridcell(c)
           l = col_pp%landunit(c)
-
-       !   local runoff used for irrigation , commented out because it's been taken care of in MOSART-WM 
-       !   qcharge_temp = qcharge(c)
-       !   if ((lun%itype(l)==istsoil .or. lun%itype(l)==istcrop) .and. col%active(c)) then
-       !      qflx_runoff(c) = qflx_runoff(c) - qflx_irrig(c) *ldomain%f_surf(g)
-       !      wa(c) =  max(0.0_r8, wa(c) - qflx_irrig(c) * dtime *
-       !      ldomain%f_grd(g))
-       !      qcharge_temp = qcharge(c)
-       !      qcharge(c) = qcharge(c) - qflx_irrig(c) * ldomain%f_grd(g)
-       !   end if
-
           qcharge_temp = qcharge(c)
 
           wa(c)  = wa(c) - qflx_grnd_irrig_col(c) * dtime

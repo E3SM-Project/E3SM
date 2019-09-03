@@ -23,12 +23,11 @@ module RtmRestFile
   use RunoffMod     , only : rtmCTL
   use RtmIO       
   use RtmDateTime
-!#ifdef INCLUDE_WRM
   use WRM_type_mod  , only : ctlSubwWRM, WRMUnit, StorWater
   use WRM_subw_io_mod, only : WRM_computeRelease
-!#endif
+
   use rof_cpl_indices , only : nt_rtm, rtm_tracers 
-!
+
 ! !PUBLIC TYPES:
   implicit none
   save
