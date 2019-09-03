@@ -7,6 +7,7 @@
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
 #include "share/util/scream_kokkos_utils.hpp"
+#include "share/util/scream_arch.hpp"
 
 #include "p3_unit_tests_common.hpp"
 
@@ -40,7 +41,7 @@ struct UnitWrap::UnitTest<D>::TestP3Func
 
     // The correct results were computed with double precision, so we need
     // significantly greater tolerance for single precision.
-    Scalar tol = util::is_single_precision<Scalar>::value ? C::Tol*100 : C::Tol;
+    Scalar tol = (util::is_single_precision<Scalar>::value || util::OnGpu<ExeSpace>::value) ? C::Tol*100 : C::Tol;
 
     for(int s = 0; s < sat_ice_p.n; ++s){
       // Test vapor pressure
