@@ -61,13 +61,6 @@ module micro_p3
 
   ! protected items should be treated as private for everyone except tests
 
-  protected :: polysvp1,find_lookupTable_indices_1a,find_lookupTable_indices_1b, &
-       find_lookupTable_indices_3,get_cloud_dsd2, &
-       get_rain_dsd2,calc_bulkRhoRime,impose_max_total_Ni,check_values,qv_sat, &
-       ice_cldliq_collection, ice_rain_collection, ice_self_collection, &
-       ice_melting, ice_cldliq_wet_growth, calc_ice_relaxation_timescale, &
-       calc_rime_density, cldliq_immersion_freezing, rain_immersion_freezing
-
   real(rtype),protected :: e0
 
   real(rtype), protected, dimension(densize,rimsize,isize,tabsize) :: itab   !ice lookup table values
