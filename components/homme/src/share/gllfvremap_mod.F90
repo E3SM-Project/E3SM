@@ -271,18 +271,18 @@ contains
        call gfr_g2f_scalar(ie, elem(ie)%metdet, elem(ie)%state%ps_v(:,:,nt:nt), &
             wr1(:,:,:1))
        ps(:ncol,ie) = reshape(wr1(:nf,:nf,1), (/ncol/))
-
+       
        if (gfr%have_fv_topo_file_phis) then
           phis(:ncol,ie) = gfr%phis(:,ie)
        else
           call gfr_dyn_to_fv_phys_topo_elem(elem, ie, phis(:,ie))
        end if
 
-       call calc_dp(hvcoord, elem(ie)%state%ps_v(:,:,nt), dp)
+       dp = elem(ie)%state%dp3d(:,:,:,nt)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, dp, dp_fv)
 
        call get_temperature(elem(ie), wr2, hvcoord, nt)
-       call calc_p(hvcoord, elem(ie)%state%ps_v(:,:,nt), p)
+       call calc_p(hvcoord, elem(ie)%state%dp3d(:,:,:,nt), p)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
        wr2 = wr2*(p/p0)**kappa
        call gfr_g2f_scalar_dp(gfr, ie, elem(ie)%metdet, dp, dp_fv, wr2, wr1)
@@ -340,7 +340,7 @@ contains
     qsize = size(q,3)
 
     do ie = nets,nete
-       call calc_dp(hvcoord, elem(ie)%state%ps_v(:,:,nt), dp)
+       dp = elem(ie)%state%dp3d(:,:,:,nt)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, dp, dp_fv)
 
        wr1(:nf,:nf,:) = reshape(uv(:ncol,1,:,ie), (/nf,nf,nlev/))
@@ -348,7 +348,7 @@ contains
        call gfr_f2g_vector(gfr, ie, elem, &
             wr1, wr2, elem(ie)%derived%FM(:,:,1,:), elem(ie)%derived%FM(:,:,2,:))
 
-       call calc_p(hvcoord, elem(ie)%state%ps_v(:,:,nt), p)
+       call calc_p(hvcoord, elem(ie)%state%dp3d(:,:,:,nt), p)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
        wr1(:nf,:nf,:) = reshape(T(:ncol,:,ie), (/nf,nf,nlev/))
        wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p_fv(:nf,:nf,:)/p0)**kappa
@@ -415,7 +415,7 @@ contains
     if (nf == 1 .and. gfr%boost_pg1) return
 
     do ie = nets,nete
-       call calc_dp(hvcoord, elem(ie)%state%ps_v(:,:,nt), dp)
+       dp = elem(ie)%state%dp3d(:,:,:,nt)
        do qi = 1,qsize
           ! Limit GLL Q1.
           if (gfr%check) wr1 = elem(ie)%derived%FQ(:,:,:,qi)
@@ -648,38 +648,24 @@ contains
     deallocate(gll%points, gll%weights)
   end subroutine gll_cleanup
 
-  subroutine calc_dp(hvcoord, ps, dp)
-    ! Compute hydrostatic dp using ps.
+  subroutine calc_p(hvcoord, dp3d, p)
+    ! Compute hydrostatic p using dp3d.
 
     use hybvcoord_mod, only: hvcoord_t
     use dimensions_mod, only: nlev
 
     type (hvcoord_t), intent(in) :: hvcoord
-    real(kind=real_kind), intent(in) :: ps(:,:)
-    real(kind=real_kind), intent(out) :: dp(:,:,:)
-
-    integer :: k
-
-    do k = 1,nlev
-       dp(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
-            (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps
-    end do
-  end subroutine calc_dp
-
-  subroutine calc_p(hvcoord, ps, p)
-    ! Compute hydrostatic p using ps.
-
-    use hybvcoord_mod, only: hvcoord_t
-    use dimensions_mod, only: nlev
-
-    type (hvcoord_t), intent(in) :: hvcoord
-    real(kind=real_kind), intent(in) :: ps(:,:)
+    real(kind=real_kind), intent(in) :: dp3d(:,:,:)
     real(kind=real_kind), intent(out) :: p(:,:,:)
 
     integer :: k
+    real(kind=real_kind) :: dp_accum(np,np,2)
 
+    dp_accum(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0
     do k = 1,nlev
-       p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps
+       dp_accum(:,:,2) = dp_accum(:,:,1) + dp3d(:,:,k)
+       p(:,:,k) = half*(dp_accum(:,:,1) + dp_accum(:,:,2))
+       dp_accum(:,:,1) = dp_accum(:,:,2)
     end do
   end subroutine calc_p
 
@@ -1566,9 +1552,9 @@ contains
     q_adjustment = ftype >= 1 .and. ftype <= 4
 
     do ie = nets,nete
-       call calc_dp(hvcoord, elem(ie)%state%ps_v(:,:,nt), dp)
+       dp = elem(ie)%state%dp3d(:,:,:,nt)
 
-       call calc_p(hvcoord, elem(ie)%state%ps_v(:,:,nt), p)
+       call calc_p(hvcoord, elem(ie)%state%dp3d(:,:,:,nt), p)
        wr1 = (p/p0)**kappa
        elem(ie)%derived%FT = elem(ie)%derived%FT*wr1
        call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, dp, &
@@ -1874,6 +1860,35 @@ contains
   ! Everything below is for internal unit testing of this module. For
   ! integration-level testing, see gllfvremap_test_mod and
   ! dcmip2016_test1_pg_forcing.
+
+  subroutine check_p(hvcoord, ps, dp, p)
+    ! Check that dp (state%dp3d) and p (derived from state%dp3d) are
+    ! consistent with ps_v.
+
+    use kinds, only: iulog
+    use hybvcoord_mod, only: hvcoord_t
+    use dimensions_mod, only: nlev
+
+    type (hvcoord_t), intent(in) :: hvcoord
+    real(kind=real_kind), intent(in) :: ps(:,:), dp(:,:,:), p(:,:,:)
+
+    real(kind=real_kind), dimension(np,np,nlev) :: dp_t, p_t
+    real(kind=real_kind) :: a, b, re1, re2
+    integer :: k
+
+    do k = 1,nlev
+       dp_t(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+            (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps
+       p_t(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps
+    end do
+    a = sum((dp - dp_t)**2)
+    b = sum(dp_t**2)
+    re1 = sqrt(a/b)
+    a = sum((p - p_t)**2)
+    b = sum(p_t**2)
+    re2 = sqrt(a/b)
+    if (re1 > 1e-14 .or. re2 > 1e-14) write(iulog,*), 'gfr> ERROR dp p', re1, re2
+  end subroutine check_p
 
   subroutine set_ps_Q(elem, nets, nete, timeidx, qidx, nlev)
     use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
