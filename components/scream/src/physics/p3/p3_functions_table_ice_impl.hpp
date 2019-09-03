@@ -93,12 +93,12 @@ void Functions<S,D>
 
   if (!qiti_gt_small.any()) return;
 
-  t.dum1 = (pack::log10(qitot/nitot)+18) * (1.0/(0.1*log10(261.7))) - 10; // For computational efficiency
+  t.dum1 = (pack::log10(qitot/nitot)+18) * (sp(1.0)/(sp(0.1)*log10(sp(261.7)))) - 10; // For computational efficiency
   t.dumi = IntSmallPack(t.dum1);
 
   // set limits (to make sure the calculated index doesn't exceed range of lookup table)
   t.dum1 = pack::min(t.dum1, static_cast<Scalar>(P3C::isize));
-  t.dum1 = pack::max(t.dum1, static_cast<Scalar>(1.));
+  t.dum1 = pack::max(t.dum1, sp(1.));
   t.dumi = pack::max(1, t.dumi);
   t.dumi = pack::min(P3C::isize, t.dumi);
 
@@ -108,7 +108,7 @@ void Functions<S,D>
 
   // set limits
   t.dum4  = pack::min(t.dum4, static_cast<Scalar>(P3C::rimsize));
-  t.dum4  = pack::max(t.dum4, static_cast<Scalar>(1.));
+  t.dum4  = pack::max(t.dum4, sp(1.));
   t.dumii = pack::max(1, t.dumii);
   t.dumii = pack::min(P3C::rimsize-1, t.dumii);
 
@@ -122,7 +122,7 @@ void Functions<S,D>
   // set limits
   t.dumjj = IntSmallPack(t.dum5);
   t.dum5  = pack::min(t.dum5, static_cast<Scalar>(P3C::densize));
-  t.dum5  = pack::max(t.dum5, static_cast<Scalar>(1));
+  t.dum5  = pack::max(t.dum5, sp(1.));
   t.dumjj = pack::max(1, t.dumjj);
   t.dumjj = pack::min(P3C::densize-1, t.dumjj);
 
@@ -156,7 +156,7 @@ void Functions<S,D>
 
   // set limits
   t.dum3 = pack::min(t.dum3, static_cast<Scalar>(P3C::rcollsize));
-  t.dum3 = pack::max(t.dum3, static_cast<Scalar>(1.));
+  t.dum3 = pack::max(t.dum3, sp(1.));
   t.dumj = pack::max(1, t.dumj);
   t.dumj = pack::min(P3C::rcollsize-1, t.dumj);
 
