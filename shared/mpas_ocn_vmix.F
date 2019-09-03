@@ -831,7 +831,7 @@ contains
       logical, pointer :: config_use_implicit_bottom_drag
       real (kind=RKIND), pointer :: config_implicit_bottom_drag_coeff
       logical, pointer :: config_Rayleigh_friction, config_Rayleigh_bottom_friction, &
-                          config_Rayleigh_damping_coeff_depth_variable
+                          config_Rayleigh_damping_depth_variable
       real (kind=RKIND), pointer :: config_Rayleigh_damping_coeff, config_Rayleigh_bottom_damping_coeff
 
       err = 0
@@ -846,8 +846,8 @@ contains
                                              config_Rayleigh_bottom_friction)
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff', &
                                              config_Rayleigh_damping_coeff)
-      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_coeff_depth_variable', &
-                                             config_Rayleigh_damping_coeff_depth_variable)
+      call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_damping_depth_variable', &
+                                             config_Rayleigh_damping_depth_variable)
       call mpas_pool_get_config(ocnConfigs, 'config_Rayleigh_bottom_damping_coeff', &
                                              config_Rayleigh_bottom_damping_coeff)
 
@@ -864,7 +864,7 @@ contains
       endif
 
       rayleighDepthVariable = 0.0_RKIND
-      if (config_Rayleigh_damping_coeff_depth_variable) then
+      if (config_Rayleigh_damping_depth_variable) then
         rayleighDepthVariable = 1.0_RKIND
       end if
 
