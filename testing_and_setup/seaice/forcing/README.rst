@@ -71,7 +71,7 @@ The following data files are required:
 * ${dataDirMonthly}/prec.nmyr.nc
 
 where ${dataDirMonthly} is the local location of the monthly data.
-These files can be obtained from https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/forcing/MPAS-Seaice_clim_data.tar.gz
+These files can be obtained from https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/forcing/MPAS-Seaice_forcing_gen_data.tar.gz
 
 
 create_ocean_forcing.py
@@ -109,4 +109,4 @@ gx1 input data
 --------------
 
 This script requires a gx1 grid file and ocean mixed file as input. These can be
-obtained from https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/forcing/MPAS-Seaice_clim_data.tar.gz
+obtained from https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-seaice/forcing/MPAS-Seaice_forcing_gen_data.tar.gz
