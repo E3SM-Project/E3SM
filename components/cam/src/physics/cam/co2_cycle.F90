@@ -21,7 +21,7 @@ use physics_types,  only: physics_state, physics_ptend, physics_ptend_init
 use physconst,      only: mwdry, mwco2, gravit, cpair
 use constituents,   only: cnst_add, cnst_get_ind, cnst_name, cnst_longname, sflxnam
 use chem_surfvals,  only: chem_surfvals_get
-use co2_data_flux,  only: co2_data_flux_type, read_data_flux, interp_time_flux,co2_data_flux_init,co2_data_flux_advance
+use co2_data_flux,  only: co2_data_flux_type, co2_data_flux_init,co2_data_flux_advance !read_data_flux, interp_time_flux
 use cam_abortutils, only: endrun
 
 implicit none

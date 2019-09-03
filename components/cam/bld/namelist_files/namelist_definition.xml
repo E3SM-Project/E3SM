@@ -4807,8 +4807,16 @@ Full pathname of the aircraft input file list
 Default: none
 </entry>
 
+<entry id="aircraft_datapath" type="char*256" category="cam_chem"
+       group="aircraft_emit_nl" valid_values="" >
+Full pathname of the directory that contains the files specified in
+{{ hilight }}aircraft_specifier{{ closehilight }}.
+Default: none
+</entry>
+
+
 <entry id="aircraft_type" type="char*32" category="cam_chem"
-       group="aircraft_emit_nl" valid_values="CYCLICAL_LIST" >
+       group="aircraft_emit_nl" valid_values="CYCLICAL_LIST,SERIAL" >
 Type of time interpolation for data in aircraft aerosol files.
 Default: 'CYCLICAL_LIST'
 </entry>

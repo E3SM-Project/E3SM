@@ -1,4 +1,4 @@
-!BALLI: take care of the units of CO2!!
+!BALLI: take care of the units of CO2!!, do cleanup
 
 module co2_data_flux
 
@@ -6,63 +6,39 @@ module co2_data_flux
 ! for data reading and interpolation                                           
 !------------------------------------------------------------------------------------------------
 
-  use shr_kind_mod,   only : r8 => shr_kind_r8,shr_kind_cx, cl => shr_kind_cl
-  use spmd_utils,     only : masterproc
-  use ppgrid,         only : begchunk, endchunk, pcols
-  use phys_grid,      only : scatter_field_to_chunk, get_ncols_p
-  use error_messages, only : alloc_err, handle_ncerr, handle_err
-  use cam_abortutils,     only : endrun
-  use netcdf,         only : nf90_inq_dimid, nf90_inquire_dimension, nf90_inq_varid, nf90_get_var, nf90_open, &
-       nf90_noerr
-  use cam_logfile,    only : iulog
-  use physics_types,  only: physics_state, physics_state_copy
-  use dycore,         only: dycore_is
-  use shr_log_mod ,   only: errMsg => shr_log_errMsg
+  use shr_kind_mod,     only : r8 => shr_kind_r8,cx => shr_kind_cx, cl => shr_kind_cl
+  use ppgrid,           only : begchunk, endchunk, pcols
+  use cam_abortutils,   only : endrun
+  use dycore,           only: dycore_is
+  use shr_log_mod ,     only: errMsg => shr_log_errMsg
   use input_data_utils, only: time_coordinate
+  use cam_pio_utils,    only: cam_pio_openfile
+  use pio,              only: file_desc_t, pio_nowrite, pio_closefile, pio_inq_dimid, pio_bcast_error, &
+       pio_seterrorhandling, pio_noerr, pio_inquire_dimension
+
 #ifdef CO2_BILIN_REGRID
-  use tracer_data,    only : trfld, trfile, trcdata_init, advance_trcdata
+  use tracer_data,      only : trfld, trfile, trcdata_init, advance_trcdata
 #endif
   
-#if ( defined SPMD )
-  use mpishorthand, only: mpicom, mpiint, mpir8
-#endif
-
   implicit none
-
-! public data
 
 ! public type
 
   public co2_data_flux_type
 
 ! public interface
-
-  public read_data_flux
   public co2_data_flux_init
-  public interp_time_flux
   public co2_data_flux_advance
 
 ! private data
 
   private
-!  integer,  parameter :: totsz=2000           ! number greater than data time sample
-  real(r8), parameter :: daysperyear = 365.0_r8  ! Number of days in a year         
-  integer :: lonsiz  ! size of longitude dimension, if dataset is 2d(lat,lon), in CAM grid
-  integer :: latsiz  ! size of latitude dimension
-
-  integer :: ncolsiz ! size of number of columns (if SE grid)
-
-  !Following state data type is declared so that we can send state as an argument 
-  !in advance_trcdata call. Only "pint" (or pmid) is used from state variable
-  !to facilitate vertical interpolation. Therefore a state computed at the model 
-  !initialization should suffice
-  type(physics_state),pointer :: state_at_init(:)
  
 !--------------------------------------------------------------------------------------------------
 type :: co2_data_flux_type          
-
+   !BALLI- clean this
   real(r8), pointer, dimension(:,:)   :: co2flx
-                       ! Interpolated output (pcols,begchunk:endchunk)
+                       ! Interpolated output in time only (pcols,begchunk:endchunk)
   real(r8), pointer, dimension(:,:,:) :: co2bdy
                        ! bracketing data     (pcols,begchunk:endchunk,2)
   real(r8) :: cdayfm   ! Calendar day for prv. month read in
@@ -103,10 +79,9 @@ subroutine co2_data_flux_init (input_file, varname, xin)
 !-------------------------------------------------------------------------------
 
    use ioFileMod,        only: getfil
-   use ppgrid,           only: begchunk, endchunk, pcols
    use cam_grid_support, only: cam_grid_id, cam_grid_check
    use cam_grid_support, only: cam_grid_get_dim_names
-   use shr_log_mod,      only: errMsg => shr_log_errMsg
+   use dyn_grid,         only: get_horiz_grid_dim_d
 
    ! Arguments
    character(len=*),          intent(in)    :: input_file
@@ -114,8 +89,11 @@ subroutine co2_data_flux_init (input_file, varname, xin)
    type(co2_data_flux_type),  intent(inout) :: xin
 
    ! Local variables
-   integer  :: grid_id
+   character(len = cx) :: msg
+   integer  :: grid_id, ierr, dim1len, dim2len, dim1id, dim2id ! netcdf file ids and sizes
+   integer  :: hdim1_d, hdim2_d    ! model grid size
    real(r8) :: dtime
+   type(file_desc_t) :: fh_co2_data_flux
    !----------------------------------------------------------------------------
 
    if (.not. dimnames_set) then
@@ -123,468 +101,89 @@ subroutine co2_data_flux_init (input_file, varname, xin)
       if (.not. cam_grid_check(grid_id)) then
          call endrun('ERROR: no "physgrid" grid:'//errmsg(__FILE__,__LINE__))
       endif
-      call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
+      !dim1name and dim2name are populated here with the grid dimension the model is running on (e.g. ne30, lat, lon etc.)
+      !For SE grid, dim1name = dim2name = "ncol"
+      !For FV grid, dim1name = lon, dim2name = lat
+      call cam_grid_get_dim_names(grid_id, dim1name, dim2name) 
       dimnames_set = .true.
    end if
 
+   !find if the "input_file" exists locally and update xin%filename with the input file path
    call getfil(input_file, xin%filename)
+
+   !Do some sanity checks before proceeding futher
+   call cam_pio_openfile(fh_co2_data_flux, trim(xin%filename), pio_nowrite)
+
+   !Ask PIO to return the control if it experiences an error so that we can handle it explicitly here
+   call pio_seterrorhandling(fh_co2_data_flux, pio_bcast_error)
+
+   !if input file is on a different grid than the model grid
+   !(e.g. model is running on an FV grid and input netcdf file is on an SE grid), exit with an error
+   if(pio_inq_dimid(fh_co2_data_flux, trim(adjustl(dim1name)), dim1id) /= pio_noerr) then
+      !pio_inq_dimid function tries to find dim1name in file with id "fh_co2_data_flux"
+      !if it can't find dim1name, it means there is a mismacth in model and netcdf 
+      !file grid
+      call endrun('ERROR: grid mismatch, failed to find '//dim1name//' dimension in file:'//input_file//' '&
+           ' '//errmsg(__FILE__,__LINE__))
+   endif
+   
+   !find if the model and netcdf file has same grid resolution
+   call get_horiz_grid_dim_d(hdim1_d,hdim2_d) !get model dim lengths
+   if( dycore_is('SE') )  then
+      if(pio_inquire_dimension(fh_co2_data_flux, dim1id, len = dim1len) ==  pio_noerr) then
+         if(dim1len /= hdim1_d ) then !compare model grid length with file's
+            write(msg,*)'Netcdf file grid size(',dim1len,') should be same as model grid size(',&
+                 hdim1_d,'), netcdf file is:'//input_file
+            call endrun(msg//errmsg(__FILE__,__LINE__))
+         endif
+      else
+         call endrun('ERROR: failed while inquiring dimensions of file:'//input_file//' '//errmsg(__FILE__,__LINE__))
+      endif
+   elseif( dycore_is('LR')) then
+      if(pio_inq_dimid(fh_co2_data_flux, trim(adjustl(dim2name)), dim2id)) then !obtain lat dimension of model
+         call endrun('ERROR: failed while inquiring dimension'//trim(adjustl(dim2name))//' from file:'&
+              ' '//input_file//' '//errmsg(__FILE__,__LINE__))
+      endif
+      if(pio_inquire_dimension(fh_co2_data_flux, dim1id, len = dim1len) ==  pio_noerr .and. &
+         pio_inquire_dimension(fh_co2_data_flux, dim2id, len = dim2len) ==  pio_noerr) then !compare grid and model's dims
+         if(dim1len /= hdim1_d .or. dim2len /= hdim2_d)then
+            write(msg,*)'Netcdf file grid size(',dim1len,' x ',dim2len,') should be same as model grid size(',&
+                 hdim1_d,' x ',hdim2_d,'), netcdf file is:'//input_file
+            call endrun(msg//errmsg(__FILE__,__LINE__))
+         endif
+      else
+          call endrun('ERROR: failed while inquiring dimensions of file:'//input_file//' '//errmsg(__FILE__,__LINE__))
+      endif
+   else
+      call endrun('Only SE or LR(FV) grids are supported currently:'//errmsg(__FILE__,__LINE__))
+   endif
+
+   !Sanity checks end
+
+   !close file
+   call pio_closefile(fh_co2_data_flux)
+
+
+   !Populate xin data structure
    xin%varname = varname
    xin%initialized = .false.
 
+   !BALLI: Not sure why dtime is defined this way...try a run without sending this optional arg to see if the results are different
+   !initialze time coord, this is used....BALLI??
    dtime = 1.0_r8 - 200.0_r8 / 86400.0_r8
    call xin%time_coord%initialize(input_file, delta_days=dtime)
 
+   !xin%co2bdy will store values of co2 for two time levels 
+   !xin%co2flx is the co2 interpolated in time based on model time
    allocate( xin%co2bdy(pcols,begchunk:endchunk,2), &
              xin%co2flx(pcols,begchunk:endchunk)    )
+
+   !Read the file and populate xin%co2flx once
    call co2_data_flux_advance(xin)
 
    xin%initialized = .true.
 
 end subroutine co2_data_flux_init
-
-
-
-
-
-subroutine read_data_flux (input_file, xin, state, pbuf2d)
- 
-!-------------------------------------------------------------------------------              
-! Do initial read of time-varying 2d(lat,lon NetCDF dataset, 
-! reading two data bracketing current timestep
-!-------------------------------------------------------------------------------
- 
-  use time_manager, only : get_curr_date, get_curr_calday, &
-                           is_perpetual, get_perp_date, get_step_size, is_first_step
-  use ioFileMod,    only : getfil
-  
-  use physics_buffer, only: physics_buffer_desc
-  use dyn_grid,     only: get_horiz_grid_dim_d
-  use cam_pio_utils,    only: cam_pio_openfile
-  use pio,              only: file_desc_t, pio_nowrite, pio_closefile
-  use cam_grid_support, only: cam_grid_id, cam_grid_check, cam_grid_get_dim_names
-  use ncdio_atm,        only: infld
-
-
-
-
-  implicit none
- 
-!---------------------------Common blocks-------------------------------
-! Dummy arguments
-  character(len=*),   intent(in)    :: input_file
-  TYPE(co2_data_flux_type),  intent(inout) :: xin   
-  type(physics_state),       pointer :: state(:)
-  type(physics_buffer_desc), pointer :: pbuf2d(:,:)
- 
-  character(len = shr_kind_cx) :: msg
-  integer lonid                 ! netcdf id for longitude variable
-  integer latid                 ! netcdf id for latitude variable
-  integer timeid                ! netcdf id for time variable
-  integer dateid                ! netcdf id for date variable
-  integer secid                 ! netcdf id for seconds variable
-  integer londimid              ! netcdf id for longitude variable
-  integer latdimid              ! netcdf id for latitude variable
-  integer ncoldimid             ! netcdf id for columns variable
-  integer :: hdim1_d,hdim2_d    ! model grid size
- 
-  integer dtime                 ! timestep size [seconds]
-  integer cnt3(3)               ! array of counts for each dimension
-  integer strt3(3)              ! array of starting indices
-  integer n, c                  ! indices
-  integer j                     ! latitude index
-  integer istat                 ! error return
-  integer  :: yr, mon, day      ! components of a date
-  integer  :: ncdate            ! current date in integer format [yyyymmdd]
-  integer  :: ncsec             ! current time of day [seconds]
-  real(r8) calday               ! calendar day (includes yr if no cycling)
-  real(r8) caldayloc            ! calendar day (includes yr if no cycling)
-#ifdef CO2_BILIN_REGRID
-  character(len=32)  :: specifier(1) = ''
-#endif
-  type(file_desc_t) :: fh_co2_data_flux
-  character(len=8)  :: dim1name, dim2name
-  integer  :: grid_id
-  logical           :: found
-  real(r8) :: dtime1
-
-
-
-! Allocate space for data.
- 
-  allocate( xin%co2flx(pcols,begchunk:endchunk), stat=istat )
-  call alloc_err( istat, 'CO2FLUX_READ', 'co2flx', &
-       pcols*(endchunk-begchunk+1) )
-
-
-#ifdef CO2_BILIN_REGRID
-  allocate (xin%file%in_pbuf(1))
-  xin%file%in_pbuf(1) = .false.
-
-  specifier(1)    = 'CO2_flux' !name of variable to read from file
-
-! Open file and initialize "fields" and "file" derived types
-! Some of the arguments passed here are hardwired which can be replaced with variables
-! if need be.
-  call trcdata_init(specifier, input_file , '', '', xin%fields, xin%file, .false., 0, 0, 0, 'SERIAL')
-  
-  !allocate state and copy the state at init 
-  allocate(state_at_init(begchunk:endchunk))
-  do c = begchunk, endchunk
-     call physics_state_copy(state(c),state_at_init(c))
-  enddo
-#else
- 
-  xin%nm_f = 1
-  xin%np_f = 2
- 
- 
-  allocate( xin%co2bdy(pcols,begchunk:endchunk,2), stat=istat )
-  call alloc_err( istat, 'CO2FLUX_READ', 'co2bdy', &
-       pcols*(endchunk-begchunk+1)*2 )
- 
-! SPMD: Master does all the work.
- 
-!  if (masterproc) then
-!
-! Use year information only if not cycling sst dataset
-!
-     if (is_first_step()) then
-        dtime = get_step_size()
-        dtime = -dtime
-        calday = get_curr_calday(offset=dtime)
-     else
-        calday = get_curr_calday()
-     endif
-     if ( is_perpetual() ) then
-        call get_perp_date(yr, mon, day, ncsec)
-     else
-        if (is_first_step()) then
-           call get_curr_date(yr, mon, day, ncsec,offset=dtime)
-        else
-           call get_curr_date(yr, mon, day, ncsec)
-        endif
-     end if
- 
-     ncdate = yr*10000 + mon*100 + day
- 
-     caldayloc = calday + yr*daysperyear
- 
-! Open NetCDF File
-     dtime1 = 1.0_r8 - 200.0_r8 / 86400.0_r8
-     call xin%time_coord%initialize(input_file, delta_days=dtime1)
-
-
-     grid_id = cam_grid_id('physgrid')
-     call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
-     call getfil(input_file, xin%filename)
-
-     call cam_pio_openfile(fh_co2_data_flux, trim(xin%filename), PIO_NOWRITE)
-
-      ! read time-level 1
-      ! skip the read if the needed vals are present in time-level 2
-     call infld('CO2_flux', fh_co2_data_flux, dim1name, dim2name, &
-              1, pcols, begchunk, endchunk, xin%co2bdy(:,:,1), found, &
-              gridname='physgrid', timelevel=xin%time_coord%indxs(1))
-     
-     !varname, ncid, dimname1,                        &
-     !  dim1b, dim1e, dim2b, dim2e, field, readvar, gridname, timelevel)
-     
-
-
-
-     call handle_ncerr( nf90_open(xin%filename, 0, xin%ncid_f),__FILE__,__LINE__)
-     write(iulog,*)'CO2FLUX_READ: NCOPN returns id ',xin%ncid_f,' for file ',trim(xin%filename)
- 
-! Get and check dimension info
-! initialize
- 
-     strt3(1) = 1
-     strt3(2) = 1
-     strt3(3) = 1
-
-     cnt3(2)  = 1
-     cnt3(3)  = 1
-
-     call get_horiz_grid_dim_d(hdim1_d,hdim2_d)
-     if( dycore_is('SE') )  then
-        istat = nf90_inq_dimid( xin%ncid_f, 'ncol', ncoldimid )
-        if(istat /= nf90_noerr) then
-           write(msg,*)'Input file:', trim(adjustl(xin%filename)), '  should be on the same grid as the model (SE):',__FILE__,__LINE__
-           call endrun(msg)
-        endif
-        call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, ncoldimid, len=ncolsiz),__FILE__,__LINE__)
-        if(hdim1_d .ne. ncolsiz) then
-           write(msg,*)'Input file grid size(',ncolsiz,') should be same as model grid size (',hdim1_d,'):',__FILE__,__LINE__
-           call endrun(msg)
-        endif
-        cnt3(1)  = ncolsiz
-     elseif( dycore_is('LR')) then
-        istat = nf90_inq_dimid( xin%ncid_f, 'lon', londimid )
-        if(istat /= nf90_noerr) then
-           write(msg,*)'Input file:', trim(adjustl(xin%filename)), '  should be on the same grid as the model (LR or FV):'&
-                ,__FILE__,__LINE__
-           call endrun(msg)
-        endif
-        call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'lat', latdimid ),__FILE__,__LINE__)
-        call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, londimid, len=lonsiz),__FILE__,__LINE__)
-        call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, latdimid, len=latsiz),__FILE__,__LINE__)
-        !if(hdim1_d .ne. lonsiz .or. hdim2_d .ne. latsiz) then
-        !   write(msg,*)'Input file grid size(',lonsiz,'x',latsiz,') should be same as model grid size (',hdim1_d,'x',hdim2_d,'):'&
-        !        ,__FILE__,__LINE__
-        !   call endrun(msg)
-        !endif
-
-        cnt3(1)  = lonsiz
-        cnt3(2)  = latsiz
-     else
-        call endrun('Only SE or LR grids are supported currently:'//errmsg(__FILE__,__LINE__))
-     endif
-
-     call handle_ncerr( nf90_inq_dimid( xin%ncid_f, 'time',  timeid ),__FILE__,__LINE__)
-     call handle_ncerr( nf90_inquire_dimension( xin%ncid_f, timeid,   len=xin%timesz ),__FILE__,__LINE__)
-
-     allocate(xin%date_f(xin%timesz), xin%sec_f(xin%timesz))
-
-! Get data id
-     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'date',     dateid     ),__FILE__,__LINE__)
-     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'datesec',  secid      ),__FILE__,__LINE__)
-     call handle_ncerr( nf90_inq_varid( xin%ncid_f, 'CO2_flux', xin%fluxid ),__FILE__,__LINE__)
- 
-! Retrieve entire date and sec variables.
- 
-     call handle_ncerr( nf90_get_var ( xin%ncid_f, dateid, xin%date_f ),__FILE__,__LINE__)
-     call handle_ncerr( nf90_get_var ( xin%ncid_f, secid,  xin%sec_f  ),__FILE__,__LINE__)
-
-!  endif
-
-#ifdef SPMD
-  call mpibcast( cnt3, 2,     mpiint, 0, mpicom )
-#endif
-  allocate(xin%xvar(cnt3(1),cnt3(2),2))
-  if (masterproc) then
-! Normal interpolation between consecutive time slices.
-
-     do n=1,xin%timesz-1
-
-        xin%np1_f = n + 1
- 
-        call bnddyi(xin%date_f(n  ),       xin%sec_f(n  ),       xin%cdayfm)
-        call bnddyi(xin%date_f(xin%np1_f), xin%sec_f(xin%np1_f), xin%cdayfp)
- 
-        yr         = xin%date_f(n)/10000
-        xin%cdayfm = xin%cdayfm + yr*daysperyear
-
-        yr         = xin%date_f(xin%np1_f)/10000
-        xin%cdayfp = xin%cdayfp + yr*daysperyear
- 
-!       read 2 time sample bracketing ncdate
-
-        if ( caldayloc > xin%cdayfm .and. caldayloc <= xin%cdayfp ) then
- 
-           strt3(3) = n
-           call handle_ncerr( nf90_get_var ( xin%ncid_f, xin%fluxid, xin%xvar(:,:,xin%nm_f), strt3, cnt3),__FILE__,__LINE__)
-           strt3(3) = xin%np1_f                                      
-           call handle_ncerr( nf90_get_var ( xin%ncid_f, xin%fluxid, xin%xvar(:,:,xin%np_f), strt3, cnt3),__FILE__,__LINE__)
-
-           goto 10
-
-        end if
- 
-     end do
-
-     write(iulog,*)'CO2FLUX_READ: Failed to find dates bracketing ncdate, ncsec=', ncdate, ncsec
-     call endrun
- 
-10   continue
-     write(iulog,*)'CO2FLUX_READ: Read ', trim(xin%filename), ' for dates ', xin%date_f(n), xin%sec_f(n), &
-          ' and ', xin%date_f(xin%np1_f), xin%sec_f(xin%np1_f)
- 
-#if (defined SPMD )
-     call mpibcast( xin%timesz, 1,     mpiint, 0, mpicom )
-     call mpibcast( xin%date_f, xin%timesz, mpiint, 0, mpicom )
-     call mpibcast( xin%sec_f,  xin%timesz, mpiint, 0, mpicom )
-     call mpibcast( xin%cdayfm, 1,     mpir8 , 0, mpicom )
-     call mpibcast( xin%cdayfp, 1,     mpir8,  0, mpicom )
-     call mpibcast( xin%np1_f,  1,     mpiint, 0, mpicom )
-  else
-     call mpibcast( xin%timesz, 1,     mpiint, 0, mpicom )
-     allocate(xin%date_f(xin%timesz), xin%sec_f(xin%timesz))
-     call mpibcast( xin%date_f, xin%timesz, mpiint, 0, mpicom )
-     call mpibcast( xin%sec_f,  xin%timesz, mpiint, 0, mpicom )
-     call mpibcast( xin%cdayfm, 1,     mpir8 , 0, mpicom )
-     call mpibcast( xin%cdayfp, 1,     mpir8,  0, mpicom )
-     call mpibcast( xin%np1_f,  1,     mpiint, 0, mpicom )
-#endif
-  end if
-
-  call scatter_field_to_chunk ( 1,1,2,cnt3(1), xin%xvar, xin%co2bdy )
-
-#endif
-  return
-end subroutine read_data_flux
- 
-!===============================================================================
-
-subroutine interp_time_flux (xin, prev_timestep)
- 
-!-----------------------------------------------------------------------
-! Time interpolate data to current time.
-! Reading in new monthly data if necessary.
-!
-!-----------------------------------------------------------------------
- 
-  use time_manager, only : get_curr_date, get_curr_calday, &
-                          is_perpetual, get_perp_date, get_step_size, is_first_step
-  use interpolate_data,   only : get_timeinterp_factors
-#ifdef CO2_BILIN_REGRID
-  use ppgrid,           only: pver, pverp
-#endif
- 
-  logical, intent(in), optional     :: prev_timestep ! If using previous timestep, set to true
-  TYPE(co2_data_flux_type),  intent(inout) :: xin
-
-!---------------------------Local variables-----------------------------
-  integer dtime          ! timestep size [seconds]
-  integer cnt3(3)        ! array of counts for each dimension
-  integer strt3(3)       ! array of starting indices
-  integer i,j,lchnk      ! indices
-  integer ncol           ! number of columns in current chunk
-  integer ntmp           ! temporary
-  real(r8) fact1, fact2  ! time interpolation factors
-  integer :: yr, mon, day! components of a date
-  integer :: ncdate      ! current date in integer format [yyyymmdd]
-  integer :: ncsec       ! current time of day [seconds]
-  real(r8) :: calday     ! current calendar day
-  real(r8) caldayloc     ! calendar day (includes yr if no cycling)
-  real(r8) deltat        ! time (days) between interpolating data
-  logical :: previous
-  logical :: co2cyc=.false.
- 
-#ifdef CO2_BILIN_REGRID
-  integer :: icol      ! indices
-
-  !Read next data if needed and interpolate (space and time)
-  call advance_trcdata( xin%fields, xin%file, state_at_init)
-
-  !Assign 
-  do lchnk   = begchunk, endchunk
-     ncol    = get_ncols_p(lchnk)
-     do icol = 1, ncol
-        xin%co2flx(icol,lchnk) = xin%fields(1)%data(icol, 1,lchnk)
-     end do
-  end do
-
-#else
-!-----------------------------------------------------------------------
- 
-! SPMD: Master does all the work.  Sends needed info to slaves
- 
-! Use year information only if a multiyear dataset
- 
-     if ( .not. present(prev_timestep) ) then
-        previous = .false.
-     else
-        previous = prev_timestep
-     end if
- 
-     if (previous .and. is_first_step()) then
-        dtime = get_step_size()
-        dtime = -dtime
-        calday = get_curr_calday(offset=dtime)
-     else
-        calday = get_curr_calday()
-     endif
- 
-     if ( is_perpetual() ) then
-        call get_perp_date(yr, mon, day, ncsec)
-     else
-        if (previous .and. is_first_step()) then
-           call get_curr_date(yr, mon, day, ncsec,offset=dtime)
-        else
-           call get_curr_date(yr, mon, day, ncsec)
-        endif
-     end if
- 
-     ncdate = yr*10000 + mon*100 + day
- 
-     caldayloc = calday + yr*daysperyear
-
-     if (masterproc) then
-
-        strt3(1) = 1
-        strt3(2) = 1
-        strt3(3) = 1
-        
-        if( dycore_is('SE') )  then
-           cnt3(1)  = ncolsiz
-        elseif( dycore_is('LR')) then
-           cnt3(1)  = lonsiz
-           cnt3(2)  = latsiz
-        endif
-        cnt3(3)  = 1
-
-     endif
-
-#ifdef SPMD
-     call mpibcast(cnt3, 2, mpiint, 0, mpicom)
-#endif
- 
-! If model time is past current forward data timeslice, read in the next
-! timeslice for time interpolation. 
- 
-     if ( caldayloc > xin%cdayfp .and. .not. (xin%np1_f==1 .and. caldayloc > xin%cdayfm) ) then
- 
-        xin%np1_f = xin%np1_f + 1
- 
-        if ( xin%np1_f > xin%timesz ) then
-           call endrun ('CO2FLUX_INTERP: Attempt to read past end of dataset')
-        end if
- 
-        xin%cdayfm = xin%cdayfp
- 
-        call bnddyi( xin%date_f(xin%np1_f), xin%sec_f(xin%np1_f), xin%cdayfp )
-
-        yr = xin%date_f(xin%np1_f)/10000
-        xin%cdayfp = xin%cdayfp + yr*daysperyear
-
-        if ( .not. (xin%np1_f == 1 .or. caldayloc <= xin%cdayfp) ) then
-         
-           if (masterproc) then
-              write(iulog,*)'CO2FLUX_INTERP: Input data for date', xin%date_f(xin%np1_f), ' sec ', xin%sec_f(xin%np1_f), &
-                        ' does not exceed model date', ncdate, ' sec ', ncsec, ' Stopping.'
-           end if
-           call endrun ()
-        end if
-
-        ntmp     = xin%nm_f
-        xin%nm_f = xin%np_f
-        xin%np_f = ntmp
- 
-        if (masterproc) then
-           strt3(3) = xin%np1_f
-           call handle_ncerr( nf90_get_var ( xin%ncid_f, xin%fluxid, xin%xvar(:,:,xin%np_f), strt3, cnt3 ),__FILE__,__LINE__)
-           write(iulog,*)'CO2FLUX_INTERP: Read ', trim(xin%filename),' for date (yyyymmdd) ', xin%date_f(xin%np1_f), &
-                     ' sec ', xin%sec_f(xin%np1_f)
-        endif
- 
-        call scatter_field_to_chunk ( 1,1,2,cnt3(1), xin%xvar, xin%co2bdy )
-     end if
- 
-! Determine time interpolation factors.
- 
-     call get_timeinterp_factors ( co2cyc, xin%np1_f, xin%cdayfm, xin%cdayfp, caldayloc, fact1, fact2, 'CO2FLUX_INTERP:' )
-
-     do lchnk=begchunk,endchunk
-        ncol = get_ncols_p(lchnk)
-        do i=1,ncol
-           xin%co2flx(i,lchnk) = -999.0 !xin%co2bdy(i,lchnk,xin%nm_f)*fact1 + xin%co2bdy(i,lchnk,xin%np_f)*fact2
-        end do
-     end do
-     
-
-#endif
-  return
-end subroutine interp_time_flux
 
 !============================================================================================================
 
@@ -595,16 +194,12 @@ subroutine co2_data_flux_advance (xin)
 !   including reading new data, if necessary
 !-------------------------------------------------------------------------------
 
-   use cam_pio_utils,    only: cam_pio_openfile
    use ncdio_atm,        only: infld
-   use pio,              only: file_desc_t, pio_nowrite, pio_closefile
-   use ppgrid,           only: begchunk, endchunk, pcols
 
    ! Arguments
    type(co2_data_flux_type),  intent(inout) :: xin
 
    ! Local variables
-   character(len=*), parameter :: subname = 'co2_data_flux_advance'
    logical           :: read_data
    integer           :: indx2_pre_adv
    type(file_desc_t) :: fh_co2_data_flux
@@ -627,11 +222,13 @@ subroutine co2_data_flux_advance (xin)
       if (xin%initialized .and. xin%time_coord%indxs(1) == indx2_pre_adv) then
          xin%co2bdy(:,:,1) = xin%co2bdy(:,:,2)
       else
+         !NOTE: infld call doesn't do any interpolation in space, it just reads in the data
          call infld(trim(xin%varname), fh_co2_data_flux, dim1name, dim2name, &
               1, pcols, begchunk, endchunk, xin%co2bdy(:,:,1), found, &
               gridname='physgrid', timelevel=xin%time_coord%indxs(1))
+
          if (.not. found) then
-            call endrun(subname // ': ERROR: ' // trim(xin%varname) // ' not found')
+            call endrun('ERROR: ' // trim(xin%varname) // ' not found'//errmsg(__FILE__,__LINE__))
          endif
       endif
 
@@ -639,8 +236,9 @@ subroutine co2_data_flux_advance (xin)
       call infld(trim(xin%varname), fh_co2_data_flux, dim1name, dim2name, &
            1, pcols, begchunk, endchunk, xin%co2bdy(:,:,2), found, &
            gridname='physgrid', timelevel=xin%time_coord%indxs(2))
+
       if (.not. found) then
-         call endrun(subname // ': ERROR: ' // trim(xin%varname) // ' not found')
+         call endrun('ERROR: ' // trim(xin%varname) // ' not found'//errmsg(__FILE__,__LINE__))
       endif
 
       call pio_closefile(fh_co2_data_flux)
@@ -657,6 +255,7 @@ subroutine co2_data_flux_advance (xin)
       xin%co2flx(:,:) = xin%co2bdy(:,:,1) + &
            xin%time_coord%wghts(2) * (xin%co2bdy(:,:,2) - xin%co2bdy(:,:,1))
    endif
+   !BRYCE-unit conversion?????
 
 end subroutine co2_data_flux_advance
 
