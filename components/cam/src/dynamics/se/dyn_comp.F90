@@ -112,7 +112,6 @@ CONTAINS
     integer :: neltmp(3)
     integer :: npes_se
     integer :: npes_se_stride
-    integer :: ie
 
     !----------------------------------------------------------------------
 

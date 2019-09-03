@@ -641,6 +641,8 @@ contains
   end subroutine gfr_init_w_ff
 
   subroutine gll_cleanup(gll)
+    ! Deallocate the GLL object's data.
+
     use quadrature_mod, only : quadrature_t
 
     type (quadrature_t), intent(inout) :: gll
@@ -1150,6 +1152,8 @@ contains
   end subroutine gfr_g2f_vector
 
   subroutine gfr_g2f_vector_dp(gfr, ie, elem, dp_g, dp_f, u_g, v_g, u_f, v_f)
+    ! Remap dp_g*(u_g,v_g).
+
     type (GllFvRemap_t), intent(in) :: gfr
     integer, intent(in) :: ie
     type (element_t), intent(in) :: elem(:)
@@ -1190,6 +1194,8 @@ contains
   end subroutine gfr_g2f_mixing_ratio
 
   subroutine gfr_g2f_mixing_ratios(gfr, ie, gll_metdet, dp_g, dp_f, qdp_g, q_f)
+    ! Remap mixing ratios conservatively and preventing new extrema.
+
     type (GllFvRemap_t), intent(in) :: gfr
     integer, intent(in) :: ie
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), dp_g(:,:,:), dp_f(:,:,:), &
@@ -1208,6 +1214,8 @@ contains
   ! FV -> GLL (f2g)
 
   subroutine gfr_f2g_scalar(ie, gll_metdet, f, g) ! no gfr b/c public for testing
+    ! Wrapper to remapd, where g and f are densities.
+
     integer, intent(in) :: ie
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), f(:,:,:)
     real(kind=real_kind), intent(out) :: g(:,:,:)
@@ -1220,6 +1228,8 @@ contains
   end subroutine gfr_f2g_scalar
 
   subroutine gfr_f2g_scalar_dp(gfr, ie, gll_metdet, dp_f, dp_g, f, g)
+    ! Wrapper to remapd, where g and f are mixing ratios.
+
     type (GllFvRemap_t), intent(in) :: gfr
     integer, intent(in) :: ie
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), dp_f(:,:,:), dp_g(:,:,:), f(:,:,:)
@@ -1233,6 +1243,9 @@ contains
   end subroutine gfr_f2g_scalar_dp
 
   subroutine gfr_f2g_vector(gfr, ie, elem, u_f, v_f, u_g, v_g)
+    ! Remap a vector on the sphere by doing the actual remap on the
+    ! reference element, thus avoiding steep gradients at the poles.
+
     type (GllFvRemap_t), intent(in) :: gfr
     integer, intent(in) :: ie
     type (element_t), intent(in) :: elem(:)
@@ -1267,6 +1280,8 @@ contains
   end subroutine gfr_f2g_vector
 
   subroutine gfr_f2g_vector_dp(gfr, ie, elem, dp_f, dp_g, u_f, v_f, u_g, v_g)
+    ! Remap dp_f*(u_f,v_f).
+
     type (GllFvRemap_t), intent(in) :: gfr
     integer, intent(in) :: ie
     type (element_t), intent(in) :: elem(:)
@@ -1349,6 +1364,9 @@ contains
   end subroutine gfr_f2g_dss
 
   subroutine gfr_f2g_remapd(gfr, gll_metdet, fv_metdet, f, g)
+    ! Core remap operator. Conservative remap on the reference
+    ! element.
+
     type (GllFvRemap_t), intent(in) :: gfr
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), fv_metdet(:), f(:,:)
     real(kind=real_kind), intent(out) :: g(:,:)
@@ -1371,6 +1389,8 @@ contains
   ! All routines to boost pg1 OOA from 1 to ~1.6.
 
   subroutine gfr_pg1_init(gfr)
+    ! Initializes pg1sd data structure; see gfr_pg1_solve doc for details.
+
     type (GllFvRemap_t), intent(inout) :: gfr
 
     real(kind=real_kind) :: Mnp2(np*np,4), wr(np*np)
@@ -1401,6 +1421,15 @@ contains
   end subroutine gfr_pg1_init
 
   subroutine gfr_pg1_solve(gfr, s, g)
+    ! Solve
+    !   min_g* M44 g* = M42 g(corners)  ! project a bilinear function onto 4-GLL basis
+    !    st   spheremp'g* = spheremp g  ! subject to conserving mass
+    ! where g(corners) extracts the corner values from the 4-GLL
+    ! coefficient vector g. (In this explantation, for concreteness I
+    ! assume np=4, but it doesn't have to be.) This problem
+    ! reconstructs the field in the element using just the corner
+    ! values and while conserving mass. This boosts the OOA of pg1.
+
     type (GllFvRemap_t), intent(in) :: gfr
     type (Pg1SolverData_t), intent(in) :: s
     real(kind=real_kind), intent(inout) :: g(:,:)
@@ -1411,7 +1440,7 @@ contains
     np2 = np*np
     n = np2
 
-    ! Form RHS.
+    ! Form RHS M42 g(corners).
     wr(1) = g(1,1); wr(2) = g(np,1); wr(3) = g(1,np); wr(4) = g(np,np)
     do i = 1,n
        x(i) = sum(s%B(:4,i)*wr(:4))
@@ -1484,6 +1513,8 @@ contains
   end subroutine make_mass_matrix_2d
 
   subroutine gfr_pg1_reconstruct_topo_hybrid(hybrid, elem, nets, nete)
+    ! pg1 reconstruction routine for topography.
+
     use kinds, only: iulog
     use edge_mod, only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
     use bndry_mod, only: bndry_exchangev
@@ -1530,6 +1561,8 @@ contains
   end subroutine gfr_pg1_reconstruct_topo_hybrid
 
   subroutine gfr_pg1_reconstruct_hybrid(hybrid, nt, dt, hvcoord, elem, nets, nete)
+    ! pg1 reconstruction routine for tendencies and states.
+
     use dimensions_mod, only: nlev, qsize
     use hybvcoord_mod, only: hvcoord_t
     use physical_constants, only: p0, kappa
@@ -1594,6 +1627,8 @@ contains
   end subroutine gfr_pg1_reconstruct_hybrid
 
   subroutine gfr_pg1_g_reconstruct_scalar(gfr, ie, gll_metdet, g)
+    ! Wrapper to core solve routine. g is a density.
+
     type (GllFvRemap_t), intent(in) :: gfr
     integer, intent(in) :: ie
     real(kind=real_kind), intent(in) :: gll_metdet(:,:)
@@ -1610,6 +1645,8 @@ contains
   end subroutine gfr_pg1_g_reconstruct_scalar
 
   subroutine gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, gll_metdet, dp, g)
+    ! Wrapper to core solve routine. g is a mixing ratio.
+
     type (GllFvRemap_t), intent(in) :: gfr
     integer, intent(in) :: ie
     real(kind=real_kind), intent(in) :: gll_metdet(:,:), dp(:,:,:)
@@ -1624,6 +1661,8 @@ contains
   end subroutine gfr_pg1_g_reconstruct_scalar_dp
 
   subroutine gfr_pg1_g_reconstruct_vector(gfr, ie, elem, v)
+    ! Wrapper to core solve routine. v is a vector.
+
     type (GllFvRemap_t), intent(in) :: gfr
     integer, intent(in) :: ie
     type (element_t), intent(in) :: elem(:)
@@ -1649,6 +1688,8 @@ contains
   end subroutine gfr_pg1_g_reconstruct_vector
 
   subroutine gfr_pg1_reconstruct_dom_mt(par, dom_mt, nt, dt, hvcoord, elem)
+    ! Wrapper to the hybrid-threading main routine.
+
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use thread_mod, only: hthreads
@@ -1675,6 +1716,8 @@ contains
   end subroutine gfr_pg1_reconstruct_dom_mt
 
   subroutine gfr_pg1_reconstruct_topo_dom_mt(par, dom_mt, elem)
+    ! Wrapper to the hybrid-threading main routine.
+
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use thread_mod, only: hthreads
@@ -1700,6 +1743,8 @@ contains
   ! Internal helpers.
 
   subroutine gfr_dyn_to_fv_phys_topo_elem(elem, ie, phis)
+    ! Remap topo within an element.
+
     type (element_t), intent(in) :: elem(:)
     integer, intent(in) :: ie
     real(kind=real_kind), intent(out) :: phis(:)
@@ -1722,6 +1767,8 @@ contains
   end subroutine gfr_dyn_to_fv_phys_topo_elem
 
   subroutine gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
+    ! Create a hybrid_t given a dom_mt.
+
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
     use hybrid_mod, only: hybrid_t, hybrid_create
@@ -1741,6 +1788,8 @@ contains
   end subroutine gfr_hybrid_create
 
   subroutine apply_interp(interp, np, npi, x, y)
+    ! Apply the npi -> np interpolation matrix 'interp' to x to get y.
+
     real(kind=real_kind), intent(in) :: interp(:,:,:,:), x(:,:)
     integer, intent(in) :: np, npi
     real(kind=real_kind), intent(out) :: y(:,:)
@@ -1762,6 +1811,9 @@ contains
   end subroutine apply_interp
 
   subroutine gfr_g_make_nonnegative(gll_metdet, g)
+    ! Move mass around as needed to make g nonnegative, where g is a
+    ! density.
+
     real(kind=real_kind), intent(in) :: gll_metdet(:,:)
     real(kind=real_kind), intent(inout) :: g(:,:,:)
 
@@ -1789,6 +1841,8 @@ contains
   end subroutine gfr_g_make_nonnegative
 
   subroutine gfr_f_get_latlon(ie, i, j, lat, lon)
+    ! Get (lat,lon) of FV point i,j.
+
     integer, intent(in) :: ie, i, j
     real(kind=real_kind), intent(out) :: lat, lon
 
@@ -1797,6 +1851,8 @@ contains
   end subroutine gfr_f_get_latlon
 
   subroutine gfr_f_get_cartesian3d(ie, i, j, p)
+    ! Get (x,y,z) of FV point i,j.
+
     use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
 
     integer, intent(in) :: ie, i, j
@@ -1806,6 +1862,12 @@ contains
   end subroutine gfr_f_get_cartesian3d
 
   subroutine limiter_clip_and_sum(n, spheremp, qmin, qmax, dp, q)
+    ! CAAS as described in Alg 3.1 of doi:10.1137/18M1165414. q is a
+    ! mixing ratio. Solve
+    !    min_q* norm(dp q - dp q*, 1)
+    !     st    spheremp'(dp q*) = spheremp'(dp q)
+    !           qmin < q* < qmax
+
     integer, intent(in) :: n
     real (kind=real_kind), intent(in) :: spheremp(:,:), dp(:,:)
     real (kind=real_kind), intent(inout) :: qmin, qmax, q(:,:)
@@ -1891,6 +1953,8 @@ contains
   end subroutine check_p
 
   subroutine set_ps_Q(elem, nets, nete, timeidx, qidx, nlev)
+    ! Make up a test function for use in unit tests.
+
     use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
 
     type (element_t), intent(inout) :: elem(:)
@@ -1916,6 +1980,9 @@ contains
   end subroutine set_ps_Q
 
   subroutine check_g2f_mixing_ratio(gfr, hybrid, ie, qi, elem, dp, dp_fv, q_g, q_f)
+    ! Check that gfr_g2f_mixing_ratio found a property-preserving
+    ! solution.
+
     use kinds, only: iulog
 
     type (GllFvRemap_t), intent(in) :: gfr
@@ -1950,6 +2017,9 @@ contains
   end subroutine check_g2f_mixing_ratio
 
   subroutine check_f2g_mixing_ratio(gfr, hybrid, ie, qi, elem, qmin, qmax, dp, q0_g, q1_g)
+    ! Check that a property-preserving solution was found in the FV ->
+    ! GLL direction.
+
     use kinds, only: iulog
 
     type (GllFvRemap_t), intent(in) :: gfr
@@ -2012,6 +2082,8 @@ contains
   end subroutine check_nonnegative
 
   subroutine check(par, dom_mt, gfr, elem, verbose)
+    ! Run a bunch of unit tests.
+
     use kinds, only: iulog
     use parallel_mod, only: parallel_t
     use dimensions_mod, only: nlev, qsize
@@ -2234,6 +2306,8 @@ contains
   end subroutine check
 
   subroutine gfr_test(hybrid, dom_mt, hvcoord, deriv, elem)
+    ! Driver for check subroutine.
+
     use domain_mod, only: domain1d_t
     use derivative_mod, only: derivative_t
     use hybvcoord_mod, only: hvcoord_t

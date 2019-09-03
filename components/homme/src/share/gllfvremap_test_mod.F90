@@ -54,6 +54,8 @@ contains
   end subroutine finish
 
   subroutine set_state(s, hvcoord, nt1, nt2, ntq, elem)
+    ! Convenience wrapper to set_elem_state.
+
     use physical_constants, only: g
     use element_ops, only: set_elem_state
     use hybvcoord_mod, only: hvcoord_t
@@ -66,20 +68,6 @@ contains
     call set_elem_state(s%u, s%v, s%w, s%wi, s%T, s%ps, s%phis, s%p, s%dp, s%z, s%zi, &
          g, elem, nt1, nt2, ntq)
   end subroutine set_state
-
-  subroutine get_state(elem, hvcoord, nt, ntq, s)
-    use physical_constants, only: g
-    use element_ops, only: get_elem_state => get_state
-    use hybvcoord_mod, only: hvcoord_t
-
-    type (element_t), intent(inout) :: elem
-    type (hvcoord_t), intent(in) :: hvcoord
-    integer, intent(in) :: nt, ntq
-    type (State_t), intent(out) :: s
-
-    call get_elem_state(s%u, s%v, s%w, s%T, s%p, s%dp, s%ps, s%rho, s%z, s%zi, &
-         g, elem, hvcoord, nt, ntq)
-  end subroutine get_state
 
   subroutine set_gll_state(hvcoord, elem, nt1, nt2)
     ! Set all quantities used in gfr_dyn_to_fv_phys and gfr_fv_phys_to_dyn to
@@ -156,6 +144,9 @@ contains
   end subroutine set_gll_state
 
   subroutine run(hybrid, hvcoord, elem, nets, nete, nphys, tendency)
+    ! Run 3 convergence and property-preservation whole-mesh
+    ! tests. See below for descriptions of the three tests.
+
     use kinds, only: iulog
     use hybvcoord_mod, only: hvcoord_t
     use dimensions_mod, only: nlev, qsize
@@ -500,6 +491,9 @@ contains
   end subroutine run
 
   subroutine gfr_check_api(hybrid, nets, nete, hvcoord, elem)
+    ! Drive run. Check nphys 1 through 4, ftypes 1 and 2, and pg1 with
+    ! and without the OOA boost.
+
     use hybvcoord_mod, only: hvcoord_t
     use control_mod, only: ftype
     use gllfvremap_mod
