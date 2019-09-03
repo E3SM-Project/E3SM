@@ -94,6 +94,12 @@ logical :: lq(pcnst) = .false. ! set flags true for constituents with non-zero t
 logical :: fix_g1_err_ndrop = .false. !BSINGH - default is false
 logical :: regen_fix 
 
+!SZHANG - add flag to control whether or not turn off aerosol activation process 
+logical :: l_aerosol_cldgrow
+logical :: l_aerosol_cldshnk
+logical :: l_aerosol_oldcld
+logical :: l_aerosol_mixing
+
 !===============================================================================
 contains
 !===============================================================================
@@ -203,7 +209,11 @@ subroutine ndrop_init
                      history_aerosol_out = history_aerosol, &
                      prog_modal_aero_out=prog_modal_aero, & 
                      fix_g1_err_ndrop_out = fix_g1_err_ndrop, &
-                     regen_fix_out=regen_fix                )
+                     regen_fix_out=regen_fix, &
+                     l_aerosol_cldgrow_out =l_aerosol_cldgrow, &
+                     l_aerosol_cldshnk_out =l_aerosol_cldshnk, &
+                     l_aerosol_oldcld_out =l_aerosol_oldcld, &
+                     l_aerosol_mixing_out =l_aerosol_mixing)
 
 
    do m = 1, ntot_amode
@@ -298,13 +308,14 @@ end subroutine ndrop_init
 
 subroutine dropmixnuc( &
    state, ptend, dtmicro, pbuf, wsub, &
-   cldn, cldo, tendnd, factnum)
+   cldn, cldo, tendnd, factnum, macmic_it)
 
    ! vertical diffusion and nucleation of cloud droplets
    ! assume cloud presence controlled by cloud fraction
    ! doesn't distinguish between warm, cold clouds
 
    use output_aerocom_aie , only: do_aerocom_ind3
+   use phys_control, only: phys_getopts
 
    ! arguments
    type(physics_state), target, intent(in)    :: state
@@ -435,6 +446,19 @@ subroutine dropmixnuc( &
    integer  :: idx1000
    logical  :: zmflag
 
+   ! add extra diagnostic output at each macmic step
+   real(r8), allocatable :: fn_af_reg(:,:,:)
+   real(r8), allocatable :: fn_bf_mix(:,:,:)
+   real(r8), allocatable :: raerfld(:,:,:)
+   real(r8), allocatable :: flxn_bf_mix(:,:,:)
+   integer,intent(in)    :: macmic_it
+   real(r8) :: numliq_bf_reg(pcols,pver),numliq_af_reg(pcols,pver)
+   real(r8) :: numliq_bf_mix(pcols,pver),numliq_af_mix(pcols,pver)
+   real(r8) :: nsource_af_reg(pcols,pver)
+   real(r8) :: nsource_bf_mix(pcols,pver),nsource_af_mix(pcols,pver)
+   character(len=20)::tmpname
+   logical  :: macmic_extra_diag
+   logical  :: grow_shrink_flag = .true. 
 
    !-------------------------------------------------------------------------------
 
@@ -590,6 +614,7 @@ subroutine dropmixnuc( &
       ! grow_shrink_main_k_loop: &
       do k = top_lev, pver
 
+       if(l_aerosol_cldshnk) then
          ! shrinking cloud ......................................................
          !    treat the reduction of cloud fraction from when cldn(i,k) < cldo(i,k)
          !    and also dissipate the portion of the cloud that will be regenerated
@@ -626,6 +651,9 @@ subroutine dropmixnuc( &
                end do
             end do
          end if
+        end if !l_aerosol_cldshnk
+
+        if(l_aerosol_cldgrow) then
 
          ! growing cloud ......................................................
          !    treat the increase of cloud fraction from when cldn(i,k) > cldo(i,k)
@@ -684,6 +712,7 @@ subroutine dropmixnuc( &
                enddo
             enddo
          endif
+        end if !l_aerosol_cldgrow
 
       enddo  ! grow_shrink_main_k_loop
       ! end of k-loop for growing/shrinking cloud calcs ......................
@@ -697,6 +726,8 @@ subroutine dropmixnuc( &
       !    previous code (which used cldo below here) would have no cloud-base activation
       !       into layer k.  however, activated particles in k mix out to k+1,
       !       so they are incorrectly depleted with no replacement
+
+    if(l_aerosol_oldcld) then
 
       ! old_cloud_main_k_loop
       if(regen_fix) then   
@@ -856,6 +887,10 @@ subroutine dropmixnuc( &
          end if
 
       end do  ! old_cloud_main_k_loop
+
+    end if !l_aerosol_oldcld
+
+    if(l_aerosol_mixing) then
 
       ! switch nsav, nnew so that nnew is the updated aerosol
       ntemp = nsav
@@ -1023,6 +1058,8 @@ subroutine dropmixnuc( &
          end do
 
       end do ! old_cloud_nsubmix_loop
+     
+     end if !l_aerosol_mixing
 
       ! evaporate particles again if no cloud
 

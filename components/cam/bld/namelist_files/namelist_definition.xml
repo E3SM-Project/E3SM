@@ -2866,6 +2866,39 @@ aerosol regeration bug in ndrop.F90
 Default: .false.
 </entry>
 
+<!-- Added flags to turn off progesses in aerosol activation-->
+<entry id="l_aerosol_mixing" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+This is used for test simulations in SciDAC project.It turns off 
+part of the aerosol activation processes in ndrop.F90
+Default: .false.
+</entry>
+
+<!-- Added flags to turn off progesses in aerosol activation-->
+<entry id="l_aerosol_cldgrow" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+This is used for test simulations in SciDAC project.It turns off         
+part of the aerosol activation processes in ndrop.F90       
+Default: .true.
+</entry>
+
+<!-- Added flags to turn off progesses in aerosol activation-->
+<entry id="l_aerosol_cldshnk" type="logical" category="conv"
+	group="phys_ctl_nl" valid_values="" >
+This is used for test simulations in SciDAC project.It turns off         
+part of the aerosol activation processes in ndrop.F90	
+Default: .true.
+</entry>
+
+<!-- Added flags to turn off progesses in aerosol activation-->
+<entry id="l_aerosol_oldcld" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="" >
+This is used for test simulations in SciDAC project.It turns off         
+part of the aerosol activation processes in ndrop.F90       
+Default: .true.
+</entry>
+
+
 <entry id="liqcf_fix" type="logical" category="conv"
        group="phys_ctl_nl" valid_values="" >
 This is part of PNNL bug fixes under Polar project.It fixes the
