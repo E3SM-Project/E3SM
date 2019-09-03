@@ -581,8 +581,19 @@ class Dataset():
         start_year, end_year = self.get_start_and_end_years()
         start_time = '{}-01-15'.format(start_year)
         end_time = '{}-12-15'.format(end_year)
-        path = self._get_timeseries_file_path(var, data_path)
-        var = var_to_get if var_to_get else var
 
-        with cdms2.open(path) as f:
-            return f(var, time=(start_time, end_time, 'ccb'))(squeeze=1)
+        fnm = self._get_timeseries_file_path(var, data_path)
+        
+        var = var_to_get if var_to_get else var
+        # get available start and end years from file name: {var}_{start_yr}01_{end_yr}12.nc
+        var_start_year = fnm.split('/')[-1].split('_')[1][:4]
+        var_end_year = fnm.split('/')[-1].split('_')[2][:4]
+
+        if start_year < var_start_year or end_year > var_end_year:
+            msg = "Invalid year range specified for test/reference time series data" 
+            raise RuntimeError(msg)
+        else: 
+            with cdms2.open(fnm) as f:
+                var_time = f(var, time=(start_time, end_time, 'ccb'))(squeeze=1)
+
+                return var_time
