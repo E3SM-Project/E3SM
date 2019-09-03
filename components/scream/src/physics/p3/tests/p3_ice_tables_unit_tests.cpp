@@ -100,6 +100,8 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
 
   static void run_bfb()
   {
+    using KTH    = KokkosTypes<HostDevice>;
+
     // Read in ice tables
     view_itab_table itab;
     view_itabcol_table itabcol;
@@ -206,6 +208,16 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
       access_lookup_table_coll(altcd[i]);
     }
 
+    // Sync to device
+    KTH::view_1d<LookupIceData> lid_host("lid_host", Spack::n);
+    KTH::view_1d<LookupIceDataB> lidb_host("lidb_host", Spack::n);
+    view_1d<LookupIceData> lid_device("lid_device", Spack::n);
+    view_1d<LookupIceDataB> lidb_device("lidb_device", Spack::n);
+    std::copy(&lid[0], &lid[0] + Spack::n, lid_host.data());
+    std::copy(&lidb[0], &lidb[0] + Spack::n, lidb_host.data());
+    Kokkos::deep_copy(lid_device, lid_host);
+    Kokkos::deep_copy(lidb_device, lidb_host);
+
     // Run the lookup from a kernel and copy results back to host
     view_1d<IntSmallPack> int_results("int results", 5);
     view_1d<Spack> real_results("real results", 7);
@@ -216,15 +228,15 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
       TableIce ti;
       TableRain tr;
       Spack qitot, nitot, qirim, rhop, qr, nr;
-      // for(Int s = 0; s < Spack::n; ++s) {
-      //   qitot[s] = lid[s].qitot;
-      //   nitot[s] = lid[s].nitot;
-      //   qirim[s] = lid[s].qirim;
-      //   rhop[s]  = lid[s].rhop;
+      for(Int s = 0; s < Spack::n; ++s) {
+        qitot[s] = lid_device(s).qitot;
+        nitot[s] = lid_device(s).nitot;
+        qirim[s] = lid_device(s).qirim;
+        rhop[s]  = lid_device(s).rhop;
 
-      //   qr[s]    = lidb[s].qr;
-      //   nr[s]    = lidb[s].nr;
-      // }
+        qr[s]    = lidb_device(s).qr;
+        nr[s]    = lidb_device(s).nr;
+      }
 
       Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
       Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
