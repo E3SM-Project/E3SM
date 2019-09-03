@@ -910,7 +910,7 @@ contains
     !----------------------------------------------------------
     ! Read shr_flux  namelist settings
     !----------------------------------------------------------
-    call seq_flux_readnl_mct(nlfilename, CPLID, infodata)
+    call seq_flux_readnl_mct(nlfilename, CPLID)
 
     !----------------------------------------------------------
     ! Print Model heading and copyright message
