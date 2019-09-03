@@ -296,11 +296,7 @@ contains
         currentg = bounds%begg
         do gg = 1, gridnum
           g = currentg + gg - 1
-		  
-		  !if (atm2lnd_vars%supply_grc(g)>0) then
-          !       write(iulog,*)'ttt1',atm2lnd_vars%supply_grc(g)
-          !end if
-				
+		  			
           if (atm2lnd_vars%supply_grc(g)/=atm2lnd_vars%supply_grc(g)) then !change NAN (if any) to zero
             atm2lnd_vars%supply_grc(g)=0._r8
           end if
