@@ -458,16 +458,16 @@ contains
 
   !===============================================================================
 
-  subroutine seq_flux_readnl_mct (nmlfile, ID, infodata)
+  subroutine seq_flux_readnl_mct (nmlfile, ID)
 
     use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
     use shr_mpi_mod,    only : shr_mpi_bcast
     use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
+    use shr_nl_mod, only: shr_nl_find_group_name
 
     !INPUT/OUTPUT PARAMETERS
     character(len=*), intent(in) :: nmlfile   ! Name-list filename
     integer                , intent(in) :: ID
-    type(seq_infodata_type), intent(in) :: infodata
 
     !LOCAL VARIABLES
     integer :: mpicom             ! MPI communicator
@@ -493,10 +493,9 @@ contains
         write(logunit,"(A)") subname//': read seq_flux_mct_inparm namelist from: '&
              //trim(nmlfile)
         open( unitn, file=trim(nmlfile), status='old' )
+        call shr_nl_find_group_name(unitn, 'seq_flux_mct_inparm', ierr)
         ierr = 1
         read(unitn,nml=seq_flux_mct_inparm,iostat=ierr)
-
-        write(0,*) ' at Point 1, seq_flux_mct_albdif=',seq_flux_mct_albdif,' seq_flux_mct_albdir=',seq_flux_mct_albdir
 
         if (ierr < 0) then
            call shr_sys_abort( &
