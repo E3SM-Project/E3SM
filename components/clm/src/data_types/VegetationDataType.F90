@@ -372,8 +372,8 @@ module VegetationDataType
     real(r8), pointer :: qflx_ev_soil       (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
     real(r8), pointer :: qflx_ev_h2osfc     (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
     real(r8), pointer :: qflx_rootsoi_frac  (:,:) => null() !  
-   ! real(r8), pointer :: qflx_irrig         (:)   => null() ! irrigation flux (mm H2O/s)
-    real(r8), pointer :: irrig_rate         (:)   => null() ! current irrigation rate [mm/s]
+   
+    real(r8), pointer :: irrig_rate               (:)   => null() ! current irrigation rate [mm/s]
     real(r8), pointer :: qflx_irrig_patch         (:)   => null()   ! patch irrigation flux (mm H2O/s)
     real(r8), pointer :: qflx_real_irrig_patch    (:)   => null()   ! patch real irrigation flux (mm H2O/s) 
     real(r8), pointer :: qflx_grnd_irrig_patch    (:)   => null()   ! groundwater irrigation (mm H2O/s) 
@@ -5359,17 +5359,15 @@ module VegetationDataType
     allocate(this%qflx_ev_soil           (begp:endp))             ; this%qflx_ev_soil         (:)   = nan
     allocate(this%qflx_ev_h2osfc         (begp:endp))             ; this%qflx_ev_h2osfc       (:)   = nan
     allocate(this%qflx_rootsoi_frac      (begp:endp,1:nlevgrnd))  ; this%qflx_rootsoi_frac    (:,:) = nan
-    !allocate(this%qflx_irrig             (begp:endp))             ; this%qflx_irrig           (:)   = nan
-    allocate(this%irrig_rate             (begp:endp))             ; this%irrig_rate           (:)   = nan
-	
+    
+    allocate(this%irrig_rate               (begp:endp))              ; this%irrig_rate               (:)   = nan
     allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = nan
     allocate(this%qflx_real_irrig_patch    (begp:endp))              ; this%qflx_real_irrig_patch    (:)   = nan
     allocate(this%qflx_grnd_irrig_patch    (begp:endp))              ; this%qflx_grnd_irrig_patch    (:)   = nan
     allocate(this%qflx_surf_irrig_patch    (begp:endp))              ; this%qflx_surf_irrig_patch    (:)   = nan
     allocate(this%qflx_supply_patch        (begp:endp))              ; this%qflx_supply_patch        (:)   = nan
     allocate(this%qflx_over_supply_patch   (begp:endp))              ; this%qflx_over_supply_patch   (:)   = nan 
-	
-    allocate(this%n_irrig_steps_left     (begp:endp))             ; this%n_irrig_steps_left   (:)   = 0
+    allocate(this%n_irrig_steps_left       (begp:endp))              ; this%n_irrig_steps_left       (:)   = 0
     
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_wf
