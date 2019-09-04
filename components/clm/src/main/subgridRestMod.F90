@@ -19,6 +19,7 @@ module subgridRestMod
   use LandunitType       , only : lun_pp
   use ColumnType         , only : col_pp
   use VegetationType     , only : veg_pp
+  use perf_mod           , only : t_startf, t_stopf
   use restUtilMod
 
   !
@@ -61,13 +62,19 @@ contains
 
     if (flag /= 'read') then
        if (flag == 'define') then
+          call t_startf('subgridRest_define')
           call subgridRest_define_only(bounds, ncid, flag)
+          call t_stopf('subgridRest_define')
        else
+          call t_startf('subgridRest_write')
           call subgridRest_write_only(bounds, ncid, flag)
+          call t_stopf('subgridRest_write')
        end if
     end if
 
+    call t_startf('subgridRest_write-read')
     call subgridRest_write_and_read(bounds, ncid, flag)
+    call t_stopf('subgridRest_write-read')
 
   end subroutine subgridRest
 
