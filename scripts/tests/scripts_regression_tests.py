@@ -1105,7 +1105,7 @@ class TestCreateTestCommon(unittest.TestCase):
                 files_to_clean.append(leftover)
 
         do_teardown = self._do_teardown and sys.exc_info() == (None, None, None)
-        if (not do_teardown):
+        if (not do_teardown and files_to_clean):
             print("Detected failed test or user request no teardown")
             print("Leaving files:")
             for file_to_clean in files_to_clean:
