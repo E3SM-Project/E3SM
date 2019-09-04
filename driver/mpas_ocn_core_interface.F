@@ -113,6 +113,7 @@ module ocn_core_interface
       logical, pointer :: thicknessFilterActive
       logical, pointer :: splitTimeIntegratorActive
       logical, pointer :: windStressBulkPKGActive
+      logical, pointer :: variableBottomDragPKGActive
       logical, pointer :: tracerBudgetActive
       logical, pointer :: landIcePressurePKGActive
       logical, pointer :: landIceFluxesPKGActive
@@ -160,6 +161,7 @@ module ocn_core_interface
       character (len=StrKIND), pointer :: config_pressure_gradient_type
       character (len=StrKIND), pointer :: config_sw_absorption_type
 
+      logical, pointer :: config_use_variable_drag
       logical, pointer :: config_use_bulk_wind_stress
       logical, pointer :: config_use_bulk_thickness_flux
       logical, pointer :: config_compute_active_tracer_budgets
@@ -229,6 +231,14 @@ module ocn_core_interface
       call mpas_pool_get_config(configPool, 'config_use_bulk_wind_stress', config_use_bulk_wind_stress)
       if ( config_use_bulk_wind_stress ) then
          windStressBulkPKGActive = .true.
+      end if
+
+      !
+      ! test for variable bottom drag of momentum, variableBottomDragPKG
+      call mpas_pool_get_package(packagePool, 'variableBottomDragPKGActive', variableBottomDragPKGActive)
+      call mpas_pool_get_config(configPool, 'config_use_variable_drag', config_use_variable_drag)
+      if ( config_use_variable_drag ) then
+        variableBottomDragPKGActive = .true.
       end if
 
       !
