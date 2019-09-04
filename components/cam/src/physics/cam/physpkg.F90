@@ -2689,7 +2689,7 @@ end if
             ! Aerosol Activation
             !===================================================
             call t_startf('microp_aero_run')
-            call microp_aero_run(state, ptend, cld_macmic_ztodt, pbuf, lcldo)
+            call microp_aero_run(state, ptend, cld_macmic_ztodt, pbuf, lcldo, macmic_it)
             call t_stopf('microp_aero_run')
 
             call physics_ptend_scale(ptend, 1._r8/cld_macmic_num_steps, ncol)
@@ -2833,7 +2833,7 @@ end if
           if (.not. micro_do_icesupersat) then 
              
             call t_startf('microp_aero_run')
-            call microp_aero_run(state, ptend_aero, cld_macmic_ztodt, pbuf, lcldo)
+            call microp_aero_run(state, ptend_aero, cld_macmic_ztodt, pbuf, lcldo, macmic_it)
             call t_stopf('microp_aero_run')
 
           endif
@@ -3372,7 +3372,7 @@ subroutine add_fld_extra_macmic_calls ()
 
      do m=1,ntot_amode
       write(modal,"(I2.2)")m
-      varname  = trim(adjustl(vlist3(iv)))//'_mod'//trim(adjustl(modal))'_'//trim(adjustl(substep))
+      varname  = trim(adjustl(vlist3(iv)))//'_mod'//trim(adjustl(modal))//'_'//trim(adjustl(substep))
       call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'extramacmic_diag_units', 'extramacmic_diag_longname',flag_xyfill=.true.)
       call add_default (trim(adjustl(varname)), 1, ' ')
      enddo

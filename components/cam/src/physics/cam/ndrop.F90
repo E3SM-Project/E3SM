@@ -456,7 +456,8 @@ subroutine dropmixnuc( &
    real(r8) :: numliq_bf_mix(pcols,pver),numliq_af_mix(pcols,pver)
    real(r8) :: nsource_af_reg(pcols,pver)
    real(r8) :: nsource_bf_mix(pcols,pver),nsource_af_mix(pcols,pver)
-   character(len=25)::tmpname,substep,modal
+   character(len=25):: tmpstrname
+   character(len=4):: substep, modal
    logical  :: macmic_extra_diag
 
    !-------------------------------------------------------------------------------
@@ -1138,44 +1139,44 @@ subroutine dropmixnuc( &
    !!output extra diagnostics!!!!
    if(macmic_extra_diag)then!! add extra diagnostic variables
    !!for numliq
-   write (tmpname, "(A14,I2.2)") "numliq_bf_reg_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   numliq_bf_reg, pcols, lchnk )
-   write (tmpname, "(A14,I2.2)") "numliq_af_reg_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   numliq_af_reg, pcols, lchnk )
-   write (tmpname, "(A14,I2.2)") "numliq_bf_mix_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   numliq_bf_mix, pcols, lchnk )
-   write (tmpname, "(A14,I2.2)") "numliq_af_mix_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   numliq_af_mix, pcols, lchnk )
+   write (tmpstrname, "(A14,I2.2)") "numliq_bf_reg_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   numliq_bf_reg, pcols, lchnk )
+   write (tmpstrname, "(A14,I2.2)") "numliq_af_reg_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   numliq_af_reg, pcols, lchnk )
+   write (tmpstrname, "(A14,I2.2)") "numliq_bf_mix_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   numliq_bf_mix, pcols, lchnk )
+   write (tmpstrname, "(A14,I2.2)") "numliq_af_mix_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   numliq_af_mix, pcols, lchnk )
 
    !!for nsource
-   write (tmpname, "(A15,I2.2)") "nsource_af_reg_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   nsource_af_reg, pcols, lchnk )
-   write (tmpname, "(A15,I2.2)") "nsource_bf_mix_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   nsource_bf_mix, pcols, lchnk )
-   write (tmpname, "(A15,I2.2)") "nsource_af_mix_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   nsource_af_mix, pcols, lchnk )
+   write (tmpstrname, "(A15,I2.2)") "nsource_af_reg_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   nsource_af_reg, pcols, lchnk )
+   write (tmpstrname, "(A15,I2.2)") "nsource_bf_mix_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   nsource_bf_mix, pcols, lchnk )
+   write (tmpstrname, "(A15,I2.2)") "nsource_af_mix_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   nsource_af_mix, pcols, lchnk )
 
    !! fore ndropmix
-   write (tmpname, "(A5,I2.2)") "wtke_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   wtke, pcols, lchnk )
-   write (tmpname, "(A9,I2.2)") "wtke_cen_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   wtke_cen, pcols, lchnk )
+   write (tmpstrname, "(A5,I2.2)") "wtke_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   wtke, pcols, lchnk )
+   write (tmpstrname, "(A9,I2.2)") "wtke_cen_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   wtke_cen, pcols, lchnk )
 
   !! for cloud fraction
-   write (tmpname, "(A11,I2.2)") "cldfrc_new_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   cldn, pcols, lchnk )
+   write (tmpstrname, "(A11,I2.2)") "cldfrc_new_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   cldn, pcols, lchnk )
 
-   write (tmpname, "(A11,I2.2)") "cldfrc_old_", macmic_it
-   call outfld(trim(adjustl(tmpname)),   cldo, pcols, lchnk )
+   write (tmpstrname, "(A11,I2.2)") "cldfrc_old_", macmic_it
+   call outfld(trim(adjustl(tmpstrname)),   cldo, pcols, lchnk )
 
    !! for aerosol within mam mode factnum
    do m = 1, ntot_amode
     write(substep,"(I2.2)") macmic_it
     write(modal,"(I2.2)") m
-    tmpname='factnum_mam'//'_mod'//trim(adjustl(modal))'_'//trim(adjustl(substep))
-    call outfld(trim(adjustl(tmpname)),   factnum(:,:,m), pcols, lchnk )
-    tmpname='raerosol_tot_mam'//'_mod'//trim(adjustl(modal))'_'//trim(adjustl(substep))
-    call outfld(trim(adjustl(tmpname)),   raerfld(:,:,m), pcols, lchnk )
+    tmpstrname='factnum_mam'//'_mod'//trim(adjustl(modal))//'_'//trim(adjustl(substep))
+    call outfld(trim(adjustl(tmpstrname)),   factnum(:,:,m), pcols, lchnk )
+    tmpstrname='raerosol_tot_mam'//'_mod'//trim(adjustl(modal))//'_'//trim(adjustl(substep))
+    call outfld(trim(adjustl(tmpstrname)),   raerfld(:,:,m), pcols, lchnk )
    end do
 
    end if   
