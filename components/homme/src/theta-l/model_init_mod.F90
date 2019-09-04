@@ -92,7 +92,8 @@ contains
        ! active for p<10*ptop (following cd_core.F90 in CAM-FV)
        ! CAM 26L and 30L:  top 3 levels 
        ! E3SM 72L:  top 6 levels
-       nu_scale_top(k) = 8*(1+tanh(log(ptop_over_press))) ! active for p<4*ptop
+       nu_scale_top(k) = 16*ptop_over_press**2 / (ptop_over_press**2 + 1)
+
        if (nu_scale_top(k)<0.15d0) nu_scale_top(k)=0
 
        !nu_scale_top(k) = 8*(1+.911*tanh(log(ptop_over_press))) ! active for p<6.5*ptop
