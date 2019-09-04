@@ -586,8 +586,8 @@ class Dataset():
         
         var = var_to_get if var_to_get else var
         # get available start and end years from file name: {var}_{start_yr}01_{end_yr}12.nc
-        var_start_year = fnm.split('/')[-1].split('_')[1][:4]
-        var_end_year = fnm.split('/')[-1].split('_')[2][:4]
+        var_start_year = fnm.split('/')[-1].split('_')[-2][:4]
+        var_end_year = fnm.split('/')[-1].split('_')[-1][:4]
 
         if start_year < var_start_year or end_year > var_end_year:
             msg = "Invalid year range specified for test/reference time series data" 
