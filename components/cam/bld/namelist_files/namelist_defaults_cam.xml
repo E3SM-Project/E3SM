@@ -1479,7 +1479,7 @@
 <hypervis_subcycle hgrid="ne60np4" >  4 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne120np4">  4 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne240np4">  4 </hypervis_subcycle>
-<hypervis_subcycle hgrid="ne512np4">  4 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne512np4">  10 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne1024np4"> 20 </hypervis_subcycle>
 <hypervis_subcycle dyn="se" waccm_phys="1">  1 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_arm_x8v3_lowcon"  > 8 </hypervis_subcycle>
