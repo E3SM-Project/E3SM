@@ -223,6 +223,7 @@
 <bnd_topo hgrid="ne60np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne60np4_16xconsistentSGH.c20140517.nc</bnd_topo>
 <bnd_topo hgrid="ne120np4" npg="0">atm/cam/topo/USGS-gtopo30_ne120np4_16xdel2-PFC-consistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne240np4" npg="0">atm/cam/topo/USGS-gtopo30_ne240np4_16xconsistentSGH.c20130724.nc</bnd_topo>
+<bnd_topo hgrid="ne512np4"  npg="0">atm/cam/topo/USGS-gtopo30_ne512np4_16xconsistentSGH.20190212.nc</bnd_topo>
 <bnd_topo hgrid="ne1024np4" npg="0">atm/cam/topo/USGS-gtopo30_ne1024np4_16xconsistentSGH_20190528.nc</bnd_topo>
 
 <bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
@@ -807,6 +808,7 @@
 <drydep_srf_file hgrid="ne60np4" >atm/cam/chem/trop_mam/atmsrf_ne60np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne120np4">atm/cam/chem/trop_mam/atmsrf_ne120np4_110920.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne240np4">atm/cam/chem/trop_mam/atmsrf_ne240np4_110920.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne512np4">atm/cam/chem/trop_mam/atmsrf_ne512np4_interp_20190409.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne1024np4">atm/cam/chem/trop_mam/atmsrf_ne1024np4_20190621.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_arm_x8v3_lowcon">atm/cam/chem/trop_mam/atmsrf_armx8v3.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon">atm/cam/chem/trop_mam/atmsrf_conusx4v1.nc</drydep_srf_file>
@@ -1414,6 +1416,7 @@
 <nu hgrid="ne60np4" >  1.0e14 </nu>
 <nu hgrid="ne120np4">  1.0e13 </nu>
 <nu hgrid="ne240np4">  1.1e12 </nu>
+<nu hgrid="ne512np4">  2.0e11 </nu>
 <nu hgrid="ne1024np4"> 2.5e10 </nu>
 <nu hgrid="ne0np4_arm_x8v3_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu>
@@ -1439,6 +1442,7 @@
 <nu_p hgrid="ne60np4" >  1.0e14 </nu_p>
 <nu_p hgrid="ne120np4">  1.0e13 </nu_p>
 <nu_p hgrid="ne240np4">  1.1e12 </nu_p>
+<nu_p hgrid="ne512np4">  2.0e11 </nu_p>
 <nu_p hgrid="ne1024np4"> 2.5e10 </nu_p>
 <nu_p hgrid="ne0np4_arm_x8v3_lowcon"  > 8.0e-8</nu_p>
 <nu_p hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu_p>
@@ -1456,6 +1460,7 @@
 <nu_div hgrid="ne60np4" >  2.5e14 </nu_div>
 <nu_div hgrid="ne120np4">  2.5e13 </nu_div>
 <nu_div hgrid="ne240np4">  2.5e12 </nu_div>
+<nu_div hgrid="ne512np4">  5.0e11 </nu_div>
 <nu_div hgrid="ne1024np4"> 6.25e10 </nu_div>
 <nu_div hgrid="ne0np4_arm_x8v3_lowcon"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_conus_x4v1_lowcon"  > 20.0e-8</nu_div>
@@ -1474,6 +1479,7 @@
 <hypervis_subcycle hgrid="ne60np4" >  4 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne120np4">  4 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne240np4">  4 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne512np4">  4 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne1024np4"> 20 </hypervis_subcycle>
 <hypervis_subcycle dyn="se" waccm_phys="1">  1 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_arm_x8v3_lowcon"  > 8 </hypervis_subcycle>
@@ -1497,6 +1503,7 @@
 <rsplit hgrid="ne60np4" >  3 </rsplit>
 <rsplit hgrid="ne120np4">  3 </rsplit>
 <rsplit hgrid="ne240np4">  3 </rsplit>
+<rsplit hgrid="ne512np4">  3 </rsplit>
 <rsplit hgrid="ne1024np4"> 3 </rsplit>
 
 <se_nsplit>                   2 </se_nsplit>
@@ -1507,6 +1514,7 @@
 <se_nsplit hgrid="ne60np4" >  4 </se_nsplit>
 <se_nsplit hgrid="ne120np4">  4 </se_nsplit>
 <se_nsplit hgrid="ne240np4">  5 </se_nsplit>
+<se_nsplit hgrid="ne512np4">  5 </se_nsplit>
 <se_nsplit hgrid="ne1024np4"> 10 </se_nsplit>
 <se_nsplit hgrid="ne0np4_arm_x8v3_lowcon"  > 5 </se_nsplit>
 <se_nsplit hgrid="ne0np4_conus_x4v1_lowcon"  > 4 </se_nsplit>
