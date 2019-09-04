@@ -1023,6 +1023,10 @@
 					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThicknessEdge.  The standard MPAS-O approach is 'centered'."
 					possible_values="'upwind', 'centered'"
 		/>
+		<nml_option name="config_drying_safety_height" type="real" default_value="1.0e-10" units="m"
+					description="Safety factor on minimum cell height to ensure the minimum height is not violated due to round-off."
+					possible_values="Real value greater or equal to 0."
+		/>
 	</nml_record>
 	<nml_record name="ocean_constants">
 		<nml_option name="config_density0" type="real" default_value="1026.0" units="kg m^{-3}"

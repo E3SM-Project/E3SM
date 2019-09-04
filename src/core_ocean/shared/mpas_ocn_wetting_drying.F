@@ -384,13 +384,14 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell
 
-      real (kind=RKIND), pointer :: config_drying_min_cell_height
+      real (kind=RKIND), pointer :: config_drying_min_cell_height, config_drying_safety_height
       logical, pointer :: config_zero_drying_velocity
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_drying_min_cell_height', config_drying_min_cell_height)
       call mpas_pool_get_config(ocnConfigs, 'config_zero_drying_velocity', config_zero_drying_velocity)
+      call mpas_pool_get_config(ocnConfigs, 'config_drying_safety_height', config_drying_safety_height)
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
@@ -424,7 +425,7 @@ contains
           end do
 
           ! if layer thickness is too small, limit divergence flux outwards with opposite velocity
-          if ((layerThickness + dt*divOutFlux ) <= (config_drying_min_cell_height))  then
+          if ((layerThickness + dt*divOutFlux ) <= (config_drying_min_cell_height + config_drying_safety_height))  then
             ! limit divOutFlux out of cell to keep it wet
             divOutFlux = abs(divOutFlux)
             divOutFlux = (layerThickness - (config_drying_min_cell_height + eps)) / (dt*divOutFlux + eps)
