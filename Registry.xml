@@ -544,6 +544,10 @@
 		/>
 	</nml_record>
 	<nml_record name="forcing" mode="init;forward">
+		<nml_option name="config_use_variable_drag" type="logical" default_value=".false." units="unitless"
+					description="Controls if variable drag is enabled."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_use_bulk_wind_stress" type="logical" default_value=".false." units="unitless"
 					description="Controls if zonal and meridional components of windstress are used to build surface wind stress."
 					possible_values=".true. or .false."
@@ -858,6 +862,14 @@
 		<nml_option name="config_implicit_bottom_drag_coeff" type="real" default_value="1.0e-3" units="unitless"
 					description="Dimensionless bottom drag coefficient, $c_{drag}$."
 					possible_values="any positive real, typically 1.0e-3"
+		/>
+		<nml_option name="config_use_implicit_bottom_drag_variable" type="logical" default_value=".false." units="unitless"
+					description="If true, spatially-variable implicit bottom drag is used on the momentum equation."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_implicit_bottom_drag_variable_mannings" type="logical" default_value=".false." units="unitless"
+					description="If true, uses Mannings' n values for the computation of Cd=g*n^2*h^{-1/3}."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_use_explicit_bottom_drag" type="logical" default_value=".false." units="unitless"
 					description="If true, explicit bottom drag is used on the momentum equation."
@@ -1228,6 +1240,7 @@
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
 		<package name="thicknessFilter" description="This package includes variables required for frequency filtered thickness."/>
 		<package name="windStressBulkPKG" description="This package includes varibles required for bulk wind stress forcing."/>
+		<package name="variableBottomDragPKG" description="This package includes varibles required for variable bottom drag."/>
 		<package name="thicknessBulkPKG" description="This package includes varibles required for bulk thickness forcing."/>
 		<package name="landIcePressurePKG" description="This package includes variables needed for runs with the sea surface depressed by land-ice pressure."/>
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
@@ -1354,6 +1367,7 @@
 			<var name="shortWaveHeatFlux"/>
 			<var name="evaporationFlux"/>
 			<var name="rainFlux"/>
+			<var name="bottomDrag"/>
 		</stream>
 
 		<!-- Forward mode streams -->
@@ -1760,6 +1774,7 @@
 			<var name="topDragMagnitude"/>
 			<var name="landIceFreshwaterFlux"/>
 			<var name="landIceHeatFlux"/>
+			<var name="bottomDrag"/>
 		</stream>
 
 		<stream name="Gent_McWilliams_spherical"
@@ -2770,6 +2785,10 @@
 		<var name="windStressMeridional" type="real" dimensions="nCells Time" units="N m^{-2}"
 			 description="Meridional (northward) component of wind stress at cell centers from coupler. Positive northward."
 			 packages="windStressBulkPKG"
+		/>
+		<var name="bottomDrag" type="real" dimensions="nCells" units="unitless"
+			 description="Bottom drag Cd coefficient in cells."
+			 packages="variableBottomDragPKG"
 		/>
 		<var name="nForcingGroupCounter"		type="integer"	dimensions="Time"/>
 		<var name="forcingGroupNames"			type="text"	dimensions="nForcingGroupsMax Time"/>

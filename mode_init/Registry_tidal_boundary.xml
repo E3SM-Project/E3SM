@@ -51,4 +51,12 @@
 			description="Fraction of the domain the plug should take up initially. Only in the y direction."
 			possible_values="Any real number between 0 and 1."
 		/>
+		<nml_option name="config_tidal_forcing_left_Cd_or_n" type="real" default_value="1.0e-3" units="unitless"
+			description="Bottom drag of left side of the boundary."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_tidal_forcing_right_Cd_or_n" type="real" default_value="1.0e-3" units="unitless"
+			description="Bottom drag of right side of the boundary."
+			possible_values="Any real number"
+		/>
 	</nml_record>

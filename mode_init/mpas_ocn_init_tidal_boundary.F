@@ -103,6 +103,7 @@ contains
     integer, dimension(:), pointer :: maxLevelCell
     real (kind=RKIND), dimension(:), pointer :: yCell, refBottomDepth, bottomDepth, vertCoordMovementWeights, dcEdge
     real (kind=RKIND), dimension(:), pointer :: tidalInputMask
+    real (kind=RKIND), dimension(:), pointer :: bottomDrag
     real (kind=RKIND), dimension(:), pointer :: ssh
     real (kind=RKIND), dimension(:,:), pointer :: layerThickness, restingThickness, zMid
     real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers, debugTracers
@@ -204,6 +205,15 @@ contains
           + (yCell(iCell) - yMin) / (yMax - yMin)  * &
           (config_tidal_boundary_right_bottom_depth - config_tidal_boundary_left_bottom_depth)
       end do
+
+      if (config_use_variable_drag) then
+        call mpas_pool_get_array(forcingPool, 'bottomDrag', bottomDrag)
+        do iCell = 1, nCellsSolve
+          bottomDrag(iCell) = config_tidal_forcing_left_Cd_or_n &
+            + (yCell(iCell) - yMin) / (yMax - yMin)  * &
+            (config_tidal_forcing_right_Cd_or_n - config_tidal_forcing_left_Cd_or_n)
+        end do
+      end if
 
       if (config_use_wetting_drying .and. config_tidal_start_dry .and. &
           trim(config_tidal_boundary_layer_type) == 'zstar') then
