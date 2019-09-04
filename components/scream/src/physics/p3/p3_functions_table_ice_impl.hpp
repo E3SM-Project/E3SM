@@ -188,7 +188,7 @@ typename Functions<S,D>::Spack Functions<S,D>
   auto gproc1 = pack::index(itab, t.dumjj, t.dumii+1, t.dumi, idxpk) + (t.dum1-Spack(t.dumi)-1) *
     (pack::index(itab, t.dumjj, t.dumii+1, t.dumi+1, idxpk) - pack::index(itab, t.dumjj, t.dumii+1, t.dumi, idxpk));
 
-  auto tmp1   = iproc1 + (t.dum4-Spack(t.dumii)-1) * (gproc1-iproc1);
+  const auto tmp1   = iproc1 + (t.dum4-Spack(t.dumii)-1) * (gproc1-iproc1);
 
   // get value at density index + 1
 
@@ -202,7 +202,7 @@ typename Functions<S,D>::Spack Functions<S,D>
   gproc1 = pack::index(itab, t.dumjj+1, t.dumii+1, t.dumi, idxpk) + (t.dum1-Spack(t.dumi)-1) *
     (pack::index(itab, t.dumjj+1, t.dumii+1, t.dumi+1, idxpk)-pack::index(itab, t.dumjj+1, t.dumii+1, t.dumi, idxpk));
 
-  auto tmp2 = iproc1+(t.dum4 - Spack(t.dumii) - 1) * (gproc1-iproc1);
+  const auto tmp2 = iproc1+(t.dum4 - Spack(t.dumii) - 1) * (gproc1-iproc1);
 
   // get final process rate
   proc = tmp1 + (t.dum5 - Spack(t.dumjj) - 1) * (tmp2-tmp1);
@@ -248,7 +248,7 @@ typename Functions<S,D>::Spack Functions<S,D>
      pack::index(itabcoll, ti.dumjj, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk));
 
   auto gproc1  = dproc1+(tr.dum3 - Spack(tr.dumj) - 1) * (dproc2-dproc1);
-  auto tmp1    = iproc1+(ti.dum4 - Spack(ti.dumii) - 1) * (gproc1-iproc1);
+  const auto tmp1    = iproc1+(ti.dum4 - Spack(ti.dumii) - 1) * (gproc1-iproc1);
 
   // density index + 1
 
@@ -279,7 +279,7 @@ typename Functions<S,D>::Spack Functions<S,D>
      pack::index(itabcoll, ti.dumjj+1, ti.dumii+1, ti.dumi, tr.dumj+1, idxpk));
 
   gproc1  = dproc1 + (tr.dum3 - Spack(tr.dumj) - 1) * (dproc2-dproc1);
-  auto tmp2    = iproc1 + (ti.dum4 - Spack(ti.dumii) - 1) * (gproc1-iproc1);
+  const auto tmp2    = iproc1 + (ti.dum4 - Spack(ti.dumii) - 1) * (gproc1-iproc1);
 
   // interpolate over density to get final values
   proc    = tmp1+(ti.dum5 - Spack(ti.dumjj) - 1) * (tmp2-tmp1);
