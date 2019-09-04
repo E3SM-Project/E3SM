@@ -42,7 +42,7 @@ struct P3GlobalForFortran
     view_itabcol_table m_itabcol;
   };
 
-  static Views& get();
+  static const Views& get();
   static std::shared_ptr<Views> s_views;
 };
 

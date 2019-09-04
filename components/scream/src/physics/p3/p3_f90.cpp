@@ -163,9 +163,7 @@ int test_FortranData () {
 
 int test_p3_init (bool use_fortran) {
   p3_init(use_fortran);
-  if (!use_fortran) {
-    P3GlobalForFortran::deinit();
-  }
+  P3GlobalForFortran::deinit();
   return 0;
 }
 
@@ -173,9 +171,7 @@ int test_p3_ic (bool use_fortran) {
   const auto d = ic::Factory::create(ic::Factory::mixed);
   p3_init();
   p3_main(*d);
-  if (!use_fortran) {
-    P3GlobalForFortran::deinit();
-  }
+  P3GlobalForFortran::deinit();
   return 0;
 }
 

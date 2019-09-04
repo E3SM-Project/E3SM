@@ -78,10 +78,10 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
 
-P3GlobalForFortran::Views& P3GlobalForFortran::get()
+const P3GlobalForFortran::Views& P3GlobalForFortran::get()
 {
   if (!P3GlobalForFortran::s_views) {
-    P3GlobalForFortran::s_views = std::shared_ptr<Views>(new Views());
+    P3GlobalForFortran::s_views = std::make_shared<Views>();
     P3F::init_kokkos_ice_lookup_tables(s_views->m_itab, s_views->m_itabcol);
   }
   return *P3GlobalForFortran::s_views;
