@@ -71,9 +71,8 @@ void p3_main(const FortranData& d);
 Int check_against_python(const FortranData& d);
 
 int test_FortranData();
-int test_p3_init();
-int test_p3_main();
-int test_p3_ic();
+int test_p3_init(bool use_fortran);
+int test_p3_ic(bool use_fortran);
 
 }  // namespace p3
 }  // namespace scream

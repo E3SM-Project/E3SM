@@ -1,4 +1,5 @@
 #include "p3_f90.hpp"
+#include "p3_functions_f90.hpp"
 #include "p3_constants.hpp"
 #include "p3_ic_cases.hpp"
 
@@ -160,15 +161,21 @@ int test_FortranData () {
   return 0;
 }
 
-int test_p3_init () {
-  p3_init();
+int test_p3_init (bool use_fortran) {
+  p3_init(use_fortran);
+  if (!use_fortran) {
+    P3GlobalForFortran::deinit();
+  }
   return 0;
 }
 
-int test_p3_ic () {
+int test_p3_ic (bool use_fortran) {
   const auto d = ic::Factory::create(ic::Factory::mixed);
   p3_init();
   p3_main(*d);
+  if (!use_fortran) {
+    P3GlobalForFortran::deinit();
+  }
   return 0;
 }
 

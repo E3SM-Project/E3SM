@@ -76,23 +76,20 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
 }
 
-P3GlobalForFortran::P3GlobalForFortran() :
-  itab(new view_itab_table()), itabcol(new view_itabcol_table())
-{
-  P3F::init_kokkos_ice_lookup_tables(*itab, *itabcol);
-}
+std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
 
-const P3GlobalForFortran& P3GlobalForFortran::get()
+P3GlobalForFortran::Views& P3GlobalForFortran::get()
 {
-  static P3GlobalForFortran inst;
-  return inst;
+  if (!P3GlobalForFortran::s_views) {
+    P3GlobalForFortran::s_views = std::shared_ptr<Views>(new Views());
+    P3F::init_kokkos_ice_lookup_tables(s_views->m_itab, s_views->m_itabcol);
+  }
+  return *P3GlobalForFortran::s_views;
 }
 
 void P3GlobalForFortran::deinit()
 {
-  P3GlobalForFortran& inst = const_cast<P3GlobalForFortran&>(P3GlobalForFortran::get());
-  delete inst.itab;
-  delete inst.itabcol;
+  P3GlobalForFortran::s_views = nullptr;
 }
 
 void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz,
@@ -156,7 +153,7 @@ void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
   t.dum4 = dum4;
   t.dum5 = dum5;
 
-  *proc = P3F::apply_table_ice(qiti_gt_small, adjusted_index, *P3GlobalForFortran::get().itab, t)[0];
+  *proc = P3F::apply_table_ice(qiti_gt_small, adjusted_index, P3GlobalForFortran::itab(), t)[0];
 }
 
 void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
@@ -181,7 +178,7 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
   ti.dum5 = dum5;
   tr.dum3 = dum3;
 
-  *proc = P3F::apply_table_coll(qiti_gt_small, adjusted_index, *P3GlobalForFortran::get().itabcol, ti, tr)[0];
+  *proc = P3F::apply_table_coll(qiti_gt_small, adjusted_index, P3GlobalForFortran::itabcol(), ti, tr)[0];
 }
 
 } // namespace p3

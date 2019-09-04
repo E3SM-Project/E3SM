@@ -25,20 +25,25 @@ struct P3GlobalForFortran
   using view_itab_table = typename P3F::view_itab_table;
   using view_itabcol_table = typename P3F::view_itabcol_table;
 
-  view_itab_table* itab;
-  view_itabcol_table* itabcol;
-
-  static const P3GlobalForFortran& get();
-
   // All kokkos views must be destructed before Kokkos::finalize
   static void deinit();
 
+  static const view_itab_table& itab()       { return get().m_itab; }
+  static const view_itabcol_table& itabcol() { return get().m_itabcol; }
+
+  P3GlobalForFortran() = delete;
+  ~P3GlobalForFortran() = delete;
   P3GlobalForFortran(const P3GlobalForFortran&) = delete;
   P3GlobalForFortran& operator=(const P3GlobalForFortran&) = delete;
 
  private:
-  P3GlobalForFortran();
-  ~P3GlobalForFortran() = default;
+  struct Views {
+    view_itab_table m_itab;
+    view_itabcol_table m_itabcol;
+  };
+
+  static Views& get();
+  static std::shared_ptr<Views> s_views;
 };
 
 struct P3InitAFortranData
