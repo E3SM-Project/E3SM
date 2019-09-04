@@ -1024,8 +1024,7 @@ def find_files(rootdir, pattern):
 
 
 def setup_standard_logging_options(parser):
-    helpfile = "{}.log".format(sys.argv[0])
-    helpfile = os.path.join(os.getcwd(),os.path.basename(helpfile))
+    helpfile = os.path.join(os.getcwd(),os.path.basename("{}.log".format(sys.argv[0])))
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information (very verbose) to file {}".format(helpfile))
     parser.add_argument("-v", "--verbose", action="store_true",
