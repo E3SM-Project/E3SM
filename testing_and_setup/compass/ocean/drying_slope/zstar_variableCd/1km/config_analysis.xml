@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<config case="analysis">
+  <add_link source="../comparison.py" dest="comparison.py"/>
+  <add_link source="../../../analysis/data" dest="data"/>
+	<add_link source="../forward1/output.nc" dest="output1.nc"/>
+	<add_link source="../forward2/output.nc" dest="output2.nc"/>
+	<add_link source="../forward3/output.nc" dest="output3.nc"/>
+	<add_link source="../forward4/output.nc" dest="output4.nc"/>
+
+	<run_script name="run.py">
+		<step executable="./comparison.py">
+		</step>
+		<step executable="paraview_vtk_field_extractor.py">
+			<argument flag="-f">output1.nc</argument>
+			<argument flag="-o">vtk_output1</argument>
+			<argument flag="-v">allOnCells</argument>
+			<argument flag="-d">maxEdges=0</argument>
+			<argument flag="">nVertLevels=0:10</argument>
+			<argument flag="--combine"></argument>
+		</step>
+		<step executable="paraview_vtk_field_extractor.py">
+			<argument flag="-f">output2.nc</argument>
+			<argument flag="-o">vtk_output2</argument>
+			<argument flag="-v">allOnCells</argument>
+			<argument flag="-d">maxEdges=0</argument>
+			<argument flag="">nVertLevels=0:10</argument>
+			<argument flag="--combine"></argument>
+		</step>
+	</run_script>
+</config>

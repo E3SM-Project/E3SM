@@ -22,10 +22,11 @@ plt.plot(x,y, lw=3, color='black', label='analytical')
 
 # data from MPAS-O on boundary
 ds = xr.open_mfdataset('output.nc')
-ds.ssh.where(ds.tidalInputMask).mean('nCells').plot(marker='o', label='MPAS-O')
+mask = ds.where(ds.yCell.values.min() == ds.yCell)
+mask.ssh.mean('nCells').plot(marker='o', label='MPAS-O')
 
 plt.legend()
-plt.ylabel('Tidal amplitude (m)')
-plt.xlabel('Time (hrs)')
+plt.ylabel('ssh amplitude (m)')
+plt.xlabel('Time (min)')
 
 plt.savefig('tidalcomparison.png')

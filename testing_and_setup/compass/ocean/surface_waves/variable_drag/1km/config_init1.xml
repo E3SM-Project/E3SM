@@ -1,20 +1,22 @@
-<template>
-	<namelist>
+<?xml version="1.0"?>
+<config case="init_step1">
+	<add_executable source="model" dest="ocean_model"/>
+
+	<namelist name="namelist.ocean" mode="init">
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_init_configuration">'tidal_boundary'</option>
-		<option name="config_tidal_boundary_layer_type">'zstar'</option>
 		<option name="config_vert_levels">-1</option>
-		<option name="config_tidal_boundary_vert_levels">100</option>
-		<option name="config_tidal_boundary_left_bottom_depth">0.0</option>
-		<option name="config_tidal_start_dry">.true.</option>
-		<option name="config_use_wetting_drying">.true.</option>
-		<option name="config_drying_min_cell_height">1.000001e-3</option>
+		<option name="config_tidal_boundary_vert_levels">30</option>
+		<option name="config_tidal_boundary_left_bottom_depth">10.0</option>
+		<option name="config_tidal_boundary_right_bottom_depth">10.0</option>
 		<option name="config_use_tidal_forcing">.true.</option>
+		<option name="config_use_implicit_bottom_drag_variable">.true.</option>
+		<option name="config_tidal_forcing_left_Cd_or_n">1.0e-2</option>
+		<option name="config_tidal_forcing_right_Cd_or_n">1.0e-3</option>
 		<option name="config_write_cull_cell_mask">.false.</option>
-		<option name="config_use_variable_drag">.true.</option>
 	</namelist>
 
-	<streams>
+	<streams name="streams.ocean" keep="immutable" mode="init">
 		<stream name="input_init">
 			<attribute name="filename_template">mesh.nc</attribute>
 		</stream>
@@ -54,4 +56,24 @@
 			</add_contents>
 		</stream>
 	</streams>
-</template>
+
+	<run_script name="run.py">
+		<step executable="planar_hex">
+			<argument flag="--nx">6</argument>
+			<argument flag="--ny">30</argument>
+			<argument flag="--dc">1000.0</argument>
+			<argument flag="--npy"></argument>
+			<argument flag="-o">grid.nc</argument>
+		</step>
+		<step executable="MpasCellCuller.x">
+			<argument flag="">grid.nc</argument>
+			<argument flag="">culled_mesh.nc</argument>
+		</step>
+		<step executable="MpasMeshConverter.x">
+			<argument flag="">culled_mesh.nc</argument>
+			<argument flag="">mesh.nc</argument>
+		</step>
+
+		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

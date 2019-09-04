@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<config case="init_step4">
+
+  <add_link source="../../../meshes/1km/build_1km_mesh/1kmmesh.nc" dest="mesh.nc"/>
+  <add_link source="../../../meshes/1km/build_1km_mesh/graph.info" dest="graph.info"/>
+	<add_executable source="model" dest="ocean_model"/>
+
+	<namelist name="namelist.ocean" mode="init">
+		<template file="init_template.xml" path_base="script_configuration_dir"/>
+		<option name="config_use_implicit_bottom_drag_variable">.true.</option>
+		<option name="config_tidal_forcing_left_Cd_or_n">1.0e-1</option>
+		<option name="config_tidal_forcing_right_Cd_or_n">1.0e-2</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="init">
+		<template file="init_template.xml" path_base="script_configuration_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

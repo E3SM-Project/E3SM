@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<config case="analysis">
+  <add_link source="../comparison.py" dest="comparison.py"/>
+  <add_link source="../../../analysis/data" dest="data"/>
+	<add_link source="../forward1/output.nc" dest="output1.nc"/>
+	<add_link source="../forward2/output.nc" dest="output2.nc"/>
+	<add_link source="../forward3/output.nc" dest="output3.nc"/>
+	<add_link source="../forward4/output.nc" dest="output4.nc"/>
+
+	<run_script name="run.py">
+		<step executable="./comparison.py">
+		</step>
+	</run_script>
+</config>
