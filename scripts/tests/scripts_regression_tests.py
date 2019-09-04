@@ -427,6 +427,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cmd = "%s/create_clone --clone %s --case %s --keepexe --user-mods-dir %s" \
               % (SCRIPT_DIR, prevtestdir, testdir, user_mods_dir)
         run_cmd_assert_result(self, cmd, from_dir=SCRIPT_DIR, expected_stat=1)
+        cls._do_teardown.append(testdir)
 
     def test_d_create_clone_new_user(self):
         cls = self.__class__
@@ -3274,9 +3275,10 @@ def write_provenance_info():
     logging.info("Test driver: %s\n" % CIME.utils.get_cime_default_driver())
 
 def cleanup():
-    if os.path.exists(TEST_ROOT) and not NO_TEARDOWN:
+    # if the TEST_ROOT directory exists and is empty, remove it
+    if os.path.exists(TEST_ROOT) and not os.listdir(TEST_ROOT):
         print("All pass, removing directory:", TEST_ROOT)
-        shutil.rmtree(TEST_ROOT)
+        os.rmdir(TEST_ROOT)
 
 def _main_func(description):
     global MACHINE
@@ -3410,7 +3412,7 @@ OR
             setattr(B_CheckCode, testname, pylint_test)
 
     try:
-        unittest.main(verbosity=20, catchbreak=True)
+        unittest.main(verbosity=2, catchbreak=True)
     except CIMEError as e:
         if e.__str__() != "False":
             print("Detected failures, leaving directory:", TEST_ROOT)
