@@ -38,6 +38,8 @@ module gllfvremap_test_mod
 contains
   
   subroutine init(nphys)
+    ! Init pg_data.
+
     integer, intent(in) :: nphys
 
     integer :: ncol
@@ -50,6 +52,8 @@ contains
   end subroutine init
 
   subroutine finish()
+    ! Clean up pg_data.
+
     deallocate(pg_data%ps, pg_data%zs, pg_data%T, pg_data%uv, pg_data%omega_p, pg_data%q)
   end subroutine finish
 
@@ -151,7 +155,7 @@ contains
     use hybvcoord_mod, only: hvcoord_t
     use dimensions_mod, only: nlev, qsize
     use coordinate_systems_mod, only: cartesian3D_t, change_coordinates
-    use element_ops, only: get_temperature
+    use element_ops, only: get_temperature, get_field
     use prim_driver_base, only: applyCAMforcing_tracers
     use prim_advance_mod, only: applyCAMforcing_dynamics
     use parallel_mod, only: global_shared_buf, global_shared_sum
@@ -173,7 +177,8 @@ contains
     type (cartesian3D_t) :: p
     real(kind=real_kind) :: wr(np,np,nlev), tend(np,np,nlev), f, a, b, c, rd, &
          qmin1(qsize+3), qmax1(qsize+3), qmin2, qmax2, mass1, mass2, &
-         wr1(np,np,nlev), wr2(np,np,nlev), dt, wr3(np*np)
+         wr1(np,np,nlev), wr2(np,np,nlev), dt, wr3(np*np), pressure(np,np,nlev), &
+         p_fv(np,np,nlev)
     integer :: nf, ncol, nt1, nt2, ie, i, j, k, d, q, qi, tl, col
     logical :: domass
 
@@ -290,8 +295,15 @@ contains
                 ! were remapped: the following should hold to nearly
                 ! machine precision.
                 !  omega_p
-                wr1(:nf,:nf,:) = reshape(pg_data%omega_p(:,:,ie), (/nf,nf,nlev/))
-                call gfr_g2f_scalar(ie, elem(ie)%metdet, elem(ie)%derived%omega_p, wr2)
+                !  True omega on GLL and FV grids.
+                call get_field(elem(ie), 'omega', wr1, hvcoord, nt1, -1)
+                call gfr_g2f_scalar(ie, elem(ie)%metdet, wr1, wr2)
+                !  Convert omega_p on FV grid to omega. When omega_p
+                !  is removed, remove the pressure calculations here.
+                call get_field(elem(ie), 'p', pressure, hvcoord, nt1, -1)
+                call gfr_g2f_scalar(ie, elem(ie)%metdet, pressure, p_fv)
+                wr1(:nf,:nf,:) = reshape(pg_data%omega_p(:,:,ie), (/nf,nf,nlev/))*p_fv(:nf,:nf,:)
+                !  Compare.
                 global_shared_buf(ie,1) = sum((wr1(:nf,:nf,:) - wr2(:nf,:nf,:))**2)
                 global_shared_buf(ie,2) = sum(wr2(:nf,:nf,:)**2)
                 !  phis

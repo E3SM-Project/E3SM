@@ -245,7 +245,7 @@ contains
 
     use dimensions_mod, only: nlev
     use hybvcoord_mod, only: hvcoord_t
-    use element_ops, only: get_temperature
+    use element_ops, only: get_temperature, get_field
     use physical_constants, only: p0, kappa
 
     type (hybrid_t), intent(in) :: hybrid
@@ -282,7 +282,7 @@ contains
        call gfr_g2f_scalar(ie, elem(ie)%metdet, dp, dp_fv)
 
        call get_temperature(elem(ie), wr2, hvcoord, nt)
-       call calc_p(hvcoord, elem(ie)%state%ps_v(:,:,nt), p)
+       call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
        wr2 = wr2*(p/p0)**kappa
        call gfr_g2f_scalar_dp(gfr, ie, elem(ie)%metdet, dp, dp_fv, wr2, wr1)
@@ -295,8 +295,11 @@ contains
        uv(:ncol,1,:,ie) = reshape(wr1(:nf,:nf,:), (/ncol,nlev/))
        uv(:ncol,2,:,ie) = reshape(wr2(:nf,:nf,:), (/ncol,nlev/))
 
-       call gfr_g2f_scalar(ie, elem(ie)%metdet, elem(ie)%derived%omega_p, wr1)
-       omega_p(:ncol,:,ie) = reshape(wr1(:nf,:nf,:), (/ncol,nlev/))
+       call get_field(elem(ie), 'omega', wr2, hvcoord, nt, -1)
+       call gfr_g2f_scalar(ie, elem(ie)%metdet, wr2, wr1)
+       ! When omega_p is switched to omega, remove the division by
+       ! p_fv.
+       omega_p(:ncol,:,ie) = reshape(wr1(:nf,:nf,:)/p_fv(:nf,:nf,:), (/ncol,nlev/))
 
        do qi = 1,qsize
           call gfr_g2f_mixing_ratio(gfr, ie, elem(ie)%metdet, dp, dp_fv, &
@@ -316,6 +319,7 @@ contains
     ! dt is not used; if it is not, then q is Qdp tendency, and dt
     ! must be the correct physics time step.
 
+    use element_ops, only: get_field
     use dimensions_mod, only: nlev
     use hybvcoord_mod, only: hvcoord_t
     use physical_constants, only: p0, kappa
@@ -348,7 +352,7 @@ contains
        call gfr_f2g_vector(gfr, ie, elem, &
             wr1, wr2, elem(ie)%derived%FM(:,:,1,:), elem(ie)%derived%FM(:,:,2,:))
 
-       call calc_p(hvcoord, elem(ie)%state%ps_v(:,:,nt), p)
+       call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
        wr1(:nf,:nf,:) = reshape(T(:ncol,:,ie), (/nf,nf,nlev/))
        wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p_fv(:nf,:nf,:)/p0)**kappa
@@ -649,23 +653,6 @@ contains
 
     deallocate(gll%points, gll%weights)
   end subroutine gll_cleanup
-
-  subroutine calc_p(hvcoord, ps, p)
-    ! Compute hydrostatic p using dp3d.
-
-    use hybvcoord_mod, only: hvcoord_t
-    use dimensions_mod, only: nlev
-
-    type (hvcoord_t), intent(in) :: hvcoord
-    real(kind=real_kind), intent(in) :: ps(:,:)
-    real(kind=real_kind), intent(out) :: p(:,:,:)
-
-    integer :: k
-
-    do k = 1,nlev
-       p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps
-    end do
-  end subroutine calc_p
 
   subroutine eval_lagrange_bases(gll, np, x, y)
     ! Evaluate the GLL basis functions at x in [-1,1], writing the
@@ -1559,6 +1546,7 @@ contains
   subroutine gfr_pg1_reconstruct_hybrid(hybrid, nt, dt, hvcoord, elem, nets, nete)
     ! pg1 reconstruction routine for tendencies and states.
 
+    use element_ops, only: get_field
     use dimensions_mod, only: nlev, qsize
     use hybvcoord_mod, only: hvcoord_t
     use physical_constants, only: p0, kappa
@@ -1583,7 +1571,7 @@ contains
     do ie = nets,nete
        dp = elem(ie)%state%dp3d(:,:,:,nt)
 
-       call calc_p(hvcoord, elem(ie)%state%ps_v(:,:,nt), p)
+       call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        wr1 = (p/p0)**kappa
        elem(ie)%derived%FT = elem(ie)%derived%FT*wr1
        call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, dp, &
