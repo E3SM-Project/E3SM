@@ -21,9 +21,9 @@
 	branch = develop
 [submodule "externals/scorpio"]
 	path = externals/scorpio
-	url = https://github.com/E3SM-Project/scorpio
+	url = git@github.com:E3SM-Project/scorpio.git
 	branch = master
 [submodule "externals/scorpio_classic"]
 	path = externals/scorpio_classic
-	url = https://github.com/E3SM-Project/scorpio
+	url = git@github.com:E3SM-Project/scorpio.git
 	branch = scorpio_classic
