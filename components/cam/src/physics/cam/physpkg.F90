@@ -2674,10 +2674,10 @@ end if
        ifalst   = pbuf_get_index('ALST')
        call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
        call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
-       write(tmpname,"(A15)") "alsto_bf_macmic"
-       ifalst   = pbuf_get_index('ALSTO')
-       call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-       call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk) 
+       !write(tmpname,"(A15)") "alsto_bf_macmic"
+       !ifalst   = pbuf_get_index('ALSTO')
+       !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+       !call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk) 
 
        do macmic_it = 1, cld_macmic_num_steps
 
@@ -2807,9 +2807,9 @@ end if
            call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
            call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
            write(tmpname,"(A17,I2.2)") "alsto_bf_micaero_", macmic_it
-           ifalst   = pbuf_get_index('ALSTO')
-           call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-           call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk) 
+           !ifalst   = pbuf_get_index('ALSTO')
+           !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+           call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk) 
 
         end if
 
@@ -2864,9 +2864,9 @@ end if
             call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
             call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
             write(tmpname,"(A17,I2.2)") "alsto_af_micaero_", macmic_it
-            ifalst   = pbuf_get_index('ALSTO')
-            call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-            call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
+            !ifalst   = pbuf_get_index('ALSTO')
+            !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+            call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)
 
           end if          
 
@@ -2958,9 +2958,9 @@ end if
             call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
             call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
             write(tmpname,"(A17,I2.2)") "alsto_af_mg2tend_", macmic_it
-            ifalst   = pbuf_get_index('ALSTO')
-            call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-            call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
+            !ifalst   = pbuf_get_index('ALSTO')
+            !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+            call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)
 
           end if
 
@@ -2982,9 +2982,9 @@ end if
       call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
       call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
       write(tmpname,"(A15)") "alsto_af_macmic"
-      ifalst   = pbuf_get_index('ALSTO')
-      call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-      call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)     
+      !ifalst   = pbuf_get_index('ALSTO')
+      !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+      call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)     
 
 if (l_tracer_aero) then
 
@@ -3323,13 +3323,13 @@ subroutine add_fld_extra_macmic_calls ()
 
   implicit none
   !Add all existing ptend names for the addfld calls
-  character(len=17), parameter :: vlist(28) = (/ 'npccn_bf_micaero ','npccn_af_micaero ','npccn_af_mg2tend ',&
+  character(len=17), parameter :: vlist(26) = (/ 'npccn_bf_micaero ','npccn_af_micaero ','npccn_af_mg2tend ',&
          'numliq_bf_micaero','numliq_af_micaero','numliq_af_mg2tend','cldliq_bf_micaero','cldliq_af_micaero',&
          'cldliq_af_mg2tend','numliq_bf_reg    ','numliq_af_reg    ','numliq_bf_mix    ','numliq_af_mix    ',&
          'nsource_af_reg   ','nsource_bf_mix   ','nsource_af_mix   ','cldfrc_new       ','cldfrc_old       ',&
          'wtke             ','wtke_cen         ','alstn_bf_micaero ','alstn_af_micaero ','alstn_af_mg2tend ',&
-         'alsto_bf_micaero ','alsto_af_micaero ','alsto_af_mg2tend ','lcldn            ','lcldo            '/)
-  character(len=14), parameter :: vlist2(2) = (/ 'alstn_af_macmic'  ,'alsto_bf_macmic'/)  !no substepping variable
+         'alsto_bf_micaero ','alsto_af_micaero ','alsto_af_mg2tend '/)
+  character(len=15), parameter :: vlist2(4) = (/ 'alstn_af_macmic'  ,'alstn_bf_macmic', 'alsto_af_macmic'  ,'alsto_bf_macmic'/)  !no substepping variable
   character(len=17), parameter :: vlist3(2) = (/ 'factnum_mam      ','raerosol_tot_mam '/) !aerosol-related variables
 
   character(len=fieldname_len) :: varname, substep, modal

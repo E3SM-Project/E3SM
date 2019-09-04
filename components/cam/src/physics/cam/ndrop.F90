@@ -532,6 +532,7 @@ subroutine dropmixnuc( &
 
    factnum = 0._r8
    wtke    = 0._r8
+   raerfld = 0._r8
 
    if (prog_modal_aero) then
       ! aerosol tendencies
@@ -702,6 +703,8 @@ subroutine dropmixnuc( &
             do m = 1, ntot_amode
                mm = mam_idx(m,0)
                dact   = dumc*fn(m)*raer(mm)%fld(i,k) ! interstitial only
+               raerfld(i,k,m) = raer(mm)%fld(i,k)
+
                qcld(k) = qcld(k) + dact
                nsource(i,k) = nsource(i,k) + dact*dtinv
                raercol_cw(k,mm,nsav) = raercol_cw(k,mm,nsav) + dact  ! cloud-borne aerosol

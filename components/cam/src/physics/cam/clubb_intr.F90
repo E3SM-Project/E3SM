@@ -153,7 +153,7 @@ module clubb_intr
     concld_idx, &       ! Convective cloud fraction
     ast_idx, &          ! Stratiform cloud fraction
     alst_idx, &         ! Liquid stratiform cloud fraction
-    alsto_idx, &        ! Liquid stratiform cloud fraction
+   !alsto_idx, &        ! Liquid stratiform cloud fraction
     aist_idx, &         ! Ice stratiform cloud fraction
     qlst_idx, &         ! Physical in-cloud LWC
     qist_idx, &         ! Physical in-cloud IWC
@@ -261,7 +261,7 @@ module clubb_intr
     call pbuf_add_field('AST',        'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    ast_idx)
     call pbuf_add_field('AIST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    aist_idx)
     call pbuf_add_field('ALST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    alst_idx)
-    call pbuf_add_field('ALSTO',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    alsto_idx)    
+   !call pbuf_add_field('ALSTO',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    alsto_idx)    
     call pbuf_add_field('QIST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    qist_idx)
     call pbuf_add_field('QLST',       'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    qlst_idx)
     call pbuf_add_field('CONCLD',     'global', dtype_r8, (/pcols,pver,dyn_time_lvls/),    concld_idx)
@@ -617,7 +617,7 @@ end subroutine clubb_init_cnst
     concld_idx  = pbuf_get_index('CONCLD')      ! Convective cloud cover
     ast_idx     = pbuf_get_index('AST')         ! Stratiform cloud fraction
     alst_idx    = pbuf_get_index('ALST')        ! Liquid stratiform cloud fraction
-    alsto_idx   = pbuf_get_index('ALSTO')        ! Liquid stratiform cloud fraction
+    !alsto_idx   = pbuf_get_index('ALSTO')        ! Liquid stratiform cloud fraction
     aist_idx    = pbuf_get_index('AIST')        ! Ice stratiform cloud fraction
     qlst_idx    = pbuf_get_index('QLST')        ! Physical in-stratus LWC 
     qist_idx    = pbuf_get_index('QIST')        ! Physical in-stratus IWC
@@ -1209,7 +1209,7 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: concld   ! convective cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: ast      ! stratiform cloud fraction                    [fraction]
    real(r8), pointer, dimension(:,:) :: alst     ! liquid stratiform cloud fraction             [fraction]
-   real(r8), pointer, dimension(:,:) :: alstx    ! liquid stratiform cloud fraction alsto       [fraction]
+  !real(r8), pointer, dimension(:,:) :: alstx    ! liquid stratiform cloud fraction alsto       [fraction]
    real(r8), pointer, dimension(:,:) :: aist     ! ice stratiform cloud fraction                [fraction]
    real(r8), pointer, dimension(:,:) :: qlst     ! Physical in-stratus LWC                      [kg/kg]
    real(r8), pointer, dimension(:,:) :: qist     ! Physical in-stratus IWC                      [kg/kg]
@@ -1324,7 +1324,7 @@ end subroutine clubb_init_cnst
    call pbuf_get_field(pbuf, concld_idx,  concld,  start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, ast_idx,     ast,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, alst_idx,    alst,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-   call pbuf_get_field(pbuf, alsto_idx,   alstx,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+  !call pbuf_get_field(pbuf, alsto_idx,   alstx,   start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, aist_idx,    aist,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, qlst_idx,    qlst,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
    call pbuf_get_field(pbuf, qist_idx,    qist,    start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
@@ -2350,10 +2350,10 @@ end subroutine clubb_init_cnst
       if(is_first_step()) alst_o(:ncol,:pver) = alst(:ncol,:pver)
    endif
    !HW
-   ! SZhang: output old alst to pbuf
-     alstx(:,:) = 0.0_r8
-     alstx(:ncol,:pver) = alst_o(:ncol,:pver)
-   !SZhang
+   !! SZhang: output old alst to pbuf
+   !  alstx(:,:) = 0.0_r8
+   !  alstx(:ncol,:pver) = alst_o(:ncol,:pver)
+   !!SZhang
 
    ! --------------------------------------------------------------------------------- !  
    !  THIS PART COMPUTES CONVECTIVE AND DEEP CONVECTIVE CLOUD FRACTION                 !
