@@ -1,4 +1,5 @@
 #include "p3_f90.hpp"
+#include "p3_functions_f90.hpp"
 #include "p3_constants.hpp"
 #include "p3_ic_cases.hpp"
 
@@ -12,6 +13,7 @@ extern "C" {
                  Real MWH2O, Real MWdry, Real gravit, Real LatVap, Real LatIce, 
                  Real CpLiq, Real Tmelt, Real Pi, Int iulog, bool masterproc);
   void p3_init_c(const char** lookup_file_dir, int* info);
+  void p3_use_cxx_c(bool use_cxx);
   void p3_main_c(Real* qc, Real* nc, Real* qr, Real* nr, Real* th,
                  Real* qv, Real dt, Real* qitot, Real* qirim,
                  Real* nitot, Real* birim, Real* pres,
@@ -124,12 +126,17 @@ void micro_p3_utils_init () {
                  c::CpLiq, c::Tmelt, c::Pi, c::iulog, c::masterproc);
 }
 
-void p3_init () {
-  micro_p3_utils_init();
-  static const char* dir = ".";
-  Int info;
-  p3_init_c(&dir, &info);
-  scream_require_msg(info == 0, "p3_init_c returned info " << info);
+void p3_init (bool use_fortran) {
+  static bool is_init = false;
+  if (!is_init) {
+    micro_p3_utils_init();
+    static const char* dir = ".";
+    Int info;
+    p3_init_c(&dir, &info);
+    scream_require_msg(info == 0, "p3_init_c returned info " << info);
+    is_init = true;
+  }
+  p3_use_cxx_c(!use_fortran);
 }
 
 void p3_main (const FortranData& d) {
@@ -154,15 +161,17 @@ int test_FortranData () {
   return 0;
 }
 
-int test_p3_init () {
-  p3_init();
+int test_p3_init (bool use_fortran) {
+  p3_init(use_fortran);
+  P3GlobalForFortran::deinit();
   return 0;
 }
 
-int test_p3_ic () {
+int test_p3_ic (bool use_fortran) {
   const auto d = ic::Factory::create(ic::Factory::mixed);
   p3_init();
   p3_main(*d);
+  P3GlobalForFortran::deinit();
   return 0;
 }
 

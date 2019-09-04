@@ -38,7 +38,7 @@
 module micro_p3
 
    ! get real kind from utils
-   use micro_p3_utils, only: rtype
+   use micro_p3_utils, only: rtype,rtype8
 
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,rhow,kr,kc,aimm,mi0,nccnst,  &
@@ -57,27 +57,22 @@ module micro_p3
 
   public  :: p3_init,p3_main
 
-  private :: polysvp1,find_lookupTable_indices_1a,find_lookupTable_indices_1b, &
-       find_lookupTable_indices_3,get_cloud_dsd2, &
-       get_rain_dsd2,calc_bulkRhoRime,impose_max_total_Ni,check_values,qv_sat, & 
-       ice_cldliq_collection, ice_rain_collection, ice_self_collection, & 
-       ice_melting, ice_cldliq_wet_growth, calc_ice_relaxation_timescale, & 
-       calc_rime_density, cldliq_immersion_freezing, rain_immersion_freezing
+  logical :: use_cxx = .true.
 
- 
+  ! protected items should be treated as private for everyone except tests
 
-  real(rtype),private :: e0
+  real(rtype),protected :: e0
 
-  real(rtype), private, dimension(densize,rimsize,isize,tabsize) :: itab   !ice lookup table values
+  real(rtype), protected, dimension(densize,rimsize,isize,tabsize) :: itab   !ice lookup table values
 
   !ice lookup table values for ice-rain collision/collection
-  double precision, private, dimension(densize,rimsize,isize,rcollsize,colltabsize)    :: itabcoll
+  real(rtype), protected, dimension(densize,rimsize,isize,rcollsize,colltabsize) :: itabcoll
 
   ! lookup table values for rain shape parameter mu_r
-  real(rtype), private, dimension(150) :: mu_r_table
+  real(rtype), protected, dimension(150) :: mu_r_table
 
   ! lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
-  real(rtype), private, dimension(300,10) :: vn_table,vm_table,revap_table
+  real(rtype), protected, dimension(300,10) :: vn_table,vm_table,revap_table
 contains
 
   !==================================================================================================!
@@ -114,7 +109,13 @@ contains
     character(len=1024)           :: lookup_file_1         !lookup table, maini
     character(len=1024)           :: version_header_table_1             !version number read from header, table 1
     integer                       :: i,j,ii,jj
-    real(rtype)                   :: dum
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    real(rtype8)                  :: dum,dumk1,dumk2
+    real(rtype8), dimension(12)   :: dumk
+#else
+    real(rtype)                   :: dum,dumk1,dumk2
+    real(rtype), dimension(12)    :: dumk
+#endif
     integer                       :: dumi
     character(len=1024)           :: dumstr
 
@@ -124,7 +125,6 @@ contains
 
     !------------------------------------------------------------------------------------------!
 
-    
     ! saturation pressure at T = 0 C
     e0    = polysvp1(zerodegc,0)
 
@@ -153,19 +153,17 @@ contains
     do jj = 1,densize
        do ii = 1,rimsize
           do i = 1,isize
-             read(10,*) dumi,dumi,dum,dum,itab(jj,ii,i,1),itab(jj,ii,i,2),           &
-                  itab(jj,ii,i,3),itab(jj,ii,i,4),itab(jj,ii,i,5),                 &
-                  itab(jj,ii,i,6),itab(jj,ii,i,7),itab(jj,ii,i,8),dum,             &
-                  itab(jj,ii,i,9),itab(jj,ii,i,10),itab(jj,ii,i,11),               &
-                  itab(jj,ii,i,12)
+             read(10,*) dumi,dumi,dum,dum,dumk(1),dumk(2),           &
+                  dumk(3),dumk(4),dumk(5),dumk(6),dumk(7),dumk(8),dum,                 &
+                  dumk(9),dumk(10),dumk(11),dumk(12)
+             itab(jj,ii,i,:) = dumk(:)
           enddo
           ! read in table for ice-rain collection
           do i = 1,isize
              do j = 1,rcollsize
-                read(10,*) dumi,dumi,dum,dum,dum,itabcoll(jj,ii,i,j,1),              &
-                     itabcoll(jj,ii,i,j,2),dum
-                itabcoll(jj,ii,i,j,1) = dlog10(itabcoll(jj,ii,i,j,1))
-                itabcoll(jj,ii,i,j,2) = dlog10(itabcoll(jj,ii,i,j,2))
+                read(10,*) dumi,dumi,dum,dum,dum,dumk1,dumk2,dum
+                itabcoll(jj,ii,i,j,1) = dlog10(dumk1)
+                itabcoll(jj,ii,i,j,2) = dlog10(dumk2)
              enddo
           enddo
        enddo
@@ -182,7 +180,7 @@ contains
   END SUBROUTINE p3_init_a
 
   subroutine p3_get_tables(mu_r_user, revap_user, vn_user, vm_user)
-    ! This can be called instead of p3_init_b.
+    ! This can be called after p3_init_b.
     implicit none
     real(rtype), dimension(150), intent(out) :: mu_r_user
     real(rtype), dimension(300,10), intent(out) :: vn_user, vm_user, revap_user
@@ -418,7 +416,7 @@ contains
 
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: icldm, lcldm, rcldm ! Ice, Liquid and Rain cloud fraction
     ! AaronDonahue, the following variable (p3_tend_out) is a catch-all for passing P3-specific variables outside of p3_main
-    ! so that they can be written as ouput.  NOTE TO C++ PORT: This variable is entirely optional and doesn't need to be 
+    ! so that they can be written as ouput.  NOTE TO C++ PORT: This variable is entirely optional and doesn't need to be
     ! included in the port to C++, or can be changed if desired.
     real(rtype), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out ! micro physics tendencies
     !----- Local variables and parameters:  -------------------------------------------------!
@@ -455,8 +453,8 @@ contains
 ! that there is no condensation of rain. Thus qccon, qrcon and qcevp have
 ! been removed from the original P3-WRF for P3-SCREAM.
 !    real(rtype) :: qrcon   ! rain condensation   (Not in paper?)
-!    real(rtype) :: qccon   ! cloud droplet condensation   
-!    real(rtype) :: qcevp   ! cloud droplet evaporation 
+!    real(rtype) :: qccon   ! cloud droplet condensation
+!    real(rtype) :: qcevp   ! cloud droplet evaporation
 
     ! ice-phase microphysical process rates:
     !  (all Q process rates in kg kg-1 s-1)
@@ -484,7 +482,7 @@ contains
     real(rtype) :: rhorime_c ! density of rime (from cloud)
     real(rtype) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
     real(rtype) :: qiberg    ! Bergeron process
-   
+
     logical   :: log_wetgrowth
 
     real(rtype) :: epsi
@@ -521,7 +519,7 @@ contains
     ! file.
 
     real(rtype)    :: f1pr02   ! mass-weighted fallspeed              See lines  731 -  808  ums
-    real(rtype)    :: f1pr03   ! ice collection within a category     See lines  809 -  928  nagg 
+    real(rtype)    :: f1pr03   ! ice collection within a category     See lines  809 -  928  nagg
     real(rtype)    :: f1pr04   ! collection of cloud water by ice     See lines  929 - 1009  nrwat
     real(rtype)    :: f1pr05   ! melting                              See lines 1212 - 1279  vdep
     real(rtype)    :: f1pr06   ! effective radius                     See lines 1281 - 1356  eff
@@ -531,7 +529,7 @@ contains
     real(rtype)    :: f1pr10   ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
     real(rtype)    :: f1pr13   ! reflectivity                         See lines  731 -  808  refl
     real(rtype)    :: f1pr14   ! melting (ventilation term)           See lines 1212 - 1279  vdep1
-    real(rtype)    :: f1pr15   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm 
+    real(rtype)    :: f1pr15   ! mass-weighted mean diameter          See lines 1212 - 1279  dmm
     real(rtype)    :: f1pr16   ! mass-weighted mean particle density  See lines 1212 - 1279  rhomm
 
 
@@ -600,7 +598,7 @@ contains
 
        if (debug_ON) call check_values(qv,T,i,it,debug_ABORT,100)
 
-       
+
        log_hydrometeorsPresent = .false.
        log_nucleationPossible  = .false.
 
@@ -679,14 +677,14 @@ contains
           t(i,k) = th(i,k) * inv_exner(i,k)
 
 
-         !Activaiton of cloud droplets 
-          if (log_predictNc) then 
+         !Activaiton of cloud droplets
+          if (log_predictNc) then
              nc(i,k) = nc(i,k) + npccn(i,k) * dt
-          endif 
+          endif
 
           call calculate_incloud_mixingratios(qc(i,k),qr(i,k),qitot(i,k),qirim(i,k),nc(i,k),nr(i,k),nitot(i,k),birim(i,k), &
                   inv_lcldm(i,k),inv_icldm(i,k),inv_rcldm(i,k), &
-                  qc_incld(i,k),qr_incld(i,k),qitot_incld(i,k),qirim_incld(i,k),nc_incld(i,k),nr_incld(i,k),nitot_incld(i,k),birim_incld(i,k)) 
+                  qc_incld(i,k),qr_incld(i,k),qitot_incld(i,k),qirim_incld(i,k),nc_incld(i,k),nr_incld(i,k),nitot_incld(i,k),birim_incld(i,k))
           !===
 
 
@@ -695,7 +693,7 @@ contains
        if (debug_ON) then
           tmparr1(i,:) = th(i,:)*inv_exner(i,:)!(pres(i,:)*1.e-5)**(rd*inv_cp)
           call check_values(qv,tmparr1,i,it,debug_ABORT,200)
-          
+
        endif
 
        !jump to end of i-loop if log_nucleationPossible=.false.  (i.e. skip everything)
@@ -734,16 +732,16 @@ contains
           ncheti  = 0._rtype;     nrcol   = 0._rtype;     nislf   = 0._rtype
           ninuc   = 0._rtype;     qidep   = 0._rtype;     qiberg  = 0._rtype
           nrheti  = 0._rtype;     nisub   = 0._rtype;     qwgrth  = 0._rtype
- 
+
           ! initialize microphysics processes tendency output
-          p3_tend_out(i,k,42) = qc(i,k)    ! Liq. microphysics tendency, initialize 
-          p3_tend_out(i,k,43) = nc(i,k)    ! Liq. # microphysics tendency, initialize 
-          p3_tend_out(i,k,44) = qr(i,k)    ! Rain microphysics tendency, initialize 
-          p3_tend_out(i,k,45) = nr(i,k)    ! Rain # microphysics tendency, initialize 
-          p3_tend_out(i,k,46) = qitot(i,k) ! Ice  microphysics tendency, initialize 
-          p3_tend_out(i,k,47) = nitot(i,k) ! Ice  # microphysics tendency, initialize 
-          p3_tend_out(i,k,48) = qv(i,k)    ! Vapor  microphysics tendency, initialize 
-          p3_tend_out(i,k,49) = th(i,k)    ! Pot. Temp. microphysics tendency, initialize 
+          p3_tend_out(i,k,42) = qc(i,k)    ! Liq. microphysics tendency, initialize
+          p3_tend_out(i,k,43) = nc(i,k)    ! Liq. # microphysics tendency, initialize
+          p3_tend_out(i,k,44) = qr(i,k)    ! Rain microphysics tendency, initialize
+          p3_tend_out(i,k,45) = nr(i,k)    ! Rain # microphysics tendency, initialize
+          p3_tend_out(i,k,46) = qitot(i,k) ! Ice  microphysics tendency, initialize
+          p3_tend_out(i,k,47) = nitot(i,k) ! Ice  # microphysics tendency, initialize
+          p3_tend_out(i,k,48) = qv(i,k)    ! Vapor  microphysics tendency, initialize
+          p3_tend_out(i,k,49) = th(i,k)    ! Pot. Temp. microphysics tendency, initialize
 
           log_wetgrowth = .false.
 
@@ -836,7 +834,7 @@ contains
           !PMC nCat deleted lots of stuff here.
 
           !.............................................
-          ! self-collection of ice 
+          ! self-collection of ice
           call ice_self_collection(rho(i,k),rhofaci(i,k),&
           f1pr03,eii,qirim_incld(i,k),qitot_incld(i,k),nitot_incld(i,k),&
                nislf)
@@ -854,7 +852,7 @@ contains
           f1pr05,f1pr14,xxlv(i,k),xlf(i,k),dv,kap,mu,sc,&
           qv(i,k),qc_incld(i,k),qitot_incld(i,k),nitot_incld(i,k),qr_incld(i,k),log_wetgrowth,&
                qrcol,qccol,qwgrth,nrshdr,qcshd)
-         
+
           !-----------------------------
           ! calcualte total inverse ice relaxation timescale combined for all ice categories
           ! note 'f1pr' values are normalized, so we need to multiply by N
@@ -894,8 +892,8 @@ contains
           ! calculate rain evaporation including ventilation
           call calc_liq_relaxation_timescale(rho(i,k),f1r,f2r,     &
           dv,mu,sc,mu_r(i,k),lamr(i,k),cdistr(i,k),cdist(i,k),qr_incld(i,k),qc_incld(i,k), &
-          epsr,epsc) 
- 
+          epsr,epsc)
+
           call evaporate_sublimate_precip(qr_incld(i,k),qc_incld(i,k),nr_incld(i,k),qitot_incld(i,k), &
           lcldm(i,k),rcldm(i,k),qvs(i,k),ab,epsr,qv(i,k), &
           qrevp,nrevp)
@@ -908,47 +906,47 @@ contains
 
           !................................................................
           ! deposition/condensation-freezing nucleation
-          call ice_nucleation(t(i,k),inv_rho(i,k),& 
-            nitot(i,k),naai(i,k),supi(i,k),odt,log_predictNc,& 
+          call ice_nucleation(t(i,k),inv_rho(i,k),&
+            nitot(i,k),naai(i,k),supi(i,k),odt,log_predictNc,&
             qinuc, ninuc)
 
           !.................................................................
           ! droplet activation
-          call droplet_activation(t(i,k),pres(i,k),qv(i,k),qc(i,k),inv_rho(i,k),& 
-             sup(i,k),xxlv(i,k),npccn(i,k),log_predictNc,odt,it,& 
+          call droplet_activation(t(i,k),pres(i,k),qv(i,k),qc(i,k),inv_rho(i,k),&
+             sup(i,k),xxlv(i,k),npccn(i,k),log_predictNc,odt,it,&
              qcnuc,ncnuc)
 
           !................
-          ! cloud water autoconversion 
+          ! cloud water autoconversion
           ! NOTE: cloud_water_autoconversion must be called before droplet_self_collection
-          call cloud_water_autoconversion(rho(i,k), inv_rho(i,k),qc_incld(i,k),& 
-            nc_incld(i,k),qr_incld(i,k),mu_c(i,k),nu(i,k),& 
+          call cloud_water_autoconversion(rho(i,k), inv_rho(i,k),qc_incld(i,k),&
+            nc_incld(i,k),qr_incld(i,k),mu_c(i,k),nu(i,k),&
             qcaut,ncautc,ncautr)
 
           !............................
           ! self-collection of droplets
-          call droplet_self_collection(rho(i,k),inv_rho(i,k),qc_incld(i,k),& 
+          call droplet_self_collection(rho(i,k),inv_rho(i,k),qc_incld(i,k),&
             mu_c(i,k),nu(i,k),ncautc,ncslf)
 
           !............................
           ! accretion of cloud by rain
-          call cloud_rain_accretion(rho(i,k),inv_rho(i,k),& 
-            qc_incld(i,k),nc_incld(i,k), qr_incld(i,k),& 
+          call cloud_rain_accretion(rho(i,k),inv_rho(i,k),&
+            qc_incld(i,k),nc_incld(i,k), qr_incld(i,k),&
             qcacc, ncacc)
 
           !.....................................
           ! self-collection and breakup of rain
           ! (breakup following modified Verlinde and Cotton scheme)
-          call rain_self_collection(rho(i,k),qr_incld(i,k),nr_incld(i,k),& 
+          call rain_self_collection(rho(i,k),qr_incld(i,k),nr_incld(i,k),&
             nrslf)
 
           ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
           ! cell-average quantities.
-          call back_to_cell_average(lcldm(i,k), rcldm(i,k), icldm(i,k), qcacc, qrevp, qcaut,& 
-            ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti,& 
-            qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,& 
+          call back_to_cell_average(lcldm(i,k), rcldm(i,k), icldm(i,k), qcacc, qrevp, qcaut,&
+            ncacc, ncslf, ncautc, nrslf, nrevp, ncautr, qcnuc, ncnuc, qisub, nrshdr, qcheti,&
+            qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf,&
             qidep, nrheti, nisub, qinuc, ninuc, qiberg)
-          
+
 
           !.................................................................
           ! conservation of water
@@ -969,10 +967,10 @@ contains
           ! then the answer appears to be YES.  There is a similar check in MG
           ! microphysics which limits qidep and qinuc, but does not limit qisub.
           ! So similar but slightly different.  The overall answer would be that
-          ! qidep does need some limit.  The next questions are, 
-          !   1) Should we be taking qinuc into consideration too? 
+          ! qidep does need some limit.  The next questions are,
+          !   1) Should we be taking qinuc into consideration too?
           !   2) Is MG correct in NOT limiting qisub?
-         
+
           call prevent_ice_overdepletion(pres(i,k), t(i,k), qv(i,k), xxls(i,k), odt, qidep, qisub)
 
           ! vapor -- not needed, since all sinks already have limits imposed and the sum, therefore,
@@ -992,11 +990,11 @@ contains
           !---------------------------------------------------------------------------------
 
           !-- ice-phase dependent processes:
-          call update_prognostic_ice(qcheti, qccol, qcshd, & 
-            nccol, ncheti, ncshdc, & 
-            qrcol, nrcol,  qrheti, nrheti, nrshdr, & 
-            qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, & 
-            exner(i,k), xxls(i,k), xlf(i,k), & 
+          call update_prognostic_ice(qcheti, qccol, qcshd, &
+            nccol, ncheti, ncshdc, &
+            qrcol, nrcol,  qrheti, nrheti, nrshdr, &
+            qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, &
+            exner(i,k), xxls(i,k), xlf(i,k), &
             log_predictNc, log_wetgrowth, dt, nmltratio, rhorime_c, &
             th(i,k), qv(i,k), qitot(i,k), nitot(i,k), qirim(i,k), birim(i,k), qc(i,k), nc(i,k), qr(i,k), nr(i,k) )
 
@@ -1008,14 +1006,14 @@ contains
 
           !==
           ! AaronDonahue - Add extra variables needed from microphysics by E3SM:
-          cmeiout(i,k) = qidep - qisub + qinuc 
+          cmeiout(i,k) = qidep - qisub + qinuc
           prain(i,k)   = ( qcacc + qcaut + qcshd + qccol )
           nevapr(i,k)  = qisub + qrevp
           prer_evap(i,k) = qrevp
           vap_ice_exchange(i,k) = qidep - qisub + qinuc
-          vap_liq_exchange(i,k) = -qrevp + qcnuc       
-          liq_ice_exchange(i,k) = qcheti + qrheti - qimlt + qiberg + qccol + qrcol   
-          vap_cld_exchange(i,k) = qcnuc 
+          vap_liq_exchange(i,k) = -qrevp + qcnuc
+          liq_ice_exchange(i,k) = qcheti + qrheti - qimlt + qiberg + qccol + qrcol
+          vap_cld_exchange(i,k) = qcnuc
           ! clipping for small hydrometeor values
           if (qc(i,k).lt.qsmall) then
              qv(i,k) = qv(i,k) + qc(i,k)
@@ -1082,25 +1080,25 @@ contains
           p3_tend_out(i,k,32) = nrshdr    ! source for rain number from collision of rain/ice above freezing and shedding
           p3_tend_out(i,k,33) = qcshd     ! source for rain mass due to cloud water/ice collision above freezing and shedding or wet growth and shedding
           p3_tend_out(i,k,34) = 0._rtype  ! used to be qcmul, but that has been removed.  Kept at 0.0 as placeholder.
-          p3_tend_out(i,k,35) = ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper) 
+          p3_tend_out(i,k,35) = ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
           ! measure microphysics processes tendency output
-          p3_tend_out(i,k,42) = ( qc(i,k)    - p3_tend_out(i,k,42) ) * odt ! Liq. microphysics tendency, measure 
-          p3_tend_out(i,k,43) = ( nc(i,k)    - p3_tend_out(i,k,43) ) * odt ! Liq. # microphysics tendency, measure 
-          p3_tend_out(i,k,44) = ( qr(i,k)    - p3_tend_out(i,k,44) ) * odt ! Rain microphysics tendency, measure 
-          p3_tend_out(i,k,45) = ( nr(i,k)    - p3_tend_out(i,k,45) ) * odt ! Rain # microphysics tendency, measure 
-          p3_tend_out(i,k,46) = ( qitot(i,k) - p3_tend_out(i,k,46) ) * odt ! Ice  microphysics tendency, measure 
-          p3_tend_out(i,k,47) = ( nitot(i,k) - p3_tend_out(i,k,47) ) * odt ! Ice  # microphysics tendency, measure 
-          p3_tend_out(i,k,48) = ( qv(i,k)    - p3_tend_out(i,k,48) ) * odt ! Vapor  microphysics tendency, measure 
-          p3_tend_out(i,k,49) = ( th(i,k)    - p3_tend_out(i,k,49) ) * odt ! Pot. Temp. microphysics tendency, measure 
+          p3_tend_out(i,k,42) = ( qc(i,k)    - p3_tend_out(i,k,42) ) * odt ! Liq. microphysics tendency, measure
+          p3_tend_out(i,k,43) = ( nc(i,k)    - p3_tend_out(i,k,43) ) * odt ! Liq. # microphysics tendency, measure
+          p3_tend_out(i,k,44) = ( qr(i,k)    - p3_tend_out(i,k,44) ) * odt ! Rain microphysics tendency, measure
+          p3_tend_out(i,k,45) = ( nr(i,k)    - p3_tend_out(i,k,45) ) * odt ! Rain # microphysics tendency, measure
+          p3_tend_out(i,k,46) = ( qitot(i,k) - p3_tend_out(i,k,46) ) * odt ! Ice  microphysics tendency, measure
+          p3_tend_out(i,k,47) = ( nitot(i,k) - p3_tend_out(i,k,47) ) * odt ! Ice  # microphysics tendency, measure
+          p3_tend_out(i,k,48) = ( qv(i,k)    - p3_tend_out(i,k,48) ) * odt ! Vapor  microphysics tendency, measure
+          p3_tend_out(i,k,49) = ( th(i,k)    - p3_tend_out(i,k,49) ) * odt ! Pot. Temp. microphysics tendency, measure
           ! Outputs associated with aerocom comparison:
           pratot(i,k) = qcacc ! cloud drop accretion by rain
-          prctot(i,k) = qcaut ! cloud drop autoconversion to rain 
+          prctot(i,k) = qcaut ! cloud drop autoconversion to rain
           !---------------------------------------------------------------------------------
 
           ! Recalculate in-cloud values for sedimentation
           call calculate_incloud_mixingratios(qc(i,k),qr(i,k),qitot(i,k),qirim(i,k),nc(i,k),nr(i,k),nitot(i,k),birim(i,k), &
                   inv_lcldm(i,k),inv_icldm(i,k),inv_rcldm(i,k), &
-                  qc_incld(i,k),qr_incld(i,k),qitot_incld(i,k),qirim_incld(i,k),nc_incld(i,k),nr_incld(i,k),nitot_incld(i,k),birim_incld(i,k)) 
+                  qc_incld(i,k),qr_incld(i,k),qitot_incld(i,k),qirim_incld(i,k),nc_incld(i,k),nr_incld(i,k),nitot_incld(i,k),birim_incld(i,k))
 
 555       continue
 
@@ -1127,13 +1125,13 @@ contains
 
        !------------------------------------------------------------------------------------------!
        ! Cloud sedimentation:  (adaptive substepping)
-       p3_tend_out(i,:,36) = qc(i,:) ! Liq. sedimentation tendency, initialize 
-       p3_tend_out(i,:,37) = nc(i,:) ! Liq. # sedimentation tendency, initialize 
+       p3_tend_out(i,:,36) = qc(i,:) ! Liq. sedimentation tendency, initialize
+       p3_tend_out(i,:,37) = nc(i,:) ! Liq. # sedimentation tendency, initialize
 
-       call cloud_sedimentation(kts,kte,ktop,kbot,kdir, & 
-         qc_incld(i,:),rho(i,:),inv_rho(i,:),lcldm(i,:),acn(i,:),inv_dzq(i,:), & 
-         dt,odt,dnu,lammin,lammax,log_predictNc, & 
-         qc(i,:),nc(i,:),nc_incld(i,:),mu_c(i,:),lamc(i,:),prt_liq(i),p3_tend_out(i,:,36),p3_tend_out(i,:,37)) 
+       call cloud_sedimentation(kts,kte,ktop,kbot,kdir, &
+         qc_incld(i,:),rho(i,:),inv_rho(i,:),lcldm(i,:),acn(i,:),inv_dzq(i,:), &
+         dt,odt,dnu,lammin,lammax,log_predictNc, &
+         qc(i,:),nc(i,:),nc_incld(i,:),mu_c(i,:),lamc(i,:),prt_liq(i),p3_tend_out(i,:,36),p3_tend_out(i,:,37))
 
        !------------------------------------------------------------------------------------------!
        ! Rain sedimentation:  (adaptive substepping)
@@ -1141,8 +1139,8 @@ contains
        p3_tend_out(i,:,39) = nr(i,:) ! Rain # sedimentation tendency, initialize
 
        call rain_sedimentation(kts,kte,ktop,kbot,kdir, &
-         qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),rcldm(i,:),inv_dzq(i,:),dt,odt, & 
-         qr(i,:),nr(i,:),nr_incld(i,:),mu_r(i,:),lamr(i,:),prt_liq(i),rflx(i,:),p3_tend_out(i,:,38),p3_tend_out(i,:,39)) 
+         qr_incld(i,:),rho(i,:),inv_rho(i,:),rhofacr(i,:),rcldm(i,:),inv_dzq(i,:),dt,odt, &
+         qr(i,:),nr(i,:),nr_incld(i,:),mu_r(i,:),lamr(i,:),prt_liq(i),rflx(i,:),p3_tend_out(i,:,38),p3_tend_out(i,:,39))
 
        !------------------------------------------------------------------------------------------!
        ! Ice sedimentation:  (adaptive substepping)
@@ -1150,15 +1148,15 @@ contains
        p3_tend_out(i,:,41) = nitot(i,:) ! Ice # sedimentation tendency, initialize
 
        call ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
-         rho(i,:),inv_rho(i,:),rhofaci(i,:),icldm(i,:),inv_dzq(i,:),dt,odt, & 
+         rho(i,:),inv_rho(i,:),rhofaci(i,:),icldm(i,:),inv_dzq(i,:),dt,odt, &
          qitot(i,:),qitot_incld(i,:),nitot(i,:),qirim(i,:),qirim_incld(i,:),birim(i,:),birim_incld(i,:),nitot_incld(i,:), &
-         prt_sol(i),p3_tend_out(i,:,40),p3_tend_out(i,:,41))     
+         prt_sol(i),p3_tend_out(i,:,40),p3_tend_out(i,:,41))
 
        !.......................................
        ! homogeneous freezing of cloud and rain
 
-       call homogeneous_freezing(kts,kte,kbot,ktop,kdir,t(i,:),exner(i,:),xlf(i,:),  & 
-         qc(i,:),nc(i,:),qr(i,:),nr(i,:),qitot(i,:),nitot(i,:),qirim(i,:),birim(i,:),th(i,:)) 
+       call homogeneous_freezing(kts,kte,kbot,ktop,kdir,t(i,:),exner(i,:),xlf(i,:),  &
+         qc(i,:),nc(i,:),qr(i,:),nr(i,:),qitot(i,:),nitot(i,:),qirim(i,:),birim(i,:),th(i,:))
 
 
        !...................................................
@@ -1310,15 +1308,24 @@ contains
 
   SUBROUTINE access_lookup_table(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: access_lookup_table_f
+#endif
+
     implicit none
 
     real(rtype)    :: dum1,dum4,dum5,proc,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumi,index
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call access_lookup_table_f(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc)
+       return
+    endif
+#endif
     ! get value at current density index
 
     ! first interpolate for current rimed fraction index
-
     iproc1 = itab(dumjj,dumii,dumi,index)+(dum1-real(dumi))*(itab(dumjj,dumii,       &
          dumi+1,index)-itab(dumjj,dumii,dumi,index))
 
@@ -1345,21 +1352,28 @@ contains
 
     ! get final process rate
     proc   = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
-
-   return
-
+    return
   END SUBROUTINE access_lookup_table
 
   !------------------------------------------------------------------------------------------!
   SUBROUTINE access_lookup_table_coll(dumjj,dumii,dumj,dumi,index,dum1,dum3,          &
        dum4,dum5,proc)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: access_lookup_table_coll_f
+#endif
+
     implicit none
 
     real(rtype)    :: dum1,dum3,dum4,dum5,proc,dproc1,dproc2,iproc1,gproc1,tmp1,tmp2
     integer :: dumjj,dumii,dumj,dumi,index
 
-
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call access_lookup_table_coll_f(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
+       return
+    endif
+#endif
     ! This subroutine interpolates lookup table values for rain/ice collection processes
 
     ! current density index
@@ -1418,8 +1432,7 @@ contains
     ! interpolate over density to get final values
     proc    = tmp1+(dum5-real(dumjj))*(tmp2-tmp1)
 
-   return
-
+    return
   END SUBROUTINE access_lookup_table_coll
 
   !==========================================================================================!
@@ -1515,6 +1528,9 @@ contains
     !------------------------------------------------------------------------------------------!
     ! Finds indices in 3D ice (only) lookup table
     !------------------------------------------------------------------------------------------!
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: find_lookuptable_indices_1a_f
+#endif
 
     implicit none
 
@@ -1524,8 +1540,15 @@ contains
     integer, intent(in)  :: isize,rimsize,densize
     real(rtype),    intent(in)  :: qitot,nitot,qirim,rhop
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call find_lookuptable_indices_1a_f(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
+            qitot,nitot,qirim,rhop)
+       return
+    endif
+#endif
     !------------------------------------------------------------------------------------------!
-
+    
     ! find index for qi (normalized ice mass mixing ratio = qitot/nitot)
     !             dum1 = (log10(qitot)+16.)/0.70757  !orig
     !             dum1 = (log10(qitot)+16.)*1.41328
@@ -1566,8 +1589,7 @@ contains
     dum6  = -99
     dumzz = -99
 
-   return
-
+    return
   end subroutine find_lookupTable_indices_1a
 
   !======================================================================================!
@@ -1577,6 +1599,9 @@ contains
     !------------------------------------------------------------------------------------------!
     ! Finds indices in 3D rain lookup table
     !------------------------------------------------------------------------------------------!
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: find_lookuptable_indices_1b_f
+#endif
 
     implicit none
 
@@ -1590,6 +1615,12 @@ contains
     real(rtype)                 :: dumlr
     real(rtype)                 :: real_rcollsize
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call find_lookupTable_indices_1b_f(dumj,dum3,qr,nr)
+       return
+    endif
+#endif
     !------------------------------------------------------------------------------------------!
     real_rcollsize = real(rcollsize)
     ! find index for scaled mean rain size
@@ -1609,12 +1640,12 @@ contains
        dum3  = 1._rtype
     endif
 
-   return
+    return
 
   end subroutine find_lookupTable_indices_1b
 
   !PMC removed find_lookupTable_indices_2 because it was used for multi-category
-  
+
   !======================================================================================!
   subroutine find_lookupTable_indices_3(dumii,dumjj,dum1,rdumii,rdumjj,inv_dum3,mu_r,lamr)
 
@@ -1966,7 +1997,7 @@ contains
   subroutine ice_cldliq_collection(rho,t,rhofaci,    &
   f1pr04,qitot_incld,qc_incld,nitot_incld,nc_incld,    &
              qccol,nccol,qcshd,ncshdc)
-   
+
    !.......................
    ! collection of droplets
 
@@ -1977,36 +2008,36 @@ contains
    ! note 'f1pr' values are normalized, so we need to multiply by N
 
 
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: rho
-   real(rtype), intent(in) :: t 
-   real(rtype), intent(in) :: rhofaci 
-   real(rtype), intent(in) :: f1pr04  ! collection of cloud water by ice 
-   real(rtype), intent(in) :: qitot_incld 
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: rhofaci
+   real(rtype), intent(in) :: f1pr04  ! collection of cloud water by ice
+   real(rtype), intent(in) :: qitot_incld
    real(rtype), intent(in) :: qc_incld
-   real(rtype), intent(in) :: nitot_incld 
-   real(rtype), intent(in) :: nc_incld 
+   real(rtype), intent(in) :: nitot_incld
+   real(rtype), intent(in) :: nc_incld
 
-   
+
    real(rtype), intent(out) :: qccol
    real(rtype), intent(out) :: nccol
-   real(rtype), intent(out) :: qcshd 
+   real(rtype), intent(out) :: qcshd
    real(rtype), intent(out) :: ncshdc
 
-   if (qitot_incld .ge.qsmall .and. qc_incld .ge.qsmall) then 
+   if (qitot_incld .ge.qsmall .and. qc_incld .ge.qsmall) then
       if  (t .le.zerodegc) then
          qccol = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
          nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
-      else if (t .gt. zerodegc) then 
+      else if (t .gt. zerodegc) then
          ! for T > 273.15, assume cloud water is collected and shed as rain drops
          ! sink for cloud water mass and number, note qcshed is source for rain mass
          qcshd = rhofaci*f1pr04*qc_incld*eci*rho*nitot_incld
          nccol = rhofaci*f1pr04*nc_incld*eci*rho*nitot_incld
          ! source for rain number, assume 1 mm drops are shed
          ncshdc = qcshd*1.923e+6_rtype
-      end if 
-   end if 
+      end if
+   end if
 
    return
 
@@ -2016,7 +2047,7 @@ contains
   subroutine ice_rain_collection(rho,t,rhofaci,    &
   logn0r,f1pr07,f1pr08,qitot_incld,nitot_incld,qr_incld,    &
   qrcol, nrcol)
-   
+
    !....................
    ! collection of rain
 
@@ -2030,22 +2061,22 @@ contains
 
    ! note 'f1pr' values are normalized, so we need to multiply by N
 
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: rho
-   real(rtype), intent(in) :: t 
-   real(rtype), intent(in) :: rhofaci 
-   real(rtype), intent(in) :: logn0r 
-   real(rtype), intent(in) :: f1pr07 !collection of rain number by ice 
-   real(rtype), intent(in) :: f1pr08 !collection of rain mass by ice 
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: rhofaci
+   real(rtype), intent(in) :: logn0r
+   real(rtype), intent(in) :: f1pr07 !collection of rain number by ice
+   real(rtype), intent(in) :: f1pr08 !collection of rain mass by ice
    real(rtype), intent(in) :: qitot_incld
    real(rtype), intent(in) :: nitot_incld
    real(rtype), intent(in) :: qr_incld
 
-   real(rtype), intent(out) :: qrcol 
-   real(rtype), intent(out) :: nrcol 
+   real(rtype), intent(out) :: qrcol
+   real(rtype), intent(out) :: nrcol
 
-   if (qitot_incld.ge.qsmall .and. qr_incld.ge.qsmall) then 
+   if (qitot_incld.ge.qsmall .and. qr_incld.ge.qsmall) then
       if (t.le.zerodegc) then
          ! note: f1pr08 and logn0r are already calculated as log_10
          qrcol = 10._rtype**(f1pr08+logn0r)*rho*rhofaci*eri*nitot_incld
@@ -2057,39 +2088,39 @@ contains
          ! note that melting of ice number is scaled to the loss
          ! rate of ice mass due to melting
          ! collection of rain above freezing does not impact total rain mass
-         nrcol  = 10._rtype**(f1pr07 + logn0r)*rho*rhofaci*eri*nitot_incld     
+         nrcol  = 10._rtype**(f1pr07 + logn0r)*rho*rhofaci*eri*nitot_incld
          ! for now neglect shedding of ice collecting rain above freezing, since snow is
          ! not expected to shed in these conditions (though more hevaily rimed ice would be
-         ! expected to lead to shedding)      
-      endif 
-   endif 
+         ! expected to lead to shedding)
+      endif
+   endif
 
    return
-   
+
   end subroutine ice_rain_collection
 
   subroutine ice_self_collection(rho,rhofaci,    &
   f1pr03,eii,qirim_incld,qitot_incld,nitot_incld,    &
              nislf)
 
-   ! self-collection of ice 
+   ! self-collection of ice
 
    ! here we multiply rates by collection efficiency, air density,
    ! and air density correction factor since these are not included
    ! in the lookup table calculations
    ! note 'f1pr' values are normalized, so we need to multiply by N
 
-   implicit none 
+   implicit none
 
-   real(rtype), intent(in) :: rho 
+   real(rtype), intent(in) :: rho
    real(rtype), intent(in) :: rhofaci
-   real(rtype), intent(in) :: f1pr03 ! ice collection within a category 
-   real(rtype), intent(in) :: eii 
-   real(rtype), intent(in) :: qirim_incld 
+   real(rtype), intent(in) :: f1pr03 ! ice collection within a category
+   real(rtype), intent(in) :: eii
+   real(rtype), intent(in) :: qirim_incld
    real(rtype), intent(in) :: qitot_incld
    real(rtype), intent(in) :: nitot_incld
 
-   real(rtype), intent(out) :: nislf 
+   real(rtype), intent(out) :: nislf
 
    real(rtype) :: tmp1, Eii_fact
 
@@ -2128,25 +2159,25 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
    ! currently enhanced melting from collision is neglected
    ! include RH dependence
 
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: rho
-   real(rtype), intent(in) :: t 
-   real(rtype), intent(in) :: pres 
-   real(rtype), intent(in) :: rhofaci 
-   real(rtype), intent(in) :: f1pr05 ! melting 
-   real(rtype), intent(in) :: f1pr14 ! melting (ventilation term) 
-   real(rtype), intent(in) :: xxlv 
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: pres
+   real(rtype), intent(in) :: rhofaci
+   real(rtype), intent(in) :: f1pr05 ! melting
+   real(rtype), intent(in) :: f1pr14 ! melting (ventilation term)
+   real(rtype), intent(in) :: xxlv
    real(rtype), intent(in) :: xlf
-   real(rtype), intent(in) :: dv 
-   real(rtype), intent(in) :: sc 
-   real(rtype), intent(in) :: mu 
+   real(rtype), intent(in) :: dv
+   real(rtype), intent(in) :: sc
+   real(rtype), intent(in) :: mu
    real(rtype), intent(in) :: kap
-   real(rtype), intent(in) :: qv 
-   real(rtype), intent(in) :: qitot_incld 
-   real(rtype), intent(in) :: nitot_incld 
+   real(rtype), intent(in) :: qv
+   real(rtype), intent(in) :: qitot_incld
+   real(rtype), intent(in) :: nitot_incld
 
-   real(rtype), intent(out) :: qimlt 
+   real(rtype), intent(out) :: qimlt
    real(rtype), intent(out) :: nimlt
 
    real(rtype) :: qsat0
@@ -2160,8 +2191,8 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
 
       qimlt = max(qimlt,0.)
       nimlt = qimlt*(nitot_incld/qitot_incld)
-      
-   endif 
+
+   endif
 
    return
 
@@ -2173,34 +2204,34 @@ f1pr05,f1pr14,xxlv,xlf,dv,kap,mu,sc,    &
 qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
            log_wetgrowth,qrcol,qccol,qwgrth,nrshdr,qcshd)
 
-   implicit none 
+   implicit none
 
-   real(rtype), intent(in) :: rho 
-   real(rtype), intent(in) :: t 
+   real(rtype), intent(in) :: rho
+   real(rtype), intent(in) :: t
    real(rtype), intent(in) :: pres
-   real(rtype), intent(in) :: rhofaci 
-   real(rtype), intent(in) :: f1pr05 ! melting 
+   real(rtype), intent(in) :: rhofaci
+   real(rtype), intent(in) :: f1pr05 ! melting
    real(rtype), intent(in) :: f1pr14 ! melting (ventilation term)
    real(rtype), intent(in) :: xxlv
    real(rtype), intent(in) :: xlf
-   real(rtype), intent(in) :: dv 
-   real(rtype), intent(in) :: kap 
-   real(rtype), intent(in) :: mu 
+   real(rtype), intent(in) :: dv
+   real(rtype), intent(in) :: kap
+   real(rtype), intent(in) :: mu
    real(rtype), intent(in) :: sc
-   real(rtype), intent(in) :: qv 
-   real(rtype), intent(in) :: qc_incld 
+   real(rtype), intent(in) :: qv
+   real(rtype), intent(in) :: qc_incld
    real(rtype), intent(in) :: qitot_incld
-   real(rtype), intent(in) :: nitot_incld  
+   real(rtype), intent(in) :: nitot_incld
    real(rtype), intent(in) :: qr_incld
 
    logical, intent(inout) :: log_wetgrowth
-   real(rtype), intent(inout) :: qrcol 
-   real(rtype), intent(inout) :: qccol 
+   real(rtype), intent(inout) :: qrcol
+   real(rtype), intent(inout) :: qccol
    real(rtype), intent(inout) :: qwgrth
-   real(rtype), intent(inout) :: nrshdr 
-   real(rtype), intent(inout) :: qcshd 
+   real(rtype), intent(inout) :: nrshdr
+   real(rtype), intent(inout) :: qcshd
 
-   real(rtype) :: qsat0, dum, dum1 
+   real(rtype) :: qsat0, dum, dum1
 
 
    if (qitot_incld.ge.qsmall .and. qc_incld+qr_incld.ge.1.e-6_rtype .and. t.lt.zerodegc) then
@@ -2225,11 +2256,11 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
       endif
 
 
-   end if 
+   end if
 
    return
 
-end subroutine ice_cldliq_wet_growth 
+end subroutine ice_cldliq_wet_growth
 
 
 subroutine calc_ice_relaxation_timescale(rho,t,rhofaci,     &
@@ -2240,22 +2271,22 @@ epsi,epsi_tot)
    ! calcualte total inverse ice relaxation timescale combined for all ice categories
    ! note 'f1pr' values are normalized, so we need to multiply by N
 
-   implicit none 
+   implicit none
 
 
-   real(rtype), intent(in) :: rho 
-   real(rtype), intent(in) :: t 
-   real(rtype), intent(in) :: rhofaci 
+   real(rtype), intent(in) :: rho
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: rhofaci
    real(rtype), intent(in) :: f1pr05 ! melting
    real(rtype), intent(in) :: f1pr14 ! melting (ventilation term)
-   real(rtype), intent(in) :: dv 
-   real(rtype), intent(in) :: mu 
-   real(rtype), intent(in) :: sc 
-   real(rtype), intent(in) :: qitot_incld 
-   real(rtype), intent(in) :: nitot_incld 
+   real(rtype), intent(in) :: dv
+   real(rtype), intent(in) :: mu
+   real(rtype), intent(in) :: sc
+   real(rtype), intent(in) :: qitot_incld
+   real(rtype), intent(in) :: nitot_incld
 
    real(rtype), intent(out) :: epsi
-   real(rtype), intent(inout) :: epsi_tot 
+   real(rtype), intent(inout) :: epsi_tot
 
 
 
@@ -2265,7 +2296,7 @@ epsi,epsi_tot)
       epsi_tot   = epsi_tot + epsi
    else
       epsi = 0._rtype
-   endif 
+   endif
 
    return
 
@@ -2274,7 +2305,7 @@ end subroutine calc_ice_relaxation_timescale
 
 subroutine calc_liq_relaxation_timescale(rho,f1r,f2r,     &
 dv,mu,sc,mu_r,lamr,cdistr,cdist,qr_incld,qc_incld, &
-epsr,epsc)  
+epsr,epsc)
 
    implicit none
 
@@ -2305,7 +2336,7 @@ epsr,epsc)
 
       !interoplate value at mu_r+1
       dum2 = revap_table(dumii,dumjj+1)+(rdumii-real(dumii))*                          &
-             (revap_table(dumii+1,dumjj+1)-revap_table(dumii,dumjj+1))    
+             (revap_table(dumii+1,dumjj+1)-revap_table(dumii,dumjj+1))
       !final interpolation
       dum  = dum1+(rdumjj-real(dumjj))*(dum2-dum1)
 
@@ -2328,8 +2359,8 @@ end subroutine calc_liq_relaxation_timescale
 
 subroutine calc_rime_density(t,rhofaci,    &
 f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
-           vtrmi1,rhorime_c) 
-   
+           vtrmi1,rhorime_c)
+
    !.........................
    ! calculate rime density
 
@@ -2344,32 +2375,32 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
    ! Compute rime density: (based on parameterization of Cober and List, 1993 [JAS])
    ! for simplicty use mass-weighted ice and droplet/rain fallspeeds
 
-   implicit none 
+   implicit none
 
-   real(rtype), intent(in) :: t 
-   real(rtype), intent(in) :: rhofaci 
-   real(rtype), intent(in) :: f1pr02 !mass-weighted fallspeed 
-   real(rtype), intent(in) :: acn 
-   real(rtype), intent(in) :: lamc 
-   real(rtype), intent(in) :: mu_c 
-   real(rtype), intent(in) :: qc_incld 
-   real(rtype), intent(in) :: qccol 
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: rhofaci
+   real(rtype), intent(in) :: f1pr02 !mass-weighted fallspeed
+   real(rtype), intent(in) :: acn
+   real(rtype), intent(in) :: lamc
+   real(rtype), intent(in) :: mu_c
+   real(rtype), intent(in) :: qc_incld
+   real(rtype), intent(in) :: qccol
 
-   real(rtype), intent(out) :: vtrmi1 
-   real(rtype), intent(out) :: rhorime_c 
+   real(rtype), intent(out) :: vtrmi1
+   real(rtype), intent(out) :: rhorime_c
 
-   real(rtype) :: iTc = 0.0_rtype 
+   real(rtype) :: iTc = 0.0_rtype
    real(rtype) :: Vt_qc = 0.0_rtype
-   real(rtype) :: D_c  = 0.0_rtype 
-   real(rtype) :: V_impact = 0.0_rtype 
-   real(rtype) :: Ri = 0.0_rtype 
+   real(rtype) :: D_c  = 0.0_rtype
+   real(rtype) :: V_impact = 0.0_rtype
+   real(rtype) :: Ri = 0.0_rtype
 
    ! if (qitot_incld(i,k).ge.qsmall .and. t(i,k).lt.zerodegc) then
    !  NOTE:  condition applicable for cloud only; modify when rain is added back
    if (qccol.ge.qsmall .and. t.lt.zerodegc) then
       ! get mass-weighted mean ice fallspeed
       vtrmi1 = f1pr02*rhofaci
-      iTc   = 1._rtype/min(-0.001_rtype,t-zerodegc) 
+      iTc   = 1._rtype/min(-0.001_rtype,t-zerodegc)
 
              ! cloud:
       if (qc_incld.ge.qsmall) then
@@ -2389,12 +2420,12 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
             ! rhorime = 900 kg m-3 at Ri = 12
             ! this is somewhat ad-hoc but allows a smoother transition
             ! in rime density up to wet growth
-            rhorime_c  = 611._rtype+72.25_rtype*(Ri-8._rtype) 
+            rhorime_c  = 611._rtype+72.25_rtype*(Ri-8._rtype)
          endif
 
       endif    !if qc>qsmall
-   else 
-      rhorime_c = 400._rtype 
+   else
+      rhorime_c = 400._rtype
    endif ! qi > qsmall and T < 273.15
 
    return
@@ -2407,18 +2438,18 @@ subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
    !............................................................
    ! contact and immersion freezing droplets
 
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: t
    real(rtype), intent(in) :: lamc
    real(rtype), intent(in) :: mu_c
-   real(rtype), intent(in) :: cdist1 
-   real(rtype), intent(in) :: qc_incld 
+   real(rtype), intent(in) :: cdist1
+   real(rtype), intent(in) :: qc_incld
 
-   real(rtype), intent(out) :: qcheti 
-   real(rtype), intent(out) :: ncheti 
+   real(rtype), intent(out) :: qcheti
+   real(rtype), intent(out) :: ncheti
 
-   real(rtype) :: dum, Q_nuc, N_nuc 
+   real(rtype) :: dum, Q_nuc, N_nuc
 
    if (qc_incld.ge.qsmall .and. t.le.rainfrze) then
       ! for future: calculate gamma(mu_c+4) in one place since its used multiple times  !AaronDonahue, TODO
@@ -2427,7 +2458,7 @@ subroutine cldliq_immersion_freezing(t,lamc,mu_c,cdist1,qc_incld,    &
       N_nuc = cons5*cdist1*gamma(mu_c+4._rtype)*exp(aimm*(zerodegc-t))*dum
       qcheti = Q_nuc
       ncheti = N_nuc
-   endif 
+   endif
 
    return
 
@@ -2441,18 +2472,18 @@ qrheti, nrheti)
    ! immersion freezing of rain
    ! for future: get rid of log statements below for rain freezing
 
-   implicit none 
-   
-   real(rtype), intent(in) :: t 
-   real(rtype), intent(in) :: mu_r 
-   real(rtype), intent(in) :: lamr 
-   real(rtype), intent(in) :: cdistr 
+   implicit none
+
+   real(rtype), intent(in) :: t
+   real(rtype), intent(in) :: mu_r
+   real(rtype), intent(in) :: lamr
+   real(rtype), intent(in) :: cdistr
    real(rtype), intent(in) :: qr_incld
 
-   real(rtype), intent(out) :: qrheti 
-   real(rtype), intent(out) :: nrheti 
+   real(rtype), intent(out) :: qrheti
+   real(rtype), intent(out) :: nrheti
 
-   real(rtype) :: Q_nuc, N_nuc 
+   real(rtype) :: Q_nuc, N_nuc
 
    if (qr_incld.ge.qsmall .and. t.le.rainfrze) then
 
@@ -2461,10 +2492,10 @@ qrheti, nrheti)
       N_nuc = cons5*exp(log(cdistr)+log(gamma(mu_r+4._rtype))-3._rtype*log(lamr))* &
       exp(aimm*(zerodegc-t))
 
-      qrheti = Q_nuc 
-      nrheti = N_nuc 
+      qrheti = Q_nuc
+      nrheti = N_nuc
 
-   endif 
+   endif
 
    return
 
@@ -2480,22 +2511,22 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
    ! use CELL-AVERAGE values, freezing of vapor
 
    implicit none
-   
+
    real(rtype), intent(in) :: t
    real(rtype), intent(in) :: inv_rho
-   real(rtype), intent(in) :: nitot 
-   real(rtype), intent(in) :: naai 
-   real(rtype), intent(in) :: supi 
-   real(rtype), intent(in) :: odt 
-   logical, intent(in) :: log_predictNc 
+   real(rtype), intent(in) :: nitot
+   real(rtype), intent(in) :: naai
+   real(rtype), intent(in) :: supi
+   real(rtype), intent(in) :: odt
+   logical, intent(in) :: log_predictNc
 
-   real(rtype), intent(inout) :: qinuc 
-   real(rtype), intent(inout) :: ninuc 
+   real(rtype), intent(inout) :: qinuc
+   real(rtype), intent(inout) :: ninuc
 
 
-   real(rtype) :: dum, N_nuc, Q_nuc 
+   real(rtype) :: dum, N_nuc, Q_nuc
    if ( t .lt.icenuct .and. supi.ge.0.05_rtype) then
-      if(.not. log_predictNc) then 
+      if(.not. log_predictNc) then
 !         ! dum = exp(-0.639+0.1296*100.*supi(i,k))*1000.*inv_rho(i,k)  !Meyers et al. (1992)
          dum = 0.005_rtype*exp(0.304_rtype*(zerodegc-t))*1000._rtype*inv_rho   !Cooper (1986)
          dum = min(dum,100.e3_rtype*inv_rho)
@@ -2503,41 +2534,41 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
          if (N_nuc.ge.1.e-20_rtype) then
             Q_nuc = max(0._rtype,(dum-nitot)*mi0*odt)
             qinuc = Q_nuc
-            ninuc = N_nuc 
+            ninuc = N_nuc
          endif
-      else 
-      ! Ice nucleation predicted by aerosol scheme 
-         ninuc = max(0._rtype, (naai - nitot)*odt) 
-         qinuc = ninuc * mi0 
-      endif 
-   endif 
+      else
+      ! Ice nucleation predicted by aerosol scheme
+         ninuc = max(0._rtype, (naai - nitot)*odt)
+         qinuc = ninuc * mi0
+      endif
+   endif
 
-end subroutine 
+end subroutine
 
 
 subroutine droplet_activation(t,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt,it,    &
    qcnuc,ncnuc)
 
 
-implicit none 
+implicit none
 
 real(rtype), intent(in) :: t
 real(rtype), intent(in) :: pres
-real(rtype), intent(in) :: qv  
+real(rtype), intent(in) :: qv
 real(rtype), intent(in) :: qc
-real(rtype), intent(in) :: inv_rho 
-real(rtype), intent(in) :: sup 
-real(rtype), intent(in) :: xxlv 
-real(rtype), intent(in) :: npccn 
+real(rtype), intent(in) :: inv_rho
+real(rtype), intent(in) :: sup
+real(rtype), intent(in) :: xxlv
+real(rtype), intent(in) :: npccn
 
 logical, intent(in) :: log_predictNc
-real(rtype), intent(in)  :: odt 
-integer, intent(in) :: it 
+real(rtype), intent(in)  :: odt
+integer, intent(in) :: it
 
-real(rtype), intent(inout) :: qcnuc 
-real(rtype), intent(inout) :: ncnuc 
+real(rtype), intent(inout) :: qcnuc
+real(rtype), intent(inout) :: ncnuc
 
-real(rtype) :: dum, dumqvs, dqsdt, ab 
+real(rtype) :: dum, dumqvs, dqsdt, ab
 
 !.................................................................
 ! droplet activation
@@ -2550,7 +2581,7 @@ real(rtype) :: dum, dumqvs, dqsdt, ab
          if (it.eq.1) then
             qcnuc = 0._rtype
          else
-            !TODO Limit qcnuc so that conditions never become sub-saturated 
+            !TODO Limit qcnuc so that conditions never become sub-saturated
             qcnuc = ncnuc*cons7
          endif
       endif
@@ -2566,23 +2597,23 @@ real(rtype) :: dum, dumqvs, dqsdt, ab
       qcnuc = dum*odt
    endif
 
-end subroutine droplet_activation 
+end subroutine droplet_activation
 
 subroutine droplet_self_collection(rho,inv_rho,qc_incld,mu_c,nu,ncautc,    &
    ncslf)
    !............................
    ! self-collection of droplets
 
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: rho
    real(rtype), intent(in) :: inv_rho
-   real(rtype), intent(in) :: qc_incld 
+   real(rtype), intent(in) :: qc_incld
    real(rtype), intent(in) :: mu_c
    real(rtype), intent(in) :: nu
-   real(rtype), intent(in) :: ncautc 
+   real(rtype), intent(in) :: ncautc
 
-   real(rtype), intent(out) :: ncslf 
+   real(rtype), intent(out) :: ncslf
 
    if (qc_incld.ge.qsmall) then
 
@@ -2608,18 +2639,18 @@ subroutine cloud_rain_accretion(rho,inv_rho,qc_incld,nc_incld,qr_incld,    &
 !............................
 ! accretion of cloud by rain
 
-implicit none 
+implicit none
 
-real(rtype), intent(in) :: rho 
+real(rtype), intent(in) :: rho
 real(rtype), intent(in) :: inv_rho
 real(rtype), intent(in) :: qc_incld
-real(rtype), intent(in) :: nc_incld 
+real(rtype), intent(in) :: nc_incld
 real(rtype), intent(in) :: qr_incld
 
 real(rtype), intent(out) :: qcacc
-real(rtype), intent(out) :: ncacc  
+real(rtype), intent(out) :: ncacc
 
-real(rtype) :: dum, dum1 
+real(rtype) :: dum, dum1
 
 if (qr_incld.ge.qsmall .and. qc_incld.ge.qsmall) then
 
@@ -2646,23 +2677,23 @@ if (qr_incld.ge.qsmall .and. qc_incld.ge.qsmall) then
 
 endif
 
-end subroutine cloud_rain_accretion 
+end subroutine cloud_rain_accretion
 
 subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
    nrslf)
-   
+
    !.....................................
    ! self-collection and breakup of rain
    ! (breakup following modified Verlinde and Cotton scheme)
 
-   implicit none 
-   
-   real(rtype), intent(in) :: rho 
+   implicit none
+
+   real(rtype), intent(in) :: rho
    real(rtype), intent(in) :: qr_incld
    real(rtype), intent(in) :: nr_incld
-   real(rtype), intent(out) :: nrslf 
+   real(rtype), intent(out) :: nrslf
 
-   real(rtype) :: dum, dum1, dum2 
+   real(rtype) :: dum, dum1, dum2
 
    if (qr_incld.ge.qsmall) then
 
@@ -2696,21 +2727,21 @@ end subroutine rain_self_collection
 subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_c,nu,    &
    qcaut,ncautc,ncautr)
 
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: rho
    real(rtype), intent(in) :: inv_rho
    real(rtype), intent(in) :: qc_incld
-   real(rtype), intent(in) :: nc_incld 
+   real(rtype), intent(in) :: nc_incld
    real(rtype), intent(in) :: qr_incld
-   real(rtype), intent(in) :: mu_c 
-   real(rtype), intent(in) :: nu 
+   real(rtype), intent(in) :: mu_c
+   real(rtype), intent(in) :: nu
 
    real(rtype), intent(out) :: qcaut
-   real(rtype), intent(out) :: ncautc 
+   real(rtype), intent(out) :: ncautc
    real(rtype), intent(out) :: ncautr
 
-   real(rtype) :: dum, dum1 
+   real(rtype) :: dum, dum1
 
    qc_not_small: if (qc_incld.ge.1.e-8_rtype) then
 
@@ -2759,34 +2790,34 @@ subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_
 end subroutine cloud_water_autoconversion
 
 subroutine back_to_cell_average(lcldm,rcldm,icldm,    &
-   qcacc,qrevp,qcaut,& 
-   ncacc,ncslf,ncautc,nrslf,nrevp,ncautr,qcnuc,ncnuc,qisub,nrshdr,qcheti,& 
-   qrcol,qcshd,qimlt,qccol,qrheti,nimlt,nccol,ncshdc,ncheti,nrcol,nislf,& 
+   qcacc,qrevp,qcaut,&
+   ncacc,ncslf,ncautc,nrslf,nrevp,ncautr,qcnuc,ncnuc,qisub,nrshdr,qcheti,&
+   qrcol,qcshd,qimlt,qccol,qrheti,nimlt,nccol,ncshdc,ncheti,nrcol,nislf,&
    qidep,nrheti,nisub,qinuc,ninuc,qiberg)
 
    ! Here we map the microphysics tendency rates back to CELL-AVERAGE quantities for updating
    ! cell-average quantities.
 
-   implicit none 
+   implicit none
 
    ! Intersection of cloud fractions for combination of ice (i), rain (r) and liquid (l)
-   real(rtype), intent(in) :: lcldm 
-   real(rtype), intent(in) :: rcldm 
-   real(rtype), intent(in) :: icldm 
+   real(rtype), intent(in) :: lcldm
+   real(rtype), intent(in) :: rcldm
+   real(rtype), intent(in) :: icldm
 
    real(rtype), intent(inout) :: qcacc, qrevp, qcaut, ncacc, ncslf, ncautc, nrslf, nrevp, ncautr
    real(rtype), intent(inout) :: qcnuc, ncnuc
    real(rtype), intent(inout) :: qisub, nrshdr, qcheti, qrcol, qcshd, qimlt, qccol, qrheti, nimlt, nccol, ncshdc, ncheti, nrcol, nislf, qidep
    real(rtype), intent(inout) :: nrheti, nisub, qinuc, ninuc, qiberg
 
-   real(rtype) :: ir_cldm, il_cldm, lr_cldm 
+   real(rtype) :: ir_cldm, il_cldm, lr_cldm
 
    ir_cldm = min(icldm,rcldm)  ! Intersection of ICE and RAIN cloud
    il_cldm = min(icldm,lcldm)  ! Intersection of ICE and LIQUID cloud
    lr_cldm = min(lcldm,rcldm)  ! Intersection of LIQUID and RAIN cloud
 
    ! Some process rates take place within the intersection of liquid, rain and ice cloud fractions.
-   ! We calculate the intersection as the minimum between combinations of cloud fractions and use 
+   ! We calculate the intersection as the minimum between combinations of cloud fractions and use
    ! these values to map back to cell-average quantities where applicable.
 
           ! map warm-phase process rates to cell-avg
@@ -2797,7 +2828,7 @@ subroutine back_to_cell_average(lcldm,rcldm,icldm,    &
    ncslf   = ncslf*lcldm       ! Self collection occurs locally in liq. cloud
    ncautc  = ncautc*lcldm      ! Impact of autoconversion on number
    nrslf   = nrslf*rcldm       ! Self collection occurs locally in rain cloud
-   nrevp   = nrevp*rcldm       ! Change in rain number due to evaporation 
+   nrevp   = nrevp*rcldm       ! Change in rain number due to evaporation
    ncautr  = ncautr*lr_cldm    ! Autoconversion of rain drops within rain/liq cloud
      ! AaronDonahue: These variables are related to aerosol activation and their usage will be changed in a later PR.
    qcnuc   = qcnuc*lcldm       ! Impact on liq. from nucleation
@@ -2826,7 +2857,7 @@ subroutine back_to_cell_average(lcldm,rcldm,icldm,    &
    qinuc   = qinuc             ! Deposition and condensation-freezing nucleation, already cell-averaged
    ninuc   = ninuc             ! Number change due to deposition and condensation-freezing, already cell-averaged
 
-end subroutine back_to_cell_average 
+end subroutine back_to_cell_average
 
 subroutine prevent_ice_overdepletion(pres,t,qv,xxls,odt,    &
    qidep,qisub)
@@ -2838,18 +2869,18 @@ subroutine prevent_ice_overdepletion(pres,t,qv,xxls,odt,    &
    !   amongst categories.
    !PMC - might need to rethink above statement since only one category now.
 
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: pres
    real(rtype), intent(in) :: t
    real(rtype), intent(in) :: qv
-   real(rtype), intent(in) :: xxls 
-   real(rtype), intent(in) :: odt 
+   real(rtype), intent(in) :: xxls
+   real(rtype), intent(in) :: odt
 
    real(rtype), intent(inout) :: qidep
-   real(rtype), intent(inout) :: qisub 
+   real(rtype), intent(inout) :: qisub
 
-   real(rtype) :: dumqvi, qdep_satadj 
+   real(rtype) :: dumqvi, qdep_satadj
 
 
    dumqvi = qv_sat(t,pres,1)
@@ -2861,13 +2892,13 @@ end subroutine prevent_ice_overdepletion
 
 subroutine cloud_water_conservation(qc,qcnuc,dt,    &
    qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
-   implicit none 
-   
-   real(rtype), intent(in) :: qc, qcnuc, dt 
-   real(rtype), intent(inout) :: qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
-   
+   implicit none
 
-   real(rtype) :: sinks, sources, ratio 
+   real(rtype), intent(in) :: qc, qcnuc, dt
+   real(rtype), intent(inout) :: qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
+
+
+   real(rtype) :: sinks, sources, ratio
 
    sinks   = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt
    sources = qc + (qcnuc)*dt
@@ -2884,7 +2915,7 @@ subroutine cloud_water_conservation(qc,qcnuc,dt,    &
    endif
 
    !PMC: ratio is also frac of step w/ liq. thus we apply qiberg for
-   !"ratio" of timestep and vapor deposition and sublimation  for the 
+   !"ratio" of timestep and vapor deposition and sublimation  for the
    !remaining frac of the timestep.  Only limit if there will be cloud
    !water to begin with.
    if (sources.gt.1.e-20_rtype) then
@@ -2893,17 +2924,17 @@ subroutine cloud_water_conservation(qc,qcnuc,dt,    &
    end if
 
 
-end subroutine cloud_water_conservation 
+end subroutine cloud_water_conservation
 
 subroutine rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
    qrevp,qrcol,qrheti)
 
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: qr, qcaut, qcacc, qimlt, qcshd, dt
-   real(rtype), intent(inout) :: qrevp, qrcol, qrheti 
+   real(rtype), intent(inout) :: qrevp, qrcol, qrheti
 
-   real(rtype) :: sinks, sources, ratio 
+   real(rtype) :: sinks, sources, ratio
 
    sinks   = (qrevp+qrcol+qrheti)*dt
    sources = qr + (qcaut+qcacc+qimlt+qcshd)*dt
@@ -2914,16 +2945,16 @@ subroutine rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
       qrheti = qrheti*ratio
    endif
 
-end subroutine rain_water_conservation 
+end subroutine rain_water_conservation
 
 subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
-   qisub,qimlt) 
+   qisub,qimlt)
 
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
-   real(rtype), intent(inout) :: qisub, qimlt 
-   real(rtype) :: sinks, sources, ratio 
+   real(rtype), intent(inout) :: qisub, qimlt
+   real(rtype) :: sinks, sources, ratio
 
    sinks   = (qisub+qimlt)*dt
    sources = qitot + (qidep+qinuc+qrcol+qccol+  &
@@ -2935,64 +2966,64 @@ subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qc
    endif
 
 
-end subroutine ice_water_conservation 
+end subroutine ice_water_conservation
 
 
-subroutine update_prognostic_ice(qcheti,qccol,qcshd,    & 
-   nccol,ncheti,ncshdc,    & 
-   qrcol,nrcol,qrheti,nrheti,nrshdr,    & 
-   qimlt,nimlt,qisub,qidep,qinuc,ninuc,nislf,nisub,qiberg,    & 
-   exner,xxls,xlf,    & 
+subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
+   nccol,ncheti,ncshdc,    &
+   qrcol,nrcol,qrheti,nrheti,nrshdr,    &
+   qimlt,nimlt,qisub,qidep,qinuc,ninuc,nislf,nisub,qiberg,    &
+   exner,xxls,xlf,    &
    log_predictNc,log_wetgrowth,dt,nmltratio,rhorime_c,    &
    th,qv,qitot,nitot,qirim,birim,qc,nc,qr,nr)
 
    !-- ice-phase dependent processes:
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: qcheti
    real(rtype), intent(in) :: qccol
    real(rtype), intent(in) :: qcshd
-   real(rtype), intent(in) :: nccol 
+   real(rtype), intent(in) :: nccol
    real(rtype), intent(in) :: ncheti
-   real(rtype), intent(in) :: ncshdc  
+   real(rtype), intent(in) :: ncshdc
 
-   real(rtype), intent(in) :: qrcol 
-   real(rtype), intent(in) :: nrcol 
-   real(rtype), intent(in) :: qrheti 
-   real(rtype), intent(in) :: nrheti 
-   real(rtype), intent(in) :: nrshdr 
+   real(rtype), intent(in) :: qrcol
+   real(rtype), intent(in) :: nrcol
+   real(rtype), intent(in) :: qrheti
+   real(rtype), intent(in) :: nrheti
+   real(rtype), intent(in) :: nrshdr
 
-   real(rtype), intent(in) :: qimlt 
-   real(rtype), intent(in) :: nimlt 
+   real(rtype), intent(in) :: qimlt
+   real(rtype), intent(in) :: nimlt
    real(rtype), intent(in) :: qisub
-   real(rtype), intent(in) :: qidep 
-   real(rtype), intent(in) :: qinuc 
-   real(rtype), intent(in) :: ninuc 
-   real(rtype), intent(in) :: nislf 
-   real(rtype), intent(in) :: nisub 
-   real(rtype), intent(in) :: qiberg 
-   real(rtype), intent(in) :: exner 
-   real(rtype), intent(in) :: xlf 
-   real(rtype), intent(in) :: xxls 
+   real(rtype), intent(in) :: qidep
+   real(rtype), intent(in) :: qinuc
+   real(rtype), intent(in) :: ninuc
+   real(rtype), intent(in) :: nislf
+   real(rtype), intent(in) :: nisub
+   real(rtype), intent(in) :: qiberg
+   real(rtype), intent(in) :: exner
+   real(rtype), intent(in) :: xlf
+   real(rtype), intent(in) :: xxls
 
    logical, intent(in) :: log_predictNc
    logical, intent(in) :: log_wetgrowth
-   real(rtype), intent(in) :: dt 
-   real(rtype), intent(in) :: nmltratio 
-   real(rtype), intent(in) :: rhorime_c 
+   real(rtype), intent(in) :: dt
+   real(rtype), intent(in) :: nmltratio
+   real(rtype), intent(in) :: rhorime_c
 
-   real(rtype), intent(inout) :: th 
-   real(rtype), intent(inout) :: qv 
+   real(rtype), intent(inout) :: th
+   real(rtype), intent(inout) :: qv
    real(rtype), intent(inout) :: qc
-   real(rtype), intent(inout) :: nc 
-   real(rtype), intent(inout) :: qr 
-   real(rtype), intent(inout) :: nr 
-   real(rtype), intent(inout) :: qitot 
-   real(rtype), intent(inout) :: nitot 
-   real(rtype), intent(inout) :: qirim 
-   real(rtype), intent(inout) :: birim 
+   real(rtype), intent(inout) :: nc
+   real(rtype), intent(inout) :: qr
+   real(rtype), intent(inout) :: nr
+   real(rtype), intent(inout) :: qitot
+   real(rtype), intent(inout) :: nitot
+   real(rtype), intent(inout) :: qirim
+   real(rtype), intent(inout) :: birim
 
-   real(rtype) :: dum 
+   real(rtype) :: dum
 
    qc = qc + (-qcheti-qccol-qcshd-qiberg)*dt
    if (log_predictNc) then
@@ -3015,7 +3046,7 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
    dum = (qrcol+qccol+qrheti+qcheti)*dt
    qitot = qitot + (qidep+qinuc+qiberg)*dt + dum
    qirim = qirim + dum
-  
+
 
    birim = birim + (qrcol*inv_rho_rimeMax+qccol/rhorime_c+(qrheti+ &
         qcheti)*inv_rho_rimeMax)*dt
@@ -3037,7 +3068,7 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
       qirim = qitot
       birim = qirim*inv_rho_rimeMax
    endif
-    
+
    ! densify in above freezing conditions and melting
    ! -- future work --
    !   Ideally, this will be treated with the predicted liquid fraction in ice.
@@ -3057,32 +3088,32 @@ subroutine update_prognostic_liquid(qcacc,ncacc,qcaut,ncautc,qcnuc,ncautr,ncslf,
     log_predictNc,inv_rho,exner,xxlv,dt,    &
     th,qv,qc,nc,qr,nr)
    !-- warm-phase only processes:
-   implicit none 
+   implicit none
 
    real(rtype), intent(in) :: qcacc
-   real(rtype), intent(in) :: ncacc 
+   real(rtype), intent(in) :: ncacc
    real(rtype), intent(in) :: qcaut
    real(rtype), intent(in) :: ncautc
    real(rtype), intent(in) :: qcnuc
-   real(rtype), intent(in) :: ncautr 
-   real(rtype), intent(in) :: ncslf 
+   real(rtype), intent(in) :: ncautr
+   real(rtype), intent(in) :: ncslf
    real(rtype), intent(in) :: qrevp
-   real(rtype), intent(in) :: nrevp 
-   real(rtype), intent(in) :: nrslf 
+   real(rtype), intent(in) :: nrevp
+   real(rtype), intent(in) :: nrslf
 
 
    logical, intent(in) :: log_predictNc
    real(rtype), intent(in) :: inv_rho
-   real(rtype), intent(in) :: exner 
-   real(rtype), intent(in) :: xxlv 
+   real(rtype), intent(in) :: exner
+   real(rtype), intent(in) :: xxlv
    real(rtype), intent(in) :: dt
 
-   real(rtype), intent(inout) :: th 
-   real(rtype), intent(inout) :: qv 
+   real(rtype), intent(inout) :: th
+   real(rtype), intent(inout) :: qv
    real(rtype), intent(inout) :: qc
-   real(rtype), intent(inout) :: nc 
-   real(rtype), intent(inout) :: qr 
-   real(rtype), intent(inout) :: nr 
+   real(rtype), intent(inout) :: nc
+   real(rtype), intent(inout) :: qr
+   real(rtype), intent(inout) :: nr
 
    qc = qc + (-qcacc-qcaut+qcnuc)*dt
    qr = qr + (qcacc+qcaut-qrevp)*dt
@@ -3182,7 +3213,7 @@ qrevp,nrevp)
 
    ! Is is assumed that macrophysics handles condensation/evaporation of qc and
    ! that there is no condensation of rain. Thus qccon, qrcon and qcevp have
-   ! been removed from the original P3-WRF.  
+   ! been removed from the original P3-WRF.
 
    ! Determine temporary cloud fraction, set to zero if cloud water + ice is
    ! very small.  This will ensure that evap/subl of precip occurs over entire
@@ -3192,7 +3223,7 @@ qrevp,nrevp)
    else
       cld = lcldm
    end if
-  
+
    ! Only calculate if there is some rain fraction > cloud fraction
    qrevp = 0.0_rtype
    if (rcldm > cld) then
@@ -3203,7 +3234,7 @@ qrevp,nrevp)
       if (qr_incld.ge.qsmall) then
          qrevp = epsr * (qclr-qvs)/ab
       end if
- 
+
       ! only evap in out-of-cloud region
       qrevp = -min(qrevp*(rcldm-cld),0._rtype)
       qrevp = qrevp/rcldm
@@ -3264,54 +3295,54 @@ end subroutine get_time_space_phys_variables
 
 subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
-   dt,odt,dnu,lammin,lammax,log_predictNc, & 
-   qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend) 
-   
-   implicit none 
+   dt,odt,dnu,lammin,lammax,log_predictNc, &
+   qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend)
+
+   implicit none
    integer, intent(in) :: kts, kte
-   integer, intent(in) :: ktop, kbot, kdir 
+   integer, intent(in) :: ktop, kbot, kdir
 
    real(rtype), intent(in), dimension(kts:kte) :: qc_incld
    real(rtype), intent(in), dimension(kts:kte) :: rho
-   real(rtype), intent(in), dimension(kts:kte) :: inv_rho 
-   real(rtype), intent(in), dimension(kts:kte) :: lcldm 
-   real(rtype), intent(in), dimension(kts:kte) :: acn 
+   real(rtype), intent(in), dimension(kts:kte) :: inv_rho
+   real(rtype), intent(in), dimension(kts:kte) :: lcldm
+   real(rtype), intent(in), dimension(kts:kte) :: acn
    real(rtype), intent(in), dimension(kts:kte) :: inv_dzq
-   real(rtype), intent(in) :: dt 
-   real(rtype), intent(in) :: odt 
+   real(rtype), intent(in) :: dt
+   real(rtype), intent(in) :: odt
    real(rtype), dimension(:), intent(in) :: dnu
    real(rtype), intent(in) :: lammin
-   real(rtype), intent(in) :: lammax 
-   logical, intent(in) :: log_predictNc 
+   real(rtype), intent(in) :: lammax
+   logical, intent(in) :: log_predictNc
 
-   real(rtype), intent(inout), dimension(kts:kte) :: qc 
-   real(rtype), intent(inout), dimension(kts:kte) :: nc 
-   real(rtype), intent(inout), dimension(kts:kte) :: nc_incld 
-   real(rtype), intent(inout), dimension(kts:kte) :: mu_c 
+   real(rtype), intent(inout), dimension(kts:kte) :: qc
+   real(rtype), intent(inout), dimension(kts:kte) :: nc
+   real(rtype), intent(inout), dimension(kts:kte) :: nc_incld
+   real(rtype), intent(inout), dimension(kts:kte) :: mu_c
    real(rtype), intent(inout), dimension(kts:kte) :: lamc
    real(rtype), intent(inout) :: prt_liq
-   real(rtype), intent(inout), dimension(kts:kte) :: qc_tend 
-   real(rtype), intent(inout), dimension(kts:kte) :: nc_tend 
+   real(rtype), intent(inout), dimension(kts:kte) :: qc_tend
+   real(rtype), intent(inout), dimension(kts:kte) :: nc_tend
 
    logical :: log_qxpresent
-   integer :: k 
-   integer :: k_qxtop, k_qxbot, k_temp 
-   integer :: tmpint1 
+   integer :: k
+   integer :: k_qxtop, k_qxbot, k_temp
+   integer :: tmpint1
 
-   real(rtype) :: dt_left 
-   real(rtype) :: prt_accum 
-   real(rtype) :: Co_max 
+   real(rtype) :: dt_left
+   real(rtype) :: prt_accum
+   real(rtype) :: Co_max
    real(rtype) :: dt_sub
-   real(rtype) :: nu 
+   real(rtype) :: nu
    real(rtype), dimension(kts:kte) :: V_qc
-   real(rtype), dimension(kts:kte) :: V_nc 
+   real(rtype), dimension(kts:kte) :: V_nc
    real(rtype), dimension(kts:kte) :: flux_qx
    real(rtype), dimension(kts:kte) :: flux_nx
- 
-   real(rtype) :: tmp1, tmp2, dum 
 
-   k_qxtop = kbot 
-   log_qxpresent = .false. 
+   real(rtype) :: tmp1, tmp2, dum
+
+   k_qxtop = kbot
+   log_qxpresent = .false.
 
    !find top, determine qxpresent
    do k = ktop,kbot,-kdir
@@ -3388,7 +3419,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
 
          enddo substep_sedi_c2
-      else 
+      else
          substep_sedi_c1: do while (dt_left.gt.1.e-4_rtype)
 
             Co_max  = 0._rtype
@@ -3405,7 +3436,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
                Co_max = max(Co_max, V_qc(k)*dt_left*inv_dzq(k))
             enddo kloop_sedi_c1
-            
+
             tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant
             dt_sub  = min(dt_left, dt_left/float(tmpint1))
 
@@ -3418,7 +3449,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             do k = k_temp,k_qxtop,kdir
                flux_qx(k) = V_qc(k)*qc(k)*rho(k)
             enddo
-            
+
             !accumulated precip during time step
             if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
 
@@ -3438,13 +3469,13 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qc_tend(:) = ( qc(:) - qc_tend(:) ) * odt ! Liq. sedimentation tendency, measure
    nc_tend(:) = ( nc(:) - nc_tend(:) ) * odt ! Liq. # sedimentation tendency, measure
 
-end subroutine cloud_sedimentation 
+end subroutine cloud_sedimentation
 
 subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
-   qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  & 
-   qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend) 
+   qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+   qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
 
-   implicit none 
+   implicit none
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
 
@@ -3452,38 +3483,38 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
    real(rtype), intent(in), dimension(kts:kte) :: rho
    real(rtype), intent(in), dimension(kts:kte) :: inv_rho
-   real(rtype), intent(in), dimension(kts:kte) :: rhofacr  
-   real(rtype), intent(in), dimension(kts:kte) :: rcldm 
+   real(rtype), intent(in), dimension(kts:kte) :: rhofacr
+   real(rtype), intent(in), dimension(kts:kte) :: rcldm
    real(rtype), intent(in), dimension(kts:kte) :: inv_dzq
-   real(rtype), intent(in) :: dt 
-   real(rtype), intent(in) :: odt 
+   real(rtype), intent(in) :: dt
+   real(rtype), intent(in) :: odt
 
-   real(rtype), intent(inout), dimension(kts:kte) :: qr 
-   real(rtype), intent(inout), dimension(kts:kte) :: nr 
-   real(rtype), intent(inout), dimension(kts:kte) :: nr_incld 
-   real(rtype), intent(inout), dimension(kts:kte) :: mu_r 
+   real(rtype), intent(inout), dimension(kts:kte) :: qr
+   real(rtype), intent(inout), dimension(kts:kte) :: nr
+   real(rtype), intent(inout), dimension(kts:kte) :: nr_incld
+   real(rtype), intent(inout), dimension(kts:kte) :: mu_r
    real(rtype), intent(inout), dimension(kts:kte) :: lamr
    real(rtype), intent(inout) :: prt_liq
-   real(rtype), intent(inout), dimension(kts:kte+1) :: rflx 
-   real(rtype), intent(inout), dimension(kts:kte) :: qr_tend 
-   real(rtype), intent(inout), dimension(kts:kte) :: nr_tend 
-    
-   logical :: log_qxpresent
-   integer :: k 
-   integer :: k_qxtop, k_qxbot, k_temp 
-   integer :: tmpint1 
+   real(rtype), intent(inout), dimension(kts:kte+1) :: rflx
+   real(rtype), intent(inout), dimension(kts:kte) :: qr_tend
+   real(rtype), intent(inout), dimension(kts:kte) :: nr_tend
 
-   real(rtype) :: dt_left 
-   real(rtype) :: prt_accum 
-   real(rtype) :: Co_max 
+   logical :: log_qxpresent
+   integer :: k
+   integer :: k_qxtop, k_qxbot, k_temp
+   integer :: tmpint1
+
+   real(rtype) :: dt_left
+   real(rtype) :: prt_accum
+   real(rtype) :: Co_max
    real(rtype) :: dt_sub
    real(rtype), dimension(kts:kte) :: V_qr
-   real(rtype), dimension(kts:kte) :: V_nr 
+   real(rtype), dimension(kts:kte) :: V_nr
    real(rtype), dimension(kts:kte) :: flux_qx
    real(rtype), dimension(kts:kte) :: flux_nx
- 
-   k_qxtop = kbot 
-   log_qxpresent = .false. 
+
+   k_qxtop = kbot
+   log_qxpresent = .false.
 
    !find top, determine qxpresent
    do k = ktop,kbot,-kdir
@@ -3569,14 +3600,14 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
    mu_r, lamr, V_qr, V_nr)
 
    real(rtype), intent(in) :: qr_incld
-   real(rtype), intent(in) :: rcldm 
-   real(rtype), intent(in) :: rhofacr 
-   real(rtype), intent(inout) :: nr 
-   real(rtype), intent(inout) :: nr_incld 
-   real(rtype), intent(out) :: mu_r 
-   real(rtype), intent(out) :: lamr  
-   real(rtype), intent(out) :: V_qr 
-   real(rtype), intent(out) :: V_nr 
+   real(rtype), intent(in) :: rcldm
+   real(rtype), intent(in) :: rhofacr
+   real(rtype), intent(inout) :: nr
+   real(rtype), intent(inout) :: nr_incld
+   real(rtype), intent(out) :: mu_r
+   real(rtype), intent(out) :: lamr
+   real(rtype), intent(out) :: V_qr
+   real(rtype), intent(out) :: V_nr
 
    real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3, rdumii, rdumjj
    integer :: dumii, dumjj
@@ -3615,58 +3646,58 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
 end subroutine compute_rain_fall_velocity
 
 subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
-   rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  & 
-   qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend) 
+   rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
+   qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend)
 
-   implicit none 
+   implicit none
    integer, intent(in) :: kts, kte
-   integer, intent(in) :: ktop, kbot, kdir 
+   integer, intent(in) :: ktop, kbot, kdir
 
    real(rtype), intent(in), dimension(kts:kte) :: rho
    real(rtype), intent(in), dimension(kts:kte) :: inv_rho
-   real(rtype), intent(in), dimension(kts:kte) :: rhofaci  
-   real(rtype), intent(in), dimension(kts:kte) :: icldm 
+   real(rtype), intent(in), dimension(kts:kte) :: rhofaci
+   real(rtype), intent(in), dimension(kts:kte) :: icldm
    real(rtype), intent(in), dimension(kts:kte) :: inv_dzq
-   real(rtype), intent(in) :: dt 
-   real(rtype), intent(in) :: odt 
+   real(rtype), intent(in) :: dt
+   real(rtype), intent(in) :: odt
 
-   real(rtype), intent(inout), dimension(kts:kte) :: qitot 
+   real(rtype), intent(inout), dimension(kts:kte) :: qitot
    real(rtype), intent(inout), dimension(kts:kte) :: qitot_incld
    real(rtype), intent(inout), dimension(kts:kte) :: nitot
-   real(rtype), intent(inout), dimension(kts:kte) :: nitot_incld 
-   real(rtype), intent(inout), dimension(kts:kte) :: qirim 
+   real(rtype), intent(inout), dimension(kts:kte) :: nitot_incld
+   real(rtype), intent(inout), dimension(kts:kte) :: qirim
    real(rtype), intent(inout), dimension(kts:kte) :: qirim_incld
-   real(rtype), intent(inout), dimension(kts:kte) :: birim 
-   real(rtype), intent(inout), dimension(kts:kte) :: birim_incld 
+   real(rtype), intent(inout), dimension(kts:kte) :: birim
+   real(rtype), intent(inout), dimension(kts:kte) :: birim_incld
 
 
    real(rtype), intent(inout) :: prt_sol
-   real(rtype), intent(inout), dimension(kts:kte) :: qi_tend 
-   real(rtype), intent(inout), dimension(kts:kte) :: ni_tend 
-   
-   logical :: log_qxpresent
-   integer :: k 
-   integer :: k_qxtop, k_qxbot, k_temp 
-   integer :: tmpint1 
+   real(rtype), intent(inout), dimension(kts:kte) :: qi_tend
+   real(rtype), intent(inout), dimension(kts:kte) :: ni_tend
 
-   real(rtype) :: dt_left 
-   real(rtype) :: prt_accum 
-   real(rtype) :: Co_max 
+   logical :: log_qxpresent
+   integer :: k
+   integer :: k_qxtop, k_qxbot, k_temp
+   integer :: tmpint1
+
+   real(rtype) :: dt_left
+   real(rtype) :: prt_accum
+   real(rtype) :: Co_max
    real(rtype) :: dt_sub
-   real(rtype) :: rhop 
+   real(rtype) :: rhop
    real(rtype), dimension(kts:kte) :: V_qit
-   real(rtype), dimension(kts:kte) :: V_nit 
+   real(rtype), dimension(kts:kte) :: V_nit
    real(rtype), dimension(kts:kte) :: flux_nit
    real(rtype), dimension(kts:kte) :: flux_bir
    real(rtype), dimension(kts:kte) :: flux_qir
-   real(rtype), dimension(kts:kte) :: flux_qit 
+   real(rtype), dimension(kts:kte) :: flux_qit
    real(rtype) :: f1pr01 ! number-weighted fallspeed            See lines  731 -  808  uns
    real(rtype) :: f1pr02 ! mass-weighted fallspeed              See lines  731 -  808  ums
    real(rtype) :: f1pr09 ! minimum ice number (lambda limiter)  See lines  704 -  705  nlarge
    real(rtype) :: f1pr10 ! maximum ice number (lambda limiter)  See lines  704 -  705  nsmall
- 
+
    real(rtype) :: dum1, dum4, dum5, dum6
-   integer dumi, dumii, dumjj, dumzz 
+   integer dumi, dumii, dumjj, dumzz
 
    log_qxpresent = .false.  !note: this applies to ice category 'iice' only
    k_qxtop       = kbot
@@ -3774,18 +3805,18 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
 end subroutine ice_sedimentation
 
 
-subroutine generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qx, qx) 
+subroutine generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qx, qx)
 
-   implicit none 
+   implicit none
 
-   integer, intent(in) :: kts, kte, kdir, k_temp, k_qxtop 
-   real(rtype), intent(in) :: dt_sub 
+   integer, intent(in) :: kts, kte, kdir, k_temp, k_qxtop
+   real(rtype), intent(in) :: dt_sub
    real(rtype), dimension(kts:kte), intent(in) :: inv_dzq
-   real(rtype), dimension(kts:kte), intent(in) :: inv_rho 
-   real(rtype), dimension(kts:kte), intent(in) :: flux_qx 
+   real(rtype), dimension(kts:kte), intent(in) :: inv_rho
+   real(rtype), dimension(kts:kte), intent(in) :: flux_qx
    real(rtype), dimension(kts:kte), intent(inout) :: qx
 
-   integer :: k 
+   integer :: k
    real(rtype) :: fluxdiv_qx
 
    !--- for top level only (since flux is 0 above)
@@ -3807,30 +3838,30 @@ subroutine generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, in
 end subroutine generalized_sedimentation
 
 subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
-   qc,nc,qr,nr,qitot,nitot,qirim,birim,th) 
-  
+   qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
+
    !.......................................
    ! homogeneous freezing of cloud and rain
 
-   implicit none 
+   implicit none
    integer, intent(in) :: kts, kte
-   integer, intent(in) :: ktop, kbot, kdir 
-   real(rtype), intent(in), dimension(kts:kte) :: t 
+   integer, intent(in) :: ktop, kbot, kdir
+   real(rtype), intent(in), dimension(kts:kte) :: t
    real(rtype), intent(in), dimension(kts:kte) :: exner
    real(rtype), intent(in), dimension(kts:kte) :: xlf
 
    real(rtype), intent(inout), dimension(kts:kte) :: qc
    real(rtype), intent(inout), dimension(kts:kte) :: nc
    real(rtype), intent(inout), dimension(kts:kte) :: qr
-   real(rtype), intent(inout), dimension(kts:kte) :: nr 
+   real(rtype), intent(inout), dimension(kts:kte) :: nr
 
    real(rtype), intent(inout), dimension(kts:kte) :: qitot
    real(rtype), intent(inout), dimension(kts:kte) :: nitot
-   real(rtype), intent(inout), dimension(kts:kte) :: qirim 
+   real(rtype), intent(inout), dimension(kts:kte) :: qirim
    real(rtype), intent(inout), dimension(kts:kte) :: birim
    real(rtype), intent(inout), dimension(kts:kte) :: th
    real(rtype) :: Q_nuc
-   real(rtype) :: N_nuc 
+   real(rtype) :: N_nuc
    integer :: k
 
    k_loop_fz:  do k = kbot,ktop,kdir
@@ -3843,10 +3874,10 @@ subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
          birim(k) = birim(k) + Q_nuc*inv_rho_rimeMax
          nitot(k) = nitot(k) + N_nuc
          th(k) = th(k) + exner(k)*Q_nuc*xlf(k)*inv_cp
-         qc(k) = 0._rtype  
-         nc(k) = 0._rtype         
+         qc(k) = 0._rtype
+         nc(k) = 0._rtype
 
-      endif 
+      endif
 
       if (qr(k).ge.qsmall .and. t(k).lt.homogfrze) then
          Q_nuc = qr(k)
@@ -3857,9 +3888,9 @@ subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
          birim(k) = birim(k) + Q_nuc*inv_rho_rimeMax
          nitot(k) = nitot(k) + N_nuc
          th(k) = th(k) + exner(k)*Q_nuc*xlf(k)*inv_cp
-         qr(k) = 0._rtype 
+         qr(k) = 0._rtype
          nr(k) = 0._rtype
-      endif 
+      endif
 
    enddo k_loop_fz
 

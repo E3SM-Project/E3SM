@@ -9,6 +9,10 @@ module micro_p3_iso_c
 # define c_real c_float
 #endif
 
+!
+! This file contains bridges from scream c++ to  micro_p3 fortran.
+!
+
 contains
   subroutine append_precision(string, prefix)
     use iso_c_binding
@@ -127,7 +131,14 @@ contains
          vap_ice_exchange, vap_cld_exchange)
   end subroutine p3_main_c
 
-   
+  subroutine p3_use_cxx_c(arg_use_cxx) bind(C)
+    use micro_p3, only: use_cxx
+
+    logical(kind=c_bool), value, intent(in) :: arg_use_cxx
+
+    use_cxx = arg_use_cxx
+  end subroutine p3_use_cxx_c
+
   subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RhoH2O, &
                  MWH2O, MWdry, gravit, LatVap, LatIce,        &
                  CpLiq, Tmelt, Pi, iulog_in, masterproc_in) bind(C)
@@ -157,5 +168,61 @@ contains
     call micro_p3_utils_init(Cpair,Rair,RH2O,RhoH2O,MWH2O,MWdry,gravit,LatVap,LatIce, &
                    CpLiq,Tmelt,Pi,iulog,masterproc)
   end subroutine micro_p3_utils_init_c
+
+  subroutine p3_init_a_c(itab_c, itabcoll_c) bind(C)
+    use micro_p3, only: itab, itabcoll
+    use micro_p3_utils, only: densize,rimsize,isize,tabsize,rcollsize,colltabsize
+
+    real(kind=c_real), intent(out), dimension(densize,rimsize,isize,tabsize) :: itab_c
+    real(kind=c_real), intent(out), dimension(densize,rimsize,isize,rcollsize,colltabsize) :: itabcoll_c
+
+    itab_c(:,:,:,:) = itab(:,:,:,:)
+    itabcoll_c(:,:,:,:,:) = itabcoll(:,:,:,:,:)
+  end subroutine p3_init_a_c
+
+  subroutine find_lookuptable_indices_1a_c(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
+       qitot,nitot,qirim,rhop) bind(C)
+    use micro_p3, only: find_lookupTable_indices_1a
+    use micro_p3_utils, only: densize,rimsize,isize
+
+    ! arguments:
+    integer(kind=c_int), intent(out) :: dumi,dumjj,dumii,dumzz
+    real(kind=c_real),   intent(out) :: dum1,dum4,dum5,dum6
+    real(kind=c_real), value, intent(in)  :: qitot,nitot,qirim,rhop
+
+    call find_lookupTable_indices_1a(dumi, dumjj, dumii, dumzz, dum1, dum4, dum5, dum6,      &
+         isize, rimsize, densize, qitot, nitot, qirim, rhop)
+  end subroutine find_lookuptable_indices_1a_c
+
+  subroutine find_lookuptable_indices_1b_c(dumj,dum3,qr,nr) bind(C)
+    use micro_p3, only: find_lookupTable_indices_1b
+    use micro_p3_utils, only: rcollsize
+
+    integer(kind=c_int), intent(out) :: dumj
+    real(kind=c_real), intent(out) :: dum3
+    real(kind=c_real), value, intent(in) :: qr, nr
+
+    call find_lookupTable_indices_1b(dumj, dum3, rcollsize, qr, nr)
+  end subroutine find_lookupTable_indices_1b_c
+
+  subroutine access_lookup_table_c(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc) bind(C)
+    use micro_p3, only: access_lookup_table
+
+    integer(kind=c_int), value, intent(in) :: dumjj, dumii, dumi, index
+    real(kind=c_real), value, intent(in) :: dum1, dum4, dum5
+    real(kind=c_real), intent(out) :: proc
+
+    call access_lookup_table(dumjj,dumii,dumi,index,dum1,dum4,dum5,proc)
+  end subroutine access_lookup_table_c
+
+  subroutine access_lookup_table_coll_c(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc) bind(C)
+    use micro_p3, only: access_lookup_table_coll
+
+    integer(kind=c_int), value, intent(in) :: dumjj,dumii,dumj,dumi,index
+    real(kind=c_real), value, intent(in) :: dum1,dum3,dum4,dum5
+    real(kind=c_real), intent(out) :: proc
+
+    call access_lookup_table_coll(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
+  end subroutine access_lookup_table_coll_c
 
 end module micro_p3_iso_c

@@ -13,6 +13,8 @@ module micro_p3_utils
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #include "scream_config.f"
 
+  integer,parameter,public :: rtype8 = c_double ! 8 byte real, compatible with c type double
+
 #ifdef SCREAM_DOUBLE_PRECISION
   integer,parameter,public :: rtype = c_double ! 8 byte real, compatible with c type double
 #else

@@ -14,13 +14,12 @@ namespace p3 {
 struct FortranData {
   typedef std::shared_ptr<FortranData> Ptr;
 
-  typedef Kokkos::HostSpace ExeSpace;
-  typedef Kokkos::LayoutLeft Layout;
-  typedef Real Scalar;
+  using KT     = KokkosTypes<HostDevice>;
+  using Scalar = Real;
 
-  using Array1 = Kokkos::View<Scalar*, Layout, ExeSpace>;
-  using Array2 = Kokkos::View<Scalar**, Layout, ExeSpace>;
-  using Array3 = Kokkos::View<Scalar***, Layout, ExeSpace>;
+  using Array1 = typename KT::template lview<Scalar*>;
+  using Array2 = typename KT::template lview<Scalar**>;
+  using Array3 = typename KT::template lview<Scalar***>;
 
   bool log_predictNc;
   const Int ncol, nlev;
@@ -62,7 +61,7 @@ private:
   void init(const FortranData::Ptr& d);
 };
 
-void p3_init();
+void p3_init(bool use_fortran=false);
 void p3_main(const FortranData& d);
 
 // We will likely want to remove these checks in the future, as we're not tied
@@ -72,9 +71,8 @@ void p3_main(const FortranData& d);
 Int check_against_python(const FortranData& d);
 
 int test_FortranData();
-int test_p3_init();
-int test_p3_main();
-int test_p3_ic();
+int test_p3_init(bool use_fortran);
+int test_p3_ic(bool use_fortran);
 
 }  // namespace p3
 }  // namespace scream
