@@ -669,7 +669,7 @@ using a fortran linker.
     <append> -L$(NETCDF_DIR) -lnetcdff -Wl,--as-needed,-L$(NETCDF_DIR)/lib -lnetcdff -lnetcdf </append>
   </SLIBS>
     <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_PAPI -DHAVE_SLASHPROC </append>
+    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <LDFLAGS>
     <append>-mkl </append>
