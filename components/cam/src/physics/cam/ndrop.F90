@@ -456,11 +456,11 @@ subroutine dropmixnuc( &
    real(r8) :: numliq_bf_mix(pcols,pver),numliq_af_mix(pcols,pver)
    real(r8) :: nsource_af_reg(pcols,pver)
    real(r8) :: nsource_bf_mix(pcols,pver),nsource_af_mix(pcols,pver)
-   character(len=20)::tmpname
+   character(len=25)::tmpname,substep,modal
    logical  :: macmic_extra_diag
-   logical  :: grow_shrink_flag = .true. 
 
    !-------------------------------------------------------------------------------
+   call phys_getopts(macmic_extra_diag_out = macmic_extra_diag) !! get flag to control the extra output 
 
    sq2pi = sqrt(2._r8*pi)
 
@@ -513,7 +513,8 @@ subroutine dropmixnuc( &
       fn(ntot_amode),                 &
       fm(ntot_amode),                 &
       fluxn(ntot_amode),              &
-      fluxm(ntot_amode)               )
+      fluxm(ntot_amode),              &
+      raerfld(pcols,pver,ntot_amode)  )
 
    ! Init pointers to mode number and specie mass mixing ratios in 
    ! intersitial and cloud borne phases.
@@ -603,6 +604,7 @@ subroutine dropmixnuc( &
             raercol(top_lev:pver,mm,nsav)    = raer(mm)%fld(i,top_lev:pver)
          end do
       end do
+      numliq_bf_reg(i,:)=qcld(:)
 
       ! droplet nucleation/aerosol activation
 
@@ -716,6 +718,10 @@ subroutine dropmixnuc( &
 
       enddo  ! grow_shrink_main_k_loop
       ! end of k-loop for growing/shrinking cloud calcs ......................
+
+      !! save the variable for output
+      numliq_af_reg(i,:)=qcld(:)
+      nsource_af_reg(i,:)=nsource(i,:)
 
       ! ......................................................................
       ! start of k-loop for calc of old cloud activation tendencies ..........
@@ -974,6 +980,9 @@ subroutine dropmixnuc( &
          end do
       end do
 
+      !save the variables for output
+      numliq_bf_mix(i,:)=qcld(:)
+      nsource_bf_mix(i,:)=nsource(i,:)
 
       ! old_cloud_nsubmix_loop
       do n = 1, nsubmix
@@ -1061,6 +1070,10 @@ subroutine dropmixnuc( &
      
      end if !l_aerosol_mixing
 
+     !save the variables for output
+      numliq_af_mix(i,:)=qcld(:pver)
+      nsource_af_mix(i,:)=nsource(i,:)
+
       ! evaporate particles again if no cloud
 
       do k = top_lev, pver
@@ -1121,6 +1134,52 @@ subroutine dropmixnuc( &
 
    end do  ! overall_main_i_loop
    ! end of main loop over i/longitude ....................................
+
+   !!output extra diagnostics!!!!
+   if(macmic_extra_diag)then!! add extra diagnostic variables
+   !!for numliq
+   write (tmpname, "(A14,I2.2)") "numliq_bf_reg_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   numliq_bf_reg, pcols, lchnk )
+   write (tmpname, "(A14,I2.2)") "numliq_af_reg_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   numliq_af_reg, pcols, lchnk )
+   write (tmpname, "(A14,I2.2)") "numliq_bf_mix_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   numliq_bf_mix, pcols, lchnk )
+   write (tmpname, "(A14,I2.2)") "numliq_af_mix_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   numliq_af_mix, pcols, lchnk )
+
+   !!for nsource
+   write (tmpname, "(A15,I2.2)") "nsource_af_reg_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   nsource_af_reg, pcols, lchnk )
+   write (tmpname, "(A15,I2.2)") "nsource_bf_mix_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   nsource_bf_mix, pcols, lchnk )
+   write (tmpname, "(A15,I2.2)") "nsource_af_mix_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   nsource_af_mix, pcols, lchnk )
+
+   !! fore ndropmix
+   write (tmpname, "(A5,I2.2)") "wtke_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   wtke, pcols, lchnk )
+   write (tmpname, "(A9,I2.2)") "wtke_cen_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   wtke_cen, pcols, lchnk )
+
+  !! for cloud fraction
+   write (tmpname, "(A11,I2.2)") "cldfrc_new_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   cldn, pcols, lchnk )
+
+   write (tmpname, "(A11,I2.2)") "cldfrc_old_", macmic_it
+   call outfld(trim(adjustl(tmpname)),   cldo, pcols, lchnk )
+
+   !! for aerosol within mam mode factnum
+   do m = 1, ntot_amode
+    write(substep,"(I2.2)") macmic_it
+    write(modal,"(I2.2)") m
+    tmpname='factnum_mam'//'_mod'//trim(adjustl(modal))'_'//trim(adjustl(substep))
+    call outfld(trim(adjustl(tmpname)),   factnum(:,:,m), pcols, lchnk )
+    tmpname='raerosol_tot_mam'//'_mod'//trim(adjustl(modal))'_'//trim(adjustl(substep))
+    call outfld(trim(adjustl(tmpname)),   raerfld(:,:,m), pcols, lchnk )
+   end do
+
+   end if   
+
 
    call outfld('NDROPCOL', ndropcol, pcols, lchnk)
    call outfld('NDROPSRC', nsource,  pcols, lchnk)
