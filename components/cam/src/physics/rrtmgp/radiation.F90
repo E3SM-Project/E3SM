@@ -1258,8 +1258,9 @@ contains
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: calculate_heating_rate
+      use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
+      use cam_control_mod, only: aqua_planet
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1398,6 +1399,12 @@ contains
       call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
       call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
+      ! Make sure temperatures are within range for aqua planets
+      if (aqua_planet) then
+         call clip_values(tmid, k_dist_sw%get_temp_ref_min(), k_dist_sw%get_temp_ref_max(), varname='tmid', warn=.true.)
+         call clip_values(tint, k_dist_sw%get_temp_ref_min(), k_dist_sw%get_temp_ref_max(), varname='tint', warn=.true.)
+      end if
+
       ! Do shortwave cloud optics calculations
       ! TODO: refactor the set_cloud_optics codes to allow passing arrays
       ! rather than state/pbuf so that we can use this for superparameterized
@@ -1515,8 +1522,9 @@ contains
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: calculate_heating_rate
+      use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
+      use cam_control_mod, only: aqua_planet
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1569,6 +1577,12 @@ contains
       ! exists or is assumed in the model we should use it here as well.
       ! TODO: set this more intelligently?
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
+
+      ! Make sure temperatures are within range for aqua planets
+      if (aqua_planet) then
+         call clip_values(tmid, k_dist_lw%get_temp_ref_min(), k_dist_lw%get_temp_ref_max(), varname='tmid', warn=.true.)
+         call clip_values(tint, k_dist_lw%get_temp_ref_min(), k_dist_lw%get_temp_ref_max(), varname='tint', warn=.true.)
+      end if
 
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')

@@ -20,7 +20,9 @@
 <solar_htng_spctrl_scl>.true. </solar_htng_spctrl_scl>
 <solar_data_type      >FIXED  </solar_data_type>
 
-<constant_zenith_deg>-1</constant_zenith_deg>
+<!-- Set constant solar zenith angle - use -1 to disable -->
+<constant_zenith_deg>42.05</constant_zenith_deg>
+<!-- <constant_zenith_deg>-1</constant_zenith_deg> -->
 
 <!-- ------------------------------------------------------------------------------------------ -->
 <!-- Revised physics constants for ape experiments (from CAM5/6 use case) -->
@@ -65,15 +67,13 @@
 <prescribed_ozone_type    > CYCLICAL              </prescribed_ozone_type>
 <prescribed_ozone_datapath> atm/cam/ozone         </prescribed_ozone_datapath>
 
-<!-- Zonally symmetric -->
-<prescribed_ozone_file    > apeozone_cam3_5_54.nc </prescribed_ozone_file>
-<prescribed_ozone_name    > OZONE                 </prescribed_ozone_name>
-<prescribed_ozone_cycle_yr> 2000                  </prescribed_ozone_cycle_yr>
+<!-- <prescribed_ozone_file    > apeozone_cam3_5_54.nc </prescribed_ozone_file> -->
+<!-- <prescribed_ozone_name    > OZONE                 </prescribed_ozone_name> -->
+<!-- <prescribed_ozone_cycle_yr> 1990                  </prescribed_ozone_cycle_yr> -->
 
-<!-- Realistic ozone distribution -->
-<!-- <prescribed_ozone_file    > ozone_1.9x2.5_L26_2000clim_c091112.nc </prescribed_ozone_file> -->
-<!-- <prescribed_ozone_name    > O3                    </prescribed_ozone_name> -->
-<!-- <prescribed_ozone_cycle_yr> 2000                  </prescribed_ozone_cycle_yr> -->
+<prescribed_ozone_file    > RCEMIP_ozone.v1.nc </prescribed_ozone_file>
+<prescribed_ozone_name    > O3                 </prescribed_ozone_name>
+<prescribed_ozone_cycle_yr> 2000               </prescribed_ozone_cycle_yr>
 
 <!-- ========================================================================================== -->
 <!-- ------------------------------------------------------------------------------------------ -->
