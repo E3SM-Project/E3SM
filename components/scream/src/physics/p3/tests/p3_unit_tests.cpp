@@ -103,19 +103,19 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
 
     //Here we check the case where sources > sinks 
-    if((abs(qcaut - 1e-4*ratio)>0).any()){errors++;}
-    if((abs(qcacc) > 0).any()){errors++;}
-    if((abs(qccol) > 0).any()){errors++;}
-    if((abs(qcheti) > 0).any()){errors++;}    
-    if((abs(qcshd) > 0).any()){errors++;}
-    if((abs(qiberg) > 0).any()){errors++;}
-    if((abs(qisub - (1.0 - ratio))> 0).any()){errors++;}
-    if((abs(qidep - (1.0 - ratio))> 0).any()){errors++;}
+    if(((qcaut - 1e-4*ratio) != 0.0).any()){errors++;}
+    if((qcacc != 0).any()){errors++;}
+    if((qccol != 0).any()){errors++;}
+    if((qcheti != 0).any()){errors++;}    
+    if((qcshd != 0).any()){errors++;}
+    if((qiberg != 0).any()){errors++;}
+    if(((qisub - (1.0 - ratio))!=0.0).any()){errors++;}
+    if(((qidep - (1.0 - ratio))!=0.0).any()){errors++;}
 
     // Now actually check conservation. We are basically checking here that 
     // qcaut, the only non-zero source, is corrected so that within a dt 
     // it does not overshoot qc.  
-    if((abs(qcaut*dt - qc) > 0.0).any()){errors++;}
+    if(((qcaut*dt - qc) != 0.0).any()){errors++;}
 
     // Check the case where sources > sinks with sinks = 0 
     qcaut = 0.0; 
@@ -146,13 +146,13 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Functions::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti);
 
     //Here we check cases where source > sinks and sinks > 1e-20
-    if((abs(qcaut)>0).any()){errors++;}
-    if((abs(qcacc)>0).any()){errors++;}
-    if((abs(qimlt)>0).any()){errors++;}
-    if((abs(qcshd)>0).any()){errors++;}
-    if((abs(qrevp - 1e-4*ratio)>0).any()){errors++;}
-    if((abs(qrcol)>0).any()){errors++;}
-    if((abs(qrheti)>0).any()){errors++;}
+    if((qcaut!=0.0).any()){errors++;}
+    if((qcacc!=0.0).any()){errors++;}
+    if((qimlt!=0.0).any()){errors++;}
+    if((qcshd!=0.0).any()){errors++;}
+    if(((qrevp - 1e-4*ratio) != 0.0).any()){errors++;}
+    if((qrcol!=0.0).any()){errors++;}
+    if((qrheti!=0.0).any()){errors++;}
 
     //Now test that conservation has actually been enforced 
     if((abs(qrevp * dt - qr)> 0.0).any()){errors++;}
@@ -180,15 +180,15 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Functions::ice_water_conservation(qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt, qisub, qimlt);
   
     //Here we check cases where source > sinks and sinks > 1e-20 
-    if((abs(qidep)>0).any()){errors++;}
-    if((abs(qinuc)>0).any()){errors++;}
-    if((abs(qrcol)>0).any()){errors++;}
-    if((abs(qccol)>0).any()){errors++;}
-    if((abs(qrheti)>0).any()){errors++;}
-    if((abs(qcheti)>0).any()){errors++;}
-    if((abs(qiberg)>0).any()){errors++;}
-    if((abs(qisub - 1e-4 * ratio)>0).any()){errors++;}
-    if((abs(qimlt)>0).any()){errors++;}
+    if((qidep!=0.0).any()){errors++;}
+    if((qinuc!=0.0).any()){errors++;}
+    if((qrcol!=0.0).any()){errors++;}
+    if((qccol!=0.0).any()){errors++;}
+    if((qrheti!=0.0).any()){errors++;}
+    if((qcheti!=0.0).any()){errors++;}
+    if((qiberg!=0.0).any()){errors++;}
+    if(((qisub - 1e-4 * ratio)!=0).any()){errors++;}
+    if((qimlt!=0).any()){errors++;}
 
     //Now test that conservation has actually been enforced 
     if((abs(qisub * dt - qitot)>0.0).any()){errors++;}

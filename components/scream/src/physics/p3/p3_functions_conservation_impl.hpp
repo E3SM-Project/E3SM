@@ -58,7 +58,7 @@ void Functions<S,D>
   Smask enforce_conservation  = sinks > sources && sinks >= 1e-20;  // determine if  conservation corrction is necessary 
 
   if (enforce_conservation.any()){
-    sources.set(enforce_conservation, sources/sinks);
+    ratio.set(enforce_conservation, sources/sinks);
     qrevp.set(enforce_conservation, qrevp*ratio); 
     qrcol.set(enforce_conservation, qrcol*ratio);
     qrheti.set(enforce_conservation, qrheti*ratio); 
@@ -78,7 +78,7 @@ void Functions<S,D>
   Smask enforce_conservation  = sinks > sources && sinks >= 1e-20;  // determine if  conservation corrction is necessary 
 
   if(enforce_conservation.any()){
-    sources.set(enforce_conservation, sources/sinks);
+    ratio.set(enforce_conservation, sources/sinks);
     qisub.set(enforce_conservation, qisub*ratio); 
     qimlt.set(enforce_conservation, qimlt*ratio); 
   }
