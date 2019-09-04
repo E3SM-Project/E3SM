@@ -2669,10 +2669,9 @@ end if
        snow_pcw_macmic = 0._r8
 
     ! write the liquid cloud fraction before macmic substepping
-       itim_old = pbuf_old_tim_idx()
        write(tmpname,"(A15)") "alstn_bf_macmic"
        ifalst   = pbuf_get_index('ALST')
-       call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+       call pbuf_get_field(pbuf, ifalst, tmp_alst)
        call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
        !write(tmpname,"(A15)") "alsto_bf_macmic"
        !ifalst   = pbuf_get_index('ALSTO')
@@ -2801,14 +2800,13 @@ end if
            call outfld(trim(adjustl(numliqname)),  tmpnumliq, pcols, lchnk )
            call outfld(trim(adjustl(cldliqname)),  tmpcldliq, pcols, lchnk )
            
-           itim_old = pbuf_old_tim_idx()
            write(tmpname,"(A17,I2.2)") "alstn_bf_micaero_", macmic_it
            ifalst   = pbuf_get_index('ALST')
-           call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+           call pbuf_get_field(pbuf, ifalst, tmp_alst)
            call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
            write(tmpname,"(A17,I2.2)") "alsto_bf_micaero_", macmic_it
            !ifalst   = pbuf_get_index('ALSTO')
-           !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+           !call pbuf_get_field(pbuf, ifalst, tmp_alst)
            call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk) 
 
         end if
@@ -2858,14 +2856,13 @@ end if
             call outfld(trim(adjustl(numliqname)),  tmpnumliq, pcols, lchnk )
             call outfld(trim(adjustl(cldliqname)),  tmpcldliq, pcols, lchnk )
 
-            itim_old = pbuf_old_tim_idx()
             write(tmpname,"(A17,I2.2)") "alstn_af_micaero_", macmic_it
             ifalst   = pbuf_get_index('ALST')
-            call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+            call pbuf_get_field(pbuf, ifalst, tmp_alst)
             call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
             write(tmpname,"(A17,I2.2)") "alsto_af_micaero_", macmic_it
             !ifalst   = pbuf_get_index('ALSTO')
-            !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+            !call pbuf_get_field(pbuf, ifalst, tmp_alst)
             call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)
 
           end if          
@@ -2952,14 +2949,13 @@ end if
             call outfld(trim(adjustl(numliqname)),  tmpnumliq, pcols, lchnk )
             call outfld(trim(adjustl(cldliqname)),  tmpcldliq, pcols, lchnk )
 
-            itim_old = pbuf_old_tim_idx()
             write(tmpname,"(A17,I2.2)") "alstn_af_mg2tend_", macmic_it
             ifalst   = pbuf_get_index('ALST')
-            call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+            call pbuf_get_field(pbuf, ifalst, tmp_alst)
             call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
             write(tmpname,"(A17,I2.2)") "alsto_af_mg2tend_", macmic_it
             !ifalst   = pbuf_get_index('ALSTO')
-            !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+            !call pbuf_get_field(pbuf, ifalst, tmp_alst)
             call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)
 
           end if
@@ -2976,14 +2972,13 @@ end if
      end if ! l_st_mic
 
     ! write the liquid cloud fraction after macmic substepping
-      itim_old = pbuf_old_tim_idx()
       write(tmpname,"(A15)") "alstn_af_macmic"
       ifalst   = pbuf_get_index('ALST')
-      call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+      call pbuf_get_field(pbuf, ifalst, tmp_alst)
       call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
       write(tmpname,"(A15)") "alsto_af_macmic"
       !ifalst   = pbuf_get_index('ALSTO')
-      !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+      !call pbuf_get_field(pbuf, ifalst, tmp_alst)
       call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)     
 
 if (l_tracer_aero) then
