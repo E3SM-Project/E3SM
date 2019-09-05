@@ -1051,8 +1051,9 @@ module li_iceshelf_melt
                kinf = ksup + 1
                if ((zOcean(ksup)-zOcean(kinf)) == 0) then
                   call mpas_log_write("iceshelf_melt_ismip6: Invalid value for zOcean. " // &
-                       "ksup=$i kinf=$i zOcean(ksup)=$r zOcean(kinf)=$r", MPAS_LOG_ERR, intArgs=(/ksup, kinf/), &
-                       realArgs=(/zOcean(ksup), zOcean(kinf) /) )
+                       "ksup=$i kinf=$i zOcean(ksup)=$r zOcean(kinf)=$r iCell=$i lowerSurface=$r", MPAS_LOG_ERR, &
+                       intArgs=(/ksup, kinf, iCell/), &
+                       realArgs=(/zOcean(ksup), zOcean(kinf), lowerSurface(iCell) /) )
                   err = ior(err, 1)
                endif
                !call mpas_log_write("kinf=$i, zOcean(kinf)=$r, TFocean=$r",realArgs=(/zOcean(kinf),TFocean(kinf,iCell)/),intArgs=(/kinf/))
