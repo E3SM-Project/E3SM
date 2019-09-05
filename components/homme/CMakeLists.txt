@@ -121,7 +121,7 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
   SET (HOMME_USE_KOKKOS TRUE)
   SET (HOMME_USE_CXX TRUE)
   IF (NOT ${BUILD_HOMME_PREQX} AND ${HOMME_BUILD_EXECS})
-    # If we build theta kokkos, we also build theta, so we can compare
+    # If we build preqx kokkos, we also build preqx, so we can compare
     MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_PREQX to ON, since BUILD_HOMME_PREQX_KOKKOS is ON.")
 
     # We need to compare against F90 implementation, so turn this on
@@ -179,7 +179,7 @@ ENDIF()
 ##############################################################################
 # Compiler options set in cmake/SetCompiler.cmake
 ##############################################################################
-INCLUDE(SetCompilerFlags)
+INCLUDE(${HOMME_SOURCE_DIR}/cmake/SetCompilerFlags.cmake)
 
 
 OPTION(HOMME_USE_MKL "Whether to use Intel's MKL instead of blas/lapack" FALSE)
@@ -409,6 +409,14 @@ ADD_CUSTOM_TARGET(clean-all
    COMMAND ${CMAKE_BUILD_TOOL} clean
    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_SOURCE_DIR}/cmake/clean-cmake-files.cmake"
 )
+
+IF (NOT "${PROJECT_NAME}" STREQUAL "HOMME")
+  # Homme is used as a subproject. We need to make the compiler options available to the outside
+  SET (HOMME_C_FLAGS ${CMAKE_C_FLAGS} PARENT_SCOPE)
+  SET (HOMME_CXX_FLAGS ${CMAKE_CXX_FLAGS} PARENT_SCOPE)
+  SET (HOMME_Fortran_FLAGS ${CMAKE_Fortran_FLAGS} PARENT_SCOPE)
+  SET (HOMME_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} PARENT_SCOPE)
+ENDIF ()
 
 IF (${HOMME_USE_KOKKOS})
   # Put this last so that tribits.cmake's 'check' target doesn't conflict with

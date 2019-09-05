@@ -29,6 +29,9 @@
 namespace Homme
 {
 
+bool Session::m_inited = false;
+bool Session::m_throw_instead_of_abort = false;
+
 std::string active_avx_string () {
   std::string s;
 #if defined __AVX512F__
@@ -91,6 +94,9 @@ void initialize_hommexx_session ()
     std::cout << "HOMMEXX provided best default values in Config.hpp\n";
 #endif
   }
+
+  Session::m_inited = true;
+  Session::m_throw_instead_of_abort = false;
 }
 
 void finalize_hommexx_session ()
@@ -103,6 +109,8 @@ void finalize_hommexx_session ()
 #endif
 
   Kokkos::finalize();
+
+  Session::m_inited = false;
 }
 
 } // namespace Homme
