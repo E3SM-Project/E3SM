@@ -49,30 +49,30 @@ interface
     real(kind=c_real),   intent(out) :: proc
   end subroutine access_lookup_table_coll_f
 
-  subroutine cloud_water_conservation(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
+  subroutine cloud_water_conservation_f(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
     qiberg,qisub,qidep) bind(C)
     use iso_c_binding
 
     real(kind=c_real), value, intent(in) :: qc, qcnuc, dt
     real(kind=c_real), intent(inout) :: qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
-  end subroutine cloud_water_conservation 
+  end subroutine cloud_water_conservation_f 
 
-  subroutine rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
+  subroutine rain_water_conservation_f(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
     qrevp,qrcol,qrheti)
     use iso_c_binding
  
     real(kind=c_real), value, intent(in) :: qr, qcaut, qcacc, qimlt, qcshd, dt
     real(kind=c_real), intent(inout) :: qrevp, qrcol, qrheti
-  end subroutine rain_water_conservation 
+  end subroutine rain_water_conservation_f 
   
-  subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
+  subroutine ice_water_conservation_f(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
     qisub,qimlt)
     use iso_c_binding
  
     real(kind=c_real), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
     real(kind=c_real), intent(inout) :: qisub, qimlt
   
-  end subroutine ice_water_conservation 
+  end subroutine ice_water_conservation_f 
 
 end interface
 
