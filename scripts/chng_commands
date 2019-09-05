@@ -1,4 +1,0 @@
-./xmlchange --subgroup case.run JOB_WALLCLOCK_TIME=00:15:00
-./xmlchange STOP_N=9 
-./xmlchange STOP_OPTION=nsteps
-./xmlchange CAM_NML_USE_CASE=rce_cam6
