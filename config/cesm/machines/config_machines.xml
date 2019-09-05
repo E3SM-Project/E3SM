@@ -1516,6 +1516,8 @@ This allows using a different mpirun command to launch unit tests
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
+      <!-- The following is needed in order to run qsub from the compute nodes -->
+      <env name="PATH">$ENV{PATH}:/cluster/torque/bin</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
