@@ -180,7 +180,11 @@ contains
     end do
     maxBottomDepth = -1.0_RKIND*maxBottomDepth
 
+    ! Enforce max bottom depth from namelist option
     call mpas_dmpar_max_real(domain % dminfo, maxBottomDepth, globalMaxBottomDepth)
+    if (config_hurricane_max_depth < globalMaxBottomDepth) then
+       globalMaxBottomDepth = config_hurricane_max_depth
+    end if
 
     ! Find min bottom depth
     maxBottomDepth = -9e10
@@ -274,56 +278,94 @@ contains
           bottomDepth(iCell) = max(bottomDepth(iCell), config_hurricane_min_depth)
           bottomDepth(iCell) = min(bottomDepth(iCell), globalMaxBottomDepth)
 
-          ! Set up vertical grid
-          maxLevelCell(iCell) = nVertLevels
-          ! ensures only 3 layers can be obtained on mesh
-          if (bottomDepth(iCell) < 0 .or. bottomDepth(iCell) < refBottomDepth(3)) then
-            maxLevelCell(iCell) = 3
-          else
-            ! snap to zstar coordinate
-            do k = 1, nVertLevels
-              if (bottomDepth(iCell) < refBottomDepth(k)) then
-                maxLevelCell(iCell) = k-1
-                bottomDepth(iCell) = refBottomDepth(k-1)
-                exit
-              end if
-            end do
-          end if
+          !! Flatten out Bermuda
+          !if ((lonCell(iCell) > (-66.0_RKIND+360.0_RKIND)*pi/180.0_RKIND .and. &
+          !     lonCell(iCell) < (-62.0_RKIND+360.0_RKIND)*pi/180.0_RKIND)  .and. &
+          !    (latCell(iCell) >  30.0_RKIND*pi/180.0_RKIND .and. &
+          !     latCell(iCell) <  34.0_RKIND*pi/180.0_RKIND)) then
+          !
+          !  bottomDepth(iCell) = globalMaxBottomDepth
+          !end if
         end do
 
-        ! shift coordinates to accomodate wetting and drying
-        do k = 1, nVertLevels
-          refBottomDepth(k) = refBottomDepth(k) - globalMinBottomDepth
-        end do
-
-        do iCell = 1, nCellsSolve
-
-          bottomDepth(iCell) = bottomDepth(iCell) - globalMinBottomDepth
-          ssh(iCell) = ssh(iCell) + globalMinBottomDepth
-
-          ! make sure depth is thick enough via ssh = TOTAL_DEPTH - bottomDepth
-          if (config_use_wetting_drying) then
-            ssh(iCell) = - bottomDepth(iCell) + &
-              max(ssh(iCell) + bottomDepth(iCell), &
-                  maxLevelCell(iCell)*(config_drying_min_cell_height + eps))
-          else
-            config_drying_min_cell_height = 0.0_RKIND
-          end if
-
-          do k = 1, maxLevelCell(iCell)
-            layerThickness(k,iCell) = max(config_drying_min_cell_height + eps, &
-              (ssh(iCell) + bottomDepth(iCell))/maxLevelCell(iCell))
-            if (layerThickness(k,iCell) < config_drying_min_cell_height) then
-              call mpas_log_write('layerThickness($i,$i)=$r', MPAS_LOG_CRIT, &
-                intArgs=(/k,iCell/), &
-                realArgs=(/layerThickness(k,iCell)/))
+        if (config_use_wetting_drying) then
+          do iCell = 1, nCellsSolve
+            ! Set up vertical grid
+            maxLevelCell(iCell) = nVertLevels
+            ! ensures only 3 layers can be obtained on mesh
+            if (bottomDepth(iCell) < 0 .or. bottomDepth(iCell) < refBottomDepth(3)) then
+              maxLevelCell(iCell) = 3
+            else
+              ! snap to zstar coordinate
+              do k = 1, nVertLevels
+                if (bottomDepth(iCell) < refBottomDepth(k)) then
+                  maxLevelCell(iCell) = k-1
+                  bottomDepth(iCell) = refBottomDepth(k-1)
+                  exit
+                end if
+              end do
             end if
           end do
 
-          do k = 1, maxLevelCell(iCell)
-            restingThickness(k,iCell) = bottomDepth(iCell)/maxLevelCell(iCell)
+          ! shift coordinates to accomodate wetting and drying
+          do k = 1, nVertLevels
+            refBottomDepth(k) = refBottomDepth(k) - globalMinBottomDepth
           end do
-        end do
+
+          do iCell = 1, nCellsSolve
+
+            bottomDepth(iCell) = bottomDepth(iCell) - globalMinBottomDepth
+            ssh(iCell) = ssh(iCell) + globalMinBottomDepth
+
+            ! make sure depth is thick enough via ssh = TOTAL_DEPTH - bottomDepth
+            ssh(iCell) = - bottomDepth(iCell) + &
+              max(ssh(iCell) + bottomDepth(iCell), &
+              maxLevelCell(iCell)*(config_drying_min_cell_height + eps))
+
+            do k = 1, maxLevelCell(iCell)
+              layerThickness(k,iCell) = max(config_drying_min_cell_height + eps, &
+                (ssh(iCell) + bottomDepth(iCell))/maxLevelCell(iCell))
+              if (layerThickness(k,iCell) < config_drying_min_cell_height) then
+                call mpas_log_write('layerThickness($i,$i)=$r', MPAS_LOG_CRIT, &
+                  intArgs=(/k,iCell/), &
+                  realArgs=(/layerThickness(k,iCell)/))
+              end if
+            end do
+
+            do k = 1, maxLevelCell(iCell)
+              restingThickness(k,iCell) = bottomDepth(iCell)/maxLevelCell(iCell)
+            end do
+          end do
+        else
+          ! case without wetting and drying
+          do iCell = 1, nCellsSolve
+            ! Set up vertical grid
+            maxLevelCell(iCell) = nVertLevels
+            if (nVertLevels > 10) then
+              ! z-star
+              do k = 1, nVertLevels
+                if (bottomDepth(iCell) < refBottomDepth(k)) then
+                  maxLevelCell(iCell) = k-1
+                  bottomDepth(iCell) = refBottomDepth(k-1)
+                  exit
+                end if
+              end do
+              do k = 1, nVertLevels
+                layerThickness(k,iCell) = globalMaxBottomDepth * (interfaceLocations(k+1) - interfaceLocations(k))
+              end do
+            else
+              ! impermeable layers
+              do k = 1, nVertLevels
+                layerThickness(k,iCell) = bottomDepth(iCell)/real(nVertLevels,RKIND)
+              end do
+            end if
+
+            ! set layer thicknesses
+            do k = 1, nVertLevels
+              restingThickness(k, iCell) = layerThickness(k, iCell)
+            end do
+          end do
+        end if
 
 
         do iCell = 1, nCellsSolve
