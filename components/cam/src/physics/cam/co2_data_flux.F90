@@ -256,6 +256,7 @@ subroutine co2_data_flux_advance (xin)
            xin%time_coord%wghts(2) * (xin%co2bdy(:,:,2) - xin%co2bdy(:,:,1))
    endif
    !BRYCE-unit conversion?????
+   ! atm_import_export.F90 wants surface fluxes in kgCO2/m2/s so no conversion necessary
 
 end subroutine co2_data_flux_advance
 

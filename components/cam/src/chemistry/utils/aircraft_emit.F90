@@ -513,7 +513,7 @@ contains
     use ppgrid,       only : pcols, pver
     use string_utils, only : to_lower, GLC
     use cam_history,  only : outfld
-    use physconst,    only : mwdry       ! molecular weight dry air ~ kg/kmole
+    use physconst,    only : mwdry, gravit        ! molecular weight dry air ~ kg/kmole
     use physconst,    only : boltz                ! J/K/molecule
     ! C.-C. Chen
     use physics_buffer, only : physics_buffer_desc, pbuf_get_field, pbuf_get_chunk
@@ -593,7 +593,7 @@ contains
                 to_mmr(:ncol,:) = 1.0_r8
              elseif (caseid == 5)then
                 !BRYCE- convert units here
-                to_mmr(:ncol,:) = 1.0_r8
+                to_mmr(:ncol,:) = gravit / state(c)%pdeldry(:ncol,:)
              endif
              pbuf_chnk => pbuf_get_chunk(pbuf2d, c)
              
@@ -641,6 +641,11 @@ contains
     logical  :: found
     real(r8) :: to_mmr(pcols,pver), vrt_interp_field(pcols, pver,begchunk:endchunk)
     real(r8),pointer :: tmpptr(:,:), tmpptr_native_grid(:,:)
+
+    real(r8) :: nzil, nzir, mzil, mzir                       ! level bounds
+    real(r8) :: ovrl, ovrr, ovrf                             ! overlap bounds
+    real(r8) :: ovrmat(pver, native_grid_frc_air(m)%lev_frc) ! overlap fractions matrix
+    integer  :: kinp, kmdl                                   ! vertical indexes
 
     !Decide whether to read new data or not (e.g. data may needs to be read on month boundaries )
     read_data = native_grid_frc_air(m)%time_coord%read_more() .or. .not. native_grid_frc_air(m)%initialized
@@ -698,8 +703,24 @@ contains
     endif
     !BRYCE- vertical interpolation (delete following two lines and ass vertical interpolation code here)
     !"vrt_interp_field" should store the vertical interpolated field
-    vrt_interp_field(:,:,:) = 1.0_r8 !delete it
-    vrt_interp_field(:,1:native_grid_frc_air(m)%lev_frc,:) = native_grid_frc_air(m)%native_grid_flds(:,:,:)!delete_it
+    ! Vertical interpolation follows Joeckel (2006) ACP method for conservation
+    do i = 1, ncol
+       do kinp = 1, native_grid_frc_air(m)%lev_frc
+          nzil = native_grid_frc_air(m)%lev_bnds(i,kinp,1)
+          nzir = native_grid_frc_air(m)%lev_bnds(i,kinp,2)
+          do kmdl = 1, pver
+             mzil               = state%zi(i, kmdl)
+             mzir               = state%zi(i, kmdl+1)
+             ovrl               = MAX( MIN(nzil, nzir), MIN(mzil, mzir) )
+             ovrr               = MIN( MAX(nzil, nzir), MAX(mzil, mzir) )
+             ovrf               = INT( SIGN(0.5_r8, ovrr-ovrl) + 1._r8 )
+             ovrmat(kinp, kmdl) = ABS(ovrr - ovrl) * ovrf / ABS(nzir - nzil)
+          end do
+       end do
+       vrt_interp_field(i,:,:)  = MATMUL( ovrmat, native_grid_frc_air(m)%native_grid_flds(:,:,:) )
+    end do
+    !vrt_interp_field(:,:,:) = 1.0_r8 !delete it
+    !vrt_interp_field(:,1:native_grid_frc_air(m)%lev_frc,:) = native_grid_frc_air(m)%native_grid_flds(:,:,:)!delete_it
     
     
     !add field to pbuf
