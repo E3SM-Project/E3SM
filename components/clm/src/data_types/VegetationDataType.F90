@@ -1156,6 +1156,11 @@ module VegetationDataType
          avgflag='A', long_name='vegetation temperature (last 24hrs)', &
          ptr_patch=this%t_veg24, default='inactive')
 
+    this%nfix_to_plantn(begp:endp) = spval
+    call hist_addfld1d (fname='NFIX_TO_PLANTN', units='gN/m^2/s', &
+         avgflag='A', long_name='N fixation to plant', &
+         ptr_patch=this%nfix_to_plantn,default='inactive')
+
     this%t_veg240(begp:endp)  = spval
     call hist_addfld1d (fname='TV240', units='K',  &
          avgflag='A', long_name='vegetation temperature (last 240hrs)', &

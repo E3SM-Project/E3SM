@@ -413,7 +413,7 @@ contains
       
       do f = 1, fn
          p = filterp(f)
-         if ( .not. nu_com_leaf_physiology) then
+         if ( .not. nu_com_leaf_physiology .or. CNAllocate_Carbon_only()) then
             ! Leaf nitrogen concentration at the top of the canopy (g N leaf / m**2 leaf)
             lnc(p) = 1._r8 / (slatop(veg_pp%itype(p)) * leafcn(veg_pp%itype(p)))
 

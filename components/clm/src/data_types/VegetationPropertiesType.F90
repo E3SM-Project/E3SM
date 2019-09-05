@@ -114,6 +114,7 @@ module VegetationPropertiesType
      real(r8), allocatable :: i_vc(:)                  ! intercept of photosynthesis vcmax ~ leaf n content regression model
      real(r8), allocatable :: s_vc(:)                  ! slope of photosynthesis vcmax ~ leaf n content regression model
 
+     real(r8), allocatable :: nsc_rtime(:)             ! non-structural carbon residence time 
      real(r8), allocatable :: alpha_nfix(:)            ! fraction of fixed N goes directly to plant
      real(r8), allocatable :: alpha_ptase(:)           ! fraction of phosphatase produced P goes directly to plant
      real(r8), allocatable :: ccost_nfix(:)            ! plant C cost per unit N produced by N2 fixation
@@ -171,7 +172,7 @@ contains
     use pftvarcon , only : vmax_nfix, km_nfix
     use pftvarcon , only : alpha_nfix, alpha_ptase,ccost_nfix,ccost_ptase
     use pftvarcon , only : vmax_ptase, km_ptase, lamda_ptase
-    use pftvarcon , only : i_vc, s_vc
+    use pftvarcon , only : i_vc, s_vc, nsc_rtime
     use pftvarcon , only : leafcn_obs, frootcn_obs, livewdcn_obs, deadwdcn_obs
     use pftvarcon , only : leafcp_obs, frootcp_obs, livewdcp_obs, deadwdcp_obs
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
@@ -262,6 +263,7 @@ contains
     allocate( this%vmax_ptase(0:numpft))                         ; this%vmax_ptase(:)            =nan
     allocate( this%i_vc(0:numpft))                               ; this%i_vc(:)                  =nan
     allocate( this%s_vc(0:numpft))                               ; this%s_vc(:)                  =nan
+    allocate( this%nsc_rtime(0:numpft))                          ; this%nsc_rtime(:)             =nan
     allocate( this%vmax_nfix(0:numpft))                          ; this%vmax_nfix(:)             =nan
     allocate( this%km_nfix(0:numpft))                            ; this%km_nfix(:)               =nan
     allocate( this%fnr(0:numpft))                                ; this%fnr(:)                   =nan
@@ -385,6 +387,7 @@ contains
         this%km_plant_p(m)     = km_plant_p(m)
         this%i_vc(m)           = i_vc(m)
         this%s_vc(m)           = s_vc(m)
+        this%nsc_rtime(m)      = nsc_rtime(m)
         this%vmax_nfix(m)      = vmax_nfix(m)
         this%km_nfix(m)        = km_nfix(m)
         this%vmax_ptase(m)     = vmax_ptase(m)

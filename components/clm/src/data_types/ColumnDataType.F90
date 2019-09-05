@@ -2601,7 +2601,7 @@ contains
                 do j = 1, nlevdecomp
                    if (c12_carbonstate_vars%decomp_cpools_vr(i,j,k) /= spval .and. &
                         .not. isnan(c12_carbonstate_vars%decomp_cpools_vr(i,j,k)) ) then
-                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c3_r2
+                         this%decomp_cpools_vr(i,j,k) = c12_carbonstate_vars%decomp_cpools_vr(i,j,k) * c14ratio
                    endif
                 end do
              end do
@@ -2706,11 +2706,11 @@ contains
     ! Spinup state
     !--------------------------------
 
-    if (carbon_type == 'c12'  .or. carbon_type == 'c14') then
+    if (carbon_type == 'c12'  .or. carbon_type == 'c13' .or. carbon_type == 'c14') then
         if (flag == 'write') then
            idata = spinup_state
         end if
-        if (carbon_type == 'c12' .or. (carbon_type == 'c14' .and. flag == 'read')) then
+        if (carbon_type == 'c12' .or. (carbon_type == 'c13' .and. flag == 'read') .or. (carbon_type == 'c14' .and. flag == 'read')) then
            call restartvar(ncid=ncid, flag=flag, varname='spinup_state', xtype=ncd_int,  &
                 long_name='Spinup state of the model that wrote this restart file: ' &
                 // ' 0 = normal model mode, 1 = AD spinup', units='', &
@@ -4295,7 +4295,8 @@ contains
     type(cnstate_type)         , intent(in)    :: cnstate_vars
     !
     ! !LOCAL VARIABLES:
-    integer            :: i,j,k,l,c,a,b,d
+    integer            :: i,j,k,l,c
+    real(r8)           :: a,b,d
     logical            :: readvar
     integer            :: idata
     logical            :: exit_spinup = .false.
@@ -7604,6 +7605,11 @@ contains
     call hist_addfld1d (fname='NDEP_TO_SMINN', units='gN/m^2/s', &
          avgflag='A', long_name='atmospheric N deposition to soil mineral N', &
          ptr_col=this%ndep_to_sminn)
+
+    this%nfix_to_ecosysn(begc:endc) = spval
+    call hist_addfld1d (fname='NFIX_TO_ECOSYSN', units='gN/m^2/s', &
+         avgflag='A', long_name='symbiotic/asymbiotic N fixation to the whole ecosystem', &
+         ptr_col=this%nfix_to_ecosysn,default='inactive')
 
     this%nfix_to_sminn(begc:endc) = spval
     call hist_addfld1d (fname='NFIX_TO_SMINN', units='gN/m^2/s', &

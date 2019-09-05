@@ -1221,6 +1221,8 @@ contains
          cn_scalar                    => cnstate_vars%cn_scalar                                , &
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
          np_scalar                    => cnstate_vars%np_scalar                                , & 
+         cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean                        , &
+         cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean                        , &
 
          t_scalar                     => col_cf%t_scalar                          , &
          w_scalar                     => col_cf%w_scalar                          , &
@@ -1444,7 +1446,7 @@ contains
                                                    (leafcn(ivt(p)) - leafcn(ivt(p))*(1- cn_stoich_var)),0.0_r8),1.0_r8)
                         endif
                         plant_ndemand_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * &
-                             froot_prof(p,j) * cn_scalar(p) * t_scalar(c,j) *  compet_plant_n(p) 
+                             froot_prof(p,j) * cn_scalar_runmean(p) * t_scalar(c,j) *  compet_plant_n(p) 
 
                         plant_ndemand_vr_patch(p,j) = max(plant_ndemand_vr_patch(p,j), 0.0_r8)
                         col_plant_ndemand_vr(c,j) = col_plant_ndemand_vr(c,j) + plant_ndemand_vr_patch(p,j)*veg_pp%wtcol(p)
@@ -1624,7 +1626,7 @@ contains
                         endif
 
                         plant_pdemand_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cp_scalar(p) * t_scalar(c,j) * compet_plant_p(p)
+                             cp_scalar_runmean(p) * t_scalar(c,j) * compet_plant_p(p)
                         plant_pdemand_vr_patch(p,j) = max(plant_pdemand_vr_patch(p,j),0.0_r8)
                         col_plant_pdemand_vr(c,j) = col_plant_pdemand_vr(c,j) + plant_pdemand_vr_patch(p,j)*veg_pp%wtcol(p)
                      else
@@ -1987,7 +1989,7 @@ contains
                   if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         do j = 1, nlevdecomp
                            pnup_pfrootc(p) = pnup_pfrootc(p) + plant_ndemand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
-                                ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+                                ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                                 * dzsoi_decomp(j)
                         end do
                   end if
@@ -2131,6 +2133,7 @@ contains
                      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         e_km_nh4 = e_km_nh4 + e_plant_scalar*frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)/km_plant_nh4(ivt(p))
                         e_km_no3 = e_km_no3 + e_plant_scalar*frootc(p)*froot_prof(p,j)*veg_pp%wtcol(p)/km_plant_no3(ivt(p))
+                        decompmicc(c,j) = decompmicc(c,j) + decompmicc_patch_vr(ivt(p),j)*veg_pp%wtcol(p)
                      end if
                   end do
                   e_km_nh4 = e_km_nh4 + e_decomp_scalar*decompmicc(c,j)*(1._r8/km_decomp_nh4 + 1._r8/km_nit)
@@ -2168,9 +2171,9 @@ contains
                         endif
 
                         plant_nh4demand_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * froot_prof(p,j) * &
-                             cn_scalar(p) * t_scalar(c,j) * compet_plant_nh4(p) 
+                             cn_scalar_runmean(p) * t_scalar(c,j) * compet_plant_nh4(p) 
                         plant_no3demand_vr_patch(p,j) = vmax_plant_no3(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cn_scalar(p) * t_scalar(c,j) * compet_plant_no3(p)
+                             cn_scalar_runmean(p) * t_scalar(c,j) * compet_plant_no3(p)
                         plant_nh4demand_vr_patch(p,j) = max(plant_nh4demand_vr_patch(p,j),0.0_r8)
                         plant_no3demand_vr_patch(p,j) = max(plant_no3demand_vr_patch(p,j),0.0_r8)
                         col_plant_nh4demand_vr(c,j) = col_plant_nh4demand_vr(c,j) + plant_nh4demand_vr_patch(p,j)*veg_pp%wtcol(p) 
@@ -2469,7 +2472,7 @@ contains
                         endif
 
                         plant_pdemand_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cp_scalar(p) * t_scalar(c,j) * compet_plant_p(p)
+                             cp_scalar_runmean(p) * t_scalar(c,j) * compet_plant_p(p)
                         plant_pdemand_vr_patch(p,j) = max(plant_pdemand_vr_patch(p,j),0.0_r8)
                         col_plant_pdemand_vr(c,j) = col_plant_pdemand_vr(c,j) + plant_pdemand_vr_patch(p,j)*veg_pp%wtcol(p)
                      else
@@ -2807,10 +2810,10 @@ contains
                   if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         do j = 1, nlevdecomp
                            pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_nh4demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
-                                ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+                                ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                                 * dzsoi_decomp(j)
                            pnup_pfrootc(p) =  pnup_pfrootc(p) + plant_no3demand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
-                                ,1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+                                ,1e-20_r8) * fpg_no3_vr(c,j) / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
                                 * dzsoi_decomp(j)
                         end do
                   end if
@@ -3044,8 +3047,10 @@ contains
          grain_flag                   => cnstate_vars%grain_flag_patch                         , &
          cn_scalar                    => cnstate_vars%cn_scalar                                , &
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
+         water_scalar                 => cnstate_vars%water_scalar                             , &
          cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean                        , &
          cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean                        , &
+         water_scalar_runmean         => cnstate_vars%water_scalar_runmean                     , &
          annmax_retransp              => cnstate_vars%annmax_retransp_patch                    , &
          cpool_to_xsmrpool            => veg_cf%cpool_to_xsmrpool               , &
          w_scalar                     => col_cf%w_scalar                          , &
@@ -3071,6 +3076,7 @@ contains
          allocation_stem              => veg_cf%allocation_stem                       , &
          allocation_froot             => veg_cf%allocation_froot                      , &
          xsmrpool_turnover            => veg_cf%xsmrpool_turnover               , &
+         nsc_rtime                    => veg_vp%nsc_rtime                                      , &
          rf_decomp_cascade            => cnstate_vars%rf_decomp_cascade_col                    , &
          fpi_vr                       => cnstate_vars%fpi_vr_col                               , &
          fpi_p_vr                     => cnstate_vars%fpi_p_vr_col                             , &
@@ -3297,6 +3303,7 @@ contains
              ! set allocation coefficients
              N_lim_factor(p) = cn_scalar_runmean(p) ! N stress factor
              P_lim_factor(p) = cp_scalar_runmean(p) ! P stress factor
+             W_lim_factor(p) = water_scalar_runmean(p) ! W stress factor
 
              if (cnallocate_carbon_only()) then
                  N_lim_factor(p) = 0.0_r8
@@ -3306,9 +3313,10 @@ contains
              else if (cnallocate_carbonphosphorus_only()) then
                  N_lim_factor(p) = 0.0_r8
              end if
-             W_lim_factor(p) = 0.0_r8
+             ! integrate instant water scalar for plant dynamic allocation
+             water_scalar(p) = 0.0_r8
              do j = 1 , nlevdecomp
-                 W_lim_factor(p) = W_lim_factor(p) + w_scalar(c,j) * froot_prof(p,j)
+                 water_scalar(p) = water_scalar(p) + w_scalar(c,j) * froot_prof(p,j) * dzsoi_decomp(j)
              end do
              ! N_lim_factor/P_lim_factor ones: highly limited
              ! N_lim_factor/P_lim_factor zeros: not limited
@@ -3481,7 +3489,7 @@ contains
                 cpool_to_xsmrpool(p) = 0.0_r8
                 
                 ! storage pool turnover
-                xsmrpool_turnover(p) = max(xsmrpool(p) - mr*xsmr_ratio*dt , 0.0_r8) / (10.0_r8*365.0_r8*secspday)
+                xsmrpool_turnover(p) = max(xsmrpool(p) - mr*xsmr_ratio*dt , 0.0_r8) / (nsc_rtime(ivt(p))*365.0_r8*secspday)
              end if
              
              plant_calloc(p) = availc(p)
