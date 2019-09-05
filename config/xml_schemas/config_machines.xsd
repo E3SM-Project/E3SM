@@ -37,6 +37,8 @@
   <xs:element name="SAVE_TIMING_DIR" type="xs:string"/>
   <xs:element name="SAVE_TIMING_DIR_PROJECTS" type="xs:string"/>
   <xs:element name="CIME_OUTPUT_ROOT" type="xs:string"/>
+  <xs:element name="CIME_HTML_ROOT" type="xs:string"/>
+  <xs:element name="CIME_URL_ROOT" type="xs:string"/>
   <xs:element name="DIN_LOC_ROOT" type="xs:string"/>
   <xs:element name="DIN_LOC_ROOT_CLMFORC" type="xs:string"/>
   <xs:element name="DOUT_S_ROOT" type="xs:string"/>
@@ -123,6 +125,10 @@
         <!-- CIME_OUTPUT_ROOT: Base directory for case output,
              the bld and run directories are written below here -->
         <xs:element ref="CIME_OUTPUT_ROOT" minOccurs="1" maxOccurs="1"/>
+        <!-- CIME_HTML_ROOT: Base directory for CIME SystemTest output websites-->
+        <xs:element ref="CIME_HTML_ROOT" minOccurs="0" maxOccurs="1"/>
+        <!-- CIME_URL_ROOT: Base URL for CIME SystemTest output websites-->
+        <xs:element ref="CIME_URL_ROOT" minOccurs="0" maxOccurs="1"/>
         <!-- DIN_LOC_ROOT: location of the inputdata directory -->
         <xs:element ref="DIN_LOC_ROOT" minOccurs="1" maxOccurs="1"/>
         <!-- DIN_LOC_ROOT_CLMFORC: optional input location for clm forcing data  -->
