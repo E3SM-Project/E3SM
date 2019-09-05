@@ -1156,11 +1156,6 @@ module VegetationDataType
          avgflag='A', long_name='vegetation temperature (last 24hrs)', &
          ptr_patch=this%t_veg24, default='inactive')
 
-    this%nfix_to_plantn(begp:endp) = spval
-    call hist_addfld1d (fname='NFIX_TO_PLANTN', units='gN/m^2/s', &
-         avgflag='A', long_name='N fixation to plant', &
-         ptr_patch=this%nfix_to_plantn,default='inactive')
-
     this%t_veg240(begp:endp)  = spval
     call hist_addfld1d (fname='TV240', units='K',  &
          avgflag='A', long_name='vegetation temperature (last 240hrs)', &
@@ -9281,6 +9276,11 @@ module VegetationDataType
     call hist_addfld1d (fname='PFT_FIRE_NLOSS', units='gN/m^2/s', &
          avgflag='A', long_name='total pft-level fire N loss', &
          ptr_patch=this%fire_nloss)
+
+    this%nfix_to_plantn(begp:endp) = spval
+    call hist_addfld1d (fname='NFIX_TO_PLANTN', units='gN/m^2/s', &
+         avgflag='A', long_name='N fixation to plant', &
+         ptr_patch=this%nfix_to_plantn,default='inactive')
 
     if (crop_prog) then
        this%fert(begp:endp) = spval
