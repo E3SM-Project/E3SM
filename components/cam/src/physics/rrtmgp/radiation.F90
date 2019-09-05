@@ -1401,8 +1401,8 @@ contains
 
       ! Make sure temperatures are within range for aqua planets
       if (aqua_planet) then
-         call clip_values(tmid, k_dist_sw%get_temp_ref_min(), k_dist_sw%get_temp_ref_max(), varname='tmid', warn=.true.)
-         call clip_values(tint, k_dist_sw%get_temp_ref_min(), k_dist_sw%get_temp_ref_max(), varname='tint', warn=.true.)
+         call clip_values(tmid, k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tmid', warn=.true.)
+         call clip_values(tint, k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tint', warn=.true.)
       end if
 
       ! Do shortwave cloud optics calculations
@@ -1580,8 +1580,8 @@ contains
 
       ! Make sure temperatures are within range for aqua planets
       if (aqua_planet) then
-         call clip_values(tmid, k_dist_lw%get_temp_ref_min(), k_dist_lw%get_temp_ref_max(), varname='tmid', warn=.true.)
-         call clip_values(tint, k_dist_lw%get_temp_ref_min(), k_dist_lw%get_temp_ref_max(), varname='tint', warn=.true.)
+         call clip_values(tmid, k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tmid', warn=.true.)
+         call clip_values(tint, k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tint', warn=.true.)
       end if
 
       ! Do longwave cloud optics calculations
