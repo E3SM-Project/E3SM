@@ -50,7 +50,7 @@ interface
   end subroutine access_lookup_table_coll_f
 
   subroutine cloud_water_conservation_f(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
-    qiberg,qisub,qidep) bind(C)
+    qiberg,qisub,qidep)
     use iso_c_binding
 
     real(kind=c_real), value, intent(in) :: qc, qcnuc, dt

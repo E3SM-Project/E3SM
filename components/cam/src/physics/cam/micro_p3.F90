@@ -2892,6 +2892,11 @@ end subroutine prevent_ice_overdepletion
 
 subroutine cloud_water_conservation(qc,qcnuc,dt,    &
    qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
+   
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cloud_water_conservation_f 
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: qc, qcnuc, dt
@@ -2899,6 +2904,14 @@ subroutine cloud_water_conservation(qc,qcnuc,dt,    &
 
 
    real(rtype) :: sinks, sources, ratio
+   
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  cloud_water_conservation_f(qc,qcnuc,dt,    &
+         qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
+      return
+   endif
+#endif
 
    sinks   = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt
    sources = qc + (qcnuc)*dt
