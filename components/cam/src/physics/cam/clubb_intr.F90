@@ -174,7 +174,15 @@ module clubb_intr
     prer_evap_idx, &    ! rain evaporation rate
     qrl_idx, &          ! longwave cooling rate
     radf_idx 
- 
+
+! Physics buffer indices
+  integer, public  :: &
+    qcwat_dbl_idx  = 0, &
+    lcwat_dbl_idx  = 0, &
+    tcwat_dbl_idx  = 0, &
+    scwat_dbl_idx  = 0, &
+    icwat_dbl_idx  = 0
+
   integer, public :: & 
     ixthlp2 = 0, &
     ixwpthlp = 0, &
@@ -251,6 +259,13 @@ module clubb_intr
        call cnst_add(trim(cnst_names(8)),0._r8,0._r8,0._r8,ixup2,longname='CLUBB 2nd moment u wind',cam_outfld=.false.)
        call cnst_add(trim(cnst_names(9)),0._r8,0._r8,0._r8,ixvp2,longname='CLUBB 2nd moment v wind',cam_outfld=.false.)
     end if
+    
+    ! save the variables used for dribbling the effect of other processes on CLUBB+MG2
+    call pbuf_add_field('QCWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), qcwat_dbl_idx)
+    call pbuf_add_field('LCWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), lcwat_dbl_idx)
+    call pbuf_add_field('TCWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), tcwat_dbl_idx)
+    call pbuf_add_field('ICWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), icwat_dbl_idx)
+    call pbuf_add_field('TCWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), scwat_dbl_idx)
 
     !  put pbuf_add calls here (see macrop_driver.F90 for sample) use indicies defined at top
     call pbuf_add_field('pblh',       'global', dtype_r8, (/pcols/),                    pblh_idx)

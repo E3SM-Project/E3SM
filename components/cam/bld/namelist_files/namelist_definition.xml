@@ -2635,6 +2635,12 @@ Do radiative transfer and heating/cooling calculation.
 Default: TRUE
 </entry>
 
+<entry id="l_dribling_tend" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Do dribling tendency during CLUBB+MG2 calculation.
+Default: FALSE
+</entry>
+
 <!-- Physics sub-column switches -->
 
 <entry id="use_subcol_microp" type="logical" category="conv"
