@@ -458,16 +458,16 @@ contains
 
   !===============================================================================
 
-  subroutine seq_flux_readnl_mct (nmlfile, ID, infodata)
+  subroutine seq_flux_readnl_mct (nmlfile, ID)
 
     use shr_file_mod,   only : shr_file_getUnit, shr_file_freeUnit
     use shr_mpi_mod,    only : shr_mpi_bcast
     use seq_infodata_mod, only : seq_infodata_type, seq_infodata_getdata
+    use shr_nl_mod, only: shr_nl_find_group_name
 
     !INPUT/OUTPUT PARAMETERS
     character(len=*), intent(in) :: nmlfile   ! Name-list filename
     integer                , intent(in) :: ID
-    type(seq_infodata_type), intent(in) :: infodata
 
     !LOCAL VARIABLES
     integer :: mpicom             ! MPI communicator
@@ -483,25 +483,29 @@ contains
     !-------------------------------------------------------------------------------
 
     call seq_comm_setptrs(ID,mpicom=mpicom)
+    if (seq_comm_iamroot(ID)) then
 
-    !---------------------------------------------------------------------------
-    ! Read in namelist 
-    !---------------------------------------------------------------------------
+       !---------------------------------------------------------------------------
+       ! Read in namelist 
+       !---------------------------------------------------------------------------
 
-     unitn = shr_file_getUnit()
-     write(logunit,"(A)") subname//': read seq_flux_mct_inparm namelist from: '&
-          //trim(nmlfile)
-     open( unitn, file=trim(nmlfile), status='old' )
-     ierr = 1
-     read(unitn,nml=seq_flux_mct_inparm,iostat=ierr)
+        unitn = shr_file_getUnit()
+        write(logunit,"(A)") subname//': read seq_flux_mct_inparm namelist from: '&
+             //trim(nmlfile)
+        open( unitn, file=trim(nmlfile), status='old' )
+        call shr_nl_find_group_name(unitn, 'seq_flux_mct_inparm', ierr)
+        ierr = 1
+        read(unitn,nml=seq_flux_mct_inparm,iostat=ierr)
 
-     if (ierr < 0) then
-        call shr_sys_abort( &
-             subname//"ERROR: namelist read returns an EOF or EOR condition" )
+        if (ierr < 0) then
+           call shr_sys_abort( &
+                subname//"ERROR: namelist read returns an EOF or EOR condition" )
+        end if
+
+        close(unitn)
+        call shr_file_freeUnit( unitn )
+
      end if
-
-     close(unitn)
-     call shr_file_freeUnit( unitn )
 
      call shr_mpi_bcast(seq_flux_mct_albdif, mpicom)
      call shr_mpi_bcast(seq_flux_mct_albdir, mpicom)
