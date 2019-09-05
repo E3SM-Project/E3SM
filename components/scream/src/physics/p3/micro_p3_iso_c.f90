@@ -10,7 +10,7 @@ module micro_p3_iso_c
 #endif
 
 !
-! This file contains bridges from scream c++ to  micro_p3 fortran.
+! This file contains bridges from scream c++ to micro_p3 fortran.
 !
 
 contains
@@ -226,7 +226,7 @@ contains
   end subroutine access_lookup_table_coll_c
 
   subroutine cloud_water_conservation_c(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
-    qiberg,qisub,qidep)
+    qiberg,qisub,qidep) bind(C)
     use micro_p3, only: cloud_water_conservation 
 
     real(kind=c_real), value, intent(in) :: qc, qcnuc, dt
@@ -236,7 +236,7 @@ contains
   end subroutine cloud_water_conservation_c 
 
   subroutine rain_water_conservation_c(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
-    qrevp,qrcol,qrheti)
+    qrevp,qrcol,qrheti) bind(C)
     use micro_p3, only: rain_water_conservation
 
     real(kind=c_real), value, intent(in) :: qr, qcaut, qcacc, qimlt, qcshd, dt
@@ -246,7 +246,7 @@ contains
   end subroutine rain_water_conservation_c
 
   subroutine ice_water_conservation_c(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
-    qisub,qimlt)
+    qisub,qimlt) bind(C)
     use micro_p3, only: ice_water_conservation 
  
     real(kind=c_real), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt

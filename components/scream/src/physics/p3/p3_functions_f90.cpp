@@ -28,6 +28,14 @@ void access_lookup_table_c(Int dumjj, Int dumii, Int dumi, Int index,
 void access_lookup_table_coll_c(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
                                 Real dum1, Real dum3, Real dum4, Real dum5, Real* proc);
 
+void cloud_water_conservation_c(Real qc, Real qcnuc, Real dt, Real* qcaut, Real* qcacc, Real* qccol, 
+  Real* qcheti, Real* qcshd, Real* qiberg, Real* qisub, Real* qidep);
+
+void rain_water_conservation_c(Real qr, Real qcaut, Real qcacc, Real qimlt, Real qcshd,
+  Real dt, Real* qrevp, Real* qrcol, Real* qrheti); 
+
+void ice_water_conservation_f(Real qitot, Real qidep, Real qinuc, Real qiberg, Real qrcol, Real qccol, 
+  Real qrheti, Real qcheti, Real dt, Real* qisub, Real* qimlt);
 }
 
 namespace scream {
@@ -179,6 +187,60 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
   tr.dum3 = dum3;
 
   *proc = P3F::apply_table_coll(qiti_gt_small, adjusted_index, P3GlobalForFortran::itabcol(), ti, tr)[0];
+}
+
+void cloud_water_conservation_f(Real qc_, Real qcnuc_, Real dt, Real* qcaut_, Real* qcacc_, Real* qccol_, 
+  Real* qcheti_, Real* qcshd_, Real* qiberg_, Real* qisub_, Real* qidep_)
+  {
+    using P3F = Functions<Real, HostDevice>;
+
+    typename P3F::Spack qc(qc_);
+    typename P3F::Spack qcnuc(qcnuc_); 
+    typename P3F::Spack qcaut(*qcaut_); 
+    typename P3F::Spack qcacc(*qcacc_); 
+    typename P3F::Spack qccol(*qccol_); 
+    typename P3F::Spack qcheti(*qcheti_);
+    typename P3F::Spack qcshd(*qcshd_); 
+    typename P3F::Spack qiberg(*qiberg_); 
+    typename P3F::Spack qisub(*qisub_);
+    typename P3F::Spack qidep(*qidep_); 
+
+    P3F::cloud_water_conservation(qc, qcnuc, dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep); 
+  }
+
+void rain_water_conservation_f(Real qr_, Real qcaut_, Real qcacc_, Real qimlt_, Real qcshd_,
+  Real dt, Real* qrevp_, Real* qrcol_, Real* qrheti_)
+  {
+    using P3F = Functions<Real, HostDevice>;
+
+    typename P3F::Spack qr(qr_);
+    typename P3F::Spack qcaut(qcaut_); 
+    typename P3F::Spack qcacc(qcacc_); 
+    typename P3F::Spack qimlt(qimlt_); 
+    typename P3F::Spack qcshd(qcshd_);  
+    typename P3F::Spack qrevp(*qrevp_); 
+    typename P3F::Spack qrcol(*qrcol_); 
+    typename P3F::Spack qrheti(*qrheti_);
+    
+    P3F::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti); 
+  }
+
+void ice_water_conservation_f(Real qitot_, Real qidep_, Real qinuc_, Real qiberg_, Real qrcol_, Real qccol_, 
+  Real qrheti_, Real qcheti_, Real dt, Real* qisub_, Real* qimlt_)
+{
+    using P3F = Functions<Real, HostDevice>;
+    typename P3F::Spack qitot(qitot_); 
+    typename P3F::Spack qidep(qidep_); 
+    typename P3F::Spack qinuc(qinuc_); 
+    typename P3F::Spack qiberg(qiberg_); 
+    typename P3F::Spack qrcol(qrcol_); 
+    typename P3F::Spack qccol(qccol_); 
+    typename P3F::Spack qrheti(qrheti_); 
+    typename P3F::Spack qcheti(qcheti_);
+    typename P3F::Spack qisub(*qisub_); 
+    typename P3F::Spack qimlt(*qimlt_); 
+
+    P3F::ice_water_conservation(qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt, qisub, qimlt);
 }
 
 } // namespace p3
