@@ -216,7 +216,7 @@ end subroutine stepon_run1
 
 subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use bndry_mod,       only: bndry_exchangeV
-   use dimensions_mod,  only: nlev, nelemd, np, npsq
+   use dimensions_mod,  only: nlev, nlevp, nelemd, np, npsq
    use dyn_grid,        only: fv_nphys
    use dp_coupling,     only: p_d_coupling
    use parallel_mod,    only: par
@@ -239,7 +239,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    real(r8) :: tmp_dyn(np,np,nlev,nelemd)
    real(r8) :: fmtmp(np,np,nlev)
    real(r8) :: p_m(np,np,nlev)    ! temporary midpoint pressure for DYN_OMEGA output
-   real(r8) :: p_i(np,np,nlev)    ! temporary interface pressure for DYN_OMEGA output
+   real(r8) :: p_i(np,np,nlevp)   ! temporary interface pressure for DYN_OMEGA output
    real(r8) :: omega(np,np,nlev)  ! temporary omega for DYN_OMEGA output
    real(r8) :: dtime
    integer :: nlev_tot
