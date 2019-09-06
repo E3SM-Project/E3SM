@@ -1580,6 +1580,8 @@
 
 <constant_zenith_deg>-1</constant_zenith_deg>
 
+<constant_albedo>-1</constant_albedo>
+
 <ocean_tight_coupling >.true.</ocean_tight_coupling>
 
 <!-- ================================================================== -->

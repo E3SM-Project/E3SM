@@ -163,7 +163,8 @@ subroutine phys_ctl_readnl(nlfile)
    use namelist_utils,  only: find_group_name
    use units,           only: getunit, freeunit
    use mpishorthand
-   use cam_control_mod, only: cam_ctrl_set_physics_type, constant_zenith_deg
+   use cam_control_mod, only: cam_ctrl_set_physics_type
+   use cam_control_mod, only: constant_zenith_deg, constant_albedo
 
    character(len=*), intent(in) :: nlfile  ! filepath for file containing namelist input
 
@@ -188,7 +189,7 @@ subroutine phys_ctl_readnl(nlfile)
       mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
       l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
-      rrtmg_temp_fix, constant_zenith_deg
+      rrtmg_temp_fix, constant_zenith_deg, constant_albedo
    !-----------------------------------------------------------------------------
 
    if (masterproc) then
@@ -275,6 +276,7 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(rrtmg_temp_fix,                  1 , mpilog,  0, mpicom)
    call mpibcast(cld_sed,                         1 , mpir8,   0, mpicom)
    call mpibcast(constant_zenith_deg,             1 , mpir8,   0, mpicom)
+   call mpibcast(constant_albedo,                 1 , mpir8,   0, mpicom)
 #endif
 
    call cam_ctrl_set_physics_type(cam_physpkg)

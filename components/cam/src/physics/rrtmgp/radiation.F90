@@ -1322,6 +1322,8 @@ contains
       real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
       real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
 
+      integer :: n
+
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_sw'
 
@@ -1377,6 +1379,7 @@ contains
       ! Get albedo. This uses CAM routines internally and just provides a
       ! wrapper to improve readability of the code here.
       call set_albedo(cam_in, albedo_direct(1:nswbands,1:ncol), albedo_diffuse(1:nswbands,1:ncol))
+      
 
       ! Send albedos to history buffer (useful for debugging)
       call outfld('SW_ALBEDO_DIR', transpose(albedo_direct(1:nswbands,1:ncol)), ncol, state%lchnk)
@@ -1921,6 +1924,7 @@ contains
    subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
       use camsrfexch, only: cam_in_t
       use radiation_utils, only: clip_values
+      use cam_control_mod, only: constant_albedo
 
       type(cam_in_t), intent(in) :: cam_in
       real(r8), intent(inout) :: albedo_direct(:,:)   ! surface albedo, direct radiation
@@ -1947,38 +1951,47 @@ contains
       albedo_direct(:,:) = 0._r8
       albedo_diffuse(:,:) = 0._r8
 
-      ! Albedos are input as broadband (visible, and near-IR), and we need to map
-      ! these to appropriate bands. Bands are categorized broadly as "visible" or
-      ! "infrared" based on wavenumber, so we get the wavenumber limits here
-      wavenumber_limits(:,:) = k_dist_sw%get_band_lims_wavenumber()
+      if ( constant_albedo > 0 ) then
+         
+         albedo_direct(:,1:ncol)  = constant_albedo
+         albedo_diffuse(:,1:ncol) = constant_albedo
 
-      ! Loop over bands, and determine for each band whether it is broadly in the
-      ! visible or infrared part of the spectrum (visible or "not visible")
-      do iband = 1,nswbands
-         if (is_visible(wavenumber_limits(1,iband)) .and. &
-             is_visible(wavenumber_limits(2,iband))) then
+      else
 
-            ! Entire band is in the visible
-            albedo_direct(iband,1:ncol) = cam_in%asdir(1:ncol)
-            albedo_diffuse(iband,1:ncol) = cam_in%asdif(1:ncol)
+         ! Albedos are input as broadband (visible, and near-IR), and we need to map
+         ! these to appropriate bands. Bands are categorized broadly as "visible" or
+         ! "infrared" based on wavenumber, so we get the wavenumber limits here
+         wavenumber_limits(:,:) = k_dist_sw%get_band_lims_wavenumber()
 
-         else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
-                  .not.is_visible(wavenumber_limits(2,iband))) then
+         ! Loop over bands, and determine for each band whether it is broadly in the
+         ! visible or infrared part of the spectrum (visible or "not visible")
+         do iband = 1,nswbands
+            if (is_visible(wavenumber_limits(1,iband)) .and. &
+                is_visible(wavenumber_limits(2,iband))) then
 
-            ! Entire band is in the longwave (near-infrared)
-            albedo_direct(iband,1:ncol) = cam_in%aldir(1:ncol)
-            albedo_diffuse(iband,1:ncol) = cam_in%aldif(1:ncol)
+               ! Entire band is in the visible
+               albedo_direct(iband,1:ncol) = cam_in%asdir(1:ncol)
+               albedo_diffuse(iband,1:ncol) = cam_in%asdif(1:ncol)
 
-         else
+            else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
+                     .not.is_visible(wavenumber_limits(2,iband))) then
 
-            ! Band straddles the visible to near-infrared transition, so we take
-            ! the albedo to be the average of the visible and near-infrared
-            ! broadband albedos
-            albedo_direct(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
-            albedo_diffuse(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
+               ! Entire band is in the longwave (near-infrared)
+               albedo_direct(iband,1:ncol) = cam_in%aldir(1:ncol)
+               albedo_diffuse(iband,1:ncol) = cam_in%aldif(1:ncol)
 
-         end if
-      end do
+            else
+
+               ! Band straddles the visible to near-infrared transition, so we take
+               ! the albedo to be the average of the visible and near-infrared
+               ! broadband albedos
+               albedo_direct(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
+               albedo_diffuse(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
+
+            end if
+         end do
+
+      end if ! constant_albedo > 0
 
       ! Check values and clip if necessary (albedos should not be larger than 1)
       ! NOTE: this does actually issue warnings for albedos larger than 1, but this

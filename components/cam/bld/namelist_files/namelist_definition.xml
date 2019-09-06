@@ -4033,6 +4033,14 @@ the value is less than 0
 Default: -1
 </entry>
 
+<entry id="constant_albedo" type="real"  category="radiation"
+       group="phys_ctl_nl" valid_values="" >
+Constant albedo value (both direct and diffuse) for idealized configurations
+such as radiative-convective equilibrium experiments. This is disabled when 
+the value is less than 0
+Default: -1
+</entry>
+
 <entry id="conv_water_in_rad" type="integer" category="radiation"
        group="phys_ctl_nl" valid_values="0,1,2" >
 Convective water used in radiation?

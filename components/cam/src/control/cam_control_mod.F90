@@ -29,7 +29,9 @@ module cam_control_mod
                               ! vernal equinox (radians)
       real(r8) :: mvelpp      ! Earth's moving vernal equinox longitude
                               ! of perihelion plus pi (radians)
+      
       real(r8) :: constant_zenith_deg  ! constant solar zenith angle (degrees)
+      real(r8) :: constant_albedo      ! constant albedo
 !
 !------------------------------------------------------------
 
