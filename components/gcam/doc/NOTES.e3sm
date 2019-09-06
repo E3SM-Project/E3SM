@@ -1,3 +1,2970 @@
+9/6/2019
+
+* I'm running into issues where I copied things from clm - the problem is
+  that I can't use modules from other components, especially for this
+  initial build, because there are no other components, I'm just building
+  iac by itself with stubs for everything else.
+
+  In particular, I can't use the clm bounds decomp, or decompMod.  And I
+  *shouldn't* - all this stuff should be handled within the iac component
+  itself.  If I need that functionality, I need to create it myself, for
+  use by this component - perhaps copying over, but always customizing for
+  the needs my component has.
+
+  This is all obvious, I'm just trying to remind myself of some of these
+  issues. 
+
+* The specific thing that's keeping me from building now is listing these
+  iac2lnd and lnd2iac variables and types and what not.  My sense is that
+  they need to be listed *separately*, in the lnd component AND the iac
+  component - we don't use the same module for each.  This means, of
+  course, that lnd sends what it sends to the coupler, and iac grabs what
+  it can from the coupler, and if something is missing it needs to replace
+  it with a config file.  Same with every interaction - everythign is with
+  the coupler, regardless of what the other components do or say.
+
+
+9/4/2019
+
+* Okay, there's a problem running mkDepends on the GCAM source .cpp files.
+  The problem happens at line 268 of mkDepends, which seems to be an
+  attempt to recursively add in all the include files included in the
+  include files... 
+
+  Anyway, it seems to be going into an infinite loop - probably a includes
+  b includes c includes a, or something like that.  I'm not certain how
+  this line does this, since it's a simple push:
+
+    for ($i = 0; $i <= $#expand_incs; ++$i) {
+	push @expand_incs, @{ $include_depends{$expand_incs[$i]} };
+    }
+
+  So, $#expand_incs is just 2, so it should just try to push three (sets?)
+  of include files into this list.
+
+! Ah. Every time we add something to $expand_incs, $#expand_incs itself
+  changes!  So, the first couple add a few files to include, so we want to
+  scan them too; so after the initial 2 include files, we now scanning the
+  first expanded include file from include file 0.
+
+  So, here is my infinite loop: a includes b includes c includes a - a adds
+  b and c to the list, b adds ..., c adds a, scan a again.  Loop.  I see a
+  comment about preventing this kind of thing somewhere, and it tries to
+  rm_duplicates after all this is over, but we have the infinite loop right
+  there. 
+
+  Okay, so, call rm_duplicates inside the loop - that way, if we've added
+  something we've already checked, we remove it.
+
+  Well, not quite - rm_duplicates builds a null hash and then returns the
+  keys from the hash - but I don't think that keeps the order of things
+  correctly. 
+
+* Okay, so I need to fix mkdepends.  Here's what I did - for each
+  prospective file to add to expand_incs, I grep to see if it's already
+  there, and only then push.  This should maintain the order, so the $i
+  loop works, and add only unique files to the list, and grep should work
+  pretty fast:
+
+    # Expand
+    for ($i = 0; $i <= $#expand_incs; ++$i) {
+	#push @expand_incs, @{ $include_depends{$expand_incs[$i]} };
+        # The above lead to an infinite loop with gcam, so grab each
+        # element and grep to see if it's already in the list.  Grep should
+        # be pretty fast for arrays of less than 1000, so I hope this isn't
+        # that big of a hit.
+        foreach $fff (@{ $include_depends{$expand_incs[$i]} }) {
+	  unless (grep( /^$fff$/, @expand_incs ) ) {
+	    push @expand_incs, $fff
+	  }
+	}
+    }
+
+  Now we test it with the full Srcfiles, and see how it goes.
+
+  Well, it only took 43 seconds to finish, so that's good.  A lot less than
+  that the second time through.  So, let's pretend that worked.
+
+* You know, a hash would probably be a faster check than grepping the
+  building array list each time:
+
+    #initialize expand_hash
+    my %expand_hash = ();
+    foreach $fff (@expand_incs) {
+       $expand_hash{$fff}=1;
+    }       
+
+    # expand
+    for ($i = 0; $i <= $#expand_incs; ++$i) {
+        foreach $fff (@{ $include_depends{$expand_incs[$i]} }) {
+	  unless ($expand_hash{$fff}) { # not already expanded
+	    push @expand_incs, $fff;
+	    $expand_hash{$fff}=1;
+	  }
+	}
+    }
+
+  
+
+9/3/2019
+
+* I've been having a lot of problems getting the various gcam modules to
+  actually generate .mod files.  Here is what I think is happening:
+
+1 In the .../gcam/src/iac/coupling directory, we build in lexical order -
+  so glm2iac_mod.F90 before iac_fields_mod.F90.
+2 But! glc2iac_mod.F90 has a "use iac_fields_mod" line
+3 So glc2iac_mod.F90 fails, saying it can't load the module iac_fields_mod,
+  because the iac_field_mod.mod file hasn't been created.
+
+* So, my working theory is that somewhere in case.setup or case.build,
+  there's logic to look for module files to build first (plus, you have to
+  build them in the right order, since you can use modules in other
+  modules).  
+XXXXXXXXXXX
+  I *believe* that it does this by looking for *Mod.F90, since that's the
+  way most module files in clm are listed, and the ones not named like that
+  give problems in .../gcam/src/iac/coupling - mksurfdat.F90,
+  iac_fields_mod.F90, etc.
+
+  So, I'm going to rename anything with a module declaration *Mod.F90, do a
+  full case setup (to iac_build7) and case build, and see where that gets
+  us. 
+
+  Here's how I find them:
+
+--------------
+
+[shippert@blueslogin4 coupling]$ egrep -i module *.F90 | grep -v '\!' | grep -v 'Mod.F90'
+gcam2emisfile_mod.F90:Module gcam2emisfile_mod
+gcam2emisfile_mod.F90:end module gcam2emisfile_mod
+gcam2glm_mod.F90:Module gcam2glm_mod
+gcam2glm_mod.F90:end module gcam2glm_mod
+gcam_var_mod.F90:module gcam_var
+gcam_var_mod.F90:end module
+glm2iac_mod.F90:Module glm2iac_mod
+glm2iac_mod.F90:end module glm2iac_mod
+iac2gcam_mod.F90:Module iac2gcam_mod
+iac2gcam_mod.F90:end module iac2gcam_mod
+iac_fields_mod.F90:Module iac_fields_mod
+iac_fields_mod.F90:end module iac_fields_mod
+mkabortutils.F90:module mkabortutils
+mkabortutils.F90:end module mkabortutils
+mkfileutils.F90:module mkfileutils
+mkfileutils.F90:end module mkfileutils
+mkncdio.F90:module mkncdio
+mkncdio.F90:     module procedure ncd_ioglobal_int_var
+mkncdio.F90:     module procedure ncd_ioglobal_real_var
+mkncdio.F90:     module procedure ncd_ioglobal_int_1d
+mkncdio.F90:     module procedure ncd_ioglobal_real_1d
+mkncdio.F90:     module procedure ncd_ioglobal_int_2d
+mkncdio.F90:     module procedure ncd_ioglobal_real_2d
+mkncdio.F90:end module mkncdio
+mksurfdat.F90:module mksurfdat
+mksurfdat.F90:end module mksurfdat
+mkvarctl.F90:module mkvarctl
+mkvarctl.F90:end module mkvarctl
+mkvarpar.F90:module mkvarpar
+mkvarpar.F90:end module mkvarpar
+
+--------------
+XXXXXXXXXXXXXXXXXXXX
+
+* Okay, forget all that, it doesn't make any difference what the files are
+  called.  My new conjecture is that the original "make Depends" error I
+  get while doing a case.build (rather than a case.build -b iac) is key -
+  somehow we need to create a Depends file that says the order we need to
+  compile things in, including modules.  And, somehow, I have not yet
+  generated the information for that to happen yet.  So, review the
+  Makefile and mkDepends files in the iac_build7/Tools directory, to see if
+  I can figure out what is happening here.
+
+8/6/2019
+
+* This environment seems to work to compile with boost, using the raw
+  includes in /home/shippert/local/boost_1_70_0/boost
+
+  Currently Loaded Modules:
+    1) intel/18.0.4-443hhug           3) mvapich2/2.3.1-verbs-dtbb6xk   5) netcdf/4.4.1-4odwn5a
+    2) intel-mkl/2018.4.274-jwaeshj   4) netcdf-fortran/4.4.4-kgp5hqm   6) cmake/3.13.4-354d6wl
+
+* I need to catch up on my notes here, but it's been frustrating as I don't
+  really understand what I'm seeing.  But in a nutshell the default anvil
+  environment doesn't work with boost - it barfs on the std::complex
+  declarations, even with -std=c++11 compile option, which is what some
+  googling suggested.  You can see the default environment in
+  software_environment.txt, as per 7/15/2019:
+
+  Currently Loaded Modules:
+    1) intel/17.0.4-74uvhji           3) netcdf/4.4.1-magkugi           5) mvapich2/2.3.1-verbs-m6cblfk
+    2) intel-mkl/2017.3.196-v7uuj6z   4) netcdf-fortran/4.4.4-7obsouy   6) cmake/3.14.1-n2wvesr
+
+* So, now I'm going to try to load the newer versions in
+  config_machines.xml, but in the past that hasn't worked for reasons I
+  don't understand.  But, once more...
+
+8/2/2019
+
+  /blues/gpfs/software/centos7/spack-0.12.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/intel-17.0.4-74uvhji/include/complex
+
+7/15/2019
+
+* So, issues with the build.  First, here is the software environment and
+  the error message I get from building gcam:
+
+============================ software_environment.txt 
+Currently Loaded Modules:
+  1) intel/17.0.4-74uvhji           3) netcdf/4.4.1-magkugi           5) mvapich2/2.2-verbs-lxc4y7i
+  2) intel-mkl/2017.3.196-v7uuj6z   4) netcdf-fortran/4.4.4-7obsouy   6) cmake/3.14.1-n2wvesr
+
+============================ 
+
+---------------------------- iac.bldlog.flarp (copied over from the build directory)
+...
+mpicxx  -c -I. -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/intel/mvapich/nodebug/nothreads/mct/include -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/intel/mvapich/nodebug/nothreads/mct/mct/noesmf/c1a1l1i1o1r1g1w1i1e1/include -I/blues/gpfs/software/centos7/spack-0.12.1/opt/spack/linux-centos7-x86_64/intel-17.0.4/netcdf-4.4.1-magkugi/include -I/blues/gpfs/software/centos7/spack-0.12.1/opt/spack/linux-centos7-x86_64/intel-17.0.4/netcdf-fortran-4.4.4-7obsouy/include -I/blues/gpfs/home/software/climate/pnetcdf/1.6.1/intel-17.0.4/mvapich2-2.2-verbs/include -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/intel/mvapich/nodebug/nothreads/mct/include -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/lnd/obj -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/lnd/obj -I. -I/blues/gpfs/home/shippert/iac_build2/SourceMods/src.gcam -I/soft/xerces/c-3.2.1/include -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/logger/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/database/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/base/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/curves/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/sectors/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/reporting/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/land_allocator/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/investment/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/consumers/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/ccarbon_model/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/policy/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/agLU/fortran_source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/target_finder/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/demographics/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/resources -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/resources/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/marketplace/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/containers/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/technologies/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/climate/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/solution/util/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/solution/solvers/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/emissions/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/ccsmcpl/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/coupling -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/cpl -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/lib/include -std=c++11 -fp-model source   -O2  -O2 -fp-model precise -std=gnu99   -O2 -debug minimal   -DLINUX  -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI -DPIO1 -DHAVE_SLASHPROC -D_PNETCDF  /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/source/ademand_function.cpp
+...
+In file included from /soft/xerces/c-3.2.1/include/xercesc/util/XercesDefs.hpp(46),
+                 from /soft/xerces/c-3.2.1/include/xercesc/dom/DOMNode.hpp(25),
+                 from /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/include/iinput.h(47),
+                 from /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/include/ifunction.h(48),
+                 from /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/include/ademand_function.h(54),
+                 from /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/source/ademand_function.cpp(48):
+/soft/xerces/c-3.2.1/include/xercesc/util/Xerces_autoconf_config.hpp(122): error: identifier "char16_t" is undefined
+  typedef XERCES_XMLCH_T				XMLCh;
+          ^
+
+...
+compilation aborted for /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/source/ademand_function.cpp (code 2)
+--------------------------
+
+* There are other things that fail in the ... lines, but I think that's
+  because of the parallel build processing - and they all seem the same,
+  not having char16_t defined.  There are *other* different build failures
+  as well later on, but lets deal with this one first.
+
+* To simulate this, I put this load in this sequence in my .bashrc, and
+  went to ~/iac_build2 and tried to compile the mpicxx line myself:
+
+======================
+module load gcc/7.1.0-4bgguyp
+module load icu4c/58.2-rv2fe73
+module load xerces/c-3.2.1
+module load intel/17.0.4-74uvhji
+module load intel-mkl/2017.3.196-v7uuj6z
+module load netcdf
+module load netcdf-fortran
+module load mvapich2
+module load boost
+module load cmake
+=======================
+
+-------------------------
+
+mpicxx  -c -I. -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/intel/mvapich/nodebug/nothreads/mct/include -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/intel/mvapich/nodebug/nothreads/mct/mct/noesmf/c1a1l1i1o1r1g1w1i1e1/include -I/blues/gpfs/software/centos7/spack-0.12.1/opt/spack/linux-centos7-x86_64/intel-17.0.4/netcdf-4.4.1-magkugi/include -I/blues/gpfs/software/centos7/spack-0.12.1/opt/spack/linux-centos7-x86_64/intel-17.0.4/netcdf-fortran-4.4.4-7obsouy/include -I/blues/gpfs/home/software/climate/pnetcdf/1.6.1/intel-17.0.4/mvapich2-2.2-verbs/include -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/intel/mvapich/nodebug/nothreads/mct/include -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/lnd/obj -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/lnd/obj -I. -I/blues/gpfs/home/shippert/iac_build2/SourceMods/src.gcam -I/soft/xerces/c-3.2.1/include -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/logger/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/database/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/base/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/curves/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/sectors/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/reporting/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/land_allocator/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/investment/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/consumers/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/ccarbon_model/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/policy/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/agLU/fortran_source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/target_finder/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/demographics/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/resources -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/resources/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/marketplace/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/containers/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/technologies/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/climate/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/solution/util/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/solution/solvers/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/emissions/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/ccsmcpl/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/coupling -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/cpl -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/lib/include -std=c++11 -fp-model source   -O2  -O2 -fp-model precise -std=gnu99   -O2 -debug minimal   -DLINUX  -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI -DPIO1 -DHAVE_SLASHPROC -D_PNETCDF  /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/source/ademand_function.cpp
+In file included from /soft/xerces/c-3.2.1/include/xercesc/util/XercesDefs.hpp(46),
+                 from /soft/xerces/c-3.2.1/include/xercesc/dom/DOMNode.hpp(25),
+                 from /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/include/iinput.h(47),
+                 from /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/include/ifunction.h(48),
+                 from /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/include/ademand_function.h(54),
+                 from /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/source/ademand_function.cpp(48):
+/soft/xerces/c-3.2.1/include/xercesc/util/Xerces_autoconf_config.hpp(122): error: identifier "char16_t" is undefined
+  typedef XERCES_XMLCH_T				XMLCh;
+          ^
+
+compilation aborted for /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/source/ademand_function.cpp (code 2)
+--------------------
+
+* So, same errors.  But, if you then reload gcc and icu4c, and remove the
+
+    -fp-model source  -fp-model precise -debug minimal
+
+  ...options from mpicc, it will build.  I assume the above CLO are
+  specific to the intel compiler, which is replaced by gcc by the load:
+
+=========================
+
+shippert@blueslogin1 iac_build2]$ module load gcc/7.1.0-4bgguyp icu4c/58.2-rv2fe73
+
+Lmod is automatically replacing "intel/17.0.4-74uvhji" with "gcc/7.1.0-4bgguyp".
+
+
+Inactive Modules:
+  1) intel-mkl/2017.3.196-v7uuj6z     2) netcdf-fortran
+
+Activating Modules:
+  1) icu4c/58.2-rv2fe73
+
+The following have been reloaded with a version change:
+  1) boost/1.63.0-m64qkx4 => boost/1.66.0-yezpm5j     4) mvapich2/2.3b-gk6kdue => mvapich2/2.3a-avvw4kp
+  2) cmake/3.13.4-354d6wl => cmake/3.14.4-kmpms6b     5) netcdf/4.4.1.1-prsuusl => netcdf/4.6.1-6z2nuae
+  3) git/2.13.0 => git/2.19.1-gy6rfgf
+
+[shippert@blueslogin1 iac_build2]$ mpicxx  -c -I. -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/intel/mvapich/nodebug/nothreads/mct/include -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/intel/mvapich/nodebug/nothreads/mct/mct/noesmf/c1a1l1i1o1r1g1w1i1e1/include -I/blues/gpfs/software/centos7/spack-0.12.1/opt/spack/linux-centos7-x86_64/intel-17.0.4/netcdf-4.4.1-magkugi/include -I/blues/gpfs/software/centos7/spack-0.12.1/opt/spack/linux-centos7-x86_64/intel-17.0.4/netcdf-fortran-4.4.4-7obsouy/include -I/blues/gpfs/home/software/climate/pnetcdf/1.6.1/intel-17.0.4/mvapich2-2.2-verbs/include -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/intel/mvapich/nodebug/nothreads/mct/include -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/lnd/obj -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/lnd/obj -I. -I/blues/gpfs/home/shippert/iac_build2/SourceMods/src.gcam -I/soft/xerces/c-3.2.1/include -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/logger/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/database/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/base/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/util/curves/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/sectors/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/reporting/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/land_allocator/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/investment/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/consumers/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/ccarbon_model/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/policy/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/agLU/fortran_source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/target_finder/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/demographics/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/resources -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/resources/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/marketplace/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/containers/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/technologies/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/climate/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/solution/util/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/solution/solvers/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/emissions/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/ccsmcpl/source -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/coupling -I/blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/cpl -I/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build2/bld/lib/include -std=c++11   -O2  -O2 -std=gnu99   -O2   -DLINUX  -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI -DPIO1 -DHAVE_SLASHPROC -D_PNETCDF  /blues/gpfs/home/shippert/E3SM_active_gcam_coupled/components/gcam/src/iac/gcam/cvs/objects/functions/source/ademand_function.cpp
+cc1plus: warning: command line option ‘-std=gnu99’ is valid for C/ObjC but not for C++
+[shippert@blueslogin1 iac_build2]$ 
+
+=============
+
+* Okay, that build line is huge and messing things up - but the issue is
+  that reloading gcc makes it compile, minus some clos.  I *think* the
+  issue is in mvapich2 - if you replace it with openmpi...
+
+--------------
+[shippert@blueslogin3 ~]$ module load intel-mpi/2017.3-dfphq6k
+
+Lmod is automatically replacing "mvapich2/2.3b-gk6kdue" with "intel-mpi/2017.3-dfphq6k".
+
+
+The following have been reloaded with a version change:
+  1) boost/1.63.0-m64qkx4 => boost/1.65.1-pka2h73     2) netcdf/4.4.1.1-prsuusl => netcdf/4.6.1-c2mecde
+--------------
+
+  ...then run the mpicxx line, it works.  Although, if you throw back in
+  the -fp-model options it still crashes, with the g++ (gcc) errors:
+
+==============
+g++: error: source: No such file or directory
+g++: error: precise: No such file or directory
+g++: error: minimal: No such file or directory
+g++: error: unrecognized command line option ‘-fp-model’
+g++: error: unrecognized command line option ‘-fp-model’
+==============
+
+? So, does replacing "mvapich2/2.3b-gk6kdue" with
+  "intel-mpi/2017.3-dfphq6k" mean we are now compiling with gcc?  Or does
+  openmpi mean the intel compiler preprocessess with g++?
+
+@ I need to update how I got here - building the GCAM code itself.  I've
+  been in the soup and not updating my notes as much as I should.
+
+* First, buildlib put all the different gcam source code and include file
+  directories into the tmp_directories file - then, the gmake will recurse
+  down them, compile anything it knows how to compile (source code,
+  including fortran and c and c++ files), and includes them in the -I
+  compile line.  This works to compile a lot of the actual gcam code,
+  although of course I haven't gotten to the link part yet.
+
+  .../cime/components/gcam/cime_config/buildlib
+
+* It fails to compile the above files as well as some others, because the
+  xerces include files are incompatible with these particular build
+  options.  It appears that xerces was built with gcc, because to load the
+  xerces package you have to load gcc and icu4c - it won't do it with just
+  the intel and mvapich2.  I've tried to get around this by loading gcc and
+  icu4c *first*, then loading xerces, then loading the intel/mvapich2
+  stuff, all of which doesn't pitch an error and bomb out or anything, but
+  doesn't really solve the problem either, as indicated above.
+
+* The cpp files are compile via mpicxx, which is a shell script setting up
+  the envrironment and who knows what else - but it seems to change
+  depending upon which packages are loaded (in particular, mvapich2
+  vs. openmpi, and maybe intel vs. gcc).  Just one more piece of
+  obfuscation - scripts calling scripts depending on packages depending on
+  config files depending on makefiles depending on command line options
+  depending on scripts.  The archeology on this is literally, physically
+  destroying my brain and will to live.
+
+* Because I couldn't figure out (yet) how to load the packages inside the
+  build script (I need the .xml file that generates env_mach_specific.xml
+  in the build directory), I got this far by including the xerces include
+  directory (/soft/xerces/c-3.2.1/include) in the tmp_filepath directory -
+  see buildlib in gcam/cime_config.  This at least put it in the long list
+  of -I... options to mpicxx, which allowed us to get to the compile error
+  we are seeing.
+
+* So, for now here's the plan:
+
+@ Try to build with gcc
+a  find which .xml file and/or command line option tells you how to build
+  stuff, modify that, do a new case.setup into iac_build3.
+@ Try to figure out how to load boost (which at least was build with
+  intel), and the xerces stuff, although the latter won't work, of course.
+  I don't know if we'll be able to link with boost when compiling with gcc,
+  but maybe.
+
+@ Try to build xerces myself as part of the gcam build - probably put it in
+  a utils directory somewhere and include that in buildlib.
+
+* Alright, this is what I did - from cime/scripts:
+
+  ./create_newcase --compiler gnu --case ~/iac_build.gnu --compset Z --res f19_g16
+
+  That seems to have worked.  Now I modify env_mach_specific.xml to load
+  xerces, do a case.setup, and finally a case.build -b iac and see what
+  happens. 
+
+* Of course that did not work - the thing barfs on the case.setup, saying
+  it can't find the modules I want to load by adding or changing
+  .../cime/config/e3sm/machines/config_machines.xml.  I *can* load the
+  modules in my shell with a straight module load, but instead of doing
+  that for some reason the loading happens via this monstrosity:
+
+========
+  export MODULEPATH=/blues/gpfs/software/centos7/spack-0.12.1/share/spack/lmod/linux-centos7-x86_64/Core;/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod python load gcc/7.1.0-4bgguyp intel-mkl/2018.1.163-4okndez hdf5/1.10.5-uhezugo netcdf/4.6.1-6z2nuae netcdf-cxx/4.2-mjgpj4k icu4c/58.2-rv2fe73 xerces/c-3.2.1 mvapich2/2.2-pu237k7
+
+========
+
+  If you look close, you can see that it's calling
+  .../lmod/lmod/libexec/lmod somewhere inside the lmod module.  I've looked
+  at that, and, of course, it's as obtuse as every other single piece of
+  code or script or package I've looked at in this godforsaken project.  I
+  don't know what lmod is doing, but it might? use some kind of cache or
+  list of approved packages or some other such nonsense, and my attempts to
+  figure out how to make it not do that do not work.
+
+* You'll also notice that because xerces was build with gcc/7.1.0 I had to
+  modify the load commands for all the other packages to make them
+  compatible with that version of gcc.  Thus, it simply cannot find ANY of
+  these packages, because ALL of them are either out of cache or otherwise
+  non-approved and/or not available.
+
+! So.  I simply cannot load the xerces package as it stands.  There is
+  LITERALLY NO WAY to make it go.  You CANNOT configure ANYTHING to make it
+  try to build with the modules and versions it needs to build with this
+  thing.  JUST GIVE UP.  It is PHYSICALLY AND METAPHYSICALLY IMPOSSIBLE.
+  You are a FOOL to keep trying in the face of such INSURMOUNTABLE
+  FUNDAMENTAL OBSTACLES.
+
+* So, I'ma gonna have to build my own version of xerces.  Yay.
+
+6/5/2019
+
+* Some delays as I got pulled into ARM ASR stuff
+
+* Mostly ready with build-namelist, trying to get gcam stuff to build.
+
+* We have boost and xerces libraries on anvil, which Kate says are the ones
+  we need to build gcam proper - to find versions and info, do:
+
+     modules spider boost
+     modules spider xerces
+
+  There are some prereqs (i.e. intel compiler) that you have to load first,
+  and actually I need to learn how to load new packages during the build
+  process - that has to be hidden somewhere in the buildlib stuff, or
+  maybe it's right there and I missed it.
+
+* We do build with intel on anvil, so the intel builds of these libraries
+  will work.  Kate says there's something funky about how they piggyback
+  off gcc to find the right library or do precompiler stuff or something,
+  so I need to figure that out, too.
+
+5/28/2019
+
+* So, I modified config_files.xml to have an "iac" section in the
+  COMPSETS_SPEC_FILE; I'm not convinced that is either necessary or
+  sufficient, but at least it will let me move forward.  I also need to (at
+  the very least) add a "gcam" section to CONFIG_IAC_FILE area.  So now I
+  need to create/modify:
+
+  components/gcam/cime_config/config_component.xml
+
+  ...so it has what it needs.  So, time to do what I always do, look at the
+  lnd and rof versions and see what they got.
+
+  So, it looks like configuration build options go in here, ways for the
+  build system to associate various actions and build variables and options
+  with compset variables.  So, if you go something like:
+
+  <entry id="PANTS_MODE">
+  ...
+    <value compset="_GCAM%PANTS">ON</value>
+  </entry>
+
+  ...that's a way to associate the GCAM%PANTS compset tag with setting
+  PANTS_MODE.  It looks like a regex, with wildcarding like:
+
+    <value compset="_CAM.*_DOCN">ACTIVE</value> 
+    <desc compset="_CLM50%[^_]*BGC" >clm5.0 bgc (cn and methane):</desc>
+
+  ...and stuff like that.
+
+* It looks like the <file> tells you which env file you should put these
+  options in, which, apparently, is where everything will look while
+  building your case.  Maybe the scripts convert to environment variables?
+  I mean, that would make "env" make sense.
+
+  Config files to create config files - this thing is a maze, and I'm
+  feeling more and more like a rat who is not going to get the cheese.
+
+  Okay, so we dump things like COMP_ROF and COMP_IAC into env_case.xml, and
+  stuff like "MOSART_MODE" and "CLM_CONFIG_OPTS" go in env_build.xml, and
+  then I guess command line options to the model execuatables would go in
+  env_run.xml
+
+* In other words, I need to set the rest of everything up (the case setup,
+  the build, the run commands) before I know what kinds of configuration
+@ options go in here.  So, up next is my special iac config_compsets.xml
+  file, which, if it doesn't work, at least lets me build the section to
+  stuff into the clm compsets section or whatever.
+
+  Okay, how about something simple:
+
+  <compset>
+    <alias>ZLND</alias>
+    <lname>2000_SATM_CLM45_SICE_SOCN_SROF_SGLC_SWAV_GCAM</lname>
+  </compset>
+
+  It looks like the all the compsets in the clm config_compsets.xml set
+  MOSART, but you see others in the cam config_compsets.xml that have clm
+  plus SROF, so let's put it in this way.  I just want to build both land
+  and GCAM, somehow - we'll worry about how things go later.  
+
+  Maybe a more straightforward
+
+  <compset>
+    <alias>Z</alias>
+    <lname>2000_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_GCAM</lname>
+  </compset>
+
+  ...everything stub but GCAM.  I doubt this would actually work - I'd have
+  to include reading the climatological .h1 file for land inputs in case of
+  a stub, which is a thing I don't know how to do, but I'm sure it works.
+
+  But I'm going to start with clm and gcam together, which will help me
+  track down build issues, and later coupling issues.
+
+  ...eh, maybe not - just try to get GCAM built, to test buildnml and
+  buildlib?  I told Kate that was a zero-level build.
+
+! Okay, created Z (all stubs except GCAM) and ZLND (add CLM45) compsets,
+  and tried this:
+
+    ./create_newcase --case iac_build --compset Z --res f19_g16
+
+================
+  I moved the results into ~/iac_build, since it built it off the scripts
+  directory.  First line in the output of create_newcase (see newcase.out)
+  is:
+
+  Did not find an alias or longname compset match for Z 
+
+  So, instead it did this:
+
+    Z_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV_SIAC_SESP 
+
+  Okay, fun.  Maybe force the component part?
+
+    ./create_newcase --case ~/iac_build2 --component iac --compset Z --res
+  f19_g16
+
+  No, can't specify the component.  Okay, fine, put the Z cases in the
+  allactive config_compsets and hope for the best.
+
+  Well, it *also* might help if I put the right directory name (gcam, not
+  iac) in COMPSETS_SPEC_FILE...
+
+  okay, there you go.
+================
+
+* So, ~/iac_build3 and ~/iac_lnd_couple_build contain the Z and ZLND cases,
+  with newcase.out containing the build issues.  There were no errors, so
+  it created the whole build structure, which is nice.
+
+* Okay, case.setup in iac_build3 - barfs when it can't find buildnml for
+  gcam.  So touch a buildnml and buildlib, chmod +x, and try again...
+
+  So, the fake buildnml worked for case.setup, but case.build fails because
+  there's no way to create libiac.a without a buildlib that actually does
+  something.
+
+@ So, the next steps are making a real buildnml and a real buildlib.
+
+5/24/2019
+
+* It is now time to work off: bishtgautam/gcam/add-submodule-2, which
+  hopefully is based off the latest E3SM with the CIME upgrades.  My plan
+  is:
+
+1 checkout bishtgautam/gcam/add-submodule-2
+2 create new branch shippert/gcam/active-gcam-coupled
+3 Merge over from active-gcam, and commit everything.
+4 Work in active-gcam-coupled from now on.
+
+* Okay, "merging" is not right - a better solution was to go to
+  E3SM_active_gcam_coupled/components/gcam/src, which is the head of the
+  submodule, and do a git pull origin master to update my submodule.  That
+  should be most of the things that are different between my original
+  active_gcam and the active_gcam_coupled branch.
+
+* Now do a diff -rq E3SM_active_gcam E3SM_active_gcam_coupled, to see what
+  files are different, and full diff -r to find the actual differences.  I
+  think any changes to CIME files should probably use the new branch, as
+  they've modified some of my original implementation.  But anything iac
+  specific, like the prep and build stuff, I just copy over from
+  E3SM_active_gcam.  Then, finally, commit and push everything, and go from
+  there. 
+
+* Okay, *that's* not going to work, either - we have 373 non-git files that
+  are different between the two branches.  So there has been a lot of
+  regular E3SM modifications since then.  Maybe just grep for things with
+  iac in the name?
+
+  ...better, only five differences, and three of them are garbage files (~
+  and an "unused").  So:
+
+    Only in E3SM_active_gcam/components/clm/src/main: lnd2iacMod.F90
+    Files E3SM_active_gcam/components/gcam/src/cpl/iac_import_export.F90 and E3SM_active_gcam_coupled/components/gcam/src/cpl/iac_import_export.F90 differ
+
+  That's fine, I should copy those over directly anyway -
+  iac_import_export.F90 is still under review about how to extract the lnd
+  imports (I think I don't need to loop over the decomp, as the mapping
+  should put it on iac decomp), and lnd2iacMod.F90 is obviously still a
+  work in progress.
+
+  Also, I should move this NOTES.e3sm file over to the new branch, too.
+
+* Once again, here is the CIME documentation:
+
+  https://esmci.github.io/cime/users_guide
+  https://esmci.github.io/cime/users_guide/introduction-and-overview.html
+
+* From that, it looks like I need to define a compset with case string.  I
+  want to say this should happen in some of the .xml files in the gcam
+  cime_config directory - perhaps this users_guide will tell me how to
+  create a new compset.  
+
+  Once I have that, then, I do something like this:
+
+  cd cime/scripts
+  ./create_newcase --case iac_build --compset Z --res f19_g16
+
+  ...or something simlar.  Perhaps I do not need teh compset name?  Sure,
+  let's try just setting the case to iac_foo...nope, you are required to
+  have --compset and --res. 
+
+  Okay - well, the good news is I don't think compset Z has been taken, so
+  I'll start by building that.  
+
+* Eh, it looks like the compset config files are defined in:
+  cime/config/e3sm/config_files.xml in the COMPSET_SPEC_FILE section.  Man,
+  I just don't know, do I modify this to let me find a config_compsets.xml
+  in gcam/src/cime_config, or do I add IAC components to the clm config
+  file.  I'd like to do as little damage as possible to the code base, but
+  either I'm mucking with cime or mucking with clm.
+
+  I think the cime mods are easier, letting me screw up my case
+  configurations all in my own area without running the risk of mucking up
+  another component.  So, I think the solution is to modify CIME to look
+  for iac stuff for these configs.
+
+5/23/2019
+
+* Here is more cpl7 documentation, to help me track down what I need to do
+  to build:
+
+  http://www.cesm.ucar.edu/models/cesm1.2/cpl7/
+
+  I've printed out the user's guid and coupler flow diagram, which, yowza.
+
+* As it turns out, the CIME driver buildnml is the one that apparently
+  takes namelist options (or something) and builds the seq_maps.rc file,
+  which is a namelist-ish format describing how all the mappings will
+  work.  So, I just need to figure out how to describe the coupling I'm
+  doing in the right namelists and that part should be taken care of.
+
+  The other part of the build is tracking down all the makefiles we used in
+  iESM, and putting them in the right spot so that buildlib works.  Jeesh,
+  this is gonna be a long day putting this all together.
+
+  I should review some of the builds I've made for various test runs and
+  see if I can identify what everything is, what it is doing, and how it
+  got to be there.
+
+* Okay, so check out:
+
+  ~/anvil/E3SM_active_gcam/cime/doc/source/users_guide/
+
+  ...and the ".rst" files, which is some kind of formatted documentation
+  that both looks good and looks bad in emacs (each sentence is on a
+  different line.  Maybe there's a ReST-viewing mode?)
+
+5/22/2019
+
+* Okay, I finally internalized a couple things while rereading for the Nth
+  time the MCT papers:
+
+1 "Merging" means taking two or more inputs and combining them onto the
+  grid/decomposition of the output.  This is where the "fractions" stuff
+  come in - atm takes lnd, ocean, and ice fluxes as input, so a "merge"
+  means meaningfully combining the same fluxes from different inputs onto
+  the boundary.  If a grid cell has two or more different surface types,
+  then you need to weight by the fraction of that grid cell that has that
+  type: i.e. atm_flux = land_flux*land_frac + ice_flux*ice_frac +
+  ocean_flux*ocean_frac, for each grid cell.
+
+  Lnd takes rof and glc as input, so we need to merge those.  The other
+  components that take multiple inputs through the coupler need merging as
+  well.
+
+  The state variables also need weighting - surface temp in the grid cell
+  would still average across land types, for example.
+
+! This means that IAC does NOT need any merging - we are taking just a
+  single component (lnd) as input.  It's likely the atm Co2 flux will
+  need to merge *in* from iac as well as lnd.  I don't know about land,
+  though - we are cogridded, and I don't think we provide inputs that
+  other models do, but I'll have to think about that.
+
+2 "Mapping" means "interpolating" - i.e. putting my stuff on your grid.
+  There is a whole calling sequence to do such mapping, and I'm not
+  convinced we can just skip it, even if we are on the same grid as lnd,
+  but MCT handles a lot of it.  It's mostly, from our perspective, a matter
+  of setting it up right.
+
+? An interesting thought here - rather than have the glm grid interpolated
+  by gcam/iac onto the lnd grid, maybe we could use MCT to do that?  It
+  might be easier, or it might be harder.
+
+3 But I *still* don't know how we go from one comp's decomposition to
+  another - in particular, take our lnd->iac coupled AVects from the lnd
+  ninst_lnd decomposition to iac's ninst_lnd=1 degenerate case.  I expect
+  to use something like like: loop over input instance, set
+  output%rAtt(:,n)=input%rAtt(:,i), where i=1,lsize_input for that
+  instance, and keep n counting over the whole instance loop.  This
+  would combine all the decomposed variables in lnd into a single vector
+  for iac.  But I haven't seen anything similar so far - taking M input instances
+  and mapping them to N output instances.  It may be that that never
+  happens - we always have 4 natm and 4 lnd and 4 glc etc, so there is
+  always this one-to-one decomposition mapping.  But that won't work for
+  iac, so, hmm.
+
+  I mean, I just do it my way and see if it works - it's straightforward
+  enough, just do something like this:
+
+    n=0
+    do eli = 1,num_inst_lnd
+       l2x_lx => component_get_c2x_cx(lnd(eli))
+       lsize=...
+       x2z_z%rAttr(index_x2z_Sl_npp,n:n+lsize) = l2x_lx%rAttr(index_l2x_Sl_npp,:)
+       ...
+       n=n+lsize
+    enddo  
+
+  Is there any reason why this wouldn't work?
+
+! I *think* this kind of thing (domain mapping) comes under the
+  globalsegmap stuff, which I never really understood.
+
+* On our weekly phone call, I had trouble expressing exactly what my issues were,
+  because I don't understand them well enough to not sound like maroon -
+  but from my conversation with GB I think the idea is that "mapping" stuff
+  is both a grid and domain mapping.  In other words, during
+  initialization, the mapping functions describe how to send stuff to and
+  from components, including interpolating onto a different grid and
+  redecomposing for a different decomposition.  So that means I *do* need
+  to set up some kind of mapper_Sl2z, using a seq_maps.rc file and the call
+  to seq_map_init_rcfile().  
+
+  There are options for saying "samegrid_xy", so something like
+  "samegrid_lz = .true." should tell it it doesn't have to interpolate.  
+
+  My problem is - npp is domain split by pft/patch (begp:endp), whereas hr is
+  domain split by column (begc:endc).  Do I need separate maps for each
+  one?  Or is there a way of turning (begp:endp) into (begc:endc,<other
+  dims>) or (begg:endg, <other dims>)?
+
+* Anyway, check this out:
+
+  ./cime/doc/source/driver_cpl/namelist-overview.rst
+
+  I found that by grepping for seq_maps.rc, which is a thing that we call
+  in every seq_map_init_rcfile() function I've seen, that has some way of
+  describing the mapping.  Maybe that will clarify things, as well as
+  everything in the cime/doc subdir.
+       
+5/16/2019
+
+* Sadly, there is no mct_aVect_max function, so my attempt to quickly use
+  MCT to do the accum->monthly avg->max of monthly averages is going to be
+  a little more complicated.  I can accum until the month break, then call
+  average.  I could copy the mct_aVect_avg code and simply replace with a
+  max instead.
+
+* So, the idea is I create a "monthly" aVect, and accumulate the l->z
+  inputs into that.  Then, on the month break (can I access dates?  I
+  should be able to), I average that Avect, then accumulate *that* into a
+  third "monthly accum" aVect.  Then, on the yearly break, I finally run my
+  custom "find a max" code.
+
+  l2z_lx -> l2zacc_lx -> l2zmonth_lx -> l2zmax_lx
+
+* It looks like "accumulators" do this: extract the entire land coupled
+  variables, via l2x_lx => component_get_c2x_cx(lnd(eli)), where eli runs
+  oer the number of land instances - thus, this grabs the decomposed
+  coupled aVectors on the land grid.
+
+  Then, it does an mct_avect_copy/accum(l2x_lx, l2acc_lx(eli) - I'm pretty
+  sure this will only copy over and accumulate the exact aVects that are
+  defined the in l2acc_lx aVect list, as well.  So once we initialize the
+  correct l2acc_lx list, we don't have to worry about tracking down which
+  exact fields to copy over.
+
+* I don't know what aVect "merging" is - I want to say it's pulling all the
+  info in from the domain decomposition and merging them into one big
+  array, but, honestly, I don't see anything that looks like that in either
+  the rof merge or the glc merge in prep_rof/glc_mod.F90.
+
+  I don't think merging means pulling in inputs from multiple components -
+  I think it's more about pulling in from multiple decompositions.  I know
+  glc is on the same domain decomp as lnd - what about rof?  I don't know -
+  it seems like I have lots of different things on lnd and rof decomp that
+  I don't understand.
+
+* Okay, let's go into prep_rof_init(): first thing, calls 
+
+     x2r_rx => component_get_x2c_cx(rof(1))
+
+  ...so it pulls out the attribute vector from the first component_type
+  rof, where rof(num_inst_rof) - basically, it tells you extract x2r_rx
+  from the first instance of rof.  I'm not sure, but the naming suggests
+  this is the stuff we are pulling *into* rof, from other components "x"
+  that pushed it "out" to the coupler first.  so x2c->c2r = x2r.  I guess.
+
+  Anyway, this particular x2r_rx instance is just to find if the
+  irrig_flux_field is defined, and get the lsize_r.  (lsize_r) is "local
+  size", so my guess that's the size of the arrays in this particular
+  instance.  
+
+! Maybe that's what the merge does - string them back together?
+  If you have a variable like this foo[a][g], and you decompose on [g],
+  that means putting blocks of size n*a into each instance.  Then, with the
+  merge, you simply tack them back on top of each otehr - run down the
+  instances and append them back together.
+
+* Anyway, then we do this:
+
+     l2x_lx => component_get_c2x_cx(lnd(1))
+     lsize_l = mct_aVect_lsize(l2x_lx)
+
+  So, that's to find the c2x - what the land send out to the coupler on
+  it's decomposition, and find that first local size.  That that point we
+  allocate our l2racc_lx accumulator avect by the number of *land*
+  components, and then 
+
+       do eli = 1,num_inst_lnd
+          call mct_aVect_initSharedFields(l2x_lx, x2r_rx, l2racc_lx(eli), lsize=lsize_l)
+          call mct_aVect_zero(l2racc_lx(eli))
+       end do
+
+  This takes two input Avects and inializes a third: so, finds the shared
+  fields between these two - the intersection of all the stuff that land
+  sends out in l2x_lx and just the stuff that rof wants in x2r_rx, and sets
+  up l2racc_lx to have those.
+
+  We *then* allocate l2r_rx, which I think is what our final
+  accum/averaged/merged input.
+
+  There's a "samegrid_lr"  check, and then a mapper_Fl2r setup.  I *think*
+  that stuff is for when we have to send fluxes across a boundary, which
+  I'm pretty sure we do *not* have to do here.  (Not for l2z input - the
+  z2a output is a flux.  z2l is landuse, so that should be a state vector,
+  as well).
+
+* Hmm, for z2a mapping, can we just use mapper_Fl2a?  Or do we need a
+  domain decomposition, as well...
+
+* Now, on to prep_rof_accum() - for each eli (land instance) call copy or
+  accum from component_get_c2x_cx(lnd(eli)) to l2racc_lx(eli).  That makes
+  sense - the stuff we pulled out of lnd, accum into l2racc.  \
+
+* prep_rof_accum_avg() - Now, this is a little weird.  It runs over the
+  *rof* instances in eri, and calculates a corresponding eli (land
+  instancE) via: 
+
+?   eli = mod((eri-1),num_inst_lnd) + 1
+
+  So, this means if we have num_inst_rof > num_inst_lnd, we map multiple
+  eris onto the same eri.  If we had 8 rof instance and 4 lnd instance,
+  then eri=1,5 gives eli=1, eri2,6 gives eli=2, etc. 
+
+  This is weird - what happens if we then:
+
+    call mct_avect_avg(l2racc_lx(eli),l2racc_lx_cnt)
+
+? ...for the same eli?  What happens when we hit eri=5 and we do eli=1
+  again?
+
+* Moving on, this prep_rof_accum_avg() gets called in the driver during the
+  setup to run rof, of course - we accum affter the land run, and average
+  just before the rof run.  (See line 4051 in cime_comp_mod.F90). 
+
+  Then (still in teh drive) call prep_rof_calc_l2r_rx(), and finally
+  prep_rof_mrg().  So:
+
+* prep_rof_calc_l2r_rx(): So, this appears to actually fill in the l2r_rx()
+  aVect, which we allocated as the last step in init.  So, it has
+  fractions_lx and deals with the mapper_Fr2l - interesting, the flux
+  mapper for going rof -> lnd, not the reverse.  Maybe it's the same with a
+  different sign or something.
+
+  Starts by looping over num_inst_rof, and then using the mod trick to find
+  the matched eli and efi ("fractions") instance.  Huh, num_inst_frc - we
+  have instances devoted to fractions?  More mysteries.
+
+  I don't understand the call to seq_map_map(), but it has something to do
+  with mapping fluxes between the l2racc (the accumulators on the lnd
+  decomposition), and l2r_rx(eri) (the final input to rof, on the rof
+  decomposition).  Then it does somethign manually for the irrigation
+  field.  Okay.
+
+* I reviewd prep_glc_calc_l2x_gx(), to see how we handle state vectors,
+  since I claim that's what I'm using (although the carbon fields are
+  actually described as "fluxes", there's no domain boundary between gcam
+  and lnd, at least as far as I can see).  It *does* suggest a mapper_Sl2g,
+  so that suggests we still need to do this infernal "mapping" - it
+  ultimately calls map_lnd2glc, to map one field from lnd->glc grid, which
+  is part of map_ln2glc_mod.F90, in the CIME/drivers/mct area.  Yeesh.
+
+  I think this glc remapping is because we have different elevation
+  classes, and ice-free vs. ice-covered.  So they have some additional
+  information they have to extract and use.
+
+  It really seems like "mapping" means regridding, with some infrastructure
+  handle different domain decomps across components, and making sure the
+  fluxes are conserved at the boundaries between components.  The fractions
+  seem to be a scalar used when mapping?  Are they land/sea fracs, or am I
+  thinking of something else.  
+
+  Jeepus, prep_rof_merg() seems to: loop over each rof instance, and send
+  l2r_rx(eri) and fractions_rx(efi) - then for each att in l2r_rx, it
+  scales by the fraction in fractions_rx, and then sets to x2r_r.  So it
+  seems like a straight copy, instance to instance, scaled by whatever is
+  in the fractions_rx that mapes to that particular rof instance.  
+
+  I mean...what?  What problem is this solving?  What kind of calculation
+  is going on here?  Why is this called "merging", what is up with that
+  infernal mod index, why weren't the land values already scaled?  This is
+  very frustrating - I don't understand the math of what is being
+  accomplished here.
+
+  Perhaps does this fractions stuff mean: the fraction of *this* land cell
+  that contains river runoff contributors?  So we scale grid cell wide
+  values by lfrac, because the flux coming into the rof part isn't the
+  entire flux of the whole cell, it's the 
+
+* So, let me conjecture for a bit - if we define iac on the same grid as
+  lnd, then this fractions nonsense doesn't come into play, does it?
+  There's no fraction of each land grid cell that applies to gcam, so we
+  need to scale like this.  Right?
+
+  Anyway, the fractions structure is an *attribute vector* that holds
+  ifrac, lfrac, ofrac, depending on I guess what component we are dealing
+  with. 
+
+* Note that prep_atm_merge has a whole section for attributes that do not
+  need to be "merged" - they just get hooked up via mct_aVect_sharedindeces
+  structures (somehow - see line 508 of prep_atm_mod.F90), and then copied
+  over via mct_aVect_copy().  So, maybe do something like that?
+
+5/15/2019 15:26:02
+
+* I'm making a separate header because we had the phone call today.
+
+* Rather than have the coupler aggregate and map to gcam grid, we decided
+  that we would let gcam do that, and just couple on the lnd grid.  This is
+  important because transforming the weights was seen as something of a
+  nightmare, and the gcam wrapper code already did it, so there.
+
+  Gautam wanted to aggregate in the coupler, because that would facilitate
+  GCAM running in a spatially decomposed (i.e. multiproc) fashion, but Kate
+  pointed out that we can't run GCAM in parallel in the spatial domain,
+  because GCAM is all about trading across zones - there is strong lateral
+  coupling there.  The parallel version of GCAM runs across *calculations*,
+  so it's process-based parallelism, not spatially-based parallelism.  That
+  is unlike the other climate (i.e. physical) components.
+
+  So we don't get anything by forcing the coupler to do all the
+  aggregating, so for now we will just run on lnd grid.  That simplifies
+  things, because it means I can use the same method for mapping patch/pft
+  -> column -> lat,lon as we currently do.
+
+* The time step issue is a problem, though.  Peter said we really do want
+  to run the way we set it up before: yearly max of monthly averages, which
+  is basically choosing the month with most npp and using that as
+  representative for the year.  We'll table discussion about the five year
+  averaging/interpolating, and running five years in the future for now -
+  right now we just want to get it so we run a gcam every year, and figure
+  out if that's what we want or not.
+
+! But, there's now the issue of how to accumulate - the MCT accumulators
+  (as I understand it) do averaging and max over the whole input period. I
+  want to average monthly then max across months, so I need to build my own
+  accumulator.  The question is, how do I implement this?
+
+  I could build an internal accumulator inside of lnd2iacMod.F90 or
+  something - we update on clm scale, and the aggregator function then does
+  the right thing.  But, how does this couple, then?  When we call
+  lnd_export() on lnd2iac_vars, does it check to see if we are at the end
+  of the year before doing the max and then sending to coupler?  That seems
+  straightforward, although I'm not sure how to get the timers and stuff
+  ready. 
+
+  You know, the prep_iac_accum() function inside the driver area is under
+  my control - rather than calling MCT functions perhaps I can simply
+  develop there.
+
+  Or, maybe there is a way inside of MCT to build your own accumulator method -
+  in that case, lnd_export() sends it up and accumulates, and prior to
+  coupling with iac we call my custom reduce function.  Hmm...
+
+  Anyway, I'm read something in the code that the glc component couples
+  with lnd every year, so I will dig in and see how that goes.
+
+* Kate is very anxious to finally get some gcam building going, and that's
+  long overdue.  So I also will need to setup the buildlib and buildnml
+  scripts, which I'm hoping will be straightforward.  I know the namelist
+  options, so just learn how to store those in XML, and then figure out the
+  building - this might get a little complicated because GCAM is in C++,
+  but that can't possibly be a very big deal.
+
+5/15/2019
+
+* I finally learned a thing about dimensions: i've been doing it all
+  wrong.  Here is the header of the .h1 file:
+
+------------
+  netcdf b.e11.BRCP85C5BPRP.f09_g16.iESM_coupled.001.clm2.h1.2091-06 {
+  dimensions:
+	lon = 288 ;
+	lat = 192 ;
+	gridcell = 20975 ;
+	landunit = 28113 ;
+	column = 45704 ;
+	pft = 277784 ;
+	levgrnd = 15 ;
+	levlak = 10 ;
+	numrad = 2 ;
+	string_length = 8 ;
+	hist_interval = 2 ;
+	time = UNLIMITED ; // (1 currently)
+------------
+
+  So, notice a couple things: column is not gridcell, and pft is not 1:17.
+  So, the "patch" level coordinate includes both *position* and *plant
+  type*.  That's what the "do n=1,npft" loop at c. line 1638 (of my current
+  version) of iac2gcam_mod.F90 is about - we are looping over the 277784
+  plant *and* location information, and extracting each.  We can get the
+  i,j,pft and column information from this simple index, presumably by
+  using the pfts1d_* mapping elements from the same clm.h1 file.
+
+* Okay, so first of all: is this patch-level mapping to location and plant
+  type constant?  Can I load them in a configuration file?
+
+* Second, I now believe the begp:endp and begc:endc decomposition is
+  consistent - each chunk would have a consistent set of both p and c
+  values.  So I should be able to export them simply, via begp:endp and
+  begc:endc ranges as I've done.
+
+! ...that is, as long as the veg_cf and col_cf structures exist on the time 
+  scale in which I need to dump things.
+
+* I still don't know what the difference between "gridcell" and "column"
+  is. I can infer from the calculation that's possible to go back and forth
+  between "column" and "pft", although apparently the calculation is not
+  easy (see c. line 1526 in iac2gcam_mod.F90).  It looks like you run
+  through the pfts, find the lat and lon, check the pfts1d_itype_lunit to
+  see if it's got vegetation (==1), then loop over all columns to find the
+  one with the same lunit and and same i and j, and then finally build the
+  mapping between pft1d_cols(patch) and column.
+
+  It therefore looks like "column" includes land unit type information (the
+  clm2.h1 file suggests "(vegetated,urban,lake,wetland,glacier or 
+  glacier_mec)" as types, so a fairly broad characterization of what the
+  column represents.
+
+* If I had to guess, then, I'd say something like: gridcell = grid points
+  with non-land masked out; columns are are gridcells + land unit type; and
+  pft/patch are columns + plant type.  But it might not be a direct
+  relationship between these three, like "pft contains columns contains
+  gridcells".  For example, consider these three pft weight variables, from
+  clm2.h1: 
+
+-----------------
+	pfts1d_wtgcell:long_name = "pft weight relative to corresponding gridcell" ;
+	pfts1d_wtlunit:long_name = "pft weight relative to corresponding landunit" ;
+	pfts1d_wtcol:long_name = "pft weight relative to corresponding	column" ;
+-----------------
+
+  So, I don't know what "weights" means in all this.  We do use
+  pfts1d_wtgcell in gcam, so that's something.  Anyway, this suggests that
+  there is a mapping between patch/pft and gridcell, landunit, AND column.
+
+* It seems like all this mapping between column, pft, gridcell, and lat/lon
+  should probably be setup during the lnd initialization and available for
+  Use in lnd modules somewhere.  Alternatively, if they are set up via a 
+  configuration file for each grid configuration, then we could crack and
+  extract that file to find these things.
+
+* So, pft_weight_mean_g is the average of pft_weights[lon,lat,PFT] on the
+  "calc_avg" time scale, which is five years.
+
+5/14/2019
+
+* So, obviously, the coupling should be really really easy after all -
+  obviously, just export veg_cf%npp and col_cf%hr in lnd_export.  That will
+  automatically happen at the same time scale as it should, which is
+  probably "radiation time scale", which is probably something like 30
+  minutes. 
+
+  So, something like:
+
+  if (iac_present)
+   do g = bounds%begg,bounds%endg
+      i = 1 + (g-bounds%endgg)
+      l2x(index_l2x_Fzll_hr,i) = col_cf%hr(g)
+   end do
+
+   do p = bounds%begp,bounds%endp
+      k = 1 + (p-bounds%endgp)
+      l2x(index_l2x_Fzll_npp,k) = veg_cf%npp(p)
+   end do
+  endif 
+  
+? Okay, I'm *still* not sure about the p index here - veg_cf_summary()
+  takes bounds but also num_soilp and filter_soilp as inputs.  So we build
+  veg_cf%npp(p) looping over filter_soilp(1:num_soilp), which is described
+  as a "patch loop".  So (a) p stands for "patch"; and (b) I'm not sure
+  what patch means, or how it's related to pft.
+
+  Okay, well, in decompMod.F90, begp:endp are described as "beginning and
+  ending pft index".  So I'm going to go with that - veg_cf%npp(begp:endp),
+  and we'll used that in lnd_export().
+
+* They seem to have mods in clm dedicated to lnd2atm and lnd2glc, etc., so
+  maybe I really should put it in a lnd2iac.  It should be simple enough to
+  copy over veg_cf%npp and col_cf%hr, but it's just this extra step that
+  seems extranous.  But it *would* give us a place to extend the coupling,
+  which I'm certain we will want to do at some point.
+
+  It looks like the clm_drv() function calls lnd2atm() and
+  update_lnd2glc() near the end, like you would expect.  Then
+  lnd_comp_run() calls lnd_export() right after clm_drv() finishes.  All
+  this makes sense.  So perhaps copying to lnd2iac_vars is necessary, if
+  clm_drv() clobbers veg_cf and col_cf as part of cleanup or something? 
+
+  Ah, we use atm2lnd_vars in our restart file - so it's certainly important
+  to store z->l coupling in some structure that we can access in a couple
+  different ways.  But the l->z coupling should only be used to send back
+  to MCT.
+
+* Now, how to accumulate those values into something meaningful is another
+  question - I still need to review how MCT aggregators work, when they are
+  called, etc.  I presume the final reduction step happens in
+  prep_iac_coupling, or whatever that function is; hopefully the aggregator
+  mechanism allows us to store 30*365 values in a meaningful way that we
+  can use for that reduction.
+
+* Similarly, iac_export should just send out our landuse[p] array from
+  glm.  It's a bigger question what to do about the grids, since the glm
+  grid is hardcoded as 360x720 - do we use MCT interpolation, or do I crack
+  iESM/clm and see how it dealt with glm output on a different grid than
+  lnd.  I think internally interpolating is probably the simplest, since
+  otherwise it means we have a different input and output grid for iac,
+  which seems goofy.
+
+* The lnd model has it's own accumulators, internally - see line 1370 of
+  clm_driver.F90.  I think those are used internally, not for coupling -
+  for making yearly averages, that kind of thing.
+
+! Okay, I've almost convinced myself - create an lnd2iac() module and
+  routine to update lnd2iac_vars, which is then sent to lnd_export().  It's
+  a little more invasive, but at least it's not hidden.
+
+  It looks like lnd2atm_vars and lnd2glc_vars are defined in
+  "clm_instMod".  For now, I'm going to stuff it all into lnd2iacMod.F90 -
+  the variable, the updater, that kind of thing.
+
+* It looks like cime_run_lnd_recv_post(), which is presumably run after the
+  land model runs, calls prep_iac_accum() - so that's good.  Thus, lnd
+  model runs, couples back to cpl, pre_iac_accum() takes the lnd2iac_vars
+  from the coupler and accumulates them.  Then cime_run_iac_setup_send()
+  calls prep_iac_accum_avg() to reduce the accumulators into what we want. 
+
+  (This is a modification of how cime named things before, I think.
+  Hopefully it's better.)
+
+  Looking at some of the comments, it appears that glc runs once a year,
+  too, with coupling and accumulating from lnd.  So look at
+  prep_glc_accum(), and prep_rof_accum() as well, because we apparently
+  average lnd2rof as well.
+
+  So, I need these things:
+
+@ lnd2iacMod.F90, with functions and vars to set lnd2iac_vars from
+  veg_cf%npp and col_cf%hr
+@ prep_iac_accum() to accumulate the values returned from land
+@ prep_iac_accum_avg() to finally transform/reduce the data into the single
+  arrays I need for input to gcam.
+
+* A stray thought on restarts - there was discussion in the code about what
+  to do if we stop mid-year.  We've accumulated a partial year of l->z
+  variables, which we will lose if we don't save it somehow.  Does that
+  mean we need to include the accumulated l->z variables in their own
+  restart file?  I mean, a deliberate restart almost certainly will start
+  on the year boundary (or at least we could require that), but a crash or
+  something could happen anywhere.
+
+  I think this was in the lnd2glc coupling, which also happens on a yearly
+  time scale, I think.  Anyway, what might this imply - a restart file on
+  every lnd time?  N days worth of l->z vars?  Or do we have to build our
+  own accumulator?  That seems crazy, MCT must have thought of this somehow.
+
+5/13/2019
+
+* A bunch of things about trying to extract npp and hr for l->z coupling.
+
+* First of all, in the clm.h1 file, we have npp[t,pft] and hr[t,col].  So,
+  apparently npp doesn't involve any location info.  
+
+* In the clm ColumnDataType.F90, we have a column_carbon_flux data type
+  that holds x%npp(c) and x%hr(c).  In VegetationDataType.F90, we have a
+  vegetation_carbon_flux which holds x%npp(pft)
+
+  So, naively, it seems like we want column_carbon_flux%hr and
+  vegatation_carbon_flux%npp.
+
+* Note that these names are *fluxes*, rather than *states*.  I'm not sure
+  treating them as a flux is meaningful, given that I don't think we have a
+  domain boundary between lnd and iac that we need to cross - it's kind of
+  collocated.  But, perhaps I should move them out of Sl avects and into
+  Flzl avects, or something like that.
+
+  Anyway, more important than that is figure out where these values are
+  calculated, and how we might extract them into our avects. 
+
+* Okay, well, in VegetationDataTypes.F90, it looks like the routine
+  veg_cf_summary() calculates the npp from gpp and ar, whatever there are,
+  at line 8111.  It then goes on to update annual NPP accumulator for use
+  in the carbon allocation code, so perhaps I insert my own accumulator
+  right here - find a monthly max or something, to match what I do with the
+  .h1?
+
+  But I'm not seeing anywhere where we calculate an "NPP" and write it to a
+  clm.h1 file - I should figure out how that happens in iESM/clm, and see
+  if there's some clues in there.
+
+  Also, track down when and where veg_cf_summary() is called.
+
+* Also, I need to do the same sort of thing with hr, only this time it's
+  apparently by column.
+
+* So, the we have a veg_cf and col_cf structure to pass this stuff around,
+  defined in VegetationDataType.F90 and ColumnDataType.F90.  So we are
+  looking to accumulate veg_cf%npp and col_cf%hp.
+
+  veg_cf%npp in veg_cf_summary(), line 8111
+  col_cf%hr in col_cf_summary(), line 6501
+
+  At the bottom of these functions (or after the assignment) we could call
+  accumulators.
+
+! Both of these functions return immediately if we use_fates, so either
+  FATES will calculate them or that calculates something else that contains
+  the same information, possibly in a transformed way - or, perhaps, they
+  aren't calculated at all.
+
+* Both of these functions are called in EcosystemDynMod.f90, line 220, in
+  function EcosystemDynLeaching() (again, if .not. use_fates), so at least
+  they are on the same time scale.  The EcosystemDynLeaching() description
+  says it runs on the "radiation time step", which, whatever.
+
+* Okay, broad strokes: 
+
+1 create an IacCoupling_mod.F90 module, to hold all the routines that deal
+  with lnd/iac coupling.  I originally thought it would be party of the lnd
+  module, but maybe make it part of gcam?  Hmm. Anyway, wherever it is:
+
+2 Have functions to be called to accumulate_npp() and accumulate_hr() -
+  these will be called from veg_cf_summary() and col_cf_summary() to grab
+  the appropriate values.  Maybe an overloaded function, or with optional
+  args or something:
+
+  accumulate_iac(npp=veg_cf%npp)
+  accumulate_iac(hr=col_cf%hr)
+
+3 This function either works completely in clm space, until we have a
+  yearly coupling alarm, that sends the results to the coupler; or we use
+  the MCT aggregator mechanism to couple every time step, sending the new
+  npp and hr values, and then have the iac prep functions complete the
+  aggregation into whatever it is we need to run on our yearly time step. 
+
+4 Either way, we need to figure out how to get these regular values and
+  turn them into something we want.  We also need to figure out how to get
+  the other things we read frm clm.h1 - landfrac, landmask,
+  pft_weight_avg_g.  I *think* those things are static, so we can read them
+  from the clmbase file as a configuration - but if not, and/or if we need
+  the aboveg and belowg carbon stuff that we read but presumably don't use
+  in iESM, then we'll need to do some more archeology to figure out where
+  to get these values from.
+
+@ Review how MCT aggregators work
+@ Review how things get put into the coupler, and how they get taken out -
+  something about the prep functions, I think.
+@ Review iac2gcam_mod.F90 to see how we use these npp_avg[p] and hr_avg[c]
+  values 
+@ Review the driver, to review calling sequences from there - see
+  prep_iac_mod.F90 stub, and try to find examples of some other coupling
+  accumulators from there.  Then, try to find examples of where such things
+  are called from.
+
+@ Try to follow some flux coupling, from l->r, for example.
+
+5/10/2019
+
+* Hidden away in gcam/src/iac/shr is iac_fields_mod.F90, with some useful
+  definitions.  I'm not sure, but it seems like a "shr" directory is
+  designed to be shared between various elements, but since I mostly need
+  this stuff internal I'm going to move it into the coupling directory.
+
+* Anyway, in iac_field_mods, we have this defined:
+
+    integer, parameter, public :: iac_glm_nx  = 720
+    integer, parameter, public :: iac_glm_ny  = 360
+
+  So now this clicks into place - we use two grids, basically an input and
+  an output grid - clm_nx,clm_ny matches the land grid, and is used on
+  input clm.  iac_glm_nx,iac_glm_ny defines the glm grid, which is 720x360,
+  the one used by updateannuallanduse(), and the output of the glm code.
+
+@ So this means we probably *don't* have to transform the input data, and
+  can define the iac grid to match the clm grid.  But it means we *do* have
+  to transform the glm grid back to the iac/clm/cam grid.
+
+* It seems like iESM has a somewhat different EClock interface, and
+  probably a cdata interface as well.  For EClock, at least, rather than
+  hunt down all the uses of EClock inside the gcam wrapper code I'm just
+  going to define a GClock just like the gcam-Eclock, and translate to and
+  from E3SM EClock.  (From now on, EClock means what E3SM says, and GClock
+  is the other thing.)  It's possible the iESM calls are compatible with
+  EClock, but redundancy like this isn't the worst thing in the world.
+
+  GClock basically just has elements for holding the various alarms to run
+  things, which are moot in my implementation, and then ymd, tod, and dt.
+  Still, there we go.
+
+* Back to iac2gcam_run_mod(), anything that cracks clm_base
+  (iac_base_clmfile) should stay  that way - it's basically a configuration
+  file.  What I need to figure  out now is how we use those values when we
+  aren't doing the goofy  interpolate stuff.
+
+* iac2gcam_run_mod() does do a lot of calculations aside from just cracking
+  the file and calling calc_clmC().  But calc_clmC() mostly cracks and uses
+  the clm history file, which should be replaced with the lnd2iac_vars that
+  we've imported from the coupler.  THUS, I now need to go back to
+  iac_import() and figure out how to turn an AVect into useable variables
+  in calc_clmC().
+
+  Another thing calc_clmC() does is read/write restarts, and writes out
+  an iac history file, both of which it should keep doing.
+
+  The final thing calc_clmC() does, and where it gets it's name, is turn
+  this analysis of monthly clm files into the weird "5-year mean of yearly
+  maximums" fields.  My initial plan was to simply have the MCT aggregator
+  generate whatever yearly means we need, but if it's a complicated and
+  weird calculation like that, then...eh, it's probably still best.
+
+! Okay, so the above paragraph clarified something: here is what
+  we end up using, I think, in gcam, for npp and hr:
+
+  The five year *mean* of the yearly *max* of the monthly *averages*. 
+
+  So, that's a mean of the maximum of means.  Yeesh.
+
+* Working on iac_import - the idea is we extract the npp and hr fields, and
+  maybe pft_weight_g into iac2lnd_vars.  
+
+5/9/2019
+
+* I've been banging my head again on iac2gcam_mod.F90 again, the function
+  iac2gcam_run_mod().  This is the key function that includes what will
+  become the l->z coupling, and, right now, reads the clm history file.  I
+  need to make some notes here about how this is structured and what it
+  does, so I can figure out what parts I keep and what I dont. 
+
+? The big question mark for me is how the time scales work.  This is the
+  time scale for how things run in iESM (see logicals set at c. line 441 in
+  iac_comp_mod.F90).  This is the order they are called in the code, so
+  when these time scales match up they will happen in this order.
+
+1 Every *month*, iac_run_mod() calls iac2gcam_run_mod() to run calc_clmC(),
+  which reads the clm h1 (monthly) history file, and does some stuff with
+  it - at the very least, it returns npp and hr, but it might do some
+  additional calculation or accumulation. 
+
+  Okay, calc_clmC() file basically accumulates inputs and writes history
+  and restart files.  See below...
+
+2 Every *five years*, on January 1, this iac2gcam_run_mod() call goes on to
+  do "calc_avg" section of the code, and then iac_run_mod() does some stuff
+  in the AGcamsetden section.  ("long_gcam_timestep").
+
+  It looks this AGcamsetden section is actually really important, because
+  the call to gcam_setdensity_mod() is how we set the carbon data for the
+  defined year.  I need to review gcami vs. gcamiold, but we seem to be
+  doing yearly interpolations of gcami over the next five years, using the
+  previous five years of clm.h1 data that we accumulate in calc_clmC().
+
+3 Every *year* (one year), iac_run_mod() calls gcam_run_mod(), apparently by
+  advancing the model year by 5 years.  (There's some stuff if the
+  long_gcam_mod is set to 15 by setting sneakermode, but I'm going to
+  ignore that for now).
+
+4 Every *five years*, iac_run_mod() will then call gcam2emisfile_run_mod(),
+  to send CO2 emissions to the atm model.
+
+5 Every *year*, iac_run_mod() will then call gcam2glm_run_mod(),
+  glm_run_mod(), and glm2iac_run_mod().
+
+6 Finally, iac_run_mod() dumps a history file
+
+--------------
+
+* So, what does this mean?  First of all, we will now run
+  iac2gcam_run_mod(), and/or calc_clmC() (or some other function to do
+  those things) not every month, but every regular gcam time step (1 or 5
+  years).  I think we *also* will do a lot of what the calc_avg section
+  does, since it really is some additional calculations that get sent to
+  the gcam subcomponent, but is also some averaging.  All that averaging
+  stuff should be handled by mct, now, so when we run iac_run_mct() the
+  input AVects should already be averaged over the year.
+
+* I need to go back and revisit the model times we are running here.  I
+  *believe* what we end up doing for year yt, we run gcam at yt+5.  We do
+  that every year, I guess so that we have a running list if inputs to send
+  back to clm every year?  That doesn't seem quite right, so I need to go
+  back and track what the EClock(iac_Eclock_ymd) gets set to before calling
+  all these functions.
+
+* So, my initial guess is that we appear to be reading and accumulating
+  data on a monthly/5-year time scale - but we *run* gcam every year for
+  five years in the *future*.  Hmm.
+
+* Quick note - from the restart file in Kate's sample run,
+  (iac_clmC_file.r.2090-11.nc), we can see that the "iac_iac_nx,
+  iac_iac_ny" we are using in calc_clmC() is the same as clm_nx and clm_ny
+  from the namelist.  (clm_nx=288, clm_ny=192).  So, the iac input grid is
+  the same as the clm grid - good to know.  (We must convert to the glm
+  output/updatelanduse() grid of 720x360 later on).
+
+* A review of calc_clmC() shows that it does this:  reads clm.h1 file on a
+  monthly basis and accumulates the *yearly maxes* of these inputs, and
+  then every five years computes the *average* of those yearly maxes, and
+  sends that back out and writes a history file.  (It also manages some
+  restart read/write stuff.)
+
+* Back to iac_comp_mod.F90, then - after doing calc_avg inside of
+  calc_clmC(), we then interpolate the gcami over the next five years and
+  push that carbon data to gcam for those years via gcam_setdensity_mod().
+  Whew! 
+
+5/6/2019
+
+* So, I need to rename some of my stuff.  I've been using "iac" to mean the
+  generic coupled component, and "gcam" the specific model; the iESM code
+  base uses "iac" to mean the specific coupled component, with "gcam" (and
+  "glm", etc.) as a subcomponent of the overall thing.
+
+  When I say "iac" I mean it in the context of MCT, but iESM uses it as a
+  wrapper for the fortran interface coming out of the (gcam,glm,...)
+  submodels. 
+
+  I can't avoid using iac now, and I don't want ot rename the iESM files,
+  so we'll just deal with that: try to keep iac_ as a prefix for files that
+  are seen outside of (gcam,glm), and understand that iac2x or x2iac means
+  interaction with the submodel.
+
+! But, I can't call my functions and modules "gcam_", because that's now
+  means the submodule, the interface with the C code a layer down, not the
+  interface with the coupler at this layer.  So, specifically, I can't have
+  gcam_run(), gcam_init(), gcam_var_set(), which I've stubbed into
+  iac_comp_mct.F90.  Instead, I need a new tag to indicate "internal
+  (gcam,glm,...) group layer functions to interact with mct() rather than
+  submodules".
+
+  Maybe "giac" - for gcam/iac layer?  That would actually be a better tag
+  for what iESM calls iac, but that ship has sailed.  Maybe I could go
+  ahead and rename iac_comp_mod.F90 into giac_comp_mod.F90.
+
+5/5/2019
+
+* Jeez, I keep losing track of the calling tree inside of iESM, which I'm
+  trying to lift as much as possible over to E3SM.  Fortunately, I did make
+  a map of it - so, to remember it, this is the way the tree should work in
+  E3SM:
+
+   driver ->
+   iac_run_mct() [ gcam/src/cpl/iac_comp_mct.F90 ]  [[ iESM: lnd_run_mct() ]]
+XXXX
+?  -> gcam_run() ? [ see below - do we need gcam_run(), or will
+      iac_run_mct() do everything?
+XXXX
+   -> iac_run_mod()         [ gcam/src/iac/coupling/iac_comp_mod.F90 ]
+    ->   iac2gcam_run_mod() [ gcam/src/iac/coupling/iac2gcam_mod.F90 ]
+    ->   gcam_run_mod()     [ gcam/src/iac/coupling/gcam_comp_mod.F90 ]
+  ( ->   gcam2emissfile_run_mod() [ gcam/src/iac/coupling/gcam2emisfile_mod.F90 ] )
+    ->   gcam2glm_run_mod() [ gcam/src/iac/coupling/gcam2glm_mod.F90 ]
+    ->   glm_run_mod()      [ gcam/src/iac/glm/glm_comp_mod.F90 ]
+    ->   glm2iac_run_mod()  [ gcam/src/iac/coupling/glm2iac_mod.F90 ]
+         -> updateannuallanduse()
+
+* Okay, so this is kind of a nightmare to keep track of all this.  A lot of
+  this is to have fortran calls to connect better with the coupler and
+  other models.  But there's a lot of ambiguity when we have both iac and
+  gcam floating around - I think that logically they considered "iac" a
+  shell around (gcam,glm, and emissivity) subcomponents, and that's why we
+  do stuff like iac2gcam and glm2iac.
+
+  So, hopefully, this means I can mostly just set things up in
+  iac_run_mct() to do this calling sequence, and I'll be good.  But once
+  again I need to review what all these code elements are doing - there is
+  E3SM-like stuff Eclock and attribute vectors inside the iac-named routines
+  inside of gcam/src/iac, and probably elsewhere.  
+
+* Okay, where else am I?  I need to write these these modules:
+
+  gcam_var - just public variables like gcam_lon, gca_lat, gcam_Active stuff like that
+  gcam_mod - gcam_init() and gcam_run()
+  iac_ctl_mod  - the iac_ctl control structure, which I don't completely
+    understand. It's called rtmCTL in rof (mosart), and seems to be just a
+    structure to hold a lot of information taht you pass back and forth.  I'm
+    trying to find the analog in lnd - clm seems to store the boundary
+    information itself in a separate bounds structure. 
+
+    For now I'm goign to put the big ctl everywhere so I can identify
+    it easily, in case I search differently.
+
+* It's hard to track down all the things we need to configure when
+  everybody has a different idea of what those things are, and how they
+  should be organized.  
+
+* So iac_init_mct() is (roughly) finished.  Here's the next things to do:
+
+@ gcam_init() - big one, figure out how to make grids, etc.
+@ iac_run_mct() - figure out what this does - does it the (gcam,glm,emiss)
+  functions as above, or does it call gcam_run(), which does all thato?
+
+  See, the thing is I think the iac_run_mct() function is basically for
+  coupling.  I don't know if it should do the model flow, or if it should
+  farm that out to a separate function.  Again, question of organization -
+  what I'm trying to do is separate all this E3SM stuff from the actual
+  model stuff.  That may be handled appropriately just by these fortran
+  functions inside the coupling directory.
+
+  I'm tempted to rename them all, because it's all very confusing, but
+  probably not - just remember that we are kind of treating gcam,glm,emiss
+  as subcomponents of iac, which is why we have functions to go back and
+  forth. 
+  
+5/1/2019
+
+* From Gautam: 
+
+  The landuse data is available on Anvil at
+
+  /lcrc/group/acme/public_html/inputdata/lnd/clm2/surfdata_map/landuse.timeseries_ne30np4_ssp5_rcp8.5_simyr2015-2100_c190411.nc
+
+* Phone call today - talked about gridding, and the transformations between
+  lnd->gcam, gcam->glm, glm->lnd.  Here is my understanding:
+
+  The glm internal grid is hardcoded to 360x720. In iESM, we took lnd->gcam
+  regional somehow, but lnd was at 1 degree, which is not the hardcoded
+  360x720 glm grid.  So there must have been some interface to read at lnd
+  resolution, convert to gcam regions, then convert onto the glm grid, and
+  finally write out the dynamic crop file.  Then clm would read that file
+  and convert to the resolution it needed.
+
+* Thus, for E3SM/GCAM, we need three conversions:
+
+1 lnd->gcam
+2 gcam->glm
+3 glm->lnd
+
+  Internally, E3SM and MCT accomplish this simply by linear algebra: if
+  you've got inputs x need outputs y, each on their own grid, define
+  a mapping T from the x grid to the y grid and then simply run y=Tx for
+  all x.  This interpolation is almost by definition a very sparse matrix,
+  since the only thing that contributes to y[i] are the points x[j] that
+  are around i, so there are sparse matrix multiplier tools that make this
+  go fast (and, I think, in a distributed manner).  One of the MCT papers
+  talks about this.
+
+  I believe that (2), gcam->glm, happens internally as part of the gcam,glm
+  calling sequence - gcam works on its regions, and then glm scales it to
+  the grid it needs to work on, somehow.  So that leaves defining
+  transformation mappings for (1) and (3), and doing the regrid
+?  transformation somewhere in the processing flow.  Logically, this might
+  mean we run y[gcam]=Tx[lnd] whenever gcam gets lnd vars from the coupler,
+  and similarly when lnd reads the glm stuff.  But it could mean we
+  transform *before* sending to the coupler...
+
+4/30/2019
+
+* I've been rereading and working through the MCT papers again, because I'm
+  trying to understand the gsMap thing.  I think it tells everybody what
+  segment of global ids is on which MPI process, so that communication when
+  you want to find those global ids is possible.  Thus, even for Gcam,
+  running on nproc=1, it needs a gsmap so that lnd and atm can find the
+  things they need from the coupler.
+
+  At least, I *think* that's what's going on.  I'm still a little unclear
+  on how it's actually used in practice - is this how we interpolate from
+  one grid to the other?  Also, how we map from one domain decomposition to
+  another...
+  
+  I've spent a lot of time on this, the *theory* of how the coupler works,
+  and so I'm getting behind on actually implementing this stuff, so maybe I
+  should table the reread and start pounding some code again.  But this is
+  important to understand.
+
+* Ah, at last - the GeneralGrid class is how we define the actual grids we
+  use in our attribute vectors - "a literal listing of each mesh point's
+  coordinates and geometric attributes".  So, somehow in the initializating
+  we need to use this to describe how our GCAM mesh works.
+
+* Note that GCAM's "grid" only makes sense in the interface with lnd and
+  atm - internally it has a region based location description, and it's
+  only in the sense that it gets input from and output to other components
+  (and files and stuff) that we need to deal with a grid.  Nevertheless,
+  we'll define our grid by the pftdyn/surfdat file, and use MCT to interact
+  with other components.
+
+4/23/2019
+
+* Okay, I was wrong - MAXINPIX and MAXINLIN are not actually used in
+  updateannuallanduse.c.  It looks like the in and out arrays are all on
+  teh same grid - dimensioned by MAXOUTPIX*MAXOUTLIN.  
+
+  So, it seems clear that this version of GCAM was designed to run on the
+  720x360 grid, only.
+
+  Also, I'm pretty sure a lot of the input arrays are not actually used,
+  although things like incurrentpftval[][] is read in from the surfdat
+  file. 
+
+* Yeesh, I'm still having trouble figuring out the grid here, it all seems
+  set elsewhere and assumed.  At any rate, plodata[][] is clearly on a
+? 360x720 grid, hardcoded.  Could we simply change the values of MAXOUTPIX
+  and MAXOUTLIN and have this code work, assuming we had a valid
+  surfdat/mcrop file for the new resolution? 
+
+! Okay, now I really have no idea what gets called and what doesn't inside
+  updateannuallanduse_main().  It looks like they crack some netCDF files,
+  maybe with dynamic values, maybe written out by glm?
+
+  Okay, so all this stuff seems to be on the same grid, which suggests, and
+  this might be crazy, that this whole gcam development tree can *only* run
+  at 360x720 gridcell resolution.  Could that be true?  I just don't see
+  how anything in this file would work if you changed the grid.
+
+* So, what would this imply then - GCAM itself works regionally, and then
+  Kate has mentioned something about downscaling.  So maybe we just say the
+  GCAM grid is always this 360x720 one, and then, maybe? MCT can do the
+  interpolation and stuff onto whatever the land grid is?
+
+? Stray thought...those "mapping" functions that befuddeled me when I first
+  started all this archeology - those might be how you interpolate from one
+  grid to the next.  Nb. my comments about prep_lnd_get_mapper_Sa2l() from
+  6/27/18 or prep_lnd_calc_r2x_lx() from 1/5/18.
+
+  Could something like this be used to go from our require 360x720
+  resolution to whatever we have for lnd?
+
+---------------
+
+* Okay, for now I'm going to let this percolate in background and go back
+  to trying to get all the framework stuff done to actually get a gcam
+  component running.   I'm in the middle of setting up iac_mct_mod.F90,
+  which contains the functions the driver calls.  From there, we need to
+  modify iac_run_mod.F90, which is the fortran interface to calling GCAM
+  with all the right bits and pieces.
+
+* I've stubbed in a gcam_init() function, but I'm looking at init functions
+  for other components to see what is going on in there.  Typically, the
+  comments suggest that's where you read in the grid and namelist
+  information.  The lnd init was pretty complicated, so I'm reviewing
+  Rtmini() from mosart (I know I've done this before), just to get an idea
+  of what kinds of setup you expect to need.  Of course, I am especially
+  interestd in anything having to do with the component grid, since I have
+  yet to figure out how that figures into things.
+
+* Well, Rtmini() is ~1000 lines long.  So much for simple.
+
+  My hope is that most of this model based init has already been written by
+  the gcam functions.
+
+  Anyway, here is what Rtmini() does:
+
+* namelist /mosart_inparm/ so, there's that.
+* Read in namelist in masterproc, then mpi_bcast() to other nodes with
+  values.  That make sense.
+* Some logging if (masterproc) - write(iulog,*)...
+* Switch on do_rtm/rtm_active and a flood_active logical
+* ...error checking, logging
+* Time manager init - ncd_pio_init(), check for restart, then
+  timemgr_init() if starting or custom RtmRestTimeManager() if restarting,
+  I think.  Also - here is where we read and set dtime_in - the coupling
+  period. 
+* Initialize rtm_trstr, for tracers - I think it's just a string saying
+  what they are, colon separated so maybe it's a formatted list of tracers
+  or something.
+* Ah, here is where we set the grid.  ncd_pio_openfile() on the
+  "frivinp_rtm" namelist option, which is a filename.  Crack that file,
+  read in "rtmlon" and "rtmlat", the dimensions of the grid.  Then allocate
+  stuff - first lat and lon based, then flattened 1D arrays.  Then read
+  "longxy" and "latixy" to fill in rlon[] and rlat[] and others in control
+  structures and whatever.  Also read "area" and "ID" to fill in other
+  arrays.
+
+  There's a clue in here - the area_global[g] array is flattened 1D from
+  [lon][lat] - the area array from the netcdf file is 2D, so we build a
+  flattened index n=(j-1)*rtmlon+i, for i over lat, j over lon.  So,
+  obviously, this is a normal column major linearized index calc.
+
+! So, we actually *crack a file* to figure out our grid!  This makes sense
+  - you set which file you want to use in the namelist and from there
+  extract the grid.
+
+! So, the mozart file has something called dnID, which is then set to a 1D
+  array dnID_globa().  But, then we have this comment (c.470 in RtmMod.F90)
+
+===================================
+    !-------------------------------------------------------
+    ! RESET dnID indices based on ID0
+    ! rename the dnID values to be consistent with global grid indexing.
+    ! where 1 = lower left of grid and rtmlon*rtmlat is upper right.
+    ! ID0 is the "key", modify dnID based on that.  keep the IDkey around
+    ! for as long as needed.  This is a key that translates the ID0 value
+    ! to the gindex value.  compute the key, then apply the key to dnID_global.
+    ! As part of this, check that each value of ID0 is unique and within
+    ! the range of 1 to rtmlon*rtmlat.
+    !-------------------------------------------------------
+===================================
+
+  Okay, so there we go - global grid indexing is 1,lon*lat, starting at (lon,lat)
+  (-180,-90) and going up to (180,90).  I'm going to have to draw this out,
+  because my row-major instincts will get it backwards, but I'm pretty sure
+  we vary lon fastest (that's why n=j*nlon+i).
+
+  Anyway, it looks like they build this IDkey() array that takes the 'ID'
+  field for each grid cell (read from the file) and assigns it the global
+  grid index going from 1,lon*lat.  This isn't important for me - they just
+  have a different ID for grid cells, so this is how you go back and
+  forth.  So we do that with dnID_global(), so it is now ordered by global
+  index rather than 
+
+* Back to Rtmini:
+
+* Calculated edges of grid cell - why do this?
+* Grid mask - land, ocean, ocean outlet from land.  I *totally* do not
+  understand what is going on in the loops at c. line 574, but whatever,
+  figuring out which grid points are what kind.  It has something to do
+  with the dnID_global() we read from the file, so whatever.  
+
+* From here, calculate various values having to do with the grid, which is
+  very rtm specific.  Basic idea: find all the river basins, and then
+  allocate them to pes.  That makes sense - you parallelize river models by
+  distributing the river basins around.  Anyway, the idea is the init
+  function also figures out how to distribute it's calculations.  Then,
+  assign cells to different chunks accordingly. 
+
+  Basically, this sets rtmCTL%begr and rtmCTL%endr for each processor
+  running this init, and thus you allocate arrays accordingly.  Then do
+  some more initialization based on the decomposition.
+
+* Then, at the end, they do stuff like run nr over rtmCTL%begr,rtmCTL%endr,
+  and set rtmCTL%lonc(nr) and rtmCTL%latc(nr) accordingly.  So, this is how
+  you build your grid - but it's not really global, is it?  Maybe it is for
+  anybody attempting to work with rtm data, include rtmMod and here's the
+  array.  But even then, it's pe dependent - rtmCTL clearly is different
+  for each processor, whcih is why rtmCTL%begr,rtmCTL%endr works, so for
+  the moment we've build a local set of lonc and latc values for each grid
+  cell nr.  How do we use that grid external to rtm - i.e. how do we couple
+  with this information?
+
+  I *think* the answer might be in the functions we call right after
+  Rtmini() in rof_comp_mct.F90 - rof_SetgsMap_mct().  Similarly, lnd does
+  the same thing - call lnd_SetgsMap_mct().  Okay, so my guess is that is
+  the function that somehow informs MCT of how all these x2z and z2x
+  attribute vectors are dimensioned.
+
+@ iac_SetgsMap_mct() - figure out how to do this.
+
+* But, back to Rtmini(): line 1051 calls mct_gsMap_init() as part of
+  "Compute Sparse Matrix for downstream advection".  Also, calls to
+  mct_sMat_init(), which, I'm at a loss as to what they do.  sMat obviously
+  means "sparse matrix", so some kind of linear algebra re-decomposition?
+
+  Whew, a lot of stuff I don't get - using MCT to, I think, do some
+  distributed linear algebra, which is why they need to stuff things into
+  attribute vectors apparently outside of any "coupling" considerations.  I
+  guess anything you distribute can use MCT functionality?  
+
+@ Review lnd() initialization and see if it does somethign like this.
+
+* Okay, now back to something I understnd - line 1328, if restart crack and
+  read restart file.
+
+* Initialize history handler and fields.
+
+* That's it.
+
+4/22/2019
+
+* Just a reminder - the gcam submodule is in:
+
+    /home/shippert/E3SM_active_gcam/components/gcam/src
+
+  This means: 
+
+    /home/shippert/E3SM_active_gcam/components/gcam/cime_config
+  
+  ...will be part of the main E3SM branch.
+
+  So, to commit and push to the gcam submodule, go to gcam/src and do your
+  thing.  
+
+  Apparently, to connect this version of gcam with a version of E3SM, you
+  go up to E3SM and add .../gcam/src, commit, and push - it will then
+  codify into the E3SM commit which submodule commit you are using, so it
+  knows which commit tot grab from the submodule repository.
+
+4/22/2019
+
+* The function updateannuallanduse.c returns its output into
+  plodata[][pft+7] - look at copy2plodata(); it fills in the
+  plodata[outgrid][pft] from outhurtpftval[pft][outgrid] (you have to flip
+  indeces because C->f90 row vs. column major order), then adds in some
+  additional outhurtt###[][] stuff on top of that.  So all that stuff is
+  used for gcam/glm.
+
+  Anyway, this means I don't have to muck with updateannuallanduse.c at all
+  - it *already* returns what I want in plodata[g][pft].  Just a straight
+  copy into the already allocated avects!
+
+! Except, the plodata[][] is on a hardcoded grid of MAXOUTPIX=720 and
+  MAXOUTLIN=360.  
+
+XXXXXXXXXXXXXXXXXX see 4/23/2019
+  I think this is the "downscaling" Kate has talked about,
+  since MAXINPIX=7200 and MAXINLIN=3600.
+XXXXXXXXXXXXXXXXXX
+
+  ...so it might be that I either make MAXOUTPIX and MAXOUTLIN dynamic,
+  which *would* require refactoring of updateannuallanduse(), or we have to
+  do some kind of transformation ourselves explicitly to put everything on
+  the land grid. 
+
+* For now, don't worry about that - instead, it's finally time to start
+  pounding the iac_run_mct() function, to call the iac_run_mod() functions
+  that do the GCAM calling routine, and just make sure we put in hooks to
+  push our output back to the avect as we can.
+
+4/17/2019
+
+* Okay, well, I got it all wrong. The *only* thing that changes in the
+  mcrop_dyn.nc file that we read is PCT_PFT.  All the PCT_WETLAND,
+  PCT_URBAN, etc. stuff is static, and the same from run to run.  We aren't
+  actually modifying the land!  We are simply tracking how much of the land
+  has vegetation on it - crops and deforestation, I think.
+
+  Because it is the only field that changes, we *only* need to extract and
+  couple with PCT_PFT!  In mcrop_dyn.nc, PCT_PFT has the dimensions:
+
+  	float PCT_PFT(time, lsmpft, lsmlat, lsmlon) ;
+
+  So: PCT_PFT[time][pft][lat][lon] - it's an array of percentages of each
+  of the 17 pfts at each time and location.
+
+  That's what is goign on in writepftdynfile() - it
+  first tracks down the "nvarspcnt" index (probably the "percent" vars),
+  finds PCT_PFT, appends the current time stamp, then goes over each grid
+  and each pft and stores the 17 values - it looks like it's trying to
+  write it out in flattened notation, which maybe is how you do straight
+  netcdf, I can't remember anymore.
+
+  Okay, so the values[] array at line 3038 is simply size 17 for the 17
+  pfts (17th is unused).
+
+  So this means that: outhurttpftval[pft][lat,lon] is exactly PCT_PFT, and
+  I simply need to bring that out and stuff into an AVECT.
+
+? I *think* that updateannuallanduse.c *hardcodes* the grid that the mcrop
+  file uses, so that suggests we have one mcrop file with its own grid, and
+  thus we need to transform this crop data onto whatever grid clm is
+  running on.  But, clm probably already does that!  So, what grid do I use
+  to transmit this out, something else?
+
+@ Also, fix seq_flds_mod.F90 - I'm not sending that PCT_WETLAND stuff.
+
+4/16/2019
+
+* Back to clm reading surfdat file - it looks like the routin
+  surfrd_get_data() in srfrdMod.F90 is what we want.  This is in the iESM
+  tree, so who knows if current clm's do the same thing, but whatever, I'm
+  following this rabbit hole as far as it goes, at least to figure out what
+  it pulls out of the file.  
+
+  Also, maybe in srfrd_wtxy_special(), and surfrd_wtxy_veg_all(), and
+  surfrd_wtxy_veg_dgvm()? 
+
+  A bunch of functions called by srfrd_get_data(), which seem to read from
+  the cracked file, which have something to do with calculating the
+  "weights". 
+
+  Also, then, srfrd_get_grid() and srfrd_get_globmask().  Whew, okay, a lot
+  to unpack here - so, grid is about the coordinate system and globmask is
+  about (I think) how much land on each cell.  Jeez, this is a mess.
+
+! Okay, so, here's a clearinghouse of every single field I think we are
+  trying to read from the surfdat file.  I'm going to just list them here,
+  and then try to match them with what I'm seeing in the test iESM run file
+  listed below (way below), and see if they match up.  If so, then let me
+  track backwards and see where the GCAM stuff modifies those things, and
+  *then*, finally, I'll have a list of what things need to be z->l
+  coupled.   
+
+  From: egrep 'subroutine|ncd_io' surfrdMod.F90, then cleaned up a bit:
+===================================
+  subroutine surfrd_get_globmask(filename, mask, ni, nj)
+       call ncd_io(ncid=ncid, varname='LANDMASK', data=idata2d, flag='read', readvar=readvar)
+          call ncd_io(ncid=ncid, varname='mask', data=idata2d, flag='read', readvar=readvar)
+       call ncd_io(ncid=ncid, varname='LANDMASK', data=mask, flag='read', readvar=readvar)
+          call ncd_io(ncid=ncid, varname='mask', data=mask, flag='read', readvar=readvar)
+
+  subroutine surfrd_get_grid(ldomain, filename, glcfilename)
+       call ncd_io(ncid=ncid, varname= 'area', flag='read', data=ldomain%area, &
+       call ncd_io(ncid=ncid, varname= 'xc', flag='read', data=ldomain%lonc, &
+       call ncd_io(ncid=ncid, varname= 'yc', flag='read', data=ldomain%latc, &
+X      call ncd_io(ncid=ncid, varname= 'AREA', flag='read', data=ldomain%area, &
+X      call ncd_io(ncid=ncid, varname= 'LONGXY', flag='read', data=ldomain%lonc, &
+X      call ncd_io(ncid=ncid, varname= 'LATIXY', flag='read', data=ldomain%latc, &
+       call ncd_io(ncid=ncid, varname=trim(vname), data=rdata2d, flag='read', readvar=readvar)
+       call ncd_io(ncid=ncid, varname=trim(vname), data=rdata2d, flag='read', readvar=readvar)
+X   call ncd_io(ncid=ncid, varname='LANDMASK', flag='read', data=ldomain%mask, &
+       call ncd_io(ncid=ncid, varname='mask', flag='read', data=ldomain%mask, &
+X   call ncd_io(ncid=ncid, varname='LANDFRAC', flag='read', data=ldomain%frac, &
+       call ncd_io(ncid=ncid, varname='frac', flag='read', data=ldomain%frac, &
+?      call ncd_io(ncid=ncidg, varname='GLCMASK', flag='read', data=ldomain%glcmask, &
+
+  subroutine surfrd_get_topo(domain,filename)
+    call ncd_io(ncid=ncid, varname='LONGXY', flag='read', data=lonc, &
+    call ncd_io(ncid=ncid, varname='LATIXY', flag='read', data=latc, &
+?   call ncd_io(ncid=ncid, varname='TOPO', flag='read', data=domain%topo, &
+
+  subroutine surfrd_get_data (ldomain, lfsurdat)
+?   call ncd_io(ncid=ncid, varname= 'PFTDATA_MASK', flag='read', data=ldomain%pftm, &
+    call ncd_io(ncid=ncid, varname=lon_var, flag='read', data=surfdata_domain%lonc, &
+    call ncd_io(ncid=ncid, varname=lat_var, flag='read', data=surfdata_domain%latc, &
+
+  subroutine surfrd_wtxy_special(ncid, ns)
+X   call ncd_io(ncid=ncid, varname='PCT_WETLAND', flag='read', data=pctwet, &
+X   call ncd_io(ncid=ncid, varname='PCT_LAKE'   , flag='read', data=pctlak, &
+X   call ncd_io(ncid=ncid, varname='PCT_GLACIER', flag='read', data=pctgla, &
+X   call ncd_io(ncid=ncid, varname='PCT_URBAN'  , flag='read', data=pcturb, &
+    if (create_glacier_mec_landunit) then          ! call ncd_io_gs_int2d
+?      call ncd_io(ncid=ncid, varname='GLC_MEC', flag='read', data=glc_topomax, &
+?      call ncd_io(ncid=ncid, varname='PCT_GLC_MEC', flag='read', data=pctglc_mec, &
+?      call ncd_io(ncid=ncid, varname='TOPO_GLC_MEC',  flag='read', data=topoglc_mec, &
+
+  subroutine surfrd_wtxy_veg_all(ncid, ns, pftm)
+X   call ncd_io(ncid=ncid, varname='PCT_PFT', flag='read', data=arrayl, &
+
+  subroutine surfrd_wtxy_veg_dgvm()
+===================================
+
+* Okay, now cross reference these with the mcrop_dyn.nc file from the iESM
+  run...(see ~/PIC/surfdata_360x720_mcrop_dyn.dod, the ncdump -h of the
+  mcrop_dyn.nc file in the test run).
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX (see 4/17/2019)
+  I see:
+    AREA
+    LONGXY
+    LATIXY
+    LANDMASK
+    LANDFRAC
+    PCT_WETLAND
+    PCT_LAKE
+    PCT_GLACIER
+    PCT_URBAN
+    PCT_PFT
+
+  I'm missing:
+    GLCMASK
+    TOPO
+    PFTDATA_MASK
+    GLC_MEC
+    PCT_GLC_MEC
+    TOPO_GLC_MEC
+
+* So, from this it looks like I want to focus the PCT_landtype vars, and
+  maybe the landmask and frac, plus the coordinate description
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+! Now, finally, cross reference with what the GCAM stuff in iESM actually
+  writes out.  See below at 1/18/19 for more information about how this is
+  used.
+
+  It looks like the function calchurtt() calls sethurttcrop(),
+  sethurttpasture() and sethurttlanduse() to modify the outhurttpftval[][]
+  array, which is then used to write out a new mcrop_dyn.nc file.  Okay!
+
+  Looking at sethurttcrop(), there are a lot of output PFTs being
+  generated...
+
+  STOP.  This is all very obfuscated, so it will take some time to track
+  down.  But!  I see in all of these cases where we read in
+
+    LANDMASK
+    LANDFRAC
+    PCT_WETLAND
+    PCT_LAKE
+    PCT_GLACIER
+    PCT_URBAN
+    PCT_PFT
+
+  ...via lines c. 5220 in updateannuallanduse.c:
+
+		readlandmask();
+		readlandfrac();
+		readlakefrac();
+		readwetlandfrac();
+		readicefrac();
+		setvegbarefrac();
+		
+		/* now read the reference year pft data */
+		readcurrentpft();
+		readcurrentpftpct(2000);
+
+  I think readcurrentpft() simply maps the pfts to the grid, and
+  setvegbarefrac() is simply what fraction is left from each grid cell when
+  you subtract ice, lake, and wetland. 
+
+  Okay, so I'm pretty sure what we are writing out has to be these values,
+  however they are calculated.
+  
+4/15/2019
+
+* Jeepus.  I simply can never remember how to do this:
+
+  git clone git@github.com:E3SM-Project/E3SM.git E3SM_active_gcam
+  cd E3SM_active_gcam
+  git checkout bishtgautam/gcam/add-submodule
+  git submodule update --init
+  git checkout -b shippert/gcam/active-gcam
+
+4/10/2019
+
+* I need to make a branch off of bishtgautam/gcam/add-submodule to do my
+  testing; it may have the configuration mods necessary to run on anvil, as
+  well as the gcam submodule and other stuff.
+
+* Dumb reminder: to create a new branch from an old master:
+
+  cd <mdir>
+  git pull (very important!)
+  git checkout -b <new branch>
+
+  Push up to github
+  
+  git push origin <new branch>
+
+  See:  https://github.com/Kunena/Kunena-Forum/wiki/Create-a-new-branch-with-git-and-manage-branches
+
+* Because it appears the cime developer group is taking over the automatic
+  optional stubbing for siac, until I get their updates I'm going to do
+  what Gautam did, and track down the compsets for every unit test and
+  simply add an _SIAC after the wav component.  If there is an ESP
+  component, then, hmm.
+
+  Initially, it looks like a lot of the unit tests are in teh cam
+  config_compsets.xml, so there we go.
+
+* The tests are listed in cime/config/e3sm/tests.py, and e3sm_developer
+  inherits lnd and atm developer test lists, so that's a start.  I can run
+  down the others, too, once I link their test names with the compsets they
+  are running.  I still don't like hammering in a _SIAC, but it seems like
+  that's the only way I'm going to verify that siac works - it's the
+  automatic adding of siac to the list that was the problem.
+
+* I could go back and add in my auto stuff in case.py, now that we have a
+  new branch that might be fully caught up.  That would require *removing*
+  this _SIAC nonsense, which is a pain, but actually easier than going the
+  other way (also, I did backup to a .dist file, just in case.)
+
+! Interesting!  It appears that while clm and cam config_compsets.xml
+  changes to explicitly add _SIAC work, the mods to the otehr
+  config_compsets.xml are not enough:
+
+    FAIL ERIO.ne30_g16_rx1.A.anvil_intel RUN time=15
+    FAIL ERP_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=1943
+    FAIL ERS.f19_g16_rx1.A.anvil_intel RUN time=20
+    FAIL ERS.ne30_g16_rx1.A.anvil_intel RUN time=20
+    FAIL HOMME_P24.f19_g16_rx1.A.anvil_intel MODEL_BUILD time=101
+    FAIL NCK.f19_g16_rx1.A.anvil_intel RUN time=345
+    FAIL SEQ.f19_g16.X.anvil_intel RUN time=11
+    FAIL SMS_D_Ln5.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=1773
+    FAIL SMS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel.cam-outfrq9s RUN time=126
+    FAIL SMS.ne30_f19_g16_rx1.A.anvil_intel RUN time=19
+    FAIL SMS.ne4_ne4.FC5AV1C-L.anvil_intel.cam-cosplite RUN time=147
+    FAIL SMS_P12x2.ne4_oQU240.A_WCYCL1850.anvil_intel.allactive-mach_mods CREATE_NEWCASE
+    FAIL SMS_R_Ld5.T42_T42.FSCM5A97.anvil_intel RUN time=11
+
+  These are (some? all?) of the non-clm, non-cam tests listed in
+  cime/config/e3sm/tests.py for e3sm_developer.  And it appears they are
+  failing with the 'area' and 'aream' AVects, too:
+
+    0: MCT::m_AttrVect::indexRA_:: ERROR--attribute not found: "area" Traceback:  
+    0: aa area ->MCT::m_AttrVect::indexRA_
+    0: MCT::m_AttrVect::indexRA_:: ERROR--attribute not found: "aream" Traceback:  
+    0: aa aream->MCT::m_AttrVect::indexRA_
+    ...
+
+  ...from the run log.  Hopefully, the CIME guys will figure that out while
+  adding in support for the optional_stubs, but if not I may have to dig
+  through again and figure out how default area and aream are set for stub
+  components.
+
+  It might be that the cam and clm test cases don't do any actual coupling,
+  while these do.  That doesn't sound likely - there are tons of land cases
+  in e3sm_land_developer, for one thing, and what are they all testing?  So
+  maybe it's something else?
+
+! Also, be careful - I might be crashing out because I'm running too many
+  jobs on anvil, and they are stuck "pending" until they are killed or
+  something, before actually FAILing the run.  So it might be that clm and
+  cam are not working with _SIAC after all.
+
+  I need to wait until tomorrow, then find the command to tell me what jobs
+  I have scheduled, and if none are there but I'm still listing some as
+  PEND then I need to resubmit.
+
+! Anyway, the 'area' and 'aream' stuff might still be affecting me, but for
+  now I'ma wait until the CIME folks get their optional stub stuff ready;
+  perhaps some of the stuff Gautam has been pushing up takes care of this
+  initialization or something.
+
+4/5/2019
+
+* Trying to work with Gautam's rebased version, in E3SM_gb.  He added _SIAC
+  to all the (clm) compsets, but that's because he didn't realize I'd
+  modified case.py to have an optional 'siac' stub.  So, in order for the
+  non-clm tests to work, I backed out the SIAC tag on all compset files,
+  and added case.py back in - but there have been some additional issues to
+  deal with from that:
+
+1 E3SM_gb/cime/scripts/lib/CIME/XML/component.py, line 203, it looks like
+  we need to add 'iac' to the components that may not have a description
+@ For these unit tests, that's probably okay, but we may need to do
+  additional work to makes sure we use the description if it *does* exist. 
+
+3/14/2019
+
+* Okay, so I'm not really getting how to run ddt - I can't figure out what
+  goes in each element to make it submit the case and connect to it.  When
+  I put in the qsub line I get from ./preview_run, it runs the job but it
+  never seems to enter the debugger.
+
+  It's possible that I'm using the wrong software in my ~/soft-ddt.sh file,
+  which is what we load when we start up a new remote ddt sesssion.  To
+  check this, here is a typical compile line from the mct build:
+
+===================
+  mpif90  -c  -I. -I../ -DLINUX -DNDEBUG -DMCT_INTERFACE -DHAVE_MPI
+  -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL -DHAVE_SLASHPROC -DSYSLINUX -DCPR
+  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs
+  -fp-model source  -O2 -debug minimal  -free
+  -I. -I/lcrc/group/acme/shippert/acme_scratch/ERS.f19_g16_rx1.A.anvil_intel.20190312_155150_nt9a2a/bld/intel/mvapich/nodebug/nothreads/include
+  -I/lcrc/group/acme/shippert/acme_scratch/ERS.f19_g16_rx1.A.anvil_intel.20190312_155150_nt9a2a/bld/intel/mvapich/nodebug/nothreads/MCT/noesmf/c1a1l1i1o1r1g1w1e1i1/include
+  -I/soft/spack-0.9.1/opt/spack/linux-centos6-x86_64/intel-17.0.0/netcdf-4.4.1-gpk22cidfgknxbc6wjuimdkqifhfhg2j/include
+  -I/soft/spack-0.9.1/opt/spack/linux-centos6-x86_64/intel-17.0.0/parallel-netcdf-1.7.0-zmjpi4rqpzhvul5o5alk2a2ytgxrrxp6/include
+  -I/lcrc/group/acme/shippert/acme_scratch/ERS.f19_g16_rx1.A.anvil_intel.20190312_155150_nt9a2a/bld/intel/mvapich/nodebug/nothreads/include
+  -I/blues/gpfs/home/shippert/E3SM_dev/cime/src/share/util
+  -I/blues/gpfs/home/shippert/E3SM_dev/cime/src/share/include
+  -I/blues/gpfs/home/shippert/E3SM_dev/cime/src/share/RandNum/include
+  /blues/gpfs/home/shippert/E3SM_dev/cime/src/externals/mct/mpeu/m_mpif.F90 
+====================
+
+* So, I see intel-17.0, netcdf-4.4.1, parallel-netcdf-1.7.0, all built for
+  intel-17.  Add in mvapich2, some softenv | grepping, and looking for the
+  acme builds...
+
+  +pnetcdf-1.7.0-intel-17.0.0-mvapich2-2.2-acme
+  +mvapich2-2.2-intel-17.0.0-acme
+  +netcdf-c-4.4.1.1-f77-4.4.4-intel-17.0.1-mvapich2-2.2-parallel-acme
+
+
+3/13/2019
+
+* So, the goal for today is to get the debugger working and start running
+  through one of the test cases.  There was some discussion on the
+  confluence page for anvil about this - also, I obviously need to figure
+  out the interactive queue.
+
+* Debugging documentation (ddt remotely):
+
+  https://acme-climate.atlassian.net/wiki/spaces/SE/pages/178847811/Debugging+on+blues+with+ddt
+  https://www.allinea.com/user-guide/forge/ConnectingtoaRemoteSystem.html
+
+  Some interesting notes abouut how to build and run debugging:
+
+==============================
+
+  1) create a small case, and modify the pelayout (to run on fewer tasks,
+  and make a more interesting pelayout, in which coupler pes are disjoint
+  from atm pes) 
+
+  /lcrc/project/ACME/iulian/ACME/cime/scripts/create_newcase \
+    --case /lcrc/project/ACME/iulian/CASES/SMALL4 --res ne4_ne4 \
+    --compset FC5AV1C-L --mach blues
+
+  cd  /lcrc/project/ACME/iulian/CASES/SMALL4
+
+  ./xmlchange --id NTASKS --val 4
+  ./xmlchange --id ROOTPE_CPL --val 2
+  ./xmlchange --id NTASKS_CPL --val 2 
+  ./xmlchange --id NTASKS_ATM --val 2
+  ./xmlchange --id STOP_N --val 1
+  ./xmlchange --id NTASKS_ESP --val 1
+  ./xmlchange --id DEBUG --val TRUE
+
+  ./case.setup
+
+  ./case.build
+
+  verify the launch: 
+
+  ./preview_run
+
+  [iulian@blogin4 SMALL4]$ ./preview_run 
+  BATCH SUBMIT:
+   case.run -> qsub -l walltime=03:00:00 -A ACME case.run
+
+   MPIRUN: mpiexec -n 4 /lcrc/project/ACME/iulian/acme_scratch/SMALL4/bld/acme.exe >> acme.log.$LID 2>&1
+
+  verify that you can launch the case, with  ./case.submit
+==============================
+  
+* Then you launch ~/allinea/forge/ddt and follow the web page to connect to
+  the remote ddt, etc.  I really hope it works, because otherwise I'll have
+  to launch from X11.
+
+* Anyway, an ./xmlchange call is how you set stuff up to run in debug
+  mode.  There doesn't seem to be an interactive queue, but so far my unit
+  tests haven't taken long to start up, so there you go.
+
+* The ddt client download page was annoyingly difficult to find - ultimate
+  it was:
+
+  https://developer.arm.com/products/software-development-tools/hpc/downloads/download-arm-forge/older-versions-of-remote-client-for-arm-forge
+
+  Note that "arm" is not my ARM, but allinea something whatever that leads
+  to ARM as an acronym for this SW development firm.  Whatever.
+
+* I should look up totalview...huh, we *do* have totalview on blues.  I'm
+  going to have to do some googling tomorrow to figure out how to do all
+  this debugging stuff, but let's try it with ddt first and see if that
+  gets us where we need to go.
+
+3/12/2019
+
+* Okay, the initial model build, at least, fails because of improper mpas
+  building, I think - it can't find some mpasli files.  dev.master has no
+  problem there, I think, but dev does - and a straight up git submodule
+  update --init seems to fail in dev.  So:
+
+  Try to clone and build dev again:
+
+  git clone git@github.com:E3SM-Project/E3SM.git E3SM_dev2
+  cd E3SM_dev2
+  git checkout shippert/cpl/add-gcam
+  git submodule update --init
+
+  ...well, that seems to have worked!  Okay, let's try and do unit testing
+  with dev2.
+
+  NOPE - it did not work - we get this error at the end:
+
+----------
+fatal: reference is not a tree: acf0ccb6273a950022484bdb33dca1d406101bc6
+fatal: reference is not a tree: c35922ee6d866c990f52588d195d9405563fdd80
+fatal: reference is not a tree: 1d80ca5d7d434df3d51b1ca68177dd91440eecbd
+Unable to checkout 'acf0ccb6273a950022484bdb33dca1d406101bc6' in submodule path 'components/mpas-cice/model'
+Unable to checkout 'c35922ee6d866c990f52588d195d9405563fdd80' in submodule path 'components/mpas-o/model'
+Unable to checkout '1d80ca5d7d434df3d51b1ca68177dd91440eecbd' in submodule path 'components/mpasli/model'
+----------
+
+  I do not know what that might mean.
+
+* So, take two: I'ma copy directly the dev.master mpas stuff over to dev,
+  and *then* submit a unit test, again.  Straight up:
+
+  cd ~/E3SM_dev.master/components
+  cp -r mpas* ~/E3SM_dev/components/  
+
+* New fails:
+
+============================
+  E3sm_dev
+
+    FAIL ERS.f19_g16_rx1.A.anvil_intel RUN time=12
+    FAIL ERS.f45_g37_rx1.DTEST.anvil_intel RUN time=23
+    FAIL ERS_IOP4c.f19_g16_rx1.A.anvil_intel RUN time=11
+    FAIL ERS_IOP4c.ne30_g16_rx1.A.anvil_intel RUN time=12
+    FAIL ERS_IOP4p.f19_g16_rx1.A.anvil_intel RUN time=12
+    FAIL ERS_IOP4p.ne30_g16_rx1.A.anvil_intel RUN time=10
+    FAIL ERS_IOP.f19_g16_rx1.A.anvil_intel RUN time=12
+    FAIL ERS_IOP.f45_g37_rx1.DTEST.anvil_intel RUN time=29
+    FAIL ERS_IOP.ne30_g16_rx1.A.anvil_intel RUN time=9
+    FAIL ERS_Ld5.T62_oQU120.CMPASO-NYF.anvil_intel RUN time=30
+*   FAIL ERS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=74
+    FAIL ERS.ne30_g16_rx1.A.anvil_intel RUN time=50
+    FAIL NCK.f19_g16_rx1.A.anvil_intel RUN time=12
+*   FAIL SMS_D_Ln5.ne4_ne4.FC5.anvil_intel RUN time=46
+*   FAIL SMS_D_Ln5.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=48
+    FAIL SMS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel.cam-outfrq9s RUN time=41
+    FAIL SMS.ne30_f19_g16_rx1.A.anvil_intel RUN time=13
+    FAIL SMS_R_Ld5.T42_T42.FSCM5A97.anvil_intel RUN time=31
+    FAIL SMS.T62_oQU120_ais20.MPAS_LISIO_TEST.anvil_intel RUN time=52
+ 
+============================
+  E3SM_dev.master
+
+    FAIL ERS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=42
+    FAIL SMS_D_Ln5.ne4_ne4.FC5.anvil_intel RUN time=49
+    FAIL SMS_D_Ln5.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=51
+!   FAIL SMS.f09_g16_a.IGCLM45_MLI.anvil_intel RUN time=39
+!   FAIL SMS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel.cam-outfrq9s RUN time=44
+
+============================
+
+* Okay, well, that's fun - a couple dev.master fails now pass for dev (+
+  copied mpas).  I honestly have no idea what is going on there.  Should I
+  rerun dev.master?  Could there have been a system issue?
+
+    FAIL ERS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=40
+    FAIL SMS_D_Ln5.ne4_ne4.FC5.anvil_intel RUN time=48
+    FAIL SMS_D_Ln5.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=51
+    FAIL SMS.f09_g16_a.IGCLM45_MLI.anvil_intel RUN time=39
+    FAIL SMS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel.cam-outfrq9s RUN time=45
+
+  Okay, a rerun fails the same way.  That's kind of amusing - so my dev
+  branch actually got a couple tests to pass where they failed before.
+
+3/11/2019
+
+* I believe the master commit that I branched off of was 'ab81d6e'.
+
+  I get this from this:
+
+  git config --global alias.hist "log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short"
+  git hist
+
+  ...to setup a pretty printing format.  'ab81d6e' was the commit just
+  prior to my initial commit.
+
+* So, to get E3SM_dev.master:
+
+  git clone git@github.com:E3SM-Project/E3SM.git E3SM_dev.master
+  cd E3SM_dev.master
+  git checkout ab81d6e
+  git submodule update --init
+
+* That seems to have worked!
+
+* Here are the E3SM_dev.master and E3SM_dev fails for unit tests:
+
+  $ ./cs.* | egrep -i 'fail '
+
+====================================
+  E3SM_dev.master
+
+    FAIL ERS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=42
+    FAIL SMS_D_Ln5.ne4_ne4.FC5.anvil_intel RUN time=49
+    FAIL SMS_D_Ln5.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=51
+    FAIL SMS.f09_g16_a.IGCLM45_MLI.anvil_intel RUN time=39
+    FAIL SMS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel.cam-outfrq9s RUN time=44
+====================================
+  E3SM_dev
+
+    FAIL ERS.f09_g16_g.MPASLISIA.anvil_intel MODEL_BUILD time=14
+    FAIL ERS.f19_g16_rx1.A.anvil_intel RUN time=53
+    FAIL ERS.f45_g37_rx1.DTEST.anvil_intel RUN time=29
+    FAIL ERS_IOP4c.f19_g16_rx1.A.anvil_intel RUN time=17
+    FAIL ERS_IOP4c.ne30_g16_rx1.A.anvil_intel RUN time=26
+    FAIL ERS_IOP4p.f19_g16_rx1.A.anvil_intel RUN time=20
+    FAIL ERS_IOP4p.ne30_g16_rx1.A.anvil_intel RUN time=20
+    FAIL ERS_IOP.f19_g16_rx1.A.anvil_intel RUN time=18
+    FAIL ERS_IOP.f45_g37_rx1.DTEST.anvil_intel RUN time=29
+    FAIL ERS_IOP.ne30_g16_rx1.A.anvil_intel RUN time=19
+    FAIL ERS_Ld5.T62_oQU120.CMPASO-NYF.anvil_intel MODEL_BUILD time=22
+*   FAIL ERS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=53
+    FAIL ERS.ne30_g16_rx1.A.anvil_intel RUN time=60
+    FAIL NCK.f19_g16_rx1.A.anvil_intel RUN time=20
+*   FAIL SMS_D_Ln5.ne4_ne4.FC5.anvil_intel RUN time=65
+*   FAIL SMS_D_Ln5.ne4_ne4.FC5AV1C-L.anvil_intel RUN time=83
+*   FAIL SMS.f09_g16_a.IGCLM45_MLI.anvil_intel MODEL_BUILD time=756
+*   FAIL SMS_Ln9.ne4_ne4.FC5AV1C-L.anvil_intel.cam-outfrq9s RUN time=53
+    FAIL SMS.ne30_f19_g16_rx1.A.anvil_intel RUN time=18
+    FAIL SMS_R_Ld5.T42_T42.FSCM5A97.anvil_intel RUN time=36
+    FAIL SMS.T62_oQU120_ais20.MPAS_LISIO_TEST.anvil_intel MODEL_BUILD time=21
+
+
+====================================
+
+* So, the fact that we fail at run time for five dev.master runs is not
+  great, but at least we have others we can try to debug.  There are 21
+  debug fails, out of 36 tests - if I had to guess, I'd say the other 15
+  were simple, non-coupled tests.  I should probably check the status log
+  of one of them vs. dev.master, too.
+
+  But, ultimately, it might make sense to port up to current E3SM (merge
+  with ~/E3SM) before we get finished with unit testing.
+
+* I'm curious about the model_build fails - there's probably something
+  interesting to learn there.  Note that one of the dev.master run fails
+  is a dev build fail, too.
+
+* So:
+
+1 check model_build fails
+2 figure out how to use the new debugger
+3 find a coupled test that we are failing, above, and debug that.
+
+  Hopefully, these three steps will get us most of the way to fully debugged.
+
+2/14/2019
+
+* Man, I keep barking up the wrong tree - I thought I found where we used
+  the pftdyn file in BiogeophysRestMod.F90, but that's for restarts, not in
+  general.  (I'm sure I'll have to modify that, too, except clm in
+  ACME/E3SM doesn't have such a file...)
+
+  Anyway, grepping for "surfdata" seems to be closer to what we want - but
+  the annoying thing is that the surface data file name is in the namelist,
+  so it's really hard to track down and verify I'm looking at the right
+  thing from the code.  I keep going back and forth with the sample run
+  Kate gave me, but it's like chasing your tail sometimes.  Or, more like
+  following three forks of a river at once.
+
+* Anyway, I'm now reviewing main/surfrdMod.F90 to see if that may give me
+  some clues as to how the stuff that goes into
+  surfdata_360x720_mcrop_dyn.nc is actually used by clm.
+
+2/11/2019
+
+* Okay, that docker class didn't do me any favors.  Trying to recover and
+  get back to where I was.  Right now I'm trying to figure out what I need
+  to write back out for z->l - i.e. the iac -> lnd fields.  Those are in
+  the pftdyn file, which means I need to find the clm code in iESM that
+  reads that file so I can tell what is important.
+
+* From there, I need to grab those values at the time we are writing them
+  to pft, and also then pass them back up to be stuffed into an MCT-style
+  avect. 
+
+* So, first things first - 
+
+1/22/2019
+
+* Okay, so tracking down some details, it looks like the surface landuse
+  stuff is written out to the "pftdyn" file, which is called
+  surfdata_360x720_mcrop_dyn.nc in updateannuallanduse() (hardcoded).
+  It appears to take the surfdata_360x720_mcrop.nc landuse file, which
+  gives data only for 2005, and updates it to give yearly values in the
+  *_mcrop_dyn.nc version.
+
+  My guess is that clm normally reads the *_mcrop.nc to get 2005 landuse
+  values, and then runs some simple extrapolation or parameterization to
+  take it to the current run year, and does that instead.  With gcam, we
+  instead run our more sophisticated landuse calculation and send that to
+  clm via this dyn file.
+
+  So: original: surfdata_360x720_mcrop.nc
+        w/gcam: surfdata_360x720_mcrop_dyn.nc
+
+* gcam2emissfile_run_mod() writes out co2flux_iESM_dyn.nc, again hardcoded,
+  which seems to contain monthly values of the co2_flux. From the ncdump:
+
+	float CO2_flux(time, lat, lon) ;
+		CO2_flux:long_name = "CO2 fossil fuel emission flux" ;
+		CO2_flux:units = "1e3 g m-2 s-1" ;
+		CO2_flux:_FillValue = -999.f ;
+		CO2_flux:standard_name = "tendency_of_atmosphere_mass_content_of_carbon_dioxide_due_to_emission
+  
+  So, this suggests that this is an extra impulse to co2flux, to be added
+  to that from the clm calculation, rather than folded into that.  At
+  least, at this point in the iac run it is - maybe iESM folds it in later,
+  but right here is the actual z2a_z flux I need to grab.
+
+? (I really do need to see how this gets sent up the chain in iESM, though
+
+* In principle, this is great, we have tracked down where this stuff is
+  getting written out, and how it's getting passed to the other mods, which
+  lets me simply grab the data at that point and pass it back up the chain
+  to iac_run_mod(), which can stuff it into the appropriate coupled
+  AVects. 
+
+* Issues:
+
+1 still need to write out files, because gcam/glm use them internally, at
+  the very least for its own calculations.  Both pftdyn and dynco2fluxfile
+  are read first by their functions, and then written out.
+
+2 How to pass this information back through the calling chain.  At least
+  gcam2emiss is in fortran, so it can set module variables or something to
+  get back to a place where I build my AVects.  updateannuallanduse() is in
+  C, so I probably need to modify the fortran wrapper to get a C structure
+  containing the landuse info and reformat it into something I can use to
+  build the AVects.
+
+3 how do AVects deal with different shapes of coordinate variables?
+  co2flux is on a strict lat,lon grid.  landuse appears to be indexed by
+  "column", with the column parameterized to lat,lon values.  I need to
+  figure out how MCT handles this kind of thing - at the very least, I'll
+  need to pass along the column index -> lat,lon information somehow (in
+  it's own AVect?  Are their such things as auxilliary or coordinate
+  attribute vectors?  Or does an Attribute Vector structure itself have the
+  coordinates and indexing info built in?  Review how clm sends information
+  to other components, and see how they handle their column-based indexing
+  there.
+
+4 I'm pretty sure this the only way iac interacts with atm, but is there
+  any other feedback to lnd other than landuse?
+
+-----------------
+
+* Wrt (3), above, check decompMod.F90 in the clm/src/main directory - it
+  defines a way to convert "clumps" back to atmos physics chunks.  There's
+  a lot of info on number of clumps, gridcells, columns, pfts, etc, all
+  used to define the coordinates of lnd values.  A lot of this stuff has to
+  do with the processor decomposition, which is less of an issue for me,
+  but since I'm dealing with land style column variables, it seems like I
+  should be able to follow what they are doing there.
+
+  So now consider lnd_import_export.F90, which is how we go from
+  lnd2atm_vars to l2x() arrays.  It really looks like it's just
+  gathering at the start of lnd_export() - from the proc-based 'g' gridcell
+  index to the global 'i' based index.
+
+  So it really looks like it can handle a gridcell and/or column based
+  coordinate system - at least, the structure of bounds_type seems to argue
+  that. 
+
+! Also, check out the sign convention comment:
+
+       ! sign convention is positive downward with 
+       ! hierarchy of atm/glc/lnd/rof/ice/ocn.  so water sent from land to rof is positive
+
+? 
+?  I'll have to think about that - so co2 from iac to atm is negative?
+? 
+
+1/18/2019
+
+* Whew!  We are finally getting somewhere.  Here is the calling tree:
+
+* clm calls iac_run_mod(), which calls, in order, given the appropriate
+  alarms:
+
+1 iac2gcam_run_mod()             (clmC alarm)
+2 gcam_run_mod()                 (gcam alarm)
+3 gcam2emissfile_run_mod()       (as above, plus co2flux and emiss options)
+4 gcam2glm_run_mod()             (glm alarm)
+5 glm_run_mod()                  ("")
+
+6 glm2iac_run_mod()              (""), calls:
+a   updateannuallanduse_main()         calls:
+       ...
+o      calcchurtt()
+o      writepftdynfile() 
+
+* So, finally I see where the file is created that talks back to clm from
+  gcam, I believe.
+
+? I don't know if that's *all* that gcam does for clm - update the landuse
+  vars - or if there is something else.  But these are the only primary
+  functions called by iac_run_mod() - everything else is logging or timing
+  or transforming arrays or something like that.  (I *think*).
+
+* Okay, so my belief that the pftdynfile is important comes from a comment
+  inside of lnd_comp_mct.F90, line 568: see 1/17/2019, below, bullet 5.
+
+* From updateannuallanduse.c, I see that the pftfile written out by
+  writepftdynfil is called: surfdata_360x720_mcrop_dyn.nc.  And we have one
+  of those in Kate's test directory:
+
+  /pic/projects/iESM/iesm_model_dir/b.e11.BRCP85C5BPRP.f09_g16.iESM_coupled.001/run
+
+* So, what is apparently happening is that surfdata_360x720_mcrop.nc (no
+  _dyn) is an exisiting netcdf file that has information about crop and
+? landuse for the year 2005.  I believe that this is used in clm as a
+  jumping off point, and is probably the basis of some parameterization or
+  simple extrapolation for land and crop use as we go forward.  But iac
+  actually *models* land and crop use, so what it does instead is this:
+
+1 take the single-sample surfdata_360x720_mcrop.nc file
+2 copy to surfdata_360x720_mcrop_dyn.nc
+3 each gcam model year, append new land and crop use information to this
+  file 
+
+  So if you look at surfdata_360x720_mcrop_dyn.nc, it has the same fields
+  and dimensional shape and everything, except it goes from 2005 to 2092,
+  following the TIME coordinate variable (shame on them for capitalizing
+  it, but whatever.)  There *are* duplicate values for some TIMEs - for
+  example, there are four values with a TIME of 2071.  My guess is
+  restarts?  Or bug fix or system barf reruns?  Anyway, it probably appends
+  to this _dyn file if it can find it, so any kind of rerunning may lead to
+  duplicate days.  The file is huge with lots grid points to work through,
+  so it's hard to see if all four 2071 TIME samples are identical or not.
+  But that's not really important, so whatever.
+
+* Okay, so I need to figure out what clm uses from this file, and if there
+  are any other files that iac modifies that it may use.  So, I need to
+  work through updateannuallanduse.c, which is 80 pages of code, with lots
+  and lots of comments and sections that says "we don't use this in iESM".
+
+* updateannuallanduse.c is actually a C program, written for some other
+  purpose, crammed into iESM - it's actually called via a fortran wrapper
+  function by glm2iac_run_mod(), rather than by gcam itself.  But I need to
+  figure out what it's doing, and how it is doing it, before I can figure
+  out how to make my iac code provide the same information in E3SM.
+
+* It looks like writepftdynfile() mostly copies the
+  outhurtpftval[inpft][outgrid] array values into the mcrop_dyn.nc file:
+  See c. line 5287.  
+
+  calchurtt() creates outhurttpftval[][], so we need to follow that
+  calculation, and maybe some of the ones upstream of it, to extract where
+  this information comes from.  Or, not?  Maybe outhurttpftval[pft][grid]
+  are the exact values I need to stuff into an attribute vector - instead
+  of writepftdynfile() instead call a returnpftdynavect() or something.
+
+* Okay, back to clm - it looks like there is a pftdynMod.F90 module, and
+  clm_driver.F90 (as well as other files) all hit on a grep for "pftdyn".
+@ So probably should work through clm_driver.F90, figure out how this
+  pftdyn file is read in, and that should give me some clues as to how to
+  use MCT to set the same information back from iac in E3SM.
+
+1/17/2019
+
+* From the phone call with Kate:
+
+* As it turns out, we *only* use HR and NPP on input - the other
+  carbon-related vegetation fields ultimately were not used in this version
+  of gcam (I got the impression it didn't accomplish what they want, so it
+  probably won't in the future, either).
+
+* Here is an iESM run, which will let me do things like examine the clm.h1
+  file etc:
+
+  /pic/projects/iESM/iesm_model_dir/b.e11.BRCP85C5BPRP.f09_g16.iESM_coupled.001
+
+   An example of the outputs, with history files, is available here:
+   /pic/projects/iESM/rcp85_results/b.e11.BRCP85C5BPRP.f09_g16.iESM_coupled.001 
+
+* From this, we see that the dimensions are HR[time,column] and
+  NPP[time,pft].  This means the only place we get any kind of location
+  information is in the HR - column is a 1D parameter of a 2D location (a
+@ grid column, obviously).  So I gotta figure out how to make MCT work with
+  a parameterized location like this - it can't be all that hard, because
+  obviously translations between columns and grid coordinates have to
+  happen all the time in a climate model.
+
+* I haven't yet been able to track down how (or what) iac sends back to clm
+  in iESM.  It look like the "clm pftdyn file" contains the output from
+  iac, as per line 568 in lnd_comp_mct.F90 (in iESM).  I'ma look for it in
+  the iESM run above, and see if I can backtrack where it is created - I
+  don't really see an nf90_create anywhere else in the whole clm tree in
+  iESM.  I might be missing something, or maybe instead it cracks open an
+  existing file and updates it?  Kate said something like that, so clm uses
+  standard tools to output a history file (thus avoiding naked nf90_create
+  calls), and then iac/clm uses nf90_open instead.
+
+  I'm fishing.  My greps for nf90_create and nf90_open haven't been all
+  that illumniating on this issue, but maybe I'm just missing it.
+
+* Co2 flux will be separate from lnd for E3SM, but in iESM it might have
+  been merged into what lnd sends back.  If so, finding how iESM folds iac
+  into clm is gonna be a little more subtle than if it dumped iac results
+  to a file or something.  Then again, maybe it's just merged right before
+  filling the output attribute vector.  I kind of need to see examples of
+  filling in output attvects, anyway, even if it's for iESM.
+
+1/15/2019
+
+* As I've previously encountered, teasing out exactly what information I'm
+  supposedt to pull out of clm/lnd and put into an attribute vector is
+  excruciating - there are zillions of little calls to nf90_inq_varid()
+  floating around.  Some are for writing output (at the end of
+  calc_clmC()), some for opening a "base" file, some obviously for cracking
+  a history file, etc.  I need to track down what each of these things are
+  for. 
+
+  To do this, how about something like this:
+
+  $ egrep 'nf90_open|nf90_inq_varid|subroutine' iac2gcam_mod.F90
+
+  The output below is lightly formatted, to highlight different read
+  sections and different subroutines.
+
+
+==============================
+
+
+  subroutine iac2gcam_init_mod( EClock, cdata, iaco, gcami)
+    status= nf90_open(trim(iac_base_clmfile),nf90_nowrite,ncidbase)
+    status = nf90_inq_varid(ncidbase, "abovg_c_mean_pft", base_abovg_c_mean_pftVarId)
+
+    status= nf90_open(trim(clm2gcam_mapfile),nf90_nowrite,ncid)
+    status = nf90_inq_varid(ncid, "CCSM_ID", CCSM_IDVarId)
+    status = nf90_inq_varid(ncid, "Country_AEZ_ID", Country_AEZ_IDVarId)
+    status = nf90_inq_varid(ncid, "GCAM_ID", GCAM_IDVarId)
+    status = nf90_inq_varid(ncid, "Weight", WeightVarId)
+  end subroutine iac2gcam_init_mod
+
+-----------------------
+
+  subroutine iac2gcam_run_mod( EClock, cdata, iaco, gcami)
+    status= nf90_open(trim(iac_base_clmfile),nf90_nowrite,ncidbase)
+
+       status= nf90_open(trim(iac_base_clmfile),nf90_nowrite,ncid)
+       status = nf90_inq_varid(ncid,'pft_weight_mean_g',varid)
+       status = nf90_inq_varid(ncid,'abovg_c_mean_pft',varid)
+       status = nf90_inq_varid(ncid,'blowg_c_mean_pft',varid)
+          status = nf90_inq_varid(ncid,'npp_mean_pft',varid)
+          status = nf90_inq_varid(ncid,'hr_mean_pft',varid)
+
+    status = nf90_inq_varid(ncidbase, "area", areaVarId)
+    status = nf90_inq_varid(ncidbase, "landfrac", landfracVarId)
+    status = nf90_inq_varid(ncidbase, trim(var1name), base_var1_mean_pftVarId)
+    status = nf90_inq_varid(ncidbase, trim(var2name), base_var2_mean_pftVarId)
+    status = nf90_inq_varid(ncidbase, "pft_weight_mean_g", base_pft_weight_mean_gVarId)
+  end subroutine iac2gcam_run_mod
+
+------------------
+
+  subroutine calc_clmC(yy,mm,bfn,out_pft_weight,out_abovg_c,out_blowg_c,out_npp,out_hr,calc_avg)
+
+        ! Read restart
+        status= nf90_open(filename,nf90_nowrite,ncid)
+
+        status = nf90_inq_varid(ncid,'year',varid)
+        status = nf90_inq_varid(ncid,'month',varid)
+        status = nf90_inq_varid(ncid,'pft_weight_mean_g',varid)
+        status = nf90_inq_varid(ncid,'wcnt',varid)
+        status = nf90_inq_varid(ncid,'abovg_c_max_pft',varid)
+        status = nf90_inq_varid(ncid,'blowg_c_max_pft',varid)
+           status = nf90_inq_varid(ncid,'npp_max_pft',varid)
+           status = nf90_inq_varid(ncid,'hr_max_pft',varid)
+        status = nf90_inq_varid(ncid,'abovg_c_mean_pft',varid)
+        status = nf90_inq_varid(ncid,'blowg_c_mean_pft',varid)
+           status = nf90_inq_varid(ncid,'npp_mean_pft',varid)
+           status = nf90_inq_varid(ncid,'hr_mean_pft',varid)
+        status = nf90_inq_varid(ncid,'cnt3',varid)
+
+     status= nf90_open(trim(filename),nf90_nowrite,ncid)
+
+        ! If first call - so these are coordinates 
+        status = nf90_inq_varid(ncid, "lon", varid)
+        status = nf90_inq_varid(ncid, "lat", varid)
+        status = nf90_inq_varid(ncid, "area", varid)
+        status = nf90_inq_varid(ncid, "landfrac", varid)
+        status = nf90_inq_varid(ncid, "pfts1d_ixy", varid)
+        status = nf90_inq_varid(ncid, "pfts1d_jxy", varid)
+        status = nf90_inq_varid(ncid, "pfts1d_itype_veg", varid)
+        status = nf90_inq_varid(ncid, "pfts1d_itype_lunit", varid)
+        status = nf90_inq_varid(ncid, "cols1d_ixy", varid)
+        status = nf90_inq_varid(ncid, "cols1d_jxy", varid)
+        status = nf90_inq_varid(ncid, "cols1d_itype_lunit", varid)
+
+     ! Read in always, so these are our state variables
+     status = nf90_inq_varid(ncid, "CWDC", varid)
+     status = nf90_inq_varid(ncid, "TOTLITC", varid)
+     status = nf90_inq_varid(ncid, "TOTSOMC", varid)
+        status = nf90_inq_varid(ncid, "HR", varid)
+     status = nf90_inq_varid(ncid, "DEADCROOTC", varid)
+     status = nf90_inq_varid(ncid, "FROOTC", varid)
+     status = nf90_inq_varid(ncid, "LIVECROOTC", varid)
+     status = nf90_inq_varid(ncid, "TOTVEGC", varid)
+        status = nf90_inq_varid(ncid, "NPP", varid)
+     status = nf90_inq_varid(ncid, "pfts1d_wtgcell", varid)
+
+     ! This is the iac_clmC_file, looks like a history file
+        status= nf90_create(filename,nf90_clobber,ncid)
+        status = nf90_inq_varid(ncid,'lon',varid)
+        status = nf90_inq_varid(ncid,'lat',varid)
+        status = nf90_inq_varid(ncid,'PFT',varid)
+        status = nf90_inq_varid(ncid,'area',varid)
+        status = nf90_inq_varid(ncid,'landfrac',varid)
+        status = nf90_inq_varid(ncid,'pft_weight_mean_g',varid)
+        status = nf90_inq_varid(ncid,'abovg_c_mean_pft',varid)
+        status = nf90_inq_varid(ncid,'blowg_c_mean_pft',varid)
+	   ! if calc_avg
+           status = nf90_inq_varid(ncid,'npp_mean_pft',varid)
+           status = nf90_inq_varid(ncid,'hr_mean_pft',varid)
+
+        ! Restart file
+        status= nf90_create(filename,nf90_clobber,ncid)
+        status = nf90_inq_varid(ncid,'lon',varid)
+        status = nf90_inq_varid(ncid,'lat',varid)
+        status = nf90_inq_varid(ncid,'PFT',varid)
+        status = nf90_inq_varid(ncid,'area',varid)
+        status = nf90_inq_varid(ncid,'landfrac',varid)
+        status = nf90_inq_varid(ncid,'year',varid)
+        status = nf90_inq_varid(ncid,'month',varid)
+        status = nf90_inq_varid(ncid,'pft_weight_mean_g',varid)
+        status = nf90_inq_varid(ncid,'wcnt',varid)
+        status = nf90_inq_varid(ncid,'abovg_c_max_pft',varid)
+        status = nf90_inq_varid(ncid,'blowg_c_max_pft',varid)
+           status = nf90_inq_varid(ncid,'npp_max_pft',varid)
+           status = nf90_inq_varid(ncid,'hr_max_pft',varid)
+        status = nf90_inq_varid(ncid,'abovg_c_mean_pft',varid)
+        status = nf90_inq_varid(ncid,'blowg_c_mean_pft',varid)
+           status = nf90_inq_varid(ncid,'npp_mean_pft',varid)
+           status = nf90_inq_varid(ncid,'hr_mean_pft',varid)
+        status = nf90_inq_varid(ncid,'cnt3',varid)
+  end subroutine calc_clmC
+==============================
+
+* Okay, that at least clarifies which calls are for which function, and
+  from which file (at least, a way to track it back.)  The time and
+  lat/lon grid should be available in another way
+
+1/14/2019
+
+* Gotta transfer some of my scrawlings back to here again.
+
+* Trying to setup the coupling indices, which have names like this:
+
+  index_x2r_Flrl_foo or index_l2x_Sl_bar
+
+  This lets us figure out which element of the attribute vector is which,
+  so if gcam is looking for _foo from some input it has the index set.
+  Most of this is automatic and internal, you just need to set up the links
+  between what field name you want to associate with which index. The way
+  that is done is via the seq_fields_x2r_fields stuff in
+  ./cime/src/drivers/mct/shr/seq_flds_mod.F90.
+
+* I've looked that over at least twice since I started, and now it's time
+  to figure it out.
+
+  It seems like I haven't modified it at all, even though it's a coupler
+  function.  Huh - I didn't need it for the stub, although, maybe I do, and
+  that's why we've seen run errors (modulo the debugger issues)?  Hmm.
+
+  Anyway, it looks like I need to add in iac and the 'z' component
+  everywhere in that mod.
+
+  No, I did mod seq_flds_mod.F90 in October - what did I do?  It looks
+  like I added some seq_flds_x2z, z2x _fluxes and _states vars, but did not
+  add the component names or anything further on?
+
+! seq_flds_mod.F90
+
+* Okay, working on this - I'm going to assume I have both states and fluxes
+  for now, but it's possible I only have states.  This is where I'm weak,
+  trying to figure out the actual science of the code and how it relates to
+  these variables and stuff, and unfortunately so far I haven't had much
+  luck inferring everything from iESM.
+
+  Interestingly, they seem to allow customized coupler fields through the
+  namelist mechanism - if I'm reading this right, maybe you could decide
+  at run time to add some more info to the coupler?  Interesting, but
+  pretty advanced for my purposes....  Still, I'm going to add in the x2z,
+  z2x options.
+
+* Next, we define domain coordinates, lat, lon, hgt, area, etc.
+
+! Okay, this is a little hard to get my head around - it *seems* like, in
+  this file, seq_flds_mod.F90, we are building up lists of strings that
+  describe the various quantities that we need to toss around between
+  different components and and the coupler.  So, for example, here are all
+  the Surface Latent Heat Fluxes, that need to get sent into the atmosphere
+  and ocean components, *from* the ice and lnd components (line c. 1218 of
+  seq_flds_mod.F90).
+
+     call seq_flds_add(l2x_fluxes,"Fall_lat")
+     call seq_flds_add(xao_fluxes,"Faox_lat")
+     call seq_flds_add(i2x_fluxes,"Faii_lat")
+     call seq_flds_add(x2a_fluxes,"Faxx_lat")
+     call seq_flds_add(x2o_fluxes,"Foxx_lat")
+
+  ...followed by some calls to "metadata_set" to link the names above with
+  various attributes like units and longname and what not.
+
+  So, looking at this, here's what I believe these mean: set Fall_lat to
+  the latent heat fluxes coming from the lnd component, Faii_lat to the
+  latent heat fluxes coming from the ice component, and Faxx_lat and
+  Foxx_lat for the latent heat fluxes sent to the atmosphere and ocean
+  components.   I think the xao stuff is a little more complicated, having
+  to do with some kind of joint calculation between atm and ocn
+  components (maybe at the boundaries?).  Anyway, all the Fa stuff will be
+  used by the atm component, the Fo will be used by the ocm component.
+
+  Okay, at the top of seq_flds_mod.F90 we what the letters mean:  Faox_
+  means "flux between atmos and ocean computed by coupler".  So things like
+  Faxx_lat mean "latent heat flux, between atmos and coupler (!) calculated
+  by coupler".  I'm afraid I don't understand what flux between a component
+  and teh coupler might mean...
+
+  Anyway, there's some merging and scaling rules, but they all seem to be
+  associated with atm component, which makes sense - that's global, and
+  everything else is not, so the lndfrac, icefrac, ocnfrac scaling issues
+  are important there.  For going between lnd and gcam, though, I don't
+  think scaling is an issue.
+
+  (Does "scaling" mean something like - if over land, lndfrac = 1,
+  otherwise lndfrac=0, and then multiply by lndfrac everywhere?)
+
+* Okay, clearly I need a list of fields that GCAM pulls out of the land
+  model and then map those to appropriate Sl_foo states and any fluxes that
+  might occur.  I'm thinking it's mostly state variables, since gcam is
+  generally only on land and the boundary overlaps aren't important.  But,
+  maybe the carbon dioxide output is a Fzaz_co2 variable or something?
+
+* Also, searching for carbon gives some interesting hydrophilic and
+  hydrophobic deposition fluxes between ice and ocean, and atmos and
+  coupler (!) (Faxa_...).  So "deposition" suggest this is carbon that
+  comes out of the first component and into the second - dropping out of
+  the air, or melting from the ice.  I still don't understand what "flux
+  between atmos and coupler" means, though - does "coupler" mean *global*
+  coverage or something?  Or does the coupler do some actual
+  calculations with Fmxn_ style fluxes?
+
+* There are also carbon concentrations - So_doc1, So_doc2, e.g. for ocean.
+
+* Then, "sea ice dissolved organic carbon flux", Fioi_doc1 -  okay, I'm
+  getting those, that's carbon released into the ocean from sea ice
+  melting.
+
+* Now, if flds_co2b is set, we do "Fall_fco2_lnd", "surface upward flux of Co2
+  from land".  The flux between the lnd component and the atmos component,
+  to represent carbon being released into the atmos from the lnd
+  component.  So, this suggest maybe "Fazz_co2" is how I send co2 fluxes
+  back from gcam, probably to merge with the values coming from lnd.
+
+  Here is a tricky part, then, scientifically - the lnd component is source
+  of carbon up into atm.  Right now, that's just from the ground cover,
+  right - trees decaying, that kind of thing.  So gcam needs to account for
+  economic (human) development in the same way, but also may change the lnd
+  flux - if we cut down trees to make a city, that's less decaying co2 but
+  more anthropogenic co2.  This suggests a carbon "flux" between lnd and
+  iac, but I'm not sure it's a flux in the way E3SM uses the term.  Maybe
+  just a state change?  Does flux mean "go across geographic boundaries
+  between the physical domains of the components?"  But what about river
+  runoff and stuff like that - any Flrl_ or Flrr_ fluxes?  I'm sure there
+  are. 
+
+* Okay, now more complications - we do different things with flds_co2a
+  vs. flds_co2b vs. flds_co2c, etc, which are gonna be namelist options.
+  These are obviously some kind of different options for different ways of
+  modelling co2, and there is some overlad (Fall_fco2_lnd is in both b and
+  c, as are the Sa_co2{diag,prog} state variables.
+
+* I'm sure there are other vegetation values, but at least these carbon
+  fields give me a jumpoff point to trying to map the iESM fields pulled
+  from the history files to something we can get out of the coupler.
+
 1/5/2019
 
 * Making some progress - have a working iac_comp_mct.F90 file, although
