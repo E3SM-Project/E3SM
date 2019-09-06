@@ -57,7 +57,7 @@ module micro_p3
 
   public  :: p3_init,p3_main
 
-  logical :: use_cxx = .true.
+  logical :: use_cxx =  .true.
 
   ! protected items should be treated as private for everyone except tests
 
@@ -1548,7 +1548,6 @@ contains
     endif
 #endif
     !------------------------------------------------------------------------------------------!
-    
     ! find index for qi (normalized ice mass mixing ratio = qitot/nitot)
     !             dum1 = (log10(qitot)+16.)/0.70757  !orig
     !             dum1 = (log10(qitot)+16.)*1.41328
@@ -2892,9 +2891,9 @@ end subroutine prevent_ice_overdepletion
 
 subroutine cloud_water_conservation(qc,qcnuc,dt,    &
    qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
-   
+
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cloud_water_conservation_f 
+   use micro_p3_iso_f, only: cloud_water_conservation_f
 #endif
 
    implicit none
@@ -2904,7 +2903,7 @@ subroutine cloud_water_conservation(qc,qcnuc,dt,    &
 
 
    real(rtype) :: sinks, sources, ratio
-   
+
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
       call  cloud_water_conservation_f(qc,qcnuc,dt,    &
@@ -2942,12 +2941,24 @@ end subroutine cloud_water_conservation
 subroutine rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
    qrevp,qrcol,qrheti)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: rain_water_conservation_f
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: qr, qcaut, qcacc, qimlt, qcshd, dt
    real(rtype), intent(inout) :: qrevp, qrcol, qrheti
 
    real(rtype) :: sinks, sources, ratio
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  rain_water_conservation_f(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
+         qrevp,qrcol,qrheti)
+      return 
+   endif
+#endif
 
    sinks   = (qrevp+qrcol+qrheti)*dt
    sources = qr + (qcaut+qcacc+qimlt+qcshd)*dt
@@ -2963,11 +2974,23 @@ end subroutine rain_water_conservation
 subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
    qisub,qimlt)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: ice_water_conservation_f
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
    real(rtype), intent(inout) :: qisub, qimlt
    real(rtype) :: sinks, sources, ratio
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  ice_water_conservation_f(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
+      qisub,qimlt)
+      return 
+   endif
+#endif
 
    sinks   = (qisub+qimlt)*dt
    sources = qitot + (qidep+qinuc+qrcol+qccol+  &

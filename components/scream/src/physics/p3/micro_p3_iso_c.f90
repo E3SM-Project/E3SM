@@ -227,13 +227,13 @@ contains
 
   subroutine cloud_water_conservation_c(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
     qiberg,qisub,qidep) bind(C)
-    use micro_p3, only: cloud_water_conservation 
+    use micro_p3, only: cloud_water_conservation
 
     real(kind=c_real), value, intent(in) :: qc, qcnuc, dt
     real(kind=c_real), intent(inout) :: qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
 
     call cloud_water_conservation(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
-  end subroutine cloud_water_conservation_c 
+  end subroutine cloud_water_conservation_c
 
   subroutine rain_water_conservation_c(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
     qrevp,qrcol,qrheti) bind(C)
@@ -247,13 +247,13 @@ contains
 
   subroutine ice_water_conservation_c(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
     qisub,qimlt) bind(C)
-    use micro_p3, only: ice_water_conservation 
- 
+    use micro_p3, only: ice_water_conservation
+
     real(kind=c_real), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
     real(kind=c_real), intent(inout) :: qisub, qimlt
-  
+
     call ice_water_conservation(qitot,qidep,qinuc,qrcol,qccol,qrheti,qcheti,qiberg,dt,qisub,qimlt)
-  end subroutine ice_water_conservation_c 
+  end subroutine ice_water_conservation_c
 
 
 end module micro_p3_iso_c

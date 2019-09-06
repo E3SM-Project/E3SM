@@ -86,40 +86,40 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
   KOKKOS_FUNCTION static void cloud_water_conservation_tests(int& errors){
 
     Spack qc(1e-5);
-    Spack qcnuc(0.0); 
-    Scalar dt = 1.1; 
-    Spack qcaut(1e-4); 
-    Spack qcacc(0.0); 
-    Spack qccol(0.0); 
-    Spack qcheti(0.0); 
-    Spack qcshd(0.0); 
-    Spack qiberg(0.0); 
-    Spack qisub(1.0); 
-    Spack qidep(1.0); 
+    Spack qcnuc(0.0);
+    Scalar dt = 1.1;
+    Spack qcaut(1e-4);
+    Spack qcacc(0.0);
+    Spack qccol(0.0);
+    Spack qcheti(0.0);
+    Spack qcshd(0.0);
+    Spack qiberg(0.0);
+    Spack qisub(1.0);
+    Spack qidep(1.0);
 
-    Spack ratio(qc/(qcaut * dt));   
-    Functions::cloud_water_conservation(qc, qcnuc, dt, 
+    Spack ratio(qc/(qcaut * dt));
+    Functions::cloud_water_conservation(qc, qcnuc, dt,
     qcaut,qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
 
 
-    //Here we check the case where sources > sinks 
+    //Here we check the case where sources > sinks
     if(((qcaut - 1e-4*ratio) != 0.0).any()){errors++;}
     if((qcacc != 0).any()){errors++;}
     if((qccol != 0).any()){errors++;}
-    if((qcheti != 0).any()){errors++;}    
+    if((qcheti != 0).any()){errors++;}
     if((qcshd != 0).any()){errors++;}
     if((qiberg != 0).any()){errors++;}
     if(((qisub - (1.0 - ratio))!=0.0).any()){errors++;}
     if(((qidep - (1.0 - ratio))!=0.0).any()){errors++;}
 
-    // Now actually check conservation. We are basically checking here that 
-    // qcaut, the only non-zero source, is corrected so that within a dt 
-    // it does not overshoot qc.  
+    // Now actually check conservation. We are basically checking here that
+    // qcaut, the only non-zero source, is corrected so that within a dt
+    // it does not overshoot qc.
     if(((qcaut*dt - qc) != 0.0).any()){errors++;}
 
-    // Check the case where sources > sinks with sinks = 0 
-    qcaut = 0.0; 
-    Functions::cloud_water_conservation(qc, qcnuc, dt, 
+    // Check the case where sources > sinks with sinks = 0
+    qcaut = 0.0;
+    Functions::cloud_water_conservation(qc, qcnuc, dt,
     qcaut,qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
 
     //In this case qidep and qisub should be set to zero
@@ -130,19 +130,18 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
   KOKKOS_FUNCTION static void rain_water_conservation_tests(int& errors){
 
-    Spack qr(1e-5); 
-    Spack qcaut(0.0); 
-    Spack qcacc(0.0); 
-    Spack qimlt(0.0); 
-    Spack qcshd(0.0); 
-    Scalar dt = 1.1; 
-    Spack qrevp(1e-4); 
-    Spack qrcol(0.0); 
+    Spack qr(1e-5);
+    Spack qcaut(0.0);
+    Spack qcacc(0.0);
+    Spack qimlt(0.0);
+    Spack qcshd(0.0);
+    Scalar dt = 1.1;
+    Spack qrevp(1e-4);
+    Spack qrcol(0.0);
     Spack qrheti(0.0);
 
-    Spack ratio(qr/(qrevp * dt)); 
-    
-    //Call function being tested 
+    Spack ratio(qr/(qrevp * dt));
+    //Call function being tested
     Functions::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti);
 
     //Here we check cases where source > sinks and sinks > 1e-20
@@ -154,7 +153,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     if((qrcol!=0.0).any()){errors++;}
     if((qrheti!=0.0).any()){errors++;}
 
-    //Now test that conservation has actually been enforced 
+    //Now test that conservation has actually been enforced
     if((abs(qrevp * dt - qr)> 0.0).any()){errors++;}
 
   }
@@ -162,24 +161,23 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
   KOKKOS_FUNCTION static void ice_water_conservation_tests(int& errors){
 
-    Spack qitot(1e-5); 
-    Spack qidep(0.0); 
-    Spack qinuc(0.0); 
-    Spack qrcol(0.0); 
-    Spack qccol(0.0); 
-    Spack qrheti(0.0); 
-    Spack qcheti(0.0); 
-    Spack qiberg(0.0); 
-    Scalar dt = 1.1; 
-    Spack qisub(1e-4); 
-    Spack qimlt(0.0); 
+    Spack qitot(1e-5);
+    Spack qidep(0.0);
+    Spack qinuc(0.0);
+    Spack qrcol(0.0);
+    Spack qccol(0.0);
+    Spack qrheti(0.0);
+    Spack qcheti(0.0);
+    Spack qiberg(0.0);
+    Scalar dt = 1.1;
+    Spack qisub(1e-4);
+    Spack qimlt(0.0);
 
     Spack ratio(qitot/(qisub * dt));
 
-    //Call function being tested 
+    //Call function being tested
     Functions::ice_water_conservation(qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt, qisub, qimlt);
-  
-    //Here we check cases where source > sinks and sinks > 1e-20 
+    //Here we check cases where source > sinks and sinks > 1e-20
     if((qidep!=0.0).any()){errors++;}
     if((qinuc!=0.0).any()){errors++;}
     if((qrcol!=0.0).any()){errors++;}
@@ -190,31 +188,30 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     if(((qisub - 1e-4 * ratio)!=0).any()){errors++;}
     if((qimlt!=0).any()){errors++;}
 
-    //Now test that conservation has actually been enforced 
+    //Now test that conservation has actually been enforced
     if((abs(qisub * dt - qitot)>0.0).any()){errors++;}
   }
 
   static void run()
   {
-    int nerr = 0; 
+    int nerr = 0;
 
     TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
     Kokkos::parallel_reduce("ConservationTests", policy, KOKKOS_LAMBDA(const MemberType& tem, int& errors){
-      
-      
+
       errors = 0;
 
       cloud_water_conservation_tests(errors);
 
-      rain_water_conservation_tests(errors); 
+      rain_water_conservation_tests(errors);
 
-      ice_water_conservation_tests(errors); 
+      ice_water_conservation_tests(errors);
 
-    }, nerr); 
+    }, nerr);
 
-    Kokkos::fence(); 
+    Kokkos::fence();
 
-    REQUIRE(nerr==0); 
+    REQUIRE(nerr==0);
   }
 
 };
