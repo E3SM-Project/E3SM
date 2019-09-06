@@ -170,14 +170,14 @@ struct RainWaterConservationData
   Real qr;
   Real qcaut;
   Real qcacc;
-  Real qimlt; 
-  Real qcshd; 
-  Real dt; 
+  Real qimlt;
+  Real qcshd;
+  Real dt;
 
   //output
-  Real qrevp; 
-  Real qrcol; 
-  Real qrheti; 
+  Real qrevp;
+  Real qrcol;
+  Real qrheti;
 };
 
 void rain_water_conservation(RainWaterConservationData& d);
