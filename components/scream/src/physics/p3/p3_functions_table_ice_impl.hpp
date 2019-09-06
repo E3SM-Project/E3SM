@@ -93,7 +93,7 @@ void Functions<S,D>
 
   if (!qiti_gt_small.any()) return;
 
-  t.dum1 = (pack::log10(qitot/nitot)+18) * (sp(1.0)/(sp(0.1)*log10(sp(261.7)))) - 10; // For computational efficiency
+  t.dum1 = (pack::log10(qitot/nitot)+18) * P3C::lookup_table_1a_dum1_c - 10;
   t.dumi = IntSmallPack(t.dum1);
 
   // set limits (to make sure the calculated index doesn't exceed range of lookup table)
