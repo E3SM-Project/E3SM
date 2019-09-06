@@ -1156,22 +1156,22 @@
       <executable/>
     </mpirun>
     <module_system type="module">
-      <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh;export MODULEPATH=/blues/gpfs/software/centos7/spack-0.12.1/share/spack/lmod/linux-centos7-x86_64/Core</init_path>
-      <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh;setenv MODULEPATH /blues/gpfs/software/centos7/spack-0.12.1/share/spack/lmod/linux-centos7-x86_64/Core</init_path>
+      <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh;export MODULEPATH=export MODULEPATH=/software/centos7/spack/share/spack/lmod/linux-centos7-x86_64/Core:/blues/gpfs/software/centos7/spack/share/spack/lmod/linux-centos7-x86_64/mvapich2/2.3.1-dtbb6xk/intel/18.0.4:/blues/gpfs/software/centos7/spack/share/spack/lmod/linux-centos7-x86_64/intel/18.0.4</init_path>
+      <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh;setenv MODULEPATH /software/centos7/spack/share/spack/lmod/linux-centos7-x86_64/Core:/blues/gpfs/software/centos7/spack/share/spack/lmod/linux-centos7-x86_64/mvapich2/2.3.1-dtbb6xk/intel/18.0.4:/blues/gpfs/software/centos7/spack/share/spack/lmod/linux-centos7-x86_64/intel/18.0.4</init_path>
       <init_path lang="python">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="python">export MODULEPATH=/blues/gpfs/software/centos7/spack-0.12.1/share/spack/lmod/linux-centos7-x86_64/Core;/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">export MODULEPATH=/software/centos7/spack/share/spack/lmod/linux-centos7-x86_64/Core:/blues/gpfs/software/centos7/spack/share/spack/lmod/linux-centos7-x86_64/mvapich2/2.3.1-dtbb6xk/intel/18.0.4:/blues/gpfs/software/centos7/spack/share/spack/lmod/linux-centos7-x86_64/intel/18.0.4;/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
-        <command name="load">intel/17.0.4-74uvhji</command>
-        <command name="load">intel-mkl/2017.3.196-v7uuj6z</command>
-        <command name="load">netcdf/4.4.1-magkugi</command>
-        <command name="load">netcdf-fortran/4.4.4-7obsouy</command>
-        <command name="load">mvapich2/2.2-verbs-lxc4y7i</command>
-        <command name="load">cmake</command>
+        <command name="load">intel/18.0.4-443hhug</command>
+        <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
+	<command name="load">mvapich2/2.3.1-verbs-dtbb6xk</command>
+	<command name="load">netcdf-fortran/4.4.4-kgp5hqm</command>
+	<command name="load">netcdf/4.4.1-4odwn5a</command>
+	<command name="load">cmake/3.13.4-354d6wl</command>
       </modules>
       <modules compiler="intel" mpilib="openmpi">
         <command name="load">intel/17.0.0-yil23id</command>
