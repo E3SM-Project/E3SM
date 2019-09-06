@@ -240,6 +240,9 @@ struct Functions
 
 };
 
+template <typename ScalarT, typename DeviceT>
+constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
+
 } // namespace p3
 } // namespace scream
 
