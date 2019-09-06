@@ -19,6 +19,7 @@ module prim_driver_mod
   public :: prim_init_kokkos_functors
   public :: prim_run_subcycle
   public :: prim_finalize
+  public :: deriv1
 
   private :: generate_global_to_local
   private :: init_cxx_connectivity_internal
@@ -38,7 +39,7 @@ module prim_driver_mod
     use parallel_mod,     only : parallel_t
     use time_mod,         only : TimeLevel_t, TimeLevel_init
     use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, &
-                                 prim_init1_cleanup, MetaVertex, GridEdge, deriv1
+                                 prim_init1_cleanup, MetaVertex, GridEdge
 #ifndef CAM
     use prim_driver_base, only : prim_init1_no_cam
 #endif
@@ -157,7 +158,6 @@ module prim_driver_mod
     use hybvcoord_mod,    only : hvcoord_t
     use time_mod,         only : timelevel_t
     use kinds,            only : real_kind
-    use prim_driver_base, only : deriv1
 
     interface
       subroutine init_derivative_c (dvv_ptr) bind(c)
