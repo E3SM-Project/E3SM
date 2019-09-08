@@ -2684,6 +2684,7 @@ end if
        snow_pcw_macmic = 0._r8
 
     ! write the liquid cloud fraction before macmic substepping
+      if (macmic_extra_diag) then
        write(tmpname,"(A15)") "alstn_bf_macmic"
        ifalst   = pbuf_get_index('ALST')
        call pbuf_get_field(pbuf, ifalst, tmp_alst)
@@ -2692,6 +2693,7 @@ end if
        !ifalst   = pbuf_get_index('ALSTO')
        !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
        !call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk) 
+       end if  
 
        if((.not.is_first_step()) .and. l_dribling_tend) then
                
@@ -3055,6 +3057,7 @@ end if
      scwat(:ncol,:pver) = state%s(:ncol,:pver)
 
     ! write the liquid cloud fraction after macmic substepping
+     if (macmic_extra_diag) then
       write(tmpname,"(A15)") "alstn_af_macmic"
       ifalst   = pbuf_get_index('ALST')
       call pbuf_get_field(pbuf, ifalst, tmp_alst)
@@ -3063,6 +3066,7 @@ end if
       !ifalst   = pbuf_get_index('ALSTO')
       !call pbuf_get_field(pbuf, ifalst, tmp_alst)
       call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)     
+     end if   
 
 if (l_tracer_aero) then
 
