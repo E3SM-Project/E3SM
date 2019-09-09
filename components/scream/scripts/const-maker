@@ -38,7 +38,7 @@ def const_maker(varname, expr):
 ###############################################################################
     val = eval(expr)
     print("Fortran:")
-    print("real(rtype), public, parameter :: {} = {:22.15e} ! {}".format(varname, val, expr))
+    print("real(rtype), public, parameter :: {} = {:22.15d} ! {}".format(varname, val, expr))
     print("C++:")
     print("static constexpr Scalar {} = {:22.15e}; // {}".format(varname, val, expr))
 
