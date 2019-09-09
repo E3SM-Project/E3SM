@@ -60,15 +60,9 @@ contains
     !------------------------------------------------------------------------
 
     if (flag /= 'read') then
-       if (flag == 'define') then
-          call t_startf('subgridRest_define')
-          call subgridRest_write_only(bounds, ncid, flag)
-          call t_stopf('subgridRest_define')
-       else if (flag == 'write') then
-          call t_startf('subgridRest_write')
-          call subgridRest_write_only(bounds, ncid, flag)
-          call t_stopf('subgridRest_write')
-       end if
+       call t_startf('subgridRest_write')
+       call subgridRest_write_only(bounds, ncid, flag)
+       call t_stopf('subgridRest_write')
     end if
 
     call t_startf('subgridRest_write-read')
@@ -127,21 +121,17 @@ contains
          long_name='gridcell latitude', units='degrees_north',         &
          interpinic_flag='skip', readvar=readvar, data=grc_pp%latdeg)
 
-    if (flag == 'write') then
-       do g=bounds%begg,bounds%endg
-          igarr(g)= mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1
-       enddo
-    endif
+    do g=bounds%begg,bounds%endg
+       igarr(g)= mod(ldecomp%gdc2glo(g)-1,ldomain%ni) + 1
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='grid1d_ixy', xtype=ncd_int,    &
          dim1name='gridcell',                                          &
          long_name='2d longitude index of corresponding gridcell',     &
          interpinic_flag='skip', readvar=readvar, data=igarr)
 
-    if (flag == 'write') then
-       do g=bounds%begg,bounds%endg
-          igarr(g)= (ldecomp%gdc2glo(g) - 1)/ldomain%ni + 1
-       enddo
-    endif
+    do g=bounds%begg,bounds%endg
+       igarr(g)= (ldecomp%gdc2glo(g) - 1)/ldomain%ni + 1
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='grid1d_jxy', xtype=ncd_int,    &
          dim1name='gridcell',                                          &
          long_name='2d latitude index of corresponding gridcell',      &
@@ -155,49 +145,39 @@ contains
 
     allocate(rlarr(bounds%begl:bounds%endl), ilarr(bounds%begl:bounds%endl))
 
-    if (flag == 'write') then
-       do l=bounds%begl,bounds%endl
-          rlarr(l) = grc_pp%londeg(lun_pp%gridcell(l))
-       enddo
-    endif
+    do l=bounds%begl,bounds%endl
+       rlarr(l) = grc_pp%londeg(lun_pp%gridcell(l))
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='land1d_lon', xtype=ncd_double,  &
          dim1name='landunit',                                                      &
          long_name='landunit longitude', units='degrees_east',                     &
          interpinic_flag='skip', readvar=readvar, data=rlarr)
  
-    if (flag == 'write') then
-       do l=bounds%begl,bounds%endl
-          rlarr(l) = grc_pp%latdeg(lun_pp%gridcell(l))
-       enddo
-    endif
+    do l=bounds%begl,bounds%endl
+       rlarr(l) = grc_pp%latdeg(lun_pp%gridcell(l))
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='land1d_lat', xtype=ncd_double,  &
          dim1name='landunit',                                                      &
          long_name='landunit latitude', units='degrees_north',                     &
          interpinic_flag='skip', readvar=readvar, data=rlarr)
 
-    if (flag == 'write') then
-       do l=bounds%begl,bounds%endl
-          ilarr(l) = mod(ldecomp%gdc2glo(lun_pp%gridcell(l))-1,ldomain%ni) + 1
-       enddo
-    endif
+    do l=bounds%begl,bounds%endl
+       ilarr(l) = mod(ldecomp%gdc2glo(lun_pp%gridcell(l))-1,ldomain%ni) + 1
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='land1d_ixy', xtype=ncd_int,     &
          dim1name='landunit',                                                      &
          long_name='2d longitude index of corresponding landunit',                 &
          interpinic_flag='skip', readvar=readvar, data=ilarr)
 
-    if (flag == 'write') then
-        do l=bounds%begl,bounds%endl
-           ilarr(l) = (ldecomp%gdc2glo(lun_pp%gridcell(l))-1)/ldomain%ni + 1
-        enddo
-    endif
+     do l=bounds%begl,bounds%endl
+        ilarr(l) = (ldecomp%gdc2glo(lun_pp%gridcell(l))-1)/ldomain%ni + 1
+     enddo
     call restartvar(ncid=ncid, flag=flag, varname='land1d_jxy', xtype=ncd_int,     &
          dim1name='landunit',                                                      &
          long_name='2d latitude index of corresponding landunit',                  &
          interpinic_flag='skip', readvar=readvar, data=ilarr)
 
-    if (flag == 'write') then
-       ilarr = GetGlobalIndexArray(lun_pp%gridcell(bounds%begl:bounds%endl), bounds%begl, bounds%endl, clmlevel=nameg)
-    endif
+    ilarr = GetGlobalIndexArray(lun_pp%gridcell(bounds%begl:bounds%endl), bounds%begl, bounds%endl, clmlevel=nameg)
     call restartvar(ncid=ncid, flag=flag, varname='land1d_gridcell_index', xtype=ncd_int, &
          dim1name='landunit',                                                             &
          long_name='gridcell index of corresponding landunit',                            &
@@ -208,15 +188,13 @@ contains
          long_name='landunit type (see global attributes)', units=' ',             &
          interpinic_flag='skip', readvar=readvar, data=lun_pp%itype)
 
-    if (flag == 'write') then
-       do l=bounds%begl,bounds%endl
-          if (lun_pp%active(l)) then
-             ilarr(l) = 1
-          else
-             ilarr(l) = 0
-          end if
-       enddo
-    endif
+    do l=bounds%begl,bounds%endl
+       if (lun_pp%active(l)) then
+          ilarr(l) = 1
+       else
+          ilarr(l) = 0
+       end if
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='land1d_active', xtype=ncd_int,  &
          dim1name='landunit',                                                      &
          long_name='landunit active flag (1=active, 0=inactive)',                  &
@@ -230,67 +208,53 @@ contains
 
     allocate(rcarr(bounds%begc:bounds%endc), icarr(bounds%begc:bounds%endc))
 
-    if (flag == 'write') then
-       do c= bounds%begc, bounds%endc
-          rcarr(c) = grc_pp%londeg(col_pp%gridcell(c))
-       enddo
-    endif
+    do c= bounds%begc, bounds%endc
+       rcarr(c) = grc_pp%londeg(col_pp%gridcell(c))
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_lon', xtype=ncd_double,   &
          dim1name='column',                                                         &
          long_name='column longitude', units='degrees_east',                        &
          interpinic_flag='skip', readvar=readvar, data=rcarr)
 
-    if (flag == 'write') then
-       do c= bounds%begc, bounds%endc
-          rcarr(c) = grc_pp%latdeg(col_pp%gridcell(c))
-       enddo
-    endif
+    do c= bounds%begc, bounds%endc
+       rcarr(c) = grc_pp%latdeg(col_pp%gridcell(c))
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_lat', xtype=ncd_double,   &
          dim1name='column',                                                         &
          long_name='column latitude', units='degrees_north',                        &
          interpinic_flag='skip', readvar=readvar, data=rcarr)
 
-    if (flag == 'write') then
-       do c= bounds%begc, bounds%endc
-          icarr(c) = mod(ldecomp%gdc2glo(col_pp%gridcell(c))-1,ldomain%ni) + 1
-       enddo
-    endif
+    do c= bounds%begc, bounds%endc
+       icarr(c) = mod(ldecomp%gdc2glo(col_pp%gridcell(c))-1,ldomain%ni) + 1
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_ixy', xtype=ncd_int,      &
          dim1name='column',                                                         &
          long_name='2d longitude index of corresponding column', units=' ',         &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
-    if (flag == 'write') then
-       do c= bounds%begc, bounds%endc
-          icarr(c) = (ldecomp%gdc2glo(col_pp%gridcell(c))-1)/ldomain%ni + 1
-       enddo
-    endif
+    do c= bounds%begc, bounds%endc
+       icarr(c) = (ldecomp%gdc2glo(col_pp%gridcell(c))-1)/ldomain%ni + 1
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_jxy', xtype=ncd_int,      &
          dim1name='column',                                                         &
          long_name='2d latitude index of corresponding column', units=' ',          &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
-    if (flag == 'write') then
-       icarr = GetGlobalIndexArray(col_pp%gridcell(bounds%begc:bounds%endc), bounds%begc, bounds%endc, clmlevel=nameg)
-    endif
+    icarr = GetGlobalIndexArray(col_pp%gridcell(bounds%begc:bounds%endc), bounds%begc, bounds%endc, clmlevel=nameg)
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_gridcell_index', xtype=ncd_int, &
          dim1name='column',                                                               &
          long_name='gridcell index of corresponding column',                              &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
-    if (flag == 'write') then
-       icarr = GetGlobalIndexArray(col_pp%landunit(bounds%begc:bounds%endc), bounds%begc, bounds%endc, clmlevel=namel)
-    endif
+    icarr = GetGlobalIndexArray(col_pp%landunit(bounds%begc:bounds%endc), bounds%begc, bounds%endc, clmlevel=namel)
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_landunit_index', xtype=ncd_int, &
          dim1name='column',                                                               &
          long_name='landunit index of corresponding column',                              &
          interpinic_flag='skip', readvar=readvar, data=icarr)
 
-    if (flag == 'write') then
-       do c= bounds%begc, bounds%endc
-          icarr(c) = lun_pp%itype(col_pp%landunit(c))
-       enddo
-    endif
+    do c= bounds%begc, bounds%endc
+       icarr(c) = lun_pp%itype(col_pp%landunit(c))
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_ityplun', xtype=ncd_int,  &
          dim1name='column',                                                         &
          long_name='column landunit type (see global attributes)', units=' ',       &
@@ -301,15 +265,13 @@ contains
          long_name='column type (see global attributes)', units=' ',                &
          interpinic_flag='skip', readvar=readvar, data=col_pp%itype)
 
-    if (flag == 'write') then
-       do c=bounds%begc,bounds%endc
-          if (col_pp%active(c)) then 
-             icarr(c) = 1
-          else
-             icarr(c) = 0
-          end if
-       enddo
-    endif
+    do c=bounds%begc,bounds%endc
+       if (col_pp%active(c)) then 
+          icarr(c) = 1
+       else
+          icarr(c) = 0
+       end if
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='cols1d_active', xtype=ncd_int,   &
          dim1name='column',                                                         &
          long_name='column active flag (1=active, 0=inactive)', units=' ',          &
@@ -323,65 +285,51 @@ contains
 
     allocate(rparr(bounds%begp:bounds%endp), iparr(bounds%begp:bounds%endp))
 
-    if (flag == 'write') then
-       do p=bounds%begp,bounds%endp
-          rparr(p) = grc_pp%londeg(veg_pp%gridcell(p))
-       enddo
-    endif
+    do p=bounds%begp,bounds%endp
+       rparr(p) = grc_pp%londeg(veg_pp%gridcell(p))
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_lon', xtype=ncd_double, &
          dim1name='pft',                                                          &
          long_name='pft longitude', units='degrees_east',                         &
          interpinic_flag='skip', readvar=readvar, data=rparr)
 
-    if (flag == 'write') then
-       do p=bounds%begp,bounds%endp
-          rparr(p) = grc_pp%latdeg(veg_pp%gridcell(p))
-       enddo
-    endif
+    do p=bounds%begp,bounds%endp
+       rparr(p) = grc_pp%latdeg(veg_pp%gridcell(p))
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_lat', xtype=ncd_double, &
          dim1name='pft',                                                          &
          long_name='pft latitude', units='degrees_north',                         &
          interpinic_flag='skip', readvar=readvar, data=rparr)
 
-    if (flag == 'write') then
-       do p=bounds%begp,bounds%endp
-          iparr(p) = mod(ldecomp%gdc2glo(veg_pp%gridcell(p))-1,ldomain%ni) + 1
-       enddo
-    endif
+    do p=bounds%begp,bounds%endp
+       iparr(p) = mod(ldecomp%gdc2glo(veg_pp%gridcell(p))-1,ldomain%ni) + 1
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_ixy', xtype=ncd_int, &
          dim1name='pft',                                                       &
          long_name='2d longitude index of corresponding pft', units='',        &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    if (flag == 'write') then
-       do p=bounds%begp,bounds%endp
-          iparr(p) = (ldecomp%gdc2glo(veg_pp%gridcell(p))-1)/ldomain%ni + 1
-       enddo
-    endif
+    do p=bounds%begp,bounds%endp
+       iparr(p) = (ldecomp%gdc2glo(veg_pp%gridcell(p))-1)/ldomain%ni + 1
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_jxy', xtype=ncd_int, &
          dim1name='pft',                                                       &
          long_name='2d latitude index of corresponding pft', units='',         &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    if (flag == 'write') then
-       iparr = GetGlobalIndexArray(veg_pp%gridcell(bounds%begp:bounds%endp), bounds%begp, bounds%endp, clmlevel=nameg)
-    endif
+    iparr = GetGlobalIndexArray(veg_pp%gridcell(bounds%begp:bounds%endp), bounds%begp, bounds%endp, clmlevel=nameg)
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_gridcell_index', xtype=ncd_int, &
          dim1name='pft',                                                                  &
          long_name='gridcell index of corresponding pft',                                 &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    if (flag == 'write') then
-       iparr = GetGlobalIndexArray(veg_pp%landunit(bounds%begp:bounds%endp), bounds%begp, bounds%endp, clmlevel=namel)
-    endif
+    iparr = GetGlobalIndexArray(veg_pp%landunit(bounds%begp:bounds%endp), bounds%begp, bounds%endp, clmlevel=namel)
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_landunit_index', xtype=ncd_int, &
          dim1name='pft',                                                                  &
          long_name='landunit index of corresponding pft',                                 &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    if (flag == 'write') then
-       iparr = GetGlobalIndexArray(veg_pp%column(bounds%begp:bounds%endp), bounds%begp, bounds%endp, clmlevel=namec)
-    endif
+    iparr = GetGlobalIndexArray(veg_pp%column(bounds%begp:bounds%endp), bounds%begp, bounds%endp, clmlevel=namec)
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_column_index', xtype=ncd_int,   &
          dim1name='pft',                                                                  &
          long_name='column index of corresponding pft',                                   &
@@ -392,46 +340,38 @@ contains
          long_name='pft vegetation type', units='',                                 &
          interpinic_flag='skip', readvar=readvar, data=veg_pp%itype)
 
-    if (flag == 'write') then
-       do p=bounds%begp,bounds%endp
-          iparr(p) = col_pp%itype(veg_pp%column(p))
-       enddo
-    endif
+    do p=bounds%begp,bounds%endp
+       iparr(p) = col_pp%itype(veg_pp%column(p))
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_itypcol', xtype=ncd_int, &
          dim1name='pft',                                                           &
          long_name='pft column type (see global attributes)', units='',          &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    if (flag == 'write') then
-       do p=bounds%begp,bounds%endp
-          iparr(p) = lun_pp%itype(veg_pp%landunit(p))
-       enddo
-    endif
+    do p=bounds%begp,bounds%endp
+       iparr(p) = lun_pp%itype(veg_pp%landunit(p))
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_ityplun', xtype=ncd_int, &
          dim1name='pft',                                                           &
          long_name='pft landunit type (see global attributes)', units='',          &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    if (flag == 'write') then
-       do p=bounds%begp,bounds%endp
-          if (veg_pp%active(p)) then
-             iparr(p) = 1
-          else
-             iparr(p) = 0
-          end if
-       enddo
-    endif
+    do p=bounds%begp,bounds%endp
+       if (veg_pp%active(p)) then
+          iparr(p) = 1
+       else
+          iparr(p) = 0
+       end if
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_active', xtype=ncd_int, &
          dim1name='pft',                                                          &
          long_name='pft active flag (1=active, 0=inactive)', units='',            &
          interpinic_flag='skip', readvar=readvar, data=iparr)
 
-    if (flag == 'write') then
-       do p=bounds%begp,bounds%endp
-          c = veg_pp%column(p)
-          rparr(p) = col_pp%glc_topo(c)
-       enddo
-    endif
+    do p=bounds%begp,bounds%endp
+       c = veg_pp%column(p)
+       rparr(p) = col_pp%glc_topo(c)
+    enddo
     call restartvar(ncid=ncid, flag=flag, varname='pfts1d_topoglc', xtype=ncd_double,   &
          dim1name='column',                                                             &
          long_name='mean elevation on glacier elevation classes', units='m',            &
