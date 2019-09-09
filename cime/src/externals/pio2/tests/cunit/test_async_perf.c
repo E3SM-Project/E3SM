@@ -36,9 +36,12 @@
 #define LON_LEN 3
 
 /* The length of our sample data along each dimension. */
-#define X_DIM_LEN 1024
-#define Y_DIM_LEN 1024
-#define Z_DIM_LEN 256
+#define X_DIM_LEN 128
+#define Y_DIM_LEN 128
+#define Z_DIM_LEN 32
+/* #define X_DIM_LEN 1024 */
+/* #define Y_DIM_LEN 1024 */
+/* #define Z_DIM_LEN 256 */
 
 /* The number of timesteps of data to write. */
 #define NUM_TIMESTEPS 3
@@ -58,6 +61,14 @@ char dim_name[NDIM4][PIO_MAX_NAME + 1] = {"unlim", "x", "y", "z"};
 
 #define NUM_VAR_SETS 2
 
+/* How long to sleep for "calculation time". */
+#define SLEEP_SECONDS 1
+
+#ifdef USE_MPE
+/* This array holds even numbers for MPE. */
+int test_event[2][TEST_NUM_EVENTS];
+#endif /* USE_MPE */
+
 /* Create the decomposition to divide the 4-dimensional sample data
  * between the 4 tasks. For the purposes of decomposition we are only
  * concerned with 3 dimensions - we ignore the unlimited dimension.
@@ -70,13 +81,19 @@ char dim_name[NDIM4][PIO_MAX_NAME + 1] = {"unlim", "x", "y", "z"};
  * @param ioid a pointer that gets the ID of this decomposition.
  * @returns 0 for success, error code otherwise.
  **/
-int create_decomposition_3d(int ntasks, int my_rank, int iosysid, int *ioid, PIO_Offset *elements_per_pe)
+int
+create_decomposition_3d(int ntasks, int my_rank, int iosysid, int *ioid,
+                        PIO_Offset *elements_per_pe)
 {
     PIO_Offset my_elem_per_pe;     /* Array elements per processing unit. */
     PIO_Offset *compdof;  /* The decomposition mapping. */
     int dim_len_3d[NDIM3] = {X_DIM_LEN, Y_DIM_LEN, Z_DIM_LEN};
     int my_proc_rank = my_rank - 1;
     int ret;
+
+#ifdef USE_MPE
+    test_start_mpe_log(TEST_DECOMP);
+#endif /* USE_MPE */
 
     /* How many data elements per task? */
     my_elem_per_pe = X_DIM_LEN * Y_DIM_LEN * Z_DIM_LEN / ntasks;
@@ -98,6 +115,14 @@ int create_decomposition_3d(int ntasks, int my_rank, int iosysid, int *ioid, PIO
 
     /* Free the mapping. */
     free(compdof);
+
+#ifdef USE_MPE
+    {
+        char msg[MPE_MAX_MSG_LEN + 1];
+        sprintf(msg, "elements_per_pe %lld", my_elem_per_pe);
+        test_stop_mpe_log(TEST_DECOMP, msg);
+    }
+#endif /* USE_MPE */
 
     return 0;
 }
@@ -130,10 +155,14 @@ run_darray_async_test(int iosysid, int fmt, int my_rank, int ntasks, int niotask
         int d, t;
 
         if (!(my_data_int = malloc(elements_per_pe2 * sizeof(int))))
-            BAIL(PIO_ENOMEM);
+            PBAIL(PIO_ENOMEM);
 
         for (d = 0; d < elements_per_pe2; d++)
             my_data_int[d] = my_rank;
+
+#ifdef USE_MPE
+        test_start_mpe_log(TEST_CREATE);
+#endif /* USE_MPE */
 
         /* Create sample output file. */
         /* sprintf(data_filename, "data_%s_iotype_%d_piotype_%d.nc", TEST_NAME, flavor[fmt], */
@@ -141,53 +170,83 @@ run_darray_async_test(int iosysid, int fmt, int my_rank, int ntasks, int niotask
         sprintf(data_filename, "data_%s.nc", TEST_NAME);
         if ((ret = PIOc_createfile(iosysid, &ncid, &flavor[fmt], data_filename,
                                    NC_CLOBBER)))
-            BAIL(ret);
+            PBAIL(ret);
+
+#ifdef USE_MPE
+        {
+            char msg[MPE_MAX_MSG_LEN + 1];
+            sprintf(msg, "iotype %d", flavor[fmt]);
+            test_stop_mpe_log(TEST_CREATE, msg);
+        }
+#endif /* USE_MPE */
 
         /* Find the size of the type. */
         if ((ret = PIOc_inq_type(ncid, piotype, NULL, &type_size)))
-            BAIL(ret);
+            PBAIL(ret);
 
         /* Define dimensions. */
         for (int d = 0; d < NDIM4; d++)
             if ((ret = PIOc_def_dim(ncid, dim_name[d], dim_len[d], &dimid[d])))
-                BAIL(ret);
+                PBAIL(ret);
 
         /* Define variables. */
         if ((ret = PIOc_def_var(ncid, REC_VAR_NAME, piotype, NDIM4, dimid, &varid)))
-            BAIL(ret);
+            PBAIL(ret);
 
         /* End define mode. */
         if ((ret = PIOc_enddef(ncid)))
-            BAIL(ret);
+            PBAIL(ret);
 
         for (t = 0; t < NUM_TIMESTEPS; t++)
         {
+#ifdef USE_MPE
+            test_start_mpe_log(TEST_DARRAY_WRITE);
+#endif /* USE_MPE */
+
             /* Set the record number for the record vars. */
             if ((ret = PIOc_setframe(ncid, varid, t)))
-                BAIL(ret);
+                PBAIL(ret);
 
             /* Write some data to the record vars. */
             if ((ret = PIOc_write_darray(ncid, varid, ioid3, elements_per_pe2,
                                          my_data_int, NULL)))
-                BAIL(ret);
+                PBAIL(ret);
 
-            /* Sync the file. */
-            if ((ret = PIOc_sync(ncid)))
-                BAIL(ret);
+#ifdef USE_MPE
+            {
+                char msg[MPE_MAX_MSG_LEN + 1];
+                sprintf(msg, "timestep %d", t);
+                test_stop_mpe_log(TEST_DARRAY_WRITE, msg);
+            }
+#endif /* USE_MPE */
 
+            /* Now do some calculations. */
+#ifdef USE_MPE
+            test_start_mpe_log(TEST_CALCULATE);
+#endif /* USE_MPE */
+
+            /* Sleep some seconds away. */
+            sleep(SLEEP_SECONDS);
+
+#ifdef USE_MPE
+            {
+                char msg[MPE_MAX_MSG_LEN + 1];
+                sprintf(msg, "timestep %d", t);
+                test_stop_mpe_log(TEST_CALCULATE, msg);
+            }
+#endif /* USE_MPE */
         }
-
 
         /* Close the file. */
         if ((ret = PIOc_closefile(ncid)))
-            BAIL(ret);
+            PBAIL(ret);
 
         free(my_data_int);
     }
 
     /* Free the decomposition. */
     if ((ret = PIOc_freedecomp(iosysid, ioid3)))
-        BAIL(ret);
+        PBAIL(ret);
 exit:
     return ret;
 }
@@ -213,6 +272,14 @@ int main(int argc, char **argv)
     /* Initialize test. */
     if ((ret = pio_test_init2(argc, argv, &my_rank, &ntasks, 1, 0, -1, &test_comm)))
         ERR(ERR_INIT);
+
+#ifdef USE_MPE
+    /* If --enable-mpe was specified at configure, start MPE
+     * logging. */
+    if (init_mpe_test_logging(my_rank, test_event))
+        return ERR_AWFUL;
+#endif /* USE_MPE */
+
     if ((ret = PIOc_set_iosystem_error_handling(PIO_DEFAULT, PIO_RETURN_ERROR, NULL)))
         return ret;
 
@@ -248,6 +315,10 @@ int main(int argc, char **argv)
             float delta_in_sec;
             float mb_per_sec;
 
+#ifdef USE_MPE
+            test_start_mpe_log(TEST_INIT);
+#endif /* USE_MPE */
+
             /* Start the clock. */
             if (!my_rank)
             {
@@ -259,6 +330,14 @@ int main(int argc, char **argv)
                                        &num_computation_procs, NULL, &io_comm, comp_comm,
                                        PIO_REARR_BOX, &iosysid)))
                 ERR(ERR_INIT);
+
+#ifdef USE_MPE
+            {
+                char msg[MPE_MAX_MSG_LEN + 1];
+                sprintf(msg, "num IO procs %d", num_io_procs[niotest]);
+                test_stop_mpe_log(TEST_INIT, msg);
+            }
+#endif /* USE_MPE */
 
             /* This code runs only on computation components. */
             if (my_rank >= num_io_procs[niotest])
@@ -292,7 +371,7 @@ int main(int argc, char **argv)
                 endt = (1000000 * endtime.tv_sec) + endtime.tv_usec;
                 delta = (endt - startt)/NUM_TIMESTEPS;
                 delta_in_sec = (float)delta / 1000000;
-                num_megabytes = (X_DIM_LEN * Y_DIM_LEN * Z_DIM_LEN * NUM_TIMESTEPS *
+                num_megabytes = (X_DIM_LEN * Y_DIM_LEN * Z_DIM_LEN * (long long int)  NUM_TIMESTEPS *
                                  sizeof(int))/(1024*1024);
                 mb_per_sec = num_megabytes / delta_in_sec;
                 printf("%d\t%d\t%d\t%d\t%d\t%8.3f\t%8.1f\t%8.3f\n", ntasks, num_io_procs[niotest],

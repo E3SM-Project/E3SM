@@ -59,7 +59,7 @@ module stepon
 ! !PRIVATE DATA MEMBERS:
 !
 
-  logical :: iop_update_surface
+  logical :: iop_update_phase1
 
   type (derivative_t)   :: deriv           ! derivative struct
   type (quadrature_t)   :: gv,gp           ! quadratures on velocity and pressure grids
@@ -202,9 +202,9 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   end if
   
   if (single_column) then
-    iop_update_surface = .true. 
-    if (doiopupdate) call readiopdata( iop_update_surface,hyam,hybm )
-    call scm_setfield(elem)       
+    iop_update_phase1 = .true. 
+    if (doiopupdate) call readiopdata( iop_update_phase1,hyam,hybm )
+    call scm_setfield(elem,iop_update_phase1)       
   endif 
   
    call t_barrierf('sync_d_p_coupling', mpicom)
@@ -216,7 +216,7 @@ end subroutine stepon_run1
 
 subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use bndry_mod,       only: bndry_exchangeV
-   use dimensions_mod,  only: nlev, nelemd, np, npsq
+   use dimensions_mod,  only: nlev, nlevp, nelemd, np, npsq
    use dyn_grid,        only: fv_nphys
    use dp_coupling,     only: p_d_coupling
    use parallel_mod,    only: par
@@ -238,6 +238,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    real(r8) :: dp(np,np,nlev),fq,fq0,qn0, ftmp(npsq,nlev,2)
    real(r8) :: tmp_dyn(np,np,nlev,nelemd)
    real(r8) :: fmtmp(np,np,nlev)
+   real(r8) :: p_m(np,np,nlev)    ! temporary midpoint pressure for DYN_OMEGA output
+   real(r8) :: p_i(np,np,nlevp)   ! temporary interface pressure for DYN_OMEGA output
+   real(r8) :: omega(np,np,nlev)  ! temporary omega for DYN_OMEGA output
    real(r8) :: dtime
    integer :: nlev_tot
    nlev_tot=(3+pcnst)*nlev
@@ -457,8 +460,15 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call outfld('DYN_Q'     ,dyn_in%elem(ie)%state%Q(:,:,:,1)       ,npsq,ie)
       call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
       call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
-      call outfld('DYN_OMEGA' ,dyn_in%elem(ie)%derived%omega_p(:,:,:) ,npsq,ie)
       call outfld('DYN_PS'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
+      ! Multiply omega_p by pressure t get omega for output
+      p_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0
+      do k = 1,nlev
+         p_i(:,:,k+1) = p_i(:,:,k) + dyn_in%elem(ie)%state%dp3d(:,:,k,tl_f)
+         p_m(:,:,k)   = ( p_i(:,:,k+1) + p_i(:,:,k) )/2
+         omega(:,:,k) = dyn_in%elem(ie)%derived%omega_p(:,:,k) * p_m(:,:,k)
+      enddo
+      call outfld('DYN_OMEGA',omega(:,:,:),npsq,ie)
    end do
    
    
@@ -478,22 +488,23 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    use cam_logfile, only: iulog
    real(r8), intent(in) :: dtime   ! Time-step
    real(r8) :: ftmp_temp(np,np,nlev,nelemd), ftmp_q(np,np,nlev,pcnst,nelemd)
-   real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
    real(r8) :: out_temp(npsq,nlev), out_q(npsq,nlev), out_u(npsq,nlev), &
                out_v(npsq,nlev), out_psv(npsq)  
    real(r8), parameter :: rad2deg = 180.0 / SHR_CONST_PI
-   real(r8), parameter :: fac = 1000._r8	
-   real(r8) :: term1, term2        
+   real(r8), parameter :: fac = 1000._r8	     
    type(cam_out_t),     intent(inout) :: cam_out(:) ! Output from CAM to surface
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type (dyn_import_t), intent(inout) :: dyn_in  ! Dynamics import container
    type (dyn_export_t), intent(inout) :: dyn_out ! Dynamics export container
    type (element_t), pointer :: elem(:)
    integer :: rc, i, j, k, p, ie, tl_f
+#if defined (E3SM_SCM_REPLAY)
+   real(r8) :: forcing_temp(npsq,nlev), forcing_q(npsq,nlev,pcnst)
+#endif   
    
    elem => dyn_out%elem
    
-#if (defined BFB_CAM_SCAM_IOP)   
+#if (defined E3SM_SCM_REPLAY)   
 
    tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
    
@@ -509,11 +520,11 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
      
      ! Update IOP properties e.g. omega, divT, divQ
      
-     iop_update_surface = .false. 
+     iop_update_phase1 = .false. 
      if (doiopupdate) then
        call scm_setinitial(elem)
-       call readiopdata(iop_update_surface,hyam,hybm)
-       call scm_setfield(elem)
+       call readiopdata(iop_update_phase1,hyam,hybm)
+       call scm_setfield(elem,iop_update_phase1)
      endif   
 
    endif   
@@ -524,7 +535,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
    call t_stopf  ('dyn_run')
    
    ! Update to get tendency 
-#if (defined BFB_CAM_SCAM_IOP) 
+#if (defined E3SM_SCM_REPLAY) 
 
    tl_f = TimeLevel%n0
    
@@ -533,15 +544,18 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
        do j=1,np
          do i=1,np
 	 
+           ! Note that this calculation will not provide b4b results with 
+	   !  an E3SM because the dynamics tendency is not computed in the exact
+	   !  same way as an E3SM run, introducing error with roundoff 
 	   forcing_temp(i+(j-1)*np,k) = (dyn_in%elem(ie)%state%T(i,j,k,tl_f) - &
-	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)
+	        ftmp_temp(i,j,k,ie))/dtime - dyn_in%elem(ie)%derived%FT(i,j,k)	
            out_temp(i+(j-1)*np,k) = dyn_in%elem(ie)%state%T(i,j,k,tl_f)
 	   out_u(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,1,k,tl_f)
 	   out_v(i+(j-1)*np,k) = dyn_in%elem(ie)%state%v(i,j,2,k,tl_f)
 	   out_q(i+(j-1)*np,k) = dyn_in%elem(ie)%state%Q(i,j,k,1)
 	   out_psv(i+(j-1)*np) = dyn_in%elem(ie)%state%ps_v(i,j,tl_f)
 
-	   do p=1,pcnst		
+	   do p=1,pcnst	 	
 	     forcing_q(i+(j-1)*np,k,p) = (dyn_in%elem(ie)%state%Q(i,j,k,p) - &
 	        ftmp_q(i,j,k,p,ie))/dtime
 	   enddo
@@ -550,12 +564,12 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
        enddo
      enddo
      
-     call outfld('divT3d',forcing_temp,npsq,ie)
      call outfld('Ps',out_psv,npsq,ie)
      call outfld('t',out_temp,npsq,ie)
      call outfld('q',out_q,npsq,ie)
      call outfld('u',out_u,npsq,ie)
      call outfld('v',out_v,npsq,ie)
+     call outfld('divT3d',forcing_temp,npsq,ie)
      do p=1,pcnst
        call outfld(trim(cnst_name(p))//'_dten',forcing_q(:,:,p),npsq,ie)   
      enddo

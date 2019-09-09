@@ -270,14 +270,16 @@ contains
     !----------------------------Local-Variables--------------------------------
     integer :: sb, eb, ie, high, low
     logical :: found
+    integer :: nphys_sq
     integer, save :: iedex_save = 1
     !---------------------------------------------------------------------------
     if(gblocks_need_initialized) call gblocks_init()
     if (fv_nphys > 0) then
 
-      ! Note: the max() is to fool the compiler debug mode when fv_nphys=0
-      blockid(1) = 1 + ( (gcol-1) / max(1,fv_nphys*fv_nphys) )
-      bcid(1) = 1 + mod(gcol-1, fv_nphys*fv_nphys)
+      ! Note: nphys_sq is to fool the compiler in debug mode when fv_nphys=0
+      nphys_sq = fv_nphys*fv_nphys
+      blockid(1) = 1 + (gcol-1) / nphys_sq
+      bcid(1) = 1 + mod(gcol-1, nphys_sq)
 
       if (present(localblockid)) then
          localblockid = -1
