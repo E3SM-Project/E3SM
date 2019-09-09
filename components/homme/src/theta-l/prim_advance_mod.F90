@@ -2203,8 +2203,6 @@ contains
                    ! condition number and thus residual depends strongly on dt and min(dz)
                    ! more work needed to exit iteration early based on residual error
   delta_phi(:,:,nlevp)=0
-  v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,np1)  
-  v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,np1)
   min_rcond=1e20
 
   do ie=nets,nete
@@ -2349,7 +2347,9 @@ contains
     max_itercnt=max(itercount,max_itercnt)
     max_deltaerr=max(deltaerr,max_deltaerr)
     max_reserr=max(reserr,max_reserr)
+#ifdef NEWTONCOND
     min_rcond=min(rcond,min_rcond)
+#endif
     itererr=min(max_reserr,max_deltaerr) ! passed back to ARKODE
     
     if (itercount >= maxiter) then
