@@ -830,12 +830,6 @@ CONTAINS
              write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE_IAF_JRA'
              call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE_IAF_JRA')
           endif
-          if (trim(datamode) == 'CORE_IAF_JRA' ) then
-             if (starcf < 1 ) then
-                write(logunit,F00) 'ERROR: tarcf must be in an input stream for CORE_IAF_JRA'
-                call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE_IAF_JRA')
-             endif
-          endif
           if (trim(factorFn) == 'null') then
              windFactor = 1.0_R8
              winddFactor = 1.0_R8
