@@ -32,6 +32,12 @@ struct Functions
       tabsize     = 12, // number of quantities used from lookup table
       rcollsize   = 30,
       coltabsize  = 2,  // number of ice-rain collection  quantities used from lookup table
+
+      // switch for warm-rain parameterization
+      // 1 => Seifert and Beheng 2001
+      // 2 => Beheng 1994
+      // 3 => Khairoutdinov and Kogan 2000
+      iparam      = 3,
     };
 
     static constexpr ScalarT lookup_table_1a_dum1_c =  4.135985029041767e+00; // 1.0/(0.1*log10(261.7))
@@ -238,6 +244,20 @@ struct Functions
   KOKKOS_INLINE_FUNCTION
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
+  // TODO: comment
+  KOKKOS_INLINE_FUNCTION
+  static void get_cloud_dsd2(
+    const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
+    const view_1d<const Scalar>& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm);
+
+  // TODO: comment
+  KOKKOS_INLINE_FUNCTION
+  static void get_rain_dsd2 (
+    const view_1d_table& mu_r_table,
+    const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
+    Spack& rdumii, IntSmallPack& dumii, Spack& lamr,
+    Spack& cdistr, Spack& logn0r);
+
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -252,6 +272,7 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 # include "p3_functions_math_impl.hpp"
 # include "p3_functions_table3_impl.hpp"
 # include "p3_functions_table_ice_impl.hpp"
+# include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
 #endif

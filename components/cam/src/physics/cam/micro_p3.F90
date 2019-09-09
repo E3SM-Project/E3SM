@@ -497,7 +497,7 @@ contains
          rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,       &
          tmparr1,inv_exner
 
-    real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi_tot, &
+    real(rtype)    :: mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi_tot, &
          dum,dum1,    &
          dum3,dum4,dum5,dum6, &
          dqsidt,abi,rhop,tmp1,  &
@@ -757,7 +757,7 @@ contains
           mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
           call get_cloud_dsd2(qc_incld(i,k),nc_incld(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,lamc(i,k),     &
-               lammin,lammax,cdist(i,k),cdist1(i,k),lcldm(i,k))
+               cdist(i,k),cdist1(i,k),lcldm(i,k))
           nc(i,k) = nc_incld(i,k)*lcldm(i,k)
 
           call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),lamr(i,k),   &
@@ -1130,7 +1130,7 @@ contains
 
        call cloud_sedimentation(kts,kte,ktop,kbot,kdir, &
          qc_incld(i,:),rho(i,:),inv_rho(i,:),lcldm(i,:),acn(i,:),inv_dzq(i,:), &
-         dt,odt,dnu,lammin,lammax,log_predictNc, &
+         dt,odt,dnu,log_predictNc, &
          qc(i,:),nc(i,:),nc_incld(i,:),mu_c(i,:),lamc(i,:),prt_liq(i),p3_tend_out(i,:,36),p3_tend_out(i,:,37))
 
        !------------------------------------------------------------------------------------------!
@@ -1168,7 +1168,7 @@ contains
           ! cloud:
           if (qc(i,k).ge.qsmall) then
              call get_cloud_dsd2(qc(i,k),nc(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,lamc(i,k),  &
-                  lammin,lammax,tmp1,tmp2,lcldm(i,k))
+                  tmp1,tmp2,lcldm(i,k))
              diag_effc(i,k) = 0.5_rtype*(mu_c(i,k)+3._rtype)/lamc(i,k)
           else
              qv(i,k) = qv(i,k)+qc(i,k)
@@ -1696,7 +1696,7 @@ contains
 
 
   !===========================================================================================
-  subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,lammin,lammax,cdist,cdist1,lcldm)
+  subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,lcldm)
 
     implicit none
 
@@ -3295,7 +3295,7 @@ end subroutine get_time_space_phys_variables
 
 subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
-   dt,odt,dnu,lammin,lammax,log_predictNc, &
+   dt,odt,dnu,log_predictNc, &
    qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend)
 
    implicit none
@@ -3311,8 +3311,6 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), intent(in) :: dt
    real(rtype), intent(in) :: odt
    real(rtype), dimension(:), intent(in) :: dnu
-   real(rtype), intent(in) :: lammin
-   real(rtype), intent(in) :: lammax
    logical, intent(in) :: log_predictNc
 
    real(rtype), intent(inout), dimension(kts:kte) :: qc
@@ -3380,7 +3378,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                qc_notsmall_c2: if (qc_incld(k)>qsmall) then
                   !-- compute Vq, Vn
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
-                  lamc(k),lammin,lammax,tmp1,tmp2,lcldm(k))
+                  lamc(k),tmp1,tmp2,lcldm(k))
 
                   nc(k) = nc_incld(k)*lcldm(k)
                   dum = 1._rtype/lamc(k)**bcn
@@ -3428,7 +3426,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             kloop_sedi_c1: do k = k_qxtop,k_qxbot,-kdir
                qc_notsmall_c1: if (qc_incld(k)>qsmall) then
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
-                  lamc(k),lammin,lammax,tmp1,tmp2,lcldm(k))
+                  lamc(k),tmp1,tmp2,lcldm(k))
                   nc(k) = nc_incld(k)*lcldm(k)
                   dum = 1._rtype/lamc(k)**bcn
                   V_qc(k) = acn(k)*gamma(4._rtype+bcn+mu_c(k))*dum/(gamma(mu_c(k)+4._rtype))

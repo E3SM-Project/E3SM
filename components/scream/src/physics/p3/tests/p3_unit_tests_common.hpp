@@ -59,6 +59,7 @@ struct UnitWrap {
     struct TestFind;
     struct TestUpwind;
     struct TestP3Func;
+    struct TestDsd2;
   };
 
 };
