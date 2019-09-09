@@ -119,6 +119,7 @@
         <command name="rm">craype-sandybridge</command>
         <command name="rm">craype-ivybridge</command>
         <command name="rm">craype</command>
+        <command name="rm">craype-hugepages2M</command>
         <command name="rm">papi</command>
         <command name="rm">cmake</command>
         <command name="rm">cray-petsc</command>
@@ -250,6 +251,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="rm">craype</command>
+        <command name="rm">craype-hugepages2M</command>
         <command name="rm">craype-mic-knl</command>
         <command name="rm">craype-haswell</command>
         <command name="rm">PrgEnv-intel</command>

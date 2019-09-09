@@ -1097,6 +1097,7 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="cori-haswell" COMPILER="intel">
+  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
@@ -1115,6 +1116,7 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="cori-knl" COMPILER="intel">
+  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CFLAGS>
     <append MPILIB="impi"> -axMIC-AVX512 -xCORE-AVX2 </append>
   </CFLAGS>
@@ -1252,7 +1254,7 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="ghost" COMPILER="intel">
-  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_20190904/albany-build/install</ALBANY_PATH>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
@@ -1630,7 +1632,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 </compiler>
 
 <compiler MACH="sandiatoss3" COMPILER="intel">
-  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
+  <ALBANY_PATH>/projects/ccsm/AlbanyTrilinos_20190904/albany-build/install</ALBANY_PATH>
   <CFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
   </CFLAGS>
