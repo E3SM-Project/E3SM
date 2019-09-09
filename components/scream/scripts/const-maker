@@ -42,6 +42,8 @@ def const_maker(varname, expr):
     print("C++:")
     print("static constexpr Scalar {} = {:22.15e}; // {}".format(varname, val, expr))
 
+    return True
+
 ###############################################################################
 def _main_func(description):
 ###############################################################################
