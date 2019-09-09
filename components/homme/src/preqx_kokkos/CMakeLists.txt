@@ -219,10 +219,10 @@ SET(USE_OPENACC FALSE)
 
 ENDMACRO(PREQX_KOKKOS_SETUP)
 
-PREQX_KOKKOS_SETUP()
-
 # Build exec only if HOMME_BUILD_EXECS is true
 IF (${HOMME_BUILD_EXECS})
+  PREQX_KOKKOS_SETUP()
+
   ############################################################################
   # createTestExec(exec_name exec_type NP NC PLEV USE_PIO USE_ENERGY QSIZE_D)
   ############################################################################
