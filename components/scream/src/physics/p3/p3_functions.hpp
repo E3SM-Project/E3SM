@@ -34,6 +34,7 @@ struct Functions
       coltabsize  = 2,  // number of ice-rain collection  quantities used from lookup table
     };
 
+    static constexpr ScalarT lookup_table_1a_dum1_c =  4.135985029041767e+00; // 1.0/(0.1*log10(261.7))
     static constexpr const char* p3_lookup_base = "p3_lookup_table_1.dat-v";
     static constexpr const char* p3_version = "2.8.2";
   };
@@ -238,6 +239,9 @@ struct Functions
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
 };
+
+template <typename ScalarT, typename DeviceT>
+constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 
 } // namespace p3
 } // namespace scream
