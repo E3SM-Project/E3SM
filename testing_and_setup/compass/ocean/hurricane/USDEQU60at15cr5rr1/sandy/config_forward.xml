@@ -9,13 +9,13 @@
 		<template file="forward_template.xml" path_base="script_configuration_dir"/>
 
 		<option name="config_time_integrator">'split_explicit'</option>
-		<option name="config_dt">'00:00:40'</option>
-		<option name="config_btr_dt">'0000_00:00:04'</option>
+		<option name="config_dt">'00:00:20'</option>
+		<option name="config_btr_dt">'0000_00:00:02'</option>
 <!--
-		<option name="config_dt">'00:00:25'</option>
+		<option name="config_dt">'00:00:12'</option>
 		<option name="config_time_integrator">'RK4'</option>
 -->
-		<option name="config_mom_del4">4.0e8</option>
+		<option name="config_mom_del4">4.0e4</option>
 
 	</namelist>
 
@@ -25,8 +25,8 @@
 
 	<run_script name="run.py">
 		<step executable="gpmetis">
-			<argument flag="graph.info">360</argument>
+			<argument flag="graph.info">720</argument>
 		</step>
-		<model_run procs="360" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="720" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>
 </config>

@@ -1,0 +1,8 @@
+<driver_script name="run_test.py">
+	<case name="init">
+		<step executable="./run.py" quiet="true" pre_message=" * Running init" post_message="     Complete"/>
+	</case>
+	<case name="forward">
+		<step executable="./run.py" quiet="true" pre_message=" * Running forward" post_message="     Complete"/>
+	</case>
+</driver_script>
