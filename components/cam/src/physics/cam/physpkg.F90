@@ -2287,11 +2287,16 @@ subroutine tphysbc (ztodt,               &
     real(r8), pointer, dimension(:,:) :: tcwat
     real(r8), pointer, dimension(:,:) :: icwat
     real(r8), pointer, dimension(:,:) :: scwat
+    real(r8), pointer, dimension(:,:) :: nlwat
+    real(r8), pointer, dimension(:,:) :: niwat
+
     real(r8):: ttend(pcols,pver)
     real(r8):: qtend(pcols,pver)
     real(r8):: ltend(pcols,pver)
     real(r8):: itend(pcols,pver)
     real(r8):: stend(pcols,pver)
+    real(r8):: nltend(pcols,pver)
+    real(r8):: nitend(pcols,pver)
     !SZhang
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
@@ -2699,6 +2704,11 @@ end if
                
         rztodt = 1.0_r8/ztodt
 
+        call cnst_get_ind('CLDLIQ', ixcldliq)
+        call cnst_get_ind('CLDICE', ixcldice)
+        call cnst_get_ind('NUMLIQ', ixnumliq)
+        call cnst_get_ind('NUMICE', ixnumice)
+
         itim_old  = pbuf_old_tim_idx()        
 
         ifld = pbuf_get_index('TCWAT_DBL')
@@ -2716,11 +2726,19 @@ end if
         ifld = pbuf_get_index('SCWAT_DBL')
         call pbuf_get_field(pbuf, ifld, scwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-        ttend(:ncol,:pver) = (state%t(:ncol,:pver) - tcwat(:ncol,:pver))*rztodt
-        qtend(:ncol,:pver) = (state%q(:ncol,:pver,1) - qcwat(:ncol,:pver))*rztodt 
-        ltend(:ncol,:pver) = (state%q(:ncol,:pver,ixcldliq) - lcwat(:ncol,:pver))*rztodt 
-        itend(:ncol,:pver) = (state%q(:ncol,:pver,ixcldice) - icwat(:ncol,:pver))*rztodt
-        stend(:ncol,:pver) = (state%s(:ncol,:pver) - scwat(:ncol,:pver))*rztodt ! Tendency of static energy
+        ifld = pbuf_get_index('NLWAT_DBL')
+        call pbuf_get_field(pbuf, ifld, nlwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+        ifld = pbuf_get_index('NIWAT_DBL')
+        call pbuf_get_field(pbuf, ifld, niwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+        ttend(:ncol,:pver)  = (state%t(:ncol,:pver) - tcwat(:ncol,:pver))*rztodt
+        qtend(:ncol,:pver)  = (state%q(:ncol,:pver,1) - qcwat(:ncol,:pver))*rztodt 
+        ltend(:ncol,:pver)  = (state%q(:ncol,:pver,ixcldliq) - lcwat(:ncol,:pver))*rztodt 
+        itend(:ncol,:pver)  = (state%q(:ncol,:pver,ixcldice) - icwat(:ncol,:pver))*rztodt
+        stend(:ncol,:pver)  = (state%s(:ncol,:pver) - scwat(:ncol,:pver))*rztodt ! Tendency of static energy
+        nltend(:ncol,:pver) = (state%q(:ncol,:pver,ixnumliq) - nlwat(:ncol,:pver))*rztodt
+        nitend(:ncol,:pver) = (state%q(:ncol,:pver,ixnumice) - niwat(:ncol,:pver))*rztodt
 
         !restore the state variable back to the previous step for the first substep  
         state%t(:ncol,:pver)          = tcwat(:ncol,:pver)
@@ -2728,6 +2746,8 @@ end if
         state%q(:ncol,:pver,ixcldliq) = lcwat(:ncol,:pver) 
         state%q(:ncol,:pver,ixcldice) = icwat(:ncol,:pver)
         state%s(:ncol,:pver)          = scwat(:ncol,:pver)
+        state%q(:ncol,:pver,ixnumliq) = nlwat(:ncol,:pver)
+        state%q(:ncol,:pver,ixnumice) = niwat(:ncol,:pver)
 
        end if 
 
@@ -2739,6 +2759,8 @@ end if
           state%q(:ncol,:pver,ixcldliq) = state%q(:ncol,:pver,ixcldliq)+ ltend(:ncol,:pver)*cld_macmic_ztodt
           state%q(:ncol,:pver,ixcldice) = state%q(:ncol,:pver,ixcldice)+ itend(:ncol,:pver)*cld_macmic_ztodt
           state%s(:ncol,:pver)          = state%s(:ncol,:pver)         + stend(:ncol,:pver)*cld_macmic_ztodt
+          state%q(:ncol,:pver,ixnumliq) = state%q(:ncol,:pver,ixnumliq)+ nltend(:ncol,:pver)*cld_macmic_ztodt
+          state%q(:ncol,:pver,ixnumice) = state%q(:ncol,:pver,ixnumice)+ nitend(:ncol,:pver)*cld_macmic_ztodt
         end if          
 
         if (l_st_mac) then
@@ -3032,6 +3054,8 @@ end if
 
      end if ! l_st_mic
 
+     if(l_dribling_tend) then
+
      !save tcwat, qcwat, lcwat, icwat for the next call of macrophysics
      itim_old  = pbuf_old_tim_idx()
 
@@ -3049,12 +3073,22 @@ end if
 
      ifld = pbuf_get_index('SCWAT_DBL')
      call pbuf_get_field(pbuf, ifld, scwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+ 
+     ifld = pbuf_get_index('NLWAT_DBL')
+     call pbuf_get_field(pbuf, ifld, nlwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
-     tcwat(:ncol,:pver) = state%t(:ncol,:pver)
-     qcwat(:ncol,:pver) = state%q(:ncol,:pver,1)
-     lcwat(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
-     icwat(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
-     scwat(:ncol,:pver) = state%s(:ncol,:pver)
+     ifld = pbuf_get_index('NIWAT_DBL')
+     call pbuf_get_field(pbuf, ifld, niwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+     tcwat(:ncol,:pver)  = state%t(:ncol,:pver)
+     qcwat(:ncol,:pver)  = state%q(:ncol,:pver,1)
+     lcwat(:ncol,:pver)  = state%q(:ncol,:pver,ixcldliq)
+     icwat(:ncol,:pver)  = state%q(:ncol,:pver,ixcldice)
+     scwat(:ncol,:pver)  = state%s(:ncol,:pver)
+     nlcwat(:ncol,:pver) = state%q(:ncol,:pver,ixnumliq)
+     nicwat(:ncol,:pver) = state%q(:ncol,:pver,ixnumice)
+
+     end if 
 
     ! write the liquid cloud fraction after macmic substepping
      if (macmic_extra_diag) then
