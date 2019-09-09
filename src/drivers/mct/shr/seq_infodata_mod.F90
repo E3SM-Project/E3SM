@@ -155,7 +155,7 @@ MODULE seq_infodata_mod
      logical                 :: histaux_a2x24hr ! cpl writes aux hist files: a2x daily all
      logical                 :: histaux_l2x1yrg ! cpl writes aux hist files: l2x annual glc forcings
      logical                 :: histaux_l2x     ! cpl writes aux hist files: l2x every c2l comm
-     logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x daily
+     logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x every c2o comm
      logical                 :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
      logical                 :: histavg_atm     ! cpl writes atm fields in average history file
      logical                 :: histavg_lnd     ! cpl writes lnd fields in average history file
@@ -393,7 +393,7 @@ CONTAINS
     logical                :: histaux_a2x24hr    ! cpl writes aux hist files: a2x daily all
     logical                :: histaux_l2x1yrg    ! cpl writes aux hist files: l2x annual glc forcings
     logical                :: histaux_l2x        ! cpl writes aux hist files: l2x every c2l comm
-    logical                :: histaux_r2x        ! cpl writes aux hist files: r2x daily
+    logical                :: histaux_r2x        ! cpl writes aux hist files: r2x every c2o comm
     logical                :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
     logical                :: histavg_atm        ! cpl writes atm fields in average history file
     logical                :: histavg_lnd        ! cpl writes lnd fields in average history file

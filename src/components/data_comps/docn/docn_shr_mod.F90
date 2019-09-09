@@ -28,6 +28,7 @@ module docn_shr_mod
   character(CL) , public :: restfilm              ! model restart file namelist
   character(CL) , public :: restfils              ! stream restart file namelist
   logical       , public :: force_prognostic_true ! if true set prognostic true
+  real(r8)      , public :: rce_sst               ! RCE SST
 
   ! variables obtained from namelist read
   character(CL) , public :: rest_file             ! restart filename
@@ -76,7 +77,7 @@ CONTAINS
 
     !----- define namelist -----
     namelist / docn_nml / &
-         decomp, restfilm, restfils, force_prognostic_true
+         decomp, restfilm, restfils, force_prognostic_true, rce_sst
 
     !----------------------------------------------------------------------------
     ! Determine input filenamname
@@ -93,6 +94,8 @@ CONTAINS
     restfilm   = trim(nullstr)
     restfils   = trim(nullstr)
     force_prognostic_true = .false.
+    rce_sst    = 26.85_r8   ! degrees C 300 - 273.15 = 26.85
+
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
@@ -107,11 +110,13 @@ CONTAINS
        write(logunit,F00)' restfilm   = ',trim(restfilm)
        write(logunit,F00)' restfils   = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
+       write(logunit,F02)' rce_sst = ',rce_sst
     endif
     call shr_mpi_bcast(decomp  ,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
+    call shr_mpi_bcast(rce_sst,mpicom,'rce_sst')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
