@@ -18,7 +18,7 @@ Options
 
 +-----------------+----------------------------------------------------------------+
 | Name            | Description                                                    |
-+=================+================================================================|
++=================+================================================================+
 | -h              | Display the help screen which describes the available options. |
 +-----------------+----------------------------------------------------------------+
 | -d, --dev       | Specify a path to the MPAS checkout to be tested.              |
@@ -90,7 +90,9 @@ Available Tests
 ===============
 
 1. **Regression**: Bit reproducibility is tested between the dev and base MPAS checkouts.
+
 2. **Parallelism**: Bit reproducibility is tested between different processor counts for the same
 dev MPAS checkout.
+
 3. **Restartability**: Bit reproducibility is tested between a standard run and a run with a restart
 half way through.
