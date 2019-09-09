@@ -11,7 +11,7 @@ include $(top_srcdir)/set_flags.am
 
 LDADD = libpio_tutil.la	\
 ${top_builddir}/src/flib/libpiof.la		\
-${top_builddir}/src/clib/libpio.la
+${top_builddir}/src/clib/libpioc.la
 
 # There is a test utility mod file in this subdir which must be built.
 SUBDIRS = util

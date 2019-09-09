@@ -24,7 +24,10 @@ module dust_model
 #if  ( defined MODAL_AERO_3MODE || defined MODAL_AERO_4MODE || defined MODAL_AERO_4MODE_MOM )
   character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a1', 'dst_a3', 'num_a1', 'num_a3' /)
   real(r8),         parameter :: dust_dmt_grd(dust_nbin+1) = (/ 0.1e-6_r8, 1.0e-6_r8, 10.0e-6_r8/)
-  real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.032_r8,0.968_r8 /)
+! Zender03: fractions of bin (0.1-1) and bin (1-10) in size 0.1-10
+!  real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.032_r8,0.968_r8 /)
+! Kok11: fractions of bin (0.1-1) and bin (1-10) in size 0.1-10
+  real(r8),         parameter :: dust_emis_sclfctr(dust_nbin) = (/ 0.011_r8,0.989_r8 /)
 #elif ( defined MODAL_AERO_7MODE || defined MODAL_AERO_9MODE )
   character(len=6), parameter :: dust_names(dust_nbin+dust_nnum) = (/ 'dst_a5', 'dst_a7', 'num_a5', 'num_a7' /)
   real(r8),         parameter :: dust_dmt_grd(dust_nbin+1) = (/ 0.1e-6_r8, 2.0e-6_r8, 10.0e-6_r8/)
@@ -140,7 +143,11 @@ module dust_model
 
           idst = dust_indices(m)
 
-          cflx(i,idst) = sum( -dust_flux_in(i,:) ) &
+       ! Correct the dust input flux calculated by CLM, which uses size distribution in Zender03
+       ! to calculate fraction of bin (0.1-10um) in range (0.1-20um) = 0.87
+       ! based on Kok11, that fraction is 0.73
+!          cflx(i,idst) = sum( -dust_flux_in(i,:) ) &
+          cflx(i,idst) = sum( -dust_flux_in(i,:) ) * 0.73_r8/0.87_r8 &
                * dust_emis_sclfctr(m)*soil_erod(i)/soil_erod_fact*1.15_r8
 
           x_mton = 6._r8 / (pi * dust_density * (dust_dmt_vwr(m)**3._r8))                

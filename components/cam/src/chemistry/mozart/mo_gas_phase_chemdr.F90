@@ -240,7 +240,7 @@ contains
 !
 ! LINOZ
 !
-    use lin_strat_chem,    only : do_lin_strat_chem, lin_strat_chem_solve
+    use lin_strat_chem,    only : do_lin_strat_chem, lin_strat_chem_solve, lin_strat_sfcsink
     use linoz_data,        only : has_linoz_data
 !
 ! for aqueous chemistry and aerosol growth
@@ -376,6 +376,7 @@ contains
     real(r8) :: mmr_tend(pcols,pver,gas_pcnst) ! chemistry species tendencies (kg/kg/s)
     real(r8) :: qh2o(pcols,pver)               ! specific humidity (kg/kg)
     real(r8) :: delta
+    real(r8) :: o3lsfcsink(ncol)               ! linoz o3l surface sink from call lin_strat_sfcsink 
 
   ! for aerosol formation....  
     real(r8) :: del_h2so4_gasprod(ncol,pver)
@@ -485,17 +486,17 @@ contains
     !-----------------------------------------------------------------------      
     !        ... set tropospheric ozone for Linoz_MAM  (pjc, 2015)
     !-----------------------------------------------------------------------
-    if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) then
+!    if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
+!       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) then
 !     write(iulog,*) 'Set tropospheric ozone for linoz_mam: inv_ndx_cnst_o3 =',inv_ndx_cnst_o3
-      do k = 1, pver                !Following loop logic from below.  However, reordering loops can get rid of IF statement.
-         do i = 1, ncol
-            if( k > troplev(i) ) then
-              vmr(i,k,o3_ndx) = invariants(i,k,inv_ndx_cnst_o3) / invariants(i,k,inv_ndx_m)   ! O3 and cnst_o3
-            endif
-         end do
-      end do
-    end if
+!      do k = 1, pver                !Following loop logic from below.  However, reordering loops can get rid of IF statement.
+!         do i = 1, ncol
+!            if( k > troplev(i) ) then
+!              vmr(i,k,o3_ndx) = invariants(i,k,inv_ndx_cnst_o3) / invariants(i,k,inv_ndx_m)   ! O3 and cnst_o3
+!            endif
+!         end do
+!      end do
+!    end if
 
 
     if (carma_do_hetchem) then 
@@ -853,6 +854,7 @@ contains
 !
     if ( do_lin_strat_chem ) then
        call lin_strat_chem_solve( ncol, lchnk, vmr(:,:,o3_ndx), col_dens(:,:,1), tfld, zen_angle, pmid, delt, rlats, troplev )
+       call   lin_strat_sfcsink (ncol, lchnk,  vmr(:,:,o3_ndx), delt, pdel(:ncol,:))
     end if
 
     !-----------------------------------------------------------------------      

@@ -67,7 +67,7 @@
 <zmconv_ke>5.e-6</zmconv_ke>
 <effgw_oro>0.25</effgw_oro>
 <seasalt_emis_scale>0.85</seasalt_emis_scale>
-<dust_emis_fact>2.05D0</dust_emis_fact>
+<dust_emis_fact>0.95D0</dust_emis_fact>
 <clubb_gamma_coef>0.32</clubb_gamma_coef>
 <clubb_gamma_coefb>0.32</clubb_gamma_coefb>
 <clubb_C8>4.3</clubb_C8>
@@ -143,6 +143,9 @@
 <linoz_data_file            >linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >INTERP_MISSING_MONTHS</linoz_data_type>
+
+<!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
+<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
 
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>1850-2000</sim_year>

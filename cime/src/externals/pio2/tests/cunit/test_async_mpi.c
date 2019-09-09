@@ -430,8 +430,8 @@ int main(int argc, char **argv)
 		    int ioroot = 0;
 		    int msg = MSG_EXIT;
 		    
-                    if (verbose)
-                        printf("my_rank %d sending exit message on union_comm %d\n", my_rank, union_comm[cmp]);
+                    /* if (verbose) */
+                    /*     printf("my_rank %d sending exit message on union_comm %d\n", my_rank, union_comm[cmp]); */
                     if ((mpierr = MPI_Send(&msg, 1, MPI_INT, ioroot, 1, union_comm[cmp])))
                         MPIERR(mpierr);
                 }
