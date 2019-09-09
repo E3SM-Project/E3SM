@@ -3085,8 +3085,8 @@ end if
      lcwat(:ncol,:pver)  = state%q(:ncol,:pver,ixcldliq)
      icwat(:ncol,:pver)  = state%q(:ncol,:pver,ixcldice)
      scwat(:ncol,:pver)  = state%s(:ncol,:pver)
-     nlcwat(:ncol,:pver) = state%q(:ncol,:pver,ixnumliq)
-     nicwat(:ncol,:pver) = state%q(:ncol,:pver,ixnumice)
+     nlwat(:ncol,:pver) = state%q(:ncol,:pver,ixnumliq)
+     niwat(:ncol,:pver) = state%q(:ncol,:pver,ixnumice)
 
      end if 
 
