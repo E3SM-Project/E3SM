@@ -1735,7 +1735,7 @@ contains
          col_wf%qflx_dew_snow(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_irrig_patch(bounds%begp:bounds%endp), &
+         veg_wf%qflx_irrig(bounds%begp:bounds%endp), &
          col_wf%qflx_irrig(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &

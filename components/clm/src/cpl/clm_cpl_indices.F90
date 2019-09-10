@@ -28,7 +28,6 @@ module clm_cpl_indices
   integer, public ::index_l2x_Flrl_rofgwl     ! lnd->rtm input liquid gwl fluxes
   integer, public ::index_l2x_Flrl_rofsub     ! lnd->rtm input liquid subsurface fluxes
   integer, public ::index_l2x_Flrl_rofi       ! lnd->rtm input frozen fluxes
-  integer, public ::index_l2x_Flrl_demand     ! lnd->rtm input total fluxes (<= 0)
 
   integer, public ::index_l2x_Sl_t            ! temperature
   integer, public ::index_l2x_Sl_tref         ! 2m reference temperature
@@ -105,7 +104,6 @@ module clm_cpl_indices
   integer, public ::index_x2l_Flrr_flood      ! rtm->lnd rof (flood) flux
   integer, public ::index_x2l_Flrr_volr       ! rtm->lnd rof volr total volume
   integer, public ::index_x2l_Flrr_volrmch    ! rtm->lnd rof volr main channel volume
-  integer, public ::index_x2l_Flrr_supply     ! rtm->lnd rof supply for land use
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_x2l_Sg_frac(0:glc_nec_max)   = 0   ! Fraction of glacier from glc model
@@ -169,7 +167,6 @@ contains
     index_l2x_Flrl_rofgwl   = mct_avect_indexra(l2x,'Flrl_rofgwl')
     index_l2x_Flrl_rofsub   = mct_avect_indexra(l2x,'Flrl_rofsub')
     index_l2x_Flrl_rofi     = mct_avect_indexra(l2x,'Flrl_rofi')
-    index_l2x_Flrl_demand   = mct_avect_indexra(l2x,'Flrl_demand')
 
     index_l2x_Sl_t          = mct_avect_indexra(l2x,'Sl_t')
     index_l2x_Sl_snowh      = mct_avect_indexra(l2x,'Sl_snowh')
@@ -232,8 +229,7 @@ contains
 
     index_x2l_Flrr_volr     = mct_avect_indexra(x2l,'Flrr_volr')
     index_x2l_Flrr_volrmch  = mct_avect_indexra(x2l,'Flrr_volrmch')
-    index_x2l_Flrr_supply   = mct_avect_indexra(x2l,'Flrr_supply')
-	
+
     index_x2l_Faxa_lwdn     = mct_avect_indexra(x2l,'Faxa_lwdn')
     index_x2l_Faxa_rainc    = mct_avect_indexra(x2l,'Faxa_rainc')
     index_x2l_Faxa_rainl    = mct_avect_indexra(x2l,'Faxa_rainl')

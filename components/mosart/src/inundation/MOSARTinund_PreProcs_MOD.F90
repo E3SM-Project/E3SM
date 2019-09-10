@@ -1,6 +1,7 @@
 
 MODULE MOSARTinund_PreProcs_MOD
 
+!#ifdef INCLUDE_INUND
 !-----------------------------------------------------------------------------
 ! DESCRIPTION: Pre-processing for MOSART-Inundation.
 ! 
@@ -365,5 +366,6 @@ MODULE MOSARTinund_PreProcs_MOD
   end function interpolation_linear
 
 !-----------------------------------------------------------------------------
+!#endif
   
 end MODULE MOSARTinund_PreProcs_MOD

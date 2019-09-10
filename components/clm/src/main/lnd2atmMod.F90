@@ -293,11 +293,6 @@ contains
          col_wf%qflx_h2osfc_surf (bounds%begc:bounds%endc), &
          lnd2atm_vars%qflx_rofliq_qsurp_grc  (bounds%begg:bounds%endg), &
          c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
-		 
-    call c2g( bounds, &
-         col_wf%qflx_irr_demand (bounds%begc:bounds%endc), &
-         lnd2atm_vars%qflx_irr_demand_grc   (bounds%begg:bounds%endg), &
-         c2l_scale_type= 'urbanf', l2g_scale_type='unity' )
 
     call c2g( bounds, &
          col_wf%qflx_drain (bounds%begc:bounds%endc), &

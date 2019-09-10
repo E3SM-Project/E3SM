@@ -90,7 +90,7 @@ contains
     integer*2 :: temp(1,500000)
     integer :: xtoget, ytoget, thisx, thisy, calday_start
     character(len=200) metsource_str, thisline
-    character(len=*), parameter :: sub = 'lnd_import_mct'
+    character(len=32), parameter :: sub = 'lnd_import_mct'
     integer :: av, v, n, nummetdims, g3, gtoget, ztoget, line, mystart, tod_start, thistimelen  
     character(len=20) aerovars(14), metvars(14)
     character(len=3) zst
@@ -179,7 +179,6 @@ contains
 
        atm2lnd_vars%volr_grc(g)   = x2l(index_x2l_Flrr_volr,i) * (ldomain%area(g) * 1.e6_r8)
        atm2lnd_vars%volrmch_grc(g)= x2l(index_x2l_Flrr_volrmch,i) * (ldomain%area(g) * 1.e6_r8)
-       atm2lnd_vars%supply_grc(g) = x2l(index_x2l_Flrr_supply,i)
 
        ! Determine required receive fields
 
@@ -1169,7 +1168,6 @@ contains
     use shr_kind_mod       , only : r8 => shr_kind_r8
     use clm_varctl         , only : iulog, create_glacier_mec_landunit
     use clm_time_manager   , only : get_nstep, get_step_size  
-    use domainMod          , only : ldomain
     use seq_drydep_mod     , only : n_drydep
     use shr_megan_mod      , only : shr_megan_mechcomps_n
     !
@@ -1186,7 +1184,6 @@ contains
     integer  :: nstep ! time step index
     integer  :: dtime ! time step   
     integer  :: num   ! counter
-    character(len=*), parameter :: sub = 'lnd_export_mct'
     !---------------------------------------------------------------------------
 
     ! cesm sign convention is that fluxes are positive downward
@@ -1251,13 +1248,6 @@ contains
        l2x(index_l2x_Flrl_rofsub,i) = lnd2atm_vars%qflx_rofliq_qsub_grc(g) &
                                     + lnd2atm_vars%qflx_rofliq_qsubp_grc(g)   !  perched drainiage
        l2x(index_l2x_Flrl_rofgwl,i) = lnd2atm_vars%qflx_rofliq_qgwl_grc(g)
-  
-       l2x(index_l2x_Flrl_demand,i) =  lnd2atm_vars%qflx_irr_demand_grc(g)   ! needs to be filled in
-       if (l2x(index_l2x_Flrl_demand,i) > 0.0_r8) then
-           write(iulog,*)'lnd2atm_vars%qflx_irr_demand_grc is',lnd2atm_vars%qflx_irr_demand_grc(g)
-           write(iulog,*)'l2x(index_l2x_Flrl_demand,i) is',l2x(index_l2x_Flrl_demand,i)
-           call endrun( sub//' ERROR: demand must be <= 0.')
-       endif
 
        ! glc coupling
 

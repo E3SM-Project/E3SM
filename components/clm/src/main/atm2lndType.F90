@@ -104,8 +104,7 @@ module atm2lndType
      real(r8), pointer :: forc_flood_grc                (:)   => null() ! rof flood (mm/s)
      real(r8), pointer :: volr_grc                      (:)   => null() ! rof volr total volume (m3)
      real(r8), pointer :: volrmch_grc                   (:)   => null() ! rof volr main channel (m3)
-     real(r8), pointer :: supply_grc                    (:)   => null() ! rof volr supply (mm/s)
-	 
+
      ! anomaly forcing
      real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing 
      real(r8), pointer :: af_uwind_grc                  (:)   => null() ! anomaly forcing 
@@ -252,7 +251,6 @@ contains
     allocate(this%forc_flood_grc                (begg:endg))        ; this%forc_flood_grc                (:)   = ival
     allocate(this%volr_grc                      (begg:endg))        ; this%volr_grc                      (:)   = ival
     allocate(this%volrmch_grc                   (begg:endg))        ; this%volrmch_grc                   (:)   = ival
-    allocate(this%supply_grc                    (begg:endg))        ; this%supply_grc                    (:)   = ival
 
     ! anomaly forcing
     allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
@@ -314,11 +312,6 @@ contains
     call hist_addfld1d (fname='VOLRMCH',  units='m3',  &
          avgflag='A', long_name='river channel main channel water storage', &
          ptr_lnd=this%volrmch_grc)
-		 
-    this%supply_grc(begg:endg) = spval
-    call hist_addfld1d (fname='SUPPLY',  units='mm/s',  &
-         avgflag='A', long_name='runoff supply for land use', &
-         ptr_lnd=this%supply_grc)
 
 !    this%forc_wind_grc(begg:endg) = spval
 !    call hist_addfld1d (fname='WIND', units='m/s',  &

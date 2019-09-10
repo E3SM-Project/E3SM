@@ -1,6 +1,7 @@
 
 MODULE MOSARTinund_Core_MOD
 
+!#ifdef INCLUDE_INUND
 !--------------------------------------------------------------------------------------
 ! DESCRIPTION: Core simulation of MOSART-Inundation.
 ! 

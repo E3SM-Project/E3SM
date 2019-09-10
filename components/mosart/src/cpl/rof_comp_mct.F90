@@ -35,11 +35,10 @@ module rof_comp_mct
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
                                 index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
-                                index_x2r_Flrl_rofdto, index_x2r_Flrl_demand, &
+                                index_x2r_Flrl_rofdto, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
-                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
-                                index_r2x_Flrr_supply
+                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
 
   use mct_mod
   use ESMF
@@ -253,11 +252,11 @@ contains
        lsize = mct_gsMap_lsize(gsMap_rof, mpicom_rof)
        call rof_domain_mct( lsize, gsMap_rof, dom_r )
        
-       ! Initialize lnd -> mosart attribute vector
+       ! Initialize lnd -> mosart attribute vector		
        call mct_aVect_init(x2r_r, rList=seq_flds_x2r_fields, lsize=lsize)
        call mct_aVect_zero(x2r_r)
        
-       ! Initialize mosart -> ocn attribute vector
+       ! Initialize mosart -> ocn attribute vector		
        call mct_aVect_init(r2x_r, rList=seq_flds_r2x_fields, lsize=lsize)
        call mct_aVect_zero(r2x_r) 
        
@@ -595,12 +594,11 @@ contains
        else
           rtmCTL%qdto(n,nliq) = 0.0_r8
        endif
-      rtmCTL%qdem(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand,n2) * (rtmCTL%area(n)*0.001_r8)
+
        rtmCTL%qsur(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
-       rtmCTL%qdem(n,nfrz) = 0.0_r8
 
     enddo
 
@@ -697,10 +695,6 @@ contains
        r2x_r%rattr(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
        r2x_r%rattr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
        r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
-       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8 
-       if (wrmflag) then
-          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s (Tian)
-       endif
     end do
 
   end subroutine rof_export_mct
