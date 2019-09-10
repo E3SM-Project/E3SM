@@ -5,7 +5,7 @@ namespace scream {
 namespace p3 {
 
 /*
- * Explicit instatiation for doing p3 table functions on Reals using the
+ * Explicit instantiation for doing p3 table functions on Reals using the
  * default device.
  */
 

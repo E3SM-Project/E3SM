@@ -113,7 +113,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     if(((qidep - (1.0 - ratio))!=0.0).any()){errors++;}
 
     // Now actually check conservation. We are basically checking here that
-    // qcaut, the only non-zero source, is corrected so that within a dt
+    // qcaut, the only non-zero sink, is corrected so that within a dt
     // it does not overshoot qc.
     if(((qcaut*dt - qc) != 0.0).any()){errors++;}
 
