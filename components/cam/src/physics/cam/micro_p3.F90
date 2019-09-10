@@ -3188,7 +3188,7 @@ qidep,qisub,nisub,qiberg)
    real(rtype), intent(in)  :: qv
    real(rtype), intent(out) :: qidep
    real(rtype), intent(out) :: qisub
-   real(rtype), intent(out) :: nisub 
+   real(rtype), intent(out) :: nisub
    real(rtype), intent(out) :: qiberg
 
    real(rtype) :: oabi
