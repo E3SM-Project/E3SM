@@ -189,7 +189,7 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
   *proc = P3F::apply_table_coll(qiti_gt_small, adjusted_index, P3GlobalForFortran::itabcol(), ti, tr)[0];
 }
 
-void cloud_water_conservation_f(Real qc_, Real qcnuc_, Real dt, Real* qcaut_, Real* qcacc_, Real* qccol_, 
+void cloud_water_conservation_f(Real qc_, Real qcnuc_, Real dt, Real* qcaut_, Real* qcacc_, Real* qccol_,
   Real* qcheti_, Real* qcshd_, Real* qiberg_, Real* qisub_, Real* qidep_)
   {
     using P3F = Functions<Real, HostDevice>;
@@ -205,7 +205,7 @@ void cloud_water_conservation_f(Real qc_, Real qcnuc_, Real dt, Real* qcaut_, Re
     typename P3F::Spack qisub(*qisub_);
     typename P3F::Spack qidep(*qidep_);
 
-    P3F::cloud_water_conservation(qc, qcnuc, dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep); 
+    P3F::cloud_water_conservation(qc, qcnuc, dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
   }
 
 void rain_water_conservation_f(Real qr_, Real qcaut_, Real qcacc_, Real qimlt_, Real qcshd_,
@@ -223,9 +223,12 @@ void rain_water_conservation_f(Real qr_, Real qcaut_, Real qcacc_, Real qimlt_, 
     typename P3F::Spack qrheti(*qrheti_);
 
     P3F::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti);
+    *qrevp_ = qrevp[0];
+    *qrcol_ = qrcol[0];
+    *qrheti_ = qrheti[0];
   }
 
-void ice_water_conservation_f(Real qitot_, Real qidep_, Real qinuc_, Real qiberg_, Real qrcol_, Real qccol_, 
+void ice_water_conservation_f(Real qitot_, Real qidep_, Real qinuc_, Real qiberg_, Real qrcol_, Real qccol_,
   Real qrheti_, Real qcheti_, Real dt, Real* qisub_, Real* qimlt_)
 {
     using P3F = Functions<Real, HostDevice>;
@@ -241,6 +244,9 @@ void ice_water_conservation_f(Real qitot_, Real qidep_, Real qinuc_, Real qiberg
     typename P3F::Spack qimlt(*qimlt_);
 
     P3F::ice_water_conservation(qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt, qisub, qimlt);
+    *qisub_ = qisub[0]; 
+    *qimlt_ = qimlt[0]; 
+
 }
 
 } // namespace p3

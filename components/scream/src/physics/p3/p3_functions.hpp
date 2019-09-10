@@ -263,6 +263,7 @@ struct Functions
 # include "p3_functions_table_ice_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
+# include "p3_functions_conservation_impl.hpp"
 #endif
 
 #endif

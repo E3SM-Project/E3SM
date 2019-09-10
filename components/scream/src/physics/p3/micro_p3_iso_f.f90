@@ -69,7 +69,7 @@ interface
     qisub,qimlt) bind(C)
     use iso_c_binding
 
-    real(kind=c_real), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
+    real(kind=c_real), value, intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
     real(kind=c_real), intent(inout) :: qisub, qimlt
 
   end subroutine ice_water_conservation_f

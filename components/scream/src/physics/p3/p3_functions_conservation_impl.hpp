@@ -55,7 +55,7 @@ void Functions<S,D>
   Spack sources = qr + (qcaut+qcacc+qimlt+qcshd)*dt; // Sources of rain water
   Spack ratio;
 
-  Smask enforce_conservation  = sinks > sources && sinks >= 1e-20;  // determine if  conservation corrction is necessary 
+  Smask enforce_conservation  = sinks > sources && sinks >= 1e-20;  // determine if  conservation corrction is necessary
 
   if (enforce_conservation.any()){
     ratio.set(enforce_conservation, sources/sinks);
@@ -82,6 +82,7 @@ void Functions<S,D>
     qisub.set(enforce_conservation, qisub*ratio);
     qimlt.set(enforce_conservation, qimlt*ratio);
   }
+
 }
 
 } // namespace p3

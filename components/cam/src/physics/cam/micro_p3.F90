@@ -2905,11 +2905,11 @@ subroutine cloud_water_conservation(qc,qcnuc,dt,    &
    real(rtype) :: sinks, sources, ratio
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   if (use_cxx) then
-      call  cloud_water_conservation_f(qc,qcnuc,dt,    &
-         qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
-      return
-   endif
+ !  if (use_cxx) then
+  !    call  cloud_water_conservation_f(qc,qcnuc,dt,    &
+ !        qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
+!      return
+!   endif
 #endif
 
    sinks   = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt
@@ -2956,7 +2956,7 @@ subroutine rain_water_conservation(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
    if (use_cxx) then
       call  rain_water_conservation_f(qr,qcaut,qcacc,qimlt,qcshd,dt,    &
          qrevp,qrcol,qrheti)
-      return 
+      return
    endif
 #endif
 
@@ -2988,7 +2988,7 @@ subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qc
    if (use_cxx) then
       call  ice_water_conservation_f(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,dt,    &
       qisub,qimlt)
-      return 
+      return
    endif
 #endif
 
@@ -3000,7 +3000,6 @@ subroutine ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qc
       qisub = qisub*ratio
       qimlt = qimlt*ratio
    endif
-
 
 end subroutine ice_water_conservation
 
@@ -3189,7 +3188,7 @@ qidep,qisub,nisub,qiberg)
    real(rtype), intent(in)  :: qv
    real(rtype), intent(out) :: qidep
    real(rtype), intent(out) :: qisub
-   real(rtype), intent(out) :: nisub
+   real(rtype), intent(out) :: nisub 
    real(rtype), intent(out) :: qiberg
 
    real(rtype) :: oabi
