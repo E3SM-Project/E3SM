@@ -32,11 +32,11 @@ struct UnitWrap::UnitTest<D>::TestP3Func
     const Spack temps(temperature);
     const Spack pres(pressure);
 
-    Spack sat_ice_p = Functions::polysvp1(temps, true);
-    Spack sat_liq_p = Functions::polysvp1(temps, false);
+    const auto sat_ice_p = Functions::polysvp1(temps, true);
+    const auto sat_liq_p = Functions::polysvp1(temps, false);
 
-    Spack mix_ice_r = Functions::qv_sat(temps, pres, true);
-    Spack mix_liq_r = Functions::qv_sat(temps, pres, false);
+    const auto mix_ice_r = Functions::qv_sat(temps, pres, true);
+    const auto mix_liq_r = Functions::qv_sat(temps, pres, false);
 
     // The correct results were computed with double precision, so we need
     // significantly greater tolerance for single precision.
@@ -97,7 +97,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Spack qisub(1.0);
     Spack qidep(1.0);
 
-    Spack ratio(qc/(qcaut * dt));
+    const auto ratio = qc/(qcaut * dt);
     Functions::cloud_water_conservation(qc, qcnuc, dt,
     qcaut,qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
 
@@ -140,7 +140,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Spack qrcol(0.0);
     Spack qrheti(0.0);
 
-    Spack ratio(qr/(qrevp * dt));
+    const auto ratio = qr/(qrevp * dt);
     //Call function being tested
     Functions::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, dt, qrevp, qrcol, qrheti);
 
@@ -173,7 +173,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Spack qisub(1e-4);
     Spack qimlt(0.0);
 
-    Spack ratio(qitot/(qisub * dt));
+    const auto ratio = qitot/(qisub * dt);
 
     //Call function being tested
     Functions::ice_water_conservation(qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt, qisub, qimlt);
