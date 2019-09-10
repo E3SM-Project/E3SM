@@ -37,6 +37,7 @@ struct Constants
   static constexpr Scalar PIOV6       = Pi*SXTH;
   static constexpr Scalar CONS1       = PIOV6*RHOW;
   static constexpr Scalar QSMALL      = 1.e-14;
+  static constexpr Scalar QTENDSMALL = 1e-20;
   static constexpr Scalar NSMALL      = 1.e-16;
   static constexpr Scalar P0          = 100000.0;        // reference pressure, Pa
   static constexpr Scalar RD          = 287.15;          // gas constant for dry air, J/kg/K
@@ -51,6 +52,9 @@ constexpr Scalar Constants<Scalar>::NSMALL;
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::QSMALL;
+
+template <typename Scalar>
+constexpr Scalar Constants<Scalar>::QTENDSMALL;
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::Tmelt;

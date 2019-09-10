@@ -2,6 +2,7 @@
 #define P3_FUNCTIONS_CONSERVATION_IMPL_HPP
 
 #include "p3_functions.hpp"
+#include "p3_constants.hpp"
 
 namespace scream {
 namespace p3 {
@@ -16,7 +17,7 @@ void Functions<S,D>
   Spack sources = qc + (qcnuc)*dt; // Source of cloud water
   Spack ratio;
 
-  Smask enforce_conservation  = sinks > sources && sinks >= 1e-20;  // determine if  conservation corrction is necessary
+  Smask enforce_conservation  = sinks > sources && sinks >= C::QTENDSMALL;  // determine if  conservation corrction is necessary
   Smask nothing_todo = !enforce_conservation;
 
   if (enforce_conservation.any()){
@@ -38,7 +39,7 @@ void Functions<S,D>
   //"ratio" of timestep and vapor deposition and sublimation  for the
   //remaining frac of the timestep.  Only limit if there will be cloud
   // water to begin with.
-  enforce_conservation = sources > 1e-20;
+  enforce_conservation = sources > C::QTENDSMALL;
   if (enforce_conservation.any()){
     qidep.set(enforce_conservation, qidep*(1.0-ratio));
     qisub.set(enforce_conservation, qisub*(1.0-ratio));
@@ -55,7 +56,7 @@ void Functions<S,D>
   Spack sources = qr + (qcaut+qcacc+qimlt+qcshd)*dt; // Sources of rain water
   Spack ratio;
 
-  Smask enforce_conservation  = sinks > sources && sinks >= 1e-20;  // determine if  conservation corrction is necessary
+  Smask enforce_conservation  = sinks > sources && sinks >= C::QTENDSMALL;  // determine if  conservation corrction is necessary
 
   if (enforce_conservation.any()){
     ratio.set(enforce_conservation, sources/sinks);
@@ -75,7 +76,7 @@ void Functions<S,D>
   Spack sources = qitot + (qidep+qinuc+qrcol+qccol+qrheti+qcheti+qiberg)*dt; // Sources of ice water
   Spack ratio;
 
-  Smask enforce_conservation  = sinks > sources && sinks >= 1e-20;  // determine if  conservation corrction is necessary
+  Smask enforce_conservation  = sinks > sources && sinks >= C::QTENDSMALL;  // determine if  conservation corrction is necessary
 
   if(enforce_conservation.any()){
     ratio.set(enforce_conservation, sources/sinks);
