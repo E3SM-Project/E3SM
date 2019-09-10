@@ -57,7 +57,7 @@ module micro_p3
 
   public  :: p3_init,p3_main
 
-  logical :: use_cxx =  .true.
+  logical :: use_cxx = .true.
 
   ! protected items should be treated as private for everyone except tests
 
