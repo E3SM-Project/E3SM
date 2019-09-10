@@ -1501,8 +1501,10 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
+         calvingThickness = 0.0_RKIND
+
          ! === apply calving ===
-         where (li_mask_is_floating_ice(cellMask) .and. (calvingMask /= 0))
+         where (li_mask_is_floating_ice(cellMask) .and. (calvingMask >= 1))
             calvingThickness = thickness
             thickness = 0.0_RKIND
          end where
