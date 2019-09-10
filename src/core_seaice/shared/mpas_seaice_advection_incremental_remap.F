@@ -4872,8 +4872,9 @@ contains
     allocate(maxLocal(nCategories))
     allocate(minLocal(nCategories))
 
-    !$omp parallel do default(shared) private(maxNeighbor,minNeighbor,iEdgeOnCell,iCellNeighbor,&
-    !$omp&  iCat,maxLocal,minLocal,iVertex,deviationAtVertex,gradFactor,gradFactor1,gradFactor2)
+    !$omp parallel do default(shared) private(iEdgeOnCell,iCellNeighbor,&
+    !$omp&  iCat,iVertex,deviationAtVertex,gradFactor,gradFactor1,gradFactor2) &
+    !$omp&  firstprivate(maxNeighbor,minNeighbor,maxLocal,minLocal)
     do iCell = 1, nCells
 
        if (maskCell(iCell) == 1) then   ! ice is present
@@ -5085,8 +5086,9 @@ contains
     allocate(maxLocal(nLayers,nCategories))
     allocate(minLocal(nLayers,nCategories))
 
-    !$omp parallel do default(shared) private(maxNeighbor,minNeighbor,iEdgeOnCell,iCellNeighbor,&
-    !$omp&  iCat,iLayer,maxLocal,minLocal,iVertex,deviationAtVertex,gradFactor,gradFactor1,gradFactor2)
+    !$omp parallel do default(shared) private(iEdgeOnCell,iCellNeighbor,&
+    !$omp&  iCat,iLayer,iVertex,deviationAtVertex,gradFactor,gradFactor1,gradFactor2) &
+    !$omp&  firstprivate(maxNeighbor,minNeighbor,maxLocal,minLocal)
     do iCell = 1, nCells
 
        if (maskCell(iCell) == 1) then  ! ice is present
@@ -6797,7 +6799,7 @@ contains
 
        if (thisTracer % ndims == 2) then
 
-          !$omp parallel do default(shared) private(iTri,iCell,tracerIntegral2D,iqp,iCat)
+          !$omp parallel do default(shared) firstprivate(tracerIntegral2D) private(iTri,iCell,iqp,iCat)
           do iEdge = 1, nEdges
              if (maskEdge(iEdge) == 1) then
 
@@ -6840,7 +6842,7 @@ contains
 
        elseif (thisTracer % ndims == 3) then
 
-          !$omp parallel do default(shared) private(iTri,iCell,tracerIntegral3D,iqp,iCat,iLayer)
+          !$omp parallel do default(shared) firstprivate(tracerIntegral3D) private(iTri,iCell,iqp,iCat,iLayer)
           do iEdge = 1, nEdges
              if (maskEdge(iEdge) == 1) then
 
@@ -7255,7 +7257,7 @@ contains
 
           allocate (fluxFromCell2D(nCategories))
 
-          !$omp parallel do default(shared) private(fluxFromCell2D,iEdgeOnCell,iEdge,edgeSignOnCell,iCat)
+          !$omp parallel do default(shared) firstprivate(fluxFromCell2D) private(iEdgeOnCell,iEdge,edgeSignOnCell,iCat)
           do iCell = 1, nCellsSolve
 
              fluxFromCell2D = 0.0_RKIND
@@ -7337,7 +7339,7 @@ contains
 
           allocate (fluxFromCell3D(nLayers,nCategories))
 
-          !$omp parallel do default(shared) private(fluxFromCell3D,iEdgeOnCell,iEdge,edgeSignOnCell,iCat,iLayer)
+          !$omp parallel do default(shared) firstprivate(fluxFromCell3D) private(iEdgeOnCell,iEdge,edgeSignOnCell,iCat,iLayer)
           do iCell = 1, nCellsSolve
 
              fluxFromCell3D = 0.0_RKIND

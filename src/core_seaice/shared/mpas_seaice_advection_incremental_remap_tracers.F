@@ -38,16 +38,16 @@ module seaice_advection_incremental_remap_tracers
                            ! (nLayer1, nLayer2, nCategories, nCells) for 3D
 
       ! tracer arrays
-      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: array2D => null()
-      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: array3D => null()
+      real(kind=RKIND), dimension(:,:),   pointer :: array2D => null()
+      real(kind=RKIND), dimension(:,:,:), pointer :: array3D => null()
 
       ! mass*tracer products
       ! = mass for mass field
       ! = mass*tracer1 for tracers with one parent
       ! = mass*tracer1*tracer2 for tracers with two parents
       ! = mass*tracer1*tracer2*tracer3 for tracers with three parents
-      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: massTracerProduct2D => null()
-      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: massTracerProduct3D => null()
+      real(kind=RKIND), dimension(:,:),   pointer :: massTracerProduct2D => null()
+      real(kind=RKIND), dimension(:,:,:), pointer :: massTracerProduct3D => null()
 
       !TODO - Replace with one field, 2 time levels?
       ! global sums (over all cells)
@@ -70,14 +70,14 @@ module seaice_advection_incremental_remap_tracers
       ! fluxes across cell edges
       !                   (nCategories, nEdges) for 2D
       !          (nLayers, nCategories, nEdges) for 3D
-      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: edgeFlux2D => null()
-      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: edgeFlux3D => null()
+      real(kind=RKIND), dimension(:,:),   pointer :: edgeFlux2D => null()
+      real(kind=RKIND), dimension(:,:,:), pointer :: edgeFlux3D => null()
 
       ! tracer values at each quadrature point of departure triangles
       !                  (nCategories, nQuadPoints, nTriPerEdge, nEdges) for 2D
       !          (nLayers,nCategories, nQuadPoints, nTriPerEdge, nEdges) for 3D
-      real(kind=RKIND), dimension(:,:,:,:),   contiguous, pointer :: triangleValue2D => null()
-      real(kind=RKIND), dimension(:,:,:,:,:), contiguous, pointer :: triangleValue3D => null()
+      real(kind=RKIND), dimension(:,:,:,:),   pointer :: triangleValue2D => null()
+      real(kind=RKIND), dimension(:,:,:,:,:), pointer :: triangleValue3D => null()
 
       ! coordinates of barycenter associated with this tracer
       ! The term 'barycenter' refers to a center of mass or related quantity, as distinct from the geometric center.
@@ -88,25 +88,25 @@ module seaice_advection_incremental_remap_tracers
       ! The barycenter for this tracer is the location where the child tracer value (array2D or array3D) is located.
       ! Only mass-type fields (nParents = 0) are located at the geometric cell center.
 
-      real(kind=RKIND), dimension(:,:),     contiguous, pointer :: xBarycenter2D => null()
-      real(kind=RKIND), dimension(:,:,:),   contiguous, pointer :: xBarycenter3D => null()
+      real(kind=RKIND), dimension(:,:),   pointer :: xBarycenter2D => null()
+      real(kind=RKIND), dimension(:,:,:), pointer :: xBarycenter3D => null()
 
-      real(kind=RKIND), dimension(:,:),     contiguous, pointer :: yBarycenter2D => null()
-      real(kind=RKIND), dimension(:,:,:),   contiguous, pointer :: yBarycenter3D => null()
+      real(kind=RKIND), dimension(:,:),   pointer :: yBarycenter2D => null()
+      real(kind=RKIND), dimension(:,:,:), pointer :: yBarycenter3D => null()
 
       ! quantities needed for linear reconstruction (value at cell center plus x and y gradients)
       ! Note: The center value is the value at the geometric cell center and generally is
       !  difference from the value at the barycenter.
       ! xGrad and yGrad are the gradient components defined at the cell center
 
-      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: center2D => null()
-      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: center3D => null()
+      real(kind=RKIND), dimension(:,:),   pointer :: center2D => null()
+      real(kind=RKIND), dimension(:,:,:), pointer :: center3D => null()
 
-      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: xGrad2D => null()
-      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: xGrad3D => null()
+      real(kind=RKIND), dimension(:,:),   pointer :: xGrad2D => null()
+      real(kind=RKIND), dimension(:,:,:), pointer :: xGrad3D => null()
 
-      real(kind=RKIND), dimension(:,:),   contiguous, pointer :: yGrad2D => null()
-      real(kind=RKIND), dimension(:,:,:), contiguous, pointer :: yGrad3D => null()
+      real(kind=RKIND), dimension(:,:),   pointer :: yGrad2D => null()
+      real(kind=RKIND), dimension(:,:,:), pointer :: yGrad3D => null()
 
       ! pointer to parent tracer
       type(tracer_type), pointer :: parent => null()
