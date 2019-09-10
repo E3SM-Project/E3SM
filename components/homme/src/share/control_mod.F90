@@ -13,7 +13,6 @@ module control_mod
   integer, public, parameter :: MAX_FILE_LEN=240
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)
 
-! experimental option for preqx model:
   ! Tracer transport algorithm type:
   !     0  spectral-element Eulerian
   !    12 interpolation semi-Lagrangian
@@ -181,6 +180,9 @@ module control_mod
   integer, public, parameter :: neast = 8
   
   logical, public :: disable_diagnostics  = .FALSE.
+
+  ! Physgrid parameters
+  integer, public :: se_fv_phys_remap_alg = 0
 
 
 
