@@ -1314,6 +1314,10 @@ end subroutine diag_conv_tend_ini
           call vertinterp(ncol, pcols, pver, state%pmid, 97500._r8, ftem, p_surf)
           call outfld('RH975', p_surf, pcols, lchnk)
        end if
+       if (hist_fld_active('RH950')) then
+          call vertinterp(ncol, pcols, pver, state%pmid, 95000._r8, ftem, p_surf)
+          call outfld('RH950', p_surf, pcols, lchnk)
+       end if
        if (hist_fld_active('RH925')) then
           call vertinterp(ncol, pcols, pver, state%pmid, 92500._r8, ftem, p_surf)
           call outfld('RH925', p_surf, pcols, lchnk)
