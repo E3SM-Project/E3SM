@@ -249,7 +249,7 @@ contains
     qisub,qimlt) bind(C)
     use micro_p3, only: ice_water_conservation
 
-    real(kind=c_real), intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
+    real(kind=c_real), value, intent(in) :: qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, dt
     real(kind=c_real), intent(inout) :: qisub, qimlt
 
     call ice_water_conservation(qitot,qidep,qinuc,qrcol,qccol,qrheti,qcheti,qiberg,dt,qisub,qimlt)
