@@ -28,7 +28,7 @@ module inidat
 contains
 
   subroutine read_inidat( ncid_ini, ncid_topo, dyn_in)
-    use dyn_comp,                only: dyn_import_t, hvcoord
+    use dyn_comp,                only: dyn_import_t, hvcoord, dom_mt
     use parallel_mod,            only: par
     use bndry_mod,               only: bndry_exchangev
     use constituents,            only: cnst_name, cnst_read_iv, qmin
@@ -60,6 +60,8 @@ contains
     use se_single_column_mod,    only: scm_setinitial
     use element_ops,             only: set_thermostate
     use fv_physics_coupling_mod, only: fv_phys_to_dyn_topo
+    use control_mod,             only: se_fv_phys_remap_alg
+    use gllfvremap_mod,          only: gfr_fv_phys_to_dyn_topo
     implicit none
     type(file_desc_t),intent(inout) :: ncid_ini, ncid_topo
     type (dyn_import_t), target, intent(inout) :: dyn_in   ! dynamics import
@@ -455,10 +457,14 @@ contains
       fieldname = 'PHIS'
       tmp(:,1,:) = 0.0_r8
       if (fv_nphys > 0) then
-         call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
-                    1, nelemd, phys_tmp, found, gridname='physgrid_d')
          ! Copy phis field to GLL grid
-         call fv_phys_to_dyn_topo(elem,phys_tmp)
+         call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
+              1, nelemd, phys_tmp, found, gridname='physgrid_d')
+         if (se_fv_phys_remap_alg == 0) then
+            call fv_phys_to_dyn_topo(elem,phys_tmp)
+         else
+            call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phys_tmp)
+         end if
       else
          call infld(fieldname, ncid_topo, ncol_name,      &
             1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
