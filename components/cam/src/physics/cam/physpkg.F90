@@ -3080,13 +3080,18 @@ end if
      ifld = pbuf_get_index('NIWAT_DBL')
      call pbuf_get_field(pbuf, ifld, niwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
 
+     call cnst_get_ind('CLDLIQ', ixcldliq)
+     call cnst_get_ind('CLDICE', ixcldice)
+     call cnst_get_ind('NUMLIQ', ixnumliq)
+     call cnst_get_ind('NUMICE', ixnumice)
+
      tcwat(:ncol,:pver)  = state%t(:ncol,:pver)
      qcwat(:ncol,:pver)  = state%q(:ncol,:pver,1)
      lcwat(:ncol,:pver)  = state%q(:ncol,:pver,ixcldliq)
      icwat(:ncol,:pver)  = state%q(:ncol,:pver,ixcldice)
      scwat(:ncol,:pver)  = state%s(:ncol,:pver)
-     nlwat(:ncol,:pver) = state%q(:ncol,:pver,ixnumliq)
-     niwat(:ncol,:pver) = state%q(:ncol,:pver,ixnumice)
+     nlwat(:ncol,:pver)  = state%q(:ncol,:pver,ixnumliq)
+     niwat(:ncol,:pver)  = state%q(:ncol,:pver,ixnumice)
 
      end if 
 
