@@ -1,0 +1,104 @@
+&velocity_solver
+    config_velocity_solver = 'FO'
+    config_unrealistic_velocity = 0.01592356685
+/
+
+&advection
+    config_thickness_advection = 'fo'
+    config_tracer_advection = 'none'
+/
+
+&thermal_solver
+    config_thermal_solver = 'none'
+    config_thermal_calculate_bmb = .true.
+    config_temperature_init = 'file'
+    config_surface_air_temperature_source = 'file'
+    config_basal_heat_flux_source = 'file'
+/
+
+&iceshelf_melt
+    config_basal_mass_bal_float = 'ismip6'
+/
+
+&calving
+    config_calving = 'none'
+    config_calving_topography = -500.0
+    config_calving_thickness = 100.0
+    config_calving_eigencalving_parameter_source = 'data'
+    config_calving_eigencalving_parameter_scalar_value = 3.5e16
+    config_data_calving = .false.
+    config_calving_timescale = 0.0
+    config_restore_calving_front = .true.
+    config_remove_icebergs = .true.
+    config_remove_small_islands = .true.
+/
+
+&physical_parameters
+    config_ice_density = 910.0
+    config_default_flowParamA = 3.1709792e-24
+    config_flowLawExponent = 3.0
+    !config_dynamic_thickness = 10.0
+    config_dynamic_thickness = 11.0
+    config_flowLawExponent = 3.0
+/
+
+&time_integration
+    config_dt = '0001-00-00_00:00:00'
+    config_time_integration = 'forward_euler'
+    config_adaptive_timestep = .true.
+    config_min_adaptive_timestep = 60.0
+    config_max_adaptive_timestep = 1.575e10
+    config_adaptive_timestep_CFL_fraction = 0.8
+    config_adaptive_timestep_include_DCFL = .false.
+    config_adaptive_timestep_force_interval = '0001-00-00_00:00:00'
+/
+
+&time_management
+!    config_do_restart = .false. 
+!    config_start_time = '2015-01-01_00:00:00'
+    config_do_restart = .true.
+    config_start_time = 'file'
+    config_restart_timestamp_name = 'restart_timestamp'
+    config_stop_time = '2100-01-01_00:00:00'
+    config_calendar_type = 'gregorian_noleap'
+/
+
+&io
+    config_write_output_on_startup = .true.
+    config_pio_num_iotasks = 200
+    config_pio_stride = 32
+    config_year_digits = 4
+/
+
+&decomposition
+    config_num_halos = 2
+    config_number_of_blocks = 0
+    config_explicit_proc_decomp = .false.
+    !config_block_decomp_file_prefix = 'weighted.graph.info.100to1.part.'
+    !config_proc_decomp_file_prefix = 'weighted.graph.info.100to1.part.'
+    config_block_decomp_file_prefix = 'graph.info.part.'
+    config_proc_decomp_file_prefix = 'graph.info.part.'
+/
+
+&debug
+    config_print_thickness_advection_info = .true.
+    config_print_calving_info = .true.
+    config_print_thermal_info = .false.
+    config_always_compute_fem_grid = .false.
+    config_print_velocity_cleanup_details = .false.
+/
+
+&AM_globalStats
+    config_AM_globalStats_enable = .true.
+    config_AM_globalStats_compute_interval = '0000-00-00_01:00:00'
+    config_AM_globalStats_compute_on_startup = .true.
+    config_AM_globalStats_write_on_startup = .true.
+/
+
+&AM_regionalStats
+    config_AM_regionalStats_enable = .true.
+    config_AM_regionalStats_compute_interval = '0000-00-00_01:00:00'
+    config_AM_regionalStats_compute_on_startup = .true.
+    config_AM_regionalStats_write_on_startup = .true.
+/
+
