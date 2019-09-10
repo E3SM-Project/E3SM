@@ -10,6 +10,17 @@
 namespace scream {
 namespace util {
 
+struct TestSession {
+  static TestSession& get () {
+    static TestSession s;
+    return s;
+  }
+
+  std::map<std::string,std::string> params;
+private:
+  TestSession() = default;
+};
+
 template <typename rngAlg, typename PDF>
 void genRandArray(int *const x, int length, rngAlg &engine, PDF &&pdf) {
   for (int i = 0; i < length; ++i) {
