@@ -2905,11 +2905,11 @@ subroutine cloud_water_conservation(qc,qcnuc,dt,    &
    real(rtype) :: sinks, sources, ratio
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
- !  if (use_cxx) then
-  !    call  cloud_water_conservation_f(qc,qcnuc,dt,    &
- !        qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
-!      return
-!   endif
+   if (use_cxx) then
+      call  cloud_water_conservation_f(qc,qcnuc,dt,    &
+         qcaut,qcacc,qccol,qcheti,qcshd,qiberg,qisub,qidep)
+      return
+   endif
 #endif
 
    sinks   = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt

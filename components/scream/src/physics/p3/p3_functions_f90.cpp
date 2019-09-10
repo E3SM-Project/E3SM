@@ -206,6 +206,14 @@ void cloud_water_conservation_f(Real qc_, Real qcnuc_, Real dt, Real* qcaut_, Re
     typename P3F::Spack qidep(*qidep_);
 
     P3F::cloud_water_conservation(qc, qcnuc, dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+    *qcaut_ = qcaut[0];
+    *qcacc_ = qcacc[0];
+    *qccol_ = qccol[0];
+    *qcheti_ = qcheti[0];
+    *qcshd_ = qcshd[0]; 
+    *qiberg_ = qiberg[0]; 
+    *qisub_ = qisub[0]; 
+    *qidep_ = qidep[0]; 
   }
 
 void rain_water_conservation_f(Real qr_, Real qcaut_, Real qcacc_, Real qimlt_, Real qcshd_,
