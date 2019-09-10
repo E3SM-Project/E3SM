@@ -28,6 +28,11 @@ void access_lookup_table_c(Int dumjj, Int dumii, Int dumi, Int index,
 void access_lookup_table_coll_c(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
                                 Real dum1, Real dum3, Real dum4, Real dum5, Real* proc);
 
+void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* dnu, Real* lamc,
+                      Real* cdist, Real* cdist1, Real lcldm);
+
+void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
+
 }
 
 namespace scream {
@@ -76,6 +81,18 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
 }
 
+void get_cloud_dsd2(GetCloudDsd2Data& d)
+{
+  p3_init(true);
+  get_cloud_dsd2_c(d.qc, &d.nc, &d.mu_c, d.rho, &d.nu, d.dnu, &d.lamc, &d.cdist, &d.cdist1, d.lcldm);
+}
+
+void get_rain_dsd2(GetRainDsd2Data& d)
+{
+  p3_init(true);
+  get_rain_dsd2_c(d.qr, &d.nr, &d.mu_r, &d.lamr, &d.cdistr, &d.logn0r, d.rcldm);
+}
+
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
 
 const P3GlobalForFortran::Views& P3GlobalForFortran::get()
@@ -83,6 +100,7 @@ const P3GlobalForFortran::Views& P3GlobalForFortran::get()
   if (!P3GlobalForFortran::s_views) {
     P3GlobalForFortran::s_views = std::make_shared<Views>();
     P3F::init_kokkos_ice_lookup_tables(s_views->m_itab, s_views->m_itabcol);
+    P3F::init_kokkos_tables(s_views->m_vn_table, s_views->m_vm_table, s_views->m_mu_r_table, s_views->m_dnu);
   }
   return *P3GlobalForFortran::s_views;
 }
@@ -99,10 +117,7 @@ void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
   using P3F = Functions<Real, HostDevice>;
 
   typename P3F::Smask qiti_gt_small(true);
-  typename P3F::Spack qitot(qitot_);
-  typename P3F::Spack nitot(nitot_);
-  typename P3F::Spack qirim(qirim_);
-  typename P3F::Spack rhop(rhop_);
+  typename P3F::Spack qitot(qitot_), nitot(nitot_), qirim(qirim_), rhop(rhop_);
   typename P3F::TableIce t;
   P3F::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t);
 
@@ -123,8 +138,7 @@ void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr_, Real nr_)
   using P3F = Functions<Real, HostDevice>;
 
   typename P3F::Smask qiti_gt_small(true);
-  typename P3F::Spack qr(qr_);
-  typename P3F::Spack nr(nr_);
+  typename P3F::Spack qr(qr_), nr(nr_);
   typename P3F::TableRain t;
   P3F::lookup_rain(qiti_gt_small, qr, nr, t);
 
@@ -179,6 +193,44 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
   tr.dum3 = dum3;
 
   *proc = P3F::apply_table_coll(qiti_gt_small, adjusted_index, P3GlobalForFortran::itabcol(), ti, tr)[0];
+}
+
+void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Real* dnu_, Real* lamc_,
+                      Real* cdist_, Real* cdist1_, Real lcldm_)
+{
+  using P3F = Functions<Real, HostDevice>;
+
+  typename P3F::Smask qc_gt_small(qc_ > P3F::C::NSMALL); // TODO: check these
+  typename P3F::Spack qc(qc_), nc(*nc_), rho(rho_), lcldm(lcldm_);
+
+  typename P3F::Spack mu_c, nu, lamc, cdist, cdist1;
+
+  P3F::get_cloud_dsd2(qc_gt_small, qc, nc, mu_c, rho, nu, P3GlobalForFortran::dnu(), lamc, cdist, cdist1, lcldm);
+
+  *nc_     = nc[0];
+  *mu_c_   = mu_c[0];
+  *nu_     = nu[0];
+  *lamc_   = lamc[0];
+  *cdist_  = cdist[0];
+  *cdist1_ = cdist1[0];
+}
+
+void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr_, Real* logn0r_, Real rcldm_)
+{
+  using P3F = Functions<Real, HostDevice>;
+
+  typename P3F::Smask qr_gt_small(qr_ > P3F::C::NSMALL);
+  typename P3F::Spack qr(qr_), rcldm(rcldm_), nr(*nr_);
+  typename P3F::Spack lamr, mu_r, cdistr, logn0r, rdumii;
+  typename P3F::IntSmallPack dumii;
+
+  P3F::get_rain_dsd2(P3GlobalForFortran::mu_r_table(), qr_gt_small, qr, nr, mu_r, rdumii, dumii, lamr, cdistr, logn0r);
+
+  *nr_     = nr[0];
+  *mu_r_   = mu_r[0];
+  *lamr_   = lamr[0];
+  *cdistr_ = cdistr[0];
+  *logn0r_ = logn0r[0];
 }
 
 } // namespace p3

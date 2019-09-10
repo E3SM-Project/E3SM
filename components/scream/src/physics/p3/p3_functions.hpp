@@ -38,6 +38,7 @@ struct Functions
       // 2 => Beheng 1994
       // 3 => Khairoutdinov and Kogan 2000
       iparam      = 3,
+      dnusize     = 16,
     };
 
     static constexpr ScalarT lookup_table_1a_dum1_c =  4.135985029041767e+00; // 1.0/(0.1*log10(261.7))
@@ -113,13 +114,17 @@ struct Functions
   // ice lookup table values for ice-rain collision/collection
   using view_itabcol_table = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::coltabsize]>;
 
+  // droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
+  // warm rain autoconversion/accretion option only (iparam = 1)
+  using view_dnu_table = typename KT::template view_1d_table<Scalar, P3C::dnusize>;
+
   //
   // --------- Functions ---------
   //
 
   // Call from host to initialize the static table entries.
   static void init_kokkos_tables(
-    view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table);
+    view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table, view_dnu_table& dnu);
 
   static void init_kokkos_ice_lookup_tables(
     view_itab_table& itab, view_itabcol_table& itabcol);
@@ -250,7 +255,7 @@ struct Functions
     const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
     const view_1d<const Scalar>& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm);
 
-  // TODO: comment
+  // Computes and returns rain size distribution parameters
   KOKKOS_INLINE_FUNCTION
   static void get_rain_dsd2 (
     const view_1d_table& mu_r_table,

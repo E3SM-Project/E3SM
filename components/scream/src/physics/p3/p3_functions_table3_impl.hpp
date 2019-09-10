@@ -85,18 +85,21 @@ typename Functions<S,D>::Spack Functions<S,D>
 
 template <typename S, typename D>
 void Functions<S,D>
-::init_kokkos_tables (view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table) {
+::init_kokkos_tables (view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table, view_dnu_table& dnu) {
   // initialize on host
 
-  using DeviceTable1 = typename view_1d_table::non_const_type;
-  using DeviceTable2 = typename view_2d_table::non_const_type;
+  using DeviceTable1   = typename view_1d_table::non_const_type;
+  using DeviceTable2   = typename view_2d_table::non_const_type;
+  using DeviceDnuTable = typename view_dnu_table::non_const_type;
 
-  const auto vn_table_d = DeviceTable2("vn_table");
-  const auto vm_table_d = DeviceTable2("vm_table");
+  const auto vn_table_d   = DeviceTable2("vn_table");
+  const auto vm_table_d   = DeviceTable2("vm_table");
   const auto mu_r_table_d = DeviceTable1("mu_r_table");
-  const auto vn_table_h = Kokkos::create_mirror_view(vn_table_d);
-  const auto vm_table_h = Kokkos::create_mirror_view(vm_table_d);
-  const auto mu_table_h = Kokkos::create_mirror_view(mu_r_table_d);
+  const auto dnu_table_d  = DeviceDnuTable("dnu");
+  const auto vn_table_h  = Kokkos::create_mirror_view(vn_table_d);
+  const auto vm_table_h  = Kokkos::create_mirror_view(vm_table_d);
+  const auto mu_table_h  = Kokkos::create_mirror_view(mu_r_table_d);
+  const auto dnu_table_h = Kokkos::create_mirror_view(dnu_table_d);
 
   scream_require(G::VN_TABLE.size()    == vn_table_h.extent(0) && G::VN_TABLE.size() > 0);
   scream_require(G::VN_TABLE[0].size() == vn_table_h.extent(1));
@@ -115,13 +118,32 @@ void Functions<S,D>
     mu_table_h(i) = G::MU_R_TABLE[i];
   }
 
+  dnu_table_h(0)  =  0.000;
+  dnu_table_h(1)  = -0.557;
+  dnu_table_h(2)  = -0.430;
+  dnu_table_h(3)  = -0.307;
+  dnu_table_h(4)  = -0.186;
+  dnu_table_h(5)  = -0.067;
+  dnu_table_h(6)  = -0.050;
+  dnu_table_h(7)  = -0.167;
+  dnu_table_h(8)  = -0.282;
+  dnu_table_h(9)  = -0.397;
+  dnu_table_h(10) = -0.512;
+  dnu_table_h(11) = -0.626;
+  dnu_table_h(12) = -0.739;
+  dnu_table_h(13) = -0.853;
+  dnu_table_h(14) = -0.966;
+  dnu_table_h(15) = -0.966;
+
   // deep copy to device
   Kokkos::deep_copy(vn_table_d, vn_table_h);
   Kokkos::deep_copy(vm_table_d, vm_table_h);
   Kokkos::deep_copy(mu_r_table_d, mu_table_h);
-  vn_table = vn_table_d;
-  vm_table = vm_table_d;
+  Kokkos::deep_copy(dnu_table_d, dnu_table_h);
+  vn_table   = vn_table_d;
+  vm_table   = vm_table_d;
   mu_r_table = mu_r_table_d;
+  dnu        = dnu_table_d;
 }
 
 } // namespace p3
