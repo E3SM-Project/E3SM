@@ -39,7 +39,7 @@ public:
   // Get the required grid for subcomponent
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert("SE Physics");
+    s.insert(m_p3_params.get<std::string>("Grid"));
     return s;
   }
 
@@ -72,6 +72,8 @@ protected:
 
   util::TimeStamp   m_current_ts;
   Comm              m_p3_comm;
+
+  ParameterList     m_p3_params;
 
 }; // class P3Microphysics
 

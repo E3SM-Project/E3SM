@@ -16,13 +16,11 @@ class DummyPhysicsGrid : public SEGrid
 {
 public:
   DummyPhysicsGrid (const int num_cols)
-   : SEGrid("Physics",GridType::SE_NodeBased)
+   : SEGrid("Physics",GridType::SE_NodeBased,num_cols)
   {
-    m_num_dofs = num_cols;
+    // Nothing to do here
   }
   ~DummyPhysicsGrid () = default;
-
-protected:
 };
 
 TEST_CASE("shoc-stand-alone", "") {

@@ -45,7 +45,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
     m_grid = grids_manager->get_grid(m_name);
 
-    auto num_cols = m_grid->get_num_dofs();
+    auto num_cols = m_grid->get_num_local_dofs();
 
     std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
     std::vector<int> dims = {num_cols, m_params.get<int>("Number of vector components")};
@@ -114,7 +114,7 @@ protected:
   Field<const Real,device_type> m_input;
   Field<Real,device_type>       m_output;
 
-  std::shared_ptr<AbstractGrid> m_grid;
+  std::shared_ptr<const AbstractGrid>   m_grid;
 
   std::string m_name;
 

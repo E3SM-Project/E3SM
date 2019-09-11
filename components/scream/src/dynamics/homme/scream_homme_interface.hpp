@@ -19,8 +19,9 @@ bool was_init_homme2_called_f90 ();
 void run_homme_f90 (const double& dt);
 void finalize_homme_f90 ();
 
-void get_elem_cols_gids_f90 (const int& ie, int* const& gids);
 int get_num_owned_columns_f90 ();
+void get_elem_cols_gids_f90 (long* const& gids);
+void get_unique_cols_f90 (long* const& gids, int* const& elgp);
 int get_homme_int_param_value_f90(const char** name);
 double get_homme_real_param_value_f90 (const char** name);
 bool get_homme_bool_param_value_f90(const char** name);

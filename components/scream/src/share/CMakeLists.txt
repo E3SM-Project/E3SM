@@ -35,6 +35,8 @@ set(SHARE_HEADERS
   grid/grids_manager.hpp
   grid/user_provided_grids_manager.hpp
   remap/abstract_remapper.hpp
+  remap/identity_remapper.hpp
+  remap/inverse_remapper.hpp
   parameter_list.hpp
   scream_session.hpp
   mpi/scream_comm.hpp

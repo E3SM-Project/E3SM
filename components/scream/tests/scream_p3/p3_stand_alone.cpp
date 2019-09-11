@@ -16,13 +16,11 @@ class DummyPhysicsGrid : public SEGrid
 {
 public:
   DummyPhysicsGrid (const int num_cols)
-   : SEGrid("Physics",GridType::SE_NodeBased)
+   : SEGrid("Physics",GridType::SE_NodeBased,num_cols)
   {
-    m_num_dofs = num_cols;
+    // Nothing to do here
   }
   ~DummyPhysicsGrid () = default;
-
-protected:
 };
 
 TEST_CASE("p3-stand-alone", "") {
@@ -41,6 +39,7 @@ TEST_CASE("p3-stand-alone", "") {
 
   auto& p0 = proc_params.sublist("Process 0");
   p0.set<std::string>("Process Name", "P3");
+  p0.set<std::string>("Grid","Physics");
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","User Provided");

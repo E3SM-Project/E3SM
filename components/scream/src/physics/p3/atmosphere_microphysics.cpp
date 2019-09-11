@@ -6,12 +6,16 @@ namespace scream
 {
 
 // =========================================================================================
-P3Microphysics::P3Microphysics (const Comm& comm,const ParameterList& /* params */)
-  : m_p3_comm (comm)
+P3Microphysics::P3Microphysics (const Comm& comm,const ParameterList& params)
+ : m_p3_comm (comm)
+ , m_p3_params (params)
 {
 /* Anything that can be initialized without grid information can be initialized here.
  * Like universal constants, table lookups, p3 options.
 */
+  if (!m_p3_params.isParameter("Grid")) {
+    m_p3_params.set("Grid",std::string("SE Physics"));
+  }
 }
 
 // =========================================================================================
@@ -27,45 +31,41 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   Qdp.set_string("kg/kg Pa");
 
   constexpr int NVL = 72;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
-  constexpr int QSZ =  9;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
+  constexpr int QSZ =  35;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
-  auto grid = grids_manager->get_grid("SE Physics");
-  const int num_dofs = grid->get_num_dofs();
+  const auto& grid_name = m_p3_params.get<std::string>("Grid");
+  auto grid = grids_manager->get_grid(grid_name);
+  const int num_dofs = grid->get_num_local_dofs();
   const int nc = num_dofs;
 
-  auto VL = FieldTag::VerticalLevel;
-  auto CO = FieldTag::Column;
-  auto VR = FieldTag::Variable;
-  auto TL = FieldTag::TimeLevel;
+  using namespace ShortFieldTagsNames;
 
-  FieldLayout scalar3d_layout { {CO,VL}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
-  FieldLayout scalar3d_layout_int { {CO,VL}, {nc,NVL+1} }; // Note that C++ and Fortran read array dimensions in reverse
-  FieldLayout vector3d_layout { {CO,VR,VL}, {nc,QSZ,NVL} };
-  FieldLayout tracers_state_layout { {CO,TL,VR,VL}, {nc,2,4,NVL} };
-  FieldLayout scalar_state_3d_mid_layout { {CO,TL,VL} , {nc,2,NVL}};
-  FieldLayout q_forcing_layout  { {CO,VR,VL}, {nc,4,NVL} };
+  FieldLayout scalar3d_layout_mid { {COL,VL}, {nc,NVL} }; // Note that C++ and Fortran read array dimensions in reverse
+  FieldLayout scalar3d_layout_int { {COL,VL}, {nc,NVL+1} }; // Note that C++ and Fortran read array dimensions in reverse
+  FieldLayout vector3d_layout_mid{ {COL,CMP,VL}, {nc,QSZ,NVL} };
+  FieldLayout tracers_layout { {COL,VAR,VL}, {nc,QSZ,NVL} };
 
   // set requirements
-//  m_required_fields.emplace("P3_req_test",  scalar3d_layout,   units::one, "Physics");
-//  m_required_fields.emplace("ASD_req_test",  scalar3d_layout,   units::one, "Physics");
+//  m_required_fields.emplace("P3_req_test",  scalar3d_layout,   units::one, grid_name);
+//  m_required_fields.emplace("ASD_req_test",  scalar3d_layout,   units::one, grid_name);
   // Inputs from Dynamics
-  m_required_fields.emplace("dp", scalar_state_3d_mid_layout,    Pa,             "Physics");
-  m_required_fields.emplace("qdp", tracers_state_layout,        Qdp,          grid->name());  
+  m_required_fields.emplace("dp", scalar3d_layout_mid,    Pa,             grid_name);
+  m_required_fields.emplace("qdp", tracers_layout,        Qdp,          grid_name);  
   // Inputs from Physics  NOTE: Making them "computed" fields now because we will initialize them in P3 for testing purposes.
-  m_computed_fields.emplace("ast",    scalar3d_layout,            A,             "Physics");
-  m_computed_fields.emplace("naai",   scalar3d_layout,   pow(kg,-1),           "Physics");
-  m_computed_fields.emplace("npccn",  scalar3d_layout,   pow(kg,-1)*pow(s,-1), "Physics");
+  m_computed_fields.emplace("ast",    scalar3d_layout_mid,            A,             grid_name);
+  m_computed_fields.emplace("naai",   scalar3d_layout_mid,   pow(kg,-1),           grid_name);
+  m_computed_fields.emplace("npccn",  scalar3d_layout_mid,   pow(kg,-1)*pow(s,-1), grid_name);
   // Inputs that are STATE variables
-  m_computed_fields.emplace("pmid",  scalar3d_layout,    Pa,                   "Physics");
-  m_computed_fields.emplace("pdel",  scalar3d_layout,    Pa,                   "Physics");
-  m_computed_fields.emplace("zi",    scalar3d_layout_int, m,                   "Physics");
+  m_computed_fields.emplace("pmid",  scalar3d_layout_mid,    Pa,                   grid_name);
+  m_computed_fields.emplace("pdel",  scalar3d_layout_mid,    Pa,                   grid_name);
+  m_computed_fields.emplace("zi",    scalar3d_layout_int, m,                   grid_name);
 
   // set computed
-//  m_computed_fields.emplace("P3_comq_test", scalar3d_layout, units::one, "Physics");
-  m_computed_fields.emplace("FQ", q_forcing_layout,      Q,      grid->name());
+//  m_computed_fields.emplace("P3_comq_test", scalar3d_layout, units::one, grid_name);
+  m_computed_fields.emplace("FQ", tracers_layout,      Q, grid_name);
   // INPUT/OUTPUT from STATE
-  m_computed_fields.emplace("T",   scalar3d_layout,      K,         "Physics");
-  m_computed_fields.emplace("q",   vector3d_layout,      Q,         "Physics");
+  m_computed_fields.emplace("T",  scalar3d_layout_mid, K, grid_name);
+  m_computed_fields.emplace("q",  vector3d_layout_mid, Q, grid_name);
 
 }
 // =========================================================================================
@@ -82,8 +82,8 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
   auto T_ptr = m_p3_fields_out.at("T").get_view().data();
   const std::string dimnames[2] = {"column", "level"};
   const std::string filename = "p3_output";
-  const int  dimrng[2]   = {218,72}; // TODO make this based on actual col,levels data
-  const int  dimnum = 2;
+  // const int  dimrng[2]   = {218,72}; // TODO make this based on actual col,levels data
+  // const int  dimnum = 2;
 
   p3_init_f90 (q_ptr,T_ptr,zi_ptr,pmid_ptr,pdel_ptr,
      ast_ptr, naai_ptr, npccn_ptr);
@@ -94,7 +94,7 @@ void P3Microphysics::run (const double dt)
 {
   auto q_ptr = m_p3_fields_out.at("q").get_view().data();
   auto FQ_ptr = m_p3_fields_out.at("FQ").get_view().data();
-  auto dp_ptr = m_p3_fields_in.at("dp").get_view().data();
+  // auto dp_ptr = m_p3_fields_in.at("dp").get_view().data();
   auto qdp_ptr = m_p3_fields_in.at("qdp").get_view().data();
   auto ast_ptr = m_p3_fields_out.at("ast").get_view().data();
   auto naai_ptr = m_p3_fields_out.at("naai").get_view().data();

@@ -34,6 +34,7 @@ TEST_CASE("ping-pong", "") {
   p1.set<int>("Number of vector components",vec_length);
 
   auto& gm_params = ad_params.sublist("Grids Manager");
+  gm_params.set<std::string>("Reference Grid","Physics_fwd");
   gm_params.set<std::string>("Type","User Provided");
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,

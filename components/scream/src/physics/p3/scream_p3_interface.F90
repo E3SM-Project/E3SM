@@ -321,16 +321,12 @@ contains
       end do
     end do  
 
-    test = test + dtime
-    FQ(1,1,1) = 9e9
     print '(a15,f16.8,5e16.8)', 'P3 run = ', test, qtest, sum(q), sum(qv), sum(FQ(:,:,:)), sum(qdp)
-
   end subroutine p3_main_f90
   !====================================================================!
   subroutine p3_finalize_f90 () bind(c)
 
-    test = -999.
-    print '(a15,f16.8)', 'P3 final = ', test
+    print *, "P3 finalization..."
 
   end subroutine p3_finalize_f90
   !================================================================================================

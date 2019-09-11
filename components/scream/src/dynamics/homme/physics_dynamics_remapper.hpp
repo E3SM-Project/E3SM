@@ -10,6 +10,8 @@
 #include "share/scream_assert.hpp"
 
 // Homme includes
+#include "Context.hpp"
+#include "TimeLevel.hpp"
 #include "Types.hpp"
 #include "mpi/MpiContext.hpp"
 #include "mpi/Connectivity.hpp"
@@ -41,20 +43,20 @@ public:
   using kt              = KokkosTypes<DeviceType>;
 
   PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
-                           const grid_ptr_type& dyn_grid)
-   : base_type(phys_grid,dyn_grid)
-  {
-    scream_require_msg(static_cast<bool>(phys_grid), "Error! Invalid input physics grid pointer.\n");
-    scream_require_msg(static_cast<bool>(dyn_grid),  "Error! Invalid input dynamics grid pointer.\n");
-    m_phys_grid = std::dynamic_pointer_cast<const SEGrid>(phys_grid);
-    scream_require_msg(dyn_grid->type()==GridType::SE_CellBased,  "Error! Input dynamics grid pointer is not a Dynamics grid.\n");
-    scream_require_msg(phys_grid->type()==GridType::SE_NodeBased,  "Error! Input physics grid pointer is not a Physics grid.\n");
-  }
+                           const grid_ptr_type& dyn_grid);
 
   ~PhysicsDynamicsRemapper () = default;
 
   FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override;
   FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override;
+
+  bool compatible_layouts (const layout_type& src,
+                           const layout_type& tgt) const override {
+    auto tgt_tags = tgt.tags();
+    util::erase(tgt_tags,FieldTag::TimeLevel);
+
+    return get_layout_type(src.tags())==get_layout_type(tgt_tags);
+  }
 
 protected:
 
@@ -73,10 +75,11 @@ protected:
   }
 
   // Registration methods
-  void do_registration_begins () override;
+  void do_registration_begins () override {}
   void do_register_field (const identifier_type& src, const identifier_type& tgt) override;
   void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
-  void do_registration_complete () override;
+  void do_unregister_field (const int ifield) override;
+  void do_registration_ends () override;
 
   // Remap methods
   void do_remap_fwd () const override;
@@ -87,23 +90,38 @@ protected:
   std::vector<field_type>   m_phys;
   std::vector<field_type>   m_dyn;
 
+  std::vector<bool>         m_is_state_field;
+  std::vector<bool>         m_is_tracer_field;
+
   std::shared_ptr<const SEGrid>   m_phys_grid;
 
-  std::shared_ptr<Homme::BoundaryExchange>  m_be;
+  std::shared_ptr<Homme::BoundaryExchange>  m_be[HOMMEXX_NUM_TIME_LEVELS][HOMMEXX_Q_NUM_TIME_LEVELS];
 
 public:
   // These functions should be morally privade, but CUDA does not allow extended host-device lambda
   // to have private/protected access within the class
-  void local_remap_fwd_2d (const field_type& src, const field_type& tgt, const LayoutType lt) const;
+  void local_remap_fwd_2d (const field_type& phys, const field_type& dyn, const int itl) const;
   template<typename ScalarT>
-  void local_remap_fwd_3d_impl (const field_type& src, const field_type& tgt, const LayoutType lt) const;
+  void local_remap_fwd_3d_impl (const field_type& phys, const field_type& dyn, const int itl) const;
 
-  void remap_bwd_2d (const field_type& src, const field_type& tgt, const LayoutType lt) const;
+  void remap_bwd_2d (const field_type& phys, const field_type& dyn, const int itl) const;
   template<typename ScalarT>
-  void remap_bwd_3d_impl (const field_type& src, const field_type& tgt, const LayoutType lt) const;
+  void remap_bwd_3d_impl (const field_type& phys, const field_type& dyn, const int itl) const;
 };
 
 // ================= IMPLEMENTATION ================= //
+
+template<typename ScalarType, typename DeviceType>
+PhysicsDynamicsRemapper<ScalarType,DeviceType>::
+PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
+                         const grid_ptr_type& dyn_grid)
+ : base_type(phys_grid,dyn_grid)
+{
+  scream_require_msg(dyn_grid->type()==GridType::SE_CellBased,  "Error! Input dynamics grid is not a Dynamics grid.\n");
+  scream_require_msg(phys_grid->type()==GridType::SE_NodeBased, "Error! Input physics grid is not a Physics grid.\n");
+
+  m_phys_grid = std::dynamic_pointer_cast<const SEGrid>(phys_grid);
+}
 
 template<typename ScalarType, typename DeviceType>
 FieldLayout PhysicsDynamicsRemapper<ScalarType,DeviceType>::
@@ -113,18 +131,26 @@ create_src_layout (const FieldLayout& tgt_layout) const {
   auto tags = tgt_layout.tags();
   auto dims = tgt_layout.dims();
 
-  // Element is the first tag. Replace it with 'Column'.
-  // Set extent to the number of columns
-  tags[0] = SFTN::COL;
-  dims[0] = this->m_src_grid->get_num_dofs();
+  // Note down the position of the first 'GaussPoint' tag.
+  int pos = std::distance(tags.cbegin(),util::find(tags,SFTN::GP));
 
-  // Find the position of the 1st GaussPoint tag. Delete twice in a row (two GP tags).
-  auto it = util::find(tags,SFTN::GP);
-  auto pos = std::distance(tags.cbegin(),it);
-  tags.erase(tags.begin()+pos);
-  tags.erase(tags.begin()+pos);
+  // We replace 'Element' with 'Column'. The number of columns is taken from the src grid.
+  tags[0] = SFTN::COL;
+  dims[0] = this->m_src_grid->get_num_local_dofs();
+
+  // Delete GP tags/dims
+  util::erase(tags,SFTN::GP);
+  util::erase(tags,SFTN::GP);
   dims.erase(dims.begin()+pos);
   dims.erase(dims.begin()+pos);
+
+  // If the tgt layout contains the TimeLevel tag, we slice it off.
+  auto it_tl = util::find(tags,SFTN::TL);
+  if (it_tl!=tags.end()) {
+    pos = std::distance(tags.cbegin(),it_tl);
+    tags.erase(tags.begin()+pos);
+    dims.erase(dims.begin()+pos);
+  }
 
   return FieldLayout(tags,dims);
 }
@@ -139,7 +165,7 @@ create_tgt_layout (const FieldLayout& src_layout) const {
 
   // Replace COL with EL, and num_cols with num_elems
   tags[0] = SFTN::EL;
-  dims[0] = this->m_tgt_grid->get_num_dofs() / (HOMMEXX_NP*HOMMEXX_NP);
+  dims[0] = this->m_tgt_grid->get_num_local_dofs() / (HOMMEXX_NP*HOMMEXX_NP);
 
   // For position of GP and NP, it's easier to switch between 2d and 3d
   auto lt = get_layout_type(tags);
@@ -181,14 +207,6 @@ create_tgt_layout (const FieldLayout& src_layout) const {
 
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
-do_registration_begins ()
-{
-  m_phys.reserve(this->m_num_fields);
-  m_dyn.reserve(this->m_num_fields);
-}
-
-template<typename ScalarType, typename DeviceType>
-void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 do_register_field (const identifier_type& src, const identifier_type& tgt)
 {
   m_phys.push_back(field_type(src));
@@ -199,103 +217,160 @@ template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 do_bind_field (const int ifield, const field_type& src, const field_type& tgt)
 {
+  const auto& tgt_layout = tgt.get_header().get_identifier().get_layout();
+  const auto& tgt_tags = tgt_layout.tags();
+  const auto& tgt_dims = tgt_layout.dims();
+
+  const bool has_time_level  = util::contains(tgt_tags,FieldTag::TimeLevel);
+  if (has_time_level) {
+    const auto& data = tgt.get_header().get_extra_data();
+
+    const bool is_tracer = data.find("Is Tracer State")!=data.end() &&
+                           util::any_cast<bool>(data.at("Is Tracer State"));
+    const bool valid_tl_dim = (tgt_dims[1]==HOMMEXX_NUM_TIME_LEVELS) || (tgt_dims[1]==HOMMEXX_Q_NUM_TIME_LEVELS);
+    scream_require_msg (valid_tl_dim, "Error! Field has the TimeLevel tag, but it does not appear to be either a 'state' or 'tracer state'.\n");
+    m_is_tracer_field.push_back(is_tracer);
+  } else {
+    m_is_tracer_field.push_back(false);
+  }
+  m_is_state_field.push_back(has_time_level);
   m_phys[ifield] = src;
   m_dyn[ifield] = tgt;
 
   // If this was the last field to be bound, we can setup the BE
-  if (this->m_all_fields_are_bound) {
+  if (this->m_state==RepoState::Closed &&
+      (this->m_num_bound_fields+1)==this->m_num_registered_fields) {
     setup_boundary_exchange ();
   }
 }
 
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
-do_registration_complete ()
+do_unregister_field (const int ifield)
+{
+  m_phys.erase(m_phys.begin()+ifield);
+  m_dyn.erase(m_dyn.begin()+ifield);
+  m_is_state_field.erase(m_is_state_field.begin()+ifield);
+  m_is_tracer_field.erase(m_is_tracer_field.begin()+ifield);
+
+  // If unregistering this field makes all fields bound, we can setup the BE
+  if (this->m_state==RepoState::Closed &&
+      (this->m_num_bound_fields==(this->m_num_registered_fields+1))) {
+    setup_boundary_exchange ();
+  }
+}
+
+template<typename ScalarType, typename DeviceType>
+void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
+do_registration_ends ()
 {
   // If we have all fields allocated, we can setup the BE
-  if (this->m_all_fields_are_bound) {
+  if (this->m_num_bound_fields==this->m_num_registered_fields) {
     setup_boundary_exchange ();
   }
 }
 
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
-do_remap_fwd() const {
-  for (int i=0; i<this->get_num_fields(); ++i) {
+do_remap_fwd() const
+{
+  using pack_type = pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
+  using small_pack_type = pack::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
+
+  const auto& tl = Homme::Context::singleton().get_time_level();
+
+  const int num_fields = m_phys.size();
+  for (int i=0; i<num_fields; ++i) {
     const auto& phys = m_phys[i];
     const auto& dyn  = m_dyn[i];
+
+    const int itl = m_is_state_field[i] ? (m_is_tracer_field[i] ? tl.np1_qdp : tl.np1) : -1;
 
     // phys->dyn requires a halo-exchange. Since not all entries in dyn
     // are overwritten before the exchange, to avoid leftover garbage,
     // we need to set all entries of dyn to zero.
     Kokkos::deep_copy(dyn.get_view(),0.0);
 
-    const auto& layout = phys.get_header().get_identifier().get_layout();
-    const auto lt = get_layout_type(layout.tags());
-    const auto& tgt_alloc_prop = dyn.get_header().get_alloc_properties();
-    const auto& src_alloc_prop = phys.get_header().get_alloc_properties();
-    using pack_type = pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
-    using small_pack_type = pack::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
-    switch (lt) {
+    const auto& ph = phys.get_header();
+    const auto& dh = dyn.get_header();
+
+    const auto& phys_alloc_prop = ph.get_alloc_properties();
+    const auto& dyn_alloc_prop  = dh.get_alloc_properties();
+
+    const bool phys_pack_alloc = phys_alloc_prop.template is_allocation_compatible_with_value_type<pack_type>();
+    const bool dyn_pack_alloc  = dyn_alloc_prop.template  is_allocation_compatible_with_value_type<pack_type>();
+    const bool phys_small_pack_alloc = phys_alloc_prop.template is_allocation_compatible_with_value_type<small_pack_type>();
+    const bool dyn_small_pack_alloc  = dyn_alloc_prop.template  is_allocation_compatible_with_value_type<small_pack_type>();
+
+    const auto phys_lt = get_layout_type(ph.get_identifier().get_layout().tags());
+    switch (phys_lt) {
       case LayoutType::Scalar2D:
       case LayoutType::Vector2D:
       case LayoutType::Tensor2D:
-        local_remap_fwd_2d(phys,dyn,lt);
+        local_remap_fwd_2d(phys,dyn,itl);
         break;
       case LayoutType::Scalar3D:
       case LayoutType::Vector3D:
       case LayoutType::Tensor3D:
-        if (src_alloc_prop.template is_allocation_compatible_with_value_type<pack_type>() &&
-            tgt_alloc_prop.template is_allocation_compatible_with_value_type<pack_type>())
-        {
-          local_remap_fwd_3d_impl<pack_type>(phys,dyn,lt);
-        } else if (src_alloc_prop.template is_allocation_compatible_with_value_type<small_pack_type>() &&
-                   tgt_alloc_prop.template is_allocation_compatible_with_value_type<small_pack_type>())
-        {
-          local_remap_fwd_3d_impl<small_pack_type>(phys,dyn,lt);
+        if (phys_pack_alloc && dyn_pack_alloc) {
+          local_remap_fwd_3d_impl<pack_type>(phys,dyn,itl);
+        } else if (phys_small_pack_alloc && dyn_small_pack_alloc) {
+          local_remap_fwd_3d_impl<small_pack_type>(phys,dyn,itl);
         } else {
-          local_remap_fwd_3d_impl<Real>(phys,dyn,lt);
+          local_remap_fwd_3d_impl<Real>(phys,dyn,itl);
         }
         break;
       default:
         error::runtime_abort("Error! Unhandled case in switch statement.\n");
     }
   }
-  m_be->exchange();
+
+  // Exchange only the current time levels
+  m_be[tl.np1][tl.np1_qdp]->exchange();
 }
 
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 do_remap_bwd() const {
-  for (int i=0; i<this->get_num_fields(); ++i) {
+  using pack_type = pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
+  using small_pack_type = pack::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
+
+  const auto& tl = Homme::Context::singleton().get_time_level();
+
+  const int num_fields = m_dyn.size();
+  for (int i=0; i<num_fields; ++i) {
     const auto& phys = m_phys[i];
     const auto& dyn  = m_dyn[i];
 
-    const auto& layout = phys.get_header().get_identifier().get_layout();
-    const auto lt = get_layout_type(layout.tags());
-    const auto& tgt_alloc_prop = phys.get_header().get_alloc_properties();
-    const auto& src_alloc_prop = dyn.get_header().get_alloc_properties();
-    using pack_type = pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
-    using small_pack_type = pack::Pack<ScalarType,SCREAM_SMALL_PACK_SIZE>;
+    const auto& ph = phys.get_header();
+    const auto& dh = dyn.get_header();
+
+    const auto& phys_alloc_prop = ph.get_alloc_properties();
+    const auto& dyn_alloc_prop  = dh.get_alloc_properties();
+
+    const bool phys_pack_alloc = phys_alloc_prop.template is_allocation_compatible_with_value_type<pack_type>();
+    const bool dyn_pack_alloc  = dyn_alloc_prop.template  is_allocation_compatible_with_value_type<pack_type>();
+    const bool phys_small_pack_alloc = phys_alloc_prop.template is_allocation_compatible_with_value_type<small_pack_type>();
+    const bool dyn_small_pack_alloc  = dyn_alloc_prop.template  is_allocation_compatible_with_value_type<small_pack_type>();
+
+    const int itl = m_is_state_field[i] ? (m_is_tracer_field[i] ? tl.np1_qdp : tl.np1) : -1;
+
+    const LayoutType lt = get_layout_type(ph.get_identifier().get_layout().tags());
     switch (lt) {
       case LayoutType::Scalar2D:
       case LayoutType::Vector2D:
       case LayoutType::Tensor2D:
-        remap_bwd_2d(dyn,phys,lt);
+        remap_bwd_2d(phys,dyn,itl);
         break;
       case LayoutType::Scalar3D:
       case LayoutType::Vector3D:
       case LayoutType::Tensor3D:
-        if (src_alloc_prop.template is_allocation_compatible_with_value_type<pack_type>() &&
-            tgt_alloc_prop.template is_allocation_compatible_with_value_type<pack_type>())
-        {
-          remap_bwd_3d_impl<pack_type>(dyn,phys,lt);
-        } else if (src_alloc_prop.template is_allocation_compatible_with_value_type<small_pack_type>() &&
-                   tgt_alloc_prop.template is_allocation_compatible_with_value_type<small_pack_type>())
-        {
-          remap_bwd_3d_impl<small_pack_type>(dyn,phys,lt);
+        if (phys_pack_alloc && dyn_pack_alloc) {
+          remap_bwd_3d_impl<pack_type>(phys,dyn,itl);
+        } else if (phys_small_pack_alloc && dyn_small_pack_alloc) {
+          remap_bwd_3d_impl<small_pack_type>(phys,dyn,itl);
         } else {
-          remap_bwd_3d_impl<Real>(dyn,phys,lt);
+          remap_bwd_3d_impl<Real>(phys,dyn,itl);
         }
         break;
       default:
@@ -309,15 +384,13 @@ void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 setup_boundary_exchange () {
   // TODO: should we check that the BE was not already setup? I don't see this happening, but even if it does,
   //       there should be no side effect if we re-build it. We waste some time, sure, but should yield a correct result.
-  using Scalar = Homme::Scalar;
 
-  auto bm   = Homme::MpiContext::singleton().get_buffers_manager(Homme::MPI_EXCHANGE);
-  auto conn = Homme::MpiContext::singleton().get_connectivity();
-  m_be = std::make_shared<Homme::BoundaryExchange>(conn,bm);
+  using Scalar = Homme::Scalar;
 
   int num_2d = 0;
   int num_3d = 0;
-  for (int i=0; i<this->m_num_registered_fields; ++i) {
+  const int num_fields = m_dyn.size();
+  for (int i=0; i<num_fields; ++i) {
     const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
     const auto lt = get_layout_type(layout.tags());
     switch (lt) {
@@ -325,57 +398,42 @@ setup_boundary_exchange () {
         ++num_2d;
         break;
       case LayoutType::Vector2D:
-        num_2d += layout.dim(1);
+        if (m_is_state_field[i]) {
+          // A state: we only exchange the timelevel we remapped
+          num_2d += 1;
+        } else {
+          // Not a state: remap all slices
+          num_2d += layout.dim(1);
+        }
         break;
       case LayoutType::Tensor2D:
-        num_2d += layout.dim(1)*layout.dim(2);
+        if (m_is_state_field[i]) {
+          // A state: we only exchange the timelevel we remapped
+          num_2d += layout.dim(2);
+        } else {
+          // Not a state: remap all slices
+          num_2d += layout.dim(1)*layout.dim(2);
+        }
         break;
       case LayoutType::Scalar3D:
         ++num_3d;
         break;
       case LayoutType::Vector3D:
-        num_3d += layout.dim(1);
-        break;
-      case LayoutType::Tensor3D:
-        num_3d += layout.dim(1)*layout.dim(2);
-        break;
-    default:
-      error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
-    }
-  }
-
-  m_be->set_num_fields(0,num_2d,num_3d);
-
-  // If some fields are already bound, set them in the bd exchange
-  for (int i=0; i<this->m_num_registered_fields; ++i) {
-    const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
-    const auto& dims = layout.dims();
-    const auto lt = get_layout_type(layout.tags());
-    switch (lt) {
-      case LayoutType::Scalar2D:
-        m_be->register_field(getHommeView<Real*[NP][NP]>(m_dyn[i]));
-        break;
-      case LayoutType::Vector2D:
-        m_be->register_field(getHommeView<Real**[NP][NP]>(m_dyn[i]),dims[1],0);
-        break;
-      case LayoutType::Tensor2D:
-        for (int idim=0; idim<dims[1]; ++idim) {
-          // Homme::BoundaryExchange only exchange one slice of the outer dim at a time,
-          // so loop on the outer dim and register each slice individually.
-          m_be->register_field(getHommeView<Real***[NP][NP]>(m_dyn[i]),idim,dims[2],0);
+        if (m_is_state_field[i]) {
+          // A state: we only exchange the timelevel we remapped
+          num_3d += 1;
+        } else {
+          // Not a state: remap all slices
+          num_3d += layout.dim(1);
         }
         break;
-      case LayoutType::Scalar3D:
-        m_be->register_field(getHommeView<Scalar*[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]));
-        break;
-      case LayoutType::Vector3D:
-        m_be->register_field(getHommeView<Scalar**[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]),dims[1],0);
-        break;
       case LayoutType::Tensor3D:
-        for (int idim=0; idim<dims[1]; ++idim) {
-          // Homme::BoundaryExchange only exchange one slice of the outer dim at a time,
-          // so loop on the outer dim and register each slice individually.
-          m_be->register_field(getHommeView<Scalar***[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]),idim,dims[2],0);
+        if (m_is_state_field[i]) {
+          // A state: we only exchange the timelevel we remapped
+          num_3d += layout.dim(2);
+        } else {
+          // Not a state: remap all slices
+          num_3d += layout.dim(1)*layout.dim(2);
         }
         break;
     default:
@@ -383,57 +441,169 @@ setup_boundary_exchange () {
     }
   }
 
-  // If all fields were already bound, then we can complete the registration in the BE structure
-  if (this->m_all_fields_are_bound) {
-    m_be->registration_completed();
+  auto bm   = Homme::MpiContext::singleton().get_buffers_manager(Homme::MPI_EXCHANGE);
+  auto conn = Homme::MpiContext::singleton().get_connectivity();
+  constexpr int NL= HOMMEXX_NUM_LEV;
+  for (int it=0; it<HOMMEXX_NUM_TIME_LEVELS; ++it) {
+    for (int itq=0; itq<HOMMEXX_Q_NUM_TIME_LEVELS; ++itq) {
+      m_be[it][itq] = std::make_shared<Homme::BoundaryExchange>(conn,bm);
+
+      auto be = m_be[it][itq];
+      be->set_num_fields(0,num_2d,num_3d);
+
+      // If some fields are already bound, set them in the bd exchange
+      for (int i=0; i<num_fields; ++i) {
+        const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
+        const auto& dims = layout.dims();
+        const auto lt = get_layout_type(layout.tags());
+        switch (lt) {
+          case LayoutType::Scalar2D:
+            be->register_field(getHommeView<Real*[NP][NP]>(m_dyn[i]));
+            break;
+          case LayoutType::Vector2D:
+            if (m_is_state_field[i]) {
+              if (m_is_tracer_field[i]) {
+                // A tracer state: exchange one time level only
+                be->register_field(getHommeView<Real**[NP][NP]>(m_dyn[i]),1,itq);
+              } else {
+                // A state: exchange one time level only
+                be->register_field(getHommeView<Real**[NP][NP]>(m_dyn[i]),1,it);
+              }
+            } else {
+              // Not a state: exchange all slices
+              be->register_field(getHommeView<Real**[NP][NP]>(m_dyn[i]),dims[1],0);
+            }
+            break;
+          case LayoutType::Tensor2D:
+            if (m_is_state_field[i]) {
+              if (m_is_tracer_field[i]) {
+                // A tracer state: exchange one time level only
+                be->register_field(getHommeView<Real***[NP][NP]>(m_dyn[i]),itq,dims[2],0);
+              } else {
+                // A state: exchange one time level only
+                be->register_field(getHommeView<Real***[NP][NP]>(m_dyn[i]),it,dims[2],0);
+              }
+            } else {
+              // Not a state: exchange all slices
+              for (int idim=0; idim<dims[1]; ++idim) {
+                // Homme::BoundaryExchange only exchange one slice of the outer dim at a time,
+                // so loop on the outer dim and register each slice individually.
+                be->register_field(getHommeView<Real***[NP][NP]>(m_dyn[i]),idim,dims[2],0);
+              }
+            }
+            break;
+          case LayoutType::Scalar3D:
+            be->register_field(getHommeView<Scalar*[NP][NP][HOMMEXX_NUM_LEV]>(m_dyn[i]));
+            break;
+          case LayoutType::Vector3D:
+            if (m_is_state_field[i]) {
+              if (m_is_tracer_field[i]) {
+                // A tracer state: exchange one time level only
+                be->register_field(getHommeView<Scalar**[NP][NP][NL]>(m_dyn[i]),1,0);
+              } else {
+                // A state: exchange one time level only
+                be->register_field(getHommeView<Scalar**[NP][NP][NL]>(m_dyn[i]),1,0);
+              }
+            } else {
+              // Not a state: exchange all slices
+              be->register_field(getHommeView<Scalar**[NP][NP][NL]>(m_dyn[i]),dims[1],0);
+            }
+            break;
+          case LayoutType::Tensor3D:
+            if (m_is_state_field[i]) {
+              if (m_is_tracer_field[i]) {
+                // A tracer state: exchange one time level only
+                be->register_field(getHommeView<Scalar***[NP][NP][NL]>(m_dyn[i]),itq,dims[2],0);
+              } else {
+                // A state: exchange one time level only
+                be->register_field(getHommeView<Scalar***[NP][NP][NL]>(m_dyn[i]),it,dims[2],0);
+              }
+            } else {
+              // Not a state: exchange all slices
+              for (int idim=0; idim<dims[1]; ++idim) {
+                // Homme::BoundaryExchange only exchange one slice of the outer dim at a time,
+                // so loop on the outer dim and register each slice individually.
+                be->register_field(getHommeView<Scalar***[NP][NP][NL]>(m_dyn[i]),idim,dims[2],0);
+              }
+            }
+            break;
+        default:
+          error::runtime_abort("Error! Invalid layout. This is an internal error. Please, contact developers\n");
+        }
+      }
+      be->registration_completed();
+    }
   }
 }
 
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
-local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, const LayoutType lt) const
+local_remap_fwd_2d(const field_type& phys_field, const field_type& dyn_field, const int itl) const
 {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
   auto p2d = m_phys_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
-  const auto& phys_dims = src_field.get_header().get_identifier().get_layout().dims();
-  switch (lt) {
+  const auto& phys_layout   = phys_field.get_header().get_identifier().get_layout();
+  const auto& phys_dims = phys_layout.dims();
+  switch (get_layout_type(phys_layout.tags())) {
     case LayoutType::Scalar2D:
     {
-      auto phys = src_field.template get_reshaped_view<Real*>();
-      auto dyn  = tgt_field.template get_reshaped_view<Real*[NP][NP]>();
-      Kokkos::parallel_for(RangePolicy(0,num_cols),
-                           KOKKOS_LAMBDA(const int icol) {
-        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        dyn(elgp[0],elgp[1],elgp[2]) = phys(icol);
-      });
+      auto phys = phys_field.template get_reshaped_view<Real*>();
+      if (itl>=0) {
+        auto dyn  = dyn_field.template get_reshaped_view<Real**[NP][NP]>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols),
+                             KOKKOS_LAMBDA(const int icol) {
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          dyn(elgp[0],itl,elgp[1],elgp[2]) = phys(icol);
+        });
+      } else {
+        auto dyn = dyn_field.template get_reshaped_view<Real*[NP][NP]>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols),
+                             KOKKOS_LAMBDA(const int icol) {
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          dyn(elgp[0],elgp[1],elgp[2]) = phys(icol);
+        });
+      }
       break;
     }
     case LayoutType::Vector2D:
     {
-      auto phys = src_field.template get_reshaped_view<Real**>();
-      auto dyn  = tgt_field.template get_reshaped_view<Real**[NP][NP]>();
-      const int dim = phys_dims[1];
-      Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
-                           KOKKOS_LAMBDA(const int idx) {
-        const int icol = idx / dim;
-        const int idim = idx % dim;
+      auto phys = phys_field.template get_reshaped_view<Real**>();
+      if (itl>=0) {
+        auto dyn = dyn_field.template get_reshaped_view<Real***[NP][NP]>();
+        const int dim = phys_dims[1];
+        Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol = idx / dim;
+          const int idim = idx % dim;
 
-        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        dyn(elgp[0],idim,elgp[1],elgp[2]) = phys(icol,idim);
-      });
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          dyn(elgp[0],itl,idim,elgp[1],elgp[2]) = phys(icol,idim);
+        });
+      } else {
+        auto dyn = dyn_field.template get_reshaped_view<Real**[NP][NP]>();
+        const int dim = phys_dims[1];
+        Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol = idx / dim;
+          const int idim = idx % dim;
+
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          dyn(elgp[0],idim,elgp[1],elgp[2]) = phys(icol,idim);
+        });
+      }
       break;
     }
     case LayoutType::Tensor2D:
     {
-      auto phys = src_field.template get_reshaped_view<Real***>();
-      auto dyn  = tgt_field.template get_reshaped_view<Real***[NP][NP]>();
+      auto phys = phys_field.template get_reshaped_view<Real***>();
+      auto dyn  = dyn_field.template get_reshaped_view<Real***[NP][NP]>();
       const int dim1 = phys_dims[1];
       const int dim2 = phys_dims[2];
       Kokkos::pair<int,int> ordering;
-      if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
+      if (phys_layout.tag(1)==dyn_field.get_header().get_identifier().get_layout().tag(1)) {
         ordering.first=0;
         ordering.second=1;
       } else {
@@ -459,55 +629,81 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
 template<typename ScalarType, typename DeviceType>
 template<typename ScalarT>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
-local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field, const LayoutType lt) const {
+local_remap_fwd_3d_impl(const field_type& phys_field, const field_type& dyn_field, const int itl) const {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
   auto p2d = m_phys_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
-  const auto& phys_dims = src_field.get_header().get_identifier().get_layout().dims();
-  switch (lt) {
+  const auto& phys_layout   = phys_field.get_header().get_identifier().get_layout();
+  const auto& phys_dims = phys_layout.dims();
+
+  constexpr int pack_size = sizeof(ScalarT) / sizeof(Real);
+  const int NumVerticalLevels = (phys_dims.back() + pack_size - 1) / pack_size;
+  switch (get_layout_type(phys_layout.tags())) {
     case LayoutType::Scalar3D:
     {
-      auto phys = src_field.template get_reshaped_view<ScalarT**>();
-      auto dyn  = tgt_field.template get_reshaped_view<ScalarT****>();
-      const int NumVerticalLevels = dyn.extent_int(3);
-      Kokkos::parallel_for(RangePolicy(0,num_cols*NumVerticalLevels),
-                           KOKKOS_LAMBDA(const int idx) {
-        const int icol = idx / NumVerticalLevels;
-        const int ilev = idx % NumVerticalLevels;
+      auto phys = phys_field.template get_reshaped_view<ScalarT**>();
+      if (itl>=0) {
+        auto dyn  = dyn_field.template get_reshaped_view<ScalarT*****>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols*NumVerticalLevels),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol = idx / NumVerticalLevels;
+          const int ilev = idx % NumVerticalLevels;
 
-        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        dyn(elgp[0],elgp[1],elgp[2],ilev) = phys(icol,ilev);
-      });
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          dyn(elgp[0],itl,elgp[1],elgp[2],ilev) = phys(icol,ilev);
+        });
+      } else {
+        auto dyn  = dyn_field.template get_reshaped_view<ScalarT****>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols*NumVerticalLevels),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol = idx / NumVerticalLevels;
+          const int ilev = idx % NumVerticalLevels;
+
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          dyn(elgp[0],elgp[1],elgp[2],ilev) = phys(icol,ilev);
+        });
+      }
       break;
     }
     case LayoutType::Vector3D:
     {
-      auto phys = src_field.template get_reshaped_view<ScalarT***>();
-      auto dyn  = tgt_field.template get_reshaped_view<ScalarT*****>();
+      auto phys = phys_field.template get_reshaped_view<ScalarT***>();
       const int dim = phys_dims[1];
-      const int NumVerticalLevels = dyn.extent_int(4);
-      Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
-                           KOKKOS_LAMBDA(const int idx) {
-        const int icol =  idx / (dim*NumVerticalLevels);
-        const int idim = (idx / NumVerticalLevels) % dim;
-        const int ilev =  idx % NumVerticalLevels;
+      if (itl>=0) {
+        auto dyn  = dyn_field.template get_reshaped_view<ScalarT******>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol =  idx / (dim*NumVerticalLevels);
+          const int idim = (idx / NumVerticalLevels) % dim;
+          const int ilev =  idx % NumVerticalLevels;
 
-        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        dyn(elgp[0],idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
-      });
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          dyn(elgp[0],itl,idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
+        });
+      } else {
+        auto dyn  = dyn_field.template get_reshaped_view<ScalarT*****>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol =  idx / (dim*NumVerticalLevels);
+          const int idim = (idx / NumVerticalLevels) % dim;
+          const int ilev =  idx % NumVerticalLevels;
+
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          dyn(elgp[0],idim,elgp[1],elgp[2],ilev) = phys(icol,idim,ilev);
+        });
+      }
       break;
     }
     case LayoutType::Tensor3D:
     {
-      auto phys = src_field.template get_reshaped_view<ScalarT****>();
-      auto dyn  = tgt_field.template get_reshaped_view<ScalarT******>();
+      auto phys = phys_field.template get_reshaped_view<ScalarT****>();
+      auto dyn  = dyn_field.template get_reshaped_view<ScalarT******>();
       const int dim1 = phys_dims[1];
       const int dim2 = phys_dims[2];
-      const int NumVerticalLevels = dyn.extent_int(5);
       Kokkos::pair<int,int> ordering;
-      if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
+      if (phys_layout.tag(1)==dyn_field.get_header().get_identifier().get_layout().tag(1)) {
         ordering.first=0;
         ordering.second=1;
       } else {
@@ -533,48 +729,72 @@ local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field
 
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
-remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const LayoutType lt) const {
+remap_bwd_2d(const field_type& phys_field, const field_type& dyn_field, const int itl) const {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
   auto p2d = m_phys_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
-  const auto& dyn_dims = src_field.get_header().get_identifier().get_layout().dims();
-  switch (lt) {
-    case LayoutType::Scalar2D:
-    {
-      auto dyn  = src_field.template get_reshaped_view<Real*[NP][NP]>();
-      auto phys = tgt_field.template get_reshaped_view<Real*>();
-      Kokkos::parallel_for(RangePolicy(0,num_cols),
-                           KOKKOS_LAMBDA(const int icol) {
-        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        phys(icol) = dyn(elgp[0],elgp[1],elgp[2]);
-      });
-      break;
-    }
-    case LayoutType::Vector2D:
-    {
-      auto dyn  = src_field.template get_reshaped_view<Real**[NP][NP]>();
-      auto phys = tgt_field.template get_reshaped_view<Real**>();
-      const int dim = dyn_dims[1];
-      Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
-                           KOKKOS_LAMBDA(const int idx) {
-        const int icol = idx / dim;
-        const int idim = idx % dim;
+  const auto& phys_layout = phys_field.get_header().get_identifier().get_layout();
+  const auto& dyn_layout  = dyn_field.get_header().get_identifier().get_layout();
 
-        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        phys(icol,idim) = dyn(elgp[0],idim,elgp[1],elgp[2]);
-      });
+  const auto& phys_dims = phys_layout.dims();
+  switch (phys_dims.size()) {
+    case 1:
+    {
+      auto phys = phys_field.template get_reshaped_view<Real*>();
+      if (itl>=0) {
+        auto dyn  = dyn_field.template get_reshaped_view<Real**[NP][NP]>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols),
+                             KOKKOS_LAMBDA(const int icol) {
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          phys(icol) = dyn(elgp[0],itl,elgp[1],elgp[2]);
+        });
+      } else {
+        auto dyn  = dyn_field.template get_reshaped_view<Real*[NP][NP]>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols),
+                             KOKKOS_LAMBDA(const int icol) {
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          phys(icol) = dyn(elgp[0],elgp[1],elgp[2]);
+        });
+      }
       break;
     }
-    case LayoutType::Tensor2D:
+    case 2:
     {
-      auto dyn  = src_field.template get_reshaped_view<Real***[NP][NP]>();
-      auto phys = tgt_field.template get_reshaped_view<Real***>();
-      const int dim1 = dyn_dims[1];
-      const int dim2 = dyn_dims[2];
+      auto phys = phys_field.template get_reshaped_view<Real**>();
+      const int dim = phys_dims[1];
+      if (itl>=0) {
+        auto dyn  = dyn_field.template get_reshaped_view<Real***[NP][NP]>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol = idx / dim;
+          const int idim = idx % dim;
+
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          phys(icol,idim) = dyn(elgp[0],itl,idim,elgp[1],elgp[2]);
+        });
+      } else {
+        auto dyn  = dyn_field.template get_reshaped_view<Real**[NP][NP]>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols*dim),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol = idx / dim;
+          const int idim = idx % dim;
+
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          phys(icol,idim) = dyn(elgp[0],idim,elgp[1],elgp[2]);
+        });
+      }
+      break;
+    }
+    case 3:
+    {
+      auto phys = phys_field.template get_reshaped_view<Real***>();
+      auto dyn  = dyn_field.template get_reshaped_view<Real***[NP][NP]>();
+      const int dim1 = phys_dims[1];
+      const int dim2 = phys_dims[2];
       Kokkos::pair<int,int> ordering;
-      if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
+      if (phys_layout.tag(1)==dyn_layout.tag(1)) {
         ordering.first=0;
         ordering.second=1;
       } else {
@@ -600,55 +820,83 @@ remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const Lay
 template<typename ScalarType, typename DeviceType>
 template<typename ScalarT>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
-remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, const LayoutType lt) const {
+remap_bwd_3d_impl(const field_type& phys_field, const field_type& dyn_field, const int itl) const {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
   auto p2d = m_phys_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
-  const auto& dyn_dims = src_field.get_header().get_identifier().get_layout().dims();
-  switch (lt) {
-    case LayoutType::Scalar3D:
-    {
-      auto dyn  = src_field.template get_reshaped_view<ScalarT****>();
-      auto phys = tgt_field.template get_reshaped_view<ScalarT**>();
-      const int NumVerticalLevels = dyn.extent_int(3);
-      Kokkos::parallel_for(RangePolicy(0,num_cols*NumVerticalLevels),
-                           KOKKOS_LAMBDA(const int idx) {
-        const int icol = idx / NumVerticalLevels;
-        const int ilev = idx % NumVerticalLevels;
+  const auto& phys_layout = phys_field.get_header().get_identifier().get_layout();
+  const auto& dyn_layout  = dyn_field.get_header().get_identifier().get_layout();
 
-        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        phys(icol,ilev) = dyn(elgp[0],elgp[1],elgp[2],ilev);
-      });
+  const auto& phys_dims = phys_layout.dims();
+
+  constexpr int pack_size = sizeof(ScalarT) / sizeof(Real);
+  const int NumVerticalLevels = (phys_dims.back() + pack_size - 1) / pack_size;
+  switch (phys_dims.size()) {
+    case 2:
+    {
+      auto phys = phys_field.template get_reshaped_view<ScalarT**>();
+      if (itl>=0) {
+        auto dyn = dyn_field.template get_reshaped_view<ScalarT*****>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols*NumVerticalLevels),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol = idx / NumVerticalLevels;
+          const int ilev = idx % NumVerticalLevels;
+
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          phys(icol,ilev) = dyn(elgp[0],itl,elgp[1],elgp[2],ilev);
+        });
+      } else {
+        auto dyn = dyn_field.template get_reshaped_view<ScalarT****>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols*NumVerticalLevels),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol = idx / NumVerticalLevels;
+          const int ilev = idx % NumVerticalLevels;
+
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          phys(icol,ilev) = dyn(elgp[0],elgp[1],elgp[2],ilev);
+        });
+      }
       break;
     }
-    case LayoutType::Vector3D:
+    case 3:
     {
-      auto dyn  = src_field.template get_reshaped_view<ScalarT*****>();
-      auto phys = tgt_field.template get_reshaped_view<ScalarT***>();
-      const int dim = dyn_dims[1];
-      const int NumVerticalLevels = dyn.extent_int(4);
-      Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
-                           KOKKOS_LAMBDA(const int idx) {
-        const int icol =  idx / (dim*NumVerticalLevels);
-        const int idim = (idx / NumVerticalLevels) % dim;
-        const int ilev =  idx % NumVerticalLevels;
+      auto phys = phys_field.template get_reshaped_view<ScalarT***>();
+      const int dim = phys_dims[1];
+      if (itl>=0) {
+        auto dyn = dyn_field.template get_reshaped_view<ScalarT******>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol =  idx / (dim*NumVerticalLevels);
+          const int idim = (idx / NumVerticalLevels) % dim;
+          const int ilev =  idx % NumVerticalLevels;
 
-        const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
-        phys(icol,idim,ilev) = dyn(elgp[0],idim,elgp[1],elgp[2],ilev);
-      });
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          phys(icol,idim,ilev) = dyn(elgp[0],itl,idim,elgp[1],elgp[2],ilev);
+        });
+      } else {
+        auto dyn = dyn_field.template get_reshaped_view<ScalarT*****>();
+        Kokkos::parallel_for(RangePolicy(0,num_cols*dim*NumVerticalLevels),
+                             KOKKOS_LAMBDA(const int idx) {
+          const int icol =  idx / (dim*NumVerticalLevels);
+          const int idim = (idx / NumVerticalLevels) % dim;
+          const int ilev =  idx % NumVerticalLevels;
+
+          const auto& elgp = Kokkos::subview(p2d,icol,Kokkos::ALL());
+          phys(icol,idim,ilev) = dyn(elgp[0],idim,elgp[1],elgp[2],ilev);
+        });
+      }
       break;
     }
-    case LayoutType::Tensor3D:
+    case 4:
     {
-      auto dyn  = src_field.template get_reshaped_view<ScalarT******>();
-      auto phys = tgt_field.template get_reshaped_view<ScalarT****>();
-      const int dim1 = dyn_dims[1];
-      const int dim2 = dyn_dims[2];
-      const int NumVerticalLevels = dyn.extent_int(5);
+      auto phys = phys_field.template get_reshaped_view<ScalarT****>();
+      auto dyn  = dyn_field.template get_reshaped_view<ScalarT******>();
+      const int dim1 = phys_dims[1];
+      const int dim2 = phys_dims[2];
       Kokkos::pair<int,int> ordering;
-      if (src_field.get_header().get_identifier().get_layout().tag(1)==tgt_field.get_header().get_identifier().get_layout().tag(1)) {
+      if (phys_layout.tag(1)==dyn_layout.tag(1)) {
         ordering.first=0;
         ordering.second=1;
       } else {

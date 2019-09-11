@@ -33,11 +33,11 @@ TEST_CASE("scream_homme_p3", "scream_homme_p3") {
   p0.set<std::string>("Process Name", "dynamics");
   auto& p1 = params.sublist("Process 1");
   p1.set<std::string>("Process Name", "P3");
+  p1.set<std::string>("Grid","SE Physics");
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","Dynamics Driven");
-  gm_params.set<std::string>("Reference Grid","Dynamics");
-  gm_params.set<std::string>("Grid","Physics");
+  gm_params.set<std::string>("Reference Grid","SE Physics");
   std::cout << "Done\n";
 
   // Need to register products in the factory *before* we create any AtmosphereProcessGroup,

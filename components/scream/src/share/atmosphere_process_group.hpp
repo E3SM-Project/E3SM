@@ -67,6 +67,7 @@ public:
   // The methods used to query the process for its inputs/outputs
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
+  const std::set<FieldIdentifier>&  get_internal_fields () const { return m_internal_fields; }
 
   // --- Methods specific to AtmosphereProcessGroup --- //
 
@@ -83,7 +84,12 @@ public:
                         const FieldRepository<Real, device_type>& bkp_repo);
 #endif
 
+  void set_internal_field (const Field<Real, device_type>& f);
+
 protected:
+
+  void run_sequential (const double dt);
+  void run_parallel   (const double dt);
 
   // The methods to set the fields in the process
   void set_required_field_impl (const Field<const Real, device_type>& f);
@@ -116,6 +122,11 @@ protected:
   // The cumulative set of required/computed fields of the atm processes in the group
   std::set<FieldIdentifier>      m_required_fields;
   std::set<FieldIdentifier>      m_computed_fields;
+
+  // This is useful only for sequential splitting. Internal fields are fields that are
+  // required fields for some atm proc, but that are computed by some other PREVIOUS
+  // atm proc in the group. These fields may not be used outside of the group.
+  std::set<FieldIdentifier>      m_internal_fields;
 
   // The remappers are to map output/input fields to/from the reference grid
   // Note: the i-th entry of the vector is a map of remappers needed by the i-th process.

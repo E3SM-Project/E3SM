@@ -2,7 +2,6 @@
 #define SCREAM_USER_PROVIDED_GRIDS_MANAGER_HPP
 
 #include "share/grid/grids_manager.hpp"
-#include "share/remap/inverse_remapper.hpp"
 
 namespace scream
 {

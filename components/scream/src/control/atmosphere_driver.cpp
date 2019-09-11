@@ -44,22 +44,27 @@ void AtmosphereDriver::initialize (const Comm& atm_comm,
   // TODO: this is a good place where we can insert a DAG analysis, to make sure all
   //       processes have their dependency met.
 
-  // Note: remappers can be setup anytime after the field repo has allocated
-  //       the fields. We put it here, but there's no dependency with the
-  //       other atm process setup stages
-  m_atm_process_group->setup_remappers(m_device_field_repo);
-
   // Set all the fields in the processes needing them (before, they only had ids)
   // Input fields will be handed to the processes as const
   const auto& inputs  = m_atm_process_group->get_required_fields();
   const auto& outputs = m_atm_process_group->get_computed_fields();
   for (const auto& id : inputs) {
-    m_atm_process_group->set_required_field(m_device_field_repo.get_field(id));
+    m_atm_process_group->set_required_field(m_device_field_repo.get_field(id).get_const());
+  }
+  // Internal fields are fields that the atm proc group both computes and requires
+  // (in that order). These are present only for sequential splitting
+  for (const auto& id : m_atm_process_group->get_internal_fields()) {
+    m_atm_process_group->set_internal_field(m_device_field_repo.get_field(id));
   }
   // Output fields are handed to the processes as writable
   for (const auto& id : outputs) {
     m_atm_process_group->set_computed_field(m_device_field_repo.get_field(id));
   }
+
+  // Note: remappers should be setup *after* fields have been set in the atm processes,
+  //       just in case some atm proc sets some extra data in the field header,
+  //       that some remappers may actually need.
+  m_atm_process_group->setup_remappers(m_device_field_repo);
 
   // Initialize the processes
   m_atm_process_group->initialize(t0);

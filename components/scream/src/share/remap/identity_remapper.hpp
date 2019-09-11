@@ -64,13 +64,6 @@ protected:
     return m_fields[ifield].second;
   }
 
-  void do_remap_fwd () const override {
-    // Do nothing
-  }
-  void do_remap_bwd () const override {
-    // Do nothing
-  }
-
   void do_registration_begins () override {
     // Reserve space for the m_fields_ids vector, in case the user set the number
     m_fields.reserve(this->m_num_fields);
@@ -84,7 +77,17 @@ protected:
     m_fields[ifield].first  = src;
     m_fields[ifield].second = tgt;
   }
-  void do_registration_complete () override {
+  void do_unregister_field (const int ifield) override {
+    m_fields.erase(m_fields.begin()+ifield);
+  }
+  void do_registration_ends () override {
+    // Do nothing
+  }
+
+  void do_remap_fwd () const override {
+    // Do nothing
+  }
+  void do_remap_bwd () const override {
     // Do nothing
   }
 

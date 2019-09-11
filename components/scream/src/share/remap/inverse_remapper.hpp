@@ -33,6 +33,11 @@ public:
     return m_remapper->create_src_layout(src_layout);
   }
 
+  bool compatible_layouts (const layout_type& src,
+                           const layout_type& tgt) const override {
+    return m_remapper->compatible_layouts(tgt,src);
+  }
+
 protected:
 
   const identifier_type& do_get_src_field_id (const int ifield) const override {
@@ -56,17 +61,22 @@ protected:
   }
 
   void do_registration_begins () override {
-    m_remapper->set_num_fields(this->m_num_fields);
     m_remapper->registration_begins();
   }
   void do_register_field (const identifier_type& src, const identifier_type& tgt) override {
     m_remapper->register_field(tgt,src);
   }
-  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override {
-    m_remapper->bind_field(ifield,tgt,src);
+  void do_bind_field (const int /* ifield */,
+                      const field_type& src,
+                      const field_type& tgt) override {
+    m_remapper->bind_field(tgt,src);
   }
-  void do_registration_complete () override {
-    m_remapper->registration_complete();
+  void do_unregister_field (const int ifield) override {
+    m_remapper->unregister_field(m_remapper->get_src_field(ifield).get_header().get_identifier(),
+                                 m_remapper->get_tgt_field(ifield).get_header().get_identifier());
+  }
+  void do_registration_ends () override {
+    m_remapper->registration_ends();
   }
 
   std::shared_ptr<base_type>  m_remapper;

@@ -33,27 +33,21 @@ public:
   using grid_type       = AbstractGrid;
   using grid_ptr_type   = std::shared_ptr<const grid_type>;
 
-  AbstractRemapper (const grid_ptr_type src_grid,
-                    const grid_ptr_type tgt_grid);
+  AbstractRemapper (const grid_ptr_type& src_grid,
+                    const grid_ptr_type& tgt_grid);
 
   virtual ~AbstractRemapper () = default;
-
-  // If the number of fields is known, you can call this to pre-allocate
-  // some memory. This can just be a 'good guess'. The actual number of
-  // registered fields is computed during registration_complete.
-  // TODO: should this be removed alltogether, and just go with dynamic
-  //       sizing of arrays?
-  void set_num_fields (const int num_fields);
 
   void registration_begins ();
   void register_field (const field_type& src, const field_type& tgt);
   void register_field (const identifier_type& src, const identifier_type& tgt);
-  void registration_complete ();
+  void unregister_field (const identifier_type& src, const identifier_type& tgt);
+  void registration_ends ();
 
   // The user is allowed to only provide identifiers in the registration phase.
   // In that case, fields have to be bound after registration is complete, and
   // before any call to remap.
-  void bind_field (const int ifield, const field_type& src, const field_type& tgt);
+  void bind_field (const field_type& src, const field_type& tgt);
 
   RepoState get_state () const { return m_state; }
 
@@ -61,9 +55,9 @@ public:
   void remap (const bool forward) const {
     scream_require_msg(m_state!=RepoState::Open,
                        "Error! Cannot perform remapping at this time.\n"
-                       "       Did you forget to call 'registration_complete'?\n");
+                       "       Did you forget to call 'registration_ends'?\n");
 
-    scream_require_msg(m_all_fields_are_bound,
+    scream_require_msg(m_num_bound_fields==m_num_fields,
                        "Error! Not all fields have been set in the remapper.\n"
                        "       In particular, field " +
                        std::to_string(std::distance(m_fields_are_bound.begin(),std::find(m_fields_are_bound.begin(),m_fields_are_bound.end(),false))) +
@@ -81,15 +75,6 @@ public:
   // Getter methods
   grid_ptr_type get_src_grid () const { return m_src_grid; }
   grid_ptr_type get_tgt_grid () const { return m_tgt_grid; }
-
-  const std::set<identifier_type>& get_src_fields_ids () const {
-    return m_src_fields_ids;
-  }
-  const std::set<identifier_type>& get_tgt_fields_ids () const {
-    return m_tgt_fields_ids;
-  }
-
-  bool field_is_bound (const int ifield) const { return m_fields_are_bound[ifield]; }
 
   const identifier_type& get_src_field_id (const int ifield) const {
     scream_require_msg(ifield>=0 && ifield<m_num_registered_fields,
@@ -122,11 +107,34 @@ public:
   virtual FieldLayout create_src_layout (const FieldLayout& tgt_layout) const = 0;
   virtual FieldLayout create_tgt_layout (const FieldLayout& src_layout) const = 0;
 
+  bool has_src_field (const identifier_type& fid) const {
+    for (int i=0; i<m_num_registered_fields; ++i) {
+      if (get_src_field_id(i) == fid) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool has_tgt_field (const identifier_type& fid) const {
+    for (int i=0; i<m_num_registered_fields; ++i) {
+      if (get_tgt_field_id(i) == fid) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   int get_num_fields () const {
-    scream_require_msg(m_state==RepoState::Closed,
-                       "Error! Cannot call 'get_num_fields' until registration has ended.\n"
-                       "       Before then, this number may be incorrect.\n");
+    scream_require_msg(m_state!=RepoState::Open,
+                       "Error! Cannot call 'get_num_fields' durin the registration phase.\n");
     return m_num_fields;
+  }
+
+  virtual bool compatible_layouts (const layout_type& src,
+                                   const layout_type& tgt) const {
+    // By default, the only compatible layouts are identical
+    return src==tgt;
   }
 
 protected:
@@ -138,10 +146,24 @@ protected:
   virtual void do_registration_begins () = 0;
   virtual void do_register_field (const identifier_type& src, const identifier_type& tgt) = 0;
   virtual void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) = 0;
-  virtual void do_registration_complete () = 0;
+  virtual void do_unregister_field (const int ifield) = 0;
+  virtual void do_registration_ends () = 0;
 
   virtual void do_remap_fwd () const = 0;
   virtual void do_remap_bwd () const = 0;
+
+  int find_field (const identifier_type& src,
+                  const identifier_type& tgt) {
+    int ifield = -1;
+    for (int i=0; i<m_num_registered_fields; ++i) {
+      if (src==get_src_field_id(i) &&
+          tgt==get_tgt_field_id(i)) {
+        ifield = i;
+        break;
+      }
+    }
+    return ifield;
+  }
 
   // The state of the remapper
   RepoState     m_state;
@@ -150,50 +172,33 @@ protected:
   grid_ptr_type m_src_grid;
   grid_ptr_type m_tgt_grid;
 
-  // The number of fields to remap
+  // The number of fields to remap, and the number of fields currently registered.
+  // The latter is guaranteed to be equal to the former only when registration is
+  // not undergoing. During registration, m_num_fields=0<=m_num_registered_fields.
   int           m_num_fields;
-
-  // The number of fields currently registered. This is guaranteed to be equal
-  // to m_num_fields only when registration is not undergoing. During registration,
-  // we have either 0<=m_num_registered_fields<=m_num_fields (if `set_num_fields`
-  // was called), or m_num_fields=0<=m_num_registered_fields.
   int           m_num_registered_fields;
 
   // Whether fields have been provided. Recall that the user may register
   // fields passing only an identifier, and actually bind fields only
   // at a later moment.
   std::vector<bool>   m_fields_are_bound;
-  bool                m_all_fields_are_bound;
-
-  std::set<identifier_type>  m_src_fields_ids;
-  std::set<identifier_type>  m_tgt_fields_ids;
+  int                 m_num_bound_fields;
 };
 
 template<typename ScalarType, typename DeviceType>
 AbstractRemapper<ScalarType,DeviceType>::
-AbstractRemapper (const grid_ptr_type src_grid,
-                  const grid_ptr_type tgt_grid)
+AbstractRemapper (const grid_ptr_type& src_grid,
+                  const grid_ptr_type& tgt_grid)
  : m_state                 (RepoState::Clean)
  , m_src_grid              (src_grid)
  , m_tgt_grid              (tgt_grid)
  , m_num_fields            (0)
  , m_num_registered_fields (0)
  , m_fields_are_bound      (0)
- , m_all_fields_are_bound  (true)
+ , m_num_bound_fields      (0)
 {
-  // Nothing to do here
-}
-
-template<typename ScalarType, typename DeviceType>
-void AbstractRemapper<ScalarType,DeviceType>::
-set_num_fields (const int num_fields) {
-  scream_require_msg(m_state==RepoState::Clean,
-                     "Error! Cannot re-set the number of fields after registration has beginned.\n");
-  scream_require_msg(num_fields>=0,
-                     "Error! Invalid number of fields specified.\n");
-
-  m_num_fields = num_fields;
-  m_fields_are_bound.resize(m_num_fields,false);
+  scream_require_msg(static_cast<bool>(src_grid), "Error! Invalid source grid pointer.\n");
+  scream_require_msg(static_cast<bool>(tgt_grid), "Error! Invalid target grid pointer.\n");
 }
 
 template<typename ScalarType, typename DeviceType>
@@ -216,24 +221,20 @@ register_field (const identifier_type& src, const identifier_type& tgt) {
                        "       Did you forget to call 'registration_begins' ?");
   scream_require_msg(m_state!=RepoState::Closed,
                        "Error! Cannot register fields in the remapper at this time.\n"
-                       "       Did you accidentally call 'registration_complete' already?");
+                       "       Did you accidentally call 'registration_ends' already?");
 
   scream_require_msg(src.get_grid_name()==m_src_grid->name(),
                        "Error! Source field stores the wrong grid.\n");
   scream_require_msg(tgt.get_grid_name()==m_tgt_grid->name(),
                        "Error! Target field stores the wrong grid.\n");
 
-  const auto src_lt = get_layout_type(src.get_layout().tags());
-  const auto tgt_lt = get_layout_type(tgt.get_layout().tags());
-
-  scream_require_msg(src_lt==tgt_lt, "Error! Source and target layouts do not match.\n");
-
-  m_fields_are_bound.push_back(false);
+  scream_require_msg(compatible_layouts(src.get_layout(),tgt.get_layout()),
+                     "Error! Source and target layouts are not compatible.\n");
 
   do_register_field (src,tgt);
 
+  m_fields_are_bound.push_back(false);
   ++m_num_registered_fields;
-  m_all_fields_are_bound = false;
 }
 
 template<typename ScalarType, typename DeviceType>
@@ -241,56 +242,72 @@ void AbstractRemapper<ScalarType,DeviceType>::
 register_field (const field_type& src, const field_type& tgt) {
   register_field(src.get_header().get_identifier(),
                  tgt.get_header().get_identifier());
-  bind_field(m_num_registered_fields-1,src,tgt);
+  bind_field(src,tgt);
 }
 
 template<typename ScalarType, typename DeviceType>
 void AbstractRemapper<ScalarType,DeviceType>::
-bind_field (const int ifield, const field_type& src, const field_type& tgt) {
-  scream_require_msg(m_state!=RepoState::Clean,
-                       "Error! Cannot bind fields in the remapper at this time.\n"
-                       "       Did you forget to call 'registration_begins' ?");
-  scream_require_msg(ifield>=0 && ifield<m_num_registered_fields,
-                     "Error! Field index (" + std::to_string(ifield) + ") out of bounds.\n");
-  scream_require_msg(!m_fields_are_bound[ifield],
-                     "Error! Fields already bound for index " + std::to_string(ifield) + ".\n");
+unregister_field (const identifier_type& src, const identifier_type& tgt) {
+  scream_require_msg(m_state==RepoState::Open,
+                     "Error! You can only un-register fields during the registration phase.\n");
 
-  scream_require_msg(src.get_header().get_identifier()==get_src_field_id(ifield),
-                       "Error! Source field has the wrong identifier.\n");
-  scream_require_msg(tgt.get_header().get_identifier()==get_tgt_field_id(ifield),
-                       "Error! Target field has the wrong identifier.\n");
+  const int ifield = find_field(src,tgt);
+  scream_require_msg(ifield>=0,
+                     "Error! The src/tgt pair of fields \n"
+                     "         " + src.get_id_string() + "\n"
+                     "         " + tgt.get_id_string() + "\n"
+                     "       was not registered.\n");
+
+  const bool was_bound = m_fields_are_bound[ifield];
+  do_unregister_field(ifield);
+
+  --m_num_registered_fields;
+  if (was_bound) {
+    --m_num_bound_fields;
+  }
+  m_fields_are_bound.erase(m_fields_are_bound.begin()+ifield);
+}
+
+template<typename ScalarType, typename DeviceType>
+void AbstractRemapper<ScalarType,DeviceType>::
+bind_field (const field_type& src, const field_type& tgt) {
+  scream_require_msg(m_state!=RepoState::Clean,
+                     "Error! Cannot bind fields in the remapper at this time.\n"
+                     "       Did you forget to call 'registration_begins' ?");
+
+  const auto& src_fid = src.get_header().get_identifier();
+  const auto& tgt_fid = tgt.get_header().get_identifier();
+
+  // Try to locate the pair of fields
+  const int ifield = find_field(src_fid, tgt_fid);
+  scream_require_msg(ifield>=0,
+                     "Error! The src/tgt field pair\n"
+                     "         " + src_fid.get_id_string() + "\n"
+                     "         " + tgt_fid.get_id_string() + "\n"
+                     "       was not registered. Please, register fields before binding them.\n");
 
   scream_require_msg(src.is_allocated(), "Error! Source field is not yet allocated.\n");
-  scream_require_msg(tgt.is_allocated(), "Error! Target field is not yet allocated.\n");
+  scream_require_msg(tgt.is_allocated(), "Error! Source field is not yet allocated.\n");
 
-  m_fields_are_bound[ifield] = true;
-
-  // Assume all good
-  m_all_fields_are_bound = true;
-  for (auto bound : m_fields_are_bound) {
-    m_all_fields_are_bound &= bound;
-  }
+  scream_require_msg(!m_fields_are_bound[ifield],
+                     "Error! Field already bound.\n");
 
   do_bind_field(ifield,src,tgt);
+
+  m_fields_are_bound[ifield] = true;
+  ++m_num_bound_fields;
 }
 
 template<typename ScalarType, typename DeviceType>
 void AbstractRemapper<ScalarType,DeviceType>::
-registration_complete () {
+registration_ends () {
   scream_require_msg(m_state!=RepoState::Closed,
-                       "Error! Cannot call registration_complete at this time.\n"
-                       "       Did you accidentally call 'registration_complete' already?");
+                       "Error! Cannot call registration_ends at this time.\n"
+                       "       Did you accidentally call 'registration_ends' already?");
 
   m_num_fields = m_num_registered_fields;
 
-  do_registration_complete();
-
-  for (int ifield=0; ifield<m_num_fields; ++ifield) {
-    auto it_bool = m_src_fields_ids.insert(get_src_field_id(ifield));
-    scream_require_msg(it_bool.second, "Error! The remapper has the same field registered twice.\n");
-    it_bool = m_tgt_fields_ids.insert(get_tgt_field_id(ifield));
-    scream_require_msg(it_bool.second, "Error! The remapper has the same field registered twice.\n");
-  }
+  do_registration_ends();
 
   m_state = RepoState::Closed;
 }

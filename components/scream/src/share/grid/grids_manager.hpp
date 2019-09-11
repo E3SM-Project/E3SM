@@ -19,8 +19,8 @@ namespace scream
 class GridsManager
 {
 public:
-  using device_type       = DefaultDevice;  // TODO: template grid or gridmanager on device type
   using grid_type         = AbstractGrid;
+  using device_type       = grid_type::device_type;
   using grid_ptr_type     = std::shared_ptr<grid_type>;
   using grid_repo_type    = std::map<std::string, grid_ptr_type>;
   using remapper_type     = AbstractRemapper<Real,device_type>;

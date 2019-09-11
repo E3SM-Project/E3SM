@@ -40,6 +40,7 @@ module scream_homme_interface_mod
   public :: was_init_homme2_called_f90
   public :: finalize_homme_f90
   public :: get_elem_cols_gids_f90
+  public :: get_unique_cols_f90
   public :: get_num_owned_columns_f90
 
   public :: get_homme_int_param_value_f90
@@ -50,7 +51,7 @@ contains
   subroutine init_homme1_f90 (f_comm) bind(c)
     use parallel_mod,     only: initmp_from_par
     use prim_driver_mod,  only: prim_init1, prim_create_c_data_structures
-    use control_mod,      only: runtype, vfile_mid, vfile_int
+    use control_mod,      only: vfile_mid, vfile_int
     use common_io_mod,    only: infilenames
     use interpolate_driver_mod, only : pio_read_phis
     !
@@ -302,30 +303,72 @@ contains
     if (par%rank .eq. par%root) par%masterproc = .true.
   end subroutine init_parallel
 
-  subroutine get_elem_cols_gids_f90 (ie, gids_ptr) bind(c)
-    use dimensions_mod, only: np
+  subroutine get_elem_cols_gids_f90 (gids_ptr) bind(c)
+    use dimensions_mod, only: np,nelemd
+    use kinds,          only: long_kind
     !
     ! Input(s)
     !
-    integer (kind=c_int), intent(in) :: ie
     type (c_ptr),         intent(in) :: gids_ptr
     !
     ! Local(s)
     !
-    integer (kind=c_int), pointer :: gids(:,:)
-    integer :: i,j
+    integer (kind=long_kind), pointer :: gids(:)
+    integer :: i,j,ie
 
     if (.not. is_half_inited) then
       call abortmp ("Error! init_homme1_f90 was not called yet.\n")
     endif
 
-    call c_f_pointer(gids_ptr, gids, [np,np])
-    do j=1,np
-      do i=1,np
-        gids(i,j) = elem(ie)%gdofP(i,j)
+    call c_f_pointer(gids_ptr, gids, [nelemd*np*np])
+    do ie=1,nelemd
+      do j=1,np
+        do i=1,np
+          gids(j*np+i) = elem(ie)%gdofP(i,j)
+        enddo
       enddo
     enddo
   end subroutine get_elem_cols_gids_f90
+
+  subroutine get_unique_cols_f90 (gids_ptr, elgp_ptr) bind(c)
+    use dimensions_mod, only: np, nelemd
+    use element_mod,    only: index_t
+    use kinds,          only: long_kind
+    !
+    ! Input(s)
+    !
+    type (c_ptr), intent(in) :: gids_ptr, elgp_ptr
+    !
+    ! Local(s)
+    !
+    type (index_t) :: idxP
+    integer (kind=long_kind), pointer :: gids(:)
+    integer (kind=c_int), pointer :: elgp(:,:)
+    integer :: i,ip,jp,ie,ncols,icol
+
+    if (.not. is_half_inited) then
+      call abortmp ("Error! init_homme1_f90 was not called yet.\n")
+    endif
+
+    ncols = get_num_owned_columns_f90()
+    call c_f_pointer(gids_ptr, gids, [ncols])
+    call c_f_pointer(elgp_ptr, elgp, [3,ncols])
+
+    icol = 1
+    do ie=1,nelemd
+      idxP = elem(ie)%idxP
+      ncols = idxP%NumUniquePts
+      do i=1,ncols
+        ip = idxP%ia(i)
+        jp = idxP%ja(i)
+        elgp(1,icol) = ie
+        elgp(2,icol) = jp
+        elgp(3,icol) = ip
+
+        gids(icol) = elem(ie)%gdofP(ip,jp)
+      enddo
+    enddo
+  end subroutine get_unique_cols_f90
 
   function get_num_owned_columns_f90 () result (num_cols) bind(c)
     use dimensions_mod, only: nelemd
@@ -346,7 +389,7 @@ contains
   end function get_num_owned_columns_f90
 
   function get_homme_int_param_value_f90 (param_name_c) result(param_value) bind(c)
-    use dimensions_mod, only: nelemd
+    use dimensions_mod, only: nelemd, qsize
     use control_mod,    only: ftype
     use time_mod,       only: nmax
     !
@@ -372,6 +415,8 @@ contains
         param_value = ftype
       case("nelemd")
         param_value = nelemd
+      case("qsize")
+        param_value = qsize
       case("nmax")
         param_value = nmax
       case("num momentum forcings")
@@ -384,7 +429,6 @@ contains
   end function get_homme_int_param_value_f90
 
   function get_homme_real_param_value_f90 (param_name_c) result(param_value) bind(c)
-    use dimensions_mod, only: nelemd
     use control_mod,    only: nu, nu_div, nu_p, nu_q, nu_s, hypervis_scaling
     use time_mod,       only: tstep
     !
@@ -426,7 +470,6 @@ contains
   end function get_homme_real_param_value_f90
 
   function get_homme_bool_param_value_f90 (param_name_c) result(param_value) bind(c)
-    use dimensions_mod, only: nelemd
     use control_mod,    only: moisture
     !
     ! Input(s)

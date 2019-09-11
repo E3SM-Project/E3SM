@@ -26,15 +26,15 @@ namespace scream
  *  This includes both physics (i.e., parametrizations) and dynamics.
  *  The atmosphere driver will take care of calling init/run/finalize
  *  methods of each process, in an order that the driver
- *  establishes. A process must provide a list of fields
- *  that it needs as input, together with a list of fields that
- *  are computed.
+ *  establishes. A concrete process must implement all the purely virtual
+ *  methods of this interface; for instance, it must provide a list of fields
+ *  that it needs as input, together with a list of fields that are computed.
  */
 
 class AtmosphereProcess : public util::enable_shared_from_this<AtmosphereProcess>
 {
 public:
-  using device_type      = DefaultDevice; // may need to template class on this
+  using device_type = DefaultDevice; // may need to template class on this
 
   virtual ~AtmosphereProcess () = default;
 

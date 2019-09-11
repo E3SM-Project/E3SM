@@ -125,7 +125,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
     auto& remap_in = m_inputs_remappers[iproc];
     auto& remap_out = m_outputs_remappers[iproc];
 
-    // Any atm proc sub-group will take care of remapping input outputs.
+    // Any atm proc sub-group will take care of remapping input/outputs.
     // We only have to deal with 'individual' atm processes
     const auto type = atm_proc->type();
     if (type!=AtmosphereProcessType::Group) {
@@ -147,14 +147,15 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       // as input a copy of fid on the reference grid.
       // If fid is not on the reference grid, we add fid to our 'computed' fields.
       const bool is_ref_grid = (fid.get_grid_name()==ref_grid->name());
-      auto& remapper = remap_in[fid.get_grid_name()];
-      const FieldIdentifier ref_fid = is_ref_grid ? fid : create_ref_fid(fid,remapper);
+      const FieldIdentifier ref_fid = is_ref_grid ? fid : create_ref_fid(fid,remap_in[fid.get_grid_name()]);
 
       if (m_group_schedule_type==GroupScheduleType::Sequential) {
         // If the schedule is sequential, we do not add inputs if they are computed
         // by a previous process (they are not an 'input' to the group).
         if (computed.find(fid.name())==computed.end()) {
           it_bool = m_required_fields.insert(ref_fid);
+        } else {
+          m_internal_fields.insert(fid);
         }
       } else {
         // In parallel schedule, the inputs of all processes are inputs of the group
@@ -168,7 +169,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
         computed.insert(fid.name());
         m_computed_fields.insert(fid);
 
-        remapper->register_field(ref_fid,fid);
+        remap_in[fid.get_grid_name()]->register_field(ref_fid,fid);
       }
     }
 
@@ -180,7 +181,7 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
       computed.insert(fid.name());
 
       // If the grid of fid is not the reference one, we also remap it
-      // to the reference grid, hence "computing" fid_ref
+      // to the reference grid, hence "computing" ref_fid
       if (fid.get_grid_name()!=ref_grid->name()) {
         auto& remapper = remap_out[fid.get_grid_name()];
 
@@ -193,10 +194,10 @@ void AtmosphereProcessGroup::set_grids (const std::shared_ptr<const GridsManager
 
     // Close registration in the remappers
     for (auto it : m_inputs_remappers[iproc]) {
-      it.second->registration_complete();
+      it.second->registration_ends();
     }
     for (auto it : m_outputs_remappers[iproc]) {
-      it.second->registration_complete();
+      it.second->registration_ends();
     }
   }
 }
@@ -223,7 +224,7 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
         auto& src = field_repo.get_field(src_id);
         auto& tgt = field_repo.get_field(tgt_id);
 
-        remapper->bind_field(ifield,src,tgt);
+        remapper->bind_field(src,tgt);
       }
     }
 
@@ -237,7 +238,7 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
         auto& src = field_repo.get_field(src_id);
         auto& tgt = field_repo.get_field(tgt_id);
 
-        remapper->bind_field(ifield,src,tgt);
+        remapper->bind_field(src,tgt);
       }
     }
   }
@@ -258,6 +259,14 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
 }
 
 void AtmosphereProcessGroup::run (const double dt) {
+  if (m_group_schedule_type==GroupScheduleType::Sequential) {
+    run_sequential(dt);
+  } else {
+    run_parallel(dt);
+  }
+}
+
+void AtmosphereProcessGroup::run_sequential (const double dt) {
   m_current_ts += dt;
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     // Reamp the inputs of this process
@@ -291,25 +300,26 @@ void AtmosphereProcessGroup::run (const double dt) {
         for (const auto& f : it.second) {
           const auto& fid = f.first;
           const auto& gn = fid.get_grid_name();
-
           auto& f_old = m_bkp_field_repo->get_field(fid);
           bool field_is_unchanged = views_are_equal(f_old,f.second);
+          if (util::contains(computed,fid) ||
+              (inputs_remappers.find(gn)!=inputs_remappers.end() &&
+               inputs_remappers.at(gn)->has_tgt_field(fid))) {
+            // For fields that changed, make sure the time stamp has been updated
+            const auto& ts = f.second.get_header().get_tracking().get_time_stamp();
+            scream_require_msg(field_is_unchanged || ts==m_current_ts,
+                               "Error! Process '" + atm_proc->name() + "' updated field '" +
+                                fid.get_id_string() + "', but it did not update its time stamp.\n");
+          } else {
+            // For non computed fields, make sure the field in m_repo matches
+            // the copy in m_bkp_repo, and update the copy in m_bkp_repo.
+            // There are three ok scenarios: 1) field is unchanged, 2) field is computed,
+            // 3) field is a remapped input.
+            scream_require_msg(field_is_unchanged,
+                               "Error! Process '" + atm_proc->name() + "' updated field '" +
+                                fid.get_id_string() + "', which it wasn't allowed to update.\n");
 
-          // For non computed fields, make sure the field in m_repo matches
-          // the copy in m_bkp_repo, and update the copy in m_bkp_repo.
-          // There are three ok scenarios: 1) field is unchanged, 2) field is computed,
-          // 3) field is a remapped input.
-          scream_require_msg(util::contains(computed,fid) || field_is_unchanged ||
-                             (inputs_remappers.find(gn)!=inputs_remappers.end() &&
-                              util::contains(inputs_remappers.at(gn)->get_tgt_fields_ids(),fid)),
-                             "Error! Process '" + atm_proc->name() + "' updated field '" +
-                              fid.get_id_string() + "', which it wasn't allowed to update.\n");
-
-          // For fields that changed, make sure the time stamp has been updated
-          const auto& ts = f.second.get_header().get_tracking().get_time_stamp();
-          scream_require_msg(field_is_unchanged || ts==m_current_ts,
-                             "Error! Process '" + atm_proc->name() + "' updated field '" +
-                              fid.get_id_string() + "', but it did not update its time stamp.\n");
+          }
         }
       }
       // Update the computed fields in the bkp field repo
@@ -340,6 +350,10 @@ void AtmosphereProcessGroup::run (const double dt) {
       }
     }
   }
+}
+
+void AtmosphereProcessGroup::run_parallel (const double /* dt */) {
+  scream_require_msg (false,"Error! Parallel splitting not yet implemented.\n");
 }
 
 void AtmosphereProcessGroup::finalize (/* what inputs? */) {
@@ -461,6 +475,26 @@ views_are_equal(const field_type& f1, const field_type& f2) {
   return (num_diffs == 0);
 }
 #endif
+
+void AtmosphereProcessGroup::set_internal_field (const Field<Real, device_type>& f)
+{
+  const auto& fid = f.get_header().get_identifier();
+  for (int iproc=0; iproc<m_group_size; ++iproc) {
+    auto proc  = m_atm_processes[iproc];
+    auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(proc);
+    if (proc->requires(fid)) {
+      proc->set_required_field(f.get_const());
+    }
+    if (proc->computes(fid)) {
+      proc->set_computed_field(f);
+    }
+    if (static_cast<bool>(group)) {
+      if (util::contains(group->get_internal_fields(),fid)) {
+        group->set_internal_field(f);
+      }
+    }
+  }
+}
 
 FieldIdentifier
 AtmosphereProcessGroup::create_ref_fid (const FieldIdentifier& fid,

@@ -9,14 +9,11 @@ class DummyPhysicsGrid : public SEGrid
 {
 public:
   DummyPhysicsGrid (const int num_cols, const bool fwd)
-   : SEGrid(std::string("Physics") + (fwd ? "_fwd" : "_bwd"),GridType::SE_NodeBased)
+   : SEGrid(std::string("Physics") + (fwd ? "_fwd" : "_bwd"),GridType::SE_NodeBased,num_cols)
   {
-    m_num_dofs = num_cols;
-
+    // Nothing to do here
   }
   ~DummyPhysicsGrid () = default;
-
-protected:
 };
 
 template<typename ScalarType, typename DeviceType>
@@ -71,7 +68,7 @@ protected:
   }
 
   void do_registration_begins () {}
-  void do_registration_complete () {}
+  void do_registration_ends () {}
 
   void do_register_field (const identifier_type& src, const identifier_type& tgt) override {
     field_type f1(src);
@@ -81,6 +78,9 @@ protected:
   void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override {
     m_fields[ifield].first  = src;
     m_fields[ifield].second = tgt;
+  }
+  void do_unregister_field (const int ifield) override {
+    m_fields.erase(m_fields.begin()+ifield);
   }
 
   void do_remap_fwd () const override {
