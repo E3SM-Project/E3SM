@@ -28,7 +28,7 @@ void access_lookup_table_c(Int dumjj, Int dumii, Int dumi, Int index,
 void access_lookup_table_coll_c(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
                                 Real dum1, Real dum3, Real dum4, Real dum5, Real* proc);
 
-void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* dnu, Real* lamc,
+void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* lamc,
                       Real* cdist, Real* cdist1, Real lcldm);
 
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
@@ -84,13 +84,17 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
 void get_cloud_dsd2(GetCloudDsd2Data& d)
 {
   p3_init(true);
-  get_cloud_dsd2_c(d.qc, &d.nc, &d.mu_c, d.rho, &d.nu, d.dnu, &d.lamc, &d.cdist, &d.cdist1, d.lcldm);
+  Real nc_in = d.nc_in;
+  get_cloud_dsd2_c(d.qc, &nc_in, &d.mu_c, d.rho, &d.nu, &d.lamc, &d.cdist, &d.cdist1, d.lcldm);
+  d.nc_out = nc_in;
 }
 
 void get_rain_dsd2(GetRainDsd2Data& d)
 {
   p3_init(true);
-  get_rain_dsd2_c(d.qr, &d.nr, &d.mu_r, &d.lamr, &d.cdistr, &d.logn0r, d.rcldm);
+  Real nr_in = d.nr_in;
+  get_rain_dsd2_c(d.qr, &nr_in, &d.mu_r, &d.lamr, &d.cdistr, &d.logn0r, d.rcldm);
+  d.nr_out = nr_in;
 }
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
@@ -195,7 +199,7 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
   *proc = P3F::apply_table_coll(qiti_gt_small, adjusted_index, P3GlobalForFortran::itabcol(), ti, tr)[0];
 }
 
-void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Real* dnu_, Real* lamc_,
+void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Real* lamc_,
                       Real* cdist_, Real* cdist1_, Real lcldm_)
 {
   using P3F = Functions<Real, HostDevice>;
@@ -221,10 +225,9 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
 
   typename P3F::Smask qr_gt_small(qr_ > P3F::C::NSMALL);
   typename P3F::Spack qr(qr_), rcldm(rcldm_), nr(*nr_);
-  typename P3F::Spack lamr, mu_r, cdistr, logn0r, rdumii;
-  typename P3F::IntSmallPack dumii;
+  typename P3F::Spack lamr, mu_r, cdistr, logn0r;
 
-  P3F::get_rain_dsd2(P3GlobalForFortran::mu_r_table(), qr_gt_small, qr, nr, mu_r, rdumii, dumii, lamr, cdistr, logn0r);
+  P3F::get_rain_dsd2(P3GlobalForFortran::mu_r_table(), qr_gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
 
   *nr_     = nr[0];
   *mu_r_   = mu_r[0];

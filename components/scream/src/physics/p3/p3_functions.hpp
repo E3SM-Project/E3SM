@@ -260,8 +260,7 @@ struct Functions
   static void get_rain_dsd2 (
     const view_1d_table& mu_r_table,
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
-    Spack& rdumii, IntSmallPack& dumii, Spack& lamr,
-    Spack& cdistr, Spack& logn0r);
+    Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 
 };
 

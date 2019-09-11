@@ -152,20 +152,16 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 struct GetCloudDsd2Data
 {
   // Inputs
-  Real qc, rho, lcldm;
-  Real* dnu;
-
-  // In/out
-  Real nc;
+  Real qc, rho, lcldm, nc_in;
 
   // Outputs
-  Real mu_c, nu, lamc, cdist, cdist1;
+  Real nc_out, mu_c, nu, lamc, cdist, cdist1;
 };
 void get_cloud_dsd2(GetCloudDsd2Data& d);
 
 extern "C" {
 
-void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* dnu, Real* lamc,
+void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* lamc,
                       Real* cdist, Real* cdist1, Real lcldm);
 
 }
@@ -173,13 +169,10 @@ void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* d
 struct GetRainDsd2Data
 {
   // Inputs
-  Real qr, rcldm;
-
-  // In/out
-  Real nr;
+  Real qr, rcldm, nr_in;
 
   // Outputs
-  Real lamr, mu_r, cdistr, logn0r;
+  Real nr_out, lamr, mu_r, cdistr, logn0r;
 };
 void get_rain_dsd2(GetRainDsd2Data& d);
 

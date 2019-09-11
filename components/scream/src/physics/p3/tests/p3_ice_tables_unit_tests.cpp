@@ -100,7 +100,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
 
   static void run_bfb()
   {
-    using KTH    = KokkosTypes<HostDevice>;
+    using KTH = KokkosTypes<HostDevice>;
 
     // Read in ice tables
     view_itab_table itab;
@@ -261,6 +261,8 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
 
       real_results(6) = rain_result;
     });
+
+    // Sync results back to host
     auto int_results_mirror  = Kokkos::create_mirror_view(int_results);
     auto real_results_mirror = Kokkos::create_mirror_view(real_results);
     Kokkos::deep_copy(int_results_mirror, int_results);

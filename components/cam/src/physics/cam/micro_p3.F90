@@ -1698,6 +1698,10 @@ contains
   !===========================================================================================
   subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,lcldm)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: get_cloud_dsd2_f
+#endif
+
     implicit none
 
     !arguments:
@@ -1711,6 +1715,13 @@ contains
     integer                         :: dumi
 
     !--------------------------------------------------------------------------
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call get_cloud_dsd2_f(qc,nc,mu_c,rho,nu,lamc,cdist,cdist1,lcldm)
+       return
+    endif
+#endif
 
     if (qc.ge.qsmall) then
 
@@ -1761,6 +1772,10 @@ contains
   !===========================================================================================
   subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: get_rain_dsd2_f
+#endif
+
     ! Computes and returns rain size distribution parameters
 
     implicit none
@@ -1774,6 +1789,13 @@ contains
     real(rtype)                            :: inv_dum,lammax,lammin
 
     !--------------------------------------------------------------------------
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call get_rain_dsd2_f(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
+       return
+    endif
+#endif
 
     if (qr.ge.qsmall) then
 

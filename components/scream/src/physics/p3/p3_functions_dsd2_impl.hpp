@@ -28,6 +28,7 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
     mu_c = pack::min(mu_c, 15.);
 
     // interpolate for mass distribution spectral shape parameter (for SB warm processes)
+    nu = 0.;
     if (P3C::iparam == 1) {
       IntSmallPack dumi = IntSmallPack(mu_c) - 1;
       Spack dnu0, dnu1;
@@ -63,8 +64,7 @@ void Functions<S,D>::
 get_rain_dsd2 (
     const view_1d_table& mu_r_table,
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
-    Spack& rdumii, IntSmallPack& dumii, Spack& lamr,
-    Spack& cdistr, Spack& logn0r)
+    Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm)
 {
   constexpr auto nsmall = Constants<Scalar>::NSMALL;
   constexpr auto thrd = Constants<Scalar>::THIRD;
@@ -74,62 +74,48 @@ get_rain_dsd2 (
   cdistr = 0;
   logn0r = 0;
 
-  // use lookup table to get mu
-  // mu-lambda relationship is from Cao et al. (2008), eq. (7)
+  if (qr_gt_small.any()) {
+    // use lookup table to get mu
+    // mu-lambda relationship is from Cao et al. (2008), eq. (7)
 
-  // find spot in lookup table
-  // (scaled N/q for lookup table parameter space)
-  const auto nr_lim = max(nr, nsmall);
-  Spack inv_dum(0);
-  inv_dum.set(qr_gt_small,
-              pow(qr / (cons1 * nr_lim * 6.0), thrd));
+    // find spot in lookup table
+    // (scaled N/q for lookup table parameter space)
+    const auto nr_lim = max(nr, nsmall);
+    Spack inv_dum(0);
+    inv_dum.set(qr_gt_small,
+                pow(qr / (cons1 * nr_lim * 6.0), thrd));
 
-  mu_r = 0;
-  {
-    const auto m1 = qr_gt_small && (inv_dum < 282.e-6);
-    mu_r.set(m1, 8.282);
-  }
-  {
-    const auto m2 = qr_gt_small && (inv_dum >= 282.e-6) && (inv_dum < 502.e-6);
-    if (m2.any()) {
-      scream_masked_loop(m2, s) {
-        // Linearly interpolate mu_r.
-        Scalar rdumiis = (inv_dum[s] - 250.e-6)*0.5e6;
-        rdumiis = util::max<Scalar>(rdumiis, 1.0);
-        rdumiis = util::min<Scalar>(rdumiis, 150.0);
-        rdumii[s] = rdumiis;
-        Int dumiis = rdumiis;
-        dumiis = util::min(dumiis, 149);
-        dumii[s] = dumiis;
-        const auto mu_r_im1 = mu_r_table(dumiis-1);
-        mu_r[s] = mu_r_im1 + (mu_r_table(dumiis) - mu_r_im1) * (rdumiis - dumiis);
+    // Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
+    mu_r.set(qr_gt_small, C::mu_r_const);
+    // recalculate slope based on mu_r
+    lamr.set(qr_gt_small,
+             pow(cons1 * nr_lim * (mu_r + 3) *
+                 (mu_r + 2) * (mu_r + 1)/qr,
+                 thrd));
+
+    // check for slope
+    const auto lammax = (mu_r+1.)*1.e+5;
+    // set to small value since breakup is explicitly included (mean size 0.8 mm)
+    const auto lammin = (mu_r+1.)*1250.0;
+
+    // apply lambda limiters for rain
+    const auto lt = qr_gt_small && (lamr < lammin);
+    const auto gt = qr_gt_small && (lamr > lammax);
+    const auto either = lt || gt;
+    nr.set(qr_gt_small, nr_lim);
+    if (either.any()) {
+      lamr.set(lt, lammin);
+      lamr.set(gt, lammax);
+      scream_masked_loop(either, s) {
+        nr[s] = std::exp(3*std::log(lamr[s]) + std::log(qr[s]) +
+                         std::log(std::tgamma(mu_r[s] + 1)) - std::log(std::tgamma(mu_r[s] + 4)))
+          / cons1;
       }
     }
-  }
 
-  // recalculate slope based on mu_r
-  lamr.set(qr_gt_small,
-           pow(cons1 * nr_lim * (mu_r + 3) *
-               (mu_r + 2) * (mu_r + 1)/qr,
-               thrd));
-
-  // check for slope
-  const auto lammax = (mu_r+1.)*1.e+5;
-  // set to small value since breakup is explicitly included (mean size 0.8 mm)
-  const auto lammin = (mu_r+1.)*1250.0;
-  // apply lambda limiters for rain
-  const auto lt = qr_gt_small && (lamr < lammin);
-  const auto gt = qr_gt_small && (lamr > lammax);
-  const auto either = lt || gt;
-  nr.set(qr_gt_small, nr_lim);
-  if (either.any()) {
-    lamr.set(lt, lammin);
-    lamr.set(gt, lammax);
-    scream_masked_loop(either, s) {
-      nr[s] = std::exp(3*std::log(lamr[s]) + std::log(qr[s]) +
-                       std::log(std::tgamma(mu_r[s] + 1)) - std::log(std::tgamma(mu_r[s] + 4)))
-        / cons1;
-    }
+    cdistr.set(qr_gt_small, nr*rcldm/pack::tgamma(mu_r + 1));
+    // note: logn0r is calculated as log10(n0r)
+    logn0r.set(qr_gt_small, pack::log10(nr) + (mu_r + 1) * pack::log10(lamr) - pack::log10(pack::tgamma(mu_r+1)));
   }
 }
 

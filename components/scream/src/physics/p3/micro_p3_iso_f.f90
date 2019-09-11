@@ -49,11 +49,10 @@ interface
     real(kind=c_real),   intent(out) :: proc
   end subroutine access_lookup_table_coll_f
 
-  subroutine get_cloud_dsd2_f(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,lcldm) bind(C)
+  subroutine get_cloud_dsd2_f(qc,nc,mu_c,rho,nu,lamc,cdist,cdist1,lcldm) bind(C)
     use iso_c_binding
 
     !arguments:
-    real(kind=c_real), dimension(:), intent(in)  :: dnu
     real(kind=c_real), value, intent(in)         :: qc,rho,lcldm
     real(kind=c_real), intent(inout)             :: nc
     real(kind=c_real), intent(out)               :: mu_c,nu,lamc,cdist,cdist1
