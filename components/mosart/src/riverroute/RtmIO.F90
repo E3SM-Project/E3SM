@@ -1092,6 +1092,8 @@ contains
 
     elseif (flag == 'write') then
 
+       start = 0
+       count = 0
        if (present(nt))      then
           start(1) = 1
           count(1) = size(data)
@@ -1100,8 +1102,6 @@ contains
        else
           start(1) = 1
           count(1) = size(data)
-          start(2) = 1
-          count(2) = 1
        end if
        call ncd_inqvid  (ncid, varname, varid, vardesc)
        status = pio_put_var(ncid, varid, start, count, data)
@@ -1153,6 +1153,8 @@ contains
 
     elseif (flag == 'write') then
 
+       start = 0
+       count = 0
        if (present(nt))      then
           start(1) = 1
           count(1) = size(data)
@@ -1161,8 +1163,6 @@ contains
        else
           start(1) = 1
           count(1) = size(data)
-          start(2) = 1
-          count(2) = 1
        end if
        call ncd_inqvid  (ncid, varname, varid, vardesc)
        allocate( idata(size(data)) ) 
@@ -1214,6 +1214,8 @@ contains
 
     elseif (flag == 'write') then
 
+       start = 0
+       count = 0
        if (present(nt))      then
           start(1) = 1
           start(2) = nt
@@ -1221,9 +1223,7 @@ contains
           count(2) = 1
        else
           start(1) = 1
-          start(2) = 1
           count(1) = size(data)
-          count(2) = 1
        end if
        call ncd_inqvid  (ncid, varname, varid, vardesc)
        status = pio_put_var(ncid, varid, start, count, data)
@@ -1330,6 +1330,8 @@ contains
 
     elseif (flag == 'write') then
 
+       start = 0
+       count = 0
        if (present(nt))      then
           start(1) = 1
           start(2) = 1
@@ -1340,10 +1342,8 @@ contains
        else
           start(1) = 1
           start(2) = 1
-          start(3) = 1
           count(1) = size(data, dim=1)
           count(2) = size(data, dim=2)
-          count(3) = 1
        end if
        call ncd_inqvid(ncid, varname, varid, vardesc)
        status = pio_put_var(ncid, varid, start, count, data)
@@ -1389,6 +1389,8 @@ contains
 
     elseif (flag == 'write') then
 
+       start = 0
+       count = 0
        if (present(nt))      then
           start(1) = 1
           start(2) = 1
@@ -1399,10 +1401,8 @@ contains
        else
           start(1) = 1
           start(2) = 1
-          start(3) = 1
           count(1) = size(data, dim=1)
           count(2) = size(data, dim=2)
-          count(3) = 1
        end if
        call ncd_inqvid  (ncid, varname, varid, vardesc)
        status = pio_put_var(ncid, varid, start, count, data)
