@@ -2,16 +2,18 @@
 #include "share/scream_assert.hpp"
 #include "dynamics/homme/scream_homme_interface.hpp"
 #include "dynamics/homme/hommexx_dimensions.hpp"
-#include "Context.hpp"
-#include "mpi/MpiContext.hpp"
-#include "Types.hpp"
-#include "Elements.hpp"
-#include "Tracers.hpp"
-#include "Dimensions.hpp"
+
+// HOMMEXX Includes
 #include "CaarFunctor.hpp"
-#include "Hommexx_Session.hpp"
+#include "Context.hpp"
+#include "Dimensions.hpp"
+#include "Elements.hpp"
 #include "EulerStepFunctor.hpp"
+#include "Hommexx_Session.hpp"
 #include "HyperviscosityFunctor.hpp"
+#include "Tracers.hpp"
+#include "Types.hpp"
+#include "mpi/MpiContext.hpp"
 
 namespace scream
 {
@@ -55,11 +57,11 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   constexpr int NTL  = HOMMEXX_NUM_TIME_LEVELS;
   constexpr int QNTL = HOMMEXX_Q_NUM_TIME_LEVELS;
 
-  auto grid = grids_manager->get_grid("Dynamics");
-  const int num_dofs = grid->num_dofs();
+  const auto& dyn_grid_name = "SE Dynamics";
+  const auto dyn_grid = grids_manager->get_grid(dyn_grid_name);
+  const int ne = dyn_grid->get_num_dofs()/(NGP*NGP);
 
-  const int ne  = num_dofs/(NGP*NGP);
-
+  // Sanity check for the grid. This should *always* pass, since Homme builds the grids
   scream_require_msg(get_homme_param_value<int>("nelemd")==ne,
                      "Error! The number of elements computed from the Dynamis grid num_dof()\n"
                      "       does not match the number of elements internal in Homme.\n");
@@ -90,16 +92,16 @@ void HommeDynamics::set_grids (const std::shared_ptr<const GridsManager> grids_m
   scream_require_msg(ftype==0 || ftype==2 || ftype==4,
                      "Error! The scream interface to homme *assumes* ftype to be 2 or 4.\n"
                      "       Found " + std::to_string(ftype) + " instead.\n");
-  m_required_fields.emplace("phis", scalar2d_layout,  pow(m,2)/pow(s,2),"Dynamics");
-  m_required_fields.emplace("FQ",   q_forcing_layout, Q,                "Dynamics");
-  m_required_fields.emplace("FM",   m_forcing_layout, m/pow(s,2),       "Dynamics");
-  m_required_fields.emplace("FT",   t_forcing_layout, K/s,              "Dynamics");
+  m_required_fields.emplace("phis", scalar2d_layout,  pow(m,2)/pow(s,2),dyn_grid_name);
+  m_required_fields.emplace("FQ",   q_forcing_layout, Q,                dyn_grid_name);
+  m_required_fields.emplace("FM",   m_forcing_layout, m/pow(s,2),       dyn_grid_name);
+  m_required_fields.emplace("FT",   t_forcing_layout, K/s,              dyn_grid_name);
 
   // Set computed fields
-  m_computed_fields.emplace("v",  vector_state_3d_mid_layout,m/s,"Dynamics");
-  m_computed_fields.emplace("t",  scalar_state_3d_mid_layout,K,  "Dynamics");
-  m_computed_fields.emplace("dp", scalar_state_3d_mid_layout,Pa, "Dynamics");
-  m_computed_fields.emplace("qdp",tracers_state_layout,      Qdp,"Dynamics");
+  m_computed_fields.emplace("v",  vector_state_3d_mid_layout,m/s,dyn_grid_name);
+  m_computed_fields.emplace("t",  scalar_state_3d_mid_layout,K,  dyn_grid_name);
+  m_computed_fields.emplace("dp", scalar_state_3d_mid_layout,Pa, dyn_grid_name);
+  m_computed_fields.emplace("qdp",tracers_state_layout,      Qdp,dyn_grid_name);
 }
 
 void HommeDynamics::initialize (const util::TimeStamp& t0)
@@ -144,7 +146,7 @@ void HommeDynamics::initialize (const util::TimeStamp& t0)
     } else if (name=="qdp") {
       // Tracers mass
       auto& qdp = tracers.qdp;
-      auto qdp_in = f.template get_reshaped_view<Real*[HOMMEXX_NUM_TIME_LEVELS][QSIZE_D][HOMMEXX_NP][HOMMEXX_NP][HOMMEXX_NUM_PHYSICAL_LEV]>();
+      auto qdp_in = f.template get_reshaped_view<Real*[HOMMEXX_Q_NUM_TIME_LEVELS][QSIZE_D][HOMMEXX_NP][HOMMEXX_NP][HOMMEXX_NUM_PHYSICAL_LEV]>();
       using qdp_type = std::remove_reference<decltype(qdp)>::type;
       qdp = qdp_type(reinterpret_cast<Scalar*>(qdp_in.data()),num_elems);
     } else {
@@ -250,7 +252,8 @@ void HommeDynamics::set_computed_field_impl (const Field<      Real, device_type
   // at the end of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr
   // in the Homme's view, and be done with it.
-  m_dyn_fields_out.emplace(f.get_header().get_identifier().name(),f);
+  const auto& name = f.get_header().get_identifier().name();
+  m_dyn_fields_out.emplace(name,f);
 
   // Add myself as provider for the field
   f.get_header_ptr()->get_tracking().add_provider(weak_from_this());

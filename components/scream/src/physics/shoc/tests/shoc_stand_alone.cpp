@@ -2,7 +2,7 @@
 #include "share/atmosphere_process.hpp"
 #include "share/scream_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
-#include "share/grid/default_grid.hpp"
+#include "share/grid/se_grid.hpp"
 #include "control/atmosphere_driver.hpp"
 
 #include "physics/shoc/atmosphere_macrophysics.hpp"
@@ -12,11 +12,11 @@ namespace scream {
 
 // === A dummy physics grids for this test === //
 
-class DummyPhysicsGrid : public DefaultGrid<GridType::Physics>
+class DummyPhysicsGrid : public SEGrid
 {
 public:
   DummyPhysicsGrid (const int num_cols)
-   : DefaultGrid<GridType::Physics>("Physics")
+   : SEGrid("Physics",GridType::SE_NodeBased)
   {
     m_num_dofs = num_cols;
   }

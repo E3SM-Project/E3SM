@@ -2,7 +2,6 @@
 #include "share/atmosphere_process.hpp"
 #include "share/scream_pack.hpp"
 #include "share/grid/user_provided_grids_manager.hpp"
-#include "share/grid/default_grid.hpp"
 #include "control/atmosphere_driver.hpp"
 
 namespace scream {
@@ -46,7 +45,7 @@ public:
   void set_grids (const std::shared_ptr<const GridsManager> grids_manager) {
     m_grid = grids_manager->get_grid(m_name);
 
-    auto num_cols = m_grid->num_dofs();
+    auto num_cols = m_grid->get_num_dofs();
 
     std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
     std::vector<int> dims = {num_cols, m_params.get<int>("Number of vector components")};

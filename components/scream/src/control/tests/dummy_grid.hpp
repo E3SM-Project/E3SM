@@ -1,15 +1,15 @@
-#include "share/grid/default_grid.hpp"
+#include "share/grid/se_grid.hpp"
 #include "share/remap/abstract_remapper.hpp"
 
 namespace scream {
 
 // === A dummy physics grids for this test === //
 
-class DummyPhysicsGrid : public DefaultGrid<GridType::Physics>
+class DummyPhysicsGrid : public SEGrid
 {
 public:
   DummyPhysicsGrid (const int num_cols, const bool fwd)
-   : DefaultGrid<GridType::Physics>(std::string("Physics") + (fwd ? "_fwd" : "_bwd"))
+   : SEGrid(std::string("Physics") + (fwd ? "_fwd" : "_bwd"),GridType::SE_NodeBased)
   {
     m_num_dofs = num_cols;
 
@@ -27,6 +27,7 @@ public:
   using grid_type       = typename base_type::grid_type;
   using field_type      = typename base_type::field_type;
   using identifier_type = typename base_type::identifier_type;
+  using layout_type     = typename base_type::layout_type;
 
 
   DummyPhysicsGridRemapper(const std::shared_ptr<const grid_type>& grid1,
@@ -46,53 +47,43 @@ public:
                        "Error! This dummy remapper only works if the two grids are one fwd and the other bwd.\n");
   }
 
-  base_type* clone () const {
-    auto remapper = new DummyPhysicsGridRemapper(this->get_src_grid(),this->get_tgt_grid());
-
-    remapper->m_fields.reserve(this->m_fields.size());
-    for (auto& it : this->m_fields) {
-      remapper->m_fields.emplace_back(it);
-    }
-
-    return remapper;
-  }
-
-  // One grid is backward of the other, but same layouts
-  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const {
+  FieldLayout create_src_layout (const FieldLayout& tgt_layout) const override {
+    // Src and tgt grids are the same, so return the input
     return tgt_layout;
   }
-  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const {
+  FieldLayout create_tgt_layout (const FieldLayout& src_layout) const override {
+    // Src and tgt grids are the same, so return the input
     return src_layout;
   }
 
 protected:
-  const identifier_type& do_get_src_field_id (const int ifield) const {
+  const identifier_type& do_get_src_field_id (const int ifield) const override {
     return m_fields[ifield].first.get_header().get_identifier();
   }
-  const identifier_type& do_get_tgt_field_id (const int ifield) const {
+  const identifier_type& do_get_tgt_field_id (const int ifield) const override {
     return m_fields[ifield].second.get_header().get_identifier();
   }
-  const field_type& do_get_src_field (const int ifield) const {
+  const field_type& do_get_src_field (const int ifield) const override {
     return m_fields[ifield].first;
   }
-  const field_type& do_get_tgt_field (const int ifield) const {
+  const field_type& do_get_tgt_field (const int ifield) const override {
     return m_fields[ifield].second;
   }
 
   void do_registration_begins () {}
   void do_registration_complete () {}
 
-  void do_register_field (const identifier_type& src, const identifier_type& tgt) {
+  void do_register_field (const identifier_type& src, const identifier_type& tgt) override {
     field_type f1(src);
     field_type f2(tgt);
     m_fields.emplace_back(std::make_pair(f1,f2));
   }
-  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) {
+  void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override {
     m_fields[ifield].first  = src;
     m_fields[ifield].second = tgt;
   }
 
-  void do_remap_fwd () const {
+  void do_remap_fwd () const override {
     for (int i=0; i<this->m_num_fields; ++i) {
       auto src = m_fields[i].first.get_view();
       auto tgt = m_fields[i].second.get_view();
@@ -105,7 +96,7 @@ protected:
       Kokkos::fence();
     }
   }
-  void do_remap_bwd () const {
+  void do_remap_bwd () const override {
     for (int i=0; i<this->m_num_fields; ++i) {
       auto src = m_fields[i].first.get_view();
       auto tgt = m_fields[i].second.get_view();

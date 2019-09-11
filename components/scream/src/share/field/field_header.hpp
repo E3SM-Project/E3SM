@@ -37,6 +37,15 @@ public:
                        const util::any& data,
                        const bool throw_if_existing = false);
 
+  template<typename T>
+  void set_extra_data (const std::string& key,
+                       const T& data,
+                       const bool throw_if_existing = false) {
+    util::any data_any;
+    data_any.reset<T>(data);
+    set_extra_data(key,data_any,throw_if_existing);
+  }
+
   // ----- Getters ----- //
 
   // Get the basic information from the identifier

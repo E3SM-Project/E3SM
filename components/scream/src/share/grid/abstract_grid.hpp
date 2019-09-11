@@ -2,7 +2,6 @@
 #define SCREAM_ABSTRACT_GRID_HPP
 
 #include "share/grid/grid_utils.hpp"
-#include "share/scream_types.hpp"
 
 namespace scream
 {
@@ -10,20 +9,18 @@ namespace scream
 class AbstractGrid
 {
 public:
-  // TODO: template everything on the device type
-  using device_type   = DefaultDevice;
-  using kokkos_types  = KokkosTypes<device_type>;
-  using dofs_map_type = kokkos_types::view<int*[4]>; // elem, igp, jgp, col_gid
-
   virtual ~AbstractGrid () = default;
 
   virtual GridType type () const = 0;
 
   virtual std::string name () const = 0;
 
-  virtual int num_dofs () const = 0;
+  virtual int get_num_dofs () const = 0;
 
-  virtual dofs_map_type get_dofs_map () const = 0;
+  // TODO: perhaps store a View with the GID of the dofs?
+  //       Sounds legit, but it may duplicate storage if the
+  //       derived classes already store GIDs, but with a peculiar
+  //       format/layout.
 };
 
 } // namespace scream

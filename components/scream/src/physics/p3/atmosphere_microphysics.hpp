@@ -39,7 +39,7 @@ public:
   // Get the required grid for subcomponent
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert("Physics");
+    s.insert("SE Physics");
     return s;
   }
 

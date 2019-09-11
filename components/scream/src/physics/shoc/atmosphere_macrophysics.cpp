@@ -30,7 +30,7 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
   constexpr int QSZ =  9;  /* TODO THIS NEEDS TO BE CHANGED TO A CONFIGURABLE */
 
   auto grid = grids_manager->get_grid("Physics");
-  const int num_dofs = grid->num_dofs();
+  const int num_dofs = grid->get_num_dofs();
   const int nc = num_dofs;
 
   auto VL = FieldTag::VerticalLevel;

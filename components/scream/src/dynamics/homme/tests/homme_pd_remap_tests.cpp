@@ -57,12 +57,12 @@ TEST_CASE("remap", "") {
   using Device = DefaultDevice;
   using PackType = pack::Pack<Homme::Real,HOMMEXX_VECTOR_SIZE>;
   using Remapper = PhysicsDynamicsRemapper<Homme::Real,Device>;
-  using phys_grid_type = Remapper::phys_grid_type;
-  using dyn_grid_type  = Remapper::dyn_grid_type;
+  using RPDF = std::uniform_real_distribution<Real>;
 
   std::random_device rd;
-  std::mt19937_64 engine(rd());
-  std::uniform_real_distribution<Real> pdf(-1.0,1.0);
+  const int seed = rd();
+  std::mt19937_64 engine(seed);
+  RPDF pdf(-1.0,1.0);
 
   // Get or create a comm
   Homme::Comm& comm = Homme::MpiContext::singleton().get_comm();
@@ -118,8 +118,8 @@ TEST_CASE("remap", "") {
   };
 
   // Create the columns global id mappings
-  typename phys_grid_type::dofs_map_type p2d("p2d",num_local_columns);
-  typename dyn_grid_type::dofs_map_type  d2p("d2p",num_local_elems*NP*NP);
+  typename SEGrid::dofs_map_type p2d("p2d",num_local_columns);
+  typename SEGrid::dofs_map_type d2p("d2p",num_local_elems*NP*NP);
 
   auto h_p2d = Kokkos::create_mirror_view(p2d);
   auto h_d2p = Kokkos::create_mirror_view(d2p);
@@ -173,90 +173,100 @@ TEST_CASE("remap", "") {
   Kokkos::deep_copy(d2p,h_d2p);
 
   // Create the physics and dynamics grids
-  auto phys_grid = std::make_shared<phys_grid_type>(p2d,"Physics");
-  auto dyn_grid  = std::make_shared<dyn_grid_type>(d2p,"Dynamics");
+  auto phys_grid = std::make_shared<SEGrid>(p2d,"Physics",GridType::SE_NodeBased);
+  auto dyn_grid  = std::make_shared<SEGrid>(d2p,"Dynamics",GridType::SE_CellBased);
 
   // Create connectivity, and add the only connection
   // Note: catch2 runs this routine several times, but the connectivity can only be init-ed once, so check first.
   std::shared_ptr<Homme::Connectivity> connectivity = Homme::MpiContext::singleton().get_connectivity();
+
+  constexpr auto NORTH = Homme::ConnectionName::NORTH;
+  constexpr auto SOUTH = Homme::ConnectionName::SOUTH;
+  constexpr auto EAST  = Homme::ConnectionName::EAST;
+  constexpr auto WEST  = Homme::ConnectionName::WEST;
+  constexpr auto NEAST = Homme::ConnectionName::NEAST;
+  constexpr auto NWEST = Homme::ConnectionName::NWEST;
+  constexpr auto SEAST = Homme::ConnectionName::SEAST;
+  constexpr auto SWEST = Homme::ConnectionName::SWEST;
+
   if (!connectivity->is_finalized()) {
     connectivity->set_comm(comm);
     connectivity->set_num_elements(num_local_elems);
     if (get_elem_pid(0)==world_rank) {
-      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::SOUTH),get_elem_pid(0),
-                                   get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::EAST) ,get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::NORTH),get_elem_pid(0),
-                                   get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::WEST) ,get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::WEST) ,get_elem_pid(0),
-                                   get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::EAST) ,get_elem_pid(3));
-      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::EAST) ,get_elem_pid(0),
-                                   get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::WEST) ,get_elem_pid(3));
+      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(SOUTH),get_elem_pid(0),
+                                   get_elem_lid(1),1,Homme::etoi(EAST) ,get_elem_pid(1));
+      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(NORTH),get_elem_pid(0),
+                                   get_elem_lid(1),1,Homme::etoi(WEST) ,get_elem_pid(1));
+      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(WEST) ,get_elem_pid(0),
+                                   get_elem_lid(3),3,Homme::etoi(EAST) ,get_elem_pid(3));
+      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(EAST) ,get_elem_pid(0),
+                                   get_elem_lid(3),3,Homme::etoi(WEST) ,get_elem_pid(3));
 
-      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::SEAST),get_elem_pid(0),
-                                   get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::SWEST),get_elem_pid(2));
-      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::NWEST),get_elem_pid(0),
-                                   get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::NEAST),get_elem_pid(2));
-      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::SWEST),get_elem_pid(0),
-                                   get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::NWEST),get_elem_pid(2));
-      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::NEAST),get_elem_pid(0),
-                                   get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::SEAST),get_elem_pid(2));
+      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(SEAST),get_elem_pid(0),
+                                   get_elem_lid(2),2,Homme::etoi(SWEST),get_elem_pid(2));
+      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(NWEST),get_elem_pid(0),
+                                   get_elem_lid(2),2,Homme::etoi(NEAST),get_elem_pid(2));
+      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(SWEST),get_elem_pid(0),
+                                   get_elem_lid(2),2,Homme::etoi(NWEST),get_elem_pid(2));
+      connectivity->add_connection(get_elem_lid(0),0,Homme::etoi(NEAST),get_elem_pid(0),
+                                   get_elem_lid(2),2,Homme::etoi(SEAST),get_elem_pid(2));
     }
     if (get_elem_pid(1)==world_rank) {
-      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::EAST) ,get_elem_pid(1),
-                                   get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::SOUTH),get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::WEST) ,get_elem_pid(1),
-                                   get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::NORTH),get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::NORTH),get_elem_pid(1),
-                                   get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::NORTH),get_elem_pid(2));
-      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::SOUTH),get_elem_pid(1),
-                                   get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::SOUTH),get_elem_pid(2));
+      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(EAST) ,get_elem_pid(1),
+                                   get_elem_lid(0),0,Homme::etoi(SOUTH),get_elem_pid(0));
+      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(WEST) ,get_elem_pid(1),
+                                   get_elem_lid(0),0,Homme::etoi(NORTH),get_elem_pid(0));
+      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(NORTH),get_elem_pid(1),
+                                   get_elem_lid(2),2,Homme::etoi(NORTH),get_elem_pid(2));
+      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(SOUTH),get_elem_pid(1),
+                                   get_elem_lid(2),2,Homme::etoi(SOUTH),get_elem_pid(2));
 
-      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::SEAST),get_elem_pid(1),
-                                   get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::SWEST),get_elem_pid(3));
-      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::NWEST),get_elem_pid(1),
-                                   get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::NEAST),get_elem_pid(3));
-      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::NEAST),get_elem_pid(1),
-                                   get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::SEAST),get_elem_pid(3));
-      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::SWEST),get_elem_pid(1),
-                                   get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::NWEST),get_elem_pid(3));
+      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(SEAST),get_elem_pid(1),
+                                   get_elem_lid(3),3,Homme::etoi(SWEST),get_elem_pid(3));
+      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(NWEST),get_elem_pid(1),
+                                   get_elem_lid(3),3,Homme::etoi(NEAST),get_elem_pid(3));
+      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(NEAST),get_elem_pid(1),
+                                   get_elem_lid(3),3,Homme::etoi(SEAST),get_elem_pid(3));
+      connectivity->add_connection(get_elem_lid(1),1,Homme::etoi(SWEST),get_elem_pid(1),
+                                   get_elem_lid(3),3,Homme::etoi(NWEST),get_elem_pid(3));
     }
     if (get_elem_pid(2)==world_rank) {
-      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::NORTH),get_elem_pid(2),
-                                   get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::NORTH),get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::SOUTH),get_elem_pid(2),
-                                   get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::SOUTH),get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::WEST) ,get_elem_pid(2),
-                                   get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::SOUTH),get_elem_pid(3));
-      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::EAST) ,get_elem_pid(2),
-                                   get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::NORTH),get_elem_pid(3));
+      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(NORTH),get_elem_pid(2),
+                                   get_elem_lid(1),1,Homme::etoi(NORTH),get_elem_pid(1));
+      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(SOUTH),get_elem_pid(2),
+                                   get_elem_lid(1),1,Homme::etoi(SOUTH),get_elem_pid(1));
+      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(WEST) ,get_elem_pid(2),
+                                   get_elem_lid(3),3,Homme::etoi(SOUTH),get_elem_pid(3));
+      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(EAST) ,get_elem_pid(2),
+                                   get_elem_lid(3),3,Homme::etoi(NORTH),get_elem_pid(3));
 
-      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::NWEST),get_elem_pid(2),
-                                   get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::SWEST),get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::SEAST),get_elem_pid(2),
-                                   get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::NEAST),get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::NEAST),get_elem_pid(2),
-                                   get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::NWEST),get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::SWEST),get_elem_pid(2),
-                                   get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::SEAST),get_elem_pid(0));
+      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(NWEST),get_elem_pid(2),
+                                   get_elem_lid(0),0,Homme::etoi(SWEST),get_elem_pid(0));
+      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(SEAST),get_elem_pid(2),
+                                   get_elem_lid(0),0,Homme::etoi(NEAST),get_elem_pid(0));
+      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(NEAST),get_elem_pid(2),
+                                   get_elem_lid(0),0,Homme::etoi(NWEST),get_elem_pid(0));
+      connectivity->add_connection(get_elem_lid(2),2,Homme::etoi(SWEST),get_elem_pid(2),
+                                   get_elem_lid(0),0,Homme::etoi(SEAST),get_elem_pid(0));
     }
     if (get_elem_pid(3)==world_rank) {
-      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::EAST) ,get_elem_pid(3),
-                                   get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::WEST) ,get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::WEST) ,get_elem_pid(3),
-                                   get_elem_lid(0),0,Homme::etoi(Homme::ConnectionName::EAST) ,get_elem_pid(0));
-      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::SOUTH),get_elem_pid(3),
-                                   get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::WEST) ,get_elem_pid(2));
-      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::NORTH),get_elem_pid(3),
-                                   get_elem_lid(2),2,Homme::etoi(Homme::ConnectionName::EAST) ,get_elem_pid(2));
+      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(EAST) ,get_elem_pid(3),
+                                   get_elem_lid(0),0,Homme::etoi(WEST) ,get_elem_pid(0));
+      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(WEST) ,get_elem_pid(3),
+                                   get_elem_lid(0),0,Homme::etoi(EAST) ,get_elem_pid(0));
+      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(SOUTH),get_elem_pid(3),
+                                   get_elem_lid(2),2,Homme::etoi(WEST) ,get_elem_pid(2));
+      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(NORTH),get_elem_pid(3),
+                                   get_elem_lid(2),2,Homme::etoi(EAST) ,get_elem_pid(2));
 
-      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::SEAST),get_elem_pid(3),
-                                   get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::NEAST),get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::NWEST),get_elem_pid(3),
-                                   get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::SWEST),get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::NEAST),get_elem_pid(3),
-                                   get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::NWEST),get_elem_pid(1));
-      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(Homme::ConnectionName::SWEST),get_elem_pid(3),
-                                   get_elem_lid(1),1,Homme::etoi(Homme::ConnectionName::SEAST),get_elem_pid(1));
+      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(SEAST),get_elem_pid(3),
+                                   get_elem_lid(1),1,Homme::etoi(NEAST),get_elem_pid(1));
+      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(NWEST),get_elem_pid(3),
+                                   get_elem_lid(1),1,Homme::etoi(SWEST),get_elem_pid(1));
+      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(NEAST),get_elem_pid(3),
+                                   get_elem_lid(1),1,Homme::etoi(NWEST),get_elem_pid(1));
+      connectivity->add_connection(get_elem_lid(3),3,Homme::etoi(SWEST),get_elem_pid(3),
+                                   get_elem_lid(1),1,Homme::etoi(SEAST),get_elem_pid(1));
     }
     connectivity->finalize(/* sanity check = */ false);
   }

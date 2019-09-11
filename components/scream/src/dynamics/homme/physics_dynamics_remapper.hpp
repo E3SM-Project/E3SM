@@ -4,8 +4,7 @@
 #include "dynamics/homme/hommexx_dimensions.hpp"
 
 #include "share/remap/abstract_remapper.hpp"
-#include "share/grid/abstract_grid.hpp"
-#include "share/grid/default_grid.hpp"
+#include "share/grid/se_grid.hpp"
 #include "share/scream_pack.hpp"
 #include "share/scream_assert.hpp"
 
@@ -51,18 +50,18 @@ public:
   using field_type      = typename base_type::field_type;
   using identifier_type = typename base_type::identifier_type;
   using layout_type     = typename base_type::layout_type;
+  using grid_ptr_type   = typename base_type::grid_ptr_type;
   using kt              = KokkosTypes<DeviceType>;
-  using phys_grid_type  = DefaultGrid<GridType::Physics>;
-  using dyn_grid_type   = DefaultGrid<GridType::Dynamics>;
 
-  PhysicsDynamicsRemapper (const std::shared_ptr<AbstractGrid> phys_grid,
-                           const std::shared_ptr<AbstractGrid> dyn_grid)
+  PhysicsDynamicsRemapper (const grid_ptr_type& phys_grid,
+                           const grid_ptr_type& dyn_grid)
    : base_type(phys_grid,dyn_grid)
   {
     scream_require_msg(static_cast<bool>(phys_grid), "Error! Invalid input physics grid pointer.\n");
     scream_require_msg(static_cast<bool>(dyn_grid),  "Error! Invalid input dynamics grid pointer.\n");
-    scream_require_msg(dyn_grid->type()==GridType::Dynamics,  "Error! Input dynamics grid pointer is not a Dynamics grid.\n");
-    scream_require_msg(phys_grid->type()==GridType::Physics,  "Error! Input physics grid pointer is not a Physics grid.\n");
+    m_phys_grid = std::dynamic_pointer_cast<const SEGrid>(phys_grid);
+    scream_require_msg(dyn_grid->type()==GridType::SE_CellBased,  "Error! Input dynamics grid pointer is not a Dynamics grid.\n");
+    scream_require_msg(phys_grid->type()==GridType::SE_NodeBased,  "Error! Input physics grid pointer is not a Physics grid.\n");
   }
 
   ~PhysicsDynamicsRemapper () = default;
@@ -98,6 +97,8 @@ protected:
   std::vector<field_type>   m_phys;
   std::vector<field_type>   m_dyn;
 
+  std::shared_ptr<const SEGrid>   m_phys_grid;
+
   std::shared_ptr<Homme::BoundaryExchange>  m_be;
 
 public:
@@ -123,7 +124,7 @@ create_src_layout (const FieldLayout& tgt_layout) const {
   // Element is the first tag. Replace it with 'Column'.
   // Set extent to the number of columns
   tags[0] = FieldTag::Column;
-  dims[0] = this->m_src_grid->num_dofs();
+  dims[0] = this->m_src_grid->get_num_dofs();
 
   // Find the position of the 1st GaussPoint tag. Delete it.
   auto it = util::find(tags,FieldTag::GaussPoint);
@@ -156,7 +157,7 @@ create_tgt_layout (const FieldLayout& src_layout) const {
   // The first tag is 'Column'. Replace with 'Element'.
   // Set the extent to the number of elements
   tags_out[0] = FieldTag::Element;
-  dims_out[0] = this->m_tgt_grid->num_dofs() / (NP*NP);
+  dims_out[0] = this->m_tgt_grid->get_num_dofs() / (NP*NP);
   switch (lt) {
     case LayoutType::Scalar2D: // Fallthrough
     case LayoutType::Vector2D: // Fallthrough
@@ -405,7 +406,7 @@ local_remap_fwd_2d(const field_type& src_field, const field_type& tgt_field, con
 {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
-  auto p2d = this->m_src_grid->get_dofs_map();
+  auto p2d = m_phys_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
   const auto& phys_dims = src_field.get_header().get_identifier().get_layout().dims();
@@ -472,7 +473,7 @@ void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 local_remap_fwd_3d_impl(const field_type& src_field, const field_type& tgt_field, const LayoutType lt) const {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
-  auto p2d = this->m_src_grid->get_dofs_map();
+  auto p2d = m_phys_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
   const auto& phys_dims = src_field.get_header().get_identifier().get_layout().dims();
@@ -546,7 +547,7 @@ void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 remap_bwd_2d(const field_type& src_field, const field_type& tgt_field, const LayoutType lt) const {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
-  auto p2d = this->m_src_grid->get_dofs_map();
+  auto p2d = m_phys_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
   const auto& dyn_dims = src_field.get_header().get_identifier().get_layout().dims();
@@ -613,7 +614,7 @@ void PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 remap_bwd_3d_impl(const field_type& src_field, const field_type& tgt_field, const LayoutType lt) const {
   using RangePolicy = Kokkos::RangePolicy<typename kt::ExeSpace>;
 
-  auto p2d = this->m_src_grid->get_dofs_map();
+  auto p2d = m_phys_grid->get_dofs_map();
   const int num_cols = p2d.extent_int(0);
 
   const auto& dyn_dims = src_field.get_header().get_identifier().get_layout().dims();
