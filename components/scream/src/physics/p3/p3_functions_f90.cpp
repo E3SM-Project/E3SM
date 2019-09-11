@@ -120,7 +120,7 @@ void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
 {
   using P3F = Functions<Real, HostDevice>;
 
-  typename P3F::Smask qiti_gt_small(true);
+  typename P3F::Smask qiti_gt_small(qitot_ > P3F::C::QSMALL);
   typename P3F::Spack qitot(qitot_), nitot(nitot_), qirim(qirim_), rhop(rhop_);
   typename P3F::TableIce t;
   P3F::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t);
@@ -141,7 +141,9 @@ void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr_, Real nr_)
 {
   using P3F = Functions<Real, HostDevice>;
 
+  // we can assume fortran would not be calling this routine if qiti_gt_small was not true
   typename P3F::Smask qiti_gt_small(true);
+
   typename P3F::Spack qr(qr_), nr(nr_);
   typename P3F::TableRain t;
   P3F::lookup_rain(qiti_gt_small, qr, nr, t);
@@ -157,6 +159,7 @@ void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
 {
   using P3F = Functions<Real, HostDevice>;
 
+  // we can assume fortran would not be calling this routine if qiti_gt_small was not true
   typename P3F::Smask qiti_gt_small(true);
   typename P3F::TableIce t;
 
@@ -179,7 +182,9 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 {
   using P3F = Functions<Real, HostDevice>;
 
+  // we can assume fortran would not be calling this routine if qiti_gt_small was not true
   typename P3F::Smask qiti_gt_small(true);
+
   typename P3F::TableIce ti;
   typename P3F::TableRain tr;
 
@@ -204,7 +209,7 @@ void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Re
 {
   using P3F = Functions<Real, HostDevice>;
 
-  typename P3F::Smask qc_gt_small(qc_ > P3F::C::NSMALL); // TODO: check these
+  typename P3F::Smask qc_gt_small(qc_ > P3F::C::QSMALL);
   typename P3F::Spack qc(qc_), nc(*nc_), rho(rho_), lcldm(lcldm_);
 
   typename P3F::Spack mu_c, nu, lamc, cdist, cdist1;
@@ -223,11 +228,11 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
 {
   using P3F = Functions<Real, HostDevice>;
 
-  typename P3F::Smask qr_gt_small(qr_ > P3F::C::NSMALL);
+  typename P3F::Smask qr_gt_small(qr_ > P3F::C::QSMALL);
   typename P3F::Spack qr(qr_), rcldm(rcldm_), nr(*nr_);
   typename P3F::Spack lamr, mu_r, cdistr, logn0r;
 
-  P3F::get_rain_dsd2(P3GlobalForFortran::mu_r_table(), qr_gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
+  P3F::get_rain_dsd2(qr_gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
 
   *nr_     = nr[0];
   *mu_r_   = mu_r[0];

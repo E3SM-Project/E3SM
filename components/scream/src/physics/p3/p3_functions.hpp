@@ -258,7 +258,6 @@ struct Functions
   // Computes and returns rain size distribution parameters
   KOKKOS_INLINE_FUNCTION
   static void get_rain_dsd2 (
-    const view_1d_table& mu_r_table,
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 

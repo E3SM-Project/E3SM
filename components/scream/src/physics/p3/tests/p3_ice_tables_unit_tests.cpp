@@ -141,7 +141,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
 
       {0.263E-05, 0.100E+07},
       {0.100E-01, 0.100E+07},
-      {0.000E+00, 0.100E-15},
+      {0.000E+00, 0.0      },
       {0.263E-05, 0.100E+07},
 
       {0.263E-05, 0.100E+07},
@@ -222,8 +222,6 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     view_1d<IntSmallPack> int_results("int results", 5);
     view_1d<Spack> real_results("real results", 7);
     Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
-      Smask qiti_gt_small(true);
-
       // Init packs
       TableIce ti;
       TableRain tr;
@@ -238,6 +236,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
         nr[s]    = lidb_device(s).nr;
       }
 
+      Smask qiti_gt_small(qitot > C::QSMALL);
       Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
       Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
       Spack ice_result = Functions::apply_table_ice(qiti_gt_small, access_table_index-1, itab, ti);
