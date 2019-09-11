@@ -45,10 +45,10 @@ module common_movie_mod
                                                  'Th         ', &
                                                  'u          ', &
                                                  'v          ', &
-                                                 'w_nlev     ', &
-                                                 'w_nlevp    ', &
-                                                 'mu         ', &
-                                                 'geo_nlevp  ', &
+                                                 'w          ', &
+                                                 'w_i        ', &
+                                                 'mu_i       ', &
+                                                 'geo_i      ', &
                                                  'ke         ', &
                                                  'hypervis   ', &
                                                  'Q          ', &
@@ -83,10 +83,10 @@ module common_movie_mod
                                                                1,2,5,0,0,0, & ! Th
                                                                1,2,5,0,0,0, & ! u
                                                                1,2,5,0,0,0, & ! v
-                                                               1,2,5,0,0,0, & ! w_nlev
-                                                               1,3,5,0,0,0, & ! w_nlevp
-                                                               1,3,5,0,0,0, & ! mu
-                                                               1,3,5,0,0,0, & ! geo_nlevp
+                                                               1,2,5,0,0,0, & ! w
+                                                               1,3,5,0,0,0, & ! w_i
+                                                               1,3,5,0,0,0, & ! mu_i
+                                                               1,3,5,0,0,0, & ! geo_i
                                                                1,2,5,0,0,0, & ! ke
                                                                1,5,0,0,0,0, & ! hypervis
                                                                1,2,5,0,0,0, & ! Q
@@ -109,8 +109,8 @@ module common_movie_mod
 
   integer, parameter :: vartype(varcnt)=(/nf_double, nf_double,nf_double, nf_double,nf_double,nf_double,& !ps:cv_lon
                                           nf_int,    nf_double,nf_double,nf_double,nf_double,& !corners:T
-                                          nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,nf_double,& !Th:w_nlevpi
-                                          nf_double, nf_double, & ! mu and geo_nlevp
+                                          nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,nf_double,& !Th:w_i
+                                          nf_double, nf_double, & ! mu_i and geo_i
                                           nf_double, nf_double,nf_double,nf_double,nf_double,& !Q:geo
                                           nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,& !omega:ilev
                                           nf_double, nf_double,nf_double,nf_double,nf_double/)

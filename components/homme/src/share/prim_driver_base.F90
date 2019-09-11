@@ -917,9 +917,13 @@ contains
        enddo
     endif
 
-!this is hack, for restart runs won't be valid at 1st timestep in output
-!for other runs should be ok assuming we init from hydro state
-!CAAR will set it to 'correct' value right before exit
+!since mu is not in derived, but it is recomputed in caar and dirk
+!by a routine that sets it to 1 at the bottom indep. of BC,
+!we save bottom mu (not redefined by dirk) in caar.
+!for restart runs mubottom won't be valid at the 1st timestep in output
+!for other runs should be ok assuming we init from hydro state (which always
+!should have mu=1).
+!CAAR will set it to 'correct' value right before end of routine.
 #ifdef MODEL_THETA_L
     do ie=nets,nete
        elem(ie)%derived%mubottom(:,:)=1.0

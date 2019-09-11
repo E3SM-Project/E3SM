@@ -226,8 +226,6 @@ contains
 
     !$OMP END SINGLE
   end subroutine nf_put1DR
-
-
   subroutine nf_put2DR(ncdf, var, start, count, varid, name)
     type(nf_handle), intent(inout) :: ncdf
     real(kind=real_kind), intent(in) :: var(:,:)
@@ -494,7 +492,6 @@ contains
 
              ii=oldvarcnt+1
              do i=1,varcnt
-
                 time_dep_var=.false.
                 vardims=unlim_dim
                 dimcnt=0

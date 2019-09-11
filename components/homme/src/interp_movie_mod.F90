@@ -64,10 +64,10 @@ module interp_movie_mod
                                                  'Th       ', &
                                                  'u        ', &
                                                  'v        ', &
-                                                 'w_nlev   ', &
-                                                 'w_nlevp  ', &
-                                                 'mu       ', &
-                                                 'geo_nlevp', &
+                                                 'w        ', &
+                                                 'w_i      ', &
+                                                 'mu_i     ', &
+                                                 'geo_i    ', &
                                                  'ke       ', &
                                                  'Q        ', &
                                                  'Q2       ', &
@@ -137,10 +137,10 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! Th
        1,2,3,5,0,  &   ! u
        1,2,3,5,0,  &   ! v
-       1,2,3,5,0,  &   ! w_nlev
-       1,2,4,5,0,  &   ! w_nlevp
-       1,2,4,5,0,  &   ! mu
-       1,2,4,5,0,  &   ! geo_nlevp
+       1,2,3,5,0,  &   ! w
+       1,2,4,5,0,  &   ! w_i
+       1,2,4,5,0,  &   ! mu_i
+       1,2,4,5,0,  &   ! geo_i
        1,2,3,5,0,  &   ! ke
        1,2,3,5,0,  &   ! Q
        1,2,3,5,0,  &   ! Q2
@@ -369,11 +369,12 @@ contains
     call nf_variable_attributes(ncdf, 'hybi', 'hybrid B coefficiet at layer interfaces' ,'dimensionless')
 !how does it work if preqx wants to output w of phi?
 #ifdef MODEL_THETA_L
-    call nf_variable_attributes(ncdf, 'w_nlev', 'vertical wind component','meters/second')
-    call nf_variable_attributes(ncdf, 'w_nlevp', 'vertical wind component','meters/second')
+!can we delete w here? 
+    call nf_variable_attributes(ncdf, 'w', 'vertical wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'w_i', 'vertical wind component on interfaces','meters/second')
     call nf_variable_attributes(ncdf, 'Th', 'potential temperature \theta','...')
-    call nf_variable_attributes(ncdf, 'mu', 'mu=dp/d\pi','dimensionless')
-    call nf_variable_attributes(ncdf, 'geo_nlevp', 'geopotential','meters')
+    call nf_variable_attributes(ncdf, 'mu_i', 'mu=dp/d\pi on interfaces','dimensionless')
+    call nf_variable_attributes(ncdf, 'geo_i', 'geopotential on interfaces','meters')
 #endif
 #endif
     call nf_variable_attributes(ncdf, 'gw',   'gauss weights','dimensionless')
@@ -967,11 +968,11 @@ contains
                 deallocate(datall)
              end if
 
-             if(nf_selectedvar('w_nlev', output_varnames)) then
-                if (par%masterproc) print *,'writing w_nlev...'
+             if(nf_selectedvar('w', output_varnames)) then
+                if (par%masterproc) print *,'writing w...'
                 allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
                 do ie=1,nelemd
-                   call get_field(elem(ie),'w_nlev',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
+                   call get_field(elem(ie),'w',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
                 end do
 !why? something in preqx?
                 call make_C0(var3d,elem,par)
@@ -982,12 +983,12 @@ contains
                         np, nlev, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='w_nlev')
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='w')
                 deallocate(datall,var3d)
              end if
-#if 1
-             if(nf_selectedvar('w_nlevp', output_varnames)) then
-                if (par%masterproc) print *,'writing w_nlevp...'
+
+             if(nf_selectedvar('w_i', output_varnames)) then
+                if (par%masterproc) print *,'writing w_i...'
                 allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
                 do ie=1,nelemd
                    call get_field_i(elem(ie),'w',var3dp1(:,:,:,ie),hvcoord,n0)
@@ -1001,12 +1002,12 @@ contains
                         np, nlevp, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
-                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='w_nlevp')
+                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='w_i')
                 deallocate(datall,var3dp1)
              end if
 
-             if(nf_selectedvar('geo_nlevp', output_varnames)) then
-                if (par%masterproc) print *,'writing geo_nlevp...'
+             if(nf_selectedvar('geo_i', output_varnames)) then
+                if (par%masterproc) print *,'writing geo_i...'
                 allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
                 do ie=1,nelemd
                    call get_field_i(elem(ie),'geopotential',var3dp1(:,:,:,ie),hvcoord,n0)
@@ -1018,12 +1019,12 @@ contains
                         np, nlevp, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
-                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='geo_nlevp')
+                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='geo_i')
                 deallocate(datall,var3dp1)
              end if
 
-             if(nf_selectedvar('mu', output_varnames)) then
-                if (par%masterproc) print *,'writing mu...'
+             if(nf_selectedvar('mu_i', output_varnames)) then
+                if (par%masterproc) print *,'writing mu_i...'
                 allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
                 do ie=1,nelemd
                    call get_field_i(elem(ie),'mu',var3dp1(:,:,:,ie),hvcoord,n0)
@@ -1035,13 +1036,12 @@ contains
                         np, nlevp, datall(st:en,:))
                    st=st+interpdata(ie)%n_interp
                 enddo
-                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='mu')
+                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='mu_i')
                 deallocate(datall,var3dp1)
              end if
 
 !!! ADD PNH in native
 
-#endif
 
              if(nf_selectedvar('omega', output_varnames)) then
                 if (par%masterproc) print *,'writing omega...'
