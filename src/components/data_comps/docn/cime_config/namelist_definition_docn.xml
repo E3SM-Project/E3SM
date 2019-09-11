@@ -644,7 +644,7 @@
     </values>
   </entry>
 
-  <entry id="rce_sst">
+  <entry id="fixed_sst">
     <type>real</type>
     <category>docn</category>
     <group>docn_nml</group>
