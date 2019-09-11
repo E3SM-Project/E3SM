@@ -27,7 +27,7 @@ module docn_comp_mod
   use docn_shr_mod   , only: decomp         ! namelist input
   use docn_shr_mod   , only: rest_file      ! namelist input
   use docn_shr_mod   , only: rest_file_strm ! namelist input
-  use docn_shr_mod   , only: rce_sst        ! namelist input
+  use docn_shr_mod   , only: fixed_sst      ! namelist input
   use docn_shr_mod   , only: nullstr
 
   ! !PUBLIC TYPES:
@@ -840,7 +840,7 @@ CONTAINS
 
     ! RCE 
     if (sst_option == 11) then
-       sst = rce_sst
+       sst = fixed_sst
     end if
 
   end subroutine prescribed_sst
