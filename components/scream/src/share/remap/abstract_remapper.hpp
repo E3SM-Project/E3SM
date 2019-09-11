@@ -2,10 +2,11 @@
 #define SCREAM_ABSTRACT_REMAPPER_HPP
 
 #include "share/field/field.hpp"
+#include "share/field/field_utils.hpp"
 #include "share/util/factory.hpp"
 #include "share/util/string_utils.hpp"
+#include "share/util/scream_std_utils.hpp"
 #include "share/parameter_list.hpp"
-#include "share/remap/remap_utils.hpp"
 #include "share/grid/abstract_grid.hpp"
 
 namespace scream
@@ -222,8 +223,8 @@ register_field (const identifier_type& src, const identifier_type& tgt) {
   scream_require_msg(tgt.get_grid_name()==m_tgt_grid->name(),
                        "Error! Target field stores the wrong grid.\n");
 
-  const auto src_lt = get_layout_type(src.get_layout());
-  const auto tgt_lt = get_layout_type(tgt.get_layout());
+  const auto src_lt = get_layout_type(src.get_layout().tags());
+  const auto tgt_lt = get_layout_type(tgt.get_layout().tags());
 
   scream_require_msg(src_lt==tgt_lt, "Error! Source and target layouts do not match.\n");
 

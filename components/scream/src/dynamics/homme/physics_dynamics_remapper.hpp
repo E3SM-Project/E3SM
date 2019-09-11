@@ -4,8 +4,6 @@
 #include "dynamics/homme/hommexx_dimensions.hpp"
 
 #include "share/remap/abstract_remapper.hpp"
-#include "share/remap/remap_utils.hpp"
-#include "share/field/field_tag.hpp"
 #include "share/grid/abstract_grid.hpp"
 #include "share/grid/default_grid.hpp"
 #include "share/scream_pack.hpp"
@@ -119,8 +117,6 @@ public:
 template<typename ScalarType, typename DeviceType>
 FieldLayout PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 create_src_layout (const FieldLayout& tgt_layout) const {
-  scream_require_msg (get_grid_type(tgt_layout)==GridType::Dynamics,
-                      "Error! Input field identifier has a layout that does not seem to be of a Dynamics grid.\n");
   auto tags = tgt_layout.tags();
   auto dims = tgt_layout.dims();
 
@@ -149,9 +145,7 @@ FieldLayout PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 create_tgt_layout (const FieldLayout& src_layout) const {
   // This is a bit more complicated, since the position of the GP is different for 2d and 3d
 
-  scream_require_msg (get_grid_type(src_layout)==GridType::Physics,
-                      "Error! Input field identifier has a layout that does not seem to be of a Physics grid.\n");
-  auto lt = get_layout_type(src_layout);
+  auto lt = get_layout_type(src_layout.tags());
   auto tags_in = src_layout.tags();
   auto dims_in = src_layout.dims();
 
@@ -246,7 +240,7 @@ do_remap_fwd() const {
     Kokkos::deep_copy(dyn.get_view(),0.0);
 
     const auto& layout = phys.get_header().get_identifier().get_layout();
-    const auto lt = get_layout_type(layout);
+    const auto lt = get_layout_type(layout.tags());
     const auto& tgt_alloc_prop = dyn.get_header().get_alloc_properties();
     const auto& src_alloc_prop = phys.get_header().get_alloc_properties();
     using pack_type = pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
@@ -287,7 +281,7 @@ do_remap_bwd() const {
     const auto& dyn  = m_dyn[i];
 
     const auto& layout = phys.get_header().get_identifier().get_layout();
-    const auto lt = get_layout_type(layout);
+    const auto lt = get_layout_type(layout.tags());
     const auto& tgt_alloc_prop = phys.get_header().get_alloc_properties();
     const auto& src_alloc_prop = dyn.get_header().get_alloc_properties();
     using pack_type = pack::Pack<ScalarType,SCREAM_PACK_SIZE>;
@@ -334,7 +328,7 @@ setup_boundary_exchange () {
   int num_3d = 0;
   for (int i=0; i<this->m_num_registered_fields; ++i) {
     const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
-    const auto lt = get_layout_type(layout);
+    const auto lt = get_layout_type(layout.tags());
     switch (lt) {
       case LayoutType::Scalar2D:
         ++num_2d;
@@ -365,7 +359,7 @@ setup_boundary_exchange () {
   for (int i=0; i<this->m_num_registered_fields; ++i) {
     const auto& layout = m_dyn[i].get_header().get_identifier().get_layout();
     const auto& dims = layout.dims();
-    const auto lt = get_layout_type(layout);
+    const auto lt = get_layout_type(layout.tags());
     switch (lt) {
       case LayoutType::Scalar2D:
         m_be->register_field(getHommeView<Real*[NP][NP]>(m_dyn[i]));

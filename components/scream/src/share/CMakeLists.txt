@@ -8,7 +8,6 @@ set(SHARE_SRC
   field/field_layout.cpp
   field/field_tracking.cpp
   mpi/scream_comm.cpp
-  remap/remap_utils.cpp
   util/scream_utils.cpp
   util/scream_arch.cpp
   util/array_io.cpp
@@ -29,13 +28,13 @@ set(SHARE_HEADERS
   field/field_repository.hpp
   field/field_tag.hpp
   field/field_tracking.cpp
+  field/field_utils.hpp
   grid/abstract_grid.hpp
   grid/default_grid.hpp
   grid/grid_utils.hpp
   grid/grids_manager.hpp
   grid/user_provided_grids_manager.hpp
   remap/abstract_remapper.hpp
-  remap/remap_utils.hpp
   parameter_list.hpp
   scream_session.hpp
   mpi/scream_comm.hpp

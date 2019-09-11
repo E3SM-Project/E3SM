@@ -29,6 +29,12 @@ bool erase (ContainerType& c, const T& value) {
   return false;
 }
 
+// Shortcuts to avoid using long iterators syntax (like v.begin() and v.end())
+template<typename ContainerType, typename T>
+int count (const ContainerType& c, const T& value) {
+  return std::count(c.begin(), c.end(), value);
+}
+
 } // namespace util
 
 // A set of weak_ptr would not compile, due to the lack of operator<.
