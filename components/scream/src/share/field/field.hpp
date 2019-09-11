@@ -60,7 +60,10 @@ public:
         header_type& get_header ()       { return *m_header; }
   const std::shared_ptr<header_type>& get_header_ptr () const { return m_header; }
 
-  const view_type&   get_view   () const { return  m_view;   }
+  const view_type& get_view   () const { return  m_view;   }
+
+  // Returns a const_field_type copy of this field
+  const_field_type get_const () const { return const_field_type(*this); }
 
   template<typename DT>
   ko::Unmanaged<typename KokkosTypes<device_type>::template view<DT> >
@@ -222,7 +225,7 @@ void Field<ScalarType,Device>::allocate_view ()
   auto& alloc_prop   = m_header->get_alloc_properties();
 
   // Check the identifier has all the dimensions set
-  scream_require_msg(layout.are_dimensions_set(), "Error! Cannot create a field until all the field's dimensions are set.\n");
+  scream_require_msg(layout.are_dimensions_set(), "Error! Cannot allocate the view until all the field's dimensions are set.\n");
 
   // Commit the allocation properties
   alloc_prop.commit();

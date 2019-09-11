@@ -124,9 +124,11 @@ inline int FieldAllocProp::get_last_dim_alloc_size () const {
 
 template<typename ValueType>
 bool FieldAllocProp::is_allocation_compatible_with_value_type () const {
+  using NonConstValueType = typename std::remove_const<ValueType>::type;
+
   constexpr int  sts = sizeof(typename util::ScalarProperties<ValueType>::scalar_type);
   constexpr int  vts = sizeof(ValueType);
-  const auto stn = util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name();
+  const auto stn = util::TypeName<typename util::ScalarProperties<NonConstValueType>::scalar_type>::name();
 
   return stn==m_scalar_type_name
       && sts==m_scalar_type_size && (m_last_dim_alloc_size%vts==0);

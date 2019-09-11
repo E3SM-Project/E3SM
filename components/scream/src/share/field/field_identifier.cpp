@@ -1,5 +1,4 @@
 #include "share/field/field_identifier.hpp"
-#include "share/grid/default_grid.hpp"
 
 namespace scream
 {
