@@ -1,3 +1,5 @@
+! Sept 2019 O. Guba Add w_i, mu_i, geo_i to interp output 
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -351,7 +353,6 @@ contains
     call nf_variable_attributes(ncdf, 'T',    'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'dp3d', 'delta p','Pa')
     call nf_variable_attributes(ncdf, 'p',    'hydrostatic pressure','Pa')
-    call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
     call nf_variable_attributes(ncdf, 'rho',  'dry air density','kg/m^3')
     call nf_variable_attributes(ncdf, 'Q',    'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'Q2',   'concentration','kg/kg')
@@ -364,11 +365,12 @@ contains
     call nf_variable_attributes(ncdf, 'hybm', 'hybrid B coefficiet at layer midpoints' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'hyai', 'hybrid A coefficiet at layer interfaces' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'hybi', 'hybrid B coefficiet at layer interfaces' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'Th',   'potential temperature \theta','degrees kelvin')
 #ifdef MODEL_THETA_L
-    call nf_variable_attributes(ncdf, 'w_i', 'vertical wind component on interfaces','meters/second')
-    call nf_variable_attributes(ncdf, 'Th', 'potential temperature \theta','...')
+    call nf_variable_attributes(ncdf, 'w_i',  'vertical wind component on interfaces','meters/second')
     call nf_variable_attributes(ncdf, 'mu_i', 'mu=dp/d\pi on interfaces','dimensionless')
-    call nf_variable_attributes(ncdf, 'geo_i', 'geopotential on interfaces','meters')
+    call nf_variable_attributes(ncdf, 'geo_i','geopotential on interfaces','meters')
+    call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
 #endif
 #endif
     call nf_variable_attributes(ncdf, 'gw',   'gauss weights','dimensionless')
@@ -860,6 +862,7 @@ contains
              end if
 
              if(nf_selectedvar('pnh', output_varnames)) then
+#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing pnh...'
                 allocate(datall(ncnt,nlev))
                 st=1
@@ -872,6 +875,7 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='pnh')
                 deallocate(datall)
+#endif
              end if
 
              if(nf_selectedvar('rho', output_varnames)) then

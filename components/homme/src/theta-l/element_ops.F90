@@ -24,6 +24,8 @@
 ! Other routines:
 !  get_field() 
 !     returns temperature, potential temperature, phi, etc..
+!  get_field_i() 
+!     returns a few quantities on interfaces 
 !  copy_state()
 !     copy state variables from one timelevel to another timelevel 
 !  get_state()
@@ -150,13 +152,12 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
          field = elem%state%w_i(:,:,1:nlevp,nt)
       endif
     case('geopotential');
-      !is phinh_i set for HY runs or should here be abort?
+      !is phinh_i set for HY runs or should here be an abort?
       field = elem%state%phinh_i(:,:,1:nlevp,nt)
     case('mu');
       !this call will return mu=1 at the bottom
       call get_dpnh_dp_i(elem,field,hvcoord,nt)
-      !assuming call to this routine is after mu at the bottom is computed
-      !like in output
+      !assuming call to this routine is after mu at the bottom is computed like in output
       field(:,:,nlevp) = elem%derived%mubottom(:,:)
     case default
       print *,'name = ',trim(name)

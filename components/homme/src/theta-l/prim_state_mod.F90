@@ -1,3 +1,5 @@
+! July 2019 O. Guba Added extrema locations in output
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
