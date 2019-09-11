@@ -1723,6 +1723,8 @@ contains
     endif
 #endif
 
+    nu = 0.0_rtype
+
     if (qc.ge.qsmall) then
 
        ! set minimum nc to prevent floating point error

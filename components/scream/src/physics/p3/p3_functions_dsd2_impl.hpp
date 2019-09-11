@@ -22,6 +22,8 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
   lamc =   0.;
   cdist =  0.;
   cdist1 = 0.;
+  nu     = 0.;
+  mu_c   = 0.;
 
   if (qc_gt_small.any()) {
     // set minimum nc to prevent floating point error
@@ -56,7 +58,8 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
     Smask min_or_max = lamc_lt_min || lamc_gt_max;
     lamc.set(lamc_lt_min, lammin);
     lamc.set(lamc_gt_max, lammax);
-    nc.set(min_or_max, 6. * pack::pow(lamc, 3) * qc / (C::Pi * C::RHOW * (mu_c + 3.) * (mu_c + 2.) * (mu_c + 1.)));
+
+    nc.set(min_or_max, 6. * (lamc * lamc * lamc) * qc / (C::Pi * C::RHOW * (mu_c + 3.) * (mu_c + 2.) * (mu_c + 1.)));
 
     cdist.set(qc_gt_small, nc * (mu_c+1.) / lamc);
     cdist1.set(qc_gt_small, nc * lcldm / pack::tgamma(mu_c + 1.));
