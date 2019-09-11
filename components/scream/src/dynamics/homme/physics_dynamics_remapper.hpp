@@ -2,6 +2,7 @@
 #define SCREAM_PHYSICS_DYNAMICS_REMAPPER_HPP
 
 #include "dynamics/homme/hommexx_dimensions.hpp"
+#include "dynamics/homme/homme_dynamics_helpers.hpp"
 
 #include "share/remap/abstract_remapper.hpp"
 #include "share/grid/se_grid.hpp"
@@ -18,19 +19,6 @@
 namespace scream
 {
 
-template<>
-struct util::ScalarProperties<::Homme::Scalar> {
-  using scalar_type = Homme::Real;
-  static constexpr bool is_pack = true;
-};
-
-template<>
-struct util::TypeName<::Homme::Scalar> {
-  static std::string name () {
-    return "Homme::Scalar";
-  }
-};
-
 template<typename DataType,typename ScalarType,typename DeviceType>
 ::Homme::ExecViewUnmanaged<DataType>
 getHommeView(const Field<ScalarType,DeviceType>& f) {
@@ -39,14 +27,13 @@ getHommeView(const Field<ScalarType,DeviceType>& f) {
 }
 
 // Performs remap from physics to dynamics grids, and viceversa
-// Note: this class *ONLY* performs local remap. This means that,
-//       when going from physics to dynamics layout, this remap
-//       must be followed by a halo exchange
 template<typename ScalarType, typename DeviceType>
 class PhysicsDynamicsRemapper : public AbstractRemapper<ScalarType,DeviceType>
 {
 public:
-  using base_type       = AbstractRemapper<ScalarType,DeviceType>;
+  using scalar_type     = ScalarType;
+  using device_type     = DeviceType;
+  using base_type       = AbstractRemapper<scalar_type,device_type>;
   using field_type      = typename base_type::field_type;
   using identifier_type = typename base_type::identifier_type;
   using layout_type     = typename base_type::layout_type;
@@ -71,6 +58,7 @@ public:
 
 protected:
 
+  // Getters
   const identifier_type& do_get_src_field_id (const int ifield) const override {
     return m_phys[ifield].get_header().get_identifier();
   }
@@ -84,11 +72,13 @@ protected:
     return m_dyn[ifield];
   }
 
+  // Registration methods
   void do_registration_begins () override;
   void do_register_field (const identifier_type& src, const identifier_type& tgt) override;
   void do_bind_field (const int ifield, const field_type& src, const field_type& tgt) override;
   void do_registration_complete () override;
 
+  // Remap methods
   void do_remap_fwd () const override;
   void do_remap_bwd () const override;
 
@@ -118,24 +108,22 @@ public:
 template<typename ScalarType, typename DeviceType>
 FieldLayout PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 create_src_layout (const FieldLayout& tgt_layout) const {
+  namespace SFTN = ShortFieldTagsNames;
+
   auto tags = tgt_layout.tags();
   auto dims = tgt_layout.dims();
 
   // Element is the first tag. Replace it with 'Column'.
   // Set extent to the number of columns
-  tags[0] = FieldTag::Column;
+  tags[0] = SFTN::COL;
   dims[0] = this->m_src_grid->get_num_dofs();
 
-  // Find the position of the 1st GaussPoint tag. Delete it.
-  auto it = util::find(tags,FieldTag::GaussPoint);
+  // Find the position of the 1st GaussPoint tag. Delete twice in a row (two GP tags).
+  auto it = util::find(tags,SFTN::GP);
   auto pos = std::distance(tags.cbegin(),it);
-  tags.erase(it);
+  tags.erase(tags.begin()+pos);
+  tags.erase(tags.begin()+pos);
   dims.erase(dims.begin()+pos);
-
-  // Find the position of the 2nd GaussPoint tag. Delete it.
-  it = util::find(tags,FieldTag::GaussPoint);
-  pos = std::distance(tags.cbegin(),it);
-  tags.erase(it);
   dims.erase(dims.begin()+pos);
 
   return FieldLayout(tags,dims);
@@ -144,49 +132,51 @@ create_src_layout (const FieldLayout& tgt_layout) const {
 template<typename ScalarType, typename DeviceType>
 FieldLayout PhysicsDynamicsRemapper<ScalarType,DeviceType>::
 create_tgt_layout (const FieldLayout& src_layout) const {
-  // This is a bit more complicated, since the position of the GP is different for 2d and 3d
+  namespace SFTN = ShortFieldTagsNames;
 
-  auto lt = get_layout_type(src_layout.tags());
-  auto tags_in = src_layout.tags();
-  auto dims_in = src_layout.dims();
+  auto tags = src_layout.tags();
+  auto dims = src_layout.dims();
 
-  int size_in = tags_in.size();
-  std::vector<FieldTag> tags_out(size_in+2);
-  std::vector<int>      dims_out(size_in+2);
+  // Replace COL with EL, and num_cols with num_elems
+  tags[0] = SFTN::EL;
+  dims[0] = this->m_tgt_grid->get_num_dofs() / (HOMMEXX_NP*HOMMEXX_NP);
 
-  // The first tag is 'Column'. Replace with 'Element'.
-  // Set the extent to the number of elements
-  tags_out[0] = FieldTag::Element;
-  dims_out[0] = this->m_tgt_grid->get_num_dofs() / (NP*NP);
+  // For position of GP and NP, it's easier to switch between 2d and 3d
+  auto lt = get_layout_type(tags);
   switch (lt) {
-    case LayoutType::Scalar2D: // Fallthrough
-    case LayoutType::Vector2D: // Fallthrough
+    case LayoutType::Scalar2D:
+    case LayoutType::Vector2D:
     case LayoutType::Tensor2D:
-      // On input, we have [Column,...], on output we have [Element,...,GP,GP]
-      for (int i=0; i<size_in-1; ++i) {
-        tags_out[i+1] = tags_in[i+1];
-        dims_out[i+1] = dims_in[i+1];
-      }
-      tags_out[size_in] = tags_out[size_in+1] = FieldTag::GaussPoint;
-      dims_out[size_in] = dims_out[size_in+1] = NP;
+      // Simple: GP/NP are at the end.
+      // Push back GP/NP twice
+      tags.push_back(SFTN::GP);
+      tags.push_back(SFTN::GP);
+      dims.push_back(HOMMEXX_NP);
+      dims.push_back(HOMMEXX_NP);
       break;
-    case LayoutType::Scalar3D: // Fallthrough
-    case LayoutType::Vector3D: // Fallthrough
+    case LayoutType::Scalar3D:
+    case LayoutType::Vector3D:
     case LayoutType::Tensor3D:
-      // On input, we have [Column,...,VerticalLevel], on output we have [Element,...,GP,GP,VerticalLevel]
-      for (int i=0; i<size_in-2; ++i) {
-        tags_out[i+1] = tags_in[i+1];
-        dims_out[i+1] = dims_in[i+1];
+      {
+        // Replace last tag/tim with GP/NP, then push back GP/NP and VL/nvl
+
+        // Note down num levels
+        const int nvl = dims.back();
+        tags.back() = SFTN::GP;
+        dims.back() = HOMMEXX_NP;
+
+        tags.push_back(SFTN::GP);
+        dims.push_back(HOMMEXX_NP);
+
+        tags.push_back(SFTN::VL);
+        dims.push_back(nvl);
+        break;
       }
-      tags_out[size_in-1] = tags_out[size_in] = FieldTag::GaussPoint;
-      dims_out[size_in-1] = dims_out[size_in] = NP;
-      tags_out[size_in+1] = FieldTag::VerticalLevel;
-      dims_out[size_in+1] = dims_in[size_in-1];
-      break;
     default:
-      scream_require_msg(false, "Error! This un-handled case is unexpected. Please, contact developers.\n");
+      scream_error_msg("Error! Unrecognized layout type.\n");
   }
-  return FieldLayout(tags_out,dims_out);
+
+  return FieldLayout(tags,dims);
 }
 
 template<typename ScalarType, typename DeviceType>
@@ -398,7 +388,6 @@ setup_boundary_exchange () {
     m_be->registration_completed();
   }
 }
-
 
 template<typename ScalarType, typename DeviceType>
 void PhysicsDynamicsRemapper<ScalarType,DeviceType>::

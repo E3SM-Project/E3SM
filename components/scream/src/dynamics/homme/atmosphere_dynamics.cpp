@@ -1,4 +1,5 @@
 #include "atmosphere_dynamics.hpp"
+#include "dynamics/homme/homme_dynamics_helpers.hpp"
 #include "share/scream_assert.hpp"
 #include "dynamics/homme/scream_homme_interface.hpp"
 #include "dynamics/homme/hommexx_dimensions.hpp"
@@ -17,18 +18,6 @@
 
 namespace scream
 {
-
-namespace util
-{
-
-// Specialize ScalarProperties on Homme's Scalar type
-template<>
-struct ScalarProperties<Homme::Scalar> {
-  using scalar_type = Homme::Real;
-  static constexpr bool is_pack = true;
-};
-
-} // namespace util
 
 HommeDynamics::HommeDynamics (const Comm& comm,const ParameterList& /* params */)
  : m_dynamics_comm (comm)
@@ -202,11 +191,12 @@ void HommeDynamics::initialize (const util::TimeStamp& t0)
 
 void HommeDynamics::register_fields (FieldRepository<Real, device_type>& field_repo) const
 {
+  using Scalar = Homme::Scalar;
   for (const auto& fid : m_computed_fields) {
-    field_repo.register_field(fid);
+    field_repo.register_field<Scalar>(fid);
   }
   for (const auto& fid : m_required_fields) {
-    field_repo.register_field(fid);
+    field_repo.register_field<Scalar>(fid);
   }
 }
 
