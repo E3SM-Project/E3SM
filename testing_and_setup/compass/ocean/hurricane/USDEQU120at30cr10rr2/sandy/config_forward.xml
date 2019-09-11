@@ -11,8 +11,8 @@
 		<option name="config_run_duration">'none'</option>
 
 		<option name="config_time_integrator">'split_explicit'</option>
-		<option name="config_dt">'00:00:30'</option>
-		<option name="config_btr_dt">'0000_00:00:03'</option>
+		<option name="config_dt">'00:00:40'</option>
+		<option name="config_btr_dt">'0000_00:00:04'</option>
 <!--
 		<option name="config_dt">'00:00:05'</option>
 		<option name="config_time_integrator">'RK4'</option>
@@ -20,8 +20,11 @@
 		<option name="config_hmix_scaleWithMesh">.true.</option>
 		<option name="config_mom_del4">4.0e8</option>
 		<option name="config_use_mom_del4">.true.</option>
+		<option name="config_ALE_thickness_proportionality">'weights_only'</option>
 		<option name="config_vert_coord_movement">'uniform_stretching'</option>
                 <option name="config_use_bulk_wind_stress">.true.</option>
+                <option name="config_use_const_visc">.true.</option>
+                <option name="config_vert_visc">1.0e4</option>
                 <option name="config_use_time_varying_atmospheric_forcing">.true.</option>
                 <option name="config_time_varying_atmospheric_forcing_start_time">'2012-10-01_00:00:00'</option>
                 <option name="config_time_varying_atmospheric_forcing_reference_time">'2012-10-01_00:00:00'</option>
