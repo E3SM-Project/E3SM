@@ -51,6 +51,8 @@
 #define scream_require_msg(condition, msg)  impl_throw(condition, msg, std::logic_error)
 #define scream_krequire_msg(condition, msg) impl_kthrow(condition, msg)
 
+#define scream_error_msg(msg)               impl_throw(false, msg, std::logic_error)
+
 // Macros to do asserts inside constexpr functions
 // This is not necessary with C++14, where constexpr functions are "regular"
 // functions (they just can be evaluated at compile time). But in C++11 you can only have
