@@ -227,9 +227,7 @@ contains
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
-!how does it work if preqx wants to output w of phi?
 #ifdef MODEL_THETA_L
-    call nf_variable_attributes(ncdf, 'w', 'vertical wind component','meters/second')
     call nf_variable_attributes(ncdf, 'w_i', 'vertical wind component on interfaces','meters/second')
     call nf_variable_attributes(ncdf, 'Th', 'potential temperature \theta','...')
     call nf_variable_attributes(ncdf, 'mu_i', 'mu=dp/d\pi on interfaces','dimensionless')
@@ -655,21 +653,8 @@ contains
                 call nf_put_var(ncdf(ios),var3d,start, count, name='geo')
              end if
 
-
-             if(nf_selectedvar('w', output_varnames)) then
-                if (par%masterproc) print *,'writing w...'
-                st=1
-                do ie=1,nelemd
-                   en=st+elem(ie)%idxp%NumUniquePts-1
-                   call get_field(elem(ie),'w',vartmp,hvcoord,n0,n0_Q)
-                   call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
-                   st=en+1
-                enddo
-                call nf_put_var(ncdf(ios),var3d,start, count, name='w')
-             end if
-
-
              if(nf_selectedvar('w_i', output_varnames)) then
+#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing w_i...'
                 st=1
                 do ie=1,nelemd
@@ -679,10 +664,12 @@ contains
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='w_i',iodescin=iodesc3dp1)
+#endif
              end if
 
 
              if(nf_selectedvar('mu_i', output_varnames)) then
+#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing mu_i...'
                 st=1
                 do ie=1,nelemd
@@ -692,10 +679,12 @@ contains
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='mu_i',iodescin=iodesc3dp1)
+#endif
              end if
 
 
              if(nf_selectedvar('geo_i', output_varnames)) then
+#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing geo_i...'
                 st=1
                 do ie=1,nelemd
@@ -705,6 +694,7 @@ contains
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='geo_i',iodescin=iodesc3dp1)
+#endif
              end if
 
              if(nf_selectedvar('omega', output_varnames)) then

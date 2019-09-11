@@ -49,7 +49,7 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 45 !45
+  integer, parameter :: varcnt = 44 !45
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
@@ -64,7 +64,6 @@ module interp_movie_mod
                                                  'Th       ', &
                                                  'u        ', &
                                                  'v        ', &
-                                                 'w        ', &
                                                  'w_i      ', &
                                                  'mu_i     ', &
                                                  'geo_i    ', &
@@ -102,7 +101,6 @@ module interp_movie_mod
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
-                                          PIO_double,&
                                           PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,&
                                           PIO_double,&
@@ -111,8 +109,8 @@ module interp_movie_mod
                                           PIO_double,PIO_double,&
                                           PIO_double,PIO_double,&
                                           PIO_double/)
-  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.false.,.false., .false., .false., &
+  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
+                                              .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
@@ -137,7 +135,6 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! Th
        1,2,3,5,0,  &   ! u
        1,2,3,5,0,  &   ! v
-       1,2,3,5,0,  &   ! w
        1,2,4,5,0,  &   ! w_i
        1,2,4,5,0,  &   ! mu_i
        1,2,4,5,0,  &   ! geo_i
@@ -367,10 +364,7 @@ contains
     call nf_variable_attributes(ncdf, 'hybm', 'hybrid B coefficiet at layer midpoints' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'hyai', 'hybrid A coefficiet at layer interfaces' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'hybi', 'hybrid B coefficiet at layer interfaces' ,'dimensionless')
-!how does it work if preqx wants to output w of phi?
 #ifdef MODEL_THETA_L
-!can we delete w here? 
-    call nf_variable_attributes(ncdf, 'w', 'vertical wind component','meters/second')
     call nf_variable_attributes(ncdf, 'w_i', 'vertical wind component on interfaces','meters/second')
     call nf_variable_attributes(ncdf, 'Th', 'potential temperature \theta','...')
     call nf_variable_attributes(ncdf, 'mu_i', 'mu=dp/d\pi on interfaces','dimensionless')
@@ -902,7 +896,7 @@ contains
                 do ie=1,nelemd
                    do k=1,nlev 
                       ke(:,:,k) = (elem(ie)%state%v(:,:,1,k,n0)**2 + &
-        	       elem(ie)%state%v(:,:,2,k,n0)**2 )/2
+                        elem(ie)%state%v(:,:,2,k,n0)**2 )/2
                    enddo
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), ke, &
@@ -968,33 +962,13 @@ contains
                 deallocate(datall)
              end if
 
-             if(nf_selectedvar('w', output_varnames)) then
-                if (par%masterproc) print *,'writing w...'
-                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
-                do ie=1,nelemd
-                   call get_field(elem(ie),'w',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
-                end do
-!why? something in preqx?
-                call make_C0(var3d,elem,par)
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), var3d(:,:,:,ie), &
-                        np, nlev, datall(st:en,:))
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='w')
-                deallocate(datall,var3d)
-             end if
-
              if(nf_selectedvar('w_i', output_varnames)) then
+#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing w_i...'
                 allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
                 do ie=1,nelemd
                    call get_field_i(elem(ie),'w',var3dp1(:,:,:,ie),hvcoord,n0)
                 end do
-!dont call it from hydro codes
-                !call make_C0(var3d,elem,par)
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1
@@ -1004,9 +978,11 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='w_i')
                 deallocate(datall,var3dp1)
+#endif
              end if
 
              if(nf_selectedvar('geo_i', output_varnames)) then
+#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing geo_i...'
                 allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
                 do ie=1,nelemd
@@ -1021,9 +997,11 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='geo_i')
                 deallocate(datall,var3dp1)
+#endif
              end if
 
              if(nf_selectedvar('mu_i', output_varnames)) then
+#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing mu_i...'
                 allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
                 do ie=1,nelemd
@@ -1038,10 +1016,8 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='mu_i')
                 deallocate(datall,var3dp1)
+#endif
              end if
-
-!!! ADD PNH in native
-
 
              if(nf_selectedvar('omega', output_varnames)) then
                 if (par%masterproc) print *,'writing omega...'
