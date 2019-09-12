@@ -34,6 +34,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     view_2d_table vn_table; view_2d_table vm_table; view_1d_table mu_r_table; view_dnu_table dnu;
     Functions::init_kokkos_tables(vn_table, vm_table, mu_r_table, dnu);
 
+    constexpr Scalar qsmall = C::QSMALL;
     static constexpr Int max_pack_size = 16;
     REQUIRE(Spack::n <= max_pack_size);
 
@@ -82,7 +83,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
         nc[s]    = gcdd_device(s).nc_in;
       }
 
-      Smask gt_small(qc > C::QSMALL);
+      Smask gt_small(qc > qsmall);
       Spack mu_c(0.0), nu(0.0), lamc(0.0), cdist(0.0), cdist1(0.0);
       Functions::get_cloud_dsd2(gt_small, qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, lcldm);
 
@@ -120,6 +121,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
   {
     using KTH = KokkosTypes<HostDevice>;
 
+    constexpr Scalar qsmall = C::QSMALL;
     static constexpr Int max_pack_size = 16;
     REQUIRE(Spack::n <= max_pack_size);
 
@@ -166,7 +168,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
         nr[s]    = grdd_device(s).nr_in;
       }
 
-      Smask gt_small(qr > C::QSMALL);
+      Smask gt_small(qr > qsmall);
       Spack mu_r(0.0), lamr(0.0), cdistr(0.0), logn0r(0.0);
       Functions::get_rain_dsd2(gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
 

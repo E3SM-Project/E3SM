@@ -107,6 +107,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     view_itabcol_table itabcol;
     Functions::init_kokkos_ice_lookup_tables(itab, itabcol);
 
+    constexpr Scalar qsmall = C::QSMALL;
     static constexpr Int max_pack_size = 16;
     REQUIRE(Spack::n <= max_pack_size);
 
@@ -236,7 +237,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
         nr[s]    = lidb_device(s).nr;
       }
 
-      Smask qiti_gt_small(qitot > C::QSMALL);
+      Smask qiti_gt_small(qitot > qsmall);
       Functions::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, ti);
       Functions::lookup_rain(qiti_gt_small, qr, nr, tr);
       Spack ice_result = Functions::apply_table_ice(qiti_gt_small, access_table_index-1, itab, ti);

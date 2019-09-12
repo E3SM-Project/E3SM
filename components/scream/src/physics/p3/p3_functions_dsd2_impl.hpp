@@ -26,10 +26,12 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
   mu_c   = 0;
 
   if (qc_gt_small.any()) {
+    constexpr Scalar nsmall = C::NSMALL;
+    constexpr Scalar cons1  = C::CONS1;
     // set minimum nc to prevent floating point error
     {
       Spack mu_c_local;
-      nc.set(qc_gt_small, pack::max(nc, C::NSMALL));
+      nc.set(qc_gt_small, pack::max(nc, nsmall));
       mu_c_local = sp(0.0005714)*(nc * sp(1.e-6) * rho) + sp(0.2714);
       mu_c_local = 1/(pack::pow(mu_c_local, 2)) - 1;
       mu_c_local = pack::max(mu_c_local, 2);
@@ -47,7 +49,7 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
     }
 
     // calculate lamc
-    lamc.set(qc_gt_small, pack::pow(C::CONS1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc, C::THIRD));
+    lamc.set(qc_gt_small, pack::pow(cons1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc, C::THIRD));
 
     // apply lambda limiters
     Spack lammin = (mu_c + 1)*sp(2.5e+4); // min: 40 micron mean diameter
@@ -81,6 +83,7 @@ get_rain_dsd2 (
   logn0r = 0;
 
   if (qr_gt_small.any()) {
+    constexpr Scalar mu_r_const = C::mu_r_const;
     // use lookup table to get mu
     // mu-lambda relationship is from Cao et al. (2008), eq. (7)
 
@@ -92,7 +95,7 @@ get_rain_dsd2 (
                 pow(qr / (cons1 * nr_lim * 6), thrd));
 
     // Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
-    mu_r.set(qr_gt_small, C::mu_r_const);
+    mu_r.set(qr_gt_small, mu_r_const);
     // recalculate slope based on mu_r
     lamr.set(qr_gt_small,
              pow(cons1 * nr_lim * (mu_r + 3) *
