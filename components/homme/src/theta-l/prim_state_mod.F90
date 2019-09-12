@@ -1059,7 +1059,7 @@ subroutine extremumLevelHelper_i(res,field,operation,first)
    real (kind=real_kind)                :: val
    integer                              :: location(3)
 
-   if((operation /= 'max').and.(operation /= 'min')) call abortmp('unknown operation in extremumLevelHelper()')
+   if((operation /= 'max').and.(operation /= 'min')) call abortmp('unknown operation in extremumLevelHelper_i()')
 
    if ( first ) then
       if( operation == 'max' ) then

@@ -69,9 +69,6 @@ module prim_movie_mod
 
   type(nf_handle) :: ncdf(max_output_streams)
   integer, private :: nxyp
-#ifndef HOMME_WITHOUT_PIOLIBRARY
-  integer(kind=nfsizekind) :: piostart2d, piocount2d, piocount3d(2), piostart3d(2)
-#endif
 
 contains
 
@@ -468,18 +465,18 @@ contains
                (output_end_time(ios) .ge. tl%nstep) .and. &
                MODULO(tl%nstep,output_frequency(ios)) .eq. 0) then
              output_varnames=>get_current_varnames(ios)
-             start2d(1)=piostart2d
+             start2d(1)=0
              start2d(2)=nf_get_frame(ncdf(ios))
-             count2d(1)=piocount2d
+             count2d(1)=0
              count2d(2)=1
 
-             count(1:2)=0 !piocount3d
-             start(1:2)=0 !piostart3d
+             count(1:2)=0 
+             start(1:2)=0 
              start(3)=nf_get_frame(ncdf(ios))
              count(3)=1
 
-             countp1(1:2)=0 !piocount3dp1
-             startp1(1:2)=0 !piostart3dp1
+             countp1(1:2)=0 
+             startp1(1:2)=0 
              startp1(3)=start(3)
              countp1(3)=1
 

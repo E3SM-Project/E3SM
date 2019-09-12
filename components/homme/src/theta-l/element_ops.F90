@@ -155,10 +155,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
       !is phinh_i set for HY runs or should here be an abort?
       field = elem%state%phinh_i(:,:,1:nlevp,nt)
     case('mu');
-      !this call will return mu=1 at the bottom
       call get_dpnh_dp_i(elem,field,hvcoord,nt)
-      !assuming call to this routine is after mu at the bottom is computed like in output
-      field(:,:,nlevp) = elem%derived%mubottom(:,:)
     case default
       print *,'name = ',trim(name)
       call abortmp('ERROR: get_field_i name not supported in this model')
@@ -224,7 +221,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   end subroutine get_temperature
 
-
+!this routine averages mu to midlevels
   !_____________________________________________________________________
   subroutine get_dpnh_dp(elem,dpnh_dp,hvcoord,nt)
   implicit none
@@ -251,7 +248,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   enddo
   end subroutine 
 
-
+!this routine returns mu at interfaces, call it only after caar set mubottom
   !_____________________________________________________________________
   subroutine get_dpnh_dp_i(elem,dpnh_dp_i,hvcoord,nt)
   implicit none
@@ -270,7 +267,9 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   dp=elem%state%dp3d(:,:,:,nt)
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
        dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
-  
+ 
+  dpnh_dp_i(:,:,nlevp) = elem%derived%mubottom(:,:) 
+
   end subroutine get_dpnh_dp_i 
 
 
