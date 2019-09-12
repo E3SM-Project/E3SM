@@ -19,21 +19,21 @@ void Functions<S,D>::
 get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
                const view_1d<const Scalar>& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm)
 {
-  lamc =   0.;
-  cdist =  0.;
-  cdist1 = 0.;
-  nu     = 0.;
-  mu_c   = 0.;
+  lamc =   0;
+  cdist =  0;
+  cdist1 = 0;
+  nu     = 0;
+  mu_c   = 0;
 
   if (qc_gt_small.any()) {
     // set minimum nc to prevent floating point error
     {
       Spack mu_c_local;
       nc.set(qc_gt_small, pack::max(nc, C::NSMALL));
-      mu_c_local = 0.0005714*(nc * 1.e-6 * rho) + 0.2714;
-      mu_c_local = 1./(pack::pow(mu_c_local, 2)) - 1.;
-      mu_c_local = pack::max(mu_c_local, 2.);
-      mu_c_local = pack::min(mu_c_local, 15.);
+      mu_c_local = sp(0.0005714)*(nc * sp(1.e-6) * rho) + sp(0.2714);
+      mu_c_local = 1/(pack::pow(mu_c_local, 2)) - 1;
+      mu_c_local = pack::max(mu_c_local, 2);
+      mu_c_local = pack::min(mu_c_local, 15);
 
       mu_c.set(qc_gt_small, mu_c_local);
     }
@@ -47,11 +47,11 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
     }
 
     // calculate lamc
-    lamc.set(qc_gt_small, pack::pow(C::CONS1 * nc * (mu_c+3.) * (mu_c + 2.) * (mu_c + 1.) / qc, C::THIRD));
+    lamc.set(qc_gt_small, pack::pow(C::CONS1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc, C::THIRD));
 
     // apply lambda limiters
-    Spack lammin = (mu_c + 1.)*2.5e+4; // min: 40 micron mean diameter
-    Spack lammax = (mu_c + 1.)*1.e+6;   // max:  1 micron mean diameter
+    Spack lammin = (mu_c + 1)*sp(2.5e+4); // min: 40 micron mean diameter
+    Spack lammax = (mu_c + 1)*sp(1.e+6);   // max:  1 micron mean diameter
 
     Smask lamc_lt_min = lamc < lammin && qc_gt_small;
     Smask lamc_gt_max = lamc > lammax && qc_gt_small;
@@ -59,10 +59,10 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
     lamc.set(lamc_lt_min, lammin);
     lamc.set(lamc_gt_max, lammax);
 
-    nc.set(min_or_max, 6. * (lamc * lamc * lamc) * qc / (C::Pi * C::RHOW * (mu_c + 3.) * (mu_c + 2.) * (mu_c + 1.)));
+    nc.set(min_or_max, 6 * pack::pow(lamc, 3) * qc / (C::Pi * C::RHOW * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
 
-    cdist.set(qc_gt_small, nc * (mu_c+1.) / lamc);
-    cdist1.set(qc_gt_small, nc * lcldm / pack::tgamma(mu_c + 1.));
+    cdist.set(qc_gt_small, nc * (mu_c+1) / lamc);
+    cdist1.set(qc_gt_small, nc * lcldm / pack::tgamma(mu_c + 1));
   }
 }
 
@@ -89,7 +89,7 @@ get_rain_dsd2 (
     const auto nr_lim = max(nr, nsmall);
     Spack inv_dum(0);
     inv_dum.set(qr_gt_small,
-                pow(qr / (cons1 * nr_lim * 6.0), thrd));
+                pow(qr / (cons1 * nr_lim * 6), thrd));
 
     // Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
     mu_r.set(qr_gt_small, C::mu_r_const);
@@ -100,9 +100,9 @@ get_rain_dsd2 (
                  thrd));
 
     // check for slope
-    const auto lammax = (mu_r+1.)*1.e+5;
+    const auto lammax = (mu_r+1.)*sp(1.e+5);
     // set to small value since breakup is explicitly included (mean size 0.8 mm)
-    const auto lammin = (mu_r+1.)*1250.0;
+    const auto lammin = (mu_r+1.)*sp(1250.0);
 
     // apply lambda limiters for rain
     const auto lt = qr_gt_small && (lamr < lammin);
