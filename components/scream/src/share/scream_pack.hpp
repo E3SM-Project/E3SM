@@ -24,7 +24,7 @@ namespace pack {
    so we want the caller to be explicit.
  */
 
-template <int PACKN>
+template <int PackSize>
 struct Mask {
   // One tends to think a short boolean type would be useful here (e.g., bool or
   // char), but that is bad for vectorization. int or long are best.
@@ -33,9 +33,10 @@ struct Mask {
   // A tag for this struct for type checking.
   enum { masktag = true };
   // Pack and Mask sizes are the same, n.
-  enum { n = PACKN };
+  enum { n = PackSize };
 
-  KOKKOS_FORCEINLINE_FUNCTION explicit Mask () {}
+  KOKKOS_FORCEINLINE_FUNCTION
+  explicit Mask () {}
 
   // Init all slots of the Mask to 'init'.
   KOKKOS_FORCEINLINE_FUNCTION explicit Mask (const bool& init) {
@@ -69,10 +70,10 @@ private:
 // Use enable_if and masktag so that we can template on 'Mask' and yet not have
 // our operator overloads, in particular, be used for something other than the
 // Mask type.
-template <typename Mask>
-using OnlyMask = typename std::enable_if<Mask::masktag,Mask>::type;
-template <typename Mask, typename Return>
-using OnlyMaskReturn = typename std::enable_if<Mask::masktag,Return>::type;
+template <typename MaskType>
+using OnlyMask = typename std::enable_if<MaskType::masktag,MaskType>::type;
+template <typename MaskType, typename ReturnType>
+using OnlyMaskReturn = typename std::enable_if<MaskType::masktag,ReturnType>::type;
 
 // Codify how a user can construct their own loops conditioned on mask slot
 // values.
@@ -111,10 +112,10 @@ scream_mask_gen_bin_op_mb(&&, &&)
 scream_mask_gen_bin_op_mb(||, ||)
 
 // Negate the mask.
-template <typename Mask> KOKKOS_INLINE_FUNCTION
-OnlyMask<Mask> operator ! (const Mask& m) {
-  Mask nm(false);
-  vector_simd for (int i = 0; i < Mask::n; ++i) nm.set(i, ! m[i]);
+template <typename MaskType> KOKKOS_INLINE_FUNCTION
+OnlyMask<MaskType> operator ! (const MaskType& m) {
+  MaskType nm(false);
+  vector_simd for (int i = 0; i < MaskType::n; ++i) nm.set(i, ! m[i]);
   return nm;
 }
 
@@ -137,17 +138,18 @@ OnlyMask<Mask> operator ! (const Mask& m) {
   scream_pack_gen_assign_op_s(op)
 
 // The Pack type. Mask was defined first since it's used in Pack.
-template <typename SCALAR, int PACKN>
+template <typename ScalarType, int PackSize>
 struct Pack {
   // Pack's tag for type checking.
   enum { packtag = true };
   // Number of slots in the Pack.
-  enum { n = PACKN };
+  enum { n = PackSize };
 
   // A definitely non-const version of the input scalar type.
-  typedef typename std::remove_const<SCALAR>::type scalar;
+  typedef typename std::remove_const<ScalarType>::type scalar;
 
-  KOKKOS_FORCEINLINE_FUNCTION explicit Pack () {
+  KOKKOS_FORCEINLINE_FUNCTION
+  explicit Pack () {
 #ifndef KOKKOS_ENABLE_CUDA
     // Quiet NaNs don't work on Cuda.
     vector_simd for (int i = 0; i < n; ++i)
@@ -156,13 +158,15 @@ struct Pack {
   }
 
   // Init all slots to scalar v.
-  KOKKOS_FORCEINLINE_FUNCTION explicit Pack (const scalar& v) {
+  KOKKOS_FORCEINLINE_FUNCTION
+  explicit Pack (const scalar& v) {
     vector_simd for (int i = 0; i < n; ++i) d[i] = v;
   }
 
   // Init this Pack from another one.
-  template <typename PackIn> KOKKOS_FORCEINLINE_FUNCTION explicit
-  Pack (const PackIn& v, typename std::enable_if<PackIn::packtag>::type* = nullptr) {
+  template <typename PackIn, typename = typename std::enable_if<PackIn::packtag>::type>
+  KOKKOS_FORCEINLINE_FUNCTION explicit
+  Pack (const PackIn& v) {
     static_assert(static_cast<int>(PackIn::n) == static_cast<int>(n),
                   "Pack::n must be the same.");
     vector_simd for (int i = 0; i < n; ++i) d[i] = v[i];
@@ -170,9 +174,10 @@ struct Pack {
 
   // Init this Pack from another one, but only where Mask is true; otherwise
   // init to default value.
-  template <typename PackIn> KOKKOS_FORCEINLINE_FUNCTION explicit
-  Pack (const Mask<Pack::n>& m, const PackIn& p) {
-    static_assert(static_cast<int>(PackIn::n) == static_cast<int>(n),
+  template <typename PackIn>
+  KOKKOS_FORCEINLINE_FUNCTION
+  explicit Pack (const Mask<PackSize>& m, const PackIn& p) {
+    static_assert(static_cast<int>(PackIn::n) == PackSize,
                   "Pack::n must be the same.");
 #ifndef KOKKOS_ENABLE_CUDA
     vector_simd for (int i = 0; i < n; ++i)
@@ -196,10 +201,12 @@ struct Pack {
   void set (const Mask<n>& mask, const scalar& v) {
     vector_simd for (int i = 0; i < n; ++i) if (mask[i]) d[i] = v;
   }
-  template <typename PackIn> KOKKOS_FORCEINLINE_FUNCTION
+
+  template <typename PackIn>
+  KOKKOS_FORCEINLINE_FUNCTION
   void set (const Mask<n>& mask, const PackIn& p,
             typename std::enable_if<PackIn::packtag>::type* = nullptr) {
-    static_assert(static_cast<int>(PackIn::n) == static_cast<int>(n),
+    static_assert(static_cast<int>(PackIn::n) == PackSize,
                   "Pack::n must be the same.");
     vector_simd for (int i = 0; i < n; ++i) if (mask[i]) d[i] = p[i];
   }
@@ -211,33 +218,42 @@ private:
 // Use enable_if and packtag so that we can template on 'Pack' and yet not have
 // our operator overloads, in particular, be used for something other than the
 // Pack type.
-template <typename Pack>
-using OnlyPack = typename std::enable_if<Pack::packtag,Pack>::type;
-template <typename Pack, typename Return>
-using OnlyPackReturn = typename std::enable_if<Pack::packtag,Return>::type;
+template <typename PackType>
+using OnlyPack = typename std::enable_if<PackType::packtag,PackType>::type;
+template <typename PackType, typename ReturnType>
+using OnlyPackReturn = typename std::enable_if<PackType::packtag,ReturnType>::type;
 
 // Later, we might support type promotion. For now, caller must explicitly
 // promote a pack's scalar type in mixed-type arithmetic.
 
 #define scream_pack_gen_bin_op_pp(op)                                   \
-  template <typename Pack> KOKKOS_FORCEINLINE_FUNCTION                  \
-  OnlyPack<Pack> operator op (const Pack& a, const Pack& b) {           \
-    Pack c;                                                             \
-    vector_simd for (int i = 0; i < Pack::n; ++i) c[i] = a[i] op b[i];  \
+  template <typename PackType>                                          \
+  KOKKOS_FORCEINLINE_FUNCTION                                           \
+  OnlyPack<PackType>                                                    \
+  operator op (const PackType& a, const PackType& b) {                  \
+    PackType c;                                                         \
+    vector_simd                                                         \
+    for (int i = 0; i < PackType::n; ++i) c[i] = a[i] op b[i];          \
     return c;                                                           \
   }
 #define scream_pack_gen_bin_op_ps(op)                                   \
-  template <typename Pack, typename Scalar> KOKKOS_FORCEINLINE_FUNCTION \
-  OnlyPack<Pack> operator op (const Pack& a, const Scalar& b) {         \
-    Pack c;                                                             \
-    vector_simd for (int i = 0; i < Pack::n; ++i) c[i] = a[i] op b;     \
+  template <typename PackType, typename ScalarType>                     \
+  KOKKOS_FORCEINLINE_FUNCTION                                           \
+  OnlyPack<PackType>                                                    \
+  operator op (const PackType& a, const ScalarType& b) {                \
+    PackType c;                                                         \
+    vector_simd                                                         \
+    for (int i = 0; i < PackType::n; ++i) c[i] = a[i] op b;             \
     return c;                                                           \
   }
 #define scream_pack_gen_bin_op_sp(op)                                   \
-  template <typename Pack, typename Scalar> KOKKOS_FORCEINLINE_FUNCTION \
-  OnlyPack<Pack> operator op (const Scalar& a, const Pack& b) {         \
-    Pack c;                                                             \
-    vector_simd for (int i = 0; i < Pack::n; ++i) c[i] = a op b[i];     \
+  template <typename PackType, typename ScalarType>                     \
+  KOKKOS_FORCEINLINE_FUNCTION                                           \
+  OnlyPack<PackType>                                                    \
+  operator op (const ScalarType& a, const PackType& b) {                \
+    PackType c;                                                         \
+    vector_simd                                                         \
+    for (int i = 0; i < PackType::n; ++i) c[i] = a op b[i];             \
     return c;                                                           \
   }
 #define scream_pack_gen_bin_op_all(op)          \
@@ -251,10 +267,12 @@ scream_pack_gen_bin_op_all(*)
 scream_pack_gen_bin_op_all(/)
 
 #define scream_pack_gen_unary_fn(fn, impl)                            \
-  template <typename Pack> KOKKOS_INLINE_FUNCTION                     \
-  OnlyPack<Pack> fn (const Pack& p) {                                 \
-    Pack s;                                                           \
-    vector_simd for (int i = 0; i < Pack::n; ++i) s[i] = impl(p[i]);  \
+  template <typename PackType>                                        \
+  KOKKOS_INLINE_FUNCTION                                              \
+  OnlyPack<PackType> fn (const PackType& p) {                         \
+    PackType s;                                                       \
+    vector_simd                                                       \
+    for (int i = 0; i < PackType::n; ++i) s[i] = impl(p[i]);          \
     return s;                                                         \
   }
 #define scream_pack_gen_unary_stdfn(fn) scream_pack_gen_unary_fn(fn, std::fn)
@@ -265,60 +283,63 @@ scream_pack_gen_unary_stdfn(log10)
 scream_pack_gen_unary_stdfn(tgamma)
 
 
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPackReturn<Pack, typename Pack::scalar> min (const Pack& p) {
-  typename Pack::scalar v(p[0]);
-  vector_disabled for (int i = 0; i < Pack::n; ++i) v = util::min(v, p[i]);
+template <typename PackType> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<PackType, typename PackType::scalar> min (const PackType& p) {
+  typename PackType::scalar v(p[0]);
+  vector_disabled for (int i = 0; i < PackType::n; ++i) v = util::min(v, p[i]);
   return v;
 }
 
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPackReturn<Pack, typename Pack::scalar> max (const Pack& p) {
-  typename Pack::scalar v(p[0]);
-  vector_simd for (int i = 0; i < Pack::n; ++i) v = util::max(v, p[i]);
+template <typename PackType> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<PackType, typename PackType::scalar> max (const PackType& p) {
+  typename PackType::scalar v(p[0]);
+  vector_simd for (int i = 0; i < PackType::n; ++i) v = util::max(v, p[i]);
   return v;
 }
 
 // min(init, min(p(mask)))
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPackReturn<Pack, typename Pack::scalar>
-min (const Mask<Pack::n>& mask, typename Pack::scalar init, const Pack& p) {
-  vector_disabled for (int i = 0; i < Pack::n; ++i)
+template <typename PackType> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<PackType, typename PackType::scalar>
+min (const Mask<PackType::n>& mask, typename PackType::scalar init, const PackType& p) {
+  vector_disabled for (int i = 0; i < PackType::n; ++i)
     if (mask[i]) init = util::min(init, p[i]);
   return init;
 }
 
 // max(init, max(p(mask)))
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPackReturn<Pack, typename Pack::scalar>
-max (const Mask<Pack::n>& mask, typename Pack::scalar init, const Pack& p) {
-  vector_simd for (int i = 0; i < Pack::n; ++i)
+template <typename PackType> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<PackType, typename PackType::scalar>
+max (const Mask<PackType::n>& mask, typename PackType::scalar init, const PackType& p) {
+  vector_simd for (int i = 0; i < PackType::n; ++i)
     if (mask[i]) init = util::max(init, p[i]);
   return init;
 }
 
-#define scream_pack_gen_bin_fn_pp(fn, impl)           \
-  template <typename Pack> KOKKOS_INLINE_FUNCTION     \
-  OnlyPack<Pack> fn (const Pack& a, const Pack& b) {  \
-    Pack s;                                           \
-    vector_simd for (int i = 0; i < Pack::n; ++i)     \
-      s[i] = impl(a[i], b[i]);                        \
-    return s;                                         \
+#define scream_pack_gen_bin_fn_pp(fn, impl)                       \
+  template <typename PackType> KOKKOS_INLINE_FUNCTION             \
+  OnlyPack<PackType> fn (const PackType& a, const PackType& b) {  \
+    PackType s;                                                   \
+    vector_simd for (int i = 0; i < PackType::n; ++i)             \
+      s[i] = impl(a[i], b[i]);                                    \
+    return s;                                                     \
   }
 #define scream_pack_gen_bin_fn_ps(fn, impl)                         \
-  template <typename Pack, typename Scalar> KOKKOS_INLINE_FUNCTION  \
-  OnlyPack<Pack> fn (const Pack& a, const Scalar& b) {              \
-    Pack s;                                                         \
-    vector_simd for (int i = 0; i < Pack::n; ++i)                   \
-      s[i] = impl<typename Pack::scalar>(a[i], b);                  \
+  template <typename PackType, typename ScalarType>                 \
+  KOKKOS_INLINE_FUNCTION                                            \
+  OnlyPack<PackType>                                                \
+  fn (const PackType& a, const ScalarType& b) {                     \
+    PackType s;                                                     \
+    vector_simd for (int i = 0; i < PackType::n; ++i)               \
+      s[i] = impl<typename PackType::scalar>(a[i], b);              \
     return s;                                                       \
   }
 #define scream_pack_gen_bin_fn_sp(fn, impl)                         \
-  template <typename Pack, typename Scalar> KOKKOS_INLINE_FUNCTION  \
-  OnlyPack<Pack> fn (const Scalar& a, const Pack& b) {              \
-    Pack s;                                                         \
-    vector_simd for (int i = 0; i < Pack::n; ++i)                   \
-      s[i] = impl<typename Pack::scalar>(a, b[i]);                  \
+  template <typename PackType, typename ScalarType>                 \
+  KOKKOS_INLINE_FUNCTION                                            \
+  OnlyPack<PackType> fn (const ScalarType& a, const PackType& b) {  \
+    PackType s;                                                     \
+    vector_simd for (int i = 0; i < PackType::n; ++i)               \
+      s[i] = impl<typename PackType::scalar>(a, b[i]);              \
     return s;                                                       \
   }
 #define scream_pack_gen_bin_fn_all(fn, impl)    \
@@ -333,70 +354,77 @@ scream_pack_gen_bin_fn_all(max, util::max)
 // understand its source. But, in any case, I'm writing a separate impl here to
 // get around that.
 //scream_pack_gen_bin_fn_all(pow, std::pow)
-template <typename Pack, typename Scalar> KOKKOS_INLINE_FUNCTION
-OnlyPack<Pack> pow (const Pack& a, const Scalar/*&*/ b) {
-  Pack s;
-  vector_simd for (int i = 0; i < Pack::n; ++i)
-    s[i] = std::pow<typename Pack::scalar>(a[i], b);
+template <typename PackType, typename ScalarType>
+KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> pow (const PackType& a, const ScalarType/*&*/ b) {
+  PackType s;
+  vector_simd for (int i = 0; i < PackType::n; ++i)
+    s[i] = std::pow<typename PackType::scalar>(a[i], b);
   return s;
 }
 
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPack<Pack> shift_right (const Pack& pm1, const Pack& p) {
-  Pack s;
-  s[0] = pm1[Pack::n-1];
-  vector_simd for (int i = 1; i < Pack::n; ++i) s[i] = p[i-1];
+template <typename PackType>
+KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> shift_right (const PackType& pm1, const PackType& p) {
+  PackType s;
+  s[0] = pm1[PackType::n-1];
+  vector_simd for (int i = 1; i < PackType::n; ++i) s[i] = p[i-1];
   return s;
 }
 
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPack<Pack> shift_right (const typename Pack::scalar& pm1, const Pack& p) {
-  Pack s;
+template <typename PackType>
+KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> shift_right (const typename PackType::scalar& pm1, const PackType& p) {
+  PackType s;
   s[0] = pm1;
-  vector_simd for (int i = 1; i < Pack::n; ++i) s[i] = p[i-1];
+  vector_simd for (int i = 1; i < PackType::n; ++i) s[i] = p[i-1];
   return s;
 }
 
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPack<Pack> shift_left (const Pack& pp1, const Pack& p) {
-  Pack s;
-  s[Pack::n-1] = pp1[0];
-  vector_simd for (int i = 0; i < Pack::n-1; ++i) s[i] = p[i+1];
+template <typename PackType>
+KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> shift_left (const PackType& pp1, const PackType& p) {
+  PackType s;
+  s[PackType::n-1] = pp1[0];
+  vector_simd for (int i = 0; i < PackType::n-1; ++i) s[i] = p[i+1];
   return s;
 }
 
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPack<Pack> shift_left (const typename Pack::scalar& pp1, const Pack& p) {
-  Pack s;
-  s[Pack::n-1] = pp1;
-  vector_simd for (int i = 0; i < Pack::n-1; ++i) s[i] = p[i+1];
+template <typename PackType> KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> shift_left (const typename PackType::scalar& pp1, const PackType& p) {
+  PackType s;
+  s[PackType::n-1] = pp1;
+  vector_simd for (int i = 0; i < PackType::n-1; ++i) s[i] = p[i+1];
   return s;
 }
 
-#define scream_mask_gen_bin_op_pp(op)             \
-  template <typename Pack> KOKKOS_INLINE_FUNCTION \
-  OnlyPackReturn<Pack, Mask<Pack::n> >            \
-  operator op (const Pack& a, const Pack& b) {    \
-    Mask<Pack::n> m(false);                       \
-    vector_simd for (int i = 0; i < Pack::n; ++i) \
-      if (a[i] op b[i]) m.set(i, true);           \
-    return m;                                     \
+#define scream_mask_gen_bin_op_pp(op)                     \
+  template <typename PackType>                            \
+  KOKKOS_INLINE_FUNCTION                                  \
+  OnlyPackReturn<PackType, Mask<PackType::n> >            \
+  operator op (const PackType& a, const PackType& b) {    \
+    Mask<PackType::n> m(false);                           \
+    vector_simd for (int i = 0; i < PackType::n; ++i)     \
+      if (a[i] op b[i]) m.set(i, true);                   \
+    return m;                                             \
   }
 #define scream_mask_gen_bin_op_ps(op)                               \
-  template <typename Pack, typename Scalar> KOKKOS_INLINE_FUNCTION  \
-  OnlyPackReturn<Pack, Mask<Pack::n> >                              \
-  operator op (const Pack& a, const Scalar& b) {                    \
-    Mask<Pack::n> m(false);                                         \
-    vector_simd for (int i = 0; i < Pack::n; ++i)                   \
+  template <typename PackType, typename ScalarType>                 \
+  KOKKOS_INLINE_FUNCTION                                            \
+  OnlyPackReturn<PackType, Mask<PackType::n> >                      \
+  operator op (const PackType& a, const ScalarType& b) {            \
+    Mask<PackType::n> m(false);                                     \
+    vector_simd for (int i = 0; i < PackType::n; ++i)               \
       if (a[i] op b) m.set(i, true);                                \
     return m;                                                       \
   }
 #define scream_mask_gen_bin_op_sp(op)                               \
-  template <typename Pack, typename Scalar> KOKKOS_INLINE_FUNCTION  \
-  OnlyPackReturn<Pack, Mask<Pack::n> >                              \
-  operator op (const Scalar& a, const Pack& b) {                    \
-    Mask<Pack::n> m(false);                                         \
-    vector_simd for (int i = 0; i < Pack::n; ++i)                   \
+  template <typename PackType, typename ScalarType>                 \
+  KOKKOS_INLINE_FUNCTION                                            \
+  OnlyPackReturn<PackType, Mask<PackType::n> >                      \
+  operator op (const ScalarType& a, const PackType& b) {            \
+    Mask<PackType::n> m(false);                                     \
+    vector_simd for (int i = 0; i < PackType::n; ++i)               \
       if (a op b[i]) m.set(i, true);                                \
     return m;                                                       \
   }
@@ -412,16 +440,17 @@ scream_mask_gen_bin_op_all(<=)
 scream_mask_gen_bin_op_all(>)
 scream_mask_gen_bin_op_all(<)
 
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPackReturn<Pack,Int> npack(const Int& nscalar) {
-  return (nscalar + Pack::n - 1) / Pack::n;
+template <typename PackType>
+KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<PackType,Int> npack(const Int& nscalar) {
+  return (nscalar + PackType::n - 1) / PackType::n;
 }
 
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPack<Pack> range (const typename Pack::scalar& start) {
-  typedef Pack pack;
-  pack p;
-  vector_simd for (int i = 0; i < Pack::n; ++i) p[i] = start + i;
+template <typename PackType>
+KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> range (const typename PackType::scalar& start) {
+  PackType p;
+  vector_simd for (int i = 0; i < PackType::n; ++i) p[i] = start + i;
   return p;
 }
 
