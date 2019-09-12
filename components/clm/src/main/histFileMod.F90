@@ -29,6 +29,7 @@ module histFileMod
   use EDTypesMod        , only : nfsc_fates       => nfsc
   use EDTypesMod        , only : ncwd_fates       => ncwd
   use FatesInterfaceMod , only : numpft_fates     => numpft
+  use TopounitType      , only : top_pp
 
   !
   implicit none
@@ -1440,7 +1441,7 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
-       else
+       else             !TKT I thought we should have another if statement for namet? to ask Peter
           check_active = .false.
        end if
 
@@ -2096,7 +2097,7 @@ contains
                      long_name=long_name, units=units, missing_value=spval, fill_value=spval)
              else
                 call ncd_defvar(ncid=nfid(t), varname=trim(varnames(ifld)), xtype=tape(t)%ncprec, &
-                        dim1name=grlnd, dim2name='levgrnd', &
+                        dim1name=grlnd, dim2name=namet, dim3name='levgrnd', &  !TKT
                      long_name=long_name, units=units, missing_value=spval, fill_value=spval)
              end if
           else

@@ -72,7 +72,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: t, l, c, fc         ! indices
     integer :: clo, cc
-	integer :: numt                ! Number of topounits per grid	
+	integer :: numt_pg                ! Number of topounits per grid	
 	
 
     ! temporaries for topo downscaling
@@ -94,12 +94,12 @@ contains
     character(len=*), parameter :: subname = 'downscale_grd_to_topounit'
     !-----------------------------------------------------------------------
 	! Get the number of topounits per grid
-	numt     = grc_pp%ntopounits(g)	
-	mxElv    = grc_pp%MaxElevation(g)         ! Maximum src elevation per grid
-	uovern_t = x2l(index_x2l_Sa_uovern,i)    ! Froude Number
-	grdElv   = grc_pp%MaxElevation(g)       ! Grid level sfc elevation
-	snow_g = x2l(index_x2l_Faxa_snowc,i) + x2l(index_x2l_Faxa_snowl,i)
-	rain_g = x2l(index_x2l_Faxa_rainc,i) + x2l(index_x2l_Faxa_rainl,i)
+	numt_pg     = grc_pp%ntopounits(g)	
+	mxElv       = grc_pp%MaxElevation(g)         ! Maximum src elevation per grid
+	uovern_t    = x2l(index_x2l_Sa_uovern,i)    ! Froude Number
+	grdElv      = grc_pp%MaxElevation(g)       ! Grid level sfc elevation
+	snow_g      = x2l(index_x2l_Faxa_snowc,i) + x2l(index_x2l_Faxa_snowl,i)
+	rain_g      = x2l(index_x2l_Faxa_rainc,i) + x2l(index_x2l_Faxa_rainl,i)
 	
 	sum_qbot_g = 0.
 	sum_wtsq_g = 0.
@@ -107,7 +107,7 @@ contains
 	sum_wtslw_g = 0.
 	
 	do t = grc_pp%topi(g), grc_pp%topf(g)
-	   if(numt > 1) then                          !downscaling is done only if a grid has more than 1 topounits    
+	   if(numt_pg > 1) then                          !downscaling is done only if a grid has more than 1 topounits    
 	      topoElv  = top_pp%elevation(g)             ! Topounit sfc elevation
 		  
 		  call downscale_atmo_state_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)	  
@@ -147,7 +147,7 @@ contains
 		 end if
 	 end do
 		 
-	 if(numt > 1) then
+	 if(numt_pg > 1) then
 	   if(uaflag == 1) then
 
             ! Normalize forc_lwrad_c(c) to conserve energy
@@ -375,11 +375,15 @@ contains
 	real(r8) :: topoElv            ! Topounit elevation
 	real(r8) :: h
 	real(r8) :: r
-	integer                    , intent(in)    :: t
-  
+	integer                    , intent(in)    :: t 
 
 	r = topoElv - grdElv
-	h = min(uovern_t,r)
+	if (uovern_t < 0) then
+	   h = r 
+	else
+	    h = min(uovern_t,r)
+	end if
+	 
 	if(mxElv < 0) then
 		mxElv = abs(mxElv) ! avoid the situation where -ve r can force lower areas more rain than higher elevation areas.
         end if	

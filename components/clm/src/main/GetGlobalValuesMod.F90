@@ -25,7 +25,7 @@ contains
     use shr_log_mod, only: errMsg => shr_log_errMsg
     use decompMod  , only: bounds_type, get_clmlevel_gsmap, get_proc_bounds
     use spmdMod    , only: iam
-    use clm_varcon , only: nameg, namel, namec, namep
+    use clm_varcon , only: nameg, namet, namel, namec, namep
     use clm_varctl , only: iulog
     use mct_mod
     !
@@ -44,6 +44,8 @@ contains
 
     if (trim(clmlevel) == nameg) then
        beg_index = bounds_proc%begg
+	else if (trim(clmlevel) == namet) then
+       beg_index = bounds_proc%begt
     else if (trim(clmlevel) == namel) then
        beg_index = bounds_proc%begl
     else if (trim(clmlevel) == namec) then
@@ -73,8 +75,9 @@ contains
     use shr_sys_mod  , only : shr_sys_abort
     use shr_log_mod  , only : errMsg => shr_log_errMsg
     use clm_varctl   , only : iulog
-    use clm_varcon   , only : nameg, namel, namec, namep
-    use GridcellType , only : grc_pp                
+    use clm_varcon   , only : nameg, namet, namel, namec, namep
+    use GridcellType , only : grc_pp   
+	use TopounitType , only : top_pp  
     use LandunitType , only : lun_pp                
     use ColumnType   , only : col_pp                
     use VegetationType    , only : veg_pp                
@@ -84,7 +87,7 @@ contains
     character(len=*) , intent(in) :: clmlevel
     !
     ! Local Variables:
-    integer :: igrc, ilun, icol, ipft 
+    integer :: igrc, itun, ilun, icol, ipft 
     !-----------------------------------------------------------------------
 
     if (trim(clmlevel) == nameg) then
@@ -94,7 +97,18 @@ contains
        write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
        write(iulog,*)'gridcell longitude    = ',grc_pp%londeg(igrc)
        write(iulog,*)'gridcell latitude     = ',grc_pp%latdeg(igrc)
+    
+	else if (trim(clmlevel) == namet) then
 
+       itun = decomp_index
+       igrc = top_pp%gridcell(itun)
+       write(iulog,*)'local  topounit index = ',itun
+       write(iulog,*)'global topounit index = ',GetGlobalIndex(decomp_index=itun, clmlevel=namet)
+       write(iulog,*)'global gridcell index = ',GetGlobalIndex(decomp_index=igrc, clmlevel=nameg)
+       write(iulog,*)'gridcell longitude    = ',grc_pp%londeg(igrc)
+       write(iulog,*)'gridcell latitude     = ',grc_pp%latdeg(igrc)
+      ! write(iulog,*)'topounit type         = ',top_pp%itype(decomp_index)
+	   
     else if (trim(clmlevel) == namel) then
 
        ilun = decomp_index

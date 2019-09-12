@@ -13,26 +13,26 @@ module clm_varsur
   implicit none
   save
   !
-  ! weight of each landunit on the grid cell
-  real(r8), pointer :: wt_lunit(:,:)     
+  ! weight of each landunit on the topounit in the grid cell
+  real(r8), pointer :: wt_lunit(:,:,:)     ! TKT added 1 dimension for topounit
 
-  ! whether we have valid urban data in each grid cell
-  logical , pointer :: urban_valid(:)
+  ! whether we have valid urban data in each grid cell or (in each topounit)
+  logical , pointer :: urban_valid(:,:)
 
   ! for natural veg landunit, weight of each pft on the landunit (adds to 1.0 on the
   ! landunit for all all grid cells, even! those without any natural pft)
   ! (second dimension goes natpft_lb:natpft_ub)
-  real(r8), pointer :: wt_nat_patch(:,:)   
+  real(r8), pointer :: wt_nat_patch(:,:,:)   
 
   ! for crop landunit, weight of each cft on the landunit (adds to 1.0 on the
   ! landunit for all all grid cells, even  those without any crop)
   ! (second dimension goes cft_lb:cft_ub)
-  real(r8), pointer :: wt_cft(:,:)       
+  real(r8), pointer :: wt_cft(:,:,:)       
 
   ! for each cft on the crop landunit prescribe annual fertilizer
   ! landunit for all all grid cells, even  those without any crop)
   ! (second dimension goes cft_lb:cft_ub)
-  real(r8), pointer :: fert_cft(:,:)
+  real(r8), pointer :: fert_cft(:,:,:)
 
   ! for glc_mec landunits, weight of glacier in each elevation class (adds to 1.0 on the
   ! landunit for all grid cells, even those without any glacier)

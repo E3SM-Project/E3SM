@@ -78,6 +78,7 @@ contains
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
+	use topounit_varcon           , only: max_topounits
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -227,11 +228,11 @@ contains
 
     ! Allocate surface grid dynamic memory (just gridcell bounds dependent)
 
-    allocate (wt_lunit     (begg:endg, max_lunit           ))
-    allocate (urban_valid  (begg:endg                      ))
-    allocate (wt_nat_patch (begg:endg, natpft_lb:natpft_ub ))
-    allocate (wt_cft       (begg:endg, cft_lb:cft_ub       ))
-    allocate (fert_cft     (begg:endg, cft_lb:cft_ub       ))
+    allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           )) ! TKT added ntopounits
+    allocate (urban_valid  (begg:endg,1:max_topounits                      ))
+    allocate (wt_nat_patch (begg:endg,1:max_topounits, natpft_lb:natpft_ub ))
+    allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
+    allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
        allocate (wt_glc_mec  (begg:endg, maxpatch_glcmec))
        allocate (topo_glc_mec(begg:endg, maxpatch_glcmec))

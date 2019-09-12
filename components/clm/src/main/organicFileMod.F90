@@ -13,7 +13,7 @@ module organicFileMod
   use abortutils   , only : endrun
   use clm_varctl   , only : iulog
   use shr_kind_mod , only : r8 => shr_kind_r8
-  use clm_varcon   , only : grlnd
+  use clm_varcon   , only : grlnd, namet
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -50,11 +50,12 @@ contains
     use fileutils   , only : getfil
     use spmdMod     , only : masterproc
     use domainMod   , only : ldomain
+	use clm_varcon  , only : grlnd, namet
     use ncdio_pio
 !
 ! !ARGUMENTS:
     implicit none
-    real(r8), pointer :: organic(:,:)         ! organic matter density (kg/m3)
+    real(r8), pointer :: organic(:,:,:)         ! organic matter density (kg/m3)
 !
 ! !CALLED FROM:
 ! subroutine initialize in module initializeMod
@@ -76,7 +77,7 @@ contains
 
     ! Initialize data to zero - no organic matter dataset
 
-    organic(:,:)   = 0._r8
+    organic(:,:,:)   = 0._r8
        
     ! Read data if file was specified in namelist
        
@@ -99,7 +100,7 @@ contains
        end if
        
        call ncd_io(ncid=ncid, varname='ORGANIC', flag='read', data=organic, &
-            dim1name=grlnd, readvar=readvar)
+            dim1name=namet,dim2name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun('organicrd: errror reading ORGANIC')
 
        if ( masterproc )then

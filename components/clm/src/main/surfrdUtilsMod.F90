@@ -34,7 +34,7 @@ contains
     !
     ! !ARGUMENTS:
     integer         , intent(in) :: lb           ! lower bound of the first dimension of arr
-    real(r8)        , intent(in) :: arr(lb:,:)   ! array to check
+    real(r8)        , intent(in) :: arr(lb:,:,:)   ! array to check
     character(len=*), intent(in) :: name         ! name of array
     character(len=*), intent(in) :: caller       ! identifier of caller, for more meaningful error messages
     !
@@ -42,21 +42,24 @@ contains
     logical :: found
     integer :: nl
     integer :: nindx
+	integer :: tindx
     real(r8), parameter :: eps = 1.e-14_r8
     !-----------------------------------------------------------------------
 
     found = .false.
 
     do nl = lbound(arr, 1), ubound(arr, 1)
-       if (abs(sum(arr(nl,:)) - 1._r8) > eps) then
-          found = .true.
-          nindx = nl
-          exit
+	   t = lbound(arr, 2), ubound(arr, 2)
+         if (abs(sum(arr(nl,t,:)) - 1._r8) > eps) then
+            found = .true.
+            nindx = nl
+			tindx = t
+            exit
        end if
     end do
 
     if (found) then
-       write(iulog,*) trim(caller), ' ERROR: sum of ', trim(name), ' not 1.0 at nl=', nindx
+       write(iulog,*) trim(caller), ' ERROR: sum of ', trim(name), ' not 1.0 at nl=', nindx, ' and t=', tindx
        write(iulog,*) 'sum is: ', sum(arr(nindx,:))
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
@@ -74,30 +77,33 @@ contains
     use clm_varpar      , only : cft_size, natpft_size
     use pftvarcon       , only : nc3crop
     use landunit_varcon , only : istsoil, istcrop
+	use topounit_varcon    , only : max_ntopounits
     ! !ARGUMENTS:
     implicit none
     integer          , intent(in)    :: begg, endg
     integer          , intent(in)    :: cftsize          ! CFT size
-    real(r8)         , intent(inout) :: wt_cft(begg:,:)  ! CFT weights
+    real(r8)         , intent(inout) :: wt_cft(begg:,max_topounits,:)  ! CFT weights TKT added ntopounits
     !
     ! !LOCAL VARIABLES:
     integer :: g    ! index
 !-----------------------------------------------------------------------
-    SHR_ASSERT_ALL((ubound(wt_cft      ) == (/endg, cftsize          /)), errMsg(__FILE__, __LINE__))
-    SHR_ASSERT_ALL((ubound(wt_nat_patch) == (/endg, nc3crop+cftsize-1/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(wt_cft      ) == (/endg,max_topounits, cftsize          /)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(wt_nat_patch) == (/endg,max_topounits, nc3crop+cftsize-1/)), errMsg(__FILE__, __LINE__))
 
     do g = begg, endg
-       if ( wt_lunit(g,istcrop) > 0.0_r8 )then
+	   do t = 1, max_topounits
+       if ( wt_lunit(g,t,istcrop) > 0.0_r8 )then
           ! Move CFT over to PFT and do weighted average of the crop and soil parts
-          wt_nat_patch(g,:)        = wt_nat_patch(g,:) * wt_lunit(g,istsoil)
-          wt_cft(g,:)              = wt_cft(g,:) * wt_lunit(g,istcrop)
-          wt_nat_patch(g,nc3crop:) = wt_cft(g,:)                                 ! Add crop CFT's to end of natural veg PFT's
-          wt_lunit(g,istsoil)      = (wt_lunit(g,istsoil) + wt_lunit(g,istcrop)) ! Add crop landunit to soil landunit
-          wt_nat_patch(g,:)        =  wt_nat_patch(g,:) / wt_lunit(g,istsoil)
-          wt_lunit(g,istcrop)      = 0.0_r8                                      ! Zero out crop CFT's
+          wt_nat_patch(g,t,:)        = wt_nat_patch(g,t,:) * wt_lunit(g,t,istsoil)
+          wt_cft(g,t,:)              = wt_cft(g,t,:) * wt_lunit(g,t,istcrop)
+          wt_nat_patch(g,t,nc3crop:) = wt_cft(g,t,:)                                 ! Add crop CFT's to end of natural veg PFT's
+          wt_lunit(g,t,istsoil)      = (wt_lunit(g,t,istsoil) + wt_lunit(g,t,istcrop)) ! Add crop landunit to soil landunit
+          wt_nat_patch(g,t,:)        =  wt_nat_patch(g,t,:) / wt_lunit(g,t,istsoil)
+          wt_lunit(g,t,istcrop)      = 0.0_r8                                      ! Zero out crop CFT's
        else
-          wt_nat_patch(g,nc3crop:) = 0.0_r8                                      ! Make sure generic crops are zeroed out
+          wt_nat_patch(g,t,nc3crop:) = 0.0_r8                                      ! Make sure generic crops are zeroed out
        end if
+	   end do
     end do
 
   end subroutine convert_cft_to_pft
@@ -114,6 +120,7 @@ contains
     use clm_varctl , only : irrigate
     use clm_varpar , only : cft_lb, cft_ub, cft_size
     use pftvarcon  , only : nc3crop, nc3irrig, npcropmax, mergetoclmpft
+	use GridcellType, only : ntopounits
     !
     ! !ARGUMENTS:
 
@@ -124,8 +131,8 @@ contains
 
     ! Weight and fertilizer of each CFT in each grid cell; dimensioned [g, cft_lb:cft_ub]
     ! This array is modified in-place
-    real(r8), intent(inout) :: wt_cft(begg:, cft_lb:)
-    real(r8), intent(inout) :: fert_cft(begg:, cft_lb:)
+    real(r8), intent(inout) :: wt_cft(begg:,ntopounits, cft_lb:)
+    real(r8), intent(inout) :: fert_cft(begg:,ntopounits, cft_lb:)
 
     logical, intent(in) :: verbose  ! If true, print some extra information
     !
@@ -139,7 +146,7 @@ contains
     character(len=*), parameter :: subname = 'collapse_crop_types'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(wt_cft) == (/endg, cft_ub/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL((ubound(wt_cft) == (/endg,ntopounits, cft_ub/)), errMsg(__FILE__, __LINE__))
 
     if (cft_size <= 0) then
        call endrun(msg = subname//' can only be called if cft_size > 0' // &
@@ -156,6 +163,7 @@ contains
        end if
 
        do g = begg, endg
+	      do t = 1, ntopounits
           ! Left Hand Side: merged rainfed+irrigated crop pfts from nc3crop to
           !                 npcropmax-1, stride 2
           ! Right Hand Side: rainfed crop pfts from nc3crop to npcropmax-1,
@@ -163,9 +171,10 @@ contains
           ! plus             irrigated crop pfts from nc3irrig to npcropmax,
           !                  stride 2
           ! where stride 2 means "every other"
-          wt_cft(g, nc3crop:npcropmax-1:2) = &
-               wt_cft(g, nc3crop:npcropmax-1:2) + wt_cft(g, nc3irrig:npcropmax:2)
-          wt_cft(g, nc3irrig:npcropmax:2)  = 0._r8
+          wt_cft(g,t, nc3crop:npcropmax-1:2) = &
+               wt_cft(g, t, nc3crop:npcropmax-1:2) + wt_cft(g,t, nc3irrig:npcropmax:2)
+          wt_cft(g,t, nc3irrig:npcropmax:2)  = 0._r8
+		  end do
        end do
 
        call check_sums_equal_1(wt_cft, begg, 'wt_cft', subname//': irrigation')
@@ -182,16 +191,17 @@ contains
     end if
 
     do g = begg, endg
+	   do t = 1, ntopounits
        do m = 1, npcropmax
           if (m /= mergetoclmpft(m)) then
-             wt_cft_to                   = wt_cft(g, mergetoclmpft(m))
-             wt_cft_from                 = wt_cft(g, m)
+             wt_cft_to                   = wt_cft(g,t, mergetoclmpft(m))
+             wt_cft_from                 = wt_cft(g,t, m)
              wt_cft_merge                = wt_cft_to + wt_cft_from
-             wt_cft(g, mergetoclmpft(m)) = wt_cft_merge
-             wt_cft(g, m)                = 0._r8
+             wt_cft(g,t, mergetoclmpft(m)) = wt_cft_merge
+             wt_cft(g, t, m)                = 0._r8
              if (wt_cft_merge > 0._r8) then
-                fert_cft(g,mergetoclmpft(m)) = (wt_cft_to * fert_cft(g,mergetoclmpft(m)) + &
-                                                wt_cft_from * fert_cft(g,m)) / wt_cft_merge
+                fert_cft(g,t,mergetoclmpft(m)) = (wt_cft_to * fert_cft(g,t,mergetoclmpft(m)) + &
+                                                wt_cft_from * fert_cft(g,t,m)) / wt_cft_merge
              end if
           end if
        end do

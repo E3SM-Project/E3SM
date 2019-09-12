@@ -9,9 +9,10 @@ Module SoilHydrologyType
   use clm_varpar            , only : more_vertlayers, nlevsoifl, toplev_equalspace 
   use clm_varcon            , only : zsoi, dzsoi, zisoi, spval
   use clm_varctl            , only : iulog 
-  use SharedParamsMod     , only : ParamsShareInst
+  use SharedParamsMod       , only : ParamsShareInst
   use LandunitType          , only : lun_pp                
-  use ColumnType            , only : col_pp                
+  use ColumnType            , only : col_pp      
+  use GridcellType          , only : grc_pp   
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -260,9 +261,9 @@ contains
     real(r8), pointer  :: sandcol    (:,:) ! column level sand fraction for calculating VIC parameters
     real(r8), pointer  :: claycol    (:,:) ! column level clay fraction for calculating VIC parameters
     real(r8), pointer  :: om_fraccol (:,:) ! column level organic matter fraction for calculating VIC parameters
-    real(r8) ,pointer  :: sand3d     (:,:) ! read in - soil texture: percent sand 
-    real(r8) ,pointer  :: clay3d     (:,:) ! read in - soil texture: percent clay 
-    real(r8) ,pointer  :: organic3d  (:,:) ! read in - organic matter: kg/m3 
+    real(r8) ,pointer  :: sand3d     (:,:,:) ! read in - soil texture: percent sand 
+    real(r8) ,pointer  :: clay3d     (:,:,:) ! read in - soil texture: percent clay 
+    real(r8) ,pointer  :: organic3d  (:,:,:) ! read in - organic matter: kg/m3 
     real(r8) ,pointer  :: zisoifl    (:)   ! original soil interface depth 
     real(r8) ,pointer  :: zsoifl     (:)   ! original soil midpoint 
     real(r8) ,pointer  :: dzsoifl    (:)   ! original soil thickness 
@@ -403,19 +404,19 @@ contains
           end do
        end do
 
-       allocate(sand3d(bounds%begg:bounds%endg,nlevsoifl))
-       allocate(clay3d(bounds%begg:bounds%endg,nlevsoifl))
-       allocate(organic3d(bounds%begg:bounds%endg,nlevsoifl))
+       allocate(sand3d(bounds%begg:bounds%endg,max_topounits,nlevsoifl))
+       allocate(clay3d(bounds%begg:bounds%endg,max_topounits,nlevsoifl))
+       allocate(organic3d(bounds%begg:bounds%endg,max_topounits,nlevsoifl))
 
        call organicrd(organic3d)
 
        call getfil (fsurdat, locfn, 0)
        call ncd_pio_openfile (ncid, locfn, 0)
-       call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=grlnd, readvar=readvar)
+       call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=namet, dim2name = grlnd, readvar=readvar)
        if (.not. readvar) then
           call endrun(msg=' ERROR: PCT_SAND NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
        end if
-       call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=grlnd, readvar=readvar)
+       call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=namet,dim2name=grlnd, readvar=readvar)
        if (.not. readvar) then
           call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
        end if
@@ -444,42 +445,45 @@ contains
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
           l = col_pp%landunit(c)
+		  t = col_pp%topounit(c)  ! Current topounit
+		  topi = grc_pp%topi(g)   ! The first topounit in the current grid
+		  ti = t - topi + 1
 
           if (lun_pp%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
              if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
                 ! do nothing
              else if (lun_pp%urbpoi(l) .and. (col_pp%itype(c) /= icol_road_perv) .and. (col_pp%itype(c) /= icol_road_imperv) )then
                 ! do nothing
-             else
-                do lev = 1,nlevgrnd
-                   if ( more_vertlayers )then
+             else			    
+                  do lev = 1,nlevgrnd
+                    if ( more_vertlayers )then
                       ! duplicate clay and sand values from last soil layer
                       if (lev .eq. 1) then
-                         clay    = clay3d(g,1)
-                         sand    = sand3d(g,1)
-                         om_frac = organic3d(g,1)/organic_max 
+                         clay    = clay3d(g,ti,1)
+                         sand    = sand3d(g,ti,1)
+                         om_frac = organic3d(g,ti,1)/organic_max 
                       else if (lev <= nlevsoi) then
                          do j = 1,nlevsoifl-1
                             if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
-                               clay    = clay3d(g,j+1)
-                               sand    = sand3d(g,j+1)
-                               om_frac = organic3d(g,j+1)/organic_max    
+                               clay    = clay3d(g,ti,j+1)
+                               sand    = sand3d(g,ti,j+1)
+                               om_frac = organic3d(g,ti,j+1)/organic_max    
                             endif
                          end do
                       else
-                         clay    = clay3d(g,nlevsoifl)
-                         sand    = sand3d(g,nlevsoifl)
+                         clay    = clay3d(g,ti,nlevsoifl)
+                         sand    = sand3d(g,ti,nlevsoifl)
                          om_frac = 0._r8
                       endif
                    else
                       ! duplicate clay and sand values from 10th soil layer
                       if (lev <= nlevsoi) then
-                         clay    = clay3d(g,lev)
-                         sand    = sand3d(g,lev)
-                         om_frac = (organic3d(g,lev)/organic_max)**2._r8
+                         clay    = clay3d(g,ti,lev)
+                         sand    = sand3d(g,ti,lev)
+                         om_frac = (organic3d(g,ti,lev)/organic_max)**2._r8
                       else
-                         clay    = clay3d(g,nlevsoi)
-                         sand    = sand3d(g,nlevsoi)
+                         clay    = clay3d(g,ti,nlevsoi)
+                         sand    = sand3d(g,ti,nlevsoi)
                          om_frac = 0._r8
                       endif
                    end if
@@ -488,7 +492,7 @@ contains
                    claycol(c,lev)    = clay
                    sandcol(c,lev)    = sand
                    om_fraccol(c,lev) = om_frac
-                end do
+			  end do
              end if
           end if ! end of if not lake
 

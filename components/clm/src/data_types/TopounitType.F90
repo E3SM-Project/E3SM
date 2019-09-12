@@ -45,6 +45,7 @@ module TopounitType
     ! this is for efficiency, since most loops will go over t in the outer loop, and
     ! landunit type in the inner loop)
     integer , pointer :: landunit_indices (:,:) => null() 
+	logical , pointer :: active       (:) => null() ! true=>do computations on this topounit 
     
     ! physical properties
     real(r8), pointer :: area       (:) => null() ! land area (km^2)
@@ -52,7 +53,7 @@ module TopounitType
     real(r8), pointer :: lon        (:) => null() ! mean longitude (radians)
     real(r8), pointer :: elevation  (:) => null() ! mean soil surface elevation, above mean sea level (m)
     real(r8), pointer :: slope      (:) => null() ! mean slope angle (radians)
-    real(r8), pointer :: aspect     (:) => null() ! mean aspect angle, measured clockwise from north (radians)
+    integer , pointer :: aspect     (:) => null() ! mean aspect angle, measured clockwise from north (radians)
     real(r8), pointer :: emissivity (:) => null() ! mean surface emissivity
     real(r8), pointer :: surfalb_dir(:,:) => null() ! (topunit,numrad) mean surface albedo (direct)
     real(r8), pointer :: surfalb_dif(:,:) => null() ! (topunit,numrad) mean surface albedo (diffuse)
@@ -86,6 +87,7 @@ module TopounitType
     allocate(this%npfts     (begt:endt)) ; this%npfts     (:) = ispval
     
     allocate(this%landunit_indices(1:max_lunit, begt:endt)); this%landunit_indices(:,:) = ispval
+	allocate(this%active      (begt:endt))                     ; this%active      (:)   = .false.
 
     allocate(this%area        (begt:endt)) ; this%area        (:) = nan
     allocate(this%lat         (begt:endt)) ; this%lat         (:) = nan
@@ -114,6 +116,7 @@ module TopounitType
     deallocate(this%pftf        )
     deallocate(this%npfts       )
     deallocate(this%landunit_indices )
+	deallocate(this%active     )
 
     deallocate(this%area        )
     deallocate(this%lat         )

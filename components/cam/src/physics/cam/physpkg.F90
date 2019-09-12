@@ -33,6 +33,7 @@ module physpkg
   use zm_conv,          only: trigmem
   use scamMod,          only: single_column, scm_crm_mode
   use flux_avg,         only: flux_avg_init
+  use infnan,           only: posinf, assignment(=)
 #ifdef SPMD
   use mpishorthand
 #endif

@@ -62,6 +62,10 @@ contains
     integer :: nc,ti,li,ci,pi,gdc,topounit  ! indices
     integer :: nclumps                      ! number of clumps on this processor
     real(r8) :: wttopounit2gridcell         ! topounit weight on gridcell
+	real(r8) :: tmp_wt2grd(:)                  ! topounit weight on gridcell
+	real(r8) :: tmp_televation(:)                  ! topounit weight on gridcell
+	real(r8) :: tmp_tslope(:)                  ! topounit weight on gridcell
+	integer :: tmp_taspect(:)                  ! topounit weight on gridcell
     type(bounds_type) :: bounds_proc
     type(bounds_type) :: bounds_clump
     !------------------------------------------------------------------------
@@ -127,9 +131,19 @@ contains
        ! As a preliminary implementation, every gridcell has the same number of topounits,
        ! and each topounit on the gridcell has an equal weight.
        do gdc = bounds_clump%begg, bounds_clump%endg
-          do topounit = 1, max_topounits
-             wttopounit2gridcell = 1._r8/(max_topounits)
-             call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell)
+	      ntopos = grc_pp%ntopounits(gdc)
+		  tmp_wt2grd = grc_pp%tfrc_area(gdc)
+		  tmp_televation = grc_pp%televation(gdc)
+		  tmp_tslope = grc_pp%tslope(gdc)
+		  tmp_taspect = grc_pp%taspect(gdc)
+		  
+          do topounit = 1, ntopos  ! use actual/valid # of topounits per grid intead of max_topounits
+		     wttopounit2gridcell = tmp_wt2grd(topounit) 
+			 elv = tmp_televation(topounit)
+			 slp = tmp_tslope(topounit)
+			 asp = tmp_taspect(topounit)
+             !wttopounit2gridcell = 1._r8/(max_topounits)
+             call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell, elv=elv, slp=slp, asp=asp)
           end do
        end do
 
@@ -278,7 +292,7 @@ contains
        call add_column(ci=ci, li=li, ctype=1, wtlunit=1.0_r8)
 
        do m = natpft_lb,natpft_ub
-          call add_patch(pi=pi, ci=ci, ptype=m, wtcol=wt_nat_patch(gi,m))
+          call add_patch(pi=pi, ci=ci, ptype=m, wtcol=wt_nat_patch(gi,ti,m))
        end do
     end if
 

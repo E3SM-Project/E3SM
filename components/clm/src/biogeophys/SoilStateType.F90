@@ -14,7 +14,7 @@ module SoilStateType
   use clm_varpar      , only : nlevsoi, nlevgrnd, nlevlak, nlevsoifl, nlayer, nlayert, nlevurb, nlevsno
   use landunit_varcon , only : istice, istdlak, istwet, istsoil, istcrop, istice_mec
   use column_varcon   , only : icol_roof, icol_sunwall, icol_shadewall, icol_road_perv, icol_road_imperv 
-  use clm_varcon      , only : zsoi, dzsoi, zisoi, spval
+  use clm_varcon      , only : zsoi, dzsoi, zisoi, spval, namet, grlnd
   use clm_varcon      , only : secspday, pc, mu, denh2o, denice, grlnd
   use clm_varctl      , only : use_cn, use_lch4,use_dynroot, use_fates
   use clm_varctl      , only : use_var_soil_thick
@@ -22,7 +22,9 @@ module SoilStateType
   use CH4varcon       , only : allowlakeprod
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
-  use VegetationType  , only : veg_pp                
+  use VegetationType  , only : veg_pp      
+  use topounit_varcon , only : max_topounits
+  use GridcellType    , only : grc_pp   
   !
   implicit none
   save
@@ -349,9 +351,9 @@ contains
     real(r8) ,pointer  :: zisoifl (:)                   ! Output: [real(r8) (:)]  original soil interface depth 
     real(r8) ,pointer  :: dzsoifl (:)                   ! Output: [real(r8) (:)]  original soil thickness 
     real(r8) ,pointer  :: gti (:)                       ! read in - fmax 
-    real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer  :: organic3d (:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: sand3d (:,:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: clay3d (:,:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer  :: organic3d (:,:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
     character(len=256) :: locfn                         ! local filename
     integer            :: nlevbed                       ! # of layers above bedrock
     integer            :: ipedof  
@@ -406,8 +408,8 @@ contains
     ! dynamic memory allocation
     ! --------------------------------------------------------------------
 
-    allocate(sand3d(begg:endg,nlevsoifl))
-    allocate(clay3d(begg:endg,nlevsoifl))
+    allocate(sand3d(begg:endg,max_topounits,nlevsoifl))
+    allocate(clay3d(begg:endg,max_topounits,nlevsoifl))
 
     ! --------------------------------------------------------------------
     ! Read surface dataset
@@ -434,37 +436,40 @@ contains
 
     organic_max = ParamsShareInst%organic_max
 
-    allocate(organic3d(bounds%begg:bounds%endg,nlevsoifl))
+    allocate(organic3d(bounds%begg:bounds%endg,max_topounits, nlevsoifl))
     call organicrd(organic3d)
 
     ! Read in sand and clay data
 
-    call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=namet, dim2name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: PCT_SAND NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
 
-    call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=namet, dim2name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
 
     do p = bounds%begp,bounds%endp
        g = veg_pp%gridcell(p)
-       if ( sand3d(g,1)+clay3d(g,1) == 0.0_r8 )then
-          if ( any( sand3d(g,:)+clay3d(g,:) /= 0.0_r8 ) )then
+	   t = veg_pp%topounit(p)
+	   topi = grc_pp%topi(g)
+	   ti = t - topi + 1
+       if ( sand3d(g,ti,1)+clay3d(g,ti,1) == 0.0_r8 )then
+          if ( any( sand3d(g,ti,:)+clay3d(g,ti,:) /= 0.0_r8 ) )then
              call endrun(msg='found depth points that do NOT sum to zero when surface does'//&
                   errMsg(__FILE__, __LINE__)) 
           end if
-          sand3d(g,:) = 1.0_r8
-          clay3d(g,:) = 1.0_r8
+          sand3d(g,ti,:) = 1.0_r8
+          clay3d(g,ti,:) = 1.0_r8
        end if
-       if ( any( sand3d(g,:)+clay3d(g,:) == 0.0_r8 ) )then
+       if ( any( sand3d(g,ti,:)+clay3d(g,ti,:) == 0.0_r8 ) )then
           call endrun(msg='after setting, found points sum to zero'//errMsg(__FILE__, __LINE__)) 
        end if
 
-       this%sandfrac_patch(p) = sand3d(g,1)/100.0_r8
-       this%clayfrac_patch(p) = clay3d(g,1)/100.0_r8
+       this%sandfrac_patch(p) = sand3d(g,ti,1)/100.0_r8
+       this%clayfrac_patch(p) = clay3d(g,ti,1)/100.0_r8
     end do
 
     ! Read fmax
@@ -519,6 +524,9 @@ contains
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
        l = col_pp%landunit(c)
+	   t = col_pp%topounit(c)
+	   topi = grc_pp%topi(g)
+	   ti = t - topi + 1
 
        if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
 
@@ -587,30 +595,30 @@ contains
              if ( more_vertlayers )then ! duplicate clay and sand values from last soil layer
 
                 if (lev .eq. 1) then
-                   clay = clay3d(g,1)
-                   sand = sand3d(g,1)
-                   om_frac = organic3d(g,1)/organic_max 
+                   clay = clay3d(g,ti,1)
+                   sand = sand3d(g,ti,1)
+                   om_frac = organic3d(g,ti,1)/organic_max 
                 else if (lev <= nlevsoi) then
                    do j = 1,nlevsoifl-1
                       if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
-                         clay = clay3d(g,j+1)
-                         sand = sand3d(g,j+1)
-                         om_frac = organic3d(g,j+1)/organic_max    
+                         clay = clay3d(g,ti,j+1)
+                         sand = sand3d(g,ti,j+1)
+                         om_frac = organic3d(g,ti,j+1)/organic_max    
                       endif
                    end do
                 else
-                   clay = clay3d(g,nlevsoifl)
-                   sand = sand3d(g,nlevsoifl)
+                   clay = clay3d(g,ti,nlevsoifl)
+                   sand = sand3d(g,ti,nlevsoifl)
                    om_frac = 0._r8
                 endif
              else
                 if (lev <= nlevsoi) then ! duplicate clay and sand values from 10th soil layer
-                   clay = clay3d(g,lev)
-                   sand = sand3d(g,lev)
-                   om_frac = (organic3d(g,lev)/organic_max)**2._r8
+                   clay = clay3d(g,ti,lev)
+                   sand = sand3d(g,ti,lev)
+                   om_frac = (organic3d(g,ti,lev)/organic_max)**2._r8
                 else
-                   clay = clay3d(g,nlevsoi)
-                   sand = sand3d(g,nlevsoi)
+                   clay = clay3d(g,ti,nlevsoi)
+                   sand = sand3d(g,ti,nlevsoi)
                    om_frac = 0._r8
                 endif
              end if

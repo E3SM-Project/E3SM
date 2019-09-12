@@ -46,6 +46,7 @@ contains
                              isturb_tbd, isturb_hd, isturb_md
     use topounit_varcon  , only : max_topounits
     use FatesInterfaceMod, only : fates_maxElementsPerSite
+	use GridcellType     , only : grc_pp
 
     !
     ! !ARGUMENTS
@@ -111,8 +112,9 @@ contains
     ! is a simple way to make the transition to topounits. We should return to this to see
     ! if there is a smarter way to allocate space that does not preclude land area transitions
     ! of interest.
-    ntopounits_per_gcell = max_topounits  ! this will be replaced later with a constant > 1, or with a function call
+   ! ntopounits_per_gcell = max_topounits  ! this will be replaced later with a constant > 1, or with a function call
                                           ! that sets the number of topounits uniquely for each gridcell.
+	ntopounits_per_gcell = grc_pp%ntopounits(gi)   ! We can use the number of valid topounits from surface data
     do t = 1, ntopounits_per_gcell
        
        itopounits = itopounits + 1

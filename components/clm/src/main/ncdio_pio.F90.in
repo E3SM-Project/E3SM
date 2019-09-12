@@ -17,7 +17,7 @@ module ncdio_pio
   use shr_log_mod    , only : errMsg => shr_log_errMsg
   use spmdMod        , only : masterproc, mpicom, iam, npes
   use spmdMod        , only : MPI_REAL8, MPI_INTEGER, MPI_LOGICAL
-  use clm_varcon     , only : grlnd, nameg, namel, namec, namep
+  use clm_varcon     , only : grlnd, nameg, namet, namel, namec, namep
   use clm_varcon     , only : spval,ispval
   use clm_varctl     , only : single_column, iulog
   use shr_sys_mod    , only : shr_sys_flush
@@ -937,7 +937,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: n                   ! indices
-    integer :: ldimid(4)           ! local dimid
+    integer :: ldimid(4)           ! local dimid TKT to increase by 1
     integer :: dimid0(1)           ! local dimid
     integer :: status              ! error status 
     integer :: lxtype              ! local external type (in case logical variable)

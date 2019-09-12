@@ -16,9 +16,11 @@ module CNStateType
   use LandunitType   , only : lun_pp                
   use ColumnType     , only : col_pp                
   use VegetationType      , only : veg_pp                
-  use clm_varctl     , only: forest_fert_exp
+  use clm_varctl     ,  only: forest_fert_exp
   use clm_varctl          , only : nu_com
-  use clm_varctl   , only:  use_fates,use_crop
+  use clm_varctl     ,  only  :  use_fates,use_crop
+  use topounit_varcon,  only : max_topounits
+  use GridcellType    , only : grc_pp   
 
   ! 
   ! !PUBLIC TYPES:
@@ -708,7 +710,7 @@ contains
     integer               :: g,l,c,p,n,j,m            ! indices
     real(r8) ,pointer     :: gdp (:)                  ! global gdp data (needs to be a pointer for use in ncdio)
     real(r8) ,pointer     :: peatf (:)                ! global peatf data (needs to be a pointer for use in ncdio)
-    integer  ,pointer     :: soilorder_rdin (:)       ! global soil order data (needs to be a pointer for use in ncdio)
+    integer  ,pointer     :: soilorder_rdin (:,:)       ! global soil order data (needs to be a pointer for use in ncdio)
     integer  ,pointer     :: abm (:)                  ! global abm data (needs to be a pointer for use in ncdio)
     real(r8) ,pointer     :: gti (:)                  ! read in - fmax (needs to be a pointer for use in ncdio)
     integer               :: dimid                    ! dimension id
@@ -791,14 +793,19 @@ contains
     ! --------------------------------------------------------------------
 
     if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_fates .and. .not. use_crop) )  then 
-       allocate(soilorder_rdin(bounds%begg:bounds%endg))
-       call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
+       allocate(soilorder_rdin(max_topounits, bounds%begg:bounds%endg))
+       call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=namet, dim2name=grlnd, readvar=readvar)
        if (.not. readvar) then
           call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
        end if
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%isoilorder(c) = soilorder_rdin(g)
+		  t = col_pp%topounit(c)
+		  topi = grc_pp%topi(g)
+		  ti = t - topi + 1
+		
+              this%isoilorder(c) = soilorder_rdin(ti,g)
+
        end do
        deallocate(soilorder_rdin)
 

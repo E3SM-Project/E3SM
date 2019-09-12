@@ -21,36 +21,36 @@ module UrbanParamsType
   public  :: UrbanInput         ! Read in urban input data
   public  :: CheckUrban         ! Check validity of urban points
   !
-  ! !PRIVATE TYPE
+  ! !PRIVATE TYPE TKT addedd 1 more dimension because of topounit
   type urbinp_type
-     real(r8), pointer :: canyon_hwr      (:,:)  
-     real(r8), pointer :: wtlunit_roof    (:,:)  
-     real(r8), pointer :: wtroad_perv     (:,:)  
-     real(r8), pointer :: em_roof         (:,:)   
-     real(r8), pointer :: em_improad      (:,:)  
-     real(r8), pointer :: em_perroad      (:,:)  
-     real(r8), pointer :: em_wall         (:,:)  
-     real(r8), pointer :: alb_roof_dir    (:,:,:)  
-     real(r8), pointer :: alb_roof_dif    (:,:,:)  
-     real(r8), pointer :: alb_improad_dir (:,:,:)  
-     real(r8), pointer :: alb_improad_dif (:,:,:)  
-     real(r8), pointer :: alb_perroad_dir (:,:,:)  
-     real(r8), pointer :: alb_perroad_dif (:,:,:)  
-     real(r8), pointer :: alb_wall_dir    (:,:,:)  
-     real(r8), pointer :: alb_wall_dif    (:,:,:)  
-     real(r8), pointer :: ht_roof         (:,:)
-     real(r8), pointer :: wind_hgt_canyon (:,:)
-     real(r8), pointer :: tk_wall         (:,:,:)
-     real(r8), pointer :: tk_roof         (:,:,:)
-     real(r8), pointer :: tk_improad      (:,:,:)
-     real(r8), pointer :: cv_wall         (:,:,:)
-     real(r8), pointer :: cv_roof         (:,:,:)
-     real(r8), pointer :: cv_improad      (:,:,:)
-     real(r8), pointer :: thick_wall      (:,:)
-     real(r8), pointer :: thick_roof      (:,:)
-     integer,  pointer :: nlev_improad    (:,:)
-     real(r8), pointer :: t_building_min  (:,:)
-     real(r8), pointer :: t_building_max  (:,:)
+     real(r8), pointer :: canyon_hwr      (:,:,:)  
+     real(r8), pointer :: wtlunit_roof    (:,:,:)  
+     real(r8), pointer :: wtroad_perv     (:,:,:)  
+     real(r8), pointer :: em_roof         (:,:,:)   
+     real(r8), pointer :: em_improad      (:,:,:)  
+     real(r8), pointer :: em_perroad      (:,:,:)  
+     real(r8), pointer :: em_wall         (:,:,:)  
+     real(r8), pointer :: alb_roof_dir    (:,:,:,:)  
+     real(r8), pointer :: alb_roof_dif    (:,:,:,:)  
+     real(r8), pointer :: alb_improad_dir (:,:,:,:)  
+     real(r8), pointer :: alb_improad_dif (:,:,:,:)  
+     real(r8), pointer :: alb_perroad_dir (:,:,:,:)  
+     real(r8), pointer :: alb_perroad_dif (:,:,:,:)  
+     real(r8), pointer :: alb_wall_dir    (:,:,:,:)  
+     real(r8), pointer :: alb_wall_dif    (:,:,:,:)  
+     real(r8), pointer :: ht_roof         (:,:,:)
+     real(r8), pointer :: wind_hgt_canyon (:,:,:)
+     real(r8), pointer :: tk_wall         (:,:,:,:)
+     real(r8), pointer :: tk_roof         (:,:,:,:)
+     real(r8), pointer :: tk_improad      (:,:,:,:)
+     real(r8), pointer :: cv_wall         (:,:,:,:)
+     real(r8), pointer :: cv_roof         (:,:,:,:)
+     real(r8), pointer :: cv_improad      (:,:,:,:)
+     real(r8), pointer :: thick_wall      (:,:,:)
+     real(r8), pointer :: thick_roof      (:,:,:)
+     integer,  pointer :: nlev_improad    (:,:,:)
+     real(r8), pointer :: t_building_min  (:,:,:)
+     real(r8), pointer :: t_building_max  (:,:,:)
   end type urbinp_type
   type (urbinp_type), public :: urbinp   ! urban input derived type
 
@@ -150,6 +150,7 @@ module UrbanParamsType
     begp = bounds%begp; endp = bounds%endp
     begc = bounds%begc; endc = bounds%endc
     begl = bounds%begl; endl = bounds%endl
+	begt = bounds%begt; endt = bounds%endt
     begg = bounds%begg; endg = bounds%endg
 
     ! Allocate urbanparams data structure
@@ -195,42 +196,44 @@ module UrbanParamsType
        if (lun_pp%urbpoi(l)) then
 
           g = lun_pp%gridcell(l)
+		  t = lun_pp%topounit(l) ! TKT added this for the topounit and added t below
           dindx = lun_pp%itype(l) - isturb_MIN + 1
+		  
 
-          this%wind_hgt_canyon(l) = urbinp%wind_hgt_canyon(g,dindx)
+          this%wind_hgt_canyon(l) = urbinp%wind_hgt_canyon(g,t,dindx)
           do ib = 1,numrad
-             this%alb_roof_dir   (l,ib) = urbinp%alb_roof_dir   (g,dindx,ib)
-             this%alb_roof_dif   (l,ib) = urbinp%alb_roof_dif   (g,dindx,ib)
-             this%alb_improad_dir(l,ib) = urbinp%alb_improad_dir(g,dindx,ib)
-             this%alb_perroad_dir(l,ib) = urbinp%alb_perroad_dir(g,dindx,ib)
-             this%alb_improad_dif(l,ib) = urbinp%alb_improad_dif(g,dindx,ib)
-             this%alb_perroad_dif(l,ib) = urbinp%alb_perroad_dif(g,dindx,ib)
-             this%alb_wall_dir   (l,ib) = urbinp%alb_wall_dir   (g,dindx,ib)
-             this%alb_wall_dif   (l,ib) = urbinp%alb_wall_dif   (g,dindx,ib)
+             this%alb_roof_dir   (l,ib) = urbinp%alb_roof_dir   (g,t,dindx,ib)
+             this%alb_roof_dif   (l,ib) = urbinp%alb_roof_dif   (g,t,dindx,ib)
+             this%alb_improad_dir(l,ib) = urbinp%alb_improad_dir(g,t,dindx,ib)
+             this%alb_perroad_dir(l,ib) = urbinp%alb_perroad_dir(g,t,dindx,ib)
+             this%alb_improad_dif(l,ib) = urbinp%alb_improad_dif(g,t,dindx,ib)
+             this%alb_perroad_dif(l,ib) = urbinp%alb_perroad_dif(g,t,dindx,ib)
+             this%alb_wall_dir   (l,ib) = urbinp%alb_wall_dir   (g,t,dindx,ib)
+             this%alb_wall_dif   (l,ib) = urbinp%alb_wall_dif   (g,t,dindx,ib)
           end do
-          this%em_roof   (l) = urbinp%em_roof   (g,dindx)
-          this%em_improad(l) = urbinp%em_improad(g,dindx)
-          this%em_perroad(l) = urbinp%em_perroad(g,dindx)
-          this%em_wall   (l) = urbinp%em_wall   (g,dindx)
+          this%em_roof   (l) = urbinp%em_roof   (g,t,dindx)
+          this%em_improad(l) = urbinp%em_improad(g,t,dindx)
+          this%em_perroad(l) = urbinp%em_perroad(g,t,dindx)
+          this%em_wall   (l) = urbinp%em_wall   (g,t,dindx)
 
           ! Landunit level initialization for urban wall and roof layers and interfaces
 
-          lun_pp%canyon_hwr(l)   = urbinp%canyon_hwr(g,dindx)
-          lun_pp%wtroad_perv(l)  = urbinp%wtroad_perv(g,dindx)
-          lun_pp%ht_roof(l)      = urbinp%ht_roof(g,dindx)
-          lun_pp%wtlunit_roof(l) = urbinp%wtlunit_roof(g,dindx)
+          lun_pp%canyon_hwr(l)   = urbinp%canyon_hwr(g,t,dindx)
+          lun_pp%wtroad_perv(l)  = urbinp%wtroad_perv(g,t,dindx)
+          lun_pp%ht_roof(l)      = urbinp%ht_roof(g,t,dindx)
+          lun_pp%wtlunit_roof(l) = urbinp%wtlunit_roof(g,t,dindx)
 
-          this%tk_wall(l,:)      = urbinp%tk_wall(g,dindx,:)
-          this%tk_roof(l,:)      = urbinp%tk_roof(g,dindx,:)
-          this%tk_improad(l,:)   = urbinp%tk_improad(g,dindx,:)
-          this%cv_wall(l,:)      = urbinp%cv_wall(g,dindx,:)
-          this%cv_roof(l,:)      = urbinp%cv_roof(g,dindx,:)
-          this%cv_improad(l,:)   = urbinp%cv_improad(g,dindx,:)
-          this%thick_wall(l)     = urbinp%thick_wall(g,dindx)
-          this%thick_roof(l)     = urbinp%thick_roof(g,dindx)
-          this%nlev_improad(l)   = urbinp%nlev_improad(g,dindx)
-          this%t_building_min(l) = urbinp%t_building_min(g,dindx)
-          this%t_building_max(l) = urbinp%t_building_max(g,dindx)
+          this%tk_wall(l,:)      = urbinp%tk_wall(g,t,dindx,:)
+          this%tk_roof(l,:)      = urbinp%tk_roof(g,t,dindx,:)
+          this%tk_improad(l,:)   = urbinp%tk_improad(g,t,dindx,:)
+          this%cv_wall(l,:)      = urbinp%cv_wall(g,t,dindx,:)
+          this%cv_roof(l,:)      = urbinp%cv_roof(g,t,dindx,:)
+          this%cv_improad(l,:)   = urbinp%cv_improad(g,t,dindx,:)
+          this%thick_wall(l)     = urbinp%thick_wall(g,t,dindx)
+          this%thick_roof(l)     = urbinp%thick_roof(g,t,dindx)
+          this%nlev_improad(l)   = urbinp%nlev_improad(g,t,dindx)
+          this%t_building_min(l) = urbinp%t_building_min(g,t,dindx)
+          this%t_building_max(l) = urbinp%t_building_max(g,t,dindx)
 
           ! Inferred from Sailor and Lu 2004
           if (urban_traffic) then
@@ -379,6 +382,7 @@ module UrbanParamsType
     use domainMod       , only : ldomain
     use ncdio_pio       , only : file_desc_t, ncd_defvar, ncd_io, ncd_inqvdlen, ncd_inqfdims 
     use ncdio_pio       , only : ncd_pio_openfile, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
+	use GridcellType    , only : ntopounits ! TKT added for the topounits
     !
     ! !ARGUMENTS:
     implicit none
@@ -430,34 +434,34 @@ module UrbanParamsType
        if ( nlevurb == 0 ) return
 
        ! Allocate dynamic memory
-       allocate(urbinp%canyon_hwr(begg:endg, numurbl), &  
-                urbinp%wtlunit_roof(begg:endg, numurbl), &  
-                urbinp%wtroad_perv(begg:endg, numurbl), &
-                urbinp%em_roof(begg:endg, numurbl), &     
-                urbinp%em_improad(begg:endg, numurbl), &    
-                urbinp%em_perroad(begg:endg, numurbl), &    
-                urbinp%em_wall(begg:endg, numurbl), &    
-                urbinp%alb_roof_dir(begg:endg, numurbl, numrad), &    
-                urbinp%alb_roof_dif(begg:endg, numurbl, numrad), &    
-                urbinp%alb_improad_dir(begg:endg, numurbl, numrad), &    
-                urbinp%alb_perroad_dir(begg:endg, numurbl, numrad), &    
-                urbinp%alb_improad_dif(begg:endg, numurbl, numrad), &    
-                urbinp%alb_perroad_dif(begg:endg, numurbl, numrad), &    
-                urbinp%alb_wall_dir(begg:endg, numurbl, numrad), &    
-                urbinp%alb_wall_dif(begg:endg, numurbl, numrad), &
-                urbinp%ht_roof(begg:endg, numurbl), &
-                urbinp%wind_hgt_canyon(begg:endg, numurbl), &
-                urbinp%tk_wall(begg:endg, numurbl,nlevurb), &
-                urbinp%tk_roof(begg:endg, numurbl,nlevurb), &
-                urbinp%tk_improad(begg:endg, numurbl,nlevurb), &
-                urbinp%cv_wall(begg:endg, numurbl,nlevurb), &
-                urbinp%cv_roof(begg:endg, numurbl,nlevurb), &
-                urbinp%cv_improad(begg:endg, numurbl,nlevurb), &
-                urbinp%thick_wall(begg:endg, numurbl), &
-                urbinp%thick_roof(begg:endg, numurbl), &
-                urbinp%nlev_improad(begg:endg, numurbl), &
-                urbinp%t_building_min(begg:endg, numurbl), &
-                urbinp%t_building_max(begg:endg, numurbl), &
+       allocate(urbinp%canyon_hwr(begg:endg,ntopounits, numurbl), &  
+                urbinp%wtlunit_roof(begg:endg,ntopounits, numurbl), &  
+                urbinp%wtroad_perv(begg:endg,ntopounits, numurbl), &
+                urbinp%em_roof(begg:endg,ntopounits, numurbl), &     
+                urbinp%em_improad(begg:endg,ntopounits, numurbl), &    
+                urbinp%em_perroad(begg:endg,ntopounits, numurbl), &    
+                urbinp%em_wall(begg:endg,ntopounits, numurbl), &    
+                urbinp%alb_roof_dir(begg:endg,ntopounits, numurbl, numrad), &    
+                urbinp%alb_roof_dif(begg:endg,ntopounits, numurbl, numrad), &    
+                urbinp%alb_improad_dir(begg:endg,ntopounits, numurbl, numrad), &    
+                urbinp%alb_perroad_dir(begg:endg,ntopounits, numurbl, numrad), &    
+                urbinp%alb_improad_dif(begg:endg,ntopounits, numurbl, numrad), &    
+                urbinp%alb_perroad_dif(begg:endg,ntopounits, numurbl, numrad), &    
+                urbinp%alb_wall_dir(begg:endg,ntopounits, numurbl, numrad), &    
+                urbinp%alb_wall_dif(begg:endg,ntopounits, numurbl, numrad), &
+                urbinp%ht_roof(begg:endg,ntopounits, numurbl), &
+                urbinp%wind_hgt_canyon(begg:endg,ntopounits, numurbl), &
+                urbinp%tk_wall(begg:endg,ntopounits, numurbl,nlevurb), &
+                urbinp%tk_roof(begg:endg,ntopounits, numurbl,nlevurb), &
+                urbinp%tk_improad(begg:endg,ntopounits, numurbl,nlevurb), &
+                urbinp%cv_wall(begg:endg,ntopounits, numurbl,nlevurb), &
+                urbinp%cv_roof(begg:endg,ntopounits, numurbl,nlevurb), &
+                urbinp%cv_improad(begg:endg,ntopounits, numurbl,nlevurb), &
+                urbinp%thick_wall(begg:endg,ntopounits, numurbl), &
+                urbinp%thick_roof(begg:endg,ntopounits, numurbl), &
+                urbinp%nlev_improad(begg:endg,ntopounits, numurbl), &
+                urbinp%t_building_min(begg:endg,ntopounits, numurbl), &
+                urbinp%t_building_max(begg:endg,ntopounits, numurbl), &
                 stat=ier)
        if (ier /= 0) then
           call endrun(msg="Allocation error "//errmsg(__FILE__, __LINE__))
@@ -722,6 +726,7 @@ module UrbanParamsType
     ! !USES:
     use clm_varsur      , only : urban_valid
     use landunit_varcon , only : numurbl
+	use GridcellType    , only : ntopounits ! TKT added for the topounits
     !
     ! !ARGUMENTS:
     implicit none
@@ -741,43 +746,44 @@ module UrbanParamsType
 
     found = .false.
     do nl = begg,endg
+	   do t = 1, ntopounits  ! TKT add for the topounits
        do n = 1, numurbl
           if ( pcturb(nl,n) > 0.0_r8 ) then
              if ( .not. urban_valid(nl) .or. &
-                  urbinp%canyon_hwr(nl,n)            <= 0._r8 .or. &
-                  urbinp%em_improad(nl,n)            <= 0._r8 .or. &
-                  urbinp%em_perroad(nl,n)            <= 0._r8 .or. &
-                  urbinp%em_roof(nl,n)               <= 0._r8 .or. &
-                  urbinp%em_wall(nl,n)               <= 0._r8 .or. &
-                  urbinp%ht_roof(nl,n)               <= 0._r8 .or. &
-                  urbinp%thick_roof(nl,n)            <= 0._r8 .or. &
-                  urbinp%thick_wall(nl,n)            <= 0._r8 .or. &
-                  urbinp%t_building_max(nl,n)        <= 0._r8 .or. &
-                  urbinp%t_building_min(nl,n)        <= 0._r8 .or. &
-                  urbinp%wind_hgt_canyon(nl,n)       <= 0._r8 .or. &
-                  urbinp%wtlunit_roof(nl,n)          <= 0._r8 .or. &
-                  urbinp%wtroad_perv(nl,n)           <= 0._r8 .or. &
-                  any(urbinp%alb_improad_dir(nl,n,:) <= 0._r8) .or. &
-                  any(urbinp%alb_improad_dif(nl,n,:) <= 0._r8) .or. &
-                  any(urbinp%alb_perroad_dir(nl,n,:) <= 0._r8) .or. &
-                  any(urbinp%alb_perroad_dif(nl,n,:) <= 0._r8) .or. &
-                  any(urbinp%alb_roof_dir(nl,n,:)    <= 0._r8) .or. &
-                  any(urbinp%alb_roof_dif(nl,n,:)    <= 0._r8) .or. &
-                  any(urbinp%alb_wall_dir(nl,n,:)    <= 0._r8) .or. &
-                  any(urbinp%alb_wall_dif(nl,n,:)    <= 0._r8) .or. &
-                  any(urbinp%tk_roof(nl,n,:)         <= 0._r8) .or. &
-                  any(urbinp%tk_wall(nl,n,:)         <= 0._r8) .or. &
-                  any(urbinp%cv_roof(nl,n,:)         <= 0._r8) .or. &
-                  any(urbinp%cv_wall(nl,n,:)         <= 0._r8)) then
+                  urbinp%canyon_hwr(nl,t,n)            <= 0._r8 .or. &
+                  urbinp%em_improad(nl,t,n)            <= 0._r8 .or. &
+                  urbinp%em_perroad(nl,t,n)            <= 0._r8 .or. &
+                  urbinp%em_roof(nl,t,n)               <= 0._r8 .or. &
+                  urbinp%em_wall(nl,t,n)               <= 0._r8 .or. &
+                  urbinp%ht_roof(nl,t,n)               <= 0._r8 .or. &
+                  urbinp%thick_roof(nl,t,n)            <= 0._r8 .or. &
+                  urbinp%thick_wall(nl,t,n)            <= 0._r8 .or. &
+                  urbinp%t_building_max(nl,t,n)        <= 0._r8 .or. &
+                  urbinp%t_building_min(nl,t,n)        <= 0._r8 .or. &
+                  urbinp%wind_hgt_canyon(nl,t,n)       <= 0._r8 .or. &
+                  urbinp%wtlunit_roof(nl,t,n)          <= 0._r8 .or. &
+                  urbinp%wtroad_perv(nl,t,n)           <= 0._r8 .or. &
+                  any(urbinp%alb_improad_dir(nl,t,n,:) <= 0._r8) .or. &
+                  any(urbinp%alb_improad_dif(nl,t,n,:) <= 0._r8) .or. &
+                  any(urbinp%alb_perroad_dir(nl,t,n,:) <= 0._r8) .or. &
+                  any(urbinp%alb_perroad_dif(nl,t,n,:) <= 0._r8) .or. &
+                  any(urbinp%alb_roof_dir(nl,t,n,:)    <= 0._r8) .or. &
+                  any(urbinp%alb_roof_dif(nl,t,n,:)    <= 0._r8) .or. &
+                  any(urbinp%alb_wall_dir(nl,t,n,:)    <= 0._r8) .or. &
+                  any(urbinp%alb_wall_dif(nl,t,n,:)    <= 0._r8) .or. &
+                  any(urbinp%tk_roof(nl,t,n,:)         <= 0._r8) .or. &
+                  any(urbinp%tk_wall(nl,t,n,:)         <= 0._r8) .or. &
+                  any(urbinp%cv_roof(nl,t,n,:)         <= 0._r8) .or. &
+                  any(urbinp%cv_wall(nl,t,n,:)         <= 0._r8)) then
                 found = .true.
                 nindx = nl
                 dindx = n
                 exit
              else
-                if (urbinp%nlev_improad(nl,n) > 0) then
-                   nlev = urbinp%nlev_improad(nl,n)
-                   if ( any(urbinp%tk_improad(nl,n,1:nlev) <= 0._r8) .or. &
-                        any(urbinp%cv_improad(nl,n,1:nlev) <= 0._r8)) then
+                if (urbinp%nlev_improad(nlt,,n) > 0) then
+                   nlev = urbinp%nlev_improad(nl,t,n)
+                   if ( any(urbinp%tk_improad(nl,t,n,1:nlev) <= 0._r8) .or. &
+                        any(urbinp%cv_improad(nl,t,n,1:nlev) <= 0._r8)) then
                       found = .true.
                       nindx = nl
                       dindx = n
@@ -788,6 +794,7 @@ module UrbanParamsType
              if (found) exit
           end if
        end do
+	   end do
     end do
     if ( found ) then
        write(iulog,*) trim(caller), ' ERROR: no valid urban data for nl=',nindx

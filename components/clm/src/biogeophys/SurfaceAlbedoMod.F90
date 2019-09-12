@@ -12,7 +12,7 @@ module SurfaceAlbedoMod
   use abortutils        , only : endrun
   use decompMod         , only : bounds_type
   use landunit_varcon   , only : istsoil, istcrop, istdlak
-  use clm_varcon        , only : grlnd, namep
+  use clm_varcon        , only : grlnd, namep, namet
   use clm_varpar        , only : numrad, nlevcan, nlevsno, nlevcan
   use clm_varctl        , only : fsurdat, iulog, subgridflag, use_snicar_frc, use_fates  
   use VegetationPropertiesType    , only : veg_vp
@@ -29,6 +29,8 @@ module SurfaceAlbedoMod
   use ColumnDataType    , only : col_es, col_ws  
   use VegetationType    , only : veg_pp
   use VegetationDataType, only : veg_es, veg_ws  
+  use topounit_varcon   , only : max_topounits
+  use GridcellType      , only : grc_pp   
   !
   implicit none
   save
@@ -98,7 +100,7 @@ contains
     character(len=256) :: locfn        ! local filename
     integer            :: ier          ! error status
     logical            :: readvar 
-    integer  ,pointer  :: soic2d (:)   ! read in - soil color 
+    integer  ,pointer  :: soic2d (:,:)   ! read in - soil color 
     !---------------------------------------------------------------------
 
     ! Allocate module variable for soil color
@@ -114,14 +116,18 @@ contains
     call ncd_io(ncid=ncid, varname='mxsoil_color', flag='read', data=mxsoil_color, readvar=readvar)
     if ( .not. readvar ) mxsoil_color = 8  
 
-    allocate(soic2d(bounds%begg:bounds%endg)) 
-    call ncd_io(ncid=ncid, varname='SOIL_COLOR', flag='read', data=soic2d, dim1name=grlnd, readvar=readvar)
+    allocate(soic2d(max_topounits, bounds%begg:bounds%endg)) 
+    call ncd_io(ncid=ncid, varname='SOIL_COLOR', flag='read', data=soic2d, dim1name=namet,dim2name = grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: SOIL_COLOR NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
-       g = col_pp%gridcell(c)
-       isoicol(c) = soic2d(g)
+		g = col_pp%gridcell(c)
+		t = col_pp%topounit(c)
+	    topi = grc_pp%topi(g)
+	    ti = t - topi + 1 		
+		isoicol(c) = soic2d(ti,g)
+		
     end do
     deallocate(soic2d)
 

@@ -120,7 +120,8 @@ CONTAINS
           do k = 1, pver
             zmid(k) = 0.5_r8*(zint(k)+zint(k+1))
           end do
-          zmid(pver+1) = zint(pver+1)
+        !  zmid(pver+1) = zint(pver+1) 
+          zmid(pver) = zint(pver+1) !TKT
 !
 !---- maximum height rise of an air parcel
 !
