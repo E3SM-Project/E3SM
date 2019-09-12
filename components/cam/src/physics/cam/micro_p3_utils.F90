@@ -23,6 +23,7 @@ module micro_p3_utils
   integer,parameter :: itype = selected_int_kind (13) ! 8 byte integer
 #else
     public :: rtype
+    integer,parameter,public :: rtype8 = selected_real_kind(15, 307) ! 8 byte real, compatible with c type double
 #endif
 
     public :: get_latent_heat, micro_p3_utils_init, &
