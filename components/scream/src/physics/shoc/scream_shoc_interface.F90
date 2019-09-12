@@ -49,8 +49,6 @@ contains
  
     real(kind=c_real), intent(inout) :: q(pcols,pver,9) ! State array  kg/kg
 
-    integer(kind=c_int) :: i, j
-
     call shoc_init( &
           gravit, rair, rh2o, cpair, &
           latvap)   
@@ -95,10 +93,10 @@ contains
 
     real(kind=c_real) :: inv_cp 
 
-    integer(kind=c_int) :: icol, k, ncol
-    integer :: i,j
+    integer(kind=c_int) :: k, ncol
+    integer :: i
 
-    integer(kind=c_int) :: it, its, ite, kts, kte
+    integer(kind=c_int) :: its, ite, kts, kte
 
     real(kind=c_real) :: qtest
 

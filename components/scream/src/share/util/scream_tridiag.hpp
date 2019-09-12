@@ -251,10 +251,9 @@ KOKKOS_INLINE_FUNCTION
 void thomas (const TeamMember& team,
              TridiagDiag dl, TridiagDiag d, TridiagDiag du, DataArray X,
              typename std::enable_if<TridiagDiag::rank == 1>::type* = 0) {
-  const int nrow = d.extent_int(0);
-  assert(X.extent_int(0) == nrow);
-  assert(dl.extent_int(0) == nrow);
-  assert(du.extent_int(0) == nrow);
+  assert( X.extent_int(0) == d.extent_int(0));
+  assert(dl.extent_int(0) == d.extent_int(0));
+  assert(du.extent_int(0) == d.extent_int(0));
   impl::thomas_factorize(team, dl, d, du);
   team.team_barrier();
   impl::thomas_solve(team, dl, d, du, X);

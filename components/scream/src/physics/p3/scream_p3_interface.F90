@@ -61,7 +61,7 @@ contains
 
     character(len=100) :: case_title
 
-    integer(kind=c_int) :: i, j, k
+    integer(kind=c_int) :: i, k
 
     ! READ inputs from SCM for p3-stand-alone:
     q(:,:,:) = 0.0_rtype
@@ -131,13 +131,13 @@ contains
     real(kind=c_real) :: qirim(pcols,pver)      !rime ice mixing ratio                  kg/kg
     real(kind=c_real) :: numice(pcols,pver)     !total ice crystal number concentration #/kg
     real(kind=c_real) :: rimvol(pcols,pver)     !rime volume mixing ratio               m3/kg
-    real(kind=c_real) :: temp(pcols,pver)       !potential temperature                  K
-    real(kind=c_real) :: rim(pcols,pver)        !rime mixing ratio                      kg/kg
+    ! real(kind=c_real) :: temp(pcols,pver)       !potential temperature                  K
+    ! real(kind=c_real) :: rim(pcols,pver)        !rime mixing ratio                      kg/kg
     real(kind=c_real) :: prt_liq(pcols)         !precipitation rate, liquid             m s-1
     real(kind=c_real) :: prt_sol(pcols)         !precipitation rate, solid              m s-1
     real(kind=c_real) :: diag_ze(pcols,pver)    !equivalent reflectivity                dBZ
-    real(kind=c_real) :: diag_effc(pcols,pver)  !effective radius, cloud                m
-    real(kind=c_real) :: diag_effi(pcols,pver)  !effective radius, ice                  m
+    ! real(kind=c_real) :: diag_effc(pcols,pver)  !effective radius, cloud                m
+    ! real(kind=c_real) :: diag_effi(pcols,pver)  !effective radius, ice                  m
     real(kind=c_real) :: diag_vmi(pcols,pver)   !mass-weighted fall speed of ice        m s-1
     real(kind=c_real) :: diag_di(pcols,pver)    !mean diameter of ice                   m
     real(kind=c_real) :: diag_rhoi(pcols,pver)  !bulk density of ice                    kg m-1
@@ -172,7 +172,7 @@ contains
     real(kind=c_real), parameter :: deicon = 50._rtype         ! Convective ice effective diameter (um)
 
     integer(kind=c_int) :: icol, k
-    integer :: i,j
+    integer :: i
 
     integer(kind=c_int) :: it, its, ite, kts, kte
     logical :: log_predictNc = .true.

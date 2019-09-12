@@ -13,7 +13,7 @@ set(SHOC_HEADERS
 )
 
 add_library(shoc ${SHOC_SRCS})
-target_include_directories(shoc PUBLIC ${SCREAM_INCLUDE_DIRS} ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
+target_include_directories(shoc PUBLIC ${SCREAM_INCLUDE_DIRS} ${SCREAM_TPL_INCLUDE_DIRS})
 set_target_properties(shoc PROPERTIES
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 

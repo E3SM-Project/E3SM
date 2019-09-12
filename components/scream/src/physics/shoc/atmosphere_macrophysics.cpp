@@ -67,7 +67,7 @@ void SHOCMacrophysics::run (const double dt)
 {
   auto q_ptr = m_shoc_fields_out.at("q").get_view().data();
   auto FQ_ptr = m_shoc_fields_out.at("FQ").get_view().data();
-  auto dp_ptr = m_shoc_fields_in.at("dp").get_view().data();
+  // auto dp_ptr = m_shoc_fields_in.at("dp").get_view().data();
   auto qdp_ptr = m_shoc_fields_in.at("qdp").get_view().data();
 
   shoc_main_f90 (dt,q_ptr,FQ_ptr,qdp_ptr);
