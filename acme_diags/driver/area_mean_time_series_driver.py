@@ -88,23 +88,26 @@ def run_diag(parameter):
             
                 parameter.ref_name_yrs = utils.general.get_name_and_yrs(parameter, ref_data)
 
-                ref = ref_data.get_timeseries_variable(var)
-                print('Start and end time for selected time slices for ref data: ', ref.getTime().asComponentTime()[0],ref.getTime().asComponentTime()[-1])
-                print('ref shape',ref.shape, ref.long_name, ref.units)
+                try: 
+                    ref = ref_data.get_timeseries_variable(var)
+                    print('Start and end time for selected time slices for ref data: ', ref.getTime().asComponentTime()[0],ref.getTime().asComponentTime()[-1])
+                    print('ref shape',ref.shape, ref.long_name, ref.units)
 
-                
-                # TODO: Will this work if ref and test are timeseries data,
-                # but land_frac and ocean_frac are climo'ed.
-                ref_domain = utils.general.select_region(region, ref, land_frac, ocean_frac, parameter)
+                    
+                    # TODO: Will this work if ref and test are timeseries data,
+                    # but land_frac and ocean_frac are climo'ed.
+                    ref_domain = utils.general.select_region(region, ref, land_frac, ocean_frac, parameter)
 
-                ref_domain = cdutil.averager(ref_domain,axis = 'xy')
-                cdutil.setTimeBoundsMonthly(ref_domain)
-                print('Start and end time for selected time slices for ref data: ', ref_domain.getTime().asComponentTime()[0],ref_domain.getTime().asComponentTime()[-1])
-                ref_domain_year = cdutil.YEAR(ref_domain)
-                ref_domain_year.ref_name = ref_name
-                save_data[ref_name] = ref_domain_year.asma().tolist()
+                    ref_domain = cdutil.averager(ref_domain,axis = 'xy')
+                    cdutil.setTimeBoundsMonthly(ref_domain)
+                    print('Start and end time for selected time slices for ref data: ', ref_domain.getTime().asComponentTime()[0],ref_domain.getTime().asComponentTime()[-1])
+                    ref_domain_year = cdutil.YEAR(ref_domain)
+                    ref_domain_year.ref_name = ref_name
+                    save_data[ref_name] = ref_domain_year.asma().tolist()
 
-                refs.append(ref_domain_year)
+                    refs.append(ref_domain_year)
+                except:
+                    print('No valid value for reference datasets available for the specified time range')
 
             # metrics_dict = create_metrics(ref_domain)
             #save_data = []
