@@ -76,6 +76,10 @@ public:
   Units (const Units&) = default;
   Units& operator= (const Units&) = default;
 
+  static Units nondimensional () {
+    return Units(RationalConstant::one());
+  }
+
   const Units& set_exp_format (const Format fmt) {
     // Note: this will NOT change the stored string.
     //       It is only used by the to_string function.
@@ -280,7 +284,6 @@ inline std::ostream& operator<< (std::ostream& out, const Units& x) {
 
 // === FUNDAMENTAL === //
 
-const Units one = Units(0,0,0,0,0,0,0);
 const Units m   = Units(1,0,0,0,0,0,0);
 const Units s   = Units(0,1,0,0,0,0,0);
 const Units kg  = Units(0,0,1,0,0,0,0);

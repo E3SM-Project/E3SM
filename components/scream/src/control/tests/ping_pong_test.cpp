@@ -79,7 +79,7 @@ TEST_CASE("ping-pong", "") {
   std::vector<FieldTag> tags = {FieldTag::Column,FieldTag::Component};
   std::vector<int> dims = {num_cols, vec_length};
   FieldLayout layout (tags,dims);
-  FieldIdentifier fid("field_0",layout,units::one,"Physics_fwd");
+  FieldIdentifier fid("field_0",layout,units::m,"Physics_fwd");
   const auto& repo = ad.get_field_repo();
   const auto& field = repo.get_field(fid);
   auto d_view = Kokkos::create_mirror_view(field.get_view());

@@ -21,7 +21,7 @@ TEST_CASE("units_framework", "") {
     REQUIRE(one/two == half);
     REQUIRE(half*half == quarter);
     REQUIRE(pow(half,2)==quarter);
-#ifdef SCREAM_CONSTEXPR_ASSERT
+#if defined(SCREAM_CONSTEXPR_ASSERT) && !defined(NDEBUG)
     REQUIRE_THROWS(one/zero);
     REQUIRE_THROWS(pow(zero,zero));
 #endif
@@ -47,7 +47,7 @@ TEST_CASE("units_framework", "") {
     REQUIRE(to_string(root2)=="2^1/2");
     REQUIRE(to_string(root2,Format::Float)=="2^0.5");
 
-#ifdef SCREAM_CONSTEXPR_ASSERT
+#if defined(SCREAM_CONSTEXPR_ASSERT) && !defined(NDEBUG)
     REQUIRE_THROWS(sqrt(-three));
 #endif
   }

@@ -61,8 +61,8 @@ public:
       out_name += "0";
     }
 
-    m_input_fids.emplace(in_name,layout,units::one,m_grid->name());
-    m_output_fids.emplace(out_name,layout,units::one,m_grid->name());
+    m_input_fids.emplace(in_name,layout,units::m,m_grid->name());
+    m_output_fids.emplace(out_name,layout,units::m,m_grid->name());
   }
 
   void initialize (const util::TimeStamp& t0) {
