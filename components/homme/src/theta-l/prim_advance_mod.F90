@@ -94,9 +94,8 @@ contains
     real (kind=real_kind) ::  gamma,delta
 
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
-    integer :: n,i,j,maxiter,mi
+    integer :: n,i,j,maxiter
  
-    mi=10
 
     call t_startf('prim_advance_exp')
     nm1   = tl%nm1
@@ -224,7 +223,7 @@ contains
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
   
 
-      maxiter=mi
+      maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
@@ -234,7 +233,7 @@ contains
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
 
-      maxiter=mi
+      maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol) 
@@ -245,7 +244,7 @@ contains
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
-      maxiter=mi
+      maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
@@ -258,9 +257,6 @@ contains
       avg_itercnt = ((nstep)*avg_itercnt + max_itercnt_perstep)/(nstep+1)
 
 !==============================================================================================
-
-!!!!!!!!!!!!!!!!!!! NOT ARK
-
     elseif (tstep_type == 7) then  ! imkg254, most robust of the methods
  
       max_itercnt_perstep = 0
@@ -289,43 +285,37 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
-      maxiter=mi
+      maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol,tl)
+        deriv,nets,nete,maxiter,itertol)
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
-!print *, 'ahat2/a2', ahat2/a2
-!print *, 'ahat3/a3', ahat3/a3
-!print *, 'ahat4/a4', ahat4/a4
-!print *, 'ahat5/a5', ahat5/a5
-!stop
-
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
-      maxiter=mi
+      maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol,tl)
+        deriv,nets,nete,maxiter,itertol)
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
-      maxiter=mi
+      maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol,tl)
+        deriv,nets,nete,maxiter,itertol)
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      maxiter=mi
+      maxiter=10
       itertol=1e-12
       call compute_stage_value_dirk(np1,qn0,dhat4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol,tl)
+        deriv,nets,nete,maxiter,itertol)
       max_itercnt_perstep        = max(maxiter,max_itercnt_perstep)
       max_itererr_perstep = max(itertol,max_itererr_perstep)
 
@@ -1292,8 +1282,7 @@ contains
         temp(:,:,:)=elem(ie)%state%vtheta_dp(:,:,:,nt)*elem(ie)%state%dp3d(:,:,:,nt)
         call pnh_and_exner_from_eos(hvcoord,temp,&
              elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),&
-             pnh,exner,temp_i,caller='advance_hypervis', &
-             spherep=elem(ie)%spherep)
+             pnh,exner,temp_i,caller='advance_hypervis')
         
         do k=1,nlev
            k2=min(k+1,nlev)
@@ -1644,7 +1633,7 @@ contains
   real (kind=real_kind) :: w_tens(np,np,nlevp)  ! need to update w at surface as well
   real (kind=real_kind) :: theta_tens(np,np,nlev)
   real (kind=real_kind) :: phi_tens(np,np,nlevp)
-
+                                               
 
   real (kind=real_kind) :: pi(np,np,nlev)                ! hydrostatic pressure
   real (kind=real_kind) :: pi_i(np,np,nlevp)             ! hydrostatic pressure interfaces
@@ -1669,7 +1658,6 @@ contains
      vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,n0)
      vtheta(:,:,:) = vtheta_dp(:,:,:)/dp3d(:,:,:)
      phi_i => elem(ie)%state%phinh_i(:,:,:,n0)
-
 
 #ifdef ENERGY_DIAGNOSTICS
      if (.not. theta_hydrostatic_mode) then
@@ -1705,8 +1693,7 @@ contains
      endif
 #endif
 
-     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR',&
-                                 spherep=elem(ie)%spherep)
+     call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR')
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -2206,7 +2193,6 @@ contains
 
      ! now we can compute the correct dphn_dp_i() at the surface:
      if (.not. theta_hydrostatic_mode) then
-
         ! solve for (dpnh_dp_i-1)
         dpnh_dp_i(:,:,nlevp) = 1 + (  &
              ((elem(ie)%state%v(:,:,1,nlev,np1)*elem(ie)%derived%gradphis(:,:,1) + &
@@ -2214,10 +2200,7 @@ contains
              elem(ie)%state%w_i(:,:,nlevp,np1)) / &
              (g + ( elem(ie)%derived%gradphis(:,:,1)**2 + &
              elem(ie)%derived%gradphis(:,:,2)**2)/(2*g))   )  / dt2
-     
-!here is it safe to store nlevp value of mu, it is not touched by imex
-        elem(ie)%derived%mubottom(:,:) = dpnh_dp_i(:,:,nlevp)
- 
+        
         ! update solution with new dpnh_dp_i value:
         elem(ie)%state%w_i(:,:,nlevp,np1) = elem(ie)%state%w_i(:,:,nlevp,np1) +&
              scale1*dt2*g*(dpnh_dp_i(:,:,nlevp)-1)
@@ -2278,7 +2261,7 @@ contains
 !===========================================================================================================
 !===========================================================================================================
   subroutine compute_stage_value_dirk(np1,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,maxiter,itertol,tl)
+       deriv,nets,nete,maxiter,itertol)
   !===================================================================================
   ! this subroutine solves a stage value equation for a DIRK method which takes the form
   !
@@ -2296,7 +2279,7 @@ contains
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
-  type (TimeLevel_t)   , intent(in), optional            :: tl
+
 
   ! local
   real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
@@ -2326,7 +2309,6 @@ contains
 
   integer :: i,j,k,l,ie,itercount,info(np,np),itercountmax
   integer :: nsafe
-  integer :: location(2)
 
 
 
@@ -2345,19 +2327,7 @@ contains
     phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
     phis => elem(ie)%state%phis(:,:)
 
-#if 0
-    ! add in w_explicit to initial guess:
-    phi_np1(:,:,1:nlev) = phi_np1(:,:,1:nlev) + dt2*g*elem(ie)%state%w_i(:,:,1:nlev,np1)
-#endif
-
-!if((elem(ie)%globalid == 1721).and.(tl%nstep == 209810))then
-!    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
-!    spherep=elem(ie)%spherep,doout=.true.)
-!stop
-!else
-    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1',&
-    spherep=elem(ie)%spherep)
-!endif
+    call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk1')
 
     dp3d_i(:,:,1) = dp3d(:,:,1)
     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
@@ -2377,8 +2347,6 @@ contains
 !     call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt2,dp3d,phi_np1,pnh,0,&
 !       1d-6,hvcoord,dpnh_dp_i,vtheta_dp)
       ! here's the call to the exact Jacobian
-
-!with 1 this call does not use pnh_...
      call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,phi_np1,pnh,1)
 
     ! compute dp3d-weighted infinity norms of the initial Jacobian and residual
@@ -2390,9 +2358,7 @@ contains
         if (k.eq.1) then
           norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k)*abs(JacD(k,i,j))+dp3d_i(i,j,k+1))*abs(JacU(k,i,j)))
         elseif (k.eq.nlev) then
-!temp fix for membug
-!          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+abs(JacD(k,i,j))*dp3d(i,j,k)))
-          norminfJ0(i,j) = max(norminfJ0(i,j),( abs(JacD(k,i,j))*dp3d(i,j,k)))
+          norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+abs(JacD(k,i,j))*dp3d(i,j,k)))
         else
           norminfJ0(i,j) = max(norminfJ0(i,j),(dp3d_i(i,j,k-1)*abs(JacL(k,i,j))+dp3d_i(i,j,k)*abs(JacD(k,i,j))+ &
             dp3d_i(i,j,k+1)*abs(JacU(k,i,j))))
@@ -2405,33 +2371,8 @@ contains
 
     maxnorminfJ0r0=max(maxval(norminfJ0(:,:)),maxval(norminfr0(:,:)))
     itererr=maxval(itererrtemp(:,:))/maxnorminfJ0r0
-
-!mu after explicit, before iteration
-#if 0
-if((elem(ie)%globalid == 1721).and.(tl%nstep == 209810))then
-do i=1,np
-do j=1,np
-do k=1,nlev
-print *,i,j,'k=',k,'mu=',dpnh_dp_i(i,j,k)
-enddo;enddo; enddo
-stop
-endif
-#endif    
-
+    
     do while ((itercount < maxiter).and.(itererr > itertol))
-
-!mu during iteration, TSTEP BEFORE CRASH!
-#if 0
-if((elem(ie)%globalid == 1721).and.(tl%nstep == 209809))then
-print *,'-------------------- ITERATION OF MU'
-!do j=1,np; do i=1,np
-i=1;j=1;
-do k=1,nlevp
-write(*,109)'   mu(',itercount+1,',',i,',',j,',',k,')=',dpnh_dp_i(i,j,k),';'
-enddo
-!enddo; enddo
-endif
-#endif
 
       info(:,:) = 0
       ! Here's how to call inexact Jacobian
@@ -2460,8 +2401,7 @@ endif
         ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
       end do
       end do
-      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2',&
-      spherep=elem(ie)%spherep)
+      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_np1,pnh,exner,dpnh_dp_i,caller='dirk2')
 
       ! update approximate solution of w
       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
@@ -2471,7 +2411,6 @@ endif
          Fn(:,:,k) = phi_np1(:,:,k)-phi_n0(:,:,k) &
               - dt2*g*w_n0(:,:,k) + (dt2*g)**2 * (1.0-dpnh_dp_i(:,:,k))
       enddo
-
       ! compute relative errors
       itererrtemp=0.d0
       do i=1,np
@@ -2486,115 +2425,9 @@ endif
 
       ! update iteration count and error measure
       itercount=itercount+1
-
-#if 0
-if((elem(ie)%globalid == 1721).and.(tl%nstep == 209810))then
-print *,'-------------------- ITERATION OF W'
-do j=1,np
-do i=1,np
-do k=1,nlev
-!print *,'witer(',itercount,',',i,',',j,',',k,')=',elem(ie)%state%w_i(i,j,k,np1),';'
-write(*,109) 'witer(',itercount,',',i,',',j,',',k,')=',elem(ie)%state%w_i(i,j,k,np1),';'
-enddo
-!print *, 'witer(',itercount,',',i,',',j,',',nlevp,')=',&
-write(*,109) 'witer(',itercount,',',i,',',j,',',nlevp,')=',&
-(elem(ie)%state%v(i,j,1,nlev,np1)*elem(ie)%derived%gradphis(i,j,1)+ &
-             elem(ie)%state%v(i,j,2,nlev,np1)*elem(ie)%derived%gradphis(i,j,2))/g,';'
-enddo
-enddo
-endif
-#endif
-109 format (A6,I2,A1,I1,A1,I1,A1,I2,A2,E23.15,A1)  !         E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
-
     end do ! end do for the do while loop
 
-
-!mu during iteration, TSTEP BEFORE CRASH!
-!crash tstep is 209810
-#if 0
-if((elem(ie)%globalid == 1721).and.(tl%nstep == 209809))then
-print *,'-------------------- ITERATION OF MU'
-!do j=1,np; do i=1,np
-i=1;j=1;
-do k=1,nlevp
-write(*,109)'   mu(',itercount,',',i,',',j,',',k,')=',dpnh_dp_i(i,j,k),';'
-enddo
-!enddo; enddo
-stop
-endif
-#endif
-
-
     if (itercount >= maxiter) then
-
-!print *, 'my GID', elem(ie)%GlobalID
-!do j=1,np
-!do i=1,np
-!      print *, 'elem coords lon',i,j,elem(ie)%spherep(i,j)%lon
-!      print *, 'elem coords lat',i,j,elem(ie)%spherep(i,j)%lat
-!enddo
-!enddo
-!do j=1,np
-!do i=1,np
-!      print *, 'itererrtemp',i,j,itererrtemp(i,j)
-!enddo
-!enddo
-      location=maxloc(itererrtemp)
-      i=location(1); j=location(2)
-
-print *, 'point where max error is ', elem(ie)%spherep(i,j)%lon,elem(ie)%spherep(i,j)%lat
-print *, 'nstep here is', tl%nstep, 'dt2 here', dt2, 'g here', g
-
-#if 0
-print *,'-------------------- INIT CONDITIONS'
-do j=1,np
-do i=1,np
-do k=1,nlev
-write(*,110) '   dp(',i,',',j,',',k,')=',dp3d(i,j,k),';'
-write(*,110) '  vth(',i,',',j,',',k,')=',vtheta_dp(i,j,k),';'
-write(*,110) '  wn0(',i,',',j,',',k,')=',w_n0(i,j,k),';'
-enddo
-write(*,110) '  wn0(',i,',',j,',',nlevp,')=',&
-(elem(ie)%state%v(i,j,1,nlev,np1)*elem(ie)%derived%gradphis(i,j,1)+ &
-             elem(ie)%state%v(i,j,2,nlev,np1)*elem(ie)%derived%gradphis(i,j,2))/g,';'
-do k=1,nlevp
-write(*,110) ' phi0(',i,',',j,',',k,')=',phi_n0(i,j,k),';'
-enddo
-enddo
-enddo
-#endif
-
-!!!!!!!!!!!!!! init conditions for 3,1 point only
-#if 0
-print *,'-------------------- INIT CONDITIONS for the point that crashed'
-i=3;j=1;
-
-do k=1,nlev
-write(*,110) '   dp(',i,',',j,',',k,')=',dp3d(i,j,k),';'
-write(*,110) '  vth(',i,',',j,',',k,')=',vtheta_dp(i,j,k),';'
-write(*,110) '  wn0(',i,',',j,',',k,')=',w_n0(i,j,k),';'
-write(*,110) '    u(',i,',',j,',',k,')=',elem(ie)%state%v(i,j,1,k,np1),';'
-write(*,110) '    v(',i,',',j,',',k,')=',elem(ie)%state%v(i,j,2,k,np1),';'
-enddo
-
-write(*,110) '  wn0(',i,',',j,',',nlevp,')=',&
-(elem(ie)%state%v(i,j,1,nlev,np1)*elem(ie)%derived%gradphis(i,j,1)+ &
-             elem(ie)%state%v(i,j,2,nlev,np1)*elem(ie)%derived%gradphis(i,j,2))/g,';'
-do k=1,nlevp
-write(*,110) ' phi0(',i,',',j,',',k,')=',phi_n0(i,j,k),';'
-enddo
-
-write(*,110) '  gps(',i,',',j,',',1,')=',elem(ie)%derived%gradphis(i,j,1),';'
-write(*,110) '  gps(',i,',',j,',',2,')=',elem(ie)%derived%gradphis(i,j,2),';'
-
-#endif
-
-
-
-
-110 format (A6,I1,A1,I1,A1,I2,A2,E23.15,A1)  !         E23.15,A2,I3,A1,E23.15,A2,I3,A1,E23.15)
-
-
       call abortmp('Error: nonlinear solver failed b/c max iteration count was met')
     end if
     itercountmax=max(itercount,itercountmax)
