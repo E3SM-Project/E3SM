@@ -1730,7 +1730,7 @@ contains
        ! set minimum nc to prevent floating point error
        nc   = max(nc,nsmall)
        mu_c = 0.0005714_rtype*(nc*1.e-6_rtype*rho)+0.2714_rtype
-       mu_c = 1._rtype/(mu_c**2)-1._rtype
+       mu_c = 1._rtype/(mu_c*mu_c)-1._rtype
        mu_c = max(mu_c,2._rtype)
        mu_c = min(mu_c,15._rtype)
 
@@ -1749,10 +1749,10 @@ contains
 
        if (lamc.lt.lammin) then
           lamc = lammin
-          nc   = 6._rtype*lamc**3*qc/(pi*rhow*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype))
+          nc   = 6._rtype*(lamc*lamc*lamc)*qc/(pi*rhow*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype))
        elseif (lamc.gt.lammax) then
           lamc = lammax
-          nc   = 6._rtype*lamc**3*qc/(pi*rhow*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype))
+          nc   = 6._rtype*(lamc*lamc*lamc)*qc/(pi*rhow*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype))
        endif
 
        cdist  = nc*(mu_c+1._rtype)/lamc

@@ -33,7 +33,7 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
       Spack mu_c_local;
       nc.set(qc_gt_small, pack::max(nc, nsmall));
       mu_c_local = sp(0.0005714)*(nc * sp(1.e-6) * rho) + sp(0.2714);
-      mu_c_local = 1/(pack::pow(mu_c_local, 2)) - 1;
+      mu_c_local = 1/(mu_c_local * mu_c_local) - 1;
       mu_c_local = pack::max(mu_c_local, 2);
       mu_c_local = pack::min(mu_c_local, 15);
 
@@ -61,7 +61,7 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
     lamc.set(lamc_lt_min, lammin);
     lamc.set(lamc_gt_max, lammax);
 
-    nc.set(min_or_max, 6 * pack::pow(lamc, 3) * qc / (C::Pi * C::RHOW * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
+    nc.set(min_or_max, 6 * (lamc * lamc * lamc) * qc / (C::Pi * C::RHOW * (mu_c + 3) * (mu_c + 2) * (mu_c + 1)));
 
     cdist.set(qc_gt_small, nc * (mu_c+1) / lamc);
     cdist1.set(qc_gt_small, nc * lcldm / pack::tgamma(mu_c + 1));
