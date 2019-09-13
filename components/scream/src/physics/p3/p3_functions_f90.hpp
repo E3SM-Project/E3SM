@@ -182,6 +182,13 @@ void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Re
 
 }
 
+extern "C" {
+
+Real cxx_pow(Real base, Real exp);
+Real cxx_gamma(Real input);
+
+}
+
 }  // namespace p3
 }  // namespace scream
 

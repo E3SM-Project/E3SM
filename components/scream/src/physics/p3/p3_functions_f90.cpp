@@ -241,5 +241,16 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   *logn0r_ = logn0r[0];
 }
 
+Real cxx_pow(Real base, Real exp)
+{
+  return std::pow(base, exp);
+}
+
+Real cxx_gamma(Real input)
+{
+  return std::tgamma(input);
+}
+
+
 } // namespace p3
 } // namespace scream

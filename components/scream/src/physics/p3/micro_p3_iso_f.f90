@@ -67,6 +67,33 @@ interface
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
   end subroutine get_rain_dsd2_f
 
+  !
+  ! These are some routine math operations that are not BFB between
+  ! fortran and C++ on all platforms, so fortran will need to use
+  ! the C++ versions in order to stay BFB.
+  !
+
+  function cxx_pow(base, exp) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in)  :: base
+    real(kind=c_real), value, intent(in)  :: exp
+
+    ! return
+    real(kind=c_real)               :: cxx_pow
+  end function cxx_pow
+
+  function cxx_gamma(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: cxx_gamma
+  end function cxx_gamma
+
 end interface
 
 end module micro_p3_iso_f

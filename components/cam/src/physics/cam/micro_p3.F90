@@ -35,6 +35,14 @@
 ! variables and outputs expected in E3SM.                                                  !
 !__________________________________________________________________________________________!
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+#  define bfb_pow(base, exp) cxx_pow(base, exp)
+#  define bfb_gamma(val) cxx_gamma(val)
+#else
+#  define bfb_pow(base, exp) base**exp
+#  define bfb_gamma(val) gamma(val)
+#endif
+
 module micro_p3
 
    ! get real kind from utils
@@ -1699,7 +1707,7 @@ contains
   subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,lcldm)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: get_cloud_dsd2_f
+    use micro_p3_iso_f, only: get_cloud_dsd2_f, cxx_pow, cxx_gamma
 #endif
 
     implicit none
@@ -1741,7 +1749,7 @@ contains
        endif
 
        ! calculate lamc
-       lamc = (cons1*nc*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype)/qc)**thrd
+       lamc = bfb_pow(cons1*nc*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype)/qc, thrd)
 
        ! apply lambda limiters
        lammin = (mu_c+1._rtype)*2.5e+4_rtype   ! min: 40 micron mean diameter
@@ -1756,7 +1764,7 @@ contains
        endif
 
        cdist  = nc*(mu_c+1._rtype)/lamc
-       cdist1 = nc*lcldm/gamma(mu_c+1._rtype)
+       cdist1 = nc*lcldm/bfb_gamma(mu_c+1._rtype)
 
     else
 
@@ -1775,7 +1783,7 @@ contains
   subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: get_rain_dsd2_f
+    use micro_p3_iso_f, only: get_rain_dsd2_f, cxx_pow, cxx_gamma
 #endif
 
     ! Computes and returns rain size distribution parameters
@@ -1807,25 +1815,25 @@ contains
        ! find spot in lookup table
        ! (scaled N/q for lookup table parameter space_
        nr      = max(nr,nsmall)
-       inv_dum = (qr/(cons1*nr*6._rtype))**thrd
+       inv_dum = bfb_pow(qr/(cons1*nr*6._rtype), thrd)
 
        ! Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
        mu_r = mu_r_constant
-       lamr   = (cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr))**thrd  ! recalculate slope based on mu_r
+       lamr   = bfb_pow(cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr), thrd)  ! recalculate slope based on mu_r
        lammax = (mu_r+1._rtype)*1.e+5_rtype   ! check for slope
        lammin = (mu_r+1._rtype)*1250._rtype   ! set to small value since breakup is explicitly included (mean size 0.8 mm)
 
        ! apply lambda limiters for rain
        if (lamr.lt.lammin) then
           lamr = lammin
-          nr   = exp(3._rtype*log(lamr)+log(qr)+log(gamma(mu_r+1._rtype))-log(gamma(mu_r+4._rtype)))/(cons1)
+          nr   = exp(3._rtype*log(lamr)+log(qr)+log(bfb_gamma(mu_r+1._rtype))-log(bfb_gamma(mu_r+4._rtype)))/(cons1)
        elseif (lamr.gt.lammax) then
           lamr = lammax
-          nr   = exp(3._rtype*log(lamr)+log(qr)+log(gamma(mu_r+1._rtype))-log(gamma(mu_r+4._rtype)))/(cons1)
+          nr   = exp(3._rtype*log(lamr)+log(qr)+log(bfb_gamma(mu_r+1._rtype))-log(bfb_gamma(mu_r+4._rtype)))/(cons1)
        endif
 
-       cdistr  = nr*rcldm/gamma(mu_r+1._rtype)
-       logn0r  = log10(nr)+(mu_r+1._rtype)*log10(lamr)-log10(gamma(mu_r+1._rtype)) !note: logn0r is calculated as log10(n0r)
+       cdistr  = nr*rcldm/bfb_gamma(mu_r+1._rtype)
+       logn0r  = log10(nr)+(mu_r+1._rtype)*log10(lamr)-log10(bfb_gamma(mu_r+1._rtype)) !note: logn0r is calculated as log10(n0r)
 
     else
 
