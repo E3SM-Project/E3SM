@@ -12,6 +12,7 @@ module CanopyHydrologyMod
   ! !USES:
   use shr_kind_mod      , only : r8 => shr_kind_r8
   use shr_log_mod       , only : errMsg => shr_log_errMsg
+  use shr_infnan_mod    , only : isnan => shr_infnan_isnan
   use shr_sys_mod       , only : shr_sys_flush
   use decompMod         , only : bounds_type
   use abortutils        , only : endrun
@@ -261,7 +262,7 @@ contains
        !--------------- temp solution for the irrigation mapping issue, if ELM and MOSART share the same grid, no such problem
        gridnum = bounds%endg - bounds%begg + 1 !number of grid on this processer
         do pp = bounds%begp,bounds%endp          
-             if (irrig_rate (pp) /= irrig_rate(pp)) then  !change NAN (if any) to zero so that the grid level irrig_rate can be calculated 
+             if (isnan(irrig_rate (pp))) then  !change NAN (if any) to zero so that the grid level irrig_rate can be calculated 
                irrig_rate(pp)=0._r8
              endif
         end do
