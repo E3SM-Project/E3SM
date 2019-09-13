@@ -108,7 +108,7 @@ CONTAINS
        write(logunit,F00)' restfilm   = ',trim(restfilm)
        write(logunit,F00)' restfils   = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
-       write(logunit,F0L)' sst_constant_value    = ',sst_constant_value
+       write(logunit,*)  ' sst_constant_value    = ',sst_constant_value
     endif
     call shr_mpi_bcast(decomp  ,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
