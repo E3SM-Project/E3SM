@@ -19,6 +19,7 @@ contains
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
     use physconst     , only: mwco2
     use time_manager  , only: is_first_step
+    use cam_control_mod,only: constant_albedo
     !
     ! Arguments
     !
@@ -126,6 +127,13 @@ contains
           end if
 
           ig=ig+1
+
+          if ( constant_albedo > 0 ) then
+            cam_in(c)%asdir(i) = constant_albedo
+            cam_in(c)%asdif(i) = constant_albedo
+            cam_in(c)%aldir(i) = constant_albedo
+            cam_in(c)%aldif(i) = constant_albedo
+          end if ! constant_albedo > 0
 
        end do
     end do

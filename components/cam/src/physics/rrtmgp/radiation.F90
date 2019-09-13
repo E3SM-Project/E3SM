@@ -94,6 +94,10 @@ module radiation
    ! TODO: How does this differ if value is .false.?
    logical :: use_rad_dt_cosz  = .false. 
 
+   ! Flag to indicate whether to do aerosol optical calculations. This 
+   ! zeroes out the aerosol optical properties if False
+   logical :: do_aerosol_rad = .true. 
+
    ! Model data that is not controlled by namelist fields specifically follows
    ! below.
 
@@ -202,10 +206,11 @@ contains
       character(len=cl) :: rrtmgp_coefficients_file_lw, rrtmgp_coefficients_file_sw
 
       ! Variables defined in namelist
-      namelist /radiation_nl/ rrtmgp_coefficients_file_lw, &
-                              rrtmgp_coefficients_file_sw, &
-                              iradsw, iradlw, irad_always, &
-                              use_rad_dt_cosz, spectralflux
+      namelist /radiation_nl/ rrtmgp_coefficients_file_lw,     &
+                              rrtmgp_coefficients_file_sw,     &
+                              iradsw, iradlw, irad_always,     &
+                              use_rad_dt_cosz, spectralflux,   &
+                              do_aerosol_rad
 
       ! Read the namelist, only if called from master process
       ! TODO: better documentation and cleaner logic here?
@@ -232,6 +237,7 @@ contains
       call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
 #endif
 
       ! Set module data
@@ -1404,8 +1410,8 @@ contains
 
       ! Make sure temperatures are within range for aqua planets
       if (aqua_planet) then
-         call clip_values(tmid, k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tmid', warn=.true.)
-         call clip_values(tint, k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tint', warn=.true.)
+         call clip_values(tmid(1:ncol,1:nlev_rad)  , k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tmid', warn=.true.)
+         call clip_values(tint(1:ncol,1:nlev_rad+1), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tint', warn=.true.)
       end if
 
       ! Do shortwave cloud optics calculations
@@ -1440,14 +1446,21 @@ contains
       do icall = N_DIAG,0,-1
          if (active_calls(icall)) then
 
-            ! Get shortwave aerosol optics
-            call t_startf('rad_aerosol_optics_sw')
-            call set_aerosol_optics_sw(icall, state, pbuf, &
-                                       day_indices(1:nday), &
-                                       night_indices(1:nnight), &
-                                       is_cmip6_volc, &
-                                       aerosol_optics_sw)
-            call t_stopf('rad_aerosol_optics_sw')
+            if (do_aerosol_rad) then
+               ! Get shortwave aerosol optics
+               call t_startf('rad_aerosol_optics_sw')
+               call set_aerosol_optics_sw(icall, state, pbuf, &
+                                          day_indices(1:nday), &
+                                          night_indices(1:nnight), &
+                                          is_cmip6_volc, &
+                                          aerosol_optics_sw)
+               call t_stopf('rad_aerosol_optics_sw')
+            else
+               aerosol_optics_sw%tau(:,:,:) = 0
+               aerosol_optics_sw%ssa(:,:,:) = 0
+               aerosol_optics_sw%g  (:,:,:) = 0
+            end if
+
 
             ! Set gas concentrations (I believe the gases may change for
             ! different values of icall, which is why we do this within the
@@ -1583,8 +1596,8 @@ contains
 
       ! Make sure temperatures are within range for aqua planets
       if (aqua_planet) then
-         call clip_values(tmid, k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tmid', warn=.true.)
-         call clip_values(tint, k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tint', warn=.true.)
+         call clip_values(tmid(1:ncol,1:nlev_rad)  , k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tmid', warn=.true.)
+         call clip_values(tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tint', warn=.true.)
       end if
 
       ! Do longwave cloud optics calculations
@@ -1615,10 +1628,14 @@ contains
             call set_gas_concentrations(icall, state, pbuf, gas_concentrations)
             call t_stopf('rad_gas_concentrations_lw')
 
-            ! Get longwave aerosol optics
-            call t_startf('rad_aerosol_optics_lw')
-            call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
-            call t_stopf('rad_aerosol_optics_lw')
+            if (do_aerosol_rad) then
+               ! Get longwave aerosol optics
+               call t_startf('rad_aerosol_optics_lw')
+               call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
+               call t_stopf('rad_aerosol_optics_lw')
+            else
+               aerosol_optics_lw%tau(:,:,:) = 0
+            end if
 
             ! Do longwave radiative transfer calculations
             call t_startf('rad_calculations_lw')
@@ -1924,7 +1941,6 @@ contains
    subroutine set_albedo(cam_in, albedo_direct, albedo_diffuse)
       use camsrfexch, only: cam_in_t
       use radiation_utils, only: clip_values
-      use cam_control_mod, only: constant_albedo
 
       type(cam_in_t), intent(in) :: cam_in
       real(r8), intent(inout) :: albedo_direct(:,:)   ! surface albedo, direct radiation
@@ -1951,47 +1967,38 @@ contains
       albedo_direct(:,:) = 0._r8
       albedo_diffuse(:,:) = 0._r8
 
-      if ( constant_albedo > 0 ) then
-         
-         albedo_direct(:,1:ncol)  = constant_albedo
-         albedo_diffuse(:,1:ncol) = constant_albedo
+      ! Albedos are input as broadband (visible, and near-IR), and we need to map
+      ! these to appropriate bands. Bands are categorized broadly as "visible" or
+      ! "infrared" based on wavenumber, so we get the wavenumber limits here
+      wavenumber_limits(:,:) = k_dist_sw%get_band_lims_wavenumber()
 
-      else
+      ! Loop over bands, and determine for each band whether it is broadly in the
+      ! visible or infrared part of the spectrum (visible or "not visible")
+      do iband = 1,nswbands
+         if (is_visible(wavenumber_limits(1,iband)) .and. &
+             is_visible(wavenumber_limits(2,iband))) then
 
-         ! Albedos are input as broadband (visible, and near-IR), and we need to map
-         ! these to appropriate bands. Bands are categorized broadly as "visible" or
-         ! "infrared" based on wavenumber, so we get the wavenumber limits here
-         wavenumber_limits(:,:) = k_dist_sw%get_band_lims_wavenumber()
+            ! Entire band is in the visible
+            albedo_direct(iband,1:ncol) = cam_in%asdir(1:ncol)
+            albedo_diffuse(iband,1:ncol) = cam_in%asdif(1:ncol)
 
-         ! Loop over bands, and determine for each band whether it is broadly in the
-         ! visible or infrared part of the spectrum (visible or "not visible")
-         do iband = 1,nswbands
-            if (is_visible(wavenumber_limits(1,iband)) .and. &
-                is_visible(wavenumber_limits(2,iband))) then
+         else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
+                  .not.is_visible(wavenumber_limits(2,iband))) then
 
-               ! Entire band is in the visible
-               albedo_direct(iband,1:ncol) = cam_in%asdir(1:ncol)
-               albedo_diffuse(iband,1:ncol) = cam_in%asdif(1:ncol)
+            ! Entire band is in the longwave (near-infrared)
+            albedo_direct(iband,1:ncol) = cam_in%aldir(1:ncol)
+            albedo_diffuse(iband,1:ncol) = cam_in%aldif(1:ncol)
 
-            else if (.not.is_visible(wavenumber_limits(1,iband)) .and. &
-                     .not.is_visible(wavenumber_limits(2,iband))) then
+         else
 
-               ! Entire band is in the longwave (near-infrared)
-               albedo_direct(iband,1:ncol) = cam_in%aldir(1:ncol)
-               albedo_diffuse(iband,1:ncol) = cam_in%aldif(1:ncol)
+            ! Band straddles the visible to near-infrared transition, so we take
+            ! the albedo to be the average of the visible and near-infrared
+            ! broadband albedos
+            albedo_direct(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
+            albedo_diffuse(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
 
-            else
-
-               ! Band straddles the visible to near-infrared transition, so we take
-               ! the albedo to be the average of the visible and near-infrared
-               ! broadband albedos
-               albedo_direct(iband,1:ncol) = 0.5 * (cam_in%aldir(1:ncol) + cam_in%asdir(1:ncol))
-               albedo_diffuse(iband,1:ncol) = 0.5 * (cam_in%aldif(1:ncol) + cam_in%asdif(1:ncol))
-
-            end if
-         end do
-
-      end if ! constant_albedo > 0
+         end if
+      end do
 
       ! Check values and clip if necessary (albedos should not be larger than 1)
       ! NOTE: this does actually issue warnings for albedos larger than 1, but this

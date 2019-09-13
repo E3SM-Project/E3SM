@@ -1381,7 +1381,7 @@
      In default model solar zenith angle is held constant over time -->
 <use_rad_dt_cosz>             .false.  </use_rad_dt_cosz>
 <raytau0>                     0.0    </raytau0>
-
+<do_aerosol_rad>              .true.   </do_aerosol_rad>
 
 
 <!-- ================================================================== -->

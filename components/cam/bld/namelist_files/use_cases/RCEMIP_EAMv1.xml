@@ -26,10 +26,15 @@
 
 <constant_albedo>0.07</constant_albedo>
 
+<do_aerosol_rad>.false.</do_aerosol_rad>
+
 <!-- ------------------------------------------------------------------------------------------ -->
 <!-- Revised physics constants for ape experiments (from CAM5/6 use case) -->
 <!-- ------------------------------------------------------------------------------------------ -->
 <sday>   0.0  </sday>
+<!-- <sday>   86164.0  </sday>   -->
+<!-- <sday>   861640.0  </sday> -->
+
 <!-- <rearth> 6.37100e6          </rearth> -->
 <!-- <gravit> 9.79764         </gravit> -->
 <!-- <mwdry>  28.96623324623746  </mwdry> -->

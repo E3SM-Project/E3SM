@@ -4088,6 +4088,12 @@ radiation will be run for every timestep from the start of an initial run.
 Default: 0
 </entry>
 
+<entry id="do_aerosol_rad" type="logical"  category="radiation"
+       group="radiation_nl" valid_values="" >
+Indicates whether to consider aerosols in radiative calculations
+Default: TRUE
+</entry>
+
 <entry id="spectralflux" type="logical"  category="radiation"
        group="radiation_nl" valid_values="" >
 Return fluxes per band in addition to the total fluxes.
