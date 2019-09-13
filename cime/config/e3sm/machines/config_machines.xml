@@ -1017,10 +1017,10 @@
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
-        <arg name="num_tasks"> -l -N {{ num_nodes }} -n {{ total_tasks }} </arg>
+        <arg name="num_tasks"> -l -N {{ num_nodes }} -n {{ total_tasks }} --kill-on-bad-exit</arg>
         <arg name="binding">--cpu_bind=cores</arg>
-        <arg name="thread_count">-c $SHELL{if [ FALSE = `./xmlquery --value SMP_PRESENT` ];then echo 1;else echo $OMP_NUM_THREADS;fi}</arg>
-        <arg name="placement">-m plane=$SHELL{if [ FALSE = `./xmlquery --value SMP_PRESENT` ];then echo 36;else echo 36/$OMP_NUM_THREADS|bc;fi}</arg>
+        <arg name="thread_count">-c $SHELL{echo $OMP_NUM_THREADS}</arg>
+        <arg name="placement">-m plane=$SHELL{echo 36/$OMP_NUM_THREADS|bc}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
@@ -1097,7 +1097,6 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="KMP_HOT_TEAMS_MODE">1</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">granularity=thread,scatter</env>
