@@ -1019,7 +1019,7 @@
       <arguments>
         <arg name="num_tasks"> -l -N {{ num_nodes }} -n {{ total_tasks }} --kill-on-bad-exit</arg>
         <arg name="binding">--cpu_bind=cores</arg>
-        <arg name="thread_count">-c $SHELL{echo $OMP_NUM_THREADS}</arg>
+        <arg name="thread_count">-c $SHELL{case $OMP_NUM_THREADS in 1|2|3|6|9|18)echo $OMP_NUM_THREADS;;*)echo bad thread_count=$OMP_NUM_THREADS;exit 1;esac}</arg>
         <arg name="placement">-m plane=$SHELL{echo 36/$OMP_NUM_THREADS|bc}</arg>
       </arguments>
     </mpirun>
