@@ -49,7 +49,7 @@ get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c
     }
 
     // calculate lamc
-    lamc.set(qc_gt_small, pack::pow(cons1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc, C::THIRD));
+    lamc.set(qc_gt_small, pack::cbrt(cons1 * nc * (mu_c + 3) * (mu_c + 2) * (mu_c + 1) / qc));
 
     // apply lambda limiters
     Spack lammin = (mu_c + 1)*sp(2.5e+4); // min: 40 micron mean diameter
@@ -75,7 +75,6 @@ get_rain_dsd2 (
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm)
 {
   constexpr auto nsmall = Constants<Scalar>::NSMALL;
-  constexpr auto thrd = Constants<Scalar>::THIRD;
   constexpr auto cons1 = Constants<Scalar>::CONS1;
 
   lamr = 0;
@@ -91,16 +90,13 @@ get_rain_dsd2 (
     // (scaled N/q for lookup table parameter space)
     const auto nr_lim = max(nr, nsmall);
     Spack inv_dum(0);
-    inv_dum.set(qr_gt_small,
-                pow(qr / (cons1 * nr_lim * 6), thrd));
+    inv_dum.set(qr_gt_small, pack::cbrt(qr / (cons1 * nr_lim * 6)));
 
     // Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
     mu_r.set(qr_gt_small, mu_r_const);
     // recalculate slope based on mu_r
-    lamr.set(qr_gt_small,
-             pow(cons1 * nr_lim * (mu_r + 3) *
-                 (mu_r + 2) * (mu_r + 1)/qr,
-                 thrd));
+    lamr.set(qr_gt_small, pack::cbrt(cons1 * nr_lim * (mu_r + 3) *
+                                     (mu_r + 2) * (mu_r + 1)/qr));
 
     // check for slope
     const auto lammax = (mu_r+1.)*sp(1.e+5);

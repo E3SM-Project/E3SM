@@ -84,6 +84,16 @@ interface
     real(kind=c_real)               :: cxx_pow
   end function cxx_pow
 
+  function cxx_cbrt(base) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in)  :: base
+
+    ! return
+    real(kind=c_real)               :: cxx_cbrt
+  end function cxx_cbrt
+
   function cxx_gamma(input) bind(C)
     use iso_c_binding
 

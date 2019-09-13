@@ -37,9 +37,11 @@
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #  define bfb_pow(base, exp) cxx_pow(base, exp)
+#  define bfb_cbrt(base) cxx_cbrt(base)
 #  define bfb_gamma(val) cxx_gamma(val)
 #else
 #  define bfb_pow(base, exp) base**exp
+#  define bfb_cbrt(base) base**thrd
 #  define bfb_gamma(val) gamma(val)
 #endif
 
@@ -1707,7 +1709,7 @@ contains
   subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,lcldm)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: get_cloud_dsd2_f, cxx_pow, cxx_gamma
+    use micro_p3_iso_f, only: get_cloud_dsd2_f, cxx_pow, cxx_gamma, cxx_cbrt
 #endif
 
     implicit none
@@ -1749,7 +1751,7 @@ contains
        endif
 
        ! calculate lamc
-       lamc = bfb_pow(cons1*nc*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype)/qc, thrd)
+       lamc = bfb_cbrt(cons1*nc*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype)/qc)
 
        ! apply lambda limiters
        lammin = (mu_c+1._rtype)*2.5e+4_rtype   ! min: 40 micron mean diameter
@@ -1783,7 +1785,7 @@ contains
   subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: get_rain_dsd2_f, cxx_pow, cxx_gamma
+    use micro_p3_iso_f, only: get_rain_dsd2_f, cxx_pow, cxx_gamma, cxx_cbrt
 #endif
 
     ! Computes and returns rain size distribution parameters
@@ -1815,11 +1817,11 @@ contains
        ! find spot in lookup table
        ! (scaled N/q for lookup table parameter space_
        nr      = max(nr,nsmall)
-       inv_dum = bfb_pow(qr/(cons1*nr*6._rtype), thrd)
+       inv_dum = bfb_cbrt(qr/(cons1*nr*6._rtype))
 
        ! Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
        mu_r = mu_r_constant
-       lamr   = bfb_pow(cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr), thrd)  ! recalculate slope based on mu_r
+       lamr   = bfb_cbrt(cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr))  ! recalculate slope based on mu_r
        lammax = (mu_r+1._rtype)*1.e+5_rtype   ! check for slope
        lammin = (mu_r+1._rtype)*1250._rtype   ! set to small value since breakup is explicitly included (mean size 0.8 mm)
 

@@ -11,7 +11,6 @@ using scream::Int;
 // A C++ interface to micro_p3 fortran calls and vice versa
 //
 
-
 extern "C" {
 
 void p3_init_a_c(Real* itab, Real* itabcol);
@@ -251,6 +250,10 @@ Real cxx_gamma(Real input)
   return std::tgamma(input);
 }
 
+Real cxx_cbrt(Real base)
+{
+  return std::cbrt(base);
+}
 
 } // namespace p3
 } // namespace scream
