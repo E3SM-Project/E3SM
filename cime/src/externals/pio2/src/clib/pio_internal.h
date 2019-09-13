@@ -12,6 +12,7 @@
 
 #include <config.h>
 #include <pio.h>
+#include <pio_error.h>
 #include <bget.h>
 #include <limits.h>
 #include <math.h>
@@ -19,6 +20,9 @@
 #include <gptl.h>
 #endif
 #include <assert.h>
+#ifdef USE_MPE
+#include <mpe.h>
+#endif /* USE_MPE */
 
 /* These are the sizes of types in netCDF files. Do not replace these
  * constants with sizeof() calls for C types. They are not the
@@ -56,10 +60,10 @@
 
 #if PIO_ENABLE_LOGGING
 void pio_log(int severity, const char *fmt, ...);
-#define LOG(e) pio_log e
+#define PLOG(e) pio_log e
 #else
 /** Logging macro for debugging. */
-#define LOG(e)
+#define PLOG(e)
 #endif /* PIO_ENABLE_LOGGING */
 
 /** Find maximum. */
@@ -84,6 +88,31 @@ void pio_log(int severity, const char *fmt, ...);
  * a data type when creating attributes or varaibles, it is only used
  * internally. */
 #define PIO_LONG_INTERNAL 13
+
+#ifdef USE_MPE
+/* These are for the event numbers array used to log various events in
+ * the program with the MPE library, which produces output for the
+ * Jumpshot program. */
+
+/* Each event has start and end. */
+#define START 0
+#define END 1
+
+/* These are the MPE states (events) we keep track of. */
+#define NUM_EVENTS 7
+#define INIT 0
+#define DECOMP 1
+#define CREATE 2
+#define OPEN 3
+#define DARRAY_WRITE 4
+#define DARRAY_READ 6
+#define CLOSE 5
+
+/* The max length of msg added to log with mpe_log_pack(). (NULL
+ * terminator is not required by mpe_log_pack(), so need not be
+ * counted in this total).*/
+#define MPE_MAX_MSG_LEN 32
+#endif /* USE_MPE */
 
 #if defined(__cplusplus)
 extern "C" {
@@ -157,13 +186,20 @@ extern "C" {
     int get_var_desc(int varid, var_desc_t **varlist, var_desc_t **var_desc);
     int delete_var_desc(int varid, var_desc_t **varlist);
 
-    /* Create a file (internal function). */
-    int PIOc_createfile_int(int iosysid, int *ncidp, int *iotype, const char *filename, int mode);
+    /* Create a file. */
+    int PIOc_createfile_int(int iosysid, int *ncidp, int *iotype, const char *filename,
+                            int mode, int use_ext_ncid);
 
     /* Open a file with optional retry as netCDF-classic if first
      * iotype does not work. */
     int PIOc_openfile_retry(int iosysid, int *ncidp, int *iotype, const char *filename, int mode,
-                            int retry);
+                            int retry, int use_ext_ncid);
+
+    /* Give the mode flag from an open, determine the IOTYPE. */
+    int find_iotype_from_omode(int mode, int *iotype);
+
+    /* Give the mode flag from an nc_create call, determine the IOTYPE. */
+    int find_iotype_from_cmode(int cmode, int *iotype);
 
     /* Given PIO type, find MPI type and type size. */
     int find_mpi_type(int pio_type, MPI_Datatype *mpi_type, int *type_size);
@@ -208,8 +244,8 @@ extern "C" {
     int alloc_region2(iosystem_desc_t *ios, int ndims, io_region **region);
 
     /* Set start and count so that they describe the first region in map.*/
-    PIO_Offset find_region(int ndims, const int *gdims, int maplen, const PIO_Offset *map,
-                           PIO_Offset *start, PIO_Offset *count);
+    int find_region(int ndims, const int *gdims, int maplen, const PIO_Offset *map,
+                    PIO_Offset *start, PIO_Offset *count, PIO_Offset *regionlen);
 
     /* Calculate start and count regions for the subset rearranger. */
     int get_regions(int ndims, const int *gdimlen, int maplen, const PIO_Offset *map,
@@ -341,9 +377,15 @@ extern "C" {
     /* Handle end and re-defs. */
     int pioc_change_def(int ncid, int is_enddef);
 
-    /* Initialize and finalize logging. */
+    /* Initialize and finalize logging, use --enable-logging at configure. */
     int pio_init_logging(void);
     void pio_finalize_logging(void );
+
+#ifdef USE_MPE
+    /* Logging with the MPE library, use --enable-mpe at configure. */
+    void pio_start_mpe_log(int state);
+    void pio_stop_mpe_log(int state, const char *msg);
+#endif /* USE_MPE */
 
     /* Write a netCDF decomp file. */
     int pioc_write_nc_decomp_int(iosystem_desc_t *ios, const char *filename, int cmode, int ndims,

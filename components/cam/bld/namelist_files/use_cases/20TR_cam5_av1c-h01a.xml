@@ -60,7 +60,7 @@
 <clubb_C2rt>         1.75D0 </clubb_C2rt>
 <effgw_oro>          0.25    </effgw_oro>
 <seasalt_emis_scale> 0.85   </seasalt_emis_scale>
-<dust_emis_fact>     2.05D0 </dust_emis_fact>
+<dust_emis_fact>     1.2D0 </dust_emis_fact>
 <clubb_gamma_coef>   0.32   </clubb_gamma_coef>
 <clubb_gamma_coefb>   0.32   </clubb_gamma_coefb>
 <cldfrc2m_rhmaxi>    1.05D0 </cldfrc2m_rhmaxi>

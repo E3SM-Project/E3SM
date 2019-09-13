@@ -304,7 +304,7 @@
 <!-- shortwave -->
 <config_shortwave_type>'dEdd'</config_shortwave_type>
 <config_albedo_type>'ccsm3'</config_albedo_type>
-<config_use_snicar>false</config_use_snicar>
+<config_use_snicar_ad>false</config_use_snicar_ad>
 <config_visible_ice_albedo>0.78</config_visible_ice_albedo>
 <config_infrared_ice_albedo>0.36</config_infrared_ice_albedo>
 <config_visible_snow_albedo>0.98</config_visible_snow_albedo>

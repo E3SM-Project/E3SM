@@ -1,11 +1,11 @@
 /**
- * @file
- * PIO functions to write data.
- *
- * @author Ed Hartnett
- * @date  2016
- * @see http://code.google.com/p/parallelio/
- */
+  * @file
+  * PIO functions to write data.
+  *
+  * @author Ed Hartnett
+  * @date  2016
+  * @see http://code.google.com/p/parallelio/
+  */
 #include <config.h>
 #include <pio.h>
 #include <pio_internal.h>

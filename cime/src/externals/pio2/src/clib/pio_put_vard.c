@@ -1,11 +1,11 @@
 /**
- * @file
- * PIO functions to write data with distributed arrays.
- *
- * @author Ed Hartnett
- * @date 2019
- * @see https://github.com/NCAR/ParallelIO
- */
+  * @file
+  * PIO functions to write data with distributed arrays.
+  *
+  * @author Ed Hartnett
+  * @date 2019
+  * @see https://github.com/NCAR/ParallelIO
+  */
 #include <config.h>
 #include <pio.h>
 #include <pio_internal.h>

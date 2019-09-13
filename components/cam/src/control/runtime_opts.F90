@@ -239,6 +239,7 @@ contains
    use clubb_intr,          only: clubb_readnl
    use shoc_intr,           only: shoc_readnl
    use chemistry,           only: chem_readnl
+   use lin_strat_chem,      only: linoz_readnl
    use prescribed_volcaero, only: prescribed_volcaero_readnl
    use aerodep_flx,         only: aerodep_flx_readnl
    use solar_data,          only: solar_data_readnl
@@ -480,6 +481,7 @@ contains
    call rad_data_readnl(nlfilename)
    call modal_aer_opt_readnl(nlfilename)
    call chem_readnl(nlfilename)
+   call linoz_readnl(nlfilename)
    call prescribed_volcaero_readnl(nlfilename)
    call solar_data_readnl(nlfilename)
    call carma_readnl(nlfilename)
