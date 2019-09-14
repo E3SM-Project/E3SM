@@ -3085,7 +3085,7 @@ end if
             call outfld(trim(adjustl(numliqname)),  tmpnumliq, pcols, lchnk )
             call outfld(trim(adjustl(cldliqname)),  tmpcldliq, pcols, lchnk )
             call outfld(trim(adjustl(numicename)),  tmpnumice, pcols, lchnk )
-            call outfld(trim(adjustl(cldiecname)),  tmpcldice, pcols, lchnk )
+            call outfld(trim(adjustl(cldicename)),  tmpcldice, pcols, lchnk )
 
             write(tmpname,"(A17,I2.2)") "alstn_af_mg2tend_", macmic_it
             ifalst   = pbuf_get_index('ALST')
