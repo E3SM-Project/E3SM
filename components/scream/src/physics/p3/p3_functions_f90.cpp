@@ -245,14 +245,51 @@ Real cxx_pow(Real base, Real exp)
   return std::pow(base, exp);
 }
 
+// Cuda implementations of std math routines are not necessarily BFB
+// with the host.
+template <typename ScalarT, typename DeviceT>
+struct CudaWrap
+{
+  using Scalar = ScalarT;
+  using RangePolicy = typename KokkosTypes<DeviceT>::RangePolicy;
+
+  static Scalar cxx_gamma(ScalarT input)
+  {
+    Scalar result;
+    Kokkos::parallel_reduce(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i, Real& value) {
+      value = std::tgamma(input);
+    }, result);
+
+    return result;
+  }
+
+  static Scalar cxx_cbrt(ScalarT input)
+  {
+    Scalar result;
+    Kokkos::parallel_reduce(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i, Real& value) {
+      value = std::cbrt(input);
+    }, result);
+
+    return result;
+  }
+};
+
 Real cxx_gamma(Real input)
 {
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_gamma(input);
+#else
   return std::tgamma(input);
+#endif
 }
 
-Real cxx_cbrt(Real base)
+Real cxx_cbrt(Real input)
 {
-  return std::cbrt(base);
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_cbrt(input);
+#else
+  return std::cbrt(input);
+#endif
 }
 
 } // namespace p3
