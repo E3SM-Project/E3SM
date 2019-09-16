@@ -69,7 +69,7 @@ void Functions<S,D>
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::ice_water_conservation(const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt, 
+::ice_water_conservation(const Spack& qitot,const Spack& qidep,const Spack& qinuc,const Spack& qiberg, const Spack &qrcol,const Spack &qccol,const Spack& qrheti,const Spack& qcheti,const Scalar dt,
    Spack& qisub, Spack& qimlt)
 {
   const auto sinks = (qisub+qimlt)*dt; // Sinks of ice water
@@ -77,13 +77,11 @@ void Functions<S,D>
   Spack ratio;
 
   Smask enforce_conservation  = sinks > sources && sinks >= C::QTENDSMALL;  // determine if  conservation corrction is necessary
-
   if(enforce_conservation.any()){
     ratio.set(enforce_conservation, sources/sinks);
     qisub.set(enforce_conservation, qisub*ratio);
     qimlt.set(enforce_conservation, qimlt*ratio);
   }
-
 }
 
 } // namespace p3

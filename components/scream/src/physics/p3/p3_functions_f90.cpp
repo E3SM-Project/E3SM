@@ -79,9 +79,15 @@ void access_lookup_table(AccessLookupTableData& d)
 
 void access_lookup_table_coll(AccessLookupTableCollData& d)
 {
-  p3_init(true);
+  p3_init(true); // need to initialize p3 first so that tables are loaded
   access_lookup_table_coll_c(d.lid.dumjj, d.lid.dumii, d.lidb.dumj, d.lid.dumi, d.index,
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
+}
+
+void ice_water_conservation(IceWaterConservationData& d){
+  p3_init(true); 
+  ice_water_conservation_c(d.qitot, d.qidep, d.qinuc, d.qiberg, d.qrcol, d.qccol, d.qrheti,
+    d.qcheti, d.dt, &d.qisub, &d.qimlt);
 }
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
@@ -210,10 +216,10 @@ void cloud_water_conservation_f(Real qc_, Real qcnuc_, Real dt, Real* qcaut_, Re
     *qcacc_ = qcacc[0];
     *qccol_ = qccol[0];
     *qcheti_ = qcheti[0];
-    *qcshd_ = qcshd[0]; 
-    *qiberg_ = qiberg[0]; 
-    *qisub_ = qisub[0]; 
-    *qidep_ = qidep[0]; 
+    *qcshd_ = qcshd[0];
+    *qiberg_ = qiberg[0];
+    *qisub_ = qisub[0];
+    *qidep_ = qidep[0];
   }
 
 void rain_water_conservation_f(Real qr_, Real qcaut_, Real qcacc_, Real qimlt_, Real qcshd_,
@@ -252,8 +258,8 @@ void ice_water_conservation_f(Real qitot_, Real qidep_, Real qinuc_, Real qiberg
     typename P3F::Spack qimlt(*qimlt_);
 
     P3F::ice_water_conservation(qitot, qidep, qinuc, qiberg, qrcol, qccol, qrheti, qcheti, dt, qisub, qimlt);
-    *qisub_ = qisub[0]; 
-    *qimlt_ = qimlt[0]; 
+    *qisub_ = qisub[0];
+    *qimlt_ = qimlt[0];
 
 }
 

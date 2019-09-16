@@ -214,6 +214,124 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     REQUIRE(nerr==0);
   }
 
+  KOKKOS_FUNCTION static void cloud_water_conservation_unit_bfb_tests(){
+
+  }
+
+  KOKKOS_FUNCTION static void ice_water_conservation_unit_bfb_tests()
+  {
+    using KTH = KokkosTypes<HostDevice>;
+
+    static constexpr Int max_pack_size = 16;
+    REQUIRE(Spack::n <= max_pack_size);
+
+    IceWaterConservationData iwdc[max_pack_size] = {
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
+      {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
+      {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+    };
+
+    // Sync to device
+    KTH::view_1d<IceWaterConservationData> iwdc_host("iwdc_host", Spack::n);
+    view_1d<IceWaterConservationData> iwdc_device("iwdc_host", Spack::n);
+
+    // This copy only copies the input variables.
+    std::copy(&iwdc[0], &iwdc[0] + Spack::n, iwdc_host.data());
+    Kokkos::deep_copy(iwdc_device, iwdc_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      ice_water_conservation(iwdc[i]);
+    }
+
+    // This copy also copies the output from the fortran function into the host view. These values
+    // are need to check the values returned from
+    std::copy(&iwdc[0], &iwdc[0] + Spack::n, iwdc_host.data());
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+      // Init pack inputs
+      Spack qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,qisub,qimlt;
+      for (Int s = 0; s < Spack::n; ++s) {
+        qitot[s]  = iwdc_device(s).qitot;
+        qidep[s]  = iwdc_device(s).qidep;
+        qinuc[s]  = iwdc_device(s).qinuc;
+        qiberg[s] = iwdc_device(s).qiberg;
+        qrcol[s]  = iwdc_device(s).qrcol;
+        qccol[s]  = iwdc_device(s).qccol;
+        qrheti[s] = iwdc_device(s).qrheti;
+        qcheti[s] = iwdc_device(s).qcheti;
+        qisub[s] = iwdc_device(s).qisub;
+        qimlt[s] = iwdc_device(s).qimlt;
+      }
+
+      Functions::ice_water_conservation(qitot,qidep,qinuc,qiberg,qrcol,qccol,qrheti,qcheti,iwdc_device(0).dt,qisub,qimlt);
+      // Copy results back into views
+      for (Int s = 0; s < Spack::n; ++s) {
+        iwdc_device(s).qitot = qitot[s];
+        iwdc_device(s).qidep = qidep[s];
+        iwdc_device(s).qinuc = qinuc[s];
+        iwdc_device(s).qiberg = qiberg[s];
+        iwdc_device(s).qrcol = qrcol[s];
+        iwdc_device(s).qccol = qccol[s];
+        iwdc_device(s).qrheti = qrheti[s];
+        iwdc_device(s).qcheti = qcheti[s];
+        iwdc_device(s).qisub = qisub[s];
+        iwdc_device(s).qimlt = qimlt[s];
+      }
+
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(iwdc_host, iwdc_device);
+
+    // Validate results
+    for (Int s = 0; s < Spack::n; ++s) {
+      REQUIRE(iwdc[s].qitot == iwdc_host(s).qitot);
+      REQUIRE(iwdc[s].qidep == iwdc_host(s).qidep );
+      REQUIRE(iwdc[s].qinuc == iwdc_host(s).qinuc);
+      REQUIRE(iwdc[s].qiberg == iwdc_host(s).qiberg);
+      REQUIRE(iwdc[s].qrcol  == iwdc_host(s).qrcol);
+      REQUIRE(iwdc[s].qccol == iwdc_host(s).qccol);
+      REQUIRE(iwdc[s].qrheti == iwdc_host(s).qrheti);
+      REQUIRE(iwdc[s].qcheti == iwdc_host(s).qcheti);
+      REQUIRE(iwdc[s].qisub == iwdc_host(s).qisub);
+      REQUIRE(iwdc[s].qimlt == iwdc_host(s).qimlt);
+    }
+
+  }
+
+  KOKKOS_FUNCTION static void rain_water_conservation_unit_bfb_tests(){
+
+  }
+
+
+
+  static void run_bfb(){
+      //cloud_water_conservation_tests(errors);
+
+      //rain_water_conservation_tests(errors);
+
+      ice_water_conservation_unit_bfb_tests();
+
+  }
+
 };
 
 }
@@ -229,6 +347,7 @@ TEST_CASE("p3_functions", "[p3_functions]")
 
 TEST_CASE("p3_conservation_test", "[p3_conservation_test]"){
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run();
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run_bfb(); 
 }
 
 } // namespace

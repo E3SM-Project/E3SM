@@ -201,8 +201,8 @@ struct IceWaterConservationData
   Real dt;
 
   //output
-   Real qisub;
-   Real qimlt;
+  Real qisub;
+  Real qimlt;
 
 };
 
