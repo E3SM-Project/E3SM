@@ -1382,6 +1382,7 @@
 <use_rad_dt_cosz>             .false.  </use_rad_dt_cosz>
 <raytau0>                     0.0    </raytau0>
 <do_aerosol_rad>              .true.   </do_aerosol_rad>
+<fixed_total_solar_irradiance>-1       </fixed_total_solar_irradiance>
 
 
 <!-- ================================================================== -->

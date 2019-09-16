@@ -4094,6 +4094,14 @@ Indicates whether to consider aerosols in radiative calculations
 Default: TRUE
 </entry>
 
+<entry id="fixed_total_solar_irradiance" type="real"  category="radiation"
+       group="radiation_nl" valid_values="" >
+Fixed value of solar constant for idealized configurations such as 
+radiative-convective equilibrium experiments. This is disabled when 
+the value is less than 0
+Default: -1
+</entry>
+
 <entry id="spectralflux" type="logical"  category="radiation"
        group="radiation_nl" valid_values="" >
 Return fluxes per band in addition to the total fluxes.

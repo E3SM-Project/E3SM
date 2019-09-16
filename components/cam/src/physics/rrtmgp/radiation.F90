@@ -98,6 +98,11 @@ module radiation
    ! zeroes out the aerosol optical properties if False
    logical :: do_aerosol_rad = .true. 
 
+   ! Value for prescribing an invariant solar constant (i.e. total solar 
+   ! irradiance at TOA). Used for idealized experiments such as RCE.
+   ! Disabled when value is less than 0.
+   real(r8) :: fixed_total_solar_irradiance = -1
+
    ! Model data that is not controlled by namelist fields specifically follows
    ! below.
 
@@ -191,7 +196,8 @@ contains
       use units,           only: getunit, freeunit
       use spmd_utils,      only: mpicom, mstrid=>masterprocid, &
                                  mpi_integer, mpi_logical, &
-                                 mpi_character, masterproc
+                                 mpi_character, masterproc, &
+                                 mpi_real8
       use time_manager,    only: get_step_size
       use cam_logfile,     only: iulog
 
@@ -210,7 +216,7 @@ contains
                               rrtmgp_coefficients_file_sw,     &
                               iradsw, iradlw, irad_always,     &
                               use_rad_dt_cosz, spectralflux,   &
-                              do_aerosol_rad
+                              do_aerosol_rad, fixed_total_solar_irradiance
 
       ! Read the namelist, only if called from master process
       ! TODO: better documentation and cleaner logic here?
@@ -238,6 +244,7 @@ contains
       call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
 #endif
 
       ! Set module data
@@ -259,7 +266,8 @@ contains
          write(iulog,*) 'RRTMGP radiation scheme parameters:'
          write(iulog,10) trim(coefficients_file_lw), trim(coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
-                         use_rad_dt_cosz, spectralflux
+                         use_rad_dt_cosz, spectralflux, &
+                         do_aerosol_rad, fixed_total_solar_irradiance
       end if
    10 format('  LW coefficents file: ',                                a/, &
              '  SW coefficents file: ',                                a/, &
@@ -267,7 +275,9 @@ contains
              '  Frequency (timesteps) of Longwave Radiation calc:   ',i5/, &
              '  SW/LW calc done every timestep for first N steps. N=',i5/, &
              '  Use average zenith angle:                           ',l5/, &
-             '  Output spectrally resolved fluxes:                  ',l5/)
+             '  Output spectrally resolved fluxes:                  ',l5/, &
+             '  Do aerosol radiative calculations:                  ',l5/, &
+             '  Fixed solar consant (disabled with -1):             ',f10.4/ )
 
    end subroutine radiation_readnl
 
@@ -1344,8 +1354,13 @@ contains
       ! Send values for this chunk to history buffer
       call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
 
-      ! Get orbital eccentricity factor to scale total sky irradiance
-      tsi_scaling = get_eccentricity_factor()
+      if (fixed_total_solar_irradiance<0) then
+         ! Get orbital eccentricity factor to scale total sky irradiance
+         tsi_scaling = get_eccentricity_factor()
+      else
+         ! tsi_scaling = fixed_total_solar_irradiance / sum( k_dist_sw%solar_src(:) )
+         tsi_scaling = fixed_total_solar_irradiance / 1360.9_r8
+      end if
 
       ! If the swrad_off flag is set, meaning we should not do SW radiation, then 
       ! we just set coszrs to zero everywhere. TODO: why not just set dosw false 

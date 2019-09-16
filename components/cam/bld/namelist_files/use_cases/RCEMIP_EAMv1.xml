@@ -20,21 +20,27 @@
 <solar_htng_spctrl_scl>.true. </solar_htng_spctrl_scl>
 <solar_data_type      >FIXED  </solar_data_type>
 
-<!-- Set constant solar zenith angle - use -1 to disable -->
-<constant_zenith_deg>42.05</constant_zenith_deg>
-<!-- <constant_zenith_deg>-1</constant_zenith_deg> -->
+<!-- ------------------------------------------------------------------------------------------ -->
+<!-- Special settings for RCE mode -->
+<!-- ------------------------------------------------------------------------------------------ -->
 
+<!-- Use constant solar zenith angle for homogenous SW radiation -->
+<constant_zenith_deg>42.05</constant_zenith_deg>
+
+<!-- Use reduced solar constant (i.e. TSI) - only works with RRTMGP -->
+<fixed_total_solar_irradiance>551.58</fixed_total_solar_irradiance>
+
+<!-- Use constant albedo -->
 <constant_albedo>0.07</constant_albedo>
 
+<!-- disable aerosol radiative calculations - only works with RRTMGP -->
 <do_aerosol_rad>.false.</do_aerosol_rad>
 
 <!-- ------------------------------------------------------------------------------------------ -->
 <!-- Revised physics constants for ape experiments (from CAM5/6 use case) -->
 <!-- ------------------------------------------------------------------------------------------ -->
-<sday>   0.0  </sday>
-<!-- <sday>   86164.0  </sday>   -->
-<!-- <sday>   861640.0  </sday> -->
 
+<sday>   0.0  </sday>
 <!-- <rearth> 6.37100e6          </rearth> -->
 <!-- <gravit> 9.79764         </gravit> -->
 <!-- <mwdry>  28.96623324623746  </mwdry> -->
