@@ -204,7 +204,7 @@ contains
       err = 0
 
       ! Assign pointers and variables
-      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask, timeLevel=1)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
 
       call mpas_pool_get_config(liConfigs, 'config_do_restart', config_do_restart)
@@ -289,6 +289,7 @@ contains
       logical :: aCellOnEdgeHasIce, aCellOnEdgeHasNoIce, aCellOnEdgeHasDynamicIce, aCellOnEdgeHasNoDynamicIce, &
          aCellOnEdgeIsFloating
       logical :: aCellOnEdgeIsGrounded
+      logical :: aCellOnEdgeIsOpenOcean
       integer :: numCellsOnVertex
       integer :: numDiriDynamicCells, numDiriNondynamicCells, numExtendedCells
       logical :: validVertex
@@ -313,7 +314,7 @@ contains
       call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
 
       call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
-      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask, timeLevel=1)
       call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
       call mpas_pool_get_array(geometryPool, 'vertexMask', vertexMask, timeLevel=1)
       call mpas_pool_get_array(geometryPool, 'thickness', thickness)
@@ -580,6 +581,7 @@ contains
           aCellOnEdgeHasNoDynamicIce = .false.
           aCellOnEdgeIsFloating = .false.
           aCellOnEdgeIsGrounded = .false.
+          aCellOnEdgeIsOpenOcean = .false.
           do j = 1, 2
               iCell = cellsOnEdge(j,i)
               aCellOnEdgeHasIce = (aCellOnEdgeHasIce .or. li_mask_is_ice(cellMask(iCell)))
@@ -588,6 +590,8 @@ contains
               aCellOnEdgeHasNoDynamicIce = (aCellOnEdgeHasNoDynamicIce .or. (.not. (li_mask_is_dynamic_ice(cellMask(iCell)))))
               aCellOnEdgeIsFloating = (aCellOnEdgeIsFloating .or. li_mask_is_floating_ice(cellMask(iCell)))
               aCellOnEdgeIsGrounded = (aCellOnEdgeIsGrounded .or. li_mask_is_grounded_ice(cellMask(iCell)))
+              aCellOnEdgeIsOpenOcean = aCellOnEdgeIsOpenOcean .or. &
+                 ((bedTopography(iCell) < config_sea_level) .and. (.not. li_mask_is_ice(cellMask(iCell))))
           end do
           if (aCellOnEdgeHasIce) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueIce)
@@ -600,7 +604,7 @@ contains
           if (aCellOnEdgeIsFloating) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueFloating)
           endif
-          if (aCellOnEdgeIsFloating .and. aCellOnEdgeIsGrounded) then
+          if (aCellOnEdgeIsGrounded .and. (aCellOnEdgeIsFloating .or. aCellOnEdgeIsOpenOcean)) then
              edgeMask(i) = ior(edgeMask(i), li_mask_ValueGroundingLine)
           endif
           if (aCellOnEdgeHasIce .and. aCellOnEdgeHasNoIce) then

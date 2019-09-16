@@ -30,7 +30,8 @@ module li_time_integration_fe
 
    use li_advection
    use li_calving, only: li_calve_ice, li_restore_calving_front
-   use li_thermal, only: li_thermal_solver, li_basal_melt_floating_ice
+   use li_thermal, only: li_thermal_solver
+   use li_iceshelf_melt
    use li_diagnostic_vars
    use li_setup
    use li_constants

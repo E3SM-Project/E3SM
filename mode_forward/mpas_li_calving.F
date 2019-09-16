@@ -193,8 +193,6 @@ module li_calving
       endif
 
       ! compute calvingThickness based on the calving_config option
-      ! the calvingThickness field gets applied to the thickness state field
-      ! after this if-construct
       if (trim(config_calving) == 'thickness_threshold') then
 
          call thickness_calving(domain, calvingFraction, err_tmp)
@@ -222,6 +220,8 @@ module li_calving
 
       endif
 
+      ! now also remove any icebergs
+      call remove_icebergs(domain)
 
       ! Final operations after calving has been applied.
       block => domain % blocklist
@@ -369,6 +369,10 @@ module li_calving
       integer, parameter :: nRows = 46
       integer :: i, iRow
       integer :: k
+
+
+      ! first remove any icebergs - do it first so restore-calving can put back thin ice in those places
+      call remove_icebergs(domain)
 
       ! block loop
       block => domain % blocklist
@@ -800,6 +804,8 @@ module li_calving
          ! === apply calving ===
          thickness(:) = thickness(:) - calvingThickness(:)
 
+         call remove_small_islands(meshPool, geometryPool)
+
          block => block % next
       enddo
 
@@ -843,6 +849,7 @@ module li_calving
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: meshPool
       real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
       real (kind=RKIND), dimension(:), pointer :: thickness
       integer, dimension(:), pointer :: cellMask
@@ -855,6 +862,7 @@ module li_calving
 
          ! get pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -869,10 +877,103 @@ module li_calving
          ! === apply calving ===
          thickness(:) = thickness(:) - calvingThickness(:)
 
+         call remove_small_islands(meshPool, geometryPool)
+
          block => block % next
       enddo
 
    end subroutine floating_calving
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!    routine remove_small_islands
+!
+!> \brief Remove very small islands that lead to velocity solver problems
+!> \author Matthew Hoffman
+!> \date   Summer 2018
+!> \details This routine finds and eliminates very small islands that lead to
+!> unrealistic velocities in the Albany velocity solver.  Specifically, this
+!> finds one- and two-cell masses of ice that are surrounded by open ocean
+!> and eliminates them by sending them to the calving flux.
+!-----------------------------------------------------------------------
+
+   subroutine remove_small_islands(meshPool, geometryPool)
+      type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh pool
+      type (mpas_pool_type), pointer, intent(inout) :: geometryPool !< Input: Geometry pool
+
+      logical, pointer :: config_remove_small_islands
+      real(kind=RKIND), pointer :: config_sea_level
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      real (kind=RKIND), dimension(:), pointer :: bedTopography
+      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+      integer, pointer :: nCellsSolve
+      integer :: iCell, jCell, n, nIceNeighbors, nIceNeighbors2, neighborWithIce
+      integer :: nOpenOceanNeighbors, nOpenOceanNeighbors2
+
+      call mpas_pool_get_config(liConfigs, 'config_remove_small_islands', config_remove_small_islands)
+      if (.not. config_remove_small_islands) then
+         return  ! skip this entire routine if disabled
+      endif
+
+      call mpas_pool_get_config(liConfigs, 'config_sea_level', config_sea_level)
+      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+      call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+      call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+      call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+      call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+      call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
+
+      do iCell = 1, nCellsSolve
+         if (li_mask_is_ice(cellMask(iCell))) then ! might as well do for both grounded or floating
+                                                   ! (1 or 2 cell floating masses are icebergs)
+            nIceNeighbors = 0
+            nOpenOceanNeighbors = 0
+            do n = 1, nEdgesOnCell(iCell)
+               jCell = cellsOnCell(n, iCell)
+               if (li_mask_is_ice(cellMask(jCell))) then
+                  nIceNeighbors = nIceNeighbors + 1
+                  neighborWithIce = jCell
+               endif
+               if (.not. li_mask_is_ice(cellMask(jCell)) .and. bedTopography(jCell) < config_sea_level) then
+                  nOpenOceanNeighbors = nOpenOceanNeighbors + 1
+               endif
+            enddo
+            if ((nIceNeighbors == 0) .and. (nOpenOceanNeighbors == nEdgesOnCell(iCell))) then
+               ! If this is a single cell of ice surrounded by open ocean, kill this location
+               calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+               thickness(iCell) = 0.0_RKIND
+            elseif (nIceNeighbors == 1) then
+               ! check if this neighbor has any additional neighbors with ice
+               nIceNeighbors2 = 0
+               nOpenOceanNeighbors = 0
+               do n = 1, nEdgesOnCell(neighborWithIce)
+                  jCell = cellsOnCell(n, neighborWithIce)
+                  if (li_mask_is_ice(cellMask(jCell))) then
+                     nIceNeighbors2 = nIceNeighbors2 + 1
+                  endif
+                  if (.not. li_mask_is_ice(cellMask(jCell)) .and. bedTopography(jCell) < config_sea_level) then
+                     nOpenOceanNeighbors2 = nOpenOceanNeighbors2 + 1
+                  endif
+               enddo
+               if ((nIceNeighbors2 == 1) .and. (nOpenOceanNeighbors2 == nEdgesOnCell(iCell)-1)) then
+                  ! <- only neighbor with ice must have been iCell
+                  ! kill both cells
+                  calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)
+                  thickness(iCell) = 0.0_RKIND
+                  calvingThickness(neighborWithIce) = calvingThickness(neighborWithIce) + thickness(neighborWithIce)
+                  thickness(neighborWithIce) = 0.0_RKIND
+               endif
+
+            endif ! check on nIceNeighbors
+
+         endif ! check if iCell has ice
+      end do ! loop over cells
+
+   end subroutine remove_small_islands
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -906,7 +1007,7 @@ module li_calving
       ! local variables
       !-----------------------------------------------------------------
       type (block_type), pointer :: block
-      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: geometryPool, meshPool
       real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
       real(kind=RKIND), pointer :: config_calving_topography
       real(kind=RKIND), pointer :: config_sea_level
@@ -930,6 +1031,7 @@ module li_calving
 
          ! get pools
          call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
@@ -943,6 +1045,8 @@ module li_calving
 
          ! === apply calving ===
          thickness(:) = thickness(:) - calvingThickness(:)
+
+         call remove_small_islands(meshPool, geometryPool)
 
          block => block % next
       enddo
@@ -1154,6 +1258,8 @@ module li_calving
                endif
             endif
          enddo
+
+         call remove_small_islands(meshPool, geometryPool)
 
          call mpas_deallocate_scratch_field(calvingFrontMaskField, .true.)
 
@@ -1406,6 +1512,211 @@ module li_calving
       enddo
 
    end subroutine calculate_calving_front_mask
+
+
+   subroutine remove_icebergs(domain)
+      !-----------------------------------------------------------------
+      ! input/output variables
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain !< Input/Output: domain object
+
+
+      ! Local variables
+      logical, pointer :: config_remove_icebergs
+      type (block_type), pointer :: block
+      type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: geometryPool
+      type (mpas_pool_type), pointer :: velocityPool
+
+      type (field1dInteger), pointer :: contiguousDynamicIceField
+      type (field1dInteger), pointer :: contiguousDynamicIceOldField
+
+      real (kind=RKIND), dimension(:), pointer :: calvingThickness    ! thickness of ice that calves (computed in this subroutine)
+      real (kind=RKIND), dimension(:), pointer :: thickness
+      integer, dimension(:), pointer :: cellMask
+      integer, dimension(:,:), pointer :: cellsOnCell ! list of cells that neighbor each cell
+      integer, dimension(:), pointer :: nEdgesOnCell ! number of cells that border each cell
+
+      integer, dimension(:), pointer :: contiguousDynamicIce, contiguousDynamicIceOld
+      integer, pointer :: nCells, nCellsSolve
+      integer, dimension(:), pointer :: nCellsArray
+      integer :: iCell, jCell, n
+      integer :: newMaskCountLocal, newMaskCountLocalAccum, newMaskCountGlobal
+      integer :: err_tmp, err
+      integer :: globalLoopCount, localLoopCount
+      integer :: localIcebergCellCount, globalIcebergCellCount
+
+      err = 0
+
+      call mpas_pool_get_config(liConfigs, 'config_remove_icebergs', config_remove_icebergs)
+      if (.not. config_remove_icebergs) then
+              return  ! skip this entire routine if disabled
+      endif
+
+      call mpas_timer_start("iceberg detection")
+      call mpas_log_write("Iceberg-detection flood-fill begin.")
+      ! Allocate needed scratch fields
+
+      block => domain % blocklist
+      call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+      call mpas_pool_get_field(geometryPool, 'contiguousDynamicIce',  contiguousDynamicIceField)
+      call mpas_allocate_scratch_field(contiguousDynamicIceField, single_block_in = .false.)
+
+      call mpas_pool_get_field(geometryPool, 'contiguousDynamicIceOld',  contiguousDynamicIceOldField)
+      call mpas_allocate_scratch_field(contiguousDynamicIceOldField, single_block_in = .false.)
+
+      call mpas_log_write("Iceberg-detection flood-fill: allocated.")
+      ! First mark grounded ice to initialize flood fill mask
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+         call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
+         call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
+
+         ! make sure masks are up to date.  May not be necessary, but safer to do anyway.
+         call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
+         err = ior(err, err_tmp)
+
+      call mpas_log_write("Iceberg-detection flood-fill: updated masks.")
+         contiguousDynamicIce(:) = 0  ! initialize
+         newMaskCountLocal = 0
+         do iCell = 1, nCells
+            if (li_mask_is_grounded_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
+               contiguousDynamicIce(iCell) = 1
+               newMaskCountLocal = newMaskCountLocal + 1
+            endif
+         enddo
+         call mpas_log_write("Initialized $i cells to local mask", intArgs=(/newMaskCountLocal/))
+
+         block => block % next
+      end do
+
+      call mpas_log_write("Iceberg-detection flood-fill initialization complete.")
+
+      ! Outer loop over processors (should also have a loop over blocks)
+      ! Inner loop over cells on that processor
+
+      ! Initialize global mask count
+      call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocal, newMaskCountGlobal)
+      globalLoopCount = 0
+
+      call mpas_log_write("Initialized $i cells to global mask", intArgs=(/newMaskCountGlobal/))
+
+      do while (newMaskCountGlobal > 0)
+         globalLoopCount = globalLoopCount + 1
+         call mpas_log_write("  Starting global processor loop $i", intArgs=(/globalLoopCount/))
+         ! First Update halos
+         call mpas_timer_start("halo updates")
+         call mpas_dmpar_field_halo_exch(domain, 'contiguousDynamicIce')
+         call mpas_timer_stop("halo updates")
+
+         ! initialize counter of cells locally updated during this outer loop
+         newMaskCountLocalAccum = 0
+
+         ! Now update (advance) mask locally
+
+         block => domain % blocklist
+         do while (associated(block))
+            call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+            call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+            call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+            call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+            call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
+            call mpas_pool_get_array(geometryPool, 'contiguousDynamicIceOld', contiguousDynamicIceOld)
+            call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+            call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+
+
+            ! initialize local loop
+            localLoopCount = 0
+            newMaskCountLocal = 1  ! need to make sure we enter the loop
+            do while (newMaskCountLocal > 0)
+               localLoopCount = localLoopCount + 1
+               call mpas_log_write("    Starting local cell loop $i", intArgs=(/localLoopCount/))
+
+               ! initialize
+               newMaskCountLocal = 0
+               contiguousDynamicIceOld(:) = contiguousDynamicIce(:)
+
+               do iCell = 1, nCellsArray(2) ! this gives owned cells plus 1-halo
+                  if (contiguousDynamicIceOld(iCell) == 0 .and. &   ! this cell not yet marked
+                     li_mask_is_dynamic_ice(cellMask(iCell))) then  ! and is dynamic
+                     ! If it has a marked neighbor, then add it to the mask
+                     do n = 1, nEdgesOnCell(iCell)
+                        jCell = cellsOnCell(n, iCell)
+                        if (contiguousDynamicIceOld(jCell) == 1) then
+                           contiguousDynamicIce(iCell) = 1
+                           newMaskCountLocal = newMaskCountLocal + 1
+                           exit ! skip the rest of this do-loop - no need to check additional neighbors
+                        endif
+                     enddo
+                  endif ! if not already marked
+               enddo ! loop over cells
+
+               ! Accumulate cells added locally until we do the next global reduce
+               newMaskCountLocalAccum = newMaskCountLocalAccum + newMaskCountLocal
+               call mpas_log_write("    Added $i new cells to local mask", intArgs=(/newMaskCountLocal/))
+            enddo ! local mask loop
+
+            block => block % next
+         end do
+
+         ! update count of cells added to mask globally
+         call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocalAccum, newMaskCountGlobal)
+         call mpas_log_write("  Added $i new cells to global mask", intArgs=(/newMaskCountGlobal/))
+      end do ! global loop
+
+
+      ! Now remove any ice that was not flood-filled - these are icebergs
+      block => domain % blocklist
+      do while (associated(block))
+         call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
+         call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
+         call mpas_pool_get_array(geometryPool, 'thickness', thickness)
+         call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
+         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
+         call mpas_pool_get_array(geometryPool, 'contiguousDynamicIceOld', contiguousDynamicIceOld)
+         call mpas_pool_get_dimension(geometryPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(geometryPool, 'nCellsSolve', nCellsSolve)
+
+         contiguousDynamicIceOld(:) = 0
+         do iCell = 1, nCellsSolve
+            if (contiguousDynamicIce(iCell) == 0 .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
+               calvingThickness(iCell) = calvingThickness(iCell) + thickness(iCell)  ! remove any remaining ice here
+               thickness(iCell) = 0.0_RKIND
+               contiguousDynamicIceOld(iCell) = 1 ! debug: make this a mask of where icebergs were removed
+            endif
+         enddo
+         localIcebergCellCount = sum(contiguousDynamicIceOld)
+
+!         where(contiguousDynamicIce == 0 .and. li_mask_is_dynamic_ice(cellMask))
+!            calvingThickness = calvingThickness + thickness  ! remove any remaining ice here
+!            thickness = 0.0_RKIND
+!         end where
+
+         block => block % next
+      end do
+
+      ! Calculate total iceberg cells removed (not needed but useful for log - note requires extra reduce!)
+      call mpas_dmpar_sum_int(domain % dminfo, localIcebergCellCount, globalIcebergCellCount)
+
+      ! update halo - probably not needed?
+      call mpas_timer_start("halo updates")
+      call mpas_dmpar_field_halo_exch(domain, 'thickness')
+      call mpas_timer_stop("halo updates")
+
+      ! clean up
+      call mpas_deallocate_scratch_field(contiguousDynamicIceField, single_block_in=.false.)
+      call mpas_deallocate_scratch_field(contiguousDynamicIceOldField, single_block_in=.false.)
+
+      call mpas_log_write("Iceberg-detection flood-fill complete. Removed $i iceberg cells.", intArgs=(/globalIcebergCellCount/))
+      call mpas_timer_stop("iceberg detection")
+   end subroutine remove_icebergs
 
 
 end module li_calving

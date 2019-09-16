@@ -56,7 +56,13 @@
                         description="minimum ice thickness in domain"
                 />
                 <var name="totalSfcMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
-                        description="total, area integrated surface mass balance. Positive values represent ice gain."
+                        description="total, area-integrated surface mass balance. Positive values represent ice gain."
+                />
+                <var name="totalGroundedSfcMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
+                        description="total, area-integrated surface mass balance on grounded ice. Positive values represent ice gain."
+                />
+                <var name="totalFloatingSfcMassBal" type="real" dimensions="Time" units="kg yr^{-1}"
+                        description="total, area-integrated surface mass balance on floating ice. Positive values represent ice gain."
                 />
                 <var name="avgNetAccumulation" type="real" dimensions="Time" units="m yr^{-1}"
                         description="average sfcMassBal, as a thickness rate. Positive values represent ice gain."
@@ -81,6 +87,9 @@
                 />
                 <var name="groundingLineFlux" type="real" dimensions="Time" units="kg yr^{-1}"
                         description="total mass flux across all grounding lines.  Note that flux from floating to grounded ice makes a negative contribution to this metric."
+                />
+                <var name="groundingLineMigrationFlux" type="real" dimensions="Time" units="kg yr^{-1}"
+                        description="total mass flux due to migration of the grounding line.  Positive is grounded to floating."
                 />
                 <var name="surfaceSpeedMax" type="real" dimensions="Time" units="m yr^{-1}"
                         description="maximum surface speed in the domain"

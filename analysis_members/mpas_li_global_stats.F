@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_init_global_stats(domain, memberName, err)!{{{
+   subroutine li_init_global_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -105,7 +105,7 @@ contains
 
       err = 0
 
-   end subroutine li_init_global_stats!}}}
+   end subroutine li_init_global_stats
 
 !***********************************************************************
 !
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_compute_global_stats(domain, memberName, timeLevel, err)!{{{
+   subroutine li_compute_global_stats(domain, memberName, timeLevel, err)
 
       !-----------------------------------------------------------------
       !
@@ -165,27 +165,24 @@ contains
       type (mpas_pool_type), pointer :: velocityPool
 
       ! arrays, vars needed from other pools for calculations here
-      real (kind=RKIND), pointer ::  config_ice_density
       real (kind=RKIND), pointer ::  deltat
       real (kind=RKIND), dimension(:), pointer ::  areaCell
       real (kind=RKIND), dimension(:), pointer ::  dvEdge
       real (kind=RKIND), dimension(:), pointer ::  thickness
       real (kind=RKIND), dimension(:), pointer ::  bedTopography
-      real (kind=RKIND), dimension(:), pointer ::  sfcMassBal
+      real (kind=RKIND), dimension(:), pointer ::  sfcMassBalApplied
+      real (kind=RKIND), dimension(:), pointer ::  groundedSfcMassBalApplied
       real (kind=RKIND), dimension(:), pointer ::  basalMassBal
       real (kind=RKIND), dimension(:), pointer ::  groundedBasalMassBal
       real (kind=RKIND), dimension(:), pointer ::  floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
-      real (kind=RKIND), dimension(:,:), pointer ::  layerNormalVelocity
-      real (kind=RKIND), dimension(:,:), pointer ::  layerThicknessEdge
+      real (kind=RKIND), dimension(:), pointer ::  fluxAcrossGroundingLine
+      real (kind=RKIND), dimension(:), pointer ::  groundedToFloatingThickness
       integer, dimension(:), pointer :: cellMask
-      integer, dimension(:), pointer :: edgeMask
-      integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nCellsSolve
       integer, pointer :: nEdgesSolve
-      integer, pointer :: nVertLevels
 
       ! config options needed
       real (kind=RKIND), pointer :: config_sea_level
@@ -194,7 +191,6 @@ contains
 
       ! Local counters
       integer :: k, iCell, iEdge
-      integer :: iCell1, iCell2
 
       ! scalars to be calculated here from global reductions
       real (kind=RKIND), pointer ::  totalIceArea, totalIceVolume
@@ -203,12 +199,14 @@ contains
       real (kind=RKIND), pointer ::  floatingIceArea, floatingIceVolume
       real (kind=RKIND), pointer ::  iceThicknessMax, iceThicknessMin, iceThicknessMean
       real (kind=RKIND), pointer ::  totalSfcMassBal, totalBasalMassBal
+      real (kind=RKIND), pointer ::  totalGroundedSfcMassBal, totalFloatingSfcMassBal
       real (kind=RKIND), pointer ::  totalGroundedBasalMassBal, totalFloatingBasalMassBal
       real (kind=RKIND), pointer ::  avgNetAccumulation
       real (kind=RKIND), pointer ::  avgGroundedBasalMelt
       real (kind=RKIND), pointer ::  avgSubshelfMelt
       real (kind=RKIND), pointer ::  totalCalvingFlux
       real (kind=RKIND), pointer ::  groundingLineFlux
+      real (kind=RKIND), pointer ::  groundingLineMigrationFlux
       real (kind=RKIND), pointer ::  surfaceSpeedMax
       real (kind=RKIND), pointer ::  basalSpeedMax
 
@@ -219,17 +217,18 @@ contains
       real (kind=RKIND) ::  blockSumFloatingIceArea, blockSumFloatingIceVolume
       real (kind=RKIND) ::  blockThickMin, blockThickMax
       real (kind=RKIND) ::  blockSumSfcMassBal, blockSumBasalMassBal
+      real (kind=RKIND) ::  blockSumGroundedSfcMassBal, blockSumFloatingSfcMassBal
       real (kind=RKIND) ::  blockSumGroundedBasalMassBal, blockSumFloatingBasalMassBal
       real (kind=RKIND) ::  blockSumCalvingFlux
       real (kind=RKIND) ::  blockMaxSurfaceSpeed
       real (kind=RKIND) ::  blockMaxBasalSpeed
       real (kind=RKIND) ::  blockGLflux
+      real (kind=RKIND) ::  blockGLMigrationFlux
 
       ! Local variables for calculations
-      real (kind=RKIND) :: fluxSign
 
       ! variables for processing stats
-      integer, parameter :: kMaxVariables = 16 ! Increase if number of stats increase
+      integer, parameter :: kMaxVariables = 24 ! Increase if number of stats increase
       integer :: nVars
       real (kind=RKIND), dimension(kMaxVariables) :: reductions, sums, mins, maxes
 
@@ -246,11 +245,14 @@ contains
       blockSumFloatingIceArea = 0.0_RKIND
       blockSumFloatingIceVolume = 0.0_RKIND
       blockSumSfcMassBal = 0.0_RKIND
+      blockSumGroundedSfcMassBal = 0.0_RKIND
+      blockSumFloatingSfcMassBal = 0.0_RKIND
       blockSumBasalMassBal = 0.0_RKIND
       blockSumGroundedBasalMassBal = 0.0_RKIND
       blockSumFloatingBasalMassBal = 0.0_RKIND
       blockSumCalvingFlux = 0.0_RKIND
       blockGLflux = 0.0_RKIND
+      blockGLMigrationFlux = 0.0_RKIND
 
       ! initialize max to 0, min to large number
       blockThickMin = 100000.0_RKIND
@@ -274,27 +276,24 @@ contains
          call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
 
          ! get values and arrays from standard pools
-         call mpas_pool_get_config(liConfigs, 'config_ice_density', config_ice_density)
          call mpas_pool_get_dimension(block % dimensions, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_dimension(block % dimensions, 'nEdgesSolve', nEdgesSolve)
-         call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_array(meshPool, 'deltat', deltat)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(meshPool, 'dvEdge', dvEdge)
-         call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(geometryPool, 'thickness', thickness)
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
-         call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+         call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'groundedSfcMassBalApplied', groundedSfcMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-         call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
+         call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
          call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
-         call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
+         call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
 
          ! loop over cells
          do iCell = 1,nCellsSolve
@@ -326,20 +325,22 @@ contains
                 blockThickMin = thickness(iCell)
             endif
 
-            ! sfc and basal mass balance (kg yr^{-1})
-            !SFP: These calculations need to be tested still
-            blockSumSfcMassBal = blockSumSfcMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
-                * areaCell(iCell) * sfcMassBal(iCell) * scyr
+            ! SMB (kg yr^{-1})
+            blockSumSfcMassBal = blockSumSfcMassBal + areaCell(iCell) * sfcMassBalApplied(iCell) * scyr
+            blockSumGroundedSfcMassBal = blockSumGroundedSfcMassBal + areaCell(iCell) * groundedSfcMassBalApplied(iCell) * scyr
+            blockSumFloatingSfcMassBal = blockSumFloatingSfcMassBal + &
+               (sfcMassBalApplied(iCell) - groundedSfcMassBalApplied(iCell)) * areaCell(iCell) * scyr
+            ! BMB (kg yr-1)
             blockSumBasalMassBal = blockSumBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * basalMassBal(iCell) * scyr
-            blockSumGroundedBasalMassBal = blockSumGroundedBasalMassBal + real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+            blockSumGroundedBasalMassBal = blockSumGroundedBasalMassBal + real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND)&
                 * areaCell(iCell) * groundedBasalMassBal(iCell) * scyr
             blockSumFloatingBasalMassBal = blockSumFloatingBasalMassBal + real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND)&
                 * areaCell(iCell) * floatingBasalMassBal(iCell) * scyr
 
             ! mass lass due do calving (kg yr^{-1})
             blockSumCalvingFlux = blockSumCalvingFlux + calvingThickness(iCell) * &
-               areaCell(iCell) * config_ice_density / ( deltat / scyr )
+               areaCell(iCell) * rhoi / ( deltat / scyr )
 
             ! max surface speed
             if (surfaceSpeed(iCell) > blockMaxSurfaceSpeed) then
@@ -351,29 +352,17 @@ contains
                blockMaxBasalSpeed = basalSpeed(iCell)
             endif
 
+            ! GL migration flux
+            blockGLMigrationFlux = blockGLMigrationFlux + groundedToFloatingThickness(iCell) * areaCell(iCell) &
+               * rhoi / (deltat / scyr)  ! convert from m to kg/yr
+
          end do ! end loop over cells
 
          ! Loop over edges
          do iEdge = 1, nEdgesSolve
-            if (li_mask_is_grounding_line(edgeMask(iEdge))) then
-               ! Determine sign of this edge relative to GL
-               ! (+=grounded to floating, -=floating to grounded)
-               iCell1 = cellsOnEdge(1,iEdge)
-               iCell2 = cellsOnEdge(2,iEdge)
-               if (li_mask_is_grounded_ice(cellMask(iCell1))) then
-                  fluxSign = 1.0_RKIND
-               else
-                  fluxSign = -1.0_RKIND
-               endif
-
-               ! Loop over levels
-               do k = 1, nVertLevels
-                  ! Flux across GL, units = kg/yr
-                  blockGLflux = blockGLflux + fluxSign * layerNormalVelocity(k, iEdge) * dvEdge(iEdge) * &
-                      layerThicknessEdge(k, iEdge) * scyr * config_ice_density  ! convert from m^3/s to kg/yr
-               end do ! end loop over levels
-            end if ! if GL
-
+            ! Flux across GL, units = kg/yr
+            blockGLflux = blockGLflux + fluxAcrossGroundingLine(iEdge) * dvEdge(iEdge) &
+                      * scyr * rhoi ! convert from m^2/s to kg/yr
          end do ! end loop over edges
 
          block => block % next
@@ -412,13 +401,17 @@ contains
       sums(5) = blockSumFloatingIceArea
       sums(6) = blockSumFloatingIceVolume
       sums(7) = blockSumSfcMassBal
-      sums(8) = blockSumBasalMassBal
-      sums(9) = blockSumGroundedBasalMassBal
-      sums(10) = blockSumFloatingBasalMassBal
-      sums(11) = blockSumCalvingFlux
-      sums(12) = blockSumVAF
-      sums(13) = blockGLflux
-      nVars = 13
+      sums(8) = blockSumGroundedSfcMassBal
+      sums(9) = blockSumFloatingSfcMassBal
+
+      sums(10) = blockSumBasalMassBal
+      sums(11) = blockSumGroundedBasalMassBal
+      sums(12) = blockSumFloatingBasalMassBal
+      sums(13) = blockSumCalvingFlux
+      sums(14) = blockSumVAF
+      sums(15) = blockGLflux
+      sums(16) = blockGLMigrationflux
+      nVars = 16
 
       call mpas_dmpar_sum_real_array(dminfo, nVars, sums(1:nVars), reductions(1:nVars))
 
@@ -435,6 +428,8 @@ contains
          call mpas_pool_get_array(globalStatsAMPool, 'groundedIceVolume', groundedIceVolume)
          call mpas_pool_get_array(globalStatsAMPool, 'iceThicknessMean', iceThicknessMean)
          call mpas_pool_get_array(globalStatsAMPool, 'totalSfcMassBal', totalSfcMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalGroundedSfcMassBal', totalGroundedSfcMassBal)
+         call mpas_pool_get_array(globalStatsAMPool, 'totalFloatingSfcMassBal', totalFloatingSfcMassBal)
          call mpas_pool_get_array(globalStatsAMPool, 'avgNetAccumulation', avgNetAccumulation)
          call mpas_pool_get_array(globalStatsAMPool, 'totalBasalMassBal', totalBasalMassBal)
          call mpas_pool_get_array(globalStatsAMPool, 'totalGroundedBasalMassBal', totalGroundedBasalMassBal)
@@ -443,6 +438,7 @@ contains
          call mpas_pool_get_array(globalStatsAMPool, 'avgSubshelfMelt', avgSubshelfMelt)
          call mpas_pool_get_array(globalStatsAMPool, 'totalCalvingFlux', totalCalvingFlux)
          call mpas_pool_get_array(globalStatsAMPool, 'groundingLineFlux', groundingLineFlux)
+         call mpas_pool_get_array(globalStatsAMPool, 'groundingLineMigrationFlux', groundingLineMigrationFlux)
 
          totalIceArea = reductions(1)
          totalIceVolume = reductions(2)
@@ -451,17 +447,28 @@ contains
          floatingIceArea = reductions(5)
          floatingIceVolume = reductions(6)
          totalSfcMassBal = reductions(7)
-         totalBasalMassBal = reductions(8)
-         totalGroundedBasalMassBal = reductions(9)
-         totalFloatingBasalMassBal = reductions(10)
-         totalCalvingFlux = reductions(11)
-         volumeAboveFloatation = reductions(12)
-         groundingLineFlux = reductions(13)
+         totalGroundedSfcMassBal = reductions(8)
+         totalFloatingSfcMassBal = reductions(9)
+         totalBasalMassBal = reductions(10)
+         totalGroundedBasalMassBal = reductions(11)
+         totalFloatingBasalMassBal = reductions(12)
+         totalCalvingFlux = reductions(13)
+         volumeAboveFloatation = reductions(14)
+         groundingLineFlux = reductions(15)
+         groundingLineMigrationFlux = reductions(16)
 
          iceThicknessMean = totalIceVolume / totalIceArea
          avgNetAccumulation = totalSfcMassBal / totalIceArea / rhoi
-         avgGroundedBasalMelt = -1.0_RKIND * totalGroundedBasalMassBal / groundedIceArea / rhoi
-         avgSubshelfMelt = -1.0_RKIND * totalFloatingBasalMassBal / floatingIceArea / rhoi
+         if (groundedIceArea > 0.0_RKIND) then
+            avgGroundedBasalMelt = -1.0_RKIND * totalGroundedBasalMassBal / groundedIceArea / rhoi
+         else
+            avgGroundedBasalMelt = 0.0_RKIND
+         endif
+         if (floatingIceArea > 0.0_RKIND) then
+            avgSubshelfMelt = -1.0_RKIND * totalFloatingBasalMassBal / floatingIceArea / rhoi
+         else
+            avgSubshelfMelt = 0.0_RKIND
+         endif
 
          block => block % next
       end do
@@ -514,7 +521,7 @@ contains
 
 
 
-   end subroutine li_compute_global_stats!}}}
+   end subroutine li_compute_global_stats
 
 !***********************************************************************
 !
@@ -529,7 +536,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_restart_global_stats(domain, memberName, err)!{{{
+   subroutine li_restart_global_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -563,7 +570,7 @@ contains
 
       err = 0
 
-   end subroutine li_restart_global_stats!}}}
+   end subroutine li_restart_global_stats
 
 !***********************************************************************
 !
@@ -578,7 +585,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_finalize_global_stats(domain, memberName, err)!{{{
+   subroutine li_finalize_global_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -612,7 +619,7 @@ contains
 
       err = 0
 
-   end subroutine li_finalize_global_stats!}}}
+   end subroutine li_finalize_global_stats
 
 end module li_global_stats
 
