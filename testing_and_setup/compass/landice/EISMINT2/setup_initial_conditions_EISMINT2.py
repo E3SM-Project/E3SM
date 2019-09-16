@@ -3,6 +3,8 @@
 # Test case is described in:
 # Payne, A. J., Huybrechts, P., Calov, R., Fastook, J. L., Greve, R., Marshall, S. J., Marsiat, I., Ritz, C., Tarasov, L. and Thomassen, M. P. A.: Results from the EISMINT model intercomparison: the effects of thermomechanical coupling, J. Glaciol., 46(153), 227-238, 2000.
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys, os
 from netCDF4 import Dataset as NetCDFFile
 from math import sqrt
@@ -19,7 +21,7 @@ if not options.exp:
     sys.exit('Error: No experiment specified.  Please specify an experiment to setup with the -e option')
 experiment = options.exp.lower()  # allow lower or upper case to be input, but use lower case in the script logic
 if experiment in ('a','b','c','d','f','g'):
-    print 'Setting up EISMINT2 Experiment ' + experiment
+    print('Setting up EISMINT2 Experiment ' + experiment)
 else:
     sys.exit("Error: Invalid experiment specified.  Please specify an experiment between 'a' and 'g', excluding 'e'")
 
@@ -125,7 +127,7 @@ r = ((xCell[:] - xsummit)**2 + (yCell[:] - ysummit)**2)**0.5
 # Define values prescribed by Payne et al. 2000 paper.
 
 params = exp_params[experiment]
-print "Parameters for this experiment:", params
+print("Parameters for this experiment:", params)
 
 # SMB field specified by EISMINT, constant in time for EISMINT2
 # It is a function of geographical position (not elevation)
@@ -163,5 +165,5 @@ else:
 betaVar[0,:] = beta
 
 gridfile.close()
-print 'Successfully added initial conditions for EISMINT2, experiment '+experiment+' to the file: ', filename
+print('Successfully added initial conditions for EISMINT2, experiment '+experiment+' to the file: ', filename)
 

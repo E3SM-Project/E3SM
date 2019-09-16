@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<config case="setup_mesh">
+        <!-- Set up needed files and executables -->
+        <add_executable source="model" dest="landice_model"/>
+        <add_link source_path="script_configuration_dir" source="cull_cells_for_MISMIP.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="setup_mismip+_initial_conditions.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="setup_mismip+_subdirectories.py" dest="."/>
+        <add_link source_path="script_configuration_dir" source="mismip+WriteGL.py" dest="."/> -->
+        <add_link source_path="script_configuration_dir" source="mismip+PlotGL.py" dest="."/> -->
+        <add_link source_path="script_configuration_dir" source="albany_input.yaml" dest="."/>
+        <add_link source_path="script_test_dir" source="namelist.input" dest="namelist.input"/>
+        <add_link source_path="work_case_dir" source="culled_graph.info" dest="graph.info"/>
+
+
+
+
+        <run_script name="setup_mesh.py">
+
+                <!-- make base mesh -->
+                <step executable="planar_hex" pre_message="\n\n### Creating periodic_hex mesh\n\n" post_message="\n\n### periodic_hex mesh creation complete\n\n">
+                        <argument flag="--nx">144</argument>
+                        <argument flag="--ny">24</argument>
+                        <argument flag="--dc">4618.802154</argument>
+                </step>
+
+                <!-- mark cells for culling -->
+                <step executable="./cull_cells_for_MISMIP.py" >
+                        <argument flag="-f">grid.nc</argument>
+                </step>
+
+                <!-- cull cells -->
+                <step executable="MpasCellCuller.x" >
+                        <argument flag="">grid.nc</argument>
+                        <argument flag="">culled_grid.nc</argument>
+                </step>
+
+                <!-- Convert from basic MPAS mesh to MPASLI mesh -->
+                <step executable="create_landice_grid_from_generic_MPAS_grid.py" pre_message="\n\n### Creating LI mesh\n\n" post_message="\n\n### LI mesh creation complete\n\n">
+                        <argument flag="-i">culled_grid.nc</argument>
+                        <argument flag="-o">landice_grid.nc</argument>
+                        <argument flag="-l">10</argument>
+                        <argument flag="--diri"></argument>
+                        <argument flag="--effecpress"></argument>
+                        <argument flag="--thermal"></argument>
+                </step>
+
+                <!-- Set up initial condition on to landice mesh -->
+                <step executable="./setup_mismip+_initial_conditions.py" pre_message="\n\n### Setting up initial condition\n\n" post_message="\n\n### Initial condition setup complete\n\n">
+                        <argument flag="-f">landice_grid.nc</argument>
+                </step>
+
+                <!-- Set up needed graph file -->
+                <step executable="gpmetis" pre_message="\n\n### Creating graph.info.part file\n\n" post_message="\n\n### graph.info.part file creation complete\n\n">
+                        <argument flag="graph.info">16</argument>
+                </step>
+
+        </run_script>
+
+
+</config>
+

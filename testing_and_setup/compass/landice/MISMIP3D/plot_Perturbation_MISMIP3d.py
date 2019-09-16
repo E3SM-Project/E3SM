@@ -4,6 +4,8 @@ Script to plot results of MISMIP3D perturbation experiments as in Pattyn et al. 
 
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
 import netCDF4
 from optparse import OptionParser
@@ -25,7 +27,7 @@ fig = plt.figure(1, facecolor='w', figsize=(5.0, 7.0))
 
 # =====================
 # First plot: GL in plan view
-print "=== Beginning plan view GL plot ==="
+print("=== Beginning plan view GL plot ===")
 ax1 = fig.add_subplot(211)
 
 # dictionary describing what's what for each run
@@ -49,10 +51,10 @@ for run in results:
   edgeMask = f.variables['edgeMask'][t,:]
   xtime = f.variables['xtime'][:]
 
-  print "For run ", run, " using file ", results[run]['fname'], " and time=", "".join(xtime[t,:])
+  print("For run " + run + " using file " + results[run]['fname'] + " and time=" + "".join(xtime[t,:]))
 
   GLindEast = np.nonzero( np.logical_and(
-                 (edgeMask[:] & GLbit) / GLbit == 1,
+                 (edgeMask[:] & GLbit) // GLbit == 1,
                  xEdge > 0.0 ) )[0]
   #plt.plot(xEdge[GLindEast] / 1000.0, yEdge[GLindEast] / 1000.0, '*', color=color)  # to just plot the edge locations
   for i in range(len(GLindEast)):
@@ -74,7 +76,7 @@ ax1.set_aspect((x1-x0)/(y1-y0))
 
 # =====================
 # Second plot: GL position time series at two points
-print "=== Beginning GL time series plot ==="
+print("=== Beginning GL time series plot ===")
 ax2 = fig.add_subplot(212)
 
 # Find the y-position at the wall - assume it is the same for S and R files
@@ -82,7 +84,7 @@ f = netCDF4.Dataset(options.sfilename, 'r')
 yEdge = f.variables['yEdge'][:]
 unique_yEdge = np.array(sorted(list(set(yEdge[:]))))
 wallY = unique_yEdge[-2] # get the second to last location.  Last one will be 'outside' the domain
-print "For wall yEdge using value:", wallY
+print("For wall yEdge using value: {}".format(wallY))
 f.close()
 
 # Build dictionary
@@ -108,13 +110,13 @@ for run in results:
      year = 100.0 - year
   nt = len(f.dimensions['Time'])
 
-  print "For run ", run, " using file ", results[run]['fname'], " and yEdge value ", yValue
+  print("For run " + run + " using file " + results[run]['fname'] + " and yEdge value " + str( yValue))
 
   GLx = np.zeros( (nt,) )
   for t in range(nt):
      edgeMask = f.variables['edgeMask'][t,:]
      GLindEast = np.nonzero( np.logical_and( np.logical_and(
-                 (edgeMask[:] & GLbit) / GLbit == 1,
+                 (edgeMask[:] & GLbit) // GLbit == 1,
                  xEdge > 0.0 ),
                  yEdge == yValue) )[0]  # should only be 1 index
      GLx[t] = xEdge[GLindEast]

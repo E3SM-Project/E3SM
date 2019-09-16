@@ -4,6 +4,8 @@ script to make final modifications needed for Thwaites initial condition.
 run with one argument for the file to be modified.
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys
 import netCDF4
 import numpy as np
@@ -15,7 +17,7 @@ parser.add_option("-f", "--file", dest="filename", type='string', help="file in 
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 f = netCDF4.Dataset(options.filename,'r+')
 thickness = f.variables['thickness'][0,:]

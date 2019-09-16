@@ -1225,7 +1225,8 @@ module li_subglacial_hydro
       !   basalMeltInput(:) / rhoi  ! Hewitt 2011 opening
       openingRate = max(0.0_RKIND, openingRate)
 
-      closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * effectivePressure(:)**3 * waterThickness(:)
+      closingRate(:) = creepCoeff * flowParamA(nVertLevels, :) * &
+              effectivePressure(:)**3 * waterThickness(:)
 !      closingRate(:) = waterThickness(:) * effectivePressure(:) / 1.0e13_RKIND
 !          ! Hewitt 2011 creep closure form.  Denominator is ice viscosity
 
@@ -1521,7 +1522,7 @@ module li_subglacial_hydro
          cell2 = cellsOnEdge(2, iEdge)
 
          ! Not sure if these ought to be upwind average, but using centered
-         flowParamAChannel(iEdge) = 0.5_RKIND * ( flowParamA(nVertLevels, cell1) + flowParamA(nVertLevels, cell2) )
+         flowParamAChannel(iEdge) = 0.5_RKIND * (flowParamA(nVertLevels, cell1) + flowParamA(nVertLevels, cell2) )
          channelEffectivePressure(iEdge) = 0.5_RKIND * (effectivePressure(cell1) + effectivePressure(cell2))
       end do
       channelClosingRate(:) = creep_coeff * channelArea(:) * flowParamAChannel(:) * channelEffectivePressure(:)**3

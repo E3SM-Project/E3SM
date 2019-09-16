@@ -69,7 +69,7 @@ std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
 std::vector<int> indexToVertexID, vertexToFCell, triangleToFVertex, indexToEdgeID, edgeToFEdge,
     mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, bedTopographyData, temperatureData, smbData, thicknessOnCells;
+    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, temperatureData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 
 // only needed for creating ASCII mesh
@@ -106,14 +106,13 @@ int velocity_solver_init_mpi(int* fComm) {
   // get MPI_Comm from Fortran
   comm = MPI_Comm_f2c(*fComm);
   reducedComm = MPI_COMM_NULL;  // initialize to null so we can check if set
-
-  return 0;
+  return velocity_solver_init_mpi__(fComm);
 }
 
 
 void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F,
                          double const* sea_level_F, double const* flowParamA_F,
-                         double const* enhancementFactor_F, double const* flowLawExponent_F, double const* dynamic_thickness_F,
+                         double const* flowLawExponent_F, double const* dynamic_thickness_F,
                          double const* clausius_clapeyron_coeff,
                          int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
                          bool const* use_GLP_F) {
@@ -123,7 +122,7 @@ void velocity_solver_set_parameters(double const* gravity_F, double const* ice_d
   dynamic_ice_bit_value = *li_mask_ValueDynamicIce;
   ice_present_bit_value = *li_mask_ValueIce;
   velocity_solver_set_physical_parameters__(*gravity_F, rho_ice, *ocean_density_F, *sea_level_F/unit_length, *flowParamA_F*std::pow(unit_length,4)*secondsInAYear, 
-                                            *enhancementFactor_F, *flowLawExponent_F, *dynamic_thickness_F/unit_length, *use_GLP_F, *clausius_clapeyron_coeff);
+                                            *flowLawExponent_F, *dynamic_thickness_F/unit_length, *use_GLP_F, *clausius_clapeyron_coeff);
 }
 
 
@@ -340,7 +339,8 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
 
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F,
-    double const* smb_F, double const* temperature_F,
+    double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
+    double const* effecPress_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
     double* u_normal_F, double* dissipation_heat_F,
     double* xVelocityOnCell, double* yVelocityOnCell, double const* deltat,
@@ -385,7 +385,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
 
     std::map<int, int> bdExtensionMap;
-    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F,  minThickness);
+    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
@@ -403,6 +403,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
+        stiffnessFactorData, effecPressData,
         temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices,
         albany_error, dt);
     *error=albany_error;
@@ -1437,13 +1438,19 @@ void extendMaskByOneLayer(int const* verticesMask_F,
 }
 
 void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
-    double const * beta_F, double const * temperature_F, double const * smb_F, double eps) {
-        
+    double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F,
+    double const * temperature_F, double const * smb_F, double eps) {
+
+  int vertexLayerShift = (Ordering == 0) ? 1 : nLayers + 1;
   elevationData.assign(nVertices, 1e10);
   thicknessData.assign(nVertices, 1e10);
   bedTopographyData.assign(nVertices, 1e10);
   if (beta_F != 0)
     betaData.assign(nVertices, 1e10);
+  if (stiffnessFactor_F != 0)
+    stiffnessFactorData.assign(nVertices, 1.0);
+  if (effecPress_F != 0)
+    effecPressData.assign(nVertices, 1e10);
   if(temperature_F != 0)
     temperatureData.assign(nLayers * nTriangles, 1e10);
   if (smb_F != 0)
@@ -1460,6 +1467,10 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
       betaData[index] = beta_F[iCell] / unit_length;
     if (smb_F != 0)
       smbData[index] = smb_F[iCell] / unit_length * secondsInAYear/rho_ice;
+    if (stiffnessFactor_F != 0)
+      stiffnessFactorData[index] = stiffnessFactor_F[iCell];
+    if (effecPress_F != 0)
+      effecPressData[index] = effecPress_F[iCell] / unit_length;  
   }
 
   if(temperature_F != 0) {
@@ -1519,7 +1530,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
            //if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
            if((cellsMask_F[c] & dynamic_ice_bit_value)) {
            double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
-           std::cout << "  elev="<<elev<<std::endl;
+           //std::cout << "  elev="<<elev<<std::endl;
            if (elev < elevTemp) {
              elevTemp = elev;
              bdExtensionMap[iV] = c;
@@ -1533,23 +1544,26 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
             // -- grounded margin --
             // Check that this margin location is not below sea level!
             if (bedTopographyData[iV] < 0.0) { // This check is probably redundant...
-               thicknessData[iV] = eps*2.0; // insert special value here to make identifying these points easier in exo output
+               thicknessData[iV] = eps*3.0; // insert special value here to make identifying these points easier in exo output
                elevationData[iV] = (rho_ocean / rho_ice - 1.0) * thicknessData[iV];  // floating surface
-               betaData[iV] = 0.0; // free slip under floating ice
             }
          }
       } else {
-         // non-floating ("grounded") boundary
-         // If this margin location is below sea level, we need to force it to have reasonable values.
-         // Otherwise, it will have a surface elevation below sea level,
-         // which is unphysical and can cause large slopes and other issues.
-         if (bedTopographyData[iV] < 0.0) {
-            //std::cout<<"non-floating boundary below sea level at iV="<<iV<<std::endl;
+        // non-floating ("grounded") boundary
+        // If this margin location is below sea level, we need to force it to have reasonable values.
+        // Otherwise, it will have a surface elevation below sea level,
+        // which is unphysical and can cause large slopes and other issues.
+        if (bedTopographyData[iV] < 0.0) {
+          //std::cout<<"non-floating boundary below sea level at iV="<<iV<<std::endl;
+          if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), indexToVertexID[iV]*vertexLayerShift) != dirichletNodesIDs.end()) { // Don't do this if location is a Dirichlet node!
+            //std::cout<<"  non-floating boundary below sea level node is Dirichlet so skipping. iV="<<iV<<std::endl;
+          } else {
+            //for (int i = 0; i < dirichletNodesIDs.size(); i++)
+            //            std::cout << dirichletNodesIDs.at(i) << ' ';  // print entire list of Diri nodes for debugging.
             thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
             elevationData[iV] = (rho_ocean / rho_ice - 1.0) * thicknessData[iV];  // floating surface
-            betaData[iV] = 0.0; // free slip under floating ice
-         } // if below sea level
-
+          }
+        } // if below sea level
       }  // floating or not
     } // is boundary
   }  // vertex loop
@@ -1566,6 +1580,10 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
       betaData[iv] = beta_F[ic] / unit_length;
     if (smb_F != 0)
       smbData[iv] = smb_F[ic] / unit_length * secondsInAYear/rho_ice;
+    if (stiffnessFactor_F != 0)
+      stiffnessFactorData[iv] = stiffnessFactor_F[ic];
+    if (effecPress_F != 0)
+      effecPressData[iv] = effecPress_F[ic] / unit_length;
   }
 
 }
@@ -2107,6 +2125,8 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
   void write_ascii_mesh(int const* indexToCellID_F,
     double const* bedTopography_F, double const* lowerSurface_F,
     double const* beta_F, double const* temperature_F,
+    double const* stiffnessFactor_F,
+    double const* effecPress_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
     double const* smb_F, double const* smbUncertainty_F,
     double const* bmb_F, double const* bmbUncertainty_F,
@@ -2165,7 +2185,7 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
        }
 
        for (int index = 0; index < nTriangles; index++) //triangles lines
-        outfile << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by FELIX, so giving dummy value
+        outfile << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by Albany LandIce, so giving dummy value
 
        for (int index = 0; index < nVerticesBoundaryEdge; index++) // boundary edges lines
        outfile <<  verticesOnBoundaryEdge[0 + 2 * index] + 1 << " " << verticesOnBoundaryEdge[1 + 2 * index] + 1 << " " << 1 << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
@@ -2180,7 +2200,8 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     // Call needed functions to process MPAS fields to Albany units/format
     
     std::map<int, int> bdExtensionMap;  // local map to be created by import2DFields
-    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, temperature_F, smb_F, minThickness);
+    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, 
+                   stiffnessFactor_F, effecPress_F, temperature_F, smb_F, minThickness);
 
     import2DFieldsObservations(bdExtensionMap,
                     thicknessUncertainty_F,
@@ -2206,6 +2227,8 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
 
     write_ascii_mesh_field(bmbData, "basal_mass_balance");
     write_ascii_mesh_field(bmbUncertaintyData, "basal_mass_balance_uncertainty");
+
+    write_ascii_mesh_field(effecPressData, "effective_pressure");
 
     // These two fields are more complicated than the others so cannot use the function to write out
 

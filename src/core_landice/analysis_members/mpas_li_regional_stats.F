@@ -71,7 +71,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_init_regional_stats(domain, memberName, err)!{{{
+   subroutine li_init_regional_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -105,7 +105,7 @@ contains
 
       err = 0
 
-   end subroutine li_init_regional_stats!}}}
+   end subroutine li_init_regional_stats
 
 !***********************************************************************
 !
@@ -120,7 +120,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_compute_regional_stats(domain, memberName, timeLevel, err)!{{{
+   subroutine li_compute_regional_stats(domain, memberName, timeLevel, err)
 
       !-----------------------------------------------------------------
       !
@@ -172,15 +172,17 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  dvEdge
       real (kind=RKIND), dimension(:), pointer ::  thickness
       real (kind=RKIND), dimension(:), pointer ::  bedTopography
-      real (kind=RKIND), dimension(:), pointer ::  sfcMassBal
+      real (kind=RKIND), dimension(:), pointer ::  sfcMassBalApplied
+      real (kind=RKIND), dimension(:), pointer ::  groundedSfcMassBalApplied
       real (kind=RKIND), dimension(:), pointer ::  basalMassBal
       real (kind=RKIND), dimension(:), pointer ::  groundedBasalMassBal
       real (kind=RKIND), dimension(:), pointer ::  floatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer ::  calvingThickness
       real (kind=RKIND), dimension(:), pointer ::  surfaceSpeed
       real (kind=RKIND), dimension(:), pointer ::  basalSpeed
-      real (kind=RKIND), dimension(:,:), pointer ::  layerNormalVelocity
-      real (kind=RKIND), dimension(:,:), pointer ::  layerThicknessEdge
+      real (kind=RKIND), dimension(:), pointer ::  fluxAcrossGroundingLine
+      real (kind=RKIND), dimension(:), pointer ::  groundedToFloatingThickness
+      real (kind=RKIND), dimension(:,:), pointer ::  normalVelocity
 
       ! config options needed
       real (kind=RKIND), pointer :: config_sea_level
@@ -193,7 +195,8 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
       integer, pointer :: nRegions, nRegionGroups !, maxRegionsInGroup  !! maxRegionsInGroup not needed / used yet
       integer, pointer :: nCellsSolve, nEdgesSolve, nVertLevels
-      integer :: k, iCell, iCell1, iCell2, iEdge
+      integer :: k, iCell, iEdge
+      integer :: upwindCell
       integer :: iRegion, iGroup
 
       ! scalars to be calculated here from regional sums
@@ -203,9 +206,11 @@ contains
       real (kind=RKIND), dimension(:), pointer ::  regionalFloatingIceArea, regionalFloatingIceVolume
       real (kind=RKIND), dimension(:), pointer ::  regionalIceThicknessMin, regionalIceThicknessMax, regionalIceThicknessMean
       real (kind=RKIND), dimension(:), pointer ::  regionalSumSfcMassBal, regionalSumBasalMassBal
+      real (kind=RKIND), dimension(:), pointer ::  regionalSumGroundedSfcMassBal, regionalSumFloatingSfcMassBal
       real (kind=RKIND), dimension(:), pointer ::  regionalSumGroundedBasalMassBal, regionalSumFloatingBasalMassBal
       real (kind=RKIND), dimension(:), pointer ::  regionalSumCalvingFlux
       real (kind=RKIND), dimension(:), pointer ::  regionalSumGroundingLineFlux
+      real (kind=RKIND), dimension(:), pointer ::  regionalSumGroundingLineMigrationFlux
       real (kind=RKIND), dimension(:), pointer ::  regionalAvgNetAccumulation
       real (kind=RKIND), dimension(:), pointer ::  regionalAvgGroundedBasalMelt
       real (kind=RKIND), dimension(:), pointer ::  regionalAvgSubshelfMelt
@@ -219,9 +224,11 @@ contains
       real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionFloatingIceArea, blockSumRegionFloatingIceVolume
       real (kind=RKIND), dimension(:), allocatable ::  blockRegionThickMin, blockRegionThickMax
       real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionSfcMassBal, blockSumRegionBasalMassBal
+      real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionGroundedSfcMassBal, blockSumRegionFloatingSfcMassBal
       real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionGroundedBasalMassBal, blockSumRegionFloatingBasalMassBal
       real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionCalvingFlux
       real (kind=RKIND), dimension(:), allocatable ::  blockSumRegionGLflux
+      real (kind=RKIND), dimension(:), allocatable ::  blockRegionGLMigrationFlux
       real (kind=RKIND), dimension(:), allocatable ::  blockRegionMaxSurfaceSpeed
       real (kind=RKIND), dimension(:), allocatable ::  blockRegionMaxBasalSpeed
 
@@ -229,7 +236,7 @@ contains
       real (kind=RKIND) :: fluxSign
 
       ! variables for processing stats
-      integer, parameter :: kMaxVariables = 16 ! Increase if number of stats increase
+      integer, parameter :: kMaxVariables = 32 ! Increase if number of stats increase
       integer :: nVars
       real (kind=RKIND), dimension(kMaxVariables) :: reductions, sums, mins, maxes
 
@@ -270,15 +277,17 @@ contains
          call mpas_pool_get_array(geometryPool, 'bedTopography', bedTopography)
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'edgeMask', edgeMask)
-         call mpas_pool_get_array(geometryPool, 'sfcMassBal', sfcMassBal)
+         call mpas_pool_get_array(geometryPool, 'sfcMassBalApplied', sfcMassBalApplied)
+         call mpas_pool_get_array(geometryPool, 'groundedSfcMassBalApplied', groundedSfcMassBalApplied)
          call mpas_pool_get_array(geometryPool, 'basalMassBal', basalMassBal)
          call mpas_pool_get_array(geometryPool, 'groundedBasalMassBal', groundedBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'floatingBasalMassBal', floatingBasalMassBal)
          call mpas_pool_get_array(geometryPool, 'calvingThickness', calvingThickness)
-         call mpas_pool_get_array(geometryPool, 'layerThicknessEdge', layerThicknessEdge)
+         call mpas_pool_get_array(geometryPool, 'groundedToFloatingThickness', groundedToFloatingThickness)
          call mpas_pool_get_array(velocityPool, 'surfaceSpeed', surfaceSpeed)
          call mpas_pool_get_array(velocityPool, 'basalSpeed', basalSpeed)
-         call mpas_pool_get_array(velocityPool, 'layerNormalVelocity', layerNormalVelocity)
+         call mpas_pool_get_array(velocityPool, 'fluxAcrossGroundingLine', fluxAcrossGroundingLine)
+         call mpas_pool_get_array(velocityPool, 'normalVelocity', normalVelocity)
 
          ! get region cell masks from regionMasks.nc input file
          call mpas_pool_get_array(regionsPool, 'regionCellMasks', regionCellMasks)
@@ -292,7 +301,10 @@ contains
          allocate(blockRegionMaxBasalSpeed(nRegions)); allocate(blockRegionMaxSurfaceSpeed(nRegions))
          allocate(blockSumRegionSfcMassBal(nRegions)); allocate(blockSumRegionBasalMassBal(nRegions))
          allocate(blockSumRegionGroundedBasalMassBal(nRegions)); allocate(blockSumRegionFloatingBasalMassBal(nRegions))
-         allocate(blockSumRegionCalvingFlux(nRegions)); allocate(blockSumRegionGLflux(nRegions))
+         allocate(blockSumRegionGroundedSfcMassBal(nRegions)); allocate(blockSumRegionFloatingSfcMassBal(nRegions))
+         allocate(blockSumRegionCalvingFlux(nRegions))
+         allocate(blockSumRegionGLflux(nRegions))
+         allocate(blockRegionGLMigrationFlux(nRegions))
 
          blockSumRegionIceArea = 0.0_RKIND; blockSumRegionIceVolume = 0.0_RKIND
          blockSumRegionVAF = 0.0_RKIND
@@ -301,8 +313,11 @@ contains
          blockRegionThickMin = 10000.0_RKIND; blockRegionThickMax = 0.0_RKIND
          blockRegionMaxBasalSpeed = 0.0_RKIND; blockRegionMaxSurfaceSpeed = 0.0_RKIND
          blockSumRegionSfcMassBal = 0.0_RKIND; blockSumRegionBasalMassBal = 0.0_RKIND
+         blockSumRegionGroundedSfcMassBal = 0.0_RKIND; blockSumRegionFloatingSfcMassBal = 0.0_RKIND
          blockSumRegionGroundedBasalMassBal = 0.0_RKIND; blockSumRegionFloatingBasalMassBal = 0.0_RKIND
-         blockSumRegionCalvingFlux = 0.0_RKIND; blockSumRegionGLflux = 0.0_RKIND
+         blockSumRegionCalvingFlux = 0.0_RKIND
+         blockSumRegionGLflux = 0.0_RKIND
+         blockRegionGLMigrationFlux = 0.0_RKIND
 
          do iCell = 1,nCellsSolve      ! loop over cells
  !         do iGroup = 1,nRegionGroups  ! loop over groups
@@ -343,21 +358,31 @@ contains
 
             ! regional sum of sfc mass balance (kg yr^{-1})
             blockSumRegionSfcMassBal(iRegion) = blockSumRegionSfcMassBal(iRegion) + ( real(regionCellMasks(iRegion,iCell),RKIND) &
-                * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) * areaCell(iCell) * sfcMassBal(iCell) * scyr )
+                * areaCell(iCell) * sfcMassBalApplied(iCell) * scyr )
+
+            ! regional sum of sfc mass balance on grounded ice (kg yr^{-1})
+            blockSumRegionGroundedSfcMassBal(iRegion) = blockSumRegionGroundedSfcMassBal(iRegion) + &
+                ( real(regionCellMasks(iRegion,iCell),RKIND) &
+                * areaCell(iCell) * groundedSfcMassBalApplied(iCell) * scyr)
+
+            ! regional sum of sfc mass balance on floatingice (kg yr^{-1})
+            blockSumRegionFloatingSfcMassBal(iRegion) = blockSumRegionFloatingSfcMassBal(iRegion) + &
+                ( real(regionCellMasks(iRegion,iCell),RKIND) &
+                * areaCell(iCell) * (sfcMassBalApplied(iCell) - groundedSfcMassBalApplied(iCell)) * scyr)
 
             ! regional sum of basal mass balance (kg yr^{-1})
             blockSumRegionBasalMassBal(iRegion) = blockSumRegionBasalMassBal(iRegion) + &
               ( real(regionCellMasks(iRegion,iCell),RKIND) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * basalMassBal(iCell) * scyr )
 
-            ! regional sum of grounded basal mass balance (kg yr^{-1})
+            ! regional sum of floating basal mass balance (kg yr^{-1})
             blockSumRegionFloatingBasalMassBal(iRegion) = blockSumRegionFloatingBasalMassBal(iRegion) + &
               ( real(regionCellMasks(iRegion,iCell),RKIND) * real(li_mask_is_floating_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * floatingBasalMassBal(iCell) * scyr )
 
-            ! regional sum of floating basal mass balance (kg yr^{-1})
+            ! regional sum of grounded basal mass balance (kg yr^{-1})
             blockSumRegionGroundedBasalMassBal(iRegion) = blockSumRegionGroundedBasalMassBal(iRegion) + &
-              ( real(regionCellMasks(iRegion,iCell),RKIND) * real(li_mask_is_ice_int(cellMask(iCell)),RKIND) &
+              ( real(regionCellMasks(iRegion,iCell),RKIND) * real(li_mask_is_grounded_ice_int(cellMask(iCell)),RKIND) &
                 * areaCell(iCell) * groundedBasalMassBal(iCell) * scyr )
 
             ! regional sum of mass lass due do calving (kg yr^{-1})
@@ -387,44 +412,35 @@ contains
                blockRegionMaxBasalSpeed(iRegion) = basalSpeed(iCell)
             endif
 
+            ! GL migration flux
+            blockRegionGLMigrationFlux(iRegion) = blockRegionGLMigrationFlux(iRegion) + &
+               groundedToFloatingThickness(iCell) * areaCell(iCell) * rhoi / (deltat / scyr)
+
            end do ! end loop over regions
  !         end do ! end loop over groups
          end do ! end loop over cells
 
 
-        do iEdge = 1,nEdgesSolve      ! loop over edges
- !         do iGroup = 1,nRegionGroups  ! loop over groups
-           do iRegion = 1,nRegions     ! loop over regions
+         do iEdge = 1,nEdgesSolve      ! loop over edges
 
             if (li_mask_is_grounding_line(edgeMask(iEdge))) then
-               ! Determine sign of this edge relative to GL
-               ! (+=grounded to floating, -=floating to grounded)
-               iCell1 = cellsOnEdge(1,iEdge)
-               iCell2 = cellsOnEdge(2,iEdge)
-               if (li_mask_is_grounded_ice(cellMask(iCell1))) then
-                  fluxSign = 1.0_RKIND
+               ! Determine upwind cell - we are choosing to assign edge quantities to the region of the upwind cell
+               if (normalVelocity(1,iEdge) > 0.0_RKIND) then  ! using surface velo to determine upwind cell
+                  ! upwind cell is cell 1 on this edge
+                  upwindCell = cellsOnEdge(1,iEdge)
                else
-                  fluxSign = -1.0_RKIND
+                  ! upwind cell is cell 2 on this edge
+                  upwindCell = cellsOnEdge(2,iEdge)
                endif
 
-               ! first need to determine if the edge flux is being calc. on is part of the region of interest
-               ! Use cellsOnEdge indices from above to index relevant regionCellMasks values and sum
-               if(regionCellMasks(iRegion,iCell1) + regionCellMasks(iRegion,iCell2) > 0) then
-
-                 ! Loop over levels
-                 do k = 1, nVertLevels
-                   ! Flux across GL, units = kg/yr
-                   blockSumRegionGLflux(iRegion) = blockSumRegionGLflux(iRegion) + fluxSign * layerNormalVelocity(k, iEdge) * &
-                      dvEdge(iEdge) * layerThicknessEdge(k, iEdge) &
-                      * scyr * config_ice_density  ! convert from m^3/s to kg/yr
-                 end do ! end loop over levels
-
-               end if ! if edge is on cell in region of interest
-
+               do iRegion = 1,nRegions     ! find this edge's region(s)
+                  if(regionCellMasks(iRegion, upwindCell) == 1) then
+                     ! assign the GL flux from this edge to the stat
+                     blockSumRegionGLflux(iRegion) = blockSumRegionGLflux(iRegion) + &
+                        fluxAcrossGroundingLine(iEdge) * dvEdge(iEdge) * scyr * config_ice_density  ! convert from m^3/s to kg/yr
+                  end if ! if edge is on cell in region of interest
+               end do ! end loop over regions
             end if ! if GL
-
-           end do ! end loop over regions
- !         end do ! end loop over groups
          end do ! end loop over edges
 
          block => block % next
@@ -459,13 +475,16 @@ contains
         sums(5) = blockSumRegionFloatingIceArea(iRegion)
         sums(6) = blockSumRegionFloatingIceVolume(iRegion)
         sums(7) = blockSumRegionSfcMassBal(iRegion)
-        sums(8) = blockSumRegionBasalMassBal(iRegion)
-        sums(9) = blockSumRegionGroundedBasalMassBal(iRegion)
-        sums(10) = blockSumRegionFloatingBasalMassBal(iRegion)
-        sums(11) = blockSumRegionCalvingFlux(iRegion)
-        sums(12) = blockSumRegionVAF(iRegion)
-        sums(13) = blockSumRegionGLflux(iRegion)
-        nVars = 13
+        sums(8) = blockSumRegionGroundedSfcMassBal(iRegion)
+        sums(9) = blockSumRegionFloatingSfcMassBal(iRegion)
+        sums(10) = blockSumRegionBasalMassBal(iRegion)
+        sums(11) = blockSumRegionGroundedBasalMassBal(iRegion)
+        sums(12) = blockSumRegionFloatingBasalMassBal(iRegion)
+        sums(13) = blockSumRegionCalvingFlux(iRegion)
+        sums(14) = blockSumRegionVAF(iRegion)
+        sums(15) = blockSumRegionGLflux(iRegion)
+        sums(16) = blockRegionGLMigrationFlux(iRegion)
+        nVars = 16
 
         call mpas_dmpar_sum_real_array(dminfo, nVars, sums(1:nVars), reductions(1:nVars))
 
@@ -485,6 +504,8 @@ contains
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalIceThicknessMean', regionalIceThicknessMean)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumSfcMassBal', regionalSumSfcMassBal)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalAvgNetAccumulation', regionalAvgNetAccumulation)
+           call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumGroundedSfcMassBal', regionalSumGroundedSfcMassBal)
+           call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumFloatingSfcMassBal', regionalSumFloatingSfcMassBal)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumBasalMassBal', regionalSumBasalMassBal)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumGroundedBasalMassBal', regionalSumGroundedBasalMassBal)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalAvgGroundedBasalMelt', regionalAvgGroundedBasalMelt)
@@ -492,6 +513,8 @@ contains
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalAvgSubshelfMelt', regionalAvgSubshelfMelt)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumCalvingFlux', regionalSumCalvingFlux)
            call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumGroundingLineFlux', regionalSumGroundingLineFlux)
+           call mpas_pool_get_array(regionalStatsAMPool, 'regionalSumGroundingLineMigrationFlux', &
+                   regionalSumGroundingLineMigrationFlux)
 
            regionalIceArea(iRegion) = reductions(1)
            regionalIceVolume(iRegion) = reductions(2)
@@ -500,19 +523,35 @@ contains
            regionalFloatingIceArea(iRegion) = reductions(5)
            regionalFloatingIceVolume(iRegion) = reductions(6)
            regionalSumSfcMassBal(iRegion) = reductions(7)
-           regionalSumBasalMassBal(iRegion) = reductions(8)
-           regionalSumGroundedBasalMassBal(iRegion) = reductions(9)
-           regionalSumFloatingBasalMassBal(iRegion) = reductions(10)
-           regionalSumCalvingFlux(iRegion) = reductions(11)
-           regionalVolumeAboveFloatation(iRegion) = reductions(12)
-           regionalSumGroundingLineFlux(iRegion) = reductions(13)
+           regionalSumGroundedSfcMassBal(iRegion) = reductions(8)
+           regionalSumFloatingSfcMassBal(iRegion) = reductions(9)
+           regionalSumBasalMassBal(iRegion) = reductions(10)
+           regionalSumGroundedBasalMassBal(iRegion) = reductions(11)
+           regionalSumFloatingBasalMassBal(iRegion) = reductions(12)
+           regionalSumCalvingFlux(iRegion) = reductions(13)
+           regionalVolumeAboveFloatation(iRegion) = reductions(14)
+           regionalSumGroundingLineFlux(iRegion) = reductions(15)
+           regionalSumGroundingLineMigrationFlux(iRegion) = reductions(16)
 
-           regionalIceThicknessMean(iRegion) = regionalIceVolume(iRegion) / regionalIceArea(iRegion)
-           regionalAvgNetAccumulation(iRegion) = regionalSumSfcMassBal(iRegion) / regionalIceArea(iRegion) / rhoi
-           regionalAvgGroundedBasalMelt(iRegion) = -1.0_RKIND * regionalSumGroundedBasalMassBal(iRegion) / &
-           regionalGroundedIceArea(iRegion) / rhoi
-           regionalAvgSubshelfMelt(iRegion) = -1.0_RKIND * regionalSumFloatingBasalMassBal(iRegion) / &
-           regionalFloatingIceArea(iRegion) / rhoi
+           if (regionalIceArea(iRegion) > 0.0_RKIND) then
+              regionalIceThicknessMean(iRegion) = regionalIceVolume(iRegion) / regionalIceArea(iRegion)
+              regionalAvgNetAccumulation(iRegion) = regionalSumSfcMassBal(iRegion) / regionalIceArea(iRegion) / rhoi
+           else
+              regionalIceThicknessMean(iRegion) = 0.0_RKIND
+              regionalAvgNetAccumulation(iRegion) = 0.0_RKIND
+           endif
+           if (regionalGroundedIceArea(iRegion) > 0.0_RKIND) then
+              regionalAvgGroundedBasalMelt(iRegion) = -1.0_RKIND * regionalSumGroundedBasalMassBal(iRegion) / &
+                 regionalGroundedIceArea(iRegion) / rhoi
+           else
+              regionalAvgGroundedBasalMelt(iRegion) = 0.0_RKIND
+           endif
+           if (regionalFloatingIceArea(iRegion) > 0.0_RKIND) then
+              regionalAvgSubshelfMelt(iRegion) = -1.0_RKIND * regionalSumFloatingBasalMassBal(iRegion) / &
+                 regionalFloatingIceArea(iRegion) / rhoi
+           else
+              regionalAvgSubshelfMelt(iRegion) = 0.0_RKIND
+           endif
 
         block => block % next
         end do
@@ -567,10 +606,13 @@ contains
       deallocate(blockRegionThickMin); deallocate(blockRegionThickMax)
       deallocate(blockRegionMaxBasalSpeed); deallocate(blockRegionMaxSurfaceSpeed)
       deallocate(blockSumRegionSfcMassBal); deallocate(blockSumRegionBasalMassBal)
+      deallocate(blockSumRegionGroundedSfcMassBal); deallocate(blockSumRegionFloatingSfcMassBal)
       deallocate(blockSumRegionGroundedBasalMassBal); deallocate(blockSumRegionFloatingBasalMassBal)
-      deallocate(blockSumRegionCalvingFlux); deallocate(blockSumRegionGLflux)
+      deallocate(blockSumRegionCalvingFlux)
+      deallocate(blockSumRegionGLflux)
+      deallocate(blockRegionGLMigrationflux)
 
-   end subroutine li_compute_regional_stats!}}}
+   end subroutine li_compute_regional_stats
 
 !***********************************************************************
 !
@@ -585,7 +627,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_restart_regional_stats(domain, memberName, err)!{{{
+   subroutine li_restart_regional_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -619,7 +661,7 @@ contains
 
       err = 0
 
-   end subroutine li_restart_regional_stats!}}}
+   end subroutine li_restart_regional_stats
 
 !***********************************************************************
 !
@@ -634,7 +676,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine li_finalize_regional_stats(domain, memberName, err)!{{{
+   subroutine li_finalize_regional_stats(domain, memberName, err)
 
       !-----------------------------------------------------------------
       !
@@ -668,7 +710,7 @@ contains
 
       err = 0
 
-   end subroutine li_finalize_regional_stats!}}}
+   end subroutine li_finalize_regional_stats
 
 end module li_regional_stats
 

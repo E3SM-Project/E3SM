@@ -28,5 +28,17 @@
                 <script name="setup_and_run_testcase.py"/>
         </test>
 
+        <test name="MISMIP+ restart test" core="landice" configuration="MISMIP+" resolution="standard_resolution" test="restart_test">
+                <script name="setup_and_run_testcase.py"/>
+        </test>
+
+        <test name="HO GIS restart test" core="landice" configuration="greenland" resolution="20km" test="ho_restart_test">
+                <script name="setup_and_run_testcase.py"/>
+        </test>
+
+        <test name="Thwaites 4km restart test" core="landice" configuration="Thwaites_variability" resolution="4km_varres" test="restart_test">
+                <script name="setup_and_run_testcase.py"/>
+        </test>
+        
 </regression_suite>
 

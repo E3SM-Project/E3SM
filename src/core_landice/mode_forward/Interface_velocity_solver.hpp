@@ -78,7 +78,7 @@ void velocity_solver_finalize();
 
 void velocity_solver_set_parameters(double const* gravity_F, double const* ice_density_F, double const* ocean_density_F,
                         double const* sea_level_F, double const* flowParamA_F,
-                        double const* enhancementFactor_F, double const* flowLawExponent_F, double const* dynamic_thickness_F,
+                        double const* flowLawExponent_F, double const* dynamic_thickness_F,
                         double const* clausius_clapeyron_coeff,
                         int const* li_mask_ValueDynamicIce, int const* li_mask_ValueIce,
                         bool const* use_GLP_F);
@@ -94,7 +94,8 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0);
 
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
-    double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F,
+    double const* thickness_F, double const* beta_F, double const* smb_F, double const* temperature_F, double const* stiffnessFactor_F,
+    double const* effecPress_F,
     double* const dirichletVelocityXValue = 0, double* const dirichletVelocitYValue = 0,
     double* u_normal_F = 0, double* dissipation_heat_F = 0,
     double* xVelocityOnCell = 0, double* yVelocityOnCell = 0, double const * deltat = 0,
@@ -136,6 +137,8 @@ void interface_reset_stdout();
 void write_ascii_mesh(int const* indexToCellID_F,
     double const* bedTopography_F, double const* lowerSurface_F,
     double const* beta_F, double const* temperature_F,
+    double const* stiffnessFactor_F,
+    double const* effecPress_F,
     double const* thickness_F, double const* thicknessUncertainty_F,
     double const* smb_F, double const* smbUncertainty_F,
     double const* bmb_F, double const* bmbUncertainty_F,
@@ -145,6 +148,7 @@ void write_ascii_mesh(int const* indexToCellID_F,
 
 } // extern "C"
 
+extern int velocity_solver_init_mpi__(int* fComm);
 extern void velocity_solver_finalize__();
 
 #ifdef LIFEV
@@ -163,7 +167,7 @@ extern void velocity_solver_export_l1l2_velocity__(const std::vector<double>& la
 #endif
 
 extern void velocity_solver_set_physical_parameters__(double const& gravity, double const& ice_density, double const& ocean_density, double const& sea_level, double const& flowParamA, 
-                        double const& enhancementFactor, double const& flowLawExponent, double const& dynamic_thickness, bool const& useGLP, double const& clausiusClapeyronCoeff); 
+                        double const& flowLawExponent, double const& dynamic_thickness, bool const& useGLP, double const& clausiusClapeyronCoeff); 
 
 extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     int nGlobalTriangles, bool ordering, bool first_time_step,
@@ -176,6 +180,8 @@ extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     const std::vector<double>& betaData,
     const std::vector<double>& bedTopographyData,
     const std::vector<double>& smbData,
+    const std::vector<double>& stiffnessFactorData,
+    const std::vector<double>& effecPressData,
     const std::vector<double>& temperatureOnTetra,
     std::vector<double>& dissipationHeatOnTetra,
     std::vector<double>& velocityOnVertices,
@@ -247,7 +253,7 @@ double signedTriangleArea(const double* x, const double* y, const double* z);
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
 void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
-    double const* beta_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
+    double const* beta_F = 0, double const* stiffnessFactor_F = 0, double const* effecPress_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
 
 void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
             double const * lowerSurface_F, 

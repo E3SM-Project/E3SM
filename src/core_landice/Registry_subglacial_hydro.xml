@@ -152,7 +152,7 @@
                 <var name="frictionAngle" type="real" dimensions="nCells Time" units="None"
                      description="subglacial till friction angle" />
                 <!-- convenience variables -->
-                <var name="effectivePressure" type="real" dimensions="nCells Time" units="Pa"
+                <var name="effectivePressure" type="real" dimensions="nCells Time" units="Pa" packages="higherOrderVelocity"
                      description="effective ice pressure in subglacial hydrology system" />
                 <var name="hydropotential" type="real" dimensions="nCells Time" units="Pa"
                      description="hydropotential in subglacial hydrology system" />

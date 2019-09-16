@@ -1,14 +1,18 @@
 #!/usr/bin/env python
-#WHL - Based on MISMIP3D setup script by Matt Hoffman, modified for MISMIP+.
+"""
+This script sets up initial conditions for the MISMIP+ experiment.
+See this paper for details:
+  X. Asay-Davis et al. (2015), Experimental design for three interrelated
+  Marine Ice-Sheet and Ocean Model Intercomparison Projects, Geosci. Model Devel. Discuss.,
+  8, 9859-9924.
+Following grid setup and initialization, the code should be spun up for ~10-20 ka
+ without basal melting, which should result in a stable grounding line
+ crossing the center of the channel around x = 450 km.
 
-# This script sets up initial conditions for the MISMIP+ experiment.
-# See this paper for details:
-#   X. Asay-Davis et al. (2015), Experimental design for three interrelated 
-#   Marine Ice-Sheet and Ocean Model Intercomparison Projects, Geosci. Model Devel. Discuss.,
-#   8, 9859-9924.
-# Following grid setup and initialization, the code should be spun up for ~10-20 ka
-#  without basal melting, which should result in a stable grounding line
-#  crossing the center of the channel around x = 450 km.
+WHL - Based on MISMIP3D setup script by Matt Hoffman, modified for MISMIP+.
+"""
+
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
 from netCDF4 import Dataset
@@ -23,7 +27,7 @@ parser.add_option("-f", "--file", dest="filename", type='string', help="file in 
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 
 # Open the file, get needed dimensions
@@ -35,7 +39,7 @@ try:
     maxEdges = len(gridfile.dimensions['maxEdges'])
     #WHL- Maybe do production runs with fewer than 10 levels?
     if nVertLevels != 10:
-         print 'nVertLevels in the supplied file was ', nVertLevels, '.  10 levels is a preliminary value to be used with this test case.'
+         print('nVertLevels in the supplied file was {}.  10 levels is a preliminary value to be used with this test case.'.format(nVertLevels))
 except:
     sys.exit('Error: The grid file specified is missing needed dimensions.')
 
@@ -48,14 +52,14 @@ xCell = gridfile.variables['xCell'][:]
 yCell = gridfile.variables['yCell'][:]
 
 if yCell.min() > 0.0:
-   print 'Shifting domain origin, because it appears that this has not yet been done.'
+   print('Shifting domain origin, because it appears that this has not yet been done.')
    unique_xs = np.array(sorted(list(set(xCell[:]))))
    unique_ys = np.array(sorted(list(set(yCell[:]))))
 
-   print 'unique_ys.min:', unique_ys.min()
-   print 'unique_ys.max:', unique_ys.max()
-   print 'unique_xs.min:', unique_xs.min()
-   print 'unique_xs.max:', unique_xs.max()
+   print('unique_ys.min: {}'.format(unique_ys.min()))
+   print('unique_ys.max: {}'.format(unique_ys.max()))
+   print('unique_xs.min: {}'.format(unique_xs.min()))
+   print('unique_xs.max: {}'.format(unique_xs.max()))
 
    xShift = -1.0 * unique_xs.min()
    yShift = -1.0 * unique_ys.min()
@@ -72,7 +76,7 @@ if yCell.min() > 0.0:
    # Essentially, we only want to model the interior half of those cells.
    # Adding this here because we only want to do this if it hasn't been done before.
    # This method is assuming a periodic_hex mesh!
-   print "Adjusting areaCell and dvEdge for cells along north and south boundaries"
+   print("Adjusting areaCell and dvEdge for cells along north and south boundaries")
 
    # Adjust area in half for N/S boundary cells
    unique_ys = np.array(sorted(list(set(yCell[:]))))  # recalculate after above adjustment
@@ -111,11 +115,11 @@ def computeBed(x,y):
    Bsum = B_x + B_y
    B = np.maximum(Bsum, Bmax)   # B >= Bmax
    return B
-   
+
 # Create the required variables in the netCDF file.
 
 # Set bedTopography (this variable should always be present in the input file)
-print "Defining bedTopography"
+print("Defining bedTopography")
 
 # Compute the bed topography
 bedTopography = np.zeros((nCells,))
@@ -132,7 +136,7 @@ gridfile.variables['bedTopography'][0,:] = bedTopography[:]  # dimensions of gri
 # Set the initial thickness
 # Initial condition is uniform 100 m (except where x > xcalve)
 
-print "Defining thickness"
+print("Defining thickness")
 xcalve = 640000.0       # m
 init_thickness = 100.0  # m
 thickness = np.zeros((nCells,))
@@ -147,7 +151,7 @@ gridfile.variables['thickness'][0,:] = thickness[:]
 # Convert from m/yr to kg/m2/s using appropriate ice density.
 # Assign a large negative SMB where x > xcalve, to prevent ice advancing.
 
-print "Defining SMB"
+print("Defining SMB")
 SMB = np.zeros((nCells,))
 rhoi = 918.0  # from Asay-Davis et al. (2016)
 seconds_per_year = 3600.0 * 24.0 * 365.0
@@ -165,14 +169,14 @@ gridfile.variables['sfcMassBal'][0,:] = SMB[:]
 #       supporting a no-slip boundary condition.
 
 if 'dirichletVelocityMask' in gridfile.variables:
-   print 'dirichletVelocityMask already in gridfile'
+   print('dirichletVelocityMask already in gridfile')
    kinbcmask = gridfile.variables['dirichletVelocityMask']
 else:
-   print 'dirichletVelocityMask not in gridfile; create new variable'
+   print('dirichletVelocityMask not in gridfile; create new variable')
    datatype = gridfile.variables['xCell'].dtype  # Get the datatype for double precision float
    dirichletVelocityMask = gridfile.createVariable('dirichletVelocityMask', datatype, ('Time','nCells','nVertInterfaces'))
 
-print "Defining velocity boundary conditions"
+print("Defining velocity boundary conditions")
 kinbcmask = np.zeros((nCells, nVertInterfaces))
 kinbcmask[np.nonzero(yCell == yCell.min()), : ] = 1 # south row
 kinbcmask[np.nonzero(yCell == yCell.max()), : ] = 1 # north row
@@ -182,16 +186,16 @@ gridfile.variables['dirichletVelocityMask'][0,:] = kinbcmask
 # Set the initial velocities to zero to enforce Dirichlet BC..
 # May not be necessary, but doing this to be on the safe side.
 if 'uReconstructX' in gridfile.variables:
-   print 'uReconstructX already in gridfile'
+   print('uReconstructX already in gridfile')
 else:
-   print 'uReconstructX not in gridfile; create new variable'
+   print('uReconstructX not in gridfile; create new variable')
    datatype = gridfile.variables['xCell'].dtype  # Get the datatype for double precision float
    uReconstructX = gridfile.createVariable('uReconstructX', datatype, ('Time','nCells'))
 
 if 'uReconstructY' in gridfile.variables:
-   print 'uReconstructY already in gridfile'
+   print('uReconstructY already in gridfile')
 else:
-   print 'uReconstructY not in gridfile; create new variable'
+   print('uReconstructY not in gridfile; create new variable')
    datatype = gridfile.variables['xCell'].dtype  # Get the datatype for double precision float
    uReconstructY = gridfile.createVariable('uReconstructY', datatype, ('Time','nCells'))
 
@@ -199,28 +203,28 @@ gridfile.variables['uReconstructX'][0,:] = 0.0
 gridfile.variables['uReconstructY'][0,:] = 0.0
 
 
-# Set basal traction coefficient, beta.
-# For now, assume a Weertman-type power law, tau_b = C * u^(1/m), where C = beta.
+# Set basal traction coefficient.  Now goes into field effectivePressure
+# For now, assume a Weertman-type power law, tau_b = C * u^(1/m), where C = effectivePressure.
 # Asay-Davis et al. (2016) specify C = 3.160 x 10^6 Pa m^{-1/3} s^{1/3} for power-law friction,
 #  with friction-law exponent m = 3.
 # Later, we could support a Tsai friction law.
 
-if 'beta' in gridfile.variables:
-   print 'beta already in gridfile'
-   kinbcmask = gridfile.variables['beta']
+if 'effectivePressure' in gridfile.variables:
+   print('effectivePressure already in gridfile')
+   effectivePressure = gridfile.variables['effectivePressure']
 else:
-   print 'beta not in gridfile; create new variable'
+   print('effectivePressure not in gridfile; create new variable')
    datatype = gridfile.variables['xCell'].dtype  # Get the datatype for double precision float
-   beta = gridfile.createVariable('beta', datatype, ('Time','nCells'))
+   effectivePressure = gridfile.createVariable('effectivePressure', datatype, ('Time','nCells'))
 
-print "Defining beta"
-# For the Weertman power law, beta holds the 'C' coefficient.  The beta units in MPAS are a mess right now.  
-# In the MISMIP3D setup script, C = 10^7 Pa m^-1/3 s^1/3 translates to beta = 31880.
-# For MISMIP+, C = 3.160 x 10^6 Pa m^-1/3 s^1/3 translates to beta = 10002.
- 
+print("Defining effectivePressure")
+# For the Weertman power law, effectivePressure holds the 'C' coefficient.  The effectivePressure units in MPAS are a bit confusing.
+# In the MISMIP3D setup script, C = 10^7 Pa m^-1/3 s^1/3 translates to effectivePressure = 31880. (actually, 31651.755)
+# For MISMIP+, C = 3.160 x 10^6 Pa m^-1/3 s^1/3 translates to effectivePressure = 10002.
+
 C = 3.160e6   # Pa m^{-1/3} s^{1/3}
 C = C / seconds_per_year**(1.0/3.0)  # convert to MPAS units
-gridfile.variables['beta'][0,:] = C
+gridfile.variables['effectivePressure'][0,:] = C
 
 
 # Set up layerThicknessFractions
@@ -230,4 +234,4 @@ gridfile.variables['layerThicknessFractions'][:] = 1.0 / float(nVertLevels)
 gridfile.sync()
 gridfile.close()
 
-print 'Successfully added MISMIP+ initial conditions to: ', options.filename
+print('Successfully added MISMIP+ initial conditions to: ' + options.filename)

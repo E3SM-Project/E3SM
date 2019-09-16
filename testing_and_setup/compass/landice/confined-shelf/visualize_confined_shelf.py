@@ -1,14 +1,16 @@
 #!/usr/bin/env python
+"""
+Visualize results of the confined shelf experiment
+See http://homepages.vub.ac.be/~phuybrec/eismint/shelf-descr.pdf for description.
+"""
 
-# Visualize results of the confined shelf experiment
-# See http://homepages.vub.ac.be/~phuybrec/eismint/shelf-descr.pdf for description.
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
 from netCDF4 import Dataset as NetCDFFile
 from optparse import OptionParser
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
-# from matplotlib.contour import QuadContourSet
 
 
 parser = OptionParser()
@@ -19,7 +21,7 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if not options.filename:
-	print "No filename provided. Using output.nc."
+	print("No filename provided. Using output.nc.")
         options.filename = "output.nc"
 
 time_slice = 0
@@ -72,7 +74,7 @@ time_length = times.shape[0]
 
 
 velnorm = (uReconstructX[:]**2 + uReconstructY[:]**2)**0.5
-print "Maximum speed (m/yr) at cell centers in domain:", velnorm.max() * secInYr
+print("Maximum speed (m/yr) at cell centers in domain: {}".format(velnorm.max() * secInYr))
 
 var_slice = thickness[time_slice,:]
 # var_slice = var_slice.reshape(time_length, ny, nx)
@@ -120,7 +122,7 @@ plt.xlabel('X position (km)')
 plt.ylabel('Y position (km)')
 
 plt.draw()
-print "Compare Figure 2 to test 3 results at http://homepages.vub.ac.be/~phuybrec/eismint/shelf-descr.pdf"
+print("Compare Figure 2 to test 3 results at http://homepages.vub.ac.be/~phuybrec/eismint/shelf-descr.pdf")
 if options.saveimages:
         plt.savefig('conf_shelf_velo_contours.png')
 
@@ -174,8 +176,8 @@ if options.saveimages:
 
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
-else:     
+     print("Plot display disabled with -n argument.")
+else:
      plt.show()
 
 f.close()

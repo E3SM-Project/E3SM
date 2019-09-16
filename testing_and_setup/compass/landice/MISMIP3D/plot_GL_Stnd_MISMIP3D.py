@@ -1,14 +1,13 @@
 #!/usr/bin/env python
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
 import netCDF4
 import datetime
-# import math
-# from pylab import *
 from optparse import OptionParser
 import matplotlib.pyplot as plt
 import fnmatch, os
-# from matplotlib.contour import QuadContourSet
-# import time
 
 template = "output-mask*.nc"
 GLbit = 256
@@ -25,13 +24,13 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if options.filename:
-        print "Using single file:", options.filename
+        print("Using single file:"+options.filename)
         filelist = (options.filename,)
 else:
-	print "No filename provided. Using template."
+	print("No filename provided. Using template.")
         filelist = fnmatch.filter(os.listdir('.'), template)
         filelist.sort()  # sort this cause the list will be in arbitrary order
-print "List of files to process:", filelist
+print("List of files to process: {}".format(filelist))
 
 #if not options.variable:
 #	parser.error("Variable is a required input.")
@@ -83,10 +82,10 @@ def xtimeGetYear(xtime):
 GLposAll = np.zeros((1,4))
 
 for filename in filelist:
-  print "Processing file:", filename
+  print("Processing file:"+filename)
 
   f = netCDF4.Dataset(filename,'r')
-  
+
   xtime = f.variables['xtime'][:]
   #years = xtime2numtime(xtime)
   years = xtimeGetYear(xtime)
@@ -108,17 +107,17 @@ for filename in filelist:
   #uReconstructX = f.variables['uReconstructX']
   #uReconstructX = f.variables['uReconstructX']
   #uReconstructY = f.variables['uReconstructY']
-  
+
   vert_levs = len(f.dimensions['nVertLevels'])
   nt = len(f.dimensions['Time'])
-  
+
   # print "nx = ", nx, " ny = ", ny
-  print "vert_levs = ", vert_levs, " time_length = ", nt
-  
+  print("vert_levs = {}, time_length = {}".format(vert_levs, nt))
+
   GLpos = np.zeros((nt,4))  # time, min, mean, max.  This array is just this file.
   for t in range(nt):
     GLpos[t,0] = years[t]
-    GLind = np.nonzero( np.logical_and( ( (edgeMask[t,:] & GLbit) / GLbit == 1), (xEdge > 0.0) ) )
+    GLind = np.nonzero( np.logical_and( ( (edgeMask[t,:] & GLbit) // GLbit == 1), (xEdge > 0.0) ) )
     #print 'Time, GL position values', years[t], xEdge[GLind]
     if len(GLind[0]) > 0:
       GLpos[t,1] = xEdge[GLind].min() / 1000.0
@@ -133,7 +132,7 @@ for filename in filelist:
 fig = plt.figure(1, facecolor='w')
 ax = fig.add_subplot(111)
 # Calculate GL position
-print "Final GL position (time, min, mean, max):", GLpos[-1,:]
+print("Final GL position (time, min, mean, max): {}".format( GLpos[-1,:]))
 
 plt.plot(GLposAll[:,0], GLposAll[:,1], ':b')
 plt.plot(GLposAll[:,0], GLposAll[:,2], '-bo')
@@ -152,14 +151,14 @@ for tl in ax2.get_yticklabels():
 
 plt.draw()
 if options.saveimages:
-        print "Saving figures to files."
+        print("Saving figures to files.")
         plt.savefig('GL-position.png')
 
 
 
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
+     print("Plot display disabled with -n argument.")
 else:     
      plt.show()
 

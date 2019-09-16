@@ -3,6 +3,8 @@
 Script to calibrate calving parameter for eigencalving from an optimized model state.
 '''
 
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import sys
 import numpy as np
 import numpy.ma as ma
@@ -12,7 +14,7 @@ from scipy import interpolate
 
 
 
-print "** Gathering information.  (Invoke with --help for more details. All arguments are optional)"
+print("** Gathering information.  (Invoke with --help for more details. All arguments are optional)")
 parser = OptionParser()
 parser.add_option("-i", "--in", dest="fileinName", help="input filename.", default="landice_grid.nc", metavar="FILENAME")
 parser.add_option("-o", "--out", dest="fileoutName", help="output filename.", default="eigencalvingParameter.nc", metavar="FILENAME")
@@ -73,10 +75,10 @@ method = 2
 
 if method == 1:
    # calibrate locally then extrapolate
-   print "Start extrapolation!"
+   print("Start extrapolation!")
    filledCells = np.invert(calvMask)  # init this mask to where we have valid K
-   print "nCells=", nCells
-   print "{} cells left for extrapolation.".format(nCells - np.count_nonzero(filledCells))
+   print("nCells={}".format(nCells))
+   print("{} cells left for extrapolation.".format(nCells - np.count_nonzero(filledCells)))
    while np.count_nonzero(filledCells) != nCells:
       filledCellsNew = np.copy(filledCells)
       searchCells = np.where(filledCells==0)[0]
@@ -89,7 +91,7 @@ if method == 1:
            #K2[iCell] = 10.0**(np.log10(K2[goodNeigh]).mean())
            filledCellsNew[iCell] = True
       filledCells = np.copy(filledCellsNew)  # update mask
-      print "{} cells left for extrapolation.".format(nCells - np.count_nonzero(filledCells))
+      print("{} cells left for extrapolation.".format(nCells - np.count_nonzero(filledCells)))
 
 
 elif method == 2:
@@ -118,7 +120,7 @@ elif method == 2:
             allInd = np.append(allInd, thisRegionInd)
 
       allInd2 = np.sort(allInd[1:])
-      print len(allInd2)
+      print(str(len(allInd2)))
       megaregionMean[i] = K3[allInd2].mean()
       K2[allInd2] = megaregionMean[i]
       K2[allInd2] = megaRegions[m]['k']
@@ -136,11 +138,11 @@ elif method == 2:
 
 
 
-print ""
+print("")
 
-print "Adding buffer increase"
+print("Adding buffer increase")
 filledCells = (thickness>0.0)
-print "{} cells left for buffer increase.".format(nCells - np.count_nonzero(filledCells))
+print("{} cells left for buffer increase.".format(nCells - np.count_nonzero(filledCells)))
 while np.count_nonzero(filledCells) != nCells:
    filledCellsNew = np.copy(filledCells)
    searchCells = np.where(filledCells==0)[0]
@@ -152,7 +154,7 @@ while np.count_nonzero(filledCells) != nCells:
         K2[iCell] = K2[goodNeigh].mean() * 1.01   # increase K in each layer beyond the initial ice by this factor
         filledCellsNew[iCell] = True
    filledCells = np.copy(filledCellsNew)  # update mask
-   print "{} cells left for buffer increase.".format(nCells - np.count_nonzero(filledCells))
+   print("{} cells left for buffer increase.".format(nCells - np.count_nonzero(filledCells)))
 
 
 # add huge values at edge of mesh (two rows)
@@ -177,4 +179,4 @@ fileout.variables['eigencalvingParameter'][0,:] = K2
 #fileout.variables['eigencalvingParameter'][0,:] = K.filled(0)
 fileout.close()
 
-print "Wrote field to " + options.fileoutName
+print("Wrote field to " + options.fileoutName)

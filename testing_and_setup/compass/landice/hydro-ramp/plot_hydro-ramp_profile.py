@@ -2,16 +2,13 @@
 '''
 Plots profiles for hydro-margin test case
 '''
+
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import numpy as np
 import netCDF4
-#import datetime
-# import math
-# from pylab import *
 from optparse import OptionParser
 import matplotlib.pyplot as plt
-from matplotlib import cm
-# from matplotlib.contour import QuadContourSet
-# import time
 
 secInYr = 3600.0 * 24.0 * 365.0  # Note: this may be slightly wrong for some calendar types!
 
@@ -24,11 +21,11 @@ parser.add_option("-n", "--nodisp", action="store_true", dest="hidefigs", help="
 options, args = parser.parse_args()
 
 if not options.filename:
-	print "No filename provided. Using output.nc."
+	print("No filename provided. Using output.nc.")
         options.filename = "output.nc"
 
 if not options.time:
-	print "No time provided. Using time -1."
+	print("No time provided. Using time -1.")
         time_slice = -1
 else:
         time_slice = int(options.time)
@@ -57,20 +54,20 @@ areaCell = f.variables['areaCell'][:]
 #fin = netCDF4.Dataset('landice_grid.nc','r')
 #H = fin.variables['thickness'][0,:]
 
-print "Using time level ", time_slice, ", which is xtime=",''.join( xtime[time_slice,:])
+print("Using time level " + str(time_slice) + ", which is xtime=",''.join( xtime[time_slice,:]))
 
 
 totalMelt = ( (basalmelt + surfmelt)/1000.0 * areaCell * (h>0.0)).sum() / (yVertex.max() - yVertex.min()) / 2.0 * 10000.0  # 10000.0 is the 10 km width that Hewitt uses; 2 is because we want half the domain since we reflect it
-print "Total water input volume rate for half the domain (m^3/s)=", totalMelt
+print("Total water input volume rate for half the domain (m^3/s)={}".format(totalMelt))
 
 # Find center row  - currently files are set up to have central row at y=0
 unique_ys=np.unique(yCell[:])
-centerY=unique_ys[len(unique_ys)/2]
-print "number of ys, center y index, center Y value", len(unique_ys), len(unique_ys)/2, centerY
+centerY=unique_ys[len(unique_ys)//2]
+print("number of ys={}, center y index={}, center Y value={}".format(len(unique_ys), len(unique_ys)//2, centerY))
 ind = np.nonzero(yCell[:] == centerY)
 x = xCell[ind]/1000.0
 
-print "start plotting."
+print("start plotting.")
 
 fig = plt.figure(1, facecolor='w')
 ax1 = fig.add_subplot(311)
@@ -117,18 +114,18 @@ plt.grid(True)
 
 
 
-print "plotting complete"
+print("plotting complete")
 
 plt.draw()
 if options.saveimages:
-        print "Saving figures to files."
+        print("Saving figures to files.")
         plt.savefig('GL-position.png')
 
 
 
 
 if options.hidefigs:
-     print "Plot display disabled with -n argument."
+     print("Plot display disabled with -n argument.")
 else:
      plt.show()
 

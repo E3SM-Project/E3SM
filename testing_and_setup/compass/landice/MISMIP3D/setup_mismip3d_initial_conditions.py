@@ -1,6 +1,10 @@
 #!/usr/bin/env python
-# This script sets up MISMIP3D Stnd experiment.
-# see http://homepages.ulb.ac.be/~fpattyn/mismip3d/Mismip3Dv12.pdf
+"""
+This script sets up MISMIP3D Stnd experiment.
+see http://homepages.ulb.ac.be/~fpattyn/mismip3d/Mismip3Dv12.pdf
+"""
+
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
 from netCDF4 import Dataset
@@ -15,7 +19,7 @@ parser.add_option("-f", "--file", dest="filename", type='string', help="file in 
 options, args = parser.parse_args()
 if not options.filename:
    options.filename = 'landice_grid.nc'
-   print 'No file specified.  Attempting to use landice_grid.nc'
+   print('No file specified.  Attempting to use landice_grid.nc')
 
 
 # Open the file, get needed dimensions
@@ -26,7 +30,7 @@ try:
     nVertInterfaces = nVertLevels + 1
     maxEdges = len(gridfile.dimensions['maxEdges'])
     if nVertLevels != 10:
-         print 'nVerLevels in the supplied file was ', nVertLevels, '.  10 levels is a preliminary value to be used  with this test case.'
+         print('nVerLevels in the supplied file was {}.  10 levels is a preliminary value to be used  with this test case.'.format(nVertLevels))
 except:
     sys.exit('Error: The grid file specified is missing needed dimensions.')
 
@@ -37,17 +41,17 @@ except:
 xCell = gridfile.variables['xCell'][:]
 yCell = gridfile.variables['yCell'][:]
 if yCell.min() > 0.0:
-   print 'Shifting domain origin, because it appears that this has not yet been done.'
+   print('Shifting domain origin, because it appears that this has not yet been done.')
    unique_ys=np.array(sorted(list(set(yCell[:]))))
    targety = (unique_ys.max() - unique_ys.min()) / 2.0 + unique_ys.min()  # center of domain range
    best_y=unique_ys[ np.absolute((unique_ys - targety)) == np.min(np.absolute(unique_ys - (targety))) ][0]
-   print 'Found a best y value to use of:' + str(best_y)
-   
+   print( 'Found a best y value to use of:' + str(best_y))
+
    unique_xs=np.array(sorted(list(set(xCell[:]))))
    targetx = (unique_xs.max() - unique_xs.min()) / 2.0 + unique_xs.min()  # center of domain range
    best_x=unique_xs[ np.absolute((unique_xs - targetx)) == np.min(np.absolute(unique_xs - (targetx))) ][0]
-   print 'Found a best x value to use of:' + str(best_x)
-   
+   print('Found a best x value to use of:' + str(best_x))
+
    xShift = -1.0 * best_x
    yShift = -1.0 * best_y
    gridfile.variables['xCell'][:] = xCell + xShift
@@ -62,7 +66,7 @@ if yCell.min() > 0.0:
    # Need to adjust geometry along top and bottom boundaries to get flux correct there
    # Essentially, we only want to model the interior half of those cells
    # Adding this here because we only want to do this if it hasn't been done before.
-   print "Adjusting areaCell and dvEdge for cells along north and south boundaries"
+   print("Adjusting areaCell and dvEdge for cells along north and south boundaries")
 
    # This method is assuming a periodic_hex mesh!
 
@@ -85,14 +89,14 @@ if yCell.min() > 0.0:
 #   print np.array(sorted(list(set(yCell[:]))))
 
 # bed slope defined by b(m)=-100km-x(km)
-print "Defining bed topography."
+print("Defining bed topography.")
 topg = np.zeros((1,nCells,))
 topg[0,np.nonzero(xCell>=0.0)]= -100.0 - xCell[np.nonzero(xCell>=0.0)]/1000.0
 topg[0,np.nonzero(xCell<0.0)] = -100.0 + xCell[np.nonzero(xCell< 0.0)]/1000.0
 gridfile.variables['bedTopography'][:] = topg[:]
 
 # SMB
-print "Defining SMB."
+print("Defining SMB.")
 SMB = np.zeros((1,nCells,))
 # 0.5 m/yr is the standard value.  0.3 m/yr is also tested in MISMIP3D.
 # Convert from units of m/yr to kg/m2/s using appropriate ice density
@@ -103,7 +107,7 @@ SMB[ 0,np.nonzero(xCell < -800000.0) ] = -100.0
 gridfile.variables['sfcMassBal'][:] = SMB[:]
 
 # Thickness initial condition is no ice.
-print "Defining thickness."
+print("Defining thickness.")
 thickness = np.zeros((nCells,))
 
 thicknessICtype = 1  # 1=uniform, 2=b.l. solution
@@ -125,10 +129,10 @@ elif thicknessICtype == 2:
    # calculations:
    ind = np.logical_and(xCell>=0.0, xCell<=xg)  # indices where xCell is between divide and GL
    unique_xs=np.array(sorted(list(set(xCell[ind])), reverse=True))  # returns a list of x values from GL to divide (descending)
-   print unique_xs
+   #print( unique_xs)
 #   i0 = np.nonzero(xCell == 0.0)[0][0] # index at divide
    hg = rhow/rhoi * -1.0*(-100.0 - xg/1000.0)  # thickness at GL
-   print 'xg, hg=', xg, hg
+   print('xg={}, hg={}'.format(xg, hg))
 
    ig = np.nonzero(np.logical_or(xCell >= xg, xCell <= -xg))[0]  # indices at GL cells and shelf cells
    thickness[ig] = hg/2.0   # make shelf thickness same as GL halved - this is reasonably close to the shelf thickness at SS and avoids large velocities (and small CFL time step limits if using the full GL thickness)
@@ -156,7 +160,7 @@ elif thicknessICtype == 2:
 
 
 # For now approximate boundary conditions with 0 velocity.
-print "Defining velocity boundary conditions."
+print("Defining velocity boundary conditions.")
 # This is not correct.
 # west boundary should be dh/dx=ds/dx=0.
 # north and south boundaries should be no slip lateral boundaries.
@@ -171,9 +175,9 @@ gridfile.variables['uReconstructX'][:] = 0.0
 gridfile.variables['uReconstructY'][:] = 0.0
 
 # beta is not correct
-print "Defining beta."
+print("Defining effectivePressure.")
 #gridfile.variables['beta'][:] = 1.0e7 / 3.14e7**(1.0/m)   # For the basal friction law being used, beta holds the 'C' coefficient in Pa m^-1/3 s^1/3
-gridfile.variables['beta'][:] = 31880.0  # For the basal friction law being used, beta holds the 'C' coefficient.  The beta units in MPAS are a mess right now.  This value translates to 10^7 Pa m^-1/3 s^1/3
+gridfile.variables['effectivePressure'][:] = 31880.0  # For the power-law basal friction law being used, effectivePressure holds the 'C' coefficient.  This value translates to units of 10^7 Pa m^-1/3 s^1/3.  Note that it should actually be 31651.755, but we've already done the experiments with 31880.0
 
 # Setup layerThicknessFractions
 gridfile.variables['layerThicknessFractions'][:] = 1.0 / float(nVertLevels)
@@ -181,5 +185,5 @@ gridfile.variables['layerThicknessFractions'][:] = 1.0 / float(nVertLevels)
 gridfile.sync()
 gridfile.close()
 
-print 'Successfully added MISMIP3D initial conditions to: ', options.filename
+print('Successfully added MISMIP3D initial conditions to: ' + options.filename)
 
