@@ -15,7 +15,7 @@ SET (NEED_LIBS ${p3Lib} ${dynLibName} scream_control scream_share pio timing ${B
 SET (UNIT_TEST_EXTRA_LIBRARY_DIRS ${dynLibDir})
 
 # Test atmosphere processes
-CreateUnitTest(homme_p3 "homme_p3.cpp" "${NEED_LIBS}" CONFIG_DEFS ${EXTRA_CONFIG_DEFS} INCLUDE_DIRS ${EXTRA_INCLUDE_DIRS} NAMELIST_FILE "namelist.nl")
+CreateUnitTest(homme_p3 "homme_p3.cpp" "${NEED_LIBS}" CONFIG_DEFS ${EXTRA_CONFIG_DEFS} INCLUDE_DIRS ${EXTRA_INCLUDE_DIRS} EXE_ARGS "< namelist.nl")
 
 # Set homme's test options, so that we can configure the namelist correctly
 SET (HOMME_TEST_NE 2)
@@ -45,8 +45,8 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/vcoord/acme-72m.ascii
 # Copy p3 lookup tables to local data directory
 FILE (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data)
 CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+               ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_lookup_table_2.dat-v4
-               ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)
+               ${CMAKE_CURRENT_BINARY_DIR} COPYONLY)
 CONFIGURE_FILE(${SCREAM_DATA_DIR}/p3_RICO_SCM.inp
                ${CMAKE_CURRENT_BINARY_DIR}/data COPYONLY)

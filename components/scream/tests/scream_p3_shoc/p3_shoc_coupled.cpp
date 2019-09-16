@@ -43,8 +43,10 @@ TEST_CASE("p3-shoc-coupled", "") {
 
   auto& p0 = proc_params.sublist("Process 1");
   p0.set<std::string>("Process Name", "P3");
+  p0.set<std::string>("Grid","Physics");
   auto& p1 = proc_params.sublist("Process 0");
   p1.set<std::string>("Process Name", "SHOC");
+  p0.set<std::string>("Grid","Physics");
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","User Provided");
