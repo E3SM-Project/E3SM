@@ -2900,8 +2900,6 @@ subroutine cloud_water_conservation(qc,qcnuc,dt,    &
 
    real(rtype), intent(in) :: qc, qcnuc, dt
    real(rtype), intent(inout) :: qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep
-
-
    real(rtype) :: sinks, sources, ratio
 
 #ifdef SCREAM_CONFIG_IS_CMAKE

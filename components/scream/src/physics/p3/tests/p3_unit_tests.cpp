@@ -216,6 +216,100 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
   KOKKOS_FUNCTION static void cloud_water_conservation_unit_bfb_tests(){
 
+    using KTH = KokkosTypes<HostDevice>;
+
+    static constexpr Int max_pack_size = 16;
+    REQUIRE(Spack::n <= max_pack_size);
+
+    CloudWaterConservationData cwdc[max_pack_size] = {
+      {9.9999999999999995e-7, 0.0, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 0.0, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 0.0, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+
+      {9.9999999999999995e-7, 0.0, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 0.0, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 0.0, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+
+      {9.9999999999999995e-7, 0.0, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 0.0, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 0.0, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7},
+
+      {9.9999999999999995e-7, 0.0, 1800.0, 1.5832574016248739e-12, 1.0630996907148179e-12, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {6.4285714285714288e-5, 0.0, 1800.0, 5.0577951315583066e-7, 7.7585489624948031e-4, 1.5683327213659326E-4, 1.2893174331809564e-14, 0.0, 5.0463073442953805e-6, 0.0, 5.1387602886199180e-7},
+      {0.0, 0.0, 1800.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+      {7.1428571428571434e-5, 0.0, 1800.0, 5.1480988828550771e-7, 7.7585489624948031e-4, 1.5597668529004373e-4, 4.9926620576534573e-14, 0.0, 6.7718890050008472e-6, 0.0, 7.1052455549903861e-7}
+    };
+
+    // Sync to device
+    KTH::view_1d<CloudWaterConservationData> cwdc_host("cwdc_host", Spack::n);
+    view_1d<CloudWaterConservationData> cwdc_device("cwdc_host", Spack::n);
+
+    // This copy only copies the input variables.
+    std::copy(&cwdc[0], &cwdc[0] + Spack::n, cwdc_host.data());
+    Kokkos::deep_copy(cwdc_device, cwdc_host);
+
+    // Get data from fortran
+    for (Int i = 0; i < max_pack_size; ++i) {
+      cloud_water_conservation(cwdc[i]);
+    }
+
+    // This copy also copies the output from the fortran function into the host view. These values
+    // are need to check the values returned from
+    std::copy(&cwdc[0], &cwdc[0] + Spack::n, cwdc_host.data());
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+      // Init pack inputs
+      Spack qc, qcnuc, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep;
+      for (Int s = 0; s < Spack::n; ++s) {
+        qc[s] = cwdc_device(s).qc;
+        qcnuc[s] = cwdc_device(s).qcnuc;
+        qcaut[s] = cwdc_device(s).qcaut;
+        qcacc[s] = cwdc_device(s).qcacc;
+        qccol[s] = cwdc_device(s).qccol;
+        qcheti[s] = cwdc_device(s).qcheti;
+        qcshd[s] = cwdc_device(s).qcshd;
+        qiberg[s] = cwdc_device(s).qiberg;
+        qisub[s] = cwdc_device(s).qisub;
+        qidep[s] = cwdc_device(s).qidep;
+      }
+
+      Functions::cloud_water_conservation(qc, qcnuc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+      // Copy results back into views
+      for (Int s = 0; s < Spack::n; ++s) {
+        cwdc_device(s).qc = qc[s];
+        cwdc_device(s).qcnuc = qcnuc[s];
+        cwdc_device(s).qcaut = qcaut[s];
+        cwdc_device(s).qcacc = qcacc[s];
+        cwdc_device(s).qccol = qccol[s];
+        cwdc_device(s).qcheti = qcheti[s];
+        cwdc_device(s).qiberg = qiberg[s];
+        cwdc_device(s).qisub = qisub[s];
+        cwdc_device(s).qidep = qidep[s];
+      }
+
+    });
+
+
+    // Sync back to host
+    Kokkos::deep_copy(cwdc_host, cwdc_device);
+
+    // Validate results
+    for (Int s = 0; s < Spack::n; ++s) {
+      REQUIRE(cwdc[s].qc == cwdc_host(s).qc);
+      REQUIRE(cwdc[s].qcnuc == cwdc_host(s).qcnuc);
+      REQUIRE(cwdc[s].qcaut == cwdc_host(s).qcaut);
+      REQUIRE(cwdc[s].qcacc == cwdc_host(s).qcacc);
+      REQUIRE(cwdc[s].qccol == cwdc_host(s).qccol);
+      REQUIRE(cwdc[s].qcheti == cwdc_host(s).qcheti);
+      REQUIRE(cwdc[s].qiberg == cwdc_host(s).qiberg);
+      REQUIRE(cwdc[s].qisub == cwdc_host(s).qisub);
+      REQUIRE(cwdc[s].qidep == cwdc_host(s).qidep);
+    }
+
   }
 
   KOKKOS_FUNCTION static void ice_water_conservation_unit_bfb_tests()
@@ -244,7 +338,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
       {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 1.9205467584100191e-4},
       {5.0e-8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 1.8234653652173277e-7, 0.0},
       {1.0e-4, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 2.3237448636383435e-3},
-      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0},
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1800.0, 0.0, 0.0}
     };
 
     // Sync to device
@@ -326,7 +420,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
   static void run_bfb(){
       //cloud_water_conservation_tests(errors);
 
-      //rain_water_conservation_tests(errors);
+      cloud_water_conservation_unit_bfb_tests();
 
       ice_water_conservation_unit_bfb_tests();
 

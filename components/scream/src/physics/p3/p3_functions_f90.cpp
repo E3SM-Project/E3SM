@@ -84,8 +84,19 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
 }
 
+void cloud_water_conservation(CloudWaterConservationData& d){
+  p3_init(true);
+  cloud_water_conservation_c(d.qc, d.qcnuc, d.dt, &d.qcaut, &d.qcacc, &d.qccol, &d.qcheti,
+  &d.qcshd, &d.qiberg, &d.qisub, &d.qidep);
+}
+
+void rain_water_conservation(RainWaterConservationData& d){
+  p3_init(true);
+  rain_water_conservation_c(d.qr, d.qcaut, d.qcacc, d.qimlt, d.qcshd, d.dt, &d.qrevp, &d.qrcol, &d.qrheti);
+}
+
 void ice_water_conservation(IceWaterConservationData& d){
-  p3_init(true); 
+  p3_init(true);
   ice_water_conservation_c(d.qitot, d.qidep, d.qinuc, d.qiberg, d.qrcol, d.qccol, d.qrheti,
     d.qcheti, d.dt, &d.qisub, &d.qimlt);
 }
