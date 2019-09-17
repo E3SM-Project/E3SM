@@ -106,17 +106,9 @@ def run_diag(parameter):
                 except:
                     print('No valid value for reference datasets available for the specified time range')
 
-            # metrics_dict = create_metrics(ref_domain)
-            #save_data = []
-            #save_data.append(parameter.test_name_yrs)
-            #save_data.append(test_domain_year.asma())
-            # print(test_domain_year.getTime().asComponentTime())
-            # print(test.getTime().asComponentTime())
 
             metrics_dict = []
             
-            #save_data = RefsTestMetrics(test=[test_domain_year.asma().tolist()], refs=[x.asma().tolist() for x in refs], metrics=metrics_dict)
-
             #save data for potential later use
             parameter.output_file = '-'.join(
                 [var, region])
@@ -125,15 +117,11 @@ def run_diag(parameter):
             print('Data saved in: ' + fnm)
 
             with open(fnm, 'w') as outfile:
-                #json.dump(result, outfile, cls=utils.general.NumpyEncoder)
                 json.dump(save_data, outfile)
 
             regions_to_data[region] = RefsTestMetrics(test=test_domain_year, refs=refs, metrics=metrics_dict)
  
         area_mean_time_series_plot.plot(var, regions_to_data, parameter)
-        # TODO: How will this work when there are a bunch of plots for each image?
-        # Yes, these files should be saved.
-        # utils.general.save_ncfiles(parameter.current_set,
-        #                     mv1_domain, mv2_domain, diff, parameter)
+
     return parameter
 
