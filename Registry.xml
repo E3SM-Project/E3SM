@@ -2565,19 +2565,6 @@
 			 description="kinetic energy of horizonal velocity on cells"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="hEddyFlux" type="real" dimensions="nVertLevels nEdges Time" units=""
-			 description="Eddy flux in Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="hKappa" type="real" dimensions="nVertLevels nEdges Time" units=""
-			 description="kappa parameter for Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="hKappaQ" type="real" dimensions="nVertLevels nEdges Time" units=""
-			 description="kappaQ parameter for Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
-		/>
-
 		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-1}"
 			 description="horizontal viscosity"
 			 packages="forwardMode;analysisMode"
