@@ -429,7 +429,10 @@ contains
     use pio, only : pio_syncfile !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
-    use element_ops, only : get_field, get_field_i
+    use element_ops, only : get_field
+#ifdef MODEL_THETA_L
+    use element_ops, only : get_field_i
+#endif
     use dcmip16_wrapper, only: precl
     use netcdf_io_mod, only : iodesc3dp1 
 

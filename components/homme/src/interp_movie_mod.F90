@@ -455,7 +455,10 @@ contains
     use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax, Timelevel_Qdp
     use parallel_mod, only : parallel_t, abortmp
 #if defined(_PRIM) 
-    use element_ops, only : get_field, get_field_i
+    use element_ops, only : get_field
+#ifdef MODEL_THETA_L
+    use element_ops, only : get_field_i
+#endif
     use hybvcoord_mod, only :  hvcoord_t 
     use dcmip16_wrapper, only: precl
 #endif
