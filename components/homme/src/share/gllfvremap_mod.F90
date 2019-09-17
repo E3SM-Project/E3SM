@@ -184,10 +184,10 @@ contains
           ! Document state of pg1. dcmip2016_test1 shows it is too coarse. For
           ! boost_pg1 = true, stepon's DSS loop needs to be separated from its
           ! tendency application loop.
-          write(iulog,*), 'gfr> Warning: pg1 is too coarse; see comments at top of gllfvremap_mod.F90'
+          write(iulog,*) 'gfr> Warning: pg1 is too coarse; see comments at top of gllfvremap_mod.F90'
           if (.not. gfr%boost_pg1) then
-             write(iulog,*), 'gfr> Warning: If you want to try pg1, use the boosted-accuracy &
-                  boost_pg1 option and call gfr_pg1_reconstruct(_topo).'
+             write(iulog,*) 'gfr> Warning: If you want to try pg1, use the boosted-accuracy &
+                  &boost_pg1 option and call gfr_pg1_reconstruct(_topo).'
           end if
        end if
     end if
@@ -1956,7 +1956,7 @@ contains
        qmax_f = maxval(q_f(:nf,:nf,k))
        qmin_g = minval(elem(ie)%state%Q(:,:,k,qi))
        qmax_g = maxval(elem(ie)%state%Q(:,:,k,qi))
-       den = gfr%tolfac*max(1e-10, maxval(abs(elem(ie)%state%Q(:,:,k,qi))))
+       den = gfr%tolfac*max(1e-10_real_kind, maxval(abs(elem(ie)%state%Q(:,:,k,qi))))
        mass_f = sum(reshape(gfr%w_ff(:nf2)*gfr%fv_metdet(:nf2,ie), (/nf,nf/))* &
             dp_fv(:nf,:nf,k)*q_f(:nf,:nf,k))
        mass_g = sum(elem(ie)%spheremp*dp(:,:,k)*q_g(:,:,k))
@@ -1992,7 +1992,7 @@ contains
        qmax_f = qmax(k)
        qmin_g = minval(q1_g(:,:,k))
        qmax_g = maxval(q1_g(:,:,k))
-       den = gfr%tolfac*max(1e-10, maxval(abs(q0_g(:,:,k))))
+       den = gfr%tolfac*max(1e-10_real_kind, maxval(abs(q0_g(:,:,k))))
        if (qmin_g < qmin_f - 50*eps*den .or. qmax_g > qmax_f + 50*eps*den) then
           write(iulog,*) 'gfr> f2g mixing ratio limits:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &
                qmin_f, qmin_g-qmin_f, qmax_g-qmax_f, qmax_f, mass0, mass1, 'ERROR'
@@ -2075,7 +2075,7 @@ contains
     call gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
 
     if (hybrid%masterthread) then
-       write(iulog,  '(a,i3,a,i3)'), 'gfr> npi', gfr%npi, ' nphys', nf
+       write(iulog,  '(a,i3,a,i3)') 'gfr> npi', gfr%npi, ' nphys', nf
        if (verbose) then
           write(iulog,*) 'gfr> w_ff', nf, gfr%w_ff(:nf2)
           write(iulog,*) 'gfr> w_gg', np, gfr%w_gg(:np, :np)
