@@ -1164,17 +1164,17 @@
 			possible_values="positive real"
 			icepack_name="kn_bac_protein"
 		/>
-		<nml_option name="config_fraction_DON_ammonium" type="real" default_value="0.25" units="unitless"
+		<nml_option name="config_fraction_DON_ammonium" type="real" default_value="1.0" units="unitless"
 			description="Fraction of remineralized DON converted to ammonium"
 			possible_values="zero or positive real less than or equal to 1"
 			icepack_name="f_don_Am_protein"
 		/>
-		<nml_option name="config_fraction_loss_to_saccharids" type="real" default_value="0.4" units="unitless"
+		<nml_option name="config_fraction_loss_to_saccharids" type="real" default_value="0.5" units="unitless"
 			description="Fraction of mortality to poly/saccharids"
 			possible_values="zero or positive real less than 1"
 			icepack_name="f_doc_s"
 		/>
-		<nml_option name="config_fraction_loss_to_lipids" type="real" default_value="0.4" units="unitless"
+		<nml_option name="config_fraction_loss_to_lipids" type="real" default_value="0.5" units="unitless"
 			description="Fraction of mortality to lipids"
 			possible_values="zero or positive real less than 1"
 			icepack_name="f_doc_l"
@@ -1329,6 +1329,11 @@
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="doctype_l"
 		/>
+		<nml_option name="config_mobility_type_inorganic_carbon" type="real" default_value="-1.0" units="unitless"
+			description="Transport type of dissolved inorganic carbon"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
+			icepack_name="dictype_1"
+		/>
 		<nml_option name="config_mobility_type_proteins" type="real" default_value="0.0" units="unitless"
 			description="Transport type of proteins"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
@@ -1419,7 +1424,7 @@
 			possible_values="positive real"
 			icepack_name="F_abs_chl_phaeo"
 		/>
-		<nml_option name="config_ratio_C_to_N_proteins" type="real" default_value="7.0" units="mol carbon/mol nitrogen"
+		<nml_option name="config_ratio_C_to_N_proteins" type="real" default_value="5.0" units="mol carbon/mol nitrogen"
 			description="Ratio of carbon to nitrogen in proteins"
 			possible_values="positive real"
 			icepack_name="ratio_C2N_proteins"

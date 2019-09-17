@@ -9692,6 +9692,7 @@ contains
          config_mobility_type_humics, &
          config_mobility_type_saccharids, &
          config_mobility_type_lipids, &
+         config_mobility_type_inorganic_carbon, &
          config_mobility_type_proteins, &
          config_mobility_type_dissolved_iron, &
          config_mobility_type_particulate_iron, &
@@ -9892,6 +9893,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_humics", config_mobility_type_humics)
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_saccharids", config_mobility_type_saccharids)
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_lipids", config_mobility_type_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_inorganic_carbon", config_mobility_type_inorganic_carbon)
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_proteins", config_mobility_type_proteins)
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_dissolved_iron", config_mobility_type_dissolved_iron)
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_particulate_iron", config_mobility_type_particulate_iron)
@@ -10079,6 +10081,7 @@ contains
          config_mobility_type_humics, &
          config_mobility_type_saccharids, &
          config_mobility_type_lipids, &
+         config_mobility_type_inorganic_carbon, &
          config_mobility_type_proteins, &
          config_mobility_type_dissolved_iron, &
          config_mobility_type_particulate_iron, &
@@ -10782,6 +10785,10 @@ contains
     ! doctype_l:
     ! mobility type lipids
     ! doctype_l = config_mobility_type_lipids
+
+    ! dictype_1:
+    ! mobility type dissolved inorganic carbon
+    ! dictype_1 = config_mobility_type_inorganic_carbon
 
     ! dontype_protein:
     ! mobility type proteins
@@ -12121,6 +12128,7 @@ contains
          config_mobility_type_phaeocystis, &
          config_mobility_type_saccharids, &
          config_mobility_type_lipids, &
+         config_mobility_type_inorganic_carbon, &
          config_mobility_type_proteins, &
          config_mobility_type_dissolved_iron, &
          config_mobility_type_particulate_iron, &
@@ -12282,6 +12290,7 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_humics", config_mobility_type_humics)
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_saccharids", config_mobility_type_saccharids)
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_lipids", config_mobility_type_lipids)
+    call MPAS_pool_get_config(domain % configs, "config_mobility_type_inorganic_carbon", config_mobility_type_inorganic_carbon)
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_proteins", config_mobility_type_proteins)
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_dissolved_iron", config_mobility_type_dissolved_iron)
     call MPAS_pool_get_config(domain % configs, "config_mobility_type_particulate_iron", config_mobility_type_particulate_iron)
@@ -12515,6 +12524,7 @@ contains
          config_mobility_type_phaeocystis, &
          config_mobility_type_saccharids, &
          config_mobility_type_lipids, &
+         config_mobility_type_inorganic_carbon, &
          config_mobility_type_proteins, &
          config_mobility_type_dissolved_iron, &
          config_mobility_type_particulate_iron, &
