@@ -2046,7 +2046,7 @@ contains
                
                !  Form IEvert1
                elem(ie)%accum%IEvert1(i,j)=elem(ie)%accum%IEvert1(i,j)      &
-                    -exner(i,j,k)*theta_vadv(i,j,k)                        
+                    -Cp*exner(i,j,k)*theta_vadv(i,j,k)                        
                ! Form IEvert2 
                ! here use of dpnh_dp_i on boundry (with incorrect data)
                ! is harmess becuase eta_dot_dpdn=0
