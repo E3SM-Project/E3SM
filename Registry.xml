@@ -3055,7 +3055,6 @@
 		<!-- Coupling fields associated with mass or salinity fluxes -->
 		<var name="evaporationFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Evaporation flux at cell centers from coupler. Positive into the ocean."
-			 packages="thicknessBulkPKG"
 		/>
 		<var name="seaIceSalinityFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Sea ice salinity flux at cell centers from coupler. Positive into the ocean."
@@ -3095,7 +3094,6 @@
 		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from rain at cell centers from coupler. Positive into the ocean."
-			 packages="thicknessBulkPKG"
 		/>
 		<var name="snowFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
