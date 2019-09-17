@@ -65,6 +65,8 @@
     <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell</CIME_OUTPUT_ROOT>
+    <CIME_HTML_ROOT>/global/project/projectdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
+    <CIME_URL_ROOT>http://portal.nersc.gov/project/acme/$ENV{USER}</CIME_URL_ROOT>
     <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -122,7 +124,8 @@
         <command name="rm">cray-petsc</command>
         <command name="rm">esmf</command>
         <command name="rm">zlib</command>
-
+        <command name="rm">craype-hugepages2M</command>
+        
         <!-- first load basic defaults, then remove/swap/load as necessary -->
         <command name="load">craype</command>
         <command name="load">PrgEnv-intel</command>
@@ -211,6 +214,8 @@
     <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
+    <CIME_HTML_ROOT>/global/project/projectdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
+    <CIME_URL_ROOT>http://portal.nersc.gov/project/acme/$ENV{USER}</CIME_URL_ROOT>
     <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
@@ -267,6 +272,7 @@
         <command name="rm">cray-petsc</command>
         <command name="rm">esmf</command>
         <command name="rm">zlib</command>
+        <command name="rm">craype-hugepages2M</command>
 
         <!-- first load basic defaults, then remove/swap/load as necessary -->
         <command name="load">craype</command>
@@ -1871,6 +1877,7 @@
     <BASELINE_ROOT>/compyfs/e3sm_baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/compyfs/e3sm_baselines/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
+    <TESTS>e3sm_integration</TESTS>	  
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
     <SUPPORTED_BY>bibi.mathew -at- pnnl.gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>40</MAX_TASKS_PER_NODE>
@@ -3016,13 +3023,13 @@
       <!-- mpi lib settings -->
       <!-- Sometimes,same versions of libraries are not available for different compilers, hence the split below -->
       <modules compiler="ibm" mpilib="!mpi-serial">
-	    <command name="load">spectrum-mpi/10.3.0.0-20190419</command>
+	    <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
       </modules>
       <modules compiler="pgi.*" mpilib="!mpi-serial">
-	    <command name="load">spectrum-mpi/10.3.0.0-20190419</command>
+	    <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
       </modules>
       <modules compiler="gnu" mpilib="!mpi-serial">
-	    <command name="load">spectrum-mpi/10.3.0.0-20190419</command>
+	    <command name="load">spectrum-mpi/10.3.0.1-20190611</command>
       </modules>
 
       <modules>

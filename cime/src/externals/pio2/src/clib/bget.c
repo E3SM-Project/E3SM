@@ -564,12 +564,12 @@ static bufsize pool_len = 0;          /* 0: no bpool calls have been made
 /* added for PIO so that a bpool can be freed and another allocated */
 void bpoolrelease()
 {
-    LOG((2, "bpoolrelease"));
+    PLOG((2, "bpoolrelease"));
     freelist.bh.prevfree=0;
     freelist.bh.bsize=0;
     freelist.ql.flink=&freelist;
     freelist.ql.blink=&freelist;
-    LOG((2, "bpoolrelease"));
+    PLOG((2, "bpoolrelease"));
 
 #ifdef BufStats
     totalloc = 0;             /* Total space currently allocated */
@@ -583,7 +583,7 @@ void bpoolrelease()
     numdrel = 0; /* Number of direct gets and rels */
 #endif /* BECtl */
 #endif /* BufStats */
-    LOG((2, "bpoolrelease"));
+    PLOG((2, "bpoolrelease"));
 
 #ifdef BECtl
 /* Automatic expansion block management functions */
@@ -593,7 +593,7 @@ void bpoolrelease()
     exp_incr = 0;
     pool_len = 0;
 #endif
-    LOG((2, "bpoolrelease"));
+    PLOG((2, "bpoolrelease"));
 
 }
 

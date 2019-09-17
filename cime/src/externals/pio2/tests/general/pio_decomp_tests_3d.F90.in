@@ -105,7 +105,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_read_3d_col_decomp
   PIO_TF_FC_DATA_TYPE, dimension(:,:,:), allocatable :: rbuf, wbuf, exp_val
   integer, dimension(NDIMS) :: dims
   integer, dimension(NDIMS) :: pio_dims
-  integer :: i, j, k, tmp_idx, ierr, lsz, nrows, ncols, nhgts
+  integer :: i, j, k, tmp_idx, ierr, nrows, ncols, nhgts
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
@@ -125,7 +125,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_read_3d_col_decomp
         wbuf(i,j,k) = (start(3) - 1 + k - 1) * (dims(1) * dims(2)) +&
                       (start(2) - 1 + j - 1) * dims(1) + i
         tmp_idx = (k - 1) * (ncols * nrows) + (j - 1) * nrows + i
-        compdof(tmp_idx) = wbuf(i,j,k)
+        compdof(tmp_idx) = int(wbuf(i,j,k))
       end do
     end do
   end do

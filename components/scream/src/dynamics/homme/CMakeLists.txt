@@ -29,6 +29,7 @@ FOREACH (target IN ITEMS ${HOMME_TARGETS})
   ENDIF()
 ENDFOREACH()
 
+SET (E3SM_INTERNAL_KOKKOS_ALREADY_BUILT TRUE)
 ADD_SUBDIRECTORY(homme)
 
 # Take the variable that homme set, and mark them as (internal) cached, so they are globally visible.

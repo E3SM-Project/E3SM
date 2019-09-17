@@ -5,6 +5,10 @@
 
 #include <Kokkos_Core.hpp>
 
+#ifdef _OPENMP
+# include <omp.h>
+#endif
+
 #include "compose_test.hpp"
 
 #define pr(m) do {                              \

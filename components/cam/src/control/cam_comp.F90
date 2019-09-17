@@ -87,7 +87,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
    use physpkg,          only: phys_init, phys_register
    
    use dycore,           only: dycore_is
-#if (defined BFB_CAM_SCAM_IOP)
+#if (defined E3SM_SCM_REPLAY)
    use history_defaults, only: initialize_iop_history
 #endif
 !   use shr_orb_mod,      only: shr_orb_params
@@ -169,7 +169,7 @@ subroutine cam_init( cam_out, cam_in, mpicom_atm, &
      ! Commented out the hub2atm_alloc call as it overwrite cam_in, which is undesirable. The fields in cam_in are necessary for getting BFB restarts
 	 ! There are no side effects of commenting out this call as this call allocates cam_in and cam_in allocation has already been done in cam_init
      !call hub2atm_alloc( cam_in )
-#if (defined BFB_CAM_SCAM_IOP)
+#if (defined E3SM_SCM_REPLAY)
       call initialize_iop_history()
 #endif
    end if

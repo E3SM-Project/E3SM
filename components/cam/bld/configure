@@ -168,9 +168,9 @@ OPTIONS
 
   Options relevent to SCAM mode:
 
-     -camiop            Configure CAM to generate an IOP file that can be used to drive SCAM.
-                        This switch only works with the Eulerian dycore.
-     -scam              Compiles model in single column mode.  Only works with Eulerian dycore.
+     -e3smreplay        Configure E3SM to generate an IOP file that can be used to drive the SCM.
+                        This switch only works with the Spectral Element dycore.		
+     -scam              Compiles model in single column mode.  Only works with SE dycore.
 
   CAM parallelization:
 
@@ -310,7 +310,7 @@ GetOptions(
     "cam_bld=s"                 => \$opts{'cam_bld'},
     "cam_exe=s"                 => \$opts{'cam_exe'},
     "cam_exedir=s"              => \$opts{'cam_exedir'},
-    "camiop"                    => \$opts{'camiop'},
+    "e3smreplay"                => \$opts{'e3smreplay'},
     "cc=s"                      => \$opts{'cc'},
     "ccsm_seq"                  => \$opts{'ccsm_seq'},
     "cflags=s"                  => \$opts{'cflags'},
@@ -1252,20 +1252,21 @@ if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Generate IOP
-if (defined $opts{'camiop'}) {
-    $cfg_ref->set('camiop', 1);
+if (defined $opts{'e3smreplay'}) {
+    $cfg_ref->set('e3smreplay', 1);
 }
-my $camiop = $cfg_ref->get('camiop') ? "ON" : "OFF";
 
-# The only dycore supported in CAMIOP mode is Spectral Element
-if ($camiop eq 'ON' and $dyn_pkg ne 'se') {
+my $e3smreplay = $cfg_ref->get('e3smreplay') ? "ON" : "OFF";
+
+# The only dycore supported in REPLAY mode is Spectral Element
+if ($e3smreplay eq 'ON'  and $dyn_pkg ne 'se') {
     die <<"EOF";
-**  ERROR: CAMIOP mode only works with Spectral Element dycore.
+**  ERROR: REPLAY mode only works with Spectral Element dycore.
 **         Requested dycore is: $dyn_pkg
 EOF
 }
 
-if ($print>=2) { print "Produce IOP file for SCAM: $camiop$eol"; }
+if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Horizontal grid parameters
@@ -1827,7 +1828,7 @@ $cfg_cppdefs .= " -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1";
 if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
 
 # Configure CAM to produce IOP files for SCAM
-if ($camiop eq 'ON') { $cfg_cppdefs .= " -DBFB_CAM_SCAM_IOP"; }
+if ($e3smreplay eq 'ON') { $cfg_cppdefs .= " -DE3SM_SCM_REPLAY"; }
 
 # Resolution parameters for rectangular lat/lon grids
 my $nlon = $cfg_ref->get('nlon');

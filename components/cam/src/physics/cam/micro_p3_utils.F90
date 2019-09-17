@@ -23,6 +23,7 @@ module micro_p3_utils
   integer,parameter :: itype = selected_int_kind (13) ! 8 byte integer
 #else
     public :: rtype
+    integer,parameter,public :: rtype8 = selected_real_kind(15, 307) ! 8 byte real, compatible with c type double
 #endif
 
     public :: get_latent_heat, micro_p3_utils_init, &
@@ -48,7 +49,7 @@ module micro_p3_utils
     real(rtype),dimension(16), public :: dnu
 
     real(rtype), public, parameter :: mu_r_constant = 1.0_rtype
-    real(rtype), public, parameter :: lookup_table_1a_dum1_c = 1.0_rtype/(0.1_rtype*log10(261.7_rtype))
+    real(rtype), public, parameter :: lookup_table_1a_dum1_c =  4.135985029041767d+00 ! 1.0/(0.1*log10(261.7))
 
     real(rtype),public :: zerodegc  ! Temperature at zero degree celcius ~K
     real(rtype),public :: rainfrze  ! Contact and immersion freexing temp, -4C  ~K

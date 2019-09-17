@@ -38,7 +38,7 @@ contains
     character(kind=c_char, len=128) :: mu_r_filename, revap_filename, vn_filename, vm_filename
     integer :: len
     logical :: ok
-    character(len=16) :: p3_version="2.8.2"
+    character(len=16) :: p3_version="4"  ! TODO: Change to be dependent on table version and path specified in p3_functions.hpp
 
     call c_f_pointer(lookup_file_dir_c, lookup_file_dir)
     len = index(lookup_file_dir, C_NULL_CHAR) - 1

@@ -16,6 +16,10 @@
 #include <iostream>
 #include <sstream>
 
+#ifdef _OPENMP
+# include <omp.h>
+#endif
+
 #include <Kokkos_Core.hpp>
 
 #ifdef SIQK_TIME

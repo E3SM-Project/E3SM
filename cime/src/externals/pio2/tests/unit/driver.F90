@@ -15,7 +15,7 @@ Program pio_unit_test_driver
 
   ! local variables
   character(len=str_len) :: err_msg
-  integer :: fail_cnt, test_cnt, ios, test_id, ierr, test_val
+  integer :: fail_cnt, test_cnt, ios, test_id, ierr
   logical :: ltest_netcdf, ltest_pnetcdf
   logical :: ltest_netcdf4p, ltest_netcdf4c
   namelist/piotest_nml/  ltest_netcdf,     &

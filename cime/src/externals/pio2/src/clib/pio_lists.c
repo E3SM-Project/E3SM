@@ -49,7 +49,7 @@ pio_get_file(int ncid, file_desc_t **cfile1)
 {
     file_desc_t *cfile = NULL;
 
-    LOG((2, "pio_get_file ncid = %d", ncid));
+    PLOG((2, "pio_get_file ncid = %d", ncid));
 
     /* Caller must provide this. */
     if (!cfile1)
@@ -133,11 +133,11 @@ pio_delete_iosystem_from_list(int piosysid)
 {
     iosystem_desc_t *ciosystem, *piosystem = NULL;
 
-    LOG((1, "pio_delete_iosystem_from_list piosysid = %d", piosysid));
+    PLOG((1, "pio_delete_iosystem_from_list piosysid = %d", piosysid));
 
     for (ciosystem = pio_iosystem_list; ciosystem; ciosystem = ciosystem->next)
     {
-        LOG((3, "ciosystem->iosysid = %d", ciosystem->iosysid));
+        PLOG((3, "ciosystem->iosysid = %d", ciosystem->iosysid));
         if (ciosystem->iosysid == piosysid)
         {
             if (piosystem == NULL)
@@ -199,7 +199,7 @@ pio_get_iosystem_from_id(int iosysid)
 {
     iosystem_desc_t *ciosystem;
 
-    LOG((2, "pio_get_iosystem_from_id iosysid = %d", iosysid));
+    PLOG((2, "pio_get_iosystem_from_id iosysid = %d", iosysid));
 
     for (ciosystem = pio_iosystem_list; ciosystem; ciosystem = ciosystem->next)
         if (ciosystem->iosysid == iosysid)
@@ -223,7 +223,7 @@ pio_num_iosystem(int *niosysid)
     /* Count the elements in the list. */
     for (iosystem_desc_t *c = pio_iosystem_list; c; c = c->next)
     {
-        LOG((3, "pio_num_iosystem c->iosysid %d", c->iosysid));
+        PLOG((3, "pio_num_iosystem c->iosysid %d", c->iosysid));
         count++;
     }
 
