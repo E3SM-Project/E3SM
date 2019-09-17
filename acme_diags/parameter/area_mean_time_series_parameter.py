@@ -23,12 +23,9 @@ class AreaMeanTimeSeriesParameter(CoreParameter):
             print(msg)
 
 
-        if self.test_timeseries_input and not (hasattr(self, 'test_start_yr') and hasattr(self, 'test_end_yr')):
-            msg = "You need to define both the 'test_start_yr' and 'test_end_yr' parameter."
+        if not (hasattr(self, 'start_yr') and hasattr(self, 'end_yr')):
+            msg = "You need to define both the 'start_yr' and 'end_yr' parameter."
             raise RuntimeError(msg)
 
-        if self.ref_timeseries_input and not (hasattr(self, 'ref_start_yr') and hasattr(self, 'ref_end_yr')):
-            msg = "You need to define both the 'ref_start_yr' and 'ref_end_yr' parameter."
-            raise RuntimeError(msg)
 
             #raise RuntimeError(msg)

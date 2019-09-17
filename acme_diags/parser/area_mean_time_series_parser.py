@@ -31,19 +31,6 @@ class AreaMeanTimeSeriesParser(CoreParser):
             required=False)
 
         self.add_argument(
-            '--ref_start_yr',
-            dest='ref_start_yr',
-            help="Start year for the reference timeseries files.",
-            required=False)
-
-        self.add_argument(
-            '--ref_end_yr',
-            dest='ref_end_yr',
-            help="End year for the reference timeseries files.",
-            required=False)
-
-
-        self.add_argument(
             '--test_timeseries_input',
             dest='test_timeseries_input',
             help='The input test data are timeseries files.',
@@ -52,14 +39,17 @@ class AreaMeanTimeSeriesParser(CoreParser):
             required=False)
 
         self.add_argument(
-            '--test_start_yr',
-            dest='test_start_yr',
-            help="Start year for the test timeseries files.",
+            '--start_yr',
+            dest='start_yr',
+            help="Start year for the timeseries files.",
             required=False)
 
         self.add_argument(
-            '--test_end_yr',
-            dest='test_end_yr',
-            help="End year for the test timeseries files.",
+            '--end_yr',
+            dest='end_yr',
+            help="End year for the timeseries files.",
             required=False)
+
+
+
 

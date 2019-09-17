@@ -90,12 +90,9 @@ def run_diag(parameter):
 
                 try: 
                     ref = ref_data.get_timeseries_variable(var)
-                    print('Start and end time for selected time slices for ref data: ', ref.getTime().asComponentTime()[0],ref.getTime().asComponentTime()[-1])
-                    print('ref shape',ref.shape, ref.long_name, ref.units)
+                    #print('Start and end time for selected time slices for ref data: ', ref.getTime().asComponentTime()[0],ref.getTime().asComponentTime()[-1])
+                    #print('ref shape',ref.shape, ref.long_name, ref.units)
 
-                    
-                    # TODO: Will this work if ref and test are timeseries data,
-                    # but land_frac and ocean_frac are climo'ed.
                     ref_domain = utils.general.select_region(region, ref, land_frac, ocean_frac, parameter)
 
                     ref_domain = cdutil.averager(ref_domain,axis = 'xy')

@@ -205,13 +205,17 @@ class Dataset():
         """
         Get the user-defined start and end years.
         """
-        if self.ref:
-            start_yr = getattr(self.parameters, 'ref_start_yr')
-            end_yr = getattr(self.parameters, 'ref_end_yr')
-
+        if self.parameters.sets[0] == 'area_mean_time_series':
+            start_yr = getattr(self.parameters, 'start_yr')
+            end_yr = getattr(self.parameters, 'end_yr')
         else:
-            start_yr = getattr(self.parameters, 'test_start_yr')
-            end_yr = getattr(self.parameters, 'test_end_yr')
+            if self.ref:
+                start_yr = getattr(self.parameters, 'ref_start_yr')
+                end_yr = getattr(self.parameters, 'ref_end_yr')
+
+            else:
+                start_yr = getattr(self.parameters, 'test_start_yr')
+                end_yr = getattr(self.parameters, 'test_end_yr')
 
         return start_yr, end_yr
 
