@@ -213,6 +213,7 @@
       flux_bio_sno(:) = c0
       Tot_BGC_i (:) = c0
       Tot_BGC_f (:) = c0
+      Zoo (:) = c0
       hsnow_i = c0
       hsnow_f = c0
       write_flux_diag = .false.
@@ -275,6 +276,15 @@
       if (write_flux_diag) then
          if (aicen > c0) then
             hsnow_f = vsnon/aicen
+            write(warning,*) 'after z_biogeochemistry'
+            call add_warning(warning)
+            write(warning,*) 'Remaining carbon after algal_dyn: Zoo'
+            call add_warning(warning)
+            do mm = 1,nblyr+1
+               write(warning,*) 'layer mm, Zoo(mm)'
+               call add_warning(warning)
+               write(warning,*) mm,Zoo(mm)
+            end do
             do mm = 1,nbtrcr
                call bgc_column_sum (nblyr, nslyr, hsnow_f, hbri, &
                               trcrn(bio_index(mm):bio_index(mm)+nblyr+2), &
@@ -1477,7 +1487,7 @@
                                    t_iron_conv      , max_loss         , &
                                    max_dfe_doc1     , fr_resp_s        , &
                                    y_sk_DMS         , t_sk_conv        , &
-                                   t_sk_ox
+                                   t_sk_ox          , R_C2N_DON
 
       use ice_zbgc_shared, only:   chlabs, alpha2max_low, beta2max, mu_max, &
                                    grow_Tdep, fr_graze, mort_pre, mort_Tdep, &
@@ -1634,6 +1644,10 @@
          DOC_r      , &  ! net DOC removal (mmol/m^3)
          DOC_s           ! net DOC sources (mmol/m^3)
 
+      real (kind=dbl_kind), dimension(n_dic) :: &
+         DIC_r      , &  ! net DIC removal (mmol/m^3)
+         DIC_s           ! net DIC sources (mmol/m^3)
+
       real (kind=dbl_kind), dimension(n_don) :: &
          DON_r      , &  ! net DON removal (mmol/m^3)
          DON_s           ! net DON sources (mmol/m^3)
@@ -1650,7 +1664,8 @@
          rFep             ! ratio of particulate Fe to tot Fep
 
       real (kind=dbl_kind) :: &
-         dN        , &  ! change in N (mmol/m^3)
+         dN        , &  ! change in Nitrogen (mmol N/m^3)
+         dC        , &  ! change in Carbon (mmol C/m^3)
          N_s_p     , &  ! algal nitrogen photosynthesis (mmol/m^3)
          N_r_g     , &  ! algal nitrogen losses to grazing (mmol/m^3)
          N_r_r     , &  ! algal nitrogen losses to respiration (mmol/m^3)
@@ -1727,6 +1742,8 @@
        U_Fe_f(:)  = c0
        DOC_s(:)   = c0
        DOC_r(:)   = c0
+       DIC_s(:)   = c0
+       DIC_r(:)   = c0
        DOC_r_c    = c0
        nitrif     = c0 
        mort_N     = c0
@@ -1975,6 +1992,7 @@
           Fe_r_p  = U_Fe (k) * dt
           Fed_tot_r = Fed_tot_r + Fe_r_p  
           exude_C = exude_C + k_exude(k)* R_C2N(k)*Nin(k) / secday 
+          DIC_r(1) = DIC_r(1) + (c1-fr_resp)*grow_N(k) * R_C2N(k) * dt
        enddo
 
       !--------------------------------------------------------------------
@@ -2018,10 +2036,12 @@
        if (tr_bgc_DON) then
        do n = 1, n_don   
           DON_r(n) =  kn_bac(n)/secday * DONin(n) * dt
-          DON_s(n) =  (c1 - fr_graze_s + fr_graze_e*fr_graze_s)* graze_N * dt !fr_graze_N*f_don(n)*fr_graze_s * dt 
+          !DON_s(n) =  (c1 - fr_graze_s + fr_graze_e*fr_graze_s)* graze_N * dt !fr_graze_N*f_don(n)*fr_graze_s * dt 
+          DON_s(n) =  graze_N*dt - Am_s_e + mort_N*dt - Am_s_mo
           Zoo_s_s = Zoo_s_s - DON_s(n)
           Zoo_s_b = Zoo_s_b + DON_r(n)*(c1-f_don_Am(n))
           Am_s = Am_s + DON_r(n)*f_don_Am(n)
+          DIC_s(1) = DIC_s(1) + DON_r(n) * R_C2N_DON(n) 
       enddo
       endif
      
@@ -2032,11 +2052,12 @@
       ! polysaccharids, lipids
       !--------------------------------------------------------------------
 
-       do n = 1, n_doc   
-          
+       do n = 1, n_doc
           DOC_r(n) =  k_bac(n)/secday * DOCin(n) * dt
-          DOC_s(n) =  f_doc(n)*(fr_graze_s *graze_C + mort_C)*dt &
-                      + f_exude(n)*exude_C
+!          DOC_s(n) =  f_doc(n)*(fr_graze_s *graze_C + mort_C)*dt &
+!                      + f_exude(n)*exude_C
+          DOC_s(n) =  f_doc(n) * (graze_C*dt + mort_C*dt - DON_s(1) * R_C2N_DON(1))
+          DIC_s(1) = DIC_s(1) + DOC_r(n)
       enddo
 
       !--------------------------------------------------------------------
@@ -2053,16 +2074,17 @@
 
       if (tr_bgc_C .and. tr_bgc_Fe) then
         if (DOCin(1) > c0) then 
-        if (Fed_tot/DOCin(1) > max_dfe_doc1) then             
-          do n = 1,n_fed                                    ! low saccharid:dFe ratio leads to 
-             Fed_r_l(n)  = Fedin(n)/t_iron_conv*dt/secday   ! loss of bioavailable Fe to particulate fraction
-             Fep_tot_s   = Fep_tot_s + Fed_r_l(n)
-             Fed_r(n)    = Fed_r_l(n)                        ! removal due to particulate scavenging 
-          enddo
-          do n = 1,n_fep
-             Fep_s(n) = rFep(n)* Fep_tot_s                  ! source from dissolved Fe 
-          enddo
-        elseif (Fed_tot/DOCin(1) < max_dfe_doc1) then  
+        !if (Fed_tot/DOCin(1) > max_dfe_doc1) then             
+        !  do n = 1,n_fed                                    ! low saccharid:dFe ratio leads to 
+        !     Fed_r_l(n)  = Fedin(n)/t_iron_conv*dt/secday   ! loss of bioavailable Fe to particulate fraction
+        !     Fep_tot_s   = Fep_tot_s + Fed_r_l(n)
+        !     Fed_r(n)    = Fed_r_l(n)                        ! removal due to particulate scavenging 
+        !  enddo
+        !  do n = 1,n_fep
+        !     Fep_s(n) = rFep(n)* Fep_tot_s                  ! source from dissolved Fe 
+        !  enddo
+        !elseif (Fed_tot/DOCin(1) < max_dfe_doc1) then  
+         if (Fed_tot/DOCin(1) < max_dfe_doc1) then  
           do n = 1,n_fep                                    ! high saccharid:dFe ratio leads to 
              Fep_r(n)  = Fepin(n)/t_iron_conv*dt/secday     ! gain of bioavailable Fe from particulate fraction
              Fed_tot_s = Fed_tot_s + Fep_r(n)
@@ -2124,9 +2146,11 @@
       !-----------------------------------------------------------------------
 
        dN = c0
+       dC = c0
        do k = 1,n_algae
               reactb(nlt_bgc_N(k))  = N_s(k) - N_r(k)
               dN = dN + reactb(nlt_bgc_N(k))
+              dC = dC + reactb(nlt_bgc_N(k)) * R_C2N(k)
        enddo
        if (tr_bgc_C) then
         ! do k = 1,n_algae
@@ -2134,6 +2158,11 @@
         ! enddo
          do k = 1,n_doc
               reactb(nlt_bgc_DOC(k))= DOC_s(k) - DOC_r(k)  
+              dC = dC + reactb(nlt_bgc_DOC(k))
+         enddo
+         do k = 1,n_dic
+              reactb(nlt_bgc_DIC(k))= DIC_s(k) - DIC_r(k)  
+              dC = dC + reactb(nlt_bgc_DIC(k))
          enddo
        endif
               reactb(nlt_bgc_Nit)   = Nit_s   - Nit_r
@@ -2148,8 +2177,9 @@
        endif
        if (tr_bgc_DON) then
          do k = 1,n_don
-              reactb(nlt_bgc_DON(k))= DON_s(k) - DON_r(k)  
+              reactb(nlt_bgc_DON(k))= DON_s(k) - DON_r(k)
               dN = dN + reactb(nlt_bgc_DON(k))
+              dC = dC + reactb(nlt_bgc_DON(k)) * R_C2N_DON(k)
          enddo
        endif 
        if (tr_bgc_Fe ) then
@@ -2164,26 +2194,74 @@
               reactb(nlt_bgc_DMSPd) = DMSPd_s - DMSPd_r
               reactb(nlt_bgc_DMS)   = DMS_s   - DMS_r
        endif
-       Nerror = dN + Zoo
-      ! if (abs(Nerror) > max(reactb(:))*1.0e-5) then
-      !      conserve_N = .false.
-      !      write(warning, *) 'Conservation error!'
-      !      call add_warning(warning)
-      !      write(warning, *) 'Nerror,dN, DONin(1),kn_bac(1),secday,dt,n_doc'
-      !      call add_warning(warning)
-      !      write(warning, *) Nerror,dN, DONin(1),kn_bac(1),secday,dt,n_doc
-      !      call add_warning(warning)
-      !      write(warning, *) 'reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2)'
-      !      call add_warning(warning)
-      !      write(warning, *) reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2))
-      !      call add_warning(warning)
-      !      write(warning, *) 'reactb(nlt_bgc_Am),reactb(nlt_bgc_DON(1)), DON_r(1),DON_s(1)'
-      !      call add_warning(warning)
-      !      write(warning, *) reactb(nlt_bgc_Am),reactb(nlt_bgc_DON(1)),DON_r(1),DON_s(1)
-      !      call add_warning(warning)
-      !      write(warning, *) 'Zoo:',Zoo
-      ! endif
-          
+       if (tr_bgc_C) then
+       if (abs(dC) > maxval(reactb(:))*maxval(R_C2N(:))*1.0e-10_dbl_kind .or. &
+          abs(dN) > maxval(reactb(:))*1.0e-10_dbl_kind) then
+            conserve_N = .false.
+            write(warning, *) 'Conservation error!'
+            call add_warning(warning)
+            if (tr_bgc_DON) then
+               write(warning, *) 'dN,DONin(1), kn_bac(1),secday,dt,n_doc'
+               call add_warning(warning)
+               write(warning, *) dN, DONin(1),kn_bac(1),secday,dt,n_doc
+               call add_warning(warning)
+               write(warning, *) 'reactb(nlt_bgc_DON(1)), DON_r(1),DON_s(1)'
+               call add_warning(warning)
+               write(warning, *) reactb(nlt_bgc_DON(1)),DON_r(1),DON_s(1)
+               call add_warning(warning)
+            end if
+            write(warning, *) 'dN,secday,dt,n_doc'
+            call add_warning(warning)
+            write(warning, *) dN,secday,dt,n_doc
+            call add_warning(warning)
+            write(warning, *) 'reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2)'
+            call add_warning(warning)
+            write(warning, *) reactb(nlt_bgc_Nit),reactb(nlt_bgc_N(1)),reactb(nlt_bgc_N(2))
+            call add_warning(warning)
+            if (tr_bgc_Am) then
+               write(warning, *) 'reactb(nlt_bgc_Am),Am_r, Am_s'
+               call add_warning(warning)
+               write(warning, *) reactb(nlt_bgc_Am),Am_r, Am_s
+               call add_warning(warning)
+            end if
+            write(warning, *) 'dC'
+            call add_warning(warning)
+            write(warning, *) dC
+            call add_warning(warning)
+            do k = 1,n_doc
+               write(warning, *) 'DOCin'
+               call add_warning(warning)
+               write(warning, *) DOCin(k)
+               call add_warning(warning)
+               write(warning, *) 'reactb(nlt_bgc_DOC)'
+               call add_warning(warning)
+               write(warning, *) reactb(nlt_bgc_DOC(k))
+               call add_warning(warning)
+               write(warning, *) 'DOC_r,DOC_s'
+               call add_warning(warning)
+               write(warning, *) DOC_r(k),DOC_s(k)
+             end do
+             do k = 1,n_dic
+               write(warning, *) 'DICin'
+               call add_warning(warning)
+               write(warning, *) DICin(k)
+               call add_warning(warning)
+               write(warning, *) 'reactb(nlt_bgc_DIC)'
+               call add_warning(warning)
+               write(warning, *) reactb(nlt_bgc_DIC(k))
+               call add_warning(warning)
+               write(warning, *) 'DIC_r,DIC_s'
+               call add_warning(warning)
+               write(warning, *) DIC_r(k),DIC_s(k)
+            end do
+            call add_warning(warning)
+            write(warning, *) 'Zoo'
+            call add_warning(warning)
+            write(warning, *) Zoo
+            call add_warning(warning)
+       endif
+       endif
+
       end subroutine algal_dyn
 
 !=======================================================================
