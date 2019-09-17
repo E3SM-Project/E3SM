@@ -289,6 +289,12 @@ def main(parameters=[]):
     if not parameters:
         parameters = get_parameters(parser)
 
+    # each case id (aka, variable) has a set of parameters specified.
+    # print out the parameters for each variable for trouble shootting
+    #for p in parameters:
+    #    attrs = vars(p)
+    #    print (', '.join("%s: %s" % item for item in attrs.items()))
+
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o755)
     if not parameters[0].no_viewer:  # Only save provenance for full runs.

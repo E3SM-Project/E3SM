@@ -57,6 +57,8 @@ class Run():
 
             # For each of the set_names, get the corresponding parameter.
             param = self._get_instance_of_param_class(SET_TO_PARAMETERS[set_name], parameters)
+            
+
             # Since each parameter will have lots of default values, we want to remove them.
             # Otherwise when calling get_parameters(), these default values
             # will take precedence over values defined in other_params.
@@ -93,10 +95,13 @@ class Run():
         But most of the important parameters are in CoreParameter,
         so copy them over to the ZonalMean2dParameter.
         """
+
         def get_parent(param):
             """
             From parameters, get any object that's a parent
             type to param.
+
+            Ex: CoreParameter object is a parent of AreaMeanTimeSeriesParameter object
             """
             try:
                 parent_class = param.__class__.__mro__[1]
@@ -118,13 +123,20 @@ class Run():
             # make a deepcopy first.
             parent = copy.deepcopy(parent)
             self._remove_attrs_with_default_values(parent)
+
+            #Simply copy over all attribute from parent to children
             #parameters[i] += parent
+
             for attr in dir(parent):
                 if not attr.startswith('_') and not hasattr(parameters[i], attr):
                     # This attr of parent is a user-defined one and does not
                     # already exist in the parameters[i] parameter object.
                     attr_value = getattr(parent, attr)
                     setattr(parameters[i], attr, attr_value)
+
+        #for i in range(len(parameters)):
+        #    attrs = vars(parameters[i])
+        #    print('all parameters', ','.join("%s: %s" % item for item in attrs.items()))
 
 
     def _add_attrs_with_default_values(self, param):
