@@ -60,6 +60,9 @@ template <typename Scalar>
 constexpr Scalar Constants<Scalar>::Tmelt;
 
 template <typename Scalar>
+constexpr Scalar Constants<Scalar>::Tol;
+
+template <typename Scalar>
 using vector_2d_t = std::vector<std::vector<Scalar> >;
 
 template <typename Scalar>

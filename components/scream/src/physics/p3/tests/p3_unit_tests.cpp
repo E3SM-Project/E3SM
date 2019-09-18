@@ -130,14 +130,14 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     Kokkos::deep_copy(cwdc_host, cwdc_device);
 
     const auto ratio = cwdc[0].qc/(cwdc[0].qcaut * cwdc[0].dt);
-    REQUIRE(cwdc_host(0).qcaut == cwdc[0].qcaut*ratio);
+    REQUIRE(abs(cwdc_host(0).qcaut - cwdc[0].qcaut*ratio) <= C::Tol);
     REQUIRE(cwdc_host(0).qcacc == 0.0);
     REQUIRE(cwdc_host(0).qccol == 0.0);
     REQUIRE(cwdc_host(0).qcheti == 0.0);
     REQUIRE(cwdc_host(0).qcshd == 0.0);
     REQUIRE(cwdc_host(0).qiberg == 0.0);
-    REQUIRE(cwdc_host(0).qisub -(1.0 - ratio) != 0.0);
-    REQUIRE(cwdc_host(0).qidep - (1.0 - ratio) != 0.0);
+    REQUIRE(abs(cwdc_host(0).qisub -(1.0 - ratio)) <= C::Tol);
+    REQUIRE(abs(cwdc_host(0).qidep - (1.0 - ratio)) <= C::Tol);
     REQUIRE(cwdc_host[0].qcaut * cwdc[0].dt <= cwdc_host[0].qc);
 
 
