@@ -2575,8 +2575,6 @@
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_oRRS15to5_mono.190509.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_oRRS15to5_mono.190509.nc</map>
       <map name="ATM2OCN_VMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_oRRS15to5_mono.190509.nc</map>
-      <!--map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oRRS15to5/map_oRRS15to5_to_ne1024np4_monotr.190509.nc</map-->
-      <!--map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oRRS15to5/map_oRRS15to5_to_ne1024np4_monotr.190509.nc</map-->
       <map name="OCN2ATM_FMAPNAME">cpl/gridmaps/oRRS15to5/map_oRRS15to5_to_ne1024np4_mono.190509.nc</map>
       <map name="OCN2ATM_SMAPNAME">cpl/gridmaps/oRRS15to5/map_oRRS15to5_to_ne1024np4_mono.190509.nc</map>
     </gridmap>
@@ -2584,8 +2582,6 @@
     <gridmap atm_grid="ne1024np4" lnd_grid="360x720cru">
       <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_360x720cru_mono.190508.nc</map>
       <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne1024np4/map_ne1024np4_to_360x720cru_mono.190508.nc</map>
-      <!--map name="LND2ATM_FMAPNAME">cpl/gridmaps/360x720cru/map_360x720cru_to_ne1024np4_monotr.190508.nc</map-->
-      <!--map name="LND2ATM_SMAPNAME">cpl/gridmaps/360x720cru/map_360x720cru_to_ne1024np4_monotr.190508.nc</map-->
       <map name="LND2ATM_FMAPNAME">cpl/gridmaps/360x720cru/map_360x720cru_to_ne1024np4_mono.190508.nc</map>
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/360x720cru/map_360x720cru_to_ne1024np4_mono.190508.nc</map>
     </gridmap>
