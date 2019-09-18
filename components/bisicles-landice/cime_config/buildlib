@@ -2,7 +2,7 @@
 use strict;
 use File::Compare;
 
-my $component = "mpas-albany-landice";
+my $component = "bisicles-landice";
 my $component_dir = "glc";
 my $component_driver = "glc_cesm_driver";
 my $core = "landice";
@@ -24,28 +24,28 @@ my $LIBROOT      = `./xmlquery LIBROOT	    -value`;
 my $GMAKE_J      = `./xmlquery GMAKE_J	    -value`;
 my $GMAKE        = `./xmlquery GMAKE	    -value`;
 my $MACH         = `./xmlquery MACH         -value`;
-my $MALI_USE_ALBANY = `./xmlquery MALI_USE_ALBANY -value`;
+my $USE_BISICLES = `./xmlquery USE_BISICLES -value`;
 my $MAKE_ARGS    = `./Tools/get_standard_makefile_args`;
 chomp($MAKE_ARGS);
 
 #---------------------------------------------------------------------------
-# Copy MALI source
+# Copy BISICLES interface source
 #---------------------------------------------------------------------------
 
 mkdir "$OBJROOT/$component_dir";
 mkdir "$OBJROOT/$component_dir/source";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/Makefile* $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/core_landice $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/external $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/operators $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/framework $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
-my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/tools $OBJROOT/$component_dir/source/.";
-system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+#my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/Makefile* $OBJROOT/$component_dir/source/.";
+#system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+#my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/core_landice $OBJROOT/$component_dir/source/.";
+#system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+#my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/external $OBJROOT/$component_dir/source/.";
+#system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+#my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/operators $OBJROOT/$component_dir/source/.";
+#system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+#my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/framework $OBJROOT/$component_dir/source/.";
+#system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
+#my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/tools $OBJROOT/$component_dir/source/.";
+#system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
 
 my $drvcpy = "cp -fpR $SRCROOT/components/$component/driver ${OBJROOT}/$component_dir/source/$component_driver";
 system($drvcpy) == 0 or die "ERROR: $component buildlib $drvcpy failed: $?\n";
@@ -62,18 +62,18 @@ if ( $MACH eq "edison" ) {
 } elsif ( $MACH eq "titan" ) {
 	$bldcmd .= ' TOOL_TARGET_ARCH="-target-cpu=istanbul"';
 }
-if (defined $ENV{MPAS_TOOL_DIR}) {
-	$bldcmd .= " MPAS_TOOL_DIR=$ENV{MPAS_TOOL_DIR}";
-}
+#if (defined $ENV{MPAS_TOOL_DIR}) {
+#	$bldcmd .= " MPAS_TOOL_DIR=$ENV{MPAS_TOOL_DIR}";
+#}
 
 # Check for Albany build
-if ( $MALI_USE_ALBANY eq "TRUE" ) {
-        print "Building MALI with Albany support.\n";
-        $bldcmd .= ' ALBANY=true';
+if ( $USE_BISICLES eq "TRUE" ) {
+        print "Building BISICLES interface.\n";
+        $bldcmd .= ' BISICLES=true';
         # Note MPAS_EXTERNAL_LIBS is not needed since ACME is doing the linking!
 }
 
-print "Compiling MALI with this command: $bldcmd \n";
+print "Compiling BISICLES interface with this command: $bldcmd \n";
 
 system($bldcmd) == 0 or die "ERROR: $component buildlib $bldcmd failed: $?\n";
 

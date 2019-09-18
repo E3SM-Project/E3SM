@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Namelist creator for E3SM's MPAS ALBANY LANDICE component
+Namelist creator for E3SM's BISICLES LANDICE component
 """
 
 import os, sys
@@ -37,9 +37,9 @@ def buildnml(case, caseroot, compname):
     run_type          = case.get_value("RUN_TYPE")
     run_refdate       = case.get_value("RUN_REFDATE")
     run_reftod        = case.get_value("RUN_REFTOD")
-    mali_use_albany   = case.get_value("MALI_USE_ALBANY")
+    use_bisicles      = case.get_value("USE_BISICLES")
     stream_name       = 'streams.landice'
-    albany_input_name = 'albany_input.xml'
+    bisicles_input_name = 'bisicles_input.xml'
 
     maliconf_dir = os.path.join(casebuild, "maliconf")
 
@@ -259,13 +259,13 @@ def buildnml(case, caseroot, compname):
         with open(os.path.join(rundir, stream_name), "w") as stream_file:
             stream_file.write("\n".join(lines))
 
-    if mali_use_albany:
-        logger.info("Setting up albany_input.xml file for use with MALI.")
-        # Write albany_input.xml file if there isn't one in SourceMods
-        if os.path.exists("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name)):
-            safe_copy("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name), os.path.join(rundir, albany_input_name))
-        else:
-            safe_copy("{}/components/mpas-albany-landice/bld/namelist_files/{}".format(srcroot, albany_input_name), os.path.join(rundir, albany_input_name))
+    if use_bisicles:
+        logger.info("Setting up bisicles_input.xml file for use with BISICLES interface (DUMMY MESSAGE).")
+        ## Write albany_input.xml file if there isn't one in SourceMods
+        #if os.path.exists("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name)):
+        #    safe_copy("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name), os.path.join(rundir, albany_input_name))
+        #else:
+        #    safe_copy("{}/components/mpas-albany-landice/bld/namelist_files/{}".format(srcroot, albany_input_name), os.path.join(rundir, albany_input_name))
 
 ###############################################################################
 def _main_func():

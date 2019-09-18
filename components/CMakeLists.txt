@@ -61,7 +61,7 @@ endif()
 # currently, C++ code is included if and only if we're linking to the
 # trilinos library or the Albany library.
 set(USE_CXX FALSE)
-if (USE_TRILINOS OR USE_ALBANY OR USE_KOKKOS)
+if (USE_TRILINOS OR USE_ALBANY OR USE_KOKKOS OR USE_BISICLES)
   set(USE_CXX TRUE)
 endif()
 
@@ -261,6 +261,23 @@ if (USE_ALBANY)
   # get the "ALBANY_LINK_LIBS" list as an env var
   file(READ ${ALBANY_PATH}/export_albany.in ALBANY_OUTPUT)
   string(REPLACE "ALBANY_LINK_LIBS=" "" ALBANY_LINK_LIBS "${ALBANY_OUTPUT}")
+endif()
+
+if (USE_BISICLES)
+  if (BISICLES_PATH)
+    if (NOT INC_BISICLES)
+      set(INC_BISICLES ${BISICLES_PATH}/include)
+    endif()
+    if (NOT LIB_BISICLES)
+      set(LIB_BISICLES ${BISICLES_PATH}/lib)
+    endif()
+  else()
+    message(FATAL_ERROR "BISICLES_PATH must be defined when USE_BISICLES is TRUE")
+  endif()
+
+  # get the "BISICLES_LINK_LIBS" list as an env var
+  file(READ ${BISICLES_PATH}/export_bisicles.in BISICLES_OUTPUT)
+  string(REPLACE "BISICLES_LINK_LIBS=" "" BISICLES_LINK_LIBS "${BISICLES_OUTPUT}")
 endif()
 
 if (USE_KOKKOS)
@@ -525,6 +542,12 @@ endif()
 if (USE_ALBANY)
   set(SLIBS "${SLIBS} ${ALBANY_LINK_LIBS}")
 endif()
+
+# Add BISICLES libraries.  These are defined in the BISICLES_LINK_LIBS env var that was included above
+if (USE_BISICLES)
+  set(SLIBS "${SLIBS} ${BISICLES_LINK_LIBS}")
+endif()
+
 
 # Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
 # if (USE_MOAB)

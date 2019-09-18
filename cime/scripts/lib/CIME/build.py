@@ -15,7 +15,7 @@ _CMD_ARGS_FOR_BUILD = \
      "MACH", "MPILIB", "NINST_VALUE", "OS", "PIO_VERSION",
      "SHAREDLIBROOT", "SMP_PRESENT", "USE_ESMF_LIB", "USE_MOAB",
      "CAM_CONFIG_OPTS", "COMPARE_TO_NUOPC", "HOMME_TARGET",
-     "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC")
+     "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_BISICLES", "USE_PETSC")
 
 def get_standard_makefile_args(case, shared_lib=False):
     make_args = "CIME_MODEL={} ".format(case.get_value("MODEL"))
@@ -459,6 +459,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     clm_use_petsc       = case.get_value("CLM_USE_PETSC")
     cism_use_trilinos   = case.get_value("CISM_USE_TRILINOS")
     mali_use_albany     = case.get_value("MALI_USE_ALBANY")
+    use_bisicles        = case.get_value("USE_BISICLES")
     mach                = case.get_value("MACH")
 
     # Load some params into env
@@ -499,6 +500,16 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     use_albany = stringify_bool(mali_use_albany)
     case.set_value("USE_ALBANY", use_albany)
+
+    # Set the overall USE_BISICLES variable to TRUE if any of the
+    # *_USE_BISICLES variables are TRUE.
+    # For now, there is just the one USE_BISICLES variable, but in
+    # the future there may be others -- so USE_BISICLES will be true if
+    # ANY of those are true.
+
+    use_bisicles = stringify_bool(use_bisicles)
+    case.set_value("USE_BISICLES", use_bisicles)
+
 
     # Load modules
     case.load_env()

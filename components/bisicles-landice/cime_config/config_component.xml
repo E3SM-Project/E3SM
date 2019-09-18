@@ -22,22 +22,22 @@
     <desc>BISICLES configure options. Currently not used</desc>
   </entry>
 
-  <entry id="MALI_USE_ALBANY">
+  <entry id="USE_BISICLES">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>build_component_mali</group>
     <file>env_build.xml</file>
-    <desc>TRUE implies MALI is built with support for the Albany
-      library The first-order velocity solver in MALI uses the
-      Albany library.  In order to use that velocity solver, MALI
-      must be built with Albany support and linking to Albany must
-      occur when building the ACME executable.  This occurs if this
+    <desc>TRUE implies BISICLES interface is built with support for the BISICLES
+      library.
+      Linking to BISICLES must
+      occur when building the E3SM executable.  
+      This occurs if this
       variable is set to TRUE.  Note that is only available on a
       limited set of machines/compilers.  This must remain FALSE to
-      run MALI on a machine that does not have Albany, or for which
+      run another land ice model on a machine that does not have BISICLES, or for which
       the CIME scripts are not aware of the existence of
-      Albany.</desc>
+      BISICLES.</desc>
   </entry>
 
   <entry id="GLC_SMB">

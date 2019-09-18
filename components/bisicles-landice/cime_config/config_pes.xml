@@ -39,8 +39,8 @@
   </grid>
   <grid name="any">
     <mach name="any">
-      <pes compset="MALI" pesize="any">
-        <comment>most MALI</comment>
+      <pes compset="BISICLES" pesize="any">
+        <comment>most BISICLES</comment>
         <ntasks>
           <ntasks_atm>8</ntasks_atm>
           <ntasks_lnd>8</ntasks_lnd>
@@ -76,8 +76,8 @@
   </grid>
   <grid name="a%0.9x1.25">
     <mach name="any">
-      <pes compset=".+SATM.+SLND.+SICE.+SOCN.+SROF.+MALI%SIA.+SWAV" pesize="any">
-        <comment>MALISIA.</comment>
+      <pes compset=".+SATM.+SLND.+SICE.+SOCN.+SROF.+BISICLES%SIA.+SWAV" pesize="any">
+        <comment>BISICLESSIA.</comment>
         <ntasks>
           <ntasks_atm>8</ntasks_atm>
           <ntasks_lnd>8</ntasks_lnd>
@@ -113,7 +113,7 @@
   </grid>
   <grid name="any">
     <mach name="mira|cetus">
-      <pes compset=".+SATM.+SLND.+SICE.+SOCN.+SROF.+MALI.+SWAV" pesize="any">
+      <pes compset=".+SATM.+SLND.+SICE.+SOCN.+SROF.+BISICLES.+SWAV" pesize="any">
         <comment>none</comment>
         <ntasks>
           <ntasks_atm>1</ntasks_atm>

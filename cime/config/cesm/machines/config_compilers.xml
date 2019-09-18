@@ -708,6 +708,7 @@ using a fortran linker.
 </compiler>
 
 <compiler MACH="cori-haswell" COMPILER="intel">
+  <BISICLES_PATH>           </BISICLES_PATH>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>

@@ -351,7 +351,8 @@ my %flag_element = map {$_, 1} ("CFLAGS", "CMAKE_OPTS", "CONFIG_ARGS",
                      "LDFLAGS", "MLIBS", "SLIBS");
 
 # All other elements.
-my %non_flag_element = map {$_, 1} ("ALBANY_PATH", "CONFIG_SHELL", "CPRE",
+my %non_flag_element = map {$_, 1} ("BISICLES_PATH", 
+                         "ALBANY_PATH", "CONFIG_SHELL", "CPRE",
                          "CXX_LINKER", "ESMF_LIBDIR", "HAS_F2008_CONTIGUOUS",
                          "HDF5_PATH", "LAPACK_LIBDIR", "LD", "MPI_LIB_NAME",
                          "MPI_PATH", "MPICC", "MPICXX", "MPIFC", "NETCDF_PATH",

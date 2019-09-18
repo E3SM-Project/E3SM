@@ -139,6 +139,7 @@
        combination. -->
   <xs:group name="compilerVars">
     <xs:choice>
+      <xs:element name="BISICLES_PATH" type="systemPath"/>
       <xs:element name="ALBANY_PATH" type="systemPath"/>
       <xs:element name="AR" type="systemPath"/>
       <xs:element name="ARFLAGS" type="flagsVar"/>
