@@ -457,7 +457,7 @@ CONTAINS
 
     call t_startf('docn_strdata_advance')
     call shr_strdata_advance(SDOCN, target_ymd, target_tod, mpicom, 'docn')
-    call t_stopf('docn_strdata_advancfe')
+    call t_stopf('docn_strdata_advance')
 
     !--- copy streams to o2x ---
     call t_barrierf('docn_scatter_BARRIER', mpicom)
