@@ -4,8 +4,6 @@
 #include "share/scream_pack.hpp"
 #include "share/scream_kokkos_meta.hpp"
 
-#include <cmath>
-
 namespace {
 
 TEST_CASE("precision", "util") {
