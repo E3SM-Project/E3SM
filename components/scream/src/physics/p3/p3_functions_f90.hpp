@@ -20,7 +20,7 @@ namespace p3 {
 //
 struct P3GlobalForFortran
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
 
   using view_1d_table = typename P3F::view_1d_table;
   using view_2d_table = typename P3F::view_2d_table;

@@ -117,12 +117,18 @@ void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
                                    Real* dum1, Real* dum4, Real* dum5, Real* dum6,
                                    Real qitot_, Real nitot_, Real qirim_, Real rhop_)
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
+  using TableIce = typename P3F::TableIce;
 
   typename P3F::Smask qiti_gt_small(qitot_ > P3F::C::QSMALL);
   typename P3F::Spack qitot(qitot_), nitot(nitot_), qirim(qirim_), rhop(rhop_);
-  typename P3F::TableIce t;
-  P3F::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t);
+  typename P3F::view_1d<TableIce> t_d("t_h", 1);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    P3F::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t_d(0));
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  auto& t = t_h(0);
 
   // adjust for 1-based indexing
   *dumi  = t.dumi[0]  + 1;
@@ -138,14 +144,20 @@ void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
 
 void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr_, Real nr_)
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
+  using TableRain = typename P3F::TableRain;
 
   // we can assume fortran would not be calling this routine if qiti_gt_small was not true
   typename P3F::Smask qiti_gt_small(true);
 
   typename P3F::Spack qr(qr_), nr(nr_);
-  typename P3F::TableRain t;
-  P3F::lookup_rain(qiti_gt_small, qr, nr, t);
+  typename P3F::view_1d<TableRain> t_d("t_h", 1);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    P3F::lookup_rain(qiti_gt_small, qr, nr, t_d(0));
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  auto& t = t_h(0);
 
   // adjust for 1-based indexing
   *dumj = t.dumj[0] + 1;
@@ -156,7 +168,7 @@ void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr_, Real nr_)
 void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
                            Real dum1, Real dum4, Real dum5, Real* proc)
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
 
   // we can assume fortran would not be calling this routine if qiti_gt_small was not true
   typename P3F::Smask qiti_gt_small(true);
@@ -173,13 +185,18 @@ void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
   t.dum4 = dum4;
   t.dum5 = dum5;
 
-  *proc = P3F::apply_table_ice(qiti_gt_small, adjusted_index, P3GlobalForFortran::itab(), t)[0];
+  auto itab = P3GlobalForFortran::itab();
+  Real result;
+  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
+    value = P3F::apply_table_ice(qiti_gt_small, adjusted_index, itab, t)[0];
+  }, result);
+  *proc = result;
 }
 
 void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
                                 Real dum1, Real dum3, Real dum4, Real dum5, Real* proc)
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
 
   // we can assume fortran would not be calling this routine if qiti_gt_small was not true
   typename P3F::Smask qiti_gt_small(true);
@@ -200,44 +217,75 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
   ti.dum5 = dum5;
   tr.dum3 = dum3;
 
-  *proc = P3F::apply_table_coll(qiti_gt_small, adjusted_index, P3GlobalForFortran::itabcol(), ti, tr)[0];
+  auto itabcol = P3GlobalForFortran::itabcol();
+  Real result;
+  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
+    value = P3F::apply_table_coll(qiti_gt_small, adjusted_index, itabcol, ti, tr)[0];
+  }, result);
+  *proc = result;
 }
 
 void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Real* lamc_,
                       Real* cdist_, Real* cdist1_, Real lcldm_)
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
 
   typename P3F::Smask qc_gt_small(qc_ > P3F::C::QSMALL);
-  typename P3F::Spack qc(qc_), nc(*nc_), rho(rho_), lcldm(lcldm_);
+  typename P3F::view_1d<Real> t_d("t_h", 6);
+  auto t_h = Kokkos::create_mirror_view(t_d);
 
-  typename P3F::Spack mu_c, nu, lamc, cdist, cdist1;
+  Real local_nc = *nc_;
+  auto dnu = P3GlobalForFortran::dnu();
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    typename P3F::Spack qc(qc_), nc(local_nc), rho(rho_), lcldm(lcldm_);
+    typename P3F::Spack mu_c, nu, lamc, cdist, cdist1;
 
-  P3F::get_cloud_dsd2(qc_gt_small, qc, nc, mu_c, rho, nu, P3GlobalForFortran::dnu(), lamc, cdist, cdist1, lcldm);
+    P3F::get_cloud_dsd2(qc_gt_small, qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, lcldm);
 
-  *nc_     = nc[0];
-  *mu_c_   = mu_c[0];
-  *nu_     = nu[0];
-  *lamc_   = lamc[0];
-  *cdist_  = cdist[0];
-  *cdist1_ = cdist1[0];
+    t_d(0) = nc[0];
+    t_d(1) = mu_c[0];
+    t_d(2) = nu[0];
+    t_d(3) = lamc[0];
+    t_d(4) = cdist[0];
+    t_d(5) = cdist1[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *nc_     = t_h(0);
+  *mu_c_   = t_h(1);
+  *nu_     = t_h(2);
+  *lamc_   = t_h(3);
+  *cdist_  = t_h(4);
+  *cdist1_ = t_h(5);
 }
 
 void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr_, Real* logn0r_, Real rcldm_)
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
 
   typename P3F::Smask qr_gt_small(qr_ > P3F::C::QSMALL);
-  typename P3F::Spack qr(qr_), rcldm(rcldm_), nr(*nr_);
-  typename P3F::Spack lamr, mu_r, cdistr, logn0r;
+  typename P3F::view_1d<Real> t_d("t_h", 5);
+  auto t_h = Kokkos::create_mirror_view(t_d);
 
-  P3F::get_rain_dsd2(qr_gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    typename P3F::Spack qr(qr_), rcldm(rcldm_), nr(*nr_);
+    typename P3F::Spack lamr, mu_r, cdistr, logn0r;
 
-  *nr_     = nr[0];
-  *mu_r_   = mu_r[0];
-  *lamr_   = lamr[0];
-  *cdistr_ = cdistr[0];
-  *logn0r_ = logn0r[0];
+    P3F::get_rain_dsd2(qr_gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
+
+    t_d(0) = nr[0];
+    t_d(1) = mu_r[0];
+    t_d(2) = lamr[0];
+    t_d(3) = cdistr[0];
+    t_d(4) = logn0r[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *nr_     = t_h(0);
+  *mu_r_   = t_h(1);
+  *lamr_   = t_h(2);
+  *cdistr_ = t_h(3);
+  *logn0r_ = t_h(4);
 }
 
 Real cxx_pow(Real base, Real exp)
@@ -251,12 +299,11 @@ template <typename ScalarT, typename DeviceT>
 struct CudaWrap
 {
   using Scalar = ScalarT;
-  using RangePolicy = typename KokkosTypes<DeviceT>::RangePolicy;
 
   static Scalar cxx_gamma(ScalarT input)
   {
     Scalar result;
-    Kokkos::parallel_reduce(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i, Real& value) {
+    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
       value = std::tgamma(input);
     }, result);
 
@@ -266,7 +313,7 @@ struct CudaWrap
   static Scalar cxx_cbrt(ScalarT input)
   {
     Scalar result;
-    Kokkos::parallel_reduce(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i, Real& value) {
+    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
       value = std::cbrt(input);
     }, result);
 
