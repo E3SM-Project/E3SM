@@ -129,29 +129,6 @@ void transpose(const Scalar* sv, Scalar* dv, Int ni, Int nk) {
         dv[nk*i + k] = sv[ni*k + i];
 };
 
-// A substitute for std::pow when exp is a positive integer. This
-// implementation is ~2x faster than std::pow, but, more importantly,
-// it is BFB with Fortran's "**" operator when base is a floating point
-// (std::pow is not!).
-template <typename Scalar> KOKKOS_INLINE_FUNCTION
-Scalar ipow_scalar(Scalar base, int exp)
-{
-  //https://stackoverflow.com/questions/101439/the-most-efficient-way-to-implement-an-integer-based-power-function-powint-int
-  base = exp >= 0 ? base : 1/base;
-  Scalar result = 1;
-  for (;;)
-  {
-    if (exp & 1)
-      result *= base;
-    exp /= 2;
-    if (!exp)
-      break;
-    base *= base;
-  }
-
-  return result;
-}
-
 namespace check_overloads
 {
 // Note: the trick used here is taken from Alexandrescu's 'Modern C++ Design' book.

@@ -187,6 +187,7 @@ extern "C" {
 Real cxx_pow(Real base, Real exp);
 Real cxx_cbrt(Real base);
 Real cxx_gamma(Real input);
+Real cxx_log10(Real input);
 
 }
 

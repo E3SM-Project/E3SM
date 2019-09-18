@@ -150,7 +150,7 @@ void Functions<S,D>
   const auto gt_small = qr > qsmall && nr > 0.0;
 
   // calculate scaled mean size for consistency with ice lookup table
-  auto dumlr = pack::pow(qr/(C::Pi * C::RHOW * nr), C::THIRD);
+  auto dumlr = pack::cbrt(qr/(C::Pi * C::RHOW * nr));
   dumlr.set(!gt_small, 1); // get rid of bad values
   t.dum3 = (pack::log10(1.0*dumlr) + 5.0)*10.70415;
   t.dumj = IntSmallPack(t.dum3);

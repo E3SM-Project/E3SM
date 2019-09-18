@@ -337,19 +337,10 @@ scream_pack_gen_bin_fn_all(max, util::max)
 // get around that.
 //scream_pack_gen_bin_fn_all(pow, std::pow)
 template <typename Pack, typename Scalar> KOKKOS_INLINE_FUNCTION
-OnlyPack<Pack> pow (const Pack& a, const Scalar/*&*/ b,
-                    typename std::enable_if<std::is_floating_point<Scalar>::value>::type* = 0 ) {
+OnlyPack<Pack> pow (const Pack& a, const Scalar/*&*/ b) {
   Pack s;
   vector_simd for (int i = 0; i < Pack::n; ++i)
     s[i] = std::pow<typename Pack::scalar>(a[i], b);
-  return s;
-}
-
-template <typename Pack> KOKKOS_INLINE_FUNCTION
-OnlyPack<Pack> pow(const Pack& a, const int b) {
-  Pack s;
-  vector_simd for (int i = 0; i < Pack::n; ++i)
-    s[i] = util::ipow_scalar(a[i], b);
   return s;
 }
 

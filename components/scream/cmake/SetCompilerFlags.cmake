@@ -107,6 +107,8 @@ if (${CUDA_FOUND})
   string (FIND "${WRAPS_NVCC_OUT1} ${WRAPS_NVCC_OUT2}" "nvcc" pos)
   if (${pos} GREATER -1)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} --expt-extended-lambda")
+    # Turn off fused multiply add for debug so we can stay BFB with host
+    set (CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} --fmad=false")
     message (STATUS "Cuda enabled!")
   else ()
     message (STATUS "Cuda was found, but the C++ compiler is not nvcc_wrapper, so building without Cuda support.")

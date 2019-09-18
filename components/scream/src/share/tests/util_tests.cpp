@@ -13,19 +13,6 @@ TEST_CASE("precision", "util") {
   CHECK(scream::util::is_single_precision<float>::value);
 }
 
-TEST_CASE("ipow_scalar", "util") {
-  for (int i = 0; i < 5; ++i) {
-    REQUIRE(scream::util::ipow_scalar(2, i) == std::pow(2, i));
-  }
-  double base = 1.167692662218503654003143310546875E+06;
-  double invbase = 1/base;
-  REQUIRE(scream::util::ipow_scalar(base, 3) == base*base*base);
-  REQUIRE(scream::util::ipow_scalar(base, -3) == scream::util::ipow_scalar(invbase, 3));
-
-  // This is case that caused problems
-  REQUIRE(scream::util::ipow_scalar(base, 3) != std::pow(base, 3));
-}
-
 // This is just a compilation test.
 TEST_CASE("Unmanaged", "scream::ko") {
   using scream::ko::Unmanaged;

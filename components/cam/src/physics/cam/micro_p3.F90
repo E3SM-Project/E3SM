@@ -39,10 +39,12 @@
 #  define bfb_pow(base, exp) cxx_pow(base, exp)
 #  define bfb_cbrt(base) cxx_cbrt(base)
 #  define bfb_gamma(val) cxx_gamma(val)
+#  define bfb_log10(val) cxx_log10(val)
 #else
 #  define bfb_pow(base, exp) base**exp
 #  define bfb_cbrt(base) base**thrd
 #  define bfb_gamma(val) gamma(val)
+#  define bfb_log10(val) log10(val)
 #endif
 
 module micro_p3
@@ -1539,7 +1541,7 @@ contains
     ! Finds indices in 3D ice (only) lookup table
     !------------------------------------------------------------------------------------------!
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: find_lookuptable_indices_1a_f
+    use micro_p3_iso_f, only: find_lookuptable_indices_1a_f, cxx_log10
 #endif
 
     implicit none
@@ -1557,15 +1559,14 @@ contains
        return
     endif
 #endif
+
     !------------------------------------------------------------------------------------------!
-    
     ! find index for qi (normalized ice mass mixing ratio = qitot/nitot)
     !             dum1 = (log10(qitot)+16.)/0.70757  !orig
     !             dum1 = (log10(qitot)+16.)*1.41328
     ! we are inverting this equation from the lookup table to solve for i:
     ! qitot/nitot=261.7**((i+10)*0.1)*1.e-18
-    !dum1 = (log10(qitot/nitot)+18.)/(0.1*log10(261.7))-10.
-    dum1 = (log10(qitot/nitot)+18._rtype)*lookup_table_1a_dum1_c-10._rtype ! For computational efficiency
+    dum1 = (bfb_log10(qitot/nitot)+18._rtype)*lookup_table_1a_dum1_c-10._rtype ! For computational efficiency
     dumi = int(dum1)
     ! set limits (to make sure the calculated index doesn't exceed range of lookup table)
     dum1 = min(dum1,real(isize))
@@ -1610,7 +1611,7 @@ contains
     ! Finds indices in 3D rain lookup table
     !------------------------------------------------------------------------------------------!
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: find_lookuptable_indices_1b_f
+    use micro_p3_iso_f, only: find_lookuptable_indices_1b_f, cxx_cbrt, cxx_log10
 #endif
 
     implicit none
@@ -1637,8 +1638,8 @@ contains
     ! if no rain, then just choose dumj = 1 and do not calculate rain-ice collection processes
     if (qr.ge.qsmall .and. nr.gt.0._rtype) then
        ! calculate scaled mean size for consistency with ice lookup table
-       dumlr = (qr/(pi*rhow*nr))**thrd
-       dum3  = (log10(1._rtype*dumlr)+5._rtype)*10.70415_rtype
+       dumlr = bfb_cbrt(qr/(pi*rhow*nr))
+       dum3  = (bfb_log10(1._rtype*dumlr)+5._rtype)*10.70415_rtype
        dumj  = int(dum3)
        ! set limits
        dum3  = min(dum3,real_rcollsize)
@@ -1785,7 +1786,7 @@ contains
   subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: get_rain_dsd2_f, cxx_pow, cxx_gamma, cxx_cbrt
+    use micro_p3_iso_f, only: get_rain_dsd2_f, cxx_pow, cxx_gamma, cxx_cbrt, cxx_log10
 #endif
 
     ! Computes and returns rain size distribution parameters
@@ -1835,7 +1836,7 @@ contains
        endif
 
        cdistr  = nr*rcldm/bfb_gamma(mu_r+1._rtype)
-       logn0r  = log10(nr)+(mu_r+1._rtype)*log10(lamr)-log10(bfb_gamma(mu_r+1._rtype)) !note: logn0r is calculated as log10(n0r)
+       logn0r  = bfb_log10(nr)+(mu_r+1._rtype)*bfb_log10(lamr)-bfb_log10(bfb_gamma(mu_r+1._rtype)) !note: logn0r is calculated as log10(n0r)
 
     else
 

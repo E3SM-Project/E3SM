@@ -266,9 +266,10 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   typename P3F::Smask qr_gt_small(qr_ > P3F::C::QSMALL);
   typename P3F::view_1d<Real> t_d("t_h", 5);
   auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_nr = *nr_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-    typename P3F::Spack qr(qr_), rcldm(rcldm_), nr(*nr_);
+    typename P3F::Spack qr(qr_), rcldm(rcldm_), nr(local_nr);
     typename P3F::Spack lamr, mu_r, cdistr, logn0r;
 
     P3F::get_rain_dsd2(qr_gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
@@ -319,6 +320,16 @@ struct CudaWrap
 
     return result;
   }
+
+  static Scalar cxx_log10(ScalarT input)
+  {
+    Scalar result;
+    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
+      value = std::log10(input);
+    }, result);
+
+    return result;
+  }
 };
 
 Real cxx_gamma(Real input)
@@ -336,6 +347,15 @@ Real cxx_cbrt(Real input)
   return CudaWrap<Real, DefaultDevice>::cxx_cbrt(input);
 #else
   return std::cbrt(input);
+#endif
+}
+
+Real cxx_log10(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_log10(input);
+#else
+  return std::log10(input);
 #endif
 }
 
