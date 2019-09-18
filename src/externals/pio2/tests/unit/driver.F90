@@ -15,7 +15,7 @@ Program pio_unit_test_driver
 
   ! local variables
   character(len=str_len) :: err_msg
-  integer :: fail_cnt, test_cnt, ios, test_id, ierr, test_val 
+  integer :: fail_cnt, test_cnt, ios, test_id, ierr
   logical :: ltest_netcdf, ltest_pnetcdf
   logical :: ltest_netcdf4p, ltest_netcdf4c
   namelist/piotest_nml/  ltest_netcdf,     &
@@ -26,7 +26,7 @@ Program pio_unit_test_driver
   integer ret_val
   character(len=pio_max_name) :: errmsg
   character(len=pio_max_name) :: expected
-  
+
   ! Set up MPI
   call MPI_Init(ierr)
   call MPI_Comm_rank(MPI_COMM_WORLD, my_rank, ierr)
@@ -63,7 +63,7 @@ Program pio_unit_test_driver
 
      ! Ignore namelist values if PIO not built with correct options
      ! (i.e. don't test pnetcdf if not built with pnetcdf)
-     ret_val = PIO_set_log_level(2)
+
 #ifndef _NETCDF
      if (ltest_netcdf) then
         write(*,"(A,1x,A)") "WARNING: can not test netcdf files because PIO", &
@@ -132,7 +132,7 @@ Program pio_unit_test_driver
      print *, err_msg
      call parse(err_msg, fail_cnt)
   end if
-     
+
   do test_id=1,ntest
      if (ltest(test_id)) then
         ! Make sure i is a valid test number
@@ -154,7 +154,7 @@ Program pio_unit_test_driver
                 write(*,"(A,I0)") "Error, not configured for test #", test_id
            call MPI_Abort(MPI_COMM_WORLD, 0, ierr)
         end select
-        
+
         ! test_create()
         if (master_task) write(*,"(3x,A,1x)") "testing PIO_createfile..."
         call test_create(test_id, err_msg)
@@ -209,7 +209,7 @@ Program pio_unit_test_driver
   call MPI_Finalize(ierr)
   if(fail_cnt>0) then
      stop 1
-  else	 
+  else
      stop 0
   endif
 Contains

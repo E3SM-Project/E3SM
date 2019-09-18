@@ -1,6 +1,6 @@
 
 shr_ncread_mod.o: shr_ncread_mod.F90
-	 $(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS_NOOPT) $<
+	 $(FC) -c $(FPPFLAGS) $(INCLDIR) $(INCS) $(FREEFLAGS) $(FFLAGS) $(FFLAGS_NOOPT) $<
 
 quadrature_mod.o: quadrature_mod.F90
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -DIS_ACCELERATOR $<

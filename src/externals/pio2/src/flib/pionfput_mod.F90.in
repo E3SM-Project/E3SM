@@ -3,6 +3,12 @@
 !! @file
 !! @brief Write routines for non-decomposed NetCDF data.
 !<
+!>
+!! @defgroup PIO_put_var Write Variable
+!! Writes data to a variable.
+!! @warning Although this is a collective call the variable is written from the
+!! root IO task, no consistancy check is made with data passed on other tasks.
+!<
 module pionfput_mod
 #ifdef TIMING
   use perf_mod, only : t_startf, t_stopf      ! _EXTERNAL
@@ -14,15 +20,6 @@ module pionfput_mod
   implicit none
   private
 
-!>
-!! @defgroup PIO_put_var PIO_put_var
-!! @brief Writes data to a netCDF file.
-!! @details The put_var interface is provided as a simplified interface to
-!!  write variables to a netcdf format file.
-!! @warning Although this is a collective call the variable is written from the
-!!  root IO task, no consistancy check is made with data passed on other tasks.
-!!
-!<
   public :: put_var
   interface put_var
      !  DIMS 0,1,2,3,4,5
@@ -178,7 +175,7 @@ contains
 !! @details
 !! @param File @copydoc file_desc_t
 !! @param vardesc @copydoc var_desc_t
-!! @param start :
+!! @param index :
 !! @param ival : The value for the netcdf metadata
 !! @retval ierr @copydoc error_return
 !<
@@ -266,8 +263,7 @@ contains
 !! @ingroup PIO_put_var
 !! @brief Writes {TYPE} data to a netCDF variable.
 !! @details
-!! @param File @copydoc file_desc_t
-!! @param File : A file handle returne from \ref PIO_openfile or \ref PIO_createfile.
+!! @param ncid : The netcdf file id.
 !! @param varid : The netcdf variable identifier
 !! @param ival : The data to write.
 !! @retval ierr @copydoc error_return
@@ -348,6 +344,7 @@ contains
   end function put_var_0d_{TYPE}
 
 
+! TYPE int,real,double
   integer function put_vara_internal_{TYPE} (ncid,varid,start,count, ival) result(ierr)
     integer, intent(in) :: ncid
     integer, intent(in) :: varid
@@ -455,7 +452,19 @@ contains
     character(C_CHAR), intent(out) :: cstr(:)
     integer :: clen, sd({DIMS})
     integer :: cinc
-    integer :: i, j, k, m, n, q
+    integer :: i, j
+#if {DIMS} >= 2
+    integer :: k
+#endif
+#if {DIMS} >= 3
+    integer :: m
+#endif
+#if {DIMS} >= 4
+    integer :: n
+#endif
+#if {DIMS} == 5
+    integer :: q
+#endif
 
     cstr = C_NULL_CHAR
     do i=1,{DIMS}

@@ -30,18 +30,22 @@ def _build_usernl_files(case, model, comp):
 
     expect(os.path.isdir(model_dir),
            "cannot find cime_config directory {} for component {}".format(model_dir, comp))
-    ninst = 1
+    comp_interface = case.get_value("COMP_INTERFACE")
     multi_driver = case.get_value("MULTI_DRIVER")
+    ninst = 1
+
     if multi_driver:
         ninst_max = case.get_value("NINST_MAX")
-        if model not in ("DRV","CPL","ESP"):
+        if comp_interface != "nuopc" and model not in ("DRV","CPL","ESP"):
             ninst_model = case.get_value("NINST_{}".format(model))
             expect(ninst_model==ninst_max,"MULTI_DRIVER mode, all components must have same NINST value.  NINST_{} != {}".format(model,ninst_max))
     if comp == "cpl":
         if not os.path.exists("user_nl_cpl"):
             safe_copy(os.path.join(model_dir, "user_nl_cpl"), ".")
     else:
-        if ninst == 1:
+        if comp_interface == "nuopc":
+            ninst = case.get_value("NINST")
+        elif ninst == 1:
             ninst = case.get_value("NINST_{}".format(model))
         nlfile = "user_nl_{}".format(comp)
         model_nl = os.path.join(model_dir, nlfile)
@@ -67,11 +71,14 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 ###############################################################################
     os.chdir(caseroot)
 
+    non_local = case.get_value("NONLOCAL")
+
     # Check that $DIN_LOC_ROOT exists - and abort if not a namelist compare tests
-    din_loc_root = case.get_value("DIN_LOC_ROOT")
-    testcase     = case.get_value("TESTCASE")
-    expect(not (not os.path.isdir(din_loc_root) and testcase != "SBN"),
-           "inputdata root is not a directory or is not readable: {}".format(din_loc_root))
+    if not non_local:
+        din_loc_root = case.get_value("DIN_LOC_ROOT")
+        testcase     = case.get_value("TESTCASE")
+        expect(not (not os.path.isdir(din_loc_root) and testcase != "SBN"),
+               "inputdata root is not a directory or is not readable: {}".format(din_loc_root))
 
     # Remove batch scripts
     if reset or clean:
@@ -86,7 +93,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             case.set_value("BUILD_COMPLETE", False)
 
     if not clean:
-        case.load_env()
+        if not non_local:
+            case.load_env()
 
         models = case.get_values("COMP_CLASSES")
         mach = case.get_value("MACH")
@@ -94,12 +102,17 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         debug = case.get_value("DEBUG")
         mpilib = case.get_value("MPILIB")
         sysos = case.get_value("OS")
+        comp_interface = case.get_value("COMP_INTERFACE")
         expect(mach is not None, "xml variable MACH is not set")
 
         # creates the Macros.make, Depends.compiler, Depends.machine, Depends.machine.compiler
         # and env_mach_specific.xml if they don't already exist.
         if not os.path.isfile("Macros.make") or not os.path.isfile("env_mach_specific.xml"):
-            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, sysos)
+            configure(Machines(machine=mach), caseroot, ["Makefile"], compiler, mpilib, debug, comp_interface, sysos)
+
+        # Also write out Cmake macro file
+        if not os.path.isfile("Macros.cmake"):
+            configure(Machines(machine=mach), caseroot, ["CMake"], compiler, mpilib, debug, comp_interface, sysos)
 
         # Set tasks to 1 if mpi-serial library
         if mpilib == "mpi-serial":
@@ -107,15 +120,22 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
 
         # Check ninst.
         # In CIME there can be multiple instances of each component model (an ensemble) NINST is the instance of that component.
+        comp_interface = case.get_value("COMP_INTERFACE")
+        if comp_interface == "nuopc":
+            ninst  = case.get_value("NINST")
+
         multi_driver = case.get_value("MULTI_DRIVER")
+
         for comp in models:
             ntasks = case.get_value("NTASKS_{}".format(comp))
             if comp == "CPL":
                 continue
-            ninst  = case.get_value("NINST_{}".format(comp))
+            if comp_interface != "nuopc":
+                ninst  = case.get_value("NINST_{}".format(comp))
             if multi_driver:
-                expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
-                       "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
+                if comp_interface != "nuopc":
+                    expect(case.get_value("NINST_LAYOUT_{}".format(comp)) == "concurrent",
+                           "If multi_driver is TRUE, NINST_LAYOUT_{} must be concurrent".format(comp))
                 case.set_value("NTASKS_PER_INST_{}".format(comp), ntasks)
             else:
                 if ninst > ntasks:
@@ -155,7 +175,6 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
             else:
                 case.set_value("TOTALPES", case.total_tasks*case.thread_count)
 
-
             # May need to select new batch settings if pelayout changed (e.g. problem is now too big for prev-selected queue)
             env_batch = case.get_env("batch")
             env_batch.set_job_defaults([(case.get_primary_job(), {})], case)
@@ -194,7 +213,7 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         logger.info("If an old case build already exists, might want to run \'case.build --clean\' before building")
 
         # Some tests need namelists created here (ERP) - so do this if we are in test mode
-        if test_mode or get_model() == "e3sm":
+        if (test_mode or get_model() == "e3sm") and not non_local:
             logger.info("Generating component namelists as part of setup")
             case.create_namelists()
 
@@ -202,7 +221,8 @@ def _case_setup_impl(case, caseroot, clean=False, test_mode=False, reset=False):
         env_module = case.get_env("mach_specific")
         env_module.make_env_mach_specific_file("sh", case)
         env_module.make_env_mach_specific_file("csh", case)
-        env_module.save_all_env_info("software_environment.txt")
+        if not non_local:
+            env_module.save_all_env_info("software_environment.txt")
 
         logger.info("You can now run './preview_run' to get more info on how your case will be run")
 
@@ -218,7 +238,7 @@ def case_setup(self, clean=False, test_mode=False, reset=False):
         with TestStatus(test_dir=caseroot, test_name=test_name) as ts:
             try:
                 run_and_log_case_status(functor, phase, caseroot=caseroot)
-            except:
+            except BaseException: # Want to catch KeyboardInterrupt too
                 ts.set_status(SETUP_PHASE, TEST_FAIL_STATUS)
                 raise
             else:

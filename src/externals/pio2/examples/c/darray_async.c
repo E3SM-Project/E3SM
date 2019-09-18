@@ -9,6 +9,7 @@
  * This example can be run in parallel for 4 processors.
  */
 
+#include "config.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -70,31 +71,6 @@ int dim_len[NDIM3] = {NC_UNLIMITED, DIM_LEN_X, DIM_LEN_Y};
 /* Names of dimensions. */
 char dim_name[NDIM3][PIO_MAX_NAME + 1] = {"unlimted", "x", "y"};
 
-/* Handle MPI errors. This should only be used with MPI library
- * function calls. */
-#define MPIERR(e) do {                                                  \
-	MPI_Error_string(e, err_buffer, &resultlen);			\
-	printf("MPI error, line %d, file %s: %s\n", __LINE__, __FILE__, err_buffer); \
-	MPI_Finalize();							\
-	return 2;							\
-    } while (0)
-
-/* Handle non-MPI errors by finalizing the MPI library and exiting
- * with an exit code. */
-#define ERR(e) do {				\
-	MPI_Finalize();				\
-	return e;				\
-    } while (0)
-
-/* Global err buffer for MPI. When there is an MPI error, this buffer
- * is used to store the error message that is associated with the MPI
- * error. */
-char err_buffer[MPI_MAX_ERROR_STRING];
-
-/* This is the length of the most recent MPI error message, stored
- * int the global error string. */
-int resultlen;
-
 /* @brief Check the output file.
  *
  *  Use netCDF to check that the output is as expected.
@@ -116,7 +92,7 @@ int resultlen;
 /*     nc_type xtype;    /\* NetCDF data type of this variable. *\/ */
 /*     int ret;          /\* Return code for function calls. *\/ */
 /*     int dimids[NDIM3]; /\* Dimension ids for this variable. *\/ */
-/*     char var_name[NC_MAX_NAME];   /\* Name of the variable. *\/ */
+/*     char var_name[PIO_MAX_NAME];   /\* Name of the variable. *\/ */
 /*     /\* size_t start[NDIM3];           /\\* Zero-based index to start read. *\\/ *\/ */
 /*     /\* size_t count[NDIM3];           /\\* Number of elements to read. *\\/ *\/ */
 /*     /\* int buffer[DIM_LEN_X];          /\\* Buffer to read in data. *\\/ *\/ */
@@ -136,7 +112,7 @@ int resultlen;
 /*         return ERR_BAD; */
 /*     for (int d = 0; d < NDIM3; d++) */
 /*     { */
-/*         char my_dim_name[NC_MAX_NAME]; */
+/*         char my_dim_name[PIO_MAX_NAME]; */
 /*         PIO_Offset dimlen;  */
         
 /*         if ((ret = PIOc_inq_dim(ncid, d, my_dim_name, &dimlen))) */
@@ -187,114 +163,118 @@ int resultlen;
 
 /* Write, then read, a simple example with darrays.
 
-    The sample file created by this program is a small netCDF file. It
-    has the following contents (as shown by ncdump):
+   The sample file created by this program is a small netCDF file. It
+   has the following contents (as shown by ncdump):
 
-    <pre>
-netcdf darray_no_async_iotype_1 {
-dimensions:
-	unlimted = UNLIMITED ; // (2 currently)
-	x = 4 ;
-	y = 4 ;
-variables:
-	int foo(unlimted, x, y) ;
-data:
+   <pre>
+   netcdf darray_no_async_iotype_1 {
+   dimensions:
+   unlimted = UNLIMITED ; // (2 currently)
+   x = 4 ;
+   y = 4 ;
+   variables:
+   int foo(unlimted, x, y) ;
+   data:
 
- foo =
-  42, 42, 42, 42,
-  43, 43, 43, 43,
-  44, 44, 44, 44,
-  45, 45, 45, 45,
-  142, 142, 142, 142,
-  143, 143, 143, 143,
-  144, 144, 144, 144,
-  145, 145, 145, 145 ;
-}
-    </pre>
+   foo =
+   42, 42, 42, 42,
+   43, 43, 43, 43,
+   44, 44, 44, 44,
+   45, 45, 45, 45,
+   142, 142, 142, 142,
+   143, 143, 143, 143,
+   144, 144, 144, 144,
+   145, 145, 145, 145 ;
+   }
+   </pre>
 
 */
-    int main(int argc, char* argv[])
-    {
-	int my_rank;  /* Zero-based rank of processor. */
-	int ntasks;   /* Number of processors involved in current execution. */
-        int iosysid; /* The ID for the parallel I/O system. */
-	/* int ncid;     /\* The ncid of the netCDF file. *\/ */
-	/* int dimid[NDIM3];    /\* The dimension ID. *\/ */
-	/* int varid;    /\* The ID of the netCDF varable. *\/ */
-        /* char filename[NC_MAX_NAME + 1]; /\* Test filename. *\/ */
-        /* int num_flavors = 0;            /\* Number of iotypes available in this build. *\/ */
-	/* int format[NUM_NETCDF_FLAVORS]; /\* Different output flavors. *\/ */
-	int ret;                        /* Return value. */
+int main(int argc, char* argv[])
+{
+    int my_rank;  /* Zero-based rank of processor. */
+    int ntasks;   /* Number of processors involved in current execution. */
+    int iosysid; /* The ID for the parallel I/O system. */
+    /* int ncid;     /\* The ncid of the netCDF file. *\/ */
+    /* int dimid[NDIM3];    /\* The dimension ID. *\/ */
+    /* int varid;    /\* The ID of the netCDF varable. *\/ */
+    /* char filename[PIO_MAX_NAME + 1]; /\* Test filename. *\/ */
+    /* int num_flavors = 0;            /\* Number of iotypes available in this build. *\/ */
+    /* int format[NUM_NETCDF_FLAVORS]; /\* Different output flavors. *\/ */
+    int ret;                        /* Return value. */
 
 #ifdef TIMING
-	/* Initialize the GPTL timing library. */
-	if ((ret = GPTLinitialize ()))
-	    return ret;
+    /* Initialize the GPTL timing library. */
+    if ((ret = GPTLinitialize ()))
+        return ret;
 #endif
         
-	/* Initialize MPI. */
-	if ((ret = MPI_Init(&argc, &argv)))
-	    MPIERR(ret);
-	if ((ret = MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN)))
-	    MPIERR(ret);
+    /* Initialize MPI. */
+    if ((ret = MPI_Init(&argc, &argv)))
+        MPIERR(ret);
+    if ((ret = MPI_Comm_set_errhandler(MPI_COMM_WORLD, MPI_ERRORS_RETURN)))
+        MPIERR(ret);
 
-	/* Learn my rank and the total number of processors. */
-	if ((ret = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank)))
-	    MPIERR(ret);
-	if ((ret = MPI_Comm_size(MPI_COMM_WORLD, &ntasks)))
-	    MPIERR(ret);
+    /* Learn my rank and the total number of processors. */
+    if ((ret = MPI_Comm_rank(MPI_COMM_WORLD, &my_rank)))
+        MPIERR(ret);
+    if ((ret = MPI_Comm_size(MPI_COMM_WORLD, &ntasks)))
+        MPIERR(ret);
 
-	/* Check that a valid number of processors was specified. */
-        printf("%d: ParallelIO Library darray_async example running on %d processors.\n",
-               my_rank, ntasks);
-	if (ntasks != TARGET_NTASKS)
-        {
-	    fprintf(stderr, "Number of processors must be %d!\n", TARGET_NTASKS);
-            return ERR_BAD;
-        }
+    /* Check that a valid number of processors was specified. */
+    printf("%d: ParallelIO Library darray_async example running on %d processors.\n",
+           my_rank, ntasks);
+    if (ntasks != TARGET_NTASKS)
+    {
+        fprintf(stderr, "Number of processors must be %d!\n", TARGET_NTASKS);
+        return ERR_BAD;
+    }
 
-        /* Turn on logging. */
-        if ((ret = PIOc_set_log_level(LOG_LEVEL)))
-            return ret;
+    /* Turn on logging. */
+    if ((ret = PIOc_set_log_level(LOG_LEVEL)))
+        return ret;
 
-        /* Num procs for computation. */
-        int num_procs2[COMPONENT_COUNT] = {4};
+    /* Change error handling so we can test inval parameters. */
+    if ((ret = PIOc_set_iosystem_error_handling(PIO_DEFAULT, PIO_RETURN_ERROR, NULL)))
+        return ret;
+
+    /* Num procs for computation. */
+    int num_procs2[COMPONENT_COUNT] = {4};
         
-        /* Is the current process a computation task? */
-        int comp_task = my_rank < NUM_IO_TASKS ? 0 : 1;
+    /* Is the current process a computation task? */
+    int comp_task = my_rank < NUM_IO_TASKS ? 0 : 1;
 
-        /* Initialize the IO system. */
-        if ((ret = PIOc_init_async(MPI_COMM_WORLD, NUM_IO_TASKS, NULL, COMPONENT_COUNT,
-                                   num_procs2, NULL, NULL, NULL, PIO_REARR_BOX, &iosysid)))
-            ERR(ret);
+    /* Initialize the IO system. */
+    if ((ret = PIOc_init_async(MPI_COMM_WORLD, NUM_IO_TASKS, NULL, COMPONENT_COUNT,
+                               num_procs2, NULL, NULL, NULL, PIO_REARR_BOX, &iosysid)))
+        ERR(ret);
 
 
-        /* The rest of the code executes on computation tasks only. As
-         * PIO functions are called on the computation tasks, the
-         * async system will call them on the IO task. When the
-         * computation tasks call PIO_finalize(), the IO task will get
-         * a message to shut itself down. */
-        if (comp_task)
-        {
-            /* PIO_Offset elements_per_pe; /\* Array elements per processing unit. *\/ */
-            /* int ioid;     /\* The I/O description ID. *\/ */
+    /* The rest of the code executes on computation tasks only. As
+     * PIO functions are called on the computation tasks, the
+     * async system will call them on the IO task. When the
+     * computation tasks call PIO_finalize(), the IO task will get
+     * a message to shut itself down. */
+    if (comp_task)
+    {
+        /* PIO_Offset elements_per_pe; /\* Array elements per processing unit. *\/ */
+        /* int ioid;     /\* The I/O description ID. *\/ */
             
-            /* /\* How many elements on each computation task? *\/ */
-            /* elements_per_pe = DIM_LEN_X * DIM_LEN_Y / NUM_COMP_TASKS; */
+        /* /\* How many elements on each computation task? *\/ */
+        /* elements_per_pe = DIM_LEN_X * DIM_LEN_Y / NUM_COMP_TASKS; */
 
-            /* /\* Allocate and initialize array of decomposition mapping. *\/ */
-            /* PIO_Offset compdof[elements_per_pe]; */
-            /* for (int i = 0; i < elements_per_pe; i++) */
-            /*     compdof[i] = my_rank * elements_per_pe + i; */
+        /* /\* Allocate and initialize array of decomposition mapping. *\/ */
+        /* PIO_Offset compdof[elements_per_pe]; */
+        /* for (int i = 0; i < elements_per_pe; i++) */
+        /*     compdof[i] = my_rank * elements_per_pe + i; */
 
-            /* /\* Create the PIO decomposition for this example. Since */
-            /*    this is a variable with an unlimited dimension, we want */
-            /*    to create a 2-D composition which represents one */
-            /*    record. *\/ */
-            /* printf("rank: %d Creating decomposition...\n", my_rank); */
-            /* if ((ret = PIOc_init_decomp(iosysid, PIO_INT, NDIM3 - 1, &dim_len[1], elements_per_pe, */
-            /*                             compdof, &ioid, 0, NULL, NULL))) */
-            /*     ERR(ret); */
+        /* /\* Create the PIO decomposition for this example. Since */
+        /*    this is a variable with an unlimited dimension, we want */
+        /*    to create a 2-D composition which represents one */
+        /*    record. *\/ */
+        /* printf("rank: %d Creating decomposition...\n", my_rank); */
+        /* if ((ret = PIOc_init_decomp(iosysid, PIO_INT, NDIM3 - 1, &dim_len[1], elements_per_pe, */
+        /*                             compdof, &ioid, 0, NULL, NULL))) */
+        /*     ERR(ret); */
 
 /*         /\* The number of favors may change with the build parameters. *\/ */
 /* #ifdef _PNETCDF */
@@ -362,26 +342,26 @@ data:
 /*             /\*     ERR(ret); *\/ */
 /* 	} */
 
-            /* Free the PIO decomposition. */
-            /* printf("rank: %d Freeing PIO decomposition...\n", my_rank); */
-            /* if ((ret = PIOc_freedecomp(iosysid, ioid))) */
-            /*     ERR(ret); */
+        /* Free the PIO decomposition. */
+        /* printf("rank: %d Freeing PIO decomposition...\n", my_rank); */
+        /* if ((ret = PIOc_freedecomp(iosysid, ioid))) */
+        /*     ERR(ret); */
 
-            /* Finalize the IO system. Only call this from the computation tasks. */
-            printf("%d %s Freeing PIO resources\n", my_rank, TEST_NAME);
-            if ((ret = PIOc_finalize(iosysid)))
-                ERR(ret);
-        } /* endif comp_task */
+        /* Finalize the IO system. Only call this from the computation tasks. */
+        printf("%d %s Freeing PIO resources\n", my_rank, TEST_NAME);
+        if ((ret = PIOc_free_iosystem(iosysid)))
+            ERR(ret);
+    } /* endif comp_task */
 
-	/* Finalize the MPI library. */
-	MPI_Finalize();
+    /* Finalize the MPI library. */
+    MPI_Finalize();
 
 #ifdef TIMING
-	/* Finalize the GPTL timing library. */
-	if ((ret = GPTLfinalize ()))
-	    return ret;
+    /* Finalize the GPTL timing library. */
+    if ((ret = GPTLfinalize ()))
+        return ret;
 #endif
 
-        printf("rank: %d SUCCESS!\n", my_rank);
-	return 0;
-    }
+    printf("rank: %d SUCCESS!\n", my_rank);
+    return 0;
+}

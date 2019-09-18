@@ -248,7 +248,7 @@ def xmlquery_sub(case, variables, subgroup=None, fileonly=False,
                     for comp in comp_classes:
                         try:
                             nextval = get_value_as_string(case,var, attribute={"compclass" : comp}, resolved=resolved, subgroup=group)
-                        except:
+                        except Exception: # probably want to be more specific
                             nextval = get_value_as_string(case,var, attribute={"compclass" : comp}, resolved=False, subgroup=group)
 
                         if nextval is not None:
@@ -330,10 +330,11 @@ def _main_func(description):
         wrapper=textwrap.TextWrapper()
         wrapper.subsequent_indent = "\t\t\t"
         wrapper.fix_sentence_endings = True
+
+    cnt = 0
     for group in sorted(iter(results)):
         if (len(variables) > 1 or len(results) > 1 or full) and not get_group and not value:
             print("\nResults in group {}".format(group))
-        cnt = 0
         for var in variables:
             if var in results[group]:
                 if raw:
@@ -344,6 +345,7 @@ def _main_func(description):
                     if cnt > 0:
                         sys.stdout.write(",")
                     sys.stdout.write("{}".format(results[group][var]['value']))
+                    cnt += 1
                 elif description:
                     if results[group][var]['desc'][0] is not None:
                         desc_text = ' '.join(results[group][var]['desc'][0].split())
@@ -366,7 +368,6 @@ def _main_func(description):
                     print("\t\tfile: {}".format(results[group][var]['file'][0]))
                 else:
                     print("\t{}: {}".format(var, results[group][var]['value']))
-            cnt += 1
 
 if (__name__ == "__main__"):
     _main_func(__doc__)

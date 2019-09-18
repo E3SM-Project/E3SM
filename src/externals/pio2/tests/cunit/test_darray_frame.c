@@ -37,7 +37,7 @@
 #define LON_LEN_SHORT 2
 
 /* The number of timesteps of data to write. */
-#define NUM_TIMESTEPS 2
+#define NUM_TIMESTEPS 3
 
 /* The names of variable in the netCDF output files. */
 #define VAR_NAME "prc"
@@ -120,7 +120,7 @@ int test_frame_simple(int iosysid, int num_iotypes, int *iotype, int my_rank,
             ERR(ret);
 
         /* Write records of data. */
-        for (int r = 0; r < TIME_LEN_SHORT; r++)
+        for (int r = 0; r < NUM_TIMESTEPS; r++)
         {
             int test_data_int[elements_per_pe];
 
@@ -225,7 +225,7 @@ int main(int argc, char **argv)
                 return ret;
 
             /* Finalize PIO system. */
-            if ((ret = PIOc_finalize(iosysid)))
+            if ((ret = PIOc_free_iosystem(iosysid)))
                 return ret;
         } /* next rearranger */
     } /* endif my_rank < TARGET_NTASKS */

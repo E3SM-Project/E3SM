@@ -1,1 +1,7 @@
-./xmlchange PIO_VERSION=2
+pioversion=`./xmlquery --value PIO_VERSION`
+if [[ "$pioversion" -eq "1" ]]
+then
+  ./xmlchange PIO_VERSION=2
+else
+  ./xmlchange PIO_VERSION=1
+fi

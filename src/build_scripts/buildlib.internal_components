@@ -14,22 +14,21 @@ from standard_script_setup import *
 from CIME.buildlib import build_cime_component_lib, parse_input
 from CIME.case import Case
 
-def buildlib(caseroot, libroot, bldroot, compname=None):
-    with Case(caseroot) as case:
-        if compname is None:
-            thisdir = os.path.dirname(os.path.abspath(__file__))
-            path, dir1 = os.path.split(thisdir)
-            _, dir2 = os.path.split(path)
-            if dir1 == "cime_config":
-                compname = dir2
-            else:
-                compname = dir1.split('.')[1]
-        build_cime_component_lib(case, compname, libroot, bldroot)
+def buildlib(case, libroot, bldroot, compname=None):
+    if compname is None:
+        thisdir = os.path.dirname(os.path.abspath(__file__))
+        path, dir1 = os.path.split(thisdir)
+        _, dir2 = os.path.split(path)
+        if dir1 == "cime_config":
+            compname = dir2
+        else:
+            compname = dir1.split('.')[1]
+    build_cime_component_lib(case, compname, libroot, bldroot)
 
 def _main_func(args):
     caseroot, libroot, bldroot = parse_input(args)
-    buildlib(caseroot, libroot, bldroot)
-
+    with Case(caseroot) as case:
+        buildlib(case, libroot, bldroot)
 
 if __name__ == "__main__":
     _main_func(sys.argv)

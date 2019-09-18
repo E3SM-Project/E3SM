@@ -62,6 +62,9 @@ module seq_rest_mod
   use prep_rof_mod,    only: prep_rof_get_l2racc_lx_cnt
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx
   use prep_glc_mod,    only: prep_glc_get_l2gacc_lx_cnt
+  use prep_glc_mod,    only: prep_glc_get_x2gacc_gx
+  use prep_glc_mod,    only: prep_glc_get_x2gacc_gx_cnt
+
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ox
   use prep_aoflux_mod, only: prep_aoflux_get_xao_ax
 
@@ -105,6 +108,7 @@ module seq_rest_mod
   logical     :: glc_present            ! .true.  => glc is present
   logical     :: wav_present            ! .true.  => wav is present
   logical     :: esp_present            ! .true.  => esp is present
+  logical     :: iac_present            ! .true.  => iac is present
 
   logical     :: atm_prognostic         ! .true.  => atm comp expects input
   logical     :: lnd_prognostic         ! .true.  => lnd comp expects input
@@ -114,6 +118,9 @@ module seq_rest_mod
   logical     :: glc_prognostic         ! .true.  => glc comp expects input
   logical     :: wav_prognostic         ! .true.  => wav comp expects input
   logical     :: esp_prognostic         ! .true.  => esp comp expects input
+  logical     :: iac_prognostic         ! .true.  => iac comp expects input
+
+  logical     :: ocn_c2_glcshelf        ! .true.  => ocn to glcshelf coupling on
 
   !--- temporary pointers ---
   type(mct_gsMap), pointer :: gsmap
@@ -123,6 +130,8 @@ module seq_rest_mod
   integer        , pointer :: l2racc_lx_cnt
   type(mct_aVect), pointer :: l2gacc_lx(:)
   integer        , pointer :: l2gacc_lx_cnt
+  type(mct_aVect), pointer :: x2gacc_gx(:)
+  integer        , pointer :: x2gacc_gx_cnt
   type(mct_aVect), pointer :: xao_ox(:)
   type(mct_aVect), pointer :: xao_ax(:)
 
@@ -131,9 +140,9 @@ contains
   !===============================================================================
 
   subroutine seq_rest_read(rest_file, infodata, &
-       atm, lnd, ice, ocn, rof, glc, wav, esp,  &
+       atm, lnd, ice, ocn, rof, glc, wav, esp, iac, &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-       fractions_rx, fractions_gx, fractions_wx)
+       fractions_rx, fractions_gx, fractions_wx, fractions_zx)
 
     implicit none
 
@@ -147,6 +156,7 @@ contains
     type (component_type) , intent(inout) :: glc(:)
     type (component_type) , intent(inout) :: wav(:)
     type (component_type) , intent(inout) :: esp(:)
+    type (component_type) , intent(inout) :: iac(:)
     type(mct_aVect)  , intent(inout) :: fractions_ax(:)   ! Fractions on atm grid/decomp
     type(mct_aVect)  , intent(inout) :: fractions_lx(:)   ! Fractions on lnd grid/decomp
     type(mct_aVect)  , intent(inout) :: fractions_ix(:)   ! Fractions on ice grid/decomp
@@ -154,6 +164,7 @@ contains
     type(mct_aVect)  , intent(inout) :: fractions_rx(:)   ! Fractions on rof grid/decomp
     type(mct_aVect)  , intent(inout) :: fractions_gx(:)   ! Fractions on glc grid/decomp
     type(mct_aVect)  , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
+    type(mct_aVect)  , intent(inout) :: fractions_zx(:)   ! Fractions on iac grid/decomp
 
     integer(IN)          :: n,n1,n2,n3
     real(r8),allocatable :: ds(:)         ! for reshaping diag data for restart file
@@ -184,6 +195,7 @@ contains
          glc_present=glc_present,        &
          wav_present=wav_present,        &
          esp_present=esp_present,        &
+         iac_present=iac_present,        &
          atm_prognostic=atm_prognostic,      &
          lnd_prognostic=lnd_prognostic,      &
          ice_prognostic=ice_prognostic,      &
@@ -192,7 +204,9 @@ contains
          ocnrof_prognostic=ocnrof_prognostic,    &
          glc_prognostic=glc_prognostic,      &
          wav_prognostic=wav_prognostic,      &
-         esp_prognostic=esp_prognostic)
+         iac_prognostic=iac_prognostic,      &
+         esp_prognostic=esp_prognostic,      &
+         ocn_c2_glcshelf=ocn_c2_glcshelf)
 
     if (iamin_CPLID) then
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
@@ -221,6 +235,15 @@ contains
           call seq_io_read(rest_file, gsmap, l2gacc_lx, 'l2gacc_lx')
           call seq_io_read(rest_file, l2gacc_lx_cnt ,'l2gacc_lx_cnt')
        end if
+
+       if (ocn_c2_glcshelf) then
+          gsmap         => component_get_gsmap_cx(glc(1))
+          x2gacc_gx     => prep_glc_get_x2gacc_gx()
+          x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
+          call seq_io_read(rest_file, gsmap, x2gacc_gx, 'x2gacc_gx')
+          call seq_io_read(rest_file, x2gacc_gx_cnt ,'x2gacc_gx_cnt')
+       end if
+
        if (ocn_present) then
           gsmap         => component_get_gsmap_cx(ocn(1))
           x2oacc_ox     => prep_ocn_get_x2oacc_ox()
@@ -255,6 +278,11 @@ contains
           call seq_io_read(rest_file, gsmap, fractions_wx, 'fractions_wx')
           call seq_io_read(rest_file, wav, 'c2x', 'w2x_wx')
        endif
+       if (iac_present) then
+          gsmap => component_get_gsmap_cx(iac(1))
+          call seq_io_read(rest_file, gsmap, fractions_zx, 'fractions_zx')
+          call seq_io_read(rest_file, iac, 'c2x', 'z2x_zx')
+       endif
        ! Add ESP restart read here
 
        n = size(budg_dataG)
@@ -285,9 +313,10 @@ contains
   !===============================================================================
 
   subroutine seq_rest_write(EClock_d, seq_SyncClock, infodata, &
-       atm, lnd, ice, ocn, rof, glc, wav, esp,                 &
+       atm, lnd, ice, ocn, rof, glc, wav, esp, iac,            &
        fractions_ax, fractions_lx, fractions_ix, fractions_ox, &
-       fractions_rx, fractions_gx, fractions_wx, tag)
+       fractions_rx, fractions_gx, fractions_wx, fractions_zx, &
+       tag, rest_file)
 
     implicit none
 
@@ -295,13 +324,14 @@ contains
     type(seq_timemgr_type) , intent(inout) :: seq_SyncClock ! contains ptr to driver clock
     type(seq_infodata_type), intent(in)    :: infodata
     type (component_type)       , intent(inout) :: atm(:)
-    type (component_type)       , intent(inout) :: lnd(:)
-    type (component_type)       , intent(inout) :: ice(:)
-    type (component_type)       , intent(inout) :: ocn(:)
-    type (component_type)       , intent(inout) :: rof(:)
-    type (component_type)       , intent(inout) :: glc(:)
-    type (component_type)       , intent(inout) :: wav(:)
-    type (component_type)       , intent(inout) :: esp(:)
+    type (component_type)  , intent(inout) :: lnd(:)
+    type (component_type)  , intent(inout) :: ice(:)
+    type (component_type)  , intent(inout) :: ocn(:)
+    type (component_type)  , intent(inout) :: rof(:)
+    type (component_type)  , intent(inout) :: glc(:)
+    type (component_type)  , intent(inout) :: wav(:)
+    type (component_type)  , intent(inout) :: esp(:)
+    type (component_type)  , intent(inout) :: iac(:)
     type(mct_aVect)        , intent(inout) :: fractions_ax(:)   ! Fractions on atm grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_lx(:)   ! Fractions on lnd grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_ix(:)   ! Fractions on ice grid/decomp
@@ -309,7 +339,9 @@ contains
     type(mct_aVect)        , intent(inout) :: fractions_rx(:)   ! Fractions on rof grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_gx(:)   ! Fractions on glc grid/decomp
     type(mct_aVect)        , intent(inout) :: fractions_wx(:)   ! Fractions on wav grid/decomp
-    character(len=*)       , intent(in) :: tag
+    type(mct_aVect)        , intent(inout) :: fractions_zx(:)   ! Fractions on iac grid/decomp
+    character(len=*)       , intent(in)    :: tag
+    character(len=CL)      , intent(out)   :: rest_file         ! Restart filename
 
     integer(IN)   :: n,n1,n2,n3,fk
     integer(IN)   :: curr_ymd         ! Current date YYYYMMDD
@@ -322,7 +354,6 @@ contains
     logical       :: whead,wdata      ! flags header/data writing
     logical       :: cplroot          ! root pe on cpl id
     integer(IN)   :: iun              ! unit number
-    character(CL) :: rest_file        ! Local path to restart filename
     type(mct_gsMap),pointer :: gsmap
     character(len=6) :: year_char
 
@@ -356,6 +387,7 @@ contains
          glc_present=glc_present,        &
          wav_present=wav_present,        &
          esp_present=esp_present,        &
+         iac_present=iac_present,        &
          atm_prognostic=atm_prognostic,      &
          lnd_prognostic=lnd_prognostic,      &
          ice_prognostic=ice_prognostic,      &
@@ -365,6 +397,8 @@ contains
          glc_prognostic=glc_prognostic,      &
          wav_prognostic=wav_prognostic,      &
          esp_prognostic=esp_prognostic,      &
+         iac_prognostic=iac_prognostic,      &
+         ocn_c2_glcshelf=ocn_c2_glcshelf,    &
          case_name=case_name,                &
          model_doi_url=model_doi_url)
 
@@ -480,6 +514,15 @@ contains
              call seq_io_write(rest_file, l2gacc_lx_cnt, 'l2gacc_lx_cnt', &
                   whead=whead, wdata=wdata)
           end if
+          if (ocn_c2_glcshelf) then
+             gsmap         => component_get_gsmap_cx(glc(1))
+             x2gacc_gx => prep_glc_get_x2gacc_gx()
+             x2gacc_gx_cnt => prep_glc_get_x2gacc_gx_cnt()
+             call seq_io_write(rest_file, gsmap, x2gacc_gx , 'x2gacc_gx', &
+                  whead=whead, wdata=wdata)
+             call seq_io_write(rest_file, x2gacc_gx_cnt, 'x2gacc_gx_cnt', &
+                  whead=whead, wdata=wdata)
+          end if
           if (ocn_present) then
              gsmap         => component_get_gsmap_cx(ocn(1))
              x2oacc_ox     => prep_ocn_get_x2oacc_ox()
@@ -525,6 +568,13 @@ contains
              call seq_io_write(rest_file, gsmap, fractions_wx, 'fractions_wx', &
                   whead=whead, wdata=wdata)
              call seq_io_write(rest_file, wav, 'c2x', 'w2x_wx', &
+                  whead=whead, wdata=wdata)
+          endif
+          if (iac_present) then
+             gsmap  => component_get_gsmap_cx(iac(1))
+             call seq_io_write(rest_file, gsmap, fractions_zx, 'fractions_zx', &
+                  whead=whead, wdata=wdata)
+             call seq_io_write(rest_file, iac, 'c2x', 'z2x_zx', &
                   whead=whead, wdata=wdata)
           endif
           ! Write ESP restart data here

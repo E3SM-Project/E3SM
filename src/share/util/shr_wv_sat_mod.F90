@@ -321,7 +321,7 @@ contains
   subroutine shr_wv_sat_make_one_table(table_spec, svp_function, table)
     type(ShrWVSatTableSpec), intent(in) :: table_spec
     interface
-       function svp_function(t, idx) result(es)
+       pure function svp_function(t, idx) result(es)
          import :: rk
          real(rk), intent(in) :: t
          integer, intent(in) :: idx

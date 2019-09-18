@@ -286,9 +286,11 @@ CONTAINS
 #ifdef _NETCDF4
       ! netcdf, netcdf4p, netcdf4c
       num_iotypes = num_iotypes + 3
-#elif _NETCDF
+#else
+#ifdef _NETCDF
       ! netcdf
       num_iotypes = num_iotypes + 1
+#endif
 #endif
 #ifdef _PNETCDF
       ! pnetcdf
@@ -317,11 +319,13 @@ CONTAINS
       iotypes(i) = PIO_iotype_netcdf4p
       iotype_descs(i) = "NETCDF4P"
       i = i + 1
-#elif _NETCDF
+#else
+#ifdef _NETCDF
       ! netcdf
       iotypes(i) = PIO_iotype_netcdf
       iotype_descs(i) = "NETCDF"
       i = i + 1
+#endif
 #endif
   END SUBROUTINE
 
@@ -402,10 +406,12 @@ CONTAINS
     num_iotypes = 0
 #ifdef _NETCDF4
       ! netcdf, netcdf4p, netcdf4c
-      num_iotypes = num_iotypes + 3
-#elif _NETCDF
+    num_iotypes = num_iotypes + 3
+#else
+#ifdef _NETCDF
       ! netcdf
-      num_iotypes = num_iotypes + 1
+    num_iotypes = num_iotypes + 1
+#endif
 #endif
 #ifdef _PNETCDF
       ! pnetcdf
@@ -434,11 +440,13 @@ CONTAINS
       iotypes(i) = PIO_iotype_netcdf4p
       iotype_descs(i) = "NETCDF4P"
       i = i + 1
-#elif _NETCDF
+#else
+#ifdef _NETCDF
       ! netcdf
       iotypes(i) = PIO_iotype_netcdf
       iotype_descs(i) = "NETCDF"
       i = i + 1
+#endif
 #endif
   END SUBROUTINE
 
@@ -584,7 +592,6 @@ CONTAINS
     INTEGER :: nequal_idx
     ! Local and global equal bools
     LOGICAL :: lequal, gequal
-    LOGICAL :: failed
     TYPE failed_info
       SEQUENCE
       INTEGER :: idx
@@ -646,6 +653,7 @@ CONTAINS
     INTEGER, DIMENSION(:), INTENT(IN) :: arr
     INTEGER, DIMENSION(:), INTENT(IN) :: exp_arr
     REAL, INTENT(IN) :: tol
+    if (tol /= 0) continue ! to suppress warning
 
     PIO_TF_Check_int_arr_arr_tol = PIO_TF_Check_int_arr_arr(arr, exp_arr)
   END FUNCTION
@@ -716,7 +724,6 @@ CONTAINS
     REAL(KIND=fc_real) :: nequal_idx
     ! Local and global equal bools
     LOGICAL :: lequal, gequal
-    LOGICAL :: failed
     TYPE failed_info
       SEQUENCE
       REAL(KIND=fc_real) :: idx
@@ -726,6 +733,7 @@ CONTAINS
     TYPE (failed_info) :: lfail_info
     TYPE (failed_info), DIMENSION(:), ALLOCATABLE :: gfail_info
 
+    if (tol /= 0) continue ! to suppress warning
     arr_sz = SIZE(arr)
     lequal = .TRUE.;
     gequal = .TRUE.;
@@ -770,7 +778,7 @@ CONTAINS
     REAL, INTENT(IN) :: tol
 
     PIO_TF_Check_real_arr_arr_tol = PIO_TF_Check_real_arr_arr_tol_(arr, exp_arr,&
-                                SHAPE(arr), 0.0)
+                                SHAPE(arr), tol)
   END FUNCTION
 
   LOGICAL FUNCTION PIO_TF_Check_real_arr_arr(arr, exp_arr)
@@ -849,7 +857,6 @@ CONTAINS
     REAL(KIND=fc_double) :: nequal_idx
     ! Local and global equal bools
     LOGICAL :: lequal, gequal
-    LOGICAL :: failed
     TYPE failed_info
       SEQUENCE
       REAL(KIND=fc_double) :: idx
@@ -859,6 +866,7 @@ CONTAINS
     TYPE (failed_info) :: lfail_info
     TYPE (failed_info), DIMENSION(:), ALLOCATABLE :: gfail_info
 
+    if (tol /= 0) continue ! to suppress warning
     arr_sz = SIZE(arr)
     lequal = .TRUE.;
     gequal = .TRUE.;
@@ -906,7 +914,7 @@ CONTAINS
     REAL, INTENT(IN) :: tol
 
     PIO_TF_Check_double_arr_arr_tol = PIO_TF_Check_double_arr_arr_tol_(arr, exp_arr,&
-                                    SHAPE(arr), 0.0)
+                                    SHAPE(arr), tol)
   END FUNCTION
 
   LOGICAL FUNCTION PIO_TF_Check_double_arr_arr(arr, exp_arr)

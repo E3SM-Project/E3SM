@@ -38,6 +38,7 @@ endif ()
 
 # Include flib source and binary directories (for Fortran modules)
 target_include_directories (piof
+  PUBLIC ${CMAKE_BINARY_DIR}
   PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
   PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -52,9 +53,16 @@ if ("${CMAKE_Fortran_COMPILER_ID}" STREQUAL "GNU")
   target_compile_options (piof
     PRIVATE -ffree-line-length-none)
 elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "NAG")
-  set ( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mismatch_all" )
+  set ( CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -mismatch_all " )
   #    target_compile_options (piof
   #        PRIVATE -mismatch_all)
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Cray")
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ef")
+elseif (CMAKE_Fortran_COMPILER_ID STREQUAL "Intel")
+  set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -debug minimal")
+endif()
+if (CMAKE_BUILD_TYPE STREQUAL "DEBUG")
+     set (CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -g")
 endif()
 
 # Look for c_sizeof capability
@@ -154,7 +162,7 @@ if (MPIF_H_PATH)
   check_macro (MPI_HAS_MPIIO
     NAME TryMPIIO.f90
     HINTS ${CMAKE_MODULE_PATH}
-    DEFINITIONS -I{MPIF_H_PATH}
+    DEFINITIONS -I${MPIF_H_PATH}
     COMMENT "whether MPIIO is supported")
   if (${MPI_HAS_MPIIO})
     message (STATUS "MPIIO verified and enabled.")

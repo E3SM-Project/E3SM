@@ -34,4 +34,3 @@ class PIO(EntryID):
                 defaults[self.get(node, "id")] = value
 
         return defaults
-

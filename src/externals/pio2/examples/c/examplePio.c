@@ -10,6 +10,7 @@
  * processors.
  */
 
+#include "config.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +20,12 @@
 #ifdef TIMING
 #include <gptl.h>
 #endif
+#ifdef USE_MPE
+#include <mpe.h>
+#endif /* USE_MPE */
+
+/** The name of this program. */
+#define TEST_NAME "examplePio"
 
 /** The length of our 1-d data array. */
 static const int LEN = 16;
@@ -178,7 +185,16 @@ struct examplePioClass* epc_init( struct examplePioClass* this )
 	  this->ntasks == 8 || this->ntasks == 16))
 	this->errorHandler(this, "Number of processors must be 1, 2, 4, 8, or 16!",
 			   ERR_CODE);
-    
+
+/* #ifdef USE_MPE */
+/*     /\* If MPE logging is being used, then initialize it. *\/ */
+/*     { */
+/*         int ret; */
+/*         if ((ret = MPE_Init_log())) */
+/*             return NULL; */
+/*     } */
+/* #endif /\* USE_MPE *\/ */
+
     /*
     ** set up PIO for rest of example
     */
@@ -441,7 +457,7 @@ struct examplePioClass* epc_closeFile( struct examplePioClass* this )
 
     This function frees the memory used in this example. It calls the
     ParallelIO library function PIOc_freedecomp() to free
-    decomposition resources. Then calles PIOc_finalize() and
+    decomposition resources. Then calles PIOc_free_iosystem() and
     MPI_finalize() to free library resources.
     
     @param [in] this  Pointer to self.
@@ -456,7 +472,8 @@ struct examplePioClass* epc_cleanUp( struct examplePioClass* this )
     free(this->compdof);
     
     PIOc_freedecomp(this->pioIoSystem, this->iodescNCells);
-    PIOc_finalize(this->pioIoSystem);
+    PIOc_free_iosystem(this->pioIoSystem);
+
     MPI_Finalize();
     
     return this;
@@ -563,6 +580,7 @@ int main(int argc, char* argv[])
 {
     /* Parse command line. */
     int c, verbose = 0;
+    int ret;
     while ((c = getopt(argc, argv, "v")) != -1)
 	switch (c)
 	{
@@ -573,15 +591,19 @@ int main(int argc, char* argv[])
             break;
 	}
 
+
+    /* Change error handling so we can test inval parameters. */
+    if ((ret = PIOc_set_iosystem_error_handling(PIO_DEFAULT, PIO_RETURN_ERROR, NULL)))
+        return ret;
+
     struct examplePioClass* pioExInst = epc_new(verbose);
     
 #ifdef TIMING    
     /* Initialize the GPTL timing library. */
-    int ret;
     if ((ret = GPTLinitialize ()))
       return ret;
 #endif    
-    
+
     pioExInst->init(pioExInst);
     pioExInst->createDecomp(pioExInst);
     pioExInst->createFile(pioExInst);
@@ -589,6 +611,12 @@ int main(int argc, char* argv[])
     pioExInst->writeVar(pioExInst);
     pioExInst->readVar(pioExInst);
     pioExInst->closeFile(pioExInst);
+
+/* #ifdef USE_MPE */
+/*     if ((ret = MPE_Finish_log("examplePio"))) */
+/*         return ret; */
+/* #endif /\* USE_MPE *\/ */
+
     pioExInst->cleanUp(pioExInst);
     
 #ifdef TIMING    

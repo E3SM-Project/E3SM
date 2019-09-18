@@ -165,7 +165,7 @@ For a serial build, your setting will look like this example:
 
 .. code-block:: xml
 
-     <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="false">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
+     <PFUNIT_PATH MPILIB="mpi-serial" compile_threaded="FALSE">$ENV{CESMDATAROOT}/tools/pFUnit/pFUnit3.2.8_cheyenne_Intel17.0.1_noMPI_noOpenMP</PFUNIT_PATH>
 
 The ``MPILIB`` attribute should be either:
 
@@ -173,7 +173,7 @@ The ``MPILIB`` attribute should be either:
 
 * the name of the MPI library you used for a pFUnit build where ``-DMPI=YES``. (For example, you might use ``mpich``, which should be one of the machine's MPI libraries specified by ``MPILIBS`` in **config_machines.xml**.)
 
-The ``compile_threaded`` attribute should be either ``true`` or ``false`` depending on the value of ``-DOPENMP``.
+The ``compile_threaded`` attribute should be either ``TRUE`` or ``FALSE`` depending on the value of ``-DOPENMP``.
 
 Once you have specified the path for your build(s), you should be able to run the unit tests by following the instructions in :ref:`running_unit_tests`.
 

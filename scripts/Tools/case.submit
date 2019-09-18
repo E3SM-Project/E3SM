@@ -75,7 +75,7 @@ def parse_command_line(args, description):
             args.mail_type, args.batch_args)
 
 ###############################################################################
-def _main_func(description):
+def _main_func(description, test_args=False):
 ###############################################################################
     caseroot, job, no_batch, prereq, allow_fail, resubmit, resubmit_immediate, skip_pnl, \
         mail_user, mail_type, batch_args = parse_command_line(sys.argv, description)
@@ -83,7 +83,7 @@ def _main_func(description):
     # save these options to a hidden file for use during resubmit
     config_file = os.path.join(caseroot,".submit_options")
     if skip_pnl or mail_user or mail_type or batch_args:
-        config = configparser.SafeConfigParser()
+        config = configparser.RawConfigParser()
         config.add_section("SubmitOptions")
         if skip_pnl:
             config.set("SubmitOptions", "skip_pnl", "True")
@@ -98,10 +98,11 @@ def _main_func(description):
     elif os.path.exists(config_file):
         os.remove(config_file)
 
-    with Case(caseroot, read_only=False) as case:
-        case.submit(job=job, no_batch=no_batch, prereq=prereq, allow_fail=allow_fail,
-                    resubmit=resubmit, resubmit_immediate=resubmit_immediate, skip_pnl=skip_pnl,
-                    mail_user=mail_user, mail_type=mail_type, batch_args=batch_args)
+    if not test_args:
+        with Case(caseroot, read_only=False) as case:
+            case.submit(job=job, no_batch=no_batch, prereq=prereq, allow_fail=allow_fail,
+                        resubmit=resubmit, resubmit_immediate=resubmit_immediate, skip_pnl=skip_pnl,
+                        mail_user=mail_user, mail_type=mail_type, batch_args=batch_args)
 
 if __name__ == "__main__":
     _main_func(__doc__)

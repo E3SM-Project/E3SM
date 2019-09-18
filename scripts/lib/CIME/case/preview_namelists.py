@@ -5,7 +5,7 @@ create_dirs and create_namelists are members of Class case from file case.py
 
 from CIME.XML.standard_module_setup import *
 from CIME.utils import run_sub_or_cmd, safe_copy
-import glob
+import time, glob
 logger = logging.getLogger(__name__)
 
 def create_dirs(self):
@@ -18,7 +18,6 @@ def create_dirs(self):
     incroot  = self.get_value("INCROOT")
     rundir   = self.get_value("RUNDIR")
     caseroot = self.get_value("CASEROOT")
-
     docdir = os.path.join(caseroot, "CaseDocs")
     dirs_to_make = []
     models = self.get_values("COMP_CLASSES")
@@ -34,7 +33,10 @@ def create_dirs(self):
                 logger.debug("Making dir '{}'".format(dir_to_make))
                 os.makedirs(dir_to_make)
             except OSError as e:
-                expect(False, "Could not make directory '{}', error: {}".format(dir_to_make, e))
+                # In a multithreaded situation, we may have lost a race to create this dir.
+                # We do not want to crash if that's the case.
+                if not os.path.isdir(dir_to_make):
+                    expect(False, "Could not make directory '{}', error: {}".format(dir_to_make, e))
 
     # As a convenience write the location of the case directory in the bld and run directories
     for dir_ in (exeroot, rundir):
@@ -60,7 +62,6 @@ def create_namelists(self, component=None):
 
     self.stage_refcase()
 
-
     logger.info("Creating component namelists")
 
     # Create namelists - must have cpl last in the list below
@@ -70,6 +71,7 @@ def create_namelists(self, component=None):
     models += [models.pop(0)]
     for model in models:
         model_str = model.lower()
+        logger.info("  {} {}".format(time.strftime("%Y-%m-%d %H:%M:%S"),model_str))
         config_file = self.get_value("CONFIG_{}_FILE".format(model_str.upper()))
         config_dir = os.path.dirname(config_file)
         if model_str == "cpl":
@@ -98,8 +100,8 @@ def create_namelists(self, component=None):
         except (OSError, IOError) as e:
             expect(False, "Failed to write {}/README: {}".format(docdir, e))
 
-    for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in",
-                   "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*"]:
+    for cpglob in ["*_in_[0-9]*", "*modelio*", "*_in", "nuopc.runconfig",
+                   "*streams*txt*", "*stxt", "*maps.rc", "*cism.config*", "nuopc.runseq"]:
         for file_to_copy in glob.glob(os.path.join(rundir, cpglob)):
             logger.debug("Copy file from '{}' to '{}'".format(file_to_copy, docdir))
             safe_copy(file_to_copy, docdir)

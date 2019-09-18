@@ -16,7 +16,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_explicit_fval
   PIO_TF_FC_DATA_TYPE, PARAMETER :: BUF_FILLVAL = -2
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
@@ -105,7 +105,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_write_1d_implicit_fval
   PIO_TF_FC_DATA_TYPE, PARAMETER :: BUF_FILLVAL = -2
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
@@ -208,7 +208,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_read_1d_explicit_fval
   PIO_TF_FC_DATA_TYPE, PARAMETER :: BUF_FILLVAL = -2
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
@@ -295,7 +295,7 @@ PIO_TF_AUTO_TEST_SUB_BEGIN nc_read_1d_implicit_fval
   integer, parameter :: BUF_FILLVAL = -2
   integer, dimension(1) :: dims
   integer :: pio_dim
-  integer :: i, ierr, lsz
+  integer :: i, ierr
   ! iotypes = valid io types
   integer, dimension(:), allocatable :: iotypes
   character(len=PIO_TF_MAX_STR_LEN), dimension(:), allocatable :: iotype_descs
