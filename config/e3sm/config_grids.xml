@@ -2270,8 +2270,7 @@
     <domain name="oRRS15to5">
       <nx>5778136</nx>
       <ny>1</ny>
-      <!--file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oRRS15to5.160207.nc</file-->
-      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oRRS15to5.190514.nc</file>
+      <file grid="ice|ocn">$DIN_LOC_ROOT/share/domains/domain.ocn.oRRS15to5.160207.nc</file>
       <desc>oRRS15to5 is an MPAS ocean grid with a mesh density function that is roughly proportional to the Rossby radius of deformation, with 15 km gridcells at low and 5 km gridcells at high latitudes:</desc>
     </domain>
 
