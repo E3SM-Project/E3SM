@@ -8,8 +8,6 @@
 #include "util/scream_utils.hpp"
 #include "scream_macros.hpp"
 
-#include <type_traits>
-
 namespace scream {
 namespace pack {
 
