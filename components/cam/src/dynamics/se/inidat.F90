@@ -21,7 +21,7 @@ module inidat
   use cam_control_mod, only : ideal_phys, aqua_planet, pertlim, seed_custom, seed_clock, new_random
   use random_xgc, only: init_ranx, ranx
   use scamMod, only: single_column, precip_off, scmlat, scmlon, &
-     do_iop_scream
+     iop_scream
   implicit none
   private
   public read_inidat
@@ -173,10 +173,9 @@ contains
       endif
 
     endif
-
     fieldname = 'U'
     tmp = 0.0_r8
-    if (.not. do_iop_scream) then    
+    if (.not. iop_scream) then    
       call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -195,7 +194,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,1,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,1,:,tl)=tmp(indx_scm,:,ie_scm)
-	     if (do_iop_scream) elem(ie)%state%v(i,j,1,:,tl)=tmp_t(indx_scm,:)
+	     if (iop_scream) elem(ie)%state%v(i,j,1,:,tl)=tmp_t(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -203,7 +202,7 @@ contains
 
     fieldname = 'V'
     tmp = 0.0_r8
-    if (.not. do_iop_scream) then
+    if (.not. iop_scream) then
       call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -221,7 +220,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
-	     if (do_iop_scream) elem(ie)%state%v(i,j,1,:,tl)=tmp_t(indx_scm,:)
+	     if (iop_scream) elem(ie)%state%v(i,j,1,:,tl)=tmp_t(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -229,7 +228,7 @@ contains
 
     fieldname = 'T'
     tmp = 0.0_r8
-    if (.not. do_iop_scream) then 
+    if (.not. iop_scream) then 
       call infld(fieldname, ncid_ini, 'ncol', 'lev', 1, npsq,          &
            1, nlev, 1, nelemd, tmp, found, gridname='GLL')
     else
@@ -257,7 +256,7 @@ contains
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
 
              if (single_column) elem(ie)%state%T(i,j,:,tl) = tmp(indx_scm,:,ie_scm)
-             if (do_iop_scream) elem(ie)%state%T(i,j,:,tl) = tmp_t(indx_scm,:)
+             if (iop_scream) elem(ie)%state%T(i,j,:,tl) = tmp_t(indx_scm,:)
 #endif
              indx = indx + 1
           end do
@@ -342,7 +341,7 @@ contains
 	    
 	  else
 	    
-	    if (.not. do_iop_scream) then
+	    if (.not. iop_scream) then
 	      tmp = 0.0_r8
               call infld(cnst_name(m_cnst), ncid_ini, 'ncol', 'lev',      &
                    1, npsq, 1, nlev, 1, nelemd, tmp, found, gridname='GLL')
@@ -436,7 +435,7 @@ contains
              do i = 1, np
                 elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx,:,ie)
                 if (single_column) elem(ie)%state%Q(i,j,:,m_cnst) = tmp(indx_scm,:,ie_scm)
-		if (do_iop_scream) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_t(indx_scm,:) 
+		if (iop_scream) elem(ie)%state%Q(i,j,:,m_cnst) = tmp_t(indx_scm,:) 
                 indx = indx + 1
              end do
           end do

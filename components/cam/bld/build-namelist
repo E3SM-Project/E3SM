@@ -627,7 +627,6 @@ if ($scam) {
 # SMALL PLANET
 my $iop_scream = $cfg->get('iop_scream');
 if ($iop_scream) {
-    add_default($nl, 'do_iop_scream', 'val'=>'.true.');
     add_default($nl, 'omega');
 }
 
