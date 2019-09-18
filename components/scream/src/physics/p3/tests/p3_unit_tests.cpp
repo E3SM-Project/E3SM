@@ -83,19 +83,80 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3Conservation
 {
 
+
+  KOKKOS_FUNCTION static void cloud_water_conservation_tests_device(){
+
+    using KTH = KokkosTypes<HostDevice>;
+
+    CloudWaterConservationData cwdc[1] = {{sp(1e-5), 0.0, sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.0), sp(1.0)}};
+
+
+    // Sync to device
+    KTH::view_1d<CloudWaterConservationData> cwdc_host("cwdc_host", 1);
+    view_1d<CloudWaterConservationData> cwdc_device("cwdc_host", 1);
+
+    // This copy only copies the input variables.
+    std::copy(&cwdc[0], &cwdc[0] + 1, cwdc_host.data());
+    Kokkos::deep_copy(cwdc_device, cwdc_host);
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+      Spack qc(cwdc_device(0).qc);
+      Spack qcnuc(cwdc_device(0).qcnuc);
+      Spack qcaut(cwdc_device(0).qcaut);
+      Spack qcacc(cwdc_device(0).qcacc);
+      Spack qccol(cwdc_device(0).qccol);
+      Spack qcheti(cwdc_device(0).qcheti);
+      Spack qcshd(cwdc_device(0).qcshd);
+      Spack qiberg(cwdc_device(0).qiberg);
+      Spack qisub(cwdc_device(0).qisub);
+      Spack qidep(cwdc_device(0).qidep);
+
+      Functions::cloud_water_conservation(qc, qcnuc, cwdc_device(0).dt, qcaut, qcacc, qccol, qcheti, qcshd, qiberg, qisub, qidep);
+
+      cwdc_device(0).qc = qc[0];
+      cwdc_device(0).qcnuc = qcnuc[0];
+      cwdc_device(0).qcaut = qcaut[0];
+      cwdc_device(0).qcacc = qcacc[0];
+      cwdc_device(0).qccol = qccol[0];
+      cwdc_device(0).qcheti = qcheti[0];
+      cwdc_device(0).qcshd = qcshd[0];
+      cwdc_device(0).qiberg = qiberg[0];
+      cwdc_device(0).qisub = qisub[0];
+      cwdc_device(0).qidep = qidep[0];
+    });
+
+    // Sync back to host
+    Kokkos::deep_copy(cwdc_host, cwdc_device);
+
+    const auto ratio = cwdc[0].qc/(cwdc[0].qcaut * cwdc[0].dt);
+    REQUIRE(cwdc_host(0).qcaut == cwdc[0].qcaut*ratio);
+    REQUIRE(cwdc_host(0).qcacc == 0.0);
+    REQUIRE(cwdc_host(0).qccol == 0.0);
+    REQUIRE(cwdc_host(0).qcheti == 0.0);
+    REQUIRE(cwdc_host(0).qcshd == 0.0);
+    REQUIRE(cwdc_host(0).qiberg == 0.0);
+    REQUIRE(cwdc_host(0).qisub -(1.0 - ratio) != 0.0);
+    REQUIRE(cwdc_host(0).qidep - (1.0 - ratio) != 0.0);
+    REQUIRE(cwdc_host[0].qcaut * cwdc[0].dt <= cwdc_host[0].qc);
+
+
+  }
+
+
   KOKKOS_FUNCTION static void cloud_water_conservation_tests(int& errors){
 
-    Spack qc(1e-5);
+    Spack qc(sp(1e-5));
     Spack qcnuc(0.0);
-    Scalar dt = 1.1;
-    Spack qcaut(1e-4);
+    Scalar dt = sp(1.1);
+    Spack qcaut(sp(1e-4));
     Spack qcacc(0.0);
     Spack qccol(0.0);
     Spack qcheti(0.0);
     Spack qcshd(0.0);
     Spack qiberg(0.0);
-    Spack qisub(1.0);
-    Spack qidep(1.0);
+    Spack qisub(sp(1.0));
+    Spack qidep(sp(1.0));
 
     const auto ratio = qc/(qcaut * dt);
     Functions::cloud_water_conservation(qc, qcnuc, dt,
@@ -103,7 +164,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
 
     //Here we check the case where sources > sinks
-    if(((qcaut - 1e-4*ratio) != 0.0).any()){errors++;}
+    if(((qcaut - sp(1.0e-4)*ratio) != 0.0).any()){errors++;}
     if((qcacc != 0).any()){errors++;}
     if((qccol != 0).any()){errors++;}
     if((qcheti != 0).any()){errors++;}
@@ -115,8 +176,8 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     // Now actually check conservation. We are basically checking here that
     // qcaut, the only non-zero sink, is corrected so that within a dt
     // it does not overshoot qc.
-    if(((qcaut*dt - qc) != 0.0).any()){errors++;}
-
+    if((qcaut*dt != qc).any()){errors++;}
+    std::cout << "****************** " << qcaut[0]*dt << "\t" <<  qc[0] << "\n";
     // Check the case where sources > sinks with sinks = 0
     qcaut = 0.0;
     Functions::cloud_water_conservation(qc, qcnuc, dt,
@@ -158,7 +219,6 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
   }
 
-
   KOKKOS_FUNCTION static void ice_water_conservation_tests(int& errors){
 
     Spack qitot(1e-5);
@@ -194,24 +254,30 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
   static void run()
   {
-    int nerr = 0;
 
-    TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
-    Kokkos::parallel_reduce("ConservationTests", policy, KOKKOS_LAMBDA(const MemberType& tem, int& errors){
+    cloud_water_conservation_tests_device(); 
+    
+    
+    //int nerr = 0;
 
-      errors = 0;
+    //TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
+    //Kokkos::parallel_reduce("ConservationTests", policy, KOKKOS_LAMBDA(const MemberType& tem, int& errors){
 
-      cloud_water_conservation_tests(errors);
+     // errors = 0;
 
-      rain_water_conservation_tests(errors);
+      //cloud_water_conservation_tests(errors);
 
-      ice_water_conservation_tests(errors);
+      
 
-    }, nerr);
+      //rain_water_conservation_tests(errors);
 
-    Kokkos::fence();
+      //ice_water_conservation_tests(errors);
 
-    REQUIRE(nerr==0);
+   // }, nerr);
+
+   // Kokkos::fence();
+
+   // REQUIRE(nerr==0);
   }
 
   KOKKOS_FUNCTION static void cloud_water_conservation_unit_bfb_tests(){
