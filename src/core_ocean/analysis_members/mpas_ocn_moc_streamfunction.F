@@ -146,7 +146,7 @@ contains
       !! region dimensions
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nRegions', nRegions)
       call mpas_pool_get_dimension(domain % blocklist % dimensions, 'nRegionGroups', nRegionGroups)
-      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'R3', maxRegionsInGroup)
+      call mpas_pool_get_dimension(domain % blocklist % dimensions, 'maxRegionsInGroup', maxRegionsInGroup)
 
       !! region config for moc
       call mpas_pool_get_config(domain % configs, 'config_AM_mocStreamfunction_region_group', &
