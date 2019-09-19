@@ -2408,7 +2408,7 @@ Int init_tree (const Int& my_rank, const tree::Node::Ptr& node, Int& id) {
     depth = std::max(depth, init_tree(my_rank, node->kids[i], id));
   }
   if (node->nkids) {
-    node->rank = node->kids[0]->rank;
+    if (node->rank < 0) node->rank = node->kids[0]->rank;
     node->cellidx = id++;
   } else {
     cedr_throw_if(node->rank == my_rank && (node->cellidx < 0 || node->cellidx >= id),
@@ -5089,13 +5089,11 @@ Int rank2sfc_search (const Int* rank2sfc, const Int& nrank, const Int& sfc) {
 // index. owned_ids is in SFC index order for this rank.
 void renumber (const Int nrank, const Int nelem, const Int my_rank, const Int* owned_ids,
                const Int* rank2sfc, const qlt::tree::Node::Ptr& node) {
-  if (node->nkids)
+  if (node->nkids) {
     for (Int k = 0; k < node->nkids; ++k)
       renumber(nrank, nelem, my_rank, owned_ids, rank2sfc, node->kids[k]);
-  else {
+  } else {
     const Int sfc = node->cellidx;
-    node->rank = rank2sfc_search(rank2sfc, nrank, sfc);
-    cedr_assert(node->rank >= 0 && node->rank < nrank);
     node->cellidx = node->rank == my_rank ? owned_ids[sfc - rank2sfc[my_rank]] : -1;
     cedr_assert((node->rank != my_rank && node->cellidx == -1) ||
                 (node->rank == my_rank && node->cellidx >= 0 && node->cellidx < nelem));
@@ -5104,10 +5102,10 @@ void renumber (const Int nrank, const Int nelem, const Int my_rank, const Int* o
 
 void renumber (const Int* sc2gci, const Int* sc2rank,
                const qlt::tree::Node::Ptr& node) {
-  if (node->nkids)
+  if (node->nkids) {
     for (Int k = 0; k < node->nkids; ++k)
       renumber(sc2gci, sc2rank, node->kids[k]);
-  else {
+  } else {
     const Int ci = node->cellidx;
     node->cellidx = sc2gci[ci];
     node->rank = sc2rank[ci];
@@ -5147,11 +5145,59 @@ void add_sub_levels (const Int my_rank, const qlt::tree::Node::Ptr& node,
   }
 }
 
+// This impl carefully follows the requirements that
+// cedr::qlt::impl::init_tree, level_schedule_and_collect
+// establish. init_tree has to be modified to have the condition in
+// the line
+//   if (node->rank < 0) node->rank = node->kids[0]->rank
+// since here we're assigning the ranks ourselves.
+qlt::tree::Node::Ptr
+make_my_tree_part (const qlt::oned::Mesh& m, const Int cs, const Int ce,
+                   const qlt::tree::Node* parent,
+                   const Int& nrank, const Int* rank2sfc) {
+  const Int cn = ce - cs, cn0 = cn/2;
+  qlt::tree::Node::Ptr n = std::make_shared<qlt::tree::Node>();
+  n->parent = parent;
+  n->cellidx = cs;
+  n->rank = rank2sfc_search(rank2sfc, nrank, cs);
+  cedr_assert(n->rank >= 0 && n->rank < nrank);
+  if (cn == 1) {
+    n->nkids = 0;
+    return n;
+  }
+  const auto k1 = make_my_tree_part(m, cs, cs + cn0, n.get(), nrank, rank2sfc);
+  const auto k2 = make_my_tree_part(m, cs + cn0, ce, n.get(), nrank, rank2sfc);
+  const auto my_rank = m.parallel()->rank();
+  if (n->rank == my_rank) {
+    // Need to know both kids for comm.
+    n->nkids = 2;
+    n->kids[0] = k1;
+    n->kids[1] = k2;
+  } else {
+    // Prune parts of the tree irrelevant to my rank.
+    n->nkids = 0;
+    if (k1->nkids > 0 || k1->rank == my_rank) n->kids[n->nkids++] = k1;
+    if (k2->nkids > 0 || k2->rank == my_rank) n->kids[n->nkids++] = k2;
+    if (n->nkids == 0) {
+      // Signal a non-leaf node with 0 kids to init_tree.
+      n->nkids = -1;
+    }
+  }
+  return n;
+}
+
+qlt::tree::Node::Ptr
+make_my_tree_part (const cedr::mpi::Parallel::Ptr& p, const Int& ncells,
+                   const Int& nrank, const Int* rank2sfc) {
+  qlt::oned::Mesh m(ncells, p);
+  return make_my_tree_part(m, 0, m.ncell(), nullptr, nrank, rank2sfc);
+}
+
 qlt::tree::Node::Ptr
 make_tree_sgi (const cedr::mpi::Parallel::Ptr& p, const Int nelem,
                const Int* owned_ids, const Int* rank2sfc, const Int nsublev) {
   // Partition 0:nelem-1, the space-filling curve space.
-  auto tree = qlt::tree::make_tree_over_1d_mesh(p, nelem);
+  auto tree = make_my_tree_part(p, nelem, p->size(), rank2sfc);
   // Renumber so that node->cellidx records the global element number, and
   // associate the correct rank with the element.
   const auto my_rank = p->rank();
@@ -5236,6 +5282,7 @@ struct CDR {
       tree = use_sgi ? make_tree_sgi(p, ncell, gid_data, rank_data, nsublev) :
         make_tree_non_sgi(p, ncell, gid_data, rank_data, nsublev);
       cdr = std::make_shared<QLTT>(p, ncell*nsublev, tree);
+      tree = nullptr;
     } else if (Alg::is_caas(alg)) {
       const auto caas = std::make_shared<CAAST>(
         p, nlclcell*nsublev, std::make_shared<ReproSumReducer>(fcomm));
@@ -5769,6 +5816,7 @@ cedr_init_impl (const homme::Int fcomm, const homme::Int cdr_alg, const bool use
 
 extern "C" void cedr_unittest (const homme::Int fcomm, homme::Int* nerrp) {
   cedr_assert(g_cdr);
+  cedr_assert(g_cdr->tree);
   auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   if (homme::CDR::Alg::is_qlt(g_cdr->alg))
     *nerrp = cedr::qlt::test::test_qlt(p, g_cdr->tree,
