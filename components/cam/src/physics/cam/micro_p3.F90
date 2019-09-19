@@ -39,12 +39,16 @@
 #  define bfb_pow(base, exp) cxx_pow(base, exp)
 #  define bfb_cbrt(base) cxx_cbrt(base)
 #  define bfb_gamma(val) cxx_gamma(val)
+#  define bfb_log(val) cxx_log(val)
 #  define bfb_log10(val) cxx_log10(val)
+#  define bfb_exp(val) cxx_exp(val)
 #else
 #  define bfb_pow(base, exp) base**exp
 #  define bfb_cbrt(base) base**thrd
 #  define bfb_gamma(val) gamma(val)
+#  define bfb_log(val) log(val)
 #  define bfb_log10(val) log10(val)
+#  define bfb_exp(val) exp(val)
 #endif
 
 module micro_p3
@@ -1786,7 +1790,7 @@ contains
   subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: get_rain_dsd2_f, cxx_pow, cxx_gamma, cxx_cbrt, cxx_log10
+    use micro_p3_iso_f, only: get_rain_dsd2_f, cxx_pow, cxx_gamma, cxx_cbrt, cxx_log10, cxx_exp, cxx_log
 #endif
 
     ! Computes and returns rain size distribution parameters
@@ -1829,10 +1833,10 @@ contains
        ! apply lambda limiters for rain
        if (lamr.lt.lammin) then
           lamr = lammin
-          nr   = exp(3._rtype*log(lamr)+log(qr)+log(bfb_gamma(mu_r+1._rtype))-log(bfb_gamma(mu_r+4._rtype)))/(cons1)
+          nr   = bfb_exp(3._rtype*bfb_log(lamr)+bfb_log(qr)+bfb_log(bfb_gamma(mu_r+1._rtype))-bfb_log(bfb_gamma(mu_r+4._rtype)))/(cons1)
        elseif (lamr.gt.lammax) then
           lamr = lammax
-          nr   = exp(3._rtype*log(lamr)+log(qr)+log(bfb_gamma(mu_r+1._rtype))-log(bfb_gamma(mu_r+4._rtype)))/(cons1)
+          nr   = bfb_exp(3._rtype*bfb_log(lamr)+bfb_log(qr)+bfb_log(bfb_gamma(mu_r+1._rtype))-bfb_log(bfb_gamma(mu_r+4._rtype)))/(cons1)
        endif
 
        cdistr  = nr*rcldm/bfb_gamma(mu_r+1._rtype)

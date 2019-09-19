@@ -289,11 +289,6 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   *logn0r_ = t_h(4);
 }
 
-Real cxx_pow(Real base, Real exp)
-{
-  return std::pow(base, exp);
-}
-
 // Cuda implementations of std math routines are not necessarily BFB
 // with the host.
 template <typename ScalarT, typename DeviceT>
@@ -301,36 +296,42 @@ struct CudaWrap
 {
   using Scalar = ScalarT;
 
-  static Scalar cxx_gamma(ScalarT input)
+  static Scalar cxx_pow(Scalar base, Scalar exp)
   {
     Scalar result;
     Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
-      value = std::tgamma(input);
+        value = std::pow(base, exp);
     }, result);
 
     return result;
   }
 
-  static Scalar cxx_cbrt(ScalarT input)
-  {
-    Scalar result;
-    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
-      value = std::cbrt(input);
-    }, result);
+#define cuda_wrap_single_arg(wrap_name, func_call)      \
+static Scalar wrap_name(Scalar input) {                 \
+  Scalar result;                                        \
+  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) { \
+    value = func_call(input);                                         \
+  }, result);                                                         \
+  return result;                                                      \
+}
 
-    return result;
-  }
+  cuda_wrap_single_arg(cxx_gamma, std::tgamma)
+  cuda_wrap_single_arg(cxx_cbrt, std::cbrt)
+  cuda_wrap_single_arg(cxx_log, std::log)
+  cuda_wrap_single_arg(cxx_log10, std::log10)
+  cuda_wrap_single_arg(cxx_exp, std::exp)
 
-  static Scalar cxx_log10(ScalarT input)
-  {
-    Scalar result;
-    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
-      value = std::log10(input);
-    }, result);
-
-    return result;
-  }
+#undef cuda_wrap_single_arg
 };
+
+Real cxx_pow(Real base, Real exp)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_pow(base, exp);
+#else
+  return std::pow(base, exp);
+#endif
+}
 
 Real cxx_gamma(Real input)
 {
@@ -350,12 +351,30 @@ Real cxx_cbrt(Real input)
 #endif
 }
 
+Real cxx_log(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_log(input);
+#else
+  return std::log(input);
+#endif
+}
+
 Real cxx_log10(Real input)
 {
 #ifdef KOKKOS_ENABLE_CUDA
   return CudaWrap<Real, DefaultDevice>::cxx_log10(input);
 #else
   return std::log10(input);
+#endif
+}
+
+Real cxx_exp(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_exp(input);
+#else
+  return std::exp(input);
 #endif
 }
 

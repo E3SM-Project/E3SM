@@ -104,6 +104,16 @@ interface
     real(kind=c_real)            :: cxx_gamma
   end function cxx_gamma
 
+  function cxx_log(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: cxx_log
+  end function cxx_log
+
   function cxx_log10(input) bind(C)
     use iso_c_binding
 
@@ -113,6 +123,16 @@ interface
     ! return
     real(kind=c_real)            :: cxx_log10
   end function cxx_log10
+
+  function cxx_exp(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: cxx_exp
+  end function cxx_exp
 
 end interface
 
