@@ -263,6 +263,7 @@ scream_pack_gen_unary_stdfn(exp)
 scream_pack_gen_unary_stdfn(log)
 scream_pack_gen_unary_stdfn(log10)
 scream_pack_gen_unary_stdfn(tgamma)
+scream_pack_gen_unary_stdfn(cbrt)
 
 
 template <typename Pack> KOKKOS_INLINE_FUNCTION

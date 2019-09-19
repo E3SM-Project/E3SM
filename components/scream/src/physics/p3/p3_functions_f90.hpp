@@ -20,16 +20,23 @@ namespace p3 {
 //
 struct P3GlobalForFortran
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
 
+  using view_1d_table = typename P3F::view_1d_table;
+  using view_2d_table = typename P3F::view_2d_table;
   using view_itab_table = typename P3F::view_itab_table;
   using view_itabcol_table = typename P3F::view_itabcol_table;
+  using view_dnu_table = typename P3F::view_dnu_table;
 
   // All kokkos views must be destructed before Kokkos::finalize
   static void deinit();
 
+  static const view_1d_table& mu_r_table()   { return get().m_mu_r_table; }
+  static const view_2d_table& vn_table()     { return get().m_vn_table; }
+  static const view_2d_table& vm_table()     { return get().m_vm_table; }
   static const view_itab_table& itab()       { return get().m_itab; }
   static const view_itabcol_table& itabcol() { return get().m_itabcol; }
+  static const view_dnu_table& dnu()         { return get().m_dnu; }
 
   P3GlobalForFortran() = delete;
   ~P3GlobalForFortran() = delete;
@@ -38,8 +45,11 @@ struct P3GlobalForFortran
 
  private:
   struct Views {
+    view_1d_table m_mu_r_table;
+    view_2d_table m_vn_table, m_vm_table;
     view_itab_table m_itab;
     view_itabcol_table m_itabcol;
+    view_dnu_table m_dnu;
   };
 
   static const Views& get();
@@ -139,6 +149,49 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 
 }
 
+struct GetCloudDsd2Data
+{
+  // Inputs
+  Real qc, rho, lcldm, nc_in;
+
+  // Outputs
+  Real nc_out, mu_c, nu, lamc, cdist, cdist1;
+};
+void get_cloud_dsd2(GetCloudDsd2Data& d);
+
+extern "C" {
+
+void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* lamc,
+                      Real* cdist, Real* cdist1, Real lcldm);
+
+}
+
+struct GetRainDsd2Data
+{
+  // Inputs
+  Real qr, rcldm, nr_in;
+
+  // Outputs
+  Real nr_out, lamr, mu_r, cdistr, logn0r;
+};
+void get_rain_dsd2(GetRainDsd2Data& d);
+
+extern "C" {
+
+void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
+
+}
+
+extern "C" {
+
+Real cxx_pow(Real base, Real exp);
+Real cxx_cbrt(Real base);
+Real cxx_gamma(Real input);
+Real cxx_log(Real input);
+Real cxx_log10(Real input);
+Real cxx_exp(Real input);
+
+}
 
 }  // namespace p3
 }  // namespace scream

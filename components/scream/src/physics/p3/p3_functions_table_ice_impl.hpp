@@ -150,19 +150,19 @@ void Functions<S,D>
   const auto gt_small = qr > qsmall && nr > 0.0;
 
   // calculate scaled mean size for consistency with ice lookup table
-  auto dumlr = pack::pow(qr/(C::Pi * C::RHOW * nr), C::THIRD);
+  auto dumlr = pack::cbrt(qr/(C::Pi * C::RHOW * nr));
   dumlr.set(!gt_small, 1); // get rid of bad values
-  t.dum3 = (pack::log10(1.0*dumlr) + 5.0)*10.70415;
+  t.dum3 = (pack::log10(1*dumlr) + 5)*sp(10.70415);
   t.dumj = IntSmallPack(t.dum3);
 
   // set limits
   t.dum3 = pack::min(t.dum3, static_cast<Scalar>(P3C::rcollsize));
-  t.dum3 = pack::max(t.dum3, sp(1.));
+  t.dum3 = pack::max(t.dum3, 1);
   t.dumj = pack::max(1, t.dumj);
   t.dumj = pack::min(P3C::rcollsize-1, t.dumj);
 
   t.dumj.set(qiti_gt_small && !gt_small, 1);
-  t.dum3.set(qiti_gt_small && !gt_small, 1.);
+  t.dum3.set(qiti_gt_small && !gt_small, 1);
 
   // adjust for 0-based indexing
   t.dumj -= 1;

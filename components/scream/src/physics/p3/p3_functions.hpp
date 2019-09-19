@@ -32,6 +32,13 @@ struct Functions
       tabsize     = 12, // number of quantities used from lookup table
       rcollsize   = 30,
       coltabsize  = 2,  // number of ice-rain collection  quantities used from lookup table
+
+      // switch for warm-rain parameterization
+      // 1 => Seifert and Beheng 2001
+      // 2 => Beheng 1994
+      // 3 => Khairoutdinov and Kogan 2000
+      iparam      = 3,
+      dnusize     = 16,
     };
 
     static constexpr ScalarT lookup_table_1a_dum1_c =  4.135985029041767e+00; // 1.0/(0.1*log10(261.7))
@@ -107,13 +114,17 @@ struct Functions
   // ice lookup table values for ice-rain collision/collection
   using view_itabcol_table = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::coltabsize]>;
 
+  // droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
+  // warm rain autoconversion/accretion option only (iparam = 1)
+  using view_dnu_table = typename KT::template view_1d_table<Scalar, P3C::dnusize>;
+
   //
   // --------- Functions ---------
   //
 
   // Call from host to initialize the static table entries.
   static void init_kokkos_tables(
-    view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table);
+    view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table, view_dnu_table& dnu);
 
   static void init_kokkos_ice_lookup_tables(
     view_itab_table& itab, view_itabcol_table& itabcol);
@@ -238,6 +249,18 @@ struct Functions
   KOKKOS_INLINE_FUNCTION
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
+  // TODO: comment
+  KOKKOS_INLINE_FUNCTION
+  static void get_cloud_dsd2(
+    const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
+    const view_1d<const Scalar>& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm);
+
+  // Computes and returns rain size distribution parameters
+  KOKKOS_INLINE_FUNCTION
+  static void get_rain_dsd2 (
+    const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
+    Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
+
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -252,6 +275,7 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 # include "p3_functions_math_impl.hpp"
 # include "p3_functions_table3_impl.hpp"
 # include "p3_functions_table_ice_impl.hpp"
+# include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
 #endif
