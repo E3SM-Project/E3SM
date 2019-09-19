@@ -26,7 +26,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
             resubmit_immediate=False, skip_pnl=False, mail_user=None, mail_type=None,
             batch_args=None):
     if job is None:
-        job = case.get_primary_job()
+        job = case.get_first_job()
 
     rundir = case.get_value("RUNDIR")
     if job != "case.test":
