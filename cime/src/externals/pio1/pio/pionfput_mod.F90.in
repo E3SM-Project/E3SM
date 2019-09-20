@@ -696,9 +696,11 @@ contains
 #endif
 #endif
 #ifdef _NETCDF
+#ifdef _NETCDF4
        case(pio_iotype_netcdf4p)
           ierr=nf90_var_par_access(File%fh, varid, NF90_COLLECTIVE)
           ierr = nf90_put_var(File%fh, varid, ival, start=int(pstart), count=int(pcount))
+#endif
        case(pio_iotype_netcdf, pio_iotype_netcdf4c)
           ! Only io proc 0 will do writing
           if (Ios%io_rank == 0) then

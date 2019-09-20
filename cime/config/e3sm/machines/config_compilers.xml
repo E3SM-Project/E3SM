@@ -1615,6 +1615,32 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </SLIBS>
 </compiler>
 
+<compiler MACH="compy" COMPILER="intel">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv -init=snan</append>
+    <append > -I$ENV{NETCDF_DIR}/include  </append>
+  </FFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_HOME}</PNETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <SLIBS>
+    <base> -lpmi -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH}/lib/intel64/ -lmkl_rt $ENV{PNETCDF_LIBRARIES}</base>
+  </SLIBS>
+  <MPICC  MPILIB="impi">mpiicc</MPICC>
+  <MPICXX MPILIB="impi">mpiicpc</MPICXX>
+  <MPIFC  MPILIB="impi">mpiifort</MPIFC>
+</compiler>
+
 <compiler MACH="sooty" COMPILER="intel">
   <CFLAGS>
     <append> -std=c99 </append>
