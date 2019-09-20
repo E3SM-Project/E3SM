@@ -191,7 +191,7 @@ CONTAINS
 
   subroutine shr_dmodel_readgrid( gGrid, gsMap, nxgo, nygo, nzgo, filename, compid, mpicom, &
        decomp, lonname, latname, hgtname, maskname, areaname, fracname, readfrac, &
-       scmmode, scmlon, scmlat)
+       scmmode, iop_scream, scmlon, scmlat)
 
     use shr_file_mod  , only : shr_file_noprefix, shr_file_queryprefix, shr_file_get
     use shr_string_mod, only : shr_string_lastindex
@@ -216,6 +216,7 @@ CONTAINS
     character(len=*) ,optional, intent(in)    :: fracname ! name of frac variable in file
     logical          ,optional, intent(in)    :: readfrac ! T <=> also read frac  in file
     logical          ,optional, intent(in)    :: scmmode  ! single column mode
+    logical          ,optional, intent(in)    :: iop_scream ! iop_scream mode
     real(R8)         ,optional, intent(in)    :: scmlon   ! single column lon
     real(R8)         ,optional, intent(in)    :: scmlat   ! single column lat
 
@@ -243,6 +244,7 @@ CONTAINS
     integer(IN)   :: ndims       ! number of dims
     integer(IN)   :: nlon,nlat,narea,nmask,nfrac,nhgt
     logical       :: lscmmode    ! local scm mode
+    logical       :: liopmode    ! local iop mode
     real(R8)      :: dist,mind   ! scmmode point search
     integer(IN)   :: ni,nj       ! scmmode point search
     real(R8)      :: lscmlon     ! local copy of scmlon
@@ -279,17 +281,19 @@ CONTAINS
     master_task = 0
 
     lscmmode = .false.
+    liopmode = .false.
     if (present(scmmode)) then
        lscmmode = scmmode
+       liopmode = iop_scream
        if (lscmmode) then
           if (.not.present(scmlon) .or. .not.present(scmlat)) then
              write(logunit,*) subname,' ERROR: scmmode must supply scmlon and scmlat'
              call shr_sys_abort(subname//' ERROR: scmmode1 lon lat')
           endif
-!          if (my_task > 0) then
-!             write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
-!             call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
-!          endif
+          if (my_task > 0 .and. .not. liopmode) then
+             write(logunit,*) subname,' ERROR: scmmode must be run on one pe'
+             call shr_sys_abort(subname//' ERROR: scmmode2 tasks')
+          endif
        endif
     endif
 
