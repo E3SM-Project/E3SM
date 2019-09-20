@@ -5150,9 +5150,9 @@ contains
     allocate(this%snow_sources           (begc:endc))             ; this%snow_sources         (:)   = nan
     allocate(this%snow_sinks             (begc:endc))             ; this%snow_sinks           (:)   = nan
     allocate(this%qflx_irrig             (begc:endc))             ; this%qflx_irrig           (:)   = nan
-	allocate(this%qflx_surf_irrig        (begc:endc))             ; this%qflx_surf_irrig      (:)   = 0._r8
-    allocate(this%qflx_grnd_irrig        (begc:endc))             ; this%qflx_grnd_irrig      (:)   = 0._r8
-    allocate(this%qflx_over_supply       (begc:endc))             ; this%qflx_over_supply     (:)   = 0._r8
+    allocate(this%qflx_surf_irrig        (begc:endc))             ; this%qflx_surf_irrig      (:)   = nan
+    allocate(this%qflx_grnd_irrig        (begc:endc))             ; this%qflx_grnd_irrig      (:)   = nan
+    allocate(this%qflx_over_supply       (begc:endc))             ; this%qflx_over_supply     (:)   = nan
     allocate(this%qflx_irr_demand        (begc:endc))             ; this%qflx_irr_demand      (:)   = nan
     
     !VSFM variables
@@ -5204,7 +5204,7 @@ contains
          avgflag='A', long_name='sub-surface drainage', &
          ptr_col=this%qflx_drain, c2l_scale_type='urbanf')
 		 
-    this%qflx_irr_demand(begc:endc) = 0._r8
+    this%qflx_irr_demand(begc:endc) = spval
     call hist_addfld1d (fname='QIRRIG_WM',  units='mm/s',  &
          avgflag='A', long_name='Surface water irrigation demand sent to MOSART/WM', &
          ptr_col=this%qflx_irr_demand, c2l_scale_type='urbanf')
@@ -5307,6 +5307,10 @@ contains
     this%qflx_snow_melt  (begc:endc)   = 0._r8
 
     this%dwb(begc:endc) = 0._r8
+
+    this%qflx_surf_irrig(begc:endc) = 0._r8
+    this%qflx_grnd_irrig(begc:endc) = 0._r8
+    this%qflx_over_supply(begc:endc) = 0._r8
     ! needed for CNNLeaching 
     do c = begc, endc
        l = col_pp%landunit(c)

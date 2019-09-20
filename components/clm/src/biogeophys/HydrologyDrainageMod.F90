@@ -230,6 +230,9 @@ contains
 
       ! Determine wetland and land ice hydrology (must be placed here
       ! since need snow updated from CombineSnowLayers)
+      do c = bounds%begc,bounds%endc
+         qflx_irr_demand(c) = 0._r8
+      end do
 
       do fc = 1,num_nolakec
          c = filter_nolakec(fc)
