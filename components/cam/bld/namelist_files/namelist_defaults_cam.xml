@@ -159,6 +159,9 @@
 <ncdata dyn="se" hgrid="ne120np4" nlev="72"             ic_ymd="101" >atm/cam/inic/homme/cami_mam3_Linoz_0000-01-ne120np4_L72_c160318.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="101" >atm/cam/inic/homme/cami_1850-01-01_ne240np4_L26_c110314.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="26"             ic_ymd="901" >atm/cam/inic/homme/cami_0000-09-01_ne240np4_L26_c061106.nc</ncdata>
+<ncdata dyn="se" hgrid="ne512np4" nlev="72"        ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne512np4_topoadj_L72.nc</ncdata>
+<ncdata dyn="se" hgrid="ne1024np4" nlev="72"       ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L72.nc</ncdata>
+<ncdata dyn="se" hgrid="ne1024np4" nlev="120"      ic_ymd="20160801">atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L120.nc</ncdata>
 
 <!-- E3SM Aquaplanet -->
 <ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne4np4_L72_c190218.nc</ncdata>
