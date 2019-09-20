@@ -105,8 +105,17 @@ module WaterfluxType
 
      ! Irrigation
      real(r8), pointer :: qflx_irrig_patch         (:)   ! patch irrigation flux (mm H2O/s)
+     real(r8), pointer :: qflx_real_irrig_patch    (:)   ! patch real irrigation flux (mm H2O/s) 
+     real(r8), pointer :: qflx_surf_irrig_col      (:)   ! col real surface irrigation flux (mm H2O/s) 
+     real(r8), pointer :: qflx_grnd_irrig_col      (:)   ! col real groundwater irrigation flux (mm H2O/s) 
+     real(r8), pointer :: qflx_grnd_irrig_patch    (:)   ! groundwater irrigation (mm H2O/s) 
+     real(r8), pointer :: qflx_surf_irrig_patch    (:)   ! surface water irrigation(mm H2O/s) 
+     real(r8), pointer :: qflx_supply_patch        (:)   ! patch supply flux (mm H2O/s) 
      real(r8), pointer :: qflx_irrig_col           (:)   ! col irrigation flux (mm H2O/s)
+     real(r8), pointer :: qflx_irr_demand_col      (:)   ! col surface irrigation demand (mm H2O /s)
      real(r8), pointer :: irrig_rate_patch         (:)   ! current irrigation rate [mm/s]
+     real(r8), pointer :: qflx_over_supply_patch   (:)   ! over supplied irrigation 
+     real(r8), pointer :: qflx_over_supply_col     (:)   ! col over supplied irrigation 
      integer , pointer :: n_irrig_steps_left_patch (:)   ! number of time steps for which we still need to irrigate today (if 0, ignore)
 
      ! For VSFM
@@ -257,8 +266,17 @@ contains
     allocate(this%qflx_liq_dynbal_grc      (begg:endg))              ; this%qflx_liq_dynbal_grc      (:)   = nan
     allocate(this%qflx_ice_dynbal_grc      (begg:endg))              ; this%qflx_ice_dynbal_grc      (:)   = nan
 
-    allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = nan
+    allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = nan 
+    allocate(this%qflx_real_irrig_patch    (begp:endp))              ; this%qflx_real_irrig_patch    (:)   = nan 
+    allocate(this%qflx_surf_irrig_col      (begc:endc))              ; this%qflx_surf_irrig_col      (:)   = nan
+    allocate(this%qflx_grnd_irrig_col      (begc:endc))              ; this%qflx_grnd_irrig_col      (:)   = nan
+    allocate(this%qflx_grnd_irrig_patch    (begp:endp))              ; this%qflx_grnd_irrig_patch    (:)   = nan
+    allocate(this%qflx_surf_irrig_patch    (begp:endp))              ; this%qflx_surf_irrig_patch    (:)   = nan
+    allocate(this%qflx_supply_patch        (begp:endp))              ; this%qflx_supply_patch        (:)   = nan 
+    allocate(this%qflx_over_supply_patch   (begp:endp))              ; this%qflx_over_supply_patch   (:)   = nan 
+    allocate(this%qflx_over_supply_col     (begc:endc))              ; this%qflx_over_supply_col     (:)   = nan
     allocate(this%qflx_irrig_col           (begc:endc))              ; this%qflx_irrig_col           (:)   = nan
+    allocate(this%qflx_irr_demand_col      (begc:endc))              ; this%qflx_irr_demand_col      (:)   = nan
     allocate(this%irrig_rate_patch         (begp:endp))              ; this%irrig_rate_patch         (:)   = nan
     allocate(this%n_irrig_steps_left_patch (begp:endp))              ; this%n_irrig_steps_left_patch (:)   = 0
 
@@ -352,6 +370,7 @@ contains
        if (lun_pp%itype(l) == istsoil .or. lun_pp%itype(l) == istcrop) then
           this%qflx_drain_col(c) = 0._r8
           this%qflx_surf_col(c)  = 0._r8
+          this%qflx_irr_demand_col(c)  = 0._r8
        end if
     end do
 

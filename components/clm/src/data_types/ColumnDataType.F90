@@ -464,7 +464,13 @@ module ColumnDataType
     real(r8), pointer :: qflx_lateral         (:)   => null() ! lateral subsurface flux (mm H2O /s)
     real(r8), pointer :: snow_sources         (:)   => null() ! snow sources (mm H2O/s)
     real(r8), pointer :: snow_sinks           (:)   => null() ! snow sinks (mm H2O/s)
-    real(r8), pointer :: qflx_irrig           (:)   => null() ! irrigation flux (mm H2O/s)
+
+    real(r8), pointer :: qflx_surf_irrig      (:)   => null() ! col real surface irrigation flux (mm H2O/s) 
+    real(r8), pointer :: qflx_grnd_irrig      (:)   => null() ! col real groundwater irrigation flux (mm H2O/s) 
+    real(r8), pointer :: qflx_irrig           (:)   => null() ! col irrigation flux (mm H2O/s)
+    real(r8), pointer :: qflx_irr_demand      (:)   => null() ! col surface irrigation demand (mm H2O /s)
+    real(r8), pointer :: qflx_over_supply     (:)   => null() ! col over supplied irrigation 
+
     real(r8), pointer :: mflx_infl_1d         (:)   => null() ! infiltration source in top soil control volume (kg H2O /s)
     real(r8), pointer :: mflx_dew_1d          (:)   => null() ! liquid+snow dew source in top soil control volume (kg H2O /s)
     real(r8), pointer :: mflx_et_1d           (:)   => null() ! evapotranspiration sink from all soil coontrol volumes (kg H2O /s)
@@ -5144,6 +5150,10 @@ contains
     allocate(this%snow_sources           (begc:endc))             ; this%snow_sources         (:)   = nan
     allocate(this%snow_sinks             (begc:endc))             ; this%snow_sinks           (:)   = nan
     allocate(this%qflx_irrig             (begc:endc))             ; this%qflx_irrig           (:)   = nan
+    allocate(this%qflx_surf_irrig        (begc:endc))             ; this%qflx_surf_irrig      (:)   = nan
+    allocate(this%qflx_grnd_irrig        (begc:endc))             ; this%qflx_grnd_irrig      (:)   = nan
+    allocate(this%qflx_over_supply       (begc:endc))             ; this%qflx_over_supply     (:)   = nan
+    allocate(this%qflx_irr_demand        (begc:endc))             ; this%qflx_irr_demand      (:)   = nan
     
     !VSFM variables
     ncells = endc - begc + 1
@@ -5193,6 +5203,11 @@ contains
     call hist_addfld1d (fname='QDRAI',  units='mm/s',  &
          avgflag='A', long_name='sub-surface drainage', &
          ptr_col=this%qflx_drain, c2l_scale_type='urbanf')
+		 
+    this%qflx_irr_demand(begc:endc) = spval
+    call hist_addfld1d (fname='QIRRIG_WM',  units='mm/s',  &
+         avgflag='A', long_name='Surface water irrigation demand sent to MOSART/WM', &
+         ptr_col=this%qflx_irr_demand, c2l_scale_type='urbanf')
 
     this%qflx_top_soil(begc:endc) = spval
     call hist_addfld1d (fname='QTOPSOIL',  units='mm/s',  &
@@ -5292,6 +5307,10 @@ contains
     this%qflx_snow_melt  (begc:endc)   = 0._r8
 
     this%dwb(begc:endc) = 0._r8
+
+    this%qflx_surf_irrig(begc:endc) = 0._r8
+    this%qflx_grnd_irrig(begc:endc) = 0._r8
+    this%qflx_over_supply(begc:endc) = 0._r8
     ! needed for CNNLeaching 
     do c = begc, endc
        l = col_pp%landunit(c)
