@@ -159,11 +159,19 @@ contains
       call mpas_pool_get_array(regionPool, 'regionGroupNames', regionGroupNames)
 
       !!! region preliminaries
+      regionGroupNumber=0
       do i = 1, nRegionGroups
          if (regionGroupNames(i) .eq. additionalRegion) then
             regionGroupNumber = i
          end if
       end do
+      if (regionGroupNumber.eq.0) then
+         call mpas_log_write &
+            ('ocn_moc_streamfunction AM: config_AM_mocStreamfunction_region_group not found in regionGroupNames')
+         call mpas_log_write &
+            ('ocn_moc_streamfunction AM: setting regionGroupNumber=1')
+         regionGroupNumber = 1
+      end if
 
       regionsInAddGroup = MIN(nRegionsInGroup(regionGroupNumber), maxRegionsInGroup)
       !!!! END REGION STUFF
@@ -392,12 +400,19 @@ contains
       call mpas_pool_get_array(regionPool, 'regionNames', regionNames)
       call mpas_pool_get_array(regionPool, 'regionGroupNames', regionGroupNames)
 
+      regionGroupNumber=0
       do i = 1, nRegionGroups
          if (regionGroupNames(i) .eq. additionalRegion) then
             regionGroupNumber = i
-            !print *, 'found region with the same name:', regionGroupNames(i)
          end if
       end do
+      if (regionGroupNumber.eq.0) then
+         call mpas_log_write &
+            ('ocn_moc_streamfunction AM: config_AM_mocStreamfunction_region_group not found in regionGroupNames')
+         call mpas_log_write &
+            ('ocn_moc_streamfunction AM: setting regionGroupNumber=1')
+         regionGroupNumber = 1
+      end if
 
       regionsInAddGroup = MIN(nRegionsInGroup(regionGroupNumber), maxRegionsInGroup)
 
@@ -426,11 +441,20 @@ contains
       call mpas_pool_get_array(transectPool, 'nTransectsInGroup', nTransectsInGroup)
       call mpas_pool_get_array(transectPool, 'transectNames', transectNames)
       call mpas_pool_get_array(transectPool, 'transectGroupNames', transectGroupNames)
+
+      transectGroupNumber=0
       do i = 1, nTransectGroups
          if (transectGroupNames(i) .eq. additionalTransect) then
             transectGroupNumber = i
          end if
       end do
+      if (transectGroupNumber.eq.0) then
+         call mpas_log_write &
+            ('ocn_moc_streamfunction AM: config_AM_mocStreamfunction_transect_group not found in transectGroupNames')
+         call mpas_log_write &
+            ('ocn_moc_streamfunction AM: setting transectGroupNumber=1')
+         transectGroupNumber = 1
+      end if
 
       transectsInAddGroup = nTransectsInGroup(transectGroupNumber)
 
@@ -493,7 +517,11 @@ contains
          call mpas_pool_get_array(transectPool,'transectEdgeMaskSigns',transectEdgeMaskSigns)
          call mpas_pool_get_array(transectPool,'transectEdgeMasks',transectEdgeMasks)
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
-         call mpas_pool_get_array(statePool, normalVelocityArrayName, normalVelocity, timeLevel)
+         if (trim(normalVelocityArrayName)=="normalVelocity") then
+            call mpas_pool_get_array(statePool, trim(normalVelocityArrayName), normalVelocity, timeLevel)
+         else
+            call mpas_pool_get_array(diagnosticsPool, trim(normalVelocityArrayName), normalVelocity, timeLevel)
+         end if
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop', maxLevelEdgeTop)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
