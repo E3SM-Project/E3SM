@@ -112,7 +112,7 @@ OPTIONS
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
      -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
-     -rce               Use homogenous conditions for radiative-convective equilibrium (RCE) 
+     -rce               Use homogenous conditions for radiative-convective equilibrium (RCE), normally used with aquaplanet 
      -carma <name>      Build CAM with specified CARMA microphysics model
                         [ none | bc_strat | cirrus | cirrus_dust | dust | meteor_impact | 
                           meteor_smoke | mixed_sulfate | pmc | pmc_sulfate | sea_salt | sulfate | tholin |
@@ -1118,8 +1118,8 @@ if (defined $opts{'rce'}) {
     $rce = 1;
 }
 $cfg_ref->set('rce', $rce);
-my $aqua_mode = $aquaplanet ? "ON" : "OFF";
-if ($print>=2) { print "Radiative-Convctive Equilibrium mode: $rce$eol"; }
+my $rce_mode = $rce ? "ON" : "OFF";
+if ($print>=2) { print "Radiative-Convctive Equilibrium mode: $rce_mode$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Ocean model
