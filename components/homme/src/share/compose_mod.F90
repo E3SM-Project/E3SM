@@ -34,6 +34,16 @@ module compose_mod
        integer(kind=c_int), intent(in) :: lid2gid(:), lid2facenum(:), nbr_id_rank(:), nirptr(:)
      end subroutine slmm_init_impl
 
+     subroutine compose_query_bufsz(sendsz, recvsz) bind(c)
+       use iso_c_binding, only: c_int
+       integer(kind=c_int), intent(out) :: sendsz, recvsz
+     end subroutine compose_query_bufsz
+
+     subroutine compose_set_bufs(sendbuf, recvbuf) bind(c)
+       use iso_c_binding, only: c_double
+       real(kind=c_double), intent(in) :: sendbuf(:), recvbuf(:)
+     end subroutine compose_set_bufs
+
      subroutine cedr_set_ie2gci(ie, gci) bind(c)
        use iso_c_binding, only: c_int
        integer(kind=c_int), value, intent(in) :: ie, gci
