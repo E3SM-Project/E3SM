@@ -1734,11 +1734,11 @@ contains
              +v_i(:,:,2,k)*gradphinh_i(:,:,2,k) 
         phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
-        if (scale2/=1) then
+        if (scale1/=scale2) then
            ! add imex phi_h splitting 
            ! use approximate phi_h = hybi*phis 
            ! could also use true hydrostatic pressure, but this requires extra DSS in dirk()
-           phi_tens(:,:,k) =  phi_tens(:,:,k)+(1-scale2)*(&
+           phi_tens(:,:,k) =  phi_tens(:,:,k)+(scale1-scale2)*(&
                 v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
                 v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2) )*hvcoord%hybi(k)
         endif
