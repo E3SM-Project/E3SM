@@ -101,18 +101,16 @@ implicit none
      enddo
   endif
 
-  ! hydrostatic pressure
-  pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
-  do k=1,nlev
-     pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
-  enddo
-  do k=1,nlev
-     pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
-  enddo
-
-
   if (theta_hydrostatic_mode) then
      ! hydrostatic pressure
+     pi_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
+     do k=1,nlev
+        pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
+     enddo
+     do k=1,nlev
+        pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
+     enddo
+     
      exner  = (pi/p0)**kappa
      pnh = pi ! copy hydrostatic pressure into output variable
      dpnh_dp_i = 1
@@ -132,7 +130,7 @@ implicit none
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! boundary terms
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-   pnh_i(:,:,1) = pi_i(:,:,1)   ! hydrostatic ptop    
+   pnh_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0  ! hydrostatic ptop    
    ! surface boundary condition pnh_i determined by w equation to enforce
    ! w b.c.  This is computed in the RHS calculation.  Here, we use
    ! an approximation (hydrostatic) so that dpnh/dpi = 1

@@ -369,7 +369,7 @@ contains
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps(:,:)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps(:,:)
   enddo
 
 !set vtheta
@@ -483,10 +483,10 @@ contains
     u   = elem%state%v   (:,:,1,:,nt)
     v   = elem%state%v   (:,:,2,:,nt)
     ps  = elem%state%ps_v(:,:,  nt)
+    dp  = elem%state%dp3d(:,:,:,nt)
     phi_i = elem%state%phinh_i(:,:,:,nt)
 
     do k=1,nlev
-       dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps(:,:)
        w(:,:,k) = (elem%state%w_i(:,:,k,nt) + elem%state%w_i(:,:,k+1,nt))/2
     end do
 

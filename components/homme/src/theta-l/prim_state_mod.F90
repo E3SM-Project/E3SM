@@ -228,7 +228,6 @@ contains
        enddo
 
        ! surface pressure
-       !tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
        tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
 
        !======================================================  
@@ -350,19 +349,16 @@ contains
     ! so rate of changes are W/m**2
 
 
-    !   mass = integral( ps-p(top) )
+    !   mass = integral( ps-p(top) ) = sum(dp3d)
     do ie=nets,nete
-       !tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
-       tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
+       tmp(:,:,ie)=sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
+#ifdef CAM
+       ! CAM neglicts the small, constant p(top) term.  Add this
+       ! term in to be consistent
+       tmp(:,:,ie)=temp(:,:,ie) + hvcoord%hyai(1)*hvcoord%ps0 
+#endif
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    !
-    !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)
-    !   but we assume hybi(1) is zero at top of atmosphere (pure pressure coordinates)
-    !    Mass = (Mass2-(hvcoord%hyai(1)*hvcoord%ps0) )*scale  ! this correction is a constant,
-    !                                                         ! ~20 kg/m^2 (effects 4th digit of Mass)
-    !   BUT: CAM EUL defines mass as integral( ps ), so to be consistent, ignore ptop contribution; 
     Mass = Mass2*scale
 
     if(hybrid%masterthread) then
