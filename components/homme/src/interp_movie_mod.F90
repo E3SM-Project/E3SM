@@ -291,7 +291,11 @@ contains
     ! Create the DOF arrays
     allocate(ldof2d(lcount))
     allocate(ldof3d(lcount*nlev))
+#if defined(_PRIM)
+!nlevp dimension is not in dimsize in SW
     allocate(ldof3dp1(lcount*nlevp))
+#endif
+
     icnt=0
     do ie=1,nelemd
        do i=1,interpdata(ie)%n_interp
@@ -308,6 +312,7 @@ contains
           end do
        end do
     end do
+#if defined(_PRIM)
     icnt=0
     do k=1,nlevp
        do ie=1,nelemd
@@ -317,20 +322,23 @@ contains
           end do
        end do
     end do
+#endif
 
     call getiodof(2, (/nlon,nlat/),       iorank,   iodof2d,   start2d(1:2),   count2d(1:2))
-
     call nf_init_decomp(ncdf, (/1,2/),    ldof2d,   iodof2d,   start2d(1:2),   count2d(1:2))
 
     call getiodof(3, (/nlon,nlat,nlev/),  iorank,   iodof3d,   start3d(1:3),   count3d(1:3))
-
     call nf_init_decomp(ncdf, (/1,2,3/),  ldof3d,   iodof3d,   start3d(1:3),   count3d(1:3))
 
+#if defined(_PRIM)
     call getiodof(3, (/nlon,nlat,nlevp/), iorank,   iodof3dp1, start3dp1(1:3), count3dp1(1:3))
-
     call nf_init_decomp(ncdf, (/1,2,4/),  ldof3dp1, iodof3dp1, start3dp1(1:3), count3dp1(1:3))
+#endif
 
-    deallocate(iodof2d, iodof3d, iodof3dp1, ldof2d, ldof3d, ldof3dp1)
+    deallocate(iodof2d, iodof3d, ldof2d, ldof3d)
+#if defined(_PRIM)
+    deallocate(iodof3dp1, ldof3dp1)
+#endif
 
     call nf_output_register_variables(ncdf,varcnt,varnames,vardims,vartype,varrequired)
     do ios = 1, max_output_streams
