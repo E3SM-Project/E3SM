@@ -18,13 +18,14 @@ module model_init_mod
   use hybvcoord_mod, 	  only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp
-  use eos          ,      only: pnh_and_exner_from_eos,get_dirk_jacobian
+  use eos          ,      only: pnh_and_exner_from_eos,get_dirk_jacobian,phi_from_eos
+  use element_ops,        only: set_theta_ref
   use element_state,      only: timelevels, nu_scale_top, nlev_tom
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
   use control_mod,        only: qsplit,theta_hydrostatic_mode
   use time_mod,           only: timelevel_qdp, timelevel_t
-  use physical_constants, only: g, TREF
+  use physical_constants, only: g, TREF, Rgas, kappa
  
   implicit none
   
@@ -64,7 +65,14 @@ contains
          elem(ie)%state%phinh_i(:,:,nlevp,t) = elem(ie)%state%phis(:,:)
       enddo
 
-      ! initialize reference states used by viscosity
+      ! initialize reference states used by hyberviscosity
+#define HV_REFSTATES_V1
+#ifdef HV_REFSTATES_V0
+      elem(ie)%derived%dp_ref=0
+      elem(ie)%derived%phi_ref=0
+      elem(ie)%derived%theta_ref=0
+#endif
+#ifdef HV_REFSTATES_V1
       ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*TREF)) 
       do k=1,nlev
          elem(ie)%derived%dp_ref(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
@@ -74,6 +82,31 @@ contains
       temp=elem(ie)%derived%theta_ref*elem(ie)%derived%dp_ref
       call phi_from_eos(hvcoord,elem(ie)%state%phis,&
            temp,elem(ie)%derived%dp_ref,elem(ie)%derived%phi_ref)
+#endif
+#ifdef HV_REFSTATES_V2
+      ! use Newton to solve for surface pressure
+      ! so that Cp theta_ref grad(exner_ref) + grad(phis) = 0
+      T1 = .0065*TREF*Cp/g ! = 191                                                            
+      T0 = TREF-T1         ! = 97                                                             
+      exner(:,:) =  exp( -kappa*elem(ie)%state%phis(:,:)/(Rgas*TREF))
+      do i=1,5
+         exner(:,:) = exner(:,:) - &
+              (elem(ie)%state%phis(:,:)/Cp + T0*log(exner(:,:))+T1*exner(:,:)-T1 ) &
+              / (T0/exner(:,:)+T1)
+      enddo
+      ps_ref(:,:) = (exner(:,:)**(1/kappa)) / p0
+
+      do k=1,nlev
+         elem(ie)%derived%dp_ref(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
+      enddo
+      call set_theta_ref(hvcoord,elem(ie)%derived%dp_ref,temp)
+      temp=temp*elem(ie)%derived%dp_ref
+      call phi_from_eos(hvcoord,elem(ie)%state%phis,&
+           temp,elem(ie)%derived%dp_ref,elem(ie)%derived%phi_ref)
+
+      elem(ie)%derived_theta_ref=0
+#endif
     enddo 
 
 

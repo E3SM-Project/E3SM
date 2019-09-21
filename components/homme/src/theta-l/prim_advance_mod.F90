@@ -1092,11 +1092,6 @@ contains
   real (kind=real_kind) :: temp(np,np,nlev)    
   real (kind=real_kind) :: temp_i(np,np,nlevp)    
   real (kind=real_kind) :: dt,xfac
-  real (kind=real_kind) :: ps_ref(np,np),vtheta_dp(np,np)
-
-  real (kind=real_kind) :: theta_ref(np,np,nlev,nets:nete)
-  real (kind=real_kind) :: phi_ref(np,np,nlevp,nets:nete)
-  real (kind=real_kind) :: dp_ref(np,np,nlev,nets:nete)
 
   integer :: l1p,l2p,l1n,l2n,l
   call t_startf('advance_hypervis')
@@ -1116,46 +1111,10 @@ contains
   enddo
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! NOTE1:  Diffusion works best when applied to theta instead of theta_dp
-! It creates some TOM noise when applied to vtheta_dp in DCMIP 2.0 test
-! so we convert from vtheta_dp->theta, and then convert back at the end of diffusion
-!
-! NOTE2: in dcmip2012 test2.0, using theta_ref does improve solution, but
-!        phi_ref has no impact
-!
-! NOTE3: in HS w/topo tests, theta_ref(dp_ref) as opposed to computing it as a 
-!        function of dp3d is less noisy at cube edges
-! 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! compute reference states
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   do ie=nets,nete
-     !ps_ref(:,:) = hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,nt),3)
-     !ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*300))  ! 300K ref temperature
-     ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*TREF)) 
-     !ps_ref(:,:) = hvcoord%ps0 - 11.3*elem(ie)%state%phis(:,:)/g
-     do k=1,nlev
-        dp_ref(:,:,k,ie) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-             (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
-     enddo
-
-
-     ! phi_ref,theta_ref depend only on ps:
-     call set_theta_ref(hvcoord,dp_ref(:,:,:,ie),theta_ref(:,:,:,ie))
-     temp(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie) 
-     call phi_from_eos(hvcoord,elem(ie)%state%phis,&
-          temp(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
-#if 0
-     ! no reference state, for testing
-     theta_ref(:,:,:,ie)=0
-     phi_ref(:,:,:,ie)=0
-     dp_ref(:,:,:,ie)=0
-#endif
-
      ! convert vtheta_dp -> theta
      do k=1,nlev
         elem(ie)%state%vtheta_dp(:,:,k,nt)=&
@@ -1172,11 +1131,11 @@ contains
      do ie=nets,nete
         ! remove ref state
         elem(ie)%state%vtheta_dp(:,:,:,nt)=elem(ie)%state%vtheta_dp(:,:,:,nt)-&
-             theta_ref(:,:,:,ie)
+             elem(ie)%derived%theta_ref(:,:,:)
         elem(ie)%state%phinh_i(:,:,:,nt)=elem(ie)%state%phinh_i(:,:,:,nt)-&
-             phi_ref(:,:,:,ie)
+             elem(ie)%derived%phi_ref(:,:,:)
         elem(ie)%state%dp3d(:,:,:,nt)=elem(ie)%state%dp3d(:,:,:,nt)-&
-             dp_ref(:,:,:,ie)
+             elem(ie)%derived%dp_ref(:,:,:)
      enddo
      
      call biharmonic_wk_theta(elem,stens,vtens,deriv,edge_g,hybrid,nt,nets,nete)
@@ -1184,11 +1143,11 @@ contains
      do ie=nets,nete
         !add ref state back
         elem(ie)%state%vtheta_dp(:,:,:,nt)=elem(ie)%state%vtheta_dp(:,:,:,nt)+&
-             theta_ref(:,:,:,ie)
+             elem(ie)%derived%theta_ref(:,:,:)
         elem(ie)%state%phinh_i(:,:,:,nt)=elem(ie)%state%phinh_i(:,:,:,nt)+&
-             phi_ref(:,:,:,ie)
+             elem(ie)%derived%phi_ref(:,:,:)
         elem(ie)%state%dp3d(:,:,:,nt)=elem(ie)%state%dp3d(:,:,:,nt)+&
-             dp_ref(:,:,:,ie)
+             elem(ie)%derived%dp_ref(:,:,:)
         
         
         ! comptue mean flux
