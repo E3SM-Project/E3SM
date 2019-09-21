@@ -63,13 +63,13 @@
 		<var name="mocStreamvalLatAndDepth" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels Time" units="sverdrups"
 			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension)"
 		/>
-		<var name="mocStreamvalLatAndDepthRegion" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels R3 Time" units="sverdrups"
+		<var name="mocStreamvalLatAndDepthRegion" type="real" dimensions="nMocStreamfunctionBinsP1 nVertLevels nRegions Time" units="sverdrups"
 			description="The value of the MOC streamfunction for each latitude-bin (first dimension) and depth (second dimension)"
 		/>
 		<var name="binBoundaryMocStreamfunction" type="real" dimensions="nMocStreamfunctionBinsP1" units="varies"
 			 description="Coordinate of southern edge of meridional heat transport bin, either in latitude or y, for plotting."
 		/>
-		<var name="minMaxLatRegion" type="real" dimensions="TWO R3" units="varies"
+		<var name="minMaxLatRegion" type="real" dimensions="TWO nRegions" units="varies"
 			 description="Coordinates of the southern and northern boundaries of each region (for drawing)."
 		/>
 	</var_struct>
