@@ -164,9 +164,7 @@ contains
      endif
 
      ! reinitialize dp3d after remap
-     do k=1,nlev    
-        elem(ie)%state%dp3d(:,:,:,np1)=dp(:,:,:)
-     enddo
+     elem(ie)%state%dp3d(:,:,:,np1)=dp(:,:,:)
 
   enddo
   call t_stopf('vertical_remap')
