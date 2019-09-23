@@ -552,7 +552,7 @@ pnorm_perp_tot(:,:)=0
             ELSEWHERE
                beta_perp_ice(:,k)=pnorm_perp_ice(:,k)/EXP(-2.0*tautot_ice(:,k+1))
             END WHERE
-         else where
+         elsewhere
             ! If attenuation to TOA is too large, exp(-2.0*tautot_ice(:,k+1))
             ! goes to zero and the above code has a divide by zero error. A
             ! simple fix is to set the beta values of such layers to zero.
@@ -578,7 +578,7 @@ pnorm_perp_tot(:,:)=0
               ELSEWHERE
                  beta_perp_liq(:,k)=pnorm_perp_liq(:,k)/EXP(-2.0*tautot_liq(:,k+1))
               END WHERE
-           else where
+           elsewhere
               ! If attenuation to TOA is too large, exp(-2.0*tautot_liq(:,k+1))
               ! goes to zero and the above code has a divide by zero error. A
               ! simple fix is to set the beta values of such layers to zero.
