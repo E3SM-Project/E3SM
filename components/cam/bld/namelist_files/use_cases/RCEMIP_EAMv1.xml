@@ -62,17 +62,12 @@
 <!-- ------------------------------------------------------------------------------------------ -->
 <!-- GHG values - co2 set by CCSM_CO2_PPMV in config_compset.xml -->
 <!-- ------------------------------------------------------------------------------------------ -->
-<ch4vmr>1.650e-6 </ch4vmr>
-<n2ovmr>0.306e-6 </n2ovmr>
-<f11vmr>0.0      </f11vmr>
-<f12vmr>0.0      </f12vmr>
-
-<!-- 2000 GHG values from AR5 (from ghg_hist_1765-2012_c130501.nc) -->
-<!-- <co2vmr>368.865e-6</co2vmr> Set by CCSM_CO2_PPMV in config_compset.xml -->
-<!-- <ch4vmr>1751.022e-9</ch4vmr> -->
-<!-- <n2ovmr>315.85e-9</n2ovmr> -->
-<!-- <f11vmr>676.0526e-12</f11vmr> -->
-<!-- <f12vmr>537.05e-12</f12vmr> -->
+<scenario_ghg> FIXED </scenario_ghg>
+<co2vmr>  348.0e-6 </co2vmr> 
+<n2ovmr>  306.0e-9 </n2ovmr>
+<ch4vmr> 1650.0e-9 </ch4vmr>
+<f11vmr> 0.0      </f11vmr>
+<f12vmr> 0.0      </f12vmr>
 
 <!-- ------------------------------------------------------------------------------------------ -->
 <!-- zonally symmetric prescribed ozone -->
