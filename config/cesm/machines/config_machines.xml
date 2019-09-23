@@ -446,37 +446,37 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules mpilib="mpt" compiler="gnu">
 	<command name="load">mpt/2.16</command>
-	<command name="load">netcdf-mpi/4.6.1</command>
+	<command name="load">netcdf-mpi/4.7.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.6.1</command>
+	<command name="load">netcdf-mpi/4.7.1</command>
 	<command name="load">pnetcdf/1.11.0</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.6.3</command>
+	<command name="load">netcdf-mpi/4.7.1</command>
 	<command name="load">pnetcdf/1.11.1</command>
       </modules>
       <modules mpilib="openmpi" compiler="pgi">
 	<command name="load">openmpi/3.1.4</command>
-	<command name="load">netcdf/4.6.3</command>
+	<command name="load">netcdf/4.7.1</command>
       </modules>
       <modules mpilib="openmpi" compiler="gnu">
         <command name="load">openmpi/3.0.1</command>
-        <command name="load">netcdf/4.6.1</command>
+        <command name="load">netcdf/4.7.1</command>
       </modules>
       <modules>
 	<command name="load">ncarcompilers/0.5.0</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
-	<command name="load">netcdf/4.6.1</command>
+	<command name="load">netcdf/4.7.1</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial">
-	<command name="load">netcdf/4.6.1</command>
+	<command name="load">netcdf/4.7.1</command>
       </modules>
       <modules compiler="pgi" mpilib="mpi-serial">
-	<command name="load">netcdf/4.6.3</command>
+	<command name="load">netcdf/4.7.1</command>
       </modules>
     </module_system>
     <environment_variables>
