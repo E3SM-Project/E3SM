@@ -65,7 +65,7 @@ contains
 
     ! READ inputs from SCM for p3-stand-alone:
     q(:,:,:) = 0.0_rtype
-    open(unit=981,file='./data/p3_RICO_SCM.inp',status='old',action='read')
+    open(unit=981,file='./data/p3_universal_constants.inp',status='old',action='read')
     read(981,'(A)') case_title
     read(981,'(2I8)') ncol, nlev
     if (ncol.gt.pcols.or.nlev.gt.pver) then

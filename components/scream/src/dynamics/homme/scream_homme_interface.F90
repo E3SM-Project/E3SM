@@ -219,6 +219,8 @@ contains
     ! Set dt in the time mod
     tstep = dt
 
+    if (par%masterproc) print *, "HOMME step: ", tl%nstep
+
     call prim_run_subcycle(elem,hybrid,nets,nete,dt,.false.,tl,hvcoord,1)
 
     if (tl%nstep .ge. next_output_step) then
