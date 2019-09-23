@@ -1659,6 +1659,7 @@ module li_calving
          call mpas_pool_get_array(geometryPool, 'cellMask', cellMask)
          call mpas_pool_get_array(geometryPool, 'contiguousDynamicIce', contiguousDynamicIce)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         call mpas_pool_get_dimension(geometryPool, 'nCellsSolve', nCellsSolve)
          call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
          call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
 
@@ -1666,10 +1667,10 @@ module li_calving
          call li_calculate_mask(meshPool, velocityPool, geometryPool, err_tmp)
          err = ior(err, err_tmp)
 
-      call mpas_log_write("Iceberg-detection flood-fill: updated masks.")
+         call mpas_log_write("Iceberg-detection flood-fill: updated masks.")
          contiguousDynamicIce(:) = 0  ! initialize
          newMaskCountLocal = 0
-         do iCell = 1, nCells
+         do iCell = 1, nCellsSolve
             if (li_mask_is_grounded_ice(cellMask(iCell)) .and. li_mask_is_dynamic_ice(cellMask(iCell))) then
                contiguousDynamicIce(iCell) = 1
                newMaskCountLocal = newMaskCountLocal + 1
@@ -1727,7 +1728,8 @@ module li_calving
                newMaskCountLocal = 0
                contiguousDynamicIceOld(:) = contiguousDynamicIce(:)
    
-               do iCell = 1, nCellsArray(2) ! this gives owned cells plus 1-halo
+               !do iCell = 1, nCellsArray(2) ! this gives owned cells plus 1-halo
+               do iCell = 1, nCellsArray(1) ! this gives owned cells only
                   if (contiguousDynamicIceOld(iCell) == 0 .and. &   ! this cell not yet marked
                      li_mask_is_dynamic_ice(cellMask(iCell))) then  ! and is dynamic
                      ! If it has a marked neighbor, then add it to the mask
@@ -1753,6 +1755,10 @@ module li_calving
          ! update count of cells added to mask globally
          call mpas_dmpar_sum_int(domain % dminfo, newMaskCountLocalAccum, newMaskCountGlobal)
          call mpas_log_write("  Added $i new cells to global mask", intArgs=(/newMaskCountGlobal/))
+
+         if (globalLoopCount>200) then
+            call mpas_log_write("Too many global loops!", MPAS_LOG_ERR)
+         endif
       end do ! global loop
 
 
