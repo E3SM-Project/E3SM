@@ -994,7 +994,7 @@
       real (dbl_kind), allocatable, dimension(:,:) :: &	 
 !      real (kind=dbl_kind), dimension(nx_global,ny_global) :: &
 !       real (kind=dbl_kind) :: &
-         temp_test1, temp_test2, temp_test3, temp_test4, temp_test5
+         scm_var1, scm_var2, scm_var3, scm_var4, scm_var5
 
       logical :: se_grid      ! determine whether file format is for 
                               !   SE dynamical core grid or not
@@ -1025,17 +1025,17 @@
       if (single_column) then
 
         if (my_task == master_task) then
-          allocate(temp_test1(nx_global,ny_global))
-	  allocate(temp_test2(nx_global,ny_global))
-	  allocate(temp_test3(nx_global,ny_global))
-	  allocate(temp_test4(nx_global,ny_global))
-	  allocate(temp_test5(nx_global,ny_global))
+          allocate(scm_var1(nx_global,ny_global))
+	  allocate(scm_var2(nx_global,ny_global))
+	  allocate(scm_var3(nx_global,ny_global))
+	  allocate(scm_var4(nx_global,ny_global))
+	  allocate(scm_var5(nx_global,ny_global))
         else
-          allocate(temp_test1(1,1))
-	  allocate(temp_test2(1,1))
-	  allocate(temp_test3(1,1))
-	  allocate(temp_test4(1,1))
-	  allocate(temp_test5(1,1))      
+          allocate(scm_var1(1,1))
+	  allocate(scm_var2(1,1))
+	  allocate(scm_var3(1,1))
+	  allocate(scm_var4(1,1))
+	  allocate(scm_var5(1,1))      
         endif
 
         if (my_task == master_task) then
@@ -1119,19 +1119,19 @@
 
          call check_ret(nf90_inq_varid(ncid, 'xc' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         temp_test1(:,:) = scamdata
+         scm_var1(:,:) = scamdata
          call check_ret(nf90_inq_varid(ncid, 'yc' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         temp_test2(:,:) = scamdata
+         scm_var2(:,:) = scamdata
          call check_ret(nf90_inq_varid(ncid, 'area' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         temp_test3(:,:) = scamdata
+         scm_var3(:,:) = scamdata
          call check_ret(nf90_inq_varid(ncid, 'mask' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         temp_test4(:,:) = scamdata
+         scm_var4(:,:) = scamdata
          call check_ret(nf90_inq_varid(ncid, 'frac' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         temp_test5(:,:) = scamdata
+         scm_var5(:,:) = scamdata
 	 
         endif	 
       else
@@ -1156,23 +1156,23 @@
       end if
       
       if (single_column) then
-        call scatter_global(TLON,temp_test1,master_task,distrb_info, &
+        call scatter_global(TLON,scm_var1,master_task,distrb_info, &
 	  field_loc_noupdate,field_type_noupdate)
-        call scatter_global(TLAT,temp_test2,master_task,distrb_info, &
+        call scatter_global(TLAT,scm_var2,master_task,distrb_info, &
 	  field_loc_noupdate,field_type_noupdate)
-        call scatter_global(tarea,temp_test3,master_task,distrb_info, &
+        call scatter_global(tarea,scm_var3,master_task,distrb_info, &
 	  field_loc_center,field_type_scalar)	  	  
-        call scatter_global(hm,temp_test4,master_task,distrb_info, &
+        call scatter_global(hm,scm_var4,master_task,distrb_info, &
 	  field_loc_noupdate,field_type_noupdate)
-        call scatter_global(ocn_gridcell_frac,temp_test5,master_task,distrb_info, &
+        call scatter_global(ocn_gridcell_frac,scm_var5,master_task,distrb_info, &
 	  field_loc_noupdate,field_type_noupdate)	  
       endif
       
-      deallocate(temp_test1)
-      deallocate(temp_test2)
-      deallocate(temp_test3)
-      deallocate(temp_test4)
-      deallocate(temp_test5)
+      deallocate(scm_var1)
+      deallocate(scm_var2)
+      deallocate(scm_var3)
+      deallocate(scm_var4)
+      deallocate(scm_var5)
 
      !$OMP PARALLEL DO PRIVATE(iblk,this_block,ilo,ihi,jlo,jhi,i,j)
       do iblk = 1,nblocks
