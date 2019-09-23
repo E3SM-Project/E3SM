@@ -1111,7 +1111,7 @@ module li_iceshelf_melt
          do iCell = 1, nCellsSolve
             if ( li_mask_is_floating_ice(cellMask(iCell)) ) then
                floatingBasalMassBal(iCell) = -1.0_RKIND * coef * (TFdraft(iCell) + deltaT(iCell)) * &
-                  (mean_TF(basinNumber(iCell)+1) + deltaT(iCell)) + ismip6shelfMelt_offset(iCell)
+                  abs(mean_TF(basinNumber(iCell)+1) + deltaT(iCell)) + ismip6shelfMelt_offset(iCell)
             endif
          enddo
 
