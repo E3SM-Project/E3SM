@@ -50,6 +50,7 @@ _TESTS = {
         "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
             "ERP_Ln9.ne4_ne4.F-EAMv1-AQP1",
+            "ERP_Ln9.ne4_ne4.F-EAMv1-RCEMIP",
             "SMS_Ld1.ne4_ne4.F-EAMv1-AQP1.cam-clubb_only",
             "PET_Ln5.ne4_ne4.FC5AV1C-L.allactive-mach-pet",
             "PEM_Ln5.ne4_ne4.FC5AV1C-L",
