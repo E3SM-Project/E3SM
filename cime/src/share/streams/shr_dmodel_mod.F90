@@ -357,18 +357,18 @@ CONTAINS
     call shr_mpi_bcast(nxg,mpicom)
     call shr_mpi_bcast(nyg,mpicom)
     call shr_mpi_bcast(nzg,mpicom)
-!    if (lscmmode) then
-!       nxgo = 1
-!       nygo = 1
-!       nzgo = -1
-!       gsize = 1
-!    else
+    if (lscmmode .and. .not. liopmode) then
+       nxgo = 1
+       nygo = 1
+       nzgo = -1
+       gsize = 1
+    else
        nxgo = nxg
        nygo = nyg
        nzgo = nzg
        gsize = abs(nxg*nyg*nzg)
        if (gsize < 1) return
-!    endif
+    endif
 
     ! Create gsmap if input gsmap is not given
 
@@ -480,6 +480,7 @@ CONTAINS
               endif
             enddo
 
+            j = nj
             j_scm = nj
 
           else ! lat and lon are on 1D arrays
@@ -494,34 +495,45 @@ CONTAINS
               endif
             enddo
 
+            j = 1
             j_scm = 1
 
           endif
 
-!          n = 1
           i_scm = ni
-	  
-          n=0
-          do k=1,abs(nzg)
-             do j=1,nyg
-                do i=1,nxg
-                   n=n+1
-                   gGridRoot%data%rAttr(nlat ,n) = lat(i_scm,j_scm)
-                   gGridRoot%data%rAttr(nlon ,n) = lon(i_scm,j_scm)
-                   gGridRoot%data%rAttr(narea,n) = area(i_scm,j_scm)
-                   gGridRoot%data%rAttr(nmask,n) = real(mask(i_scm,j_scm),R8)
-                   gGridRoot%data%rAttr(nfrac,n) = frac(i_scm,j_scm)
-                   gGridRoot%data%rAttr(nhgt ,n) = hgt(k)
-                enddo
-             enddo
-          enddo	  
 
-!          gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
-!          gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
-!          gGridRoot%data%rAttr(narea,n) = area(i,j)
-!          gGridRoot%data%rAttr(nmask,n) = real(mask(i,j),R8)
-!          gGridRoot%data%rAttr(nfrac,n) = frac(i,j)
-!          gGridRoot%data%rAttr(nhgt, n) = 1
+          if (liopmode) then 
+	  
+	    i_scm = ni
+	  
+            n=0
+            do k=1,abs(nzg)
+              do j=1,nyg
+                do i=1,nxg
+                  n=n+1
+                  gGridRoot%data%rAttr(nlat ,n) = lat(i_scm,j_scm)
+                  gGridRoot%data%rAttr(nlon ,n) = lon(i_scm,j_scm)
+                  gGridRoot%data%rAttr(narea,n) = area(i_scm,j_scm)
+                  gGridRoot%data%rAttr(nmask,n) = real(mask(i_scm,j_scm),R8)
+                  gGridRoot%data%rAttr(nfrac,n) = frac(i_scm,j_scm)
+                  gGridRoot%data%rAttr(nhgt ,n) = hgt(k)
+                enddo
+              enddo
+            enddo
+	    
+	  else	  
+	  
+	    n = 1
+
+            gGridRoot%data%rAttr(nlat ,n) = lat(i,j)
+            gGridRoot%data%rAttr(nlon ,n) = lon(i,j)
+            gGridRoot%data%rAttr(narea,n) = area(i,j)
+            gGridRoot%data%rAttr(nmask,n) = real(mask(i,j),R8)
+            gGridRoot%data%rAttr(nfrac,n) = frac(i,j)
+            gGridRoot%data%rAttr(nhgt, n) = 1
+	    
+	  endif
+	    
        else
           n=0
           do k=1,abs(nzg)

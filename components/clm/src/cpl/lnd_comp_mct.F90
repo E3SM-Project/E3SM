@@ -43,7 +43,8 @@ contains
     use clm_time_manager , only : get_nstep, get_step_size, set_timemgr_init, set_nextsw_cday
     use clm_initializeMod, only : initialize1, initialize2, initialize3
     use clm_instMod      , only : lnd2atm_vars, lnd2glc_vars
-    use clm_varctl       , only : finidat,single_column, clm_varctl_set, iulog, noland
+    use clm_varctl       , only : finidat,single_column, iop_scream, &
+                                  clm_varctl_set, iulog, noland
     use clm_varctl       , only : inst_index, inst_suffix, inst_name
     use clm_varorb       , only : eccen, obliqr, lambm0, mvelpp
     use controlMod       , only : control_setNL
@@ -217,7 +218,8 @@ contains
                                    calendar=calendar )
     call seq_infodata_GetData(infodata, case_name=caseid,    &
                               case_desc=ctitle, single_column=single_column,    &
-                              scmlat=scmlat, scmlon=scmlon,                     &
+                              iop_scream=iop_scream,                            &
+			      scmlat=scmlat, scmlon=scmlon,                     &
                               brnch_retain_casename=brnch_retain_casename,      &
                               start_type=starttype, model_version=version,      &
                               hostname=hostname, username=username )
@@ -235,10 +237,11 @@ contains
     end if
 
     ! Temporarily force 
-    single_column = .false. 
+    if (iop_scream) single_column = .false. 
     call clm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
                         brnch_retain_casename_in=brnch_retain_casename,         &
-                        single_column_in=single_column, scmlat_in=scmlat,       &
+                        single_column_in=single_column,&
+			iop_scream_in=iop_scream, scmlat_in=scmlat,       &
                         scmlon_in=scmlon, nsrest_in=nsrest, version_in=version, &
                         hostname_in=hostname, username_in=username)
 

@@ -179,6 +179,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 #ifndef MODEL_THETA_L
 
     integer :: ie,k,i,j,t,nm_f
+    integer :: nelemd_todo, np_todo
     real (kind=real_kind), dimension(np,np,nlev)  :: dpt1,dpt2   ! delta pressure
     real (kind=real_kind), dimension(np,np)  :: E
     real (kind=real_kind), dimension(np,np)  :: suml,suml2,v1,v2
@@ -202,6 +203,15 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
        t1=tl%n0
        t2=tl%np1
     endif
+    
+    ! Settings for traditional SCM run
+    nelemd_todo = 1
+    np_todo = 1
+    
+    if (iop_scream) then
+      nelemd_todo = nelemd
+      np_todo = np
+    endif
 
     !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
     !        Cp*dpdn(n)*T(n+1) + (Cpv-Cp) Qdpdn(n)*T(n+1)
@@ -211,7 +221,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 !$omp parallel do private(k)
 #endif
 
-    do ie=1,nelemd
+    do ie=1,nelemd_todo
 
       do k=1,nlev
         p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*elem(ie)%state%ps_v(:,:,t1)
@@ -219,8 +229,8 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 
       dt=dtime
 
-      do j=1,np
-        do i=1,np
+      do j=1,np_todo
+        do i=1,np_todo
 
           stateQin_qfcst(:,:) = elem(ie)%state%Q(i,j,:,:)
           stateQin1(:,:) = stateQin_qfcst(:,:)

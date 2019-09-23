@@ -943,7 +943,7 @@
 !
 !     use ice_boundary
       use ice_domain_size
-      use ice_scam, only : scmlat, scmlon, single_column
+      use ice_scam, only : scmlat, scmlon, single_column, iop_scream
       use netcdf
 !
 ! !INPUT/OUTPUT PARAMETERS:
@@ -1022,31 +1022,32 @@
       ! Determine start/count to read in for either single column or global lat-lon grid
       ! If single_column, then assume that only master_task is used since there is only one task
 
-      if (my_task == master_task) then
-        allocate(temp_test1(nx_global,ny_global))
-	allocate(temp_test2(nx_global,ny_global))
-	allocate(temp_test3(nx_global,ny_global))
-	allocate(temp_test4(nx_global,ny_global))
-	allocate(temp_test5(nx_global,ny_global))
-      else
-        allocate(temp_test1(1,1))
-	allocate(temp_test2(1,1))
-	allocate(temp_test3(1,1))
-	allocate(temp_test4(1,1))
-	allocate(temp_test5(1,1))      
-      endif
-      do_this = .true.
       if (single_column) then
+
+        if (my_task == master_task) then
+          allocate(temp_test1(nx_global,ny_global))
+	  allocate(temp_test2(nx_global,ny_global))
+	  allocate(temp_test3(nx_global,ny_global))
+	  allocate(temp_test4(nx_global,ny_global))
+	  allocate(temp_test5(nx_global,ny_global))
+        else
+          allocate(temp_test1(1,1))
+	  allocate(temp_test2(1,1))
+	  allocate(temp_test3(1,1))
+	  allocate(temp_test4(1,1))
+	  allocate(temp_test5(1,1))      
+        endif
+
         if (my_task == master_task) then
          ! Check for consistency
-!         if (my_task == master_task) then
-!            if ((nx_global /= 1).or. (ny_global /= 1)) then
-!               write(nu_diag,*) 'Because you have selected the column model flag'
-!               write(nu_diag,*) 'Please set nx_global=ny_global=1 in file'
-!               write(nu_diag,*) 'ice_domain_size.F and recompile'
-!               call abort_ice ('latlongrid: check nx_global, ny_global')
-!            endif
-!         end if
+         if (my_task == master_task) then
+            if (((nx_global /= 1).or. (ny_global /= 1)) .and. (.not. iop_scream)) then
+               write(nu_diag,*) 'Because you have selected the column model flag'
+               write(nu_diag,*) 'Please set nx_global=ny_global=1 in file'
+               write(nu_diag,*) 'ice_domain_size.F and recompile'
+               call abort_ice ('latlongrid: check nx_global, ny_global')
+            endif
+         end if
 
          ! Are we dealing with a file for SE grid?
          se_grid=.false.

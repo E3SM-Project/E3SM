@@ -26,7 +26,7 @@ module stepon
    use edge_mod,       only: initEdgeBuffer, FreeEdgeBuffer, edgeVpack, edgeVunpack
    use parallel_mod,   only : par
    use scamMod,        only: use_iop, doiopupdate, single_column, &
-                             setiopupdate, readiopdata
+                             setiopupdate, readiopdata, iop_scream
    use element_mod,    only: element_t
    use shr_const_mod,       only: SHR_CONST_PI
    use se_single_column_mod, only: scm_broadcast
@@ -252,21 +252,23 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
 
    call t_startf('stepon_bndry_exch')
    ! do boundary exchange
-!   if (.not. single_column) then 
-     do ie=1,nelemd
-       kptr=0
+   if (single_column .and. .not. iop_scream) goto 10 
+     
+   do ie=1,nelemd
+     kptr=0
 #ifdef MODEL_THETA_L
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
-       kptr=kptr+3*nlev
+     call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
+     kptr=kptr+3*nlev
 #else
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
+     call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
+     kptr=kptr+2*nlev
 #endif
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
-       kptr=kptr+nlev
-       call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
-     end do
-!   endif
+     call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+     kptr=kptr+nlev
+     call edgeVpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
+   end do
+
+10 continue
 
    call bndry_exchangeV(par, edgebuf)
 
@@ -275,20 +277,21 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    rec2dt = 1._r8/dtime
 
    do ie=1,nelemd
-!     if (.not. single_column) then
-       kptr=0
+     if (single_column .and. .not. iop_scream) goto 20 
+     kptr=0
 #ifdef MODEL_THETA_L
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
-       kptr=kptr+3*nlev
+     call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),3*nlev,kptr,ie)
+     kptr=kptr+3*nlev
 #else
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
-       kptr=kptr+2*nlev
+     call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FM(:,:,:,:),2*nlev,kptr,ie)
+     kptr=kptr+2*nlev
 #endif
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
-       kptr=kptr+nlev
+     call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FT(:,:,:),nlev,kptr,ie)
+     kptr=kptr+nlev
 
-       call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
-!     endif
+     call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
+
+20 continue
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 

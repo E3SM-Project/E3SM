@@ -504,7 +504,7 @@ contains
       iop_update_surface = .false.
       if (masterproc) call setiopupdate()
       if (masterproc) call readiopdata(iop_update_surface,hyam,hybm)
-      call scm_broadcast()
+      if (iop_scream) call scm_broadcast()
       call scm_setinitial(elem)
     endif
 
