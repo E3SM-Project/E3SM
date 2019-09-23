@@ -45,13 +45,16 @@ contains
   !====================================================================!
   subroutine shoc_init_f90 (q) bind(c)
 
-    use shoc,                   only: shoc_init
+    use shoc,                   only: shoc_init,r8
  
     real(kind=c_real), intent(inout) :: q(pcols,pver,9) ! State array  kg/kg
 
     call shoc_init( &
-          gravit, rair, rh2o, cpair, &
-          latvap)   
+          real(gravit,kind=r8),&
+          real(rair,kind=r8),  &
+          real(rh2o,kind=r8),  &
+          real(cpair,kind=r8), &
+          real(latvap,kind=r8))   
 
     q(:,:,:) = 0.0_rtype
     q(:,:,1) = 1.0e-5_rtype!state%q(:,:,1)
