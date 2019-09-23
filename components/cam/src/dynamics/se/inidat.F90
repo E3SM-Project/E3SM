@@ -453,6 +453,11 @@ contains
 
     if ( (ideal_phys .or. aqua_planet)) then
        tmp(:,1,:) = 0._r8
+       if (fv_nphys>0) then
+          do ie=1,nelemd
+             fv_physgrid(ie)%topo(:,:) = 0
+          end do
+       end if
     else    
       fieldname = 'PHIS'
       tmp(:,1,:) = 0.0_r8
