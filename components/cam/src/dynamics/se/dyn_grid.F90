@@ -84,6 +84,7 @@ module dyn_grid
     real(kind=r8), allocatable :: lat(:,:)    ! latitude
     real(kind=r8), allocatable :: corner_lon(:,:,:)    ! longitude
     real(kind=r8), allocatable :: corner_lat(:,:,:)    ! latitude
+    real(kind=r8), allocatable :: topo(:,:)   ! topography data
   end type fv_physgrid_struct
   type(fv_physgrid_struct), public, pointer :: fv_physgrid(:) => null()
 

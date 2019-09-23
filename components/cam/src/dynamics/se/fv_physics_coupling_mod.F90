@@ -159,6 +159,10 @@ contains
         do i = 1,fv_nphys 
           icol = icol + 1
           !-------------------------------------------------------------------
+          ! Store topo data in fv_physgrid to avoid mapping back and forth
+          !-------------------------------------------------------------------
+          fv_physgrid(ie)%topo(i,j) = phis_tmp(icol,ie)
+          !-------------------------------------------------------------------
           !-------------------------------------------------------------------
           ! pg1 case 
           if (fv_nphys == 1) then
@@ -242,10 +246,8 @@ contains
                      elem(ie)%state%ps_v(:,:,tl_f),                 &
                      np, fv_nphys, elem(ie)%metdet(:,:) )           &
                      *inv_area , (/ncol/) )
-      zs_tmp(:,ie) = RESHAPE( subcell_integration(                  &
-                     elem(ie)%state%phis(:,:),                      &
-                     np, fv_nphys, elem(ie)%metdet(:,:) )           &
-                     *inv_area , (/ncol/) )
+      
+      zs_tmp(:,ie) = RESHAPE( fv_physgrid(ie)%topo(:,:), (/ncol/) )
 
       call get_temperature(elem(ie),temperature,hvcoord,tl_f)
 
