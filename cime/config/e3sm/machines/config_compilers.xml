@@ -1094,6 +1094,9 @@ for mct, etc.
   <LDFLAGS>
     <append> -lpmi -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH}/lib/intel64/ -lmkl_rt $ENV{PNETCDF_LIBRARIES} </append>
   </LDFLAGS>
+  <MPICC  MPILIB="impi">mpipgcc</MPICC>
+  <MPICXX MPILIB="impi">mpipgcxx</MPICXX>
+  <MPIFC  MPILIB="impi">mpipgf90</MPIFC>
 </compiler>
 
 <compiler MACH="cori-haswell" COMPILER="intel">
