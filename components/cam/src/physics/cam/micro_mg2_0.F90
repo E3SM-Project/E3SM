@@ -1776,8 +1776,10 @@ subroutine micro_mg_tend ( &
            dum = ((-nnucct(i,k)-tmpfrz-nnudep(i,k)-nsacwi(i,k))*lcldm(i,k)+(nprci(i,k)+ &
                 nprai(i,k)-nsubi(i,k))*icldm(i,k)-nnuccri(i,k)*precip_frac(i,k)- &
                 nnuccd(i,k))*deltat
-
-           if (dum.gt.ni(i,k)) then
+!HHLEE 20190918
+!           if (dum.gt.ni(i,k)) then
+           if (dum.gt.ni(i,k) .and.  &
+                   ((nprci(i,k)+nprai(i,k)-nsubi(i,k))*icldm(i,k)).gt.0._r8) then
               ratio = (ni(i,k)/deltat+nnuccd(i,k)+ &
                    (nnucct(i,k)+tmpfrz+nnudep(i,k)+nsacwi(i,k))*lcldm(i,k)+ &
                    nnuccri(i,k)*precip_frac(i,k))/ &

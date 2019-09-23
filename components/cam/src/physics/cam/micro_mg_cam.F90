@@ -2169,7 +2169,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    !  This is a crucial component to using FIVE within E3SM
    call five_syncronize_e3sm(state,dtime,p0_five_ref,pint_five,pmid_five,&
                              t_five,u_five,v_five,q_five)
-   q_five = max(q_five, 0._r8)
+   q_five(:ncol,:,:) = max(q_five(:ncol,:,:), 0._r8)
    ! Find top level index for FIVE
    do i = 1, ncol
      call find_level_match_index(state%pmid(i,:),pmid_five(i,:),pint_five(i,:),&
