@@ -66,12 +66,13 @@ print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/climate/source \n"
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/solution/util/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/solution/solvers/source \n";
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/emissions/source \n";
+
+# So, this one has the original coupling functions - might need to move
+# that up to iac/coupling
 print file "$SRCROOT/components/gcam/src/iac/gcam/cvs/objects/ccsmcpl/source \n";
 
-
-
 # I do not have the glm code in here yet.
-#print file "$SRCROOT/components/gcam/src/iac/glm \n";
+print file "$SRCROOT/components/gcam/src/iac/glm \n";
 print file "$SRCROOT/components/gcam/src/cpl \n";
 close(file);
 

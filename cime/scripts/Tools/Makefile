@@ -81,6 +81,14 @@ ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
 
+USE_GCAM = TRUE
+# These are needed for GCAM - need to have a USE_GCAM kind of tag here.
+ifeq ($(strip $(USE_GCAM)), TRUE)
+  # Hardcoded to my local directory on anvil.  Obviously not correct
+  GLIBS += -L/home/shippert/local/lib -lxerces-c -lxqilla -lstdc++
+endif
+
+
 #===============================================================================
 # set CPP options (must use this before any flags or cflags settings)
 #===============================================================================
@@ -906,7 +914,7 @@ install_lib: $(COMPLIB)
 
 
 $(EXEC_SE): $(OBJS) $(ULIBDEP) $(CSMSHARELIB) $(MCTLIBS) $(PIOLIB) $(GPTLLIB)
-	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(F90_LDFLAGS)
+	$(LD) -o $(EXEC_SE) $(OBJS) $(CLIBS) $(ULIBS) $(SLIBS) $(MLIBS) $(F90_LDFLAGS) $(GLIBS)
 
 $(COMPLIB): $(OBJS)
 	$(AR) $(ARFLAGS) $(COMPLIB) $(OBJS)
