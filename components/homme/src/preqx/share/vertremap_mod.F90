@@ -253,6 +253,8 @@ contains
 
 ! ----- syncronize FIVE variables
 
+!     if (.not. is_first_step()) then
+
      do i=1,np
      do j=1,np
         call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
@@ -348,6 +350,7 @@ contains
 
     ! Finally, update FIVE prognostic variables based on this tendency, so 
     !   complete syncronization with E3SM
+!goto 9998
     do k=1,pver_five
       do i=1,np
       do j=1,np
@@ -364,33 +367,34 @@ contains
       enddo
       enddo
     enddo
+!9998 continue
 
+!    end if ! is_first_step
 #endif
 
 #ifdef FIVE
 
      if (rsplit>0) then
+goto 9999
+     do i=1,np
+     do j=1,np
 
-!     if (is_first_step()) then
-!     do i=1,np
-!     do j=1,np
-!
-!        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
-!        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,1,:,np1),utmp_five(i,j,:),pver,pver_five)
-!        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,2,:,np1),vtmp_five(i,j,:),pver,pver_five)
-!       do q = 1, qsize
-!         state_Q(i,j,:,q) = elem(ie)%state%Qdp(i,j,:,q,np1_qdp) / dp_star(i,j,:) 
-!         call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),state_Q(i,j,:,q),Qtmp_five(i,j,:,q),pver,pver_five)
-!         Qtmp_five_old(i,j,:,q) = Qtmp_five(i,j,:,q)
-!         Qtmp_five(i,j,:,q) = Qtmp_five(i,j,:,q)*dp_star_five(i,j,:)
-!
-!       enddo 
-!     enddo 
-!     enddo
-!        ttmp_five_old = ttmp_five 
-!        utmp_five_old = utmp_five
-!        vtmp_five_old = vtmp_five
-!     endif ! is_first_step
+        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
+        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,1,:,np1),utmp_five(i,j,:),pver,pver_five)
+        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,2,:,np1),vtmp_five(i,j,:),pver,pver_five)
+       do q = 1, qsize
+         state_Q(i,j,:,q) = elem(ie)%state%Qdp(i,j,:,q,np1_qdp) / dp_star(i,j,:) 
+         call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),state_Q(i,j,:,q),Qtmp_five(i,j,:,q),pver,pver_five)
+         Qtmp_five_old(i,j,:,q) = Qtmp_five(i,j,:,q)
+         Qtmp_five(i,j,:,q) = Qtmp_five(i,j,:,q)*dp_star_five(i,j,:)
+
+       enddo 
+     enddo 
+     enddo
+        ttmp_five_old = ttmp_five 
+        utmp_five_old = utmp_five
+        vtmp_five_old = vtmp_five
+9999 continue
 
      if (single_column) then
      do i=1,np
@@ -435,18 +439,6 @@ contains
        call remap1(Qtmp_five,np,pver_five,qsize,dp_star_five,dp_five)
        call t_stopf('vertical_remap1_FIVE_4')
 
-     endif
-
-     if (minval(ttmp_five) .le. 0) then
-        do k=1,pver_five
-        do i=1,np
-        do j=1,np
-           if (ttmp_five(i,j,k) .le. 0) then
-              print *,"HHLEE after remap",i, j, k, ttmp_five(i,j,k), ttmp_five_old(i,j,k)
-           endif
-        enddo
-        enddo
-        enddo
      endif
 
 
@@ -541,6 +533,15 @@ contains
          state_Qnew(:,:,:,q) = max(state_Qnew(:,:,:,q),0.)
          elem(ie)%state%Qdp(:,:,:,q,np1_qdp) = state_Qnew(:,:,:,q) * dp(:,:,:)
       enddo
+!    do i=1,np
+!    do j=1,np
+!    do k = 1, pver
+!      if (state_Q(i,j,k,2) .gt. 1.e-5 .or. state_Qnew(i,j,k,2) .gt. 1.e-5) then
+!      print *, 'HHLEE Q2', k,state_Q(i,j,k,2),state_Qnew(i,j,k,2)
+!      endif
+!    enddo
+!    enddo
+!    enddo
 #else
        call t_startf('vertical_remap1_3')
        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,pver,qsize,dp_star,dp)
@@ -548,6 +549,7 @@ contains
 #endif
 
      endif
+
 
   enddo
   call t_stopf('vertical_remap')
