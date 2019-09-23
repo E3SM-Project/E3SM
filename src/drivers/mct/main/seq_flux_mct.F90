@@ -487,7 +487,7 @@ contains
     if (seq_comm_iamroot(ID)) then
 
        !---------------------------------------------------------------------------
-       ! Read in namelist 
+       ! Read in namelist
        !---------------------------------------------------------------------------
 
         unitn = shr_file_getUnit()
@@ -507,10 +507,10 @@ contains
         call shr_file_freeUnit( unitn )
 
      end if
-
-     call shr_mpi_bcast(seq_flux_mct_albdif, mpicom)
-     call shr_mpi_bcast(seq_flux_mct_albdir, mpicom)
-
+     if (seq_comm_iamin(ID)) then
+        call shr_mpi_bcast(seq_flux_mct_albdif, mpicom)
+        call shr_mpi_bcast(seq_flux_mct_albdir, mpicom)
+     endif
   end subroutine seq_flux_readnl_mct
 
   !===============================================================================
@@ -1098,7 +1098,7 @@ contains
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             duu10n,ustar, re  , ssq , missval = 0.0_r8 )
     else
-       
+
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
             tocn , emask, sen , lat , lwup , &
@@ -1497,7 +1497,7 @@ contains
        if (ocn_surface_flux_scheme.eq.2) then
           call shr_sys_abort(trim(subname)//' ERROR cannot use flux_diurnal with UA flux scheme')
        endif
-       
+
        call shr_flux_atmocn_diurnal (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
             tocn , emask, sen , lat , lwup , &
