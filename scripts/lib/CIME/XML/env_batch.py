@@ -435,6 +435,7 @@ class EnvBatch(EnvBase):
         alljobs = env_workflow.get_jobs()
         alljobs = [j for j in alljobs
                    if os.path.isfile(os.path.join(self._caseroot,get_batch_script_for_job(j)))]
+
         startindex = 0
         jobs = []
         firstjob = job
@@ -459,6 +460,7 @@ class EnvBatch(EnvBase):
 
             if self._batchtype == "cobalt":
                 break
+
         depid = OrderedDict()
         jobcmds = []
 
