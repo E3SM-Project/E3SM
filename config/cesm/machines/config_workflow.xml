@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<config_workflow version="2.0">
+<config_workflow version="2.1">
   <!--
   File: config_workflow.xml
   Purpose: Define the jobs to be run, the order to run them, the job size and
@@ -27,7 +27,7 @@
 	  The runtime_parameters block may have an optional MACH attribute.
 
   -->
-  <workflow_jobs case="default">
+  <workflow_jobs id="default">
     <!-- order matters, with no-batch jobs will be run in the order listed here -->
     <job name="case.run">
       <template>template.case.run</template>
@@ -50,7 +50,7 @@
     </job>
   </workflow_jobs>
 
-  <workflow_jobs case="timeseries" prepend="default">
+  <workflow_jobs id="timeseries" prepend="default">
     <job name="timeseries">
       <template>$ENV{POSTPROCESS_PATH}/timeseries/template.timeseries</template>
       <dependency>case.st_archive</dependency>
@@ -67,7 +67,7 @@
       </runtime_parameters>
     </job>
   </workflow_jobs>
-  <workflow_jobs case="timeseries_transfer" prepend="timeseries">
+  <workflow_jobs id="timeseries_transfer" prepend="timeseries">
     <job name="timeseries_transfer">
       <template>$ENV{POSTPROCESS_PATH}/timeseries/template.timeseries_transfer</template>
       <dependency>timeseries</dependency>
@@ -79,7 +79,7 @@
       </runtime_parameters>
     </job>
   </workflow_jobs>
-  <workflow_jobs case="diagnostics" prepend="timeseries">
+  <workflow_jobs id="diagnostics" prepend="timeseries">
     <job name="xconform">
       <template>$CASEROOT/postprocess/xconform</template>
       <dependency>timeseriesL</dependency>
