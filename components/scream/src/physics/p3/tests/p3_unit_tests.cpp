@@ -20,12 +20,49 @@ namespace scream {
 namespace p3 {
 namespace unit_test {
 
+
+
 /*
  * Unit-tests for p3_functions.
  */
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3Func
 {
+
+  KOKKOS_FUNCTION static Scalar condition_number_polysvp1(const Spack& temperature, const bool ice){
+
+    const auto sat0 = Functions::polysvp1(temperature, ice);
+    const auto sat1 = Functions::polysvp1(temperature + 1e-4, ice);
+
+    const auto cond = (abs(sat1 - sat0)/abs(sat0)) /(abs(1e-4)/abs(temperature));
+
+
+    return 1.25 * cond[0];
+  }
+
+  KOKKOS_FUNCTION static Spack condition_number_qv_sat(const Spack& temperature, const Spack& pressure, const bool ice){
+
+    const Scalar deltap = 1e0;
+    const Scalar deltat = 1e-2;
+
+    const auto qv_sat0 = Functions::qv_sat(temperature, pressure, ice);
+    const auto qv_sat_t1 = Functions::qv_sat(temperature + deltat, pressure, ice);
+    const auto qv_sat_p1 = Functions::qv_sat(temperature, pressure + deltap , ice);
+
+    Spack  jac[2];
+    jac[0] = (qv_sat_t1 - qv_sat0)/deltat;
+    jac[1] = (qv_sat_p1 - qv_sat0)/deltap;
+
+    const auto norm_jac = sqrt(jac[0]*jac[0] + jac[1]*jac[1]);
+
+    auto cond = jac[0][0] * temperature/qv_sat0;
+    const auto  set_mask = jac[0][0] * temperature/qv_sat0  < jac[1][0] * pressure/qv_sat0; 
+    cond.set(set_mask, jac[1][0] * pressure[0]/qv_sat0[0]);
+
+    return cond*1.25;
+
+  }
+
   KOKKOS_FUNCTION  static void saturation_tests(const Scalar& temperature, const Scalar& pressure, const Scalar& correct_sat_ice_p,
     const Scalar& correct_sat_liq_p, const Scalar&  correct_mix_ice_r, const Scalar& correct_mix_liq_r, int& errors ){
 
@@ -33,22 +70,22 @@ struct UnitWrap::UnitTest<D>::TestP3Func
     const Spack pres(pressure);
 
     const auto sat_ice_p = Functions::polysvp1(temps, true);
+    const auto cond_ice_p = condition_number_polysvp1(temps, true);
     const auto sat_liq_p = Functions::polysvp1(temps, false);
+    const auto cond_liq_p = condition_number_polysvp1(temps, false);
 
     const auto mix_ice_r = Functions::qv_sat(temps, pres, true);
+    const auto cond_ice_r  = condition_number_qv_sat(temps, pres, true);
     const auto mix_liq_r = Functions::qv_sat(temps, pres, false);
-
-    // The correct results were computed with double precision, so we need
-    // significantly greater tolerance for single precision.
-    Scalar tol = (util::is_single_precision<Scalar>::value || util::OnGpu<ExeSpace>::value) ? C::Tol*100 : C::Tol;
+    const auto cond_liq_r = condition_number_qv_sat(temps, pres, false);
 
     for(int s = 0; s < sat_ice_p.n; ++s){
-      // Test vapor pressure
-      if (abs(sat_ice_p[s] - correct_sat_ice_p) > tol ) {errors++;}
-      if (abs(sat_liq_p[s] - correct_sat_liq_p) > tol)  {errors++;}
+      // Test vapor pressure note that we multipy by numerically computed realtive condition number 
+      if (abs(sat_ice_p[s] - correct_sat_ice_p) >  cond_ice_p*C::Tol * abs(correct_sat_ice_p)){errors++;}
+      if (abs(sat_liq_p[s] - correct_sat_liq_p) >  cond_liq_p*C::Tol * abs(correct_sat_liq_p)){errors++;}
       //Test mixing-ratios
-      if (abs(mix_ice_r[s] -  correct_mix_ice_r) > tol ) {errors++;}
-      if (abs(mix_liq_r[s] -  correct_mix_liq_r) > tol ) {errors++;}
+      if (abs(mix_ice_r[s] -  correct_mix_ice_r) >   cond_ice_r[s] * C::Tol * abs(correct_mix_ice_r)) {errors++; std::cout << mix_ice_r[s] -  correct_mix_ice_r <<  "\t" << C::Tol * abs(correct_mix_ice_r) << "\n";}
+      if (abs(mix_liq_r[s] -  correct_mix_liq_r) >   cond_liq_r[s] * C::Tol * abs(correct_mix_liq_r)) {errors++;}
     }
   }
 
@@ -61,16 +98,16 @@ struct UnitWrap::UnitTest<D>::TestP3Func
       errors = 0;
       const auto tmelt = C::Tmelt;
       // Test values @ the melting point of H20 @ 1e5 Pa
-      saturation_tests(tmelt, 1e5, 610.7960763188032, 610.7960763188032,
-         0.003822318507864685,  0.003822318507864685, errors);
+      saturation_tests(tmelt, sp(1e5), sp(610.7960763188032), sp(610.7960763188032),
+         sp(0.003822318507864685),  sp(0.003822318507864685), errors);
 
       //Test vaules @ 243.15K @ 1e5 Pa
-      saturation_tests(243.15, 1e5, 37.98530141245404, 50.98455924912173,
-         0.00023634717905493638,  0.0003172707211143376, errors);
+      saturation_tests(sp(243.15), sp(1e5), sp(37.98530141245404), sp(50.98455924912173),
+         sp(0.00023634717905493638),  sp(0.0003172707211143376), errors);
 
       //Test values @ 303.15 @ 1e5 Pa
-      saturation_tests(303.15, 1e5, 4242.757341329608, 4242.757341329608,
-        0.0275579183092878, 0.0275579183092878, errors);
+      saturation_tests(sp(303.15), sp(1e5), sp(4242.757341329608), sp(4242.757341329608),
+        sp(0.0275579183092878), sp(0.0275579183092878), errors);
 
     }, nerr);
 
@@ -89,7 +126,6 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     using KTH = KokkosTypes<HostDevice>;
 
     CloudWaterConservationData cwdc[1] = {{sp(1e-5), 0.0, sp(1.1), sp(1e-4), 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.0), sp(1.0)}};
-
 
     // Sync to device
     KTH::view_1d<CloudWaterConservationData> cwdc_host("cwdc_host", 1);
@@ -177,7 +213,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     // qcaut, the only non-zero sink, is corrected so that within a dt
     // it does not overshoot qc.
     if((qcaut*dt != qc).any()){errors++;}
-    std::cout << "****************** " << qcaut[0]*dt << "\t" <<  qc[0] << "\n";
+
     // Check the case where sources > sinks with sinks = 0
     qcaut = 0.0;
     Functions::cloud_water_conservation(qc, qcnuc, dt,
@@ -186,6 +222,62 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     //In this case qidep and qisub should be set to zero
     if((qisub != 0.0).any()){errors++;}
     if((qidep != 0.0).any()){errors++;}
+
+  }
+
+
+  KOKKOS_FUNCTION static void rain_water_conservation_tests_device(){
+     using KTH = KokkosTypes<HostDevice>;
+
+     RainWaterConservationData rwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0 }};
+
+     // Sync to device
+     KTH::view_1d<RainWaterConservationData> rwdc_host("rwdc_host", 1);
+     view_1d<RainWaterConservationData> rwdc_device("rwdc_host", 1);
+
+     // This copy only copies the input variables.
+     std::copy(&rwdc[0], &rwdc[0] + 1, rwdc_host.data());
+     Kokkos::deep_copy(rwdc_device, rwdc_host);
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+      Spack qr(rwdc_device(0).qr);
+      Spack qcaut(rwdc_device(0).qcaut);
+      Spack qcacc(rwdc_device(0).qcacc);
+      Spack qimlt(rwdc_device(0).qimlt);
+      Spack qcshd(rwdc_device(0).qcshd);
+      Spack qrevp(rwdc_device(0).qrevp);
+      Spack qrcol(rwdc_device(0).qrcol);
+      Spack qrheti(rwdc_device(0).qrheti);
+
+      Functions::rain_water_conservation(qr, qcaut, qcacc, qimlt, qcshd, rwdc_device(0).dt, qrevp, qrcol, qrheti);
+
+      rwdc_device(0).qr = qr[0];
+      rwdc_device(0).qcaut = qcaut[0];
+      rwdc_device(0).qcacc = qcacc[0];
+      rwdc_device(0).qimlt = qimlt[0];
+      rwdc_device(0).qcshd = qcshd[0];
+      rwdc_device(0).qrevp = qrevp[0];
+      rwdc_device(0).qrcol = qrcol[0];
+      rwdc_device(0).qrheti = qrheti[0];
+    });
+
+
+    // Sync back to host
+    Kokkos::deep_copy(rwdc_host, rwdc_device);
+    const auto ratio = rwdc[0].qr/(rwdc[0].qrevp * rwdc[0].dt);
+
+    //Here we check cases where source > sinks and sinks > 1e-20
+    REQUIRE(rwdc_host(0).qcaut == 0.0);
+    REQUIRE(rwdc_host(0).qcacc == 0.0);
+    REQUIRE(rwdc_host(0).qimlt == 0.0);
+    REQUIRE(rwdc_host(0).qcshd == 0.0);
+
+    //Check the value of qrevp
+    REQUIRE(abs(rwdc_host(0).qrevp- rwdc[0].qrevp*ratio)<= C::Tol);
+
+    //Now test that conservation has actually been enforced
+    REQUIRE( rwdc_host(0).qr - rwdc_host(0).qrevp * rwdc_host(0).dt  !=  0.0);
 
   }
 
@@ -255,9 +347,9 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
   static void run()
   {
 
-    cloud_water_conservation_tests_device(); 
-    
-    
+    cloud_water_conservation_tests_device();
+
+    rain_water_conservation_tests_device();
     //int nerr = 0;
 
     //TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
@@ -266,8 +358,6 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
      // errors = 0;
 
       //cloud_water_conservation_tests(errors);
-
-      
 
       //rain_water_conservation_tests(errors);
 

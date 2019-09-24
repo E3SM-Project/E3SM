@@ -44,7 +44,7 @@ struct Constants
   static constexpr Scalar RHOSUR      = P0/(RD*Tmelt);
   static constexpr Scalar CP          = Cpair;          // heat constant of air at constant pressure, J/kg
   static constexpr Scalar INV_CP      = 1.0/CP;
-  static constexpr Scalar Tol         = util::is_single_precision<Real>::value ? 2e-5 : 1e-14;
+  static constexpr Scalar Tol         = std::numeric_limits<Scalar>::epsilon(); 
 };
 
 template <typename Scalar>

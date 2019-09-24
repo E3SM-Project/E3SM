@@ -235,7 +235,7 @@ struct Functions
   // Calls polysvp1 to obtain the saturation vapor pressure, and then computes
   // and returns the saturation mixing ratio, with respect to either liquid or ice,
   // depending on value of 'ice'
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_FUNCTION
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
   KOKKOS_FUNCTION
