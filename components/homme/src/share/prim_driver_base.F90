@@ -650,7 +650,13 @@ contains
     type (element_t),   pointer     :: elem(:)
     type (parallel_t),  intent(in)  :: par
 
-    integer :: edgesz, sendsz, recvsz, n
+    integer :: edgesz, sendsz, recvsz, n, den
+
+    call prim_advance_init1(par,elem,integration)
+#ifdef TRILINOS
+    call prim_implicit_init(par, elem)
+#endif
+    call Prim_Advec_Init1(par, elem)
 
     ! single global edge buffer for all models:
     ! hydrostatic 4*nlev      NH:  6*nlev+1  
@@ -664,9 +670,8 @@ contains
        ! find out how much memory SLMM wants.
        call compose_query_bufsz(sendsz, recvsz)
        ! from initEdgeBuffer nbuf calc
-       n = 4*(np+max_corner_elem)*nelemd
-       n = (max(sendsz, recvsz) + n - 1)/n
-       print *,'n,edgesz',n,edgesz
+       den = 4*(np+max_corner_elem)*nelemd
+       n = (max(sendsz, recvsz) + den - 1)/den
        edgesz = max(edgesz, n)
     end if
 #endif
@@ -676,12 +681,6 @@ contains
 #ifdef HOMME_ENABLE_COMPOSE
     if (transport_alg > 0) call compose_set_bufs(edge_g%buf, edge_g%receive)
 #endif
-
-    call prim_advance_init1(par,elem,integration)
-#ifdef TRILINOS
-    call prim_implicit_init(par, elem)
-#endif
-    call Prim_Advec_Init1(par, elem)
 
   end subroutine prim_init1_buffers
 

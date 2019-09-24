@@ -34,15 +34,15 @@ module compose_mod
        integer(kind=c_int), intent(in) :: lid2gid(:), lid2facenum(:), nbr_id_rank(:), nirptr(:)
      end subroutine slmm_init_impl
 
-     subroutine compose_query_bufsz(sendsz, recvsz) bind(c)
+     subroutine cedr_query_bufsz(sendsz, recvsz) bind(c)
        use iso_c_binding, only: c_int
        integer(kind=c_int), intent(out) :: sendsz, recvsz
-     end subroutine compose_query_bufsz
+     end subroutine cedr_query_bufsz
 
-     subroutine compose_set_bufs(sendbuf, recvbuf) bind(c)
+     subroutine cedr_set_bufs(sendbuf, recvbuf) bind(c)
        use iso_c_binding, only: c_double
        real(kind=c_double), intent(in) :: sendbuf(:), recvbuf(:)
-     end subroutine compose_set_bufs
+     end subroutine cedr_set_bufs
 
      subroutine cedr_set_ie2gci(ie, gci) bind(c)
        use iso_c_binding, only: c_int
@@ -123,6 +123,16 @@ module compose_mod
        integer(kind=c_int), value, intent(in) :: ie, num_neighbors
        type(cartesian3D_t), intent(in) :: neigh_corners(:,:), pinside
      end subroutine slmm_init_local_mesh
+
+     subroutine slmm_query_bufsz(sendsz, recvsz) bind(c)
+       use iso_c_binding, only: c_int
+       integer(kind=c_int), intent(out) :: sendsz, recvsz
+     end subroutine slmm_query_bufsz
+
+     subroutine slmm_set_bufs(sendbuf, recvbuf) bind(c)
+       use iso_c_binding, only: c_double
+       real(kind=c_double), intent(in) :: sendbuf(:), recvbuf(:)
+     end subroutine slmm_set_bufs
 
      subroutine slmm_init_finalize() bind(c)
      end subroutine slmm_init_finalize
@@ -276,6 +286,28 @@ contains
     call t_stopf('compose_init')
 #endif
   end subroutine compose_init
+  
+  subroutine compose_query_bufsz(sendsz, recvsz)
+    integer, intent(out) :: sendsz, recvsz
+
+    integer :: ssz, rsz
+
+    call slmm_query_bufsz(sendsz, recvsz)
+    call cedr_query_bufsz(ssz, rsz)
+    sendsz = max(sendsz, ssz)
+    recvsz = max(recvsz, rsz)
+  end subroutine compose_query_bufsz
+
+  subroutine compose_set_bufs(sendbuf, recvbuf)
+    use kinds, only: real_kind
+
+    real(kind=real_kind), intent(in) :: sendbuf(:), recvbuf(:)
+
+    ! CEDR and SLMM can use the same buffers because they operate in sequence
+    ! and never leave persistent state in these buffers between top-level calls.
+    call slmm_set_bufs(sendbuf, recvbuf)
+    call cedr_set_bufs(sendbuf, recvbuf)
+  end subroutine compose_set_bufs
 
   subroutine compose_repro_sum(send, recv, nlocal, nfld, comm) bind(c)
     use iso_c_binding, only: c_int, c_double

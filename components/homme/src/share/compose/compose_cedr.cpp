@@ -413,6 +413,11 @@ private:
 
 namespace cedr {
 // Constrained Density Reconstructor interface.
+//   Find a point Qm in the set
+//      { Qm: ( i) e'Qm = Qm_global
+//            (ii) Qm_min <= Qm <= Qm_max },
+// where e is the vector of 1s. Each algorithm in CEDR has its own optimality
+// principle to decide on the point.
 struct CDR {
   typedef std::shared_ptr<CDR> Ptr;
 
@@ -428,6 +433,17 @@ struct CDR {
 
   // It is an error to call this function from a parallel region.
   virtual void end_tracer_declarations() = 0;
+
+  // Optionally query the sizes of the two primary memory buffers. This
+  // operation is valid after end_tracer_declarations was called.
+  virtual void get_buffers_sizes(size_t& buf1, size_t& buf2) = 0;
+  // Optionally provide the two primary memory buffers. These pointers must
+  // point to memory having at least the sizes returned by get_buffer_sizes.
+  virtual void set_buffers(Real* buf1, Real* buf2) = 0;
+
+  // Call this method to finish the setup phase. The subsequent methods are
+  // valid only after this method has been called.
+  virtual void finish_setup() = 0;
 
   virtual int get_problem_type(const Int& tracer_idx) const = 0;
 
@@ -525,7 +541,7 @@ struct NodeSets {
     // are multiples of this unit.
     Int offset;
 
-    Node () : rank(-1), id(-1), parent(-1), nkids(0), offset(-1) {}
+    KOKKOS_FUNCTION Node () : rank(-1), id(-1), parent(-1), nkids(0), offset(-1) {}
   };
 
   // A level in the level schedule that is constructed to orchestrate
@@ -625,6 +641,7 @@ public:
   typedef typename cedr::impl::DeviceType<ExeSpace>::type Device;
   typedef QLT<ExeSpace> Me;
   typedef std::shared_ptr<Me> Ptr;
+  typedef Kokkos::View<Real*, Device> RealList;
   
   // Set up QLT topology and communication data structures based on a tree. Both
   // ncells and tree refer to the global mesh, not just this processor's
@@ -650,6 +667,12 @@ public:
   void declare_tracer(int problem_type, const Int& rhomidx) override;
 
   void end_tracer_declarations() override;
+
+  void get_buffers_sizes(size_t& buf1, size_t& buf2) override;
+
+  void set_buffers(Real* buf1, Real* buf2) override;
+
+  void finish_setup() override;
 
   int get_problem_type(const Int& tracer_idx) const override;
 
@@ -752,14 +775,20 @@ PROTECTED_CUDA:
   };
 
   struct BulkData {
-    typedef Kokkos::View<Real*, Device> RealList;
     typedef cedr::impl::Unmanaged<RealList> UnmanagedRealList;
 
     UnmanagedRealList l2r_data, r2l_data;
 
-    void init(const MetaData& md, const Int& nslots);
+    BulkData () : inited_(false) {}
+
+    bool inited () const { return inited_; }
+
+    void init(const size_t& l2r_sz, const size_t& r2l_sz);
+    void init(Real* l2r_buf, const size_t& l2r_sz,
+              Real* r2l_buf, const size_t& r2l_sz);
 
   private:
+    bool inited_;
     RealList l2r_data_, r2l_data_;
   };
 
@@ -806,12 +835,14 @@ struct Input {
 Int run_unit_and_randomized_tests(const Parallel::Ptr& p, const Input& in);
 
 Int test_qlt(const Parallel::Ptr& p, const tree::Node::Ptr& tree, const Int& ncells,
-             const Int nrepeat = 1,
+             const Int nrepeat,
              // Diagnostic output for dev and illustration purposes. To be
              // clear, no QLT unit test requires output to be checked; each
              // checks in-memory data and returns a failure count.
-             const bool write = false,
-             const bool verbose = false);
+             const bool write,
+             // Provide memory to QLT for its buffers.
+             const bool external_memory,
+             const bool verbose);
 } // namespace test
 } // namespace qlt
 } // namespace cedr
@@ -841,6 +872,7 @@ public:
   typedef typename cedr::impl::DeviceType<ExeSpace>::type Device;
   typedef CAAS<ExeSpace> Me;
   typedef std::shared_ptr<Me> Ptr;
+  typedef Kokkos::View<Real*, Kokkos::LayoutLeft, Device> RealList;
 
 public:
   struct UserAllReducer {
@@ -864,6 +896,12 @@ public:
 
   void end_tracer_declarations() override;
 
+  void get_buffers_sizes(size_t& buf1, size_t& buf2) override;
+
+  void set_buffers(Real* buf1, Real* buf2) override;
+
+  void finish_setup() override;
+
   int get_problem_type(const Int& tracer_idx) const override;
 
   Int get_num_tracers() const override;
@@ -883,7 +921,6 @@ public:
   Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const override;
 
 protected:
-  typedef Kokkos::View<Real*, Kokkos::LayoutLeft, Device> RealList;
   typedef cedr::impl::Unmanaged<RealList> UnmanagedRealList;
   typedef Kokkos::View<Int*, Kokkos::LayoutLeft, Device> IntList;
 
@@ -903,12 +940,16 @@ protected:
   IntList probs_, t2r_;
   typename IntList::HostMirror probs_h_;
   RealList d_, send_, recv_;
+  bool finished_setup_;
 
   void reduce_globally();
 
 PRIVATE_CUDA:
   void reduce_locally();
   void finish_locally();
+
+private:
+  void get_buffers_sizes(size_t& buf1, size_t& buf2, size_t& buf3);
 };
 
 namespace test {
@@ -1173,13 +1214,11 @@ void calc_r (const Int n, const Real* w, const Real* a, const Real b,
 KOKKOS_INLINE_FUNCTION
 Int solve_1eq_bc_qp_2d (const Real* w, const Real* a, const Real b,
                         const Real* xlo, const Real* xhi, 
-                        const Real* y, Real* x, const bool clip) {
-  Int info;
-#if 0
+                        const Real* y, Real* x,
+                        const bool clip) {
   const Real r_tol = impl::calc_r_tol(b, a, y, 2);
-  info = impl::check_lu(2, a, b, xlo, xhi, r_tol, x);
+  Int info = impl::check_lu(2, a, b, xlo, xhi, r_tol, x);
   if (info == -1) return info;
-#endif
 
   { // Check if the optimal point ignoring bound constraints is in bounds.
     Real qmass = 0, dm = b;
@@ -1537,6 +1576,24 @@ void r2l_nl_adjust_bounds (Real Qm_bnd[2], const Real rhom[2], Real Qm_extra) {
   }
 }
 
+template <typename ES> KOKKOS_INLINE_FUNCTION
+int QLT<ES>::MetaData::get_problem_type (const int& idx) {
+  static const Int problem_type[] = {
+    CPT::st, CPT::cst, CPT::t, CPT::ct, CPT::nn, CPT::cnn
+  };
+  return problem_type[idx];
+}
+    
+template <typename ES> KOKKOS_INLINE_FUNCTION
+int QLT<ES>::MetaData::get_problem_type_l2r_bulk_size (const int& mask) {
+  if (mask & ProblemType::nonnegative) {
+    if (mask & ProblemType::conserve) return 2;
+    return 1;
+  }
+  if (mask & ProblemType::conserve) return 4;
+  return 3;
+}
+
 namespace impl {
 KOKKOS_INLINE_FUNCTION
 void solve_node_problem (const Real& rhom, const Real* pd, const Real& Qm,
@@ -1584,7 +1641,7 @@ void solve_node_problem (const Real& rhom, const Real* pd, const Real& Qm,
     const Real w[] = {1/rhom0, 1/rhom1};
     Real Qm_kids[] = {k0d[1], k1d[1]};
     local::solve_1eq_bc_qp_2d(w, ones, Qm, Qm_min_kids, Qm_max_kids,
-                              Qm_orig_kids, Qm_kids, false /* clip */);
+                              Qm_orig_kids, Qm_kids);
     Qm0 = Qm_kids[0];
     Qm1 = Qm_kids[1];
   }
@@ -1790,7 +1847,7 @@ private:
 namespace cedr {
 namespace test {
 
-template <typename CDRT, typename ExeSpace>
+template <typename CDRT, typename ES>
 Int TestRandomized::run (const Int nrepeat, const bool write) {
   const Int nt = tracers_.size(), nlclcells = gcis_.size();
 
@@ -1806,7 +1863,7 @@ Int TestRandomized::run (const Int nrepeat, const bool write) {
       write_pre(t, v);
 
   CDRT cdr = static_cast<CDRT&>(get_cdr());
-  ValuesDevice<ExeSpace> vd(v);
+  ValuesDevice<ES> vd(v);
   vd.sync_device();
 
   {
@@ -1814,7 +1871,7 @@ Int TestRandomized::run (const Int nrepeat, const bool write) {
     const auto set_rhom = KOKKOS_LAMBDA (const Int& i) {
       cdr.set_rhom(i, 0, rhom[i]);
     };
-    Kokkos::parallel_for(nlclcells, set_rhom);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, nlclcells), set_rhom);
   }
   // repeat > 1 runs the same values repeatedly for performance
   // meaurement.
@@ -1825,7 +1882,7 @@ Int TestRandomized::run (const Int nrepeat, const bool write) {
       cdr.set_Qm(i, ti, vd.Qm(ti)[i], vd.Qm_min(ti)[i], vd.Qm_max(ti)[i],
                  vd.Qm_prev(ti)[i]);
     };
-    Kokkos::parallel_for(nt*nlclcells, set_Qm);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, nt*nlclcells), set_Qm);
     run_impl(trial);
   }
   {
@@ -1834,7 +1891,7 @@ Int TestRandomized::run (const Int nrepeat, const bool write) {
       const auto i = j % nlclcells;
       vd.Qm(ti)[i] = cdr.get_Qm(i, ti);
     };
-    Kokkos::parallel_for(nt*nlclcells, get_Qm);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, nt*nlclcells), get_Qm);
   }
   vd.sync_host(); // => v contains computed values
 
@@ -2159,7 +2216,7 @@ Int test_1eq_nonneg () {
       solve_1eq_bc_qp(n, w, a, b, xlo, xhi, y, x_ls);
       const Real rd_caas = reldif(x_caas, x1_caas, 2);
       const Real rd_ls = reldif(x_ls, x1_ls, 2);
-      if (rd_ls > 1e1*std::numeric_limits<Real>::epsilon() ||
+      if (rd_ls > 5e1*std::numeric_limits<Real>::epsilon() ||
           rd_caas > 1e1*std::numeric_limits<Real>::epsilon()) {
         pr(puf(rd_ls) pu(rd_caas));
         if (verbose) {
@@ -2736,14 +2793,6 @@ void QLT<ES>::init (const std::string& name, IntList& d,
   h = Kokkos::create_mirror_view(d);
 }
 
-template <typename ES> KOKKOS_INLINE_FUNCTION
-int QLT<ES>::MetaData::get_problem_type (const int& idx) {
-  static const Int problem_type[] = {
-    CPT::st, CPT::cst, CPT::t, CPT::ct, CPT::nn, CPT::cnn
-  };
-  return problem_type[idx];
-}
-    
 template <typename ES>
 int QLT<ES>::MetaData::get_problem_type_idx (const int& mask) {
   switch (mask) {
@@ -2755,16 +2804,6 @@ int QLT<ES>::MetaData::get_problem_type_idx (const int& mask) {
   case CPT::cnn: return 5;
   default: cedr_kernel_throw_if(true, "Invalid problem type."); return -1;
   }
-}
-
-template <typename ES> KOKKOS_INLINE_FUNCTION
-int QLT<ES>::MetaData::get_problem_type_l2r_bulk_size (const int& mask) {
-  if (mask & ProblemType::nonnegative) {
-    if (mask & ProblemType::conserve) return 2;
-    return 1;
-  }
-  if (mask & ProblemType::conserve) return 4;
-  return 3;
 }
 
 template <typename ES>
@@ -2829,11 +2868,22 @@ void QLT<ES>::MetaData::init (const MetaDataBuilder& mdb) {
 }
 
 template <typename ES>
-void QLT<ES>::BulkData::init (const MetaData& md, const Int& nslots) {
-  l2r_data_ = RealList("QLT l2r_data", md.a_h.prob2bl2r[md.nprobtypes]*nslots);
-  r2l_data_ = RealList("QLT r2l_data", md.a_h.prob2br2l[md.nprobtypes]*nslots);
+void QLT<ES>::BulkData::init (const size_t& l2r_sz, const size_t& r2l_sz) {
+  l2r_data_ = RealList("QLT l2r_data", l2r_sz);
+  r2l_data_ = RealList("QLT r2l_data", r2l_sz);
   l2r_data = l2r_data_;
   r2l_data = r2l_data_;
+  inited_ = true;
+}
+
+template <typename ES>
+void QLT<ES>::BulkData::init (Real* buf1, const size_t& l2r_sz,
+                              Real* buf2, const size_t& r2l_sz) {
+  l2r_data_ = RealList(buf1, l2r_sz);
+  r2l_data_ = RealList(buf2, r2l_sz);
+  l2r_data = l2r_data_;
+  r2l_data = r2l_data_;
+  inited_ = true;
 }
 
 template <typename ES>
@@ -2946,7 +2996,28 @@ template <typename ES>
 void QLT<ES>::end_tracer_declarations () {
   md_.init(*mdb_);
   mdb_ = nullptr;
-  bd_.init(md_, ns_->nslots);
+}
+
+template <typename ES>
+void QLT<ES>::get_buffers_sizes (size_t& buf1, size_t& buf2) {
+  const auto nslots = ns_->nslots;
+  buf1 = md_.a_h.prob2bl2r[md_.nprobtypes]*nslots;
+  buf2 = md_.a_h.prob2br2l[md_.nprobtypes]*nslots;
+}
+
+template <typename ES>
+void QLT<ES>::set_buffers (Real* buf1, Real* buf2) {
+  size_t l2r_sz, r2l_sz;
+  get_buffers_sizes(l2r_sz, r2l_sz);
+  bd_.init(buf1, l2r_sz, buf2, r2l_sz);
+}
+
+template <typename ES>
+void QLT<ES>::finish_setup () {
+  if (bd_.inited()) return;
+  size_t l2r_sz, r2l_sz;
+  get_buffers_sizes(l2r_sz, r2l_sz);
+  bd_.init(l2r_sz, r2l_sz);
 }
 
 template <typename ES>
@@ -3246,6 +3317,7 @@ template <typename ES> void QLT<ES>
 
 template <typename ES>
 void QLT<ES>::run () {
+  cedr_assert(bd_.inited());
   Timer::start(Timer::qltrunl2r);
   // Number of data per slot.
   const Int l2rndps = md_.a_h.prob2bl2r[md_.nprobtypes];
@@ -3275,9 +3347,9 @@ public:
   typedef QLT<Kokkos::DefaultExecutionSpace> QLTT;
 
   TestQLT (const Parallel::Ptr& p, const tree::Node::Ptr& tree,
-           const Int& ncells, const bool verbose=false)
+           const Int& ncells, const bool external_memory, const bool verbose)
     : TestRandomized("QLT", p, ncells, verbose),
-      qlt_(p, ncells, tree), tree_(tree)
+      qlt_(p, ncells, tree), tree_(tree), external_memory_(external_memory)
   {
     if (verbose) qlt_.print(std::cout);
     init();
@@ -3286,6 +3358,8 @@ public:
 private:
   QLTT qlt_;
   tree::Node::Ptr tree_;
+  bool external_memory_;
+  typename QLTT::RealList buf1_, buf2_;
 
   CDR& get_cdr () override { return qlt_; }
 
@@ -3320,6 +3394,14 @@ private:
     for (const auto& t : tracers_)
       qlt_.declare_tracer(t.problem_type, 0);
     qlt_.end_tracer_declarations();
+    if (external_memory_) {
+      size_t l2r_sz, r2l_sz;
+      qlt_.get_buffers_sizes(l2r_sz, r2l_sz);
+      buf1_ = typename QLTT::RealList("buf1", l2r_sz);
+      buf2_ = typename QLTT::RealList("buf2", r2l_sz);
+      qlt_.set_buffers(buf1_.data(), buf2_.data());
+    }
+    qlt_.finish_setup();
     cedr_assert(qlt_.get_num_tracers() == static_cast<Int>(tracers_.size()));
     for (size_t i = 0; i < tracers_.size(); ++i) {
       const auto pt = qlt_.get_problem_type(i);
@@ -3349,8 +3431,9 @@ private:
 // Test all QLT variations and situations.
 Int test_qlt (const Parallel::Ptr& p, const tree::Node::Ptr& tree,
               const Int& ncells, const Int nrepeat,
-              const bool write, const bool verbose) {
-  return TestQLT(p, tree, ncells, verbose).run<TestQLT::QLTT>(nrepeat, write);
+              const bool write, const bool external_memory, const bool verbose) {
+  return TestQLT(p, tree, ncells, external_memory, verbose)
+    .run<TestQLT::QLTT>(nrepeat, write);
 }
 } // namespace test
 
@@ -3507,19 +3590,22 @@ Int unittest_QLT (const Parallel::Ptr& p, const bool write_requested=false) {
   const Mesh::ParallelDecomp::Enum dists[] = { Mesh::ParallelDecomp::contiguous,
                                                Mesh::ParallelDecomp::pseudorandom };
   Int nerr = 0;
-  for (size_t is = 0, islim = sizeof(szs)/sizeof(*szs); is < islim; ++is)
-    for (size_t id = 0, idlim = sizeof(dists)/sizeof(*dists); id < idlim; ++id)
-    for (bool imbalanced: {false, true}) {
-      if (p->amroot()) {
-        std::cout << " (" << szs[is] << ", " << id << ", " << imbalanced << ")";
-        std::cout.flush();
+  for (size_t is = 0, islim = sizeof(szs)/sizeof(*szs); is < islim; ++is) {
+    for (size_t id = 0, idlim = sizeof(dists)/sizeof(*dists); id < idlim; ++id) {
+      for (bool imbalanced: {false, true}) {
+        const auto external_memory = imbalanced;
+        if (p->amroot()) {
+          std::cout << " (" << szs[is] << ", " << id << ", " << imbalanced << ")";
+          std::cout.flush();
+        }
+        Mesh m(szs[is], p, dists[id]);
+        tree::Node::Ptr tree = make_tree(m, imbalanced);
+        const bool write = (write_requested && m.ncell() < 3000 &&
+                            is == islim-1 && id == idlim-1);
+        nerr += test::test_qlt(p, tree, m.ncell(), 1, write, external_memory, false);
       }
-      Mesh m(szs[is], p, dists[id]);
-      tree::Node::Ptr tree = make_tree(m, imbalanced);
-      const bool write = (write_requested && m.ncell() < 3000 &&
-                          is == islim-1 && id == idlim-1);
-      nerr += test::test_qlt(p, tree, m.ncell(), 1, write);
     }
+  }
   return nerr;
 }
 
@@ -3551,7 +3637,7 @@ Int run_unit_and_randomized_tests (const Parallel::Ptr& p, const Input& in) {
     Timer::start(Timer::total); Timer::start(Timer::tree);
     tree::Node::Ptr tree = make_tree(m, false);
     Timer::stop(Timer::tree);
-    test::test_qlt(p, tree, in.ncells, in.nrepeat, false, in.verbose);
+    test::test_qlt(p, tree, in.ncells, in.nrepeat, false, false, in.verbose);
     Timer::stop(Timer::total);
     if (p->amroot()) Timer::print();
   }
@@ -3571,6 +3657,9 @@ template class cedr::qlt::QLT<Kokkos::OpenMP>;
 #ifdef KOKKOS_ENABLE_CUDA
 template class cedr::qlt::QLT<Kokkos::Cuda>;
 #endif
+#ifdef KOKKOS_ENABLE_THREADS
+template class cedr::qlt::QLT<Kokkos::Threads>;
+#endif
 
 //>> cedr_caas.cpp
 // COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
@@ -3584,6 +3673,16 @@ namespace Kokkos {
 struct Real2 {
   cedr::Real v[2];
   KOKKOS_INLINE_FUNCTION Real2 () { v[0] = v[1] = 0; }
+
+  KOKKOS_INLINE_FUNCTION void operator= (const Real2& s) {
+    v[0] = s.v[0];
+    v[1] = s.v[1];
+  }
+  KOKKOS_INLINE_FUNCTION void operator= (const volatile Real2& s) volatile {
+    v[0] = s.v[0];
+    v[1] = s.v[1];
+  }
+
   KOKKOS_INLINE_FUNCTION Real2& operator+= (const Real2& o) {
     v[0] += o.v[0];
     v[1] += o.v[1];
@@ -3603,7 +3702,7 @@ template <typename ES>
 CAAS<ES>::CAAS (const mpi::Parallel::Ptr& p, const Int nlclcells,
                 const typename UserAllReducer::Ptr& uar)
   : p_(p), user_reducer_(uar), nlclcells_(nlclcells), nrhomidxs_(0),
-    need_conserve_(false)
+    need_conserve_(false), finished_setup_(false)
 {
   cedr_throw_if(nlclcells == 0, "CAAS does not support 0 cells on a rank.");
   tracer_decls_ = std::make_shared<std::vector<Decl> >();  
@@ -3633,13 +3732,47 @@ void CAAS<ES>::end_tracer_declarations () {
   }
   Kokkos::deep_copy(probs_, probs_h_);
   tracer_decls_ = nullptr;
-  // (rho, Qm, Qm_min, Qm_max, [Qm_prev])
+}
+
+template <typename ES>
+void CAAS<ES>::get_buffers_sizes (size_t& buf1, size_t& buf2, size_t& buf3) {
   const Int e = need_conserve_ ? 1 : 0;
-  d_ = RealList("CAAS data", nlclcells_ * ((3+e)*probs_.size() + 1));
   const auto nslots = 4*probs_.size();
+  buf1 = nlclcells_ * ((3+e)*probs_.size() + 1);
+  buf2 = nslots*(user_reducer_ ? nlclcells_ : 1);
+  buf3 = nslots;
+}
+
+template <typename ES>
+void CAAS<ES>::get_buffers_sizes (size_t& buf1, size_t& buf2) {
+  size_t buf3;
+  get_buffers_sizes(buf1, buf2, buf3);
+  buf2 += buf3;
+}
+
+template <typename ES>
+void CAAS<ES>::set_buffers (Real* buf1, Real* buf2) {
+  size_t buf1sz, buf2sz, buf3sz;
+  get_buffers_sizes(buf1sz, buf2sz, buf3sz);
+  d_ = RealList(buf1, buf1sz);
+  send_ = RealList(buf2, buf2sz);
+  recv_ = RealList(buf2 + buf2sz, buf3sz);
+}
+
+template <typename ES>
+void CAAS<ES>::finish_setup () {
+  if (recv_.size() > 0) {
+    finished_setup_ = true;
+    return;
+  }
+  size_t buf1, buf2, buf3;
+  get_buffers_sizes(buf1, buf2, buf3);
+  // (rho, Qm, Qm_min, Qm_max, [Qm_prev])
+  d_ = RealList("CAAS data", buf1);
   // (e'Qm_clip, e'Qm, e'Qm_min, e'Qm_max, [e'Qm_prev])
-  send_ = RealList("CAAS send", nslots*(user_reducer_ ? nlclcells_ : 1));
-  recv_ = RealList("CAAS recv", nslots);
+  send_ = RealList("CAAS send", buf2);
+  recv_ = RealList("CAAS recv", buf3);
+  finished_setup_ = true;
 }
 
 template <typename ES>
@@ -3687,14 +3820,14 @@ void CAAS<ES>::reduce_locally () {
       send(nlclcells*      k  + i) = Qm_clip;
       send(nlclcells*(nt + k) + i) = Qm_term;
     };
-    Kokkos::parallel_for(nt*nlclcells, calc_Qm_clip);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, nt*nlclcells), calc_Qm_clip);
     const auto set_Qm_minmax = KOKKOS_LAMBDA (const Int& j) {
       const auto k = 2*nt + j / nlclcells;
       const auto i = j % nlclcells;
       const auto os = (k-nt+1)*nlclcells;
       send(nlclcells*k + i) = d(os+i);
     };
-    Kokkos::parallel_for(2*nt*nlclcells, set_Qm_minmax);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, 2*nt*nlclcells), set_Qm_minmax);
   } else {
     using ESU = cedr::impl::ExeSpaceUtils<ES>;
     const auto calc_Qm_clip = KOKKOS_LAMBDA (const typename ESU::Member& t) {
@@ -3783,6 +3916,7 @@ void CAAS<ES>::finish_locally () {
 
 template <typename ES>
 void CAAS<ES>::run () {
+  cedr_assert(finished_setup_);
   reduce_locally();
   const bool user_reduces = user_reducer_ != nullptr;
   if (user_reduces)
@@ -3818,9 +3952,10 @@ struct TestCAAS : public cedr::test::TestRandomized {
   };
 
   TestCAAS (const mpi::Parallel::Ptr& p, const Int& ncells,
-            const bool use_own_reducer, const bool verbose)
+            const bool use_own_reducer, const bool external_memory,
+            const bool verbose)
     : TestRandomized("CAAS", p, ncells, verbose),
-      p_(p)
+      p_(p), external_memory_(external_memory)
   {
     const auto np = p->size(), rank = p->rank();
     nlclcells_ = ncells / np;
@@ -3858,6 +3993,14 @@ struct TestCAAS : public cedr::test::TestRandomized {
     }
     tracers_ = tracers;
     caas_->end_tracer_declarations();
+    if (external_memory_) {
+      size_t l2r_sz, r2l_sz;
+      caas_->get_buffers_sizes(l2r_sz, r2l_sz);
+      buf1_ = typename CAAST::RealList("buf1", l2r_sz);
+      buf2_ = typename CAAST::RealList("buf2", r2l_sz);
+      caas_->set_buffers(buf1_.data(), buf2_.data());
+    }
+    caas_->finish_setup();
   }
 
   void run_impl (const Int trial) override {
@@ -3866,8 +4009,10 @@ struct TestCAAS : public cedr::test::TestRandomized {
 
 private:
   mpi::Parallel::Ptr p_;
+  bool external_memory_;
   Int nlclcells_;
   CAAST::Ptr caas_;
+  typename CAAST::RealList buf1_, buf2_;
 
   static Int get_nllclcells (const Int& ncells, const Int& np, const Int& rank) {
     Int nlclcells = ncells / np;
@@ -3883,8 +4028,10 @@ Int unittest (const mpi::Parallel::Ptr& p) {
   for (Int nlclcells : {1, 2, 4, 11}) {
     Long ncells = np*nlclcells;
     if (ncells > np) ncells -= np/2;
-    nerr += TestCAAS(p, ncells, false, false).run<TestCAAS::CAAST>(1, false);
-    nerr += TestCAAS(p, ncells, true, false).run<TestCAAS::CAAST>(1, false);
+    for (const bool own_reducer : {false, true})
+      for (const bool external_memory : {false, true})
+        nerr += TestCAAS(p, ncells, own_reducer, external_memory, false)
+          .run<TestCAAS::CAAST>(1, false);
   }
   return nerr;
 }
@@ -3900,6 +4047,9 @@ template class cedr::caas::CAAS<Kokkos::OpenMP>;
 #endif
 #ifdef KOKKOS_ENABLE_CUDA
 template class cedr::caas::CAAS<Kokkos::Cuda>;
+#endif
+#ifdef KOKKOS_ENABLE_THREADS
+template class cedr::caas::CAAS<Kokkos::Threads>;
 #endif
 
 //>> cedr_test_randomized.cpp
@@ -4619,6 +4769,7 @@ Int run (const mpi::Parallel::Ptr& parallel, const Input& in) {
       cdr->declare_tracer(cedr::ProblemType::conserve |
                           cedr::ProblemType::shapepreserve, 0);
     cdr->end_tracer_declarations();
+    cdr->finish_setup();
     for (Int i = 0; i < in.ncells; ++i)
       cdr->set_rhom(i, 0, p.area(i));
     cdr->print(std::cout);
@@ -5301,6 +5452,15 @@ struct CDR {
     cdr->end_tracer_declarations();
   }
 
+  void get_buffers_sizes (size_t& s1, size_t &s2) {
+    cdr->get_buffers_sizes(s1, s2);
+  }
+
+  void set_buffers (Real* b1, Real* b2) {
+    cdr->set_buffers(b1, b2);
+    cdr->finish_setup();
+  }
+
 private:
   bool inited_tracers_;
 };
@@ -5437,7 +5597,8 @@ void run (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_r,
           const Int k = k0 + sbli;
           if (k >= nlev) {
             cdr.cdr->set_Qm(lci, ti, 0, 0, 0, 0);
-            break;
+            if (ti == 0) cdr.cdr->set_rhom(lci, 0, 0);
+            continue;
           }
           Real Qm = 0, Qm_min = 0, Qm_max = 0, Qm_prev = 0, rhom = 0, volume = 0;
           for (Int j = 0; j < np; ++j) {
@@ -5814,13 +5975,25 @@ cedr_init_impl (const homme::Int fcomm, const homme::Int cdr_alg, const bool use
     cdr_alg, gbl_ncell, lcl_ncell, nlev, use_sgi, *gid_data, *rank_data, p, fcomm);
 }
 
+extern "C" void cedr_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
+  cedr_assert(g_cdr);
+  size_t s1, s2;
+  g_cdr->get_buffers_sizes(s1, s2);
+  *sendsz = static_cast<homme::Int>(s1);
+  *recvsz = static_cast<homme::Int>(s2);
+}
+
+extern "C" void cedr_set_bufs (homme::Real** sendbuf, homme::Real** recvbuf) {
+  g_cdr->set_buffers(*sendbuf, *recvbuf);
+}
+
 extern "C" void cedr_unittest (const homme::Int fcomm, homme::Int* nerrp) {
   cedr_assert(g_cdr);
   cedr_assert(g_cdr->tree);
   auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   if (homme::CDR::Alg::is_qlt(g_cdr->alg))
-    *nerrp = cedr::qlt::test::test_qlt(p, g_cdr->tree,
-                                       g_cdr->nsublev*g_cdr->ncell);
+    *nerrp = cedr::qlt::test::test_qlt(p, g_cdr->tree, g_cdr->nsublev*g_cdr->ncell,
+                                       1, false, false, false);
   else
     *nerrp = cedr::caas::test::unittest(p);
 }

@@ -2333,6 +2333,16 @@ int waitall (int count, Request* reqs, MPI_Status* stats = nullptr) {
                      stats ? stats : MPI_STATUS_IGNORE);
 #endif
 }
+
+int wait (Request* req, MPI_Status* stat = nullptr) {
+#ifdef COMPOSE_DEBUG_MPI
+  const auto out = MPI_Wait(&req->request, stat ? stat : MPI_STATUS_IGNORE);
+  req->unfreed--;
+  return out;
+#else
+  return MPI_Wait(reinterpret_cast<MPI_Request*>(req), stat ? stat : MPI_STATUS_IGNORE);
+#endif
+}
 } // namespace mpi
 
 namespace cslmpi {
@@ -3364,7 +3374,6 @@ void isend (CslMpi& cm, const bool want_req = true, const bool skip_if_empty = f
 # pragma omp master
 #endif
   {
-    slmm_assert( ! (skip_if_empty && want_req));
     const Int nrmtrank = static_cast<Int>(cm.ranks.size()) - 1;
     for (Int ri = 0; ri < nrmtrank; ++ri) {
       if (skip_if_empty && cm.sendcount(ri) == 0) continue;
@@ -3381,6 +3390,21 @@ void recv_and_wait_on_send (CslMpi& cm) {
   {
     mpi::waitall(cm.sendreq.n(), cm.sendreq.data());
     mpi::waitall(cm.recvreq.n(), cm.recvreq.data());
+  }
+#ifdef HORIZ_OPENMP
+# pragma omp barrier
+#endif
+}
+
+void wait_on_send (CslMpi& cm, const bool skip_if_empty = false) {
+#ifdef HORIZ_OPENMP
+# pragma omp master
+#endif
+  {
+    for (Int ri = 0; ri < cm.sendreq.n(); ++ri) {
+      if (skip_if_empty && cm.sendcount(ri) == 0) continue;
+      mpi::wait(&cm.sendreq(ri));
+    }
   }
 #ifdef HORIZ_OPENMP
 # pragma omp barrier
@@ -3825,7 +3849,7 @@ void step (
   // Compute the requested q for departure points from remotes.
   calc_rmt_q<np>(cm);
   // Send q data.
-  isend(cm, false /* want_req */, true /* skip_if_empty */);
+  isend(cm, true /* want_req */, true /* skip_if_empty */);
   // Set up to receive q for each of my departure point requests sent to
   // remotes. We can't do this until the OpenMP barrier in isend assures that
   // all threads are done with the receive buffer's departure points.
@@ -3836,9 +3860,8 @@ void step (
   // Receive remote q data and use this to fill in the rest of my fields.
   recv(cm, true /* skip_if_empty */);
   copy_q(cm, nets, q_min, q_max);
-  // Don't need to wait on send buffer again because MPI-level synchronization
-  // outside of SL transport assures the send buffer is ready at the next call
-  // to step. But do need to dealloc the send requests.
+  // Wait on send buffer so it's free to be used by others.
+  wait_on_send(cm, true /* skip_if_empty */);
 }
 } // namespace cslmpi
 } // namespace homme
@@ -3892,7 +3915,7 @@ void slmm_init_impl (
                                   2 /* halo */);
 }
 
-void compose_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
+void slmm_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
   slmm_assert(g_csl_mpi);
   homme::Int s = 0, r = 0;
   for (const auto e : g_csl_mpi->sendsz) s += e;
@@ -3901,7 +3924,7 @@ void compose_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
   *recvsz = r;
 }
 
-void compose_set_bufs (homme::Real** sendbuf, homme::Real** recvbuf) {
+void slmm_set_bufs (homme::Real** sendbuf, homme::Real** recvbuf) {
   slmm_assert(g_csl_mpi);
   homme::cslmpi::alloc_mpi_buffers(*g_csl_mpi, *sendbuf, *recvbuf);
 }
