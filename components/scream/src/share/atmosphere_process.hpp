@@ -14,6 +14,7 @@
 #include "share/util/string_utils.hpp"
 #include "share/grid/grids_manager.hpp"
 #include "share/util/scream_std_enable_shared_from_this.hpp"
+#include "share/util/scream_std_utils.hpp"
 
 namespace scream
 {
@@ -25,16 +26,15 @@ namespace scream
  *  This includes both physics (i.e., parametrizations) and dynamics.
  *  The atmosphere driver will take care of calling init/run/finalize
  *  methods of each process, in an order that the driver
- *  establishes. A process must provide a list of fields
- *  that it needs as input, together with a list of fields that
- *  are computed.
+ *  establishes. A concrete process must implement all the purely virtual
+ *  methods of this interface; for instance, it must provide a list of fields
+ *  that it needs as input, together with a list of fields that are computed.
  */
 
 class AtmosphereProcess : public util::enable_shared_from_this<AtmosphereProcess>
 {
 public:
-  using device_type      = DefaultDevice; // may need to template class on this
-  using host_device_type = HostDevice;
+  using device_type = DefaultDevice; // may need to template class on this
 
   virtual ~AtmosphereProcess () = default;
 
@@ -53,7 +53,7 @@ public:
   // Give the grids manager to the process, so it can grab its grid
   // IMPORTANT: the process is *expected* to have valid field ids for
   //            required/computed fields once this method returns
-  virtual void set_grid (const std::shared_ptr<const GridsManager> grids_manager) = 0;
+  virtual void set_grids (const std::shared_ptr<const GridsManager> grids_manager) = 0;
 
   // These are the three main interfaces:
   //   - the initialize method sets up all the stuff the process needs to run,
@@ -68,14 +68,19 @@ public:
   // run method can (and usually will) be called multiple times.
   // We should put asserts to verify that the process has been init-ed, when
   // run/finalize is called.
-  virtual void initialize () = 0;
-  virtual void run        (/* what inputs? */) = 0;
+  virtual void initialize (const util::TimeStamp& t0) = 0;
+  virtual void run        (const double dt) = 0;
   virtual void finalize   (/* what inputs? */) = 0;
 
   // These methods set fields in the atm process. Fields live on device and they are all 1d.
   // If the process *needs* to store the field as n-dimensional field, use the
   // template function 'get_reshaped_view' (see field.hpp for details).
-  // Note: this method will be called *after* set_grid, but *before* initialize
+  // Note: this method will be called *after* set_grid, but *before* initialize.
+  //       You are *guaranteed* that the view in the Field f is allocated by now.
+  // Note: it would be tempting to add this process as provider/customer right here.
+  //       However, if this process is of type Group, we don't really want to add it
+  //       as provider/customer. The group is just a 'design layer', and the stored processes
+  //       are the actuall providers/customers.
   void set_required_field (const Field<const Real, device_type>& f) {
     error::runtime_check(requires(f.get_header().get_identifier()),
                          "Error! This atmosphere process does not require this field. "
@@ -97,9 +102,9 @@ public:
   virtual const std::set<FieldIdentifier>& get_required_fields () const = 0;
   virtual const std::set<FieldIdentifier>& get_computed_fields () const = 0;
 
-  // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use find and check result.
-  bool requires (const FieldIdentifier& id) const { return get_required_fields().find(id)!= get_computed_fields().end(); }
-  bool computes (const FieldIdentifier& id) const { return get_computed_fields().find(id)!= get_computed_fields().end(); }
+  // NOTE: C++20 will introduce the method 'contains' for std::set. Till then, use our util free function
+  bool requires (const FieldIdentifier& id) const { return util::contains(get_required_fields(),id); }
+  bool computes (const FieldIdentifier& id) const { return util::contains(get_computed_fields(),id); }
 
 protected:
   virtual void set_required_field_impl (const Field<const Real, device_type>& f) = 0;

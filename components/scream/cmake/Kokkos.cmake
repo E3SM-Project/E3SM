@@ -6,7 +6,7 @@ elseif (KOKKOS_DIR)
 else ()
   # Build kokkos submodule if user did not specify Kokkos_DIR.
   set(KOKKOS_SRC    ${CMAKE_SOURCE_DIR}/../../externals/kokkos)
-  set(KOKKOS_BINARY ${CMAKE_BINARY_DIR}/kokkos/install)
+  set(KOKKOS_BINARY ${CMAKE_BINARY_DIR}/kokkos/build)
 
   add_subdirectory(${KOKKOS_SRC} ${KOKKOS_BINARY})
 

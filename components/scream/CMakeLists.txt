@@ -15,6 +15,7 @@ MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 # Set the scream base and src directory, to be used across subfolders
 SET (SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 SET (SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
+SET (SCREAM_DATA_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/data)
 
 # Add the ./cmake folder to cmake path
 SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -155,6 +156,18 @@ EXECUTE_PROCESS(COMMAND sed -i "s;^/;!/;g" ${CMAKE_BINARY_DIR}/src/scream_config
 
 SET (SCREAM_DYNAMICS_DYCORE "NONE" CACHE STRING "The name of the dycore to be used for dynamics. If NONE, then any code/test requiring dynamics is disabled.")
 STRING(TOUPPER "${SCREAM_DYNAMICS_DYCORE}" SCREAM_DYNAMICS_DYCORE)
+IF (NOT ${SCREAM_DOUBLE_PRECISION})
+  # Homme cannot handle single precision, for now. This causes tests to fail.
+  # Fixing this requires adding a config parameter to homme, to switch between
+  # single and double. That must be done in the upstream repo (E3SM), before
+  # we can support it here.
+  # So, for now, if Homme is the requested dyn dycore AND single precision is
+  # requested, we disable dynamics, printing a warning.
+  IF ("${SCREAM_DYNAMICS_DYCORE}" STREQUAL "HOMME")
+    MESSAGE ("WARNING! Homme dycore cannot be used in a Single Precision build. Turning Homme off.")
+    SET (SCREAM_DYNAMICS_DYCORE "NONE")
+  ENDIF()
+ENDIF()
 print_var(SCREAM_DYNAMICS_DYCORE)
 
 set (SCREAM_F90_MODULES ${CMAKE_BINARY_DIR}/modules)

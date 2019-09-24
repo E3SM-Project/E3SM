@@ -9,16 +9,16 @@ SurfaceCoupling (const Comm& comm, const ParameterList& /*params*/)
   // Grab what you need from the parameter list
 }
 
-void SurfaceCoupling::set_grid (const std::shared_ptr<const GridsManager> /* grids_manager */) {
+void SurfaceCoupling::set_grids (const std::shared_ptr<const GridsManager> /* grids_manager */) {
   // Get the grid from the grids manager.
 }
 
-void SurfaceCoupling::initialize () {
+void SurfaceCoupling::initialize (const util::TimeStamp& /* t0 */) {
   // Initialize the FieldRepository (FR) for host fields
   // (i.e., fields that are I/O w.r.t the coupler)
 }
 
-void SurfaceCoupling::run ( /* inputs ? */ ) {
+void SurfaceCoupling::run (const double /* dt */) {
   // Recall that the surface coupling can (and usually does) happen
   // in the middle of an atm time step. Therefore, we first export
   // atm output fields to the coupler, then import atm input fields
@@ -43,7 +43,7 @@ void SurfaceCoupling::set_required_field_impl (const Field<const Real, device_ty
   /* impl */
 }
 
-void SurfaceCoupling::set_computed_field_impl (const Field<      Real, device_type>& /*f*/) {
+void SurfaceCoupling::set_computed_field_impl (const Field<Real, device_type>& /*f*/) {
   /* impl */
 }
 
