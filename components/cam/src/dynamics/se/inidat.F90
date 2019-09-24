@@ -72,7 +72,7 @@ contains
     real(r8), allocatable :: qtmp(:,:)     ! (npsp*nelemd,nlev)
     real(r8) :: ps(np,np)     
     logical,  allocatable :: tmpmask(:,:)  ! (npsp,nlev,nelemd) unique grid val
-    real(r8), allocatable :: phys_tmp(:,:) ! (nphys_sq,nelemd)
+    real(r8), allocatable :: phis_tmp(:,:) ! (nphys_sq,nelemd)
     integer :: nphys_sq                    ! # of fv physics columns per element
     integer :: ie, k, t
     integer :: indx_scm, ie_scm, i_scm, j_scm
@@ -129,7 +129,7 @@ contains
 
     if (fv_nphys>0) then
       nphys_sq = fv_nphys*fv_nphys
-      allocate(phys_tmp(nphys_sq,nelemd))
+      allocate(phis_tmp(nphys_sq,nelemd))
     end if
 
     if (par%dynproc) then
@@ -464,11 +464,11 @@ contains
       if (fv_nphys > 0) then
          ! Copy phis field to GLL grid
          call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
-              1, nelemd, phys_tmp, found, gridname='physgrid_d')
+              1, nelemd, phis_tmp, found, gridname='physgrid_d')
          if (se_fv_phys_remap_alg == 0) then
-            call fv_phys_to_dyn_topo(elem,phys_tmp)
+            call fv_phys_to_dyn_topo(elem,phis_tmp)
          else
-            call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phys_tmp)
+            call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
          end if
       else
          call infld(fieldname, ncid_topo, ncol_name,      &
