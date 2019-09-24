@@ -1,6 +1,218 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 8-29-2019
+Tag: cime5.8.9
+Answer Changes: None
+Tests:  scripts_regression_tests --compiler nag, SMS_D_Ln9.f19_f19_mg17.QPC6.izumi_nag
+Dependencies:
+
+Brief Summary:
+    - Fix nag compiler for CAM.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+    - 6026ca341 Merge pull request #3219 from ESMCI/fischer/nag
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/Depends.nag
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 8-26-2019
+Tag: cime5.8.8
+Answer Changes: None
+Tests: scripts_regression_tests, aux_mom 
+Dependencies:
+
+Brief Summary:
+    - Merge maint-5.6 branch.
+    - Add support for ne120pg3 using tx01.v3 mask.
+    - ACME merge 2019-08-20.
+    - Fix bad compset.
+    - Update ncpl and cpl_seq_option for mom6.
+    - Improve the config_compilers.xml schema.
+    - Overindented line fixed.
+    - ACME merge 2019-08-07.
+    - PIO2 update.
+    - Make sure output_root path is abspath.
+    - Use correct mask for ne16pg3 resolution.
+    - Changes to have TG compset with NUOPC cap work correctly.
+    - Point to new mapping files for r05 <-> f10 mapping.
+    - Fix some test fails.
+    - ACME merge 2019-07-22
+    - Remove test SMS.T42_T42.S when testing with nuopc driver.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+a9c9289f1 Merge branch 'maint-5.6'
+44fd46a43 Merge pull request #3208 from ESMCI/fischer/ne120pg3_tx13
+34e3dbe77 Merge pull request #3206 from ESMCI/jgfouca/branch-for-acme-split-2019-08-20
+0b1c5aab9 Merge pull request #3203 from gold2718/fix_bad_compset
+1c663d0e3 Merge pull request #3198 from alperaltuntas/update_mom6_ncpl
+74b5913c4 Merge pull request #3196 from jedwards4b/config_compiler_schema_improvement
+b0d5c1537 Merge pull request #3197 from jedwards4b/fix_indentation
+c2433ef3f Merge pull request #3195 from ESMCI/jgfouca/branch-for-acme-split-2019-08-07
+74afc1fc1 Merge pull request #3194 from jedwards4b/pio2_update
+97725f090 Merge pull request #3193 from jedwards4b/fix_output_root
+d1efcdc44 Merge pull request #3190 from gold2718/fix_ne16pg3_mask
+f1a4a59cd Merge pull request #3187 from ESMCI/mvertens/nuopc-cism-changes
+f2744838b Merge pull request #3186 from billsacks/fix_r05_f10_maps
+86f60dfd7 Merge pull request #3183 from ESMCI/jgfouca/fix_test_fails
+b6d24eab7 Merge pull request #3181 from ESMCI/jgfouca/branch-for-acme-split-2019-07-22
+d7f56ac8b Merge pull request #3178 from jedwards4b/nuopc_interface_fix
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_grids.xml
+M	config/cesm/config_grids_common.xml
+M	config/cesm/config_grids_mct.xml
+M	config/cesm/machines/config_compilers.xml
+M	config/cesm/machines/config_machines.xml
+M	config/e3sm/allactive/config_pesall.xml
+M	config/e3sm/config_grids.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/tests.py
+M	scripts/Tools/Makefile
+M	scripts/Tools/mkDepends
+M	scripts/Tools/preview_run
+M	scripts/climate_reproducibility/README.md
+D	scripts/climate_reproducibility/requirements.txt
+M	scripts/lib/CIME/Servers/ftp.py
+M	scripts/lib/CIME/SystemTests/homme.py
+M	scripts/lib/CIME/SystemTests/mvk.py
+M	scripts/lib/CIME/SystemTests/pgn.py
+M	scripts/lib/CIME/SystemTests/tsc.py
+M	scripts/lib/CIME/XML/compilers.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/XML/env_workflow.py
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/case/case.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/case/check_input_data.py
+M	scripts/lib/CIME/case/check_lockedfiles.py
+M	scripts/lib/CIME/case/preview_namelists.py
+M	scripts/lib/CIME/get_timing.py
+M	scripts/lib/CIME/hist_utils.py
+M	scripts/lib/CIME/nmlgen.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/jenkins_generic_job.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/dlnd/nuopc/dlnd_comp_mod.F90
+M	src/drivers/mct/cime_config/config_component.xml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/config_component_e3sm.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/seq_domain_mct.F90
+M	src/drivers/moab/main/cime_comp_mod.F90
+M	src/externals/pio2/.travis.yml
+M	src/externals/pio2/configure.ac
+A	src/externals/pio2/doc/source/netcdf_integration.txt
+M	src/externals/pio2/doc/source/users_guide.txt
+M	src/externals/pio2/examples/Makefile.am
+M	src/externals/pio2/examples/c/Makefile.am
+M	src/externals/pio2/examples/c/darray_async.c
+M	src/externals/pio2/examples/c/darray_no_async.c
+M	src/externals/pio2/examples/c/example1.c
+M	src/externals/pio2/examples/c/examplePio.c
+A	src/externals/pio2/examples/f03/Makefile.am
+A	src/externals/pio2/examples/f03/run_tests.sh
+M	src/externals/pio2/src/Makefile.am
+M	src/externals/pio2/src/clib/Makefile.am
+M	src/externals/pio2/src/clib/bget.c
+M	src/externals/pio2/src/clib/pio.h
+M	src/externals/pio2/src/clib/pio_darray.c
+M	src/externals/pio2/src/clib/pio_darray_int.c
+A	src/externals/pio2/src/clib/pio_error.h
+M	src/externals/pio2/src/clib/pio_file.c
+M	src/externals/pio2/src/clib/pio_get_nc.c
+M	src/externals/pio2/src/clib/pio_get_vard.c
+M	src/externals/pio2/src/clib/pio_getput_int.c
+M	src/externals/pio2/src/clib/pio_internal.h
+M	src/externals/pio2/src/clib/pio_lists.c
+M	src/externals/pio2/src/clib/pio_msg.c
+M	src/externals/pio2/src/clib/pio_nc.c
+M	src/externals/pio2/src/clib/pio_nc4.c
+M	src/externals/pio2/src/clib/pio_put_nc.c
+M	src/externals/pio2/src/clib/pio_put_vard.c
+M	src/externals/pio2/src/clib/pio_rearrange.c
+M	src/externals/pio2/src/clib/pio_spmd.c
+M	src/externals/pio2/src/clib/pioc.c
+M	src/externals/pio2/src/clib/pioc_sc.c
+M	src/externals/pio2/src/clib/pioc_support.c
+M	src/externals/pio2/src/flib/CMakeLists.txt
+M	src/externals/pio2/src/flib/Makefile.am
+A	src/externals/pio2/src/flib/ncint_mod.F90
+M	src/externals/pio2/src/flib/pio.F90
+M	src/externals/pio2/src/flib/pio_nf.F90
+M	src/externals/pio2/src/flib/pio_support.F90
+M	src/externals/pio2/src/flib/piodarray.F90.in
+M	src/externals/pio2/src/flib/piolib_mod.F90
+M	src/externals/pio2/src/flib/pionfatt_mod.F90.in
+M	src/externals/pio2/src/flib/pionfput_mod.F90.in
+A	src/externals/pio2/src/ncint/Makefile.am
+A	src/externals/pio2/src/ncint/nc_get_vard.c
+A	src/externals/pio2/src/ncint/nc_put_vard.c
+A	src/externals/pio2/src/ncint/ncint_pio.c
+A	src/externals/pio2/src/ncint/ncintdispatch.c
+A	src/externals/pio2/src/ncint/ncintdispatch.h
+M	src/externals/pio2/tests/Makefile.am
+M	src/externals/pio2/tests/cunit/Makefile.am
+M	src/externals/pio2/tests/cunit/pio_tests.h
+M	src/externals/pio2/tests/cunit/test_async_mpi.c
+M	src/externals/pio2/tests/cunit/test_async_multicomp.c
+M	src/externals/pio2/tests/cunit/test_async_perf.c
+M	src/externals/pio2/tests/cunit/test_common.c
+M	src/externals/pio2/tests/cunit/test_darray.c
+M	src/externals/pio2/tests/cunit/test_darray_async.c
+M	src/externals/pio2/tests/cunit/test_darray_async_many.c
+M	src/externals/pio2/tests/cunit/test_darray_async_simple.c
+M	src/externals/pio2/tests/cunit/test_perf2.c
+M	src/externals/pio2/tests/cunit/test_rearr.c
+A	src/externals/pio2/tests/fncint/Makefile.am
+A	src/externals/pio2/tests/fncint/ftst_pio.f90
+A	src/externals/pio2/tests/fncint/ftst_pio_orig.f90
+A	src/externals/pio2/tests/fncint/run_tests.sh
+A	src/externals/pio2/tests/fncint/tst_c_pio.c
+M	src/externals/pio2/tests/general/Makefile.am
+M	src/externals/pio2/tests/general/ncdf_get_put.F90.in
+M	src/externals/pio2/tests/general/ncdf_inq.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_fillval.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_frame_tests.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_tests.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_tests_1d.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_tests_2d.F90.in
+M	src/externals/pio2/tests/general/pio_decomp_tests_3d.F90.in
+M	src/externals/pio2/tests/general/pio_iosystem_tests.F90.in
+M	src/externals/pio2/tests/general/pio_iosystem_tests2.F90.in
+M	src/externals/pio2/tests/general/pio_iosystem_tests3.F90.in
+M	src/externals/pio2/tests/general/pio_rearr.F90.in
+M	src/externals/pio2/tests/general/pio_rearr_opts.F90.in
+M	src/externals/pio2/tests/general/pio_rearr_opts2.F90.in
+M	src/externals/pio2/tests/general/util/pio_tutil.F90
+A	src/externals/pio2/tests/ncint/Makefile.am
+A	src/externals/pio2/tests/ncint/run_tests.sh
+A	src/externals/pio2/tests/ncint/tst_pio_udf.c
+M	src/externals/pio2/tests/performance/Makefile.am
+M	src/externals/pio2/tests/unit/Makefile.am
+M	src/externals/pio2/tests/unit/basic_tests.F90
+M	src/externals/pio2/tests/unit/driver.F90
+M	src/externals/pio2/tests/unit/ncdf_tests.F90
+M	src/share/util/shr_pio_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 7-19-209
 Tag: cime5.8.7
 Answer Changes: Climate changing for CAM ne120, ne120pg3, ne0CONUS grids
