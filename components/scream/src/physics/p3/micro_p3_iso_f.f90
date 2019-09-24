@@ -74,6 +74,91 @@ interface
 
   end subroutine ice_water_conservation_f
 
+  subroutine get_cloud_dsd2_f(qc,nc,mu_c,rho,nu,lamc,cdist,cdist1,lcldm) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in)         :: qc,rho,lcldm
+    real(kind=c_real), intent(inout)             :: nc
+    real(kind=c_real), intent(out)               :: mu_c,nu,lamc,cdist,cdist1
+  end subroutine get_cloud_dsd2_f
+
+  subroutine get_rain_dsd2_f(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: qr,rcldm
+    real(kind=c_real), intent(inout)     :: nr
+    real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
+  end subroutine get_rain_dsd2_f
+
+  !
+  ! These are some routine math operations that are not BFB between
+  ! fortran and C++ on all platforms, so fortran will need to use
+  ! the C++ versions in order to stay BFB.
+  !
+
+  function cxx_pow(base, exp) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in)  :: base
+    real(kind=c_real), value, intent(in)  :: exp
+
+    ! return
+    real(kind=c_real)               :: cxx_pow
+  end function cxx_pow
+
+  function cxx_cbrt(base) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in)  :: base
+
+    ! return
+    real(kind=c_real)               :: cxx_cbrt
+  end function cxx_cbrt
+
+  function cxx_gamma(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: cxx_gamma
+  end function cxx_gamma
+
+  function cxx_log(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: cxx_log
+  end function cxx_log
+
+  function cxx_log10(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: cxx_log10
+  end function cxx_log10
+
+  function cxx_exp(input) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: input
+
+    ! return
+    real(kind=c_real)            :: cxx_exp
+  end function cxx_exp
+
 end interface
 
 end module micro_p3_iso_f

@@ -35,6 +35,22 @@
 ! variables and outputs expected in E3SM.                                                  !
 !__________________________________________________________________________________________!
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+#  define bfb_pow(base, exp) cxx_pow(base, exp)
+#  define bfb_cbrt(base) cxx_cbrt(base)
+#  define bfb_gamma(val) cxx_gamma(val)
+#  define bfb_log(val) cxx_log(val)
+#  define bfb_log10(val) cxx_log10(val)
+#  define bfb_exp(val) cxx_exp(val)
+#else
+#  define bfb_pow(base, exp) base**exp
+#  define bfb_cbrt(base) base**thrd
+#  define bfb_gamma(val) gamma(val)
+#  define bfb_log(val) log(val)
+#  define bfb_log10(val) log10(val)
+#  define bfb_exp(val) exp(val)
+#endif
+
 module micro_p3
 
    ! get real kind from utils
@@ -330,8 +346,6 @@ contains
 
     enddo mu_r_loop
 
-   return
-
   END SUBROUTINE p3_init_b
 
   !==========================================================================================!
@@ -497,7 +511,7 @@ contains
          rhofacr,rhofaci,acn,xxls,xxlv,xlf,qvs,qvi,sup,supi,       &
          tmparr1,inv_exner
 
-    real(rtype)    :: lammax,lammin,mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi_tot, &
+    real(rtype)    :: mu,dv,sc,dqsdt,ab,kap,epsr,epsc,epsi_tot, &
          dum,dum1,    &
          dum3,dum4,dum5,dum6, &
          dqsidt,abi,rhop,tmp1,  &
@@ -757,7 +771,7 @@ contains
           mu,dv,sc,dqsdt,dqsidt,ab,abi,kap,eii)
 
           call get_cloud_dsd2(qc_incld(i,k),nc_incld(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,lamc(i,k),     &
-               lammin,lammax,cdist(i,k),cdist1(i,k),lcldm(i,k))
+               cdist(i,k),cdist1(i,k),lcldm(i,k))
           nc(i,k) = nc_incld(i,k)*lcldm(i,k)
 
           call get_rain_dsd2(qr_incld(i,k),nr_incld(i,k),mu_r(i,k),lamr(i,k),   &
@@ -1130,7 +1144,7 @@ contains
 
        call cloud_sedimentation(kts,kte,ktop,kbot,kdir, &
          qc_incld(i,:),rho(i,:),inv_rho(i,:),lcldm(i,:),acn(i,:),inv_dzq(i,:), &
-         dt,odt,dnu,lammin,lammax,log_predictNc, &
+         dt,odt,dnu,log_predictNc, &
          qc(i,:),nc(i,:),nc_incld(i,:),mu_c(i,:),lamc(i,:),prt_liq(i),p3_tend_out(i,:,36),p3_tend_out(i,:,37))
 
        !------------------------------------------------------------------------------------------!
@@ -1168,7 +1182,7 @@ contains
           ! cloud:
           if (qc(i,k).ge.qsmall) then
              call get_cloud_dsd2(qc(i,k),nc(i,k),mu_c(i,k),rho(i,k),nu(i,k),dnu,lamc(i,k),  &
-                  lammin,lammax,tmp1,tmp2,lcldm(i,k))
+                  tmp1,tmp2,lcldm(i,k))
              diag_effc(i,k) = 0.5_rtype*(mu_c(i,k)+3._rtype)/lamc(i,k)
           else
              qv(i,k) = qv(i,k)+qc(i,k)
@@ -1529,7 +1543,7 @@ contains
     ! Finds indices in 3D ice (only) lookup table
     !------------------------------------------------------------------------------------------!
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: find_lookuptable_indices_1a_f
+    use micro_p3_iso_f, only: find_lookuptable_indices_1a_f, cxx_log10
 #endif
 
     implicit none
@@ -1547,14 +1561,14 @@ contains
        return
     endif
 #endif
+
     !------------------------------------------------------------------------------------------!
     ! find index for qi (normalized ice mass mixing ratio = qitot/nitot)
     !             dum1 = (log10(qitot)+16.)/0.70757  !orig
     !             dum1 = (log10(qitot)+16.)*1.41328
     ! we are inverting this equation from the lookup table to solve for i:
     ! qitot/nitot=261.7**((i+10)*0.1)*1.e-18
-    !dum1 = (log10(qitot/nitot)+18.)/(0.1*log10(261.7))-10.
-    dum1 = (log10(qitot/nitot)+18._rtype)*lookup_table_1a_dum1_c-10._rtype ! For computational efficiency
+    dum1 = (bfb_log10(qitot/nitot)+18._rtype)*lookup_table_1a_dum1_c-10._rtype ! For computational efficiency
     dumi = int(dum1)
     ! set limits (to make sure the calculated index doesn't exceed range of lookup table)
     dum1 = min(dum1,real(isize))
@@ -1599,7 +1613,7 @@ contains
     ! Finds indices in 3D rain lookup table
     !------------------------------------------------------------------------------------------!
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: find_lookuptable_indices_1b_f
+    use micro_p3_iso_f, only: find_lookuptable_indices_1b_f, cxx_cbrt, cxx_log10
 #endif
 
     implicit none
@@ -1626,8 +1640,8 @@ contains
     ! if no rain, then just choose dumj = 1 and do not calculate rain-ice collection processes
     if (qr.ge.qsmall .and. nr.gt.0._rtype) then
        ! calculate scaled mean size for consistency with ice lookup table
-       dumlr = (qr/(pi*rhow*nr))**thrd
-       dum3  = (log10(1._rtype*dumlr)+5._rtype)*10.70415_rtype
+       dumlr = bfb_cbrt(qr/(pi*rhow*nr))
+       dum3  = (bfb_log10(1._rtype*dumlr)+5._rtype)*10.70415_rtype
        dumj  = int(dum3)
        ! set limits
        dum3  = min(dum3,real_rcollsize)
@@ -1695,7 +1709,11 @@ contains
 
 
   !===========================================================================================
-  subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,lammin,lammax,cdist,cdist1,lcldm)
+  subroutine get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,lcldm)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: get_cloud_dsd2_f, cxx_pow, cxx_gamma, cxx_cbrt
+#endif
 
     implicit none
 
@@ -1711,12 +1729,21 @@ contains
 
     !--------------------------------------------------------------------------
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call get_cloud_dsd2_f(qc,nc,mu_c,rho,nu,lamc,cdist,cdist1,lcldm)
+       return
+    endif
+#endif
+
+    nu = 0.0_rtype
+
     if (qc.ge.qsmall) then
 
        ! set minimum nc to prevent floating point error
        nc   = max(nc,nsmall)
        mu_c = 0.0005714_rtype*(nc*1.e-6_rtype*rho)+0.2714_rtype
-       mu_c = 1._rtype/(mu_c**2)-1._rtype
+       mu_c = 1._rtype/(mu_c*mu_c)-1._rtype
        mu_c = max(mu_c,2._rtype)
        mu_c = min(mu_c,15._rtype)
 
@@ -1727,7 +1754,7 @@ contains
        endif
 
        ! calculate lamc
-       lamc = (cons1*nc*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype)/qc)**thrd
+       lamc = bfb_cbrt(cons1*nc*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype)/qc)
 
        ! apply lambda limiters
        lammin = (mu_c+1._rtype)*2.5e+4_rtype   ! min: 40 micron mean diameter
@@ -1735,14 +1762,14 @@ contains
 
        if (lamc.lt.lammin) then
           lamc = lammin
-          nc   = 6._rtype*lamc**3*qc/(pi*rhow*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype))
+          nc   = 6._rtype*(lamc*lamc*lamc)*qc/(pi*rhow*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype))
        elseif (lamc.gt.lammax) then
           lamc = lammax
-          nc   = 6._rtype*lamc**3*qc/(pi*rhow*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype))
+          nc   = 6._rtype*(lamc*lamc*lamc)*qc/(pi*rhow*(mu_c+3._rtype)*(mu_c+2._rtype)*(mu_c+1._rtype))
        endif
 
        cdist  = nc*(mu_c+1._rtype)/lamc
-       cdist1 = nc*lcldm/gamma(mu_c+1._rtype)
+       cdist1 = nc*lcldm/bfb_gamma(mu_c+1._rtype)
 
     else
 
@@ -1760,6 +1787,10 @@ contains
   !===========================================================================================
   subroutine get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: get_rain_dsd2_f, cxx_pow, cxx_gamma, cxx_cbrt, cxx_log10, cxx_exp, cxx_log
+#endif
+
     ! Computes and returns rain size distribution parameters
 
     implicit none
@@ -1774,6 +1805,13 @@ contains
 
     !--------------------------------------------------------------------------
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call get_rain_dsd2_f(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
+       return
+    endif
+#endif
+
     if (qr.ge.qsmall) then
 
        ! use lookup table to get mu
@@ -1782,25 +1820,25 @@ contains
        ! find spot in lookup table
        ! (scaled N/q for lookup table parameter space_
        nr      = max(nr,nsmall)
-       inv_dum = (qr/(cons1*nr*6._rtype))**thrd
+       inv_dum = bfb_cbrt(qr/(cons1*nr*6._rtype))
 
        ! Apply constant mu_r:  Recall the switch to v4 tables means constant mu_r
        mu_r = mu_r_constant
-       lamr   = (cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr))**thrd  ! recalculate slope based on mu_r
+       lamr   = bfb_cbrt(cons1*nr*(mu_r+3._rtype)*(mu_r+2._rtype)*(mu_r+1._rtype)/(qr))  ! recalculate slope based on mu_r
        lammax = (mu_r+1._rtype)*1.e+5_rtype   ! check for slope
        lammin = (mu_r+1._rtype)*1250._rtype   ! set to small value since breakup is explicitly included (mean size 0.8 mm)
 
        ! apply lambda limiters for rain
        if (lamr.lt.lammin) then
           lamr = lammin
-          nr   = exp(3._rtype*log(lamr)+log(qr)+log(gamma(mu_r+1._rtype))-log(gamma(mu_r+4._rtype)))/(cons1)
+          nr   = bfb_exp(3._rtype*bfb_log(lamr)+bfb_log(qr)+bfb_log(bfb_gamma(mu_r+1._rtype))-bfb_log(bfb_gamma(mu_r+4._rtype)))/(cons1)
        elseif (lamr.gt.lammax) then
           lamr = lammax
-          nr   = exp(3._rtype*log(lamr)+log(qr)+log(gamma(mu_r+1._rtype))-log(gamma(mu_r+4._rtype)))/(cons1)
+          nr   = bfb_exp(3._rtype*bfb_log(lamr)+bfb_log(qr)+bfb_log(bfb_gamma(mu_r+1._rtype))-bfb_log(bfb_gamma(mu_r+4._rtype)))/(cons1)
        endif
 
-       cdistr  = nr*rcldm/gamma(mu_r+1._rtype)
-       logn0r  = log10(nr)+(mu_r+1._rtype)*log10(lamr)-log10(gamma(mu_r+1._rtype)) !note: logn0r is calculated as log10(n0r)
+       cdistr  = nr*rcldm/bfb_gamma(mu_r+1._rtype)
+       logn0r  = bfb_log10(nr)+(mu_r+1._rtype)*bfb_log10(lamr)-bfb_log10(bfb_gamma(mu_r+1._rtype)) !note: logn0r is calculated as log10(n0r)
 
     else
 
@@ -3328,7 +3366,7 @@ end subroutine get_time_space_phys_variables
 
 subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
-   dt,odt,dnu,lammin,lammax,log_predictNc, &
+   dt,odt,dnu,log_predictNc, &
    qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend)
 
    implicit none
@@ -3344,8 +3382,6 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), intent(in) :: dt
    real(rtype), intent(in) :: odt
    real(rtype), dimension(:), intent(in) :: dnu
-   real(rtype), intent(in) :: lammin
-   real(rtype), intent(in) :: lammax
    logical, intent(in) :: log_predictNc
 
    real(rtype), intent(inout), dimension(kts:kte) :: qc
@@ -3413,7 +3449,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                qc_notsmall_c2: if (qc_incld(k)>qsmall) then
                   !-- compute Vq, Vn
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
-                  lamc(k),lammin,lammax,tmp1,tmp2,lcldm(k))
+                  lamc(k),tmp1,tmp2,lcldm(k))
 
                   nc(k) = nc_incld(k)*lcldm(k)
                   dum = 1._rtype/lamc(k)**bcn
@@ -3461,7 +3497,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
             kloop_sedi_c1: do k = k_qxtop,k_qxbot,-kdir
                qc_notsmall_c1: if (qc_incld(k)>qsmall) then
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
-                  lamc(k),lammin,lammax,tmp1,tmp2,lcldm(k))
+                  lamc(k),tmp1,tmp2,lcldm(k))
                   nc(k) = nc_incld(k)*lcldm(k)
                   dum = 1._rtype/lamc(k)**bcn
                   V_qc(k) = acn(k)*gamma(4._rtype+bcn+mu_c(k))*dum/(gamma(mu_c(k)+4._rtype))

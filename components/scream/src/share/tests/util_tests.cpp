@@ -1,6 +1,7 @@
 #include <catch2/catch.hpp>
 
 #include "share/util/scream_utils.hpp"
+#include "share/util/string_utils.hpp"
 #include "share/scream_pack.hpp"
 #include "share/scream_kokkos_meta.hpp"
 
@@ -68,6 +69,20 @@ TEST_CASE("Unmanaged", "scream::ko") {
                   "VUm </- CVUm");
     CVUm cv_um(v);
   }
+}
+
+TEST_CASE("string","string") {
+  using namespace scream;
+
+  util::CaseInsensitiveString cis1 = "field_1";
+  util::CaseInsensitiveString cis2 = "fIeLd_1";
+  util::CaseInsensitiveString cis3 = "field_2";
+  util::CaseInsensitiveString cis4 = "feld_1";
+
+  REQUIRE (cis1==cis2);
+  REQUIRE (cis1!=cis3);
+  REQUIRE (cis4<=cis1);
+  REQUIRE (cis4<cis1);
 }
 
 } // empty namespace

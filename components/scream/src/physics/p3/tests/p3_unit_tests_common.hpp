@@ -43,6 +43,7 @@ struct UnitWrap {
     using view_itabcol_table = typename Functions::view_itabcol_table;
     using view_1d_table      = typename Functions::view_1d_table;
     using view_2d_table      = typename Functions::view_2d_table;
+    using view_dnu_table     = typename Functions::view_dnu_table;
     using Scalar             = typename Functions::Scalar;
     using Spack              = typename Functions::Spack;
     using Pack               = typename Functions::Pack;
@@ -59,6 +60,7 @@ struct UnitWrap {
     struct TestFind;
     struct TestUpwind;
     struct TestP3Func;
+    struct TestDsd2;
     struct TestP3Conservation; 
   };
 

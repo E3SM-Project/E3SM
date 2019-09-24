@@ -3,6 +3,9 @@
 
 #include <sstream>
 #include <exception>
+#include <assert.h>
+#include <stdexcept>  // For std::logic_error
+#include "scream_config.h"
 
 /*
  * Asserts and error checking for Scream.
@@ -47,6 +50,32 @@
 #define scream_krequire(condition)          impl_kthrow(condition, "")
 #define scream_require_msg(condition, msg)  impl_throw(condition, msg, std::logic_error)
 #define scream_krequire_msg(condition, msg) impl_kthrow(condition, msg)
+
+#define scream_error_msg(msg)               impl_throw(false, msg, std::logic_error)
+
+// Macros to do asserts inside constexpr functions
+// This is not necessary with C++14, where constexpr functions are "regular"
+// functions (they just can be evaluated at compile time). But in C++11 you can only have
+// 'return blah;' in a constexpr function, and user-defined constexpr constructors must
+// have an empty body (only initializer list syntax allowed).
+// NOTE: doing `return assert(check), blah;` seems the right solution, but it seems
+//       older versions of gcc may not like this option even if check evaluates to true.
+// As soon as we can use C++14, this macro can be removed, and you can simply use
+// `assert(check);` in the body of the constexpr function.
+#if defined(NDEBUG) || !defined(SCREAM_CONSTEXPR_ASSERT)
+#define CONSTEXPR_ASSERT(CHECK) void(0)
+#else
+namespace impl {
+struct assert_failure {
+  explicit assert_failure(const char *sz)
+  {
+    std::fprintf(stderr, "Assertion failure: %s\n", sz);
+  }
+};
+}
+#define CONSTEXPR_ASSERT(CHECK) \
+    ( (CHECK) ? void(0) : throw impl::assert_failure(#CHECK), void(0) )
+#endif
 
 namespace scream {
 namespace error {

@@ -4,6 +4,7 @@ namespace scream {
 
 FieldAllocProp::FieldAllocProp (const FieldLayout& layout)
  : m_layout           (layout)
+ , m_value_type_sizes (0)
  , m_scalar_type_size (0)
  , m_scalar_type_name ("")
  , m_alloc_size       (0)
@@ -20,8 +21,8 @@ void FieldAllocProp::commit ()
   }
 
   // Sanity checks: we must have requested at least one value type, and the identifier needs all dimensions set by now.
-  error::runtime_check(m_value_type_sizes.size()>0, "Error! No value types requested for the allocation.\n");
-  error::runtime_check(m_layout.are_dimensions_set(), "Error! You need all field dimensions set before committing the allocation properties.\n");
+  scream_require_msg(m_value_type_sizes.size()>0, "Error! No value types requested for the allocation.\n");
+  scream_require_msg(m_layout.are_dimensions_set(), "Error! You need all field dimensions set before committing the allocation properties.\n");
 
   // Loop on all value type sizes.
   m_last_dim_alloc_size = 0;
@@ -33,9 +34,7 @@ void FieldAllocProp::commit ()
     const int num_last_dim_value_types = (m_layout.dims().back() + num_scalars_in_value_type - 1) / num_scalars_in_value_type;
 
     // The size of such allocation (along the last dim only)
-    const int tmp = std::max(m_last_dim_alloc_size, vts * num_last_dim_value_types);
-
-    m_last_dim_alloc_size = std::max(m_alloc_size, tmp);
+    m_last_dim_alloc_size = std::max(m_last_dim_alloc_size, vts * num_last_dim_value_types);
   }
 
   m_alloc_size = (m_layout.size() / m_layout.dims().back()) // All except the last dimension

@@ -45,6 +45,7 @@ struct Constants
   static constexpr Scalar CP          = Cpair;          // heat constant of air at constant pressure, J/kg
   static constexpr Scalar INV_CP      = 1.0/CP;
   static constexpr Scalar Tol         = std::numeric_limits<Scalar>::epsilon(); 
+  static constexpr Scalar mu_r_const  = 1.0;
 };
 
 template <typename Scalar>

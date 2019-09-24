@@ -11,7 +11,6 @@ using scream::Int;
 // A C++ interface to micro_p3 fortran calls and vice versa
 //
 
-
 extern "C" {
 
 void p3_init_a_c(Real* itab, Real* itabcol);
@@ -36,6 +35,12 @@ void rain_water_conservation_c(Real qr, Real qcaut, Real qcacc, Real qimlt, Real
 
 void ice_water_conservation_c(Real qitot, Real qidep, Real qinuc, Real qiberg, Real qrcol, Real qccol,
   Real qrheti, Real qcheti, Real dt, Real* qisub, Real* qimlt);
+
+void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* lamc,
+                      Real* cdist, Real* cdist1, Real lcldm);
+
+void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
+
 }
 
 namespace scream {
@@ -99,6 +104,21 @@ void ice_water_conservation(IceWaterConservationData& d){
   p3_init(true);
   ice_water_conservation_c(d.qitot, d.qidep, d.qinuc, d.qiberg, d.qrcol, d.qccol, d.qrheti,
     d.qcheti, d.dt, &d.qisub, &d.qimlt);
+
+void get_cloud_dsd2(GetCloudDsd2Data& d)
+{
+  p3_init(true);
+  Real nc_in = d.nc_in;
+  get_cloud_dsd2_c(d.qc, &nc_in, &d.mu_c, d.rho, &d.nu, &d.lamc, &d.cdist, &d.cdist1, d.lcldm);
+  d.nc_out = nc_in;
+}
+
+void get_rain_dsd2(GetRainDsd2Data& d)
+{
+  p3_init(true);
+  Real nr_in = d.nr_in;
+  get_rain_dsd2_c(d.qr, &nr_in, &d.mu_r, &d.lamr, &d.cdistr, &d.logn0r, d.rcldm);
+  d.nr_out = nr_in;
 }
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
@@ -108,6 +128,7 @@ const P3GlobalForFortran::Views& P3GlobalForFortran::get()
   if (!P3GlobalForFortran::s_views) {
     P3GlobalForFortran::s_views = std::make_shared<Views>();
     P3F::init_kokkos_ice_lookup_tables(s_views->m_itab, s_views->m_itabcol);
+    P3F::init_kokkos_tables(s_views->m_vn_table, s_views->m_vm_table, s_views->m_mu_r_table, s_views->m_dnu);
   }
   return *P3GlobalForFortran::s_views;
 }
@@ -121,15 +142,18 @@ void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
                                    Real* dum1, Real* dum4, Real* dum5, Real* dum6,
                                    Real qitot_, Real nitot_, Real qirim_, Real rhop_)
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
+  using TableIce = typename P3F::TableIce;
 
-  typename P3F::Smask qiti_gt_small(true);
-  typename P3F::Spack qitot(qitot_);
-  typename P3F::Spack nitot(nitot_);
-  typename P3F::Spack qirim(qirim_);
-  typename P3F::Spack rhop(rhop_);
-  typename P3F::TableIce t;
-  P3F::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t);
+  typename P3F::Smask qiti_gt_small(qitot_ > P3F::C::QSMALL);
+  typename P3F::Spack qitot(qitot_), nitot(nitot_), qirim(qirim_), rhop(rhop_);
+  typename P3F::view_1d<TableIce> t_d("t_h", 1);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    P3F::lookup_ice(qiti_gt_small, qitot, nitot, qirim, rhop, t_d(0));
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  auto& t = t_h(0);
 
   // adjust for 1-based indexing
   *dumi  = t.dumi[0]  + 1;
@@ -145,13 +169,20 @@ void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
 
 void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr_, Real nr_)
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
+  using TableRain = typename P3F::TableRain;
 
+  // we can assume fortran would not be calling this routine if qiti_gt_small was not true
   typename P3F::Smask qiti_gt_small(true);
-  typename P3F::Spack qr(qr_);
-  typename P3F::Spack nr(nr_);
-  typename P3F::TableRain t;
-  P3F::lookup_rain(qiti_gt_small, qr, nr, t);
+
+  typename P3F::Spack qr(qr_), nr(nr_);
+  typename P3F::view_1d<TableRain> t_d("t_h", 1);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    P3F::lookup_rain(qiti_gt_small, qr, nr, t_d(0));
+  });
+  Kokkos::deep_copy(t_h, t_d);
+  auto& t = t_h(0);
 
   // adjust for 1-based indexing
   *dumj = t.dumj[0] + 1;
@@ -162,8 +193,9 @@ void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr_, Real nr_)
 void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
                            Real dum1, Real dum4, Real dum5, Real* proc)
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
 
+  // we can assume fortran would not be calling this routine if qiti_gt_small was not true
   typename P3F::Smask qiti_gt_small(true);
   typename P3F::TableIce t;
 
@@ -178,15 +210,22 @@ void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
   t.dum4 = dum4;
   t.dum5 = dum5;
 
-  *proc = P3F::apply_table_ice(qiti_gt_small, adjusted_index, P3GlobalForFortran::itab(), t)[0];
+  auto itab = P3GlobalForFortran::itab();
+  Real result;
+  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
+    value = P3F::apply_table_ice(qiti_gt_small, adjusted_index, itab, t)[0];
+  }, result);
+  *proc = result;
 }
 
 void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int index,
                                 Real dum1, Real dum3, Real dum4, Real dum5, Real* proc)
 {
-  using P3F = Functions<Real, HostDevice>;
+  using P3F = Functions<Real, DefaultDevice>;
 
+  // we can assume fortran would not be calling this routine if qiti_gt_small was not true
   typename P3F::Smask qiti_gt_small(true);
+
   typename P3F::TableIce ti;
   typename P3F::TableRain tr;
 
@@ -203,7 +242,165 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
   ti.dum5 = dum5;
   tr.dum3 = dum3;
 
-  *proc = P3F::apply_table_coll(qiti_gt_small, adjusted_index, P3GlobalForFortran::itabcol(), ti, tr)[0];
+  auto itabcol = P3GlobalForFortran::itabcol();
+  Real result;
+  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
+    value = P3F::apply_table_coll(qiti_gt_small, adjusted_index, itabcol, ti, tr)[0];
+  }, result);
+  *proc = result;
+}
+
+void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Real* lamc_,
+                      Real* cdist_, Real* cdist1_, Real lcldm_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::Smask qc_gt_small(qc_ > P3F::C::QSMALL);
+  typename P3F::view_1d<Real> t_d("t_h", 6);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_nc = *nc_;
+  auto dnu = P3GlobalForFortran::dnu();
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    typename P3F::Spack qc(qc_), nc(local_nc), rho(rho_), lcldm(lcldm_);
+    typename P3F::Spack mu_c, nu, lamc, cdist, cdist1;
+
+    P3F::get_cloud_dsd2(qc_gt_small, qc, nc, mu_c, rho, nu, dnu, lamc, cdist, cdist1, lcldm);
+
+    t_d(0) = nc[0];
+    t_d(1) = mu_c[0];
+    t_d(2) = nu[0];
+    t_d(3) = lamc[0];
+    t_d(4) = cdist[0];
+    t_d(5) = cdist1[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *nc_     = t_h(0);
+  *mu_c_   = t_h(1);
+  *nu_     = t_h(2);
+  *lamc_   = t_h(3);
+  *cdist_  = t_h(4);
+  *cdist1_ = t_h(5);
+}
+
+void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr_, Real* logn0r_, Real rcldm_)
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::Smask qr_gt_small(qr_ > P3F::C::QSMALL);
+  typename P3F::view_1d<Real> t_d("t_h", 5);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+  Real local_nr = *nr_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    typename P3F::Spack qr(qr_), rcldm(rcldm_), nr(local_nr);
+    typename P3F::Spack lamr, mu_r, cdistr, logn0r;
+
+    P3F::get_rain_dsd2(qr_gt_small, qr, nr, mu_r, lamr, cdistr, logn0r, rcldm);
+
+    t_d(0) = nr[0];
+    t_d(1) = mu_r[0];
+    t_d(2) = lamr[0];
+    t_d(3) = cdistr[0];
+    t_d(4) = logn0r[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *nr_     = t_h(0);
+  *mu_r_   = t_h(1);
+  *lamr_   = t_h(2);
+  *cdistr_ = t_h(3);
+  *logn0r_ = t_h(4);
+}
+
+// Cuda implementations of std math routines are not necessarily BFB
+// with the host.
+template <typename ScalarT, typename DeviceT>
+struct CudaWrap
+{
+  using Scalar = ScalarT;
+
+  static Scalar cxx_pow(Scalar base, Scalar exp)
+  {
+    Scalar result;
+    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
+        value = std::pow(base, exp);
+    }, result);
+
+    return result;
+  }
+
+#define cuda_wrap_single_arg(wrap_name, func_call)      \
+static Scalar wrap_name(Scalar input) {                 \
+  Scalar result;                                        \
+  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) { \
+    value = func_call(input);                                         \
+  }, result);                                                         \
+  return result;                                                      \
+}
+
+  cuda_wrap_single_arg(cxx_gamma, std::tgamma)
+  cuda_wrap_single_arg(cxx_cbrt, std::cbrt)
+  cuda_wrap_single_arg(cxx_log, std::log)
+  cuda_wrap_single_arg(cxx_log10, std::log10)
+  cuda_wrap_single_arg(cxx_exp, std::exp)
+
+#undef cuda_wrap_single_arg
+};
+
+Real cxx_pow(Real base, Real exp)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_pow(base, exp);
+#else
+  return std::pow(base, exp);
+#endif
+}
+
+Real cxx_gamma(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_gamma(input);
+#else
+  return std::tgamma(input);
+#endif
+}
+
+Real cxx_cbrt(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_cbrt(input);
+#else
+  return std::cbrt(input);
+#endif
+}
+
+Real cxx_log(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_log(input);
+#else
+  return std::log(input);
+#endif
+}
+
+Real cxx_log10(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_log10(input);
+#else
+  return std::log10(input);
+#endif
+}
+
+Real cxx_exp(Real input)
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  return CudaWrap<Real, DefaultDevice>::cxx_exp(input);
+#else
+  return std::exp(input);
+#endif
 }
 
 void cloud_water_conservation_f(Real qc_, Real qcnuc_, Real dt, Real* qcaut_, Real* qcacc_, Real* qccol_,

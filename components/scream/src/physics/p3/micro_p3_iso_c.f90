@@ -225,6 +225,7 @@ contains
     call access_lookup_table_coll(dumjj,dumii,dumj,dumi,index,dum1,dum3,dum4,dum5,proc)
   end subroutine access_lookup_table_coll_c
 
+
   subroutine cloud_water_conservation_c(qc,qcnuc,dt,qcaut,qcacc,qccol,qcheti,qcshd,     &
     qiberg,qisub,qidep) bind(C)
     use micro_p3, only: cloud_water_conservation
@@ -255,5 +256,27 @@ contains
     call ice_water_conservation(qitot,qidep,qinuc,qrcol,qccol,qrheti,qcheti,qiberg,dt,qisub,qimlt)
   end subroutine ice_water_conservation_c
 
+  subroutine get_cloud_dsd2_c(qc,nc,mu_c,rho,nu,lamc,cdist,cdist1,lcldm) bind(C)
+    use micro_p3, only: get_cloud_dsd2
+    use micro_p3_utils, only: dnu
+
+    !arguments:
+    real(kind=c_real), value, intent(in)        :: qc,rho,lcldm
+    real(kind=c_real), intent(inout)            :: nc
+    real(kind=c_real), intent(out)              :: mu_c,nu,lamc,cdist,cdist1
+
+    call get_cloud_dsd2(qc,nc,mu_c,rho,nu,dnu,lamc,cdist,cdist1,lcldm)
+  end subroutine get_cloud_dsd2_c
+
+  subroutine get_rain_dsd2_c(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm) bind(C)
+    use micro_p3, only: get_rain_dsd2
+
+    !arguments:
+    real(kind=c_real), value, intent(in) :: qr,rcldm
+    real(kind=c_real), intent(inout)     :: nr
+    real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
+
+    call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
+  end subroutine get_rain_dsd2_c
 
 end module micro_p3_iso_c
