@@ -453,23 +453,14 @@ contains
 
     if ( (ideal_phys .or. aqua_planet)) then
        tmp(:,1,:) = 0._r8
-       if (fv_nphys>0) then
-          do ie=1,nelemd
-             fv_physgrid(ie)%topo(:,:) = 0
-          end do
-       end if
+       phis_tmp(:,:) = 0._r8
     else    
       fieldname = 'PHIS'
       tmp(:,1,:) = 0.0_r8
       if (fv_nphys > 0) then
-         ! Copy phis field to GLL grid
+         ! Load phis field to GLL grid first
          call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
               1, nelemd, phis_tmp, found, gridname='physgrid_d')
-         if (se_fv_phys_remap_alg == 0) then
-            call fv_phys_to_dyn_topo(elem,phis_tmp)
-         else
-            call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
-         end if
       else
          call infld(fieldname, ncid_topo, ncol_name,      &
             1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
@@ -480,6 +471,13 @@ contains
     end if
 
     if (fv_nphys == 0) then
+      ! Map phis data to FV physics grid
+      if (se_fv_phys_remap_alg == 0) then
+         call fv_phys_to_dyn_topo(elem,phis_tmp)
+      else
+         call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
+      end if
+      ! Copy phis data to element state
       do ie=1,nelemd
          elem(ie)%state%phis=0.0_r8
          indx = 1
