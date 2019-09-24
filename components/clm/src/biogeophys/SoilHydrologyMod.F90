@@ -18,7 +18,8 @@ module SoilHydrologyMod
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp
   use ColumnDataType    , only : col_es, col_ws, col_wf  
-  use VegetationType    , only : veg_pp     
+  use VegetationType    , only : veg_pp
+  use VegetationDataType, only : veg_wf  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -103,6 +104,8 @@ contains
          qflx_evap_grnd   =>    col_wf%qflx_evap_grnd   , & ! Input:  [real(r8) (:)   ]  ground surface evaporation rate (mm H2O/s) [+]    
          qflx_top_soil    =>    col_wf%qflx_top_soil    , & ! Output: [real(r8) (:)   ]  net water input into soil from top (mm/s)         
          qflx_surf        =>    col_wf%qflx_surf        , & ! Output: [real(r8) (:)   ]  surface runoff (mm H2O /s)                        
+         qflx_irrig       =>    col_wf%qflx_irrig       , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)
+         irrig_rate       =>    veg_wf%irrig_rate       , & ! Input:  [real(r8) (:)   ]  current irrigation rate (applied if !n_irrig_steps_left > 0) [mm/s]
 
          zwt              =>    soilhydrology_vars%zwt_col          , & ! Input:  [real(r8) (:)   ]  water table depth (m)                             
          max_moist        =>    soilhydrology_vars%max_moist_col    , & ! Input:  [real(r8) (:,:) ]  maximum soil moisture (ice + liq, mm)            
@@ -543,6 +546,7 @@ contains
      use clm_varpar       , only : nlevsoi, nlevgrnd
      use column_varcon    , only : icol_roof, icol_road_imperv
      use clm_varctl       , only : use_vsfm, use_var_soil_thick
+     use domainMod        , only : ldomain
      use SoilWaterMovementMod, only : zengdecker_2009_with_var_soil_thick
      !
      ! !ARGUMENTS:
@@ -558,7 +562,7 @@ contains
      type(waterflux_type)     , intent(inout) :: waterflux_vars
      !
      ! !LOCAL VARIABLES:
-     integer  :: c,j,fc,i                                ! indices
+     integer  :: c,j,fc,i,l,g                            ! indices
      integer  :: nlevbed                                 ! # layers to bedrock
      real(r8) :: dtime                                   ! land model time step (sec)
      real(r8) :: xs(bounds%begc:bounds%endc)             ! water needed to bring soil moisture to watmin (mm)
@@ -595,6 +599,7 @@ contains
      real(r8) :: q_perch
      real(r8) :: q_perch_max
      real(r8) :: dflag=0._r8
+	 real(r8) :: qcharge_temp
      !-----------------------------------------------------------------------
 
      associate(                                                            & 
@@ -619,7 +624,10 @@ contains
           hksat              =>    soilstate_vars%hksat_col              , & ! Input:  [real(r8) (:,:) ]  hydraulic conductivity at saturation (mm H2O /s)
           sucsat             =>    soilstate_vars%sucsat_col             , & ! Input:  [real(r8) (:,:) ]  minimum soil suction (mm)                       
           watsat             =>    soilstate_vars%watsat_col             , & ! Input:  [real(r8) (:,:) ]  volumetric soil water at saturation (porosity)  
-          eff_porosity       =>    soilstate_vars%eff_porosity_col       , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice         
+          eff_porosity       =>    soilstate_vars%eff_porosity_col       , & ! Input:  [real(r8) (:,:) ]  effective porosity = porosity - vol_ice   
+          
+          qflx_irrig         =>    col_wf%qflx_irrig         , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)
+          qflx_grnd_irrig_col=>    col_wf%qflx_grnd_irrig    , & ! Output: [real(r8) (:)   ]  col real groundwater irrigation flux (mm H2O /s)                                                                                                                                                               
 
           zwt                =>    soilhydrology_vars%zwt_col            , & ! Output: [real(r8) (:)   ]  water table depth (m)                             
           zwt_perched        =>    soilhydrology_vars%zwt_perched_col    , & ! Output: [real(r8) (:)   ]  perched water table depth (m)                     
@@ -689,6 +697,13 @@ contains
           rous=max(rous,0.02_r8)
 
           !--  water table is below the soil column  --------------------------------------
+		  g = col_pp%gridcell(c)
+          l = col_pp%landunit(c)
+          qcharge_temp = qcharge(c)
+
+          wa(c)  = wa(c) - qflx_grnd_irrig_col(c) * dtime
+          zwt(c) = zwt(c) + (qflx_grnd_irrig_col(c) * dtime)/1000._r8/rous
+		  
           if(jwt(c) == nlevbed) then             
 	     if (.not. (zengdecker_2009_with_var_soil_thick)) then
                 wa(c)  = wa(c) + qcharge(c)  * dtime
@@ -748,6 +763,7 @@ contains
                 end if
              enddo
           endif
+          qcharge(c) = qcharge_temp
        enddo
 
 

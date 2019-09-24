@@ -5466,6 +5466,24 @@ if <varname>linoz_data_type</varname> is 'FIXED'.
 Default: 0 seconds
 </entry>
 
+<entry id="linoz_lbl" type="integer" category="linoz"
+       group="linoz_nl" valid_values="" >
+Tunable number of layers with ozone decay from the surface in Linoz
+Default: 4
+</entry>
+
+<entry id="linoz_sfc" type="real" category="linoz"
+       group="linoz_nl" valid_values="" >
+Tunable boundary layer concentration (ppb) to which Linoz ozone e-fold
+Default: 30.0e-9
+</entry>
+
+<entry id="linoz_tau" type="real" category="linoz"
+       group="linoz_nl" valid_values="" >
+Tunable Linoz e-fold time scale (in seconds) in the boundary layer
+Default: 172800.0
+</entry>
+
 <entry id="tracer_cnst_datapath" type="char*256" input_pathname="abs" category="cam_chem"
        group="chem_inparm" valid_values="" >
 Full pathname of the directory that contains the files specified in
@@ -6047,7 +6065,21 @@ nearest point in the halo to the departure point, when necessary.
 Default: 0
 </entry>
 
+<entry id="semi_lagrange_hv_q" type="integer" category="se"
+       group="ctl_nl" valid_values="">
+Number of tracers, starting from 1, to which to apply hyperviscosity. For
+example, to apply hyperviscosity to moisture, the first tracer, set the value to
+1. Hyperviscosity is applied using nu_q as the coefficient.
+</entry>
+
 <!-- Physics grid -->
+
+<entry id="se_fv_phys_remap_alg" type="integer" category="se"
+       group="ctl_nl" valid_values="0,1">
+Remap algorithm to use to map between FV physics grid and GLL dynamics
+grid. 0, default, provides the original algorithms; 1 provides
+high-order algorithms implemented in gllfvremap_mod.
+</entry>
 
 <entry id="se_fv_nphys" type="integer" category="se"
        group="dyn_se_inparm" valid_values="" >
@@ -6056,13 +6088,6 @@ element. A number greater than zero will define [se_fv_nphys] equally
 spaced physics points in each direction (e.g., se_fv_nphys = 2 will
 result in 4 equally-spaced physics points per element).
 Default: 0 = feature disabled, use dynamics GLL points.
-</entry>
-
-<entry id="semi_lagrange_hv_q" type="integer" category="se"
-       group="ctl_nl" valid_values="">
-Number of tracers, starting from 1, to which to apply hyperviscosity. For
-example, to apply hyperviscosity to moisture, the first tracer, set the value to
-1. Hyperviscosity is applied using nu_q as the coefficient.
 </entry>
 
 <!-- CAM I/O  -->

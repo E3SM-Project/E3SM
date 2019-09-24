@@ -3,7 +3,7 @@
 10/2016 DMH
 
 The CMAKE build system supports a number of user-configurable targets:
-sweqx, preqx, preqx_acc, pese, swim, prim
+sweqx, preqx, preqx_acc, theta-l, swim, prim
 
 Scripts which will CMake configure, build, construct namelists and run a simulation using these
 targets, see:

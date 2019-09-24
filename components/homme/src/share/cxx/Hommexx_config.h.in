@@ -29,6 +29,8 @@
 #cmakedefine HOMMEXX_CUDA_MIN_WARP_PER_TEAM ${HOMMEXX_CUDA_MIN_WARP_PER_TEAM}
 #cmakedefine HOMMEXX_CUDA_MAX_WARP_PER_TEAM ${HOMMEXX_CUDA_MAX_WARP_PER_TEAM}
 
+#cmakedefine CUDA_BUILD
+
 // The version of AVX available on the host
 #define HOMMEXX_AVX_VERSION ${AVX_VERSION}
 

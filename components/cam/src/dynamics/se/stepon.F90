@@ -216,7 +216,7 @@ end subroutine stepon_run1
 
 subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use bndry_mod,       only: bndry_exchangeV
-   use dimensions_mod,  only: nlev, nelemd, np, npsq
+   use dimensions_mod,  only: nlev, nlevp, nelemd, np, npsq
    use dyn_grid,        only: fv_nphys
    use dp_coupling,     only: p_d_coupling
    use parallel_mod,    only: par
@@ -238,6 +238,9 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    real(r8) :: dp(np,np,nlev),fq,fq0,qn0, ftmp(npsq,nlev,2)
    real(r8) :: tmp_dyn(np,np,nlev,nelemd)
    real(r8) :: fmtmp(np,np,nlev)
+   real(r8) :: p_m(np,np,nlev)    ! temporary midpoint pressure for DYN_OMEGA output
+   real(r8) :: p_i(np,np,nlevp)   ! temporary interface pressure for DYN_OMEGA output
+   real(r8) :: omega(np,np,nlev)  ! temporary omega for DYN_OMEGA output
    real(r8) :: dtime
    integer :: nlev_tot
    nlev_tot=(3+pcnst)*nlev
@@ -457,8 +460,15 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call outfld('DYN_Q'     ,dyn_in%elem(ie)%state%Q(:,:,:,1)       ,npsq,ie)
       call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
       call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
-      call outfld('DYN_OMEGA' ,dyn_in%elem(ie)%derived%omega_p(:,:,:) ,npsq,ie)
       call outfld('DYN_PS'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
+      ! Multiply omega_p by pressure t get omega for output
+      p_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0
+      do k = 1,nlev
+         p_i(:,:,k+1) = p_i(:,:,k) + dyn_in%elem(ie)%state%dp3d(:,:,k,tl_f)
+         p_m(:,:,k)   = ( p_i(:,:,k+1) + p_i(:,:,k) )/2
+         omega(:,:,k) = dyn_in%elem(ie)%derived%omega_p(:,:,k) * p_m(:,:,k)
+      enddo
+      call outfld('DYN_OMEGA',omega(:,:,:),npsq,ie)
    end do
    
    
