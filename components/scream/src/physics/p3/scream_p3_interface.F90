@@ -29,7 +29,7 @@ module scream_p3_interface_mod
   integer(kind=c_int) :: qsize = 9
 
   character(len=16)   :: micro_p3_tableversion = "4"
-  character(len=100)  :: micro_p3_lookup_dir = "./data"
+  character(len=100)  :: micro_p3_lookup_dir = "./"
   real(kind=c_real) :: cpair  !=    1004.64000000000
   real(kind=c_real) :: rair   !=    287.042311365049
   real(kind=c_real) :: rh2o   !=    461.504639820160

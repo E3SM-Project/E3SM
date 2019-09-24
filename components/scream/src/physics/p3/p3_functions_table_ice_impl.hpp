@@ -101,7 +101,7 @@ void Functions<S,D>
   t.dum1 = pack::min(t.dum1, static_cast<Scalar>(P3C::isize));
   t.dum1 = pack::max(t.dum1, sp(1.));
   t.dumi = pack::max(1, t.dumi);
-  t.dumi = pack::min(P3C::isize, t.dumi);
+  t.dumi = pack::min(P3C::isize-1, t.dumi);
 
   // find index for rime mass fraction
   t.dum4  = (qirim/qitot)*3 + 1;
