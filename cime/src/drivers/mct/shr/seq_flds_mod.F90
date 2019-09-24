@@ -1994,6 +1994,15 @@ contains
     attname  = 'Flrl_rofi'
     call metadata_set(attname, longname, stdname, units)
 
+    if (trim(cime_model) == 'e3sm') then
+       call seq_flds_add(l2x_fluxes,'Flrl_demand')
+       call seq_flds_add(x2r_fluxes,'Flrl_demand')
+       longname = 'Water flux total demand in land from rof'
+       stdname  = 'water_flux_total_demand_from_runoff'
+       units    = 'kg m-2 s-1'
+       attname  = 'Flrl_demand'
+       call metadata_set(attname, longname, stdname, units)
+    endif
     ! Currently only the CESM land and runoff models treat irrigation as a separate
     ! field: in E3SM, this field is folded in to the other runoff fields. Eventually,
     ! E3SM may want to update its land and runoff models to map irrigation specially, as
@@ -2074,6 +2083,15 @@ contains
     attname  = 'Flrr_volrmch'
     call metadata_set(attname, longname, stdname, units)
 
+    if (trim(cime_model) == 'e3sm') then
+       call seq_flds_add(r2x_fluxes,'Flrr_supply')
+       call seq_flds_add(x2l_fluxes,'Flrr_supply')
+       longname = 'River model supply for land use'
+       stdname  = 'rtm_supply'
+       units    = 'kg m-2 s-1'
+       attname  = 'Flrr_supply'
+       call metadata_set(attname, longname, stdname, units)
+    endif
     !-----------------------------
     ! wav->ocn and ocn->wav
     !-----------------------------
