@@ -20,7 +20,7 @@ module fv_physics_coupling_mod
   use kinds,          only: real_kind, int_kind
   use constituents,   only: pcnst, cnst_name
   use dimensions_mod, only: np, npsq, nelemd, nlev
-  use dyn_grid,       only: fv_nphys
+  use dyn_grid,       only: fv_nphys, fv_physgrid
   use ppgrid,         only: pcols, pver, pverp
   
   private
@@ -136,7 +136,7 @@ contains
   end subroutine fv_phys_to_dyn
   !=================================================================================================
   !=================================================================================================
-  subroutine fv_phys_to_dyn_topo(elem,phys_tmp)
+  subroutine fv_phys_to_dyn_topo(elem,phis_tmp)
     ! Purpose: topo is initially defined on phys grid, 
     !          so this routine copys it to the dynamics grid
     use parallel_mod,   only: par
@@ -146,7 +146,7 @@ contains
     !---------------------------------------------------------------------------
     ! interface arguments
     type(element_t),      intent(inout) :: elem(:)        ! dynamics element structure
-    real(kind=real_kind), intent(inout) :: phys_tmp (:,:) ! temp array to hold PHIS field from file
+    real(kind=real_kind), intent(inout) :: phis_tmp (:,:) ! temp array to hold PHIS field from file
     ! local variables
     integer(kind=int_kind)   :: ie, i, j, icol            ! loop iterators
     integer(kind=int_kind)   :: ii, jj, gi, gj            ! GLL loop iterator and indices for pg2
@@ -166,7 +166,7 @@ contains
           !-------------------------------------------------------------------
           ! pg1 case 
           if (fv_nphys == 1) then
-            elem(ie)%state%phis(:,:) = phys_tmp(icol,ie)
+            elem(ie)%state%phis(:,:) = phis_tmp(icol,ie)
           end if ! fv_nphys == 1
           !-------------------------------------------------------------------
           !-------------------------------------------------------------------
@@ -178,7 +178,7 @@ contains
                 if (j==1) gj = jj
                 if (i==2) gi = ii+2
                 if (j==2) gj = jj+2
-                elem(ie)%state%phis(gi,gj) = phys_tmp(icol,ie)
+                elem(ie)%state%phis(gi,gj) = phis_tmp(icol,ie)
               end do ! ii
             end do ! jj
           end if ! fv_nphys == 2
