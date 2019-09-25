@@ -100,6 +100,10 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
                             lt1,lt2,lt3,t0,t1,t2,t3,t4,tm,tp,ie,i,ilev,j,jk,k,q
   logical :: abort=.false.
 
+  q = vert_remap_q_alg
+  if ( (q.ne.-1) .or (q.ne.0) .or. (q.ne.1) .or. (q.ne.2) .or. (q.ne.3) .or. (q.ne.10) )&
+     abortmp('Bad vert_remap_q_alg value. Use -1, 0, 1, 2, 3, or 10.')
+
   if (vert_remap_q_alg == -1) then
      call remap1_nofilter(qdp,nx,qsize,dp1,dp2)
      return
@@ -607,20 +611,21 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
           ao(k) = ao(k) / dpo(k)        !Divide out the old grid spacing because we want the tracer mixing ratio, not mass.
         enddo
         !Fill in ghost values. Ignored if vert_remap_q_alg == 2
-        do k = 1 , gs
-          if (vert_remap_q_alg == 3) then
-             ao(1   -k) = ao(1)
-             ao(nlev+k) = ao(nlev)
-          elseif (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 1) then   !Ignored if vert_remap_q_alg == 2
-             ao(1   -k) = ao(       k)
-             ao(nlev+k) = ao(nlev+1-k)
-          endif
-        enddo
-        if (vert_remap_q_alg == 10) then
-                call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1),ao(0), ao(-1))
-                call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
-                     ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2))
-        end if
+        if (vert_remap_q_alg >= 1 .and. vert_remap_q_alg <= 3) then
+           do k = 1 , gs
+              if (vert_remap_q_alg == 3) then
+                 ao(1   -k) = ao(1)
+                 ao(nlev+k) = ao(nlev)
+              elseif (vert_remap_q_alg == 2 .or. vert_remap_q_alg == 1)then   !Ignored if vert_remap_q_alg == 2
+                 ao(1   -k) = ao(       k)
+                 ao(nlev+k) = ao(nlev+1-k)
+              endif
+            enddo
+         elseif (vert_remap_q_alg == 10) then
+            call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1))
+            call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
+                 ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2))
+         endif
         !Compute monotonic and conservative PPM reconstruction over every cell
         coefs(:,:) = compute_ppm( ao , ppmdx )
         !Compute tracer values on the new grid by integrating from the old cell bottom to the new
