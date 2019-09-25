@@ -104,6 +104,7 @@ void ice_water_conservation(IceWaterConservationData& d){
   p3_init(true);
   ice_water_conservation_c(d.qitot, d.qidep, d.qinuc, d.qiberg, d.qrcol, d.qccol, d.qrheti,
     d.qcheti, d.dt, &d.qisub, &d.qimlt);
+}
 
 void get_cloud_dsd2(GetCloudDsd2Data& d)
 {

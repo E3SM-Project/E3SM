@@ -221,6 +221,7 @@ void ice_water_conservation(IceWaterConservationData& d);
 extern "C"{
   void ice_water_conservation_f(Real qitot, Real qidep, Real qinuc, Real qiberg, Real qrcol, Real qccol,
   Real qrheti, Real qcheti, Real dt, Real* qisub, Real* qimlt);
+}
 
 struct GetCloudDsd2Data
 {
