@@ -3,7 +3,6 @@
 
 #include "Types.hpp"
 
-#include "DiagnosticsBase.hpp"
 #include "ElementsGeometry.hpp"
 #include "ElementsState.hpp"
 #include "ColumnOps.hpp"
@@ -19,7 +18,7 @@ namespace Homme
 
 struct FunctorsBuffersManager;
 
-class DiagnosticsTheta : public DiagnosticsBase
+class Diagnostics
 {
 private:
   struct Buffers {
@@ -35,7 +34,7 @@ private:
   };
 
 public:
-  void init (const ElementsState& state,
+  void init (const ElementsState& state, const ElementsGeometry& geometry,
              const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
              F90Ptr& elem_state_q_ptr,
              F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,
@@ -45,6 +44,7 @@ public:
   int requested_buffer_size () const;
   void init_buffers (const FunctorsBuffersManager& fbm);
 
+  void prim_diag_scalars (const bool before_advance, const int ivar);
   void prim_energy_halftimes (const bool before_advance, const int ivar);
 
   HostViewUnmanaged<Real*[QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> h_Q;
@@ -57,23 +57,19 @@ public:
 
     // Subview inputs/outputs
     auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp, kv.ie,t1);
-    auto ps_v      = Homme::subview(m_state.m_ps_v,      kv.ie,t1);
+    auto dpt1      = Homme::subview(m_state.m_dp3d,      kv.ie,t1);
+    auto phi_i     = Homme::subview(m_state.m_phinh_i,   kv.ie,t1);
 
     auto phi       = Homme::subview(m_buffers.phi,       kv.team_idx);
     auto exner     = Homme::subview(m_buffers.exner,     kv.team_idx);
     auto pnh       = Homme::subview(m_buffers.pnh,       kv.team_idx);
-    auto dpt1      = Homme::subview(m_buffers.dp_ref,    kv.team_idx);
     auto dpnh_dp_i = Homme::subview(m_buffers.dpnh_dp_i, kv.team_idx);
 
-    ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV_P]> phi_i;
-    if (m_theta_hydrostatic_mode) {
-      phi_i = Homme::subview(m_buffers.dpnh_dp_i, kv.team_idx);
-    } else {
-      phi_i = Homme::subview(m_state.m_phinh_i,kv.ie,t1);
-    }
-
-    // Compute delta_hyai*ps0+delta_hybi*ps_v
-    m_hvcoord.compute_dp_ref(kv,ps_v,dpt1);
+    // ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV_P]> phi_i;
+    // if (m_theta_hydrostatic_mode) {
+      // phi_i = Homme::subview(m_buffers.dpnh_dp_i, kv.team_idx);
+    // } else {
+    // }
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int &point_idx) {
@@ -100,9 +96,11 @@ public:
         m_eos.compute_exner(kv,Homme::subview(pnh,igp,jgp),
                                Homme::subview(exner,igp,jgp));
 
-        m_eos.compute_phi_i(kv.team,
-                            Homme::subview(m_geometry.m_phis,kv.ie),
-                            vtheta_dp, exner, pnh, phi_i);
+        m_eos.compute_phi_i(kv,m_geometry.m_phis(kv.ie,igp,jgp),
+                               Homme::subview(vtheta_dp,igp,jgp),
+                               Homme::subview(exner,igp,jgp),
+                               Homme::subview(pnh,igp,jgp),
+                               Homme::subview(phi_i,igp,jgp));
       } else {
         m_eos.compute_pnh_and_exner(kv,Homme::subview(vtheta_dp,igp,jgp),
                                        Homme::subview(phi_i,igp,jgp),
@@ -112,7 +110,7 @@ public:
 
       // Compute phi at midpoints
       m_col_ops.compute_midpoint_values(kv,Homme::subview(phi_i,igp,jgp),
-                                            Homme::subview(phi,  igp,jgp));
+                                           Homme::subview(phi,  igp,jgp));
 
       auto& KEner = m_KEner(kv.ie,m_ivar,igp,jgp);
       auto& PEner = m_PEner(kv.ie,m_ivar,igp,jgp);
@@ -161,13 +159,20 @@ public:
 
 private:
 
-  HostViewUnmanaged<Real*[4][NP][NP]> h_IEner;
-  HostViewUnmanaged<Real*[4][NP][NP]> h_KEner;
-  HostViewUnmanaged<Real*[4][NP][NP]> h_PEner;
+  static constexpr int NUM_DIAG_TIMES = 6;
 
-  ExecViewManaged<Real*[4][NP][NP]>   m_IEner;
-  ExecViewManaged<Real*[4][NP][NP]>   m_KEner;
-  ExecViewManaged<Real*[4][NP][NP]>   m_PEner;
+  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_IEner;
+  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_KEner;
+  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][NP][NP]> h_PEner;
+
+  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]>     h_Qvar;
+  HostViewUnmanaged<Real*[NUM_DIAG_TIMES][QSIZE_D][NP][NP]>     h_Qmass;
+  HostViewUnmanaged<Real*                [QSIZE_D][NP][NP]>     h_Q1mass;
+
+
+  ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]>   m_IEner;
+  ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]>   m_KEner;
+  ExecViewManaged<Real*[NUM_DIAG_TIMES][NP][NP]>   m_PEner;
 
   HybridVCoord      m_hvcoord;
   EquationOfState   m_eos;
@@ -180,6 +185,7 @@ private:
   int t1,t1_qdp;
 
   int m_ivar;
+  int m_num_elems;
 
   bool m_theta_hydrostatic_mode;
 };

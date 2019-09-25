@@ -6,7 +6,7 @@
 
 #include "CaarFunctor.hpp"
 #include "Context.hpp"
-#include "DiagnosticsPreqx.hpp"
+#include "Diagnostics.hpp"
 #include "Elements.hpp"
 #include "ErrorDefs.hpp"
 #include "EulerStepFunctor.hpp"
@@ -228,11 +228,11 @@ void init_time_level_c (const int& nm1, const int& n0, const int& np1,
 
 void init_elements_c (const int& num_elems)
 {
-  Elements& r = Context::singleton().create<Elements> ();
+  Elements& e = Context::singleton().create<Elements> ();
   const SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  r.init (num_elems, consthv);
+  e.init (num_elems, consthv);
 
   // Init also the tracers structure
   Tracers& t = Context::singleton().create<Tracers> ();
@@ -244,9 +244,9 @@ void init_elements_c (const int& num_elems)
   // while still knowing that what they grab contains the same views as the object stored in the
   // Elements inside the Context
   ElementsGeometry& geometry = Context::singleton().create<ElementsGeometry>();
-  geometry = r.m_geometry;
+  geometry = e.m_geometry;
   ElementsDerivedState& derived = Context::singleton().create<ElementsDerivedState>();
-  derived = r.m_derived;
+  derived = e.m_derived;
 }
 
 void init_functors_c ()
@@ -316,7 +316,7 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
                          F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
 {
   Elements& elements = Context::singleton().get<Elements> ();
-  DiagnosticsPreqx& diagnostics = Context::singleton().create_with_base<DiagnosticsBase,DiagnosticsPreqx> ();
+  Diagnostics& diagnostics = Context::singleton().create<Diagnostics> ();
 
   diagnostics.init(elements.num_elems(), elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
                    elem_accum_iener_ptr, elem_accum_iener_wet_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);

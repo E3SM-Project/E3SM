@@ -6,7 +6,7 @@
 
 
 #include "Context.hpp"
-#include "DiagnosticsBase.hpp"
+#include "Diagnostics.hpp"
 #include "Elements.hpp"
 #include "Tracers.hpp"
 #include "HybridVCoord.hpp"
@@ -32,12 +32,14 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 {
   GPTLstart("tl-sc prim_run_subcycle_c");
 
+  auto& context = Context::singleton();
+
   // Get simulation params
-  SimulationParams& params = Context::singleton().get<SimulationParams>();
+  SimulationParams& params = context.get<SimulationParams>();
   assert(params.params_set);
 
   // Get time info and compute dt for tracers and remap
-  TimeLevel& tl = Context::singleton().get<TimeLevel>();
+  TimeLevel& tl = context.get<TimeLevel>();
   const Real dt_q = dt*params.qsplit;
   Real dt_remap = dt_q;
   int nstep_end = tl.nstep + params.qsplit;
@@ -58,7 +60,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   }
 
   if (compute_diagnostics) {
-    DiagnosticsBase& diags = Context::singleton().get<DiagnosticsBase>();
+    Diagnostics& diags = context.get<Diagnostics>();
     diags.prim_diag_scalars(true,2);
     diags.prim_energy_halftimes(true,2);
   }
@@ -82,15 +84,15 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   }
 
   if (compute_diagnostics) {
-    DiagnosticsBase& diags = Context::singleton().get<DiagnosticsBase>();
+    Diagnostics& diags = context.get<Diagnostics>();
     diags.prim_energy_halftimes(true,0);
     diags.prim_diag_scalars(true,0);
   }
 
   // Initialize dp3d from ps
   GPTLstart("tl-sc dp3d-from-ps");
-  Elements& elements = Context::singleton().get<Elements>();
-  HybridVCoord& hvcoord = Context::singleton().get<HybridVCoord>();
+  Elements& elements = context.get<Elements>();
+  HybridVCoord& hvcoord = context.get<HybridVCoord>();
   const auto hybrid_ai_delta = hvcoord.hybrid_ai_delta;
   const auto hybrid_bi_delta = hvcoord.hybrid_bi_delta;
   const auto ps0 = hvcoord.ps0;
@@ -138,7 +140,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   update_q(tl.np1_qdp,tl.np1);
 
   if (compute_diagnostics) {
-    DiagnosticsBase& diags = Context::singleton().get<DiagnosticsBase>();
+    Diagnostics& diags = context.get<Diagnostics>();
     diags.prim_diag_scalars(false,1);
     diags.prim_energy_halftimes(false,1);
   }
@@ -173,22 +175,24 @@ void apply_test_forcing () {
 
 void update_q (const int np1_qdp, const int np1)
 {
+  auto& context = Context::singleton();
+
   // Get simulation params
-  SimulationParams& params = Context::singleton().get<SimulationParams>();
+  SimulationParams& params = context.get<SimulationParams>();
   assert(params.params_set);
 
   // Get hybrid vertical coordinate
-  HybridVCoord& hvcoord = Context::singleton().get<HybridVCoord>();
+  HybridVCoord& hvcoord = context.get<HybridVCoord>();
   auto hyai_delta = hvcoord.hybrid_ai_delta;
   auto hybi_delta = hvcoord.hybrid_bi_delta;
   const Real ps0 = hvcoord.ps0;
 
   // Get ps_v from Elements
-  Elements& elements = Context::singleton().get<Elements>();
+  Elements& elements = context.get<Elements>();
   auto ps_v = elements.m_state.m_ps_v;
 
   // Get the tracers concentration and mass from Tracers
-  Tracers& tracers = Context::singleton().get<Tracers>();
+  Tracers& tracers = context.get<Tracers>();
   auto qdp = tracers.qdp;
   auto Q = tracers.Q;
 

@@ -1,4 +1,4 @@
-#include "DiagnosticsPreqx.hpp"
+#include "Diagnostics.hpp"
 
 #include "Context.hpp"
 #include "Elements.hpp"
@@ -14,23 +14,78 @@
 namespace Homme
 {
 
-void DiagnosticsPreqx::init (const int num_elems,
+void Diagnostics::init (const int num_elems,
                         F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr,
                         F90Ptr& elem_accum_qmass_ptr, F90Ptr& elem_accum_q1mass_ptr,
                         F90Ptr& elem_accum_iener_ptr, F90Ptr& elem_accum_iener_wet_ptr,
                         F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
 {
-  DiagnosticsBase::init(num_elems,elem_state_q_ptr,elem_accum_qvar_ptr,elem_accum_qmass_ptr,elem_accum_q1mass_ptr);
+  assert (num_elems>0);
+  m_num_elems = num_elems;
 
   // F90 ptr to array (n1,n2,...,nK,nelemd) can be stuffed directly in an unmanaged view
   // with scalar type Real*[nK]...[n2][n1] (with runtime dimension nelemd)
-  h_IEner     = HostViewUnmanaged<Real*[4][NP][NP]>(elem_accum_iener_ptr, num_elems);
-  h_IEner_wet = HostViewUnmanaged<Real*[4][NP][NP]>(elem_accum_iener_wet_ptr, num_elems);
-  h_KEner     = HostViewUnmanaged<Real*[4][NP][NP]>(elem_accum_kener_ptr, num_elems);
-  h_PEner     = HostViewUnmanaged<Real*[4][NP][NP]>(elem_accum_pener_ptr, num_elems);
+  h_Q      = decltype(h_Q)(elem_state_q_ptr, m_num_elems);
+  h_Qvar   = decltype(h_Qvar)(elem_accum_qvar_ptr, m_num_elems);
+  h_Qmass  = decltype(h_Qmass)(elem_accum_qmass_ptr, m_num_elems);
+  h_Q1mass = decltype(h_Q1mass)(elem_accum_q1mass_ptr, m_num_elems);
+
+  h_IEner     = decltype(h_IEner)(elem_accum_iener_ptr, m_num_elems);
+  h_IEner_wet = decltype(h_IEner_wet)(elem_accum_iener_wet_ptr, m_num_elems);
+  h_KEner     = decltype(h_KEner)(elem_accum_kener_ptr, m_num_elems);
+  h_PEner     = decltype(h_PEner)(elem_accum_pener_ptr, m_num_elems);
 }
 
-void DiagnosticsPreqx::prim_energy_halftimes (const bool before_advance, const int ivar)
+void Diagnostics::prim_diag_scalars (const bool before_advance, const int ivar)
+{
+  // Get simulation params
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
+  assert(params.params_set);
+
+  // Get time info
+  TimeLevel& tl = Context::singleton().get<TimeLevel>();
+
+  // Make sure tracers timelevels are updated
+  tl.update_tracers_levels(params.qsplit);
+
+  // Pick tracers time-level, depending on when this routine was called
+  int t2_qdp;
+  if (before_advance) {
+    t2_qdp = tl.n0_qdp;
+  } else {
+    t2_qdp = tl.np1_qdp;
+  }
+
+  const Tracers& tracers = Context::singleton().get<Tracers>();
+
+  sync_to_host(tracers.Q,h_Q);
+
+  // Copy back tracers concentration and mass
+  auto qdp_h = Kokkos::create_mirror_view(tracers.qdp);
+  Kokkos::deep_copy(qdp_h,tracers.qdp);
+  for (int ie=0; ie<m_num_elems; ++ie) {
+    for (int iq=0; iq<params.qsize; ++iq) {
+      for (int igp=0; igp<NP; ++igp) {
+        for (int jgp=0; jgp<NP; ++jgp) {
+          Real accum_qdp_q = 0;
+          Real accum_qdp = 0;
+
+          HostViewUnmanaged<Real[NUM_PHYSICAL_LEV]> qdp(&qdp_h(ie, t2_qdp, iq, igp, jgp, 0)[0]);
+          for (int level=0; level<NUM_PHYSICAL_LEV; ++level) {
+            accum_qdp_q += qdp(level)*h_Q(ie, iq, level, igp, jgp);
+            accum_qdp   += qdp(level);
+          }
+          h_Qvar(ie, ivar, iq, igp, jgp) = accum_qdp_q;
+
+          h_Qmass(ie, ivar, iq, igp, jgp) = accum_qdp;
+          h_Q1mass(ie, iq, igp, jgp) = accum_qdp;
+        }
+      }
+    }
+  }
+}
+
+void Diagnostics::prim_energy_halftimes (const bool before_advance, const int ivar)
 {
   // Get simulation params
   SimulationParams& params = Context::singleton().get<SimulationParams>();

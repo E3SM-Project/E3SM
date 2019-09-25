@@ -6,7 +6,7 @@
 
 #include "CaarFunctor.hpp"
 #include "Context.hpp"
-#include "DiagnosticsTheta.hpp"
+#include "Diagnostics.hpp"
 #include "Elements.hpp"
 #include "ErrorDefs.hpp"
 #include "EulerStepFunctor.hpp"
@@ -189,32 +189,6 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr,         F90Ptr &elem_stat
                    elem_Q_ptr, num_elems));
 }
 
-// Probably not needed
-void cxx_push_forcing_to_f90(F90Ptr /* elem_derived_FM */,
-                             F90Ptr /* elem_derived_FVTheta */,
-                             F90Ptr /* elem_derived_FPHI */,
-                             F90Ptr /* elem_derived_FQ */) {
-  // Elements &elements = Context::singleton().get<Elements>();
-  // Tracers &tracers = Context::singleton().get<Tracers>();
-
-  // HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][2][NP][NP]> fm_f90(
-  //     elem_derived_FM, elements.num_elems());
-  // sync_to_host(elements.m_derived.m_fm, fm_f90);
-  // HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][NP][NP]> ft_f90(
-  //     elem_derived_FT, elements.num_elems());
-  // sync_to_host(elements.m_derived.m_ft, ft_f90);
-
-  // const SimulationParams &params = Context::singleton().get<SimulationParams>();
-  // if (params.ftype == ForcingAlg::FORCING_DEBUG) {
-  //   if (tracers.fq.data() == nullptr) {
-  //     tracers.fq = decltype(tracers.fq)("fq", elements.num_elems());
-  //   }
-  //   HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]> fq_f90(
-  //       elem_derived_FQ, elements.num_elems());
-  //   sync_to_host(tracers.fq, fq_f90);
-  // }
-}
-
 void push_forcing_to_c (F90Ptr elem_derived_FM,
                         F90Ptr elem_derived_FVTheta,
                         F90Ptr elem_derived_FT,
@@ -341,9 +315,9 @@ void init_functors_c ()
   auto& esf  = Context::singleton().create<EulerStepFunctor>();
   auto& hvf  = Context::singleton().create<HyperviscosityFunctor>();
   auto& fbm  = Context::singleton().create<FunctorsBuffersManager>();
-  Context::singleton().create<VerticalRemapManager>();
   auto& ff   = Context::singleton().create<ForcingFunctor>();
-  auto& diag = Context::singleton().create_with_base<DiagnosticsBase,DiagnosticsTheta> ();
+  auto& diag = Context::singleton().create<Diagnostics> ();
+  Context::singleton().create<VerticalRemapManager>();
 
   // Make the functor request their buffer to the buffers manager
   // Note: diagnostics also needs buffers
@@ -400,13 +374,14 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
                          F90Ptr& elem_accum_q1mass_ptr, F90Ptr& elem_accum_iener_ptr,
                          F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
 {
-  Elements& elements = Context::singleton().get<Elements> ();
-  DiagnosticsTheta& diagnostics = Context::singleton().get<DiagnosticsTheta> ();
+  ElementsGeometry& geometry = Context::singleton().get<ElementsGeometry> ();
+  ElementsState&    state    = Context::singleton().get<ElementsState> ();
+  Diagnostics&      diags    = Context::singleton().get<Diagnostics> ();
 
   auto& params  = Context::singleton().get<SimulationParams>();
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
   
-  diagnostics.init(elements.m_state, hvcoord, params.theta_hydrostatic_mode,
+  diags.init(state, geometry, hvcoord, params.theta_hydrostatic_mode,
                    elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
                    elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
 }

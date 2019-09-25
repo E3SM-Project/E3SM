@@ -49,16 +49,6 @@ public:
   template<typename ConcreteType, typename... Args>
   ConcreteType& create_if_not_there (Args&&... args);
 
-  // Creates a concrete type and sets a second entry in the map, with
-  // BaseType's name as key, so one can access the concrete type either
-  // with the base or derived type name.
-  template<typename BaseType, typename ConcreteType, typename... Args>
-  ConcreteType& create_with_base (Args&&... args) {
-    ConcreteType& c = create<ConcreteType>(args...);
-    alias<BaseType,ConcreteType>();
-    return c;
-  }
-
   // Getters for a managed object.
   template<typename ConcreteType>
   ConcreteType& get () const;
@@ -71,12 +61,6 @@ public:
 
   static void finalize_singleton();
 private:
-  // Sets an entry in the map for a BaseType given the DerivedType.
-  // This allows to set a specific derived type first, then set an
-  // alias of it using the base type, so that other files can access
-  // the concrete derived type using the base type.
-  template<typename BaseType, typename DerivedType>
-  void alias ();
 
   std::map<std::string,Homme::any> m_members;
 
@@ -122,20 +106,6 @@ ConcreteType& Context::create (Args&&... args) {
   it_bool.first->second.reset<ConcreteType>(args...);
 
   return *any_ptr_cast<ConcreteType>(it_bool.first->second);
-}
-
-template<typename BaseType, typename DerivedType>
-void Context::alias () {
-  static_assert(std::is_base_of<BaseType,DerivedType>::value, "Error! Trying to use 'alias' with types not compatible (BaseType must be a base type of DerivedType).\n");
-  Errors::runtime_check(has<DerivedType>(), "Error! An object with the concrete type " + std::string(typeid(DerivedType).name()) +
-                                              " is not yet stored. In order to 'alias' it with a base type, you need to set the derived type first.\n");
-
-  auto it_bool = m_members.emplace(typeid(BaseType).name(),Homme::any());
-  Errors::runtime_check(it_bool.second, "Error! Something went wrong when inserting a new element in the context. "
-                                        "This is an internal error. Please, contact developers.\n");
-  auto derived_ptr = get_ptr<DerivedType>();
-
-  it_bool.first->second.reset_ptr<BaseType>(derived_ptr);
 }
 
 template<typename ConcreteType>
