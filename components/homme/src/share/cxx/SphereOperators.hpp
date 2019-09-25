@@ -495,12 +495,10 @@ public:
       const int igp = loop_idx / NP;
       const int jgp = loop_idx % NP;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
-        const auto& v0 = v(0, igp, jgp, ilev);
-        const auto& v1 = v(1, igp, jgp, ilev);
+        const auto& v0 = v(0, igp, jgp, ilev)*f(igp,jgp,ilev);
+        const auto& v1 = v(1, igp, jgp, ilev)*f(igp,jgp,ilev);
         gv_buf(0,igp,jgp,ilev) = (D_inv(0,0,igp,jgp) * v0 + D_inv(1,0,igp,jgp) * v1) * metdet(igp,jgp);
         gv_buf(1,igp,jgp,ilev) = (D_inv(0,1,igp,jgp) * v0 + D_inv(1,1,igp,jgp) * v1) * metdet(igp,jgp);
-        gv_buf(0,igp,jgp,ilev) *= f(igp,jgp,ilev);
-        gv_buf(1,igp,jgp,ilev) *= f(igp,jgp,ilev);
 
       });
     });

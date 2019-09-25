@@ -388,7 +388,7 @@ TEST_CASE("eos", "eos") {
         auto vtheta_dp = Homme::subview(vtheta_dp_cxx,kv.ie,igp,jgp);
         auto phi_i = Homme::subview(phi_i_cxx,kv.ie,igp,jgp);
 
-        eos.compute_phi_i(kv,phis,vtheta_dp,p,exner,phi_i);
+        eos.compute_phi_i(kv,phis,vtheta_dp,exner,p,phi_i);
       });
       kv.team_barrier();
     });

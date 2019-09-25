@@ -153,13 +153,12 @@ public:
   // If exner is available, then use exner/p instead of (p/p0)^(k-1)/p0, to avoid dealing with exponentials
   // VThetaProvider can be either a 1d view or a lambda,
   // as long as vtheta_dp(ilev) returns vtheta_dp at pack ilev
-  template<typename VThetaProvider>
   KOKKOS_INLINE_FUNCTION
   void compute_phi_i (const KernelVariables& kv,
                       const ExecViewUnmanaged<const Real   [NP][NP]           >& phis,
-                      const VThetaProvider& vtheta_dp,
-                      const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& p,
+                      const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& vtheta_dp,
                       const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& exner,
+                      const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& p,
                       const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV_P]>& phi_i) const {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -167,8 +166,8 @@ public:
       const int jgp = idx % NP;
       compute_phi_i(kv, phis(igp,jgp),
                     Homme::subview(vtheta_dp,igp,jgp),
-                    Homme::subview(p,igp,jgp),
                     Homme::subview(exner,igp,jgp),
+                    Homme::subview(p,igp,jgp),
                     Homme::subview(phi_i,igp,jgp));
     });
   }
@@ -176,8 +175,8 @@ public:
   KOKKOS_INLINE_FUNCTION
   void compute_phi_i (const KernelVariables& kv, const Real phis,
                       const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& vtheta_dp,
-                      const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& p,
                       const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& exner,
+                      const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& p,
                       const ExecViewUnmanaged<      Scalar [NUM_LEV_P]>& phi_i) const
   {
     // Init phi on surface with phis

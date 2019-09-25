@@ -10,6 +10,7 @@
 #include <string>
 #include <map>
 #include <memory>
+#include <functional>
 
 #include "ErrorDefs.hpp"
 #include "utilities/StdMeta.hpp"
@@ -37,6 +38,9 @@ public:
   template<typename ConcreteType, typename... Args>
   ConcreteType& create (Args&&... args);
 
+  template<typename ConcreteType>
+  void create_ref (ConcreteType& src);
+
   // More relaxed than create, it won't throw if the
   // object already exists, and simply return it.
   // NOTE: this is allows more flexibility in the cxx-f90
@@ -63,6 +67,7 @@ public:
 private:
 
   std::map<std::string,Homme::any> m_members;
+  std::map<std::string, bool>      m_is_ref_wrapper;
 
   // Clear the objects Context manages.
   void clear();
@@ -87,6 +92,7 @@ ConcreteType& Context::create_if_not_there (Args&&... args) {
   if (it_bool.second) {
     // We created it, so init it.
     it_bool.first->second.reset<ConcreteType>(args...);
+    m_is_ref_wrapper[typeid(ConcreteType).name()] = false;
   }
   return *any_ptr_cast<ConcreteType>(it_bool.first->second);
 }
@@ -104,13 +110,37 @@ ConcreteType& Context::create (Args&&... args) {
   Errors::runtime_check(it_bool.second, "Error! Something went wrong when inserting a new element in the context. "
                                         "This is an internal error. Please, contact developers.\n", -1);
   it_bool.first->second.reset<ConcreteType>(args...);
+  m_is_ref_wrapper[typeid(ConcreteType).name()] = false;
 
   return *any_ptr_cast<ConcreteType>(it_bool.first->second);
 }
 
 template<typename ConcreteType>
+void Context::create_ref (ConcreteType& src) {
+  // This is needed for emplacing a type whose constructor takes no arguments.
+  // We could do emplace(name,ConcreteType()), but then we would be assuming
+  // that ConcreteType *has* a move constructor. This implementation here is
+  // probably the most cumbersome, but also the safest.
+  auto it_bool = m_members.emplace(typeid(ConcreteType).name(),Homme::any());
+  Errors::runtime_check(it_bool.second, "Error! Something went wrong when inserting a new element in the context. "
+                                        "This is an internal error. Please, contact developers.\n", -1);
+
+  auto ref = std::ref(src);
+  it_bool.first->second.reset<std::reference_wrapper<ConcreteType>>(ref);
+  m_is_ref_wrapper[typeid(ConcreteType).name()] = true;
+}
+
+template<typename ConcreteType>
 ConcreteType& Context::get () const {
-  return *get_ptr<ConcreteType>();
+  const std::string& name = typeid(ConcreteType).name();
+  auto it = m_members.find(name);
+  Errors::runtime_check(it!=m_members.end(), "Error! Context member '" + name + "' not found.\n", -1);
+  if (m_is_ref_wrapper.at(name)) {
+    auto ref = any_ptr_cast<std::reference_wrapper<ConcreteType>>(it->second);
+    return ref->get();
+  } else {
+    return *get_ptr<ConcreteType>();
+  }
 }
 
 template<typename ConcreteType>
@@ -118,6 +148,8 @@ std::shared_ptr<ConcreteType> Context::get_ptr() const {
   const std::string& name = typeid(ConcreteType).name();
   auto it = m_members.find(name);
   Errors::runtime_check(it!=m_members.end(), "Error! Context member '" + name + "' not found.\n", -1);
+  Errors::runtime_check(!m_is_ref_wrapper.at(name),
+                        "Error! Context member '" + name + "' is only available as a reference.\n", -1);
 
   return any_ptr_cast<ConcreteType>(it->second);
 }

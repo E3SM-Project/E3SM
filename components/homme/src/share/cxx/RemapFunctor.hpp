@@ -160,8 +160,9 @@ RemapStateAndThicknessProvider<true> {
 
     const int iters_pre = m_state_provider.num_states_preprocess();
     const int iters_post = m_state_provider.num_states_postprocess();
-    m_policy_pre = Homme::get_default_team_policy<ExecSpace,TagPreProcess>(iters_pre);
-    m_policy_post = Homme::get_default_team_policy<ExecSpace,TagPostProcess>(iters_post);
+    const int num_elems = elements.m_state.num_elems();
+    m_policy_pre = Homme::get_default_team_policy<ExecSpace,TagPreProcess>(iters_pre*num_elems);
+    m_policy_post = Homme::get_default_team_policy<ExecSpace,TagPostProcess>(iters_post*num_elems);
 
     m_state_provider.allocate_buffers(m_policy_pre);
   }
@@ -203,7 +204,7 @@ RemapStateAndThicknessProvider<true> {
     const int istate = kv.ie % m_state_provider.num_states_preprocess();
     kv.ie /= m_state_provider.num_states_preprocess();
     auto dp = Homme::subview(m_tgt_layer_thickness,kv.ie);
-    m_state_provider.preprocess_state(kv,istate,m_np1,dp);
+    m_state_provider.postprocess_state(kv,istate,m_np1,dp);
   }
 
   KOKKOS_INLINE_FUNCTION

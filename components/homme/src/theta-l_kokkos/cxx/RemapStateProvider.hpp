@@ -130,7 +130,7 @@ struct RemapStateProvider {
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
         const int igp = idx / NP;
-        const int jgp = idx / NP;
+        const int jgp = idx % NP;
         auto w_i = Homme::subview(m_state.m_w_i,kv.ie,np1,igp,jgp);
         auto delta_w = Homme::subview(m_delta_w,kv.ie,igp,jgp);
 

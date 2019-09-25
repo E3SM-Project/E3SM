@@ -152,8 +152,8 @@ public:
       constexpr int last_mid_vec_end = MidInfo::LastVecEnd;
 
       w(last_int_pack)[last_int_vec_end] =
-        u(last_mid_pack)[last_mid_vec_end]*m_geometry.m_gradphis(kv.ie,0,igp,jgp) +
-        v(last_mid_pack)[last_mid_vec_end]*m_geometry.m_gradphis(kv.ie,1,igp,jgp);
+        (u(last_mid_pack)[last_mid_vec_end]*m_geometry.m_gradphis(kv.ie,0,igp,jgp) +
+         v(last_mid_pack)[last_mid_vec_end]*m_geometry.m_gradphis(kv.ie,1,igp,jgp)) / PhysicalConstants::g;
     });
   }
 
@@ -385,7 +385,7 @@ public:
 
         // Update temperature
         tn1(ilev) += m_dt*ft(ilev);
-      
+
         // Compute theta, store in tn1.
         tn1(ilev) = (Rstar(ilev)/PhysicalConstants::Rgas)*tn1(ilev)*dp(ilev)/exner(ilev);
       });
