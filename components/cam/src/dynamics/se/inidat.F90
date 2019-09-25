@@ -458,7 +458,7 @@ contains
       fieldname = 'PHIS'
       tmp(:,1,:) = 0.0_r8
       if (fv_nphys > 0) then
-         ! Load phis field to GLL grid first
+         ! Load phis field to physics grid
          call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
               1, nelemd, phis_tmp, found, gridname='physgrid_d')
       else
@@ -471,13 +471,7 @@ contains
     end if
 
     if (fv_nphys == 0) then
-      ! Map phis data to FV physics grid
-      if (se_fv_phys_remap_alg == 0) then
-         call fv_phys_to_dyn_topo(elem,phis_tmp)
-      else
-         call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
-      end if
-      ! Copy phis data to element state
+      ! Copy phis data to dyn element state
       do ie=1,nelemd
          elem(ie)%state%phis=0.0_r8
          indx = 1
@@ -489,6 +483,13 @@ contains
             end do
          end do
       end do
+    else
+      ! Map phis data to dyn grid
+      if (se_fv_phys_remap_alg == 0) then
+         call fv_phys_to_dyn_topo(elem,phis_tmp)
+      else
+         call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
+      end if
     end if ! fv_nphys == 0
     
     if (single_column) then
