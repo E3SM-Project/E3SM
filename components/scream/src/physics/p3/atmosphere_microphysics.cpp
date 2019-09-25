@@ -2,6 +2,8 @@
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/atmosphere_microphysics.hpp"
 
+#include <array>
+
 namespace scream
 {
 
@@ -72,40 +74,43 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
 void P3Microphysics::initialize (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
-  auto q_ptr = m_p3_fields_out.at("q").get_view().data();
-  auto ast_ptr = m_p3_fields_out.at("ast").get_view().data();
-  auto naai_ptr = m_p3_fields_out.at("naai").get_view().data();
-  auto npccn_ptr = m_p3_fields_out.at("npccn").get_view().data();
-  auto pmid_ptr = m_p3_fields_out.at("pmid").get_view().data();
-  auto pdel_ptr = m_p3_fields_out.at("pdel").get_view().data();
-  auto zi_ptr = m_p3_fields_out.at("zi").get_view().data();
-  auto T_ptr = m_p3_fields_out.at("T").get_view().data();
-  const std::string dimnames[2] = {"column", "level"};
-  const std::string filename = "p3_output";
-  // const int  dimrng[2]   = {218,72}; // TODO make this based on actual col,levels data
-  // const int  dimnum = 2;
 
-  p3_init_f90 (q_ptr,T_ptr,zi_ptr,pmid_ptr,pdel_ptr,
-     ast_ptr, naai_ptr, npccn_ptr);
+  constexpr int num_views = 8;
+  std::array<const char*, num_views> view_names = {"q", "T", "zi", "pmid", "pdel", "ast", "naai", "npccn"};
+  std::array<typename field_type::view_type, num_views> device_views;
+  std::array<typename field_type::host_view_type, num_views> host_views;
+  std::array<typename field_type::value_type*, num_views> raw_ptrs;
+
+  for (int i = 0; i < num_views; ++i) {
+    device_views[i] = m_p3_fields_out.at(view_names[i]).get_view();
+    host_views[i]   = Kokkos::create_mirror_view(device_views[i]);
+    Kokkos::deep_copy(host_views[i], device_views[i]);
+    raw_ptrs[i] = host_views[i].data();
+  }
+  p3_init_f90(raw_ptrs[0], raw_ptrs[1], raw_ptrs[2], raw_ptrs[3], raw_ptrs[4], raw_ptrs[5], raw_ptrs[6], raw_ptrs[7]);
+
+  for (int i = 0; i < num_views; ++i) {
+    Kokkos::deep_copy(device_views[i], host_views[i]);
+  }
 }
 
 // =========================================================================================
 void P3Microphysics::run (const double dt)
 {
-  auto q_ptr = m_p3_fields_out.at("q").get_view().data();
-  auto FQ_ptr = m_p3_fields_out.at("FQ").get_view().data();
-  // auto dp_ptr = m_p3_fields_in.at("dp").get_view().data();
-  auto qdp_ptr = m_p3_fields_in.at("qdp").get_view().data();
-  auto ast_ptr = m_p3_fields_out.at("ast").get_view().data();
-  auto naai_ptr = m_p3_fields_out.at("naai").get_view().data();
-  auto npccn_ptr = m_p3_fields_out.at("npccn").get_view().data();
-  auto pmid_ptr = m_p3_fields_out.at("pmid").get_view().data();
-  auto pdel_ptr = m_p3_fields_out.at("pdel").get_view().data();
-  auto zi_ptr = m_p3_fields_out.at("zi").get_view().data();
-  auto T_ptr = m_p3_fields_out.at("T").get_view().data();
+  constexpr int num_views = 10;
+  std::array<const char*, num_views> view_names = {"q", "FQ", "qdp", "T", "zi", "pmid", "pdel", "ast", "naai", "npccn"};
+  std::array<typename field_type::view_type, num_views> device_views;
+  std::array<typename field_type::host_view_type, num_views> host_views;
+  std::array<typename field_type::value_type*, num_views> raw_ptrs;
 
-  p3_main_f90 (dt,q_ptr,FQ_ptr,qdp_ptr,T_ptr,zi_ptr,pmid_ptr,pdel_ptr,
-     ast_ptr, naai_ptr, npccn_ptr);
+  for (int i = 0; i < num_views; ++i) {
+    device_views[i] = m_p3_fields_out.at(view_names[i]).get_view();
+    host_views[i]   = Kokkos::create_mirror_view(device_views[i]);
+    Kokkos::deep_copy(host_views[i], device_views[i]);
+    raw_ptrs[i] = host_views[i].data();
+  }
+
+  p3_main_f90 (dt, raw_ptrs[0], raw_ptrs[1], raw_ptrs[2], raw_ptrs[3], raw_ptrs[4], raw_ptrs[5], raw_ptrs[6], raw_ptrs[7], raw_ptrs[8], raw_ptrs[9]);
 
   m_current_ts += dt;
   m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(m_current_ts);

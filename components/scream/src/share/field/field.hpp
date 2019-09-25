@@ -33,6 +33,7 @@ public:
   using header_type          = FieldHeader;
   using identifier_type      = header_type::identifier_type;
   using view_type            = typename KokkosTypes<device_type>::template view<value_type*>;
+  using host_view_type       = typename KokkosTypes<HostDevice>::template view<value_type*>;
   using const_value_type     = typename std::add_const<value_type>::type;
   using non_const_value_type = typename std::remove_const<value_type>::type;
 

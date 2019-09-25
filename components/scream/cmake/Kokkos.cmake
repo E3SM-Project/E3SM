@@ -8,8 +8,10 @@ else ()
   set(KOKKOS_SRC    ${CMAKE_SOURCE_DIR}/../../externals/kokkos)
   set(KOKKOS_BINARY ${CMAKE_BINARY_DIR}/kokkos/build)
 
-  # We want Kokkos to be in debug mode if scream is in debug mode
-  if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+  # We want Kokkos to be in debug mode if scream is in debug mode. This is a bit hacky
+  # since we can't use KOKKOS_GMAKE_DEVICES yet.
+  set(NO_DEBUG_ARGS Volta70 Pascal60)
+  if (CMAKE_BUILD_TYPE_ci STREQUAL "debug" AND NOT KOKKOS_ARCH IN_LIST NO_DEBUG_ARGS)
     set(KOKKOS_ENABLE_DEBUG TRUE)
   endif()
 
