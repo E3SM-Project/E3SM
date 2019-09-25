@@ -337,6 +337,19 @@ struct Functions
   KOKKOS_FUNCTION
   static Spack calc_bulk_rho_rime(
     const Smask& qi_gt_small, const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim);
+
+  //BALLI- add comments here
+  KOKKOS_FUNCTION	    
+  static void update_prognostic_ice(const Spack& qcheti, const Spack& qccol, 
+    const Spack& qcshd,  const Spack& nccol,  const Spack& ncheti, const Spack& ncshdc, 
+    const Spack& qrcol,  const Spack& nrcol,  const Spack& qrheti, const Spack& nrheti, 
+    const Spack& nrshdr, const Spack& qimlt,  const Spack& nimlt,  const Spack& qisub, 
+    const Spack& qidep,  const Spack& qinuc,  const Spack& ninuc,  const Spack& nislf, 
+    const Spack& nisub,  const Spack& qiberg, const Spack& exner,  const Spack& xxls, 
+    const Spack& xlf,    const bool log_predictNc, const bool log_wetgrowth, const Scalar dt, 
+    const Spack& nmltratio, const Spack& rhorime_c, Spack& th, Spack& qv, Spack& qitot,
+    Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,  Spack& nc, Spack& qr,
+    Spack& nr); 
 };
 
 template <typename ScalarT, typename DeviceT>
@@ -357,6 +370,7 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 # include "p3_functions_autoconversion_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
 # include "p3_functions_ice_sed_impl.hpp"
+# include "p3_functions_update_prognostics_impl.hpp"
 #endif
 
 #endif
