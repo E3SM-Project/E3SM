@@ -185,7 +185,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne16np4">
+  <grid name="a%ne16np4_">
     <mach name="any">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -222,7 +222,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne240np4">
+  <grid name="a%ne240np4_">
     <mach name="any">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -259,7 +259,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne240np4">
+  <grid name="a%ne240np4_">
     <mach name="any">
       <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
@@ -296,7 +296,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4">
+  <grid name="a%ne120np4_">
     <mach name="titan|stampede|bluewaters|edison|eos|cori-haswell">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -440,7 +440,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4">
+  <grid name="a%ne120np4_">
     <mach name="any">
       <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
@@ -477,7 +477,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4">
+  <grid name="a%ne120np4_">
     <mach name="titan|stampede|bluewaters|edison|eos|cori-haswell">
       <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
@@ -514,7 +514,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4">
+  <grid name="a%ne120np4_">
     <mach name="titan|stampede|bluewaters">
       <pes compset="CAM.+CLM.+CICE.+POP" pesize="any">
         <comment>none</comment>
@@ -551,7 +551,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="any">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -588,7 +588,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="any">
       <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
@@ -625,7 +625,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="melvin">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -662,7 +662,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="edison">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -699,7 +699,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="cori-haswell">
       <pes compset="any" pesize="L">
         <comment>169 nodes, 19 sypd</comment>
@@ -802,7 +802,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="cori-knl">
       <pes compset="any" pesize="L">
         <comment>cori-knl, generic ne30, 85 nodes, 64x1</comment>
@@ -906,7 +906,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="eos">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -943,7 +943,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="blues">
       <pes compset="XATM|DATM.+CLM" pesize="any">
         <comment>none</comment>
@@ -980,7 +980,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="titan|stampede|bluewaters">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -1017,7 +1017,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="titan|stampede|bluewaters">
       <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>none</comment>
@@ -2541,7 +2541,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne16np4">
+  <grid name="a%ne16np4_">
     <mach name="edison|cori-haswell">
       <pes compset="any" pesize="any">
         <comment>none</comment>
@@ -2578,7 +2578,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne16np4">
+  <grid name="a%ne16np4_">
     <mach name="cori-knl">
       <pes compset="any" pesize="any">
         <comment>cori-knl, 6 nodes, 64x4, sypd=2.93 (for F-compset)</comment>
@@ -2607,7 +2607,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne11np4">
+  <grid name="a%ne11np4_">
     <mach name="cori-knl">
       <pes compset="any" pesize="any">
         <comment>6 nodes, 64x2, sypd=11.1 (for F-compset)</comment>
@@ -4552,7 +4552,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4_l%ne30np4_oi%ne30np4">
+  <grid name="a%ne30np4_l%ne30np4_oi%ne30np4_">
     <mach name="anvil|bebop">
       <pes compset="any" pesize="any">
         <comment>ne30_ne30 grid on 40 nodes 36 ppn pure-MPI</comment>
@@ -4810,7 +4810,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="mira|cetus">
       <pes compset="any" pesize="any">
         <comment>ne30 grid on 128x16x4 PEs</comment>
@@ -6109,7 +6109,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="edison">
       <pes compset="CAM.+CLM.+DOCN." pesize="any">
         <comment>"113-node 12x4 F-compset sypd=10.8"</comment>
@@ -6148,7 +6148,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="edison">
       <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>"133 node version gets 6 SYPD. This will be the default and M size"</comment>
@@ -6185,7 +6185,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="edison">
       <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
         <comment>"39 node version gets 2.1 SYPD."</comment>
@@ -6222,7 +6222,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="edison">
       <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="L">
         <comment>"285 node version gets 11.5 SYPD"</comment>
@@ -6259,7 +6259,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="cori-haswell">
       <pes compset="CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="any">
         <comment>"185 nodes, 32x1, ~5sypd (wmod185)"</comment>
@@ -6329,7 +6329,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne30np4">
+  <grid name="a%ne30np4_">
     <mach name="cori-knl">
       <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="L">
         <comment>"cori-knl ne30 coupled compest on 120 nodes, 64x1 (2 threads CPL/OCN/ICE), (kmod125) sypd=4.1"</comment>
@@ -6758,7 +6758,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne120np4">
+  <grid name="a%ne120np4_">
     <mach name="mira">
       <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="S">
         <comment>ne120 coupled-compset on 1024 nodes</comment>
@@ -8210,7 +8210,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne4np4">
+  <grid name="a%ne4np4_">
     <mach name="cetus">
       <pes compset="any" pesize="any">
         <comment>any compset on ne4 grid</comment>
@@ -8247,7 +8247,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne4np4">
+  <grid name="a%ne4np4_">
     <mach name="cori-haswell">
       <pes compset="any" pesize="any">
         <comment>3 nodes, any compset on ne4 grid</comment>
@@ -8274,7 +8274,7 @@
       </pes>
     </mach>
   </grid>
-  <grid name="a%ne4np4">
+  <grid name="a%ne4np4_">
     <mach name="cori-knl">
       <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="any">
         <comment>"cori-knl ne4 coupled compest on 6 nodes, sypd=22.9"</comment>
@@ -8424,16 +8424,16 @@
   <grid name="a%ne4np4.pg1">
     <mach name="any">
       <pes compset="any" pesize="any">
-        <comment>any compset on ne4np4.pg3 grid</comment>
+        <comment>any compset on ne4np4.pg1 grid</comment>
         <ntasks>
           <ntasks_atm>96</ntasks_atm>
           <ntasks_lnd>96</ntasks_lnd>
           <ntasks_rof>96</ntasks_rof>
           <ntasks_ice>96</ntasks_ice>
           <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_cpl>96</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
-          <ntasks_cpl>1</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -8445,16 +8445,6 @@
           <nthrds_wav>1</nthrds_wav>
           <nthrds_cpl>1</nthrds_cpl>
         </nthrds>
-        <rootpe>
-          <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>0</rootpe_lnd>
-          <rootpe_rof>0</rootpe_rof>
-          <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>0</rootpe_ocn>
-          <rootpe_glc>0</rootpe_glc>
-          <rootpe_wav>0</rootpe_wav>
-          <rootpe_cpl>0</rootpe_cpl>
-        </rootpe>
       </pes>
     </mach>
   </grid>
@@ -8468,9 +8458,9 @@
           <ntasks_rof>96</ntasks_rof>
           <ntasks_ice>96</ntasks_ice>
           <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_cpl>96</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
-          <ntasks_cpl>1</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
@@ -8495,9 +8485,9 @@
           <ntasks_rof>96</ntasks_rof>
           <ntasks_ice>96</ntasks_ice>
           <ntasks_ocn>96</ntasks_ocn>
+          <ntasks_cpl>96</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
-          <ntasks_cpl>1</ntasks_cpl>
         </ntasks>
         <nthrds>
           <nthrds_atm>1</nthrds_atm>
