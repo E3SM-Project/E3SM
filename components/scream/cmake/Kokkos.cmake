@@ -8,6 +8,11 @@ else ()
   set(KOKKOS_SRC    ${CMAKE_SOURCE_DIR}/../../externals/kokkos)
   set(KOKKOS_BINARY ${CMAKE_BINARY_DIR}/kokkos/build)
 
+  # We want Kokkos to be in debug mode if scream is in debug mode
+  if (CMAKE_BUILD_TYPE_ci STREQUAL "debug")
+    set(KOKKOS_ENABLE_DEBUG TRUE)
+  endif()
+
   add_subdirectory(${KOKKOS_SRC} ${KOKKOS_BINARY})
 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -I${KOKKOS_SRC}/core/src -I${KOKKOS_BINARY}")

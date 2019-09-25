@@ -32,6 +32,10 @@ function (check_pack_size master_pack_size pack_size name)
   endif()
 endfunction ()
 
+# Compute reasonable defaults. This needs to happen before the CACHE variables
+# are set.
+STRING(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
+
 enable_testing()
 include(CTest)
 
@@ -45,10 +49,6 @@ set(CUDA_BUILD FALSE)
 if (${cuda_str_pos} GREATER -1)
   set(CUDA_BUILD TRUE)
 endif ()
-
-# Compute reasonable defaults. This needs to happen before the CACHE variables
-# are set.
-STRING(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_ci)
 
 ### Scream configuration options>
 set(DEFAULT_MAX_THREADS 16)
