@@ -2288,6 +2288,8 @@ subroutine tphysbc (ztodt,               &
    
     !SZhang 
     logical  :: l_dribling_tend                ! flag to turn on tendency dribling in CLUBB+MG2
+    logical  :: l_dribling_uv                  ! flag to turn on tendency dribling in CLUBB+MG2
+    logical  :: l_dribling_w                   ! flag to turn on tendency dribling in CLUBB+MG2
     real(r8) :: rztodt                         ! inverse of time step  
     real(r8), pointer, dimension(:,:) :: qcwat
     real(r8), pointer, dimension(:,:) :: lcwat
@@ -2296,6 +2298,9 @@ subroutine tphysbc (ztodt,               &
     real(r8), pointer, dimension(:,:) :: scwat
     real(r8), pointer, dimension(:,:) :: nlwat
     real(r8), pointer, dimension(:,:) :: niwat
+    real(r8), pointer, dimension(:,:) :: ucwat    
+    real(r8), pointer, dimension(:,:) :: vcwat
+    real(r8), pointer, dimension(:,:) :: wcwat
 
     real(r8):: ttend(pcols,pver)
     real(r8):: qtend(pcols,pver)
@@ -2304,6 +2309,9 @@ subroutine tphysbc (ztodt,               &
     real(r8):: stend(pcols,pver)
     real(r8):: nltend(pcols,pver)
     real(r8):: nitend(pcols,pver)
+    real(r8):: utend(pcols,pver)
+    real(r8):: vtend(pcols,pver)
+    real(r8):: wtend(pcols,pver)
     !SZhang
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
@@ -2318,6 +2326,8 @@ subroutine tphysbc (ztodt,               &
                       ,l_st_mic_out           = l_st_mic           &
                       ,l_rad_out              = l_rad              &
                       ,l_dribling_tend_out    = l_dribling_tend    &
+                      ,l_dribling_uv_out      = l_dribling_uv      &
+                      ,l_dribling_w_out       = l_dribling_w       &
                       )
     
     !-----------------------------------------------------------------------
@@ -2756,6 +2766,29 @@ end if
         state%q(:ncol,:pver,ixnumliq) = nlwat(:ncol,:pver)
         state%q(:ncol,:pver,ixnumice) = niwat(:ncol,:pver)
 
+        if(l_dribling_uv) then
+         ifld = pbuf_get_index('UCWAT_DBL')
+         call pbuf_get_field(pbuf, ifld, ucwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+         ifld = pbuf_get_index('VCWAT_DBL')
+         call pbuf_get_field(pbuf, ifld, vcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+         utend(:ncol,:pver)  = (state%u(:ncol,:pver) - ucwat(:ncol,:pver))*rztodt
+         vtend(:ncol,:pver)  = (state%v(:ncol,:pver) - vcwat(:ncol,:pver))*rztodt
+
+         state%u(:ncol,:pver) = ucwat(:ncol,:pver)
+         state%v(:ncol,:pver) = vcwat(:ncol,:pver)
+        end if
+
+        if(l_dribling_w) then
+         ifld = pbuf_get_index('WCWAT_DBL')
+         call pbuf_get_field(pbuf, ifld, wcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+         wtend(:ncol,:pver)  = (state%omega(:ncol,:pver) - wcwat(:ncol,:pver))*rztodt
+
+         state%omega(:ncol,:pver) = wcwat(:ncol,:pver)
+        end if
+
        end if 
 
        do macmic_it = 1, cld_macmic_num_steps
@@ -2768,6 +2801,13 @@ end if
           state%s(:ncol,:pver)          = state%s(:ncol,:pver)         + stend(:ncol,:pver)*cld_macmic_ztodt
           state%q(:ncol,:pver,ixnumliq) = state%q(:ncol,:pver,ixnumliq)+ nltend(:ncol,:pver)*cld_macmic_ztodt
           state%q(:ncol,:pver,ixnumice) = state%q(:ncol,:pver,ixnumice)+ nitend(:ncol,:pver)*cld_macmic_ztodt
+          if(l_dribling_uv) then
+           state%u(:ncol,:pver)         = state%u(:ncol,:pver)         + utend(:ncol,:pver)*cld_macmic_ztodt
+           state%v(:ncol,:pver)         = state%v(:ncol,:pver)         + vtend(:ncol,:pver)*cld_macmic_ztodt
+          endif
+          if(l_dribling_w) then
+           state%omega(:ncol,:pver)     = state%omega(:ncol,:pver)     + wtend(:ncol,:pver)*cld_macmic_ztodt
+          endif
         end if          
 
         if (macmic_extra_diag) then
@@ -3147,6 +3187,24 @@ end if
      scwat(:ncol,:pver)  = state%s(:ncol,:pver)
      nlwat(:ncol,:pver)  = state%q(:ncol,:pver,ixnumliq)
      niwat(:ncol,:pver)  = state%q(:ncol,:pver,ixnumice)
+
+     if(l_dribling_uv) then
+      ifld = pbuf_get_index('UCWAT_DBL')
+      call pbuf_get_field(pbuf, ifld, ucwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+      ifld = pbuf_get_index('VCWAT_DBL')
+      call pbuf_get_field(pbuf, ifld, vcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+      ucwat(:ncol,:pver)  = state%u(:ncol,:pver) 
+      vcwat(:ncol,:pver)  = state%v(:ncol,:pver) 
+     end if
+
+     if(l_dribling_w) then
+      ifld = pbuf_get_index('WCWAT_DBL')
+      call pbuf_get_field(pbuf, ifld, wcwat, start=(/1,1,itim_old/), kount=(/pcols,pver,1/) )
+
+      wcwat(:ncol,:pver) = state%omega(:ncol,:pver) 
+     end if
 
      end if 
 

@@ -181,6 +181,9 @@ module clubb_intr
     lcwat_dbl_idx  = 0, &
     tcwat_dbl_idx  = 0, &
     scwat_dbl_idx  = 0, &
+    ucwat_dbl_idx  = 0, &
+    vcwat_dbl_idx  = 0, &
+    wcwat_dbl_idx  = 0, &
     icwat_dbl_idx  = 0, &
     nlwat_dbl_idx  = 0, &
     niwat_dbl_idx  = 0
@@ -270,6 +273,9 @@ module clubb_intr
     call pbuf_add_field('SCWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), scwat_dbl_idx)
     call pbuf_add_field('NLWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), nlwat_dbl_idx)
     call pbuf_add_field('NIWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), niwat_dbl_idx)
+    call pbuf_add_field('UCWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), ucwat_dbl_idx)
+    call pbuf_add_field('VCWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), vcwat_dbl_idx)
+    call pbuf_add_field('WCWAT_DBL',      'global', dtype_r8, (/pcols,pver,dyn_time_lvls/), wcwat_dbl_idx)
 
     !  put pbuf_add calls here (see macrop_driver.F90 for sample) use indicies defined at top
     call pbuf_add_field('pblh',       'global', dtype_r8, (/pcols/),                    pblh_idx)
