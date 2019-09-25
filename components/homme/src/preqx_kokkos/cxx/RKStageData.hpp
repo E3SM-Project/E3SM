@@ -10,14 +10,13 @@ struct RKStageData {
   RKStageData () = default;
 
   RKStageData (const int nm1_in, const int n0_in, const int np1_in, const int n0_qdp_in,
-               const Real dt_in, const Real eta_ave_w_in, const bool compute_diagnostics_in)
+               const Real dt_in, const Real eta_ave_w_in)
    : nm1    (nm1_in)
    , n0     (n0_in)
    , np1    (np1_in)
    , n0_qdp (n0_qdp_in)
    , dt     (dt_in)
    , eta_ave_w (eta_ave_w_in)
-   , compute_diagnostics  (compute_diagnostics_in)
   {}
 
   int     nm1;
@@ -27,8 +26,6 @@ struct RKStageData {
 
   Real    dt;
   Real    eta_ave_w;
-
-  bool    compute_diagnostics;
 };
 
 } // namespace Homme

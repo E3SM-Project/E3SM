@@ -6,6 +6,7 @@
 
 #include "CaarFunctor.hpp"
 #include "Context.hpp"
+#include "Diagnostics.hpp"
 #include "Elements.hpp"
 #include "HyperviscosityFunctor.hpp"
 #include "PhysicalConstants.hpp"
@@ -18,11 +19,11 @@ namespace Homme
 {
 
 // Declare all the timestepping schemes routines
-void RK2_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
-void imex_KG254_explicit_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
-void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
-void imex_KG243_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
-void imex_KG254_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics);
+void RK2_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
+void imex_KG254_explicit_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
+void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
+void imex_KG243_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
+void imex_KG254_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w);
 
 // -------------- IMPLEMENTATIONS -------------- //
 
@@ -35,8 +36,10 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
                          Errors::err_not_implemented);
 #endif
 
+  auto& context = Context::singleton();
+
   // Get simulation params
-  SimulationParams& params = Context::singleton().get<SimulationParams>();
+  SimulationParams& params = context.get<SimulationParams>();
 
   // Determine the tracers time level
   tl.update_tracers_levels(params.qsplit);
@@ -46,7 +49,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 
   // From f90 code: "this should not be needed, but in case physics update u without updating w b.c."
   {
-    auto e = Context::singleton().get<Elements>();
+    auto e = context.get<Elements>();
     auto w_i = e.m_state.m_w_i;
     auto v = e.m_state.m_v;
     auto gradphis = e.m_geometry.m_gradphis;
@@ -76,19 +79,19 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 
   switch (params.time_step_type) {
     case TimeStepType::RK2:
-      RK2_timestep (tl, dt, eta_ave_w, compute_diagnostics);
+      RK2_timestep (tl, dt, eta_ave_w);
       break;
     case TimeStepType::IMEX_KG254_EX:
-      imex_KG254_explicit_timestep (tl, dt, eta_ave_w, compute_diagnostics);
+      imex_KG254_explicit_timestep (tl, dt, eta_ave_w);
       break;
     case TimeStepType::ULLRICH_RK35:
-      u3_5stage_timestep (tl, dt, eta_ave_w, compute_diagnostics);
+      u3_5stage_timestep (tl, dt, eta_ave_w);
       break;
     case TimeStepType::IMEX_KG243:
-      imex_KG243_timestep (tl, dt, eta_ave_w, compute_diagnostics);
+      imex_KG243_timestep (tl, dt, eta_ave_w);
       break;
     case TimeStepType::IMEX_KG254:
-      imex_KG254_timestep (tl, dt, eta_ave_w, compute_diagnostics);
+      imex_KG254_timestep (tl, dt, eta_ave_w);
       break;
     default:
       {
@@ -100,8 +103,14 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
       }
   }
 
+  if (compute_diagnostics) {
+    auto& diags = context.get<Diagnostics>();
+    diags.prim_energy_halftimes(false,4);
+    diags.prim_diag_scalars(false,4);
+  }
+
   if (params.hypervis_order==2 && params.nu>0) {
-    HyperviscosityFunctor& functor = Context::singleton().get<HyperviscosityFunctor>();
+    HyperviscosityFunctor& functor = context.get<HyperviscosityFunctor>();
     GPTLstart("tl-ae advance_hypervis_dp");
     functor.run(tl.np1,dt,eta_ave_w);
     GPTLstop("tl-ae advance_hypervis_dp");
@@ -112,24 +121,34 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
                            Errors::err_not_implemented);
   }
 
+  if (compute_diagnostics) {
+    auto& diags = context.get<Diagnostics>();
+    diags.prim_energy_halftimes(false,5);
+    diags.prim_diag_scalars(false,5);
+  }
+
   GPTLstop("tl-ae prim_advance_exp");
 }
 
 // Implementations of timestep schemes, in terms of CaarFunctor runs
 
-void RK2_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
+void RK2_timestep(const TimeLevel& /* tl */,
+                  const Real /* dt */,
+                  const Real /* eta_ave_w */)
 {
   // TODO
   assert(false);
 }
 
-void imex_KG254_explicit_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
+void imex_KG254_explicit_timestep(const TimeLevel& /* tl */,
+                                  const Real /* dt */,
+                                  const Real /* eta_ave_w */)
 {
   // TODO
   assert(false);
 }
 
-void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
+void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w)
 {
   GPTLstart("tl-ae U3-5stage_timestep");
   // Get elements structure
@@ -141,22 +160,26 @@ void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w
   // ===================== RK STAGES ===================== //
 
   // Stage 1: u1 = u0 + dt/5 RHS(u0),          t_rhs = t
-  functor.run(RKStageData(tl.n0,tl.n0,tl.nm1,tl.n0_qdp,dt/5.0,eta_ave_w/4.0,compute_diagnostics));
+  functor.run(RKStageData(tl.n0,tl.n0,tl.nm1,tl.n0_qdp,dt/5.0,eta_ave_w/4.0));
 
   // Stage 2: u2 = u0 + dt/5 RHS(u1),          t_rhs = t + dt/5
-  functor.run(RKStageData(tl.n0,tl.nm1,tl.np1,tl.n0_qdp,dt/5.0,0.0,false));
+  functor.run(RKStageData(tl.n0,tl.nm1,tl.np1,tl.n0_qdp,dt/5.0,0.0));
 
   // Stage 3: u3 = u0 + dt/3 RHS(u2),          t_rhs = t + dt/5 + dt/5
-  functor.run(RKStageData(tl.n0,tl.np1,tl.np1,tl.n0_qdp,dt/3.0,0.0,false));
+  functor.run(RKStageData(tl.n0,tl.np1,tl.np1,tl.n0_qdp,dt/3.0,0.0));
 
   // Stage 4: u4 = u0 + 2dt/3 RHS(u3),         t_rhs = t + dt/5 + dt/5 + dt/3
-  functor.run(RKStageData(tl.n0,tl.np1,tl.np1,tl.n0_qdp,2.0*dt/3.0,0.0,false));
+  functor.run(RKStageData(tl.n0,tl.np1,tl.np1,tl.n0_qdp,2.0*dt/3.0,0.0));
 
   // Compute (5u1-u0)/4 and store it in timelevel nm1
   {
     // const auto t    = elements.m_state.m_t;
-    const auto v    = elements.m_state.m_v;
-    const auto dp3d = elements.m_state.m_dp3d;
+    const auto v         = elements.m_state.m_v;
+    const auto w         = elements.m_state.m_w_i;
+    const auto vtheta_dp = elements.m_state.m_vtheta_dp;
+    const auto phinh     = elements.m_state.m_phinh_i;
+    const auto dp3d      = elements.m_state.m_dp3d;
+
     const auto nm1  = tl.nm1;
     const auto n0   = tl.n0;
     Kokkos::parallel_for(
@@ -166,26 +189,43 @@ void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w
          const int igp = (it / (NP*NUM_LEV)) % NP;
          const int jgp = (it / NUM_LEV) % NP;
          const int ilev = it % NUM_LEV;
-         // t(ie,nm1,igp,jgp,ilev) = (5.0*t(ie,nm1,igp,jgp,ilev)-t(ie,n0,igp,jgp,ilev))/4.0;
          v(ie,nm1,0,igp,jgp,ilev) = (5.0*v(ie,nm1,0,igp,jgp,ilev)-v(ie,n0,0,igp,jgp,ilev))/4.0;
          v(ie,nm1,1,igp,jgp,ilev) = (5.0*v(ie,nm1,1,igp,jgp,ilev)-v(ie,n0,1,igp,jgp,ilev))/4.0;
+         w(ie,nm1,igp,jgp,ilev) = (5.0*w(ie,nm1,igp,jgp,ilev)-w(ie,n0,igp,jgp,ilev))/4.0;
+         vtheta_dp(ie,nm1,igp,jgp,ilev) = (5.0*vtheta_dp(ie,nm1,igp,jgp,ilev)-vtheta_dp(ie,n0,igp,jgp,ilev))/4.0;
+         phinh(ie,nm1,igp,jgp,ilev) = (5.0*phinh(ie,nm1,igp,jgp,ilev)-phinh(ie,n0,igp,jgp,ilev))/4.0;
          dp3d(ie,nm1,igp,jgp,ilev) = (5.0*dp3d(ie,nm1,igp,jgp,ilev)-dp3d(ie,n0,igp,jgp,ilev))/4.0;
     });
+    // If NUM_LEV==NUM_LEV_P, the code above will take care also of the last interface
+    if (NUM_LEV_P>NUM_LEV) {
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<ExecSpace>(0, elements.num_elems()*NP*NP),
+        KOKKOS_LAMBDA(const int it) {
+           const int ie  =  it / (NP*NP);
+           const int igp = (it / NP) % NP;
+           const int jgp =  it % NP;
+           w(ie,nm1,igp,jgp,NUM_LEV_P) = (5.0*w(ie,nm1,igp,jgp,NUM_LEV_P)-w(ie,n0,igp,jgp,NUM_LEV_P))/4.0;
+      });
+    }
   }
   ExecSpace::fence();
 
   // Stage 5: u5 = (5u1-u0)/4 + 3dt/4 RHS(u4), t_rhs = t + dt/5 + dt/5 + dt/3 + 2dt/3
-  functor.run(RKStageData(tl.nm1,tl.np1,tl.np1,tl.n0_qdp,3.0*dt/4.0,3.0*eta_ave_w/4.0,false));
+  functor.run(RKStageData(tl.nm1,tl.np1,tl.np1,tl.n0_qdp,3.0*dt/4.0,3.0*eta_ave_w/4.0));
   GPTLstop("tl-ae U3-5stage_timestep");
 }
 
-void imex_KG243_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
+void imex_KG243_timestep(const TimeLevel& /* tl */,
+                         const Real /* dt */,
+                         const Real /* eta_ave_w */)
 {
   // TODO
   assert(false);
 }
 
-void imex_KG254_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w, const bool compute_diagnostics)
+void imex_KG254_timestep(const TimeLevel& /* tl */,
+                         const Real /* dt */,
+                         const Real /* eta_ave_w */)
 {
   // TODO
   assert(false);

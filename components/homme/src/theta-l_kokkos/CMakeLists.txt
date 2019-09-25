@@ -138,7 +138,7 @@ SET(THETAL_DEPS_F90
 
 SET(THETAL_DEPS_CXX
   ${TARGET_DIR}/cxx/CamForcing.cpp
-  ${TARGET_DIR}/cxx/DiagnosticsTheta.cpp
+  ${TARGET_DIR}/cxx/Diagnostics.cpp
   ${TARGET_DIR}/cxx/ElementsForcing.cpp
   ${TARGET_DIR}/cxx/ElementsState.cpp
   ${TARGET_DIR}/cxx/HyperviscosityFunctorImpl.cpp
@@ -146,7 +146,6 @@ SET(THETAL_DEPS_CXX
   ${TARGET_DIR}/cxx/prim_advance_exp.cpp
   ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
   ${SRC_SHARE_DIR}/cxx/Context.cpp
-  ${SRC_SHARE_DIR}/cxx/DiagnosticsBase.cpp
   ${SRC_SHARE_DIR}/cxx/Elements.cpp
   ${SRC_SHARE_DIR}/cxx/ElementsDerivedState.cpp
   ${SRC_SHARE_DIR}/cxx/ElementsGeometry.cpp

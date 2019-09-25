@@ -10,7 +10,7 @@ struct RKStageData {
   RKStageData () = default;
 
   RKStageData (const int nm1_in, const int n0_in, const int np1_in, const int n0_qdp_in,
-               const Real dt_in, const Real eta_ave_w_in, const bool compute_diagnostics_in,
+               const Real dt_in, const Real eta_ave_w_in,
                const Real scale1_in = 1.0, const Real scale2_in = 1.0, const Real scale3_in = 1.0)
    : nm1    (nm1_in)
    , n0     (n0_in)
@@ -18,7 +18,6 @@ struct RKStageData {
    , n0_qdp (n0_qdp_in)
    , dt     (dt_in)
    , eta_ave_w (eta_ave_w_in)
-   , compute_diagnostics  (compute_diagnostics_in)
    , scale1 (scale1_in)
    , scale2 (scale2_in)
    , scale3 (scale3_in)
@@ -31,8 +30,6 @@ struct RKStageData {
 
   Real    dt;
   Real    eta_ave_w;
-
-  bool    compute_diagnostics;
 
   Real    scale1;
   Real    scale2;
