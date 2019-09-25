@@ -56,8 +56,9 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     # flag will stay in effect for the duration of the RESUBMITs
     env_batch = case.get_env("batch")
     external_workflow = case.get_value("EXTERNAL_WORKFLOW")
-    if resubmit and env_batch.get_batch_system_type() == "none" or external_workflow:
+    if env_batch.get_batch_system_type() == "none" or resubmit and external_workflow:
         no_batch = True
+
     if no_batch:
         batch_system = "none"
     else:
