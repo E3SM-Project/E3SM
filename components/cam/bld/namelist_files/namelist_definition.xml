@@ -2641,6 +2641,18 @@ Do dribling tendency during CLUBB+MG2 calculation.
 Default: FALSE
 </entry>
 
+<entry id="l_dribling_uv" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Do dribling tendency for uv during CLUBB+MG2 calculation.
+Default: FALSE
+</entry>
+
+<entry id="l_dribling_w" type="logical" category="physc_test"
+       group="phys_ctl_nl" valid_values="" >
+Do dribling tendency for omega during CLUBB+MG2 calculation.
+Default: FALSE
+</entry>
+
 <!-- Physics sub-column switches -->
 
 <entry id="use_subcol_microp" type="logical" category="conv"
