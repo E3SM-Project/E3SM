@@ -54,7 +54,7 @@ TEST_CASE("d_dinv_check", "Testing Elements::random_init") {
   const int seed = rd();
 
   ElementsGeometry geometry;
-  geometry.init(num_elems,false);
+  geometry.init(num_elems, false, /*alloc_gradphis = */ false);
   geometry.randomize(seed);
 
   HostViewManaged<Real * [2][2][NP][NP]> d("host d", num_elems);

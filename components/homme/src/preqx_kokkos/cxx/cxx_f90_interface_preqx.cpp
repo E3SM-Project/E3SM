@@ -232,7 +232,7 @@ void init_elements_c (const int& num_elems)
   const SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  e.init (num_elems, consthv);
+  e.init (num_elems, consthv, /* alloc_gradphis = */ false);
 
   // Init also the tracers structure
   Tracers& t = Context::singleton().create<Tracers> ();

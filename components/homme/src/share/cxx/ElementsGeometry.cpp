@@ -16,7 +16,7 @@
 
 namespace Homme {
 
-void ElementsGeometry::init(const int num_elems, const bool consthv) {
+void ElementsGeometry::init(const int num_elems, const bool consthv, const bool alloc_gradphis) {
   // Sanity check
   assert (num_elems>0);
 
@@ -44,6 +44,10 @@ void ElementsGeometry::init(const int num_elems, const bool consthv) {
   //matrix D and its derivatives 
   m_d    = ExecViewManaged<Real * [2][2][NP][NP]>("matrix D",                   m_num_elems);
   m_dinv = ExecViewManaged<Real * [2][2][NP][NP]>("DInv - inverse of matrix D", m_num_elems);
+
+  if (alloc_gradphis) {
+    m_gradphis = decltype(m_gradphis) ("gradient of geopotential at surface", m_num_elems);
+  }
 }
 
 void ElementsGeometry::
@@ -164,13 +168,13 @@ void ElementsGeometry::randomize(const int seed) {
   genRandArray(m_fcor,         engine, random_dist);
 
   genRandArray(m_spheremp,     engine, random_dist);
-  genRandArray(m_rspheremp,    engine, random_dist);
-  genRandArray(m_metdet,       engine, random_dist);
-  genRandArray(m_metinv,       engine, random_dist);
   genRandArray(m_tensorvisc,   engine, random_dist);
   genRandArray(m_vec_sph2cart, engine, random_dist);
 
   genRandArray(m_phis,         engine, random_dist);
+  if (m_gradphis.size()!=0) {
+    genRandArray(m_gradphis, engine, random_dist);
+  }
 
   // Lambdas used to constrain the metric tensor and its inverse
   const auto compute_det = [](HostViewUnmanaged<Real[2][2]> mtx) {
@@ -185,12 +189,26 @@ void ElementsGeometry::randomize(const int seed) {
 
   auto h_d    = Kokkos::create_mirror_view(m_d);
   auto h_dinv = Kokkos::create_mirror_view(m_dinv);
+  auto h_metinv = Kokkos::create_mirror_view(m_metinv);
+  auto h_metdet = Kokkos::create_mirror_view(m_metdet);
+  auto h_rspheremp = Kokkos::create_mirror_view(m_rspheremp);
+  auto h_spheremp  = Kokkos::create_mirror_view(m_spheremp);
+  Kokkos::deep_copy(h_spheremp, m_spheremp);
 
   for (int ie = 0; ie < m_num_elems; ++ie) {
     // Because this constraint is difficult to satisfy for all of the tensors,
     // incrementally generate the view
     for (int igp = 0; igp < NP; ++igp) {
       for (int jgp = 0; jgp < NP; ++jgp) {
+
+        // To avoid physical inconsistencies (which may trigger errors in the EOS):
+        //  1) rspheremp = 1/spheremp
+        //  2.1) det(d)>0
+        //  2.1) dinv = (d)^-1
+        //  2.1) det(metinv)>0
+        //  2.1) metdet = 1/det(metinv)
+        h_rspheremp(ie,igp,jgp) = 1./h_spheremp(ie,igp,jgp);
+
         do {
           genRandArray(h_matrix, engine, random_dist);
         } while (compute_det(h_matrix)<=0.0);
@@ -205,12 +223,24 @@ void ElementsGeometry::randomize(const int seed) {
         h_dinv(ie, 1, 0, igp, jgp) = -h_matrix(1, 0) / determinant;
         h_dinv(ie, 0, 1, igp, jgp) = -h_matrix(0, 1) / determinant;
         h_dinv(ie, 1, 1, igp, jgp) =  h_matrix(0, 0) / determinant;
+
+        do {
+          genRandArray(h_matrix, engine, random_dist);
+        } while (compute_det(h_matrix)<=0.0);
+        h_metdet(ie,igp,jgp) = compute_det(h_matrix);
+        h_metinv(ie, 0, 0, igp, jgp) = h_matrix(1, 1);
+        h_metinv(ie, 1, 0, igp, jgp) = h_matrix(1, 0);
+        h_metinv(ie, 0, 1, igp, jgp) = h_matrix(0, 1);
+        h_metinv(ie, 1, 1, igp, jgp) = h_matrix(0, 0);
       }
     }
   }
 
   Kokkos::deep_copy(m_d,    h_d);
   Kokkos::deep_copy(m_dinv, h_dinv);
+  Kokkos::deep_copy(m_metinv, h_metinv);
+  Kokkos::deep_copy(m_metdet, h_metdet);
+  Kokkos::deep_copy(m_rspheremp, h_rspheremp);
 }
 
 } // namespace Homme

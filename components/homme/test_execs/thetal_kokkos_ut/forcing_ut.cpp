@@ -58,7 +58,7 @@ TEST_CASE("forcing", "forcing") {
   hv.random_init(seed);
 
   auto& geo     = c.create<ElementsGeometry>();
-  geo.init(num_elems,true);
+  geo.init(num_elems,true, /* alloc_gradphis = */ true);
   geo.randomize(seed);
 
   auto& state   = c.create<ElementsState>();
@@ -77,8 +77,6 @@ TEST_CASE("forcing", "forcing") {
   const int np1_qdp = ipdf(0,1)(engine);
 
   // Init the f90 side
-  geo.m_gradphis = decltype(geo.m_gradphis)("",num_elems);
-  genRandArray(geo.m_gradphis,engine,dpdf(0.1,1.0));
   auto h_hyai = Kokkos::create_mirror_view(hv.hybrid_ai);
   auto h_hybi = Kokkos::create_mirror_view(hv.hybrid_bi);
   auto h_hyam = Kokkos::create_mirror_view(hv.hybrid_am);
@@ -150,11 +148,7 @@ TEST_CASE("forcing", "forcing") {
   auto h_fphi    = Kokkos::create_mirror_view(forcing.m_fphi);
 
   for (const bool hydrostatic : {true,false}) {
-    std::cout << (hydrostatic ? " -> Hydrostatic mode\n" : " -> Non-hydrostatic mode\n");
     for (const MoistDry moisture : {MoistDry::DRY,MoistDry::MOIST}) {
-      const bool moist = (moisture==MoistDry::MOIST);
-      std::cout << (moist ? "  -> Moist case\n" : "  -> Dry case\n");
-
       // Reset state, tracers, and forcing to the original random values
       state.randomize(seed, 10*hv.ps0, hv.ps0);
       tracers.randomize(seed);
@@ -202,9 +196,6 @@ TEST_CASE("forcing", "forcing") {
               const int ivec = k % VECTOR_SIZE;
 
               REQUIRE(h_dp(ie,np1,igp,jgp,ilev)[ivec]==dp_f90(ie,np1,k,igp,jgp));
-if(h_fphi(ie,igp,jgp,ilev)[ivec]!=fphi_f90(ie,k,igp,jgp)) {
-  printf ("ie,k,igp,jgp: %d, %d, %d, %d.\n",ie,k,igp,jgp);
-}
               REQUIRE(h_fphi(ie,igp,jgp,ilev)[ivec]==fphi_f90(ie,k,igp,jgp));
               REQUIRE(h_fvtheta(ie,igp,jgp,ilev)[ivec]==fvtheta_f90(ie,k,igp,jgp));
 

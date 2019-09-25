@@ -158,12 +158,13 @@ TEST_CASE("hvf", "biharmonic") {
   const int num_elems = c.get<Connectivity>().get_num_local_elements();
 
   auto& geo = c.create<ElementsGeometry>();
-  geo.init(num_elems,false);
+  geo.init(num_elems,false, /* alloc_gradphis = */ true);
   geo.randomize(seed);
 
   auto& state = c.create<ElementsState>();
   state.init(num_elems);
-  state.randomize(seed,rpdf(engine),hvcoord.ps0);
+  const auto max_pressure = rpdf(engine) + hvcoord.ps0; // This ensures max_p > ps0
+  state.randomize(seed,max_pressure,hvcoord.ps0);
 
   auto& derived = c.create<ElementsDerivedState>();
   derived.init(num_elems);

@@ -242,15 +242,11 @@ void init_elements_c (const int& num_elems)
   const SimulationParams& params = c.get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
-  e.init (num_elems, consthv);
+  e.init (num_elems, consthv, /* alloc_gradphis = */ true);
 
   // Init also the tracers structure
   Tracers& t = c.create<Tracers> ();
   t.init(num_elems,params.qsize);
-
-  // Init the geopotential gradient. The ElementsGeometry structure does *not* init this
-  // view, since it's only needed by the theta model, and not by preqx
-  e.m_geometry.m_gradphis = ExecViewManaged<Real * [2][NP][NP]>("PHIS GRADIENT", e.num_elems());
 
   // In the context, we register also Elements[Geometry|State|DerivedState|Forcing],
   // making sure they store the same views as in the subobjects of Elements.

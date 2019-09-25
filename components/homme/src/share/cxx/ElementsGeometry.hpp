@@ -43,7 +43,7 @@ public:
 
   ElementsGeometry() : m_num_elems(0) {}
 
-  void init (const int num_elems, const bool consthv);
+  void init (const int num_elems, const bool consthv, const bool alloc_gradphis);
 
   void randomize (const int seed);
 

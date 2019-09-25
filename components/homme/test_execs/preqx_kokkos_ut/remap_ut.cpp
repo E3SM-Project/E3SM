@@ -406,7 +406,7 @@ TEST_CASE("remap_interface", "vertical remap") {
 
   Elements elements;
   seed = rd();
-  elements.init(num_elems,seed);
+  elements.init(num_elems,seed, /*alloc_gradphis = */ false);
   elements.randomize(seed);
 
   Tracers tracers;
