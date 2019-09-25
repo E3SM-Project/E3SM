@@ -27,7 +27,7 @@ contains
     ! !USES:
     use clm_varctl       , only: co2_type, co2_ppmv, iulog, use_c13, create_glacier_mec_landunit, &
                                  metdata_type, metdata_bypass, metdata_biases, co2_file, aero_file
-    use clm_varctl       , only: add_temperature, add_co2
+    use clm_varctl       , only: const_climate_hist, add_temperature, add_co2, use_cn
     use clm_varctl       , only: startdate_add_temperature, startdate_add_co2
     use clm_varcon       , only: rair, o2_molar_const, c13ratio
     use clm_time_manager , only: get_nstep, get_step_size, get_curr_calday, get_curr_date 
@@ -418,7 +418,7 @@ contains
             starti(2) = gtoget
             counti(1) = atm2lnd_vars%timelen_spinup(v)
             counti(2) = 1
-            if (yr .ge. 1850 .or. use_sitedata) counti(1) = atm2lnd_vars%timelen(v)
+            if (.not. const_climate_hist .and. (yr .ge. 1850 .or. use_sitedata)) counti(1) = atm2lnd_vars%timelen(v)
 
             if (i == 1 .and. v == 1)  then 
               allocate(atm2lnd_vars%atm_input       (met_nvars,bounds%begg:bounds%endg,1,1:counti(1)))
@@ -506,13 +506,25 @@ contains
               atm2lnd_vars%tindex(g,v,2) = atm2lnd_vars%tindex(g,v,2)+nint(1/atm2lnd_vars%npf(v))  
             end if
 
-            if (yr .gt. atm2lnd_vars%startyear_met) then 
-              if (atm2lnd_vars%tindex(g,v,1) .gt. atm2lnd_vars%timelen(v)) atm2lnd_vars%tindex(g,v,1) = 1
-              if (atm2lnd_vars%tindex(g,v,2) .gt. atm2lnd_vars%timelen(v)) atm2lnd_vars%tindex(g,v,2) = 1
-            else
+            if (const_climate_hist .or. yr .le. atm2lnd_vars%startyear_met) then
               if (atm2lnd_vars%tindex(g,v,1) .gt. atm2lnd_vars%timelen_spinup(v)) atm2lnd_vars%tindex(g,v,1) = 1
               if (atm2lnd_vars%tindex(g,v,2) .gt. atm2lnd_vars%timelen_spinup(v)) atm2lnd_vars%tindex(g,v,2) = 1
+            else if (yr .gt. atm2lnd_vars%endyear_met_trans) then
+              if (atm2lnd_vars%tindex(g,v,1) .gt. atm2lnd_vars%timelen(v)) then
+                 atm2lnd_vars%tindex(g,v,1) = atm2lnd_vars%timelen(v)-atm2lnd_vars%timelen_spinup(v)+1
+              end if
+              if (atm2lnd_vars%tindex(g,v,2) .gt. atm2lnd_vars%timelen(v)) then
+                 atm2lnd_vars%tindex(g,v,2) = atm2lnd_vars%timelen(v)-atm2lnd_vars%timelen_spinup(v)+1
+              end if
             end if
+
+            !if (yr .gt. atm2lnd_vars%startyear_met) then 
+            !  if (atm2lnd_vars%tindex(g,v,1) .gt. atm2lnd_vars%timelen(v)) atm2lnd_vars%tindex(g,v,1) = 1
+            !  if (atm2lnd_vars%tindex(g,v,2) .gt. atm2lnd_vars%timelen(v)) atm2lnd_vars%tindex(g,v,2) = 1
+            !else
+            !  if (atm2lnd_vars%tindex(g,v,1) .gt. atm2lnd_vars%timelen_spinup(v)) atm2lnd_vars%tindex(g,v,1) = 1
+            !  if (atm2lnd_vars%tindex(g,v,2) .gt. atm2lnd_vars%timelen_spinup(v)) atm2lnd_vars%tindex(g,v,2) = 1
+            !end if
           end do
         end if
 
@@ -686,11 +698,12 @@ contains
  
         nindex(1) = yr-1848
         nindex(2) = nindex(1)+1
-        if (yr .lt. 1850) nindex(1:2) = 2
-        if (yr .ge. 2010) nindex(1:2) = 161
+        if (yr .lt. 1850 .or. const_climate_hist) nindex(1:2) = 2
+        if (yr .ge. 2010 .and. .not. const_climate_hist) nindex(1:2) = 161
       
-        if (atm2lnd_vars%loaded_bypassdata == 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then  
-          if (masterproc .and. i .eq. 1) then 
+        if (use_cn) then 
+          if (atm2lnd_vars%loaded_bypassdata == 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then  
+            if (masterproc .and. i .eq. 1) then 
               ! Read pop_dens streams namelist to get filename
               nu_nml = getavu()
               open(nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
@@ -723,20 +736,20 @@ contains
                   atm2lnd_vars%hdm2 = atm2lnd_vars%hdm1 
               end if
               ierr = nf90_close(ncid)
-          end if
+            end if
 
-          if (i .eq. 1) then 
+            if (i .eq. 1) then 
               call mpi_bcast (atm2lnd_vars%hdm1, 360*720, MPI_REAL8, 0, mpicom, ier)
               call mpi_bcast (atm2lnd_vars%hdm2, 360*720, MPI_REAL8, 0, mpicom, ier)
               call mpi_bcast (smap05_lon, 720, MPI_REAL8, 0, mpicom, ier)
               call mpi_bcast (smap05_lat, 360, MPI_REAL8, 0, mpicom, ier)
+            end if
           end if
-        end if
 
-        !figure out which point to get
-        if (atm2lnd_vars%loaded_bypassdata == 0) then 
-          mindist=99999
-          do thisx = 1,720
+          !figure out which point to get
+          if (atm2lnd_vars%loaded_bypassdata == 0) then 
+            mindist=99999
+            do thisx = 1,720
               do thisy = 1,360
                   if (ldomain%lonc(g) .lt. 0) then
                       if (smap05_lon(thisx) >= 180) smap05_lon(thisx) = smap05_lon(thisx)-360._r8
@@ -751,163 +764,164 @@ contains
                       atm2lnd_vars%hdmind(g,2) = thisy
                   end if
               end do
-          end do
-        end if
-        !get weights for interpolation
-        wt1(1) = 1._r8 - (thiscalday -1._r8)/365._r8
-        wt2(1) = 1._r8 - wt1(1)
-        atm2lnd_vars%forc_hdm(g) = atm2lnd_vars%hdm1(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt1(1) + &
-                                   atm2lnd_vars%hdm2(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt2(1)
-
-        if (atm2lnd_vars%loaded_bypassdata .eq. 0 .and. masterproc .and. i .eq. 1) then 
-          ! Read light_streams namelist to get filename
-          nu_nml = getavu()
-          open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
-          call find_nlgroup_name(nu_nml, 'light_streams', status=nml_error)
-          if (nml_error == 0) then
-            read(nu_nml, nml=light_streams,iostat=nml_error)
-            if (nml_error /= 0) then
-              call endrun(msg='ERROR reading light_streams namelist')
-            end if
-          end if
-          close(nu_nml)
-          call relavu( nu_nml )
-
-          !Get all of the data (master processor only)
-          allocate(atm2lnd_vars%lnfm_all       (192,94,2920))
-          ierr = nf90_open(trim(stream_fldFileName_lightng), NF90_NOWRITE, ncid)
-          ierr = nf90_inq_varid(ncid, 'lat', varid)
-          ierr = nf90_get_var(ncid, varid, smapt62_lat)
-          ierr = nf90_inq_varid(ncid, 'lon', varid)
-          ierr = nf90_get_var(ncid, varid, smapt62_lon)
-          ierr = nf90_inq_varid(ncid, 'lnfm', varid)
-          ierr = nf90_get_var(ncid, varid, atm2lnd_vars%lnfm_all)
-          ierr = nf90_close(ncid)
-        end if
-        if (atm2lnd_vars%loaded_bypassdata .eq. 0 .and. i .eq. 1) then
-            call mpi_bcast (smapt62_lon, 192, MPI_REAL8, 0, mpicom, ier)
-            call mpi_bcast (smapt62_lat, 94, MPI_REAL8, 0, mpicom, ier)
-        end if
-        if (atm2lnd_vars%loaded_bypassdata .eq. 0) then
-          mindist=99999
-          do thisx = 1,192
-            do thisy = 1,94
-              if (ldomain%lonc(g) .lt. 0) then 
-                if (smapt62_lon(thisx) >= 180) smapt62_lon(thisx) = smapt62_lon(thisx)-360._r8
-              else if (ldomain%lonc(g) .ge. 180) then 
-                if (smapt62_lon(thisx) < 0) smapt62_lon(thisx) = smapt62_lon(thisx) + 360._r8
-              end if
-              thisdist = 100*((smapt62_lat(thisy) - ldomain%latc(g))**2 + &
-                            (smapt62_lon(thisx) - ldomain%lonc(g))**2)**0.5
-              if (thisdist .lt. mindist) then
-                mindist = thisdist
-                lnfmind(1) = thisx
-                lnfmind(2) = thisy
-              end if
             end do
-          end do
-          if (masterproc) then
-            atm2lnd_vars%lnfm(g,:) = atm2lnd_vars%lnfm_all(lnfmind(1),lnfmind(2),:)
-            do np = 1,npes-1
-              if (i == 1) then 
-                call mpi_recv(thisng,  1, MPI_INTEGER, np, 100000+np, mpicom, status, ier)
-                ng_all(np) = thisng
-              end if
-              if (i <= ng_all(np)) then 
-                 call mpi_recv(lnfmind, 2, MPI_INTEGER, np, 200000+np, mpicom, status, ier)
-                 call mpi_send(atm2lnd_vars%lnfm_all(lnfmind(1),lnfmind(2),:), 2920, &
-                            MPI_REAL8, np, 300000+np, mpicom, ier)
-              end if
-            end do
-          else
-            if (i == 1)  call mpi_send(thisng,  1, MPI_INTEGER, 0, 100000+iam, mpicom, ier)
-            call mpi_send(lnfmind, 2, MPI_INTEGER, 0, 200000+iam, mpicom, ier) 
-            call mpi_recv(atm2lnd_vars%lnfm(g,:), 2920, MPI_REAL8, 0, 300000+iam, mpicom, status, ier)
           end if
-        end if
+          !get weights for interpolation
+          wt1(1) = 1._r8 - (thiscalday -1._r8)/365._r8
+          wt2(1) = 1._r8 - wt1(1)
+          atm2lnd_vars%forc_hdm(g) = atm2lnd_vars%hdm1(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt1(1) + &
+                                     atm2lnd_vars%hdm2(atm2lnd_vars%hdmind(g,1),atm2lnd_vars%hdmind(g,2),1)*wt2(1)
 
-        !Lightning data is 3-hourly.  Does not currently interpolate.
-        atm2lnd_vars%forc_lnfm(g) = atm2lnd_vars%lnfm(g, ((int(thiscalday)-1)*8+tod/(3600*3))+1)
-
-   !------------------------------------Nitrogen deposition----------------------------------------------
-
-        !DMR note - ndep will NOT be correct if more than 1850 years of model
-        !spinup (model year > 1850)
-        nindex(1) = min(max(yr-1848,2), 168)
-        nindex(2) = min(nindex(1)+1, 168)
-
-        if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
-          if (masterproc .and. i .eq. 1) then 
+          if (atm2lnd_vars%loaded_bypassdata .eq. 0 .and. masterproc .and. i .eq. 1) then 
+            ! Read light_streams namelist to get filename
             nu_nml = getavu()
             open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
-            call find_nlgroup_name(nu_nml, 'ndepdyn_nml', status=nml_error)
+            call find_nlgroup_name(nu_nml, 'light_streams', status=nml_error)
             if (nml_error == 0) then
-              read(nu_nml, nml=ndepdyn_nml,iostat=nml_error)
+              read(nu_nml, nml=light_streams,iostat=nml_error)
               if (nml_error /= 0) then
-                call endrun(msg='ERROR reading ndep namelist')
+                call endrun(msg='ERROR reading light_streams namelist')
               end if
             end if
             close(nu_nml)
             call relavu( nu_nml )
 
-            ierr = nf90_open(trim(stream_fldFileName_ndep), nf90_nowrite, ncid)
+            !Get all of the data (master processor only)
+            allocate(atm2lnd_vars%lnfm_all       (192,94,2920))
+            ierr = nf90_open(trim(stream_fldFileName_lightng), NF90_NOWRITE, ncid)
             ierr = nf90_inq_varid(ncid, 'lat', varid)
-            ierr = nf90_get_var(ncid, varid, smap2_lat)
-            ierr = nf90_inq_varid(ncid, 'lon', varid)      
-            ierr = nf90_get_var(ncid, varid, smap2_lon)
-            ierr = nf90_inq_varid(ncid, 'NDEP_year', varid)
-            starti(1:2) = 1
-            starti(3)   = nindex(1)
-            counti(1)   = 144
-            counti(2)   = 96
-            counti(3)   = 1
-            ierr = nf90_get_var(ncid, varid, atm2lnd_vars%ndep1, starti, counti)
-            if (nindex(1) .ne. nindex(2)) then 
-              starti(3) = nindex(2)
-              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%ndep2, starti, counti)
-            else
-              atm2lnd_vars%ndep2 = atm2lnd_vars%ndep1
-            end if
+            ierr = nf90_get_var(ncid, varid, smapt62_lat)
+            ierr = nf90_inq_varid(ncid, 'lon', varid)
+            ierr = nf90_get_var(ncid, varid, smapt62_lon)
+            ierr = nf90_inq_varid(ncid, 'lnfm', varid)
+            ierr = nf90_get_var(ncid, varid, atm2lnd_vars%lnfm_all)
             ierr = nf90_close(ncid)
-           end if
-           if (i .eq. 1) then
-              call mpi_bcast (atm2lnd_vars%ndep1, 144*96, MPI_REAL8, 0, mpicom, ier)
-              call mpi_bcast (atm2lnd_vars%ndep2, 144*96, MPI_REAL8, 0, mpicom, ier)
-              call mpi_bcast (smap2_lon, 144, MPI_REAL8, 0, mpicom, ier)
-              call mpi_bcast (smap2_lat, 96, MPI_REAL8, 0, mpicom, ier)
-           end if
-        end if
-
-        if (atm2lnd_vars%loaded_bypassdata .eq. 0) then 
-          mindist=99999
-          do thisx = 1,144
-            do thisy = 1,96
-              if (ldomain%lonc(g) .lt. 0) then 
-                if (smap2_lon(thisx) >= 180) smap2_lon(thisx) = smap2_lon(thisx)-360._r8
-              else if (ldomain%lonc(g) .ge. 180) then 
-                 if (smap2_lon(thisx) < 0) smap2_lon(thisx) = smap2_lon(thisx) + 360._r8
-              end if
-              thislon = smap2_lon(thisx)
-              thisdist = 100*((smap2_lat(thisy) - ldomain%latc(g))**2 + &
-                              (thislon - ldomain%lonc(g))**2)**0.5
-              if (thisdist .lt. mindist) then
-                mindist = thisdist
-                atm2lnd_vars%ndepind(g,1) = thisx
-                atm2lnd_vars%ndepind(g,2) = thisy
-              end if
+          end if
+          if (atm2lnd_vars%loaded_bypassdata .eq. 0 .and. i .eq. 1) then
+            call mpi_bcast (smapt62_lon, 192, MPI_REAL8, 0, mpicom, ier)
+            call mpi_bcast (smapt62_lat, 94, MPI_REAL8, 0, mpicom, ier)
+          end if
+          if (atm2lnd_vars%loaded_bypassdata .eq. 0) then
+            mindist=99999
+            do thisx = 1,192
+              do thisy = 1,94
+                if (ldomain%lonc(g) .lt. 0) then 
+                  if (smapt62_lon(thisx) >= 180) smapt62_lon(thisx) = smapt62_lon(thisx)-360._r8
+                else if (ldomain%lonc(g) .ge. 180) then 
+                  if (smapt62_lon(thisx) < 0) smapt62_lon(thisx) = smapt62_lon(thisx) + 360._r8
+                end if
+                thisdist = 100*((smapt62_lat(thisy) - ldomain%latc(g))**2 + &
+                            (smapt62_lon(thisx) - ldomain%lonc(g))**2)**0.5
+                if (thisdist .lt. mindist) then
+                  mindist = thisdist
+                  lnfmind(1) = thisx
+                  lnfmind(2) = thisy
+                end if
+              end do
             end do
-          end do
-        end if
+            if (masterproc) then
+              atm2lnd_vars%lnfm(g,:) = atm2lnd_vars%lnfm_all(lnfmind(1),lnfmind(2),:)
+              do np = 1,npes-1
+                if (i == 1) then 
+                  call mpi_recv(thisng,  1, MPI_INTEGER, np, 100000+np, mpicom, status, ier)
+                  ng_all(np) = thisng
+                end if
+                if (i <= ng_all(np)) then 
+                  call mpi_recv(lnfmind, 2, MPI_INTEGER, np, 200000+np, mpicom, status, ier)
+                  call mpi_send(atm2lnd_vars%lnfm_all(lnfmind(1),lnfmind(2),:), 2920, &
+                            MPI_REAL8, np, 300000+np, mpicom, ier)
+                end if
+              end do
+            else
+              if (i == 1)  call mpi_send(thisng,  1, MPI_INTEGER, 0, 100000+iam, mpicom, ier)
+              call mpi_send(lnfmind, 2, MPI_INTEGER, 0, 200000+iam, mpicom, ier) 
+              call mpi_recv(atm2lnd_vars%lnfm(g,:), 2920, MPI_REAL8, 0, 300000+iam, mpicom, status, ier)
+            end if
+          end if
 
-        !get weights for interpolation
-        wt1(1) = 1._r8 - (thiscalday -1._r8)/365._r8
-        wt2(1) = 1._r8 - wt1(1)
+          !Lightning data is 3-hourly.  Does not currently interpolate.
+          atm2lnd_vars%forc_lnfm(g) = atm2lnd_vars%lnfm(g, ((int(thiscalday)-1)*8+tod/(3600*3))+1)
+
+   !------------------------------------Nitrogen deposition----------------------------------------------
+
+          !DMR note - ndep will NOT be correct if more than 1850 years of model
+          !spinup (model year > 1850)
+          nindex(1) = min(max(yr-1848,2), 168)
+          nindex(2) = min(nindex(1)+1, 168)
+
+          if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
+            if (masterproc .and. i .eq. 1) then 
+              nu_nml = getavu()
+              open( nu_nml, file=trim(NLFilename), status='old', iostat=nml_error )
+              call find_nlgroup_name(nu_nml, 'ndepdyn_nml', status=nml_error)
+              if (nml_error == 0) then
+                read(nu_nml, nml=ndepdyn_nml,iostat=nml_error)
+                if (nml_error /= 0) then
+                  call endrun(msg='ERROR reading ndep namelist')
+                end if
+              end if
+              close(nu_nml)
+              call relavu( nu_nml )
+
+              ierr = nf90_open(trim(stream_fldFileName_ndep), nf90_nowrite, ncid)
+              ierr = nf90_inq_varid(ncid, 'lat', varid)
+              ierr = nf90_get_var(ncid, varid, smap2_lat)
+              ierr = nf90_inq_varid(ncid, 'lon', varid)      
+              ierr = nf90_get_var(ncid, varid, smap2_lon)
+              ierr = nf90_inq_varid(ncid, 'NDEP_year', varid)
+              starti(1:2) = 1
+              starti(3)   = nindex(1)
+              counti(1)   = 144
+              counti(2)   = 96
+              counti(3)   = 1
+              ierr = nf90_get_var(ncid, varid, atm2lnd_vars%ndep1, starti, counti)
+              if (nindex(1) .ne. nindex(2)) then 
+                starti(3) = nindex(2)
+                ierr = nf90_get_var(ncid, varid, atm2lnd_vars%ndep2, starti, counti)
+              else
+                atm2lnd_vars%ndep2 = atm2lnd_vars%ndep1
+              end if
+              ierr = nf90_close(ncid)
+             end if
+             if (i .eq. 1) then
+               call mpi_bcast (atm2lnd_vars%ndep1, 144*96, MPI_REAL8, 0, mpicom, ier)
+               call mpi_bcast (atm2lnd_vars%ndep2, 144*96, MPI_REAL8, 0, mpicom, ier)
+               call mpi_bcast (smap2_lon, 144, MPI_REAL8, 0, mpicom, ier)
+               call mpi_bcast (smap2_lat, 96, MPI_REAL8, 0, mpicom, ier)
+             end if
+          end if
+
+          if (atm2lnd_vars%loaded_bypassdata .eq. 0) then 
+            mindist=99999
+            do thisx = 1,144
+              do thisy = 1,96
+                if (ldomain%lonc(g) .lt. 0) then 
+                  if (smap2_lon(thisx) >= 180) smap2_lon(thisx) = smap2_lon(thisx)-360._r8
+                else if (ldomain%lonc(g) .ge. 180) then 
+                  if (smap2_lon(thisx) < 0) smap2_lon(thisx) = smap2_lon(thisx) + 360._r8
+                end if
+                thislon = smap2_lon(thisx)
+                thisdist = 100*((smap2_lat(thisy) - ldomain%latc(g))**2 + &
+                              (thislon - ldomain%lonc(g))**2)**0.5
+                if (thisdist .lt. mindist) then
+                  mindist = thisdist
+                  atm2lnd_vars%ndepind(g,1) = thisx
+                  atm2lnd_vars%ndepind(g,2) = thisy
+                end if
+              end do
+            end do
+          end if
+
+          !get weights for interpolation
+          wt1(1) = 1._r8 - (thiscalday -1._r8)/365._r8
+          wt2(1) = 1._r8 - wt1(1)
   
-        atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
-                                            atm2lnd_vars%ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
+          atm2lnd_vars%forc_ndep_grc(g)    = (atm2lnd_vars%ndep1(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt1(1) + &
+                                              atm2lnd_vars%ndep2(atm2lnd_vars%ndepind(g,1),atm2lnd_vars%ndepind(g,2),1)*wt2(1)) / (365._r8 * 86400._r8)
+        end if
 
    !------------------------------------Aerosol forcing--------------------------------------------------
-       if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
+        if (atm2lnd_vars%loaded_bypassdata .eq. 0 .or. (mon .eq. 1 .and. day .eq. 1 .and. tod .eq. 0)) then 
           if (masterproc .and. i .eq. 1) then 
             aerovars(1) = 'BCDEPWET'
             aerovars(2) = 'BCPHODRY'
@@ -942,9 +956,29 @@ contains
           if (i .eq. 1) then 
              call mpi_bcast (atm2lnd_vars%aerodata, 14*144*96*14, MPI_REAL8, 0, mpicom, ier)
           end if
-       end if
+        end if
 
-       !Use ndep grid indices since they're on the same grid
+        !Use ndep grid indices since they're on the same grid
+        if (atm2lnd_vars%loaded_bypassdata .eq. 0 .and. .not. use_cn) then
+            mindist=99999
+            do thisx = 1,144
+              do thisy = 1,96
+                if (ldomain%lonc(g) .lt. 0) then
+                  if (smap2_lon(thisx) >= 180) smap2_lon(thisx) = smap2_lon(thisx)-360._r8
+                else if (ldomain%lonc(g) .ge. 180) then
+                  if (smap2_lon(thisx) < 0) smap2_lon(thisx) = smap2_lon(thisx) + 360._r8
+                end if
+                thislon = smap2_lon(thisx)
+                thisdist = 100*((smap2_lat(thisy) - ldomain%latc(g))**2 + &
+                              (thislon - ldomain%lonc(g))**2)**0.5
+                if (thisdist .lt. mindist) then
+                  mindist = thisdist
+                  atm2lnd_vars%ndepind(g,1) = thisx
+                  atm2lnd_vars%ndepind(g,2) = thisy
+                end if
+              end do
+            end do
+        end if
 
         !get weights for interpolation (note this method doesn't get the month boundaries quite right..)
         aindex(1) = mon+1

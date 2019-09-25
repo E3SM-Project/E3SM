@@ -63,6 +63,11 @@ Full pathname of land fraction data file.
 Clumps per processor.
 </entry>
 
+<entry id="const_climate_hist" type="logical" category="clm_physics"
+       group="clm_inparm" valid_values="" >
+Continue cycling spinup climate througout transient simulation
+</entry>
+
 <entry id="co2_ppmv" type="real" category="clm_physics"
        group="clm_inparm" valid_values="" >
 Atmospheric CO2 molar ratio (by volume) only used when co2_type==constant (umol/mol)

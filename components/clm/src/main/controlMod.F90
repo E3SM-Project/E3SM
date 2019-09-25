@@ -49,6 +49,7 @@ module controlMod
   use clm_varctl              , only : use_pheno_flux_limiter
   use clm_varctl              , only: startdate_add_temperature, startdate_add_co2
   use clm_varctl              , only: add_temperature, add_co2
+  use clm_varctl              , only: const_climate_hist
  !
   ! !PUBLIC TYPES:
   implicit none
@@ -266,7 +267,7 @@ contains
 
     ! cpl_bypass variables
     namelist /clm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
-         co2_file, aero_file
+         co2_file, aero_file,const_climate_hist
 
     ! bgc & pflotran interface
     namelist /clm_inparm/ use_clm_interface, use_clm_bgc, use_pflotran
@@ -732,6 +733,7 @@ contains
     call mpi_bcast (co2_ppmv, 1, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (albice, 2, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (more_vertlayers,1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (const_climate_hist, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! glacier_mec variables
     call mpi_bcast (create_glacier_mec_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -993,6 +995,8 @@ contains
     else
        write(iulog,*) '   CO2 volume mixing ratio                = ', co2_type
     end if
+
+    write(iulog,*) '   constant historical climate during transient simulation = ', const_climate_hist
 
     write(iulog,*) '   land-ice albedos      (unitless 0-1)   = ', albice
     write(iulog,*) '   urban air conditioning/heating and wasteheat   = ', urban_hac
