@@ -56,7 +56,7 @@ public:
 
   // The initialization, run, and finalization methods
   void initialize (const util::TimeStamp& t0);
-  void run        (const double dt);
+  void run        (const Real dt);
   void finalize   (/* what inputs? */);
 
   void final_setup ();
@@ -88,8 +88,8 @@ public:
 
 protected:
 
-  void run_sequential (const double dt);
-  void run_parallel   (const double dt);
+  void run_sequential (const Real dt);
+  void run_parallel   (const Real dt);
 
   // The methods to set the fields in the process
   void set_required_field_impl (const Field<const Real, device_type>& f);

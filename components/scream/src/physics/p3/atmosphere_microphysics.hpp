@@ -48,7 +48,7 @@ public:
 
   // The three main interfaces for the subcomponent
   void initialize (const util::TimeStamp& t0);
-  void run        (const double dt);
+  void run        (const Real dt);
   void finalize   ();
 
   // Register all fields in the given repo

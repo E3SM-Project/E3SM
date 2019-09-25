@@ -90,7 +90,7 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
 }
 
 // =========================================================================================
-void P3Microphysics::run (const double dt)
+void P3Microphysics::run (const Real dt)
 {
   auto q_ptr = m_p3_fields_out.at("q").get_view().data();
   auto FQ_ptr = m_p3_fields_out.at("FQ").get_view().data();

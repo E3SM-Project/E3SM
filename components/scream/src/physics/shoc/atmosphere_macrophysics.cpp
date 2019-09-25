@@ -63,7 +63,7 @@ void SHOCMacrophysics::initialize (const util::TimeStamp& t0)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::run (const double dt)
+void SHOCMacrophysics::run (const Real dt)
 {
   auto q_ptr = m_shoc_fields_out.at("q").get_view().data();
   auto FQ_ptr = m_shoc_fields_out.at("FQ").get_view().data();

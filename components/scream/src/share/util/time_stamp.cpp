@@ -57,12 +57,12 @@ std::pair<int,int> get_month_and_day (const int year, const int day) {
 TimeStamp::TimeStamp()
  : m_yy (std::numeric_limits<int>::lowest())
  , m_dd (std::numeric_limits<int>::lowest())
- , m_ss (std::numeric_limits<double>::lowest())
+ , m_ss (std::numeric_limits<Real>::lowest())
 {
   // Nothing to do here
 }
 
-TimeStamp::TimeStamp(const int yy, const int dd, const double ss)
+TimeStamp::TimeStamp(const int yy, const int dd, const Real ss)
  : m_yy(yy)
  , m_dd(dd)
  , m_ss(ss)
@@ -95,7 +95,7 @@ std::string TimeStamp::to_string () const {
          (h==0 ? zero : std::to_string(h)) + ":" + (m==0 ? zero : std::to_string(m)) + ":" + (s==0 ? zero : std::to_string(s));
 }
 
-TimeStamp& TimeStamp::operator+=(const double seconds) {
+TimeStamp& TimeStamp::operator+=(const Real seconds) {
   return (*this += TimeStamp(0,0,seconds));
 }
 
@@ -157,7 +157,7 @@ bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2) {
 TimeStamp operator- (const TimeStamp& ts1, const TimeStamp& ts2) {
   scream_require_msg (ts2<ts1, "Error! We only allow to compute positive time stamp differences");
 
-  double ss1 = ts1.get_seconds();
+  Real ss1 = ts1.get_seconds();
   int dd1 = ts1.get_days();
   int yy1 = ts1.get_years();
 
@@ -180,7 +180,7 @@ TimeStamp operator+ (const TimeStamp& ts, const TimeStamp& dt) {
   return sum;
 }
 
-TimeStamp operator+ (const TimeStamp& ts, const double dt) {
+TimeStamp operator+ (const TimeStamp& ts, const Real dt) {
   TimeStamp sum = ts;
   sum += dt;
   return sum;
