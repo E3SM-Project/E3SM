@@ -1639,3 +1639,8 @@ directory, NOT in this subdirectory."""
 
     def get_primary_job(self):
         return "case.test" if self.get_value("TEST") else "case.run"
+
+    def get_first_job(self):
+        env_workflow = self.get_env("workflow")
+        jobs = env_workflow.get_jobs()
+        return jobs[0]
