@@ -201,7 +201,7 @@ subroutine phys_ctl_readnl(nlfile)
       demott_ice_nuc, pergro_mods, pergro_test_active, &
       macmic_extra_diag, mam_amicphys_optaa, n_so4_monolayers_pcage,micro_mg_accre_enhan_fac, &
       l_tracer_aero, l_vdiff, l_rayleigh, l_gw_drag, l_ac_energy_chk, &
-      l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, l_dribling_tend,l_dribling_uv,l_dribling_w &
+      l_bc_energy_fix, l_dry_adj, l_st_mac, l_st_mic, l_rad, l_dribling_tend,l_dribling_uv,l_dribling_w, &
       prc_coef1,prc_exp,prc_exp1,cld_sed,mg_prc_coeff_fix, &
       rrtmg_temp_fix
    !-----------------------------------------------------------------------------
