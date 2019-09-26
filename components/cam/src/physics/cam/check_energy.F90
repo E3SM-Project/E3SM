@@ -841,6 +841,9 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     if (single_column .and. use_camiop) then
       heat_glob = heat_glob_scm(1)
     endif
+    if (single_column .and. .not. use_camiop) then
+      heat_glob = 0._r8
+    endif
     ptend%s(:ncol,:pver) = heat_glob
 !!$    write(iulog,*) "chk_fix: heat", state%lchnk, ncol, heat_glob
 
