@@ -942,6 +942,8 @@ subroutine micro_mg_cam_init(pbuf2d)
       call add_default ('FREQS    ', 1, ' ')
       call add_default ('FREQL    ', 1, ' ')
       call add_default ('FREQI    ', 1, ' ')
+      call add_default ('ICIMRST  ', 1, ' ')
+      call add_default ('ICWMRST  ', 1, ' ')
       do m = 1, ncnst
          call cnst_get_ind(cnst_names(m), mm)
          call add_default(cnst_name(mm), 1, ' ')
