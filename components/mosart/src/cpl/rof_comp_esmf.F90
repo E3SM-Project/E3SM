@@ -25,10 +25,10 @@ module rof_comp_esmf
   use seq_flds_mod
   use esmf
   use esmfshr_mod
-  use RunoffMod        , only : rtmCTL, TRunoff
+  use RunoffMod        , only : rtmCTL, TRunoff, THeat
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
-                                inst_index, inst_suffix, inst_name, RtmVarSet
+                                inst_index, inst_suffix, inst_name, RtmVarSet, heatflag
   use RtmSpmd          , only : masterproc, iam, npes, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size!, advance_timestep 
@@ -36,10 +36,17 @@ module rof_comp_esmf
   use WRM_type_mod     , only : StorWater
 
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
-                                index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
-                                index_x2r_Flrl_rofi, index_x2r_Flrl_rofsur, &
+                                index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
                                 index_x2r_Flrl_rofdto, &
+                                index_x2r_Flrl_Tqsur, index_x2r_Flrl_Tqsub, &
+                                index_x2r_Sa_tbot, index_x2r_Sa_pbot, &
+                                index_x2r_Sa_u   , index_x2r_Sa_v   , &
+                                index_x2r_Sa_shum, &
+                                index_x2r_Faxa_lwdn , &
+                                index_x2r_Faxa_swvdr, index_x2r_Faxa_swvdf, &
+                                index_x2r_Faxa_swndr, index_x2r_Faxa_swndf, &
+                                index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
                                 index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
                                 index_r2x_Flrr_supply, index_x2r_Flrl_demand
@@ -658,6 +665,7 @@ contains
     ! LOCAL VARIABLES
     real(R8), pointer :: fptr(:, :)
     integer :: n2, n, nt, begr, endr, nliq, nfrz
+    real(R8) :: tmp1, tmp2
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
     
@@ -701,6 +709,22 @@ contains
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
        rtmCTL%qdem(n,nfrz) = 0.0_r8
+       
+       if(heatflag) then
+          rtmCTL%Tqsur(n) = fptr(index_x2r_Flrl_Tqsur,n2) !x2r_r%rAttr(index_x2r_Flrl_Tqsur,n2)
+          rtmCTL%Tqsub(n) = fptr(index_x2r_Flrl_Tqsub,n2) !x2r_r%rAttr(index_x2r_Flrl_Tqsub,n2)
+          THeat%Tqsur(n) = rtmCTL%Tqsur(n)
+          THeat%Tqsub(n) = rtmCTL%Tqsub(n)
+          
+          THeat%forc_t(n) = fptr(index_x2r_Sa_tbot,n2)
+          THeat%forc_pbot(n) = fptr(index_x2r_Sa_pbot,n2)
+          tmp1 = fptr(index_x2r_Sa_u   ,n2)
+          tmp2 = fptr(index_x2r_Sa_v   ,n2)
+          THeat%forc_wind(n) = sqrt(tmp1*tmp1 + tmp2*tmp2)
+          THeat%forc_lwrad(n)= fptr(index_x2r_Faxa_lwdn ,n2)
+          THeat%forc_solar(n)= fptr(index_x2r_Faxa_swvdr,n2) + fptr(index_x2r_Faxa_swvdf,n2) + &
+                               fptr(index_x2r_Faxa_swndr,n2) + fptr(index_x2r_Faxa_swndf,n2)
+       end if                 
 
     enddo
 
