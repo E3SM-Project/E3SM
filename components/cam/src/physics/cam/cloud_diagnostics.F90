@@ -116,6 +116,7 @@ contains
           call add_default ('ICWMR', 1, ' ')
           call add_default ('ICIMR', 1, ' ')
           call add_default ('IWC      ', 1, ' ')
+          call add_default ('LWC      ', 1, ' ')
        end if
 
        dei_idx    = pbuf_get_index('DEI')
@@ -188,6 +189,9 @@ contains
        call add_default ('TGCLDLWP', 1, ' ')
        call add_default ('TGCLDIWP', 1, ' ')
        call add_default ('TGCLDCWP', 1, ' ')
+       call add_default ('GCLDLWP',1,' ')
+       call add_default ('ICLDIWP',1,' ')
+       call add_default ('ICLDTWP',1,' ')
        if (camrt_rad) then
            call add_default ('EMIS', 1, ' ')
        else
