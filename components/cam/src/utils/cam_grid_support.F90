@@ -2559,7 +2559,8 @@ contains
     ! Local variables
     integer                                :: dims(2)
     integer                                :: dstrt, dend
-    integer                                :: gridlen, gridloc, ierr
+    integer(iMap)                          :: gridlen, gridloc
+    integer                                :: ierr
 
     ! Check to make sure the map meets our needs
     call this%coord_lengths(dims)
@@ -2582,7 +2583,7 @@ contains
       gridloc = count((map(dstrt,:) /= 0) .and. (map(dend,:) /= 0))
     end if
     call MPI_Allreduce(gridloc, gridlen, 1, MPI_INTEGER, MPI_SUM, mpicom, ierr)
-    if (gridlen /= product(dims)) then
+    if (gridlen /= product(int(dims,iMap))) then
       call endrun('cam_grid_set_map: Bad map size for '//trim(this%name))
     else
       if (.not. associated(this%map)) then

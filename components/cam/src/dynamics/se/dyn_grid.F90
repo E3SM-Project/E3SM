@@ -1506,12 +1506,13 @@ contains
   !=================================================================================================
   !
   subroutine fv_physgrid_init()
-    use control_mod,            only: cubed_sphere_map
+    use control_mod,            only: cubed_sphere_map, se_fv_phys_remap_alg
     use kinds,                  only: lng_dbl => longdouble_kind
     use cube_mod,               only: ref2sphere
     use coordinate_systems_mod, only: spherical_polar_t, cartesian3D_t
     use coordinate_systems_mod, only: sphere_tri_area, change_coordinates 
     use derivative_mod,         only: allocate_subcell_integration_matrix
+    use gllfvremap_mod,         only: gfr_init
     !------------------------------Arguments------------------------------------
     ! type(element_t)         , intent(in   ) :: elem(:)
     ! type(fv_physgrid_struct), intent(inout) :: fv_physgrid(nelemd)
@@ -1625,11 +1626,15 @@ contains
       end do ! j
     end do ! ie
 
+    if (se_fv_phys_remap_alg == 1) call gfr_init(par, elem, fv_nphys)
   end subroutine fv_physgrid_init
   !
   !=================================================================================================
   !
   subroutine fv_physgrid_final()
+    use control_mod,      only: se_fv_phys_remap_alg
+    use gllfvremap_mod,   only: gfr_finish
+
     !----------------------------Local-Variables--------------------------------
     integer :: ie
     !---------------------------------------------------------------------------  
@@ -1640,6 +1645,8 @@ contains
       deallocate( fv_physgrid(ie)%corner_lat )
       deallocate( fv_physgrid(ie)%corner_lon )
     end do ! ie
+
+    if (se_fv_phys_remap_alg == 1) call gfr_finish()
   end subroutine fv_physgrid_final
   !
   !=================================================================================================

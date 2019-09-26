@@ -29,6 +29,9 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <spinup_state bgc_spinup="on" >1</spinup_state>
 <spinup_state bgc_spinup="off">0</spinup_state>
 
+<!-- twowayirrigation default -->
+<tw_irr>.false.</tw_irr>
+
 <!-- Supplmental Nitrogen mode -->
 <suplnitro use_cn=".true." >NONE</suplnitro>
 
