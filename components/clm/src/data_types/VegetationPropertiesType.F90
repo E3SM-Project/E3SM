@@ -115,6 +115,8 @@ module VegetationPropertiesType
      real(r8), allocatable :: s_vc(:)                  ! slope of photosynthesis vcmax ~ leaf n content regression model
 
      real(r8), allocatable :: nsc_rtime(:)             ! non-structural carbon residence time 
+     real(r8), allocatable :: pinit_beta1(:)           ! shaping parameter for P initialization
+     real(r8), allocatable :: pinit_beta2(:)           ! shaping parameter for P initialization
      real(r8), allocatable :: alpha_nfix(:)            ! fraction of fixed N goes directly to plant
      real(r8), allocatable :: alpha_ptase(:)           ! fraction of phosphatase produced P goes directly to plant
      real(r8), allocatable :: ccost_nfix(:)            ! plant C cost per unit N produced by N2 fixation
@@ -172,7 +174,7 @@ contains
     use pftvarcon , only : vmax_nfix, km_nfix
     use pftvarcon , only : alpha_nfix, alpha_ptase,ccost_nfix,ccost_ptase
     use pftvarcon , only : vmax_ptase, km_ptase, lamda_ptase
-    use pftvarcon , only : i_vc, s_vc, nsc_rtime
+    use pftvarcon , only : i_vc, s_vc, nsc_rtime, pinit_beta1, pinit_beta2
     use pftvarcon , only : leafcn_obs, frootcn_obs, livewdcn_obs, deadwdcn_obs
     use pftvarcon , only : leafcp_obs, frootcp_obs, livewdcp_obs, deadwdcp_obs
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
@@ -264,6 +266,8 @@ contains
     allocate( this%i_vc(0:numpft))                               ; this%i_vc(:)                  =nan
     allocate( this%s_vc(0:numpft))                               ; this%s_vc(:)                  =nan
     allocate( this%nsc_rtime(0:numpft))                          ; this%nsc_rtime(:)             =nan
+    allocate( this%pinit_beta1(0:nsoilorder))                    ; this%pinit_beta1(:)           =nan
+    allocate( this%pinit_beta2(0:nsoilorder))                    ; this%pinit_beta2(:)           =nan
     allocate( this%vmax_nfix(0:numpft))                          ; this%vmax_nfix(:)             =nan
     allocate( this%km_nfix(0:numpft))                            ; this%km_nfix(:)               =nan
     allocate( this%fnr(0:numpft))                                ; this%fnr(:)                   =nan
@@ -409,6 +413,8 @@ contains
     end do
 
     do m = 0, nsoilorder
+       this%pinit_beta1(m) = pinit_beta1(m)
+       this%pinit_beta2(m) = pinit_beta2(m)
        do j = 1 , nlevdecomp
           this%vmax_minsurf_p_vr(m,j) = vmax_minsurf_p_vr(j,m)
           this%km_minsurf_p_vr(m,j) = km_minsurf_p_vr(j,m)
