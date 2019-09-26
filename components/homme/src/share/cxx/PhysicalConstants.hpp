@@ -22,6 +22,8 @@ struct PhysicalConstants
   static constexpr Real rrearth       = 1.0 / 6.376e6;
   static constexpr Real g             = 9.80616;
   static constexpr Real p0            = 100000;         // [mbar]
+
+  static constexpr Real Tref          = 288;
 };
 
 } // namespace Homme

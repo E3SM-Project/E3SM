@@ -68,7 +68,6 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   constexpr int size_int_scalar =   NP*NP*NUM_LEV_P*VECTOR_SIZE;
   constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
   constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV*VECTOR_SIZE;
-  constexpr int size_2d_scalar  =   NP*NP;
 
   const int nelems = m_geometry.num_elems();
   const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
@@ -77,11 +76,11 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   // Even though we don't compute wtens at last interface, it makes
   // the code MUCH cleaner when computing the heating term, cause
   // we can then use ColumnOps to average w*wtens
-  return nelems*(6*size_mid_scalar + size_mid_vector + 2*size_int_scalar) + 
-         nteams*(4*size_bhm_scalar + size_bhm_vector + size_int_scalar + size_2d_scalar);
+  return nelems*(5*size_mid_scalar + size_mid_vector + 2*size_int_scalar) +
+         nteams*(4*size_bhm_scalar + size_bhm_vector + 2*size_mid_scalar + size_int_scalar);
 #else
-  return nelems*(7*size_mid_scalar + size_mid_vector + size_int_scalar) + 
-         nteams*(4*size_bhm_scalar + size_bhm_vector + size_int_scalar + size_2d_scalar);
+  return nelems*(6*size_mid_scalar + size_mid_vector + size_int_scalar) +
+         nteams*(4*size_bhm_scalar + size_bhm_vector + 2*size_mid_scalar + size_int_scalar);
 #endif
 }
 
@@ -98,25 +97,22 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   const int nelems = m_geometry.num_elems();
   const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
 
-  // Midpoints fields
-
+  // Ref states (persistent views => nelems)
   m_buffers.dp_ref = decltype(m_buffers.dp_ref)(mem,nelems);
-  mem += size_mid_scalar*nelems;
-
-  m_buffers.p = decltype(m_buffers.p)(mem,nelems);
   mem += size_mid_scalar*nelems;
 
   m_buffers.theta_ref = decltype(m_buffers.theta_ref)(mem,nelems);
   mem += size_mid_scalar*nelems;
 
+  m_buffers.phi_i_ref = decltype(m_buffers.phi_i_ref)(mem,nelems);
+  mem += size_int_scalar*nelems;
+
+  // Tens quantities (persistent views => nelems)
   m_buffers.dptens = decltype(m_buffers.dptens)(mem,nelems);
   mem += size_mid_scalar*nelems;
 
   m_buffers.ttens = decltype(m_buffers.ttens)(mem,nelems);
   mem += size_mid_scalar*nelems;
-
-  m_buffers.phi_i_ref = decltype(m_buffers.phi_i_ref)(mem,nelems);
-  mem += size_int_scalar*nelems;
 
   m_buffers.wtens = decltype(m_buffers.wtens)(mem,nelems);
 #ifdef XX_NONBFB_COMING
@@ -131,11 +127,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   m_buffers.vtens = decltype(m_buffers.vtens)(mem,nelems);
   mem += size_mid_vector*nelems;
 
-  // Interfaces fields
-  m_buffers.p_i       = decltype(m_buffers.p_i)(mem,nteams);
-  mem += size_int_scalar*nteams;
-
-  // Biharmonic fields
+  // Biharmonic views (non-persistent views => nteams)
   m_buffers.lapl_dp = decltype(m_buffers.lapl_dp)(mem,nteams);
   mem += size_bhm_scalar*nteams;
 
@@ -151,9 +143,18 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   m_buffers.lapl_v = decltype(m_buffers.lapl_v)(mem,nteams);
   mem += size_bhm_vector*nteams;
 
+  // Service views (non-persistent views => nteams)
+  m_buffers.p = decltype(m_buffers.p)(mem,nteams);
+  mem += size_mid_scalar*nteams;
+
+  m_buffers.exner = decltype(m_buffers.exner)(mem,nteams);
+  mem += size_mid_scalar*nteams;
+
+  m_buffers.p_i       = decltype(m_buffers.p_i)(mem,nteams);
+  mem += size_int_scalar*nteams;
+
   // ps_ref can alias anything (except dp_ref), since it's used to compute dp_ref, then tossed
   m_buffers.ps_ref = decltype(m_buffers.ps_ref)(reinterpret_cast<Real*>(m_buffers.p.data()),nteams);
-
 }
 
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {
@@ -161,15 +162,21 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   auto bm_exchange = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
 
   m_be->set_buffers_manager(bm_exchange);
+  if (m_theta_hydrostatic_mode) {
+    m_be->set_num_fields(0, 0, 4);
+  } else {
 #ifdef XX_NONBFB_COMING
-  m_be->set_num_fields(0, 0, 5, 1);
+    m_be->set_num_fields(0, 0, 5, 1);
 #else
-  m_be->set_num_fields(0, 0, 6);
+    m_be->set_num_fields(0, 0, 6);
 #endif
+  }
   m_be->register_field(m_buffers.dptens);
   m_be->register_field(m_buffers.ttens);
-  m_be->register_field(m_buffers.wtens);
-  m_be->register_field(m_buffers.phitens);
+  if (!m_theta_hydrostatic_mode) {
+    m_be->register_field(m_buffers.wtens);
+    m_be->register_field(m_buffers.phitens);
+  }
   m_be->register_field(m_buffers.vtens, 2, 0);
   m_be->registration_completed();
 }
@@ -186,6 +193,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     GPTLstart("hvf-bhwk");
     biharmonic_wk_theta ();
     GPTLstop("hvf-bhwk");
+
     // dispatch parallel_for for first kernel
     Kokkos::parallel_for(m_policy_pre_exchange, *this);
     Kokkos::fence();
@@ -193,13 +201,51 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
     // Exchange
     assert (m_be->is_registration_completed());
     GPTLstart("hvf-bexch");
-    m_be->exchange(m_geometry.m_rspheremp);
+    m_be->exchange();
     GPTLstop("hvf-bexch");
 
     // Update states
     Kokkos::parallel_for(m_policy_update_states, *this);
     Kokkos::fence();
   }
+
+  // Finally, convert theta back to vtheta, and adjust w at surface
+  auto state = m_state;
+  auto geo = m_geometry;
+  Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(state.num_elems()),
+                       KOKKOS_LAMBDA(const TeamMember& team) {
+    const int ie = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      // theta->vtheta
+      auto vtheta = Homme::subview(state.m_vtheta_dp,ie,np1,igp,jgp);
+      auto dp = Homme::subview(state.m_dp3d,ie,np1,igp,jgp);
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,NUM_LEV),
+                           [&](const int ilev) {
+        vtheta(ilev) *= dp(ilev);
+      });
+
+      // Fix w at surface:
+      // Adjust w_i at the surface, since velocity has changed
+      Kokkos::single(Kokkos::PerThread(team),[&](){
+        using InfoI = ColInfo<NUM_INTERFACE_LEV>;
+        using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
+        constexpr Real g = PhysicalConstants::g;
+
+        const auto& grad_x = geo.m_gradphis(ie,0,igp,jgp);
+        const auto& grad_y = geo.m_gradphis(ie,1,igp,jgp);
+        const auto& u = state.m_v(ie,np1,0,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd];
+        const auto& v = state.m_v(ie,np1,1,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd];
+
+        auto& w = state.m_w_i(ie,np1,igp,jgp,InfoI::LastPack)[InfoI::LastVecEnd];
+
+        w = (u*grad_x+v*grad_y) / g;
+      });
+    });
+  });
 }
 
 void HyperviscosityFunctorImpl::biharmonic_wk_theta() const
