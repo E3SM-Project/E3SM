@@ -2035,7 +2035,8 @@ end subroutine clubb_init_cnst
               edsclr_out(k,ixind) = edsclr_in(pverp-k+1,ixind)
           enddo
 
-      enddo 
+      enddo
+
      
       !  Fill up arrays needed for McICA.  Note we do not want the ghost point,
       !   thus why the second loop is needed.

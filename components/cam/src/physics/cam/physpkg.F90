@@ -2137,6 +2137,8 @@ subroutine tphysbc (ztodt,               &
     real(r8) :: tmpcldliq(pcols,pver)          !temporary array for cldliq 
     real(r8) :: tmpnumice(pcols,pver)          !temporary array for numice
     real(r8) :: tmpcldice(pcols,pver)          !temporary array for cldice
+    real(r8) :: tmpvar(pcols,pver)          !temporary array for temperature
+    real(r8) :: tmpqvapor(pcols,pver)          !temporary array for vapor
 
     character(200) :: npccnname                !String for npccn name at each sub step
     character(200) :: numliqname               !String for numliq name at each sub step
@@ -2144,8 +2146,8 @@ subroutine tphysbc (ztodt,               &
     character(200) :: numicename               !String for numice name at each sub step
     character(200) :: cldicename               !String for cldice name at each sub step
 
-    character(200) :: tmpname                  !String for temporal variable name
-    integer :: ixnumliq, ixnumice, ifnpccn     ! index for tracer number concentration
+    character(200) :: tmpname,qvaporname                  !String for temporal variable name
+    integer :: ixnumliq, ixnumice, ifnpccn,ixqvapor     ! index for tracer number concentration
     integer :: ifalst                          ! index for liquid cloud fraction alst
 
     type(physics_ptend)   :: ptend            ! indivdual parameterization tendencies
@@ -2706,16 +2708,16 @@ end if
        snow_pcw_macmic = 0._r8
 
     ! write the liquid cloud fraction before macmic substepping
-      if (macmic_extra_diag) then
-       write(tmpname,"(A15)") "alstn_bf_macmic"
-       ifalst   = pbuf_get_index('ALST')
-       call pbuf_get_field(pbuf, ifalst, tmp_alst)
-       call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
-       !write(tmpname,"(A15)") "alsto_bf_macmic"
-       !ifalst   = pbuf_get_index('ALSTO')
-       !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-       !call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk) 
-       end if  
+    !  if (macmic_extra_diag) then
+    !   write(tmpname,"(A15)") "alstn_bf_macmic"
+    !   ifalst   = pbuf_get_index('ALST')
+    !   call pbuf_get_field(pbuf, ifalst, tmp_alst)
+    !   call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
+    !   !write(tmpname,"(A15)") "alsto_bf_macmic"
+    !   !ifalst   = pbuf_get_index('ALSTO')
+    !   !call pbuf_get_field(pbuf, ifalst, tmp_alst, start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+    !   !call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk) 
+    !   end if  
 
        if((.not.is_first_step()) .and. l_dribling_tend) then
                
@@ -2812,30 +2814,36 @@ end if
 
         if (macmic_extra_diag) then
            !SZhang add output here to diagnose npcc 
-           !call cnst_get_ind('Q',ixq)
+           call cnst_get_ind('Q',ixqvapor)
            call cnst_get_ind('CLDLIQ',ixcldliq)
            call cnst_get_ind('CLDICE',ixcldice)
            call cnst_get_ind('NUMLIQ',ixnumliq)
            call cnst_get_ind('NUMICE',ixnumice)
 
-           ifnpccn  = pbuf_get_index('NPCCN')
-           write (npccnname, "(A15,I2.2)") "npccn_bf_clubb_", macmic_it
+           !ifnpccn  = pbuf_get_index('NPCCN')
+           !write (npccnname, "(A15,I2.2)") "npccn_bf_clubb_", macmic_it
            write (numliqname,"(A16,I2.2)") "numliq_bf_clubb_", macmic_it
            write (cldliqname,"(A16,I2.2)") "cldliq_bf_clubb_", macmic_it
            write (numicename,"(A16,I2.2)") "numice_bf_clubb_", macmic_it
            write (cldicename,"(A16,I2.2)") "cldice_bf_clubb_", macmic_it
+           write (qvaporname,"(A16,I2.2)") "qvapor_bf_clubb_", macmic_it
+           write (tmpname,"(A14,I2.2)")    "temp_bf_clubb_", macmic_it
 
-           call pbuf_get_field(pbuf, ifnpccn, tmp_npccn)
+!           call pbuf_get_field(pbuf, ifnpccn, tmp_npccn)
            tmpnumliq(:ncol,:pver) = state%q(:ncol,:pver,ixnumliq)
            tmpcldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
            tmpnumice(:ncol,:pver) = state%q(:ncol,:pver,ixnumice)
            tmpcldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
+           tmpqvapor(:ncol,:pver) = state%q(:ncol,:pver,ixqvapor)
+           tmpvar(:ncol,:pver) = state%t(:ncol,:pver)
 
-           call outfld(trim(adjustl(npccnname)),   tmp_npccn, pcols, lchnk )
+           !call outfld(trim(adjustl(npccnname)),   tmp_npccn, pcols, lchnk )
            call outfld(trim(adjustl(numliqname)),  tmpnumliq, pcols, lchnk )
            call outfld(trim(adjustl(cldliqname)),  tmpcldliq, pcols, lchnk )
            call outfld(trim(adjustl(numicename)),  tmpnumice, pcols, lchnk )
            call outfld(trim(adjustl(cldicename)),  tmpcldice, pcols, lchnk )
+           call outfld(trim(adjustl(qvaporname)),  tmpqvapor, pcols, lchnk )
+           call outfld(trim(adjustl(tmpname)),  tmpvar, pcols, lchnk )
 
         end if
 
@@ -2940,39 +2948,45 @@ end if
 
         if (macmic_extra_diag) then
            !SZhang add output here to diagnose npcc 
-           !call cnst_get_ind('Q',ixq)
+           call cnst_get_ind('Q',ixqvapor)
            call cnst_get_ind('CLDLIQ',ixcldliq)
            call cnst_get_ind('CLDICE',ixcldice)
            call cnst_get_ind('NUMLIQ',ixnumliq)
            call cnst_get_ind('NUMICE',ixnumice)
 
-           ifnpccn  = pbuf_get_index('NPCCN')
-           write (npccnname, "(A17,I2.2)") "npccn_bf_micaero_", macmic_it
+           !ifnpccn  = pbuf_get_index('NPCCN')
+           !write (npccnname, "(A17,I2.2)") "npccn_bf_micaero_", macmic_it
            write (numliqname,"(A18,I2.2)") "numliq_bf_micaero_", macmic_it
            write (cldliqname,"(A18,I2.2)") "cldliq_bf_micaero_", macmic_it
            write (numicename,"(A18,I2.2)") "numice_bf_micaero_", macmic_it
            write (cldicename,"(A18,I2.2)") "cldice_bf_micaero_", macmic_it
+           write (qvaporname,"(A18,I2.2)") "qvapor_bf_micaero_", macmic_it
+           write (tmpname,"(A16,I2.2)")    "temp_bf_micaero_", macmic_it
 
-           call pbuf_get_field(pbuf, ifnpccn, tmp_npccn)
+           !call pbuf_get_field(pbuf, ifnpccn, tmp_npccn)
            tmpnumliq(:ncol,:pver) = state%q(:ncol,:pver,ixnumliq)
            tmpcldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
            tmpnumice(:ncol,:pver) = state%q(:ncol,:pver,ixnumice)
            tmpcldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
+           tmpqvapor(:ncol,:pver) = state%q(:ncol,:pver,ixqvapor)
+           tmpvar(:ncol,:pver) = state%t(:ncol,:pver)
 
-           call outfld(trim(adjustl(npccnname)),   tmp_npccn, pcols, lchnk )
+           !call outfld(trim(adjustl(npccnname)),   tmp_npccn, pcols, lchnk )
            call outfld(trim(adjustl(numliqname)),  tmpnumliq, pcols, lchnk )
            call outfld(trim(adjustl(cldliqname)),  tmpcldliq, pcols, lchnk )
            call outfld(trim(adjustl(numicename)),  tmpnumice, pcols, lchnk )
            call outfld(trim(adjustl(cldicename)),  tmpcldice, pcols, lchnk )
+           call outfld(trim(adjustl(qvaporname)),  tmpqvapor, pcols, lchnk )
+           call outfld(trim(adjustl(tmpname)),  tmpvar, pcols, lchnk )
 
-           write(tmpname,"(A17,I2.2)") "alstn_bf_micaero_", macmic_it
-           ifalst   = pbuf_get_index('ALST')
-           call pbuf_get_field(pbuf, ifalst, tmp_alst)
-           call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
-           write(tmpname,"(A17,I2.2)") "alsto_bf_micaero_", macmic_it
-           !ifalst   = pbuf_get_index('ALSTO')
-           !call pbuf_get_field(pbuf, ifalst, tmp_alst)
-           call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk) 
+!           write(tmpname,"(A17,I2.2)") "alstn_bf_micaero_", macmic_it
+!           ifalst   = pbuf_get_index('ALST')
+!           call pbuf_get_field(pbuf, ifalst, tmp_alst)
+!           call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
+!           write(tmpname,"(A17,I2.2)") "alsto_bf_micaero_", macmic_it
+!           !ifalst   = pbuf_get_index('ALSTO')
+!           !call pbuf_get_field(pbuf, ifalst, tmp_alst)
+!           call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk) 
 
         end if
 
@@ -3004,38 +3018,38 @@ end if
           if (macmic_extra_diag) then
             !SZhang add output here to diagnose npcc
             !call cnst_get_ind('Q',ixq)
-            call cnst_get_ind('CLDLIQ',ixcldliq)
-            call cnst_get_ind('CLDICE',ixcldice)
-            call cnst_get_ind('NUMLIQ',ixnumliq)
-            call cnst_get_ind('NUMICE',ixnumice)
+!            call cnst_get_ind('CLDLIQ',ixcldliq)
+!            call cnst_get_ind('CLDICE',ixcldice)
+!            call cnst_get_ind('NUMLIQ',ixnumliq)
+!            call cnst_get_ind('NUMICE',ixnumice)
 
             ifnpccn  = pbuf_get_index('NPCCN')
             write (npccnname, "(A17,I2.2)") "npccn_af_micaero_", macmic_it
-            write (numliqname,"(A18,I2.2)") "numliq_af_micaero_", macmic_it
-            write (cldliqname,"(A18,I2.2)") "cldliq_af_micaero_", macmic_it
-            write (numicename,"(A18,I2.2)") "numice_af_micaero_", macmic_it
-            write (cldicename,"(A18,I2.2)") "cldice_af_micaero_", macmic_it
+!            write (numliqname,"(A18,I2.2)") "numliq_af_micaero_", macmic_it
+!            write (cldliqname,"(A18,I2.2)") "cldliq_af_micaero_", macmic_it
+!            write (numicename,"(A18,I2.2)") "numice_af_micaero_", macmic_it
+!            write (cldicename,"(A18,I2.2)") "cldice_af_micaero_", macmic_it
 
             call pbuf_get_field(pbuf, ifnpccn, tmp_npccn)
-            tmpnumliq(:ncol,:pver) = state%q(:ncol,:pver,ixnumliq) + ptend_aero%q(:ncol,:pver,ixnumliq)*cld_macmic_ztodt
-            tmpcldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq) + ptend_aero%q(:ncol,:pver,ixcldliq)*cld_macmic_ztodt
-            tmpnumice(:ncol,:pver) = state%q(:ncol,:pver,ixnumice) + ptend_aero%q(:ncol,:pver,ixnumice)*cld_macmic_ztodt
-            tmpcldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice) + ptend_aero%q(:ncol,:pver,ixcldice)*cld_macmic_ztodt
+!            tmpnumliq(:ncol,:pver) = state%q(:ncol,:pver,ixnumliq) + ptend_aero%q(:ncol,:pver,ixnumliq)*cld_macmic_ztodt
+!            tmpcldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq) + ptend_aero%q(:ncol,:pver,ixcldliq)*cld_macmic_ztodt
+!            tmpnumice(:ncol,:pver) = state%q(:ncol,:pver,ixnumice) + ptend_aero%q(:ncol,:pver,ixnumice)*cld_macmic_ztodt
+!            tmpcldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice) + ptend_aero%q(:ncol,:pver,ixcldice)*cld_macmic_ztodt
 
             call outfld(trim(adjustl(npccnname)),   tmp_npccn, pcols, lchnk )
-            call outfld(trim(adjustl(numliqname)),  tmpnumliq, pcols, lchnk )
-            call outfld(trim(adjustl(cldliqname)),  tmpcldliq, pcols, lchnk )
-            call outfld(trim(adjustl(numicename)),  tmpnumice, pcols, lchnk )
-            call outfld(trim(adjustl(cldicename)),  tmpcldice, pcols, lchnk )
+!            call outfld(trim(adjustl(numliqname)),  tmpnumliq, pcols, lchnk )
+!            call outfld(trim(adjustl(cldliqname)),  tmpcldliq, pcols, lchnk )
+!            call outfld(trim(adjustl(numicename)),  tmpnumice, pcols, lchnk )
+!            call outfld(trim(adjustl(cldicename)),  tmpcldice, pcols, lchnk )
 
-            write(tmpname,"(A17,I2.2)") "alstn_af_micaero_", macmic_it
-            ifalst   = pbuf_get_index('ALST')
-            call pbuf_get_field(pbuf, ifalst, tmp_alst)
-            call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
-            write(tmpname,"(A17,I2.2)") "alsto_af_micaero_", macmic_it
-            !ifalst   = pbuf_get_index('ALSTO')
-            !call pbuf_get_field(pbuf, ifalst, tmp_alst)
-            call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)
+!            write(tmpname,"(A17,I2.2)") "alstn_af_micaero_", macmic_it
+!            ifalst   = pbuf_get_index('ALST')
+!            call pbuf_get_field(pbuf, ifalst, tmp_alst)
+!            call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
+!            write(tmpname,"(A17,I2.2)") "alsto_af_micaero_", macmic_it
+!            !ifalst   = pbuf_get_index('ALSTO')
+!            !call pbuf_get_field(pbuf, ifalst, tmp_alst)
+!            call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)
 
           end if          
 
@@ -3102,39 +3116,45 @@ end if
 
           if (macmic_extra_diag) then
             !SZhang add output here to diagnose npcc 
-            !call cnst_get_ind('Q',ixq)
+            call cnst_get_ind('Q',ixqvapor)
             call cnst_get_ind('CLDLIQ',ixcldliq)
             call cnst_get_ind('CLDICE',ixcldice)
             call cnst_get_ind('NUMLIQ',ixnumliq)
             call cnst_get_ind('NUMICE',ixnumice)
 
-            ifnpccn  = pbuf_get_index('NPCCN')
-            write (npccnname, "(A17,I2.2)") "npccn_af_mg2tend_", macmic_it
+           ! ifnpccn  = pbuf_get_index('NPCCN')
+           ! write (npccnname, "(A17,I2.2)") "npccn_af_mg2tend_", macmic_it
             write (numliqname,"(A18,I2.2)") "numliq_af_mg2tend_", macmic_it
             write (cldliqname,"(A18,I2.2)") "cldliq_af_mg2tend_", macmic_it
             write (numicename,"(A18,I2.2)") "numice_af_mg2tend_", macmic_it
             write (cldicename,"(A18,I2.2)") "cldice_af_mg2tend_", macmic_it
+            write (qvaporname,"(A18,I2.2)") "qvapor_af_mg2tend_", macmic_it
+            write (tmpname,"(A16,I2.2)")    "temp_af_mg2tend_", macmic_it
 
-            call pbuf_get_field(pbuf, ifnpccn, tmp_npccn)
+           ! call pbuf_get_field(pbuf, ifnpccn, tmp_npccn)
             tmpnumliq(:ncol,:pver) = state%q(:ncol,:pver,ixnumliq)
             tmpcldliq(:ncol,:pver) = state%q(:ncol,:pver,ixcldliq)
             tmpnumice(:ncol,:pver) = state%q(:ncol,:pver,ixnumice)
             tmpcldice(:ncol,:pver) = state%q(:ncol,:pver,ixcldice)
+            tmpqvapor(:ncol,:pver) = state%q(:ncol,:pver,ixqvapor)
+            tmpvar(:ncol,:pver) = state%t(:ncol,:pver)
 
-            call outfld(trim(adjustl(npccnname)),   tmp_npccn, pcols, lchnk )
+!            call outfld(trim(adjustl(npccnname)),   tmp_npccn, pcols, lchnk )
             call outfld(trim(adjustl(numliqname)),  tmpnumliq, pcols, lchnk )
             call outfld(trim(adjustl(cldliqname)),  tmpcldliq, pcols, lchnk )
             call outfld(trim(adjustl(numicename)),  tmpnumice, pcols, lchnk )
             call outfld(trim(adjustl(cldicename)),  tmpcldice, pcols, lchnk )
+            call outfld(trim(adjustl(qvaporname)),  tmpqvapor, pcols, lchnk )
+            call outfld(trim(adjustl(tmpname)),  tmpvar, pcols, lchnk )
 
-            write(tmpname,"(A17,I2.2)") "alstn_af_mg2tend_", macmic_it
-            ifalst   = pbuf_get_index('ALST')
-            call pbuf_get_field(pbuf, ifalst, tmp_alst)
-            call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
-            write(tmpname,"(A17,I2.2)") "alsto_af_mg2tend_", macmic_it
-            !ifalst   = pbuf_get_index('ALSTO')
-            !call pbuf_get_field(pbuf, ifalst, tmp_alst)
-            call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)
+!            write(tmpname,"(A17,I2.2)") "alstn_af_mg2tend_", macmic_it
+!            ifalst   = pbuf_get_index('ALST')
+!            call pbuf_get_field(pbuf, ifalst, tmp_alst)
+!            call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
+!            write(tmpname,"(A17,I2.2)") "alsto_af_mg2tend_", macmic_it
+!            !ifalst   = pbuf_get_index('ALSTO')
+!            !call pbuf_get_field(pbuf, ifalst, tmp_alst)
+!            call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)
 
           end if
 
@@ -3208,17 +3228,17 @@ end if
 
      end if 
 
-    ! write the liquid cloud fraction after macmic substepping
-     if (macmic_extra_diag) then
-      write(tmpname,"(A15)") "alstn_af_macmic"
-      ifalst   = pbuf_get_index('ALST')
-      call pbuf_get_field(pbuf, ifalst, tmp_alst)
-      call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
-      write(tmpname,"(A15)") "alsto_af_macmic"
-      !ifalst   = pbuf_get_index('ALSTO')
-      !call pbuf_get_field(pbuf, ifalst, tmp_alst)
-      call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)     
-     end if   
+!    ! write the liquid cloud fraction after macmic substepping
+!     if (macmic_extra_diag) then
+!      write(tmpname,"(A15)") "alstn_af_macmic"
+!      ifalst   = pbuf_get_index('ALST')
+!      call pbuf_get_field(pbuf, ifalst, tmp_alst)
+!      call outfld(trim(adjustl(tmpname)), tmp_alst, pcols, lchnk)
+!      write(tmpname,"(A15)") "alsto_af_macmic"
+!      !ifalst   = pbuf_get_index('ALSTO')
+!      !call pbuf_get_field(pbuf, ifalst, tmp_alst)
+!      call outfld(trim(adjustl(tmpname)), lcldo, pcols, lchnk)     
+!     end if   
 
 if (l_tracer_aero) then
 
@@ -3557,14 +3577,15 @@ subroutine add_fld_extra_macmic_calls ()
 
   implicit none
   !Add all existing ptend names for the addfld calls
-  character(len=17), parameter :: vlist(37) = (/ 'npccn_bf_micaero ','npccn_af_micaero ','npccn_af_mg2tend ',&
-         'numliq_bf_micaero','numliq_af_micaero','numliq_af_mg2tend','cldliq_bf_micaero','cldliq_af_micaero',&
-         'cldliq_af_mg2tend','numliq_bf_reg    ','numliq_af_reg    ','numliq_bf_mix    ','numliq_af_mix    ',&
-         'nsource_af_reg   ','nsource_bf_mix   ','nsource_af_mix   ','cldfrc_new       ','cldfrc_old       ',&
-         'wtke             ','wtke_cen         ','alstn_bf_micaero ','alstn_af_micaero ','alstn_af_mg2tend ',&
-         'alsto_bf_micaero ','alsto_af_micaero ','alsto_af_mg2tend ','npccn_bf_clubb   ','cldliq_bf_clubb  ',&
-         'numliq_bf_clubb  ','cldice_bf_clubb  ','numice_bf_clubb  ','numice_bf_micaero','numice_af_micaero',&
-         'numice_af_mg2tend','cldice_bf_micaero','cldice_af_micaero','cldice_af_mg2tend'/)
+  character(len=17), parameter ::vlist(19) = (/ 'npccn_af_micaero ',&
+         'numliq_bf_clubb  ','numliq_bf_micaero','numliq_af_mg2tend','cldliq_bf_micaero','cldliq_af_mg2tend',&
+!        'numliq_bf_reg    ','numliq_af_reg    ','numliq_bf_mix    ','numliq_af_mix    ',&
+!         'nsource_af_reg   ','nsource_bf_mix   ','nsource_af_mix   ','cldfrc_new       ','cldfrc_old       ',&
+!         'wtke             ','wtke_cen         ','alstn_bf_micaero ','alstn_af_micaero ','alstn_af_mg2tend ',&
+!         'alsto_bf_micaero ','alsto_af_micaero ','alsto_af_mg2tend ',
+         'cldliq_bf_clubb  ','qvapor_bf_clubb  ','qvapor_bf_micaero','qvapor_af_mg2tend','cldice_bf_clubb  ',&
+         'numice_bf_clubb  ','numice_bf_micaero','numice_af_mg2tend','cldice_bf_micaero','cldice_af_mg2tend',&
+         'temp_bf_clubb    ','temp_bf_micaero  ','temp_af_mg2tend  '/) 
 
   character(len=15), parameter :: vlist2(4) = (/ 'alstn_af_macmic'  ,'alstn_bf_macmic', 'alsto_af_macmic'  ,'alsto_bf_macmic'/)  !no substepping variable
   character(len=17), parameter :: vlist3(2) = (/ 'factnum_mam      ','raerosol_tot_mam '/) !aerosol-related variables
@@ -3590,32 +3611,32 @@ subroutine add_fld_extra_macmic_calls ()
     enddo     
   enddo
 
-  ntot = size(vlist2)
-
-  do iv=1,ntot
-  varname=vlist2(iv)
-  call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'fraction', 'liquid cloud fraction',flag_xyfill=.true.) !The units and longname are dummy as it is for a test only
-  call add_default (trim(adjustl(varname)), 1, ' ')
-  enddo  
-  
- call rad_cnst_get_info(0, nmodes=ntot_amode)
-
- ntot = size(vlist3)
-
- do iv = 1, ntot
- 
-   do it=1,cld_macmic_num_steps
-     write(substep,"(I2.2)")it
-
-     do m=1,ntot_amode
-      write(modal,"(I2.2)")m
-      varname  = trim(adjustl(vlist3(iv)))//'_mod'//trim(adjustl(modal))//'_'//trim(adjustl(substep))
-      call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'extramacmic_diag_units', 'extramacmic_diag_longname',flag_xyfill=.true.)
-      call add_default (trim(adjustl(varname)), 1, ' ')
-     enddo
-
-   enddo     
- enddo
+!  ntot = size(vlist2)
+!
+!  do iv=1,ntot
+!  varname=vlist2(iv)
+!  call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'fraction', 'liquid cloud fraction',flag_xyfill=.true.) !The units and longname are dummy as it is for a test only
+!  call add_default (trim(adjustl(varname)), 1, ' ')
+!  enddo  
+!  
+! call rad_cnst_get_info(0, nmodes=ntot_amode)
+!
+! ntot = size(vlist3)
+!
+! do iv = 1, ntot
+! 
+!   do it=1,cld_macmic_num_steps
+!     write(substep,"(I2.2)")it
+!
+!     do m=1,ntot_amode
+!      write(modal,"(I2.2)")m
+!      varname  = trim(adjustl(vlist3(iv)))//'_mod'//trim(adjustl(modal))//'_'//trim(adjustl(substep))
+!      call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'extramacmic_diag_units', 'extramacmic_diag_longname',flag_xyfill=.true.)
+!      call add_default (trim(adjustl(varname)), 1, ' ')
+!     enddo
+!
+!   enddo     
+! enddo
 
 
 end subroutine add_fld_extra_macmic_calls
