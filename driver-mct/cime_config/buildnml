@@ -53,6 +53,12 @@ def _create_drv_namelists(case, infile, confdir, nmlgen, files):
     config['atm_grid'] = case.get_value('ATM_GRID')
     config['compocn'] = case.get_value('COMP_OCN')
 
+    docn_mode = case.get_value("DOCN_MODE")
+    if docn_mode and 'aqua' in docn_mode:
+        config['aqua_planet_sst_type'] = docn_mode
+    else:
+        config['aqua_planet_sst_type'] = 'none'
+        
     if case.get_value('RUN_TYPE') == 'startup':
         config['run_type'] = 'startup'
     elif case.get_value('RUN_TYPE') == 'hybrid':
