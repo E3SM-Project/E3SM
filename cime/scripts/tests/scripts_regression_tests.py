@@ -7,7 +7,7 @@ to confirm overall CIME correctness.
 
 import glob, os, re, shutil, signal, sys, tempfile, \
     threading, time, logging, unittest, getpass, \
-    filecmp, time
+    filecmp, time, atexit
 
 from xml.etree.ElementTree import ParseError
 
@@ -427,6 +427,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cmd = "%s/create_clone --clone %s --case %s --keepexe --user-mods-dir %s" \
               % (SCRIPT_DIR, prevtestdir, testdir, user_mods_dir)
         run_cmd_assert_result(self, cmd, from_dir=SCRIPT_DIR, expected_stat=1)
+        cls._do_teardown.append(testdir)
 
     def test_d_create_clone_new_user(self):
         cls = self.__class__
@@ -469,6 +470,7 @@ class J_TestCreateNewcase(unittest.TestCase):
             case2 = case1.create_clone(testdir)
             with self.assertRaises(CIMEError):
                 case2.set_value("CHARGE_ACCOUNT", "fouc")
+        cls._do_teardown.append(testdir)
 
     def test_e_xmlquery(self):
         # Set script and script path
@@ -779,7 +781,6 @@ class J_TestCreateNewcase(unittest.TestCase):
         else:
             args += " --res f19_g16 "
 
-        cls._testdirs.append(testdir)
         run_cmd_assert_result(self, "./create_newcase %s"%(args),
                               from_dir=SCRIPT_DIR, expected_stat=1)
         self.assertFalse(os.path.exists(testdir))
@@ -787,17 +788,22 @@ class J_TestCreateNewcase(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
-
+        rmtestroot = True
         for tfile in cls._testdirs:
             if tfile not in cls._do_teardown:
                 print("Detected failed test or user request no teardown")
                 print("Leaving case directory : %s"%tfile)
+                rmtestroot = False
             elif do_teardown:
                 try:
                     print ("Attempt to remove directory {}".format(tfile))
                     shutil.rmtree(tfile)
                 except BaseException:
                     print("Could not remove directory {}".format(tfile))
+        if rmtestroot:
+            shutil.rmtree(cls._testroot)
+
+
 
 ###############################################################################
 class M_TestWaitForTests(unittest.TestCase):
@@ -1100,7 +1106,7 @@ class TestCreateTestCommon(unittest.TestCase):
                 files_to_clean.append(leftover)
 
         do_teardown = self._do_teardown and sys.exc_info() == (None, None, None)
-        if (not do_teardown):
+        if (not do_teardown and files_to_clean):
             print("Detected failed test or user request no teardown")
             print("Leaving files:")
             for file_to_clean in files_to_clean:
@@ -2284,6 +2290,8 @@ class K_TestCimeCase(TestCreateTestCommon):
         except ImportError:
             print("imp not found, skipping case.submit interface test")
             return
+        # the current directory may not exist, so make sure we are in a real directory
+        os.chdir(os.getenv("HOME"))
         sys.path.append(TOOLS_DIR)
         case_submit_path = os.path.join(TOOLS_DIR, "case.submit")
         submit_interface = imp.load_source("case_submit_interface", case_submit_path)
@@ -3267,6 +3275,12 @@ def write_provenance_info():
     logging.info("Test root: %s" % TEST_ROOT)
     logging.info("Test driver: %s\n" % CIME.utils.get_cime_default_driver())
 
+def cleanup():
+    # if the TEST_ROOT directory exists and is empty, remove it
+    if os.path.exists(TEST_ROOT) and not os.listdir(TEST_ROOT):
+        print("All pass, removing directory:", TEST_ROOT)
+        os.rmdir(TEST_ROOT)
+
 def _main_func(description):
     global MACHINE
     global NO_CMAKE
@@ -3386,6 +3400,7 @@ OR
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, None)
 
     write_provenance_info()
+    atexit.register(cleanup)
 
     # Find all python files in repo and create a pylint test for each
     if check_for_pylint():
@@ -3402,12 +3417,8 @@ OR
     except CIMEError as e:
         if e.__str__() != "False":
             print("Detected failures, leaving directory:", TEST_ROOT)
-        else:
-            print("All pass, removing directory:", TEST_ROOT)
-            if os.path.exists(TEST_ROOT) and not NO_TEARDOWN:
-                shutil.rmtree(TEST_ROOT)
+            raise
 
-        raise
 
 if (__name__ == "__main__"):
     _main_func(__doc__)
