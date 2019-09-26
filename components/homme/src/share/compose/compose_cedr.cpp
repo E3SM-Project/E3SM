@@ -421,7 +421,25 @@ namespace cedr {
 struct CDR {
   typedef std::shared_ptr<CDR> Ptr;
 
+  struct Options {
+    // In exact arithmetic, mass is conserved exactly and bounds of a feasible
+    // problem are not violated. In inexact arithmetic, these properties are
+    // inexact, and approximation quality of one can be preferred to that of the
+    // other. Use this option to prefer numerical mass conservation over
+    // numerical bounds nonviolation. In practice, this option governs errrs at
+    // the level of 10 to 1000 times numeric_limits<Real>::epsilon().
+    bool prefer_numerical_mass_conservation_to_numerical_bounds;
+
+    Options ()
+      : prefer_numerical_mass_conservation_to_numerical_bounds(false)
+    {}
+  };
+
+  CDR (const Options options = Options()) : options_(options) {}
+
   virtual void print(std::ostream& os) const {}
+
+  const Options& get_options () const { return options_; }
 
   // Set up QLT tracer metadata. Call declare_tracer in order of the tracer
   // index in the caller's numbering. Once end_tracer_declarations is called, it
@@ -487,6 +505,9 @@ struct CDR {
   // Get a cell's tracer mass Qm after the QLT algorithm has run.
   KOKKOS_FUNCTION
   virtual Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const = 0;
+
+protected:
+  Options options_;
 };
 } // namespace cedr
 
@@ -646,7 +667,8 @@ public:
   // Set up QLT topology and communication data structures based on a tree. Both
   // ncells and tree refer to the global mesh, not just this processor's
   // part. The tree must be identical across ranks.
-  QLT(const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree);
+  QLT(const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree,
+      CDR::Options options = Options());
 
   void print(std::ostream& os) const override;
 
@@ -842,6 +864,8 @@ Int test_qlt(const Parallel::Ptr& p, const tree::Node::Ptr& tree, const Int& nce
              const bool write,
              // Provide memory to QLT for its buffers.
              const bool external_memory,
+             // Set CDR::Options.prefer_numerical_mass_conservation_to_numerical_bounds.
+             const bool prefer_mass_con_to_bounds,
              const bool verbose);
 } // namespace test
 } // namespace qlt
@@ -1042,7 +1066,13 @@ KOKKOS_INLINE_FUNCTION
 Int solve_1eq_bc_qp_2d(const Real* w, const Real* a, const Real b,
                        const Real* xlo, const Real* xhi,
                        const Real* y, Real* x,
-                       const bool clip = true);
+                       const bool clip = true,
+                       // The 2D algorithm doesn't need to terminate based on a
+                       // tolerance, but by default it will exit early if the ND
+                       // algorithm would. Set this to false to run the full 2D
+                       // algorithm w/o checking the tolerance at start. If this
+                       // is false, the feasibility check is also disabled.
+                       const bool early_exit_on_tol = true);
 
 // ClipAndAssuredSum. Minimize the 1-norm with w = 1s. Does not check for
 // feasibility.
@@ -1215,10 +1245,13 @@ KOKKOS_INLINE_FUNCTION
 Int solve_1eq_bc_qp_2d (const Real* w, const Real* a, const Real b,
                         const Real* xlo, const Real* xhi, 
                         const Real* y, Real* x,
-                        const bool clip) {
-  const Real r_tol = impl::calc_r_tol(b, a, y, 2);
-  Int info = impl::check_lu(2, a, b, xlo, xhi, r_tol, x);
-  if (info == -1) return info;
+                        const bool clip, const bool early_exit_on_tol) {
+  Int info;
+  if (early_exit_on_tol) {
+    const Real r_tol = impl::calc_r_tol(b, a, y, 2);
+    Int info = impl::check_lu(2, a, b, xlo, xhi, r_tol, x);
+    if (info == -1) return info;
+  }
 
   { // Check if the optimal point ignoring bound constraints is in bounds.
     Real qmass = 0, dm = b;
@@ -1598,7 +1631,8 @@ namespace impl {
 KOKKOS_INLINE_FUNCTION
 void solve_node_problem (const Real& rhom, const Real* pd, const Real& Qm,
                          const Real& rhom0, const Real* k0d, Real& Qm0,
-                         const Real& rhom1, const Real* k1d, Real& Qm1) {
+                         const Real& rhom1, const Real* k1d, Real& Qm1,
+                         const bool prefer_mass_con_to_bounds) {
   Real Qm_min_kids [] = {k0d[0], k1d[0]};
   Real Qm_orig_kids[] = {k0d[1], k1d[1]};
   Real Qm_max_kids [] = {k0d[2], k1d[2]};
@@ -1641,7 +1675,9 @@ void solve_node_problem (const Real& rhom, const Real* pd, const Real& Qm,
     const Real w[] = {1/rhom0, 1/rhom1};
     Real Qm_kids[] = {k0d[1], k1d[1]};
     local::solve_1eq_bc_qp_2d(w, ones, Qm, Qm_min_kids, Qm_max_kids,
-                              Qm_orig_kids, Qm_kids);
+                              Qm_orig_kids, Qm_kids,
+                              ! prefer_mass_con_to_bounds /* clip */,
+                              ! prefer_mass_con_to_bounds /* early_exit_on_tol */);
     Qm0 = Qm_kids[0];
     Qm1 = Qm_kids[1];
   }
@@ -1651,14 +1687,16 @@ KOKKOS_INLINE_FUNCTION
 void solve_node_problem (const Int problem_type,
                          const Real& rhom, const Real* pd, const Real& Qm,
                          const Real& rhom0, const Real* k0d, Real& Qm0,
-                         const Real& rhom1, const Real* k1d, Real& Qm1) {
+                         const Real& rhom1, const Real* k1d, Real& Qm1,
+                         const bool prefer_mass_con_to_bounds) {
   if ((problem_type & ProblemType::consistent) &&
       ! (problem_type & ProblemType::shapepreserve)) {      
     Real mpd[3], mk0d[3], mk1d[3];
     mpd[0]  = pd [0]*rhom ; mpd [1] = pd[1] ; mpd [2] = pd [2]*rhom ;
     mk0d[0] = k0d[0]*rhom0; mk0d[1] = k0d[1]; mk0d[2] = k0d[2]*rhom0;
     mk1d[0] = k1d[0]*rhom1; mk1d[1] = k1d[1]; mk1d[2] = k1d[2]*rhom1;
-    solve_node_problem(rhom, mpd, Qm, rhom0, mk0d, Qm0, rhom1, mk1d, Qm1);
+    solve_node_problem(rhom, mpd, Qm, rhom0, mk0d, Qm0, rhom1, mk1d, Qm1,
+                       prefer_mass_con_to_bounds);
     return;
   } else if (problem_type & ProblemType::nonnegative) {
     static const Real ones[] = {1, 1};
@@ -1670,7 +1708,8 @@ void solve_node_problem (const Int problem_type,
     Qm0 = Qm_kids[0];
     Qm1 = Qm_kids[1];
   } else {
-    solve_node_problem(rhom, pd, Qm, rhom0, k0d, Qm0, rhom1, k1d, Qm1);
+    solve_node_problem(rhom, pd, Qm, rhom0, k0d, Qm0, rhom1, k1d, Qm1,
+                       prefer_mass_con_to_bounds);
   }
 }
 
@@ -1697,7 +1736,8 @@ namespace test {
 class TestRandomized {
 public:
   TestRandomized(const std::string& cdr_name, const mpi::Parallel::Ptr& p,
-                 const Int& ncells, const bool verbose = false);
+                 const Int& ncells, const bool verbose = false,
+                 const CDR::Options options = CDR::Options());
 
   // The subclass should call this, probably in its constructor.
   void init();
@@ -1707,6 +1747,7 @@ public:
 
 private:
   const std::string cdr_name_;
+  const CDR::Options options_;
 
 protected:
   struct Tracer {
@@ -1824,8 +1865,8 @@ private:
   static void generate_Q(const Tracer& t, Values& v);
   static void permute_Q(const Tracer& t, Values& v);
   static std::string get_tracer_name(const Tracer& t);
-  static Int check(const std::string& cdr_name, const mpi::Parallel& p,
-                   const std::vector<Tracer>& ts, const Values& v);
+  Int check(const std::string& cdr_name, const mpi::Parallel& p,
+            const std::vector<Tracer>& ts, const Values& v);
 };
 
 } // namespace test
@@ -2938,7 +2979,10 @@ void QLT<ES>::init_ordinals () {
 }
 
 template <typename ES>
-QLT<ES>::QLT (const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree) {
+QLT<ES>::QLT (const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree,
+              Options options)
+  : CDR(options)
+{
   init(p, ncells, tree);
   cedr_throw_if(nlclcells() == 0, "QLT does not support 0 cells on a rank.");
 }
@@ -3213,7 +3257,8 @@ void r2l_solve_qp_solve_node_problem (
   const impl::NodeSets::Node& n,
   const impl::NodeSets::Node& k0, const impl::NodeSets::Node& k1,
   const Int& l2rndps, const Int& r2lndps,
-  const Int& l2rbdi, const Int& r2lbdi)
+  const Int& l2rbdi, const Int& r2lbdi,
+  const bool prefer_mass_con_to_bounds)
 {
   impl::solve_node_problem(
     problem_type,
@@ -3225,12 +3270,15 @@ void r2l_solve_qp_solve_node_problem (
      r2l_data(k0.offset*r2lndps + r2lbdi),
      l2r_data(k1.offset*l2rndps),
     &l2r_data(k1.offset*l2rndps + l2rbdi),
-     r2l_data(k1.offset*r2lndps + r2lbdi));
+     r2l_data(k1.offset*r2lndps + r2lbdi),
+    prefer_mass_con_to_bounds);
 }
 
 template <typename ES> void QLT<ES>
 ::r2l_solve_qp (const Int& lvlidx, const Int& l2rndps, const Int& r2lndps) const {
   Timer::start(Timer::snp);
+  const bool prefer_mass_con_to_bounds =
+    options_.prefer_numerical_mass_conservation_to_numerical_bounds;
   if (cedr::impl::OnGpu<ES>::value) {
     const auto d = *nsdd_;
     const auto l2r_data = bd_.l2r_data;
@@ -3264,7 +3312,7 @@ template <typename ES> void QLT<ES>
       }
       r2l_solve_qp_solve_node_problem(
         l2r_data, r2l_data, problem_type, n, d.node(n.kids[0]), d.node(n.kids[1]),
-        l2rndps, r2lndps, l2rbdi, r2lbdi);
+        l2rndps, r2lndps, l2rbdi, r2lbdi, prefer_mass_con_to_bounds);
     };
     Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, N), solve_qp);
     Kokkos::fence();
@@ -3298,7 +3346,8 @@ template <typename ES> void QLT<ES>
           }
           r2l_solve_qp_solve_node_problem(
             bd_.l2r_data, bd_.r2l_data, problem_type, *n, *ns_->node_h(n->kids[0]),
-            *ns_->node_h(n->kids[1]), l2rndps, r2lndps, l2rbdi, r2lbdi);
+            *ns_->node_h(n->kids[1]), l2rndps, r2lndps, l2rbdi, r2lbdi,
+            prefer_mass_con_to_bounds);
         }
       }
     }
@@ -3347,9 +3396,10 @@ public:
   typedef QLT<Kokkos::DefaultExecutionSpace> QLTT;
 
   TestQLT (const Parallel::Ptr& p, const tree::Node::Ptr& tree,
-           const Int& ncells, const bool external_memory, const bool verbose)
-    : TestRandomized("QLT", p, ncells, verbose),
-      qlt_(p, ncells, tree), tree_(tree), external_memory_(external_memory)
+           const Int& ncells, const bool external_memory, const bool verbose,
+           CDR::Options options)
+    : TestRandomized("QLT", p, ncells, verbose, options),
+      qlt_(p, ncells, tree, options), tree_(tree), external_memory_(external_memory)
   {
     if (verbose) qlt_.print(std::cout);
     init();
@@ -3431,8 +3481,12 @@ private:
 // Test all QLT variations and situations.
 Int test_qlt (const Parallel::Ptr& p, const tree::Node::Ptr& tree,
               const Int& ncells, const Int nrepeat,
-              const bool write, const bool external_memory, const bool verbose) {
-  return TestQLT(p, tree, ncells, external_memory, verbose)
+              const bool write, const bool external_memory,
+              const bool prefer_mass_con_to_bounds, const bool verbose) {
+  CDR::Options options;
+  options.prefer_numerical_mass_conservation_to_numerical_bounds =
+    prefer_mass_con_to_bounds;
+  return TestQLT(p, tree, ncells, external_memory, verbose, options)
     .run<TestQLT::QLTT>(nrepeat, write);
 }
 } // namespace test
@@ -3592,17 +3646,21 @@ Int unittest_QLT (const Parallel::Ptr& p, const bool write_requested=false) {
   Int nerr = 0;
   for (size_t is = 0, islim = sizeof(szs)/sizeof(*szs); is < islim; ++is) {
     for (size_t id = 0, idlim = sizeof(dists)/sizeof(*dists); id < idlim; ++id) {
-      for (bool imbalanced: {false, true}) {
-        const auto external_memory = imbalanced;
-        if (p->amroot()) {
-          std::cout << " (" << szs[is] << ", " << id << ", " << imbalanced << ")";
-          std::cout.flush();
+      for (bool imbalanced : {false, true}) {
+        for (bool prefer_mass_con_to_bounds : {false, true}) {
+          const auto external_memory = imbalanced;
+          if (p->amroot()) {
+            std::cout << " (" << szs[is] << ", " << id << ", " << imbalanced << ", "
+                      << prefer_mass_con_to_bounds << ")";
+            std::cout.flush();
+          }
+          Mesh m(szs[is], p, dists[id]);
+          tree::Node::Ptr tree = make_tree(m, imbalanced);
+          const bool write = (write_requested && m.ncell() < 3000 &&
+                              is == islim-1 && id == idlim-1);
+          nerr += test::test_qlt(p, tree, m.ncell(), 1, write, external_memory,
+                                 prefer_mass_con_to_bounds, false);
         }
-        Mesh m(szs[is], p, dists[id]);
-        tree::Node::Ptr tree = make_tree(m, imbalanced);
-        const bool write = (write_requested && m.ncell() < 3000 &&
-                            is == islim-1 && id == idlim-1);
-        nerr += test::test_qlt(p, tree, m.ncell(), 1, write, external_memory, false);
       }
     }
   }
@@ -3637,7 +3695,7 @@ Int run_unit_and_randomized_tests (const Parallel::Ptr& p, const Input& in) {
     Timer::start(Timer::total); Timer::start(Timer::tree);
     tree::Node::Ptr tree = make_tree(m, false);
     Timer::stop(Timer::tree);
-    test::test_qlt(p, tree, in.ncells, in.nrepeat, false, false, in.verbose);
+    test::test_qlt(p, tree, in.ncells, in.nrepeat, false, false, false, in.verbose);
     Timer::stop(Timer::total);
     if (p->amroot()) Timer::print();
   }
@@ -4111,7 +4169,7 @@ void TestRandomized::generate_rho (Values& v) {
   auto r = v.rhom();
   const Int n = v.ncells();
   for (Int i = 0; i < n; ++i)
-    r[i] = 0.5 + 1.5*urand();
+    r[i] = 0.5*(1 + urand());
 }
 
 void TestRandomized::generate_Q (const Tracer& t, Values& v) {
@@ -4349,7 +4407,12 @@ Int TestRandomized
 ::check (const std::string& cdr_name, const mpi::Parallel& p,
          const std::vector<Tracer>& ts, const Values& v) {
   static const bool details = true;
-  static const Real ulp3 = 3*std::numeric_limits<Real>::epsilon();
+  static const Real eps = std::numeric_limits<Real>::epsilon();
+  static const Real ulp3 = 3*eps;
+  const auto prefer_mass_con_to_bounds =
+    options_.prefer_numerical_mass_conservation_to_numerical_bounds;
+  const Real lv_tol = prefer_mass_con_to_bounds ? 100*eps : 0;
+  const Real safety_tol = prefer_mass_con_to_bounds ? 100*eps : ulp3;
   Int nerr = 0;
   std::vector<Real> lcl_mass(2*ts.size()), q_min_lcl(ts.size()), q_max_lcl(ts.size());
   std::vector<Int> t_ok(ts.size(), 1), local_violated(ts.size(), 0);
@@ -4368,7 +4431,7 @@ Int TestRandomized
     for (Int i = 0; i < n; ++i) {
       const bool lv = (nonneg_only ?
                        Qm[i] < 0 :
-                       Qm[i] < Qm_min[i] || Qm[i] > Qm_max[i]);
+                       Qm[i] < Qm_min[i] - lv_tol || Qm[i] > Qm_max[i] + lv_tol);
       if (lv) local_violated[ti] = 1;
       if ( ! safe_only && lv) {
         // If this fails at ~ machine eps, check r2l_nl_adjust_bounds code in
@@ -4410,7 +4473,7 @@ Int TestRandomized
         * Qm_max = v.Qm_max(t.idx);
       const Real q_min = nonneg_only ? 0 : q_min_gbl[ti], q_max = q_max_gbl[ti];
       for (Int i = 0; i < n; ++i) {
-        const Real delta = (q_max - q_min)*ulp3;
+        const Real delta = (q_max - q_min)*safety_tol;
         const bool lv = (nonneg_only ?
                          Qm[i] < -ulp3 :
                          (Qm[i] < q_min*rhom[i] - delta ||
@@ -4464,8 +4527,10 @@ Int TestRandomized
   
 TestRandomized
 ::TestRandomized (const std::string& name, const mpi::Parallel::Ptr& p,
-                  const Int& ncells, const bool verbose)
-  : cdr_name_(name), p_(p), ncells_(ncells), write_inited_(false)
+                  const Int& ncells, const bool verbose,
+                  const CDR::Options options)
+  : cdr_name_(name), options_(options), p_(p), ncells_(ncells),
+    write_inited_(false)
 {}
 
 void TestRandomized::init () {
@@ -4914,8 +4979,8 @@ namespace compose {
 template <typename ES>
 struct QLT : public cedr::qlt::QLT<ES> {
   QLT (const cedr::mpi::Parallel::Ptr& p, const cedr::Int& ncells,
-       const cedr::qlt::tree::Node::Ptr& tree)
-    : cedr::qlt::QLT<ES>(p, ncells, tree)
+       const cedr::qlt::tree::Node::Ptr& tree, const cedr::CDR::Options& options)
+    : cedr::qlt::QLT<ES>(p, ncells, tree, options)
   {}
 
   void run () override {
@@ -5127,7 +5192,8 @@ struct QLT : public cedr::qlt::QLT<ES> {
                  bd_.r2l_data(k0->offset*r2lndps + r2lbdi),
                  bd_.l2r_data(k1->offset*l2rndps),
                 &bd_.l2r_data(k1->offset*l2rndps + l2rbdi),
-                 bd_.r2l_data(k1->offset*r2lndps + r2lbdi));
+                 bd_.r2l_data(k1->offset*r2lndps + r2lbdi),
+                this->options_.prefer_numerical_mass_conservation_to_numerical_bounds);
             }
           }
         }
@@ -5432,7 +5498,9 @@ struct CDR {
     if (Alg::is_qlt(alg)) {
       tree = use_sgi ? make_tree_sgi(p, ncell, gid_data, rank_data, nsublev) :
         make_tree_non_sgi(p, ncell, gid_data, rank_data, nsublev);
-      cdr = std::make_shared<QLTT>(p, ncell*nsublev, tree);
+      cedr::CDR::Options options;
+      options.prefer_numerical_mass_conservation_to_numerical_bounds = true;
+      cdr = std::make_shared<QLTT>(p, ncell*nsublev, tree, options);
       tree = nullptr;
     } else if (Alg::is_caas(alg)) {
       const auto caas = std::make_shared<CAAST>(
@@ -5993,7 +6061,7 @@ extern "C" void cedr_unittest (const homme::Int fcomm, homme::Int* nerrp) {
   auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   if (homme::CDR::Alg::is_qlt(g_cdr->alg))
     *nerrp = cedr::qlt::test::test_qlt(p, g_cdr->tree, g_cdr->nsublev*g_cdr->ncell,
-                                       1, false, false, false);
+                                       1, false, false, true, false);
   else
     *nerrp = cedr::caas::test::unittest(p);
 }
