@@ -5,7 +5,7 @@ module geometry_interface_mod
   use hybrid_mod,     only : hybrid_t
   use kinds,          only : real_kind
   use metagraph_mod,  only : MetaVertex_t
-  use parallel_mod,   only : parallel_t
+  use parallel_mod,   only : parallel_t, abortmp
 
   implicit none
 
@@ -16,7 +16,7 @@ module geometry_interface_mod
   type (parallel_t)   :: par
   type (hybrid_t)     :: hybrid
 
-  type (element_t), dimension(:), allocatable, public :: elem
+  type (element_t), dimension(:), pointer, public :: elem
 
   integer :: nelemd
 
@@ -61,6 +61,10 @@ contains
     nelem = CubeElemCount()
     num_edges = CubeEdgeCount()
 
+    if (nelem < par%nprocs) then
+       call abortmp('Error: too many MPI tasks. Run the test with less MPI ranks, or increase ne.')
+    end if
+
     ! Allocate
     allocate (GridVertex(nelem))
     allocate (GridEdge(num_edges))
@@ -100,6 +104,12 @@ contains
     call initMetaGraph(iam,MetaVertex,GridVertex,GridEdge)
 
     nelemd = LocalElemCount(MetaVertex)
+
+    if (nelemd .le. 0) then
+      call abortmp ("Something went wrong during domain partitioning, &
+                     and a process is left with no elements. Please, &
+                     run the test with more elements, or less MPI ranks.")
+    endif
 
     allocate (num_elems(par%nprocs))
     my_num_elems_ptr => my_num_elems

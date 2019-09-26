@@ -52,8 +52,8 @@ module prim_advance_mod
   implicit none
   private
   save
-  public :: prim_advance_exp, prim_advance_init1, &
-       applycamforcing_dynamics, compute_andor_apply_rhs
+  public :: prim_advance_exp, prim_advance_init1, advance_hypervis, &
+            applycamforcing_dynamics, compute_andor_apply_rhs
 
 contains
 

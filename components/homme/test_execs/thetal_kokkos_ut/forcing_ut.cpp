@@ -38,6 +38,7 @@ void set_forcing_pointers_f90 (Real*& q_ptr, Real*& fq_ptr, Real*& qdp_ptr,
                                Real*& fm_ptr, Real*& ft_ptr,
                                Real*& fvtheta_ptr, Real*& fphi_ptr);
 void tracers_forcing_f90 (const Real& dt, const int& np1, const int& np1_qdp, const bool& hydrostatic, const bool& moist);
+void dynamics_forcing_f90 (const Real& dt, const int& np1);
 } // extern "C"
 
 TEST_CASE("forcing", "forcing") {
@@ -207,6 +208,58 @@ TEST_CASE("forcing", "forcing") {
             }
           }
         }
+      }
+    }
+  }
+
+  // Reset state and forcing to the original random values
+  state.randomize(seed, 10*hv.ps0, hv.ps0);
+  forcing.randomize(seed);
+
+  // Sync views
+  sync_to_host(state.m_v,v_f90);
+  sync_to_host(state.m_w_i,w_f90);
+  sync_to_host(state.m_vtheta_dp,vtheta_f90);
+  sync_to_host(state.m_dp3d,dp_f90);
+  sync_to_host(state.m_phinh_i,phinh_f90);
+
+  sync_to_host<3>(forcing.m_fm,fm_f90);
+  sync_to_host(forcing.m_ft,ft_f90);
+  sync_to_host(forcing.m_fvtheta,fvtheta_f90);
+  sync_to_host(forcing.m_fphi,fphi_f90);
+
+  // Create the functor
+  FunctorsBuffersManager fbm;
+  ForcingFunctor ff;
+
+  // Create and set buffers in the forcing functor
+  fbm.request_size(ff.requested_buffer_size());
+  fbm.allocate();
+  ff.init_buffers(fbm);
+
+  // Run states forcing (cxx and f90)
+  ff.states_forcing(dt,np1);
+  dynamics_forcing_f90(dt,np1+1);
+
+  // Compare answers
+  for (int ie=0; ie<num_elems; ++ie) {
+    for (int igp=0; igp<NP; ++igp) {
+      for (int jgp=0; jgp<NP; ++jgp) {
+        for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+          const int ilev = k / VECTOR_SIZE;
+          const int ivec = k % VECTOR_SIZE;
+
+          REQUIRE(h_v(ie,np1,0,igp,jgp,ilev)[ivec]==v_f90(ie,np1,k,0,igp,jgp));
+          REQUIRE(h_v(ie,np1,1,igp,jgp,ilev)[ivec]==v_f90(ie,np1,k,1,igp,jgp));
+          REQUIRE(h_w(ie,np1,igp,jgp,ilev)[ivec]==w_f90(ie,np1,k,igp,jgp));
+          REQUIRE(h_phi(ie,np1,igp,jgp,ilev)[ivec]==phinh_f90(ie,np1,k,igp,jgp));
+          REQUIRE(h_vtheta(ie,np1,igp,jgp,ilev)[ivec]==vtheta_f90(ie,np1,k,igp,jgp));
+        }
+
+        const int k = NUM_PHYSICAL_LEV;
+        const int ilev = k / VECTOR_SIZE;
+        const int ivec = k % VECTOR_SIZE;
+        REQUIRE(h_w(ie,np1,igp,jgp,ilev)[ivec]==w_f90(ie,np1,k,igp,jgp));
       }
     }
   }

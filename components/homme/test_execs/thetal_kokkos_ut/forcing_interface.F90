@@ -91,42 +91,42 @@ contains
     call c_f_pointer (fphi_ptr,   fphi,    [np,np,  nlevp,nelemd])
   end subroutine set_forcing_pointers_f90
 
-  subroutine forcing_f90(dt,np1,np1_qdp,moist) bind(c)
-    use dimensions_mod,   only: nelemd
-    use prim_driver_base, only: applyCAMforcing_remap
-    !
-    ! Inputs
-    !
-    real    (kind=c_double), intent(in) :: dt
-    integer (kind=c_int),    intent(in) :: np1, np1_qdp
-    logical (kind=c_bool),   intent(in) :: moist
-    
-
-    call applyCAMforcing_remap(elem,hvcoord,np1,np1_qdp,dt,1,nelemd)
-  end subroutine forcing_f90
-
-  subroutine dynamics_forcing_f90(dt,np1,np1_qdp,moist) bind(c)
+  subroutine dynamics_forcing_f90(dt,np1) bind(c)
     use dimensions_mod,   only: nelemd
     use prim_advance_mod, only: applyCAMforcing_dynamics
     !
     ! Inputs
     !
     real (kind=c_double),  intent(in) :: dt
-    integer (kind=c_int),  intent(in) :: np1,np1_qdp
-    logical (kind=c_bool), intent(in) :: moist
+    integer (kind=c_int),  intent(in) :: np1
+    !
+    ! Locals
+    !
+    integer :: ie
+
+    do ie=1,nelemd
+      ! Copy inputs from C ptrs
+      elem(ie)%derived%FM      = fm(:,:,:,:,ie)
+      elem(ie)%derived%FT      = ft(:,:,:,ie)
+      elem(ie)%derived%FVTheta = fvtheta(:,:,:,ie)
+      elem(ie)%derived%FPHI    = fphi(:,:,:,ie)
+    enddo
 
     call applyCAMforcing_dynamics(elem,hvcoord,np1,dt,1,nelemd)
+
+    do ie=1,nelemd
+      ! Copy outputs to C ptrs
+      v(:,:,:,:,:,ie)    = elem(ie)%state%v        
+      w(:,:,:,:,ie)      = elem(ie)%state%w_i      
+      vtheta(:,:,:,:,ie) = elem(ie)%state%vtheta_dp
+      phinh(:,:,:,:,ie)  = elem(ie)%state%phinh_i  
+    enddo
   end subroutine dynamics_forcing_f90
 
   subroutine tracers_forcing_f90(dt,np1,np1_qdp,hydrostatic,moist) bind(c)
     use control_mod,      only: use_moisture, theta_hydrostatic_mode
     use dimensions_mod,   only: nelemd
     use prim_driver_base, only: applyCAMforcing_tracers
-    use element_state,    only: elem_state_v, elem_state_dp3d, elem_state_phinh_i,     &
-                                elem_state_vtheta_dp, elem_state_ps_v, elem_state_w_i, &
-                                elem_state_q, elem_state_qdp,                          &
-                                elem_derived_FM, elem_derived_FQ, elem_derived_FPHI,   &
-                                elem_derived_FVTheta, elem_derived_FT, timelevels
     !
     ! Inputs
     !
@@ -179,7 +179,6 @@ contains
       fvtheta(:,:,:,ie)  = elem(ie)%derived%FVTheta
       fphi(:,:,:,ie)     = elem(ie)%derived%FPHI   
     enddo
-    
   end subroutine tracers_forcing_f90
 
   subroutine cleanup_f90 () bind(c)
