@@ -48,6 +48,7 @@ def buildlib(bldroot, installpath, case):
     cime_model = case.get_value("MODEL")
     caseroot = case.get_value("CASEROOT")
     pio_version = case.get_value("PIO_VERSION")
+    scorpio_src_root_dir = None
     if cime_model == "e3sm":
         srcroot = case.get_value("SRCROOT")
         scorpio_src_root_dir = os.path.join(srcroot, "externals")

@@ -70,22 +70,22 @@
     <machines>
       <machine name="cheyenne" compiler="intel" category="aux_cime_baselines">
 	<options>
-	  <option name="wallclock">00:10</option>
+	  <option name="wallclock">00:10:00</option>
 	</options>
       </machine>
       <machine name="cheyenne" compiler="intel" category="jim">
 	<options>
-	  <option name="wallclock">00:10</option>
+	  <option name="wallclock">00:10:00</option>
 	</options>
       </machine>
       <machine name="cheyenne" compiler="gnu" category="jim">
 	<options>
-	  <option name="wallclock">00:10</option>
+	  <option name="wallclock">00:10:00</option>
 	</options>
       </machine>
       <machine name="cheyenne" compiler="pgi" category="jim">
 	<options>
-	  <option name="wallclock">00:10</option>
+	  <option name="wallclock">00:10:00</option>
 	</options>
       </machine>
     </machines>
