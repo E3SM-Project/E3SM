@@ -28,7 +28,7 @@ module ColumnDataType
   use clm_varctl      , only : get_carbontag, override_bgc_restart_mismatch_dump
   use clm_varctl      , only : pf_hmode, nu_com
   use ch4varcon       , only : allowlakeprod
-  use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr
+  use pftvarcon       , only : VMAX_MINSURF_P_vr, KM_MINSURF_P_vr, pinit_beta1, pinit_beta2
   use soilorder_varcon, only : smax, ks_sorption
   use clm_time_manager, only : is_restart, get_nstep
   use clm_time_manager, only : is_first_step, get_step_size
@@ -4511,19 +4511,29 @@ contains
               errMsg(__FILE__, __LINE__))
           end if
 
-          do j = 1, nlevdecomp
-             rootfr(j) = exp(-3.0* zsoi(j))
-          end do
-          rootfr_tot = 0._r8
-          do j = 1, nlevdecomp
-             rootfr_tot = rootfr_tot + rootfr(j)
-          end do
-          do j = 1, nlevdecomp
-             pinit_prof(j) = rootfr(j) / rootfr_tot / dzsoi_decomp(j) ! 1/m
-          end do
-
           do c = bounds%begc, bounds%endc
              if (use_vertsoilc) then
+                ! calculate P initializtation profile
+                do j = 1, 6 ! top 50 cm
+                   rootfr(j) = exp(-1._r8 * pinit_beta1(cnstate_vars%isoilorder(c)) * zsoi(j))
+                end do
+                do j = 7, nlevdecomp ! below 50 cm
+                   rootfr(j) = exp(-1._r8 * pinit_beta2(cnstate_vars%isoilorder(c)) * zsoi(j))
+                end do
+                ! rescale P profile so that distribution conserves and total P
+                ! mass (g/m2) match obs for top 50 cm
+                rootfr_tot = 0._r8
+                do j = 1, 6 ! top 50 cm
+                   rootfr_tot = rootfr_tot + rootfr(j) * dzsoi_decomp(j)
+                end do
+                do j = 1, nlevdecomp
+                   if (j <= 6) then ! for top 50 cm (6 layers), rescale
+                      pinit_prof(j) = rootfr(j) / rootfr_tot ! unit m-3
+                   else ! for below 50 cm, make sure 7 layer and 6 layer are consistent
+                      pinit_prof(j) = rootfr(j) / rootfr(7) *  pinit_prof(6)
+                   end if
+                end do
+
                 do j = 1, nlevdecomp
                    ! solve equilibrium between loosely adsorbed and solution
                    ! phosphorus
