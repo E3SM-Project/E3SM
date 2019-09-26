@@ -14,13 +14,13 @@ module prim_driver_mod
 contains
 
   subroutine prim_init2(elem, hybrid, nets, nete, tl, hvcoord)
-    use iso_c_binding,    only : c_loc, c_ptr, c_bool
+    use iso_c_binding,    only : c_loc, c_ptr, c_bool, C_NULL_CHAR
     use control_mod,      only : limiter_option, rsplit, qsplit, tstep_type, statefreq,  &
                                  nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg, &
                                  hypervis_order, hypervis_subcycle, hypervis_scaling,    &
                                  ftype, prescribed_wind, moisture, disable_diagnostics,  &
                                  use_cpstar, transport_alg, theta_hydrostatic_mode,      &
-                                 dcmip16_mu, theta_advect_form
+                                 dcmip16_mu, theta_advect_form, test_case, MAX_STRING_LEN
     use dimensions_mod,   only : qsize, nelemd, np, qsize
     use element_mod,      only : element_t
     use element_state,    only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,   &
@@ -48,8 +48,8 @@ contains
                                            hypervis_order, hypervis_subcycle, hypervis_scaling,          &
                                            dcmip16_mu, ftype, theta_adv_form, prescribed_wind, moisture, &
                                            disable_diagnostics, use_cpstar, use_semi_lagrange_transport, &
-                                           theta_hydrostatic_mode) bind(c)
-        use iso_c_binding, only: c_int, c_bool, c_double
+                                           theta_hydrostatic_mode, test_case_name) bind(c)
+        use iso_c_binding, only: c_int, c_bool, c_double, c_ptr
         !
         ! Inputs
         !
@@ -60,6 +60,7 @@ contains
         integer(kind=c_int),  intent(in) :: ftype, theta_adv_form
         logical(kind=c_bool), intent(in) :: prescribed_wind, moisture, disable_diagnostics, use_cpstar
         logical(kind=c_bool), intent(in) :: use_semi_lagrange_transport, theta_hydrostatic_mode
+        type(c_ptr), intent(in) :: test_case_name
       end subroutine init_simulation_params_c
       subroutine init_elements_c (nelemd) bind(c)
         use iso_c_binding, only : c_int
@@ -159,6 +160,7 @@ contains
     type (c_ptr) :: elem_tensorvisc_ptr, elem_vec_sph2cart_ptr
     type (c_ptr) :: elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr
     type (c_ptr) :: elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr
+    character(len=MAX_STRING_LEN), target :: test_name
 
     ! Call the base version of prim_init2
     call prim_init2_base(elem,hybrid,nets,nete,tl,hvcoord)
@@ -170,16 +172,18 @@ contains
 
     ! Fill the simulation params structures in C++
     use_semi_lagrange_transport = transport_alg > 0
+    test_name = TRIM(test_case) // C_NULL_CHAR
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
                                    hypervis_order, hypervis_subcycle, hypervis_scaling,           &
-                                   dcmip16_mu, ftype, theta_advect_form,                           &
+                                   dcmip16_mu, ftype, theta_advect_form,                          &
                                    LOGICAL(prescribed_wind==1,c_bool),                            &
                                    LOGICAL(moisture/="dry",c_bool),                               &
                                    LOGICAL(disable_diagnostics,c_bool),                           &
                                    LOGICAL(use_cpstar==1,c_bool),                                 &
                                    LOGICAL(use_semi_lagrange_transport,c_bool),                   &
-                                   LOGICAL(theta_hydrostatic_mode,c_bool))
+                                   LOGICAL(theta_hydrostatic_mode,c_bool),                        &
+                                   c_loc(test_name))
 
     ! Initialize time level structure in C++
     call init_time_level_c(tl%nm1, tl%n0, tl%np1, tl%nstep, tl%nstep0)

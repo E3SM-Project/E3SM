@@ -39,7 +39,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
                                const Real& nu, const Real& nu_p, const Real& nu_q, const Real& nu_s, const Real& nu_div, const Real& nu_top,
                                const int& hypervis_order, const int& hypervis_subcycle, const double& hypervis_scaling, const double& dcmip16_mu,
                                const int& ftype, const int& theta_adv_form, const bool& prescribed_wind, const bool& moisture, const bool& disable_diagnostics,
-                               const bool& use_cpstar, const bool& use_semi_lagrangian_transport, const bool& theta_hydrostatic_mode)
+                               const bool& use_cpstar, const bool& use_semi_lagrangian_transport, const bool& theta_hydrostatic_mode, const char** test_case)
 {
   // Check that the simulation options are supported. This helps us in the future, since we
   // are currently 'assuming' some option have/not have certain values. As we support for more
@@ -141,7 +141,12 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
 
   // TODO Parse a fortran string and set this properly. For now, our code does
   // not depend on this except to throw an error in apply_test_forcing.
-  params.test_case = TestCase::JW_BAROCLINIC;
+  std::string test_name(*test_case);
+  if (test_name=="jw_baroclinic") {
+    params.test_case = TestCase::JW_BAROCLINIC;
+  } else {
+    Errors::runtime_abort("Error! Unknown test case '" + test_name + "'.\n");
+  }
 
   // Now this structure can be used safely
   params.params_set = true;
@@ -157,8 +162,8 @@ void init_hvcoord_c (const Real& ps0, CRCPtr& hybrid_am_ptr, CRCPtr& hybrid_ai_p
 
 void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr,         F90Ptr &elem_state_w_i_ptr,
                              F90Ptr &elem_state_vtheta_dp_ptr, F90Ptr &elem_state_phinh_i_ptr,
-                             F90Ptr &elem_state_dp3d_ptr,      F90Ptr &elem_state_Qdp_ptr,
-                             F90Ptr &elem_Q_ptr,               F90Ptr &elem_state_ps_v_ptr,
+                             F90Ptr &elem_state_dp3d_ptr,      F90Ptr &elem_state_ps_v_ptr,
+                             F90Ptr &elem_state_Qdp_ptr,       F90Ptr &elem_Q_ptr,
                              F90Ptr &elem_derived_omega_p_ptr) {
   ElementsState &state = Context::singleton().get<ElementsState>();
   const int num_elems = state.num_elems();
@@ -201,9 +206,17 @@ void push_forcing_to_c (F90Ptr elem_derived_FM,
       elem_derived_FM, num_elems);
   sync_to_device<3>(fm_f90, forcing.m_fm);
 
-  HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][NP][NP]> ft_f90(
+  HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][NP][NP]> fvtheta_f90(
       elem_derived_FVTheta, num_elems);
-  sync_to_device(ft_f90, forcing.m_fvtheta);
+  sync_to_device(fvtheta_f90, forcing.m_fvtheta);
+
+  HostViewUnmanaged<Real * [NUM_PHYSICAL_LEV][NP][NP]> ft_f90(
+      elem_derived_FT, num_elems);
+  sync_to_device(ft_f90, forcing.m_ft);
+
+  HostViewUnmanaged<Real * [NUM_INTERFACE_LEV][NP][NP]> fphi_f90(
+      elem_derived_FPHI, num_elems);
+  sync_to_device(fphi_f90, forcing.m_fphi);
 
   const SimulationParams &params = Context::singleton().get<SimulationParams>();
   Tracers &tracers = Context::singleton().get<Tracers>();
@@ -259,14 +272,10 @@ void init_elements_c (const int& num_elems)
   //          In other words, you cannot reset the views. If you *really* need to do it,
   //          you must reset the view in both c.get<Elements>().m_geometry AND
   //          c.get<ElementsGeometry>()
-  ElementsGeometry& geometry = c.create<ElementsGeometry>();
-  geometry = e.m_geometry;
-  ElementsState& state = c.create<ElementsState>();
-  state = e.m_state;
-  ElementsDerivedState& derived = c.create<ElementsDerivedState>();
-  derived = e.m_derived;
-  ElementsForcing& forcing = c.create<ElementsForcing>();
-  forcing = e.m_forcing;
+  c.create_ref<ElementsGeometry>(e.m_geometry);
+  c.create_ref<ElementsState>(e.m_state);
+  c.create_ref<ElementsDerivedState>(e.m_derived);
+  c.create_ref<ElementsForcing>(e.m_forcing);
 }
 
 void init_functors_c ()
