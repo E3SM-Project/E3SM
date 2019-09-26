@@ -121,8 +121,6 @@ contains
     type(parallel_t), intent(out) ::  par
 
 #ifdef _MPI
-#include <mpif.h>
-
     integer(kind=int_kind)                              :: ierr
     logical :: running   ! state of MPI at beginning of initmp call
 #ifdef CAM
@@ -162,6 +160,7 @@ contains
     if (color == 0) par%dynproc = .TRUE.
 #else
     par%comm     = MPI_COMM_WORLD
+    par%dynproc  = .TRUE.
 #endif
     call MPI_comm_rank(par%comm,par%rank,ierr)
     call MPI_comm_size(par%comm,par%nprocs,ierr)
@@ -181,6 +180,7 @@ contains
 
   subroutine initmp_from_par(par)
     type (parallel_t),intent(in):: par
+#ifdef _MPI
     character(len=MPI_MAX_PROCESSOR_NAME)               :: my_name
     character(len=MPI_MAX_PROCESSOR_NAME), allocatable  :: the_names(:)
     integer(kind=int_kind),allocatable                  :: tarray(:)
@@ -188,8 +188,6 @@ contains
     integer(kind=int_kind)                              :: ierr,tmp_min,tmp_max
     integer :: node_color
            
-#ifdef _MPI
-#include <mpif.h>
     if (MPI_DOUBLE_PRECISION==20 .and. MPI_REAL8==18) then
        ! LAM MPI defined MPI_REAL8 differently from MPI_DOUBLE_PRECISION
        ! and LAM MPI's allreduce does not accept on MPI_REAL8
@@ -353,7 +351,6 @@ end subroutine haltmp
     type (parallel_t) par
 
 #ifdef _MPI
-#include <mpif.h>
     integer                         :: errorcode,errorlen,ierr
     character(len=MPI_MAX_ERROR_STRING)               :: errorstring
 
@@ -378,7 +375,6 @@ end subroutine haltmp
     integer :: comm
 
 #ifdef _MPI
-#include <mpif.h>
     integer                         :: errorcode,errorlen,ierr
     character(len=MPI_MAX_ERROR_STRING)               :: errorstring
 
