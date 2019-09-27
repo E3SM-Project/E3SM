@@ -66,8 +66,8 @@ contains
 
 
     ! unit test for analytic jacobian used by IMEX methods
-    if (.not. theta_hydrostatic_mode) &
-         call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
+!    if (.not. theta_hydrostatic_mode) &
+!         call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
 
 
 
