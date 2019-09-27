@@ -1297,6 +1297,37 @@ module five_intr
     
   return    
   
-  end subroutine    
+  end subroutine find_level_match_index
+  
+  ! ======================================== !
+  !                                          !
+  ! ======================================== !
+  
+  subroutine five_amr(&
+           pbuf) 
+  
+    use physics_buffer, only: pbuf_get_field, pbuf_old_tim_idx, &
+      pbuf_get_index
+    ! Purpose is to update FIVE levels based on AMR
+    implicit none
+  
+    ! declare input/out variables to subroutine 
+    type(physics_buffer_desc), pointer :: pbuf(:)
+    
+    ! declare local variables
+    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction [fraction]   
+    
+    integer :: cld_idx, itim_old
+    
+    ! Start routine 
+    cld_idx = pbuf_get_index('CLD')         ! Cloud fraction
+    itim_old = pbuf_old_tim_idx()
+    call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
+    
+    ! "cld" array (pcols,pver) is now loaded with cloud fraction 
+    
+  return    
+  
+  end subroutine five_amr       
 
 end module five_intr

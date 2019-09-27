@@ -1900,6 +1900,9 @@ subroutine tphysbc (ztodt,               &
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
+#ifdef FIVE
+    use five_intr,       only: five_amr
+#endif 
 
     implicit none
 
@@ -2454,6 +2457,10 @@ end if
        snow_sed_macmic = 0._r8
        prec_pcw_macmic = 0._r8
        snow_pcw_macmic = 0._r8
+
+#ifdef FIVE       
+       call five_amr(pbuf)
+#endif
 
        do macmic_it = 1, cld_macmic_num_steps
 
