@@ -1512,6 +1512,9 @@ contains
   real (kind=real_kind) ::  v1,v2,w,d_eta_dot_dpdn_dn
   integer :: i,j,k,kptr,ie, nlyr_tot
 
+  real (kind=real_kind) ::  phihy_i(np,np,nlevp), phi_temp(np,np,2,nlev)
+
+
   call t_startf('compute_andor_apply_rhs')
 
   if (theta_hydrostatic_mode) then
@@ -1577,7 +1580,23 @@ contains
         v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
              dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (2*dp3d_i(:,:,k))
      end do
-     
+    
+
+
+
+!!!!! SPLITTING
+     call phi_from_eos(hvcoord,elem(ie)%state%phis,vtheta_dp,dp3d,phihy_i)
+     !gradient of it
+     do k=1,nlev
+       phi_temp(:,:,:,k) = gradient_sphere( phihy_i(:,:,k), deriv, elem(ie)%Dinv);
+       phi_temp(:,:,1,k) = phi_temp(:,:,1,k) * v_i(:,:,1,k)
+       phi_temp(:,:,2,k) = phi_temp(:,:,2,k) * v_i(:,:,2,k)
+     enddo
+
+
+
+
+ 
      if (theta_hydrostatic_mode) then
         do k=nlev,1,-1          ! traditional Hydrostatic integral
            phi_i(:,:,k)=phi_i(:,:,k+1)+&
@@ -1734,13 +1753,21 @@ contains
              +v_i(:,:,2,k)*gradphinh_i(:,:,2,k) 
         phi_tens(:,:,k) =  (-phi_vadv_i(:,:,k) - v_gradphinh_i(:,:,k))*scale1 &
           + scale2*g*elem(ie)%state%w_i(:,:,k,n0)
+
+!!!! SPLITTING
         if (scale2/=1) then
            ! add imex phi_h splitting 
            ! use approximate phi_h = hybi*phis 
            ! could also use true hydrostatic pressure, but this requires extra DSS in dirk()
+#if 0
            phi_tens(:,:,k) =  phi_tens(:,:,k)+(1-scale2)*(&
                 v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
                 v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2) )*hvcoord%hybi(k)
+#else
+           phi_tens(:,:,k) =  phi_tens(:,:,k)+(1-scale2)*&
+                ( phi_temp(:,:,1,k) + phi_temp(:,:,2,k) )
+#endif
+
         endif
      end do
 
@@ -2124,7 +2151,64 @@ contains
      endif
      call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
           elem(ie)%spheremp,hvcoord%dp0)
+
+
+
+
+
+     dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
+     vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,np1)
+
+     dp3d_i(:,:,1) = dp3d(:,:,1)
+     dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
+     do k=2,nlev
+        dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
+     end do
+
+     ! special averaging for velocity for energy conservation
+     v_i(:,:,1:2,1) = elem(ie)%state%v(:,:,1:2,1,np1)
+     v_i(:,:,1:2,nlevp) = elem(ie)%state%v(:,:,1:2,nlev,np1)
+     do k=2,nlev
+        v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,np1) + &
+             dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,np1) ) / (2*dp3d_i(:,:,k))
+        v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,np1) + &
+             dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,np1) ) / (2*dp3d_i(:,:,k))
+     end do
+
+!!!!! SPLITTING
+     call phi_from_eos(hvcoord,elem(ie)%state%phis,vtheta_dp,dp3d,phihy_i)
+     !gradient of it
+     do k=1,nlev
+       phi_temp(:,:,:,k) = gradient_sphere( phihy_i(:,:,k), deriv, elem(ie)%Dinv);
+       phi_temp(:,:,1,k) = phi_temp(:,:,1,k) * v_i(:,:,1,k)
+       phi_temp(:,:,2,k) = phi_temp(:,:,2,k) * v_i(:,:,2,k)
+     enddo
+
+
+!!!!! pack it to 
+     do k=1,nlev
+       elem(ie)%derived%ugradphihy(:,:,k) = (phi_temp(:,:,1,k)+phi_temp(:,:,2,k))*elem(ie)%spheremp(:,:)
+     enddo
+     kptr=0
+     call edgeVpack_nlyr(edge_g,elem(ie)%desc,&
+          elem(ie)%derived%ugradphihy(:,:,:),nlev,kptr,nlyr_tot)
   end do
+
+  call t_startf('caar_bexchV')
+  call bndry_exchangeV(hybrid,edge_g)
+  call t_stopf('caar_bexchV')
+
+  do ie=nets,nete
+     kptr=0
+     call edgeVunpack_nlyr(edge_g,elem(ie)%desc,&
+          elem(ie)%derived%ugradphihy(:,:,:),nlev,kptr,nlyr_tot)
+     do k=1,nlev
+        elem(ie)%derived%ugradphihy(:,:,k)=&
+        elem(ie)%derived%ugradphihy(:,:,k)*elem(ie)%rspheremp(:,:)
+     enddo
+  enddo
+
+
   call t_stopf('compute_andor_apply_rhs')
 
   end subroutine compute_andor_apply_rhs
@@ -2217,6 +2301,9 @@ contains
        dphi_n0(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
     enddo
 
+
+!!!!!!! SPLITTING
+#if 0
     do k=2,nlev
        v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,np1) + &
             dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,np1) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
@@ -2230,6 +2317,13 @@ contains
             v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
             *hvcoord%hybi(k)/g  
     enddo
+#else
+    wh_i = 0.0
+    wh_i(:,:,1:nlev) = elem(ie)%derived%ugradphihy(:,:,1:nlev)
+#endif
+!!!!!!!! end of splitting
+
+
 
 #if 1
     dphi = dphi_n0  ! initial guess
