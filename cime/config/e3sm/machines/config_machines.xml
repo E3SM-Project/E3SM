@@ -275,7 +275,7 @@
         <command name="load">pmi/5.0.13</command>
 
         <command name="rm">cray-mpich</command>
-        <command name="load">cray-mpich/7.7.0</command>
+        <command name="load">cray-mpich/7.7.6</command>
       </modules>
 
       <modules compiler="intel">
@@ -285,11 +285,11 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
+        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.5</command>
         <command name="rm">gcc</command>
-        <command name="load">gcc/7.3.0</command>
+        <command name="load">gcc/8.2.0</command>
         <command name="rm">cray-libsci</command>
-        <command name="load">cray-libsci/18.03.1</command>
+        <command name="load">cray-libsci/19.02.1</command>
       </modules>
 
       <modules>
@@ -306,16 +306,16 @@
       </modules>
       <modules mpilib="!mpi-serial">
         <command name="rm">cray-netcdf-hdf5parallel</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
-        <command name="load">cray-hdf5-parallel/1.10.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.8.1.3</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.6.1.3</command>
+        <command name="load">cray-hdf5-parallel/1.10.1.2</command>
+        <command name="load">cray-parallel-netcdf/1.8.1.4</command>
       </modules>
 
       <modules>
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.11.4</command>
+        <command name="load">cmake/3.14.4</command>
       </modules>
     </module_system>
 
@@ -414,7 +414,7 @@
       </modules>
 
       <modules mpilib="mpt">
-        <command name="swap">cray-mpich cray-mpich/7.7.0</command>
+        <command name="swap">cray-mpich cray-mpich/7.7.6</command>
       </modules>
 
       <modules mpilib="impi">
@@ -434,17 +434,17 @@
       </modules>
 
       <modules compiler="gnu">
-        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.4</command>
+        <command name="swap">PrgEnv-intel PrgEnv-gnu/6.0.5</command>
         <command name="rm">gcc</command>
-        <command name="load">gcc/7.3.0</command>
+        <command name="load">gcc/8.2.0</command>
         <command name="rm">cray-libsci</command>
-        <command name="load">cray-libsci/18.03.1</command>
+        <command name="load">cray-libsci/19.02.1</command>
       </modules>
 
       <modules>
-        <command name="swap">craype craype/2.5.14</command>
+        <command name="swap">craype craype/2.5.18</command>
         <command name="rm">pmi</command>
-        <command name="load">pmi/5.0.13</command>
+        <command name="load">pmi/5.0.14</command>
         <command name="rm">craype-haswell</command>
         <command name="load">craype-mic-knl</command>
       </modules>
@@ -453,21 +453,21 @@
         <command name="rm">cray-netcdf-hdf5parallel</command>
         <command name="rm">cray-hdf5-parallel</command>
         <command name="rm">cray-parallel-netcdf</command>
-        <command name="load">cray-netcdf/4.4.1.1.6</command>
-        <command name="load">cray-hdf5/1.10.1.1</command>
+        <command name="load">cray-netcdf/4.6.1.3</command>
+        <command name="load">cray-hdf5/1.10.2.1</command>
       </modules>
       <modules mpilib="!mpi-serial">
         <command name="rm">cray-netcdf-hdf5parallel</command>
-        <command name="load">cray-netcdf-hdf5parallel/4.4.1.1.6</command>
-        <command name="load">cray-hdf5-parallel/1.10.1.1</command>
-        <command name="load">cray-parallel-netcdf/1.8.1.3</command>
+        <command name="load">cray-netcdf-hdf5parallel/4.6.1.3</command>
+        <command name="load">cray-hdf5-parallel/1.10.2.0</command>
+        <command name="load">cray-parallel-netcdf/1.8.1.4</command>
       </modules>
 
       <modules>
         <command name="rm">git</command>
         <command name="load">git</command>
         <command name="rm">cmake</command>
-        <command name="load">cmake/3.11.4</command>
+        <command name="load">cmake/3.14.4</command>
       </modules>
 
       <!--command name="list">&gt;&amp; ml.txt</command-->
