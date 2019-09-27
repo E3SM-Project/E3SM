@@ -21,7 +21,6 @@ module UrbanRadiationMod
   use TemperatureType   , only : temperature_type
   use SolarAbsorbedType , only : solarabs_type 
   use SurfaceAlbedoType , only : surfalb_type
-  use UrbanParamsType   , only : urbanparams_type
   use EnergyFluxType    , only : energyflux_type
   use TopounitDataType  , only : top_af
   use LandunitType      , only : lun_pp                

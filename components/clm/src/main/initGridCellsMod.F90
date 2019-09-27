@@ -59,13 +59,10 @@ contains
     use shr_const_mod     , only : SHR_CONST_PI
     !
     ! !LOCAL VARIABLES:
-    integer :: nc,ti,li,ci,pi,gdc,topounit  ! indices
+    integer :: nc,ti,li,ci,pi,gdc,topounit, ntopos  ! indices
     integer :: nclumps                      ! number of clumps on this processor
-    real(r8) :: wttopounit2gridcell         ! topounit weight on gridcell
-	real(r8) :: tmp_wt2grd(:)                  ! topounit weight on gridcell
-	real(r8) :: tmp_televation(:)                  ! topounit weight on gridcell
-	real(r8) :: tmp_tslope(:)                  ! topounit weight on gridcell
-	integer :: tmp_taspect(:)                  ! topounit weight on gridcell
+    real(r8) :: wttopounit2gridcell, elv, slp        ! topounit weight on gridcell, elevation and slope
+    integer :: asp                                         ! aspect
     type(bounds_type) :: bounds_proc
     type(bounds_type) :: bounds_clump
     !------------------------------------------------------------------------
@@ -131,17 +128,14 @@ contains
        ! As a preliminary implementation, every gridcell has the same number of topounits,
        ! and each topounit on the gridcell has an equal weight.
        do gdc = bounds_clump%begg, bounds_clump%endg
-	      ntopos = grc_pp%ntopounits(gdc)
-		  tmp_wt2grd = grc_pp%tfrc_area(gdc)
-		  tmp_televation = grc_pp%televation(gdc)
-		  tmp_tslope = grc_pp%tslope(gdc)
-		  tmp_taspect = grc_pp%taspect(gdc)
-		  
+          !ntopos = grc_pp%ntopounits(gdc) ! This is the actual or valid # of topounits per grid for future use
+          ntopos = max_topounits            ! For now we use the maximum number to topounits per grid assuming the same # of topounits in each gridcell
+	  
           do topounit = 1, ntopos  ! use actual/valid # of topounits per grid intead of max_topounits
-		     wttopounit2gridcell = tmp_wt2grd(topounit) 
-			 elv = tmp_televation(topounit)
-			 slp = tmp_tslope(topounit)
-			 asp = tmp_taspect(topounit)
+             wttopounit2gridcell = grc_pp%tfrc_area(gdc,topounit)  
+             elv = grc_pp%televation(gdc,topounit) 
+             slp = grc_pp%tslope(gdc,topounit) 
+             asp = grc_pp%taspect(gdc,topounit) 
              !wttopounit2gridcell = 1._r8/(max_topounits)
              call add_topounit(ti=ti, gi=gdc, wtgcell=wttopounit2gridcell, elv=elv, slp=slp, asp=asp)
           end do
@@ -283,7 +277,7 @@ contains
     ! gridcell as the new landunit weights on each topounit.
     ! Later, this information will come from new surface datasat.
     call subgrid_get_topounitinfo(ti, gi, nveg=npfts)
-    wtlunit2topounit = wt_lunit(gi, ltype)
+    wtlunit2topounit = wt_lunit(gi,ti, ltype)
 
     if (npfts > 0) then
        call add_landunit(li=li, ti=ti, ltype=ltype, wttopounit=wtlunit2topounit)
@@ -352,7 +346,7 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
 
-    wtlunit2topounit = wt_lunit(gi, ltype)
+    wtlunit2topounit = wt_lunit(gi,ti, ltype)
 
     if (npfts > 0) then
 
@@ -379,7 +373,7 @@ contains
  
           do m = 1, maxpatch_glcmec
 
-             wtcol2lunit = wt_glc_mec(gi,m)
+             wtcol2lunit = wt_glc_mec(gi,ti, m)
 
              if (wtcol2lunit > 0._r8 .or. glcmask == 1) then
                 call add_column(ci=ci, li=li, ctype=icemec_class_to_col_itype(m), wtlunit=wtcol2lunit)
@@ -442,7 +436,7 @@ contains
     ! gridcell as the new landunit weights on each topounit.
     ! Later, this information will come from new surface datasat.
     call subgrid_get_topounitinfo(ti, gi, ncrop=npfts)
-    wtlunit2topounit = wt_lunit(gi, ltype)
+    wtlunit2topounit = wt_lunit(gi,ti, ltype)
 
     if (npfts > 0) then
 
@@ -461,7 +455,7 @@ contains
 
        if (create_crop_landunit) then
           do m = cft_lb, cft_ub
-             call add_column(ci=ci, li=li, ctype=((istcrop*100) + m), wtlunit=wt_cft(gi,m))
+             call add_column(ci=ci, li=li, ctype=((istcrop*100) + m), wtlunit=wt_cft(gi,ti,m))
              call add_patch(pi=pi, ci=ci, ptype=m, wtcol=1.0_r8)
           end do
        end if
@@ -528,11 +522,11 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end select
 
-    wtlunit2topounit = wt_lunit(gi, ltype)
+    wtlunit2topounit = wt_lunit(gi,ti, ltype)
 
     n = ltype - isturb_MIN + 1
-    wtlunit_roof = urbinp%wtlunit_roof(gi,n)
-    wtroad_perv  = urbinp%wtroad_perv(gi,n)
+    wtlunit_roof = urbinp%wtlunit_roof(gi,ti,n)
+    wtroad_perv  = urbinp%wtroad_perv(gi,ti,n)
 
     if (npfts > 0) then
 

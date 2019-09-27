@@ -317,7 +317,7 @@ contains
     type(bounds_type), intent(in) :: bounds  
     !
                                                         ! !LOCAL VARIABLES:
-    integer            :: p, lev, c, l, g, j            ! indices
+    integer            :: p, lev, c, l, g, j,t,ti,topi            ! indices
     real(r8)           :: om_frac                       ! organic matter fraction
     real(r8)           :: om_tkm         = 0.25_r8      ! thermal conductivity of organic soil (Farouki, 1986) [W/m/K]
     real(r8)           :: om_watsat_lake = 0.9_r8       ! porosity of organic soil
@@ -350,7 +350,7 @@ contains
     real(r8) ,pointer  :: zsoifl (:)                    ! Output: [real(r8) (:)]  original soil midpoint 
     real(r8) ,pointer  :: zisoifl (:)                   ! Output: [real(r8) (:)]  original soil interface depth 
     real(r8) ,pointer  :: dzsoifl (:)                   ! Output: [real(r8) (:)]  original soil thickness 
-    real(r8) ,pointer  :: gti (:)                       ! read in - fmax 
+    real(r8) ,pointer  :: gti (:,:)                       ! read in - fmax 
     real(r8) ,pointer  :: sand3d (:,:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: organic3d (:,:,:)               ! read in - organic matter: kg/m3 (needs to be a pointer for use in ncdio)
@@ -441,21 +441,21 @@ contains
 
     ! Read in sand and clay data
 
-    call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=namet, dim2name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: PCT_SAND NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
 
-    call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=namet, dim2name=grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
 
     do p = bounds%begp,bounds%endp
        g = veg_pp%gridcell(p)
-	   t = veg_pp%topounit(p)
-	   topi = grc_pp%topi(g)
-	   ti = t - topi + 1
+       t = veg_pp%topounit(p)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
        if ( sand3d(g,ti,1)+clay3d(g,ti,1) == 0.0_r8 )then
           if ( any( sand3d(g,ti,:)+clay3d(g,ti,:) /= 0.0_r8 ) )then
              call endrun(msg='found depth points that do NOT sum to zero when surface does'//&
@@ -474,14 +474,18 @@ contains
 
     ! Read fmax
 
-    allocate(gti(bounds%begg:bounds%endg))
+    allocate(gti(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='FMAX', flag='read', data=gti, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: FMAX NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       this%wtfact_col(c) = gti(g)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
+       
+       this%wtfact_col(c) = gti(g,ti)
     end do
     deallocate(gti)
 
@@ -524,9 +528,9 @@ contains
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
        l = col_pp%landunit(c)
-	   t = col_pp%topounit(c)
-	   topi = grc_pp%topi(g)
-	   ti = t - topi + 1
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
 
        if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
 
@@ -813,9 +817,12 @@ contains
 
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
 
-       this%gwc_thr_col(c) = 0.17_r8 + 0.14_r8 * clay3d(g,1) * 0.01_r8
-       this%mss_frc_cly_vld_col(c) = min(clay3d(g,1) * 0.01_r8, 0.20_r8)
+       this%gwc_thr_col(c) = 0.17_r8 + 0.14_r8 * clay3d(g,ti,1) * 0.01_r8
+       this%mss_frc_cly_vld_col(c) = min(clay3d(g,ti,1) * 0.01_r8, 0.20_r8)
     end do
 
     ! --------------------------------------------------------------------

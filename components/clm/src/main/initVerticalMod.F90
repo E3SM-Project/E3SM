@@ -22,7 +22,9 @@ module initVerticalMod
   use landunit_varcon, only : istdlak, istice_mec
   use fileutils      , only : getfil
   use LandunitType   , only : lun_pp                
-  use ColumnType     , only : col_pp                
+  use ColumnType     , only : col_pp           
+  use topounit_varcon, only : max_topounits
+  use GridcellType     , only : grc_pp
   use ncdio_pio
   !
   ! !PUBLIC TYPES:
@@ -46,7 +48,7 @@ contains
     real(r8)            , intent(in)    :: thick_roof(bounds%begl:)
     !
     ! LOCAL VARAIBLES:
-    integer               :: c,l,g,i,j,lev     ! indices 
+    integer               :: c,l,t,ti,topi,g,i,j,lev     ! indices 
     type(file_desc_t)     :: ncid              ! netcdf id
     logical               :: readvar 
     integer               :: dimid             ! dimension id
@@ -63,7 +65,7 @@ contains
     integer               :: ier               ! error status
     real(r8)              :: scalez = 0.025_r8 ! Soil layer thickness discretization (m)
     real(r8)              :: thick_equal = 0.2
-    real(r8) ,pointer     :: lakedepth_in(:)   ! read in - lakedepth 
+    real(r8) ,pointer     :: lakedepth_in(:,:)   ! read in - lakedepth 
     real(r8), allocatable :: zurb_wall(:,:)    ! wall (layer node depth)
     real(r8), allocatable :: zurb_roof(:,:)    ! roof (layer node depth)
     real(r8), allocatable :: dzurb_wall(:,:)   ! wall (layer thickness)
@@ -349,18 +351,22 @@ contains
     ! Set lake levels and layers (no interfaces)
     !-----------------------------------------------
 
-    allocate(lakedepth_in(bounds%begg:bounds%endg))
+    allocate(lakedepth_in(bounds%begg:bounds%endg, 1:max_topounits))
     call ncd_io(ncid=ncid, varname='LAKEDEPTH', flag='read', data=lakedepth_in, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        if (masterproc) then
           write(iulog,*) 'WARNING:: LAKEDEPTH not found on surface data set. All lake columns will have lake depth', &
                ' set equal to default value.'
        end if
-       lakedepth_in(:) = spval
+       lakedepth_in(:,:) = spval
     end if
     do c = begc, endc
        g = col_pp%gridcell(c)
-       col_pp%lakedepth(c) = lakedepth_in(g)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
+       
+       col_pp%lakedepth(c) = lakedepth_in(g,ti)
     end do
     deallocate(lakedepth_in)
 

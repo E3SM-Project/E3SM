@@ -363,7 +363,7 @@ contains
     integer :: anumg              ! lnd num gridcells
     integer :: icells             ! temporary
     integer :: begg, endg         ! temporary
-    integer :: itunits         ! temporary
+    integer :: itunits            ! temporary
     integer :: ilunits            ! temporary
     integer :: icols              ! temporary
     integer :: ipfts              ! temporary
@@ -422,7 +422,7 @@ contains
                ncohorts=icohorts )
        endif
        allvecl(cid,glev) = allvecl(cid,glev) + 1           ! number of gridcells for local clump cid
-       allvecl(cid,tlev) = allvecl(cid,tlev) + itunits  ! number of topographic units for local clump cid
+       allvecl(cid,tlev) = allvecl(cid,tlev) + itunits     ! number of topographic units for local clump cid
        allvecl(cid,llev) = allvecl(cid,llev) + ilunits     ! number of landunits for local clump cid
        allvecl(cid,clev) = allvecl(cid,clev) + icols       ! number of columns for local clump cid
        allvecl(cid,plev) = allvecl(cid,plev) + ipfts       ! number of pfts for local clump cid 
@@ -1769,7 +1769,7 @@ contains
 
        ! All = local (as no ghost cells)
        procinfo%ncells_all      = procinfo%ncells
-       procinfo%ntunits_all  = procinfo%ntunits
+       procinfo%ntunits_all     = procinfo%ntunits
        procinfo%nlunits_all     = procinfo%nlunits
        procinfo%ncols_all       = procinfo%ncols
        procinfo%npfts_all       = procinfo%npfts

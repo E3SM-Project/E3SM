@@ -10,7 +10,7 @@ module TopounitType
   use shr_kind_mod   , only : r8 => shr_kind_r8
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use shr_log_mod    , only : errMsg => shr_log_errMsg
-  use abortutils     , only : endrun
+  ! use abortutils     , only : endrun
   use landunit_varcon, only : max_lunit
   use clm_varcon     , only : ispval, spval
   use clm_varpar     , only : numrad
@@ -94,7 +94,7 @@ module TopounitType
     allocate(this%lon         (begt:endt)) ; this%lon         (:) = nan
     allocate(this%elevation   (begt:endt)) ; this%elevation   (:) = nan
     allocate(this%slope       (begt:endt)) ; this%slope       (:) = nan
-    allocate(this%aspect      (begt:endt)) ; this%aspect      (:) = nan
+    allocate(this%aspect      (begt:endt)) ; this%aspect      (:) = ispval
     allocate(this%emissivity  (begt:endt)) ; this%emissivity  (:) = nan
     allocate(this%surfalb_dir (begt:endt,1:numrad)) ; this%surfalb_dir(:,:) = nan
     allocate(this%surfalb_dif (begt:endt,1:numrad)) ; this%surfalb_dif(:,:) = nan

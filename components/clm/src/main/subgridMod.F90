@@ -23,7 +23,7 @@ contains
 
   !------------------------------------------------------------------------------
   subroutine subgrid_get_gcellinfo (gi, &
-       ntopounits, nlunits, ncols, npfts, ncohorts, &
+       ntunits, nlunits, ncols, npfts, ncohorts, &
        nveg, &
        ncrop, &
        nurban_tbd, &
@@ -46,13 +46,13 @@ contains
                              isturb_tbd, isturb_hd, isturb_md
     use topounit_varcon  , only : max_topounits
     use FatesInterfaceMod, only : fates_maxElementsPerSite
-	use GridcellType     , only : grc_pp
+    use GridcellType     , only : grc_pp
 
     !
     ! !ARGUMENTS
     implicit none
     integer , intent(in)  :: gi                   ! grid cell index
-    integer , optional, intent(out) :: ntopounits ! number of topographic units
+    integer , optional, intent(out) :: ntunits    ! number of topographic units
     integer , optional, intent(out) :: nlunits    ! number of landunits
     integer , optional, intent(out) :: ncols      ! number of columns 
     integer , optional, intent(out) :: npfts      ! number of pfts 
@@ -71,7 +71,7 @@ contains
     ! !LOCAL VARIABLES:
     integer  :: t, m             ! loop index
     integer  :: n                ! elevation class index
-    integer  :: itopounits       ! number of topographic units in gridcell
+    integer  :: itunits       ! number of topographic units in gridcell
     integer  :: ilunits          ! number of landunits in gridcell
     integer  :: icols            ! number of columns in gridcell
     integer  :: ipfts            ! number of pfts in gridcell
@@ -84,7 +84,7 @@ contains
     ! Initialize topounits, landunits, pfts, columns and cohorts counters for gridcell
     ! -------------------------------------------------------------------------
 
-    itopounits = 0
+    itunits = 0
     ilunits    = 0
     icols      = 0
     ipfts      = 0
@@ -112,12 +112,12 @@ contains
     ! is a simple way to make the transition to topounits. We should return to this to see
     ! if there is a smarter way to allocate space that does not preclude land area transitions
     ! of interest.
-   ! ntopounits_per_gcell = max_topounits  ! this will be replaced later with a constant > 1, or with a function call
+    ntopounits_per_gcell = max_topounits  ! this will be replaced later with a constant > 1, or with a function call
                                           ! that sets the number of topounits uniquely for each gridcell.
-	ntopounits_per_gcell = grc_pp%ntopounits(gi)   ! We can use the number of valid topounits from surface data
+    !ntopounits_per_gcell = grc_pp%ntopounits(gi)   ! For future improvement the number of valid topounits can be used from surface data
     do t = 1, ntopounits_per_gcell
        
-       itopounits = itopounits + 1
+       itunits = itunits + 1
 
        ! -------------------------------------------------------------------------
        ! Set naturally vegetated landunit
@@ -161,7 +161,7 @@ contains
        ! Set urban tall building district landunit
 
        npfts_per_lunit = 0
-       if (urban_valid(gi)) then
+       if (urban_valid(gi,t)) then
           npfts_per_lunit = maxpatch_urb
           ilunits = ilunits + 1
           icols   = icols + npfts_per_lunit
@@ -172,7 +172,7 @@ contains
        ! Set urban high density landunit
 
        npfts_per_lunit = 0
-       if (urban_valid(gi)) then
+       if (urban_valid(gi,t)) then
           npfts_per_lunit = maxpatch_urb
           ilunits = ilunits + 1
           icols   = icols + npfts_per_lunit
@@ -183,7 +183,7 @@ contains
        ! Set urban medium density landunit
 
        npfts_per_lunit = 0
-       if (urban_valid(gi)) then
+       if (urban_valid(gi,t)) then
           npfts_per_lunit = maxpatch_urb
           ilunits = ilunits + 1
           icols   = icols + npfts_per_lunit
@@ -199,7 +199,7 @@ contains
        ! only need to allocate space for it where its weight is currently non-zero.
 
        npfts_per_lunit = 0
-       if (wt_lunit(gi, istdlak) > 0.0_r8) then
+       if (wt_lunit(gi,t, istdlak) > 0.0_r8) then
           npfts_per_lunit = npfts_per_lunit + 1
        end if
        if (npfts_per_lunit > 0) then
@@ -217,7 +217,7 @@ contains
        ! we only need to allocate space for it where its weight is currently non-zero.
 
        npfts_per_lunit = 0
-       if (wt_lunit(gi, istwet) > 0.0_r8) then
+       if (wt_lunit(gi,t, istwet) > 0.0_r8) then
           npfts_per_lunit = npfts_per_lunit + 1
        end if
        if (npfts_per_lunit > 0) then
@@ -237,7 +237,7 @@ contains
        ! glacier landunits.)
 
        npfts_per_lunit = 0
-       if (wt_lunit(gi, istice) > 0.0_r8) then
+       if (wt_lunit(gi,t, istice) > 0.0_r8) then
           npfts_per_lunit = npfts_per_lunit + 1
        end if
        if (npfts_per_lunit > 0) then
@@ -261,7 +261,7 @@ contains
        do m = 1, maxpatch_glcmec
           ! If the landunit has non-zero weight on the grid cell, and this column has
           ! non-zero weight on the landunit...
-          if (wt_lunit(gi, istice_mec) > 0.0_r8 .and. wt_glc_mec(gi, m) > 0.0_r8) then
+          if (wt_lunit(gi,t, istice_mec) > 0.0_r8 .and. wt_glc_mec(gi,t, m) > 0.0_r8) then
              npfts_per_lunit = npfts_per_lunit + 1
 
           elseif (present(glcmask)) then
@@ -299,7 +299,7 @@ contains
     ! Determine return arguments
     ! -------------------------------------------------------------------------
 
-    if (present(ntopounits)) ntopounits = itopounits
+    if (present(ntunits)) ntunits = itunits
     if (present(nlunits))       nlunits = ilunits
     if (present(ncols))           ncols = icols
     if (present(npfts))           npfts = ipfts
@@ -425,7 +425,7 @@ contains
     ! Set urban tall building district landunit
 
     npfts_per_lunit = 0
-    if (urban_valid(gi)) then
+    if (urban_valid(gi,ti)) then
        npfts_per_lunit = maxpatch_urb
        ilunits = ilunits + 1
        icols   = icols + npfts_per_lunit
@@ -436,7 +436,7 @@ contains
     ! Set urban high density landunit
 
     npfts_per_lunit = 0
-    if (urban_valid(gi)) then
+    if (urban_valid(gi,ti)) then
        npfts_per_lunit = maxpatch_urb
        ilunits = ilunits + 1
        icols   = icols + npfts_per_lunit
@@ -447,7 +447,7 @@ contains
     ! Set urban medium density landunit
 
     npfts_per_lunit = 0
-    if (urban_valid(gi)) then
+    if (urban_valid(gi,ti)) then
        npfts_per_lunit = maxpatch_urb
        ilunits = ilunits + 1
        icols   = icols + npfts_per_lunit
@@ -463,7 +463,7 @@ contains
     ! only need to allocate space for it where its weight is currently non-zero.
 
     npfts_per_lunit = 0
-    if (wt_lunit(gi, istdlak) > 0.0_r8) then
+    if (wt_lunit(gi,ti, istdlak) > 0.0_r8) then
        npfts_per_lunit = npfts_per_lunit + 1
     end if
     if (npfts_per_lunit > 0) then
@@ -481,7 +481,7 @@ contains
     ! we only need to allocate space for it where its weight is currently non-zero.
 
     npfts_per_lunit = 0
-    if (wt_lunit(gi, istwet) > 0.0_r8) then
+    if (wt_lunit(gi,ti, istwet) > 0.0_r8) then
        npfts_per_lunit = npfts_per_lunit + 1
     end if
     if (npfts_per_lunit > 0) then
@@ -501,7 +501,7 @@ contains
     ! glacier landunits.)
 
     npfts_per_lunit = 0
-    if (wt_lunit(gi, istice) > 0.0_r8) then
+    if (wt_lunit(gi,ti, istice) > 0.0_r8) then
        npfts_per_lunit = npfts_per_lunit + 1
     end if
     if (npfts_per_lunit > 0) then
@@ -525,7 +525,7 @@ contains
     do m = 1, maxpatch_glcmec
        ! If the landunit has non-zero weight on the grid cell, and this column has
        ! non-zero weight on the landunit...
-       if (wt_lunit(gi, istice_mec) > 0.0_r8 .and. wt_glc_mec(gi, m) > 0.0_r8) then
+       if (wt_lunit(gi,ti, istice_mec) > 0.0_r8 .and. wt_glc_mec(gi,ti, m) > 0.0_r8) then
           npfts_per_lunit = npfts_per_lunit + 1
 
        elseif (present(glcmask)) then

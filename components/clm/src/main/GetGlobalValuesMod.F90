@@ -44,7 +44,7 @@ contains
 
     if (trim(clmlevel) == nameg) then
        beg_index = bounds_proc%begg
-	else if (trim(clmlevel) == namet) then
+    else if (trim(clmlevel) == namet) then
        beg_index = bounds_proc%begt
     else if (trim(clmlevel) == namel) then
        beg_index = bounds_proc%begl

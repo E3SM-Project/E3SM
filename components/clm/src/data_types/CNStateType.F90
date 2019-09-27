@@ -707,11 +707,11 @@ contains
     type(bounds_type), intent(in) :: bounds   
     !
     ! !LOCAL VARIABLES:
-    integer               :: g,l,c,p,n,j,m            ! indices
-    real(r8) ,pointer     :: gdp (:)                  ! global gdp data (needs to be a pointer for use in ncdio)
-    real(r8) ,pointer     :: peatf (:)                ! global peatf data (needs to be a pointer for use in ncdio)
+    integer               :: g,l,c,p,n,j,m, t, ti, topi            ! indices
+    real(r8) ,pointer     :: gdp (:,:)                  ! global gdp data (needs to be a pointer for use in ncdio)
+    real(r8) ,pointer     :: peatf (:,:)                ! global peatf data (needs to be a pointer for use in ncdio)
     integer  ,pointer     :: soilorder_rdin (:,:)       ! global soil order data (needs to be a pointer for use in ncdio)
-    integer  ,pointer     :: abm (:)                  ! global abm data (needs to be a pointer for use in ncdio)
+    integer  ,pointer     :: abm (:,:)                  ! global abm data (needs to be a pointer for use in ncdio)
     real(r8) ,pointer     :: gti (:)                  ! read in - fmax (needs to be a pointer for use in ncdio)
     integer               :: dimid                    ! dimension id
     integer               :: ier                      ! error status
@@ -762,14 +762,18 @@ contains
     ! Read in GDP data 
     ! --------------------------------------------------------------------
 
-    allocate(gdp(bounds%begg:bounds%endg))
+    allocate(gdp(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='gdp', flag='read', data=gdp, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: gdp NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       this%gdp_lf_col(c) = gdp(g)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
+       
+       this%gdp_lf_col(c) = gdp(g,ti)
     end do
     deallocate(gdp)
 
@@ -777,14 +781,18 @@ contains
     ! Read in peatf data 
     ! --------------------------------------------------------------------
 
-    allocate(peatf(bounds%begg:bounds%endg))
+    allocate(peatf(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='peatf', flag='read', data=peatf, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: peatf NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       this%peatf_lf_col(c) = peatf(g)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
+       
+       this%peatf_lf_col(c) = peatf(g,ti)
     end do
     deallocate(peatf)
 
@@ -794,17 +802,17 @@ contains
 
     if ( (nu_com .eq. 'RD' .or. nu_com .eq. 'ECA') .and. (use_cn .and. .not. use_fates .and. .not. use_crop) )  then 
        allocate(soilorder_rdin(max_topounits, bounds%begg:bounds%endg))
-       call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=namet, dim2name=grlnd, readvar=readvar)
+       call ncd_io(ncid=ncid, varname='SOIL_ORDER', flag='read',data=soilorder_rdin, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
           call endrun(msg=' ERROR: SOIL_ORDER NOT on surfdata file'//errMsg(__FILE__, __LINE__))
        end if
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-		  t = col_pp%topounit(c)
-		  topi = grc_pp%topi(g)
-		  ti = t - topi + 1
-		
-              this%isoilorder(c) = soilorder_rdin(ti,g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+
+          this%isoilorder(c) = soilorder_rdin(ti,g)
 
        end do
        deallocate(soilorder_rdin)
@@ -885,14 +893,18 @@ contains
     ! Read in ABM data 
     ! --------------------------------------------------------------------
 
-    allocate(abm(bounds%begg:bounds%endg))
+    allocate(abm(bounds%begg:bounds%endg,1:max_topounits))
     call ncd_io(ncid=ncid, varname='abm', flag='read', data=abm, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: abm NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
        g = col_pp%gridcell(c)
-       this%abm_lf_col(c) = abm(g)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
+       
+       this%abm_lf_col(c) = abm(g,ti)
     end do
     deallocate(abm)
 

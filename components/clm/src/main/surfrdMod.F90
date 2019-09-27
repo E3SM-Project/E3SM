@@ -14,7 +14,7 @@ module surfrdMod
   use clm_varcon      , only : grlnd
   use clm_varctl      , only : iulog, scmlat, scmlon, single_column
   use clm_varctl      , only : create_glacier_mec_landunit
-  use surfrdUtilsMod  , only : check_sums_equal_1
+  use surfrdUtilsMod  , only : check_sums_equal_1_3d
   use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
   use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
   use pio
@@ -586,7 +586,7 @@ contains
        endif
     endif
 
-    topo_glc_mec(:,:) = 0._r8
+    topo_glc_mec(:,:,:) = 0._r8
 
     ! Read surface data
 
@@ -600,7 +600,7 @@ contains
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: pftm NOT on surface dataset'//errMsg(__FILE__, __LINE__))
 	
-	! Read the new grid elevation parameter that is based on topounit elevation
+    ! Read the new grid elevation parameter that is based on topounit elevation
     call ncd_io(ncid=ncid, varname= 'TOPO2', flag='read', data=ldomain%topo2, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: TOPO2 NOT on surface dataset'//errMsg(__FILE__, __LINE__))
@@ -667,11 +667,11 @@ contains
 
     call surfrd_veg_all(begg, endg, ncid, ldomain%ns)
 	
-	call surfrd_topounit_data(begg,endg,ncid)
+    call surfrd_topounit_data(begg,endg,ncid)
 
     call ncd_pio_closefile(ncid)
 
-    call check_sums_equal_1(wt_lunit, begg, 'wt_lunit', subname)
+    call check_sums_equal_1_3d(wt_lunit, begg, 'wt_lunit', subname)
 
     if ( masterproc )then
        write(iulog,*) 'Successfully read surface boundary data'
@@ -699,35 +699,35 @@ contains
     integer          , intent(in)    :: ns     ! domain size
     !
     ! !LOCAL VARIABLES:
-    integer  :: n,nl,nurb,g                ! indices
+    integer  :: n,nl,nurb,g, t                ! indices
     integer  :: dimid,varid                ! netCDF id's
     real(r8) :: nlevsoidata(nlevsoifl)
     logical  :: found                      ! temporary for error check
     integer  :: nindx                      ! temporary for error check
     integer  :: ier                        ! error status
     logical  :: readvar
-    real(r8),pointer :: pctgla(:)      ! percent of grid cell is glacier
+    real(r8),pointer :: pctgla(:,:)      ! percent of grid cell is glacier
     real(r8),pointer :: pctlak(:,:)      ! percent of grid cell is lake
     real(r8),pointer :: pctwet(:,:)      ! percent of grid cell is wetland
     real(r8),pointer :: pcturb(:,:,:)    ! percent of grid cell is urbanized
-    integer ,pointer :: urban_region_id(:,:) !TKT
-    real(r8),pointer :: pctglc_mec_tot(:) ! percent of grid cell is glacier (sum over classes)
-    real(r8),pointer :: pcturb_tot(:)  ! percent of grid cell is urban (sum over density classes)
-    real(r8),pointer :: pctspec(:)     ! percent of spec lunits wrt gcell
+    integer ,pointer :: urban_region_id(:,:) 
+    real(r8),pointer :: pctglc_mec_tot(:,:) ! percent of grid cell is glacier (sum over classes)
+    real(r8),pointer :: pcturb_tot(:,:)  ! percent of grid cell is urban (sum over density classes)
+    real(r8),pointer :: pctspec(:,:)     ! percent of spec lunits wrt gcell
     integer  :: dens_index             ! urban density index
     character(len=32) :: subname = 'surfrd_special'  ! subroutine name
     real(r8) closelat,closelon
     integer, parameter :: urban_invalid_region = 0   ! urban_region_id indicating invalid point
 !-----------------------------------------------------------------------
 
-    allocate(pctgla(begg:endg,max_topounits))
-    allocate(pctlak(begg:endg,max_topounits))
-    allocate(pctwet(begg:endg,max_topounits))
-    allocate(pcturb(begg:endg,max_topounits,numurbl))
-    allocate(pcturb_tot(begg:endg,max_topounits))
-    allocate(urban_region_id(begg:endg,max_topounits))
-    allocate(pctglc_mec_tot(begg:endg))
-    allocate(pctspec(begg:endg))
+    allocate(pctgla(begg:endg,1:max_topounits))
+    allocate(pctlak(begg:endg,1:max_topounits))
+    allocate(pctwet(begg:endg,1:max_topounits))
+    allocate(pcturb(begg:endg,1:max_topounits,numurbl))
+    allocate(pcturb_tot(begg:endg,1:max_topounits))
+    allocate(urban_region_id(begg:endg,1:max_topounits))
+    allocate(pctglc_mec_tot(begg:endg,1:max_topounits))
+    allocate(pctspec(begg:endg,1:max_topounits))
 
     call check_dim(ncid, 'nlevsoi', nlevsoifl)
 
@@ -774,9 +774,9 @@ contains
     pcturb_tot(:,:) = 0._r8
     do n = 1, numurbl
        do nl = begg,endg
-	     do t = 1, max_topounits
-          pcturb_tot(nl,t) = pcturb_tot(nl,t) + pcturb(nl,t,n)
-		 end do
+         do t = 1, max_topounits
+           pcturb_tot(nl,t) = pcturb_tot(nl,t) + pcturb(nl,t,n)
+         end do
        enddo
     enddo
 
@@ -789,25 +789,25 @@ contains
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: PCT_GLC_MEC NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 
-       wt_glc_mec(:,:) = wt_glc_mec(:,:) / 100._r8
-       call check_sums_equal_1(wt_glc_mec, begg, 'wt_glc_mec', subname)
+       wt_glc_mec(:,:,:) = wt_glc_mec(:,:,:) / 100._r8
+       call check_sums_equal_1_3d(wt_glc_mec, begg, 'wt_glc_mec', subname)
 
        call ncd_io(ncid=ncid, varname='TOPO_GLC_MEC',  flag='read', data=topo_glc_mec, &
             dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun( msg=' ERROR: TOPO_GLC_MEC NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 
-       topo_glc_mec(:,:) = max(topo_glc_mec(:,:), 0._r8)
+       topo_glc_mec(:,:,:) = max(topo_glc_mec(:,:,:), 0._r8)
 
 
        ! Put glacier area into the GLC_MEC landunit rather than the simple glacier landunit
-       pctglc_mec_tot(:) = pctgla(:)
-       pctgla(:) = 0._r8
+       pctglc_mec_tot(:,:) = pctgla(:,:)
+       pctgla(:,:) = 0._r8
 
        pctspec = pctwet + pctlak + pcturb_tot + pctglc_mec_tot
 
     else
 
-       pctglc_mec_tot(:) = 0._r8
+       pctglc_mec_tot(:,:) = 0._r8
        pctspec = pctwet + pctlak + pcturb_tot + pctgla
  
     endif
@@ -816,12 +816,14 @@ contains
 
     found = .false.
     do nl = begg,endg
-       if (pctspec(nl) > 100._r8+1.e-04_r8) then
-          found = .true.
-          nindx = nl
-          exit
-       end if
-       if (found) exit
+       do t = 1, max_topounits
+         if (pctspec(nl,t) > 100._r8+1.e-04_r8) then
+            found = .true.
+            nindx = nl
+            exit
+         end if
+         if (found) exit
+       end do
     end do
     if ( found ) then
        write(iulog,*)'surfrd error: PFT cover>100 for nl=',nindx
@@ -831,24 +833,23 @@ contains
     ! Determine wt_lunit for special landunits
 
     do nl = begg,endg
-	   do t = 1, max_topounits
 
-         wt_lunit(nl,t,istdlak)     = pctlak(nl,t)/100._r8
+         wt_lunit(nl,:,istdlak)     = pctlak(nl,:)/100._r8
 
-         wt_lunit(nl,t,istwet)      = pctwet(nl,t)/100._r8
+         wt_lunit(nl,:,istwet)      = pctwet(nl,:)/100._r8
 
-         wt_lunit(nl,t,istice)      = pctgla(nl,t)/100._r8
+         wt_lunit(nl,:,istice)      = pctgla(nl,:)/100._r8
 
-         wt_lunit(nl,t,istice_mec)  = pctglc_mec_tot(nl,t)/100._r8
+         wt_lunit(nl,:,istice_mec)  = pctglc_mec_tot(nl,:)/100._r8
 
          do n = isturb_MIN, isturb_MAX
             dens_index = n - isturb_MIN + 1
-            wt_lunit(nl,n)        = pcturb(nl,dens_index) / 100._r8
+            wt_lunit(nl,:,n)        = pcturb(nl,:,dens_index) / 100._r8
          end do
-        end do
+      
     end do
 
-    call CheckUrban(begg, endg, pcturb(begg:endg,:), subname)
+    call CheckUrban(begg, endg, pcturb(begg:endg,:,:), subname)
 
     deallocate(pctgla,pctlak,pctwet,pcturb,pcturb_tot,urban_region_id,pctglc_mec_tot,pctspec)
 
@@ -863,7 +864,7 @@ contains
     ! !USES:
     use clm_varsur      , only : fert_cft, wt_nat_patch
     use clm_varpar      , only : cft_size, cft_lb, natpft_lb
-	use topounit_varcon,  only : max_topounits
+    use topounit_varcon,  only : max_topounits
     ! !ARGUMENTS:
     implicit none
     type(file_desc_t), intent(inout) :: ncid         ! netcdf id
@@ -919,7 +920,7 @@ contains
     ! !USES:
     use clm_varsur      , only : fert_cft, wt_nat_patch
     use clm_varpar      , only : natpft_size, cft_size, natpft_lb
-	use topounit_varcon,  only : max_topounits
+    use topounit_varcon,  only : max_topounits
     ! !ARGUMENTS:
     implicit none
     integer, intent(in) :: begg, endg
@@ -957,7 +958,7 @@ contains
     fert_cft = 0.0_r8
 
     call ncd_io(ncid=ncid, varname='PCT_NAT_PFT', flag='read', data=wt_nat_patch, &
-         dim1name=grlnd, dim2name=namet, readvar=readvar)
+         dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: PCT_NAT_PFT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 
   end subroutine surfrd_pftformat
@@ -986,14 +987,14 @@ contains
     integer          ,intent(in)    :: ns     ! domain size
     !
     ! !LOCAL VARIABLES:
-    integer  :: nl                             ! index
+    integer  :: nl, t                             ! index
     integer  :: dimid,varid                    ! netCDF id's
     integer  :: ier                            ! error status	
     integer  :: cftsize                        ! size of CFT's
     logical  :: readvar                        ! is variable on dataset
     logical  :: cft_dim_exists                 ! does the dimension 'cft' exist on the dataset?
     real(r8),pointer :: arrayl(:,:)              ! local array
-    real(r8),pointer :: array2D(:,:)                 ! local 2D array
+    real(r8),pointer :: array2D(:,:,:)                 ! local 2D array
     character(len=32) :: subname = 'surfrd_veg_all'  ! subroutine name
 !-----------------------------------------------------------------------
 
@@ -1006,12 +1007,12 @@ contains
     call ncd_io(ncid=ncid, varname='PCT_NATVEG', flag='read', data=arrayl, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: PCT_NATVEG NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    wt_lunit(begg:endg,1:max_topounits,istsoil) = arrayl(begg:endg,1:max_topounits) ! TKT added max_topounits
+    wt_lunit(begg:endg,1:max_topounits,istsoil) = arrayl(begg:endg,1:max_topounits) 
 
     call ncd_io(ncid=ncid, varname='PCT_CROP', flag='read', data=arrayl, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: PCT_CROP NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-    wt_lunit(begg:endg,1:max_topounits,istcrop) = arrayl(begg:endg,1:max_topounits) ! TKT added ntopounits
+    wt_lunit(begg:endg,1:max_topounits,istcrop) = arrayl(begg:endg,1:max_topounits) 
 
     deallocate(arrayl)
     
@@ -1034,7 +1035,7 @@ contains
           if ( masterproc ) write(iulog,*) "WARNING: When fates is on we allow new CFT based surface datasets ", &
                                            "to be used with create_crop_land FALSE"
           cftsize = 2
-          allocate(array2D(begg:endg,cft_lb:cftsize-1+cft_lb))
+          allocate(array2D(begg:endg,max_topounits,cft_lb:cftsize-1+cft_lb))
           call surfrd_cftformat( ncid, begg, endg, array2D, cftsize, natpft_size-cftsize ) ! Read crops in as CFT's
           call convert_cft_to_pft( begg, endg, cftsize, array2D )                          ! Convert from CFT to natural veg. landunit
           deallocate(array2D)
@@ -1058,12 +1059,12 @@ contains
 
     if (cft_size > 0) then
        wt_cft(begg:endg,:,:) = wt_cft(begg:endg,:,:) / 100._r8
-       call check_sums_equal_1(wt_cft, begg, 'wt_cft', subname)
+       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname)
     end if
     wt_lunit(begg:endg,:,istsoil) = wt_lunit(begg:endg,:,istsoil) / 100._r8
     wt_lunit(begg:endg,:,istcrop) = wt_lunit(begg:endg,:,istcrop) / 100._r8
     wt_nat_patch(begg:endg,:,:)   = wt_nat_patch(begg:endg,:,:) / 100._r8
-    call check_sums_equal_1(wt_nat_patch, begg, 'wt_nat_patch', subname)
+    call check_sums_equal_1_3d(wt_nat_patch, begg, 'wt_nat_patch', subname)
 
     ! If no irrigation, merge irrigated CFTs with rainfed
     
@@ -1078,7 +1079,7 @@ contains
        end if
 
        do nl = begg,endg
-		  do t = 1, max_topounits
+          do t = 1, max_topounits
             wt_cft(nl,t,nc3crop)       = wt_cft(nl,t,nc3crop)  + wt_cft(nl,t,nc3irrig)
             wt_cft(nl,t,nc3irrig)      = 0._r8
             wt_cft(nl,t,ncorn)         = wt_cft(nl,t,ncorn)    + wt_cft(nl,t,ncornirrig)
@@ -1089,10 +1090,10 @@ contains
             wt_cft(nl,t,nwcerealirrig) = 0._r8
             wt_cft(nl,t,nsoybean)      = wt_cft(nl,t,nsoybean) + wt_cft(nl,t,nsoybeanirrig)
             wt_cft(nl,t,nsoybeanirrig) = 0._r8
-		  end do
+          end do
        end do
 
-       call check_sums_equal_1(wt_cft, begg, 'wt_cft', subname)
+       call check_sums_equal_1_3d(wt_cft, begg, 'wt_cft', subname)
     end if
 
   end subroutine surfrd_veg_all
@@ -1294,58 +1295,58 @@ contains
     integer ,pointer :: TopounitElv(:,:)         ! Topounit elevation
     real(r8),pointer :: TopounitSlope(:,:)       ! Topounit slope 
     real(r8),pointer :: TopounitAspect(:,:)      ! Topounit aspect
-!    real(r8),pointer :: TopounitStdElv(:,:)      ! Topounit standard deviation elevation
+!   real(r8),pointer :: TopounitStdElv(:,:)      ! Topounit standard deviation elevation
 	
     character(len=32) :: subname = 'surfrd_topounit_data'  ! subroutine name
 !-----------------------------------------------------------------------
 
-	allocate(maxTopoElv(begg:endg))
-	allocate(numTopoPerGrid(begg:endg))
-	allocate(TopounitFracArea(begg:endg,max_topounits))
-	allocate(TopounitElv(begg:endg,max_topounits))
-	allocate(TopounitSlope(begg:endg,max_topounits))
-	allocate(TopounitAspect(begg:endg,max_topounits))
-!	allocate(TopounitStdElv(begg:endg,max_topounits))
+    allocate(maxTopoElv(begg:endg))
+    allocate(numTopoPerGrid(begg:endg))
+    allocate(TopounitFracArea(begg:endg,max_topounits))
+    allocate(TopounitElv(begg:endg,max_topounits))
+    allocate(TopounitSlope(begg:endg,max_topounits))
+    allocate(TopounitAspect(begg:endg,max_topounits))
+!   allocate(TopounitStdElv(begg:endg,max_topounits))
 	
-	!call check_dim(ncid, 'nlevsoi', nlevsoifl)
+    !call check_dim(ncid, 'nlevsoi', nlevsoifl)
 	
-	call ncd_io(ncid=ncid, varname='MaxTopounitElv', flag='read', data=maxTopoElv, &
+    call ncd_io(ncid=ncid, varname='MaxTopounitElv', flag='read', data=maxTopoElv, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: MaxTopounitElv NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 	
-	call ncd_io(ncid=ncid, varname='topoPerGrid', flag='read', data=numTopoPerGrid, &
+    call ncd_io(ncid=ncid, varname='topoPerGrid', flag='read', data=numTopoPerGrid, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: topoPerGrid NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 	
-	call ncd_io(ncid=ncid, varname='TopounitFracArea', flag='read', data=TopounitFracArea, &
+    call ncd_io(ncid=ncid, varname='TopounitFracArea', flag='read', data=TopounitFracArea, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: TopounitFracArea NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 	
-	call ncd_io(ncid=ncid, varname='TopounitAveElv', flag='read', data=TopounitElv, &
+    call ncd_io(ncid=ncid, varname='TopounitAveElv', flag='read', data=TopounitElv, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: TopounitAveElv NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 	
-	call ncd_io(ncid=ncid, varname='TopounitSlope', flag='read', data=TopounitSlope, &
+    call ncd_io(ncid=ncid, varname='TopounitSlope', flag='read', data=TopounitSlope, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: TopounitSlope NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 	
-	call ncd_io(ncid=ncid, varname='TopounitAspect', flag='read', data=TopounitAspect, &
+    call ncd_io(ncid=ncid, varname='TopounitAspect', flag='read', data=TopounitAspect, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: TopounitAspect NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 	
-	!call ncd_io(ncid=ncid, varname='Topounit_STD_ELV', flag='read', data=TopounitStdElv, &
+    !call ncd_io(ncid=ncid, varname='Topounit_STD_ELV', flag='read', data=TopounitStdElv, &
     !     dim1name=grlnd, readvar=readvar)
     !if (.not. readvar) call endrun( msg=' ERROR: Topounit_STD_ELV NOT on surfdata file'//errMsg(__FILE__, __LINE__))
 	
 
     do n = begg,endg
-	   grc_pp%ntopounits(n) = numTopoPerGrid(n) 
+       grc_pp%ntopounits(n) = numTopoPerGrid(n) 
        grc_pp%MaxElevation(n) = maxTopoElv(n) 		
-	   grc_pp%tfrc_area(n,:) = TopounitFracArea(n,:) 
-	   grc_pp%televation(n,:) = TopounitElv(n,:) 
-	   grc_pp%tslope(n,:) = TopounitSlope(n,:) 
-	   grc_pp%taspect(n,:) = TopounitAspect(n,:) 
-    enddo	
+       grc_pp%tfrc_area(n,:) = TopounitFracArea(n,:) 
+       grc_pp%televation(n,:) = TopounitElv(n,:) 
+       grc_pp%tslope(n,:) = TopounitSlope(n,:) 
+       grc_pp%taspect(n,:) = TopounitAspect(n,:) 
+    end do	
 	
 	
     deallocate(maxTopoElv,numTopoPerGrid,TopounitFracArea,TopounitElv,TopounitSlope,TopounitAspect)

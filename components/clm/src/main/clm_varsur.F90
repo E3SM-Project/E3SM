@@ -36,10 +36,10 @@ module clm_varsur
 
   ! for glc_mec landunits, weight of glacier in each elevation class (adds to 1.0 on the
   ! landunit for all grid cells, even those without any glacier)
-  real(r8), pointer :: wt_glc_mec(:,:)   
+  real(r8), pointer :: wt_glc_mec(:,:,:)   
 
   ! subgrid glacier_mec sfc elevation
-  real(r8), pointer :: topo_glc_mec(:,:) 
+  real(r8), pointer :: topo_glc_mec(:,:,:) 
   !-----------------------------------------------------------------------
 
 end module clm_varsur

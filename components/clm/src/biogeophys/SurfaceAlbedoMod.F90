@@ -94,7 +94,7 @@ contains
     type(bounds_type), intent(in) :: bounds  
     !
     ! !LOCAL VARIABLES:
-    integer            :: c,g          ! indices
+    integer            :: c,g,t,ti,topi          ! indices
     integer            :: mxsoil_color ! maximum number of soil color classes
     type(file_desc_t)  :: ncid         ! netcdf id
     character(len=256) :: locfn        ! local filename
@@ -117,16 +117,16 @@ contains
     if ( .not. readvar ) mxsoil_color = 8  
 
     allocate(soic2d(max_topounits, bounds%begg:bounds%endg)) 
-    call ncd_io(ncid=ncid, varname='SOIL_COLOR', flag='read', data=soic2d, dim1name=namet,dim2name = grlnd, readvar=readvar)
+    call ncd_io(ncid=ncid, varname='SOIL_COLOR', flag='read', data=soic2d, dim1name=grlnd, readvar=readvar)
     if (.not. readvar) then
        call endrun(msg=' ERROR: SOIL_COLOR NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
     end if
     do c = bounds%begc, bounds%endc
-		g = col_pp%gridcell(c)
-		t = col_pp%topounit(c)
-	    topi = grc_pp%topi(g)
-	    ti = t - topi + 1 		
-		isoicol(c) = soic2d(ti,g)
+       g = col_pp%gridcell(c)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1 		
+       isoicol(c) = soic2d(ti,g)
 		
     end do
     deallocate(soic2d)

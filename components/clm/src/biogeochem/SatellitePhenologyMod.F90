@@ -30,6 +30,8 @@ module SatellitePhenologyMod
   use spmdMod         , only : mpicom, comp_id
   use mct_mod
   use ncdio_pio   
+  use topounit_varcon , only : max_topounits
+  use GridcellType    , only : grc_pp
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -471,10 +473,10 @@ contains
     ! !LOCAL VARIABLES:
     type(file_desc_t) :: ncid             ! netcdf id
     real(r8), pointer :: annlai(:,:)      ! 12 months of monthly lai from input data set 
-    real(r8), pointer :: mlai(:,:)        ! lai read from input files
+    real(r8), pointer :: mlai(:,:,:)        ! lai read from input files
     real(r8):: closelat,closelon          ! single column vars
     integer :: ier                        ! error code
-    integer :: g,k,l,m,n,p                ! indices
+    integer :: g,k,l,m,n,p,t,ti,topi                ! indices
     integer :: ni,nj,ns                   ! indices
     integer :: dimid,varid                ! input netCDF id's
     integer :: ntim                       ! number of input data time samples
@@ -491,7 +493,7 @@ contains
 
     ! Determine necessary indices
 
-    allocate(mlai(bounds%begg:bounds%endg,0:numpft), stat=ier)
+    allocate(mlai(bounds%begg:bounds%endg,1:max_topounits, 0:numpft), stat=ier)
     if (ier /= 0) then
        write(iulog,*)subname, 'allocation error ' 
        call endrun(msg=errMsg(__FILE__, __LINE__))
@@ -530,10 +532,13 @@ contains
 
        do p = bounds%begp,bounds%endp
           g =veg_pp%gridcell(p)
+          t = veg_pp%topounit(p)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
           if (veg_pp%itype(p) /= noveg) then     !! vegetated pft
              do l = 0, numpft
                 if (l == veg_pp%itype(p)) then
-                   annlai(k,p) = mlai(g,l)
+                   annlai(k,p) = mlai(g,ti,l)
                 end if
              end do
           else                       !! non-vegetated pft
@@ -574,7 +579,7 @@ contains
     ! !LOCAL VARIABLES:
     character(len=256) :: locfn           ! local file name
     type(file_desc_t)  :: ncid            ! netcdf id
-    integer :: g,n,k,l,m,p,ni,nj,ns       ! indices
+    integer :: g,n,k,l,m,p,ni,nj,ns,t,ti,topi       ! indices
     integer :: dimid,varid                ! input netCDF id's
     integer :: ntim                       ! number of input data time samples
     integer :: nlon_i                     ! number of input data longitudes
@@ -584,20 +589,20 @@ contains
     integer :: closelatidx,closelonidx
     real(r8):: closelat,closelon
     logical :: readvar
-    real(r8), pointer :: mlai(:,:)        ! lai read from input files
-    real(r8), pointer :: msai(:,:)        ! sai read from input files
-    real(r8), pointer :: mhgtt(:,:)       ! top vegetation height
-    real(r8), pointer :: mhgtb(:,:)       ! bottom vegetation height
+    real(r8), pointer :: mlai(:,:,:)        ! lai read from input files
+    real(r8), pointer :: msai(:,:,:)        ! sai read from input files
+    real(r8), pointer :: mhgtt(:,:,:)       ! top vegetation height
+    real(r8), pointer :: mhgtb(:,:,:)       ! bottom vegetation height
     character(len=32) :: subname = 'readMonthlyVegetation'
     !-----------------------------------------------------------------------
 
     ! Determine necessary indices
 
     allocate(&
-         mlai(bounds%begg:bounds%endg,0:numpft), &
-         msai(bounds%begg:bounds%endg,0:numpft), &
-         mhgtt(bounds%begg:bounds%endg,0:numpft), &
-         mhgtb(bounds%begg:bounds%endg,0:numpft), &
+         mlai(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
+         msai(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
+         mhgtt(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
+         mhgtb(bounds%begg:bounds%endg,1:max_topounits,0:numpft), &
          stat=ier)
     if (ier /= 0) then
        write(iulog,*)subname, 'allocation big error '
@@ -641,13 +646,16 @@ contains
 
        do p = bounds%begp,bounds%endp
           g =veg_pp%gridcell(p)
+          t = veg_pp%topounit(p)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
           if (veg_pp%itype(p) /= noveg) then     ! vegetated pft
              do l = 0, numpft
                 if (l == veg_pp%itype(p)) then
-                   mlai2t(p,k) = mlai(g,l)
-                   msai2t(p,k) = msai(g,l)
-                   mhvt2t(p,k) = mhgtt(g,l)
-                   mhvb2t(p,k) = mhgtb(g,l)
+                   mlai2t(p,k) = mlai(g,ti,l)
+                   msai2t(p,k) = msai(g,ti,l)
+                   mhvt2t(p,k) = mhgtt(g,ti,l)
+                   mhvb2t(p,k) = mhgtb(g,ti,l)
                 end if
              end do
           else                        ! non-vegetated pft

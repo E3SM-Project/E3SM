@@ -115,7 +115,7 @@ module ncdio_pio
      module procedure ncd_io_{DIMS}d_{TYPE}_glob
 
      !TYPE int,double
-     !DIMS 1,2,3
+     !DIMS 1,2,3,4
      module procedure ncd_io_{DIMS}d_{TYPE}
 
      !TYPE logical
@@ -1317,7 +1317,7 @@ contains
 
        call ncd_inqvid  (ncid, varname, varid, vardesc)
 
-       if (present(nt)) then
+if (present(nt)) then
 #if ({DIMS}==0) 
           start(1) = nt  ; count(1) = 1
           temp(1) = data
@@ -1952,6 +1952,127 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     endif
 
   end subroutine ncd_io_3d_{TYPE}
+
+  !-----------------------------------------------------------------------
+
+  !TYPE int,double
+  subroutine ncd_io_4d_{TYPE}(varname, data, dim1name, flag, ncid, nt, readvar)
+    !
+    ! !DESCRIPTION:
+    ! Netcdf i/o of 4d 
+    !
+    ! !ARGUMENTS:
+    class(file_desc_t), intent(inout) :: ncid         ! netcdf file id
+    character(len=*) , intent(in)  :: flag            ! 'read' or 'write'
+    character(len=*) , intent(in)  :: varname         ! variable name
+    {VTYPE}          , pointer     :: data(:,:,:,:)     ! local decomposition input data
+    character(len=*) , intent(in)  :: dim1name        ! dimension 1 name
+    integer, optional, intent(in)  :: nt              ! time sample index
+    logical, optional, intent(out) :: readvar         ! true => variable is on initial dataset (read only)
+    !
+    ! !LOCAL VARIABLES:
+    integer                          :: ndim1,ndim2       
+    character(len=8)                 :: clmlevel   ! clmlevel
+    character(len=32)                :: dimname    ! temporary      
+    integer                          :: status     ! error status
+    integer                          :: ndims      ! ndims total for var
+    integer                          :: ndims_iod  ! ndims iodesc for var
+    integer                          :: varid      ! varid
+    integer                          :: n          ! index      
+    integer                          :: dims(4)    ! dim sizes       
+    integer                          :: dids(4)    ! dim ids
+    integer                          :: iodnum     ! iodesc num in list
+    integer                          :: start(6)   ! netcdf start index
+    integer                          :: count(6)   ! netcdf count index
+    logical                          :: varpresent ! if true, variable is on tape
+    type(iodesc_plus_type) , pointer :: iodesc_plus
+    type(var_desc_t)                 :: vardesc
+    character(len=*),parameter :: subname='ncd_io_4d_{TYPE}' ! subroutine name
+    !-----------------------------------------------------------------------
+
+    clmlevel = dim1name      
+
+    if (masterproc .and. debug > 1) then
+       write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(clmlevel)
+    end if
+
+    if (flag == 'read') then
+
+       call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
+       if (varpresent) then
+          if (single_column) then
+             start(:) = 1; count(:) = 1
+             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
+             if (present(nt)) then
+               n=6
+               if (start(6) .eq. 0) n=5
+               start(n) = nt ; count(n) = 1
+             endif
+             
+             status = pio_get_var(ncid, vardesc, start, count, data)
+          else
+             status = pio_inq_varndims(ncid, vardesc, ndims)
+             status = pio_inq_vardimid(ncid,vardesc, dids)
+             status = pio_inq_dimname(ncid, dids(ndims), dimname)
+             if (ndims == 0) then
+                write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
+                call shr_sys_abort(errMsg(__FILE__, __LINE__))
+             end if
+             if ('time' == trim(dimname)) then
+                ndims_iod = ndims - 1
+             else
+                ndims_iod = ndims
+             end if
+             do n = 1,ndims_iod
+                status = pio_inq_dimlen(ncid,dids(n),dims(n))
+             enddo
+             call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+                  PIO_{TYPE}, iodnum)
+             iodesc_plus => iodesc_list(iodnum)
+             if (present(nt)) then
+                call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
+             end if
+             call pio_read_darray(ncid, vardesc, iodesc_plus%iodesc, data, status)
+          end if
+       end if
+       if (present(readvar)) readvar = varpresent
+
+    else if (flag == 'write') then
+
+       call ncd_inqvid(ncid, varname ,varid, vardesc)
+       status = pio_inq_varndims(ncid, vardesc, ndims)
+       status = pio_inq_vardimid(ncid, vardesc , dids)
+       if (ndims == 0) then
+          write(iulog,*) trim(subname),' ERROR: ndims must be greater than 0'
+          call shr_sys_abort(errMsg(__FILE__, __LINE__))
+       end if
+       status = pio_inq_dimname(ncid,dids(ndims),dimname)
+       if ('time' == trim(dimname)) then
+          ndims_iod = ndims - 1
+       else
+          ndims_iod = ndims
+       end if
+       do n = 1,ndims_iod
+          status = pio_inq_dimlen(ncid,dids(n),dims(n))
+       enddo
+       call ncd_getiodesc(ncid, clmlevel, ndims_iod, dims(1:ndims_iod), dids(1:ndims_iod), &
+            PIO_{TYPE}, iodnum)
+       iodesc_plus => iodesc_list(iodnum)
+       if (present(nt)) then
+          call pio_setframe(ncid, vardesc, int(nt,kind=PIO_OFFSET_KIND))
+       end if
+       call pio_write_darray(ncid, vardesc, iodesc_plus%iodesc, data, status)
+
+    else
+
+       if (masterproc) then
+          write(iulog,*) subname,' error: unsupported flag ',trim(flag)
+          call shr_sys_abort(errMsg(__FILE__, __LINE__))
+       endif
+
+    endif
+
+  end subroutine ncd_io_4d_{TYPE}
 
   !------------------------------------------------------------------------
 

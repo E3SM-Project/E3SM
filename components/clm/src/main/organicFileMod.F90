@@ -50,7 +50,7 @@ contains
     use fileutils   , only : getfil
     use spmdMod     , only : masterproc
     use domainMod   , only : ldomain
-	use clm_varcon  , only : grlnd, namet
+    use clm_varcon  , only : grlnd, namet
     use ncdio_pio
 !
 ! !ARGUMENTS:
@@ -100,7 +100,7 @@ contains
        end if
        
        call ncd_io(ncid=ncid, varname='ORGANIC', flag='read', data=organic, &
-            dim1name=namet,dim2name=grlnd, readvar=readvar)
+            dim1name=grlnd, readvar=readvar)
        if (.not. readvar) call endrun('organicrd: errror reading ORGANIC')
 
        if ( masterproc )then

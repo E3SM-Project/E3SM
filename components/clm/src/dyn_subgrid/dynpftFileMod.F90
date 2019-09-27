@@ -18,7 +18,9 @@ module dynpftFileMod
   use clm_varcon          , only : grlnd, nameg
   use LandunitType        , only : lun_pp                
   !DW  not use at all     !   use ColumnType          , only : col                
-  use VegetationType           , only : veg_pp                
+  use VegetationType           , only : veg_pp        
+  use topounit_varcon      , only : max_topounits
+  use GridcellType         , only : grc_pp 
   !
   ! !PUBLIC MEMBER FUNCTIONS:
   implicit none
@@ -125,6 +127,7 @@ contains
     logical             :: check_dynpft_consistency ! whether to do the consistency check in this routine
     integer             :: g                        ! index
     real(r8), pointer   :: wtpatch_time1(:,:)       ! weight of each pft in each grid cell at first time
+    !real(r8), pointer   :: wt_nat_patch_2d(:,:)     ! This is a temporary solution to stop DLU from complaining about changes related to topounit
     logical             :: readvar                  ! whether variable was read
     real(r8), parameter :: tol = 1.e-13_r8          ! tolerance for checking equality
 
@@ -134,9 +137,11 @@ contains
     call dynpft_read_consistency_nl(check_dynpft_consistency)
 
     if (check_dynpft_consistency) then
+       !allocate(wt_nat_patch_2d(bounds%begg:bounds%endg, natpft_size))
+       !wt_nat_patch_2d = wt_nat_patch(bounds%begg:bounds%endg,1,natpft_size)
 
        ! Read first time slice of PCT_NAT_PATCH
-
+       
        allocate(wtpatch_time1(bounds%begg:bounds%endg, natpft_size))
        call ncd_io(ncid=dynpft_file, varname=varname, flag='read', data=wtpatch_time1, &
             dim1name=grlnd, nt=1, readvar=readvar)
@@ -150,10 +155,10 @@ contains
     
        ! Compare with values read from surface dataset
        do g = bounds%begg, bounds%endg
-          if (any(abs(wtpatch_time1(g,:) - wt_nat_patch(g,:)) > tol)) then
+          if (any(abs(wtpatch_time1(g,:) - wt_nat_patch(g,1,:)) > tol)) then
              write(iulog,*) subname//' mismatch between PCT_NAT_PATCH at initial time and that obtained from surface dataset'
              write(iulog,*) 'On landuse_timeseries file: ', wtpatch_time1(g,:)
-             write(iulog,*) 'On surface dataset: ', wt_nat_patch(g,:)
+             write(iulog,*) 'On surface dataset: ', wt_nat_patch(g,1,:)
              write(iulog,*) ' '
              write(iulog,*) 'Confirm that the year of your surface dataset'
              write(iulog,*) 'corresponds to the first year of your landuse_timeseries file'

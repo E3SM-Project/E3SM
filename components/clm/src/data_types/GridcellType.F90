@@ -15,7 +15,7 @@ module GridcellType
   use shr_infnan_mod , only : nan => shr_infnan_nan, assignment(=)
   use landunit_varcon, only : max_lunit
   use clm_varcon     , only : ispval
-  use topounit_varcon, only : max_topounit
+  use topounit_varcon, only : max_topounits
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -120,7 +120,7 @@ contains
 	allocate(this%televation (begg:endg,1:max_topounits)) ; this%televation (:,:) = nan
 	allocate(this%tslope (begg:endg,1:max_topounits)) ; this%tslope (:,:) = nan
 	allocate(this%taspect (begg:endg,1:max_topounits)) ; this%taspect (:,:) = ispval
-	allocate(this%tfrc_area (begg:endg,1:max_topounits)) ; this%tfrc_area ((:,:) = nan
+	allocate(this%tfrc_area (begg:endg,1:max_topounits)) ; this%tfrc_area (:,:) = nan
 
 
   end subroutine grc_pp_init

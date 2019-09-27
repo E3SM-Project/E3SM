@@ -213,7 +213,7 @@ contains
     select case (subgrid_level)
     case (BOUNDS_SUBGRID_GRIDCELL)
        beg_index = bounds%begg
-	case (BOUNDS_SUBGRID_TOPOUNIT)
+    case (BOUNDS_SUBGRID_TOPOUNIT)
        beg_index = bounds%begt
     case (BOUNDS_SUBGRID_LANDUNIT)
        beg_index = bounds%begl
@@ -256,7 +256,7 @@ contains
     select case (subgrid_level)
     case (BOUNDS_SUBGRID_GRIDCELL)
        end_index = bounds%endg
-	case (BOUNDS_SUBGRID_TOPOUNIT)
+    case (BOUNDS_SUBGRID_TOPOUNIT)
        end_index = bounds%endt
     case (BOUNDS_SUBGRID_LANDUNIT)
        end_index = bounds%endl
@@ -347,14 +347,14 @@ contains
    end subroutine get_clump_bounds_new
 
    !------------------------------------------------------------------------------
-   subroutine get_clump_bounds_old (n, begg, endg,endg, begt, begl, endl, begc, endc, begp, endp, &
+   subroutine get_clump_bounds_old (n, begg, endg, begt,endt, begl, endl, begc, endc, begp, endp, &
         begCohort, endCohort)
      integer, intent(in)  :: n           ! proc clump index
      integer, intent(out) :: begp, endp  ! clump beg and end pft indices
      integer, intent(out) :: begc, endc  ! clump beg and end column indices
      integer, intent(out) :: begl, endl  ! clump beg and end landunit indices
      integer, intent(out) :: begt, endt  ! clump beg and end topounit indices
-	 integer, intent(out) :: begg, endg  ! clump beg and end gridcell indices
+     integer, intent(out) :: begg, endg  ! clump beg and end gridcell indices
      integer, intent(out) :: begCohort, endCohort  ! cohort beg and end gridcell indices
      integer :: cid                                                ! clump id
      !------------------------------------------------------------------------------
@@ -495,7 +495,7 @@ contains
      npfts   = 0
      ncols   = 0
      nlunits = 0
-     ntopounits = 0
+     ntunits = 0
      ncells  = 0
      do cid = 1,nclumps
         if (clumps(cid)%owner == pid) then
@@ -621,7 +621,7 @@ contains
      !
      ! !ARGUMENTS:
      integer, intent(out) :: ncells_ghost   ! number of ghost gridcells on the processor
-	 integer, intent(out) :: ntunits_ghost   ! number of ghost topounits on the processor
+     integer, intent(out) :: ntunits_ghost   ! number of ghost topounits on the processor
      integer, intent(out) :: nlunits_ghost  ! number of ghost landunits on the processor
      integer, intent(out) :: ncols_ghost    ! number of ghost columns on the processor
      integer, intent(out) :: npfts_ghost    ! number of ghost pfts on the processor

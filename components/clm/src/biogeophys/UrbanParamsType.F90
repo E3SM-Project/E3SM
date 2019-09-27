@@ -11,7 +11,9 @@ module UrbanParamsType
   use decompMod    , only : bounds_type
   use clm_varctl   , only : iulog, fsurdat
   use clm_varcon   , only : namel, grlnd, spval
-  use LandunitType , only : lun_pp                
+  use LandunitType , only : lun_pp          
+  use GridcellType , only : grc_pp
+  use topounit_varcon , only : max_topounits ! maximum number of topounits
   !
   implicit none
   save
@@ -43,9 +45,9 @@ module UrbanParamsType
      real(r8), pointer :: tk_wall         (:,:,:,:)
      real(r8), pointer :: tk_roof         (:,:,:,:)
      real(r8), pointer :: tk_improad      (:,:,:,:)
-     real(r8), pointer :: cv_wall         (:,:,:,:)
-     real(r8), pointer :: cv_roof         (:,:,:,:)
-     real(r8), pointer :: cv_improad      (:,:,:,:)
+     real(r8), pointer :: cv_wall         (:,:,:,:)           ! Voulumetric heat capacity of wall       
+     real(r8), pointer :: cv_roof         (:,:,:,:)           ! Volumetric heat capacity of roof
+     real(r8), pointer :: cv_improad      (:,:,:,:)           !                          of impervious road
      real(r8), pointer :: thick_wall      (:,:,:)
      real(r8), pointer :: thick_roof      (:,:,:)
      integer,  pointer :: nlev_improad    (:,:,:)
@@ -130,7 +132,7 @@ module UrbanParamsType
     type(bounds_type)      , intent(in)    :: bounds  
     !
     ! !LOCAL VARIABLES:
-    integer             :: j,l,c,p,g       ! indices
+    integer             :: j,l,c,p,t,ti,topi,g       ! indices
     integer             :: nc,fl,ib        ! indices 
     integer             :: dindx           ! urban density type index
     integer             :: ier             ! error status
@@ -141,9 +143,10 @@ module UrbanParamsType
     real(r8)            :: plan_ai         ! plan area index - ratio building area to plan area (-)
     real(r8)            :: frontal_ai      ! frontal area index of buildings (-)
     real(r8)            :: build_lw_ratio  ! building short/long side ratio (-)
-    integer		:: begl, endl
-    integer		:: begc, endc
-    integer		:: begp, endp
+    integer		        :: begl, endl
+    integer		        :: begt, endt
+    integer		        :: begc, endc
+    integer		        :: begp, endp
     integer             :: begg, endg
     !---------------------------------------------------------------------
 
@@ -196,9 +199,10 @@ module UrbanParamsType
        if (lun_pp%urbpoi(l)) then
 
           g = lun_pp%gridcell(l)
-		  t = lun_pp%topounit(l) ! TKT added this for the topounit and added t below
-          dindx = lun_pp%itype(l) - isturb_MIN + 1
-		  
+          ti = lun_pp%topounit(l) ! for the topounit
+          topi = grc_pp%topi(g)
+          t = ti - topi + 1
+          dindx = lun_pp%itype(l) - isturb_MIN + 1		  
 
           this%wind_hgt_canyon(l) = urbinp%wind_hgt_canyon(g,t,dindx)
           do ib = 1,numrad
@@ -382,7 +386,6 @@ module UrbanParamsType
     use domainMod       , only : ldomain
     use ncdio_pio       , only : file_desc_t, ncd_defvar, ncd_io, ncd_inqvdlen, ncd_inqfdims 
     use ncdio_pio       , only : ncd_pio_openfile, ncd_pio_closefile, ncd_inqdid, ncd_inqdlen
-	use GridcellType    , only : ntopounits ! TKT added for the topounits
     !
     ! !ARGUMENTS:
     implicit none
@@ -434,34 +437,34 @@ module UrbanParamsType
        if ( nlevurb == 0 ) return
 
        ! Allocate dynamic memory
-       allocate(urbinp%canyon_hwr(begg:endg,ntopounits, numurbl), &  
-                urbinp%wtlunit_roof(begg:endg,ntopounits, numurbl), &  
-                urbinp%wtroad_perv(begg:endg,ntopounits, numurbl), &
-                urbinp%em_roof(begg:endg,ntopounits, numurbl), &     
-                urbinp%em_improad(begg:endg,ntopounits, numurbl), &    
-                urbinp%em_perroad(begg:endg,ntopounits, numurbl), &    
-                urbinp%em_wall(begg:endg,ntopounits, numurbl), &    
-                urbinp%alb_roof_dir(begg:endg,ntopounits, numurbl, numrad), &    
-                urbinp%alb_roof_dif(begg:endg,ntopounits, numurbl, numrad), &    
-                urbinp%alb_improad_dir(begg:endg,ntopounits, numurbl, numrad), &    
-                urbinp%alb_perroad_dir(begg:endg,ntopounits, numurbl, numrad), &    
-                urbinp%alb_improad_dif(begg:endg,ntopounits, numurbl, numrad), &    
-                urbinp%alb_perroad_dif(begg:endg,ntopounits, numurbl, numrad), &    
-                urbinp%alb_wall_dir(begg:endg,ntopounits, numurbl, numrad), &    
-                urbinp%alb_wall_dif(begg:endg,ntopounits, numurbl, numrad), &
-                urbinp%ht_roof(begg:endg,ntopounits, numurbl), &
-                urbinp%wind_hgt_canyon(begg:endg,ntopounits, numurbl), &
-                urbinp%tk_wall(begg:endg,ntopounits, numurbl,nlevurb), &
-                urbinp%tk_roof(begg:endg,ntopounits, numurbl,nlevurb), &
-                urbinp%tk_improad(begg:endg,ntopounits, numurbl,nlevurb), &
-                urbinp%cv_wall(begg:endg,ntopounits, numurbl,nlevurb), &
-                urbinp%cv_roof(begg:endg,ntopounits, numurbl,nlevurb), &
-                urbinp%cv_improad(begg:endg,ntopounits, numurbl,nlevurb), &
-                urbinp%thick_wall(begg:endg,ntopounits, numurbl), &
-                urbinp%thick_roof(begg:endg,ntopounits, numurbl), &
-                urbinp%nlev_improad(begg:endg,ntopounits, numurbl), &
-                urbinp%t_building_min(begg:endg,ntopounits, numurbl), &
-                urbinp%t_building_max(begg:endg,ntopounits, numurbl), &
+       allocate(urbinp%canyon_hwr(begg:endg,max_topounits, numurbl), &  
+                urbinp%wtlunit_roof(begg:endg,max_topounits, numurbl), &  
+                urbinp%wtroad_perv(begg:endg,max_topounits, numurbl), &
+                urbinp%em_roof(begg:endg,max_topounits, numurbl), &     
+                urbinp%em_improad(begg:endg,max_topounits, numurbl), &    
+                urbinp%em_perroad(begg:endg,max_topounits, numurbl), &    
+                urbinp%em_wall(begg:endg,max_topounits, numurbl), &    
+                urbinp%alb_roof_dir(begg:endg,max_topounits, numurbl, numrad), &    
+                urbinp%alb_roof_dif(begg:endg,max_topounits, numurbl, numrad), &    
+                urbinp%alb_improad_dir(begg:endg,max_topounits, numurbl, numrad), &    
+                urbinp%alb_perroad_dir(begg:endg,max_topounits, numurbl, numrad), &    
+                urbinp%alb_improad_dif(begg:endg,max_topounits, numurbl, numrad), &    
+                urbinp%alb_perroad_dif(begg:endg,max_topounits, numurbl, numrad), &    
+                urbinp%alb_wall_dir(begg:endg,max_topounits, numurbl, numrad), &    
+                urbinp%alb_wall_dif(begg:endg,max_topounits, numurbl, numrad), &
+                urbinp%ht_roof(begg:endg,max_topounits, numurbl), &
+                urbinp%wind_hgt_canyon(begg:endg,max_topounits, numurbl), &
+                urbinp%tk_wall(begg:endg,max_topounits, numurbl,nlevurb), &
+                urbinp%tk_roof(begg:endg,max_topounits, numurbl,nlevurb), &
+                urbinp%tk_improad(begg:endg,max_topounits, numurbl,nlevurb), &
+                urbinp%cv_wall(begg:endg,max_topounits, numurbl,nlevurb), &
+                urbinp%cv_roof(begg:endg,max_topounits, numurbl,nlevurb), &
+                urbinp%cv_improad(begg:endg,max_topounits, numurbl,nlevurb), &
+                urbinp%thick_wall(begg:endg,max_topounits, numurbl), &
+                urbinp%thick_roof(begg:endg,max_topounits, numurbl), &
+                urbinp%nlev_improad(begg:endg,max_topounits, numurbl), &
+                urbinp%t_building_min(begg:endg,max_topounits, numurbl), &
+                urbinp%t_building_max(begg:endg,max_topounits, numurbl), &
                 stat=ier)
        if (ier /= 0) then
           call endrun(msg="Allocation error "//errmsg(__FILE__, __LINE__))
@@ -726,12 +729,11 @@ module UrbanParamsType
     ! !USES:
     use clm_varsur      , only : urban_valid
     use landunit_varcon , only : numurbl
-	use GridcellType    , only : ntopounits ! TKT added for the topounits
     !
     ! !ARGUMENTS:
     implicit none
     integer         , intent(in) :: begg, endg           ! beg & end grid cell indices
-    real(r8)        , intent(in) :: pcturb(begg:,:)      ! % urban
+    real(r8)        , intent(in) :: pcturb(begg:,:,:)      ! % urban
     character(len=*), intent(in) :: caller               ! identifier of caller, for more meaningful error messages
     !
     ! !REVISION HISTORY:
@@ -739,17 +741,17 @@ module UrbanParamsType
     !
     ! !LOCAL VARIABLES:
     logical :: found
-    integer :: nl, n
+    integer :: nl, n, t
     integer :: nindx, dindx
     integer :: nlev
     !-----------------------------------------------------------------------
 
     found = .false.
     do nl = begg,endg
-	   do t = 1, ntopounits  ! TKT add for the topounits
+	   do t = 1, max_topounits  ! TKT add for the topounits
        do n = 1, numurbl
-          if ( pcturb(nl,n) > 0.0_r8 ) then
-             if ( .not. urban_valid(nl) .or. &
+          if ( pcturb(nl,t,n) > 0.0_r8 ) then
+             if ( .not. urban_valid(nl,t) .or. &
                   urbinp%canyon_hwr(nl,t,n)            <= 0._r8 .or. &
                   urbinp%em_improad(nl,t,n)            <= 0._r8 .or. &
                   urbinp%em_perroad(nl,t,n)            <= 0._r8 .or. &
@@ -780,7 +782,7 @@ module UrbanParamsType
                 dindx = n
                 exit
              else
-                if (urbinp%nlev_improad(nlt,,n) > 0) then
+                if (urbinp%nlev_improad(nl,t,n) > 0) then
                    nlev = urbinp%nlev_improad(nl,t,n)
                    if ( any(urbinp%tk_improad(nl,t,n,1:nlev) <= 0._r8) .or. &
                         any(urbinp%cv_improad(nl,t,n,1:nlev) <= 0._r8)) then
@@ -799,36 +801,36 @@ module UrbanParamsType
     if ( found ) then
        write(iulog,*) trim(caller), ' ERROR: no valid urban data for nl=',nindx
        write(iulog,*)'density type:    ',dindx
-       write(iulog,*)'urban_valid:     ',urban_valid(nindx)
-       write(iulog,*)'canyon_hwr:      ',urbinp%canyon_hwr(nindx,dindx)
-       write(iulog,*)'em_improad:      ',urbinp%em_improad(nindx,dindx)
-       write(iulog,*)'em_perroad:      ',urbinp%em_perroad(nindx,dindx)
-       write(iulog,*)'em_roof:         ',urbinp%em_roof(nindx,dindx)
-       write(iulog,*)'em_wall:         ',urbinp%em_wall(nindx,dindx)
-       write(iulog,*)'ht_roof:         ',urbinp%ht_roof(nindx,dindx)
-       write(iulog,*)'thick_roof:      ',urbinp%thick_roof(nindx,dindx)
-       write(iulog,*)'thick_wall:      ',urbinp%thick_wall(nindx,dindx)
-       write(iulog,*)'t_building_max:  ',urbinp%t_building_max(nindx,dindx)
-       write(iulog,*)'t_building_min:  ',urbinp%t_building_min(nindx,dindx)
-       write(iulog,*)'wind_hgt_canyon: ',urbinp%wind_hgt_canyon(nindx,dindx)
-       write(iulog,*)'wtlunit_roof:    ',urbinp%wtlunit_roof(nindx,dindx)
-       write(iulog,*)'wtroad_perv:     ',urbinp%wtroad_perv(nindx,dindx)
-       write(iulog,*)'alb_improad_dir: ',urbinp%alb_improad_dir(nindx,dindx,:)
-       write(iulog,*)'alb_improad_dif: ',urbinp%alb_improad_dif(nindx,dindx,:)
-       write(iulog,*)'alb_perroad_dir: ',urbinp%alb_perroad_dir(nindx,dindx,:)
-       write(iulog,*)'alb_perroad_dif: ',urbinp%alb_perroad_dif(nindx,dindx,:)
-       write(iulog,*)'alb_roof_dir:    ',urbinp%alb_roof_dir(nindx,dindx,:)
-       write(iulog,*)'alb_roof_dif:    ',urbinp%alb_roof_dif(nindx,dindx,:)
-       write(iulog,*)'alb_wall_dir:    ',urbinp%alb_wall_dir(nindx,dindx,:)
-       write(iulog,*)'alb_wall_dif:    ',urbinp%alb_wall_dif(nindx,dindx,:)
-       write(iulog,*)'tk_roof:         ',urbinp%tk_roof(nindx,dindx,:)
-       write(iulog,*)'tk_wall:         ',urbinp%tk_wall(nindx,dindx,:)
-       write(iulog,*)'cv_roof:         ',urbinp%cv_roof(nindx,dindx,:)
-       write(iulog,*)'cv_wall:         ',urbinp%cv_wall(nindx,dindx,:)
-       if (urbinp%nlev_improad(nindx,dindx) > 0) then
-          nlev = urbinp%nlev_improad(nindx,dindx)
-          write(iulog,*)'tk_improad: ',urbinp%tk_improad(nindx,dindx,1:nlev)
-          write(iulog,*)'cv_improad: ',urbinp%cv_improad(nindx,dindx,1:nlev)
+       write(iulog,*)'urban_valid:     ',urban_valid(nindx,:)
+       write(iulog,*)'canyon_hwr:      ',urbinp%canyon_hwr(nindx,:,dindx)
+       write(iulog,*)'em_improad:      ',urbinp%em_improad(nindx,:,dindx)
+       write(iulog,*)'em_perroad:      ',urbinp%em_perroad(nindx,:,dindx)
+       write(iulog,*)'em_roof:         ',urbinp%em_roof(nindx,:,dindx)
+       write(iulog,*)'em_wall:         ',urbinp%em_wall(nindx,:,dindx)
+       write(iulog,*)'ht_roof:         ',urbinp%ht_roof(nindx,:,dindx)
+       write(iulog,*)'thick_roof:      ',urbinp%thick_roof(nindx,:,dindx)
+       write(iulog,*)'thick_wall:      ',urbinp%thick_wall(nindx,:,dindx)
+       write(iulog,*)'t_building_max:  ',urbinp%t_building_max(nindx,:,dindx)
+       write(iulog,*)'t_building_min:  ',urbinp%t_building_min(nindx,:,dindx)
+       write(iulog,*)'wind_hgt_canyon: ',urbinp%wind_hgt_canyon(nindx,:,dindx)
+       write(iulog,*)'wtlunit_roof:    ',urbinp%wtlunit_roof(nindx,:,dindx)
+       write(iulog,*)'wtroad_perv:     ',urbinp%wtroad_perv(nindx,:,dindx)
+       write(iulog,*)'alb_improad_dir: ',urbinp%alb_improad_dir(nindx,:,dindx,:)
+       write(iulog,*)'alb_improad_dif: ',urbinp%alb_improad_dif(nindx,:,dindx,:)
+       write(iulog,*)'alb_perroad_dir: ',urbinp%alb_perroad_dir(nindx,:,dindx,:)
+       write(iulog,*)'alb_perroad_dif: ',urbinp%alb_perroad_dif(nindx,:,dindx,:)
+       write(iulog,*)'alb_roof_dir:    ',urbinp%alb_roof_dir(nindx,:,dindx,:)
+       write(iulog,*)'alb_roof_dif:    ',urbinp%alb_roof_dif(nindx,:,dindx,:)
+       write(iulog,*)'alb_wall_dir:    ',urbinp%alb_wall_dir(nindx,:,dindx,:)
+       write(iulog,*)'alb_wall_dif:    ',urbinp%alb_wall_dif(nindx,:,dindx,:)
+       write(iulog,*)'tk_roof:         ',urbinp%tk_roof(nindx,:,dindx,:)
+       write(iulog,*)'tk_wall:         ',urbinp%tk_wall(nindx,:,dindx,:)
+       write(iulog,*)'cv_roof:         ',urbinp%cv_roof(nindx,:,dindx,:)
+       write(iulog,*)'cv_wall:         ',urbinp%cv_wall(nindx,:,dindx,:)
+       if (urbinp%nlev_improad(nindx,1,dindx) > 0) then
+          nlev = urbinp%nlev_improad(nindx,1,dindx)
+          write(iulog,*)'tk_improad: ',urbinp%tk_improad(nindx,:,dindx,1:nlev)
+          write(iulog,*)'cv_improad: ',urbinp%cv_improad(nindx,:,dindx,1:nlev)
        end if
        call endrun(msg=errmsg(__FILE__, __LINE__))
     end if

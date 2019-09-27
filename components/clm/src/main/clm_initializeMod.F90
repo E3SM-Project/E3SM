@@ -78,11 +78,11 @@ contains
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
-	use topounit_varcon           , only: max_topounits
+    use topounit_varcon           , only: max_topounits
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
-    integer           :: i,j,n,k,c,l,g           ! indices
+    integer           :: i,j,n,k,c,l,g,t,ti,topi           ! indices
     integer           :: nl                      ! gdc and glo lnd indices
     integer           :: ns, ni, nj              ! global grid sizes
     integer           :: begg, endg              ! processor bounds
@@ -234,11 +234,11 @@ contains
     allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     allocate (fert_cft     (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
     if (create_glacier_mec_landunit) then
-       allocate (wt_glc_mec  (begg:endg, maxpatch_glcmec))
-       allocate (topo_glc_mec(begg:endg, maxpatch_glcmec))
+       allocate (wt_glc_mec  (begg:endg,1:max_topounits, maxpatch_glcmec))
+       allocate (topo_glc_mec(begg:endg,1:max_topounits, maxpatch_glcmec))
     else
-       allocate (wt_glc_mec  (1,1))
-       allocate (topo_glc_mec(1,1))
+       allocate (wt_glc_mec  (1,1,1))
+       allocate (topo_glc_mec(1,1,1))
     endif
 
     ! Read list of Patches and their corresponding parameter values
@@ -372,12 +372,15 @@ contains
     do c = bounds_proc%begc, bounds_proc%endc
        l = col_pp%landunit(c)
        g = col_pp%gridcell(c)
+       t = col_pp%topounit(c)
+       topi = grc_pp%topi(g)
+       ti = t - topi + 1
 
        if (lun_pp%itype(l) == istice_mec) then
           ! For ice_mec landunits, initialize glc_topo based on surface dataset; this
           ! will get overwritten in the run loop by values sent from CISM
           icemec_class = col_itype_to_icemec_class(col_pp%itype(c))
-          col_pp%glc_topo(c) = topo_glc_mec(g, icemec_class)
+          col_pp%glc_topo(c) = topo_glc_mec(g,ti, icemec_class)
        else
           ! For other landunits, arbitrarily initialize glc_topo to 0 m; for landunits
           ! where this matters, this will get overwritten in the run loop by values sent

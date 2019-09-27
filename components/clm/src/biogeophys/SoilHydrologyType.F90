@@ -13,6 +13,7 @@ Module SoilHydrologyType
   use LandunitType          , only : lun_pp                
   use ColumnType            , only : col_pp      
   use GridcellType          , only : grc_pp   
+  use topounit_varcon       , only : max_topounits
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -242,7 +243,7 @@ contains
     type(bounds_type) , intent(in)    :: bounds                                    
     !
     ! !LOCAL VARIABLES:
-    integer            :: p,c,j,l,g,lev,nlevs 
+    integer            :: p,c,j,l,g,lev,nlevs, t,ti,topi
     integer            :: nlevbed
     integer            :: ivic,ivicstrt,ivicend   
     real(r8)           :: maxslope, slopemax, minslope
@@ -254,10 +255,10 @@ contains
     real(r8)           :: clay,sand        ! temporaries
     real(r8)           :: om_frac          ! organic matter fraction
     real(r8)           :: organic_max      ! organic matter (kg/m3) where soil is assumed to act like peat 
-    real(r8) ,pointer  :: b2d        (:)   ! read in - VIC b  
-    real(r8) ,pointer  :: ds2d       (:)   ! read in - VIC Ds 
-    real(r8) ,pointer  :: dsmax2d    (:)   ! read in - VIC Dsmax 
-    real(r8) ,pointer  :: ws2d       (:)   ! read in - VIC Ws 
+    real(r8) ,pointer  :: b2d        (:,:)   ! read in - VIC b  
+    real(r8) ,pointer  :: ds2d       (:,:)   ! read in - VIC Ds 
+    real(r8) ,pointer  :: dsmax2d    (:,:)   ! read in - VIC Dsmax 
+    real(r8) ,pointer  :: ws2d       (:,:)   ! read in - VIC Ws 
     real(r8), pointer  :: sandcol    (:,:) ! column level sand fraction for calculating VIC parameters
     real(r8), pointer  :: claycol    (:,:) ! column level clay fraction for calculating VIC parameters
     real(r8), pointer  :: om_fraccol (:,:) ! column level organic matter fraction for calculating VIC parameters
@@ -333,10 +334,10 @@ contains
 
     if (use_vichydro) then
 
-       allocate(b2d        (bounds%begg:bounds%endg))
-       allocate(ds2d       (bounds%begg:bounds%endg))
-       allocate(dsmax2d    (bounds%begg:bounds%endg))
-       allocate(ws2d       (bounds%begg:bounds%endg))
+       allocate(b2d        (bounds%begg:bounds%endg,1:max_topounits))
+       allocate(ds2d       (bounds%begg:bounds%endg,1:max_topounits))
+       allocate(dsmax2d    (bounds%begg:bounds%endg,1:max_topounits))
+       allocate(ws2d       (bounds%begg:bounds%endg,1:max_topounits))
        allocate(sandcol    (bounds%begc:bounds%endc,1:nlevgrnd ))
        allocate(claycol    (bounds%begc:bounds%endc,1:nlevgrnd ))
        allocate(om_fraccol (bounds%begc:bounds%endc,1:nlevgrnd ))
@@ -379,10 +380,14 @@ contains
 
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
-          this%b_infil_col(c) = b2d(g)
-          this%ds_col(c)      = ds2d(g)
-          this%dsmax_col(c)   = dsmax2d(g)
-          this%Wsvic_col(c)   = ws2d(g)
+          t = col_pp%topounit(c)
+          topi = grc_pp%topi(g)
+          ti = t - topi + 1
+          
+          this%b_infil_col(c) = b2d(g,ti)
+          this%ds_col(c)      = ds2d(g,ti)
+          this%dsmax_col(c)   = dsmax2d(g,ti)
+          this%Wsvic_col(c)   = ws2d(g,ti)
        end do
 
        do c = bounds%begc, bounds%endc
@@ -412,11 +417,11 @@ contains
 
        call getfil (fsurdat, locfn, 0)
        call ncd_pio_openfile (ncid, locfn, 0)
-       call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=namet, dim2name = grlnd, readvar=readvar)
+       call ncd_io(ncid=ncid, varname='PCT_SAND', flag='read', data=sand3d, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
           call endrun(msg=' ERROR: PCT_SAND NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
        end if
-       call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=namet,dim2name=grlnd, readvar=readvar)
+       call ncd_io(ncid=ncid, varname='PCT_CLAY', flag='read', data=clay3d, dim1name=grlnd, readvar=readvar)
        if (.not. readvar) then
           call endrun(msg=' ERROR: PCT_CLAY NOT on surfdata file'//errMsg(__FILE__, __LINE__)) 
        end if
@@ -445,9 +450,9 @@ contains
        do c = bounds%begc, bounds%endc
           g = col_pp%gridcell(c)
           l = col_pp%landunit(c)
-		  t = col_pp%topounit(c)  ! Current topounit
-		  topi = grc_pp%topi(g)   ! The first topounit in the current grid
-		  ti = t - topi + 1
+          t = col_pp%topounit(c)  ! Current topounit
+          topi = grc_pp%topi(g)   ! The first topounit in the current grid
+          ti = t - topi + 1
 
           if (lun_pp%itype(l) /= istdlak) then  ! soil columns of both urban and non-urban types
              if (lun_pp%itype(l)==istwet .or. lun_pp%itype(l)==istice .or. lun_pp%itype(l)==istice_mec) then
