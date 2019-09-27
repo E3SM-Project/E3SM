@@ -155,12 +155,12 @@ MODULE MOSART_sediment_mod
             seout = 0._r8
         end if        
         
-		if(abs(TRunoff%erout(iunit,nt_nliq)) > TINYVALUE_s) then
+        if(abs(TRunoff%erout(iunit,nt_nliq)) > TINYVALUE_s) then
             s_conc_equi = seout/abs(TRunoff%erout(iunit,nt_nliq))        
             s_wr_equi = s_conc_equi * TRunoff%wr(iunit,nt_nliq)
-		else 
-		    s_wr_equi = 0._r8
-		end if
+        else 
+            s_wr_equi = 0._r8
+        end if
         
         ers = 0._r8
         ses = 0._r8
@@ -297,7 +297,7 @@ MODULE MOSART_sediment_mod
             !if((TRunoff%yr(iunit,nt_nliq).gt.TINYVALUE_s) .and. (TRunoff%wr(iunit,nt_nsan).gt.TINYVALUE_s)) then
             !    write(unit=1111,fmt="(i10, 6(e12.3))") iunit, ers, ses, seout, TRunoff%wr(iunit,nt_nsan), TRunoff%vr(iunit,nt_nliq), CRQs(TRunoff%yr(iunit,nt_nliq), TRunoff%vr(iunit,nt_nliq), TUnit%rwidth(iunit), TUnit%rslp(iunit), TUnit%nr(iunit))
             !end if
-		
+
     end subroutine mainchannelSediment
 
     function CRQs_Wu(h_, U_, rwidth_,slope_) result(Qs_)

@@ -85,11 +85,6 @@ module RtmMod
   real(r8) :: river_depth_minimum = 1.e-4 ! gridcell average minimum river depth [m]
 
 !global (glo)
-  integer , pointer :: ID0_global(:)  ! local ID index
-  integer , pointer :: dnID_global(:) ! downstream ID based on ID0
-  integer , pointer :: nUp_global(:)  ! number of upstream units
-  integer , pointer :: nUp_dstrm_global(:)  ! number of units flowing into the downstream unit
-  real(r8), pointer :: area_global(:) ! area
   integer , pointer :: IDkey(:)       ! translation key from ID to gindex
 
 !local (gdc)
@@ -243,6 +238,14 @@ contains
     character(len=256):: nlfilename_rof       ! namelist filename
     type(mct_avect)   :: avtmp, avtmpG        ! temporary avects
     type(mct_sMat)    :: sMat                 ! temporary sparse matrix, needed for sMatP
+
+!global (glo), temporary
+    integer , pointer :: ID0_global(:)  ! local ID index
+    integer , pointer :: dnID_global(:) ! downstream ID based on ID0
+    integer , pointer :: nUp_global(:)  ! number of upstream units
+    integer , pointer :: nUp_dstrm_global(:)  ! number of units flowing into the downstream unit
+    real(r8), pointer :: area_global(:) ! area
+
     character(len=*),parameter :: subname = '(Rtmini) '
 
 !#ifdef INCLUDE_INUND
@@ -1284,7 +1287,8 @@ contains
     deallocate(gmask)
     deallocate(rglo2gdc)
     deallocate(rgdc2glo)
-    deallocate (dnID_global,area_global)
+    deallocate(dnID_global,area_global)
+    deallocate(nUp_global,nUp_dstrm_global)
     deallocate(idxocn)
     call shr_mpi_sum(lrtmarea,rtmCTL%totarea,mpicom_rof,'mosart totarea',all=.true.)
     if (masterproc) write(iulog,*) subname,'  earth area ',4.0_r8*shr_const_pi*1.0e6_r8*re*re
@@ -1797,14 +1801,14 @@ contains
           call UpdateState_hillslope(nr,nt)
           call UpdateState_subnetwork(nr,nt)
           call UpdateState_mainchannel(nr,nt)
-		  if(sediflag) then
+          if(sediflag) then
              rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
                                    TRunoff%wh(nr,nt)*rtmCTL%area(nr)+ &
                                    TRunoff%wt_al(nr,nt) + TRunoff%wr_al(nr,nt))
-		  else
+          else
              rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
                                    TRunoff%wh(nr,nt)*rtmCTL%area(nr))
-          end if		  
+          end if 
        enddo
        enddo
     endif
@@ -2523,7 +2527,7 @@ endif
        else
           rtmCTL%volr(nr,nt) = (TRunoff%wt(nr,nt) + TRunoff%wr(nr,nt) + &
                                 TRunoff%wh(nr,nt)*rtmCTL%area(nr) * TUnit%frac(nr))
-	   end if                  
+       end if                  
 !#ifdef INCLUDE_INUND
        if (inundflag .and. Tctl%OPT_inund == 1 .and. nt == 1) then
           rtmCTL%volr(nr,nt) = rtmCTL%volr(nr,nt) + TRunoff%wf_ini(nr)

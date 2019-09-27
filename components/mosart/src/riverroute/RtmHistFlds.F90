@@ -183,7 +183,7 @@ contains
            avgflag='A', long_name='MOSART sediment yield from hillslope: '//trim(rtm_tracers(3)), &
            ptr_rof=rtmCTL%qsur_nt3, default='active')
 
-	end if
+    end if
 
     if (wrmflag) then
 
@@ -284,7 +284,7 @@ contains
     rtmCTL%qdem_nt1(:)       = rtmCTL%qdem(:,1)
     rtmCTL%qdem_nt2(:)       = rtmCTL%qdem(:,2)
 
-	if(sediflag) then
+    if(sediflag) then
         rtmCTL%runofflnd_nt3(:)  = rtmCTL%runofflnd(:,3)
         rtmCTL%runofflnd_nt4(:)  = rtmCTL%runofflnd(:,4)
         rtmCTL%runoffocn_nt3(:)  = rtmCTL%runoffocn(:,3)
@@ -292,8 +292,7 @@ contains
         rtmCTL%volr_nt3(:)       = rtmCTL%volr(:,3)
         rtmCTL%volr_nt4(:)       = rtmCTL%volr(:,4)
         rtmCTL%qsur_nt3(:)       = rtmCTL%qsur(:,3)
-	end if
-
+    end if
 
     if (wrmflag) then
        StorWater%storageG = 0._r8
