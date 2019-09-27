@@ -1769,21 +1769,8 @@ contains
                 ( phi_temp(:,:,1,k) + phi_temp(:,:,2,k) )
 
 #endif
-
-
-!compare new term to old one:
-!        if((elem(ie)%globalid == 1721).and.(k == 72)) then
-!print *, 'comparing at lev', k
-!print *, (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1)+v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))*hvcoord%hybi(k) &
-!-( phi_temp(:,:,1,k) + phi_temp(:,:,2,k) )*hvcoord%hybi(k)
-!        endif
-
-
-
         endif
      end do
-
-!if(elem(ie)%globalid == 1721) stop
 
      ! k =nlevp case, all terms in the imex methods are treated explicitly at the boundary
      k =nlevp 
@@ -2167,6 +2154,8 @@ contains
 
   enddo !ie
 
+
+#ifdef NEWS
   do ie=nets,nete
 
      dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
@@ -2220,7 +2209,7 @@ contains
         elem(ie)%derived%ugradphihy(:,:,k)*elem(ie)%rspheremp(:,:)
      enddo
   enddo
-
+#endif
 
   call t_stopf('compute_andor_apply_rhs')
 
@@ -2333,17 +2322,6 @@ contains
 #else
     wh_i = 0.0
     wh_i(:,:,1:nlev) = elem(ie)%derived%ugradphihy(:,:,1:nlev)/g
-
-!    if((elem(ie)%globalid == 1721)) then
-!do k=1,nlev
-!print *, 'comparing at lev', k
-!print *, (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
-!            v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
-!            *hvcoord%hybi(k)/g - 
-!enddo
-!    endif
-
-
 #endif
 !!!!!!!! end of splitting
 
