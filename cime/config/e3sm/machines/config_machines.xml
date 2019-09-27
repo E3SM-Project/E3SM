@@ -1930,9 +1930,12 @@
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3.1</command>
       </modules>
-      <modules mpilib="impi">
-        <command name="load">intelmpi/2019u5</command>
+      <modules mpilib="impi" compiler="intel">
+	<command name="load">intelmpi/2019u5</command>
       </modules>
+      <modules mpilib="impi" compiler="pgi">
+	<command name="load">intelmpi/2019u3</command>
+      </modules>      
       <modules>
         <command name="load">netcdf/4.6.3</command>
         <command name="load">pnetcdf/1.9.0</command>
