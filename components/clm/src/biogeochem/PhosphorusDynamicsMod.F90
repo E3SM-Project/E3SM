@@ -606,6 +606,7 @@ contains
     use pftvarcon              , only : noveg
     use clm_varpar             , only : ndecomp_pools
     use clm_time_manager       , only : get_step_size
+    use CNDecompCascadeConType , only : decomp_cascade_con
     
     !
     ! !ARGUMENTS:
@@ -640,8 +641,8 @@ contains
          decomp_ppools_vr_col => col_ps%decomp_ppools_vr, &
          lamda_ptase          => veg_vp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
          cn_scalar             => cnstate_vars%cn_scalar               , &
-         cp_scalar             => cnstate_vars%cp_scalar                 &
-         )
+         cp_scalar             => cnstate_vars%cp_scalar               , &
+         is_soil               => decomp_cascade_con%is_soil)
 
     dt = real( get_step_size(), r8 )
 
@@ -716,6 +717,7 @@ contains
                if (is_soil(l)) then
                      biochem_pmin_to_ecosysp_vr_col(c,j) = biochem_pmin_to_ecosysp_vr_col(c,j)+ &
                                           biochem_pmin_ppools_vr_col(c,j,l)
+               endif
             enddo
         enddo
     end do
@@ -777,17 +779,3 @@ contains
   end subroutine PhosphorusBiochemMin_balance
 
 end module PhosphorusDynamicsMod
-               
-                
-     
-
-      
-
-
-
-
-
-
-
-
->>>>>>> Adds variable soil thickness to CNP:components/clm/src/biogeochem/PDynamicsMod.F90
