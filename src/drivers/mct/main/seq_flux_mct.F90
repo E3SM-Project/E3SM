@@ -111,6 +111,7 @@ module seq_flux_mct
   ! albedo reference variables - set via namelist
   real(r8)  :: seq_flux_mct_albdif  ! albedo, diffuse
   real(r8)  :: seq_flux_mct_albdir  ! albedo, direct
+  real(r8)  :: seq_flux_atmocn_minwind ! minimum wind temperature for atmocn flux routines
 
   ! Coupler field indices
 
@@ -476,7 +477,7 @@ contains
 
     character(len=256) :: cime_model
 
-    namelist /seq_flux_mct_inparm/ seq_flux_mct_albdif, seq_flux_mct_albdir
+    namelist /seq_flux_mct_inparm/ seq_flux_mct_albdif, seq_flux_mct_albdir, seq_flux_atmocn_minwind
 
     character(len=*),parameter :: subname = '(seq_flux_readnl_mct) '
 
@@ -509,6 +510,7 @@ contains
 
      call shr_mpi_bcast(seq_flux_mct_albdif, mpicom)
      call shr_mpi_bcast(seq_flux_mct_albdir, mpicom)
+     call shr_mpi_bcast(seq_flux_atmocn_minwind, mpicom)
 
   end subroutine seq_flux_readnl_mct
 
@@ -1069,7 +1071,8 @@ contains
     if (flux_diurnal) then
        call shr_flux_atmocn_diurnal (nloc_a2o , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-            tocn , emask, sen , lat , lwup , &
+            tocn , emask, seq_flux_atmocn_minwind, &
+            sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             uGust, lwdn , swdn , swup, prec, &
@@ -1084,7 +1087,8 @@ contains
     else
        call shr_flux_atmocn (nloc_a2o , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-            tocn , emask, sen , lat , lwup , &
+            tocn , emask, seq_flux_atmocn_minwind, &
+            sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux, tauy, tref, qref , &
             duu10n,ustar, re  , ssq , missval = 0.0_r8 )
@@ -1477,7 +1481,8 @@ contains
     if (flux_diurnal) then
        call shr_flux_atmocn_diurnal (nloc , zbot , ubot, vbot, thbot, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-            tocn , emask, sen , lat , lwup , &
+            tocn , emask, seq_flux_atmocn_minwind, &
+            sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             uGust, lwdn , swdn , swup, prec, &
@@ -1495,7 +1500,8 @@ contains
     else
        call shr_flux_atmocn (nloc , zbot , ubot, vbot, thbot, prec_gust, gust_fac, &
             shum , shum_16O , shum_HDO, shum_18O, dens , tbot, uocn, vocn , &
-            tocn , emask, sen , lat , lwup , &
+            tocn , emask, seq_flux_atmocn_minwind, &
+            sen , lat , lwup , &
             roce_16O, roce_HDO, roce_18O,    &
             evap , evap_16O, evap_HDO, evap_18O, taux , tauy, tref, qref , &
             duu10n,ustar, re  , ssq)
