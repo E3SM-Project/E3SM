@@ -2152,9 +2152,9 @@ contains
      call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
           elem(ie)%spheremp,hvcoord%dp0)
 
+  enddo !ie
 
-
-
+  do ie=nets,nete
 
      dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
      vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,np1)
@@ -2191,7 +2191,7 @@ contains
      enddo
      kptr=0
      call edgeVpack_nlyr(edge_g,elem(ie)%desc,&
-          elem(ie)%derived%ugradphihy(:,:,:),nlev,kptr,nlyr_tot)
+          elem(ie)%derived%ugradphihy(:,:,:),nlev,kptr,nlev)
   end do
 
   call t_startf('caar_bexchV')
@@ -2201,7 +2201,7 @@ contains
   do ie=nets,nete
      kptr=0
      call edgeVunpack_nlyr(edge_g,elem(ie)%desc,&
-          elem(ie)%derived%ugradphihy(:,:,:),nlev,kptr,nlyr_tot)
+          elem(ie)%derived%ugradphihy(:,:,:),nlev,kptr,nlev)
      do k=1,nlev
         elem(ie)%derived%ugradphihy(:,:,k)=&
         elem(ie)%derived%ugradphihy(:,:,k)*elem(ie)%rspheremp(:,:)
