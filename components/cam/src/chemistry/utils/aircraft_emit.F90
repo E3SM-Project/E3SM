@@ -318,7 +318,8 @@ contains
           native_grid_frc_air(m)%input_file     = trim(air_datapath)//'/'//trim(spc_fname(m))
 
           native_grid_frc_air(m)%initialized    = .false.
-          call native_grid_frc_air(m)%time_coord%initialize(trim(adjustl(native_grid_frc_air(m)%input_file)))
+          call native_grid_frc_air(m)%time_coord%initialize(trim(adjustl(native_grid_frc_air(m)%input_file)), &
+               force_time_interp=.true.)
 
           !-----------------------------------------------------------------------
           !       Open file
