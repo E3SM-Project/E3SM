@@ -752,7 +752,7 @@
                  f_don_Am_protein ,f_doc_s, f_doc_l, &
                  f_exude_s, f_exude_l, k_bac_s,  k_bac_l, &
                  algaltype_diatoms, algaltype_sp, algaltype_phaeo, &
-                 doctype_s, doctype_l, dontype_protein, &
+                 doctype_s, doctype_l, dictype_1, dontype_protein, &
                  fedtype_1, feptype_1, zaerotype_bc1, zaerotype_bc2, &
                  zaerotype_dust1, zaerotype_dust2, zaerotype_dust3, &
                  zaerotype_dust4, &
@@ -979,6 +979,7 @@
         humtype           , & !
         doctype_s         , & !
         doctype_l         , & !
+        dictype_1         , & !
         dontype_protein    , & !
         fedtype_1         , & !
         feptype_1         , & !
@@ -1129,7 +1130,7 @@
       F_abs_chl(3) = F_abs_chl_phaeo
 
       R_Fe2DON(1) = ratio_Fe2DON
-      R_C2N(1) = ratio_C2N_proteins
+      R_C2N_DON(1) = ratio_C2N_proteins
      
       R_Fe2DOC(1) = ratio_Fe2DOC_s
       R_Fe2DOC(2) = ratio_Fe2DOC_l
@@ -1187,6 +1188,9 @@
       K_Fe(2) = K_Fe_sp
       K_Fe(3) = K_Fe_phaeo
 
+      f_doc(1) = f_doc_s
+      f_doc(2) = f_doc_l
+
       f_don(1) = f_don_protein
       kn_bac(1) = kn_bac_protein
       f_don_Am(1) = f_don_Am_protein
@@ -1203,6 +1207,8 @@
       doctype(1) = doctype_s
       doctype(2) = doctype_l
  
+      dictype(1) = dictype_1
+
       dontype(1) = dontype_protein
 
       fedtype(1) = fedtype_1
@@ -4108,7 +4114,8 @@
            dmspdtype_in, &          
            humtype_in, &            
            doctype_s_in, &          
-           doctype_l_in, &          
+           doctype_l_in, &
+           dictype_1_in, &
            dontype_protein_in, &     
            fedtype_1_in, &           
            feptype_1_in, &           
@@ -4301,6 +4308,7 @@
              humtype            , &
              doctype_s          , &
              doctype_l          , &
+             dictype_1          , &
              dontype_protein    , & 
              fedtype_1          , & 
              feptype_1          , & 
@@ -4586,6 +4594,7 @@
          humtype_in            , & !
          doctype_s_in          , & !
          doctype_l_in          , & !
+         dictype_1_in          , & !
          dontype_protein_in    , & !
          fedtype_1_in          , & !
          feptype_1_in          , & !
@@ -4818,6 +4827,7 @@
         humtype            = humtype_in
         doctype_s          = doctype_s_in
         doctype_l          = doctype_l_in
+        dictype_1          = dictype_1_in
         dontype_protein    = dontype_protein_in
         fedtype_1          = fedtype_1_in
         feptype_1          = feptype_1_in
@@ -5832,7 +5842,7 @@
        doc(2) = 9.0_dbl_kind  ! lipids
        doc(3) = c1 ! 
        do k = 1, max_dic
-            dic(k) = c1
+            dic(k) = 1950.0_dbl_kind  ! 1950-2260 mmol C/m3 (Tynan et al. 2015)
        enddo  
        do k = 1, max_don
             don(k) = 12.9_dbl_kind              

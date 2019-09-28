@@ -392,6 +392,7 @@
          humtype            , & !
          doctype_s          , & !
          doctype_l          , & !
+         dictype_1          , & !
          dontype_protein    , & !
          fedtype_1          , & !
          feptype_1          , & !
@@ -421,8 +422,8 @@
       ! Algal types: Diatoms, flagellates, Phaeocycstis
       ! DOC        : Proteins, EPS, Lipids
       !-----------------------------------------------------------------
-      real (kind=dbl_kind), parameter, dimension(max_dic), public :: &
-         dictype   = (/-c1/)  ! not in namelist
+      real (kind=dbl_kind), dimension(max_dic), public :: &
+         dictype     ! added to namelist
 
       real (kind=dbl_kind), dimension(max_algae), public :: &
          algaltype   ! tau_min for both retention and release
