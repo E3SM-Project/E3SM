@@ -92,7 +92,7 @@ contains
     real (kind=real_kind) :: dt2, time, dt_vis, x, eta_ave_w
     real (kind=real_kind) :: itertol,a1,a2,a3,a4,a5,a6,ahat1,ahat2
     real (kind=real_kind) :: ahat3,ahat4,ahat5,ahat6,dhat1,dhat2,dhat3,dhat4
-    real (kind=real_kind) ::  gamma,delta,ap,aphat,dhat5
+    real (kind=real_kind) ::  gamma,delta,ap,aphat,dhat5,offcenter
 
     integer :: ie,nm1,n0,np1,nstep,qsplit_stage,k, qn0
     integer :: n,i,j,maxiter
@@ -285,15 +285,8 @@ contains
         deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
       call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat4*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-#if 0
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
-#else
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w,1d0,0d0,1d0)
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-#endif
 !================================================================================
     elseif (tstep_type == 8) then ! IMKG253, might be more efficient than IMKG254, might be a teeny bit bad at coarse resolution
 
@@ -363,7 +356,6 @@ contains
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
-
 !================================================================================                                      
     elseif (tstep_type == 10) then ! IMKG232b
       a1 = 1d0/2d0
@@ -390,65 +382,48 @@ contains
         deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
 !===================================================================================
-    elseif (tstep_type == 11 ) then ! imkg255 - final stage implicit
+   elseif (tstep_type == 12 ) then ! imkg233 - final stage implicit
 
-      dhat5 = 3d0
-      dhat4 = 3d0
-      dhat3 = -.75d0
-      dhat2 = .2d0
-      a5    = 1d0
 
-      ahat4 = 1d0/(2d0*a5) - dhat4
-      ahat5 = (1d0/2d0-dhat5)/(ahat4+dhat4)
-      ap = 1d0-a5
-      aphat = 1d0-ahat5-dhat5
+     ! FREE PARAMETERS YOU CAN CHANGE
+      dhat2 = 1d0/3d0; dhat3 = 1d0/3d0 
 
-      dhat1 = -(ahat4*ahat5   - ahat5*dhat2 - ahat5*dhat3   - aphat*dhat2  - aphat*dhat3 &
-        - aphat*dhat4  + dhat2*dhat3 + dhat2*dhat4 + dhat3*dhat4)/ &
-        (- ahat5  - aphat + dhat2  + dhat3 + dhat4)
+      offcenter = 0.01
 
-      ahat3 = -(- ahat4*ahat5*dhat1 - ahat4*ahat5*dhat2 + ahat5*dhat1*dhat2 + ahat5*dhat1*dhat3 &
-        + ahat5*dhat2*dhat3 + aphat*dhat1*dhat2+ aphat*dhat1*dhat3 + aphat*dhat1*dhat4 &
-        + aphat*dhat2*dhat3 + aphat*dhat2*dhat4+ aphat*dhat3*dhat4- dhat1*dhat2*dhat3 &
-        - dhat1*dhat2*dhat4- dhat1*dhat3*dhat4- dhat2*dhat3*dhat4 )/(ahat4*ahat5)
+      ! THE UPDATE IS SOMETHING LIKE aphat*s(t0) + ahat3*s(t+1/2) + dhat3*s(t+1)
 
-      ahat2 = -(- ahat3*ahat4*ahat5*dhat1  + ahat4*ahat5*dhat1*dhat2 - ahat5*dhat1*dhat2*dhat3 &
-        - aphat*dhat1*dhat2*dhat3 - aphat*dhat1*dhat2*dhat4 - aphat*dhat1*dhat3*dhat4 &
-        - aphat*dhat2*dhat3*dhat4 + dhat1*dhat2*dhat3*dhat4)/(ahat3*ahat4*ahat5)
+      !  DONT CHAGE THESE
+      ap = 0d0
+      a3 = 1d0 
+      a2 = 1d0/2d0
+      a1 = 1d0/2d0
+      ahat2 = 1d0/2d0-dhat2    ! 1/6
+      ahat3 = 1d0-2d0*dhat3;   ! 1/3
+      aphat = 1d0-dhat3-ahat3; ! =  1d0-dhat3-1d0+2d0*dhat3 = dhat3 = 1/3
+      dhat1 = (ahat2*ahat3  - aphat*dhat2)/(ahat3+aphat-dhat2)   ! -1/6
+      ahat1 = -aphat*dhat1*dhat2/(ahat2*ahat3)  !  1/3
 
-      ahat1 = - aphat*dhat1*dhat2*dhat3*dhat4  / (ahat2*ahat3*ahat4*ahat5)
-
-      ap = 1d0-a5
-      a4 = 1d0/(2d0*a5)
-      a3 = 3d0/(16d0*a4*a5)
-      a2 = 1d0/(32d0*a3*a4*a5)
-      a1 = 1d0/(128d0*a2*a3*a4*a5)
+      
+      ! introduce 1st order offcentering
+      aphat = aphat-offcenter
+      dhat3 = dhat3+offcenter
 
       call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat1/a1,1d0) !   aphat/ap,1d0)                                         
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat1/a1,1d0) !   aphat/ap,1d0)               
+
       call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat1*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat2/a2,1d0)
+        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
+
       call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat2*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-           deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat3/a3,1d0)
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat3*dt,elem,hvcoord,hybrid,&
+           deriv,nets,nete,.false.,eta_ave_w,1d0,ahat3/a3,1d0)
+      call compute_stage_value_dirk(n0,np1,aphat*dt,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat4/a4,1d0)
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,eta_ave_w,1d0,ahat5/a5,1d0)
-      call compute_stage_value_dirk(n0,np1,aphat*dt,qn0,dhat5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
 
     else
        call abortmp('ERROR: bad choice of tstep_type')
@@ -1076,6 +1051,7 @@ contains
      temp(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie) 
      call phi_from_eos(hvcoord,elem(ie)%state%phis,&
           temp(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
+
 #if 0
      ! no reference state, for testing
      theta_ref(:,:,:,ie)=0
@@ -2233,6 +2209,7 @@ contains
   real (kind=real_kind) :: w_n0(np,np,nlevp)    
   real (kind=real_kind) :: dphi(np,np,nlev)    
   real (kind=real_kind) :: dphi_n0(np,np,nlev)    
+  real (kind=real_kind) :: phi_n0(np,np,nlevp)    
   real (kind=real_kind) :: delta_phi(np,np,nlevp)    ! phi_np1-phi_n0
   real (kind=real_kind) :: Ipiv(nlev,np,np)
   real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
@@ -2268,28 +2245,46 @@ contains
   min_rcond=1e20
 
   do ie=nets,nete
+    w_n0 = elem(ie)%state%w_i(:,:,:,np1)
+    wgdtmax=max(1d0,maxval(abs(w_n0)))*abs(dt2)*g
+    ! approximate the initial error of f(x) \approx 0
+    vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,np1)
+    phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
+
+    phi_n0 = phi_np1
 
     if (alphadt.ne.0d0) then ! add dt*alpha*s(un0) to the initial guess and rhs
       call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0), &
         elem(ie)%state%dp3d(:,:,:,n0),elem(ie)%state%phinh_i(:,:,:,n0),pnh,   &
-        exner,dpnh_dp_i,caller='CAORS')
-      elem(ie)%state%w_i(:,:,1:nlev,np1)     = elem(ie)%state%w_i(:,:,1:nlev,np1) + &
+        exner,dpnh_dp_i,caller='dirk0')
+      w_n0(:,:,1:nlev)     = w_n0(:,:,1:nlev) + &
                                             alphadt*g*(dpnh_dp_i(:,:,1:nlev)-1d0)
-      elem(ie)%state%phinh_i(:,:,1:nlev,np1) = elem(ie)%state%phinh_i(:,:,1:nlev,np1) + &
+      phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) + &
                                             alphadt*g*elem(ie)%state%w_i(:,:,1:nlev,n0)
+
+      ! add wh_i(n0) term to RHS
+      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
+      do k=2,nlev
+         v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0) + &
+              dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,n0) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
+         v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
+              dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
+      end do
+      wh_i(:,:,1)=0
+      !wh_i(:,:,nlevp)=elem(ie)%state%w_i(:,:,nlevp,n0)  ! not used
+      do k=2,nlev
+         wh_i(:,:,k) = (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
+              v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
+              *hvcoord%hybi(k)/g  
+      enddo
+      phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) -  alphadt*g*wh_i(:,:,1:nlev)
+      
     end if
 
-    w_n0 = elem(ie)%state%w_i(:,:,:,np1)
-    wgdtmax=max(1d0,maxval(abs(w_n0)))*abs(dt2)*g
-
-    ! approximate the initial error of f(x) \approx 0
+    
     dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
-    vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,np1)
-    phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
-    do k=1,nlev
-       dphi_n0(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
-    enddo
-
+    ! add wh_i(np1) term to RHS. this term doesn't change during the Newton
+    ! iterations so we can add it to phi_n0
     do k=2,nlev
        v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,np1) + &
             dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,np1) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
@@ -2303,16 +2298,19 @@ contains
             v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
             *hvcoord%hybi(k)/g  
     enddo
+    phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) - dt2*g*wh_i(:,:,1:nlev)
 
-#if 1
-    dphi = dphi_n0  ! initial guess
-#else
+
+#if 0
     ! use hydrostatic for initial guess
     call phi_from_eos(hvcoord,elem(ie)%state%phis,vtheta_dp,dp3d,phi_np1)
-    do k=1,nlev  
+#endif
+
+    ! newton iteration will iterate of d(phi)/deta.  initialize:
+    do k=1,nlev
+       dphi_n0(:,:,k)=phi_n0(:,:,k+1)-phi_n0(:,:,k)
        dphi(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
     enddo
-#endif
     
     do k=1,nlev
        do j=1,np
@@ -2334,8 +2332,7 @@ contains
        delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
     enddo
     do k=1,nlev
-       Fn(:,:,k) = delta_phi(:,:,k) &
-            - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
+       Fn(:,:,k) = delta_phi(:,:,k) - dt2*g*(elem(ie)%state%w_i(:,:,k,np1))
     enddo
 
 
@@ -2390,8 +2387,7 @@ contains
          delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
       enddo
       do k=1,nlev
-         Fn(:,:,k) = delta_phi(:,:,k) &
-              - dt2*g*(elem(ie)%state%w_i(:,:,k,np1)-wh_i(:,:,k))
+         Fn(:,:,k) = delta_phi(:,:,k)  - dt2*g*(elem(ie)%state%w_i(:,:,k,np1))
       enddo
       reserr=maxval(abs(Fn))/wgdtmax   ! residual error in phi tendency, relative to source term gw
 

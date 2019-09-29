@@ -102,7 +102,7 @@ subroutine remap1(Qdp,nx,qsize,dp1,dp2)
 
   q = vert_remap_q_alg
   if ( (q.ne.-1) .and. (q.ne.0) .and. (q.ne.1) .and. (q.ne.2) .and. (q.ne.3) .and. (q.ne.10) )&
-     abortmp('Bad vert_remap_q_alg value. Use -1, 0, 1, 2, 3, or 10.')
+     call abortmp('Bad vert_remap_q_alg value. Use -1, 0, 1, 2, 3, or 10.')
 
   if (vert_remap_q_alg == -1) then
      call remap1_nofilter(qdp,nx,qsize,dp1,dp2)
