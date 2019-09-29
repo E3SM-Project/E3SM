@@ -51,7 +51,7 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 44 !45
+  integer, parameter :: varcnt = 45
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
@@ -66,6 +66,7 @@ module interp_movie_mod
                                                  'Th       ', &
                                                  'u        ', &
                                                  'v        ', &
+                                                 'w        ', &
                                                  'w_i      ', &
                                                  'mu_i     ', &
                                                  'geo_i    ', &
@@ -103,7 +104,7 @@ module interp_movie_mod
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
-                                          PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,&
                                           PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
@@ -117,7 +118,7 @@ module interp_movie_mod
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.false.,.false.,&
+                                              .false.,.false.,.false.,.false.,&
                                               .false.,.true. ,.true. ,&
                                               .true.,.true. ,.true. ,&   ! gw,lev,ilev
                                               .true. ,.true. ,&   ! hy arrays
@@ -137,6 +138,7 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! Th
        1,2,3,5,0,  &   ! u
        1,2,3,5,0,  &   ! v
+       1,2,3,5,0,  &   ! w
        1,2,4,5,0,  &   ! w_i
        1,2,4,5,0,  &   ! mu_i
        1,2,4,5,0,  &   ! geo_i
@@ -994,7 +996,7 @@ contains
                 do ie=1,nelemd
                    call get_field(elem(ie),'w',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
                 end do
-!                call make_C0(var3d,elem,par)
+                call make_C0(var3d,elem,par)
                 st=1
                 do ie=1,nelemd
                    en=st+interpdata(ie)%n_interp-1

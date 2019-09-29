@@ -27,7 +27,7 @@ module common_movie_mod
 #ifndef HOMME_WITHOUT_PIOLIBRARY
 
 #ifdef _PRIM
-  integer, parameter :: varcnt =  36
+  integer, parameter :: varcnt =  37
 
   integer, parameter :: maxdims =  6
 
@@ -45,6 +45,7 @@ module common_movie_mod
                                                  'Th         ', &
                                                  'u          ', &
                                                  'v          ', &
+                                                 'w          ', &
                                                  'w_i        ', &
                                                  'mu_i       ', &
                                                  'geo_i      ', &
@@ -83,6 +84,7 @@ module common_movie_mod
                                                                1,2,5,0,0,0, & ! Th
                                                                1,2,5,0,0,0, & ! u
                                                                1,2,5,0,0,0, & ! v
+                                                               1,2,5,0,0,0, & ! w
                                                                1,3,5,0,0,0, & ! w_i
                                                                1,3,5,0,0,0, & ! mu_i
                                                                1,3,5,0,0,0, & ! geo_i
@@ -109,15 +111,15 @@ module common_movie_mod
 
   integer, parameter :: vartype(varcnt)=(/nf_double, nf_double,nf_double, nf_double,nf_double,nf_double,& !ps:cv_lon
                                           nf_int,    nf_double,nf_double,nf_double,nf_double,& !corners:T
-                                          nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,& !Th:w_i
-                                          nf_double, nf_double, nf_double, & ! mu_i and geo_i and pnh
+                                          nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,& !Th:w
+                                          nf_double, nf_double, nf_double,nf_double,& 
                                           nf_double, nf_double,nf_double,nf_double,nf_double,& !Q:geo
                                           nf_double, nf_double,nf_double,nf_double,nf_double,nf_double,& !omega:ilev
                                           nf_double, nf_double,nf_double,nf_double,nf_double/)
   logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.false., .false., &
+                                              .false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.true. ,.true. ,&
                                               .true. ,.true. ,&   ! lev,ilev
