@@ -145,16 +145,16 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   type (hvcoord_t),       intent(in) :: hvcoord
 
   select case(name)
-    case('w');
+    case('w_i');
       if(theta_hydrostatic_mode) then
          call abortmp('ERROR: get_field_i is not supported for w in theta HY')
       else
          field = elem%state%w_i(:,:,1:nlevp,nt)
       endif
-    case('geopotential');
+    case('geo_i');
       !is phinh_i set for HY runs or should here be an abort?
       field = elem%state%phinh_i(:,:,1:nlevp,nt)
-    case('mu');
+    case('mu_i');
       call get_dpnh_dp_i(elem,field,hvcoord,nt)
     case default
       print *,'name = ',trim(name)
@@ -248,7 +248,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   enddo
   end subroutine 
 
-!this routine returns mu at interfaces, call it only after caar set mubottom
+!this routine returns mu at interfaces, mu_surface = 1, will be fixed later
   !_____________________________________________________________________
   subroutine get_dpnh_dp_i(elem,dpnh_dp_i,hvcoord,nt)
   implicit none
@@ -268,11 +268,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
        dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
  
-  dpnh_dp_i(:,:,nlevp) = elem%derived%mubottom(:,:) 
-
   end subroutine get_dpnh_dp_i 
-
-
 
   !_____________________________________________________________________
   subroutine get_hydro_pressure(p,dp,hvcoord)

@@ -217,7 +217,7 @@ contains
           call get_field(elem(ie),'temperature',tdiag,hvcoord,n0,n0q)
        else
           ! show min/max/num of dpnh / dp as a diagnostic
-          call get_field_i(elem(ie),'mu',muvalue,hvcoord,n0)
+          call get_field_i(elem(ie),'mu_i',muvalue,hvcoord,n0)
        endif
 
        ! layer thickness

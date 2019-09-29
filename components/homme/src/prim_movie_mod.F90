@@ -146,8 +146,7 @@ contains
     call nf_output_register_dims(ncdf,maxdims, dimnames, dimsize)
 
 
-    allocate(compdof(nxyp*nlev), latp(nxyp),lonp(nxyp))
-    allocate(compdofp1(nxyp*nlevp))
+    allocate(compdof(nxyp*nlevp), latp(nxyp),lonp(nxyp))
     
     ! Create the DOF arrays for GLL points
     iorank=pio_iotask_rank(pio_subsystem)
@@ -157,15 +156,15 @@ contains
     call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols/),&
          compDOF(1:nxyp),IOdesc2D)
 
-    if (par%masterproc) print *,'compDOF for 3d'
+    if (par%masterproc) print *,'compDOF for 3d nlev'
     call getDOF(elem, GlobalUniqueCols, nlev, compdof)
     call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols,nlev/),&
-         compDOF,IOdesc3D)
+         compDOF(1:nxyp*nlev),IOdesc3D)
 
-    if (par%masterproc) print *,'compDOFp1 for 3d'
-    call getDOF(elem, GlobalUniqueCols, nlevp, compdofp1)
+    if (par%masterproc) print *,'compDOF for 3d nlevp'
+    call getDOF(elem, GlobalUniqueCols, nlevp, compdof)
     call PIO_initDecomp(pio_subsystem,pio_double,(/GlobalUniqueCols,nlevp/),&
-         compDOFp1,iodesc3dp1)
+         compDOF,iodesc3dp1)
 
 ! trivial case for vertical variables
     if(par%masterproc) then
@@ -191,7 +190,6 @@ contains
          compDOF(1:1),IOdescT)
 
     deallocate(compdof)
-    deallocate(compdofp1)
 
 
 ! the GLL based element subgrid
@@ -227,12 +225,10 @@ contains
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'Th','potential temperature \theta','degrees kelvin')
-#ifdef MODEL_THETA_L
     call nf_variable_attributes(ncdf, 'w_i',  'vertical wind component on interfaces','meters/second')
     call nf_variable_attributes(ncdf, 'mu_i', 'mu=dp/d\pi on interfaces','dimensionless')
     call nf_variable_attributes(ncdf, 'geo_i','geopotential on interfaces','meters')
     call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
-#endif
 #ifdef _PRIM
     call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
     call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
@@ -429,10 +425,7 @@ contains
     use pio, only : pio_syncfile !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
-    use element_ops, only : get_field
-#ifdef MODEL_THETA_L
-    use element_ops, only : get_field_i
-#endif
+    use element_ops, only : get_field, get_field_i
     use dcmip16_wrapper, only: precl
     use netcdf_io_mod, only : iodesc3dp1 
 
@@ -656,52 +649,56 @@ contains
                 call nf_put_var(ncdf(ios),var3d,start, count, name='geo')
              end if
 
-             if(nf_selectedvar('w_i', output_varnames)) then
-#ifdef MODEL_THETA_L
-                if (par%masterproc) print *,'writing w_i...'
-                st=1
-                do ie=1,nelemd
-                   en=st+elem(ie)%idxp%NumUniquePts-1
-                   call get_field_i(elem(ie),'w',vartmp1,hvcoord,n0)
-                   call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
-                   st=en+1
-                enddo
-                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='w_i',iodescin=iodesc3dp1)
-#endif
-             end if
-
-
-             if(nf_selectedvar('mu_i', output_varnames)) then
-#ifdef MODEL_THETA_L
-                if (par%masterproc) print *,'writing mu_i...'
-                st=1
-                do ie=1,nelemd
-                   en=st+elem(ie)%idxp%NumUniquePts-1
-                   call get_field_i(elem(ie),'mu',vartmp1,hvcoord,n0)
-                   call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
-                   st=en+1
-                enddo
-                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='mu_i',iodescin=iodesc3dp1)
-#endif
-             end if
-
-
              if(nf_selectedvar('geo_i', output_varnames)) then
-#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing geo_i...'
                 st=1
                 do ie=1,nelemd
                    en=st+elem(ie)%idxp%NumUniquePts-1
-                   call get_field_i(elem(ie),'geopotential',vartmp1,hvcoord,n0)
+                   call get_field_i(elem(ie),'geo_i',vartmp1,hvcoord,n0)
                    call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
                    st=en+1
                 enddo
-                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='geo_i',iodescin=iodesc3dp1)
-#endif
+                call nf_put_var(ncdf(ios),var3dp1,startp1,countp1,name='geo_i',iodescin=iodesc3dp1)
+             end if
+
+             if(nf_selectedvar('w', output_varnames)) then
+                if (par%masterproc) print *,'writing w...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field(elem(ie),'w',vartmp,hvcoord,n0,n0_Q)
+                   call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3d,start, count, name='w')
+             end if
+
+             if(nf_selectedvar('w_i', output_varnames)) then
+                if (par%masterproc) print *,'writing w_i...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field_i(elem(ie),'w_i',vartmp1,hvcoord,n0)
+                   call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='w_i',iodescin=iodesc3dp1)
+             end if
+
+
+             if(nf_selectedvar('mu_i', output_varnames)) then
+                if (par%masterproc) print *,'writing mu_i...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field_i(elem(ie),'mu_i',vartmp1,hvcoord,n0)
+                   call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='mu_i',iodescin=iodesc3dp1)
              end if
 
              if(nf_selectedvar('pnh', output_varnames)) then
-#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing pnh...'
                 st=1
                 do ie=1,nelemd
@@ -711,7 +708,6 @@ contains
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var3d,start,count,name='pnh')
-#endif
              end if
 
              if(nf_selectedvar('omega', output_varnames)) then

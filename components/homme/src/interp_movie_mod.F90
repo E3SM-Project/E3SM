@@ -374,12 +374,10 @@ contains
     call nf_variable_attributes(ncdf, 'hyai', 'hybrid A coefficiet at layer interfaces' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'hybi', 'hybrid B coefficiet at layer interfaces' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'Th',   'potential temperature \theta','degrees kelvin')
-#ifdef MODEL_THETA_L
     call nf_variable_attributes(ncdf, 'w_i',  'vertical wind component on interfaces','meters/second')
     call nf_variable_attributes(ncdf, 'mu_i', 'mu=dp/d\pi on interfaces','dimensionless')
     call nf_variable_attributes(ncdf, 'geo_i','geopotential on interfaces','meters')
     call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
-#endif
 #endif
     call nf_variable_attributes(ncdf, 'gw',   'gauss weights','dimensionless')
     call nf_variable_attributes(ncdf, 'lat',  'column latitude','degrees_north')
@@ -463,10 +461,7 @@ contains
     use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax, Timelevel_Qdp
     use parallel_mod, only : parallel_t, abortmp
 #if defined(_PRIM) 
-    use element_ops, only : get_field
-#ifdef MODEL_THETA_L
-    use element_ops, only : get_field_i
-#endif
+    use element_ops, only : get_field, get_field_i
     use hybvcoord_mod, only :  hvcoord_t 
     use dcmip16_wrapper, only: precl
 #endif
@@ -873,7 +868,6 @@ contains
              end if
 
              if(nf_selectedvar('pnh', output_varnames)) then
-#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing pnh...'
                 allocate(datall(ncnt,nlev))
                 st=1
@@ -886,7 +880,6 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='pnh')
                 deallocate(datall)
-#endif
              end if
 
              if(nf_selectedvar('rho', output_varnames)) then
@@ -977,31 +970,12 @@ contains
                 deallocate(datall)
              end if
 
-             if(nf_selectedvar('w_i', output_varnames)) then
-#ifdef MODEL_THETA_L
-                if (par%masterproc) print *,'writing w_i...'
-                allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
-                do ie=1,nelemd
-                   call get_field_i(elem(ie),'w',var3dp1(:,:,:,ie),hvcoord,n0)
-                end do
-                st=1
-                do ie=1,nelemd
-                   en=st+interpdata(ie)%n_interp-1
-                   call interpolate_scalar(interpdata(ie), var3dp1(:,:,:,ie), &
-                        np, nlevp, datall(st:en,:))
-                   st=st+interpdata(ie)%n_interp
-                enddo
-                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='w_i')
-                deallocate(datall,var3dp1)
-#endif
-             end if
 
              if(nf_selectedvar('geo_i', output_varnames)) then
-#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing geo_i...'
                 allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
                 do ie=1,nelemd
-                   call get_field_i(elem(ie),'geopotential',var3dp1(:,:,:,ie),hvcoord,n0)
+                   call get_field_i(elem(ie),'geo_i',var3dp1(:,:,:,ie),hvcoord,n0)
                 end do
                 st=1
                 do ie=1,nelemd
@@ -1012,15 +986,48 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='geo_i')
                 deallocate(datall,var3dp1)
-#endif
+             end if
+
+             if(nf_selectedvar('w', output_varnames)) then
+                if (par%masterproc) print *,'writing w...'
+                allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
+                do ie=1,nelemd
+                   call get_field(elem(ie),'w',var3d(:,:,:,ie),hvcoord,n0,n0_Q)
+                end do
+!                call make_C0(var3d,elem,par)
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3d(:,:,:,ie), &
+                        np, nlev, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3d, count3d, name='w')
+                deallocate(datall,var3d)
+             end if
+
+             if(nf_selectedvar('w_i', output_varnames)) then
+                if (par%masterproc) print *,'writing w_i...'
+                allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
+                do ie=1,nelemd
+                   call get_field_i(elem(ie),'w_i',var3dp1(:,:,:,ie),hvcoord,n0)
+                end do
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3dp1(:,:,:,ie), &
+                        np, nlevp, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3dp1,count3dp1,name='w_i')
+                deallocate(datall,var3dp1)
              end if
 
              if(nf_selectedvar('mu_i', output_varnames)) then
-#ifdef MODEL_THETA_L
                 if (par%masterproc) print *,'writing mu_i...'
                 allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
                 do ie=1,nelemd
-                   call get_field_i(elem(ie),'mu',var3dp1(:,:,:,ie),hvcoord,n0)
+                   call get_field_i(elem(ie),'mu_i',var3dp1(:,:,:,ie),hvcoord,n0)
                 end do
                 st=1
                 do ie=1,nelemd
@@ -1031,7 +1038,6 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='mu_i')
                 deallocate(datall,var3dp1)
-#endif
              end if
 
              if(nf_selectedvar('omega', output_varnames)) then

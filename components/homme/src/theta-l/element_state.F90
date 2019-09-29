@@ -80,7 +80,6 @@ module element_state
 
     real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
 
-    real (kind=real_kind) :: mubottom(np,np)                       !mu
   end type derived_state_t
   
 
