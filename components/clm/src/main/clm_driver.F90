@@ -927,7 +927,7 @@ contains
                  canopystate_vars, soilstate_vars, temperature_vars, crop_vars, &
                  photosyns_vars, soilhydrology_vars, energyflux_vars,&
                  PlantMicKinetics_vars, ch4_vars,                               &
-                 phosphorusflux_vars, phosphorusstate_vars)
+                 phosphorusflux_vars, phosphorusstate_vars, sedflux_vars)
 
            if(do_betr_bgc_type('type1_bgc')) &
            call CNEcosystemDynBeTR1(bounds_clump, col_pp, veg_pp,               &
