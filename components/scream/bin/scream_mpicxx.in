@@ -1,0 +1,5 @@
+MPICXX=@CMAKE_CXX_COMPILER@
+
+export OMPI_CXX=@CMAKE_CURRENT_SOURCE_DIR@/../../externals/kokkos/bin/nvcc_wrapper
+
+${MPICXX} ""$@""

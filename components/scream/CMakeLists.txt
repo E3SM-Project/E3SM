@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.3)
 cmake_policy(SET CMP0057 NEW)
 
+IF (KOKKOS_ENABLE_CUDA)
+  # Before starting the project, wrap mpicxx in the scream_mpicxx script, which
+  # takes care of setting OMPI_CXX to point to nvcc_wrapper
+  CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/bin/scream_mpicxx.in ${CMAKE_CURRENT_BINARY_DIR}/bin/scream_mpicxx @ONLY)
+  SET (CMAKE_CXX_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/bin/scream_mpicxx CACHE STRING "" FORCE)
+ENDIF()
+
 project(SCREAM CXX Fortran)
 set (CMAKE_CXX_STANDARD 11)
 
