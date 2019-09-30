@@ -1869,7 +1869,7 @@
     <NODENAME_REGEX>compy</NODENAME_REGEX>
     <OS>LINUX</OS>
     <COMPILERS>intel,pgi</COMPILERS>
-    <MPILIBS>mvapich2,impi</MPILIBS>
+    <MPILIBS>impi,mvapich2</MPILIBS>
     <SAVE_TIMING_DIR>/compyfs</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>/compyfs/$USER/e3sm_scratch</CIME_OUTPUT_ROOT>
@@ -1922,7 +1922,7 @@
         <command name="load">cmake/3.11.4</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/18.0.0</command>
+        <command name="load">intel/19.0.5</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">pgi/18.10</command>
@@ -1930,13 +1930,16 @@
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3.1</command>
       </modules>
-      <modules mpilib="impi">
-        <command name="load">intelmpi/2018</command>
+      <modules mpilib="impi" compiler="intel">
+	<command name="load">intelmpi/2019u4</command>
       </modules>
+      <modules mpilib="impi" compiler="pgi">
+	<command name="load">intelmpi/2019u3</command>
+      </modules>      
       <modules>
         <command name="load">netcdf/4.6.3</command>
         <command name="load">pnetcdf/1.9.0</command>
-        <command name="load">mkl/2018</command>
+        <command name="load">mkl/2019u5</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
