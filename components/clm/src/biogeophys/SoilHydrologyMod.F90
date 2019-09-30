@@ -177,8 +177,8 @@ contains
             fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt(c))
          end if
 #if (defined HUM_HOL)
-         if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/1.0_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% changed to 1.0 TAO
-         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/1.0_r8*(zwt(c)-h2osfc(c)/1000.+0.35_r8)), 1._r8) !TAO 0.3 t0 1.0, 0.15 to 0.35
+         if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)))   !at 30cm, hummock saturated at 5% changed to 0.1 TAO
+         if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t0 0.1, 0.15 to 0.35
 #endif
 
          ! use perched water table to determine fsat (if present)
@@ -189,16 +189,16 @@ contains
                fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt(c))
             end if
 #if (defined HUM_HOL)
-            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/1.0_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/1.0_r8*(zwt(c)-h2osfc(c)/1000.+0.35_r8)), 1._r8) !TAO 0.3 t 1.5, 0.15 to 0.35
+            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)))   !at 30cm, hummock saturated at 5%
+            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t 0.1, 0.15 to 0.35
 #endif
          else
             if ( frost_table(c) > zwt_perched(c)) then 
                fsat(c) = wtfact(c) * exp(-0.5_r8*fff(c)*zwt_perched(c))       !*( frost_table(c) - zwt_perched(c))/4.0
             endif
 #if (defined HUM_HOL)
-            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/1.0_r8*(zwt(c))) !at 30cm, hummock saturated at 5%
-            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/1.0_r8*(zwt(c)-h2osfc(c)/1000.+0.35_r8)), 1._r8) !TAO 0.3 t 1.5, 0.15 to 0.35
+            if (c .eq. 1) fsat(c) = 1.0 * exp(-3.0_r8/0.1_r8*(zwt(c))) !at 30cm, hummock saturated at 5%
+            if (c .eq. 2) fsat(c) = min(1.0 * exp(-3.0_r8/0.1_r8*(zwt(c)-h2osfc(c)/1000.+0.15_r8)), 1._r8) !TAO 0.3 t 1.5, 0.15 to 0.35
 #endif   
          endif
          if (origflag == 1) then
@@ -637,10 +637,10 @@ contains
                  !turn off lateral transport if any ice is present
                  qflx_lat_aqu(:) = 0._r8
                else
-                 qflx_lat_aqu(1) =  2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- & !0.0_r8 is the offset value between the 2 columns changed to 1.5
-                     1.0_r8) / 50._r8 * sqrt(hol_frac/hum_frac)
+                 qflx_lat_aqu(1) =  2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- & !0.0_r8 is the offset value between the 2 columns changed to 0.5
+                     0.2_r8) / 50._r8 * sqrt(hol_frac/hum_frac)
                  qflx_lat_aqu(2) = -2._r8/(1._r8/ka_hu+1._r8/ka_ho) * (zwt_hu-zwt_ho- & !changed distance from 1._r8 to 50 in meters
-                     1.0_r8) / 50._r8 * sqrt(hum_frac/hol_frac)
+                     0.2_r8) / 50._r8 * sqrt(hum_frac/hol_frac)
                endif
              endif
 #endif
@@ -1522,9 +1522,9 @@ contains
 #if (defined HUM_HOL_SPRUCE)
           !changes for hummock hollow topography
           if (c .eq. 1) then !hummock
-            if (zwt(c) < 1.0_r8) then !TAO changed 0.7 to 1.0 for elevation offset 
+            if (zwt(c) < 0.5_r8) then !TAO changed 0.7 to 1.0 for elevation offset 
               rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*zwt(c)) - &
-                imped * rsub_top_max * exp(-fff(c)*1.0_r8) !TAO changed 0.7 to 1.0 for elevation offset 
+                imped * rsub_top_max * exp(-fff(c)*0.2_r8) !TAO changed 0.7 to 1.0 for elevation offset 
             else
               rsub_top(c)    = 0_r8
             endif
@@ -1532,10 +1532,10 @@ contains
             if (zwt(c) < 0.4_r8) then
               if (zwt(c) .lt. 0.017) then
                   rsub_top(c)    = imped * rsub_top_max*exp(-fff(c)*(zwt(c)+1.0_r8-h2osfc(c)/1000_r8)) - & !TAO
-                  imped * rsub_top_max * exp(-fff(c)*1.0_r8) !TAO changed 0.7 to 1.0 for elevation offset 
+                  imped * rsub_top_max * exp(-fff(c)*0.2_r8) !TAO changed 0.7 to 1.0 for elevation offset 
               else
                 rsub_top(c)    = imped * rsub_top_max* exp(-fff(c)*(zwt(c)+1.0_r8)) - & !TAO
-                  imped * rsub_top_max * exp(-fff(c)*1.0_r8) !TAO changed 0.7 to 1.0 for elevation offset 
+                  imped * rsub_top_max * exp(-fff(c)*0.2_r8) !TAO changed 0.7 to 1.0 for elevation offset 
               end if
             else
               rsub_top(c)    = 0_r8
