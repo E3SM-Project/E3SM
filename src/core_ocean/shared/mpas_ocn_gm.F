@@ -210,8 +210,8 @@ contains
       !$omp end do
 
       !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdges + 1
-         do k = 1, nVertLevels
+      do iEdge = 1, nEdges
+         do k = 1, nVertLevels + 1
             gradDensityTopOfEdge(k, iEdge) = huge(0D0)
             dDensityDzTopOfEdge(k, iEdge) = huge(0D0)
             gradZMidTopOfEdge(k, iEdge) = huge(0D0)
