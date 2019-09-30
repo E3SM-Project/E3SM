@@ -32,7 +32,10 @@ def putvar(fname, varname, varvals):
     if (usescipy):
         nffile = netcdf.netcdf_file(fname,"a",mmap=False)
         var = nffile.variables[varname]
-        var[:] = varvals
+        if (len(varvals) > 1):
+          var[:] = varvals
+        else:
+          
         nffile.close()
     else:
         nffile = netcdf.NetCDFFile(fname,"a")
