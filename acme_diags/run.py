@@ -141,10 +141,14 @@ class Run():
                     attr_value = getattr(parent, attr)
                     setattr(parameters[i], attr, attr_value)
 
+            print(list(set(none_default_param_parent) - \
+                set(none_default_param_child)))
             for attr in list(set(none_default_param_parent) - \
                 set(none_default_param_child)):
-                attr_value = getattr(parent, attr)
-                setattr(parameters[i], attr, attr_value)
+                #'seasons' is a corner case that don't need to get in to none-core sets, Ex. area mean time series
+                if attr != 'seasons':
+                    attr_value = getattr(parent, attr)
+                    setattr(parameters[i], attr, attr_value)
 
         #for i in range(len(parameters)):
         #    attrs = vars(parameters[i])
