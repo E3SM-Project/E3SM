@@ -3429,31 +3429,8 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             enddo kloop_sedi_c2
 
-            !-- compute dt_sub
-            tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant
-            dt_sub  = min(dt_left, dt_left/float(tmpint1))
-
-            if (k_qxbot.eq.kbot) then
-               k_temp = k_qxbot
-            else
-               k_temp = k_qxbot-kdir
-            endif
-
-             !-- calculate fluxes
-            do k = k_temp,k_qxtop,kdir
-               flux_qx(k) = V_qc(k)*qc(k)*rho(k)
-               flux_nx(k) = V_nc(k)*nc(k)*rho(k)
-            enddo
-
-            !accumulated precip during time step
-            if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
-
-
-            call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qx, qc)
-            call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_nx, nc)
-
-            dt_left = dt_left - dt_sub  !update time remaining for sedimentation
-            if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
+            call flux_and_sed(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, &
+                 V_qc, V_nc, flux_qx, flux_nx, qc, nc)
 
          enddo substep_sedi_c2
       else
@@ -3539,12 +3516,10 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    logical :: log_qxpresent
    integer :: k
    integer :: k_qxtop, k_qxbot, k_temp
-   integer :: tmpint1
 
    real(rtype) :: dt_left
    real(rtype) :: prt_accum
    real(rtype) :: Co_max
-   real(rtype) :: dt_sub
    real(rtype), dimension(kts:kte) :: V_qr
    real(rtype), dimension(kts:kte) :: V_nr
    real(rtype), dimension(kts:kte) :: flux_qx
@@ -3596,31 +3571,18 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
          enddo kloop_sedi_r1
 
-         !-- compute dt_sub
-         tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant
-         dt_sub  = min(dt_left, dt_left/float(tmpint1))
-
          if (k_qxbot.eq.kbot) then
             k_temp = k_qxbot
          else
             k_temp = k_qxbot-kdir
          endif
 
-         !-- calculate fluxes ! AaronDonahue, including rflx output
+         call flux_and_sed(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, V_qr, V_nr, flux_qx, flux_nx, qr, nr)
+
+         !-- AaronDonahue, rflx output
          do k = k_temp,k_qxtop,kdir
-            flux_qx(k) = V_qr(k)*qr(k)*rho(k)
-            flux_nx(k) = V_nr(k)*nr(k)*rho(k)
             rflx(k+1) = rflx(k+1) + flux_qx(k) ! AaronDonahue
          enddo
-
-         !accumulated precip during time step
-         if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
-
-         call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qx, qr)
-         call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_nx, nr)
-
-         dt_left = dt_left - dt_sub  !update time remaining for sedimentation
-         if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
 
       enddo substep_sedi_r
 
@@ -3871,8 +3833,57 @@ subroutine generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, in
 
    end do
 
-
 end subroutine generalized_sedimentation
+
+subroutine flux_and_sed(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, &
+     V_qr, V_nr, flux_qx, flux_nx, qr, nr)
+
+   implicit none
+
+   integer, intent(in) :: kts, kte, kdir, k_qxtop, kbot
+   integer, intent(inout) :: k_qxbot
+   real(rtype), intent(in) :: Co_max
+   real(rtype), intent(inout) :: dt_left, prt_accum
+   real(rtype), dimension(kts:kte), intent(in) :: inv_dzq
+   real(rtype), dimension(kts:kte), intent(in) :: inv_rho
+   real(rtype), dimension(kts:kte), intent(in) :: rho
+
+   real(rtype), dimension(kts:kte) :: V_qr
+   real(rtype), dimension(kts:kte) :: V_nr
+   real(rtype), dimension(kts:kte) :: flux_qx
+   real(rtype), dimension(kts:kte) :: flux_nx
+   real(rtype), intent(inout), dimension(kts:kte) :: qr
+   real(rtype), intent(inout), dimension(kts:kte) :: nr
+
+   integer :: tmpint1, k_temp, k
+   real(rtype) :: dt_sub
+
+   !-- compute dt_sub
+   tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant
+   dt_sub  = min(dt_left, dt_left/float(tmpint1))
+
+   if (k_qxbot.eq.kbot) then
+      k_temp = k_qxbot
+   else
+      k_temp = k_qxbot-kdir
+   endif
+
+   !-- calculate fluxes
+   do k = k_temp,k_qxtop,kdir
+      flux_qx(k) = V_qr(k)*qr(k)*rho(k)
+      flux_nx(k) = V_nr(k)*nr(k)*rho(k)
+   enddo
+
+   !accumulated precip during time step
+   if (k_qxbot.eq.kbot) prt_accum = prt_accum + flux_qx(kbot)*dt_sub
+
+   call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_qx, qr)
+   call generalized_sedimentation(kts, kte, kdir, k_temp, k_qxtop, dt_sub, inv_dzq, inv_rho, flux_nx, nr)
+
+   dt_left = dt_left - dt_sub  !update time remaining for sedimentation
+   if (k_qxbot.ne.kbot) k_qxbot = k_qxbot - kdir
+
+end subroutine flux_and_sed
 
 subroutine homogeneous_freezing(kts,kte,kbot,ktop,kdir,t,exner,xlf,    &
    qc,nc,qr,nr,qitot,nitot,qirim,birim,th)
