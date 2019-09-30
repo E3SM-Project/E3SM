@@ -273,6 +273,7 @@
       <command name="rm">cray-petsc</command>
       <command name="rm">esmf</command>
       <command name="rm">zlib</command>
+      <command name="rm">craype-hugepages2M</command>
 
       <!-- first load basic defaults, then remove/swap/load as necessary -->
       <command name="load">craype</command>
@@ -419,6 +420,7 @@
       <command name="rm">cray-petsc</command>
       <command name="rm">esmf</command>
       <command name="rm">zlib</command>
+      <command name="rm">craype-hugepages2M</command>
 
       <!-- first load basic defaults, then remove/swap/load as necessary -->
       <command name="load">craype</command>
