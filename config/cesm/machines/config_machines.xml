@@ -441,11 +441,11 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">pgi/19.3</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gnu/7.3.0</command>
-        <command name="load">openblas/0.2.20</command>
+        <command name="load">gnu/8.3.0</command>
+        <command name="load">openblas/0.3.6</command>
       </modules>
       <modules mpilib="mpt" compiler="gnu">
-	<command name="load">mpt/2.16</command>
+	<command name="load">mpt/2.19</command>
 	<command name="load">netcdf-mpi/4.7.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
@@ -463,7 +463,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf/4.7.1</command>
       </modules>
       <modules mpilib="openmpi" compiler="gnu">
-        <command name="load">openmpi/3.0.1</command>
+        <command name="load">openmpi/3.1.4</command>
         <command name="load">netcdf/4.7.1</command>
       </modules>
       <modules>
