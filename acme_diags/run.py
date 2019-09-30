@@ -122,17 +122,29 @@ class Run():
             # removing the default values before addition)
             # make a deepcopy first.
             parent = copy.deepcopy(parent)
+            #find attributes that are not defaults
+
+            none_default_param_parent = self._find_attrs_with_default_values(parent)
+            none_default_param_child = self._find_attrs_with_default_values(parameters[i])
+
+
             self._remove_attrs_with_default_values(parent)
+ 
 
             #Simply copy over all attribute from parent to children
             #parameters[i] += parent
-
+             
             for attr in dir(parent):
                 if not attr.startswith('_') and not hasattr(parameters[i], attr):
                     # This attr of parent is a user-defined one and does not
                     # already exist in the parameters[i] parameter object.
                     attr_value = getattr(parent, attr)
                     setattr(parameters[i], attr, attr_value)
+
+            for attr in list(set(none_default_param_parent) - \
+                set(none_default_param_child)):
+                attr_value = getattr(parent, attr)
+                setattr(parameters[i], attr, attr_value)
 
         #for i in range(len(parameters)):
         #    attrs = vars(parameters[i])
@@ -170,6 +182,22 @@ class Run():
                 getattr(new_instance, attr) == getattr(param, attr):
                 delattr(param, attr)
 
+    def _find_attrs_with_default_values(self, param):
+        """
+        In the param, remove any parameters that
+        have their default value.
+        """
+        none_default_attr = []
+        new_instance = param.__class__()
+        for attr in dir(param):
+            # Ignore any of the hidden attributes.
+            if attr.startswith('_'):
+                continue
+            
+            if hasattr(new_instance, attr) and \
+                getattr(new_instance, attr) != getattr(param, attr):
+                none_default_attr.append(attr)
+        return none_default_attr
 
     def _get_instance_of_param_class(self, cls, parameters):
         """
