@@ -200,16 +200,23 @@ contains
       ! Assign a huge value to the scratch variables which may manifest itself when
       ! there is a bug.
       !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdges + 1
+      do iEdge = 1, nEdges
          do k = 1, nVertLevels
             gradDensityEdge(k, iEdge) = huge(0D0)
+            gradZMidEdge(k, iEdge) = huge(0D0)
+            normalGMBolusVelocity(k, iEdge) = 0.0_RKIND
+         end do
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime) private(k)
+      do iEdge = 1, nEdges + 1
+         do k = 1, nVertLevels
             gradDensityTopOfEdge(k, iEdge) = huge(0D0)
             dDensityDzTopOfEdge(k, iEdge) = huge(0D0)
-            gradZMidEdge(k, iEdge) = huge(0D0)
             gradZMidTopOfEdge(k, iEdge) = huge(0D0)
             relativeSlopeTopOfEdge(k, iEdge) = 0.0_RKIND
             relativeSlopeTapering(k, iEdge) = 0.0_RKIND
-            normalGMBolusVelocity(k, iEdge) = 0.0_RKIND
          end do
       end do
       !$omp end do
