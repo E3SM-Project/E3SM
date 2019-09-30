@@ -83,7 +83,7 @@ contains
           pinside = change_coordinates(elem(ie)%spherep(2,2))
           num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
           call slmm_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors, &
-               pinside)
+               pinside, size(elem(ie)%desc%neigh_corners,2))
           if (sl_test) then
              do j = 1,np
                 do i = 1,np

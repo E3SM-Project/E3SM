@@ -6035,12 +6035,12 @@ static homme::CDR::Ptr g_cdr;
 
 extern "C" void
 cedr_init_impl (const homme::Int fcomm, const homme::Int cdr_alg, const bool use_sgi,
-                const homme::Int** gid_data, const homme::Int** rank_data,
+                const homme::Int* gid_data, const homme::Int* rank_data,
                 const homme::Int gbl_ncell, const homme::Int lcl_ncell,
-                const homme::Int nlev) {
+                const homme::Int nlev, const homme::Int, const homme::Int) {
   const auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   g_cdr = std::make_shared<homme::CDR>(
-    cdr_alg, gbl_ncell, lcl_ncell, nlev, use_sgi, *gid_data, *rank_data, p, fcomm);
+    cdr_alg, gbl_ncell, lcl_ncell, nlev, use_sgi, gid_data, rank_data, p, fcomm);
 }
 
 extern "C" void cedr_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
@@ -6051,8 +6051,9 @@ extern "C" void cedr_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
   *recvsz = static_cast<homme::Int>(s2);
 }
 
-extern "C" void cedr_set_bufs (homme::Real** sendbuf, homme::Real** recvbuf) {
-  g_cdr->set_buffers(*sendbuf, *recvbuf);
+extern "C" void cedr_set_bufs (homme::Real* sendbuf, homme::Real* recvbuf,
+                               homme::Int, homme::Int) {
+  g_cdr->set_buffers(sendbuf, recvbuf);
 }
 
 extern "C" void cedr_unittest (const homme::Int fcomm, homme::Int* nerrp) {

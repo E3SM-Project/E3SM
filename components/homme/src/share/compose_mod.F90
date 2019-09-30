@@ -18,20 +18,23 @@ module compose_mod
      end subroutine cedr_unittest
 
      subroutine cedr_init_impl(comm, cdr_alg, use_sgi, gid_data, rank_data, &
-          ncell, nlclcell, nlev) bind(c)
+          ncell, nlclcell, nlev, gid_data_sz, rank_data_sz) bind(c)
        use iso_c_binding, only: c_int, c_bool
-       integer(kind=c_int), value, intent(in) :: comm, cdr_alg, ncell, nlclcell, nlev
+       integer(kind=c_int), value, intent(in) :: comm, cdr_alg, ncell, nlclcell, nlev, &
+            gid_data_sz, rank_data_sz
        logical(kind=c_bool), value, intent(in) :: use_sgi
-       integer(kind=c_int), intent(in) :: gid_data(:), rank_data(:)
+       integer(kind=c_int), intent(in) :: gid_data(gid_data_sz), rank_data(rank_data_sz)
      end subroutine cedr_init_impl
 
      subroutine slmm_init_impl(comm, transport_alg, np, nlev, qsize, qsize_d, &
           nelem, nelemd, cubed_sphere_map, lid2gid, lid2facenum, nbr_id_rank, nirptr, &
-          sl_nearest_point_lev) bind(c)
+          sl_nearest_point_lev, lid2gid_sz, lid2facenum_sz, nbr_id_rank_sz, nirptr_sz) bind(c)
        use iso_c_binding, only: c_int
        integer(kind=c_int), value, intent(in) :: comm, transport_alg, np, nlev, qsize, qsize_d, &
-            nelem, nelemd, cubed_sphere_map, sl_nearest_point_lev
-       integer(kind=c_int), intent(in) :: lid2gid(:), lid2facenum(:), nbr_id_rank(:), nirptr(:)
+            nelem, nelemd, cubed_sphere_map, sl_nearest_point_lev, lid2gid_sz, lid2facenum_sz, &
+            nbr_id_rank_sz, nirptr_sz
+       integer(kind=c_int), intent(in) :: lid2gid(lid2gid_sz), lid2facenum(lid2facenum_sz), &
+            nbr_id_rank(nbr_id_rank_sz), nirptr(nirptr_sz)
      end subroutine slmm_init_impl
 
      subroutine cedr_query_bufsz(sendsz, recvsz) bind(c)
@@ -39,9 +42,10 @@ module compose_mod
        integer(kind=c_int), intent(out) :: sendsz, recvsz
      end subroutine cedr_query_bufsz
 
-     subroutine cedr_set_bufs(sendbuf, recvbuf) bind(c)
-       use iso_c_binding, only: c_double
-       real(kind=c_double), intent(in) :: sendbuf(:), recvbuf(:)
+     subroutine cedr_set_bufs(sendbuf, recvbuf, sendsz, recvsz) bind(c)
+       use iso_c_binding, only: c_double, c_int
+       integer(kind=c_int), value, intent(in) :: sendsz, recvsz
+       real(kind=c_double), intent(in) :: sendbuf(sendsz), recvbuf(recvsz)
      end subroutine cedr_set_bufs
 
      subroutine cedr_set_ie2gci(ie, gci) bind(c)
@@ -117,11 +121,12 @@ module compose_mod
        integer(kind=c_int), value, intent(in) :: nets, nete
      end subroutine cedr_sl_check
 
-     subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors, pinside) bind(c)
+     subroutine slmm_init_local_mesh(ie, neigh_corners, num_neighbors, pinside, &
+          patch_size) bind(c)
        use iso_c_binding, only: c_int
        use coordinate_systems_mod, only : cartesian3D_t
-       integer(kind=c_int), value, intent(in) :: ie, num_neighbors
-       type(cartesian3D_t), intent(in) :: neigh_corners(:,:), pinside
+       integer(kind=c_int), value, intent(in) :: ie, num_neighbors, patch_size
+       type(cartesian3D_t), intent(in) :: neigh_corners(4,patch_size), pinside
      end subroutine slmm_init_local_mesh
 
      subroutine slmm_query_bufsz(sendsz, recvsz) bind(c)
@@ -129,9 +134,10 @@ module compose_mod
        integer(kind=c_int), intent(out) :: sendsz, recvsz
      end subroutine slmm_query_bufsz
 
-     subroutine slmm_set_bufs(sendbuf, recvbuf) bind(c)
-       use iso_c_binding, only: c_double
-       real(kind=c_double), intent(in) :: sendbuf(:), recvbuf(:)
+     subroutine slmm_set_bufs(sendbuf, recvbuf, sendsz, recvsz) bind(c)
+       use iso_c_binding, only: c_double, c_int
+       integer(kind=c_int), intent(in) :: sendsz, recvsz
+       real(kind=c_double), intent(in) :: sendbuf(sendsz), recvbuf(recvsz)
      end subroutine slmm_set_bufs
 
      subroutine slmm_init_finalize() bind(c)
@@ -237,10 +243,12 @@ contains
     end if
     if (use_sgi) then
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
-            use_sgi, owned_ids, rank2sfc, nelem, nelemd, nlev)
+            use_sgi, owned_ids, rank2sfc, nelem, nelemd, nlev, &
+            size(owned_ids), size(rank2sfc))
     else
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
-            use_sgi, sc2gci, sc2rank, nelem, nelemd, nlev)
+            use_sgi, sc2gci, sc2rank, nelem, nelemd, nlev, &
+            size(sc2gci), size(sc2rank))
     end if
     if (allocated(sc2gci)) deallocate(sc2gci, sc2rank)
     if (allocated(owned_ids)) deallocate(owned_ids)
@@ -280,7 +288,8 @@ contains
        nirptr(nelemd+1) = k - 1
        call slmm_init_impl(par%comm, transport_alg, np, nlev, qsize, qsize_d, &
             nelem, nelemd, cubed_sphere_map, lid2gid, lid2facenum, &
-            nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev)
+            nbr_id_rank, nirptr, semi_lagrange_nearest_point_lev, &
+            size(lid2gid), size(lid2facenum), size(nbr_id_rank), size(nirptr))
        deallocate(nbr_id_rank, nirptr)
     end if
     call t_stopf('compose_init')
@@ -305,8 +314,8 @@ contains
 
     ! CEDR and SLMM can use the same buffers because they operate in sequence
     ! and never leave persistent state in these buffers between top-level calls.
-    call slmm_set_bufs(sendbuf, recvbuf)
-    call cedr_set_bufs(sendbuf, recvbuf)
+    call slmm_set_bufs(sendbuf, recvbuf, size(sendbuf), size(recvbuf))
+    call cedr_set_bufs(sendbuf, recvbuf, size(sendbuf), size(recvbuf))
   end subroutine compose_set_bufs
 
   subroutine compose_repro_sum(send, recv, nlocal, nfld, comm) bind(c)

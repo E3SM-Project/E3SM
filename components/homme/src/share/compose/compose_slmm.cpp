@@ -3901,17 +3901,18 @@ void slmm_init_impl (
   homme::Int fcomm, homme::Int transport_alg, homme::Int np,
   homme::Int nlev, homme::Int qsize, homme::Int qsized, homme::Int nelem,
   homme::Int nelemd, homme::Int cubed_sphere_map,
-  const homme::Int** lid2gid, const homme::Int** lid2facenum,
-  const homme::Int** nbr_id_rank, const homme::Int** nirptr,
-  homme::Int sl_nearest_point_lev)
+  const homme::Int* lid2gid, const homme::Int* lid2facenum,
+  const homme::Int* nbr_id_rank, const homme::Int* nirptr,
+  homme::Int sl_nearest_point_lev, homme::Int, homme::Int, homme::Int,
+  homme::Int)
 {
   homme::slmm_init(np, nelem, nelemd, transport_alg, cubed_sphere_map,
-                   sl_nearest_point_lev - 1, *lid2facenum);
+                   sl_nearest_point_lev - 1, lid2facenum);
   slmm_throw_if(homme::g_advecter->is_cisl(),
                 "CISL code was removed.");
   const auto p = homme::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   g_csl_mpi = homme::cslmpi::init(homme::g_advecter, p, np, nlev, qsize,
-                                  qsized, nelemd, *nbr_id_rank, *nirptr,
+                                  qsized, nelemd, nbr_id_rank, nirptr,
                                   2 /* halo */);
 }
 
@@ -3924,9 +3925,10 @@ void slmm_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
   *recvsz = r;
 }
 
-void slmm_set_bufs (homme::Real** sendbuf, homme::Real** recvbuf) {
+void slmm_set_bufs (homme::Real* sendbuf, homme::Real* recvbuf,
+                    homme::Int, homme::Int) {
   slmm_assert(g_csl_mpi);
-  homme::cslmpi::alloc_mpi_buffers(*g_csl_mpi, *sendbuf, *recvbuf);
+  homme::cslmpi::alloc_mpi_buffers(*g_csl_mpi, sendbuf, recvbuf);
 }
 
 void slmm_get_mpi_pattern (homme::Int* sl_mpi) {
@@ -3934,12 +3936,12 @@ void slmm_get_mpi_pattern (homme::Int* sl_mpi) {
 }
 
 void slmm_init_local_mesh (
-  homme::Int ie, homme::Cartesian3D** neigh_corners, homme::Int nnc,
-  homme::Cartesian3D* p_inside)
+  homme::Int ie, homme::Cartesian3D* neigh_corners, homme::Int nnc,
+  homme::Cartesian3D* p_inside, homme::Int)
 {
   homme::g_advecter->init_local_mesh_if_needed(
     ie - 1, homme::FA3<const homme::Real>(
-      reinterpret_cast<const homme::Real*>(*neigh_corners), 3, 4, nnc),
+      reinterpret_cast<const homme::Real*>(neigh_corners), 3, 4, nnc),
     reinterpret_cast<const homme::Real*>(p_inside));
 }
 
