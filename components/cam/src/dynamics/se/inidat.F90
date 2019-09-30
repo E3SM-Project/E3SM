@@ -464,13 +464,20 @@ contains
       else
          call infld(fieldname, ncid_topo, ncol_name,      &
             1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
-      endif
+      end if ! fv_nphys > 0
       if(.not. found) then
          call endrun('Could not find PHIS field on input datafile')
       end if
     end if
 
-    if (fv_nphys == 0) then
+    if (fv_nphys > 0) then
+      ! Map phis data to dyn grid
+      if (se_fv_phys_remap_alg == 0) then
+         call fv_phys_to_dyn_topo(elem,phis_tmp)
+      else
+         call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
+      end if
+    else
       ! Copy phis data to dyn element state
       do ie=1,nelemd
          elem(ie)%state%phis=0.0_r8
@@ -483,14 +490,7 @@ contains
             end do
          end do
       end do
-    else
-      ! Map phis data to dyn grid
-      if (se_fv_phys_remap_alg == 0) then
-         call fv_phys_to_dyn_topo(elem,phis_tmp)
-      else
-         call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
-      end if
-    end if ! fv_nphys == 0
+    end if ! fv_nphys > 0
     
     if (single_column) then
       iop_update_surface = .false.
