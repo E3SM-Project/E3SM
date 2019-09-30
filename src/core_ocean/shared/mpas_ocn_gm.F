@@ -199,7 +199,7 @@ contains
 
       ! Assign a huge value to the scratch variables which may manifest itself when
       ! there is a bug.
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(k)
       do iEdge = 1, nEdges + 1
          do k = 1, nVertLevels
             gradDensityEdge(k, iEdge) = huge(0D0)
@@ -214,7 +214,7 @@ contains
       end do
       !$omp end do
 
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells + 1
          do k = 1, nVertLevels
             dDensityDzTopOfCell(k,  iCell) = huge(0D0)
