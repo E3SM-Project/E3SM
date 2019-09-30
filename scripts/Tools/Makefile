@@ -106,7 +106,6 @@ endif
 
 ifeq ($(COMP_INTERFACE), nuopc)
    CPPDEFS += -DNUOPC_INTERFACE
-   SLIBS += -L$(YAML)/lib
 else
    CPPDEFS += -DMCT_INTERFACE
 endif
