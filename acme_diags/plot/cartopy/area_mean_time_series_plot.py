@@ -34,6 +34,10 @@ def plot(var, regions_to_data, parameter):
              (0.7, 0.06, 0.25, 0.225),
              ]
 
+    # Border padding relative to subplot axes for saving individual panels
+    # (left, bottom, right, top) in page coordinates
+    border = (-0.047, -0.06, 0.006, 0.03)
+
     # Create the figure.
     figsize = [17.0, 10]
     fig = plt.figure(figsize=figsize, dpi=parameter.dpi)
@@ -87,6 +91,30 @@ def plot(var, regions_to_data, parameter):
         fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
             ignore_container=True), output_file_name + '.' + f)
         print('Plot saved in: ' + fnm)
+
+    # Save individual subplots
+    for f in parameter.output_format_subplot:
+        fnm = os.path.join(get_output_dir(
+            parameter.current_set, parameter), parameter.output_file)
+        page = fig.get_size_inches()
+        i = 0
+        for p in panel:
+            # Extent of subplot
+            subpage = np.array(p).reshape(2,2)
+            subpage[1,:] = subpage[0,:] + subpage[1,:]
+            subpage = subpage + np.array(border).reshape(2,2)
+            subpage = list(((subpage)*page).flatten())
+            extent = matplotlib.transforms.Bbox.from_extents(*subpage)
+            # Save subplot
+            fname = fnm + '.%i.' %(i) + f
+            plt.savefig(fname, bbox_inches=extent)
+
+            orig_fnm = os.path.join(get_output_dir(parameter.current_set, parameter,
+                ignore_container=True), parameter.output_file)
+            fname = orig_fnm + '.%i.' %(i) + f
+            print('Sub-plot saved in: ' + fname)
+            
+            i += 1
 
     plt.close()
 
