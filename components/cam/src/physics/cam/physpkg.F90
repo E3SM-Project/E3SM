@@ -2292,6 +2292,9 @@ subroutine tphysbc (ztodt,               &
     logical  :: l_dribling_tend                ! flag to turn on tendency dribling in CLUBB+MG2
     logical  :: l_dribling_uv                  ! flag to turn on tendency dribling in CLUBB+MG2
     logical  :: l_dribling_w                   ! flag to turn on tendency dribling in CLUBB+MG2
+    logical  :: lu                             ! flag in ptend and physics_update
+    logical  :: lv                             ! for u, v wind update
+    logical  :: ls                             ! flag in ptend and physics_update for dry static energy
     real(r8) :: rztodt                         ! inverse of time step  
     real(r8), pointer, dimension(:,:) :: qcwat
     real(r8), pointer, dimension(:,:) :: lcwat
@@ -2759,7 +2762,7 @@ end if
         nltend(:ncol,:pver) = (state%q(:ncol,:pver,ixnumliq) - nlwat(:ncol,:pver))*rztodt
         nitend(:ncol,:pver) = (state%q(:ncol,:pver,ixnumice) - niwat(:ncol,:pver))*rztodt
 
-        !restore the state variable back to the previous step for the first substep  
+        !restore the state variable back to the previous step for tendency dribbling  
         state%t(:ncol,:pver)          = tcwat(:ncol,:pver)
         state%q(:ncol,:pver,1)        = qcwat(:ncol,:pver)
         state%q(:ncol,:pver,ixcldliq) = lcwat(:ncol,:pver) 
@@ -2796,22 +2799,40 @@ end if
        do macmic_it = 1, cld_macmic_num_steps
 
         if((.not.is_first_step()) .and. l_dribling_tend) then
-          state%t(:ncol,:pver)          = state%t(:ncol,:pver)         + ttend(:ncol,:pver)*cld_macmic_ztodt
-          state%q(:ncol,:pver,1)        = state%q(:ncol,:pver,1)       + qtend(:ncol,:pver)*cld_macmic_ztodt 
-          state%q(:ncol,:pver,ixcldliq) = state%q(:ncol,:pver,ixcldliq)+ ltend(:ncol,:pver)*cld_macmic_ztodt
-          state%q(:ncol,:pver,ixcldice) = state%q(:ncol,:pver,ixcldice)+ itend(:ncol,:pver)*cld_macmic_ztodt
-          state%s(:ncol,:pver)          = state%s(:ncol,:pver)         + stend(:ncol,:pver)*cld_macmic_ztodt
-          state%q(:ncol,:pver,ixnumliq) = state%q(:ncol,:pver,ixnumliq)+ nltend(:ncol,:pver)*cld_macmic_ztodt
-          state%q(:ncol,:pver,ixnumice) = state%q(:ncol,:pver,ixnumice)+ nitend(:ncol,:pver)*cld_macmic_ztodt
-          if(l_dribling_uv) then
-           state%u(:ncol,:pver)         = state%u(:ncol,:pver)         + utend(:ncol,:pver)*cld_macmic_ztodt
-           state%v(:ncol,:pver)         = state%v(:ncol,:pver)         + vtend(:ncol,:pver)*cld_macmic_ztodt
-          endif
-          if(l_dribling_w) then
-           state%omega(:ncol,:pver)     = state%omega(:ncol,:pver)     + wtend(:ncol,:pver)*cld_macmic_ztodt
-          endif
-        end if          
 
+         write (tmpname,"(A16,I2.2)")    "drib_tend_clubb_", macmic_it
+
+         call t_startf(trim(adjustl(tmpname)))
+
+         ! the flag lu,lv,ls,lq is to control whether or not do physics update on the variables 
+         if(l_dribling_uv) then
+          lu = .TRUE.
+          lv = .TRUE.
+         else
+          lu = .FALSE.
+          lv = .FALSE.       
+         end if
+         ls    = .TRUE. 
+         lq(:) = .TRUE.
+         call physics_ptend_init(ptend, state%psetcols, trim(adjustl(tmpname)), ls=ls, lu=lu, lv=lv, lq=lq)
+              ptend%s(:ncol,:pver)          = stend(:ncol,:pver) !T will be changed via s
+              ptend%q(:ncol,:pver,1)        = qtend(:ncol,:pver)
+              ptend%q(:ncol,:pver,ixcldliq) = ltend(:ncol,:pver)
+              ptend%q(:ncol,:pver,ixcldice) = itend(:ncol,:pver)
+              ptend%q(:ncol,:pver,ixnumliq) = nltend(:ncol,:pver)
+              ptend%q(:ncol,:pver,ixnumice) = nitend(:ncol,:pver)
+              if(l_dribling_uv) then
+               ptend%u(:ncol,:pver)         = utend(:ncol,:pver)
+               ptend%v(:ncol,:pver)         = vtend(:ncol,:pver) 
+              endif
+         call physics_update(state, ptend, cld_macmic_ztodt)
+         !note: physics_update and ptend do not have omega, 
+         if(l_dribling_w) then
+          state%omega(:ncol,:pver)     = state%omega(:ncol,:pver)     + wtend(:ncol,:pver)*cld_macmic_ztodt
+         endif
+         call t_stopf(trim(adjustl(tmpname)))
+        end if
+         
         if (macmic_extra_diag) then
            !SZhang add output here to diagnose npcc 
            call cnst_get_ind('Q',ixqvapor)
