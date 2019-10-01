@@ -124,8 +124,8 @@ class Run():
             parent = copy.deepcopy(parent)
             #find attributes that are not defaults
 
-            none_default_param_parent = self._find_attrs_with_default_values(parent)
-            none_default_param_child = self._find_attrs_with_default_values(parameters[i])
+            none_default_param_parent = self._find_attrs_with_none_default_values(parent)
+            none_default_param_child = self._find_attrs_with_none_default_values(parameters[i])
 
 
             self._remove_attrs_with_default_values(parent)
@@ -186,7 +186,7 @@ class Run():
                 getattr(new_instance, attr) == getattr(param, attr):
                 delattr(param, attr)
 
-    def _find_attrs_with_default_values(self, param):
+    def _find_attrs_with_none_default_values(self, param):
         """
         In the param, remove any parameters that
         have their default value.
