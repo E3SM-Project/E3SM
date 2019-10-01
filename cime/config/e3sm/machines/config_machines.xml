@@ -784,6 +784,7 @@
       <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-serial/gcc-6.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
+      <env name="HDF5_PATH">$SHELL{dirname $(dirname $(which h5dump))}</env>
       <!-- We currently don't have a soft env for pnetcdf 1.8.1 -->
       <env name="PNETCDF_PATH">/soft/apps/packages/climate/pnetcdf/1.8.1/gcc-6.2.0</env>
     </environment_variables>
