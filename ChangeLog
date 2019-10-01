@@ -1,6 +1,32 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-01-2019
+Tag: cime5.8.11
+Answer Changes: None
+Tests: scripts_regression_tests, Hand tested SMS_D_Vnuopc.f09_g17.X.cheyenne_intel 
+Dependencies:
+
+Brief Summary:
+    - Correct the way esmf is built to avoid library mismatch.
+    - Update gnu compiler on cheyenne, bit for bit.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+693383167 Merge pull request #3252 from jedwards4b/nuopc_esmf_build_correction
+fcc629127 Merge pull request #3253 from ESMCI/fischer/gnu_fix
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/Makefile
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 9-26-2019
 Tag: cime5.8.10
 Answer Changes: None
