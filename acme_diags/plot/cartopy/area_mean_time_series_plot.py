@@ -36,8 +36,7 @@ def plot(var, regions_to_data, parameter):
 
     # Create the figure.
     figsize = [17.0, 10]
-    dpi = 150
-    fig = plt.figure(figsize=figsize, dpi=dpi)
+    fig = plt.figure(figsize=figsize, dpi=parameter.dpi)
     start_time = int(parameter.start_yr)
     end_time = int(parameter.end_yr)
     num_year = end_time - start_time+1
