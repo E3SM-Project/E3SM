@@ -2766,6 +2766,10 @@ end subroutine rain_self_collection
 subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_c,nu,    &
    qcaut,ncautc,ncautr)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cloud_water_autoconversion_f
+#endif
+
    implicit none
 
    real(rtype), intent(in) :: rho
@@ -2781,6 +2785,14 @@ subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_
    real(rtype), intent(out) :: ncautr
 
    real(rtype) :: dum, dum1
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  cloud_water_autoconversion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_c,nu,    &
+         qcaut,ncautc,ncautr)
+      return
+   endif
+#endif
 
    qc_not_small: if (qc_incld.ge.1.e-8_rtype) then
 
