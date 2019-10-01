@@ -28,6 +28,7 @@ void Functions<S,D>
 
     const auto ncautc_is_zero = ncautc == 0;
     if(ncautc_is_zero.any()){qcaut.set(ncautc_is_zero, 0.0);}
+
 }
 
 } // namespace p3
