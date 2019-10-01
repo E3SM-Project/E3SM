@@ -15,14 +15,10 @@ def plot(var, regions_to_data, parameter):
     plotTitle = {'fontsize': 8.5}
     plotSideTitle = {'fontsize': 6.5}
 
-    # Position and sizes of subplot axes in page coordinates (0 to 1)
-    # The dimensions [left, bottom, width, height] of the new axes. All quantities are in fractions of figure width and height.
     line_color = ['r', 'b', 'g', 'm', 'c', 'y']
 
-    panel = [(0.1500, 0.5500, 0.7500, 0.3000),
-             (0.1500, 0.1300, 0.7500, 0.3000),
-             ]
-
+    # Position and sizes of subplot axes in page coordinates (0 to 1)
+    # The dimensions [left, bottom, width, height] of the new axes. All quantities are in fractions of figure width and height.
     panel = [(0.1, 0.70, 0.25, 0.225),
              (0.4, 0.70, 0.25, 0.225),
              (0.7, 0.70, 0.25, 0.225),
@@ -68,15 +64,12 @@ def plot(var, regions_to_data, parameter):
         ax1.set_xticks(x[::stepsize])
         x_ticks_labels = np.arange(start_time, end_time + 1, stepsize)
         ax1.set_xticklabels(x_ticks_labels, rotation='45', fontsize=8)
-
-        #if i_region % 3 == 0 :
-        #    ax1.set_ylabel(var + ' (' + test.units + ')')
         ax1.set_ylabel(var + ' (' + test.units + ')')
         ax1.set_xlabel('Year')
         ax1.legend(loc='best', prop={'size': 7})
-        #fig.text(panel[i_region][0]+0.12, panel[i_region][1]+panel[i_region][3]-0.015, parameter.regions[i_region],ha='center', color='black')
-    # Figure title.
         ax1.set_title(parameter.regions[i_region],fontsize = 10)
+
+    # Figure title.
     fig.suptitle('Annual mean ' + var + ' time series over regions ' + parameter.test_name_yrs, x=0.3, y=0.98, fontsize=15)
 
     # Save the figure.
@@ -113,7 +106,7 @@ def plot(var, regions_to_data, parameter):
                 ignore_container=True), parameter.output_file)
             fname = orig_fnm + '.%i.' %(i) + f
             print('Sub-plot saved in: ' + fname)
-            
+
             i += 1
 
     plt.close()
