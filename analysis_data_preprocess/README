@@ -30,4 +30,8 @@ B. Generate climo and time-series for each datasets:
 7. OAFLUX
   -Run create_OAFLUX_climo.py for surface heat flux from WHOI OAFLUX
 
+8. ISLSCPII_GRDC Runoff
+   -Run process_ISLSCPII_COMP_RUNOFF.py to convert ascii to netcdf time series
+   -Run create_ISLSCPII_COMP_RUNOFF_climo.sh to generate climatology
+
 As of Oct 24th 2018, climos of other variables (CRU_IPCC, cloud simulators related[COSP], SSMI) used in E3SM diags are used from data distributed with NCAR's AMWG diagnostics package.We did use analysis_scripts_more_fix.py to add yrs_averaged attritute for data that with this information available. 
