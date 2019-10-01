@@ -104,7 +104,7 @@ contains
 
   end subroutine p3_init_f90
   !====================================================================!
-  subroutine p3_main_f90 (dtime,q,FQ,qdp,T,zi,pmid,pdel,ast,naai,npccn) bind(c)
+  subroutine p3_main_f90 (dtime,qdp,zi,pmid,pdel,ast,naai,npccn,q,FQ,T) bind(c)
     use micro_p3,       only: p3_main
 
 !    real, intent(in) :: q(pcols,pver,9) ! Tracer mass concentrations from SCREAM      kg/kg
