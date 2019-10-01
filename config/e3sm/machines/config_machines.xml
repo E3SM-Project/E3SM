@@ -773,7 +773,7 @@
       <modules compiler="gnu" mpilib="!mpi-serial">
         <command name="add">+mpich-3.2-gcc-6.2.0</command>
         <command name="add">+hdf5-1.8.16-gcc-6.2.0-mpich-3.2-parallel</command>
-        <command name="add">+netcdf-4.3.3.1c-4.2cxx-4.4.2f-parallel-gcc6.2.0-mpich3.2</command>
+        <command name="add">+netcdf-4.4.1c-4.2cxx-4.4.4f-parallel-gcc6.2.0-mpich-3.2</command>
       </modules>
     </module_system>
     <environment_variables>
