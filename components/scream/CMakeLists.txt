@@ -1,7 +1,12 @@
 cmake_minimum_required(VERSION 3.3)
 cmake_policy(SET CMP0057 NEW)
 
+# Add the ./cmake folder to cmake path
+SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 IF (KOKKOS_ENABLE_CUDA)
+  INCLUDE (GetMpiDistributionName)
+  GET_MPI_DISTRIBUTION_NAME(MPI_DISTRO_NAME)
   # Before starting the project, wrap mpicxx in the scream_mpicxx script, which
   # takes care of setting OMPI_CXX to point to nvcc_wrapper
   CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/bin/scream_mpicxx.in ${CMAKE_CURRENT_BINARY_DIR}/bin/scream_mpicxx @ONLY)
@@ -23,9 +28,6 @@ MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 SET (SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 SET (SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 SET (SCREAM_DATA_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/data)
-
-# Add the ./cmake folder to cmake path
-SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Shortcut function, to print a variable
 function (print_var var)
