@@ -363,61 +363,6 @@ for mct, etc.
   <SFC> nagfor </SFC>
 </compiler>
 
-<compiler COMPILER="gnu" MACH="mymac" >
-  <CFLAGS>
-    <!-- for Mac OSX high sierra, clang-based gcc may have issue with '-mcmodel=medium' for libcsm_share.a, as following
-         ld: in ../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a(dSFMT.o), 
-             in section __TEXT,__text reloc 3: length != 2 and X86_64_RELOC_GOT not supported file 
-             '../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a' for architecture x86_64
-         collect2: error: ld returned 1 exit status 
-    -->
-    <base> -mcmodel=small </base>
-    <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
-  </CFLAGS>
-  <FFLAGS>
-    <base> -mcmodel=small -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
-    <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
-    <append MODEL="clm"> -I$(PETSC_PATH)/include </append>
-    <append MODEL="clm"> -I$(CLM_PFLOTRAN_SOURCE_DIR) </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append> -framework Accelerate </append>
-    <append MODEL="driver">-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
-    <append MODEL="driver">-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
-    <!-- append>-L$(PNETCDF_PATH)/lib -lpnetcdf </append> -->
-    <append>-L$(CC_ROOT)/lib -lgomp </append> 
-    <append MODEL="driver"> -L$(PETSC_PATH)/lib -lpetsc -lmetis -lparmetis </append>
-    <append MODEL="driver"> -L$(CLM_PFLOTRAN_SOURCE_DIR) -lpflotran </append>
-  </LDFLAGS>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -framework Accelerate </append>
-  </SLIBS>
-  <SFC>$(FC_ROOT)/bin/gfortran</SFC>
-  <SCC>$(CC_ROOT)/bin/gcc</SCC>
-  <SCXX>$(CC_ROOT)/bin/g++</SCXX>
-  <MPICC>$(MPI_ROOT)/bin/mpicc</MPICC>
-  <MPICXX>$(MPI_ROOT)/bin/mpicxx</MPICXX>
-  <MPIFC>$(MPI_ROOT)/bin/mpifort</MPIFC>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="mymac" >
-  <LDFLAGS>
-    <append>-L$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
-    <append>-L$(HDF5_PATH)/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
-    <!-- append>-L$(PNETCDF_PATH)/lib -lpnetcdf </append> -->
-  </LDFLAGS>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_PATH}/bin/nf-config --flibs} -llapack -lblas</append>
-  </SLIBS>
-  <SFC>$(FC_ROOT)/bin/pgfortran</SFC>
-  <SCC>$(CC_ROOT)/bin/pgcc</SCC>
-  <SCXX>$(CC_ROOT)/bin/pgc++</SCXX>
-  <MPICC>$(MPI_ROOT)/bin/mpicc</MPICC>
-  <MPICXX>$(MPI_ROOT)/bin/mpicxx</MPICXX>
-  <MPIFC>$(MPI_ROOT)/bin/mpifort</MPIFC>
-</compiler>
-
-
 <compiler COMPILER="pathscale">
   <CFLAGS>
     <append compile_threaded="true"> -mp </append>
@@ -483,7 +428,7 @@ for mct, etc.
     <base> -r8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <base>  -i4 -gopt  -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee  </base>
+    <base>  -i4 -gopt  -time -Mstack_arrays  -Mextend -byteswapio -Mflushz -Kieee -Mallocatable=03 </base>
     <append compile_threaded="false"> </append>
     <append compile_threaded="true"> -mp </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
@@ -724,11 +669,9 @@ for mct, etc.
   <CPPDEFS>
     <append> -DSYSDARWIN </append>
   </CPPDEFS>
-  <!-- The following may cause duplicate symbol issue, especially with Mac OSX high sierra
   <LDFLAGS>
     <append MODEL="driver"> -all_load </append>
   </LDFLAGS>
-  -->
 </compiler>
 
 <compiler OS="Darwin" COMPILER="intel">
@@ -917,9 +860,65 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+<compiler COMPILER="gnu" MACH="ubuntu">
+      <CPPDEFS> 
+	 <append> -DFORTRANUNDERSCORE -DNO_R16</append>
+      </CPPDEFS>
+      <CFLAGS>
+        <append compile_threaded="true"> -fopenmp </append>
+      </CFLAGS>
+      <FFLAGS>
+	<append compile_threaded="true"> -fopenmp </append>
+      </FFLAGS>
+      <LDFLAGS>
+	<append compile_threaded="true"> -fopenmp </append>
+      </LDFLAGS>
+      <CMAKE_OPTS>
+	      <append MODEL="cism"> -D CISM_GNU=ON </append>
+      </CMAKE_OPTS>
+      <FIXEDFLAGS> 
+	 <base> -ffixed-form </base>
+      </FIXEDFLAGS>
+      <FREEFLAGS> 
+	 <base>-ffree-form </base>
+      </FREEFLAGS>
+      <FFLAGS>
+        <base>-O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fno-range-check</base>      
+	<append DEBUG="TRUE"> -g -Wall </append>
+      </FFLAGS>
+      <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
+                                 so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
+      <FFLAGS_NOOPT> 
+	 <base>-O0 </base>
+      </FFLAGS_NOOPT>
+      <FC_AUTO_R8> 
+	 <base> -fdefault-real-8 </base>
+      </FC_AUTO_R8>
+      <SFC>gfortran</SFC>
+      <SCC>gcc</SCC>
+      <SCXX>g++</SCXX>
+      <MPIFC>mpif90</MPIFC>
+      <MPICC>mpicc</MPICC>
+      <MPICXX>mpic++</MPICXX>
+      <CXX_LINKER>FORTRAN</CXX_LINKER>
+      <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+      <NETCDF_PATH>/usr/</NETCDF_PATH>
+      <LDFLAGS> 
+        <append> -L/usr/lib/x86_64-linux-gnu -lblas -llapack -lnetcdf -lnetcdff</append>
+      </LDFLAGS>
+</compiler>
+
 <compiler MACH="cades" COMPILER="gnu">
+  <CFLAGS>
+    <append compile_threaded="true"> -fopenmp </append>
+  </CFLAGS>
+  <CMAKE_OPTS>
+    <append MODEL="cism"> -D CISM_GNU=ON </append>
+  </CMAKE_OPTS>
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16</append>
+    <!-- <append MODEL="clm"> -DCLM_PFLOTRAN </append>
+         <append MODEL="clm"> -DCOLUMN_MODE </append> -->
   </CPPDEFS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <FC_AUTO_R8>
@@ -929,9 +928,9 @@ for mct, etc.
     <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
                                  so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
     <base> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fno-range-check</base>
-    <append> -I$(NETCDF_PATH)/include -I$(HDF5_PATH)/include </append>
-    <!--append MODEL="clm"> -I$(PETSC_PATH)/include </append>
-    <append MODEL="clm"> -I$(CLM_PFLOTRAN_SOURCE_DIR) </append-->
+    <append compile_threaded="true"> -fopenmp </append>
+    <append DEBUG="TRUE"> -g -Wall </append>
+    <!-- <append MODEL="clm"> -I/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</append> -->
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
@@ -947,11 +946,9 @@ for mct, etc.
   <PNETCDF_PATH>/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/pnetcdf/1.9.0/centos7.2_gnu5.3.0</PNETCDF_PATH>
   <LAPACK_LIBDIR>/software/tools/compilers/intel_2017/mkl/lib/intel64</LAPACK_LIBDIR>
   <LDFLAGS>
+    <append compile_threaded="true"> -fopenmp </append>
     <append MODEL="driver"> -L$NETCDF_PATH/lib -Wl,-rpath=$NETCDF_PATH/lib -lnetcdff -lnetcdf </append>
-    <append MODEL="driver"> -L$HDF5_PATH/lib -Wl,-rpath=$HDF5_PATH/lib -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran </append>
-    <!--append MODEL="driver"> -L$(CLM_PFLOTRAN_SOURCE_DIR) -Wl,-rpath=$(CLM_PFLOTRAN_SOURCE_DIR) -lpflotran </append-->
-    <!-- A NOTE here: it's strange that PETSC library must be placed after PFLOTRAN libray on CADES, otherwise libpetsc.a cound not be linked>
-    <append MODEL="driver"> -L$(PETSC_PATH)/lib -Wl,-rpath=$(PETSC_PATH)/lib -lpetsc -lmetis -lparmetis </append-->
+    <!-- <append MODEL="driver"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran $ENV{PETSC_LIB} </append> -->
   </LDFLAGS>
   <MPICC>mpicc</MPICC>
   <MPICXX>mpic++</MPICXX>
@@ -1398,6 +1395,39 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
+<compiler MACH="lawrencium-lr6" COMPILER="intel">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
+  </CPPDEFS>
+  <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+  <SLIBS>
+    <append> -lnetcdff -lnetcdf -mkl</append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="lawrencium-lr6" COMPILER="gnu">
+  <LAPACK_LIBDIR>$ENV{LAPACK_DIR}/lib</LAPACK_LIBDIR>
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CXX_LIBS>
+    <base>-lstdc++ -lmpi_cxx</base>
+  </CXX_LIBS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2  </append>
+    <append > -I$ENV{NETCDF_DIR}/include  </append>
+  </FFLAGS>
+  <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_DIR}</PNETCDF_PATH>
+  <SLIBS>
+    <append> -L/global/software/sl-7.x86_64/modules/gcc/6.3.0/netcdf/4.4.1.1-gcc-p/lib -lnetcdff -lnetcdf -lnetcdf -lblas -llapack </append>
+  </SLIBS>
+</compiler>
+
 <compiler MACH="linux-generic" COMPILER="gnu">
   <NETCDF_PATH> $ENV{NETCDF_PATH}</NETCDF_PATH>
   <PNETCDF_PATH> $ENV{PNETCDF_PATH}</PNETCDF_PATH>
@@ -1598,6 +1628,22 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append compile_threaded="true"> -L$ENV{IBM_MAIN_DIR}/xlf/bg/14.1/bglib64 -lxlfmath -lxlf90_r -lxlopt -lxl -L$ENV{IBM_MAIN_DIR}/xlsmp/bg/3.1/bglib64 -lxlsmp </append>
   </SLIBS>
   <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+</compiler>
+
+<compiler MACH="oic5" COMPILER="gnu">
+  <MPICC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpicc</MPICC>
+  <MPIFC>/projects/cesm/devtools/mpich-3.0.4-gcc4.8.1/bin/mpif90</MPIFC>
+  <NETCDF_PATH>/projects/cesm/devtools/netcdf-4.1.3-gcc4.8.1-mpich3.0.4/</NETCDF_PATH>
+  <SCC>/projects/cesm/devtools/gcc-4.8.1/bin/gcc</SCC>
+  <SCXX>/projects/cesm/devtools/gcc-4.8.1/bin/g++</SCXX>
+  <SFC>/projects/cesm/devtools/gcc-4.8.1/bin/gfortran</SFC>
+  <SLIBS>
+    <append>-L/user/lib64 -llapack -lblas -lnetcdff </append>
+  </SLIBS>
+</compiler>
+
+<compiler MACH="oic5" COMPILER="pgi">
+  <NETCDF_PATH>/home/zdr/opt/netcdf-4.1.3_pgf95</NETCDF_PATH>
 </compiler>
 
 <compiler MACH="olympus" COMPILER="intel">
