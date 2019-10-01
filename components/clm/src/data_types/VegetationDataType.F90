@@ -13,7 +13,7 @@ module VegetationDataType
   use abortutils      , only : endrun
   use clm_time_manager, only : is_restart, get_nstep
   use clm_varpar      , only : nlevsno, nlevgrnd, nlevlak, nlevurb, nlevcan, crop_prog
-  use clm_varpar      , only : nlevdecomp, nlevdecomp_full
+  use clm_varpar      , only : nlevdecomp, nlevdecomp_full, maxpatch_pft
   use clm_varcon      , only : spval, ispval, sb
   use clm_varcon      , only : c13ratio, c14ratio
   use landunit_varcon , only : istsoil, istcrop
@@ -28,6 +28,7 @@ module VegetationDataType
   use restUtilMod
   use CNStateType     , only: cnstate_type
   use SpeciesMod              , only : species_from_string
+  use ColumnType      , only : col_pp
   use VegetationType            , only : veg_pp
   use VegetationPropertiesType  , only : veg_vp
   use LandunitType              , only : lun_pp
@@ -839,6 +840,8 @@ module VegetationDataType
     real(r8), pointer :: fire_nloss_litter                   (:)   => null()  ! total nloss from veg to litter pool due to fire
     real(r8), pointer :: hrv_nloss_litter                    (:)   => null()  ! total nloss from veg to litter pool due to harvest mortality
     real(r8), pointer :: sen_nloss_litter                    (:)   => null()  ! total nloss from veg to litter pool due to senescence
+    real(r8), pointer :: smin_nh4_to_plant_vr               (:,:) => null()  ! vertically resolved nh4 uptake
+    real(r8), pointer :: smin_no3_to_plant_vr               (:,:) => null()  ! vertically resolved no3 uptake
   contains
     procedure, public :: Init      => veg_nf_init
     procedure, public :: Restart   => veg_nf_restart
@@ -1006,6 +1009,7 @@ module VegetationDataType
     real(r8), pointer :: fire_ploss_litter                   (:)     ! total ploss from veg to litter pool due to fire
     real(r8), pointer :: hrv_ploss_litter                    (:)     ! total ploss from veg to litter pool due to harvest mortality
     real(r8), pointer :: sen_ploss_litter                    (:)     ! total ploss from veg to litter pool due to senescence
+    real(r8), pointer :: sminp_to_plant_trans                (:)     ! mineral p flux to plant through transpiration, gP/m2/s
   contains
     procedure, public :: Init      => veg_pf_init
     procedure, public :: Restart   => veg_pf_restart
@@ -5369,6 +5373,7 @@ module VegetationDataType
     allocate(this%qflx_over_supply_patch   (begp:endp))              ; this%qflx_over_supply_patch   (:)   = nan
     allocate(this%n_irrig_steps_left       (begp:endp))              ; this%n_irrig_steps_left       (:)   = 0
 
+
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_wf
     !-----------------------------------------------------------------------
@@ -8397,7 +8402,8 @@ module VegetationDataType
   end subroutine veg_cf_summary
 
   !------------------------------------------------------------
-  subroutine veg_cf_summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, col_cf_input)
+  subroutine veg_cf_summary_rr(this, bounds, num_soilp, filter_soilp, num_soilc, &
+    filter_soilc, col_cf_input, cnstate_vars)
     !
     ! !DESCRIPTION:
     ! summarize root respiration
@@ -8412,9 +8418,10 @@ module VegetationDataType
     integer, intent(in) :: num_soilc
     integer, intent(in) :: filter_soilc(:)
     type(column_carbon_flux), intent(inout) :: col_cf_input
+    type(cnstate_type), optional, intent(in) :: cnstate_vars
     !
     ! !LOCAL VARIABLES
-    integer :: fp, p
+    integer :: fp, p, c, j, pi, fc
     !------------------------------------------------------------
 
     do fp = 1,num_soilp
@@ -8435,6 +8442,20 @@ module VegetationDataType
       call p2c(bounds, num_soilc, filter_soilc, &
            this%rr(bounds%begp:bounds%endp), &
            col_cf_input%rr(bounds%begc:bounds%endc))
+
+    if(present(cnstate_vars))then
+      do j = 1, nlevdecomp_full
+        do pi = 1,maxpatch_pft
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            if (pi <=  col_pp%npfts(c)) then
+              p = col_pp%pfti(c) + pi - 1
+              col_cf_input%rr_vr(c,j)=col_cf_input%rr_vr(c,j) + this%rr(p)*cnstate_vars%froot_prof_patch(p,j) * veg_pp%wtcol(p)
+            endif
+          enddo
+        enddo
+      enddo
+    endif
 
   end subroutine veg_cf_summary_rr
 
@@ -8919,6 +8940,8 @@ module VegetationDataType
     allocate(this%fire_nloss_litter                   (begp:endp)) ; this%fire_nloss_litter                   (:) = nan
     allocate(this%hrv_nloss_litter                    (begp:endp)) ; this%hrv_nloss_litter                    (:) = nan
     allocate(this%sen_nloss_litter                    (begp:endp)) ; this%sen_nloss_litter                    (:) = nan
+    allocate(this%smin_no3_to_plant_vr                (begp:endp, 1:nlevdecomp)) ; this%smin_no3_to_plant_vr  (:,:) = nan
+    allocate(this%smin_nh4_to_plant_vr                (begp:endp, 1:nlevdecomp)) ; this%smin_nh4_to_plant_vr  (:,:) = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_nf
@@ -9314,6 +9337,11 @@ module VegetationDataType
     call hist_addfld1d (fname='PFT_FIRE_NLOSS', units='gN/m^2/s', &
          avgflag='A', long_name='total pft-level fire N loss', &
          ptr_patch=this%fire_nloss)
+
+    this%nfix_to_plantn(begp:endp) = spval
+    call hist_addfld1d (fname='NFIX_TO_PLANTN', units='gN/m^2/s', &
+         avgflag='A', long_name='N fixation to plant', &
+         ptr_patch=this%nfix_to_plantn,default='inactive')
 
     if (crop_prog) then
        this%fert(begp:endp) = spval
@@ -9824,17 +9852,11 @@ module VegetationDataType
            this%hrv_deadcrootn_to_litter(p)        + &
            this%hrv_deadcrootn_storage_to_litter(p)+ &
            this%hrv_deadcrootn_xfer_to_litter(p)
-      if (crop_prog) then
-         this%sen_nloss_litter(p) = &
-             this%livestemn_to_litter(p)            + &
-             this%leafn_to_litter(p)                + &
-             this%frootn_to_litter(p)
-      else
-         this%sen_nloss_litter(p) = &
-             this%leafn_to_litter(p)                + &
-             this%frootn_to_litter(p)
-      end if
 
+       this%sen_nloss_litter(p) = &
+           this%livestemn_to_litter(p)            + &
+           this%leafn_to_litter(p)                + &
+           this%frootn_to_litter(p)
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
@@ -10022,6 +10044,7 @@ module VegetationDataType
     allocate(this%avail_retransp                      (begp:endp)) ; this%avail_retransp                      (:) = nan
     allocate(this%plant_palloc                        (begp:endp)) ; this%plant_palloc                        (:) = nan
     allocate(this%sminp_to_plant                      (begp:endp)) ; this%sminp_to_plant                      (:) = nan
+    allocate(this%sminp_to_plant_trans                (begp:endp)) ; this%sminp_to_plant_trans                (:) = nan
     allocate(this%plant_pdemand_vr                    (begp:endp,1:nlevdecomp_full )) ; this%plant_pdemand_vr (:,:) = nan
     allocate(this%prev_leafp_to_litter                (begp:endp)) ; this%prev_leafp_to_litter                (:) = nan
     allocate(this%prev_frootp_to_litter               (begp:endp)) ; this%prev_frootp_to_litter               (:) = nan
@@ -10930,16 +10953,10 @@ module VegetationDataType
            this%hrv_deadcrootp_storage_to_litter(p)+ &
            this%hrv_deadcrootp_xfer_to_litter(p)
 
-      if (crop_prog) then
-         this%sen_ploss_litter(p) = &
-             this%livestemp_to_litter(p)            + &
-             this%leafp_to_litter(p)                + &
-             this%frootp_to_litter(p)
-      else
-         this%sen_ploss_litter(p) = &
-             this%leafp_to_litter(p)                + &
-             this%frootp_to_litter(p)
-      end if
+       this%sen_ploss_litter(p) = &
+           this%livestemp_to_litter(p)            + &
+           this%leafp_to_litter(p)                + &
+           this%frootp_to_litter(p)
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
@@ -10964,4 +10981,3 @@ module VegetationDataType
     !------------------------------------------------------------------------
 
 end module vegetationDataType
-  

@@ -40,7 +40,11 @@ module AllocationMod
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
   use clm_varctl          , only : NFIX_PTASE_plant
-
+  use ColumnDataType          , only : column_carbon_flux
+  use VegetationDataType      , only : vegetation_nitrogen_state, vegetation_nitrogen_flux, vegetation_carbon_state
+  use clm_varpar      , only: nlevdecomp
+  use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf, noveg
+  use clm_varcon       , only : zisoi
   !
   implicit none
   save
@@ -58,7 +62,7 @@ module AllocationMod
   public :: Allocation1_PlantNPDemand     !Plant N/P Demand;       called in EcosystemDynNoLeaching1
   public :: Allocation2_ResolveNPLimit    !Resolve N/P Limitation; called in SoilLittDecompAlloc
   public :: Allocation3_PlantCNPAlloc     !Plant C/N/P Allocation; called in SoilLittDecompAlloc2
-
+  public :: calc_nfix_stress              !compute stress for nitrogen fixation
   !-----------------------------------------------------------------------------------------------------
   public :: dynamic_plant_alloc        ! dynamic plant carbon allocation based on different nutrient stress
 
@@ -1242,6 +1246,8 @@ contains
          sminn_to_plant_patch         => veg_nf%sminn_to_plant                , &
          smin_nh4_to_plant_patch      => veg_nf%smin_nh4_to_plant             , &
          smin_no3_to_plant_patch      => veg_nf%smin_no3_to_plant             , &
+         smin_nh4_to_plant_vr_patch   => veg_nf%smin_nh4_to_plant_vr             , &
+         smin_no3_to_plant_vr_patch   => veg_nf%smin_no3_to_plant_vr             , &
          actual_immob_no3             => col_nf%actual_immob_no3                , &
          actual_immob_nh4             => col_nf%actual_immob_nh4                , &
          froot_prof                   => cnstate_vars%froot_prof_patch                         , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
@@ -2732,8 +2738,11 @@ contains
                      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         smin_nh4_to_plant_patch(p) = smin_nh4_to_plant_patch(p) + plant_nh4demand_vr_patch(p,j) * fpg_nh4_vr(c,j)&
                              *dzsoi_decomp(j)
+                        smin_nh4_to_plant_vr_patch(p, j) = plant_nh4demand_vr_patch(p,j) * fpg_nh4_vr(c,j)
+
                         smin_no3_to_plant_patch(p) = smin_no3_to_plant_patch(p) + plant_no3demand_vr_patch(p,j) * fpg_no3_vr(c,j)&
                              *dzsoi_decomp(j)
+                        smin_no3_to_plant_vr_patch(p,j) = plant_no3demand_vr_patch(p,j) * fpg_no3_vr(c,j)
                         sminp_to_plant_patch(p) = sminp_to_plant_patch(p) + plant_pdemand_vr_patch(p,j) * fpg_p_vr(c,j) &
                              *dzsoi_decomp(j)
                      end if
@@ -4501,4 +4510,51 @@ contains
   end associate
   end subroutine update_competition_kinetic_pars
 
+!--------------------------------------------------------
+  subroutine calc_nfix_stress(num_soilc, filter_soilc, cnstate_vars, col_cf, veg_cs, veg_ns, veg_nf)
+  !
+  !DESCRIPTION:
+  ! compute the plant nitrogen stress for fixation
+  implicit none
+  integer, intent(in) :: num_soilc
+  integer, intent(in) :: filter_soilc(:)
+  type(cnstate_type)       , intent(in)    :: cnstate_vars
+  type(column_carbon_flux)   , intent(in)     :: col_cf
+  type(vegetation_carbon_state),intent(inout) :: veg_cs
+  type(vegetation_nitrogen_state),intent(inout) :: veg_ns
+  type(vegetation_nitrogen_flux) ,intent(inout) :: veg_nf    !
+
+  integer :: fc, c, p, j
+
+  associate(     &
+   cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean       , &
+   cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean       , &
+   froot_prof                   => cnstate_vars%froot_prof_patch        , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
+   frootc                       => veg_cs%frootc                         , & ! Input:  [real(r8) (:)   ]
+    t_scalar                     => col_cf%t_scalar                     , &
+    smin_nh4_to_plant_vr_patch      => veg_nf%smin_nh4_to_plant_vr      , &
+    smin_no3_to_plant_vr_patch      => veg_nf%smin_no3_to_plant_vr      , &
+    pnup_pfrootc                 => veg_ns%pnup_pfrootc                   &
+
+  )
+
+  do fc=1,num_soilc
+    c = filter_soilc(fc)
+    do p = col_pp%pfti(c), col_pp%pftf(c)
+      pnup_pfrootc(p) =  0.0_r8
+      if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+        do j = 1, nlevdecomp
+           pnup_pfrootc(p) =  pnup_pfrootc(p) + smin_nh4_to_plant_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
+              ,1e-20_r8) / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+              * dzsoi_decomp(j)
+           pnup_pfrootc(p) =  pnup_pfrootc(p) + smin_no3_to_plant_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
+              ,1e-20_r8)  / max(cn_scalar_runmean(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+              * dzsoi_decomp(j)
+        end do
+      end if
+      pnup_pfrootc(p) =  pnup_pfrootc(p) / zisoi(nlevdecomp-1)
+    end do
+  end do
+  end associate
+  end subroutine calc_nfix_stress
 end module AllocationMod

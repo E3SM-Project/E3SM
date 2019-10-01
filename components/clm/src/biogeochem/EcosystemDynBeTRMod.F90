@@ -231,6 +231,7 @@ module EcosystemDynBeTRMod
     use BeTRSimulationALM                 , only : betr_simulation_alm_type
     use SoilWaterRetentionCurveMod        , only : soil_water_retention_curve_type
     use subgridAveMod                     , only: p2c
+    use AllocationMod                     , only : calc_nfix_stress
     implicit none
 
 
@@ -298,21 +299,23 @@ module EcosystemDynBeTRMod
       call ep_betr%CalcSmpL(bounds, 1, nlevsoi, num_soilc, filter_soilc, &
             temperature_vars%t_soisno_col(bounds%begc:bounds%endc,1:nlevsoi), &
             soilstate_vars, waterstate_vars, soil_water_retention_curve)
-!      print*,'carbonflux_vars ecodyn'
+
+
       call ep_betr%SetBiophysForcing(bounds, col, pft,  &
          waterstate_vars=waterstate_vars, temperature_vars=temperature_vars,&
          atm2lnd_vars=atm2lnd_vars, soilstate_vars=soilstate_vars, carbonflux_vars=col_cf)
- !     print*,'sefff fin'
- !     call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp,'bfbetrbgc')
 
+      !pass in parameters into betr
       call ep_betr%EnterOutLoopBGC(bounds, col, pft, &
        num_soilc, filter_soilc, &
        col_cs, col_cf, &
        c13_col_cs, c14_col_cs,  &
        col_ns,  col_ps, PlantMicKinetics_vars)
 
+      !do bgc inside betr
       call ep_betr%OutLoopSoilBGC(bounds, col, pft)
 
+      !gathering outputs from betr
       call ep_betr%ExitOutLoopBGC(bounds, col, pft, &
         col_cs, col_cf, &
         c13_col_cs, c13_col_cf, &
@@ -328,7 +331,9 @@ module EcosystemDynBeTRMod
          veg_pf%sminp_to_plant(bounds%begp:bounds%endp), &
          col_pf%sminp_to_plant(bounds%begc:bounds%endc))
 
+      call calc_nfix_stress(num_soilc, filter_soilc, cnstate_vars, col_cf, veg_cs, veg_ns, veg_nf)
 
+      !resolve nutrient allocation
       call Allocation3_PlantCNPAlloc (bounds            , &
         num_soilc, filter_soilc, num_soilp, filter_soilp    , &
         canopystate_vars                                    , &
