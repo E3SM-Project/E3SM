@@ -33,7 +33,7 @@ TEST_CASE("units_framework", "") {
     constexpr RationalConstant four_thirds = 4*third;
     constexpr RationalConstant three_halves = 3/(2*one);
     constexpr RationalConstant two = 2*one;
-    constexpr ScalingFactor root2 (2,{1,2});
+    constexpr ScalingFactor root2 (2,RationalConstant{1,2});
 
     // I need a runtime number for runtime checks
     const RationalConstant three(3);

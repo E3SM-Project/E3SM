@@ -4,6 +4,8 @@
 #include <iostream>
 #include "share/util/rational_constant.hpp"
 
+#include <array>
+
 namespace scream
 {
 
@@ -22,8 +24,8 @@ struct ScalingFactor {
   }
   constexpr ScalingFactor (const RationalConstant& b,
                            const RationalConstant& e)
-   : base(check_and_adjust(b,e,true))
-   , exp (check_and_adjust(b,e,false))
+   : base(std::get<0>(check_and_adjust(b,e)))
+   , exp (std::get<1>(check_and_adjust(b,e)))
   {
     // Nothing to do here
   }
@@ -31,17 +33,23 @@ struct ScalingFactor {
   constexpr ScalingFactor (const ScalingFactor&) = default;
   ScalingFactor& operator= (const ScalingFactor&) = default;
 
+  static constexpr ScalingFactor one () { return ScalingFactor(1); }
+  static constexpr ScalingFactor zero () { return ScalingFactor(0); }
+
 private:
 
-  static constexpr RationalConstant
-  check_and_adjust (const RationalConstant& b,
-                    const RationalConstant& e,
-                    const bool return_base) {
+  using base_and_exp = std::array<RationalConstant,2>;
+  static constexpr base_and_exp
+  check_and_adjust (const RationalConstant b,
+                    const RationalConstant e)
+  {
     // Check that we are not doing 0^0 or taking even roots of negative numbers.
-    // If all good, adjust base and exp for x^0 case, and return what was requested.
+    // If all good, adjust base and exp for x^0 case (b=1,e=1), and return what was requested.
     return CONSTEXPR_ASSERT( !(b==RationalConstant::zero() && e==RationalConstant::zero()) ),
            CONSTEXPR_ASSERT( !(b.num()<0 && e.den()%2==0) ),
-           e==RationalConstant::zero() ? RationalConstant::one(): (return_base ? b : e);
+           (e==RationalConstant::zero()
+              ? base_and_exp{{RationalConstant::one(), RationalConstant::one()}}
+              : base_and_exp{{b,e}} );
   }
 };
 
@@ -71,8 +79,6 @@ constexpr ScalingFactor operator* (const ScalingFactor& lhs, const ScalingFactor
   //    (a/b)^(c/d) * (x/y)^(w/z)
   // is equivalent to
   //    ((a/b)^(cz) * (x/w)^(wd)) ^ (1/dz)
-// auto l = pow(lhs.base,lhs.exp.num()*rhs.exp.den());
-// std::cout << "l = " << l.set_format(Rat) << "\n";
   return lhs.base==rhs.base 
             ? ScalingFactor(lhs.base,lhs.exp+rhs.exp)
             : (lhs.exp==rhs.exp
