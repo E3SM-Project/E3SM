@@ -2406,13 +2406,13 @@ contains
     if (trim(config_stress_divergence_scheme) == "weak") then
 
        call mpas_timer_start("Velocity solver internal stress")
-       call seaice_internal_stress_weak(domain)
+       call seaice_internal_stress_weak(domain, .false.)
        call mpas_timer_stop("Velocity solver internal stress")
 
     else if (trim(config_stress_divergence_scheme) == "variational") then
 
        call mpas_timer_start("Velocity solver internal stress")
-       call seaice_internal_stress_variational(domain)
+       call seaice_internal_stress_variational(domain, .false.)
        call mpas_timer_stop("Velocity solver internal stress")
 
     endif

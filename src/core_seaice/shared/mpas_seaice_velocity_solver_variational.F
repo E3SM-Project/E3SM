@@ -120,10 +120,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_internal_stress_variational(domain)!{{{
+  subroutine seaice_internal_stress_variational(&
+       domain, &
+       linearConsitutiveRelation)!{{{
 
     type(domain_type), intent(inout) :: &
          domain
+
+    logical, intent(in) :: &
+         linearConsitutiveRelation
 
     type(block_type), pointer :: &
          block
@@ -232,7 +237,8 @@ contains
             replacementPressure, &
             solveStress, &
             elasticTimeStep, &
-            revisedEVP)
+            revisedEVP, &
+            linearConsitutiveRelation)
        call mpas_timer_stop("Velocity solver stress tensor")
 
        call mpas_timer_start("Velocity solver stress divergence")
@@ -393,11 +399,13 @@ contains
        replacementPressure, &
        solveStress, &
        dtElastic, &
-       revisedEVP)!{{{
+       revisedEVP, &
+       linearConsitutiveRelation)!{{{
 
     use seaice_velocity_solver_constitutive_relation, only: &
          seaice_evp_constitutive_relation, &
-         seaice_evp_constitutive_relation_revised
+         seaice_evp_constitutive_relation_revised, &
+         seaice_linear_constitutive_relation
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -425,8 +433,8 @@ contains
          dtElastic !< Input:
 
     logical, intent(in) :: &
-         revisedEVP !< Input:
-
+         revisedEVP, & !< Input:
+         linearConsitutiveRelation !< Input:
     integer :: &
          iCell, &
          iVertexOnCell
@@ -446,29 +454,23 @@ contains
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
-    if (.not. revisedEVP) then
+    if (linearConsitutiveRelation) then
 
        !$omp parallel do default(shared) private(iCell, iVertexOnCell)
        do iCell = 1, nCells
-
-          replacementPressure(:,iCell) = 0.0_RKIND
 
           if (solveStress(iCell) == 1) then
 
              !$omp simd
              do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-                call seaice_evp_constitutive_relation(&
+                call seaice_linear_constitutive_relation(&
                      stress11(iVertexOnCell,iCell), &
                      stress22(iVertexOnCell,iCell), &
                      stress12(iVertexOnCell,iCell), &
                      strain11(iVertexOnCell,iCell), &
                      strain22(iVertexOnCell,iCell), &
-                     strain12(iVertexOnCell,iCell), &
-                     icePressure(iCell), &
-                     replacementPressure(iVertexOnCell,iCell), &
-                     areaCell(iCell), &
-                     dtElastic)
+                     strain12(iVertexOnCell,iCell))
 
              enddo ! iVertexOnCell
 
@@ -478,30 +480,64 @@ contains
 
     else
 
-       !$omp parallel do default(shared) private(iCell, iVertexOnCell)
-       do iCell = 1, nCells
+       if (.not. revisedEVP) then
 
-          if (solveStress(iCell) == 1) then
+          !$omp parallel do default(shared) private(iCell, iVertexOnCell)
+          do iCell = 1, nCells
 
-             !$omp simd
-             do iVertexOnCell = 1, nEdgesOnCell(iCell)
+             replacementPressure(:,iCell) = 0.0_RKIND
 
-                call seaice_evp_constitutive_relation_revised(&
-                     stress11(iVertexOnCell,iCell), &
-                     stress22(iVertexOnCell,iCell), &
-                     stress12(iVertexOnCell,iCell), &
-                     strain11(iVertexOnCell,iCell), &
-                     strain22(iVertexOnCell,iCell), &
-                     strain12(iVertexOnCell,iCell), &
-                     icePressure(iCell), &
-                     replacementPressure(iVertexOnCell,iCell), &
-                     areaCell(iCell))
+             if (solveStress(iCell) == 1) then
 
-             enddo ! iVertexOnCell
+                !$omp simd
+                do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
-          endif ! solveStress
+                   call seaice_evp_constitutive_relation(&
+                        stress11(iVertexOnCell,iCell), &
+                        stress22(iVertexOnCell,iCell), &
+                        stress12(iVertexOnCell,iCell), &
+                        strain11(iVertexOnCell,iCell), &
+                        strain22(iVertexOnCell,iCell), &
+                        strain12(iVertexOnCell,iCell), &
+                        icePressure(iCell), &
+                        replacementPressure(iVertexOnCell,iCell), &
+                        areaCell(iCell), &
+                        dtElastic)
 
-       enddo ! iCell
+                enddo ! iVertexOnCell
+
+             endif ! solveStress
+
+          enddo ! iCell
+
+       else
+
+          !$omp parallel do default(shared) private(iCell, iVertexOnCell)
+          do iCell = 1, nCells
+
+             if (solveStress(iCell) == 1) then
+
+                !$omp simd
+                do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+                   call seaice_evp_constitutive_relation_revised(&
+                        stress11(iVertexOnCell,iCell), &
+                        stress22(iVertexOnCell,iCell), &
+                        stress12(iVertexOnCell,iCell), &
+                        strain11(iVertexOnCell,iCell), &
+                        strain22(iVertexOnCell,iCell), &
+                        strain12(iVertexOnCell,iCell), &
+                        icePressure(iCell), &
+                        replacementPressure(iVertexOnCell,iCell), &
+                        areaCell(iCell))
+
+                enddo ! iVertexOnCell
+
+             endif ! solveStress
+
+          enddo ! iCell
+
+       endif
 
     endif
 

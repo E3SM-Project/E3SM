@@ -110,10 +110,15 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_internal_stress_weak(domain)!{{{
+  subroutine seaice_internal_stress_weak(&
+       domain, &
+       linearConsitutiveRelation)!{{{
 
     type(domain_type), intent(inout) :: &
          domain
+
+    logical, intent(in) :: &
+         linearConsitutiveRelation
 
     type(block_type), pointer :: &
          block
@@ -206,7 +211,8 @@ contains
             replacementPressure, &
             solveStress, &
             elasticTimeStep, &
-            revisedEVP)
+            revisedEVP, &
+            linearConsitutiveRelation)
 
        call seaice_stress_divergence_weak(&
             meshPool, &
@@ -403,11 +409,13 @@ contains
        replacementPressure, &
        solveStress, &
        dtElastic, &
-       revisedEVP)!{{{
+       revisedEVP, &
+       linearConsitutiveRelation)!{{{
 
     use seaice_velocity_solver_constitutive_relation, only: &
          seaice_evp_constitutive_relation, &
-         seaice_evp_constitutive_relation_revised
+         seaice_evp_constitutive_relation_revised, &
+         seaice_linear_constitutive_relation
 
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
@@ -431,7 +439,8 @@ contains
          dtElastic !< Input:
 
     logical, intent(in) :: &
-         revisedEVP !< Input:
+         revisedEVP, & !< Input:
+         linearConsitutiveRelation !< Input:
 
     integer :: &
          iCell
@@ -447,23 +456,19 @@ contains
 
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
 
-    if (.not. revisedEVP) then
+    if (linearConsitutiveRelation) then
 
        do iCell = 1, nCells
 
           if (solveStress(iCell) == 1) then
 
-             call seaice_evp_constitutive_relation(&
+             call seaice_linear_constitutive_relation(&
                   stress11(iCell), &
                   stress22(iCell), &
                   stress12(iCell), &
                   strain11(iCell), &
                   strain22(iCell), &
-                  strain12(iCell), &
-                  icePressure(iCell), &
-                  replacementPressure(iCell), &
-                  areaCell(iCell), &
-                  dtElastic)
+                  strain12(iCell))
 
           else
 
@@ -473,34 +478,66 @@ contains
 
           endif ! solveStress
 
-       end do ! iCell
+       enddo ! iCell
 
     else
 
-       do iCell = 1, nCells
+       if (.not. revisedEVP) then
 
-          if (solveStress(iCell) == 1) then
+          do iCell = 1, nCells
 
-             call seaice_evp_constitutive_relation_revised(&
-                  stress11(iCell), &
-                  stress22(iCell), &
-                  stress12(iCell), &
-                  strain11(iCell), &
-                  strain22(iCell), &
-                  strain12(iCell), &
-                  icePressure(iCell), &
-                  replacementPressure(iCell), &
-                  areaCell(iCell))
+             if (solveStress(iCell) == 1) then
 
-          else
+                call seaice_evp_constitutive_relation(&
+                     stress11(iCell), &
+                     stress22(iCell), &
+                     stress12(iCell), &
+                     strain11(iCell), &
+                     strain22(iCell), &
+                     strain12(iCell), &
+                     icePressure(iCell), &
+                     replacementPressure(iCell), &
+                     areaCell(iCell), &
+                     dtElastic)
 
-             stress11(iCell) = 0.0_RKIND
-             stress22(iCell) = 0.0_RKIND
-             stress12(iCell) = 0.0_RKIND
+             else
 
-          endif ! solveStress
+                stress11(iCell) = 0.0_RKIND
+                stress22(iCell) = 0.0_RKIND
+                stress12(iCell) = 0.0_RKIND
 
-       end do ! iCell
+             endif ! solveStress
+
+          end do ! iCell
+
+       else
+
+          do iCell = 1, nCells
+
+             if (solveStress(iCell) == 1) then
+
+                call seaice_evp_constitutive_relation_revised(&
+                     stress11(iCell), &
+                     stress22(iCell), &
+                     stress12(iCell), &
+                     strain11(iCell), &
+                     strain22(iCell), &
+                     strain12(iCell), &
+                     icePressure(iCell), &
+                     replacementPressure(iCell), &
+                     areaCell(iCell))
+
+             else
+
+                stress11(iCell) = 0.0_RKIND
+                stress22(iCell) = 0.0_RKIND
+                stress12(iCell) = 0.0_RKIND
+
+             endif ! solveStress
+
+          end do ! iCell
+
+       endif
 
     endif
 
