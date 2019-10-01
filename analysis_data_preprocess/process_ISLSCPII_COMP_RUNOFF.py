@@ -50,7 +50,10 @@ for year in range(1986,1996):
         print(days_per_month)
         imon = '{0:02d}'.format(month+1)
         fname = datapath + file_name +'_' + str(year)+imon+'.asc'
-        data[count,:,:] = numpy.loadtxt(fname, skiprows=6) / days_per_month * 24. * 3600.  #converted from mm/month to kg/m2/s
+        data_mon = numpy.loadtxt(fname, skiprows=6)
+        print(data_mon.shape)
+        data_mon = data_mon[::-1,:]
+        data[count,:,:] = data_mon / days_per_month * 24. * 3600.  #converted from mm/month to kg/m2/s
         count = count+1
 
 print(count)
