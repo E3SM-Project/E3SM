@@ -19,8 +19,8 @@ import importlib
 import traceback
 import subprocess
 import cdp.cdp_run
-import cdms2.tvariable
 import acme_diags
+import cdms2.tvariable 
 from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.parser import SET_TO_PARSER
 from acme_diags.parser.core_parser import CoreParser
@@ -288,6 +288,12 @@ def main(parameters=[]):
     parser = CoreParser()
     if not parameters:
         parameters = get_parameters(parser)
+
+    # each case id (aka, variable) has a set of parameters specified.
+    # print out the parameters for each variable for trouble shootting
+    #for p in parameters:
+    #    attrs = vars(p)
+    #    print (', '.join("%s: %s" % item for item in attrs.items()))
 
     if not os.path.exists(parameters[0].results_dir):
         os.makedirs(parameters[0].results_dir, 0o755)

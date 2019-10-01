@@ -71,7 +71,8 @@ class CoreParameter(cdp.cdp_parameter.CDPParameter):
         self.viewer_descr = {}
 
     def check_values(self):
-        must_have_params = ['reference_data_path', 'test_data_path', 'results_dir']
+        #must_have_params = ['reference_data_path', 'test_data_path', 'results_dir']
+        must_have_params = ['test_data_path', 'results_dir']
 
         for param in must_have_params:
             if not hasattr(self, param):

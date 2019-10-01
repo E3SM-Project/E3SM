@@ -57,6 +57,8 @@ class Run():
 
             # For each of the set_names, get the corresponding parameter.
             param = self._get_instance_of_param_class(SET_TO_PARAMETERS[set_name], parameters)
+            
+
             # Since each parameter will have lots of default values, we want to remove them.
             # Otherwise when calling get_parameters(), these default values
             # will take precedence over values defined in other_params.
@@ -73,6 +75,7 @@ class Run():
             # command-line way of using CDP.
             # We just call it manually with the parameter object param.
             params = self.parser.select(param, params)
+
 
             final_params.extend(params)
 
@@ -92,10 +95,13 @@ class Run():
         But most of the important parameters are in CoreParameter,
         so copy them over to the ZonalMean2dParameter.
         """
+
         def get_parent(param):
             """
             From parameters, get any object that's a parent
             type to param.
+
+            Ex: CoreParameter object is a parent of AreaMeanTimeSeriesParameter object
             """
             try:
                 parent_class = param.__class__.__mro__[1]
@@ -116,8 +122,37 @@ class Run():
             # removing the default values before addition)
             # make a deepcopy first.
             parent = copy.deepcopy(parent)
+            #find attributes that are not defaults
+
+            none_default_param_parent = self._find_attrs_with_none_default_values(parent)
+            none_default_param_child = self._find_attrs_with_none_default_values(parameters[i])
+
+
             self._remove_attrs_with_default_values(parent)
-            parameters[i] += parent
+ 
+
+            #Simply copy over all attribute from parent to children
+            #parameters[i] += parent
+             
+            for attr in dir(parent):
+                if not attr.startswith('_') and not hasattr(parameters[i], attr):
+                    # This attr of parent is a user-defined one and does not
+                    # already exist in the parameters[i] parameter object.
+                    attr_value = getattr(parent, attr)
+                    setattr(parameters[i], attr, attr_value)
+
+            print(list(set(none_default_param_parent) - \
+                set(none_default_param_child)))
+            for attr in list(set(none_default_param_parent) - \
+                set(none_default_param_child)):
+                #'seasons' is a corner case that don't need to get in to none-core sets, Ex. area mean time series
+                if attr != 'seasons':
+                    attr_value = getattr(parent, attr)
+                    setattr(parameters[i], attr, attr_value)
+
+        #for i in range(len(parameters)):
+        #    attrs = vars(parameters[i])
+        #    print('all parameters', ','.join("%s: %s" % item for item in attrs.items()))
 
 
     def _add_attrs_with_default_values(self, param):
@@ -151,6 +186,22 @@ class Run():
                 getattr(new_instance, attr) == getattr(param, attr):
                 delattr(param, attr)
 
+    def _find_attrs_with_none_default_values(self, param):
+        """
+        In the param, remove any parameters that
+        have their default value.
+        """
+        none_default_attr = []
+        new_instance = param.__class__()
+        for attr in dir(param):
+            # Ignore any of the hidden attributes.
+            if attr.startswith('_'):
+                continue
+            
+            if hasattr(new_instance, attr) and \
+                getattr(new_instance, attr) != getattr(param, attr):
+                none_default_attr.append(attr)
+        return none_default_attr
 
     def _get_instance_of_param_class(self, cls, parameters):
         """

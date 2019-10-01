@@ -11,6 +11,8 @@ import cdms2
 from acme_diags import container
 from acme_diags.derivations.default_regions import regions_specs
 
+
+
 def adjust_time_from_time_bounds(var):
     """
     Redefine time to be in the middle of the time interval, and rewrite 
@@ -129,7 +131,7 @@ def pressure_to_plevs(var, plev):
     return var_p
 
 
-def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
+def select_region(region, var, land_frac, ocean_frac, parameter):
     """Select desired regions from transient variables."""
     domain = None
     # if region != 'global':
@@ -140,15 +142,13 @@ def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
             land_ocean_frac = ocean_frac
         region_value = regions_specs[region]['value']
 
-        var1_domain = mask_by(
-            var1, land_ocean_frac, low_limit=region_value)
-        var2_domain = var2.regrid(
-            var1.getGrid(), regridTool=parameter.regrid_tool, regridMethod=parameter.regrid_method)
-        var2_domain = mask_by(
-            var2_domain, land_ocean_frac, low_limit=region_value)
+        land_ocean_frac = land_ocean_frac.regrid(
+            var.getGrid(), regridTool=parameter.regrid_tool, regridMethod=parameter.regrid_method)
+
+        var_domain = mask_by(
+            var, land_ocean_frac, low_limit=region_value)
     else:
-        var1_domain = var1
-        var2_domain = var2
+        var_domain = var
 
     try:
         # if region.find('global') == -1:
@@ -157,12 +157,10 @@ def select_region(region, var1, var2, land_frac, ocean_frac, parameter):
     except:
         print("No domain selector.")
 
-    var1_domain_selected = var1_domain(domain)
-    var2_domain_selected = var2_domain(domain)
-    var1_domain_selected.units = var1.units
-    var2_domain_selected.units = var1.units
+    var_domain_selected = var_domain(domain)
+    var_domain_selected.units = var.units
 
-    return var1_domain_selected, var2_domain_selected
+    return var_domain_selected
 
 
 def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
