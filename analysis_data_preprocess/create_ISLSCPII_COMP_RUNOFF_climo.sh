@@ -31,15 +31,6 @@ ncclimo -a sdd --lnk_flg -c QRUNOFF_198601.nc -s 1986 -e 1995
 mv *climo.nc $climo_output_path
 
 
-#ncclimo -a sdd --lnk_flg -c HadISST_PI_187001.nc -s 1999 -e 2016
-#ncclimo -a sdd --lnk_flg -c HadISST_PI_187001.nc -s 1870 -e 1900
-#rm 'HadiSST'${yyyy}'.nc'
-#for yr in {1870..2016}; do
-#    yyyy=`printf "%04d" $yr`
-#    cdo setrtomiss,-1e20,-1000 'HadiSSTi'${yyyy}'.nc' 'HadiSSTii'${yyyy}'.nc'
-#    rm 'HadiSSTi'${yyyy}'.nc'
-#    mv 'HadiSSTii'${yyyy}'.nc' 'HadiSST'${yyyy}'.nc'
-#done
 
 
 
