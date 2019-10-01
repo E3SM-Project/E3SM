@@ -1097,6 +1097,7 @@ for mct, etc.
   <MPICC  MPILIB="impi">mpipgcc</MPICC>
   <MPICXX MPILIB="impi">mpipgcxx</MPICXX>
   <MPIFC  MPILIB="impi">mpipgf90</MPIFC>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
 <compiler MACH="cori-haswell" COMPILER="intel">

@@ -1892,7 +1892,7 @@
       <executable>srun</executable>
       <arguments>
         <arg name="mpi">--mpi=none</arg>
-        <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
+        <arg name="num_tasks">--ntasks={{ total_tasks }} --nodes={{ num_nodes }}</arg>
         <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
         <arg name="cpu_bind">-l --cpu_bind=cores -c $ENV{OMP_NUM_THREADS} -m plane=$SHELL{echo 40/$OMP_NUM_THREADS|bc}</arg>
       </arguments>
@@ -1901,7 +1901,7 @@
       <executable>srun</executable>
       <arguments>
         <arg name="mpi">--mpi=pmi2</arg>
-        <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
+        <arg name="num_tasks">--ntasks={{ total_tasks }} --nodes={{ num_nodes }}</arg>
         <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
         <arg name="cpu_bind">-l --cpu_bind=cores -c $ENV{OMP_NUM_THREADS} -m plane=$SHELL{echo 40/$OMP_NUM_THREADS|bc}</arg>
       </arguments>
@@ -1960,8 +1960,7 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
+      <env name="OMP_PLACES">cores</env>
     </environment_variables>
   </machine>
 
