@@ -3,6 +3,7 @@ module CLMFatesParamInterfaceMod
   ! interface module because of circular dependancies with pftvarcon.
 
   use FatesGlobals, only : fates_log
+  use shr_kind_mod, only : r8 => shr_kind_r8
   
   implicit none
 
@@ -172,7 +173,6 @@ contains
  !-----------------------------------------------------------------------
  subroutine ParametersFromNetCDF(filename, is_host_file, fates_params)
 
-   use shr_kind_mod, only: r8 => shr_kind_r8
    use abortutils, only : endrun
    use fileutils  , only : getfil
    use ncdio_pio  , only : file_desc_t, ncd_pio_closefile, ncd_pio_openfile
