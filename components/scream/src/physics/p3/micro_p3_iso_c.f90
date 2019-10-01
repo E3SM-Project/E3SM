@@ -248,4 +248,13 @@ contains
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
 
+  subroutine cloud_water_autoconversion_c(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_c,nu,qcaut,ncautc,ncautr) bind(C)
+
+      use micro_p3, only: cloud_water_autoconversion
+      real(kind=c_real), value, intent(in) :: rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu
+      real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
+
+      call cloud_water_autoconversion(rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qcaut, ncautc, ncautr)
+  end subroutine cloud_water_autoconversion_c
+
 end module micro_p3_iso_c

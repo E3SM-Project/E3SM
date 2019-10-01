@@ -67,6 +67,14 @@ interface
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
   end subroutine get_rain_dsd2_f
 
+  subroutine cloud_water_autoconversion_f(rho, rho_inv, qc_incld, nc_incld, qr_incld, mu_c, nu, qcaut, ncautc, ncautr) bind(C)
+    use iso_c_binding
+
+    !arguments: 
+    real(kind=c_real), value, intent(in) :: rho, rho_inv, qc_incld, nc_incld, qr_incld, mu_c, nu
+    real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
+  end subroutine cloud_water_autoconversion_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use

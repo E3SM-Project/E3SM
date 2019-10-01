@@ -32,6 +32,9 @@ void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
+void cloud_water_autoconversion_c(Real rho, Real inv_rho, Real qc_incld, Real nc_incld, Real qr_incld, Real mu_c,
+  Real nu, Real* qcaut, Real* ncautc, Real* ncautr);
+
 }
 
 namespace scream {
@@ -78,6 +81,12 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
   p3_init(true);
   access_lookup_table_coll_c(d.lid.dumjj, d.lid.dumii, d.lidb.dumj, d.lid.dumi, d.index,
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
+}
+
+void cloud_water_autoconversion(CloudWaterAutoconversionData & d){
+  p3_init(true);
+  cloud_water_autoconversion_c(d.rho, d.inv_rho, d.qc_incld, d.nc_incld, d.qr_incld, d.mu_c, d.nu,
+    &d.qcaut, &d.ncautc, &d.ncautr);
 }
 
 void get_cloud_dsd2(GetCloudDsd2Data& d)
@@ -287,6 +296,28 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   *lamr_   = t_h(2);
   *cdistr_ = t_h(3);
   *logn0r_ = t_h(4);
+}
+
+void cloud_water_autoconversion_f(Real rho_, Real inv_rho_, Real qc_incld_, Real nc_incld_, Real qr_incld_, Real mu_c_,
+  Real nu_, Real* qcaut_, Real* ncautc_, Real* ncautr_){
+
+    using P3F = Functions<Real, HostDevice>;
+
+    typename P3F::Spack rho(rho_);
+    typename P3F::Spack inv_rho(inv_rho_);
+    typename P3F::Spack qc_incld(qc_incld_);
+    typename P3F::Spack nc_incld(nc_incld_);
+    typename P3F::Spack qr_incld(qr_incld_);
+    typename P3F::Spack mu_c(mu_c_);
+    typename P3F::Spack nu(nu_);
+    typename P3F::Spack qcaut(*qcaut_);
+    typename P3F::Spack ncautc(*ncautc_);
+    typename P3F::Spack ncautr(*ncautr_);
+
+    P3F::cloud_water_autoconversion(rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qcaut, ncautc, ncautr); 
+    *qcaut_ = qcaut[0];
+    *ncautc_ = ncautc[0];
+    *ncautr_ = ncautr[0];
 }
 
 // Cuda implementations of std math routines are not necessarily BFB

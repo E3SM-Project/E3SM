@@ -149,6 +149,30 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
 
 }
 
+struct CloudWaterAutoconversionData
+{
+  // inputs
+  Real rho;
+  Real inv_rho;
+  Real qc_incld;
+  Real nc_incld;
+  Real qr_incld;
+  Real mu_c;
+  Real nu;
+
+  // output
+  Real qcaut;
+  Real ncautc;
+  Real ncautr;
+};
+
+void cloud_water_conservation(CloudWaterAutoconversionData& d);
+extern "C"{
+
+  void cloud_water_autoconversion_f(Real rho, Real inv_rho, Real qc_incld, Real qr_incld, Real mu_c, Real nu, 
+    Real* qcaut, Real* ncautc, Real* ncautr);
+}
+
 struct GetCloudDsd2Data
 {
   // Inputs
