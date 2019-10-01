@@ -849,6 +849,8 @@ contains
      isoilorder                   => cnstate_vars%isoilorder                          , &
      cn_scalar                    => cnstate_vars%cn_scalar                           , &
      cp_scalar                    => cnstate_vars%cp_scalar                           , &
+     cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean                   , &
+     cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean                   , &
      froot_prof                   => cnstate_vars%froot_prof_patch                    , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
      frootc                       => carbonstate_vars%frootc_patch                    , & ! Input:  [real(r8) (:)   ]
      leafc                        => carbonstate_vars%leafc_patch                     , & ! Input:  [real(r8) (:)   ]
@@ -945,16 +947,16 @@ contains
             plant_no3_vmax_vr_patch(p,j)  = 0._r8
           else
             plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p)) * t_scalar(c,j) * &
-                            cn_scalar(p) / e_plant_scalar
+                            cn_scalar_runmean(p) / e_plant_scalar
 
             plant_no3_vmax_vr_patch(p,j) = vmax_plant_no3(ivt(p)) * t_scalar(c,j) * &
-                             cn_scalar(p)  / e_plant_scalar
+                             cn_scalar_runmean(p)  / e_plant_scalar
           endif
           if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only()) then
             plant_p_vmax_vr_patch(p,j) = 0._r8
           else
             plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) * t_scalar(c,j)  * &
-                             cp_scalar(p)  / e_plant_scalar
+                             cp_scalar_runmean(p)  / e_plant_scalar
           endif
           plant_nh4_km_vr_patch(p,j) = km_plant_nh4_p
           plant_no3_km_vr_patch(p,j) = km_plant_no3_p
@@ -1194,6 +1196,10 @@ contains
          grain_flag                   => cnstate_vars%grain_flag_patch                         , &
          cn_scalar                    => cnstate_vars%cn_scalar                                , &
          cp_scalar                    => cnstate_vars%cp_scalar                                , &
+         water_scalar                 => cnstate_vars%water_scalar                             , &
+         cn_scalar_runmean            => cnstate_vars%cn_scalar_runmean                        , &
+         cp_scalar_runmean            => cnstate_vars%cp_scalar_runmean                        , &
+         water_scalar_runmean         => cnstate_vars%water_scalar_runmean                     , &
          annmax_retransp              => cnstate_vars%annmax_retransp_patch                    , &
          cpool_to_xsmrpool            => carbonflux_vars%cpool_to_xsmrpool_patch               , &
          w_scalar                     => carbonflux_vars%w_scalar_col                          , &
@@ -1239,8 +1245,9 @@ contains
          ! 'ECA' or 'MIC' mode
          ! dynamic allocation based on light limitation (more woody growth) vs nutrient limitations (more fine root growth)
          ! set allocation coefficients
-         N_lim_factor(p) = cn_scalar(p) ! N stress factor
-         P_lim_factor(p) = cp_scalar(p) ! P stress factor
+         N_lim_factor(p) = cn_scalar_runmean(p) ! N stress factor
+         P_lim_factor(p) = cp_scalar_runmean(p) ! P stress factor
+         W_lim_factor(p) = water_scalar_runmean(p) ! W stress factor
 
          if (cnallocate_carbon_only()) then
            N_lim_factor(p) = 0.0_r8
@@ -1250,9 +1257,10 @@ contains
          else if (cnallocate_carbonphosphorus_only()) then
            N_lim_factor(p) = 0.0_r8
          end if
-         W_lim_factor(p) = 0.0_r8
+         ! integrate instant water scalar for plant dynamic allocation
+         water_scalar(p) = 0.0_r8
          do j = 1 , nlevdecomp
-            W_lim_factor(p) = W_lim_factor(p) + w_scalar(c,j) * froot_prof(p,j)
+            water_scalar(p) = water_scalar(p) + w_scalar(c,j) * froot_prof(p,j) * dzsoi_decomp(j)
          end do
          ! N_lim_factor/P_lim_factor ones: highly limited
          ! N_lim_factor/P_lim_factor zeros: not limited

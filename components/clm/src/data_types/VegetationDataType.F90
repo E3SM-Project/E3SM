@@ -833,6 +833,8 @@ module VegetationDataType
     real(r8), pointer :: fire_nloss_litter                   (:)   => null()  ! total nloss from veg to litter pool due to fire
     real(r8), pointer :: hrv_nloss_litter                    (:)   => null()  ! total nloss from veg to litter pool due to harvest mortality
     real(r8), pointer :: sen_nloss_litter                    (:)   => null()  ! total nloss from veg to litter pool due to senescence
+    real(r8), pointer :: smin_nh4_to_plant_vr               (:,:) => null()  ! vertically resolved nh4 uptake
+    real(r8), pointer :: smin_no3_to_plant_vr               (:,:) => null()  ! vertically resolved no3 uptake
   contains
     procedure, public :: Init      => veg_nf_init
     procedure, public :: Restart   => veg_nf_restart
@@ -8899,6 +8901,8 @@ module VegetationDataType
     allocate(this%fire_nloss_litter                   (begp:endp)) ; this%fire_nloss_litter                   (:) = nan
     allocate(this%hrv_nloss_litter                    (begp:endp)) ; this%hrv_nloss_litter                    (:) = nan
     allocate(this%sen_nloss_litter                    (begp:endp)) ; this%sen_nloss_litter                    (:) = nan
+    allocate(this%smin_no3_to_plant_vr                (begp:endp, 1:nlevdecomp)) ; this%smin_no3_to_plant_vr  (:,:) = nan
+    allocate(this%smin_nh4_to_plant_vr                (begp:endp, 1:nlevdecomp)) ; this%smin_nh4_to_plant_vr  (:,:) = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_nf
