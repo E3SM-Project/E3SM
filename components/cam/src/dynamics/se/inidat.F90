@@ -453,7 +453,7 @@ contains
 
     if ( (ideal_phys .or. aqua_planet)) then
        tmp(:,1,:) = 0._r8
-       phis_tmp(:,:) = 0._r8
+       if (fv_nphys > 0) phis_tmp(:,:) = 0._r8
     else    
       fieldname = 'PHIS'
       tmp(:,1,:) = 0.0_r8
