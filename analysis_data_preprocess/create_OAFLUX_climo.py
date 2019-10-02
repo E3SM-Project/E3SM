@@ -195,10 +195,12 @@ for fi in fisc:
                 #print ji,' modified'
             if ji == 'shtfl':
                 outputdattable.id='SHFLX'
+                outputdattable.units='W m-2'
                 outputdattable.standard_name='surface_upward_sensible_heat_flux'
                 #print ji,' modified'
             if ji == 'lhtfl':
                 outputdattable.id='LHFLX'
+                outputdattable.units='W m-2'
                 outputdattable.standard_name='surface_upward_latent_heat_flux'
                 #print ji,' modified'
             f_out.write(outputdattable)

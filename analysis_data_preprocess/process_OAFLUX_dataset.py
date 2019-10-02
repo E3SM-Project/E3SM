@@ -75,11 +75,13 @@ for ji in varlist:
         if ji == 'shtfl':
             outputdattable = f_in(ji)
             outputdattable.id='SHFLX'
+            outputdattable.units='W m-2'
             outputdattable.standard_name='surface_upward_sensible_heat_flux'
             #print ji,' modified'
         if ji == 'lhtfl':
             outputdattable = f_in(ji)
             outputdattable.id='LHFLX'
+            outputdattable.units='W m-2'
             outputdattable.standard_name='surface_upward_latent_heat_flux'
             #print ji,' modified'
         print ji
