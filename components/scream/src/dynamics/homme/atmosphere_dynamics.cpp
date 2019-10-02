@@ -198,7 +198,7 @@ void HommeDynamics::register_fields (FieldRepository<Real, device_type>& field_r
   }
 }
 
-void HommeDynamics::run (const double dt)
+void HommeDynamics::run (const Real dt)
 {
   try {
     run_homme_f90 (dt);

@@ -71,7 +71,7 @@ public:
     m_time_stamp = t0;
   }
 
-  void run (const double dt) {
+  void run (const Real dt) {
     auto in = m_input.get_view();
     auto out = m_output.get_view();
     auto iter = m_iter % 4;

@@ -54,7 +54,7 @@ TEST_CASE("ping-pong", "") {
   UserProvidedGridsManager upgm;
   auto dummy_grid_fwd = std::make_shared<DummyPhysicsGrid>(num_cols,true);
   auto dummy_grid_bwd = std::make_shared<DummyPhysicsGrid>(num_cols,false);
-  
+
   upgm.set_grid(dummy_grid_fwd);
   upgm.set_grid(dummy_grid_bwd);
   upgm.set_reference_grid("Physics_fwd");
@@ -72,7 +72,7 @@ TEST_CASE("ping-pong", "") {
   // or you'll clear the field repo!)
   util::TimeStamp init_time(2019,0,0);
   util::TimeStamp end_time (2019,1,0);
-  const double dt = 3500.0; // This should trigger an adjustment of the last time step
+  const Real dt = 3500.0; // This should trigger an adjustment of the last time step
   ad.initialize(atm_comm,ad_params,init_time);
 
   // Fill the field with initial guess
@@ -100,7 +100,7 @@ TEST_CASE("ping-pong", "") {
     std::cout << " -------------------------------------------------------\n";
     std::cout << "   Start of atmosphere time step\n";
     std::cout << "    - current time: " << ts.to_string() << "\n";
-    double dt_adj = dt;
+    Real dt_adj = dt;
     bool adjusted = false;
     if (end_time<(ts+dt)) {
       dt_adj = (end_time-ts).get_seconds();

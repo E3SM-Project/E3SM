@@ -69,7 +69,7 @@ public:
   // We should put asserts to verify that the process has been init-ed, when
   // run/finalize is called.
   virtual void initialize (const util::TimeStamp& t0) = 0;
-  virtual void run        (const double dt) = 0;
+  virtual void run        (const Real dt) = 0;
   virtual void finalize   (/* what inputs? */) = 0;
 
   // These methods set fields in the atm process. Fields live on device and they are all 1d.

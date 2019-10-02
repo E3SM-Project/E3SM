@@ -258,7 +258,7 @@ setup_remappers (const FieldRepository<Real, device_type>& field_repo) {
   }
 }
 
-void AtmosphereProcessGroup::run (const double dt) {
+void AtmosphereProcessGroup::run (const Real dt) {
   if (m_group_schedule_type==GroupScheduleType::Sequential) {
     run_sequential(dt);
   } else {
@@ -266,7 +266,7 @@ void AtmosphereProcessGroup::run (const double dt) {
   }
 }
 
-void AtmosphereProcessGroup::run_sequential (const double dt) {
+void AtmosphereProcessGroup::run_sequential (const Real dt) {
   m_current_ts += dt;
   for (int iproc=0; iproc<m_group_size; ++iproc) {
     // Reamp the inputs of this process
@@ -352,7 +352,7 @@ void AtmosphereProcessGroup::run_sequential (const double dt) {
   }
 }
 
-void AtmosphereProcessGroup::run_parallel (const double /* dt */) {
+void AtmosphereProcessGroup::run_parallel (const Real /* dt */) {
   scream_require_msg (false,"Error! Parallel splitting not yet implemented.\n");
 }
 

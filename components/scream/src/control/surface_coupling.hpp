@@ -43,7 +43,7 @@ public:
 
   // The run method is responsible for exporting atm states to the e3sm coupler, and
   // import surface states from the e3sm coupler.
-  void run (const double dt);
+  void run (const Real dt);
 
   // Clean up
   void finalize ( /* inputs */ );

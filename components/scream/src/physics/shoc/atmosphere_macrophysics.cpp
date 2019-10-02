@@ -69,7 +69,7 @@ void SHOCMacrophysics::initialize (const util::TimeStamp& t0)
 }
 
 // =========================================================================================
-void SHOCMacrophysics::run (const double dt)
+void SHOCMacrophysics::run (const Real dt)
 {
   // TODO: create the host mirrors once.
   auto q_dev   = m_shoc_fields_out.at("q").get_view();

@@ -92,7 +92,7 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
 }
 
 // =========================================================================================
-void P3Microphysics::run (const double dt)
+void P3Microphysics::run (const Real dt)
 {
   // std::array<const char*, num_views> view_names = {"q", "FQ", "qdp", "T", "zi", "pmid", "pdel", "ast", "naai", "npccn"};
 

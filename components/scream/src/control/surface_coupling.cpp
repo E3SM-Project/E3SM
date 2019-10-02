@@ -18,7 +18,7 @@ void SurfaceCoupling::initialize (const util::TimeStamp& /* t0 */) {
   // (i.e., fields that are I/O w.r.t the coupler)
 }
 
-void SurfaceCoupling::run (const double /* dt */) {
+void SurfaceCoupling::run (const Real /* dt */) {
   // Recall that the surface coupling can (and usually does) happen
   // in the middle of an atm time step. Therefore, we first export
   // atm output fields to the coupler, then import atm input fields
