@@ -23,11 +23,8 @@ void Functions<S,D>
         ncautc.set(qc_not_small, qcaut*nc_incld/qc_incld);
     }
 
-    const auto qcaut_is_zero = qcaut == 0;
-    if(qcaut_is_zero.any()){ncautc.set(qcaut_is_zero,  0.0);}
-
-    const auto ncautc_is_zero = ncautc == 0;
-    if(ncautc_is_zero.any()){qcaut.set(ncautc_is_zero, 0.0);}
+    ncautc.set(qcaut == 0,  0.0);
+    qcaut.set(ncautc == 0, 0.0);
 
 }
 
