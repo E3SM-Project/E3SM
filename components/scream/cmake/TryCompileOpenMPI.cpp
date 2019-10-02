@@ -2,8 +2,8 @@
 
 int main (int, char**)
 {
-#ifndef OMPI_MAJOR_VERSION
-#error "Mpi not provided by OpenMPI"
+#ifdef OMPI_MAJOR_VERSION
+#error "OpenMPI found"
 #endif
   return 0;
 }

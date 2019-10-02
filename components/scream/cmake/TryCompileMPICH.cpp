@@ -2,8 +2,8 @@
 
 int main (int, char**)
 {
-#ifndef MPICH_NAME
-#error "Mpi not provided by OpenMPI"
+#ifdef MPICH_VERSION
+#error "MPICH found"
 #endif
   return 0;
 }
