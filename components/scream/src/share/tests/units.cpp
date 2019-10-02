@@ -13,7 +13,6 @@ TEST_CASE("units_framework", "") {
     constexpr RationalConstant half(1,2);
     constexpr RationalConstant one(1);
     constexpr RationalConstant two(2,1);
-    const RationalConstant zero(0);
 
     // Verify operations
     REQUIRE(half*two == one);
@@ -22,8 +21,10 @@ TEST_CASE("units_framework", "") {
     REQUIRE(half*half == quarter);
     REQUIRE(pow(half,2)==quarter);
 #if defined(SCREAM_CONSTEXPR_ASSERT) && !defined(NDEBUG)
+    const RationalConstant zero(0);
     REQUIRE_THROWS(one/zero);
     REQUIRE_THROWS(pow(zero,zero));
+    REQUIRE_THROWS(pow(-one,half));
 #endif
   }
 
