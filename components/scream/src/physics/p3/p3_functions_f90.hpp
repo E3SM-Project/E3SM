@@ -166,7 +166,7 @@ struct CloudWaterAutoconversionData
   Real ncautr;
 };
 
-void cloud_water_conservation(CloudWaterAutoconversionData& d);
+void cloud_water_autoconversion(CloudWaterAutoconversionData& d);
 extern "C"{
 
   void cloud_water_autoconversion_f(Real rho, Real inv_rho, Real qc_incld, Real nc_incld, Real qr_incld, Real mu_c, Real nu, 

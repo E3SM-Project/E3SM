@@ -314,7 +314,7 @@ void cloud_water_autoconversion_f(Real rho_, Real inv_rho_, Real qc_incld_, Real
     typename P3F::Spack ncautc(*ncautc_);
     typename P3F::Spack ncautr(*ncautr_);
 
-    P3F::cloud_water_autoconversion(rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qcaut, ncautc, ncautr); 
+    P3F::cloud_water_autoconversion(rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qcaut, ncautc, ncautr);
     *qcaut_ = qcaut[0];
     *ncautc_ = ncautc[0];
     *ncautr_ = ncautr[0];
