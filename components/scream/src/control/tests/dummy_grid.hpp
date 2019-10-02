@@ -53,7 +53,11 @@ public:
     return src_layout;
   }
 
+// Cuda does not allow enclosing function of a lambda to have private or protected access
+#ifndef KOKKOS_ENABLE_CUDA
 protected:
+#endif
+
   const identifier_type& do_get_src_field_id (const int ifield) const override {
     return m_fields[ifield].first.get_header().get_identifier();
   }

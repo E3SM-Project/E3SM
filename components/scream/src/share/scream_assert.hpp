@@ -74,7 +74,7 @@ struct assert_failure {
 };
 }
 #define CONSTEXPR_ASSERT(CHECK) \
-    ( (CHECK) ? void(0) : throw impl::assert_failure(#CHECK), void(0) )
+    ( (CHECK) || (throw impl::assert_failure(#CHECK), false) )
 #endif
 
 namespace scream {

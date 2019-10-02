@@ -82,19 +82,20 @@ TEST_CASE("ping-pong", "") {
   FieldIdentifier fid("field_0",layout,units::m,"Physics_fwd");
   const auto& repo = ad.get_field_repo();
   const auto& field = repo.get_field(fid);
-  auto d_view = Kokkos::create_mirror_view(field.get_view());
+  auto d_view = field.get_view();
   auto h_view = Kokkos::create_mirror_view(d_view);
   const int size = h_view.size();
   decltype(h_view) answer("",size);
-  std::iota(answer.data(),answer.data()+size,1);
-  Kokkos::deep_copy(h_view,answer);
-  Kokkos::deep_copy(d_view,h_view);
+
+  Kokkos::deep_copy(d_view,0.0);
+  Kokkos::deep_copy(h_view,0.0);
 #ifdef SCREAM_DEBUG
   Kokkos::deep_copy(ad.get_bkp_field_repo().get_field(fid).get_view(),d_view);
 #endif
 
   // Run
-  for (auto time=init_time; time<end_time; time+=dt) {
+  int iter = 0;
+  for (auto time=init_time; time<end_time; time+=dt, ++iter) {
     const auto& ts = ad.get_atm_time_stamp();
     std::cout << " -------------------------------------------------------\n";
     std::cout << "   Start of atmosphere time step\n";
@@ -113,13 +114,20 @@ TEST_CASE("ping-pong", "") {
     // Every atm proc does out(:) = sin(in(:)). There are 2 atm process, with
     // input and output swapped, that do this update, so at every
     // time step we should get f(i) = sin(sin(f(i))).
+    int rem = iter % 4;
     for (int i=0; i<size; ++i) {
-      answer[i] = std::sin(answer[i]);
-      answer[i] = std::sin(answer[i]);
+      switch (rem) {
+        // Do update twice, since both atm procs do the same update
+        case 0: answer[i] += 2.0; answer[i] += 2.0; break;
+        case 1: answer[i] *= 2.0; answer[i] *= 2.0; break;
+        case 2: answer[i] -= 2.0; answer[i] -= 2.0; break;
+        case 3: answer[i] /= 2.0; answer[i] /= 2.0; break;
+      }
     }
   }
 
   // Check the answer
+  Kokkos::deep_copy(h_view,d_view);
   for (int i=0; i<h_view.extent_int(0); ++i) {
     REQUIRE (h_view(i) == answer[i]);
   }

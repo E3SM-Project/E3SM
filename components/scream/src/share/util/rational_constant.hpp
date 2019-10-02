@@ -23,11 +23,11 @@ inline constexpr Format operator&& (const Format fmt1, const Format fmt2) {
                     : (fmt1==Format::Auto ? fmt2 : fmt1);
 }
 
-constexpr long abs (const long a) {
+constexpr long long abs (const long long a) {
   return a>=0 ? a : -a;
 }
 
-constexpr long gcd (const long a, const long b) {
+constexpr long long gcd (const long long a, const long long b) {
   return b==0
           ? a
           : gcd(b, a % b);
