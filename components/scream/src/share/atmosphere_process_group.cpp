@@ -512,9 +512,6 @@ AtmosphereProcessGroup::create_ref_fid (const FieldIdentifier& fid,
     // Something went wrong
     scream_require_msg(false,"Error! Input FieldIdentifier's grid name is neither the source nor the target grid of the input remapper.\n");
   }
-
-  // Silence compiler warning
-  return FieldIdentifier("__INVALID__",FieldLayout({}),units::ScalingFactor(0));
 }
 
 } // namespace scream
