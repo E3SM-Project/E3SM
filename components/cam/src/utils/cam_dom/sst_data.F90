@@ -283,7 +283,7 @@ subroutine sstini(ncid_sst)
 
 
   if (single_column) then
-     call shr_scam_GetCloseLatLon(ncid_sst%fh,scmlat,scmlon,closelat,closelon,closelatidx,closelonidx)
+     call shr_scam_GetCloseLatLon(ncid_sst,scmlat,scmlon,closelat,closelon,closelatidx,closelonidx)
      strt3(1) = closelonidx
      strt3(2) = closelatidx
      strt3(3) = 1
@@ -432,7 +432,7 @@ subroutine sstint(ncid_sst, prev_timestep)
 
   if (masterproc) then
      if (single_column) then
-        call shr_scam_GetCloseLatLon(ncid_sst%fh,scmlat,scmlon,closelat,closelon,closelatidx,closelonidx)
+        call shr_scam_GetCloseLatLon(ncid_sst,scmlat,scmlon,closelat,closelon,closelatidx,closelonidx)
         strt3(1) = closelonidx
         strt3(2) = closelatidx
         strt3(3) = 1

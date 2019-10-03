@@ -294,7 +294,7 @@ contains
        call getfil(focndomain, locfn)
        call cam_pio_openfile(ncid_dom, locfn, 0)
        if (single_column) then
-          call shr_scam_getCloseLatLon(ncid_dom%fh,scmlat,scmlon,closelat,closelon,closelatidx,closelonidx)
+          call shr_scam_getCloseLatLon(ncid_dom,scmlat,scmlon,closelat,closelon,closelatidx,closelonidx)
           rcode = pio_inq_varid(ncid_dom, 'frac', fracid)
           rcode = pio_get_var(ncid_dom,fracid,(/closelonidx,closelatidx/),(/1,1/),arr2d)
        else
