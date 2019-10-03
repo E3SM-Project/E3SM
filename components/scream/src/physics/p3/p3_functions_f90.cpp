@@ -298,7 +298,7 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
 
 void cloud_water_autoconversion_f(Real rho_, Real qc_incld_, Real nc_incld_, Real* qcaut_, Real* ncautc_, Real* ncautr_){
 
-    using P3F = Functions<Real, HostDevice>;
+    using P3F = Functions<Real, DefaultDevice>;
 
     typename P3F::Spack rho(rho_);
     typename P3F::Spack qc_incld(qc_incld_);
