@@ -49,6 +49,7 @@ contains
        clock, &
        dt)!{{{
 
+    use seaice_unit_test, only: seaice_init_unit_test
     use seaice_mesh, only: seaice_init_mesh
     use seaice_advection, only: seaice_init_advection
     use seaice_velocity_solver, only: seaice_init_velocity_solver
@@ -72,6 +73,9 @@ contains
          block
 
     call mpas_log_write("seaice_init: Initialize sea-ice model")
+
+    ! unit testing init
+    call seaice_init_unit_test(domain)
 
     ! init testing system test arrays
     call seaice_set_testing_system_test_arrays(domain)
@@ -998,8 +1002,10 @@ contains
     integer :: &
          iCell
 
-    real(kind=RKIND), parameter :: &
-         circle_radius = 0.1_RKIND*earthRadius
+    real(kind=RKIND) :: &
+         circle_radius
+
+    circle_radius = 0.1_RKIND*earthRadius
 
     call MPAS_pool_get_config(configs, "config_initial_ice_area", config_initial_ice_area)
     call MPAS_pool_get_config(configs, "config_initial_ice_volume", config_initial_ice_volume)

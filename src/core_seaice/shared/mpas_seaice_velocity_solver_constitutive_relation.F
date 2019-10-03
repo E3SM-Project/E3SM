@@ -24,7 +24,8 @@ module seaice_velocity_solver_constitutive_relation
   public :: &
        seaice_init_evp, &
        seaice_evp_constitutive_relation, &
-       seaice_evp_constitutive_relation_revised
+       seaice_evp_constitutive_relation_revised, &
+       seaice_linear_constitutive_relation
 
   ! general EVP parameters
   real(kind=RKIND), parameter, private :: &
