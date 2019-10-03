@@ -86,31 +86,31 @@ struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion
 {
 
 KOKKOS_FUNCTION static void  cloud_water_autoconversion_unit_bfb_tests(){
-  using KTH = KokkosTypes<HostDevice>; 
+  using KTH = KokkosTypes<HostDevice>;
 
-  static constexpr Int max_pack_size = 16; 
-  REQUIRE(Spack::n <= max_pack_size); 
+  static constexpr Int max_pack_size = 16;
+  REQUIRE(Spack::n <= max_pack_size);
 
   CloudWaterAutoconversionData cwadc[max_pack_size] = {
-    { 0.97026902585098274, 1.0306419903726614, 5.1000000000000004e-3, 206128398.07453227, 1.0000000000000000e-2, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0},
-    { 1.0061301158991891, 0.99390723346581222, 5.1000000000000004e-3, 198781446.69316244, 1.0000000000000000e-2, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0},
-    { 1.1393248270523915, 0.87771281398927625, 0.0, 0.0, 5.2631578947368479e-7, 0.0, 0.0, 0.0, 0.0, 0.0},
-    { 1.1512545299884895, 0.86861764618637216, 9.9999999999999995e-7, 173723529.23727444, 1.0010000000000000e-6, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0}, 
+    { 0.97026902585098274, 5.1000000000000004e-3, 206128398.07453227,  0.0, 0.0, 0.0},
+    { 1.0061301158991891,  5.1000000000000004e-3, 198781446.69316244,  0.0, 0.0, 0.0},
+    { 1.1393248270523915, 0.0, 0.0,  0.0, 0.0, 0.0},
+    { 1.1512545299884895,  9.9999999999999995e-7, 173723529.23727444,  0.0, 0.0, 0.0},
 
-    { 0.97026902585098274, 1.0306419903726614, 5.1000000000000004e-3, 206128398.07453227, 1.0000000000000000e-2, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0},
-    { 1.0061301158991891, 0.99390723346581222, 5.1000000000000004e-3, 198781446.69316244, 1.0000000000000000e-2, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0},
-    { 1.1393248270523915, 0.87771281398927625, 0.0, 0.0, 5.2631578947368479e-7, 0.0, 0.0, 0.0, 0.0, 0.0},
-    { 1.1512545299884895, 0.86861764618637216, 9.9999999999999995e-7, 173723529.23727444, 1.0010000000000000e-6, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0}, 
+    { 0.97026902585098274, 5.1000000000000004e-3, 206128398.07453227,  0.0, 0.0, 0.0},
+    { 1.0061301158991891,  5.1000000000000004e-3, 198781446.69316244,  0.0, 0.0, 0.0},
+    { 1.1393248270523915, 0.0, 0.0,  0.0, 0.0, 0.0},
+    { 1.1512545299884895,  9.9999999999999995e-7, 173723529.23727444,  0.0, 0.0, 0.0},
 
-    { 0.97026902585098274, 1.0306419903726614, 5.1000000000000004e-3, 206128398.07453227, 1.0000000000000000e-2, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0},
-    { 1.0061301158991891, 0.99390723346581222, 5.1000000000000004e-3, 198781446.69316244, 1.0000000000000000e-2, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0},
-    { 1.1393248270523915, 0.87771281398927625, 0.0, 0.0, 5.2631578947368479e-7, 0.0, 0.0, 0.0, 0.0, 0.0},
-    { 1.1512545299884895, 0.86861764618637216, 9.9999999999999995e-7, 173723529.23727444, 1.0010000000000000e-6, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0}, 
+    { 0.97026902585098274, 5.1000000000000004e-3, 206128398.07453227,  0.0, 0.0, 0.0},
+    { 1.0061301158991891,  5.1000000000000004e-3, 198781446.69316244,  0.0, 0.0, 0.0},
+    { 1.1393248270523915, 0.0, 0.0,  0.0, 0.0, 0.0},
+    { 1.1512545299884895,  9.9999999999999995e-7, 173723529.23727444,  0.0, 0.0, 0.0},
 
-    { 0.97026902585098274, 1.0306419903726614, 5.1000000000000004e-3, 206128398.07453227, 1.0000000000000000e-2, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0},
-    { 1.0061301158991891, 0.99390723346581222, 5.1000000000000004e-3, 198781446.69316244, 1.0000000000000000e-2, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0},
-    { 1.1393248270523915, 0.87771281398927625, 0.0, 0.0, 5.2631578947368479e-7, 0.0, 0.0, 0.0, 0.0, 0.0},
-    { 1.1512545299884895, 0.86861764618637216, 9.9999999999999995e-7, 173723529.23727444, 1.0010000000000000e-6, 5.7227314503059361, 0.0, 0.0, 0.0, 0.0}
+    { 0.97026902585098274, 5.1000000000000004e-3, 206128398.07453227,  0.0, 0.0, 0.0},
+    { 1.0061301158991891,  5.1000000000000004e-3, 198781446.69316244,  0.0, 0.0, 0.0},
+    { 1.1393248270523915, 0.0, 0.0,  0.0, 0.0, 0.0},
+    { 1.1512545299884895,  9.9999999999999995e-7, 173723529.23727444,  0.0, 0.0, 0.0},
   };
 
   // Sync to device
@@ -136,28 +136,20 @@ KOKKOS_FUNCTION static void  cloud_water_autoconversion_unit_bfb_tests(){
     Spack rho, inv_rho, qc_incld, nc_incld, qr_incld, mu_c, nu, qcaut, ncautc, ncautr;
     for (Int s = 0; s < Spack::n; ++s) {
       rho[s] = cwadc_device(s).rho;
-      inv_rho[s] = cwadc_device(s).inv_rho;
       qc_incld[s] = cwadc_device(s).qc_incld;
       nc_incld[s] = cwadc_device(s).nc_incld;
-      qr_incld[s] = cwadc_device(s).qr_incld;
-      mu_c[s] = cwadc_device(s).mu_c;
-      nu[s] = cwadc_device(s).nu;
       qcaut[s] = cwadc_device(s).qcaut;
       ncautc[s] = cwadc_device(s).ncautc;
       ncautr[s] = cwadc_device(s).ncautr;
     }
 
-    Functions::cloud_water_autoconversion(rho, inv_rho, qc_incld, nc_incld,
-      qr_incld, mu_c, nu, qcaut, ncautc, ncautr);
+    Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld,
+      qcaut, ncautc, ncautr);
     // Copy results back into views
     for (Int s = 0; s < Spack::n; ++s) {
       cwadc_device(s).rho = rho[s];
-      cwadc_device(s).inv_rho = inv_rho[s];
       cwadc_device(s).qc_incld = qc_incld[s];
       cwadc_device(s).nc_incld = nc_incld[s];
-      cwadc_device(s).qr_incld = qr_incld[s];
-      cwadc_device(s).mu_c = mu_c[s];
-      cwadc_device(s).nu = nu[s];
       cwadc_device(s).qcaut = qcaut[s];
       cwadc_device(s).ncautc = ncautc[s];
       cwadc_device(s).ncautr = ncautr[s];
@@ -171,22 +163,22 @@ KOKKOS_FUNCTION static void  cloud_water_autoconversion_unit_bfb_tests(){
     // Validate results
     for (Int s = 0; s < Spack::n; ++s) {
        REQUIRE(cwadc[s].rho == cwadc_host(s).rho);
-       REQUIRE(cwadc[s].inv_rho == cwadc_host(s).inv_rho);
        REQUIRE(cwadc[s].qc_incld == cwadc_host(s).qc_incld);
-       REQUIRE(cwadc[s].qr_incld == cwadc_host(s).qr_incld);
-       REQUIRE(cwadc[s].mu_c == cwadc_host(s).mu_c);
-       REQUIRE(cwadc[s].nu == cwadc_host(s).nu);
        REQUIRE(cwadc[s].qcaut == cwadc_host(s).qcaut);
        REQUIRE(cwadc[s].ncautc == cwadc_host(s).ncautc);
        REQUIRE(cwadc[s].ncautr == cwadc_host(s).ncautr);
      }
 }
 
-
   static void run_bfb(){
     cloud_water_autoconversion_unit_bfb_tests();
   }
 
+
+  static void run_physics(){
+
+
+  }
 
 }; //  TestP3CloudWaterAutoconversion
 
@@ -202,8 +194,8 @@ TEST_CASE("p3_functions", "[p3_functions]")
 }
 
 TEST_CASE("p3_cloud_water_autoconversion_test", "[p3_cloud_water_autoconversion_test]"){
-  //scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3Conservation::run();
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion::run_bfb(); 
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion::run_physics();
+  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestP3CloudWaterAutoconversion::run_bfb();
 }
 
 } // namespace

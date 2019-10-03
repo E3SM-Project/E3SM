@@ -262,8 +262,8 @@ struct Functions
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 
   KOKKOS_FUNCTION
-  static void cloud_water_autoconversion(const Spack& rho, const Spack& inv_rho, const Spack& qc_incld, const Spack& nc_incld,
-    const Spack& qr_incld, const Spack& mu_c, const Spack& nu, Spack& qcaut, Spack& ncautc, Spack& ncautr);
+  static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& nc_incld,
+    Spack& qcaut, Spack& ncautc, Spack& ncautr);
 };
 
 template <typename ScalarT, typename DeviceT>

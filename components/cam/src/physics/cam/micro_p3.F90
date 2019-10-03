@@ -935,8 +935,7 @@ contains
           !................
           ! cloud water autoconversion
           ! NOTE: cloud_water_autoconversion must be called before droplet_self_collection
-          call cloud_water_autoconversion(rho(i,k), inv_rho(i,k),qc_incld(i,k),&
-            nc_incld(i,k),qr_incld(i,k),mu_c(i,k),nu(i,k),&
+          call cloud_water_autoconversion(rho(i,k),qc_incld(i,k),nc_incld(i,k),&
             qcaut,ncautc,ncautr)
 
           !............................
@@ -2763,7 +2762,7 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
 end subroutine rain_self_collection
 
 
-subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_c,nu,    &
+subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,    &
    qcaut,ncautc,ncautr)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
@@ -2773,12 +2772,8 @@ subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_
    implicit none
 
    real(rtype), intent(in) :: rho
-   real(rtype), intent(in) :: inv_rho
    real(rtype), intent(in) :: qc_incld
    real(rtype), intent(in) :: nc_incld
-   real(rtype), intent(in) :: qr_incld
-   real(rtype), intent(in) :: mu_c
-   real(rtype), intent(in) :: nu
 
    real(rtype), intent(out) :: qcaut
    real(rtype), intent(out) :: ncautc
@@ -2788,7 +2783,7 @@ subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call  cloud_water_autoconversion_f(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_c,nu,    &
+      call  cloud_water_autoconversion_f(rho,qc_incld,nc_incld,    &
          qcaut,ncautc,ncautr)
       return
    endif

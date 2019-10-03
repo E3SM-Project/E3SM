@@ -10,8 +10,8 @@ namespace p3 {
 template<typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
-::cloud_water_autoconversion(const Spack& rho, const Spack& inv_rho, const Spack& qc_incld, const Spack& nc_incld,
-    const Spack& qr_incld, const Spack& mu_c, const Spack& nu, Spack& qcaut, Spack& ncautc, Spack& ncautr)
+::cloud_water_autoconversion(const Spack& rho, const Spack& qc_incld, const Spack& nc_incld,
+    Spack& qcaut, Spack& ncautc, Spack& ncautr)
 {
     // Khroutdinov and Kogan (2000)
     const auto qc_not_small = qc_incld >=  1e-8;
@@ -23,7 +23,7 @@ void Functions<S,D>
         ncautc.set(qc_not_small, qcaut*nc_incld/qc_incld);
     }
 
-    ncautc.set(qcaut == 0,  0.0);
+    ncautc.set(qcaut == 0, 0.0);
     qcaut.set(ncautc == 0, 0.0);
 
 }
