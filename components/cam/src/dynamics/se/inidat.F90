@@ -460,10 +460,10 @@ contains
       if (fv_nphys > 0) then
          ! Load phis field to physics grid
          call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
-              1, nelemd, phis_tmp, found, gridname='physgrid_d')
+                    1, nelemd, phis_tmp, found, gridname='physgrid_d')
       else
-         call infld(fieldname, ncid_topo, ncol_name,      &
-            1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+         call infld(fieldname, ncid_topo, ncol_name, 1, npsq, &
+                    1, nelemd, tmp(:,1,:), found, gridname=grid_name)
       end if ! fv_nphys > 0
       if(.not. found) then
          call endrun('Could not find PHIS field on input datafile')
