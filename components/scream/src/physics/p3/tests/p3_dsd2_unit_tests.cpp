@@ -73,7 +73,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     Kokkos::deep_copy(gcdd_device, gcdd_host);
 
     // Run the lookup from a kernel and copy results back to host
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
       // Init pack inputs
       Spack qc, rho, lcldm, nc;
       for (Int s = 0; s < Spack::n; ++s) {

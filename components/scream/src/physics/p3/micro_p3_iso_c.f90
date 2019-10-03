@@ -248,4 +248,27 @@ contains
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
 
+  subroutine calc_first_order_upwind_step_c(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
+    use micro_p3, only: calc_first_order_upwind_step, realptr
+
+    !arguments:
+    integer(kind=c_int), value, intent(in) :: kts, kte, kdir, kbot, k_qxtop, num_arrays
+    real(kind=c_real), value, intent(in) :: dt_sub
+    real(kind=c_real), dimension(kts:kte), intent(in) :: rho, inv_rho, inv_dzq
+    type(c_ptr), intent(in), dimension(num_arrays) :: fluxes, vs, qnx
+
+    type(realptr), dimension(num_arrays) :: fluxes_f, vs_f, qnx_f
+    integer :: i
+
+    do i = 1, num_arrays
+       call c_f_pointer(fluxes(i), fluxes_f(i)%p, [(kte-kts)+1])
+       call c_f_pointer(vs(i),     vs_f(i)%p,     [(kte-kts)+1])
+       call c_f_pointer(qnx(i),    qnx_f(i)%p ,   [(kte-kts)+1])
+    end do
+
+    call calc_first_order_upwind_step(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes_f, vs_f, qnx_f)
+
+  end subroutine calc_first_order_upwind_step_c
+
+
 end module micro_p3_iso_c

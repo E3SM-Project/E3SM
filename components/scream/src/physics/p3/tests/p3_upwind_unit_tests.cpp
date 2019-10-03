@@ -34,7 +34,7 @@ namespace unit_test {
 template <typename D>
 struct UnitWrap::UnitTest<D>::TestUpwind {
 
-static void run()
+static void run_phys()
 {
   static const Int nfield = 2;
 
@@ -50,7 +50,7 @@ static void run()
     const auto lrho = smallize(rho), linv_rho = smallize(inv_rho), linv_dz = smallize(inv_dz);
 
     Kokkos::Array<view_1d<Pack>, nfield> flux, V, r;
-    Kokkos::Array<ko::Unmanaged<view_1d<Spack> >, nfield> lflux, lV, lr;
+    Kokkos::Array<uview_1d<Spack>, nfield> lflux, lV, lr;
     const auto init_array = [&] (const std::string& name, const Int& i, decltype(flux)& f,
                                  decltype(lflux)& lf) {
       f[i] = view_1d<Pack>("f", npack);
@@ -194,6 +194,56 @@ static void run()
   }
 }
 
+static void run_bfb()
+{
+  using KTH = KokkosTypes<HostDevice>;
+
+  static constexpr Int num_runs = 4;
+  static constexpr Int kts      = 1;
+  static constexpr Int kte      = 72;
+
+  CalcUpwindData cuds[num_runs] = {
+                // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,  rho range, inv_dzq range, vs range, qnx range
+    CalcUpwindData(kts, kte,   -1,   72,      36,  2,  1.833E+03,
+                   std::make_pair(4.056E-03, 1.153E+00),
+                   std::make_pair(2.863E-05, 8.141E-03),
+                   std::make_pair(2.965E-02, 3.555E+00),
+                   std::make_pair(7.701E-16, 2.119E-04)),
+
+    CalcUpwindData(kts, kte,    1,   36,      72,  2,  1.833E+03,
+                   std::make_pair(4.056E-03, 1.153E+00),
+                   std::make_pair(2.863E-05, 8.141E-03),
+                   std::make_pair(2.965E-02, 3.555E+00),
+                   std::make_pair(7.701E-16, 2.119E-04)),
+
+    CalcUpwindData(kts, kte,   -1,   72,      36,  4,  1.833E+03,
+                   std::make_pair(4.056E-03, 1.153E+00),
+                   std::make_pair(2.863E-05, 8.141E-03),
+                   std::make_pair(2.965E-02, 3.555E+00),
+                   std::make_pair(7.701E-16, 2.119E-04)),
+
+    CalcUpwindData(kts, kte,   -1,   72,      72,  2,  1.833E+03,
+                   std::make_pair(4.056E-03, 1.153E+00),
+                   std::make_pair(2.863E-05, 8.141E-03),
+                   std::make_pair(2.965E-02, 3.555E+00),
+                   std::make_pair(7.701E-16, 2.119E-04))
+  };
+
+  // Get data from fortran
+  for (Int i = 0; i < num_runs; ++i) {
+    calc_first_order_upwind_step(cuds[i]);
+  }
+
+  for (Int i = 0; i < num_runs; ++i) {
+    const CalcUpwindData& cud = cuds[i];
+
+    // Sync to device
+    view_1d<Spack> rho_d("rho_d", cud.nk()), inv_rho_d("inv_rho_d", cud.nk()), inv_dzq_d("inv_dzq_d", cud.nk());
+
+    // TODO
+  }
+}
+
 };
 
 }
@@ -204,7 +254,10 @@ namespace {
 
 TEST_CASE("p3_upwind", "[p3_functions]")
 {
-  scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind::run();
+  using TU = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind;
+
+  TU::run_phys();
+  TU::run_bfb();
 }
 
 } // namespace
