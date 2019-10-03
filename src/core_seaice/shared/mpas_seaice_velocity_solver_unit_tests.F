@@ -987,6 +987,8 @@ contains
 
     endif
 
+    call MPAS_log_write("Unit test finished", MPAS_LOG_CRIT)
+
   end subroutine seaice_stress_divergence_operator_unit_test
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -1345,9 +1347,9 @@ contains
 
           if (solveVelocity(iVertex) == 0) then
              stressDivergenceU_test(iVertex) = 0.0_RKIND
-             stressDivergenceU_test(iVertex) = 0.0_RKIND
+             stressDivergenceV_test(iVertex) = 0.0_RKIND
              stressDivergenceU_diff(iVertex) = 0.0_RKIND
-             stressDivergenceU_diff(iVertex) = 0.0_RKIND
+             stressDivergenceV_diff(iVertex) = 0.0_RKIND
           endif
 
        enddo ! iCell
@@ -2242,6 +2244,8 @@ contains
          array_size
 
     real(kind=RKIND) :: &
+         plotLonPoint, &
+         plotLatPoint, &
          plotLonPointVertex, &
          plotLatPointVertex, &
          plotLonPointVertex0, &
@@ -2321,10 +2325,27 @@ contains
 
              iPointVertex = pointVertexOnPoint(iPointVertexOnPoint,iPoint)
 
+             plotLonPoint = lonPoint(iPoint)
+             plotLatPoint = latPoint(iPoint)
+
+             if (plotLonPoint < 0.0_RKIND) then
+                plotLonPoint = plotLonPoint + 2.0_RKIND * pii
+             endif
+             if (plotLonPoint > 2.0_RKIND*pii) then
+                plotLonPoint = plotLonPoint - 2.0_RKIND * pii
+             endif
+
              plotLonPointVertex = lonPointVertex(iPointVertex)
              plotLatPointVertex = latPointVertex(iPointVertex)
 
-             if (lonPoint(iPoint) <= pii) then
+             if (plotLonPointVertex < 0.0_RKIND) then
+                plotLonPointVertex = plotLonPointVertex + 2.0_RKIND * pii
+             endif
+             if (plotLonPointVertex > 2.0_RKIND*pii) then
+                plotLonPointVertex = plotLonPointVertex - 2.0_RKIND * pii
+             endif
+
+             if (plotLonPoint <= pii) then
 
                 if (plotLonPointVertex >= 0.9_RKIND * 2.0_RKIND * pii) then
                    plotLonPointVertex = plotLonPointVertex - 2.0_RKIND * pii
@@ -2332,7 +2353,7 @@ contains
 
              endif
 
-             if (lonPoint(iPoint) > pii) then
+             if (plotLonPoint > pii) then
 
                 if (plotLonPointVertex <= 0.1_RKIND * 2.0_RKIND * pii) then
                    plotLonPointVertex = plotLonPointVertex + 2.0_RKIND * pii
