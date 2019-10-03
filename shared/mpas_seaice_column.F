@@ -1670,7 +1670,8 @@ contains
        abortMessage = ""
 
        !$omp parallel do default(shared) private(iCategory,iAerosol,northernHemisphereMask,&
-       !$omp&  specificSnowAerosol,specificIceAerosol,abortMessage) reduction(.or.:abortFlag)
+       !$omp&  abortMessage) firstprivate(specificSnowAerosol,specificIceAerosol) &
+       !$omp&  reduction(.or.:abortFlag)
        do iCell = 1, nCellsSolve
 
           ! initial state values
@@ -2102,8 +2103,9 @@ contains
        abortFlag = .false.
        abortMessage = ""
 
-       !$omp parallel do default(shared) private(iCategory,newlyFormedIceLogical,iBioTracers,iBioData,&
-       !$omp&   oceanBioConcentrationsUsed,abortMessage) reduction(.or.:abortFlag)
+       !$omp parallel do default(shared) private(iCategory,iBioTracers,iBioData,&
+       !$omp&   abortMessage) firstprivate(newlyFormedIceLogical,oceanBioConcentrationsUsed) &
+       !$omp&   reduction(.or.:abortFlag)
        do iCell = 1, nCellsSolve
 
           ! newly formed ice
@@ -2883,7 +2885,8 @@ contains
        setGetPhysicsTracers = .true.
        setGetBGCTracers     = config_use_column_biogeochemistry
 
-       !$omp parallel do default(shared) private(iCategory,iAerosol,aerosolsArray,lonCellColumn)
+       !$omp parallel do default(shared) firstprivate(aerosolsArray,index_shortwaveAerosol) &
+       !$omp&                                 private(iCategory,iAerosol,lonCellColumn)
        do iCell = 1, nCellsSolve
 
           ! set aerosols array
@@ -5135,6 +5138,29 @@ contains
        ! set all indices for biogeochemistry including parent, ancestor and ancestor mask
        call init_column_tracer_object_for_biogeochemistry(domain, tracerObject)
 
+    else
+       allocate(tracerObject % index_algaeConc(1))
+       allocate(tracerObject % index_algalCarbon(1))
+       allocate(tracerObject % index_algalChlorophyll(1))
+       allocate(tracerObject % index_DOCConc(1))
+       allocate(tracerObject % index_DONConc(1))
+       allocate(tracerObject % index_DICConc(1))
+       allocate(tracerObject % index_dissolvedIronConc(1))
+       allocate(tracerObject % index_particulateIronConc(1))
+       allocate(tracerObject % index_verticalAerosolsConc(1))
+
+       allocate(tracerObject % index_algaeConcLayer(1))
+       allocate(tracerObject % index_algalCarbonLayer(1))
+       allocate(tracerObject % index_algalChlorophyllLayer(1))
+       allocate(tracerObject % index_DOCConcLayer(1))
+       allocate(tracerObject % index_DONConcLayer(1))
+       allocate(tracerObject % index_DICConcLayer(1))
+       allocate(tracerObject % index_dissolvedIronConcLayer(1))
+       allocate(tracerObject % index_particulateIronConcLayer(1))
+       allocate(tracerObject % index_verticalAerosolsConcLayer(1))
+       allocate(tracerObject % index_verticalAerosolsConcShortwave(1))
+       allocate(tracerObject % index_LayerIndexToDataArray(1))
+       allocate(tracerObject % index_LayerIndexToBioIndex(1))
     endif
 
     ! allocate tracer arrays
