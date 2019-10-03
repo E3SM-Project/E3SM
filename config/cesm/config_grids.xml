@@ -197,6 +197,13 @@
       <mask>gx1v7</mask>
     </model_grid>
 
+    <model_grid alias="T5_T5_mg37" not_compset="_POP">
+      <grid name="atm">T5</grid>
+      <grid name="lnd">T5</grid>
+      <grid name="ocnice">T5</grid>
+      <mask>gx3v7</mask>
+    </model_grid>
+
     <model_grid alias="T85_T85_mg16" not_compset="_POP">
       <grid name="atm">T85</grid>
       <grid name="lnd">T85</grid>
