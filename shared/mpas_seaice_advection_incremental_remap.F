@@ -4296,7 +4296,9 @@ contains
     yGrad(:,:) = 0.0_RKIND
     !zGrad(:) = 0.0_RKIND  ! diagnostic only
 
+#if !defined(__GFORTRAN__) && !defined(CPRGNU)
     !$omp parallel do default(shared) firstprivate(normalGrad,globalGrad) private(iEdgeOnCell,iCellNeighbor,iEdge,iCat,signGradient,tempGrad)
+#endif
     do iCell = 1, nCells
 
        if (maskCell(iCell) == 1) then  ! ice is present in the cell
@@ -4519,7 +4521,9 @@ contains
     yGrad(:,:,:) = 0.0_RKIND
     !zGrad(:,:) = 0.0_RKIND     ! diagnostic only
 
+#if !defined(__GFORTRAN__) && !defined(CPRGNU)
     !$omp parallel do default(shared) firstprivate(normalGrad,globalGrad) private(iEdgeOnCell,iCellNeighbor,iEdge,iCat,iLayer,signGradient)
+#endif
     do iCell = 1, nCells
 
        if (maskCell(iCell) == 1) then  ! ice is present in the cell
