@@ -746,8 +746,8 @@
     <SUPPORTED_BY>jgfouca at sandia dot gov</SUPPORTED_BY>
     <GMAKE>make</GMAKE>
     <GMAKE_J>32</GMAKE_J>
-    <MAX_TASKS_PER_NODE>64</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
+    <MAX_TASKS_PER_NODE>32</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
@@ -771,8 +771,7 @@
       <modules compiler="gnu" mpilib="!mpi-serial">
         <command name="add">+mpich-3.2-gcc-6.2.0</command>
         <command name="add">+hdf5-1.8.16-gcc-6.2.0-mpich-3.2-parallel</command>
-        <command name="add">+netcdf-4.3.3.1c-4.2cxx-4.4.2f-parallel-gcc6.2.0-mpich3.2</command>
-        <command name="add">+pnetcdf-1.6.1-gcc-6.2.0-mpich-3.2</command>
+        <command name="add">+netcdf-4.4.1c-4.2cxx-4.4.4f-parallel-gcc6.2.0-mpich-3.2</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -783,7 +782,9 @@
       <env name="LD_LIBRARY_PATH">/soft/apps/packages/climate/hdf5/1.8.16-serial/gcc-6.2.0/lib:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables mpilib="!mpi-serial">
-      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+      <env name="HDF5_PATH">$SHELL{dirname $(dirname $(which h5dump))}</env>
+      <!-- We currently don't have a soft env for pnetcdf 1.8.1 -->
+      <env name="PNETCDF_PATH">/soft/apps/packages/climate/pnetcdf/1.8.1/gcc-6.2.0</env>
     </environment_variables>
 </machine>
 
