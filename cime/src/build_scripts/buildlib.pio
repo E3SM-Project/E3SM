@@ -48,13 +48,18 @@ def buildlib(bldroot, installpath, caseroot):
         pio_version = case.get_value("PIO_VERSION")
         if cime_model == "e3sm":
             srcroot = case.get_value("SRCROOT")
-            pio_src_root_dir = os.path.join(srcroot, "externals")
-            pio1_src_dir = os.path.join(pio_src_root_dir, "pio1")
-            pio2_src_dir = os.path.join(pio_src_root_dir, "pio2")
-            if (not os.path.isdir(pio_src_root_dir) or
-                not os.path.isdir(pio1_src_dir) or
-                not os.path.isdir(pio2_src_dir)):
-                pio_src_root_dir = None
+            scorpio_src_root_dir = os.path.join(srcroot, "externals")
+            # Scorpio classic is derived from PIO1
+            scorpio_classic_dir = "scorpio_classic"
+            # Scorpio is derived from PIO2
+            scorpio_dir = "scorpio"
+            scorpio_classic_src_dir = os.path.join(scorpio_src_root_dir,
+                                        scorpio_classic_dir)
+            scorpio_src_dir = os.path.join(scorpio_src_root_dir, scorpio_dir)
+            if (not os.path.isdir(scorpio_src_root_dir) or
+                not os.path.isdir(scorpio_classic_src_dir) or
+                not os.path.isdir(scorpio_src_dir)):
+                scorpio_src_root_dir = None
         mpilib = case.get_value("MPILIB")
         exeroot = case.get_value("EXEROOT")
         pio_model = "pio{}".format(pio_version)
@@ -79,9 +84,13 @@ def buildlib(bldroot, installpath, caseroot):
                               sharedlibroot=bldroot, exeroot=exeroot,
                               compiler=compiler, build_threaded=build_threaded)
 
-        if pio_src_root_dir is not None:
-            gmake_vars += " PIO_SRCROOT={pio_src_root_dir}"\
-                          .format(pio_src_root_dir=pio_src_root_dir)
+        if scorpio_src_root_dir is not None:
+            gmake_vars += " IO_LIB_SRCROOT={scorpio_src_root_dir} "\
+                          " IO_LIB_v1_SRCDIR={scorpio_classic_dir} "\
+                          " IO_LIB_v2_SRCDIR={scorpio_dir} "\
+                          .format(scorpio_src_root_dir=scorpio_src_root_dir,
+                                  scorpio_classic_dir=scorpio_classic_dir,
+                                  scorpio_dir=scorpio_dir)
 
         gmake_opts =  "{pio_dir}/Makefile -C {pio_dir} "\
                       " {gmake_vars} -f {casetools}/Makefile"\
