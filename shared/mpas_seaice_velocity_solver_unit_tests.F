@@ -2486,10 +2486,10 @@ contains
        unitTestSubtype)
 
     use seaice_velocity_solver_weak, only: &
-         seaice_internal_stress_weak
+         seaice_internal_stress_weak_linear
 
     use seaice_velocity_solver_variational, only: &
-         seaice_internal_stress_variational
+         seaice_internal_stress_variational_linear
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -2507,9 +2507,9 @@ contains
 
     ! calculate the divergence of stress
     if (trim(config_stress_divergence_scheme) == "weak") then
-       call seaice_internal_stress_weak(domain, .true.)
+       call seaice_internal_stress_weak_linear(domain)
     else if (trim(config_stress_divergence_scheme) == "variational") then
-       call seaice_internal_stress_variational(domain, .true.)
+       call seaice_internal_stress_variational_linear(domain)
     endif
 
   end subroutine seaice_strain_and_stress_divergence_unit_test
