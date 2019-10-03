@@ -300,17 +300,26 @@ void cloud_water_autoconversion_f(Real rho_, Real qc_incld_, Real nc_incld_, Rea
 
     using P3F = Functions<Real, DefaultDevice>;
 
-    typename P3F::Spack rho(rho_);
-    typename P3F::Spack qc_incld(qc_incld_);
-    typename P3F::Spack nc_incld(nc_incld_);
-    typename P3F::Spack qcaut(*qcaut_);
-    typename P3F::Spack ncautc(*ncautc_);
-    typename P3F::Spack ncautr(*ncautr_);
+    typename P3F::view_1d<Real> t_d("t_h", 3);
+    auto t_h = Kokkos::create_mirror_view(t_d);
+    Real local_qcaut = *qcaut_;
+    Real local_ncautc = *ncautc_;
+    Real local_ncautr = *ncautr_;
 
-    P3F::cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr);
-    *qcaut_ = qcaut[0];
-    *ncautc_ = ncautc[0];
-    *ncautr_ = ncautr[0];
+    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack rho(rho_), qc_incld(qc_incld_), nc_incld(nc_incld_), qcaut(local_qcaut), ncautc(local_ncautc), ncautr(local_ncautr);
+      P3F::cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr);
+
+      t_d(0) = qcaut[0];
+      t_d(1) = ncautc[0];
+      t_d(2) = ncautr[0];
+
+    });
+    Kokkos::deep_copy(t_h, t_d);
+
+    *qcaut_ = t_h(0);
+    *ncautc_ = t_h(1);
+    *ncautr_ = t_h(2);
 }
 
 // Cuda implementations of std math routines are not necessarily BFB
