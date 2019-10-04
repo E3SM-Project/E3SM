@@ -106,20 +106,24 @@ CalcUpwindData::CalcUpwindData(
   std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
   std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range) :
   kts(kts_), kte(kte_), kdir(kdir_), kbot(kbot_), k_qxtop(k_qxtop_), num_arrays(num_arrays_), dt_sub(dt_sub_),
-  m_nk((kte - kts) + 1),
-  m_data( (3 + num_arrays*4) * m_nk)
+  m_nk((kte_ - kts_) + 1),
+  m_data( (3 + num_arrays_*3) * m_nk),
+  m_ptr_data(num_arrays_*3)
 {
   Int offset = 0;
 
   rho     = m_data.data();
   inv_rho = rho + (offset+=m_nk);
-  inv_dzq = inv_rho + (offset+=m_nk);
+  inv_dzq = rho + (offset+=m_nk);
+
+  fluxes = m_ptr_data.data();
+  vs     = fluxes + num_arrays;
+  qnx    = vs + num_arrays;
 
   for (Int i = 0; i < num_arrays; ++i) {
-    fluxes[i]  = m_data.data() + (offset+=m_nk);
-    vs[i]      = m_data.data() + (offset+=m_nk);
-    qnx_in[i]  = m_data.data() + (offset+=m_nk);
-    qnx_out[i] = m_data.data() + (offset+=m_nk);
+    fluxes[i]  = rho + (offset+=m_nk);
+    vs[i]      = rho + (offset+=m_nk);
+    qnx[i]     = rho + (offset+=m_nk);
   }
 
   std::default_random_engine generator;
@@ -135,27 +139,40 @@ CalcUpwindData::CalcUpwindData(
     inv_dzq[k] = inv_dzq_dist(generator);
 
     for (Int i = 0; i < num_arrays; ++i) {
-      fluxes [i][k] = 0.0;
-      qnx_out[i][k] = 0.0;
-      vs     [i][k] = vs_dist(generator);
-      qnx_in [i][k] = qnx_dist(generator);
+      fluxes[i][k] = 0.0;
+      vs    [i][k] = vs_dist(generator);
+      qnx   [i][k] = qnx_dist(generator);
     }
+  }
+}
+
+CalcUpwindData::CalcUpwindData(const CalcUpwindData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), kdir(rhs.kdir), kbot(rhs.kbot), k_qxtop(rhs.k_qxtop), num_arrays(rhs.num_arrays), dt_sub(rhs.dt_sub),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data),
+  m_ptr_data(rhs.m_ptr_data.size())
+{
+  Int offset = 0;
+
+  rho     = m_data.data();
+  inv_rho = rho + (offset+=m_nk);
+  inv_dzq = rho + (offset+=m_nk);
+
+  fluxes = m_ptr_data.data();
+  vs     = fluxes + num_arrays;
+  qnx    = vs + num_arrays;
+
+  for (Int i = 0; i < num_arrays; ++i) {
+    fluxes[i] = rho + (offset+=m_nk);
+    vs[i]     = rho + (offset+=m_nk);
+    qnx[i]    = rho + (offset+=m_nk);
   }
 }
 
 void calc_first_order_upwind_step(CalcUpwindData& d)
 {
   p3_init(true);
-  std::vector<std::vector<Real> > qnx_in(d.num_arrays, std::vector<Real>(d.nk()));
-  for (Int i = 0; i < d.num_arrays; ++i) {
-    std::copy(d.qnx_in[i], d.qnx_in[i] + d.nk(), qnx_in[i].begin());
-  }
-
-  calc_first_order_upwind_step_c(d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub, d.rho, d.inv_rho, d.inv_dzq, d.num_arrays, d.fluxes, d.vs, d.qnx_in);
-
-  for (Int i = 0; i < d.num_arrays; ++i) {
-    std::copy(qnx_in[i].begin(), qnx_in[i].end(), d.qnx_out[i]);
-  }
+  calc_first_order_upwind_step_c(d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub, d.rho, d.inv_rho, d.inv_dzq, d.num_arrays, d.fluxes, d.vs, d.qnx);
 }
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
@@ -369,10 +386,16 @@ void calc_first_order_upwind_step_f_impl(
   using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Spack, N>;
   using uview_1d = typename P3F::uview_1d<Spack>;
 
-  // Setup views
+  // Adjust for 0-based indexing
+  kts -= 1;
+  kte -= 1;
+  kbot -= 1;
+  k_qxtop -= 1;
+
   const Int nk = (kte - kts) + 1;
   const Int npack = (nk + Spack::n - 1) / Spack::n;
 
+  // Setup views
   view_1d rho_d("rho_d", npack), inv_rho_d("inv_rho_d", npack), inv_dzq_d("inv_dzq_d", npack);
   auto rho_h     = Kokkos::create_mirror_view(rho_d);
   auto inv_rho_h = Kokkos::create_mirror_view(inv_rho_d);
@@ -421,6 +444,7 @@ void calc_first_order_upwind_step_f_impl(
     Kokkos::deep_copy(qnx_d[i],    qnx_h[i]);
   }
 
+  // Call core function from kernel
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
   Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
     view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;

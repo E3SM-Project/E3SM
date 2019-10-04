@@ -222,7 +222,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     // Run the lookup from a kernel and copy results back to host
     view_1d<IntSmallPack> int_results("int results", 5);
     view_1d<Spack> real_results("real results", 7);
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
       // Init packs
       TableIce ti;
       TableRain tr;

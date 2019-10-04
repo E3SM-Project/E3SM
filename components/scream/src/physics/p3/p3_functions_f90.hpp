@@ -190,21 +190,30 @@ struct CalcUpwindData
   Int kts, kte, kdir, kbot, k_qxtop, num_arrays;
   Real dt_sub;
   Real* rho, *inv_rho, *inv_dzq;
-  Real **vs, **qnx_in;
+  Real **vs;
+
+  // In/out
+  Real **qnx;
 
   // Outputs
-  Real** fluxes, **qnx_out;
+  Real** fluxes;
+
+  CalcUpwindData() = default;
 
   CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
                  std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
                  std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
 
+  // deep copy
+  CalcUpwindData(const CalcUpwindData& rhs);
+
   Int nk() const { return m_nk; }
 
  private:
   // Internals
-  std::vector<Real> m_data;
   Int m_nk;
+  std::vector<Real> m_data;
+  std::vector<Real*> m_ptr_data;
 };
 void calc_first_order_upwind_step(CalcUpwindData& d);
 

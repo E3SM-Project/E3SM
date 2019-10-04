@@ -56,8 +56,14 @@ void Functions<S,D>
           shift_right(0, (*flux[f])(k)) :
           shift_left (0, (*flux[f])(k));
         const auto fluxdiv = (flux_pkdir - (*flux[f])(k)) * inv_dzq(k);
+        //printf("Setting1CXX qnx=%40.32E fluxdiv=%40.32E dt_sub=%40.32E inv_rho=%40.32E inv_dzk=%40.32E fluxes=%40.32E\n",
+        //(*r[f])(k)[0], fluxdiv[0], dt_sub, inv_rho(k)[0], inv_dzq(k)[0], (*flux[f])(k)[0]);
+
         // update prognostic variables
         (*r[f])(k) += fluxdiv * dt_sub * inv_rho(k);
+        // for (int s = 0; s < Spack::n; ++s) {
+        //   printf("  r[%d](%d)[%d] = %40.32E\n", f, k, s, (*r[f])(k)[s]);
+        // }
       }
     });
 

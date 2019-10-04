@@ -196,13 +196,11 @@ static void run_phys()
 
 static void run_bfb()
 {
-  using KTH = KokkosTypes<HostDevice>;
-
   static constexpr Int num_runs = 4;
   static constexpr Int kts      = 1;
   static constexpr Int kte      = 72;
 
-  CalcUpwindData cuds[num_runs] = {
+  CalcUpwindData cuds_fortran[num_runs] = {
                 // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,  rho range, inv_dzq range, vs range, qnx range
     CalcUpwindData(kts, kte,   -1,   72,      36,  2,  1.833E+03,
                    std::make_pair(4.056E-03, 1.153E+00),
@@ -229,18 +227,38 @@ static void run_bfb()
                    std::make_pair(7.701E-16, 2.119E-04))
   };
 
+  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // inout data is in original state
+  CalcUpwindData cuds_cxx[num_runs] = {
+    CalcUpwindData(cuds_fortran[0]),
+    CalcUpwindData(cuds_fortran[1]),
+    CalcUpwindData(cuds_fortran[2]),
+    CalcUpwindData(cuds_fortran[3])
+  };
+
   // Get data from fortran
   for (Int i = 0; i < num_runs; ++i) {
-    calc_first_order_upwind_step(cuds[i]);
+    calc_first_order_upwind_step(cuds_fortran[i]);
+  }
+
+  // Get data from cxx
+  for (Int i = 0; i < num_runs; ++i) {
+    calc_first_order_upwind_step_f(
+      cuds_cxx[i].kts, cuds_cxx[i].kte, cuds_cxx[i].kdir, cuds_cxx[i].kbot, cuds_cxx[i].k_qxtop, cuds_cxx[i].dt_sub,
+      cuds_cxx[i].rho, cuds_cxx[i].inv_rho, cuds_cxx[i].inv_dzq,
+      cuds_cxx[i].num_arrays, cuds_cxx[i].fluxes, cuds_cxx[i].vs, cuds_cxx[i].qnx);
   }
 
   for (Int i = 0; i < num_runs; ++i) {
-    const CalcUpwindData& cud = cuds[i];
-
-    // Sync to device
-    view_1d<Spack> rho_d("rho_d", cud.nk()), inv_rho_d("inv_rho_d", cud.nk()), inv_dzq_d("inv_dzq_d", cud.nk());
-
-    // TODO
+    for (int n = 0; n < cuds_fortran[i].num_arrays; ++n) {
+      // Due to pack issues, we must restrict checks to the active k space
+      Int start = std::min(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop) - 1; // 0-based indx
+      Int end   = std::max(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop); // 0-based indx
+      for (Int k = start; k < end; ++k) {
+        REQUIRE(cuds_fortran[i].fluxes[n][k] == cuds_cxx[i].fluxes[n][k]);
+        REQUIRE(cuds_fortran[i].qnx[n][k]    == cuds_cxx[i].qnx[n][k]);
+      }
+    }
   }
 }
 
@@ -256,7 +274,7 @@ TEST_CASE("p3_upwind", "[p3_functions]")
 {
   using TU = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind;
 
-  TU::run_phys();
+  //TU::run_phys();
   TU::run_bfb();
 }
 
