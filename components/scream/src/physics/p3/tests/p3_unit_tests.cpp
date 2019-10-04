@@ -164,6 +164,7 @@ KOKKOS_FUNCTION static void  cloud_water_autoconversion_unit_bfb_tests(){
     for (Int s = 0; s < Spack::n; ++s) {
        REQUIRE(cwadc[s].rho == cwadc_host(s).rho);
        REQUIRE(cwadc[s].qc_incld == cwadc_host(s).qc_incld);
+       REQUIRE(cwadc[s].nc_incld == cwadc_host(s).nc_incld);
        REQUIRE(cwadc[s].qcaut == cwadc_host(s).qcaut);
        REQUIRE(cwadc[s].ncautc == cwadc_host(s).ncautc);
        REQUIRE(cwadc[s].ncautr == cwadc_host(s).ncautr);
@@ -174,9 +175,27 @@ KOKKOS_FUNCTION static void  cloud_water_autoconversion_unit_bfb_tests(){
     cloud_water_autoconversion_unit_bfb_tests();
   }
 
+  KOKKOS_FUNCTION  static void autoconversion_is_positive(const Int &i, Int &errors){
+
+    const Spack rho(1.0);
+    Spack qc_incld, nc_incld(1e7), qcaut(0.0), ncautc(0.0), ncautr(0.0);
+    for(int si=0; si<Spack::n; ++si){
+        qc_incld[si] = 1e-5 * i * Spack::n + si;
+        Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr);
+        if((qcaut < 0.0).any()){errors++;}
+      }
+    }
 
   static void run_physics(){
 
+    int nerr = 0;
+
+    Kokkos::parallel_reduce("TestAutoConversionPositive", 100, KOKKOS_LAMBDA(const Int& i,  Int& errors) {
+      autoconversion_is_positive(i, errors);
+    }, nerr);
+
+    Kokkos::fence();
+    REQUIRE(nerr == 0);
 
   }
 
