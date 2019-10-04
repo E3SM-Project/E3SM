@@ -50,10 +50,6 @@ void Functions<S,D>
         const auto mask = range_pack >= nk || range_pack < kmin_scalar;
         for (int f = 0; f < nfield; ++f)
           (*flux[f])(k_top_pack).set(mask, 0);
-
-        //for (int s = 0; s < Spack::n; ++s) {
-        //std::cout << "s=" << s << " mask[s]=" << mask[s] << " nk=" << nk << " range[s]=" << range_pack[s] << " kmin=" << kmin_scalar << std::endl;
-        //}
       }
       for (int f = 0; f < nfield; ++f) {
         // compute flux divergence
@@ -61,17 +57,9 @@ void Functions<S,D>
           shift_right(0, (*flux[f])(k)) :
           shift_left (0, (*flux[f])(k));
         const auto fluxdiv = (flux_pkdir - (*flux[f])(k)) * inv_dzq(k);
-        //const auto fluxdiv = (-1*(*flux[f])(k)) * inv_dzq(k);
-        // for (int s = 0; s < Spack::n; ++s) {
-        //   printf("Setting1CXX qnx=%20.12E fluxdiv=%20.12E dt_sub=%20.12E inv_rho=%20.12E inv_dzk=%20.12E fluxes=%20.12E flux_pkdir=%20.12E\n",
-        //          (*r[f])(k)[s], fluxdiv[s], dt_sub, inv_rho(k)[s], inv_dzq(k)[s], (*flux[f])(k)[s], flux_pkdir[s]);
-        // }
 
         // update prognostic variables
         (*r[f])(k) += fluxdiv * dt_sub * inv_rho(k);
-        // for (int s = 0; s < Spack::n; ++s) {
-        //   printf("  r[%d](%d)[%d] = %20.12E\n", f, k, s, (*r[f])(k)[s]);
-        //}
       }
     });
 

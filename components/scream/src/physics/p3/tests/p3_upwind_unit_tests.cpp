@@ -250,19 +250,11 @@ static void run_bfb()
   }
 
   for (Int i = 0; i < num_runs; ++i) {
-    //std::cout << "CHECKING: " << cuds_fortran[i].kbot << " " << cuds_fortran[i].k_qxtop << " " << cuds_fortran[i].nk() << std::endl;
     for (int n = 0; n < cuds_fortran[i].num_arrays; ++n) {
       // Due to pack issues, we must restrict checks to the active k space
       Int start = std::min(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop) - 1; // 0-based indx
       Int end   = std::max(cuds_fortran[i].kbot, cuds_fortran[i].k_qxtop); // 0-based indx
       for (Int k = start; k < end; ++k) {
-        // std::cout << "  CHECKING: " << i << " " << n << " " << k << std::endl;
-        // if (cuds_fortran[i].fluxes[n][k] != cuds_cxx[i].fluxes[n][k]) {
-        //   std::cout << "    Failed(fluxes)" << std::endl;
-        // }
-        // if (cuds_fortran[i].qnx[n][k] != cuds_cxx[i].qnx[n][k]) {
-        //   std::cout << "    Failed(qnx)" << std::endl;
-        // }
         REQUIRE(cuds_fortran[i].fluxes[n][k] == cuds_cxx[i].fluxes[n][k]);
         REQUIRE(cuds_fortran[i].qnx[n][k]    == cuds_cxx[i].qnx[n][k]);
       }

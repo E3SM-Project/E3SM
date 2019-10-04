@@ -3877,16 +3877,13 @@ subroutine calc_first_order_upwind_step(kts, kte, kdir, kbot, k_qxtop, dt_sub, r
      !- compute flux divergence
      fluxdiv = -fluxes(i)%p(k) * inv_dzq(k)
      !- update prognostic variables
-     !print '("Setting1F90 qnx=",ES20.12," fluxdiv=",ES20.12," dt_sub=",ES20.12," inv_rho=",ES20.12," inv_dzk=",ES20.12," fluxes=",ES20.12)', qnx(i)%p(k), fluxdiv, dt_sub, inv_rho(k), inv_dzq(k), fluxes(i)%p(k)
      qnx(i)%p(k) = qnx(i)%p(k) + fluxdiv*dt_sub*inv_rho(k)
-     !print '("  qnx[",I0,"][",I0,"] = ",ES20.12)', i, k, qnx(i)%p(k)
 
      do k = k_qxtop-kdir,kbot,-kdir
         !-- compute flux divergence
         fluxdiv = (fluxes(i)%p(k+kdir) - fluxes(i)%p(k))*inv_dzq(k)
         !-- update prognostic variables
         qnx(i)%p(k) = qnx(i)%p(k) + fluxdiv*dt_sub*inv_rho(k)
-        !print '("Setting2 qnx[",I0,"][",I0,"] = ",ES20.12)', i, k, qnx(i)%p(k)
      end do
   end do
 
