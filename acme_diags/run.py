@@ -188,8 +188,8 @@ class Run():
 
     def _find_attrs_with_none_default_values(self, param):
         """
-        In the param, remove any parameters that
-        have their default value.
+        In the param, find any parameters that
+        have none default value.
         """
         none_default_attr = []
         new_instance = param.__class__()
