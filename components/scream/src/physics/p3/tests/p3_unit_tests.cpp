@@ -180,17 +180,17 @@ KOKKOS_FUNCTION static void  cloud_water_autoconversion_unit_bfb_tests(){
     const Spack rho(1.0);
     Spack qc_incld, nc_incld(1e7), qcaut(0.0), ncautc(0.0), ncautr(0.0);
     for(int si=0; si<Spack::n; ++si){
-        qc_incld[si] = 1e-5 * i * Spack::n + si;
+        qc_incld[si] = 1e-6 * i * Spack::n + si;
+      }
         Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr);
         if((qcaut < 0.0).any()){errors++;}
-      }
     }
 
   static void run_physics(){
 
     int nerr = 0;
 
-    Kokkos::parallel_reduce("TestAutoConversionPositive", 100, KOKKOS_LAMBDA(const Int& i,  Int& errors) {
+    Kokkos::parallel_reduce("TestAutoConversionPositive", 1000, KOKKOS_LAMBDA(const Int& i,  Int& errors) {
       autoconversion_is_positive(i, errors);
     }, nerr);
 
