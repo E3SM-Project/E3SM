@@ -842,9 +842,9 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
       heat_glob = heat_glob_scm(1)
     endif
     
-    ! If single column model we do NOT want to take into
+    ! In single column model we do NOT want to take into
     !   consideration the dynamics energy fixer.  Since only
-    !   only column of dynamics is active, this data will 
+    !   one column of dynamics is active, this data will 
     !   essentially be garbage. 
     if (single_column .and. .not. use_replay) then
       heat_glob = 0._r8
