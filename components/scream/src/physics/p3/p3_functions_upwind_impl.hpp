@@ -25,8 +25,9 @@ void Functions<S,D>
   const view_1d_ptr_array<Spack, nfield>& V,
   const view_1d_ptr_array<Spack, nfield>& r)
 {
+  const Int kmin_scalar = ( kdir == 1 ? k_bot : k_top);
   Int
-    kmin = ( kdir == 1 ? k_bot : k_top)             / Spack::n,
+    kmin = kmin_scalar / Spack::n,
     // Add 1 to make [kmin, kmax). But then the extra term (Spack::n -
     // 1) to determine pack index cancels the +1.
     kmax = ((kdir == 1 ? k_top : k_bot) + Spack::n) / Spack::n;
@@ -45,10 +46,14 @@ void Functions<S,D>
     Kokkos::PerTeam(team), [&] () {
       const Int k = k_top_pack;
       if (nk % Spack::n != 0) {
-        const auto mask =
-          scream::pack::range<IntSmallPack>(k_top_pack*Spack::n) >= nk;
+        auto range_pack = scream::pack::range<IntSmallPack>(k_top_pack*Spack::n);
+        const auto mask = range_pack >= nk || range_pack < kmin_scalar;
         for (int f = 0; f < nfield; ++f)
           (*flux[f])(k_top_pack).set(mask, 0);
+
+        //for (int s = 0; s < Spack::n; ++s) {
+        //std::cout << "s=" << s << " mask[s]=" << mask[s] << " nk=" << nk << " range[s]=" << range_pack[s] << " kmin=" << kmin_scalar << std::endl;
+        //}
       }
       for (int f = 0; f < nfield; ++f) {
         // compute flux divergence
@@ -56,14 +61,17 @@ void Functions<S,D>
           shift_right(0, (*flux[f])(k)) :
           shift_left (0, (*flux[f])(k));
         const auto fluxdiv = (flux_pkdir - (*flux[f])(k)) * inv_dzq(k);
-        //printf("Setting1CXX qnx=%40.32E fluxdiv=%40.32E dt_sub=%40.32E inv_rho=%40.32E inv_dzk=%40.32E fluxes=%40.32E\n",
-        //(*r[f])(k)[0], fluxdiv[0], dt_sub, inv_rho(k)[0], inv_dzq(k)[0], (*flux[f])(k)[0]);
+        //const auto fluxdiv = (-1*(*flux[f])(k)) * inv_dzq(k);
+        // for (int s = 0; s < Spack::n; ++s) {
+        //   printf("Setting1CXX qnx=%20.12E fluxdiv=%20.12E dt_sub=%20.12E inv_rho=%20.12E inv_dzk=%20.12E fluxes=%20.12E flux_pkdir=%20.12E\n",
+        //          (*r[f])(k)[s], fluxdiv[s], dt_sub, inv_rho(k)[s], inv_dzq(k)[s], (*flux[f])(k)[s], flux_pkdir[s]);
+        // }
 
         // update prognostic variables
         (*r[f])(k) += fluxdiv * dt_sub * inv_rho(k);
         // for (int s = 0; s < Spack::n; ++s) {
-        //   printf("  r[%d](%d)[%d] = %40.32E\n", f, k, s, (*r[f])(k)[s]);
-        // }
+        //   printf("  r[%d](%d)[%d] = %20.12E\n", f, k, s, (*r[f])(k)[s]);
+        //}
       }
     });
 
