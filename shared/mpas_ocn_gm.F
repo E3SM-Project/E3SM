@@ -199,22 +199,29 @@ contains
 
       ! Assign a huge value to the scratch variables which may manifest itself when
       ! there is a bug.
-      !$omp do schedule(runtime)
-      do iEdge = 1, nEdges + 1
+      !$omp do schedule(runtime) private(k)
+      do iEdge = 1, nEdges
          do k = 1, nVertLevels
             gradDensityEdge(k, iEdge) = huge(0D0)
-            gradDensityTopOfEdge(k, iEdge) = huge(0D0)
-            dDensityDzTopOfEdge(k, iEdge) = huge(0D0)
             gradZMidEdge(k, iEdge) = huge(0D0)
-            gradZMidTopOfEdge(k, iEdge) = huge(0D0)
-            relativeSlopeTopOfEdge(k, iEdge) = 0.0_RKIND
-            relativeSlopeTapering(k, iEdge) = 0.0_RKIND
             normalGMBolusVelocity(k, iEdge) = 0.0_RKIND
          end do
       end do
       !$omp end do
 
-      !$omp do schedule(runtime)
+      !$omp do schedule(runtime) private(k)
+      do iEdge = 1, nEdges
+         do k = 1, nVertLevels + 1
+            gradDensityTopOfEdge(k, iEdge) = huge(0D0)
+            dDensityDzTopOfEdge(k, iEdge) = huge(0D0)
+            gradZMidTopOfEdge(k, iEdge) = huge(0D0)
+            relativeSlopeTopOfEdge(k, iEdge) = 0.0_RKIND
+            relativeSlopeTapering(k, iEdge) = 0.0_RKIND
+         end do
+      end do
+      !$omp end do
+
+      !$omp do schedule(runtime) private(k)
       do iCell = 1, nCells + 1
          do k = 1, nVertLevels
             dDensityDzTopOfCell(k,  iCell) = huge(0D0)
@@ -524,36 +531,37 @@ contains
       !
       !--------------------------------------------------------------------
 
-
-      cGMphaseSpeed(:) = config_gravWaveSpeed_trunc
       if (config_gm_lat_variable_c2) then
-          nEdges = nEdgesArray( 3 )
-          !$omp do schedule(runtime) private(cell1, cell2, k, ltSum, BruntVaisalaFreqTopEdge, sumN2, countN2, bottomAv)
-          do iEdge = 1, nEdges
-             cell1 = cellsOnEdge(1,iEdge)
-             cell2 = cellsOnEdge(2,iEdge)
-           sumN2 = 0.0
-          countN2 = 0
-          ltSum = 0.0
+         !$omp do schedule(runtime) private(cell1, cell2, sumN2, ltSum, countN2, BruntVaisalaFreqTopEdge)
+         do iEdge = 1, nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            sumN2 = 0.0
+            ltSum = 0.0
+            countN2 = 0
             
-             do k=2,maxLevelEdgeTop(iEdge)
+            do k=2,maxLevelEdgeTop(iEdge)
 
-                BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
-                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
+               BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
+               BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
                 
-                sumN2 = sumN2 + BruntVaisalaFreqTopEdge*layerThicknessEdge(k,iEdge)
-                ltSum = ltSum + layerThicknessEdge(k,iEdge)
-                countN2 = countN2 +1
+               sumN2 = sumN2 + BruntVaisalaFreqTopEdge*layerThicknessEdge(k,iEdge)
+               ltSum = ltSum + layerThicknessEdge(k,iEdge)
+               countN2 = countN2 +1
 
-             enddo
+            enddo
 
-             if(countN2 > 0) cGMphaseSpeed(iEdge) = max(config_gm_min_phase_speed ,sqrt(sumN2/ltSum)*ltSum / 3.141592_RKIND)
+            if(countN2 > 0) cGMphaseSpeed(iEdge) = max(config_gm_min_phase_speed ,sqrt(sumN2/ltSum)*ltSum / 3.141592_RKIND)
 
-          enddo
-          !$omp end do
+         enddo
+         !$omp end do
 
       else
-          cGMphaseSpeed(:) = config_gravWaveSpeed_trunc
+         !$omp do schedule(runtime)
+         do iEdge = 1, nEdges
+            cGMphaseSpeed(iEdge) = config_gravWaveSpeed_trunc
+         enddo
+         !$omp end do
       endif
 
       !$omp do schedule(runtime)
