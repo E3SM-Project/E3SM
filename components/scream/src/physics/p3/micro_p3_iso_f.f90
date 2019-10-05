@@ -15,7 +15,6 @@ module micro_p3_iso_f
 
 interface
 
-
   subroutine find_lookuptable_indices_1a_f(dumi,dumjj,dumii,dumzz,dum1,dum4,dum5,dum6,      &
        qitot,nitot,qirim,rhop) bind(C)
     use iso_c_binding
