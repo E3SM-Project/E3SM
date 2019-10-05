@@ -274,7 +274,7 @@ TEST_CASE("p3_upwind", "[p3_functions]")
 {
   using TU = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestUpwind;
 
-  //TU::run_phys();
+  TU::run_phys();
   TU::run_bfb();
 }
 
