@@ -1,0 +1,8 @@
+The original nudging code can be found at: https://github.com/E3SM-Project/E3SM/blob/master/components/cam/src/physics/cam/nudging.F90
+
+The revised nudging code can be found at: https://github.com/E3SM-Project/E3SM/blob/jiansunpnnl/ms2019/components/cam/src/physics/cam/nudging.F90
+
+The modifications mainly include:
+1. The original nudging code only works appropriately when there is one time slice per data file. The revised code can work well with multiple time slices per data file.
+2. The original nudging code only applies the step-function nudging. The revised code linearly interpolates the nudging data to each model time step. The difference can be viewed in Sun et al.'s JAMES paper.
+3. Fix bugs to perform a real intermittent nudged simulation.
