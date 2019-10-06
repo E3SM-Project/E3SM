@@ -1,76 +1,26 @@
-[![E3SM Logo](https://e3sm.org/wp-content/themes/e3sm/assets/images/e3sm-logo.png)](https://e3sm.org)
 
-Energy Exascale Earth System Model (E3SM)
+Revised nudging code for E3SMv1 
 ================================================================================
 
-E3SM is a state-of-the-art fully coupled model of the Earth's climate including
-important biogeochemical and cryospheric processes. It is intended to address
-the most challenging and demanding climate-change research problems and
-Department of Energy mission needs while efficiently using DOE Leadership
-Computing Facilities.  
+This is a branch of the E3SM model repository: 
 
-DOI: [10.11578/E3SM/dc.20180418.36](http://dx.doi.org/10.11578/E3SM/dc.20180418.36)
+https://github.com/E3SM-Project/E3SM/
 
-Please visit the [project website](https://e3sm.org) for further details.
+The original nudging code can be found at: 
 
-Table of Contents 
+https://github.com/E3SM-Project/E3SM/blob/master/components/cam/src/physics/cam/nudging.F90
+
+The revised nudging code can be found at: 
+
+https://github.com/E3SM-Project/E3SM/blob/jiansunpnnl/ms2019/components/cam/src/physics/cam/nudging.F90
+
+The modifications mainly include:
+  * The original nudging code only works appropriately when there is one time slice per data file. The revised code can work well with multiple time slices per data file.
+  * The original nudging code only applies the step-function nudging. The revised code linearly interpolates the nudging data to each model time step. The difference can be viewed in Sun et al.'s JAMES paper.
+  * Fix bugs to perform a real intermittent nudged simulation.
+
+
+Reference
 --------------------------------------------------------------------------------
-- [Quick Start](#quickstart)
-- [Supported Machines](#supportedmachines)
-- [Running](#running)
-- [Contributing](#contributing)
-- [Acknowledge](#acknowledge)
-- [License](#license)
-
-Quick Start
---------------------------------------------------------------------------------
-The [Quick Start](https://e3sm.org/model/running-e3sm/e3sm-quick-start/) page 
-includes instructions on obtaining the necessary code and input data for model 
-setup and execution.
-
-Supported Machines 
---------------------------------------------------------------------------------
-E3SM is high-performance computing application and generally requires a cluster
-with several hundred nodes to run a scientifically validated case at a useful
-simulation speed.
-
-To run E3SM, it is recommended that you obtain time on a 
-[Supported Machine](https://e3sm.org/model/running-e3sm/supported-machines/).
-
-Running
---------------------------------------------------------------------------------
-Please refer to [Running E3SM](https://e3sm.org/model/running-e3sm/) 
- for instructions on running the model. 
-
-Contributing
---------------------------------------------------------------------------------
-Please refer to [Contributing](CONTRIBUTING.md) for details on our code development
-process for submitting pull requests.
-
-Acknowledgement
---------------------------------------------------------------------------------
-The Energy Exascale Earth System Model (E3SM) Project should be acknowledged in
-publications as the origin of the model using
-[these guidelines](https://e3sm.org/resources/policies/acknowledge-e3sm/).
-
-In addition, the software should be cited.  For your convenience,
-the following BibTeX entry is provided.
-```TeX
-@misc{e3sm-model,
-	title = {{Energy Exascale Earth System Model (E3SM)}},
-	author = {{E3SM Project}},
-	abstractNote = {{E3SM} is a state-of-the-art fully coupled model of the {E}arth's 
-		climate including important biogeochemical and cryospheric processes.},
-	howpublished = {[Computer Software] \url{https://dx.doi.org/10.11578/E3SM/dc.20180418.36}},
-	url = {https://dx.doi.org/10.11578/E3SM/dc.20180418.36},
-	doi = {10.11578/E3SM/dc.20180418.36},
-	year = 2018,
-	month = apr,
-}
-```
-
-License
---------------------------------------------------------------------------------
-The E3SM model became open development at the time of first model and data release.
-Please see [LICENSE](LICENSE) for details.
+Sun et al. (2019) Impact of nudging strategy on the climate representativeness and hindcast skill of constrained EAMv1 simulations. Under review for JAMES. 
 
