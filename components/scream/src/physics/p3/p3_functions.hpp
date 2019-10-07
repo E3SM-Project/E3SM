@@ -88,7 +88,7 @@ struct Functions
 
   using MemberType = typename KT::MemberType;
 
-  // -- Table3
+  // -- Table3 --
 
   struct Table3 {
     IntSmallPack dumii, dumjj;
