@@ -183,6 +183,10 @@ module clm_varctl
   ! atmospheric CO2 molar ratio (by volume) (umol/mol)
   real(r8), public :: co2_ppmv     = 355._r8            !
 
+  ! Use constant climate during transient run (CPL_BYPASS only)
+  logical, public :: const_climate_hist  = .false.
+
+
   !----------------------------------------------------------
   ! C isotopes
   !----------------------------------------------------------
@@ -360,6 +364,13 @@ module clm_varctl
   !-----------------------------------------------------------------------
   ! Priority of plant to get symbiotic N fixation, phosphatase
   logical, public :: NFIX_PTASE_plant = .false.
+
+  !-----------------------------------------------------------------------
+  !CO2 and warming experiments
+  character(len=8), public :: startdate_add_temperature ='99991231'
+  character(len=8), public :: startdate_add_co2         ='99991231'
+  real(r8), public         :: add_co2 = 0d0
+  real(r8), public         :: add_temperature = 0d0
 
   !-----------------------------------------------------------------------
   ! Lateral grid connectivity
