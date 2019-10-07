@@ -196,36 +196,42 @@ static void run_phys()
 
 static void run_bfb()
 {
-  static constexpr Int num_runs = 4;
-  static constexpr Int kts      = 1;
-  static constexpr Int kte      = 72;
-
-  CalcUpwindData cuds_fortran[num_runs] = {
+  CalcUpwindData cuds_fortran[] = {
                 // kts, kte, kdir, kbot, k_qxtop, na,   dt_sub,  rho range, inv_dzq range, vs range, qnx range
-    CalcUpwindData(kts, kte,   -1,   72,      36,  2,  1.833E+03,
+    CalcUpwindData(  1,  72,   -1,   72,      36,  2,  1.833E+03,
                    std::make_pair(4.056E-03, 1.153E+00),
                    std::make_pair(2.863E-05, 8.141E-03),
                    std::make_pair(2.965E-02, 3.555E+00),
                    std::make_pair(7.701E-16, 2.119E-04)),
 
-    CalcUpwindData(kts, kte,    1,   36,      72,  2,  1.833E+03,
+    CalcUpwindData(  1,  72,    1,   36,      72,  2,  1.833E+03,
                    std::make_pair(4.056E-03, 1.153E+00),
                    std::make_pair(2.863E-05, 8.141E-03),
                    std::make_pair(2.965E-02, 3.555E+00),
                    std::make_pair(7.701E-16, 2.119E-04)),
 
-    CalcUpwindData(kts, kte,   -1,   72,      36,  4,  1.833E+03,
+    CalcUpwindData(  1,  72,   -1,   72,      36,  4,  1.833E+03,
                    std::make_pair(4.056E-03, 1.153E+00),
                    std::make_pair(2.863E-05, 8.141E-03),
                    std::make_pair(2.965E-02, 3.555E+00),
                    std::make_pair(7.701E-16, 2.119E-04)),
 
-    CalcUpwindData(kts, kte,   -1,   72,      72,  2,  1.833E+03,
+    CalcUpwindData(  1,  72,   -1,   72,      72,  2,  1.833E+03,
+                   std::make_pair(4.056E-03, 1.153E+00),
+                   std::make_pair(2.863E-05, 8.141E-03),
+                   std::make_pair(2.965E-02, 3.555E+00),
+                   std::make_pair(7.701E-16, 2.119E-04)),
+
+    CalcUpwindData(  1,  32,   -1,   24,      8,  2,  1.833E+03,
                    std::make_pair(4.056E-03, 1.153E+00),
                    std::make_pair(2.863E-05, 8.141E-03),
                    std::make_pair(2.965E-02, 3.555E+00),
                    std::make_pair(7.701E-16, 2.119E-04))
+
   };
+
+  static constexpr Int num_runs = sizeof(cuds_fortran) / sizeof(CalcUpwindData);
+
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state
@@ -233,7 +239,8 @@ static void run_bfb()
     CalcUpwindData(cuds_fortran[0]),
     CalcUpwindData(cuds_fortran[1]),
     CalcUpwindData(cuds_fortran[2]),
-    CalcUpwindData(cuds_fortran[3])
+    CalcUpwindData(cuds_fortran[3]),
+    CalcUpwindData(cuds_fortran[4])
   };
 
   // Get data from fortran

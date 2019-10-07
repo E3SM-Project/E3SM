@@ -45,11 +45,14 @@ void Functions<S,D>
   Kokkos::single(
     Kokkos::PerTeam(team), [&] () {
       const Int k = k_top_pack;
-      if (nk % Spack::n != 0) {
-        auto range_pack = scream::pack::range<IntSmallPack>(k_top_pack*Spack::n);
+      {
+        const auto range_pack = scream::pack::range<IntSmallPack>(k_top_pack*Spack::n);
         const auto mask = range_pack >= nk || range_pack < kmin_scalar;
-        for (int f = 0; f < nfield; ++f)
-          (*flux[f])(k_top_pack).set(mask, 0);
+        if (mask.any()) {
+          for (int f = 0; f < nfield; ++f) {
+            (*flux[f])(k_top_pack).set(mask, 0);
+          }
+        }
       }
       for (int f = 0; f < nfield; ++f) {
         // compute flux divergence

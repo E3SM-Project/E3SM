@@ -386,6 +386,8 @@ void calc_first_order_upwind_step_f_impl(
   using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Spack, N>;
   using uview_1d = typename P3F::uview_1d<Spack>;
 
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
   // Adjust for 0-based indexing
   kts -= 1;
   kte -= 1;

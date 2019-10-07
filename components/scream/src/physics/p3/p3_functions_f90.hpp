@@ -198,8 +198,6 @@ struct CalcUpwindData
   // Outputs
   Real** fluxes;
 
-  CalcUpwindData() = default;
-
   CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
                  std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
                  std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
