@@ -124,8 +124,8 @@ class Run():
             parent = copy.deepcopy(parent)
             #find attributes that are not defaults
 
-            none_default_param_parent = self._find_attrs_with_none_default_values(parent)
-            none_default_param_child = self._find_attrs_with_none_default_values(parameters[i])
+            nondefault_param_parent = self._find_attrs_with_nondefault_values(parent)
+            nondefault_param_child = self._find_attrs_with_nondefault_values(parameters[i])
 
 
             self._remove_attrs_with_default_values(parent)
@@ -141,10 +141,10 @@ class Run():
                     attr_value = getattr(parent, attr)
                     setattr(parameters[i], attr, attr_value)
 
-            print(list(set(none_default_param_parent) - \
-                set(none_default_param_child)))
-            for attr in list(set(none_default_param_parent) - \
-                set(none_default_param_child)):
+            print(list(set(nondefault_param_parent) - \
+                set(nondefault_param_child)))
+            for attr in list(set(nondefault_param_parent) - \
+                set(nondefault_param_child)):
                 #'seasons' is a corner case that don't need to get in to none-core sets, Ex. area mean time series
                 if attr != 'seasons':
                     attr_value = getattr(parent, attr)
@@ -186,12 +186,12 @@ class Run():
                 getattr(new_instance, attr) == getattr(param, attr):
                 delattr(param, attr)
 
-    def _find_attrs_with_none_default_values(self, param):
+    def _find_attrs_with_nondefault_values(self, param):
         """
-        In the param, remove any parameters that
-        have their default value.
+        In the param, find any parameters that
+        have nondefault value.
         """
-        none_default_attr = []
+        nondefault_attr = []
         new_instance = param.__class__()
         for attr in dir(param):
             # Ignore any of the hidden attributes.
@@ -200,8 +200,8 @@ class Run():
             
             if hasattr(new_instance, attr) and \
                 getattr(new_instance, attr) != getattr(param, attr):
-                none_default_attr.append(attr)
-        return none_default_attr
+                nondefault_attr.append(attr)
+        return nondefault_attr
 
     def _get_instance_of_param_class(self, cls, parameters):
         """
