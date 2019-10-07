@@ -79,6 +79,10 @@ for mct, etc.
      compilers -->
 <compiler>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
+  <!-- MPAS Components rely on this flag to use the newer PIO/Scorpio interfaces. These newer interfaces are available on both Scorpio and Scorpio classic -->
+  <ADD_CPPDEFS MODEL="ice"> -DUSE_PIO2 </ADD_CPPDEFS>
+  <ADD_CPPDEFS MODEL="ocn"> -DUSE_PIO2 </ADD_CPPDEFS>
+  <ADD_CPPDEFS MODEL="glc"> -DUSE_PIO2 </ADD_CPPDEFS>
   <ADD_CPPDEFS MODEL="pop"> -D_USE_FLOW_CONTROL </ADD_CPPDEFS>
 </compiler>
 
