@@ -3516,7 +3516,7 @@ end subroutine phys_timestep_init
 subroutine add_fld_default_calls()
   !BSINGH -  For adding addfld and add defualt calls
   use cam_history,        only: addfld, add_default, fieldname_len
-
+  use phys_control,     only: phys_getopts
   implicit none
 
   !Add all existing ptend names for the addfld calls
@@ -3530,52 +3530,21 @@ subroutine add_fld_default_calls()
 !       'clubb_ice4          ','clubb_srf           ' /)
 
 !Add all existing ptend names in e3smv1 for the addfld calls
-  character(len=20), parameter :: vlist(198) = (/ 'topphysbc           ', 'chkenergyfix        ', 'dadadj              ', 'zm_convr            ', 'zm_conv_evap        ',&
-           'momtran             ', 'zm_conv_tend        ', 'convect_shallow_off ', 'convect_shallow     ', 'clubb_ice1_sub01    ', 'clubb_det_sub01     ',&
-           'clubb_ice4_sub01    ', 'micro_mg_sub01      ', 'cldwat_mic_sub01    ', 'clubb_ice1_sub02    ', 'clubb_det_sub02     ',&
-           'clubb_ice4_sub02    ', 'micro_mg_sub02      ', 'cldwat_mic_sub02    ', 'clubb_ice1_sub03    ', 'clubb_det_sub03     ',&
-           'clubb_ice4_sub03    ', 'micro_mg_sub03      ', 'cldwat_mic_sub03    ', 'clubb_ice1_sub04    ', 'clubb_det_sub04     ',&
-           'clubb_ice4_sub04    ', 'micro_mg_sub04      ', 'cldwat_mic_sub04    ', 'clubb_ice1_sub05    ', 'clubb_det_sub05     ',&
-           'clubb_ice4_sub05    ', 'micro_mg_sub05      ', 'cldwat_mic_sub05    ', 'clubb_ice1_sub06    ', 'clubb_det_sub06     ',&
-           'clubb_ice4_sub06    ', 'micro_mg_sub06      ', 'cldwat_mic_sub06    ', 'clubb_ice1_sub07    ', 'clubb_det_sub07     ',&
-           'clubb_ice4_sub07    ', 'micro_mg_sub07      ', 'cldwat_mic_sub07    ', 'clubb_ice1_sub08    ', 'clubb_det_sub08     ',&
-           'clubb_ice4_sub08    ', 'micro_mg_sub08      ', 'cldwat_mic_sub08    ', 'clubb_ice1_sub09    ', 'clubb_det_sub09     ',&
-           'clubb_ice4_sub09    ', 'micro_mg_sub09      ', 'cldwat_mic_sub09    ', 'clubb_ice1_sub10    ', 'clubb_det_sub10     ',&
-           'clubb_ice4_sub10    ', 'micro_mg_sub10      ', 'cldwat_mic_sub10    ', 'clubb_ice1_sub11    ', 'clubb_det_sub11     ',&
-           'clubb_ice4_sub11    ', 'micro_mg_sub11      ', 'cldwat_mic_sub11    ', 'clubb_ice1_sub12    ', 'clubb_det_sub12     ',&
-           'clubb_ice4_sub12    ', 'micro_mg_sub12      ', 'cldwat_mic_sub12    ', 'clubb_ice1_sub13    ', 'clubb_det_sub13     ',&
-           'clubb_ice4_sub13    ', 'micro_mg_sub13      ', 'cldwat_mic_sub13    ', 'clubb_ice1_sub14    ', 'clubb_det_sub14     ',&
-           'clubb_ice4_sub14    ', 'micro_mg_sub14      ', 'cldwat_mic_sub14    ', 'clubb_ice1_sub15    ', 'clubb_det_sub15     ',&
-           'clubb_ice4_sub15    ', 'micro_mg_sub15      ', 'cldwat_mic_sub15    ', 'clubb_ice1_sub16    ', 'clubb_det_sub16     ',&
-           'clubb_ice4_sub16    ', 'micro_mg_sub16      ', 'cldwat_mic_sub16    ', 'clubb_ice1_sub17    ', 'clubb_det_sub17     ',&
-           'clubb_ice4_sub17    ', 'micro_mg_sub17      ', 'cldwat_mic_sub17    ', 'clubb_ice1_sub18    ', 'clubb_det_sub18     ',&
-           'clubb_ice4_sub18    ', 'micro_mg_sub18      ', 'cldwat_mic_sub18    ', 'clubb_ice1_sub19    ', 'clubb_det_sub19     ',&
-           'clubb_ice4_sub19    ', 'micro_mg_sub19      ', 'cldwat_mic_sub19    ', 'clubb_ice1_sub20    ', 'clubb_det_sub20     ',&
-           'clubb_ice4_sub20    ', 'micro_mg_sub20      ', 'cldwat_mic_sub20    ', 'clubb_ice1_sub21    ', 'clubb_det_sub21     ',&
-           'clubb_ice4_sub21    ', 'micro_mg_sub21      ', 'cldwat_mic_sub21    ', 'clubb_ice1_sub22    ', 'clubb_det_sub22     ',&
-           'clubb_ice4_sub22    ', 'micro_mg_sub22      ', 'cldwat_mic_sub22    ', 'clubb_ice1_sub23    ', 'clubb_det_sub23     ',&
-           'clubb_ice4_sub23    ', 'micro_mg_sub23      ', 'cldwat_mic_sub23    ', 'clubb_ice1_sub24    ', 'clubb_det_sub24     ',&
-           'clubb_ice4_sub24    ', 'micro_mg_sub24      ', 'cldwat_mic_sub24    ', 'clubb_ice1_sub25    ', 'clubb_det_sub25     ',&
-           'clubb_ice4_sub25    ', 'micro_mg_sub25      ', 'cldwat_mic_sub25    ', 'clubb_ice1_sub26    ', 'clubb_det_sub26     ',&
-           'clubb_ice4_sub26    ', 'micro_mg_sub26      ', 'cldwat_mic_sub26    ', 'clubb_ice1_sub27    ', 'clubb_det_sub27     ',&
-           'clubb_ice4_sub27    ', 'micro_mg_sub27      ', 'cldwat_mic_sub27    ', 'clubb_ice1_sub28    ', 'clubb_det_sub28     ',&
-           'clubb_ice4_sub28    ', 'micro_mg_sub28      ', 'cldwat_mic_sub28    ', 'clubb_ice1_sub29    ', 'clubb_det_sub29     ',&
-           'clubb_ice4_sub29    ', 'micro_mg_sub29      ', 'cldwat_mic_sub29    ', 'clubb_ice1_sub30    ', 'clubb_det_sub30     ',&
-           'clubb_ice4_sub30    ', 'micro_mg_sub30      ', 'cldwat_mic_sub30    ', 'clubb_ice1_sub31    ', 'clubb_det_sub31     ',&
-           'clubb_ice4_sub31    ', 'micro_mg_sub31      ', 'cldwat_mic_sub31    ', 'clubb_ice1_sub32    ', 'clubb_det_sub32     ',&
-           'clubb_ice4_sub32    ', 'micro_mg_sub32      ', 'cldwat_mic_sub32    ', 'clubb_ice1_sub33    ', 'clubb_det_sub33     ',&
-           'clubb_ice4_sub33    ', 'micro_mg_sub33      ', 'cldwat_mic_sub33    ', 'clubb_ice1_sub34    ', 'clubb_det_sub34     ',&
-           'clubb_ice4_sub34    ', 'micro_mg_sub34      ', 'cldwat_mic_sub34    ', 'clubb_ice1_sub35    ', 'clubb_det_sub35     ',&
-           'clubb_ice4_sub35    ', 'micro_mg_sub35      ', 'cldwat_mic_sub35    ', 'clubb_ice1_sub36    ', 'clubb_det_sub36     ',&
-           'clubb_ice4_sub36    ', 'micro_mg_sub36      ', 'cldwat_mic_sub36    ', 'aero_model_wetdep_ma', 'convtran2           ',&
-           'cam_radheat         ', 'chemistry           ', 'clubb_srf           ', 'rayleigh_friction   ', 'aero_model_drydep_ma',&
-           'Grav_wave_drag      ', 'nudging             ' /)
-
+  character(len=20), parameter :: vlist(18) = (/          'topphysbc           ', 'chkenergyfix        ', 'dadadj              ',&
+           'zm_convr            ', 'zm_conv_evap        ', 'momtran             ', 'zm_conv_tend        ', 'convect_shallow_off ',&
+           'convect_shallow     ', 'aero_model_wetdep_ma', 'convtran2           ', 'cam_radheat         ', 'chemistry           ',&
+           'clubb_srf           ', 'rayleigh_friction   ', 'aero_model_drydep_ma', 'Grav_wave_drag      ', 'nudging             ' /)
+   character(len=10), parameter :: vlist2(5) =(/'clubb_ice1','clubb_det ','clubb_ice4','micro_mg  ','cldwat_mic'/)
   character(len=fieldname_len) :: varname
   character(len=1000)          :: s_lngname,stend_lngname,qv_lngname,qvtend_lngname,t_lngname
   
-  integer :: iv, ntot, ihist
+  integer :: iv, ntot, ihist,it
+  integer :: cld_macmic_num_steps
+  logical  :: l_dribling_tend   
+ call phys_getopts(cld_macmic_num_steps_out=cld_macmic_num_steps)
+ call phys_getopts(l_dribling_tend_out=l_dribling_tend)
 
+  
   ntot = size(vlist)
 
   do ihist = 1 , nvars_prtrb_hist
@@ -3587,6 +3556,28 @@ subroutine add_fld_default_calls()
         call add_default (trim(adjustl(varname)), 1, ' ')        
      enddo
   enddo
+ntot=size(vlist2)
+do ihist = 1 , nvars_prtrb_hist
+ do iv = 1, ntot
+
+    do it=1,cld_macmic_num_steps
+        write(substep,"(I2.2)")it
+        varname  = trim(adjustl(hist_vars(ihist)))//'_'//trim(adjustl(vlist2(iv)))//'_sub'//trim(adjustl(substep)) ! form variable name  !trim(adjustl(hist_vars(ihist)))//'_'//trim(adjustl(vlist(iv))) ! form variable name
+
+        call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'extramacmic_diag_units', 'extramacmic_diag_longname',flag_xyfill=.true.)!The units and longname are dummy as it is for a test only
+        call add_default (trim(adjustl(varname)), 1, ' ')
+    enddo
+    if(l_dribling_tend)then
+    do it=1,cld_macmic_num_steps
+        write(substep,"(I2.2)")it
+        varname  = trim(adjustl(hist_vars(ihist)))//'_'//'drib_tend_clubb_'//trim(adjustl(substep)) ! form variable name  !trim(adjustl(hist_vars(ihist)))//'_'//trim(adjustl(vlist(iv))) ! form variable name
+
+        call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'extramacmic_diag_units', 'extramacmic_diag_longname',flag_xyfill=.true.)!The units and longname are dummy as it is for a test only
+        call add_default (trim(adjustl(varname)), 1, ' ')
+    enddo
+   end if
+  enddo
+end do
 
 end subroutine add_fld_default_calls
 
@@ -3598,7 +3589,7 @@ subroutine add_fld_extra_macmic_calls ()
 
   implicit none
   !Add all existing ptend names for the addfld calls
-  character(len=17), parameter ::vlist(19) = (/ 'npccn_af_micaero ',&
+  character(len=17), parameter ::vlist(57) = (/ 'npccn_af_micaero ',&
          'numliq_bf_clubb  ','numliq_bf_micaero','numliq_af_mg2tend','cldliq_bf_micaero','cldliq_af_mg2tend',&
 !        'numliq_bf_reg    ','numliq_af_reg    ','numliq_bf_mix    ','numliq_af_mix    ',&
 !         'nsource_af_reg   ','nsource_bf_mix   ','nsource_af_mix   ','cldfrc_new       ','cldfrc_old       ',&
@@ -3606,7 +3597,15 @@ subroutine add_fld_extra_macmic_calls ()
 !         'alsto_bf_micaero ','alsto_af_micaero ','alsto_af_mg2tend ',
          'cldliq_bf_clubb  ','qvapor_bf_clubb  ','qvapor_bf_micaero','qvapor_af_mg2tend','cldice_bf_clubb  ',&
          'numice_bf_clubb  ','numice_bf_micaero','numice_af_mg2tend','cldice_bf_micaero','cldice_af_mg2tend',&
-         'temp_bf_clubb    ','temp_bf_micaero  ','temp_af_mg2tend  '/) 
+         'temp_bf_clubb    ','temp_bf_micaero  ','temp_af_mg2tend  ','EVAPSNOW         ','EVAPPREC         ',&
+         'QVRES            ','QISEVAP          ','QCSEVAP          ','QISEDTEN         ','QCSEDTEN         ',&
+         'QIRESO           ','QCRESO           ','QRSEDTEN         ','QSSEDTEN         ','PSACWSO          ',&
+         'PRCO             ','PRCIO            ','PRAO             ','PRAIO            ','PRACSO           ',&
+         'MSACWIO          ','MPDW2V           ','MPDW2P           ','MPDW2I           ','MPDT             ',&
+         'MPDQ             ','MPDLIQ           ','MPDICE           ','MPDI2W           ','MPDI2P           ',&
+         'MPDI2V           ','MNUCCTO          ','MNUCCRO          ','MNUCCCO          ','MELTSDT          ',&
+         'MELTO            ','HOMOO            ','FRZRDT           ','CMEIOUT          ','BERGSO           ',&
+         'BERGO            '/) 
 
   character(len=15), parameter :: vlist2(4) = (/ 'alstn_af_macmic'  ,'alstn_bf_macmic', 'alsto_af_macmic'  ,'alsto_bf_macmic'/)  !no substepping variable
   character(len=17), parameter :: vlist3(2) = (/ 'factnum_mam      ','raerosol_tot_mam '/) !aerosol-related variables
