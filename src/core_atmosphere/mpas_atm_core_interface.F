@@ -119,11 +119,16 @@ module atm_core_interface
 
       logical, pointer :: iauActive
       character(len=StrKIND), pointer :: config_iau_option
+      logical, pointer :: limited_areaActive
+      logical, pointer :: config_apply_lbcs
       logical, pointer :: config_jedi_da, jedi_daActive
       integer :: local_ierr
 
       ierr = 0
 
+      !
+      ! Incremental analysis update
+      !
       nullify(config_iau_option)
       call mpas_pool_get_config(configs, 'config_IAU_option', config_iau_option)
 
@@ -136,6 +141,24 @@ module atm_core_interface
          iauActive = .false.
       end if
 
+      !
+      ! Limited-area
+      !
+      nullify(config_apply_lbcs)
+      call mpas_pool_get_config(configs, 'config_apply_lbcs', config_apply_lbcs)
+
+      nullify(limited_areaActive)
+      call mpas_pool_get_package(packages, 'limited_areaActive', limited_areaActive)
+
+      if (config_apply_lbcs) then
+         limited_areaActive = .true.
+      else
+         limited_areaActive = .false.
+      end if
+
+      !
+      ! JEDI data assimilation
+      !
       nullify(config_jedi_da)
       call mpas_pool_get_config(configs, 'config_jedi_da', config_jedi_da)
 
@@ -213,15 +236,16 @@ module atm_core_interface
    !>  and allow the core to specify details of the configuration.
    !
    !-----------------------------------------------------------------------
-   function atm_setup_log(logInfo, domain) result(iErr)!{{{
+   function atm_setup_log(logInfo, domain, unitNumbers) result(iErr)!{{{
 
       use mpas_derived_types, only : mpas_log_type, domain_type
       use mpas_log, only : mpas_log_init, mpas_log_open
 
       implicit none
 
-      type (mpas_log_type), intent(inout), pointer :: logInfo  !< logging information object to set up
-      type (domain_type), intent(in), pointer :: domain  !< domain object to provide info for setting up log manager
+      type (mpas_log_type), intent(inout), pointer :: logInfo    !< logging information object to set up
+      type (domain_type), intent(in), pointer :: domain          !< domain object to provide info for setting up log manager
+      integer, dimension(2), intent(in), optional :: unitNumbers !< Fortran unit numbers to use for output and error logs
       integer :: iErr
 
       ! Local variables
@@ -230,7 +254,7 @@ module atm_core_interface
       iErr = 0
 
       ! Initialize log manager
-      call mpas_log_init(logInfo, domain, err=local_err)
+      call mpas_log_init(logInfo, domain, unitNumbers=unitNumbers, err=local_err)
       iErr = ior(iErr, local_err)
 
       ! Set core specific options here

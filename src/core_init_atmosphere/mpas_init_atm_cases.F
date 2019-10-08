@@ -66,6 +66,9 @@ module init_atm_cases
       logical, pointer :: config_static_interp
       logical, pointer :: config_native_gwd_static
       logical, pointer :: config_met_interp
+      logical, pointer :: config_blend_bdy_terrain
+      character (len=StrKIND), pointer :: config_start_time
+      character (len=StrKIND), pointer :: config_met_prefix
 
       character(len=StrKIND), pointer :: mminlu
       character(len=StrKIND), pointer :: xtime
@@ -77,6 +80,14 @@ module init_atm_cases
       integer, pointer :: nCells
       integer, pointer :: nEdges
       integer, pointer :: nVertLevels
+
+      ! The next four variables are needed in the argument list for blend_bdy_terrain
+      ! with the dryrun argument set to true; accordingly, we never actually need to
+      ! set these pointers to fields
+      real (kind=RKIND), dimension(:), pointer :: latCell
+      real (kind=RKIND), dimension(:), pointer :: lonCell
+      real (kind=RKIND), dimension(:), pointer :: ter
+      integer, dimension(:), pointer :: bdyMaskCell
 
 
       call mpas_pool_get_config(domain % blocklist % configs, 'config_init_case', config_init_case)
@@ -160,6 +171,7 @@ module init_atm_cases
             call mpas_pool_get_config(block_ptr % configs, 'config_static_interp', config_static_interp)
             call mpas_pool_get_config(block_ptr % configs, 'config_native_gwd_static', config_native_gwd_static)
             call mpas_pool_get_config(block_ptr % configs, 'config_met_interp', config_met_interp)
+            call mpas_pool_get_config(block_ptr % configs, 'config_blend_bdy_terrain', config_blend_bdy_terrain)
 
             call mpas_pool_get_subpool(block_ptr % structs, 'mesh', mesh)
             call mpas_pool_get_subpool(block_ptr % structs, 'fg', fg)
@@ -170,6 +182,29 @@ module init_atm_cases
             call mpas_pool_get_dimension(block_ptr % dimensions, 'nCells', nCells)
             call mpas_pool_get_dimension(block_ptr % dimensions, 'nEdges', nEdges)
             call mpas_pool_get_dimension(block_ptr % dimensions, 'nVertLevels', nVertLevels)
+
+            !
+            ! Before proceeding with any other processing that takes non-trivial time (e.g., static field interpolation),
+            ! check that the intermediate file with terrain information exists if config_blend_bdy_terrain = true.
+            !
+            ! NB: When calling blend_bdy_terrain(...) with the 'dryrun' argument set, the nCells, latCell, lonCell,
+            !     bdyMaskCell, and ter arguments are not used -- only the config_met_prefix and config_start_time
+            !     arguments are used.
+            !
+            if (config_blend_bdy_terrain) then
+                call mpas_pool_get_config(block_ptr % configs, 'config_start_time', config_start_time)
+                call mpas_pool_get_config(block_ptr % configs, 'config_met_prefix', config_met_prefix)
+
+                call blend_bdy_terrain(config_met_prefix, config_start_time, &
+                                       nCells, latCell, lonCell, bdyMaskCell, ter, .true., ierr)
+                if (ierr /= 0) then
+                    call mpas_log_write('*************************************************************', messageType=MPAS_LOG_ERR)
+                    call mpas_log_write('Blending of terrain along domain boundaries would fail, and', messageType=MPAS_LOG_ERR)
+                    call mpas_log_write('config_blend_bdy_terrain = true in the namelist.init_atmosphere file.', &
+                                        messageType=MPAS_LOG_ERR)
+                    call mpas_log_write('*************************************************************', messageType=MPAS_LOG_CRIT)
+                end if
+            end if
 
             if (config_static_interp) then
 
@@ -2606,6 +2641,7 @@ module init_atm_cases
       real (kind=RKIND), dimension(nVertLevels + 1) :: hyai, hybi, znu, znw, znwc, znwv, hyam, hybm
       real (kind=RKIND), dimension(nVertLevels + 1) :: znuc, znuv, bn, divh, dpn
 
+      real (kind=RKIND), dimension(:), pointer :: specified_zw
       real (kind=RKIND), dimension(nVertLevels + 1) :: sh, zw, ah
       real (kind=RKIND), dimension(nVertLevels) :: zu, dzw, rdzwp, rdzwm
       real (kind=RKIND), dimension(nVertLevels) :: eta, etav, teta, ppi, tt
@@ -2636,6 +2672,7 @@ module init_atm_cases
       real (kind=RKIND), pointer :: config_dzmin
       real (kind=RKIND), pointer :: config_ztop
       logical, pointer :: config_tc_vertical_grid
+      character (len=StrKIND), pointer :: config_specified_zeta_levels
       logical, pointer :: config_use_spechumd
       integer, pointer :: config_nfglevels
       integer, pointer :: config_nfgsoillevels
@@ -2712,6 +2749,7 @@ module init_atm_cases
       call mpas_pool_get_config(configs, 'config_dzmin', config_dzmin)
       call mpas_pool_get_config(configs, 'config_ztop', config_ztop)
       call mpas_pool_get_config(configs, 'config_tc_vertical_grid', config_tc_vertical_grid)
+      call mpas_pool_get_config(configs, 'config_specified_zeta_levels', config_specified_zeta_levels)
       call mpas_pool_get_config(configs, 'config_use_spechumd', config_use_spechumd)
       call mpas_pool_get_config(configs, 'config_nfglevels', config_nfglevels)
       call mpas_pool_get_config(configs, 'config_nfgsoillevels', config_nfgsoillevels)
@@ -2851,7 +2889,7 @@ module init_atm_cases
          call mpas_pool_get_array(mesh, 'bdyMaskCell', bdyMaskCell)
          call mpas_pool_get_array(mesh, 'ter', ter)
 
-         call blend_bdy_terrain(config_met_prefix, config_start_time, nCells, latCell, lonCell, bdyMaskCell, ter, istatus)
+         call blend_bdy_terrain(config_met_prefix, config_start_time, nCells, latCell, lonCell, bdyMaskCell, ter, .false., istatus)
          if (istatus /= 0) then
              call mpas_log_write('*************************************************************', messageType=MPAS_LOG_ERR)
              call mpas_log_write('* Blending of terrain along domain boundaries failed!       *', messageType=MPAS_LOG_ERR)
@@ -2930,7 +2968,37 @@ module init_atm_cases
 
 !     Metrics for hybrid coordinate and vertical stretching
 
-      if (config_tc_vertical_grid) then
+      !
+      ! If a the name of a file with vertical coordinate values has been specified,
+      ! use those values to setup the vertical grid
+      !
+      if (len_trim(config_specified_zeta_levels) > 0) then
+
+         call mpas_log_write('Setting up vertical grid using levels from '''//trim(config_specified_zeta_levels)//'''')
+
+         if (read_text_array(dminfo, trim(config_specified_zeta_levels), specified_zw) /= 0) then
+            call mpas_log_write('Failed to read vertical levels from '''//trim(config_specified_zeta_levels)//'''', &
+                                 messageType=MPAS_LOG_CRIT)
+         end if
+
+         if (size(specified_zw) /= nz) then
+            call mpas_log_write('In the namelist.init_atmosphere file, config_nvertlevels = $i, but ', intArgs=(/nz1/), &
+                                 messageType=MPAS_LOG_ERR)
+            call mpas_log_write('but '''//trim(config_specified_zeta_levels)//''' has $i values.', intArgs=(/size(specified_zw)/), &
+                                 messageType=MPAS_LOG_ERR)
+            call mpas_log_write(''''//trim(config_specified_zeta_levels)//''' must contain nVertLevels+1 ($i) values.', intArgs=(/nz/), &
+                                 messageType=MPAS_LOG_CRIT)
+         end if
+
+         zw(:) = specified_zw(:)
+         zt = zw(nz)
+
+         deallocate(specified_zw)
+
+      !
+      ! Otherwise, see if the user has requested to set up the vertical grid as in the MPAS TC configuration
+      !
+      else if (config_tc_vertical_grid) then
 
          call mpas_log_write('Setting up vertical levels as in 2014 TC experiments')
 
@@ -2976,6 +3044,9 @@ module init_atm_cases
             if (k > 1) dzw(k-1) = zw(k)-zw(k-1)
          end do
 
+      !
+      ! Otherwise, use the vertical level configuration from MPAS v2.0
+      !
       else
 
          call mpas_log_write('Setting up vertical levels as in MPAS 2.0 and earlier')
@@ -3058,8 +3129,6 @@ module init_atm_cases
 !      cf2 = d1*d3*(d1-d3)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 !      cf3 = d1*d2*(d2-d1)/(d2*d3*(d3-d2)+d1*d3*(d1-d3)+d1*d2*(d2-d1))
 
-
-      call mpas_log_write(' cf1, cf2, cf3 = ', realArgs=(/cf1,cf2,cf3/))
 
 !     Smoothing algorithm for coordinate surfaces 
 
@@ -4661,6 +4730,14 @@ call mpas_log_write('Done with soil consistency check')
       endif
 
       !
+      ! After RH has been used to compute qv (unless config_use_spechumd = T and a valid spechum field
+      ! is available), modify the RH field to be with respect to ice for temperatures below freezing.
+      ! NB: Here we pass in 1:nCells explicitly, since computations involving the "garbage cell" could
+      ! trigger FPEs.
+      !
+      call convert_relhum_wrt_ice(t(:,1:nCells), relhum(:,1:nCells))
+
+      !
       ! Diagnose fields needed in initial conditions file (u, w, rho, theta)
       ! NB: At this point, "rho_zz" is simple dry density, and "theta_m" is regular potential temperature
       !
@@ -4974,6 +5051,8 @@ call mpas_log_write('Done with soil consistency check')
 
       character (len=StrKIND) :: errstring
 
+      real (kind=RKIND) :: max_zgrid_local, max_zgrid_global
+
 
       call mpas_log_write('Interpolating LBCs at time '//trim(timestamp))
 
@@ -5059,6 +5138,23 @@ call mpas_log_write('Done with soil consistency check')
       p0 = 1.0e+05_RKIND
 
       scalars(:,:,:) = 0.0_RKIND
+
+      !
+      ! Check that we have what looks like a valid zgrid field. If the max value for zgrid is zero,
+      ! the input file likely does not contain vertical grid information.
+      !
+      max_zgrid_local = maxval(zgrid(:,1:nCellsSolve))
+      call mpas_dmpar_max_real(dminfo, max_zgrid_local, max_zgrid_global)
+      if (max_zgrid_global == 0.0_RKIND) then
+         call mpas_log_write('********************************************************************************', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('The maximum value of the zgrid field is 0. Please ensure that the ''input'' stream ', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('contains valid vertical grid information.', &
+                             messageType=MPAS_LOG_ERR)
+         call mpas_log_write('********************************************************************************', &
+                             messageType=MPAS_LOG_CRIT)
+      end if
 
 
       !
@@ -5988,11 +6084,16 @@ call mpas_log_write('Done with soil consistency check')
    !>  and 1, the terrain field is a combination of the first-guess terrain and the high-resolution
    !>  "static" terrain field.
    !>
+   !>  When dryrun=true, the nCells, latCell, lonCell, bdyMaskCell, and ter arguments are not used
+   !>   -- only the config_met_prefix and config_start_time arguments are used. The dryrun argument
+   !>  allows calling code to determine if blend_bdy_terrain will succeed without actually blending
+   !>  the boundary terrain.
+   !>
    !>  For global meshes, where bdyMaskCell == 0 everywhere, this routine will have no impact
    !>  on the model terrain field.
    !
    !-----------------------------------------------------------------------
-   subroutine blend_bdy_terrain(config_met_prefix, config_start_time, nCells, latCell, lonCell, bdyMaskCell, ter, ierr)
+   subroutine blend_bdy_terrain(config_met_prefix, config_start_time, nCells, latCell, lonCell, bdyMaskCell, ter, dryrun, ierr)
 
       use init_atm_read_met, only : read_met_init, read_met_close, read_next_met_field, met_data
       use init_atm_llxy, only : map_init, map_set, proj_info, latlon_to_ij, PROJ_LATLON, PROJ_GAUSS, DEG_PER_RAD
@@ -6007,6 +6108,7 @@ call mpas_log_write('Done with soil consistency check')
       real (kind=RKIND), dimension(:), intent(in) :: lonCell  ! may actually have more than nCells elements, for example,
       integer, dimension(:), intent(in) :: bdyMaskCell        ! if the arrays include a "garbage cell".
       real (kind=RKIND), dimension(:), intent(inout) :: ter   ! 
+      logical, intent(in) :: dryrun
       integer, intent(out) :: ierr
 
       integer, parameter :: nBdyLayers = 7   ! The number of relaxation layers plus the number of specified layers
@@ -6025,7 +6127,9 @@ call mpas_log_write('Done with soil consistency check')
 
       ierr = 0
 
-      call mpas_log_write('Blending first-guess terrain field along domain boundary')
+      if (.not. dryrun) then
+         call mpas_log_write('Blending first-guess terrain field along domain boundary')
+      end if
 
       call read_met_init(trim(config_met_prefix), .false., config_start_time(1:13), istatus)
 
@@ -6047,84 +6151,86 @@ call mpas_log_write('Done with soil consistency check')
       do while (istatus == 0)
          if (trim(field % field) == 'SOILHGT') then
 
-            interp_list(1) = FOUR_POINT
-            interp_list(2) = 0
+            if (.not. dryrun) then
+               interp_list(1) = FOUR_POINT
+               interp_list(2) = 0
 
-            !
-            ! Set up map projection - currently, only the regular lat-lon projection is handled
-            !
-            call map_init(proj)
+               !
+               ! Set up map projection - currently, only the regular lat-lon projection is handled
+               !
+               call map_init(proj)
           
-            if (field % iproj == PROJ_LATLON) then
-               call map_set(PROJ_LATLON, proj, &
-                            latinc = real(field % deltalat,RKIND), &
-                            loninc = real(field % deltalon,RKIND), &
-                            knowni = 1.0_RKIND, &
-                            knownj = 1.0_RKIND, &
-                            lat1 = real(field % startlat,RKIND), &
-                            lon1 = real(field % startlon,RKIND))
-            else if (field % iproj == PROJ_GAUSS) then
-               call map_set(PROJ_GAUSS, proj, &
-                            nlat = nint(field % deltalat), &
-                            loninc = 360.0_RKIND / real(field % nx,RKIND), &
-                            lat1 = real(field % startlat,RKIND), &
-                            lon1 = real(field % startlon,RKIND))
-            end if
-
-            !
-            ! Copy the first-guess terrain field into an array that includes some periodic points
-            !
-            allocate(rslab(-2:field % nx+3, field % ny))
-            rslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
-            rslab(0, 1:field % ny)  = field % slab(field % nx, 1:field % ny)
-            rslab(-1, 1:field % ny) = field % slab(field % nx-1, 1:field % ny)
-            rslab(-2, 1:field % ny) = field % slab(field % nx-2, 1:field % ny)
-            rslab(field % nx+1, 1:field % ny) = field % slab(1, 1:field % ny)
-            rslab(field % nx+2, 1:field % ny) = field % slab(2, 1:field % ny)
-            rslab(field % nx+3, 1:field % ny) = field % slab(3, 1:field % ny)
-
-            !
-            ! For each cell in the MPAS mesh, perform terrain blending if the cell is a boundary cell
-            !
-            do i=1,nCells
-               if (bdyMaskCell(i) > 0) then
-                  lat = latCell(i)*DEG_PER_RAD
-                  lon = lonCell(i)*DEG_PER_RAD
-                  call latlon_to_ij(proj, lat, lon, x, y)
-                  if (x < 0.5) then
-                     lon = lon + 360.0
-                     call latlon_to_ij(proj, lat, lon, x, y)
-                  else if (x >= real(field%nx)+0.5) then
-                     lon = lon - 360.0
-                     call latlon_to_ij(proj, lat, lon, x, y)
-                  end if
-                  if (y < 0.5) then
-                     y = 1.0
-                  else if (y >= real(field%ny)+0.5) then
-                     y = real(field%ny)
-                  end if
-
-                  !
-                  ! Is this a specified cell?
-                  !
-                  if (bdyMaskCell(i) > (nBdyLayers - nSpecLayers)) then
-                     ter(i) = interp_sequence(x, y, 1, rslab, -2, field%nx + 3, 1, field%ny, &
-                                              1, 1, -1.0E30_RKIND, interp_list, 1)
-
-                  !
-                  ! Or a relaxation cell?
-                  !
-                  else
-                     weight = real(bdyMaskCell(i),kind=RKIND) / real(nBdyLayers - nSpecLayers,kind=RKIND)
-                     ter(i) = weight * interp_sequence(x, y, 1, rslab, -2, field%nx + 3, 1, field%ny, &
-                                                       1, 1, -1.0E30_RKIND, interp_list, 1) &
-                            + (1.0_RKIND - weight) * ter(i)
-
-                  end if
+               if (field % iproj == PROJ_LATLON) then
+                  call map_set(PROJ_LATLON, proj, &
+                               latinc = real(field % deltalat,RKIND), &
+                               loninc = real(field % deltalon,RKIND), &
+                               knowni = 1.0_RKIND, &
+                               knownj = 1.0_RKIND, &
+                               lat1 = real(field % startlat,RKIND), &
+                               lon1 = real(field % startlon,RKIND))
+               else if (field % iproj == PROJ_GAUSS) then
+                  call map_set(PROJ_GAUSS, proj, &
+                               nlat = nint(field % deltalat), &
+                               loninc = 360.0_RKIND / real(field % nx,RKIND), &
+                               lat1 = real(field % startlat,RKIND), &
+                               lon1 = real(field % startlon,RKIND))
                end if
-            end do
 
-            deallocate(rslab)
+               !
+               ! Copy the first-guess terrain field into an array that includes some periodic points
+               !
+               allocate(rslab(-2:field % nx+3, field % ny))
+               rslab(1:field % nx, 1:field % ny) = field % slab(1:field % nx, 1:field % ny)
+               rslab(0, 1:field % ny)  = field % slab(field % nx, 1:field % ny)
+               rslab(-1, 1:field % ny) = field % slab(field % nx-1, 1:field % ny)
+               rslab(-2, 1:field % ny) = field % slab(field % nx-2, 1:field % ny)
+               rslab(field % nx+1, 1:field % ny) = field % slab(1, 1:field % ny)
+               rslab(field % nx+2, 1:field % ny) = field % slab(2, 1:field % ny)
+               rslab(field % nx+3, 1:field % ny) = field % slab(3, 1:field % ny)
+
+               !
+               ! For each cell in the MPAS mesh, perform terrain blending if the cell is a boundary cell
+               !
+               do i=1,nCells
+                  if (bdyMaskCell(i) > 0) then
+                     lat = latCell(i)*DEG_PER_RAD
+                     lon = lonCell(i)*DEG_PER_RAD
+                     call latlon_to_ij(proj, lat, lon, x, y)
+                     if (x < 0.5) then
+                        lon = lon + 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     else if (x >= real(field%nx)+0.5) then
+                        lon = lon - 360.0
+                        call latlon_to_ij(proj, lat, lon, x, y)
+                     end if
+                     if (y < 0.5) then
+                        y = 1.0
+                     else if (y >= real(field%ny)+0.5) then
+                        y = real(field%ny)
+                     end if
+
+                     !
+                     ! Is this a specified cell?
+                     !
+                     if (bdyMaskCell(i) > (nBdyLayers - nSpecLayers)) then
+                        ter(i) = interp_sequence(x, y, 1, rslab, -2, field%nx + 3, 1, field%ny, &
+                                                 1, 1, -1.0E30_RKIND, interp_list, 1)
+
+                     !
+                     ! Or a relaxation cell?
+                     !
+                     else
+                        weight = real(bdyMaskCell(i),kind=RKIND) / real(nBdyLayers - nSpecLayers,kind=RKIND)
+                        ter(i) = weight * interp_sequence(x, y, 1, rslab, -2, field%nx + 3, 1, field%ny, &
+                                                          1, 1, -1.0E30_RKIND, interp_list, 1) &
+                               + (1.0_RKIND - weight) * ter(i)
+
+                     end if
+                  end if
+               end do
+
+               deallocate(rslab)
+            end if
 
             !
             ! At this point, we have found and processed the first-guess terrain field, so we can return
@@ -6154,5 +6260,189 @@ call mpas_log_write('Done with soil consistency check')
                           messageType=MPAS_LOG_ERR)
 
    end subroutine blend_bdy_terrain
+
+
+   !-----------------------------------------------------------------------
+   !  routine convert_relhum_wrt_ice
+   !
+   !> \brief Converts an RH field given w.r.t. liquid water to RH w.r.t. ice below freezing
+   !> \author Wei Wang
+   !> \date   11 May 2019
+   !> \details
+   !>  This routine takes as input a temperature field (in K) and an RH field (in percent),
+   !>  which is assumed to be with respect to liquid water everywhere. Upon return, the
+   !>  relative humidity for temperatures below 253.15 K has been modified to be with
+   !>  respect to ice. For temperatures in the range (253.15, 273.15] the relative humidity
+   !>  uses a blend of the saturation mixing ratios for liquid water and ice.
+   !>
+   !>  This routine uses the formula from the WPS ungrib program to re-compute RH with
+   !>  respect to ice in an attempt to re-construct RH that is more like the ungrib input.
+   !
+   !-----------------------------------------------------------------------
+   subroutine convert_relhum_wrt_ice(t, relhum)
+
+      implicit none
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: t
+      real (kind=RKIND), dimension(:,:), intent(inout) :: relhum
+
+      integer :: iCell, k
+      integer :: nVertLevels
+      integer :: nCells
+      real (kind=RKIND) :: eis, ews, r1
+
+
+      nVertLevels = size(t, dim=1)
+      nCells = size(t, dim=2)
+
+      call mpas_log_write('')
+      call mpas_log_write('Recomputing RH w.r.t. ice below freezing')
+      call mpas_log_write('')
+
+      do iCell = 1, nCells
+         do k = 1, nVertLevels
+            if ( t(k,iCell) <= 273.15_RKIND ) then
+
+               ! use formula in ungrib to reconstruct RH 
+               eis = 0.01_RKIND * exp (9.550426_RKIND - (5723.265_RKIND / t(k,iCell)) + (3.53068_RKIND * log(t(k,iCell))) &
+                   - (0.00728332_RKIND * t(k,iCell)))
+               ews = 6.112_RKIND * exp(17.67_RKIND * (t(k,iCell)-273.15_RKIND) / ((t(k,iCell)-273.15_RKIND)+243.5_RKIND))
+
+               ! A linear approximation to the GFS blending region ( -20 C > T < 0 C )
+               if ( t(k,iCell) > 253.15_RKIND ) then
+                  r1 = ((273.15_RKIND - t(k,iCell)) / 20.0_RKIND)
+                  r1 = (r1 * eis) + ((1.0_RKIND-r1)*ews)
+               else
+                  r1 = eis
+               end if
+               r1 = max(r1, 1.0e-12_RKIND)
+               ews = max(ews, 0.0_RKIND)
+               relhum(k,iCell) = ews / r1 * relhum(k,iCell)
+               relhum(k,iCell) = min(relhum(k,iCell), 100.0_RKIND)
+               relhum(k,iCell) = max(relhum(k,iCell), 0.0_RKIND)
+            end if
+         end do
+      end do
+
+   end subroutine convert_relhum_wrt_ice
+
+
+   !-----------------------------------------------------------------------
+   !  routine read_text_array
+   !
+   !> \brief Reads a real-valued array from a text file and broadcasts to all tasks
+   !> \author Michael Duda
+   !> \date   11 May 2019
+   !> \details
+   !>  This routine reads a list of real values from the specified text file on
+   !>  the IO_NODE task and broadcasts the values to all other MPI tasks. Upon
+   !>  successful return, the array pointer xarray will have been allocated with
+   !>  a size equal to the number of lines in the text file, the array will be filled
+   !>  with the values from the file, and a value of 0 will be returned.
+   !>
+   !>  This routine will print an error message and return a non-zero value if
+   !>  any of the following conditions occur:
+   !>
+   !>  1) The text file does not exist
+   !>  2) The text file cannot be opened for reading
+   !>  3) The text does not contain readable real values
+   !>
+   !>  If the return value of this function is non-zero, the xarray pointer
+   !>  will be unassociated.
+   !
+   !-----------------------------------------------------------------------
+   function read_text_array(dminfo, filename, xarray) result(ierr)
+
+      use mpas_io_units, only : mpas_new_unit, mpas_release_unit
+      use mpas_log, only : mpas_log_write
+      use mpas_derived_types, only : MPAS_LOG_ERR
+
+      implicit none
+
+      type (dm_info), intent(in) :: dminfo
+      character(len=*), intent(in) :: filename
+      real (kind=RKIND), dimension(:), pointer :: xarray
+
+      integer :: ierr
+
+      integer :: i
+      integer :: nlines
+      integer :: iunit
+      integer :: iexists
+      logical :: exists
+      real (kind=RKIND) :: rtemp
+
+
+      ierr = 1
+      nullify(xarray)
+
+      !
+      ! Check whether the file exists
+      !
+      if (dminfo % my_proc_id == IO_NODE) then
+         inquire(file=filename, exist=exists)
+         if (exists) then
+            iexists = 1
+         else
+            iexists = 0
+         end if
+      end if
+      call mpas_dmpar_bcast_int(dminfo, iexists)
+
+      if (iexists == 0) then
+         call mpas_log_write('Text file '''//filename//''' does not exist.', messageType=MPAS_LOG_ERR)
+         return
+      end if
+
+      !
+      ! Count the number of lines in the file
+      !
+      if (dminfo % my_proc_id == IO_NODE) then
+         call mpas_new_unit(iunit)
+         open(unit=iunit, file=filename, form='formatted', status='old', iostat=ierr)
+         if (ierr /= 0) then
+            nlines = -1
+         else
+            nlines = 0
+            read(unit=iunit, fmt=*, iostat=ierr) rtemp
+            do while (ierr == 0)
+               nlines = nlines + 1
+               read(unit=iunit, fmt=*, iostat=ierr) rtemp
+            end do
+         end if
+         close(unit=iunit)
+         call mpas_release_unit(iunit)
+      end if
+      call mpas_dmpar_bcast_int(dminfo, nlines)
+
+      if (nlines <= 0) then
+         if (nlines < 0) then
+            call mpas_log_write('Text file '''//filename//''' could not be opened for reading.', messageType=MPAS_LOG_ERR)
+         else
+            call mpas_log_write('Text file '''//filename//''' contains no readable real values.', messageType=MPAS_LOG_ERR)
+         end if
+         ierr = 1
+         return
+      end if
+
+      !
+      ! Allocate output array, read, and broadcast
+      !
+      allocate(xarray(nlines))
+      if (dminfo % my_proc_id == IO_NODE) then
+         call mpas_new_unit(iunit)
+         open(unit=iunit, file=filename, form='formatted', status='old', iostat=ierr)
+         do i=1,nlines
+            read(unit=iunit, fmt=*, iostat=ierr) xarray(i)
+         end do
+         close(unit=iunit)
+         call mpas_release_unit(iunit)
+      end if
+
+      call mpas_dmpar_bcast_reals(dminfo, nlines, xarray)
+      ierr = 0
+
+   end function read_text_array
+
 
 end module init_atm_cases
