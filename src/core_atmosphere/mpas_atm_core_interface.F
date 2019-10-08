@@ -55,7 +55,7 @@ module atm_core_interface
       core % Conventions = 'MPAS'
       core % source = 'MPAS'
 
-#include "inc/core_variables.inc"
+#include "core_variables.inc"
 
    end subroutine atm_setup_core
 
@@ -80,7 +80,7 @@ module atm_core_interface
 
       type (domain_type), pointer :: domain
 
-#include "inc/domain_variables.inc"
+#include "domain_variables.inc"
 
    end subroutine atm_setup_domain
 
@@ -119,9 +119,16 @@ module atm_core_interface
 
       logical, pointer :: iauActive
       character(len=StrKIND), pointer :: config_iau_option
+      logical, pointer :: limited_areaActive
+      logical, pointer :: config_apply_lbcs
+      logical, pointer :: config_jedi_da, jedi_daActive
+      integer :: local_ierr
 
       ierr = 0
 
+      !
+      ! Incremental analysis update
+      !
       nullify(config_iau_option)
       call mpas_pool_get_config(configs, 'config_IAU_option', config_iau_option)
 
@@ -134,15 +141,49 @@ module atm_core_interface
          iauActive = .false.
       end if
 
+      !
+      ! Limited-area
+      !
+      nullify(config_apply_lbcs)
+      call mpas_pool_get_config(configs, 'config_apply_lbcs', config_apply_lbcs)
+
+      nullify(limited_areaActive)
+      call mpas_pool_get_package(packages, 'limited_areaActive', limited_areaActive)
+
+      if (config_apply_lbcs) then
+         limited_areaActive = .true.
+      else
+         limited_areaActive = .false.
+      end if
+
+      !
+      ! JEDI data assimilation
+      !
+      nullify(config_jedi_da)
+      call mpas_pool_get_config(configs, 'config_jedi_da', config_jedi_da)
+
+      nullify(jedi_daActive)
+      call mpas_pool_get_package(packages, 'jedi_daActive', jedi_daActive)
+
+      if (associated(config_jedi_da) .and. associated(jedi_daActive)) then
+         jedi_daActive = config_jedi_da
+      else
+         ierr = ierr + 1
+         call mpas_log_write('Package setup failed for ''jedi_da''. '// &
+              'Either ''jedi_da'' is not a package, or ''config_jedi_da'' is not a namelist option.', &
+              messageType=MPAS_LOG_ERR)
+      end if
+
 #ifdef DO_PHYSICS
       !check that all the physics options are correctly defined and that at
       !least one physics parameterization is called (using the logical moist_physics):
       call physics_namelist_check(configs)
 
-      ierr = atmphys_setup_packages(configs,packages,iocontext)
-      if(ierr /= 0) then
+      local_ierr = atmphys_setup_packages(configs, packages, iocontext)
+      if (local_ierr /= 0) then
+         ierr = ierr + 1
          call mpas_log_write('Package setup failed for atmphys in core_atmosphere', messageType=MPAS_LOG_ERR)
-      endif
+      end if
 #endif
 
    end function atm_setup_packages
@@ -195,15 +236,16 @@ module atm_core_interface
    !>  and allow the core to specify details of the configuration.
    !
    !-----------------------------------------------------------------------
-   function atm_setup_log(logInfo, domain) result(iErr)!{{{
+   function atm_setup_log(logInfo, domain, unitNumbers) result(iErr)!{{{
 
       use mpas_derived_types, only : mpas_log_type, domain_type
       use mpas_log, only : mpas_log_init, mpas_log_open
 
       implicit none
 
-      type (mpas_log_type), intent(inout), pointer :: logInfo  !< logging information object to set up
-      type (domain_type), intent(in), pointer :: domain  !< domain object to provide info for setting up log manager
+      type (mpas_log_type), intent(inout), pointer :: logInfo    !< logging information object to set up
+      type (domain_type), intent(in), pointer :: domain          !< domain object to provide info for setting up log manager
+      integer, dimension(2), intent(in), optional :: unitNumbers !< Fortran unit numbers to use for output and error logs
       integer :: iErr
 
       ! Local variables
@@ -212,7 +254,7 @@ module atm_core_interface
       iErr = 0
 
       ! Initialize log manager
-      call mpas_log_init(logInfo, domain, err=local_err)
+      call mpas_log_init(logInfo, domain, unitNumbers=unitNumbers, err=local_err)
       iErr = ior(iErr, local_err)
 
       ! Set core specific options here
@@ -346,16 +388,16 @@ module atm_core_interface
    end function atm_setup_block
 
 
-#include "inc/setup_immutable_streams.inc"
+#include "setup_immutable_streams.inc"
 
-#include "inc/block_dimension_routines.inc"
+#include "block_dimension_routines.inc"
 
-#include "inc/define_packages.inc"
+#include "define_packages.inc"
 
-#include "inc/structs_and_variables.inc"
+#include "structs_and_variables.inc"
 
-#include "inc/namelist_call.inc"
+#include "namelist_call.inc"
 
-#include "inc/namelist_defines.inc"
+#include "namelist_defines.inc"
 
 end module atm_core_interface

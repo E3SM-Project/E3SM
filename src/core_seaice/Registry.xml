@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="seaice" core_abbrev="seaice" version="6.1">
+<registry model="mpas" core="seaice" core_abbrev="seaice" version="7.0">
 
 	<dims>
 		<dim name="nCells"
