@@ -185,7 +185,7 @@ module convective_diagnostics
     
                   ! compute above ground level (AGL) heights
                   z_agl(1:nVertLevelsP1) = zgrid(1:nVertLevelsP1,iCell) - zgrid(1,iCell)
-                  uph = integral_zstaggered(updraft_helicity(1:nVertLevels,iCell),z_agl,2000.,5000.,nVertLevels,nVertLevelsP1)
+                  uph = integral_zstaggered(updraft_helicity(1:nVertLevels,iCell),z_agl,2000.0_RKIND,5000.0_RKIND,nVertLevels,nVertLevelsP1)
                   updraft_helicity_max(iCell) = max( updraft_helicity_max(iCell),uph)
         
                 end do
@@ -385,16 +385,16 @@ module convective_diagnostics
               temperature_surface(iCell) = temperature(1,iCell)
               dewpoint_surface(iCell) = dewpoint(1,iCell)
               if (need_uzonal_1km) then
-                  uzonal_1km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 1000., nVertLevels)
+                  uzonal_1km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 1000.0_RKIND, nVertLevels)
               end if
               if (need_umerid_1km) then
-                  umeridional_1km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 1000., nVertLevels)
+                  umeridional_1km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 1000.0_RKIND, nVertLevels)
               end if
               if (need_uzonal_6km) then
-                  uzonal_6km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 6000., nVertLevels)
+                  uzonal_6km(iCell)      = column_height_value(uzonal(1:nVertLevels,iCell),      zp, 6000.0_RKIND, nVertLevels)
               end if
               if (need_umerid_6km) then
-                  umeridional_6km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 6000., nVertLevels)
+                  umeridional_6km(iCell) = column_height_value(umeridional(1:nVertLevels,iCell), zp, 6000.0_RKIND, nVertLevels)
               end if
 
            !  storm-relative helicity
@@ -441,10 +441,10 @@ module convective_diagnostics
                    end do
 
                    if (need_srh_01km) then
-                       srh_0_1km(iCell) = integral_zpoint(srh, zrel, 0., 1000., nVertLevelsP1)
+                       srh_0_1km(iCell) = integral_zpoint(srh, zrel, 0.0_RKIND, 1000.0_RKIND, nVertLevelsP1)
                    end if
                    if (need_srh_03km) then
-                       srh_0_3km(iCell) = integral_zpoint(srh, zrel, 0., 3000., nVertLevelsP1)
+                       srh_0_3km(iCell) = integral_zpoint(srh, zrel, 0.0_RKIND, 3000.0_RKIND, nVertLevelsP1)
                    end if
                end if
 
@@ -454,8 +454,8 @@ module convective_diagnostics
             if (need_cape .or. need_cin) then
                 do iCell=1, nCellsSolve
                     p_in(1:nVertLevels) = (pressure_p(1:nVertLevels,iCell) + pressure_base(1:nVertLevels,iCell)) / 100.0_RKIND
-                    t_in(1:nVertLevels) = temperature(1:nVertLevels,iCell) - 273.15
-                    td_in(1:nVertLevels) = dewpoint(1:nVertLevels,iCell) - 273.15
+                    t_in(1:nVertLevels) = temperature(1:nVertLevels,iCell) - 273.15_RKIND
+                    td_in(1:nVertLevels) = dewpoint(1:nVertLevels,iCell) - 273.15_RKIND
 
                  !   do k=1,nVertLevels
                  !     relhum(k,iCell) = max(1.e-08,min(1.,relhum(k,iCell)))
@@ -569,8 +569,8 @@ module convective_diagnostics
       real (kind=RKIND) function integral_zpoint( column_values, z, zbot, ztop, n )
       implicit none
       integer n
-      real :: column_values(n), z(n), zbot, ztop
-      real :: zb, zt, dz, zr_midpoint, midpoint_value
+      real(kind=RKIND) :: column_values(n), z(n), zbot, ztop
+      real(kind=RKIND) :: zb, zt, dz, zr_midpoint, midpoint_value
 
       integer :: k
 
@@ -929,7 +929,7 @@ module convective_diagnostics
           cpm=cp+cpv*qvbar+cpl*qlbar+cpi*qibar
           th2=th1*exp(  lhv*(ql2-ql1)/(cpm*tbar)     &
                        +lhs*(qi2-qi1)/(cpm*tbar)     &
-                       +(rm/cpm-rd/cp)*alog(p2/p1) )
+                       +(rm/cpm-rd/cp)*log(p2/p1) )
 
           if(i .gt. 90 .and. debug_level .gt. 0) call mpas_log_write('$i $r $r $r', intArgs=(/i/), realArgs=(/th2,thlast,th2-thlast/))
           if(i .gt. 100)then
@@ -1083,7 +1083,7 @@ module convective_diagnostics
     if( (td-t).ge.-0.1 )then
       tlcl = t
     else
-      tlcl = 56.0 + ( (td-56.0)**(-1) + 0.00125*alog(t/td) )**(-1)
+      tlcl = 56.0 + ( (td-56.0)**(-1) + 0.00125*log(t/td) )**(-1)
     endif
 
     getthe=t*( (100000.0/p)**(0.2854*(1.0-0.28*q)) )   &

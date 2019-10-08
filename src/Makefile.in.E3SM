@@ -1,11 +1,11 @@
 # Duplicate logic from Tools/Makefile to set compile_threaded
-compile_threaded = false
+compile_threaded = FALSE
 ifeq ($(strip $(SMP)),TRUE)
-   compile_threaded = true
+   compile_threaded = TRUE
    THREADDIR = threads
 else
    ifeq ($(strip $(BUILD_THREADED)),TRUE)
-      compile_threaded = true
+      compile_threaded = TRUE
       THREADDIR = threads
    else
       THREADDIR = nothreads
@@ -44,27 +44,25 @@ CC=$(MPICC)
 CXX=$(MPICXX)
 NETCDF=$(NETCDF_PATH)
 PNETCDF=$(PNETCDF_PATH)
-PIO=$(EXEROOT)/pio
+PIO=$(INSTALL_SHAREDPATH)/pio
 FILE_OFFSET = -DOFFSET64BIT
 override CFLAGS += -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -DMPAS_PERF_MOD_TIMERS
 override FFLAGS += -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -DMPAS_PERF_MOD_TIMERS
 override CPPFLAGS += $(CPPDEFS) $(MODEL_FORMULATION) $(FILE_OFFSET) $(ZOLTAN_DEFINE) -DMPAS_NO_LOG_REDIRECT -DMPAS_NO_ESMF_INIT -DMPAS_ESM_SHR_CONST -D_MPI -DMPAS_NAMELIST_SUFFIX=$(NAMELIST_SUFFIX) -DMPAS_EXE_NAME=$(EXE_NAME) -DMPAS_PERF_MOD_TIMERS
-override CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-override FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(SHAREDPATH)/include -I$(SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
-LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
-
-ifneq (,$(findstring FORTRANUNDERSCORE, $(CPPFLAGS)))
-ifeq (,$(findstring DUNDERSCORE, $(CPPFLAGS)))
-    override CPPFLAGS += -DUNDERSCORE
-endif
-endif
+override CPPINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+override FCINCLUDES += -I$(EXEROOT)/$(COMPONENT)/source/inc -I$(INSTALL_SHAREDPATH)/include -I$(INSTALL_SHAREDPATH)/$(COMP_INTERFACE)/$(ESMFDIR)/$(NINST_VALUE)/csm_share -I$(NETCDF)/include -I$(PIO) -I$(PNETCDF)/include
+LIBS += -L$(PIO) -L$(PNETCDF)/lib -L$(NETCDF)/lib -L$(LIBROOT) -L$(INSTALL_SHAREDPATH)/lib -lpio -lpnetcdf -lnetcdf
 
 ifeq ($(DEBUG), TRUE)
     override CPPFLAGS += -DMPAS_DEBUG
 endif
 
-ifeq ($(compile_threaded), true)
+ifeq ($(compile_threaded), TRUE)
     override CPPFLAGS += -DMPAS_OPENMP
+endif
+
+ifeq "$(GEN_F90)" "true"
+    override CPPFLAGS += -Uvector
 endif
 
 all:

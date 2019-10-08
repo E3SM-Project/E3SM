@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="atmosphere" core_abbrev="atm" version="6.0">
+<registry model="mpas" core="atmosphere" core_abbrev="atm" version="7.0">
 
 <!-- **************************************************************************************** -->
 <!-- ************************************** Dimensions ************************************** -->
@@ -101,7 +101,7 @@
 
                 <nml_option name="config_dynamics_split_steps" type="integer" default_value="3"
                      units="-"
-                     description="When config\_split\_dynamics\_transport = T, the number of RK steps per transport step"
+                     description="When config_split_dynamics_transport = T, the number of RK steps per transport step"
                      possible_values="Positive integer values"/>
 
                 <nml_option name="config_h_mom_eddy_visc2" type="real" default_value="0.0"
@@ -255,7 +255,34 @@
                      units="-"
                      description="Maximum w-damping coefficient at model top"
                      possible_values="0 $\leq$ config_xnutr $\leq$ 1"/>
+
+                <nml_option name="config_mpas_cam_coef" type="real" default_value="0.0" in_defaults="false"
+                     units="-"
+                     description="Coefficient for scaling the 2nd-order horizontal mixing in the mpas_cam absorbing layer"
+                     possible_values="0 $\leq$ config_mpas_cam_coef $\leq$ 1, standard value is 0.2"/>
+
+                <nml_option name="config_rayleigh_damp_u" type="logical" default_value="false" in_defaults="false"
+                     units="-"
+                     description="Whether to apply Rayleigh damping on horizontal velocity in the top-most model levels. The number of levels is specified by the config_number_rayleigh_damp_u_levels option, and the damping timescale is specified by the config_rayleigh_damp_u_timescale_days option."
+                     possible_values=".true. or .false."/>
+
+                <nml_option name="config_rayleigh_damp_u_timescale_days" type="real" default_value="5.0" in_defaults="false"
+                     units="days"
+                     description="Timescale, in days (86400 s), for the Rayleigh damping on horizontal velocity in the top-most model levels."
+                     possible_values="Positive real values"/>
+
+                <nml_option name="config_number_rayleigh_damp_u_levels" type="integer" default_value="6" in_defaults="false"
+                     units="-"
+                     description="Number layers in which to apply Rayleigh damping on horizontal velocity at top of model; damping linearly ramps to zero by layer number from the top"
+                     possible_values="Positive integer values"/>
         </nml_record>
+
+        <nml_record name="limited_area" in_defaults="true">
+                <nml_option name="config_apply_lbcs" type="logical" default_value="false"
+                     units="-"
+                     description="Whether to apply lateral boundary conditions"
+                     possible_values="true or false; this option must be set to true for limited-area simulations and false for global simulations"/>
+	</nml_record>
 
         <nml_record name="io" in_defaults="true">
                 <nml_option name="config_restart_timestamp_name" type="character" default_value="restart_timestamp" in_defaults="false"
@@ -336,6 +363,12 @@
                      possible_values="Non-negative real values"/>
 	</nml_record>
 
+        <nml_record name="assimilation" in_defaults="false">
+                <nml_option name="config_jedi_da" type="logical" default_value="false"
+                     units="-"
+                     description="Whether this run is within the JEDI data assimilation framework; used to add temperature and specific humidity as diagnostics"
+                     possible_values=".true. or .false."/>
+        </nml_record>
 
 <!-- **************************************************************************************** -->
 <!-- **************************************  Packages  ************************************** -->
@@ -352,6 +385,8 @@
                 <package name="bl_mynn_in" description="parameterization of MYNN Planetary Boundary Layer."/>
 
                 <package name="iau" description="Incremental Analysis Update"/>
+                <package name="limited_area" description="Limited-area simulations, which have lateral boundaries"/>
+                <package name="jedi_da" description="Data Assimilation in JEDI framework"/>
         </packages>
 
 
@@ -407,6 +442,9 @@
 			<var name="fEdge"/>
 			<var name="fVertex"/>
 			<var name="meshDensity"/>
+			<var name="bdyMaskCell"/>
+			<var name="bdyMaskEdge"/>
+			<var name="bdyMaskVertex"/>
 			<var name="cf1"/>
 			<var name="cf2"/>
 			<var name="cf3"/>
@@ -422,6 +460,7 @@
 			<var name="zb3"/>
 			<var name="dss"/>
 			<var name="u_init"/>
+			<var name="v_init"/>
 			<var name="t_init"/>
 			<var name="qv_init"/>
 			<var name="deriv_two"/>
@@ -442,6 +481,8 @@
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
 			<var name="mminlu"/>
+			<var name="isice_lu"/>
+			<var name="iswater_lu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -531,6 +572,11 @@
 			<var name="meshDensity"/>
 			<var name="meshScalingDel2"/>
 			<var name="meshScalingDel4"/>
+			<var name="meshScalingRegionalCell"/>
+			<var name="meshScalingRegionalEdge"/>
+			<var name="bdyMaskCell"/>
+			<var name="bdyMaskEdge"/>
+			<var name="bdyMaskVertex"/>
 			<var name="cf1"/>
 			<var name="cf2"/>
 			<var name="cf3"/>
@@ -546,6 +592,7 @@
 			<var name="zb3"/>
 			<var name="dss"/>
 			<var name="u_init"/>
+			<var name="v_init"/>
 			<var name="t_init"/>
 			<var name="qv_init"/>
 			<var name="deriv_two"/>
@@ -711,6 +758,7 @@
 			<var name="noahres"/>
 			<var name="potevp"/>
 			<var name="sfc_albedo"/>
+			<var name="sfc_albedo_seaice"/>
 			<var name="sfc_emiss"/>
 			<var name="sfc_emibck"/>
 			<var name="sfcrunoff"/>
@@ -758,6 +806,8 @@
 			<var name="isltyp"/>
 			<var name="ivgtyp"/>
 			<var name="mminlu"/>
+			<var name="isice_lu"/>
+			<var name="iswater_lu"/>
 			<var name="landmask"/>
 			<var name="shdmin"/>
 			<var name="shdmax"/>
@@ -907,6 +957,8 @@
 			<var name="pin"/>
 			<var name="ozmixm"/>
 			<var name="mminlu"/>
+			<var name="isice_lu"/>
+			<var name="iswater_lu"/>
 			<var name="xland"/>
 			<var name="skintemp"/>
 			<var name="snow"/>
@@ -1048,6 +1100,23 @@
 			<var name="xtime"/>
 			<var_struct name="tend_iau"/>
 		</stream>
+
+                <stream name="lbc_in"
+                        type="input"
+                        filename_template="lbc.$Y-$M-$D_$h.$m.$s.nc"
+                        filename_interval="input_interval"
+                        input_interval="3:00:00" 
+                        runtime_format="single_file"
+                        immutable="true"
+                        packages="limited_area">
+
+                        <var name="lbc_u" />
+                        <var name="lbc_w" />
+                        <var name="lbc_rho" />
+                        <var name="lbc_theta" />
+                        <var_array name="lbc_scalars" />
+
+                </stream>
 	</streams>
 
 
@@ -1199,6 +1268,12 @@
                 <var name="meshScalingDel4" type="real" dimensions="nEdges" units="unitless"
                      description="Scaling coefficient for $\nabla^4$ eddy hyper-viscosity"/>
 
+                <var name="meshScalingRegionalCell" type="real" dimensions="nCells" units="unitless"
+                     description="Cell-centered Scaling coefficient for relaxation zone"/>
+
+                <var name="meshScalingRegionalEdge" type="real" dimensions="nEdges" units="unitless"
+                     description="Edge-centered Scaling coefficient for relaxation zone"/>
+
                 <var name="edgesOnVertex_sign" type="real" dimensions="vertexDegree nVertices" units="-"
                      description="Sign for edges incident with a vertex: positive for positive inward tengential velocity"/>
 
@@ -1263,6 +1338,9 @@
                 <var name="u_init" type="real" dimensions="nVertLevels" units="m s^{-1}"
                      description="u reference profile"/>
 
+                <var name="v_init" type="real" dimensions="nVertLevels" units="m s^{-1}"
+                     description="v reference profile"/>
+
                 <var name="t_init" type="real" dimensions="nVertLevels nCells" units="K"
                      description="theta reference profile"/>
 
@@ -1301,6 +1379,34 @@
 
                 <var name="north" type="real" dimensions="R3 nCells" units="unitless"
                      description="Cartesian components of the unit vector pointing north"/>
+
+                <var name="bdyMaskCell" type="integer" dimensions="nCells" default_value="0"
+                     units="-"
+                     description="Limited-area specified/relaxation zone index for cells"/>
+
+                <var name="bdyMaskEdge" type="integer" dimensions="nEdges" default_value="0"
+                     units="-"
+                     description="Limited-area specified/relaxation zone index for edges"/>
+
+                <var name="bdyMaskVertex" type="integer" dimensions="nVertices" default_value="0"
+                     units="-"
+                     description="Limited-area specified/relaxation zone index for vertices"/>
+
+                <var name="specZoneMaskCell" type="real" dimensions="nCells" default_value="0.0"
+                     units="-"
+                     description="0/1 mask on cells, defined as 1 for cells in the limited-area specified zone"/>
+
+                <var name="specZoneMaskEdge" type="real" dimensions="nEdges" default_value="0.0"
+                     units="-"
+                     description="0/1 mask on edges, defined as 1 for edges in the limited-area specified zone"/>
+
+                <var name="specZoneMaskVertex" type="real" dimensions="nVertices" default_value="0.0"
+                     units="-"
+                     description="0/1 mask on vertices, defined as 1 for vertices in the limited-area specified zone"/>
+
+                <var name="nearestRelaxationCell" type="integer" dimensions="nCells" units="-"
+                     description="For cells in the specified zone, gives the index of the nearest cell in the relaxation zone"/>
+
         </var_struct>
 
         <var_struct name="state" time_levs="2">
@@ -1439,8 +1545,16 @@
                 <var name="theta" type="real" dimensions="nVertLevels nCells Time" units="K"
                      description="Potential temperature"/>
 
+                <var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K"
+                     description="temperature"
+                     packages="jedi_da"/>
+
                 <var name="relhum" type="real" dimensions="nVertLevels nCells Time" units="percent"
                      description="Relative humidity"/>
+
+                <var name="spechum" type="real" dimensions="nVertLevels nCells Time" units="kg kg^{-1}"
+                     description="Specific humidity"
+                     packages="jedi_da"/>
 
                 <var name="v" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
                      description="Horizontal tangential velocity at edges"/>
@@ -1664,6 +1778,63 @@
                 </var_array>
         </var_struct>
 
+        <!-- ===================================================================================== -->
+        <!-- Storage for lateral boundary conditions:                                              -->
+        <!-- Time-level 1 contains tendencies for variables                                        -->
+        <!-- Time-level 2 contains values for variables valid at the end of the boundary interval  -->
+        <!-- ===================================================================================== -->
+        <var_struct name="lbc" time_levs="2" packages="limited_area">
+                <var name="lbc_u" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-2}"
+                     description="Lateral boundary tendency of u"/>
+
+                <var name="lbc_ru" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-2} s^{-2}"
+                     description="Lateral boundary tendency of rho_zz-coupled u"/>
+
+                <var name="lbc_w" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-2}"
+                     description="Lateral boundary tendency of w"/>
+
+                <var name="lbc_rho" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3} s^{-1}"
+                     description="Lateral boundary tendency of rho"/>
+
+                <var name="lbc_rho_zz" type="real" dimensions="nVertLevels nCells Time" units="kg m^{-3} s^{-1}"
+                     description="Lateral boundary tendency of rho_zz"/>
+
+                <var name="lbc_rho_edge" type="real" dimensions="nVertLevels nEdges Time" units="kg m^{-3} s^{-1}"
+                     description="Lateral boundary tendency of rho_zz averaged from cell centers to cell faces (edges)"/>
+
+                <var name="lbc_theta" type="real" dimensions="nVertLevels nCells Time" units="K s^{-2}"
+                     description="Lateral boundary tendency of theta"/>
+
+                <var name="lbc_rtheta_m" type="real" dimensions="nVertLevels nCells Time" units="kg K m^{-3} s^{-2}"
+                     description="Lateral boundary tendency of rho_zz-coupled theta_m"/>
+
+                <var_array name="lbc_scalars" type="real" dimensions="nVertLevels nCells Time">
+                        <var name="lbc_qv" name_in_code="qv" array_group="moist" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of water vapor mixing ratio"/>
+
+                        <var name="lbc_qc" name_in_code="qc" array_group="moist"  packages="bl_mynn_in;cu_tiedtke_in;mp_kessler_in;mp_thompson_in;mp_wsm6_in" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of cloud water mixing ratio"/>
+
+                        <var name="lbc_qr" name_in_code="qr" array_group="moist"  packages="mp_kessler_in;mp_thompson_in;mp_wsm6_in" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of rain water mixing ratio"/>
+
+                        <var name="lbc_qi" name_in_code="qi" array_group="moist"  packages="bl_mynn_in;cu_tiedtke_in;mp_thompson_in;mp_wsm6_in" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of ice mixing ratio"/>
+
+                        <var name="lbc_qs" name_in_code="qs" array_group="moist"  packages="mp_thompson_in;mp_wsm6_in" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of snow mixing ratio"/>
+
+                        <var name="lbc_qg" name_in_code="qg" array_group="moist"  packages="mp_thompson_in;mp_wsm6_in" units="kg kg^{-1} s^{-1}"
+                             description="Lateral boundary tendency of graupel mixing ratio"/>
+
+                        <var name="lbc_nr" name_in_code="nr" array_group="number" packages="mp_thompson_in" units="m^{-3} s^{-1}"
+                             description="Lateral boundary tendency of rain number concentration"/>
+
+                        <var name="lbc_ni" name_in_code="ni" array_group="number" packages="bl_mynn_in;mp_thompson_in" units="m^{-3} s^{-1}"
+                             description="Lateral boundary tendency of ice number concentration"/>
+                </var_array>
+        </var_struct>
+
 
 <!-- ================================================================================================== -->
 <!--  DECLARATIONS OF ALL PHYSICS VARIABLES (will need to be moved to a Physics Registry shared by the  -->
@@ -1742,7 +1913,7 @@
                      description="logical for configuration of deep soil temperatures"
                      possible_values=".true. for slowly time-varying deep soil temperatures; .false. otherwise"/>
 
-                <nml_option name="config_o3climatology" type="logical" default_value="false" in_defaults="false"
+                <nml_option name="config_o3climatology" type="logical" default_value="true" in_defaults="false"
                      units="-"
                      description="logical for configuration of input ozone data in RRMTG long- and short-wave radiation"
                      possible_values=".true. for using monthly-varying ozone data; .false. for using fixed vertical profile"/>
@@ -2367,7 +2538,6 @@
                 <var name="i_acswuptc" type="integer" dimensions="nCells Time" units="unitless"
                      description="incidence of accumulated clear-sky upward top-of-atmosphere shortwave radiation greater than config_bucket_radt"/>
 
-
                 <var name="coszr" type="real" dimensions="nCells Time" units="unitless"
                      description="cosine of zenith solar angle"/>
 
@@ -2378,7 +2548,7 @@
                      description="all-sky downward surface shortwave radiation flux"/>
 
                 <var name="swdnbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="clear-sky downward surface shortwave radiation flux"/>                
+                     description="clear-sky downward surface shortwave radiation flux"/>
 
                 <var name="swdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="all-sky downward top-of-atmosphere shortwave radiation flux"/>
@@ -2402,7 +2572,7 @@
                      description="accumulated all-sky downward surface shortwave radiation flux"/>
 
                 <var name="acswdnbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated clear-sky downward surface shortwave radiation flux"/>                
+                     description="accumulated clear-sky downward surface shortwave radiation flux"/>
 
                 <var name="acswdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="accumulated all-sky downward top-of-atmosphere shortwave radiation flux"/>
@@ -2424,7 +2594,6 @@
 
                 <var name="gsw" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="net surface shortwave radiation flux"/>
-
 
                 <!-- RRTMG SW ONLY: -->
                 <var name="swdnflx" type="real" dimensions="nVertLevelsP2 nCells Time" units="-"
@@ -2484,22 +2653,22 @@
                      description="clear-sky downward surface longwave radiation flux"/>
 
                 <var name="lwdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="clear-sky downward surface longwave radiation flux"/>
+                     description="all-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="lwdntc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="clear-sky downward surface longwave radiation flux"/>
+                     description="clear-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="lwupb" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="all-sky upward surface longwave radiation flux"/>
 
                 <var name="lwupbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all-sky upward surface longwave radiation flux"/>
+                     description="clear-sky upward surface longwave radiation flux"/>
 
                 <var name="lwupt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all-sky upward surface longwave radiation flux"/>
+                     description="all-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="lwuptc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all-sky upward surface longwave radiation flux"/>
+                     description="clear-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwdnb" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="accumulated all-sky downward surface longwave radiation flux"/>
@@ -2508,28 +2677,28 @@
                      description="accumulated clear-sky downward surface longwave radiation flux"/>
 
                 <var name="aclwdnt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated clear-sky downward surface longwave radiation flux"/>
+                     description="accumulated all-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwdntc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated clear-sky downward surface longwave radiation flux"/>
+                     description="accumulated clear-sky downward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwupb" type="real" dimensions="nCells Time" units="W m^{-2}"
                      description="accumulated all-sky upward surface longwave radiation flux"/>
 
                 <var name="aclwupbc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated all-sky upward surface longwave radiation flux"/>
+                     description="accumulated clear-sky upward surface longwave radiation flux"/>
 
                 <var name="aclwupt" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated all-sky upward surface longwave radiation flux"/>
+                     description="accumulated all-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="aclwuptc" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="accumulated all-sky upward surface longwave radiation flux"/>
+                     description="accumulated clear-sky upward top-of-the-atmosphere longwave radiation flux"/>
 
                 <var name="olrtoa" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="top-of-atmosphere outgoing longwave radiation flux"/>
+                     description="all-sky top-of-atmosphere outgoing longwave radiation flux"/>
 
                 <var name="glw" type="real" dimensions="nCells Time" units="W m^{-2}"
-                     description="all downward surface longwave radiation"/>
+                     description="all-sky downward surface longwave radiation"/>
 
                 <var name="rre_cloud" type="real" dimensions="nVertLevels nCells Time" units="microns"
                      description="effective radius of cloud water droplets calculated in RRTMG radiation"/>
@@ -2537,8 +2706,8 @@
                 <var name="rre_ice" type="real" dimensions="nVertLevels nCells Time" units="microns"
                      description="effective radius of cloud ice crystals calculated in RRTMG radiation"/>
 
-                <var name="rre_snow" type="real" dimensions="nVertLevels nCells Time"/>
-                     description="effective radius of cloud ice crystals calculated in RRTMG radiation"/>
+                <var name="rre_snow" type="real" dimensions="nVertLevels nCells Time" units="microns"
+                     description="effective radius of snow crystals calculated in RRTMG radiation"/>
 
 
                 <!-- ================================================================================================== -->
@@ -2612,6 +2781,9 @@
                 <var name="sfc_albedo" type="real" dimensions="nCells Time" units="unitless"
                      description="surface albedo"/>
 
+                <var name="sfc_albedo_seaice" type="real" dimensions="nCells Time" units="unitless"
+                     description="surface albedo over seaice"/>
+
                 <var name="sfc_emiss" type="real" dimensions="nCells Time" units="unitless"
                      description="surface emissivity"/>
 
@@ -2634,7 +2806,7 @@
                      description="initial number of time-steps since last snow fall"/>
 
                 <var name="sstsk" type="real" dimensions="nCells Time" units="K"
-                     description="skin sea-aurface temperature"/>
+                     description="skin sea-surface temperature"/>
 
                 <var name="sstsk_dtc" type="real" dimensions="nCells Time" units="K"
                      description="skin sea-surface temperature cooling"/>
@@ -2786,7 +2958,7 @@
                      description="tendency of potential temperature due to short wave radiation"/>
 
                 <var name="rthratenlw" type="real" dimensions="nVertLevels nCells Time" units="K s^{-1}"
-                     description="tendency of potential temperature due to short wave radiation"/>
+                     description="tendency of potential temperature due to long wave radiation"/>
         </var_struct>
 
 
@@ -2814,6 +2986,12 @@
 
                 <var name="mminlu" type="text" dimensions="" units="unitless"
                      description="land use classification"/>
+
+                <var name="isice_lu" name_in_code="isice" type="integer" dimensions="" units="unitless" default_value="24"
+                     description="Index category for snow/ice"/>
+
+                <var name="iswater_lu" name_in_code="iswater" type="integer" dimensions="" units="unitless" default_value="16"
+                     description="Index category for water"/>
 
                 <var name="landmask" type="integer"  dimensions="nCells" units="unitless"
                      description="land-ocean mask (1=land ; 0=ocean)"/>

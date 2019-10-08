@@ -2187,6 +2187,8 @@ module mpas_io
 
    subroutine MPAS_io_get_var_char0d(handle, fieldname, val, ierr)
 
+      use mpas_c_interfacing, only : MPAS_sanitize_string
+
       implicit none
 
       type (MPAS_IO_Handle_type), intent(inout) :: handle
@@ -2198,11 +2200,14 @@ module mpas_io
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, charVal=val, ierr=ierr)
+      call MPAS_sanitize_string(val)
 
    end subroutine MPAS_io_get_var_char0d
 
 
    subroutine MPAS_io_get_var_char1d(handle, fieldname, val, ierr)
+
+      use mpas_c_interfacing, only : MPAS_sanitize_string
 
       implicit none
 
@@ -2211,10 +2216,15 @@ module mpas_io
       character (len=*), dimension(:), intent(out) :: val
       integer, intent(out), optional :: ierr
 
+      integer :: i
+
 !     call mpas_log_write('Called MPAS_io_get_var_char1d()')
       if (present(ierr)) ierr = MPAS_IO_NOERR
 
       call MPAS_io_get_var_generic(handle, fieldname, charArray1d=val, ierr=ierr)
+      do i=1,size(val)
+         call MPAS_sanitize_string(val(i))
+      end do
 
    end subroutine MPAS_io_get_var_char1d
 

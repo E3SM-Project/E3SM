@@ -19,17 +19,30 @@
 !-----------------------------------------------------------------------
 */
 
-#include <math.h>
+/* In Fortran, use the following as an interface for compute_ev_2 and
+ compute_ev_3:
+ 
+ interface
+    subroutine compute_ev_2(A, wr, wi) bind(C)!{{{
+       use iso_c_binding, only: c_double
+       real (c_double), dimension(2,2) :: A
+       real (c_double), dimension(2) :: wr
+       real (c_double), dimension(2) :: wi
+    end subroutine compute_ev_2!}}}
+ end interface
 
-#ifdef UNDERSCORE
-#define compute_ev_2 compute_ev_2_
-#define compute_ev_3 compute_ev_3_
-#else
-#ifdef DOUBLEUNDERSCORE
-#define compute_ev_2 compute_ev_2__
-#define compute_ev_3 compute_ev_3__
-#endif
-#endif
+ interface
+    subroutine compute_ev_3(A, wr, wi) bind(C)!{{{
+       use iso_c_binding, only: c_double
+       real (c_double), dimension(3,3) :: A
+       real (c_double), dimension(3) :: wr
+       real (c_double), dimension(3) :: wi
+    end subroutine compute_ev_3!}}}
+ end interface
+
+ */
+
+#include <math.h>
 
 #ifdef SINGLE_PRECISION
     typedef float real;
