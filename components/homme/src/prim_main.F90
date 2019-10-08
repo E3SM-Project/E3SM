@@ -28,10 +28,6 @@ program prim_main
 #endif
   use compose_test_mod, only: compose_test
 
-#ifdef VERTICAL_INTERPOLATION
-  use netcdf_interp_mod, only: netcdf_interp_init, netcdf_interp_write, netcdf_interp_finish
-#endif
-
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
   use interpolate_driver_mod, only : interpolate_driver, pio_read_phis
@@ -193,9 +189,7 @@ program prim_main
 ! initialize history files.  filename constructed with restart time
 ! so we have to do this after ReadRestart in prim_init2 above
   call t_startf('prim_io_init')
-#ifdef VERTICAL_INTERPOLATION
-  call netcdf_interp_init(elem, hybrid, hvcoord)
-#elif defined PIO_INTERP
+#if defined PIO_INTERP
   call interp_movie_init( elem, par,  hvcoord, tl )
 #else
   call prim_movie_init( elem, par, hvcoord, tl )
@@ -205,9 +199,7 @@ program prim_main
   ! output initial state for NEW runs (not restarts or branch runs)
   if (runtype == 0 ) then
      if(par%masterproc) print *,"Output of initial state..."
-#ifdef VERTICAL_INTERPOLATION
-    call netcdf_interp_write(elem, tl, hybrid, hvcoord)
-#elif defined PIO_INTERP
+#if defined PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0, hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
@@ -238,9 +230,7 @@ program prim_main
      !$OMP END PARALLEL
 #endif
 
-#ifdef VERTICAL_INTERPOLATION
-     call netcdf_interp_write(elem, tl, hybrid, hvcoord)
-#elif defined PIO_INTERP
+#if defined PIO_INTERP
      call interp_movie_output(elem, tl, par, 0d0,hvcoord=hvcoord)
 #else
      call prim_movie_output(elem, tl, hvcoord, par)
@@ -259,9 +249,7 @@ program prim_main
   call prim_finalize()
   if(par%masterproc) print *,"closing history files"
 
-#ifdef VERTICAL_INTERPOLATION
-  call netcdf_interp_finish
-#elif defined PIO_INTERP
+#if defined PIO_INTERP
   call interp_movie_finish
 #else
   call prim_movie_finish

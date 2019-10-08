@@ -24,18 +24,23 @@ module rof_comp_mct
   use RunoffMod        , only : rtmCTL, TRunoff
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
-                                inst_index, inst_suffix, inst_name, RtmVarSet
+                                inst_index, inst_suffix, inst_name, RtmVarSet, wrmflag
   use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
-  use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size, advance_timestep 
+  use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
+
+  use WRM_type_mod     , only : StorWater
+
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
                                 index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
-                                index_x2r_Flrl_rofdto, &
+                                index_x2r_Flrl_rofdto, index_x2r_Flrl_demand, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
-                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
+                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
+                                index_r2x_Flrr_supply
+
   use mct_mod
   use ESMF
 !
@@ -135,11 +140,11 @@ contains
     endif
 #endif                      
 
+    ! Initialize io log unit
     inst_name   = seq_comm_name(ROFID)
     inst_index  = seq_comm_inst(ROFID)
     inst_suffix = seq_comm_suffix(ROFID)
 
-    ! Initialize io log unit
     call shr_file_getLogUnit (shrlogunit)
     if (masterproc) then
        inquire(file='rof_modelio.nml'//trim(inst_suffix),exist=exists)
@@ -248,11 +253,11 @@ contains
        lsize = mct_gsMap_lsize(gsMap_rof, mpicom_rof)
        call rof_domain_mct( lsize, gsMap_rof, dom_r )
        
-       ! Initialize lnd -> mosart attribute vector		
+       ! Initialize lnd -> mosart attribute vector
        call mct_aVect_init(x2r_r, rList=seq_flds_x2r_fields, lsize=lsize)
        call mct_aVect_zero(x2r_r)
        
-       ! Initialize mosart -> ocn attribute vector		
+       ! Initialize mosart -> ocn attribute vector
        call mct_aVect_init(r2x_r, rList=seq_flds_r2x_fields, lsize=lsize)
        call mct_aVect_zero(r2x_r) 
        
@@ -343,7 +348,6 @@ contains
     write(rdate,'(i4.4,"-",i2.2,"-",i2.2,"-",i5.5)') yr_sync,mon_sync,day_sync,tod_sync
     nlend = seq_timemgr_StopAlarmIsOn( EClock )
     rstwr = seq_timemgr_RestartAlarmIsOn( EClock )
-    call advance_timestep()
     call Rtmrun(rstwr,nlend,rdate)
 
     ! Map roff data to MCT datatype (input is rtmCTL%runoff, output is r2x_r)
@@ -591,11 +595,12 @@ contains
        else
           rtmCTL%qdto(n,nliq) = 0.0_r8
        endif
-
+      rtmCTL%qdem(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsur(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
+       rtmCTL%qdem(n,nfrz) = 0.0_r8
 
     enddo
 
@@ -692,6 +697,10 @@ contains
        r2x_r%rattr(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
        r2x_r%rattr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
        r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
+       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8 
+       if (wrmflag) then
+          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s (Tian)
+       endif
     end do
 
   end subroutine rof_export_mct

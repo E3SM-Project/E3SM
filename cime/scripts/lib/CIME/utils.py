@@ -1024,8 +1024,7 @@ def find_files(rootdir, pattern):
 
 
 def setup_standard_logging_options(parser):
-    helpfile = "{}.log".format(sys.argv[0])
-    helpfile = os.path.join(os.getcwd(),os.path.basename(helpfile))
+    helpfile = os.path.join(os.getcwd(),os.path.basename("{}.log".format(sys.argv[0])))
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information (very verbose) to file {}".format(helpfile))
     parser.add_argument("-v", "--verbose", action="store_true",
@@ -1816,3 +1815,61 @@ def model_log(model, arg_logger, msg, debug_others=True):
         arg_logger.info(msg)
     elif debug_others:
         arg_logger.debug(msg)
+
+def get_htmlroot(machobj=None):
+    """Get location for test HTML output
+
+    Hierarchy for choosing CIME_HTML_ROOT:
+    0. Environment variable CIME_HTML_ROOT
+    1. File $HOME/.cime/config
+    2. config_machines.xml (if machobj provided)
+    """
+    htmlroot = os.environ.get("CIME_HTML_ROOT")
+    if htmlroot is not None:
+        logger.info("Using htmlroot from env CIME_HTML_ROOT: {}".format(htmlroot))
+        return htmlroot
+
+    cime_config = get_cime_config()
+    if cime_config.has_option("main", "CIME_HTML_ROOT"):
+        htmlroot = cime_config.get("main", "CIME_HTML_ROOT")
+        if htmlroot is not None:
+            logger.info("Using htmlroot from .cime/config: {}".format(htmlroot))
+            return htmlroot
+
+    if machobj is not None:
+        htmlroot = machobj.get_value("CIME_HTML_ROOT")
+        if htmlroot is not None:
+            logger.info("Using htmlroot from config_machines.xml: {}".format(htmlroot))
+            return htmlroot
+
+    logger.info("No htmlroot info available")
+    return None
+
+def get_urlroot(machobj=None):
+    """Get URL to htmlroot
+
+    Hierarchy for choosing CIME_URL_ROOT:
+    0. Environment variable CIME_URL_ROOT
+    1. File $HOME/.cime/config
+    2. config_machines.xml (if machobj provided)
+    """
+    urlroot = os.environ.get("CIME_URL_ROOT")
+    if urlroot is not None:
+        logger.info("Using urlroot from env CIME_URL_ROOT: {}".format(urlroot))
+        return urlroot
+
+    cime_config = get_cime_config()
+    if cime_config.has_option("main", "CIME_URL_ROOT"):
+        urlroot = cime_config.get("main", "CIME_URL_ROOT")
+        if urlroot is not None:
+            logger.info("Using urlroot from .cime/config: {}".format(urlroot))
+            return urlroot
+
+    if machobj is not None:
+        urlroot = machobj.get_value("CIME_URL_ROOT")
+        if urlroot is not None:
+            logger.info("Using urlroot from config_machines.xml: {}".format(urlroot))
+            return urlroot
+
+    logger.info("No urlroot info available")
+    return None

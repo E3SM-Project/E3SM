@@ -128,7 +128,7 @@ module cime_comp_mod
 
   ! flux calc routines
   use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
-  use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct
+  use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct, seq_flux_readnl_mct
 
   ! domain fraction routines
   use seq_frac_mct, only : seq_frac_init, seq_frac_set
@@ -1004,6 +1004,11 @@ contains
     else
        call seq_infodata_init(infodata,nlfilename, GLOID, pioid)
     end if
+
+    !----------------------------------------------------------
+    ! Read shr_flux  namelist settings
+    !----------------------------------------------------------
+    call seq_flux_readnl_mct(nlfilename, CPLID)
 
     !----------------------------------------------------------
     ! Print Model heading and copyright message
@@ -1906,7 +1911,7 @@ contains
     !----------------------------------------------------------
 
     areafact_samegrid = .false.
-#if (defined BFB_CAM_SCAM_IOP )
+#if (defined E3SM_SCM_REPLAY )
     if (.not.samegrid_alo) then
        call shr_sys_abort(subname//' ERROR: samegrid_alo is false - Must run with same atm/ocn/lnd grids when configured for scam iop')
     else

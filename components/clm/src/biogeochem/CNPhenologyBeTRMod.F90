@@ -1349,6 +1349,7 @@ contains
     integer fp,p      ! patch indices
     integer c         ! column indices
     integer g         ! gridcell indices
+    integer t         ! topographic indices
     integer h         ! hemisphere indices
     integer idpp      ! number of days past planting
     real(r8) dayspyr  ! days per year
@@ -1433,6 +1434,7 @@ contains
          p = filter_pcropp(fp)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
+         t = veg_pp%topounit(p)
          h = inhemi(p)
 
          ! background litterfall and transfer rates; long growing season factor
@@ -1605,7 +1607,7 @@ contains
                      a10tmin(p) > minplanttemp(ivt(p)))               &
                                                                 .or.  &
                      (p_season                                  .and. &
-                     forc_rain(c) .gt. minrain/dt)                    & ! rain threshold to trigger
+                     forc_rain(t) .gt. minrain/dt)                    & ! rain threshold to trigger
                                                                 .or.  & ! the beginnig of rain season
                      (no_season)) then
 
@@ -2215,7 +2217,7 @@ contains
          end if
 
          xt(p,kmo) = xt(p,kmo) + t_ref2m(p) * fracday/ndaypm(kmo) ! monthly average temperature
-         xp(p,kmo) = xp(p,kmo) + (forc_rain(c)+forc_snow(c))*dt   ! monthly average precipitation
+         xp(p,kmo) = xp(p,kmo) + (forc_rain(t)+forc_snow(t))*dt   ! monthly average precipitation
          ! calculate the potential evapotranspiration
          call calculate_eto(t_ref2m(p), netrad(p), eflx_soil_grnd(p), forc_pbot(t), forc_rh(t), forc_wind(t), es, dt, ETout)
          ! monthly ETo

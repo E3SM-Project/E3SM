@@ -7549,6 +7549,35 @@
         </nthrds>
       </pes>
     </mach>
+    <mach name="compy">
+      <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="any">
+        <comment>compy ne120 W-cycle on 310 nodes, 40x1, sypd=1.2</comment>
+        <ntasks>
+          <ntasks_atm>9600</ntasks_atm>
+          <ntasks_cpl>9600</ntasks_cpl>
+          <ntasks_ice>7200</ntasks_ice>
+          <ntasks_ocn>2800</ntasks_ocn>
+          <ntasks_lnd>2400</ntasks_lnd>
+          <ntasks_rof>2400</ntasks_rof>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_cpl>1</nthrds_cpl>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>9600</rootpe_ocn>
+          <rootpe_lnd>7200</rootpe_lnd>
+          <rootpe_rof>7200</rootpe_rof>
+        </rootpe>
+      </pes>
+    </mach>
   </grid>
   <grid name="any">
     <mach name="edison|cori-haswell">
@@ -7620,6 +7649,35 @@
           <rootpe_ocn>108</rootpe_ocn>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
+        </rootpe>
+      </pes>
+    </mach>
+    <mach name="compy">
+      <pes compset="any" pesize="any">
+        <comment>ne4 grid on 3 nodes pure-MPI</comment>
+        <ntasks>
+          <ntasks_atm>96</ntasks_atm>
+          <ntasks_ice>96</ntasks_ice>
+          <ntasks_cpl>96</ntasks_cpl>
+          <ntasks_lnd>96</ntasks_lnd>
+          <ntasks_rof>96</ntasks_rof>
+          <ntasks_ocn>96</ntasks_ocn>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>1</nthrds_atm>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_cpl>1</nthrds_cpl>
+          <nthrds_lnd>1</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ocn>1</nthrds_ocn>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_cpl>0</rootpe_cpl>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ocn>0</rootpe_ocn>
         </rootpe>
       </pes>
     </mach>
@@ -8756,6 +8814,37 @@
           <rootpe_rof>0</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
           <rootpe_ocn>480</rootpe_ocn>
+          <rootpe_cpl>0</rootpe_cpl>
+        </rootpe>
+      </pes>
+    </mach>
+  </grid>
+  <grid name="a%T62.+_oi%oEC60to30.*">
+    <mach name="theta">
+      <pes compset=".*MPASSI.*DOCN.+" pesize="any">
+        <comment>--res T62_oEC60to30v3 --compset DTESTM on 2 nodes</comment>
+        <ntasks>
+          <ntasks_atm>128</ntasks_atm>
+          <ntasks_lnd>128</ntasks_lnd>
+          <ntasks_rof>128</ntasks_rof>
+          <ntasks_ice>128</ntasks_ice>
+          <ntasks_ocn>128</ntasks_ocn>
+          <ntasks_cpl>128</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>2</nthrds_atm>
+          <nthrds_lnd>2</nthrds_lnd>
+          <nthrds_rof>2</nthrds_rof>
+          <nthrds_ice>2</nthrds_ice>
+          <nthrds_ocn>2</nthrds_ocn>
+          <nthrds_cpl>2</nthrds_cpl>
+        </nthrds>
+        <rootpe>
+          <rootpe_atm>0</rootpe_atm>
+          <rootpe_lnd>0</rootpe_lnd>
+          <rootpe_rof>0</rootpe_rof>
+          <rootpe_ice>0</rootpe_ice>
+          <rootpe_ocn>0</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
         </rootpe>
       </pes>

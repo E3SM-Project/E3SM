@@ -4,7 +4,7 @@
 # Ed Hartnett 5/7/18
 
 # Link to our assembled library.
-AM_LDFLAGS = ${top_builddir}/src/clib/libpio.la
+LDADD = ${top_builddir}/src/clib/libpioc.la
 AM_CPPFLAGS = -I$(top_srcdir)/src/clib
 
 # Build the tests for make check.
@@ -19,4 +19,4 @@ endif # RUN_TESTS
 EXTRA_DIST = run_tests.sh
 
 # Clean up files produced during testing.
-CLEANFILES = *.nc *.log
+CLEANFILES = *.nc *.log *.clog2 *.slog2

@@ -189,19 +189,20 @@ contains
     allocate(iosystems(total_comps))
 
     if(pio_async_interface) then
-       call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems)
-       do i=1,total_comps
-         ret =  pio_set_rearr_opts(iosystems(i), pio_rearr_opt_comm_type,&
-                  pio_rearr_opt_fcd,&
-                  pio_rearr_opt_c2i_enable_hs, pio_rearr_opt_c2i_enable_isend,&
-                  pio_rearr_opt_c2i_max_pend_req,&
-                  pio_rearr_opt_i2c_enable_hs, pio_rearr_opt_i2c_enable_isend,&
-                  pio_rearr_opt_i2c_max_pend_req)
-         if(ret /= PIO_NOERR) then
-            write(shr_log_unit,*) "ERROR: Setting rearranger options failed"
-         end if
-       end do
-       i=1
+       call shr_sys_abort('pio_async_interface is not currently supported')
+!       call pio_init(total_comps,mpi_comm_world, comp_comm, io_comm, iosystems)
+!       do i=1,total_comps
+!         ret =  pio_set_rearr_opts(iosystems(i), pio_rearr_opt_comm_type,&
+!                  pio_rearr_opt_fcd,&
+!                  pio_rearr_opt_c2i_enable_hs, pio_rearr_opt_c2i_enable_isend,&
+!                  pio_rearr_opt_c2i_max_pend_req,&
+!                  pio_rearr_opt_i2c_enable_hs, pio_rearr_opt_i2c_enable_isend,&
+!                  pio_rearr_opt_i2c_max_pend_req)
+!         if(ret /= PIO_NOERR) then
+!            write(shr_log_unit,*) "ERROR: Setting rearranger options failed"
+!         end if
+!       end do
+!       i=1
     else
        do i=1,total_comps
           if(comp_iamin(i)) then

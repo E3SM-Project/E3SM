@@ -2321,7 +2321,10 @@ subroutine set_gas_concentrations(icall, state, pbuf, &
 
       ! Map to radiation grid
       vol_mix_ratio_out(1:ncol,ktop:kbot) = vol_mix_ratio(1:ncol,1:pver)
-      vol_mix_ratio_out(1:ncol,1) = vol_mix_ratio(1:ncol,ktop)
+
+      ! Copy top-most model level to top-most rad level (which could be above
+      ! the top of the model)
+      vol_mix_ratio_out(1:ncol,1) = vol_mix_ratio(1:ncol,1)
 
       ! Populate the RRTMGP gas concentration object with values for this gas.
       ! NOTE: RRTMGP makes some assumptions about gas names internally, so we

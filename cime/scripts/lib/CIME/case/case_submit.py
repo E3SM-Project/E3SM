@@ -27,7 +27,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
             resubmit_immediate=False, skip_pnl=False, mail_user=None, mail_type=None,
             batch_args=None):
     if job is None:
-        job = case.get_primary_job()
+        job = case.get_first_job()
 
     # Check if CONTINUE_RUN value makes sense
     if job != "case.test" and case.get_value("CONTINUE_RUN"):
@@ -56,8 +56,9 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     # flag will stay in effect for the duration of the RESUBMITs
     env_batch = case.get_env("batch")
     external_workflow = case.get_value("EXTERNAL_WORKFLOW")
-    if resubmit and env_batch.get_batch_system_type() == "none" or external_workflow:
+    if env_batch.get_batch_system_type() == "none" or resubmit and external_workflow:
         no_batch = True
+
     if no_batch:
         batch_system = "none"
     else:

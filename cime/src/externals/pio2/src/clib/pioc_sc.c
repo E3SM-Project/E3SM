@@ -165,7 +165,7 @@ PIO_Offset GCDblocksize(int arrlen, const PIO_Offset *arr_in)
 
             bsize = lgcd(bsize, blk_len);
             if (bsize == 1)
-              return 1;
+                return 1;
 
             /* Continue to find next block. */
             blk_len = 1;
@@ -216,8 +216,8 @@ int CalcStartandCount(int pio_type, int ndims, const int *gdims, int num_io_proc
     /* Check inputs. */
     pioassert(pio_type > 0 && ndims > 0 && gdims && num_io_procs > 0 && start && count,
               "invalid input", __FILE__, __LINE__);
-    LOG((1, "CalcStartandCount pio_type = %d ndims = %d num_io_procs = %d myiorank = %d",
-         pio_type, ndims, num_io_procs, myiorank));
+    PLOG((1, "CalcStartandCount pio_type = %d ndims = %d num_io_procs = %d myiorank = %d",
+          pio_type, ndims, num_io_procs, myiorank));
 
     /* We are trying to find start and count indices for each iotask
      * such that each task has approximately blocksize data to write
