@@ -2,7 +2,10 @@
 
 #include "share/scream_assert.hpp"
 #include "share/util/scream_utils.hpp"
+#include "share/util/scream_kokkos_utils.hpp"
 #include "p3_f90.hpp"
+
+#include <random>
 
 using scream::Real;
 using scream::Int;
@@ -31,6 +34,8 @@ void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
                       Real* cdist, Real* cdist1, Real lcldm);
 
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
+
+void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
 
 }
 
@@ -94,6 +99,80 @@ void get_rain_dsd2(GetRainDsd2Data& d)
   Real nr_in = d.nr_in;
   get_rain_dsd2_c(d.qr, &nr_in, &d.mu_r, &d.lamr, &d.cdistr, &d.logn0r, d.rcldm);
   d.nr_out = nr_in;
+}
+
+CalcUpwindData::CalcUpwindData(
+  Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
+  std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
+  std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range) :
+  kts(kts_), kte(kte_), kdir(kdir_), kbot(kbot_), k_qxtop(k_qxtop_), num_arrays(num_arrays_), dt_sub(dt_sub_),
+  m_nk((kte_ - kts_) + 1),
+  m_data( (3 + num_arrays_*3) * m_nk),
+  m_ptr_data(num_arrays_*3)
+{
+  Int offset = 0;
+
+  rho     = m_data.data();
+  inv_rho = rho + (offset+=m_nk);
+  inv_dzq = rho + (offset+=m_nk);
+
+  fluxes = m_ptr_data.data();
+  vs     = fluxes + num_arrays;
+  qnx    = vs + num_arrays;
+
+  for (Int i = 0; i < num_arrays; ++i) {
+    fluxes[i]  = rho + (offset+=m_nk);
+    vs[i]      = rho + (offset+=m_nk);
+    qnx[i]     = rho + (offset+=m_nk);
+  }
+
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real>
+    rho_dist(rho_range.first, rho_range.second),
+    inv_dzq_dist(inv_dzq_range.first, inv_dzq_range.second),
+    vs_dist(vs_range.first, vs_range.second),
+    qnx_dist(qnx_range.first, qnx_range.second);
+
+  for (Int k = 0; k < m_nk; ++k) {
+    rho[k]     = rho_dist(generator);
+    inv_rho[k] = 1 / rho[k];
+    inv_dzq[k] = inv_dzq_dist(generator);
+
+    for (Int i = 0; i < num_arrays; ++i) {
+      fluxes[i][k] = 0.0;
+      vs    [i][k] = vs_dist(generator);
+      qnx   [i][k] = qnx_dist(generator);
+    }
+  }
+}
+
+CalcUpwindData::CalcUpwindData(const CalcUpwindData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), kdir(rhs.kdir), kbot(rhs.kbot), k_qxtop(rhs.k_qxtop), num_arrays(rhs.num_arrays), dt_sub(rhs.dt_sub),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data),
+  m_ptr_data(rhs.m_ptr_data.size())
+{
+  Int offset = 0;
+
+  rho     = m_data.data();
+  inv_rho = rho + (offset+=m_nk);
+  inv_dzq = rho + (offset+=m_nk);
+
+  fluxes = m_ptr_data.data();
+  vs     = fluxes + num_arrays;
+  qnx    = vs + num_arrays;
+
+  for (Int i = 0; i < num_arrays; ++i) {
+    fluxes[i] = rho + (offset+=m_nk);
+    vs[i]     = rho + (offset+=m_nk);
+    qnx[i]    = rho + (offset+=m_nk);
+  }
+}
+
+void calc_first_order_upwind_step(CalcUpwindData& d)
+{
+  p3_init(true);
+  calc_first_order_upwind_step_c(d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub, d.rho, d.inv_rho, d.inv_dzq, d.num_arrays, d.fluxes, d.vs, d.qnx);
 }
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
@@ -264,7 +343,7 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   using P3F = Functions<Real, DefaultDevice>;
 
   typename P3F::Smask qr_gt_small(qr_ > P3F::C::QSMALL);
-  typename P3F::view_1d<Real> t_d("t_h", 5);
+  typename P3F::view_1d<Real> t_d("t_d", 5);
   auto t_h = Kokkos::create_mirror_view(t_d);
   Real local_nr = *nr_;
 
@@ -289,6 +368,133 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   *logn0r_ = t_h(4);
 }
 
+template <int N>
+void calc_first_order_upwind_step_f_impl(
+  Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub,
+  Real* rho, Real* inv_rho, Real* inv_dzq,
+  Real** fluxes, Real** vs, Real** qnx)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+  using P3FH = Functions<Real, HostDevice>;
+
+  using Spack = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Spack>;
+  using view_1dh = typename P3FH::view_1d<Spack>;
+  using KT = typename P3F::KT;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Spack, N>;
+  using uview_1d = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts -= 1;
+  kte -= 1;
+  kbot -= 1;
+  k_qxtop -= 1;
+
+  const Int nk = (kte - kts) + 1;
+  const Int npack = (nk + Spack::n - 1) / Spack::n;
+
+  // Setup views
+  view_1d rho_d("rho_d", npack), inv_rho_d("inv_rho_d", npack), inv_dzq_d("inv_dzq_d", npack);
+  auto rho_h     = Kokkos::create_mirror_view(rho_d);
+  auto inv_rho_h = Kokkos::create_mirror_view(inv_rho_d);
+  auto inv_dzq_h = Kokkos::create_mirror_view(inv_dzq_d);
+  Kokkos::Array<view_1d, N> fluxes_d, vs_d, qnx_d;
+  Kokkos::Array<view_1dh, N> fluxes_h, vs_h, qnx_h;
+
+  // Populate views. Considered using Unmanaged views to wrap input ptrs but
+  // I was worried about running off the ends of arrays if npack does not evenly
+  // divide nk;
+  for (Int k = 0; k < npack; ++k) {
+    const Int scalar_offset = k*Spack::n;
+    for (Int s = 0; s < Spack::n && scalar_offset+s < nk; ++s) {
+      rho_h(k)[s]     = rho    [scalar_offset + s];
+      inv_rho_h(k)[s] = inv_rho[scalar_offset + s];
+      inv_dzq_h(k)[s] = inv_dzq[scalar_offset + s];
+    }
+  }
+
+  for (Int i = 0; i < N; ++i) {
+    fluxes_d[i] = view_1d("fluxes_d", npack);
+    vs_d[i]     = view_1d("vs_d",     npack);
+    qnx_d[i]    = view_1d("qnx_d",    npack);
+
+    fluxes_h[i] = Kokkos::create_mirror_view(fluxes_d[i]);
+    vs_h[i]     = Kokkos::create_mirror_view(vs_d[i]);
+    qnx_h[i]    = Kokkos::create_mirror_view(qnx_d[i]);
+
+    for (Int k = 0; k < npack; ++k) {
+      const Int scalar_offset = k*Spack::n;
+      for (Int s = 0; s < Spack::n && scalar_offset+s < nk; ++s) {
+        fluxes_h[i](k)[s] = fluxes[i][scalar_offset + s];
+        vs_h    [i](k)[s] = vs    [i][scalar_offset + s];
+        qnx_h   [i](k)[s] = qnx   [i][scalar_offset + s];
+      }
+    }
+  }
+
+  // Sync views
+  Kokkos::deep_copy(rho_d, rho_h);
+  Kokkos::deep_copy(inv_rho_d, inv_rho_h);
+  Kokkos::deep_copy(inv_dzq_d, inv_dzq_h);
+  for (Int i = 0; i < N; ++i) {
+    Kokkos::deep_copy(fluxes_d[i], fluxes_h[i]);
+    Kokkos::deep_copy(vs_d[i],     vs_h[i]);
+    Kokkos::deep_copy(qnx_d[i],    qnx_h[i]);
+  }
+
+  // Call core function from kernel
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;
+    for (int i = 0; i < N; ++i) {
+      fluxes_ptr[i] = (uview_1d*)(&fluxes_d[i]);
+      vs_ptr[i]     = (uview_1d*)(&vs_d[i]);
+      qnx_ptr[i]    = (uview_1d*)(&qnx_d[i]);
+    }
+    uview_1d urho_d(rho_d), uinv_rho_d(inv_rho_d), uinv_dzq_d(inv_dzq_d);
+    P3F::calc_first_order_upwind_step<N>(urho_d, uinv_rho_d, uinv_dzq_d, team, nk, kbot, k_qxtop, kdir, dt_sub, fluxes_ptr, vs_ptr, qnx_ptr);
+  });
+
+  // Sync back to host
+  for (Int i = 0; i < N; ++i) {
+    Kokkos::deep_copy(fluxes_h[i], fluxes_d[i]);
+    Kokkos::deep_copy(vs_h[i],     vs_d[i]);
+    Kokkos::deep_copy(qnx_h[i],    qnx_d[i]);
+
+    for (Int k = 0; k < npack; ++k) {
+      const Int scalar_offset = k*Spack::n;
+      for (Int s = 0; s < Spack::n && scalar_offset+s < nk; ++s) {
+        fluxes[i][scalar_offset + s] = fluxes_h[i](k)[s];
+        vs    [i][scalar_offset + s] = vs_h    [i](k)[s];
+        qnx   [i][scalar_offset + s] = qnx_h   [i](k)[s];
+      }
+    }
+  }
+}
+
+void calc_first_order_upwind_step_f(
+  Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub,
+  Real* rho, Real* inv_rho, Real* inv_dzq,
+  Int num_arrays, Real** fluxes, Real** vs, Real** qnx)
+{
+  if (num_arrays == 1) {
+    calc_first_order_upwind_step_f_impl<1>(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, fluxes, vs, qnx);
+  }
+  else if (num_arrays == 2) {
+    calc_first_order_upwind_step_f_impl<2>(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, fluxes, vs, qnx);
+  }
+  else if (num_arrays == 4) {
+    calc_first_order_upwind_step_f_impl<4>(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, fluxes, vs, qnx);
+  }
+  else {
+    scream_require_msg(false, "Unsupported num arrays in bridge calc_first_order_upwind_step_f: " << num_arrays);
+  }
+}
+
 // Cuda implementations of std math routines are not necessarily BFB
 // with the host.
 template <typename ScalarT, typename DeviceT>
@@ -299,7 +505,7 @@ struct CudaWrap
   static Scalar cxx_pow(Scalar base, Scalar exp)
   {
     Scalar result;
-    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
+    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Scalar& value) {
         value = std::pow(base, exp);
     }, result);
 
@@ -309,7 +515,7 @@ struct CudaWrap
 #define cuda_wrap_single_arg(wrap_name, func_call)      \
 static Scalar wrap_name(Scalar input) {                 \
   Scalar result;                                        \
-  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) { \
+  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Scalar& value) { \
     value = func_call(input);                                         \
   }, result);                                                         \
   return result;                                                      \

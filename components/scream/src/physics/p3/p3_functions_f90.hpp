@@ -6,6 +6,8 @@
 
 #include "p3_functions.hpp"
 
+#include <utility>
+
 //
 // Bridge functions to call fortran version of p3 functions from C++
 //
@@ -179,6 +181,43 @@ void get_rain_dsd2(GetRainDsd2Data& d);
 extern "C" {
 
 void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
+
+}
+
+struct CalcUpwindData
+{
+  // Inputs
+  Int kts, kte, kdir, kbot, k_qxtop, num_arrays;
+  Real dt_sub;
+  Real* rho, *inv_rho, *inv_dzq;
+  Real **vs;
+
+  // In/out
+  Real **qnx;
+
+  // Outputs
+  Real** fluxes;
+
+  CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
+                 std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
+                 std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
+
+  // deep copy
+  CalcUpwindData(const CalcUpwindData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+  std::vector<Real*> m_ptr_data;
+};
+void calc_first_order_upwind_step(CalcUpwindData& d);
+
+extern "C" {
+
+void calc_first_order_upwind_step_f(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
 
 }
 

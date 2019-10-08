@@ -16,17 +16,18 @@ template <Int kdir, int nfield>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_first_order_upwind_step (
-  const ko::Unmanaged<view_1d<const Spack> >& rho,
-  const ko::Unmanaged<view_1d<const Spack> >& inv_rho,
-  const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+  const uview_1d<const Spack>& rho,
+  const uview_1d<const Spack>& inv_rho,
+  const uview_1d<const Spack>& inv_dzq,
   const MemberType& team,
   const Int& nk, const Int& k_bot, const Int& k_top, const Scalar& dt_sub,
   const view_1d_ptr_array<Spack, nfield>& flux,
   const view_1d_ptr_array<Spack, nfield>& V,
   const view_1d_ptr_array<Spack, nfield>& r)
 {
+  const Int kmin_scalar = ( kdir == 1 ? k_bot : k_top);
   Int
-    kmin = ( kdir == 1 ? k_bot : k_top)             / Spack::n,
+    kmin = kmin_scalar / Spack::n,
     // Add 1 to make [kmin, kmax). But then the extra term (Spack::n -
     // 1) to determine pack index cancels the +1.
     kmax = ((kdir == 1 ? k_top : k_bot) + Spack::n) / Spack::n;
@@ -44,11 +45,14 @@ void Functions<S,D>
   Kokkos::single(
     Kokkos::PerTeam(team), [&] () {
       const Int k = k_top_pack;
-      if (nk % Spack::n != 0) {
-        const auto mask =
-          scream::pack::range<IntSmallPack>(k_top_pack*Spack::n) >= nk;
-        for (int f = 0; f < nfield; ++f)
-          (*flux[f])(k_top_pack).set(mask, 0);
+      {
+        const auto range_pack = scream::pack::range<IntSmallPack>(k_top_pack*Spack::n);
+        const auto mask = range_pack >= nk || range_pack < kmin_scalar;
+        if (mask.any()) {
+          for (int f = 0; f < nfield; ++f) {
+            (*flux[f])(k_top_pack).set(mask, 0);
+          }
+        }
       }
       for (int f = 0; f < nfield; ++f) {
         // compute flux divergence
@@ -56,6 +60,7 @@ void Functions<S,D>
           shift_right(0, (*flux[f])(k)) :
           shift_left (0, (*flux[f])(k));
         const auto fluxdiv = (flux_pkdir - (*flux[f])(k)) * inv_dzq(k);
+
         // update prognostic variables
         (*r[f])(k) += fluxdiv * dt_sub * inv_rho(k);
       }
@@ -82,13 +87,30 @@ void Functions<S,D>
 }
 
 template <typename S, typename D>
+template <Int kdir, int nfield>
+KOKKOS_FUNCTION
+void Functions<S,D>
+::generalized_sedimentation (
+  const uview_1d<const Spack>& rho,
+  const uview_1d<const Spack>& inv_rho,
+  const uview_1d<const Spack>& inv_dzq,
+  const MemberType& team,
+  const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,
+  const view_1d_ptr_array<Spack, nfield>& fluxes,
+  const view_1d_ptr_array<Spack, nfield>& Vs, // (behaviorally const)
+  const view_1d_ptr_array<Spack, nfield>& rs)
+{
+
+}
+
+template <typename S, typename D>
 template <int nfield>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_first_order_upwind_step (
-  const ko::Unmanaged<view_1d<const Spack> >& rho,
-  const ko::Unmanaged<view_1d<const Spack> >& inv_rho,
-  const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+  const uview_1d<const Spack>& rho,
+  const uview_1d<const Spack>& inv_rho,
+  const uview_1d<const Spack>& inv_dzq,
   const MemberType& team,
   const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
   const view_1d_ptr_array<Spack, nfield>& flux,
@@ -107,14 +129,14 @@ template <typename S, typename D>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::calc_first_order_upwind_step (
-  const ko::Unmanaged<view_1d<const Spack> >& rho,
-  const ko::Unmanaged<view_1d<const Spack> >& inv_rho,
-  const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+  const uview_1d<const Spack>& rho,
+  const uview_1d<const Spack>& inv_rho,
+  const uview_1d<const Spack>& inv_dzq,
   const MemberType& team,
   const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
-  const ko::Unmanaged<view_1d<Spack> >& flux,
-  const ko::Unmanaged<view_1d<const Spack> >& V,
-  const ko::Unmanaged<view_1d<Spack> >& r)
+  const uview_1d<Spack>& flux,
+  const uview_1d<const Spack>& V,
+  const uview_1d<Spack>& r)
 {
   // B/c automatic casting to const does not work in the nested data
   // view_1d_ptr_array (C++ does not provide all legal const casts automatically
@@ -122,8 +144,8 @@ void Functions<S,D>
   // versions of this function, as doing so would be a burden to the caller. But
   // in this version, we can. Thus, to call through to the impl, we explicitly
   // cast here.
-  const auto V_nonconst = ko::Unmanaged<view_1d<Spack> >(const_cast<Spack*>(V.data()),
-                                                     V.extent_int(0));
+  const auto V_nonconst = uview_1d<Spack>(const_cast<Spack*>(V.data()),
+                                          V.extent_int(0));
   if (kdir == 1)
     calc_first_order_upwind_step< 1, 1>(
       rho, inv_rho, inv_dzq, team, nk, k_bot, k_top, dt_sub,

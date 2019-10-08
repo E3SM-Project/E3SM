@@ -64,7 +64,7 @@ module micro_p3
        rho_rimeMax,inv_rho_rimeMax,max_total_Ni,dbrk,nmltratio,clbfact_sub,  &
        clbfact_dep,iparam, isize, densize, rimsize, rcollsize, tabsize, colltabsize, &
        get_latent_heat, zerodegc, pi=>pi_e3sm, dnu, &
-      rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
+       rainfrze, icenuct, homogfrze, iulog=>iulog_e3sm, &
        masterproc=>masterproc_e3sm, calculate_incloud_mixingratios, mu_r_constant, &
        lookup_table_1a_dum1_c
 
@@ -3830,15 +3830,35 @@ end subroutine generalized_sedimentation
 
 subroutine calc_first_order_upwind_step(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: calc_first_order_upwind_step_f
+    use iso_c_binding
+#endif
+
   implicit none
 
   integer, intent(in) :: kts, kte, kdir, kbot, k_qxtop, num_arrays
   real(rtype), intent(in) :: dt_sub
   real(rtype), dimension(kts:kte), intent(in) :: rho, inv_rho, inv_dzq
-  type(realptr), intent(in), dimension(num_arrays) :: fluxes, vs, qnx
+  type(realptr), intent(in), dimension(num_arrays), target :: fluxes, vs, qnx
 
   integer :: i, k
   real(rtype) :: fluxdiv
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  type(c_ptr), dimension(num_arrays) :: fluxes_c, vs_c, qnx_c
+
+  if (use_cxx) then
+     do i = 1, num_arrays
+        fluxes_c(i) = c_loc(fluxes(i)%p)
+        vs_c(i) = c_loc(vs(i)%p)
+        qnx_c(i) = c_loc(qnx(i)%p)
+     end do
+     call calc_first_order_upwind_step_f(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, &
+          num_arrays, fluxes_c, vs_c, qnx_c)
+     return
+  endif
+#endif
 
   !-- calculate fluxes
   do k = kbot,k_qxtop,kdir

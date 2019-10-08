@@ -83,9 +83,12 @@ struct Functions
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
+  template <typename S>
+  using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
+
   using MemberType = typename KT::MemberType;
 
-  // -- Table3
+  // -- Table3 --
 
   struct Table3 {
     IntSmallPack dumii, dumjj;
@@ -183,9 +186,9 @@ struct Functions
   template <int nfield>
   KOKKOS_FUNCTION
   static void calc_first_order_upwind_step(
-    const ko::Unmanaged<view_1d<const Spack> >& rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_rho, // 1/rho
-    const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho, // 1/rho
+    const uview_1d<const Spack>& inv_dzq,
     const MemberType& team,
     const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
     const view_1d_ptr_array<Spack, nfield>& flux, // workspace
@@ -195,28 +198,40 @@ struct Functions
   // Evolve 1 mixing ratio. This is a syntax-convenience version of the above.
   KOKKOS_FUNCTION
   static void calc_first_order_upwind_step(
-    const ko::Unmanaged<view_1d<const Spack> >& rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_rho, // 1/rho
-    const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho, // 1/rho
+    const uview_1d<const Spack>& inv_dzq,
     const MemberType& team,
     const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
-    const ko::Unmanaged<view_1d<Spack> >& flux,
-    const ko::Unmanaged<view_1d<const Spack> >& V,
-    const ko::Unmanaged<view_1d<Spack> >& r);
+    const uview_1d<Spack>& flux,
+    const uview_1d<const Spack>& V,
+    const uview_1d<Spack>& r);
 
   // This is the main routine. It can be called by the user if kdir is known at
   // compile time. So far it is not, so the above versions are called instead.
   template <Int kdir, int nfield>
   KOKKOS_FUNCTION
   static void calc_first_order_upwind_step(
-    const ko::Unmanaged<view_1d<const Spack> >& rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& inv_dzq,
     const MemberType& team,
     const Int& nk, const Int& k_bot, const Int& k_top, const Scalar& dt_sub,
     const view_1d_ptr_array<Spack, nfield>& flux,
     const view_1d_ptr_array<Spack, nfield>& V, // (behaviorally const)
     const view_1d_ptr_array<Spack, nfield>& r);
+
+  template <Int kdir, int nfield>
+  KOKKOS_FUNCTION
+  static void generalized_sedimentation(
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& inv_dzq,
+    const MemberType& team,
+    const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,
+    const view_1d_ptr_array<Spack, nfield>& fluxes,
+    const view_1d_ptr_array<Spack, nfield>& Vs, // (behaviorally const)
+    const view_1d_ptr_array<Spack, nfield>& rs);
 
   // -- Find layers
 
@@ -225,14 +240,14 @@ struct Functions
   KOKKOS_FUNCTION
   static Int find_bottom (
     const MemberType& team,
-    const ko::Unmanaged<view_1d<const Scalar> >& v, const Scalar& small,
+    const uview_1d<const Scalar>& v, const Scalar& small,
     const Int& kbot, const Int& ktop, const Int& kdir,
     bool& log_present);
 
   KOKKOS_FUNCTION
   static Int find_top (
     const MemberType& team,
-    const ko::Unmanaged<view_1d<const Scalar> >& v, const Scalar& small,
+    const uview_1d<const Scalar>& v, const Scalar& small,
     const Int& kbot, const Int& ktop, const Int& kdir,
     bool& log_present);
 

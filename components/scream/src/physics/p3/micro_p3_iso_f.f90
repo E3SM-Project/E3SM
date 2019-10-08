@@ -67,6 +67,16 @@ interface
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
   end subroutine get_rain_dsd2_f
 
+  subroutine calc_first_order_upwind_step_f(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    integer(kind=c_int), value, intent(in) :: kts, kte, kdir, kbot, k_qxtop, num_arrays
+    real(kind=c_real), value, intent(in) :: dt_sub
+    real(kind=c_real), dimension(kts:kte), intent(in) :: rho, inv_rho, inv_dzq
+    type(c_ptr), intent(in), dimension(num_arrays) :: fluxes, vs, qnx
+  end subroutine calc_first_order_upwind_step_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use
