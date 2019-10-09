@@ -281,9 +281,9 @@ for mct, etc.
 <compiler COMPILER="intel">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <!-- WJS (8-11-14): For some reason, yellowstone-intel has starting giving lots of
@@ -299,7 +299,7 @@ for mct, etc.
   <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
   <CFLAGS> -O2 -fp-model precise -std=gnu99 </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
-  <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
@@ -320,9 +320,9 @@ for mct, etc.
 <compiler COMPILER="intel14">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
@@ -348,9 +348,9 @@ for mct, etc.
 <compiler COMPILER="intelmic">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
@@ -378,9 +378,9 @@ for mct, etc.
 <compiler COMPILER="intelmic14">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
@@ -1416,6 +1416,41 @@ for mct, etc.
   <SLIBS> -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -lpmi -L$(MKL_PATH) -lmkl_rt</SLIBS>
 </compiler>
 
+<compiler COMPILER="pgi" MACH="compy">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <ADD_FFLAGS DEBUG="TRUE"> -C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <SFC>pgfortran</SFC>
+  <SCC>pgcc</SCC>
+  <SCXX>pgc++</SCXX>
+  <SLIBS> -lpmi -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -L$(MKL_PATH)/lib/intel64/ -lmkl_rt $(PNETCDF_LIBRARIES) </SLIBS>
+  <MPIFC MPILIB="impi"> mpipgf90 </MPIFC>
+  <MPICC MPILIB="impi"> mpipgcc  </MPICC>
+  <MPICXX MPILIB="impi"> mpipgcxx </MPICXX>
+</compiler>
+
+<compiler COMPILER="intel" MACH="compy">
+  <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
+  <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
+  <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv -init=snan</ADD_FFLAGS>
+  <SFC> ifort </SFC>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <SLIBS> -lpmi -L$(NETCDF_PATH)/lib -lnetcdf -lnetcdff -L$(MKL_PATH)/lib/intel64/ -lmkl_rt $(PNETCDF_LIBRARIES)</SLIBS>
+  <MPI_LIB_NAME>impi</MPI_LIB_NAME>
+  <MPIFC> mpiifort </MPIFC>
+  <MPICC> mpiicc </MPICC>
+  <MPICXX> mpiicpc </MPICXX>
+</compiler>
 
 <compiler MACH="grizzly" COMPILER="gnu">
 	<PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
