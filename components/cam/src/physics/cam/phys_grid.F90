@@ -106,10 +106,6 @@ module phys_grid
    use shr_const_mod,    only: SHR_CONST_PI
    use dycore,           only: dycore_is
    use units,            only: getunit, freeunit
-
-!#ifdef FIVE
-!    use five_intr,        only: pver_five
-!#endif
    implicit none
    save
 
@@ -377,6 +373,10 @@ contains
     use cam_grid_support, only: cam_grid_register, iMap, max_hcoordname_len
     use cam_grid_support, only: horiz_coord_t, horiz_coord_create
     use cam_grid_support, only: cam_grid_attribute_copy
+! HHLEE
+!#ifdef FIVE
+!    use five_intr,        only: pver_five
+!#endif
     !
     !------------------------------Arguments--------------------------------
     !
@@ -403,8 +403,10 @@ contains
     integer :: levels(plev+1)             ! vertical level indices
 #ifdef FIVE
     integer :: pver_five 
-    !integer :: levels_five(pver_five+1)   ! vertical level indices
-    integer :: levels_five(110+1)   ! vertical level indices
+! HHLEE
+!    integer :: levels_five(pver_five+1)   ! vertical level indices
+!    integer :: levels_five(110+1)   ! vertical level indices
+    integer, dimension(:), allocatable :: levels_five
 #endif
     integer :: owner_d                    ! process owning given block column
     integer :: owner_p                    ! process owning given chunk column
@@ -458,9 +460,13 @@ contains
 
     call t_adj_detailf(-2)
     call t_startf("phys_grid_init")
-
+! HHLEE
 #ifdef FIVE
-    pver_five = 110
+!    pver_five = 110
+
+    call five_wrapper(pver_five)
+
+    allocate (levels_five(1:pver_five+1))
 #endif
 
     !-----------------------------------------------------------------------
@@ -1125,6 +1131,8 @@ contains
           btofc_chk_num_five(p) = curcnt
           curcnt = 0
        enddo
+
+    deallocate (levels_five )
       
 #endif
        !

@@ -871,7 +871,7 @@ subroutine micro_mg_cam_init(pbuf2d)
    ! This is provided as an example on how to write out subcolumn output
    ! NOTE -- only 'I' should be used for sub-column fields as subc-columns could shift from time-step to time-step
    if (use_subcol_microp) then
-      call addfld('FICE_SCOL', (/'psubcols','lev_five     '/), 'I', 'fraction', &
+      call addfld('FICE_SCOL', (/'psubcols','lev_five'/), 'I', 'fraction', &
            'Sub-column fractional ice content within cloud', flag_xyfill=.true., fill_value=1.e30_r8)
    end if
 
@@ -1436,8 +1436,11 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    real(r8) :: naai_five(pcols,pver_five)      ! ice nucleation number
    real(r8) :: naai_hom_five(pcols,pver_five)      ! ice nucleation number
    real(r8) :: npccn_five(pcols,pver_five)     ! liquid activation number tendency
-   real(r8) :: rndst_five(pcols,pver_five,size(rndst,3))
-   real(r8) :: nacon_five(pcols,pver_five,size(nacon,3))
+   
+   !allocate rndst_five and nacon_five after rndst and nacon are read from pbuf
+   real(r8), allocatable :: rndst_five(:,:,:)
+   real(r8), allocatable :: nacon_five(:,:,:)
+
 
    real(r8) :: vtrmc_five_low(pcols,pver)
    real(r8) :: cmeliq_five_low(pcols,pver)
@@ -1972,7 +1975,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    integer :: cldliqbf_idx, cldicebf_idx, numliqbf_idx, numicebf_idx
 
    !-------------------------------------------------------------------------------
-
+!   Write(*,*)"Entering function: micro_mg_tend_cam"
    call t_startf('micro_mg_cam_tend_init')
 
    ! Find the number of levels used in the microphysics.
@@ -1998,8 +2001,14 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call pbuf_get_field(pbuf, naai_idx,        naai,        col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, naai_hom_idx,    naai_hom,    col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, npccn_idx,       npccn,       col_type=col_type, copy_if_needed=use_subcol_microp)
+
    call pbuf_get_field(pbuf, rndst_idx,       rndst,       col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, nacon_idx,       nacon,       col_type=col_type, copy_if_needed=use_subcol_microp)
+   
+   !only now does one know the third dimension of rndst_five and nacon_five
+   allocate(rndst_five(pcols,pver_five,size(rndst,3)))    
+   allocate(nacon_five(pcols,pver_five,size(nacon,3)))   
+   
    call pbuf_get_field(pbuf, relvar_idx,      relvar,      col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, accre_enhan_idx, accre_enhan, col_type=col_type, copy_if_needed=use_subcol_microp)
    call pbuf_get_field(pbuf, cmeliq_idx,      cmeliq,      col_type=col_type, copy_if_needed=use_subcol_microp)
@@ -2169,7 +2178,7 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    !  This is a crucial component to using FIVE within E3SM
    call five_syncronize_e3sm(state,dtime,p0_five_ref,pint_five,pmid_five,&
                              t_five,u_five,v_five,q_five)
-   q_five(:ncol,:,:) = max(q_five(:ncol,:,:), 0._r8)
+   q_five = max(q_five, 0._r8)
    ! Find top level index for FIVE
    do i = 1, ncol
      call find_level_match_index(state%pmid(i,:),pmid_five(i,:),pint_five(i,:),&
@@ -4281,6 +4290,9 @@ subroutine micro_mg_cam_tend(state, ptend, dtime, pbuf)
    call physics_state_dealloc(state_loc)
    call t_stopf('micro_mg_cam_tend_fini')
 
+   deallocate (rndst_five)
+   deallocate (nacon_five)
+!   Write(*,*)"Leaving function: micro_mg_tend_cam"
 end subroutine micro_mg_cam_tend
 
 function p1(tin) result(pout)
