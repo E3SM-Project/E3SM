@@ -318,8 +318,9 @@ contains
           native_grid_frc_air(m)%input_file     = trim(air_datapath)//'/'//trim(spc_fname(m))
 
           native_grid_frc_air(m)%initialized    = .false.
+          dtime = 1.0_r8 - 200.0_r8 / 86400.0_r8
           call native_grid_frc_air(m)%time_coord%initialize(trim(adjustl(native_grid_frc_air(m)%input_file)), &
-               force_time_interp=.true.)
+               force_time_interp=.true., delta_days=dtime)
 
           !-----------------------------------------------------------------------
           !       Open file
