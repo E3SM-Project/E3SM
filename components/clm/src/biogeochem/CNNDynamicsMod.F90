@@ -369,7 +369,7 @@ contains
        theta = min(theta, 0.98_r8*thetasat)
        infiltr_m_s = max(waterflux_vars%qflx_infl_col(c), 0.0) * 1e-3 
        evap_m_s = waterflux_vars%qflx_evap_grnd_col(c) * 1e-3
-       runoff_m_s = max(waterflux_vars%qflx_runoff_col(c), 0.0) * 1e-3
+       runoff_m_s = max(waterflux_vars%qflx_surf_col(c), 0.0) * 1e-3
 
        !
        ! grazing
