@@ -3535,7 +3535,7 @@ subroutine add_fld_default_calls()
            'convect_shallow     ', 'aero_model_wetdep_ma', 'convtran2           ', 'cam_radheat         ', 'chemistry           ',&
            'clubb_srf           ', 'rayleigh_friction   ', 'aero_model_drydep_ma', 'Grav_wave_drag      ', 'nudging             ' /)
    character(len=10), parameter :: vlist2(5) =(/'clubb_ice1','clubb_det ','clubb_ice4','micro_mg  ','cldwat_mic'/)
-  character(len=fieldname_len) :: varname
+  character(len=fieldname_len) :: varname, substep, modal
   character(len=1000)          :: s_lngname,stend_lngname,qv_lngname,qvtend_lngname,t_lngname
   
   integer :: iv, ntot, ihist,it
