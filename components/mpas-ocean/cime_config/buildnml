@@ -860,6 +860,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="vertViscTopOfCell"/>')
         lines.append('    <var name="bulkRichardsonNumber"/>')
         lines.append('    <var name="boundaryLayerDepth"/>')
+        lines.append('    <var name="boundaryLayerDepthKrausTurner"/>')
         lines.append('    <var name="columnIntegratedSpeed"/>')
         lines.append('    <var name="landIceFreshwaterFlux"/>')
         lines.append('    <var name="landIceHeatFlux"/>')

@@ -723,6 +723,13 @@ add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
 add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
+add_default($nl, 'config_cvmix_kpp_minimum_sfc_buoyancy_forcing');
+add_default($nl, 'config_cvmix_kpp_use_stable_KTforcing_BLD_code');
+add_default($nl, 'config_cvmix_kpp_KTminimum_factor');
+add_default($nl, 'config_cvmix_use_enhanced_SO_bulkRI');
+add_default($nl, 'config_cvmix_SO_bulkRI_transition_max');
+add_default($nl, 'config_cvmix_SO_bulkRI_transition_lat');
+add_default($nl, 'config_cvmix_SO_bulkRI_transition_width');
 
 ###########################
 # Namelist group: forcing #

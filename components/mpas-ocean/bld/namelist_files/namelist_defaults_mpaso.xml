@@ -238,6 +238,13 @@
 <config_cvmix_kpp_stop_OBL_search>100.0</config_cvmix_kpp_stop_OBL_search>
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
+<config_cvmix_kpp_KTminimum_factor>1.0</config_cvmix_kpp_KTminimum_factor>
+<config_cvmix_kpp_use_stable_KTforcing_BLD_code>.false.</config_cvmix_kpp_use_stable_KTforcing_BLD_code>
+<config_cvmix_kpp_minimum_sfc_buoyancy_forcing>0.0</config_cvmix_kpp_minimum_sfc_buoyancy_forcing>
+<config_cvmix_use_enhanced_SO_bulkRI>.false.</config_cvmix_use_enhanced_SO_bulkRI>
+<config_cvmix_SO_bulkRI_transition_max>1.0</config_cvmix_SO_bulkRI_transition_max>
+<config_cvmix_SO_bulkRI_transition_lat>-1.047</config_cvmix_SO_bulkRI_transition_lat>
+<config_cvmix_SO_bulkRI_transition_width>0.1745</config_cvmix_SO_bulkRI_transition_width>
 
 <!-- vmix_const -->
 <config_use_const_visc>.false.</config_use_const_visc>

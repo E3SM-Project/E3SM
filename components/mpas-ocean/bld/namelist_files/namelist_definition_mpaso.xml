@@ -1085,6 +1085,61 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_cvmix_kpp_minimum_sfc_buoyancy_forcing" type="real"
+  category="cvmix" group="cvmix">
+  value above which the KT minimum BLD hack is used.
+
+  Valid values: postive real numbers (including zero)
+  Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_kpp_use_stable_KTforcing_BLD_code" type="logical"
+  category="cvmix" group="cvmix">
+  flag that turns on the KT minimum BLD hack
+
+  Valid values: .true. or .false.
+  Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_kpp_KTminimum_factor" type="real"
+  category="cvmix" group="cvmix">
+  Scaling factor that multiplies the KT minimum bld hack
+
+  Valid values: Positive real numbers
+  Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_SO_bulkRI_transition_width" type="real"
+  category="cvmix" group="cvmix">
+  transition width for bulk richardson number criterion
+
+  Valid values: small positive real numbers
+  Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_SO_bulkRI_transition_lat" type="real"
+  category="cvmix" group="cvmix">
+  transition latitude for bulk richardson number criterion
+
+  Valid values: s. ocean latitudes in radians
+  Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_SO_bulkRI_transition_max" type="real"
+  category="cvmix" group="cvmix">
+  maximum bulk richardson number in s. ocean 
+
+  Valid values: likely between 0.25 and 1.5
+  Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_cvmix_use_enhanced_SO_bulkRI" type="logical"
+  category="cvmix" group="cvmix">
+  whter or not to use enhanced bulkRI in S. Ocean
+
+  Valid values: small positive real numbers
+  Default: Defined in namelist_defaults.xml
+</entry>
 
 <!-- vmix_const -->
 
