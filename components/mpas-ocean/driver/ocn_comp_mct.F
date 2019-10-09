@@ -1567,7 +1567,8 @@ contains
                        config_use_DMSTracers_sea_ice_coupling,  &
                        config_use_MacroMoleculesTracers,  &
                        config_use_MacroMoleculesTracers_sea_ice_coupling, &
-                       config_remove_AIS_coupler_runoff
+                       config_remove_AIS_coupler_runoff, &
+                       config_cvmix_kpp_use_theory_wave
 
    character(len=StrKIND), pointer :: config_ecosys_atm_co2_option, &
                                       config_ecosys_atm_alt_co2_option
@@ -1615,7 +1616,8 @@ contains
                                   iceFluxDustField, &
                                   landIceFreshwaterFluxField, &
                                   landIceHeatFluxField, &
-                                  landIceFractionField
+                                  landIceFractionField, &
+                                  windSpeed10mField
                                   !landIcePressureField
 
    type (field2DReal), pointer :: iceFluxPhytoCField, &
@@ -1649,7 +1651,8 @@ contains
                                                iceFluxDust, &
                                                landIceFreshwaterFlux, &
                                                landIceHeatFlux, &
-                                               landIceFraction
+                                               landIceFraction, &
+                                               windSpeed10m
                                                !landIcePressure
 
    real (kind=RKIND), dimension(:), pointer :: latCell
@@ -1689,6 +1692,7 @@ contains
    call mpas_pool_get_config(domain % configs, 'config_use_MacroMoleculesTracers_sea_ice_coupling',  &
                                                 config_use_MacroMoleculesTracers_sea_ice_coupling)
    call mpas_pool_get_config(domain % configs, 'config_remove_AIS_coupler_runoff', config_remove_AIS_coupler_runoff)
+   call mpas_pool_get_config(domain % configs, 'config_cvmix_kpp_use_theory_wave', config_cvmix_kpp_use_theory_wave)
 
    n = 0
    removedRiverRunoffFluxThisProc = 0.0_RKIND
@@ -1729,6 +1733,9 @@ contains
       call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
       call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
       call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
+
+      call mpas_pool_get_field(forcingPool, 'windSpeed10m', windSpeed10mField)
+
       call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
       call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
 
@@ -1761,6 +1768,7 @@ contains
       landIceHeatFlux => landIceHeatFluxField % array
       landIceInterfaceTracers => landIceInterfaceTracersField % array
       landIceFraction => landIceFractionField % array
+      windSpeed10m => windSpeed10mField % array
       !landIcePressure => landIcePressureField % array
 
       call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -1825,6 +1833,11 @@ contains
          ! Initialize these fields
          removedRiverRunoffFlux(:) = 0.0_RKIND
          removedIceRunoffFlux(:) = 0.0_RKIND
+      endif
+
+      if (config_cvmix_kpp_use_theory_wave) then
+         ! Initialize these fields
+         windSpeed10m(:) = 0.0_RKIND
       endif
 
       do i = 1, nCellsSolve
@@ -1909,6 +1922,12 @@ contains
         if ( iceFractionField % isActive ) then
            iceFraction(i) = x2o_o % rAttr(index_x2o_Si_ifrac, n)
         end if
+
+        if (config_cvmix_kpp_use_theory_wave) then
+           if ( windSpeed10mField% isActive ) then
+              windSpeed10m(i) = sqrt( x2o_o % rAttr(index_x2o_So_duu10n, n))
+           end if
+        endif
 
         if ( landIceFreshwaterFluxField % isActive ) then
            !landIceFreshwaterFlux(i) = x2o_o % rAttr(index_x2o_Fogx_qicelo, n)
@@ -2048,6 +2067,9 @@ contains
    call mpas_pool_get_field(forcingPool, 'landIceHeatFlux', landIceHeatFluxField)
    call mpas_pool_get_field(forcingPool, 'landIceFraction', landIceFractionField)
    call mpas_pool_get_field(forcingPool, 'landIceInterfaceTracers', landIceInterfaceTracersField)
+
+   call mpas_pool_get_field(forcingPool, 'windSpeed10m', windSpeed10mField)
+
    call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceTemperature', indexIT)
    call mpas_pool_get_dimension(forcingPool, 'index_landIceInterfaceSalinity', indexIS)
    !call mpas_pool_get_field(forcingPool, 'landIcePressure', landIcePressureField)
@@ -2159,6 +2181,10 @@ contains
 !   if ( landIcePressureField % isActive ) then
 !      call mpas_dmpar_exch_halo_field(landIcePressureField)
 !   end if
+
+   if ( windSpeed10mField % isActive ) then
+      call mpas_dmpar_exch_halo_field(windSpeed10mField)
+   end if
 
    ! BGC fields
    if (config_use_ecosysTracers) then

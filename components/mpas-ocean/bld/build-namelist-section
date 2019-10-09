@@ -185,45 +185,6 @@ add_default($nl, 'config_Rayleigh_damping_coeff');
 add_default($nl, 'config_Rayleigh_bottom_friction');
 add_default($nl, 'config_Rayleigh_bottom_damping_coeff');
 
-########################
-# Namelist group: vmix #
-########################
-
-add_default($nl, 'config_convective_visc');
-add_default($nl, 'config_convective_diff');
-
-##############################
-# Namelist group: vmix_const #
-##############################
-
-add_default($nl, 'config_use_const_visc');
-add_default($nl, 'config_use_const_diff');
-add_default($nl, 'config_vert_visc');
-add_default($nl, 'config_vert_diff');
-
-#############################
-# Namelist group: vmix_rich #
-#############################
-
-add_default($nl, 'config_use_rich_visc');
-add_default($nl, 'config_use_rich_diff');
-add_default($nl, 'config_bkrd_vert_visc');
-add_default($nl, 'config_bkrd_vert_diff');
-add_default($nl, 'config_rich_mix');
-
-#############################
-# Namelist group: vmix_tanh #
-#############################
-
-add_default($nl, 'config_use_tanh_visc');
-add_default($nl, 'config_use_tanh_diff');
-add_default($nl, 'config_max_visc_tanh');
-add_default($nl, 'config_min_visc_tanh');
-add_default($nl, 'config_max_diff_tanh');
-add_default($nl, 'config_min_diff_tanh');
-add_default($nl, 'config_zMid_tanh');
-add_default($nl, 'config_zWidth_tanh');
-
 #########################
 # Namelist group: cvmix #
 #########################
@@ -264,6 +225,48 @@ add_default($nl, 'configure_cvmix_kpp_minimum_OBL_under_sea_ice');
 add_default($nl, 'config_cvmix_kpp_stop_OBL_search');
 add_default($nl, 'config_cvmix_kpp_use_enhanced_diff');
 add_default($nl, 'config_cvmix_kpp_nonlocal_with_implicit_mix');
+add_default($nl, 'config_cvmix_kpp_use_theory_wave');
+add_default($nl, 'config_cvmix_kpp_langmuir_mixing_opt');
+add_default($nl, 'config_cvmix_kpp_langmuir_entrainment_opt');
+
+##############################
+# Namelist group: vmix_const #
+##############################
+
+add_default($nl, 'config_use_const_visc');
+add_default($nl, 'config_use_const_diff');
+add_default($nl, 'config_vert_visc');
+add_default($nl, 'config_vert_diff');
+
+#############################
+# Namelist group: vmix_rich #
+#############################
+
+add_default($nl, 'config_use_rich_visc');
+add_default($nl, 'config_use_rich_diff');
+add_default($nl, 'config_bkrd_vert_visc');
+add_default($nl, 'config_bkrd_vert_diff');
+add_default($nl, 'config_rich_mix');
+
+########################
+# Namelist group: vmix #
+########################
+
+add_default($nl, 'config_convective_visc');
+add_default($nl, 'config_convective_diff');
+
+#############################
+# Namelist group: vmix_tanh #
+#############################
+
+add_default($nl, 'config_use_tanh_visc');
+add_default($nl, 'config_use_tanh_diff');
+add_default($nl, 'config_max_visc_tanh');
+add_default($nl, 'config_min_visc_tanh');
+add_default($nl, 'config_max_diff_tanh');
+add_default($nl, 'config_min_diff_tanh');
+add_default($nl, 'config_zMid_tanh');
+add_default($nl, 'config_zWidth_tanh');
 
 ###########################
 # Namelist group: forcing #
