@@ -10,7 +10,7 @@ SET (WITH_PNETCDF FALSE CACHE FILEPATH "")
 SET (NETCDF_DIR "$ENV{NETCDF_ROOT}" CACHE STRING "")
 
 #is there a better way? without this linker does not see C netcdf library
-sET (ADD_LINKER_FLAGS "-L/$ENV{MKLROOT}/lib/intel64 -L/$ENV{NETCDF_ROOT}/lib -lnetcdff -lnetcdf -lmkl_rt" CACHE STRING "")
+SET (ADD_LINKER_FLAGS "-L/$ENV{MKLROOT}/lib/intel64 -L/$ENV{NETCDF_ROOT}/lib -lnetcdff -lnetcdf -lmkl_rt" CACHE STRING "")
 SET (ADD_Fortran_FLAGS "-traceback" CACHE STRING "")
 
 SET (USE_MPIEXEC "srun" CACHE STRING "")
