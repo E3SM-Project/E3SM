@@ -397,6 +397,7 @@ module CNNitrogenFluxType
      real(r8), pointer :: man_n_appl_col                             (:)   ! Manure N (TAN+organic) applied on soil (gN/m2/s)
      real(r8), pointer :: man_n_grz_col                              (:)   ! Manure N from grazing animals (gN/m2/s)
      real(r8), pointer :: man_n_mix_col                              (:)   ! Manure N from produced in mixed systems (gN/m2/s)
+     real(r8), pointer :: man_n_barns_col                            (:)   ! Manure N produced in animal housings (gN/m2/s)
      real(r8), pointer :: fert_n_appl_col                            (:)   ! Fertilizer N  applied on soil (gN/m2/s)
      real(r8), pointer :: otherfert_n_appl_col                       (:)   ! Non-urea fertilizer N  applied on soil (gN/m2/s)
      real(r8), pointer :: man_n_transf_col                           (:)   ! Manure N removed from the crop column (into the natural veg. column in the gcell) 
@@ -833,6 +834,7 @@ contains
        allocate(this%man_n_appl_col                 (begc:endc))                   ; this%man_n_appl_col             (:)   = spval
        allocate(this%man_n_grz_col                  (begc:endc))                   ; this%man_n_grz_col              (:)   = spval
        allocate(this%man_n_mix_col                  (begc:endc))                   ; this%man_n_mix_col              (:)   = spval
+       allocate(this%man_n_barns_col                (begc:endc))                   ; this%man_n_barns_col            (:)   = spval
        allocate(this%fert_n_appl_col                (begc:endc))                   ; this%fert_n_appl_col            (:)   = spval
        allocate(this%otherfert_n_appl_col           (begc:endc))                   ; this%otherfert_n_appl_col       (:)   = spval
        allocate(this%man_n_transf_col               (begc:endc))                   ; this%man_n_transf_col           (:)   = spval
@@ -2094,6 +2096,11 @@ contains
             avgflag='A', long_name='Manure N in produced mixed systems', &
             ptr_col=this%man_n_mix_col)
 
+       this%man_n_barns_col(begc:endc) = spval
+        call hist_addfld1d( fname='MAN_N_BARNS', units='gN/m^2/s', &
+             avgflag='A', long_name='Manure N in produced barns', &
+             ptr_col=this%man_n_barns_col)
+
        this%fert_n_appl_col(begc:endc) = spval
        call hist_addfld1d( fname='FERT_N_APP', units='gN/m^2/s', &
             avgflag='A', long_name='Fertilizer N applied on soil', &
@@ -2633,6 +2640,7 @@ contains
           this%man_n_appl_col(i)         = value_column
           this%man_n_grz_col(i)          = value_column
           this%man_n_mix_col(i)          = value_column
+          this%man_n_barns_col(i)        = value_column
           this%fert_n_appl_col(i)        = value_column
           this%otherfert_n_appl_col(i)   = value_column
           this%man_n_transf_col(i)       = value_column
