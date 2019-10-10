@@ -238,6 +238,7 @@
     config_mobility_type_humics = 0.0
     config_mobility_type_saccharids = 0.0
     config_mobility_type_lipids = 0.0
+    config_mobility_type_inorganic_carbon = -1.0
     config_mobility_type_proteins = 0.0
     config_mobility_type_dissolved_iron = 0.0
     config_mobility_type_particulate_iron = 0.5
