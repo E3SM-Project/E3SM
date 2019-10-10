@@ -373,6 +373,13 @@ lnd/clm2/surfdata_map/surfdata_twpx4v1_simyr2000_c170706.nc</fsurdat>
 <flanduse_timeseries hgrid="ne11np4" sim_year_range="1850-2000"
  use_crop=".false."  >lnd/clm2/surfdata_map/surfdata.pftdyn_ne11np4_hist_simyr1850-2005_c160803.nc</flanduse_timeseries>
 
+<flanduse_timeseries hgrid="r0125" sim_year_range="1850-2000"
+ use_crop=".false." >lnd/clm2/surfdata_map/landuse.timeseries_0.125x0.125_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
+
+<flanduse_timeseries hgrid="r05" sim_year_range="1850-2000"
+  use_crop=".false." >landuse.timeseries_0.5x0.5_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
+
+
 <!-- Dynamic PFT surface datasets for future scenarios(relative to {csmdata}) -->
 
 <!-- Other future scenario Dynamic PFT datasets -->
