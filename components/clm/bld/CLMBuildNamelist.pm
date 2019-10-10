@@ -562,12 +562,8 @@ sub read_namelist_defaults {
   # values for variables contained in the input defaults file.  The
   # configuration object provides attribute values that are relevent
   # for the CLM executable for which the namelist is being produced.
-  print"here!!\n";
   my $defaults = Build::NamelistDefaults->new( shift( @nl_defaults_files ), $cfg);
-  print "done\n";
   foreach my $nl_defaults_file ( @nl_defaults_files ) {
-      print "add $nl_defaults_file\n";
-
     $defaults->add( "$nl_defaults_file" );
   }
   return $defaults;
@@ -1826,9 +1822,7 @@ sub process_namelist_commandline_clm_usr_name {
     # The one difference is that variables are expanded.
     # Create a new NamelistDefaults object.
     my $nl_defaults_file = "$nl_flags->{'cfgdir'}/namelist_files/namelist_defaults_usr_files.xml";
-    print "here4\n";  
     my $uf_defaults = Build::NamelistDefaults->new("$nl_defaults_file", $cfg );
-    print "done4\n";  
     # Loop over the variables specified in the user files
     # Add each one to the namelist.
     my @vars = $uf_defaults->get_variable_names();
@@ -1878,9 +1872,7 @@ sub process_namelist_commandline_use_case {
 
     # The use case definition is contained in an xml file with the same format as the defaults file.
       # Create a new NamelistDefaults object.
-    print "here2\n";
     my $uc_defaults = Build::NamelistDefaults->new("$opts->{'use_case_dir'}/$opts->{'use_case'}.xml", $cfg);
-    print "done2\n";
     my %settings;
     $settings{'res'}            = $nl_flags->{'res'};
     $settings{'rcp'}            = $nl_flags->{'rcp'};
@@ -3031,7 +3023,7 @@ sub setup_logic_nitrogen_deposition {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv, $deptype) = @_;
   my $ndep;  
   if ($deptype eq 'fan') {
-      if (!value_is_true( $nl_flags->{'use_fan'})) { print "no fan!!\n"; return; }
+      if (!value_is_true( $nl_flags->{'use_fan'})) { fatal_error("FAN not on but deptype == fan\n"); }
       $ndep = 'fan';
   } elsif ($deptype eq 'ndep') {
       $ndep = 'ndep';
@@ -3044,7 +3036,6 @@ sub setup_logic_nitrogen_deposition {
   #
 
   if ( $physv->as_long() == $physv->as_long("clm4_0") && $nl_flags->{'bgc_mode'} ne "none" ) {
-      print "here444\n";
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "${ndep}mapalgo", 'phys'=>$nl_flags->{'phys'}, 
                 'bgc'=>$nl_flags->{'bgc_mode'}, 'hgrid'=>$nl_flags->{'res'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_first_${ndep}", 'phys'=>$nl_flags->{'phys'},
@@ -3065,7 +3056,6 @@ sub setup_logic_nitrogen_deposition {
                 'hgrid'=>"1.9x2.5" );
 
   } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
-      print "here555 $ndep\n";
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "${ndep}mapalgo", 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, "stream_year_first_${ndep}", 'phys'=>$nl_flags->{'phys'},
@@ -3083,7 +3073,6 @@ sub setup_logic_nitrogen_deposition {
                 'use_cn'=>$nl_flags->{'use_cn'}, 'rcp'=>$nl_flags->{'rcp'},
                 'hgrid'=>"1.9x2.5" );
   } else {
-      print "no cn/cndv $physv->as_long() $nl_flags->{'bgc_mode'} \n";
     # If bgc is NOT CN/CNDV then make sure none of the ndep settings are set!
     if ( defined($nl->get_value('stream_year_first_${ndep}')) ||
          defined($nl->get_value('stream_year_last_${ndep}'))  ||
@@ -3165,7 +3154,6 @@ sub setup_logic_fan {
   # Flags to control FAN (Flow of Agricultural Nitrogen) nitrogen deposition (manure and fertilizer)
   #
    my ($opts, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
-   #print "FAN MODE: $opts->{'fan'}\n";
    if ( $physv->as_long() >= $physv->as_long("clm4_5") ) {
        if ( $opts->{'fan'} ) {
 	   add_default($opts, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'use_fan',
@@ -3799,9 +3787,7 @@ sub validate_options {
               } else {
                  fatal_error("Bad name for use case file = $file");
               }
-	      print "here3\n";
               my $uc_defaults = Build::NamelistDefaults->new("$file", $cfg);
-	      print "done3\n";
 
               printf "%15s = %s\n", $use_case, $uc_defaults->get_value("use_case_desc");
               push @ucases, $use_case;
@@ -4086,7 +4072,6 @@ sub main {
   $nl_flags{'cfgdir'} = dirname(abs_path($0));
 
   my %opts = process_commandline(\%nl_flags);
-  print "FAN: $opts{'fan'}\n";
   my $cfgdir = $nl_flags{'cfgdir'};
   version($nl_flags{'cfgdir'}) if $opts{'version'};
   set_print_level(\%opts);
