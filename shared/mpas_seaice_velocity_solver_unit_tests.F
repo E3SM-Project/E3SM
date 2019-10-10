@@ -24,7 +24,9 @@ module seaice_velocity_solver_unit_tests
   public :: &
        seaice_strain_rate_operator_unit_test, &
        seaice_stress_divergence_operator_unit_test, &
-       seaice_constitutive_relationship_unit_test
+       seaice_constitutive_relationship_unit_test, &
+       seaice_strain_and_stress_divergence_unit_test_init, &
+       seaice_strain_and_stress_divergence_unit_test
 
   integer, private :: &
        iObject = 2
@@ -985,6 +987,8 @@ contains
 
     endif
 
+    call MPAS_log_write("Unit test finished", MPAS_LOG_CRIT)
+
   end subroutine seaice_stress_divergence_operator_unit_test
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
@@ -1343,9 +1347,9 @@ contains
 
           if (solveVelocity(iVertex) == 0) then
              stressDivergenceU_test(iVertex) = 0.0_RKIND
-             stressDivergenceU_test(iVertex) = 0.0_RKIND
+             stressDivergenceV_test(iVertex) = 0.0_RKIND
              stressDivergenceU_diff(iVertex) = 0.0_RKIND
-             stressDivergenceU_diff(iVertex) = 0.0_RKIND
+             stressDivergenceV_diff(iVertex) = 0.0_RKIND
           endif
 
        enddo ! iCell
@@ -2240,6 +2244,8 @@ contains
          array_size
 
     real(kind=RKIND) :: &
+         plotLonPoint, &
+         plotLatPoint, &
          plotLonPointVertex, &
          plotLatPointVertex, &
          plotLonPointVertex0, &
@@ -2319,10 +2325,27 @@ contains
 
              iPointVertex = pointVertexOnPoint(iPointVertexOnPoint,iPoint)
 
+             plotLonPoint = lonPoint(iPoint)
+             plotLatPoint = latPoint(iPoint)
+
+             if (plotLonPoint < 0.0_RKIND) then
+                plotLonPoint = plotLonPoint + 2.0_RKIND * pii
+             endif
+             if (plotLonPoint > 2.0_RKIND*pii) then
+                plotLonPoint = plotLonPoint - 2.0_RKIND * pii
+             endif
+
              plotLonPointVertex = lonPointVertex(iPointVertex)
              plotLatPointVertex = latPointVertex(iPointVertex)
 
-             if (lonPoint(iPoint) <= pii) then
+             if (plotLonPointVertex < 0.0_RKIND) then
+                plotLonPointVertex = plotLonPointVertex + 2.0_RKIND * pii
+             endif
+             if (plotLonPointVertex > 2.0_RKIND*pii) then
+                plotLonPointVertex = plotLonPointVertex - 2.0_RKIND * pii
+             endif
+
+             if (plotLonPoint <= pii) then
 
                 if (plotLonPointVertex >= 0.9_RKIND * 2.0_RKIND * pii) then
                    plotLonPointVertex = plotLonPointVertex - 2.0_RKIND * pii
@@ -2330,7 +2353,7 @@ contains
 
              endif
 
-             if (lonPoint(iPoint) > pii) then
+             if (plotLonPoint > pii) then
 
                 if (plotLonPointVertex <= 0.1_RKIND * 2.0_RKIND * pii) then
                    plotLonPointVertex = plotLonPointVertex + 2.0_RKIND * pii
@@ -2408,6 +2431,1694 @@ contains
     endif
 
   end subroutine open_filename_tag!}}}
+
+!--------------------------------------------------------------------------
+! strain and stress
+!--------------------------------------------------------------------------
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_strain_and_stress_divergence_unit_test_init
+!
+!> \brief Init simultaneous unit test of strain and stress divergence
+!> \author Adrian K. Turner, LANL
+!> \date 30th September 2019
+!> \details
+!>  Set unit earth radius
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_strain_and_stress_divergence_unit_test_init(&
+       domain, &
+       unitTestSubtype)
+
+    use seaice_constants, only: &
+         earthRadius
+
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    character(len=*), intent(in) :: &
+         unitTestSubtype !< Input:
+
+    earthRadius = 1.0_RKIND
+
+  end subroutine seaice_strain_and_stress_divergence_unit_test_init
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_strain_and_stress_divergence_unit_test
+!
+!> \brief Simultaneous unit test of strain and stress divergence
+!> \author Adrian K. Turner, LANL
+!> \date 24th October 2016
+!> \details
+!>  This unit test provides trial u and v velocity fields and an
+!>  identity constitutive relation. The analytical u and v stress
+!>  divergence fields are calculated as well as the numerical ones.
+!>  These fields can then be written out for analysis. Numerous options
+!>  for the u and v trial fields are provided.
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_strain_and_stress_divergence_unit_test(&
+       domain, &
+       unitTestSubtype)
+
+    use seaice_velocity_solver_weak, only: &
+         seaice_internal_stress_weak_linear
+
+    use seaice_velocity_solver_variational, only: &
+         seaice_internal_stress_variational_linear
+
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    character(len=*), intent(in) :: &
+         unitTestSubtype !< Input:
+
+    character(len=strKIND), pointer :: &
+         config_stress_divergence_scheme
+
+    call MPAS_pool_get_config(domain % configs, "config_stress_divergence_scheme", config_stress_divergence_scheme)
+
+    ! set initial velocity
+    call set_strain_and_stress_divergence_variables(domain, unitTestSubtype)
+
+    ! calculate the divergence of stress
+    if (trim(config_stress_divergence_scheme) == "weak") then
+       call seaice_internal_stress_weak_linear(domain)
+    else if (trim(config_stress_divergence_scheme) == "variational") then
+       call seaice_internal_stress_variational_linear(domain)
+    endif
+
+  end subroutine seaice_strain_and_stress_divergence_unit_test
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  set_strain_and_stress_divergence_variables
+!
+!> \brief Calculate the u.v trial velocities and stress divergences
+!> \author Adrian K. Turner, LANL
+!> \date 24th October 2016
+!> \details
+!>  This routine calculates the trial u and v fields and the analytical
+!>  stress divergence field from those velocity fields.
+!
+!-----------------------------------------------------------------------
+
+  subroutine set_strain_and_stress_divergence_variables(&
+       domain, &
+       unitTestSubtype)
+
+    use seaice_mesh, only: &
+         seaice_latlon_from_xyz, &
+         seaice_grid_rotation_forward, &
+         seaice_latlon_vector_rotation_forward
+
+    use seaice_constants, only: &
+         pii, &
+         seaiceRadiansToDegrees
+
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    character(len=*), intent(in) :: &
+         unitTestSubtype !< Input:
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocitySolverPool, &
+         boundaryPool, &
+         unitTestsPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         lonVertex, &
+         latVertex, &
+         uVelocity, &
+         vVelocity, &
+         xVertex, &
+         yVertex, &
+         zVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         stressDivergenceUAnalytical, &
+         stressDivergenceVAnalytical, &
+         strain11Analytical, &
+         strain22Analytical, &
+         strain12Analytical
+
+    integer, pointer :: &
+         nVertices
+
+    integer :: &
+         iVertex
+
+    integer, dimension(:), pointer :: &
+         solveStress, &
+         solveVelocity, &
+         interiorVertex
+
+    real(kind=RKIND) :: &
+         latVertexRotated0, lonVertexRotated0, &
+         xp, yp, zp, &
+         uVelocityIn, &
+         vVelocityIn
+
+    real(kind=RKIND), pointer :: &
+         sphere_radius
+
+    logical, pointer :: &
+         config_rotate_cartesian_grid
+
+    call MPAS_pool_get_config(domain % configs, "config_rotate_cartesian_grid", config_rotate_cartesian_grid)
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+       call MPAS_pool_get_subpool(block % structs, "boundary", boundaryPool)
+       call MPAS_pool_get_subpool(block % structs, "strain_stress_divergence_unit_tests", unitTestsPool)
+
+       call MPAS_pool_get_array(meshPool, "lonVertex", lonVertex)
+       call MPAS_pool_get_array(meshPool, "latVertex", latVertex)
+       call MPAS_pool_get_array(meshPool, "xVertex", xVertex)
+       call MPAS_pool_get_array(meshPool, "yVertex", yVertex)
+       call MPAS_pool_get_array(meshPool, "zVertex", zVertex)
+
+       call MPAS_pool_get_config(meshPool, "sphere_radius", sphere_radius)
+
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+
+       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+
+       call MPAS_pool_get_array(unitTestsPool, "stressDivergenceUAnalytical", stressDivergenceUAnalytical)
+       call MPAS_pool_get_array(unitTestsPool, "stressDivergenceVAnalytical", stressDivergenceVAnalytical)
+       call MPAS_pool_get_array(unitTestsPool, "strain11Analytical", strain11Analytical)
+       call MPAS_pool_get_array(unitTestsPool, "strain22Analytical", strain22Analytical)
+       call MPAS_pool_get_array(unitTestsPool, "strain12Analytical", strain12Analytical)
+
+       call MPAS_pool_get_array(boundaryPool, "interiorVertex", interiorVertex)
+
+       call MPAS_pool_get_dimension(block % dimensions, "nVertices", nVertices)
+
+       do iVertex = 1, nVertices
+
+          ! velocity
+          call strain_and_stress_divergence_velocities_and_derivatives(&
+               xVertex(iVertex), &
+               yVertex(iVertex), &
+               zVertex(iVertex), &
+               sphere_radius, &
+               uVelocity(iVertex), &
+               vVelocity(iVertex), &
+               strain11Analytical(iVertex), &
+               strain22Analytical(iVertex), &
+               strain12Analytical(iVertex), &
+               stressDivergenceUAnalytical(iVertex), &
+               stressDivergenceVAnalytical(iVertex), &
+               config_rotate_cartesian_grid, &
+               unitTestSubtype)
+
+          ! solve velocity
+          call seaice_grid_rotation_forward(&
+               xp,               yp,               zp, &
+               xVertex(iVertex), yVertex(iVertex), zVertex(iVertex), &
+               config_rotate_cartesian_grid)
+
+          call seaice_latlon_from_xyz(&
+               latVertexRotated0, lonVertexRotated0, &
+               xp, yp, zp, sphere_radius)
+
+          solveVelocity(iVertex) = interiorVertex(iVertex)
+
+          if (abs(latVertexRotated0) > 0.9_RKIND * pii * 0.5_RKIND) then
+             solveVelocity(iVertex) = 0
+          endif
+
+       enddo ! iVertex
+
+       solveStress = 1
+
+       block => block % next
+    end do
+
+  end subroutine set_strain_and_stress_divergence_variables
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  strain_and_stress_divergence_velocities_and_derivatives
+!
+!> \brief Calculate trial u,v fields for a point
+!> \author Adrian K. Turner, LANL
+!> \date 24th October 2016
+!> \details
+!>  This routine calculates the trial u and v fields and stress
+!>  divergence for a single point. It is here that the various velocity
+!>  field options are exposed.
+!
+!-----------------------------------------------------------------------
+
+  subroutine strain_and_stress_divergence_velocities_and_derivatives(&
+       x, &
+       y, &
+       z, &
+       r, &
+       u, &
+       v, &
+       strain11, &
+       strain22, &
+       strain12, &
+       divu, &
+       divv, &
+       rotateCartesianGrid, &
+       unitTestSubtype)
+
+    use seaice_mesh, only: &
+         seaice_grid_rotation_forward, &
+         seaice_latlon_from_xyz
+
+    real(kind=RKIND), intent(in) :: &
+         x, &
+         y, &
+         z, &
+         r
+
+    real(kind=RKIND), intent(out) :: &
+         u, &
+         v, &
+         strain11, &
+         strain22, &
+         strain12, &
+         divu, &
+         divv
+
+    logical, intent(in) :: &
+         rotateCartesianGrid
+
+    character(len=*), intent(in) :: &
+         unitTestSubtype
+
+    real(kind=RKIND) :: &
+         lon, &
+         lat, &
+         xp, yp, zp, &
+         du_dlon, &
+         du_dlat, &
+         dv_dlon, &
+         dv_dlat, &
+         d2u_dlon2, &
+         d2u_dlat2, &
+         d2v_dlat2, &
+         d2v_dlon2, &
+         d2u_dlatdlon, &
+         d2v_dlatdlon
+
+    call seaice_grid_rotation_forward(&
+         xp, yp, zp, &
+         x,  y,  z, &
+         rotateCartesianGrid)
+
+    call seaice_latlon_from_xyz(lat, lon, xp, yp, zp, r)
+
+    select case (trim(unitTestSubtype))
+    case ("sinusoidal1")
+
+       call strain_and_stress_divergence_sinusoidal1_velocities(&
+            lon, &
+            lat, &
+            r, &
+            u, &
+            v, &
+            du_dlon, &
+            du_dlat, &
+            dv_dlon, &
+            dv_dlat, &
+            d2u_dlon2, &
+            d2u_dlat2, &
+            d2v_dlat2, &
+            d2v_dlon2, &
+            d2u_dlatdlon, &
+            d2v_dlatdlon)
+
+    case ("constantu")
+
+       call strain_and_stress_divergence_constantu_velocities(&
+            lon, &
+            lat, &
+            r, &
+            u, &
+            v, &
+            du_dlon, &
+            du_dlat, &
+            dv_dlon, &
+            dv_dlat, &
+            d2u_dlon2, &
+            d2u_dlat2, &
+            d2v_dlat2, &
+            d2v_dlon2, &
+            d2u_dlatdlon, &
+            d2v_dlatdlon)
+
+    case ("solid_body")
+
+       call strain_and_stress_divergence_solid_body_velocities(&
+            lon, &
+            lat, &
+            r, &
+            u, &
+            v, &
+            du_dlon, &
+            du_dlat, &
+            dv_dlon, &
+            dv_dlat, &
+            d2u_dlon2, &
+            d2u_dlat2, &
+            d2v_dlat2, &
+            d2v_dlon2, &
+            d2u_dlatdlon, &
+            d2v_dlatdlon)
+
+    case ("spherical_harmonics")
+
+       call strain_and_stress_divergence_spherical_harmonics_velocities(&
+            lon, &
+            lat, &
+            r, &
+            u, &
+            v, &
+            du_dlon, &
+            du_dlat, &
+            dv_dlon, &
+            dv_dlat, &
+            d2u_dlon2, &
+            d2u_dlat2, &
+            d2v_dlat2, &
+            d2v_dlon2, &
+            d2u_dlatdlon, &
+            d2v_dlatdlon)
+
+    end select
+
+    call strain_and_stress_divergence_analytical(&
+         lon, &
+         lat, &
+         r, &
+         u, &
+         v, &
+         du_dlon, &
+         du_dlat, &
+         dv_dlon, &
+         dv_dlat, &
+         d2u_dlon2, &
+         d2u_dlat2, &
+         d2v_dlat2, &
+         d2v_dlon2, &
+         d2u_dlatdlon, &
+         d2v_dlatdlon, &
+         strain11, &
+         strain22, &
+         strain12, &
+         divu, &
+         divv)
+
+  end subroutine strain_and_stress_divergence_velocities_and_derivatives
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  strain_and_stress_divergence_sinusoidal1_velocities
+!
+!> \brief Sinusoidal u and v trial velocities
+!> \author Adrian K. Turner, LANL
+!> \date 24th October 2016
+!> \details
+!>  This routine sets the u and v trial velocities as a simple
+!>  sinusoidal function.
+!
+!-----------------------------------------------------------------------
+
+  subroutine strain_and_stress_divergence_sinusoidal1_velocities(&
+       lon, &
+       lat, &
+       r, &
+       u, &
+       v, &
+       du_dlon, &
+       du_dlat, &
+       dv_dlon, &
+       dv_dlat, &
+       d2u_dlon2, &
+       d2u_dlat2, &
+       d2v_dlat2, &
+       d2v_dlon2, &
+       d2u_dlatdlon, &
+       d2v_dlatdlon)
+
+    real(kind=RKIND), intent(in) :: &
+         lon, &
+         lat, &
+         r
+
+    real(kind=RKIND), intent(out) :: &
+         u, &
+         v, &
+         du_dlon, &
+         du_dlat, &
+         dv_dlon, &
+         dv_dlat, &
+         d2u_dlon2, &
+         d2u_dlat2, &
+         d2v_dlat2, &
+         d2v_dlon2, &
+         d2u_dlatdlon, &
+         d2v_dlatdlon
+
+    real(kind=RKIND), parameter :: &
+         AA = 2.0_RKIND, &
+         BB = 3.0_RKIND, &
+         CC = 4.0_RKIND, &
+         DD = 5.0_RKIND
+
+    real(kind=RKIND) :: &
+         c, s, &
+         cAA, sAA, &
+         cBB, sBB, &
+         cCC, sCC, &
+         cDD, sDD
+
+    c = cos(lat)
+    s = sin(lat)
+
+    cAA = cos(AA * lon)
+    sAA = sin(AA * lon)
+
+    cBB = cos(BB * lat)
+    sBB = sin(BB * lat)
+
+    cCC = cos(CC * lon)
+    sCC = sin(CC * lon)
+
+    cDD = cos(DD * lat)
+    sDD = sin(DD * lat)
+
+    ! u
+    u = cAA * cBB * c
+
+    du_dlon = -AA * sAA * cBB * c
+    du_dlat = cAA * (-cBB * s - BB * sBB * c)
+
+    d2u_dlon2 = -AA**2 * cAA * cBB * c
+    d2u_dlat2 = cAA * (-cBB * c + BB * sBB * s - BB**2 * cBB * c + BB * sBB * s)
+
+    d2u_dlatdlon = -AA * sAA * (-cBB * s - BB * sBB * c)
+
+    ! v
+    v = cCC * cDD * c
+
+    dv_dlon = -CC * sCC * cDD * c
+    dv_dlat = cCC * (-cDD * s - DD * sDD * c)
+
+    d2v_dlat2 = -CC**2 * cCC * cDD * c
+    d2v_dlon2 = cCC * (-cDD * c + DD * sDD * s - DD**2 * cDD * c + DD * sDD * s)
+
+    d2v_dlatdlon = -CC * sCC * (-cDD * s - DD * sDD * c)
+
+  end subroutine strain_and_stress_divergence_sinusoidal1_velocities
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  strain_and_stress_divergence_constantu_velocities
+!
+!> \brief Constant u trial velocities
+!> \author Adrian K. Turner, LANL
+!> \date 24th October 2016
+!> \details
+!>  Here the trial velocities are set as constant u, zero v.
+!
+!-----------------------------------------------------------------------
+
+  subroutine strain_and_stress_divergence_constantu_velocities(&
+       lon, &
+       lat, &
+       r, &
+       u, &
+       v, &
+       du_dlon, &
+       du_dlat, &
+       dv_dlon, &
+       dv_dlat, &
+       d2u_dlon2, &
+       d2u_dlat2, &
+       d2v_dlat2, &
+       d2v_dlon2, &
+       d2u_dlatdlon, &
+       d2v_dlatdlon)
+
+    real(kind=RKIND), intent(in) :: &
+         lon, &
+         lat, &
+         r
+
+    real(kind=RKIND), intent(out) :: &
+         u, &
+         v, &
+         du_dlon, &
+         du_dlat, &
+         dv_dlon, &
+         dv_dlat, &
+         d2u_dlon2, &
+         d2u_dlat2, &
+         d2v_dlat2, &
+         d2v_dlon2, &
+         d2u_dlatdlon, &
+         d2v_dlatdlon
+
+    u = 1.0_RKIND
+    v = 0.0_RKIND
+
+    du_dlon = 0.0_RKIND
+    du_dlat = 0.0_RKIND
+
+    dv_dlon = 0.0_RKIND
+    dv_dlat = 0.0_RKIND
+
+    d2u_dlon2 = 0.0_RKIND
+    d2u_dlat2 = 0.0_RKIND
+
+    d2v_dlat2 = 0.0_RKIND
+    d2v_dlon2 = 0.0_RKIND
+
+    d2u_dlatdlon = 0.0_RKIND
+    d2v_dlatdlon = 0.0_RKIND
+
+  end subroutine strain_and_stress_divergence_constantu_velocities
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  strain_and_stress_divergence_solid_body_velocities
+!
+!> \brief Solid body rotation trial velocities
+!> \author Adrian K. Turner, LANL
+!> \date 24th October 2016
+!> \details
+!>  Here the trial velocities are set for solid body rotation.
+!
+!-----------------------------------------------------------------------
+
+  subroutine strain_and_stress_divergence_solid_body_velocities(&
+       lon, &
+       lat, &
+       r, &
+       u, &
+       v, &
+       du_dlon, &
+       du_dlat, &
+       dv_dlon, &
+       dv_dlat, &
+       d2u_dlon2, &
+       d2u_dlat2, &
+       d2v_dlat2, &
+       d2v_dlon2, &
+       d2u_dlatdlon, &
+       d2v_dlatdlon)
+
+    real(kind=RKIND), intent(in) :: &
+         lon, &
+         lat, &
+         r
+
+    real(kind=RKIND), intent(out) :: &
+         u, &
+         v, &
+         du_dlon, &
+         du_dlat, &
+         dv_dlon, &
+         dv_dlat, &
+         d2u_dlon2, &
+         d2u_dlat2, &
+         d2v_dlat2, &
+         d2v_dlon2, &
+         d2u_dlatdlon, &
+         d2v_dlatdlon
+
+    u = cos(lat)
+    v = 0.0_RKIND
+
+    du_dlon = 0.0_RKIND
+    du_dlat = -sin(lat)
+
+    dv_dlon = 0.0_RKIND
+    dv_dlat = 0.0_RKIND
+
+    d2u_dlon2 = 0.0_RKIND
+    d2u_dlat2 = -cos(lat)
+
+    d2v_dlat2 = 0.0_RKIND
+    d2v_dlon2 = 0.0_RKIND
+
+    d2u_dlatdlon = 0.0_RKIND
+    d2v_dlatdlon = 0.0_RKIND
+
+  end subroutine strain_and_stress_divergence_solid_body_velocities
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  strain_and_stress_divergence_spherical_harmonics_velocities
+!
+!> \brief Spherical harmonic trial velocities
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  Here the trial velocities are set as spherical harmonics.
+!
+!-----------------------------------------------------------------------
+
+  subroutine strain_and_stress_divergence_spherical_harmonics_velocities(&
+       lon, &
+       lat, &
+       r, &
+       u, &
+       v, &
+       du_dlon, &
+       du_dlat, &
+       dv_dlon, &
+       dv_dlat, &
+       d2u_dlon2, &
+       d2u_dlat2, &
+       d2v_dlat2, &
+       d2v_dlon2, &
+       d2u_dlatdlon, &
+       d2v_dlatdlon)
+
+    real(kind=RKIND), intent(in) :: &
+         lon, &
+         lat, &
+         r
+
+    real(kind=RKIND), intent(out) :: &
+         u, &
+         v, &
+         du_dlon, &
+         du_dlat, &
+         dv_dlon, &
+         dv_dlat, &
+         d2u_dlon2, &
+         d2u_dlat2, &
+         d2v_dlat2, &
+         d2v_dlon2, &
+         d2u_dlatdlon, &
+         d2v_dlatdlon
+
+    integer, parameter :: &
+         lu = 5, &
+         mu = 3, &
+         lv = 4, &
+         mv = 2
+
+    real(kind=RKIND) :: &
+         d2u_dlondlat, &
+         d2v_dlondlat
+
+    u = spherical_harmonic_geographical(lon, lat, mu, lu)
+    v = spherical_harmonic_geographical(lon, lat, mv, lv)
+
+    call spherical_harmonic_geographical_derivatives(&
+         lon, &
+         lat, &
+         mu, &
+         lu, &
+         du_dlon, &
+         du_dlat, &
+         d2u_dlon2, &
+         d2u_dlondlat, &
+         d2u_dlatdlon, &
+         d2u_dlat2)
+
+    call spherical_harmonic_geographical_derivatives(&
+         lon, &
+         lat, &
+         mv, &
+         lv, &
+         dv_dlon, &
+         dv_dlat, &
+         d2v_dlon2, &
+         d2v_dlondlat, &
+         d2v_dlatdlon, &
+         d2v_dlat2)
+
+  end subroutine strain_and_stress_divergence_spherical_harmonics_velocities
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  spherical_harmonic_geographical
+!
+!> \brief Geographical spherical harmonics
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  This routine calculates a spherical harmonic function from
+!>  geographical coordinates.
+!
+!-----------------------------------------------------------------------
+
+  function spherical_harmonic_geographical(lon, lat, m, l) result(sphericalHarmonic)
+
+    use seaice_constants, only: &
+         pii
+
+    real(kind=RKIND), intent(in) :: &
+         lon, &
+         lat
+
+    integer, intent(in) :: &
+         m, l
+
+    real(kind=RKIND) :: sphericalHarmonic
+
+    real(kind=RKIND) :: phi, theta
+
+    theta = pii / 2.0_RKIND - lat
+    phi = lon
+
+    sphericalHarmonic = spherical_harmonic(theta, phi, m, l)
+
+  end function spherical_harmonic_geographical
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  spherical_harmonic
+!
+!> \brief Spherical harmonic function
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  This routine calculates a spherical harmonic function from
+!>  mathematical coordinates.
+!
+!-----------------------------------------------------------------------
+
+  function spherical_harmonic(theta, phi, m, l) result(sphericalHarmonic)
+
+    real(kind=RKIND), intent(in) :: &
+         theta, &
+         phi
+
+    integer, intent(in) :: &
+         m, l
+
+    real(kind=RKIND) :: sphericalHarmonic
+
+    if (m > 0) then
+       sphericalHarmonic = sqrt(2.0_RKIND) * K(m,l) * cos( real(m,RKIND) * phi) * legendre_polynomial(cos(theta),  m, l)
+    else if (m == 0) then
+       sphericalHarmonic =                   K(m,l) *                             legendre_polynomial(cos(theta),  m, l)
+    else if (m < 0) then
+       sphericalHarmonic = sqrt(2.0_RKIND) * K(m,l) * sin(-real(m,RKIND) * phi) * legendre_polynomial(cos(theta), -m, l)
+    endif
+
+  end function spherical_harmonic
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  spherical_harmonic_geographical_derivatives
+!
+!> \brief Geographical derivatives of spherical harmonic function
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  This routine calculates the derivatives of the geographical
+!>  spherical harmonic function with respect to geographical
+!>  coordinates.
+!
+!-----------------------------------------------------------------------
+
+  subroutine spherical_harmonic_geographical_derivatives(&
+       lon, &
+       lat, &
+       m, &
+       l, &
+       dsh_dlon, &
+       dsh_dlat, &
+       d2sh_dlonlon, &
+       d2sh_dlonlat, &
+       d2sh_dlatlon, &
+       d2sh_dlatlat)
+
+    use seaice_constants, only: &
+         pii
+
+    real(kind=RKIND), intent(in) :: &
+         lon, &
+         lat
+
+    integer, intent(in) :: &
+         m, l
+
+    real(kind=RKIND), intent(out) :: &
+         dsh_dlon, &
+         dsh_dlat, &
+         d2sh_dlonlon, &
+         d2sh_dlonlat, &
+         d2sh_dlatlon, &
+         d2sh_dlatlat
+
+    real(kind=RKIND) :: &
+         theta, &
+         phi, &
+         dphi_dlon, &
+         dtheta_dlat, &
+         dsh_dtheta, &
+         dsh_dphi, &
+         d2sh_dthetatheta, &
+         d2sh_dthetaphi, &
+         d2sh_dphitheta, &
+         d2sh_dphiphi
+
+    theta = pii / 2.0_RKIND - lat
+    phi = lon
+
+    call subroutine_harmonic_derivatives(&
+         theta, &
+         phi, &
+         m, &
+         l, &
+         dsh_dtheta, &
+         dsh_dphi, &
+         d2sh_dthetatheta, &
+         d2sh_dthetaphi, &
+         d2sh_dphitheta, &
+         d2sh_dphiphi)
+
+    dphi_dlon = 1.0_RKIND
+    dtheta_dlat = -1.0_RKIND
+
+    dsh_dlon     = dsh_dphi         * dphi_dlon
+    dsh_dlat     = dsh_dtheta       * dtheta_dlat
+    d2sh_dlonlon = d2sh_dphiphi     * dphi_dlon   * dphi_dlon
+    d2sh_dlonlat = d2sh_dphitheta   * dphi_dlon   * dtheta_dlat
+    d2sh_dlatlon = d2sh_dthetaphi   * dphi_dlon   * dtheta_dlat
+    d2sh_dlatlat = d2sh_dthetatheta * dtheta_dlat * dtheta_dlat
+
+  end subroutine spherical_harmonic_geographical_derivatives
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  spherical_harmonic_derivatives
+!
+!> \brief Derivatives of the spherical harmonic function
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  This routine calculates the derivatives of the spherical harmonic
+!>  function.
+!
+!-----------------------------------------------------------------------
+
+  subroutine subroutine_harmonic_derivatives(&
+       theta, &
+       phi, &
+       m, &
+       l, &
+       dsh_dtheta, &
+       dsh_dphi, &
+       d2sh_dthetadtheta, &
+       d2sh_dthetadphi, &
+       d2sh_dphidtheta, &
+       d2sh_dphidphi)
+
+    real(kind=RKIND), intent(in) :: &
+         theta, &
+         phi
+
+    integer, intent(in) :: &
+         m, l
+
+    real(kind=RKIND), intent(out) :: &
+         dsh_dtheta, &
+         dsh_dphi, &
+         d2sh_dthetadtheta, &
+         d2sh_dthetadphi, &
+         d2sh_dphidtheta, &
+         d2sh_dphidphi
+
+    if (m > 0) then
+
+       !sphericalHarmonic = sqrt(2.0_RKIND) * K(m,l) * cos( real(m,RKIND) * phi) * legendre_polynomial(cos(theta),  m, l)
+
+       dsh_dtheta        =                     cos( real(m,RKIND) * phi) * dlegendre_polynomial_dz(cos(theta),  m, l) * (-sin(theta))
+       dsh_dphi          = -real(m,RKIND)    * sin( real(m,RKIND) * phi) * legendre_polynomial(cos(theta),  m, l)
+       d2sh_dthetadtheta =                     cos( real(m,RKIND) * phi) * ((-cos(theta)) * dlegendre_polynomial_dz(cos(theta),  m, l) + sin(theta)**2 * d2legendre_polynomial_dz2(cos(theta),  m, l))
+       d2sh_dthetadphi   = -real(m,RKIND)    * sin( real(m,RKIND) * phi) * dlegendre_polynomial_dz(cos(theta),  m, l) * (-sin(theta))
+       d2sh_dphidtheta   = -real(m,RKIND)    * sin( real(m,RKIND) * phi) * dlegendre_polynomial_dz(cos(theta),  m, l) * (-sin(theta))
+       d2sh_dphidphi     = -real(m,RKIND)**2 * cos( real(m,RKIND) * phi) * legendre_polynomial(cos(theta),  m, l)
+
+       dsh_dtheta        = dsh_dtheta        * sqrt(2.0_RKIND) * K(m,l)
+       dsh_dphi          = dsh_dphi          * sqrt(2.0_RKIND) * K(m,l)
+       d2sh_dthetadtheta = d2sh_dthetadtheta * sqrt(2.0_RKIND) * K(m,l)
+       d2sh_dthetadphi   = d2sh_dthetadphi   * sqrt(2.0_RKIND) * K(m,l)
+       d2sh_dphidtheta   = d2sh_dphidtheta   * sqrt(2.0_RKIND) * K(m,l)
+       d2sh_dphidphi     = d2sh_dphidphi     * sqrt(2.0_RKIND) * K(m,l)
+
+    else if (m == 0) then
+
+       !sphericalHarmonic =                   K(m,l) *                             legendre_polynomial(cos(theta),  m, l)
+
+       dsh_dtheta        = K(m,l) * dlegendre_polynomial_dz(cos(theta),  m, l) * (-sin(theta))
+       dsh_dphi          = 0.0_RKIND
+       d2sh_dthetadtheta = K(m,l) * ((-cos(theta)) * dlegendre_polynomial_dz(cos(theta),  m, l) + sin(theta)**2 * d2legendre_polynomial_dz2(cos(theta),  m, l))
+       d2sh_dthetadphi   = 0.0_RKIND
+       d2sh_dphidtheta   = 0.0_RKIND
+       d2sh_dphidphi     = 0.0_RKIND
+
+    else if (m < 0) then
+
+       !sphericalHarmonic = sqrt(2.0_RKIND) * K(m,l) * sin(-real(m,RKIND) * phi) * legendre_polynomial(cos(theta), -m, l)
+
+       dsh_dtheta        =                     sin(-real(m,RKIND) * phi) * dlegendre_polynomial_dz(cos(theta),  -m, l) * (-sin(theta))
+       dsh_dphi          = -real(m,RKIND)    * cos(-real(m,RKIND) * phi) * legendre_polynomial(cos(theta),  -m, l)
+       d2sh_dthetadtheta =                     sin(-real(m,RKIND) * phi) * ((-cos(theta)) * dlegendre_polynomial_dz(cos(theta),  -m, l) + sin(theta)**2 * d2legendre_polynomial_dz2(cos(theta),  -m, l))
+       d2sh_dthetadphi   = -real(m,RKIND)    * cos(-real(m,RKIND) * phi) * dlegendre_polynomial_dz(cos(theta),  -m, l) * (-sin(theta))
+       d2sh_dphidtheta   = -real(m,RKIND)    * cos(-real(m,RKIND) * phi) * dlegendre_polynomial_dz(cos(theta),  -m, l) * (-sin(theta))
+       d2sh_dphidphi     = -real(m,RKIND)**2 * sin(-real(m,RKIND) * phi) * legendre_polynomial(cos(theta),  -m, l)
+
+       dsh_dtheta        = dsh_dtheta        * sqrt(2.0_RKIND) * K(m,l)
+       dsh_dphi          = dsh_dphi          * sqrt(2.0_RKIND) * K(m,l)
+       d2sh_dthetadtheta = d2sh_dthetadtheta * sqrt(2.0_RKIND) * K(m,l)
+       d2sh_dthetadphi   = d2sh_dthetadphi   * sqrt(2.0_RKIND) * K(m,l)
+       d2sh_dphidtheta   = d2sh_dphidtheta   * sqrt(2.0_RKIND) * K(m,l)
+       d2sh_dphidphi     = d2sh_dphidphi     * sqrt(2.0_RKIND) * K(m,l)
+
+    endif
+
+  end subroutine subroutine_harmonic_derivatives
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  K
+!
+!> \brief Spherical harmonic constant
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  This function returns the constant of the spherical harmonic
+!>  function that is a function of l and m.
+!
+!-----------------------------------------------------------------------
+
+  function K(m, l) result(Kr)
+
+    use seaice_constants, only: &
+         pii
+
+    integer, intent(in) :: &
+         m, l
+
+    real(kind=RKIND) :: Kr
+
+    Kr = sqrt((real(2 * l + 1,RKIND) * factorial(l-abs(m))) / (4.0_RKIND * pii * factorial(l+abs(m))))
+
+  end function K
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  factorial
+!
+!> \brief Factorial
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  This routine returns the factorial of a number.
+!
+!-----------------------------------------------------------------------
+
+  function factorial(n) result(fac)
+
+    integer, intent(in) :: &
+         n
+
+    integer :: fac
+
+    integer :: i
+
+    fac = 1
+
+    do i = n, 1, -1
+       fac = fac * i
+    enddo ! i
+
+  end function factorial
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  double_factorial
+!
+!> \brief Double factorial
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  This routine returns the double factorial of a number.
+!
+!-----------------------------------------------------------------------
+
+  function double_factorial(n) result(fac)
+
+    integer, intent(in) :: &
+         n
+
+    integer :: fac
+
+    integer :: i
+
+    fac = 1
+
+    do i = n, 1, -2
+       fac = fac * i
+    enddo ! i
+
+  end function double_factorial
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  legendre_polynomial
+!
+!> \brief Legendre Polynomial
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  This routine calculates the Legendre Polynomial
+!
+!-----------------------------------------------------------------------
+
+  recursive function legendre_polynomial(z, m, l) result(poly)
+
+    real(kind=RKIND), intent(in) :: &
+         z
+
+    integer, intent(in) :: &
+         m, l
+
+    real(kind=RKIND), parameter :: &
+         c0   =   0.0_RKIND, &
+         p5   =   0.5_RKIND, &
+         c1   =   1.0_RKIND, &
+         c1p5 =   1.5_RKIND, &
+         c2   =   2.0_RKIND, &
+         c3   =   3.0_RKIND, &
+         c4   =   4.0_RKIND, &
+         c5   =   5.0_RKIND, &
+         c6   =   6.0_RKIND, &
+         c7   =   7.0_RKIND, &
+         c8   =   8.0_RKIND, &
+         c9   =   9.0_RKIND, &
+         c12  =  12.0_RKIND, &
+         c14  =  14.0_RKIND, &
+         c15  =  15.0_RKIND, &
+         c18  =  18.0_RKIND, &
+         c20  =  20.0_RKIND, &
+         c21  =  21.0_RKIND, &
+         c24  =  24.0_RKIND, &
+         c28  =  28.0_RKIND, &
+         c30  =  30.0_RKIND, &
+         c35  =  35.0_RKIND, &
+         c42  =  42.0_RKIND, &
+         c45  =  45.0_RKIND, &
+         c56  =  56.0_RKIND, &
+         c60  =  60.0_RKIND, &
+         c63  =  63.0_RKIND, &
+         c70  =  70.0_RKIND, &
+         c84  =  84.0_RKIND, &
+         c90  =  90.0_RKIND, &
+         c105 = 105.0_RKIND, &
+         c108 = 108.0_RKIND, &
+         c140 = 140.0_RKIND, &
+         c168 = 168.0_RKIND, &
+         c252 = 252.0_RKIND, &
+         c280 = 280.0_RKIND, &
+         c420 = 420.0_RKIND, &
+         c504 = 504.0_RKIND, &
+         c756 = 756.0_RKIND, &
+         c945 = 945.0_RKIND
+    real(kind=RKIND) :: poly
+
+    real :: s
+
+    s = (c1 - z**2)**p5
+
+    if (l == 0 .and. m == 0) then
+
+       poly = c1
+
+    else if (l == 1 .and. m == 0) then
+
+       poly = z
+
+    else if (l == 1 .and. m == 1) then
+
+       poly = s
+
+    else if (l == 2 .and. m == 0) then
+
+       poly = p5 * (c3 * z**2 - c1)
+
+    else if (l == 2 .and. m == 1) then
+
+       poly = c3 * z * s
+
+    else if (l == 2 .and. m == 2) then
+
+       poly = c3 * (c1 - z**2)
+
+    else if (l == 3 .and. m == 0) then
+
+       poly = p5 * z * (c5 * z**2 - c3)
+
+    else if (l == 3 .and. m == 1) then
+
+       poly = c1p5 * (c5 * z**2 - c1) * s
+
+    else if (l == 3 .and. m == 2) then
+
+       poly = c15 * z * (c1 - z**2)
+
+    else if (l == 3 .and. m == 3) then
+
+       poly = c15 * s**3
+
+    else if (l == 4 .and. m == 0) then
+
+       poly = (c1/c8) * (c35 * z**4 - c30 * z**2 + c3)
+
+    else if (l == 4 .and. m == 1) then
+
+       poly = (c5/c2) * (c7 * z**3 - c3 * z) * s
+
+    else if (l == 4 .and. m == 2) then
+
+       poly = (c15/c2) * (c7 * z**2 - c1) * (c1 - z**2)
+
+    else if (l == 4 .and. m == 3) then
+
+       poly = c105 * z * s**3
+
+    else if (l == 4 .and. m == 4) then
+
+       poly = c105 * s**4
+
+    else if (l == 5 .and. m == 0) then
+
+       poly = (c1/c8) * z * (c63 * z**4 - c70 * z**2 + c15)
+
+    else if (l == 5 .and. m == 1) then
+
+       poly = (c15/c8) * s * (c21 * z**4 - c14 * z**2 + c1)
+
+    else if (l == 5 .and. m == 2) then
+
+       poly = (c105/c2) * z * (c1 - z**2) * (c3 * z**2 - c1)
+
+    else if (l == 5 .and. m == 3) then
+
+       poly = (c105/c2) * s**3 * (c9 * z**2 - c1)
+
+    else if (l == 5 .and. m == 4) then
+
+       poly = c945 * z * s**4
+
+    else if (l == 5 .and. m == 5) then
+
+       poly = c945 * s**5
+
+    else
+
+       !write(stderrUnit,*) "legendre_polynomial: m, l, choice not implemented: m, l: ", m, l
+       call mpas_log_write("legendre_polynomial: m, l, choice not implemented: m, l: $i $i: ", MPAS_LOG_CRIT, intArgs=(/m, l/))
+       !call MPAS_dmpar_global_abort('MPAS-seaice: legendre_polynomial: m, l, choice not implemented')
+
+    endif
+
+  end function legendre_polynomial
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  dlegendre_polynomial_dz
+!
+!> \brief Legendre polynomial derivative
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  This routine returns the derivative of the Legendre polynomial.
+!
+!-----------------------------------------------------------------------
+
+  recursive function dlegendre_polynomial_dz(z, m, l) result(poly)
+
+    real(kind=RKIND), intent(in) :: &
+         z
+
+    integer, intent(in) :: &
+         m, l
+
+    real(kind=RKIND), parameter :: &
+         c0   =   0.0_RKIND, &
+         p5   =   0.5_RKIND, &
+         c1   =   1.0_RKIND, &
+         c1p5 =   1.5_RKIND, &
+         c2   =   2.0_RKIND, &
+         c3   =   3.0_RKIND, &
+         c4   =   4.0_RKIND, &
+         c5   =   5.0_RKIND, &
+         c6   =   6.0_RKIND, &
+         c7   =   7.0_RKIND, &
+         c8   =   8.0_RKIND, &
+         c9   =   9.0_RKIND, &
+         c12  =  12.0_RKIND, &
+         c14  =  14.0_RKIND, &
+         c15  =  15.0_RKIND, &
+         c18  =  18.0_RKIND, &
+         c20  =  20.0_RKIND, &
+         c21  =  21.0_RKIND, &
+         c24  =  24.0_RKIND, &
+         c28  =  28.0_RKIND, &
+         c30  =  30.0_RKIND, &
+         c35  =  35.0_RKIND, &
+         c42  =  42.0_RKIND, &
+         c45  =  45.0_RKIND, &
+         c56  =  56.0_RKIND, &
+         c60  =  60.0_RKIND, &
+         c63  =  63.0_RKIND, &
+         c70  =  70.0_RKIND, &
+         c84  =  84.0_RKIND, &
+         c90  =  90.0_RKIND, &
+         c105 = 105.0_RKIND, &
+         c108 = 108.0_RKIND, &
+         c140 = 140.0_RKIND, &
+         c168 = 168.0_RKIND, &
+         c252 = 252.0_RKIND, &
+         c280 = 280.0_RKIND, &
+         c420 = 420.0_RKIND, &
+         c504 = 504.0_RKIND, &
+         c756 = 756.0_RKIND, &
+         c945 = 945.0_RKIND
+
+    real(kind=RKIND) :: poly
+
+    real :: s, dsdz
+
+    s = (c1 - z**2)**p5
+    dsdz = -z / s
+
+    if (l == 0 .and. m == 0) then
+
+       !poly = c1
+       poly = c0
+
+    else if (l == 1 .and. m == 0) then
+
+       !poly = z
+       poly = c1
+
+    else if (l == 1 .and. m == 1) then
+
+       !poly = s
+       poly = dsdz
+
+    else if (l == 2 .and. m == 0) then
+
+       !poly = p5 * (c3 * z**2 - c1)
+       poly = c3 * z
+
+    else if (l == 2 .and. m == 1) then
+
+       !poly = c3 * z * s
+       poly = c3 * z * dsdz + c3 * s
+
+    else if (l == 2 .and. m == 2) then
+
+       !poly = c3 * (c1 - z**2)
+       poly = -c6 * z
+
+    else if (l == 3 .and. m == 0) then
+
+       !poly = p5 * z * (c5 * z**2 - c3)
+       poly = p5 * (c15 * z - c3)
+
+    else if (l == 3 .and. m == 1) then
+
+       !poly = c1p5 * (c5 * z**2 - c1) * s
+       poly = c15 * z * s + c1p5 * (c5 * z**2 - c1) * dsdz
+
+    else if (l == 3 .and. m == 2) then
+
+       !poly = c15 * z * (c1 - z**2)
+       poly = c15 * (c1 - c3 * z**2)
+
+    else if (l == 3 .and. m == 3) then
+
+       !poly = c15 * s**3
+       poly = c45 * s**2 * dsdz
+
+    else if (l == 4 .and. m == 0) then
+
+       !poly = (c1/c8) * (c35 * z**4 - c30 * z**2 + c3)
+       poly = (c1/c8) * (c140 * z**3 - c60 * z)
+
+    else if (l == 4 .and. m == 1) then
+
+       !poly = (c5/c2) * (c7 * z**3 - c3 * z) * s
+       poly = (c5/c2) * ((c21 * z**2 - c3) * s + (c7 * z**3 - 3 * z) * dsdz)
+
+    else if (l == 4 .and. m == 2) then
+
+       !poly = (c15/c2) * (c7 * z**2 - c1) * (c1 - z**2)
+       poly = (c15/c2) * (c14 * z * (c1 - z**2) - c2 * z * (c7 * z**2 - c1))
+
+    else if (l == 4 .and. m == 3) then
+
+       !poly = c105 * z * s**3
+       poly = c105 * (s**3 + c3 * z * s**2 * dsdz)
+
+    else if (l == 4 .and. m == 4) then
+
+       !poly = c105 * s**4
+       poly = c420 * s**3 * dsdz
+
+    else if (l == 5 .and. m == 0) then
+
+       !poly = (c1/c8) * z * (c63 * z**4 - c70 * z**2 + c15)
+       poly = (c1/c8) * ((c63 * z**4 - c70 * z**2 + c15) + z * (c252 * z**3 - c140 * z))
+
+    else if (l == 5 .and. m == 1) then
+
+       !poly = (c15/c8) * s * (c21 * z**4 - c14 * z**2 + c1)
+       poly = (c15/c8) * (s * (c84 * z**3 - c28 * z) + dsdz * (c21 * z**4 - c14 * z**2 + 1))
+
+    else if (l == 5 .and. m == 2) then
+
+       !poly = (c105/c2) * z * (c1 - z**2) * (c3 * z**2 - c1)
+       poly = (c105/c2) * ((c1 - z**2) * (c3 * z**2 - c1) - c2 * z**2 * (c3 * z**2 - c1) + c6 * z**2 * (c1 - z**2))
+
+    else if (l == 5 .and. m == 3) then
+
+       !poly = (c105/c2) * s**3 * (c9 * z**2 - c1)
+       poly = (c105/c2) * (c3 * s**2 * dsdz * (c9 * z**2 - c1) + c18 * s**3 * z)
+
+    else if (l == 5 .and. m == 4) then
+
+       !poly = c945 * z * s**4
+       poly = c945 * (s**4 + c4 * z * s**3 * dsdz)
+
+    else if (l == 5 .and. m == 5) then
+
+       !poly = c945 * s**5
+       poly = c945 * (c5 * s**4 * dsdz)
+
+    else
+
+       !write(stderrUnit,*) "dlegendre_polynomial_dz: m, l, choice not implemented: m, l: ", m, l
+       call mpas_log_write("dlegendre_polynomial_dz: m, l, choice not implemented: m, l: $i $i", MPAS_LOG_CRIT, intArgs=(/m, l/))
+       !call MPAS_dmpar_global_abort('MPAS-seaice: dlegendre_polynomial_dz: m, l, choice not implemented')
+
+    endif
+
+  end function dlegendre_polynomial_dz
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  dlegendre_polynomial_dz
+!
+!> \brief Second derivative of the Legendre polynomial
+!> \author Adrian K. Turner, LANL
+!> \date 1st November 2016
+!> \details
+!>  This routine returns the second derivative of the Legendre
+!>  polynomial.
+!
+!-----------------------------------------------------------------------
+
+  recursive function d2legendre_polynomial_dz2(z, m, l) result(poly)
+
+    real(kind=RKIND), intent(in) :: &
+         z
+
+    integer, intent(in) :: &
+         m, l
+
+    real(kind=RKIND), parameter :: &
+         c0   =   0.0_RKIND, &
+         p5   =   0.5_RKIND, &
+         c1   =   1.0_RKIND, &
+         c1p5 =   1.5_RKIND, &
+         c2   =   2.0_RKIND, &
+         c3   =   3.0_RKIND, &
+         c4   =   4.0_RKIND, &
+         c5   =   5.0_RKIND, &
+         c6   =   6.0_RKIND, &
+         c7   =   7.0_RKIND, &
+         c8   =   8.0_RKIND, &
+         c9   =   9.0_RKIND, &
+         c12  =  12.0_RKIND, &
+         c14  =  14.0_RKIND, &
+         c15  =  15.0_RKIND, &
+         c18  =  18.0_RKIND, &
+         c20  =  20.0_RKIND, &
+         c21  =  21.0_RKIND, &
+         c24  =  24.0_RKIND, &
+         c28  =  28.0_RKIND, &
+         c30  =  30.0_RKIND, &
+         c35  =  35.0_RKIND, &
+         c42  =  42.0_RKIND, &
+         c45  =  45.0_RKIND, &
+         c56  =  56.0_RKIND, &
+         c60  =  60.0_RKIND, &
+         c63  =  63.0_RKIND, &
+         c70  =  70.0_RKIND, &
+         c84  =  84.0_RKIND, &
+         c90  =  90.0_RKIND, &
+         c105 = 105.0_RKIND, &
+         c108 = 108.0_RKIND, &
+         c140 = 140.0_RKIND, &
+         c168 = 168.0_RKIND, &
+         c252 = 252.0_RKIND, &
+         c280 = 280.0_RKIND, &
+         c420 = 420.0_RKIND, &
+         c504 = 504.0_RKIND, &
+         c756 = 756.0_RKIND, &
+         c945 = 945.0_RKIND
+
+    real(kind=RKIND) :: poly
+
+    real :: s, dsdz, d2sdz2
+
+    s = (c1 - z**2)**p5
+    dsdz = -z / s
+    d2sdz2 = -c1 / s + (z * dsdz) / s**2
+
+    if (l == 0 .and. m == 0) then
+
+       !poly = c1
+       poly = c0
+
+    else if (l == 1 .and. m == 0) then
+
+       !poly = z
+       poly = c0
+
+    else if (l == 1 .and. m == 1) then
+
+       !poly = s
+       poly = d2sdz2
+
+    else if (l == 2 .and. m == 0) then
+
+       !poly = p5 * (c3 * z**2 - c1)
+       poly = c3
+
+    else if (l == 2 .and. m == 1) then
+
+       !poly = c3 * z * s
+       poly = c3 * z * d2sdz2 + c6 * dsdz
+
+    else if (l == 2 .and. m == 2) then
+
+       !poly = c3 * (c1 - z**2)
+       poly = -c6
+
+    else if (l == 3 .and. m == 0) then
+
+       !poly = p5 * z * (c5 * z**2 - c3)
+       poly = c15 / 2
+
+    else if (l == 3 .and. m == 1) then
+
+       !poly = c1p5 * (c5 * z**2 - c1) * s
+       poly = c15 * s + c30 * z * dsdz + c1p5 * (c5 * z**2 - c1) * d2sdz2
+
+    else if (l == 3 .and. m == 2) then
+
+       !poly = c15 * z * (c1 - z**2)
+       poly = -c90 * z
+
+    else if (l == 3 .and. m == 3) then
+
+       !poly = c15 * s**3
+       poly = c45 * (c2 * s * dsdz + s**2 * d2sdz2)
+
+    else if (l == 4 .and. m == 0) then
+
+       !poly = (c1/c8) * (c35 * z**4 - c30 * z**2 + c3)
+       poly = (c1/c8) * (c420 * z**2 - c60)
+
+    else if (l == 4 .and. m == 1) then
+
+       !poly = (c5/c2) * (c7 * z**3 - c3 * z) * s
+       poly = (c5/c2) * (c42 * z * s + c2 * (c21 * z**2 - c3) * dsdz + (c7 * z**3 - c3 * z) * d2sdz2)
+
+    else if (l == 4 .and. m == 2) then
+
+       !poly = (c15/c2) * (c7 * z**2 - c1) * (c1 - z**2)
+       poly = (c15/c2) * (c14 * (c1 - z**2) - c56 * z**2 - c2 * (c7 * z**2 - c1))
+
+    else if (l == 4 .and. m == 3) then
+
+       !poly = c105 * z * s**3
+       poly = c105 * (c6 * s**2 * dsdz + c6 * z * s * dsdz**2 + c3 * z * s**2 * d2sdz2)
+
+    else if (l == 4 .and. m == 4) then
+
+       !poly = c105 * s**4
+       poly = c420 * (c3 * s**2 * dsdz + s**3 * d2sdz2)
+
+    else if (l == 5 .and. m == 0) then
+
+       !poly = (c1/c8) * z * (c63 * z**4 - c70 * z**2 + c15)
+       poly = (c1/c8) * (c504 * z**3 - c280 * z + z * (c756 * z**2 - c140))
+
+    else if (l == 5 .and. m == 1) then
+
+       !poly = (c15/c8) * s * (c21 * z**4 - c14 * z**2 + c1)
+       poly = (c15/c8) * (s * (c252 * z**2 - c28) + dsdz * (c168 * z**3 - c56 * z) + d2sdz2 * (c21 * z**4 - c14 * z**2 + 1))
+
+    else if (l == 5 .and. m == 2) then
+
+       !poly = (c105/c2) * z * (c1 - z**2) * (c3 * z**2 - c1)
+       poly = (c105/c2) * (c18 * z * (c1 - z**2) - c6 * z * (c3 * z**2 - 1) - c24 * z**3)
+
+    else if (l == 5 .and. m == 3) then
+
+       !poly = (c105/c2) * s**3 * (c9 * z**2 - 1)
+       poly = (c105/c2) * (c6 * s * dsdz**2 * (c9 * z**2 - c1) + c3 * s**2 * d2sdz2 * (c9 * z**2 - c1) + c108 * s**2 * dsdz * z + c18 * s**3)
+
+    else if (l == 5 .and. m == 4) then
+
+       !poly = c945 * z * s**4
+       poly = c945 * (c8 * s**3 * dsdz + c12 * z * s**2 * dsdz**2 + c4 * z * s**3 * d2sdz2)
+
+    else if (l == 5 .and. m == 5) then
+
+       !poly = c945 * s**5
+       poly = c945 * (c20 * s**3 * dsdz**2 + c5 * s**4 * d2sdz2)
+
+    else
+
+       !write(stderrUnit,*) "d2legendre_polynomial_dz: m, l, choice not implemented: m, l: ", m, l
+       call mpas_log_write("d2legendre_polynomial_dz: m, l, choice not implemented: m, l: $i $i", MPAS_LOG_CRIT, intArgs=(/m, l/))
+       !call MPAS_dmpar_global_abort('MPAS-seaice: d2legendre_polynomial_dz2: m, l, choice not implemented')
+
+    endif
+
+  end function d2legendre_polynomial_dz2
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  strain_and_stress_divergence_analytical
+!
+!> \brief Analytical stress divergence
+!> \author Adrian K. Turner, LANL
+!> \date 24th October 2016
+!> \details
+!>  This routine calculates the analytical stress divergence given a
+!>  trial velocity field.
+!
+!-----------------------------------------------------------------------
+
+  subroutine strain_and_stress_divergence_analytical(&
+       lon, &
+       lat, &
+       r, &
+       u, &
+       v, &
+       du_dlon, &
+       du_dlat, &
+       dv_dlon, &
+       dv_dlat, &
+       d2u_dlon2, &
+       d2u_dlat2, &
+       d2v_dlat2, &
+       d2v_dlon2, &
+       d2u_dlatdlon, &
+       d2v_dlatdlon, &
+       strain11, &
+       strain22, &
+       strain12, &
+       divu, &
+       divv)
+
+    real(kind=RKIND), intent(in) :: &
+         lon, &
+         lat, &
+         r, &
+         u, &
+         v, &
+         du_dlon, &
+         du_dlat, &
+         dv_dlon, &
+         dv_dlat, &
+         d2u_dlon2, &
+         d2u_dlat2, &
+         d2v_dlat2, &
+         d2v_dlon2, &
+         d2u_dlatdlon, &
+         d2v_dlatdlon
+
+    real(kind=RKIND), intent(out) :: &
+         strain11, &
+         strain22, &
+         strain12, &
+         divu, &
+         divv
+
+    real(kind=RKIND) :: &
+         dstrain11_dlon, &
+         dstrain22_dlat, &
+         dstrain12_dlon, &
+         dstrain12_dlat
+
+    strain11 = (1.0_RKIND / (r * cos(lat))) * (du_dlon - v * sin(lat))
+    strain22 = dv_dlat / r
+    strain12 = (0.5_RKIND / r) * (du_dlat + u * tan(lat) + dv_dlon / cos(lat))
+
+    dstrain11_dlon = (1.0_RKIND / (r * cos(lat))) * (d2u_dlon2 - dv_dlon * sin(lat))
+    dstrain22_dlat = d2v_dlat2 / r
+
+    dstrain12_dlon = (0.5_RKIND / r) * (d2u_dlatdlon + du_dlon * tan(lat) + d2v_dlon2 / cos(lat))
+    dstrain12_dlat = (0.5_RKIND / r) * (d2u_dlat2 + du_dlat * tan(lat) + u / cos(lat)**2 + d2v_dlatdlon / cos(lat) + dv_dlon * (tan(lat) / cos(lat)))
+
+    divu = (1.0_RKIND / (r * cos(lat))) * dstrain11_dlon + &
+           (1.0_RKIND / r)              * dstrain12_dlat - &
+           (2.0_RKIND / r) * tan(lat)   * strain12
+
+    divv = (1.0_RKIND / (r * cos(lat))) * dstrain12_dlon + &
+           (1.0_RKIND / r)              * dstrain22_dlat + &
+           (1.0_RKIND / r) * tan(lat)   * strain11       - &
+           (1.0_RKIND / r) * tan(lat)   * strain22
+
+  end subroutine strain_and_stress_divergence_analytical
 
   !--------------------------------------------------------------------------
 

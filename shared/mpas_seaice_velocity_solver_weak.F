@@ -23,6 +23,7 @@ module seaice_velocity_solver_weak
   public :: &
        seaice_init_velocity_solver_weak, &
        seaice_internal_stress_weak, &
+       seaice_internal_stress_weak_linear, &
        seaice_strain_tensor_weak, &
        seaice_stress_tensor_weak, &
        seaice_stress_divergence_weak, &
@@ -110,7 +111,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_internal_stress_weak(domain)!{{{
+  subroutine seaice_internal_stress_weak(&
+       domain)!{{{
 
     type(domain_type), intent(inout) :: &
          domain
@@ -223,6 +225,116 @@ contains
     end do
 
   end subroutine seaice_internal_stress_weak!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_internal_stress_weak_linear
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 3rd October 2019
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_internal_stress_weak_linear(&
+       domain)!{{{
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         block
+
+    type(MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocityWeakPool, &
+         velocitySolverPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity, &
+         stressDivergenceU, &
+         stressDivergenceV, &
+         strain11, &
+         strain22, &
+         strain12, &
+         stress11, &
+         stress22, &
+         stress12, &
+         latCellRotated, &
+         latVertexRotated
+
+    integer, dimension(:), pointer :: &
+         solveStress, &
+         solveVelocity
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         normalVectorPolygon, &
+         normalVectorTriangle
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_weak", velocityWeakPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+
+       call MPAS_pool_get_array(velocityWeakPool, "normalVectorPolygon", normalVectorPolygon)
+       call MPAS_pool_get_array(velocityWeakPool, "normalVectorTriangle", normalVectorTriangle)
+       call MPAS_pool_get_array(velocityWeakPool, "latCellRotated", latCellRotated)
+       call MPAS_pool_get_array(velocityWeakPool, "latVertexRotated", latVertexRotated)
+       call MPAS_pool_get_array(velocityWeakPool, "strain11", strain11)
+       call MPAS_pool_get_array(velocityWeakPool, "strain22", strain22)
+       call MPAS_pool_get_array(velocityWeakPool, "strain12", strain12)
+       call MPAS_pool_get_array(velocityWeakPool, "stress11", stress11)
+       call MPAS_pool_get_array(velocityWeakPool, "stress22", stress22)
+       call MPAS_pool_get_array(velocityWeakPool, "stress12", stress12)
+
+       call seaice_strain_tensor_weak(&
+            meshPool, &
+            strain11, &
+            strain22, &
+            strain12, &
+            uVelocity, &
+            vVelocity, &
+            normalVectorPolygon, &
+            latCellRotated, &
+            solveStress)
+
+       call seaice_stress_tensor_weak_linear(&
+            meshPool, &
+            stress11, &
+            stress22, &
+            stress12, &
+            strain11, &
+            strain22, &
+            strain12, &
+            solveStress)
+
+       call seaice_stress_divergence_weak(&
+            meshPool, &
+            stressDivergenceU, &
+            stressDivergenceV, &
+            stress11, &
+            stress22, &
+            stress12, &
+            normalVectorTriangle, &
+            latVertexRotated, &
+            solveVelocity)
+
+       block => block % next
+    end do
+
+  end subroutine seaice_internal_stress_weak_linear!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -505,6 +617,80 @@ contains
     endif
 
   end subroutine seaice_stress_tensor_weak!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_stress_tensor_weak_linear
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 2013-2014
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_stress_tensor_weak_linear(&
+       mesh, &
+       stress11, &
+       stress22, &
+       stress12, &
+       strain11, &
+       strain22, &
+       strain12, &
+       solveStress)!{{{
+
+    use seaice_velocity_solver_constitutive_relation, only: &
+         seaice_linear_constitutive_relation
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input:
+
+    real(kind=RKIND), dimension(:), intent(out) :: &
+         stress11, & !< Output:
+         stress22, & !< Output:
+         stress12    !< Output:
+
+    real(kind=RKIND), dimension(:), intent(in) :: &
+         strain11, & !< Input:
+         strain22, & !< Input:
+         strain12    !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         solveStress !< Input:
+
+    integer :: &
+         iCell
+
+    integer, pointer :: &
+         nCells
+
+    ! init variables
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    do iCell = 1, nCells
+
+       if (solveStress(iCell) == 1) then
+
+          call seaice_linear_constitutive_relation(&
+               stress11(iCell), &
+               stress22(iCell), &
+               stress12(iCell), &
+               strain11(iCell), &
+               strain22(iCell), &
+               strain12(iCell))
+
+       else
+
+          stress11(iCell) = 0.0_RKIND
+          stress22(iCell) = 0.0_RKIND
+          stress12(iCell) = 0.0_RKIND
+
+       endif ! solveStress
+
+    enddo ! iCell
+
+  end subroutine seaice_stress_tensor_weak_linear!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
