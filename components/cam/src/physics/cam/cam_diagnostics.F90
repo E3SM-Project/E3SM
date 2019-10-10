@@ -1248,7 +1248,7 @@ end subroutine diag_conv_tend_ini
        call outfld('U90M    ', p_surf, pcols, lchnk )
     end if
     if (hist_fld_active('V90M')) then
-       call vertinterpz(ncol, pcols, pver, state%zm, 90._r8, state%u, p_surf)
+       call vertinterpz(ncol, pcols, pver, state%zm, 90._r8, state%v, p_surf)
        call outfld('V90M    ', p_surf, pcols, lchnk )
     end if
 
