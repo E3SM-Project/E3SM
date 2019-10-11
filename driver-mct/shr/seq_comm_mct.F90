@@ -15,11 +15,18 @@ module seq_comm_mct
 !!! (or else, only accept one entry for these quantities when reading
 !!! the namelist).  ARE OTHER PROTECTIONS/CHECKS NEEDED???
 
-
-  use mct_mod     , only : mct_world_init, mct_world_clean, mct_die
-  use shr_sys_mod , only : shr_sys_abort, shr_sys_flush
-  use shr_mpi_mod , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
-  use shr_file_mod, only : shr_file_getUnit, shr_file_freeUnit
+  use mct_mod        , only : mct_world_init, mct_world_clean, mct_die
+  use shr_sys_mod    , only : shr_sys_abort, shr_sys_flush
+  use shr_mpi_mod    , only : shr_mpi_chkerr, shr_mpi_bcast, shr_mpi_max
+  use shr_file_mod   , only : shr_file_getUnit, shr_file_freeUnit
+  ! gptl timing library is not built for unit tests but it is on
+  ! by default for Makefile (model) builds.
+#ifdef TIMING
+  use shr_taskmap_mod, only : shr_taskmap_write
+  use perf_mod       , only : t_startf, t_stopf
+#endif
+  use esmf           , only : ESMF_LogKind_Flag, ESMF_LOGKIND_NONE
+  use esmf           , only : ESMF_LOGKIND_SINGLE, ESMF_LOGKIND_MULTI
 
   implicit none
 
@@ -59,9 +66,9 @@ module seq_comm_mct
 
   integer, public :: global_mype = -1  !! To be initialized
 
-!!! Note - NUM_COMP_INST_XXX are cpp variables set in buildlib.csm_share
+ !!! Note - NUM_COMP_INST_XXX are cpp variables set in buildlib.csm_share
 
-  integer, parameter :: ncomptypes = 8  ! total number of component types
+  integer, parameter :: ncomptypes = 9  ! total number of component types
   integer, parameter :: ncouplers  = 1  ! number of couplers
   integer, parameter, public :: num_inst_atm = NUM_COMP_INST_ATM
   integer, parameter, public :: num_inst_lnd = NUM_COMP_INST_LND
@@ -70,6 +77,7 @@ module seq_comm_mct
   integer, parameter, public :: num_inst_glc = NUM_COMP_INST_GLC
   integer, parameter, public :: num_inst_wav = NUM_COMP_INST_WAV
   integer, parameter, public :: num_inst_rof = NUM_COMP_INST_ROF
+  integer, parameter, public :: num_inst_iac = NUM_COMP_INST_IAC
   integer, parameter, public :: num_inst_esp = NUM_COMP_INST_ESP
 
   integer, parameter, public :: num_inst_total= num_inst_atm + &
@@ -79,6 +87,7 @@ module seq_comm_mct
        num_inst_glc + &
        num_inst_wav + &
        num_inst_rof + &
+       num_inst_iac + &
        num_inst_esp + 1
 
   integer, public :: num_inst_min, num_inst_max
@@ -96,11 +105,13 @@ module seq_comm_mct
   integer, parameter, public :: num_inst_phys = num_inst_atm + num_inst_lnd + &
        num_inst_ocn + num_inst_ice + &
        num_inst_glc + num_inst_rof + &
-       num_inst_wav + num_inst_esp
+       num_inst_wav + num_inst_esp + &
+       num_inst_iac
   integer, parameter, public :: num_cpl_phys  = num_inst_atm + num_inst_lnd + &
        num_inst_ocn + num_inst_ice + &
        num_inst_glc + num_inst_rof + &
-       num_inst_wav + num_inst_esp
+       num_inst_wav + num_inst_esp + &
+       num_inst_iac
   integer, parameter :: ncomps = (1 + ncouplers + 2*ncomptypes + num_inst_phys + num_cpl_phys)
 
   integer, public :: GLOID
@@ -113,6 +124,7 @@ module seq_comm_mct
   integer, public :: ALLGLCID
   integer, public :: ALLROFID
   integer, public :: ALLWAVID
+  integer, public :: ALLIACID
   integer, public :: ALLESPID
 
   integer, public :: CPLALLATMID
@@ -122,6 +134,7 @@ module seq_comm_mct
   integer, public :: CPLALLGLCID
   integer, public :: CPLALLROFID
   integer, public :: CPLALLWAVID
+  integer, public :: CPLALLIACID
   integer, public :: CPLALLESPID
 
   integer, public :: ATMID(num_inst_atm)
@@ -131,6 +144,7 @@ module seq_comm_mct
   integer, public :: GLCID(num_inst_glc)
   integer, public :: ROFID(num_inst_rof)
   integer, public :: WAVID(num_inst_wav)
+  integer, public :: IACID(num_inst_iac)
   integer, public :: ESPID(num_inst_esp)
 
   integer, public :: CPLATMID(num_inst_atm)
@@ -140,9 +154,14 @@ module seq_comm_mct
   integer, public :: CPLGLCID(num_inst_glc)
   integer, public :: CPLROFID(num_inst_rof)
   integer, public :: CPLWAVID(num_inst_wav)
+  integer, public :: CPLIACID(num_inst_iac)
   integer, public :: CPLESPID(num_inst_esp)
 
   integer, parameter, public :: seq_comm_namelen=16
+
+  ! taskmap output level specifications for components
+  ! (0:no output, 1:compact, 2:verbose)
+  integer, public :: info_taskmap_comp
 
   ! suffix for log and timing files if multi coupler driver
   character(len=seq_comm_namelen), public  :: cpl_inst_tag
@@ -187,7 +206,7 @@ module seq_comm_mct
 
   character(len=32), public :: &
        atm_layout, lnd_layout, ice_layout, glc_layout, rof_layout, &
-       ocn_layout, wav_layout, esp_layout
+       ocn_layout, wav_layout, esp_layout, iac_layout
 
   logical :: seq_comm_mct_initialized = .false.  ! whether this module has been initialized
 
@@ -218,6 +237,10 @@ contains
     integer, pointer :: comps(:) ! array with component ids
     integer, pointer :: comms(:) ! array with mpicoms
     integer :: nu
+    logical :: verbose_taskmap_output
+    integer :: drv_inst
+    character(len=8) :: c_drv_inst      ! driver instance number
+    character(len=8) :: c_driver_numpes ! number of pes in driver
     character(len=seq_comm_namelen) :: valid_comps(ncomps)
 
     integer :: &
@@ -229,7 +252,9 @@ contains
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
+         iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, &
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads, &
+         info_taskmap_model
 
     namelist /cime_pes/  &
          atm_ntasks, atm_rootpe, atm_pestride, atm_nthreads, atm_layout, &
@@ -240,7 +265,9 @@ contains
          rof_ntasks, rof_rootpe, rof_pestride, rof_nthreads, rof_layout, &
          ocn_ntasks, ocn_rootpe, ocn_pestride, ocn_nthreads, ocn_layout, &
          esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout, &
-         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads
+         iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, iac_layout, &
+         cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads,             &
+         info_taskmap_model, info_taskmap_comp
     !----------------------------------------------------------
 
     ! make sure this is first pass and set comms unset
@@ -307,7 +334,10 @@ contains
        call comp_pelayout_init(numpes, wav_ntasks, wav_rootpe, wav_pestride, wav_nthreads, wav_layout)
        call comp_pelayout_init(numpes, glc_ntasks, glc_rootpe, glc_pestride, glc_nthreads, glc_layout)
        call comp_pelayout_init(numpes, esp_ntasks, esp_rootpe, esp_pestride, esp_nthreads, esp_layout)
+       call comp_pelayout_init(numpes, iac_ntasks, iac_rootpe, iac_pestride, iac_nthreads, iac_layout)
        call comp_pelayout_init(numpes, cpl_ntasks, cpl_rootpe, cpl_pestride, cpl_nthreads)
+       info_taskmap_model = 0
+       info_taskmap_comp  = 0
 
        ! Read namelist if it exists
 
@@ -332,6 +362,7 @@ contains
     call shr_mpi_bcast(wav_nthreads,DRIVER_COMM,'wav_nthreads')
     call shr_mpi_bcast(rof_nthreads,DRIVER_COMM,'rof_nthreads')
     call shr_mpi_bcast(esp_nthreads,DRIVER_COMM,'esp_nthreads')
+    call shr_mpi_bcast(iac_nthreads,DRIVER_COMM,'iac_nthreads')
     call shr_mpi_bcast(cpl_nthreads,DRIVER_COMM,'cpl_nthreads')
 
     call shr_mpi_bcast(atm_layout,DRIVER_COMM,'atm_layout')
@@ -341,8 +372,55 @@ contains
     call shr_mpi_bcast(glc_layout,DRIVER_COMM,'glc_layout')
     call shr_mpi_bcast(wav_layout,DRIVER_COMM,'wav_layout')
     call shr_mpi_bcast(rof_layout,DRIVER_COMM,'rof_layout')
+    call shr_mpi_bcast(iac_layout,DRIVER_COMM,'iac_layout')
     call shr_mpi_bcast(esp_layout,DRIVER_COMM,'esp_layout')
 
+    call shr_mpi_bcast(info_taskmap_model,DRIVER_COMM,'info_taskmap_model')
+    call shr_mpi_bcast(info_taskmap_comp, DRIVER_COMM,'info_taskmap_comp' )
+
+#ifdef TIMING
+    if (info_taskmap_model > 0) then
+       ! output task-to-node mapping
+
+       if (info_taskmap_model == 1) then
+         verbose_taskmap_output = .false.
+       else
+         verbose_taskmap_output = .true.
+       endif
+
+       if (present(drv_comm_id)) then
+          drv_inst = drv_comm_id
+          write(c_drv_inst,'(i8)') drv_inst
+       else
+          drv_inst = 0
+       endif
+
+       if (mype == 0) then
+          write(c_driver_numpes,'(i8)') numpes
+          if (drv_inst == 0) then
+             write(logunit,'(2A)') trim(adjustl(c_driver_numpes)), &
+                                   ' pes participating in computation of coupled model'
+          else
+             write(logunit,'(3A)') trim(adjustl(c_driver_numpes)), &
+                                   ' pes participating in computation of DRIVER instance #', &
+                                   trim(adjustl(c_drv_inst))
+          endif
+          call shr_sys_flush(logunit)
+       endif
+
+       call t_startf("shr_taskmap_write")
+       if (drv_inst == 0) then
+          call shr_taskmap_write(logunit, DRIVER_COMM, &
+                                 'GLOBAL', &
+                                 verbose=verbose_taskmap_output)
+       else
+          call shr_taskmap_write(logunit, DRIVER_COMM, &
+                                 'DRIVER #'//trim(adjustl(c_drv_inst)), &
+                                 verbose=verbose_taskmap_output)
+       endif
+       call t_stopf("shr_taskmap_write")
+    endif
+#endif
 
     !--- compute some other num_inst values
 
@@ -356,10 +434,10 @@ contains
     error_state = .false.
     num_inst_min = min(num_inst_atm, num_inst_lnd, num_inst_ocn,&
          num_inst_ice, num_inst_glc, num_inst_wav, num_inst_rof,&
-         num_inst_esp)
+         num_inst_esp, num_inst_iac)
     num_inst_max = max(num_inst_atm, num_inst_lnd, num_inst_ocn,&
          num_inst_ice, num_inst_glc, num_inst_wav, num_inst_rof,&
-         num_inst_esp)
+         num_inst_esp, num_inst_iac)
 
     if (num_inst_min /= num_inst_max .and. num_inst_min /= 1) error_state = .true.
     if (num_inst_atm /= num_inst_min .and. num_inst_atm /= num_inst_max) error_state = .true.
@@ -369,6 +447,7 @@ contains
     if (num_inst_glc /= num_inst_min .and. num_inst_glc /= num_inst_max) error_state = .true.
     if (num_inst_wav /= num_inst_min .and. num_inst_wav /= num_inst_max) error_state = .true.
     if (num_inst_rof /= num_inst_min .and. num_inst_rof /= num_inst_max) error_state = .true.
+    if (num_inst_iac /= num_inst_min .and. num_inst_iac /= num_inst_max) error_state = .true.
     if (num_inst_esp /= num_inst_min .and. num_inst_esp /= num_inst_max) error_state = .true.
 
     if (error_state) then
@@ -401,6 +480,7 @@ contains
        pelist(2,1) = cpl_rootpe + (cpl_ntasks -1) * cpl_pestride
        pelist(3,1) = cpl_pestride
     end if
+
     call mpi_bcast(pelist, size(pelist), MPI_INTEGER, 0, DRIVER_COMM, ierr)
     call seq_comm_setcomm(CPLID,pelist,nthreads=cpl_nthreads,iname='CPL')
 
@@ -420,6 +500,8 @@ contains
          CPLID, WAVID, CPLWAVID, ALLWAVID, CPLALLWAVID, 'WAV', count, drv_comm_id)
     call comp_comm_init(driver_comm, esp_rootpe, esp_nthreads, esp_layout, esp_ntasks, esp_pestride, num_inst_esp, &
          CPLID, ESPID, CPLESPID, ALLESPID, CPLALLESPID, 'ESP', count, drv_comm_id)
+    call comp_comm_init(driver_comm, iac_rootpe, iac_nthreads, iac_layout, iac_ntasks, iac_pestride, num_inst_iac, &
+         CPLID, IACID, CPLIACID, ALLIACID, CPLALLIACID, 'IAC', count, drv_comm_id)
 
     if (count /= ncomps) then
        write(logunit,*) trim(subname),' ERROR in ID count ',count,ncomps
