@@ -1,0 +1,29 @@
+<driver_script name="run_test.py">
+	<case name="mpas_mesh">
+		<step executable="./run.py" quiet="true" pre_message=" * Creating 2D MPAS mesh with planar_hex, MpasCellCuller, and MpasMeshConverter ..." post_message="     complete!  Created file:  mpas_mesh/mpas_mesh.nc"/>
+	</case>
+	<case name="initial_state">
+		<step executable="./run.py" quiet="true" pre_message=" * Initializing ocean state with bathymetry and tracers..." post_message="     complete!  Created file:  initial_state/initial_state.nc"/>
+	</case>
+	<case name="rpe_test_1_nu_p01">
+		<step executable="./run.py" quiet="true" pre_message=" * Running overflow RPE test 1, nu=0.01 ..." post_message="     complete!"/>
+	</case>
+	<case name="rpe_test_2_nu_p1">
+		<step executable="./run.py" quiet="true" pre_message=" * Running overflow RPE test 2, nu=0.1 ..." post_message="     complete!"/>
+	</case>
+	<case name="rpe_test_3_nu_1">
+		<step executable="./run.py" quiet="true" pre_message=" * Running overflow RPE test 3, nu=1.0 ..." post_message="     complete!"/>
+	</case>
+	<case name="rpe_test_4_nu_10">
+		<step executable="./run.py" quiet="true" pre_message=" * Running overflow RPE test 4, nu=10 ..." post_message="     complete!"/>
+	</case>
+	<case name="rpe_test_5_nu_100">
+		<step executable="./run.py" quiet="true" pre_message=" * Running overflow RPE test 5, nu=100 ..." post_message="     complete!"/>
+	</case>
+	<case name="rpe_test_6_nu_1000">
+		<step executable="./run.py" quiet="true" pre_message=" * Running overflow RPE test 6, nu=1000 ..." post_message="     complete!"/>
+	</case>
+<!--	<case name="analysis">
+		<step executable="./run.py" quiet="true" pre_message=" * Visualization and analysis of RPE tests ..." post_message="     complete!"/> 
+	</case> -->
+</driver_script>
