@@ -1838,7 +1838,7 @@ subroutine shoc_length(&
   conv_vel(:,1)=0._r8
   do k=2,nlev
     do i=1,shcol
-      conv_vel(i,k) = conv_vel(i,k-1)+2.5_r8*dz_zt(i,k)*(ggr/basetemp)*wthv_sec(i,k)
+      conv_vel(i,k) = conv_vel(i,k-1)+2.5_r8*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
  
