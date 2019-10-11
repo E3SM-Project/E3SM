@@ -1030,7 +1030,7 @@ contains
     !
 
     k = nlev-1
-    do while ( (any(found(:) == .false.) == .true.) .and. k>=1 )
+    do while ( (any(found(:) .eqv. .false.) .eqv. .true.) .and. k>=1 )
        do i=1,ncol
           if ((.not. found(i)) .and. zmid(i,k)>zout .and. zout>=zmid(i,k+1)) then
              found(i) = .true.
