@@ -280,15 +280,6 @@ static void run_phys()
 
 static void run_bfb()
 {
-//   Co_max = 9.196837456784E-02 - 9.827330928362E+01
-//     dt_left =1.818181818182E+01 - 1.800000000000E+03
-// prt_accum = 4.959754212038E-05 - 6.211745579368E-07
-
-  // GenSedData(Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
-  //            Real prt_accum_, Int num_arrays_,
-  //            std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
-  //            std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
-
   GenSedData gsds_fortran[] = {
     //       kts, kte, kdir, k_qxtop, k_qxbot, kbot,     Co_max,   dt_left, prt_accum, num_arrays
     GenSedData(1,  72,    -1,     36,      72,   72,  9.196E-02, 1.818E+01, 4.959E-05, 2,
@@ -329,7 +320,7 @@ static void run_bfb()
         REQUIRE(gsds_fortran[i].fluxes[n][k] == gsds_cxx[i].fluxes[n][k]);
         REQUIRE(gsds_fortran[i].qnx[n][k]    == gsds_cxx[i].qnx[n][k]);
       }
-      REQUIRE(gsds_fortran[i].k_qxbot   == gsds_cxx[i].k_qxbot);
+      REQUIRE(gsds_fortran[i].k_qxbot-1   == gsds_cxx[i].k_qxbot);
       REQUIRE(gsds_fortran[i].dt_left   == gsds_cxx[i].dt_left);
       REQUIRE(gsds_fortran[i].prt_accum == gsds_cxx[i].prt_accum);
     }
@@ -357,8 +348,8 @@ TEST_CASE("p3_gen_sed", "[p3_functions]")
 {
   using TG = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGenSed;
 
-  //TG::run_phys();
-  //TG::run_bfb();
+  TG::run_phys();
+  TG::run_bfb();
 }
 
 } // namespace

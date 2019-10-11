@@ -480,7 +480,7 @@ void generalized_sedimentation_f_impl(
   kte -= 1;
   kbot -= 1;
   k_qxtop -= 1;
-  k_qxbot -= 1;
+  *k_qxbot -= 1;
 
   const Int nk = (kte - kts) + 1;
 
