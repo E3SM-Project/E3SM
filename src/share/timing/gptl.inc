@@ -23,7 +23,9 @@
       integer GPTLdopr_multparent
       integer GPTLdopr_collision
       integer GPTLprint_method
+      integer GPTLprint_mode
       integer GPTLtablesize
+      integer GPTLmaxthreads
 
       integer GPTL_IPC
       integer GPTL_CI
@@ -37,6 +39,7 @@
       integer GPTL_L3MRT
 
       integer GPTLprofile_ovhd
+      integer GPTLdopr_quotes
 
       integer GPTLnanotime
       integer GPTLmpiwtime
@@ -49,6 +52,9 @@
       integer GPTLlast_parent
       integer GPTLmost_frequent
       integer GPTLfull_tree
+
+      integer GPTLprint_write
+      integer GPTLprint_append
 
       parameter (GPTLsync_mpi       = 0)
       parameter (GPTLwall           = 1)
@@ -66,7 +72,9 @@
       parameter (GPTLdopr_multparent= 14)
       parameter (GPTLdopr_collision = 15)
       parameter (GPTLprint_method   = 16)
-      parameter (GPTLtablesize      = 50)
+      parameter (GPTLprint_mode     = 50)
+      parameter (GPTLtablesize      = 51)
+      parameter (GPTLmaxthreads     = 52)
 
       parameter (GPTL_IPC           = 17)
       parameter (GPTL_CI            = 18)
@@ -80,6 +88,7 @@
       parameter (GPTL_L3MRT         = 26)
 
       parameter (GPTLprofile_ovhd   = 27)
+      parameter (GPTLdopr_quotes    = 28)
 
       parameter (GPTLgettimeofday   = 1)
       parameter (GPTLnanotime       = 2)
@@ -93,10 +102,16 @@
       parameter (GPTLmost_frequent  = 3)
       parameter (GPTLfull_tree      = 4)
 
+      parameter (GPTLprint_write    = 1)
+      parameter (GPTLprint_append   = 2)
+
 ! Externals
 
       integer gptlsetoption
       integer gptlinitialize
+      integer gptlprefix_set
+      integer gptlprefix_setf
+      integer gptlprefix_unset
       integer gptlstart
       integer gptlstart_handle
       integer gptlstartf
@@ -108,10 +123,8 @@
       integer gptlstartstop_vals
       integer gptlstartstop_valsf
       integer gptlstamp
-      integer gptlpr_set_append
-      integer gptlpr_query_append
-      integer gptlpr_set_write
-      integer gptlpr_query_write
+      integer gptlprint_mode_query
+      integer gptlprint_mode_set
       integer gptlpr
       integer gptlpr_file
       integer gptlpr_summary
@@ -136,6 +149,9 @@
 
       external gptlsetoption
       external gptlinitialize
+      external gptlprefix_set
+      external gptlprefix_setf
+      external gptlprefix_unset
       external gptlstart
       external gptlstart_handle
       external gptlstartf
@@ -147,10 +163,8 @@
       external gptlstartstop_vals
       external gptlstartstop_valsf
       external gptlstamp
-      external gptlpr_set_append
-      external gptlpr_query_append
-      external gptlpr_set_write
-      external gptlpr_query_write
+      external gptlprint_mode_query
+      external gptlprint_mode_set
       external gptlpr
       external gptlpr_file
       external gptlpr_summary

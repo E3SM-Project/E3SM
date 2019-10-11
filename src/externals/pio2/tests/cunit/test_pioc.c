@@ -1,4 +1,4 @@
-/*
+ /*
  * Tests for PIO Functions.
  *
  * @author Ed Hartnett
@@ -539,11 +539,10 @@ int test_iotypes(int my_rank)
  */
 int check_strerror_netcdf(int my_rank)
 {
-#define NUM_NETCDF_TRIES 5
-    int errcode[NUM_NETCDF_TRIES] = {PIO_EBADID, NC4_LAST_ERROR - 1, 0, 1, -600};
+#define NUM_NETCDF_TRIES 3
+    int errcode[NUM_NETCDF_TRIES] = {PIO_EBADID, 0, 1};
     const char *expected[NUM_NETCDF_TRIES] = {"NetCDF: Not a valid ID",
-                                              "Unknown Error: Unrecognized error code", "No error",
-                                              nc_strerror(1), "Unknown Error: Unrecognized error code"};
+                                              "No error", nc_strerror(1)};
     int ret;
 
     if ((ret = check_error_strings(my_rank, NUM_NETCDF_TRIES, errcode, expected)))
@@ -551,9 +550,7 @@ int check_strerror_netcdf(int my_rank)
 
     /* When called with a code of 0, these functions should do nothing
      * and return 0. */
-    if (check_mpi(NULL, 0, __FILE__, __LINE__))
-        ERR(ERR_WRONG);
-    if (check_mpi2(NULL, NULL, 0, __FILE__, __LINE__))
+    if (check_mpi(NULL, NULL, 0, __FILE__, __LINE__))
         ERR(ERR_WRONG);
     if (pio_err(NULL, NULL, 0, __FILE__, __LINE__))
         ERR(ERR_WRONG);
@@ -561,15 +558,6 @@ int check_strerror_netcdf(int my_rank)
         ERR(ERR_WRONG);
     if (check_netcdf2(NULL, NULL, 0, __FILE__, __LINE__))
         ERR(ERR_WRONG);
-
-    /* When called with other error messages, these functions should
-     * return PIO_EIO. */
-    /* if (check_mpi(NULL, MPI_ERR_OTHER, __FILE__, __LINE__) != PIO_EIO) */
-    /*     ERR(ERR_WRONG); */
-    /* This returns the correct result, but prints a confusing error
-     * message during the test run, so I'll leave it commented out. */
-    /* if (check_mpi(NULL, MPI_ERR_UNKNOWN, __FILE__, __LINE__) != PIO_EIO) */
-    /*     ERR(ERR_WRONG); */
 
     return PIO_NOERR;
 }
@@ -627,14 +615,13 @@ int check_strerror_pnetcdf(int my_rank)
  */
 int check_strerror_pio(int my_rank)
 {
-#define NUM_PIO_TRIES 6
+#define NUM_PIO_TRIES 5
     int errcode[NUM_PIO_TRIES] = {PIO_EBADID,
-                                  NC_ENOTNC3, NC4_LAST_ERROR - 1, 0, 1,
+                                  NC_ENOTNC3, 0, 1,
                                   PIO_EBADIOTYPE};
     const char *expected[NUM_PIO_TRIES] = {"NetCDF: Not a valid ID",
                                            "NetCDF: Attempting netcdf-3 operation on netcdf-4 file",
-                                           "Unknown Error: Unrecognized error code", "No error",
-                                           nc_strerror(1), "Bad IO type"};
+                                           "No error", nc_strerror(1), "Bad IO type"};
     int ret;
 
     if ((ret = check_error_strings(my_rank, NUM_PIO_TRIES, errcode, expected)))
@@ -1905,8 +1892,8 @@ int test_decomp_internal(int my_test_size, int my_rank, int iosysid, int dim_len
                          MPI_Comm test_comm, int async)
 {
     int ioid;
-    char filename[NC_MAX_NAME + 1];    /* Test decomp filename. */
-    char nc_filename[NC_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
+    char filename[PIO_MAX_NAME + 1];    /* Test decomp filename. */
+    char nc_filename[PIO_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
     iosystem_desc_t *ios; /* IO system info. */
     int ret;
 
@@ -2094,7 +2081,7 @@ int test_decomp_public(int my_test_size, int my_rank, int iosysid, int dim_len,
                        MPI_Comm test_comm, int async)
 {
     int ioid;
-    char nc_filename[NC_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
+    char nc_filename[PIO_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
     int ret;
 
     /* This will be our file name for writing out decompositions. */
@@ -2239,7 +2226,7 @@ int test_decomp_public_2(int my_test_size, int my_rank, int iosysid, int dim_len
                          MPI_Comm test_comm, int async)
 {
     int ioid;
-    char nc_filename[NC_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
+    char nc_filename[PIO_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
     int ret;
 
     /* This will be our file name for writing out decompositions. */
@@ -2265,7 +2252,7 @@ int test_decomp_2(int my_test_size, int my_rank, int iosysid, int dim_len,
                   MPI_Comm test_comm, int async)
 {
     int ioid;
-    char nc_filename[NC_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
+    char nc_filename[PIO_MAX_NAME + 1]; /* Test decomp filename (netcdf version). */
     int ret;
 
     /* This will be our file name for writing out decompositions. */
@@ -2319,8 +2306,8 @@ int test_all(int iosysid, int num_flavors, int *flavor, int my_rank, MPI_Comm te
 {
     int ioid;
     int my_test_size;
-    char filename[NC_MAX_NAME + 1];
-    char nc_filename[NC_MAX_NAME + 1];
+    char filename[PIO_MAX_NAME + 1];
+    char nc_filename[PIO_MAX_NAME + 1];
     int ret; /* Return code. */
 
     if ((ret = MPI_Comm_size(test_comm, &my_test_size)))

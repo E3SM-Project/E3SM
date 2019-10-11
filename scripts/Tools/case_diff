@@ -131,11 +131,12 @@ def _main_func(description):
                 repls[os.path.normpath(val2)] = os.path.normpath(val1)
             else:
                 repls[val2] = val1
-        except SystemExit:
-            print("Warning, failed to normalize on " + xml_normalize_field)
+        except Exception:
+            logging.warning("Warning, failed to normalize on " + xml_normalize_field)
+            repls = {}
 
     num_differing_files = recursive_diff(case1, case2, repls, show_binary, skip_list)
-    print (num_differing_files, "files are different")
+    logging.info(num_differing_files, "files are different")
     sys.exit(0 if num_differing_files == 0 else 1)
 
 ###############################################################################

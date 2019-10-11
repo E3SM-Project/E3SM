@@ -3,7 +3,7 @@ Classes used to build the CIME Macros file.
 
 The main "public" class here is Build. It is initialized with machine-specific
 information, and its write_macros method is the driver for translating the
-config_build.xml file into a Makefile or CMake-format Macros file.
+config_compilers.xml file into a Makefile or CMake-format Macros file.
 
 For developers, here's the role of the other classes in the process:
 
@@ -30,7 +30,7 @@ In more detail:
 - For each <compiler> element, Build.write_macros creates a CompilerBlock
   instance. This object is responsible for translating the XML in its block, in
   order to populate the PossibleValues instances. This includes handling the
-  <var>/<env>/<shell> tags, and keeping track of dependencies induced by one
+  $VAR, $ENV{...} and $SHELL{...} and keeping track of dependencies induced by one
   variable referencing another's value.
 
 - The PossibleValues object holds the information about how one variable can be
@@ -101,8 +101,8 @@ class CompilerBlock(object):
     def _handle_references(self, elem, set_up, tear_down, depends):
         """Expand markup used internally.
 
-        This function is responsible for expanding <env>, <var>, and
-        <shell> tags into Makefile/CMake syntax.
+        This function is responsible for expanding $ENV{...}, $VAR, and
+        $SHELL{...} syntax into Makefile/CMake syntax.
 
         Arguments:
         elem - An ElementTree.Element containing text to expand.
@@ -118,14 +118,11 @@ class CompilerBlock(object):
         output = self._db.text(elem)
         if output is None:
             output = ""
+
         logger.debug("Initial output={}".format(output))
         reference_re = re.compile(r'\${?(\w+)}?')
         env_ref_re   = re.compile(r'\$ENV\{(\w+)\}')
-        shell_ref_re = re.compile(r'\$SHELL\{([^}]+)\}')
-        nesting_ref_re = re.compile(r'\$SHELL\{[^}]+\$\w*\{')
-
-        expect(nesting_ref_re.search(output) is None,
-               "Nesting not allowed in this syntax, use xml syntax <shell> <env> if nesting is required")
+        shell_prefix = "$SHELL{"
 
         for m in reference_re.finditer(output):
             var_name = m.groups()[0]
@@ -143,12 +140,23 @@ class CompilerBlock(object):
 
         logger.debug("postenv pass output={}".format(output))
 
-        for s in shell_ref_re.finditer(output):
-            command = s.groups()[0]
+        while shell_prefix in output:
+            sidx = output.index(shell_prefix)
+            brace_count = 1
+            idx = 0
+            for idx in range(sidx + len(shell_prefix), len(output)):
+                if output[idx] == "{":
+                    brace_count += 1
+                elif output[idx] == "}":
+                    brace_count -= 1
+                    if brace_count == 0:
+                        break
+
+            command = output[sidx + len(shell_prefix) : idx]
             logger.debug("execute {} in shell, command {}".format(output, command))
             new_set_up, inline, new_tear_down = \
                 writer.shell_command_strings(command)
-            output = output.replace(s.group(), inline)
+            output = output.replace(output[sidx:idx+1], inline, 1)
             if new_set_up is not None:
                 set_up.append(new_set_up)
             if new_tear_down is not None:
@@ -156,38 +164,6 @@ class CompilerBlock(object):
             logger.debug("set_up {} inline {} tear_down {}".format(new_set_up,inline,new_tear_down))
 
         logger.debug("First pass output={}".format(output))
-
-        for child in self._db.get_children(root=elem):
-            if self._db.name(child) == "env":
-                # <env> tags just need to be expanded by the writer.
-                output += writer.environment_variable_string(self._db.text(child))
-            elif self._db.name(child) == "shell":
-                # <shell> tags can contain other tags, so handle those.
-                command = self._handle_references(child, set_up, tear_down,
-                                                  depends)
-                new_set_up, inline, new_tear_down = \
-                                    writer.shell_command_strings(command)
-                output += inline
-                if new_set_up is not None:
-                    set_up.append(new_set_up)
-                if new_tear_down is not None:
-                    tear_down.append(new_tear_down)
-                logger.debug("set_up {} inline {} tear_down {}".format(new_set_up,inline,new_tear_down))
-            elif self._db.name(child) == "var":
-                # <var> commands also need expansion by the writer, and can
-                # add dependencies.
-                var_name = self._db.text(child)
-                output += writer.variable_string(var_name)
-                depends.add(var_name)
-            else:
-                expect(False,
-                       "Unexpected tag "+self._db.name(child)+" encountered in "
-                       "config_build.xml. Check that the file is valid "
-                       "according to the schema.")
-            if child.xml_element.tail is not None:
-                output += child.xml_element.tail
-
-        logger.debug("Second pass output={}".format(output))
 
         return output
 
@@ -212,8 +188,10 @@ class CompilerBlock(object):
         value_text = self._handle_references(elem, set_up,
                                              tear_down, depends)
         # Create the setting object.
-        setting = ValueSetting(value_text, self._db.name(elem) == "append",
+        append = self._db.name(elem) == "append"
+        setting = ValueSetting(value_text, append,
                                conditions, set_up, tear_down)
+
         return (setting, depends)
 
     def _add_elem_to_lists(self, name, elem, value_lists):
@@ -230,8 +208,7 @@ class CompilerBlock(object):
             value_lists[name] = PossibleValues(name, setting,
                                                self._specificity, depends)
         else:
-            value_lists[name].add_setting(setting, self._specificity,
-                                          depends)
+            value_lists[name].add_setting(setting, self._specificity,depends)
 
     def add_settings_to_lists(self, flag_vars, value_lists):
         """Add all data in the <compiler> element to lists of settings.
@@ -251,7 +228,6 @@ class CompilerBlock(object):
 
     def matches_machine(self):
         """Check whether this block matches a machine/os.
-
         This also sets the specificity of the block, so this must be called
         before add_settings_to_lists if machine-specific output is needed.
         """

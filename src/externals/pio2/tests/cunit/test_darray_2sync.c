@@ -189,6 +189,10 @@ int darray_fill_test(int iosysid, int my_rank, int num_iotypes, int *iotype,
             if ((ret = PIOc_def_var(ncid, VAR_NAME, test_type[t], NDIM1, &dimid, &varid)))
                 ERR(ret);
 
+            /* Turn on fill mode for this var. */
+            if ((ret = PIOc_def_var_fill(ncid, varid, 0, default_fillvalue)))
+                ERR(ret);
+
             /* End define mode. */
             if ((ret = PIOc_enddef(ncid)))
                 ERR(ret);
@@ -508,7 +512,7 @@ int run_async_tests(MPI_Comm test_comm, int my_rank, int num_iotypes, int *iotyp
             ERR(ret);
 
         /* Finalize PIO system. */
-        if ((ret = PIOc_finalize(iosysid)))
+        if ((ret = PIOc_free_iosystem(iosysid)))
             return ret;
 
         /* Free the computation conomponent communicator. */
@@ -544,7 +548,7 @@ int run_noasync_tests(MPI_Comm test_comm, int my_rank, int num_iotypes, int *iot
         ERR(ret);
 
     /* Finalize PIO system. */
-    if ((ret = PIOc_finalize(iosysid)))
+    if ((ret = PIOc_free_iosystem(iosysid)))
         return ret;
 
     return PIO_NOERR;

@@ -38,7 +38,11 @@ module shr_reprosum_mod
    use shr_log_mod,   only: s_loglev  => shr_log_Level
    use shr_log_mod,   only: s_logunit => shr_log_Unit
    use shr_sys_mod,   only: shr_sys_abort
-   use shr_infnan_mod,only: shr_infnan_isnan, shr_infnan_isinf
+   use shr_infnan_mod,only: shr_infnan_inf_type, assignment(=), &
+                            shr_infnan_posinf, shr_infnan_neginf, &
+                            shr_infnan_nan, &
+                            shr_infnan_isnan, shr_infnan_isinf, &
+                            shr_infnan_isposinf, shr_infnan_isneginf
    use perf_mod
 
 !-----------------------------------------------------------------------
@@ -86,12 +90,15 @@ module shr_reprosum_mod
    !----------------------------------------------------------------------------
    logical            :: repro_sum_use_ddpdd = .false.
 
+   logical            :: repro_sum_allow_infnan = .false.
+
    CONTAINS
 
 !
 !========================================================================
 !
    subroutine shr_reprosum_setopts(repro_sum_use_ddpdd_in,    &
+                                   repro_sum_allow_infnan_in, &
                                    repro_sum_rel_diff_max_in, &
                                    repro_sum_recompute_in,    &
                                    repro_sum_master,          &
@@ -104,6 +111,8 @@ module shr_reprosum_mod
 !------------------------------Arguments--------------------------------
       ! Use DDPDD algorithm instead of fixed precision algorithm
       logical, intent(in), optional :: repro_sum_use_ddpdd_in
+      ! Allow INF or NaN in summands
+      logical, intent(in), optional :: repro_sum_allow_infnan_in
       ! maximum permissible difference between reproducible and
       ! nonreproducible sums
       real(r8), intent(in), optional :: repro_sum_rel_diff_max_in
@@ -142,6 +151,9 @@ module shr_reprosum_mod
       if ( present(repro_sum_use_ddpdd_in) ) then
          repro_sum_use_ddpdd = repro_sum_use_ddpdd_in
       endif
+      if ( present(repro_sum_allow_infnan_in) ) then
+         repro_sum_allow_infnan = repro_sum_allow_infnan_in
+      endif
       if ( present(repro_sum_rel_diff_max_in) ) then
          shr_reprosum_reldiffmax = repro_sum_rel_diff_max_in
       endif
@@ -157,6 +169,14 @@ module shr_reprosum_mod
             write(logunit,*) 'SHR_REPROSUM_SETOPTS: ',&
               'Using fixed-point-based (scalable) reproducible ', &
               'distributed sum algorithm'
+         endif
+
+         if ( repro_sum_allow_infnan ) then
+            write(logunit,*) 'SHR_REPROSUM_SETOPTS: ',&
+              'Will calculate sum when INF or NaN are included in summands'
+         else
+            write(logunit,*) 'SHR_REPROSUM_SETOPTS: ',&
+              'Will abort if INF or NaN are included in summands'
          endif
 
          if (shr_reprosum_reldiffmax >= 0._r8) then
@@ -185,7 +205,7 @@ module shr_reprosum_mod
 !
 
    subroutine shr_reprosum_calc (arr, arr_gsum, nsummands, dsummands,     &
-                                 nflds, ddpdd_sum,                        &
+                                 nflds, allow_infnan, ddpdd_sum,          &
                                  arr_gbl_max, arr_gbl_max_out,            &
                                  arr_max_levels, arr_max_levels_out,      &
                                  gbl_max_nsummands, gbl_max_nsummands_out,&
@@ -280,6 +300,10 @@ module shr_reprosum_mod
                                          ! use ddpdd algorithm instead
                                          ! of fixed precision algorithm
 
+      logical,  intent(in),    optional :: allow_infnan
+         ! if .true., allow INF or NaN input values.
+         ! if .false. (the default), then abort.
+
       real(r8), intent(in),    optional :: arr_gbl_max(nflds)
                                          ! upper bound on max(abs(arr))
 
@@ -312,13 +336,14 @@ module shr_reprosum_mod
          ! flag enabling/disabling testing that gmax and  max_levels are
          ! accurate/sufficient. Default is enabled.
 
-      integer,  intent(inout), optional :: repro_sum_stats(5)
+      integer,  intent(inout), optional :: repro_sum_stats(6)
                                    ! increment running totals for
                                    !  (1) one-reduction repro_sum
                                    !  (2) two-reduction repro_sum
                                    !  (3) both types in one call
                                    !  (4) nonrepro_sum
                                    !  (5) global max nsummands reduction
+                                   !  (6) global lor 3*nflds reduction
 
       real(r8), intent(out),   optional :: rel_diff(2,nflds)
                                          ! relative and absolute
@@ -331,6 +356,8 @@ module shr_reprosum_mod
 !
 ! Local workspace
 !
+      logical :: abort_inf_nan           ! flag indicating whether to
+                                         !  abort if INF or NaN found in input
       logical :: use_ddpdd_sum           ! flag indicating whether to
                                          !  use shr_reprosum_ddpdd or not
       logical :: recompute               ! flag indicating need to
@@ -341,8 +368,23 @@ module shr_reprosum_mod
                                          !  are accurate/sufficient
       logical :: nan_check, inf_check    ! flag on whether there are
                                          !  NaNs and INFs in input array
+      logical :: inf_nan_lchecks(3,nflds)! flags on whether there are
+                                         !  NaNs, positive INFs, or negative INFs
+                                         !  for each input field locally
+      logical :: inf_nan_gchecks(3,nflds)! flags on whether there are
+                                         !  NaNs, positive INFs, or negative INFs
+                                         !  for each input field
+      logical :: arr_gsum_infnan(nflds)  ! flag on whether field sum is a
+                                         !  NaN or INF
 
-      integer :: num_nans, num_infs      ! count of NaNs and INFs in
+      integer :: gbl_lor_red             ! global lor reduction? (0/1)
+      integer :: gbl_max_red             ! global max reduction? (0/1)
+      integer :: repro_sum_fast          ! 1 reduction repro_sum? (0/1)
+      integer :: repro_sum_slow          ! 2 reduction repro_sum? (0/1)
+      integer :: repro_sum_both          ! both fast and slow? (0/1)
+      integer :: nonrepro_sum            ! nonrepro_sum? (0/1)
+
+      integer :: nan_count, inf_count    ! local count of NaNs and INFs in
                                          !  input array
       integer :: omp_nthreads            ! number of OpenMP threads
       integer :: mpi_comm                ! MPI subcommunicator
@@ -375,11 +417,6 @@ module shr_reprosum_mod
       integer :: max_levels(nflds)       ! maximum number of levels of
                                          !  integer expansion to use
       integer :: max_level               ! maximum value in max_levels
-      integer :: gbl_max_red             ! global max local sum reduction? (0/1)
-      integer :: repro_sum_fast          ! 1 reduction repro_sum? (0/1)
-      integer :: repro_sum_slow          ! 2 reduction repro_sum? (0/1)
-      integer :: repro_sum_both          ! both fast and slow? (0/1)
-      integer :: nonrepro_sum            ! nonrepro_sum? (0/1)
 
       real(r8) :: xmax_nsummands         ! dble of max_nsummands
       real(r8) :: arr_lsum(nflds)        ! local sums
@@ -396,50 +433,8 @@ module shr_reprosum_mod
 !
 !-----------------------------------------------------------------------
 !
-! check whether input contains NaNs or INFs, and abort if so
-
-      call t_startf('shr_reprosum_NaN_INF_Chk')
-      nan_check = .false.
-      inf_check = .false.
-      num_nans = 0
-      num_infs = 0
-
-      nan_check = any(shr_infnan_isnan(arr))
-      inf_check = any(shr_infnan_isinf(arr))
-      if (nan_check .or. inf_check) then
-         do ifld=1,nflds
-            do isum=1,nsummands
-               if (shr_infnan_isnan(arr(isum,ifld))) then
-                  num_nans = num_nans + 1
-               endif
-               if (shr_infnan_isinf(arr(isum,ifld))) then
-                  num_infs = num_infs + 1
-               endif
-            end do
-         end do
-      endif
-      call t_stopf('shr_reprosum_NaN_INF_Chk')
-
-      if ((num_nans > 0) .or. (num_infs > 0)) then
-         call mpi_comm_rank(MPI_COMM_WORLD, mypid, ierr)
-         write(s_logunit,37) real(num_nans,r8), real(num_infs,r8), mypid
-37 format("SHR_REPROSUM_CALC: Input contains ",e12.5, &
-          " NaNs and ", e12.5, " INFs on process ", i7)
-         call shr_sys_abort("shr_reprosum_calc ERROR: NaNs or INFs in input")
-      endif
-
-! check whether should use shr_reprosum_ddpdd algorithm
-      use_ddpdd_sum = repro_sum_use_ddpdd
-      if ( present(ddpdd_sum) ) then
-         use_ddpdd_sum = ddpdd_sum
-      endif
-
-! check whether intrinsic-based algorithm will work on this system
-! (requires floating point and integer bases to be the same)
-! If not, always use ddpdd.
-      use_ddpdd_sum = use_ddpdd_sum .or. (radix(0._r8) /= radix(0_i8))
-
 ! initialize local statistics variables
+      gbl_lor_red = 0
       gbl_max_red = 0
       repro_sum_fast = 0
       repro_sum_slow = 0
@@ -453,6 +448,76 @@ module shr_reprosum_mod
          mpi_comm = MPI_COMM_WORLD
       endif
       call t_barrierf('sync_repro_sum',mpi_comm)
+
+! check whether should abort if input contains NaNs or INFs
+      abort_inf_nan = .not. repro_sum_allow_infnan
+      if ( present(allow_infnan) ) then
+         abort_inf_nan = .not. allow_infnan
+      endif
+
+      call t_startf('shr_reprosum_INF_NaN_Chk')
+
+! initialize flags to indicate that no NaNs or INFs are present in the input data
+      inf_nan_gchecks = .false.
+      arr_gsum_infnan = .false.
+
+      if (abort_inf_nan) then
+
+! check whether input contains NaNs or INFs, and abort if so
+         nan_check = any(shr_infnan_isnan(arr))
+         inf_check = any(shr_infnan_isinf(arr))
+
+         if (nan_check .or. inf_check) then
+
+            nan_count = count(shr_infnan_isnan(arr))
+            inf_count = count(shr_infnan_isinf(arr))
+
+            if ((nan_count > 0) .or. (inf_count > 0)) then
+               call mpi_comm_rank(MPI_COMM_WORLD, mypid, ierr)
+               write(s_logunit,37) real(nan_count,r8), real(inf_count,r8), mypid
+37 format("SHR_REPROSUM_CALC: Input contains ",e12.5, &
+          " NaNs and ", e12.5, " INFs on process ", i7)
+               call shr_sys_abort("shr_reprosum_calc ERROR: NaNs or INFs in input")
+            endif
+
+         endif
+
+      else
+
+! determine whether any fields contain NaNs or INFs, and avoid processing them
+! via integer expansions
+         inf_nan_lchecks = .false.
+
+         do ifld=1,nflds
+            inf_nan_lchecks(1,ifld) = any(shr_infnan_isnan(arr(:,ifld)))
+            inf_nan_lchecks(2,ifld) = any(shr_infnan_isposinf(arr(:,ifld)))
+            inf_nan_lchecks(3,ifld) = any(shr_infnan_isneginf(arr(:,ifld)))
+         end do
+
+         call t_startf("repro_sum_allr_lor")
+         call mpi_allreduce (inf_nan_lchecks, inf_nan_gchecks, 3*nflds, &
+                             MPI_LOGICAL, MPI_LOR, mpi_comm, ierr)
+         gbl_lor_red = 1
+         call t_stopf("repro_sum_allr_lor")
+
+         do ifld=1,nflds
+            arr_gsum_infnan(ifld) = any(inf_nan_gchecks(:,ifld))
+         enddo
+
+      endif
+
+      call t_stopf('shr_reprosum_INF_NaN_Chk')
+
+! check whether should use shr_reprosum_ddpdd algorithm
+      use_ddpdd_sum = repro_sum_use_ddpdd
+      if ( present(ddpdd_sum) ) then
+         use_ddpdd_sum = ddpdd_sum
+      endif
+
+! check whether intrinsic-based algorithm will work on this system
+! (requires floating point and integer bases to be the same)
+! If not, always use ddpdd.
+      use_ddpdd_sum = use_ddpdd_sum .or. (radix(0._r8) /= radix(0_i8))
 
       if ( use_ddpdd_sum ) then
 
@@ -548,8 +613,8 @@ module shr_reprosum_mod
                endif
                call shr_reprosum_int(arr, arr_gsum, nsummands, dsummands, &
                                      nflds, arr_max_shift, arr_gmax_exp, &
-                                     arr_max_levels, max_level, validate, &
-                                     recompute, omp_nthreads, mpi_comm)
+                                     arr_max_levels, max_level, arr_gsum_infnan, &
+                                     validate, recompute, omp_nthreads, mpi_comm)
 
 ! record statistics, etc.
                repro_sum_fast = 1
@@ -598,13 +663,15 @@ module shr_reprosum_mod
                do ifld=1,nflds
                   arr_exp_tlmin = MAXEXPONENT(1._r8)
                   arr_exp_tlmax = MINEXPONENT(1._r8)
-                  do isum=isum_beg(ithread),isum_end(ithread)
-                     if (arr(isum,ifld) .ne. 0.0_r8) then
-                        arr_exp = exponent(arr(isum,ifld))
-                        arr_exp_tlmin = min(arr_exp,arr_exp_tlmin)
-                        arr_exp_tlmax = max(arr_exp,arr_exp_tlmax)
-                     endif
-                  end do
+                  if (.not. arr_gsum_infnan(ifld)) then
+                     do isum=isum_beg(ithread),isum_end(ithread)
+                        if (arr(isum,ifld) .ne. 0.0_r8) then
+                           arr_exp = exponent(arr(isum,ifld))
+                           arr_exp_tlmin = min(arr_exp,arr_exp_tlmin)
+                           arr_exp_tlmax = max(arr_exp,arr_exp_tlmax)
+                        endif
+                     end do
+                  endif
                   arr_tlmin_exp(ifld,ithread) = arr_exp_tlmin
                   arr_tlmax_exp(ifld,ithread) = arr_exp_tlmax
                end do
@@ -628,9 +695,9 @@ module shr_reprosum_mod
             arr_gmax_exp(:) = -arr_gextremes(1:nflds,1)
             arr_gmin_exp(:) =  arr_gextremes(1:nflds,2)
 
-! if a field is identically zero, arr_gmin_exp still equals MAXEXPONENT
-!   and arr_gmax_exp still equals MINEXPONENT. In this case, set
-!   arr_gmin_exp = arr_gmax_exp = MINEXPONENT
+! if a field is identically zero or contains INFs or NaNs, arr_gmin_exp
+!   still equals MAXEXPONENT and arr_gmax_exp still equals MINEXPONENT.
+!   In this case, set arr_gmin_exp = arr_gmax_exp = MINEXPONENT
             do ifld=1,nflds
                arr_gmin_exp(ifld) = min(arr_gmax_exp(ifld),arr_gmin_exp(ifld))
             enddo
@@ -695,10 +762,10 @@ module shr_reprosum_mod
 
 ! calculate sum
             validate = .false.
-            call shr_reprosum_int(arr, arr_gsum, nsummands, dsummands, nflds, &
-                                  arr_max_shift, arr_gmax_exp, max_levels, &
-                                  max_level, validate, recompute, &
-                                  omp_nthreads, mpi_comm)
+            call shr_reprosum_int(arr, arr_gsum, nsummands, dsummands, &
+                                  nflds, arr_max_shift, arr_gmax_exp, &
+                                  max_levels, max_level, arr_gsum_infnan, &
+                                  validate, recompute, omp_nthreads, mpi_comm)
 
          endif
 
@@ -720,13 +787,17 @@ module shr_reprosum_mod
 !$omp default(shared)  &
 !$omp private(ifld, isum)
             do ifld=1,nflds
-               do isum=1,nsummands
-                  arr_lsum(ifld) = arr(isum,ifld) + arr_lsum(ifld)
-               end do
+               if (.not. arr_gsum_infnan(ifld)) then
+                  do isum=1,nsummands
+                     arr_lsum(ifld) = arr(isum,ifld) + arr_lsum(ifld)
+                  end do
+               endif
             end do
 
+            call t_startf("nonrepro_sum_allr_r8")
             call mpi_allreduce (arr_lsum, arr_gsum_fast, nflds, &
                                 MPI_REAL8, MPI_SUM, mpi_comm, ierr)
+            call t_stopf("nonrepro_sum_allr_r8")
 
             call t_stopf('nonrepro_sum')
 
@@ -748,6 +819,25 @@ module shr_reprosum_mod
          endif
       endif
 
+! Set field sums to NaN and INF, as needed
+      do ifld=1,nflds
+         if (arr_gsum_infnan(ifld)) then
+            if (inf_nan_gchecks(1,ifld)) then
+               ! NaN => NaN
+               arr_gsum(ifld) = shr_infnan_nan
+            else if (inf_nan_gchecks(2,ifld) .and. inf_nan_gchecks(3,ifld)) then
+               ! posINF and negINF => NaN
+               arr_gsum(ifld) = shr_infnan_nan
+            else if (inf_nan_gchecks(2,ifld)) then
+               ! posINF only => posINF
+               arr_gsum(ifld) = shr_infnan_posinf
+            else if (inf_nan_gchecks(3,ifld)) then
+               ! negINF only => negINF
+               arr_gsum(ifld) = shr_infnan_neginf
+            endif
+         endif
+      end do
+
 ! return statistics
       if ( present(repro_sum_stats) ) then
          repro_sum_stats(1) = repro_sum_stats(1) + repro_sum_fast
@@ -755,6 +845,7 @@ module shr_reprosum_mod
          repro_sum_stats(3) = repro_sum_stats(3) + repro_sum_both
          repro_sum_stats(4) = repro_sum_stats(4) + nonrepro_sum
          repro_sum_stats(5) = repro_sum_stats(5) + gbl_max_red
+         repro_sum_stats(6) = repro_sum_stats(6) + gbl_lor_red
       endif
 
 
@@ -766,7 +857,7 @@ module shr_reprosum_mod
 
    subroutine shr_reprosum_int (arr, arr_gsum, nsummands, dsummands, nflds, &
                                 arr_max_shift, arr_gmax_exp, max_levels,    &
-                                max_level, validate, recompute,             &
+                                max_level, skip_field, validate, recompute, &
                                 omp_nthreads, mpi_comm                      )
 !----------------------------------------------------------------------
 !
@@ -798,9 +889,14 @@ module shr_reprosum_mod
       integer,  intent(in) :: mpi_comm      ! MPI subcommunicator
 
       real(r8), intent(in) :: arr(dsummands,nflds)
-                                             ! input array
+                                            ! input array
 
-      logical,  intent(in):: validate
+      logical,  intent(in) :: skip_field(nflds)
+         ! flag indicating whether the sum for this field should be
+         ! computed or not (used to skip over fields containing
+         ! NaN or INF summands)
+
+      logical,  intent(in) :: validate
          ! flag indicating that accuracy of solution generated from
          ! arr_gmax_exp and max_levels should be tested
 
@@ -920,8 +1016,10 @@ module shr_reprosum_mod
 
           max_error(ifld,ithread) = 0
           not_exact(ifld,ithread) = 0
-
           i8_arr_tlsum_level(:,ifld,ithread) = 0_i8
+
+          if (skip_field(ifld)) cycle
+
           do isum=isum_beg(ithread),isum_end(ithread)
             arr_remainder = 0.0_r8
 
@@ -1370,8 +1468,11 @@ module shr_reprosum_mod
 
       enddo
 
+      call t_startf("repro_sum_allr_c16")
       call mpi_allreduce (arr_lsum_dd, arr_gsum_dd, nflds, &
                           MPI_COMPLEX16, mpi_sumdd, mpi_comm, ierr)
+      call t_stopf("repro_sum_allr_c16")
+
       do ifld=1,nflds
          arr_gsum(ifld) = real(arr_gsum_dd(ifld))
       enddo

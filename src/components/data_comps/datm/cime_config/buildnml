@@ -161,6 +161,8 @@ def buildnml(case, caseroot, compname):
 
     rundir = case.get_value("RUNDIR")
     ninst = case.get_value("NINST_ATM")
+    if ninst is None:
+        ninst = case.get_value("NINST")
 
     # Determine configuration directory
     confdir = os.path.join(caseroot,"Buildconf",compname + "conf")

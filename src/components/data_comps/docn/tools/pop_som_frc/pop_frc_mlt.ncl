@@ -10,16 +10,16 @@ load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
 load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
 
-case = "b40.1850.track1.2deg.003"
+case = "b.e11.B20TRC5CNBDRD.f09_g16"
 
 begin
 
- popmac = "/biptmp/dbailey/"+case+"/"+case+".pop.h.481-500.MAC.nc"
-;cplmac = "/biptmp/dbailey/"+case+"/"+case+".cpl6.ha.126-165.MAC.nc"
+ popmac = "/glade/scratch/dbailey/"+case+"/"+case+".ensmean.pop.h.1980-2005.MAC.nc"
+;cplmac = "/glade/scratch/dbailey/"+case+"/"+case+".cpl6.ha.126-165.MAC.nc"
 
  f1 = addfile(popmac,"r")
 ;f2 = addfile(cplmac,"r")
- f3 = addfile("/fis/cgd/cseg/csm/inputdata/ocn/docn7/domain.ocn.gx1v5.061230.nc","r")
+ f3 = addfile("/glade/p/cesm/cseg/inputdata/ocn/docn7/domain.ocn.gx1v6.090206.nc","r")
 
  time = (/14., 46., 74., 105., 135., 166., 196., 227., 258., 288., 319., 349./)
  maskr = f1->REGION_MASK
@@ -163,16 +163,8 @@ begin
  T2 = Tin
  T2(0,:,:) = Tin(11,:,:)
  T2(1:11,:,:) = Tin(0:10,:,:)
- hblt1 = hblttmp
- hblt1(0:10,:,:) = hblttmp(1:11,:,:)
- hblt1(11,:,:) = hblttmp(0,:,:)
- hblt2 = hblttmp
- hblt2(0,:,:) = hblttmp(11,:,:)
- hblt2(1:11,:,:) = hblttmp(0:10,:,:)
- dT = T1*hblt1-T2*hblt2
- release = rcp_sw*dT / (86400.*365./6.)
-;dT = T1-T2
-;release = rcp_sw*dT*hblttmp / (86400.*365./6.)
+ dT = T1-T2
+ release = rcp_sw*dT*hblttmp / (86400.*365./6.)
 
  ocnheat = surf-release
  maskt = new((/nlat,nlon/),double)
@@ -268,7 +260,7 @@ begin
  fileAtt@conventions = "CCSM data model domain description"
  fileAtt@source = "pop_frc.ncl"
  fileAtt@description = "Input data for DOCN7 mixed layer model from " + case
- fileAtt@note1 = "fields computed from 20-yr monthly means from pop"
+ fileAtt@note1 = "fields computed from years 402 to 1510 monthly means from pop"
  fileAtt@note2 = "all fields interpolated to T-grid"
  fileAtt@note3 = "qdp is computed from depth summed ocean column"
  fileAtt@author = "D. Bailey"

@@ -224,11 +224,15 @@ function (find_package_component PKG)
         if (${PKG}_PATHS)
             list (APPEND SEARCH_DIRS ${${PKG}_PATHS})
         endif ()
-        
-        # Start the search for the include file and library file
-        set (${PKGCOMP}_PREFIX ${PKGCOMP}_PREFIX-NOTFOUND)
-        set (${PKGCOMP}_INCLUDE_DIR ${PKGCOMP}_INCLUDE_DIR-NOTFOUND)
-        set (${PKGCOMP}_LIBRARY ${PKGCOMP}_LIBRARY-NOTFOUND)
+
+        # Start the search for the include file and library file. Only overload
+        # if the variable is not defined.
+        foreach (suffix PREFIX LIBRARY INCLUDE_DIR)
+            if (NOT DEFINED ${PKGCOMP}_${suffix})
+                set (${PKGCOMP}_${suffix} ${PKGCOMP}_${suffix}-NOTFOUND)
+            endif ()
+        endforeach ()
+
         foreach (dir IN LISTS SEARCH_DIRS)
         
             # Search for include file names in current dirrectory

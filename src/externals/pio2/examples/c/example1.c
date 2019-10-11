@@ -10,6 +10,7 @@
  * processors.
  */
 
+#include "config.h"
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +20,12 @@
 #ifdef TIMING
 #include <gptl.h>
 #endif
+#ifdef USE_MPE
+#include <mpe.h>
+#endif /* USE_MPE */
+
+/** The name of this program. */
+#define TEST_NAME "example1"
 
 /** The number of possible output netCDF output flavors available to
  * the ParallelIO library. */
@@ -302,9 +309,22 @@ int check_file(int ntasks, char *filename) {
 	    printf("%d: ParallelIO Library example1 running on %d processors.\n",
 		   my_rank, ntasks);
 
-	/* keep things simple - 1 iotask per MPI process */    
-	niotasks = ntasks; 
+#ifdef USE_MPE
+        /* If MPE logging is being used, then initialize it. */
+        if ((ret = MPE_Init_log()))
+            return ret;
+#endif /* USE_MPE */
 
+        /* keep things simple - 1 iotask per MPI process */
+	niotasks = ntasks;
+
+        /* Turn on logging if available. */
+        /* PIOc_set_log_level(4); */
+
+        /* Change error handling to return errors. */
+        if ((ret = PIOc_set_iosystem_error_handling(PIO_DEFAULT, PIO_RETURN_ERROR, NULL)))
+            return ret;
+        
 	/* Initialize the PIO IO system. This specifies how
 	 * many and which processors are involved in I/O. */
 	if ((ret = PIOc_Init_Intracomm(MPI_COMM_WORLD, niotasks, ioproc_stride,
@@ -416,7 +436,7 @@ int check_file(int ntasks, char *filename) {
 	    return ret;
 #endif    
 
-	if (verbose)
+        if (verbose)
 	    printf("rank: %d SUCCESS!\n", my_rank);
 	return 0;
     }

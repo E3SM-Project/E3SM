@@ -10,16 +10,17 @@ they can be run outside the context of TestScheduler.
 
 import traceback, stat, threading, time, glob
 from collections import OrderedDict
+
 from CIME.XML.standard_module_setup import *
-import CIME.compare_namelists
-import CIME.utils
 import six
-from get_tests import get_recommended_test_time
-from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model, convert_to_seconds
+from get_tests import get_recommended_test_time, get_build_groups
+from CIME.utils import append_status, append_testlog, TESTS_FAILED_ERR_CODE, parse_test_name, get_full_test_name, get_model, \
+    convert_to_seconds, get_cime_root, get_project, get_timestamp, get_python_libs_root
 from CIME.test_status import *
 from CIME.XML.machines import Machines
 from CIME.XML.generic_xml import GenericXML
 from CIME.XML.env_test import EnvTest
+from CIME.XML.env_mach_pes import EnvMachPes
 from CIME.XML.files import Files
 from CIME.XML.component import Component
 from CIME.XML.tests import Tests
@@ -27,7 +28,9 @@ from CIME.case import Case
 from CIME.wait_for_tests import wait_for_tests
 from CIME.provenance import get_recommended_test_time_based_on_past
 from CIME.locked_files import lock_file
-import CIME.test_utils
+from CIME.cs_status_creator import create_cs_status
+from CIME.hist_utils import generate_teststatus
+from CIME.build import post_build
 
 logger = logging.getLogger(__name__)
 
@@ -119,10 +122,12 @@ class TestScheduler(object):
                  use_existing=False, save_timing=False, queue=None,
                  allow_baseline_overwrite=False, output_root=None,
                  force_procs=None, force_threads=None, mpilib=None,
-                 input_dir=None, pesfile=None, mail_user=None, mail_type=None):
+                 input_dir=None, pesfile=None, mail_user=None, mail_type=None, allow_pnl=False,
+                 non_local=False, single_exe=False):
     ###########################################################################
-        self._cime_root       = CIME.utils.get_cime_root()
+        self._cime_root       = get_cime_root()
         self._cime_model      = get_model()
+        self._cime_driver     = "mct"
         self._save_timing     = save_timing
         self._queue           = queue
         self._test_data       = {} if test_data is None else test_data # Format:  {test_name -> {data_name -> data}}
@@ -131,6 +136,9 @@ class TestScheduler(object):
         self._input_dir       = input_dir
         self._pesfile         = pesfile
         self._allow_baseline_overwrite = allow_baseline_overwrite
+        self._allow_pnl       = allow_pnl
+        self._non_local       = non_local
+        self._build_groups    = []
 
         self._mail_user = mail_user
         self._mail_type = mail_type
@@ -149,7 +157,7 @@ class TestScheduler(object):
         self._output_root = output_root
         # Figure out what project to use
         if project is None:
-            self._project = CIME.utils.get_project()
+            self._project = get_project()
             if self._project is None:
                 self._project = self._machobj.get_value("PROJECT")
         else:
@@ -173,7 +181,7 @@ class TestScheduler(object):
             self._test_root = self._test_root.replace("$PROJECT", self._project)
 
         self._test_root = os.path.abspath(self._test_root)
-        self._test_id   = test_id if test_id is not None else CIME.utils.get_timestamp()
+        self._test_id   = test_id if test_id is not None else get_timestamp()
 
         self._compiler = self._machobj.get_default_compiler() if compiler is None else compiler
 
@@ -183,8 +191,10 @@ class TestScheduler(object):
         self._walltime = walltime
 
         if parallel_jobs is None:
-            self._parallel_jobs = min(len(test_names),
-                                      self._machobj.get_value("MAX_MPITASKS_PER_NODE"))
+            mach_parallel_jobs = self._machobj.get_value("NTEST_PARALLEL_JOBS")
+            if mach_parallel_jobs is None:
+                mach_parallel_jobs = self._machobj.get_value("MAX_MPITASKS_PER_NODE")
+            self._parallel_jobs = min(len(test_names), mach_parallel_jobs)
         else:
             self._parallel_jobs = parallel_jobs
 
@@ -281,6 +291,25 @@ class TestScheduler(object):
                        " Pick a different test-id".format(self._get_test_dir(test)))
                 logger.info("Creating test directory {}".format(self._get_test_dir(test)))
 
+        # Setup build groups
+        if single_exe:
+            self._build_groups = [self._tests]
+        elif self._cime_model == "e3sm":
+            # Any test that's in a shared-enabled suite with other tests should share exes
+            self._build_groups = get_build_groups(self._tests)
+        else:
+            self._build_groups = [ (item,) for item in self._tests ]
+
+        # Build group to exeroot map
+        self._build_group_exeroots = {}
+        for build_group in self._build_groups:
+            self._build_group_exeroots[build_group] = None
+
+        logger.debug("Build groups are:")
+        for build_group in self._build_groups:
+            for test_name in build_group:
+                logger.debug("{}{}".format("  " if test_name == build_group[0] else "    ", test_name))
+
         # By the end of this constructor, this program should never hard abort,
         # instead, errors will be placed in the TestStatus files for the various
         # tests cases
@@ -344,8 +373,10 @@ class TestScheduler(object):
         if phase is None or phase == curr_phase:
             return curr_status
         else:
-            expect(phase is None or self._phases.index(phase) < self._phases.index(curr_phase),
-                   "Tried to see the future")
+            # Assume all future phases are PEND
+            if phase is not None and self._phases.index(phase) > self._phases.index(curr_phase):
+                return TEST_PEND_STATUS
+
             # Assume all older phases PASSed
             return TEST_PASS_STATUS
 
@@ -409,7 +440,7 @@ class TestScheduler(object):
         test_dir = self._get_test_dir(test)
 
         _, case_opts, grid, compset,\
-            machine, compiler, test_mods = CIME.utils.parse_test_name(test)
+            machine, compiler, test_mods = parse_test_name(test)
 
         create_newcase_cmd = "{} --case {} --res {} --compset {}"\
                              " --test".format(os.path.join(self._cime_root, "scripts", "create_newcase"),
@@ -424,12 +455,15 @@ class TestScheduler(object):
             create_newcase_cmd += " --output-root {} ".format(self._output_root)
         if self._input_dir is not None:
             create_newcase_cmd += " --input-dir {} ".format(self._input_dir)
+        if self._non_local:
+            create_newcase_cmd += " --non-local"
 
         if self._pesfile is not None:
             create_newcase_cmd += " --pesfile {} ".format(self._pesfile)
 
         if test_mods is not None:
-            files = Files()
+            files = Files(comp_interface=self._cime_driver)
+
             if test_mods.find('/') != -1:
                 (component, modspath) = test_mods.split('/', 1)
             else:
@@ -469,8 +503,8 @@ class TestScheduler(object):
                     pesize = case_opt[1:]
                     create_newcase_cmd += " --pecount {}".format(pesize)
                 elif case_opt.startswith('V'):
-                    driver = case_opt[1:]
-                    create_newcase_cmd += " --driver {}".format(driver)
+                    self._cime_driver = case_opt[1:]
+                    create_newcase_cmd += " --driver {}".format(self._cime_driver)
 
         # create_test mpilib option overrides default but not explicitly set case_opt mpilib
         if mpilib is None and self._mpilib is not None:
@@ -482,7 +516,7 @@ class TestScheduler(object):
         else:
             # We need to hard code the queue for this test on cheyenne
             # otherwise it runs in share and fails intermittently
-            test_case = CIME.utils.parse_test_name(test)[0]
+            test_case = parse_test_name(test)[0]
             if test_case == "NODEFAIL":
                 machine = machine if machine is not None else self._machobj.get_machine_name()
                 if machine == "cheyenne":
@@ -509,7 +543,7 @@ class TestScheduler(object):
     ###########################################################################
     def _xml_phase(self, test):
     ###########################################################################
-        test_case = CIME.utils.parse_test_name(test)[0]
+        test_case = parse_test_name(test)[0]
 
         # Create, fill and write an envtest object
         test_dir = self._get_test_dir(test)
@@ -517,7 +551,7 @@ class TestScheduler(object):
 
         # Determine list of component classes that this coupler/driver knows how
         # to deal with. This list follows the same order as compset longnames follow.
-        files = Files()
+        files = Files(comp_interface=self._cime_driver)
         drv_config_file = files.get_value("CONFIG_CPL_FILE")
         drv_comp = Component(drv_config_file, "CPL")
         envtest.add_elements_by_group(files, {}, "env_test.xml")
@@ -560,7 +594,7 @@ class TestScheduler(object):
         testnode = config_test.get_test_node(test_case)
         envtest.add_test(testnode)
         # Determine the test_case from the test name
-        test_case, case_opts = CIME.utils.parse_test_name(test)[:2]
+        test_case, case_opts = parse_test_name(test)[:2]
 
         # Determine case_opts from the test_case
         if case_opts is not None:
@@ -597,15 +631,21 @@ class TestScheduler(object):
                     #  (SCM) mode
                     envtest.set_test_parameter("PTS_MODE", "TRUE")
 
-                    # For PTS_MODE, compile with mpi-serial
-                    envtest.set_test_parameter("MPILIB", "mpi-serial")
+                    # For PTS_MODE, set all tasks and threads to 1
+                    comps=["ATM","LND","ICE","OCN","CPL","GLC","ROF","WAV"]
+
+                    for comp in comps:
+                        envtest.set_test_parameter("NTASKS_"+comp, "1")
+                        envtest.set_test_parameter("NTHRDS_"+comp, "1")
+                        envtest.set_test_parameter("ROOTPE_"+comp, "0")
 
                 elif (opt.startswith('I') or # Marker to distinguish tests with same name - ignored
                       opt.startswith('M') or # handled in create_newcase
                       opt.startswith('P') or # handled in create_newcase
                       opt.startswith('N') or # handled in create_newcase
                       opt.startswith('C') or # handled in create_newcase
-                      opt.startswith('V')):  # handled in create_newcase
+                      opt.startswith('V') or # handled in create_newcase
+                      opt == 'B'):           # handled in run_phase
                     pass
 
                 elif opt.startswith('IOP'):
@@ -627,6 +667,17 @@ class TestScheduler(object):
             envtest.set_initial_values(case)
             case.set_value("TEST", True)
             case.set_value("SAVE_TIMING", self._save_timing)
+
+            # handle single-exe here, all cases will use the EXEROOT from
+            # the first case in the build group
+            is_first_test, _, my_build_group = self._get_build_group(test)
+            if is_first_test:
+                expect(self._build_group_exeroots[my_build_group] is None, "Should not already have exeroot")
+                self._build_group_exeroots[my_build_group] = case.get_value("EXEROOT")
+            else:
+                build_group_exeroot = self._build_group_exeroots[my_build_group]
+                expect(build_group_exeroot is not None, "Should already have exeroot")
+                case.set_value("EXEROOT", build_group_exeroot)
 
             # Scale back build parallelism on systems with few cores
             if self._model_build_cost > self._proc_pool:
@@ -651,13 +702,41 @@ class TestScheduler(object):
     ###########################################################################
     def _sharedlib_build_phase(self, test):
     ###########################################################################
+        is_first_test, first_test, _ = self._get_build_group(test)
+        if not is_first_test:
+            if self._get_test_status(first_test, phase=SHAREDLIB_BUILD_PHASE) == TEST_PASS_STATUS:
+                return True, ""
+            else:
+                return False, "Cannot use build for test {} because it failed".format(first_test)
+
         test_dir = self._get_test_dir(test)
         return self._shell_cmd_for_phase(test, "./case.build --sharedlib-only", SHAREDLIB_BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
+    def _get_build_group(self, test):
+    ###########################################################################
+        for build_group in self._build_groups:
+            if test in build_group:
+                return test == build_group[0], build_group[0], build_group
+
+        expect(False, "No build group for test '{}'".format(test))
+
+    ###########################################################################
     def _model_build_phase(self, test):
     ###########################################################################
+        is_first_test, first_test, _ = self._get_build_group(test)
+
         test_dir = self._get_test_dir(test)
+
+        if not is_first_test:
+            if self._get_test_status(first_test, phase=MODEL_BUILD_PHASE) == TEST_PASS_STATUS:
+                with Case(test_dir, read_only=False) as case:
+                    post_build(case, [], build_complete=True, save_build_provenance=False)
+
+                return True, ""
+            else:
+                return False, "Cannot use build for test {} because it failed".format(first_test)
+
         return self._shell_cmd_for_phase(test, "./case.build --model-only", MODEL_BUILD_PHASE, from_dir=test_dir)
 
     ###########################################################################
@@ -665,22 +744,32 @@ class TestScheduler(object):
     ###########################################################################
         test_dir = self._get_test_dir(test)
 
-        cmd = "./case.submit --skip-preview-namelist"
-        if self._no_batch:
-            cmd += " --no-batch"
-        if self._mail_user:
-            cmd += " --mail-user={}".format(self._mail_user)
-        if self._mail_type:
-            cmd += " -M={}".format(",".join(self._mail_type))
+        case_opts = parse_test_name(test)[1]
+        if case_opts is not None and "B" in case_opts: # pylint: disable=unsupported-membership-test
+            self._log_output(test, "{} SKIPPED for test '{}'".format(RUN_PHASE, test))
+            self._update_test_status_file(test, SUBMIT_PHASE, TEST_PASS_STATUS)
+            self._update_test_status_file(test, RUN_PHASE,    TEST_PASS_STATUS)
 
-        return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
+            return True, "SKIPPED"
+        else:
+            cmd = "./case.submit"
+            if not self._allow_pnl:
+                cmd += " --skip-preview-namelist"
+            if self._no_batch:
+                cmd += " --no-batch"
+            if self._mail_user:
+                cmd += " --mail-user={}".format(self._mail_user)
+            if self._mail_type:
+                cmd += " -M={}".format(",".join(self._mail_type))
+
+            return self._shell_cmd_for_phase(test, cmd, RUN_PHASE, from_dir=test_dir)
 
     ###########################################################################
     def _run_catch_exceptions(self, test, phase, run):
     ###########################################################################
         try:
             return run(test)
-        except (SystemExit, Exception) as e:
+        except Exception as e:
             exc_tb = sys.exc_info()[2]
             errput = "Test '{}' failed in phase '{}' with exception '{}'\n".format(test, phase, str(e))
             errput += ''.join(traceback.format_tb(exc_tb))
@@ -690,9 +779,21 @@ class TestScheduler(object):
     ###########################################################################
     def _get_procs_needed(self, test, phase, threads_in_flight=None, no_batch=False):
     ###########################################################################
+        # For build pools, we must wait for the first case to complete XML, SHAREDLIB,
+        # and MODEL_BUILD phases before the other cases can do those phases
+        is_first_test, first_test, _ = self._get_build_group(test)
+
+        if not is_first_test:
+            build_group_dep_phases = [XML_PHASE, SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]
+            if phase in build_group_dep_phases:
+                if self._get_test_status(first_test, phase=phase) == TEST_PEND_STATUS:
+                    return self._proc_pool + 1
+                else:
+                    return 1
+
         if phase == RUN_PHASE and (self._no_batch or no_batch):
             test_dir = self._get_test_dir(test)
-            total_pes = int(run_cmd_no_fail("./xmlquery TOTALPES --value", from_dir=test_dir))
+            total_pes = EnvMachPes(test_dir, read_only=True).get_value("TOTALPES")
             return total_pes
 
         elif (phase == SHAREDLIB_BUILD_PHASE):
@@ -764,7 +865,10 @@ class TestScheduler(object):
 
         logger.info(status_str)
 
-        if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE]:
+        is_first_test = self._get_build_group(test)[0]
+
+        if test_phase in [CREATE_NEWCASE_PHASE, XML_PHASE] or \
+           (not is_first_test and test_phase in [SHAREDLIB_BUILD_PHASE, MODEL_BUILD_PHASE]):
             # These are the phases for which TestScheduler is reponsible for
             # updating the TestStatus file
             self._update_test_status_file(test, test_phase, status)
@@ -850,19 +954,10 @@ class TestScheduler(object):
     def _setup_cs_files(self):
     ###########################################################################
         try:
-            python_libs_root = CIME.utils.get_python_libs_root()
-            template_file = os.path.join(python_libs_root, "cs.status.template")
-            template = open(template_file, "r").read()
-            template = template.replace("<PATH>",
-                                        os.path.join(self._cime_root,"scripts","Tools")).replace\
-                                        ("<TESTID>", self._test_id).replace\
-                                        ("<TESTROOT>", self._test_root)
-            if not os.path.exists(self._test_root):
-                os.makedirs(self._test_root)
-            cs_status_file = os.path.join(self._test_root, "cs.status.{}".format(self._test_id))
-            with open(cs_status_file, "w") as fd:
-                fd.write(template)
-            os.chmod(cs_status_file, os.stat(cs_status_file).st_mode | stat.S_IXUSR | stat.S_IXGRP)
+            python_libs_root = get_python_libs_root()
+
+            create_cs_status(test_root=self._test_root,
+                             test_id=self._test_id)
 
             template_file = os.path.join(python_libs_root, "cs.submit.template")
             template = open(template_file, "r").read()
@@ -923,6 +1018,15 @@ class TestScheduler(object):
 
         expect(threading.active_count() == 1, "Leftover threads?")
 
+        # Copy TestStatus files to baselines for tests that have already failed.
+        if get_model() == "cesm":
+            for test in self._tests:
+                status = self._get_test_data(test)[1]
+                if status not in [TEST_PASS_STATUS, TEST_PEND_STATUS] and self._baseline_gen_name:
+                    basegen_case_fullpath = os.path.join(self._baseline_root,self._baseline_gen_name, test)
+                    test_dir = self._get_test_dir(test)
+                    generate_teststatus(test_dir, basegen_case_fullpath)
+
         wait_handles_report = False
         if not self._no_run and not self._no_batch:
             if wait:
@@ -957,9 +1061,13 @@ class TestScheduler(object):
                     ts = TestStatus(self._get_test_dir(test))
                     nlfail = ts.get_status(NAMELIST_PHASE) == TEST_FAIL_STATUS
                     ts_status = ts.get_overall_test_status(ignore_namelists=True, check_memory=False, check_throughput=False)
+                    local_run = not self._no_run and self._no_batch
 
                     if ts_status not in [TEST_PASS_STATUS, TEST_PEND_STATUS]:
                         logger.info( "{} {} (phase {})".format(ts_status, test, phase))
+                        rv = False
+                    elif ts_status == TEST_PEND_STATUS and local_run:
+                        logger.info( "{} {} (Some phases left in PEND)".format(TEST_FAIL_STATUS, test))
                         rv = False
                     elif nlfail:
                         logger.info( "{} {} (but otherwise OK) {}".format(NAMELIST_FAIL_STATUS, test, phase))

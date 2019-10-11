@@ -73,7 +73,6 @@ def parse_command_line(args, description):
     return (args.caseroot, args.last_date, args.no_incomplete_logs, args.copy_only,
             args.test_all, args.test_case, args.resubmit)
 
-
 ###############################################################################
 def _main_func(description):
 ###############################################################################

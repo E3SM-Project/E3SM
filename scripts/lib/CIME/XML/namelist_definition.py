@@ -25,6 +25,38 @@ logger = logging.getLogger(__name__)
 
 _array_size_re = re.compile(r'^(?P<type>[^(]+)\((?P<size>[^)]+)\)$')
 
+class CaseInsensitiveDict(dict):
+
+    """Basic case insensitive dict with strings only keys.
+        From https://stackoverflow.com/a/27890005 """
+
+    proxy = {}
+
+    def __init__(self, data):
+        dict.__init__(self)
+        self.proxy = dict((k.lower(), k) for k in data)
+        for k in data:
+            self[k] = data[k]
+
+    def __contains__(self, k):
+        return k.lower() in self.proxy
+
+    def __delitem__(self, k):
+        key = self.proxy[k.lower()]
+        super(CaseInsensitiveDict, self).__delitem__(key)
+        del self.proxy[k.lower()]
+
+    def __getitem__(self, k):
+        key = self.proxy[k.lower()]
+        return super(CaseInsensitiveDict, self).__getitem__(key)
+
+    def get(self, k, default=None):
+        return self[k] if k in self else default
+
+    def __setitem__(self, k, v):
+        super(CaseInsensitiveDict, self).__setitem__(k, v)
+        self.proxy[k.lower()] = k
+
 class NamelistDefinition(EntryID):
 
     """Class representing variable definitions for a namelist.
@@ -54,7 +86,7 @@ class NamelistDefinition(EntryID):
         self._entry_ids = []
         self._valid_values = {}
         self._entry_types = {}
-        self._group_names = {}
+        self._group_names = CaseInsensitiveDict({})
         self._nodes = {}
 
     def set_nodes(self, skip_groups=None):
@@ -260,7 +292,6 @@ class NamelistDefinition(EntryID):
         appear in the namelist (even for scalar variables, in which case the
         length of the list is always 1).
         """
-        name = name.lower()
         # Separate into a type, optional length, and optional size.
         type_, max_len, size = self.split_type_string(name)
         invalid = []
@@ -305,7 +336,9 @@ class NamelistDefinition(EntryID):
         return True
 
     def _expect_variable_in_definition(self, name, variable_template):
-        """Used to get a better error message for an unexpected variable."""
+        """Used to get a better error message for an unexpected variable.
+             case insensitve match"""
+
         expect(name in self._entry_ids,
                (variable_template + " is not in the namelist definition.").format(str(name)))
 

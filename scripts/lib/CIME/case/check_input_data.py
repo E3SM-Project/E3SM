@@ -37,6 +37,8 @@ def _download_checksum_file(rundir):
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
 
+        if not chksum_file:
+            continue
 
         success = False
         rel_path = chksum_file
@@ -360,7 +362,8 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
     hashfile = os.path.join(rundir, local_chksum_file)
     if not chksum_hash:
         if not os.path.isfile(hashfile):
-            expect(False, "Failed to find or download file {}".format(hashfile))
+            logger.warning("Failed to find or download file {}".format(hashfile))
+            return
 
         with open(hashfile) as fd:
             lines = fd.readlines()
@@ -370,6 +373,7 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
                     expect(chksum_hash[fname] == fchksum, " Inconsistent hashes in chksum for file {}".format(fname))
                 else:
                     chksum_hash[fname] = fchksum
+
     if isdirectory:
         filenames = glob.glob(os.path.join(filename,"*.*"))
     else:
@@ -385,8 +389,6 @@ def verify_chksum(input_data_root, rundir, filename, isdirectory):
                 expect(chksum == chksum_hash[fname],
                        "chksum mismatch for file {} expected {} found {}".
                        format(os.path.join(input_data_root,fname),chksum, chksum_hash[fname]))
-
-
 
 def md5(fname):
     """
