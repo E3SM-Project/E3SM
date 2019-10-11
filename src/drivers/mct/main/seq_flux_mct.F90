@@ -487,7 +487,7 @@ contains
     if (seq_comm_iamroot(ID)) then
 
        !---------------------------------------------------------------------------
-       ! Read in namelist 
+       ! Read in namelist
        !---------------------------------------------------------------------------
 
         unitn = shr_file_getUnit()
@@ -508,10 +508,11 @@ contains
 
      end if
 
-     call shr_mpi_bcast(seq_flux_mct_albdif, mpicom)
-     call shr_mpi_bcast(seq_flux_mct_albdir, mpicom)
-     call shr_mpi_bcast(seq_flux_atmocn_minwind, mpicom)
-
+     if (seq_comm_iamin(ID)) then
+        call shr_mpi_bcast(seq_flux_mct_albdif, mpicom)
+        call shr_mpi_bcast(seq_flux_mct_albdir, mpicom)
+        call shr_mpi_bcast(seq_flux_atmocn_minwind, mpicom)
+     endif
   end subroutine seq_flux_readnl_mct
 
   !===============================================================================
