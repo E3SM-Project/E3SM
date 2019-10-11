@@ -26,11 +26,12 @@ void Functions<S,D>
   const view_1d_ptr_array<Spack, nfield>& r)
 {
   const Int kmin_scalar = ( kdir == 1 ? k_bot : k_top);
+  const Int kmax_scalar = ( kdir == 1 ? k_top : k_bot);
   Int
     kmin = kmin_scalar / Spack::n,
     // Add 1 to make [kmin, kmax). But then the extra term (Spack::n -
     // 1) to determine pack index cancels the +1.
-    kmax = ((kdir == 1 ? k_top : k_bot) + Spack::n) / Spack::n;
+    kmax = (kmax_scalar + Spack::n) / Spack::n;
   const Int k_top_pack = k_top / Spack::n;
 
   // calculate fluxes
@@ -47,7 +48,7 @@ void Functions<S,D>
       const Int k = k_top_pack;
       {
         const auto range_pack = scream::pack::range<IntSmallPack>(k_top_pack*Spack::n);
-        const auto mask = range_pack >= nk || range_pack < kmin_scalar;
+        const auto mask = range_pack > kmax_scalar || range_pack < kmin_scalar;
         if (mask.any()) {
           for (int f = 0; f < nfield; ++f) {
             (*flux[f])(k_top_pack).set(mask, 0);

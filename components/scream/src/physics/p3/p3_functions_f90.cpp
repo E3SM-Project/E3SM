@@ -510,8 +510,17 @@ void generalized_sedimentation_f_impl(
       qnx_ptr[i]    = (uview_1d*)(&qnx_d[i]);
     }
     uview_1d urho_d(rho_d), uinv_rho_d(inv_rho_d), uinv_dzq_d(inv_dzq_d);
-    Int k_qxbot_k = static_cast<int>(scalars_d(2)[0]);
-    P3F::generalized_sedimentation<N>(urho_d, uinv_rho_d, uinv_dzq_d, team, nk, k_qxtop, k_qxbot_k, kbot, kdir, Co_max, scalars_d(1)[0], scalars_d(0)[0], fluxes_ptr, vs_ptr, qnx_ptr);
+
+    // Each thread needs their own copy, like we expect in the main program, or else we will hit
+    // data race issues
+    Real prt_accum_k = scalars_d(0)[0];
+    Real dt_left_k   = scalars_d(1)[0];
+    Int k_qxbot_k    = static_cast<int>(scalars_d(2)[0]);
+
+    P3F::generalized_sedimentation<N>(urho_d, uinv_rho_d, uinv_dzq_d, team, nk, k_qxtop, k_qxbot_k, kbot, kdir, Co_max, dt_left_k, prt_accum_k, fluxes_ptr, vs_ptr, qnx_ptr);
+
+    scalars_d(0)[0] = prt_accum_k;
+    scalars_d(1)[0] = dt_left_k;
     scalars_d(2)[0] = k_qxbot_k;
   });
 
@@ -550,8 +559,6 @@ void generalized_sedimentation_f(
   Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
   Int num_arrays, Real** vs, Real** fluxes, Real** qnx)
 {
-  scream_require_msg(kdir == 1 || kdir == -1, "Bad kdir: " << kdir);
-
   if (num_arrays == 1) {
     generalized_sedimentation_f_impl<1>(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum,
                                         inv_dzq, inv_rho, rho, vs, fluxes, qnx);
