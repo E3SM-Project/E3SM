@@ -323,6 +323,12 @@ static void run_bfb()
                std::make_pair(2.965E-02, 3.555E+00),
                std::make_pair(7.701E-16, 2.119E-04)),
 
+    GenSedData(1,  72,    -1,     72,      72,   72,  4.196E-01, 1.418E+02, 4.959E-06, 1,
+               std::make_pair(4.056E-03, 1.153E+00),
+               std::make_pair(2.863E-05, 8.141E-03),
+               std::make_pair(2.965E-02, 3.555E+00),
+               std::make_pair(7.701E-16, 2.119E-04)),
+
   };
 
   static constexpr Int num_runs = sizeof(gsds_fortran) / sizeof(GenSedData);
@@ -333,6 +339,7 @@ static void run_bfb()
     GenSedData(gsds_fortran[0]),
     GenSedData(gsds_fortran[1]),
     GenSedData(gsds_fortran[2]),
+    GenSedData(gsds_fortran[3]),
   };
 
   // Get data from fortran
@@ -357,7 +364,7 @@ static void run_bfb()
         REQUIRE(gsds_fortran[i].fluxes[n][k] == gsds_cxx[i].fluxes[n][k]);
         REQUIRE(gsds_fortran[i].qnx[n][k]    == gsds_cxx[i].qnx[n][k]);
       }
-      REQUIRE(gsds_fortran[i].k_qxbot-1 == gsds_cxx[i].k_qxbot);
+      REQUIRE(gsds_fortran[i].k_qxbot   == gsds_cxx[i].k_qxbot);
       REQUIRE(gsds_fortran[i].dt_left   == gsds_cxx[i].dt_left);
       REQUIRE(gsds_fortran[i].prt_accum == gsds_cxx[i].prt_accum);
     }

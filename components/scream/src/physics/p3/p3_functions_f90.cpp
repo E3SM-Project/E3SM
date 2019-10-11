@@ -532,7 +532,7 @@ void generalized_sedimentation_f_impl(
   // Set scalars
   *prt_accum = scalars[0];
   *dt_left   = scalars[1];
-  *k_qxbot   = scalars[2];
+  *k_qxbot   = scalars[2] + 1;
 }
 
 void calc_first_order_upwind_step_f(
