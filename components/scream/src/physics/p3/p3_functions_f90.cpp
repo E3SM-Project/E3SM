@@ -112,7 +112,7 @@ CalcUpwindData::CalcUpwindData(
   std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range) :
   kts(kts_), kte(kte_), kdir(kdir_), kbot(kbot_), k_qxtop(k_qxtop_), num_arrays(num_arrays_), dt_sub(dt_sub_),
   m_nk((kte_ - kts_) + 1),
-  m_data( (3 + num_arrays_*3) * m_nk),
+  m_data( (3 + num_arrays_*3) * m_nk, 0.0),
   m_ptr_data(num_arrays_*3)
 {
   Int offset = 0;
@@ -144,7 +144,6 @@ CalcUpwindData::CalcUpwindData(
     inv_dzq[k] = inv_dzq_dist(generator);
 
     for (Int i = 0; i < num_arrays; ++i) {
-      fluxes[i][k] = 0.0;
       vs    [i][k] = vs_dist(generator);
       qnx   [i][k] = qnx_dist(generator);
     }
@@ -458,14 +457,16 @@ void calc_first_order_upwind_step_f_impl(
 
 template <int N>
 void generalized_sedimentation_f_impl(
-  Int kts, Int kte, Int kdir, Int k_qxtop, Int k_qxbot, Int kbot, Real Co_max,
+  Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
   Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
   Real** vs, Real** fluxes, Real** qnx)
 {
   using P3F  = Functions<Real, DefaultDevice>;
 
   using Spack = typename P3F::Spack;
+  using Singlep = typename pack::Pack<Real, 1>;
   using view_1d = typename P3F::view_1d<Spack>;
+  using view_1ds = typename P3F::view_1d<Singlep>;
   using KT = typename P3F::KT;
   using ExeSpace = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
@@ -486,10 +487,14 @@ void generalized_sedimentation_f_impl(
   // Setup views
   Kokkos::Array<view_1d, 3> temp_d;
   Kokkos::Array<view_1d, N> fluxes_d, vs_d, qnx_d;
+  Kokkos::Array<view_1ds, 1> scalar_temp;
+  std::vector<Real> scalars = {*prt_accum, *dt_left, static_cast<Real>(*k_qxbot)};
 
   pack::host_to_device<3, Real, Spack, DefaultDevice>({rho, inv_rho, inv_dzq}, nk, temp_d);
+  pack::host_to_device<1, Real, Singlep, DefaultDevice>({scalars.data()}, scalars.size(), scalar_temp);
 
   view_1d rho_d(temp_d[0]), inv_rho_d(temp_d[1]), inv_dzq_d(temp_d[2]);
+  view_1ds scalars_d(scalar_temp[0]);
 
   pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
   pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
@@ -505,13 +510,20 @@ void generalized_sedimentation_f_impl(
       qnx_ptr[i]    = (uview_1d*)(&qnx_d[i]);
     }
     uview_1d urho_d(rho_d), uinv_rho_d(inv_rho_d), uinv_dzq_d(inv_dzq_d);
-    Real prt_accum_k, dt_left_k; Int k_qxbot_k;
-    P3F::generalized_sedimentation<N>(urho_d, uinv_rho_d, uinv_dzq_d, team, nk, k_qxtop, k_qxbot_k, kbot, kdir, Co_max, dt_left_k, prt_accum_k, fluxes_ptr, vs_ptr, qnx_ptr);
+    Int k_qxbot_k = static_cast<int>(scalars_d(2)[0]);
+    P3F::generalized_sedimentation<N>(urho_d, uinv_rho_d, uinv_dzq_d, team, nk, k_qxtop, k_qxbot_k, kbot, kdir, Co_max, scalars_d(1)[0], scalars_d(0)[0], fluxes_ptr, vs_ptr, qnx_ptr);
+    scalars_d(2)[0] = k_qxbot_k;
   });
 
   // Sync back to host
   pack::device_to_host<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>(fluxes), nk, fluxes_d);
   pack::device_to_host<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>(qnx), nk, qnx_d);
+  pack::device_to_host<1, Real, Singlep, DefaultDevice>({scalars.data()}, scalars.size(), scalar_temp);
+
+  // Set scalars
+  *prt_accum = scalars[0];
+  *dt_left   = scalars[1];
+  *k_qxbot   = scalars[2];
 }
 
 void calc_first_order_upwind_step_f(
@@ -534,7 +546,7 @@ void calc_first_order_upwind_step_f(
 }
 
 void generalized_sedimentation_f(
-  Int kts, Int kte, Int kdir, Int k_qxtop, Int k_qxbot, Int kbot, Real Co_max,
+  Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
   Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
   Int num_arrays, Real** vs, Real** fluxes, Real** qnx)
 {

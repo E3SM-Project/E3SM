@@ -110,21 +110,17 @@ void Functions<S,D>
   calc_first_order_upwind_step<nfield>(rho, inv_rho, inv_dzq, team, nk, k_temp, k_qxtop, kdir, dt_sub, fluxes, Vs, rs);
   team.team_barrier();
 
-  Kokkos::single(
-    Kokkos::PerTeam(team), [&] () {
-      // accumulated precip during time step
-      if (k_qxbot == kbot) {
-        const auto sflux0 = scalarize(*fluxes[0]);
-        prt_accum += sflux0(kbot) * dt_sub;
-      }
-      else {
-        k_qxbot -= kdir;
-      }
+  // accumulated precip during time step
+  if (k_qxbot == kbot) {
+    const auto sflux0 = scalarize(*fluxes[0]);
+    prt_accum += sflux0(kbot) * dt_sub;
+  }
+  else {
+    k_qxbot -= kdir;
+  }
 
-      // update time remaining for sedimentation
-      dt_left -= dt_sub;
-    }
-  );
+  // update time remaining for sedimentation
+  dt_left -= dt_sub;
 }
 
 template <typename S, typename D>

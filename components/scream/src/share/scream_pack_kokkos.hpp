@@ -262,7 +262,6 @@ void host_to_device(const Kokkos::Array<const Scalar*, N>& data,
                     const Int size,
                     Kokkos::Array<typename KokkosTypes<DeviceT>::template view_1d<PackT>, N>& views)
 {
-
   using KT = KokkosTypes<DeviceT>;
   using view_1d = typename KT::template view_1d<PackT>;
 

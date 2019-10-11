@@ -241,7 +241,7 @@ void generalized_sedimentation(GenSedData& d);
 
 extern "C" {
 
-void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int k_qxbot, Int kbot, Real Co_max,
+void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int *k_qxbot, Int kbot, Real Co_max,
                                  Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
                                  Int num_arrays, Real** vs, Real** fluxes, Real** qnx);
 
