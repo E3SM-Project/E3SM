@@ -3,6 +3,7 @@
 #include "share/scream_assert.hpp"
 #include "share/util/scream_utils.hpp"
 #include "share/util/scream_kokkos_utils.hpp"
+#include "share/scream_pack_kokkos.hpp"
 #include "p3_f90.hpp"
 
 #include <random>
@@ -36,6 +37,10 @@ void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
 void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
+
+void generalized_sedimentation_c(Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
+                                 Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
+                                 Int num_arrays, Real** vs, Real** fluxes, Real** qnx);
 
 }
 
@@ -173,6 +178,24 @@ void calc_first_order_upwind_step(CalcUpwindData& d)
 {
   p3_init(true);
   calc_first_order_upwind_step_c(d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub, d.rho, d.inv_rho, d.inv_dzq, d.num_arrays, d.fluxes, d.vs, d.qnx);
+}
+
+GenSedData::GenSedData(
+  Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
+  Real prt_accum_, Int num_arrays_,
+  std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
+  std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range) :
+  CalcUpwindData(kts_, kte_, kdir_, kbot_, k_qxtop_, num_arrays_, 0.0, rho_range, inv_dzq_range, vs_range, qnx_range),
+  Co_max(Co_max_), k_qxbot(k_qxbot_), dt_left(dt_left_), prt_accum(prt_accum_)
+{ }
+
+
+void generalized_sedimentation(GenSedData& d)
+{
+  p3_init(true);
+  generalized_sedimentation_c(d.kts, d.kte, d.kdir, d.k_qxtop, &d.k_qxbot, d.kbot, d.Co_max,
+                              &d.dt_left, &d.prt_accum, d.inv_dzq, d.inv_rho, d.rho,
+                              d.num_arrays, d.vs, d.fluxes, d.qnx);
 }
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
@@ -368,6 +391,15 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   *logn0r_ = t_h(4);
 }
 
+template <int N, typename T>
+Kokkos::Array<T*, N> ptr_to_arr(T** data)
+{
+  Kokkos::Array<T*, N> result;
+  for (int i = 0; i < N; ++i) result[i] = data[i];
+
+  return result;
+}
+
 template <int N>
 void calc_first_order_upwind_step_f_impl(
   Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub,
@@ -375,11 +407,9 @@ void calc_first_order_upwind_step_f_impl(
   Real** fluxes, Real** vs, Real** qnx)
 {
   using P3F  = Functions<Real, DefaultDevice>;
-  using P3FH = Functions<Real, HostDevice>;
 
   using Spack = typename P3F::Spack;
   using view_1d = typename P3F::view_1d<Spack>;
-  using view_1dh = typename P3FH::view_1d<Spack>;
   using KT = typename P3F::KT;
   using ExeSpace = typename KT::ExeSpace;
   using MemberType = typename P3F::MemberType;
@@ -395,56 +425,18 @@ void calc_first_order_upwind_step_f_impl(
   k_qxtop -= 1;
 
   const Int nk = (kte - kts) + 1;
-  const Int npack = (nk + Spack::n - 1) / Spack::n;
 
   // Setup views
-  view_1d rho_d("rho_d", npack), inv_rho_d("inv_rho_d", npack), inv_dzq_d("inv_dzq_d", npack);
-  auto rho_h     = Kokkos::create_mirror_view(rho_d);
-  auto inv_rho_h = Kokkos::create_mirror_view(inv_rho_d);
-  auto inv_dzq_h = Kokkos::create_mirror_view(inv_dzq_d);
+  Kokkos::Array<view_1d, 3> temp_d;
   Kokkos::Array<view_1d, N> fluxes_d, vs_d, qnx_d;
-  Kokkos::Array<view_1dh, N> fluxes_h, vs_h, qnx_h;
 
-  // Populate views. Considered using Unmanaged views to wrap input ptrs but
-  // I was worried about running off the ends of arrays if npack does not evenly
-  // divide nk;
-  for (Int k = 0; k < npack; ++k) {
-    const Int scalar_offset = k*Spack::n;
-    for (Int s = 0; s < Spack::n && scalar_offset+s < nk; ++s) {
-      rho_h(k)[s]     = rho    [scalar_offset + s];
-      inv_rho_h(k)[s] = inv_rho[scalar_offset + s];
-      inv_dzq_h(k)[s] = inv_dzq[scalar_offset + s];
-    }
-  }
+  pack::host_to_device<3, Real, Spack, DefaultDevice>({rho, inv_rho, inv_dzq}, nk, temp_d);
 
-  for (Int i = 0; i < N; ++i) {
-    fluxes_d[i] = view_1d("fluxes_d", npack);
-    vs_d[i]     = view_1d("vs_d",     npack);
-    qnx_d[i]    = view_1d("qnx_d",    npack);
+  view_1d rho_d(temp_d[0]), inv_rho_d(temp_d[1]), inv_dzq_d(temp_d[2]);
 
-    fluxes_h[i] = Kokkos::create_mirror_view(fluxes_d[i]);
-    vs_h[i]     = Kokkos::create_mirror_view(vs_d[i]);
-    qnx_h[i]    = Kokkos::create_mirror_view(qnx_d[i]);
-
-    for (Int k = 0; k < npack; ++k) {
-      const Int scalar_offset = k*Spack::n;
-      for (Int s = 0; s < Spack::n && scalar_offset+s < nk; ++s) {
-        fluxes_h[i](k)[s] = fluxes[i][scalar_offset + s];
-        vs_h    [i](k)[s] = vs    [i][scalar_offset + s];
-        qnx_h   [i](k)[s] = qnx   [i][scalar_offset + s];
-      }
-    }
-  }
-
-  // Sync views
-  Kokkos::deep_copy(rho_d, rho_h);
-  Kokkos::deep_copy(inv_rho_d, inv_rho_h);
-  Kokkos::deep_copy(inv_dzq_d, inv_dzq_h);
-  for (Int i = 0; i < N; ++i) {
-    Kokkos::deep_copy(fluxes_d[i], fluxes_h[i]);
-    Kokkos::deep_copy(vs_d[i],     vs_h[i]);
-    Kokkos::deep_copy(qnx_d[i],    qnx_h[i]);
-  }
+  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
+  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
+  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
 
   // Call core function from kernel
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
@@ -460,20 +452,66 @@ void calc_first_order_upwind_step_f_impl(
   });
 
   // Sync back to host
-  for (Int i = 0; i < N; ++i) {
-    Kokkos::deep_copy(fluxes_h[i], fluxes_d[i]);
-    Kokkos::deep_copy(vs_h[i],     vs_d[i]);
-    Kokkos::deep_copy(qnx_h[i],    qnx_d[i]);
+  pack::device_to_host<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>(fluxes), nk, fluxes_d);
+  pack::device_to_host<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>(qnx), nk, qnx_d);
+}
 
-    for (Int k = 0; k < npack; ++k) {
-      const Int scalar_offset = k*Spack::n;
-      for (Int s = 0; s < Spack::n && scalar_offset+s < nk; ++s) {
-        fluxes[i][scalar_offset + s] = fluxes_h[i](k)[s];
-        vs    [i][scalar_offset + s] = vs_h    [i](k)[s];
-        qnx   [i][scalar_offset + s] = qnx_h   [i](k)[s];
-      }
+template <int N>
+void generalized_sedimentation_f_impl(
+  Int kts, Int kte, Int kdir, Int k_qxtop, Int k_qxbot, Int kbot, Real Co_max,
+  Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
+  Real** vs, Real** fluxes, Real** qnx)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Spack>;
+  using KT = typename P3F::KT;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Spack, N>;
+  using uview_1d = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts -= 1;
+  kte -= 1;
+  kbot -= 1;
+  k_qxtop -= 1;
+  k_qxbot -= 1;
+
+  const Int nk = (kte - kts) + 1;
+
+  // Setup views
+  Kokkos::Array<view_1d, 3> temp_d;
+  Kokkos::Array<view_1d, N> fluxes_d, vs_d, qnx_d;
+
+  pack::host_to_device<3, Real, Spack, DefaultDevice>({rho, inv_rho, inv_dzq}, nk, temp_d);
+
+  view_1d rho_d(temp_d[0]), inv_rho_d(temp_d[1]), inv_dzq_d(temp_d[2]);
+
+  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
+  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
+  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
+
+  // Call core function from kernel
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;
+    for (int i = 0; i < N; ++i) {
+      fluxes_ptr[i] = (uview_1d*)(&fluxes_d[i]);
+      vs_ptr[i]     = (uview_1d*)(&vs_d[i]);
+      qnx_ptr[i]    = (uview_1d*)(&qnx_d[i]);
     }
-  }
+    uview_1d urho_d(rho_d), uinv_rho_d(inv_rho_d), uinv_dzq_d(inv_dzq_d);
+    Real prt_accum_k, dt_left_k; Int k_qxbot_k;
+    P3F::generalized_sedimentation<N>(urho_d, uinv_rho_d, uinv_dzq_d, team, nk, k_qxtop, k_qxbot_k, kbot, kdir, Co_max, dt_left_k, prt_accum_k, fluxes_ptr, vs_ptr, qnx_ptr);
+  });
+
+  // Sync back to host
+  pack::device_to_host<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>(fluxes), nk, fluxes_d);
+  pack::device_to_host<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>(qnx), nk, qnx_d);
 }
 
 void calc_first_order_upwind_step_f(
@@ -489,6 +527,30 @@ void calc_first_order_upwind_step_f(
   }
   else if (num_arrays == 4) {
     calc_first_order_upwind_step_f_impl<4>(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, fluxes, vs, qnx);
+  }
+  else {
+    scream_require_msg(false, "Unsupported num arrays in bridge calc_first_order_upwind_step_f: " << num_arrays);
+  }
+}
+
+void generalized_sedimentation_f(
+  Int kts, Int kte, Int kdir, Int k_qxtop, Int k_qxbot, Int kbot, Real Co_max,
+  Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
+  Int num_arrays, Real** vs, Real** fluxes, Real** qnx)
+{
+  scream_require_msg(kdir == 1 || kdir == -1, "Bad kdir: " << kdir);
+
+  if (num_arrays == 1) {
+    generalized_sedimentation_f_impl<1>(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum,
+                                        inv_dzq, inv_rho, rho, vs, fluxes, qnx);
+  }
+  else if (num_arrays == 2) {
+    generalized_sedimentation_f_impl<2>(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum,
+                                        inv_dzq, inv_rho, rho, vs, fluxes, qnx);
+  }
+  else if (num_arrays == 4) {
+    generalized_sedimentation_f_impl<4>(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum,
+                                        inv_dzq, inv_rho, rho, vs, fluxes, qnx);
   }
   else {
     scream_require_msg(false, "Unsupported num arrays in bridge calc_first_order_upwind_step_f: " << num_arrays);

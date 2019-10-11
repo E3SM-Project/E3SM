@@ -271,6 +271,19 @@ static void run_bfb()
 
 };
 
+template <typename D>
+struct UnitWrap::UnitTest<D>::TestGenSed {
+
+static void run_phys()
+{
+}
+
+static void run_bfb()
+{
+}
+
+};
+
 }
 }
 }
@@ -283,6 +296,14 @@ TEST_CASE("p3_upwind", "[p3_functions]")
 
   TU::run_phys();
   TU::run_bfb();
+}
+
+TEST_CASE("p3_gen_sed", "[p3_functions]")
+{
+  using TG = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestGenSed;
+
+  TG::run_phys();
+  TG::run_bfb();
 }
 
 } // namespace

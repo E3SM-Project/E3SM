@@ -217,7 +217,33 @@ void calc_first_order_upwind_step(CalcUpwindData& d);
 
 extern "C" {
 
-void calc_first_order_upwind_step_f(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
+void calc_first_order_upwind_step_f(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho,
+                                    Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
+
+}
+
+struct GenSedData : public CalcUpwindData
+{
+  // Inputs
+  Real Co_max;
+
+  // In/out
+  Int k_qxbot;
+  Real dt_left, prt_accum;
+
+  GenSedData(Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
+             Real prt_accum_, Int num_arrays_,
+             std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
+             std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
+
+};
+void generalized_sedimentation(GenSedData& d);
+
+extern "C" {
+
+void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int k_qxbot, Int kbot, Real Co_max,
+                                 Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
+                                 Int num_arrays, Real** vs, Real** fluxes, Real** qnx);
 
 }
 

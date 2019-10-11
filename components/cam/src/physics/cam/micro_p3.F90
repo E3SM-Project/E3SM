@@ -3792,6 +3792,11 @@ end subroutine ice_sedimentation
 subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, &
      num_arrays, vs, fluxes, qnx)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: generalized_sedimentation_f
+    use iso_c_binding
+#endif
+
    implicit none
 
    integer, intent(in) :: kts, kte, kdir, k_qxtop, kbot, num_arrays
@@ -3806,6 +3811,21 @@ subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_
 
    integer :: tmpint1, k_temp, k, i
    real(rtype) :: dt_sub
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  type(c_ptr), dimension(num_arrays) :: fluxes_c, vs_c, qnx_c
+
+  if (use_cxx) then
+     do i = 1, num_arrays
+        fluxes_c(i) = c_loc(fluxes(i)%p)
+        vs_c(i) = c_loc(vs(i)%p)
+        qnx_c(i) = c_loc(qnx(i)%p)
+     end do
+     call generalized_sedimentation_f(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, &
+          num_arrays, vs_c, fluxes_c, qnx_c)
+     return
+  endif
+#endif
 
    !-- compute dt_sub
    tmpint1 = int(Co_max+1._rtype)    !number of substeps remaining if dt_sub were constant
