@@ -84,7 +84,7 @@ int GPTLprint_memusage (const char *str)
   }
 
   if (bytesperblock > 0)
-    printf ("%s size=%.1f MB rss=%.1f MB share=%.1f MB text=%.1f MB datastack=%.1f MB\n",
+    printf ("%s size=%.1f MB rss=%.4f MB share=%.1f MB text=%.1f MB datastack=%.1f MB\n",
 	    str, size*blockstomb, rss*blockstomb, share*blockstomb,
 	    text*blockstomb, datastack*blockstomb);
   else
