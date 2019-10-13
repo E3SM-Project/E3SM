@@ -520,6 +520,7 @@ class Dataset():
         files = sorted(glob.glob(path))
 
         #Both .nc and .xml files are supported
+        file_fmt=''
         if len(files) > 0:
             file_fmt = files[0].split('.')[-1]
 
@@ -540,9 +541,10 @@ class Dataset():
         # the ref_name prepended to it.
         ref_name = getattr(self.parameters, 'ref_name', '')
         #path = os.path.join(data_path, ref_name, '*.nc')
-        path = os.path.join(data_path, '*.*')
+        path = os.path.join(data_path, ref_name, '*.*')
         files = sorted(glob.glob(path))
         #Both .nc and .xml files are supported
+        file_fmt=''
         if len(files) > 0:
             file_fmt = files[0].split('.')[-1]
 
@@ -598,7 +600,7 @@ class Dataset():
         end_time = '{}-12-15'.format(end_year)
 
         fnm = self._get_timeseries_file_path(var, data_path)
-        print(fnm)
+        #print(fnm)
         
         var = var_to_get if var_to_get else var
         # get available start and end years from file name: {var}_{start_yr}01_{end_yr}12.nc
