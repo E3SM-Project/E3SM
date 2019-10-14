@@ -27,10 +27,8 @@ else()
 endif()
 
 # Need this code so that build errors don't get buried
-message("JGF BUILD_SUCCESS IS: ${BUILD_SUCCESS}")
 if (NOT BUILD_SUCCESS STREQUAL "0")
   set(TEST_FAILS True)
-  message("JGF HERE 1, checking glob ${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastBuild*.log")
   file(GLOB MATCHES "${CTEST_BINARY_DIRECTORY}/Testing/Temporary/LastBuild*.log")
     if (MATCHES)
       foreach (MATCH IN LISTS MATCHES)
