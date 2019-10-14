@@ -3807,7 +3807,7 @@ subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_
    real(rtype), dimension(kts:kte), intent(in) :: inv_rho
    real(rtype), dimension(kts:kte), intent(in) :: rho
 
-   type(realptr), intent(in), dimension(num_arrays) :: vs, fluxes, qnx
+   type(realptr), intent(in), dimension(num_arrays), target :: vs, fluxes, qnx
 
    integer :: tmpint1, k_temp, k, i
    real(rtype) :: dt_sub
@@ -3818,8 +3818,8 @@ subroutine generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_
   if (use_cxx) then
      do i = 1, num_arrays
         fluxes_c(i) = c_loc(fluxes(i)%p)
-        vs_c(i) = c_loc(vs(i)%p)
-        qnx_c(i) = c_loc(qnx(i)%p)
+        vs_c(i)     = c_loc(vs(i)%p)
+        qnx_c(i)    = c_loc(qnx(i)%p)
      end do
      call generalized_sedimentation_f(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, &
           num_arrays, vs_c, fluxes_c, qnx_c)
@@ -3871,8 +3871,8 @@ subroutine calc_first_order_upwind_step(kts, kte, kdir, kbot, k_qxtop, dt_sub, r
   if (use_cxx) then
      do i = 1, num_arrays
         fluxes_c(i) = c_loc(fluxes(i)%p)
-        vs_c(i) = c_loc(vs(i)%p)
-        qnx_c(i) = c_loc(qnx(i)%p)
+        vs_c(i)     = c_loc(vs(i)%p)
+        qnx_c(i)    = c_loc(qnx(i)%p)
      end do
      call calc_first_order_upwind_step_f(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, &
           num_arrays, fluxes_c, vs_c, qnx_c)
