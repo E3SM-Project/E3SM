@@ -18,6 +18,7 @@ module seq_flds_mod
   !    g => glc
   !    r => rof
   !    w => wav
+  !    z => iac
   !
   !  state-name
   !    what follows state prefix
@@ -212,8 +213,8 @@ module seq_flds_mod
   character(CXX) :: seq_flds_r2o_liq_fluxes
   character(CXX) :: seq_flds_r2o_ice_fluxes
 
-  !character(CXX) :: seq_flds_x2z_states
-  !character(CXX) :: seq_flds_z2x_states
+  character(CXX) :: seq_flds_x2z_states
+  character(CXX) :: seq_flds_z2x_states
   character(CXX) :: seq_flds_z2x_fluxes
   character(CXX) :: seq_flds_x2z_fluxes
 
@@ -337,12 +338,18 @@ contains
     character(CXX) :: r2o_liq_fluxes = ''
     character(CXX) :: r2o_ice_fluxes = ''
 
+    character(CXX) :: z2x_states = ''
+    character(CXX) :: z2x_fluxes = ''
+    character(CXX) :: x2z_states = ''
+    character(CXX) :: x2z_fluxes = ''
+
     character(CXX) :: stringtmp  = ''
 
     !------ namelist -----
     character(len=CSS)  :: fldname, fldflow
     logical :: is_state, is_flux
     integer :: i,n
+    character(len=3) :: pftstr = ''
 
     ! use cases namelists
     logical :: flds_co2a
@@ -352,10 +359,12 @@ contains
     logical :: flds_bgc_oi
     logical :: flds_wiso
     integer :: glc_nec
+    integer :: iac_npft = 17
 
     namelist /seq_cplflds_inparm/  &
          flds_co2a, flds_co2b, flds_co2c, flds_co2_dmsa, flds_wiso, glc_nec, &
-         ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, nan_check_component_fields
+         ice_ncat, seq_flds_i2o_per_cat, flds_bgc_oi, nan_check_component_fields, &
+         iac_npft
 
     ! user specified new fields
     integer,  parameter :: nfldmax = 200
@@ -507,6 +516,12 @@ contains
           case('x2g')
              if (is_state) call seq_flds_add(x2g_states,trim(fldname))
              if (is_flux ) call seq_flds_add(x2g_fluxes,trim(fldname))
+          case('z2x')
+             if (is_state) call seq_flds_add(z2x_states,trim(fldname))
+             if (is_flux ) call seq_flds_add(z2x_fluxes,trim(fldname))
+          case('x2z')
+             if (is_state) call seq_flds_add(x2z_states,trim(fldname))
+             if (is_flux ) call seq_flds_add(x2z_fluxes,trim(fldname))
           case default
              write(logunit,*) subname//'ERROR: ',trim(cplflds_custom(n)),&
                   ' not a recognized value'
@@ -2106,6 +2121,67 @@ contains
     units    = 'm'
     attname  = 'Sw_hstokes'
     call metadata_set(attname, longname, stdname, units)
+
+    !----------------------------
+    ! lnd->iac, iac->lnd, iac->atm
+    !----------------------------
+    
+    ! Only hr and npp matter, for now
+    call seq_flds_add(l2x_states,'Sl_hr')
+    call seq_flds_add(x2z_states,'Sl_hr')
+    longname = 'Total heterotrophic respiration'
+    stdname  = 'lnd_total_heterotrophic_respiration'
+    units    = 'gC/m^2/s'
+    attname  = 'Sl_hr'
+    call metadata_set(attname, longname, stdname, units)
+
+    ! npp and pftwtgs need one field for each pft
+    do i = 1,iac_npft
+       write(pftstr,'(I0)') i
+       pftstr=trim(pftstr)
+
+       call seq_flds_add(l2x_states,'Sl_npp_pft' // pftstr)
+       call seq_flds_add(x2z_states,'Sl_npp_pft' // pftstr)
+       longname = 'Net primary production for pft ' // pftstr
+       stdname  = 'lnd_net_primary_production_pft' // pftstr
+       units    = 'gC/m^2/s'
+       attname  = 'Sl_npp_pft' // pftstr
+       call metadata_set(attname, longname, stdname, units)
+    
+       ! Review
+       call seq_flds_add(l2x_states,'Sl_pftwtg_pft' //pftstr)
+       call seq_flds_add(x2z_states,'Sl_pftwtg' //pftstr)
+       longname = 'PFT weight relative to gridcell for pft ' //pftstr
+       stdname  = 'lnd_pft_weight_pft' //pftstr
+       units    = ''
+       attname  = 'Sl_pftwtg_pft' //pftstr
+       call metadata_set(attname, longname, stdname, units)
+
+       ! iac->lnd 
+
+       ! This is currently the only thing we send back from gcam, but I
+       ! wonder if landuse and landfrac should go as well - just to
+       ! verify that we are all using the same values.
+       call seq_flds_add(z2x_states,'Sz_pct_pft' //pftstr)
+       call seq_flds_add(x2l_states,'Sz_pct_pft' //pftstr)
+       longname = 'Percent pft of vegetated land unit for pft ' //pftstr
+       stdname  = 'iac_pct_pft' //pftstr
+       units    = 'percent'
+       attname  = 'Sz_pct_pft' //pftstr
+       call metadata_set(attname, longname, stdname, units)
+    end do 
+
+    ! iac->atm flux.  Probably need to switch for correct
+    ! flds_CO2(a,b,c) option
+
+    call seq_flds_add(z2x_fluxes,  "Fazz_fco2_iac")
+    call seq_flds_add(x2a_fluxes,  "Fazz_fco2_iac")
+    longname = 'Surface flux of CO2 from iac'
+    stdname  = 'surface_upward_flux_of_carbon_dioxide_from_iac'
+    units    = 'moles m-2 s-1'
+    attname  = 'Fazz_fco2_iac'
+    call metadata_set(attname, longname, stdname, units)
+
 
     !-----------------------------
     ! New xao_states diagnostic
