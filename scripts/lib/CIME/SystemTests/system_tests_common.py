@@ -474,7 +474,7 @@ class SystemTestsCommon(object):
                         diff = (baseline - current)/baseline
                         tolerance = self._case.get_value("TEST_TPUT_TOLERANCE")
                         if tolerance is None:
-                            tolerance = 0.25
+                            tolerance = 0.1
                         expect(tolerance > 0.0, "Bad value for throughput tolerance in test")
                         if diff < tolerance and self._test_status.get_status(THROUGHPUT_PHASE) is None:
                             self._test_status.set_status(THROUGHPUT_PHASE, TEST_PASS_STATUS)
