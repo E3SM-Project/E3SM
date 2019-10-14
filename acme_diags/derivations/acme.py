@@ -615,7 +615,7 @@ derived_variables = {
         (('CLDTOT',), lambda cldtot: convert_units(cldtot, target_units="%"))
     ]),
     'CLOUD': OrderedDict([
-        (('clt',), rename),
+        (('cl',), rename),
         (('CLOUD',), lambda cldtot: convert_units(cldtot, target_units="%"))
     ]),
     # below for COSP output
