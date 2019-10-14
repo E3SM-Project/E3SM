@@ -47,7 +47,6 @@ module element_state
     real (kind=real_kind) :: phis(np,np)                          ! surface geopotential (prescribed)  
     real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)             ! Tracer concentration               
     real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2)           ! Tracer mass                        
-
   end type elem_state_t
 
   !___________________________________________________________________
@@ -80,6 +79,7 @@ module element_state
     real (kind=real_kind) :: FQps(np,np)                   ! forcing of FQ on ps_v
 
     real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
+
   end type derived_state_t
   
 

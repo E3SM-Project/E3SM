@@ -1,3 +1,5 @@
+! July 2019 O. Guba Added extrema locations in output
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -17,7 +19,7 @@ module prim_state_mod
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
-  use element_ops,      only: get_field, get_phi
+  use element_ops,      only: get_field, get_phi, get_field_i
   use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt,diagtimes
   use eos,              only: pnh_and_exner_from_eos
   use viscosity_mod,    only: compute_zeta_C0
@@ -105,7 +107,7 @@ contains
     real (kind=real_kind)  :: phi_i(np,np,nlevp)
     real (kind=real_kind)  :: dphi(np,np,nlev)
     real (kind=real_kind)  :: w_over_dz(np,np,nlev),w_over_dz_p
-    real (kind=real_kind)  :: tdiag(np,np,nlev), tempext
+    real (kind=real_kind)  :: tdiag(np,np,nlev), muvalue(np,np,nlevp), tempext
     !    real (kind=real_kind)  :: E(np,np)
     integer                :: location(3)
 
@@ -215,7 +217,7 @@ contains
           call get_field(elem(ie),'temperature',tdiag,hvcoord,n0,n0q)
        else
           ! show min/max/num of dpnh / dp as a diagnostic
-          call get_field(elem(ie),'dpnh_dp',tdiag,hvcoord,n0,n0q)
+          call get_field_i(elem(ie),'mu_i',muvalue,hvcoord,n0)
        endif
 
        ! layer thickness
@@ -235,7 +237,11 @@ contains
 
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
 
-       call extremumLevelHelper(tmax_local,tdiag,'max',logical(ie == nets))
+       if (theta_hydrostatic_mode) then
+          call extremumLevelHelper(tmax_local,tdiag,'max',logical(ie == nets))
+       else
+          call extremumLevelHelper_i(tmax_local,muvalue,'max',logical(ie == nets))
+       endif
        call extremumLevelHelper(phimax_local,dphi,'max',logical(ie == nets))
        call extremumLevelHelper(w_over_dz_max_local,w_over_dz,'max',logical(ie == nets))
 
@@ -243,7 +249,11 @@ contains
 
        psmin_local(ie) = MINVAL(tmp(:,:,ie))
 
-       call extremumLevelHelper(tmin_local,tdiag,'min',logical(ie == nets))
+       if (theta_hydrostatic_mode) then
+          call extremumLevelHelper(tmin_local,tdiag,'min',logical(ie == nets))
+       else
+          call extremumLevelHelper_i(tmin_local,muvalue,'min',logical(ie == nets))
+       endif
        call extremumLevelHelper(phimin_local,dphi,'min',logical(ie == nets))
 
        !======================================================
@@ -255,7 +265,11 @@ contains
        phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
-       tsum_local(ie)    = SUM(tdiag)
+       if (theta_hydrostatic_mode) then
+          tsum_local(ie)    = SUM(tdiag)
+       else
+          tsum_local(ie)    = SUM(muvalue)
+       endif
 
        dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
 
@@ -1029,6 +1043,55 @@ subroutine extremumLevelHelper(res,field,operation,first)
       endif
    endif
 end subroutine extremumLevelHelper
+
+
+
+!helper routine to compute min/max for derived quantities
+subroutine extremumLevelHelper_i(res,field,operation,first)
+   use kinds, only : real_kind
+   use dimensions_mod, only : np, np, nlev
+   implicit none
+   real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
+   character(len=*),      intent(in)    :: operation
+   logical,               intent(in)    :: first
+   real (kind=real_kind), intent(in)    :: field(np,np,nlevp)
+
+   real (kind=real_kind)                :: val
+   integer                              :: location(3)
+
+   if((operation /= 'max').and.(operation /= 'min')) call abortmp('unknown operation in extremumLevelHelper_i()')
+
+   if ( first ) then
+      if( operation == 'max' ) then
+         res(1) = MAXVAL(field)
+         location = MAXLOC(field)
+         res(2) = location(3)
+      else
+         res(1) = MINVAL(field)
+         location = MINLOC(field)
+         res(2) = location(3)
+      endif
+   else
+      if( operation == 'max' ) then
+         val = MAXVAL(field)
+         if ( val > res(1) ) then
+            res(1) = val
+            location = MAXLOC(field)
+            res(2) = location(3)
+         endif
+      else
+         val = MINVAL(field)
+         if ( val < res(1) ) then
+            res(1) = val
+            location = MINLOC(field)
+            res(2) = location(3)
+         endif
+      endif
+   endif
+end subroutine extremumLevelHelper_i
+
+
+
 
 
 
