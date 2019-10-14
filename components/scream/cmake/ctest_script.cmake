@@ -27,6 +27,7 @@ else()
 endif()
 
 # Need this code so that build errors don't get buried
+message("JGF BUILD_SUCCESS IS: ${BUILD_SUCCESS}")
 if (NOT BUILD_SUCCESS STREQUAL "0")
   set(TEST_FAILS True)
   file(GLOB MATCHES "${CMAKE_BINARY_DIR}/Testing/Temporary/LastBuild*.log")
