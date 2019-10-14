@@ -515,12 +515,18 @@ class Dataset():
         This is equivalent to returning False.
         """
         # Get all of the nc file paths in data_path.
-        path = os.path.join(data_path, '*.nc')
+        #path = os.path.join(data_path, '*.nc')
+        path = os.path.join(data_path, '*.*')
         files = sorted(glob.glob(path))
+
+        #Both .nc and .xml files are supported
+        file_fmt=''
+        if len(files) > 0:
+            file_fmt = files[0].split('.')[-1]
 
         # Everything between '{var}_' and '.nc' in a
         # time-series file is always 13 characters.
-        re_str = var + r'_.{13}.nc'
+        re_str = var + r'_.{13}.' + file_fmt
         re_str = os.path.join(data_path, re_str)
         matches = [f for f in files if re.search(re_str, f)]
 
@@ -534,10 +540,17 @@ class Dataset():
         # If nothing was found, try looking for the file with
         # the ref_name prepended to it.
         ref_name = getattr(self.parameters, 'ref_name', '')
-        path = os.path.join(data_path, ref_name, '*.nc')
+        #path = os.path.join(data_path, ref_name, '*.nc')
+        path = os.path.join(data_path, ref_name, '*.*')
         files = sorted(glob.glob(path))
+        #Both .nc and .xml files are supported
+        file_fmt=''
+        if len(files) > 0:
+            file_fmt = files[0].split('.')[-1]
 
-        re_str = var + r'_.{13}.nc'
+        # Everything between '{var}_' and '.nc' in a
+        # time-series file is always 13 characters.
+        re_str = var + r'_.{13}.' + file_fmt
         re_str = os.path.join(data_path, ref_name, re_str)
         matches = [f for f in files if re.search(re_str, f)]
         # Again, there should only be one file per var in this new location.
@@ -587,6 +600,7 @@ class Dataset():
         end_time = '{}-12-15'.format(end_year)
 
         fnm = self._get_timeseries_file_path(var, data_path)
+        #print(fnm)
         
         var = var_to_get if var_to_get else var
         # get available start and end years from file name: {var}_{start_yr}01_{end_yr}12.nc
@@ -597,7 +611,11 @@ class Dataset():
             msg = "Invalid year range specified for test/reference time series data" 
             raise RuntimeError(msg)
         else: 
-            with cdms2.open(fnm) as f:
-                var_time = f(var, time=(start_time, end_time, 'ccb'))(squeeze=1)
-
-                return var_time
+            #with cdms2.open(fnm) as f:
+            #    var_time = f(var, time=(start_time, end_time, 'ccb'))(squeeze=1)
+            #    return var_time
+            #For xml files using above with statement won't work because the Dataset object returned doesn't have attribute __enter__ for content management.
+            fin = cdms2.open(fnm)
+            var_time = fin(var, time=(start_time, end_time, 'ccb'))(squeeze=1)
+            fin.close() 
+            return var_time

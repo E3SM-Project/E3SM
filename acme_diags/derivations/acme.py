@@ -105,6 +105,13 @@ def prect(precc, precl):
     var.long_name = "Total precipitation rate (convective + large-scale)"
     return var
 
+def precst(precc, precl):
+    """Total precipitation flux = convective + large-scale"""
+    var = precc + precl
+    var = convert_units(var, "mm/day")
+    var.long_name = "Total snowfall flux (convective + large-scale)"
+    return var
+
 def tauxy(taux, tauy):
     """tauxy = (taux^2 + tauy^2)sqrt"""
     var = (taux**2 + tauy**2)**0.5
@@ -367,6 +374,10 @@ derived_variables = {
         (('pr',), lambda pr: qflxconvert_units(rename(pr))),
         (('PRECC', 'PRECL'), lambda precc, precl: prect(precc, precl))
     ]),
+    'PRECST': OrderedDict([
+        (('prsn',), lambda prsn: qflxconvert_units(rename(prsn))),
+        (('PRECSC', 'PRECSL'), lambda precsc, precsl: precst(precsc, precsl))
+    ]),
     'SST': OrderedDict([
         # lambda sst: convert_units(rename(sst),target_units="degC")),
         (('sst',), rename),
@@ -374,8 +385,8 @@ derived_variables = {
             convert_units(ts, target_units="degC"), ocnfrac, low_limit=0.9)),
         (('SST',), lambda sst: convert_units(sst, target_units="degC"))
     ]),
-    'PREH2O': OrderedDict([
-        (('TMQ',), rename),
+    'TMQ': OrderedDict([
+        (('PREH2O',), rename),
         (('prw',), rename)
     ]),
     'SOLIN': OrderedDict([
@@ -456,6 +467,9 @@ derived_variables = {
     'FLDS': OrderedDict([
         (('rlds',), rename)
     ]),
+    'FLUS': OrderedDict([
+        (('rlus',), rename)
+    ]),
     'FLDSC': OrderedDict([
         (('rldscs',), rename),
         (('TS', 'FLNSC'), lambda ts, flnsc: fldsc(ts, flnsc))
@@ -470,6 +484,12 @@ derived_variables = {
     'FSDS': OrderedDict([
         (('rsds',), rename)
     ]),
+    'FSUS': OrderedDict([
+        (('rsus',), rename)
+    ]),
+    'FSUSC': OrderedDict([
+        (('rsuscs',), rename)
+    ]),
     'FSDSC': OrderedDict([
         (('rsdscs',), rename),
         (('rsdsc',), rename)
@@ -480,6 +500,12 @@ derived_variables = {
     ]),
     'FLUT': OrderedDict([
         (('rlut',), rename)
+    ]),
+    'FSUTOA': OrderedDict([
+        (('rsut',), rename)
+    ]),
+    'FSUTOAC': OrderedDict([
+        (('rsutcs',), rename)
     ]),
     'FLNT': OrderedDict([
         (('FLNT',), rename)
@@ -551,6 +577,7 @@ derived_variables = {
         (('tas',), lambda t: convert_units(t, target_units="DegC"))
     ]),
     'QFLX': OrderedDict([
+        (('evspsbl',), rename),
         (('QFLX',), lambda qflx: qflxconvert_units(qflx))
     ]),
     'LHFLX': OrderedDict([
@@ -584,7 +611,12 @@ derived_variables = {
         (('CLDMED',), lambda cldmed: convert_units(cldmed, target_units="%"))
     ]),
     'CLDTOT': OrderedDict([
+        (('clt',), rename),
         (('CLDTOT',), lambda cldtot: convert_units(cldtot, target_units="%"))
+    ]),
+    'CLOUD': OrderedDict([
+        (('cl',), rename),
+        (('CLOUD',), lambda cldtot: convert_units(cldtot, target_units="%"))
     ]),
     # below for COSP output
     # CLIPSO
@@ -706,6 +738,7 @@ derived_variables = {
         (('OMEGA',), lambda omega: convert_units(omega, target_units="mbar/day"))
     ]),
     'SHUM': OrderedDict([
+        (('hus',), lambda q: convert_units(rename(q), target_units="g/kg")),
         (('Q',), lambda q: convert_units(rename(q), target_units="g/kg")),
         (('SHUM',), lambda shum: convert_units(shum, target_units="g/kg"))
     ]),
@@ -714,7 +747,191 @@ derived_variables = {
         (('tauu','tauv'), lambda taux, tauy: tauxy(taux, tauy))
     ]),
     'AODVIS': OrderedDict([
+        (('od550aer',), rename),
         (('AODVIS',), lambda aod: convert_units(rename(aod), target_units = "dimensionless")),
         (('AOD_550_ann',), lambda aod: convert_units(rename(aod), target_units = "dimensionless"))
+    ]),
+    'AODABS': OrderedDict([
+        (('abs550aer',), rename)
+    ]),
+    'TS': OrderedDict([
+        (('ts',), rename)
+    ]),
+    'PS': OrderedDict([
+        (('ps',), rename)
+    ]),
+    'U10': OrderedDict([
+        (('sfcWind',), rename)
+    ]),
+    'QREFHT': OrderedDict([
+        (('huss',), rename)
+    ]),
+    'PRECC': OrderedDict([
+        (('prc',), rename)
+    ]),
+    'TAUX': OrderedDict([
+        (('tauu',), lambda tauu: -tauu)
+    ]),
+    'TAUY': OrderedDict([
+        (('tauv',), lambda tauv: -tauv)
+    ]),
+    'CLDICE': OrderedDict([
+        (('cli',), rename)
+    ]),
+    'TGCLDIWP': OrderedDict([
+        (('clivi',), rename)
+    ]),
+    'CLDLIQ': OrderedDict([
+        (('clw',), rename)
+    ]),
+    'TGCLDCWP': OrderedDict([
+        (('clwvi',), rename)
+    ]),
+    'O3': OrderedDict([
+        (('o3',), rename)
+    ]),
+    #Land variables
+    'SOILWATER_10CM': OrderedDict([
+        (('mrsos',), rename)
+    ]),
+    'SOILWATER_SUM': OrderedDict([
+        (('mrso',), rename)
+    ]),
+    'SOILICE_SUM': OrderedDict([
+        (('mrfso',), rename)
+    ]),
+    'QOVER': OrderedDict([
+        (('mrros',), rename)
+    ]),
+    'QRUNOFF': OrderedDict([
+        (('mrro',), rename)
+    ]),
+    'QINTR': OrderedDict([
+        (('prveg',), rename)
+    ]),
+    'QVEGE': OrderedDict([
+        (('evspsblveg',), rename)
+    ]),
+    'QSOIL': OrderedDict([
+        (('evspsblsoi',), rename)
+    ]),
+    'TRAN': OrderedDict([
+        (('tran',), rename)
+    ]),
+    'TSOI': OrderedDict([
+        (('tsl',), rename)
+    ]),
+    'LAI': OrderedDict([
+        (('lai',), rename)
+    ]),
+    #Ocean variables
+    'tauuo': OrderedDict([
+        (('tauuo',), rename)
+    ]),
+    'tos': OrderedDict([
+        (('tos',), rename)
+    ]),
+    'thetaoga': OrderedDict([
+        (('thetaoga',), rename)
+    ]),
+    'hfsifrazil': OrderedDict([
+        (('hfsifrazil',), rename)
+    ]),
+    'sos': OrderedDict([
+        (('sos',), rename)
+    ]),
+    'soga': OrderedDict([
+        (('soga',), rename)
+    ]),
+    'tosga': OrderedDict([
+        (('tosga',), rename)
+    ]),
+    'wo': OrderedDict([
+        (('wo',), rename)
+    ]),
+    'thetao': OrderedDict([
+        (('thetao',), rename)
+    ]),
+    'masscello': OrderedDict([
+        (('masscello',), rename)
+    ]),
+    'wfo': OrderedDict([
+        (('wfo',), rename)
+    ]),
+    'tauvo': OrderedDict([
+        (('tauvo',), rename)
+    ]),
+    'vo': OrderedDict([
+        (('vo',), rename)
+    ]),
+    'hfds': OrderedDict([
+        (('hfds',), rename)
+    ]),
+    'volo': OrderedDict([
+        (('volo',), rename)
+    ]),
+    'uo': OrderedDict([
+        (('uo',), rename)
+    ]),
+    'zos': OrderedDict([
+        (('zos',), rename)
+    ]),
+    'tob': OrderedDict([
+        (('tob',), rename)
+    ]),
+    'sosga': OrderedDict([
+        (('sosga',), rename)
+    ]),
+    'sfdsi': OrderedDict([
+        (('sfdsi',), rename)
+    ]),
+    'zhalfo': OrderedDict([
+        (('zhalfo',), rename)
+    ]),
+    'masso': OrderedDict([
+        (('masso',), rename)
+    ]),
+    'so': OrderedDict([
+        (('so',), rename)
+    ]),
+    'sob': OrderedDict([
+        (('sob',), rename)
+    ]),
+    'mlotst': OrderedDict([
+        (('mlotst',), rename)
+    ]),
+    'fsitherm': OrderedDict([
+        (('fsitherm',), rename)
+    ]),
+    'msftmz': OrderedDict([
+        (('msftmz',), rename)
+    ]),
+    #sea ice variables
+    'sitimefrac': OrderedDict([
+        (('sitimefrac',), rename)
+    ]),
+    'siconc': OrderedDict([
+        (('siconc',), rename)
+    ]),
+    'sisnmass': OrderedDict([
+        (('sisnmass',), rename)
+    ]),
+    'sisnthick': OrderedDict([
+        (('sisnthick',), rename)
+    ]),
+    'simass': OrderedDict([
+        (('simass',), rename)
+    ]),
+    'sithick': OrderedDict([
+        (('sithick',), rename)
+    ]),
+    'siu': OrderedDict([
+        (('siu',), rename)
+    ]),
+    'sitemptop': OrderedDict([
+        (('sitemptop',), rename)
+    ]),
+    'siv': OrderedDict([
+        (('siv',), rename)
     ])
 }
