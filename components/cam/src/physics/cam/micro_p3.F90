@@ -3061,7 +3061,7 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then
-      call  update_prognostic_ice_fqcheti,qccol,qcshd,    &
+      call  update_prognostic_ice_f(qcheti,qccol,qcshd,    &
            nccol,ncheti,ncshdc,    &
            qrcol,nrcol,qrheti,nrheti,nrshdr,    &
            qimlt,nimlt,qisub,qidep,qinuc,ninuc,nislf,nisub,qiberg,    &
