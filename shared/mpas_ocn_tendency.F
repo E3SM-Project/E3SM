@@ -116,7 +116,7 @@ contains
 
       real (kind=RKIND), dimension(:), pointer :: surfaceThicknessFlux
       real (kind=RKIND), dimension(:), pointer :: surfaceThicknessFluxRunoff
-      real (kind=RKIND), dimension(:,:), pointer :: layerThickness, layerThicknessEdge, &
+      real (kind=RKIND), dimension(:,:), pointer :: layerThicknessEdge, &
          vertAleTransportTop, tend_layerThickness, normalTransportVelocity, fractionAbsorbed, fractionAbsorbedRunoff
 
       integer, pointer :: nCells
@@ -179,7 +179,7 @@ contains
       ! surface flux tendency
       !
 
-      call ocn_thick_surface_flux_tend(meshPool, fractionAbsorbed, fractionAbsorbedRunoff, layerThickness,  &
+      call ocn_thick_surface_flux_tend(meshPool, fractionAbsorbed, fractionAbsorbedRunoff, &
          surfaceThicknessFlux, surfaceThicknessFluxRunoff, tend_layerThickness, err)
 
       !
