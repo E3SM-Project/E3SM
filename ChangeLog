@@ -1,6 +1,45 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-15-2019
+Tag: cime5.8.12
+Answer Changes: None
+Tests: ERS.T5_T5_mg37.QPC4, scripts_regression_tests 
+Dependencies:
+
+Brief Summary:
+    - Add missing domain files for T5_T5_mg37 grid.
+    - Merge maint-5.6 to master 2019-11-10.
+    - Updates for cam testing updates.
+    - Fix nuopc esmf paths.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+7f1d48fe9 Merge pull request #3263 from ESMCI/fischer/T5_grid_fix
+3468404c1 Merge pull request #3260 from ESMCI/fischer/maint-5.6_merge
+7070d8a5c Merge pull request #3256 from ESMCI/fischer/cam_testing
+4a9b008f2 fix nuopc esmf paths
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_files.xml
+M       config/cesm/config_grids.xml
+M       config/cesm/machines/config_machines.xml
+M       config/cesm/machines/config_workflow.xml
+M       config/e3sm/machines/config_workflow.xml
+M       config/xml_schemas/config_workflow.xsd
+M       scripts/create_newcase
+M       scripts/lib/CIME/XML/workflow.py
+M       scripts/lib/CIME/case/case.py
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/main/seq_flux_mct.F90
+M       src/share/util/shr_flux_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 10-01-2019
 Tag: cime5.8.11
 Answer Changes: None
