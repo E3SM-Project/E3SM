@@ -1448,11 +1448,6 @@ contains
      do s = 1, this%fates(nc)%nsites
         ! filter flag == 1 means that this patch has not been called for photosynthesis
         this%fates(nc)%bc_in(s)%filter_photo_pa(:) = 1
-
-        ! set transpiration input boundary condition to zero. The exposed
-        ! vegetation filter may not even call every patch.
-        this%fates(nc)%bc_in(s)%qflx_transp_pa(:) = 0._r8
-        
      end do
   end subroutine prep_canopyfluxes
 
@@ -2280,7 +2275,6 @@ contains
  ! ======================================================================================
 
  subroutine wrap_hydraulics_drive(this, bounds_clump, &
-                                 fn, filterp, &
                                  soilstate_inst, waterstate_inst, waterflux_inst, &
                                  solarabs_inst, energyflux_inst)
 
@@ -2288,8 +2282,6 @@ contains
    implicit none
    class(hlm_fates_interface_type), intent(inout) :: this
    type(bounds_type),intent(in)                   :: bounds_clump
-   integer, intent(in)                            :: fn
-   integer, intent(in)                            :: filterp(fn)
    type(soilstate_type)    , intent(inout)        :: soilstate_inst
    type(waterstate_type)   , intent(inout)        :: waterstate_inst
    type(waterflux_type)    , intent(inout)        :: waterflux_inst
@@ -2300,7 +2292,6 @@ contains
    integer :: s
    integer :: c 
    integer :: j
-   integer :: f    ! filter loop index
    integer :: ifp
    integer :: p
    integer :: nc
@@ -2339,21 +2330,9 @@ contains
          p = ifp+col_pp%pfti(c)
          this%fates(nc)%bc_in(s)%swrad_net_pa(ifp) = solarabs_inst%fsa_patch(p)
          this%fates(nc)%bc_in(s)%lwrad_net_pa(ifp) = energyflux_inst%eflx_lwrad_net_patch(p)
+         this%fates(nc)%bc_in(s)%qflx_transp_pa(ifp) = veg_wf%qflx_tran_veg(p)
       end do
    end do
-
-   ! The exposed vegetation filter "filterp" dictates which patches
-   ! had their transpiration updated during canopy_fluxes(). Patches
-   ! not in the filter had been zero'd during prep_canopyfluxes().
-   
-   do f = 1,fn
-      p = filterp(f)
-      c = veg_pp%column(p)
-      s = this%f2hmap(nc)%hsites(c)
-      ifp = p - col_pp%pfti(c)
-      this%fates(nc)%bc_in(s)%qflx_transp_pa(ifp) = waterflux_inst%qflx_tran_veg_patch(p)
-   end do
-
 
    ! Call Fates Hydraulics
    ! ------------------------------------------------------------------------------------
