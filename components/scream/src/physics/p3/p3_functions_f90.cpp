@@ -429,13 +429,13 @@ void calc_first_order_upwind_step_f_impl(
   Kokkos::Array<view_1d, 3> temp_d;
   Kokkos::Array<view_1d, N> fluxes_d, vs_d, qnx_d;
 
-  pack::host_to_device<3, Real, Spack, DefaultDevice>({rho, inv_rho, inv_dzq}, nk, temp_d);
+  pack::host_to_device({rho, inv_rho, inv_dzq}, nk, temp_d);
 
   view_1d rho_d(temp_d[0]), inv_rho_d(temp_d[1]), inv_dzq_d(temp_d[2]);
 
-  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
-  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
-  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
+  pack::host_to_device(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
+  pack::host_to_device(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
+  pack::host_to_device(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
 
   // Call core function from kernel
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
@@ -451,8 +451,8 @@ void calc_first_order_upwind_step_f_impl(
   });
 
   // Sync back to host
-  pack::device_to_host<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>(fluxes), nk, fluxes_d);
-  pack::device_to_host<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>(qnx), nk, qnx_d);
+  pack::device_to_host(ptr_to_arr<N>(fluxes), nk, fluxes_d);
+  pack::device_to_host(ptr_to_arr<N>(qnx), nk, qnx_d);
 }
 
 template <int N>
@@ -490,15 +490,15 @@ void generalized_sedimentation_f_impl(
   Kokkos::Array<view_1ds, 1> scalar_temp;
   std::vector<Real> scalars = {*prt_accum, *dt_left, static_cast<Real>(*k_qxbot)};
 
-  pack::host_to_device<3, Real, Spack, DefaultDevice>({rho, inv_rho, inv_dzq}, nk, temp_d);
-  pack::host_to_device<1, Real, Singlep, DefaultDevice>({scalars.data()}, scalars.size(), scalar_temp);
+  pack::host_to_device({rho, inv_rho, inv_dzq}, nk, temp_d);
+  pack::host_to_device({scalars.data()}, scalars.size(), scalar_temp);
 
   view_1d rho_d(temp_d[0]), inv_rho_d(temp_d[1]), inv_dzq_d(temp_d[2]);
   view_1ds scalars_d(scalar_temp[0]);
 
-  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
-  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
-  pack::host_to_device<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
+  pack::host_to_device(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
+  pack::host_to_device(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
+  pack::host_to_device(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
 
   // Call core function from kernel
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
@@ -525,9 +525,9 @@ void generalized_sedimentation_f_impl(
   });
 
   // Sync back to host
-  pack::device_to_host<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>(fluxes), nk, fluxes_d);
-  pack::device_to_host<N, Real, Spack, DefaultDevice>(ptr_to_arr<N>(qnx), nk, qnx_d);
-  pack::device_to_host<1, Real, Singlep, DefaultDevice>({scalars.data()}, scalars.size(), scalar_temp);
+  pack::device_to_host(ptr_to_arr<N>(fluxes), nk, fluxes_d);
+  pack::device_to_host(ptr_to_arr<N>(qnx), nk, qnx_d);
+  pack::device_to_host({scalars.data()}, scalars.size(), scalar_temp);
 
   // Set scalars
   *prt_accum = scalars[0];
