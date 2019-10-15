@@ -924,6 +924,16 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="ne30_r05_ne30" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">r05</grid>
+      <grid name="ocnice">ne30np4</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
     <model_grid alias="ne30pg1_ne30pg1" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne30np4.pg1</grid>
       <grid name="lnd">ne30np4.pg1</grid>
@@ -2155,6 +2165,7 @@
       <ny>360</ny>
       <file grid="atm" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_oEC60to30v3.190418.nc</file>
       <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_oEC60to30v3.190418.nc</file>
+      <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r05_gx1v6.191014.nc</file>
       <desc>r05 is 1/2 degree river routing grid:</desc>
     </domain>
 
@@ -2517,10 +2528,10 @@
     </gridmap>
 
     <gridmap atm_grid="ne30np4" lnd_grid="r05">
-      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r05_conserve.190418.nc</map>
-      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r05_conserve.190418.nc</map>
-      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_conserve.190418.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_conserve.190418.nc</map>
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r05_aave.190424.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r05_aave.190424.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_aave.190424.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_aave.190424.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4" lnd_grid="r0125">
