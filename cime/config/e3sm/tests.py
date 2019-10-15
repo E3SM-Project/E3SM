@@ -68,7 +68,7 @@ _TESTS = {
             "ERS_Ld31.ne4_ne4.FC5AV1C-L",
             "ERP_Lm3.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne30_ne30.FC5AV1C-L",
-            "ERP_Ln5.ne30_ne30.FC5AV1C-L",
+            "ERP_Ln7.ne30_ne30.FC5AV1C-L",
             "SMS_Ly1.ne4_ne4.FC5AV1C-L",
             )
         },
