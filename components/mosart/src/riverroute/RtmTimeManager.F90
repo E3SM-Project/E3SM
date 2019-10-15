@@ -731,7 +731,9 @@ subroutine advance_timestep(nsub)
            if (dd1 /= dd0) new_day = .true.
         endif
      endif
+#ifdef DEBUG
      write(iulog,'(2a,4i6,3l4)') sub," yy,mm,dd = ",yy1,mm1,dd1,tod1,new_year,new_month,new_day
+#endif
   endif
 
 end subroutine advance_timestep

@@ -1058,6 +1058,7 @@ for mct, etc.
 <compiler MACH="compy" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
+    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
@@ -1083,6 +1084,7 @@ for mct, etc.
 <compiler MACH="compy" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
+    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
