@@ -51,9 +51,11 @@
 
 <fsurdat res="r0125">lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr1850_c190730.nc</fsurdat>
 <flanduse_timeseries res="r0125">lnd/clm2/surfdata_map/landuse.timeseries_0.125x0.125_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
+<finidat res="r0125"> </finidat>
 
 <fsurdat res="r05">lnd/clm2/surfdata_map/surfdata_0.5x0.5_simyr1850_c190418.nc</fsurdat>
 <flanduse_timeseries res="r05">lnd/clm2/surfdata_map/landuse.timeseries_0.5x0.5_hist_simyr1850-2015_c191004.nc</flanduse_timeseries>
+<finidat res="r05"> </finidat>
 
 <check_finidat_year_consistency>.false.</check_finidat_year_consistency>
 <check_dynpft_consistency>.false.</check_dynpft_consistency>
