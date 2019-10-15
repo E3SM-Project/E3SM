@@ -59,6 +59,7 @@ module mpas_atm_boundaries
         use mpas_stream_manager, only : mpas_stream_mgr_read
         use mpas_log, only : mpas_log_write
         use mpas_derived_types, only : MPAS_STREAM_MGR_NOERR, MPAS_LOG_ERR
+        use mpas_timekeeping, only : mpas_get_time
 
         implicit none
 
@@ -67,6 +68,9 @@ module mpas_atm_boundaries
         type (block_type), intent(inout) :: block
         logical, intent(in) :: firstCall
         integer, intent(out) :: ierr
+
+        character(len=StrKIND) :: lbc_intv_start_string
+        character(len=StrKIND) :: lbc_intv_end_string
 
         type (mpas_pool_type), pointer :: mesh
         type (mpas_pool_type), pointer :: state
@@ -208,6 +212,19 @@ module mpas_atm_boundaries
             lbc_tend_rho_zz(:,:) = (rho_zz(:,:) - lbc_tend_rho_zz(:,:)) * dt
             lbc_tend_rho(:,:) = (rho(:,:) - lbc_tend_rho(:,:)) * dt
             lbc_tend_scalars(:,:,:) = (scalars(:,:,:) - lbc_tend_scalars(:,:,:)) * dt
+
+            !
+            ! Logging the lbc start and end times appears to be backwards, but
+            ! until the end of this function, LBC_intv_end == the last interval
+            ! time and currTime == the next interval time.
+            !
+            call mpas_get_time(LBC_intv_end, dateTimeString=lbc_intv_start_string)
+            call mpas_get_time(currTime, dateTimeString=lbc_intv_end_string)
+            call mpas_log_write('----------------------------------------------------------------------')
+            call mpas_log_write('Updated lateral boundary conditions. LBCs are now valid')
+            call mpas_log_write('from '//trim(lbc_intv_start_string)//' to '//trim(lbc_intv_end_string))
+            call mpas_log_write('----------------------------------------------------------------------')
+
         end if
 
         LBC_intv_end = currTime
