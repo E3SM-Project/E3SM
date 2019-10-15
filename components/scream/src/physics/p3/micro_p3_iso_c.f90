@@ -15,7 +15,6 @@ module micro_p3_iso_c
 
 contains
   subroutine append_precision(string, prefix)
-    use iso_c_binding
 
     character(kind=c_char, len=128), intent(inout) :: string
     character(*), intent(in) :: prefix
@@ -269,6 +268,30 @@ contains
     call calc_first_order_upwind_step(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes_f, vs_f, qnx_f)
 
   end subroutine calc_first_order_upwind_step_c
+
+  subroutine generalized_sedimentation_c(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnx) bind(C)
+    use micro_p3, only: generalized_sedimentation, realptr
+
+    ! arguments
+    integer(kind=c_int), value, intent(in) :: kts, kte, kdir, k_qxtop, kbot, num_arrays
+    integer(kind=c_int), intent(inout) :: k_qxbot
+    real(kind=c_real), value, intent(in) :: Co_max
+    real(kind=c_real), intent(inout) :: dt_left, prt_accum
+    real(kind=c_real), dimension(kts:kte), intent(in) :: inv_dzq, inv_rho, rho
+    type(c_ptr), intent(in), dimension(num_arrays) :: vs, fluxes, qnx
+
+    type(realptr), dimension(num_arrays) :: fluxes_f, vs_f, qnx_f
+    integer :: i
+
+    do i = 1, num_arrays
+       call c_f_pointer(fluxes(i), fluxes_f(i)%p, [(kte-kts)+1])
+       call c_f_pointer(vs(i),     vs_f(i)%p,     [(kte-kts)+1])
+       call c_f_pointer(qnx(i),    qnx_f(i)%p ,   [(kte-kts)+1])
+    end do
+
+    call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs_f, fluxes_f, qnx_f)
+
+  end subroutine generalized_sedimentation_c
 
 
 end module micro_p3_iso_c

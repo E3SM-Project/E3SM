@@ -77,6 +77,18 @@ interface
     type(c_ptr), intent(in), dimension(num_arrays) :: fluxes, vs, qnx
   end subroutine calc_first_order_upwind_step_f
 
+  subroutine generalized_sedimentation_f(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnx) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int), value, intent(in) :: kts, kte, kdir, k_qxtop, kbot, num_arrays
+    integer(kind=c_int), intent(inout) :: k_qxbot
+    real(kind=c_real), value, intent(in) :: Co_max
+    real(kind=c_real), intent(inout) :: dt_left, prt_accum
+    real(kind=c_real), dimension(kts:kte), intent(in) :: inv_dzq, inv_rho, rho
+
+    type(c_ptr), intent(in), dimension(num_arrays) :: vs, fluxes, qnx
+  end subroutine generalized_sedimentation_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use

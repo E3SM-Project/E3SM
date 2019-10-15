@@ -26,11 +26,12 @@ void Functions<S,D>
   const view_1d_ptr_array<Spack, nfield>& r)
 {
   const Int kmin_scalar = ( kdir == 1 ? k_bot : k_top);
+  const Int kmax_scalar = ( kdir == 1 ? k_top : k_bot);
   Int
     kmin = kmin_scalar / Spack::n,
     // Add 1 to make [kmin, kmax). But then the extra term (Spack::n -
     // 1) to determine pack index cancels the +1.
-    kmax = ((kdir == 1 ? k_top : k_bot) + Spack::n) / Spack::n;
+    kmax = (kmax_scalar + Spack::n) / Spack::n;
   const Int k_top_pack = k_top / Spack::n;
 
   // calculate fluxes
@@ -47,7 +48,7 @@ void Functions<S,D>
       const Int k = k_top_pack;
       {
         const auto range_pack = scream::pack::range<IntSmallPack>(k_top_pack*Spack::n);
-        const auto mask = range_pack >= nk || range_pack < kmin_scalar;
+        const auto mask = range_pack > kmax_scalar || range_pack < kmin_scalar;
         if (mask.any()) {
           for (int f = 0; f < nfield; ++f) {
             (*flux[f])(k_top_pack).set(mask, 0);
@@ -87,7 +88,7 @@ void Functions<S,D>
 }
 
 template <typename S, typename D>
-template <Int kdir, int nfield>
+template <int nfield>
 KOKKOS_FUNCTION
 void Functions<S,D>
 ::generalized_sedimentation (
@@ -95,12 +96,32 @@ void Functions<S,D>
   const uview_1d<const Spack>& inv_rho,
   const uview_1d<const Spack>& inv_dzq,
   const MemberType& team,
-  const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,
+  const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Int& kdir, const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,
   const view_1d_ptr_array<Spack, nfield>& fluxes,
   const view_1d_ptr_array<Spack, nfield>& Vs, // (behaviorally const)
   const view_1d_ptr_array<Spack, nfield>& rs)
 {
+  // compute dt_sub
+  const Int tmpint1 = static_cast<int>(Co_max + 1);
+  const Scalar dt_sub = util::min(dt_left, dt_left/tmpint1);
 
+  // Move bottom cell down by 1 if not at ground already
+  const Int k_temp = (k_qxbot == kbot) ? k_qxbot : k_qxbot - kdir;
+
+  calc_first_order_upwind_step<nfield>(rho, inv_rho, inv_dzq, team, nk, k_temp, k_qxtop, kdir, dt_sub, fluxes, Vs, rs);
+  team.team_barrier();
+
+  // accumulated precip during time step
+  if (k_qxbot == kbot) {
+    const auto sflux0 = scalarize(*fluxes[0]);
+    prt_accum += sflux0(kbot) * dt_sub;
+  }
+  else {
+    k_qxbot -= kdir;
+  }
+
+  // update time remaining for sedimentation
+  dt_left -= dt_sub;
 }
 
 template <typename S, typename D>
