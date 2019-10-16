@@ -26,13 +26,12 @@ branches:
 
 script:
 - git clean -fd
-- git clone https://github.com/jgfouca/scream-scripts-mirror.git
 - if [[ "${TRAVIS_OS_NAME}" == "linux" ]]; then export OMPI_CXX=$(which g++-6); fi
 - gfortran --version
 - git config submodule.externals/kokkos.url https://github.com/E3SM-Project/kokkos.git
 - git submodule update --init externals/kokkos
 - cd components/scream
-- CTEST_PARALLEL_LEVEL=4 ../../scream-scripts-mirror/test-all-scream mpicxx -m generic-desktop-debug -c '-DSCREAM_TEST_MAX_THREADS=4 -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage"'
+- CTEST_PARALLEL_LEVEL=4 ./scripts/test-all-scream mpicxx -m generic-desktop-debug -c '-DSCREAM_TEST_MAX_THREADS=4 -DCMAKE_CXX_FLAGS="-fprofile-arcs -ftest-coverage"'
 
 after_success:
 # Source: https://github.com/codecov/example-cpp11-cmake
