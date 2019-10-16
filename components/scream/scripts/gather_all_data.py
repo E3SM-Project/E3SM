@@ -46,8 +46,8 @@ class GatherAllData(object):
             scream_docs_repo = os.path.abspath("./scream-docs/micro-apps")
             scream_repo      = os.path.abspath("./scream/components/scream")
         else:
-            scream_docs_repo = "{}/scream-docs-perf-{}/micro-apps".format(os.environ("HOME"), machine)
-            scream_repo      = "{}/scream-perf-{}/components/scream".format(os.environ("HOME"), machine)
+            scream_docs_repo = "{}/scream-docs-perf-{}/micro-apps".format(os.environ["HOME"], machine)
+            scream_repo      = "{}/scream-perf-{}/components/scream".format(os.environ["HOME"], machine)
 
         repo       = scream_docs_repo if self._scream_docs else scream_repo
 
