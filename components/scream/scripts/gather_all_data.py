@@ -46,8 +46,8 @@ class GatherAllData(object):
             scream_docs_repo = os.path.abspath("./scream-docs/micro-apps")
             scream_repo      = os.path.abspath("./scream/components/scream")
         else:
-            scream_docs_repo = "{}/scream-docs-perf-{}/micro-apps".format(os.environ["HOME"], machine)
-            scream_repo      = "{}/scream-perf-{}/components/scream".format(os.environ["HOME"], machine)
+            scream_docs_repo = "~/scream-docs-perf-{}/micro-apps".format(machine)
+            scream_repo      = "~/scream-perf-{}/components/scream".format(machine)
 
         repo       = scream_docs_repo if self._scream_docs else scream_repo
 
@@ -66,7 +66,7 @@ class GatherAllData(object):
             replace("$scream_docs", scream_docs_repo).\
             replace("$scream", scream_repo)
 
-        if not local_cmd.startswith("/"):
+        if not local_cmd.startswith("/") and not local_cmd.startswith("~"):
             local_cmd = os.path.join(repo, self._run)
 
         # Scream-docs tests may depend on scream's Kokkos and scripts, so update scream repo too if we're doing
