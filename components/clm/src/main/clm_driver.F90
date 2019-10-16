@@ -1111,7 +1111,7 @@ contains
               soilstate_vars, waterstate_vars, soil_water_retention_curve)
 
            call ep_betr%SetBiophysForcing(bounds_clump, col_pp, veg_pp,                 &
-             carbonflux_vars=col_cf,                                                    &
+             carbonflux_vars=col_cf,     pf_carbonflux_vars=veg_cf,                          &
              waterstate_vars=waterstate_vars,         waterflux_vars=waterflux_vars,         &
              temperature_vars=temperature_vars,       soilhydrology_vars=soilhydrology_vars, &
              atm2lnd_vars=atm2lnd_vars,               canopystate_vars=canopystate_vars,     &

@@ -1309,24 +1309,43 @@ module EcosystemDynBeTRMod
        call PrecisionControl(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
 
-       call carbonflux_vars%summary_cflux_for_ch4(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc)
+       call col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
+       call veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
 
-       call carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'bulk')
-       call carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+       call veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
+       call col_cf%Summary(bounds, num_soilc, filter_soilc, 'bulk')
        if ( use_c13 ) then
-          call c13_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c13')
-          call c13_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+          call c13_veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
+          call c13_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c13')
        end if
        if ( use_c14 ) then
-          call c14_carbonflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, 'c14')
-          call c14_carbonstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+          call c14_veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c14', c14_col_cf)
+          call c14_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c14')
        end if
-       call nitrogenflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-       call nitrogenstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
 
-       call phosphorusflux_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
-       call phosphorusstate_vars%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp)
+       call veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_cs)
+       call col_cs%Summary(bounds, num_soilc, filter_soilc)
+       if ( use_c13 ) then
+          call c13_veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c13_col_cs)
+          call c13_col_cs%Summary(bounds, num_soilc, filter_soilc)
+       end if
+       if ( use_c14 ) then
+          call c14_veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c14_col_cs)
+          call c14_col_cs%Summary(bounds, num_soilc, filter_soilc)
 
+       end if
+
+       call veg_nf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf)
+       call col_nf%Summary(bounds, num_soilc, filter_soilc)
+
+       call veg_ns%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
+       call col_ns%Summary(bounds, num_soilc, filter_soilc)
+
+       call veg_pf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
+       call col_pf%Summary(bounds, num_soilc, filter_soilc)
+
+       call veg_ps%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
+       call col_ps%Summary(bounds, num_soilc, filter_soilc)
        call t_stopf('CNPsum')
 
     end if !end of if not use_fates block
