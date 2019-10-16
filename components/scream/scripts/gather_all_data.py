@@ -117,7 +117,7 @@ class GatherAllData(object):
     def gather_all_data(self):
     ###########################################################################
         if not self._local:
-            os.makedirs(os.path.join("gather-all-results", self._commit) exist_ok=True)
+            os.makedirs(os.path.join("gather-all-results", self._commit), exist_ok=True)
 
         success = True
 
