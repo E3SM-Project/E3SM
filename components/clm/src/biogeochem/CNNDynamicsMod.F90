@@ -367,15 +367,12 @@ contains
           ns%fan_grz_fract_col(c) = 1.0_r8 ! for crops handled by handle_storage
        end if
 
-       ! Calculation of the water fluxes should include the background soil moisture
-       ! tendency. However, it is unclear how to do this in a numerically consistent
-       ! way. Following a naive finite differencing approach led to worse agreement in
-       ! stand-alone simulations so the term is currenltly neglected here.
        watertend = 0.0_r8 
        tg = temperature_vars%t_grnd_col(c)
        theta = waterstate_vars%h2osoi_vol_col(c,1)
        thetasat = soilstate_vars%watsat_col(c,1)
        theta = min(theta, 0.98_r8*thetasat)
+       theta = max(theta, 1e-6) !?
        infiltr_m_s = max(waterflux_vars%qflx_infl_col(c), 0.0) * 1e-3 
        evap_m_s = waterflux_vars%qflx_evap_grnd_col(c) * 1e-3
        runoff_m_s = max(waterflux_vars%qflx_surf_col(c), 0.0) * 1e-3
@@ -514,6 +511,13 @@ contains
              
              call endrun(msg='update_3pool status /= 0')
           end if
+          if (debug_fan .and. any(isnan(fluxes4))) then
+             write(iulog, *) fluxes4
+             write(iulog, *), tanpools4
+             write(iulog, * ) ratm, theta, thetasat, infiltr_m_s, tandep, tanprod
+             call endrun('nan4')
+          end if
+
           fluxes_tmp = fluxes_tmp + sum(fluxes4, dim=2)
           garbage_total = garbage_total + garbage
        end do
@@ -524,10 +528,6 @@ contains
        ns%tan_s2_col(c) = tanpools4(3)
        ns%tan_s3_col(c) = tanpools4(4)
 
-       if (debug_fan .and. any(isnan(fluxes4))) then
-          write(iulog, *) fluxes3, tanpools4,ratm, theta, thetasat, infiltr_m_s, tandep, tanprod
-          call endrun('nan4')
-       end if
 
        nf%nh3_man_app_col(c) = fluxes_tmp(iflx_air)
        nf%manure_runoff_col(c) = nf%manure_runoff_col(c) + fluxes_tmp(iflx_roff)
