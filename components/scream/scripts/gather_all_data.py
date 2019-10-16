@@ -66,9 +66,6 @@ class GatherAllData(object):
             replace("$scream_docs", scream_docs_repo).\
             replace("$scream", scream_repo)
 
-        if not local_cmd.startswith("/") and not local_cmd.startswith("~"):
-            local_cmd = os.path.join(repo, self._run)
-
         # Scream-docs tests may depend on scream's Kokkos and scripts, so update scream repo too if we're doing
         # a scream-docs test.
         setup = ""
