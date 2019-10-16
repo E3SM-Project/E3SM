@@ -100,7 +100,15 @@ class GatherAllData(object):
                 output = str(e)
                 raise
             finally:
-                with open(os.path.join("gather-all-results", self._commit, machine), "w") as fd:
+                result_path = os.path.join("gather-all-results", self._commit, machine)
+                if os.path.exists(result_path):
+                    old_path = result_path + ".old"
+                    while (os.path.exists(old_path)):
+                        old_path += ".old"
+                    print("Warning moving old results to {}".format(old_path))
+                    os.rename(result_path, old_path)
+
+                with open(result_path, "w") as fd:
                     fd.write(output)
 
         print("Completed analysis on {}".format(machine))
@@ -109,7 +117,7 @@ class GatherAllData(object):
     def gather_all_data(self):
     ###########################################################################
         if not self._local:
-            os.makedirs(os.path.join("gather-all-results", self._commit))
+            os.makedirs(os.path.join("gather-all-results", self._commit, exist_ok=True))
 
         success = True
 
