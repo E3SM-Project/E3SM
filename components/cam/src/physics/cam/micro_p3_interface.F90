@@ -1120,15 +1120,6 @@ end subroutine micro_p3_readnl
                 icldm(its:ite,kts:kte),lcldm(its:ite,kts:kte),rcldm(its:ite,kts:kte))
     call t_stopf('micro_p3_tend_init')
 
-    !do icol = 1,state%ncol
-    !  do k = 1,pver
-    !     write(981,'(16E16.8)') ast(icol,k), naai(icol,k), npccn(icol,k), state%pmid(icol,k), state%zi(icol,k), state%T(icol,k), &
-    !                     qv(icol,k), cldliq(icol,k), ice(icol,k), numliq(icol,k), numice(icol,k), rain(icol,k), &
-    !                     numrain(icol,k), qirim(icol,k), rimvol(icol,k), state%pdel(icol,k)
-    !  end do
-    !  write(981,'(E16.8)') state%zi(icol,pver+1)
-    !end do
-    close(981)
     p3_main_inputs(:,:,:) = -999._rtype
     do k = 1,pver
       p3_main_inputs(1,k,1)  = ast(1,k)
