@@ -556,6 +556,10 @@ contains
             this%h2osfc_thresh_col(c) = 2.e3_r8    ! set to zero for no h2osfc (w/frac_infclust =large) changed from 0 to 1 TAO 29/8/2018
 #endif
 
+#if (defined MARSH)
+            this%h2osfc_thresh_col(c) = 2.e3_r8    ! set to zero for no h2osfc (w/frac_infclust =large) changed from 0 to 1 TAO 29/8/2018
+#endif
+
          ! set decay factor
          this%hkdepth_col(c) = 1._r8/2.5_r8
 
@@ -860,7 +864,7 @@ contains
 
      origflag = 0
      h2osfcflag = 1
-#if (defined HUM_HOL)
+#if (defined HUM_HOL || defined MARSH)
      origflag = 1         
 #endif       
 

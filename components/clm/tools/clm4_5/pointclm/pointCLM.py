@@ -39,6 +39,8 @@ parser.add_option("--lon_bounds", dest="lon_bounds", default='-999,-999', \
                   help = 'longitude range for regional run')
 parser.add_option("--humhol", dest="humhol", default=False, \
                   help = 'Use hummock/hollow microtopography', action="store_true")
+parser.add_option("--marsh", dest="marsh", default=False, \
+                  help = 'Use marsh hydrology/elevation', action="store_true")
 parser.add_option("--mask", dest="mymask", default='', \
                   help = 'Mask file to use (regional only)')
 parser.add_option("--ilambvars", dest="ilambvars", default=False, \
@@ -1131,6 +1133,8 @@ for s in infile:
             stemp = stemp[:-1]+' -DCPL_BYPASS\n'
         if (options.humhol):
             stemp = stemp[:-1]+' -DHUM_HOL\n'
+        if (options.MARSH):
+            stemp = stemp[:-1]+' -DMARSH\n'
         outfile.write(stemp) 
     elif (s[0:13] == "NETCDF_PATH:=" and options.machine == 'userdefined'):
         try:
