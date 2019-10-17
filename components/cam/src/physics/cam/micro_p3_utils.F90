@@ -21,8 +21,11 @@ module micro_p3_utils
 #  else
   integer,parameter,public :: rtype = c_float ! 4 byte real, compatible with c type float
 #  endif
+
   integer,parameter :: itype = selected_int_kind (13) ! 8 byte integer
+
 #else
+  integer,parameter,public :: btype = kind(.true.) ! native logical
   public :: rtype
   integer,parameter,public :: rtype8 = selected_real_kind(15, 307) ! 8 byte real, compatible with c type double
 #endif
@@ -31,7 +34,7 @@ module micro_p3_utils
               avg_diameter, calculate_incloud_mixingratios
 
     integer, public :: iulog_e3sm
-    logical, public :: masterproc_e3sm
+    logical(btype), public :: masterproc_e3sm
 
     ! Signaling NaN bit pattern that represents a limiter that's turned off.
     integer(itype), parameter :: limiter_off = int(Z'7FF1111111111111', itype)
@@ -114,7 +117,7 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
     real(rtype), intent(in) :: tmelt
     real(rtype), intent(in) :: pi
     integer, intent(in)     :: iulog
-    logical, intent(in)     :: masterproc
+    logical(btype), intent(in)     :: masterproc
 
     real(rtype) :: ice_lambda_bounds(2)
 

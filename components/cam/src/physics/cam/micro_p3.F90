@@ -413,7 +413,7 @@ contains
     integer, intent(in)                                  :: kts,kte    ! array bounds (vertical)
     integer, intent(in)                                  :: it         ! time step counter NOTE: starts at 1 for first time step
 
-    logical, intent(in)                                  :: log_predictNc ! .T. (.F.) for prediction (specification) of Nc
+    logical(btype), intent(in)                           :: log_predictNc ! .T. (.F.) for prediction (specification) of Nc
 
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: pdel       ! pressure thickness               Pa
     real(rtype), intent(in),    dimension(its:ite,kts:kte)      :: exner      ! Exner expression
@@ -502,7 +502,7 @@ contains
     real(rtype) :: ncshdc    ! source for rain number due to cloud water/ice collision above freezing  and shedding (combined with NRSHD in the paper)
     real(rtype) :: qiberg    ! Bergeron process
 
-    logical   :: log_wetgrowth
+    logical(btype) :: log_wetgrowth
 
     real(rtype) :: epsi
     real(rtype) :: eii ! temperature dependent aggregation efficiency
@@ -528,7 +528,7 @@ contains
     integer :: dumi,i,k,dumj,dumii,dumjj,dumzz,      &
          ktop,kbot,kdir
 
-    logical :: log_nucleationPossible,log_hydrometeorsPresent,     &
+    logical(btype) :: log_nucleationPossible,log_hydrometeorsPresent,     &
          log_exitlevel
 
 
@@ -553,8 +553,8 @@ contains
 
 
     !--These will be added as namelist parameters in the future
-    logical, parameter :: debug_ON     = .false.  !.true. to switch on debugging checks/traps throughout code
-    logical, parameter :: debug_ABORT  = .false.  !.true. will result in forced abort in s/r 'check_values'
+    logical(btype), parameter :: debug_ON     = .false.  !.true. to switch on debugging checks/traps throughout code
+    logical(btype), parameter :: debug_ABORT  = .false.  !.true. will result in forced abort in s/r 'check_values'
 
     !-----------------------------------------------------------------------------------!
     !  End of variables/parameters declarations
@@ -1988,7 +1988,7 @@ contains
     !Calling parameters:
     real(rtype), dimension(:,:),   intent(in) :: Qv,T
     integer,                intent(in) :: source_ind,i,timestepcount
-    logical,                intent(in) :: force_abort         !.TRUE. = forces abort if value violation is detected
+    logical(btype),                intent(in) :: force_abort         !.TRUE. = forces abort if value violation is detected
 
     !Local variables:
     real(rtype), parameter :: T_low  = 173._rtype
@@ -1999,7 +1999,7 @@ contains
     real(rtype), parameter :: x_high = 1.e+30_rtype
     real(rtype), parameter :: x_low  = 0._rtype
     integer         :: k,nk
-    logical         :: trap,badvalue_found
+    logical(btype)         :: trap,badvalue_found
 
     nk   = size(Qv,dim=2)
 
@@ -2266,7 +2266,7 @@ qv,qc_incld,qitot_incld,nitot_incld,qr_incld,    &
    real(rtype), intent(in) :: nitot_incld
    real(rtype), intent(in) :: qr_incld
 
-   logical, intent(inout) :: log_wetgrowth
+   logical(btype), intent(inout) :: log_wetgrowth
    real(rtype), intent(inout) :: qrcol
    real(rtype), intent(inout) :: qccol
    real(rtype), intent(inout) :: qwgrth
@@ -2560,7 +2560,7 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
    real(rtype), intent(in) :: naai
    real(rtype), intent(in) :: supi
    real(rtype), intent(in) :: odt
-   logical, intent(in) :: log_predictNc
+   logical(btype), intent(in) :: log_predictNc
 
    real(rtype), intent(inout) :: qinuc
    real(rtype), intent(inout) :: ninuc
@@ -2603,7 +2603,7 @@ real(rtype), intent(in) :: sup
 real(rtype), intent(in) :: xxlv
 real(rtype), intent(in) :: npccn
 
-logical, intent(in) :: log_predictNc
+logical(btype), intent(in) :: log_predictNc
 real(rtype), intent(in)  :: odt
 integer, intent(in) :: it
 
@@ -3048,8 +3048,8 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
    real(rtype), intent(in) :: xlf
    real(rtype), intent(in) :: xxls
 
-   logical, intent(in) :: log_predictNc
-   logical, intent(in) :: log_wetgrowth
+   logical(btype), intent(in) :: log_predictNc
+   logical(btype), intent(in) :: log_wetgrowth
    real(rtype), intent(in) :: dt
    real(rtype), intent(in) :: nmltratio
    real(rtype), intent(in) :: rhorime_c
@@ -3144,7 +3144,7 @@ subroutine update_prognostic_liquid(qcacc,ncacc,qcaut,ncautc,qcnuc,ncautr,ncslf,
    real(rtype), intent(in) :: nrslf
 
 
-   logical, intent(in) :: log_predictNc
+   logical(btype), intent(in) :: log_predictNc
    real(rtype), intent(in) :: inv_rho
    real(rtype), intent(in) :: exner
    real(rtype), intent(in) :: xxlv
@@ -3357,7 +3357,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), intent(in) :: dt
    real(rtype), intent(in) :: odt
    real(rtype), dimension(:), intent(in) :: dnu
-   logical, intent(in) :: log_predictNc
+   logical(btype), intent(in) :: log_predictNc
 
    real(rtype), intent(inout), dimension(kts:kte), target :: qc
    real(rtype), intent(inout), dimension(kts:kte), target :: nc
@@ -3368,7 +3368,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), intent(inout), dimension(kts:kte) :: qc_tend
    real(rtype), intent(inout), dimension(kts:kte) :: nc_tend
 
-   logical :: log_qxpresent
+   logical(btype) :: log_qxpresent
    integer :: k
    integer :: k_qxtop, k_qxbot, k_temp
    integer :: tmpint1
@@ -3388,13 +3388,10 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype) :: tmp1, tmp2, dum
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   logical(btype) :: log_predictNc_c
-
-   log_predictNc_c = log_predictNc
    if (use_cxx) then
       call cloud_sedimentation_f(kts,kte,ktop,kbot,kdir,   &
            qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
-           dt,odt,log_predictNc_c, &
+           dt,odt,log_predictNc, &
            qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend)
       return
    endif
@@ -3520,7 +3517,7 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), intent(inout), dimension(kts:kte) :: qr_tend
    real(rtype), intent(inout), dimension(kts:kte) :: nr_tend
 
-   logical :: log_qxpresent
+   logical(btype) :: log_qxpresent
    integer :: k
    integer :: k_qxtop, k_qxbot, k_temp
    integer, parameter :: num_arrays = 2
@@ -3689,7 +3686,7 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    real(rtype), intent(inout), dimension(kts:kte) :: qi_tend
    real(rtype), intent(inout), dimension(kts:kte) :: ni_tend
 
-   logical :: log_qxpresent
+   logical(btype) :: log_qxpresent
    integer :: k
    integer :: k_qxtop, k_qxbot, k_temp
    integer :: tmpint1
