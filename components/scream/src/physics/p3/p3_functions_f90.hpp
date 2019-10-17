@@ -259,7 +259,30 @@ struct CloudSedData
   Real *qc, *nc, *nc_incld, *mu_c, *lamc, *qc_tend, *nc_tend;
   Real prt_liq;
 
-  CloudSedData();
+  CloudSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+               Real dt_, Real odt_, bool log_predictNc_, Real prt_liq,
+               std::pair<Real, Real> qc_incld_range,
+               std::pair<Real, Real> rho_range,
+               std::pair<Real, Real> lcldm_range,
+               std::pair<Real, Real> acn_range,
+               std::pair<Real, Real> inv_dzq_range,
+               std::pair<Real, Real> qc_range,
+               std::pair<Real, Real> nc_range,
+               std::pair<Real, Real> nc_incld_range,
+               std::pair<Real, Real> mu_c_range,
+               std::pair<Real, Real> lamc_range,
+               std::pair<Real, Real> qc_tend_range,
+               std::pair<Real, Real> nc_tend_range);
+
+  // deep copy
+  CloudSedData(const CloudSedData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
 };
 void cloud_sedimentation(CloudSedData& d);
 
