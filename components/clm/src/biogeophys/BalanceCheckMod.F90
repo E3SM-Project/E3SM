@@ -249,7 +249,7 @@ contains
           qflx_sl_top_soil           =>    col_wf%qflx_sl_top_soil        , & ! Input:  [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)
           qflx_liq_dynbal            =>    grc_wf%qflx_liq_dynbal         , & ! Input:  [real(r8) (:)   ]  liq runoff due to dynamic land cover change (mm H2O /s)
           qflx_ice_dynbal            =>    grc_wf%qflx_ice_dynbal         , & ! Input:  [real(r8) (:)   ]  ice runoff due to dynamic land cover change (mm H2O /s)
-#if (defined HUM_HOL)
+#if (defined HUM_HOL || MARSH)
           qflx_lat_aqu               =>    col_wf%qflx_lat_aqu            , & ! Input:   [real(r8) (:)   ]  lateral flow between hummock and hollow (mm H2O /s)
           qflx_tide                  =>    col_wf%qflx_tide               , & ! Input:   [real(r8) (:)   ]  tidal flux between consecutive timesteps (mm H2O /s)
           qflx_surf_input            =>    col_wf%qflx_surf_input         , & ! Input:   [real(r8) (:)   ]  input to hollow surface water from hummock (mm H2O /s)
@@ -332,6 +332,13 @@ contains
                   - qflx_evap_tot(c) - qflx_surf(c) + qflx_surf_input(c) - qflx_h2osfc_surf(c) &
                   - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c)  &
                   - qflx_lateral(c) + qflx_lat_aqu(c)) * dtime
+#elif (defined MARSH)
+             errh2o(c) = endwb(c) - begwb(c) &
+                  - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_surf_irrig_col(c) + qflx_over_supply_col(c) &
+                  + qflx_tide(c) & !TAO qflx_tide added
+                  - qflx_evap_tot(c) - qflx_surf(c) + qflx_surf_input(c) - qflx_h2osfc_surf(c) &
+                  - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c)  &
+                  + qflx_lat_aqu(c)) * dtime
 #else
              errh2o(c) = endwb(c) - begwb(c) &
                   - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_surf_irrig_col(c) + qflx_over_supply_col(c) &
@@ -435,7 +442,7 @@ contains
              write(iulog,*)'qflx_glcice_melt           = ',qflx_glcice_melt(indexc)
              write(iulog,*)'qflx_glcice_frz            = ',qflx_glcice_frz(indexc) 
              write(iulog,*)'qflx_lateral               = ',qflx_lateral(indexc)
-#if (defined HUM_HOL)
+#if (defined HUM_HOL || MARSH)
              write(iulog,*)'qflx_lat_aqu               = ',qflx_lat_aqu(indexc)
              write(iulog,*)'qflx_tide                  = ',qflx_tide(indexc)
              write(iulog,*)'qflx_surf_input            = ',qflx_surf_input(indexc)

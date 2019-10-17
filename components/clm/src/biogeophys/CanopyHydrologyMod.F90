@@ -892,6 +892,10 @@ contains
 #if (defined HUM_HOL)
                 frac_h2osfc(c) = 0.99_r8
 #endif
+
+#if (defined MARSH)
+                frac_h2osfc(c) = 0.99_r8
+#endif
              else
                 frac_h2osfc(c) = 0._r8
                 h2osoi_liq(c,1) = h2osoi_liq(c,1) + h2osfc(c)
