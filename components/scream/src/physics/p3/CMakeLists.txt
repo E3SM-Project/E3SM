@@ -24,24 +24,13 @@ list(APPEND P3_SRCS ${share_sources})
 if (NOT CUDA_BUILD)
   list(APPEND P3_SRCS
     p3_functions_upwind.cpp
+    p3_functions_cloud_sed.cpp
     p3_functions_table3.cpp
     p3_functions_table_ice.cpp
     p3_functions_dsd2.cpp
     p3_functions_find.cpp
     p3_functions_math.cpp)
 endif()
-
-set(P3_HEADERS
-  p3_f90.hpp
-  p3_ic_cases.hpp
-  p3_constants.hpp
-  p3_functions_upwind_impl.hpp
-  p3_functions_table3_impl.hpp
-  p3_functions.hpp
-  p3_functions_find_impl.hpp
-  atmosphere_microphysics.hpp
-  scream_p3_interface.hpp
-)
 
 # link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})
 add_library(p3 ${P3_SRCS})

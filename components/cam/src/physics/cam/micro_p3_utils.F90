@@ -1,29 +1,30 @@
 module micro_p3_utils
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use iso_c_binding, only: c_double, c_float
+  use iso_c_binding, only: c_double, c_float, c_bool
 #else
-    use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
+  use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
 #endif
 
-    implicit none
-    private
-    save
+  implicit none
+  private
+  save
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #include "scream_config.f"
 
   integer,parameter,public :: rtype8 = c_double ! 8 byte real, compatible with c type double
+  integer,parameter,public :: btype  = c_bool ! boolean type, compatible with c
 
-#ifdef SCREAM_DOUBLE_PRECISION
+#  ifdef SCREAM_DOUBLE_PRECISION
   integer,parameter,public :: rtype = c_double ! 8 byte real, compatible with c type double
-#else
+#  else
   integer,parameter,public :: rtype = c_float ! 4 byte real, compatible with c type float
-#endif
+#  endif
   integer,parameter :: itype = selected_int_kind (13) ! 8 byte integer
 #else
-    public :: rtype
-    integer,parameter,public :: rtype8 = selected_real_kind(15, 307) ! 8 byte real, compatible with c type double
+  public :: rtype
+  integer,parameter,public :: rtype8 = selected_real_kind(15, 307) ! 8 byte real, compatible with c type double
 #endif
 
     public :: get_latent_heat, micro_p3_utils_init, &

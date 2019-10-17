@@ -41,6 +41,11 @@ void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_
 void generalized_sedimentation_c(Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
                                  Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
                                  Int num_arrays, Real** vs, Real** fluxes, Real** qnx);
+void cloud_sedimentation_c(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
+  Real dt, Real odt, bool log_predictNc,
+  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
 
 }
 
@@ -188,13 +193,24 @@ GenSedData::GenSedData(
   Co_max(Co_max_), k_qxbot(k_qxbot_), dt_left(dt_left_), prt_accum(prt_accum_)
 { }
 
-
 void generalized_sedimentation(GenSedData& d)
 {
   p3_init(true);
   generalized_sedimentation_c(d.kts, d.kte, d.kdir, d.k_qxtop, &d.k_qxbot, d.kbot, d.Co_max,
                               &d.dt_left, &d.prt_accum, d.inv_dzq, d.inv_rho, d.rho,
                               d.num_arrays, d.vs, d.fluxes, d.qnx);
+}
+
+// TODO
+CloudSedData::CloudSedData() {}
+
+void cloud_sedimentation(CloudSedData& d)
+{
+  p3_init(true);
+  cloud_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+                        d.qc_incld, d.rho, d.inv_rho, d.lcldm, d.acn, d.inv_dzq,
+                        d.dt, d.odt, d.log_predictNc,
+                        d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.prt_liq, d.qc_tend, d.nc_tend);
 }
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
@@ -574,6 +590,15 @@ void generalized_sedimentation_f(
   else {
     scream_require_msg(false, "Unsupported num arrays in bridge calc_first_order_upwind_step_f: " << num_arrays);
   }
+}
+
+void cloud_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
+  Real dt, Real odt, bool log_predictNc,
+  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend)
+{
+  // TODO
 }
 
 // Cuda implementations of std math routines are not necessarily BFB

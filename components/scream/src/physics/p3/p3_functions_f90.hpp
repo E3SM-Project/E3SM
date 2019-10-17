@@ -247,6 +247,32 @@ void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int *k
 
 }
 
+struct CloudSedData
+{
+  // Inputs
+  Int kts, kte, ktop, kbot, kdir;
+  Real *qc_incld, *rho, *inv_rho, *lcldm, *acn, *inv_dzq;
+  Real dt, odt;
+  bool log_predictNc;
+
+  // In/out
+  Real *qc, *nc, *nc_incld, *mu_c, *lamc, *qc_tend, *nc_tend;
+  Real prt_liq;
+
+  CloudSedData();
+};
+void cloud_sedimentation(CloudSedData& d);
+
+extern "C" {
+
+void cloud_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
+  Real dt, Real odt, bool log_predictNc,
+  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
+
+}
+
 extern "C" {
 
 Real cxx_pow(Real base, Real exp);

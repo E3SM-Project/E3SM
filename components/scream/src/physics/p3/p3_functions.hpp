@@ -233,6 +233,26 @@ struct Functions
     const view_1d_ptr_array<Spack, nfield>& Vs, // (behaviorally const)
     const view_1d_ptr_array<Spack, nfield>& rs);
 
+  // Cloud sedimentation
+  KOKKOS_FUNCTION
+  static void cloud_sedimentation(
+    const uview_1d<const Spack>& qc_incld,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& lcldm,
+    const uview_1d<const Spack>& acn,
+    const uview_1d<const Spack>& inv_dzq,
+    const MemberType& team,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt, const bool& log_predictNc,
+    const uview_1d<Spack>& qc,
+    const uview_1d<Spack>& nc,
+    const uview_1d<Spack>& nc_incld,
+    const uview_1d<Spack>& mu_c,
+    const uview_1d<Spack>& lamc,
+    const uview_1d<Spack>& qc_tend,
+    const uview_1d<Spack>& nc_tend,
+    Scalar& prt_liq);
+
   // -- Find layers
 
   // Find the bottom and top of the mixing ratio, e.g., qr. It's worth casing
@@ -293,6 +313,7 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 # include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
+# include "p3_functions_cloud_sed_impl.hpp"
 #endif
 
 #endif

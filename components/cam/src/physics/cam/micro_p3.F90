@@ -54,7 +54,7 @@
 module micro_p3
 
    ! get real kind from utils
-   use micro_p3_utils, only: rtype,rtype8
+   use micro_p3_utils, only: rtype,rtype8,btype
 
    ! physical and mathematical constants
    use micro_p3_utils, only: rhosur,rhosui,ar,br,f1r,f2r,rhow,kr,kc,aimm,mi0,nccnst,  &
@@ -3340,6 +3340,10 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    dt,odt,dnu,log_predictNc, &
    qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: cloud_sedimentation_f
+#endif
+
    implicit none
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
@@ -3382,6 +3386,19 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), dimension(kts:kte), target :: flux_nx
 
    real(rtype) :: tmp1, tmp2, dum
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   logical(btype) :: log_predictNc_c
+
+   log_predictNc_c = log_predictNc
+   if (use_cxx) then
+      call cloud_sedimentation_f(kts,kte,ktop,kbot,kdir,   &
+           qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
+           dt,odt,log_predictNc_c, &
+           qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend)
+      return
+   endif
+#endif
 
    k_qxtop = kbot
    log_qxpresent = .false.
