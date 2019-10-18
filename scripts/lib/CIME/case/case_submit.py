@@ -62,7 +62,7 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
         batch_system = "none"
     else:
         batch_system = env_batch.get_batch_system_type()
-
+    unlock_file(os.path.basename(env_batch.filename))
     case.set_value("BATCH_SYSTEM", batch_system)
 
     env_batch_has_changed = False
@@ -80,8 +80,7 @@ env_batch.xml appears to have changed, regenerating batch scripts
 manual edits to these file will be lost!
 """)
         env_batch.make_all_batch_files(case)
-
-    unlock_file(os.path.basename(env_batch.filename))
+    case.flush()
     lock_file(os.path.basename(env_batch.filename))
 
     if resubmit:

@@ -161,9 +161,11 @@ class EnvBatch(EnvBase):
             self.add_child(self.copy(batchobj.batch_system_node))
         if batchobj.machine_node is not None:
             self.add_child(self.copy(batchobj.machine_node))
-        unlock_file(batchobj._filename)
+        if os.path.exists(os.path.join(self._caseroot, "LockedFiles", "env_batch.xml")):
+            unlock_file(os.path.basename(batchobj.filename), caseroot=self._caseroot)
         self.set_value("BATCH_SYSTEM", batch_system_type)
-        lock_file(batchobj.filename)
+        if os.path.exists(os.path.join(self._caseroot, "LockedFiles")):
+            lock_file(os.path.basename(batchobj.filename), caseroot=self._caseroot)
 
     def get_job_overrides(self, job, case):
         env_workflow = case.get_env('workflow')
