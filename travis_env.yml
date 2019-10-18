@@ -1,0 +1,22 @@
+name: e3sm_diags
+channels:
+    - cdat/label/v82
+    - conda-forge
+    - defaults
+dependencies:
+    - python
+    - cdp >=1.6.0
+    - vcs >=8.2
+    - vtk-cdat 8.2.0.8.2
+    - vcsaddons >=8.2
+    - dv3d >=8.2
+    - cdms2 >=3.1.4
+    - cdutil >=8.2
+    - genutil >=8.2
+    - cdtime >=3.1.2
+    - numpy <1.18
+    - matplotlib
+    - cartopy
+    - beautifulsoup4
+    - lxml
+    - mesalib

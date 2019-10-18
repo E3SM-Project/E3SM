@@ -15,7 +15,7 @@ import subprocess
 
 # Set to True to place the results directory on Cori's web server
 # Set to False to place the results directory in tests/system
-CORI_WEB = True
+CORI_WEB = False
 
 
 def get_results_dir(output_list):
@@ -156,6 +156,22 @@ class TestAllSets(unittest.TestCase):
             variables=['COSP_HISTOGRAM_MISR'],
             region='global'
         )
+
+    def test_enso_diags(self):
+        case_id = 'TREFHT-response'
+        case_id_lower = case_id.lower()
+        nino_region_lower = 'NINO34'.lower()
+        set_name = 'enso_diags'
+        variables = ['TREFHT']
+        for variable in variables:
+            variable_lower = variable.lower()
+            png_path = '{}/{}/regression-coefficient-{}-over-{}.png'.format(
+                set_name, case_id, variable_lower, nino_region_lower)
+            full_png_path = '{}{}'.format(TestAllSets.results_dir, png_path)
+            self.assertTrue(os.path.exists(full_png_path))
+            html_path = '{}viewer/{}/variable/{}/plot.html'.format(
+                TestAllSets.results_dir, set_name, case_id_lower)
+            self.check_html_image(html_path, png_path)
 
     def test_lat_lon(self):
         self.check_plots_plevs('lat_lon', 'global', [850.0])

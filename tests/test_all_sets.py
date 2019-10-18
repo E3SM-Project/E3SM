@@ -33,7 +33,7 @@ class TestAllSets(unittest.TestCase):
 
         if backend == 'mpl':
             backend_option = ''
-            expected_num_diags = 8
+            expected_num_diags = 9
         elif backend == 'vcs':
             backend_option = ' --backend vcs'
             expected_num_diags = 7

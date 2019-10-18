@@ -1,8 +1,9 @@
 import unittest
 import collections
 from acme_diags.run import Run
-from acme_diags.parameter.core_parameter import CoreParameter
 from acme_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
+from acme_diags.parameter.core_parameter import CoreParameter
+from acme_diags.parameter.enso_diags_parameter import EnsoDiagsParameter
 from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
 
 
@@ -40,7 +41,12 @@ class TestRun(unittest.TestCase):
         ts_param = AreaMeanTimeSeriesParameter()
         ts_param.start_yr = '2000'
         ts_param.end_yr = '2004'
-        parameters = self.runner.get_final_parameters([self.core_param, ts_param])
+
+        enso_param = EnsoDiagsParameter()
+        enso_param.start_yr = '2000'
+        enso_param.end_yr = '2004'
+        
+        parameters = self.runner.get_final_parameters([self.core_param, ts_param, enso_param])
         # Counts the number of each set and each seasons to run the diags on.
         set_counter, season_counter = collections.Counter(), collections.Counter()
         for param in parameters:
@@ -56,6 +62,9 @@ class TestRun(unittest.TestCase):
                 self.fail(msg.format(set_name, count))
         
         all_season_counts = list(season_counter.values())
+        # enso_diags only runs ANN, no seasons
+        # So, reduce the ANN count by the number of times enso_diags appears
+        all_season_counts[0] -= set_counter['enso_diags']
         if not all(all_season_counts[0] == count for count in all_season_counts):
             self.fail('Counts for the seasons don\'t match: {}'.format(all_season_counts))
 
