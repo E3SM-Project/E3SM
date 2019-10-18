@@ -221,14 +221,14 @@ struct Functions
     const view_1d_ptr_array<Spack, nfield>& V, // (behaviorally const)
     const view_1d_ptr_array<Spack, nfield>& r);
 
-  template <Int kdir, int nfield>
+  template <int nfield>
   KOKKOS_FUNCTION
   static void generalized_sedimentation(
     const uview_1d<const Spack>& rho,
     const uview_1d<const Spack>& inv_rho,
     const uview_1d<const Spack>& inv_dzq,
     const MemberType& team,
-    const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,
+    const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Int& kdir, const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,
     const view_1d_ptr_array<Spack, nfield>& fluxes,
     const view_1d_ptr_array<Spack, nfield>& Vs, // (behaviorally const)
     const view_1d_ptr_array<Spack, nfield>& rs);

@@ -62,6 +62,7 @@ struct UnitWrap {
     struct TestTable3;
     struct TestFind;
     struct TestUpwind;
+    struct TestGenSed;
     struct TestP3Func;
     struct TestDsd2;
   };

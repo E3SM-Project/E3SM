@@ -1120,20 +1120,6 @@ end subroutine micro_p3_readnl
                 icldm(its:ite,kts:kte),lcldm(its:ite,kts:kte),rcldm(its:ite,kts:kte))
     call t_stopf('micro_p3_tend_init')
 
-    ! Write inputs from SCM for p3-stand-alone:
-    open(unit=981,file='p3_universal_constants.inp',status='replace',action='write')
-    write(981,'(A100)') 'Universal constants for p3-stand-alone test case'
-    write(981,'(2I8)') state%ncol, pver
-    write(981,'(12E16.8)') cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice,cpliq,tmelt,pi
-    !do icol = 1,state%ncol
-    !  do k = 1,pver
-    !     write(981,'(16E16.8)') ast(icol,k), naai(icol,k), npccn(icol,k), state%pmid(icol,k), state%zi(icol,k), state%T(icol,k), &
-    !                     qv(icol,k), cldliq(icol,k), ice(icol,k), numliq(icol,k), numice(icol,k), rain(icol,k), &
-    !                     numrain(icol,k), qirim(icol,k), rimvol(icol,k), state%pdel(icol,k)
-    !  end do
-    !  write(981,'(E16.8)') state%zi(icol,pver+1)
-    !end do
-    close(981)
     p3_main_inputs(:,:,:) = -999._rtype
     do k = 1,pver
       p3_main_inputs(1,k,1)  = ast(1,k)
