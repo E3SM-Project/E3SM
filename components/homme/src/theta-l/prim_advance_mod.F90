@@ -287,143 +287,79 @@ contains
         deriv,nets,nete,maxiter,itertol)
       call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
-!================================================================================
-    elseif (tstep_type == 8) then ! IMKG253, might be more efficient than IMKG254, might be a teeny bit bad at coarse resolution
-
-      a1 = 1/4d0
-      a2 = 1/6d0
-      a3 = 3/8d0
-      a4 = 1/2d0
-      a5 = 1d0
-      ahat5 = 1d0
-
-      dhat4 = 1d0
-      dhat3 = 1d0
-      ahat4 = -1d0/2d0
-      dhat2= (ahat4*ahat5 - ahat5*dhat1 - ahat5*dhat3 + dhat1*dhat3+ dhat1*dhat4 + dhat3*dhat4)/(ahat5-dhat1-dhat3-dhat4)
-      ahat3 = (-ahat4*ahat5*dhat2+ahat5*dhat2*dhat3- dhat2*dhat3*dhat4)/(-ahat4*ahat5)
-
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
- 
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
-
-!================================================================================
-    elseif (tstep_type == 9) then ! IMKG252, use if feeling lucky, might be bad at coarse resolution
- 
-      a1 = 1/4d0
-      a2 = 1/6d0
-      a3 = 3/8d0
-      a4 = 1/2d0
-      a5 = 1d0
-      ahat5 = 1d0
-
-      dhat3 = (2d0+sqrt(2d0))/2d0
-      dhat4 = (2d0+sqrt(2d0))/2d0
-      ahat4 = -(1d0+sqrt(2d0))/2d0
-
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0) 
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat3*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat4/a4,1d0)
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat4*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a5*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat5/a5,1d0)
-!================================================================================                                      
-    elseif (tstep_type == 10) then ! IMKG232b
-      a1 = 1d0/2d0
-      a2 = 1d0/2d0
-      a3 = 1d0
-      ahat3 = 1d0
-      dhat2 = .5d0*(2d0+sqrt(2d0))
-      dhat1 = dhat2
-      ahat2 = -(1d0+sqrt(2d0))/2d0
-
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)  
-
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
-
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol) 
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
 
 !===================================================================================
-   elseif (tstep_type == 12 ) then ! imkg233 - final stage implicit
+   elseif (tstep_type == 8 ) then ! KG3 + CN + offcentering
 
-
-     ! FREE PARAMETERS YOU CAN CHANGE
-      dhat2 = 1d0/3d0; dhat3 = 1d0/3d0 
-
-      offcenter = 0.01
-
-      ! THE UPDATE IS SOMETHING LIKE aphat*s(t0) + ahat3*s(t+1/2) + dhat3*s(t+1)
-
-      !  DONT CHAGE THESE
-      ap = 0d0
-      a3 = 1d0 
-      a2 = 1d0/2d0
-      a1 = 1d0/2d0
-      ahat2 = 1d0/2d0-dhat2    ! 1/6
-      ahat3 = 1d0-2d0*dhat3;   ! 1/3
-      aphat = 1d0-dhat3-ahat3; ! =  1d0-dhat3-1d0+2d0*dhat3 = dhat3 = 1/3
-      dhat1 = (ahat2*ahat3  - aphat*dhat2)/(ahat3+aphat-dhat2)   ! -1/6
-      ahat1 = -aphat*dhat1*dhat2/(ahat2*ahat3)  !  1/3
-
-      
       ! introduce 1st order offcentering
-      aphat = aphat-offcenter
-      dhat3 = dhat3+offcenter
+      offcenter = 0
+      aphat = 0.5d0-offcenter
+      dhat3 = 0.5d0+offcenter
 
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,a1*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,compute_diagnostics,0d0,1d0,ahat1/a1,1d0) !   aphat/ap,1d0)               
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt/2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0) !   aphat/ap,1d0)               
 
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(n0,np1,aphat*dt/2,qn0,dhat3*dt/2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
 
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(n0,np1,aphat*dt/2,qn0,dhat3*dt/2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,a3*dt,elem,hvcoord,hybrid,&
-           deriv,nets,nete,.false.,eta_ave_w,1d0,ahat3/a3,1d0)
+      ! introduce 1st order offcentering
+      offcenter = 0.01
+      aphat = 0.5d0-offcenter
+      dhat3 = 0.5d0+offcenter
+
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+           deriv,nets,nete,.false.,eta_ave_w,1d0,0d0,1d0)
       call compute_stage_value_dirk(n0,np1,aphat*dt,qn0,dhat3*dt,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
+
+    else if (tstep_type==9) then ! KG5(3rd order linear) + CN + offcenter
+      offcenter=.2
+      a1=.5d0-offcenter
+      a2=.5d0+offcenter
+      dt2=dt/5     ! 3rd order CFL=3.87
+      ! dt2=dt/4   ! 2nd order CFL=4
+      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+      dt2=dt/5     ! 3rd order CFL=3.87
+      ! dt2=dt/6   ! 2nd order CFL=4
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+      dt2=dt/3       ! 3rd order CFL=3.87
+      ! dt2=3*dt/8   ! 2nd order CFL=4
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+
+      dt2=dt/2   ! same for 2nd and 3rd order
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+
+      offcenter=0.025
+      a1=.5d0-offcenter
+      a2=.5d0+offcenter
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt,qn0,a2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+
 
     else
        call abortmp('ERROR: bad choice of tstep_type')
