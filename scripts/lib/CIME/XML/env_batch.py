@@ -5,7 +5,7 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, get_cime_config, get_batch_script_for_job, get_logging_options
-
+from CIME.locked_files import lock_file, unlock_file
 from collections import OrderedDict
 import stat, re, math
 
@@ -161,7 +161,9 @@ class EnvBatch(EnvBase):
             self.add_child(self.copy(batchobj.batch_system_node))
         if batchobj.machine_node is not None:
             self.add_child(self.copy(batchobj.machine_node))
+        unlock_file(batchobj._filename)
         self.set_value("BATCH_SYSTEM", batch_system_type)
+        lock_file(batchobj.filename)
 
     def get_job_overrides(self, job, case):
         env_workflow = case.get_env('workflow')
