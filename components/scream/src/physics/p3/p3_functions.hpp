@@ -3,6 +3,7 @@
 
 #include "share/scream_types.hpp"
 #include "share/scream_pack_kokkos.hpp"
+#include "share/scream_workspace.hpp"
 #include "p3_constants.hpp"
 
 namespace scream {
@@ -87,6 +88,8 @@ struct Functions
   using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
 
   using MemberType = typename KT::MemberType;
+
+  using Workspace = typename WorkspaceManager<Spack, Device>::Workspace;
 
   // -- Table3 --
 
@@ -242,7 +245,9 @@ struct Functions
     const uview_1d<const Spack>& lcldm,
     const uview_1d<const Spack>& acn,
     const uview_1d<const Spack>& inv_dzq,
+    const view_dnu_table& dnu,
     const MemberType& team,
+    const Workspace& workspace,
     const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt, const bool& log_predictNc,
     const uview_1d<Spack>& qc,
     const uview_1d<Spack>& nc,
@@ -288,7 +293,7 @@ struct Functions
   KOKKOS_INLINE_FUNCTION
   static void get_cloud_dsd2(
     const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-    const view_1d<const Scalar>& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm);
+    const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm);
 
   // Computes and returns rain size distribution parameters
   KOKKOS_INLINE_FUNCTION

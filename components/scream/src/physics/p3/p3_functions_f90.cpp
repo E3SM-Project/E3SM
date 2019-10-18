@@ -678,6 +678,8 @@ void cloud_sedimentation_f(
   const Int nk = (kte - kts) + 1;
 
   // Set up views
+  auto dnu = P3GlobalForFortran::dnu();
+
   Kokkos::Array<view_1d, 13> temp_d;
 
   pack::host_to_device({qc_incld, rho, inv_rho, lcldm, acn, inv_dzq, qc, nc, nc_incld, mu_c, lamc, qc_tend, nc_tend},
@@ -700,6 +702,7 @@ void cloud_sedimentation_f(
 
   // Call core function from kernel
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_liq_k) {
 
     uview_1d
@@ -718,8 +721,8 @@ void cloud_sedimentation_f(
       unc_tend_d (temp_d[12]);
 
     P3F::cloud_sedimentation(
-      uqc_incld_d, urho_d, uinv_rho_d, ulcldm_d, uacn_d, uinv_dzq_d,
-      team,
+      uqc_incld_d, urho_d, uinv_rho_d, ulcldm_d, uacn_d, uinv_dzq_d, dnu,
+      team, wsm.get_workspace(team),
       nk, ktop, kbot, kdir, dt, odt, log_predictNc,
       uqc_d, unc_d, unc_incld_d, umu_c_d, ulamc_d, uqc_tend_d, unc_tend_d,
       prt_liq_k);
