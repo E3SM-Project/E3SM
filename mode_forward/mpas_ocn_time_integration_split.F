@@ -141,11 +141,13 @@ module ocn_time_integration_split
       logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
       logical, pointer :: config_compute_active_tracer_budgets
+      logical, pointer :: config_use_tidal_potential_forcing
 
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
       real (kind=RKIND), pointer :: config_mom_del4, config_btr_gam1_velWt1, config_btr_gam2_SSHWt1
       real (kind=RKIND), pointer :: config_btr_gam3_velWt2
+      real (kind=RKIND), pointer :: config_self_attraction_and_loading_beta
 
       ! Dimensions
       integer :: nCells, nEdges
@@ -166,6 +168,7 @@ module ocn_time_integration_split
 
       ! State Array Pointers
       real (kind=RKIND), dimension(:), pointer :: sshSubcycleCur, sshSubcycleNew
+      real (kind=RKIND), dimension(:), pointer :: sshSubcycleCurWithTides, sshSubcycleNewWithTides
       real (kind=RKIND), dimension(:), pointer :: normalBarotropicVelocitySubcycleCur, normalBarotropicVelocitySubcycleNew
       real (kind=RKIND), dimension(:), pointer :: sshCur, sshNew
       real (kind=RKIND), dimension(:), pointer :: normalBarotropicVelocityCur, normalBarotropicVelocityNew
@@ -193,6 +196,7 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:), pointer :: gradSSHX, gradSSHY, gradSSHZ
       real (kind=RKIND), dimension(:), pointer :: gradSSHZonal, gradSSHMeridional
       real (kind=RKIND), dimension(:,:), pointer :: surfaceVelocity, SSHGradient
+      real (kind=RKIND), dimension(:), pointer :: tidalPotentialEta 
 
       ! Diagnostics Field Pointers
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
@@ -243,6 +247,8 @@ module ocn_time_integration_split
       call mpas_pool_get_config(domain % configs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
       call mpas_pool_get_config(domain % configs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
       call mpas_pool_get_config(domain % configs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
+      call mpas_pool_get_config(domain % configs, 'config_use_tidal_potential_forcing', config_use_tidal_potential_forcing)
+      call mpas_pool_get_config(domain % configs, 'config_self_attraction_and_loading_beta',config_self_attraction_and_loading_beta)
 
       call mpas_pool_get_config(domain % configs, 'config_prescribe_velocity', config_prescribe_velocity)
       call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
@@ -781,6 +787,7 @@ module ocn_time_integration_split
                      call mpas_pool_get_subpool(block % structs, 'state', statePool)
                      call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                      call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+                     call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
 
                      call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
                      call mpas_pool_get_array(meshPool, 'nEdgesOnEdge', nEdgesOnEdge)
@@ -797,6 +804,24 @@ module ocn_time_integration_split
                      call mpas_pool_get_array(statePool, 'sshSubcycle', sshSubcycleCur, oldBtrSubcycleTime)
 
                      call mpas_pool_get_array(diagnosticsPool, 'barotropicForcing', barotropicForcing)
+
+                     ! Subtract tidal potential from ssh, if needed
+                     !   Subtract the tidal potential from the current subcycle ssh and store and a work array.
+                     !   Then point sshSubcycleCur to the work array so the tidal potential terms are included
+                     !   in the grad operator inside the edge loop.
+                     if (config_use_tidal_potential_forcing) then
+                       call mpas_pool_get_array(forcingPool, 'sshSubcycleCurWithTides', sshSubcycleCurWithTides)
+                       call mpas_pool_get_array(forcingPool, 'tidalPotentialEta', tidalPotentialEta)
+                       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCellsPtr)
+
+                       nCells = nCellsPtr
+                       do iCell = 1, nCells
+                         sshSubcycleCurWithTides(iCell) = sshSubcycleCur(iCell) - tidalPotentialEta(iCell) &
+                                                        - config_self_attraction_and_loading_beta * sshSubcycleCur(iCell)
+                       end do
+
+                       call mpas_pool_get_array(forcingPool, 'sshSubcycleCurWithTides', sshSubcycleCur)
+                     end if
 
                      nEdges = nEdgesPtr
                      nEdges = nEdgesArray( edgeHaloComputeCounter )
@@ -977,6 +1002,7 @@ module ocn_time_integration_split
                    call mpas_pool_get_subpool(block % structs, 'state', statePool)
                    call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
                    call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
+                   call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
                    call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
                    call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
 
@@ -999,6 +1025,28 @@ module ocn_time_integration_split
 
                    call mpas_pool_get_field(scratchPool, 'btrvel_temp', btrvel_tempField)
                    btrvel_temp => btrvel_tempField % array
+
+                   ! Subtract tidal potential from ssh, if needed
+                   !   Subtract the tidal potential from the current and new subcycle ssh and store and a work arrays.
+                   !   Then point sshSubcycleCur and  ssh SubcycleNew to the work arrays so the tidal potential terms 
+                   !   are included in the grad operator inside the edge loop.
+                   if (config_use_tidal_potential_forcing) then
+                     call mpas_pool_get_array(forcingPool,'sshSubcycleCurWithTides', sshSubcycleCurWithTides)
+                     call mpas_pool_get_array(forcingPool,'sshSubcycleNewWithTides', sshSubcycleNewWithTides)
+                     call mpas_pool_get_array(forcingPool, 'tidalPotentialEta', tidalPotentialEta)
+                     call mpas_pool_get_dimension(block % dimensions, 'nCells', nCellsPtr)
+
+                     nCells = nCellsPtr
+                     do iCell = 1, nCells
+                       sshSubcycleCurWithTides(iCell) = sshSubcycleCur(iCell) - tidalPotentialEta(iCell) &
+                                                      - config_self_attraction_and_loading_beta * sshSubcycleCur(iCell)
+                       sshSubcycleNewWithTides(iCell) = sshSubcycleNew(iCell) - tidalPotentialEta(iCell) &
+                                                      - config_self_attraction_and_loading_beta * sshSubcycleNew(iCell)
+                     end do
+
+                     call mpas_pool_get_array(forcingPool,'sshSubcycleCurWithTides', sshSubcycleCur)
+                     call mpas_pool_get_array(forcingPool,'sshSubcycleNewWithTides', sshSubcycleNew)
+                   end if
 
                    ! Need to initialize btr_vel_temp over the one more halo than we're computing over
                    nEdges = nEdgesPtr

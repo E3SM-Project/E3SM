@@ -95,6 +95,10 @@
 			description="Number of forcing groups"
 			definition="4"
 		/>
+		<dim name="maxTidalConstituents"
+			description="Max number of tidal potential constituents"
+			definition="37"
+		/>
 	</dims>
 
 	<!--*************************************-->
@@ -484,6 +488,10 @@
 					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level."
 					possible_values="Any positive real value."
 		/>
+		<nml_option name="config_Rayleigh_damping_depth_variable" type="logical" default_value=".false." units="unitless"
+					description="If true applies r h^-1 instead of just r."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_Rayleigh_bottom_friction" type="logical" default_value=".false." units="unitless"
 					description="If true, Rayleigh friction is only applied to the bottom"
 					possible_values=".true. or .false."
@@ -845,6 +853,10 @@
 					possible_values="Real non-zero value."
 		/>
 		<nml_option name="config_tidal_forcing_type" type="character" default_value="off" units="unitless"
+					description="Selects the way tidal forcing is applied."
+					possible_values="'thickness_source','direct'"
+		/>
+		<nml_option name="config_tidal_forcing_model" type="character" default_value="off" units="unitless"
 					description="Selects the mode in which tidal forcing is computed."
 					possible_values="'off','monochromatic'"
 		/>
@@ -859,6 +871,56 @@
 		<nml_option name="config_tidal_forcing_monochromatic_baseline" type="real" default_value="0.0" units="days"
 					description="Value of baseline monochromatic tide, e.g., sea level rise."
 					possible_values="Any positive real number."
+		/>
+	</nml_record>
+	<nml_record name="tidal_potential_forcing" mode="forward">
+		<nml_option name="config_use_tidal_potential_forcing" type="logical" default_value=".false." units="unitless"
+					description="Controls if tidal potential forcing is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_tidal_potential_reference_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+					description="Timestamp describing the time used to initialize nodal factors."
+					possible_values="'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_M2" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the M2 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_S2" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the S2 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_N2" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the N2 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_K2" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the K2 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_K1" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the K1 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_O1" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the O1 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_Q1" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the Q1 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_P1" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the P1 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_tidal_potential_ramp" type="real" default_value="10.0" units="days"
+					description="Number of days over which the tidal potential forcing is ramped"
+					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_self_attraction_and_loading_beta" type="real" default_value="0.09" units="unitless"
+					description="Coefficient for SAL scalar approximation"
+					possible_values="0.0 to turn off, 0.09 is typical value to use for scalar approximation"
 		/>
 	</nml_record>
 	<nml_record name="frazil_ice" mode="forward">
@@ -1031,6 +1093,10 @@
 					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThicknessEdge.  The standard MPAS-O approach is 'centered'."
 					possible_values="'upwind', 'centered'"
 		/>
+		<nml_option name="config_drying_safety_height" type="real" default_value="1.0e-10" units="m"
+					description="Safety factor on minimum cell height to ensure the minimum height is not violated due to round-off."
+					possible_values="Real value greater or equal to 0."
+		/>
 	</nml_record>
 	<nml_record name="ocean_constants">
 		<nml_option name="config_density0" type="real" default_value="1026.0" units="kg m^{-3}"
@@ -1040,8 +1106,8 @@
 	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
 		<nml_option name="config_pressure_gradient_type" type="character" default_value="pressure_and_zmid" units="unitless"
-					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential."
-					possible_values="'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'"
+					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure."
+					possible_values="'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'"
 		/>
 		<nml_option name="config_common_level_weight" type="real" default_value="0.5" units="unitless"
 					description="The weight between standard Jacobian and weighted Jacobian, $\gamma$."
@@ -1377,6 +1443,7 @@
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
 		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
+		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 	</packages>
 
 	<streams>
@@ -3152,6 +3219,10 @@
 			 description="Input mask for application of tidal forcing where 1 is applied tidal forcing"
 			 packages="tidalForcing"
 		/>
+		<var name="tidalBCValue" type="real" dimensions="nCells Time" units="m"
+			 description="Value of ssh height in cell for tidal boundary condition"
+			 packages="tidalForcing"
+		/>
 
 		<!-- Output fields for forcing due to tides -->
 		<var name="tidalLayerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
@@ -3177,6 +3248,60 @@
 		<var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
 			 description="surface pressure forcing due to weight of frazil ice"
 			 packages="frazilIce"
+		/>
+
+		<!-- Fields for tidal potential forcing -->
+		<var name="tidalPotentialEta" type="real" dimensions="nCells Time" units="m"
+			description="Equilibrium tidal potential"
+			packages="forwardMode"
+		/>
+		<var name="nTidalPotentialConstituents" type="integer" dimensions="Time" units="unitless"
+			description="Number of tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentFrequency" type="real" dimensions="maxTidalConstituents Time" units="s^{-1}"
+			description="Frequency of tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentAmplitude" type="real" dimensions="maxTidalConstituents Time" units="m"
+			description="Amplitude of tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentLoveNumbers" type="real" dimensions="maxTidalConstituents Time" units="unitless"
+			description="Love number combinations for tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentNodalAmplitude" type="real" dimensions="maxTidalConstituents Time" units="m"
+			description="Amplitude nodal factor for tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentNodalPhase" type="real" dimensions="maxTidalConstituents Time" units="s^{-1}"
+			description="Phase nodal factor for tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentAstronomical" type="real" dimensions="maxTidalConstituents Time" units="s^{-1}"
+			description="Astronomical argument for tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentType" type="integer" dimensions="maxTidalConstituents Time" units="unitless"
+			description="Spieces code for tidal constituents: long-period = 0, diurnal = 1, semi-diurnal = 2"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialLatitudeFunction" type="real" dimensions="nCells R3 Time" units="unitless"
+			description="Latitude function for tidal constituents: long-period = 3\sin^2(\phi)-1, diurnal = \sin(2\phi), semi-diurnal = \cos^2(\phi)"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialZMid" type="real" dimensions="nVertLevels nCells Time" units="m"
+			description="zMid - Equilibrium tidal potential in RK4"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="sshSubcycleCurWithTides" type="real" dimensions="nCells Time" units="m"
+			description="SSH - tidal potential in split explicit "
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="sshSubcycleNewWithTides" type="real" dimensions="nCells Time" units="m"
+			description="SSH - tidal potential in split explicit "
+			packages="tidalPotentialForcingPKG"
 		/>
 	</var_struct>
 	<var_struct name="timeVaryingForcing" time_levs="1">

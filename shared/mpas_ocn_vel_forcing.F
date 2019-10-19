@@ -27,7 +27,6 @@ module ocn_vel_forcing
 
    use ocn_vel_forcing_surface_stress
    use ocn_vel_forcing_explicit_bottom_drag
-   use ocn_vel_forcing_rayleigh
 
    implicit none
    private
@@ -143,9 +142,6 @@ contains
 
       err = ior(err, err1)
 
-      call ocn_vel_forcing_rayleigh_tend(meshPool, normalVelocity, tend, err1)
-      err = ior(err, err1)
-
    !--------------------------------------------------------------------
 
    end subroutine ocn_vel_forcing_tend!}}}
@@ -180,8 +176,7 @@ contains
       integer :: err1, err2
 
       call ocn_vel_forcing_surface_stress_init(err1)
-      call ocn_vel_forcing_explicit_bottom_drag_init(err1)
-      call ocn_vel_forcing_rayleigh_init(err2)
+      call ocn_vel_forcing_explicit_bottom_drag_init(err2)
 
       err = ior(err1, err2)
 
