@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<config case="init">
+	<add_link source="../../build_mesh/culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
+	<add_link source="../../build_mesh/culled_mesh/culled_graph.info" dest="graph.info"/>
+	<add_link source_path="initial_condition_database" source="sandy_wnd10m.nc" dest="wnd10m.nc"/>
+	<add_link source_path="initial_condition_database" source="sandy_prmsl.nc" dest="prmsl.nc"/>
+	<add_link source_path="script_configuration_dir" source="interpolate_time_varying_forcing.py" dest="interpolate_time_varying_forcing.py"/>
+	<add_link source_path="script_configuration_dir" source="create_pointstats_file.py" dest="create_pointstats_file.py"/>
+	<add_link source_path="script_test_dir" source="NOAA-COOPS_stations.txt" dest="NOAA-COOPS_stations.txt"/>
+	<add_link source_path="script_test_dir" source="USGS_stations.txt" dest="USGS_stations.txt"/>
+
+	<namelist name="namelist.ocean" mode="init">
+		<template file="init_template.xml" path_base="script_configuration_dir"/>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="init">
+		<template file="init_template.xml" path_base="script_configuration_dir"/>
+	</streams>
+
+	<run_script name="run.py">
+<!--
+		<step executable="gpmetis">
+		        <argument flag="graph.info">6</argument>
+		</step>
+-->
+		<step executable="python">
+			<argument flag="interpolate_time_varying_forcing.py"></argument>
+		</step>
+		<step executable="python">
+			<argument flag="create_pointstats_file.py"></argument>
+			<argument flag="--mesh_file">mesh.nc</argument>
+			<argument flag="--station_files">USGS_stations.txt</argument>
+			<argument flag="--station_files">NOAA-COOPS_stations.txt</argument>
+		</step>
+		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+
+</config>

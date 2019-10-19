@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<config case="analysis">
+	<add_link source="../forward/output.nc" dest="output.nc"/>
+
+	<run_script name="run.py">
+		<step executable="paraview_vtk_field_extractor.py">
+			<argument flag="-f">output.nc</argument>
+			<argument flag="-o">vtk_output</argument>
+			<argument flag="-v">allOnCells</argument>
+			<argument flag="-d">maxEdges=0</argument>
+			<argument flag="">nVertLevels=0:10</argument>
+			<argument flag="--combine"></argument>
+		</step>
+	</run_script>
+</config>

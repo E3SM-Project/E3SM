@@ -59,6 +59,7 @@ module ocn_tendency
    use ocn_vel_forcing
    use ocn_vmix
    use ocn_wetting_drying
+   use ocn_tidal_potential_forcing
 
    implicit none
    private
@@ -213,7 +214,7 @@ contains
 
       type (mpas_pool_type), intent(inout) :: tendPool !< Input/Output: Tendency structure
       type (mpas_pool_type), intent(in) :: statePool !< Input: State information
-      type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
+      type (mpas_pool_type), intent(inout) :: forcingPool !< Input: Forcing information
       type (mpas_pool_type), intent(in) :: diagnosticsPool !< Input: Diagnostic information
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       real (kind=RKIND), intent(in) :: dt
@@ -222,7 +223,8 @@ contains
 
       type (mpas_pool_type), pointer :: tracersPool
 
-      real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude, surfaceFluxAttenuationCoefficient
+      real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude, surfaceFluxAttenuationCoefficient, ssh
+      real (kind=RKIND), dimension(:), pointer :: tidalPotentialEta 
       real (kind=RKIND), dimension(:,:), pointer :: &
         layerThicknessEdge, normalVelocity, tangentialVelocity, density, potentialDensity, zMid, pressure, &
         layerThickness, &
@@ -230,18 +232,23 @@ contains
         normalizedRelativeVorticityEdge, normalizedPlanetaryVorticityEdge, &
         montgomeryPotential, vertAleTransportTop, divergence, vertViscTopOfEdge, &
         inSituThermalExpansionCoeff, inSituSalineContractionCoeff
+      real (kind=RKIND), dimension(:,:), pointer :: tidalPotentialZMid
       real (kind=RKIND), dimension(:,:), pointer :: wettingVelocity
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       integer :: timeLevel
 
-      integer :: err, iEdge, iCell
+      integer :: err, iEdge, iCell, k
       integer, pointer :: indexTemperature, indexSalinity, nEdges, nCells
+      integer, dimension(:), pointer :: maxLevelCell
 
       logical, pointer :: config_disable_vel_all_tend
       logical, pointer :: config_use_wetting_drying
       logical, pointer :: config_prevent_drying
+      logical, pointer :: config_use_tidal_potential_forcing
       character (len=StrKIND), pointer :: config_pressure_gradient_type
+      character (len=StrKIND), pointer :: config_time_integrator
+      real (kind=RKIND), pointer :: config_self_attraction_and_loading_beta 
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -253,6 +260,9 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
       call mpas_pool_get_config(ocnConfigs, 'config_use_wetting_drying', config_use_wetting_drying)
       call mpas_pool_get_config(ocnConfigs, 'config_prevent_drying', config_prevent_drying)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_potential_forcing', config_use_tidal_potential_forcing)
+      call mpas_pool_get_config(ocnConfigs, 'config_self_attraction_and_loading_beta',config_self_attraction_and_loading_beta)
+      call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
@@ -261,6 +271,7 @@ contains
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+      call mpas_pool_get_array(statePool, 'ssh', ssh, timeLevel)
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
@@ -326,20 +337,50 @@ contains
       call ocn_vel_vadv_tend(meshPool, normalVelocity, layerThicknessEdge, vertAleTransportTop, tend_normalVelocity, err)
 
       !
+      ! velocity tendency: tidal potential (if needed) 
+      !   For RK4, subtract the tidal potential from the zMid array and store in a work array, 
+      !   Then point zMid to work array so the tidal potential terms are included inside the grad computed in ocn_vel_pressure_grad_tend
+      !   zMid is pointed back to the typical value afterward, so the work array is not used in place of zMid elsewhere.
+      !
+      if (config_use_tidal_potential_forcing) then
+        call ocn_compute_tidal_potential_forcing(meshPool, forcingPool, diagnosticsPool, err)
+      end if
+
+      if (config_use_tidal_potential_forcing .and. config_time_integrator == 'RK4') then
+        call mpas_pool_get_array(forcingPool, 'tidalPotentialZMid', tidalPotentialZMid)
+        call mpas_pool_get_array(forcingPool, 'tidalPotentialEta', tidalPotentialEta)
+        call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+
+        do iCell = 1, nCells
+          do k = 1, maxLevelCell(iCell)
+            tidalPotentialZMid(k,iCell) = zMid(k,iCell) - tidalPotentialEta(iCell) &
+                                        - config_self_attraction_and_loading_beta * zMid(k,iCell)
+          end do 
+        end do
+
+        call mpas_pool_get_array(forcingPool, 'tidalPotentialZMid', zMid)
+      end if
+
+      !
       ! velocity tendency: pressure gradient
       !
       if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
          ! only pass EOS derivatives if needed.
          call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
          call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
-         call ocn_vel_pressure_grad_tend(meshPool, pressure, montgomeryPotential, zMid, density, potentialDensity, &
+         call ocn_vel_pressure_grad_tend(meshPool, ssh, pressure, montgomeryPotential, zMid, density, potentialDensity, &
               indexTemperature, indexSalinity, activeTracers, tend_normalVelocity, err, &
               inSituThermalExpansionCoeff,inSituSalineContractionCoeff)
       else
-         call ocn_vel_pressure_grad_tend(meshPool, pressure, montgomeryPotential, zMid, density, potentialDensity, &
+         call ocn_vel_pressure_grad_tend(meshPool, ssh, pressure, montgomeryPotential, zMid, density, potentialDensity, &
               indexTemperature, indexSalinity, activeTracers, tend_normalVelocity, err, &
               inSituThermalExpansionCoeff,inSituSalineContractionCoeff)
       endif
+
+      if (config_use_tidal_potential_forcing .and. config_time_integrator == 'RK4') then
+        ! point zMid back to usual array, to be safe
+        call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
+      end if
 
       !
       ! velocity tendency: del2 dissipation, \nu_2 \nabla^2 u
