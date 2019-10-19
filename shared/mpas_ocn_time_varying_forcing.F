@@ -402,7 +402,8 @@ contains
          windStressCoefficient, &
          rhoAir, &
          ramp, &
-         currentTime
+         currentTime, &
+         windStressCoefficientLimit
 
     real(kind=RKIND), pointer:: &
         config_forcing_ramp, &
@@ -434,6 +435,7 @@ contains
     call MPAS_pool_get_array(forcingPool, "atmosphericPressure", atmosphericPressure)
 
     rhoAir = 1.225_RKIND
+    windStressCoefficientLimit = 0.0035_RKIND
 
     ramp = tanh((2.0_RKIND*daysSinceStartOfSim)/config_forcing_ramp)
 
@@ -443,10 +445,13 @@ contains
        windSpeedU(iCell) = ramp*windSpeedU(iCell)
        windSpeedV(iCell) = ramp*windSpeedV(iCell)
        windSpeedMagnitude(iCell) = sqrt(windSpeedU(iCell)**2 + windSpeedV(iCell)**2)
-       windStressCoefficient = (0.75_RKIND + 0.067_RKIND * windSpeedMagnitude(iCell)) * 0.001_RKIND * rhoAir  ! Garratt 1977
+       windStressCoefficient = (0.75_RKIND + 0.067_RKIND * windSpeedMagnitude(iCell)) * 0.001_RKIND   ! Garratt 1977
+       if (windStressCoefficient > windStressCoefficientLimit) then
+         windStressCoefficient = windStressCoefficientLimit
+       end if
 
-       windStressZonal(iCell) = windSpeedU(iCell) * windSpeedMagnitude(iCell) * windStressCoefficient
-       windStressMeridional(iCell) = windSpeedV(iCell) * windSpeedMagnitude(iCell) * windStressCoefficient
+       windStressZonal(iCell) =  rhoAir * windSpeedU(iCell) * windSpeedMagnitude(iCell) * windStressCoefficient
+       windStressMeridional(iCell) = rhoAir * windSpeedV(iCell) * windSpeedMagnitude(iCell) * windStressCoefficient
 
        atmosphericPressure(iCell) = ((1.0_RKIND-ramp)*atm_ref_pressure + ramp*atmosPressure(iCell)) - atm_ref_pressure
 

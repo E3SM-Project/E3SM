@@ -111,26 +111,35 @@ contains
                                         config_vertical_grid, &
                                         config_tidal_boundary_layer_type
     logical, pointer :: config_tidal_boundary_use_distances, config_alter_ICs_for_pbcs
+    logical, pointer :: config_use_wetting_drying, config_tidal_start_dry
     real (kind=RKIND), pointer :: config_tidal_boundary_right_bottom_depth, &
                                   config_tidal_boundary_left_bottom_depth, &
                                   config_tidal_boundary_plug_width_dist, config_tidal_boundary_plug_width_frac, &
                                   config_tidal_boundary_plug_temperature, config_tidal_boundary_domain_temperature, &
                                   config_tidal_boundary_salinity, config_tidal_boundary_isopycnal_min_thickness, &
-                                  config_tidal_boundary_water_thickness
+                                  config_tidal_boundary_left_value, &
+                                  config_tidal_boundary_right_value, &
+                                  config_drying_min_cell_height
+    integer, pointer :: config_tidal_boundary_min_vert_levels
 
 
     real (kind=RKIND), dimension(:), pointer :: interfaceLocations
+    real (kind=RKIND),  parameter :: eps=1.0e-12
 
     iErr = 0
 
 
     call mpas_pool_get_config(ocnConfigs, 'config_init_configuration', config_init_configuration)
+    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_layer_type', config_tidal_boundary_layer_type)
 
     call mpas_log_write('here')
     if(config_init_configuration .ne. trim('tidal_boundary')) return
 
     call mpas_pool_get_config(ocnConfigs, 'config_vertical_grid', config_vertical_grid)
 
+    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_min_vert_levels', config_tidal_boundary_min_vert_levels)
+    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_right_value', config_tidal_boundary_right_value)
+    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_left_value', config_tidal_boundary_left_value)
     call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_right_bottom_depth', config_tidal_boundary_right_bottom_depth)
     call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_left_bottom_depth', config_tidal_boundary_left_bottom_depth)
     call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_plug_width_frac', config_tidal_boundary_plug_width_frac)
@@ -138,6 +147,12 @@ contains
     call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_domain_temperature', config_tidal_boundary_domain_temperature)
     call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_salinity', config_tidal_boundary_salinity)
     call mpas_pool_get_config(ocnConfigs, 'config_alter_ICs_for_pbcs', config_alter_ICs_for_pbcs)
+
+    call mpas_pool_get_config(ocnConfigs, 'config_tidal_start_dry', config_tidal_start_dry)
+    call mpas_pool_get_config(ocnConfigs, 'config_use_wetting_drying', config_use_wetting_drying)
+    call mpas_pool_get_config(ocnConfigs, 'config_drying_min_cell_height', config_drying_min_cell_height)
+
+    call mpas_pool_get_config(ocnConfigs, 'config_tidal_boundary_use_distances', config_tidal_boundary_use_distances)
 
     call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
     call mpas_pool_get_dimension(meshPool, 'nVertLevelsP1', nVertLevelsP1)
@@ -218,36 +233,115 @@ contains
         refBottomDepth(k) = config_tidal_boundary_right_bottom_depth * interfaceLocations(k+1)
       end do
 
+      if (config_tidal_boundary_use_distances) then
+        yMin = config_tidal_boundary_left_value
+        yMax = config_tidal_boundary_right_value
+      end if
+
       do iCell = 1, nCellsSolve
         bottomDepth(iCell) = config_tidal_boundary_left_bottom_depth &
           + (yCell(iCell) - yMin) / (yMax - yMin)  * &
           (config_tidal_boundary_right_bottom_depth - config_tidal_boundary_left_bottom_depth)
+      end do
 
-        if (.not. config_alter_ICs_for_pbcs) then
+      if (config_use_wetting_drying .and. config_tidal_start_dry .and. &
+          trim(config_tidal_boundary_layer_type) == 'zstar') then
+        do iCell = 1, nCellsSolve
+          ! make sure bottomDepth not smaller than 3 layers)
+          bottomDepth(iCell) = max(refBottomDepth(2), bottomDepth(iCell))
+        end do
+      end if
+
+      if (.not. config_alter_ICs_for_pbcs .and. trim(config_tidal_boundary_layer_type) == 'zstar') then
+        do iCell = 1, nCellsSolve
           do k = 1,nVertLevels
             if (refBottomDepth(k) > bottomDepth(iCell)) then
               bottomDepth(iCell) = refBottomDepth(k)
               exit
             end if
           end do
-        end if
+        end do
+      end if
+
+      if(trim(config_tidal_boundary_layer_type) == 'zstar') then
 
         ! Determine maxLevelCell based on bottomDepth and refBottomDepth
         ! Also set botomDepth based on refBottomDepth, since
         ! above bottomDepth was set with continuous analytical functions,
         ! and needs to be discrete
+        do iCell = 1, nCellsSolve
         maxLevelCell(iCell) = nVertLevels
-        if (nVertLevels > 1) then
-          do k = 1, nVertLevels
-            if (bottomDepth(iCell) < refBottomDepth(k)) then
-              maxLevelCell(iCell) = k-1
-              bottomDepth(iCell) = refBottomDepth(k-1)
-              exit
-            end if
-          end do
-        end if
+          if (nVertLevels > 1) then
+            do k = 1, nVertLevels
+              if (bottomDepth(iCell) < refBottomDepth(k)) then
+                maxLevelCell(iCell) = k-1
+                bottomDepth(iCell) = refBottomDepth(k-1)
+                exit
+              end if
+            end do
+          end if
 
-      end do
+          ssh(iCell) = 0.0_RKIND
+        end do
+
+      else if (trim(config_tidal_boundary_layer_type) == 'sigma') then
+
+        do iCell = 1, nCellsSolve
+          maxLevelCell(iCell) = nVertLevels
+        end do
+
+      else if (trim(config_tidal_boundary_layer_type) == 'hybrid') then
+
+        do iCell = 1, nCellsSolve
+          maxLevelCell(iCell) = nVertLevels
+          if (nVertLevels > 1) then
+            do k = 1, nVertLevels
+              if (bottomDepth(iCell) < refBottomDepth(k)) then
+                if (k < config_tidal_boundary_min_vert_levels) then
+                  ! Use sigma
+                  maxLevelCell(iCell) = config_tidal_boundary_min_vert_levels
+                  exit
+                else
+                  ! Use zstar
+                  maxLevelCell(iCell) = k-1
+                  bottomDepth(iCell) = refBottomDepth(k-1)
+                  exit
+                end if
+              end if
+            end do
+          end if
+
+          ssh(iCell) = 0.0_RKIND
+        end do
+
+      end if
+
+
+      if (config_use_wetting_drying .and. config_tidal_start_dry) then
+        do iCell = 1, nCellsSolve
+          ssh(iCell) = -bottomDepth(iCell) + config_drying_min_cell_height*maxLevelCell(iCell)
+          ! also computes zMid
+          do k = 1, maxLevelCell(iCell)
+            layerThickness(k,iCell) = (ssh(iCell) + bottomDepth(iCell))/maxLevelCell(iCell)
+            restingThickness(k, iCell) = bottomDepth(iCell)/maxLevelCell(iCell)
+          end do
+        end do
+      else
+        do iCell = 1, nCellsSolve
+          ! Set layerThickness and restingThickness
+          call ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness(:,iCell), zMid(:,iCell), &
+            refBottomDepth, bottomDepth(iCell), maxLevelCell(iCell), nVertLevels, iErr, &
+            restingThickness=restingThickness(:,iCell), &
+            ssh=ssh(iCell))
+          ! also computes zMid
+          do k = 1, maxLevelCell(iCell)
+            restingThickness(k, iCell) = layerThickness(k, iCell)
+          end do
+        end do
+      end if
+
+      ! Set vertCoordMovementWeights
+      vertCoordMovementWeights(:) = 1.0_RKIND
 
       ! Set tidal boundary mask
       do iCell = 1, nCellsSolve
@@ -260,13 +354,16 @@ contains
         end if
       end do
 
-      do iCell = 1, nCellsSolve
-        ssh(iCell) = 0.0_RKIND
-      end do
+      ! Set salinity
+      if ( associated(activeTracers) ) then
+        do iCell = 1, nCellsSolve
+          activeTracers(index_salinity, :, iCell) = config_tidal_boundary_salinity
+        end do
+      end if
 
-      do iCell = 1, nCellsSolve
-        ! Set temperature
-        if ( associated(activeTracers) ) then
+      ! Set temperature
+      if ( associated(activeTracers) ) then
+        do iCell = 1, nCellsSolve
           do k = 1, maxLevelCell(iCell)
             if(yCell(iCell) < yMinGlobal + plugWidth) then
               activeTracers(index_temperature, k, iCell) = config_tidal_boundary_plug_temperature
@@ -274,39 +371,21 @@ contains
               activeTracers(index_temperature, k, iCell) = config_tidal_boundary_domain_temperature
             end if
           end do
-          ! Set debug tracer to match plug onshore
-          if ( associated(debugTracers) ) then
-            do k = 1, maxLevelCell(iCell)
-              if(yCell(iCell) < (yMinGlobal + plugWidth)) then
-                debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
-              else
-                debugTracers(index_tracer1, k, iCell) = 0.0_RKIND
-              end if
-            end do
-          end if
-        end if
-      end do
-
-      do iCell = 1, nCellsSolve
-        ! Set layerThickness and restingThickness
-        call ocn_compute_layerThickness_zMid_from_bottomDepth(layerThickness(:,iCell), zMid(:,iCell), &
-          refBottomDepth, bottomDepth(iCell), maxLevelCell(iCell), nVertLevels, iErr, &
-          restingThickness=restingThickness(:,iCell), &
-          ssh=ssh(iCell))
-        ! also computes zMid
-        do k = 1, maxLevelCell(iCell)
-          restingThickness(k, iCell) = layerThickness(k, iCell)
         end do
+      end if
 
-        ! Set salinity
-        if ( associated(activeTracers) ) then
-          activeTracers(index_salinity, :, iCell) = config_tidal_boundary_salinity
-        end if
-
-      end do
-
-      ! Set vertCoordMovementWeights
-      vertCoordMovementWeights(:) = 1.0_RKIND
+      ! Set debug tracer to match plug onshore
+      if ( associated(debugTracers) ) then
+        do iCell = 1, nCellsSolve
+          do k = 1, maxLevelCell(iCell)
+            if(yCell(iCell) < (yMinGlobal + plugWidth)) then
+              debugTracers(index_tracer1, k, iCell) = 1.0_RKIND
+            else
+              debugTracers(index_tracer1, k, iCell) = 0.0_RKIND
+            end if
+          end do
+        end do
+      end if
 
       block_ptr => block_ptr % next
     end do
