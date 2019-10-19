@@ -1,0 +1,42 @@
+	<nml_record name="hurricane" mode="init" configuration="hurricane">
+		<nml_option name="config_hurricane_vert_levels" type="integer" default_value="3" units="m"
+			description="Number of vertical levels for hurricane."
+			possible_values="Any positive integer number greater than 2."
+		/>
+		<nml_option name="config_hurricane_min_depth" type="real" default_value="10.0" units="m"
+			description="Minimum depth for hurricane mesh bathymetry."
+			possible_values="Any positive real number greater than 0."
+		/>
+		<nml_option name="config_hurricane_max_depth" type="real" default_value="60.0" units="m"
+			description="Maximum depth for hurricane mesh bathymetry."
+			possible_values="Any positive real number greater than 0."
+		/>
+		<nml_option name="config_hurricane_gaussian_hump_amplitude" type="real" default_value="1.0" units="m"
+			description="Amplitude of gaussian wave."
+			possible_values="Any positive real number greater than 0."
+		/>
+		<nml_option name="config_hurricane_use_gaussian_hump" type="logical" default_value="false" units="unitless"
+			description="Use of idealized gaussian hump 'hurricane' initial condition."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_hurricane_gaussian_lon_center" type="real" default_value="286.0" units="degrees"
+			description="Longitude of center of gaussian wave."
+			possible_values="Any real number between 0.0 and 360.0."
+		/>
+		<nml_option name="config_hurricane_gaussian_lat_center" type="real" default_value="38.0" units="degrees"
+			description="Latitude of center of gaussian wave."
+			possible_values="Any real number between -90.0 and 90.0."
+		/>
+		<nml_option name="config_hurricane_gaussian_width" type="real" default_value="1.0" units="degrees"
+			description="Width scale of gaussian wave."
+			possible_values="Any real number greater than 0.0"
+		/>
+		<nml_option name="config_hurricane_gaussian_amplitude" type="real" default_value="1.0" units="m"
+			description="Amplitude of gaussian wave."
+			possible_values="Any real number greater than 0.0"
+		/>
+		<nml_option name="config_hurricane_gaussian_slr_amp" type="real" default_value="0.0" units="m"
+			description="Amplitude of sea level rise."
+			possible_values="Any real number."
+		/>
+	</nml_record>

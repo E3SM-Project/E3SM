@@ -115,6 +115,7 @@ contains
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessCur
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessNew
       real (kind=RKIND), dimension(:,:), pointer :: layerThicknessTend
+      real (kind=RKIND), dimension(:), pointer :: lonCell, latCell
       real (kind=RKIND) :: minThickness, layerThick
       character (len=StrKIND) :: debugFilename
       character (len=StrKIND), pointer :: config_time_integrator
@@ -137,6 +138,8 @@ contains
       call mpas_pool_get_array(statePool, 'sshSubcycle', sshSubcycleNew, 2)
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
       call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
+      call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
+      call mpas_pool_get_array(meshPool, 'latCell', latCell)
 
       err = 0
 
@@ -161,8 +164,10 @@ contains
               open(unit=debugUnit, file=debugFilename, form='formatted', status='unknown')
             end if
             err = iCell
-            write(debugUnit, '(A, I5, A, I5, A, ES14.7, A)') 'ERROR: layerThickness too small at iCell=', iCell, &
-                             ', k=', k, ' with thickness of ', layerThick , '.'
+            write(debugUnit, '(A, I5, A, I5, A, ES14.7, A, ES14.7, A, ES14.7, A)') &
+              'ERROR: layerThickness too small at iCell=', iCell, ' k = ', k, &
+              ', lon= ', lonCell(iCell), ', lat= ', latCell(iCell), &
+              ' with thickness of ', layerThick , '.'
           end if
         end do
       end do
@@ -171,7 +176,7 @@ contains
 
       if ( err > 0) then
         ! end the simulation if layerThickness constraint is violated
-        call mpas_log_write( 'Done, some cells are have dried.')
+        call mpas_log_write( 'Done, some cells have dried.')
         flush(debugUnit)
         close(debugUnit)
         call mpas_release_unit(debugUnit)
@@ -384,13 +389,14 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dvEdge
       real (kind=RKIND), dimension(:), pointer :: areaCell
 
-      real (kind=RKIND), pointer :: config_drying_min_cell_height
+      real (kind=RKIND), pointer :: config_drying_min_cell_height, config_drying_safety_height
       logical, pointer :: config_zero_drying_velocity
 
       err = 0
 
       call mpas_pool_get_config(ocnConfigs, 'config_drying_min_cell_height', config_drying_min_cell_height)
       call mpas_pool_get_config(ocnConfigs, 'config_zero_drying_velocity', config_zero_drying_velocity)
+      call mpas_pool_get_config(ocnConfigs, 'config_drying_safety_height', config_drying_safety_height)
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
@@ -424,7 +430,7 @@ contains
           end do
 
           ! if layer thickness is too small, limit divergence flux outwards with opposite velocity
-          if ((layerThickness + dt*divOutFlux ) <= (config_drying_min_cell_height))  then
+          if ((layerThickness + dt*divOutFlux ) <= (config_drying_min_cell_height + config_drying_safety_height))  then
             ! limit divOutFlux out of cell to keep it wet
             divOutFlux = abs(divOutFlux)
             divOutFlux = (layerThickness - (config_drying_min_cell_height + eps)) / (dt*divOutFlux + eps)
