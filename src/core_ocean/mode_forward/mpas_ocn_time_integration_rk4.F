@@ -144,6 +144,7 @@ module ocn_time_integration_rk4
 
       ! Mesh array pointers
       integer, dimension(:), pointer :: maxLevelCell, maxLevelEdgeTop
+      real (kind=RKIND), dimension(:), pointer :: bottomDepth
 
       ! Provis Array Pointers
       real (kind=RKIND), dimension(:,:), pointer :: normalVelocityProvis, layerThicknessProvis
@@ -190,6 +191,13 @@ module ocn_time_integration_rk4
       character (len=StrKIND) :: modifiedGroupName
       character (len=StrKIND) :: configName
 
+      ! Tidal boundary condition
+      logical, pointer :: config_use_tidal_forcing
+      character (len=StrKIND), pointer :: config_tidal_forcing_type
+      real (kind=RKIND), dimension(:), pointer :: tidalInputMask, tidalBCValue
+      real (kind=RKIND), dimension(:,:), pointer :: restingThickness
+      real (kind=RKIND) :: totalDepth
+
       ! Get config options
       call mpas_pool_get_config(domain % configs, 'config_mom_del4', config_mom_del4)
       call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
@@ -207,6 +215,8 @@ module ocn_time_integration_rk4
       call mpas_pool_get_config(domain % configs, 'config_verify_not_dry', config_verify_not_dry)
       call mpas_pool_get_config(domain % configs, 'config_drying_min_cell_height', config_drying_min_cell_height)
       call mpas_pool_get_config(domain % configs, 'config_zero_drying_velocity', config_zero_drying_velocity)
+      call mpas_pool_get_config(domain % configs, 'config_use_tidal_forcing', config_use_tidal_forcing)
+      call mpas_pool_get_config(domain % configs, 'config_tidal_forcing_type', config_tidal_forcing_type)
 
       !
       ! Initialize time_levs(2) with state at current time
@@ -628,9 +638,11 @@ module ocn_time_integration_rk4
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
          call mpas_pool_get_subpool(block % structs, 'scratch', scratchPool)
+         call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
 
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
+         call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
 
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityCur, 1)
          call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocityNew, 2)
@@ -657,6 +669,9 @@ module ocn_time_integration_rk4
          call mpas_pool_get_array(diagnosticsPool, 'gradSSHMeridional', gradSSHMeridional)
          call mpas_pool_get_array(diagnosticsPool, 'surfaceVelocity', surfaceVelocity)
          call mpas_pool_get_array(diagnosticsPool, 'SSHGradient', SSHGradient)
+         call mpas_pool_get_array(verticalMeshPool, 'restingThickness', restingThickness)
+         call mpas_pool_get_array(forcingPool, 'tidalInputMask', tidalInputMask)
+         call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
 
 
          if (config_prescribe_velocity) then
@@ -673,6 +688,26 @@ module ocn_time_integration_rk4
                layerThicknessNew(:, iCell) = layerThicknessCur(:, iCell)
             end do
             !$omp end do
+         end if
+
+         ! direct application of tidal boundary condition
+         if (config_use_tidal_forcing .and. trim(config_tidal_forcing_type) == 'direct') then
+           do iCell=1, nCells
+             ! artificially assumes boolean mask for now, could generalize to tappered sponge layer
+             if (tidalInputMask(iCell) == 1.0_RKIND) then
+               ! compute total depth for relative thickness contribution
+               totalDepth = 0.0_RKIND
+               do k = 1, maxLevelCell(iCell)
+                 totalDepth = totalDepth + restingThickness(k,iCell)
+               end do
+
+               ! only modify layer thicknesses on tidal boundary
+               do k = 1, maxLevelCell(iCell)
+                 layerThicknessNew(k, iCell) = tidalInputMask(iCell)*(tidalBCValue(iCell) + bottomDepth(iCell))*(restingThickness(k,iCell)/totalDepth)
+                 !(1.0_RKIND - tidalInputMask(iCell))*layerThicknessNew(k, iCell)  ! generalized tappered assumption code
+               end do
+             end if
+           end do
          end if
 
          call ocn_diagnostic_solve(dt, statePool, forcingPool, meshPool, diagnosticsPool, scratchPool, tracersPool, 2)
