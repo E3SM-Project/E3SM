@@ -267,7 +267,7 @@ CloudSedData::CloudSedData(const CloudSedData& rhs) :
 void cloud_sedimentation(CloudSedData& d)
 {
   p3_init(true);
-  cloud_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+  cloud_sedimentation_c(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                         d.qc_incld, d.rho, d.inv_rho, d.lcldm, d.acn, d.inv_dzq,
                         d.dt, d.odt, d.log_predictNc,
                         d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.prt_liq, d.qc_tend, d.nc_tend);
