@@ -13,9 +13,9 @@
 	url = https://github.com/MPAS-Dev/MPAS-Model.git
 [submodule "externals/scorpio"]
 	path = externals/scorpio
-  url = git@github.com:E3SM-Project/scorpio.git
+  url = https://github.com/E3SM-Project/scorpio
 	branch = master
 [submodule "externals/scorpio_classic"]
 	path = externals/scorpio_classic
-  url = git@github.com:E3SM-Project/scorpio.git
+  url = https://github.com/E3SM-Project/scorpio
 	branch = scorpio_classic
