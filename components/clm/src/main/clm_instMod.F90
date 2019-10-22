@@ -392,6 +392,7 @@ contains
     call col_ef%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_ef%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 
+    call drydepvel_vars%Init(bounds_proc)
     call aerosol_vars%Init(bounds_proc)
 
     call frictionvel_vars%Init(bounds_proc)
