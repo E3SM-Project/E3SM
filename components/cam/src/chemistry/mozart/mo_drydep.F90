@@ -2098,7 +2098,7 @@ contains
        if (use_camiop) then
           call getfil (ncdata, ncdata_loc)
           call cam_pio_openfile (piofile, trim(ncdata_loc), PIO_NOWRITE)
-          call shr_scam_getCloseLatLon(piofile%fh,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+          call shr_scam_getCloseLatLon(piofile,scmlat,scmlon,closelat,closelon,latidx,lonidx)
           call pio_closefile ( piofile)
           ploniop=size(loniop)
           platiop=size(latiop)
