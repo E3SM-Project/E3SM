@@ -162,17 +162,7 @@
       <grid name="atm">360x720cru</grid>
       <grid name="lnd">360x720cru</grid>
       <grid name="ocnice">360x720cru</grid>
-      <grid name="rof">360x720cru</grid>
-      <grid name="glc">null</grid>
-      <grid name="wav">null</grid>
-      <mask>360x720cru</mask>
-    </model_grid>
-
-    <model_grid alias="T62_hcru" compset="(DATM|SATM).+CLM">
-      <grid name="atm">T62</grid>
-      <grid name="lnd">360x720cru</grid>
-      <grid name="ocnice">360x720cru</grid>
-      <grid name="rof">360x720cru</grid>
+      <grid name="rof">r05</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>360x720cru</mask>

@@ -48,7 +48,7 @@ def buildnml(case, caseroot, compname):
     # Verify rof grid is supported
     #--------------------------------------------------------------------
 
-    rof_grid_supported = ("null", "r05", "r0125", "r01", "360x720cru")
+    rof_grid_supported = ("null", "r05", "r0125", "r01")
     expect(rof_grid in rof_grid_supported, "ROF_GRID '{}' is not supported in mosart. Choose from: null, r05, r0125, r01".format(rof_grid))
 
     #--------------------------------------------------------------------
