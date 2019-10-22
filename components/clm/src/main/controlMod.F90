@@ -46,7 +46,7 @@ module controlMod
   use clm_varctl              , only: forest_fert_exp
   use clm_varctl              , only: ECA_Pconst_RGspin
   use clm_varctl              , only: NFIX_PTASE_plant
-!  use topounit_varcon         , only: max_topounits
+  use clm_varctl              , only: use_multiple_topounits
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -275,7 +275,7 @@ contains
          budget_ann, budget_ltann, budget_ltend
 	
 	namelist /clm_inparm/use_downscaling_to_topounit
-	!namelist /clm_inparm/max_topounits
+        namelist /clm_inparm/use_multiple_topounits
 
     ! ----------------------------------------------------------------------
     ! Default values
@@ -838,6 +838,7 @@ contains
     write(iulog,*) '   PFT physiology and parameters file = ',trim(paramfile)
     write(iulog,*) '   Soil order dependent parameters file = ',trim(fsoilordercon)
     write(iulog,*) '    use_downscaling_to_topounit = ', use_downscaling_to_topounit
+    write(iulog,*) '    use_multiple_topounits = ', use_multiple_topounits
     !write(iulog,*) '    Maximum number of topounits per grid = ', max_topounits
     if (fsurdat == ' ') then
        write(iulog,*) '   fsurdat, surface dataset not set'

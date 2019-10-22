@@ -601,9 +601,11 @@ contains
     if (.not. readvar) call endrun( msg=' ERROR: pftm NOT on surface dataset'//errMsg(__FILE__, __LINE__))
 	
     ! Read the new grid elevation parameter that is based on topounit elevation
-    call ncd_io(ncid=ncid, varname= 'TOPO2', flag='read', data=ldomain%topo2, &
+	call check_var(ncid=ncid, varname='TOPO2', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname= 'TOPO2', flag='read', data=ldomain%topo2, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: TOPO2 NOT on surface dataset'//errMsg(__FILE__, __LINE__))
+    endif
     
 	! Check if fsurdat grid is "close" to fatmlndfrc grid, exit if lats/lon > 0.001
 
@@ -1270,6 +1272,7 @@ contains
 
   end subroutine surfrd_get_grid_conn
   
+  !-----------------------------------------------------------------------------------------------------
   subroutine surfrd_topounit_data(begg, endg, ncid)
     !
     ! !DESCRIPTION:
@@ -1285,6 +1288,7 @@ contains
     
     !
     ! !LOCAL VARIABLES:
+    type(var_desc_t)  :: vardesc
     integer  :: n                ! indices
   
     logical  :: readvar
@@ -1309,35 +1313,41 @@ contains
 !   allocate(TopounitStdElv(begg:endg,max_topounits))
 	
     !call check_dim(ncid, 'nlevsoi', nlevsoifl)
-	
-    call ncd_io(ncid=ncid, varname='MaxTopounitElv', flag='read', data=maxTopoElv, &
+    call check_var(ncid=ncid, varname='MaxTopounitElv', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname='MaxTopounitElv', flag='read', data=maxTopoElv, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: MaxTopounitElv NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-	
-    call ncd_io(ncid=ncid, varname='topoPerGrid', flag='read', data=numTopoPerGrid, &
+    endif
+
+    call check_var(ncid=ncid, varname='topoPerGrid', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname='topoPerGrid', flag='read', data=numTopoPerGrid, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: topoPerGrid NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-	
-    call ncd_io(ncid=ncid, varname='TopounitFracArea', flag='read', data=TopounitFracArea, &
+    endif
+
+    call check_var(ncid=ncid, varname='TopounitFracArea', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname='TopounitFracArea', flag='read', data=TopounitFracArea, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: TopounitFracArea NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-	
-    call ncd_io(ncid=ncid, varname='TopounitAveElv', flag='read', data=TopounitElv, &
+    endif
+
+    call check_var(ncid=ncid, varname='TopounitAveElv', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname='TopounitAveElv', flag='read', data=TopounitElv, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: TopounitAveElv NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-	
-    call ncd_io(ncid=ncid, varname='TopounitSlope', flag='read', data=TopounitSlope, &
+    endif
+
+    call check_var(ncid=ncid, varname='TopounitSlope', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname='TopounitSlope', flag='read', data=TopounitSlope, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: TopounitSlope NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-	
-    call ncd_io(ncid=ncid, varname='TopounitAspect', flag='read', data=TopounitAspect, &
+    endif
+
+    call check_var(ncid=ncid, varname='TopounitAspect', vardesc=vardesc, readvar=readvar)
+    if (readvar) then
+       call ncd_io(ncid=ncid, varname='TopounitAspect', flag='read', data=TopounitAspect, &
          dim1name=grlnd, readvar=readvar)
-    if (.not. readvar) call endrun( msg=' ERROR: TopounitAspect NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-	
-    !call ncd_io(ncid=ncid, varname='Topounit_STD_ELV', flag='read', data=TopounitStdElv, &
-    !     dim1name=grlnd, readvar=readvar)
-    !if (.not. readvar) call endrun( msg=' ERROR: Topounit_STD_ELV NOT on surfdata file'//errMsg(__FILE__, __LINE__))
-	
+    endif
 
     do n = begg,endg
        grc_pp%ntopounits(n) = numTopoPerGrid(n) 
@@ -1346,8 +1356,7 @@ contains
        grc_pp%televation(n,:) = TopounitElv(n,:) 
        grc_pp%tslope(n,:) = TopounitSlope(n,:) 
        grc_pp%taspect(n,:) = TopounitAspect(n,:) 
-    end do	
-	
+    end do		
 	
     deallocate(maxTopoElv,numTopoPerGrid,TopounitFracArea,TopounitElv,TopounitSlope,TopounitAspect)
   end subroutine surfrd_topounit_data
