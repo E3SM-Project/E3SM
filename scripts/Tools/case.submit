@@ -17,6 +17,7 @@ Other examples:
 
 from standard_script_setup import *
 from CIME.case        import Case
+from CIME.utils        import expect
 from six.moves import configparser
 
 ###############################################################################
@@ -35,6 +36,13 @@ def parse_command_line(args, description):
     parser.add_argument("--job", "-j",
                         help="Name of the job to be submitted;\n"
                         "can be any of the jobs listed in env_batch.xml.\n"
+                        "This will be the first job of any defined workflow.  "
+                        "Default is case.run.")
+
+    parser.add_argument("--only-job", 
+                        help="Name of the job to be submitted;\n"
+                        "can be any of the jobs listed in env_batch.xml.\n"
+                        "Only this job will be run, workflow and RESUBMIT are ignored.  "
                         "Default is case.run.")
 
     parser.add_argument("--no-batch", action="store_true",
@@ -70,6 +78,8 @@ def parse_command_line(args, description):
 
     CIME.utils.resolve_mail_type_args(args)
 
+    expect(args.job is None or args.only_job is None, "Cannot specify both --job and --only-job")
+    
     return (args.caseroot, args.job, args.no_batch, args.prereq, args.prereq_allow_failure,
             args.resubmit, args.resubmit_immediate, args.skip_preview_namelist, args.mail_user,
             args.mail_type, args.batch_args)
