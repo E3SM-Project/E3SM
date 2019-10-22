@@ -209,23 +209,25 @@ ENDIF ()
 ##############################################################################
 # OpenMP
 ##############################################################################
-FIND_PACKAGE(OpenMP)
-IF(OPENMP_FOUND)
-  MESSAGE(STATUS "Found OpenMP Flags")
+string(FIND "${KOKKOS_GMAKE_DEVICES}" "OpenMP" openmp_str_pos)
+if (${openmp_str_pos} GREATER -1)
+  find_package(OpenMP)
+  if(OPENMP_FOUND)
+    message(STATUS "Found OpenMP Flags")
 
-  MESSAGE(STATUS "OpenMP_Fortran_FLAGS: ${OpenMP_Fortran_FLAGS}")
-  MESSAGE(STATUS "OpenMP_C_FLAGS: ${OpenMP_C_FLAGS}")
-  MESSAGE(STATUS "OpenMP_CXX_FLAGS: ${OpenMP_CXX_FLAGS}")
-  MESSAGE(STATUS "OpenMP_EXE_LINKER_FLAGS: ${OpenMP_EXE_LINKER_FLAGS}")
-  # The fortran openmp flag should be the same as the C Flag
-  SET(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_C_FLAGS}")
-  SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-  SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-ELSE ()
-  MESSAGE(FATAL_ERROR "Unable to find OpenMP")
-ENDIF()
-##############################################################################
+    message(STATUS "OpenMP_Fortran_FLAGS: ${OpenMP_Fortran_FLAGS}")
+    message(STATUS "OpenMP_C_FLAGS: ${OpenMP_C_FLAGS}")
+    message(STATUS "OpenMP_CXX_FLAGS: ${OpenMP_CXX_FLAGS}")
+    message(STATUS "OpenMP_EXE_LINKER_FLAGS: ${OpenMP_EXE_LINKER_FLAGS}")
+    # The fortran openmp flag should be the same as the C Flag
+    set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+  else()
+    message(FATAL_ERROR "Unable to find OpenMP")
+  endif()
+endif()
 
 ##############################################################################
 # Intel Phi (MIC) specific flags - only supporting the Intel compiler
