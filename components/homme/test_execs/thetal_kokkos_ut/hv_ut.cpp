@@ -72,6 +72,7 @@ public:
     m_data.dt = dt/m_data.hypervis_subcycle;
     m_data.eta_ave_w = eta_ave_w;
     this->m_theta_hydrostatic_mode = hydrostatic;
+    this->m_eos.init(hydrostatic,this->m_hvcoord);
   }
 
   void set_hv_data (const Real hv_scaling, const Real nu_ratio1, const Real nu_ratio2)
@@ -132,7 +133,6 @@ TEST_CASE("hvf", "biharmonic") {
 
   // Use stuff from Context, to increase similarity with actual runs
   auto& c = Context::singleton();
-  auto old_comm = c.get_ptr<Comm>();
 
   // Init parameters
   auto& params = c.create<SimulationParams>();
@@ -144,6 +144,15 @@ TEST_CASE("hvf", "biharmonic") {
   params.hypervis_scaling  = RPDF(0.1,1.0)(engine);
   params.hypervis_subcycle = IPDF(1,3)(engine);
   params.params_set = true;
+
+  // Sync params across ranks
+  MPI_Bcast(&params.nu_top,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
+  MPI_Bcast(&params.nu,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
+  MPI_Bcast(&params.nu_p,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
+  MPI_Bcast(&params.nu_s,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
+  MPI_Bcast(&params.nu_div,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
+  MPI_Bcast(&params.hypervis_scaling,1,MPI_DOUBLE,0,c.get<Comm>().mpi_comm());
+  MPI_Bcast(&params.hypervis_subcycle,1,MPI_INT,0,c.get<Comm>().mpi_comm());
 
   // Create and init hvcoord and ref_elem, needed to init the fortran interface
   auto& hvcoord = c.create<HybridVCoord>();
@@ -251,9 +260,12 @@ TEST_CASE("hvf", "biharmonic") {
         params.theta_hydrostatic_mode = hydrostatic;
 
         // Generate timestep settings
-        const Real dt = 1.0;//rpdf(engine);
-        const Real eta_ave_w = 1.0;//rpdf(engine);
-        const int  np1 = 0;//ipdf(engine);
+        const Real dt = RPDF(1.0,10.0)(engine);
+        const Real eta_ave_w = RPDF(0.1,10.0)(engine);
+        int np1 = IPDF(0,2)(engine);
+        // Sync np1 across ranks. If they are not synced, we may get stuck in an mpi wait
+        MPI_Bcast(&np1,1,MPI_INT,0,c.get<Comm>().mpi_comm());
+
         hvf.set_timestep_data(np1,dt,eta_ave_w, hydrostatic);
 
         // The be needs to be inited after the hydrostatic option has been set
@@ -395,8 +407,8 @@ TEST_CASE("hvf", "biharmonic") {
   }
 
   SECTION ("hypervis") {
-    for (Real hv_scaling : {0.0, RPDF(0.5,5.0)(engine)}) {
-      for (const bool hydrostatic : {true, false}) {
+    for (Real hv_scaling : {0.0}) {
+      for (const bool hydrostatic : {true}) {
         params.theta_hydrostatic_mode = hydrostatic;
 
         // Generate timestep settings
@@ -601,8 +613,17 @@ TEST_CASE("hvf", "biharmonic") {
     }
   }
 
+  // The tester.cpp file (where the 'main' is), inits the comm in
+  // the context. When there are multiple test_cases/sections, we
+  // need to make sure the context is returned in the same status
+  // that it was found in. The comm is the only structure that
+  // is present when we enter a test_case, so just copy it,
+  // finalize the singleton, then re-set the (same) comm in the context.
+  auto old_comm = c.get_ptr<Comm>();
   c.finalize_singleton();
   auto& new_comm = c.create<Comm>();
   new_comm = *old_comm;
+
   cleanup_f90();
+
 }
