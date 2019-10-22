@@ -23,7 +23,6 @@ namespace Remap {
 
 struct RemapStateProvider {
 
-  ColumnOps         m_col_ops;
   EquationOfState   m_eos;
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
@@ -85,7 +84,7 @@ struct RemapStateProvider {
         auto w_i = Homme::subview(m_state.m_w_i,kv.ie,np1,igp,jgp);
         auto delta_w = Homme::subview(m_delta_w,kv.ie,igp,jgp);
 
-        m_col_ops.compute_midpoint_delta(kv,w_i,delta_w);
+        ColumnOps::compute_midpoint_delta(kv,w_i,delta_w);
       });
     } else if (istate==1) {
       // Compute delta_phinh
@@ -101,8 +100,8 @@ struct RemapStateProvider {
         // Remove hydrostatic phi before remap. Use still unused delta_phinh to store p.
         // Recycle tmp for both p_i and phi_i_ref
         tmp(0)[0] = m_hvcoord.hybrid_ai0*m_hvcoord.ps0;
-        m_col_ops.column_scan_mid_to_int<true>(kv,dp_pt,tmp);
-        m_col_ops.compute_midpoint_values(kv,tmp,delta_phinh);
+        ColumnOps::column_scan_mid_to_int<true>(kv,dp_pt,tmp);
+        ColumnOps::compute_midpoint_values(kv,tmp,delta_phinh);
         m_eos.compute_phi_i(kv,m_geometry.m_phis(kv.ie,igp,jgp),
                             Homme::subview(m_state.m_vtheta_dp,kv.ie,np1,igp,jgp),
                             delta_phinh,
@@ -114,7 +113,7 @@ struct RemapStateProvider {
         });
 
         // Now compute phinh_i increments
-        m_col_ops.compute_midpoint_delta(kv,phinh_i,delta_phinh);
+        ColumnOps::compute_midpoint_delta(kv,phinh_i,delta_phinh);
       });
     }
   }
@@ -136,7 +135,7 @@ struct RemapStateProvider {
 
         // w_i(k) = w_i(k+1) - delta_w(k), so do a backward scan sum of -delta_w
         auto minus_delta = [&](const int ilev)->Scalar { return -delta_w(ilev); };
-        m_col_ops.column_scan_mid_to_int<false>(kv,minus_delta,w_i);
+        ColumnOps::column_scan_mid_to_int<false>(kv,minus_delta,w_i);
 
         // Since u changed, update w_i b.c. at the surface
         Kokkos::single(Kokkos::PerThread(kv.team),[&](){
@@ -160,13 +159,13 @@ struct RemapStateProvider {
 
         // phinh_i(k) = phinh_i(k+1) - delta_phinh(k), so do a backward scan sum of -delta_phinh
         auto minus_delta = [&](const int ilev)->Scalar { return -delta_phinh(ilev); };
-        m_col_ops.column_scan_mid_to_int<false>(kv,minus_delta,phinh_i);
+        ColumnOps::column_scan_mid_to_int<false>(kv,minus_delta,phinh_i);
 
         // Need to add back the reference phi. Recycle delta_phinh to store p.
         // Recycle tmp for both p_i and phi_i_ref
         tmp(0)[0] = m_hvcoord.hybrid_ai0*m_hvcoord.ps0;
-        m_col_ops.column_scan_mid_to_int<true>(kv,dp_pt,tmp);
-        m_col_ops.compute_midpoint_values(kv,tmp,delta_phinh);
+        ColumnOps::column_scan_mid_to_int<true>(kv,dp_pt,tmp);
+        ColumnOps::compute_midpoint_values(kv,tmp,delta_phinh);
         m_eos.compute_phi_i(kv,m_geometry.m_phis(kv.ie,igp,jgp),
                             Homme::subview(m_state.m_vtheta_dp,kv.ie,np1,igp,jgp),
                             delta_phinh,

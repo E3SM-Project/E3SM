@@ -56,7 +56,6 @@ TEST_CASE("elem_ops", "elem_ops") {
 
   auto h_theta_ref = Kokkos::create_mirror_view(theta_ref_cxx);
 
-  ColumnOps  col_ops;
   ElementOps elem_ops;
   elem_ops.init(hvcoord);
 
@@ -134,8 +133,8 @@ TEST_CASE("elem_ops", "elem_ops") {
         auto p_i = Homme::subview(p_i_cxx,kv.ie,igp,jgp);
         p_i(0)[0] = hvcoord.hybrid_ai0*hvcoord.ps0;
 
-        col_ops.column_scan_mid_to_int<true>(kv,dp,p_i);
-        col_ops.compute_midpoint_values(kv,p_i,p);
+        ColumnOps::column_scan_mid_to_int<true>(kv,dp,p_i);
+        ColumnOps::compute_midpoint_values(kv,p_i,p);
 
         auto theta = Homme::subview(theta_ref_cxx,kv.ie,igp,jgp);
         elem_ops.compute_theta_ref(kv,p,theta);

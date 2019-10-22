@@ -46,9 +46,9 @@ public:
                               const ExecViewUnmanaged<      Scalar[NUM_LEV  ]>& pi) const
   {
     p_i(0)[0] = m_hvcoord.hybrid_ai0*m_hvcoord.ps0;
-    m_col_ops.column_scan_mid_to_int<true>(kv,dp,p_i);
+    ColumnOps::column_scan_mid_to_int<true>(kv,dp,p_i);
 #ifdef XX_NONBFB_COMING
-    m_col_ops.compute_midpoint_values(kv,p_i,pi);
+    ColumnOps::compute_midpoint_values(kv,p_i,pi);
 #else
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                          [&](const int ilev) {
@@ -84,7 +84,6 @@ private:
   static constexpr Real T0 = 288.0-T1;
 
   HybridVCoord    m_hvcoord;
-  ColumnOps       m_col_ops;
 };
 
 } // namespace Homme

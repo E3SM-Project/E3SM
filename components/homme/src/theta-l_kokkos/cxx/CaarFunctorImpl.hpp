@@ -86,7 +86,6 @@ struct CaarFunctorImpl {
   const ElementsDerivedState  m_derived;
   const ElementsGeometry      m_geometry;
   EquationOfState             m_eos;
-  ColumnOps                   m_col_ops;
   Buffers                     m_buffers;
   const deriv_type            m_deriv;
 
@@ -451,7 +450,7 @@ struct CaarFunctorImpl {
         pi_i(0)[0] = m_hvcoord.ps0*m_hvcoord.hybrid_ai0;
       });
 
-      m_col_ops.column_scan_mid_to_int<true>(kv,dp,pi_i);
+      ColumnOps::column_scan_mid_to_int<true>(kv,dp,pi_i);
 
       // Add dp(k)/2 to pi(k)
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -463,11 +462,11 @@ struct CaarFunctorImpl {
         omega_i(0)[0] = 0.0;
       });
 
-      m_col_ops.column_scan_mid_to_int<true>(kv,div_vdp,omega_i);
+      ColumnOps::column_scan_mid_to_int<true>(kv,div_vdp,omega_i);
       // Average omega_i to midpoints, and change sign, since later
       //   omega=v*grad(pi)-average(omega_i)
       auto omega = Homme::subview(m_buffers.omega_p,kv.team_idx,igp,jgp);
-      m_col_ops.compute_midpoint_values<CombineMode::Scale>(kv,omega_i,omega,-1.0);
+      ColumnOps::compute_midpoint_values<CombineMode::Scale>(kv,omega_i,omega,-1.0);
     });
     kv.team_barrier();
 
@@ -508,11 +507,11 @@ struct CaarFunctorImpl {
       auto dp_i = Homme::subview(m_buffers.dp_i,kv.team_idx,igp,jgp);
 
       // Compute interface dp
-      m_col_ops.compute_interface_values(kv.team,dp,dp_i);
+      ColumnOps::compute_interface_values(kv.team,dp,dp_i);
 
       // Compute interface horiz velocity
-      m_col_ops.compute_interface_values(kv.team,dp,dp_i,u,u_i);
-      m_col_ops.compute_interface_values(kv.team,dp,dp_i,v,v_i);
+      ColumnOps::compute_interface_values(kv.team,dp,dp_i,u,u_i);
+      ColumnOps::compute_interface_values(kv.team,dp,dp_i,v,v_i);
 
       // Compute interface vtheta_i, with an energy preserving scheme
 
@@ -528,8 +527,8 @@ struct CaarFunctorImpl {
                                  dpnh_dp_i);
 
       // vtheta_i(k) = -dpnh_dp_i(k)*(phi(k)-phi(k-1)) / (exner(k)-exner(k-1)) / Cp
-      m_col_ops.compute_interface_delta(kv,phi,vtheta_i);
-      m_col_ops.compute_interface_delta(kv,exner,dexner_i);
+      ColumnOps::compute_interface_delta(kv,phi,vtheta_i);
+      ColumnOps::compute_interface_delta(kv,exner,dexner_i);
       // Fix dexner_i(0)[0] to avoid 0/0
       dexner_i(0)[0] = 1.0;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -559,7 +558,7 @@ struct CaarFunctorImpl {
       }
 
       // Compute phi at midpoints
-      m_col_ops.compute_midpoint_values(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
+      ColumnOps::compute_midpoint_values(kv,Homme::subview(m_state.m_phinh_i,kv.ie,m_data.n0,igp,jgp),
                                             Homme::subview(m_buffers.phi,kv.team_idx,igp,jgp));
     });
     kv.team_barrier();
@@ -657,7 +656,7 @@ struct CaarFunctorImpl {
     });
 
     auto theta_vadv = Homme::subview(m_buffers.theta_vadv,kv.team_idx,igp,jgp);
-    m_col_ops.compute_midpoint_delta(kv,vtheta_i,theta_vadv);
+    ColumnOps::compute_midpoint_delta(kv,vtheta_i,theta_vadv);
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -672,10 +671,10 @@ struct CaarFunctorImpl {
     auto eta_dot_dpdn = Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp);
     auto w_vadv = Homme::subview(m_buffers.w_vadv,kv.team_idx,igp,jgp);
 
-    m_col_ops.compute_midpoint_delta(kv,w_i,dw);
-    m_col_ops.compute_midpoint_values<CombineMode::ProdUpdate>(kv,eta_dot_dpdn,dw);
+    ColumnOps::compute_midpoint_delta(kv,w_i,dw);
+    ColumnOps::compute_midpoint_values<CombineMode::ProdUpdate>(kv,eta_dot_dpdn,dw);
     
-    m_col_ops.compute_interface_values(kv,tmp,w_vadv);
+    ColumnOps::compute_interface_values(kv,tmp,w_vadv);
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                          [&](const int ilev) {
       w_vadv(ilev) /= dp_i(ilev);
@@ -690,7 +689,7 @@ struct CaarFunctorImpl {
     auto eta_dot_dpdn = Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp);
     auto dp_i = Homme::subview(m_buffers.dp_i,kv.ie,igp,jgp);
 
-    m_col_ops.compute_interface_delta(kv,phi,phi_vadv);
+    ColumnOps::compute_interface_delta(kv,phi,phi_vadv);
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                          [&](const int ilev) {
       phi_vadv(ilev) *= eta_dot_dpdn(ilev);
@@ -874,7 +873,7 @@ struct CaarFunctorImpl {
       auto eta_dot_dpdn = Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp);
       auto div_vdp = Homme::subview(m_buffers.div_vdp,kv.team_idx,igp,jgp);
 
-      m_col_ops.compute_midpoint_delta(kv,eta_dot_dpdn,dp_tens);
+      ColumnOps::compute_midpoint_delta(kv,eta_dot_dpdn,dp_tens);
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
@@ -979,7 +978,7 @@ struct CaarFunctorImpl {
       };
 
       // Rescale by 2 (we are averaging kinetic energy w_i*w_i/2, but the provider has no '/2')
-      m_col_ops.compute_midpoint_values(kv, w_sq, Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp),0.5);
+      ColumnOps::compute_midpoint_values(kv, w_sq, Homme::subview(m_buffers.pi,kv.team_idx,igp,jgp),0.5);
     });
 
     // Compute grad(average(w^2/2))
@@ -1018,9 +1017,9 @@ struct CaarFunctorImpl {
         return gradw_y(ilev)*w_i(ilev);
       };
 
-      m_col_ops.compute_midpoint_values<CombineMode::ScaleAdd>(kv,
+      ColumnOps::compute_midpoint_values<CombineMode::ScaleAdd>(kv,
                         w_gradw_x, wvor_x, -1.0);
-      m_col_ops.compute_midpoint_values<CombineMode::ScaleAdd>(kv,
+      ColumnOps::compute_midpoint_values<CombineMode::ScaleAdd>(kv,
                         w_gradw_y, wvor_y, -1.0);
 
       // Compute average(dpnh_dp_i*grad(phinh_i)), and add to wvor
@@ -1034,8 +1033,8 @@ struct CaarFunctorImpl {
         return phinh_i_y(ilev)*dpnh_dp_i(ilev);
       };
 
-      m_col_ops.compute_midpoint_values<CombineMode::Add>(kv,prod_x,wvor_x);
-      m_col_ops.compute_midpoint_values<CombineMode::Add>(kv,prod_y,wvor_y);
+      ColumnOps::compute_midpoint_values<CombineMode::Add>(kv,prod_x,wvor_x);
+      ColumnOps::compute_midpoint_values<CombineMode::Add>(kv,prod_y,wvor_y);
 
       // Compute KE. Use pi as temporary. Also, add fcor to vort
       auto u  = Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp);

@@ -141,8 +141,8 @@ public:
 
       // Step 2: compute p_ref = p(p_i(dp))
       p_i(0)[0] = m_hvcoord.hybrid_ai0*m_hvcoord.ps0;
-      m_col_ops.column_scan_mid_to_int<true>(kv,dp_ref,p_i);
-      m_col_ops.compute_midpoint_values(kv,p_i,p);
+      ColumnOps::column_scan_mid_to_int<true>(kv,dp_ref,p_i);
+      ColumnOps::compute_midpoint_values(kv,p_i,p);
 
       // Step 3: compute theta_ref = theta(exner(p_ref))
       m_elem_ops.compute_theta_ref(kv,p,theta_ref);
@@ -430,7 +430,7 @@ public:
         auto provider = [&w,&wtens](const int ilev)->Scalar {
           return w(ilev)*wtens(ilev);
         };
-        m_col_ops.compute_midpoint_values<CombineMode::Replace>(kv,provider,heating);
+        ColumnOps::compute_midpoint_values<CombineMode::Replace>(kv,provider,heating);
         Kokkos::single(Kokkos::PerThread(kv.team),[&](){
           using Info = ColInfo<NUM_PHYSICAL_LEV>;
           constexpr int ilev = Info::LastPack;
@@ -577,7 +577,6 @@ protected:
   ElementsDerivedState  m_derived;
   ElementsGeometry      m_geometry;
   SphereOperators       m_sphere_ops;
-  ColumnOps             m_col_ops;
   ElementOps            m_elem_ops;
   EquationOfState       m_eos;
   Buffers               m_buffers;

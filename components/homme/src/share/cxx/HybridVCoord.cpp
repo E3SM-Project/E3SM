@@ -168,7 +168,6 @@ void HybridVCoord::compute_deltas ()
   // This is obviously not for speed (tiny amount of work, and only at setup),
   // but rather to delegate the logic to a single place (namely ColumnOps),
   // so that we avoid making mistakes by replicating the same algorithm
-  ColumnOps col_ops;
   hybrid_ai_delta = ExecViewManaged<Scalar[NUM_LEV]>("delta hyai");
   hybrid_bi_delta = ExecViewManaged<Scalar[NUM_LEV]>("delta hybi");
   dp0 = ExecViewManaged<Scalar[NUM_LEV]>("dp0");
@@ -187,8 +186,8 @@ void HybridVCoord::compute_deltas ()
                        KOKKOS_LAMBDA(const TeamMember& team) {
     KernelVariables kv(team);
     Kokkos::single(Kokkos::PerTeam(kv.team),[&](){
-      col_ops.compute_midpoint_delta(kv,hyai,dhyai);
-      col_ops.compute_midpoint_delta(kv,hybi,dhybi);
+      ColumnOps::compute_midpoint_delta(kv,hyai,dhyai);
+      ColumnOps::compute_midpoint_delta(kv,hybi,dhybi);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
         ldp0(ilev) = dhyai(ilev) * lps0 + dhybi(ilev) * lps0;

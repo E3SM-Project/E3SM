@@ -80,13 +80,14 @@ TEST_CASE("eos", "eos") {
   const Real* hyai_ptr = hyai.data();
   init_f90(hyai_ptr,hvcoord.ps0);
 
-  ColumnOps col_ops;
   EquationOfState eos;
   ElementOps elem_ops;
   elem_ops.init(hvcoord);
 
   SECTION ("pnh_and_exner") {
-    for (bool hydrostatic : {false,true}) {
+    for (const bool hydrostatic : {false,true}) {
+
+      std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
 
       eos.init(hydrostatic,hvcoord);
 
@@ -157,7 +158,7 @@ TEST_CASE("eos", "eos") {
           auto dp   = Homme::subview(dp_cxx,kv.ie,igp,jgp);
           auto dp_i = Homme::subview(dp_i_cxx,kv.ie,igp,jgp);
 
-          col_ops.compute_interface_values(kv,dp,dp_i);
+          ColumnOps::compute_interface_values(kv,dp,dp_i);
 
           auto pnh = Homme::subview(pnh_cxx,kv.ie,igp,jgp);
           auto dpnh_dp_i = Homme::subview(dpnh_dp_i_cxx,kv.ie,igp,jgp);
@@ -225,10 +226,10 @@ TEST_CASE("eos", "eos") {
 
         // Compute p_i from dp with an exclusive, forward scan sum
         p_i(0)[0] = hvcoord.hybrid_ai(0)*hvcoord.ps0;
-        col_ops.column_scan_mid_to_int<true>(kv,dp,p_i);
+        ColumnOps::column_scan_mid_to_int<true>(kv,dp,p_i);
 
         // Compute p from p_i
-        col_ops.compute_midpoint_values(kv,p_i,p);
+        ColumnOps::compute_midpoint_values(kv,p_i,p);
 
         // Now compute the geopotential
         auto phis = phis_cxx(kv.ie,igp,jgp);

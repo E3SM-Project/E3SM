@@ -83,10 +83,10 @@ public:
 
   template<CombineMode CM = CombineMode::Replace, typename InputProvider = DefaultIntProvider>
   KOKKOS_INLINE_FUNCTION
-  void compute_midpoint_values (const KernelVariables& kv,
+  static void compute_midpoint_values (const KernelVariables& kv,
                                 const InputProvider& x_i,
                                 const ExecViewUnmanaged<Scalar [NUM_LEV]>& x_m,
-                                const Real alpha = 1.0, const Real beta = 0.0) const
+                                const Real alpha = 1.0, const Real beta = 0.0)
   {
     // Compute midpoint quanitiy. Note: the if statement is evaluated at compile time, so no penalization. Only requirement is both branches must compile.
     if (OnGpu<ExecSpace>::value) {
@@ -118,10 +118,10 @@ public:
 
   template<CombineMode CM = CombineMode::Replace, typename InputProvider = DefaultMidProvider>
   KOKKOS_INLINE_FUNCTION
-  void compute_interface_values (const KernelVariables& kv,
+  static void compute_interface_values (const KernelVariables& kv,
                                  const InputProvider& x_m,
                                  const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& x_i,
-                                 const Real alpha = 1.0, const Real beta = 0.0) const
+                                 const Real alpha = 1.0, const Real beta = 0.0)
   {
     // Compute interface quanitiy.
     if (OnGpu<ExecSpace>::value) {
@@ -166,12 +166,12 @@ public:
            typename WeightsIntProvider = DefaultIntProvider,
            typename InputProvider = DefaultMidProvider>
   KOKKOS_INLINE_FUNCTION
-  void compute_interface_values (const KernelVariables& kv,
+  static void compute_interface_values (const KernelVariables& kv,
                                  const WeightsMidProvider& weights_m,
                                  const WeightsIntProvider& weights_i,
                                  const InputProvider& x_m,
                                  const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& x_i,
-                                 const Real alpha = 1.0, const Real beta = 0.0) const
+                                 const Real alpha = 1.0, const Real beta = 0.0)
   {
     // Compute interface quanitiy.
     if (OnGpu<ExecSpace>::value) {
@@ -213,10 +213,10 @@ public:
   template<CombineMode CM = CombineMode::Replace,
            typename InputProvider = DefaultIntProvider>
   KOKKOS_INLINE_FUNCTION
-  void compute_midpoint_delta (const KernelVariables& kv,
+  static void compute_midpoint_delta (const KernelVariables& kv,
                                const InputProvider& x_i,
                                const ExecViewUnmanaged<Scalar [NUM_LEV]>& dx_m,
-                               const Real alpha = 1.0, const Real beta = 0.0) const
+                               const Real alpha = 1.0, const Real beta = 0.0)
   {
     // Compute increment of interface values at midpoints.
     if (OnGpu<ExecSpace>::value) {
@@ -246,11 +246,11 @@ public:
            BCType bcType = BCType::Zero,
            typename InputProvider = DefaultMidProvider>
   KOKKOS_INLINE_FUNCTION
-  void compute_interface_delta (const KernelVariables& kv,
+  static void compute_interface_delta (const KernelVariables& kv,
                                 const InputProvider& x_m,
                                 const ExecViewUnmanaged<Scalar [NUM_LEV_P]> dx_i,
                                 const Real bcVal = 0.0,
-                                const Real alpha = 1.0, const Real beta = 0.0) const
+                                const Real alpha = 1.0, const Real beta = 0.0)
   {
     static_assert (bcType==BCType::Zero || bcType==BCType::Value || bcType == BCType::DoNothing,
                    "Error! Invalid bcType for interface delta calculation.\n");
@@ -308,21 +308,21 @@ public:
   // Note: InputProvider could be a lambda or a 1d view.
   template<bool Forward, bool Inclusive, int LENGTH, typename InputProvider>
   KOKKOS_INLINE_FUNCTION
-  void column_scan (const KernelVariables& kv,
+  static void column_scan (const KernelVariables& kv,
                     const InputProvider& input_provider,
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
-                    const Real s0 = 0.0) const
+                    const Real s0 = 0.0)
   {
     column_scan_impl<ExecSpace,Forward,Inclusive,LENGTH>(kv,input_provider,sum,s0);
   }
 
   template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
-  typename std::enable_if<!OnGpu<ExecSpaceType>::value>::type
+  static typename std::enable_if<!OnGpu<ExecSpaceType>::value>::type
   column_scan_impl (const KernelVariables& /* kv */,
                     const InputProvider& input_provider,
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
-                    const Real s0 = 0.0) const
+                    const Real s0 = 0.0)
   {
     // It is easier to write two loops for Forward true/false. There's no runtime penalty,
     // since the if is evaluated at compile time, so no big deal.
@@ -372,11 +372,11 @@ public:
 
   template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
-  typename std::enable_if<OnGpu<ExecSpaceType>::value>::type
+  static typename std::enable_if<OnGpu<ExecSpaceType>::value>::type
   column_scan_impl (const KernelVariables& kv,
                     const InputProvider& input_provider,
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
-                    const Real s0 = 0.0) const
+                    const Real s0 = 0.0)
   {
     // On GPU we rely on the fact that Scalar is basically double[1].
     static_assert (!OnGpu<ExecSpaceType>::value || ColInfo<LENGTH>::NumPacks==LENGTH, "Error! In a GPU build we expect VECTOR_SIZE=1.\n");
@@ -425,9 +425,9 @@ public:
   //       contains the desired initial value
   template<bool Forward,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
-  void column_scan_mid_to_int (const KernelVariables& kv,
+  static void column_scan_mid_to_int (const KernelVariables& kv,
                                const InputProvider& input_provider,
-                               const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& sum) const
+                               const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& sum)
   {
     if (Forward) {
       // It's safe to pass the output as it is, and claim is Exclusive over NUM_INTERFACE_LEV

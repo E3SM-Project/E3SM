@@ -57,7 +57,7 @@ public:
     //  3) exner = pnh/p_over_exner
 
     // To avoid temporaries, use exner to store some temporaries
-    m_col_ops.compute_midpoint_delta(kv,phi_i,exner);
+    ColumnOps::compute_midpoint_delta(kv,phi_i,exner);
 
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                          [&](const int ilev) {
@@ -86,7 +86,7 @@ public:
       });
     } else {
       // Start with dpnh_dp_i = delta(pnh)/dp_i. Skip bc's, cause we do our own here
-      m_col_ops.compute_interface_delta<CombineMode::Replace,BCType::DoNothing>(kv.team,pnh,dpnh_dp_i);
+      ColumnOps::compute_interface_delta<CombineMode::Replace,BCType::DoNothing>(kv.team,pnh,dpnh_dp_i);
 
       // Note: top and bottom need special treatment, so we may as well stop at NUM_LEV here (rather than NUM_LEV_P)
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -147,7 +147,7 @@ public:
       return (Rgas*vtheta_dp(ilev) * pow(p(ilev)/p0,kappa-1)) / p0;
     };
 
-    m_col_ops.column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
+    ColumnOps::column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
   }
 
   // If exner is available, then use exner/p instead of (p/p0)^(k-1)/p0, to avoid dealing with exponentials
@@ -188,13 +188,12 @@ public:
       return Rgas*vtheta_dp(ilev)*exner(ilev)/p(ilev);
     };
 
-    m_col_ops.column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
+    ColumnOps::column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
   }
 
 private:
 
   bool            m_theta_hydrostatic_mode;
-  ColumnOps       m_col_ops;
   HybridVCoord    m_hvcoord;
 };
 

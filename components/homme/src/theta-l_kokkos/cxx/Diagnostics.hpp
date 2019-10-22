@@ -109,7 +109,7 @@ public:
       }
 
       // Compute phi at midpoints
-      m_col_ops.compute_midpoint_values(kv,Homme::subview(phi_i,igp,jgp),
+      ColumnOps::compute_midpoint_values(kv,Homme::subview(phi_i,igp,jgp),
                                            Homme::subview(phi,  igp,jgp));
 
       auto& KEner = m_KEner(kv.ie,m_ivar,igp,jgp);
@@ -179,7 +179,6 @@ private:
   ElementOps        m_elem_ops;
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
-  ColumnOps         m_col_ops;
   Buffers           m_buffers;
 
   int t1,t1_qdp;

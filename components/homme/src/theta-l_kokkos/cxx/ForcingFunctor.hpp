@@ -397,7 +397,7 @@ public:
       auto integrand_provider = [&](const int ilev)->Scalar {
         return PhysicalConstants::Rgas*tn1(ilev)*exner(ilev)/pnh(ilev);
       };
-      m_col_ops.column_scan_mid_to_int<false>(kv,integrand_provider,fphi);
+      ColumnOps::column_scan_mid_to_int<false>(kv,integrand_provider,fphi);
 
       // Finally, update forcing for theta and phi_i
       auto vtheta = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_np1,igp,jgp);
@@ -423,7 +423,6 @@ private:
   Tracers           m_tracers;
 
   HybridVCoord      m_hvcoord;
-  ColumnOps         m_col_ops;
   ElementOps        m_elem_ops;
   EquationOfState   m_eos;
 
