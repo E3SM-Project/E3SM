@@ -924,6 +924,16 @@
       <mask>gx1v6</mask>
     </model_grid>
 
+    <model_grid alias="ne30_r0125_ne30" compset="(DOCN|XOCN|SOCN|AQP1)">
+      <grid name="atm">ne30np4</grid>
+      <grid name="lnd">r0125</grid>
+      <grid name="ocnice">ne30np4</grid>
+      <grid name="rof">r0125</grid>
+      <grid name="glc">null</grid>
+      <grid name="wav">null</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
     <model_grid alias="ne30pg1_ne30pg1" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne30np4.pg1</grid>
       <grid name="lnd">ne30np4.pg1</grid>
@@ -2171,6 +2181,8 @@
       <desc>r0125 is 1/8 degree river routing grid:</desc>
       <file grid="atm" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
       <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
+      <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191017.nc</file>
+      <desc>r0125 is 1/8 degree river routing grid:</desc>
     </domain>
 
     <domain name="mp120v1">
