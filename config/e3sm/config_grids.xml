@@ -2530,10 +2530,10 @@
     </gridmap>
 
     <gridmap atm_grid="ne30np4" lnd_grid="r05">
-      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r05_aave.190424.nc</map>
-      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r05_aave.190424.nc</map>
-      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_aave.190424.nc</map>
-      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_aave.190424.nc</map>
+      <map name="ATM2LND_FMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r05_mono.191016.nc</map>
+      <map name="ATM2LND_SMAPNAME">cpl/gridmaps/ne30np4/map_ne30np4_to_r05_mono.191016.nc</map>
+      <map name="LND2ATM_FMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_mono.191016.nc</map>
+      <map name="LND2ATM_SMAPNAME">cpl/gridmaps/ne30np4/map_r05_to_ne30np4_mono.191016.nc</map>
     </gridmap>
 
     <gridmap atm_grid="ne30np4" lnd_grid="r0125">
