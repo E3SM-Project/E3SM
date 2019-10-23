@@ -122,8 +122,10 @@ OBJS := gen_domain.o
 
 # Append user defined compiler and load flags to Makefile defaults
 CFLAGS   += $(USER_CFLAGS) -I$(INC_NETCDF)
-FFLAGS   += $(USER_FFLAGS) -I$(MOD_NETCDF) -I$(INC_NETCDF)
-LDFLAGS  += $(USER_LDFLAGS)
+FFLAGS   += $(USER_FFLAGS) -I$(MOD_NETCDF) -I$(INC_NETCDF) -g -DLINUX
+LDFLAGS  += $(USER_LDFLAGS) -L /home/iulian/3rdparty/netcdf/4.3.3.1c-4.2cxx-4.4.2f-parallel/gnu-6.4/mpich-3.2.1/lib -lnetcdff -lnetcdf -L \
+	    /home/iulian/3rdparty/hdf5/1.8.16/gnu6.4/mpich3.2.1/lib -lhdf5 -lhdf5_hl -g
+
 
 # Set user specified linker
 ifneq ($(USER_LINKER),$(null))
@@ -133,7 +135,9 @@ else
 endif
 
 .F90.o:
-	$(FC) -c $(FPPDEFS) $(FFLAGS) $<
+	echo FPPDE $(FPPDEFS)
+	echo FFL $(FFLAGS)
+	$(FC) -c  $(FFLAGS) $<
 
 .c.o:
 	$(CC) -c $(CFLAGS) $<

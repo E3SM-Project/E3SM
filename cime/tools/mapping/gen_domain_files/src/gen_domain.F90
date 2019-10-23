@@ -26,7 +26,7 @@ program fmain
   integer :: n                      ! index
   integer :: set_fv_pole_yc         ! fix pole ycs on this grid [0,1,2]
   integer :: nargs                  ! number of arguments
-  integer, external  :: iargc       ! number of arguments function
+  INTRINSIC  :: iargc       ! number of arguments function
   character(LEN=512) :: arg         ! input argument
   character(LEN=512) :: cmdline     ! input command line
   character(LEN=512) :: fmap        ! file name ( input nc file)
@@ -605,7 +605,7 @@ contains
        if (rcode == 0) then
           call check_ret(nf_put_att_text(fid,NF_GLOBAL,'hostname' ,len_trim(host),host))
        else
-          write(6,*) 'WARNING: could not determine hostname, so that information will not be stored in netCDF attribute. To avoid this warning in the future, set environment variable HOST or HOSTNAME.'
+          write(6,*) 'WARNING: could not determine hostname, so that' 
        end if
     end if
 
