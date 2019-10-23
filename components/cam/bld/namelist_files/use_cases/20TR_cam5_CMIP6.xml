@@ -5,7 +5,7 @@
 <cosp_lite>.true.</cosp_lite>
 
 <!-- Solar constant from CMIP6 input4MIPS -->
-<solar_data_file>atm/cam/solar/Solar_1850-2299_input4MIPS_c20171207.nc</solar_data_file>
+<solar_data_file>atm/cam/solar/Solar_1850-2299_input4MIPS_c20181106.nc</solar_data_file>
 <solar_data_type>SERIAL</solar_data_type>
 
 <!-- GHG values from CMIP6 input4MIPS -->
