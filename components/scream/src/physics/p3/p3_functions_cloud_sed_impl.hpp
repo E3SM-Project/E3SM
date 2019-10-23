@@ -45,6 +45,11 @@ void Functions<S,D>
     vs_ptr     = {&V_qc, &V_nc},
     qnr_ptr    = {&qc, &nc};
 
+  view_1d_ptr_array<Spack, 1>
+    flux_ptr = {&flux_qx},
+    v_ptr     = {&V_qc},
+    qr_ptr    = {&qc};
+
   // find top, determine qxpresent
   const auto sqc = scalarize(qc);
   bool log_qxpresent;
@@ -96,7 +101,12 @@ void Functions<S,D>
       }, Kokkos::Max<Scalar>(Co_max));
       team.team_barrier();
 
-      generalized_sedimentation<2>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
+      if (log_predictNc) {
+        generalized_sedimentation<2>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
+      }
+      else {
+        generalized_sedimentation<1>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, flux_ptr, v_ptr, qr_ptr);
+      }
     }
 
     Kokkos::single(
