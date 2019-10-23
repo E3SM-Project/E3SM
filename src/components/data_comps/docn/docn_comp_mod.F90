@@ -63,12 +63,14 @@ module docn_comp_mod
   integer(IN)   :: kswnet,klwup,klwdn,ksen,klat,kmelth,ksnow,krofi
   integer(IN)   :: kh,kqbot
   integer(IN)   :: index_lat, index_lon
+  integer(IN)   :: kmask, kfrac  ! frac and mask field indices of docn domain
+  integer(IN)   :: ksomask       ! So_omask field index
 
   type(mct_rearr)        :: rearr
   type(mct_avect)        :: avstrm       ! av of data from stream
   real(R8), pointer      :: somtp(:)
   real(R8), pointer      :: tfreeze(:)
-  integer , pointer      :: imask(:)
+  integer(IN), pointer      :: imask(:)
   real(R8), pointer      :: xc(:), yc(:) ! arryas of model latitudes and longitudes
 
   !--------------------------------------------------------------------------
@@ -80,9 +82,6 @@ module docn_comp_mod
        (/ "So_t        ","So_u        ","So_v        ","So_dhdx     ",&
           "So_dhdy     ","So_s        ","strm_h      ","strm_qbot   "/)
   character(len=*), parameter :: flds_strm = 'strm_h:strm_qbot'
-  !--------------------------------------------------------------------------
-
-  save
 
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -124,7 +123,6 @@ CONTAINS
     integer(IN)   :: lsize    ! local size
     logical       :: exists   ! file existance
     integer(IN)   :: nu       ! unit number
-    integer(IN)   :: kmask    ! field reference
     character(CL) :: calendar ! model calendar
 
     !--- formats ---
@@ -228,7 +226,7 @@ CONTAINS
     kv    = mct_aVect_indexRA(o2x,'So_v')
     kdhdx = mct_aVect_indexRA(o2x,'So_dhdx')
     kdhdy = mct_aVect_indexRA(o2x,'So_dhdy')
-    kswp  = mct_aVect_indexRA(o2x,'So_fswpen')
+    kswp  = mct_aVect_indexRA(o2x,'So_fswpen', perrwith='quiet')
     kq    = mct_aVect_indexRA(o2x,'Fioo_q')
 
     call mct_aVect_init(x2o, rList=seq_flds_x2o_fields, lsize=lsize)
@@ -254,6 +252,13 @@ CONTAINS
     allocate(imask(lsize))
     allocate(xc(lsize))
     allocate(yc(lsize))
+
+    kfrac = mct_aVect_indexRA(ggrid%data,'frac')
+
+    ksomask = mct_aVect_indexRA(o2x,'So_omask', perrwith='quiet')
+    if (ksomask /= 0) then
+       o2x%rAttr(ksomask, :) = ggrid%data%rAttr(kfrac,:)
+    end if
 
     kmask = mct_aVect_indexRA(ggrid%data,'mask')
     imask(:) = nint(ggrid%data%rAttr(kmask,:))
@@ -396,6 +401,9 @@ CONTAINS
 
     lsize = mct_avect_lsize(o2x)
     do n = 1,lsize
+       if (ksomask /= 0) then
+          o2x%rAttr(ksomask, n) = ggrid%data%rAttr(kfrac,n)
+       end if
        o2x%rAttr(kt   ,n) = TkFrz
        o2x%rAttr(ks   ,n) = ocnsalt
        o2x%rAttr(ku   ,n) = 0.0_R8
@@ -403,7 +411,9 @@ CONTAINS
        o2x%rAttr(kdhdx,n) = 0.0_R8
        o2x%rAttr(kdhdy,n) = 0.0_R8
        o2x%rAttr(kq   ,n) = 0.0_R8
-       o2x%rAttr(kswp ,n) = swp
+       if (kswp /= 0) then
+          o2x%rAttr(kswp ,n) = swp
+       end if
     enddo
 
     ! NOTE: for SST_AQUAPANAL, the docn buildnml sets the stream to "null"
@@ -434,6 +444,9 @@ CONTAINS
     case('SSTDATA')
        lsize = mct_avect_lsize(o2x)
        do n = 1,lsize
+          if (ksomask /= 0) then
+             o2x%rAttr(ksomask, n) = ggrid%data%rAttr(kfrac,n)
+          end if
           o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
           o2x%rAttr(ks   ,n) = ocnsalt
           o2x%rAttr(ku   ,n) = 0.0_R8
@@ -441,7 +454,9 @@ CONTAINS
           o2x%rAttr(kdhdx,n) = 0.0_R8
           o2x%rAttr(kdhdy,n) = 0.0_R8
           o2x%rAttr(kq   ,n) = 0.0_R8
-          o2x%rAttr(kswp ,n) = swp
+          if (kswp /= 0) then
+             o2x%rAttr(kswp ,n) = swp
+          endif
        enddo
 
     case('SST_AQUAPANAL')
