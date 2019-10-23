@@ -181,6 +181,7 @@ contains
           idintx = atm(1)%cplcompid + 100*ocn(1)%cplcompid ! something different, to differentiate it
           ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
           ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxoa)
+#ifdef MOABDEBUG
           wopts = CHAR(0)
           call shr_mpi_commrank( mpicom_CPLID, rank )
           if (rank .lt. 5) then
@@ -188,6 +189,7 @@ contains
             outfile = 'intx'//trim(lnum)// '.h5m' // CHAR(0)
             ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
           endif
+#endif
        end if
 
        ! needed for domain checking
