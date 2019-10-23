@@ -1816,14 +1816,9 @@ subroutine shoc_length(&
       
       if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
       
-      ! End of computation of local stability
-!      if (k .eq. 1) then ! point closest to surface
-!        term=600._r8 * tkes
-!	shoc_mix(i,k)=term+(0.4_r8*zt_grid(i,k)-term)*exp(-zt_grid(i,k)/100._r8)
-!      else
-        shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale*tkes*vonk*zt_grid(i,k))) &
-	  +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/0.3_r8)  
-!      endif      
+
+      shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale*tkes*vonk*zt_grid(i,k))) &
+        +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/0.3_r8)     
       
     enddo  ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
