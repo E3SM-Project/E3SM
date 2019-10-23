@@ -255,7 +255,7 @@ contains
       ierr = iMOAB_GetIntTagStorage ( MHFID, newtagg, nverts , ent_type, vgids)
       if (ierr > 0 )  &
         call endrun('Error: fail to retrieve GLOBAL ID on each task')
-
+#ifdef MOABDEBUG
 ! write in serial, on each task, before ghosting
       if (par%rank .lt. 4) then
         write(lnum,"(I0.2)")par%rank
@@ -265,7 +265,7 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to write local mesh file')
       endif
-
+#endif
       ierr = iMOAB_UpdateMeshInfo(MHFID)
       if (ierr > 0 )  &
         call endrun('Error: fail to update mesh info')
@@ -458,7 +458,7 @@ contains
       if (ierr > 0 )  &
         call endrun('Error: fail to create atm to ocean tag')
 
-
+#ifdef MOABDEBUG
 ! write in serial, on each task, before ghosting
       if (par%rank .lt. 5) then
         write(lnum,"(I0.2)")par%rank
@@ -468,7 +468,7 @@ contains
         if (ierr > 0 )  &
           call endrun('Error: fail to write local mesh file')
       endif
-
+#endif
       ierr = iMOAB_UpdateMeshInfo(MHID)
       if (ierr > 0 )  &
         call endrun('Error: fail to update mesh info')
