@@ -412,7 +412,7 @@ void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Re
   auto t_h = Kokkos::create_mirror_view(t_d);
 
   Real local_nc = *nc_;
-  auto dnu = P3GlobalForFortran::dnu();
+  const auto dnu = P3GlobalForFortran::dnu();
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     typename P3F::Spack qc(qc_), nc(local_nc), rho(rho_), lcldm(lcldm_);
     typename P3F::Spack mu_c, nu, lamc, cdist, cdist1;
@@ -678,7 +678,7 @@ void cloud_sedimentation_f(
   const Int nk = (kte - kts) + 1;
 
   // Set up views
-  auto dnu = P3GlobalForFortran::dnu();
+  const auto dnu = P3GlobalForFortran::dnu();
 
   Kokkos::Array<view_1d, 13> temp_d;
 
@@ -732,7 +732,6 @@ void cloud_sedimentation_f(
   // Sync back to host
   Kokkos::Array<view_1d, 7> inout_views = {qc_d, nc_d, nc_incld_d, mu_c_d, lamc_d, qc_tend_d, nc_tend_d};
   pack::device_to_host({qc, nc, nc_incld, mu_c, lamc, qc_tend, nc_tend}, nk, inout_views);
-
 }
 
 // Cuda implementations of std math routines are not necessarily BFB

@@ -3341,7 +3341,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use micro_p3_iso_f, only: cloud_sedimentation_f
+    use micro_p3_iso_f, only: cloud_sedimentation_f, cxx_gamma
 #endif
 
    implicit none
@@ -3444,9 +3444,9 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                   lamc(k),tmp1,tmp2,lcldm(k))
 
                   nc(k) = nc_incld(k)*lcldm(k)
-                  dum = 1._rtype/lamc(k)**bcn
-                  V_qc(k) = acn(k)*gamma(4._rtype+bcn+mu_c(k))*dum/(gamma(mu_c(k)+4._rtype))
-                  V_nc(k) = acn(k)*gamma(1._rtype+bcn+mu_c(k))*dum/(gamma(mu_c(k)+1._rtype))
+                  dum = 1._rtype / (lamc(k)*lamc(k))
+                  V_qc(k) = acn(k)*bfb_gamma(4._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+4._rtype))
+                  V_nc(k) = acn(k)*bfb_gamma(1._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+1._rtype))
 
                endif qc_notsmall_c2
                Co_max = max(Co_max, V_qc(k)*dt_left*inv_dzq(k))
@@ -3467,8 +3467,8 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
                   call get_cloud_dsd2(qc_incld(k),nc_incld(k),mu_c(k),rho(k),nu,dnu,   &
                   lamc(k),tmp1,tmp2,lcldm(k))
                   nc(k) = nc_incld(k)*lcldm(k)
-                  dum = 1._rtype/lamc(k)**bcn
-                  V_qc(k) = acn(k)*gamma(4._rtype+bcn+mu_c(k))*dum/(gamma(mu_c(k)+4._rtype))
+                  dum = 1._rtype / (lamc(k)*lamc(k))
+                  V_qc(k) = acn(k)*bfb_gamma(4._rtype+bcn+mu_c(k))*dum/(bfb_gamma(mu_c(k)+4._rtype))
                endif qc_notsmall_c1
 
                Co_max = max(Co_max, V_qc(k)*dt_left*inv_dzq(k))

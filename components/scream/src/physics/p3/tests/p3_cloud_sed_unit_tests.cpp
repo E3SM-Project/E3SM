@@ -30,8 +30,8 @@ static void run_phys()
 static void run_bfb()
 {
   CloudSedData csds_fortran[] = {
-    //         kts, kte, ktop, kbot, kdir, dt, odt, log_predictNc, prt_liq,
-    CloudSedData(1,  72,   36,   72,   -1, 0.0, 0.0,        false,     0.0,
+    //         kts, kte, ktop, kbot, kdir,        dt,       odt, log_predictNc, prt_liq,
+    CloudSedData(1,  72,   36,   72,   -1, 1.800E+03, 5.556E-04,         false,     0.0,
                  std::make_pair(5.100E-03, 9.952E-07), // qc_incld_range
                  std::make_pair(4.056E-03, 1.153E+00), // rho_range
                  std::make_pair(0.9, 1.1),             // lcldm_range
@@ -64,7 +64,7 @@ static void run_bfb()
 
   // Get data from cxx
   for (Int i = 0; i < num_runs; ++i) {
-    CloudSedData& d = csds_cxx[num_runs];
+    CloudSedData& d = csds_cxx[i];
     cloud_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
                           d.qc_incld, d.rho, d.inv_rho, d.lcldm, d.acn, d.inv_dzq,
                           d.dt, d.odt, d.log_predictNc,
@@ -103,6 +103,8 @@ TEST_CASE("p3_cloud_sed", "[p3_functions]")
 
   TCS::run_phys();
   TCS::run_bfb();
+
+  scream::p3::P3GlobalForFortran::deinit();
 }
 
 } // namespace

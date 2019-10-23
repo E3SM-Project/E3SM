@@ -79,11 +79,10 @@ void Functions<S,D>
           auto qc_gt_small = (qc_incld(pk) > C::QSMALL);
           if (qc_gt_small.any()) {
             // compute Vq, Vn
-
             Spack nu, cdist, cdist1, dum;
-            get_cloud_dsd2(qc_gt_small, qc(pk), nc(pk), mu_c(pk), rho(pk), nu, dnu, lamc(pk), cdist, cdist1, lcldm(pk));
+            get_cloud_dsd2(qc_gt_small, qc_incld(pk), nc_incld(pk), mu_c(pk), rho(pk), nu, dnu, lamc(pk), cdist, cdist1, lcldm(pk));
             nc(pk).set(qc_gt_small, nc_incld(pk)*lcldm(pk));
-            dum = 1 / pack::pow(lamc(pk), 2); // bcn = 2
+            dum = 1 / (lamc(pk)*lamc(pk)); // bcn = 2
             V_qc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(4 + 2 + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+4)));
             if (log_predictNc) {
               V_nc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(1 + 2 + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+1)));
@@ -98,12 +97,12 @@ void Functions<S,D>
       team.team_barrier();
 
       generalized_sedimentation<2>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
-
-      Kokkos::single(
-        Kokkos::PerTeam(team), [&] () {
-          prt_liq += prt_accum * C::INV_RHOW * odt;
-      });
     }
+
+    Kokkos::single(
+      Kokkos::PerTeam(team), [&] () {
+        prt_liq = prt_accum * C::INV_RHOW * odt;
+      });
   }
 
   Kokkos::parallel_for(
