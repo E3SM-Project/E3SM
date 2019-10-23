@@ -2565,19 +2565,6 @@
 			 description="kinetic energy of horizonal velocity on cells"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="hEddyFlux" type="real" dimensions="nVertLevels nEdges Time" units=""
-			 description="Eddy flux in Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="hKappa" type="real" dimensions="nVertLevels nEdges Time" units=""
-			 description="kappa parameter for Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="hKappaQ" type="real" dimensions="nVertLevels nEdges Time" units=""
-			 description="kappaQ parameter for Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
-		/>
-
 		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-1}"
 			 description="horizontal viscosity"
 			 packages="forwardMode;analysisMode"
@@ -3055,7 +3042,6 @@
 		<!-- Coupling fields associated with mass or salinity fluxes -->
 		<var name="evaporationFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Evaporation flux at cell centers from coupler. Positive into the ocean."
-			 packages="thicknessBulkPKG"
 		/>
 		<var name="seaIceSalinityFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Sea ice salinity flux at cell centers from coupler. Positive into the ocean."
@@ -3095,7 +3081,6 @@
 		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from rain at cell centers from coupler. Positive into the ocean."
-			 packages="thicknessBulkPKG"
 		/>
 		<var name="snowFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
