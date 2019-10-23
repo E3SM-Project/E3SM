@@ -98,6 +98,12 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
             value = ['null']
             nmlgen.set_value("streams",value)
 
+    # globally uniform SST mode
+    if docn_mode=='sst_aquap_constant':
+        value = ['null']
+        nmlgen.set_value("streams",value)
+        value = [case.get_value('DOCN_AQPCONST_VALUE')]
+        nmlgen.set_value("sst_constant_value",value)
     #----------------------------------------------------
     # Create `shr_strdata_nml` namelist group.
     #----------------------------------------------------
