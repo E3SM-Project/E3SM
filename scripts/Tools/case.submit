@@ -17,6 +17,7 @@ Other examples:
 
 from standard_script_setup import *
 from CIME.case        import Case
+from CIME.utils        import expect
 from six.moves import configparser
 
 ###############################################################################
@@ -35,6 +36,13 @@ def parse_command_line(args, description):
     parser.add_argument("--job", "-j",
                         help="Name of the job to be submitted;\n"
                         "can be any of the jobs listed in env_batch.xml.\n"
+                        "This will be the first job of any defined workflow.  "
+                        "Default is case.run.")
+
+    parser.add_argument("--only-job",
+                        help="Name of the job to be submitted;\n"
+                        "can be any of the jobs listed in env_batch.xml.\n"
+                        "Only this job will be run, workflow and RESUBMIT are ignored.  "
                         "Default is case.run.")
 
     parser.add_argument("--no-batch", action="store_true",
@@ -70,15 +78,25 @@ def parse_command_line(args, description):
 
     CIME.utils.resolve_mail_type_args(args)
 
-    return (args.caseroot, args.job, args.no_batch, args.prereq, args.prereq_allow_failure,
+    expect(args.job is None or args.only_job is None, "Cannot specify both --job and --only-job")
+    job = None
+    workflow = True
+    if args.job:
+        job = args.job
+    elif args.only_job:
+        job = args.only_job
+        workflow = False
+
+
+    return (args.caseroot, job, args.no_batch, args.prereq, args.prereq_allow_failure,
             args.resubmit, args.resubmit_immediate, args.skip_preview_namelist, args.mail_user,
-            args.mail_type, args.batch_args)
+            args.mail_type, args.batch_args, workflow)
 
 ###############################################################################
 def _main_func(description, test_args=False):
 ###############################################################################
     caseroot, job, no_batch, prereq, allow_fail, resubmit, resubmit_immediate, skip_pnl, \
-        mail_user, mail_type, batch_args = parse_command_line(sys.argv, description)
+        mail_user, mail_type, batch_args, workflow = parse_command_line(sys.argv, description)
 
     # save these options to a hidden file for use during resubmit
     config_file = os.path.join(caseroot,".submit_options")
@@ -102,7 +120,7 @@ def _main_func(description, test_args=False):
         with Case(caseroot, read_only=False) as case:
             case.submit(job=job, no_batch=no_batch, prereq=prereq, allow_fail=allow_fail,
                         resubmit=resubmit, resubmit_immediate=resubmit_immediate, skip_pnl=skip_pnl,
-                        mail_user=mail_user, mail_type=mail_type, batch_args=batch_args)
+                        mail_user=mail_user, mail_type=mail_type, batch_args=batch_args, workflow=workflow)
 
 if __name__ == "__main__":
     _main_func(__doc__)
