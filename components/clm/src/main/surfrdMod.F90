@@ -557,6 +557,7 @@ contains
     use fileutils   , only : getfil
     use domainMod   , only : domain_type, domain_init, domain_clean
     use clm_varsur  , only : wt_lunit, topo_glc_mec
+    use GridcellType, only : grc_pp
     !
     ! !ARGUMENTS:
     integer,          intent(in) :: begg, endg      
@@ -1280,7 +1281,7 @@ contains
     !
     ! !USES:
 	use GridcellType, only : grc_pp
-	use TopounitType, only : top_pp
+    
     !
     ! !ARGUMENTS:
     integer          , intent(in)    :: begg, endg 
@@ -1348,16 +1349,16 @@ contains
        call ncd_io(ncid=ncid, varname='TopounitAspect', flag='read', data=TopounitAspect, &
          dim1name=grlnd, readvar=readvar)
     endif
-
-    do n = begg,endg
-       grc_pp%ntopounits(n) = numTopoPerGrid(n) 
-       grc_pp%MaxElevation(n) = maxTopoElv(n) 		
-       grc_pp%tfrc_area(n,:) = TopounitFracArea(n,:) 
-       grc_pp%televation(n,:) = TopounitElv(n,:) 
-       grc_pp%tslope(n,:) = TopounitSlope(n,:) 
-       grc_pp%taspect(n,:) = TopounitAspect(n,:) 
-    end do		
-	
+    if (readvar) then
+        do n = begg,endg
+           grc_pp%ntopounits(n) = numTopoPerGrid(n) 
+           grc_pp%MaxElevation(n) = maxTopoElv(n) 		
+           grc_pp%tfrc_area(n,:) = TopounitFracArea(n,:) 
+           grc_pp%televation(n,:) = TopounitElv(n,:) 
+           grc_pp%tslope(n,:) = TopounitSlope(n,:) 
+           grc_pp%taspect(n,:) = TopounitAspect(n,:) 
+        end do		
+     endif	
     deallocate(maxTopoElv,numTopoPerGrid,TopounitFracArea,TopounitElv,TopounitSlope,TopounitAspect)
   end subroutine surfrd_topounit_data
 
