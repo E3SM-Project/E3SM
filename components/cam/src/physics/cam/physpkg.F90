@@ -3567,6 +3567,7 @@ do ihist = 1 , nvars_prtrb_hist
         call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'extramacmic_diag_units', 'extramacmic_diag_longname',flag_xyfill=.true.)!The units and longname are dummy as it is for a test only
         call add_default (trim(adjustl(varname)), 1, ' ')
     enddo
+  end do
     if(l_dribling_tend)then
     do it=1,cld_macmic_num_steps
         write(substep,"(I2.2)")it
@@ -3576,7 +3577,7 @@ do ihist = 1 , nvars_prtrb_hist
         call add_default (trim(adjustl(varname)), 1, ' ')
     enddo
    end if
-  enddo
+  !enddo
 end do
 
 end subroutine add_fld_default_calls
