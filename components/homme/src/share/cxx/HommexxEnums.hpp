@@ -62,6 +62,19 @@ enum class RemapAlg {
   PPM_FIXED_MEANS = 3,
 };
 
+inline std::string remapAlg2str (const RemapAlg alg) {
+  switch (alg) {
+    case RemapAlg::PPM_MIRRORED:
+      return "PPM Mirrored";
+    case RemapAlg::PPM_FIXED_MEANS:
+      return "PPM Fixed Means";
+    case RemapAlg::PPM_FIXED_PARABOLA:
+      return "PPM Fixed Parabola";
+  }
+
+  return "UNKNOWN";
+}
+
 enum class TestCase {
   ASP_BAROCLINIC,
   ASP_GRAVITY_WAVE,
@@ -122,6 +135,20 @@ enum class CombineMode {
   Add,            // out = out + in (special case of ScaleAdd/Update with alpha=1, beta=1.0)
   ProdUpdate      // out = out*in
 };
+
+template<CombineMode CM>
+inline std::string cm2str () {
+  switch (CM) {
+    case CombineMode::Replace:      return "Replace";
+    case CombineMode::Scale:        return "Scale";
+    case CombineMode::Update:       return "Update";
+    case CombineMode::ScaleUpdate:  return "ScaleUpdate";
+    case CombineMode::ScaleAdd:     return "ScaleAdd";
+    case CombineMode::Add:          return "Add";
+    case CombineMode::ProdUpdate:   return "ProdUpdate";
+  }
+  return "UNKNOWN";
+}
 
 // ========================== BC Types ============================ //
 

@@ -2,6 +2,7 @@
 #define HOMMEXX_COLUMN_OPS_HPP
 
 #include "KernelVariables.hpp"
+#include "ErrorDefs.hpp"
 #include "HommexxEnums.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/VectorUtils.hpp"
@@ -78,6 +79,29 @@ public:
   using DefaultMidProvider = ExecViewUnmanaged<const Scalar [NUM_LEV]>;
   using DefaultIntProvider = ExecViewUnmanaged<const Scalar [NUM_LEV_P]>;
 
+  template<CombineMode CM>
+  static constexpr bool needsAlpha () {
+    return CM==CombineMode::Scale || CM==CombineMode::ScaleAdd || CM==CombineMode::ScaleUpdate;
+  }
+
+  template<CombineMode CM>
+  static constexpr bool needsBeta () {
+    return CM==CombineMode::Update || CM==CombineMode::ScaleUpdate;
+  }
+
+  template<CombineMode CM>
+  static void sanity_check (const Real alpha, const Real beta) {
+    Errors::runtime_check (
+      needsAlpha<CM>() || alpha==1.0,
+      "[ColumnOps] Error! You specified alpha!=1.0, but combine mode '"
+      + cm2str<CM>() +
+      "' would discard alpha altogether.\n");
+    Errors::runtime_check (
+      needsBeta<CM>() || beta==0.0,
+      "[ColumnOps] Error! You specified beta!=0.0, but combine mode '"
+      + cm2str<CM>() +
+      "' would discard beta altogether.\n");
+  }
 
   ColumnOps () = default;
 
@@ -88,6 +112,10 @@ public:
                                 const ExecViewUnmanaged<Scalar [NUM_LEV]>& x_m,
                                 const Real alpha = 1.0, const Real beta = 0.0)
   {
+#ifndef NDEBUG
+    sanity_check<CM>(alpha,beta);
+#endif
+
     // Compute midpoint quanitiy. Note: the if statement is evaluated at compile time, so no penalization. Only requirement is both branches must compile.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
@@ -123,6 +151,10 @@ public:
                                  const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& x_i,
                                  const Real alpha = 1.0, const Real beta = 0.0)
   {
+#ifndef NDEBUG
+    sanity_check<CM>(alpha,beta);
+#endif
+
     // Compute interface quanitiy.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
@@ -173,6 +205,10 @@ public:
                                  const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& x_i,
                                  const Real alpha = 1.0, const Real beta = 0.0)
   {
+#ifndef NDEBUG
+    sanity_check<CM>(alpha,beta);
+#endif
+
     // Compute interface quanitiy.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
@@ -218,6 +254,10 @@ public:
                                const ExecViewUnmanaged<Scalar [NUM_LEV]>& dx_m,
                                const Real alpha = 1.0, const Real beta = 0.0)
   {
+#ifndef NDEBUG
+    sanity_check<CM>(alpha,beta);
+#endif
+
     // Compute increment of interface values at midpoints.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,0,NUM_PHYSICAL_LEV),
@@ -252,6 +292,10 @@ public:
                                 const Real bcVal = 0.0,
                                 const Real alpha = 1.0, const Real beta = 0.0)
   {
+#ifndef NDEBUG
+    sanity_check<CM>(alpha,beta);
+#endif
+
     static_assert (bcType==BCType::Zero || bcType==BCType::Value || bcType == BCType::DoNothing,
                    "Error! Invalid bcType for interface delta calculation.\n");
 
@@ -326,7 +370,7 @@ public:
   {
     // It is easier to write two loops for Forward true/false. There's no runtime penalty,
     // since the if is evaluated at compile time, so no big deal.
-    constexpr int lastPack = ColInfo<LENGTH>::NumPacks - 1;
+    constexpr int lastPack = ColInfo<LENGTH>::LastPack;
     if (Forward) {
       // Running integral
       Real integration = s0;
