@@ -763,19 +763,26 @@ end subroutine micro_p3_readnl
           rcldm(i,k) = cldm(i,k)
           IF (trim(method) == 'in_cloud') THEN
              IF (k /= ktop) THEN
-                ! If cloud mass exists, keep precip_frac = cldm (precipitation
-                ! only present in cloud). If not, use the max of cloud fraction
-                ! and fraction from the level above (precip is originating from
-                ! above in this case, but we need to use the max because P3 can't
-                ! handle rcldm < cldm correctly).
+                ! in_cloud means that precip_frac (rcldm) = cloud (cldm) frac when cloud mass
+                ! is present. Below cloud, precip frac is equal to the cloud
+                ! fraction from the last layer that had cloud. Since presence or
+                ! absence of cloud is defined as mass > qsmall, sub-cloud precip
+                ! frac for the in_cloud method tends to be very small and is
+                ! very sensitive to tiny changes in condensate near cloud base.
                 IF (qc(i,k) .lt. qsmall .and. qitot(i,k) .lt. qsmall) THEN
+                   ! max(rcldm above and rcldm for this layer) is taken here
+                   ! because code is incapable of handling rcldm<cldm for a
+                   ! given grid cell
                    rcldm(i,k) = max(rcldm(i,k+kdir),rcldm(i,k))
                 END IF
              END IF
           ELSE IF (trim(method) == 'max_overlap') THEN
-          ! calculate precip fraction based on maximum overlap assumption
+          ! max overlap is the max cloud fraction in all layers above which are
+          ! connected to this one by a continuous band of precip mass. If
+          ! there's no precip mass falling into a cell, it's precip frac is equal
+          ! to the cloud frac, which is probably ~zero.
 
-          ! IF rain or snow mix ratios are smaller than threshold,
+          ! IF rain or ice mix ratios are smaller than threshold,
           ! then leave rcldm as cloud fraction at current level
              IF (k /= ktop) THEN
                 IF (qr(i,k+kdir) .ge. qsmall .or. qitot(i,k+kdir) .ge. qsmall) THEN
