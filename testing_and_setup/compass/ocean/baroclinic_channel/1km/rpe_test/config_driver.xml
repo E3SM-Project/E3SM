@@ -1,0 +1,26 @@
+<driver_script name="run_test.py">
+	<case name="mpas_mesh">
+		<step executable="./run.py" quiet="true" pre_message=" * Creating 2D MPAS mesh with planar_hex, MpasCellCuller, and MpasMeshConverter ..." post_message="     complete!  Created file:  mpas_mesh/mpas_mesh.nc"/>
+	</case>
+	<case name="initial_state">
+		<step executable="./run.py" quiet="true" pre_message=" * Initializing ocean state with bathymetry and tracers..." post_message="     complete!  Created file:  initial_state/initial_state.nc"/>
+	</case>
+	<case name="rpe_test_1_nu_1">
+		<step executable="./run.py" quiet="true" pre_message=" * Running baroclinic channel RPE test 1, nu=1 ..." post_message="     complete!"/>
+	</case>
+	<case name="rpe_test_2_nu_5">
+		<step executable="./run.py" quiet="true" pre_message=" * Running baroclinic channel RPE test 2, nu=5 ..." post_message="     complete!"/>
+	</case>
+	<case name="rpe_test_3_nu_10">
+		<step executable="./run.py" quiet="true" pre_message=" * Running baroclinic channel RPE test 3, nu=10 ..." post_message="     complete!"/>
+	</case>
+	<case name="rpe_test_4_nu_20">
+		<step executable="./run.py" quiet="true" pre_message=" * Running baroclinic channel RPE test 4, nu=20 ..." post_message="     complete!"/>
+	</case>
+	<case name="rpe_test_5_nu_200">
+		<step executable="./run.py" quiet="true" pre_message=" * Running baroclinic channel RPE test 4, nu=200 ..." post_message="     complete!"/>
+	</case>
+<!--	<case name="analysis">
+		<step executable="./run.py" quiet="true" pre_message=" * Visualization and analysis of RPE tests ..." post_message="     complete!"/> 
+	</case> -->
+</driver_script>

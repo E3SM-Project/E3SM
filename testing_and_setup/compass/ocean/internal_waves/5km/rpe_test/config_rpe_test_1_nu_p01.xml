@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<config case="rpe_test_1_nu_p01">
+	<add_link source="../initial_state/initial_state.nc" dest="initial_state.nc"/>
+	<add_link source="../mpas_mesh/culled_graph.info" dest="graph.info"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="internal_waves_5km_template.xml" path_base="script_resolution_dir"/>
+		<option name="config_run_duration">'100_00:00:00'</option>
+		<option name="config_mom_del2">0.01</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<stream name="mesh">
+			<attribute name="filename_template">initial_state.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">initial_state.nc</attribute>
+		</stream>
+		<stream name="output">
+			<attribute name="type">output</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="filename_template">output.nc</attribute>
+			<attribute name="output_interval">0000-00-10_00:00:00</attribute>
+			<add_contents>
+				<member type="var_struct" name="tracers"/>
+				<member type="var" name="density"/>
+				<member type="var" name="daysSinceStartOfSim"/>
+				<member type="var" name="xtime"/>
+			</add_contents>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="gpmetis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>
