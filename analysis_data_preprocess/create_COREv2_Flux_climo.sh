@@ -14,8 +14,10 @@ mkdir $tmp
 
 cd $original_path
 echo $path
+start_yr=1979
+end_yr=2006
 
-for yr in {1979..2006}; do
+for yr in $(eval echo "{$start_yr..$end_yr}"); do
     yyyy=`printf "%04d" $yr`
     ncks --mk_rec_dmn time ${original_path}${yyyy}.nc ${tmp}time_rec_dim_${yyyy}.nc
 
@@ -24,15 +26,19 @@ for yr in {1979..2006}; do
         ncks -O -F -d time,${mth} ${tmp}time_rec_dim_${yyyy}.nc ${tmp}COREv2_Flux_${yyyy}${mm}.nc
         done
 done
+cd ${tmp}
 
-ncrcat ${tmp}COREv2_Flux_*nc ${time_series_output_path}COREv2_Flux_197901_200612.nc 
+ncclimo -a sdd --lnk_flg -c COREv2_Flux_${start_yr}01.nc -s $start_yr -e $end_yr
+mv *climo.nc $climo_output_path
 
-ncrename -v F_evap,evspsbl -v F_prec,pr -v F_roff,mrro -v Q_lat,hfls -v Q_sen,hfss -v Q_lwdn,rlds -v Q_lwup,rlus -v Q_swnet,rss -v taux,tauu -v tauy,tauv ${time_series_output_path}COREv2_Flux_197901_200612.nc
+ncrcat ${tmp}COREv2_Flux_*nc ${time_series_output_path}COREv2_Flux_${start_yr}01_${end_yr}12.nc 
+
+ncrename -v F_evap,evspsbl -v F_prec,pr -v F_roff,mrro -v Q_lat,hfls -v Q_sen,hfss -v Q_lwdn,rlds -v Q_lwup,rlus -v Q_swnet,rss -v taux,tauu -v tauy,tauv ${time_series_output_path}COREv2_Flux_${start_yr}01_${end_yr}12.nc
 
 for var in evspsbl pr mrro hfls hfss rlds rlus rss tauu tauv
 do
    echo $var
-   ncks -v $var ${time_series_output_path}COREv2_Flux_197901_200612.nc ${time_series_output_path}${var}_197901_200612.nc
+   ncks -v $var ${time_series_output_path}COREv2_Flux_${start_yr}01_${end_yr}12.nc ${time_series_output_path}${var}_${start_yr}01_${end_yr}12.nc
 done
 rm ${time_series_output_path}COREv2_Flux*nc
 
