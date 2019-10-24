@@ -738,7 +738,7 @@ contains
        ! Determine temperatures
        ! ============================================================================
        if(use_betr)then
-         call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+         call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
          call ep_betr%PreDiagSoilColWaterFlux(filter(nc)%num_nolakec , filter(nc)%nolakec)
        endif
        ! Set lake temperature
@@ -762,7 +762,7 @@ contains
 
 
        if(use_betr)then
-         call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+         call ep_betr%BeTRSetBiophysForcing(bounds_clump, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
          call ep_betr%DiagnoseDtracerFreezeThaw(bounds_clump, filter(nc)%num_nolakec , filter(nc)%nolakec, col_pp, lun_pp)
        endif
        ! ============================================================================
@@ -1108,12 +1108,12 @@ contains
          if (use_betr)then
            call ep_betr%CalcSmpL(bounds_clump, 1, nlevsoi, filter(nc)%num_soilc, filter(nc)%soilc, &
               col_es%t_soisno(bounds_clump%begc:bounds_clump%endc,1:nlevsoi), &
-              soilstate_vars, waterstate_vars, soil_water_retention_curve)
+              soilstate_vars, col_ws, soil_water_retention_curve)
 
            call ep_betr%SetBiophysForcing(bounds_clump, col_pp, veg_pp,                 &
              carbonflux_vars=col_cf,     pf_carbonflux_vars=veg_cf,                          &
-             waterstate_vars=waterstate_vars,         waterflux_vars=waterflux_vars,         &
-             temperature_vars=temperature_vars,       soilhydrology_vars=soilhydrology_vars, &
+             waterstate_vars=col_ws,         waterflux_vars=col_wf, pf_waterflux_vars=veg_wf,        &
+             temperature_vars=col_es, pf_temperature_vars=veg_es,  soilhydrology_vars=soilhydrology_vars, &
              atm2lnd_vars=atm2lnd_vars,               canopystate_vars=canopystate_vars,     &
              chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
              cnstate_vars = cnstate_vars, carbonstate_vars=col_cs)
