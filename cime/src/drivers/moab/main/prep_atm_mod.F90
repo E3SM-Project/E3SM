@@ -367,7 +367,7 @@ contains
     ! it happens over joint communicator
     ierr = iMOAB_CoverageGraph(mpicom_join, mhid,  atmid, mbaxid,  id_join, mbintxla, context_id);
 
-    wgtIdef = 'scalar'//CHAR(0)
+    wgtIdef = 'scalar-pc'//CHAR(0)
     dm1 = "cgll"//CHAR(0)
     dm2 = "pcloud"//CHAR(0)
     dofnameATM="GLOBAL_DOFS"//CHAR(0)
