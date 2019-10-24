@@ -14,7 +14,7 @@ module cplcomp_exchange_mod
   use seq_diag_mct
 
   use seq_comm_mct, only : mhid, mpoid, mbaxid, mboxid  ! iMOAB app ids, for atm, ocean, ax mesh, ox mesh
-  use seq_comm_mct, only : mlnid , mlnxid !    iMOAB app id for land , on land pes and coupler pes
+  use seq_comm_mct, only : mlnid , mblxid !    iMOAB app id for land , on land pes and coupler pes
   use shr_mpi_mod,  only: shr_mpi_max
 
   implicit none
@@ -1125,26 +1125,37 @@ contains
       if (MPI_COMM_NULL /= mpicom_new ) then !  we are on the coupler pes
         appname = "COUPLE_LAND"//CHAR(0)
         ! migrated mesh gets another app id, moab ocean to coupler (mbox)
-        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mlnxid)
-        ierr = iMOAB_ReceiveMesh(mlnxid, mpicom_join, mpigrp_old, id_old)
+        ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_new, id_join, mblxid)
+        ierr = iMOAB_ReceiveMesh(mblxid, mpicom_join, mpigrp_old, id_old)
 
+        ! define here the tag that will be projected from atmosphere
+        tagnameProj = 'a2lTbot_proj'//CHAR(0)  ! temperature
+        tagtype = 1  ! dense, double
+        numco = 1 !  one value per vertex / entity
+        ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
+
+        ! define more tags
+        tagnameProj = 'a2lUbot_proj'//CHAR(0)  ! U component of velocity
+        ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
+        tagnameProj = 'a2lVbot_proj'//CHAR(0)  ! V component of velocity
+        ierr = iMOAB_DefineTagStorage(mblxid, tagnameProj, tagtype, numco,  tagindex )
 #ifdef MOABDEBUG
         !there are no shared entities, but we will set a special partition tag, in order to see the
         ! partitions ; it will be visible with a Pseudocolor plot in VisIt
         tagname='partition'//CHAR(0)
         tagtype = 0  ! dense, integer
         numco = 1 !  one value per cell
-        ierr = iMOAB_DefineTagStorage(mlnxid, tagname, tagtype, numco,  tagindex )
-        ierr = iMOAB_GetMeshInfo(mlnxid, nverts, nelem, nblocks, nsbc, ndbc)
+        ierr = iMOAB_DefineTagStorage(mblxid, tagname, tagtype, numco,  tagindex )
+        ierr = iMOAB_GetMeshInfo(mblxid, nverts, nelem, nblocks, nsbc, ndbc)
         allocate(vgids(nverts(1)))
         vgids = rank
         ent_type = 0 ! vertex type
-        ierr = iMOAB_SetIntTagStorage ( mlnxid, tagname, nverts(1) , ent_type, vgids)
+        ierr = iMOAB_SetIntTagStorage ( mblxid, tagname, nverts(1) , ent_type, vgids)
         ! debug test
         outfile = 'recLand.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
 !       write out the mesh file to disk
-        ierr = iMOAB_WriteMesh(mlnxid, trim(outfile), trim(wopts))
+        ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
 #endif
       endif
     endif

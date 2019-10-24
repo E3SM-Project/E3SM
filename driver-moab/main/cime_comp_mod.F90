@@ -1647,6 +1647,8 @@ contains
     !  need to finish up the computation of the atm - ocean map (tempest)
     if (iamin_CPLALLATMID .and. ocn_c2_atm) call prep_atm_ocn_moab(infodata)
 
+    !  need to finish up the computation of the atm - land map ( point cloud)
+    if (iamin_CPLALLATMID .and. atm_c2_lnd) call prep_atm_lnd_moab(infodata)
     !----------------------------------------------------------
     !| Update aream in domains where appropriate
     !----------------------------------------------------------
@@ -3556,10 +3558,16 @@ contains
           endif
        endif
 
-       ! send temp from atm to ocean mesh, after projection
+       ! send projected data from atm to ocean mesh, after projection in coupler
        if (iamin_CPLALLOCNID .and. ocn_c2_atm) then
          ! migrate that tag from coupler pes to ocean pes
          call prep_ocn_migrate_moab(infodata)
+       endif
+
+       ! send projected data from atm to land mesh, after projection in coupler
+       if (iamin_CPLALLLNDID .and. atm_c2_lnd) then
+         ! migrate that tag from coupler pes to ocean pes
+         call prep_lnd_migrate_moab(infodata)
        endif
 
        !----------------------------------------------------------
