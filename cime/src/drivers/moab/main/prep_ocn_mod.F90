@@ -1435,7 +1435,7 @@ contains
 
     ! we can now free the sender buffers
     if (mboxid .ge. 0) then
-       ierr = iMOAB_FreeSenderBuffers(mboxid, mpicom_join, id_join)
+       ierr = iMOAB_FreeSenderBuffers(mboxid, context_id)
        ! CHECKRC(ierr, "cannot free buffers used to send projected tag towards the ocean mesh")
     endif
 

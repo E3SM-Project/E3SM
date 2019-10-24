@@ -22,6 +22,8 @@ module prep_atm_mod
   use seq_comm_mct, only : mboxid   ! iMOAB id for mpas ocean migrated mesh to coupler pes
   use seq_comm_mct, only : mbintxoa ! iMOAB id for intx mesh between ocean and atmosphere; output from this
   use seq_comm_mct, only : mhid     ! iMOAB id for atm instance
+  use seq_comm_mct, only : mblxid   ! iMOAB id for land migrated to coupler pes !! old name : mlnxid
+  use seq_comm_mct, only : mbintxla ! iMOAB id for intx mesh between land and atmmosphere
   use seq_comm_mct, only : seq_comm_getinfo => seq_comm_setptrs
   use dimensions_mod, only : np     ! for atmosphere
 
@@ -52,7 +54,7 @@ module prep_atm_mod
   public :: prep_atm_get_mapper_Si2a
   public :: prep_atm_get_mapper_Fi2a
 
-  public :: prep_atm_ocn_moab, prep_atm_migrate_moab
+  public :: prep_atm_ocn_moab, prep_atm_migrate_moab, prep_atm_lnd_moab
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -115,7 +117,7 @@ contains
     character(*), parameter          :: subname = '(prep_atm_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
     integer, external :: iMOAB_ComputeMeshIntersectionOnSphere, iMOAB_RegisterFortranApplication, &
-        iMOAB_WriteMesh
+        iMOAB_WriteMesh, iMOAB_ComputePointDoFIntersection
     integer ierr, idintx, rank
     character*32             :: appname, outfile, wopts, lnum
     !---------------------------------------------------------------
@@ -178,7 +180,7 @@ contains
 
           appname = "ATM_OCN_COU"//CHAR(0)
           ! idintx is a unique number of MOAB app that takes care of intx between ocn and atm mesh
-          idintx = atm(1)%cplcompid + 100*ocn(1)%cplcompid ! something different, to differentiate it
+          idintx = 100*atm(1)%cplcompid + ocn(1)%cplcompid ! something different, to differentiate it
           ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxoa)
           ierr =  iMOAB_ComputeMeshIntersectionOnSphere (mbaxid, mboxid, mbintxoa)
 #ifdef MOABDEBUG
@@ -246,6 +248,12 @@ contains
           call seq_map_init_rcfile(mapper_Sl2a, lnd(1), atm(1), &
                'seq_maps.rc','lnd2atm_smapname:','lnd2atm_smaptype:',samegrid_al, &
                'mapper_Sl2a initialization',esmf_map_flag)
+
+          appname = "ATM_LND_COU"//CHAR(0)
+          ! idintx is a unique number of MOAB app that takes care of intx between lnd and atm mesh
+          idintx = 100*atm(1)%cplcompid + lnd(1)%cplcompid ! something different, to differentiate it
+          ierr = iMOAB_RegisterFortranApplication(trim(appname), mpicom_CPLID, idintx, mbintxla)
+          ierr =  iMOAB_ComputePointDoFIntersection (mbaxid, mblxid, mbintxla)
        end if
 
 
@@ -315,6 +323,69 @@ contains
     endif
   end subroutine prep_atm_ocn_moab
 
+  subroutine prep_atm_lnd_moab(infodata)
+    !---------------------------------------------------------------
+    ! Description
+    ! After intersection of atm and land mesh, correct the communication graph
+    !   between atm instance and atm on coupler (due to coverage), in the context of land
+    !  also, compute the map; this would be equivalent to seq_map_init_rcfile on the
+    !  mapping file computed offline (this will be now online)
+    !
+    ! Arguments
+    type(seq_infodata_type) , intent(in)    :: infodata
+
+    integer :: ierr
+
+    logical                          :: atm_present    ! .true.  => atm is present
+    logical                          :: lnd_present    ! .true.  => lnd is present
+    integer                  :: id_join
+    integer                  :: mpicom_join
+    integer                  :: context_id ! used to define context for coverage (this case, land on coupler)
+    integer                  :: atmid
+    character*32             :: dm1, dm2, dofnameATM, dofnameLND, wgtIdef
+    integer                  :: orderLND, orderATM, volumetric, noConserve, validate
+    integer                  :: monotonicity
+
+    integer, external :: iMOAB_CoverageGraph, iMOAB_ComputeScalarProjectionWeights
+
+    call seq_infodata_getData(infodata, &
+         atm_present=atm_present,       &
+         lnd_present=lnd_present)
+
+  !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
+  !  intx lnd atm are in mbintxla ; remapper also has some info about coverage mesh
+  ! after this, the sending of tags from atm pes to coupler pes, in land context will use the new par
+  ! comm graph, that has more precise info about
+  ! how to get mpicomm for joint atm + coupler
+    id_join = atm(1)%cplcompid
+    atmid   = atm(1)%compid
+    ! maybe we can use a moab-only id, defined like mbintxoa, mhid, somewhere else (seq_comm_mct)
+    ! we cannot use mbintxla because it may not exist on atm comp yet;
+    context_id = lnd(1)%cplcompid
+    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+
+    ! it happens over joint communicator
+    ierr = iMOAB_CoverageGraph(mpicom_join, mhid,  atmid, mbaxid,  id_join, mbintxla, context_id);
+
+    wgtIdef = 'scalar'//CHAR(0)
+    dm1 = "cgll"//CHAR(0)
+    dm2 = "pcloud"//CHAR(0)
+    dofnameATM="GLOBAL_DOFS"//CHAR(0)
+    dofnameLND="GLOBAL_ID"//CHAR(0)
+    orderATM = np !  it should be 4
+    orderLND = 1  !  not much arguing
+    monotonicity = 0 !
+    volumetric = 0
+    noConserve = 0
+    validate = 1
+    if (mbintxoa .ge. 0 ) then
+      ierr = iMOAB_ComputeScalarProjectionWeights ( mbintxla, wgtIdef, &
+                                                trim(dm1), orderATM, trim(dm2), orderLND, &
+                                                monotonicity, volumetric, noConserve, validate, &
+                                                trim(dofnameATM), trim(dofnameLND) )
+    endif
+  end subroutine prep_atm_lnd_moab
+
   subroutine prep_atm_migrate_moab(infodata)
   !---------------------------------------------------------------
     ! Description
@@ -328,6 +399,7 @@ contains
 
     logical                          :: atm_present    ! .true.  => atm is present
     logical                          :: ocn_present    ! .true.  => ocn is present
+    logical                          :: lnd_present    ! .true.  => lnd is present
     integer                  :: id_join
     integer                  :: mpicom_join
     integer                  :: atmid
@@ -341,7 +413,8 @@ contains
 
     call seq_infodata_getData(infodata, &
          atm_present=atm_present,       &
-         ocn_present=ocn_present)
+         ocn_present=ocn_present,       &
+         lnd_present=lnd_present)
 
   !  it involves initial atm app; mhid; also migrate atm mesh on coupler pes, mbaxid
   !  intx ocean atm are in mbintxoa ; remapper also has some info about coverage mesh
@@ -352,50 +425,99 @@ contains
 
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-    ! we should do this only of ocn_present
+! we should do this only of ocn_present
+
     context_id = ocn(1)%cplcompid
     ! now send the tags a2o?bot  from original atmosphere mhid(pid1) towards migrated coverage mesh (pid3), using the new coverage graph communicator
     tagName = 'a2oTbot;a2oUbot;a2oVbot;'//CHAR(0) ! they are defined in semoab_mod.F90!!!
     !  the separator will be ';' semicolon
     tagNameProj = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0)
     wgtIdef = 'scalar'//CHAR(0)
-    if (mhid .ge. 0) then !  send because we are on atm pes
+    if (atm_present .and. ocn_present) then
+      if (mhid .ge. 0) then !  send because we are on atm pes
 
-      ! basically, adjust the migration of the tag we want to project; it was sent initially with
-      ! trivial partitioning, now we need to adjust it for "coverage" mesh
-      ! as always, use nonblocking sends
+        ! basically, adjust the migration of the tag we want to project; it was sent initially with
+        ! trivial partitioning, now we need to adjust it for "coverage" mesh
+        ! as always, use nonblocking sends
 
-       ierr = iMOAB_SendElementTag(mhid, atmid, id_join, tagName, mpicom_join, context_id)
+         ierr = iMOAB_SendElementTag(mhid, atmid, id_join, tagName, mpicom_join, context_id)
 
-    endif
-    if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
-      ! receive on atm on coupler pes, that was redistributed according to coverage
-       ierr = iMOAB_ReceiveElementTag(mbaxid, atmid, id_join, tagName, mpicom_join, context_id)
-    !CHECKRC(ierr, "cannot receive tag values")
-    endif
+      endif
+      if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+        ! receive on atm on coupler pes, that was redistributed according to coverage
+         ierr = iMOAB_ReceiveElementTag(mbaxid, atmid, id_join, tagName, mpicom_join, context_id)
+      !CHECKRC(ierr, "cannot receive tag values")
+      endif
 
-    ! we can now free the sender buffers
-    if (mhid .ge. 0) then
-       ierr = iMOAB_FreeSenderBuffers(mhid, mpicom_join, id_join)
-       ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
-    endif
+      ! we can now free the sender buffers
+      if (mhid .ge. 0) then
+         ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+         ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
+      endif
 
-    ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
-    ! the actual migrate could happen later , from coupler pes to the ocean pes
-    if (mbintxoa .ge. 0 ) then !  we are on coupler pes, for sure
-      ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
-      !  hard coded now, it should be a runtime option in the future
-      ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxoa, wgtIdef, tagName, tagNameProj)
+      ! we could do the projection now, on the ocean mesh, because we are on the coupler pes;
+      ! the actual migrate could happen later , from coupler pes to the ocean pes
+      if (mbintxoa .ge. 0 ) then !  we are on coupler pes, for sure
+        ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
+        !  hard coded now, it should be a runtime option in the future
+        ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxoa, wgtIdef, tagName, tagNameProj)
 
 #ifdef MOABDEBUG
-      ! we can also write the ocean mesh to file, just to see the projectd tag
-      !      write out the mesh file to disk
-      outfile = 'ocn_proj.h5m'//CHAR(0)
-      wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
-      ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
+        ! we can also write the ocean mesh to file, just to see the projectd tag
+        !      write out the mesh file to disk
+        outfile = 'ocn_proj.h5m'//CHAR(0)
+        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+        ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
 #endif
 
-    !CHECKRC(ierr, "cannot receive tag values")
+      !CHECKRC(ierr, "cannot receive tag values")
+      endif
+
+    endif
+! repeat this for land data, that is already on atm tag
+    tagNameProj = 'a2lTbot_proj;a2lUbot_proj;a2lVbot_proj;'//CHAR(0)
+    context_id = lnd(1)%cplcompid
+    wgtIdef = 'scalar-pc'//CHAR(0)
+    if (atm_present .and. lnd_present) then
+      if (mhid .ge. 0) then !  send because we are on atm pes
+
+        ! basically, adjust the migration of the tag we want to project; it was sent initially with
+        ! original partitioning, now we need to adjust it for "coverage" mesh
+        ! as always, use nonblocking sends
+
+         ierr = iMOAB_SendElementTag(mhid, atmid, id_join, tagName, mpicom_join, context_id)
+
+      endif
+      if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
+        ! receive on atm on coupler pes, that was redistributed according to coverage
+         ierr = iMOAB_ReceiveElementTag(mbaxid, atmid, id_join, tagName, mpicom_join, context_id)
+      !CHECKRC(ierr, "cannot receive tag values")
+      endif
+
+      ! we can now free the sender buffers
+      if (mhid .ge. 0) then
+         ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+         ! CHECKRC(ierr, "cannot free buffers used to resend atm mesh tag towards the coverage mesh")
+      endif
+
+      ! we could do the projection now, on the land mesh, because we are on the coupler pes;
+      ! the actual migrate back could happen later , from coupler pes to the land pes
+      if (mbintxla .ge. 0 ) then !  we are on coupler pes, for sure
+        ! we could apply weights; need to use the same weight identifier wgtIdef as when we generated it
+        !  hard coded now, it should be a runtime option in the future
+        ierr = iMOAB_ApplyScalarProjectionWeights ( mbintxla, wgtIdef, tagName, tagNameProj)
+
+#ifdef MOABDEBUG
+        ! we can also write the ocean mesh to file, just to see the projectd tag
+        !      write out the mesh file to disk
+        outfile = 'lndCplProj.h5m'//CHAR(0)
+        wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+        ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
+#endif
+
+      !CHECKRC(ierr, "cannot receive tag values")
+      endif
+
     endif
 
   end subroutine prep_atm_migrate_moab
