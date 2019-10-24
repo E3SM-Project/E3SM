@@ -84,7 +84,7 @@ public:
 
 // TODO: remove the following lines if we start requiring C++17.
 //       The reason is that passing one of the constexpr variables to
-//       a function that odr-use them (e.g., takes them bu reference)
+//       a function that odr-use them (e.g., takes them by reference)
 //       forces a namespace definition of the variable to be available.
 //       C++17 drops this requirement.
 template<int PL>

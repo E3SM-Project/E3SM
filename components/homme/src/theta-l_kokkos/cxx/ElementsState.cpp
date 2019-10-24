@@ -52,6 +52,55 @@ void ElementsState::randomize(const int seed, const Real max_pressure) {
 
 void ElementsState::randomize(const int seed,
                               const Real max_pressure,
+                              const Real ps0,
+                              const ExecViewUnmanaged<const Real*[NP][NP]>& phis) {
+  randomize(seed,max_pressure,ps0);
+
+  // Re-do phinh so it satisfies phinh_i(bottom)=phis
+
+  // Sanity check
+  assert(phis.extent_int(0)==m_num_elems);
+
+  std::mt19937_64 engine(seed);
+
+  // Note: to avoid errors in the equation of state, we need phi to be increasing.
+  //       Rather than using a constraint (which may call the function many times,
+  //       we simply ask that there are no duplicates, then we sort it later.
+  auto sort_and_chek = [](const ExecViewManaged<Real[NUM_PHYSICAL_LEV]>::HostMirror v)->bool {
+    Real* start = reinterpret_cast<Real*>(v.data());
+    Real* end   = reinterpret_cast<Real*>(v.data()) + NUM_PHYSICAL_LEV;
+    std::sort(start,end);
+    std::reverse(start,end);
+    auto it = std::unique(start,end);
+    return it==end;
+  };
+
+  auto h_phis = Kokkos::create_mirror_view(phis);
+  Kokkos::deep_copy(h_phis,phis);
+  for (int ie=0; ie<m_num_elems; ++ie) {
+    for (int igp=0; igp<NP; ++igp) {
+      for (int jgp=0; jgp<NP; ++ jgp) {
+        const Real phis_ij = h_phis(ie,igp,jgp);
+        // Ensure generated values are larger than phis
+        std::uniform_real_distribution<Real> random_dist(1.001*phis_ij,100.0*phis_ij);
+        for (int itl=0; itl<NUM_TIME_LEVELS; ++itl) {
+          // Get column
+          auto phi_col = Homme::viewAsReal(Homme::subview(m_phinh_i,ie,itl,igp,jgp));
+
+          // Stuff phis at the bottom
+          Kokkos::deep_copy(Kokkos::subview(phi_col,NUM_PHYSICAL_LEV),phis_ij);
+
+          // Generate values except at bottom
+          ExecViewUnmanaged<Real[NUM_PHYSICAL_LEV]> phi_no_bottom(phi_col.data());
+          genRandArray(phi_no_bottom,engine,random_dist,sort_and_chek);
+        }
+      }
+    }
+  }
+}
+
+void ElementsState::randomize(const int seed,
+                              const Real max_pressure,
                               const Real ps0) {
   // Check elements were inited
   assert (m_num_elems>0);

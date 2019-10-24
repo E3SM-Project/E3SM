@@ -26,13 +26,16 @@ void Elements::init(const int num_elems, const bool consthv, const bool alloc_gr
   m_inited = true;
 }
 
-//test for tensor hv is needed
 void Elements::randomize(const int seed, const Real max_pressure) {
+  randomize(seed,max_pressure,max_pressure/100);
+}
+
+void Elements::randomize(const int seed, const Real max_pressure, const Real ps0) {
   // Check elements were inited
   assert(m_num_elems>0);
 
   m_geometry.randomize(seed);
-  m_state.randomize(seed,max_pressure);
+  m_state.randomize(seed,max_pressure,ps0,m_geometry.m_phis);
 
   Real dp3d_min = std::numeric_limits<Real>::max();
   for (int ie = 0; ie < m_num_elems; ++ie) {

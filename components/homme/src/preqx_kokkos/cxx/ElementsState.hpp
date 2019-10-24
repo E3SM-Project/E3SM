@@ -33,6 +33,12 @@ public:
   void randomize(const int seed, const Real max_pressure);
   void randomize(const int seed, const Real max_pressure, const Real ps0);
 
+  // phis is not used in preqx model initialization
+  void randomize(const int seed, const Real max_pressure, const Real ps0,
+                 const ExecViewUnmanaged<const Real*[NP][NP]>& /* phis */) {
+    randomize(seed,max_pressure, ps0);
+  }
+
   KOKKOS_INLINE_FUNCTION
   int num_elems() const { return m_num_elems; }
 
