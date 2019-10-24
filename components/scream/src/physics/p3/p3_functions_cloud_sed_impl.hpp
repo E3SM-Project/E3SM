@@ -52,15 +52,16 @@ void Functions<S,D>
 
   // find top, determine qxpresent
   const auto sqc = scalarize(qc);
+  constexpr Scalar qsmall = C::QSMALL;
   bool log_qxpresent;
-  const Int k_qxtop = find_top(team, sqc, C::QSMALL, kbot, ktop, kdir, log_qxpresent);
+  const Int k_qxtop = find_top(team, sqc, qsmall, kbot, ktop, kdir, log_qxpresent);
 
   if (log_qxpresent) {
     Scalar dt_left = dt;    // time remaining for sedi over full model (mp) time step
     Scalar prt_accum = 0.0; // precip rate for individual category
 
     // find bottom
-    Int k_qxbot = find_bottom(team, sqc, C::QSMALL, kbot, k_qxtop, kdir, log_qxpresent);
+    Int k_qxbot = find_bottom(team, sqc, qsmall, kbot, k_qxtop, kdir, log_qxpresent);
 
     while (dt_left > 1.e-4) {
       Scalar Co_max = 0.0;
@@ -81,7 +82,7 @@ void Functions<S,D>
       Kokkos::parallel_reduce(
         Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
           const int pk = kmin + pk_;
-          auto qc_gt_small = (qc_incld(pk) > C::QSMALL);
+          auto qc_gt_small = (qc_incld(pk) > qsmall);
           if (qc_gt_small.any()) {
             // compute Vq, Vn
             Spack nu, cdist, cdist1, dum;
