@@ -763,8 +763,13 @@ end subroutine micro_p3_readnl
           rcldm(i,k) = cldm(i,k)
           IF (trim(method) == 'in_cloud') THEN
              IF (k /= ktop) THEN
+                ! If cloud mass exists, keep precip_frac = cldm (precipitation
+                ! only present in cloud). If not, use the max of cloud fraction
+                ! and fraction from the level above (precip is originating from
+                ! above in this case, but we need to use the max because P3 can't
+                ! handle rcldm < cldm correctly).
                 IF (qc(i,k) .lt. qsmall .and. qitot(i,k) .lt. qsmall) THEN
-                   rcldm(i,k) = rcldm(i,k+kdir)
+                   rcldm(i,k) = max(rcldm(i,k+kdir),rcldm(i,k))
                 END IF
              END IF
           ELSE IF (trim(method) == 'max_overlap') THEN
@@ -774,7 +779,7 @@ end subroutine micro_p3_readnl
           ! then leave rcldm as cloud fraction at current level
              IF (k /= ktop) THEN
                 IF (qr(i,k+kdir) .ge. qsmall .or. qitot(i,k+kdir) .ge. qsmall) THEN
-                   rcldm(i,k) = max(cldm(i,k+kdir),rcldm(i,k))
+                   rcldm(i,k) = max(rcldm(i,k+kdir),rcldm(i,k))
                 END IF
              END IF
           END IF
