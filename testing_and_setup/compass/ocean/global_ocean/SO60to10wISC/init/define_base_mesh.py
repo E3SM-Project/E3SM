@@ -26,8 +26,8 @@ def cellWidthVsLatLon():
     cellWidth30 = 30.0 * np.ones(lat.size)
 
     # Southern transition
-    latTransition = -50.0
-    latWidthTransition = 5.0
+    latTransition = -48.0
+    latWidthTransition = 10.0
     cellWidthSouth = mdt.mergeCellWidthVsLat(
         lat,
         cellWidth10,
