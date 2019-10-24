@@ -1,6 +1,48 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-24-2019
+Tag: cime5.8.13
+Answer Changes: None
+Tests: scripts_regeression_tests
+Dependencies:
+
+Brief Summary:
+    - Add a raw xml option to the query_config interface.
+    - Add --only-job option to case.submit.
+
+User interface changes: 
+    - Add --xml to query_config.
+    - Add option --only-job to case.submit.
+    - Fix an issue with Lockedfile error when case.submit is used with the --no-batch flag.
+    - Change globally uniform SST mode from AQP11 to AQPCONST.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+f22ebdafa Merge pull request #3268 from jedwards4b/add_xml_to_query_config
+ab4d53999 Merge pull request #3267 from jedwards4b/no_workflow
+4cd12246f Merge pull request #3265 from jedwards4b/fix_batch_lock_issue
+a45130996 Merge pull request #3257 from ESMCI/whannah/add-AQPCONST-mode
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/Tools/case.submit
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_submit.py
+M       scripts/lib/CIME/utils.py
+M       scripts/query_config
+M       src/components/data_comps/docn/cime_config/buildnml
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M       src/components/data_comps/docn/mct/docn_comp_mod.F90
+M       src/components/data_comps/docn/mct/docn_shr_mod.F90
+M       src/drivers/mct/cime_config/config_component.xml
+M       src/share/util/shr_scam_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 10-15-2019
 Tag: cime5.8.12
 Answer Changes: None
