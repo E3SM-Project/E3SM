@@ -118,9 +118,11 @@ contains
 !                 optimal: for windspeeds ~120m/s,gravity: 340m/2
 !                 run with qsplit=1
 !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
-!   tstep_type=6  IMKG243a 
+!   tstep_type=6  KG4+BE/CN  2nd order
 !   tstep_type=7  IMKG254a
-!   tstep_type=8  IMKG252a
+!   tstep_type=8  KG3+BE/CN  KG3 2nd order explicit, 1st order off-centering implicit
+!   tstep_type=9  KG5+BE/CN  KG5(3rd order linear, 3.87CFL) + BE/CN,  2nd order IMEX
+!   tstep_type=10 KG5+BE/CN  KG5(2nd order, 4.0CFL) + BE/CN,  2nd order IMEX
 !
 
 ! default weights for computing mean dynamics fluxes
@@ -202,44 +204,29 @@ contains
        ! final method is the same as:
        ! u5 = u0 +  dt/4 RHS(u0)) + 3dt/4 RHS(u4)
 !=========================================================================================
-    elseif (tstep_type == 6) then  ! IMEX-KG243
+    elseif (tstep_type == 6) then  ! IMEX-KG4 + CN 
  
-      a1 = 1d0/4d0
-      a2 = 1d0/3d0
-      a3 = 1d0/2d0
-      a4 = 1d0
-
-      ahat4 = 1d0
-      ahat1 = 0d0
-      ! IMEX-KGNO243
-      dhat2 = (1.+sqrt(3.)/3.)/2.
-      dhat3 = dhat2
-      ahat3 = 1./2.-dhat3
-      dhat1 = (ahat3-dhat2+dhat2*dhat3)/(1.-dhat2-dhat3)
-      ahat2 = (dhat1-dhat1*dhat3-dhat1*dhat2+dhat1*dhat2*dhat3)/(1.-dhat3)
-
-      call compute_andor_apply_rhs(np1,n0,n0,qn0,dt*a1,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt/4,elem,hvcoord,hybrid,&
         deriv,nets,nete,compute_diagnostics,0d0,1d0,0d0,1d0)
-  
-
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat1*dt,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(n0,nm1,0d0,qn0,dt/4,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
  
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat2/a2,1d0)
-
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat2*dt,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt/3,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
+      call compute_stage_value_dirk(n0,np1,0d0,qn0,dt/3,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol) 
 
-
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a3,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,0d0,1d0,ahat3/a3,1d0)
-
-      call compute_stage_value_dirk(n0,np1,0d0,qn0,dhat3*dt,elem,hvcoord,hybrid,&
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt/2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,0d0,1d0,0d0,1d0)
+      call compute_stage_value_dirk(n0,np1,0d0,qn0,dt/2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt*a4,elem,hvcoord,hybrid,&
-        deriv,nets,nete,.false.,eta_ave_w,1d0,ahat4/a4,1d0)
+      a1=2d0/7
+      a2=3d0/7
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,.false.,eta_ave_w,1d0,0d0,1d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt,qn0,a2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol,nm1)
 
 
 !==============================================================================================
@@ -292,7 +279,7 @@ contains
    elseif (tstep_type == 8 ) then ! KG3 + CN + offcentering
 
       ! introduce 1st order offcentering
-      offcenter = 0
+      offcenter = 0.5d0
       aphat = 0.5d0-offcenter
       dhat3 = 0.5d0+offcenter
 
@@ -309,7 +296,7 @@ contains
         deriv,nets,nete,maxiter,itertol)
 
       ! introduce 1st order offcentering
-      offcenter = 0.01
+      offcenter = 0.01d0
       aphat = 0.5d0-offcenter
       dhat3 = 0.5d0+offcenter
 
@@ -319,48 +306,82 @@ contains
         deriv,nets,nete,maxiter,itertol)
 
     else if (tstep_type==9) then ! KG5(3rd order linear) + CN + offcenter
-      offcenter=.2
-      a1=.5d0-offcenter
-      a2=.5d0+offcenter
-      dt2=dt/5     ! 3rd order CFL=3.87
-      ! dt2=dt/4   ! 2nd order CFL=4
+      a1=0d0
+      a2=1-a1
+      dt2=dt/5     
+      call compute_andor_apply_rhs(nm1,n0,n0,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,compute_diagnostics,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(n0,nm1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+      dt2=dt/5     
+      call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+      dt2=dt/3
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+
+      dt2=dt/2
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+      a1=5d0/18
+      a2=8d0/18
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,0d0,1.d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt,qn0,a2*dt,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol,nm1)
+      !  u0 saved in elem(n0)
+      !  u1 saved in elem(nm1)
+      !  u4 saved in elem(np1)
+      !  u5 = u0 + dt*N(u4) + dt*5/18*S(u0) + dt*5/18 S(u1) + dt*8/18* S(u5)
+      
+    else if (tstep_type==10) then ! KG5(2nd order CFL=4) + CN + offcenter
+      a1=0d0
+      a2=1-a1
+      dt2=dt/4
       call compute_andor_apply_rhs(np1,n0,n0,qn0,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,compute_diagnostics,0d0,1.d0,0.d0,1.d0)
       call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
-      dt2=dt/5     ! 3rd order CFL=3.87
-      ! dt2=dt/6   ! 2nd order CFL=4
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+      dt2=dt/6
+      call compute_andor_apply_rhs(nm1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-      call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(n0,nm1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
-      dt2=dt/3       ! 3rd order CFL=3.87
-      ! dt2=3*dt/8   ! 2nd order CFL=4
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
-      call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-
-      dt2=dt/2   ! same for 2nd and 3rd order
-      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+      dt2=3*dt/8
+      call compute_andor_apply_rhs(np1,n0,nm1,qn0,dt2,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
       call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
 
 
-      offcenter=0.025
-      a1=.5d0-offcenter
-      a2=.5d0+offcenter
+      dt2=dt/2
+      call compute_andor_apply_rhs(np1,n0,np1,qn0,dt2,elem,hvcoord,hybrid,&
+            deriv,nets,nete,.false.,0d0,1.d0,0.d0,1.d0)
+      call compute_stage_value_dirk(n0,np1,a1*dt2,qn0,a2*dt2,elem,hvcoord,hybrid,&
+        deriv,nets,nete,maxiter,itertol)
+
+      a1=6d0/22 
+      a2=10d0/22
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
-            deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,0.d0,1.d0)
+            deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,0d0,1.d0)
       call compute_stage_value_dirk(n0,np1,a1*dt,qn0,a2*dt,elem,hvcoord,hybrid,&
-        deriv,nets,nete,maxiter,itertol)
-
-
-
+        deriv,nets,nete,maxiter,itertol,nm1)
+      !  u0 saved in elem(n0)
+      !  u2 saved in elem(nm1)
+      !  u4 saved in elem(np1)
+      !  u5 = u0 + dt*N(u4) + dt*6/22*S(u0) + dt*6/22 S(u1) + dt*10/22* S(u5)
     else
        call abortmp('ERROR: bad choice of tstep_type')
     endif
@@ -987,7 +1008,7 @@ contains
      temp(:,:,:)=theta_ref(:,:,:,ie)*dp_ref(:,:,:,ie) 
      call phi_from_eos(hvcoord,elem(ie)%state%phis,&
           temp(:,:,:),dp_ref(:,:,:,ie),phi_ref(:,:,:,ie))
-
+     theta_ref(:,:,:,ie)=0
 #if 0
      ! no reference state, for testing
      theta_ref(:,:,:,ie)=0
@@ -1090,19 +1111,6 @@ contains
            
         enddo
         
-        do k=1,nlev
-           elem(ie)%state%v(:,:,:,k,nt)=elem(ie)%state%v(:,:,:,k,nt) + &
-                vtens(:,:,:,k,ie)
-           elem(ie)%state%w_i(:,:,k,nt)=elem(ie)%state%w_i(:,:,k,nt) &
-                +stens(:,:,k,3,ie)
-           
-           elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt) &
-                +stens(:,:,k,1,ie)
-           
-           elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt) &
-                +stens(:,:,k,4,ie)
-        enddo
-        
         
         ! apply heating after updating state.  using updated v gives better results in PREQX model
         !
@@ -1118,6 +1126,7 @@ contains
         ! 
         ! compute exner needed for heating term and IE scaling
         ! this is using a mixture of data before viscosity and after viscosity 
+#if 0
         temp(:,:,:)=elem(ie)%state%vtheta_dp(:,:,:,nt)*elem(ie)%state%dp3d(:,:,:,nt)
         call pnh_and_exner_from_eos(hvcoord,temp,&
              elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),&
@@ -1137,10 +1146,33 @@ contains
                      elem(ie)%state%w_i(:,:,k2,nt)*stens(:,:,k2,3,ie))/2 ) /  &
                    (exner(:,:,k)*Cp)  
            endif
+           !elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
+           !     +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt)&
+           !     )  -heating(:,:,k)
            elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
-                +stens(:,:,k,2,ie)*hvcoord%dp0(k)*exner0(k)/(exner(:,:,k)*elem(ie)%state%dp3d(:,:,k,nt)&
-                )  -heating(:,:,k)
+                  -heating(:,:,k)
         enddo
+#endif
+
+        do k=1,nlev
+           elem(ie)%state%v(:,:,:,k,nt)=elem(ie)%state%v(:,:,:,k,nt) + &
+                vtens(:,:,:,k,ie)
+           elem(ie)%state%w_i(:,:,k,nt)=elem(ie)%state%w_i(:,:,k,nt) &
+                +stens(:,:,k,3,ie)
+           
+           elem(ie)%state%dp3d(:,:,k,nt)=elem(ie)%state%dp3d(:,:,k,nt) &
+                +stens(:,:,k,1,ie)
+           
+           elem(ie)%state%phinh_i(:,:,k,nt)=elem(ie)%state%phinh_i(:,:,k,nt) &
+                +stens(:,:,k,4,ie)
+
+           elem(ie)%state%vtheta_dp(:,:,k,nt)=elem(ie)%state%vtheta_dp(:,:,k,nt) &
+                +stens(:,:,k,2,ie)
+        enddo
+
+
+
+
      enddo ! ie
   enddo  ! subcycle
 
@@ -2104,6 +2136,38 @@ contains
 
 
 
+  subroutine compute_gwphis(gwh_i,dp3d,v,gradphis,hvcoord)
+!
+!  compute a vertical velocity induced by surface topography
+!  wh_i =  ubar grad phis 
+!
+  real (kind=real_kind) :: gwh_i(np,np,nlevp)
+  real (kind=real_kind) :: dp3d(np,np,nlev)
+  real (kind=real_kind) :: v(np,np,2,nlev)
+  real (kind=real_kind) :: gradphis(np,np,2)
+  type (hvcoord_t)     , intent(in) :: hvcoord  
+
+  ! local
+  integer :: k
+  real (kind=real_kind) :: v_i(np,np,2,nlevp)
+
+  ! add wh_i(n0) term to RHS
+  do k=2,nlev
+     v_i(:,:,1,k) = (dp3d(:,:,k)*v(:,:,1,k) + &
+          dp3d(:,:,k-1)*v(:,:,1,k-1) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
+     v_i(:,:,2,k) = (dp3d(:,:,k)*v(:,:,2,k) + &
+          dp3d(:,:,k-1)*v(:,:,2,k-1) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
+  end do
+  gwh_i(:,:,1)=0
+  gwh_i(:,:,nlevp)=0  ! should be elem(ie)%state%w_i(:,:,nlevp,n0), but not used
+  do k=2,nlev
+     gwh_i(:,:,k) = (v_i(:,:,1,k)*gradphis(:,:,1) + v_i(:,:,2,k)*gradphis(:,:,2))&
+          *hvcoord%hybi(k)
+  enddo
+  end subroutine
+
+
+
  
 !===========================================================================================================
 !===========================================================================================================
@@ -2111,7 +2175,7 @@ contains
 !===========================================================================================================
 !===========================================================================================================
   subroutine compute_stage_value_dirk(n0,np1,alphadt,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,itercount,itererr)
+       deriv,nets,nete,itercount,itererr,nm1)
   !===================================================================================
   ! this subroutine solves a stage value equation for a DIRK method which takes the form
   !
@@ -2119,18 +2183,39 @@ contains
   !
   ! It is assumed that un0 has the value of y and the computed value of gi is stored at
   ! unp1
+  ! 
+  ! w_0 = w(np1)
+  ! phi_0 = phi(np1)
+  ! Then solve (ovewriting w(np1),phi(np1): 
+  ! w(np1) = w_0 + alphadt1 * SW(n0)  + alphadt1*SW(nm1) +  dt2*SW(np1)
+  ! phi(np1) = phi_0 + alphadt1 * SPHI(n0)  + alphadt1*SPHI(nm1) +  dt2*SPHI(np1)
+  !
+  ! SW(nt) = g*dpnh_dp_i(nt)-1
+  ! SPHI(nt) = g*w(nt) -g*a(k) u(nt) dot grad_phis
+  !
+  ! pnh_and_exner_from_eos()   used to compute dpnh_dp_i(nt) in SW(nt)
+  ! compute_gwphis()            used to compute g*a(k) u(nt) dot grad_phis  in SPHI(nt)   
+  !
+  ! We then precompute:
+  !  w_rhs = w_0 + alphadt1 * SW(n0)  + alphadt1*SW(nm1) 
+  !  phi_rhs = w_0 + alphadt1 * SPHI(n0)  + alphadt1*SPHI(nm1) -  dt2*compute_gwphi(np1)
+  ! and solve, via Newton iteraiton:
+  !   w(np1) = w_rhs + dt2*SW(np1)
+  !   phi(np1) = phi_rhs + dt2*g*w(np1)
+  !
   !===================================================================================
 
   integer, intent(in) :: n0,np1,qn0,nets,nete
-  real*8, intent(in) :: dt2
+  real (kind=real_kind), intent(in) :: dt2
   integer :: itercount
-  real*8 :: itererr
+  real (kind=real_kind) :: itererr
   real (kind=real_kind), intent(in) :: alphadt
 
   type (hvcoord_t)     , intent(in) :: hvcoord
   type (hybrid_t)      , intent(in) :: hybrid
   type (element_t)     , intent(inout), target :: elem(:)
   type (derivative_t)  , intent(in) :: deriv
+  integer, optional :: nm1
 
 
   ! local
@@ -2149,7 +2234,7 @@ contains
   real (kind=real_kind) :: delta_phi(np,np,nlevp)    ! phi_np1-phi_n0
   real (kind=real_kind) :: Ipiv(nlev,np,np)
   real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
-  real (kind=real_kind) :: wh_i(np,np,nlevp)  ! w hydrostatic
+  real (kind=real_kind) :: gwh_i(np,np,nlevp)  ! w hydrostatic
   real (kind=real_kind) :: v_i(np,np,2,nlevp)  ! w hydrostatic
 
   real (kind=real_kind) :: Jac2D(nlev,np,np)  , Jac2L(nlev-1,np,np)
@@ -2158,9 +2243,9 @@ contains
 
   real (kind=real_kind) :: wgdtmax
   integer :: maxiter
-  real*8 :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm
+  real*8 :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm,dt3
 
-  integer :: i,j,k,l,ie,info(np,np)
+  integer :: i,j,k,l,ie,info(np,np),nt
   integer :: nsafe
 #undef NEWTONCOND
 #ifdef NEWTONCOND
@@ -2189,54 +2274,47 @@ contains
 
     phi_n0 = phi_np1
 
-    if (alphadt.ne.0d0) then ! add dt*alpha*s(un0) to the initial guess and rhs
-      call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,n0), &
-        elem(ie)%state%dp3d(:,:,:,n0),elem(ie)%state%phinh_i(:,:,:,n0),pnh,   &
-        exner,dpnh_dp_i,caller='dirk0')
-      w_n0(:,:,1:nlev)     = w_n0(:,:,1:nlev) + &
-                                            alphadt*g*(dpnh_dp_i(:,:,1:nlev)-1d0)
-      phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) + &
-                                            alphadt*g*elem(ie)%state%w_i(:,:,1:nlev,n0)
-
-      ! add wh_i(n0) term to RHS
-      dp3d  => elem(ie)%state%dp3d(:,:,:,n0)
-      do k=2,nlev
-         v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0) + &
-              dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,n0) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
-         v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0) + &
-              dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,n0) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
-      end do
-      wh_i(:,:,1)=0
-      !wh_i(:,:,nlevp)=elem(ie)%state%w_i(:,:,nlevp,n0)  ! not used
-      do k=2,nlev
-         wh_i(:,:,k) = (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
-              v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
-              *hvcoord%hybi(k)/g  
-      enddo
-      phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) -  alphadt*g*wh_i(:,:,1:nlev)
-      
+    if (alphadt.ne.0d0) then ! add dt*alpha*S(un0) to the rhs
+       dt3=alphadt
+       nt=n0
+       call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt), &
+            elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),pnh,   &
+            exner,dpnh_dp_i,caller='dirk0')
+       w_n0(:,:,1:nlev)     = w_n0(:,:,1:nlev) + &
+            dt3*g*(dpnh_dp_i(:,:,1:nlev)-1d0)
+       
+       call compute_gwphis(gwh_i,elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%v(:,:,:,:,nt),&
+            elem(ie)%derived%gradphis,hvcoord)
+       phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) + &
+            dt3*g*elem(ie)%state%w_i(:,:,1:nlev,nt) -  dt3*gwh_i(:,:,1:nlev)
     end if
+
+
+    if (present(nm1)) then ! add dt*alpha*S(unm1) to the rhs
+       dt3=alphadt
+       nt=nm1
+       call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt), &
+            elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),pnh,   &
+            exner,dpnh_dp_i,caller='dirk0')
+       w_n0(:,:,1:nlev)     = w_n0(:,:,1:nlev) + &
+            dt3*g*(dpnh_dp_i(:,:,1:nlev)-1d0)
+       
+       call compute_gwphis(gwh_i,elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%v(:,:,:,:,nt),&
+            elem(ie)%derived%gradphis,hvcoord)
+       phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) + &
+            dt3*g*elem(ie)%state%w_i(:,:,1:nlev,nt) -  dt3*gwh_i(:,:,1:nlev)
+    end if
+
+    ! add just the wphis(np1) term to the RHS
+    nt=np1
+    call compute_gwphis(gwh_i,elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%v(:,:,:,:,nt),&
+         elem(ie)%derived%gradphis,hvcoord)
+    phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) -  dt2*gwh_i(:,:,1:nlev)
+
+
 
     
     dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
-    ! add wh_i(np1) term to RHS. this term doesn't change during the Newton
-    ! iterations so we can add it to phi_n0
-    do k=2,nlev
-       v_i(:,:,1,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,np1) + &
-            dp3d(:,:,k-1)*elem(ie)%state%v(:,:,1,k-1,np1) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
-       v_i(:,:,2,k) = (dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,np1) + &
-            dp3d(:,:,k-1)*elem(ie)%state%v(:,:,2,k-1,np1) ) / (dp3d(:,:,k)+dp3d(:,:,k-1))
-    end do
-    wh_i(:,:,1)=0
-    wh_i(:,:,nlevp)=elem(ie)%state%w_i(:,:,nlevp,np1)
-    do k=2,nlev
-       wh_i(:,:,k) = (v_i(:,:,1,k)*elem(ie)%derived%gradphis(:,:,1) + &
-            v_i(:,:,2,k)*elem(ie)%derived%gradphis(:,:,2))&
-            *hvcoord%hybi(k)/g  
-    enddo
-    phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) - dt2*g*wh_i(:,:,1:nlev)
-
-
 #if 0
     ! use hydrostatic for initial guess
     call phi_from_eos(hvcoord,elem(ie)%state%phis,vtheta_dp,dp3d,phi_np1)

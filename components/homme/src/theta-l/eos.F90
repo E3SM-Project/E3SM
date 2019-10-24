@@ -115,8 +115,7 @@ implicit none
 
   ! check for bad state that will crash exponential function below
   if (theta_hydrostatic_mode) then
-    ierr= any(vtheta_dp(:,:,:) < 0 )  .or. &
-          any(dp3d(:,:,:) < 0 )
+    ierr= any(dp3d(:,:,:) < 0 )
   else
     ierr= any(vtheta_dp(:,:,:) < 0 )  .or. &
           any(dp3d(:,:,:) < 0 ) .or. &
