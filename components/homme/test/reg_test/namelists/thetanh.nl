@@ -1,11 +1,11 @@
 !
-! theta: namelist for dcmip2016 test2: tropical cyclone
+! namelist for development testing of theta model
 !_______________________________________________________________________
 &ctl_nl
   nthreads          = 1
   partmethod        = 4                         ! mesh parition method: 4 = space filling curve
   topology          = "cube"                    ! mesh type: cubed sphere
-  test_case         = "dcmip2016_test2"         ! test identifier
+  test_case         = "jw_baroclinic"           ! test identifier
   ne                = ${HOMME_TEST_NE}          ! number of elements per cube face
   qsize             = ${HOMME_TEST_QSIZE}       ! num tracer fields
   ndays             = ${HOMME_TEST_NDAYS}

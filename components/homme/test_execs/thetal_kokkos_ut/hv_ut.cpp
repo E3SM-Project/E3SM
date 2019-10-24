@@ -22,7 +22,7 @@
 using namespace Homme;
 
 extern "C" {
-void init_f90 (const int& ne,
+void init_hv_f90 (const int& ne,
                const Real* hyai_ptr, const Real* hybi_ptr,
                const Real* hyam_ptr, const Real* hybm_ptr,
                Real* dvv, Real* mp,
@@ -31,6 +31,7 @@ void init_f90 (const int& ne,
                const Real& nu_p, const Real& nu_s);
 void init_geo_views_f90 (Real*& d_ptr,Real*& dinv_ptr,
                const Real*& phis_ptr, const Real*& gradphis_ptr,
+               Real*& fcor,
                Real*& sphmp_ptr, Real*& rspmp_ptr,
                Real*& tVisc_ptr, Real*& sph2c_ptr,
                Real*& metdet_ptr, Real*& metinv_ptr);
@@ -176,10 +177,10 @@ TEST_CASE("hvf", "biharmonic") {
   std::vector<Real> mp(NP*NP);
 
   // This will also init the c connectivity.
-  init_f90(ne,hyai_ptr,hybi_ptr,hyam_ptr,hybm_ptr,dvv.data(),mp.data(),
-           hvcoord.ps0,params.hypervis_subcycle,
-           params.nu, params.nu_div, params.nu_top,
-           params.nu_p, params.nu_s);
+  init_hv_f90(ne,hyai_ptr,hybi_ptr,hyam_ptr,hybm_ptr,dvv.data(),mp.data(),
+              hvcoord.ps0,params.hypervis_subcycle,
+              params.nu, params.nu_div, params.nu_top,
+              params.nu_p, params.nu_s);
   ref_FE.init_mass(mp.data());
   ref_FE.init_deriv(dvv.data());
 
@@ -193,7 +194,7 @@ TEST_CASE("hvf", "biharmonic") {
   auto& state = c.create<ElementsState>();
   state.init(num_elems);
   const auto max_pressure = 1000.0 + hvcoord.ps0; // This ensures max_p > ps0
-  state.randomize(seed,max_pressure,hvcoord.ps0);
+  state.randomize(seed,max_pressure,hvcoord.ps0,geo.m_phis);
 
   auto& derived = c.create<ElementsDerivedState>();
   derived.init(num_elems);
@@ -204,6 +205,7 @@ TEST_CASE("hvf", "biharmonic") {
   auto dinv     = Kokkos::create_mirror_view(geo.m_dinv);
   auto phis     = Kokkos::create_mirror_view(geo.m_phis);
   auto gradphis = Kokkos::create_mirror_view(geo.m_gradphis);
+  auto fcor     = Kokkos::create_mirror_view(geo.m_fcor);
   auto spmp     = Kokkos::create_mirror_view(geo.m_spheremp);
   auto rspmp    = Kokkos::create_mirror_view(geo.m_rspheremp);
   auto tVisc    = Kokkos::create_mirror_view(geo.m_tensorvisc);
@@ -215,6 +217,7 @@ TEST_CASE("hvf", "biharmonic") {
 
   Real* d_ptr        = d.data();
   Real* dinv_ptr     = dinv.data();
+  Real* fcor_ptr     = fcor.data();
   Real* spmp_ptr     = spmp.data();
   Real* rspmp_ptr    = rspmp.data();
   Real* tVisc_ptr    = tVisc.data();
@@ -226,7 +229,7 @@ TEST_CASE("hvf", "biharmonic") {
 
   // This will also init the c connectivity.
   init_geo_views_f90(d_ptr,dinv_ptr,phis_ptr,gradphis_ptr,
-                     spmp_ptr,rspmp_ptr,tVisc_ptr,
+                     fcor_ptr, spmp_ptr,rspmp_ptr,tVisc_ptr,
                      sph2c_ptr,mdet_ptr,minv_ptr);
 
   Kokkos::deep_copy(geo.m_d,d);
@@ -255,8 +258,11 @@ TEST_CASE("hvf", "biharmonic") {
   hvf.init_buffers(fbm);
 
   SECTION ("biharmonic_wk_theta") {
-    for (Real hv_scaling : {0.0, RPDF(0.5,5.0)(engine)}) {
-      for (const bool hydrostatic : {true, false}) {
+    std::cout << "Biharmonic wk theta test:\n";
+    for (const bool hydrostatic : {true, false}) {
+      std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
+      for (Real hv_scaling : {0.0, RPDF(0.5,5.0)(engine)}) {
+        std::cout << "   -> hypervis scaling = " << hv_scaling << "\n";
         params.theta_hydrostatic_mode = hydrostatic;
 
         // Generate timestep settings
@@ -286,6 +292,9 @@ TEST_CASE("hvf", "biharmonic") {
           params.nu_ratio1 = 1.0;
           params.nu_ratio2 = 1.0;
         }
+
+        // Randomize inputs
+        state.randomize(seed,max_pressure,hvcoord.ps0,geo.m_phis);
 
         // Set the hv scaling
         hvf.set_hv_data(hv_scaling,params.nu_ratio1,params.nu_ratio2);
@@ -357,28 +366,24 @@ TEST_CASE("hvf", "biharmonic") {
               for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
                 if(dptens_cxx(igp,jgp,k)!=dptens_f90(ie,k,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("hv_scaling: %3.17f\n",hv_scaling);
                   printf("dptens cxx: %3.40f\n",dptens_cxx(igp,jgp,k));
                   printf("dptens f90: %3.40f\n",dptens_f90(ie,k,igp,jgp));
                 }
                 REQUIRE(dptens_cxx(igp,jgp,k)==dptens_f90(ie,k,igp,jgp));
                 if(ttens_cxx(igp,jgp,k)!=ttens_f90(ie,k,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("hv_scaling: %3.17f\n",hv_scaling);
                   printf("ttens cxx: %3.17f\n",ttens_cxx(igp,jgp,k));
                   printf("ttens f90: %3.17f\n",ttens_f90(ie,k,igp,jgp));
                 }
                 REQUIRE(ttens_cxx(igp,jgp,k)==ttens_f90(ie,k,igp,jgp));
                 if(wtens_cxx(igp,jgp,k)!=wtens_f90(ie,k,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("hv_scaling: %3.17f\n",hv_scaling);
                   printf("wtens cxx: %3.17f\n",wtens_cxx(igp,jgp,k));
                   printf("wtens f90: %3.17f\n",wtens_f90(ie,k,igp,jgp));
                 }
                 REQUIRE(wtens_cxx(igp,jgp,k)==wtens_f90(ie,k,igp,jgp));
                 if(phitens_cxx(igp,jgp,k)!=phitens_f90(ie,k,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("hv_scaling: %3.17f\n",hv_scaling);
                   printf("phitens cxx: %3.17f\n",phitens_cxx(igp,jgp,k));
                   printf("phitens f90: %3.17f\n",phitens_f90(ie,k,igp,jgp));
                 }
@@ -386,14 +391,12 @@ TEST_CASE("hvf", "biharmonic") {
 
                 if(vtens_cxx(0,igp,jgp,k)!=vtens_f90(ie,k,0,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("hv_scaling: %3.17f\n",hv_scaling);
                   printf("vtens cxx: %3.17f\n",vtens_cxx(0,igp,jgp,k));
                   printf("vtens f90: %3.17f\n",vtens_f90(ie,k,0,igp,jgp));
                 }
                 REQUIRE(vtens_cxx(0,igp,jgp,k)==vtens_f90(ie,k,0,igp,jgp));
                 if(vtens_cxx(1,igp,jgp,k)!=vtens_f90(ie,k,1,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("hv_scaling: %3.17f\n",hv_scaling);
                   printf("vtens cxx: %3.17f\n",vtens_cxx(1,igp,jgp,k));
                   printf("vtens f90: %3.17f\n",vtens_f90(ie,k,1,igp,jgp));
                 }
@@ -407,8 +410,11 @@ TEST_CASE("hvf", "biharmonic") {
   }
 
   SECTION ("hypervis") {
-    for (Real hv_scaling : {0.0}) {
-      for (const bool hydrostatic : {true}) {
+    std::cout << "Hypervis test:\n";
+    for (const bool hydrostatic : {true}) {
+      std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
+      for (Real hv_scaling : {0.0}) {
+        std::cout << "   -> hypervis scaling = " << hv_scaling << "\n";
         params.theta_hydrostatic_mode = hydrostatic;
 
         // Generate timestep settings

@@ -42,12 +42,12 @@ contains
 
 
   subroutine init_cube_geometry_f90 (ne_in) bind(c)
-    use iso_c_binding,  only : c_int
-    use cube_mod,       only : CubeTopology, CubeElemCount, CubeEdgeCount
-    use dimensions_mod, only : nelem, npart
-    use dimensions_mod, only : ne
-    use gridgraph_mod,  only : allocate_gridvertex_nbrs
-    use spacecurve_mod, only : genspacepart
+    use iso_c_binding,   only : c_int
+    use cube_mod,        only: CubeTopology, CubeElemCount, CubeEdgeCount
+    use dimensions_mod,  only: nelem, nelemd, npart, np
+    use dimensions_mod,  only: ne
+    use gridgraph_mod,   only: allocate_gridvertex_nbrs
+    use spacecurve_mod,  only: genspacepart
     !
     ! Inputs
     !
@@ -81,7 +81,6 @@ contains
 
     ! Partition mesh among processes
     call genspacepart(GridEdge, GridVertex)
-
   end subroutine init_cube_geometry_f90
 
   subroutine init_connectivity_f90 () bind(c)
