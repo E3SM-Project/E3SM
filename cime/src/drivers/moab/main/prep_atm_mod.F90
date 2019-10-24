@@ -270,6 +270,7 @@ contains
     logical                          :: ocn_present    ! .true.  => ocn is present
     integer                  :: id_join
     integer                  :: mpicom_join
+    integer                  :: context_id ! used to define context for coverage (this case, ocean on coupler)
     integer                  :: atmid
     character*32             :: dm1, dm2, dofnameATM, dofnameOCN, wgtIdef
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
@@ -287,10 +288,13 @@ contains
   ! how to get mpicomm for joint atm + coupler
     id_join = atm(1)%cplcompid
     atmid   = atm(1)%compid
+    ! maybe we can use a moab-only id, defined like mbintxoa, mhid, somewhere else (seq_comm_mct)
+    ! we cannot use mbintxoa because it may not exist on atm comp yet;
+    context_id = ocn(1)%cplcompid
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
     ! it happens over joint communicator
-    ierr = iMOAB_CoverageGraph(mpicom_join, mhid,  atmid, mbaxid,  id_join, mbintxoa);
+    ierr = iMOAB_CoverageGraph(mpicom_join, mhid,  atmid, mbaxid,  id_join, mbintxoa, context_id);
 
     wgtIdef = 'scalar'//CHAR(0)
     dm1 = "cgll"//CHAR(0)
@@ -327,6 +331,7 @@ contains
     integer                  :: id_join
     integer                  :: mpicom_join
     integer                  :: atmid
+    integer                  :: context_id ! we will use ocean context
     character*32             :: dm1, dm2, tagName, wgtIdef
     character*50             :: outfile, wopts, tagnameProj
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
@@ -344,10 +349,11 @@ contains
   ! how to get mpicomm for joint atm + coupler
     id_join = atm(1)%cplcompid
     atmid   = atm(1)%compid
+
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
-
-
+    ! we should do this only of ocn_present
+    context_id = ocn(1)%cplcompid
     ! now send the tags a2o?bot  from original atmosphere mhid(pid1) towards migrated coverage mesh (pid3), using the new coverage graph communicator
     tagName = 'a2oTbot;a2oUbot;a2oVbot;'//CHAR(0) ! they are defined in semoab_mod.F90!!!
     !  the separator will be ';' semicolon
@@ -359,12 +365,12 @@ contains
       ! trivial partitioning, now we need to adjust it for "coverage" mesh
       ! as always, use nonblocking sends
 
-       ierr = iMOAB_SendElementTag(mhid, atmid, id_join, tagName, mpicom_join)
+       ierr = iMOAB_SendElementTag(mhid, atmid, id_join, tagName, mpicom_join, context_id)
 
     endif
     if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
       ! receive on atm on coupler pes, that was redistributed according to coverage
-       ierr = iMOAB_ReceiveElementTag(mbaxid, atmid, id_join, tagName, mpicom_join)
+       ierr = iMOAB_ReceiveElementTag(mbaxid, atmid, id_join, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 
