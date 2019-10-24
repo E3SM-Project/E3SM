@@ -1397,6 +1397,7 @@ contains
     integer                  :: id_join
     integer                  :: mpicom_join
     integer                  :: atmid
+    integer                  :: context_id
     character*32             :: dm1, dm2
     character*50             :: tagName
     character*32             :: outfile, wopts
@@ -1416,19 +1417,19 @@ contains
     id_join = ocn(1)%cplcompid
     ocnid   = ocn(1)%compid
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
-
+    context_id = -1
     ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
     tagName = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0) !  defined in prep_atm_mod.F90!!!
 
     if (mboxid .ge. 0) then !  send because we are on coupler pes
 
       ! basically, use the initial partitioning
-      ierr = iMOAB_SendElementTag(mboxid, id_join, ocnid, tagName, mpicom_join)
+      ierr = iMOAB_SendElementTag(mboxid, id_join, ocnid, tagName, mpicom_join, context_id)
 
     endif
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
       ! receive on ocean pes, a tag that was computed on coupler pes
-       ierr = iMOAB_ReceiveElementTag(mpoid, id_join, ocnid, tagName, mpicom_join)
+       ierr = iMOAB_ReceiveElementTag(mpoid, id_join, ocnid, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 
