@@ -290,6 +290,7 @@ struct Functions
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
   // TODO: comment
+  template <bool zero_out=true>
   KOKKOS_INLINE_FUNCTION
   static void get_cloud_dsd2(
     const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
