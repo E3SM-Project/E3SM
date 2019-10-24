@@ -1696,7 +1696,6 @@ contains
      call pnh_and_exner_from_eos(hvcoord,vtheta_dp,dp3d,phi_i,pnh,exner,dpnh_dp_i,caller='CAAR')
 
      dp3d_i(:,:,1) = dp3d(:,:,1)
-
      dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
      do k=2,nlev
         dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
@@ -1958,18 +1957,15 @@ contains
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
 
-              vtens1(i,j,k) = (-v_vadv(i,j,1,k) &
-                   + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
-                   - gradKE(i,j,1,k) - mgrad(i,j,1,k) &
-                  -Cp*vtheta(i,j,k)*gradexner(i,j,1,k)&
-                  -wvor(i,j,1,k) )*scale1
+              vtens1(i,j,k) = ( - Cp*vtheta(i,j,k)*gradexner(i,j,1,k) &
+                                - (v_vadv(i,j,1,k) + gradKE(i,j,1,k)) &
+                                - (mgrad(i,j,1,k) + wvor(i,j,1,k))    &
+                                + v2*(elem(ie)%fcor(i,j) + vort(i,j,k)) )*scale1
 
-
-              vtens2(i,j,k) = (-v_vadv(i,j,2,k) &
-                   - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) &
-                   - gradKE(i,j,2,k) - mgrad(i,j,2,k) &
-                  -Cp*vtheta(i,j,k)*gradexner(i,j,2,k) &
-                  -wvor(i,j,2,k) )*scale1
+              vtens2(i,j,k) = ( - Cp*vtheta(i,j,k)*gradexner(i,j,2,k) &
+                                - (v_vadv(i,j,2,k) + gradKE(i,j,2,k)) &
+                                - (mgrad(i,j,2,k) + wvor(i,j,2,k))    &
+                                - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) )*scale1
            end do
         end do     
      end do 
