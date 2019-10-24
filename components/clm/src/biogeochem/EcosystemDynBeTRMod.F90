@@ -43,8 +43,8 @@ module EcosystemDynBeTRMod
   use VegetationType            , only : vegetation_physical_properties
   use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
   use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType      , only : col_ns, col_nf
-  use ColumnDataType      , only : col_ps, col_pf
+  use ColumnDataType      , only : col_ns, col_nf, col_ws
+  use ColumnDataType      , only : col_ps, col_pf, col_es
   use VegetationDataType  , only : veg_cs, c13_veg_cs, c14_veg_cs
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType  , only : veg_ns, veg_nf
@@ -297,12 +297,12 @@ module EcosystemDynBeTRMod
         PlantMicKinetics_vars)
 
       call ep_betr%CalcSmpL(bounds, 1, nlevsoi, num_soilc, filter_soilc, &
-            temperature_vars%t_soisno_col(bounds%begc:bounds%endc,1:nlevsoi), &
-            soilstate_vars, waterstate_vars, soil_water_retention_curve)
+            col_es%t_soisno(bounds%begc:bounds%endc,1:nlevsoi), &
+            soilstate_vars, col_ws, soil_water_retention_curve)
 
 
       call ep_betr%SetBiophysForcing(bounds, col, pft,  &
-         waterstate_vars=waterstate_vars, temperature_vars=temperature_vars,&
+         waterstate_vars=col_ws, temperature_vars=col_es,&
          atm2lnd_vars=atm2lnd_vars, soilstate_vars=soilstate_vars, carbonflux_vars=col_cf)
 
       !pass in parameters into betr

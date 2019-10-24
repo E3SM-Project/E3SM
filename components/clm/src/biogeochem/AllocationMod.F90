@@ -4338,15 +4338,15 @@ contains
     ivt               => veg_pp%itype                            , &
     leafcn            => veg_vp%leafcn                           , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)
     leafcp            => veg_vp%leafcp                           , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
-    leafc             => carbonstate_vars%leafc_patch            , &
-    leafc_storage     => carbonstate_vars%leafc_storage_patch    , &
-    leafc_xfer        => carbonstate_vars%leafc_xfer_patch       , &
-    leafn             => nitrogenstate_vars%leafn_patch          , &
-    leafn_storage     => nitrogenstate_vars%leafn_storage_patch  , &
-    leafn_xfer        => nitrogenstate_vars%leafn_xfer_patch     , &
-    leafp             => phosphorusstate_vars%leafp_patch        , &
-    leafp_storage     => phosphorusstate_vars%leafp_storage_patch, &
-    leafp_xfer        => phosphorusstate_vars%leafp_xfer_patch   , &
+    leafc             => veg_cs%leafc                            , &
+    leafc_storage     => veg_cs%leafc_storage                    , &
+    leafc_xfer        => veg_cs%leafc_xfer                       , &
+    leafn             => veg_ns%leafn                            , &
+    leafn_storage     => veg_ns%leafn_storage                    , &
+    leafn_xfer        => veg_ns%leafn_xfer                       , &
+    leafp             => veg_ps%leafp                            , &
+    leafp_storage     => veg_ps%leafp_storage                    , &
+    leafp_xfer        => veg_ps%leafp_xfer                       , &
     cn_scalar         => cnstate_vars%cn_scalar                  , &
     cp_scalar         => cnstate_vars%cp_scalar                    &
   )
@@ -4420,11 +4420,11 @@ contains
     km_minsurf_p_vr      => veg_vp%km_minsurf_p_vr         , &
     vmax_minsurf_p_vr    => veg_vp%vmax_minsurf_p_vr       , &
     decompmicc_patch_vr  => veg_vp%decompmicc_patch_vr     , &
-    frootc               => carbonstate_vars%frootc_patch  , &
-    t_scalar             => carbonflux_vars%t_scalar_col   , &
-    froot_prof            => cnstate_vars%froot_prof_patch  , &
-    cn_scalar            => cnstate_vars%cn_scalar         , &
-    cp_scalar            => cnstate_vars%cp_scalar         , &
+    frootc               => veg_cs%frootc                  , &
+    t_scalar             => col_cf%t_scalar                , &
+    froot_prof           => cnstate_vars%froot_prof_patch  , &
+    cn_scalar_runmean    => cnstate_vars%cn_scalar_runmean , &
+    cp_scalar_runmean    => cnstate_vars%cp_scalar_runmean , &
     ndep_prof           => cnstate_vars%ndep_prof_col      , &
     isoilorder                   => cnstate_vars%isoilorder, &
     plant_eff_ncompet_b_vr_patch    => PlantMicKinetics_vars%plant_eff_ncompet_b_vr_patch, &
@@ -4448,11 +4448,11 @@ contains
     km_decomp_p_vr_col    =>  PlantMicKinetics_vars%km_decomp_p_vr_col, &
     dsolutionp_dt_vr_col => PlantMicKinetics_vars%dsolutionp_dt_vr_col ,&
     dlabp_dt_vr_col      => PlantMicKinetics_vars%dlabp_dt_vr_col, &
-    pdep_to_sminp        => phosphorusflux_vars%pdep_to_sminp_col    , &
-    biochem_pmin_vr_col => phosphorusflux_vars%biochem_pmin_vr_col, &
-    col_plant_pdemand_vr         => nitrogenflux_vars%col_plant_pdemand_vr, &
-    labilep_vr                   => phosphorusstate_vars%labilep_vr_col, &
-    primp_to_labilep_vr_col => phosphorusflux_vars%primp_to_labilep_vr_col &
+    pdep_to_sminp        => col_pf%pdep_to_sminp    , &
+    biochem_pmin_vr => col_pf%biochem_pmin_vr, &
+    col_plant_pdemand_vr         => col_pf%col_plant_pdemand_vr, &
+    labilep_vr                   => col_ps%labilep_vr, &
+    primp_to_labilep_vr => col_pf%primp_to_labilep_vr &
   )
   dt = real( get_step_size(), r8 )
    do j = 1, nlevdecomp
@@ -4469,12 +4469,12 @@ contains
              decompmicc(c,j) = decompmicc(c,j) + decompmicc_patch_vr(ivt(p),j) * veg_pp%wtcol(p)
 
              plant_nh4_vmax_vr_patch(p,j) = vmax_plant_nh4(ivt(p))* frootc(p) * &
-                             froot_prof(p,j) * cn_scalar(p) * t_scalar(c,j) * veg_pp%wtcol(p)
+                             froot_prof(p,j) * cn_scalar_runmean(p) * t_scalar(c,j) * veg_pp%wtcol(p)
 
              plant_no3_vmax_vr_patch(p,j) =  vmax_plant_no3(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cn_scalar(p) * t_scalar(c,j) * veg_pp%wtcol(p)
+                             cn_scalar_runmean(p) * t_scalar(c,j) * veg_pp%wtcol(p)
              plant_p_vmax_vr_patch(p,j) = vmax_plant_p(ivt(p)) * frootc(p) * froot_prof(p,j) * &
-                             cp_scalar(p) * t_scalar(c,j) * veg_pp%wtcol(p)
+                             cp_scalar_runmean(p) * t_scalar(c,j) * veg_pp%wtcol(p)
 
              plant_nh4_km_vr_patch(p,j) = km_plant_nh4(ivt(p))
 
@@ -4502,7 +4502,7 @@ contains
          km_minsurf_p_vr_col(c,j)=km_minsurf_p_vr(isoilorder(c),j)
          vmax_minsurf_p_vr_col(c,j) = vmax_minsurf_p_vr(isoilorder(c),j)
 
-         dsolutionp_dt_vr_col(c,j) = biochem_pmin_vr_col(c,j) + primp_to_labilep_vr_col(c,j) +&
+         dsolutionp_dt_vr_col(c,j) = biochem_pmin_vr(c,j) + primp_to_labilep_vr(c,j) +&
                         pdep_to_sminp(c)*ndep_prof(c,j) - col_plant_pdemand_vr(c,j)
          dlabp_dt_vr_col(c,j) = labilep_vr(c,j)/dt
     enddo

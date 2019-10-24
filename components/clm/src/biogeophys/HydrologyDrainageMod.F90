@@ -20,7 +20,7 @@ module HydrologyDrainageMod
   use TopounitDataType  , only : top_af ! atmospheric flux variables
   use LandunitType      , only : lun_pp                
   use ColumnType        , only : col_pp
-  use ColumnDataType    , only : col_ws, col_wf  
+  use ColumnDataType    , only : col_ws, col_wf
   use VegetationType    , only : veg_pp                
   !
   ! !PUBLIC TYPES:
@@ -135,7 +135,7 @@ contains
       endif
 
       if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars)
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws)
         call ep_betr%PreDiagSoilColWaterFlux(num_hydrologyc, filter_hydrologyc)
       endif
 
@@ -147,10 +147,10 @@ contains
       endif
 
       if (use_betr) then
-        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=waterstate_vars, &
-          waterflux_vars=waterflux_vars)
+        call ep_betr%BeTRSetBiophysForcing(bounds, col_pp, veg_pp, 1, nlevsoi, waterstate_vars=col_ws, &
+          waterflux_vars=col_wf)
         call ep_betr%DiagDrainWaterFlux(num_hydrologyc, filter_hydrologyc)
-        call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=waterflux_vars)
+        call ep_betr%RetrieveBiogeoFlux(bounds, 1, nlevsoi, waterflux_vars=col_wf)
       endif
 
       do j = 1, nlevgrnd

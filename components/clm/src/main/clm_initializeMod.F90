@@ -442,7 +442,7 @@ contains
     use clm_interface_pflotranMod           , only : clm_pf_interface_init !, clm_pf_set_restart_stamp
     use tracer_varcon         , only : is_active_betr_bgc    
     use clm_time_manager      , only : is_restart
-    use ALMbetrNLMod          , only : betr_namelist_buffer
+    use ALMbetrNLMod          , only : betr_namelist_buffer, do_betr_bgc_type
     !
     ! !ARGUMENTS    
     implicit none
@@ -579,7 +579,7 @@ contains
       allocate(ep_betr, source=create_betr_simulation_alm())
       !set internal filters for betr
       call ep_betr%BeTRSetFilter(maxpft_per_col=max_patch_per_col, boffline=.false.)
-      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, waterstate_vars, betr_namelist_buffer, masterproc)
+      call ep_betr%InitOnline(bounds_proc, lun_pp, col_pp, veg_pp, col_ws, betr_namelist_buffer, masterproc)
       is_active_betr_bgc = ep_betr%do_soibgc()
     else
       allocate(ep_betr, source=create_betr_simulation_alm())
@@ -600,7 +600,7 @@ contains
     call readPrivateParameters()
 
     if (use_cn .or. use_fates) then
-       if (.not. is_active_betr_bgc)then
+       if (.not. do_betr_bgc_type('type2_bgc'))then
           if (use_century_decomp) then
            ! Note that init_decompcascade_bgc needs cnstate_vars to be initialized
              call init_decompcascade_bgc(bounds_proc, cnstate_vars, soilstate_vars)
