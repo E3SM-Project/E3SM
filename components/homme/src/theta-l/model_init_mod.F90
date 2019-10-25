@@ -137,6 +137,7 @@ contains
   
   real (kind=real_kind) :: dp3d(np,np,nlev), phis(np,np)
   real (kind=real_kind) :: phi_i(np,np,nlevp)
+  real (kind=real_kind) :: dphi(np,np,nlev)
   real (kind=real_kind) :: vtheta_dp(np,np,nlev)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
@@ -161,7 +162,10 @@ contains
          
      dt=100.0
           
-     call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,phi_i,pnh,1)
+     do k=1,nlev
+        dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
+     enddo
+     call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,dphi,pnh,1)
          
     ! compute infinity norm of the initial Jacobian 
      norminfJ0=0.d0
@@ -171,9 +175,9 @@ contains
         if (k.eq.1) then
           norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacD(k,i,j))+abs(JacU(k,i,j))))
         elseif (k.eq.nlev) then
-          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k,i,j))+abs(JacD(k,i,j))))
+          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k-1,i,j))+abs(JacD(k,i,j))))
         else
-          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k,i,j))+abs(JacD(k,i,j))+ &
+          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k-1,i,j))+abs(JacD(k,i,j))+ &
             abs(JacU(k,i,j))))
         end if
       end do
@@ -194,7 +198,10 @@ contains
         ! that the sweetspot where the finite difference error is minimized is
         ! =================================================================
         epsie=10.d0/(10.d0)**(j+1)
-        call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,phi_i,pnh,0,&
+        do k=1,nlev
+           dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
+        enddo
+        call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,dphi,pnh,0,&
            epsie,hvcoord,dpnh_dp_i,vtheta_dp)
     
         if (maxval(abs(JacD(:,:,:)-Jac2D(:,:,:))) > jacerrorvec(j)) then 
