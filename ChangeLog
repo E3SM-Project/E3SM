@@ -1,6 +1,37 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-25-2019
+Tag: cime5.6.25
+Answer Changes: None
+Tests: SMS_Ld1_D.f19_g17.I1850Clm50BgcCropCmip6.cheyenne_gnu.clm-default
+Dependencies:
+
+Brief Summary:
+    - Cherry-picked AQPCONST changes.
+    - Fix mpi_bcast in seq_flux_mct.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+03cb90660 Merge pull request #3266 from ESMCI/aqp_cherrypick
+f75914619 Merge pull request #3261 from jedwards4b/seq_flux_mct_fix
+
+Modified files: git diff --name-status [previous_tag]
+M       src/components/data_comps/docn/cime_config/buildnml
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M       src/components/data_comps/docn/docn_comp_mod.F90
+M       src/components/data_comps/docn/docn_shr_mod.F90
+M       src/drivers/mct/main/seq_flux_mct.F90
+M       src/share/util/shr_scam_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 9-30-2019
 Tag: cime5.6.24
 Answer Changes: None
