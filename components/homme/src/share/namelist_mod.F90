@@ -882,6 +882,9 @@ module namelist_mod
           call abortmp('limiter 8,84,9 require hypervis_subcycle_q=1')
        endif
     endif
+    if (transport_alg == 0 .and. dt_remap_factor > 0 .and. dt_remap_factor < dt_tracer_factor) then
+       call abortmp('Only SL transport supports vertical remap time step < tracer time step.')
+    end if
 #endif
 
 #ifndef CAM
