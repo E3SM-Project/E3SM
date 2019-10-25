@@ -566,17 +566,20 @@ contains
     ! PHIS_d in the sense that an integral of either one over a finite volume
     ! subcell has the same value.
 
-    use common_io_mod, only: infilenames, varname_len
-    use parallel_mod, only: parallel_t
+#ifndef CAM
+    use common_io_mod, only: varname_len
     use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_dyn_to_fv_phys_topo_data, gfr_f_get_latlon
     use interpolate_driver_mod, only: pio_read_gll_topo_file, pio_write_physgrid_topo_file
     use physical_constants, only: dd_pi
+#endif
+    use parallel_mod, only: parallel_t
 
     type (parallel_t), intent(in) :: par
     type (element_t), intent(inout) :: elem(:)
     integer, intent(in) :: nphys
     character(*), intent(in) :: intopofn, outtopoprefix
 
+#ifndef CAM
     real(real_kind), allocatable :: gll_fields(:,:,:,:), pg_fields(:,:,:), latlon(:,:,:)
     integer :: unit, nf2, vari, phisidx, ie, i, j, k
     logical :: square, augment
@@ -624,5 +627,6 @@ contains
          'Converted from '// trim(intopofn) // ' by HOMME gfr_convert_topo')
 
     deallocate(gll_fields, pg_fields, latlon)
+#endif
   end subroutine gfr_convert_topo
 end module gllfvremap_util_mod
