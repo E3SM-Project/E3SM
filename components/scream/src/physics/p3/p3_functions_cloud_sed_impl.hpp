@@ -46,7 +46,7 @@ void Functions<S,D>
     qnr_ptr    = {&qc, &nc};
 
   view_1d_ptr_array<Spack, 1>
-    flux_ptr = {&flux_qx},
+    flux_ptr  = {&flux_qx},
     v_ptr     = {&V_qc},
     qr_ptr    = {&qc};
 
@@ -66,6 +66,8 @@ void Functions<S,D>
     while (dt_left > 1.e-4) {
       Scalar Co_max = 0.0;
       Int kmin, kmax;
+      const Int kmin_scalar = ( kdir == 1 ? k_qxbot : k_qxtop);
+      const Int kmax_scalar = ( kdir == 1 ? k_qxtop : k_qxbot);
 
       Kokkos::parallel_for(
         Kokkos::TeamThreadRange(team, V_qc.extent(0)), [&] (Int k) {
@@ -82,7 +84,9 @@ void Functions<S,D>
       Kokkos::parallel_reduce(
         Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
           const int pk = kmin + pk_;
-          auto qc_gt_small = (qc_incld(pk) > qsmall);
+          const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
+          const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
+          auto qc_gt_small = range_mask && qc_incld(pk) > C::QSMALL;
           if (qc_gt_small.any()) {
             // compute Vq, Vn
             Spack nu, cdist, cdist1, dum;
