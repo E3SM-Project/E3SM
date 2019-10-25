@@ -63,7 +63,7 @@ void Functions<S,D>
     // find bottom
     Int k_qxbot = find_bottom(team, sqc, qsmall, kbot, k_qxtop, kdir, log_qxpresent);
 
-    while (dt_left > 1.e-4) {
+    while (dt_left > C::dt_left_tol) {
       Scalar Co_max = 0.0;
       Int kmin, kmax;
       const Int kmin_scalar = ( kdir == 1 ? k_qxbot : k_qxtop);
