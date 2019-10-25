@@ -86,7 +86,7 @@ void Functions<S,D>
           const int pk = kmin + pk_;
           const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
           const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
-          auto qc_gt_small = range_mask && qc_incld(pk) > C::QSMALL;
+          auto qc_gt_small = range_mask && qc_incld(pk) > qsmall;
           if (qc_gt_small.any()) {
             // compute Vq, Vn
             Spack nu, cdist, cdist1, dum;
