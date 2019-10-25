@@ -326,6 +326,10 @@ Toggle to turn on inventory initialization(only relevant if FATES is being used)
 Full pathname to the inventory initialization control file.
 </entry>
 
+<entry id="use_hydrstress" type="logical" category="physics"
+        group="clm_inparm" valid_values="" value=".false.">
+Toggle to turn on if Kennedy et al plant hydraulics model is used.
+</entry>
 
 <entry id="paramfile" type="char*256" category="datasets"
        input_pathname="abs" group="clm_inparm" valid_values="" >
