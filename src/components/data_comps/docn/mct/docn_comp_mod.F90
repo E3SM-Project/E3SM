@@ -28,8 +28,9 @@ module docn_comp_mod
   use docn_shr_mod   , only: decomp         ! namelist input
   use docn_shr_mod   , only: rest_file      ! namelist input
   use docn_shr_mod   , only: rest_file_strm ! namelist input
-  use docn_shr_mod   , only: fixed_sst      ! namelist input
+  use docn_shr_mod   , only: sst_constant_value ! namelist input
   use docn_shr_mod   , only: nullstr
+
 
   ! !PUBLIC TYPES:
   implicit none
@@ -173,7 +174,8 @@ CONTAINS
        call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', &
             scmmode=scmmode,scmlon=scmlon,scmlat=scmlat, calendar=calendar)
     else
-       if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
+       if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. &
+           datamode == 'SOM_AQUAP' .or. datamode == 'SST_AQUAP_CONSTANT' ) then
           ! Special logic for either prescribed or som aquaplanet - overwrite and
           call shr_strdata_init(SDOCN,mpicom,compid,name='ocn', calendar=calendar, reset_domain_mask=.true.)
        else
@@ -522,6 +524,20 @@ CONTAINS
           end if
        enddo
 
+    case('SST_AQUAP_CONSTANT')
+       lsize = mct_avect_lsize(o2x)
+       ! Zero out the attribute vector except for temperature
+       do n = 1,lsize
+          o2x%rAttr(:,n) = 0.0_r8
+       end do
+       ! Set temperature and re-set omask
+       do n = 1,lsize
+          o2x%rAttr(kt,n) = sst_constant_value
+          if (ksomask /= 0) then
+             o2x%rAttr(ksomask, n) = ggrid%data%rAttr(kfrac,n)
+          end if
+       enddo
+
     case('IAF')
        lsize = mct_avect_lsize(o2x)
        do n = 1,lsize
@@ -760,7 +776,7 @@ CONTAINS
 
     ! Control
 
-    if (sst_option < 1 .or. sst_option > 11) then
+    if (sst_option < 1 .or. sst_option > 10) then
        call shr_sys_abort ('prescribed_sst: ERROR: sst_option must be between 1 and 10')
     end if
 
@@ -919,11 +935,6 @@ CONTAINS
              sst(i) = tmp*(t0_max - t0_min) + t0_min
           end if
        end do
-    end if
-
-    ! RCE 
-    if (sst_option == 11) then
-       sst = fixed_sst
     end if
 
   end subroutine prescribed_sst

@@ -1579,6 +1579,9 @@ def _get_most_recent_lid_impl(files):
     >>> files = ['/foo/bar/e3sm.log.20160905_111212', '/foo/bar/e3sm.log.20160906_111212.gz']
     >>> _get_most_recent_lid_impl(files)
     ['20160905_111212', '20160906_111212']
+    >>> files = ['/foo/bar/e3sm.log.20160905_111212', '/foo/bar/e3sm.log.20160905_111212.gz']
+    >>> _get_most_recent_lid_impl(files)
+    ['20160905_111212']
     """
     results = []
     for item in files:
@@ -1589,7 +1592,7 @@ def _get_most_recent_lid_impl(files):
         else:
             logger.warning("Apparent model log file '{}' did not conform to expected name format".format(item))
 
-    return sorted(results)
+    return sorted(list(set(results)))
 
 def ls_sorted_by_mtime(path):
     ''' return list of path sorted by timestamp oldest first'''
