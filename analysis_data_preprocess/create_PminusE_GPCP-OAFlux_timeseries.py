@@ -1,41 +1,9 @@
 #This script is to combine precipication from GPCP and evaporation from OAFlux to derive P minus E variable
 #Generated Oct25th by Jill Zhang 
 
-import argparse,datetime,gc,re,sys,time
-#import cdat_info,cdtime,code,inspect,os,re,string,sys,pytz
 import cdms2 
-import MV2 as MV     #functions for dealing with masked values.
-import cdutil as cdu
-import glob
 import os
-from socket import gethostname
-from string import replace
 import numpy
-from subprocess import call  #for calling NCO functions
-
-def regrid_to_lower_res(mv1, mv2, regrid_tool, regrid_method):
-    """Regrid transient variable toward lower resolution of two variables."""
-
-    axes1 = mv1.getAxisList()
-    axes2 = mv2.getAxisList()
-
-    # use nlat to decide data resolution, higher number means higher data
-    # resolution. For the difference plot, regrid toward lower resolution
-    if len(axes1[1]) <= len(axes2[1]):
-        mv_grid = mv1.getGrid()
-        mv1_reg = mv1
-        mv2_reg = mv2.regrid(mv_grid, regridTool=regrid_tool,
-                             regridMethod=regrid_method)
-        mv2_reg.units = mv2.units
-
-    else:
-        mv_grid = mv2.getGrid()
-        mv2_reg = mv2
-        mv1_reg = mv1.regrid(mv_grid, regridTool=regrid_tool,
-                             regridMethod=regrid_method)
-        mv1_reg.units = mv1.units
-
-    return mv1_reg, mv2_reg
 
 # Set nc classic as outputs
 cdms2.setCompressionWarnings(0) ; # Suppress warnings
