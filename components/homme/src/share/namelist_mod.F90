@@ -43,6 +43,8 @@ module namelist_mod
     cubed_sphere_map, &
     qsplit,        &
     rsplit,        &
+    dt_tracer_factor, &
+    dt_remap_factor, &
     rk_stage_user, &
     LFTfreq,       &
     prescribed_wind, &
@@ -86,7 +88,8 @@ module namelist_mod
     debug_level,   &
     theta_advect_form,   &
     vert_remap_q_alg, &
-    se_fv_phys_remap_alg
+    se_fv_phys_remap_alg, &
+    timestep_make_parameters_consistent
 
 #ifndef CAM
   use control_mod, only:              &
@@ -177,9 +180,9 @@ module namelist_mod
     integer :: se_phys_tscale, se_nsplit
     integer :: interp_nlat, interp_nlon, interp_gridtype, interp_type
     integer :: i, ii, j
-    integer  :: ierr
+    integer  :: ierr, nstep_factor
     character(len=80) :: errstr, arg
-    real(kind=real_kind) :: dt_max
+    real(kind=real_kind) :: dt_max, dtime
 #ifdef CAM
     character(len=MAX_STRING_LEN) :: se_topology
     integer :: se_partmethod
@@ -229,6 +232,8 @@ module namelist_mod
       cubed_sphere_map, &
       qsplit,        &
       rsplit,        &
+      dt_tracer_factor, &
+      dt_remap_factor, &
       rk_stage_user, &
       LFTfreq,       &
       disable_diagnostics, &
@@ -616,6 +621,9 @@ module namelist_mod
 #endif
 #endif
 ! ^ ifndef CAM
+
+       ierr = timestep_make_parameters_consistent(par, rsplit, qsplit, dt_remap_factor, dt_tracer_factor, &
+            tstep, dtime, nsplit, nstep_factor)
     end if
 
 #ifdef CAM
@@ -726,6 +734,8 @@ module namelist_mod
     call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(dt_tracer_factor,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(dt_remap_factor,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rk_stage_user,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(LFTfreq,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
@@ -887,11 +897,6 @@ module namelist_mod
           call abortmp('prescribed_wind should be either 0 or 1')
     endif
 
-    
-    if (transport_alg > 0 .and. rsplit == 0) then
-       call abortmp('The semi-Lagrange Transport option requires 0 < rsplit')
-    end if
-
 !=======================================================================================================!
 #ifdef CAM
     nmpi_per_node=1
@@ -998,8 +1003,10 @@ module namelist_mod
        write(iulog,*)"readnl: ftype          = ",ftype
        write(iulog,*)"readnl: limiter_option = ",limiter_option
 #endif
-       write(iulog,*)"readnl: qsplit        = ",qsplit
-       write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
+       write(iulog,*)"readnl: qsplit (deprecated) = ",qsplit
+       write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled) (deprecated): ",rsplit
+       write(iulog,*)"readnl: dt_tracer_factor = ",dt_tracer_factor
+       write(iulog,*)"readnl: vertical remap frequency dt_remap_factor (0=disabled): ",dt_remap_factor
 
        write(iulog,*)"readnl: runtype       = ",runtype
        write(iulog,*)"readnl: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
