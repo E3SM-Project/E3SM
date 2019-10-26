@@ -16,7 +16,6 @@ program prim_main
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init, nstep=>nextOutputStep
   use dimensions_mod,   only: nelemd, qsize
   use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype
-  use control_mod, only: amb_experiment, transport_alg
   use domain_mod,       only: domain1d_t
   use element_mod,      only: element_t
   use common_io_mod,    only: output_dir, infilenames
@@ -28,6 +27,7 @@ program prim_main
   use arkode_mod,       only: calc_nonlinear_stats, finalize_nonlinear_stats
 #endif
   use compose_test_mod, only: compose_test
+  use test_mod,         only: print_test_results
 
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
@@ -54,7 +54,6 @@ program prim_main
   
   character (len=20) :: numproc_char
   character (len=20) :: numtrac_char
-  character (len=255) :: amb_experiment_str
   
   logical :: dir_e ! boolean existence of directory where output netcdf goes
   
@@ -210,13 +209,6 @@ program prim_main
 
   call compose_test(par, hvcoord, dom_mt, elem)
 
-  amb_experiment = 0
-  if (transport_alg > 0) then
-     call get_environment_variable("AMB_EXPERIMENT", amb_experiment_str, status=ithr)
-     if (ithr /= 1) read(amb_experiment_str, *, iostat=ithr) amb_experiment
-     if (amb_experiment > 0 .and. par%masterproc) print *, 'amb> amb_experiment', amb_experiment
-  end if
-
   if(par%masterproc) print *,"Entering main timestepping loop"
   call t_startf('prim_main_loop')
   do while(tl%nstep < nEndStep)
@@ -257,6 +249,8 @@ program prim_main
   if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep
   call prim_finalize()
   if(par%masterproc) print *,"closing history files"
+
+  call print_test_results(elem, tl, hvcoord, par)
 
 #if defined PIO_INTERP
   call interp_movie_finish

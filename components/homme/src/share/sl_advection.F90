@@ -118,7 +118,6 @@ contains
     use control_mod,            only : dcmip16_mu_q
     use prim_advection_base,    only : advance_physical_vis
     use vertremap_base,         only : remap1
-    use control_mod, only: amb_experiment
 
     implicit none
     type (element_t)     , intent(inout) :: elem(:)
@@ -136,7 +135,7 @@ contains
 
     integer :: i,j,k,l,n,q,ie,n0_qdp,np1_qdp
     integer :: num_neighbors, scalar_q_bounds, info
-    logical :: slmm, cisl, qos, sl_test
+    logical :: slmm, cisl, qos, sl_test, independent_time_steps
     real(kind=real_kind) :: dp(np,np,nlev), wr(np,np,nlev,2)
 
 #ifdef HOMME_ENABLE_COMPOSE
@@ -145,20 +144,24 @@ contains
 
     call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test)
 
+    ! Either dt_remap_factor = 0 (vertically Eulerian dynamics) or
+    ! dt_remap_factor < dt_tracer_factor (vertically Lagrangian
+    ! dynamics' vertical remap time step < tracer time step).
+    independent_time_steps = dt_remap_factor < dt_tracer_factor
+
     call TimeLevel_Qdp( tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
     do ie = nets,nete
        elem(ie)%derived%vn0 = elem(ie)%state%v(:,:,:,:,tl%np1)
     end do
-    if (amb_experiment > 0) then
+    if (independent_time_steps) then
        call t_startf('SLMM_reconstruct')
-       call flt_reconstruct(hybrid, elem, nets, nete, hvcoord, tl, dt, deriv)
+       call reconstruct_eta_dot_dpdn(hybrid, elem, nets, nete, hvcoord, tl, dt, deriv)
        do ie = nets,nete
           dp = elem(ie)%state%dp3d(:,:,:,tl%np1)
           ! use divdp for dp_star
           elem(ie)%derived%divdp = dp + &
                dt*(elem(ie)%derived%eta_dot_dpdn(:,:,2:) - elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev))
-          if (amb_experiment > 2) cycle
           wr(:,:,:,1) = elem(ie)%derived%vn0(:,:,1,:)*dp
           wr(:,:,:,2) = elem(ie)%derived%vn0(:,:,2,:)*dp
           call remap1(wr,np,2,dp,elem(ie)%derived%divdp)
@@ -168,9 +171,9 @@ contains
        call t_stopf('SLMM_reconstruct')
     end if
 
-    call ALE_RKdss(elem, nets, nete, hybrid, deriv, dt, tl)
+    call ALE_RKdss(elem, nets, nete, hybrid, deriv, dt, tl, independent_time_steps)
 
-    if (amb_experiment > 0) then
+    if (independent_time_steps) then
        do ie = nets,nete
           dp = elem(ie)%state%dp3d(:,:,:,tl%np1)
           if (dt_remap_factor == 0) then
@@ -239,10 +242,10 @@ contains
        do ie = nets, nete
           call cedr_sl_set_spheremp(ie, elem(ie)%spheremp)
           call cedr_sl_set_Qdp(ie, elem(ie)%state%Qdp, n0_qdp, np1_qdp)
-          if (amb_experiment == 0) then
-             call cedr_sl_set_dp3d(ie, elem(ie)%state%dp3d, tl%np1)
-          else
+          if (independent_time_steps) then
              call cedr_sl_set_dp(ie, elem(ie)%derived%divdp) ! dp_star
+          else
+             call cedr_sl_set_dp3d(ie, elem(ie)%state%dp3d, tl%np1)
           end if
           call cedr_sl_set_Q(ie, elem(ie)%state%Q)
        end do
@@ -303,7 +306,7 @@ contains
 
   ! this will calculate the velocity at time t+1/2  along the trajectory s(t) given the velocities
   ! at the GLL points at time t and t+1 using a second order time accurate formulation.
-  subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl)
+  subroutine ALE_RKdss(elem, nets, nete, hy, deriv, dt, tl, independent_time_steps)
     use derivative_mod,  only : derivative_t, ugradv_sphere
     use edgetype_mod,    only : EdgeBuffer_t
     use bndry_mod,       only : bndry_exchangev
@@ -311,7 +314,6 @@ contains
     use hybrid_mod,      only : hybrid_t
     use element_mod,     only : element_t
     use dimensions_mod,   only : np, nlev
-    use control_mod, only : amb_experiment
 
     implicit none
 
@@ -322,6 +324,7 @@ contains
     type (derivative_t)  , intent(in)                :: deriv ! derivative struct
     real (kind=real_kind), intent(in)                :: dt ! timestep
     type (TimeLevel_t)   , intent(in)                :: tl
+    logical              , intent(in)                :: independent_time_steps
 
     integer                                          :: ie, k
     real (kind=real_kind), dimension(np,np,2)        :: vtmp
@@ -347,7 +350,7 @@ contains
     !  x(t-ts) = x(t)) -ts * [ 1/2( U(x(t),t-ts)+U(x(t),t)) - ts 1/2 U(x(t),t) gradU(x(t),t-ts) ]
 
     nlyr = 2*nlev
-    if (amb_experiment > 0) nlyr = nlyr + nlevp
+    if (independent_time_steps) nlyr = nlyr + nlevp
 
     do ie = nets,nete
        ! vstarn0 = U(x,t)
@@ -361,17 +364,18 @@ contains
           elem(ie)%derived%vstar(:,:,:,k) = &
                (elem(ie)%derived%vn0(:,:,:,k) + elem(ie)%derived%vstar(:,:,:,k))/2 - dt*vtmp(:,:,:)/2
 
-          !todo-notbfb Include rspheremp here and rm from unpack loop.
-          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp
-          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp
+          if (independent_time_steps) then
+             elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp*elem(ie)%rspheremp
+             elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp*elem(ie)%rspheremp
+             elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%spheremp*elem(ie)%rspheremp
+          else
+             !todo-notbfb Include rspheremp here and rm from unpack loop.
+             elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%spheremp
+             elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%spheremp
+          end if
        enddo
        call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%vstar,2*nlev,0,nlyr)
-       if (amb_experiment > 0) then
-          do k = 1,nlevp
-             elem(ie)%derived%eta_dot_dpdn(:,:,k) = elem(ie)%derived%eta_dot_dpdn(:,:,k)*elem(ie)%spheremp*elem(ie)%rspheremp
-          end do
-          call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%eta_dot_dpdn,nlevp,2*nlev,nlyr)
-       end if
+       if (independent_time_steps) call edgeVpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%eta_dot_dpdn,nlevp,2*nlev,nlyr)
     enddo
 
     call t_startf('ALE_RKdss_bexchV')
@@ -380,12 +384,13 @@ contains
 
     do ie = nets,nete
        call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%vstar,2*nlev,0,nlyr)
-       do k = 1,nlev
-          elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
-          elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
-       end do
-       if (amb_experiment > 0) then
+       if (independent_time_steps) then
           call edgeVunpack_nlyr(edge_g,elem(ie)%desc,elem(ie)%derived%eta_dot_dpdn,nlevp,2*nlev,nlyr)
+       else
+          do k = 1,nlev
+             elem(ie)%derived%vstar(:,:,1,k) = elem(ie)%derived%vstar(:,:,1,k)*elem(ie)%rspheremp(:,:)
+             elem(ie)%derived%vstar(:,:,2,k) = elem(ie)%derived%vstar(:,:,2,k)*elem(ie)%rspheremp(:,:)
+          end do
        end if
     end do
   end subroutine ALE_RKdss
@@ -799,7 +804,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   end subroutine biharmonic_wk_scalar
 
-  subroutine flt_reconstruct(hybrid, elem, nets, nete, hvcoord, tl, dt, deriv)
+  subroutine reconstruct_eta_dot_dpdn(hybrid, elem, nets, nete, hvcoord, tl, dt, deriv)
     ! Reconstruct the vertically Lagrangian levels, thus permitting
     ! the dynamics vertical remap time step to be shorter than the
     ! tracer time step. This routine provides the reconstruction via
@@ -823,7 +828,7 @@ contains
 
     if (abs(hvcoord%hybi(1)) > 10*eps .or. hvcoord%hyai(nlevp) > 10*eps) then
        if (hybrid%masterthread) &
-            print *, 'flt_reconstruct: bi(1)', hvcoord%hybi(1), 'ai(nlevp)', &
+            print *, 'reconstruct_eta_dot_dpdn: bi(1)', hvcoord%hybi(1), 'ai(nlevp)', &
             hvcoord%hyai(nlevp)
        call abortmp('hvcoord has unexpected non-0 entries at the bottom and/or top')
     end if
@@ -921,7 +926,7 @@ contains
        elem(ie)%derived%eta_dot_dpdn(:,:,1) = zero
        elem(ie)%derived%eta_dot_dpdn(:,:,nlevp) = zero
     end do
-  end subroutine flt_reconstruct
+  end subroutine reconstruct_eta_dot_dpdn
 
   subroutine eval_lagrange_poly_derivative(n, xs, ys, xi, yp)
     integer, intent(in) :: n
@@ -1002,7 +1007,7 @@ contains
     real(kind=real_kind), intent(in) :: dt_q
     type (TimeLevel_t), intent(in) :: tl
 
-    real(kind=real_kind) :: dp_star(np,np,qsize)
+    real(kind=real_kind) :: dp_star(np,np,nlev)
     integer :: ie, i, j, q, n0_qdp, np1_qdp
 
     call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)

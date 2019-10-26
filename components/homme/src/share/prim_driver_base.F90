@@ -1245,7 +1245,7 @@ contains
     type(TimeLevel_t),    intent(inout) :: tl
     logical,              intent(in)    :: compute_diagnostics
 
-    real(kind=real_kind) :: dt_q, dt_remap, dp(np,np,qsize)
+    real(kind=real_kind) :: dt_q, dt_remap, dp(np,np,nlev)
     integer :: ie, q, k, n, n0_qdp, np1_qdp
     logical :: compute_diagnostics_it
 

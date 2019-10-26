@@ -15,7 +15,6 @@ module control_mod
   integer, public, parameter :: MAX_FILE_LEN=240
   character(len=MAX_STRING_LEN)    , public :: integration    ! time integration (explicit, or full imp)
 
-  integer, public :: amb_experiment = 0
   ! Tracer transport algorithm type:
   !     0  spectral-element Eulerian
   !    12 interpolation semi-Lagrangian
