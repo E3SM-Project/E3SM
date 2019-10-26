@@ -16,6 +16,7 @@ program prim_main
   use time_mod,         only: tstep, nendstep, timelevel_t, TimeLevel_init, nstep=>nextOutputStep
   use dimensions_mod,   only: nelemd, qsize
   use control_mod,      only: restartfreq, vfile_mid, vfile_int, runtype
+  use control_mod, only: amb_experiment, transport_alg
   use domain_mod,       only: domain1d_t
   use element_mod,      only: element_t
   use common_io_mod,    only: output_dir, infilenames
@@ -53,6 +54,7 @@ program prim_main
   
   character (len=20) :: numproc_char
   character (len=20) :: numtrac_char
+  character (len=255) :: amb_experiment_str
   
   logical :: dir_e ! boolean existence of directory where output netcdf goes
   
@@ -207,6 +209,13 @@ program prim_main
   endif
 
   call compose_test(par, hvcoord, dom_mt, elem)
+
+  amb_experiment = 0
+  if (transport_alg > 0) then
+     call get_environment_variable("AMB_EXPERIMENT", amb_experiment_str, status=ithr)
+     if (ithr /= 1) read(amb_experiment_str, *, iostat=ithr) amb_experiment
+     if (amb_experiment > 0 .and. par%masterproc) print *, 'amb> amb_experiment', amb_experiment
+  end if
 
   if(par%masterproc) print *,"Entering main timestepping loop"
   call t_startf('prim_main_loop')

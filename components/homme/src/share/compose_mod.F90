@@ -73,6 +73,14 @@ module compose_mod
        real(kind=c_double), intent(in) :: dp3d(np,np,nlev,timelevels)
      end subroutine cedr_sl_set_dp3d
 
+     subroutine cedr_sl_set_dp(ie, dp) bind(c)
+       use kinds         , only : real_kind
+       use dimensions_mod, only : nlev, np
+       use element_state,  only : timelevels
+       integer, value, intent(in) :: ie
+       real(kind=real_kind), intent(in) :: dp(np,np,nlev)
+     end subroutine cedr_sl_set_dp
+
      subroutine cedr_sl_set_Q(ie, Q) bind(c)
        use iso_c_binding, only: c_int, c_double
        use dimensions_mod, only : nlev, np, qsize_d

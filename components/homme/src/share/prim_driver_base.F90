@@ -1093,8 +1093,10 @@ contains
 
       call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets_in,nete_in)
     else
-       
-    end if ! not independent_time_steps
+      ! This time stepping routine permits the vertical remap time
+      ! step to be shorter than the tracer transport time step.
+      call prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
+    end if ! independent_time_steps
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! time step is complete.  update some diagnostic variables:
@@ -1221,6 +1223,101 @@ contains
     call t_stopf("prim_step_advec")
 
   end subroutine prim_step
+
+  subroutine prim_step_flexible(hybrid, elem, nets, nete, dt, tl, hvcoord, compute_diagnostics)
+    use control_mod,        only: ftype, nu_p, dt_tracer_factor, dt_remap_factor, prescribed_wind, transport_alg
+    use hybvcoord_mod,      only: hvcoord_t
+    use parallel_mod,       only: abortmp
+    use prim_advance_mod,   only: prim_advance_exp, applycamforcing_dynamics
+    use prim_advection_mod, only: prim_advec_tracers_remap
+    use reduction_mod,      only: parallelmax
+    use time_mod,           only: TimeLevel_t, timelevel_update, timelevel_qdp
+    use prim_state_mod,     only: prim_printstate
+    use vertremap_mod,      only: vertical_remap
+    use sl_advection,       only: sl_vertically_remap_tracers
+
+    type(element_t),      intent(inout) :: elem(:)
+    type(hybrid_t),       intent(in)    :: hybrid   ! distributed parallel structure (shared)
+    type(hvcoord_t),      intent(in)    :: hvcoord  ! hybrid vertical coordinate struct
+    integer,              intent(in)    :: nets     ! starting thread element number (private)
+    integer,              intent(in)    :: nete     ! ending thread element number   (private)
+    real(kind=real_kind), intent(in)    :: dt       ! "timestep dependent" timestep
+    type(TimeLevel_t),    intent(inout) :: tl
+    logical,              intent(in)    :: compute_diagnostics
+
+    real(kind=real_kind) :: dt_q, dt_remap, dp(np,np,qsize)
+    integer :: ie, q, k, n, n0_qdp, np1_qdp
+    logical :: compute_diagnostics_it
+
+    dt_q = dt*dt_tracer_factor
+    if (dt_remap_factor == 0) then
+       dt_remap = dt_q
+    else
+       dt_remap = dt*dt_remap_factor
+    end if
+
+    call set_tracer_transport_derived_values(elem, nets, nete, tl)
+
+    call t_startf("prim_step_dyn")
+    do n = 1,dt_tracer_factor
+       compute_diagnostics_it = logical(compute_diagnostics .and. n == 1)
+
+       if (n > 1) call TimeLevel_update(tl, "leapfrog")
+
+       if (ftype == 4) then
+          ! also apply dynamics tendencies from forcing; energy
+          ! diagnostics will be incorrect
+          call ApplyCAMforcing_dynamics(elem,hvcoord,tl%n0,dt,nets,nete)
+          if (compute_diagnostics_it) call run_diagnostics(elem,hvcoord,tl,1,.true.,nets,nete)
+       end if
+
+       call prim_advance_exp(elem, deriv1, hvcoord,hybrid, dt, tl, nets, nete, &
+            compute_diagnostics_it)
+
+       if (dt_remap_factor /= 0) then
+          if (modulo(n, dt_remap_factor) == 0) then
+             if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,4,.false.,nets,nete)
+
+             if (prescribed_wind == 1) then
+                ! Prescribed winds are evaluated on reference levels,
+                ! not floating levels, so don't remap, just update dp3d.
+                do ie = nets,nete
+                   elem(ie)%state%ps_v(:,:,tl%np1) = hvcoord%hyai(1)*hvcoord%ps0 + &
+                        sum(elem(ie)%state%dp3d(:,:,:,tl%np1),3)
+                   do k=1,nlev
+                      dp(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+                                  (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,tl%np1)
+                   end do
+                   elem(ie)%state%dp3d(:,:,:,tl%np1) = dp
+                end do
+             else
+                ! Set np1_qdp to -1 to remap dynamics variables but
+                ! not tracers.
+                call vertical_remap(hybrid, elem, hvcoord, dt_remap, tl%np1, -1, nets, nete)
+             end if
+          end if
+       end if
+       ! defer final timelevel update until after Q update.
+    enddo
+    call t_stopf("prim_step_dyn")
+
+    if (qsize > 0) then
+       call t_startf("PAT_remap")
+       call Prim_Advec_Tracers_remap(elem,deriv1,hvcoord,hybrid,dt_q,tl,nets,nete)
+       call t_stopf("PAT_remap")
+    end if
+
+    ! Remap tracers.
+    if (dt_remap_factor == 0) then
+       ! dt_remap_factor = 0 means vertical_remap will not remap
+       ! dynamics variables.
+       call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
+       if (compute_diagnostics) call run_diagnostics(elem,hvcoord,tl,4,.false.,nets,nete)
+       call vertical_remap(hybrid,elem,hvcoord,dt_remap,tl%np1,np1_qdp,nets,nete)
+    else
+       call sl_vertically_remap_tracers(hybrid, elem, nets, nete, tl, dt_q)
+    end if
+  end subroutine prim_step_flexible
 
   subroutine run_diagnostics(elem, hvcoord, tl, n, t_before_advance, nets, nete)
     use time_mod,           only: TimeLevel_t

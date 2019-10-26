@@ -5809,6 +5809,8 @@ extern "C" void cedr_sl_set_qdp (homme::Int ie, homme::Real* v, homme::Int n0_qd
 { homme::sl::insert(g_sl, ie - 1, 1, v, n0_qdp - 1, n1_qdp - 1); }
 extern "C" void cedr_sl_set_dp3d (homme::Int ie, homme::Real* v, homme::Int tl_np1)
 { homme::sl::insert(g_sl, ie - 1, 2, v, tl_np1 - 1); }
+extern "C" void cedr_sl_set_dp (homme::Int ie, homme::Real* v)
+{ homme::sl::insert(g_sl, ie - 1, 2, v, 0); }
 extern "C" void cedr_sl_set_q (homme::Int ie, homme::Real* v)
 { homme::sl::insert(g_sl, ie - 1, 3, v); }
 extern "C" void cedr_sl_set_pointers_end () {}
