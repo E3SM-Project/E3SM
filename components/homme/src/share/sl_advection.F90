@@ -30,11 +30,13 @@ module sl_advection
        eps = epsilon(1.0_real_kind)
 
   type (ghostBuffer3D_t)   :: ghostbuf_tr
-  integer :: sl_mpi
   type (cartesian3D_t), allocatable :: dep_points_all(:,:,:,:) ! (np,np,nlev,nelemd)
   real(kind=real_kind), dimension(:,:,:,:,:), allocatable :: minq, maxq ! (np,np,nlev,qsize,nelemd)
 
-  public :: Prim_Advec_Tracers_remap_ALE, sl_init1, sl_vertically_remap_tracers
+  ! For use in make_positive.
+  real(kind=real_kind) :: dp_tol
+
+  public :: Prim_Advec_Tracers_remap_ALE, sl_init1, sl_vertically_remap_tracers, sl_unittest
 
   logical, parameter :: barrier = .false.
 
@@ -42,15 +44,21 @@ contains
 
   !=================================================================================================!
 
-  subroutine sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test)
+  subroutine sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test, independent_time_steps)
+    use control_mod, only: dt_remap_factor, dt_tracer_factor
+
     integer, intent(in) :: transport_alg
-    logical, intent(out) :: slmm, cisl, qos, sl_test
+    logical, intent(out) :: slmm, cisl, qos, sl_test, independent_time_steps
 
     slmm = transport_alg > 1
     cisl = transport_alg == 2 .or. transport_alg == 3 .or. transport_alg >= 20
     qos  = cisl .and. (transport_alg == 3 .or. transport_alg == 39)  
     sl_test = (transport_alg >= 17 .and. transport_alg <= 19) .or. &
          transport_alg == 29 .or. transport_alg == 39
+    ! Either dt_remap_factor = 0 (vertically Eulerian dynamics) or
+    ! dt_remap_factor < dt_tracer_factor (vertically Lagrangian
+    ! dynamics' vertical remap time step < tracer time step).
+    independent_time_steps = dt_remap_factor < dt_tracer_factor
   end subroutine sl_parse_transport_alg
 
   subroutine sl_init1(par, elem)
@@ -59,26 +67,22 @@ contains
          nu_q, semi_lagrange_hv_q
     use element_state,          only : timelevels
     use coordinate_systems_mod, only : cartesian3D_t, change_coordinates
-    use perf_mod, only : t_startf, t_stopf
+    use perf_mod, only: t_startf, t_stopf
+    use kinds, only: iulog
 
     type (parallel_t) :: par
     type (element_t) :: elem(:)
     type (cartesian3D_t) :: pinside
     integer :: nslots, ie, num_neighbors, need_conservation, i, j
-    logical :: slmm, cisl, qos, sl_test
+    logical :: slmm, cisl, qos, sl_test, independent_time_steps
 
 #ifdef HOMME_ENABLE_COMPOSE
     call t_startf('sl_init1')
     if (transport_alg > 0) then
-       call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test)
+       call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test, independent_time_steps)
        if (par%masterproc .and. nu_q > 0 .and. semi_lagrange_hv_q > 0) &
-            print *, 'COMPOSE> use HV; nu_q, all:', nu_q, semi_lagrange_hv_q
+            write(iulog,*) 'COMPOSE> use HV; nu_q, all:', nu_q, semi_lagrange_hv_q
        nslots = nlev*qsize
-       sl_mpi = 0
-       call slmm_get_mpi_pattern(sl_mpi)
-       if (.not. slmm .or. cisl .or. sl_mpi == 0) then
-          call abortmp('Only slmm with SL MPI is supported')
-       end if
        call interpolate_tracers_init()
        ! Technically a memory leak, but the array persists for the entire
        ! run, so not a big deal for now.
@@ -104,6 +108,7 @@ contains
           call cedr_sl_init(np, nlev, qsize, qsize_d, timelevels, need_conservation)
        end if
        allocate(minq(np,np,nlev,qsize,size(elem)), maxq(np,np,nlev,qsize,size(elem)))
+       dp_tol = -one
     endif
     call t_stopf('sl_init1')
 #endif
@@ -114,8 +119,8 @@ contains
     use dimensions_mod,         only : max_neigh_edges
     use bndry_mod,              only : ghost_exchangevfull
     use interpolate_mod,        only : interpolate_tracers, minmax_tracers
-    use control_mod,            only : dt_tracer_factor, dt_remap_factor, nu_q, &
-         transport_alg, semi_lagrange_hv_q, semi_lagrange_cdr_alg, semi_lagrange_cdr_check
+    use control_mod,            only : dt_tracer_factor, nu_q, transport_alg, semi_lagrange_hv_q, &
+         semi_lagrange_cdr_alg, semi_lagrange_cdr_check
     ! For DCMIP16 supercell test case.
     use control_mod,            only : dcmip16_mu_q
     use prim_advection_base,    only : advance_physical_vis
@@ -136,35 +141,33 @@ contains
     integer :: i,j,k,l,n,q,ie,n0_qdp,np1_qdp
     integer :: num_neighbors, scalar_q_bounds, info
     logical :: slmm, cisl, qos, sl_test, independent_time_steps
-    real(kind=real_kind) :: dp(np,np,nlev), wr(np,np,nlev,2)
+    real(kind=real_kind) :: wr(np,np,nlev,2)
 
 #ifdef HOMME_ENABLE_COMPOSE
     call t_barrierf('Prim_Advec_Tracers_remap_ALE', hybrid%par%comm)
     call t_startf('Prim_Advec_Tracers_remap_ALE')
 
-    call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test)
+    call sl_parse_transport_alg(transport_alg, slmm, cisl, qos, sl_test, independent_time_steps)
 
-    ! Either dt_remap_factor = 0 (vertically Eulerian dynamics) or
-    ! dt_remap_factor < dt_tracer_factor (vertically Lagrangian
-    ! dynamics' vertical remap time step < tracer time step).
-    independent_time_steps = dt_remap_factor < dt_tracer_factor
-
-    call TimeLevel_Qdp( tl, dt_tracer_factor, n0_qdp, np1_qdp)
+    call TimeLevel_Qdp(tl, dt_tracer_factor, n0_qdp, np1_qdp)
 
     do ie = nets,nete
        elem(ie)%derived%vn0 = elem(ie)%state%v(:,:,:,:,tl%np1)
     end do
     if (independent_time_steps) then
        call t_startf('SLMM_reconstruct')
-       call reconstruct_eta_dot_dpdn(hybrid, elem, nets, nete, hvcoord, tl, dt, deriv)
+       if (dp_tol < zero) then
+          ! Thread write race condition; benign b/c written value is same in all threads.
+          call set_dp_tol(hvcoord, dp_tol)
+       end if
+       call reconstruct_eta_dot_dpdn(hybrid, elem, nets, nete, hvcoord, tl, dt, deriv, dp_tol)
        do ie = nets,nete
-          dp = elem(ie)%state%dp3d(:,:,:,tl%np1)
           ! use divdp for dp_star
-          elem(ie)%derived%divdp = dp + &
+          elem(ie)%derived%divdp = elem(ie)%state%dp3d(:,:,:,tl%np1) + &
                dt*(elem(ie)%derived%eta_dot_dpdn(:,:,2:) - elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev))
-          wr(:,:,:,1) = elem(ie)%derived%vn0(:,:,1,:)*dp
-          wr(:,:,:,2) = elem(ie)%derived%vn0(:,:,2,:)*dp
-          call remap1(wr,np,2,dp,elem(ie)%derived%divdp)
+          wr(:,:,:,1) = elem(ie)%derived%vn0(:,:,1,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
+          wr(:,:,:,2) = elem(ie)%derived%vn0(:,:,2,:)*elem(ie)%state%dp3d(:,:,:,tl%np1)
+          call remap1(wr, np, 2, elem(ie)%state%dp3d(:,:,:,tl%np1), elem(ie)%derived%divdp)
           elem(ie)%derived%vn0(:,:,1,:) = wr(:,:,:,1)/elem(ie)%derived%divdp
           elem(ie)%derived%vn0(:,:,2,:) = wr(:,:,:,2)/elem(ie)%derived%divdp
        end do
@@ -175,12 +178,8 @@ contains
 
     if (independent_time_steps) then
        do ie = nets,nete
-          dp = elem(ie)%state%dp3d(:,:,:,tl%np1)
-          if (dt_remap_factor == 0) then
-             elem(ie)%derived%divdp = dp + &
-                  dt*(elem(ie)%derived%eta_dot_dpdn(:,:,2:) - elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev))
-          else
-          end if
+          elem(ie)%derived%divdp = elem(ie)%state%dp3d(:,:,:,tl%np1) + &
+               dt*(elem(ie)%derived%eta_dot_dpdn(:,:,2:) - elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev))
        end do
     end if
 
@@ -223,21 +222,27 @@ contains
     if (semi_lagrange_hv_q > 0 .and. nu_q > 0) then
        n = semi_lagrange_hv_q
        do ie = nets, nete
+          if (independent_time_steps) then
+             wr(:,:,:,1) = elem(ie)%derived%divdp
+          else
+             wr(:,:,:,1) = elem(ie)%state%dp3d(:,:,:,tl%np1)
+          end if
           do q = 1, n
-             do k = 1, nlev
-                elem(ie)%state%Qdp(:,:,k,q,np1_qdp) = elem(ie)%state%Q(:,:,k,q) * &
-                     elem(ie)%state%dp3d(:,:,k,tl%np1)
-             enddo
+             elem(ie)%state%Qdp(:,:,:,q,np1_qdp) = elem(ie)%state%Q(:,:,:,q) * &
+                  elem(ie)%state%dp3d(:,:,:,tl%np1)
           enddo
        end do
        call advance_hypervis_scalar(elem, hvcoord, hybrid, deriv, tl%np1, np1_qdp, nets, nete, dt, n)
        ! No barrier needed: advance_hypervis_scalar has a horiz thread barrier at the end.
        do ie = nets, nete
+          if (independent_time_steps) then
+             wr(:,:,:,1) = elem(ie)%derived%divdp
+          else
+             wr(:,:,:,1) = elem(ie)%state%dp3d(:,:,:,tl%np1)
+          end if
           do q = 1, n
-             do k = 1, nlev
-                elem(ie)%state%Q(:,:,k,q) = elem(ie)%state%Qdp(:,:,k,q,np1_qdp) / &
-                     elem(ie)%state%dp3d(:,:,k,tl%np1)
-             enddo
+             elem(ie)%state%Q(:,:,:,q) = elem(ie)%state%Qdp(:,:,:,q,np1_qdp) / &
+                  elem(ie)%state%dp3d(:,:,:,tl%np1)
           enddo
        end do
     end if
@@ -819,7 +824,7 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   end subroutine biharmonic_wk_scalar
 
-  subroutine reconstruct_eta_dot_dpdn(hybrid, elem, nets, nete, hvcoord, tl, dt, deriv)
+  subroutine reconstruct_eta_dot_dpdn(hybrid, elem, nets, nete, hvcoord, tl, dt, deriv, dp_tol)
     ! Reconstruct the vertically Lagrangian levels, thus permitting
     ! the dynamics vertical remap time step to be shorter than the
     ! tracer time step. This routine provides the reconstruction via
@@ -827,18 +832,20 @@ contains
 
     use control_mod, only: dt_remap_factor
     use derivative_mod, only: derivative_t, gradient_sphere
+    use kinds, only: iulog
 
     type (hybrid_t), intent(in) :: hybrid
     type (element_t), intent(inout) :: elem(:)
     integer, intent(in) :: nets, nete
     type (hvcoord_t), intent(in) :: hvcoord
     type (TimeLevel_t), intent(in) :: tl
-    real(kind=real_kind), intent(in) :: dt
+    real(kind=real_kind), intent(in) :: dt, dp_tol
     type (derivative_t), intent(in) :: deriv
 
     real(real_kind), dimension(np,np,nlevp) :: pref, p0r, p1r
     real(real_kind), dimension(np,np) :: dps, ptp0, pth, v1h, v2h, divdp
     real(real_kind), dimension(np,np,2) :: grad, vdp
+    real(real_kind) :: dp_neg_min
     integer :: ie, i, j, k, k1, k2, d
 
     if (abs(hvcoord%hybi(1)) > 10*eps .or. hvcoord%hyai(nlevp) > 10*eps) then
@@ -940,6 +947,14 @@ contains
        ! End points are always 0.
        elem(ie)%derived%eta_dot_dpdn(:,:,1) = zero
        elem(ie)%derived%eta_dot_dpdn(:,:,nlevp) = zero
+
+       ! Limit dp to be > 0.
+       dp_neg_min = make_positive(elem(ie)%state%dp3d(:,:,:,tl%np1), dt, dp_tol, &
+            elem(ie)%derived%eta_dot_dpdn)
+       if (dp_neg_min < zero) then
+          write(iulog, '(a,i7,i7,es11.4)') 'sl_advection: make_positive (rank,ie) returned', &
+               hybrid%par%rank, ie, dp_neg_min
+       end if
     end do
   end subroutine reconstruct_eta_dot_dpdn
 
@@ -1006,6 +1021,48 @@ contains
     end do
   end subroutine calc_p
 
+  subroutine set_dp_tol(hvcoord, dp_tol)
+    ! Pad by an amount ~ smallest level to keep the computed dp > 0.
+
+    type (hvcoord_t), intent(in) :: hvcoord
+    real(kind=real_kind), intent(out) :: dp_tol
+
+    dp_tol = 10_real_kind*eps*minval(hvcoord%dp0)
+  end subroutine set_dp_tol
+
+  function make_positive(dpref, dt, dp_tol, eta_dot_dpdn) result(dp_neg_min)
+    ! Move mass around in a column as needed to make dp nonnegative.
+
+    real(kind=real_kind), intent(in) :: dpref(np,np,nlev), dt, dp_tol
+    real(kind=real_kind), intent(inout) :: eta_dot_dpdn(np,np,nlevp)
+
+    integer :: k, i, j
+    real(kind=real_kind) :: nmass, w(nlev), dp(nlev), dp_neg_min
+
+    dp_neg_min = zero ! < 0 if the limiter has to adjust dp
+    do j = 1,np
+       do i = 1,np
+          nmass = zero
+          do k = 1,nlev
+             dp(k) = dpref(i,j,k) + dt*(eta_dot_dpdn(i,j,k+1) - eta_dot_dpdn(i,j,k))
+             if (dp(k) < dp_tol) then
+                nmass = nmass + dp(k)
+                dp_neg_min = min(dp_neg_min, dp(k))
+                dp(k) = dp_tol
+                w(k) = zero
+             else
+                w(k) = dp(k) - dp_tol
+             end if
+          end do
+          if (nmass == zero) cycle
+          dp = dp + nmass*(w/sum(w))
+          do k = 1,nlev
+             eta_dot_dpdn(i,j,k+1) = eta_dot_dpdn(i,j,k) + (dp(k) - dpref(i,j,k))/dt
+          end do
+       end do
+    end do
+  end function make_positive
+
   subroutine sl_vertically_remap_tracers(hybrid, elem, nets, nete, tl, dt_q)
     ! Remap the tracers after a tracer time step, in the case that the
     ! vertical remap time step for dynamics is shorter than the tracer
@@ -1033,7 +1090,7 @@ contains
        ! levels.
        dp_star = elem(ie)%state%dp3d(:,:,:,tl%np1) + &
                  dt_q*(elem(ie)%derived%eta_dot_dpdn(:,:,2:    ) - &
-                       elem(ie)%derived%eta_dot_dpdn(:,:,1:nlev))
+                       elem(ie)%derived%eta_dot_dpdn(:,:, :nlev))
        if (minval(dp_star) < 0) then
           write(iulog,*) 'sl_vertically_remap_tracers> dp_star -ve: rank, ie', hybrid%par%rank, ie
           do j = 1,np
@@ -1055,5 +1112,59 @@ contains
        enddo
     end do
   end subroutine sl_vertically_remap_tracers
+
+  function test_lagrange() result(nerr)
+    use kinds, only: rt => real_kind
+
+    real(rt), parameter :: xs(3) = (/-one, zero, half/)
+    integer, parameter :: n = 3, ntrial = 10
+
+    real(rt) :: a, b, c, x, y1, y2, alpha, ys(3), xsi(np,np,n), ysi(np,np,n), &
+         xi(np,np), y2i(np,np)
+    integer :: i, j, trial, nerr
+
+    nerr = 0
+    a = -half; b = 0.3_rt; c = 1.7_rt
+
+    do i = 1,3
+       x = xs(i)
+       ys(i) = (a*x + b)*x + c
+    end do
+
+    do trial = 0,ntrial
+       alpha = real(trial,rt)/ntrial
+       x = (1-alpha)*(-2_rt) + alpha*2_rt
+       y1 = 2*a*x + b
+       do j = 1,np
+          do i = 1,np
+             xsi(i,j,:) = xs
+             ysi(i,j,:) = ys
+             xi(i,j) = x
+          end do
+       end do
+       call eval_lagrange_poly_derivative(n, xsi, ysi, xi, y2i)
+       if (abs(y2i(np,np) - y1) > 1d-14*abs(y1)) nerr = nerr + 1
+    end do
+  end function test_lagrange
+
+  function test_make_positive() result(nerr)
+    integer :: nerr
+
+    nerr = 0
+  end function test_make_positive
+
+  subroutine sl_unittest(par)
+    use kinds, only: iulog
+
+    type (parallel_t), intent(in) :: par
+
+    integer :: nerr
+
+    nerr = 0
+    nerr = nerr + test_lagrange()
+    nerr = nerr + test_make_positive()
+
+    if (nerr > 0 .and. par%masterproc) write(iulog,'(a,i2)'), 'sl_unittest FAIL', nerr
+  end subroutine sl_unittest
 
 end module sl_advection

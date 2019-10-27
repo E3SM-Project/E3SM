@@ -80,6 +80,7 @@ contains
     use hybvcoord_mod, only: hvcoord_t
     use time_mod, only: nEndStep
     use control_mod, only: transport_alg
+    use sl_advection, only: sl_unittest
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
@@ -103,6 +104,7 @@ contains
 
     ! 1. Unit tests.
     call compose_unittest()
+    call sl_unittest(par)
 
 #if (defined HORIZ_OPENMP)
     !$omp parallel num_threads(hthreads), default(SHARED), private(ithr,nets,nete,hybrid)
