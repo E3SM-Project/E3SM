@@ -123,6 +123,12 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   }
   GPTLstop("tl-sc prim_step-loop");
 
+  if (compute_diagnostics) {
+    Diagnostics& diags = context.get<Diagnostics>();
+    diags.prim_diag_scalars(true,3);
+    diags.prim_energy_halftimes(true,3);
+  }
+
   ////////////////////////////////////////////////////////////////////////
   // apply vertical remap
   // always for tracers

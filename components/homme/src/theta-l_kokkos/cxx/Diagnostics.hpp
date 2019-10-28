@@ -44,6 +44,8 @@ public:
   int requested_buffer_size () const;
   void init_buffers (const FunctorsBuffersManager& fbm);
 
+  void sync_diags_to_host ();
+
   void prim_diag_scalars (const bool before_advance, const int ivar);
   void prim_energy_halftimes (const bool before_advance, const int ivar);
 
@@ -120,7 +122,7 @@ public:
       KEner = 0.0;
       Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
                                   [=](const int ilev, Real& accumulator){
-        accumulator += (u(ilev)*u(ilev) + v(ilev)*v(ilev))/2.0 * dpt1_real(ilev);
+        accumulator += ((u(ilev)*u(ilev) + v(ilev)*v(ilev))/2.0) * dpt1_real(ilev);
       }, KEner);
 
       if (!m_theta_hydrostatic_mode) {

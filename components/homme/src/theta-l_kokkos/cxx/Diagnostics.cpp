@@ -75,6 +75,12 @@ void Diagnostics::init_buffers (const FunctorsBuffersManager& fbm) {
   m_buffers.dpnh_dp_i = decltype(m_buffers.dpnh_dp_i)(mem,nteams);
 }
 
+void Diagnostics::sync_diags_to_host () {
+  Kokkos::deep_copy(h_IEner,m_IEner);
+  Kokkos::deep_copy(h_PEner,m_PEner);
+  Kokkos::deep_copy(h_KEner,m_KEner);
+}
+
 void Diagnostics::prim_diag_scalars (const bool before_advance, const int ivar)
 {
   // Get simulation params

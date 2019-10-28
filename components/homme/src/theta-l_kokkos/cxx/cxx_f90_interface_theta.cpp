@@ -192,6 +192,9 @@ void cxx_push_results_to_f90(F90Ptr &elem_state_v_ptr,         F90Ptr &elem_stat
   sync_to_host(tracers.Q,
                HostViewUnmanaged<Real * [QSIZE_D][NUM_PHYSICAL_LEV][NP][NP]>(
                    elem_Q_ptr, num_elems));
+
+  Diagnostics& diags = Context::singleton().get<Diagnostics>();
+  diags.sync_diags_to_host();
 }
 
 void push_forcing_to_c (F90Ptr elem_derived_FM,
