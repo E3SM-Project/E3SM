@@ -549,7 +549,7 @@ struct NodeSets {
     // Rank of the node. If the node is in a level, then its rank is my rank. If
     // it's not in a level, then it is a comm partner of a node on this rank.
     Int rank;
-    // Globally unique identifier; cellidx if leaf node, ie, if nkids == 0.
+    // cellidx if leaf node, ie, if nkids == 0; otherwise, undefined.
     Int id;
     // This node's parent, a comm partner, if such a partner is required.
     Int parent;
@@ -647,7 +647,10 @@ struct Node {
   Int nkids;          // 0 at leaf, 1 or 2 otherwise.
   Node::Ptr kids[2];
   Int reserved;       // For internal use.
-  Node () : parent(nullptr), rank(-1), cellidx(-1), nkids(0), reserved(-1) {}
+  Int level;          // If providing only partial trees, set level to
+                      // the level of this node, with a leaf node at
+                      // level 0.
+  Node () : parent(nullptr), rank(-1), cellidx(-1), nkids(0), reserved(-1), level(-1) {}
 };
 
 // Utility to make a tree over a 1D mesh. For testing, it can be useful to
@@ -2532,6 +2535,12 @@ void level_schedule_and_collect (
     if (kid_needs_ns_node) make_ns_node = true;
   }
   ++level;
+  if (node->level >= 0) {
+    // The caller built only partial trees and so must provide the
+    // level.
+    level = node->level;
+    cedr_assert(level < static_cast<Int>(ns.levels.size()));
+  }
   // Is parent node needed for isend?
   const bool node_is_owned = node->rank == my_rank;
   need_parent_ns_node = node_is_owned;
@@ -2543,7 +2552,7 @@ void level_schedule_and_collect (
     node->reserved = ns_node_idx;
     NodeSets::Node* ns_node = ns.node_h(ns_node_idx);
     ns_node->rank = node->rank;
-    ns_node->id = node->cellidx;
+    if (node->nkids == 0) ns_node->id = node->cellidx;
     if (node_is_owned) {
       // If this node is owned, it needs to have information about all kids.
       ns_node->nkids = node->nkids;
@@ -2683,7 +2692,12 @@ NodeSets::ConstPtr analyze (const Parallel::Ptr& p, const Int& ncells,
   const auto nodesets = std::make_shared<NodeSets>();
   cedr_assert( ! tree->parent);
   Int id = ncells;
-  const Int depth = init_tree(p->rank(), tree, id);
+  Int depth = init_tree(p->rank(), tree, id);
+  if (tree->level >= 0) {
+    // If level is provided, don't trust depth from init_tree. Partial trees can
+    // make depth too small.
+    depth = tree->level + 1;
+  }
   nodesets->levels.resize(depth);
   level_schedule_and_collect(*nodesets, p->rank(), tree);
   consolidate(*nodesets);
@@ -5331,10 +5345,11 @@ void renumber (const Int* sc2gci, const Int* sc2rank,
 
 // Build a subtree over [0, nsublev).
 void add_sub_levels (const qlt::tree::Node::Ptr& node, const Int nsublev,
-                     const Int gci, const Int rank,
+                     const Int gci, const Int rank, const bool calc_level,
                      const Int slb, const Int sle) {
   if (slb+1 == sle) {
     node->cellidx = nsublev*gci + slb;
+    if (calc_level) node->level = 0;
   } else {
     node->nkids = 2;
     for (Int k = 0; k < 2; ++k) {
@@ -5344,21 +5359,26 @@ void add_sub_levels (const qlt::tree::Node::Ptr& node, const Int nsublev,
       node->kids[k] = kid;
     }
     const Int mid = slb + (sle - slb)/2;
-    add_sub_levels(node->kids[0], nsublev, gci, rank, slb, mid);
-    add_sub_levels(node->kids[1], nsublev, gci, rank, mid, sle);
+    add_sub_levels(node->kids[0], nsublev, gci, rank, calc_level, slb, mid);
+    add_sub_levels(node->kids[1], nsublev, gci, rank, calc_level, mid, sle);
+    if (calc_level)
+      node->level = 1 + std::max(node->kids[0]->level, node->kids[1]->level);
   }
 }
 
 // Recurse to each leaf and call add_sub_levels above.
 void add_sub_levels (const Int my_rank, const qlt::tree::Node::Ptr& node,
-                     const Int nsublev) {
-  if (node->nkids)
+                     const Int nsublev, const Int level_offset) {
+  if (node->nkids) {
     for (Int k = 0; k < node->nkids; ++k)
-      add_sub_levels(my_rank, node->kids[k], nsublev);
-  else {
+      add_sub_levels(my_rank, node->kids[k], nsublev, level_offset);
+    node->level += level_offset;
+  } else {
     const Int gci = node->cellidx;
     const Int rank = node->rank;
-    add_sub_levels(node, nsublev, gci, rank, 0, nsublev);
+    add_sub_levels(node, nsublev, gci, rank, level_offset, 0, nsublev);
+    // Level already calculated if requested.
+    cedr_assert(level_offset == 0 || node->level == level_offset);
   }
 }
 
@@ -5367,7 +5387,9 @@ void add_sub_levels (const Int my_rank, const qlt::tree::Node::Ptr& node,
 // establish. init_tree has to be modified to have the condition in
 // the line
 //   if (node->rank < 0) node->rank = node->kids[0]->rank
-// since here we're assigning the ranks ourselves.
+// since here we're assigning the ranks ourselves. Similarly, it must
+// check for node->level >= 0; if the tree is partial, it is unable to
+// compute node level.
 qlt::tree::Node::Ptr
 make_my_tree_part (const qlt::oned::Mesh& m, const Int cs, const Int ce,
                    const qlt::tree::Node* parent,
@@ -5380,10 +5402,12 @@ make_my_tree_part (const qlt::oned::Mesh& m, const Int cs, const Int ce,
   cedr_assert(n->rank >= 0 && n->rank < nrank);
   if (cn == 1) {
     n->nkids = 0;
+    n->level = 0;
     return n;
   }
   const auto k1 = make_my_tree_part(m, cs, cs + cn0, n.get(), nrank, rank2sfc);
   const auto k2 = make_my_tree_part(m, cs + cn0, ce, n.get(), nrank, rank2sfc);
+  n->level = 1 + std::max(k1->level, k2->level);
   const auto my_rank = m.parallel()->rank();
   if (n->rank == my_rank) {
     // Need to know both kids for comm.
@@ -5400,6 +5424,7 @@ make_my_tree_part (const qlt::oned::Mesh& m, const Int cs, const Int ce,
       n->nkids = -1;
     }
   }
+  cedr_assert(n->level > 0 || n->nkids == 0);
   return n;
 }
 
@@ -5408,6 +5433,15 @@ make_my_tree_part (const cedr::mpi::Parallel::Ptr& p, const Int& ncells,
                    const Int& nrank, const Int* rank2sfc) {
   qlt::oned::Mesh m(ncells, p);
   return make_my_tree_part(m, 0, m.ncell(), nullptr, nrank, rank2sfc);
+}
+
+static size_t get_tree_height (size_t nleaf) {
+  size_t height = 0;
+  while (nleaf) {
+    ++height;
+    nleaf >>= 1;
+  }
+  return height;
 }
 
 qlt::tree::Node::Ptr
@@ -5419,7 +5453,10 @@ make_tree_sgi (const cedr::mpi::Parallel::Ptr& p, const Int nelem,
   // associate the correct rank with the element.
   const auto my_rank = p->rank();
   renumber(p->size(), nelem, my_rank, owned_ids, rank2sfc, tree);
-  add_sub_levels(my_rank, tree, nsublev);
+  if (nsublev > 1) {
+    const Int level_offset = get_tree_height(nsublev) - 1;
+    add_sub_levels(my_rank, tree, nsublev, level_offset);
+  }
   return tree;
 }
 
@@ -5429,8 +5466,16 @@ make_tree_non_sgi (const cedr::mpi::Parallel::Ptr& p, const Int nelem,
   auto tree = qlt::tree::make_tree_over_1d_mesh(p, nelem);
   renumber(sc2gci, sc2rank, tree);
   const auto my_rank = p->rank();
-  add_sub_levels(my_rank, tree, nsublev);
+  if (nsublev > 1) add_sub_levels(my_rank, tree, nsublev, 0);
   return tree;
+}
+
+Int test_tree_maker () {
+  Int nerr = 0;
+  if (get_tree_height(3) != 3) ++nerr;
+  if (get_tree_height(4) != 3) ++nerr;
+  if (get_tree_height(5) != 4) ++nerr;
+  return nerr;
 }
 
 extern "C"
@@ -6065,6 +6110,7 @@ extern "C" void cedr_unittest (const homme::Int fcomm, homme::Int* nerrp) {
                                        1, false, false, true, false);
   else
     *nerrp = cedr::caas::test::unittest(p);
+  *nerrp += homme::test_tree_maker();
 }
 
 extern "C" void cedr_set_ie2gci (const homme::Int ie, const homme::Int gci) {
