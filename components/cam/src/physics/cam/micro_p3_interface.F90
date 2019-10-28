@@ -752,13 +752,13 @@ end subroutine micro_p3_readnl
              cldm(i,k)  = max(ast(i,k), mincld)
              icldm(i,k) = max(ast(i,k), mincld)
              lcldm(i,k) = max(ast(i,k), mincld)
+             rcldm(i,k) = cldm(i,k)
           end do
        end do
 
        !! 
        !! precipitation fraction 
        !! 
-       rcldm(i,k) = cldm(i,k)
        IF (trim(method) == 'in_cloud') THEN
           DO k = ktop-kdir,kbot,-kdir 
              DO i=its,ite
