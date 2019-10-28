@@ -755,14 +755,13 @@ end subroutine micro_p3_readnl
           end do
        end do
 
-       DO k = ktop,kbot,-kdir  !AaronDonahue TODO: Check to make sure this is correct.  Are we going the correct direction?
-          DO i=its,ite
        !! 
        !! precipitation fraction 
        !! 
-          rcldm(i,k) = cldm(i,k)
-          IF (trim(method) == 'in_cloud') THEN
-             IF (k /= ktop) THEN
+       rcldm(i,k) = cldm(i,k)
+       IF (trim(method) == 'in_cloud') THEN
+          DO k = ktop-kdir,kbot,-kdir 
+             DO i=its,ite
                 ! in_cloud means that precip_frac (rcldm) = cloud (cldm) frac when cloud mass
                 ! is present. Below cloud, precip frac is equal to the cloud
                 ! fraction from the last layer that had cloud. Since presence or
@@ -775,23 +774,24 @@ end subroutine micro_p3_readnl
                    ! given grid cell
                    rcldm(i,k) = max(rcldm(i,k+kdir),rcldm(i,k))
                 END IF
-             END IF
-          ELSE IF (trim(method) == 'max_overlap') THEN
-          ! max overlap is the max cloud fraction in all layers above which are
-          ! connected to this one by a continuous band of precip mass. If
-          ! there's no precip mass falling into a cell, it's precip frac is equal
-          ! to the cloud frac, which is probably ~zero.
+             END DO !i
+          END DO !k
+       ELSE IF (trim(method) == 'max_overlap') THEN
+       ! max overlap is the max cloud fraction in all layers above which are
+       ! connected to this one by a continuous band of precip mass. If
+       ! there's no precip mass falling into a cell, it's precip frac is equal
+       ! to the cloud frac, which is probably ~zero.
 
-          ! IF rain or ice mix ratios are smaller than threshold,
-          ! then leave rcldm as cloud fraction at current level
-             IF (k /= ktop) THEN
+       ! IF rain or ice mix ratios are smaller than threshold,
+       ! then leave rcldm as cloud fraction at current level
+          DO k = ktop-kdir,kbot,-kdir 
+             DO i=its,ite
                 IF (qr(i,k+kdir) .ge. qsmall .or. qitot(i,k+kdir) .ge. qsmall) THEN
                    rcldm(i,k) = max(rcldm(i,k+kdir),rcldm(i,k))
                 END IF
-             END IF
-          END IF
-          END DO ! i
-       END DO    ! k
+             END DO ! i
+          END DO ! k
+       END IF
 
 
        call t_stopf('micro_p3_get_cloud_fraction')
