@@ -10,6 +10,9 @@ namespace p3 {
 
 /*
  * Mathematical constants used by p3.
+ *
+ * Note that a potential optimization could be to change the type of
+ * Scalar constants that have integer values to int.
  */
 
 template <typename Scalar>
