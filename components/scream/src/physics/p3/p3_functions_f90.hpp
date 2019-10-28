@@ -247,6 +247,55 @@ void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int *k
 
 }
 
+struct CloudSedData
+{
+  // Inputs
+  Int kts, kte, ktop, kbot, kdir;
+  Real *qc_incld, *rho, *inv_rho, *lcldm, *acn, *inv_dzq;
+  Real dt, odt;
+  bool log_predictNc;
+
+  // In/out
+  Real *qc, *nc, *nc_incld, *mu_c, *lamc, *qc_tend, *nc_tend;
+  Real prt_liq;
+
+  CloudSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+               Real dt_, Real odt_, bool log_predictNc_, Real prt_liq,
+               std::pair<Real, Real> qc_incld_range,
+               std::pair<Real, Real> rho_range,
+               std::pair<Real, Real> lcldm_range,
+               std::pair<Real, Real> acn_range,
+               std::pair<Real, Real> inv_dzq_range,
+               std::pair<Real, Real> qc_range,
+               std::pair<Real, Real> nc_range,
+               std::pair<Real, Real> nc_incld_range,
+               std::pair<Real, Real> mu_c_range,
+               std::pair<Real, Real> lamc_range,
+               std::pair<Real, Real> qc_tend_range,
+               std::pair<Real, Real> nc_tend_range);
+
+  // deep copy
+  CloudSedData(const CloudSedData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+void cloud_sedimentation(CloudSedData& d);
+
+extern "C" {
+
+void cloud_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
+  Real dt, Real odt, bool log_predictNc,
+  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
+
+}
+
 extern "C" {
 
 Real cxx_pow(Real base, Real exp);

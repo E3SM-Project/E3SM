@@ -62,6 +62,7 @@ contains
     character(len=100) :: case_title
 
     integer(kind=c_int) :: i, k
+    logical(kind=c_bool) :: masterproc
 
     ! READ inputs from SCM for p3-stand-alone:
     q(:,:,:) = 0.0_rtype
@@ -93,9 +94,9 @@ contains
 !    q(:,:,7) = 1.0e5_rtype!state%q(:,:,ixnumrain)
 !    q(:,:,8) = 1.0e-8_rtype!state%q(:,:,ixcldrim) !Aaron, changed ixqirim to ixcldrim to match Kai's code
 !    q(:,:,9) = 1.0e4_rtype!state%q(:,:,ixrimvol)
-     
+    masterproc = .false.
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
-             cpliq,tmelt,pi,0,.false.)
+             cpliq,tmelt,pi,0,masterproc)
     call p3_init(micro_p3_lookup_dir,micro_p3_tableversion)
 
 
@@ -175,7 +176,7 @@ contains
     integer :: i
 
     integer(kind=c_int) :: it, its, ite, kts, kte
-    logical :: log_predictNc = .true.
+    logical(kind=c_bool) :: log_predictNc = .true.
     character(len=16) :: precip_frac_method = 'max_overlap'  ! AaronDonahue, Hard-coded for now, should be fixed in the future
 
     real(kind=c_real) :: qtest

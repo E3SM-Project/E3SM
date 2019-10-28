@@ -41,6 +41,11 @@ void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_
 void generalized_sedimentation_c(Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
                                  Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
                                  Int num_arrays, Real** vs, Real** fluxes, Real** qnx);
+void cloud_sedimentation_c(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
+  Real dt, Real odt, bool log_predictNc,
+  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
 
 }
 
@@ -188,13 +193,84 @@ GenSedData::GenSedData(
   Co_max(Co_max_), k_qxbot(k_qxbot_), dt_left(dt_left_), prt_accum(prt_accum_)
 { }
 
-
 void generalized_sedimentation(GenSedData& d)
 {
   p3_init(true);
   generalized_sedimentation_c(d.kts, d.kte, d.kdir, d.k_qxtop, &d.k_qxbot, d.kbot, d.Co_max,
                               &d.dt_left, &d.prt_accum, d.inv_dzq, d.inv_rho, d.rho,
                               d.num_arrays, d.vs, d.fluxes, d.qnx);
+}
+
+CloudSedData::CloudSedData(
+  Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+  Real dt_, Real odt_, bool log_predictNc_, Real prt_liq_,
+  std::pair<Real, Real> qc_incld_range,
+  std::pair<Real, Real> rho_range,
+  std::pair<Real, Real> lcldm_range,
+  std::pair<Real, Real> acn_range,
+  std::pair<Real, Real> inv_dzq_range,
+  std::pair<Real, Real> qc_range,
+  std::pair<Real, Real> nc_range,
+  std::pair<Real, Real> nc_incld_range,
+  std::pair<Real, Real> mu_c_range,
+  std::pair<Real, Real> lamc_range,
+  std::pair<Real, Real> qc_tend_range,
+  std::pair<Real, Real> nc_tend_range) :
+  kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
+  dt(dt_), odt(odt_), log_predictNc(log_predictNc_), prt_liq(prt_liq_),
+  m_nk((kte_ - kts_) + 1),
+  m_data( 13 * m_nk, 0.0)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  Real** ptrs[12] =
+    {&qc_incld, &rho, &lcldm, &acn, &inv_dzq, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend};
+  std::pair<Real,Real>* ranges[12] =
+    {&qc_incld_range, &rho_range, &lcldm_range, &acn_range, &inv_dzq_range, &qc_range, &nc_range, &nc_incld_range, &mu_c_range, &lamc_range, &qc_tend_range, &nc_tend_range};
+
+  std::default_random_engine generator;
+
+  for (Int i = 0; i < 12; ++i) {
+    std::uniform_real_distribution<Real> data_dist(ranges[i]->first, ranges[i]->second);
+    *ptrs[i] = data_begin + offset;
+    offset += m_nk;
+    for(Int k = 0; k < m_nk; ++k) {
+      (*ptrs[i])[k] = data_dist(generator);
+    }
+  }
+
+  inv_rho = data_begin + offset;
+  for (Int k = 0; k < m_nk; ++k) {
+    inv_rho[k] = 1 / rho[k];
+  }
+}
+
+CloudSedData::CloudSedData(const CloudSedData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), ktop(rhs.ktop), kbot(rhs.kbot), kdir(rhs.kdir),
+  dt(rhs.dt), odt(rhs.odt), log_predictNc(rhs.log_predictNc), prt_liq(rhs.prt_liq),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  Real** ptrs[13] =
+    {&qc_incld, &rho, &lcldm, &acn, &inv_dzq, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend, &inv_rho};
+
+  for (Int i = 0; i < 13; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_nk;
+  }
+}
+
+void cloud_sedimentation(CloudSedData& d)
+{
+  p3_init(true);
+  cloud_sedimentation_c(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+                        d.qc_incld, d.rho, d.inv_rho, d.lcldm, d.acn, d.inv_dzq,
+                        d.dt, d.odt, d.log_predictNc,
+                        d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.prt_liq, d.qc_tend, d.nc_tend);
 }
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
@@ -336,7 +412,7 @@ void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Re
   auto t_h = Kokkos::create_mirror_view(t_d);
 
   Real local_nc = *nc_;
-  auto dnu = P3GlobalForFortran::dnu();
+  const auto dnu = P3GlobalForFortran::dnu();
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     typename P3F::Spack qc(qc_), nc(local_nc), rho(rho_), lcldm(lcldm_);
     typename P3F::Spack mu_c, nu, lamc, cdist, cdist1;
@@ -484,7 +560,7 @@ void generalized_sedimentation_f_impl(
 
   const Int nk = (kte - kts) + 1;
 
-  // Setup views
+  // Set up views
   Kokkos::Array<view_1d, 3> temp_d;
   Kokkos::Array<view_1d, N> fluxes_d, vs_d, qnx_d;
   Kokkos::Array<view_1ds, 1> scalar_temp;
@@ -574,6 +650,88 @@ void generalized_sedimentation_f(
   else {
     scream_require_msg(false, "Unsupported num arrays in bridge calc_first_order_upwind_step_f: " << num_arrays);
   }
+}
+
+void cloud_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
+  Real dt, Real odt, bool log_predictNc,
+  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Spack>;
+  using KT = typename P3F::KT;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using uview_1d = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts -= 1;
+  kte -= 1;
+  ktop -= 1;
+  kbot -= 1;
+
+  const Int nk = (kte - kts) + 1;
+
+  // Set up views
+  const auto dnu = P3GlobalForFortran::dnu();
+
+  Kokkos::Array<view_1d, 13> temp_d;
+
+  pack::host_to_device({qc_incld, rho, inv_rho, lcldm, acn, inv_dzq, qc, nc, nc_incld, mu_c, lamc, qc_tend, nc_tend},
+                       nk, temp_d);
+
+  view_1d
+    qc_incld_d(temp_d[0]),
+    rho_d     (temp_d[1]),
+    inv_rho_d (temp_d[2]),
+    lcldm_d   (temp_d[3]),
+    acn_d     (temp_d[4]),
+    inv_dzq_d (temp_d[5]),
+    qc_d      (temp_d[6]),
+    nc_d      (temp_d[7]),
+    nc_incld_d(temp_d[8]),
+    mu_c_d    (temp_d[9]),
+    lamc_d    (temp_d[10]),
+    qc_tend_d (temp_d[11]),
+    nc_tend_d (temp_d[12]);
+
+  // Call core function from kernel
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
+  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_liq_k) {
+
+    uview_1d
+      uqc_incld_d(temp_d[0]),
+      urho_d     (temp_d[1]),
+      uinv_rho_d (temp_d[2]),
+      ulcldm_d   (temp_d[3]),
+      uacn_d     (temp_d[4]),
+      uinv_dzq_d (temp_d[5]),
+      uqc_d      (temp_d[6]),
+      unc_d      (temp_d[7]),
+      unc_incld_d(temp_d[8]),
+      umu_c_d    (temp_d[9]),
+      ulamc_d    (temp_d[10]),
+      uqc_tend_d (temp_d[11]),
+      unc_tend_d (temp_d[12]);
+
+    P3F::cloud_sedimentation(
+      uqc_incld_d, urho_d, uinv_rho_d, ulcldm_d, uacn_d, uinv_dzq_d, dnu,
+      team, wsm.get_workspace(team),
+      nk, ktop, kbot, kdir, dt, odt, log_predictNc,
+      uqc_d, unc_d, unc_incld_d, umu_c_d, ulamc_d, uqc_tend_d, unc_tend_d,
+      prt_liq_k);
+
+  }, *prt_liq);
+
+  // Sync back to host
+  Kokkos::Array<view_1d, 7> inout_views = {qc_d, nc_d, nc_incld_d, mu_c_d, lamc_d, qc_tend_d, nc_tend_d};
+  pack::device_to_host({qc, nc, nc_incld, mu_c, lamc, qc_tend, nc_tend}, nk, inout_views);
 }
 
 // Cuda implementations of std math routines are not necessarily BFB

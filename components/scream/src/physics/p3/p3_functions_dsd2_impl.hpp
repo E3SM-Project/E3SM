@@ -15,15 +15,18 @@ namespace p3 {
  */
 
 template <typename S, typename D>
+template <bool zero_out>
 void Functions<S,D>::
 get_cloud_dsd2(const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-               const view_1d<const Scalar>& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm)
+               const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm)
 {
-  lamc =   0;
-  cdist =  0;
-  cdist1 = 0;
-  nu     = 0;
-  mu_c   = 0;
+  if (zero_out) {
+    lamc =   0;
+    cdist =  0;
+    cdist1 = 0;
+    nu     = 0;
+    mu_c   = 0;
+  }
 
   if (qc_gt_small.any()) {
     constexpr Scalar nsmall = C::NSMALL;
