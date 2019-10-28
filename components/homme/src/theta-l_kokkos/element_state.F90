@@ -22,18 +22,15 @@ module element_state
   integer, public, parameter :: diagtimes = 6
 
   ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
-  integer, public               :: max_itercnt_perstep
-  ! running average of max_itercnt_perstep
-  real (kind=real_kind), public :: avg_itercnt=0.0
-  ! maximum error of Newton iteration for an IMEX-RK stage per time-step
-  real (kind=real_kind), public :: max_itererr_perstep
+  integer, public               :: max_itercnt=0
+  real (kind=real_kind), public :: max_deltaerr=0
+  real (kind=real_kind), public :: max_reserr=0
 
   ! pressure based TOM sponge layer
   real (kind=real_kind),public :: nu_scale_top(nlev)
   integer, public              :: nlev_tom
 
-
-  ! arrays for all state, derived, and accum quantities that need to be passed back and forth to CXX
+  ! flattened arrays for all state, derived, and accum quantities that need to be passed back and forth to CXX
 
   real (kind=real_kind), allocatable, target, public :: elem_state_v    (:,:,:,:,:,:)           ! horizontal velocity 
   real (kind=real_kind), allocatable, target, public :: elem_state_w_i  (:,:,:,:,:)             ! vertical velocity at interfaces
@@ -80,7 +77,6 @@ module element_state
     real (kind=real_kind), pointer :: phis(:,:)             ! surface geopotential (prescribed)  
     real (kind=real_kind), pointer :: Q   (:,:,:,:)         ! Tracer concentration               
     real (kind=real_kind), pointer :: Qdp (:,:,:,:,:)       ! Tracer mass                        
-
   end type elem_state_t
 
   !___________________________________________________________________
@@ -105,7 +101,6 @@ module element_state
     real (kind=real_kind) :: divdp(np,np,nlev)                        ! divergence of dp
     real (kind=real_kind) :: divdp_proj(np,np,nlev)                   ! DSSed divdp
 
-    ! forcing terms for CAM
     real (kind=real_kind), pointer :: FQ(:,:,:,:)                     ! tracer forcing
     real (kind=real_kind), pointer :: FM(:,:,:,:)                     ! momentum forcing
     real (kind=real_kind), pointer :: FT(:,:,:)                       ! temperature forcing
@@ -114,6 +109,7 @@ module element_state
     real (kind=real_kind), pointer :: FQps(:,:)                       ! forcing of FQ on ps_v
 
     real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
+
   end type derived_state_t
   
 

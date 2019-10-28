@@ -80,8 +80,9 @@ public:
 
 private:
 
-  static constexpr Real T1 = 0.0065f*288.0*PhysicalConstants::cp/PhysicalConstants::g;
-  static constexpr Real T0 = 288.0-T1;
+  static constexpr Real TREF = 288.0;
+  static constexpr Real T1 = 0.0065f*TREF*PhysicalConstants::cp/PhysicalConstants::g;
+  static constexpr Real T0 = TREF-T1;
 
   HybridVCoord    m_hvcoord;
 };
