@@ -5685,15 +5685,14 @@ static void run_cdr (CDR& q) {
 void run (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_r,
           const Int nets, const Int nete) {
   static constexpr Int max_np = 4;
-  const Int np = d.np, nlev = d.nlev, qsize = d.qsize, ncell = nete - nets + 1;
+  const Int np = d.np, nlev = d.nlev, qsize = d.qsize;
   cedr_assert(np <= max_np);
 
   FA5<const Real>
-    q_min(q_min_r, np, np, nlev, qsize, ncell),
-    q_max(q_max_r, np, np, nlev, qsize, ncell);
+    q_min(q_min_r, np, np, nlev, qsize, nete+1),
+    q_max(q_max_r, np, np, nlev, qsize, nete+1);
 
   for (Int ie = nets; ie <= nete; ++ie) {
-    const Int ie0 = ie - nets;
     FA2<const Real> spheremp(d.spheremp[ie], np, np);
     FA5<const Real> qdp_p(d.qdp_pc[ie], np, np, nlev, d.qsize_d, 2);
     FA4<const Real> dp3d_c(d.dp3d_c[ie], np, np, nlev, d.timelevels);
@@ -5720,8 +5719,8 @@ void run (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_r,
               const Real rhomij = dp3d_c(i,j,k,d.tl_np1) * spheremp(i,j);
               rhom += rhomij;
               Qm += q_c(i,j,k,q) * rhomij;
-              Qm_min += q_min(i,j,k,q,ie0) * rhomij;
-              Qm_max += q_max(i,j,k,q,ie0) * rhomij;
+              Qm_min += q_min(i,j,k,q,ie) * rhomij;
+              Qm_max += q_max(i,j,k,q,ie) * rhomij;
               Qm_prev += qdp_p(i,j,k,q,d.n0_qdp) * spheremp(i,j);
             }
           }
@@ -5769,16 +5768,14 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
                 const Int nets, const Int nete, const bool scalar_bounds,
                 const Int limiter_option) {
   static constexpr Int max_np = 4, max_np2 = max_np*max_np;
-  const Int np = d.np, np2 = np*np, nlev = d.nlev, qsize = d.qsize,
-    ncell = nete - nets + 1;
+  const Int np = d.np, np2 = np*np, nlev = d.nlev, qsize = d.qsize;
   cedr_assert(np <= max_np);
 
   FA5<const Real>
-    q_min(q_min_r, np, np, nlev, qsize, ncell),
-    q_max(q_max_r, np, np, nlev, qsize, ncell);
+    q_min(q_min_r, np, np, nlev, qsize, nete+1),
+    q_max(q_max_r, np, np, nlev, qsize, nete+1);
 
   for (Int ie = nets; ie <= nete; ++ie) {
-    const Int ie0 = ie - nets;
     FA2<const Real> spheremp(d.spheremp[ie], np, np);
     FA5<      Real> qdp_c(d.qdp_pc[ie], np, np, nlev, d.qsize_d, 2);
     FA4<const Real> dp3d_c(d.dp3d_c[ie], np, np, nlev, d.timelevels);
@@ -5808,8 +5805,8 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
 
           //todo Replace with ReconstructSafely.
           if (scalar_bounds) {
-            qlo[0] = q_min(0,0,k,q,ie0);
-            qhi[0] = q_max(0,0,k,q,ie0);
+            qlo[0] = q_min(0,0,k,q,ie);
+            qhi[0] = q_max(0,0,k,q,ie);
             const Int N = std::min(max_np2, np2);
             for (Int i = 1; i < N; ++i) qlo[i] = qlo[0];
             for (Int i = 1; i < N; ++i) qhi[i] = qhi[0];
@@ -5828,8 +5825,8 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
             const Int N = std::min(max_np2, np2);
             for (Int j = 0, cnt = 0; j < np; ++j)
               for (Int i = 0; i < np; ++i, ++cnt) {
-                qlo[cnt] = q_min(i,j,k,q,ie0);
-                qhi[cnt] = q_max(i,j,k,q,ie0);
+                qlo[cnt] = q_min(i,j,k,q,ie);
+                qhi[cnt] = q_max(i,j,k,q,ie);
               }
             for (Int trial = 0; trial < 3; ++trial) {
               int info;
@@ -5885,8 +5882,7 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
             const Int nets, const Int nete) {
   using cedr::mpi::reduce;
 
-  const Int np = d.np, nlev = d.nlev, nsuplev = cdr.nsuplev, qsize = d.qsize,
-    ncell = nete - nets + 1;
+  const Int np = d.np, nlev = d.nlev, nsuplev = cdr.nsuplev, qsize = d.qsize;
 
   Kokkos::View<Real**, Kokkos::Serial>
     mass_p("mass_p", nsuplev, qsize), mass_c("mass_c", nsuplev, qsize),
@@ -5895,8 +5891,8 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
     q_min_l("q_min_l", nsuplev, qsize), q_max_l("q_max_l", nsuplev, qsize),
     qd_lo("qd_lo", nsuplev, qsize), qd_hi("qd_hi", nsuplev, qsize);
   FA5<const Real>
-    q_min(q_min_r, np, np, nlev, qsize, ncell),
-    q_max(q_max_r, np, np, nlev, qsize, ncell);
+    q_min(q_min_r, np, np, nlev, qsize, nete+1),
+    q_max(q_max_r, np, np, nlev, qsize, nete+1);
   Kokkos::deep_copy(q_lo,  1e200);
   Kokkos::deep_copy(q_hi, -1e200);
   Kokkos::deep_copy(q_min_l,  1e200);
@@ -5906,7 +5902,6 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
 
   bool fp_issue = false; // Limit output once the first issue is seen.
   for (Int ie = nets; ie <= nete; ++ie) {
-    const Int ie0 = ie - nets;
     FA2<const Real> spheremp(d.spheremp[ie], np, np);
     FA5<const Real> qdp_pc(d.qdp_pc[ie], np, np, nlev, d.qsize_d, 2);
     FA4<const Real> dp3d_c(d.dp3d_c[ie], np, np, nlev, d.timelevels);
@@ -5925,11 +5920,11 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
             }
         }
         for (Int q = 0; q < qsize; ++q) {
-          Real qlo_s = q_min(0,0,k,q,ie0), qhi_s = q_max(0,0,k,q,ie0);
+          Real qlo_s = q_min(0,0,k,q,ie), qhi_s = q_max(0,0,k,q,ie);
           for (Int j = 0; j < np; ++j)
             for (Int i = 0; i < np; ++i) {
-              qlo_s = std::min(qlo_s, q_min(i,j,k,q,ie0));
-              qhi_s = std::max(qhi_s, q_max(i,j,k,q,ie0));
+              qlo_s = std::min(qlo_s, q_min(i,j,k,q,ie));
+              qhi_s = std::max(qhi_s, q_max(i,j,k,q,ie));
             }
           for (Int j = 0; j < np; ++j)
             for (Int i = 0; i < np; ++i) {
@@ -5956,14 +5951,14 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
               if (q_c(i,j,k,q) > qhi_s)
                 qd_hi(spli,q) = std::max(qd_hi(spli,q), q_c(i,j,k,q) - qhi_s);
               // Safety problem bound constraints.
-              mass_lo(spli,q) += (q_min(i,j,k,q,ie0) * dp3d_c(i,j,k,d.tl_np1) *
+              mass_lo(spli,q) += (q_min(i,j,k,q,ie) * dp3d_c(i,j,k,d.tl_np1) *
                                   spheremp(i,j));
-              mass_hi(spli,q) += (q_max(i,j,k,q,ie0) * dp3d_c(i,j,k,d.tl_np1) *
+              mass_hi(spli,q) += (q_max(i,j,k,q,ie) * dp3d_c(i,j,k,d.tl_np1) *
                                   spheremp(i,j));
-              q_lo(spli,q) = std::min(q_lo(spli,q), q_min(i,j,k,q,ie0));
-              q_hi(spli,q) = std::max(q_hi(spli,q), q_max(i,j,k,q,ie0));
-              q_min_l(spli,q) = std::min(q_min_l(spli,q), q_min(i,j,k,q,ie0));
-              q_max_l(spli,q) = std::max(q_max_l(spli,q), q_max(i,j,k,q,ie0));
+              q_lo(spli,q) = std::min(q_lo(spli,q), q_min(i,j,k,q,ie));
+              q_hi(spli,q) = std::max(q_hi(spli,q), q_max(i,j,k,q,ie));
+              q_min_l(spli,q) = std::min(q_min_l(spli,q), q_min(i,j,k,q,ie));
+              q_max_l(spli,q) = std::max(q_max_l(spli,q), q_max(i,j,k,q,ie));
             }
         }
       }

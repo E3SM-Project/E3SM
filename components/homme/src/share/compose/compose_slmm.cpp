@@ -3762,15 +3762,14 @@ void calc_own_q (CslMpi& cm, const Int& nets, const Int& nete,
                  const FA4<Real>& q_min, const FA4<Real>& q_max) {
   const int tid = get_tid();
   for (Int tci = nets; tci <= nete; ++tci) {
-    const Int ie0 = tci - nets;
     auto& ed = cm.ed(tci);
     const FA3<Real> q_tgt(ed.q, cm.np2, cm.nlev, cm.qsize);
     for (const auto& e: ed.own) {
       const Int slid = ed.nbrs(ed.src(e.lev, e.k)).lid_on_rank;
       const auto& sed = cm.ed(slid);
       for (Int iq = 0; iq < cm.qsize; ++iq) {
-        q_min(e.k, e.lev, iq, ie0) = sed.q_extrema(iq, e.lev, 0);
-        q_max(e.k, e.lev, iq, ie0) = sed.q_extrema(iq, e.lev, 1);
+        q_min(e.k, e.lev, iq, tci) = sed.q_extrema(iq, e.lev, 0);
+        q_max(e.k, e.lev, iq, tci) = sed.q_extrema(iq, e.lev, 1);
       }
       Real* const qtmp = &cm.rwork(tid, 0);
       calc_q<np>(cm, slid, e.lev, &dep_points(0, e.k, e.lev, tci), qtmp, false);
@@ -3788,7 +3787,6 @@ void copy_q (CslMpi& cm, const Int& nets,
            end = cm.mylid_with_comm_tid_ptr(tid+1);
        ptr < end; ++ptr) {
     const Int tci = cm.mylid_with_comm(ptr);
-    const Int ie0 = tci - nets;
     auto& ed = cm.ed(tci);
     const FA3<Real> q_tgt(ed.q, cm.np2, cm.nlev, cm.qsize);
     for (const auto& e: ed.rmt) {
@@ -3796,8 +3794,8 @@ void copy_q (CslMpi& cm, const Int& nets,
       const Int ri = ed.nbrs(ed.src(e.lev, e.k)).rank_idx;
       const auto&& recvbuf = cm.recvbuf(ri);
       for (Int iq = 0; iq < cm.qsize; ++iq) {
-        q_min(e.k, e.lev, iq, ie0) = recvbuf(e.q_extrema_ptr + 2*iq    );
-        q_max(e.k, e.lev, iq, ie0) = recvbuf(e.q_extrema_ptr + 2*iq + 1);
+        q_min(e.k, e.lev, iq, tci) = recvbuf(e.q_extrema_ptr + 2*iq    );
+        q_max(e.k, e.lev, iq, tci) = recvbuf(e.q_extrema_ptr + 2*iq + 1);
       }
       for (Int iq = 0; iq < cm.qsize; ++iq) {
         slmm_assert(recvbuf(e.q_ptr + iq) != -1);
@@ -3825,8 +3823,8 @@ void step (
                3, cm.np2, cm.nlev, cm.nelemd);
   const Int nelem = nete - nets + 1;
   const FA4<Real>
-    q_min(q_min_r, cm.np2, cm.nlev, cm.qsize, nelem),
-    q_max(q_max_r, cm.np2, cm.nlev, cm.qsize, nelem);
+    q_min(q_min_r, cm.np2, cm.nlev, cm.qsize, cm.nelemd),
+    q_max(q_max_r, cm.np2, cm.nlev, cm.qsize, cm.nelemd);
 
   // Partition my elements that communicate with remotes among threads, if I
   // haven't done that yet.

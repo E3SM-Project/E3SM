@@ -28,6 +28,7 @@ module sl_advection
   type (ghostBuffer3D_t)   :: ghostbuf_tr
   integer :: sl_mpi
   type (cartesian3D_t), allocatable :: dep_points_all(:,:,:,:) ! (np,np,nlev,nelemd)
+  real(kind=real_kind), dimension(:,:,:,:,:), allocatable :: minq, maxq ! (np,np,nlev,qsize,nelemd)
 
   public :: Prim_Advec_Tracers_remap_ALE, sl_init1
 
@@ -98,6 +99,7 @@ contains
           need_conservation = 1
           call cedr_sl_init(np, nlev, qsize, qsize_d, timelevels, need_conservation)
        end if
+       allocate(minq(np,np,nlev,qsize,size(elem)), maxq(np,np,nlev,qsize,size(elem)))
     endif
     call t_stopf('sl_init1')
 #endif
@@ -125,8 +127,6 @@ contains
     integer              , intent(in   ) :: nete
 
     type(cartesian3D_t)   :: dep_points  (np,np)
-    real(kind=real_kind)  :: minq        (np,np,nlev,qsize,nets:nete)
-    real(kind=real_kind)  :: maxq        (np,np,nlev,qsize,nets:nete)
 
     integer               :: i,j,k,l,n,q,ie,n0_qdp,np1_qdp
     integer               :: num_neighbors, scalar_q_bounds, info
