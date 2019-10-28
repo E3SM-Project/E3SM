@@ -40,12 +40,12 @@ void Functions<S,D>
     {"V_qc", "V_nc", "flux_qx", "flux_nx"},
     {&V_qc, &V_nc, &flux_qx, &flux_nx});
 
-  view_1d_ptr_array<Spack, 2>
+  const view_1d_ptr_array<Spack, 2>
     fluxes_ptr = {&flux_qx, &flux_nx},
     vs_ptr     = {&V_qc, &V_nc},
     qnr_ptr    = {&qc, &nc};
 
-  view_1d_ptr_array<Spack, 1>
+  const view_1d_ptr_array<Spack, 1>
     flux_ptr  = {&flux_qx},
     v_ptr     = {&V_qc},
     qr_ptr    = {&qc};
@@ -53,6 +53,7 @@ void Functions<S,D>
   // find top, determine qxpresent
   const auto sqc = scalarize(qc);
   constexpr Scalar qsmall = C::QSMALL;
+  constexpr Scalar bcn    = C::bcn;
   bool log_qxpresent;
   const Int k_qxtop = find_top(team, sqc, qsmall, kbot, ktop, kdir, log_qxpresent);
 
@@ -86,16 +87,16 @@ void Functions<S,D>
           const int pk = kmin + pk_;
           const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
           const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
-          auto qc_gt_small = range_mask && qc_incld(pk) > qsmall;
+          const auto qc_gt_small = range_mask && qc_incld(pk) > qsmall;
           if (qc_gt_small.any()) {
             // compute Vq, Vn
             Spack nu, cdist, cdist1, dum;
             get_cloud_dsd2<false>(qc_gt_small, qc_incld(pk), nc_incld(pk), mu_c(pk), rho(pk), nu, dnu, lamc(pk), cdist, cdist1, lcldm(pk));
             nc(pk).set(qc_gt_small, nc_incld(pk)*lcldm(pk));
-            dum = 1 / (lamc(pk)*lamc(pk)); // bcn = 2
-            V_qc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(4 + 2 + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+4)));
+            dum = 1 / (pack::pow(lamc(pk), bcn));
+            V_qc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(4 + bcn + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+4)));
             if (log_predictNc) {
-              V_nc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(1 + 2 + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+1)));
+              V_nc(pk).set(qc_gt_small, acn(pk)*pack::tgamma(1 + bcn + mu_c(pk)) * dum / (pack::tgamma(mu_c(pk)+1)));
             }
 
             const auto Co_max_local = max(qc_gt_small, -1,
