@@ -45,7 +45,6 @@ contains
   use control_mod,    only: rsplit
   use hybrid_mod,     only: hybrid_t
   use ppgrid,         only: pver, pverp
-! HHLEE 20190521
 #ifdef FIVE
   use time_manager,   only: is_first_step, get_nstep
   use shr_kind_mod,   only: r8=>shr_kind_r8
@@ -239,21 +238,16 @@ contains
 
      do i=1,np
      do j=1,np
-        !call linear_interp(pint_host(i,j,:),pint_five(i,j,:),eta_dot_dpdn(i,j,1:pverp),&
-        !             eta_dot_dpdn_five(i,j,1:pverp_five),pverp,pverp_five)  
         call linear_interp(pint_host(i,j,:),pint_five(i,j,:),pint_star(i,j,1:pverp),&
                      pint_star_five(i,j,1:pverp_five),pverp,pverp_five)  
      enddo
      enddo
 
      do k=1,pver_five
-        !dp_star_five(:,:,k) = dp_five(:,:,k) + dt*(eta_dot_dpdn_five(:,:,k+1) - eta_dot_dpdn_five(:,:,k))
         dp_star_five(:,:,k) = pint_star_five(:,:,k+1) - pint_star_five(:,:,k)
      enddo
 
 ! ----- syncronize FIVE variables
-
-!     if (.not. is_first_step()) then
 
      do i=1,np
      do j=1,np
@@ -350,7 +344,6 @@ contains
 
     ! Finally, update FIVE prognostic variables based on this tendency, so 
     !   complete syncronization with E3SM
-!goto 9998
     do k=1,pver_five
       do i=1,np
       do j=1,np
@@ -367,34 +360,12 @@ contains
       enddo
       enddo
     enddo
-!9998 continue
 
-!    end if ! is_first_step
 #endif
 
 #ifdef FIVE
 
      if (rsplit>0) then
-goto 9999
-     do i=1,np
-     do j=1,np
-
-        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%t(i,j,:,np1),ttmp_five(i,j,:),pver,pver_five)
-        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,1,:,np1),utmp_five(i,j,:),pver,pver_five)
-        call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),elem(ie)%state%v(i,j,2,:,np1),vtmp_five(i,j,:),pver,pver_five)
-       do q = 1, qsize
-         state_Q(i,j,:,q) = elem(ie)%state%Qdp(i,j,:,q,np1_qdp) / dp_star(i,j,:) 
-         call linear_interp(pmid_host(i,j,:),pmid_five(i,j,:),state_Q(i,j,:,q),Qtmp_five(i,j,:,q),pver,pver_five)
-         Qtmp_five_old(i,j,:,q) = Qtmp_five(i,j,:,q)
-         Qtmp_five(i,j,:,q) = Qtmp_five(i,j,:,q)*dp_star_five(i,j,:)
-
-       enddo 
-     enddo 
-     enddo
-        ttmp_five_old = ttmp_five 
-        utmp_five_old = utmp_five
-        vtmp_five_old = vtmp_five
-9999 continue
 
      if (single_column) then
      do i=1,np
@@ -533,15 +504,6 @@ goto 9999
          state_Qnew(:,:,:,q) = max(state_Qnew(:,:,:,q),0.)
          elem(ie)%state%Qdp(:,:,:,q,np1_qdp) = state_Qnew(:,:,:,q) * dp(:,:,:)
       enddo
-!    do i=1,np
-!    do j=1,np
-!    do k = 1, pver
-!      if (state_Q(i,j,k,2) .gt. 1.e-5 .or. state_Qnew(i,j,k,2) .gt. 1.e-5) then
-!      print *, 'HHLEE Q2', k,state_Q(i,j,k,2),state_Qnew(i,j,k,2)
-!      endif
-!    enddo
-!    enddo
-!    enddo
 #else
        call t_startf('vertical_remap1_3')
        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,pver,qsize,dp_star,dp)

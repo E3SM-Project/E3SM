@@ -373,10 +373,6 @@ contains
     use cam_grid_support, only: cam_grid_register, iMap, max_hcoordname_len
     use cam_grid_support, only: horiz_coord_t, horiz_coord_create
     use cam_grid_support, only: cam_grid_attribute_copy
-! HHLEE
-!#ifdef FIVE
-!    use five_intr,        only: pver_five
-!#endif
     !
     !------------------------------Arguments--------------------------------
     !
@@ -403,9 +399,6 @@ contains
     integer :: levels(plev+1)             ! vertical level indices
 #ifdef FIVE
     integer :: pver_five 
-! HHLEE
-!    integer :: levels_five(pver_five+1)   ! vertical level indices
-!    integer :: levels_five(110+1)   ! vertical level indices
     integer, dimension(:), allocatable :: levels_five
 #endif
     integer :: owner_d                    ! process owning given block column
@@ -460,10 +453,11 @@ contains
 
     call t_adj_detailf(-2)
     call t_startf("phys_grid_init")
-! HHLEE
 #ifdef FIVE
+! HHLEE
 !    pver_five = 110
 
+! five_wrapper subroutine only works on Syrah but Cori
     call five_wrapper(pver_five)
 
     allocate (levels_five(1:pver_five+1))

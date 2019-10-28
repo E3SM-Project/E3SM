@@ -13,7 +13,6 @@ module five_intr
   use cam_logfile, only: iulog
 
   implicit none
-! HHLEE
   public:: five_readnl ! read namelist from file 
 
   ! This is the number of layers to add between E3SM levels
@@ -580,7 +579,6 @@ module five_intr
     real(r8) :: zi_five(pcols,pverp_five)
     
     real(r8) :: psr
-! HHLEE 20190117
     real(r8) :: five_water, e3sm_water, ratio, diff
         
     ncol = state%ncol
@@ -695,13 +693,12 @@ module five_intr
        
         do p=1,pcnst
           q_five(i,k,p) = q_five(i,k,p) + dtime * q_five_tend(i,k,p)
-! HHLEE 20190117
           q_five(i,k,p) = max(q_five(i,k,p),0._r8)
         enddo
        
       enddo
     enddo    
-! HHLEE 20190117 
+
 ! water adjustment. This adjustment can solve the conservation issue in clubb.
     do i = 1, ncol 
        do p = 1, pcnst
