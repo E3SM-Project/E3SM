@@ -32,6 +32,7 @@ module sl_advection
   type (ghostBuffer3D_t)   :: ghostbuf_tr
   integer :: sl_mpi
   type (cartesian3D_t), allocatable :: dep_points_all(:,:,:,:) ! (np,np,nlev,nelemd)
+  real(kind=real_kind), dimension(:,:,:,:,:), allocatable :: minq, maxq ! (np,np,nlev,qsize,nelemd)
 
   public :: Prim_Advec_Tracers_remap_ALE, sl_init1, sl_vertically_remap_tracers
 
@@ -87,7 +88,7 @@ contains
           pinside = change_coordinates(elem(ie)%spherep(2,2))
           num_neighbors = elem(ie)%desc%actual_neigh_edges + 1
           call slmm_init_local_mesh(ie, elem(ie)%desc%neigh_corners, num_neighbors, &
-               pinside)
+               pinside, size(elem(ie)%desc%neigh_corners,2))
           if (sl_test) then
              do j = 1,np
                 do i = 1,np
@@ -102,6 +103,7 @@ contains
           need_conservation = 1
           call cedr_sl_init(np, nlev, qsize, qsize_d, timelevels, need_conservation)
        end if
+       allocate(minq(np,np,nlev,qsize,size(elem)), maxq(np,np,nlev,qsize,size(elem)))
     endif
     call t_stopf('sl_init1')
 #endif
@@ -130,8 +132,6 @@ contains
     integer              , intent(in   ) :: nete
 
     type(cartesian3D_t)   :: dep_points  (np,np)
-    real(kind=real_kind)  :: minq        (np,np,nlev,qsize,nets:nete)
-    real(kind=real_kind)  :: maxq        (np,np,nlev,qsize,nets:nete)
 
     integer :: i,j,k,l,n,q,ie,n0_qdp,np1_qdp
     integer :: num_neighbors, scalar_q_bounds, info
@@ -206,7 +206,13 @@ contains
             elem(ie)%derived%dp, elem(ie)%state%Q, &
             elem(ie)%desc%actual_neigh_edges + 1)
     end do
+    ! edge_g buffers are shared by SLMM, CEDR, other places in HOMME, and
+    ! dp_coupling in EAM. Thus, we must take care to protected threaded
+    ! access. In the following, "No barrier needed" comments justify why a
+    ! barrier isn't needed.
+    ! No barrier needed: ale_rkdss has a horiz thread barrier at the end.
     call slmm_csl(nets, nete, dep_points_all, minq, maxq, info)
+    ! No barrier needed: slmm_csl has a horiz thread barrier at the end.
     if (info /= 0) then
        call write_velocity_data(elem, nets, nete, hybrid, deriv, dt, tl)
        call abortmp('slmm_csl returned -1; see output above for more information.')
@@ -225,6 +231,7 @@ contains
           enddo
        end do
        call advance_hypervis_scalar(elem, hvcoord, hybrid, deriv, tl%np1, np1_qdp, nets, nete, dt, n)
+       ! No barrier needed: advance_hypervis_scalar has a horiz thread barrier at the end.
        do ie = nets, nete
           do q = 1, n
              do k = 1, nlev
@@ -251,11 +258,15 @@ contains
        end do
        call cedr_sl_set_pointers_end()
        call t_startf('CEDR')
+       ! No barrier needed: A barrier was already called.
        call cedr_sl_run(minq, maxq, nets, nete)
+       ! No barrier needed: run_cdr has a horiz thread barrier at the end.
        if (barrier) call perf_barrier(hybrid)
        call t_stopf('CEDR')
        call t_startf('CEDR_local')
        call cedr_sl_run_local(minq, maxq, nets, nete, scalar_q_bounds, limiter_option)
+       ! Barrier needed to protect edge_g buffers use in CEDR.
+       !$omp barrier
        if (barrier) call perf_barrier(hybrid)
        call t_stopf('CEDR_local')
     else
@@ -393,6 +404,10 @@ contains
           end do
        end if
     end do
+
+#if (defined HORIZ_OPENMP)
+    !$omp barrier
+#endif
   end subroutine ALE_RKdss
 
   subroutine write_velocity_data(elem, nets, nete, hy, deriv, dt, tl)

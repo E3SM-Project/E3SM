@@ -413,10 +413,33 @@ private:
 
 namespace cedr {
 // Constrained Density Reconstructor interface.
+//   Find a point Qm in the set
+//      { Qm: ( i) e'Qm = Qm_global
+//            (ii) Qm_min <= Qm <= Qm_max },
+// where e is the vector of 1s. Each algorithm in CEDR has its own optimality
+// principle to decide on the point.
 struct CDR {
   typedef std::shared_ptr<CDR> Ptr;
 
+  struct Options {
+    // In exact arithmetic, mass is conserved exactly and bounds of a feasible
+    // problem are not violated. In inexact arithmetic, these properties are
+    // inexact, and approximation quality of one can be preferred to that of the
+    // other. Use this option to prefer numerical mass conservation over
+    // numerical bounds nonviolation. In practice, this option governs errrs at
+    // the level of 10 to 1000 times numeric_limits<Real>::epsilon().
+    bool prefer_numerical_mass_conservation_to_numerical_bounds;
+
+    Options ()
+      : prefer_numerical_mass_conservation_to_numerical_bounds(false)
+    {}
+  };
+
+  CDR (const Options options = Options()) : options_(options) {}
+
   virtual void print(std::ostream& os) const {}
+
+  const Options& get_options () const { return options_; }
 
   // Set up QLT tracer metadata. Call declare_tracer in order of the tracer
   // index in the caller's numbering. Once end_tracer_declarations is called, it
@@ -428,6 +451,17 @@ struct CDR {
 
   // It is an error to call this function from a parallel region.
   virtual void end_tracer_declarations() = 0;
+
+  // Optionally query the sizes of the two primary memory buffers. This
+  // operation is valid after end_tracer_declarations was called.
+  virtual void get_buffers_sizes(size_t& buf1, size_t& buf2) = 0;
+  // Optionally provide the two primary memory buffers. These pointers must
+  // point to memory having at least the sizes returned by get_buffer_sizes.
+  virtual void set_buffers(Real* buf1, Real* buf2) = 0;
+
+  // Call this method to finish the setup phase. The subsequent methods are
+  // valid only after this method has been called.
+  virtual void finish_setup() = 0;
 
   virtual int get_problem_type(const Int& tracer_idx) const = 0;
 
@@ -471,6 +505,9 @@ struct CDR {
   // Get a cell's tracer mass Qm after the QLT algorithm has run.
   KOKKOS_FUNCTION
   virtual Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const = 0;
+
+protected:
+  Options options_;
 };
 } // namespace cedr
 
@@ -512,7 +549,7 @@ struct NodeSets {
     // Rank of the node. If the node is in a level, then its rank is my rank. If
     // it's not in a level, then it is a comm partner of a node on this rank.
     Int rank;
-    // Globally unique identifier; cellidx if leaf node, ie, if nkids == 0.
+    // cellidx if leaf node, ie, if nkids == 0; otherwise, undefined.
     Int id;
     // This node's parent, a comm partner, if such a partner is required.
     Int parent;
@@ -525,7 +562,7 @@ struct NodeSets {
     // are multiples of this unit.
     Int offset;
 
-    Node () : rank(-1), id(-1), parent(-1), nkids(0), offset(-1) {}
+    KOKKOS_FUNCTION Node () : rank(-1), id(-1), parent(-1), nkids(0), offset(-1) {}
   };
 
   // A level in the level schedule that is constructed to orchestrate
@@ -610,7 +647,10 @@ struct Node {
   Int nkids;          // 0 at leaf, 1 or 2 otherwise.
   Node::Ptr kids[2];
   Int reserved;       // For internal use.
-  Node () : parent(nullptr), rank(-1), cellidx(-1), nkids(0), reserved(-1) {}
+  Int level;          // If providing only partial trees, set level to
+                      // the level of this node, with a leaf node at
+                      // level 0.
+  Node () : parent(nullptr), rank(-1), cellidx(-1), nkids(0), reserved(-1), level(-1) {}
 };
 
 // Utility to make a tree over a 1D mesh. For testing, it can be useful to
@@ -625,11 +665,13 @@ public:
   typedef typename cedr::impl::DeviceType<ExeSpace>::type Device;
   typedef QLT<ExeSpace> Me;
   typedef std::shared_ptr<Me> Ptr;
+  typedef Kokkos::View<Real*, Device> RealList;
   
   // Set up QLT topology and communication data structures based on a tree. Both
   // ncells and tree refer to the global mesh, not just this processor's
   // part. The tree must be identical across ranks.
-  QLT(const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree);
+  QLT(const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree,
+      CDR::Options options = Options());
 
   void print(std::ostream& os) const override;
 
@@ -650,6 +692,12 @@ public:
   void declare_tracer(int problem_type, const Int& rhomidx) override;
 
   void end_tracer_declarations() override;
+
+  void get_buffers_sizes(size_t& buf1, size_t& buf2) override;
+
+  void set_buffers(Real* buf1, Real* buf2) override;
+
+  void finish_setup() override;
 
   int get_problem_type(const Int& tracer_idx) const override;
 
@@ -752,14 +800,20 @@ PROTECTED_CUDA:
   };
 
   struct BulkData {
-    typedef Kokkos::View<Real*, Device> RealList;
     typedef cedr::impl::Unmanaged<RealList> UnmanagedRealList;
 
     UnmanagedRealList l2r_data, r2l_data;
 
-    void init(const MetaData& md, const Int& nslots);
+    BulkData () : inited_(false) {}
+
+    bool inited () const { return inited_; }
+
+    void init(const size_t& l2r_sz, const size_t& r2l_sz);
+    void init(Real* l2r_buf, const size_t& l2r_sz,
+              Real* r2l_buf, const size_t& r2l_sz);
 
   private:
+    bool inited_;
     RealList l2r_data_, r2l_data_;
   };
 
@@ -806,12 +860,16 @@ struct Input {
 Int run_unit_and_randomized_tests(const Parallel::Ptr& p, const Input& in);
 
 Int test_qlt(const Parallel::Ptr& p, const tree::Node::Ptr& tree, const Int& ncells,
-             const Int nrepeat = 1,
+             const Int nrepeat,
              // Diagnostic output for dev and illustration purposes. To be
              // clear, no QLT unit test requires output to be checked; each
              // checks in-memory data and returns a failure count.
-             const bool write = false,
-             const bool verbose = false);
+             const bool write,
+             // Provide memory to QLT for its buffers.
+             const bool external_memory,
+             // Set CDR::Options.prefer_numerical_mass_conservation_to_numerical_bounds.
+             const bool prefer_mass_con_to_bounds,
+             const bool verbose);
 } // namespace test
 } // namespace qlt
 } // namespace cedr
@@ -841,6 +899,7 @@ public:
   typedef typename cedr::impl::DeviceType<ExeSpace>::type Device;
   typedef CAAS<ExeSpace> Me;
   typedef std::shared_ptr<Me> Ptr;
+  typedef Kokkos::View<Real*, Kokkos::LayoutLeft, Device> RealList;
 
 public:
   struct UserAllReducer {
@@ -864,6 +923,12 @@ public:
 
   void end_tracer_declarations() override;
 
+  void get_buffers_sizes(size_t& buf1, size_t& buf2) override;
+
+  void set_buffers(Real* buf1, Real* buf2) override;
+
+  void finish_setup() override;
+
   int get_problem_type(const Int& tracer_idx) const override;
 
   Int get_num_tracers() const override;
@@ -883,7 +948,6 @@ public:
   Real get_Qm(const Int& lclcellidx, const Int& tracer_idx) const override;
 
 protected:
-  typedef Kokkos::View<Real*, Kokkos::LayoutLeft, Device> RealList;
   typedef cedr::impl::Unmanaged<RealList> UnmanagedRealList;
   typedef Kokkos::View<Int*, Kokkos::LayoutLeft, Device> IntList;
 
@@ -903,12 +967,16 @@ protected:
   IntList probs_, t2r_;
   typename IntList::HostMirror probs_h_;
   RealList d_, send_, recv_;
+  bool finished_setup_;
 
   void reduce_globally();
 
 PRIVATE_CUDA:
   void reduce_locally();
   void finish_locally();
+
+private:
+  void get_buffers_sizes(size_t& buf1, size_t& buf2, size_t& buf3);
 };
 
 namespace test {
@@ -1001,7 +1069,13 @@ KOKKOS_INLINE_FUNCTION
 Int solve_1eq_bc_qp_2d(const Real* w, const Real* a, const Real b,
                        const Real* xlo, const Real* xhi,
                        const Real* y, Real* x,
-                       const bool clip = true);
+                       const bool clip = true,
+                       // The 2D algorithm doesn't need to terminate based on a
+                       // tolerance, but by default it will exit early if the ND
+                       // algorithm would. Set this to false to run the full 2D
+                       // algorithm w/o checking the tolerance at start. If this
+                       // is false, the feasibility check is also disabled.
+                       const bool early_exit_on_tol = true);
 
 // ClipAndAssuredSum. Minimize the 1-norm with w = 1s. Does not check for
 // feasibility.
@@ -1173,13 +1247,14 @@ void calc_r (const Int n, const Real* w, const Real* a, const Real b,
 KOKKOS_INLINE_FUNCTION
 Int solve_1eq_bc_qp_2d (const Real* w, const Real* a, const Real b,
                         const Real* xlo, const Real* xhi, 
-                        const Real* y, Real* x, const bool clip) {
+                        const Real* y, Real* x,
+                        const bool clip, const bool early_exit_on_tol) {
   Int info;
-#if 0
-  const Real r_tol = impl::calc_r_tol(b, a, y, 2);
-  info = impl::check_lu(2, a, b, xlo, xhi, r_tol, x);
-  if (info == -1) return info;
-#endif
+  if (early_exit_on_tol) {
+    const Real r_tol = impl::calc_r_tol(b, a, y, 2);
+    Int info = impl::check_lu(2, a, b, xlo, xhi, r_tol, x);
+    if (info == -1) return info;
+  }
 
   { // Check if the optimal point ignoring bound constraints is in bounds.
     Real qmass = 0, dm = b;
@@ -1537,11 +1612,30 @@ void r2l_nl_adjust_bounds (Real Qm_bnd[2], const Real rhom[2], Real Qm_extra) {
   }
 }
 
+template <typename ES> KOKKOS_INLINE_FUNCTION
+int QLT<ES>::MetaData::get_problem_type (const int& idx) {
+  static const Int problem_type[] = {
+    CPT::st, CPT::cst, CPT::t, CPT::ct, CPT::nn, CPT::cnn
+  };
+  return problem_type[idx];
+}
+    
+template <typename ES> KOKKOS_INLINE_FUNCTION
+int QLT<ES>::MetaData::get_problem_type_l2r_bulk_size (const int& mask) {
+  if (mask & ProblemType::nonnegative) {
+    if (mask & ProblemType::conserve) return 2;
+    return 1;
+  }
+  if (mask & ProblemType::conserve) return 4;
+  return 3;
+}
+
 namespace impl {
 KOKKOS_INLINE_FUNCTION
 void solve_node_problem (const Real& rhom, const Real* pd, const Real& Qm,
                          const Real& rhom0, const Real* k0d, Real& Qm0,
-                         const Real& rhom1, const Real* k1d, Real& Qm1) {
+                         const Real& rhom1, const Real* k1d, Real& Qm1,
+                         const bool prefer_mass_con_to_bounds) {
   Real Qm_min_kids [] = {k0d[0], k1d[0]};
   Real Qm_orig_kids[] = {k0d[1], k1d[1]};
   Real Qm_max_kids [] = {k0d[2], k1d[2]};
@@ -1584,7 +1678,9 @@ void solve_node_problem (const Real& rhom, const Real* pd, const Real& Qm,
     const Real w[] = {1/rhom0, 1/rhom1};
     Real Qm_kids[] = {k0d[1], k1d[1]};
     local::solve_1eq_bc_qp_2d(w, ones, Qm, Qm_min_kids, Qm_max_kids,
-                              Qm_orig_kids, Qm_kids, false /* clip */);
+                              Qm_orig_kids, Qm_kids,
+                              ! prefer_mass_con_to_bounds /* clip */,
+                              ! prefer_mass_con_to_bounds /* early_exit_on_tol */);
     Qm0 = Qm_kids[0];
     Qm1 = Qm_kids[1];
   }
@@ -1594,14 +1690,16 @@ KOKKOS_INLINE_FUNCTION
 void solve_node_problem (const Int problem_type,
                          const Real& rhom, const Real* pd, const Real& Qm,
                          const Real& rhom0, const Real* k0d, Real& Qm0,
-                         const Real& rhom1, const Real* k1d, Real& Qm1) {
+                         const Real& rhom1, const Real* k1d, Real& Qm1,
+                         const bool prefer_mass_con_to_bounds) {
   if ((problem_type & ProblemType::consistent) &&
       ! (problem_type & ProblemType::shapepreserve)) {      
     Real mpd[3], mk0d[3], mk1d[3];
     mpd[0]  = pd [0]*rhom ; mpd [1] = pd[1] ; mpd [2] = pd [2]*rhom ;
     mk0d[0] = k0d[0]*rhom0; mk0d[1] = k0d[1]; mk0d[2] = k0d[2]*rhom0;
     mk1d[0] = k1d[0]*rhom1; mk1d[1] = k1d[1]; mk1d[2] = k1d[2]*rhom1;
-    solve_node_problem(rhom, mpd, Qm, rhom0, mk0d, Qm0, rhom1, mk1d, Qm1);
+    solve_node_problem(rhom, mpd, Qm, rhom0, mk0d, Qm0, rhom1, mk1d, Qm1,
+                       prefer_mass_con_to_bounds);
     return;
   } else if (problem_type & ProblemType::nonnegative) {
     static const Real ones[] = {1, 1};
@@ -1613,7 +1711,8 @@ void solve_node_problem (const Int problem_type,
     Qm0 = Qm_kids[0];
     Qm1 = Qm_kids[1];
   } else {
-    solve_node_problem(rhom, pd, Qm, rhom0, k0d, Qm0, rhom1, k1d, Qm1);
+    solve_node_problem(rhom, pd, Qm, rhom0, k0d, Qm0, rhom1, k1d, Qm1,
+                       prefer_mass_con_to_bounds);
   }
 }
 
@@ -1640,7 +1739,8 @@ namespace test {
 class TestRandomized {
 public:
   TestRandomized(const std::string& cdr_name, const mpi::Parallel::Ptr& p,
-                 const Int& ncells, const bool verbose = false);
+                 const Int& ncells, const bool verbose = false,
+                 const CDR::Options options = CDR::Options());
 
   // The subclass should call this, probably in its constructor.
   void init();
@@ -1650,6 +1750,7 @@ public:
 
 private:
   const std::string cdr_name_;
+  const CDR::Options options_;
 
 protected:
   struct Tracer {
@@ -1767,8 +1868,8 @@ private:
   static void generate_Q(const Tracer& t, Values& v);
   static void permute_Q(const Tracer& t, Values& v);
   static std::string get_tracer_name(const Tracer& t);
-  static Int check(const std::string& cdr_name, const mpi::Parallel& p,
-                   const std::vector<Tracer>& ts, const Values& v);
+  Int check(const std::string& cdr_name, const mpi::Parallel& p,
+            const std::vector<Tracer>& ts, const Values& v);
 };
 
 } // namespace test
@@ -1790,7 +1891,7 @@ private:
 namespace cedr {
 namespace test {
 
-template <typename CDRT, typename ExeSpace>
+template <typename CDRT, typename ES>
 Int TestRandomized::run (const Int nrepeat, const bool write) {
   const Int nt = tracers_.size(), nlclcells = gcis_.size();
 
@@ -1806,7 +1907,7 @@ Int TestRandomized::run (const Int nrepeat, const bool write) {
       write_pre(t, v);
 
   CDRT cdr = static_cast<CDRT&>(get_cdr());
-  ValuesDevice<ExeSpace> vd(v);
+  ValuesDevice<ES> vd(v);
   vd.sync_device();
 
   {
@@ -1814,7 +1915,7 @@ Int TestRandomized::run (const Int nrepeat, const bool write) {
     const auto set_rhom = KOKKOS_LAMBDA (const Int& i) {
       cdr.set_rhom(i, 0, rhom[i]);
     };
-    Kokkos::parallel_for(nlclcells, set_rhom);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, nlclcells), set_rhom);
   }
   // repeat > 1 runs the same values repeatedly for performance
   // meaurement.
@@ -1825,7 +1926,7 @@ Int TestRandomized::run (const Int nrepeat, const bool write) {
       cdr.set_Qm(i, ti, vd.Qm(ti)[i], vd.Qm_min(ti)[i], vd.Qm_max(ti)[i],
                  vd.Qm_prev(ti)[i]);
     };
-    Kokkos::parallel_for(nt*nlclcells, set_Qm);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, nt*nlclcells), set_Qm);
     run_impl(trial);
   }
   {
@@ -1834,7 +1935,7 @@ Int TestRandomized::run (const Int nrepeat, const bool write) {
       const auto i = j % nlclcells;
       vd.Qm(ti)[i] = cdr.get_Qm(i, ti);
     };
-    Kokkos::parallel_for(nt*nlclcells, get_Qm);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, nt*nlclcells), get_Qm);
   }
   vd.sync_host(); // => v contains computed values
 
@@ -2159,7 +2260,7 @@ Int test_1eq_nonneg () {
       solve_1eq_bc_qp(n, w, a, b, xlo, xhi, y, x_ls);
       const Real rd_caas = reldif(x_caas, x1_caas, 2);
       const Real rd_ls = reldif(x_ls, x1_ls, 2);
-      if (rd_ls > 1e1*std::numeric_limits<Real>::epsilon() ||
+      if (rd_ls > 5e1*std::numeric_limits<Real>::epsilon() ||
           rd_caas > 1e1*std::numeric_limits<Real>::epsilon()) {
         pr(puf(rd_ls) pu(rd_caas));
         if (verbose) {
@@ -2408,7 +2509,7 @@ Int init_tree (const Int& my_rank, const tree::Node::Ptr& node, Int& id) {
     depth = std::max(depth, init_tree(my_rank, node->kids[i], id));
   }
   if (node->nkids) {
-    node->rank = node->kids[0]->rank;
+    if (node->rank < 0) node->rank = node->kids[0]->rank;
     node->cellidx = id++;
   } else {
     cedr_throw_if(node->rank == my_rank && (node->cellidx < 0 || node->cellidx >= id),
@@ -2434,6 +2535,12 @@ void level_schedule_and_collect (
     if (kid_needs_ns_node) make_ns_node = true;
   }
   ++level;
+  if (node->level >= 0) {
+    // The caller built only partial trees and so must provide the
+    // level.
+    level = node->level;
+    cedr_assert(level < static_cast<Int>(ns.levels.size()));
+  }
   // Is parent node needed for isend?
   const bool node_is_owned = node->rank == my_rank;
   need_parent_ns_node = node_is_owned;
@@ -2445,7 +2552,7 @@ void level_schedule_and_collect (
     node->reserved = ns_node_idx;
     NodeSets::Node* ns_node = ns.node_h(ns_node_idx);
     ns_node->rank = node->rank;
-    ns_node->id = node->cellidx;
+    if (node->nkids == 0) ns_node->id = node->cellidx;
     if (node_is_owned) {
       // If this node is owned, it needs to have information about all kids.
       ns_node->nkids = node->nkids;
@@ -2585,7 +2692,12 @@ NodeSets::ConstPtr analyze (const Parallel::Ptr& p, const Int& ncells,
   const auto nodesets = std::make_shared<NodeSets>();
   cedr_assert( ! tree->parent);
   Int id = ncells;
-  const Int depth = init_tree(p->rank(), tree, id);
+  Int depth = init_tree(p->rank(), tree, id);
+  if (tree->level >= 0) {
+    // If level is provided, don't trust depth from init_tree. Partial trees can
+    // make depth too small.
+    depth = tree->level + 1;
+  }
   nodesets->levels.resize(depth);
   level_schedule_and_collect(*nodesets, p->rank(), tree);
   consolidate(*nodesets);
@@ -2736,14 +2848,6 @@ void QLT<ES>::init (const std::string& name, IntList& d,
   h = Kokkos::create_mirror_view(d);
 }
 
-template <typename ES> KOKKOS_INLINE_FUNCTION
-int QLT<ES>::MetaData::get_problem_type (const int& idx) {
-  static const Int problem_type[] = {
-    CPT::st, CPT::cst, CPT::t, CPT::ct, CPT::nn, CPT::cnn
-  };
-  return problem_type[idx];
-}
-    
 template <typename ES>
 int QLT<ES>::MetaData::get_problem_type_idx (const int& mask) {
   switch (mask) {
@@ -2755,16 +2859,6 @@ int QLT<ES>::MetaData::get_problem_type_idx (const int& mask) {
   case CPT::cnn: return 5;
   default: cedr_kernel_throw_if(true, "Invalid problem type."); return -1;
   }
-}
-
-template <typename ES> KOKKOS_INLINE_FUNCTION
-int QLT<ES>::MetaData::get_problem_type_l2r_bulk_size (const int& mask) {
-  if (mask & ProblemType::nonnegative) {
-    if (mask & ProblemType::conserve) return 2;
-    return 1;
-  }
-  if (mask & ProblemType::conserve) return 4;
-  return 3;
 }
 
 template <typename ES>
@@ -2829,11 +2923,22 @@ void QLT<ES>::MetaData::init (const MetaDataBuilder& mdb) {
 }
 
 template <typename ES>
-void QLT<ES>::BulkData::init (const MetaData& md, const Int& nslots) {
-  l2r_data_ = RealList("QLT l2r_data", md.a_h.prob2bl2r[md.nprobtypes]*nslots);
-  r2l_data_ = RealList("QLT r2l_data", md.a_h.prob2br2l[md.nprobtypes]*nslots);
+void QLT<ES>::BulkData::init (const size_t& l2r_sz, const size_t& r2l_sz) {
+  l2r_data_ = RealList("QLT l2r_data", l2r_sz);
+  r2l_data_ = RealList("QLT r2l_data", r2l_sz);
   l2r_data = l2r_data_;
   r2l_data = r2l_data_;
+  inited_ = true;
+}
+
+template <typename ES>
+void QLT<ES>::BulkData::init (Real* buf1, const size_t& l2r_sz,
+                              Real* buf2, const size_t& r2l_sz) {
+  l2r_data_ = RealList(buf1, l2r_sz);
+  r2l_data_ = RealList(buf2, r2l_sz);
+  l2r_data = l2r_data_;
+  r2l_data = r2l_data_;
+  inited_ = true;
 }
 
 template <typename ES>
@@ -2888,7 +2993,10 @@ void QLT<ES>::init_ordinals () {
 }
 
 template <typename ES>
-QLT<ES>::QLT (const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree) {
+QLT<ES>::QLT (const Parallel::Ptr& p, const Int& ncells, const tree::Node::Ptr& tree,
+              Options options)
+  : CDR(options)
+{
   init(p, ncells, tree);
   cedr_throw_if(nlclcells() == 0, "QLT does not support 0 cells on a rank.");
 }
@@ -2946,7 +3054,28 @@ template <typename ES>
 void QLT<ES>::end_tracer_declarations () {
   md_.init(*mdb_);
   mdb_ = nullptr;
-  bd_.init(md_, ns_->nslots);
+}
+
+template <typename ES>
+void QLT<ES>::get_buffers_sizes (size_t& buf1, size_t& buf2) {
+  const auto nslots = ns_->nslots;
+  buf1 = md_.a_h.prob2bl2r[md_.nprobtypes]*nslots;
+  buf2 = md_.a_h.prob2br2l[md_.nprobtypes]*nslots;
+}
+
+template <typename ES>
+void QLT<ES>::set_buffers (Real* buf1, Real* buf2) {
+  size_t l2r_sz, r2l_sz;
+  get_buffers_sizes(l2r_sz, r2l_sz);
+  bd_.init(buf1, l2r_sz, buf2, r2l_sz);
+}
+
+template <typename ES>
+void QLT<ES>::finish_setup () {
+  if (bd_.inited()) return;
+  size_t l2r_sz, r2l_sz;
+  get_buffers_sizes(l2r_sz, r2l_sz);
+  bd_.init(l2r_sz, r2l_sz);
 }
 
 template <typename ES>
@@ -3142,7 +3271,8 @@ void r2l_solve_qp_solve_node_problem (
   const impl::NodeSets::Node& n,
   const impl::NodeSets::Node& k0, const impl::NodeSets::Node& k1,
   const Int& l2rndps, const Int& r2lndps,
-  const Int& l2rbdi, const Int& r2lbdi)
+  const Int& l2rbdi, const Int& r2lbdi,
+  const bool prefer_mass_con_to_bounds)
 {
   impl::solve_node_problem(
     problem_type,
@@ -3154,12 +3284,15 @@ void r2l_solve_qp_solve_node_problem (
      r2l_data(k0.offset*r2lndps + r2lbdi),
      l2r_data(k1.offset*l2rndps),
     &l2r_data(k1.offset*l2rndps + l2rbdi),
-     r2l_data(k1.offset*r2lndps + r2lbdi));
+     r2l_data(k1.offset*r2lndps + r2lbdi),
+    prefer_mass_con_to_bounds);
 }
 
 template <typename ES> void QLT<ES>
 ::r2l_solve_qp (const Int& lvlidx, const Int& l2rndps, const Int& r2lndps) const {
   Timer::start(Timer::snp);
+  const bool prefer_mass_con_to_bounds =
+    options_.prefer_numerical_mass_conservation_to_numerical_bounds;
   if (cedr::impl::OnGpu<ES>::value) {
     const auto d = *nsdd_;
     const auto l2r_data = bd_.l2r_data;
@@ -3193,7 +3326,7 @@ template <typename ES> void QLT<ES>
       }
       r2l_solve_qp_solve_node_problem(
         l2r_data, r2l_data, problem_type, n, d.node(n.kids[0]), d.node(n.kids[1]),
-        l2rndps, r2lndps, l2rbdi, r2lbdi);
+        l2rndps, r2lndps, l2rbdi, r2lbdi, prefer_mass_con_to_bounds);
     };
     Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, N), solve_qp);
     Kokkos::fence();
@@ -3227,7 +3360,8 @@ template <typename ES> void QLT<ES>
           }
           r2l_solve_qp_solve_node_problem(
             bd_.l2r_data, bd_.r2l_data, problem_type, *n, *ns_->node_h(n->kids[0]),
-            *ns_->node_h(n->kids[1]), l2rndps, r2lndps, l2rbdi, r2lbdi);
+            *ns_->node_h(n->kids[1]), l2rndps, r2lndps, l2rbdi, r2lbdi,
+            prefer_mass_con_to_bounds);
         }
       }
     }
@@ -3246,6 +3380,7 @@ template <typename ES> void QLT<ES>
 
 template <typename ES>
 void QLT<ES>::run () {
+  cedr_assert(bd_.inited());
   Timer::start(Timer::qltrunl2r);
   // Number of data per slot.
   const Int l2rndps = md_.a_h.prob2bl2r[md_.nprobtypes];
@@ -3275,9 +3410,10 @@ public:
   typedef QLT<Kokkos::DefaultExecutionSpace> QLTT;
 
   TestQLT (const Parallel::Ptr& p, const tree::Node::Ptr& tree,
-           const Int& ncells, const bool verbose=false)
-    : TestRandomized("QLT", p, ncells, verbose),
-      qlt_(p, ncells, tree), tree_(tree)
+           const Int& ncells, const bool external_memory, const bool verbose,
+           CDR::Options options)
+    : TestRandomized("QLT", p, ncells, verbose, options),
+      qlt_(p, ncells, tree, options), tree_(tree), external_memory_(external_memory)
   {
     if (verbose) qlt_.print(std::cout);
     init();
@@ -3286,6 +3422,8 @@ public:
 private:
   QLTT qlt_;
   tree::Node::Ptr tree_;
+  bool external_memory_;
+  typename QLTT::RealList buf1_, buf2_;
 
   CDR& get_cdr () override { return qlt_; }
 
@@ -3320,6 +3458,14 @@ private:
     for (const auto& t : tracers_)
       qlt_.declare_tracer(t.problem_type, 0);
     qlt_.end_tracer_declarations();
+    if (external_memory_) {
+      size_t l2r_sz, r2l_sz;
+      qlt_.get_buffers_sizes(l2r_sz, r2l_sz);
+      buf1_ = typename QLTT::RealList("buf1", l2r_sz);
+      buf2_ = typename QLTT::RealList("buf2", r2l_sz);
+      qlt_.set_buffers(buf1_.data(), buf2_.data());
+    }
+    qlt_.finish_setup();
     cedr_assert(qlt_.get_num_tracers() == static_cast<Int>(tracers_.size()));
     for (size_t i = 0; i < tracers_.size(); ++i) {
       const auto pt = qlt_.get_problem_type(i);
@@ -3349,8 +3495,13 @@ private:
 // Test all QLT variations and situations.
 Int test_qlt (const Parallel::Ptr& p, const tree::Node::Ptr& tree,
               const Int& ncells, const Int nrepeat,
-              const bool write, const bool verbose) {
-  return TestQLT(p, tree, ncells, verbose).run<TestQLT::QLTT>(nrepeat, write);
+              const bool write, const bool external_memory,
+              const bool prefer_mass_con_to_bounds, const bool verbose) {
+  CDR::Options options;
+  options.prefer_numerical_mass_conservation_to_numerical_bounds =
+    prefer_mass_con_to_bounds;
+  return TestQLT(p, tree, ncells, external_memory, verbose, options)
+    .run<TestQLT::QLTT>(nrepeat, write);
 }
 } // namespace test
 
@@ -3507,19 +3658,26 @@ Int unittest_QLT (const Parallel::Ptr& p, const bool write_requested=false) {
   const Mesh::ParallelDecomp::Enum dists[] = { Mesh::ParallelDecomp::contiguous,
                                                Mesh::ParallelDecomp::pseudorandom };
   Int nerr = 0;
-  for (size_t is = 0, islim = sizeof(szs)/sizeof(*szs); is < islim; ++is)
-    for (size_t id = 0, idlim = sizeof(dists)/sizeof(*dists); id < idlim; ++id)
-    for (bool imbalanced: {false, true}) {
-      if (p->amroot()) {
-        std::cout << " (" << szs[is] << ", " << id << ", " << imbalanced << ")";
-        std::cout.flush();
+  for (size_t is = 0, islim = sizeof(szs)/sizeof(*szs); is < islim; ++is) {
+    for (size_t id = 0, idlim = sizeof(dists)/sizeof(*dists); id < idlim; ++id) {
+      for (bool imbalanced : {false, true}) {
+        for (bool prefer_mass_con_to_bounds : {false, true}) {
+          const auto external_memory = imbalanced;
+          if (p->amroot()) {
+            std::cout << " (" << szs[is] << ", " << id << ", " << imbalanced << ", "
+                      << prefer_mass_con_to_bounds << ")";
+            std::cout.flush();
+          }
+          Mesh m(szs[is], p, dists[id]);
+          tree::Node::Ptr tree = make_tree(m, imbalanced);
+          const bool write = (write_requested && m.ncell() < 3000 &&
+                              is == islim-1 && id == idlim-1);
+          nerr += test::test_qlt(p, tree, m.ncell(), 1, write, external_memory,
+                                 prefer_mass_con_to_bounds, false);
+        }
       }
-      Mesh m(szs[is], p, dists[id]);
-      tree::Node::Ptr tree = make_tree(m, imbalanced);
-      const bool write = (write_requested && m.ncell() < 3000 &&
-                          is == islim-1 && id == idlim-1);
-      nerr += test::test_qlt(p, tree, m.ncell(), 1, write);
     }
+  }
   return nerr;
 }
 
@@ -3551,7 +3709,7 @@ Int run_unit_and_randomized_tests (const Parallel::Ptr& p, const Input& in) {
     Timer::start(Timer::total); Timer::start(Timer::tree);
     tree::Node::Ptr tree = make_tree(m, false);
     Timer::stop(Timer::tree);
-    test::test_qlt(p, tree, in.ncells, in.nrepeat, false, in.verbose);
+    test::test_qlt(p, tree, in.ncells, in.nrepeat, false, false, false, in.verbose);
     Timer::stop(Timer::total);
     if (p->amroot()) Timer::print();
   }
@@ -3571,6 +3729,9 @@ template class cedr::qlt::QLT<Kokkos::OpenMP>;
 #ifdef KOKKOS_ENABLE_CUDA
 template class cedr::qlt::QLT<Kokkos::Cuda>;
 #endif
+#ifdef KOKKOS_ENABLE_THREADS
+template class cedr::qlt::QLT<Kokkos::Threads>;
+#endif
 
 //>> cedr_caas.cpp
 // COMPOSE version 1.0: Copyright 2018 NTESS. This software is released under
@@ -3584,6 +3745,16 @@ namespace Kokkos {
 struct Real2 {
   cedr::Real v[2];
   KOKKOS_INLINE_FUNCTION Real2 () { v[0] = v[1] = 0; }
+
+  KOKKOS_INLINE_FUNCTION void operator= (const Real2& s) {
+    v[0] = s.v[0];
+    v[1] = s.v[1];
+  }
+  KOKKOS_INLINE_FUNCTION void operator= (const volatile Real2& s) volatile {
+    v[0] = s.v[0];
+    v[1] = s.v[1];
+  }
+
   KOKKOS_INLINE_FUNCTION Real2& operator+= (const Real2& o) {
     v[0] += o.v[0];
     v[1] += o.v[1];
@@ -3603,7 +3774,7 @@ template <typename ES>
 CAAS<ES>::CAAS (const mpi::Parallel::Ptr& p, const Int nlclcells,
                 const typename UserAllReducer::Ptr& uar)
   : p_(p), user_reducer_(uar), nlclcells_(nlclcells), nrhomidxs_(0),
-    need_conserve_(false)
+    need_conserve_(false), finished_setup_(false)
 {
   cedr_throw_if(nlclcells == 0, "CAAS does not support 0 cells on a rank.");
   tracer_decls_ = std::make_shared<std::vector<Decl> >();  
@@ -3633,13 +3804,47 @@ void CAAS<ES>::end_tracer_declarations () {
   }
   Kokkos::deep_copy(probs_, probs_h_);
   tracer_decls_ = nullptr;
-  // (rho, Qm, Qm_min, Qm_max, [Qm_prev])
+}
+
+template <typename ES>
+void CAAS<ES>::get_buffers_sizes (size_t& buf1, size_t& buf2, size_t& buf3) {
   const Int e = need_conserve_ ? 1 : 0;
-  d_ = RealList("CAAS data", nlclcells_ * ((3+e)*probs_.size() + 1));
   const auto nslots = 4*probs_.size();
+  buf1 = nlclcells_ * ((3+e)*probs_.size() + 1);
+  buf2 = nslots*(user_reducer_ ? nlclcells_ : 1);
+  buf3 = nslots;
+}
+
+template <typename ES>
+void CAAS<ES>::get_buffers_sizes (size_t& buf1, size_t& buf2) {
+  size_t buf3;
+  get_buffers_sizes(buf1, buf2, buf3);
+  buf2 += buf3;
+}
+
+template <typename ES>
+void CAAS<ES>::set_buffers (Real* buf1, Real* buf2) {
+  size_t buf1sz, buf2sz, buf3sz;
+  get_buffers_sizes(buf1sz, buf2sz, buf3sz);
+  d_ = RealList(buf1, buf1sz);
+  send_ = RealList(buf2, buf2sz);
+  recv_ = RealList(buf2 + buf2sz, buf3sz);
+}
+
+template <typename ES>
+void CAAS<ES>::finish_setup () {
+  if (recv_.size() > 0) {
+    finished_setup_ = true;
+    return;
+  }
+  size_t buf1, buf2, buf3;
+  get_buffers_sizes(buf1, buf2, buf3);
+  // (rho, Qm, Qm_min, Qm_max, [Qm_prev])
+  d_ = RealList("CAAS data", buf1);
   // (e'Qm_clip, e'Qm, e'Qm_min, e'Qm_max, [e'Qm_prev])
-  send_ = RealList("CAAS send", nslots*(user_reducer_ ? nlclcells_ : 1));
-  recv_ = RealList("CAAS recv", nslots);
+  send_ = RealList("CAAS send", buf2);
+  recv_ = RealList("CAAS recv", buf3);
+  finished_setup_ = true;
 }
 
 template <typename ES>
@@ -3687,14 +3892,14 @@ void CAAS<ES>::reduce_locally () {
       send(nlclcells*      k  + i) = Qm_clip;
       send(nlclcells*(nt + k) + i) = Qm_term;
     };
-    Kokkos::parallel_for(nt*nlclcells, calc_Qm_clip);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, nt*nlclcells), calc_Qm_clip);
     const auto set_Qm_minmax = KOKKOS_LAMBDA (const Int& j) {
       const auto k = 2*nt + j / nlclcells;
       const auto i = j % nlclcells;
       const auto os = (k-nt+1)*nlclcells;
       send(nlclcells*k + i) = d(os+i);
     };
-    Kokkos::parallel_for(2*nt*nlclcells, set_Qm_minmax);
+    Kokkos::parallel_for(Kokkos::RangePolicy<ES>(0, 2*nt*nlclcells), set_Qm_minmax);
   } else {
     using ESU = cedr::impl::ExeSpaceUtils<ES>;
     const auto calc_Qm_clip = KOKKOS_LAMBDA (const typename ESU::Member& t) {
@@ -3783,6 +3988,7 @@ void CAAS<ES>::finish_locally () {
 
 template <typename ES>
 void CAAS<ES>::run () {
+  cedr_assert(finished_setup_);
   reduce_locally();
   const bool user_reduces = user_reducer_ != nullptr;
   if (user_reduces)
@@ -3818,9 +4024,10 @@ struct TestCAAS : public cedr::test::TestRandomized {
   };
 
   TestCAAS (const mpi::Parallel::Ptr& p, const Int& ncells,
-            const bool use_own_reducer, const bool verbose)
+            const bool use_own_reducer, const bool external_memory,
+            const bool verbose)
     : TestRandomized("CAAS", p, ncells, verbose),
-      p_(p)
+      p_(p), external_memory_(external_memory)
   {
     const auto np = p->size(), rank = p->rank();
     nlclcells_ = ncells / np;
@@ -3858,6 +4065,14 @@ struct TestCAAS : public cedr::test::TestRandomized {
     }
     tracers_ = tracers;
     caas_->end_tracer_declarations();
+    if (external_memory_) {
+      size_t l2r_sz, r2l_sz;
+      caas_->get_buffers_sizes(l2r_sz, r2l_sz);
+      buf1_ = typename CAAST::RealList("buf1", l2r_sz);
+      buf2_ = typename CAAST::RealList("buf2", r2l_sz);
+      caas_->set_buffers(buf1_.data(), buf2_.data());
+    }
+    caas_->finish_setup();
   }
 
   void run_impl (const Int trial) override {
@@ -3866,8 +4081,10 @@ struct TestCAAS : public cedr::test::TestRandomized {
 
 private:
   mpi::Parallel::Ptr p_;
+  bool external_memory_;
   Int nlclcells_;
   CAAST::Ptr caas_;
+  typename CAAST::RealList buf1_, buf2_;
 
   static Int get_nllclcells (const Int& ncells, const Int& np, const Int& rank) {
     Int nlclcells = ncells / np;
@@ -3883,8 +4100,10 @@ Int unittest (const mpi::Parallel::Ptr& p) {
   for (Int nlclcells : {1, 2, 4, 11}) {
     Long ncells = np*nlclcells;
     if (ncells > np) ncells -= np/2;
-    nerr += TestCAAS(p, ncells, false, false).run<TestCAAS::CAAST>(1, false);
-    nerr += TestCAAS(p, ncells, true, false).run<TestCAAS::CAAST>(1, false);
+    for (const bool own_reducer : {false, true})
+      for (const bool external_memory : {false, true})
+        nerr += TestCAAS(p, ncells, own_reducer, external_memory, false)
+          .run<TestCAAS::CAAST>(1, false);
   }
   return nerr;
 }
@@ -3900,6 +4119,9 @@ template class cedr::caas::CAAS<Kokkos::OpenMP>;
 #endif
 #ifdef KOKKOS_ENABLE_CUDA
 template class cedr::caas::CAAS<Kokkos::Cuda>;
+#endif
+#ifdef KOKKOS_ENABLE_THREADS
+template class cedr::caas::CAAS<Kokkos::Threads>;
 #endif
 
 //>> cedr_test_randomized.cpp
@@ -3961,7 +4183,7 @@ void TestRandomized::generate_rho (Values& v) {
   auto r = v.rhom();
   const Int n = v.ncells();
   for (Int i = 0; i < n; ++i)
-    r[i] = 0.5 + 1.5*urand();
+    r[i] = 0.5*(1 + urand());
 }
 
 void TestRandomized::generate_Q (const Tracer& t, Values& v) {
@@ -4199,7 +4421,12 @@ Int TestRandomized
 ::check (const std::string& cdr_name, const mpi::Parallel& p,
          const std::vector<Tracer>& ts, const Values& v) {
   static const bool details = true;
-  static const Real ulp3 = 3*std::numeric_limits<Real>::epsilon();
+  static const Real eps = std::numeric_limits<Real>::epsilon();
+  static const Real ulp3 = 3*eps;
+  const auto prefer_mass_con_to_bounds =
+    options_.prefer_numerical_mass_conservation_to_numerical_bounds;
+  const Real lv_tol = prefer_mass_con_to_bounds ? 100*eps : 0;
+  const Real safety_tol = prefer_mass_con_to_bounds ? 100*eps : ulp3;
   Int nerr = 0;
   std::vector<Real> lcl_mass(2*ts.size()), q_min_lcl(ts.size()), q_max_lcl(ts.size());
   std::vector<Int> t_ok(ts.size(), 1), local_violated(ts.size(), 0);
@@ -4218,7 +4445,7 @@ Int TestRandomized
     for (Int i = 0; i < n; ++i) {
       const bool lv = (nonneg_only ?
                        Qm[i] < 0 :
-                       Qm[i] < Qm_min[i] || Qm[i] > Qm_max[i]);
+                       Qm[i] < Qm_min[i] - lv_tol || Qm[i] > Qm_max[i] + lv_tol);
       if (lv) local_violated[ti] = 1;
       if ( ! safe_only && lv) {
         // If this fails at ~ machine eps, check r2l_nl_adjust_bounds code in
@@ -4260,7 +4487,7 @@ Int TestRandomized
         * Qm_max = v.Qm_max(t.idx);
       const Real q_min = nonneg_only ? 0 : q_min_gbl[ti], q_max = q_max_gbl[ti];
       for (Int i = 0; i < n; ++i) {
-        const Real delta = (q_max - q_min)*ulp3;
+        const Real delta = (q_max - q_min)*safety_tol;
         const bool lv = (nonneg_only ?
                          Qm[i] < -ulp3 :
                          (Qm[i] < q_min*rhom[i] - delta ||
@@ -4314,8 +4541,10 @@ Int TestRandomized
   
 TestRandomized
 ::TestRandomized (const std::string& name, const mpi::Parallel::Ptr& p,
-                  const Int& ncells, const bool verbose)
-  : cdr_name_(name), p_(p), ncells_(ncells), write_inited_(false)
+                  const Int& ncells, const bool verbose,
+                  const CDR::Options options)
+  : cdr_name_(name), options_(options), p_(p), ncells_(ncells),
+    write_inited_(false)
 {}
 
 void TestRandomized::init () {
@@ -4619,6 +4848,7 @@ Int run (const mpi::Parallel::Ptr& parallel, const Input& in) {
       cdr->declare_tracer(cedr::ProblemType::conserve |
                           cedr::ProblemType::shapepreserve, 0);
     cdr->end_tracer_declarations();
+    cdr->finish_setup();
     for (Int i = 0; i < in.ncells; ++i)
       cdr->set_rhom(i, 0, p.area(i));
     cdr->print(std::cout);
@@ -4763,8 +4993,8 @@ namespace compose {
 template <typename ES>
 struct QLT : public cedr::qlt::QLT<ES> {
   QLT (const cedr::mpi::Parallel::Ptr& p, const cedr::Int& ncells,
-       const cedr::qlt::tree::Node::Ptr& tree)
-    : cedr::qlt::QLT<ES>(p, ncells, tree)
+       const cedr::qlt::tree::Node::Ptr& tree, const cedr::CDR::Options& options)
+    : cedr::qlt::QLT<ES>(p, ncells, tree, options)
   {}
 
   void run () override {
@@ -4976,7 +5206,8 @@ struct QLT : public cedr::qlt::QLT<ES> {
                  bd_.r2l_data(k0->offset*r2lndps + r2lbdi),
                  bd_.l2r_data(k1->offset*l2rndps),
                 &bd_.l2r_data(k1->offset*l2rndps + l2rbdi),
-                 bd_.r2l_data(k1->offset*r2lndps + r2lbdi));
+                 bd_.r2l_data(k1->offset*r2lndps + r2lbdi),
+                this->options_.prefer_numerical_mass_conservation_to_numerical_bounds);
             }
           }
         }
@@ -5089,13 +5320,11 @@ Int rank2sfc_search (const Int* rank2sfc, const Int& nrank, const Int& sfc) {
 // index. owned_ids is in SFC index order for this rank.
 void renumber (const Int nrank, const Int nelem, const Int my_rank, const Int* owned_ids,
                const Int* rank2sfc, const qlt::tree::Node::Ptr& node) {
-  if (node->nkids)
+  if (node->nkids) {
     for (Int k = 0; k < node->nkids; ++k)
       renumber(nrank, nelem, my_rank, owned_ids, rank2sfc, node->kids[k]);
-  else {
+  } else {
     const Int sfc = node->cellidx;
-    node->rank = rank2sfc_search(rank2sfc, nrank, sfc);
-    cedr_assert(node->rank >= 0 && node->rank < nrank);
     node->cellidx = node->rank == my_rank ? owned_ids[sfc - rank2sfc[my_rank]] : -1;
     cedr_assert((node->rank != my_rank && node->cellidx == -1) ||
                 (node->rank == my_rank && node->cellidx >= 0 && node->cellidx < nelem));
@@ -5104,10 +5333,10 @@ void renumber (const Int nrank, const Int nelem, const Int my_rank, const Int* o
 
 void renumber (const Int* sc2gci, const Int* sc2rank,
                const qlt::tree::Node::Ptr& node) {
-  if (node->nkids)
+  if (node->nkids) {
     for (Int k = 0; k < node->nkids; ++k)
       renumber(sc2gci, sc2rank, node->kids[k]);
-  else {
+  } else {
     const Int ci = node->cellidx;
     node->cellidx = sc2gci[ci];
     node->rank = sc2rank[ci];
@@ -5116,10 +5345,11 @@ void renumber (const Int* sc2gci, const Int* sc2rank,
 
 // Build a subtree over [0, nsublev).
 void add_sub_levels (const qlt::tree::Node::Ptr& node, const Int nsublev,
-                     const Int gci, const Int rank,
+                     const Int gci, const Int rank, const bool calc_level,
                      const Int slb, const Int sle) {
   if (slb+1 == sle) {
     node->cellidx = nsublev*gci + slb;
+    if (calc_level) node->level = 0;
   } else {
     node->nkids = 2;
     for (Int k = 0; k < 2; ++k) {
@@ -5129,34 +5359,104 @@ void add_sub_levels (const qlt::tree::Node::Ptr& node, const Int nsublev,
       node->kids[k] = kid;
     }
     const Int mid = slb + (sle - slb)/2;
-    add_sub_levels(node->kids[0], nsublev, gci, rank, slb, mid);
-    add_sub_levels(node->kids[1], nsublev, gci, rank, mid, sle);
+    add_sub_levels(node->kids[0], nsublev, gci, rank, calc_level, slb, mid);
+    add_sub_levels(node->kids[1], nsublev, gci, rank, calc_level, mid, sle);
+    if (calc_level)
+      node->level = 1 + std::max(node->kids[0]->level, node->kids[1]->level);
   }
 }
 
 // Recurse to each leaf and call add_sub_levels above.
 void add_sub_levels (const Int my_rank, const qlt::tree::Node::Ptr& node,
-                     const Int nsublev) {
-  if (node->nkids)
+                     const Int nsublev, const Int level_offset) {
+  if (node->nkids) {
     for (Int k = 0; k < node->nkids; ++k)
-      add_sub_levels(my_rank, node->kids[k], nsublev);
-  else {
+      add_sub_levels(my_rank, node->kids[k], nsublev, level_offset);
+    node->level += level_offset;
+  } else {
     const Int gci = node->cellidx;
     const Int rank = node->rank;
-    add_sub_levels(node, nsublev, gci, rank, 0, nsublev);
+    add_sub_levels(node, nsublev, gci, rank, level_offset, 0, nsublev);
+    // Level already calculated if requested.
+    cedr_assert(level_offset == 0 || node->level == level_offset);
   }
+}
+
+// This impl carefully follows the requirements that
+// cedr::qlt::impl::init_tree, level_schedule_and_collect
+// establish. init_tree has to be modified to have the condition in
+// the line
+//   if (node->rank < 0) node->rank = node->kids[0]->rank
+// since here we're assigning the ranks ourselves. Similarly, it must
+// check for node->level >= 0; if the tree is partial, it is unable to
+// compute node level.
+qlt::tree::Node::Ptr
+make_my_tree_part (const qlt::oned::Mesh& m, const Int cs, const Int ce,
+                   const qlt::tree::Node* parent,
+                   const Int& nrank, const Int* rank2sfc) {
+  const Int cn = ce - cs, cn0 = cn/2;
+  qlt::tree::Node::Ptr n = std::make_shared<qlt::tree::Node>();
+  n->parent = parent;
+  n->cellidx = cs;
+  n->rank = rank2sfc_search(rank2sfc, nrank, cs);
+  cedr_assert(n->rank >= 0 && n->rank < nrank);
+  if (cn == 1) {
+    n->nkids = 0;
+    n->level = 0;
+    return n;
+  }
+  const auto k1 = make_my_tree_part(m, cs, cs + cn0, n.get(), nrank, rank2sfc);
+  const auto k2 = make_my_tree_part(m, cs + cn0, ce, n.get(), nrank, rank2sfc);
+  n->level = 1 + std::max(k1->level, k2->level);
+  const auto my_rank = m.parallel()->rank();
+  if (n->rank == my_rank) {
+    // Need to know both kids for comm.
+    n->nkids = 2;
+    n->kids[0] = k1;
+    n->kids[1] = k2;
+  } else {
+    // Prune parts of the tree irrelevant to my rank.
+    n->nkids = 0;
+    if (k1->nkids > 0 || k1->rank == my_rank) n->kids[n->nkids++] = k1;
+    if (k2->nkids > 0 || k2->rank == my_rank) n->kids[n->nkids++] = k2;
+    if (n->nkids == 0) {
+      // Signal a non-leaf node with 0 kids to init_tree.
+      n->nkids = -1;
+    }
+  }
+  cedr_assert(n->level > 0 || n->nkids == 0);
+  return n;
+}
+
+qlt::tree::Node::Ptr
+make_my_tree_part (const cedr::mpi::Parallel::Ptr& p, const Int& ncells,
+                   const Int& nrank, const Int* rank2sfc) {
+  qlt::oned::Mesh m(ncells, p);
+  return make_my_tree_part(m, 0, m.ncell(), nullptr, nrank, rank2sfc);
+}
+
+static size_t get_tree_height (size_t nleaf) {
+  size_t height = 0;
+  while (nleaf) {
+    ++height;
+    nleaf >>= 1;
+  }
+  return height;
 }
 
 qlt::tree::Node::Ptr
 make_tree_sgi (const cedr::mpi::Parallel::Ptr& p, const Int nelem,
                const Int* owned_ids, const Int* rank2sfc, const Int nsublev) {
   // Partition 0:nelem-1, the space-filling curve space.
-  auto tree = qlt::tree::make_tree_over_1d_mesh(p, nelem);
+  auto tree = make_my_tree_part(p, nelem, p->size(), rank2sfc);
   // Renumber so that node->cellidx records the global element number, and
   // associate the correct rank with the element.
   const auto my_rank = p->rank();
   renumber(p->size(), nelem, my_rank, owned_ids, rank2sfc, tree);
-  add_sub_levels(my_rank, tree, nsublev);
+  if (nsublev > 1) {
+    const Int level_offset = get_tree_height(nsublev) - 1;
+    add_sub_levels(my_rank, tree, nsublev, level_offset);
+  }
   return tree;
 }
 
@@ -5166,8 +5466,16 @@ make_tree_non_sgi (const cedr::mpi::Parallel::Ptr& p, const Int nelem,
   auto tree = qlt::tree::make_tree_over_1d_mesh(p, nelem);
   renumber(sc2gci, sc2rank, tree);
   const auto my_rank = p->rank();
-  add_sub_levels(my_rank, tree, nsublev);
+  if (nsublev > 1) add_sub_levels(my_rank, tree, nsublev, 0);
   return tree;
+}
+
+Int test_tree_maker () {
+  Int nerr = 0;
+  if (get_tree_height(3) != 3) ++nerr;
+  if (get_tree_height(4) != 3) ++nerr;
+  if (get_tree_height(5) != 4) ++nerr;
+  return nerr;
 }
 
 extern "C"
@@ -5235,7 +5543,10 @@ struct CDR {
     if (Alg::is_qlt(alg)) {
       tree = use_sgi ? make_tree_sgi(p, ncell, gid_data, rank_data, nsublev) :
         make_tree_non_sgi(p, ncell, gid_data, rank_data, nsublev);
-      cdr = std::make_shared<QLTT>(p, ncell*nsublev, tree);
+      cedr::CDR::Options options;
+      options.prefer_numerical_mass_conservation_to_numerical_bounds = true;
+      cdr = std::make_shared<QLTT>(p, ncell*nsublev, tree, options);
+      tree = nullptr;
     } else if (Alg::is_caas(alg)) {
       const auto caas = std::make_shared<CAAST>(
         p, nlclcell*nsublev, std::make_shared<ReproSumReducer>(fcomm));
@@ -5252,6 +5563,15 @@ struct CDR {
       cdr->declare_tracer(PT::shapepreserve |
                           (need_conservation ? PT::conserve : 0), 0);
     cdr->end_tracer_declarations();
+  }
+
+  void get_buffers_sizes (size_t& s1, size_t &s2) {
+    cdr->get_buffers_sizes(s1, s2);
+  }
+
+  void set_buffers (Real* b1, Real* b2) {
+    cdr->set_buffers(b1, b2);
+    cdr->finish_setup();
   }
 
 private:
@@ -5365,15 +5685,14 @@ static void run_cdr (CDR& q) {
 void run (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_r,
           const Int nets, const Int nete) {
   static constexpr Int max_np = 4;
-  const Int np = d.np, nlev = d.nlev, qsize = d.qsize, ncell = nete - nets + 1;
+  const Int np = d.np, nlev = d.nlev, qsize = d.qsize;
   cedr_assert(np <= max_np);
 
   FA5<const Real>
-    q_min(q_min_r, np, np, nlev, qsize, ncell),
-    q_max(q_max_r, np, np, nlev, qsize, ncell);
+    q_min(q_min_r, np, np, nlev, qsize, nete+1),
+    q_max(q_max_r, np, np, nlev, qsize, nete+1);
 
   for (Int ie = nets; ie <= nete; ++ie) {
-    const Int ie0 = ie - nets;
     FA2<const Real> spheremp(d.spheremp[ie], np, np);
     FA5<const Real> qdp_p(d.qdp_pc[ie], np, np, nlev, d.qsize_d, 2);
     FA4<const Real> dp3d_c(d.dp3d_c[ie], np, np, nlev, d.timelevels);
@@ -5390,7 +5709,8 @@ void run (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_r,
           const Int k = k0 + sbli;
           if (k >= nlev) {
             cdr.cdr->set_Qm(lci, ti, 0, 0, 0, 0);
-            break;
+            if (ti == 0) cdr.cdr->set_rhom(lci, 0, 0);
+            continue;
           }
           Real Qm = 0, Qm_min = 0, Qm_max = 0, Qm_prev = 0, rhom = 0, volume = 0;
           for (Int j = 0; j < np; ++j) {
@@ -5399,8 +5719,8 @@ void run (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_r,
               const Real rhomij = dp3d_c(i,j,k,d.tl_np1) * spheremp(i,j);
               rhom += rhomij;
               Qm += q_c(i,j,k,q) * rhomij;
-              Qm_min += q_min(i,j,k,q,ie0) * rhomij;
-              Qm_max += q_max(i,j,k,q,ie0) * rhomij;
+              Qm_min += q_min(i,j,k,q,ie) * rhomij;
+              Qm_max += q_max(i,j,k,q,ie) * rhomij;
               Qm_prev += qdp_p(i,j,k,q,d.n0_qdp) * spheremp(i,j);
             }
           }
@@ -5448,16 +5768,14 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
                 const Int nets, const Int nete, const bool scalar_bounds,
                 const Int limiter_option) {
   static constexpr Int max_np = 4, max_np2 = max_np*max_np;
-  const Int np = d.np, np2 = np*np, nlev = d.nlev, qsize = d.qsize,
-    ncell = nete - nets + 1;
+  const Int np = d.np, np2 = np*np, nlev = d.nlev, qsize = d.qsize;
   cedr_assert(np <= max_np);
 
   FA5<const Real>
-    q_min(q_min_r, np, np, nlev, qsize, ncell),
-    q_max(q_max_r, np, np, nlev, qsize, ncell);
+    q_min(q_min_r, np, np, nlev, qsize, nete+1),
+    q_max(q_max_r, np, np, nlev, qsize, nete+1);
 
   for (Int ie = nets; ie <= nete; ++ie) {
-    const Int ie0 = ie - nets;
     FA2<const Real> spheremp(d.spheremp[ie], np, np);
     FA5<      Real> qdp_c(d.qdp_pc[ie], np, np, nlev, d.qsize_d, 2);
     FA4<const Real> dp3d_c(d.dp3d_c[ie], np, np, nlev, d.timelevels);
@@ -5487,8 +5805,8 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
 
           //todo Replace with ReconstructSafely.
           if (scalar_bounds) {
-            qlo[0] = q_min(0,0,k,q,ie0);
-            qhi[0] = q_max(0,0,k,q,ie0);
+            qlo[0] = q_min(0,0,k,q,ie);
+            qhi[0] = q_max(0,0,k,q,ie);
             const Int N = std::min(max_np2, np2);
             for (Int i = 1; i < N; ++i) qlo[i] = qlo[0];
             for (Int i = 1; i < N; ++i) qhi[i] = qhi[0];
@@ -5507,8 +5825,8 @@ void run_local (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_
             const Int N = std::min(max_np2, np2);
             for (Int j = 0, cnt = 0; j < np; ++j)
               for (Int i = 0; i < np; ++i, ++cnt) {
-                qlo[cnt] = q_min(i,j,k,q,ie0);
-                qhi[cnt] = q_max(i,j,k,q,ie0);
+                qlo[cnt] = q_min(i,j,k,q,ie);
+                qhi[cnt] = q_max(i,j,k,q,ie);
               }
             for (Int trial = 0; trial < 3; ++trial) {
               int info;
@@ -5564,8 +5882,7 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
             const Int nets, const Int nete) {
   using cedr::mpi::reduce;
 
-  const Int np = d.np, nlev = d.nlev, nsuplev = cdr.nsuplev, qsize = d.qsize,
-    ncell = nete - nets + 1;
+  const Int np = d.np, nlev = d.nlev, nsuplev = cdr.nsuplev, qsize = d.qsize;
 
   Kokkos::View<Real**, Kokkos::Serial>
     mass_p("mass_p", nsuplev, qsize), mass_c("mass_c", nsuplev, qsize),
@@ -5574,8 +5891,8 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
     q_min_l("q_min_l", nsuplev, qsize), q_max_l("q_max_l", nsuplev, qsize),
     qd_lo("qd_lo", nsuplev, qsize), qd_hi("qd_hi", nsuplev, qsize);
   FA5<const Real>
-    q_min(q_min_r, np, np, nlev, qsize, ncell),
-    q_max(q_max_r, np, np, nlev, qsize, ncell);
+    q_min(q_min_r, np, np, nlev, qsize, nete+1),
+    q_max(q_max_r, np, np, nlev, qsize, nete+1);
   Kokkos::deep_copy(q_lo,  1e200);
   Kokkos::deep_copy(q_hi, -1e200);
   Kokkos::deep_copy(q_min_l,  1e200);
@@ -5585,7 +5902,6 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
 
   bool fp_issue = false; // Limit output once the first issue is seen.
   for (Int ie = nets; ie <= nete; ++ie) {
-    const Int ie0 = ie - nets;
     FA2<const Real> spheremp(d.spheremp[ie], np, np);
     FA5<const Real> qdp_pc(d.qdp_pc[ie], np, np, nlev, d.qsize_d, 2);
     FA4<const Real> dp3d_c(d.dp3d_c[ie], np, np, nlev, d.timelevels);
@@ -5604,11 +5920,11 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
             }
         }
         for (Int q = 0; q < qsize; ++q) {
-          Real qlo_s = q_min(0,0,k,q,ie0), qhi_s = q_max(0,0,k,q,ie0);
+          Real qlo_s = q_min(0,0,k,q,ie), qhi_s = q_max(0,0,k,q,ie);
           for (Int j = 0; j < np; ++j)
             for (Int i = 0; i < np; ++i) {
-              qlo_s = std::min(qlo_s, q_min(i,j,k,q,ie0));
-              qhi_s = std::max(qhi_s, q_max(i,j,k,q,ie0));
+              qlo_s = std::min(qlo_s, q_min(i,j,k,q,ie));
+              qhi_s = std::max(qhi_s, q_max(i,j,k,q,ie));
             }
           for (Int j = 0; j < np; ++j)
             for (Int i = 0; i < np; ++i) {
@@ -5635,14 +5951,14 @@ void check (CDR& cdr, Data& d, const Real* q_min_r, const Real* q_max_r,
               if (q_c(i,j,k,q) > qhi_s)
                 qd_hi(spli,q) = std::max(qd_hi(spli,q), q_c(i,j,k,q) - qhi_s);
               // Safety problem bound constraints.
-              mass_lo(spli,q) += (q_min(i,j,k,q,ie0) * dp3d_c(i,j,k,d.tl_np1) *
+              mass_lo(spli,q) += (q_min(i,j,k,q,ie) * dp3d_c(i,j,k,d.tl_np1) *
                                   spheremp(i,j));
-              mass_hi(spli,q) += (q_max(i,j,k,q,ie0) * dp3d_c(i,j,k,d.tl_np1) *
+              mass_hi(spli,q) += (q_max(i,j,k,q,ie) * dp3d_c(i,j,k,d.tl_np1) *
                                   spheremp(i,j));
-              q_lo(spli,q) = std::min(q_lo(spli,q), q_min(i,j,k,q,ie0));
-              q_hi(spli,q) = std::max(q_hi(spli,q), q_max(i,j,k,q,ie0));
-              q_min_l(spli,q) = std::min(q_min_l(spli,q), q_min(i,j,k,q,ie0));
-              q_max_l(spli,q) = std::max(q_max_l(spli,q), q_max(i,j,k,q,ie0));
+              q_lo(spli,q) = std::min(q_lo(spli,q), q_min(i,j,k,q,ie));
+              q_hi(spli,q) = std::max(q_hi(spli,q), q_max(i,j,k,q,ie));
+              q_min_l(spli,q) = std::min(q_min_l(spli,q), q_min(i,j,k,q,ie));
+              q_max_l(spli,q) = std::max(q_max_l(spli,q), q_max(i,j,k,q,ie));
             }
         }
       }
@@ -5759,22 +6075,37 @@ static homme::CDR::Ptr g_cdr;
 
 extern "C" void
 cedr_init_impl (const homme::Int fcomm, const homme::Int cdr_alg, const bool use_sgi,
-                const homme::Int** gid_data, const homme::Int** rank_data,
+                const homme::Int* gid_data, const homme::Int* rank_data,
                 const homme::Int gbl_ncell, const homme::Int lcl_ncell,
-                const homme::Int nlev) {
+                const homme::Int nlev, const homme::Int, const homme::Int) {
   const auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   g_cdr = std::make_shared<homme::CDR>(
-    cdr_alg, gbl_ncell, lcl_ncell, nlev, use_sgi, *gid_data, *rank_data, p, fcomm);
+    cdr_alg, gbl_ncell, lcl_ncell, nlev, use_sgi, gid_data, rank_data, p, fcomm);
+}
+
+extern "C" void cedr_query_bufsz (homme::Int* sendsz, homme::Int* recvsz) {
+  cedr_assert(g_cdr);
+  size_t s1, s2;
+  g_cdr->get_buffers_sizes(s1, s2);
+  *sendsz = static_cast<homme::Int>(s1);
+  *recvsz = static_cast<homme::Int>(s2);
+}
+
+extern "C" void cedr_set_bufs (homme::Real* sendbuf, homme::Real* recvbuf,
+                               homme::Int, homme::Int) {
+  g_cdr->set_buffers(sendbuf, recvbuf);
 }
 
 extern "C" void cedr_unittest (const homme::Int fcomm, homme::Int* nerrp) {
   cedr_assert(g_cdr);
+  cedr_assert(g_cdr->tree);
   auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   if (homme::CDR::Alg::is_qlt(g_cdr->alg))
-    *nerrp = cedr::qlt::test::test_qlt(p, g_cdr->tree,
-                                       g_cdr->nsublev*g_cdr->ncell);
+    *nerrp = cedr::qlt::test::test_qlt(p, g_cdr->tree, g_cdr->nsublev*g_cdr->ncell,
+                                       1, false, false, true, false);
   else
     *nerrp = cedr::caas::test::unittest(p);
+  *nerrp += homme::test_tree_maker();
 }
 
 extern "C" void cedr_set_ie2gci (const homme::Int ie, const homme::Int gci) {

@@ -631,7 +631,7 @@ contains
   end subroutine prim_init1_cleanup
 
   subroutine prim_init1_buffers (elem,par)
-    use control_mod,        only : integration
+    use control_mod,        only : integration, transport_alg
     use edge_mod,           only : initedgebuffer, edge_g
     use parallel_mod,       only : parallel_t
     use prim_advance_mod,   only : prim_advance_init1
@@ -640,23 +640,47 @@ contains
 #ifdef TRILINOS
     use prim_implicit_mod,  only : prim_implicit_init
 #endif
+#ifdef HOMME_ENABLE_COMPOSE
+    use dimensions_mod,     only : max_corner_elem
+    use compose_mod,        only : compose_query_bufsz, compose_set_bufs
+#endif
     !
     ! Inputs
     !
     type (element_t),   pointer     :: elem(:)
     type (parallel_t),  intent(in)  :: par
 
-    ! single global edge buffer for all models:
-    ! hydrostatic 4*nlev      NH:  6*nlev+1  
-    ! SL tracers: (qsize+1)*nlev   e3sm:  (qsize+3)*nlev+2
-    ! if this is too small, code will abort with an error message
-    call initEdgeBuffer(par,edge_g,elem,max((qsize+3)*nlev+2,6*nlev+1))
+    integer :: edgesz, sendsz, recvsz, n, den
 
     call prim_advance_init1(par,elem,integration)
 #ifdef TRILINOS
     call prim_implicit_init(par, elem)
 #endif
     call Prim_Advec_Init1(par, elem)
+
+    ! single global edge buffer for all models:
+    ! hydrostatic 4*nlev      NH:  6*nlev+1  
+    ! SL tracers: (qsize+1)*nlev   e3sm:  (qsize+3)*nlev+2
+    ! if this is too small, code will abort with an error message    
+    edgesz = max((qsize+3)*nlev+2,6*nlev+1)
+
+#ifdef HOMME_ENABLE_COMPOSE
+    if (transport_alg > 0) then
+       ! slmm_init_impl has already run, called from compose_init. Now
+       ! find out how much memory SLMM wants.
+       call compose_query_bufsz(sendsz, recvsz)
+       ! from initEdgeBuffer nbuf calc
+       den = 4*(np+max_corner_elem)*nelemd
+       n = (max(sendsz, recvsz) + den - 1)/den
+       edgesz = max(edgesz, n)
+    end if
+#endif
+
+    call initEdgeBuffer(par,edge_g,elem,edgesz)
+
+#ifdef HOMME_ENABLE_COMPOSE
+    if (transport_alg > 0) call compose_set_bufs(edge_g%buf, edge_g%receive)
+#endif
 
   end subroutine prim_init1_buffers
 
