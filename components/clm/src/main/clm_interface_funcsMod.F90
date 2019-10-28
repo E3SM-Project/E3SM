@@ -1253,11 +1253,12 @@ contains
 
         supplement_to_sminp_vr(c,:) = clm_bgc_data%supplement_to_sminp_vr(c,:)
 
-        sminp_to_plant_vr(c,:)      = clm_bgc_data%sminp_to_plant_vr(c,:)
-        potential_immob_p_vr(c,:)   = clm_bgc_data%potential_immob_p_vr(c,:)
-        actual_immob_p_vr(c,:)      = clm_bgc_data%actual_immob_p_vr(c,:)
-        gross_pmin_vr(c,:)          = clm_bgc_data%gross_pmin_vr(c,:)
-        net_pmin_vr(c,:)            = clm_bgc_data%net_pmin_vr(c,:)     !NOT available in PF
+        !sminp_to_plant_vr(c,:)      = clm_bgc_data%sminp_to_plant_vr(c,:)   !NOT available in PF
+        sminp_to_plant_vr(c,:)      = clm_bgc_data%plant_pdemand_vr(c,:)     ! passed from CLM
+        potential_immob_p_vr(c,:)   = clm_bgc_data%potential_immob_p_vr(c,:) !NOT available in PF
+        actual_immob_p_vr(c,:)      = clm_bgc_data%actual_immob_p_vr(c,:)    !NOT available in PF
+        gross_pmin_vr(c,:)          = clm_bgc_data%gross_pmin_vr(c,:)        !NOT available in PF
+        net_pmin_vr(c,:)            = clm_bgc_data%net_pmin_vr(c,:)          !NOT available in PF
 
       end do
     end associate

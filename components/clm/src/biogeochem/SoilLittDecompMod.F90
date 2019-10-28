@@ -673,30 +673,41 @@ contains
          gross_nmin                       =>    col_nf%gross_nmin                       , & ! Output: [real(r8) (:)     ]  gross rate of N mineralization (gN/m2/s)
          net_nmin                         =>    col_nf%net_nmin                         , & ! Output: [real(r8) (:)     ]  net rate of N mineralization (gN/m2/s)
          !phosphorus
-         gross_pmin_vr                    =>    col_pf%gross_pmin_vr                  , & ! Output: [real(r8) (:,:)   ]
-         net_pmin_vr                      =>    col_pf%net_pmin_vr                    , & ! Output: [real(r8) (:,:)   ]
-         gross_pmin                       =>    col_pf%gross_pmin                     , & ! Output: [real(r8) (:)     ]  gross rate of P mineralization (gP/m2/s)
-         net_pmin                         =>    col_pf%net_pmin                       , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)
+         gross_pmin_vr                    =>    col_pf%gross_pmin_vr                    , & ! Output: [real(r8) (:,:)   ]
+         net_pmin_vr                      =>    col_pf%net_pmin_vr                      , & ! Output: [real(r8) (:,:)   ]
+         gross_pmin                       =>    col_pf%gross_pmin                       , & ! Output: [real(r8) (:)     ]  gross rate of P mineralization (gP/m2/s)
+         net_pmin                         =>    col_pf%net_pmin                         , & ! Output: [real(r8) (:)     ]  net rate of P mineralization (gP/m2/s)
 
 
-         fpi_vr                           =>    cnstate_vars%fpi_vr_col                                , & ! Output:  [real(r8) (:,:)   ]  fraction of potential immobilization (no units)
-         fpi                              =>    cnstate_vars%fpi_col                                   , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
+         fpi_vr                           =>    cnstate_vars%fpi_vr_col                 , & ! Output:  [real(r8) (:,:)   ]  fraction of potential immobilization (no units)
+         fpi                              =>    cnstate_vars%fpi_col                    , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
          potential_immob_vr               =>    col_nf%potential_immob_vr               , & ! Input:
          actual_immob_vr                  =>    col_nf%actual_immob_vr                  , & ! Input:
          potential_immob                  =>    col_nf%potential_immob                  , & ! Output: [real(r8) (:)   ]
          actual_immob                     =>    col_nf%actual_immob                     , & ! Output: [real(r8) (:)   ]
+         !phosphorus
+         fpi_p_vr                         =>    cnstate_vars%fpi_vr_col                 , & ! Output:  [real(r8) (:,:)   ]  fraction of potential immobilization (no units)
+         fpi_p                            =>    cnstate_vars%fpi_col                    , & ! Output: [real(r8) (:)   ]  fraction of potential immobilization (no units)
+         potential_immob_p_vr             =>    col_pf%potential_immob_p_vr             , & ! Input:
+         actual_immob_p_vr                =>    col_pf%actual_immob_p_vr                , & ! Input:
+         potential_immob_p                =>    col_pf%potential_immob_p                , & ! Output: [real(r8) (:)   ]
+         actual_immob_p                   =>    col_pf%actual_immob_p                   , & ! Output: [real(r8) (:)   ]
 
-         fpg                              =>    cnstate_vars%fpg_col                                   , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
+         fpg                              =>    cnstate_vars%fpg_col                    , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
          sminn_to_plant                   =>    col_nf%sminn_to_plant                   , & ! Output: [real(r8) (:)     ]  col N uptake (gN/m2/s)
          sminn_to_plant_vr                =>    col_nf%sminn_to_plant_vr                , & ! Input:  [real(r8) (:,:)    ]  vertically-resolved N uptake (gN/m3/s)
-
          smin_no3_to_plant_vr             =>    col_nf%smin_no3_to_plant_vr             , & ! Output: [real(r8) (:,:) ]
          smin_nh4_to_plant_vr             =>    col_nf%smin_nh4_to_plant_vr             , & ! Output: [real(r8) (:,:) ]
+         !phosphorus
+         fpg_p                            =>    cnstate_vars%fpg_p_col                  , & ! Output: [real(r8) (:)   ]  fraction of potential gpp (no units)
+         sminp_to_plant                   =>    col_pf%sminp_to_plant                   , & ! Output: [real(r8) (:)     ]  col N uptake (gN/m2/s)
+         sminp_to_plant_vr                =>    col_pf%sminp_to_plant_vr                , & ! Input:  [real(r8) (:,:)    ]  vertically-resolved N uptake (gN/m3/s)
 
          col_plant_ndemand_vr             =>    col_nf%plant_ndemand_vr                 , & ! Input:  [real(r8) (:)     ]  col N uptake (gN/m2/s)
-
          plant_ndemand_col                =>    col_nf%plant_ndemand                    , & ! Output:  [real(r8) (:,:) ]
-         plant_pdemand_col                =>    col_pf%plant_pdemand                  , & ! Output:  [real(r8) (:,:) ]
+         !phosphorus
+         col_plant_pdemand_vr             =>    col_pf%plant_pdemand_vr                 , & ! Input:  [real(r8) (:)     ]  col N uptake (gN/m2/s)
+         plant_pdemand_col                =>    col_pf%plant_pdemand                    , & ! Output:  [real(r8) (:,:) ]
 
          w_scalar                         =>    col_cf%w_scalar                           , & ! Input:  [real(r8) (:,:)   ]  fraction by which decomposition is limited by moisture availability
          decomp_cascade_hr_vr             =>    col_cf%decomp_cascade_hr_vr               , & ! Output: [real(r8) (:,:,:) ]  vertically-resolved het. resp. from decomposing C pools (gC/m3/s)
@@ -721,12 +732,23 @@ contains
 
       ! MUST have already updated needed bgc variables from PFLOTRAN by this point
       if(use_clm_interface.and.use_pflotran.and.pf_cmode) then
+         ! currently P element cycle NOT YET included in PFLOTRAN (TODO), but need to assign a few variables
+         ! needs to zero CLM-CNP variables NOT available from pflotran bgc coupling
+         call CNvariables_nan4pf(bounds, num_soilc, filter_soilc, &
+                        num_soilp, filter_soilp,                  &
+                        carbonflux_vars, nitrogenflux_vars,       &
+                        phosphorusstate_vars, phosphorusflux_vars)
+
          ! fpg calculation
          do fc=1,num_soilc
             c = filter_soilc(fc)
             sminn_to_plant(c)       = 0._r8
+            !phosphrous
+            sminp_to_plant(c)       = 0._r8
             do j = 1, nlevdecomp           ! sum up actual and potential column-level N fluxes to plant
                sminn_to_plant(c)    = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
+               !phosphrous
+               sminp_to_plant(c)    = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
             end do
          end do
          do fc=1,num_soilc
@@ -739,6 +761,13 @@ contains
             else
                fpg(c) = 1.0_r8
             end if
+            !phosphrous
+            if (plant_pdemand_col(c) > 0.0_r8) then
+               fpg_p(c) = max(0._r8,sminp_to_plant(c)) / plant_pdemand_col(c)
+               fpg_p(c) = min(1._r8, fpg_p(c))
+            else
+               fpg_p(c) = 1.0_r8
+            end if
          end do
 
          ! fpi calculation
@@ -746,6 +775,8 @@ contains
             c = filter_soilc(fc)
             potential_immob(c) = 0._r8
             actual_immob(c)    = 0._r8
+            potential_immob_p(c) = 0._r8
+            actual_immob_p(c)    = 0._r8
             do j = 1, nlevdecomp
                if (potential_immob_vr(c,j) > 0.0_r8) then
                   fpi_vr(c,j) = actual_immob_vr(c,j) / potential_immob_vr(c,j)
@@ -753,6 +784,14 @@ contains
                   actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j)*dzsoi_decomp(j)
                else
                   fpi_vr(c,j) = 0.0_r8
+               end if
+               !phosphrous
+               if (potential_immob_p_vr(c,j) > 0.0_r8) then
+                  fpi_p_vr(c,j) = actual_immob_p_vr(c,j) / potential_immob_p_vr(c,j)
+                  potential_immob_p(c) = potential_immob_p(c) + potential_immob_p_vr(c,j)*dzsoi_decomp(j)
+                  actual_immob_p(c) = actual_immob_p(c) + actual_immob_p_vr(c,j)*dzsoi_decomp(j)
+               else
+                  fpi_p_vr(c,j) = 0.0_r8
                end if
             end do
          end do
@@ -763,6 +802,13 @@ contains
                fpi(c) = min(1._r8, fpi(c))
             else
                fpi(c) = 1.0_r8
+            end if
+            !phosphrous
+            if (potential_immob_p(c) > 0.0_r8) then
+               fpi_p(c) = max(0._r8,actual_immob_p(c)) / potential_immob_p(c)
+               fpi_p(c) = min(1._r8, fpi_p(c))
+            else
+               fpi_p(c) = 1.0_r8
             end if
          end do
 
@@ -801,12 +847,6 @@ contains
             end do
          end if
 
-         ! needs to zero CLM-CNP variables NOT available from pflotran bgc coupling
-         call CNvariables_nan4pf(bounds, num_soilc, filter_soilc, &
-                        num_soilp, filter_soilp,                  &
-                        carbonflux_vars, nitrogenflux_vars,       &
-                        phosphorusstate_vars, phosphorusflux_vars)
-
          ! save variables before updating
          do fc = 1,num_soilc
             c = filter_soilc(fc)
@@ -831,7 +871,7 @@ contains
       call t_stopf('CNAllocation - phase-3')
       !------------------------------------------------------------------
 
-    if(use_pflotran.and.pf_cmode) then
+    if(use_clm_interface.and.use_pflotran.and.pf_cmode) then
     ! in Allocation3_PlantCNPAlloc():
     ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted
     ! therefore, we need to update smin_no3_vr(c,j) & smin_nh4_vr(c,j)
@@ -844,7 +884,7 @@ contains
                smin_nh4_vr(c,j) = max(0._r8, smin_nh4_vr(c,j))
             end do
       end do
-    end if !(use_pflotran.and.pf_cmode)
+    end if !(use_clm_interface.and.use_pflotran.and.pf_cmode)
     !------------------------------------------------------------------
       ! vertically integrate net and gross mineralization fluxes for diagnostic output
       do fc=1,num_soilc
@@ -905,7 +945,6 @@ contains
          decomp_cascade_ntransfer_vr      =>    col_nf%decomp_cascade_ntransfer_vr        & ! Output: [real(r8) (:,:,:) ]  vert-res transfer of N from donor to receiver pool along decomp. cascade (gN/m3/s)
    )
    ! set zeros for those variables NOT available from PFLOTRAN
-   ! (TODO) will check 'zero' or '-9999' is better.
 
    do fc = 1,num_soilc
       c = filter_soilc(fc)
@@ -920,13 +959,13 @@ contains
    end do
 
    ! pflotran not yet support phosphous cycle
-   if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only() ) then
+   !if (cnallocate_carbon_only() .or. cnallocate_carbonnitrogen_only() ) then
       call veg_ps%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
       call col_ps%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)      
 
       call veg_pf%SetValues(num_patch=num_soilp,  filter_patch=filter_soilp,  value_patch=0._r8)
       call col_pf%SetValues(num_column=num_soilc, filter_column=filter_soilc, value_column=0._r8)
-   end if
+   !end if
 
   end associate
   end subroutine CNvariables_nan4pf
