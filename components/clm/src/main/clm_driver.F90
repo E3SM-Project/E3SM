@@ -800,7 +800,7 @@ contains
             filter(nc)%num_hydrononsoic, filter(nc)%hydrononsoic,            &
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
-            filter(nc)%num_nosnowc, filter(nc)%nosnowc,                      &
+            filter(nc)%num_nosnowc, filter(nc)%nosnowc,canopystate_vars,     &
             atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
             waterflux_vars, waterstate_vars, soilhydrology_vars, aerosol_vars, &
             soil_water_retention_curve, ep_betr,                             &
