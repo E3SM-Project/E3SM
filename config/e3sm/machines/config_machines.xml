@@ -119,6 +119,7 @@
         <command name="rm">craype-sandybridge</command>
         <command name="rm">craype-ivybridge</command>
         <command name="rm">craype</command>
+        <command name="rm">craype-hugepages2M</command>
         <command name="rm">papi</command>
         <command name="rm">cmake</command>
         <command name="rm">cray-petsc</command>
@@ -250,6 +251,7 @@
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="rm">craype</command>
+        <command name="rm">craype-hugepages2M</command>
         <command name="rm">craype-mic-knl</command>
         <command name="rm">craype-haswell</command>
         <command name="rm">PrgEnv-intel</command>
@@ -1890,7 +1892,7 @@
       <executable>srun</executable>
       <arguments>
         <arg name="mpi">--mpi=none</arg>
-        <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
+        <arg name="num_tasks">--ntasks={{ total_tasks }} --nodes={{ num_nodes }}</arg>
         <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
         <arg name="cpu_bind">-l --cpu_bind=cores -c $ENV{OMP_NUM_THREADS} -m plane=$SHELL{echo 40/$OMP_NUM_THREADS|bc}</arg>
       </arguments>
@@ -1899,7 +1901,7 @@
       <executable>srun</executable>
       <arguments>
         <arg name="mpi">--mpi=pmi2</arg>
-        <arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
+        <arg name="num_tasks">--ntasks={{ total_tasks }} --nodes={{ num_nodes }}</arg>
         <arg name="kill-on-bad-exit">--kill-on-bad-exit</arg>
         <arg name="cpu_bind">-l --cpu_bind=cores -c $ENV{OMP_NUM_THREADS} -m plane=$SHELL{echo 40/$OMP_NUM_THREADS|bc}</arg>
       </arguments>
@@ -1920,7 +1922,7 @@
         <command name="load">cmake/3.11.4</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/19.0.3</command>
+        <command name="load">intel/19.0.5</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">pgi/18.10</command>
@@ -1928,17 +1930,22 @@
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3.1</command>
       </modules>
-      <modules mpilib="impi">
-        <command name="load">intelmpi/2019u3</command>
+      <modules mpilib="impi" compiler="intel">
+	<command name="load">intelmpi/2019u4</command>
       </modules>
+      <modules mpilib="impi" compiler="pgi">
+	<command name="load">intelmpi/2019u3</command>
+      </modules>      
       <modules>
         <command name="load">netcdf/4.6.3</command>
         <command name="load">pnetcdf/1.9.0</command>
-        <command name="load">mkl/2019u3</command>
+        <command name="load">mkl/2019u5</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="NETCDF_HOME">$ENV{NETCDF_ROOT}/</env>
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
@@ -1955,8 +1962,7 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
+      <env name="OMP_PLACES">cores</env>
     </environment_variables>
   </machine>
 
@@ -2965,7 +2971,7 @@
     <DOUT_S_ROOT>/gpfs/alpine/$PROJECT/proj-shared/$ENV{USER}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/gpfs/alpine/cli115/world-shared/e3sm/baselines/$COMPILER</BASELINE_ROOT>
     <CCSM_CPRNC>/gpfs/alpine/cli115/world-shared/e3sm/tools/cprnc.summit/cprnc</CCSM_CPRNC>
-    <GMAKE_J>32</GMAKE_J>
+    <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
     <BATCH_SYSTEM>lsf</BATCH_SYSTEM>
@@ -2978,7 +2984,7 @@
       <executable>/gpfs/alpine/world-shared/cli115/mpirun.summit</executable>
       <!-- <executable>jsrun</executable> -->
       <arguments>
-        <arg name="num_tasks"> -n {{ total_tasks }} -N $MAX_MPITASKS_PER_NODE</arg>
+        <arg name="num_tasks"> -n {{ total_tasks }} -N {{ tasks_per_node }}</arg>
       </arguments>
     </mpirun>
     <module_system type="module" allow_error="true">
