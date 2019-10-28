@@ -24,7 +24,7 @@ HommeConfigFile (${THIS_CONFIG_IN} ${THIS_CONFIG_HC} ${THIS_CONFIG_H} )
 ADD_LIBRARY(thetal_kokkos_ut_lib ${THETAL_DEPS})
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${EXEC_INCLUDE_DIRS})
 TARGET_INCLUDE_DIRECTORIES(thetal_kokkos_ut_lib PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-SET_TARGET_PROPERTIES(thetal_kokkos_ut_lib  PROPERTIES COMPILE_DEFINITIONS HAVE_CONFIG_H)
+SET_TARGET_PROPERTIES(thetal_kokkos_ut_lib  PROPERTIES COMPILE_DEFINITIONS "HAVE_CONFIG_H;XX_NONBFB_COMING")
 link_to_kokkos(thetal_kokkos_ut_lib)
 TARGET_LINK_LIBRARIES(thetal_kokkos_ut_lib timing pio ${COMPOSE_LIBRARY} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
 # Fortran modules
@@ -196,3 +196,35 @@ ENDIF()
 cxx_unit_test (caar_ut "${CAAR_UT_F90_SRCS}" "${CAAR_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 TARGET_LINK_LIBRARIES(caar_ut thetal_kokkos_ut_lib)
 
+# ### Remap functor unit test
+
+SET (REMAP_THETA_UT_CXX_SRCS
+  ${THETA_UT_DIR}/remap_theta_ut.cpp
+)
+
+SET (REMAP_THETA_UT_F90_SRCS
+  ${THETA_UT_DIR}/remap_theta_interface.F90
+  ${THETA_UT_DIR}/thetal_test_interface.F90
+  ${SHARE_UT_DIR}/geometry_interface.F90
+)
+
+SET (CONFIG_DEFINES HAVE_CONFIG_H XX_NONBFB_COMING)
+SET (REMAP_THETA_UT_INCLUDE_DIRS
+  ${SRC_THETA_DIR}/cxx
+  ${SRC_SHARE_DIR}
+  ${SRC_SHARE_DIR}/cxx
+  ${THETA_UT_DIR}
+  ${THETA_LIB_MODULE_DIR}
+  ${UTILS_TIMING_SRC_DIR}
+  ${UTILS_TIMING_BIN_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_BINARY_DIR}/src/share/cxx
+)
+
+IF (USE_NUM_PROCS)
+  SET (NUM_CPUS ${USE_NUM_PROCS})
+ELSE()
+  SET (NUM_CPUS 1)
+ENDIF()
+cxx_unit_test (remap_theta_ut "${REMAP_THETA_UT_F90_SRCS}" "${REMAP_THETA_UT_CXX_SRCS}" "${REMAP_THETA_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+TARGET_LINK_LIBRARIES(remap_theta_ut thetal_kokkos_ut_lib)

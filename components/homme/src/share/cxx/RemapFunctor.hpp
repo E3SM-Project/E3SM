@@ -316,6 +316,8 @@ struct RemapFunctor : public Remapper {
   // Computes the intrinsic values of the states in the final map
   // i.e. momentum -> velocity
   struct ComputeIntrinsicsTag {};
+  // Sets dp to the target dp in the state
+  struct UpdateThicknessTag {};
 
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeThicknessTag, const TeamMember &team) const {
@@ -387,6 +389,16 @@ struct RemapFunctor : public Remapper {
     }
   }
 
+  KOKKOS_INLINE_FUNCTION
+  void operator()(UpdateThicknessTag, const int idx) const {
+    const int ie   =  idx / (NP*NP*NUM_LEV);
+    const int igp  = (idx / (NP*NUM_LEV)) % NP;
+    const int jgp  = (idx / NUM_LEV) % NP;
+    const int ilev =  idx % NUM_LEV;
+
+    m_state.m_dp3d(ie,m_data.np1,igp,jgp,ilev) = m_fields_provider.m_tgt_layer_thickness(ie,igp,jgp,ilev);
+  }
+
   void run_remap(int np1, int np1_qdp, double dt) override {
     m_data.np1 = np1;
     m_data.np1_qdp = np1_qdp;
@@ -423,6 +435,9 @@ struct RemapFunctor : public Remapper {
         m_fields_provider.postprocess_states(m_data.np1);
       }
     }
+
+    auto update_dp_policy = Kokkos::RangePolicy<ExecSpace,UpdateThicknessTag>(0,m_state.num_elems()*NP*NP*NUM_LEV);
+    Kokkos::parallel_for(update_dp_policy, *this);
   }
 
 private:

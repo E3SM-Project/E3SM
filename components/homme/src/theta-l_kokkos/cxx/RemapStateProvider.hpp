@@ -9,6 +9,7 @@
 
 #include "Elements.hpp"
 #include "EquationOfState.hpp"
+#include "ElementOps.hpp"
 #include "ErrorDefs.hpp"
 #include "ColumnOps.hpp"
 #include "Context.hpp"
@@ -24,6 +25,7 @@ namespace Remap {
 struct RemapStateProvider {
 
   EquationOfState   m_eos;
+  ElementOps        m_elem_ops;
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
   HybridVCoord      m_hvcoord;
@@ -43,9 +45,15 @@ struct RemapStateProvider {
    , m_delta_w ("w_i increments",elements.num_elems())
    , m_delta_phinh ("phinh_i increments",elements.num_elems())
   {
-    // Fetch HybridVCoord from the context
+    // Fetch SimulationParams and HybridVCoord from the context
+    const auto& params = Context::singleton().get<SimulationParams>();
+    assert (params.params_set);
+
     m_hvcoord = Context::singleton().get<HybridVCoord>();
     assert (m_hvcoord.m_inited);
+
+    m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
+    m_elem_ops.init(m_hvcoord);
   }
 
   // TODO: find a way to get the temporary from the FunctorsBuffersManager class
@@ -80,7 +88,7 @@ struct RemapStateProvider {
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
         const int igp = idx / NP;
-        const int jgp = idx / NP;
+        const int jgp = idx % NP;
         auto w_i = Homme::subview(m_state.m_w_i,kv.ie,np1,igp,jgp);
         auto delta_w = Homme::subview(m_delta_w,kv.ie,igp,jgp);
 
@@ -91,25 +99,26 @@ struct RemapStateProvider {
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
         const int igp = idx / NP;
-        const int jgp = idx / NP;
+        const int jgp = idx % NP;
+
+        // Remove hydrostatic phi before remap. Use still unused delta_phinh to store p.
+        // Recycle m_temp for both p_i and phi_i_ref
         auto dp_pt = Homme::subview(dp,igp,jgp);
         auto phinh_i = Homme::subview(m_state.m_phinh_i,kv.ie,np1,igp,jgp);
         auto delta_phinh = Homme::subview(m_delta_phinh,kv.ie,igp,jgp);
-        auto tmp = Homme::subview(m_temp,kv.team_idx,igp,jgp);
+        auto& p = delta_phinh;
+        auto p_i = Homme::subview(m_temp,kv.team_idx,igp,jgp);
+        auto& phi_ref = p_i;
 
-        // Remove hydrostatic phi before remap. Use still unused delta_phinh to store p.
-        // Recycle tmp for both p_i and phi_i_ref
-        tmp(0)[0] = m_hvcoord.hybrid_ai0*m_hvcoord.ps0;
-        ColumnOps::column_scan_mid_to_int<true>(kv,dp_pt,tmp);
-        ColumnOps::compute_midpoint_values(kv,tmp,delta_phinh);
+        m_elem_ops.compute_hydrostatic_p(kv,dp_pt,p_i,delta_phinh);
         m_eos.compute_phi_i(kv,m_geometry.m_phis(kv.ie,igp,jgp),
                             Homme::subview(m_state.m_vtheta_dp,kv.ie,np1,igp,jgp),
-                            delta_phinh,
-                            tmp);
+                            p,
+                            phi_ref);
 
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV_P),
                              [&](const int ilev) {
-          phinh_i(ilev) -= tmp(ilev);
+          phinh_i(ilev) -= phi_ref(ilev);
         });
 
         // Now compute phinh_i increments
@@ -139,11 +148,14 @@ struct RemapStateProvider {
 
         // Since u changed, update w_i b.c. at the surface
         Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+          constexpr auto g = PhysicalConstants::g;
+
           const auto gradphis = Homme::subview(m_geometry.m_gradphis,kv.ie);
           const auto v        = Homme::subview(m_state.m_v,kv.ie,np1);
+
           w_i(InfoI::LastPack)[InfoI::LastVecEnd] = 
-                v(0,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd]*gradphis(0,igp,jgp) +
-                v(1,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd]*gradphis(1,igp,jgp);
+                (v(0,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd]*gradphis(0,igp,jgp) +
+                 v(1,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd]*gradphis(1,igp,jgp)) / g;
         });
       });
     } else if (istate==1) {
@@ -151,29 +163,30 @@ struct RemapStateProvider {
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
         const int igp = idx / NP;
-        const int jgp = idx / NP;
+        const int jgp = idx % NP;
+        // Recycle m_temp for both p_i and phi_i_ref
         auto phinh_i = Homme::subview(m_state.m_phinh_i,kv.ie,np1,igp,jgp);
         auto delta_phinh = Homme::subview(m_delta_phinh,kv.ie,igp,jgp);
-        auto tmp = Homme::subview(m_temp,kv.team_idx,igp,jgp);
         auto dp_pt = Homme::subview(dp,igp,jgp);
+        auto& p = delta_phinh;
+        auto p_i = Homme::subview(m_temp,kv.team_idx,igp,jgp);
+        auto& phi_ref = p_i;
 
         // phinh_i(k) = phinh_i(k+1) - delta_phinh(k), so do a backward scan sum of -delta_phinh
         auto minus_delta = [&](const int ilev)->Scalar { return -delta_phinh(ilev); };
         ColumnOps::column_scan_mid_to_int<false>(kv,minus_delta,phinh_i);
 
         // Need to add back the reference phi. Recycle delta_phinh to store p.
-        // Recycle tmp for both p_i and phi_i_ref
-        tmp(0)[0] = m_hvcoord.hybrid_ai0*m_hvcoord.ps0;
-        ColumnOps::column_scan_mid_to_int<true>(kv,dp_pt,tmp);
-        ColumnOps::compute_midpoint_values(kv,tmp,delta_phinh);
+        // Recycle m_temp for both p_i and phi_i_ref
+        m_elem_ops.compute_hydrostatic_p(kv,dp_pt,p_i,p);
         m_eos.compute_phi_i(kv,m_geometry.m_phis(kv.ie,igp,jgp),
                             Homme::subview(m_state.m_vtheta_dp,kv.ie,np1,igp,jgp),
-                            delta_phinh,
-                            tmp);
+                            p,
+                            phi_ref);
 
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV_P),
                              [&](const int ilev) {
-          phinh_i(ilev) += tmp(ilev);
+          phinh_i(ilev) += phi_ref(ilev);
         });
       });
     }
