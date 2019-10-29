@@ -238,13 +238,9 @@ contains
           print *,'ne, ne_file',ne,ne_file
           call abortmp('The variable ne in the namelist must be the same as that of the file.')
        end if
-       if(nlev_file/=nlev .and. nlev_file/=-1) then
-          print *,'nlev, nlev_file',nlev,nlev_file
-          call abortmp('The variable nlev in Params.inc must be the same as that of the file, you will need to recompile.')
-       end if
        if(np_file/=np .and. np_file/=-1) then
           print *,'np, np_file',np,np_file
-          call abortmp('The variable np in Params.inc must be the same as that of the file, you will need to recompile.')
+          call abortmp('The variable dimensions_mod::np must be the same as that of the file, you will need to recompile.')
        end if
     else
        call abortmp('The input file is missing required ncol dimensions')
@@ -300,8 +296,22 @@ contains
             infile%vars%dimids(1:infile%vars%ndims(i),i))
        lev=1
        do n=1,infile%vars%ndims(i)
-          if(infile%dims(infile%vars%dimids(n,i))%name.eq.'lev') lev=nlev
-          if(infile%dims(infile%vars%dimids(n,i))%name.eq.'ilev') lev=nlev+1
+          if(infile%dims(infile%vars%dimids(n,i))%name.eq.'lev') then
+             ! if we are reading a variable with levels, verifty nlev == nlev_file
+             if(nlev_file/=nlev .and. nlev_file/=-1) then
+                print *,'nlev, nlev_file',nlev,nlev_file
+                call abortmp('Error: dimensions_mod::nlev does not match file nlev')
+             end if
+             lev=nlev
+          endif
+          if(infile%dims(infile%vars%dimids(n,i))%name.eq.'ilev') then
+             ! if we are reading a variable with levels, verifty nlev == nlev_file
+             if(nlev_file/=nlev .and. nlev_file/=-1) then
+                print *,'nlev, nlev_file',nlev,nlev_file
+                call abortmp('Error: dimensions_mod::nlev does not match file nlev')
+             end if
+             lev=nlev+1
+          endif
           if(infile%dims(infile%vars%dimids(n,i))%name.eq.'time') infile%vars%timedependent(i)=.true.
           if(infile%dims(infile%vars%dimids(n,i))%name.eq.'ncol') infile%vars%decomposed(i)=.true.
 
