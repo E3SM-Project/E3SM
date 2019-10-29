@@ -67,6 +67,7 @@ def _main_func(description):
 
     success = tas.test_all_scream()
 
+    print("OVERALL STATUS: {}".format("PASS" if success else "FAIL"))
     sys.exit(0 if success else 1)
 
 ###############################################################################

@@ -84,7 +84,7 @@ contains
 
   subroutine p3_main_c(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
        pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
-       diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc_in, &
+       diag_effi,diag_vmi,diag_di,diag_rhoi,log_predictNc, &
        pdel,exner,cmeiout,prain,nevapr,prer_evap,rflx,sflx,rcldm,lcldm,icldm, &
        pratot,prctot,p3_tend_out,mu_c,lamc,liq_ice_exchange,vap_liq_exchange, &
        vap_ice_exchange, vap_cld_exchange) bind(C)
@@ -99,7 +99,7 @@ contains
     real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_ze, diag_effc
     real(kind=c_real), intent(out), dimension(its:ite,kts:kte) :: diag_effi, diag_vmi, diag_di, diag_rhoi
     integer(kind=c_int), value, intent(in) :: its,ite, kts,kte, it
-    logical(kind=c_bool), value, intent(in) :: log_predictNc_in
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
 
     real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: pdel
     real(kind=c_real), intent(in),    dimension(its:ite,kts:kte)      :: exner
@@ -117,10 +117,6 @@ contains
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_liq_exchange
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_ice_exchange
     real(kind=c_real), intent(out),   dimension(its:ite,kts:kte)      :: vap_cld_exchange
-
-    logical :: log_predictNc
-
-    log_predictNc = log_predictNc_in
 
     call p3_main(qc,nc,qr,nr,th,qv,dt,qitot,qirim,nitot,birim,   &
          pres,dzq,npccn,naai,it,prt_liq,prt_sol,its,ite,kts,kte,diag_ze,diag_effc,     &
@@ -140,7 +136,7 @@ contains
 
   subroutine micro_p3_utils_init_c(Cpair, Rair, RH2O, RhoH2O, &
                  MWH2O, MWdry, gravit, LatVap, LatIce,        &
-                 CpLiq, Tmelt, Pi, iulog_in, masterproc_in) bind(C)
+                 CpLiq, Tmelt, Pi, iulog_in, masterproc) bind(C)
 
     use micro_p3_utils, only: micro_p3_utils_init
     real(kind=c_real), value, intent(in) :: Cpair
@@ -156,12 +152,9 @@ contains
     real(kind=c_real), value, intent(in) :: Tmelt
     real(kind=c_real), value, intent(in) :: Pi
     integer(kind=c_int), value, intent(in)   :: iulog_in
-    logical(kind=c_bool), value, intent(in)  :: masterproc_in
+    logical(kind=c_bool), value, intent(in)  :: masterproc
 
-    logical :: masterproc
     integer :: iulog
-
-    masterproc = masterproc_in
     iulog = iulog_in
 
     call micro_p3_utils_init(Cpair,Rair,RH2O,RhoH2O,MWH2O,MWdry,gravit,LatVap,LatIce, &
@@ -293,5 +286,40 @@ contains
 
   end subroutine generalized_sedimentation_c
 
+  subroutine cloud_sedimentation_c(kts,kte,ktop,kbot,kdir,   &
+       qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
+       dt,odt,log_predictNc, &
+       qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend) bind(C)
+    use micro_p3, only: cloud_sedimentation, dnu
+
+    ! arguments
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+
+    real(kind=c_real), intent(in), dimension(kts:kte) :: qc_incld
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: lcldm
+    real(kind=c_real), intent(in), dimension(kts:kte) :: acn
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dzq
+
+    real(kind=c_real),    value, intent(in) :: dt
+    real(kind=c_real),    value, intent(in) :: odt
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: mu_c
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: lamc
+    real(kind=c_real), intent(inout) :: prt_liq
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc_tend
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc_tend
+
+    call cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
+         qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
+         dt,odt,dnu,log_predictNc, &
+         qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend)
+
+  end subroutine cloud_sedimentation_c
 
 end module micro_p3_iso_c

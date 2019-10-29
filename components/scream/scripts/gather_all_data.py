@@ -20,6 +20,9 @@ MACHINE_METADATA = {
     "white"    : (["module purge && module load devpack/20181011/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-white/bin:$PATH"],
                   "$(which mpicxx)",
                   "bsub -I -q rhel7G"),
+    "lassen" : (["module purge && module load gcc/7.3.1 cuda/10.1.243 cmake/3.14.5 spectrum-mpi netcdf/4.7.0 python/3.7.2 && export LLNL_USE_OMPI_VARS='y'"],
+                  "$(which mpicxx)",
+                  "bsub"),
 }
 
 ###############################################################################
@@ -74,7 +77,7 @@ class GatherAllData(object):
                 .format(scream_repo)
 
         extra_env = ""
-        if machine in ["waterman", "white"] and "OMPI_CXX" not in " ".join(env_setup):
+        if machine in ["waterman", "white", "lassen"] and "OMPI_CXX" not in " ".join(env_setup):
             extra_env = "OMPI_CXX={}/bin/nvcc_wrapper ".format(kokkos_loc)
         else:
             extra_env = "OMP_PROC_BIND=FALSE "
