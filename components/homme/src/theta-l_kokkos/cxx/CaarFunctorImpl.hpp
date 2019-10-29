@@ -100,10 +100,12 @@ struct CaarFunctorImpl {
 
   struct TagPreExchange {};
   struct TagPostExchange {};
+  struct TagDp3dLimiter {};
 
   // Policies
   Kokkos::TeamPolicy<ExecSpace, TagPreExchange>   m_policy_pre;
   Kokkos::RangePolicy<ExecSpace, TagPostExchange> m_policy_post;
+  Kokkos::TeamPolicy<ExecSpace, TagDp3dLimiter>   m_policy_dp3d_lim;
 
   Kokkos::TeamPolicy<ExecSpace, TagPreExchange>
   get_policy_pre_exchange () const {
@@ -131,6 +133,7 @@ struct CaarFunctorImpl {
       , m_sphere_ops(sphere_ops)
       , m_policy_pre (Homme::get_default_team_policy<ExecSpace,TagPreExchange>(elements.num_elems()))
       , m_policy_post (0,elements.num_elems()*NP*NP)
+      , m_policy_dp3d_lim (Homme::get_default_team_policy<ExecSpace,TagDp3dLimiter>(elements.num_elems()))
   {
     // Initialize equation of state
     m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
@@ -285,6 +288,12 @@ struct CaarFunctorImpl {
       ExecSpace::fence();
       GPTLstop("caar compute");
     }
+
+    GPTLstart("caar compute");
+    Kokkos::parallel_for("caar loop dp3d limiter", m_policy_dp3d_lim, *this);
+    ExecSpace::fence();
+    GPTLstop("caar compute");
+    
     profiling_pause();
   }
 
@@ -416,6 +425,89 @@ struct CaarFunctorImpl {
   }
 
   KOKKOS_INLINE_FUNCTION
+  void operator()(const TagDp3dLimiter&, const TeamMember &team) const {
+    KernelVariables kv(team);
+
+    // TODO: make this less hard-coded maybe?
+    constexpr Real dp3d_thresh = 0.125;
+
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP; 
+      const int jgp = idx % NP;
+
+      const auto& spheremp = m_geometry.m_spheremp(kv.ie,igp,jgp);
+
+      // Check if the minimum dp3d in this column is blow a certain threshold
+      auto dp = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
+      auto& dp0 = m_hvcoord.dp0;
+      auto diff = Homme::subview(m_buffers.vort,kv.ie,igp,jgp);
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                           [&](const int ilev) {
+        diff(ilev) = (dp(ilev) - dp3d_thresh*dp0(ilev))*spheremp;
+      });
+
+      Real min_diff = Kokkos::reduction_identity<Real>::max();
+      auto diff_as_real = Homme::viewAsReal(diff);
+      Kokkos::Min<Real,ExecSpace> reducer(min_diff);
+      Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
+                              [&](const int k,Real& result) {
+        result = std::min(result,diff_as_real(k));
+      }, reducer);
+
+      if (min_diff<0) {
+        // Compute vtheta = vtheta_dp/dp
+        auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
+        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                             [&](const int ilev) {
+          vtheta_dp(ilev) /= dp(ilev);
+        });
+
+        // Gotta apply vertical mixing, to prevent levels from getting too thin.
+        Scalar col_mass = 0.0;
+        Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                                [&](const int ilev, Scalar& result) {
+          result += diff(ilev);
+        },col_mass);
+        Real mass = col_mass.reduce_add();
+
+        if (mass<0) {
+          Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                               [&](const int ilev) {
+            diff(ilev) *= -1.0;
+          });
+        }
+
+        // This loop must be done over physical levels, unless we implement
+        // masks, like it has been done in the E3SM/scream project
+        Real mass_new = 0.0;
+        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
+                             [&](const int k) {
+          if (diff_as_real(k)<0) {
+            diff_as_real(k) = 0;
+          } else {
+            mass_new += diff_as_real(k);
+          }
+        });
+
+        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                             [&](const int ilev) {
+          if (mass_new>0) {
+            diff(ilev) *= fabs(mass)/mass_new;
+          }
+          if (mass<0) {
+            diff(ilev) *= -1.0;
+          }
+
+          dp(ilev) = diff(ilev)/spheremp + dp3d_thresh*dp0(ilev);
+          vtheta_dp(ilev) *= dp(ilev);
+        });
+      }
+    });
+    kv.team_barrier();
+  }
+
+  KOKKOS_INLINE_FUNCTION
   void compute_div_vdp(KernelVariables &kv) const {
     // Compute vdp
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
@@ -472,11 +564,15 @@ struct CaarFunctorImpl {
 
       ColumnOps::column_scan_mid_to_int<true>(kv,dp,pi_i);
 
+#ifdef XX_NONBFB_COMING
+      ColumnOps::compute_midpoint_values(kv,pi_i,pi);
+#else
       // Add dp(k)/2 to pi(k)
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
         pi(ilev) = pi_i(ilev) + dp(ilev)/2;
       });
+#endif
 
       Kokkos::single(Kokkos::PerThread(kv.team),[&]() {
         omega_i(0)[0] = 0.0;
@@ -779,11 +875,6 @@ struct CaarFunctorImpl {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV_P),
                            [&](const int ilev) {
 
-#ifdef XX_NONBFB_COMING
-        // TODO: defer multiplication by scale1 until calculation of np1 quantities,
-        //       so you can save one packed op*, by multiplying by scale1*dt
-#endif
-
         // Compute w_tens
         auto temp = m_buffers.dpnh_dp_i(kv.team_idx,igp,jgp,ilev);
         temp -= 1.0;
@@ -804,6 +895,14 @@ struct CaarFunctorImpl {
         phi_tens(ilev) += m_buffers.phi_vadv(kv.team_idx,igp,jgp,ilev);
         phi_tens(ilev) *= -m_data.scale1;
         phi_tens(ilev) += temp;
+        if (m_data.scale1!=m_data.scale2) {
+           // add imex phi_h splitting 
+           // use approximate phi_h = hybi*phis 
+           // could also use true hydrostatic pressure, but this requires extra DSS in dirk()
+           phi_tens(ilev) +=  (m_data.scale1-m_data.scale2) *
+                (v_i(0,igp,jgp,ilev)*m_geometry.m_gradphis(kv.ie,0,igp,jgp) +
+                 v_i(1,igp,jgp,ilev)*m_geometry.m_gradphis(kv.ie,1,igp,jgp) ) * m_hvcoord.hybrid_bi(ilev);
+        }
       });
     });
     kv.team_barrier();
@@ -949,7 +1048,12 @@ struct CaarFunctorImpl {
           theta_tens(ilev) += m_buffers.grad_tmp(kv.team_idx,1,igp,jgp,ilev)*m_buffers.vdp(kv.team_idx,1,igp,jgp,ilev);
         }
         theta_tens(ilev) += m_buffers.theta_vadv(kv.team_idx,igp,jgp,ilev);
+#ifdef XX_NONBFB_COMING
+        // Defer multiplication by scale 1 to later, so we multiply by (dt*scale1),
+        // saving one Scalar x Real operation
+#else
         theta_tens(ilev) *= -m_data.scale1;
+#endif
       });
     });
   }
@@ -988,7 +1092,7 @@ struct CaarFunctorImpl {
 
         // Add theta_tens to vtheta_nm1 and multiply by spheremp
 #ifdef XX_NONBFB_COMING
-        theta_tens(ilev) *= m_data.dt*spheremp;
+        theta_tens(ilev) *= -m_data.scale1*m_data.dt*spheremp;
         vtheta_np1(ilev)  = m_state.m_vtheta_dp(kv.ie,m_data.nm1,igp,jgp,ilev);
         vtheta_np1(ilev) *= m_data.scale3*spheremp;
         vtheta_np1(ilev) += theta_tens(ilev);
@@ -1192,8 +1296,8 @@ struct CaarFunctorImpl {
         v_np1(ilev) = m_state.m_v(kv.ie,m_data.nm1,1,igp,jgp,ilev);
 
 #ifdef XX_NONBFB_COMING
-        u_tens(ilev) *= -m_data.dt*m_data.scale1*spheremp;
-        v_tens(ilev) *= -m_data.dt*m_data.scale1*spheremp;
+        u_tens(ilev) *= -m_data.scale1*m_data.dt*spheremp;
+        v_tens(ilev) *= -m_data.scale1*m_data.dt*spheremp;
 
         u_np1(ilev) *= m_data.scale3*spheremp;
         v_np1(ilev) *= m_data.scale3*spheremp;

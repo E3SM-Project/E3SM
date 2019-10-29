@@ -228,21 +228,25 @@ TEST_CASE("caar", "caar_testing") {
           params.rsplit = rsplit;
 
           // Generate RK stage data
-          Real dt = 1.0;//RPDF(1.0,10.0)(engine);
-          Real eta_ave_w = 1.0;// RPDF(0.1,1.0)(engine);
-          int  np1 = 0;//IPDF(0,2)(engine);
+          Real dt = RPDF(1.0,10.0)(engine);
+          Real eta_ave_w = RPDF(0.1,1.0)(engine);
+          Real scale1 = RPDF(1.0,2.0)(engine);
+          Real scale2 = RPDF(1.0,2.0)(engine);
+          Real scale3 = RPDF(1.0,2.0)(engine);
 
+          int  np1 = IPDF(0,2)(engine);
+
+          // Sync scalars across ranks (only np1 is *really* necessary, but might as well...)
           auto mpi_comm = Context::singleton().get<Comm>().mpi_comm();
           MPI_Bcast(&dt,1,MPI_DOUBLE,0,mpi_comm);
-          // MPI_Bcast(&eta_ave_w,1,MPI_DOUBLE,0,mpi_comm);
+          MPI_Bcast(&scale1,1,MPI_DOUBLE,0,mpi_comm);
+          MPI_Bcast(&scale2,1,MPI_DOUBLE,0,mpi_comm);
+          MPI_Bcast(&scale3,1,MPI_DOUBLE,0,mpi_comm);
+          MPI_Bcast(&eta_ave_w,1,MPI_DOUBLE,0,mpi_comm);
           MPI_Bcast(&np1,1,MPI_INT,0,mpi_comm);
 
           const int  n0  = (np1+1)%3;
           const int  nm1 = (np1+2)%3;
-
-          const Real scale1 = 1.0; // rpdf(engine);
-          const Real scale2 = 1.0; // rpdf(engine);
-          const Real scale3 = 1.0; // rpdf(engine);
 
           RKStageData data (nm1, n0, np1, 0, dt, eta_ave_w, scale1, scale2, scale3);
 

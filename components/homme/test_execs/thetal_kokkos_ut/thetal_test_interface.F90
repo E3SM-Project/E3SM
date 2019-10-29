@@ -41,7 +41,7 @@ contains
     !
     ! Locals
     !
-    integer :: ie
+    integer :: ie, k
     type (quadrature_t) :: gp
 
     call derivinit(deriv)
@@ -77,6 +77,11 @@ contains
     hvcoord%hyam = hyam
     hvcoord%hybm = hybm
     hvcoord%ps0 = ps0
+    do k=1,nlev
+      hvcoord%dp0(k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*ps0 + &
+                       (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps0
+    enddo
+
     call set_layer_locations (hvcoord,.false.,.false.)
 
     deriv%dvv = dvv
