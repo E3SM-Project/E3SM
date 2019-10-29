@@ -239,7 +239,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_rof_mrg(infodata, fractions_rx, timer_mrg)
+  subroutine prep_rof_mrg(infodata, fractions_rx, timer_mrg, cime_model)
 
     !---------------------------------------------------------------
     ! Description
@@ -249,6 +249,7 @@ contains
     type(seq_infodata_type) , intent(in)    :: infodata
     type(mct_aVect)         , intent(in)    :: fractions_rx(:)
     character(len=*)        , intent(in)    :: timer_mrg
+    character(len=*)        , intent(in)    :: cime_model
     !
     ! Local Variables
     integer                  :: eri, efi
@@ -261,7 +262,7 @@ contains
        efi = mod((eri-1),num_inst_frc) + 1
 
        x2r_rx => component_get_x2c_cx(rof(eri))  ! This is actually modifying x2r_rx
-       call prep_rof_merge(l2r_rx(eri), fractions_rx(efi), x2r_rx)
+       call prep_rof_merge(l2r_rx(eri), fractions_rx(efi), x2r_rx, cime_model)
     end do
     call t_drvstopf (trim(timer_mrg))
 
@@ -269,7 +270,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_rof_merge(l2x_r, fractions_r, x2r_r)
+  subroutine prep_rof_merge(l2x_r, fractions_r, x2r_r, cime_model)
 
     !-----------------------------------------------------------------------
     ! Description
@@ -279,6 +280,7 @@ contains
     type(mct_aVect),intent(in)    :: l2x_r
     type(mct_aVect),intent(in)    :: fractions_r
     type(mct_aVect),intent(inout) :: x2r_r
+    character(len=*)        , intent(in)    :: cime_model
     !
     ! Local variables
     integer       :: i
@@ -340,13 +342,15 @@ contains
           index_l2x_Flrl_irrig  = mct_aVect_indexRA(l2x_r,'Flrl_irrig' )
        end if
        index_l2x_Flrl_rofi   = mct_aVect_indexRA(l2x_r,'Flrl_rofi' )
-       index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
+       if(trim(cime_model) .eq. 'e3sm') then
+          index_l2x_Flrl_demand = mct_aVect_indexRA(l2x_r,'Flrl_demand' )
+          index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
+       endif
        index_x2r_Flrl_rofsur = mct_aVect_indexRA(x2r_r,'Flrl_rofsur' )
        index_x2r_Flrl_rofgwl = mct_aVect_indexRA(x2r_r,'Flrl_rofgwl' )
        index_x2r_Flrl_rofsub = mct_aVect_indexRA(x2r_r,'Flrl_rofsub' )
        index_x2r_Flrl_rofdto = mct_aVect_indexRA(x2r_r,'Flrl_rofdto' )
        index_x2r_Flrl_rofi   = mct_aVect_indexRA(x2r_r,'Flrl_rofi' )
-       index_x2r_Flrl_demand = mct_aVect_indexRA(x2r_r,'Flrl_demand' )
        if (have_irrig_field) then
           index_x2r_Flrl_irrig  = mct_aVect_indexRA(x2r_r,'Flrl_irrig' )
        end if
@@ -382,8 +386,10 @@ contains
             'lfrac*l2x%Flrl_rofdto'
        mrgstr(index_x2r_Flrl_rofi) = trim(mrgstr(index_x2r_Flrl_rofi))//' = '// &
             'lfrac*l2x%Flrl_rofi'
-       mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
-             'lfrac*l2x%Flrl_demand'
+       if (trim(cime_model).eq.'e3sm') then
+          mrgstr(index_x2r_Flrl_demand) = trim(mrgstr(index_x2r_Flrl_demand))//' = '// &
+               'lfrac*l2x%Flrl_demand'
+       endif
        if (have_irrig_field) then
           mrgstr(index_x2r_Flrl_irrig) = trim(mrgstr(index_x2r_Flrl_irrig))//' = '// &
                'lfrac*l2x%Flrl_irrig'
@@ -411,7 +417,9 @@ contains
        x2r_r%rAttr(index_x2r_Flrl_rofsub,i) = l2x_r%rAttr(index_l2x_Flrl_rofsub,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofdto,i) = l2x_r%rAttr(index_l2x_Flrl_rofdto,i) * lfrac
        x2r_r%rAttr(index_x2r_Flrl_rofi,i) = l2x_r%rAttr(index_l2x_Flrl_rofi,i) * lfrac
-       x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * lfrac
+       if (trim(cime_model).eq.'e3sm') then
+          x2r_r%rAttr(index_x2r_Flrl_demand,i) = l2x_r%rAttr(index_l2x_Flrl_demand,i) * lfrac
+       endif
        if (have_irrig_field) then
           x2r_r%rAttr(index_x2r_Flrl_irrig,i) = l2x_r%rAttr(index_l2x_Flrl_irrig,i) * lfrac
        end if
