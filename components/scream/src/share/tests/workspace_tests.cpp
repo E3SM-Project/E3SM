@@ -1,7 +1,3 @@
-#ifdef _OPENMP
-# include <omp.h>
-#endif
-
 #include <catch2/catch.hpp>
 
 #include "share/scream_workspace.hpp"
@@ -175,7 +171,7 @@ static void unittest_workspace()
 #ifdef WS_EXPENSIVE_TEST
     if (true)
 #else
-    if (omp_get_max_threads() == 2) // the test below is expensive, we don't want all threads sweeps to run it
+    if ( ExeSpace::concurrency() == 2 ) // the test below is expensive, we don't want all threads sweeps to run it
 #endif
     {
       // Test weird take/release permutations.
