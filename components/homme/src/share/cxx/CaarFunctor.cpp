@@ -80,15 +80,6 @@ void CaarFunctor::set_rk_stage_data (const RKStageData& data)
   m_caar_impl->set_rk_stage_data(data);
 }
 
-void CaarFunctor::run ()
-{
-  // Sanity check (should NEVER happen)
-  assert (m_caar_impl);
-
-  // Run functor
-  m_caar_impl->run();
-}
-
 void CaarFunctor::run (const RKStageData& data)
 {
   // Sanity check (should NEVER happen)

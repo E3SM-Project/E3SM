@@ -265,16 +265,6 @@ struct CaarFunctorImpl {
     Kokkos::deep_copy(Kokkos::subview(scale2,NUM_PHYSICAL_LEV),m_data.scale1*g);
   }
 
-  void run () const {
-    // Run functor
-    profiling_resume();
-    GPTLstart("caar compute");
-    Kokkos::parallel_for("caar loop pre-boundary exchange", m_policy_pre, *this);
-    ExecSpace::fence();
-    GPTLstop("caar compute");
-    profiling_pause();
-  }
-
   void run (const RKStageData& data)
   {
     set_rk_stage_data(data);

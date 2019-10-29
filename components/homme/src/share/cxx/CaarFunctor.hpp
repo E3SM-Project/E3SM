@@ -43,8 +43,6 @@ public:
 
   void set_rk_stage_data(const RKStageData& data);
 
-  void run();
-
   void run(const RKStageData& data);
 
 private:

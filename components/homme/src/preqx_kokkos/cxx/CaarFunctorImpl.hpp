@@ -189,16 +189,6 @@ struct CaarFunctorImpl {
     m_data = data;
   }
 
-  void run () const {
-    // Run functor
-    profiling_resume();
-    GPTLstart("caar compute");
-    Kokkos::parallel_for("caar loop pre-boundary exchange", m_policy, *this);
-    ExecSpace::fence();
-    GPTLstop("caar compute");
-    profiling_pause();
-  }
-
   void run (const RKStageData& data)
   {
     set_rk_stage_data(data);
