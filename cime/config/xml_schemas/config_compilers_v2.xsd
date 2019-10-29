@@ -11,6 +11,8 @@
   <xs:attribute name="compile_threaded" type="upperBoolean"/>
   <xs:attribute name="DEBUG" type="upperBoolean"/>
   <xs:attribute name="MODEL" type="xs:token"/>
+  <xs:attribute name="COMP_NAME" type="xs:token"/>
+  <xs:attribute name="COMP_CLASS" type="xs:token"/>
   <xs:attribute name="MPILIB" type="xs:token"/>
 
   <!--  simple types -->
@@ -53,6 +55,8 @@
     <!-- We could try enumerating all the valid names for models, but that could
 	 complicate the process of adding new models. -->
     <xs:attribute ref="MODEL"/>
+    <xs:attribute ref="COMP_NAME"/>
+    <xs:attribute ref="COMP_CLASS"/>
     <xs:attribute ref="MPILIB"/>
   </xs:complexType>
 

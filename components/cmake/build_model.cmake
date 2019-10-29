@@ -1,5 +1,10 @@
-function(build_model COMP_CLASS_ARG MODEL_ARG)
-  set(MODELCONF_DIR "${BUILDCONF}/${MODEL_ARG}conf")
+function(build_model COMP_CLASS COMP_NAME)
+
+  # We support component-specific configuration of flags, etc, so this setup
+  # need to be done here.
+  include(${CMAKE_SOURCE_DIR}/cmake/common_setup.cmake)
+
+  set(MODELCONF_DIR "${BUILDCONF}/${COMP_NAME}conf")
 
   # Load dependency search path.
   file(STRINGS ${MODELCONF_DIR}/Filepath FILEPATH_DIRS)
@@ -14,7 +19,7 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
     set(CPPDEFS "${CPPDEFS} ${CCSM_CPPDEFS}")
   endif()
 
-  if (MODEL_ARG STREQUAL "cpl")
+  if (COMP_NAME STREQUAL "cpl")
     list(APPEND INCLDIR "${EXEROOT}/cmake-bld/mpas-source/src")
     foreach(ITEM IN LISTS COMP_CLASSES)
       list(APPEND INCLDIR "${EXEROOT}/cmake-bld/cmake/${ITEM}")
@@ -39,7 +44,7 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
   # Cam needs some special handling for cosp and turning off opts for some files
   #-------------------------------------------------------------------------------
 
-  if (MODEL_ARG STREQUAL "cam")
+  if (COMP_NAME STREQUAL "cam")
     # These RRTMG files take an extraordinarily long time to compile with optimization.
     # Until mods are made to read the data from files, just remove optimization from
     # their compilation.
@@ -79,7 +84,7 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
     set(LNDOBJDIR "${SHAREDLIBROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/clm/obj")
     set(LNDLIBDIR "${EXEROOT}/${SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/lib")
     list(APPEND INCLDIR "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
-    if (MODEL_ARG STREQUAL "clm")
+    if (COMP_NAME STREQUAL "clm")
       set(INCLUDE_DIR "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/include")
     endif()
   endif()
@@ -163,7 +168,7 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
     endif()
   endforeach()
 
-  if (MODEL_ARG STREQUAL "cpl")
+  if (COMP_NAME STREQUAL "cpl")
     set(TARGET_NAME "${CIME_MODEL}.exe")
     add_executable(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
@@ -179,7 +184,7 @@ function(build_model COMP_CLASS_ARG MODEL_ARG)
     endforeach()
     set_target_properties(${TARGET_NAME} PROPERTIES LINKER_LANGUAGE ${LD})
   else()
-    set(TARGET_NAME ${COMP_CLASS_ARG})
+    set(TARGET_NAME ${COMP_CLASS})
     add_library(${TARGET_NAME})
     target_sources(${TARGET_NAME} PRIVATE ${REAL_SOURCES})
   endif()

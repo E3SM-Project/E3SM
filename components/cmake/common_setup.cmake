@@ -1,10 +1,6 @@
-# This file contains configuration that is independent of the library being
-# built.
-
-# Set global cmake settings
-set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
-set(CMAKE_VERBOSE_MAKEFILE TRUE)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/..)
+# This file is intended to be included by build_model function. Any changes
+# to CMAKE variables intended to impact the CMakeLists.txt file that called
+# build_model must use PARENT_SCOPE.
 
 # Add INCROOT to path for Depends and Include
 set(MINCROOT "")
@@ -185,7 +181,7 @@ if (USE_TRILINOS)
     message(FATAL_ERROR "TRILINOS_PATH must be defined when USE_TRILINOS is TRUE")
   endif()
 
-  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${TRILINOS_PATH})
+  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${TRILINOS_PATH} PARENT_SCOPE)
   find_package(Trilinos)
 endif()
 
@@ -446,21 +442,18 @@ set(MCTLIBS "${MCT_LIBDIR}/libmct.a ${MCT_LIBDIR}/libmpeu.a")
 
 set(GPTLLIB "${GPTL_LIBDIR}/libgptl.a")
 
-add_custom_target(genf90
-  DEPENDS ${CIMEROOT}/src/externals/genf90/genf90.pl)
-
 #------------------------------------------------------------------------------
 # Set key cmake vars
 #------------------------------------------------------------------------------
-set(CMAKE_C_COMPILER ${CC})
-set(CMAKE_CXX_COMPILER ${CXX})
-set(CMAKE_Fortran_COMPILER ${FC})
+set(CMAKE_C_COMPILER ${CC} PARENT_SCOPE)
+set(CMAKE_CXX_COMPILER ${CXX} PARENT_SCOPE)
+set(CMAKE_Fortran_COMPILER ${FC} PARENT_SCOPE)
 
-set(CMAKE_Fortran_FLAGS "${FFLAGS}")
-set(CMAKE_C_FLAGS "${CFLAGS}")
-set(CMAKE_CXX_FLAGS "${CXXFLAGS}")
+set(CMAKE_Fortran_FLAGS "${FFLAGS}" PARENT_SCOPE)
+set(CMAKE_C_FLAGS "${CFLAGS}" PARENT_SCOPE)
+set(CMAKE_CXX_FLAGS "${CXXFLAGS}" PARENT_SCOPE)
 if (LD STREQUAL "Fortran")
-  set(CMAKE_EXE_LINKER_FLAGS "${F90_LDFLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${F90_LDFLAGS}" PARENT_SCOPE)
 else()
-  set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}" PARENT_SCOPE)
 endif()

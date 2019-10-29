@@ -45,7 +45,7 @@ def build_cime_component_lib(case, compname, libroot, bldroot, use_old=True):
 
     cimeroot  = case.get_value("CIMEROOT")
     casebuild = case.get_value("CASEBUILD")
-    compclass = compname[1:]
+    compclass = compname[1:] # This very hacky
     comp_interface = case.get_value("COMP_INTERFACE")
     confdir   = os.path.join(casebuild, "{}conf".format(compname))
 
@@ -75,10 +75,10 @@ def build_cime_component_lib(case, compname, libroot, bldroot, use_old=True):
         safe_copy(os.path.join(confdir, "Filepath"), bldroot)
         safe_copy(os.path.join(confdir, "CCSM_cppdefs"), bldroot)
 
-        run_gmake(case, compclass, libroot, bldroot)
+        run_gmake(case, compclass, compname, libroot, bldroot)
 
 ###############################################################################
-def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
+def run_gmake(case, compclass, compname, libroot, bldroot, libname="", user_cppdefs=""):
 ###############################################################################
     gmake_args = get_standard_makefile_args(case)
 
@@ -93,8 +93,8 @@ def run_gmake(case, compclass, libroot, bldroot, libname="", user_cppdefs=""):
 
     makefile = os.path.join(case.get_value("CASETOOLS"), "Makefile")
 
-    cmd = "{} complib -j {:d} MODEL={} COMPLIB={} {} -f {} -C {} " \
-        .format(gmake, gmake_j, compclass, complib, gmake_args, makefile, bldroot)
+    cmd = "{} complib -j {:d} MODEL={} COMP_CLASS={} COMP_NAME={} COMPLIB={} {} -f {} -C {} " \
+        .format(gmake, gmake_j, compclass, compclass, compname, complib, gmake_args, makefile, bldroot)
     if user_cppdefs:
         cmd = cmd + "USER_CPPDEFS='{}'".format(user_cppdefs )
 

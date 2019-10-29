@@ -15,7 +15,7 @@ _CMD_ARGS_FOR_BUILD = \
      "MACH", "MPILIB", "NINST_VALUE", "OS", "PIO_VERSION",
      "SHAREDLIBROOT", "SMP_PRESENT", "USE_ESMF_LIB", "USE_MOAB",
      "CAM_CONFIG_OPTS", "COMPARE_TO_NUOPC", "HOMME_TARGET",
-     "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC")
+     "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_TRILINOS", "USE_ALBANY", "USE_PETSC")
 
 def get_standard_makefile_args(case, shared_lib=False):
     make_args = "CIME_MODEL={} ".format(case.get_value("MODEL"))
@@ -392,8 +392,8 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
 
     with open(file_build, "w") as fd:
-        stat = run_cmd("MODEL={} SMP={} {} {} {} {} "
-                       .format(compclass, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
+        stat = run_cmd("MODEL={} COMP_CLASS={} COMP_NAME={} SMP={} {} {} {} {} "
+                       .format(compclass, compclass, compname, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
                        from_dir=bldroot,  arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
 
@@ -411,6 +411,10 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
 ###############################################################################
 def _create_build_metadata_for_component(config_dir, libroot, bldroot, case):
 ###############################################################################
+    """
+    Ensure that crucial Filepath and CCSM_CPPDEFS files exist for this component.
+    In many cases, the bld/configure script will have already created these.
+    """
     buildlib = imp.load_source("buildlib_cmake", os.path.join(config_dir, "buildlib_cmake"))
     buildlib.buildlib(bldroot, libroot, case)
 
