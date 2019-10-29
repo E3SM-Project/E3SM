@@ -135,7 +135,7 @@ def parse_command_line(args, description):
                         help="Specify the mpilib. To see list of supported MPI libraries for each machine, "
                         "\ninvoke ./query_config. The default is the first listing .")
 
-    if model == "cesm":
+    if model in ["cesm","ufs"]:
         parser.add_argument("-c", "--compare",
                             help="While testing, compare baselines against the given compare directory. ")
 
@@ -304,7 +304,7 @@ def parse_command_line(args, description):
     CIME.utils.resolve_mail_type_args(args)
 
     # generate and compare flags may not point to the same directory
-    if model == "cesm":
+    if model in ["cesm", "ufs"]:
         if args.generate is not None:
             expect(not (args.generate == args.compare),
                    "Cannot generate and compare baselines at the same time")
@@ -367,7 +367,7 @@ def parse_command_line(args, description):
 
     # Compute list of fully-resolved test_names
     test_extra_data = {}
-    if model == "cesm":
+    if model in ["cesm","ufs"]:
         machine_name = args.xml_machine if args.machine is None else args.machine
 
         # If it's still unclear what machine to use, look at test names
@@ -422,7 +422,7 @@ def parse_command_line(args, description):
     baseline_cmp_name = None
     baseline_gen_name = None
     if args.compare or args.generate:
-        if model == "cesm":
+        if model in ["cesm", "ufs"]:
             if args.compare is not None:
                 baseline_cmp_name = args.compare
             if args.generate is not None:
