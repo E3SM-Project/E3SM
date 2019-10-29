@@ -97,6 +97,15 @@ def qflxconvert_units(var):
         var.units = 'mm/day'
     return var
 
+def pminuse_convert_units(var):
+    if var.units == 'kg/m2/s' or var.units == 'kg m-2 s-1':
+        # need to find a solution for units not included in udunits
+        # var = convert_units( var, 'kg/m2/s' )
+        var = var * 3600.0 * 24  # convert to mm/day
+        var.units = 'mm/day'
+    var.long_name = "precip. flux - evap. flux"
+    return var
+
 
 def prect(precc, precl):
     """Total precipitation flux = convective + large-scale"""
@@ -789,6 +798,12 @@ derived_variables = {
     ]),
     'O3': OrderedDict([
         (('o3',), rename)
+    ]),
+    'PminusE': OrderedDict([
+        (('PminusE',),lambda pminuse: pminuse_convert_units(pminuse)),
+        (('PRECC', 'PRECL', 'QFLX',),lambda precc,precl,qflx: pminuse_convert_units(prect(precc,precl)-pminuse_convert_units(qflx))),
+        (('pr','evspsbl'), lambda pr,evspsbl: pminuse_convert_units(pr - evspsbl))
+        
     ]),
     #Land variables
     'SOILWATER_10CM': OrderedDict([
