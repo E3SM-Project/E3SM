@@ -2886,7 +2886,11 @@
    <default_value></default_value>
    <group>job_submission</group>
    <file>env_workflow.xml</file>
-   <desc>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</desc>
+   <desc>The machine wallclock setting.  Default determined in
+   config_machines.xml can be overwritten by testing.  Format is
+   DD:HH:MM with DD assumed 0 if not present, this is translated to
+   the format specified by walltime format defined in
+   config_batch.xml</desc>
  </entry>
 
   <entry id="BATCH_COMMAND_FLAGS">

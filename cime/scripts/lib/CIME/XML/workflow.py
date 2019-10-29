@@ -31,9 +31,9 @@ class Workflow(GenericXML):
         if os.path.exists(infile):
             GenericXML.read(self, infile)
 
-    def get_workflow_jobs(self, machine, workflow_case="default"):
+    def get_workflow_jobs(self, machine, workflowid="default"):
         """
-        Return a list of jobs with the first element the name of the case script
+        Return a list of jobs with the first element the name of the script
         and the second a dict of qualifiers for the job
         """
         jobs = []
@@ -41,8 +41,8 @@ class Workflow(GenericXML):
         findmore = True
         prepend = False
         while findmore:
-            bnode = self.get_optional_child("workflow_jobs", attributes={"case":workflow_case})
-            expect(bnode,"No workflow_case {} found in file {}".format(workflow_case, self.filename))
+            bnode = self.get_optional_child("workflow_jobs", attributes={"id":workflowid})
+            expect(bnode,"No workflow {} found in file {}".format(workflowid, self.filename))
             if prepend:
                 bnodes = [bnode] + bnodes
             else:
@@ -50,10 +50,10 @@ class Workflow(GenericXML):
             prepend = False
             workflow_attribs = self.attrib(bnode)
             if "prepend" in workflow_attribs:
-                workflow_case = workflow_attribs["prepend"]
+                workflowid = workflow_attribs["prepend"]
                 prepend = True
             elif "append" in workflow_attribs:
-                workflow_case = workflow_attribs["append"]
+                workflowid = workflow_attribs["append"]
             else:
                 findmore = False
         for bnode in bnodes:
