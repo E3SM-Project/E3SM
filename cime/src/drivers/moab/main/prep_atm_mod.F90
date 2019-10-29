@@ -302,7 +302,7 @@ contains
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
     ! it happens over joint communicator
-    ierr = iMOAB_CoverageGraph(mpicom_join, mhid,  atmid, mbaxid,  id_join, mbintxoa, context_id);
+    ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxoa, context_id);
 
     wgtIdef = 'scalar'//CHAR(0)
     dm1 = "cgll"//CHAR(0)
@@ -365,7 +365,7 @@ contains
     call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
 
     ! it happens over joint communicator
-    ierr = iMOAB_CoverageGraph(mpicom_join, mhid,  atmid, mbaxid,  id_join, mbintxla, context_id);
+    ierr = iMOAB_CoverageGraph(mpicom_join, mhid, mbaxid, mbintxla, context_id);
 
     wgtIdef = 'scalar-pc'//CHAR(0)
     dm1 = "cgll"//CHAR(0)
@@ -440,12 +440,12 @@ contains
         ! trivial partitioning, now we need to adjust it for "coverage" mesh
         ! as always, use nonblocking sends
 
-         ierr = iMOAB_SendElementTag(mhid, atmid, id_join, tagName, mpicom_join, context_id)
+         ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
 
       endif
       if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
         ! receive on atm on coupler pes, that was redistributed according to coverage
-         ierr = iMOAB_ReceiveElementTag(mbaxid, atmid, id_join, tagName, mpicom_join, context_id)
+         ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
       !CHECKRC(ierr, "cannot receive tag values")
       endif
 
@@ -485,12 +485,12 @@ contains
         ! original partitioning, now we need to adjust it for "coverage" mesh
         ! as always, use nonblocking sends
 
-         ierr = iMOAB_SendElementTag(mhid, atmid, id_join, tagName, mpicom_join, context_id)
+         ierr = iMOAB_SendElementTag(mhid, tagName, mpicom_join, context_id)
 
       endif
       if (mbaxid .ge. 0 ) then !  we are on coupler pes, for sure
         ! receive on atm on coupler pes, that was redistributed according to coverage
-         ierr = iMOAB_ReceiveElementTag(mbaxid, atmid, id_join, tagName, mpicom_join, context_id)
+         ierr = iMOAB_ReceiveElementTag(mbaxid, tagName, mpicom_join, context_id)
       !CHECKRC(ierr, "cannot receive tag values")
       endif
 

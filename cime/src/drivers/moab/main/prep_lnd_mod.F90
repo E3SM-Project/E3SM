@@ -568,12 +568,12 @@ contains
     if (mblxid .ge. 0) then !  send because we are on coupler pes
 
       ! basically, use the initial partitioning
-      ierr = iMOAB_SendElementTag(mblxid, id_join, lndid, tagName, mpicom_join, context_id)
+      ierr = iMOAB_SendElementTag(mblxid, tagName, mpicom_join, context_id)
 
     endif
     if (mlnid .ge. 0 ) then !  we are on land pes, for sure
       ! receive on land pes, a tag that was computed on coupler pes
-       ierr = iMOAB_ReceiveElementTag(mlnid, id_join, lndid, tagName, mpicom_join, context_id)
+       ierr = iMOAB_ReceiveElementTag(mlnid, tagName, mpicom_join, context_id)
     !CHECKRC(ierr, "cannot receive tag values")
     endif
 
