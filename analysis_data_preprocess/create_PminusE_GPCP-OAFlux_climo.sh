@@ -16,7 +16,7 @@ cd $time_series_output_path
 start_yr=1979
 end_yr=2013
 
-cdo splityear PminusE_197901_201312.nc ${tmp}PminusE
+cdo splityear PminusE_197901_201312.nc ${tmp}GPCP_OAFLux
 
 for yr in $(eval echo "{$start_yr..$end_yr}"); do
     yyyy=`printf "%04d" $yr`
@@ -24,12 +24,12 @@ for yr in $(eval echo "{$start_yr..$end_yr}"); do
 
     for mth in {1..12}; do
         mm=`printf "%02d" $mth`
-        ncks -O -F -d time,${mth} ${tmp}PminusE${yyyy}.nc ${tmp}PminusE_${yyyy}${mm}.nc
+        ncks -O -F -d time,${mth} ${tmp}GPCP_OAFLux${yyyy}.nc ${tmp}GPCP_OAFLux_${yyyy}${mm}.nc
         done
 done
 cd ${tmp}
 
-ncclimo -a sdd --lnk_flg -c PminusE_${start_yr}01.nc -s $start_yr -e $end_yr
+ncclimo -a sdd --lnk_flg -c GPCP_OAFLux_${start_yr}01.nc -s $start_yr -e $end_yr
 mv *climo.nc $climo_output_path
 
 
