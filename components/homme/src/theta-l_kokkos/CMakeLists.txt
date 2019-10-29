@@ -2,9 +2,6 @@
 
 MACRO(THETAL_KOKKOS_SETUP)
 
-INCLUDE_DIRECTORIES ( SYSTEM ${Trilinos_INCLUDE_DIRS} ${Trilinos_TPL_INCLUDE_DIRS} )
-LINK_DIRECTORIES    ( ${Trilinos_LIBRARY_DIRS} ${Trilinos_TPL_LIBRARY_DIRS} )
-
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta-l_kokkos)
 SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
@@ -58,6 +55,8 @@ SET (SRC_SHARE_F90
   ${SRC_SHARE_DIR}/edgetype_mod.F90
   ${SRC_SHARE_DIR}/edge_mod_base.F90
   ${SRC_SHARE_DIR}/element_mod.F90
+  ${SRC_SHARE_DIR}/gllfvremap_mod.F90
+  ${SRC_SHARE_DIR}/gllfvremap_test_mod.F90
   ${SRC_SHARE_DIR}/global_norms_mod.F90
   ${SRC_SHARE_DIR}/gridgraph_mod.F90
   ${SRC_SHARE_DIR}/hybrid_mod.F90
@@ -178,7 +177,7 @@ IF (HOMME_USE_ARKODE)
     ${ARKODE_DIR}/theta-l/homme_nvector.F90
   )
 
-  SET(THETAL_DEPS_CXX
+  SET(THETAL_DEPS_C
     ${ARKODE_DIR}/nvector_external.h
     ${ARKODE_DIR}/nvector_external.c
     ${ARKODE_DIR}/column_linsol.h
@@ -196,6 +195,7 @@ ENDIF ()
 SET(THETAL_DEPS
   ${TARGET_F90}
   ${THETAL_DEPS_F90}
+  ${THETAL_DEPS_C}
   ${THETAL_DEPS_CXX}
 )
 
