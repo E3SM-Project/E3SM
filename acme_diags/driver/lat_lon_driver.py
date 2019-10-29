@@ -121,7 +121,7 @@ def run_diag(parameter):
                     mv2 = mv2_p[ilev, ]
 
                     for region in regions:
-                        print("Selected region: {}".format(region))
+                        #print("Selected region: {}".format(region))
 
                         mv1_domain = utils.general.select_region(region, mv1, land_frac, ocean_frac, parameter)
                         mv2_domain = utils.general.select_region(region, mv2, land_frac, ocean_frac, parameter)
@@ -150,7 +150,7 @@ def run_diag(parameter):
                         # When running in a container, the paths are modified.
                         fnm = os.path.join(utils.general.get_output_dir(parameter.current_set,
                             parameter, ignore_container=True), parameter.output_file + '.json')
-                        print('Metrics saved in: ' + fnm)
+                        #print('Metrics saved in: ' + fnm)
 
                         parameter.var_region = region
                         plot(parameter.current_set, mv2_domain,
@@ -162,7 +162,7 @@ def run_diag(parameter):
             # For variables without a z-axis.
             elif mv1.getLevel() is None and mv2.getLevel() is None:
                 for region in regions:
-                    print("Selected region: {}".format(region))
+                    #print("Selected region: {}".format(region))
 
                     mv1_domain = utils.general.select_region(region, mv1, land_frac, ocean_frac, parameter)
                     mv2_domain = utils.general.select_region(region, mv2, land_frac, ocean_frac, parameter)
@@ -200,7 +200,7 @@ def run_diag(parameter):
                     # When running in a container, the paths are modified.
                     fnm = os.path.join(utils.general.get_output_dir(parameter.current_set,
                         parameter, ignore_container=True), parameter.output_file + '.json')
-                    print('Metrics saved in: ' + fnm)
+                    #print('Metrics saved in: ' + fnm)
 
                     parameter.var_region = region
                     plot(parameter.current_set, mv2_domain,
