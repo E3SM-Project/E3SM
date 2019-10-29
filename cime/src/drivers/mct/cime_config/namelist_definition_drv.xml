@@ -4758,7 +4758,8 @@
     </desc>
     <values>
       <value>0.5</value>
-      <value aqua_planet_sst_type="sst_aquap11">1.0</value>
+      <value cime_model='cesm' aqua_planet_sst_type="sst_aquap11">1.0</value>
+      <value cime_model='e3sm' aqua_planet_sst_type="sst_aquap_constant">1.0</value>
     </values>
   </entry>
 
