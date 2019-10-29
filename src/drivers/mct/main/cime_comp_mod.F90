@@ -532,6 +532,7 @@ module cime_comp_mod
        &Sa_co2diag:Sa_co2prog'
 
   ! --- other ---
+  character(len=cs)        :: cime_model
 
   integer  :: driver_id              ! ID for multi-driver setup
   integer  :: ocnrun_count           ! number of times ocn run alarm went on
@@ -1317,6 +1318,7 @@ contains
        write(logunit,F00) 'Initialize each component: atm, lnd, rof, ocn, ice, glc, wav, esp, iac'
        call shr_sys_flush(logunit)
     endif
+    call seq_infodata_GetData(infodata, cime_model=cime_model)
 
     call t_startf('CPL:comp_init_pre_all')
     call component_init_pre(atm, ATMID, CPLATMID, CPLALLATMID, infodata, ntype='atm')
@@ -3298,7 +3300,6 @@ contains
 
     use shr_pio_mod, only : shr_pio_finalize
     use shr_wv_sat_mod, only: shr_wv_sat_final
-    character(len=cs)        :: cime_model
 
     !------------------------------------------------------------------------
     ! Finalization of all models
@@ -3328,7 +3329,6 @@ contains
     !------------------------------------------------------------------------
 
     call shr_wv_sat_final()
-    call seq_infodata_GetData(infodata, cime_model=cime_model)
     call shr_pio_finalize( )
 
     call shr_mpi_min(msize ,msize0,mpicom_GLOID,' driver msize0', all=.true.)
@@ -3402,12 +3402,10 @@ contains
     character(len=8) :: ctime          ! System time
     integer          :: values(8)
     character        :: date*8, time*10, zone*5
-    character(len=cs)        :: cime_model
 
     !-------------------------------------------------------------------------------
 
     call date_and_time (date, time, zone, values)
-    call seq_infodata_GetData(infodata, cime_model=cime_model)
     cdate(1:2) = date(5:6)
     cdate(3:3) = '/'
     cdate(4:5) = date(7:8)
@@ -4141,7 +4139,7 @@ contains
 !----------------------------------------------------------------------------------
 
   subroutine cime_run_rof_setup_send()
-
+    
     !----------------------------------------------------
     ! rof prep-merge
     !----------------------------------------------------
@@ -4155,7 +4153,7 @@ contains
 
        if (lnd_c2_rof) call prep_rof_calc_l2r_rx(fractions_lx, timer='CPL:rofprep_lnd2rof')
 
-       call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r')
+       call prep_rof_mrg(infodata, fractions_rx, timer_mrg='CPL:rofprep_mrgx2r', cime_model=cime_model)
 
        call component_diag(infodata, rof, flow='x2c', comment= 'send rof', &
             info_debug=info_debug, timer_diag='CPL:rofprep_diagav')
