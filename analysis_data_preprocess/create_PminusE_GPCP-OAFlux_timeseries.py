@@ -56,5 +56,6 @@ year_str="".join([startyear,'-',endyear])
 setattr(fout,'yrs_averaged',year_str)
 setattr(fout,'data_name','P - E computed using precipitation rate from GPCP (1979-2013) and evaporation rate from OAFlux (1979-2013)')
 print(fout.attributes)
+fout.close()
 
 
