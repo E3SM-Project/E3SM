@@ -171,7 +171,7 @@ static void unittest_workspace()
 #ifdef WS_EXPENSIVE_TEST
     if (true)
 #else
-    if ( ExeSpace::concurrency() ) // the test below is expensive, we don't want all threads sweeps to run it
+    if ( ExeSpace::concurrency() == 2 ) // the test below is expensive, we don't want all threads sweeps to run it
 #endif
     {
       // Test weird take/release permutations.
