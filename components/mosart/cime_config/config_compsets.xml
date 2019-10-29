@@ -10,7 +10,7 @@
   <!---MOSART RM compsets -->
 
   <compset>
-    <alias>RM</alias>
+    <alias>RMOSARTNLDAS</alias>
     <lname>2000_SATM_DLND%LCLMR_SICE_SOCN_MOSART_SGLC_SWAV</lname>
   </compset>
 
