@@ -62,7 +62,7 @@ def run_diag(parameter):
             test = test_data.get_timeseries_variable(var)
             print('Start and end time for selected time slices for test data: ', test.getTime().asComponentTime()[0],test.getTime().asComponentTime()[-1])
             
-            print('test shape',test.shape, test.long_name, test.units)
+            #print('test shape',test.shape, test.long_name, test.units)
 
             parameter.viewer_descr[var] = getattr(test, 'long_name', var)
             # Get the name of the data, appended with the years averaged.
@@ -90,14 +90,13 @@ def run_diag(parameter):
 
                 try: 
                     ref = ref_data.get_timeseries_variable(var)
-                    #print('Start and end time for selected time slices for ref data: ', ref.getTime().asComponentTime()[0],ref.getTime().asComponentTime()[-1])
                     #print('ref shape',ref.shape, ref.long_name, ref.units)
 
                     ref_domain = utils.general.select_region(region, ref, land_frac, ocean_frac, parameter)
 
                     ref_domain = cdutil.averager(ref_domain,axis = 'xy')
                     cdutil.setTimeBoundsMonthly(ref_domain)
-                    print('Start and end time for selected time slices for ref data: ', ref_domain.getTime().asComponentTime()[0],ref_domain.getTime().asComponentTime()[-1])
+                    #print('Start and end time for selected time slices for ref data: ', ref_domain.getTime().asComponentTime()[0],ref_domain.getTime().asComponentTime()[-1])
                     ref_domain_year = cdutil.YEAR(ref_domain)
                     ref_domain_year.ref_name = ref_name
                     save_data[ref_name] = ref_domain_year.asma().tolist()
@@ -114,7 +113,7 @@ def run_diag(parameter):
                 [var, region])
             fnm = os.path.join(utils.general.get_output_dir(
                             parameter.current_set, parameter), parameter.output_file + '.json') 
-            print('Data saved in: ' + fnm)
+            #print('Data saved in: ' + fnm)
 
             with open(fnm, 'w') as outfile:
                 json.dump(save_data, outfile)

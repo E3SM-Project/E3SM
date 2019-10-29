@@ -107,7 +107,7 @@ def run_diag(parameter):
                     (not isinstance(plevs, numpy.ndarray) and not plevs):
                     plevs = ZonalMean2dParameter().plevs
 
-                print('Selected pressure level: {}'.format(plevs))
+                #print('Selected pressure level: {}'.format(plevs))
 
                 mv1_p = utils.general.convert_to_pressure_levels(mv1, plevs, test_data, var, season)
                 mv2_p = utils.general.convert_to_pressure_levels(mv2, plevs, ref_data, var, season)

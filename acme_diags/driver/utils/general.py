@@ -153,9 +153,10 @@ def select_region(region, var, land_frac, ocean_frac, parameter):
     try:
         # if region.find('global') == -1:
         domain = regions_specs[region]['domain']
-        print('Domain: ', domain)
+        #print('Domain: ', domain)
     except:
-        print("No domain selector.")
+        pass
+        #print("No domain selector.")
 
     var_domain_selected = var_domain(domain)
     var_domain_selected.units = var.units
