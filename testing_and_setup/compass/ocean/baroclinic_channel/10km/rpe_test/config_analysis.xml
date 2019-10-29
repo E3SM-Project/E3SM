@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<config case="analysis">
+
+	<add_link source="plot.py" source_path="script_test_dir" dest="plot.py"/>
+	<add_link source="../initial_state/initial_state.nc" dest="initial_state.nc"/>
+	<add_link source="../rpe_test_1_nu_1/output.nc" dest="output_1.nc"/>
+	<add_link source="../rpe_test_2_nu_5/output.nc" dest="output_2.nc"/>
+	<add_link source="../rpe_test_3_nu_10/output.nc" dest="output_3.nc"/>
+	<add_link source="../rpe_test_4_nu_20/output.nc" dest="output_4.nc"/>
+	<add_link source="../rpe_test_5_nu_200/output.nc" dest="output_5.nc"/>
+
+	<run_script name="run.py">
+		<step executable="python plot.py">
+		</step>
+	</run_script>
+</config>

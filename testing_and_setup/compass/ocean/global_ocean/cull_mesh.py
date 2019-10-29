@@ -55,8 +55,7 @@ options, args = parser.parse_args()
 # required for compatibility with MPAS
 netcdfFormat = 'NETCDF3_64BIT'
 
-gf = GeometricFeatures(cacheLocation='{}'.format(options.path),
-                       remoteBranchOrTag='convert_to_package')
+gf = GeometricFeatures(cacheLocation='{}'.format(options.path))
 
 # start with the land coverage from Natural Earth
 fcLandCoverage = gf.read(componentName='natural_earth', objectType='region',
