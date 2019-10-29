@@ -1819,7 +1819,7 @@ module mpas_pool_routines
                      end if
                   else if (poolItr % nDims == 4) then
                      if (poolItr % nTimeLevels > 1) then
-                        decompType = pool_get_member_decomp_type(poolMem % r4 % dimNames(4))
+                        decompType = pool_get_member_decomp_type(poolMem % r4a(1) % dimNames(4))
 
                         if (decompType == MPAS_DECOMP_CELLS) then
                            do i = 1, poolItr % nTimeLevels
