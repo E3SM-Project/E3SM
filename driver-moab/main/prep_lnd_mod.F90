@@ -546,4 +546,74 @@ contains
     prep_lnd_get_mapper_Fg2l => mapper_Fg2l
   end function prep_lnd_get_mapper_Fg2l
 
+  ! exposed method to migrate projected tag from coupler pes back to land pes
+  subroutine prep_lnd_migrate_moab(infodata)
+  !---------------------------------------------------------------
+    ! Description
+    ! After a2lTbot_proj, a2lVbot_proj, a2lUbot_proj were computed on lnd mesh on coupler, they need
+    !   to be migrated to the land pes
+    !  maybe the land solver will use it (later)?
+    ! Arguments
+    type(seq_infodata_type) , intent(in)    :: infodata
+
+    integer :: ierr
+
+    logical                          :: atm_present    ! .true.  => atm is present
+    logical                          :: lnd_present    ! .true.  => lnd is present
+    integer                  :: id_join
+    integer                  :: mpicom_join
+    integer                  :: atmid
+    integer                  :: context_id
+    character*32             :: dm1, dm2
+    character*50             :: tagName
+    character*32             :: outfile, wopts
+    integer                  :: orderLND, orderATM, volumetric, noConserve, validate
+
+    integer, external :: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
+    integer, external :: iMOAB_WriteMesh
+
+    call seq_infodata_getData(infodata, &
+         atm_present=atm_present,       &
+         lnd_present=lnd_present)
+
+  !  it involves initial ocn app; mpoid; also migrated ocn mesh mesh on coupler pes, mbaxid
+  ! after this, the sending of tags from coupler pes to ocn pes will use initial graph
+       !  (not processed for coverage)
+  ! how to get mpicomm for joint ocn + coupler
+    id_join = lnd(1)%cplcompid
+    lndid   = lnd(1)%compid
+    call seq_comm_getinfo(ID_join,mpicom=mpicom_join)
+    context_id = -1
+    ! now send the tag a2oTbot_proj, a2oUbot_proj, a2oVbot_proj from ocn on coupler pes towards original ocean mesh
+    tagName = 'a2lTbot_proj;a2lUbot_proj;a2lVbot_proj;'//CHAR(0) !  defined in prep_atm_mod.F90!!!
+
+    if (mblxid .ge. 0) then !  send because we are on coupler pes
+
+      ! basically, use the initial partitioning
+      ierr = iMOAB_SendElementTag(mblxid, tagName, mpicom_join, context_id)
+
+    endif
+    if (mlnid .ge. 0 ) then !  we are on land pes, for sure
+      ! receive on land pes, a tag that was computed on coupler pes
+       ierr = iMOAB_ReceiveElementTag(mlnid, tagName, mpicom_join, context_id)
+    !CHECKRC(ierr, "cannot receive tag values")
+    endif
+
+    ! we can now free the sender buffers
+    if (mblxid .ge. 0) then
+       ierr = iMOAB_FreeSenderBuffers(mblxid, context_id)
+       ! CHECKRC(ierr, "cannot free buffers used to send projected tag towards the ocean mesh")
+    endif
+
+#ifdef MOABDEBUG
+    if (mlnid .ge. 0 ) then !  we are on land pes, for sure
+
+      outfile = 'wholeLND_proj.h5m'//CHAR(0)
+      wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
+      ierr = iMOAB_WriteMesh(mlnid, trim(outfile), trim(wopts))
+    endif
+#endif
+
+  end subroutine prep_lnd_migrate_moab
+
 end module prep_lnd_mod
