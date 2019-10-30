@@ -1,6 +1,6 @@
 import CIME.compare_namelists, CIME.simple_compare
 from CIME.test_scheduler import NAMELIST_PHASE
-from CIME.utils import run_cmd, expect, get_scripts_root, get_model, EnvironmentContext
+from CIME.utils import run_cmd, get_scripts_root, get_model, EnvironmentContext
 from CIME.test_status import *
 from CIME.hist_utils import generate_baseline, compare_baseline
 from CIME.case import Case
