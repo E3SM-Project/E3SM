@@ -37,7 +37,7 @@ module cam_pio_utils
   public :: clean_iodesc_list
 
   integer            :: pio_iotype
-  integer, parameter :: pio_rearranger = pio_rearr_subset
+  integer            :: pio_rearranger
 
   ! This variable should be private ?
   type(iosystem_desc_t), pointer, public :: pio_subsystem => null()
@@ -527,11 +527,15 @@ contains
 
   subroutine cam_pio_newdecomp(iodesc, dims, dof, dtype)
     use pio,          only: pio_initdecomp, pio_offset_kind
+    use shr_pio_mod,  only: shr_pio_getrearranger
+    use cam_instance, only: atm_id
 
     type(io_desc_t),          pointer              :: iodesc
     integer,                           intent(in)  :: dims(:)
     integer(kind=PIO_OFFSET_KIND),     intent(in)  :: dof(:)
     integer,                           intent(in)  :: dtype
+
+    pio_rearranger = shr_pio_getrearranger(atm_id)
 
     call pio_initdecomp(pio_subsystem, dtype, dims, dof, iodesc,              &
          rearr=pio_rearranger)
@@ -865,9 +869,10 @@ contains
 
       if (present(start)) then
         ! start and kount override other options and are not error checked
-        strt(1:2) = start
+        strt(1:2) = start(1:2)
         strt(3) = 1
-        cnt(1:2) = kount
+        cnt(1:2) = kount(1:2)
+        cnt(3) = 1
       else
         strt = 1   ! cnt set by cam_pio_var_info
         exists = use_scam_limits(File, strt, cnt)
@@ -1010,9 +1015,10 @@ contains
 
       if (present(start)) then
         ! start and kount override other options and are not error checked
-        strt(1:3) = start
+        strt(1:3) = start(1:3)
         strt(4) = 1
-        cnt(1:3) = kount
+        cnt(1:3) = kount(1:3)
+        cnt(4) = 1
       else
         strt = 1   ! cnt set by cam_pio_var_info
         exists = use_scam_limits(File, strt, cnt)
@@ -1023,7 +1029,7 @@ contains
         call calc_permutation(filedims(1:3), arraydims, perm, isperm)
         if (isperm) then
           allocate(tmp_fld(cnt(1), cnt(2), cnt(3)))
-          ierr = pio_get_var(File, varid, strt(1:3), cnt(1:3), tmp_fld)
+          ierr = pio_get_var(File, varid, strt(1:ndims), cnt(1:ndims), tmp_fld)
           do k = 1, cnt(3)
             ind(3) = k
             do j = 1, cnt(2)
@@ -1035,7 +1041,7 @@ contains
             end do
           end do
         else
-          ierr = pio_get_var(File, varid, strt(1:3), cnt(1:3), field)
+          ierr = pio_get_var(File, varid, strt(1:ndims), cnt(1:ndims), field)
         end if
       else
         call endrun(trim(subname)//': Incorrect variable rank')

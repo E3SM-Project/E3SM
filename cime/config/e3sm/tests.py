@@ -118,6 +118,7 @@ _TESTS = {
     "e3sm_prod" : (("e3sm_atm_prod",),None,
                      (
 		      ("SMS_Ld2.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","allactive-v1cmip6"),
+                      ("SMS_Ld2.ne30_oECv3_ICG.A_WCYCL20TRS_CMIP6","allactive-v1cmip6")
 		      )),
 
     "fates" : (None, None,

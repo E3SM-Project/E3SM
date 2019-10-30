@@ -63,9 +63,10 @@
     </values>
   </entry>
 
+  <!-- Using the BOX rearranger as the default -->
   <entry id="PIO_REARRANGER">
     <values>
-      <value>$PIO_VERSION</value>
+      <value>1</value>
     </values>
   </entry>
 
@@ -122,13 +123,13 @@
     </values>
   </entry>
   -->
-  <entry id="LND_PIO_REARRANGER">
+<!--  <entry id="LND_PIO_REARRANGER">
     <values>
       <value compset="_CLM40" >2</value>
       <value compset="_CLM45" >1</value>
       <value compset="_CLM50" >1</value>
     </values>
-  </entry>
+  </entry> -->
 
   <!--- uncomment and fill in relevant sections
   <entry id="LND_PIO_STRIDE">

@@ -96,6 +96,36 @@ def copy(case, suffix):
 
     return comments
 
+def rename_all_hist_files(case, suffix):
+    """Renaming all hist files in a case, adding the given suffix.
+    
+    case - The case containing the files you want to save
+    suffix - The string suffix you want to add to saved files, this can be used to find them later.
+    """
+    rundir   = case.get_value("RUNDIR")
+    testcase = case.get_value("CASE")
+
+    # Loop over models
+    comments = "Renaming hist files by adding suffix '{}'\n".format(suffix)
+    num_renamed = 0
+    for model in _iter_model_file_substrs(case):
+        comments += "  Renaming hist files for model '{}'\n".format(model)
+        test_hists = _get_all_hist_files(testcase, model, rundir)
+        num_renamed += len(test_hists)
+        for test_hist in test_hists:
+            new_file = "{}.{}".format(test_hist, suffix)
+            if os.path.exists(new_file):
+                os.remove(new_file)
+
+            comments += "    Renaming '{}' to '{}'\n".format(test_hist, new_file)
+
+            os.rename(test_hist, new_file)
+
+    expect(num_renamed > 0, "Renaming failed: no hist files found in rundir '{}'".format(rundir))
+
+    return comments
+
+
 def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     """
     return (num in set 1 but not 2 , num in set 2 but not 1, matchups)
@@ -326,8 +356,10 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
     if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
-            last_line = open(bless_log, "r").readlines()[-1]
-            comments += "\n  Most recent bless: {}".format(last_line)
+            lines = open(bless_log, "r").readlines()
+            if lines:
+                last_line = lines[-1]
+                comments += "\n  Most recent bless: {}".format(last_line)
 
     return success, comments
 
