@@ -100,7 +100,8 @@ contains
                 cnstate_vars, ch4_vars,                         &
                 carbonstate_vars, carbonflux_vars,              &
                 nitrogenstate_vars, nitrogenflux_vars,          &
-                phosphorusstate_vars,phosphorusflux_vars)
+                phosphorusstate_vars,phosphorusflux_vars,       &
+                elm_fates)
 
     !-----------------------------------------------------------------------------
     ! DESCRIPTION:
@@ -139,6 +140,8 @@ contains
     ! add phosphorus --
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    type(hlm_fates_interface_type) , intent(inout) :: elm_fates
+
 !    type(crop_type)          , intent(in)    :: crop_vars
     !
     ! !LOCAL VARIABLES:
@@ -413,7 +416,7 @@ contains
                carbonstate_vars, carbonflux_vars,                   &
                nitrogenstate_vars, nitrogenflux_vars,               &
                phosphorusstate_vars,phosphorusflux_vars,            &
-               soilstate_vars,waterstate_vars)
+               soilstate_vars,waterstate_vars, elm_fates)
       call t_stopf('CNAllocation - phase-2')
 
       
@@ -615,7 +618,7 @@ contains
        waterstate_vars, cnstate_vars, ch4_vars,                                          &
        carbonstate_vars, carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars,      &
        nitrogenstate_vars, nitrogenflux_vars, crop_vars, atm2lnd_vars,                   &
-       phosphorusstate_vars,phosphorusflux_vars)
+       phosphorusstate_vars,phosphorusflux_vars, elm_fates)
     !-----------------------------------------------------------------------------
     ! DESCRIPTION:
     ! bgc interface & pflotran:
@@ -655,6 +658,9 @@ contains
     !! add phosphorus --
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
+    type(hlm_fates_interface_type) , intent(inout) :: elm_fates
+
+
     !
     ! !LOCAL VARIABLES:
     integer :: fc, c, j                                     ! indices

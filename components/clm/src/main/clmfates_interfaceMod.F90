@@ -300,6 +300,36 @@ contains
                                                                           ! THE BARE SOIL PATCH
       call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
 
+
+      call set_fates_ctrlparms('nu_com',cval=nu_com)  ! Should be 'RD','ECA', etc...
+
+
+      ! Determine which nitrogen and phosphorus species are tracked
+      ! in the soil bgc model, notify fates
+
+      if(cnallocate_carbon_only()) then
+         call set_fates_ctrlparms('nitrogen_spec',ival=0)
+         call set_fates_ctrlparms('phosphorus_spec',ival=0)
+      elseif(cnallocate_carbonnitrogen_only()) then
+         call set_fates_ctrlparms('phosphorus_spec',ival=0)
+         if(use_nitrif_denitrif) then
+            call set_fates_ctrlparms('nitrogen_spec',ival=2)
+         else
+            call set_fates_ctrlparms('nitrogen_spec',ival=1)
+         end if
+      elseif(cnallocate_carbonphosphorus_only()) then
+         call set_fates_ctrlparms('phosphorus_spec',ival=1)
+         call set_fates_ctrlparms('nitrogen_spec',ival=0)
+      else
+         call set_fates_ctrlparms('phosphorus_spec',ival=1)
+         if(use_nitrif_denitrif) then
+            call set_fates_ctrlparms('nitrogen_spec',ival=2)
+         else
+            call set_fates_ctrlparms('nitrogen_spec',ival=1)
+         end if
+      end if
+
+
       if(is_restart()) then
          pass_is_restart = 1
       else
@@ -1763,6 +1793,38 @@ contains
     call t_stopf('edpsn')
 
  end subroutine wrap_photosynthesis
+
+ ! ======================================================================================
+
+ subroutine wrap_veg_nutrient_struct(this, bounds_clump, c, veg_rootc, ft_index, decompmicc)
+
+   s = this%f2hmap(nc)%hsites(c)
+   
+   veg_rootc = this%fates(nc)%bc_out(s)%veg_rootc
+   ft_index  = this%fates(nc)%bc_out(s)%ft_index
+   decompmicc = this%fates(nc)%bc_out(s)%decompmicc
+
+
+   return
+ end subroutine wrap_veg_nutrient_struct
+
+ subroutine wrap_veg_nutrient_nh4(this, bounds_clump, 
+
+
+
+
+ ! ========================================================================================
+
+ subroutine wrap_nutrient_nh4(this, bounds_clump, c, )
+
+   
+   cn_scalar = this%fates(nc)%bc_out(s)%
+
+
+   return
+ end subroutine wrap_nutrient_nh4
+
+
 
  ! ======================================================================================
 
