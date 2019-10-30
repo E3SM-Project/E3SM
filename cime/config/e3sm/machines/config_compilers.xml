@@ -1102,6 +1102,10 @@ for mct, etc.
     <append DEBUG="FALSE"> -O2 </append>
     <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>
