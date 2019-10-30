@@ -429,8 +429,10 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
     if get_model() == "e3sm":
         bless_log = os.path.join(basecmp_dir, BLESS_LOG_NAME)
         if os.path.exists(bless_log):
-            last_line = open(bless_log, "r").readlines()[-1]
-            comments += "\n  Most recent bless: {}".format(last_line)
+            lines = open(bless_log, "r").readlines()
+            if lines:
+                last_line = lines[-1]
+                comments += "\n  Most recent bless: {}".format(last_line)
 
     return success, comments
 
@@ -574,7 +576,7 @@ def _generate_baseline_impl(case, baseline_dir=None, allow_baseline_overwrite=Fa
     testname = case.get_value("TESTCASE")
     testopts = parse_test_name(case.get_value("CASEBASEID"))[1]
     testopts = [] if testopts is None else testopts
-    expect(num_gen > 0 or (testname == "PFS" or "B" in testopts),
+    expect(num_gen > 0 or (testname in ["PFS", "TSC"] or "B" in testopts),
            "Could not generate any hist files for case '{}', something is seriously wrong".format(os.path.join(rundir, testcase)))
 
     if get_model() == "e3sm":
