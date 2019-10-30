@@ -23,6 +23,8 @@ open(file,">tmp_filepath") or die "ERROT: mosart.buildexe could not open file Fi
 print file "$CASEROOT/SourceMods/src.mosart \n";
 print file "$SRCROOT/components/mosart/src/riverroute \n";
 print file "$SRCROOT/components/mosart/src/cpl \n";
+print file "$SRCROOT/components/mosart/src/wrm \n";
+print file "$SRCROOT/components/mosart/src/inundation \n";
 print file "$SRCROOT/components/mosart/src/cpl_share \n";
 close(file);
 
@@ -38,6 +40,5 @@ my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=mosart COMPLIB=$LIBROOT/librof.a 
 system($sysmod) == 0 or die "ERROR: mosart.buildexe $sysmod failed: $?\n";
 
 exit(0);
-
 
 

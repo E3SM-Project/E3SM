@@ -28,6 +28,7 @@ module clm_instMod
   use FrictionVelocityType       , only : frictionvel_type
   use LakeStateType              , only : lakestate_type
   use PhotosynthesisType         , only : photosyns_type
+  use SedFluxType                , only : sedflux_type
   use SoilHydrologyType          , only : soilhydrology_type
   use SoilStateType              , only : soilstate_type
   use SolarAbsorbedType          , only : solarabs_type
@@ -107,6 +108,7 @@ module clm_instMod
   type(frictionvel_type)                              :: frictionvel_vars
   type(lakestate_type)                                :: lakestate_vars
   type(photosyns_type)                                :: photosyns_vars
+  type(sedflux_type)                                  :: sedflux_vars
   type(soilstate_type)                                :: soilstate_vars
   type(soilhydrology_type)                            :: soilhydrology_vars
   type(solarabs_type)                                 :: solarabs_vars
@@ -390,6 +392,7 @@ contains
     call col_ef%Init(bounds_proc%begc_all, bounds_proc%endc_all)
     call veg_ef%Init(bounds_proc%begp_all, bounds_proc%endp_all)
 
+    call drydepvel_vars%Init(bounds_proc)
     call aerosol_vars%Init(bounds_proc)
 
     call frictionvel_vars%Init(bounds_proc)
@@ -422,6 +425,8 @@ contains
 
     ! Note - always initialize the memory for cnstate_vars (used in biogeophys/)
     call cnstate_vars%Init(bounds_proc)
+
+    call sedflux_vars%Init(bounds_proc)
     ! --------------------------------------------------------------
     ! Initialise the BeTR
     ! --------------------------------------------------------------

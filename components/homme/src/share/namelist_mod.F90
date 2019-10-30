@@ -7,6 +7,9 @@ module namelist_mod
   use kinds,      only: real_kind, iulog
   use params_mod, only: recursive, sfcurve, SPHERE_COORDS, Z2_NO_TASK_MAPPING
   use cube_mod,   only: rotate_grid
+#ifdef CAM
+  use dyn_grid,   only: fv_nphys
+#endif
   use physical_constants, only: rearth, rrearth, omega
 #if (defined MODEL_THETA_L && defined ARKODE)
   use arkode_mod, only: rel_tol, abs_tol, calc_nonlinear_stats, use_column_solver
@@ -82,7 +85,8 @@ module namelist_mod
     tol,           &
     debug_level,   &
     theta_advect_form,   &
-    vert_remap_q_alg
+    vert_remap_q_alg, &
+    se_fv_phys_remap_alg
 
 #ifndef CAM
   use control_mod, only:              &
@@ -257,7 +261,8 @@ module namelist_mod
       rotate_grid,   &
       mesh_file,     &               ! Name of mesh file
       theta_advect_form,     & 
-      vert_remap_q_alg
+      vert_remap_q_alg, &
+      se_fv_phys_remap_alg
 
 
 #ifdef CAM
@@ -385,6 +390,7 @@ module namelist_mod
     semi_lagrange_hv_q = 0
     semi_lagrange_nearest_point_lev = 0
     disable_diagnostics = .false.
+    se_fv_phys_remap_alg = 0
 
     theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
 #if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
@@ -724,6 +730,7 @@ module namelist_mod
     call MPI_bcast(LFTfreq,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(moisture,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
+    call MPI_bcast(se_fv_phys_remap_alg,1,MPIinteger_t ,par%root,par%comm,ierr)
 
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
@@ -838,6 +845,9 @@ module namelist_mod
        cubed_sphere_map=0  ! default is equi-angle gnomonic
 #endif
        if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
+#ifdef CAM
+       if (fv_nphys.gt.0) cubed_sphere_map=2  ! must use element_local for FV physics grid
+#endif
     endif
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
@@ -992,6 +1002,7 @@ module namelist_mod
        write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
 
        write(iulog,*)"readnl: runtype       = ",runtype
+       write(iulog,*)"readnl: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
 
        if (hypervis_power /= 0)then
           write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power

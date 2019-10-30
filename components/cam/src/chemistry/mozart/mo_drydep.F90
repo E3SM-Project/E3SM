@@ -2036,7 +2036,7 @@ contains
                          wetland, vegetation_map, soilw_map, do_soilw )
 
     use mo_constants, only : r2d
-    use scamMod, only : latiop,loniop,scmlat,scmlon,use_camiop
+    use scamMod, only : latiop,loniop,scmlat,scmlon,use_replay
     use shr_scam_mod  , only: shr_scam_getCloseLatLon  ! Standardized system subroutines
     use filenames, only: ncdata
     use dycore, only : dycore_is
@@ -2101,7 +2101,7 @@ contains
     ju = plon
 
     if (single_column) then
-       if (use_camiop) then
+       if (use_replay) then
           call getfil (ncdata, ncdata_loc)
           call cam_pio_openfile (piofile, trim(ncdata_loc), PIO_NOWRITE)
           call shr_scam_getCloseLatLon(piofile,scmlat,scmlon,closelat,closelon,latidx,lonidx)
@@ -2718,6 +2718,7 @@ contains
     !
     ! compute rsmx = 1/(rs+rm) : multiply by 3 if surface is wet
     !-------------------------------------------------------------------------------------
+    rlux = 0._r8
     species_loop1 :  do ispec = 1,gas_pcnst
        if( has_dvel(ispec) ) then
           m = map_dvel(ispec)

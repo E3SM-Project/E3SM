@@ -17,7 +17,7 @@
 
   <compset>
     <alias>CMPASO-IAF</alias>
-    <lname>2000_DATM%IAF_SLND_DICE%SIAF_MPASO%DATMFORCED_DROF%IAF_SGLC_SWAV</lname>
+    <lname>2000_DATM%IAF_SLND_DICE%IAF_MPASO%DATMFORCED_DROF%IAF_SGLC_SWAV</lname>
     <support_level>Experimental, under development</support_level>
   </compset>
 

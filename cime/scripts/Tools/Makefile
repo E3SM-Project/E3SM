@@ -320,14 +320,14 @@ endif
 # For compiling and linking with external ESMF.
 # If linking to external ESMF library then include esmf.mk
 # ESMF_F90COMPILEPATHS
-# ESMF_F90LINKPATHS
+# ESMF_F90ESMFLINKPATHS
 # ESMF_F90LINKRPATHS
 # ESMF_F90ESMFLINKLIBS
 ifeq ($(USE_ESMF_LIB), TRUE)
   -include $(CIME_ESMFMKFILE)
   CPPDEFS += -DESMF_VERSION_MAJOR=$(ESMF_VERSION_MAJOR) -DESMF_VERSION_MINOR=$(ESMF_VERSION_MINOR)
   FFLAGS += $(ESMF_F90COMPILEPATHS)
-  SLIBS  += $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
+  SLIBS  += $(ESMF_F90ESMFLINKPATHS) $(ESMF_F90ESMFLINKRPATHS) $(ESMF_F90ESMFLINKLIBS)
 endif
 
 # Stub libraries do not need to be built for nuopc driver
@@ -486,6 +486,29 @@ endif
 
 ifeq ($(MODEL),driver)
   INCLDIR += -I$(EXEROOT)/atm/obj -I$(EXEROOT)/ice/obj -I$(EXEROOT)/ocn/obj -I$(EXEROOT)/glc/obj -I$(EXEROOT)/rof/obj -I$(EXEROOT)/wav/obj -I$(EXEROOT)/esp/obj -I$(EXEROOT)/iac/obj
+# nagfor and gcc have incompatible LDFLAGS.
+# nagfor requires the weird "-Wl,-Wl,," syntax.
+# If done in config_compilers.xml, we break MCT.
+  ifeq ($(strip $(COMPILER)),nag)
+     ifeq ($(NETCDF_SEPARATE), false)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF)
+     else ifeq ($(NETCDF_SEPARATE), true)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_C)
+       SLIBS += -Wl,-Wl,,-rpath=$(LIB_NETCDF_FORTRAN)
+     endif
+  endif
+else
+  ifeq ($(strip $(COMPILER)),nag)
+    ifeq ($(DEBUG), TRUE)
+      ifneq (,$(filter $(strip $(MACH)),hobart izumi))
+       # GCC needs to be able to link to
+       # nagfor runtime to get autoconf
+       # tests to work.
+         CFLAGS += -Wl,--as-needed,--allow-shlib-undefined
+         SLIBS += -L$(COMPILER_PATH)/lib/NAG_Fortran -lf62rts
+       endif
+    endif
+  endif
 endif
 
 ifndef MCT_LIBDIR
@@ -646,20 +669,33 @@ $(SHAREDLIBROOT)/$(SHAREDPATH)/mct/mpi-serial/Makefile.conf:
 	@echo "SHAREDLIBROOT |$(SHAREDLIBROOT)| SHAREDPATH |$(SHAREDPATH)|"; \
 	$(CONFIG_SHELL) $(CIMEROOT)/src/externals/mct/mpi-serial/configure $(CONFIG_ARGS) --srcdir $(CIMEROOT)/src/externals/mct/mpi-serial
 
+ifndef IO_LIB_SRCROOT
+  ifndef PIO_SRCROOT
+    PIO_SRCROOT = $(CIMEROOT)/src/externals
+  endif
+
+  ifeq ($(PIO_VERSION),2)
+    PIO_SRC_DIR = $(PIO_SRCROOT)/pio2
+  else
+    ifneq ("$(wildcard $(PIO_SRCROOT)/pio1/pio)", "")
+      PIO_SRC_DIR = $(PIO_SRCROOT)/pio1
+    else
+      PIO_SRC_DIR = $(PIO_SRCROOT)/pio1/pio
+    endif
+  endif
+else
+  PIO_SRC_DIR = $(IO_LIB_SRCROOT)/$(IO_LIB_v$(PIO_VERSION)_SRCDIR)
+endif
+
+
 ifeq ($(PIO_VERSION),2)
 # This is a pio2 library
   PIOLIB = $(PIO_LIBDIR)/libpiof.a $(PIO_LIBDIR)/libpioc.a
   PIOLIBNAME = -lpiof -lpioc
-  PIO_SRC_DIR = $(CIMEROOT)/src/externals/pio2
 else
 # This is a pio1 library
   PIOLIB = $(PIO_LIBDIR)/libpio.a
   PIOLIBNAME = -lpio
-  ifneq ("$(wildcard $(CIMEROOT)/src/externals/pio1/pio)", "")
-    PIO_SRC_DIR = $(CIMEROOT)/src/externals/pio1
-  else
-    PIO_SRC_DIR = $(CIMEROOT)/src/externals/pio1/pio
-  endif
 endif
 #endif
 
@@ -686,7 +722,7 @@ CMAKE_OPTS += -D CMAKE_Fortran_FLAGS:STRING="$(FFLAGS) $(EXTRA_PIO_FPPDEFS) $(IN
               -D CMAKE_VERBOSE_MAKEFILE:BOOL=ON \
               -D GPTL_PATH:STRING=$(INSTALL_SHAREDPATH) \
               -D PIO_ENABLE_TESTS:BOOL=OFF \
-              -D PIO_USE_MALLOC:BOOL=OFF \
+              -D PIO_USE_MALLOC:BOOL=ON \
 	      -D USER_CMAKE_MODULE_PATH:LIST="$(CIMEROOT)/src/CMake;$(CIMEROOT)/src/externals/pio2/cmake" \
 
 # Allow for separate installations of the NetCDF C and Fortran libraries

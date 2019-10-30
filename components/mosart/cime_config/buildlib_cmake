@@ -35,6 +35,8 @@ def buildlib(bldroot, installpath, case):
  """{caseroot}/SourceMods/src.mosart
 {srcroot}/components/mosart/src/riverroute
 {srcroot}/components/mosart/src/cpl
+{srcroot}/components/mosart/src/wrm
+{srcroot}/components/mosart/src/inundation
 {srcroot}/components/mosart/src/cpl_share
 """.format(caseroot=caseroot, srcroot=srcroot)
 

@@ -127,6 +127,9 @@ CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/testing-utils.sh
 CONFIGURE_FILE(${HOMME_SOURCE_DIR}/test/reg_test/run_tests/diffTol.py
                ${CMAKE_BINARY_DIR}/tests/diffTol.py COPYONLY)
 
+# create list of all executables needed by tests
+ADD_CUSTOM_TARGET(test-execs)
+
 ADD_CUSTOM_TARGET(check 
                   COMMAND ${CMAKE_CTEST_COMMAND} "--output-on-failure")
 
@@ -181,17 +184,8 @@ IF(${BUILD_HOMME_PREQX})
 ENDIF()
 
 # Add the test exec subdirs for the prim executable
-IF(${BUILD_HOMME_PESE})
-  ADD_SUBDIRECTORY(pese-nlev20)
-  ADD_SUBDIRECTORY(pese-nlev30)
-  ADD_SUBDIRECTORY(pese-nlev60)
-ENDIF()
 
 IF(${BUILD_HOMME_THETA})
-  ADD_SUBDIRECTORY(theta-nlev20)
-  ADD_SUBDIRECTORY(theta-nlev30)
-  ADD_SUBDIRECTORY(theta-nlev40)
-  ADD_SUBDIRECTORY(theta-nlev60)
   ADD_SUBDIRECTORY(theta-l-nlev20)
   ADD_SUBDIRECTORY(theta-l-nlev30)
   ADD_SUBDIRECTORY(theta-l-nlev40)

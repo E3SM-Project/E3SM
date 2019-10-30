@@ -16,6 +16,7 @@ module restFileMod
   use histFileMod          , only : hist_restart_ncd
   use clm_varpar           , only : crop_prog
   use clm_varctl           , only : use_cn, use_c13, use_c14, use_lch4, use_fates, use_betr
+  use clm_varctl           , only : use_erosion
   use clm_varctl           , only : create_glacier_mec_landunit, iulog 
   use clm_varcon           , only : c13ratio, c14ratio
   use clm_varcon           , only : nameg, namet, namel, namec, namep, nameCohort
@@ -37,6 +38,7 @@ module restFileMod
   use FrictionVelocityType , only : frictionvel_type
   use LakeStateType        , only : lakestate_type
   use PhotosynthesisType   , only : photosyns_type
+  use SedFluxType          , only : sedflux_type
   use SoilHydrologyType    , only : soilhydrology_type  
   use SoilStateType        , only : soilstate_type
   use SolarAbsorbedType    , only : solarabs_type
@@ -111,7 +113,7 @@ contains
        ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-       waterflux_vars, waterstate_vars,                                               &
+       waterflux_vars, waterstate_vars, sedflux_vars,                                 &
        phosphorusstate_vars, phosphorusflux_vars,                                     &
        ep_betr,                                                                       &
        alm_fates, crop_vars,                                                          &
@@ -143,6 +145,7 @@ contains
     type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)        , intent(in)    :: nitrogenflux_vars
     type(photosyns_type)           , intent(in)    :: photosyns_vars
+    type(sedflux_type)             , intent(in)    :: sedflux_vars
     type(soilhydrology_type)       , intent(in)    :: soilhydrology_vars
     type(soilstate_type)           , intent(inout) :: soilstate_vars
     type(solarabs_type)            , intent(in)    :: solarabs_vars
@@ -235,6 +238,10 @@ contains
          watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))    
 
     call veg_ws%Restart (bounds, ncid, flag='define')
+
+    if (use_erosion) then
+        call sedflux_vars%restart (bounds, ncid, flag='define')
+    end if
 
     call aerosol_vars%restart (bounds, ncid,  flag='define', &
          h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
@@ -386,6 +393,10 @@ contains
     
     call veg_ws%Restart (bounds, ncid, flag='write')
 
+    if (use_erosion) then
+        call sedflux_vars%restart (bounds, ncid, flag='write')
+    end if
+
     call aerosol_vars%restart (bounds, ncid,  flag='write', &
          h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
          h2osoi_liq_col=col_ws%h2osoi_liq(bounds%begc:bounds%endc,:) )
@@ -509,7 +520,7 @@ contains
        ch4_vars, energyflux_vars, frictionvel_vars, lakestate_vars,        &
        nitrogenstate_vars, nitrogenflux_vars, photosyns_vars, soilhydrology_vars,     &
        soilstate_vars, solarabs_vars, surfalb_vars, temperature_vars,                 &
-       waterflux_vars, waterstate_vars,                                               &
+       waterflux_vars, waterstate_vars, sedflux_vars,                                 &
        phosphorusstate_vars,phosphorusflux_vars,                                      &
        ep_betr,                                                                       &
        alm_fates, glc2lnd_vars, crop_vars)
@@ -545,6 +556,7 @@ contains
     type(nitrogenstate_type)       , intent(inout) :: nitrogenstate_vars
     type(nitrogenflux_type)        , intent(inout) :: nitrogenflux_vars
     type(photosyns_type)           , intent(inout) :: photosyns_vars
+    type(sedflux_type)             , intent(inout) :: sedflux_vars
     type(soilhydrology_type)       , intent(inout) :: soilhydrology_vars
     type(soilstate_type)           , intent(inout) :: soilstate_vars
     type(solarabs_type)            , intent(inout) :: solarabs_vars
@@ -639,6 +651,10 @@ contains
          watsat_input=soilstate_vars%watsat_col(bounds%begc:bounds%endc,:))
 
     call veg_ws%Restart (bounds, ncid, flag='read')
+
+    if (use_erosion) then
+        call sedflux_vars%restart (bounds, ncid, flag='read')
+    end if
 
     call aerosol_vars%restart (bounds, ncid, flag='read', &
          h2osoi_ice_col=col_ws%h2osoi_ice(bounds%begc:bounds%endc,:), &
@@ -991,8 +1007,8 @@ contains
     ! !USES:
     use clm_time_manager     , only : get_nstep
     use clm_varctl           , only : caseid, ctitle, version, username, hostname, fsurdat
-    use clm_varctl           , only : conventions, source
-    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full
+    use clm_varctl           , only : conventions, source, use_hydrstress
+    use clm_varpar           , only : numrad, nlevlak, nlevsno, nlevgrnd, nlevurb, nlevcan, nlevtrc_full, nmonth, nvegwcs
     use clm_varpar           , only : cft_lb, cft_ub, maxpatch_glcmec
     use dynSubgridControlMod , only : get_flanduse_timeseries
     use decompMod            , only : get_proc_global
@@ -1037,8 +1053,12 @@ contains
     call ncd_defdim(ncid , 'levtot'  , nlevsno+nlevgrnd, dimid)
     call ncd_defdim(ncid , 'numrad'  , numrad         ,  dimid)
     call ncd_defdim(ncid , 'levcan'  , nlevcan        ,  dimid)
+    if ( use_hydrstress ) then
+      call ncd_defdim(ncid , 'vegwcs'  , nvegwcs        ,  dimid)
+    end if
     call ncd_defdim(ncid , 'string_length', 64        ,  dimid)
     call ncd_defdim(ncid , 'levtrc'  , nlevtrc_full   ,  dimid)    
+    call ncd_defdim(ncid , 'month'   , nmonth         ,  dimid)
     if (create_glacier_mec_landunit) then
        call ncd_defdim(ncid , 'glc_nec', maxpatch_glcmec, dimid)
     end if

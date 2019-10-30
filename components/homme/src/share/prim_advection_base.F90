@@ -75,7 +75,7 @@ module prim_advection_base
   public :: Prim_Advec_Tracers_remap_rk2   
   public :: advance_physical_vis ! so sl_advection can use it
 
-  type (EdgeBuffer_t)      :: edgeAdvQminmax
+  type (EdgeBuffer_t), public :: edgeAdvQminmax ! so gllfvremap_mod can use it
 
   integer,parameter :: DSSeta = 1
   integer,parameter :: DSSomega = 2

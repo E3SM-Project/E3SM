@@ -882,7 +882,7 @@ contains
     integer, optional :: rank
 
     if (present(rank)) then
-       write(iulog,*),rank,') ' // trim(this%name)
+       write(iulog,*)rank,') ' // trim(this%name)
     else
        write(iulog,*)trim(this%name)
     endif

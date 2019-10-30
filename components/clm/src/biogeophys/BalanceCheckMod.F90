@@ -9,7 +9,7 @@ module BalanceCheckMod
   use shr_log_mod        , only : errMsg => shr_log_errMsg
   use decompMod          , only : bounds_type
   use abortutils         , only : endrun
-  use clm_varctl         , only : iulog, use_var_soil_thick
+  use clm_varctl         , only : iulog, use_var_soil_thick, tw_irr
   use clm_varcon         , only : namep, namec
   use GetGlobalValuesMod , only : GetGlobalIndex
   use atm2lndType        , only : atm2lnd_type
@@ -171,6 +171,7 @@ contains
      use clm_varctl        , only : create_glacier_mec_landunit
      use clm_time_manager  , only : get_step_size, get_nstep
      use clm_initializeMod , only : surfalb_vars
+     use domainMod         , only : ldomain
      use CanopyStateType   , only : canopystate_type
      use subgridAveMod
      use clm_time_manager  , only : get_curr_date, get_nstep
@@ -220,7 +221,9 @@ contains
           qflx_rain_grnd_col         =>    col_wf%qflx_rain_grnd          , & ! Input:  [real(r8) (:)   ]  rain on ground after interception (mm H2O/s) [+]
           qflx_snow_grnd_col         =>    col_wf%qflx_snow_grnd          , & ! Input:  [real(r8) (:)   ]  snow on ground after interception (mm H2O/s) [+]
           qflx_evap_soi              =>    col_wf%qflx_evap_soi           , & ! Input:  [real(r8) (:)   ]  soil evaporation (mm H2O/s) (+ = to atm)
-          qflx_irrig                 =>    col_wf%qflx_irrig              , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
+          qflx_irrig                 =>    col_wf%qflx_irrig              , & ! Input:  [real(r8) (:)   ]  irrigation flux (mm H2O /s)
+          qflx_surf_irrig_col        =>    col_wf%qflx_surf_irrig         , & ! Input:  [real(r8) (:)   ]  real surface irrigation flux (mm H2O /s)     
+          qflx_over_supply_col       =>    col_wf%qflx_over_supply        , & ! Input:  [real(r8) (:)   ]  over supply irrigation flux (mm H2O /s)
           qflx_snwcp_ice             =>    col_wf%qflx_snwcp_ice          , & ! Input:  [real(r8) (:)   ]  excess snowfall due to snow capping (mm H2O /s) [+]`
           qflx_evap_tot              =>    col_wf%qflx_evap_tot           , & ! Input:  [real(r8) (:)   ]  qflx_evap_soi + qflx_evap_can + qflx_tran_veg
           qflx_dew_snow              =>    col_wf%qflx_dew_snow           , & ! Input:  [real(r8) (:)   ]  surface dew added to snow pack (mm H2O /s) [+]
@@ -316,12 +319,11 @@ contains
 
           ! add qflx_drain_perched and qflx_flood
           if (col_pp%active(c)) then
-
              errh2o(c) = endwb(c) - begwb(c) &
-                  - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_irrig(c) &
-                  - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &
+                  - (forc_rain_col(c) + forc_snow_col(c)  + qflx_floodc(c) + qflx_surf_irrig_col(c) + qflx_over_supply_col(c) &
+                  - qflx_evap_tot(c) - qflx_surf(c)  - qflx_h2osfc_surf(c) &  
                   - qflx_qrgwl(c) - qflx_drain(c) - qflx_drain_perched(c) - qflx_snwcp_ice(c) &
-                  - qflx_lateral(c) ) * dtime
+                  - qflx_lateral(c)) * dtime
              dwb(c) = (endwb(c)-begwb(c))/dtime
 
           else
@@ -381,6 +383,8 @@ contains
              write(iulog,*)'begwb                      = ',begwb(indexc)
              write(iulog,*)'qflx_evap_tot              = ',qflx_evap_tot(indexc)
              write(iulog,*)'qflx_irrig                 = ',qflx_irrig(indexc)
+             write(iulog,*)'qflx_supply                = ',atm2lnd_vars%supply_grc(g)
+             write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
              write(iulog,*)'qflx_surf                  = ',qflx_surf(indexc)
              write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
              write(iulog,*)'qflx_drain                 = ',qflx_drain(indexc)
@@ -393,6 +397,7 @@ contains
           else if (abs(errh2o(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
 
              write(iulog,*)'clm model is stopping - error is greater than 1e-4 (mm)'
+             write(iulog,*)'colum number               = ',col_pp%gridcell(indexc)
              write(iulog,*)'nstep                      = ',nstep
              write(iulog,*)'errh2o                     = ',errh2o(indexc)
              write(iulog,*)'forc_rain                  = ',forc_rain_col(indexc)
@@ -401,6 +406,10 @@ contains
              write(iulog,*)'begwb                      = ',begwb(indexc)
              write(iulog,*)'qflx_evap_tot              = ',qflx_evap_tot(indexc)
              write(iulog,*)'qflx_irrig                 = ',qflx_irrig(indexc)
+             write(iulog,*)'qflx_surf_irrig_col        = ',qflx_surf_irrig_col(indexc)
+             write(iulog,*)'qflx_over_supply_col       = ',qflx_over_supply_col(indexc)
+             write(iulog,*)'qflx_supply                = ',atm2lnd_vars%supply_grc(g)
+             write(iulog,*)'f_grd                      = ',ldomain%f_grd(g)
              write(iulog,*)'qflx_surf                  = ',qflx_surf(indexc)
              write(iulog,*)'qflx_h2osfc_surf           = ',qflx_h2osfc_surf(indexc)
              write(iulog,*)'qflx_qrgwl                 = ',qflx_qrgwl(indexc)
@@ -679,7 +688,7 @@ contains
        found = .false.
        do c = bounds%begc,bounds%endc
           if (col_pp%active(c)) then
-             if (abs(errsoi_col(c)) > 1.0e-6_r8 ) then
+             if (abs(errsoi_col(c)) > 1.0e-5_r8 ) then
                 found = .true.
                 indexc = c
              end if
@@ -689,6 +698,7 @@ contains
           write(iulog,*)'WARNING: BalanceCheck: soil balance error (W/m2)'
           write(iulog,*)'nstep         = ',nstep
           write(iulog,*)'errsoi_col    = ',errsoi_col(indexc)
+          write(iulog,*)'colum number  = ',col_pp%gridcell(indexc)
           if (abs(errsoi_col(indexc)) > 1.e-4_r8 .and. (nstep > 2) ) then
              write(iulog,*)'clm model is stopping'
              call endrun(decomp_index=indexc, clmlevel=namec, msg=errmsg(__FILE__, __LINE__))

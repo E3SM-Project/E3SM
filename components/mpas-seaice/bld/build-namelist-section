@@ -298,6 +298,7 @@ add_default($nl, 'config_mobility_type_DMSPd');
 add_default($nl, 'config_mobility_type_humics');
 add_default($nl, 'config_mobility_type_saccharids');
 add_default($nl, 'config_mobility_type_lipids');
+add_default($nl, 'config_mobility_type_inorganic_carbon');
 add_default($nl, 'config_mobility_type_proteins');
 add_default($nl, 'config_mobility_type_dissolved_iron');
 add_default($nl, 'config_mobility_type_particulate_iron');
@@ -324,7 +325,7 @@ add_default($nl, 'config_ratio_C_to_N_proteins');
 
 add_default($nl, 'config_shortwave_type');
 add_default($nl, 'config_albedo_type');
-add_default($nl, 'config_use_snicar');
+add_default($nl, 'config_use_snicar_ad');
 add_default($nl, 'config_visible_ice_albedo');
 add_default($nl, 'config_infrared_ice_albedo');
 add_default($nl, 'config_visible_snow_albedo');

@@ -824,7 +824,6 @@ contains
     ! find_next_factorable for a smaller ne2.
     ne2 = 2**ceiling(log(real(ne))/log(2d0))
     ne2sq = ne2*ne2
-    print *,'ne,ne2',ne,ne2
 
     o = sfcmap_init(ne2, sfcmap)
     allocate(inds(2,nelem))
@@ -1048,7 +1047,7 @@ contains
                             !there can be at most max_corner element of these
              
              a_corner_elems = 0
-             a_corner_elems = elem_neighbor(elem_nbr_start : elem_nbr_start + cnt -1)
+             a_corner_elems(1:cnt) = elem_neighbor(elem_nbr_start : elem_nbr_start + cnt -1)
              !corner-sides(2) is clockwise of corner_side(1)
              corner_array= 0
              orig_pos = 0

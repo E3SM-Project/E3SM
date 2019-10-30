@@ -65,6 +65,9 @@
 
 <!-- ALE_vertical_grid -->
 <config_vert_coord_movement>'uniform_stretching'</config_vert_coord_movement>
+<config_ALE_thickness_proportionality>'restingThickness_times_weights'</config_ALE_thickness_proportionality>
+<config_vert_taper_weight_depth_1>250.0</config_vert_taper_weight_depth_1>
+<config_vert_taper_weight_depth_2>500.0</config_vert_taper_weight_depth_2>
 <config_use_min_max_thickness>.false.</config_use_min_max_thickness>
 <config_min_thickness>1.0</config_min_thickness>
 <config_max_thickness_factor>6.0</config_max_thickness_factor>
@@ -165,6 +168,10 @@
 <config_use_standardGM ocn_grid="oRRS15to5">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oARRM60to10">.false.</config_use_standardGM>
 <config_use_standardGM ocn_grid="oARRM60to6">.false.</config_use_standardGM>
+<config_gm_lat_variable_c2>.true.</config_gm_lat_variable_c2>
+<config_gm_kappa_lat_depth_variable>.true.</config_gm_kappa_lat_depth_variable>
+<config_gm_min_stratification_ratio>0.1</config_gm_min_stratification_ratio>
+<config_gm_min_phase_speed>0.1</config_gm_min_phase_speed>
 <config_use_Redi_surface_layer_tapering>.false.</config_use_Redi_surface_layer_tapering>
 <config_Redi_surface_layer_tapering_extent>0.0</config_Redi_surface_layer_tapering_extent>
 <config_use_Redi_bottom_layer_tapering>.false.</config_use_Redi_bottom_layer_tapering>
@@ -231,6 +238,9 @@
 <config_cvmix_kpp_stop_OBL_search>100.0</config_cvmix_kpp_stop_OBL_search>
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
+<config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
+<config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
+<config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
 
 <!-- vmix_const -->
 <config_use_const_visc>.false.</config_use_const_visc>
@@ -856,12 +866,7 @@
 <config_AM_transectTransport_transect_group>'all'</config_AM_transectTransport_transect_group>
 
 <!-- AM_eddyProductVariables -->
-<config_AM_eddyProductVariables_enable>.false.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oEC60to30v3">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oEC60to30v3wLI">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oRRS30to10v3">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oRRS30to10v3wLI">.true.</config_AM_eddyProductVariables_enable>
-<config_AM_eddyProductVariables_enable ocn_grid="oRRS18to6v3">.true.</config_AM_eddyProductVariables_enable>
+<config_AM_eddyProductVariables_enable>.true.</config_AM_eddyProductVariables_enable>
 <config_AM_eddyProductVariables_compute_interval>'0000-00-00_01:00:00'</config_AM_eddyProductVariables_compute_interval>
 <config_AM_eddyProductVariables_output_stream>'eddyProductVariablesOutput'</config_AM_eddyProductVariables_output_stream>
 <config_AM_eddyProductVariables_compute_on_startup>.true.</config_AM_eddyProductVariables_compute_on_startup>
