@@ -128,7 +128,7 @@ module cime_comp_mod
 
   ! flux calc routines
   use seq_flux_mct, only: seq_flux_init_mct, seq_flux_initexch_mct, seq_flux_ocnalb_mct
-  use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct
+  use seq_flux_mct, only: seq_flux_atmocn_mct, seq_flux_atmocnexch_mct, seq_flux_readnl_mct
 
   ! domain fraction routines
   use seq_frac_mct, only : seq_frac_init, seq_frac_set
@@ -1006,6 +1006,11 @@ contains
     end if
 
     !----------------------------------------------------------
+    ! Read shr_flux  namelist settings
+    !----------------------------------------------------------
+    call seq_flux_readnl_mct(nlfilename, CPLID)
+
+    !----------------------------------------------------------
     ! Print Model heading and copyright message
     !----------------------------------------------------------
 
@@ -1639,11 +1644,7 @@ contains
     ! set skip_ocean_run flag, used primarily for ocn run on first timestep
     ! use reading a restart as a surrogate from whether this is a startup run
 
-#ifdef COMPARE_TO_NUOPC
-    skip_ocean_run = .false.
-#else
     skip_ocean_run = .true.
-#endif
     if ( read_restart) skip_ocean_run = .false.
     ocnrun_count = 0
     cpl2ocn_first = .true.
@@ -1910,7 +1911,7 @@ contains
     !----------------------------------------------------------
 
     areafact_samegrid = .false.
-#if (defined BFB_CAM_SCAM_IOP )
+#if (defined E3SM_SCM_REPLAY )
     if (.not.samegrid_alo) then
        call shr_sys_abort(subname//' ERROR: samegrid_alo is false - Must run with same atm/ocn/lnd grids when configured for scam iop')
     else
@@ -3872,12 +3873,24 @@ contains
 
        ! ocn prep-merge (cesm1_mod or cesm1_mod_tight)
        if (ocn_prognostic) then
+#if COMPARE_TO_NUOPC          
+          !This is need to compare to nuopc
+          if (.not. skip_ocean_run) then
+             ! ocn prep-merge
+             xao_ox => prep_aoflux_get_xao_ox()
+             call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
+
+             ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
+             call prep_ocn_accum(timer='CPL:atmocnp_accum')
+          end if
+#else 
           ! ocn prep-merge
           xao_ox => prep_aoflux_get_xao_ox()
           call prep_ocn_mrg(infodata, fractions_ox, xao_ox=xao_ox, timer_mrg='CPL:atmocnp_mrgx2o')
 
           ! Accumulate ocn inputs - form partial sum of tavg ocn inputs (virtual "send" to ocn)
           call prep_ocn_accum(timer='CPL:atmocnp_accum')
+#endif
        end if
 
        !----------------------------------------------------------
