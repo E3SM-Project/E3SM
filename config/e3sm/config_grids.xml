@@ -834,7 +834,7 @@
       <mask>tx0.1v2</mask>
     </model_grid>
 
-    <model_grid alias="northamericax4v1_r0125_oRRS15to5" compset="(DOCN|XOCN|SOCN|AQP1)"-->
+    <model_grid alias="northamericax4v1_r0125_oRRS15to5" compset="(DOCN|XOCN|SOCN|AQP1)">
       <grid name="atm">ne0np4_northamericax4v1</grid>
       <grid name="lnd">r0125</grid>
       <grid name="ocnice">oRRS15to5</grid>
