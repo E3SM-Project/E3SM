@@ -1,11 +1,11 @@
 import CIME.compare_namelists, CIME.simple_compare
 from CIME.test_scheduler import NAMELIST_PHASE
-from CIME.utils import run_cmd, expect, get_scripts_root, get_model, EnvironmentContext
+from CIME.utils import run_cmd, get_scripts_root, get_model, EnvironmentContext
 from CIME.test_status import *
 from CIME.hist_utils import generate_baseline, compare_baseline
 from CIME.case import Case
-
-import os, glob, time, six
+from CIME.test_utils import get_test_status_files
+import os,  time, six
 logger = logging.getLogger(__name__)
 
 ###############################################################################
@@ -59,9 +59,7 @@ def bless_history(test_name, case, baseline_name, baseline_root, report_only, fo
 def bless_test_results(baseline_name, baseline_root, test_root, compiler, test_id=None, namelists_only=False, hist_only=False,
                        report_only=False, force=False, bless_tests=None, no_skip_pass=False):
 ###############################################################################
-    test_id_glob = "*{}*".format(compiler) if test_id is None else "*{}*".format(test_id)
-    test_status_files = glob.glob("{}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
-    expect(test_status_files, "No matching test cases found in for {}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
+    test_status_files = get_test_status_files(test_root, compiler, test_id=test_id)
 
     # auto-adjust test-id if multiple rounds of tests were matched
     timestamps = set()

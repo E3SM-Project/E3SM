@@ -1,10 +1,11 @@
 import CIME.compare_namelists, CIME.simple_compare
-from CIME.utils import expect, append_status, EnvironmentContext
+from CIME.utils import append_status, EnvironmentContext
 from CIME.test_status import *
 from CIME.hist_utils import compare_baseline, get_ts_synopsis
 from CIME.case import Case
+from CIME.test_utils import get_test_status_files
 
-import os, glob, logging
+import os, logging
 
 ###############################################################################
 def append_status_cprnc_log(msg, logfile_name, test_dir):
@@ -58,9 +59,7 @@ def compare_test_results(baseline_name, baseline_root, test_root, compiler, test
     Returns True if all tests generated either PASS or SKIP results, False if
     there was at least one FAIL result.
     """
-    test_id_glob = "*{}*".format(compiler) if test_id is None else "*{}*".format(test_id)
-    test_status_files = glob.glob("{}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
-    expect(test_status_files, "No matching test cases found in for {}/{}/{}".format(test_root, test_id_glob, TEST_STATUS_FILENAME))
+    test_status_files = get_test_status_files(test_root, compiler, test_id=test_id)
 
     # ID to use in the log file names, to avoid file name collisions with
     # earlier files that may exist.
