@@ -88,10 +88,10 @@ def do_subtree_split(new_split_tag, merge_tag):
 def touches_file(start_range, end_range, filepath, title, skip=None):
 ###############################################################################
     skip_str = "--grep={} --invert-grep".format(skip) if skip is not None else ""
-    result = run_cmd_no_fail("git log {} {}..{} -- {}".format(skip_str, start_range, end_range, filepath))
+    result = run_cmd_no_fail("git log --first-parent {} {}..{} -- {}".format(skip_str, start_range, end_range, filepath))
 
     if result:
-        logging.debug("  touched by {} within range {}..{} by commits\n{}".format(title, start_range, end_range, result))
+        logging.info("    Touched by {} within range {}..{} by commits\n{}".format(title, start_range, end_range, result))
 
     return result != ""
 
@@ -117,7 +117,7 @@ def get_last_instance_of(branch_name, head):
     return run_cmd_no_fail("git log --first-parent {} --grep='{}' -1 --oneline".format(head, branch_name)).split()[0]
 
 ###############################################################################
-def handle_easy_conflict(dst_filepath, is_merge):
+def handle_easy_conflict(dst_filepath, is_merge, src_head, dst_head, last_src_operation, last_dst_operation, src_branch_prefix):
 ###############################################################################
     """
     src = repo we are coming from
@@ -131,51 +131,22 @@ def handle_easy_conflict(dst_filepath, is_merge):
     src = cime
     dst = e3sm
     """
-    src_tag_prefix = MERGE_TAG_PREFIX if is_merge else SPLIT_TAG_PREFIX
-    dst_tag_prefix = SPLIT_TAG_PREFIX if is_merge else MERGE_TAG_PREFIX
-
-    # For split, src_tag_prefix = acme-split-, dst_tag_prefix = to-acme-
-
-    src_branch_prefix = "branch-for-{}".format(dst_tag_prefix) # NOTE: opposite of tag
-    dst_branch_prefix = "branch-for-{}".format(src_tag_prefix) # NOTE: opposite of tag
-
-    # For split, dst_branch_prefix = branch-for-acme-split
-
-    # we can't use ORIG_HEAD for src_head for splits
-    # because ORIG_HEAD has been re-written by subtree, making the tag
-    # we want to use useless in a range operation
-    src_head = "MERGE_HEAD" if is_merge else "origin/master"
-    dst_head = "ORIG_HEAD"  if is_merge else "MERGE_HEAD"
-
-    # For split, src_head = origin/master, dst_head = MERGE_HEAD
-
-    src_filepath = dst_filepath.replace("cime/", "", 1) if is_merge else os.path.join("cime", dst_filepath)
+    logging.info("  Examining file {} ...".format(dst_filepath))
 
     # For split, src_filepath = cime/xxx/yyy, dst_filepath = xxx/yyy
-
-    # There's no tag for last dst operation
-    try:
-        last_dst_operation = get_last_instance_of(dst_branch_prefix, dst_head)
-    except Exception as e:
-        logging.warning("Could not get most recent merge for branch {}, {}".format(dst_branch_prefix, e))
-        return False
-
-    # Use tag for last src operation
-    last_src_operation = get_tag(src_tag_prefix, expected_num=2)[0]
-
-    logging.info("Examining file {} ...".format(dst_filepath))
+    src_filepath = dst_filepath.replace("cime/", "", 1) if is_merge else os.path.join("cime", dst_filepath)
 
     if not touches_file(last_dst_operation, dst_head, dst_filepath, "dst"):
-        logging.info("  File '{}' appears to have had no recent dst mods, setting to src".format(dst_filepath))
+        logging.info("    File '{}' appears to have had no recent dst mods, setting to src".format(dst_filepath))
         reset_file(src_head, src_filepath, dst_filepath)
         return True
     # We don't want to pick up the last dst->src operation as a src modification of this file
     elif not touches_file(last_src_operation, src_head, src_filepath, "src", skip=src_branch_prefix):
-        logging.info("  File '{}' appears to have had no recent src mods, setting to dst".format(src_filepath))
+        logging.info("    File '{}' appears to have had no recent src mods, setting to dst".format(src_filepath))
         reset_file(dst_head, dst_filepath, dst_filepath)
         return True
     else:
-        logging.info("  File '{}' appears to have real conflicts".format(dst_filepath))
+        logging.info("    File '{}' appears to have real conflicts".format(dst_filepath))
         return False
 
 ###############################################################################
@@ -185,9 +156,38 @@ def handle_easy_conflicts(is_merge):
     if not conflicting_files:
         expect(False, "Merge appears to have failed for reasons other than merge conflicts")
 
+    # For split, src_tag_prefix = acme-split-, dst_tag_prefix = to-acme-
+    src_tag_prefix = MERGE_TAG_PREFIX if is_merge else SPLIT_TAG_PREFIX
+    dst_tag_prefix = SPLIT_TAG_PREFIX if is_merge else MERGE_TAG_PREFIX
+
+    # For split, src_branch_prefix = branch-for-to-acme-, dst_branch_prefix = branch-for-acme-split-
+    src_branch_prefix = "branch-for-{}".format(dst_tag_prefix) # NOTE: opposite of tag
+    dst_branch_prefix = "branch-for-{}".format(src_tag_prefix) # NOTE: opposite of tag
+
+    # we can't use ORIG_HEAD for src_head for splits
+    # because ORIG_HEAD has been re-written by subtree, making the tag
+    # we want to use useless in a range operation
+    #
+    # For split, src_head = origin/master, dst_head = MERGE_HEAD
+    src_head = "MERGE_HEAD" if is_merge else "origin/master"
+    dst_head = "ORIG_HEAD"  if is_merge else "MERGE_HEAD"
+
+    # There's no tag for last dst operation
+    try:
+        last_dst_operation = get_last_instance_of(dst_branch_prefix, dst_head)
+        logging.info("  Detecting last dst operation was: {}".format(last_dst_operation))
+    except Exception as e:
+        logging.warning("  Could not get most recent merge for branch {}, {}. ABORTING auto conflict resolution".\
+                            format(dst_branch_prefix, e))
+        return conflicting_files
+
+    # Use tag for last src operation
+    last_src_operation = get_tag(src_tag_prefix, expected_num=2)[0]
+    logging.info("  Detecting last src operation was: {}".format(last_src_operation))
+
     rv = []
     for conflicting_file in conflicting_files:
-        able_to_handle = handle_easy_conflict(conflicting_file, is_merge)
+        able_to_handle = handle_easy_conflict(conflicting_file, is_merge, src_head, dst_head, last_src_operation, last_dst_operation, src_branch_prefix)
         if not able_to_handle:
             rv.append(conflicting_file)
 
@@ -196,13 +196,20 @@ def handle_easy_conflicts(is_merge):
 ###############################################################################
 def handle_conflicts(is_merge=False, auto_conf=False):
 ###############################################################################
+    logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     logging.info("There are conflicts, analyzing...")
+    logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+
     remaining_conflicts = handle_easy_conflicts(is_merge) if auto_conf else True
     if remaining_conflicts:
         expect(False, "There are merge conflicts. Please fix, commit, and re-run this tool with --resume")
     else:
         logging.info("All conflicts were automatically resovled, continuing")
         run_cmd_no_fail("git commit --no-edit")
+
+    logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    logging.info("Automatic conflict resolution complete")
+    logging.info("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 ###############################################################################
 def do_subtree_pull(squash=False, auto_conf=False):
