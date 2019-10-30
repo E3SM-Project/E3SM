@@ -416,7 +416,7 @@ class TestScheduler(object):
                 self._log_output(test,
                                  "{} FAILED for test '{}'.\nCommand: {}\nOutput: {}\n".
                                  format(phase, test, cmd,
-                                        output.encode('utf-8') + b"\n" + errput.encode('utf-8')))
+                                        output + "\n" + errput))
                 # Temporary hack to get around odd file descriptor use by
                 # buildnml scripts.
                 if "bad interpreter" in output:
@@ -431,7 +431,7 @@ class TestScheduler(object):
                 self._log_output(test,
                                  "{} PASSED for test '{}'.\nCommand: {}\nOutput: {}\n".
                                  format(phase, test, cmd,
-                                        output.encode('utf-8') + b"\n" + errput.encode('utf-8')))
+                                        output + "\n" + errput))
                 return True, errput
 
     ###########################################################################
@@ -861,7 +861,7 @@ class TestScheduler(object):
 
         if not success:
             status_str += "\n    Case dir: {}\n".format(self._get_test_dir(test))
-            status_str += "    Errors were:\n        {}\n".format("\n        ".join(str(errors.encode('utf-8')).splitlines()))
+            status_str += "    Errors were:\n        {}\n".format("\n        ".join(errors.splitlines()))
 
         logger.info(status_str)
 
