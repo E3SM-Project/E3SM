@@ -32,6 +32,7 @@ _TESTS = {
             "ERS.f19_g16.I1850GSWCNPRDCTCBC.clm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.clm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "ERS.f09_g16.ICLM45BC",
+            "SMS.r05_r05.I1850CLM45CN",
             )
         },
 
@@ -81,7 +82,10 @@ _TESTS = {
 
     #atmopheric tests to mimic low res production runs
     "e3sm_atm_prod" : {
-        "tests" : "SMS_Ln5.ne30_ne30.FC5AV1C-L.cam-cosplite"
+        "tests" : (
+            "SMS_Ln5.ne30_ne30.FC5AV1C-L.cam-cosplite",
+            "SMS.ne30_r05_ne30.F20TRC5-CMIP6",
+            )
         },
 
     #atmopheric nbfb tests
@@ -139,6 +143,7 @@ _TESTS = {
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850.clm-bgcexp",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.clm-bgcexp",
             "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
+            "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
             )
         },
 
