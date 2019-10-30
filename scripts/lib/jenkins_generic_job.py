@@ -28,7 +28,7 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
                         arg_test_suite,
                         cdash_build_group, baseline_compare,
                         scratch_root, parallel_jobs, walltime,
-                        machine, compiler, real_baseline_name):
+                        machine, compiler, real_baseline_name, baseline_root):
 ###############################################################################
     """
     Return True if all tests passed
@@ -102,6 +102,9 @@ def jenkins_generic_job(generate_baselines, submit_to_cdash, no_batch,
 
     if walltime is not None:
         create_test_args.append(" --walltime " + walltime)
+
+    if baseline_root is not None:
+        create_test_args.append(" --baseline-root " + baseline_root)
 
     create_test_cmd = "./create_test " + " ".join(create_test_args)
 
