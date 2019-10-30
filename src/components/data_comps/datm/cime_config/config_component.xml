@@ -57,7 +57,7 @@
 
   <entry id="DATM_PRESAERO">
     <type>char</type>
-    <valid_values>none,clim_1850,clim_2000,clim_2010,trans_1850-2000,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,cplhist</valid_values>
+    <valid_values>none,clim_1850,clim_2000,clim_2010,trans_1850-2000,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,cesm2_omip,cplhist</valid_values>
     <default_value>clim_2000</default_value>
     <values match="last">
       <value compset="^1850_"   >clim_1850</value>
@@ -73,6 +73,8 @@
       <value compset="^SSP585_" >SSP5-8.5</value>
       <value compset="^HIST_"   >trans_1850-2000</value>
       <value compset="^20TR_"   >trans_1850-2000</value>
+      <value compset="^OMIP_DATM%IAF" cime_model="cesm">cesm2_omip</value>
+      <value compset="^OMIP_DATM%JRA" cime_model="cesm">cesm2_omip</value>
       <value compset="_DATM%CPLHIST">cplhist</value>
       <value compset="_DATM.*_DICE.*_DOCN.*_DROF">none</value> 
     </values>
@@ -98,7 +100,7 @@
 
   <entry id="DATM_CO2_TSERIES">
     <type>char</type>
-    <valid_values>none,20tr,20tr.latbnd,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,SSP1-1.9.latbnd,SSP1-2.6.latbnd,SSP2-4.5.latbnd,SSP3-7.0.latbnd,SSP4-3.4.latbnd,SSP4-6.0.latbnd,SSP5-3.4.latbnd,SSP5-8.5.latbnd</valid_values>
+    <valid_values>none,20tr,20tr.latbnd,omip,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,SSP1-1.9.latbnd,SSP1-2.6.latbnd,SSP2-4.5.latbnd,SSP3-7.0.latbnd,SSP4-3.4.latbnd,SSP4-6.0.latbnd,SSP5-3.4.latbnd,SSP5-8.5.latbnd</valid_values>
     <default_value>none</default_value>
     <values match="last">
       <value compset="^SSP119_">SSP1-1.9</value>
@@ -111,6 +113,8 @@
       <value compset="^SSP585_">SSP5-8.5</value>
       <value compset="^HIST"   >20tr</value>
       <value compset="^20TR"   >20tr</value>
+      <value compset="^OMIP_DATM%IAF.*_POP2%[^_]*ECO">omip</value>
+      <value compset="^OMIP_DATM%JRA.*_POP2%[^_]*ECO">omip</value>
     </values>
     <group>run_component_datm</group>
     <file>env_run.xml</file>

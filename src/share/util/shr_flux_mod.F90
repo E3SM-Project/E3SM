@@ -137,7 +137,8 @@ end subroutine shr_flux_adjust_constants
 SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_fac, &
            &               qbot  ,s16O  ,sHDO  ,s18O  ,rbot  ,   &
            &               tbot  ,us    ,vs    ,   &
-           &               ts    ,mask  ,sen   ,lat   ,lwup  ,   &
+           &               ts    ,mask  , seq_flux_atmocn_minwind, &
+           &               sen   ,lat   ,lwup  ,   &
            &               r16O, rhdo, r18O, &
            &               evap  ,evap_16O, evap_HDO, evap_18O, &
            &               taux  ,tauy  ,tref  ,qref  ,   &
@@ -173,6 +174,7 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
    real(R8)   ,intent(in) :: ts   (nMax) ! ocn temperature       (K)
    real(R8)   ,intent(in) :: prec_gust (nMax) ! atm precip for convective gustiness (kg/m^3)
    real(R8)   ,intent(in) :: gust_fac    ! wind gustiness factor
+   real(R8)   ,intent(in) :: seq_flux_atmocn_minwind        ! minimum wind speed for atmocn      (m/s)
 
    !--- output arguments -------------------------------
    real(R8),intent(out)  ::  sen  (nMax) ! heat flux: sensible    (W/m^2)
@@ -197,7 +199,6 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
 ! !EOP
 
    !--- local constants --------------------------------
-   real(R8),parameter :: umin  =  0.5_R8 ! minimum wind speed       (m/s)
    real(R8),parameter :: zref  = 10.0_R8 ! reference height           (m)
    real(R8),parameter :: ztref =  2.0_R8 ! reference height for air T (m)
 
@@ -305,17 +306,18 @@ SUBROUTINE shr_flux_atmOcn(nMax  ,zbot  ,ubot  ,vbot  ,thbot ,  prec_gust, gust_
         !--- compute some needed quantities ---
 
         ! old version
-        !vmag   = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+        !vmag   = max(seq_flux_atmocn_minwind, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
 
         !--- vmag+ugust (convective gustiness) Limit to a max precip 6 cm/day = 0.00069444 m/s.
         !--- reverts to original formula if gust_fac=0
 
         !PMA saves vmag_old for taux tauy computation
 
-        vmag_old    = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+        vmag_old    = max(seq_flux_atmocn_minwind, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
 
         if (gust_fac .gt. 1.e-12_R8) then
-         vmag       = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) + ugust(min(prec_gust(n),6.94444e-4_R8)))
+         vmag       = max(seq_flux_atmocn_minwind, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) + &
+                      ugust(min(prec_gust(n),6.94444e-4_R8)))
         else
          vmag       = vmag_old
         endif
@@ -489,7 +491,8 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
                           (nMax  ,zbot  ,ubot  ,vbot  ,thbot ,             &
                            qbot  ,s16O  ,sHDO  ,s18O  ,rbot  ,             &
                            tbot  ,us    ,vs    ,                           &
-                           ts    ,mask  ,sen   ,lat   ,lwup  ,             &
+                           ts    ,mask  , seq_flux_atmocn_minwind,         &
+                           sen   ,lat   ,lwup  ,                           &
                            r16O  ,rhdo  ,r18O  ,evap  ,evap_16O,           &
                            evap_HDO     ,evap_18O,                         &
                            taux  ,tauy  ,tref  ,qref  ,                    &
@@ -566,6 +569,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
    integer(IN),intent(in) :: secs               ! NEW  elsapsed seconds in day (GMT)
    integer(IN),intent(in) :: dt                 ! NEW
    logical ,intent(in)    :: cold_start         ! cold start flag
+   real(R8),intent(in)    :: seq_flux_atmocn_minwind   ! minimum wind speed for atmocn      (m/s)
 
    real(R8),intent(in) ,optional :: missval     ! masked value
 
@@ -591,7 +595,6 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
 
    !--- local constants --------------------------------
-   real(R8),parameter :: umin  =  0.5_R8 ! minimum wind speed       (m/s)
    real(R8),parameter :: zref  = 10.0_R8 ! reference height           (m)
    real(R8),parameter :: ztref =  2.0_R8 ! reference height for air T (m)
 
@@ -788,7 +791,7 @@ SUBROUTINE shr_flux_atmOcn_diurnal &
 
          !--- compute some initial and useful flux quantities ---
 
-         vmag     = max(umin, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
+         vmag     = max(seq_flux_atmocn_minwind, sqrt( (ubot(n)-us(n))**2 + (vbot(n)-vs(n))**2) )
          if (use_coldair_outbreak_mod) then
             ! Cold Air Outbreak Modification:
             ! Increase windspeed for negative tbot-ts

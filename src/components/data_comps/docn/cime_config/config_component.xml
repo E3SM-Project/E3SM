@@ -13,7 +13,7 @@
        This file may have ocn desc entries.
   -->
   <description modifier_mode="1">
-    <desc ocn="DOCN[%NULL][%DOM][%SOM][%SOMAQP][%IAF][%SST_AQUAP][%AQP1][%AQP2][%AQP3][%AQP4][%AQP5][%AQP6][%AQP7][%AQP8][%AQP9][%AQP10][%AQPFILE]">DOCN </desc>
+    <desc ocn="DOCN[%NULL][%DOM][%SOM][%SOMAQP][%IAF][%SST_AQUAP][%AQP1][%AQP2][%AQP3][%AQP4][%AQP5][%AQP6][%AQP7][%AQP8][%AQP9][%AQP10][%AQPFILE][%AQPCONST]">DOCN </desc>
     <desc option="NULL">  null mode</desc>
     <desc option="DOM">  prescribed ocean mode</desc>
     <desc option="SOM">  slab ocean mode</desc>
@@ -31,6 +31,7 @@
     <desc option="AQP9">  analytic aquaplanet sst - option 9</desc>
     <desc option="AQP10">  analytic aquaplanet sst - option 10</desc>
     <desc option="AQPFILE">  file input aquaplanet sst </desc>
+    <desc option="AQPCONST">  globally constant SST for idealized experiments, such as RCE </desc>
   </description>
 
   <entry id="COMP_OCN">
@@ -44,7 +45,7 @@
 
   <entry id="DOCN_MODE">
     <type>char</type>
-    <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquapfile,som,som_aquap,interannual,null</valid_values>
+    <valid_values>prescribed,sst_aquap1,sst_aquap2,sst_aquap3,sst_aquap4,sst_aquap5,sst_aquap6,sst_aquap7,sst_aquap8,sst_aquap9,sst_aquap10,sst_aquapfile,som,som_aquap,sst_aquap_constant,interannual,null</valid_values>
     <default_value>prescribed</default_value>
     <values match="last">
       <value compset="_DOCN%NULL_">null</value>
@@ -63,6 +64,7 @@
       <value compset="_DOCN%AQP9_">sst_aquap9</value>
       <value compset="_DOCN%AQP10_">sst_aquap10</value>
       <value compset="_DOCN%AQPFILE_">sst_aquapfile</value>
+      <value compset="_DOCN%AQPCONST_">sst_aquap_constant</value>
     </values>
     <group>run_component_docn</group>
     <file>env_run.xml</file>
@@ -132,6 +134,18 @@
     <file>env_run.xml</file>
     <desc>Sets aquaplanet forcing filename instead of using an analytic form.
     This is only used when DOCN_MODE=sst_aquapfile.</desc>
+  </entry>
+
+   <entry id="DOCN_AQPCONST_VALUE">
+    <type>real</type>
+    <valid_values></valid_values>
+    <default_value>-1</default_value>
+    <values match="last">
+      <value compset="_DOCN%AQPCONST">300</value>
+    </values>
+    <group>run_component_docn</group>
+    <file>env_run.xml</file>
+    <desc>Sets globally constant SST value</desc>
   </entry>
 
   <entry id="SSTICE_STREAM">

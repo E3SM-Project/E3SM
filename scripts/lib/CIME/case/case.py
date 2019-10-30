@@ -761,7 +761,7 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None, driver=None, workflow_case="default"):
+                  input_dir=None, driver=None, workflowid="default"):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
 
@@ -944,7 +944,7 @@ class Case(object):
         logger.info("Batch_system_type is {}".format(batch_system_type))
         batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files)
         workflow = Workflow(files=files)
-        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflow_case=workflow_case)
+        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflowid=workflowid)
         env_workflow = self.get_env("workflow")
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
@@ -1429,7 +1429,7 @@ directory, NOT in this subdirectory."""
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None, driver=None, workflow_case="default"):
+               input_dir=None, driver=None, workflowid="default"):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1445,7 +1445,7 @@ directory, NOT in this subdirectory."""
                            walltime=walltime, queue=queue,
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
-                           input_dir=input_dir, driver=driver, workflow_case=workflow_case)
+                           input_dir=input_dir, driver=driver, workflowid=workflowid)
 
             self.create_caseroot()
 
@@ -1484,3 +1484,8 @@ directory, NOT in this subdirectory."""
 
     def get_primary_job(self):
         return "case.test" if self.get_value("TEST") else "case.run"
+
+    def get_first_job(self):
+        env_workflow = self.get_env("workflow")
+        jobs = env_workflow.get_jobs()
+        return jobs[0]

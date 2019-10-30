@@ -1,6 +1,142 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 10-25-2019
+Tag: cime5.6.25
+Answer Changes: None
+Tests: SMS_Ld1_D.f19_g17.I1850Clm50BgcCropCmip6.cheyenne_gnu.clm-default
+Dependencies:
+
+Brief Summary:
+    - Cherry-picked AQPCONST changes.
+    - Fix mpi_bcast in seq_flux_mct.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+03cb90660 Merge pull request #3266 from ESMCI/aqp_cherrypick
+f75914619 Merge pull request #3261 from jedwards4b/seq_flux_mct_fix
+
+Modified files: git diff --name-status [previous_tag]
+M       src/components/data_comps/docn/cime_config/buildnml
+M       src/components/data_comps/docn/cime_config/config_component.xml
+M       src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M       src/components/data_comps/docn/docn_comp_mod.F90
+M       src/components/data_comps/docn/docn_shr_mod.F90
+M       src/drivers/mct/main/seq_flux_mct.F90
+M       src/share/util/shr_scam_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 9-30-2019
+Tag: cime5.6.24
+Answer Changes: None
+Tests: aux_cam tests, cime_developer tests, scripts_regression_tests 
+       tested workflow by hand
+Dependencies:
+
+Brief Summary:
+    - Add namelist for minimum wind speed for atmOcn fluxes.
+    - Address objection to using case in workflow.
+    - Fix case of workflow job prior to case.run or case.test.
+    - Fix bug in SCAM.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+cf62e3524 Merge pull request #3251 from cacraigucar/atmOcn_wind
+98d8115ac Merge pull request #3246 from jedwards4b/workflow_casetoworkflow_id
+829138e73 Merge pull request #3242 from jedwards4b/workflow_before_run_fix
+7b1b3208c Merge pull request #3238 from cacraigucar/maint-5.6
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_workflow.xml
+M       config/e3sm/machines/config_workflow.xml
+M       config/xml_schemas/config_workflow.xsd
+M       scripts/Tools/preview_run
+M       scripts/create_newcase
+M       scripts/lib/CIME/XML/env_batch.py
+M       scripts/lib/CIME/XML/workflow.py
+M       scripts/lib/CIME/case/case.py
+M       scripts/lib/CIME/case/case_submit.py
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+M       src/drivers/mct/main/seq_flux_mct.F90
+M       src/share/util/shr_flux_mod.F90
+M       src/share/util/shr_scam_mod.F90
+
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
+Date: 9-11-2019
+Tag: cime5.6.23
+Answer Changes: climate changing for C & G compsets.
+Tests: cime_developers, aux_cam, scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Change rce_sst to fixed_sst to better reflect its purpose.
+    - Fix wallclocks in testlists.
+    - Archive metadata add support for lens experiment type.
+    - Changes to support Radiative Convective Equilibrium.
+    - Add support for CMIP6 OMIP, update JRA forcing files.
+    - Make the streams file legitiment xml files.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+e7e14698a Merge pull request #3236 from cacraigucar/fixed_sst
+189ac85c6 Merge pull request #3234 from ESMCI/fischer/wallclocks
+751d24c99 Merge pull request #3228 from bertinia/maint-5.6_archive_metadata
+3a3fa6fab Merge pull request #3231 from cacraigucar/rce_release
+3418675b0 Merge pull request #3223 from klindsay28/cesm2_omip
+38117f02d Merge pull request #3217 from jedwards4b/maint-5.6_user_streamfix
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_archive.xml
+M	config/cesm/config_grids.xml
+M	scripts/Tools/archive_metadata
+A	scripts/lib/CIME/XML/stream.py
+M	scripts/lib/CIME/case/case_setup.py
+M	scripts/lib/CIME/nmlgen.py
+M	src/components/data_comps/datm/cime_config/buildnml
+M	src/components/data_comps/datm/cime_config/config_component.xml
+M	src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M	src/components/data_comps/datm/datm_comp_mod.F90
+M	src/components/data_comps/dice/cime_config/buildnml
+M	src/components/data_comps/dlnd/cime_config/buildnml
+M	src/components/data_comps/docn/cime_config/buildnml
+M	src/components/data_comps/docn/cime_config/config_component.xml
+M	src/components/data_comps/docn/cime_config/namelist_definition_docn.xml
+M	src/components/data_comps/docn/docn_comp_mod.F90
+M	src/components/data_comps/docn/docn_shr_mod.F90
+M	src/components/data_comps/drof/cime_config/buildnml
+M	src/components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M	src/components/data_comps/dwav/cime_config/buildnml
+M	src/drivers/mct/cime_config/buildnml
+M	src/drivers/mct/cime_config/config_component_cesm.xml
+M	src/drivers/mct/cime_config/namelist_definition_drv.xml
+M	src/drivers/mct/cime_config/testdefs/testlist_drv.xml
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/seq_flux_mct.F90
+M	src/drivers/mct/shr/seq_infodata_mod.F90
+M	src/share/streams/shr_tInterp_mod.F90
+M	src/share/util/shr_orb_mod.F90
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 8-26-2019
 Tag: cime5.6.22
 Answer Changes: None
