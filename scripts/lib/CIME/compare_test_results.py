@@ -3,6 +3,7 @@ from CIME.utils import expect, append_status, EnvironmentContext
 from CIME.test_status import *
 from CIME.hist_utils import compare_baseline, get_ts_synopsis
 from CIME.case import Case
+from CIME.test_utils import get_test_status_files
 
 import os, logging
 

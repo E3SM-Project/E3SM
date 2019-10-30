@@ -2,7 +2,7 @@
 Utility functions used in test_scheduler.py, and by other utilities that need to
 get test lists.
 """
-
+import glob
 from CIME.XML.standard_module_setup import *
 from CIME.XML.testlist import Testlist
 from CIME.XML.files import Files
