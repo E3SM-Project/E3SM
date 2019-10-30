@@ -8070,12 +8070,10 @@ module VegetationDataType
             this%psnshade_to_cpool(p)
 
        ! maintenance respiration (MR)
-       if ( trim(isotope) == 'c13' .or. trim(isotope) == 'c14') then
-          this%leaf_mr(p)      = this%leaf_curmr(p)      + this%leaf_xsmr(p)
-          this%froot_mr(p)     = this%froot_curmr(p)     + this%froot_xsmr(p)
-          this%livestem_mr(p)  = this%livestem_curmr(p)  + this%livestem_xsmr(p)
-          this%livecroot_mr(p) = this%livecroot_curmr(p) + this%livecroot_xsmr(p)
-       endif
+       this%leaf_mr(p)      = this%leaf_curmr(p)      + this%leaf_xsmr(p)
+       this%froot_mr(p)     = this%froot_curmr(p)     + this%froot_xsmr(p)
+       this%livestem_mr(p)  = this%livestem_curmr(p)  + this%livestem_xsmr(p)
+       this%livecroot_mr(p) = this%livecroot_curmr(p) + this%livecroot_xsmr(p)
 
        this%mr(p)  = &
             this%leaf_mr(p)     + &
