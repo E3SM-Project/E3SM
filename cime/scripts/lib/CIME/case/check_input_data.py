@@ -2,11 +2,7 @@
 API for checking input for testcase
 """
 from CIME.XML.standard_module_setup import *
-<<<<<<< HEAD
 from CIME.utils import SharedArea, find_files, safe_copy, expect
-=======
-from CIME.utils import SharedArea, find_files, expect
->>>>>>> maint-1.0
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
@@ -113,11 +109,7 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
         # copy the refcases' rpointer files to the run directory
         for rpointerfile in glob.iglob(os.path.join("{}","*rpointer*").format(refdir)):
             logger.info("Copy rpointer {}".format(rpointerfile))
-<<<<<<< HEAD
-            safe_copy(rpointerfile, rundir)
-=======
             shutil.copy2(rpointerfile, rundir)
->>>>>>> maint-1.0
 
         # link everything else
 
