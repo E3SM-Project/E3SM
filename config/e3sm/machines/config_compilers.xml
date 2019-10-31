@@ -78,12 +78,6 @@ for mct, etc.
      compilers -->
 <compiler>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
-  <CPPDEFS>
-    <!-- MPAS Components rely on this flag to use the newer PIO/Scorpio interfaces. These newer interfaces are available on both Scorpio and Scorpio classic -->
-    <append MODEL="ice"> -DUSE_PIO2 </append>
-    <append MODEL="ocn"> -DUSE_PIO2 </append>
-    <append MODEL="glc"> -DUSE_PIO2 </append>
-  </CPPDEFS>
 </compiler>
 
 <compiler COMPILER="cray">
@@ -787,7 +781,7 @@ for mct, etc.
 
 <compiler MACH="bebop" COMPILER="gnu">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -1074,7 +1068,7 @@ for mct, etc.
 <compiler MACH="compy" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
@@ -1100,7 +1094,7 @@ for mct, etc.
 <compiler MACH="compy" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
   <CXX_LIBS>
     <base>-lstdc++</base>
