@@ -437,6 +437,22 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
         <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
       </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
+      </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
       </modules>
@@ -485,18 +501,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_TYPE_DEPTH">16</env>
       <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" mpilib="mpi-serial" DEBUG="FALSE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libO/Linux.intel.64.mpiuni.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" mpilib="mpi-serial" DEBUG="TRUE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libg/Linux.intel.64.mpiuni.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" DEBUG="FALSE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libO/Linux.intel.64.mpt.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" DEBUG="TRUE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libg/Linux.intel.64.mpt.default/esmf.mk</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
