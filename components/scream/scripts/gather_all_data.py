@@ -22,7 +22,7 @@ MACHINE_METADATA = {
                   "bsub -I -q rhel7G"),
     "lassen" : (["module purge && module load gcc/7.3.1 cuda/10.1.243 cmake/3.14.5 spectrum-mpi netcdf/4.7.0 python/3.7.2 && export LLNL_USE_OMPI_VARS='y'"],
                   "$(which mpicxx)",
-                  "bsub"),
+                  "bsub -Ip"),
     "quartz" : (["module purge &&  module load StdEnv cmake/3.14.5 mkl netcdf/4.4.1.1 mvapich2/2.3 intel/19.0.4 python/3.7.2"],
                   "$(which mpicxx)",
                   "srun"),
