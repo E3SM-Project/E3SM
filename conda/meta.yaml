@@ -21,14 +21,14 @@ requirements:
   run:
     - python
     - cdp >=1.6.0
-    - vcs >=8.0
-    - vtk-cdat 8.2.0rc2.8.1
-    - vcsaddons >=8.0
-    - dv3d >=8.0
-    - cdms2 >=3.0.1
-    - cdutil >=8.0
-    - genutil >=8.0
-    - cdtime >=3.0
+    - vcs >=8.2
+    - vtk-cdat 8.2.0.8.2
+    - vcsaddons >=8.2
+    - dv3d >=8.2
+    - cdms2 >=3.1.4
+    - cdutil >=8.2
+    - genutil >=8.2
+    - cdtime >=3.1.2
     - numpy
     - matplotlib
     - cartopy
