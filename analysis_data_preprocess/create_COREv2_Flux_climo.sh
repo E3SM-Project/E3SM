@@ -23,7 +23,7 @@ for yr in $(eval echo "{$start_yr..$end_yr}"); do
     ncks --mk_rec_dmn time ${original_path}${yyyy}.nc ${tmp}time_rec_dim_${yyyy}.nc
     #ncrename -v F_evap,evspsbl -v F_prec,pr -v F_roff,mrro -v Q_lat,hfls -v Q_sen,hfss -v Q_lwdn,rlds -v Q_lwup,rlus -v Q_swnet,rss -v taux,tauu -v tauy,tauv ${original_path}${yyyy}.nc
     #somehow Q_lwup can not get renamed, neglect for now.
-    ncrename -v F_evap,evspsbl -v F_prec,pr -v F_roff,mrro -v Q_lat,hfls -v Q_sen,hfss -v Q_lwdn,rlds -v Q_swnet,rss -v taux,tauu -v tauy,tauv ${tmp}time_rec_dim_${yyyy}.nc
+    #ncrename -v F_evap,evspsbl -v F_prec,pr -v F_roff,mrro -v Q_lat,hfls -v Q_sen,hfss -v Q_lwdn,rlds -v Q_swnet,rss -v taux,tauu -v tauy,tauv ${tmp}time_rec_dim_${yyyy}.nc
 
 
     for mth in {1..12}; do
@@ -40,7 +40,8 @@ ncrcat ${tmp}COREv2_Flux_*nc ${time_series_output_path}COREv2_Flux_${start_yr}01
 
 #ncrename -v F_evap,evspsbl -v F_prec,pr -v F_roff,mrro -v Q_lat,hfls -v Q_sen,hfss -v Q_lwdn,rlds -v Q_lwup,rlus -v Q_swnet,rss -v taux,tauu -v tauy,tauv ${time_series_output_path}COREv2_Flux_${start_yr}01_${end_yr}12.nc
 
-for var in evspsbl pr mrro hfls hfss rlds rlus rss tauu tauv
+#for var in evspsbl pr mrro hfls hfss rlds rlus rss tauu tauv
+for var in F_evap F_prec F_roff Q_lat Q_sen Q_lwdn Q_lwup Q_swnet taux tauy
 do
    echo $var
    ncks -v $var ${time_series_output_path}COREv2_Flux_${start_yr}01_${end_yr}12.nc ${time_series_output_path}${var}_${start_yr}01_${end_yr}12.nc

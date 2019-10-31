@@ -98,7 +98,7 @@ def qflxconvert_units(var):
     return var
 
 def pminuse_convert_units(var):
-    if var.units == 'kg/m2/s' or var.units == 'kg m-2 s-1':
+    if var.units == 'kg/m2/s' or var.units == 'kg m-2 s-1' or var.units == 'kg/s/m^2':
         # need to find a solution for units not included in udunits
         # var = convert_units( var, 'kg/m2/s' )
         var = var * 3600.0 * 24  # convert to mm/day
@@ -802,6 +802,7 @@ derived_variables = {
     'PminusE': OrderedDict([
         (('PminusE',),lambda pminuse: pminuse_convert_units(pminuse)),
         (('PRECC', 'PRECL', 'QFLX',),lambda precc,precl,qflx: pminuse_convert_units(prect(precc,precl)-pminuse_convert_units(qflx))),
+        (('F_prec','F_evap'), lambda pr,evspsbl: pminuse_convert_units(pr + evspsbl)),
         (('pr','evspsbl'), lambda pr,evspsbl: pminuse_convert_units(pr - evspsbl))
         
     ]),
