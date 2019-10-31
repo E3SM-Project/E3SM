@@ -1,6 +1,7 @@
 function(build_mpas_models)
 
   file(GLOB MPASCONFS "${BUILDCONF}/mpas*conf" "${BUILDCONF}/maliconf")
+
   foreach(ITEM IN LISTS MPASCONFS)
     get_filename_component(MPASCONF ${ITEM} NAME)
     string(REPLACE "conf" "" COMP_NAME "${MPASCONF}")
