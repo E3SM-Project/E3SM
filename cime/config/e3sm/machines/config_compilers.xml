@@ -71,6 +71,12 @@ These should NOT be specified via <ADD_SLIBS USE_CXX="true"> or
 <ADD_LDFLAGS USE_CXX="true">, because those mess up the configure step
 for mct, etc.
 
+========================================================================
+ MPAS
+========================================================================
+
+MPAS has a semi-autonomous build from core E3SM. Component-specific (mali, mpassi)
+flags should be captured within MPAS CMake files.
 
 ===========================
 -->
