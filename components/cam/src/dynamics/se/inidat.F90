@@ -465,24 +465,29 @@ contains
               1, nelemd, phys_tmp, found, gridname='physgrid_d')
          call fv_phys_to_dyn_topo(elem,phys_tmp)
       else
-         ! Attempt to read a mixed GLL-FV topo file, which contains PHIS_d in
-         ! addition to PHIS.
-         call infld(fieldname // '_d', ncid_topo, ncol_name,      &
-            1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
-         if (found) then
-            if (masterproc) then
-               write(iulog,*) 'reading GLL ', trim(fieldname) // '_d', &
-                    ' on gridname ', trim(grid_name)
-            end if
+         if (fv_nphys == 0) then
+            call infld(fieldname, ncid_topo, ncol_name,      &
+                 1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
          else
-            ! Pure-FV topo file, so read FV PHIS and convert it to GLL.
-            if (masterproc) then
-               write(iulog,*) 'reading FV ', trim(fieldname), ' on gridname physgrid_d'
+            ! Attempt to read a mixed GLL-FV topo file, which contains PHIS_d in
+            ! addition to PHIS.
+            call infld(fieldname // '_d', ncid_topo, ncol_name,      &
+                 1, npsq, 1, nelemd, tmp(:,1,:), found, gridname=grid_name)
+            if (found) then
+               if (masterproc) then
+                  write(iulog,*) 'reading GLL ', trim(fieldname) // '_d', &
+                       ' on gridname ', trim(grid_name)
+               end if
+            else
+               ! Pure-FV topo file, so read FV PHIS and convert it to GLL.
+               if (masterproc) then
+                  write(iulog,*) 'reading FV ', trim(fieldname), ' on gridname physgrid_d'
+               end if
+               read_pg_grid = .true.
+               call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
+                    1, nelemd, phys_tmp, found, gridname='physgrid_d')
+               call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phys_tmp)
             end if
-            read_pg_grid = .true.
-            call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
-                 1, nelemd, phys_tmp, found, gridname='physgrid_d')
-            call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phys_tmp)
          end if
       endif
       if(.not. found) then

@@ -518,13 +518,13 @@ contains
     ncol = nf*nf
 
     if (augment_variance) then
-       ! Compute an estimated amount of additional variance due to remapping
-       ! from GLL to FV bases.
+       ! Estimate additional variance due to remapping from GLL to FV
+       ! bases.
        call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, elem(ie)%state%phis, phispg)
        do j = 1,nf
           do i = 1,nf
              ! Integrate (phis_gll - phis_fv)^2 over FV subcell (i,j). Do this
-             ! using gfr_g2f_scalar; thus, only one entry out of nf^2 are used.
+             ! using gfr_g2f_scalar; thus, only one entry out of nf^2 is used.
              k = nf*(j-1) + i
              wr(:,:,2) = ((elem(ie)%state%phis - phispg(k))/grav)**2
              call gfr_g2f_scalar(ie, elem(ie)%metdet, wr(:,:,2:2), wr(:,:,1:1))
