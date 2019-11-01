@@ -154,7 +154,7 @@ def _build_model(build_threaded, exeroot, incroot, complist,
 
 ###############################################################################
 def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
-                       comp_interface, sharedpath, ninja, case):
+                       comp_interface, sharedpath, use_gmake, case):
 ###############################################################################
     cime_model = get_model()
     bldroot    = os.path.join(exeroot, "cmake-bld")
@@ -181,18 +181,22 @@ def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
 
     # Call CMake
     cmake_args = get_standard_cmake_args(case, sharedpath)
-    if ninja:
+    cmake_env = ""
+    ninja_path = os.path.join(srcroot, "externals/ninja/bin")
+    if not use_gmake:
         cmake_args += " -GNinja "
-    cmake_cmd = "cmake {} {}/components >> {} 2>&1".format(cmake_args, srcroot, bldlog)
+        cmake_env += "PATH={}:$PATH ".format(ninja_path)
+
+    cmake_cmd = "{}cmake {} {}/components >> {} 2>&1".format(cmake_env, cmake_args, srcroot, bldlog)
     with open(bldlog, "w") as fd:
         fd.write("Configuring with cmake cmd:\n{}\n\n".format(cmake_cmd))
     stat = run_cmd(cmake_cmd, from_dir=bldroot)[0]
 
     # Call Make
     if stat == 0:
-        make_cmd = "{} -j {} >> {} 2>&1".format("ninja" if ninja else gmake, gmake_j, bldlog)
+        make_cmd = "{} -j {} >> {} 2>&1".format(gmake if use_gmake else os.path.join(ninja_path, "ninja"), gmake_j, bldlog)
         with open(bldlog, "a") as fd:
-            fd.write("\n\nBuilding with make cmd:\n{}\n\n".format(make_cmd))
+            fd.write("\n\nBuilding with cmd:\n{}\n\n".format(make_cmd))
 
         stat = run_cmd(make_cmd, from_dir=bldroot)[0]
 
@@ -465,7 +469,7 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
 
 ###############################################################################
 def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
-                     save_build_provenance, use_old, ninja):
+                     save_build_provenance, use_old, use_gmake):
 ###############################################################################
 
     t1 = time.time()
@@ -476,7 +480,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     logger.info("sharedlib_only is {}".format(sharedlib_only))
     logger.info("model_only is {}".format(model_only))
 
-    expect(not (use_old and ninja), "Ninja backend not supported for classic build system")
     expect(os.path.isdir(caseroot), "'{}' is not a valid directory".format(caseroot))
     os.chdir(caseroot)
 
@@ -589,7 +592,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     if not sharedlib_only:
         if get_model() == "e3sm" and not use_old:
             logs.extend(_build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
-                                           comp_interface, sharedpath, ninja, case))
+                                           comp_interface, sharedpath, use_gmake, case))
         else:
             os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
             logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
@@ -634,10 +637,10 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
         lock_file("env_build.xml", caseroot=case.get_value("CASEROOT"))
 
 ###############################################################################
-def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True, use_old=False, ninja=False):
+def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True, use_old=False, use_gmake=False):
 ###############################################################################
     functor = lambda: _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
-                                       save_build_provenance, use_old, ninja)
+                                       save_build_provenance, use_old, use_gmake)
     return run_and_log_case_status(functor, "case.build", caseroot=caseroot)
 
 ###############################################################################

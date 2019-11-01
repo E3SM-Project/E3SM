@@ -34,7 +34,7 @@ class SystemTestsCommon(object):
         self._skip_pnl = False
         self._cpllog = "med" if self._case.get_value("COMP_INTERFACE")=="nuopc" else "cpl"
         self._old_build = False
-        self._ninja = False
+        self._use_gmake = False
 
     def _init_environment(self, caseroot):
         """
@@ -68,7 +68,7 @@ class SystemTestsCommon(object):
 
             self._case.case_setup(reset=True, test_mode=True)
 
-    def build(self, sharedlib_only=False, model_only=False, old_build=False, ninja=False):
+    def build(self, sharedlib_only=False, model_only=False, old_build=False, use_gmake=False):
         """
         Do NOT override this method, this method is the framework that
         controls the build phase. build_phase is the extension point
@@ -76,7 +76,7 @@ class SystemTestsCommon(object):
         """
         success = True
         self._old_build = old_build
-        self._ninja = ninja
+        self._use_gmake = use_gmake
         for phase_name, phase_bool in [(SHAREDLIB_BUILD_PHASE, not model_only),
                                        (MODEL_BUILD_PHASE, not sharedlib_only)]:
             if phase_bool:
@@ -124,7 +124,7 @@ class SystemTestsCommon(object):
         model = self._case.get_value('MODEL')
         build.case_build(self._caseroot, case=self._case,
                          sharedlib_only=sharedlib_only, model_only=model_only,
-                         save_build_provenance=not model=='cesm', use_old=self._old_build, ninja=self._ninja)
+                         save_build_provenance=not model=='cesm', use_old=self._old_build, use_gmake=self._use_gmake)
 
     def clean_build(self, comps=None):
         if comps is None:
