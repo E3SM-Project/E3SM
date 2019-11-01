@@ -52,6 +52,8 @@ class ERI(SystemTestsCommon):
         stop_option = self._case.get_value("STOP_OPTION")
         run_startdate = self._case.get_value("RUN_STARTDATE")
         start_tod = self._case.get_value("START_TOD")
+        if start_tod == 0: 
+          start_tod="00000"
 
         stop_n1 = int(stop_n / 6)
         rest_n1 = stop_n1
@@ -123,7 +125,7 @@ class ERI(SystemTestsCommon):
         # Set startdate to start2, set ref date based on ref1 restart
         restdir_2 = run_cmd_no_fail(r'ls -1dt {}/rest/* | head -1 |  sed "s/^.*rest\///"'.format(dout_sr1))
         refsec_2 = restdir_2[-5:]
-        refdate_2 = restdir_2.strip("-"+refsec_2)
+        refdate_2 = restdir_2[:10]
 
         logger.info("ref2 hybrid: doing a {} {} startup hybrid run".format(stop_n2, stop_option))
         logger.info("  starting from {} and using ref1 {} and {} seconds".format(start_2, refdate_2, refsec_2))
@@ -167,7 +169,7 @@ class ERI(SystemTestsCommon):
 
         restdir_3 = run_cmd_no_fail(r'ls -1dt {}/rest/* | head -1 | sed "s/^.*rest\///"'.format(dout_sr2))
         refsec_3 = restdir_3[-5:]
-        refdate_3 = restdir_3.strip("-"+refsec_3)
+        refdate_3 = restdir_3[:10]
 
 
         logger.info("branch: doing a {} {} branch".format(stop_n3, stop_option))
