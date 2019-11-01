@@ -242,7 +242,7 @@
     <values match="last">
       <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)">1850</value>
       <value compset="20TR_CAM5%AV">1850</value>
-      <value compset="20TR_CAM5%CMIP6">1870</value>
+      <value compset="20TR_CAM5%CMIP6">1869</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
@@ -266,7 +266,7 @@
     <values match="last">
       <value compset="(AMIP_|HIST_|5505_|PIPD_|%TSCH)">1850</value>
       <value compset="20TR_CAM5%AV">1850</value>
-      <value compset="20TR_CAM5%CMIP6">1870</value>
+      <value compset="20TR_CAM5%CMIP6">1869</value>
     </values>
     <group>run_component_cam_sstice</group>
     <file>env_run.xml</file>
