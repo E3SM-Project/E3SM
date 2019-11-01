@@ -394,6 +394,7 @@
       <value compset="DATM.+MOM\d">TRUE</value>
       <value compset="DATM.+DOCN%IAF">TRUE</value>
       <value compset="DATM%CPLHIST.+POP\d">FALSE</value>
+      <value compset="DOCN%AQP11">TRUE</value>
       <value compset="DATM%CPLHIST.+MOM\d">FALSE</value>
     </values>
     <group>run_component_cpl</group>
