@@ -541,7 +541,7 @@ end subroutine clubb_init_cnst
     use constituents,           only: cnst_get_ind
     use phys_control,           only: phys_getopts
 
-    use parameters_tunable, only: params_list => clubb_params_list
+    use parameters_tunable, only: params_list
 
 #endif
 
@@ -709,7 +709,7 @@ end subroutine clubb_init_cnst
        write(iulog,*)'CLUBB tunable parameters: total ',nparams
        write(iulog,*)'--------------------------------------------------'
        do i = 1, nparams
-          write(iulog,*) clubb_params_list(i), " = ", clubb_params(i)
+          write(iulog,*) params_list(i), " = ", clubb_params(i)
        enddo
     endif
  
