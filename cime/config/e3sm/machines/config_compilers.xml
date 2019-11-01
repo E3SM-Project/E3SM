@@ -357,6 +357,7 @@ for mct, etc.
 
 <compiler MACH="mymac" COMPILER="gnu">
   <NETCDF_PATH>$ENV{NETCDF_PATH}</NETCDF_PATH> <!-- this is needed for cmake list of CLM, and cannot be passing from machine configuration (weired) -->
+  <PETSC_PATH>$ENV{PETSC_PATH}</PETSC_PATH> <!-- this is needed for cmake list of CLM_USE_PETSC, and cannot be passing from machine configuration (weired) -->
   <CFLAGS>
     <!-- for Mac OSX high sierra, clang-based gcc may have issue with '-mcmodel=medium' for libcsm_share.a, as following
          ld: in ../../gnu/mpich/nodebug/nothreads/mct/noesmf/c1a1l1i1o1r1g1w1e1/lib/libcsm_share.a(dSFMT.o), 
@@ -943,6 +944,7 @@ for mct, etc.
     <NETCDF_PATH>/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/netcdf-hdf5parallel/4.3.3.1/centos7.2_gnu5.3.0</NETCDF_PATH>
     <PNETCDF_PATH>/software/dev_tools/swtree/cs400_centos7.2_pe2016-08/pnetcdf/1.9.0/centos7.2_gnu5.3.0</PNETCDF_PATH>
     <LAPACK_LIBDIR>$ENV{MKLROOT}/mkl/lib/intel64</LAPACK_LIBDIR>
+    <PETSC_PATH>/software/user_tools/current/cades-ccsi/petsc-x/openmpi-1.10-gcc-5.3</PETSC_PATH> <!-- this is needed for cmake list of CLM_USE_PETSC, and cannot be passing from machine configuration (weired) -->
     <LDFLAGS>
         <append MODEL="driver"> -L$(NETCDF_PATH)/lib -Wl,-rpath=$(NETCDF_PATH)/lib -lnetcdff -lnetcdf </append>
         <append MODEL="driver"> -L$(HDF5_PATH)/lib -Wl,-rpath=$(HDF5_PATH)/lib -lhdf5hl_fortran -lhdf5_fortran -lhdf5_hl -lhdf5 </append>

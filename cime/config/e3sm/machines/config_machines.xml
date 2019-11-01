@@ -535,9 +535,13 @@
     <environment_variables>
       <!-- for CLM-PFLOTRAN coupling, the $PETSC_DIR and $CLM_PFLOTRAN_SOURCE_DIR must be user-defined specifically upon machines, e.g. in .bashrc -->
       <!-- pflotran codes are pre-built as libpflotran.a in $CLM_PFLOTRAN_SOURCE_DIR -->
+      <!-- AND, setting 'CLM_USE_PETSC' value to 'TRUE' in 'env_build.xml' to append PETSc includes and Libraries,
+                otherwise,explicitly appending  ' -I$ENV{PETSC_DIR}/include' in 'PFLOTRAN_INC' and
+                 ' -L$ENV{PETSC_DIR}/lib -lpetsc -lparmetis -lmetis' in 'PFLOTTRAN_LIB' -->
       <env name="PETSC_PATH">$ENV{PETSC_DIR}</env>
-      <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} -I$ENV{PETSC_DIR}/include</env>
-      <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_DIR}/lib -lpetsc -lparmetis -lmetis</env>
+      <env name="PETSC_ARCH"></env> <!-- this is needed for cmake list of CLM_USE_PETSC, default by 'null' if installed PETSc rather than Built only -->
+      <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR}</env>
+      <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran</env>
     </environment_variables>
   </machine>
 
@@ -2118,9 +2122,17 @@
         <!-- for CLM-PFLOTRAN coupling, the $PETSC_DIR and $CLM_PFLOTRAN_SOURCE_DIR must be user-defined specifically upon machines, e.g. in .bashrc -->
         <!-- (NOTE: on CADES, PETSc built with mkl libraries, $MKLROOT_INC with '-I' and $MKLROOT_LIB with '-L') -->
         <!-- pflotran codes are pre-built as libpflotran.a in $CLM_PFLOTRAN_SOURCE_DIR -->
+      <!-- for CLM-PFLOTRAN coupling, the $PETSC_DIR and $CLM_PFLOTRAN_SOURCE_DIR must be user-defined specifically upon machines, e.g. in .bashrc -->
+      <!-- pflotran codes are pre-built as libpflotran.a in $CLM_PFLOTRAN_SOURCE_DIR -->
+      <!-- AND, setting 'CLM_USE_PETSC' value to 'TRUE' in 'env_build.xml' to append PETSc includes and Libraries,
+                otherwise,explicitly appending  ' -I$ENV{PETSC_DIR}/include $ENV{MKLROOT_INC}' in 'PFLOTRAN_INC' and
+                 ' -L$ENV{PETSC_DIR}/lib -lpetsc -lparmetis -lmetis $ENV{MKLROOT_LIB} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential' in 'PFLOTTRAN_LIB' -->
         <env name="PETSC_PATH">$ENV{PETSC_DIR}</env>
-        <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} -I$ENV{PETSC_DIR}/include $ENV{MKLROOT_INC}</env>
-        <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_DIR}/lib -lpetsc -lmetis -lparmetis $ENV{MKLROOT_LIB} -lmkl_intel_lp64 -lmkl_core -lmkl_sequential</env>
+        <env name="PETSC_ARCH"></env> <!-- this is needed for cmake list of CLM_USE_PETSC, default by 'null' if installed PETSc rather than Built only -->
+        <env name="PFLOTRAN_INC"> -I$ENV{CLM_PFLOTRAN_SOURCE_DIR} </env>
+        <!-- env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran </env>
+             note that still needs PETSc libs explicitly on CADES probably due to older GCC -->
+        <env name="PFLOTRAN_LIB"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran -L$ENV{PETSC_DIR}/lib -lpetsc -lparmetis -lmetis </env>
     </environment_variables>
   </machine>
 
