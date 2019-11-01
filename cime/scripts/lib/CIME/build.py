@@ -501,14 +501,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     use_albany = stringify_bool(mali_use_albany)
     case.set_value("USE_ALBANY", use_albany)
 
-    # Set the overall USE_BISICLES variable to TRUE if any of the
-    # *_USE_BISICLES variables are TRUE.
-    # For now, there is just the one USE_BISICLES variable, but in
-    # the future there may be others -- so USE_BISICLES will be true if
-    # ANY of those are true.
-
-    use_bisicles = stringify_bool(use_bisicles)
-    case.set_value("USE_BISICLES", use_bisicles)
 
 
     # Load modules

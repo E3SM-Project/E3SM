@@ -15,11 +15,6 @@
   </compset>
 
   <compset>
-    <alias>BISICLESSIA</alias>
-    <lname>RCP8_SATM_SLND_SICE_SOCN_SROF_BISICLES%SIA_SWAV</lname>
-  </compset>
-
-  <compset>
     <alias>BISICLES</alias>
     <lname>RCP8_SATM_SLND_SICE_SOCN_SROF_BISICLES_SWAV</lname>
   </compset>

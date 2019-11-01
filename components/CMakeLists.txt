@@ -61,7 +61,7 @@ endif()
 # currently, C++ code is included if and only if we're linking to the
 # trilinos library or the Albany library.
 set(USE_CXX FALSE)
-if (USE_TRILINOS OR USE_ALBANY OR USE_KOKKOS OR USE_BISICLES)
+if (USE_TRILINOS OR USE_ALBANY OR USE_KOKKOS)
   set(USE_CXX TRUE)
 endif()
 

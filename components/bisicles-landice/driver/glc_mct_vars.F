@@ -8,9 +8,9 @@ module glc_mct_vars
   save
   public
 
-  integer :: MALI_MCT_GLCID
-  type(mct_gsMap), pointer :: MALI_MCT_gsMap_g
-  type(mct_gGrid), pointer :: MALI_MCT_dom_g
+!  integer :: MALI_MCT_GLCID
+!  type(mct_gsMap), pointer :: MALI_MCT_gsMap_g
+!  type(mct_gGrid), pointer :: MALI_MCT_dom_g
  
 end module glc_mct_vars
 

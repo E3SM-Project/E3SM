@@ -269,8 +269,11 @@
       <value compset="_DLND.*_CISM\d">year</value>
       <value compset="_DLND.*_MALI">year</value>
       <value compset="_SLND.*SOCN.*_MALI">day</value>
+      <value compset="_DLND.*BISICLES">year</value>
+      <value compset="_SLND.*SOCN.*BISICLES">day</value>
       <value compset="_MPASO"       >day</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">day</value>
+      <value compset="_DATM.*_SLND.*MPASO.*BISICLES">day</value>
       <value compset="_CAM.*_CLM.*MPASO">day</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">day</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">day</value>
@@ -303,6 +306,9 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DLND.*BISICLES">1</value>
+      <value compset="_SLND.*SOCN.*BISICLES">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*BISICLES">24</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU480">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240">12</value>
       <value compset="_DATM.*_SLND.*MPAS" grid="oi%oQU240wLI">12</value>
@@ -358,6 +364,9 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
+      <value compset="_DLND.*BISICLES">1</value>
+      <value compset="_SLND.*SOCN.*BISICLES">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*BISICLES">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO">48</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">12</value>
@@ -378,6 +387,9 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">$ATM_NCPL</value>
+      <value compset="_DLND.*BISICLES">1</value>
+      <value compset="_SLND.*SOCN.*BISICLES">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*BISICLES">$ATM_NCPL</value>
       <value compset="_CAM.*_CLM.*MPASO">$ATM_NCPL</value>
     </values>
     <group>run_coupling</group>
@@ -404,6 +416,9 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DLND.*BISICLES">1</value>
+      <value compset="_SLND.*SOCN.*BISICLES">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*BISICLES">24</value>
       <value compset="_MPASO" grid="oi%oQU480">6</value>
       <value compset="_MPASO" grid="oi%oQU240">12</value>
       <value compset="_MPASO" grid="oi%oQU240wLI">12</value>
@@ -434,6 +449,9 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">1</value>
+      <value compset="_DLND.*BISICLES">1</value>
+      <value compset="_SLND.*SOCN.*BISICLES">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*BISICLES">1</value>
       <value compset="_CAM.*_CLM.*MPASO">1</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">1</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne120np4">1</value>
@@ -479,6 +497,9 @@
       <value compset="_DLND.*_MALI">1</value>
       <value compset="_SLND.*SOCN.*_MALI">1</value>
       <value compset="_DATM.*_SLND.*MPASO.*_MALI">24</value>
+      <value compset="_DLND.*BISICLES">1</value>
+      <value compset="_SLND.*SOCN.*BISICLES">1</value>
+      <value compset="_DATM.*_SLND.*MPASO.*BISICLES">24</value>
       <value compset="_CAM.*_CLM.*MPASO">8</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne4np4">6</value>
       <value compset="_CAM.*_CLM.*MPASO" grid="a%ne11np4">4</value>
@@ -713,6 +734,7 @@
     <values match="last">
       <value compset="_CLM45.+CISM\d">TRUE</value>
       <value compset="_CLM45.*_MALI">TRUE</value>
+      <value compset="_CLM45.*BISICLES">TRUE</value>
       <value compset="_CLM50.+CISM\d">TRUE</value>
       <!-- Turn on two-way coupling for TG compsets - even though there are no
 	   feedbacks for a TG compset, this will give us additional diagnostics -->

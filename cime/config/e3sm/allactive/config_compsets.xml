@@ -19,7 +19,7 @@
     ICE  = [MPASSI, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, SOCN]
     ROF  = [MOSART, SROF]
-    GLC  = [MALI, BISICLES, SGLC]
+    GLC  = [MALI, MALIBISICLES, BISICLES, SGLC]
     WAV  = [DWAV, XWAV, SWAV]
     ESP  = [SESP]
     BGC  = optional BGC scenario
@@ -105,6 +105,23 @@
   <alias>A_CRYO</alias>
   <lname>2000_CAM5%AV1C-L_CLM45%SPBC_MPASSI_MPASO_MOSART_MALI_SWAV</lname>
 </compset>
+
+<compset>
+  <alias>A_CRYO_BISICLES</alias>
+  <lname>2000_CAM5%AV1C-L_CLM45%SPBC_MPASSI_MPASO_MOSART_BISICLES_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>MPAS_LISIO_TEST_BISICLES</alias>
+  <lname>2000_DATM%NYF_SLND_MPASSI_MPASO_DROF%NYF_BISICLES_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>MPAS_LISIO_TEST_MALIBISICLES</alias>
+  <lname>2000_DATM%NYF_SLND_MPASSI_MPASO_DROF%NYF_MALIBISICLES_SWAV</lname>
+</compset>
+
+
 
 <!-- E3SM v1 science compsets (hires) -->
 
@@ -270,12 +287,7 @@
 <!-- OCN + CICE + GLC Only Compsets -->
 <compset>
   <alias>MPAS_LISIO_TEST</alias>
-  <lname>2000_DATM%NYF_SLND_MPASSI_MPASO_DROF%NYF_MALI%SIA_SWAV</lname>
-</compset>
-
-<compset>
-  <alias>MPAS_LISIO_BISICLES_TEST</alias>
-  <lname>2000_DATM%NYF_SLND_MPASSI_MPASO_DROF%NYF_BISICLES%SIA_SWAV</lname>
+  <lname>2000_DATM%NYF_SLND_MPASSI_MPASO_DROF%NYF_MALI%FO_SWAV</lname>
 </compset>
 
 <!-- Slab ocean cases -->

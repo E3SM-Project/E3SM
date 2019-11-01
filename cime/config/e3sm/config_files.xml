@@ -113,6 +113,7 @@
       <value component="mpaso"    >$SRCROOT/components/mpas-ocean/cime_config/config_compsets.xml</value>
       <value component="mali"     >$SRCROOT/components/mpas-albany-landice/cime_config/config_compsets.xml</value>
       <value component="bisicles" >$SRCROOT/components/bisicles-landice/cime_config/config_compsets.xml</value>      
+      <value component="malibisicles" >$SRCROOT/components/bisicles-landice/cime_config/config_compsets.xml</value>      
       <value component="mpassi"   >$SRCROOT/components/mpas-seaice/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
@@ -133,6 +134,7 @@
       <value component="mpaso"    >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
       <value component="mali"     >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
       <value component="bisicles" >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>      
+      <value component="malibisicles" >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>      
       <value component="mpassi"   >$CIMEROOT/config/$MODEL/allactive/config_pesall.xml</value>
     </values>
     <group>case_last</group>
@@ -366,6 +368,7 @@
     <values>
       <value component="mali">$SRCROOT/components/mpas-albany-landice/cime_config/config_component.xml</value>
       <value component="bisicles">$SRCROOT/components/bisicles-landice/cime_config/config_component.xml</value>      
+      <value component="malibisicles">$SRCROOT/components/bisicles-landice/cime_config/config_component.xml</value>      
       <value component="dglc">$CIMEROOT/src/components/data_comps/dglc/cime_config/config_component.xml</value>
       <value component="sglc">$CIMEROOT/src/components/stub_comps/sglc/cime_config/config_component.xml</value>
       <value component="xglc">$CIMEROOT/src/components/xcpl_comps/xglc/cime_config/config_component.xml</value>

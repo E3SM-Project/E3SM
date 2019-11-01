@@ -3,11 +3,11 @@
 #
 # build-namelist
 #
-# This script builds the namelists for the MALI configuration of E3SM.
+# This script builds the namelists for the BISICLES configuration of E3SM.
 #
 # build-namelist uses a config_cache.xml file that current contains the landice grid information.
 # build-namelist reads this file to obtain information it needs to provide
-# default values that are consistent with the MALI XML file.  For example, the grid resolution
+# default values that are consistent with the BISICLES XML file.  For example, the grid resolution
 # is obtained from the cache file and used to determine appropriate defaults for namelist input
 # that is resolution dependent.
 #
@@ -47,7 +47,7 @@ OPTIONS
      -glc_grid             GLC_GRID variable
      -decomp_prefix        decomp_prefix variable
      -date_stamp           date_stamp variable
-     -cfg_grid             Directory containing MALI configuration scripts.
+     -cfg_grid             Directory containing BISICLES configuration scripts.
                            If not defined, location is set as \$ProgDir or \$cwd
                            (Needed to run build-namelist from SourceMods dir)
      -inst_string          inst_string variable
@@ -63,7 +63,7 @@ EOF
 }
 
 #-----------------------------------------------------------------------------------------------
-# Set the directory that contains the MALI configuration scripts.  If the command was
+# Set the directory that contains the BISICLES configuration scripts.  If the command was
 # issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
 # command was issued from the current working directory.
 
@@ -137,7 +137,7 @@ if ($opts{'verbose'}) { $print = 2; }
 if ($opts{'preview'}) { $preview = 1; }
 my $eol = "\n";
 
-if ($print>=2) { print "Setting MALI configuration script directory to $cfgdir$eol"; }
+if ($print>=2) { print "Setting BISICLES configuration script directory to $cfgdir$eol"; }
 
 my $CASEROOT      = $opts{'caseroot'};
 my $CASEBUILD     = $opts{'casebuild'};
@@ -162,7 +162,7 @@ validate_options("commandline", \%opts);
 
 
 # build config_cache.xml file (needed below)
-my $config_cache = "${CASEBUILD}/maliconf/config_cache.xml";
+my $config_cache = "${CASEBUILD}/BISICLESconf/config_cache.xml";
 my  $fh = new IO::File;
 $fh->open(">$config_cache") or die "** can't open file: $config_cache\n";
 print $fh  <<"EOF";
@@ -222,16 +222,16 @@ EOF
 
 # The namelist definition file contains entries for all namelist variables that
 # can be output by build-namelist.  The version of the file that is associate with a
-# fixed MALI tag is $cfgdir/namelist_files/namelist_definition.xml.  To aid developers
-# who make use of the SourceMods/src.mali directory - we allow the definition file 
+# fixed BISICLES tag is $cfgdir/namelist_files/namelist_definition.xml.  To aid developers
+# who make use of the SourceMods/src.BISICLES directory - we allow the definition file 
 # to come from that directory
 my $nl_definition_file;
-if (-f "${CASEROOT}/SourceMods/src.mali/namelist_definition_mali.xml") {
-    $nl_definition_file = "${CASEROOT}/SourceMods/src.mali/namelist_definition_mali.xml";
+if (-f "${CASEROOT}/SourceMods/src.BISICLES/namelist_definition_BISICLES.xml") {
+    $nl_definition_file = "${CASEROOT}/SourceMods/src.BISICLES/namelist_definition_BISICLES.xml";
 }
 if (! defined $nl_definition_file) {
     # default location of namelist definition file
-    $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_mali.xml";
+    $nl_definition_file = "$cfgdir/namelist_files/namelist_definition_BISICLES.xml";
     (-f "$nl_definition_file")  or  die <<"EOF";
     ** $ProgName - ERROR: Cannot find namelist definition file \"$nl_definition_file\" **
 EOF
@@ -240,11 +240,11 @@ if ($print>=2) { print "Using namelist definition file $nl_definition_file$eol";
 
 # The namelist defaults file contains default values for all required namelist variables.
 my $nl_defaults_file;
-if (-f "${CASEROOT}/SourceMods/src.mali/namelist_defaults_mali.xml") {
-    $nl_defaults_file = "${CASEROOT}/SourceMods/src.mali/namelist_defaults_mali.xml";
+if (-f "${CASEROOT}/SourceMods/src.BISICLES/namelist_defaults_BISICLES.xml") {
+    $nl_defaults_file = "${CASEROOT}/SourceMods/src.BISICLES/namelist_defaults_BISICLES.xml";
 }
 if (! defined $nl_defaults_file) {
-    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_mali.xml";
+    $nl_defaults_file = "$cfgdir/namelist_files/namelist_defaults_BISICLES.xml";
     (-f "$nl_defaults_file")  or  die <<"EOF";
     ** $ProgName - Cannot find namelist defaults file \"$nl_defaults_file\" **
 EOF
@@ -261,8 +261,8 @@ require Build::Namelist;
 require Config::SetupTools;
 
 #-----------------------------------------------------------------------------------------------
-# Create a configuration object from the MALI config_cache.xml file-  created by 
-# mali.cpl7.template in $CASEBUILD/maliconf
+# Create a configuration object from the BISICLES config_cache.xml file-  created by 
+# BISICLES.cpl7.template in $CASEBUILD/BISICLESconf
 my $cfg = Build::Config->new('config_cache.xml');
 
 # Create a namelist definition object.  This object provides a method for verifying that the
@@ -272,7 +272,7 @@ my $definition = Build::NamelistDefinition->new($nl_definition_file);
 
 # Create a namelist defaults object.  This object provides default values for variables
 # contained in the input defaults file.  The configuration object provides attribute
-# values that are relevent for the MALI library for which the namelist is being produced.
+# values that are relevent for the BISICLES library for which the namelist is being produced.
 my $defaults = Build::NamelistDefaults->new($nl_defaults_file, $cfg);
 
 # Create an empty namelist object.  Add values to it in order of precedence.
@@ -317,7 +317,7 @@ if (defined $opts{'infile'}) {
         my $val = $nl_infile->get_variable_value($group, $var);
         my @broken = split(/&/,$var);
         my $check_grp = 0; # If 1, make sure group found in definitions file
-                           # matches that specified in user_nl_mali
+                           # matches that specified in user_nl_BISICLES
 
         # if variable has ampersand, truncate it unless it is type derived
         if ($broken[1]) {
@@ -336,18 +336,18 @@ if (defined $opts{'infile'}) {
           $var_local = $var;
         }
 
-        # Make sure variable is defined in namelist_definition_mali.xml
+        # Make sure variable is defined in namelist_definition_BISICLES.xml
         $nl_check_var->set_variable_value($group, $var_local,$val);
         eval { $nl_check_valid = $definition->validate($nl_check_var); };
         (not $@) or die <<"EOF";
-** ERROR: either $var_local is not a valid MALI namelist variable or $var_local = $val is not a valid value; please fix user_nl_mali. Note that $var_local may appear in multiple namelists, in which case you need to specify the correct namelist in user_nl_mali using the format $var_local\&namelist_nml = $val, where \&namelist_nml is the mali_in namelist containing $var_local.**
+** ERROR: either $var_local is not a valid BISICLES namelist variable or $var_local = $val is not a valid value; please fix user_nl_BISICLES. Note that $var_local may appear in multiple namelists, in which case you need to specify the correct namelist in user_nl_BISICLES using the format $var_local\&namelist_nml = $val, where \&namelist_nml is the BISICLES_in namelist containing $var_local.**
 EOF
 
-        # If group was specified in user_nl_mali, make sure it matches
+        # If group was specified in user_nl_BISICLES, make sure it matches
         # the group in the definitions file.
         my @group_valid = $nl_check_valid->get_group_names();
         ((not $check_grp) or ($broken[1] eq $group_valid[0])) or die <<"EOF";
-** ERROR: $broken[0] is in $group_valid[0], not $broken[1]! Please fix this in user_nl_mali. **
+** ERROR: $broken[0] is in $group_valid[0], not $broken[1]! Please fix this in user_nl_BISICLES. **
 EOF
 
         # Add variable to validated namelist
@@ -358,7 +358,7 @@ EOF
     # If preview is desired and something has been changed in $nl_infile_valid,
     # output everything in $nl_infile_valid
     if (($preview == 1) && ($nl_infile_valid->get_group_names)) {
-      print " - The following values have been set in user_nl_mali:\n";
+      print " - The following values have been set in user_nl_BISICLES:\n";
       print_nl_to_screen($nl_infile_valid);
     }
     # Merge input values into namelist.  Previously specified values have higher
@@ -387,18 +387,18 @@ my $RUN_STARTDATE          = "$xmlvars{'RUN_STARTDATE'}";
 my $START_TOD              = "$xmlvars{'START_TOD'}";
 my $RUN_REFDATE            = "$xmlvars{'RUN_REFDATE'}";
 my $CONTINUE_RUN           = "$xmlvars{'CONTINUE_RUN'}";
-my $MALI_USE_ALBANY        = "$xmlvars{'MALI_USE_ALBANY'}";
+my $USE_BISICLES           = "$xmlvars{'USE_BISICLES'}";
 
-my $output_r = "./${CASE}.mali.r";
-my $output_h = "./${CASE}.mali.h";
-my $output_d = "./${CASE}.mali.d";
+my $output_r = "./${CASE}.BISICLES.r";
+my $output_h = "./${CASE}.BISICLES.h";
+my $output_d = "./${CASE}.BISICLES.d";
 if ($inst_string) {
-    $output_r = "./${CASE}.mali${inst_string}.r";
-    $output_h = "./${CASE}.mali${inst_string}.h";
-    $output_d = "./${CASE}.mali${inst_string}.d";
+    $output_r = "./${CASE}.BISICLES${inst_string}.r";
+    $output_h = "./${CASE}.BISICLES${inst_string}.h";
+    $output_d = "./${CASE}.BISICLES${inst_string}.d";
 } 
 
-# Environment variables set in mali.buildnml.csh that are not xml variables
+# Environment variables set in BISICLES.buildnml.csh that are not xml variables
 my $RESTART_INPUT_TS_FMT = "$ENV{'RESTART_INPUT_TS_FMT'}"; 
 my $LID = $ENV{'LID'};
 
@@ -406,7 +406,7 @@ my $ntasks = $NTASKS_GLC / $NINST_GLC;
 
 if ($CONTINUE_RUN eq 'TRUE') {$RUN_TYPE = "continue";}
 
-print "MALI build-namelist: glc_grid is $GLC_GRID \n";
+print "BISICLES build-namelist: glc_grid is $GLC_GRID \n";
 
 (-d $DIN_LOC_ROOT)  or mkdir $DIN_LOC_ROOT;
 if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
@@ -415,205 +415,193 @@ if ($print>=2) { print "CESM inputdata root directory: $DIN_LOC_ROOT$eol"; }
 # Determine namelist
 #-----------------------------------------------------------------------------------------------
 
-if ($MALI_USE_ALBANY eq 'TRUE') {
-    print "Setting up MALI namelist to use Albany.\n"; }
+if ($USE_BISICLES eq 'TRUE') {
+    print "Setting up BISICLES namelist.\n"; }
 
 ###################################
 # Namelist group: velocity_solver #
 ###################################
 
-add_default($nl, 'config_velocity_solver', 'masi_use_albany'=>"$MALI_USE_ALBANY");
-add_default($nl, 'config_sia_tangent_slope_calculation');
-add_default($nl, 'config_flowParamA_calculation');
-add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
-add_default($nl, 'config_simple_velocity_type');
-add_default($nl, 'config_use_glp');
-add_default($nl, 'config_beta_use_effective_pressure');
-
-#############################
-# Namelist group: advection #
-#############################
-
-add_default($nl, 'config_thickness_advection');
-add_default($nl, 'config_tracer_advection');
-
-###########################
-# Namelist group: calving #
-###########################
-
-add_default($nl, 'config_calving');
-add_default($nl, 'config_calving_topography');
-add_default($nl, 'config_calving_thickness');
-add_default($nl, 'config_calving_eigencalving_parameter_source');
-add_default($nl, 'config_calving_eigencalving_parameter_scalar_value');
-add_default($nl, 'config_data_calving');
-add_default($nl, 'config_calving_timescale');
-add_default($nl, 'config_restore_calving_front');
-
-##################################
-# Namelist group: thermal_solver #
-##################################
-
-add_default($nl, 'config_thermal_solver');
-add_default($nl, 'config_thermal_calculate_bmb');
-add_default($nl, 'config_temperature_init');
-add_default($nl, 'config_thermal_thickness');
-add_default($nl, 'config_surface_air_temperature_source');
-add_default($nl, 'config_surface_air_temperature_value');
-add_default($nl, 'config_surface_air_temperature_lapse_rate');
-add_default($nl, 'config_basal_heat_flux_source');
-add_default($nl, 'config_basal_heat_flux_value');
-add_default($nl, 'config_basal_mass_bal_float');
-add_default($nl, 'config_basal_mass_bal_seroussi_amplitude');
-add_default($nl, 'config_basal_mass_bal_seroussi_period');
-add_default($nl, 'config_basal_mass_bal_seroussi_phase');
-add_default($nl, 'config_bmlt_float_flux');
-add_default($nl, 'config_bmlt_float_xlimit');
-
-#######################################
-# Namelist group: physical_parameters #
-#######################################
-
-add_default($nl, 'config_ice_density');
-add_default($nl, 'config_ocean_density');
-add_default($nl, 'config_sea_level');
-add_default($nl, 'config_default_flowParamA');
-add_default($nl, 'config_enhancementFactor');
-add_default($nl, 'config_flowLawExponent');
-add_default($nl, 'config_dynamic_thickness');
-
-####################################
-# Namelist group: time_integration #
-####################################
-
-add_default($nl, 'config_dt');
-add_default($nl, 'config_time_integration');
-add_default($nl, 'config_adaptive_timestep');
-add_default($nl, 'config_min_adaptive_timestep');
-add_default($nl, 'config_max_adaptive_timestep');
-add_default($nl, 'config_adaptive_timestep_CFL_fraction');
-add_default($nl, 'config_adaptive_timestep_include_DCFL');
-add_default($nl, 'config_adaptive_timestep_force_interval');
-
+add_default($nl, 'config_velocity_solver', 'use_BISICLES'=>"$USE_BISICLES");
+#add_default($nl, 'config_sia_tangent_slope_calculation');
+#add_default($nl, 'config_flowParamA_calculation');
+#add_default($nl, 'config_do_velocity_reconstruction_for_external_dycore');
+#add_default($nl, 'config_simple_velocity_type');
+#add_default($nl, 'config_use_glp');
+#add_default($nl, 'config_beta_use_effective_pressure');
+#
+##############################
+## Namelist group: advection #
+##############################
+#
+#add_default($nl, 'config_thickness_advection');
+#add_default($nl, 'config_tracer_advection');
+#
+############################
+## Namelist group: calving #
+############################
+#
+#add_default($nl, 'config_calving');
+#add_default($nl, 'config_calving_topography');
+#add_default($nl, 'config_calving_thickness');
+#add_default($nl, 'config_calving_eigencalving_parameter_source');
+#add_default($nl, 'config_calving_eigencalving_parameter_scalar_value');
+#add_default($nl, 'config_data_calving');
+#add_default($nl, 'config_calving_timescale');
+#add_default($nl, 'config_restore_calving_front');
+#
 ###################################
-# Namelist group: time_management #
+## Namelist group: thermal_solver #
 ###################################
-
-if ($CONTINUE_RUN eq 'TRUE') {
-	add_default($nl, 'config_do_restart', 'val'=>".true.");
-} else {
-	add_default($nl, 'config_do_restart', 'val'=>".false.");
-}
-add_default($nl, 'config_restart_timestamp_name');
-add_default($nl, 'config_calendar_type', 'calendar'=>"$CALENDAR");
-if ($CONTINUE_RUN eq 'TRUE') {
-	add_default($nl, 'config_start_time', 'val'=>"'file'");
-} else {
-	add_default($nl, 'config_start_time', 'val'=>"'${RUN_STARTDATE}_${START_TOD}'");
-}
-
-######################
-# Namelist group: io #
-######################
-
-add_default($nl, 'config_stats_interval');
-add_default($nl, 'config_write_stats_on_startup');
-add_default($nl, 'config_stats_cell_ID');
-add_default($nl, 'config_write_output_on_startup');
-add_default($nl, 'config_pio_num_iotasks');
-add_default($nl, 'config_pio_stride');
-add_default($nl, 'config_year_digits');
-add_default($nl, 'config_output_external_velocity_solver_data');
-add_default($nl, 'config_write_albany_ascii_mesh');
-
-#################################
-# Namelist group: decomposition #
-#################################
-
-add_default($nl, 'config_num_halos');
-add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpasli/${GLC_GRID}/${decomp_prefix}${date_stamp}.part.'");
-add_default($nl, 'config_number_of_blocks');
-add_default($nl, 'config_explicit_proc_decomp');
-add_default($nl, 'config_proc_decomp_file_prefix');
-
-#########################
-# Namelist group: debug #
-#########################
-
-add_default($nl, 'config_print_thickness_advection_info');
-add_default($nl, 'config_print_calving_info');
-add_default($nl, 'config_print_thermal_info');
-add_default($nl, 'config_always_compute_fem_grid');
-add_default($nl, 'config_print_velocity_cleanup_details');
-
+#
+#add_default($nl, 'config_thermal_solver');
+#add_default($nl, 'config_thermal_calculate_bmb');
+#add_default($nl, 'config_temperature_init');
+#add_default($nl, 'config_thermal_thickness');
+#add_default($nl, 'config_surface_air_temperature_source');
+#add_default($nl, 'config_surface_air_temperature_value');
+#add_default($nl, 'config_surface_air_temperature_lapse_rate');
+#add_default($nl, 'config_basal_heat_flux_source');
+#add_default($nl, 'config_basal_heat_flux_value');
+#add_default($nl, 'config_basal_mass_bal_float');
+#add_default($nl, 'config_basal_mass_bal_seroussi_amplitude');
+#add_default($nl, 'config_basal_mass_bal_seroussi_period');
+#add_default($nl, 'config_basal_mass_bal_seroussi_phase');
+#add_default($nl, 'config_bmlt_float_flux');
+#add_default($nl, 'config_bmlt_float_xlimit');
+#
+########################################
+## Namelist group: physical_parameters #
+########################################
+#
+#add_default($nl, 'config_ice_density');
+#add_default($nl, 'config_ocean_density');
+#add_default($nl, 'config_sea_level');
+#add_default($nl, 'config_default_flowParamA');
+#add_default($nl, 'config_enhancementFactor');
+#add_default($nl, 'config_flowLawExponent');
+#add_default($nl, 'config_dynamic_thickness');
+#
+#####################################
+## Namelist group: time_integration #
+#####################################
+#
+#add_default($nl, 'config_dt');
+#add_default($nl, 'config_time_integration');
+#add_default($nl, 'config_adaptive_timestep');
+#add_default($nl, 'config_min_adaptive_timestep');
+#add_default($nl, 'config_max_adaptive_timestep');
+#add_default($nl, 'config_adaptive_timestep_CFL_fraction');
+#add_default($nl, 'config_adaptive_timestep_include_DCFL');
+#add_default($nl, 'config_adaptive_timestep_force_interval');
+#
 ####################################
-# Namelist group: subglacial_hydro #
+## Namelist group: time_management #
 ####################################
-
-add_default($nl, 'config_SGH');
-add_default($nl, 'config_SGH_adaptive_timestep_fraction');
-add_default($nl, 'config_SGH_max_adaptive_timestep');
-add_default($nl, 'config_SGH_tangent_slope_calculation');
-add_default($nl, 'config_SGH_pressure_calc');
-add_default($nl, 'config_SGH_alpha');
-add_default($nl, 'config_SGH_beta');
-add_default($nl, 'config_SGH_conduc_coeff');
-add_default($nl, 'config_SGH_till_drainage');
-add_default($nl, 'config_SGH_advection');
-add_default($nl, 'config_SGH_bed_roughness');
-add_default($nl, 'config_SGH_bed_roughness_max');
-add_default($nl, 'config_SGH_creep_coefficient');
-add_default($nl, 'config_SGH_englacial_porosity');
-add_default($nl, 'config_SGH_till_max');
-add_default($nl, 'config_SGH_chnl_active');
-add_default($nl, 'config_SGH_chnl_alpha');
-add_default($nl, 'config_SGH_chnl_beta');
-add_default($nl, 'config_SGH_chnl_conduc_coeff');
-add_default($nl, 'config_SGH_chnl_creep_coefficient');
-add_default($nl, 'config_SGH_incipient_channel_width');
-add_default($nl, 'config_SGH_include_pressure_melt');
-add_default($nl, 'config_SGH_shmip_forcing');
-add_default($nl, 'config_SGH_basal_melt');
-
+#
+#if ($CONTINUE_RUN eq 'TRUE') {
+#	add_default($nl, 'config_do_restart', 'val'=>".true.");
+#} else {
+#	add_default($nl, 'config_do_restart', 'val'=>".false.");
+#}
+#add_default($nl, 'config_restart_timestamp_name');
+#add_default($nl, 'config_calendar_type', 'calendar'=>"$CALENDAR");
+#if ($CONTINUE_RUN eq 'TRUE') {
+#	add_default($nl, 'config_start_time', 'val'=>"'file'");
+#} else {
+#	add_default($nl, 'config_start_time', 'val'=>"'${RUN_STARTDATE}_${START_TOD}'");
+#}
+#
+#######################
+## Namelist group: io #
+#######################
+#
+#add_default($nl, 'config_stats_interval');
+#add_default($nl, 'config_write_stats_on_startup');
+#add_default($nl, 'config_stats_cell_ID');
+#add_default($nl, 'config_write_output_on_startup');
+#add_default($nl, 'config_pio_num_iotasks');
+#add_default($nl, 'config_pio_stride');
+#add_default($nl, 'config_year_digits');
+#add_default($nl, 'config_output_external_velocity_solver_data');
+#add_default($nl, 'config_write_albany_ascii_mesh');
+#
 ##################################
-# Namelist group: AM_globalStats #
+## Namelist group: decomposition #
 ##################################
-
-add_default($nl, 'config_AM_globalStats_enable');
-add_default($nl, 'config_AM_globalStats_compute_interval');
-add_default($nl, 'config_AM_globalStats_stream_name');
-add_default($nl, 'config_AM_globalStats_compute_on_startup');
-add_default($nl, 'config_AM_globalStats_write_on_startup');
-
-####################################
-# Namelist group: AM_regionalStats #
-####################################
-
-add_default($nl, 'config_AM_regionalStats_enable');
-add_default($nl, 'config_AM_regionalStats_compute_interval');
-add_default($nl, 'config_AM_regionalStats_stream_name');
-add_default($nl, 'config_AM_regionalStats_compute_on_startup');
-add_default($nl, 'config_AM_regionalStats_write_on_startup');
+#
+#add_default($nl, 'config_num_halos');
+#add_default($nl, 'config_block_decomp_file_prefix', 'val'=>"'${DIN_LOC_ROOT}/glc/mpasli/${GLC_GRID}/${decomp_prefix}${date_stamp}.part.'");
+#add_default($nl, 'config_number_of_blocks');
+#add_default($nl, 'config_explicit_proc_decomp');
+#add_default($nl, 'config_proc_decomp_file_prefix');
+#
+##########################
+## Namelist group: debug #
+##########################
+#
+#add_default($nl, 'config_print_thickness_advection_info');
+#add_default($nl, 'config_print_calving_info');
+#add_default($nl, 'config_print_thermal_info');
+#add_default($nl, 'config_always_compute_fem_grid');
+#add_default($nl, 'config_print_velocity_cleanup_details');
+#
+#####################################
+## Namelist group: subglacial_hydro #
+#####################################
+#
+#add_default($nl, 'config_SGH');
+#add_default($nl, 'config_SGH_adaptive_timestep_fraction');
+#add_default($nl, 'config_SGH_max_adaptive_timestep');
+#add_default($nl, 'config_SGH_tangent_slope_calculation');
+#add_default($nl, 'config_SGH_pressure_calc');
+#add_default($nl, 'config_SGH_alpha');
+#add_default($nl, 'config_SGH_beta');
+#add_default($nl, 'config_SGH_conduc_coeff');
+#add_default($nl, 'config_SGH_till_drainage');
+#add_default($nl, 'config_SGH_advection');
+#add_default($nl, 'config_SGH_bed_roughness');
+#add_default($nl, 'config_SGH_bed_roughness_max');
+#add_default($nl, 'config_SGH_creep_coefficient');
+#add_default($nl, 'config_SGH_englacial_porosity');
+#add_default($nl, 'config_SGH_till_max');
+#add_default($nl, 'config_SGH_chnl_active');
+#add_default($nl, 'config_SGH_chnl_alpha');
+#add_default($nl, 'config_SGH_chnl_beta');
+#add_default($nl, 'config_SGH_chnl_conduc_coeff');
+#add_default($nl, 'config_SGH_chnl_creep_coefficient');
+#add_default($nl, 'config_SGH_incipient_channel_width');
+#add_default($nl, 'config_SGH_include_pressure_melt');
+#add_default($nl, 'config_SGH_shmip_forcing');
+#add_default($nl, 'config_SGH_basal_melt');
+#
+###################################
+## Namelist group: AM_globalStats #
+###################################
+#
+#add_default($nl, 'config_AM_globalStats_enable');
+#add_default($nl, 'config_AM_globalStats_compute_interval');
+#add_default($nl, 'config_AM_globalStats_stream_name');
+#add_default($nl, 'config_AM_globalStats_compute_on_startup');
+#add_default($nl, 'config_AM_globalStats_write_on_startup');
+#
+#####################################
+## Namelist group: AM_regionalStats #
+#####################################
+#
+#add_default($nl, 'config_AM_regionalStats_enable');
+#add_default($nl, 'config_AM_regionalStats_compute_interval');
+#add_default($nl, 'config_AM_regionalStats_stream_name');
+#add_default($nl, 'config_AM_regionalStats_compute_on_startup');
+#add_default($nl, 'config_AM_regionalStats_write_on_startup');
 
 
 #-----------------------------------------------------------------------------------------------
-# *** Write output namelist file (mali_in) and input dataset list (mali.input_data_list) ***
+# *** Write output namelist file (BISICLES_in) and input dataset list (BISICLES.input_data_list) ***
 #-----------------------------------------------------------------------------------------------
 # Set namelist groups to be written out
 
 my @groups = qw(velocity_solver
-                advection
-                calving
-                thermal_solver
-                physical_parameters
-                time_integration
-                time_management
-                io
-                decomposition
-                debug
-                subglacial_hydro
-                am_globalstats
-                am_regionalstats
                 );
 
 # Check for variables in the "derived" group, add them to appropriate group
@@ -623,10 +611,10 @@ for my $var ($nl->get_variable_names('derived')) {
   $nl->set_variable_value($broken[1], $broken[0], $val);
 }
 
-# Write out all groups  to mali_in
-my $outfile = "./mali_in";
+# Write out all groups  to BISICLES_in
+my $outfile = "./BISICLES_in";
 $nl->write($outfile, 'groups'=>\@groups);
-if ($print>=2) { print "Writing mali glc component namelist to $outfile $eol"; }
+if ($print>=2) { print "Writing BISICLES glc component namelist to $outfile $eol"; }
 
 #--------------------------------------------------------------------
 # Append namelist specified files to input data file
@@ -634,8 +622,8 @@ if ($print>=2) { print "Writing mali glc component namelist to $outfile $eol"; }
 #     is set in the namelist and the suffix comes from the number of tasks
 #--------------------------------------------------------------------
 
-open(my $input_list, ">>", "$CASEBUILD/mali.input_data_list") or
-     die "** can't open filepath file: mali.input_data_list\n";
+open(my $input_list, ">>", "$CASEBUILD/BISICLES.input_data_list") or
+     die "** can't open filepath file: BISICLES.input_data_list\n";
 my $block_decomp_file_prefix = $nl->get_value( 'config_block_decomp_file_prefix' );
 # remove quotes for concatenation
 $block_decomp_file_prefix =~ s/['"]//g;
@@ -644,7 +632,7 @@ print $input_list "graph$NTASKS_GLC = $block_decomp_file\n";
 $input_list->close;
 
 # Write input dataset list.
-check_input_files($DIN_LOC_ROOT, "$CASEBUILD/mali.input_data_list");
+check_input_files($DIN_LOC_ROOT, "$CASEBUILD/BISICLES.input_data_list");
 
 #-----------------------------------------------------------------------------------------------
 # END OF MAIN SCRIPT

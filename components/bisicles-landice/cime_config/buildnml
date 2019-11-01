@@ -13,16 +13,53 @@ from standard_script_setup import *
 from CIME.case import Case
 from CIME.utils import expect, run_cmd_no_fail, safe_copy
 from CIME.buildnml import create_namelist_infile, parse_input
+from CIME.utils import run_sub_or_cmd
 
 logger = logging.getLogger(__name__)
 
 ###############################################################################
 def buildnml(case, caseroot, compname):
 ###############################################################################
-    expect(compname == "bisicles", compname)
+    if compname == "mali":
+        print("SPECIAL HANDLING WHEN BUILDING MALI BUT CASE IS BISICLES")
+        compname = "mali"
+        model_str = 'glc'
+        config_file = case.get_value("CONFIG_{}_FILE".format(model_str.upper())).replace('components/bisicles','components/mpas-albany')
+        config_dir = os.path.dirname(config_file).replace('components/bisicles','components/mpas-albany')
+        #print(config_file,config_dir)
+
+        cmd = os.path.join(caseroot, "SourceMods", "src."+compname, "buildnml")
+        if os.path.isfile(cmd):
+            logger.warning("\nWARNING: Using local buildnml file {}\n".format(cmd))
+        else:
+            # otherwise look in the component config_dir
+            cmd = os.path.join(config_dir, "buildnml")
+        expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(compname))
+        run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, compname), case=case)
+        return
+
+    elif compname == "mali_BISICLES":
+        print("SPECIAL HANDLING WHEN BUILDING BOTH MALI AND BISICLES")
+        expect(compname == "mali_BISICLES", compname)
+        tmpcompname = "mali"
+        model_str = 'glc'
+        config_file = case.get_value("CONFIG_{}_FILE".format(model_str.upper())).replace('components/bisicles','components/mpas-albany')
+        config_dir = os.path.dirname(config_file).replace('components/bisicles','components/mpas-albany')
+        #print(config_file,config_dir)
+
+        cmd = os.path.join(caseroot, "SourceMods", "src."+tmpcompname, "buildnml")
+        if os.path.isfile(cmd):
+            logger.warning("\nWARNING: Using local buildnml file {}\n".format(cmd))
+        else:
+            # otherwise look in the component config_dir
+            cmd = os.path.join(config_dir, "buildnml")
+        expect(os.path.isfile(cmd), "Could not find buildnml file for component {}".format(tmpcompname))
+        run_sub_or_cmd(cmd, (caseroot), "buildnml", (case, caseroot, tmpcompname), case=case)
+        print("NOW SETTING UP BISICLES")
+ 
 
     os.chdir(caseroot)
-
+    
     cimeroot          = case.get_value("CIMEROOT")
     caseroot          = case.get_value("CASEROOT")
     casebuild         = case.get_value("CASEBUILD")
@@ -39,20 +76,22 @@ def buildnml(case, caseroot, compname):
     run_reftod        = case.get_value("RUN_REFTOD")
     use_bisicles      = case.get_value("USE_BISICLES")
     stream_name       = 'streams.landice'
-    bisicles_input_name = 'bisicles_input.xml'
-
-    maliconf_dir = os.path.join(casebuild, "maliconf")
-
-    if not os.path.isdir(maliconf_dir): os.mkdir(maliconf_dir)
-
+    bisicles_input_name = 'BISICLES_input.xml'
+    
+    
+    BISICLESconf_dir = os.path.join(casebuild, "BISICLESconf")
+    
+    if not os.path.isdir(BISICLESconf_dir): os.mkdir(BISICLESconf_dir)
+    
     #--------------------------------------------------------------------
     # Determine date stamp, from grid names
     #--------------------------------------------------------------------
-
+    
+    
     grid_date = ''
     grid_prefix = ''
     decomp_prefix = ''
-
+    
     if glc_grid == 'mpas.gis20km':
         grid_date += '150922'
         grid_prefix += 'gis20km'
@@ -62,61 +101,62 @@ def buildnml(case, caseroot, compname):
         grid_prefix += 'ais20km'
         decomp_prefix += 'mpasli.graph.info.'
     else:
-        expect(False, "ERROR: mali buildnml encountered unknown GLC_GRID: " + glc_grid)
-
+        expect(False, "ERROR: BISICLES buildnml encountered unknown GLC_GRID: " + glc_grid)
+    
     #--------------------------------------------------------------------
     # Set the initial file, changing to a restart file for branch and hybrid runs
     # Note: this is not setup for multiple instances
     #--------------------------------------------------------------------
-
+    
     input_file = "{}/glc/mpasli/{}/{}.{}.nc".format(din_loc_root, glc_grid, grid_prefix, grid_date)
     if run_type == 'hybrid' or run_type == 'branch':
-        input_file = "{}/mali.rst.{}_{}.nc".format(rundir, run_refdate, run_reftod)
-        expect(os.path.exists(input_file), " ERROR mali buildnml: missing specified restart file for branch or hybrid run: " + input_file)
-
+        input_file = "{}/BISICLES.rst.{}_{}.nc".format(rundir, run_refdate, run_reftod)
+        expect(os.path.exists(input_file), " ERROR BISICLES buildnml: missing specified restart file for branch or hybrid run: " + input_file)
+    
     #--------------------------------------------------------------------
     # Generate input data file with stream-specified files
     #--------------------------------------------------------------------
-
-    with open(os.path.join(casebuild, "mali.input_data_list"), "w") as input_list:
+    
+    with open(os.path.join(casebuild, "BISICLES.input_data_list"), "w") as input_list:
         input_list.write("mesh = {}/glc/mpasli/{}/{}.{}.nc\n".format(din_loc_root, glc_grid, grid_prefix, grid_date))
-
+    
+    
     #--------------------------------------------------------------------
-    # Invoke mpas build-namelist - output will go in $CASEBUILD/maliconf
+    # Invoke mpas build-namelist - output will go in $CASEBUILD/BISICLESconf
     #--------------------------------------------------------------------
-
+    
     inst_string = ""
     for inst_counter in range(1, ninst_glc + 1):
-
+    
         # -----------------------------------------------------
         # determine instance string
         # -----------------------------------------------------
-
+    
         inst_string = ""
         if ninst_glc > 1:
             inst_string = "_{0:04d}".format(inst_counter)
-
+    
             # If multi-instance case does not have restart file, use single-case restart
             # for each instance
             if not os.path.exists(os.path.join(rundir, "rpointer.glc{}".format(inst_string))) and \
                    os.path.exists(os.path.join(rundir, "rpointer.glc")):
                 safe_copy(os.path.join(rundir, "rpointer.glc"),
                           os.path.join(rundir, "rpointer.glc{}".format(inst_string)))
-
+    
         # -----------------------------------------------------
-        # create maliconf/cesm_namelist
+        # create BISICLESconf/cesm_namelist
         # -----------------------------------------------------
-
+    
         create_namelist_infile(case,
-                               "{}/user_nl_mali{}".format(caseroot, inst_string),
-                               "{}/cesm_namelist".format(maliconf_dir))
-
+                               "{}/user_nl_BISICLES{}".format(caseroot, inst_string),
+                               "{}/cesm_namelist".format(BISICLESconf_dir))
+    
         # -----------------------------------------------------
-        # call build-namelist- output will go in $CASEBUILD/maliconf/mali_in
+        # call build-namelist- output will go in $CASEBUILD/BISICLESconf/BISICLES_in
         # -----------------------------------------------------
-
-        sysmod =  "{}/components/mpas-albany-landice/bld/build-namelist".format(srcroot)
-        sysmod += " -infile {}/cesm_namelist".format(maliconf_dir)
+    
+        sysmod =  "{}/components/bisicles-landice/bld/build-namelist".format(srcroot)
+        sysmod += " -infile {}/cesm_namelist".format(BISICLESconf_dir)
         sysmod += " -caseroot {}".format(caseroot)
         sysmod += " -casebuild {}".format(casebuild)
         sysmod += " -cimeroot {}".format(cimeroot)
@@ -126,25 +166,25 @@ def buildnml(case, caseroot, compname):
         sysmod += " -glc_grid '{}'".format(glc_grid)
         sysmod += " -ntasks_glc '{}'".format(ntasks_glc)
         sysmod += " -ninst_glc '{}'".format(ninst_glc_real)
-
-        run_cmd_no_fail(sysmod, from_dir=maliconf_dir)
-
+    
+        run_cmd_no_fail(sysmod, from_dir=BISICLESconf_dir)
+    
         # -----------------------------------------------------
         # Copy resolved namelist to $RUNDIR
         # -----------------------------------------------------
-
-        default_in_filename = "mali_in"
+    
+        default_in_filename = "BISICLES_in"
         in_filename = "{}{}".format(default_in_filename, inst_string)
         if os.path.isdir(rundir):
-            safe_copy(os.path.join(maliconf_dir, "mali_in"), os.path.join(rundir, in_filename))
-
+            safe_copy(os.path.join(BISICLESconf_dir, "BISICLES_in"), os.path.join(rundir, in_filename))
+    
     # Write streams file if there isn't one in SourceMods
-
-    if os.path.exists("{}/SourceMods/src.mali/{}".format(caseroot, stream_name)):
-        safe_copy("{}/SourceMods/src.mali/{}".format(caseroot, stream_name), os.path.join(rundir, stream_name))
+    
+    if os.path.exists("{}/SourceMods/src.BISICLES/{}".format(caseroot, stream_name)):
+        safe_copy("{}/SourceMods/src.BISICLES/{}".format(caseroot, stream_name), os.path.join(rundir, stream_name))
     else:
         lines = []
-
+    
         lines.append('    <streams>')
         lines.append('')
         lines.append('    <immutable_stream name="basicmesh"')
@@ -169,7 +209,7 @@ def buildnml(case, caseroot, compname):
         lines.append('    -->')
         lines.append('    <immutable_stream name="restart"')
         lines.append('                      type="input;output"')
-        lines.append('                      filename_template="mali.rst.$Y-$M-$D_$S.nc"')
+        lines.append('                      filename_template="BISICLES.rst.$Y-$M-$D_$S.nc"')
         lines.append('                      filename_interval="output_interval"')
         lines.append('                      clobber_mode="truncate"')
         lines.append('                      input_interval="initial_only"')
@@ -182,7 +222,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('    <stream name="output"')
         lines.append('            type="output"')
-        lines.append('            filename_template="mali.hist.$Y-$M-$D_$S.nc"')
+        lines.append('            filename_template="BISICLES.hist.$Y-$M-$D_$S.nc"')
         lines.append('            filename_interval="0001-00-00_00:00:00"')
         lines.append('            clobber_mode="truncate"')
         lines.append('            output_interval="0001-00-00_00:00:00">')
@@ -198,8 +238,8 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="upperSurface"/>')
         lines.append('    <var name="cellMask"/>')
         lines.append('    <var name="edgeMask"/>')
-#    lines.append('    <var name="vertexMask"/>')
-#    lines.append('    <var name="normalVelocity"/>')
+        lines.append('    <var name="vertexMask"/>')
+        lines.append('    <var name="normalVelocity"/>')
         lines.append('    <var name="uReconstructX"/>')
         lines.append('    <var name="uReconstructY"/>')
         lines.append('    <var name="surfaceSpeed"/>')
@@ -224,7 +264,7 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('<stream name="globalStatsOutput"')
         lines.append('        type="output"')
-        lines.append('        filename_template="mali.hist.am.$Y-$M-$D_$S.nc"')
+        lines.append('        filename_template="BISICLES.hist.am.$Y-$M-$D_$S.nc"')
         lines.append('        filename_interval="0001-00-00_00:00:00"')
         lines.append('        clobber_mode="truncate"')
         lines.append('        packages="globalStatsAMPKG"')
@@ -255,24 +295,24 @@ def buildnml(case, caseroot, compname):
         lines.append('')
         lines.append('</streams>')
         lines.append('')
-
+    
         with open(os.path.join(rundir, stream_name), "w") as stream_file:
             stream_file.write("\n".join(lines))
-
+    
     if use_bisicles:
         logger.info("Setting up bisicles_input.xml file for use with BISICLES interface (DUMMY MESSAGE).")
-        ## Write albany_input.xml file if there isn't one in SourceMods
-        #if os.path.exists("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name)):
-        #    safe_copy("{}/SourceMods/src.mali/{}".format(caseroot, albany_input_name), os.path.join(rundir, albany_input_name))
-        #else:
-        #    safe_copy("{}/components/mpas-albany-landice/bld/namelist_files/{}".format(srcroot, albany_input_name), os.path.join(rundir, albany_input_name))
+        # Write bisicles_input.xml file if there isn't one in SourceMods
+        if os.path.exists("{}/SourceMods/src.BISICLES/{}".format(caseroot, bisicles_input_name)):
+            safe_copy("{}/SourceMods/src.BISICLES/{}".format(caseroot, bisicles_input_name), os.path.join(rundir, bisicles_input_name))
+        else:
+            safe_copy("{}/components/bisicles-landice/bld/namelist_files/{}".format(srcroot, bisicles_input_name), os.path.join(rundir, bisicles_input_name))
 
 ###############################################################################
 def _main_func():
 ###############################################################################
     caseroot = parse_input(sys.argv)
     with Case(caseroot) as case:
-        buildnml(case, caseroot, "mali")
+        buildnml(case, caseroot, "BISICLES")
 
 if __name__ == "__main__":
     _main_func()

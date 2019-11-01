@@ -1177,6 +1177,30 @@
       <mask>oRRS15to5</mask>
     </model_grid>
 
+    <!--- BISICLES grids -->
+
+    <model_grid alias="f09_g16_a" compset="_BISICLES">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">gx1v6</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.ais20km</grid>
+      <grid name="wav">null</grid>
+      <mask>gx1v6</mask>
+    </model_grid>
+
+    <model_grid alias="f09_oEC_a" compset="MPASO.*_BISICLES">
+      <grid name="atm">0.9x1.25</grid>
+      <grid name="lnd">0.9x1.25</grid>
+      <grid name="ocnice">oEC60to30</grid>
+      <grid name="rof">r05</grid>
+      <grid name="glc">mpas.ais20km</grid>
+      <grid name="wav">null</grid>
+      <mask>oEC60to30</mask>
+    </model_grid>
+
+
+
     <!--- mali grids -->
 
     <model_grid alias="ne30_oECv3_aisgis" compset="_MALI">
@@ -1545,7 +1569,7 @@
       <mask>oQU120</mask>
     </model_grid>
 
-    <model_grid alias="T62_oQU120_ais20" compset="MPASO.*_BISICLES">
+    <model_grid alias="T62_oQU120_ais20_bisicles" compset="MPASO.*_BISICLES">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
       <grid name="ocnice">oQU120</grid>
@@ -1554,6 +1578,17 @@
       <grid name="wav">null</grid>
       <mask>oQU120</mask>
     </model_grid>
+
+    <model_grid alias="T62_oQU120_ais20_malibisicles" compset="MPASO.*_MALIBISICLES">
+      <grid name="atm">T62</grid>
+      <grid name="lnd">T62</grid>
+      <grid name="ocnice">oQU120</grid>
+      <grid name="rof">rx1</grid>
+      <grid name="glc">mpas.ais20km</grid>
+      <grid name="wav">null</grid>
+      <mask>oQU120</mask>
+    </model_grid>
+
 
 
     <model_grid alias="T62_oEC60to30v3wLI_ais20" compset="MPASO.*_MALI">
@@ -2198,6 +2233,15 @@
       <ny>1</ny>
       <desc>mpas.ais20km is a uniform-resolution 20km MALI grid of the Antarctic Ice Sheet.  It is primarily intended for testing.</desc>
     </domain>
+
+    <!-- GLC:BISICLES domains -->
+
+<!--    <domain name="mpas.ais20km">-->
+<!--      <nx>45675</nx>-->
+<!--      <ny>1</ny>-->
+<!--      <desc>mpas.ais20km is a uniform-resolution 20km BISICLES grid of the Antarctic Ice Sheet.  It is primarily intended for testing.</desc>-->
+<!--    </domain>-->
+
 
     <!-- WW3 domains-->
 

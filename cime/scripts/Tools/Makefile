@@ -260,6 +260,25 @@ ifeq ($(strip $(USE_ALBANY)), TRUE)
   include $(ALBANY_PATH)/export_albany.in
 endif
 
+# Set BISICLES info if it is being used
+ifeq ($(strip $(USE_BISICLES)), TRUE)
+  ifdef BISICLES_PATH
+    ifndef INC_BISICLES
+      INC_BISICLES:=$(BISICLES_PATH)/include
+    endif
+    ifndef LIB_BISICLES
+      LIB_BISICLES:=$(BISICLES_PATH)/lib
+    endif
+  else
+    $(error BISICLES_PATH must be defined when USE_BISICLES is TRUE)
+  endif
+
+  # get the "BISICLES_LINK_LIBS" list as an env var
+  include $(BISICLES_PATH)/export_bisicles.in
+endif
+
+
+
 ifeq ($(strip $(USE_KOKKOS)), TRUE)
   include $(INSTALL_SHAREDPATH)/Makefile.kokkos
   SLIBS += $(KOKKOS_LIBS)
@@ -480,6 +499,9 @@ endif
 ifdef INC_ALBANY
   INCLDIR += -I$(INC_ALBANY)
 endif
+ifdef INC_BISICLES
+  INCLDIR += -I$(INC_BISICLES)
+endif
 ifdef INC_MOAB
   INCLDIR += -I$(INC_MOAB)
 endif
@@ -641,6 +663,11 @@ endif
 # Add Albany libraries.  These are defined in the ALBANY_LINK_LIBS env var that was included above
 ifeq ($(strip $(USE_ALBANY)), TRUE)
   SLIBS += $(ALBANY_LINK_LIBS)
+endif
+
+# Add BISICLES libraries.  These are defined in the BISICLES_LINK_LIBS env var that was included above
+ifeq ($(strip $(USE_BISICLES)), TRUE)
+  SLIBS += $(BISICLES_LINK_LIBS)
 endif
 
 # Add MOAB libraries.  These are defined in the MOAB_LINK_LIBS env var that was included above
