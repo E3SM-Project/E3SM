@@ -66,8 +66,9 @@ def parse_command_line(args, description):
         parser.add_argument("--use-old", action="store_true",
                             help="Use old Makefile build system (not cmake)")
 
-    parser.add_argument("--ninja", action="store_true",
-                        help="Use ninja backed for CMake (instead of make)")
+    parser.add_argument("--use-gmake", action="store_true",
+                        help="Use gmake backed for CMake (instead of ninja). "
+                        "The gmake backend does not always correctly scan fortran dependencies")
 
     mutex_group = parser.add_mutually_exclusive_group()
 
@@ -113,12 +114,12 @@ def parse_command_line(args, description):
     cleanlist = args.clean if args.clean is None or len(args.clean) else comps
     buildlist = None if args.build is None or len(args.build) == 0 else args.build
 
-    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, not args.skip_provenance_check, args.use_old, args.ninja
+    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, not args.skip_provenance_check, args.use_old, args.use_gmake
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist,clean_depends, save_build_provenance, use_old, ninja = \
+    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist,clean_depends, save_build_provenance, use_old, use_gmake = \
         parse_command_line(sys.argv, description)
 
     success = True
@@ -143,12 +144,12 @@ def _main_func(description):
                 raise
 
             expect(buildlist is None, "Build lists don't work with tests")
-            success = test.build(sharedlib_only=sharedlib_only, model_only=model_only, old_build=use_old, ninja=ninja)
+            success = test.build(sharedlib_only=sharedlib_only, model_only=model_only, old_build=use_old, use_gmake=use_gmake)
         else:
             success = build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
                                        model_only=model_only, buildlist=buildlist,
                                        save_build_provenance=save_build_provenance,
-                                       use_old=use_old, ninja=ninja)
+                                       use_old=use_old, use_gmake=use_gmake)
 
     sys.exit(0 if success else 1)
 
