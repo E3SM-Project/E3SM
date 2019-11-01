@@ -2343,10 +2343,16 @@ contains
            this%hrv_deadcrootp_storage_to_litter_patch(p)+ &
            this%hrv_deadcrootp_xfer_to_litter_patch(p)
 
-       this%sen_ploss_litter(p) = &
-           this%livestemp_to_litter_patch(p)            + &
-           this%leafp_to_litter_patch(p)                + &
-           this%frootp_to_litter_patch(p)
+      if (crop_prog) then
+         this%sen_ploss_litter(p) = &
+             this%livestemp_to_litter(p)            + &
+             this%leafp_to_litter(p)                + &
+             this%frootp_to_litter(p)
+      else
+         this%sen_ploss_litter(p) = &
+             this%leafp_to_litter(p)                + &
+             this%frootp_to_litter(p)
+      end if
 
     end do
 
