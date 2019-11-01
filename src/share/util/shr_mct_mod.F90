@@ -15,7 +15,7 @@ module shr_mct_mod
 
 ! !USES:
 
-   use shr_kind_mod         ! shared kinds
+   use shr_kind_mod, only : R8=>SHR_KIND_R8, IN=>SHR_KIND_IN, CL=>SHR_KIND_CL         ! shared kinds
    use shr_sys_mod          ! share system routines
    use shr_mpi_mod          ! mpi layer
    use shr_const_mod        ! constants
@@ -40,10 +40,9 @@ module shr_mct_mod
 
 !EOP
 
-   !--- local kinds ---
-   integer,parameter,private :: R8 = SHR_KIND_R8
-   integer,parameter,private :: IN = SHR_KIND_IN
-   integer,parameter,private :: CL = SHR_KIND_CL
+   !--- local use of kinds ---
+
+   private :: R8, IN, CL
 
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 contains
