@@ -49,6 +49,7 @@ module seq_drydep_mod
 
   logical, public  :: lnd_drydep                           ! If dry-dep fields passed
   integer, public  :: n_drydep = 0                         ! Number in drypdep list
+  logical          :: drydep_init = .false.                ! has seq_drydep_init been called?
   character(len=CS), public, dimension(maxspc) :: drydep_list = ''   ! List of dry-dep species
 
   real(r8), public, allocatable, dimension(:) :: foxd      ! reactivity factor for oxidation (dimensioness)
@@ -583,6 +584,9 @@ CONTAINS
        call ESMF_VMBroadcast(vm, drydep_method, 16, 0, rc=rc)
     endif
 
+    ! set module variable
+    n_drydep = drydep_nflds
+
     !--- Make sure method is valid and determine if land is passing drydep fields ---
     lnd_drydep = (drydep_nflds>0 .and. drydep_method == DD_XLND)
 
@@ -635,6 +639,14 @@ CONTAINS
     !----- formats -----
     character(*),parameter :: subName = '(seq_drydep_init) '
     character(*),parameter :: F00   = "('(seq_drydep_init) ',8a)"
+
+    !-----------------------------------------------------------------------------
+    ! Return if this routine has already been called (e.g. cam and clm both call this)
+    !-----------------------------------------------------------------------------
+
+    if (drydep_init) then
+       RETURN
+    end if
 
     !-----------------------------------------------------------------------------
     ! Allocate and fill foxd, drat and mapping as well as species indices
@@ -788,6 +800,8 @@ CONTAINS
     where( rac < small_value)
        rac = small_value
     endwhere
+
+    drydep_init = .true.
 
   end subroutine seq_drydep_init
 
