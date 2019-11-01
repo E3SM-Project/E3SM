@@ -1737,7 +1737,7 @@
 <fatmlndfrc hgrid="ne120np4"  >share/domains/domain.lnd.ne120np4_gx1v6.111226.nc</fatmlndfrc>
 <fatmlndfrc hgrid="ne240np4"  >share/domains/domain.lnd.ne240np4_gx1v6.120125.nc</fatmlndfrc>
 
-<!--fatmlndfrc hgrid="ne0np4_northamericax4v1">share/domains/domain.lnd.northamericax4v1_oRRS15to5.190614.nc</fatmlndfrc-->
+<fatmlndfrc hgrid="ne0np4_northamericax4v1">share/domains/domain.lnd.northamericax4v1_oRRS15to5.191022.nc</fatmlndfrc>
 <fatmlndfrc hgrid="ne0np4_enax4v1">share/domains/domain.lnd.enax4v1_oRRS18to6.170621.nc</fatmlndfrc>
 
 <!-- SNICAR (SNow, ICe, and Aerosol Radiative model) datasets -->
