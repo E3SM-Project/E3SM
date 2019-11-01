@@ -355,7 +355,7 @@ contains
 #ifdef CAM
        ! CAM neglicts the small, constant p(top) term.  Add this
        ! term in to be consistent
-       tmp(:,:,ie)=temp(:,:,ie) + hvcoord%hyai(1)*hvcoord%ps0 
+       tmp(:,:,ie)=tmp(:,:,ie) + hvcoord%hyai(1)*hvcoord%ps0 
 #endif
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
