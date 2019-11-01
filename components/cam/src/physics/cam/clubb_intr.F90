@@ -541,6 +541,8 @@ end subroutine clubb_init_cnst
     use constituents,           only: cnst_get_ind
     use phys_control,           only: phys_getopts
 
+    use parameters_tunable, only: params_list => clubb_params_list
+
 #endif
 
     use physics_buffer,         only: pbuf_get_index, pbuf_set_field, physics_buffer_desc
@@ -696,10 +698,21 @@ end subroutine clubb_init_cnst
     ! Setup CLUBB core
     ! ----------------------------------------------------------------- !
     
-    !  Read in parameters for CLUBB.  Just read in default values 
+    !  Read in parameters for CLUBB.  Pack the default and updated (via nml) 
+    !  tunable parameters into clubb_params
 !$OMP PARALLEL
     call read_parameters_api( -99, "", clubb_params )
 !$OMP END PARALLEL
+
+    ! Print the list of CLUBB parameters, if multi-threaded, it may print by each thread
+    if (masterproc) then
+       write(iulog,*)'CLUBB tunable parameters: total ',nparams
+       write(iulog,*)'--------------------------------------------------'
+       do i = 1, nparams
+          write(iulog,*) clubb_params_list(i), " = ", clubb_params(i)
+       enddo
+    endif
+ 
       
     !  Fill in dummy arrays for height.  Note that these are overwrote
     !  at every CLUBB step to physical values.    
@@ -1822,15 +1835,6 @@ end subroutine clubb_init_cnst
       !  tunable parameters into clubb_params
       call read_parameters_api( -99, "", clubb_params )
 
-      ! Print the list of CLUBB parameters
-      if (masterproc .and. i .eq. 1) then
-         write(iulog,*)'CLUBB tunable parameters: total ',nparams
-         write(iulog,*)'--------------------------------------------------'
-         do k = 1, nparams
-            write(iulog,*) params_list(k), " = ", clubb_params(k)
-         enddo
-      endif
- 
       !  Set-up CLUBB core at each CLUBB call because heights can change 
       call setup_grid_heights_api(l_implemented, grid_type, zi_g(2), &
          zi_g(1), zi_g, zt_g)
