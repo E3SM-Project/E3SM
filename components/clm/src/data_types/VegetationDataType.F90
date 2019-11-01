@@ -9824,11 +9824,17 @@ module VegetationDataType
            this%hrv_deadcrootn_to_litter(p)        + &
            this%hrv_deadcrootn_storage_to_litter(p)+ &
            this%hrv_deadcrootn_xfer_to_litter(p)
+      if (crop_prog) then
+         this%sen_nloss_litter(p) = &
+             this%livestemn_to_litter(p)            + &
+             this%leafn_to_litter(p)                + &
+             this%frootn_to_litter(p)
+      else
+         this%sen_nloss_litter(p) = &
+             this%leafn_to_litter(p)                + &
+             this%frootn_to_litter(p)
+      end if
 
-       this%sen_nloss_litter(p) = &
-           this%livestemn_to_litter(p)            + &
-           this%leafn_to_litter(p)                + &
-           this%frootn_to_litter(p)
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
@@ -10924,10 +10930,16 @@ module VegetationDataType
            this%hrv_deadcrootp_storage_to_litter(p)+ &
            this%hrv_deadcrootp_xfer_to_litter(p)
 
-       this%sen_ploss_litter(p) = &
-           this%livestemp_to_litter(p)            + &
-           this%leafp_to_litter(p)                + &
-           this%frootp_to_litter(p)
+      if (crop_prog) then
+         this%sen_ploss_litter(p) = &
+             this%livestemp_to_litter(p)            + &
+             this%leafp_to_litter(p)                + &
+             this%frootp_to_litter(p)
+      else
+         this%sen_ploss_litter(p) = &
+             this%leafp_to_litter(p)                + &
+             this%frootp_to_litter(p)
+      end if
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
