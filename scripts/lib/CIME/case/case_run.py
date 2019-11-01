@@ -171,7 +171,11 @@ def _post_run_check(case, lid):
     driver = case.get_value("COMP_INTERFACE")
 
     if driver == 'nuopc':
-        file_prefix = 'med'
+        compset = case.get_value("COMPSET")
+        if "FV3GFS" in compset:
+            file_prefix = 'cesm'
+        else:
+            file_prefix = 'med'
     else:
         file_prefix = 'cpl'
 

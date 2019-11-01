@@ -42,6 +42,7 @@ module lnd_comp_nuopc
   type (fld_list_type)   :: fldsToLnd(fldsMax)
   type (fld_list_type)   :: fldsFrLnd(fldsMax)
   integer, parameter     :: gridTofieldMap = 2 ! ungridded dimension is innermost
+  integer                :: glc_nec 
 
   real(r8), pointer      :: gbuf(:,:)            ! model info
   real(r8), pointer      :: lat(:)
@@ -219,6 +220,11 @@ contains
 
     if (nxg /= 0 .and. nyg /= 0) then
 
+       call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       read(cvalue,*) glc_nec
+       call ESMF_LogWrite('glc_nec = '// trim(cvalue), ESMF_LOGMSG_INFO)
+
        call fld_list_add(fldsFrLnd_num, fldsFrlnd, trim(flds_scalar_name))
        call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Sl_lfrin'      )
        call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Sl_t'          )
@@ -244,7 +250,10 @@ contains
        call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Fall_lwup'     )
        call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Fall_evap'     )
        call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Fall_swnet'    )
-       call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Fall_flxdst', ungridded_lbound=1, ungridded_ubound=4)
+       call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Fall_flxdst'   , ungridded_lbound=1, ungridded_ubound=4)
+       call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Flgl_qice_elev', ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+       call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Sl_tsrf_elev'  , ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+       call fld_list_add(fldsFrLnd_num, fldsFrlnd, 'Sl_topo_elev'  , ungridded_lbound=1, ungridded_ubound=glc_nec+1)
 
        call fld_list_add(fldsToLnd_num, fldsToLnd, trim(flds_scalar_name))
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Sa_z'         )
@@ -266,10 +275,13 @@ contains
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Faxa_swvdr'   )
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Faxa_swndf'   )
        call fld_list_add(fldsToLnd_num, fldsToLnd, 'Faxa_swvdf'   )
-       call fld_list_add(fldsTolnd_num, fldsTolnd, 'Faxa_bcph'  , ungridded_lbound=1, ungridded_ubound=3)
-       call fld_list_add(fldsTolnd_num, fldsTolnd, 'Faxa_ocph'  , ungridded_lbound=1, ungridded_ubound=3)
-       call fld_list_add(fldsTolnd_num, fldsTolnd, 'Faxa_dstwet', ungridded_lbound=1, ungridded_ubound=4)
-       call fld_list_add(fldsTolnd_num, fldsTolnd, 'Faxa_dstdry', ungridded_lbound=1, ungridded_ubound=4)
+       call fld_list_add(fldsTolnd_num, fldsTolnd, 'Faxa_bcph'           , ungridded_lbound=1, ungridded_ubound=3)
+       call fld_list_add(fldsTolnd_num, fldsTolnd, 'Faxa_ocph'           , ungridded_lbound=1, ungridded_ubound=3)
+       call fld_list_add(fldsTolnd_num, fldsTolnd, 'Faxa_dstwet'         , ungridded_lbound=1, ungridded_ubound=4)
+       call fld_list_add(fldsTolnd_num, fldsTolnd, 'Faxa_dstdry'         , ungridded_lbound=1, ungridded_ubound=4)
+       call fld_list_add(fldsToLnd_num, fldsTolnd, 'Sg_topo_elev'        , ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+       call fld_list_add(fldsToLnd_num, fldsTolnd, 'Sg_ice_covered_elev' , ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+       call fld_list_add(fldsToLnd_num, fldsTolnd, 'Flgg_hflx_elev'      , ungridded_lbound=1, ungridded_ubound=glc_nec+1)
 
        do n = 1,fldsFrLnd_num
           if (mastertask) write(logunit,*)'Advertising From Xlnd ',trim(fldsFrLnd(n)%stdname)

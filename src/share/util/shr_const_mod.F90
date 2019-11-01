@@ -5,11 +5,12 @@
 
 MODULE shr_const_mod
 
-   use shr_kind_mod, only: R8=>SHR_KIND_R8
-   private :: R8
+   use shr_kind_mod, only : R8 => shr_kind_r8
+
    !----------------------------------------------------------------------------
    ! physical constants (all data public)
    !----------------------------------------------------------------------------
+   private :: R8
    public
 
    real(R8),parameter :: SHR_CONST_PI      = 3.14159265358979323846_R8  ! pi
