@@ -1746,6 +1746,9 @@ if (l_ac_energy_chk) then
 
     end if
 
+!!!Tend bug
+!state%t is recomputed here again, now from tend%dtdt
+!is this the last call before dycore?/ then does order of params matter? 
 
     !*** BAB's FV heating kludge *** apply the heating as temperature tendency.
     !*** BAB's FV heating kludge *** modify the temperature in the state structure

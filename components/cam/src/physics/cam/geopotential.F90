@@ -20,10 +20,15 @@ module geopotential
   private
   save
 
-  public geopotential_dse
+!  public geopotential_dse
+  public temperature_from_se
   public geopotential_t
 
 contains
+
+
+!!!!!!remove later
+
 !===============================================================================
   subroutine geopotential_dse(                                &
        piln   , pmln   , pint   , pmid   , pdel   , rpdel  ,  &
@@ -117,7 +122,47 @@ contains
     return
   end subroutine geopotential_dse
 
+
+!trivial mod of geop_dse routine -- set phis and h coefs to zero to verify
+!that t = dse/cpair
 !===============================================================================
+  subroutine temperature_from_se( dse , cpair , t , ncol )
+!----------------------------------------------------------------------- 
+! 
+! Purpose: 
+! Compute the temperature at the midpoints from the input dry static energy and pressures.
+!
+!------------------------------Arguments--------------------------------
+!
+! Input arguments
+    integer, intent(in) :: ncol                  ! Number of longitudes
+
+    ! cpair is passed in as slice of rank 3 arrays allocated
+    ! at runtime. Don't specify size to avoid temporary copy.
+    real(r8), intent(in) :: dse  (:,:)    ! (pcols,pver)  - dry static energy
+    real(r8), intent(in) :: cpair(:,:)    !               - specific heat at constant p for dry air
+
+! Output arguments
+
+    real(r8), intent(out) :: delt(:,:)       ! (pcols,pver)  - temperature
+!
+!---------------------------Local variables-----------------------------------------
+!
+    integer  :: i,k                     ! Lon, level, level indices
+!
+!----------------------------------------------------------------------------------
+    do k = 1,pver
+       do i = 1,ncol
+          t(i,k) = dse(i,k) / cpair(i,k)
+       end do
+    end do
+
+    return
+  end subroutine temperature_from_se
+
+
+
+!==============================================================================e
   subroutine geopotential_t(                                 &
        piln   , pmln   , pint   , pmid   , pdel   , rpdel  , &
        t      , q      , rair   , gravit , zvir   ,          &
