@@ -51,6 +51,7 @@ class ERI(SystemTestsCommon):
         stop_n = self._case.get_value("STOP_N")
         stop_option = self._case.get_value("STOP_OPTION")
         run_startdate = self._case.get_value("RUN_STARTDATE")
+        start_tod = self._case.get_value("START_TOD")
 
         stop_n1 = int(stop_n / 6)
         rest_n1 = stop_n1
@@ -81,7 +82,7 @@ class ERI(SystemTestsCommon):
         os.chdir(clone1_path)
         self._set_active_case(clone1)
 
-        logger.info("ref1 startup: doing a {} {} startup run from {} and 00000 seconds".format(stop_n1, stop_option, start_1))
+        logger.info("ref1 startup: doing a {} {} startup run from {} and {} seconds".format(stop_n1, stop_option, start_1, start_tod))
         logger.info("  writing restarts at {} {}".format(rest_n1, stop_option))
         logger.info("  short term archiving is on ")
 
@@ -120,8 +121,9 @@ class ERI(SystemTestsCommon):
         self._set_active_case(clone2)
 
         # Set startdate to start2, set ref date based on ref1 restart
-        refdate_2 = run_cmd_no_fail(r'ls -1dt {}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"'.format(dout_sr1))
-        refsec_2 = "00000"
+        restdir_2 = run_cmd_no_fail(r'ls -1dt {}/rest/* | head -1 |  sed "s/^.*rest\///"'.format(dout_sr1))
+        refsec_2 = restdir_2[-5:]
+        refdate_2 = restdir_2.strip("-"+refsec_2)
 
         logger.info("ref2 hybrid: doing a {} {} startup hybrid run".format(stop_n2, stop_option))
         logger.info("  starting from {} and using ref1 {} and {} seconds".format(start_2, refdate_2, refsec_2))
@@ -163,8 +165,10 @@ class ERI(SystemTestsCommon):
         os.chdir(caseroot)
         self._set_active_case(orig_case)
 
-        refdate_3 = run_cmd_no_fail(r'ls -1dt {}/rest/*-00000* | head -1 | sed "s/-00000.*//" | sed "s/^.*rest\///"'.format(dout_sr2))
-        refsec_3 = "00000"
+        restdir_3 = run_cmd_no_fail(r'ls -1dt {}/rest/* | head -1 | sed "s/^.*rest\///"'.format(dout_sr2))
+        refsec_3 = restdir_3[-5:]
+        refdate_3 = restdir_3.strip("-"+refsec_3)
+
 
         logger.info("branch: doing a {} {} branch".format(stop_n3, stop_option))
         logger.info("  starting from ref2 {} and {} seconds restarts".format(refdate_3, refsec_3))
