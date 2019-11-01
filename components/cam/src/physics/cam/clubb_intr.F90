@@ -1823,11 +1823,11 @@ end subroutine clubb_init_cnst
       call read_parameters_api( -99, "", clubb_params )
 
       ! Print the list of CLUBB parameters
-      if (masterproc) then
+      if (masterproc .and. i .eq. 1) then
          write(iulog,*)'CLUBB tunable parameters: total ',nparams
          write(iulog,*)'--------------------------------------------------'
-         do i = 1, nparams
-            write(iulog,*) params_list(i), " = ", clubb_params(i)
+         do k = 1, nparams
+            write(iulog,*) params_list(k), " = ", clubb_params(k)
          enddo
       endif
  
