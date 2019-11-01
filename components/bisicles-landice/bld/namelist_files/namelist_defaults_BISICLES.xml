@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+
+<!-- velocity_solver -->
+<config_velocity_solver>'BISICLES'</config_velocity_solver>
+</namelist_defaults>
