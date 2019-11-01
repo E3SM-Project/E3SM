@@ -121,10 +121,17 @@ endif (PETSC_DIR AND NOT PETSC_ARCH)
 
 set (petsc_slaves LIBRARIES_SYS LIBRARIES_VEC LIBRARIES_MAT LIBRARIES_DM LIBRARIES_KSP LIBRARIES_SNES LIBRARIES_TS
   INCLUDE_DIR INCLUDE_CONF)
-include (FindPackageMultipass)
-find_package_multipass (PETSc petsc_config_current
-  STATES DIR ARCH
-  DEPENDENTS INCLUDES LIBRARIES COMPILER MPIEXEC ${petsc_slaves})
+
+if (EXISTS "${CMAKE_MODULE_PATH}/FindPackageMultipass.cmake")
+  set (MULTIPASS_RUNS true CACHE BOOL "multipass is ON" FORCE)
+  include (FindPackageMultipass)
+  find_package_multipass (PETSc petsc_config_current
+    STATES DIR ARCH
+    DEPENDENTS INCLUDES LIBRARIES COMPILER MPIEXEC ${petsc_slaves})
+else ()
+  set (MULTIPASS_RUNS false CACHE BOOL "multipass is OFF" FORCE)
+endif()
+message (STATUS "PETSc MULTIPASS_RUNS is ${MULTIPASS_RUNS}")
 
 # Determine whether the PETSc layout is old-style (through 2.3.3) or
 # new-style (>= 3.0.0)
@@ -177,10 +184,16 @@ show :
   # We are done with the temporary Makefile, calling PETSC_GET_VARIABLE after this point is invalid!
   file (REMOVE ${petsc_config_makefile})
 
-  include (ResolveCompilerPaths)
-  # Extract include paths and libraries from compile command line
-  resolve_includes (petsc_includes_all "${petsc_cpp_line}")
-
+  if (EXISTS "${CMAKE_MODULE_PATH}/ResolveCompilerPaths.cmake")
+    set (RESOLVE_LIBS true CACHE BOOL "Resolve_Libraries is ON" FORCE)
+    include (ResolveCompilerPaths)
+    # Extract include paths and libraries from compile command line
+    resolve_includes (petsc_includes_all "${petsc_cpp_line}")
+  else ()
+    set (RESOLVE_LIBS false CACHE BOOL "Resolve_Libraries is OFF" FORCE)
+  endif()
+  message (STATUS "PETSc Resolve_Libraries_External is ${RESOLVE_LIBS}")
+  
   #on windows we need to make sure we're linking against the right
   #runtime library
   if (WIN32)
@@ -202,8 +215,11 @@ show :
     endif (petsc_cc_flags MATCHES "-MT")
   endif (WIN32)
 
-  include (CorrectWindowsPaths)
-  convert_cygwin_path(petsc_lib_dir)
+  if (EXISTS "${CMAKE_MODULE_PATH}/CorrectWindowsPaths.cmake")
+    include (CorrectWindowsPaths)
+    convert_cygwin_path(petsc_lib_dir)
+  endif()
+  
   message (STATUS "petsc_lib_dir ${petsc_lib_dir}")
 
   macro (PETSC_FIND_LIBRARY suffix name)
@@ -280,11 +296,13 @@ int main(int argc,char *argv[]) {
   return 0;
 }
 ")
+    if (${MULTIPASS_RUNS})
     multipass_source_runs ("${includes}" "${libraries}" "${_PETSC_TEST_SOURCE}" ${runs} "${PETSC_LANGUAGE_BINDINGS}")
     if (${${runs}})
       set (PETSC_EXECUTABLE_RUNS "YES" CACHE BOOL
         "Can the system successfully run a PETSc executable?  This variable can be manually set to \"YES\" to force CMake to accept a given PETSc configuration, but this will almost always result in a broken build.  If you change PETSC_DIR, PETSC_ARCH, or PETSC_CURRENT you would have to reset this variable." FORCE)
     endif (${${runs}})
+    endif()
   endmacro (PETSC_TEST_RUNS)
 
 
@@ -303,7 +321,11 @@ int main(int argc,char *argv[]) {
       message (STATUS "PETSc requires extra include paths, but links correctly with only interface libraries.  This is an unexpected configuration (but it seems to work fine).")
       set (petsc_includes_needed ${petsc_includes_all})
     else (petsc_works_allincludes) # We are going to need to link the external libs explicitly
-      resolve_libraries (petsc_libraries_external "${petsc_libs_external}")
+      if (${RESOLVE_LIBS})
+        resolve_libraries (petsc_libraries_external "${petsc_libs_external}")
+      else ()
+        set (petsc_libs_external "")
+      endif()
       foreach (pkg SYS VEC MAT DM KSP SNES TS ALL)
         list (APPEND PETSC_LIBRARIES_${pkg}  ${petsc_libraries_external})
       endforeach (pkg)
