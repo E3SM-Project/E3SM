@@ -194,7 +194,7 @@ def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
 
     # Call Make
     if stat == 0:
-        make_cmd = "{} -j {} >> {} 2>&1".format(gmake if use_gmake else os.path.join(ninja_path, "ninja"), gmake_j, bldlog)
+        make_cmd = "{} -j {} >> {} 2>&1".format(gmake if use_gmake else "{} -v".format(os.path.join(ninja_path, "ninja")), gmake_j, bldlog)
         with open(bldlog, "a") as fd:
             fd.write("\n\nBuilding with cmd:\n{}\n\n".format(make_cmd))
 
