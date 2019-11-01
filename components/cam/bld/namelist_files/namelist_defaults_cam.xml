@@ -1830,7 +1830,7 @@
 <focndomain hgrid="ne120np4"  >share/domains/domain.ocn.ne120np4_gx1v6.111226.nc</focndomain>
 <focndomain hgrid="ne240np4"  >share/domains/domain.ocn.ne240np4_gx1v6.111226.nc</focndomain>
 
-<!--focndomain hgrid="ne0np4_northamericax4v1">share/domains/domain.ocn.northamericax4v1_oRRS15to5.190614.nc</focndomain-->
+<focndomain hgrid="ne0np4_northamericax4v1">share/domains/domain.ocn.northamericax4v1_oRRS15to5.191022.nc</focndomain>
 <focndomain hgrid="ne0np4_enax4v1">share/domains/domain.ocn.enax4v1_oRRS18to6.170621.nc</focndomain>
 
 </namelist_defaults>
