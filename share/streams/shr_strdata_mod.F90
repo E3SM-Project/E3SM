@@ -42,7 +42,7 @@ module shr_strdata_mod
   public shr_strdata_print
   public shr_strdata_init
   public shr_strdata_init_model_domain
-  public shr_strdata_init_streams 
+  public shr_strdata_init_streams
   public shr_strdata_init_mapping
   public shr_strdata_create
   public shr_strdata_advance
@@ -64,7 +64,7 @@ module shr_strdata_mod
 
   ! !PRIVATE:
 
-  integer(SHR_KIND_IN)                 :: debug    = 0  ! local debug flag
+  integer(IN)                          :: debug    = 0  ! local debug flag
   integer(IN)      ,parameter          :: nStrMax = 30
   integer(IN)      ,parameter          :: nVecMax = 30
   character(len=*) ,parameter, public  :: shr_strdata_nullstr = 'null'
@@ -107,7 +107,7 @@ module shr_strdata_mod
      type(mct_gsmap)                :: gsmap             ! model grid global seg map
      type(mct_ggrid)                :: grid              ! model grid ggrid
      type(mct_avect)                :: avs(nStrMax)      ! model grid stream attribute vectors
-                                                         ! stream attribute vectors that are time and spatially 
+                                                         ! stream attribute vectors that are time and spatially
                                                          ! interpolated to model grid
 
      ! --- stream info, internal ---
@@ -181,7 +181,7 @@ contains
     integer(IN)                :: n,m,k         ! generic index
     integer(IN)                :: my_task,npes  ! my task, total pes
     character(CS)              :: lname         ! local name
-    integer                    :: ierr 
+    integer                    :: ierr
     character(len=*),parameter :: subname = "(shr_strdata_init) "
     character(*),parameter     :: F00 = "('(shr_strdata_init) ',8a)"
     !-------------------------------------------------------------------------------
@@ -403,7 +403,7 @@ contains
     type(shr_strdata_type),intent(inout) :: SDAT
     integer(IN)           ,intent(in)    :: compid
     integer(IN)           ,intent(in)    :: mpicom
-    integer(IN)           ,intent(in)    :: my_task  
+    integer(IN)           ,intent(in)    :: my_task
 
     ! local variables
     integer(IN)          :: n,m,k    ! generic index
@@ -421,7 +421,7 @@ contains
     character(len=*), parameter :: subname = "(shr_strdata_init_streams) "
     !-------------------------------------------------------------------------------
 
-    ! Count streams again in case user made changes 
+    ! Count streams again in case user made changes
     if (my_task == master_task) then
        do n=1,nStrMax
 
@@ -501,17 +501,17 @@ contains
 
   subroutine shr_strdata_init_mapping(SDAT, compid, mpicom, my_task)
 
-    ! input/output arguments 
+    ! input/output arguments
     type(shr_strdata_type),intent(inout) :: SDAT
     integer(IN)           ,intent(in)    :: compid
     integer(IN)           ,intent(in)    :: mpicom
-    integer(IN)           ,intent(in)    :: my_task  
+    integer(IN)           ,intent(in)    :: my_task
 
     ! local variables
     type(mct_sMat) :: sMati
     integer(IN)    :: n,m,k   ! generic index
     integer(IN)    :: nu,nv   ! u,v index
-    integer(IN)    :: method  ! mapping method 
+    integer(IN)    :: method  ! mapping method
     character(CXX) :: fldList ! list of fields
     character(CS)  :: uname   ! u vector field name
     character(CS)  :: vname   ! v vector field name

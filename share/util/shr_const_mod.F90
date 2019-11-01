@@ -5,7 +5,7 @@
 
 MODULE shr_const_mod
 
-   use shr_kind_mod, only R8=>SHR_KIND_R8
+   use shr_kind_mod, only: R8=>SHR_KIND_R8
    private :: R8
    !----------------------------------------------------------------------------
    ! physical constants (all data public)
