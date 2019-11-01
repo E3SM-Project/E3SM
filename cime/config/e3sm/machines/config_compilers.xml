@@ -774,11 +774,27 @@ for mct, etc.
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
   </FFLAGS>
-  <MPICC> mpiicc  </MPICC>
-  <MPICXX> mpiicpc </MPICXX>
-  <MPIFC> mpiifort </MPIFC>
+  <MPICC  MPILIB="impi"> mpiicc  </MPICC>
+  <MPICXX MPILIB="impi"> mpiicpc </MPICXX>
+  <MPIFC  MPILIB="impi"> mpiifort </MPIFC>
   <SLIBS>
     <append>$SHELL{nf-config --flibs} -mkl</append>
+  </SLIBS>
+  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
+  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
+  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
+</compiler>
+
+<compiler MACH="bebop" COMPILER="gnu">
+  <CPPDEFS>
+    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+  </CPPDEFS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <SLIBS>
+    <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs}</append> 
+    <append>-L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_gf_lp64 -lmkl_sequential -lmkl_core -lpthread -lm -ldl</append>
   </SLIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
@@ -1086,6 +1102,10 @@ for mct, etc.
     <append DEBUG="FALSE"> -O2 </append>
     <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
   </CONFIG_ARGS>

@@ -221,6 +221,11 @@ module clm_varctl
   !----------------------------------------------------------
 
   logical, public :: use_lai_streams = .false. ! true => use lai streams in SatellitePhenologyMod.F90
+  !----------------------------------------------------------
+  ! plant hydraulic stress switch
+  !----------------------------------------------------------
+
+  logical, public :: use_hydrstress = .false. ! true => use plant hydraulic stress calculation
 
   !----------------------------------------------------------
   ! dynamic root switch

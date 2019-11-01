@@ -20,7 +20,7 @@ module prim_state_mod
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
   use element_ops,      only: get_field, get_phi, get_field_i
-  use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt,diagtimes
+  use element_state,    only: max_itercnt,max_deltaerr,max_reserr,diagtimes
   use eos,              only: pnh_and_exner_from_eos
   use viscosity_mod,    only: compute_zeta_C0
   use reduction_mod,    only: parallelmax,parallelmin,parallelmaxwithindex,parallelminwithindex
@@ -151,6 +151,8 @@ contains
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, n0q
     integer               :: npts,n,q
+    integer :: max_itercnt_g
+    real (kind=real_kind) :: max_deltaerr_g, max_reserr_g
 
     call t_startf('prim_printstate')
     if (hybrid%masterthread) then 
@@ -414,7 +416,7 @@ contains
                                  fqmax_local(1)," (",nint(fqmax_local(2)),")",fqsum_p
 
        if (.not.theta_hydrostatic_mode) then
-          write(iulog,110) "   min .5*dz/w (CFL condition) = ",.5/w_over_dz_max_local(1)," (",nint(w_over_dz_max_local(2)),")"
+          write(iulog,110) "   min dz/w (CFL condition) = ",1/w_over_dz_max_local(1)," (",nint(w_over_dz_max_local(2)),")"
        endif
 
        do q=1,qsize
@@ -677,6 +679,13 @@ contains
     IEvert1=0; PEhorz1=0; PEhorz2=0; PEvert1=0; PEvert2=0; 
     KEH1=0; KEH2=0;  KEV1=0; KEV2=0;  KEwH1=0; KEwH2=0; KEwH3=0;  KEwV1=0; KEwV2=0; 
 #endif
+    max_itercnt_g=parallelmax(max_itercnt,hybrid)
+    max_deltaerr_g=parallelmax(max_deltaerr,hybrid)
+    max_reserr_g=parallelmax(max_reserr,hybrid)
+    max_itercnt=0 ; max_deltaerr=0; max_reserr=0 ! reset max counters each statefreq output
+
+
+
 
     if(hybrid%masterthread) then 
        if(use_moisture)then
@@ -783,10 +792,7 @@ contains
        endif
 
       ! IMEX diagnostics
-      write(iulog,'(a)')        'IMEX diagnostics:                  '
-      write(iulog,'(a,I2)')     'Max iterations in last time-step   :', max_itercnt_perstep
-      write(iulog,'(a,F8.2)')   'Running average of max iterations  :', avg_itercnt
-      write(iulog,'(a,E23.15)') 'Max error in last time-step        :', max_itererr_perstep
+      write(iulog,'(a,I3,2E23.15)') 'IMEX max iterations, error:',max_itercnt_g,max_deltaerr_g,max_reserr_g
     endif
     
     
