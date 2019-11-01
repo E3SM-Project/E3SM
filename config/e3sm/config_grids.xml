@@ -838,7 +838,7 @@
       <grid name="atm">ne0np4_northamericax4v1</grid>
       <grid name="lnd">r0125</grid>
       <grid name="ocnice">oRRS15to5</grid>
-      <grid name="rof">r0125</grid>
+      <grid name="rof">null</grid>
       <grid name="glc">null</grid>
       <grid name="wav">null</grid>
       <mask>oRRS15to5</mask>
