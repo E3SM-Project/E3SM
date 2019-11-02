@@ -89,7 +89,7 @@ module namelist_mod
     theta_advect_form,   &
     vert_remap_q_alg, &
     se_fv_phys_remap_alg, &
-    timestep_make_parameters_consistent
+    timestep_make_subcycle_parameters_consistent
 
 #ifndef CAM
   use control_mod, only:              &
@@ -180,9 +180,9 @@ module namelist_mod
     integer :: se_phys_tscale, se_nsplit
     integer :: interp_nlat, interp_nlon, interp_gridtype, interp_type
     integer :: i, ii, j
-    integer  :: ierr, nstep_factor
+    integer  :: ierr
     character(len=80) :: errstr, arg
-    real(kind=real_kind) :: dt_max, dtime
+    real(kind=real_kind) :: dt_max
 #ifdef CAM
     character(len=MAX_STRING_LEN) :: se_topology
     integer :: se_partmethod
@@ -621,10 +621,8 @@ module namelist_mod
 #endif
 #endif
 ! ^ ifndef CAM
-
-       dtime = 0
-       ierr = timestep_make_parameters_consistent(par, rsplit, qsplit, dt_remap_factor, dt_tracer_factor, &
-            tstep, dtime, nsplit, nstep_factor)
+       ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
+            dt_remap_factor, dt_tracer_factor)
     end if
 
 #ifdef CAM

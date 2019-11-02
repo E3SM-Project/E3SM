@@ -5887,6 +5887,18 @@ If rsplit=0, vertically lagrangian code is off.
 Default: Set by build-namelist.
 </entry>
 
+<entry id="dt_tracer_factor" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Tracer advection is done every dt_tracer_factor dynamics timesteps.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="dt_remap_factor" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Vertically lagrangian code updates every dt_remap_factor dynamics timesteps.
+If dt_remap_factor=0, vertically lagrangian code is off.
+</entry>
+
 <entry id="tstep_type" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 Time stepping method for SE dycore

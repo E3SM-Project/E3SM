@@ -146,12 +146,16 @@ subroutine dcmip2012_test1_1_conv(elem,hybrid,hvcoord,nets,nete,time,n0,n1)
 
   ! set analytic vertical coordinates at t=0
   if(.not. initialized) then
+    !$omp barrier
+    !$omp master
     if (hybrid%masterthread) write(iulog,*) 'initializing dcmip2012 test 1-1: 3d deformational flow'
     call get_evenly_spaced_p(zi,zm,0.0_rl,ztop,H)                       ! get evenly spaced p levels
     hvcoord%etai  = exp(-zi/H)                                          ! set eta levels from z
     call set_hybrid_coefficients(hvcoord,hybrid, hvcoord%etai(1),1.0_rl)! set hybrid A and B from eta levels
     call set_layer_locations(hvcoord, .true., hybrid%masterthread)
     initialized = .true.
+    !$omp end master
+    !$omp barrier
   endif
 
   ! set prescribed state at level midpoints

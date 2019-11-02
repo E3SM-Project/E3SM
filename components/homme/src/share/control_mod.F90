@@ -280,7 +280,7 @@ contains
     real(kind=real_kind), intent(inout) :: &
          ! Dynamics time step.
          tstep
-    real(kind=real_kind), intent(inout) :: &
+    integer, intent(inout) :: &
          ! Physics-dynamics coupling time step.
          dtime
     logical, intent(in), optional :: abort, silent
@@ -291,17 +291,42 @@ contains
          eps = epsilon(1.0_real_kind), &
          divisible_tol = 1e3_real_kind*eps
 
-    real(kind=real_kind) :: nsplit_real, tmp
-    integer :: qsplit_prev, rsplit_prev, dt_max_factor
-    logical :: abort_in, silent_in, split_specified, factor_specified, split_is_master
-
-    status = -1 ! error value for early returns on error
+    logical :: abort_in, silent_in
 
     abort_in = .true.
     if (present(abort)) abort_in = abort
-
     silent_in = .false.
     if (present(silent)) silent_in = silent
+
+    status = timestep_make_subcycle_parameters_consistent( &
+         par, rsplit, qsplit, dt_remap_factor, dt_tracer_factor, &
+         abort_in, silent_in)
+    if (status /= 0) return
+    status = timestep_make_eam_parameters_consistent( &
+         par, dt_remap_factor, dt_tracer_factor, nsplit, nstep_factor, tstep, dtime, &
+         abort_in, silent_in)
+  end function timestep_make_parameters_consistent
+
+  function timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
+       dt_remap_factor, dt_tracer_factor, abort, silent) result(status)
+
+    use parallel_mod, only: abortmp, parallel_t
+    use kinds, only: iulog
+
+    type (parallel_t), intent(in) :: par
+    integer, intent(inout) :: rsplit, qsplit, dt_remap_factor, dt_tracer_factor
+    logical, intent(in), optional :: abort, silent
+    integer :: status
+
+    integer :: qsplit_prev, rsplit_prev
+    logical :: split_specified, factor_specified, split_is_master, abort_in, silent_in
+
+    abort_in = .true.
+    if (present(abort)) abort_in = abort
+    silent_in = .false.
+    if (present(silent)) silent_in = silent
+
+    status = -1 ! error value for early returns on error
 
     split_specified = rsplit >= 0 .and. qsplit >= 1
     factor_specified = dt_remap_factor >= 0 .and. dt_tracer_factor >= 1
@@ -365,19 +390,53 @@ contains
                qsplit_prev, ' to ', qsplit, ' and rsplit from ', rsplit_prev, ' to ', rsplit, '.'
        end if
     end if
-    dt_max_factor = max(dt_remap_factor, dt_tracer_factor)
+
+    status = 0 ! success value
+  end function timestep_make_subcycle_parameters_consistent
+
+  function timestep_make_eam_parameters_consistent(par, dt_remap_factor, dt_tracer_factor, &
+       nsplit, nstep_factor, tstep, dtime, abort, silent) result(status)
+
+    use parallel_mod, only: abortmp, parallel_t
+    use kinds, only: iulog
+
+    type (parallel_t), intent(in) :: par
+    integer, intent(in) :: dt_remap_factor, dt_tracer_factor
+    integer, intent(inout) :: nsplit
+    integer, intent(out) :: nstep_factor
+    real(kind=real_kind), intent(inout) :: tstep
+    integer, intent(inout) :: dtime
+    logical, intent(in), optional :: abort, silent
+    integer :: status
+
+    real(kind=real_kind), parameter :: &
+         zero = 0.0_real_kind, &
+         eps = epsilon(1.0_real_kind), &
+         divisible_tol = 1e3_real_kind*eps
+
+    real(kind=real_kind) :: nsplit_real, tmp
+    integer :: dt_max_factor
+    logical :: abort_in, silent_in
+
+    abort_in = .true.
+    if (present(abort)) abort_in = abort
+    silent_in = .false.
+    if (present(silent)) silent_in = silent
+
+    status = -1 ! error value for early returns on error
 
     !! Process dtime, tstep, nsplit.
+    dt_max_factor = max(dt_remap_factor, dt_tracer_factor)
 
     ! Every 'if' has an 'else', so every case is covered.
     if (nsplit > 0) nstep_factor = dt_max_factor*nsplit
-    if (dtime > zero) then
+    if (dtime > 0) then
        if (nsplit > zero) then
-          tmp = dtime/real(nstep_factor, real_kind)
+          tmp = real(dtime, real_kind)/real(nstep_factor, real_kind)
           if (tstep > zero) then
              if (abs(tstep - tmp) > divisible_tol*tmp) then
                 if (par%masterproc .and. .not. silent_in) then
-                   write(iulog,'(a,a,es11.4,a,i2,a,es11.4,a,i2)') &
+                   write(iulog,'(a,a,i6,a,i2,a,es11.4,a,i2)') &
                         'dtime, nsplit, tstep were all >0 on input, but they disagree: ', &
                         'dtime ', dtime, ' nsplit ', nsplit, ' tstep ', tstep, ' nstep_factor ', nstep_factor
                 end if
@@ -387,12 +446,12 @@ contains
           end if
           tstep = tmp
        elseif (tstep > zero) then
-          nsplit_real = dtime/(dt_max_factor*tstep)
+          nsplit_real = real(dtime, real_kind)/(dt_max_factor*tstep)
           nsplit = idnint(nsplit_real)
           nstep_factor = dt_max_factor*nsplit
           if (abs(nsplit_real - nsplit) > divisible_tol*nsplit_real) then
              if (par%masterproc .and. .not. silent_in) then
-                write(iulog,'(a,es11.4,a,es11.4,a,es11.4,a)') &
+                write(iulog,'(a,es11.4,a,i7,a,es11.4,a)') &
                      'nsplit was computed as ', nsplit_real, ' based on dtime ', dtime, &
                      ' and tstep ', tstep, ', which is outside the divisibility tolerance. Set &
                      &tstep so that it divides dtime.'
@@ -430,7 +489,7 @@ contains
     end if
 
     status = 0 ! success value
-  end function timestep_make_parameters_consistent
+  end function timestep_make_eam_parameters_consistent
 
   subroutine test_timestep_make_parameters_consistent(par, nerr)
     ! Test timestep_make_parameters_consistent.
@@ -443,15 +502,15 @@ contains
 
     real(real_kind), parameter :: eps = epsilon(1.0_real_kind), tol = 1e3_real_kind*eps
 
-    real(real_kind) :: tstep, dtime
-    integer :: i, rs, qs, drf, dtf, ns, nstep_fac
+    real(real_kind) :: tstep
+    integer :: i, rs, qs, drf, dtf, ns, nstep_fac, dtime
     logical :: a, s
 
     a = .false.
     nerr = 0
 
     !! Test backwards compatibility.
-    dtime = 1800_real_kind
+    dtime = 1800
 
     qs = 3; rs = 0; drf = -1; dtf = -1
     tstep = -1; ns = 2
@@ -485,7 +544,7 @@ contains
          nerr = nerr + 1
 
     qs = -1; rs = -1; drf = 12; dtf = 6
-    tstep = 300_real_kind; dtime = 7200_real_kind; ns = -1
+    tstep = 300_real_kind; dtime = 7200; ns = -1
     i = timestep_make_parameters_consistent(par,rs,qs,drf,dtf,tstep,dtime,ns,nstep_fac,a)
     if (i /= 0 .or. rs /= 2 .or. qs /= 6 .or. nstep_fac /= qs*rs*ns .or. ns /= 2 .or. &
          abs(tstep - dtime/(qs*rs*ns)) > tol) &
@@ -535,12 +594,12 @@ contains
 
     !! Test warning conditions.
     qs = 4; rs = 0; drf = 3; dtf = 6
-    tstep = -1; dtime = 1800_real_kind; ns = 2
+    tstep = -1; dtime = 1800; ns = 2
     i = timestep_make_parameters_consistent(par,rs,qs,drf,dtf,tstep,dtime,ns,nstep_fac,a,s)
     if (i /= 0 .or. qs /= dtf .or. rs /= 1) nerr = nerr + 1
 
     qs = 4; rs = 0; drf = 12; dtf = 6
-    tstep = -1; dtime = 1800_real_kind; ns = 2
+    tstep = -1; dtime = 1800; ns = 2
     i = timestep_make_parameters_consistent(par,rs,qs,drf,dtf,tstep,dtime,ns,nstep_fac,a,s)
     if (i /= 0 .or. qs /= dtf .or. rs /= 2) nerr = nerr + 1
 
