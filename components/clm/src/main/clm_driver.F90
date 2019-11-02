@@ -128,9 +128,9 @@ module clm_driver
   use clm_instMod            , only : chemstate_vars
   use clm_instMod            , only : alm_fates
   use clm_instMod            , only : PlantMicKinetics_vars
+  use EcosystemDynBeTRMod    , only : CNEcosystemDynBeTR0, CNFluxStateBeTR0Summary
   use EcosystemDynBeTRMod    , only : CNEcosystemDynBeTR1, CNFluxStateBeTR1Summary
-  use EcosystemDynBeTRMod    , only : CNEcosystemDynBeTR2, CNEcosystemDynBeTR0
-  use EcosystemDynBeTRMod    , only : CNFluxStateBeTR2Summary
+  use EcosystemDynBeTRMod    , only : CNEcosystemDynBeTR2, CNFluxStateBeTR2Summary
   use UrbanParamsType        , only : urbanparams_vars
 
   use GridcellType           , only : grc_pp
@@ -1197,7 +1197,23 @@ contains
                col_ns, veg_ns, col_nf, veg_nf, col_ps, col_pf, veg_pf)
           endif
 
-          if(do_betr_bgc_type('type0_bgc') .or. do_betr_bgc_type('type1_bgc'))then
+          if(do_betr_bgc_type('type0_bgc'))then
+            !summarize total column nitrogen and carbon, plant have no nutrient buffer
+            call CNFluxStateBeTR0Summary(bounds_clump, col_pp, veg_pp, &
+                 filter(nc)%num_soilc, filter(nc)%soilc,                       &
+                 filter(nc)%num_soilp, filter(nc)%soilp,                       &
+                 filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,               &
+                 cnstate_vars,                                                 &
+                 carbonflux_vars, carbonstate_vars,                            &
+                 c13_carbonflux_vars, c13_carbonstate_vars,                    &
+                 c14_carbonflux_vars, c14_carbonstate_vars,                    &
+                 nitrogenflux_vars, nitrogenstate_vars,                        &
+                 waterstate_vars, waterflux_vars,                              &
+                 frictionvel_vars, canopystate_vars,                           &
+                 phosphorusflux_vars, phosphorusstate_vars)
+          endif
+
+          if(do_betr_bgc_type('type1_bgc'))then
             !summarize total column nitrogen and carbon, plant have no nutrient buffer
             call CNFluxStateBeTR1Summary(bounds_clump, col_pp, veg_pp, &
                  filter(nc)%num_soilc, filter(nc)%soilc,                       &
