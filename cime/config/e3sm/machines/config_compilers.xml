@@ -745,7 +745,7 @@ for mct, etc.
   <SLIBS>
     <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} </append>
     <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
-    <append>-mkl</append>
+    <append>-Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl</append>
   </SLIBS>
   <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
   <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
@@ -818,13 +818,14 @@ for mct, etc.
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
   <CFLAGS>
     <base> -O2 -fp-model precise -std=gnu99 </base>
-    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
+    <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
   </CFLAGS>
   <CXXFLAGS>
     <base> -std=c++11 -fp-model source </base>
-    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
     <append DEBUG="TRUE"> -O0 -g </append>
     <append DEBUG="FALSE"> -O2 </append>
   </CXXFLAGS>
@@ -840,7 +841,8 @@ for mct, etc.
   </FC_AUTO_R8>
   <FFLAGS>
     <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </base>
-    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
+    <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
     <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
     <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --fflags} </append>
@@ -856,7 +858,7 @@ for mct, etc.
   </FREEFLAGS>
   <HAS_F2008_CONTIGUOUS>TRUE</HAS_F2008_CONTIGUOUS>
   <LDFLAGS>
-    <append compile_threaded="TRUE"> -qopenmp </append>
+    <append compile_threaded="TRUE"> -qopenmp -static-intel</append>
   </LDFLAGS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpicxx </MPICXX>
