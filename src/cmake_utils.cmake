@@ -6,7 +6,7 @@ function(handle_st_nl_gen NL_GEN_ARGS ST_GEN_ARGS CORE_INPUT_DIR_ARG CORE_BLDDIR
     list(APPEND INPUTS ${ITEM})
     add_custom_command(
       OUTPUT ${CORE_INPUT_DIR_ARG}/${ITEM}
-      COMMAND ${CMAKE_BINARY_DIR}/namelist_gen ${CORE_BLDDIR_ARG}/Registry_processed.xml ${NL_GEN_ARG}
+      COMMAND ${CMAKE_BINARY_DIR}/tools/namelist_gen ${CORE_BLDDIR_ARG}/Registry_processed.xml ${NL_GEN_ARG}
       DEPENDS namelist_gen ${CORE_BLDDIR_ARG}/Registry_processed.xml
       WORKING_DIRECTORY ${CORE_INPUT_DIR_ARG}
     )
@@ -18,7 +18,7 @@ function(handle_st_nl_gen NL_GEN_ARGS ST_GEN_ARGS CORE_INPUT_DIR_ARG CORE_BLDDIR
     list(APPEND INPUTS ${ITEM})
     add_custom_command(
       OUTPUT ${CORE_INPUT_DIR_ARG}/${ITEM}
-      COMMAND ${CMAKE_BINARY_DIR}/streams_gen ${CORE_BLDDIR_ARG}/Registry_processed.xml ${ST_GEN_ARG}
+      COMMAND ${CMAKE_BINARY_DIR}/tools/streams_gen ${CORE_BLDDIR_ARG}/Registry_processed.xml ${ST_GEN_ARG}
       DEPENDS streams_gen ${CORE_BLDDIR_ARG}/Registry_processed.xml
       WORKING_DIRECTORY ${CORE_INPUT_DIR_ARG}
     )

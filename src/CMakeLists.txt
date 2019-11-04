@@ -51,20 +51,7 @@ set(CMAKE_Fortran_FLAGS "${FFLAGS}")
 set(CMAKE_C_FLAGS "${CFLAGS}")
 set(CMAKE_CXX_FLAGS "${CXXFLAGS}")
 
-# Make build tools
-set(CMAKE_C_COMPILER ${SCC})
-
-add_executable(streams_gen tools/input_gen/streams_gen.c tools/input_gen/test_functions.c external/ezxml/ezxml.c)
-add_executable(namelist_gen tools/input_gen/namelist_gen.c tools/input_gen/test_functions.c external/ezxml/ezxml.c)
-add_executable(parse tools/registry/parse.c tools/registry/dictionary.c tools/registry/gen_inc.c tools/registry/fortprintf.c tools/registry/utility.c external/ezxml/ezxml.c)
-
-foreach(EXEITEM streams_gen namelist_gen parse)
-  target_compile_definitions(${EXEITEM} PRIVATE ${CPPDEFS})
-  target_compile_options(${EXEITEM} PRIVATE "-Uvector")
-  target_include_directories(${EXEITEM} PRIVATE ${INCLUDES})
-endforeach()
-
-set(CMAKE_C_COMPILER ${MPICC})
+add_subdirectory(tools)
 
 # Gather sources that are needed for all cores
 
