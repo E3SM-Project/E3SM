@@ -1019,10 +1019,10 @@
     <mpirun mpilib="default">
       <executable>srun</executable>
       <arguments>
-        <arg name="num_tasks"> -l -N {{ num_nodes }} -n {{ total_tasks }} </arg>
+        <arg name="num_tasks"> -l -N {{ num_nodes }} -n {{ total_tasks }} --kill-on-bad-exit</arg>
         <arg name="binding">--cpu_bind=cores</arg>
-        <arg name="thread_count">-c $SHELL{if [ FALSE = `./xmlquery --value SMP_PRESENT` ];then echo 1;else echo $OMP_NUM_THREADS;fi}</arg>
-        <arg name="placement">-m plane=$SHELL{if [ FALSE = `./xmlquery --value SMP_PRESENT` ];then echo 36;else echo 36/$OMP_NUM_THREADS|bc;fi}</arg>
+        <arg name="thread_count">-c $ENV{OMP_NUM_THREADS}</arg>
+        <arg name="placement">-m plane=$SHELL{echo 36/$OMP_NUM_THREADS|bc}</arg>
       </arguments>
     </mpirun>
     <mpirun mpilib="mpi-serial">
@@ -1099,7 +1099,6 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="KMP_HOT_TEAMS_MODE">1</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
       <env name="KMP_AFFINITY">granularity=thread,scatter</env>
@@ -1115,7 +1114,7 @@
     <DESC>ANL/LCRC Linux Cluster</DESC>
     <NODENAME_REGEX>blueslogin.*.lcrc.anl.gov</NODENAME_REGEX>
     <OS>LINUX</OS>
-    <COMPILERS>intel18,gnu</COMPILERS>
+    <COMPILERS>intel,intel18,gnu</COMPILERS>
     <MPILIBS>mvapich</MPILIBS>
     <PROJECT>condo</PROJECT>
     <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
@@ -1146,38 +1145,48 @@
       <executable/>
     </mpirun>
     <module_system type="module">
-      <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/sh;export MODULEPATH=$MODULEPATH:/software/centos7/spack-latest/share/spack/lmod/linux-centos7-x86_64/Core</init_path>
+      <init_path lang="csh">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/csh;setenv MODULEPATH $MODULEPATH\:/software/centos7/spack-latest/share/spack/lmod/linux-centos7-x86_64/Core</init_path>
       <init_path lang="python">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/init/env_modules_python.py</init_path>
-      <cmd_path lang="python">/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod python</cmd_path>
+      <cmd_path lang="python">export MODULEPATH=$MODULEPATH:/software/centos7/spack-latest/share/spack/lmod/linux-centos7-x86_64/Core;/home/software/spack-0.10.1/opt/spack/linux-centos7-x86_64/gcc-4.8.5/lmod-7.4.9-ic63herzfgw5u3na5mdtvp3nwxy6oj2z/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
         <command name="purge"/>
-        <command name="load">cmake/3.13.4-354d6wl</command>
+        <command name="load">cmake/3.14.2-gvwazz3</command>
+      </modules>
+      <modules compiler="intel">
+        <command name="load">intel/17.0.0-pwabdn2</command>
+        <command name="load">intel-mkl/2017.1.132-6qy7y5f</command>
+        <command name="load">netcdf/4.4.1-tckdgwl</command>
+        <command name="load">netcdf-cxx/4.2-3qkutvv</command>
+        <command name="load">netcdf-fortran/4.4.4-urmb6ss</command>
+      </modules>
+      <modules compiler="intel" mpilib="mvapich">
+        <command name="load">mvapich2/2.2-verbs-qwuab3b</command>
+        <command name="load">parallel-netcdf/1.7.0-lbykqph</command>
       </modules>
       <modules compiler="intel18">
-        <command name="load">intel/18.0.4-443hhug</command>
+        <command name="load">intel/18.0.4-62uvgmb</command>
         <command name="load">intel-mkl/2018.4.274-jwaeshj</command>
+        <command name="load">netcdf/4.4.1-fijcsqi</command>
+        <command name="load">netcdf-cxx/4.2-cixenix</command>
+        <command name="load">netcdf-fortran/4.4.4-mmtrep3</command>
       </modules>
       <modules compiler="intel18" mpilib="mvapich">
-        <command name="load">mvapich2/2.3.1-verbs-omjz3ck</command>
-        <command name="load">hdf5/1.10.5-3mk3uik</command>
-        <command name="load">netcdf/4.7.0-krelxcz</command>
-        <command name="load">netcdf-fortran/4.4.5-74lj75q</command>
-        <command name="load">parallel-netcdf/1.11.2-7fy6qz3</command>
+        <command name="load">mvapich2/2.2-verbs-m57bia7</command>
+        <command name="load">parallel-netcdf/1.11.0-ny4vo3o</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gcc/8.2.0-g7hppkz</command>
-	<command name="load">intel-mkl/2018.4.274-2amycpi</command>
-	<command name="load">hdf5/1.8.16-mz7lmxh</command>
-	<command name="load">netcdf/4.4.1-xkjcghm</command>
-	<command name="load">netcdf-cxx/4.2-kyva3os</command>
-	<command name="load">netcdf-fortran/4.4.4-mpstomu</command>
+        <command name="load">gcc/8.2.0-xhxgy33</command>
+        <command name="load">intel-mkl/2018.4.274-2amycpi</command>
+        <command name="load">netcdf/4.4.1-ve2zfkw</command>
+        <command name="load">netcdf-cxx/4.2-2rkopdl</command>
+        <command name="load">netcdf-fortran/4.4.4-thtylny</command>
       </modules>
       <modules compiler="gnu" mpilib="mvapich">
-	<command name="load">mvapich2/2.3.1-verbs-wcfqbl5</command>
-        <command name="load">parallel-netcdf/1.8.1-mnott45</command>
+        <command name="load">mvapich2/2.2-verbs-ppznoge</command>
+        <command name="load">parallel-netcdf/1.11.0-c22b2bn</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
