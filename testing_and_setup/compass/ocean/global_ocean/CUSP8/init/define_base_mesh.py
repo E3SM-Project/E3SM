@@ -11,23 +11,97 @@ def cellWidthVsLatLon():
     km = 1000.0
 
     params = ct.default_params
+
+    # Use 1.0 degree for fast scoping, and 0.1 for the final creation:
+    params["ddeg"] = 0.1
+
     params["dx_min_coastal"] = 8.0*km
-    params["trans_width"] = 600.0*km
     params["trans_start"] = 400.0*km
+    params["trans_width"] = 600.0*km
+    params["n_longest"] = 20
     params["mesh_type"] = "EC"
 
-    #params["plot_box"] = np.array([-80,-30,30,90])
     params["plot_box"] = ct.Entire_Globe
     params["plot_option"] = False
 
     print("***Gulf Coast***")
     params["region_box"] = ct.US_Gulf_Coast
     params["restrict_box"] = ct.Gulf_restrict
+    params["trans_start"] = 400.0*km
+    params["trans_width"] = 600.0*km
     cell_width, lon, lat = ct.coastal_refined_mesh(params)
 
     print("***East Coast***")
     params["region_box"] = ct.US_East_Coast
     params["restrict_box"] = ct.East_Coast_restrict
+    params["trans_start"] = 400.0*km
+    params["trans_width"] = 600.0*km
+    cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+
+    print("***Gulf Stream extension***")
+    params["restrict_box"] = ct.Empty
+    params["trans_width"] = 600.0*km
+    params["region_box"] = {"include":[np.array([-78,-70,40,42])],
+                            "exclude":[]}
+    params["trans_start"] = 700.0*km
+    cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+    params["region_box"] = {"include":[np.array([-74,-50,42,55])],
+                            "exclude":[]}
+    params["trans_start"] = 1100.0*km
+    cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+
+    print("***Gulf Coast spot***")
+    params["restrict_box"] = ct.Empty
+    params["trans_width"] = 100.0*km
+    params["region_box"] = {"include":[np.array([-98,-94,28,30])],
+                            "exclude":[]}
+    params["trans_start"] = 400.0*km
+    cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+    
+    print("***Greenland***")
+    params["region_box"] = ct.Greenland
+    params["restrict_box"] = ct.Empty
+    params["trans_width"] = 600.0*km
+    params["trans_start"] = 275.0*km
+    cell_width, lon, lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+
+    print("***Greenland-Iceland smooth kink***")
+    params["region_box"] = {"include":[np.array([-45,-40,59,62])],
+                            "exclude":[]}
+    params["trans_start"] = 700.0*km
+    cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+
+    print( "***Hudson Bay***")
+    params["region_box"] = {"include":[np.array([-100,-70,50,65])],
+                            "exclude":[]}
+    params["restrict_box"] = {"include":[np.array([-100,-70,50,65])],
+                            "exclude":[]}
+    params["trans_start"] = 600.0*km
+    params["trans_width"] = 100.0*km
+    cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+
+    print( "***Northern Canada***")
+    params["region_box"] = {"include":[np.array([-168,-59,67,85])],
+                            "exclude":[]}
+    params["restrict_box"] = ct.Empty
+    params["trans_start"] = 275.0*km
+    params["trans_width"] = 600.0*km
+    params["n_longest"] = 20
+    cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+
+    print("***Alaska***")
+    params["region_box"] = ct.Alaska
+    params["trans_start"] = 400.0*km
+    params["trans_width"] = 600.0*km
+    cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
+
+    print( "***Crook at Alaska/Canada***")
+    params["region_box"] = {"include":[np.array([-144,-127,68.5,71])],
+                            "exclude":[]}
+    params["restrict_box"] = ct.Empty
+    params["trans_start"] = 550.0*km
+    params["trans_width"] = 600.0*km
+    params["n_longest"] = 20
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
     print("***Caribbean***")
@@ -44,10 +118,6 @@ def cellWidthVsLatLon():
     params["trans_width"] = 600.0*km
     params["trans_start"] = 400.0*km
     params["n_longest"] = 10
-    cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
-
-    print("***Alaska***")
-    params["region_box"] = ct.Alaska
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
     print("***Aleutian Islands (West)***")
@@ -80,6 +150,7 @@ def cellWidthVsLatLon():
     params["restrict_box"] = ct.Empty
     params["trans_start"] = 100*km
     params["trans_width"] = 200*km
+    params["n_longest"] = 10
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
     print("***Newfoundland***")
@@ -91,13 +162,6 @@ def cellWidthVsLatLon():
     params["trans_width"] = 600.0*km
     params["trans_start"] = 400.0*km
     cell_width,lon,lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
-
-    print("***Greenland***")
-    params["region_box"] = ct.Greenland
-    params["restrict_box"] = ct.Empty
-    params["trans_width"] = 600.0*km
-    params["trans_start"] = 275.0*km
-    cell_width, lon, lat = ct.coastal_refined_mesh(params,cell_width,lon,lat)
 
     print("***Labrador Sea***")
     params["region_box"] = ct.Empty
