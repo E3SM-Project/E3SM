@@ -1615,7 +1615,11 @@ contains
         omega_i(:,:,k+1)=omega_i(:,:,k)+divdp(:,:,k)
      enddo
      do k=1,nlev
+#ifdef XX_NONBFB_COMING
+        pi(:,:,k)=(pi_i(:,:,k) + pi_i(:,:,k+1))/2
+#else
         pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
+#endif
         vtemp(:,:,:,k) = gradient_sphere( pi(:,:,k), deriv, elem(ie)%Dinv);
         vgrad_p(:,:,k) = elem(ie)%state%v(:,:,1,k,n0)*vtemp(:,:,1,k)+&
              elem(ie)%state%v(:,:,2,k,n0)*vtemp(:,:,2,k)
@@ -1785,7 +1789,11 @@ contains
                 dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0)*v_theta(:,:,1,k) + &
                 dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0)*v_theta(:,:,2,k) 
         endif
+#ifdef XX_NONBFB_COMING
+        theta_tens(:,:,k)=(-theta_vadv(:,:,k)-div_v_theta(:,:,k))
+#else
         theta_tens(:,:,k)=(-theta_vadv(:,:,k)-div_v_theta(:,:,k))*scale1
+#endif
 
         ! w vorticity correction term
         temp(:,:,k) = (elem(ie)%state%w_i(:,:,k,n0)**2 + &
@@ -1839,6 +1847,17 @@ contains
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
 
+#ifdef XX_NONBFB_COMING
+              vtens1(i,j,k) = ( - Cp*vtheta(i,j,k)*gradexner(i,j,1,k) &
+                                - (v_vadv(i,j,1,k) + gradKE(i,j,1,k)) &
+                                - (mgrad(i,j,1,k) + wvor(i,j,1,k))    &
+                                + v2*(elem(ie)%fcor(i,j) + vort(i,j,k)) )
+
+              vtens2(i,j,k) = ( - Cp*vtheta(i,j,k)*gradexner(i,j,2,k) &
+                                - (v_vadv(i,j,2,k) + gradKE(i,j,2,k)) &
+                                - (mgrad(i,j,2,k) + wvor(i,j,2,k))    &
+                                - v1*(elem(ie)%fcor(i,j) + vort(i,j,k)) )
+#else
               vtens1(i,j,k) = (-v_vadv(i,j,1,k) &
                    + v2*(elem(ie)%fcor(i,j) + vort(i,j,k))        &
                    - gradKE(i,j,1,k) - mgrad(i,j,1,k) &
@@ -1851,6 +1870,7 @@ contains
                    - gradKE(i,j,2,k) - mgrad(i,j,2,k) &
                   -Cp*vtheta(i,j,k)*gradexner(i,j,2,k) &
                   -wvor(i,j,2,k) )*scale1
+#endif
            end do
         end do     
      end do 
@@ -1997,6 +2017,25 @@ contains
 #endif
 
      do k=1,nlev
+#ifdef XX_NONBFB_COMING
+        elem(ie)%state%v(:,:,1,k,np1) = (elem(ie)%spheremp(:,:)*scale3) * elem(ie)%state%v(:,:,1,k,nm1) &
+          + (scale1*dt2*elem(ie)%spheremp(:,:))*vtens1(:,:,k)
+        elem(ie)%state%v(:,:,2,k,np1) = (elem(ie)%spheremp(:,:)*scale3) * elem(ie)%state%v(:,:,2,k,nm1) &
+          +  (scale1*dt2*elem(ie)%spheremp(:,:))*vtens2(:,:,k)
+        elem(ie)%state%vtheta_dp(:,:,k,np1) = (elem(ie)%spheremp(:,:)*scale3) * elem(ie)%state%vtheta_dp(:,:,k,nm1) &
+          + (scale1*dt2*elem(ie)%spheremp(:,:))*theta_tens(:,:,k)
+        if ( .not. theta_hydrostatic_mode ) then
+           elem(ie)%state%w_i(:,:,k,np1)    = (elem(ie)%spheremp(:,:)*scale3) * elem(ie)%state%w_i(:,:,k,nm1)   &
+                + (elem(ie)%spheremp(:,:)*dt2)*w_tens(:,:,k)
+           elem(ie)%state%phinh_i(:,:,k,np1)   = (elem(ie)%spheremp(:,:)*scale3) * elem(ie)%state%phinh_i(:,:,k,nm1) &
+                + (elem(ie)%spheremp(:,:)*dt2)*phi_tens(:,:,k)
+        endif
+
+        elem(ie)%state%dp3d(:,:,k,np1) = &
+             (elem(ie)%spheremp(:,:) * scale3) * elem(ie)%state%dp3d(:,:,k,nm1) - &
+             (scale1*dt2*elem(ie)%spheremp(:,:)) * (divdp(:,:,k) + (eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
+
+#else
         elem(ie)%state%v(:,:,1,k,np1) = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%v(:,:,1,k,nm1) &
           + dt2*vtens1(:,:,k) )
         elem(ie)%state%v(:,:,2,k,np1) = elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%v(:,:,2,k,nm1) &
@@ -2014,11 +2053,18 @@ contains
         elem(ie)%state%dp3d(:,:,k,np1) = &
              elem(ie)%spheremp(:,:) * (scale3 * elem(ie)%state%dp3d(:,:,k,nm1) - &
              scale1*dt2 * (divdp(:,:,k) + eta_dot_dpdn(:,:,k+1)-eta_dot_dpdn(:,:,k)))
+#endif
      enddo
-     k=nlevp
-     if ( .not. theta_hydrostatic_mode ) &
-          elem(ie)%state%w_i(:,:,k,np1)=elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%w_i(:,:,k,nm1)   &
-          + dt2*w_tens(:,:,k))
+     if ( .not. theta_hydrostatic_mode ) then
+        k=nlevp
+#ifdef XX_NONBFB_COMING
+        elem(ie)%state%w_i(:,:,k,np1)= (elem(ie)%spheremp(:,:)*scale3) * elem(ie)%state%w_i(:,:,k,nm1)   &
+        + (elem(ie)%spheremp(:,:)*dt2)*w_tens(:,:,k)
+#else
+        elem(ie)%state%w_i(:,:,k,np1)=elem(ie)%spheremp(:,:)*(scale3 * elem(ie)%state%w_i(:,:,k,nm1)   &
+        + dt2*w_tens(:,:,k))
+#endif
+     endif
 
 
      kptr=0
@@ -2486,38 +2532,48 @@ contains
   enddo
 
   if (warn) then
-  vtheta_dp(:,:,:)=vtheta_dp(:,:,:)/dp3d(:,:,:)
-  do j = 1 , np
-     do i = 1 , np
-        if ( minval(dp3d(i,j,:) - dp3d_thresh*dp0(:)) < 0 ) then
+#ifndef XX_NONBFB_COMING
+    vtheta_dp(:,:,:)=vtheta_dp(:,:,:)/dp3d(:,:,:)
+#endif
+    do j = 1 , np
+       do i = 1 , np
+          if ( minval(dp3d(i,j,:) - dp3d_thresh*dp0(:)) < 0 ) then
+#ifdef XX_NONBFB_COMING
+             vtheta_dp(i,j,:)=vtheta_dp(i,j,:)/dp3d(i,j,:)
+#endif
 
-           ! subtract min, multiply in by weights
-           Qcol(:) = (dp3d(i,j,:) - dp3d_thresh*dp0(:))*spheremp(i,j)
-           mass = 0
-           do k = 1,nlev
-              mass = mass + Qcol(k)
-           enddo
+             ! subtract min, multiply in by weights
+             Qcol(:) = (dp3d(i,j,:) - dp3d_thresh*dp0(:))*spheremp(i,j)
+             mass = 0
+             do k = 1,nlev
+                mass = mass + Qcol(k)
+             enddo
 
-           ! negative mass.  so reduce all postive values to zero
-           ! then increase negative values as much as possible
-           if ( mass < 0 ) Qcol = -Qcol
-           mass_new = 0
-           do k=1,nlev
-              if ( Qcol(k) < 0 ) then
-                 Qcol(k) = 0
-              else
-                 mass_new = mass_new + Qcol(k)
-              endif
-           enddo
-           ! now scale the all positive values to restore mass
-           if ( mass_new > 0 ) Qcol(:) = Qcol(:) * (abs(mass) / mass_new)
-           if ( mass     < 0 ) Qcol(:) = -Qcol(:)
-           !
-           dp3d(i,j,:) = Qcol(:)/spheremp(i,j) + dp3d_thresh*dp0(:)
-        endif
-     enddo
-  enddo
-  vtheta_dp(:,:,:)=vtheta_dp(:,:,:)*dp3d(:,:,:)
+             ! negative mass.  so reduce all postive values to zero
+             ! then increase negative values as much as possible
+             if ( mass < 0 ) Qcol = -Qcol
+             mass_new = 0
+             do k=1,nlev
+                if ( Qcol(k) < 0 ) then
+                   Qcol(k) = 0
+                else
+                   mass_new = mass_new + Qcol(k)
+                endif
+             enddo
+             ! now scale the all positive values to restore mass
+             if ( mass_new > 0 ) Qcol(:) = Qcol(:) * (abs(mass) / mass_new)
+             if ( mass     < 0 ) Qcol(:) = -Qcol(:)
+             !
+             dp3d(i,j,:) = Qcol(:)/spheremp(i,j) + dp3d_thresh*dp0(:)
+#ifdef XX_NONBFB_COMING
+             vtheta_dp(i,j,:)=vtheta_dp(i,j,:)*dp3d(i,j,:)
+#endif
+          endif
+       enddo
+    enddo
+#ifndef XX_NONBFB_COMING
+    vtheta_dp(:,:,:)=vtheta_dp(:,:,:)*dp3d(:,:,:)
+#endif
   endif
   end subroutine limiter_dp3d_k
 

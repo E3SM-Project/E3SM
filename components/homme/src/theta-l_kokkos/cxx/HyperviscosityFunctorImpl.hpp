@@ -192,7 +192,7 @@ public:
       });
 
 #ifndef XX_NONBFB_COMING
-      // It would be fine to not even bother with the surface level, cince
+      // It would be fine to not even bother with the surface level, since
       // phitens is only NUM_LEV long, so all the hv stuff does not even happen
       // at NUM_LEV_P (unless NUM_LEV_P==NUM_LEV). However, removing the subtraction
       // and addition of phi_i_ref at NUM_LEV_P introduces NON BFB diffs.
@@ -201,8 +201,8 @@ public:
           phi_i(NUM_LEV_P-1) -= phi_i_ref(NUM_LEV_P-1);
         });
       }
-    });
 #endif
+    });
 
     // Laplacian of layer thickness
     m_sphere_ops.laplace_simple(kv,
@@ -327,7 +327,7 @@ public:
     }
     // Laplacian of vertical velocity
 #ifdef XX_NONBFB_COMING
-    m_sphere_ops.laplace_simple<NUM_LEV_P,NUM_LEV_P,NUM_LEV>(kv,
+    m_sphere_ops.laplace_tensor<NUM_LEV_P,NUM_LEV_P,NUM_LEV>(kv,
 #else
     m_sphere_ops.laplace_tensor(kv,
 #endif
@@ -488,8 +488,8 @@ public:
         Kokkos::single(Kokkos::PerThread(kv.team),[&](){
           phi(NUM_LEV_P-1) += phi_ref(NUM_LEV_P-1);
         });
-#endif
       }
+#endif
     });
     kv.team_barrier();
 

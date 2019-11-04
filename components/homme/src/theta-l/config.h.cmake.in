@@ -66,4 +66,5 @@
 /* commit sha */
 #define HOMME_SHA1 "${LAST_GIT_COMMIT_SHA}"
 
-
+/* temporary flag to compare f90-cxx until we settle on either cxx or f90 implementation */
+#cmakedefine XX_NONBFB_COMING

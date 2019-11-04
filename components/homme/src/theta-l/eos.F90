@@ -146,9 +146,15 @@ implicit none
   do k=1,nlev
      pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
   enddo
+#ifdef XX_NONBFB_COMING
+  do k=1,nlev
+     pi(:,:,k) = (pi_i(:,:,k+1)+pi_i(:,:,k))/2
+  enddo
+#else
   do k=1,nlev
      pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
   enddo
+#endif
 
 
   if (theta_hydrostatic_mode) then
