@@ -892,7 +892,7 @@ contains
     dp_neg_min = reconstruct_and_limit_dp(elem%state%dp3d(:,:,:,tl%np1), &
          dt, dp_tol, eta_dot_dpdn, dprecon)
 #ifndef NDEBUG
-    if (dp_neg_min < zero) then
+    if (dp_neg_min < dp_tol) then
        write(iulog, '(a,i7,i7,es11.4)') &
             'sl_advection: reconstruct_and_limit_dp (rank,ie) returned', &
             hybrid%par%rank, ie, dp_neg_min
@@ -981,7 +981,7 @@ contains
     integer :: k, i, j
     real(kind=real_kind) :: nmass, w(nlev), dp(nlev), dp_neg_min
 
-    dp_neg_min = zero ! < 0 if the limiter has to adjust dp
+    dp_neg_min = dp_tol ! < dp_tol if the limiter has to adjust dp
     do j = 1,np
        do i = 1,np
           nmass = zero

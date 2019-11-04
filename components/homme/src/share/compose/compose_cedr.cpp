@@ -5636,22 +5636,23 @@ struct CDR {
   
   const Alg::Enum alg;
   const Int ncell, nlclcell, nlev, nsublev, nsuplev;
-  const bool cdr_over_super_levels;
+  const bool cdr_over_super_levels, hard_zero;
   const cedr::mpi::Parallel::Ptr p;
   qlt::tree::Node::Ptr tree; // Don't need this except for unit testing.
   cedr::CDR::Ptr cdr;
   std::vector<Int> ie2gci; // Map Homme ie to Homme global cell index.
   std::vector<Int> ie2lci; // Map Homme ie to CDR local cell index (lclcellidx).
+  std::vector<char> nonneg;
 
   CDR (Int cdr_alg_, Int ngblcell_, Int nlclcell_, Int nlev_, bool use_sgi,
-       bool cdr_over_super_levels_, const Int* gid_data, const Int* rank_data,
-       const cedr::mpi::Parallel::Ptr& p_, Int fcomm)
+       bool cdr_over_super_levels_, const bool hard_zero_, const Int* gid_data,
+       const Int* rank_data, const cedr::mpi::Parallel::Ptr& p_, Int fcomm)
     : alg(Alg::convert(cdr_alg_)),
       ncell(ngblcell_), nlclcell(nlclcell_), nlev(nlev_),
       nsublev(Alg::is_suplev(alg) ? nsublev_per_suplev : 1),
       nsuplev((nlev + nsublev - 1) / nsublev),
-      p(p_), inited_tracers_(false),
-      cdr_over_super_levels(cdr_over_super_levels_)
+      cdr_over_super_levels(cdr_over_super_levels_), hard_zero(hard_zero_),
+      p(p_), inited_tracers_(false)
   {
     if (Alg::is_qlt(alg)) {
       tree = make_tree(p, ncell, gid_data, rank_data, nsublev, use_sgi,
@@ -5674,6 +5675,7 @@ struct CDR {
   }
 
   void init_tracers (const Int qsize, const bool need_conservation) {
+    nonneg.resize(qsize, hard_zero);
     typedef cedr::ProblemType PT;
     const Int nt = cdr_over_super_levels ? qsize : nsuplev*qsize;
     for (Int ti = 0; ti < nt; ++ti)
@@ -5822,16 +5824,16 @@ static void run_cdr (CDR& q) {
 #endif
 }
 
-void run (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_r,
+void run (CDR& cdr, const Data& d, Real* q_min_r, const Real* q_max_r,
           const Int nets, const Int nete) {
   static constexpr Int max_np = 4;
   const Int np = d.np, nlev = d.nlev, qsize = d.qsize,
     nlevwrem = cdr.nsuplev*cdr.nsublev;
   cedr_assert(np <= max_np);
 
-  FA5<const Real>
-    q_min(q_min_r, np, np, nlev, qsize, nete+1),
-    q_max(q_max_r, np, np, nlev, qsize, nete+1);
+  
+  FA5<      Real> q_min(q_min_r, np, np, nlev, qsize, nete+1);
+  FA5<const Real> q_max(q_max_r, np, np, nlev, qsize, nete+1);
 
   for (Int ie = nets; ie <= nete; ++ie) {
     FA2<const Real> spheremp(d.spheremp[ie], np, np);
@@ -5844,6 +5846,7 @@ void run (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_r,
     for (Int spli = 0; spli < cdr.nsuplev; ++spli) {
       const Int k0 = cdr.nsublev*spli;
       for (Int q = 0; q < qsize; ++q) {
+        const bool nonneg = cdr.nonneg[q];
         const Int ti = cdr.cdr_over_super_levels ? q : spli*qsize + q;
         for (Int sbli = 0; sbli < cdr.nsublev; ++sbli) {
           const auto k = k0 + sbli;
@@ -5863,6 +5866,7 @@ void run (CDR& cdr, const Data& d, const Real* q_min_r, const Real* q_max_r,
               const Real rhomij = dp3d_c(i,j,k,d.tl_np1) * spheremp(i,j);
               rhom += rhomij;
               Qm += q_c(i,j,k,q) * rhomij;
+              if (nonneg) q_min(i,j,k,q,ie) = std::max<Real>(q_min(i,j,k,q,ie), 0);
               Qm_min += q_min(i,j,k,q,ie) * rhomij;
               Qm_max += q_max(i,j,k,q,ie) * rhomij;
               Qm_prev += qdp_p(i,j,k,q,d.n0_qdp) * spheremp(i,j);
@@ -6231,11 +6235,11 @@ extern "C" void
 cedr_init_impl (const homme::Int fcomm, const homme::Int cdr_alg, const bool use_sgi,
                 const homme::Int* gid_data, const homme::Int* rank_data,
                 const homme::Int gbl_ncell, const homme::Int lcl_ncell,
-                const homme::Int nlev, const bool independent_time_steps,
+                const homme::Int nlev, const bool independent_time_steps, const bool hard_zero,
                 const homme::Int, const homme::Int) {
   const auto p = cedr::mpi::make_parallel(MPI_Comm_f2c(fcomm));
   g_cdr = std::make_shared<homme::CDR>(
-    cdr_alg, gbl_ncell, lcl_ncell, nlev, use_sgi, independent_time_steps,
+    cdr_alg, gbl_ncell, lcl_ncell, nlev, use_sgi, independent_time_steps, hard_zero,
     gid_data, rank_data, p, fcomm);
 }
 
@@ -6303,7 +6307,7 @@ extern "C" void cedr_sl_set_q (homme::Int ie, homme::Real* v)
 extern "C" void cedr_sl_set_pointers_end () {}
 
 // Run QLT.
-extern "C" void cedr_sl_run (const homme::Real* minq, const homme::Real* maxq,
+extern "C" void cedr_sl_run (homme::Real* minq, const homme::Real* maxq,
                              homme::Int nets, homme::Int nete) {
   cedr_assert(minq != maxq);
   cedr_assert(g_cdr);

@@ -18,11 +18,12 @@ module compose_mod
      end subroutine cedr_unittest
 
      subroutine cedr_init_impl(comm, cdr_alg, use_sgi, gid_data, rank_data, &
-          ncell, nlclcell, nlev, independent_time_steps, gid_data_sz, rank_data_sz) bind(c)
+          ncell, nlclcell, nlev, independent_time_steps, hard_zero, &
+          gid_data_sz, rank_data_sz) bind(c)
        use iso_c_binding, only: c_int, c_bool
        integer(kind=c_int), value, intent(in) :: comm, cdr_alg, ncell, nlclcell, nlev, &
             gid_data_sz, rank_data_sz
-       logical(kind=c_bool), value, intent(in) :: use_sgi, independent_time_steps
+       logical(kind=c_bool), value, intent(in) :: use_sgi, independent_time_steps, hard_zero
        integer(kind=c_int), intent(in) :: gid_data(gid_data_sz), rank_data(rank_data_sz)
      end subroutine cedr_init_impl
 
@@ -213,7 +214,7 @@ contains
     integer :: lid2gid(nelemd), lid2facenum(nelemd)
     integer :: i, j, k, sfc, gid, igv, sc
     ! To map SFC index to IDs and ranks
-    logical(kind=c_bool) :: use_sgi, owned, independent_time_steps
+    logical(kind=c_bool) :: use_sgi, owned, independent_time_steps, hard_zero
     integer, allocatable :: owned_ids(:)
     integer, pointer :: rank2sfc(:) => null()
     integer, target :: null_target(1)
@@ -221,6 +222,7 @@ contains
 #ifdef HOMME_ENABLE_COMPOSE
     call t_startf('compose_init')
     use_sgi = sgi_is_initialized()
+    hard_zero = .true.
 
     independent_time_steps = dt_remap_factor < dt_tracer_factor
 
@@ -254,11 +256,11 @@ contains
     if (use_sgi) then
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
             use_sgi, owned_ids, rank2sfc, nelem, nelemd, nlev, &
-            independent_time_steps, size(owned_ids), size(rank2sfc))
+            independent_time_steps, hard_zero, size(owned_ids), size(rank2sfc))
     else
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &
             use_sgi, sc2gci, sc2rank, nelem, nelemd, nlev, &
-            independent_time_steps, size(sc2gci), size(sc2rank))
+            independent_time_steps, hard_zero, size(sc2gci), size(sc2rank))
     end if
     if (allocated(sc2gci)) deallocate(sc2gci, sc2rank)
     if (allocated(owned_ids)) deallocate(owned_ids)
