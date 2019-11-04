@@ -599,7 +599,7 @@ subroutine update_prognostics_implicit( &
   real(r8) :: flux_dummy(shcol)
   real(r8) :: ws(shcol)
   real(r8) :: tau(shcol), taux(shcol), tauy(shcol)
-  real(r8) :: ksrf(shcol)
+  real(r8) :: ksrf(shcol), ustar, wtke_flux(shcol)
   
   real(r8) :: ca(shcol,nlev) ! superdiagonal for solver
   real(r8) :: cc(shcol,nlev) ! subdiagonal for solver
@@ -641,11 +641,14 @@ subroutine update_prognostics_implicit( &
     ws(i) = max(sqrt(u_wind(i,1)**2._r8 + v_wind(i,1)**2._r8),wsmin)
     tau(i) = sqrt( taux(i)**2._r8 + tauy(i)**2._r8 )
     ksrf(i) = max(tau(i) / ws(i), ksrfmin)
+    ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_r8)
+    wtke_flux(i) = ustar**3
   enddo
 
   ! Apply the surface fluxes explicitly for temperature and moisture
   thetal(:,1) = thetal(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wthl_sfc(:)  
   qw(:,1) = qw(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wqw_sfc(:)
+  tke(:,1) = tke(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wtke_flux(:)
 
   ! Call decomp for momentum variables
   call vd_shoc_decomp(shcol,nlev,nlevi,tk_zi,tmpi,rdp_zt,dtime,&
@@ -828,7 +831,7 @@ subroutine diag_second_shoc_moments(&
     wqw_sec(i,1) = wqw_sfc(i)
     uw_sec(i,1) = uw_sfc(i)
     vw_sec(i,1) = vw_sfc(i)
-    wtke_sec(i,1) = 0._r8
+    wtke_sec(i,1) = max(sqrt(ustar2),0.01_r8)**3
     do p=1,num_tracer
       wtracer_sec(i,1,p) = wtracer_sfc(i,p)
     enddo
@@ -1603,15 +1606,11 @@ subroutine shoc_tke(&
     enddo
   enddo
   
-  ! Set lower boundary condition for shear production
-  do i=1,shcol
-    grid_dz = 0.5_r8*dz_zi(i,1)
-
-    ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_r8)
-    shear_prod(i,1) = ustar**3/(0.4_r8*grid_dz) 
-  enddo
-  
-  ! Set upper boundary for shear production
+  ! Set lower and upper boundary for shear production
+  ! Note that the lower bound for shear production has already 
+  !  been taken into account for the TKE boundary condition, 
+  !  thus zero out here
+  shear_prod(:,1) = 0._r8
   shear_prod(:,nlevi) = 0._r8
   
   ! Interpolate shear production from interface to thermo grid
@@ -1817,14 +1816,9 @@ subroutine shoc_length(&
       
       if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
       
-      ! End of computation of local stability
-      if (k .eq. 1) then ! point closest to surface
-        term=600._r8 * tkes
-	shoc_mix(i,k)=term+(0.4_r8*zt_grid(i,k)-term)*exp(-zt_grid(i,k)/100._r8)
-      else
-        shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale*tkes*vonk*zt_grid(i,k))) &
-	  +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/0.3_r8)  
-      endif      
+
+      shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale*tkes*vonk*zt_grid(i,k))) &
+        +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/0.3_r8)     
       
     enddo  ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
@@ -1838,7 +1832,7 @@ subroutine shoc_length(&
   conv_vel(:,1)=0._r8
   do k=2,nlev
     do i=1,shcol
-      conv_vel(i,k) = conv_vel(i,k-1)+2.5_r8*dz_zt(i,k)*(ggr/basetemp)*wthv_sec(i,k)
+      conv_vel(i,k) = conv_vel(i,k-1)+2.5_r8*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
  
@@ -2084,43 +2078,79 @@ subroutine vd_shoc_solve(&
   
 end subroutine vd_shoc_solve
 
-!==============================================================
-! Linear interpolation to get values on various grids
+  !==============================================================
+  ! Linear interpolation to get values on various grids
 
-subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
-  implicit none
+  subroutine linear_interp(x1,x2,y1,y2,km1,km2,ncol,minthresh)
+    implicit none
 
-  integer, intent(in) :: km1, km2
-  integer, intent(in) :: ncol
-  real(r8), intent(in) :: x1(ncol,km1), y1(ncol,km1)
-  real(r8), intent(in) :: x2(ncol,km2)
-  real(r8), intent(in) :: minthresh 
-  real(r8), intent(out) :: y2(ncol,km2)
+    integer, intent(in) :: km1, km2
+    integer, intent(in) :: ncol
+    real(r8), intent(in) :: x1(ncol,km1), y1(ncol,km1)
+    real(r8), intent(in) :: x2(ncol,km2)
+    real(r8), intent(in) :: minthresh 
+    real(r8), intent(out) :: y2(ncol,km2)
 
-  integer :: k1, k2, i
+    integer :: k1, k2, i
 
-  do i=1,ncol
-    do k2=1,km2
-      if( x2(i,k2) <= x1(i,1) ) then
-        y2(i,k2) = y1(i,1) + (y1(i,2)-y1(i,1))*(x2(i,k2)-x1(i,1))/(x1(i,2)-x1(i,1))
-      elseif( x2(i,k2) >= x1(i,km1) ) then
-        y2(i,k2) = y1(i,km1) + (y1(i,km1)-y1(i,km1-1))*(x2(i,k2)-x1(i,km1))/(x1(i,km1)-x1(i,km1-1))    
-      else
-        do k1 = 2,km1
-          if( (x2(i,k2)>=x1(i,k1-1)).and.(x2(i,k2)<x1(i,k1)) ) then
-            y2(i,k2) = y1(i,k1-1) + (y1(i,k1)-y1(i,k1-1))*(x2(i,k2)-x1(i,k1-1))/(x1(i,k1)-x1(i,k1-1))
+#if 1
+    !i = check_grid(x1,x2,km1,km2,ncol)
+    if (km1 .eq. km2+1) then
+       do k2 = 1,km2
+          k1 = k2+1
+          do i = 1,ncol
+             y2(i,k2) = y1(i,k1-1) + (y1(i,k1)-y1(i,k1-1))*(x2(i,k2)-x1(i,k1-1))/(x1(i,k1)-x1(i,k1-1))
+          end do
+       end do
+    elseif (km2 .eq. km1+1) then
+       k2 = 1
+       do i = 1,ncol
+          y2(i,k2) = y1(i,1) + (y1(i,2)-y1(i,1))*(x2(i,k2)-x1(i,1))/(x1(i,2)-x1(i,1))
+       end do
+       do k2 = 2, km2-1
+          k1 = k2
+          do i = 1,ncol
+             y2(i,k2) = y1(i,k1-1) + (y1(i,k1)-y1(i,k1-1))*(x2(i,k2)-x1(i,k1-1))/(x1(i,k1)-x1(i,k1-1))
+          end do
+       end do
+       k2 = km2
+       do i = 1,ncol
+          y2(i,k2) = y1(i,km1) + (y1(i,km1)-y1(i,km1-1))*(x2(i,k2)-x1(i,km1))/(x1(i,km1)-x1(i,km1-1))
+       end do
+    else
+       print *,km1,km2
+    end if
+    do k2 = 1,km2
+       do i = 1,ncol
+          if (y2(i,k2) .lt. minthresh) then
+             y2(i,k2) = minthresh
           endif
-        enddo ! end k1 loop
-      endif 
-      
-      if (y2(i,k2) .lt. minthresh) then
-        y2(i,k2) = minthresh
-      endif
-      
-    enddo ! end k2 loop
-  enddo ! i loop
-  
-  return
+       end do
+    end do
+#else
+    do i=1,ncol
+       do k2=1,km2
+          if( x2(i,k2) <= x1(i,1) ) then
+             y2(i,k2) = y1(i,1) + (y1(i,2)-y1(i,1))*(x2(i,k2)-x1(i,1))/(x1(i,2)-x1(i,1))
+          elseif( x2(i,k2) >= x1(i,km1) ) then
+             y2(i,k2) = y1(i,km1) + (y1(i,km1)-y1(i,km1-1))*(x2(i,k2)-x1(i,km1))/(x1(i,km1)-x1(i,km1-1))    
+          else
+             do k1 = 2,km1
+                if( (x2(i,k2)>=x1(i,k1-1)).and.(x2(i,k2)<x1(i,k1)) ) then
+                   y2(i,k2) = y1(i,k1-1) + (y1(i,k1)-y1(i,k1-1))*(x2(i,k2)-x1(i,k1-1))/(x1(i,k1)-x1(i,k1-1))
+                endif
+             enddo ! end k1 loop
+          endif
+
+          if (y2(i,k2) .lt. minthresh) then
+             y2(i,k2) = minthresh
+          endif
+
+       enddo ! end k2 loop
+    enddo ! i loop
+#endif
+
+    return
 
 end subroutine linear_interp
 
