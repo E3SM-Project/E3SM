@@ -10,6 +10,7 @@ module EcosystemDynBeTRMod
   use shr_kind_mod              , only : r8 => shr_kind_r8
   use shr_sys_mod               , only : shr_sys_flush
   use clm_varctl                , only : use_c13, use_c14, use_fates, use_dynroot
+  use clm_varctl                , only : use_pheno_flux_limiter
   use clm_varpar                , only : nlevsoi
   use clm_varctl                , only : use_erosion
   use decompMod                 , only : bounds_type
@@ -42,15 +43,17 @@ module EcosystemDynBeTRMod
   use clm_time_manager          , only : get_nstep
   use ColumnType                , only : column_physical_properties
   use VegetationType            , only : vegetation_physical_properties
-  use ColumnDataType      , only : col_cs, c13_col_cs, c14_col_cs
-  use ColumnDataType      , only : col_cf, c13_col_cf, c14_col_cf
-  use ColumnDataType      , only : col_ns, col_nf, col_ws
-  use ColumnDataType      , only : col_ps, col_pf, col_es
-  use VegetationDataType  , only : veg_cs, c13_veg_cs, c14_veg_cs
-  use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf
-  use VegetationDataType  , only : veg_ns, veg_nf
-  use VegetationDataType  , only : veg_ps, veg_pf
-
+  use ColumnDataType            , only : col_cs, c13_col_cs, c14_col_cs
+  use ColumnDataType            , only : col_cf, c13_col_cf, c14_col_cf
+  use ColumnDataType            , only : col_ns, col_nf, col_ws
+  use ColumnDataType            , only : col_ps, col_pf, col_es
+  use VegetationDataType        , only : veg_cs, c13_veg_cs, c14_veg_cs
+  use VegetationDataType        , only : veg_cf, c13_veg_cf, c14_veg_cf
+  use VegetationDataType        , only : veg_ns, veg_nf
+  use VegetationDataType        , only : veg_ps, veg_pf
+  use AllocationMod             , only : nu_com_nfix, nu_com_phosphatase
+  use SoilLittDecompMod         , only : SoilLittDecompAlloc
+  use SoilLittDecompMod         , only : SoilLittDecompAlloc2 !after SoilLittDecompAlloc
   implicit none
 
   private
@@ -172,10 +175,9 @@ module EcosystemDynBeTRMod
 
        call t_startf('SoilLittDecompAlloc')
        !----------------------------------------------------------------
-       if(.not.use_clm_interface) then
             ! directly run clm-bgc
             ! if (use_clm_interface & use_clm_bgc), then CNDecomAlloc is called in clm_driver
-            call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
+       call SoilLittDecompAlloc (bounds, num_soilc, filter_soilc,    &
                        num_soilp, filter_soilp,                     &
                        canopystate_vars, soilstate_vars,            &
                        temperature_vars, waterstate_vars,           &
@@ -183,7 +185,6 @@ module EcosystemDynBeTRMod
                        carbonstate_vars, carbonflux_vars,           &
                        nitrogenstate_vars, nitrogenflux_vars,       &
                        phosphorusstate_vars,phosphorusflux_vars)
-       end if !if(.not.use_clm_interface)
        !----------------------------------------------------------------
        ! SoilLittDecompAlloc2 is called by both clm-bgc & pflotran
        ! pflotran: call 'SoilLittDecompAlloc2' to calculate some diagnostic variables and 'fpg' for plant N uptake
@@ -365,7 +366,7 @@ module EcosystemDynBeTRMod
              c14_col_cs, c14_veg_cs, c14_col_cf, c14_veg_cf)
        end if
        call NitrogenStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
-            nitrogenflux_vars, nitrogenstate_vars)
+            col_ns, veg_ns, col_nf, veg_nf)
 
        call PhosphorusStateUpdate2(num_soilc, filter_soilc, num_soilp, filter_soilp, &
             col_ps, veg_ps, col_pf, veg_pf)
@@ -1688,7 +1689,7 @@ module EcosystemDynBeTRMod
     use perf_mod             , only: t_startf, t_stopf
     use shr_sys_mod          , only: shr_sys_flush
     use PhosphorusDynamicsMod         , only: PhosphorusLeaching
-
+    use PhosphorusDynamicsMod         , only: PhosphorusBiochemMin
     !
     ! !ARGUMENTS:
     type(bounds_type)        , intent(in)    :: bounds
