@@ -26,6 +26,11 @@ function(build_model COMP_CLASS COMP_NAME)
     endforeach()
   endif()
 
+  # Source files don't live in components/cmake/$COMP_CLASS. This path won't work for
+  # generated files.
+  set(SOURCE_PATH "../..")
+  set(CIMESRC_PATH "../cime/src")
+
   #-------------------------------------------------------------------------------
   # Build & include dependency files
   #-------------------------------------------------------------------------------
@@ -164,7 +169,7 @@ function(build_model COMP_CLASS COMP_NAME)
     if (ITEM MATCHES "${CMAKE_BINARY_DIR}/.*") # is generated
       list(APPEND REAL_SOURCES ${ITEM})
     else()
-      list(APPEND REAL_SOURCES "../../${ITEM}")
+      list(APPEND REAL_SOURCES "${SOURCE_PATH}/${ITEM}")
     endif()
   endforeach()
 
