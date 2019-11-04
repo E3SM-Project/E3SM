@@ -484,6 +484,12 @@
        Method to perform Nudging analyses.
        Default: none
        </entry>
+
+<entry id="Nudge_Tau" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Use user-defined relaxation time scale.
+       Default: 0
+       </entry>
 <!-- JS END -->
 
 <!-- Aerosols: Data (CAM version) -->
