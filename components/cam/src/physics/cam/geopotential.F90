@@ -144,7 +144,7 @@ contains
 
 ! Output arguments
 
-    real(r8), intent(out) :: delt(:,:)       ! (pcols,pver)  - temperature
+    real(r8), intent(out) :: t(:,:)       ! (pcols,pver)  - temperature
 !
 !---------------------------Local variables-----------------------------------------
 !
