@@ -2933,13 +2933,13 @@ contains
 
       if (crop_prog) then
          this%sen_nloss_litter(p) = &
-             this%livestemn_to_litter(p)            + &
-             this%leafn_to_litter(p)                + &
-             this%frootn_to_litter(p)
+             this%livestemn_to_litter_patch(p)            + &
+             this%leafn_to_litter_patch(p)                + &
+             this%frootn_to_litter_patch(p)
       else
          this%sen_nloss_litter(p) = &
-             this%leafn_to_litter(p)                + &
-             this%frootn_to_litter(p)
+             this%leafn_to_litter_patch(p)                + &
+             this%frootn_to_litter_patch(p)
       end if
 
     end do

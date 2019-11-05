@@ -2345,13 +2345,13 @@ contains
 
       if (crop_prog) then
          this%sen_ploss_litter(p) = &
-             this%livestemp_to_litter(p)            + &
-             this%leafp_to_litter(p)                + &
-             this%frootp_to_litter(p)
+             this%livestemp_to_litter_patch(p)            + &
+             this%leafp_to_litter_patch(p)                + &
+             this%frootp_to_litter_patch(p)
       else
          this%sen_ploss_litter(p) = &
-             this%leafp_to_litter(p)                + &
-             this%frootp_to_litter(p)
+             this%leafp_to_litter_patch(p)                + &
+             this%frootp_to_litter_patch(p)
       end if
 
     end do
