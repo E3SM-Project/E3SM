@@ -995,7 +995,7 @@ contains
     !-----------------------------------------------------------------------
 
     do t = 1,ntapes
-!$OMP PARALLEL DO PRIVATE (f, num2d)
+!$OMP PARALLEL DO PRIVATE (f, numdims, num2d)
        do f = 1,tape(t)%nflds
           numdims = tape(t)%hlist(f)%field%numdims
           if ( numdims == 1) then   

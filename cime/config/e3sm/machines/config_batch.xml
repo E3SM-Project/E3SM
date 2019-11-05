@@ -282,6 +282,12 @@
       </queues>
     </batch_system>
 
+    <batch_system MACH="anvil-centos7" type="slurm" >
+      <queues>
+	<queue walltimemax="01:00:00" default="true">acme-centos7</queue>
+      </queues>
+    </batch_system>
+
     <batch_system MACH="bebop" type="slurm" >
       <queues>
 	<queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
