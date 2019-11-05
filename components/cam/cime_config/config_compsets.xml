@@ -7,6 +7,21 @@
    </help>
 
   <compset>
+    <alias>FAMIPC5</alias>
+    <lname>AMIP_CAM5_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>FAMIPC5L60</alias>
+    <lname>AMIP_CAM5%L60_CLM45%SP_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
+    <alias>F20TRC5-AMIP</alias>
+    <lname>20TR_CAM5_CLM45%SPBC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
+  </compset>
+
+  <compset>
     <alias>F1850C5L45BGC</alias>
     <lname>1850_CAM5_CLM45%BGC_CICE%PRES_DOCN%DOM_SROF_SGLC_SWAV</lname>
   </compset>
