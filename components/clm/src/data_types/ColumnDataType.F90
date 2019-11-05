@@ -4320,7 +4320,8 @@ contains
     real(r8)           :: smax_c, ks_sorption_c
     real(r8)           :: rootfr(1:nlevdecomp)
     real(r8)           :: pinit_prof(1:nlevdecomp)
-    real(r8)           :: rootfr_tot
+    real(r8)           :: rootfr_tot,depth
+    integer            :: j_depth
     !------------------------------------------------------------------------
 
     associate(&
@@ -4517,26 +4518,32 @@ contains
               errMsg(__FILE__, __LINE__))
           end if
 
+          depth = 0.5_r8
+          do j = 1, nlevdecomp
+             if (zisoi(j) <= depth) then
+                j_depth = j
+             end if
+          end do
           do c = bounds%begc, bounds%endc
              if (use_vertsoilc) then
                 ! calculate P initializtation profile
-                do j = 1, 6 ! top 50 cm
-                   rootfr(j) = exp(-1._r8 * pinit_beta1(cnstate_vars%isoilorder(c)) * zsoi(j))
+                do j = 1, j_depth ! top 50 cm
+                   rootfr(j) = exp(-1._r8 * pinit_beta1(cnstate_vars%isoilorder(c)) * zisoi(j))
                 end do
-                do j = 7, nlevdecomp ! below 50 cm
-                   rootfr(j) = exp(-1._r8 * pinit_beta2(cnstate_vars%isoilorder(c)) * zsoi(j))
+                do j = j_depth+1, nlevdecomp ! below 50 cm
+                   rootfr(j) = exp(-1._r8 * pinit_beta2(cnstate_vars%isoilorder(c)) * zisoi(j))
                 end do
                 ! rescale P profile so that distribution conserves and total P
                 ! mass (g/m2) match obs for top 50 cm
                 rootfr_tot = 0._r8
-                do j = 1, 6 ! top 50 cm
+                do j = 1, j_depth ! top 50 cm
                    rootfr_tot = rootfr_tot + rootfr(j) * dzsoi_decomp(j)
                 end do
                 do j = 1, nlevdecomp
-                   if (j <= 6) then ! for top 50 cm (6 layers), rescale
+                   if (j <= j_depth) then ! for top 50 cm (6 layers), rescale
                       pinit_prof(j) = rootfr(j) / rootfr_tot ! unit m-3
                    else ! for below 50 cm, make sure 7 layer and 6 layer are consistent
-                      pinit_prof(j) = rootfr(j) / rootfr(7) *  pinit_prof(6)
+                      pinit_prof(j) = rootfr(j) / rootfr(j_depth+1) *  pinit_prof(j_depth)
                    end if
                 end do
 

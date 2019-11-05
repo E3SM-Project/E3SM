@@ -1566,23 +1566,6 @@ contains
                   ! plant P uptake, microbial P uptake/release
                   ! secondary P desorption is assumed to go into solution P pool
 
-                  ! potential adsorption rate without plant and microbial interaction
-                  ! including weathering, deposition, phosphatase, mineralization, immobilization, plant uptake
-                  dsolutionp_dt(c,j) = gross_pmin_vr(c,j) -potential_immob_p_vr(c,j) - &
-                       col_plant_pdemand_vr(c,j) + biochem_pmin_vr_col(c,j) + &
-                       primp_to_labilep_vr_col(c,j) + pdep_to_sminp(c) *ndep_prof(c,j)
-                  adsorb_to_labilep_vr(c,j) = (vmax_minsurf_p_vr(isoilorder(c),j)* km_minsurf_p_vr(isoilorder(c),j)) / &
-                       ((km_minsurf_p_vr(isoilorder(c),j)+max(solutionp_vr(c,j),0._r8))**2._r8 ) * dsolutionp_dt(c,j)
-                  ! sign convention: if adsorb_to_labilep_vr(c,j) < 0, then it's desorption
-                  if (adsorb_to_labilep_vr(c,j) >= 0) then
-                     adsorb_to_labilep_vr(c,j) = max(min(adsorb_to_labilep_vr(c,j), &
-                          (vmax_minsurf_p_vr(isoilorder(c),j) - labilep_vr(c,j))/dt),0.0_r8)
-                     desorb_to_solutionp_vr(c,j) = 0.0_r8
-                  else
-                     desorb_to_solutionp_vr(c,j) = min(-1.0*adsorb_to_labilep_vr(c,j), labilep_vr(c,j)/dt)
-                     adsorb_to_labilep_vr(c,j) = 0.0_r8
-                  end if
-
                   ! plant, microbial decomposer, mineral surface compete for P
                   ! loop over each pft within the same column
                   ! calculate competition coefficients for N/P
@@ -1634,6 +1617,25 @@ contains
                         plant_pdemand_vr_patch(p,j) = 0.0_r8
                      end if
                   end do
+                  ! potential adsorption rate without plant and microbial
+                  ! interaction
+                  ! including weathering, deposition, phosphatase,
+                  ! mineralization, immobilization, plant uptake
+                  dsolutionp_dt(c,j) = gross_pmin_vr(c,j) -potential_immob_p_vr(c,j) - &
+                       col_plant_pdemand_vr(c,j) + biochem_pmin_vr_col(c,j) + &
+                       primp_to_labilep_vr_col(c,j) + pdep_to_sminp(c) *ndep_prof(c,j)
+                  adsorb_to_labilep_vr(c,j) = (vmax_minsurf_p_vr(isoilorder(c),j)* km_minsurf_p_vr(isoilorder(c),j)) / &
+                       ((km_minsurf_p_vr(isoilorder(c),j)+max(solutionp_vr(c,j),0._r8))**2._r8 ) * dsolutionp_dt(c,j)
+                  ! sign convention: if adsorb_to_labilep_vr(c,j) < 0, then it's
+                  ! desorption
+                  if (adsorb_to_labilep_vr(c,j) >= 0) then
+                     adsorb_to_labilep_vr(c,j) = max(min(adsorb_to_labilep_vr(c,j), &
+                          (vmax_minsurf_p_vr(isoilorder(c),j) - labilep_vr(c,j))/dt),0.0_r8)
+                     desorb_to_solutionp_vr(c,j) = 0.0_r8
+                  else
+                     desorb_to_solutionp_vr(c,j) = min(-1.0*adsorb_to_labilep_vr(c,j), labilep_vr(c,j)/dt)
+                     adsorb_to_labilep_vr(c,j) = 0.0_r8
+                  end if
 
                   ! compete for phosphorus
                   sum_pdemand_vr(c,j) = col_plant_pdemand_vr(c,j) + potential_immob_p_vr(c,j) + adsorb_to_labilep_vr(c,j)
