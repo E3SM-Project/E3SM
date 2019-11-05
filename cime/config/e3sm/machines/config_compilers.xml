@@ -282,9 +282,9 @@ for mct, etc.
 <compiler COMPILER="intel">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <!-- WJS (8-11-14): For some reason, yellowstone-intel has starting giving lots of
@@ -300,7 +300,7 @@ for mct, etc.
   <FFLAGS>  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source </FFLAGS>
   <CFLAGS> -O2 -fp-model precise -std=gnu99 </CFLAGS>
   <FFLAGS_NOOPT> -O0 </FFLAGS_NOOPT>
-  <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
@@ -321,9 +321,9 @@ for mct, etc.
 <compiler COMPILER="intel14">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
@@ -349,9 +349,9 @@ for mct, etc.
 <compiler COMPILER="intelmic">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
@@ -379,9 +379,9 @@ for mct, etc.
 <compiler COMPILER="intelmic14">
   <!-- http://software.intel.com/en-us/articles/intel-composer-xe/ -->
   <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16 -DCPRINTEL</ADD_CPPDEFS>
-  <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
   <FREEFLAGS> -free </FREEFLAGS>
   <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
@@ -534,9 +534,9 @@ for mct, etc.
   <ADD_FFLAGS_NOOPT DEBUG="TRUE"> -g -time -f2003 -ieee=stop </ADD_FFLAGS_NOOPT>
   <ADD_FFLAGS_NOOPT DEBUG="TRUE" compile_threaded="false"> -gline        </ADD_FFLAGS_NOOPT>
 
-  <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-  <ADD_FFLAGS_NOOPT compile_threaded="true"> -openmp </ADD_FFLAGS_NOOPT>
-  <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+  <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+  <ADD_FFLAGS_NOOPT compile_threaded="true"> -qopenmp </ADD_FFLAGS_NOOPT>
+  <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
 
   <FC_AUTO_R8> -r8 </FC_AUTO_R8>
   <FIXEDFLAGS> -fixed </FIXEDFLAGS>
@@ -1515,9 +1515,9 @@ for mct, etc.
 
 <compiler COMPILER="intel" MACH="mesabi">
         <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
-        <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-        <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-        <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+        <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+        <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+        <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
         <FREEFLAGS> -free </FREEFLAGS>
         <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
         <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
@@ -1537,14 +1537,14 @@ lude </CFLAGS>
         <ADD_CPPDEFS> -DCPRINTEL </ADD_CPPDEFS>
         <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
         <ADD_LDFLAGS> -lnetcdff </ADD_LDFLAGS>
-        <ADD_SLIBS>-L/soft/netcdf/fortran-4.4-intel-sp1-update3-parallel/lib -lnetcdff -L/soft/hdf5/hdf5-1.8.13-intel-2013-sp1-update3-impi-5.0.0.028/lib -openmp -fPIC -lnetcdf -lnetcdf -L/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm </ADD_SLIBS>
+        <ADD_SLIBS>-L/soft/netcdf/fortran-4.4-intel-sp1-update3-parallel/lib -lnetcdff -L/soft/hdf5/hdf5-1.8.13-intel-2013-sp1-update3-impi-5.0.0.028/lib -qopenmp -fPIC -lnetcdf -lnetcdf -L/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="itasca">
         <ADD_CPPDEFS> -DFORTRANUNDERSCORE -DNO_R16</ADD_CPPDEFS>
-        <ADD_CFLAGS compile_threaded="true"> -openmp </ADD_CFLAGS>
-        <ADD_FFLAGS compile_threaded="true"> -openmp </ADD_FFLAGS>
-        <ADD_LDFLAGS compile_threaded="true"> -openmp </ADD_LDFLAGS>
+        <ADD_CFLAGS compile_threaded="true"> -qopenmp </ADD_CFLAGS>
+        <ADD_FFLAGS compile_threaded="true"> -qopenmp </ADD_FFLAGS>
+        <ADD_LDFLAGS compile_threaded="true"> -qopenmp </ADD_LDFLAGS>
         <FREEFLAGS> -free </FREEFLAGS>
         <FIXEDFLAGS> -fixed -132 </FIXEDFLAGS>
         <ADD_FFLAGS DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 </ADD_FFLAGS>
@@ -1564,7 +1564,7 @@ lude </CFLAGS>
         <ADD_CPPDEFS> -DCPRINTEL </ADD_CPPDEFS>
         <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
         <ADD_LDFLAGS> -lnetcdff </ADD_LDFLAGS>
-        <ADD_SLIBS>-L/soft/netcdf/fortran-4.4-intel-sp1-update3-parallel/lib -lnetcdff -L/soft/hdf5/hdf5-1.8.13-intel-2013-sp1-update3-impi-5.0.0.028/lib -openmp -fPIC -lnetcdf -lnetcdf -L/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm </ADD_SLIBS>
+        <ADD_SLIBS>-L/soft/netcdf/fortran-4.4-intel-sp1-update3-parallel/lib -lnetcdff -L/soft/hdf5/hdf5-1.8.13-intel-2013-sp1-update3-impi-5.0.0.028/lib -qopenmp -fPIC -lnetcdf -lnetcdf -L/soft/intel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/lib/intel64 -lmkl_intel_lp64 -lmkl_core -lmkl_intel_thread -lpthread -lm </ADD_SLIBS>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="eddi">

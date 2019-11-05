@@ -1909,7 +1909,7 @@
         <command name="load">cmake/3.11.4</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/19.0.3</command>
+        <command name="load">intel/19.0.5</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">pgi/18.10</command>
@@ -1918,16 +1918,16 @@
         <command name="load">mvapich2/2.3.1</command>
       </modules>
       <modules mpilib="impi">
-        <command name="load">intelmpi/2019u3</command>
+        <command name="load">intelmpi/2019u5</command>
       </modules>
       <modules mpilib="!mpi-serial">
         <command name="load">netcdf/4.6.3</command>
         <command name="load">pnetcdf/1.9.0</command>
-        <command name="load">mkl/2019u3</command>
+        <command name="load">mkl/2019u5</command>
       </modules>
       <modules mpilib="mpi-serial">
         <command name="load">netcdf/4.6.3</command>
-        <command name="load">mkl/2019u3</command>
+        <command name="load">mkl/2019u5</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
