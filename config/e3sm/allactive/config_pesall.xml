@@ -7683,16 +7683,16 @@
     </mach>
   </grid>
   <grid name="a%ne30np4_l%ne30np4_oi%oEC60to30">
-    <mach name="anvil|bebop">
+    <mach name="anvil|bebop|anvil-centos7">
       <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
-        <comment> -compset A_WCYCL* -res ne30_oEC* on 32 nodes pure-MPI </comment>
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 27 nodes pure-MPI </comment>
         <ntasks>
           <ntasks_atm>675</ntasks_atm>
-          <ntasks_lnd>72</ntasks_lnd>
-          <ntasks_rof>72</ntasks_rof>
-          <ntasks_ice>720</ntasks_ice>
-          <ntasks_ocn>360</ntasks_ocn>
-          <ntasks_cpl>720</ntasks_cpl>
+          <ntasks_lnd>108</ntasks_lnd>
+          <ntasks_rof>108</ntasks_rof>
+          <ntasks_ice>576</ntasks_ice>
+          <ntasks_ocn>288</ntasks_ocn>
+          <ntasks_cpl>576</ntasks_cpl>
           <ntasks_glc>1</ntasks_glc>
           <ntasks_wav>1</ntasks_wav>
         </ntasks>
@@ -7708,10 +7708,10 @@
         </nthrds>
         <rootpe>
           <rootpe_atm>0</rootpe_atm>
-          <rootpe_lnd>720</rootpe_lnd>
-          <rootpe_rof>720</rootpe_rof>
+          <rootpe_lnd>576</rootpe_lnd>
+          <rootpe_rof>576</rootpe_rof>
           <rootpe_ice>0</rootpe_ice>
-          <rootpe_ocn>792</rootpe_ocn>
+          <rootpe_ocn>684</rootpe_ocn>
           <rootpe_cpl>0</rootpe_cpl>
           <rootpe_glc>0</rootpe_glc>
           <rootpe_wav>0</rootpe_wav>
