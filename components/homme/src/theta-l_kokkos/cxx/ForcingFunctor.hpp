@@ -75,7 +75,7 @@ public:
     constexpr int int_size = NP*NP*NUM_LEV_P*VECTOR_SIZE;
 
     // 3 persistent midlayers, 2 non-persistent midlayer, and 1 non-persistent interface
-    return mid_size*(nelems*3+nteams*2) + (m_hydrostatic ? int_size*nteams : 0);
+    return mid_size*(nelems*4+nteams) + (m_hydrostatic ? int_size*nteams : 0);
   }
 
   void init_buffers (const FunctorsBuffersManager& fbm) {
@@ -95,8 +95,8 @@ public:
     m_pnh = decltype(m_pnh)(mem,num_elems);
     mem += mid_size*num_elems;
 
-    m_exner = decltype(m_exner)(mem,num_teams);
-    mem += mid_size*num_teams;
+    m_exner = decltype(m_exner)(mem,num_elems);
+    mem += mid_size*num_elems;
 
     m_Rstar = decltype(m_Rstar)(mem,num_teams);
     mem += mid_size*num_teams;
@@ -227,7 +227,7 @@ public:
       auto vtheta = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_np1,igp,jgp);
       auto phinh  = Homme::subview(m_state.m_phinh_i,kv.ie,m_np1,igp,jgp);
       auto pnh    = Homme::subview(m_pnh,kv.ie,igp,jgp);
-      auto exner  = Homme::subview(m_exner,kv.team_idx,igp,jgp);
+      auto exner  = Homme::subview(m_exner,kv.ie,igp,jgp);
       if (m_hydrostatic) {
       auto p_i = Homme::subview(m_pi_i,kv.team_idx,igp,jgp);
         m_elem_ops.compute_hydrostatic_p(kv,dp,p_i,pnh);
@@ -348,7 +348,7 @@ public:
 
       auto tn1    = Homme::subview(m_tn1,kv.ie,igp,jgp);
       auto pnh    = Homme::subview(m_pnh,kv.ie,igp,jgp);
-      auto exner  = Homme::subview(m_exner,kv.team_idx,igp,jgp);
+      auto exner  = Homme::subview(m_exner,kv.ie,igp,jgp);
       auto dp     = Homme::subview(m_state.m_dp3d,kv.ie,m_np1,igp,jgp);
       auto dp_adj = Homme::subview(m_dp_adj,kv.ie,igp,jgp);
       auto ft     = Homme::subview(m_forcing.m_ft,kv.ie,igp,jgp);
