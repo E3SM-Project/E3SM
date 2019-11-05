@@ -4,9 +4,23 @@ CIME ERI test  This class inherits from SystemTestsCommon
 from CIME.XML.standard_module_setup import *
 from CIME.utils import safe_copy
 from CIME.SystemTests.system_tests_common import SystemTestsCommon
+from stat import S_ISDIR, ST_CTIME, ST_MODE
 import shutil, glob, os
 
 logger = logging.getLogger(__name__)
+
+def _get_rest_date(archive_root):
+    restdir = os.path.join(archive_root,"rest")
+    # get all entries in the directory w/ stats
+    entries = (os.path.join(restdir, fn) for fn in os.listdir(restdir))
+    entries = ((os.stat(path), path) for path in entries)
+    entries = sorted((stat[ST_CTIME], path)
+                     for stat, path in entries if S_ISDIR(stat[ST_MODE]))
+    last_dir = os.path.basename(entries[-1][1])
+    ref_sec = last_dir[-5:]
+    ref_date = last_dir[:10]
+    return ref_date, ref_sec
+
 
 def _helper(dout_sr, refdate, refsec, rundir):
     rest_path = os.path.join(dout_sr, "rest", "{}-{}".format(refdate, refsec))
@@ -52,8 +66,8 @@ class ERI(SystemTestsCommon):
         stop_option = self._case.get_value("STOP_OPTION")
         run_startdate = self._case.get_value("RUN_STARTDATE")
         start_tod = self._case.get_value("START_TOD")
-        if start_tod == 0: 
-          start_tod="00000"
+        if start_tod == 0:
+            start_tod="00000"
 
         stop_n1 = int(stop_n / 6)
         rest_n1 = stop_n1
@@ -123,9 +137,7 @@ class ERI(SystemTestsCommon):
         self._set_active_case(clone2)
 
         # Set startdate to start2, set ref date based on ref1 restart
-        restdir_2 = run_cmd_no_fail(r'ls -1dt {}/rest/* | head -1 |  sed "s/^.*rest\///"'.format(dout_sr1))
-        refsec_2 = restdir_2[-5:]
-        refdate_2 = restdir_2[:10]
+        refdate_2, refsec_2 = _get_rest_date(dout_sr1)
 
         logger.info("ref2 hybrid: doing a {} {} startup hybrid run".format(stop_n2, stop_option))
         logger.info("  starting from {} and using ref1 {} and {} seconds".format(start_2, refdate_2, refsec_2))
@@ -166,10 +178,7 @@ class ERI(SystemTestsCommon):
 
         os.chdir(caseroot)
         self._set_active_case(orig_case)
-
-        restdir_3 = run_cmd_no_fail(r'ls -1dt {}/rest/* | head -1 | sed "s/^.*rest\///"'.format(dout_sr2))
-        refsec_3 = restdir_3[-5:]
-        refdate_3 = restdir_3[:10]
+        refdate_3, refsec_3 = _get_rest_date(dout_sr2)
 
 
         logger.info("branch: doing a {} {} branch".format(stop_n3, stop_option))
