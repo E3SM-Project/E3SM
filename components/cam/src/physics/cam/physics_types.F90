@@ -284,6 +284,8 @@ contains
        allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
        cpairv_loc(:,:,:) = cpairv(:,:,:)
     else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
+!allocate?
+!called each physics_update, see also below rairv_loc
        allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
        cpairv_loc(:,:,:) = cpair
     else
