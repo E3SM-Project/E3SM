@@ -160,6 +160,21 @@ using Unmanaged =
 // MyDebug<T>::type i;
 template <typename T> struct MyDebug {};
 
+namespace Remap {
+// All VertRemapAlg types must provide the following methods:
+// compute_grids_phase, and compute_remap_phase
+//
+// compute_grids_phase is expected to have less parallelism available and to
+// compute quantities which are independent of the tracers,
+// based on the computed partitions
+//
+// compute_remap_phase remaps each of the tracers based on the quantities
+// previously computed in compute_grids_phase.
+// It is also expected to have a large amount of parallelism, specifically
+// qsize * num_elems
+struct VertRemapAlg {};
+} // namespace Remap
+
 } // Homme
 
 // A kokkos-compatible implementation of a static array of 2 Real's

@@ -213,3 +213,39 @@ ELSE()
 ENDIF()
 cxx_unit_test (col_ops_ut "${COL_OPS_UT_F90_SRCS}" "${COL_OPS_UT_CXX_SRCS}" "${COL_OPS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
 
+### PpmRemap unit test ###
+
+SET (PPM_REMAP_UT_F90_SRCS
+  ${SRC_SHARE_DIR}/control_mod.F90
+  ${SRC_SHARE_DIR}/dimensions_mod.F90
+  ${SRC_SHARE_DIR}/kinds.F90
+  ${SRC_SHARE_DIR}/parallel_mod.F90
+  ${SRC_SHARE_DIR}/vertremap_base.F90
+  ${SHARE_UT_DIR}/ppm_remap_interface.F90
+)
+
+SET (PPM_REMAP_UT_CXX_SRCS
+  ${SRC_SHARE_DIR}/cxx/Context.cpp
+  ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
+  ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
+  ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
+  ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
+  ${SHARE_UT_DIR}/ppm_remap_ut.cpp
+)
+
+SET (CONFIG_DEFINES NP=4 NC=4 PLEV=16 QSIZE_D=4 _MPI=1 _PRIM)
+SET (PPM_REMAP_UT_INCLUDE_DIRS
+  ${SRC_PREQX_DIR}/cxx
+  ${SRC_SHARE_DIR}
+  ${SRC_SHARE_DIR}/cxx
+  ${PREQX_UT_DIR}
+  ${UTILS_TIMING_DIR}
+  ${CMAKE_BINARY_DIR}/src/share/cxx
+)
+
+IF (USE_NUM_PROCS)
+  SET (NUM_CPUS ${USE_NUM_PROCS})
+ELSE()
+  SET (NUM_CPUS 1)
+ENDIF()
+cxx_unit_test (ppm_remap_ut "${PPM_REMAP_UT_F90_SRCS}" "${PPM_REMAP_UT_CXX_SRCS}" "${PPM_REMAP_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})

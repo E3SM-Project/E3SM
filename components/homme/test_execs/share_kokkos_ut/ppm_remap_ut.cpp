@@ -35,9 +35,10 @@ using rngAlg = std::mt19937_64;
  * boundary_cond needs to be one of the PPM boundary condition objects,
  * which provide the indexes to loop over
  */
-template <typename boundary_cond> class ppm_remap_functor_test {
+template <typename boundary_cond>
+class ppm_remap_functor_test {
   static_assert(std::is_base_of<PpmBoundaryConditions, boundary_cond>::value,
-                "PPM Remap test must have a valid boundary condition");
+                "PPM Remap test must have a supported boundary condition");
 
 public:
   ppm_remap_functor_test(const int num_elems, const int num_remap)
@@ -397,74 +398,6 @@ TEST_CASE("ppm_fixed_means", "vertical remap") {
   SECTION("grid") { remap_test_fixed.test_grid(); }
   SECTION("ppm") { remap_test_fixed.test_ppm(); }
   SECTION("remap") { remap_test_fixed.test_remap(); }
-}
-
-TEST_CASE("remap_interface", "vertical remap") {
-  constexpr int num_elems = 4;
-  std::random_device rd;
-  int seed;
-
-  Elements elements;
-  seed = rd();
-  elements.init(num_elems,seed, /*alloc_gradphis = */ false);
-  elements.randomize(seed);
-
-  Tracers tracers;
-  tracers.init(num_elems,QSIZE_D);
-  seed = rd();
-  tracers.randomize(seed);
-
-  HybridVCoord hvcoord;
-  seed = rd();
-  hvcoord.random_init(seed);
-
-  Real dp3d_min;
-  {
-    auto h_dp3d = Kokkos::create_mirror_view(elements.m_state.m_dp3d);
-    Kokkos::deep_copy(h_dp3d,elements.m_state.m_dp3d);
-    Real* ptr = reinterpret_cast<Real*>(h_dp3d.data());
-    dp3d_min = *std::min_element(ptr,ptr+h_dp3d.size()*VECTOR_SIZE);
-  }
-
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]> eta_dot_dpdn ("",num_elems);
-  ExecViewManaged<Scalar*[Q_NUM_TIME_LEVELS][QSIZE_D][NP][NP][NUM_LEV]> qdp("",num_elems);
-
-  // TODO: make dt random
-  constexpr int np1 = 0;
-  constexpr int n0_qdp = 0;
-  seed = rd();
-  std::mt19937_64 engine(seed);
-  // Note: the bounds on the distribution for dt are strictly linked to how ps_v is (randomly)
-  //       init-ed in ElementsState, and how eta_dot_dpdn is (randomly) init-ed in ElementsDerivedState
-  //       (here we are initing eta_dot_dpdn in the same way). In particular, this interval *should* ensure that
-  //       dp3d[k] + dt*(eta_dot_dpdn[k+1]-eta_dot_dpdn[k]) > 0, which is needed to pass the test
-  std::uniform_real_distribution<Real> eta_pdf(0.01*dp3d_min, 0.1*dp3d_min);
-  std::uniform_real_distribution<Real> dt_pdf(0.01, 10);
-  const Real dt = dt_pdf(engine);
-  genRandArray(eta_dot_dpdn,engine,eta_pdf);
-  genRandArray(qdp,engine,dt_pdf);
-
-  SECTION("states_only") {
-    constexpr bool rsplit_non_zero = true;
-    constexpr int qsize = 0;
-    using _Remap = RemapFunctor<rsplit_non_zero, PpmVertRemap, PpmMirrored>;
-    _Remap remap(qsize, elements, tracers, hvcoord);
-    remap.run_remap(np1, n0_qdp, dt);
-  }
-  SECTION("tracers_only") {
-    constexpr bool rsplit_non_zero = false;
-    constexpr int qsize = QSIZE_D;
-    using _Remap = RemapFunctor<rsplit_non_zero, PpmVertRemap, PpmMirrored>;
-    _Remap remap(qsize, elements, tracers, hvcoord);
-    remap.run_remap(np1, n0_qdp, dt);
-  }
-  SECTION("states_tracers") {
-    constexpr bool rsplit_non_zero = true;
-    constexpr int qsize = QSIZE_D;
-    using _Remap = RemapFunctor<rsplit_non_zero, PpmVertRemap, PpmMirrored>;
-    _Remap remap(qsize, elements, tracers, hvcoord);
-    remap.run_remap(np1, n0_qdp, dt);
-  }
 }
 
 TEST_CASE("binary_search","binary_search")

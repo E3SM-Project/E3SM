@@ -28,19 +28,6 @@
 namespace Homme {
 namespace Remap {
 
-// All VertRemapAlg types must provide the following methods:
-// compute_grids_phase, and compute_remap_phase
-//
-// compute_grids_phase is expected to have less parallelism available and to
-// compute quantities which are independent of the tracers,
-// based on the computed partitions
-//
-// compute_remap_phase remaps each of the tracers based on the quantities
-// previously computed in compute_grids_phase.
-// It is also expected to have a large amount of parallelism, specifically
-// qsize * num_elems
-struct VertRemapAlg {};
-
 // The RemapStateAndThicknessProvider provides states and src/tgt thicknesses
 // to the RemapFunctor. Its implementation differ depending on whether rsplit
 // is zero or not. In case it is not zero, it must provide states to remap.
@@ -236,11 +223,8 @@ struct Remapper {
 
 // The Remap functor
 template <bool nonzero_rsplit,
-          template <typename...> class _RemapType,
-          typename... RemapOptions>
+          typename RemapType>
 struct RemapFunctor : public Remapper {
-
-  using RemapType = _RemapType<RemapOptions...>;
 
   static_assert(std::is_base_of<VertRemapAlg, RemapType>::value,
                 "RemapFunctor not given a remap algorithm to use");

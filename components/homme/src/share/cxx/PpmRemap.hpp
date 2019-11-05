@@ -174,7 +174,8 @@ struct PpmFixedMeans : public PpmBoundaryConditions {
 };
 
 // Piecewise Parabolic Method stencil
-template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
+template <typename boundaries>
+struct PpmVertRemap : public VertRemapAlg {
   static_assert(std::is_base_of<PpmBoundaryConditions, boundaries>::value,
                 "PpmVertRemap requires a valid PPM "
                 "boundary condition");
@@ -282,7 +283,7 @@ template <typename boundaries> struct PpmVertRemap : public VertRemapAlg {
   template <typename ExecSpaceType = ExecSpace>
   KOKKOS_INLINE_FUNCTION
   typename std::enable_if<!Homme::OnGpu<ExecSpaceType>::value, void>::type
-  compute_remap(KernelVariables &kv,
+  compute_remap(KernelVariables &/* kv */,
       ExecViewUnmanaged<const int[NUM_PHYSICAL_LEV]> k_id,
       ExecViewUnmanaged<const Real[NUM_PHYSICAL_LEV]> integral_bounds,
       ExecViewUnmanaged<const Real[3][NUM_PHYSICAL_LEV]> parabola_coeffs,

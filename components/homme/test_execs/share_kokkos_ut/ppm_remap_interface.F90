@@ -1,10 +1,10 @@
 module remap_interface
 
   use iso_c_binding,  only: c_int
+  use control_mod,    only: vert_remap_q_alg
   use dimensions_mod, only: nlev
   use kinds,          only: real_kind 
   use parallel_mod,   only: abortmp
-  use control_mod,    only: vert_remap_q_alg
   implicit none
 
 contains
