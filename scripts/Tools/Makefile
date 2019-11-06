@@ -73,6 +73,8 @@ ifeq ($(strip $(USE_KOKKOS)), TRUE)
   USE_CXX = TRUE
 endif
 
+SLIBS ?= $(USER_SLIBS)
+
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
 endif
