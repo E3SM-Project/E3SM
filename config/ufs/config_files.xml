@@ -6,7 +6,7 @@
 
   <entry id="MODEL">
     <type>char</type>
-    <default_value>cesm</default_value>
+    <default_value>ufs</default_value>
     <group>case_der</group>
     <file>env_case.xml</file>
     <desc>model system name</desc>
@@ -294,7 +294,7 @@
   <entry id="ARCHIVE_SPEC_FILE">
     <type>char</type>
     <values>
-      <value>$CIMEROOT/config/cesm/config_archive.xml</value>
+      <value>$CIMEROOT/config/$MODEL/config_archive.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime_config/config_archive.xml</value>
       <!-- data model components -->
       <value component="drof">$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
