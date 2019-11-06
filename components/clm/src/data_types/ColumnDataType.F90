@@ -10149,9 +10149,8 @@ contains
        c = special_col(fc)
        this%dwt_ploss(c) = 0._r8
     end do
-
+    
     call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
-
   end subroutine col_pf_init
 
   !-----------------------------------------------------------------------
