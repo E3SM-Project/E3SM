@@ -1858,6 +1858,7 @@ contains
     !-----------------------------------------------------------------------
     ! allocate for each member of col_cs
     !-----------------------------------------------------------------------
+
     allocate(this%rootc                (begc:endc))     ; this%rootc                (:)     = nan
     allocate(this%totvegc              (begc:endc))     ; this%totvegc              (:)     = nan
     allocate(this%leafc                (begc:endc))     ; this%leafc                (:)     = nan
@@ -1874,13 +1875,9 @@ contains
     allocate(this%totpftc              (begc:endc))     ; this%totpftc              (:)     = nan
     allocate(this%cwdc                 (begc:endc))     ; this%cwdc                 (:)     = nan
     allocate(this%ctrunc               (begc:endc))     ; this%ctrunc               (:)     = nan
-    allocate(this%totlitc              (begc:endc))     ; this%totlitc              (:)     = nan
-    allocate(this%totsomc              (begc:endc))     ; this%totsomc              (:)     = nan
-    allocate(this%totlitc_1m           (begc:endc))     ; this%totlitc_1m           (:)     = nan
-    allocate(this%totsomc_1m           (begc:endc))     ; this%totsomc_1m           (:)     = nan
+    allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = nan
     allocate(this%totecosysc           (begc:endc))     ; this%totecosysc           (:)     = nan
     allocate(this%totcolc              (begc:endc))     ; this%totcolc              (:)     = nan
-    allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = nan
     allocate(this%totblgc              (begc:endc))     ; this%totblgc              (:)     = nan
     allocate(this%totvegc_abg          (begc:endc))     ; this%totvegc_abg          (:)     = nan
     allocate(this%begcb                (begc:endc))     ; this%begcb                (:)     = nan
@@ -1900,11 +1897,16 @@ contains
     allocate(this%decomp_som2c_vr  (begc:endc,1:nlevdecomp_full))                 ; this%decomp_som2c_vr  (:,:)   = nan
     allocate(this%decomp_cpools_1m (begc:endc,1:ndecomp_pools))                   ; this%decomp_cpools_1m (:,:)   = nan
     allocate(this%decomp_cpools    (begc:endc,1:ndecomp_pools))                   ; this%decomp_cpools    (:,:)   = nan
+    allocate(this%totlitc_1m           (begc:endc))     ; this%totlitc_1m           (:)     = nan
+    allocate(this%totsomc_1m           (begc:endc))     ; this%totsomc_1m           (:)     = nan
+    allocate(this%totlitc              (begc:endc))     ; this%totlitc              (:)     = nan
+    allocate(this%totsomc              (begc:endc))     ; this%totsomc              (:)     = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_cs
     !-----------------------------------------------------------------------
     if ( use_fates ) then
+
        if (carbon_type == 'c12') then
           if ( nlevdecomp_full > 1 ) then
              this%totlitc_1m(begc:endc) = spval
@@ -2801,8 +2803,6 @@ contains
     integer  :: nlev
     !-----------------------------------------------------------------------
 
-    if (use_fates) return
-
     nlev = nlevdecomp
     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
@@ -2854,21 +2854,24 @@ contains
           end do
        end do
        
-       ! total litter carbon in the top meter (TOTLITC_1m)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%totlitc_1m(c)         = 0._r8
-       end do
-       do l = 1, ndecomp_pools
-          if ( decomp_cascade_con%is_litter(l) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%totlitc_1m(c) = &
-                     this%totlitc_1m(c) + &
-                     this%decomp_cpools_1m(c,l)
-             end do
-          endif
-       end do
+       if(.not.use_fates)then
+
+          ! total litter carbon in the top meter (TOTLITC_1m)
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%totlitc_1m(c)         = 0._r8
+          end do
+          do l = 1, ndecomp_pools
+             if ( decomp_cascade_con%is_litter(l) ) then
+                do fc = 1,num_soilc
+                   c = filter_soilc(fc)
+                   this%totlitc_1m(c) = &
+                        this%totlitc_1m(c) + &
+                        this%decomp_cpools_1m(c,l)
+                end do
+             endif
+          end do
+       end if
        
        ! total soil organic matter carbon in the top meter (TOTSOMC_1m)
        do fc = 1,num_soilc
@@ -2885,6 +2888,10 @@ contains
              end do
           end if
        end do
+
+
+
+
     end if ! nlevdecomp>1
        
     ! total litter carbon (TOTLITC)
@@ -2968,6 +2975,8 @@ contains
 
        ! total column carbon, including veg and cpool (TOTCOLC)
        ! adding col_ctrunc, seedc
+       ! FATES: totpftc, prod1c,ctrunc and cropseedc_deficit should
+       ! all be zero.
        this%totcolc(c) = &
             this%totpftc(c)  + &
             this%cwdc(c)     + &
@@ -2976,6 +2985,7 @@ contains
             this%prod1c(c)   + &
             this%ctrunc(c)   + &
             this%cropseedc_deficit(c)
+
             
        this%totabgc(c) = &
             this%totpftc(c)  + &

@@ -5,7 +5,7 @@ module SoilLittVertTranspMod
   !
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varctl             , only : iulog, use_c13, use_c14, spinup_state, use_vertsoilc, use_fates
+  use clm_varctl             , only : iulog, use_c13, use_c14, spinup_state, use_vertsoilc
   use clm_varcon             , only : secspday
   use decompMod              , only : bounds_type
   use abortutils             , only : endrun
@@ -189,9 +189,7 @@ contains
       if ( use_c14 ) then
          ntype = ntype+1
       endif
-      if ( use_fates ) then
-         ntype = 1
-      endif
+
       spinup_term = 1._r8
       epsilon = 1.e-30
 

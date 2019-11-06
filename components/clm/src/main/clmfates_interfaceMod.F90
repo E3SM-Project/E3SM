@@ -71,7 +71,6 @@ module CLMFatesInterfaceMod
    use SurfaceAlbedoType , only : surfalb_type
    use SolarAbsorbedType , only : solarabs_type
    use CNCarbonFluxType  , only : carbonflux_type
-   use CNCarbonStateType , only : carbonstate_type
    use FrictionVelocityType , only : frictionvel_type
    use clm_time_manager  , only : is_restart
    use ncdio_pio         , only : file_desc_t, ncd_int, ncd_double
@@ -103,6 +102,7 @@ module CLMFatesInterfaceMod
    
 
    ! Used FATES Modules
+
    use FatesInterfaceMod     , only : fates_interface_type
    use FatesInterfaceMod     , only : allocate_bcin
    use FatesInterfaceMod     , only : allocate_bcout
@@ -130,6 +130,7 @@ module CLMFatesInterfaceMod
    use FatesPlantRespPhotosynthMod, only : FatesPlantRespPhotosynthDrive
    use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
    use EDPhysiologyMod       , only : FluxIntoLitterPools
+   use PRTGenericMod, only : prt_cnp_flex_allom_hyp
    use FatesPlantHydraulicsMod, only : hydraulics_drive
    use FatesPlantHydraulicsMod, only : HydrSiteColdStart
    use FatesPlantHydraulicsMod, only : InitHydrSites
@@ -138,6 +139,15 @@ module CLMFatesInterfaceMod
    use FatesInterfaceMod      , only : bc_in_type, bc_out_type
 
    implicit none
+
+
+
+   ! Vegetation Structures Needed to be allocated and functional when FATES is ON
+   ! veg_pp
+   ! veg_es
+   ! veg_wf
+
+
    
    type, public :: f2hmap_type
 
@@ -586,8 +596,7 @@ contains
 
    subroutine dynamics_driv(this, bounds_clump, top_as_inst,          &
          top_af_inst, atm2lnd_inst, soilstate_inst, temperature_inst, &
-         waterstate_inst, canopystate_inst, carbonflux_inst,          &
-         frictionvel_inst )
+         waterstate_inst, canopystate_inst, frictionvel_inst )
     
       ! This wrapper is called daily from clm_driver
       ! This wrapper calls ed_driver, which is the daily dynamics component of FATES
@@ -604,7 +613,6 @@ contains
       type(temperature_type)  , intent(in)           :: temperature_inst
       type(waterstate_type)   , intent(inout)        :: waterstate_inst
       type(canopystate_type)  , intent(inout)        :: canopystate_inst
-      type(carbonflux_type)   , intent(inout)        :: carbonflux_inst
       type(frictionvel_type)  , intent(inout)        :: frictionvel_inst
 
       ! !LOCAL VARIABLES:
@@ -732,7 +740,7 @@ contains
       ! Part III: Process FATES output into the dimensions and structures that are part
       ! of the HLMs API.  (column, depth, and litter fractions)
       ! ---------------------------------------------------------------------------------
-      call this%UpdateLitterFluxes(bounds_clump,carbonflux_inst)
+      call this%UpdateLitterFluxes(bounds_clump)
 
       ! ---------------------------------------------------------------------------------
       ! Part III.2 (continued).
@@ -761,13 +769,47 @@ contains
       return
    end subroutine dynamics_driv
 
+
+   subroutine ReportSiteStatesFates(this,bounds_clump)
+     
+     implicit none
+     class(hlm_fates_interface_type), intent(inout) :: this
+     type(bounds_type)              , intent(in)    :: bounds_clump
+     
+     ! !LOCAL VARIABLES:
+     integer  :: s                        ! site index
+     integer  :: c                        ! column index (HLM)
+     integer  :: nc                       ! clump index
+     integer  :: nld_si
+     real(r8) :: dtime
+     
+     ! The purpose here is to report ecosystem quantities (CNP)
+     ! that will enable the EcosystemBalanceCheck to pass,
+     ! and report a few key variables in the history
+
+     dtime = real(get_step_size(),r8)
+     nc = bounds_clump%clump_index
+     
+     do s = 1, this%fates(nc)%nsites
+        c = this%f2hmap(nc)%fcolumn(s)
+        
+        nld_si = this%fates(nc)%bc_in(s)%nlevdecomp
+        
+        
+        
+     end do
+
+     return
+   end subroutine ReportFATESSiteStates
+
+
    ! ------------------------------------------------------------------------------------
-   subroutine UpdateLitterFluxes(this,bounds_clump,carbonflux_inst)
+
+   subroutine UpdateLitterFluxes(this,bounds_clump)
 
       implicit none
       class(hlm_fates_interface_type), intent(inout) :: this
       type(bounds_type)              , intent(in)    :: bounds_clump
-      type(carbonflux_type)          , intent(inout) :: carbonflux_inst
 
       ! !LOCAL VARIABLES:
       integer  :: s                        ! site index
@@ -782,11 +824,10 @@ contains
       do s = 1, this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
 
+         nld_si = this%fates(nc)%bc_in(s)%nlevdecomp
          col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_met_lit) = 0._r8
          col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_cel_lit) = 0._r8
          col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_lig_lit) = 0._r8
-
-         nld_si = this%fates(nc)%bc_in(s)%nlevdecomp
 
          col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_met_lit) = &
                this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nld_si) * dtime
@@ -794,6 +835,47 @@ contains
                this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nld_si)* dtime
          col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_lig_lit) = &
                this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nld_si) * dtime
+
+         litfall(c) = (this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nld_si) + & 
+                      this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nld_si) + &  
+                      this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nld_si)) * dtime
+
+
+         select case(fates_parteh_mode)
+         case (prt_cnp_flex_allom_hyp )
+            
+            ! Zero transfer arrays
+            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp_full,i_met_lit) = 0._r8
+            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp_full,i_cel_lit) = 0._r8
+            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp_full,i_lig_lit) = 0._r8
+            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp_full,i_met_lit) = 0._r8
+            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp_full,i_cel_lit) = 0._r8
+            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp_full,i_lig_lit) = 0._r8
+
+            ! Transfer Phosphorus
+            col_pf%decomp_ppools_sourcesink(c,1:nld_si,i_met_lit) = &
+                 this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nld_si) * dtime
+            col_pf%decomp_ppools_sourcesink(c,1:nld_si,i_cel_lit) = &
+                 this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nld_si)* dtime
+            col_pf%decomp_ppools_sourcesink(c,1:nld_si,i_lig_lit) = &
+                 this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nld_si) * dtime
+
+            ! Transfer Nitrogen
+            col_nf%decomp_npools_sourcesink(c,1:nld_si,i_met_lit) = &
+                 this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nld_si) * dtime
+            col_nf%decomp_npools_sourcesink(c,1:nld_si,i_cel_lit) = &
+                 this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nld_si)* dtime
+            col_nf%decomp_npools_sourcesink(c,1:nld_si,i_lig_lit) = &
+                 this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nld_si) * dtime
+
+         end select
+         
+
+         
+
+
+
+       
       end do
 
    end subroutine UpdateLitterFluxes
@@ -1958,15 +2040,13 @@ contains
 
  ! ======================================================================================
 
- subroutine wrap_bgc_summary(this, bounds_clump, carbonflux_inst, carbonstate_inst)
+ subroutine wrap_bgc_summary(this, bounds_clump )
 
    
 
     ! Arguments
     class(hlm_fates_interface_type), intent(inout) :: this
     type(bounds_type),  intent(in)                 :: bounds_clump
-    type(carbonflux_type), intent(in)              :: carbonflux_inst
-    type(carbonstate_type), intent(in)             :: carbonstate_inst
 
     ! locals
     real(r8) :: dtime

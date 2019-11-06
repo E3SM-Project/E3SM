@@ -285,7 +285,8 @@ contains
        call alt_calc(filter(nc)%num_soilc, filter(nc)%soilc, &
             temperature_vars, canopystate_vars) 
 
-       if (use_cn) then
+       ! fates and use_cn "should" be mutually exclusive
+       if (use_cn .and. (.not.use_fates)) then
           !  Note (WJS, 6-12-13): Because of this routine's placement in the driver sequence
           !  (it is called very early in each timestep, before weights are adjusted and
           !  filters are updated), it may be necessary for this routine to compute values over
@@ -328,13 +329,39 @@ contains
          call ep_betr%BeginMassBalanceCheck(bounds_clump)
        endif
        
-       if (use_cn) then
+       
+       if (use_cn .or. use_fates) then
           call t_startf('cnpinit')
-
-          call veg_cs%ZeroDwt(bounds_clump)
 
           call grc_cf%ZeroDWT(bounds_clump)
           call col_cf%ZeroDWT(bounds_clump)
+
+          call grc_nf%ZeroDWT(bounds_clump)
+          call col_nf%ZeroDWT(bounds_clump)
+
+          call grc_pf%ZeroDWT(bounds_clump)
+          call col_pf%ZeroDWT(bounds_clump)
+          
+          call col_cs%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc)
+
+          call col_ns%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc)
+
+          call col_ps%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc)
+
+          call BeginGridCBalanceBeforeDynSubgridDriver(bounds_clump, col_cs, grc_cs)
+          call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump, nitrogenstate_vars)
+          call BeginGridPBalanceBeforeDynSubgridDriver(bounds_clump, phosphorusstate_vars)
+          
+          call t_stopf('cnpinit')
+       end if
+
+       if (use_cn) then
+          call t_startf('cnpveginit')
+
+          call veg_cs%ZeroDwt(bounds_clump)
           if (use_c13) then
              call c13_grc_cf%ZeroDWT(bounds_clump)
              call c13_col_cf%ZeroDWT(bounds_clump)
@@ -343,40 +370,19 @@ contains
              call c14_grc_cf%ZeroDWT(bounds_clump)
              call c14_col_cf%ZeroDWT(bounds_clump)
           end if
-
           call veg_ns%ZeroDWT(bounds_clump)
-
-          call grc_nf%ZeroDWT(bounds_clump)
-          call col_nf%ZeroDWT(bounds_clump)
-
           call veg_ps%ZeroDWT(bounds_clump)
-
-          call grc_pf%ZeroDWT(bounds_clump)
-          call col_pf%ZeroDWT(bounds_clump)
-
           call veg_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-          call col_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
-
           call veg_ns%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-          call col_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
-          
           call veg_ps%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
-          call col_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
-          
-          call BeginGridCBalanceBeforeDynSubgridDriver(bounds_clump, col_cs, grc_cs)
-          call BeginGridNBalanceBeforeDynSubgridDriver(bounds_clump, nitrogenstate_vars)
-          call BeginGridPBalanceBeforeDynSubgridDriver(bounds_clump, phosphorusstate_vars)
 
-          call t_stopf('cnpinit')
+          call t_stopf('cnpveginit')
        end if
 
     end do
@@ -401,17 +407,17 @@ contains
        phosphorusstate_vars,phosphorusflux_vars, crop_vars)
     call t_stopf('dyn_subgrid')
 
-    if (.not. use_fates)then
-       if (use_cn) then
-          nstep = get_nstep()
-
-          if (nstep < 2 )then
-             if (masterproc) then
-                write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
-             end if
-          else
-             call t_startf('cnbalchk_at_grid')
-
+    if (use_cn  .or. use_fates) then
+       nstep = get_nstep()
+       
+       if (nstep < 2 )then
+          if (masterproc) then
+             write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
+          end if
+       else
+          call t_startf('cnbalchk_at_grid')
+          
+          if(use_cn) then
              !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
              do nc = 1,nclumps
                 call get_clump_bounds(nc, bounds_clump)
@@ -419,40 +425,51 @@ contains
                 call veg_cs%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-                call col_cs%Summary(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc)
 
                 call veg_ns%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-                call col_ns%Summary(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc)
 
                 call veg_ps%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
-                call col_ps%Summary(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc)
-
-                call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     col_cs, grc_cs, carbonflux_vars)
-
-                call EndGridNBalanceAfterDynSubgridDriver(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     nitrogenstate_vars, nitrogenflux_vars)
-
-                call EndGridPBalanceAfterDynSubgridDriver(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     phosphorusstate_vars, phosphorusflux_vars)
-
+                
              end do
              !$OMP END PARALLEL DO
-             call t_stopf('cnbalchk_at_grid')
-
           end if
+          
+          !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
+          do nc = 1,nclumps
+             call get_clump_bounds(nc, bounds_clump)
+             
+             call col_cs%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+             
+             call col_ns%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+             
+             call col_ps%Summary(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc)
+             
+             call EndGridCBalanceAfterDynSubgridDriver(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  col_cs, grc_cs, carbonflux_vars)
+             
+             call EndGridNBalanceAfterDynSubgridDriver(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  nitrogenstate_vars, nitrogenflux_vars)
+             
+             call EndGridPBalanceAfterDynSubgridDriver(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  phosphorusstate_vars, phosphorusflux_vars)
+             
+          end do
+          !$OMP END PARALLEL DO
+          call t_stopf('cnbalchk_at_grid')
+          
        end if
     end if
+       
 
     ! ============================================================================
     ! Initialize the mass balance checks for water.
@@ -483,39 +500,40 @@ contains
 
        if (use_cn) then
           call t_startf('begcnpbal')
-
           ! call veg summary before col summary, for p2c
           call veg_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-          call col_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
-
           call veg_ns%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-          call col_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc)
-
           call veg_ps%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+          call t_stopf('begcnpbal')
+       end if
+       
+       if (use_cn  .or. use_fates) then
+          call t_startf('begcnpbalwf')
+          call col_cs%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_ns%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc)
           call col_ps%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
-
           call BeginColCBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                col_cs)
-
           call BeginColNBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                nitrogenstate_vars)
-
           call BeginColPBalance(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                phosphorusstate_vars)
-          call t_stopf('begcnpbal')
+          
+          call t_stopf('begcnpbalwf')
        end if
+       
 
        if (do_budgets) then
           call WaterBudget_SetBeginningMonthlyStates(bounds_clump, waterstate_vars)
@@ -524,28 +542,34 @@ contains
     end do
     !$OMP END PARALLEL DO
 
-    ! ============================================================================
-    ! Update dynamic N deposition field, on albedo timestep
-    ! currently being done outside clumps loop, but no reason why it couldn't be
-    ! re-written to go inside.
-    ! ============================================================================
+  
 
 #ifndef CPL_BYPASS
+
     if (use_cn) then
+       call t_startf('fireinterp')
+       call FireInterp(bounds_proc)
+       call t_stopf('fireinterp')       
+    end if
+    
+    if (use_cn .or. use_fates) then
+       ! ============================================================================
+       ! Update dynamic N deposition field, on albedo timestep
+       ! currently being done outside clumps loop, but no reason why it couldn't be
+       ! re-written to go inside.
+       ! ============================================================================
+       
        call t_startf('ndep_interp')
        ! PET: switching CN timestep
        call ndep_interp(bounds_proc, atm2lnd_vars)
-       call FireInterp(bounds_proc)
        call t_stopf('ndep_interp')
-    end if
-
-    ! ============================================================================
-    ! Update dynamic P deposition field, on albedo timestep
-    ! currently being done outside clumps loop, but no reason why it couldn't be
-    ! re-written to go inside.
-    ! ============================================================================
-
-    if (use_cn) then
+       
+       ! ============================================================================
+       ! Update dynamic P deposition field, on albedo timestep
+       ! currently being done outside clumps loop, but no reason why it couldn't be
+       ! re-written to go inside.
+       ! ============================================================================
+    
        call t_startf('pdep_interp')
        ! PET: switching CN timestep
        call pdep_interp(bounds_proc, atm2lnd_vars)
@@ -933,10 +957,11 @@ contains
          endif     
        endif       
        
-         ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
-       if (.not. use_fates) then 
-         if( .not. is_active_betr_bgc) then
-           if (use_cn) then 
+       ! FIX(SPM,032414)  push these checks into the routines below and/or make this consistent.
+
+       if( .not. is_active_betr_bgc) then
+       
+          if (use_cn .or. use_fates) then 
 
              ! fully prognostic canopy structure and C-N biogeochemistry
              ! - crop model:  crop algorithms called from within CNEcosystemDyn
@@ -1057,9 +1082,9 @@ contains
                      waterstate_vars, canopystate_vars)
              end if
 
-          end if  ! end of if-use_cn
-          end if ! end of is_active_betr_bgc
-        end if  ! end of if-use_fates
+          end if  ! end of if-use_cn   or if-use_fates
+       end if ! end of is_active_betr_bgc
+    
 
     
 
@@ -1193,36 +1218,35 @@ contains
              !! call setFilters( bounds_clump, glc_behavior )
              
           end if
-
-          ! ------------------------------------------------------------------------------
-          ! Perform reduced capacity soil-bgc only calculations when FATES/ED is on
-          ! ------------------------------------------------------------------------------
-          
-          call FatesBGCDyn(bounds_clump,                           &
-               filter(nc)%num_soilc, filter(nc)%soilc,             &
-               filter(nc)%num_soilp, filter(nc)%soilp,             &
-               carbonflux_vars, carbonstate_vars, cnstate_vars,    &
-               c13_carbonflux_vars, c13_carbonstate_vars,          &
-               c14_carbonflux_vars, c14_carbonstate_vars,          &
-               canopystate_vars, soilstate_vars, temperature_vars, &
-               ch4_vars, nitrogenflux_vars, nitrogenstate_vars,    &
-               phosphorusstate_vars, phosphorusflux_vars,          &
-               alm_fates, crop_vars)
-          
        end if
+
+       ! ------------------------------------------------------------------------------
+       ! Perform reduced capacity soil-bgc only calculations when FATES/ED is on
+       ! ------------------------------------------------------------------------------
+       !   
+       !   call FatesBGCDyn(bounds_clump,                           &
+       !        filter(nc)%num_soilc, filter(nc)%soilc,             &
+       !        filter(nc)%num_soilp, filter(nc)%soilp,             &
+       !        carbonflux_vars, carbonstate_vars, cnstate_vars,    &
+       !        c13_carbonflux_vars, c13_carbonstate_vars,          &
+       !        c14_carbonflux_vars, c14_carbonstate_vars,          &
+       !        canopystate_vars, soilstate_vars, temperature_vars, &
+       !        ch4_vars, nitrogenflux_vars, nitrogenstate_vars,    &
+       !        phosphorusstate_vars, phosphorusflux_vars,          &
+       !        alm_fates, crop_vars)
+          
+       
        
        ! ============================================================================
        ! Check the energy and water balance, also carbon and nitrogen balance
        ! ============================================================================
 
-       if (.not. use_fates) then
-
-          if (use_cn) then
-            
-            if (.not. is_active_betr_bgc)then
+       if (use_cn .or. use_fates) then
+          
+          if (.not. is_active_betr_bgc)then
              ! FIX(SPM,032414) there are use_fates checks in this routine...be consistent 
              ! (see comment above re: no leaching
-               call EcosystemDynLeaching(bounds_clump,                &
+             call EcosystemDynLeaching(bounds_clump,                &
                   filter(nc)%num_soilc, filter(nc)%soilc,               &
                   filter(nc)%num_soilp, filter(nc)%soilp,               &
                   filter(nc)%num_pcropp, filter(nc)%pcropp, doalb,      &
@@ -1233,14 +1257,12 @@ contains
                   waterstate_vars, waterflux_vars, frictionvel_vars,    &
                   canopystate_vars,                                     &
                   phosphorusflux_vars,phosphorusstate_vars)
-             end if
+          end if
 
-             if (doalb) then   
-                call VegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
-                     waterstate_vars, frictionvel_vars, cnstate_vars, &
-                     carbonstate_vars, canopystate_vars, crop_vars)
-             end if
-               
+          if (use_cn .and. doalb) then   
+             call VegStructUpdate(filter(nc)%num_soilp, filter(nc)%soilp,   &
+                  waterstate_vars, frictionvel_vars, cnstate_vars, &
+                  carbonstate_vars, canopystate_vars, crop_vars)
           end if
        end if
 

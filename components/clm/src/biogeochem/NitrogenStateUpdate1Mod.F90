@@ -177,14 +177,16 @@ contains
 
                ! plant to litter fluxes
                ! phenology and dynamic landcover fluxes
-               col_nf%decomp_npools_sourcesink(c,j,i_met_lit) = &
-                    col_nf%phenology_n_to_litr_met_n(c,j) * dt
-               
-               col_nf%decomp_npools_sourcesink(c,j,i_cel_lit) = &
-                    col_nf%phenology_n_to_litr_cel_n(c,j) * dt
-               
-               col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
-                    col_nf%phenology_n_to_litr_lig_n(c,j) * dt
+               if(.not.use_fates) then
+                  col_nf%decomp_npools_sourcesink(c,j,i_met_lit) = &
+                       col_nf%phenology_n_to_litr_met_n(c,j) * dt
+                  
+                  col_nf%decomp_npools_sourcesink(c,j,i_cel_lit) = &
+                       col_nf%phenology_n_to_litr_cel_n(c,j) * dt
+                  
+                  col_nf%decomp_npools_sourcesink(c,j,i_lig_lit) = &
+                       col_nf%phenology_n_to_litr_lig_n(c,j) * dt
+               end if
             end do
          end do
          

@@ -159,8 +159,8 @@ contains
       ! if coupled with pflotran, the following updates are NOT needed
       ! if (.not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
-      if(.not. is_active_betr_bgc)then
-      do j = 1, nlevdecomp
+      if((.not.is_active_betr_bgc) .and. (.not.use_fates))then
+         do j = 1, nlevdecomp
          do fc = 1,num_soilc
             c = filter_soilc(fc)
 

@@ -228,32 +228,54 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
 
+
+
          ! calculate the total column-level carbon storage, for mass conservation check
          col_endcb(c) = totcolc(c)
 
-         ! calculate total column-level inputs
-         col_cinputs = gpp(c)
+         ! FATES also checks to see if input fluxes match
+         ! a change in the total stock. So hwere we assume that
+         ! the fates stocks are 0 for simplicity, and are only
+         ! conerned that the changes in the soil stocks (including
+         ! fragmented litter, match the fluxes in and out of fates
+         if(use_fates) then
 
-         ! calculate total column-level outputs
-         ! er = ar + hr, col_fire_closs includes pft-level fire losses
-         col_coutputs = er(c) + col_fire_closs(c) + col_hrv_xsmrpool_to_atm(c)
+            col_cinputs  = litfall(c)
 
-         ! Fluxes to product pools are included in column-level outputs: the product
-         ! pools are not included in totcolc, so are outside the system with respect to
-         ! these balance checks
-         col_coutputs = col_coutputs + &
-              hrv_deadstemc_to_prod10c(c) + hrv_deadstemc_to_prod100c(c)
+            col_coutputs = hr(c) - som_c_leached(c)
+            
+            ! add erosion flux
+            if (ero_ccycle) then
+               col_coutputs = col_coutputs + som_c_yield(c)
+            end if
 
-         col_coutputs = col_coutputs + col_prod1c_loss(c)
+         else
 
-         ! subtract leaching flux
-         col_coutputs = col_coutputs - som_c_leached(c)
+            ! calculate total column-level inputs
+            col_cinputs = gpp(c)
+            
+            ! calculate total column-level outputs
+            ! er = ar + hr, col_fire_closs includes pft-level fire losses
+            col_coutputs = er(c) + col_fire_closs(c) + col_hrv_xsmrpool_to_atm(c)
+            
+            ! Fluxes to product pools are included in column-level outputs: the product
+            ! pools are not included in totcolc, so are outside the system with respect to
+            ! these balance checks
+            col_coutputs = col_coutputs + &
+                 hrv_deadstemc_to_prod10c(c) + hrv_deadstemc_to_prod100c(c)
+            
+            col_coutputs = col_coutputs + col_prod1c_loss(c)
+            
+            ! subtract leaching flux
+            col_coutputs = col_coutputs - som_c_leached(c)
+            
+            ! add erosion flux
+            if (ero_ccycle) then
+               col_coutputs = col_coutputs + som_c_yield(c)
+            end if
 
-         ! add erosion flux
-         if (ero_ccycle) then
-            col_coutputs = col_coutputs + som_c_yield(c)
          end if
-
+         
          ! calculate the total column-level carbon balance error for this time step
          col_errcb(c) = (col_cinputs - col_coutputs)*dt - (col_endcb(c) - col_begcb(c))
 
@@ -272,35 +294,33 @@ contains
          end if
       end do ! end of columns loop
       
-      ! Consider adapting this check to be fates compliant (rgk 04-2017)
-      if (.not. use_fates) then
-         if (err_found) then
-            c = err_index
-            write(iulog,*)'column cbalance error = ', col_errcb(c), c
-            write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
-            write(iulog,*)'input                 = ',col_cinputs*dt
-            write(iulog,*)'output                = ',col_coutputs*dt
-            write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
-            write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
-            write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
-            write(iulog,*)'hrv_to_prod10         = ',hrv_deadstemc_to_prod10c(c)*dt
-            write(iulog,*)'hrv_to_prod100        = ',hrv_deadstemc_to_prod100c(c)*dt
-            write(iulog,*)'leach                 = ',som_c_leached(c)*dt
-            write(iulog,*)'begcb                 = ',col_begcb(c)
-            write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
-            write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
-
-            if (ero_ccycle) then
-               write(iulog,*)'erosion               = ',som_c_yield(c)*dt
-            end if
-
-            if (use_pflotran .and. pf_cmode) then
-               write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
-            end if
-
-            call endrun(msg=errMsg(__FILE__, __LINE__))
+      if (err_found) then
+         c = err_index
+         write(iulog,*)'column cbalance error = ', col_errcb(c), c
+         write(iulog,*)'Latdeg,Londeg         = ',grc_pp%latdeg(col_pp%gridcell(c)),grc_pp%londeg(col_pp%gridcell(c))
+         write(iulog,*)'input                 = ',col_cinputs*dt
+         write(iulog,*)'output                = ',col_coutputs*dt
+         write(iulog,*)'er                    = ',er(c)*dt,col_cf%hr(c)*dt
+         write(iulog,*)'fire                  = ',col_fire_closs(c)*dt
+         write(iulog,*)'hrv_to_atm            = ',col_hrv_xsmrpool_to_atm(c)*dt
+         write(iulog,*)'hrv_to_prod10         = ',hrv_deadstemc_to_prod10c(c)*dt
+         write(iulog,*)'hrv_to_prod100        = ',hrv_deadstemc_to_prod100c(c)*dt
+         write(iulog,*)'leach                 = ',som_c_leached(c)*dt
+         write(iulog,*)'begcb                 = ',col_begcb(c)
+         write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
+         write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
+         
+         if (ero_ccycle) then
+            write(iulog,*)'erosion               = ',som_c_yield(c)*dt
          end if
-      end if !use_fates
+         
+         if (use_pflotran .and. pf_cmode) then
+            write(iulog,*)'pf_delta_decompc      = ',col_decompc_delta(c)*dt
+         end if
+
+         call endrun(msg=errMsg(__FILE__, __LINE__))
+      end if
+      
 
     end associate
 
@@ -376,60 +396,78 @@ contains
          ! calculate the total column-level nitrogen storage, for mass conservation check
          col_endnb(c) = totcoln(c)
 
-         ! calculate total column-level inputs
-         if (NFIX_PTASE_plant) then
-            col_ninputs(c) = ndep_to_sminn(c) + nfix_to_ecosysn(c) + supplement_to_sminn(c)
-         else
-            col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
-         end if
+         if(use_fates) then
 
-         if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
-              fert_to_sminn(c) + soyfixn_to_sminn(c)
-
-         do p = col_pp%pfti(c), col_pp%pftf(c)
-            if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
-                col_ninputs(c) = col_ninputs(c) + supplement_to_plantn(p) * veg_pp%wtcol(p)
+            ! calculate total column-level inputs
+            if (NFIX_PTASE_plant) then
+               col_ninputs(c) = ndep_to_sminn(c) + supplement_to_sminn(c)
+            else
+               col_ninputs(c) = ndep_to_sminn(c) + supplement_to_sminn(c)
             end if
-         end do
 
+            ! calculate total column-level outputs
+            col_noutputs(c) = denit(c) +  sminn_to_plant(c)
+
+         else
+
+            ! calculate total column-level inputs
+            if (NFIX_PTASE_plant) then
+               col_ninputs(c) = ndep_to_sminn(c) + nfix_to_ecosysn(c) + supplement_to_sminn(c)
+            else
+               col_ninputs(c) = ndep_to_sminn(c) + nfix_to_sminn(c) + supplement_to_sminn(c)
+            end if
+            
+            if (crop_prog) col_ninputs(c) = col_ninputs(c) + &
+                 fert_to_sminn(c) + soyfixn_to_sminn(c)
+            
+            do p = col_pp%pfti(c), col_pp%pftf(c)
+               if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
+                  col_ninputs(c) = col_ninputs(c) + supplement_to_plantn(p) * veg_pp%wtcol(p)
+               end if
+            end do
+            
+            
+
+            ! calculate total column-level outputs
+            col_noutputs(c) = denit(c) + col_fire_nloss(c)
+
+            ! Fluxes to product pools are included in column-level outputs: the product
+            ! pools are not included in totcolc, so are outside the system with respect to
+            ! these balance checks
+            col_noutputs(c) = col_noutputs(c) + &
+                 hrv_deadstemn_to_prod10n(c) + hrv_deadstemn_to_prod100n(c)
+
+         end if
+         
          ! forest fertilization
          if (forest_fert_exp) then
             if ( ((fert_continue(c) == 1 .and. kyr > fert_start(c) .and. kyr <= fert_end(c)) .or.  kyr == fert_start(c)) &
-               .and. fert_type(c) == 1 &
-               .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
+                 .and. fert_type(c) == 1 &
+                 .and. kda == 1  .and. mcsec == 1800) then ! fertilization assumed to occur at the begnining of each month
                col_ninputs(c) = col_ninputs(c) + fert_dose(c,kmo)/dt
-             end if
+            end if
          end if
-
-         ! calculate total column-level outputs
-         col_noutputs(c) = denit(c) + col_fire_nloss(c)
-
-         ! Fluxes to product pools are included in column-level outputs: the product
-         ! pools are not included in totcolc, so are outside the system with respect to
-         ! these balance checks
-         col_noutputs(c) = col_noutputs(c) + &
-              hrv_deadstemn_to_prod10n(c) + hrv_deadstemn_to_prod100n(c)
 
          if (is_active_betr_bgc)then
             col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
-
+            
             col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
          else
-           if (.not. use_nitrif_denitrif) then
-            col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
-           else
-            col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
-
-            if(use_pflotran .and. pf_cmode) then
-               ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
+            if (.not. use_nitrif_denitrif) then
                col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
             else
-
-               col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
-
-            endif
-
-           end if
+               col_noutputs(c) = col_noutputs(c) + f_n2o_nit(c)
+               
+               if(use_pflotran .and. pf_cmode) then
+                  ! inclusion of aq. NH4 transport by PFLOTRAN-bgc
+                  col_noutputs(c) = col_noutputs(c) + sminn_leached(c)
+               else
+                  
+                  col_noutputs(c) = col_noutputs(c) + smin_no3_leached(c) + smin_no3_runoff(c)
+                  
+               endif
+               
+            end if
          endif
 
          col_noutputs(c) = col_noutputs(c) + col_prod1n_loss(c)
@@ -625,11 +663,20 @@ contains
          ! calculate total column-level inputs
          col_pinputs(c) = primp_to_labilep(c) + supplement_to_sminp(c)
 
-         do p = col_pp%pfti(c), col_pp%pftf(c)
-            if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
-                col_pinputs(c) = col_pinputs(c) + supplement_to_plantp(p) * veg_pp%wtcol(p)
-            end if
-         end do
+         if(use_fates) then
+
+            col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + sminp_to_plant(c)
+
+         else
+            do p = col_pp%pfti(c), col_pp%pftf(c)
+               if (veg_pp%active(p) .and. (veg_pp%itype(p) .ne. noveg)) then
+                  col_pinputs(c) = col_pinputs(c) + supplement_to_plantp(p) * veg_pp%wtcol(p)
+               end if
+            end do
+            
+            col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c)
+    
+         end if
 
          ! forest fertilization
          if (forest_fert_exp) then
@@ -640,7 +687,7 @@ contains
              end if
          end if
 
-         col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + col_fire_ploss(c)
+        
 
          ! Fluxes to product pools are included in column-level outputs: the product
          ! pools are not included in totcolc, so are outside the system with respect to

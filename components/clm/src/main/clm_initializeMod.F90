@@ -658,7 +658,7 @@ contains
     ! Initialize modules (after time-manager initialization in most cases)
     ! ------------------------------------------------------------------------
 
-    if (use_cn) then
+    if (use_cn .or. use_fates) then
        call EcosystemDynInit(bounds_proc)
     else
        call SatellitePhenologyInit(bounds_proc)

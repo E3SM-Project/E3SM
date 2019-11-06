@@ -650,7 +650,7 @@ contains
     biochem_pmin_ppools_vr_col(bounds%begc : bounds%endc, :, :) = 0._r8
     biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp) = 0._r8
     biochem_pmin_to_plant_patch(bounds%begp:bounds%endp) = 0._r8
-      
+
     do j = 1,nlevdecomp
         do fc = 1,num_soilc
             c = filter_soilc(fc)
