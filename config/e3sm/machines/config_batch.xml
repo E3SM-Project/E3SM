@@ -398,7 +398,8 @@
 
    <batch_system MACH="compy" type="slurm">
     <queues>
-      <queue walltimemax="00:59:00" default="true">slurm</queue>
+      <queue walltimemax="00:30:00" nodemax="40" default="true">short</queue>
+      <queue walltimemax="01:00:00" >slurm</queue>
     </queues>
    </batch_system>
 
