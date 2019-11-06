@@ -1,4 +1,36 @@
 
+# build_options.mk stuff handled here
+list(APPEND CPPDEFS "-DCORE_LANDICE")
+list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_landice/shared" "${CMAKE_BINARY_DIR}/core_landice/analysis_members" "${CMAKE_BINARY_DIR}/core_landice/mode_forward")
+
+#
+# Check if building with LifeV, Albany, and/or PHG external libraries
+#
+
+if (LIFEV)
+  # LifeV can solve L1L2 or FO
+  list(APPEND CPPDEFS "-DLIFEV" "-DUSE_EXTERNAL_L1L2" "-DUSE_EXTERNAL_FIRSTORDER" "-DMPAS_LI_BUILD_INTERFACE")
+endif()
+
+# Albany can only solve FO at present
+if (ALBANY)
+  list(APPEND CPPDEFS "-DUSE_EXTERNAL_FIRSTORDER" "-DMPAS_LI_BUILD_INTERFACE")
+endif()
+
+if (LIFEV AND ALBANY)
+  message(FATAL "Compiling with both LifeV and Albany is not allowed at this time.")
+endif()
+
+# PHG currently requires LifeV
+if (PHG AND NOT LIFEV)
+  message(FATAL "Compiling with PHG requires LifeV at this time.")
+endif()
+
+# PHG can only Stokes at present
+if (PHG)
+  list(APPEND CPPDEFS "-DUSE_EXTERNAL_STOKES" "-DMPAS_LI_BUILD_INTERFACE")
+endif()
+
 # driver (files live in E3SM)
 list(APPEND RAW_SOURCES
   ../../mpas-albany-landice/driver/glc_comp_mct.F
