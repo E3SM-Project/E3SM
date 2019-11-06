@@ -477,6 +477,7 @@ contains
       else
          call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
       end if
+      deallocate(phis_tmp)
     else
       ! Copy phis data to dyn element state
       do ie=1,nelemd
