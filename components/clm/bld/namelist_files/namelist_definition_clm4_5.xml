@@ -1743,16 +1743,6 @@ Runtime flag to turn on/off downscaling from grid to topounit.
 </entry
 
 <!-- ========================================================================================  -->
-<!-- Namelist options for multiple number of topounits per grid                                -->
-<!-- ========================================================================================  -->
-
-<entry id="use_multiple_topounits" type="logical" category="default_settings"
-        group="clm_inparm" valid_values="">
-Runtime flag to turn on/off for multiple topounits per grid.
-</entry
-
-
-<!-- ========================================================================================  -->
 <!-- Namelist options for performing water and energy budgets                                  -->
 <!-- ========================================================================================  -->
 <entry id="do_budgets"

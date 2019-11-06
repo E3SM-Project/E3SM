@@ -14,7 +14,7 @@ module clm_varsur
   save
   !
   ! weight of each landunit on the topounit in the grid cell
-  real(r8), pointer :: wt_lunit(:,:,:)     ! TKT added 1 dimension for topounit
+  real(r8), pointer :: wt_lunit(:,:,:)    
 
   ! whether we have valid urban data in each grid cell or (in each topounit)
   logical , pointer :: urban_valid(:,:)

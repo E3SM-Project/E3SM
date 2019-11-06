@@ -69,7 +69,7 @@ contains
     use CH4varcon                 , only: CH4conrd
     use UrbanParamsType           , only: UrbanInput
     use CLMFatesParamInterfaceMod , only: FatesReadPFTs
-    use surfrdMod                 , only: surfrd_get_grid_conn
+    use surfrdMod                 , only: surfrd_get_grid_conn, surfrd_topounit_data
     use clm_varctl                , only: lateral_connectivity, domain_decomp_type
     use decompInitMod             , only: decompInit_lnd_using_gp, decompInit_ghosts
     use domainLateralMod          , only: ldomain_lateral, domainlateral_init
@@ -78,7 +78,7 @@ contains
     use dynSubgridControlMod      , only: dynSubgridControl_init
     use filterMod                 , only: allocFilters
     use reweightMod               , only: reweight_wrapup
-    use topounit_varcon           , only: max_topounits
+    use topounit_varcon           , only: max_topounits, has_topounit, topounit_varcon_init
     !
     ! !LOCAL VARIABLES:
     integer           :: ier                     ! error status
@@ -129,6 +129,7 @@ contains
     if (masterproc) call control_print()
 
     call dynSubgridControl_init(NLFilename)
+    call topounit_varcon_init(fsurdat)
 
     ! ------------------------------------------------------------------------
     ! Read in global land grid and land mask (amask)- needed to set decomposition
@@ -228,7 +229,7 @@ contains
 
     ! Allocate surface grid dynamic memory (just gridcell bounds dependent)
 
-    allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           )) ! TKT added ntopounits
+    allocate (wt_lunit     (begg:endg,1:max_topounits, max_lunit           )) 
     allocate (urban_valid  (begg:endg,1:max_topounits                      ))
     allocate (wt_nat_patch (begg:endg,1:max_topounits, natpft_lb:natpft_ub ))
     allocate (wt_cft       (begg:endg,1:max_topounits, cft_lb:cft_ub       ))
@@ -297,6 +298,11 @@ contains
 
     ! Initialize the gridcell data types
     call grc_pp%Init (bounds_proc%begg_all, bounds_proc%endg_all)
+    
+    ! Read topounit information from fsurdat
+    if (has_topounit) then
+         call surfrd_topounit_data(begg, endg, fsurdat)         
+    end if
     
     ! Initialize the topographic unit data types
     call top_pp%Init (bounds_proc%begt_all, bounds_proc%endt_all) ! topology and physical properties

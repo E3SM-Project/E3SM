@@ -26,6 +26,7 @@ module TopounitType
 
     ! indices and weights for higher subgrid level (gridcell)
     integer , pointer :: gridcell   (:) => null() ! index into gridcell level quantities
+    integer , pointer :: topo_grc_ind   (:) => null() ! index of topounit in the grid
     real(r8), pointer :: wtgcell    (:) => null() ! weight (relative to gridcell)
 
     ! Starting and ending indices for all subgrid types below the landunit level
@@ -75,6 +76,7 @@ module TopounitType
     integer, intent(in) :: endt   ! ending topographic unit index
     
     allocate(this%gridcell  (begt:endt)) ; this%gridcell  (:) = ispval
+    allocate(this%topo_grc_ind  (begt:endt)) ; this%topo_grc_ind  (:) = ispval
     allocate(this%wtgcell   (begt:endt)) ; this%wtgcell   (:) = nan
     allocate(this%lndi      (begt:endt)) ; this%lndi      (:) = ispval
     allocate(this%lndf      (begt:endt)) ; this%lndf      (:) = ispval
@@ -105,6 +107,7 @@ module TopounitType
     class(topounit_physical_properties) :: this
   
     deallocate(this%gridcell    )
+    deallocate(this%topo_grc_ind    )
     deallocate(this%wtgcell     )
     deallocate(this%lndi        )
     deallocate(this%lndf        )

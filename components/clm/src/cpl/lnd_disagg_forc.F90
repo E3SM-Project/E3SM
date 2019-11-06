@@ -173,7 +173,7 @@ contains
 
   end subroutine downscale_grd_to_topounit
   
-  !------------------------------------------------------
+  !--------------------------------------------------------
   ! Downscale other atmospheric state variables
   !-----------------------------------------------------------------------
   subroutine downscale_atmo_state_to_topounit(g, i, t, x2l, lnd2atm_vars, method)

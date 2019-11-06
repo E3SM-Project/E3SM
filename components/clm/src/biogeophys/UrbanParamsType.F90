@@ -23,7 +23,7 @@ module UrbanParamsType
   public  :: UrbanInput         ! Read in urban input data
   public  :: CheckUrban         ! Check validity of urban points
   !
-  ! !PRIVATE TYPE TKT addedd 1 more dimension because of topounit
+  ! !PRIVATE TYPE 
   type urbinp_type
      real(r8), pointer :: canyon_hwr      (:,:,:)  
      real(r8), pointer :: wtlunit_roof    (:,:,:)  
@@ -748,7 +748,7 @@ module UrbanParamsType
 
     found = .false.
     do nl = begg,endg
-	   do t = 1, max_topounits  ! TKT add for the topounits
+	   do t = 1, max_topounits 
        do n = 1, numurbl
           if ( pcturb(nl,t,n) > 0.0_r8 ) then
              if ( .not. urban_valid(nl,t) .or. &

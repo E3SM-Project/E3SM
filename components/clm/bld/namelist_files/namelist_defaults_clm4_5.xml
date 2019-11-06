@@ -93,9 +93,6 @@ attributes from the config_cache.xml file (with keys converted to upper-case).
 <!-- Do downscaling to topounit -->
 <use_downscaling_to_topounit>.false.</use_downscaling_to_topounit>
 
-<!-- Use multiple topounits -->
-<use_multiple_topounits>.false.</use_multiple_topounits>
-
 <!-- ================================================================== -->
 <!-- The default filenames are given relative to the root directory
      for the CLM2 data in the CESM distribution -->

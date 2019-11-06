@@ -58,6 +58,7 @@ module GridcellType
      real(r8), pointer :: tslope      (:,:) => null() ! mean slope angle (radians) for topounits
      integer , pointer :: taspect     (:,:) => null() ! mean aspect angle, measured clockwise from north (radians) for topounits
 	 real(r8), pointer :: tfrc_area   (:,:) => null()  ! Topounit fractional area
+     !integer , pointer :: topounit_indices (:,:) => null()
 
      ! indices into landunit-level arrays for landunits in this grid cell (ispval implies
      ! this landunit doesn't exist on this grid cell) [1:max_lunit, begg:endg]
@@ -121,7 +122,7 @@ contains
 	allocate(this%tslope (begg:endg,1:max_topounits)) ; this%tslope (:,:) = nan
 	allocate(this%taspect (begg:endg,1:max_topounits)) ; this%taspect (:,:) = ispval
 	allocate(this%tfrc_area (begg:endg,1:max_topounits)) ; this%tfrc_area (:,:) = nan
-
+   ! allocate(this%topounit_indices (begg:endg,1:max_topounits)) ; this%topounit_indices (:,:) = ispval
 
   end subroutine grc_pp_init
 
@@ -162,6 +163,7 @@ contains
 	deallocate(this%tslope )
 	deallocate(this%taspect )
 	deallocate(this%tfrc_area )
+    !deallocate(this%topounit_indices )
     
   end subroutine grc_pp_clean
 

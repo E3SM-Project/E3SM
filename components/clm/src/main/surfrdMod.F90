@@ -32,13 +32,13 @@ module surfrdMod
   public :: surfrd_get_topo      ! Read grid topography into domain (after domain decomp)
   public :: surfrd_get_data      ! Read surface dataset and determine subgrid weights
   public :: surfrd_get_grid_conn ! Reads grid connectivity information from domain file
+  public :: surfrd_topounit_data ! Read topounit physical properties
   !
   ! !PRIVATE MEMBER FUNCTIONS:
   private :: surfrd_special             ! Read the special landunits
   private :: surfrd_veg_all             ! Read all of the vegetated landunits
   private :: surfrd_pftformat           ! Read crop pfts in file format where they are part of the vegetated land unit
   private :: surfrd_cftformat           ! Read crop pfts in file format where they are on their own landunit
-  private :: surfrd_topounit_data       ! Read topounit physical properties
   !
   ! !PRIVATE DATA MEMBERS:
   ! default multiplication factor for epsilon for error checks
@@ -558,6 +558,7 @@ contains
     use domainMod   , only : domain_type, domain_init, domain_clean
     use clm_varsur  , only : wt_lunit, topo_glc_mec
     use GridcellType, only : grc_pp
+    use topounit_varcon, only : max_topounits
     !
     ! !ARGUMENTS:
     integer,          intent(in) :: begg, endg      
@@ -575,7 +576,7 @@ contains
     real(r8)          :: rmaxlon,rmaxlat      ! local min/max vars
     type(file_desc_t) :: ncid                 ! netcdf id
     logical           :: istype_domain        ! true => input file is of type domain
-    logical           :: isgrid2d             ! true => intut grid is 2d 
+    logical           :: isgrid2d             ! true => intut grid is 2d     
     character(len=32) :: subname = 'surfrd_get_data'    ! subroutine name
     !-----------------------------------------------------------------------
 
@@ -661,7 +662,7 @@ contains
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
     call domain_clean(surfdata_domain)
-
+    
     ! Obtain special landunit info
 
     call surfrd_special(begg, endg, ncid, ldomain%ns)
@@ -669,8 +670,6 @@ contains
     ! Obtain vegetated landunit info
 
     call surfrd_veg_all(begg, endg, ncid, ldomain%ns)
-	
-    call surfrd_topounit_data(begg,endg,ncid)
 
     call ncd_pio_closefile(ncid)
 
@@ -695,6 +694,7 @@ contains
     use landunit_varcon , only : isturb_MIN, isturb_MAX, istdlak, istwet, istice, istice_mec
     use clm_varsur      , only : wt_lunit, urban_valid, wt_glc_mec, topo_glc_mec
     use UrbanParamsType , only : CheckUrban
+    use topounit_varcon , only : max_topounits, has_topounit
     !
     ! !ARGUMENTS:
     integer          , intent(in)    :: begg, endg 
@@ -709,6 +709,16 @@ contains
     integer  :: nindx                      ! temporary for error check
     integer  :: ier                        ! error status
     logical  :: readvar
+    
+    real(r8),pointer :: pctgla_old(:)      ! percent of grid cell is glacier
+    real(r8),pointer :: pctlak_old(:)      ! percent of grid cell is lake
+    real(r8),pointer :: pctwet_old(:)      ! percent of grid cell is wetland
+    real(r8),pointer :: pcturb_old(:,:)    ! percent of grid cell is urbanized
+    integer ,pointer :: urban_region_id_old(:) 
+    real(r8),pointer :: pctglc_mec_tot_old(:) ! percent of grid cell is glacier (sum over classes)
+    real(r8),pointer :: pcturb_tot_old(:)  ! percent of grid cell is urban (sum over density classes)
+    real(r8),pointer :: pctspec_old(:)     ! percent of spec lunits wrt gcell
+    
     real(r8),pointer :: pctgla(:,:)      ! percent of grid cell is glacier
     real(r8),pointer :: pctlak(:,:)      ! percent of grid cell is lake
     real(r8),pointer :: pctwet(:,:)      ! percent of grid cell is wetland
@@ -735,7 +745,7 @@ contains
     call check_dim(ncid, 'nlevsoi', nlevsoifl)
 
        ! Obtain non-grid surface properties of surface dataset other than percent pft
-
+   ! if (has_topounit) then
     call ncd_io(ncid=ncid, varname='PCT_WETLAND', flag='read', data=pctwet, &
          dim1name=grlnd, readvar=readvar)
     if (.not. readvar) call endrun( msg=' ERROR: PCT_WETLAND  NOT on surfdata file'//errMsg(__FILE__, __LINE__))
@@ -855,7 +865,10 @@ contains
     call CheckUrban(begg, endg, pcturb(begg:endg,:,:), subname)
 
     deallocate(pctgla,pctlak,pctwet,pcturb,pcturb_tot,urban_region_id,pctglc_mec_tot,pctspec)
-
+    
+   ! else
+    
+    
   end subroutine surfrd_special
 
 !-----------------------------------------------------------------------
@@ -1274,25 +1287,33 @@ contains
   end subroutine surfrd_get_grid_conn
   
   !-----------------------------------------------------------------------------------------------------
-  subroutine surfrd_topounit_data(begg, endg, ncid)
+  subroutine surfrd_topounit_data(begg, endg, lfsurdat)
     !
     ! !DESCRIPTION:
     ! Read topounit surface properties data
     !
     ! !USES:
+    use ncdio_pio       , only : file_desc_t, var_desc_t, ncd_pio_openfile, ncd_pio_closefile
+    use ncdio_pio       , only : ncd_io, check_var, ncd_inqfdims, check_dim, ncd_inqdid, ncd_inqdlen
+    use clm_varctl      , only: fsurdat
+    use fileutils   , only : getfil   
 	use GridcellType, only : grc_pp
+    use topounit_varcon,  only : max_topounits, has_topounit
     
     !
     ! !ARGUMENTS:
     integer          , intent(in)    :: begg, endg 
-    type(file_desc_t), intent(inout) :: ncid   ! netcdf id
-    
+    character(len=*), intent(in) :: lfsurdat    ! surface dataset filename
+
     !
     ! !LOCAL VARIABLES:
     type(var_desc_t)  :: vardesc
-    integer  :: n                ! indices
+    integer  :: n,t                ! indices
+    character(len=256):: locfn                ! local file name
   
     logical  :: readvar
+    integer :: dimid
+    type(file_desc_t)     :: ncid         ! netcdf id
    
     real(r8),pointer :: maxTopoElv(:)            ! Maximum topounit elevation
     real(r8),pointer :: numTopoPerGrid(:)        ! Number of topounits per grid
@@ -1300,10 +1321,10 @@ contains
     integer ,pointer :: TopounitElv(:,:)         ! Topounit elevation
     real(r8),pointer :: TopounitSlope(:,:)       ! Topounit slope 
     real(r8),pointer :: TopounitAspect(:,:)      ! Topounit aspect
-!   real(r8),pointer :: TopounitStdElv(:,:)      ! Topounit standard deviation elevation
+!    integer ,pointer :: TopounitIndices(:,:)     ! Topounit indices in each grid
 	
     character(len=32) :: subname = 'surfrd_topounit_data'  ! subroutine name
-!-----------------------------------------------------------------------
+!-----------------------------------------------------------------------  
 
     allocate(maxTopoElv(begg:endg))
     allocate(numTopoPerGrid(begg:endg))
@@ -1311,7 +1332,11 @@ contains
     allocate(TopounitElv(begg:endg,max_topounits))
     allocate(TopounitSlope(begg:endg,max_topounits))
     allocate(TopounitAspect(begg:endg,max_topounits))
-!   allocate(TopounitStdElv(begg:endg,max_topounits))
+!    allocate(TopounitIndices(begg:endg,max_topounits))
+    
+    ! Read surface data
+    call getfil( lfsurdat, locfn, 0 )
+    call ncd_pio_openfile (ncid, trim(locfn), 0)
 	
     !call check_dim(ncid, 'nlevsoi', nlevsoifl)
     call check_var(ncid=ncid, varname='MaxTopounitElv', vardesc=vardesc, readvar=readvar)
@@ -1352,14 +1377,21 @@ contains
     if (readvar) then
         do n = begg,endg
            grc_pp%ntopounits(n) = numTopoPerGrid(n) 
-           grc_pp%MaxElevation(n) = maxTopoElv(n) 		
-           grc_pp%tfrc_area(n,:) = TopounitFracArea(n,:) 
-           grc_pp%televation(n,:) = TopounitElv(n,:) 
-           grc_pp%tslope(n,:) = TopounitSlope(n,:) 
-           grc_pp%taspect(n,:) = TopounitAspect(n,:) 
+           grc_pp%MaxElevation(n) = maxTopoElv(n) 	
+           
+           do t = 1, max_topounits
+              grc_pp%tfrc_area(n,t) = TopounitFracArea(n,t) 
+              grc_pp%televation(n,t) = TopounitElv(n,t) 
+              grc_pp%tslope(n,t) = TopounitSlope(n,t) 
+              grc_pp%taspect(n,t) = TopounitAspect(n,t) 
+              !grc_pp%topounit_indices(n,t) = t
+           end do
         end do		
      endif	
     deallocate(maxTopoElv,numTopoPerGrid,TopounitFracArea,TopounitElv,TopounitSlope,TopounitAspect)
+    
+    call ncd_pio_closefile(ncid)
+    
   end subroutine surfrd_topounit_data
 
 end module surfrdMod

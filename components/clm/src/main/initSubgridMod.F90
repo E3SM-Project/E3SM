@@ -373,7 +373,7 @@ contains
   end subroutine clm_ptrs_check
 
   !-----------------------------------------------------------------------
-  subroutine add_topounit(ti, gi, wtgcell,elv, slp, asp)
+  subroutine add_topounit(ti, gi, wtgcell,elv, slp, asp,topo_ind)
     !
     ! !DESCRIPTION:
     ! Add an entry in the topounit-level arrays. ti gives the index of the last topounit
@@ -387,6 +387,7 @@ contains
     real(r8) , intent(in)    :: elv     ! topounit elevation
     real(r8) , intent(in)    :: slp     ! topounit slope
     integer , intent(in)    :: asp      ! topounit aspect
+    integer , intent(in)    :: topo_ind      ! topounit index in the grid
     !
     ! !LOCAL VARIABLES:
     character(len=*), parameter :: subname = 'add_topounit'
@@ -399,6 +400,7 @@ contains
     top_pp%elevation(ti) = elv
     top_pp%slope(ti) = slp
     top_pp%aspect(ti) = asp
+    top_pp%topo_grc_ind(ti) = topo_ind
     
   end subroutine add_topounit
 

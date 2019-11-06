@@ -1441,7 +1441,7 @@ contains
        else if (type1d == namel) then
           check_active = .true.
           active =>lun_pp%active
-       else             !TKT I thought we should have another if statement for namet? to ask Peter
+       else             
           check_active = .false.
        end if
 
