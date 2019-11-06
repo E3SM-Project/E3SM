@@ -1,4 +1,9 @@
 
+# build_options.mk stuff handled here
+list(APPEND CPPDEFS "-DCORE_SEAICE" "-Dcoupled" "-DCCSMCOUPLED")
+list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_seaice/column" "${CMAKE_BINARY_DIR}/core_seaice/shared" "${CMAKE_BINARY_DIR}/core_seaice/analysis_members" "${CMAKE_BINARY_DIR}/core_seaice/model_forward")
+
+
 # driver (files live in E3SM)
 list(APPEND RAW_SOURCES
   ../../mpas-seaice/driver/ice_comp_mct.F

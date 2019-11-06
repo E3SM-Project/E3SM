@@ -1,3 +1,13 @@
+#
+# This is the interface between E3SM's new CMake-based build system and MPAS.
+#
+# The following CMake variables are expected to be defined:
+#  * CORES : A list of CORES to build, comma-separated (e.g. "ocean,seaice,landice")
+#  * Whatever CIME settings are setting to correctly resolve the ${CASEROOT}/Macros.cmake file
+#    - COMPILER, DEBUG, MPILIB, MACH, OS
+#
+
+# Source CIME-generated Macros
 include(${CASEROOT}/Macros.cmake)
 
 #
@@ -51,65 +61,18 @@ set(CMAKE_Fortran_FLAGS "${FFLAGS}")
 set(CMAKE_C_FLAGS "${CFLAGS}")
 set(CMAKE_CXX_FLAGS "${CXXFLAGS}")
 
-add_subdirectory(tools)
-
-# Gather sources that are needed for all cores
-
-# externals
-set(COMMON_RAW_SOURCES external/ezxml/ezxml.c)
-
-# framework
-list(APPEND COMMON_RAW_SOURCES
-  framework/mpas_kind_types.F
-  framework/mpas_framework.F
-  framework/mpas_timer.F
-  framework/mpas_timekeeping.F
-  framework/mpas_constants.F
-  framework/mpas_attlist.F
-  framework/mpas_hash.F
-  framework/mpas_sort.F
-  framework/mpas_block_decomp.F
-  framework/mpas_block_creator.F
-  framework/mpas_dmpar.F
-  framework/mpas_abort.F
-  framework/mpas_decomp.F
-  framework/mpas_threading.F
-  framework/mpas_io.F
-  framework/mpas_io_streams.F
-  framework/mpas_bootstrapping.F
-  framework/mpas_io_units.F
-  framework/mpas_stream_manager.F
-  framework/mpas_stream_list.F
-  framework/mpas_forcing.F
-  framework/mpas_c_interfacing.F
-  framework/random_id.c
-  framework/pool_hash.c
-  framework/mpas_derived_types.F
-  framework/mpas_domain_routines.F
-  framework/mpas_field_routines.F
-  framework/mpas_pool_routines.F
-  framework/xml_stream_parser.c
-  framework/regex_matching.c
-  framework/mpas_field_accessor.F
-  framework/mpas_log.F
-)
-
-# operators
-list(APPEND COMMON_RAW_SOURCES
-  operators/mpas_vector_operations.F
-  operators/mpas_matrix_operations.F
-  operators/mpas_tensor_operations.F
-  operators/mpas_rbf_interpolation.F
-  operators/mpas_vector_reconstruction.F
-  operators/mpas_spline_interpolation.F
-  operators/mpas_tracer_advection_helpers.F
-  operators/mpas_tracer_advection_mono.F
-  operators/mpas_tracer_advection_std.F
-  operators/mpas_geometry_utils.F
-)
-
+# Include custom cmake libraries used for mpas
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake_utils.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/build_core.cmake)
+
+# Add tools
+add_subdirectory(tools)
+
+# Gather sources that are needed for all cores into "common" library
+
+set(COMMON_RAW_SOURCES external/ezxml/ezxml.c)
+include(${CMAKE_CURRENT_SOURCE_DIR}/framework/framework.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/operators/operators.cmake)
 
 add_library(common OBJECT)
 target_compile_definitions(common PRIVATE ${CPPDEFS})
@@ -118,6 +81,7 @@ target_include_directories(common PRIVATE ${INCLUDES})
 genf90_targets("${COMMON_RAW_SOURCES}" "${INCLUDES}" "${CPPDEFS}" "" "")
 target_sources(common PRIVATE ${SOURCES})
 
+# Build cores!
 foreach(CORE IN LISTS CORES)
   build_core(${CORE})
 endforeach()
