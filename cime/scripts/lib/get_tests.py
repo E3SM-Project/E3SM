@@ -283,3 +283,9 @@ def sort_by_time(test_one, test_two):
             a = convert_to_seconds(rec2)
             b = convert_to_seconds(rec1)
             return (a < b) - (b < a)
+
+###############################################################################
+def key_test_time(test_full_name):
+###############################################################################
+    result = get_recommended_test_time(test_full_name)
+    return 99999999 if result is None else convert_to_seconds(result)
