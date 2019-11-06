@@ -1,4 +1,8 @@
 
+# build_options.mk stuff handled here
+list(APPEND CPPDEFS "-DCORE_OCEAN")
+list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/BGC" "${CMAKE_BINARY_DIR}/core_ocean/shared" "${CMAKE_BINARY_DIR}/core_ocean/analysis_members" "${CMAKE_BINARY_DIR}/core_ocean/cvmix" "${CMAKE_BINARY_DIR}/core_ocean/mode_forward" "${CMAKE_BINARY_DIR}/core_ocean/mode_analysis" "${CMAKE_BINARY_DIR}/core_ocean/mode_init")
+
 # driver (files live in E3SM)
 list(APPEND RAW_SOURCES
   ../../mpas-ocean/driver/ocn_comp_mct.F
