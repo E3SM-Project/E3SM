@@ -319,7 +319,7 @@ def get_model():
             srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
         if os.path.isfile(os.path.join(srcroot, "Externals.cfg")):
             model = 'cesm'
-            with fopen(os.path.join(srcroot, "Externals.cfg")) as fd:
+            with open(os.path.join(srcroot, "Externals.cfg")) as fd:
                 for line in fd:
                     if re.search('fv3gfs', line):
                         model = 'ufs'
