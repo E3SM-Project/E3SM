@@ -105,7 +105,7 @@ contains
 #ifdef MODEL_THETA_L
     ! not going to wrap each scm call in ifdef for now,
     ! but some calls have to be wrapped
-    if (single_column) then
+    if (single_column .and. .not. iop_scream) then
        call endrun("read_inidat: SCM does not work with cam target theta-l.")
     endif
 #endif
@@ -173,6 +173,20 @@ contains
       endif
 
     endif
+    
+    ! Test spherep 
+!    do ie=1,nelemd
+!      do j=1,np
+!        do i=1,np
+!	  elem(ie)%spherep(i,j)%lat=scmlat/rad2deg
+!	  testlon = scmlon
+!	  if (testlon .gt. 180._r8) testlon = testlon - 360._r8
+!	  elem(ie)%spherep(i,j)%lon = testlon/rad2deg
+!	enddo
+!      enddo
+!    enddo
+    
+    
     fieldname = 'U'
     tmp = 0.0_r8
     if (.not. iop_scream) then    
@@ -220,7 +234,7 @@ contains
           do i = 1, np
              elem(ie)%state%v(i,j,2,:,tl) = tmp(indx,:,ie)
              if (single_column) elem(ie)%state%v(i,j,2,:,tl) = tmp(indx_scm,:,ie_scm)
-	     if (iop_scream) elem(ie)%state%v(i,j,1,:,tl)=tmp_t(indx_scm,:)
+	     if (iop_scream) elem(ie)%state%v(i,j,2,:,tl)=tmp_t(indx_scm,:)
              indx = indx + 1
           end do
        end do
@@ -252,6 +266,7 @@ contains
 #ifdef MODEL_THETA_L
              elem(ie)%derived%FT(i,j,:) = tmp(indx,:,ie)
              !no scm in theta-l yet
+	     if (iop_scream) elem(ie)%derived%FT(i,j,:) = tmp_t(indx_scm,:)
 #else
              elem(ie)%state%T(i,j,:,tl) = tmp(indx,:,ie)
 
@@ -263,7 +278,7 @@ contains
        end do
     end do
 
-    write(*,*) 'INITTEMPERATURE ', elem(1)%state%T(1,1,nlev,tl)
+!    write(*,*) 'INITTEMPERATURE ', elem(1)%state%T(1,1,nlev,tl)
 
     if (pertlim .ne. D0_0) then
       if(masterproc) then

@@ -166,6 +166,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     use time_mod
     use constituents, only: pcnst
     use time_manager, only: get_nstep
+    use cam_history, only: outfld
     use shr_const_mod, only: SHR_CONST_PI
 
     integer :: t1,t2,n,nets,nete,pp
@@ -190,6 +191,8 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real (kind=real_kind), dimension(nlev,pcnst) :: stateQin1, stateQin2, stateQin_qfcst
     real (kind=real_kind), dimension(nlev,pcnst) :: forecast_q
     real (kind=real_kind), dimension(nlev) :: dummy1, dummy2, forecast_t, forecast_u, forecast_v
+    real (kind=real_kind), dimension(nlev) :: tdiff_dyn, qdiff_dyn
+    real (kind=real_kind), dimension(npsq,nlev) :: tdiff_out, qdiff_out
     real (kind=real_kind) :: forecast_ps
     logical :: wet
 
@@ -251,15 +254,22 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
             elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
             elem(ie)%state%T(i,j,:,t1),elem(ie)%state%T(i,j,:,t1),&
             forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
-            stateQin_qfcst,p(i,j,:),stateQin1,1)         
+            stateQin_qfcst,p(i,j,:),stateQin1,1,&
+	    tdiff_dyn,qdiff_dyn)         
 
           elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
           elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
           elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
           elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
 	  
+	  tdiff_out(i+(j-1)*np,:)=tdiff_dyn(:)
+	  qdiff_out(i+(j-1)*np,:)=qdiff_dyn(:)
+	  
 	enddo
       enddo
+      
+      call outfld('TDIFF',tdiff_out,npsq,ie)
+      call outfld('QDIFF',qdiff_out,npsq,ie)
       
     enddo
 

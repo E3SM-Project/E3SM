@@ -4,7 +4,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
                    t3, t3m1, t3m2, &
                    q3, q3m1, q3m2, ztodt, t2, &
                    fu, fv, qfcst,etamid, &
-                   qminus, nlon)
+                   qminus, nlon, &
+		   tdiff_ret,qdiff_ret)
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -53,6 +54,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8), intent(inout) :: q3m2(plev,pcnst)   ! constituent conc(time n: h2o first)
    real(r8), intent(in) :: etamid(plev)       ! vertical coords at midpoints
    real(r8), intent(inout) :: qfcst(plon,plev,pcnst)
+   real(r8), intent(out) :: tdiff_ret(plev)
+   real(r8), intent(out) :: qdiff_ret(plev)
 
    real(r8), intent(in) :: ztodt                       ! twice time step unless nstep=0
    integer lat               ! latitude index for S->N storage
@@ -133,6 +136,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) rtau(plev)
    real(r8) relaxt(plev)
    real(r8) relaxq(plev)
+   real(r8) relaxu(plev)
+   real(r8) relaxv(plev)   
    logical relax
 !
 !  diagnostic variables for estimating vertical advection terms
@@ -179,24 +184,25 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
    wfldint(plevp) = 0.0_r8
 
-   if (use_3dfrc .and. use_iop) then
+!   if (use_3dfrc .and. use_iop) then
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
       i=1
       do k=1,plev
-         tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+!         tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+        tfcst(k) = t3m2(k) + ztodt*divt(k)
       end do
       do m=1,pcnst
          do k=1,plev
-            qfcst(1,k,m) = qminus(1,k,m) +  divq3d(k,m)*ztodt
+            qfcst(1,k,m) = qminus(1,k,m) +  divq(k,m)*ztodt
          end do
       enddo
 
       go to 1000
 
-   end if
+!   end if
 
 !
 !  provide an eulerian forecast.  First check to ensure that 2d forcing
@@ -523,22 +529,35 @@ end if
       enddo
    endif
 !
+   
    if(.not.l_uvadvect) then
-      if (use_iop .and. have_v .and. have_u) then
+
+      if (use_iop .and. have_v .and. have_u .and. .not. iop_scream) then
          do k=1,plev
             ufcst(k) = uobs(k)
             vfcst(k) = vobs(k)
          enddo
-!
+
       else
-!
+
          do k=1,plev
             ufcst(k) = u3m2(k)
             vfcst(k) = v3m2(k)
          enddo
-!
+	 
+	 ! Relax winds for IOP_script
+	 if (iop_scream) then
+	   rtau(k) = 10800._r8
+	   rtau(k) = max(ztodt,rtau(k))
+	   relaxu(k) = -(ufcst(k) - uobs(k))/rtau(k)
+	   relaxv(k) = -(vfcst(k) - vobs(k))/rtau(k)
+	   
+	   ufcst(k) = ufcst(k) + relaxu(k)*ztodt
+	   vfcst(k) = vfcst(k) + relaxv(k)*ztodt
+	 endif
+
       endif      ! from  if (use_iop .and. have_v .and. have_u) 
-!      
+      
    else
 !
       do k=1,plev
@@ -605,6 +624,9 @@ end if
       qdiff(k) = q3(k,1) - qobs(k)
       udiff(k) = u3(k)   - uobs(k)
       vdiff(k) = v3(k)   - vobs(k)
+      
+      tdiff_ret(k) = tdiff(k)
+      qdiff_ret(k) = qdiff(k)
    end do
 
 !
@@ -619,8 +641,8 @@ end if
 
    call outfld('TOBS',tobs,plon,lat)
    call outfld('QOBS',qobs,plon,lat)
-   call outfld('TDIFF',tdiff,plon,lat)
-   call outfld('QDIFF',qdiff,plon,lat)
+!   call outfld('TDIFF',tdiff,plon,lat)
+!   call outfld('QDIFF',qdiff,plon,lat)
    if( use_iop ) then
       call outfld('DIVQ',divq,plon,lat)
       call outfld('DIVT',divt,plon,lat)

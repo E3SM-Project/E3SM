@@ -1108,10 +1108,10 @@ endif !scm_observed_aero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivq', &
         have_srf, srf(1), fill_ends, scm_crm_mode, &
         dplevs, nlev,psobs, hyam, hybm, vertdivq(:,1), status )
-     if ( status .ne. nf90_noerr ) then
+     if ( status .ne. nf90_noerr .or. iop_scream ) then
        have_vertdivq = .false.
      else
-       have_vertdivq = .true.
+       have_vertdivq = .true.  !PAB
      endif
 
      status = nf90_inq_varid( ncid, 'vertdivqsrf', varid   )
@@ -1282,10 +1282,10 @@ endif !scm_observed_aero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivT', &
        have_srf, srf(1), fill_ends, scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, vertdivt, status )
-     if ( status .ne. nf90_noerr ) then
+     if ( status .ne. nf90_noerr .or. iop_scream ) then
        have_vertdivt = .false.
      else
-       have_vertdivt = .true.
+       have_vertdivt = .true.  ! PAB
      endif
 !
 !       read divt3d (combined vertical/horizontal advection)

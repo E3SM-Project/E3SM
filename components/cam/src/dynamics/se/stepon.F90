@@ -117,6 +117,9 @@ subroutine stepon_init(dyn_in, dyn_out )
   !
   ! Forcing from physics
   ! FU, FV, other dycores, doc, says "m/s" but I think that is m/s^2
+  call addfld ('divT3d',(/ 'lev' /), 'A','K','Dynamics Residual for T',gridname='GLL')
+  call add_default ('divT3d',1,' ')
+
   call addfld ('FU',  (/ 'lev' /), 'A', 'm/s2', 'Zonal wind forcing term',     gridname='GLL')
   call addfld ('FV',  (/ 'lev' /), 'A', 'm/s2', 'Meridional wind forcing term',gridname='GLL')
   call register_vector_field('FU', 'FV')
@@ -144,9 +147,12 @@ subroutine stepon_init(dyn_in, dyn_out )
   call add_default ('T&IC       ',0, 'I')
   do m = 1,pcnst
      call addfld (trim(cnst_name(m))//'&IC', (/ 'lev' /), 'I', 'kg/kg', cnst_longname(m), gridname='physgrid')
+     call addfld (trim(cnst_name(m))//'_dten',(/ 'lev' /), 'A','kg/kg', &
+         trim(cnst_name(m))//' IOP Dynamics Residual for '//trim(cnst_name(m)),gridname='GLL')    
   end do
   do m = 1,pcnst
      call add_default(trim(cnst_name(m))//'&IC',0, 'I')
+     call add_default (trim(cnst_name(m))//'_dten',1,' ')
   end do
 
 
@@ -230,6 +236,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
    use hycoef,          only: hyai, hybi, ps0
    use cam_history,     only: outfld, hist_fld_active
    use prim_driver_base,only: applyCAMforcing_tracers
+   use time_manager,    only: is_first_step
 
    type(physics_state), intent(inout) :: phys_state(begchunk:endchunk)
    type(physics_tend), intent(inout) :: phys_tend(begchunk:endchunk)
@@ -292,6 +299,8 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
      call edgeVunpack(edgebuf,dyn_in%elem(ie)%derived%FQ(:,:,:,:),nlev*pcnst,kptr,ie)
 
 20 continue
+
+!      if (is_first_step() .and. ie .eq. 1) write(*,*) 'PHYS_Qafter ', dyn_in%elem(ie)%derived%FQ(:,:,1,70)
 
       tl_f = TimeLevel%n0   ! timelevel which was adjusted by physics
 

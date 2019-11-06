@@ -391,7 +391,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
 
 !    if(masterproc) then 
 
-    if(aqua_planet .or. single_column) then
+    if(aqua_planet.or. single_column) then
        sgh = 0._r8
        sgh30 = 0._r8
        landm = 0._r8
@@ -402,8 +402,12 @@ subroutine phys_inidat( cam_out, pbuf2d )
 !       if (masterproc) then
        fh_topo=>topo_file_get_id()
 
+!       call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
+!            sgh, found, gridname='physgrid')
        call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
-            sgh, found, gridname='physgrid')
+            tptr(:,:), found, gridname='physgrid')
+!       sgh(:,:) = tptr(1,1)
+       sgh = 0._r8
        if(.not. found) call endrun('ERROR: SGH not found on topo file')
 
        call infld('SGH30', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &

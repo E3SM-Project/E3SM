@@ -372,7 +372,7 @@ CONTAINS
        single_column_in = single_column
        if (single_column .and. iop_scream) single_column_in = .false.
 
-       if (.not. use_3dfrc) then
+!       if (.not. use_3dfrc) then
          do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
            call t_startf("prim_run_sybcycle")
@@ -380,7 +380,7 @@ CONTAINS
                tstep, single_column_in, TimeLevel, hvcoord, n)
            call t_stopf("prim_run_sybcycle")
          end do
-       endif
+!       endif
 
        if (single_column) then
          call apply_SC_forcing(dyn_state%elem,hvcoord,TimeLevel,3,.false.,nets,nete)
