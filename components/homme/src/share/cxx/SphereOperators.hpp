@@ -1023,8 +1023,8 @@ public:
                         [&](const int loop_idx) {
       const int igp = loop_idx / NP; //slow
       const int jgp = loop_idx % NP; //fast
+      const auto f = 2.0*spheremp(igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV_REQUEST), [&] (const int& ilev) {
-        const auto f = 2.0*spheremp(igp,jgp);
         laplace(0,igp,jgp,ilev) = f*vector(0,igp,jgp,ilev)*re2 + grad_curl_cov(0,igp,jgp,ilev);
         laplace(1,igp,jgp,ilev) = f*vector(1,igp,jgp,ilev)*re2 + grad_curl_cov(1,igp,jgp,ilev);
       });

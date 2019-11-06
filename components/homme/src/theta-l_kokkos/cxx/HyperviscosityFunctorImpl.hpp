@@ -65,11 +65,12 @@ class HyperviscosityFunctorImpl
     ExecViewManaged<Real * [NP][NP]> ps_ref;
 
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]> dp_ref;
+#ifdef HV_USE_THETA_REF
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]> theta_ref;
+#endif
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]> phi_i_ref;
 
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>   p;
-    ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>   exner;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]> p_i;
 
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    dptens;
@@ -129,7 +130,12 @@ public:
 
       auto dp_ref    = Homme::subview(m_buffers.dp_ref,kv.ie,igp,jgp);
       auto phi_ref   = Homme::subview(m_buffers.phi_i_ref,kv.ie,igp,jgp);
+#ifdef HV_USE_THETA_REF
       auto theta_ref = Homme::subview(m_buffers.theta_ref,kv.ie,igp,jgp);
+#else
+      // theta_ref is only needed to compute phi_ref. Use any unused buffer.
+      auto theta_ref = Homme::subview(m_buffers.dptens,kv.team_idx,igp,jgp);
+#endif
       auto p     = Homme::subview(m_buffers.p,kv.team_idx,igp,jgp);
       auto p_i   = Homme::subview(m_buffers.p_i,kv.team_idx,igp,jgp);
 
@@ -156,6 +162,7 @@ public:
                              theta_dp,p,phi_ref);
 
       // Replace vtheta_dp with theta (i.e., divide by dp)
+      // Also, reset theta_ref to 0
       auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
       auto state_dp = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -180,13 +187,17 @@ public:
       auto phi_i = Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1,igp,jgp);
       auto dp    = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
 
+#if HV_USE_THETA_REF
       auto theta_ref = Homme::subview(m_buffers.theta_ref,kv.ie,igp,jgp);
+#endif
       auto phi_i_ref = Homme::subview(m_buffers.phi_i_ref,kv.ie,igp,jgp);
       auto dp_ref    = Homme::subview(m_buffers.dp_ref,kv.ie,igp,jgp);
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
+#ifdef HV_USE_THETA_REF
         vtheta(ilev) -= theta_ref(ilev);
+#endif
         phi_i(ilev)  -= phi_i_ref(ilev);
         dp(ilev)     -= dp_ref(ilev);
       });
@@ -394,63 +405,12 @@ public:
         phitens(ilev) *= rspheremp;
 #endif
 
-        u(ilev)     += utens(ilev);
-        v(ilev)     += vtens(ilev);
-        w(ilev)     += wtens(ilev);
-        phi_i(ilev) += phitens(ilev);
-        dp(ilev)    += dptens(ilev);
-      });
-
-      // Compute exner.
-      auto p     = Homme::subview(m_buffers.p,kv.team_idx,igp,jgp);
-      auto exner = Homme::subview(m_buffers.exner,kv.team_idx,igp,jgp);
-      if (m_theta_hydrostatic_mode) {
-        auto p_i = Homme::subview(m_buffers.p_i,kv.team_idx,igp,jgp);
-        m_elem_ops.compute_hydrostatic_p(kv,dp,p_i,p);
-        m_eos.compute_exner(kv,p,exner);
-      } else {
-        auto vtheta_provider = [&](const int ilev)->Scalar {
-          return vtheta(ilev)*dp(ilev);
-        };
-        m_eos.compute_pnh_and_exner(kv,vtheta_provider,phi_i,p,exner);
-      }
-
-      // Recycle p for the heating
-      auto& heating = p;
-      if (m_theta_hydrostatic_mode) {
-        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                             [&](const int ilev) {
-          heating(ilev) = (u(ilev)*utens(ilev) + v(ilev)*vtens(ilev)) /
-                           (exner(ilev)*PhysicalConstants::cp);
-        });
-      } else {
-        // Here, we fix f90 logic, and use k2=min(k+1,NUM_PHYSICAL_LEV)
-        // Because of this special treatment, we need to adjust the result
-        // for the last midpoint
-        auto provider = [&w,&wtens](const int ilev)->Scalar {
-          return w(ilev)*wtens(ilev);
-        };
-        ColumnOps::compute_midpoint_values<CombineMode::Replace>(kv,provider,heating);
-        Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-          using Info = ColInfo<NUM_PHYSICAL_LEV>;
-          constexpr int ilev = Info::LastPack;
-          constexpr int ivec = Info::LastVecEnd;
-
-          heating(ilev)[ivec] = w(ilev)[ivec]*wtens(ilev)[ivec];
-        });
-        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                             [&](const int ilev) {
-          heating(ilev) += u(ilev)*utens(ilev) + v(ilev)*vtens(ilev);
-          heating(ilev) /= (exner(ilev)*PhysicalConstants::cp);
-        });
-      }
-
-      // Add the heating term
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-        vtheta(ilev) += ttens(ilev)*m_hvcoord.dp0(ilev)*m_hvcoord.exner0(ilev) /
-                      (exner(ilev)*dp(ilev));
-        vtheta(ilev) -= heating(ilev);
+        u(ilev)      += utens(ilev);
+        v(ilev)      += vtens(ilev);
+        w(ilev)      += wtens(ilev);
+        vtheta(ilev) += ttens(ilev);
+        phi_i(ilev)  += phitens(ilev);
+        dp(ilev)     += dptens(ilev);
       });
     });
   }
@@ -468,7 +428,9 @@ public:
       const auto dp3d = Homme::subview(m_state.m_dp3d,kv.ie, m_data.np1, igp, jgp);
       const auto dp_ref = Homme::subview(m_buffers.dp_ref,kv.ie, igp, jgp);
       const auto theta = Homme::subview(m_state.m_vtheta_dp,kv.ie, m_data.np1, igp, jgp);
+#ifdef HV_USE_THETA_REF
       const auto theta_ref = Homme::subview(m_buffers.theta_ref,kv.ie, igp, jgp);
+#endif
       const auto phi = Homme::subview(m_state.m_phinh_i,kv.ie, m_data.np1, igp, jgp);
       const auto phi_ref = Homme::subview(m_buffers.phi_i_ref,kv.ie, igp, jgp);
       const auto dptens = Homme::subview(m_buffers.dptens,kv.ie, igp, jgp);
@@ -477,12 +439,15 @@ public:
                            [&](const int &ilev) {
 
         dp3d(ilev) += dp_ref(ilev);
+#ifdef HV_USE_THETA_REF
         theta(ilev) += theta_ref(ilev);
+#endif
         phi(ilev) += phi_ref(ilev);
-        dpdiss_ave(ilev) += m_data.eta_ave_w*dp3d(ilev) / m_data.hypervis_subcycle;
-        dpdiss_bih(ilev) += m_data.eta_ave_w*dptens(ilev) / m_data.hypervis_subcycle;
+        if (m_data.nu_p>0) {
+          dpdiss_ave(ilev) += m_data.eta_ave_w*dp3d(ilev) / m_data.hypervis_subcycle;
+          dpdiss_bih(ilev) += m_data.eta_ave_w*dptens(ilev) / m_data.hypervis_subcycle;
+        }
       });
-
 #ifndef XX_NONBFB_COMING
       if (NUM_LEV!=NUM_LEV_P) {
         Kokkos::single(Kokkos::PerThread(kv.team),[&](){

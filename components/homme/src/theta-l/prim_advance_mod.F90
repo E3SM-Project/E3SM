@@ -1023,7 +1023,6 @@ contains
      enddo
   enddo
 
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !  hyper viscosity
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1102,13 +1101,21 @@ contains
         
         ! apply inverse mass matrix, accumulate tendencies
         do k=1,nlev
+#ifdef XX_NONBFB_COMING
+           vtens(:,:,1,k,ie)=vtens(:,:,1,k,ie)*(elem(ie)%rspheremp(:,:)*dt)  ! u
+           vtens(:,:,2,k,ie)=vtens(:,:,2,k,ie)*(elem(ie)%rspheremp(:,:)*dt)  ! v
+           stens(:,:,k,1,ie)=stens(:,:,k,1,ie)*(elem(ie)%rspheremp(:,:)*dt)  ! dp3d
+           stens(:,:,k,2,ie)=stens(:,:,k,2,ie)*(elem(ie)%rspheremp(:,:)*dt)  ! theta
+           stens(:,:,k,3,ie)=stens(:,:,k,3,ie)*(elem(ie)%rspheremp(:,:)*dt)  ! w
+           stens(:,:,k,4,ie)=stens(:,:,k,4,ie)*(elem(ie)%rspheremp(:,:)*dt)  ! phi
+#else
            vtens(:,:,1,k,ie)=dt*vtens(:,:,1,k,ie)*elem(ie)%rspheremp(:,:)  ! u
            vtens(:,:,2,k,ie)=dt*vtens(:,:,2,k,ie)*elem(ie)%rspheremp(:,:)  ! v
            stens(:,:,k,1,ie)=dt*stens(:,:,k,1,ie)*elem(ie)%rspheremp(:,:)  ! dp3d
            stens(:,:,k,2,ie)=dt*stens(:,:,k,2,ie)*elem(ie)%rspheremp(:,:)  ! theta
            stens(:,:,k,3,ie)=dt*stens(:,:,k,3,ie)*elem(ie)%rspheremp(:,:)  ! w
            stens(:,:,k,4,ie)=dt*stens(:,:,k,4,ie)*elem(ie)%rspheremp(:,:)  ! phi
-           
+#endif
         enddo
         
         
@@ -1184,7 +1191,7 @@ contains
      ! finally update w at the surface: 
      elem(ie)%state%w_i(:,:,nlevp,nt) = (elem(ie)%state%v(:,:,1,nlev,nt)*elem(ie)%derived%gradphis(:,:,1) + &
           elem(ie)%state%v(:,:,2,nlev,nt)*elem(ie)%derived%gradphis(:,:,2))/g
-  enddo	
+  enddo
 
 
 

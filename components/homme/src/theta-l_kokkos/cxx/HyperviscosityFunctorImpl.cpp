@@ -72,16 +72,34 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   const int nelems = m_geometry.num_elems();
   const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
 
+  // Number of scalar/vector int/mid/bhm buffers needed, with size nteams/nelems
+  constexpr int mid_vectors_nelems = 1;
+  int int_scalars_nelems = 1;
+  int mid_scalars_nelems = 5;
 #ifdef XX_NONBFB_COMING
-  // Even though we don't compute wtens at last interface, it makes
-  // the code MUCH cleaner when computing the heating term, cause
-  // we can then use ColumnOps to average w*wtens
-  return nelems*(5*size_mid_scalar + size_mid_vector + 2*size_int_scalar) +
-         nteams*(4*size_bhm_scalar + size_bhm_vector + 2*size_mid_scalar + size_int_scalar);
-#else
-  return nelems*(6*size_mid_scalar + size_mid_vector + size_int_scalar) +
-         nteams*(4*size_bhm_scalar + size_bhm_vector + 2*size_mid_scalar + size_int_scalar);
+  // wtens on interfaces
+  ++int_scalars_nelems;
+  --mid_scalars_nelems;
 #endif
+
+#ifdef HV_USE_THETA_REF
+  ++mid_scalars_nelems;
+#endif
+
+  constexpr int bhm_scalars_nteams = 4;
+  constexpr int bhm_vectors_nteams = 1;
+  constexpr int int_scalars_nteams = 1;
+  constexpr int mid_scalars_nteams = 1;
+
+  const int size = nelems*(mid_scalars_nelems*size_mid_scalar +
+                           mid_vectors_nelems*size_mid_vector +
+                           int_scalars_nelems*size_int_scalar) +
+                   nteams*(bhm_scalars_nteams*size_bhm_scalar +
+                           bhm_vectors_nteams*size_bhm_vector +
+                           mid_scalars_nteams*size_mid_scalar +
+                           int_scalars_nteams*size_int_scalar);
+
+  return size;
 }
 
 void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm) {
@@ -93,6 +111,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV;
   constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV;
 
+  auto mem_in = fbm.get_memory();
   Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
   const int nelems = m_geometry.num_elems();
   const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
@@ -101,8 +120,10 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   m_buffers.dp_ref = decltype(m_buffers.dp_ref)(mem,nelems);
   mem += size_mid_scalar*nelems;
 
+#ifdef HV_USE_THETA_REF
   m_buffers.theta_ref = decltype(m_buffers.theta_ref)(mem,nelems);
   mem += size_mid_scalar*nelems;
+#endif
 
   m_buffers.phi_i_ref = decltype(m_buffers.phi_i_ref)(mem,nelems);
   mem += size_int_scalar*nelems;
@@ -147,14 +168,22 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   m_buffers.p = decltype(m_buffers.p)(mem,nteams);
   mem += size_mid_scalar*nteams;
 
-  m_buffers.exner = decltype(m_buffers.exner)(mem,nteams);
-  mem += size_mid_scalar*nteams;
-
-  m_buffers.p_i       = decltype(m_buffers.p_i)(mem,nteams);
+  m_buffers.p_i = decltype(m_buffers.p_i)(mem,nteams);
   mem += size_int_scalar*nteams;
 
   // ps_ref can alias anything (except dp_ref), since it's used to compute dp_ref, then tossed
   m_buffers.ps_ref = decltype(m_buffers.ps_ref)(reinterpret_cast<Real*>(m_buffers.p.data()),nteams);
+
+  const int used_mem = reinterpret_cast<Real*>(mem)-mem_in;
+  if (used_mem < requested_buffer_size()) {
+    printf("[HyperviscosityFunctorImpl] Warning! We used less memory than we said we would: %d instead of %d\n",
+           used_mem, requested_buffer_size());
+  } else if (used_mem > requested_buffer_size()) {
+    std::string msg = "[HyperviscosityFunctorImpl] Error! We used more memory than we said we would: "
+                    + std::to_string(used_mem) + " instead of "
+                    + std::to_string(requested_buffer_size()) + "\n";
+    Errors::runtime_abort(msg);
+  }
 }
 
 void HyperviscosityFunctorImpl::init_boundary_exchanges () {

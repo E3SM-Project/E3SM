@@ -61,7 +61,9 @@ public:
   {
     // Zero out ref states
     Kokkos::deep_copy(m_buffers.dp_ref,0.0);
+#ifdef HV_USE_THETA_REF
     Kokkos::deep_copy(m_buffers.theta_ref,0.0);
+#endif
     Kokkos::deep_copy(m_buffers.phi_i_ref,0.0);
   }
 
