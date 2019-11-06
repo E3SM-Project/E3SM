@@ -169,12 +169,10 @@ contains
 
       ! column level fluxes
 
-      if(.not.use_fates) then
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            col_cs%decomp_som2c_vr(c,1:nlevdecomp) = col_cs%decomp_cpools_vr(c,1:nlevdecomp,6)
-         end do
-      end if
+      do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          col_cs%decomp_som2c_vr(c,1:nlevdecomp) = col_cs%decomp_cpools_vr(c,1:nlevdecomp,6)
+      end do
       
       if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) ) then
 

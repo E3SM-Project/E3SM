@@ -836,9 +836,10 @@ contains
          col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_lig_lit) = &
                this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nld_si) * dtime
 
-         litfall(c) = (this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nld_si) + & 
-                      this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nld_si) + &  
-                      this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nld_si)) * dtime
+         litfall(c) = & 
+               sum(this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + & 
+               sum(this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + &  
+               sum(this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si))
 
 
          select case(fates_parteh_mode)
@@ -860,21 +861,27 @@ contains
             col_pf%decomp_ppools_sourcesink(c,1:nld_si,i_lig_lit) = &
                  this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nld_si) * dtime
 
+            ! Diagnostic for mass balancing (gP/m2/s)
+            col_pf%plant_to_litter_pflux(c) = & 
+                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + &
+                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + & 
+                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si))
+            
             ! Transfer Nitrogen
             col_nf%decomp_npools_sourcesink(c,1:nld_si,i_met_lit) = &
-                 this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nld_si) * dtime
+                  this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nld_si) * dtime
             col_nf%decomp_npools_sourcesink(c,1:nld_si,i_cel_lit) = &
-                 this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nld_si)* dtime
+                  this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nld_si)* dtime
             col_nf%decomp_npools_sourcesink(c,1:nld_si,i_lig_lit) = &
-                 this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nld_si) * dtime
+                  this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nld_si) * dtime
+            
+            ! Diagnostic for mass balancing  (gN/m2/s)
+            col_nf%plant_to_litter_nflux = & 
+                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + & 
+                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + & 
+                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si))            
 
          end select
-         
-
-         
-
-
-
        
       end do
 

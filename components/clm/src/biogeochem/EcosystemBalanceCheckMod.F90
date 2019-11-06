@@ -368,6 +368,8 @@ contains
          smin_no3_leached          =>    col_nf%smin_no3_leached          , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to leaching (gN/m2/s)
          smin_no3_runoff           =>    col_nf%smin_no3_runoff           , & ! Input:  [real(r8) (:)]  soil mineral NO3 pool loss to runoff (gN/m2/s)
          f_n2o_nit                 =>    col_nf%f_n2o_nit                 , & ! Input:  [real(r8) (:)]  flux of N2o from nitrification [gN/m^2/s]
+         plant_to_litter_nflux     =>    col_nf%plant_to_litter_nflux     , & ! Input                   flux of N from FATES litter into ELM
+                                                                              !                         litter (gP/m2/s)
          col_prod1n_loss           =>    col_nf%prod1n_loss               , & ! Input:  [real(r8) (:) ]  (gN/m2/s) crop leafc harvested
          col_fire_nloss            =>    col_nf%fire_nloss                , & ! Input:  [real(r8) (:)]  total column-level fire N loss (gN/m2/s)
          hrv_deadstemn_to_prod10n  =>    col_nf%hrv_deadstemn_to_prod10n  , & ! Input:  [real(r8) (:)]  (gN/m2/s) dead stem C harvest mortality to 10-year product pool
@@ -404,6 +406,12 @@ contains
             else
                col_ninputs(c) = ndep_to_sminn(c) + supplement_to_sminn(c)
             end if
+
+            ! plant_to_litter_nflux is used by FATES to store
+            ! column level fragmentation fluxes of nitrogen FATES litter to 
+            ! ELM litter
+
+            col_ninputs(c) = col_ninputs(c) + plant_to_litter_nflux(c)
 
             ! calculate total column-level outputs
             col_noutputs(c) = denit(c) +  sminn_to_plant(c)
@@ -585,9 +593,12 @@ contains
          occlp_yield               => col_pf%occlp_yield               , & ! Input:  [real(r8) (:)]  soil occluded mineral P loss by erosion (gP/m^s/s)
          primp_yield               => col_pf%primp_yield               , & ! Input:  [real(r8) (:)]  soil primary mineral P loss by erosion (gP/m^s/s)
          supplement_to_plantp      => veg_pf%supplement_to_plantp          , &
+         plant_to_litter_pflux     => col_pf%plant_to_litter_pflux     , & ! Input                   flux of P from FATES litter into ELM
+                                                                           !                         litter (gP/m2/s)
          col_prod1p_loss           => col_pf%prod1p_loss               , & ! Input:  [real(r8) (:) ]  (gP/m2/s) crop leafc harvested 
          col_pinputs               => col_pf%pinputs                   , & ! Output: [real(r8) (:)]  column-level P inputs (gP/m2/s)
          col_poutputs              => col_pf%poutputs                  , & ! Output: [real(r8) (:)]  column-level P outputs (gP/m2/s)
+         
          col_begpb                 => col_ps%begpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, beginning of time step (gP/m**2)
          col_endpb                 => col_ps%endpb                    , & ! Output: [real(r8) (:)]  phosphorus mass, end of time step (gP/m**2)
          col_errpb                 => col_ps%errpb                    , & ! Output: [real(r8) (:)]  phosphorus balance error for the timestep (gP/m**2)
@@ -666,6 +677,11 @@ contains
          if(use_fates) then
 
             col_poutputs(c) = secondp_to_occlp(c) + sminp_leached(c) + sminp_to_plant(c)
+            ! plant_to_litter_nflux is used by FATES to store
+            ! column level fragmentation fluxes of nitrogen FATES litter to 
+            ! ELM litter
+
+            col_pinputs(c) = col_pinputs(c) + plant_to_litter_pflux(c)
 
          else
             do p = col_pp%pfti(c), col_pp%pftf(c)
