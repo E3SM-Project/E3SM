@@ -119,7 +119,7 @@ _CIME_TESTS = {
         "tests" : (
             "NCK_Ld3.f45_g37_rx1.A",
             "ERI_Ln9.f09_g16.X",
-            "ERIO_Ln5.f09_g16.X",
+            "ERIO_Ln11.f09_g16.X",
             "SEQ_Ln9.f19_g16_rx1.A",
             "ERS.ne30_g16_rx1.A.drv-y100k",
             "IRT_N2_Ln9.f19_g16_rx1.A",
