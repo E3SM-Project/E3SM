@@ -234,7 +234,8 @@ This allows using a different mpirun command to launch unit tests
       </modules>
     </module_system>
     <environment_variables>
-      <env name="OMP_STACKSIZE">256M</env>
+      <env name="OMP_NUM_THREADS">1</env>
+      <env name="OMP_STACKSIZE">1024M</env>
       <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_TYPE_DEPTH">16</env>
       <env name="MPI_IB_CONGESTED">1</env>
@@ -255,9 +256,13 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-      <env name="UGCSINPUTPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/2012010100/gfs/fcst</env>
+      <!--<env name="UGCSINPUTPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/2012010100/gfs/fcst</env>-->
+      <env name="UGCSINPUTPATH">/glade/scratch/turuncu/fv3gfs/fv3_gfdlmprad</env>
       <env name="UGCSFIXEDFILEPATH">/glade/work/turuncu/FV3GFS/fix_am</env>
       <env name="UGCSADDONPATH">/glade/work/turuncu/FV3GFS/addon</env>
+    </environment_variables>
+    <environment_variables comp_interface="nuopc">
+      <env name="NCEP_LIBS">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install</env>
     </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>
