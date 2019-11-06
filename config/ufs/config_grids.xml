@@ -1115,6 +1115,10 @@
       <mask>tx0.25v1</mask>
     </model_grid>
 
+    <model_grid alias="C96" not_compset="_POP" >
+      <grid name="atm">C96</grid>
+    </model_grid>
+
     <model_grid alias="C384_t025" not_compset="_POP" >
       <grid name="atm">C384</grid>
       <grid name="lnd">C384</grid>
