@@ -78,6 +78,15 @@ namespace tridiag {
    scream::pack::Pack<scalar_type, 1> makes sense, so it also likely makes sense
    that the value type is just the POD (plain-old data) scalar_type.
 
+   For BFB development work, there is a function
+
+        template <typename TeamMember, typename TridiagDiag, typename DataArray>
+        void bfb(const TeamMember& team,
+                 TridiagDiag dl, TridiagDiag d, TridiagDiag du, DataArray X);
+
+   it is not performant and should be used only when requiring answers to be
+   BFB-identical across architectures.
+
    The rest of this file contains implementation details. Each of (a, b, c) is
    specialized to the various problem formats. This header documentation is the
    interface, and nothing further needs to be read.
@@ -244,6 +253,35 @@ void thomas_amxm (DT* const dl, DT* d, DT* const du, XT* X,
   }
 }
 
+template <typename TridiagDiag>
+KOKKOS_INLINE_FUNCTION
+void bfb_thomas_factorize (TridiagDiag dl, TridiagDiag d, TridiagDiag du,
+                           typename std::enable_if<TridiagDiag::rank == 1>::type* = 0) {
+  const int nrow = d.extent_int(0);
+  assert(dl.extent_int(0) == nrow);
+  assert(du.extent_int(0) == nrow);
+  for (int i = 1; i < nrow; ++i) {
+    dl(i) /= d(i-1);
+    d (i) -= dl(i) * du(i-1);
+  }
+}
+
+template <typename TridiagDiag, typename DataArray>
+KOKKOS_INLINE_FUNCTION
+void bfb_thomas_solve (TridiagDiag dl, TridiagDiag d, TridiagDiag du,
+                       DataArray X,
+                       typename std::enable_if<TridiagDiag::rank == 1>::type* = 0,
+                       typename std::enable_if<DataArray::rank == 1>::type* = 0) {
+  const int nrow = d.extent_int(0);
+  assert(X.extent_int(0) == nrow);
+  assert(dl.extent_int(0) == nrow);
+  assert(du.extent_int(0) == nrow);
+  for (int i = 1; i < nrow; ++i)
+    X(i) -= dl(i) * X(i-1);
+  X(nrow-1) /= d(nrow-1);
+  for (int i = nrow-1; i > 0; --i)
+    X(i-1) = (X(i-1) - du(i-1) * X(i)) / d(i-1);
+}
 } // namespace impl
 
 template <typename TeamMember, typename TridiagDiag, typename DataArray>
@@ -553,6 +591,54 @@ void cr (const TeamMember& team,
     os >>= 1;
     team.team_barrier();
   }
+}
+
+template <typename TeamMember, typename TridiagDiag, typename DataArray>
+KOKKOS_INLINE_FUNCTION
+void bfb (const TeamMember& team,
+          TridiagDiag dl, TridiagDiag d, TridiagDiag du, DataArray X,
+          typename std::enable_if<TridiagDiag::rank == 1>::type* = 0) {
+  const int nrhs = X.extent_int(1);
+  assert(dl.extent_int(0) == d.extent_int(0));
+  assert(du.extent_int(0) == d.extent_int(0));
+  assert(X. extent_int(0) == d.extent_int(0));
+  Kokkos::single(Kokkos::PerTeam(team),
+                 [&] () { impl::bfb_thomas_factorize(dl, d, du); });
+  team.team_barrier();
+  const auto f = [&] (const int& j) {
+    impl::bfb_thomas_solve(dl, d, du, Kokkos::subview(X , Kokkos::ALL(), j));
+  };
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nrhs), f);
+}
+
+template <typename TeamMember, typename TridiagDiag, typename DataArray>
+KOKKOS_INLINE_FUNCTION
+void bfb (const TeamMember& team,
+          TridiagDiag dl, TridiagDiag d, TridiagDiag du, DataArray X,
+          typename std::enable_if<TridiagDiag::rank == 2>::type* = 0) {
+  using Kokkos::subview;
+  using Kokkos::ALL;
+  const int nrhs = X.extent_int(1);
+  if (nrhs > 1 && dl.extent_int(1) == 1) {
+    bfb(team, subview(dl, ALL(), 0), subview(d, ALL(), 0), subview(du, ALL(), 0), X);
+    return;
+  }
+  assert(dl.extent_int(1) == nrhs);
+  assert(d. extent_int(1) == nrhs);
+  assert(du.extent_int(1) == nrhs);
+  assert(dl.extent_int(0) == d.extent_int(0));
+  assert(du.extent_int(0) == d.extent_int(0));
+  assert(X. extent_int(0) == d.extent_int(0));
+  const auto f = [&] (const int& j) {
+    impl::bfb_thomas_factorize(subview(dl, ALL(), j),
+                               subview(d , ALL(), j),
+                               subview(du, ALL(), j));
+    impl::bfb_thomas_solve(subview(dl, ALL(), j),
+                           subview(d , ALL(), j),
+                           subview(du, ALL(), j),
+                           subview(X , ALL(), j));
+  };
+  Kokkos::parallel_for(Kokkos::TeamThreadRange(team, nrhs), f);
 }
 
 } // namespace tridiag
