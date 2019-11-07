@@ -1280,6 +1280,7 @@ end subroutine clubb_init_cnst
    intrinsic :: selected_real_kind, max
 
    character(len=fieldname_len) :: varname, substep
+   logical :: macmic_clubb_diag
 
 #endif
    det_s(:)   = 0.0_r8
