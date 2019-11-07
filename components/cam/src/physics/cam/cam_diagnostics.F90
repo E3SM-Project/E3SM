@@ -183,6 +183,14 @@ subroutine diag_init()
    integer :: ixcldice, ixcldliq ! constituent indices for cloud liquid and ice water.
    integer :: ierr
 
+   !outfld calls for generating nudging data
+  
+   call addfld ('PS_ndg',horiz_only, 'A','Pa'   ,'Surface pressure')
+   call addfld ('T_ndg',(/ 'lev' /), 'A','K'    ,'Temperature')
+   call addfld ('U_ndg',(/ 'lev' /), 'A','m/s'  ,'Zonal wind')
+   call addfld ('V_ndg',(/ 'lev' /), 'A','m/s'  ,'Meridional wind')
+   call addfld ('Q_ndg',(/ 'lev' /), 'A','kg/kg','Specific humidity')
+
    call phys_getopts(prog_modal_aero_out = prog_modal_aero )
 
    ! outfld calls in diag_phys_writeout

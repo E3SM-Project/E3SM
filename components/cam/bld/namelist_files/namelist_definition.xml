@@ -484,7 +484,40 @@
        Method to perform Nudging analyses.
        Default: none
        </entry>
+<entry id="Nudge_Tau" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Method to perform Nudging time scale.
+       Default: none
+       </entry>
 <!-- JS END -->
+
+<!-- SZ ADD -->
+<entry id="Nudge_Data" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Toggle Generating Nudging Data ON/OFF.
+       Default: FALSE
+       </entry>
+<entry id="Nudge_Unam" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       U-name in Nudging data.
+       Default: "U"
+       </entry>
+<entry id="Nudge_Vnam" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       U-name in Nudging data.
+       Default: "V"
+       </entry>
+<entry id="Nudge_Tnam" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       U-name in Nudging data.
+       Default: "T"
+       </entry>
+<entry id="Nudge_Qnam" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       U-name in Nudging data.
+       Default: "Q"
+       </entry>
+<!-- SZ END -->
 
 <!-- Aerosols: Data (CAM version) -->
 
@@ -3936,7 +3969,19 @@ Default: .false.
 
 <entry id="macmic_extra_diag" type="logical"  category="perturbation"
        group="phys_ctl_nl" valid_values="" >
-switch to turn on code instrumentations for extra output in clubb and mg2
+switch to turn on code instrumentations for extra output in physpkg
+Default: .false.
+</entry>
+
+<entry id="macmic_clubb_diag" type="logical"  category="perturbation"
+       group="phys_ctl_nl" valid_values="" >
+switch to turn on code instrumentations for extra output in clubb only
+Default: .false.
+</entry>
+
+<entry id="macmic_mg2_diag" type="logical"  category="perturbation"
+       group="phys_ctl_nl" valid_values="" >
+switch to turn on code instrumentations for extra output in mg2 only 
 Default: .false.
 </entry>
 

@@ -94,6 +94,8 @@ module physpkg
   logical           :: pergro_test_active= .false.
   logical           :: pergro_mods = .false.
   logical           :: macmic_extra_diag = .false.
+  logical           :: macmic_clubb_diag = .false.
+  logical           :: macmic_mg2_diag   = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
 
   !======================================================================= 
@@ -174,7 +176,9 @@ subroutine phys_register
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
                       pergro_mods_out          = pergro_mods, &
-                      macmic_extra_diag_out    = macmic_extra_diag)
+                      macmic_extra_diag_out    = macmic_extra_diag, &
+                      macmic_clubb_diag_out    = macmic_clubb_diag, &
+                      macmic_mg2_diag_out      = macmic_mg2_diag)
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
@@ -3435,12 +3439,16 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
-  use nudging,             only: Nudge_Model,nudging_timestep_init
+  use nudging,             only: Nudge_Model,Nudge_Data,nudging_timestep_init
+  use cam_history,         only: outfld
 
   use seasalt_model,       only: advance_ocean_data, has_mam_mom
 
+  use constituents,        only: cnst_get_ind
+
   implicit none
 
+  integer :: c,ncol,indw   ! indices
   type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
   type(cam_out_t),     intent(inout), dimension(begchunk:endchunk) :: cam_out
   
@@ -3506,6 +3514,24 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   ! age of air tracers
   call aoa_tracers_timestep_init(phys_state)
 
+  !--------------------------------------------------------
+  ! Generate Nudging data if needed. This data is used 
+  ! for nudging to CLIM experiment the output here is 
+  ! to make the output nudging data and calculation of 
+  ! nudging tendency  in the same time level
+  !-------------------------------------------------------
+  if (Nudge_Data)  then
+   call cnst_get_ind('Q',indw)
+   do c=begchunk, endchunk
+    ncol = phys_state(c)%ncol
+    call outfld('T_ndg   ',phys_state(c)%t        , pcols   ,c   )
+    call outfld('PS_ndg  ',phys_state(c)%ps       , pcols   ,c   )
+    call outfld('U_ndg   ',phys_state(c)%u        , pcols   ,c   )
+    call outfld('V_ndg   ',phys_state(c)%v        , pcols   ,c   )   
+    call outfld('Q_ndg   ',phys_state(c)%q(1,1,1) , pcols   ,c   )
+   end do 
+  end if 
+
   ! Update Nudging values, if needed
   !----------------------------------
   if(Nudge_Model) call nudging_timestep_init(phys_state)
@@ -3516,7 +3542,7 @@ end subroutine phys_timestep_init
 subroutine add_fld_default_calls()
   !BSINGH -  For adding addfld and add defualt calls
   use cam_history,        only: addfld, add_default, fieldname_len
-  use phys_control,     only: phys_getopts
+   use phys_control,     only: phys_getopts
   implicit none
 
   !Add all existing ptend names for the addfld calls
@@ -3530,32 +3556,20 @@ subroutine add_fld_default_calls()
 !       'clubb_ice4          ','clubb_srf           ' /)
 
 !Add all existing ptend names in e3smv1 for the addfld calls
-  character(len=20), parameter :: vlist(18) = (/          'topphysbc           ', 'chkenergyfix        ', 'dadadj              ',&
+character(len=20), parameter :: vlist(18) = (/          'topphysbc           ', 'chkenergyfix        ', 'dadadj              ',&
            'zm_convr            ', 'zm_conv_evap        ', 'momtran             ', 'zm_conv_tend        ', 'convect_shallow_off ',&
            'convect_shallow     ', 'aero_model_wetdep_ma', 'convtran2           ', 'cam_radheat         ', 'chemistry           ',&
            'clubb_srf           ', 'rayleigh_friction   ', 'aero_model_drydep_ma', 'Grav_wave_drag      ', 'nudging             ' /)
    character(len=10), parameter :: vlist2(5) =(/'clubb_ice1','clubb_det ','clubb_ice4','micro_mg  ','cldwat_mic'/)
-  character(len=fieldname_len) :: varname, substep, modal
+  character(len=fieldname_len) :: varname,substep,modal
   character(len=1000)          :: s_lngname,stend_lngname,qv_lngname,qvtend_lngname,t_lngname
   
   integer :: iv, ntot, ihist,it
   integer :: cld_macmic_num_steps
-  logical  :: l_dribling_tend   
+  logical  :: l_dribling_tend
  call phys_getopts(cld_macmic_num_steps_out=cld_macmic_num_steps)
  call phys_getopts(l_dribling_tend_out=l_dribling_tend)
 
-  
-  ntot = size(vlist)
-
-  do ihist = 1 , nvars_prtrb_hist
-     do iv = 1, ntot   
-        
-        varname  = trim(adjustl(hist_vars(ihist)))//'_'//trim(adjustl(vlist(iv))) ! form variable name
-
-        call addfld (trim(adjustl(varname)), (/ 'lev' /), 'A', 'prg_test_units', 'pergro_longname',flag_xyfill=.true.)!The units and longname are dummy as it is for a test only
-        call add_default (trim(adjustl(varname)), 1, ' ')        
-     enddo
-  enddo
 ntot=size(vlist2)
 do ihist = 1 , nvars_prtrb_hist
  do iv = 1, ntot
@@ -3590,7 +3604,7 @@ subroutine add_fld_extra_macmic_calls ()
 
   implicit none
   !Add all existing ptend names for the addfld calls
-  character(len=17), parameter ::vlist(57) = (/ 'npccn_af_micaero ',&
+  character(len=17), parameter ::vlist(19) = (/ 'npccn_af_micaero ',&
          'numliq_bf_clubb  ','numliq_bf_micaero','numliq_af_mg2tend','cldliq_bf_micaero','cldliq_af_mg2tend',&
 !        'numliq_bf_reg    ','numliq_af_reg    ','numliq_bf_mix    ','numliq_af_mix    ',&
 !         'nsource_af_reg   ','nsource_bf_mix   ','nsource_af_mix   ','cldfrc_new       ','cldfrc_old       ',&
@@ -3598,15 +3612,7 @@ subroutine add_fld_extra_macmic_calls ()
 !         'alsto_bf_micaero ','alsto_af_micaero ','alsto_af_mg2tend ',
          'cldliq_bf_clubb  ','qvapor_bf_clubb  ','qvapor_bf_micaero','qvapor_af_mg2tend','cldice_bf_clubb  ',&
          'numice_bf_clubb  ','numice_bf_micaero','numice_af_mg2tend','cldice_bf_micaero','cldice_af_mg2tend',&
-         'temp_bf_clubb    ','temp_bf_micaero  ','temp_af_mg2tend  ','EVAPSNOW         ','EVAPPREC         ',&
-         'QVRES            ','QISEVAP          ','QCSEVAP          ','QISEDTEN         ','QCSEDTEN         ',&
-         'QIRESO           ','QCRESO           ','QRSEDTEN         ','QSSEDTEN         ','PSACWSO          ',&
-         'PRCO             ','PRCIO            ','PRAO             ','PRAIO            ','PRACSO           ',&
-         'MSACWIO          ','MPDW2V           ','MPDW2P           ','MPDW2I           ','MPDT             ',&
-         'MPDQ             ','MPDLIQ           ','MPDICE           ','MPDI2W           ','MPDI2P           ',&
-         'MPDI2V           ','MNUCCTO          ','MNUCCRO          ','MNUCCCO          ','MELTSDT          ',&
-         'MELTO            ','HOMOO            ','FRZRDT           ','CMEIOUT          ','BERGSO           ',&
-         'BERGO            '/) 
+         'temp_bf_clubb    ','temp_bf_micaero  ','temp_af_mg2tend  '/) 
 
   character(len=15), parameter :: vlist2(4) = (/ 'alstn_af_macmic'  ,'alstn_bf_macmic', 'alsto_af_macmic'  ,'alsto_bf_macmic'/)  !no substepping variable
   character(len=17), parameter :: vlist3(2) = (/ 'factnum_mam      ','raerosol_tot_mam '/) !aerosol-related variables

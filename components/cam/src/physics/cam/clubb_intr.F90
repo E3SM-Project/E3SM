@@ -795,6 +795,10 @@ end subroutine clubb_init_cnst
     call addfld ('FICE_T', (/ 'lev' /),  'A',        'K', 'Temperature for ice cloud fraction calculation')
     call addfld ('FICE_f', (/ 'lev' /),  'A',        'fraction', 'Ice cloud cover')
 
+    ! save the changes of frequencies of explicit diffusion that is called by CLUBB   
+    call addfld ('FRQ_EXDIFF_LT',  (/ 'lev' /),  'A',   '#', 'Frequency of thlm700 - thlm1000 < 20 K'  ) 
+    call addfld ('FRQ_EXDIFF_GE',  (/ 'lev' /),  'A',   '#', 'Frequency of thlm700 - thlm1000 >= 20 K' )     
+
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
     dum2 = 1200._r8
@@ -861,6 +865,8 @@ end subroutine clubb_init_cnst
        call add_default('SL',               1, ' ')
        call add_default('QT',               1, ' ')
        call add_default('CONCLD',           1, ' ')
+       call add_default('FRQ_EXDIFF_LT',    1, ' ')
+       call add_default('FRQ_EXDIFF_GE',    1, ' ')
     else 
        call add_default('CLOUDFRAC_CLUBB',  1, ' ')
        call add_default('CONCLD',           1, ' ')
@@ -973,7 +979,7 @@ end subroutine clubb_init_cnst
    use parameters_tunable,        only: read_parameters, setup_parameters ! Subroutine
    use cldfrc2m,                  only: aist_vector
    use clubb_precision,           only: time_precision
-   use cam_history,               only: outfld
+   use cam_history,               only: outfld, fieldname_len
    use advance_clubb_core_module, only: advance_clubb_core, calculate_thlp2_rad
    use grid_class,                only: zt2zm, zm2zt, gr, setup_grid, cleanup_grid 
    use constants_clubb,           only: w_tol_sqd, rt_tol, thl_tol  
@@ -1254,6 +1260,13 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: prer_evap
    real(r8), pointer, dimension(:,:) :: qrl
    real(r8), pointer, dimension(:,:) :: radf_clubb
+
+!SZ 
+   real(r8) frediff_lt(pcols,pverp)
+   real(r8) frediff_ge(pcols,pverp)
+   real(r8) thfrq_lt(pverp)
+   real(r8) thfrq_ge(pverp)
+
 !PMA
    real(r8)  relvarc(pcols,pver)
    real(r8)  stend(pcols,pver)
@@ -1265,6 +1278,9 @@ end subroutine clubb_init_cnst
    integer :: ixorg
 
    intrinsic :: selected_real_kind, max
+
+   character(len=fieldname_len) :: varname, substep
+   logical :: macmic_clubb_diag
 
 #endif
    det_s(:)   = 0.0_r8
@@ -1802,6 +1818,8 @@ end subroutine clubb_init_cnst
          edsclr_out(k,:)     = 0._r8
          khzm_out(k)         = 0._r8
          khzt_out(k)         = 0._r8
+         thfrq_ge(k)         = 0.0_r8
+         thfrq_lt(k)         = 0.0_r8
 
          !  higher order scalar stuff, put to zero
          sclrm(k,:)          = 0._r8
@@ -1934,7 +1952,7 @@ end subroutine clubb_init_cnst
             rcm_out, wprcp_out, cloud_frac_out, ice_supersat_frac, &
             rcm_in_layer_out, cloud_cover_out, &
             khzm_out, khzt_out, qclvar_out, thlprcp_out, &
-            pdf_params)
+            pdf_params, thfrq_lt, thfrq_ge)
          call t_stopf('advance_clubb_core')
 
          if (do_rainturb) then
@@ -2030,6 +2048,8 @@ end subroutine clubb_init_cnst
           khzm(i,k)         = khzm_out(pverp-k+1)
           khzt(i,k)         = khzt_out(pverp-k+1)
           qclvar(i,k)       = min(1._r8,qclvar_out(pverp-k+1))
+          frediff_lt(i,k)   = thfrq_lt(pverp-k+1)
+          frediff_ge(i,k)   = thfrq_ge(pverp-k+1)  
      
           do ixind=1,edsclr_dim
               edsclr_out(k,ixind) = edsclr_in(pverp-k+1,ixind)
@@ -2518,6 +2538,9 @@ end subroutine clubb_init_cnst
    ! --------------------------------------------------------------------------------- !  
  
    !  Output calls of variables goes here
+   call outfld( 'FRQ_EXDIFF_LT',   frediff_lt,               pcols, lchnk )
+   call outfld( 'FRQ_EXDIFF_GE',   frediff_ge,               pcols, lchnk )
+
    call outfld( 'RELVAR',           relvar,                  pcols, lchnk )
    call outfld( 'RELVARC',          relvarc,                 pcols, lchnk )
    call outfld( 'RHO_CLUBB',        rho,                     pcols, lchnk )
@@ -2557,7 +2580,10 @@ end subroutine clubb_init_cnst
 
    !  Output CLUBB history here
    if (l_stats) then 
-      
+ 
+    ! get the namelist variables to determine if we ouput diagnostics at each substep
+      call phys_getopts(macmic_clubb_diag_out = macmic_clubb_diag)
+     
       do i=1,stats_zt%num_output_fields
    
          temp1 = trim(stats_zt%file%var(i)%name)
@@ -2565,6 +2591,13 @@ end subroutine clubb_init_cnst
          if (len(temp1) .gt. 16) sub = temp1(1:16)
    
          call outfld(trim(sub), out_zt(:,:,i), pcols, lchnk )
+
+         if (macmic_clubb_diag) then
+          write(substep,"(I2.2)") macmic_it
+          varname  = trim(adjustl(sub))//'_'//trim(adjustl(substep))
+          call outfld(trim(adjustl(varname)), out_zt(:,:,i), pcols, lchnk )
+         end if 
+
       enddo
    
       do i=1,stats_zm%num_output_fields
@@ -2574,20 +2607,48 @@ end subroutine clubb_init_cnst
          if (len(temp1) .gt. 16) sub = temp1(1:16)
       
          call outfld(trim(sub),out_zm(:,:,i), pcols, lchnk)
+
+         if (macmic_clubb_diag) then
+          write(substep,"(I2.2)") macmic_it
+          varname  = trim(adjustl(sub))//'_'//trim(adjustl(substep))
+          call outfld(trim(adjustl(varname)), out_zm(:,:,i), pcols, lchnk )
+         end if
+
       enddo
 
       if (l_output_rad_files) then  
          do i=1,stats_rad_zt%num_output_fields
             call outfld(trim(stats_rad_zt%file%var(i)%name), out_radzt(:,:,i), pcols, lchnk)
+
+            if (macmic_clubb_diag) then
+             write(substep,"(I2.2)") macmic_it
+             varname  = trim(adjustl(stats_rad_zt%file%var(i)%name))//'_'//trim(adjustl(substep))
+             call outfld(trim(adjustl(varname)), out_radzt(:,:,i), pcols, lchnk )
+            end if
+
          enddo
    
          do i=1,stats_rad_zm%num_output_fields
             call outfld(trim(stats_rad_zm%file%var(i)%name), out_radzm(:,:,i), pcols, lchnk)
+
+            if (macmic_clubb_diag) then
+             write(substep,"(I2.2)") macmic_it
+             varname  = trim(adjustl(stats_rad_zm%file%var(i)%name))//'_'//trim(adjustl(substep))
+             call outfld(trim(adjustl(varname)), out_radzm(:,:,i), pcols, lchnk )
+            end if
+
          enddo
       endif
    
       do i=1,stats_sfc%num_output_fields
          call outfld(trim(stats_sfc%file%var(i)%name), out_sfc(:,:,i), pcols, lchnk)
+
+         if (macmic_clubb_diag) then
+          write(substep,"(I2.2)") macmic_it
+          varname  = trim(adjustl(stats_sfc%file%var(i)%name))//'_'//trim(adjustl(substep))
+          call outfld(trim(adjustl(varname)), out_sfc(:,:,i), pcols, lchnk )
+         end if
+
       enddo
    
    endif
@@ -2871,7 +2932,7 @@ end function diag_ustar
     use stats_sfc_module,       only: nvarmax_sfc, stats_init_sfc ! 
     use error_code,             only: clubb_at_least_debug_level ! 
     use constants_clubb,        only: fstderr, var_length !     
-    use cam_history,            only: addfld, horiz_only
+    use cam_history,            only: addfld, horiz_only, fieldname_len
     use namelist_utils,         only: find_group_name
     use units,                  only: getunit, freeunit
     use cam_abortutils,         only: endrun
@@ -2918,6 +2979,14 @@ end function diag_ustar
 
     integer :: i, ntot, read_status
     integer :: iunit
+    integer :: macmic_it                       ! iteration variables
+
+    character(len=fieldname_len) :: varname, substep
+
+    ! get the namelist variables to determine if we ouput diagnostics at each substep
+    call phys_getopts(cld_macmic_num_steps_out = cld_macmic_num_steps, &
+                      macmic_clubb_diag_out = macmic_clubb_diag)
+
 
     !  Initialize
     l_error = .false.
@@ -3267,6 +3336,18 @@ end function diag_ustar
      
        call addfld(trim(sub),(/ 'ilev' /),&
             'A',trim(stats_zt%file%var(i)%units),trim(stats_zt%file%var(i)%description))
+
+      if (macmic_clubb_diag) then
+       
+       do macmic_it = 1, cld_macmic_num_steps
+          write(substep,"(I2.2)") macmic_it
+          varname  = trim(adjustl(sub))//'_'//trim(adjustl(substep))
+          call addfld(trim(adjustl(varname)),(/ 'ilev' /),&
+            'A',trim(stats_zt%file%var(i)%units),trim(stats_zt%file%var(i)%description))
+       end do        
+ 
+      end if
+
     enddo
     
     do i = 1, stats_zm%num_output_fields
@@ -3277,23 +3358,71 @@ end function diag_ustar
     
       call addfld(trim(sub),(/ 'ilev' /),&
            'A',trim(stats_zm%file%var(i)%units),trim(stats_zm%file%var(i)%description))
+
+      if (macmic_clubb_diag) then
+
+       do macmic_it = 1, cld_macmic_num_steps
+          write(substep,"(I2.2)") macmic_it
+          varname  = trim(adjustl(sub))//'_'//trim(adjustl(substep))
+          call addfld(trim(adjustl(varname)),(/ 'ilev' /),&
+            'A',trim(stats_zm%file%var(i)%units),trim(stats_zm%file%var(i)%description))
+       end do
+
+      end if
+
     enddo
 
     if (l_output_rad_files) then     
       do i = 1, stats_rad_zt%num_output_fields
         call addfld(trim(stats_rad_zt%file%var(i)%name),(/ 'foobar' /),&
            'A',trim(stats_rad_zt%file%var(i)%units),trim(stats_rad_zt%file%var(i)%description))
+
+        if (macmic_clubb_diag) then
+
+         do macmic_it = 1, cld_macmic_num_steps
+            write(substep,"(I2.2)") macmic_it
+            varname  = trim(adjustl(stats_rad_zt%file%var(i)%name))//'_'//trim(adjustl(substep))
+            call addfld(trim(adjustl(varname)),(/ 'foobar' /),&
+           'A',trim(stats_rad_zt%file%var(i)%units),trim(stats_rad_zt%file%var(i)%description))
+         end do
+
+        end if
+
       enddo
     
       do i = 1, stats_rad_zm%num_output_fields
         call addfld(trim(stats_rad_zm%file%var(i)%name),(/ 'foobar' /),&
            'A',trim(stats_rad_zm%file%var(i)%units),trim(stats_rad_zm%file%var(i)%description))
+
+        if (macmic_clubb_diag) then
+
+         do macmic_it = 1, cld_macmic_num_steps
+            write(substep,"(I2.2)") macmic_it
+            varname  = trim(adjustl(stats_rad_zm%file%var(i)%name))//'_'//trim(adjustl(substep))
+            call addfld(trim(adjustl(varname)),(/ 'foobar' /),&
+           'A',trim(stats_rad_zm%file%var(i)%units),trim(stats_rad_zm%file%var(i)%description))
+         end do
+
+        end if
+
       enddo
     endif 
     
     do i = 1, stats_sfc%num_output_fields
       call addfld(trim(stats_sfc%file%var(i)%name),horiz_only,&
            'A',trim(stats_sfc%file%var(i)%units),trim(stats_sfc%file%var(i)%description))
+
+        if (macmic_clubb_diag) then
+
+         do macmic_it = 1, cld_macmic_num_steps
+            write(substep,"(I2.2)") macmic_it
+            varname  = trim(adjustl(stats_sfc%file%var(i)%name))//'_'//trim(adjustl(substep))
+            call addfld(trim(adjustl(varname)),horiz_only,&
+           'A',trim(stats_sfc%file%var(i)%units),trim(stats_sfc%file%var(i)%description))
+         end do
+
+        end if
+
     enddo
 
     return
