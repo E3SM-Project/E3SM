@@ -412,8 +412,8 @@ contains
          leafp_xfer    => veg_ps%leafp_xfer    , &
          i_vcmax       => veg_vp%i_vc                          , &
          s_vcmax       => veg_vp%s_vc                          , &
-         h2o_moss_wc   => veg_ws%h2o_moss_wc_patch         , & !Input: [real(r8) (:)   ]  Total Moss water content
-         h2osfc        => veg_ws%h2osfc_col                 & !Input: [real(r8) (:)   ]  Surface water
+         h2o_moss_wc   => veg_ws%h2o_moss_wc                  , & !Input: [real(r8) (:)   ]  Total Moss water content
+         h2osfc        => col_ws%h2osfc                         & !Input: [real(r8) (:)   ]  Surface water
          )
       
       if (phase == 'sun') then
@@ -826,17 +826,17 @@ contains
          gb_mol(p) = gb * cf
 
          !Dessication and submergence scalaers for moss photosynthesis
-         if (veg_pp%itype(p) == 12)then
-            wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
-            !DMR 05/11/17 - add scaler for submergence effect
-            !wcscaler = wcscaler * (1.0_r8 - min(h2osfc(c),50.0_r8)/50.0_r8)
-            wcscaler = max(0._r8, min(1.0_r8, wcscaler))
-         endif
+         !if (veg_pp%itype(p) == 12)then
+         !   wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
+         !   !DMR 05/11/17 - add scaler for submergence effect
+         !   !wcscaler = wcscaler * (1.0_r8 - min(h2osfc(c),50.0_r8)/50.0_r8)
+         !   wcscaler = max(0._r8, min(1.0_r8, wcscaler))
+         !endif
 
          ! Loop through canopy layers (above snow). Only do calculations if daytime
          do iv = 1, nrad(p)
 
-           if (veg_pp%itype(p) == 12) lmr_z(p,iv) = lmr_z(p,iv) * wcscaler
+           !if (veg_pp%itype(p) == 12) lmr_z(p,iv) = lmr_z(p,iv) * wcscaler
            if (par_z(p,iv) <= 0._r8) then           ! night time
 
                ac(p,iv) = 0._r8
@@ -1539,8 +1539,8 @@ contains
          theta_cj   => photosyns_vars%theta_cj_patch           , & ! Output: [real(r8) (:)   ]  empirical curvature parameter for ac, aj photosynthesis co-limitation 
          bbb        => photosyns_vars%bbb_patch                , & ! Output: [real(r8) (:)   ]  Ball-Berry minimum leaf conductance (umol H2O/m**2/s)                 
          mbb        => photosyns_vars%mbb_patch                , & ! Output: [real(r8) (:)   ]  Ball-Berry slope of conductance-photosynthesis relationship           
-         h2o_moss_wc   => waterstate_vars%h2o_moss_wc_patch    , & ! Input: [real(r8) (:)   ]  Total Moss water content
-         h2osfc        => waterstate_vars%h2osfc_col             & ! Input: [real(r8) (:)   ]  Surface water
+         h2o_moss_wc   => veg_ws%h2o_moss_wc                   , & ! Input: [real(r8) (:)   ]  Total Moss water content
+         h2osfc        => col_ws%h2osfc                          & ! Input: [real(r8) (:)   ]  Surface water
          )
 
       ! Miscellaneous parameters, from Bonan et al (2011) JGR, 116, doi:10.1029/2010JG001593
@@ -1586,14 +1586,14 @@ contains
       ag(p,iv) = min(r1,r2)
 
       !Dessication and submergence effects for moss PFT
-      if (veg_pp%itype(p) == 12)then
-         wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
-         !DMR 05/11/17 - add scaler for submergence effect
-         !wcscaler = wcscaler * (1.0_r8 - min(h2osfc(c),50.0_r8)/50.0_r8)
-         wcscaler = max(0._r8, min(1.0_r8, wcscaler))
-         ag(p,iv) = ag(p,iv) * wcscaler
-         !if (h2osfc(c) > 0) print*, 'AG', c, h2osfc(c), wcscaler
-      endif
+      !if (veg_pp%itype(p) == 12)then
+      !   wcscaler = (-0.656_r8 + 1.654_r8 *log10(h2o_moss_wc (p)))
+      !   !DMR 05/11/17 - add scaler for submergence effect
+      !   !wcscaler = wcscaler * (1.0_r8 - min(h2osfc(c),50.0_r8)/50.0_r8)
+      !   wcscaler = max(0._r8, min(1.0_r8, wcscaler))
+      !   ag(p,iv) = ag(p,iv) * wcscaler
+      !   !if (h2osfc(c) > 0) print*, 'AG', c, h2osfc(c), wcscaler
+      !endif
 
       ! Net photosynthesis. Exit iteration if an < 0
 

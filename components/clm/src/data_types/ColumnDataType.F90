@@ -1,5 +1,5 @@
 module ColumnDataType
-
+    
   !-----------------------------------------------------------------------
   ! !DESCRIPTION:
   ! Column data type allocation and initialization
@@ -434,6 +434,7 @@ module ColumnDataType
     real(r8), pointer :: qflx_gross_infl_soil (:)   => null() ! gross infiltration, before considering the evaporation
     real(r8), pointer :: qflx_adv             (:,:) => null() ! advective flux across different soil layer interfaces [mm H2O/s] [+ downward]
     real(r8), pointer :: qflx_rootsoi         (:,:) => null() ! root and soil water exchange [mm H2O/s] [+ into root]     
+    real(r8), pointer :: qflx_tran_veg_sat    (:)   => null() ! Transpiration from saturated zone
     real(r8), pointer :: dwb                  (:)   => null() !  water mass change [+ increase] [mm H2O/s] 
     real(r8), pointer :: qflx_infl            (:)   => null() ! infiltration (mm H2O /s)
     real(r8), pointer :: qflx_surf            (:)   => null() ! surface runoff (mm H2O /s)
@@ -471,6 +472,10 @@ module ColumnDataType
     real(r8), pointer :: qflx_irrig           (:)   => null() ! col irrigation flux (mm H2O/s)
     real(r8), pointer :: qflx_irr_demand      (:)   => null() ! col surface irrigation demand (mm H2O /s)
     real(r8), pointer :: qflx_over_supply     (:)   => null() ! col over supplied irrigation 
+
+    real(r8), pointer :: qflx_lat_aqu         (:)   => null() ! Total lateral flux between hummock/hollow (mm H2O /s)
+    real(r8), pointer :: qflx_lat_aqu_layer   (:,:) => null() ! Lateral flux between hummock/hollow by layer (mm H2O/s)
+    real(r8), pointer :: qflx_surf_input      (:)   => null() ! Runoff input from Hummock (mm H2O/s)
 
     real(r8), pointer :: mflx_infl_1d         (:)   => null() ! infiltration source in top soil control volume (kg H2O /s)
     real(r8), pointer :: mflx_dew_1d          (:)   => null() ! liquid+snow dew source in top soil control volume (kg H2O /s)
@@ -5119,6 +5124,7 @@ contains
     allocate(this%qflx_gross_infl_soil   (begc:endc))             ; this%qflx_gross_infl_soil (:)   = nan
     allocate(this%qflx_adv               (begc:endc,0:nlevgrnd))  ; this%qflx_adv             (:,:) = nan
     allocate(this%qflx_rootsoi           (begc:endc,1:nlevgrnd))  ; this%qflx_rootsoi         (:,:) = nan
+    allocate(this%qflx_tran_veg_sat      (begc:endc))             ; this%qflx_tran_veg_sat    (:)   = nan
     allocate(this%dwb                    (begc:endc))             ; this%dwb                  (:)   = nan
     allocate(this%qflx_infl              (begc:endc))             ; this%qflx_infl            (:)   = nan
     allocate(this%qflx_surf              (begc:endc))             ; this%qflx_surf            (:)   = nan
@@ -5155,7 +5161,10 @@ contains
     allocate(this%qflx_grnd_irrig        (begc:endc))             ; this%qflx_grnd_irrig      (:)   = nan
     allocate(this%qflx_over_supply       (begc:endc))             ; this%qflx_over_supply     (:)   = nan
     allocate(this%qflx_irr_demand        (begc:endc))             ; this%qflx_irr_demand      (:)   = nan
-    
+    allocate(this%qflx_lat_aqu           (begc:endc))             ; this%qflx_lat_aqu         (:)   = nan
+    allocate(this%qflx_lat_aqu_layer     (begc:endc,1:nlevgrnd))  ; this%qflx_lat_aqu_layer   (:,:) = nan
+    allocate(this%qflx_surf_input        (begc:endc))             ; this%qflx_surf_input         (:)   = nan   
+
     !VSFM variables
     ncells = endc - begc + 1
     allocate(this%mflx_infl_1d           (ncells))                ; this%mflx_infl_1d                    (:)   = nan
@@ -5259,8 +5268,13 @@ contains
     this%qflx_snofrz(begc:endc) = spval
     call hist_addfld1d (fname='QSNOFRZ', units='kg/m2/s', &
          avgflag='A', long_name='column-integrated snow freezing rate', &
-         ptr_col=this%qflx_snofrz, set_lake=spval, c2l_scale_type='urbanf', default='inactive')
-         
+         ptr_col=this%qflx_snofrz, set_lake=spval, c2l_scale_type='urbanf', default='inactive')         
+
+    this%qflx_lat_aqu(begc:endc) = spval
+    call hist_addfld1d (fname='QLAT_AQU', units='kg/m2/s', &
+         avgflag='A', long_name='Lateral flux between hummock/hollow', &
+         ptr_col=this%qflx_lat_aqu, set_lake=spval, c2l_scale_type='urbanf', default='inactive')
+
     if (create_glacier_mec_landunit) then
        this%qflx_glcice(begc:endc) = spval
        call hist_addfld1d (fname='QICE',  units='mm/s',  &

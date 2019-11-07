@@ -185,7 +185,7 @@ contains
     ! !USES:
     use pftvarcon       , only : noveg, nbrdlf_evr_shrub, pprodharv10
     use clm_varcon      , only : secspday
-    use clm_time_manager, only : get_days_per_year
+    use clm_time_manager, only : get_days_per_year, get_curr_date, get_step_size
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_soilc       ! number of soil columns in filter
@@ -205,6 +205,7 @@ contains
     integer :: p                         ! patch index
     integer :: g                         ! gridcell index
     integer :: fp                        ! patch filter index
+    integer :: yr, mon, day, sec, dtime  ! date information
     real(r8):: am                        ! rate for fractional harvest mortality (1/yr)
     real(r8):: m                         ! rate for fractional harvest mortality (1/s)
     real(r8):: days_per_year             ! days per year
@@ -363,8 +364,18 @@ contains
       if (ivt(p) > noveg .and. ivt(p) < nbrdlf_evr_shrub) then
 
          if (do_harvest) then
-            am = harvest(g)
+           am = harvest(g)
+#if (defined HUM_HOL)
+           call get_curr_date(yr, mon, day, sec)
+           dtime  = get_step_size()
+           if (mon == 1 .and. day == 31 .and. sec == 0) then
+             m = am/dtime   !Do site-level harvest on first day of year
+           else
+             m = 0._r8
+           end if
+ #else
             m  = am/(days_per_year * secspday)
+ #endif
          else
             m = 0._r8
          end if   

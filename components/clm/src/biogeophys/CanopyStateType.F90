@@ -56,6 +56,14 @@ module CanopyStateType
                                                           ! for non-ED/FATES this is the same as pftcon%dleaf()
      real(r8),  pointer :: lbl_rsc_h2o_patch        (:)   ! laminar boundary layer resistance for water over dry leaf (s/m)
      real(r8) , pointer :: vegwp_patch              (:,:) ! patch vegetation water matric potential (mm)
+     real(r8),  pointer :: sp_onset_day_patch       (:)
+     real(r8),  pointer :: sp_offset_day_patch      (:)
+     real(r8),  pointer :: sp_gdd_patch             (:)
+     real(r8),  pointer :: sp_chil_patch            (:)
+     real(r8),  pointer :: sp_swi_on_patch          (:)
+     real(r8),  pointer :: sp_swi_off_patch         (:)
+     real(r8),  pointer :: sp_fdd_off_patch         (:)
+     real(r8),  pointer :: sp_dayl_temp_patch       (:)
    contains
 
      procedure, public  :: Init
@@ -137,6 +145,14 @@ contains
     allocate(this%dleaf_patch              (begp:endp))           ; this%dleaf_patch              (:)   = nan
     allocate(this%lbl_rsc_h2o_patch        (begp:endp))           ; this%lbl_rsc_h2o_patch        (:)   = nan
     allocate(this%vegwp_patch              (begp:endp,1:nvegwcs)) ; this%vegwp_patch              (:,:) = nan
+    allocate(this%sp_onset_day_patch       (begp:endp))           ; this%sp_onset_day_patch       (:)   = 0._r8
+    allocate(this%sp_offset_day_patch      (begp:endp))           ; this%sp_offset_day_patch      (:)   = 0._r8
+    allocate(this%sp_gdd_patch             (begp:endp))           ; this%sp_gdd_patch             (:)   = 0._r8
+    allocate(this%sp_chil_patch            (begp:endp))           ; this%sp_chil_patch            (:)   = 0._r8
+    allocate(this%sp_swi_on_patch          (begp:endp))           ; this%sp_swi_on_patch          (:)   = 0._r8
+    allocate(this%sp_swi_off_patch         (begp:endp))           ; this%sp_swi_off_patch         (:)   = 0._r8
+    allocate(this%sp_fdd_off_patch         (begp:endp))           ; this%sp_fdd_off_patch         (:)   = 0._r8
+    allocate(this%sp_dayl_temp_patch       (begp:endp))           ; this%sp_dayl_temp_patch         (:)   = 0._r8
 
 
   end subroutine InitAllocate

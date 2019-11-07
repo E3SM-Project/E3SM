@@ -17,7 +17,7 @@ module CanopyFluxesMod
   use clm_varctl            , only : use_hydrstress
   use clm_varpar            , only : nlevgrnd, nlevsno
   use clm_varcon            , only : namep 
-  use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig
+  use pftvarcon             , only : nbrdlf_dcd_tmp_shrub, nsoybean , nsoybeanirrig, slatop
   use decompMod             , only : bounds_type
   use PhotosynthesisMod     , only : Photosynthesis, PhotosynthesisTotal, Fractionation, PhotoSynthesisHydraulicStress
   use SoilMoistStressMod    , only : calc_effective_soilporosity, calc_volumetric_h2oliq
@@ -46,7 +46,7 @@ module CanopyFluxesMod
   use ColumnType            , only : col_pp
   use ColumnDataType        , only : col_es, col_ef, col_ws               
   use VegetationType        , only : veg_pp                
-  use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf  
+  use VegetationDataType    , only : veg_es, veg_ef, veg_ws, veg_wf, veg_ns  
   !
   ! !PUBLIC TYPES:
   implicit none
@@ -412,8 +412,8 @@ contains
          rh_ref2m             => veg_ws%rh_ref2m            , & ! Output: [real(r8) (:)   ]  2 m height surface relative humidity (%)                              
          rhaf                 => veg_ws%rh_af               , & ! Output: [real(r8) (:)   ]  fractional humidity of canopy air [dimensionless]                     
 
-         h2o_moss_inter       => veg_ws%h2o_moss_inter_patch , & ! Output: [real(r8) (:)   ]  Internal Moss water content
-         h2o_moss_wc          => veg_ws%h2o_moss_wc_patch    , & ! Output: [real(r8) (:)   ]  Total Moss water content
+         h2o_moss_inter       => veg_ws%h2o_moss_inter       , & ! Output: [real(r8) (:)   ]  Internal Moss water content
+         h2o_moss_wc          => veg_ws%h2o_moss_wc          , & ! Output: [real(r8) (:)   ]  Total Moss water content
 
          n_irrig_steps_left   => veg_wf%n_irrig_steps_left   , & ! Output: [integer  (:)   ]  number of time steps for which we still need to irrigate today              
          irrig_rate           => veg_wf%irrig_rate           , & ! Output: [real(r8) (:)   ]  current irrigation rate [mm/s]                                        
@@ -445,7 +445,7 @@ contains
          eflx_sh_soil         => veg_ef%eflx_sh_soil        , & ! Output: [real(r8) (:)   ]  sensible heat flux from soil (W/m**2) [+ to atm]                      
          eflx_sh_veg          => veg_ef%eflx_sh_veg         , & ! Output: [real(r8) (:)   ]  sensible heat flux from leaves (W/m**2) [+ to atm]                    
          eflx_sh_grnd         => veg_ef%eflx_sh_grnd        , & ! Output: [real(r8) (:)   ]  sensible heat flux from ground (W/m**2) [+ to atm]
-         leafn                => veg_ns%leafn_patch         , &
+         leafn                => veg_ns%leafn               , &
 
          begp                 => bounds%begp                               , &
          endp                 => bounds%endp                                 &
@@ -855,8 +855,9 @@ contains
                     h2o_moss_inter(p) = -18032 *0.25**4 + 7248.1 * 0.25**3 &
                                      -591.74 *0.25**2 + 6.9031*0.25 + 0.4954
                 endif
-                if (leafn(p).gt. 0._r8) then
-                   h2o_moss_wc(p) = h2o_moss_inter(p) + h2ocan(p)/(leafn(p)*60.0*2.0_r8/1000.0_r8)
+                if (elai(p) .gt. 0._r8) then 
+                   h2o_moss_wc(p) = h2o_moss_inter(p) + h2ocan(p)/(elai(p)/slatop(veg_pp%itype(p)) &
+                             * 2.0_r8 / 1000.0_r8)
                 else
                    h2o_moss_wc(p) = 0._r8
                 endif
@@ -904,7 +905,7 @@ contains
                call Photosynthesis (bounds, fn, filterp, &
                  svpts(begp:endp), eah(begp:endp), o2(begp:endp), co2(begp:endp), rb(begp:endp), btran(begp:endp), &
                  dayl_factor(begp:endp), atm2lnd_vars, temperature_vars, surfalb_vars, solarabs_vars, &
-                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, waterstate_vars, phase='sun'
+                 canopystate_vars, photosyns_vars, nitrogenstate_vars, phosphorusstate_vars, waterstate_vars, phase='sun')
             end if
 
             if ( use_c13 ) then

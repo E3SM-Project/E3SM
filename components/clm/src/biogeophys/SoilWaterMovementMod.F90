@@ -382,7 +382,7 @@ contains
          qflx_deficit      =>    col_wf%qflx_deficit    , & ! Input:  [real(r8) (:)   ]  water deficit to keep non-negative liquid water content
          qflx_infl         =>    col_wf%qflx_infl       , & ! Input:  [real(r8) (:)   ]  infiltration (mm H2O /s)                          
          qflx_rootsoi_col  =>    col_wf%qflx_rootsoi    , & ! Input: [real(r8) (:,:) ]  vegetation/soil water exchange (mm H2O/s) (+ = to atm)
-         qflx_tran_veg_col_sat     =>    col_wf%qflx_tran_veg_col_sat, & ! Output: [real(r8) (:)   ]
+         qflx_tran_veg_col_sat   =>    col_wf%qflx_tran_veg_sat, & ! Output: [real(r8) (:)   ]
 
          t_soisno          =>    col_es%t_soisno        & ! Input:  [real(r8) (:,:) ]  soil temperature (Kelvin)                       
          )

@@ -457,14 +457,14 @@ contains
                 this%leafc_storage_patch(p) = 0._r8
              else
                 if (veg_vp%evergreen(veg_pp%itype(p)) == 1._r8) then
-                   this%leafc_patch(p)         = 1._r8 * ratio
+                   this%leafc_patch(p)         = 50._r8 * ratio
                    this%leafc_storage_patch(p) = 0._r8
                 else if (veg_pp%itype(p) >= npcropmin) then ! prognostic crop types
                    this%leafc_patch(p) = 0._r8
                    this%leafc_storage_patch(p) = 0._r8
                 else
                    this%leafc_patch(p) = 0._r8
-                   this%leafc_storage_patch(p) = 1._r8 * ratio
+                   this%leafc_storage_patch(p) = 50._r8 * ratio
                 end if
              end if
              this%leafc_xfer_patch(p) = 0._r8

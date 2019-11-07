@@ -100,8 +100,10 @@ contains
          dwood              =>  veg_vp%dwood                  ,       & ! Input:  [real(r8) (:) ] density of wood (gC/m^3)                          
 
          snow_depth         =>  col_ws%snow_depth             ,       & ! Input:  [real(r8) (:) ] snow height (m)                                   
-         zwt                =>  col_ws%zwt_col                ,       &
-         h2osfc             =>  col_ws%h2osfc_col             ,       &
+
+         zwt                =>  soilhydrology_vars%zwt_col    ,       &
+         h2osfc             =>  col_ws%h2osfc                 ,       &
+
          forc_hgt_u_patch   =>  frictionvel_vars%forc_hgt_u_patch ,       & ! Input:  [real(r8) (:) ] observational height of wind at pft-level [m]     
 
          leafc              =>  veg_cs%leafc      ,       & ! Input:  [real(r8) (:) ] (gC/m2) leaf C                                    
@@ -262,7 +264,7 @@ contains
          else
 #if (defined HUM_HOL)
            if (ivt(p) == 12) then
-             thiswtht = zwt(c)*-1.0_r8+humhol_ht/2.0_r8+h2osfc(c)/1000._r8 !height above hollow bottom
+             thiswtht = zwt(c)*(-1.0_r8)+humhol_ht/2.0_r8+h2osfc(c)/1000._r8 !height above hollow bottom
              !calculate submerged LAI
              !Calculate LAI buried by snow (5cm is assumed)
              fb1 = 1._r8 - max(min(snow_depth(c),0.05_r8),0._r8)/0.05_r8
