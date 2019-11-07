@@ -87,7 +87,7 @@ use constituents,   only: cnst_add, cnst_get_ind, &
 
 use cldfrc2m,       only: rhmini=>rhmini_const
 
-use cam_history,    only: addfld, horiz_only, add_default, outfld
+use cam_history,    only: addfld, horiz_only, add_default, outfld, fieldname_len
 
 use cam_logfile,    only: iulog
 use cam_abortutils, only: endrun
@@ -653,6 +653,10 @@ subroutine micro_mg_cam_init(pbuf2d)
    integer :: ierr
    character(128) :: errstring     ! return status (non-blank for error return)
 
+   integer :: macmic_it                       ! iteration variables
+
+   character(len=fieldname_len) :: varname, substep
+
    !-----------------------------------------------------------------------
 
    call phys_getopts(use_subcol_microp_out= use_subcol_microp, &
@@ -662,7 +666,9 @@ subroutine micro_mg_cam_init(pbuf2d)
                      prc_exp1_out         = prc_exp1_in,       &
                      cld_sed_out          = cld_sed_in,        &
                      mg_prc_coeff_fix_out = mg_prc_coeff_fix_in, &
-                     rrtmg_temp_fix_out   = rrtmg_temp_fix       )
+                     rrtmg_temp_fix_out   = rrtmg_temp_fix,  &
+                     macmic_mg2_diag_out  = macmic_mg2_diag, & 
+                     cld_macmic_num_steps_out = cld_macmic_num_steps) 
 
    if (do_clubb_sgs) then
      allow_sed_supersat = .false.
@@ -1005,6 +1011,59 @@ subroutine micro_mg_cam_init(pbuf2d)
          call add_default(bpcnst   (ixrain), budget_histfile, ' ')
          call add_default(bpcnst   (ixsnow), budget_histfile, ' ')
       end if
+
+   end if
+
+   if (macmic_mg2_diag) then
+
+     do macmic_it = 1, cld_macmic_num_steps
+
+      write(substep,"(I2.2)") macmic_it
+      call addfld ('MPDT_'//trim(adjustl(substep))    ,  (/ 'lev' /), 'A', 'W/kg'   , 'Heating tendency - Morrison microphysics'           )
+      call addfld ('MPDQ_'//trim(adjustl(substep))    ,  (/ 'lev' /), 'A', 'kg/kg/s', 'Q tendency - Morrison microphysics'                 )
+      call addfld ('MPDLIQ_'//trim(adjustl(substep))  ,  (/ 'lev' /), 'A', 'kg/kg/s', 'CLDLIQ tendency - Morrison microphysics'            )
+      call addfld ('MPDICE_'//trim(adjustl(substep))  ,  (/ 'lev' /), 'A', 'kg/kg/s', 'CLDICE tendency - Morrison microphysics'            )
+      call addfld ('MPDW2V_'//trim(adjustl(substep))  ,  (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Vapor tendency - Morrison microphysics'  )
+      call addfld ('MPDW2I_'//trim(adjustl(substep))  ,  (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Ice tendency - Morrison microphysics'    )
+      call addfld ('MPDW2P_'//trim(adjustl(substep))  ,  (/ 'lev' /), 'A', 'kg/kg/s', 'Water <--> Precip tendency - Morrison microphysics' )
+      call addfld ('MPDI2V_'//trim(adjustl(substep))  ,  (/ 'lev' /), 'A', 'kg/kg/s', 'Ice <--> Vapor tendency - Morrison microphysics'    )
+      call addfld ('MPDI2W_'//trim(adjustl(substep))  ,  (/ 'lev' /), 'A', 'kg/kg/s', 'Ice <--> Water tendency - Morrison microphysics'    )
+      call addfld ('MPDI2P_'//trim(adjustl(substep))  ,  (/ 'lev' /), 'A', 'kg/kg/s', 'Ice <--> Precip tendency - Morrison microphysics'   )
+      call addfld ('PRODPREC_'//trim(adjustl(substep)),  (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of conversion of condensate to precip'         )
+      call addfld ('EVAPPREC_'//trim(adjustl(substep)),  (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling precip'              )
+      call addfld ('EVAPSNOW_'//trim(adjustl(substep)),  (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling snow'                )
+      call addfld ('QCSEVAP_'//trim(adjustl(substep)) ,  (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of evaporation of falling cloud water'         )
+      call addfld ('QISEVAP_'//trim(adjustl(substep)) ,  (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of sublimation of falling cloud ice'           )
+      call addfld ('QVRES_'//trim(adjustl(substep))   ,  (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of residual condensation term'                 )
+      call addfld ('CMEIOUT_'//trim(adjustl(substep)) , (/ 'lev' /), 'A', 'kg/kg/s', 'Rate of deposition/sublimation of cloud ice'         )
+      call addfld ('QCSEDTEN_'//trim(adjustl(substep)), (/ 'lev' /), 'A', 'kg/kg/s', 'Cloud water mixing ratio tendency from sedimentation')
+      call addfld ('QISEDTEN_'//trim(adjustl(substep)), (/ 'lev' /), 'A', 'kg/kg/s', 'Cloud ice mixing ratio tendency from sedimentation'  )
+      call addfld ('PRAO_'//trim(adjustl(substep))    , (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of cloud water by rain'                    )
+      call addfld ('PRCO_'//trim(adjustl(substep))    , (/ 'lev' /), 'A', 'kg/kg/s', 'Autoconversion of cloud water'                       )
+      call addfld ('MNUCCCO_'//trim(adjustl(substep)) , (/ 'lev' /), 'A', 'kg/kg/s', 'Immersion freezing of cloud water'                   )
+      call addfld ('MNUCCTO_'//trim(adjustl(substep)) , (/ 'lev' /), 'A', 'kg/kg/s', 'Contact freezing of cloud water'                     )
+      call addfld ('MNUCCDO_'//trim(adjustl(substep)) , (/ 'lev' /), 'A', 'kg/kg/s', 'Homogeneous and heterogeneous nucleation from vapor' )
+      call addfld ('MSACWIO_'//trim(adjustl(substep)) , (/ 'lev' /), 'A', 'kg/kg/s', 'Conversion of cloud water from rime-splintering'     )
+      call addfld ('PSACWSO_'//trim(adjustl(substep)) , (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of cloud water by snow'                    )
+      call addfld ('BERGSO_'//trim(adjustl(substep))  , (/ 'lev' /), 'A', 'kg/kg/s', 'Conversion of cloud water to snow from bergeron'     )
+      call addfld ('BERGO_'//trim(adjustl(substep))   , (/ 'lev' /), 'A', 'kg/kg/s', 'Conversion of cloud water to cloud ice from bergeron')
+      call addfld ('MELTO_'//trim(adjustl(substep))   , (/ 'lev' /), 'A', 'kg/kg/s', 'Melting of cloud ice'                                )
+      call addfld ('HOMOO_'//trim(adjustl(substep))   , (/ 'lev' /), 'A', 'kg/kg/s', 'Homogeneous freezing of cloud water'                 )
+      call addfld ('QCRESO_'//trim(adjustl(substep))  , (/ 'lev' /), 'A', 'kg/kg/s', 'Residual condensation term for cloud water'          )
+      call addfld ('PRCIO_'//trim(adjustl(substep))   , (/ 'lev' /), 'A', 'kg/kg/s', 'Autoconversion of cloud ice'                         )
+      call addfld ('PRAIO_'//trim(adjustl(substep))   , (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of cloud ice by rain'                      )
+      call addfld ('QIRESO_'//trim(adjustl(substep))  , (/ 'lev' /), 'A', 'kg/kg/s', 'Residual deposition term for cloud ice'              )
+      call addfld ('MNUCCRO_'//trim(adjustl(substep)) , (/ 'lev' /), 'A', 'kg/kg/s', 'Heterogeneous freezing of rain to snow'              )
+      call addfld ('PRACSO_'//trim(adjustl(substep))  , (/ 'lev' /), 'A', 'kg/kg/s', 'Accretion of rain by snow'                           )
+      call addfld ('MELTSDT_'//trim(adjustl(substep)) , (/ 'lev' /), 'A', 'W/kg', 'Latent heating rate due to melting of snow'             )
+      call addfld ('FRZRDT_'//trim(adjustl(substep))  , (/ 'lev' /), 'A', 'W/kg', 'Latent heating rate due to homogeneous freezing of rain')
+
+      if (micro_mg_version > 1) then
+         call addfld ('QRSEDTEN_'//trim(adjustl(substep)), (/ 'lev' /), 'A', 'kg/kg/s', 'Rain mixing ratio tendency from sedimentation'    )
+         call addfld ('QSSEDTEN_'//trim(adjustl(substep)), (/ 'lev' /), 'A', 'kg/kg/s', 'Snow mixing ratio tendency from sedimentation'    )
+      end if
+
+     end do
 
    end if
 
@@ -1591,8 +1650,6 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
 
    integer :: autocl_idx, accretl_idx  ! Aerocom IND3
    integer :: cldliqbf_idx, cldicebf_idx, numliqbf_idx, numicebf_idx
-
-   logical  :: macmic_extra_diag
 
    !-------------------------------------------------------------------------------
 
@@ -2997,41 +3054,61 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    ftem_grid = 0._r8
 
    !-------------------------------------------------------------------------------
-   call phys_getopts(macmic_extra_diag_out = macmic_extra_diag) !! get flag to control the extra output 
-   
-   if (macmic_extra_diag) then
+   call phys_getopts(macmic_mg2_diag_out = macmic_mg2_diag) !! get flag to control the extra output 
 
    ftem_grid(:ngrdcol,top_lev:pver) =  qcreso_grid(:ngrdcol,top_lev:pver)
    call outfld( 'MPDW2V', ftem_grid, pcols, lchnk)
-   write(tmpname,"(A7,I2.2)")"MPDW2V_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
-   ftem_grid(:ngrdcol,top_lev:pver) =  melto_grid(:ngrdcol,top_lev:pver) - mnuccco_grid(:ngrdcol,top_lev:pver)&
-        - mnuccto_grid(:ngrdcol,top_lev:pver) -  bergo_grid(:ngrdcol,top_lev:pver) - homoo_grid(:ngrdcol,top_lev:pver)&
+
+   ftem_grid(:ngrdcol,top_lev:pver) =  melto_grid(:ngrdcol,top_lev:pver) - mnuccco_grid(:ngrdcol,top_lev:pver) &
+        - mnuccto_grid(:ngrdcol,top_lev:pver) - bergo_grid(:ngrdcol,top_lev:pver) - homoo_grid(:ngrdcol,top_lev:pver) &
         - msacwio_grid(:ngrdcol,top_lev:pver)
    call outfld( 'MPDW2I', ftem_grid, pcols, lchnk)
-   write(tmpname,"(A7,I2.2)")"MPDW2I_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)   
-
-   ftem_grid(:ngrdcol,top_lev:pver) = -prao_grid(:ngrdcol,top_lev:pver) - prco_grid(:ngrdcol,top_lev:pver)&
+ 
+   ftem_grid(:ngrdcol,top_lev:pver) = -prao_grid(:ngrdcol,top_lev:pver) - prco_grid(:ngrdcol,top_lev:pver) &
         - psacwso_grid(:ngrdcol,top_lev:pver) - bergso_grid(:ngrdcol,top_lev:pver)
    call outfld( 'MPDW2P', ftem_grid, pcols, lchnk)
-   write(tmpname,"(A7,I2.2)")"MPDW2P_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
-   ftem_grid(:ngrdcol,top_lev:pver) =  cmeiout_grid(:ngrdcol,top_lev:pver) + qireso_grid(:ngrdcol,top_lev:pver)
-   call outfld( 'MPDI2V', ftem_grid, pcols, lchnk)
-   write(tmpname,"(A7,I2.2)")"MPDI2V_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
 
-   ftem_grid(:ngrdcol,top_lev:pver) = -melto_grid(:ngrdcol,top_lev:pver) + mnuccco_grid(:ngrdcol,top_lev:pver) &
-        + mnuccto_grid(:ngrdcol,top_lev:pver) +  bergo_grid(:ngrdcol,top_lev:pver) + homoo_grid(:ngrdcol,top_lev:pver)&
-        + msacwio_grid(:ngrdcol,top_lev:pver)
+     ftem_grid(:ngrdcol,top_lev:pver) =  cmeiout_grid(:ngrdcol,top_lev:pver) + qireso_grid(:ngrdcol,top_lev:pver)
+   call outfld( 'MPDI2V', ftem_grid, pcols, lchnk)
+
+     ftem_grid(:ngrdcol,top_lev:pver) = -melto_grid(:ngrdcol,top_lev:pver) + mnuccco_grid(:ngrdcol,top_lev:pver) &
+          + mnuccto_grid(:ngrdcol,top_lev:pver) + bergo_grid(:ngrdcol,top_lev:pver) + homoo_grid(:ngrdcol,top_lev:pver) &
+          + msacwio_grid(:ngrdcol,top_lev:pver)
    call outfld( 'MPDI2W', ftem_grid, pcols, lchnk)
-   write(tmpname,"(A7,I2.2)")"MPDI2W_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
+  
    ftem_grid(:ngrdcol,top_lev:pver) = -prcio_grid(:ngrdcol,top_lev:pver) - praio_grid(:ngrdcol,top_lev:pver)
    call outfld( 'MPDI2P', ftem_grid, pcols, lchnk)
-   write(tmpname,"(A7,I2.2)")"MPDI2P_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
+
+   if (macmic_mg2_diag) then
+
+     ftem_grid(:ngrdcol,top_lev:pver) =  qcreso_grid(:ngrdcol,top_lev:pver)
+     write(tmpname,"(A7,I2.2)")"MPDW2V_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
+
+     ftem_grid(:ngrdcol,top_lev:pver) =  melto_grid(:ngrdcol,top_lev:pver) - mnuccco_grid(:ngrdcol,top_lev:pver) &
+          - mnuccto_grid(:ngrdcol,top_lev:pver) -  bergo_grid(:ngrdcol,top_lev:pver) - homoo_grid(:ngrdcol,top_lev:pver) &
+          - msacwio_grid(:ngrdcol,top_lev:pver)
+     write(tmpname,"(A7,I2.2)")"MPDW2I_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)   
+
+     ftem_grid(:ngrdcol,top_lev:pver) = -prao_grid(:ngrdcol,top_lev:pver) - prco_grid(:ngrdcol,top_lev:pver) &
+          - psacwso_grid(:ngrdcol,top_lev:pver) - bergso_grid(:ngrdcol,top_lev:pver)
+     write(tmpname,"(A7,I2.2)")"MPDW2P_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
+
+     ftem_grid(:ngrdcol,top_lev:pver) =  cmeiout_grid(:ngrdcol,top_lev:pver) + qireso_grid(:ngrdcol,top_lev:pver)
+     write(tmpname,"(A7,I2.2)")"MPDI2V_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
+
+     ftem_grid(:ngrdcol,top_lev:pver) = -melto_grid(:ngrdcol,top_lev:pver) + mnuccco_grid(:ngrdcol,top_lev:pver) &
+          + mnuccto_grid(:ngrdcol,top_lev:pver) +  bergo_grid(:ngrdcol,top_lev:pver) + homoo_grid(:ngrdcol,top_lev:pver) &
+          + msacwio_grid(:ngrdcol,top_lev:pver)
+     write(tmpname,"(A7,I2.2)")"MPDI2W_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
+
+     ftem_grid(:ngrdcol,top_lev:pver) = -prcio_grid(:ngrdcol,top_lev:pver) - praio_grid(:ngrdcol,top_lev:pver)
+     write(tmpname,"(A7,I2.2)")"MPDI2P_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
 
    end if
  
@@ -3063,7 +3140,7 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    call outfld('QISEVAP',     qisevap,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('QVRES',       qvres,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
 
-   if (macmic_extra_diag) then
+   if (macmic_mg2_diag) then
 
      write(tmpname,"(A5,I2.2)")"MPDT_",macmic_it
      call outfld(trim(adjustl(tmpname)),        tlat,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
@@ -3094,7 +3171,7 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
        call outfld('QSSEDTEN',    qssedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    end if
 
-   if (macmic_extra_diag) then
+   if (macmic_mg2_diag) then
      write(tmpname,"(A9,I2.2)")"QCSEDTEN_",macmic_it
      call outfld(trim(adjustl(tmpname)),        qcsedten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
      write(tmpname,"(A9,I2.2)")"QISEDTEN_",macmic_it
@@ -3110,22 +3187,20 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    call outfld('MNUCCDO',     mnuccdo,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MNUCCDOhet',  mnuccdohet,  psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MNUCCRO',     mnuccro,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('PRACSO',      pracso ,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('MELTSDT',     meltsdt,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('FRZRDT',      frzrdt ,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+   call outfld('FICE',        nfice,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
 
-   if (macmic_extra_diag) then
-
+   if (macmic_mg2_diag) then
      write(tmpname,"(A8,I2.2)")"MNUCCRO_",macmic_it
      call outfld(trim(adjustl(tmpname)),        mnuccro,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-     call outfld('PRACSO',      pracso ,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
      write(tmpname,"(A7,I2.2)")"PRACSO_",macmic_it
      call outfld(trim(adjustl(tmpname)),        pracso,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-     call outfld('MELTSDT',     meltsdt,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
      write(tmpname,"(A8,I2.2)")"MELTSDT_",macmic_it
      call outfld(trim(adjustl(tmpname)),        meltsdt,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-     call outfld('FRZRDT',      frzrdt ,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
      write(tmpname,"(A7,I2.2)")"FRZRDT_",macmic_it
      call outfld(trim(adjustl(tmpname)),        frzrdt,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-     call outfld('FICE',        nfice,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   
    end if 
 
    if (micro_mg_version > 1) then
@@ -3154,11 +3229,11 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    call outfld('CME',         qme_grid,         pcols, lchnk)
    call outfld('PRODPREC',    prain_grid,       pcols, lchnk)
    call outfld('EVAPPREC',    nevapr_grid,      pcols, lchnk)
+   call outfld('QCRESO',      qcreso_grid,      pcols, lchnk)
 
-   if (macmic_extra_diag) then
+   if (macmic_mg2_diag) then
      write(tmpname,"(A9,I2.2)")"EVAPPREC_",macmic_it
      call outfld(trim(adjustl(tmpname)),        nevapr_grid,        pcols, lchnk)  
-     call outfld('QCRESO',      qcreso_grid,      pcols, lchnk)
      write(tmpname,"(A7,I2.2)")"QCRESO_",macmic_it
      call outfld(trim(adjustl(tmpname)),        qcreso_grid,        pcols, lchnk)
    end if
@@ -3209,7 +3284,7 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    call outfld('PRAIO',       praio_grid,       pcols, lchnk)
    call outfld('QIRESO',      qireso_grid,      pcols, lchnk)
 
-   if (macmic_extra_diag) then
+   if (macmic_mg2_diag) then
 
      write(tmpname,"(A8,I2.2)")"CMEIOUT_",macmic_it
      call outfld(trim(adjustl(tmpname)),        cmeiout_grid,        pcols, lchnk)
