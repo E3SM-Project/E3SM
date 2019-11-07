@@ -100,6 +100,7 @@ module li_core_interface
 
       ! Local variables
       character (len=StrKIND), pointer :: config_velocity_solver
+      character (len=StrKIND), pointer :: config_basal_mass_bal_float
       logical, pointer :: config_SGH
       logical, pointer :: config_adaptive_timestep_include_DCFL
       logical, pointer :: config_write_albany_ascii_mesh
@@ -108,17 +109,20 @@ module li_core_interface
       logical, pointer :: SIAvelocityActive
       logical, pointer :: hydroActive
       logical, pointer :: observationsActive
+      logical, pointer :: ismip6MeltActive
 
       ierr = 0
 
       call mpas_pool_get_config(configPool, 'config_velocity_solver', config_velocity_solver)
       call mpas_pool_get_config(configPool, 'config_SGH', config_SGH)
       call mpas_pool_get_config(configPool, 'config_write_albany_ascii_mesh', config_write_albany_ascii_mesh)
+      call mpas_pool_get_config(configPool, 'config_basal_mass_bal_float', config_basal_mass_bal_float)
 
       call mpas_pool_get_package(packagePool, 'SIAvelocityActive', SIAvelocityActive)
       call mpas_pool_get_package(packagePool, 'higherOrderVelocityActive', higherOrderVelocityActive)
       call mpas_pool_get_package(packagePool, 'hydroActive', hydroActive)
       call mpas_pool_get_package(packagePool, 'observationsActive', observationsActive)
+      call mpas_pool_get_package(packagePool, 'ismip6MeltActive', ismip6MeltActive)
 
       if (trim(config_velocity_solver) == 'sia') then
          SIAvelocityActive = .true.
@@ -140,6 +144,13 @@ module li_core_interface
          call mpas_log_write("The 'observations' package and assocated variables have been enabled because " // &
               "'config_write_albany_ascii_mesh' is set to .true.")
       endif
+
+      if (trim(config_basal_mass_bal_float) == 'ismip6') then
+         ismip6MeltActive = .true.
+         call mpas_log_write("The 'ismip6Melt' package and assocated variables have been enabled because " // &
+              "'config_basal_mass_bal_float' is set to 'ismip6'")
+      endif
+
 
       ! call setup packages in analysis driver
       call li_analysis_setup_packages(configPool, packagePool, ierr)

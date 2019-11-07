@@ -1,0 +1,47 @@
+Processing steps for ISMIP6 forcing
+
+MJH 9/23/2019
+
+Regridding from native ISMIP6 grid to MPAS grid needs to happen for all
+forcings.
+
+
+BMB
+---
+
+1. copy 1995-2010 remapped data from Tong's directory, naming it appropriately
+here: TF_<ESM>_<RCP>_1995-2010.nc
+2. run add_xtime.py script on file
+
+3. Create gamma0/basin/Toffset file:
+  a. Do some renames from ISMIP6-provided files, e.g.:
+     ncrename -v x,x1 -v y,y1 -v deltaT_basin,ismip6shelfMelt_deltaT -v gamma0,ismip6shelfMelt_gamma0 coeff_gamma0_DeltaT_quadratic_non_local_median_PIGL_gamma_calibration.renames.nc
+  b. regrid basin number, Toffset using interpolate_to_mpasli_grid.py using nearest neighbor method, e.g.:
+     ./interpolate_to_mpasli_grid.py -s coeff_gamma0_DeltaT_quadratic_non_local_median_PIGL_gamma_calibration.renames.nc -d ismip6_basins_gamma0_deltaT_nonlocal_median_PIGL.nc -m n
+     (Note will need to add xCell,yCell to destination file for interpolation to work.)
+  c. Apply gamma0 value:
+     ncks -A -v ismip6shelfMelt_gamma0 coeff_gamma0_DeltaT_quadratic_non_local_median_PIGL_gamma_calibration.renames.nc ismip6_basins_gamma0_deltaT_nonlocal_median_PIGL.nc
+
+3. Create offset file:
+  a. run model for one time step at 2015 to get param. base melt rate
+  b. Pull out melt rate (make sure it was from the param and not the original
+     Rignot data): 
+     ncks -d Time,0 -v floatingBasalMassBal output.2015.nc mt0.nc
+  c. Difference with Rignot melt rate:
+     ncdiff m0.nc mt0.nc ismip6shelfMelt_offset_<ESM>_<RCP>_2015.nc
+  d. Rename melt field:
+     ncrename -v floatingBasalMassBal,ismip6shelfMelt_offset ismip6shelfMelt_offset_<ESM>_<RCP>_2015.nc
+ 
+
+ 
+SMB
+---
+
+1. copy 1995-2010 remapped data from Tong's directory, naming it appropriately
+here: SMB_<ESM>_<RCP>_1995-2010.anomaly.nc
+1a. Rename smb field:  ncrename -v smb,sfcMassBal FILE.nc
+2. run add_xtime.py script on file
+3. cp to non-anomaly file name: SMB_<ESM>_<RCP>_1995-2010.nc
+4. run apply_base_to_anomaly.py on file
+5. run zero_smb_on_icefree_areas.py on file
+
