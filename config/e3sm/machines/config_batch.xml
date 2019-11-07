@@ -284,9 +284,9 @@
 
     <batch_system MACH="anvil-centos7" type="slurm" >
       <queues>
-	<queue walltimemax="02:00:00" nodemax="5" default="true">acme-small</queue>
-	<queue walltimemax="01:00:00" nodemin="6" nodemax="60">acme-medium</queue>
-	<queue walltimemax="00:12:00" nodemin="61">acme-large</queue>
+	<queue walltimemax="02:00:00" nodemax="5" default="true" strict="true">acme-small</queue>
+	<queue walltimemax="01:00:00" nodemin="6" nodemax="60" strict="true">acme-medium</queue>
+	<queue walltimemax="00:12:00" nodemin="61" strict="true">acme-large</queue>
       </queues>
     </batch_system>
 
