@@ -102,6 +102,8 @@ module VegetationDataType
     real(r8), pointer :: begwb        (:) => null() ! water mass begining of the time step
     real(r8), pointer :: endwb        (:) => null() ! water mass end of the time step
     real(r8), pointer :: errh2o       (:) => null() ! water conservation error (mm H2O)
+    real(r8), pointer :: h2o_moss_wc    (:) => null() ! Total water content of Sphagnum moss (relative to dry mass (relative to dry mass))
+    real(r8), pointer :: h2o_moss_inter (:) => null() ! Internal water content of Sphagnum moss (relative to dry mass (relative to dry mass))
   contains
     procedure, public :: Init    => veg_ws_init
     procedure, public :: Restart => veg_ws_restart
@@ -1789,6 +1791,8 @@ module VegetationDataType
     allocate(this%begwb               (begp:endp))          ; this%begwb             (:) = nan
     allocate(this%endwb               (begp:endp))          ; this%endwb             (:) = nan
     allocate(this%errh2o              (begp:endp))          ; this%errh2o            (:) = nan
+    allocate(this%h2o_moss_wc         (begp:endp))          ; this%h2o_moss_wc       (:) = nan
+    allocate(this%h2o_moss_inter      (begp:endp))          ; this%h2o_moss_inter    (:) = nan
 
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_ws
@@ -1835,6 +1839,11 @@ module VegetationDataType
        call hist_addfld1d (fname='FDRY', units='proportion', &
             avgflag='A', long_name='fraction of foliage that is green and dry', &
             ptr_patch=this%fdry, default='inactive')
+
+       this%h2o_moss_wc(begp:endp) = spval
+       call hist_addfld1d (fname='H2O_MOSS_WC', units='proportion', &
+            avgflag='A', long_name='Relative water content of Moss', &
+            ptr_patch=this%h2o_moss_wc)
     end if
 
     !-----------------------------------------------------------------------
