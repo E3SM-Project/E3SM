@@ -73,6 +73,12 @@ module compose_mod
        real(kind=c_double), intent(in) :: spheremp(np,np)
      end subroutine cedr_sl_set_spheremp
 
+     subroutine cedr_sl_set_dp0(dp0) bind(c)
+       use iso_c_binding, only: c_double
+       use dimensions_mod, only : nlev
+       real(kind=c_double), intent(in) :: dp0(nlev)
+     end subroutine cedr_sl_set_dp0
+
      subroutine cedr_sl_set_Qdp(ie, Qdp, n0_qdp, np1_qdp) bind(c)
        use iso_c_binding, only: c_int, c_double
        use dimensions_mod, only : nlev, np, qsize_d

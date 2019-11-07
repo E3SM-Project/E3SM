@@ -81,6 +81,7 @@ contains
     use time_mod, only: nEndStep
     use control_mod, only: transport_alg
     use sl_advection, only: sl_unittest
+    use compose_mod, only: cedr_unittest
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
@@ -89,7 +90,7 @@ contains
 
     type (hybrid_t) :: hybrid
     type (derivative_t) :: deriv
-    integer :: ithr, nets, nete
+    integer :: ithr, nets, nete, nerr
 
 #ifdef HOMME_ENABLE_COMPOSE
     if (transport_alg == 19) then
@@ -105,6 +106,9 @@ contains
     ! 1. Unit tests.
     call compose_unittest()
     call sl_unittest(par)
+    nerr = 0
+    call cedr_unittest(par%comm, nerr)
+    if (nerr /= 0) print *, 'cedr_unittest returned', nerr
 
 #if (defined HORIZ_OPENMP)
     !$omp parallel num_threads(hthreads), default(SHARED), private(ithr,nets,nete,hybrid)
