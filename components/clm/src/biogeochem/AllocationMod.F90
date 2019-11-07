@@ -102,8 +102,8 @@ module AllocationMod
 
   real(r8), allocatable :: decompmicc(:,:)                ! column-level soil microbial decomposer biomass gC/m3
   
-  real(r8), parameter   :: E_plant_scalar  = 0.0000125_r8 ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
-  real(r8), parameter   :: E_decomp_scalar = 0.05_r8      ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
+  real(r8), parameter   :: e_plant_scalar  = 0.0000125_r8 ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
+  real(r8), parameter   :: e_decomp_scalar = 0.05_r8      ! scaling factor for soil microbial biomass to calculate nutrient carrier enzyme abundance
 
   real(r8)              :: e_km_nh4                       ! temp variable of sum(E/KM) for NH4 competition BGC mode
   real(r8)              :: e_km_no3                       ! temp variable of sum(E/KM) for NO3 competition BGC mode
