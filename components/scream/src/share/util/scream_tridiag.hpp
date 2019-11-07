@@ -599,10 +599,9 @@ void bfb (const TeamMember& team,
           TridiagDiag dl, TridiagDiag d, TridiagDiag du, DataArray X,
           typename std::enable_if<TridiagDiag::rank == 1>::type* = 0) {
   const int nrhs = X.extent_int(1);
-  assert(dl.extent_int(0) == nrow);
-  assert(d. extent_int(0) == nrow);
-  assert(du.extent_int(0) == nrow);
-  assert(X. extent_int(0) == nrow);
+  assert(dl.extent_int(0) == d.extent_int(0));
+  assert(du.extent_int(0) == d.extent_int(0));
+  assert(X. extent_int(0) == d.extent_int(0));
   Kokkos::single(Kokkos::PerTeam(team),
                  [&] () { impl::bfb_thomas_factorize(dl, d, du); });
   team.team_barrier();
@@ -627,10 +626,9 @@ void bfb (const TeamMember& team,
   assert(dl.extent_int(1) == nrhs);
   assert(d. extent_int(1) == nrhs);
   assert(du.extent_int(1) == nrhs);
-  assert(dl.extent_int(0) == nrow);
-  assert(d. extent_int(0) == nrow);
-  assert(du.extent_int(0) == nrow);
-  assert(X. extent_int(0) == nrow);
+  assert(dl.extent_int(0) == d.extent_int(0));
+  assert(du.extent_int(0) == d.extent_int(0));
+  assert(X. extent_int(0) == d.extent_int(0));
   const auto f = [&] (const int& j) {
     impl::bfb_thomas_factorize(subview(dl, ALL(), j),
                                subview(d , ALL(), j),
