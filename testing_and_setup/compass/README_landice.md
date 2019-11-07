@@ -6,14 +6,12 @@ To set up and run landice test cases from COMPASS, you will need a conda
 environment.  First, install Miniconda3 (if miniconda is not already
 installed), then create a new conda environment as follows:
 ``` bash
-conda create -n compass_py2.7 -c conda-forge python=2.7 geometric_features mpas_tools jigsaw metis pyflann scikit-image basemap pyamg pyqt
+conda create -n compass_py3.7 -c conda-forge -c xylar python=3.7 geometric_features mpas_tools jigsaw jigsawpy metis pyflann scikit-image basemap pyamg ffmpeg pyqt
 ```
 Each time you want to work with COMPASS, you will need to run:
 ```
-conda activate compass_py2.7
+conda activate compass_py3.7
 ```
-
-Note: As of June 2019 Python 2.7 is still the supported version of python, but migration to Python 3.7 is underway.
 
 ## Setting config options
 
