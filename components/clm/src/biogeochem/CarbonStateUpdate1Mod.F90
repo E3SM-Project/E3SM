@@ -415,7 +415,7 @@ contains
 
       end do ! end of patch loop
 
-   end if
+  end if
 
  end associate
 

@@ -1051,6 +1051,9 @@ contains
              end if !if (use_clm_interface)
              !--------------------------------------------------------------------------------
 
+             ! NOTE TO RYAN: BLOCK OUT ALL ISOTOPE ALLOCATIONS AND USAGE WHEN FATES ON
+
+
              call EcosystemDynNoLeaching2(bounds_clump,                                   &
                    filter(nc)%num_soilc, filter(nc)%soilc,                                  &
                    filter(nc)%num_soilp, filter(nc)%soilp,                                  &
@@ -1082,7 +1085,7 @@ contains
                      waterstate_vars, canopystate_vars)
              end if
 
-          end if  ! end of if-use_cn   or if-use_fates
+         end if  ! end of if-use_cn   or if-use_fates
        end if ! end of is_active_betr_bgc
     
 

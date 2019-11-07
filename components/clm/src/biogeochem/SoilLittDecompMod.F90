@@ -823,17 +823,19 @@ contains
 
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
-      call t_startf('CNAllocation - phase-3')
-      call Allocation3_PlantCNPAlloc (bounds                      , &
+      if(.not.use_fates)then
+          call t_startf('CNAllocation - phase-3')
+          call Allocation3_PlantCNPAlloc (bounds                      , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp    , &
                 canopystate_vars                                    , &
                 cnstate_vars, carbonstate_vars, carbonflux_vars     , &
                 c13_carbonflux_vars, c14_carbonflux_vars            , &
                 nitrogenstate_vars, nitrogenflux_vars               , &
                 phosphorusstate_vars, phosphorusflux_vars, crop_vars)
-      call t_stopf('CNAllocation - phase-3')
+          call t_stopf('CNAllocation - phase-3')
+      end if
       !------------------------------------------------------------------
-
+      
     if(use_pflotran.and.pf_cmode) then
     ! in Allocation3_PlantCNPAlloc():
     ! smin_nh4_to_plant_vr(c,j), smin_no3_to_plant_vr(c,j), sminn_to_plant_vr(c,j) may be adjusted

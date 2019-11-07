@@ -31,6 +31,9 @@ module PhosphorusDynamicsMod
   use VegetationDataType  , only : veg_ns, veg_pf
   use VegetationPropertiesType      , only : veg_vp
   use clm_varctl          , only : NFIX_PTASE_plant
+  use shr_log_mod         , only : errMsg => shr_log_errMsg
+  use clm_varctl          , only : iulog
+  use abortutils          , only : endrun
 
   !
   implicit none
@@ -656,26 +659,55 @@ contains
             c = filter_soilc(fc)
             biochem_pmin_vr(c,j) = 0.0_r8
             biochem_pmin_to_ecosysp_vr_col_pot(c,j) = 0._r8
-            do p = col_pp%pfti(c), col_pp%pftf(c)
-                if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
-                    !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
-                    lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
+            if(use_fates) then
+                do p = 1, alm_fates%fates(ci)%bc_out(s)%n_plant_comps
+                    lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ & 
+                          max(alm_fates%fates(ci)%bc_out(s)%cn_scalar(p),1e-20_r8)
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
-                    ptase_tmp = vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                        (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) 
+
+                    write(iulog,*) 'ptase driven uptake not enabled yet in ECA-FATES'
+                    call endrun(msg=errMsg(__FILE__, __LINE__))
+
+
+                    ! vmax_ptase is bound to the veg_pp PFT structure. Should we add this parameter
+                    ! to FATES? (RGK 11-2019)
+                   
+                    fr_frac = alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,j)/sum(alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,:))
+                    ptase_tmp = vmax_ptase(1) *  fr_frac * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                          (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) 
+
                     if (NFIX_PTASE_plant) then
-                       biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alpha_ptase(veg_pp%itype(p)) 
-                       biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p) * &
-                            (1._r8 - alpha_ptase(veg_pp%itype(p)))
-                       biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp  * veg_pp%wtcol(p)
+                        biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp*(1._r8 - alpha_ptase(veg_pp%itype(p)))
+                        biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp  * veg_pp%wtcol(p)
                     else
-                       biochem_pmin_to_plant_vr_patch(p,j) = 0._r8
-                       biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p)
-                       biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + &
-                            ptase_tmp  * veg_pp%wtcol(p)
+                        biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p)
+                        biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + &
+                              ptase_tmp  * veg_pp%wtcol(p)
                     endif
-                end if
-            enddo
+                    
+                end do
+            else
+                do p = col_pp%pfti(c), col_pp%pftf(c)
+                    if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+                        !lamda_up = npimbalance(p) ! partial_vcmax/partial_lpc / partial_vcmax/partial_lnc
+                        lamda_up = cp_scalar(p)/max(cn_scalar(p),1e-20_r8)
+                        lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
+                        ptase_tmp = vmax_ptase(veg_pp%itype(p)) * froot_prof(p,j) * max(lamda_up - lamda_ptase, 0.0_r8) / &
+                              (km_ptase + max(lamda_up - lamda_ptase, 0.0_r8)) 
+                        if (NFIX_PTASE_plant) then
+                            biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alpha_ptase(veg_pp%itype(p)) 
+                            biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p) * &
+                                  (1._r8 - alpha_ptase(veg_pp%itype(p)))
+                            biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + ptase_tmp  * veg_pp%wtcol(p)
+                        else
+                            biochem_pmin_to_plant_vr_patch(p,j) = 0._r8
+                            biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp * veg_pp%wtcol(p)
+                            biochem_pmin_to_ecosysp_vr_col_pot(c,j) = biochem_pmin_to_ecosysp_vr_col_pot(c,j) + &
+                                  ptase_tmp  * veg_pp%wtcol(p)
+                        endif
+                    end if
+                enddo
+            end if
         enddo
     enddo 
     

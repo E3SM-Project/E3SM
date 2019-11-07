@@ -4361,7 +4361,11 @@ end subroutine Allocation2_ResolveNPLimit
                      nuptake_prof(c,j) = sminn_vr_loc(c,j) / sminn_tot(c)   !original: if (use_nitrif_denitrif): nuptake_prof(c,j) = sminn_vr(c,j) / sminn_tot(c)
                   end if
                else
-                  nuptake_prof(c,j) = nfixation_prof(c,j)
+                  ! If there is no sminn_tot, there is nothing to uptake so
+                  ! it doesn't matter what this profile is. Removing dependence
+                  ! on a vegetation type array (RGK 11-2019)
+                  ! nuptake_prof(c,j) = nfixation_prof(c,j)
+                  nuptake_prof(c,j) = 1._r8
                end if
 
             end do
@@ -4418,7 +4422,7 @@ end subroutine Allocation2_ResolveNPLimit
                if (solutionp_tot(c)  >  0.) then
                   puptake_prof(c,j) = solutionp_vr(c,j) / solutionp_tot(c)
                else
-                  puptake_prof(c,j) = nfixation_prof(c,j)      ! need modifications 
+                  puptake_prof(c,j) = 1._r8
                endif
 
             end do
