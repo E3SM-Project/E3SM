@@ -108,6 +108,22 @@ module mpas_field_routines
       module procedure mpas_deallocate_field1d_char
    end interface
 
+   interface mpas_deallocate_field_target
+      module procedure mpas_deallocate_field0d_logical_target
+      module procedure mpas_deallocate_field0d_integer_target
+      module procedure mpas_deallocate_field1d_integer_target
+      module procedure mpas_deallocate_field2d_integer_target
+      module procedure mpas_deallocate_field3d_integer_target
+      module procedure mpas_deallocate_field0d_real_target
+      module procedure mpas_deallocate_field1d_real_target
+      module procedure mpas_deallocate_field2d_real_target
+      module procedure mpas_deallocate_field3d_real_target
+      module procedure mpas_deallocate_field4d_real_target
+      module procedure mpas_deallocate_field5d_real_target
+      module procedure mpas_deallocate_field0d_char_target
+      module procedure mpas_deallocate_field1d_char_target
+   end interface
+
    contains
 
 !***********************************************************************
@@ -1391,6 +1407,396 @@ module mpas_field_routines
 !  routine mpas_deallocate_field0D_logical
 !
 !> \brief   MPAS 0D int deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 0-d logical field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field0d_logical(f)!{{{
+
+       implicit none
+
+       type (field0dLogical), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field0d_logical!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field0D_integer
+!
+!> \brief   MPAS 0D int deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 0-d integer field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field0d_integer(f)!{{{
+
+       implicit none
+
+       type (field0dInteger), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field0d_integer!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field1D_integer
+!
+!> \brief   MPAS 1D int deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 1-d integer field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field1d_integer(f)!{{{
+
+       implicit none
+
+       type (field1dInteger), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field1d_integer!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field2D_integer
+!
+!> \brief   MPAS 2D int deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 2-d integer field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field2d_integer(f)!{{{
+
+       implicit none
+
+       type (field2dInteger), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field2d_integer!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field3D_integer
+!
+!> \brief   MPAS 3D int deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 3-d integer field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field3d_integer(f)!{{{
+
+       implicit none
+
+       type (field3dInteger), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field3d_integer!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field0D_real
+!
+!> \brief   MPAS 0D real deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 0-d real field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field0d_real(f)!{{{
+
+       implicit none
+
+       type (field0dReal), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field0d_real!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field1D_real
+!
+!> \brief   MPAS 1D real deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 1-d real field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field1d_real(f)!{{{
+
+       implicit none
+
+       type (field1dReal), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field1d_real!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field2D_real
+!
+!> \brief   MPAS 2D real deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 2-d real field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field2d_real(f)!{{{
+
+       implicit none
+
+       type (field2dReal), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field2d_real!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field3D_real
+!
+!> \brief   MPAS 3D real deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 3-d real field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field3d_real(f)!{{{
+
+       implicit none
+
+       type (field3dReal), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field3d_real!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field4D_real
+!
+!> \brief   MPAS 4D real deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 4-d real field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field4d_real(f)!{{{
+
+       implicit none
+
+       type (field4dReal), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field4d_real!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field5D_real
+!
+!> \brief   MPAS 5D real deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 5-d real field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field5d_real(f)!{{{
+
+       implicit none
+
+       type (field5dReal), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field5d_real!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field0D_char
+!
+!> \brief   MPAS 0D real deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 0-d character field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field0d_char(f)!{{{
+
+       implicit none
+
+       type (field0dChar), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field0d_char!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field1D_char
+!
+!> \brief   MPAS 1D char deallocation routine.
+!> \author  Michael G. Duda
+!> \date    4 November 2019
+!> \details 
+!>  This routine deallocates a 1-d character field. Upon return, all memory
+!>  that is uniquely associated with the field pointed to by f
+!>  (i.e., array storage, attribute lists, constitutent names; *not* sendList,
+!>  recvList, block, etc. that are potentially referenced by other fields)
+!>  will have been freed, and the input pointer will be nullified.
+!>
+!>  For fields that are elements of an array of fields, do not use this
+!>  routine, and instead use mpas_deallocate_field_target.
+!
+!-----------------------------------------------------------------------
+   subroutine mpas_deallocate_field1d_char(f)!{{{
+
+       implicit none
+
+       type (field1dChar), pointer :: f !< Input: Field to deallocate
+
+       call mpas_deallocate_field_target(f, keep_head_ptr=.false.)
+       nullify(f)
+
+   end subroutine mpas_deallocate_field1d_char!}}}
+
+
+!***********************************************************************
+!
+!  routine mpas_deallocate_field0D_logical_target
+!
+!> \brief   MPAS 0D int deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
@@ -1403,7 +1809,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field0d_logical(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field0d_logical_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -1447,12 +1853,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field0d_logical!}}}
+   end subroutine mpas_deallocate_field0d_logical_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field0D_integer
+!  routine mpas_deallocate_field0D_integer_target
 !
 !> \brief   MPAS 0D int deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -1467,7 +1873,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field0d_integer(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field0d_integer_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -1511,12 +1917,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field0d_integer!}}}
+   end subroutine mpas_deallocate_field0d_integer_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field1D_integer
+!  routine mpas_deallocate_field1D_integer_target
 !
 !> \brief   MPAS 1D int deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -1531,7 +1937,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field1d_integer(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field1d_integer_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -1579,12 +1985,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field1d_integer!}}}
+   end subroutine mpas_deallocate_field1d_integer_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field2D_integer
+!  routine mpas_deallocate_field2D_integer_target
 !
 !> \brief   MPAS 2D int deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -1601,7 +2007,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field2d_integer(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field2d_integer_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -1649,12 +2055,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field2d_integer!}}}
+   end subroutine mpas_deallocate_field2d_integer_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field3D_integer
+!  routine mpas_deallocate_field3D_integer_target
 !
 !> \brief   MPAS 3D int deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -1669,7 +2075,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field3d_integer(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field3d_integer_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -1717,12 +2123,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field3d_integer!}}}
+   end subroutine mpas_deallocate_field3d_integer_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field0D_real
+!  routine mpas_deallocate_field0D_real_target
 !
 !> \brief   MPAS 0D real deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -1737,7 +2143,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field0d_real(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field0d_real_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -1781,12 +2187,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field0d_real!}}}
+   end subroutine mpas_deallocate_field0d_real_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field1D_real
+!  routine mpas_deallocate_field1D_real_target
 !
 !> \brief   MPAS 1D real deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -1801,7 +2207,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field1d_real(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field1d_real_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -1849,12 +2255,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field1d_real!}}}
+   end subroutine mpas_deallocate_field1d_real_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field2D_real
+!  routine mpas_deallocate_field2D_real_target
 !
 !> \brief   MPAS 2D real deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -1869,7 +2275,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field2d_real(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field2d_real_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -1917,12 +2323,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field2d_real!}}}
+   end subroutine mpas_deallocate_field2d_real_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field3D_real
+!  routine mpas_deallocate_field3D_real_target
 !
 !> \brief   MPAS 3D real deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -1939,7 +2345,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field3d_real(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field3d_real_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -1987,12 +2393,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field3d_real!}}}
+   end subroutine mpas_deallocate_field3d_real_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field4D_real
+!  routine mpas_deallocate_field4D_real_target
 !
 !> \brief   MPAS 4D real deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -2007,7 +2413,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field4d_real(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field4d_real_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -2055,12 +2461,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field4d_real!}}}
+   end subroutine mpas_deallocate_field4d_real_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field5D_real
+!  routine mpas_deallocate_field5D_real_target
 !
 !> \brief   MPAS 5D real deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -2075,7 +2481,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field5d_real(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field5d_real_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -2123,12 +2529,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field5d_real!}}}
+   end subroutine mpas_deallocate_field5d_real_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field0D_char
+!  routine mpas_deallocate_field0D_char_target
 !
 !> \brief   MPAS 0D real deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -2143,7 +2549,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field0d_char(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field0d_char_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -2187,12 +2593,12 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field0d_char!}}}
+   end subroutine mpas_deallocate_field0d_char_target!}}}
 
 
 !***********************************************************************
 !
-!  routine mpas_deallocate_field1D_char
+!  routine mpas_deallocate_field1D_char_target
 !
 !> \brief   MPAS 1D char deallocation routine.
 !> \author  Doug Jacobsen, Michael G. Duda
@@ -2207,7 +2613,7 @@ module mpas_field_routines
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
-   subroutine mpas_deallocate_field1d_char(f, keep_head_ptr)!{{{
+   subroutine mpas_deallocate_field1d_char_target(f, keep_head_ptr)!{{{
 
        implicit none
 
@@ -2255,7 +2661,7 @@ module mpas_field_routines
            end do
        end if
 
-   end subroutine mpas_deallocate_field1d_char!}}}
+   end subroutine mpas_deallocate_field1d_char_target!}}}
 
 
 !***********************************************************************
