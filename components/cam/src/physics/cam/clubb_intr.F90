@@ -795,6 +795,10 @@ end subroutine clubb_init_cnst
     call addfld ('FICE_T', (/ 'lev' /),  'A',        'K', 'Temperature for ice cloud fraction calculation')
     call addfld ('FICE_f', (/ 'lev' /),  'A',        'fraction', 'Ice cloud cover')
 
+    ! save the changes of frequencies of explicit diffusion that is called by CLUBB   
+    call addfld ('FRQ_EXDIFF_LT',  (/ 'lev' /),  'A',   '#', 'Frequency of thlm700 - thlm1000 < 20 K'  ) 
+    call addfld ('FRQ_EXDIFF_GE',  (/ 'lev' /),  'A',   '#', 'Frequency of thlm700 - thlm1000 >= 20 K' )     
+
     !  Initialize statistics, below are dummy variables
     dum1 = 300._r8
     dum2 = 1200._r8
@@ -861,6 +865,8 @@ end subroutine clubb_init_cnst
        call add_default('SL',               1, ' ')
        call add_default('QT',               1, ' ')
        call add_default('CONCLD',           1, ' ')
+       call add_default('FRQ_EXDIFF_LT',    1, ' ')
+       call add_default('FRQ_EXDIFF_GE',    1, ' ')
     else 
        call add_default('CLOUDFRAC_CLUBB',  1, ' ')
        call add_default('CONCLD',           1, ' ')
@@ -1254,6 +1260,13 @@ end subroutine clubb_init_cnst
    real(r8), pointer, dimension(:,:) :: prer_evap
    real(r8), pointer, dimension(:,:) :: qrl
    real(r8), pointer, dimension(:,:) :: radf_clubb
+
+!SZ 
+   real(r8) frediff_lt(pcols,pverp)
+   real(r8) frediff_ge(pcols,pverp)
+   real(r8) thfrq_lt(pverp)
+   real(r8) thfrq_ge(pverp)
+
 !PMA
    real(r8)  relvarc(pcols,pver)
    real(r8)  stend(pcols,pver)
@@ -1802,6 +1815,8 @@ end subroutine clubb_init_cnst
          edsclr_out(k,:)     = 0._r8
          khzm_out(k)         = 0._r8
          khzt_out(k)         = 0._r8
+         thfrq_ge(k)         = 0.0_r8
+         thfrq_lt(k)         = 0.0_r8
 
          !  higher order scalar stuff, put to zero
          sclrm(k,:)          = 0._r8
@@ -1934,7 +1949,7 @@ end subroutine clubb_init_cnst
             rcm_out, wprcp_out, cloud_frac_out, ice_supersat_frac, &
             rcm_in_layer_out, cloud_cover_out, &
             khzm_out, khzt_out, qclvar_out, thlprcp_out, &
-            pdf_params)
+            pdf_params, thfrq_lt, thfrq_ge)
          call t_stopf('advance_clubb_core')
 
          if (do_rainturb) then
@@ -2030,6 +2045,8 @@ end subroutine clubb_init_cnst
           khzm(i,k)         = khzm_out(pverp-k+1)
           khzt(i,k)         = khzt_out(pverp-k+1)
           qclvar(i,k)       = min(1._r8,qclvar_out(pverp-k+1))
+          frediff_lt(i,k)   = thfrq_lt(pverp-k+1)
+          frediff_ge(i,k)   = thfrq_ge(pverp-k+1)  
      
           do ixind=1,edsclr_dim
               edsclr_out(k,ixind) = edsclr_in(pverp-k+1,ixind)
@@ -2518,6 +2535,9 @@ end subroutine clubb_init_cnst
    ! --------------------------------------------------------------------------------- !  
  
    !  Output calls of variables goes here
+   call outfld( 'FRQ_EXDIFF_LT',   frediff_lt,               pcols, lchnk )
+   call outfld( 'FRQ_EXDIFF_GE',   frediff_ge,               pcols, lchnk )
+
    call outfld( 'RELVAR',           relvar,                  pcols, lchnk )
    call outfld( 'RELVARC',          relvarc,                 pcols, lchnk )
    call outfld( 'RHO_CLUBB',        rho,                     pcols, lchnk )
