@@ -252,6 +252,9 @@ module li_time_integration_fe
       logical, pointer :: config_adaptive_timestep
       logical, pointer :: config_adaptive_timestep_include_DCFL
 
+      character (len=StrKIND), pointer :: &
+           config_thickness_advection   ! method for advecting thickness and tracers
+
       integer :: &
            allowableAdvecDtProcNumberHere, &
            allowableAdvecDtProcNumber
@@ -301,6 +304,11 @@ module li_time_integration_fe
       call mpas_pool_get_config(liConfigs, 'config_print_thickness_advection_info', config_print_thickness_advection_info)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep', config_adaptive_timestep)
       call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+      call mpas_pool_get_config(liConfigs, 'config_thickness_advection', config_thickness_advection)
+
+      if (trim(config_thickness_advection) == 'none') then
+         return ! skip this routine
+      endif
 
       allowableAdvecDtAllProcs = 0.0_RKIND
       allowableDiffDtAllProcs = 0.0_RKIND
@@ -308,8 +316,6 @@ module li_time_integration_fe
       dminfo => domain % dminfo
 
       ! Initialize
-
-      err = 0
 
       allowableAdvecDtOnProc = 1.0e36_RKIND ! set to large number
       allowableDiffDtOnProc = 1.0e36_RKIND ! set to large number
