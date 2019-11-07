@@ -233,38 +233,25 @@ class EnvBatch(EnvBase):
             else:
                 node_count = case.num_nodes
 
-            if force_queue:
-                if not self.queue_meets_spec(force_queue, node_count, task_count, walltime=walltime, job=job):
-                    logger.warning("WARNING: User-requested queue '{}' does not meet requirements for job '{}'".format(force_queue, job))
-                    if self.queue_meets_spec(force_queue, node_count, task_count, walltime=None, job=job):
-                        if case.get_value("TEST"):
-                            walltime = self.get_queue_specs(force_queue)[3]
-                            logger.warning("  Using walltime '{}' instead".format(walltime))
-                        else:
-                            logger.warning("  Continuing with suspect walltime, batch submission may fail")
+            queue = self.select_best_queue(node_count, task_count, name=force_queue, walltime=walltime, job=job)
+            if queue is None and walltime is not None:
+                # Try to see if walltime was the holdup
+                queue = self.select_best_queue(node_count, task_count, name=force_queue, walltime=None, job=job)
+                if queue is not None:
+                    # It was, override the walltime if a test, otherwise just warn the user
+                    new_walltime = self.get_queue_specs(queue)[3]
+                    expect(new_walltime is not None, "Should never make it here")
+                    logger.warning("WARNING: Requested walltime '{}' could not be matched by any {} queue".format(walltime, force_queue))
+                    if case.get_value("TEST"):
+                        logger.warning("  Using walltime '{}' instead".format(new_walltime))
+                        walltime = new_walltime
+                    else:
+                        logger.warning("  Continuing with suspect walltime, batch submission may fail")
 
-                queue = force_queue
-            else:
-                queue = self.select_best_queue(node_count, task_count, walltime=walltime, job=job)
-                if queue is None and walltime is not None:
-                    # Try to see if walltime was the holdup
-                    queue = self.select_best_queue(node_count, task_count, walltime=None, job=job)
-                    if queue is not None:
-                        # It was, override the walltime if a test, otherwise just warn the user
-                        new_walltime = self.get_queue_specs(queue)[3]
-                        expect(new_walltime is not None, "Should never make it here")
-                        logger.warning("WARNING: Requested walltime '{}' could not be matched by any queue".format(walltime))
-                        if case.get_value("TEST"):
-                            logger.warning("  Using walltime '{}' instead".format(new_walltime))
-                            walltime = new_walltime
-                        else:
-                            logger.warning("  Continuing with suspect walltime, batch submission may fail")
-
-                if queue is None:
-                    logger.warning("WARNING: No queue on this system met the requirements for this job. Falling back to defaults")
-                    default_queue_node = self.get_default_queue()
-                    queue = self.text(default_queue_node)
-                    walltime = self.get_queue_specs(queue)[3]
+            if queue is None:
+                logger.warning("WARNING: No queue on this system met the requirements for this job. Falling back to defaults")
+                queue = self.get_default_queue()
+                walltime = self.get_queue_specs(queue)[3]
 
             specs = self.get_queue_specs(queue)
             if walltime is None:
@@ -276,9 +263,10 @@ class EnvBatch(EnvBase):
                     walltime = specs[3]
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
-            env_workflow.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
+
+            env_workflow.set_value("JOB_QUEUE", self.text(queue), subgroup=job, ignore_type=specs is None)
             env_workflow.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
-            logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
+            logger.debug("Job {} queue {} walltime {}".format(job, self.text(queue), walltime))
 
     def _match_attribs(self, attribs, case, queue):
         # check for matches with case-vars
@@ -740,9 +728,6 @@ class EnvBatch(EnvBase):
 
     def queue_meets_spec(self, queue, num_nodes, num_tasks, walltime=None, job=None):
         specs = self.get_queue_specs(queue)
-        if specs is None:
-            logger.warning("WARNING: queue '{}' is unknown to this system".format(queue))
-            return True
 
         nodemin, nodemax, jobname, walltimemax, jobmin, jobmax, strict = specs
 
@@ -776,43 +761,39 @@ class EnvBatch(EnvBase):
 
         return queue_names
 
-    def select_best_queue(self, num_nodes, num_tasks, walltime=None, job=None):
+    def select_best_queue(self, num_nodes, num_tasks, name=None, walltime=None, job=None):
         # Make sure to check default queue first.
-        qnames = self._get_all_queue_names()
-        for qname in qnames:
-            if self.queue_meets_spec(qname, num_nodes, num_tasks, walltime=walltime, job=job):
-                return qname
+        qnodes = self.get_all_queues(name=name)
+        for qnode in qnodes:
+            if self.queue_meets_spec(qnode, num_nodes, num_tasks, walltime=walltime, job=job):
+                return qnode
 
         return None
 
-    def get_queue_specs(self, queue):
+    def get_queue_specs(self, qnode):
         """
-        Get queue specifications by name.
+        Get queue specifications from node.
 
         Returns (nodemin, nodemax, jobname, walltimemax, jobmin, jobmax, is_strict)
         """
-        for queue_node in self.get_all_queues():
-            if self.text(queue_node) == queue:
-                nodemin = self.get(queue_node, "nodemin")
-                nodemin = None if nodemin is None else int(nodemin)
-                nodemax = self.get(queue_node, "nodemax")
-                nodemax = None if nodemax is None else int(nodemax)
+        nodemin = self.get(qnode, "nodemin")
+        nodemin = None if nodemin is None else int(nodemin)
+        nodemax = self.get(qnode, "nodemax")
+        nodemax = None if nodemax is None else int(nodemax)
 
-                jobmin = self.get(queue_node, "jobmin")
-                jobmin = None if jobmin is None else int(jobmin)
-                jobmax = self.get(queue_node, "jobmax")
-                jobmax = None if jobmax is None else int(jobmax)
+        jobmin = self.get(qnode, "jobmin")
+        jobmin = None if jobmin is None else int(jobmin)
+        jobmax = self.get(qnode, "jobmax")
+        jobmax = None if jobmax is None else int(jobmax)
 
-                expect( nodemin is None or jobmin is None, "Cannot specify both nodemin and jobmin for a queue")
-                expect( nodemax is None or jobmax is None, "Cannot specify both nodemax and jobmax for a queue")
+        expect( nodemin is None or jobmin is None, "Cannot specify both nodemin and jobmin for a queue")
+        expect( nodemax is None or jobmax is None, "Cannot specify both nodemax and jobmax for a queue")
 
-                jobname = self.get(queue_node, "jobname")
-                walltimemax = self.get(queue_node, "walltimemax")
-                strict = self.get(queue_node, "strict") == "true"
+        jobname = self.get(qnode, "jobname")
+        walltimemax = self.get(qnode, "walltimemax")
+        strict = self.get(qnode, "strict") == "true"
 
-                return nodemin, nodemax, jobname, walltimemax, jobmin, jobmax, strict
-
-        return None
+        return nodemin, nodemax, jobname, walltimemax, jobmin, jobmax, strict
 
     def get_default_queue(self):
         bs_nodes = self.get_children("batch_system")
@@ -827,13 +808,17 @@ class EnvBatch(EnvBase):
         expect(node is not None, "No queues found")
         return node
 
-    def get_all_queues(self):
+    def get_all_queues(self, name=None):
         bs_nodes = self.get_children("batch_system")
         nodes = []
         for bsnode in bs_nodes:
-            qnode = self.get_optional_child("queues", root=bsnode)
-            if qnode is not None:
-                nodes.extend(self.get_children("queue", root=qnode))
+            qsnode = self.get_optional_child("queues", root=bsnode)
+            if qsnode is not None:
+                qnodes = self.get_children("queue", root=qsnode)
+                for qnode in qnodes:
+                    if name is None or self.text(qnode) == name:
+                        nodes.append(qnode)
+
         return nodes
 
     def get_children(self, name=None, attributes=None, root=None):
