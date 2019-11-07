@@ -1394,14 +1394,12 @@ module mpas_field_routines
 !> \author  Doug Jacobsen, Michael G. Duda
 !> \date    04/02/13
 !> \details 
-!>  This routine deallocates a 0D int field. If the optional argument
+!>  This routine deallocates a 0D logical field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -1441,7 +1439,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -1463,11 +1461,9 @@ module mpas_field_routines
 !>  This routine deallocates a 0D int field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -1507,7 +1503,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -1529,11 +1525,9 @@ module mpas_field_routines
 !>  This routine deallocates a 1D int field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -1577,7 +1571,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -1599,11 +1593,11 @@ module mpas_field_routines
 !>  This routine deallocates a 2D int field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
+!>  will be deallocated.
 !>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -1647,7 +1641,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -1669,11 +1663,9 @@ module mpas_field_routines
 !>  This routine deallocates a 3D int field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -1717,7 +1709,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -1739,11 +1731,9 @@ module mpas_field_routines
 !>  This routine deallocates a 0D real field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -1783,7 +1773,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -1805,11 +1795,9 @@ module mpas_field_routines
 !>  This routine deallocates a 1D real field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -1853,7 +1841,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -1875,11 +1863,9 @@ module mpas_field_routines
 !>  This routine deallocates a 2D real field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -1923,7 +1909,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -1945,11 +1931,11 @@ module mpas_field_routines
 !>  This routine deallocates a 3D real field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
+!>  will be deallocated.
 !>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -1993,7 +1979,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -2015,11 +2001,9 @@ module mpas_field_routines
 !>  This routine deallocates a 4D real field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -2063,7 +2047,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -2085,11 +2069,9 @@ module mpas_field_routines
 !>  This routine deallocates a 5D real field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -2133,7 +2115,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -2155,11 +2137,9 @@ module mpas_field_routines
 !>  This routine deallocates a 0D real field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -2199,7 +2179,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
@@ -2221,11 +2201,9 @@ module mpas_field_routines
 !>  This routine deallocates a 1D char field. If the optional argument
 !>  keep_head_ptr is .true., the field type pointed to by f will not be
 !>  deallocated -- only the contents (array, attLists, constituentNames)
-!>  will be deallocated. If the field contains multiple blocks, all memory
-!>  for all blocks other than the first (including the field types themselves)
 !>  will be deallocated.
 !>
-!>  The principal use fo rthe keep_head_ptr argument is for situations in
+!>  The principal use for the keep_head_ptr argument is for situations in
 !>  which elemements of an array of fields need to be deallocated.
 !
 !-----------------------------------------------------------------------
@@ -2269,7 +2247,7 @@ module mpas_field_routines
                    deallocate(f_cursor % constituentNames)
                end if
 
-               if ((.not. local_keep_head_ptr) .or. (.not. associated(f_cursor, f))) then
+               if (.not. local_keep_head_ptr) then
                    deallocate(f_cursor)
                end if
 
