@@ -389,12 +389,6 @@
     </queues>
    </batch_system>
 
-   <batch_system MACH="compy" type="slurm">
-    <queues>
-      <queue walltimemax="00:59:00" default="true">slurm</queue>
-    </queues>
-   </batch_system>
-
    <batch_system MACH="sooty" type="slurm" >
      <directives>
        <directive>--ntasks-per-node={{ tasks_per_node }}</directive>
