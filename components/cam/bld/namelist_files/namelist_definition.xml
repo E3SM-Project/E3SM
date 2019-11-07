@@ -484,7 +484,40 @@
        Method to perform Nudging analyses.
        Default: none
        </entry>
+<entry id="Nudge_Tau" type="real" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Method to perform Nudging time scale.
+       Default: none
+       </entry>
 <!-- JS END -->
+
+<!-- SZ ADD -->
+<entry id="Nudge_Data" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Toggle Generating Nudging Data ON/OFF.
+       Default: FALSE
+       </entry>
+<entry id="Nudge_Unam" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       U-name in Nudging data.
+       Default: "U"
+       </entry>
+<entry id="Nudge_Vnam" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       U-name in Nudging data.
+       Default: "V"
+       </entry>
+<entry id="Nudge_Tnam" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       U-name in Nudging data.
+       Default: "T"
+       </entry>
+<entry id="Nudge_Qnam" type="char*80" category="nudging"
+       group="nudging_nl" valid_values="" >
+       U-name in Nudging data.
+       Default: "Q"
+       </entry>
+<!-- SZ END -->
 
 <!-- Aerosols: Data (CAM version) -->
 

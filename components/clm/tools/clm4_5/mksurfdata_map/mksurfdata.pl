@@ -44,7 +44,7 @@ my $nldef_file     = "$scrdir/../../../bld/namelist_files/namelist_definition_cl
 
 my $definition = Build::NamelistDefinition->new( $nldef_file );
 
-my $CSMDATA = "/lustre/atlas1/cli900/world-shared/cesm/inputdata";
+my $CSMDATA = "/global/cscratch1/sd/zhan391/acme_input/ne4_init"; #"/lustre/atlas1/cli900/world-shared/cesm/inputdata";
 
 my %opts = ( 
                hgrid=>"all", 
