@@ -218,10 +218,14 @@ cxx_unit_test (col_ops_ut "${COL_OPS_UT_F90_SRCS}" "${COL_OPS_UT_CXX_SRCS}" "${C
 SET (PPM_REMAP_UT_F90_SRCS
   ${SRC_SHARE_DIR}/control_mod.F90
   ${SRC_SHARE_DIR}/dimensions_mod.F90
+  ${SRC_SHARE_DIR}/hybvcoord_mod.F90
   ${SRC_SHARE_DIR}/kinds.F90
   ${SRC_SHARE_DIR}/parallel_mod.F90
+  ${SRC_SHARE_DIR}/physical_constants.F90
   ${SRC_SHARE_DIR}/vertremap_base.F90
   ${SHARE_UT_DIR}/ppm_remap_interface.F90
+  ${UTILS_TIMING_DIR}/perf_mod.F90
+  ${UTILS_TIMING_DIR}/perf_utils.F90
 )
 
 SET (PPM_REMAP_UT_CXX_SRCS
