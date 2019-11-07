@@ -265,7 +265,11 @@ def get_cime_default_driver():
             if driver:
                 logger.debug("Setting CIME_driver={} from ~/.cime/config".format(driver))
     if not driver:
-        driver = "mct"
+        model = get_model()
+        if model == "ufs":
+            driver = "nuopc"
+        else:
+            driver = "mct"
     expect(driver in ("mct", "nuopc", "moab"),"Attempt to set invalid driver {}".format(driver))
     return driver
 
