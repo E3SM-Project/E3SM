@@ -649,6 +649,8 @@ subroutine micro_mg_cam_init(pbuf2d)
                                    ! liquid budgets.
    logical :: use_subcol_microp
    logical :: do_clubb_sgs
+   logical :: macmic_mg2_diag      ! logics to control extra diagnistic in mg2  
+   integer :: cld_macmic_num_steps ! macmic substeps
    integer :: budget_histfile      ! output history file number for budget fields
    integer :: ierr
    character(128) :: errstring     ! return status (non-blank for error return)
@@ -1651,6 +1653,7 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    integer :: autocl_idx, accretl_idx  ! Aerocom IND3
    integer :: cldliqbf_idx, cldicebf_idx, numliqbf_idx, numicebf_idx
 
+   logical :: macmic_mg2_diag
    !-------------------------------------------------------------------------------
 
    call t_startf('micro_mg_cam_tend_init')
