@@ -94,6 +94,8 @@ module physpkg
   logical           :: pergro_test_active= .false.
   logical           :: pergro_mods = .false.
   logical           :: macmic_extra_diag = .false.
+  logical           :: macmic_clubb_diag = .false.
+  logical           :: macmic_mg2_diag   = .false.
   logical           :: is_cmip6_volc !true if cmip6 style volcanic file is read otherwise false
 
   !======================================================================= 
@@ -174,7 +176,9 @@ subroutine phys_register
                       micro_do_icesupersat_out = micro_do_icesupersat, &
                       pergro_test_active_out   = pergro_test_active, &
                       pergro_mods_out          = pergro_mods, &
-                      macmic_extra_diag_out    = macmic_extra_diag)
+                      macmic_extra_diag_out    = macmic_extra_diag, &
+                      macmic_clubb_diag_out    = macmic_clubb_diag, &
+                      macmic_mg2_diag_out      = macmic_mg2_diag)
     ! Initialize dyn_time_lvls
     call pbuf_init_time()
 
