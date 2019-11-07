@@ -1592,6 +1592,8 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    integer :: autocl_idx, accretl_idx  ! Aerocom IND3
    integer :: cldliqbf_idx, cldicebf_idx, numliqbf_idx, numicebf_idx
 
+   logical  :: macmic_extra_diag
+
    !-------------------------------------------------------------------------------
 
    call t_startf('micro_mg_cam_tend_init')
@@ -2994,6 +2996,11 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    ! Output a handle of variables which are calculated on the fly
    ftem_grid = 0._r8
 
+   !-------------------------------------------------------------------------------
+   call phys_getopts(macmic_extra_diag_out = macmic_extra_diag) !! get flag to control the extra output 
+   
+   if (macmic_extra_diag) then
+
    ftem_grid(:ngrdcol,top_lev:pver) =  qcreso_grid(:ngrdcol,top_lev:pver)
    call outfld( 'MPDW2V', ftem_grid, pcols, lchnk)
    write(tmpname,"(A7,I2.2)")"MPDW2V_",macmic_it
@@ -3026,6 +3033,8 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    write(tmpname,"(A7,I2.2)")"MPDI2P_",macmic_it
    call outfld(trim(adjustl(tmpname)),        ftem_grid,        pcols, lchnk)
 
+   end if
+ 
    ! Output fields which have not been averaged already, averaging if use_subcol_microp is true
    call outfld('MPICLWPI',    iclwpi,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MPICIWPI',    iciwpi,      psetcols, lchnk, avg_subcol_field=use_subcol_microp)
@@ -3046,60 +3055,79 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    call outfld('FREQR',       freqr,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('FREQS',       freqs,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MPDT',        tlat,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A5,I2.2)")"MPDT_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        tlat,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MPDQ',        qvlat,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A5,I2.2)")"MPDQ_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qvlat,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MPDLIQ',      qcten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A7,I2.2)")"MPDLIQ_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qcten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MPDICE',      qiten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A7,I2.2)")"MPDICE_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qiten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('EVAPSNOW',    evapsnow,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A9,I2.2)")"EVAPSNOW_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        evapsnow,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('QCSEVAP',     qcsevap,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A8,I2.2)")"QCSEVAP_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qcsevap,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('QISEVAP',     qisevap,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A8,I2.2)")"QISEVAP_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qisevap,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('QVRES',       qvres,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A6,I2.2)")"QVRES_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qvres,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+
+   if (macmic_extra_diag) then
+
+     write(tmpname,"(A5,I2.2)")"MPDT_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        tlat,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A5,I2.2)")"MPDQ_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        qvlat,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A7,I2.2)")"MPDLIQ_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        qcten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A7,I2.2)")"MPDICE_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        qiten,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A9,I2.2)")"EVAPSNOW_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        evapsnow,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A8,I2.2)")"QCSEVAP_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        qcsevap,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A8,I2.2)")"QISEVAP_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        qisevap,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A6,I2.2)")"QVRES_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        qvres,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+
+   end if 
+
    call outfld('VTRMC',       vtrmc,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('VTRMI',       vtrmi,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('QCSEDTEN',    qcsedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A9,I2.2)")"QCSEDTEN_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qcsedten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('QISEDTEN',    qisedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A9,I2.2)")"QISEDTEN_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qisedten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+
    if (micro_mg_version > 1) then
-      call outfld('QRSEDTEN',    qrsedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-      write(tmpname,"(A9,I2.2)")"QRSEDTEN_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qrsedten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-      call outfld('QSSEDTEN',    qssedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-      write(tmpname,"(A9,I2.2)")"QSSEDTEN_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qssedten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+       call outfld('QRSEDTEN',    qrsedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+       call outfld('QSSEDTEN',    qssedten,    psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    end if
+
+   if (macmic_extra_diag) then
+     write(tmpname,"(A9,I2.2)")"QCSEDTEN_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        qcsedten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A9,I2.2)")"QISEDTEN_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        qisedten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     if (micro_mg_version > 1) then
+       write(tmpname,"(A9,I2.2)")"QRSEDTEN_",macmic_it
+       call outfld(trim(adjustl(tmpname)),        qrsedten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+       write(tmpname,"(A9,I2.2)")"QSSEDTEN_",macmic_it
+       call outfld(trim(adjustl(tmpname)),        qssedten,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     end if
+   end if 
+
    call outfld('MNUCCDO',     mnuccdo,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MNUCCDOhet',  mnuccdohet,  psetcols, lchnk, avg_subcol_field=use_subcol_microp)
    call outfld('MNUCCRO',     mnuccro,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A8,I2.2)")"MNUCCRO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        mnuccro,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('PRACSO',      pracso ,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A7,I2.2)")"PRACSO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        pracso,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('MELTSDT',     meltsdt,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A8,I2.2)")"MELTSDT_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        meltsdt,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('FRZRDT',      frzrdt ,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   write(tmpname,"(A7,I2.2)")"FRZRDT_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        frzrdt,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
-   call outfld('FICE',        nfice,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+
+   if (macmic_extra_diag) then
+
+     write(tmpname,"(A8,I2.2)")"MNUCCRO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        mnuccro,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     call outfld('PRACSO',      pracso ,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A7,I2.2)")"PRACSO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        pracso,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     call outfld('MELTSDT',     meltsdt,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A8,I2.2)")"MELTSDT_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        meltsdt,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     call outfld('FRZRDT',      frzrdt ,     psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     write(tmpname,"(A7,I2.2)")"FRZRDT_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        frzrdt,        psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+     call outfld('FICE',        nfice,       psetcols, lchnk, avg_subcol_field=use_subcol_microp)
+   
+   end if 
+
    if (micro_mg_version > 1) then
       call outfld('UMR',      umr,         psetcols, lchnk, avg_subcol_field=use_subcol_microp)
       call outfld('UMS',      ums,         psetcols, lchnk, avg_subcol_field=use_subcol_microp)
@@ -3126,11 +3154,15 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    call outfld('CME',         qme_grid,         pcols, lchnk)
    call outfld('PRODPREC',    prain_grid,       pcols, lchnk)
    call outfld('EVAPPREC',    nevapr_grid,      pcols, lchnk)
-   write(tmpname,"(A9,I2.2)")"EVAPPREC_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        nevapr_grid,        pcols, lchnk)  
-   call outfld('QCRESO',      qcreso_grid,      pcols, lchnk)
-   write(tmpname,"(A7,I2.2)")"QCRESO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qcreso_grid,        pcols, lchnk)
+
+   if (macmic_extra_diag) then
+     write(tmpname,"(A9,I2.2)")"EVAPPREC_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        nevapr_grid,        pcols, lchnk)  
+     call outfld('QCRESO',      qcreso_grid,      pcols, lchnk)
+     write(tmpname,"(A7,I2.2)")"QCRESO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        qcreso_grid,        pcols, lchnk)
+   end if
+ 
    call outfld('LS_REFFRAIN', mgreffrain_grid,  pcols, lchnk)
    call outfld('LS_REFFSNOW', mgreffsnow_grid,  pcols, lchnk)
    call outfld('DSNOW',       des_grid,         pcols, lchnk)
@@ -3163,48 +3195,52 @@ subroutine micro_mg_cam_tend(state, ptend, macmic_it, dtime, pbuf)
    call outfld('ICIMRST',     icimrst_grid_out, pcols, lchnk)
    call outfld('ICWMRST',     icwmrst_grid_out, pcols, lchnk)
    call outfld('CMEIOUT',     cmeiout_grid,     pcols, lchnk)
-   write(tmpname,"(A8,I2.2)")"CMEIOUT_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        cmeiout_grid,        pcols, lchnk)
    call outfld('PRAO',        prao_grid,        pcols, lchnk)
-   write(tmpname,"(A5,I2.2)")"PRAO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        prao_grid,        pcols, lchnk)
    call outfld('PRCO',        prco_grid,        pcols, lchnk)
-   write(tmpname,"(A5,I2.2)")"PRCO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        prco_grid,        pcols, lchnk)
    call outfld('MNUCCCO',     mnuccco_grid,     pcols, lchnk)
-   write(tmpname,"(A8,I2.2)")"MNUCCCO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        mnuccco_grid,        pcols, lchnk)
    call outfld('MNUCCTO',     mnuccto_grid,     pcols, lchnk)
-   write(tmpname,"(A8,I2.2)")"MNUCCTO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        mnuccto_grid,        pcols, lchnk)
    call outfld('MSACWIO',     msacwio_grid,     pcols, lchnk)
-   write(tmpname,"(A8,I2.2)")"MSACWIO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        msacwio_grid,        pcols, lchnk)
    call outfld('PSACWSO',     psacwso_grid,     pcols, lchnk)
-   write(tmpname,"(A8,I2.2)")"PSACWSO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        psacwso_grid,        pcols, lchnk)
    call outfld('BERGSO',      bergso_grid,      pcols, lchnk)
-   write(tmpname,"(A7,I2.2)")"BERGSO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        bergso_grid,        pcols, lchnk)   
-  
    call outfld('BERGO',       bergo_grid,       pcols, lchnk)
-   write(tmpname,"(A6,I2.2)")"BERGO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        bergo_grid,        pcols, lchnk)
    call outfld('MELTO',       melto_grid,       pcols, lchnk)
-   write(tmpname,"(A6,I2.2)")"MELTO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        melto_grid,        pcols, lchnk)
    call outfld('HOMOO',       homoo_grid,       pcols, lchnk)
-   write(tmpname,"(A6,I2.2)")"HOMOO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        homoo_grid,        pcols, lchnk)
    call outfld('PRCIO',       prcio_grid,       pcols, lchnk)
-   write(tmpname,"(A6,I2.2)")"PRCIO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        prcio_grid,        pcols, lchnk)
    call outfld('PRAIO',       praio_grid,       pcols, lchnk)
-   write(tmpname,"(A6,I2.2)")"PRAIO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        praio_grid,        pcols, lchnk)
    call outfld('QIRESO',      qireso_grid,      pcols, lchnk)
-   write(tmpname,"(A7,I2.2)")"QIRESO_",macmic_it
-   call outfld(trim(adjustl(tmpname)),        qireso_grid,        pcols, lchnk)
+
+   if (macmic_extra_diag) then
+
+     write(tmpname,"(A8,I2.2)")"CMEIOUT_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        cmeiout_grid,        pcols, lchnk)
+     write(tmpname,"(A5,I2.2)")"PRAO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        prao_grid,           pcols, lchnk)
+     write(tmpname,"(A5,I2.2)")"PRCO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        prco_grid,           pcols, lchnk)
+     write(tmpname,"(A8,I2.2)")"MNUCCCO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        mnuccco_grid,        pcols, lchnk)
+     write(tmpname,"(A8,I2.2)")"MNUCCTO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        mnuccto_grid,        pcols, lchnk)
+     write(tmpname,"(A8,I2.2)")"MSACWIO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        msacwio_grid,        pcols, lchnk)
+     write(tmpname,"(A8,I2.2)")"PSACWSO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        psacwso_grid,        pcols, lchnk)
+     write(tmpname,"(A7,I2.2)")"BERGSO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        bergso_grid,         pcols, lchnk)   
+     write(tmpname,"(A6,I2.2)")"BERGO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        bergo_grid,          pcols, lchnk)
+     write(tmpname,"(A6,I2.2)")"MELTO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        melto_grid,          pcols, lchnk)
+     write(tmpname,"(A6,I2.2)")"HOMOO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        homoo_grid,          pcols, lchnk)
+     write(tmpname,"(A6,I2.2)")"PRCIO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        prcio_grid,          pcols, lchnk)
+     write(tmpname,"(A6,I2.2)")"PRAIO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        praio_grid,          pcols, lchnk)
+     write(tmpname,"(A7,I2.2)")"QIRESO_",macmic_it
+     call outfld(trim(adjustl(tmpname)),        qireso_grid,         pcols, lchnk)
+  
+   end if 
 
    ! ptend_loc is deallocated in physics_update above
    call physics_state_dealloc(state_loc)
