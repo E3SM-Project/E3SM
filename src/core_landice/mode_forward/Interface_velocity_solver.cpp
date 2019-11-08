@@ -741,9 +741,13 @@ void velocity_solver_extrude_3d_grid(double const* levelsRatio_F,
     verticesCoords[index * 3 + 2] = zCell_F[iCell] / unit_length;
   }
 
+  std::vector<std::vector<int>> procsSharingVertices(nVertices);
+  for(int i=0; i< nVertices; i++)
+    procsSharingVertex(i, procsSharingVertices[i]);
+
   velocity_solver_extrude_3d_grid__(nLayers, nGlobalTriangles, nGlobalVertices,
       nGlobalEdges, Ordering, reducedComm, indexToVertexID, mpasIndexToVertexID,
-      verticesCoords, isVertexBoundary, verticesOnTria, isBoundaryEdge,
+      verticesCoords, isVertexBoundary, verticesOnTria, procsSharingVertices, isBoundaryEdge,
       trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge, indexToEdgeID,
       indexToTriangleID, dirichletNodesIDs, floatingEdgesIds);
   }
@@ -1690,157 +1694,6 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
          ( bcoords[1] > -eps) &&
          ( bcoords[2] > -eps );
 }
-
-int prismType(long long int const* prismVertexMpasIds, int& minIndex)
-{
-  int PrismVerticesMap[6][6] = {{0, 1, 2, 3, 4, 5}, {1, 2, 0, 4, 5, 3}, {2, 0, 1, 5, 3, 4}, {3, 5, 4, 0, 2, 1}, {4, 3, 5, 1, 0, 2}, {5, 4, 3, 2, 1, 0}};
-  minIndex = std::min_element (prismVertexMpasIds, prismVertexMpasIds + 3) - prismVertexMpasIds;
-
-  int v1 (prismVertexMpasIds[PrismVerticesMap[minIndex][1]]);
-  int v2 (prismVertexMpasIds[PrismVerticesMap[minIndex][2]]);
-
-  return v1  > v2;
-}
-
- void tetrasFromPrismStructured (long long int const* prismVertexMpasIds, long long int const* prismVertexGIds, long long int tetrasIdsOnPrism[][4])
-  {
-      int PrismVerticesMap[6][6] = {{0, 1, 2, 3, 4, 5}, {1, 2, 0, 4, 5, 3}, {2, 0, 1, 5, 3, 4}, {3, 5, 4, 0, 2, 1}, {4, 3, 5, 1, 0, 2}, {5, 4, 3, 2, 1, 0}};
-
-      int tetraOfPrism[2][3][4] = {{{0, 1, 2, 5}, {0, 1, 5, 4}, {0, 4, 5, 3}}, {{0, 1, 2, 4}, {0, 4, 2, 5}, {0, 4, 5, 3}}};
-
-      int tetraAdjacentToPrismLateralFace[2][3][2] = {{{1, 2}, {0, 1}, {0, 2}}, {{0, 2}, {0, 1}, {1, 2}}};
-      int tetraFaceIdOnPrismLateralFace[2][3][2] = {{{0, 0}, {1, 1}, {2, 2}}, {{0, 0}, {1, 1}, {2, 2}}};
-      int tetraAdjacentToBottomFace = 0; //does not depend on type;
-      int tetraAdjacentToUpperFace = 2; //does not depend on type;
-      int tetraFaceIdOnBottomFace = 3; //does not depend on type;
-      int tetraFaceIdOnUpperFace = 0; //does not depend on type;
-
-      int minIndex;
-      int prismT = prismType(prismVertexMpasIds, minIndex);
-
-      long long int reorderedPrismLIds[6];
-
-      for (int ii = 0; ii < 6; ii++)
-      {
-          reorderedPrismLIds[ii] = prismVertexGIds[PrismVerticesMap[minIndex][ii]];
-      }
-
-      for (int iTetra = 0; iTetra < 3; iTetra++)
-          for (int iVertex = 0; iVertex < 4; iVertex++)
-          {
-              tetrasIdsOnPrism[iTetra][iVertex] = reorderedPrismLIds[tetraOfPrism[prismT][iTetra][iVertex]];
-          }
-  }
-
-
-  void computeMap()
-  {
-    int PrismVerticesMap[6][6] = {{0, 1, 2, 3, 4, 5}, {1, 2, 0, 4, 5, 3}, {2, 0, 1, 5, 3, 4}, {3, 5, 4, 0, 2, 1}, {4, 3, 5, 1, 0, 2}, {5, 4, 3, 2, 1, 0}};
-
-    int tetraOfPrism[2][3][4] = {{{0, 1, 2, 5}, {0, 1, 5, 4}, {0, 4, 5, 3}}, {{0, 1, 2, 4}, {0, 4, 2, 5}, {0, 4, 5, 3}}};
-
-    int TetraFaces[4][3] = {{0 , 1 , 3}, {1 , 2 , 3}, {0 , 3 , 2}, {0 , 2 , 1}};
-
-    int PrismFaces[5][4] = {{0 , 1 , 4 , 3}, {1 , 2 , 5 , 4}, {0 , 3 , 5 , 2}, {0 , 2 , 1 , -1}, {3 , 4 , 5, -1}};
-
-
-    for(int pType=0; pType<2; ++pType){
-      std::cout<< "pType: " << pType <<std::endl;
-      for(int minIndex = 0; minIndex<6; ++minIndex){
-        std::cout<< "mIndex: " << minIndex <<std::endl;
-        for(int pFace = 0; pFace<5; ++pFace){
-          for(int tFace =0; tFace<4; ++tFace){
-            for(int iTetra =0; iTetra<3; ++iTetra){
-              int count=0;
-              for(int in =0; in<3; ++in){
-                int node=PrismVerticesMap[minIndex][tetraOfPrism[pType][iTetra][TetraFaces[tFace][in]]];
-                for(int i=0; i<4; ++i)
-                  count += (node == PrismFaces[pFace][i]);
-              }
-              if(count == 3)
-                std::cout << pFace << " " << tFace << " " << iTetra << std::endl;
-              }
-            }
-          }
-        }
-      std::cout<<std::endl;
-      }
-    std::cout<<std::endl;
-    }
-
-
-  void tetrasFromPrismStructured (int const* prismVertexMpasIds, int const* prismVertexGIds, int tetrasIdsOnPrism[][4])
-  {
-      int PrismVerticesMap[6][6] = {{0, 1, 2, 3, 4, 5}, {1, 2, 0, 4, 5, 3}, {2, 0, 1, 5, 3, 4}, {3, 5, 4, 0, 2, 1}, {4, 3, 5, 1, 0, 2}, {5, 4, 3, 2, 1, 0}};
-
-      int tetraOfPrism[2][3][4] = {{{0, 1, 2, 5}, {0, 1, 5, 4}, {0, 4, 5, 3}}, {{0, 1, 2, 4}, {0, 4, 2, 5}, {0, 4, 5, 3}}};
-
-      int minIndex = std::min_element (prismVertexMpasIds, prismVertexMpasIds + 3) - prismVertexMpasIds;
-
-      int v1 (prismVertexMpasIds[PrismVerticesMap[minIndex][1]]);
-      int v2 (prismVertexMpasIds[PrismVerticesMap[minIndex][2]]);
-
-      int prismType = v1  > v2;
-
-      for (int iTetra = 0; iTetra < 3; iTetra++)
-          for (int iVertex = 0; iVertex < 4; iVertex++)
-          {
-              tetrasIdsOnPrism[iTetra][iVertex] = prismVertexGIds[tetraOfPrism[prismType][iTetra][iVertex]];
-          }
-
-      // return;
-
-      int reorderedPrismLIds[6];
-
-      for (int ii = 0; ii < 6; ii++)
-      {
-          reorderedPrismLIds[ii] = prismVertexGIds[PrismVerticesMap[minIndex][ii]];
-      }
-
-      for (int iTetra = 0; iTetra < 3; iTetra++)
-          for (int iVertex = 0; iVertex < 4; iVertex++)
-          {
-              tetrasIdsOnPrism[iTetra][iVertex] = reorderedPrismLIds[tetraOfPrism[prismType][iTetra][iVertex]];
-          }
-  }
-
-
-
-
-  void setBdFacesOnPrism (const std::vector<std::vector<std::vector<int> > >& prismStruct, const std::vector<int>& prismFaceIds, std::vector<int>& tetraPos, std::vector<int>& facePos)
-  {
-    int numTriaFaces = prismFaceIds.size() - 2;
-    tetraPos.assign(numTriaFaces,-1);
-    facePos.assign(numTriaFaces,-1);
-
-
-    for (int iTetra (0), k (0); (iTetra < 3 && k < numTriaFaces); iTetra++)
-    {
-      bool found;
-      for (int jFaceLocalId = 0; jFaceLocalId < 4; jFaceLocalId++ )
-      {
-        found = true;
-        for (int ip (0); ip < 3 && found; ip++)
-        {
-          int localId = prismStruct[iTetra][jFaceLocalId][ip];
-          int j = 0;
-          found = false;
-          while ( (j < prismFaceIds.size()) && !found )
-          {
-            found = (localId == prismFaceIds[j]);
-            j++;
-          }
-        }
-        if (found)
-        {
-          tetraPos[k] = iTetra;
-          facePos[k] = jFaceLocalId;
-          k += found;
-          break;
-        }
-      }
-    }
-  }
 
   void procsSharingVertex(const int vertex, std::vector<int>& procIds) {
     int fCell = vertexToFCell[vertex];
