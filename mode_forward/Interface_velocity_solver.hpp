@@ -181,6 +181,7 @@ extern void velocity_solver_extrude_3d_grid__(int nLayers, int nGlobalTriangles,
     const std::vector<double>& verticesCoords,
     const std::vector<bool>& isVertexBoundary,
     const std::vector<int>& verticesOnTria,
+    const std::vector<std::vector<int>> procsSharingVertices,
     const std::vector<bool>& isBoundaryEdge,
     const std::vector<int>& trianglesOnEdge,
     const std::vector<int>& trianglesPositionsOnEdge,
@@ -264,12 +265,6 @@ void allToAll(std::vector<int>& field, exchangeList_Type const* sendList,
 void allToAll(double* field, exchangeList_Type const* sendList,
     exchangeList_Type const* recvList, int fieldDim = 1);
 
-int prismType(long long int const* prismVertexMpasIds, int& minIndex);
-void tetrasFromPrismStructured (long long int const* prismVertexMpasIds, long long int const* prismVertexGIds, long long int tetrasIdsOnPrism[][4]);
-void computeMap();
-
-void setBdFacesOnPrism (const std::vector<std::vector<std::vector<int> > >& prismStruct, const std::vector<int>& prismFaceIds, std::vector<int>& tetraPos, std::vector<int>& facePos);
-void tetrasFromPrismStructured (int const* prismVertexMpasIds, int const* prismVertexGIds, int tetrasIdsOnPrism[][4]);
 void procsSharingVertex(const int vertex, std::vector<int>& procIds);
 
 bool belongToTria(double const* x, double const* t, double bcoords[3], double eps = 1e-3);
