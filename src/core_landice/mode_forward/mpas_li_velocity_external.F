@@ -327,7 +327,7 @@ contains
       call velocity_solver_set_grid_data(nCells, nEdges, nVertices, nVertInterfaces, &
               nCellsSolve, nEdgesSolve, nVerticesSolve, maxNEdgesOnCell, radius, &
               cellsOnEdge, cellsOnVertex, verticesOnCell, verticesOnEdge, edgesOnCell, &
-              nEdgesOnCell, indexToCellID, &
+              nEdgesOnCell, indexToCellID, indexToEdgeID, indexToVertexID, &
               xCell, yCell, zCell, xVertex, yVertex, zVertex, areaTriangle, &
               sendCellsArray, recvCellsArray, &
               sendEdgesArray, recvEdgesArray, &
@@ -1018,7 +1018,7 @@ subroutine li_velocity_external_write_albany_mesh(domain)
           case ('FO') ! ===============================================
 #ifdef USE_EXTERNAL_FIRSTORDER
               call mpas_timer_start("velocity_solver_extrude_3d_grid")
-              call velocity_solver_extrude_3d_grid(layerThicknessFractions, lowerSurface, thickness)
+              call velocity_solver_extrude_3d_grid(layerThicknessFractions)
               call mpas_timer_stop("velocity_solver_extrude_3d_grid")
               call mpas_timer_start("velocity_solver_init_FO")
               call velocity_solver_init_FO(layerThicknessFractions)
