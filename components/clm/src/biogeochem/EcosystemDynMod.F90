@@ -87,18 +87,18 @@ contains
 
     call AllocationInit (bounds)
 
-    if(.not.use_fates)then
-       call PhenologyInit  (bounds)
-       call FireInit       (bounds)
-       if(use_pheno_flux_limiter)then
-          call InitPhenoFluxLimiter()
-       endif
-    end if
+    if(use_fates) return
+
+    call PhenologyInit  (bounds)
+    call FireInit       (bounds)
 
     if ( use_c14 ) then
        call C14_init_BombSpike()
     end if
 
+    if(use_pheno_flux_limiter)then
+        call InitPhenoFluxLimiter()
+    endif
     
   end subroutine EcosystemDynInit
 
@@ -224,21 +224,25 @@ contains
          carbonstate_vars, c13_carbonstate_vars, c14_carbonstate_vars, nitrogenstate_vars,phosphorusstate_vars)
 
     ! Only update the veg_ data structures if we are using cn
-    if(use_cn) then
+    if(.not.use_fates) then
        call veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
        call veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'bulk', col_cf)
        if ( use_c13 ) then
           call c13_veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c13', c13_col_cf)
+          call c13_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c13')
        end if
        if ( use_c14 ) then
           call c14_veg_cf%Summary(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, 'c14', c14_col_cf)
+          call c14_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c14')
        end if
        call veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_cs)
        if ( use_c13 ) then
           call c13_veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c13_col_cs)
+          call c13_col_cs%Summary(bounds, num_soilc, filter_soilc)
        end if
        if ( use_c14 ) then
           call c14_veg_cs%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, c14_col_cs)
+          call c14_col_cs%Summary(bounds, num_soilc, filter_soilc)
        end if
        call veg_nf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_nf)
        call veg_ns%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
@@ -248,20 +252,7 @@ contains
 
     call col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
     call col_cf%Summary(bounds, num_soilc, filter_soilc, 'bulk')
-    if ( use_c13 ) then
-       call c13_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c13')
-    end if
-    if ( use_c14 ) then
-       call c14_col_cf%Summary(bounds, num_soilc, filter_soilc, 'c14')
-    end if
     call col_cs%Summary(bounds, num_soilc, filter_soilc)
-    if ( use_c13 ) then
-       call c13_col_cs%Summary(bounds, num_soilc, filter_soilc)
-    end if
-    if ( use_c14 ) then
-       call c14_col_cs%Summary(bounds, num_soilc, filter_soilc)
-    end if
-    
     
     call col_nf%Summary(bounds, num_soilc, filter_soilc)
     call col_ns%Summary(bounds, num_soilc, filter_soilc)
@@ -377,27 +368,21 @@ contains
     
     call t_startf('CNZero')
 
-    if(use_cn) then
+    if(.not.use_fates) then
        call veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
        if ( use_c13 ) then
           call c13_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
+          call c13_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
        end if
        if ( use_c14 ) then
           call c14_veg_cf%SetValues(num_soilp, filter_soilp, 0._r8)
+          call c14_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
        end if
        call veg_nf%SetValues (num_soilp, filter_soilp, 0._r8)
        call veg_pf%SetValues (num_soilp, filter_soilp, 0._r8)
     end if
     
     call col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
-    if ( use_c13 ) then
-       call c13_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
-    end if
-    
-    if ( use_c14 ) then
-       call c14_col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
-    end if
-    
     call col_nf%SetValues (num_soilc, filter_soilc, 0._r8)
     call col_pf%SetValues (num_soilc, filter_soilc, 0._r8)
     

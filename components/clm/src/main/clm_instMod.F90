@@ -4,6 +4,7 @@ module clm_instMod
   !
   use shr_kind_mod               , only : r8 => shr_kind_r8
   use shr_log_mod                , only : errMsg => shr_log_errMsg
+  use abortutils                 , only : endrun
   use decompMod                  , only : bounds_type, get_proc_bounds
   use clm_varctl                 , only : use_cn, use_voc, use_c13, use_c14, use_fates, use_betr
   !-----------------------------------------
@@ -162,6 +163,7 @@ contains
     if (use_voc ) then
        call vocemis_vars%Init(bounds_proc)
     end if
+
     if (use_cn .or. use_fates) then
 
        ! Note - always initialize the memory for the c13_cs and

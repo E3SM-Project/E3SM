@@ -101,7 +101,7 @@ module AllocationMod
   logical :: crop_supln  = .false.             !Prognostic crop receives supplemental Nitrogen
 
   real(r8), allocatable :: decompmicc(:)                 ! column-level soil microbial decomposer biomass gC/m3
-  real(r8), allocatable :: veg_rootc(:,:)                ! column-level fine-root biomas kgc/m3?
+  real(r8), allocatable :: veg_rootc(:,:)                ! column-level fine-root biomas kgc/m3
   integer,  allocatable :: filter_pcomp(:)               ! this is a plant competitor map for FATES/ECA
   integer,  allocatable :: ft_index(:)                   ! array holding the pft index of each competitor
   real(r8), allocatable :: plant_nh4demand_vr_fates(:,:) ! nutrient demands per competitor per soil layer
@@ -377,7 +377,7 @@ contains
     real(r8) :: sum_no3_demand_vr(bounds%begc:bounds%endc,1:nlevdecomp)
     real(r8) :: sum_no3_demand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)
     
-    real(r8) :: sum_pdemand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)  ! sum of total P demand, scaled with relative competitiveness
+
     real(r8) :: excess_immob_nh4_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! nh4 excess flux, if soil microbes are more P limited
     real(r8) :: excess_immob_no3_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! no3 excess flux, if soil microbes are more P limited
     real(r8) :: excess_immob_p_vr(bounds%begc:bounds%endc,1:nlevdecomp)   ! P excess flux, if soil microbes are more N limited
@@ -399,8 +399,6 @@ contains
     real(r8):: cnl,cnfr,cnlw,cndw                                    !C:N ratios for leaf, fine root, and wood
 
     real(r8):: curmr, curmr_ratio                                    !xsmrpool temporary variables
-!    real(r8):: sum_ndemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
-!    real(r8):: sminn_tot(bounds%begc:bounds%endc)
     real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
 
     real(r8) f5                                                      !grain allocation parameter
@@ -411,14 +409,11 @@ contains
 
     !! Local P variables
     real(r8):: cpl,cpfr,cplw,cpdw,cpg                                    !C:N ratios for leaf, fine root, and wood
-    real(r8):: sum_pdemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp)     !total column P demand (gN/m3/s) at a given level
     real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
-    real(r8):: solutionp_tot(bounds%begc:bounds%endc)
     integer :: plimit(bounds%begc:bounds%endc,0:nlevdecomp)              !flag for P limitation
     real(r8):: residual_sminp_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: residual_sminp(bounds%begc:bounds%endc)
     real(r8):: residual_plant_pdemand(bounds%begc:bounds%endc)
-    real(r8):: sum_ndemand_scaled(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
 
     real(r8):: temp_sminn_to_plant(bounds%begc:bounds%endc)
     real(r8):: temp_sminp_to_plant(bounds%begc:bounds%endc)
@@ -610,7 +605,6 @@ contains
          actual_immob_vr              => col_nf%actual_immob_vr                 , & ! Output: [real(r8) (:,:) ]                                        
          
          !!! add phosphorus variables  - X. YANG  
-         sminp_vr                     => col_ps%sminp_vr                     , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P                
          solutionp_vr                 => col_ps%solutionp_vr                 , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P                
          retransp                     => veg_ps%retransp                   , & ! Input:  [real(r8) (:)   ]  (gP/m2) plant pool of retranslocated P  
 
@@ -1094,77 +1088,51 @@ contains
                             phosphorusstate_vars,phosphorusflux_vars        , &
                             soilstate_vars,waterstate_vars)
 
-    ! PHASE-2 of Allocation:  resolving N/P limitation
-    ! !USES:
-    use shr_sys_mod      , only: shr_sys_flush
-    use clm_varctl       , only: iulog,cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
-                                 cnallocate_carbonphosphorus_only
-!    use pftvarcon        , only: npcropmin, declfact, bfact, aleaff, arootf, astemf
-!    use pftvarcon        , only: arooti, fleafi, allconsl, allconss, grperc, grpnow, nsoybean 
-    use pftvarcon        , only: noveg
-    use clm_varpar       , only: nlevdecomp, ndecomp_cascade_transitions
-    use clm_varcon       , only: nitrif_n2o_loss_frac, secspday
-!    use landunit_varcon  , only: istsoil, istcrop
-    use clm_time_manager , only: get_step_size
+    ! PHASE-2 of Allocation     :  resolving N/P limitation
+    ! !USES                     :
+    use shr_sys_mod      , only : shr_sys_flush
+    use clm_varctl       , only : iulog,cnallocate_carbon_only
+    use clm_varctl       , only : cnallocate_carbonnitrogen_only
+    use clm_varctl       , only : cnallocate_carbonphosphorus_only
+    use pftvarcon        , only : noveg
+    use clm_varpar       , only : nlevdecomp, ndecomp_cascade_transitions
+    use clm_varcon       , only : nitrif_n2o_loss_frac, secspday
+    use clm_time_manager , only : get_step_size
     use clm_varcon       , only : zisoi
-    use FatesInterfaceMod, only : numpft_fates     => numpft
+
 
     !
     ! !ARGUMENTS:
-    type(bounds_type)        , intent(in)    :: bounds
-    integer                  , intent(in)    :: num_soilc        ! number of soil columns in filter
-    integer                  , intent(in)    :: filter_soilc(:)  ! filter for soil columns
-    integer                  , intent(in)    :: num_soilp        ! number of soil patches in filter
-    integer                  , intent(in)    :: filter_soilp(:)  ! filter for soil patches
-    type(cnstate_type)       , intent(inout) :: cnstate_vars
-    type(carbonstate_type)   , intent(in)    :: carbonstate_vars
-    type(carbonflux_type)    , intent(inout) :: carbonflux_vars
-    type(nitrogenstate_type) , intent(inout) :: nitrogenstate_vars
-    type(nitrogenflux_type)  , intent(inout) :: nitrogenflux_vars
-!     !!  add phosphorus  -X.YANG
+    type(bounds_type)          , intent(in)    :: bounds
+    integer                    , intent(in)    :: num_soilc        ! number of soil columns in filter
+    integer                    , intent(in)    :: filter_soilc(:)  ! filter for soil columns
+    integer                    , intent(in)    :: num_soilp        ! number of soil patches in filter
+    integer                    , intent(in)    :: filter_soilp(:)  ! filter for soil patches
+    type(cnstate_type)         , intent(inout) :: cnstate_vars
+    type(carbonstate_type)     , intent(in)    :: carbonstate_vars
+    type(carbonflux_type)      , intent(inout) :: carbonflux_vars
+    type(nitrogenstate_type)   , intent(inout) :: nitrogenstate_vars
+    type(nitrogenflux_type)    , intent(inout) :: nitrogenflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-
-    type(soilstate_type)     , intent(in)    :: soilstate_vars
-    type(waterstate_type)    , intent(in)    :: waterstate_vars
+    type(soilstate_type)       , intent(in)    :: soilstate_vars
+    type(waterstate_type)      , intent(in)    :: waterstate_vars
 
     !
     ! !LOCAL VARIABLES:
     integer  :: nc   ! clump index
-
     real(r8), pointer :: veg_rootc_ptr(:,:)     ! points to either native ELM or FATES root carbon array             (p or i x nlevdecomp)
     integer, pointer  :: ft_index_ptr(:)        ! points to either native ELM or FATES PFT array                     (p or i)
     real(r8), pointer :: cn_scalar_ptr(:)       ! points to either native ELM or FATES C:N scalar array              (pft)
     real(r8), pointer :: cp_scalar_ptr(:)       ! points to either native ELM or FATES C:P scalar array              (pft)
 
-
-    real(r8) :: sum_pdemand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)  ! sum of total P demand, scaled with relative competitiveness
     real(r8) :: excess_immob_nh4_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! nh4 excess flux, if soil microbes are more P limited
     real(r8) :: excess_immob_no3_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! no3 excess flux, if soil microbes are more P limited
     real(r8) :: excess_immob_p_vr(bounds%begc:bounds%endc,1:nlevdecomp)   ! P excess flux, if soil microbes are more N limited
 
-!    real(r8) :: compet_plant_no3(bounds%begp:bounds%endp)                 ! (unitless) relative compettiveness of plants for NO3 BGC mode
-!    real(r8) :: compet_plant_nh4(bounds%begp:bounds%endp)                 ! (unitless) relative compettiveness of plants for NH4 BGC mode
-!    real(r8) :: compet_plant_n(bounds%begp:bounds%endp)                   ! (unitless) relative compettiveness of plants for N CN mode
-!    real(r8) :: compet_plant_p(bounds%begp:bounds%endp)                   ! (unitless) relative competitiveness of plant for P
-
-!    real(r8) :: compet_decomp_no3      ! (unitless) relative competitiveness of immobilizers for NO3
-!    real(r8) :: compet_decomp_nh4      ! (unitless) relative competitiveness of immobilizers for NH4
-!    real(r8) :: compet_decomp_n        ! (unitless) relative competitiveness of immobilizers for N for CN module
-!    real(r8) :: compet_denit           ! (unitless) relative competitiveness of denitrifiers for NO3
-!    real(r8) :: compet_nit             ! (unitless) relative competitiveness of nitrifiers for NH4
-
     real(r8) :: fpi_no3_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by no3(no units)
     real(r8) :: fpi_nh4_vr(bounds%begc:bounds%endc,1:nlevdecomp) ! fraction of potential immobilization supplied by nh4 (no units)
-    real(r8) :: sum_nh4_demand(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8) :: sum_no3_demand(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8) :: sum_nh4_demand_vr(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8) :: sum_nh4_demand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8) :: sum_no3_demand_vr(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8) :: sum_no3_demand_scaled(bounds%begc:bounds%endc,1:nlevdecomp)
-    
-    real(r8) :: sminn_tot(bounds%begc:bounds%endc)
-    !
+
     integer :: c,p,l,j,k                                             !indices
     integer :: fp                                                    !lake filter pft index
     integer :: fc                                                    !lake filter column index
@@ -1172,35 +1140,19 @@ contains
     
     real(r8):: sum_ndemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
     real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
-
     integer :: nlimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for N limitation
     real(r8):: residual_sminn_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: residual_sminn(bounds%begc:bounds%endc)
-    integer :: nlimit_no3(bounds%begc:bounds%endc,0:nlevdecomp)      !flag for NO3 limitation
+    integer :: nlimit_no3(bounds%begc:bounds%endc,(0:nlevdecomp)      !flag for NO3 limitation
     integer :: nlimit_nh4(bounds%begc:bounds%endc,0:nlevdecomp)      !flag for NH4 limitation
-    real(r8):: residual_smin_nh4_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
-    real(r8):: residual_smin_no3_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
-    real(r8):: residual_smin_nh4(bounds%begc:bounds%endc)
-    real(r8):: residual_smin_no3(bounds%begc:bounds%endc)
     real(r8):: residual_plant_ndemand(bounds%begc:bounds%endc)
 
     !! Local P variables
-    real(r8):: sum_pdemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column P demand (gN/m3/s) at a given level
     real(r8):: puptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
     integer :: plimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for P limitation
     real(r8):: residual_sminp_vr(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: residual_sminp(bounds%begc:bounds%endc)
     real(r8):: residual_plant_pdemand(bounds%begc:bounds%endc)
-    real(r8):: solutionp_tot(bounds%begc:bounds%endc)
-    real(r8):: sum_ndemand_scaled(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
-
-    real(r8) :: compet_minsurf_p                                          ! (unitless) relative competitiveness of mineral surface for P
-    real(r8) :: compet_leach_p                                            ! (unitless) relative competitiveness of leaching for P
-    real(r8) :: compet_decomp_p                                           ! (unitless) relative competitiveness of immobilizer for P
-
-    real(r8):: solution_nh4conc(bounds%begc:bounds%endc, 1:nlevdecomp)    ! temp solution concentration g nutrient per m3 water, because VMAX/KM are measured in hydroponic chamber
-    real(r8):: solution_no3conc(bounds%begc:bounds%endc, 1:nlevdecomp) 
-    real(r8):: solution_pconc(bounds%begc:bounds%endc, 1:nlevdecomp)
     real(r8):: cn_stoich_var=0.2    ! variability of CN ratio
     real(r8):: cp_stoich_var=0.4    ! variability of CP ratio
 
@@ -1263,27 +1215,25 @@ contains
 
          t_scalar                     => col_cf%t_scalar                          , &
          w_scalar                     => col_cf%w_scalar                          , &
-
-         plant_nh4demand_vr_patch     => veg_nf%plant_nh4demand_vr            , &
-         plant_no3demand_vr_patch     => veg_nf%plant_no3demand_vr            , &
-         plant_ndemand_vr_patch       => veg_nf%plant_ndemand_vr              , &
-         plant_pdemand_vr_patch       => veg_pf%plant_pdemand_vr            , &
-
-         pnup_pfrootc                 => veg_ns%pnup_pfrootc                 , &
-
          isoilorder                   => cnstate_vars%isoilorder                               , &
+
+        
+         actual_immob_no3             => col_nf%actual_immob_no3                , &
+         actual_immob_nh4             => col_nf%actual_immob_nh4                , &
+         froot_prof                   => cnstate_vars%froot_prof_patch                         , & 
+         ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
 
          sminp_to_plant_patch         => veg_pf%sminp_to_plant              , &
          sminn_to_plant_patch         => veg_nf%sminn_to_plant                , &
          smin_nh4_to_plant_patch      => veg_nf%smin_nh4_to_plant             , &                                   
          smin_no3_to_plant_patch      => veg_nf%smin_no3_to_plant             , &
-         actual_immob_no3             => col_nf%actual_immob_no3                , &
-         actual_immob_nh4             => col_nf%actual_immob_nh4                , &
-         froot_prof                   => cnstate_vars%froot_prof_patch                         , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
-
+         plant_nh4demand_vr_patch     => veg_nf%plant_nh4demand_vr            , &
+         plant_no3demand_vr_patch     => veg_nf%plant_no3demand_vr            , &
+         plant_ndemand_vr_patch       => veg_nf%plant_ndemand_vr              , &
+         plant_pdemand_vr_patch       => veg_pf%plant_pdemand_vr            , &
+         pnup_pfrootc                 => veg_ns%pnup_pfrootc                 , &
          frootc                       => veg_cs%frootc                         , & ! Input:  [real(r8) (:)   ]                                          
          leafc                        => veg_cs%leafc                          , & ! Input:  [real(r8) (:)   ]                                          
-
          frootcn                      => veg_vp%frootcn                                    , & ! Input:  [real(r8) (:)   ]  fine root C:N (gC/gN)                   
          leafcn                       => veg_vp%leafcn                                     , & ! Input:  [real(r8) (:)   ]  leaf C:N (gC/gN)                        
          leafcp                       => veg_vp%leafcp                                     , & ! Input:  [real(r8) (:)   ]  leaf C:P (gC/gP)
@@ -1324,7 +1274,6 @@ contains
          gross_pmin_vr                => col_pf%gross_pmin_vr                 , &
 
          !! add phosphorus variables  - X. YANG
-!         sminp_vr                     => col_ps%sminp_vr                     , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
          solutionp_vr                 => col_ps%solutionp_vr               , & ! Input:  [real(r8) (:,:) ]  (gP/m3) soil mineral P
 
          potential_immob_p            => col_pf%potential_immob_p           , & ! Output: [real(r8) (:)   ]
@@ -1507,19 +1456,19 @@ contains
             
             if (nu_com .eq. 'RD') then ! 'RD' : relative demand approach
 
-               call NAllocationRD(plant_ndemand_col_ptr, &        ! IN (j)
-                                  nuptake_prof(c,:),         &    ! IN (j)
-                                  potential_immob_vr(c,:),  &    ! IN (j)
-                                  AllocParamsInst%compet_plant_nh4,   &    ! IN 
-                                  AllocParamsInst%compet_decomp_nh4,   &    ! IN
-                                  dt,                  &    ! IN
-                                  smin_nh4_vr(c,:),         &    ! IN (j)
-                                  nlimit_nh4(c,:),          &    ! OUT (:)
-                                  fpi_nh4_vr(c,:),          &    ! OUT (:)
-                                  actual_immob_nh4_vr(c,:), &    ! OUT (:)
-                                  smin_nh4_to_plant_vr(c,:))
+               call NAllocationRD(plant_ndemand_col_ptr,             & ! IN (j)
+                                  nuptake_prof(c,:),                 & ! IN (j)
+                                  potential_immob_vr(c,:),           & ! IN (j)
+                                  AllocParamsInst%compet_plant_nh4,  & ! IN 
+                                  AllocParamsInst%compet_decomp_nh4, & ! IN
+                                  dt,                                & ! IN
+                                  sminn_vr(c,:),                     & ! IN (j)
+                                  nlimit(c,:),                       & ! OUT (:)
+                                  fpi_vr(c,:),                       & ! OUT (:)
+                                  actual_immob_vr(c,:),              & ! OUT (:)
+                                  sminn_to_plant_vr(c,:))
 
-                call PAllocationRD(plant_pdemand_vr_ptr,      &    ! IN 
+                call PAllocationRD(plant_pdemand_vr_ptr,     &    ! IN 
                                   potential_immob_p_vr(c,:), &    ! IN (j)
                                   solutionp_vr(c,:),         &    ! IN (j)
                                   dt,                        &    ! IN
@@ -1535,11 +1484,12 @@ contains
                                       bd(c,:),                & ! IN (j)
                                       h2osoi_vol(c,:),             & ! IN (j)
                                       t_scalar(c,:),               & ! IN (j)
+                                      n_pcomp,                     & ! IN 
                                       veg_rootc_ptr(filter_pcomp(1:n_pcomp),:), & 
                                       ft_index_ptr(filter_pcomp(1:n_pcomp)),               & ! IN (icomp)
                                       cn_scalar_ptr(filter_pcomp(1:n_pcomp)),              & ! IN (icomp)
                                       decompmicc,             & ! IN (j)
-                                      smin_nh4_vr(c,:),       & ! IN (j)
+                                      sminn_vr(c,:),       & ! IN (j)
                                       nu_com,                 & ! IN 
                                       km_nh4_plant_ptr,       & ! IN (pft)
                                       vmax_nh4_plant_ptr,     & ! IN (pft)
@@ -1547,17 +1497,17 @@ contains
                                       potential_immob_vr(c,:),     & ! IN (j)
                                       plant_nh4demand_vr_ptr(filter_pcomp(1:n_pcomp),:), & ! OUT (i,j)
                                       col_plant_nh4demand_vr(c,:), & ! OUT (j)
-                                      nlimit_nh4(c,:),             & ! OUT (j)
-                                      fpi_nh4_vr(c,:),             & ! OUT (j)
-                                      actual_immob_nh4_vr(c,:),    & ! OUT (j)
-                                      smin_nh4_to_plant_vr(c,:))     ! OUT (j)
+                                      nlimit(c,:),                 & ! OUT (j)
+                                      fpi_vr(c,:),                 & ! OUT (j)
+                                      actual_immob_vr(c,:),    & ! OUT (j)
+                                      sminn_to_plant_vr(c,:))        ! OUT (j)
 
                call PAllocationECAMIC(gross_pmin_vr(c,:), & 
                                       potential_immob_p_vr(c,:), & 
                                       biochem_pmin_vr_col(c,:), & 
                                       primp_to_labilep_vr_col(c,:), & 
                                       pdep_to_sminp(c), & 
-                                      ndep_prof(c,:), & 
+                                      pdep_prof(c,:), & 
                                       vmax_minsurf_p_vr(isoilorder(c),:), &
                                       km_minsurf_p_vr(isoilorder(c),:), &
                                       solutionp_vr(c,:), &
@@ -1746,7 +1696,6 @@ contains
                      
                      !!! for phosphorus
                      sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
-                     sum_pdemand_vr(c,j) = potential_immob_p_vr(c,j) + sminp_to_plant_vr(c,j)
                   end do
                end do
             end if
@@ -1867,6 +1816,7 @@ contains
                                    bd(c,:),                                           & ! IN (j)
                                    h2osoi_vol(c,:),                                   & ! IN (j)
                                    t_scalar(c,:),                                     & ! IN (j)
+                                   n_pcomp,                                           & ! IN 
                                    veg_rootc_ptr(filter_pcomp(1:n_pcomp),:),          & ! IN (j)
                                    ft_index_ptr(filter_pcomp(1:n_pcomp)),             & ! IN (icomp)
                                    cn_scalar_ptr(filter_pcomp(1:n_pcomp)),            & ! IN (icomp)
@@ -1912,9 +1862,7 @@ contains
             
             ! eliminate any N limitation, when carbon only or carbon phosphorus only is set.
             if ( cnallocate_carbon_only() .or. cnallocate_carbonphosphorus_only() ) then
-               nlimit(c,j) = 0
                if ( fpi_no3_vr(c,j) + fpi_nh4_vr(c,j) < 1._r8 ) then
-                  nlimit(c,j) = 1
                   fpi_vr(c,j) = 1._r8
                   fpi_nh4_vr(c,j) = 1.0_r8 - fpi_no3_vr(c,j)
                   supplement_to_sminn_vr(c,j) = (potential_immob_vr(c,j) - actual_immob_no3_vr(c,j)) - actual_immob_nh4_vr(c,j)
@@ -1924,7 +1872,6 @@ contains
                
                if (nu_com .eq. 'RD') then
                   if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < plant_ndemand_col(c)*nuptake_prof(c,j) ) then
-                     nlimit(c,j) = 1
                      supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
                           (plant_ndemand_col(c)*nuptake_prof(c,j) - smin_no3_to_plant_vr(c,j)) - smin_nh4_to_plant_vr(c,j)  ! use old values
                      ! update to new values that satisfy demand
@@ -1936,7 +1883,6 @@ contains
                else ! 'ECA' or 'MIC' mode
                   
                   if ( smin_no3_to_plant_vr(c,j) + smin_nh4_to_plant_vr(c,j) < col_plant_ndemand_vr(c,j)) then
-                     nlimit(c,j) = 1
                      supplement_to_sminn_vr(c,j) = supplement_to_sminn_vr(c,j) + &
                           (col_plant_nh4demand_vr(c,j) + col_plant_no3demand_vr(c,j) - smin_no3_to_plant_vr(c,j)) &
                           - smin_nh4_to_plant_vr(c,j)
@@ -1978,7 +1924,7 @@ contains
                                    biochem_pmin_vr_col(c,:), & 
                                    primp_to_labilep_vr_col(c,:), & 
                                    pdep_to_sminp(c), & 
-                                   ndep_prof(c,:), & 
+                                   pdep_prof(c,:), & 
                                    vmax_minsurf_p_vr(isoilorder(c),:), &
                                    km_minsurf_p_vr(isoilorder(c),:), &
                                    solutionp_vr(c,:), &
@@ -2004,14 +1950,6 @@ contains
          !  resolving N limitation vs. P limitation for decomposition 
          !  update (1) actual immobilization for N and P (2) sminn_to_plant and sminp_to_plant
 
-         do j = 1, nlevdecomp
-            if (nlimit_nh4(c,j) == 0 .and. nlimit_no3(c,j) == 0) then
-               nlimit(c,j) = 0
-            else
-               nlimit(c,j) = 1 
-            end if
-         end do
- 
          if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only()&
               .and. .not.cnallocate_carbon_only() )then
          
@@ -2151,14 +2089,6 @@ contains
             end do
 
             if(.not.use_fates) then
-               !do fp=1,num_soilp
-               !   CHECK TO MAKE SURE THAT  col_pp%pfti(c), col_pp%pftf(c) == filter_soilp(fp)
-               !   p = filter_soilp(fp)
-               !   smin_nh4_to_plant_patch(p) = 0.0_r8
-               !   smin_no3_to_plant_patch(p) = 0.0_r8
-               !   sminn_to_plant_patch(p) = 0.0_r8
-               !   sminp_to_plant_patch(p) = 0.0_r8
-               !end do
                ! Is this the same as filter_soilp?
                do p = col_pp%pfti(c), col_pp%pftf(c)
                   smin_nh4_to_plant_patch(p) = 0.0_r8
@@ -2288,6 +2218,7 @@ end subroutine Allocation2_ResolveNPLimit
                               bd,                     & ! IN (j)
                               h2osoi_vol,             & ! IN (j)
                               t_scalar,               & ! IN (j)
+                              np_comp,                & ! IN 
                               veg_rootc,              & ! IN (icomp,j)
                               ft_index,               & ! IN (icomp)
                               cn_scalar,              & ! IN (icomp)
@@ -2330,7 +2261,8 @@ end subroutine Allocation2_ResolveNPLimit
    real(r8), intent(in)  :: dt              ! Time step duration [s]
    real(r8), intent(in)  :: bd(:)           ! Bulk density of dry soil material [kg m-3]
    real(r8), intent(in)  :: h2osoi_vol(:)   ! Vol. Soil Water in each layer [m3]
-   real(r8), intent(in)  :: t_scalar(:)     ! fraction by which decomposition is limited by temperature 
+   real(r8), intent(in)  :: t_scalar(:)     ! fraction by which decomposition is limited by temperature  
+   integer,  intent(in)  :: np_comp         ! number of plant competitors
    real(r8), intent(in)  :: veg_rootc(:,:)  ! total fine-root biomass of each competitor [gC/m3]
                                             ! (per area of column, not patch)
    integer, intent(in)   :: ft_index(:)     ! pft index of plant competitors
@@ -2379,9 +2311,11 @@ end subroutine Allocation2_ResolveNPLimit
    real(r8) :: e_km                  ! temp variable of sum(E/KM) (different species)
    real(r8) :: solution_conc         ! mineralized nutrient concentration 
                                      ! g nutrient per m3 water
-
+   real(r8) :: compet_plant(np_comp) ! (unitless) relative compettiveness of plants for NO3 or NH4
+   real(r8) :: compet_decomp         ! (unitless) relative competitiveness of immobilizers for NO3 or NH4
+   real(r8) :: compet_denit          ! (unitless) relative competitiveness of denitrifiers for NO3
+   real(r8) :: compet_nit            ! (unitless) relative competitiveness of nitrifiers for NH4
    integer :: j                      ! loop index for soil layers
-   integer :: np_comp                ! number of plant competitors
    integer :: i                      ! loop index for competitors
    integer :: nlevdecomp             ! number of decomposition layers
 
@@ -2401,11 +2335,6 @@ end subroutine Allocation2_ResolveNPLimit
 
    nlevdecomp = size(smin_nh4_vr,dim=1)
    
-   ! Number of plant competitors. For ELM native, this is the number of PFTs on
-   ! this colum. For FATES, this is the number of cohorts
-   
-   np_comp     = size(ft_index,dim=1)
-
 
    do j = 1, nlevdecomp
 
@@ -2679,6 +2608,7 @@ end subroutine Allocation2_ResolveNPLimit
    integer :: ft
    real(r8) :: sum_pdemand
    real(r8) :: sum_pdemand_scaled
+   real(r8) :: solution_pconc          ! concentration of P in soil water
    real(r8) :: e_km_P
    real(r8) :: compet_decomp_p         ! (unitless) relative competitiveness of immobilizer for P
    real(r8) :: compet_minsurf_p        ! (unitless) relative competitiveness of mineral surface for P
@@ -3012,7 +2942,7 @@ end subroutine Allocation2_ResolveNPLimit
    real(r8), intent(out) :: supplement_to_sminp_vr(:)
 
    ! Locals
-   real(r8) :: sum_p_demand          ! Total phos demand over all competitors
+   real(r8) :: sum_pdemand          ! Total phos demand over all competitors
    integer  :: nlevdecomp            ! number of decomp layers
    integer  :: j                     ! soil decomp layer loop
    
@@ -3053,8 +2983,8 @@ end subroutine Allocation2_ResolveNPLimit
          ! available soil mineral solution P resource.
          
          plimit(j) = 1
-         if (sum_pdemand_vr > 0.0_r8 .and. solutionp_vr(j) >0._r8) then
-            actual_immob_p_vr(j) = (solutionp_vr(j)/dt)*(potential_immob_p_vr(j) / sum_pdemand_vr)
+         if (sum_pdemand > 0.0_r8 .and. solutionp_vr(j) >0._r8) then
+            actual_immob_p_vr(j) = (solutionp_vr(j)/dt)*(potential_immob_p_vr(j) / sum_pdemand)
          else
             actual_immob_p_vr(j) = 0.0_r8
          end if

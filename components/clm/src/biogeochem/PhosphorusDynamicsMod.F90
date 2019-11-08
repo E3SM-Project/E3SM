@@ -631,7 +631,8 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                              &
-         froot_prof           => cnstate_vars%froot_prof_patch            , & ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
+         ! fine root vertical profile Zeng, X. 2001. Global vegetation root distribution for land modeling. J. Hydrometeor. 2:525-530
+         froot_prof           => cnstate_vars%froot_prof_patch            , & 
          biochem_pmin_vr      => col_pf%biochem_pmin_vr  , &
          biochem_pmin_ppools_vr_col  => col_pf%biochem_pmin_ppools_vr ,&
          biochem_pmin_to_ecosysp_vr_col => col_pf%biochem_pmin_to_ecosysp_vr , &
@@ -641,7 +642,8 @@ contains
          km_ptase             => veg_vp%km_ptase                      , &
          alpha_ptase          => veg_vp%alpha_ptase                   , &
          decomp_ppools_vr_col => col_ps%decomp_ppools_vr, &
-         lamda_ptase          => veg_vp%lamda_ptase                   ,  & ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
+         ! critical value of nitrogen cost of phosphatase activity induced phosphorus uptake
+         lamda_ptase          => veg_vp%lamda_ptase                   ,  & 
          cn_scalar             => cnstate_vars%cn_scalar               , &
          cp_scalar             => cnstate_vars%cp_scalar               , &
          is_soil               => decomp_cascade_con%is_soil             &

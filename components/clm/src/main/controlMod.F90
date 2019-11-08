@@ -401,6 +401,15 @@ contains
                    errMsg(__FILE__, __LINE__))
           end if
 
+          if (use_c13 .or. use_c14) then
+              call endrun(msg=' ERROR:: use_c13 and use_c14 are not compatible with FATES.'//&
+                    errMsg(__FILE__, __LINE__))
+          end if
+
+          if(nu_com_nfix) then
+              call endrun(msg=' ERROR:: n_com_nfix and use_fates cannot both be true'//&
+                    errMsg(__FILE__, __LINE__))
+          end if
        end if
 
 
