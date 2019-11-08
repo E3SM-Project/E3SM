@@ -1100,7 +1100,7 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="cori-haswell" COMPILER="intel">
-  <BISICLES_PATH>/global/homes/m/mjac/acme/bisicles_e3sm/BISICLES/code/E3SM-interface/install</BISICLES_PATH>
+  <BISICLES_PATH>/global/homes/m/mjac/acme/bisicles_e3sm/BISICLES/code/E3SM-interface/install_mathias</BISICLES_PATH>
   <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
@@ -1120,7 +1120,6 @@ for mct, etc.
 </compiler>
 
 <compiler MACH="cori-knl" COMPILER="intel">
-  <BISICLES_PATH>/global/homes/m/mjac/acme/bisicles_e3sm/BISICLES/code/E3SM-interface/install</BISICLES_PATH>
   <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
   <CFLAGS>
     <append MPILIB="impi"> -axMIC-AVX512 -xCORE-AVX2 </append>

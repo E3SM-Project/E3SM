@@ -300,7 +300,7 @@ def buildnml(case, caseroot, compname):
             stream_file.write("\n".join(lines))
     
     if use_bisicles:
-        logger.info("Setting up bisicles_input.xml file for use with BISICLES interface (DUMMY MESSAGE).")
+        logger.info("Setting up bisicles_input.xml file for use with BISICLES interface.")
         # Write bisicles_input.xml file if there isn't one in SourceMods
         if os.path.exists("{}/SourceMods/src.BISICLES/{}".format(caseroot, bisicles_input_name)):
             safe_copy("{}/SourceMods/src.BISICLES/{}".format(caseroot, bisicles_input_name), os.path.join(rundir, bisicles_input_name))

@@ -29,8 +29,8 @@ module glc_comp_mct
   use perf_mod
 
   ! glc driver modules
-  use glc_cpl_indices
-  use glc_mct_vars
+  !use glc_cpl_indices
+  !use glc_mct_vars
 
   ! MPAS framework modules
 !  use mpas_framework
@@ -206,6 +206,7 @@ contains
           character(kind=c_char), dimension(*), intent(out) :: io_type
           integer(kind=c_int), intent(out) :: ierr
        end subroutine xml_stream_get_attributes
+
     end interface
 
 !!!!-----------------------------------------------------------------------
@@ -240,6 +241,10 @@ contains
 !!!    MALI_MCT_dom_g   => dom_g
 !!!
     call MPI_comm_rank(mpicom_g,iam,ierr)
+
+    call bike_driver_init(mpicom_g)
+
+
 !!!#if (defined _MEMTRACE)
 !!!     if(iam == 0) then
 !!!         lbnum=1
