@@ -539,7 +539,7 @@ def single_submit_impl(machine_name, test_id, proc_pool, _, args, job_cost_map, 
         "tasks_per_node": tasks_per_node,
         "totaltasks" : tasks_per_node * num_nodes,
         "job_wallclock_time": wall_time_bab,
-        "job_queue": queue
+        "job_queue": env_batch.text(queue)
         }
 
     directives = env_batch.get_batch_directives(case, "case.test", overrides=overrides)
