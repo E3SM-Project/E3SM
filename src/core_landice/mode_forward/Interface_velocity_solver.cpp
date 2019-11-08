@@ -15,9 +15,6 @@ distributed with this code, or at http://mpas-dev.github.com/license.html
 #include <set>
 #include <fstream>
 #include "Interface_velocity_solver.hpp"
-//#include <lifev/ice_sheet/interface_with_mpas/Interface.hpp>
-//#include <lifev/ice_sheet/solver/BuildMeshFromBareData.hpp>
-//#include <lifev/ice_sheet/solver/Extrude3DMesh.hpp>
 
 // ===================================================
 //! Namespaces
@@ -131,11 +128,6 @@ void velocity_solver_export_2d_data(double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F) {
   if (isDomainEmpty)
     return;
-#ifdef LIFEV
-  import2DFields(lowerSurface_F, thickness_F, beta_F,  minThickneess);
-  velocity_solver_export_2d_data__(reducedComm, elevationData, thicknessData,
-      betaData, indexToVertexID);
-#endif
 }
 
 void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
@@ -210,23 +202,6 @@ void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
 }
 
 void velocity_solver_init_l1l2(double const* levelsRatio_F) {
-#ifdef LIFEV
-  velocityOnVertices.resize(2 * nVertices * (nLayers + 1), 0.);
-  velocityOnCells.resize(2 * nCells_F * (nLayers + 1), 0.);
-
-  if (isDomainEmpty)
-    return;
-
-  layersRatio.resize(nLayers);
-  // !!Indexing of layers is reversed
-  for (int i = 0; i < nLayers; i++)
-    layersRatio[i] = levelsRatio_F[nLayers - 1 - i];
-  //std::copy(levelsRatio_F, levelsRatio_F+nLayers, layersRatio.begin());
-  mapCellsToVertices(velocityOnCells, velocityOnVertices, 2, nLayers, Ordering);
-
-  velocity_solver_init_l1l2__(layersRatio, velocityOnVertices, initialize_velocity);
-  initialize_velocity = false;
-#endif
 }
 
 
@@ -236,82 +211,9 @@ void velocity_solver_solve_l1l2(double const* lowerSurface_F,
     double const* thickness_F, double const* beta_F, double const* temperature_F,
     double* const dirichletVelocityXValue, double* const dirichletVelocitYValue,
     double* u_normal_F, double* xVelocityOnCell, double* yVelocityOnCell) {
-
-#ifdef LIFEV
-
-  std::fill(u_normal_F, u_normal_F + nEdges_F * (nLayers+1), 0.);
-
-  double localSum(0), sum(0);
-
-  for (int i = 0; i < nCellsSolve_F; i++) {
-    localSum = std::max(localSum,
-        std::fabs(thickness_F[i] - thicknessOnCells[i]));
-  }
-
-  MPI_Allreduce(&localSum, &sum, 1, MPI_DOUBLE, MPI_MAX, comm);
-
-  std::cout << "Thickness change: " << sum << std::endl;
-  std::copy(thickness_F, thickness_F + nCellsSolve_F, &thicknessOnCells[0]);
-
-  if (!isDomainEmpty) {
-    std::vector<double> temperatureData(nLayers * nVertices);
-
-    import2DFields(lowerSurface_F, thickness_F, beta_F,  minThickness);
-
-    for (int index = 0; index < nVertices; index++) {
-      int iCell = vertexToFCell[index];
-      for (int il = 0; il < nLayers; il++) {
-        temperatureData[index + il * nVertices] = temperature_F[iCell * nLayers
-            + (nLayers - il - 1)];
-      }
-    }
-
-
-    velocity_solver_solve_l1l2__(elevationData, thicknessData, betaData,
-        temperatureData, indexToVertexID, velocityOnVertices);
-  }
-
-
-   mapVerticesToCells (velocityOnVertices, &velocityOnCells[0], 2, nLayers, Ordering);
-
-   //computing x, yVelocityOnCell
-   int sizeVelOnCell = nCells_F * (nLayers + 1);
-   for(int iCell=0; iCell<nCells_F; ++iCell)
-     for(int il=0; il<nLayers + 1; ++il) {
-       int ilReversed = nLayers - il;
-       int indexReversed = iCell * (nLayers+1) + ilReversed;
-       int index = iCell * (nLayers + 1) +il;
-     xVelocityOnCell[indexReversed] = velocityOnCells[index];
-     yVelocityOnCell[indexReversed] = velocityOnCells[index+sizeVelOnCell];
-   }
-
-   if (!isDomainEmpty)
-     get_prism_velocity_on_FEdges(u_normal_F, velocityOnCells, edgeToFEdge);
-
-   allToAll (u_normal_F,  &sendEdgesListReversed, &recvEdgesListReversed, nLayers+1);
-   allToAll (u_normal_F,  sendEdgesList_F, recvEdgesList_F, nLayers+1);
-
-#endif
-
 }
 
-void velocity_solver_export_l1l2_velocity() {
-
-  if (isDomainEmpty)
-     return;
-
-  std::vector<double> regulThk(thicknessData);
-      for (int index = 0; index < nVertices; index++)
-        regulThk[index] = std::max(1e-4, thicknessData[index]);
-
-      std::vector<int> mpasIndexToVertexID(nVertices);
-      for (int i = 0; i < nVertices; i++) {
-        mpasIndexToVertexID[i] = indexToCellID_F[vertexToFCell[i]];
-      }
-#ifdef LIFEV
-  velocity_solver_export_l1l2_velocity__(layersRatio, elevationData, regulThk, mpasIndexToVertexID, reducedComm);
-#endif
-}
+void velocity_solver_export_l1l2_velocity() {}
 
 void velocity_solver_init_fo(double const *levelsRatio_F) {
 
@@ -325,15 +227,9 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
   // !!Indexing of layers is reversed
   for (int i = 0; i < nLayers; i++)
     layersRatio[i] = levelsRatio_F[nLayers - 1 - i];
-  //std::copy(levelsRatio_F, levelsRatio_F+nLayers, layersRatio.begin());
-
 
   mapCellsToVertices(velocityOnCells, velocityOnVertices, 2, nLayers, Ordering);
 
-#ifdef LIFEV
-  velocity_solver_init_fo__(layersRatio, velocityOnVertices, indexToVertexID, initialize_velocity);
-#endif
-  //    iceProblemPtr->initializeSolverFO(layersRatio, velocityOnVertices, thicknessData, elevationData, indexToVertexID, initialize_velocity);
   initialize_velocity = false;
 }
 
@@ -367,22 +263,6 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
   mapCellsToVertices(velocityOnCells, velocityOnVertices, 2, nLayers, Ordering);
 
   if (!isDomainEmpty) {
-
-#ifdef LIFEV
-   double localSum(0), sum(0);
-
-   for (int i = 0; i < nCellsSolve_F; i++) {
-   localSum = std::max(localSum,
-   std::fabs(thickness_F[i] - thicknessOnCells[i]));
-   }
-
-   MPI_Allreduce(&localSum, &sum, 1, MPI_DOUBLE, MPI_MAX, comm);
-
-   std::cout << "Thickness change: " << sum << std::endl;
-   std::copy(thickness_F, thickness_F + nCellsSolve_F, &thicknessOnCells[0]);
-#endif
-
-
 
     std::map<int, int> bdExtensionMap;
     import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, temperature_F, smb_F,  minThickness);
@@ -444,65 +324,6 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
   allToAll(u_normal_F, sendEdgesList_F, recvEdgesList_F, nLayers+1);
 
   first_time_step = false;
-
-#ifdef LIFEV
-
-  std::vector<int> edgesProcId(nEdges_F), trianglesProcIds(nVertices_F);
-  getProcIds(edgesProcId, recvEdgesList_F);
-  getProcIds(trianglesProcIds, recvVerticesList_F);
-
-  int localSumInt(0), sumInt(0);
-
-  for (int i = 0; i < nEdges; i++) {
-    for (int il = 0; il < 1; il++) {
-      if (std::fabs(
-          velOnEdges[i * (nLayers+1) + il]
-              - u_normal_F[edgeToFEdge[i] * nLayers + il]) > 1e-9)
-      //  if(edgeToFEdge[i]>nEdgesSolve_F)
-          {
-        localSumInt++;
-        int edge = edgeToFEdge[i];
-        int gEdge = indexToEdgeID[i];
-        ID fVertex0 = verticesOnEdge_F[2 * edge] - 1;
-        ID fVertex1 = verticesOnEdge_F[2 * edge + 1] - 1;
-        ID triaId0 = fVertexToTriangleID[fVertex0];
-        ID triaId1 = fVertexToTriangleID[fVertex1];
-        ID procTria0 = trianglesProcIds[fVertex0];
-        ID procTria1 = trianglesProcIds[fVertex1];
-        std::cout << "vs( " << velOnEdges[i * (nLayers+1) + il] << ", "
-            << u_normal_F[edgeToFEdge[i] * nLayers + il] << ")  ";
-        std::cout << "edge: " << edge << ", gEdge: " << gEdge << ", on proc: "
-            << edgesProcId[edgeToFEdge[i]];
-        if (triaId0 != NotAnId) {
-          std::cout << ". first tria0: " << triaId0 << " on proc: "
-              << procTria0;
-        }
-        if (triaId1 != NotAnId) {
-          std::cout << ".. second tria0:" << std::endl;
-        }
-        if ((triaId0 == NotAnId) || (triaId1 == NotAnId)) {
-          std::cout << ". and to Tria: " << triaId1 << " on proc: " << procTria1
-              << std::endl;
-        }
-
-      }
-
-      //localSum = std::max(localSum, std::fabs(velOnEdges[i*nLayers+il] - u_normal_F[edgeToFEdge[i]*nLayers+il]));
-    }
-  }
-
-  MPI_Allreduce(&localSumInt, &sumInt, 1, MPI_INT, MPI_SUM, comm);
-
-  int localNum(sendEdgesListReversed.size()), num(0);
-
-  MPI_Allreduce(&localNum, &num, 1, MPI_INT, MPI_SUM, comm);
-
-  std::cout << "Edges change: " << sumInt << " " << num << std::endl;
-
-#endif
-
-
-
 }
 
 
@@ -526,7 +347,7 @@ void velocity_solver_finalize() {
 
 /*duality:
  *
- *   mpas(F) |  lifev
+ *   mpas(F) |  Albany LandIce (C++)
  *  ---------|---------
  *   cell    |  vertex
  *   vertex  |  triangle
@@ -722,8 +543,6 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
 
   fCellsToReceive.clear();
 
-  // if(! isDomainEmpty)
-  // {
   fCellsToReceive.reserve(nCells_F - nCellsSolve_F);
   for (int i = 0; i < nCells_F; i++) {
     bool isMine = i < nCellsSolve_F;
@@ -749,7 +568,6 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
       vertexToFCell.push_back(i);
     }
   }
-  //        }
 
   //Compute the global number of vertices, and the localOffset on the local processor, such that a globalID = localOffset + index
   computeLocalOffset(fCellsToSend.size(), localOffset, nGlobalVertices);
@@ -887,43 +705,7 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   if (isDomainEmpty)
     return;
 
-#ifdef LIFEV
-    std::vector<double> verticesCoords(3 * nVertices);
-
-    for (int index = 0; index < nVertices; index++) {
-      int iCell = vertexToFCell[index];
-      verticesCoords[index * 3] = xCell_F[iCell] / unit_length;
-      verticesCoords[index * 3 + 1] = yCell_F[iCell] / unit_length;
-      verticesCoords[index * 3 + 2] = zCell_F[iCell] / unit_length;
-    }
-
-    velocity_solver_compute_2d_grid__(nGlobalTriangles,
-        nGlobalVertices, nGlobalEdges, indexToVertexID, verticesCoords,
-        isVertexBoundary, verticesOnTria,isBoundaryEdge, trianglesOnEdge,
-        trianglesPositionsOnEdge, verticesOnEdge, indexToEdgeID,
-        indexToTriangleID, procOnInterfaceEdge );
-#else
-    velocity_solver_compute_2d_grid__(reducedComm);
-#endif
-
-  /*
-
-   //initialize the mesh
-   iceProblemPtr->mesh2DPtr.reset (new RegionMesh<LinearTriangle>() );
-
-   //construct the mesh nodes
-   constructNodes ( * (iceProblemPtr->mesh2DPtr), indexToVertexID, verticesCoords, isVertexBoundary, nGlobalVertices, 3);
-
-   //construct the mesh elements
-   constructElements ( * (iceProblemPtr->mesh2DPtr), indexToTriangleID, verticesOnTria, nGlobalTriangles);
-
-   //construct the mesh facets
-   constructFacets ( * (iceProblemPtr->mesh2DPtr), isBoundaryEdge, trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge, indexToEdgeID, procOnInterfaceEdge, nGlobalEdges, 3);
-
-   Switch sw;
-   std::vector<bool> elSign;
-   checkVolumes ( * (iceProblemPtr->mesh2DPtr), elSign, sw );
-   */
+  velocity_solver_compute_2d_grid__(reducedComm);
 }
 
 void velocity_solver_extrude_3d_grid(double const* levelsRatio_F,
@@ -1124,7 +906,7 @@ void get_prism_velocity_on_FEdges(double * uNormal,
       //edge is on boundary and wasn't found by previous two cases
       //For boundary edges one of the two triangles sharing the edge won't be part of the velocity solver's mesh and the dynamic_ice_bit_value will be 0.
 
-      //Compute iCells containinig the vertices of the triangle that is part of the mesh and bcoords the corresponding barycentric coordinates
+      //Compute iCells containing the vertices of the triangle that is part of the mesh and bcoords the corresponding barycentric coordinates
       if(verticesMask_F[fVertex0] & dynamic_ice_bit_value) { belongToTria(e_mid, t0, bcoords);
         for (int j = 0; j < 3; j++)
           iCells[j] = cellsOnVertex_F[3 * fVertex0 + j] - 1;
@@ -1222,7 +1004,6 @@ void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
   getProcIds(cellsProcId, recvCellsList_F);
   getProcIds(trianglesProcIds, recvVerticesList_F);
 
-  //std::cout << "SendList " ;
   for (int i = 0; i < nVertices; i++) {
     int iCell = vertexToFCell[i];
     if (iCell < nCellsSolve_F)
@@ -1239,11 +1020,8 @@ void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
     if (!belongToTriaOnSameProc) {
       sendMap[cellsProcId[iCell]].insert(
           std::make_pair(fCellToVertexID[iCell], iCell));
-      // std::cout<< "(" << cellsProcId[iCell] << "," << iCell << ") ";
     }
-
   }
-  //std::cout <<std::endl;
 
   for (std::map<int, std::map<int, int> >::const_iterator it = sendMap.begin();
       it != sendMap.end(); it++) {
@@ -1256,7 +1034,6 @@ void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
         exchange(it->first, &sendVec[0], &sendVec[0] + sendVec.size()));
   }
 
-  //std::cout << "ReceiveList " ;
   for (UInt i = 0; i < fCellsToReceive.size(); i++) {
     int iCell = fCellsToReceive[i];
     int nEdg = nEdgesOnCells_F[iCell];
@@ -1266,11 +1043,9 @@ void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
       if (triaId != NotAnId) {
         receiveMap[trianglesProcIds[fVertex]].insert(
             std::make_pair(fCellToVertexID[iCell], iCell));
-        // std::cout<< "(" << trianglesProcIds[fVertex] << "," << iCell << ") ";
       }
     }
   }
-  //std::cout <<std::endl;
 
   for (std::map<int, std::map<int, int> >::const_iterator it =
       receiveMap.begin(); it != receiveMap.end(); it++) {
@@ -1297,7 +1072,6 @@ void createReverseEdgesExchangeLists(exchangeList_Type& sendListReverse_F,
   getProcIds(edgesProcId, recvEdgesList_F);
   getProcIds(trianglesProcIds, recvVerticesList_F);
 
-  //std::cout << "EdgesSendList " ;
   for (int i = 0; i < nEdges; i++) {
     int iEdge = edgeToFEdge[i];
     if (iEdge < nEdgesSolve_F)
@@ -1313,10 +1087,8 @@ void createReverseEdgesExchangeLists(exchangeList_Type& sendListReverse_F,
     if (!belongToTriaOnSameProc) {
       sendMap[edgesProcId[iEdge]].insert(
           std::make_pair(fEdgeToEdgeID[iEdge], iEdge));
-      //std::cout<< "(" << edgesProcId[iEdge] << "," << iEdge << ") ";
     }
   }
-  //std::cout <<std::endl;
 
   for (std::map<int, std::map<int, int> >::const_iterator it = sendMap.begin();
       it != sendMap.end(); it++) {
@@ -1329,7 +1101,6 @@ void createReverseEdgesExchangeLists(exchangeList_Type& sendListReverse_F,
         exchange(it->first, &sendVec[0], &sendVec[0] + sendVec.size()));
   }
 
-  //std::cout << "EdgesReceiveList " ;
   for (UInt i = 0; i < edgesToReceive.size(); i++) {
     int iEdge = edgesToReceive[i];
     for (int j = 0; j < 2; j++) {
@@ -1338,11 +1109,9 @@ void createReverseEdgesExchangeLists(exchangeList_Type& sendListReverse_F,
       if (triaId != NotAnId) {
         receiveMap[trianglesProcIds[fVertex]].insert(
             std::make_pair(fEdgeToEdgeID[iEdge], iEdge));
-        //  std::cout<< "(" << trianglesProcIds[fVertex] << "," << iEdge << ") ";
       }
     }
   }
-  // std::cout <<std::endl;
 
   for (std::map<int, std::map<int, int> >::const_iterator it =
       receiveMap.begin(); it != receiveMap.end(); it++) {
@@ -1417,25 +1186,6 @@ double signedTriangleAreaOnSphere(const double* x, const double* y,
           > 0) ? area : -area;
 }
 
-//TO BE FIXED, Access To verticesOnCell_F is not correct
-void extendMaskByOneLayer(int const* verticesMask_F,
-    std::vector<int>& extendedFVerticesMask) {
-  extendedFVerticesMask.resize(nVertices_F);
-  extendedFVerticesMask.assign(&verticesMask_F[0],
-      &verticesMask_F[0] + nVertices_F);
-  for (int i = 0; i < nCells_F; i++) {
-    bool belongsToMarkedTriangle = false;
-    int nEdg = nEdgesOnCells_F[i];
-    for (UInt k = 0; k < nEdg && !belongsToMarkedTriangle; k++)
-      belongsToMarkedTriangle = belongsToMarkedTriangle
-          || verticesMask_F[verticesOnCell_F[maxNEdgesOnCell_F * i + k] - 1];
-    if (belongsToMarkedTriangle)
-      for (UInt k = 0; k < nEdg; k++) {
-        ID fVertex(verticesOnCell_F[maxNEdgesOnCell_F * i + k] - 1);
-        extendedFVerticesMask[fVertex] = !isGhostTriangle(fVertex);
-      }
-  }
-}
 
 void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F,
@@ -1482,7 +1232,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
         for (int iVertex = 0; iVertex < 3; iVertex++) {
       int v = verticesOnTria[iVertex + 3 * index];
       int iCell = vertexToFCell[v];
-          //compute temperature by averaging tmeperature values of triangles vertices where ice is present
+      //compute temperature by averaging temperature values of triangles vertices where ice is present
       if (cellsMask_F[iCell] & ice_present_bit_value) { 
         temperature += temperature_F[iCell * nLayers + ilReversed];
         nPoints++;
@@ -1527,10 +1277,8 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
            int c0 = cellsOnEdge_F[2 * fEdge] - 1;
            int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
            c = (fCellToVertex[c0] == iV) ? c1 : c0;
-           //if(!(cellsMask_F[c] & ice_present_bit_value)) continue;
            if((cellsMask_F[c] & dynamic_ice_bit_value)) {
            double elev = thickness_F[c] + lowerSurface_F[c]; // - 1e-8*std::sqrt(pow(xCell_F[c0],2)+std::pow(yCell_F[c0],2));
-           //std::cout << "  elev="<<elev<<std::endl;
            if (elev < elevTemp) {
              elevTemp = elev;
              bdExtensionMap[iV] = c;
@@ -1554,12 +1302,8 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
         // Otherwise, it will have a surface elevation below sea level,
         // which is unphysical and can cause large slopes and other issues.
         if (bedTopographyData[iV] < 0.0) {
-          //std::cout<<"non-floating boundary below sea level at iV="<<iV<<std::endl;
           if (std::find(dirichletNodesIDs.begin(), dirichletNodesIDs.end(), indexToVertexID[iV]*vertexLayerShift) != dirichletNodesIDs.end()) { // Don't do this if location is a Dirichlet node!
-            //std::cout<<"  non-floating boundary below sea level node is Dirichlet so skipping. iV="<<iV<<std::endl;
           } else {
-            //for (int i = 0; i < dirichletNodesIDs.size(); i++)
-            //            std::cout << dirichletNodesIDs.at(i) << ' ';  // print entire list of Diri nodes for debugging.
             thicknessData[iV] = eps*2.0; // insert special small value here to make identifying these points easier in exo output
             elevationData[iV] = (1.0 - rho_ice / rho_ocean) * thicknessData[iV];  // floating surface
           }
@@ -1913,13 +1657,6 @@ int initialize_iceProblem(int nTriangles) {
 
   isDomainEmpty = !keep_proc;
 
-
-#ifdef LIFEV
-if(!isDomainEmpty) {
-  velocity_solver_initialize_iceProblem__(keep_proc, reducedComm);
-}
-#endif
-
   // initialize ice problem pointer
   if (keep_proc) {
     std::cout << nTriangles
@@ -2135,23 +1872,6 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     double const* observedThicknessTendency_F, double const * observedThicknessTendencyUncertainty_F) {
 
 
-//    std::vector<double> regulThk(thicknessData);
-//    for (int index = 0; index < nVertices; index++)
-//      regulThk[index] = std::max(1e-4, thicknessData[index]);  //TODO Make limit a parameter
-//
-//    importP0Temperature(temperature_F);
-//
-//    std::cout << "\n\nTimeStep: "<< *deltat << "\n\n"<< std::endl;
-//
-//    std::vector<int> mpasIndexToVertexID(nVertices);
-//    for (int i = 0; i < nVertices; i++) {
-//      mpasIndexToVertexID[i] = indexToCellID_F[vertexToFCell[i]];
-//    }
-//
-//    mapVerticesToCells(velocityOnVertices, &velocityOnCells[0], 2, nLayers,
-//        Ordering);
-
-
     // Write out ASCII format
 
     std::cout << "Writing mesh to albany.msh." << std::endl;
@@ -2185,7 +1905,6 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
              iVerticesBoundaryEdge ++;
           }
        }
-       //std::cout<<"final count: "<<iVerticesBoundaryEdge << "  nVerticesBoundaryEdge="<<nVerticesBoundaryEdge<<std::endl;
 
        outfile << "Triangle " << 3 << "\n";  // first line saying it is a mesh of triangles
        outfile << nVertices << " " << nTriangles << " " << nVerticesBoundaryEdge << "\n";  // second line

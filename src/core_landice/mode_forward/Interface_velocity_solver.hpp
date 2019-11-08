@@ -10,7 +10,6 @@ distributed with this code, or at http://mpas-dev.github.com/license.html
 // ===================================================
 //! Includes
 // ===================================================
-//#include <boost/program_options.hpp>
 #include <cstring>
 #include <vector>
 #include <mpi.h>
@@ -44,11 +43,6 @@ distributed with this code, or at http://mpas-dev.github.com/license.html
 #define interface_reset_stdout interface_reset_stdout_
 #define write_ascii_mesh write_ascii_mesh_
 #endif
-
-//#include <lifev/core/algorithm/PreconditionerIfpack.hpp>
-//#include <lifev/core/algorithm/PreconditionerML.hpp>
-
-//#include <lifev/ice_sheet/solver/IceProblem.hpp>
 
 struct exchange {
   const int procID;
@@ -126,8 +120,6 @@ void velocity_solver_export_l1l2_velocity();
 
 void velocity_solver_export_fo_velocity();
 
-//void velocity_solver_estimate_SS_SMB (const double* u_normal_F, double* sfcMassBal);
-
 void interface_init_log();
 
 void interface_redirect_stdout(int const* iTimestep);
@@ -151,21 +143,6 @@ void write_ascii_mesh(int const* indexToCellID_F,
 extern int velocity_solver_init_mpi__(int* fComm);
 extern void velocity_solver_finalize__();
 
-#ifdef LIFEV
-extern void velocity_solver_init_l1l2__(const std::vector<double>& layersRatio, const std::vector<double>& velocityOnVertices, bool initialize_velocity);
-
-extern void velocity_solver_solve_l1l2__(const std::vector<double>& elevationData,
-    const std::vector<double>& thicknessData, const std::vector<double>& betaData,
-    const std::vector<double>& temperatureData, const std::vector<int>& indexToVertexID,
-    std::vector<double>& velocityOnVertices);
-
-extern void velocity_solver_init_fo__(const std::vector<double>& layersRatio, const std::vector<double>& velocityOnVertices, const std::vector<int>& indexToVertexID, bool initialize_velocity);
-
-extern void velocity_solver_export_l1l2_velocity__(const std::vector<double>& layersRatio, const std::vector<double>& elevationData, const std::vector<double>& regulThk,
-    const std::vector<int>& mpasIndexToVertexID, MPI_Comm reducedComm);
-
-#endif
-
 extern void velocity_solver_set_physical_parameters__(double const& gravity, double const& ice_density, double const& ocean_density, double const& sea_level, double const& flowParamA, 
                         double const& flowLawExponent, double const& dynamic_thickness, bool const& useGLP, double const& clausiusClapeyronCoeff); 
 
@@ -188,25 +165,7 @@ extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     int& error,
     const double& deltat = 0.0);
 
-
-#ifdef LIFEV
-extern void velocity_solver_compute_2d_grid__(int nGlobalTriangles,
-     int nGlobalVertices, int nGlobalEdges,
-     const std::vector<int>& indexToVertexID,
-     const std::vector<double>& verticesCoords,
-     const std::vector<bool>& isVertexBoundary,
-     const std::vector<int>& verticesOnTria,
-     const std::vector<bool>& isBoundaryEdge,
-     const std::vector<int>& trianglesOnEdge,
-     const std::vector<int>& trianglesPositionsOnEdge,
-     const std::vector<int>& verticesOnEdge,
-     const std::vector<int>& indexToEdgeID,
-     const std::vector<int>& indexToTriangleID,
-     const std::vector < std::pair<int, int> >& procOnInterfaceEdge);
-
-#else
 extern void velocity_solver_compute_2d_grid__(MPI_Comm);
-#endif
 
 
 extern void velocity_solver_export_2d_data__(MPI_Comm reducedComm,
@@ -231,16 +190,7 @@ extern void velocity_solver_extrude_3d_grid__(int nLayers, int nGlobalTriangles,
     const std::vector<int>& dirichletNodes,
     const std::vector<int>&floatingEdges);
 
-//extern void velocity_solver_export_l1l2_velocity__();
-
 extern void velocity_solver_export_fo_velocity__(MPI_Comm reducedComm);
-
-
-#ifdef LIFEV
-extern int  velocity_solver_initialize_iceProblem__(bool keep_proc, MPI_Comm reducedComm);
-#endif
-
-//extern void velocity_solver_estimate_SS_SMB__ (const double* u_normal_F, double* sfcMassBal);
 
 exchangeList_Type unpackMpiArray(int const* array);
 
@@ -270,9 +220,6 @@ void write_ascii_mesh_field(std::vector<double> fieldData, std::string filenameb
 void write_ascii_mesh_field_int(std::vector<int> fieldData, std::string filenamebase);
 
 std::vector<int> extendMaskByOneLayer(int const* verticesMask_F);
-
-void extendMaskByOneLayer(int const* verticesMask_F,
-    std::vector<int>& extendedFVerticesMask);
 
 void importP0Temperature();
 
