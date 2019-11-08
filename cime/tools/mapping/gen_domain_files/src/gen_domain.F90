@@ -336,10 +336,11 @@ contains
       if (.not. complf) then
 
          ! Determine ocn mask on ocn grid
-         call check_ret(nf_inq_varid(fid,'mask'//trim(suffix), vid ))
-         call check_ret(nf_get_var_int   (fid,vid,omask ))
-         ofrac(:) = c0
-         where (omask /= 0) ofrac = c1
+         !call check_ret(nf_inq_varid(fid,'mask'//trim(suffix), vid ))
+         !call check_ret(nf_get_var_int   (fid,vid,omask ))
+         !ofrac(:) = c0
+         !where (omask /= 0) ofrac = c1
+         ofrac = c1
 
       else
          !----------------------------------------------------------------------------
@@ -360,8 +361,9 @@ contains
          call check_ret(nf_get_var_int(fid,vid, row ))
          call check_ret(nf_inq_varid(fid,'S', vid ))
          call check_ret(nf_get_var_double(fid,vid,S))
-         call check_ret(nf_inq_varid(fid,'mask_a', vid ))
-         call check_ret(nf_get_var_int(fid,vid,mask_a ))
+         !call check_ret(nf_inq_varid(fid,'mask_a', vid ))
+         !call check_ret(nf_get_var_int(fid,vid,mask_a ))
+         mask_a = 1
          frac_a = c0
          where (mask_a /= 0) frac_a = c1
          !--- compute ocean fraction on atm grid ---
