@@ -779,10 +779,6 @@ subroutine li_velocity_external_write_albany_mesh(domain)
          call mpas_log_write("config_velocity solver needs to be set to 'FO' for config_write_albany_ascii_mesh to work.", &
             MPAS_LOG_CRIT)
       endif
-      ! check nProcs
-      if (domain % dminfo % nProcs /= 1) then
-         call mpas_log_write("config_write_albany_ascii_mesh currently only works on 1 processor.", MPAS_LOG_CRIT)
-      endif
       ! check nBlocks
       if (domain % dminfo % total_blocks /= 1) then
          call mpas_log_write("config_write_albany_ascii_mesh currently only works on 1 block per processor.", MPAS_LOG_CRIT)

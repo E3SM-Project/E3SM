@@ -1878,7 +1878,11 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
     // msh file
     std::ofstream outfile;
     outfile.precision(15);
-    outfile.open ("albany.msh", std::ios::out | std::ios::trunc);
+    std::stringstream name;
+    int me;
+    MPI_Comm_rank(comm, &me);
+    name <<  "albany.msh." <<  me;
+    outfile.open (name.str(), std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
 
        int nVerticesBoundaryEdge = 0;
@@ -1906,7 +1910,8 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
           }
        }
 
-       outfile << "Triangle " << 3 << "\n";  // first line saying it is a mesh of triangles
+       outfile << "Format: " << 1 << "\n";  // first line stating the format (we are going to provide global ids)
+       outfile << "Triangle " << 3 << "\n";  // second line saying it is a mesh of triangles
        outfile << nVertices << " " << nTriangles << " " << nVerticesBoundaryEdge << "\n";  // second line
 
        for (int index = 0; index < nVertices; index++) { //coordinates lines
@@ -1916,14 +1921,14 @@ int prismType(long long int const* prismVertexMpasIds, int& minIndex)
           int vertexLabel = (!isVertexBoundary[index]) ? 0 :
                             isDirichletVertex ? 3 : 1;
 
-          outfile << xCell_F[iCell] / unit_length << " " << yCell_F[iCell] / unit_length << " " << vertexLabel << "\n"  ;
+          outfile << indexToVertexID[index] << " " << xCell_F[iCell] / unit_length << " " << yCell_F[iCell] / unit_length << " " << vertexLabel << "\n"  ;
        }
 
        for (int index = 0; index < nTriangles; index++) //triangles lines
-        outfile << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by Albany LandIce, so giving dummy value
+        outfile << indexToTriangleID[index] << " " << verticesOnTria[0 + 3 * index] + 1 << " " << verticesOnTria[1 + 3 * index] + 1 << " " << verticesOnTria[2 + 3 * index] + 1 << " " << 1 << "\n"; // last digit can be used to specify a 'material'.  Not used by Albany LandIce, so giving dummy value
 
        for (int index = 0; index < nVerticesBoundaryEdge; index++) // boundary edges lines
-       outfile <<  boundaryEdges[0 + 3 * index] + 1 << " " << boundaryEdges[1 + 3 * index] + 1 << " " << boundaryEdges[2 + 3 * index] << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
+       outfile <<  indexToEdgeID[index] << " " << boundaryEdges[0 + 3 * index] + 1 << " " << boundaryEdges[1 + 3 * index] + 1 << " " << boundaryEdges[2 + 3 * index] << "\n"; //last digit can be used to tell whether it's floating or not.. but let's worry about this later.
 
        outfile.close();
        }
