@@ -1682,6 +1682,7 @@
 
     <domain name="gland4">
       <nx>416</nx> <ny>704</ny>
+      <mesh driver="nuopc">$DIN_LOC_ROOT/share/meshes/greenland_4km_epsg3413_c170414_ESMFmesh_c20190729.nc">
       <desc>4-km Greenland grid, for use with the glissade dycore</desc>
     </domain>
 
