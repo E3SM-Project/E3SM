@@ -109,8 +109,8 @@ module seq_flux_mct
   real(r8),parameter :: const_deg2rad = const_pi/180.0_r8  ! deg to rads
 
   ! albedo reference variables - set via namelist
-  real(r8)  :: seq_flux_mct_albdif  ! albedo, diffuse
-  real(r8)  :: seq_flux_mct_albdir  ! albedo, direct
+  real(r8)  :: seq_flux_mct_albdif = 0.06_r8  ! albedo, diffuse
+  real(r8)  :: seq_flux_mct_albdir = 0.07_r8  ! albedo, direct
   real(r8)  :: seq_flux_atmocn_minwind ! minimum wind temperature for atmocn flux routines
 
   ! Coupler field indices
@@ -899,7 +899,6 @@ contains
           update_alb = .true.
        endif    ! nextsw_cday
     end if   ! flux_albav
-
     !--- update current ifrad/ofrad values if albedo was updated
 
     if (update_alb) then
