@@ -6,7 +6,7 @@ module physics_types
   use shr_kind_mod, only: r8 => shr_kind_r8
   use ppgrid,       only: pcols, pver, psubcols
   use constituents, only: pcnst, qmin, cnst_name
-  use geopotential, only: temperature_from_se
+  use geopotential, only: temperature_from_se, geopotential_t2
   use physconst,    only: zvir, gravit, cpair, rair, cpairv, rairv
   use dycore,       only: dycore_is
   use phys_grid,    only: get_ncols_p, get_rlon_all_p, get_rlat_all_p, get_gcol_all_p
@@ -450,6 +450,12 @@ contains
 !c_pv???
        call temperature_from_se(state%s,  cpairv(:,:,state%lchnk), state%t, ncol)
     end if
+
+!why zm, zi were done in the if statement?
+       call geopotential_t2(state%pint, state%pmid,    state%pdel, state%rpdel,&
+                           state%t,    state%q(:,:,1),rairv(:,:,state%lchnk), gravit,     &
+                           zvirv,      state%zi,      state%zm, ncol)
+
 
     ! Good idea to do this regularly.
     ! (The following causes a 'recursive I/O' error with some compilers.)
@@ -1274,8 +1280,11 @@ end subroutine physics_ptend_copy
 !	    gravit, cpairv(:,:,state%lchnk), zvirv, &
 !            state%t     , state%zi      , state%zm   , ncol)
 
-!c_pv???
        call temperature_from_se(state%s, cpairv(:,:,state%lchnk), state%t, ncol)
+
+       call geopotential_t2(state%pint, state%pmid,    state%pdel,             state%rpdel,&
+                           state%t,    state%q(:,:,1),rairv(:,:,state%lchnk), gravit,     &
+                           zvirv,      state%zi,      state%zm,               ncol)
 
     end if
 
