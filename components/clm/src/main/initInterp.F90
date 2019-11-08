@@ -984,7 +984,7 @@ contains
              rbufslo(no) = spval
           end if
        else
-          if ( shr_infnan_isnan(rbufsli(no)) ) then
+          if ( shr_infnan_isnan(rbufslo(no)) ) then
              rbufslo(no) = spval
           end if
        end if
