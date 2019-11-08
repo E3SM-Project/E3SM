@@ -14,28 +14,30 @@ distributed with this code, or at http://mpas-dev.github.com/license.html
 #include <algorithm>
 #include <set>
 #include <fstream>
+#include <sstream>
+#include <limits>
 #include "Interface_velocity_solver.hpp"
 
 // ===================================================
 //! Namespaces
 // ===================================================
 
-//typedef std::list<exchange> exchangeList_Type;
+//#define useContiguousIDs
+#define changeTrianglesOwnership
+
 
 // ice_problem pointer
 
 int Ordering = 0; //ordering ==0 means that the mesh is extruded layerwise, whereas ordering==1 means that the mesh is extruded columnwise.
 MPI_Comm comm, reducedComm;
 bool isDomainEmpty = true;
-bool initialize_velocity = true;
 bool first_time_step = true;
 int nCells_F, nEdges_F, nVertices_F;
 int nCellsSolve_F, nEdgesSolve_F, nVerticesSolve_F;
-int nVertices, nEdges, nTriangles, nGlobalVertices, nGlobalEdges,
-    nGlobalTriangles;
+int nVertices, nEdges, nTriangles, globalVertexStride, globalEdgeStride,globalTriangleStride;
 int maxNEdgesOnCell_F;
 int const *cellsOnEdge_F, *cellsOnVertex_F, *verticesOnCell_F,
-    *verticesOnEdge_F, *edgesOnCell_F, *indexToCellID_F, *nEdgesOnCells_F,
+    *verticesOnEdge_F, *edgesOnCell_F, *indexToCellID_F, *indexToEdgeID_F, *indexToVertexID_F, *nEdgesOnCells_F,
     *verticesMask_F, *cellsMask_F, *dirichletCellsMask_F, *floatingEdgesMask_F;
 std::vector<double> layersRatio, levelsNormalizedThickness;
 int nLayers;
@@ -61,10 +63,10 @@ int Interface_stdout; // the location of stdout as we use it here
 
 //void *phgGrid = 0;
 std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
-    verticesOnTria, trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge,
-    trianglesProcIds,  reduced_ranks;
-std::vector<int> indexToVertexID, vertexToFCell, triangleToFVertex, indexToEdgeID, edgeToFEdge,
-    mask, fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
+    verticesOnTria, trianglesOnEdge, verticesOnEdge,
+    trianglesProcIds, reduced_ranks;
+std::vector<int> indexToVertexID, vertexToFCell, vertexProcIDs, triangleToFVertex, indexToEdgeID, edgeToFEdge,
+    fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
 std::vector<double> temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, velocityOnCells,
     elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, temperatureData, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
@@ -83,8 +85,8 @@ double radius;
 exchangeList_Type const *sendCellsList_F = 0, *recvCellsList_F = 0;
 exchangeList_Type const *sendEdgesList_F = 0, *recvEdgesList_F = 0;
 exchangeList_Type const *sendVerticesList_F = 0, *recvVerticesList_F = 0;
-exchangeList_Type sendCellsListReversed, recvCellsListReversed,
-    sendEdgesListReversed, recvEdgesListReversed;
+exchangeList_Type sendVerticesListReversed, recvVerticesListReversed,
+    sendCellsListReversed, recvCellsListReversed;
 
 exchange::exchange(int _procID, int const* vec_first, int const* vec_last,
     int fieldDim) :
@@ -103,7 +105,7 @@ int velocity_solver_init_mpi(int* fComm) {
   // get MPI_Comm from Fortran
   comm = MPI_Comm_f2c(*fComm);
   reducedComm = MPI_COMM_NULL;  // initialize to null so we can check if set
-  return velocity_solver_init_mpi__(fComm);
+  return velocity_solver_init_mpi__(comm);
 }
 
 
@@ -138,6 +140,8 @@ void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
     int const* _verticesOnCell_F, int const* _verticesOnEdge_F,
     int const* _edgesOnCell_F, int const* _nEdgesOnCells_F,
     int const* _indexToCellID_F,
+    int const* _indexToEdgeID_F,
+    int const* _indexToVertexID_F,
     double const* _xCell_F, double const* _yCell_F, double const* _zCell_F,
     double const* _xVertex_F, double const* _yVertex_F, double const* _zVertex_F,
     double const* _areaTriangle_F,
@@ -160,7 +164,9 @@ void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
   verticesOnEdge_F = _verticesOnEdge_F;
   edgesOnCell_F = _edgesOnCell_F;
   nEdgesOnCells_F = _nEdgesOnCells_F;
+  indexToEdgeID_F = _indexToEdgeID_F;
   indexToCellID_F = _indexToCellID_F;
+  indexToVertexID_F = _indexToVertexID_F;
   xCell_F = _xCell_F;
   yCell_F = _yCell_F;
   zCell_F = _zCell_F;
@@ -168,7 +174,6 @@ void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
   yVertex_F = _yVertex_F;
   zVertex_F = _zVertex_F;
   areaTriangle_F = _areaTriangle_F;
-  mask.resize(nVertices_F);
 
   thicknessOnCells.resize(nCellsSolve_F);
 
@@ -180,9 +185,6 @@ void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
       unpackMpiArray(sendVerticesArray_F));
   recvVerticesList_F = new exchangeList_Type(
       unpackMpiArray(recvVerticesArray_F));
-
-  trianglesProcIds.resize(nVertices_F);
-  getProcIds(trianglesProcIds, recvVerticesList_F);
 
   if (radius > 10) {
     xCellProjected.resize(nCells_F);
@@ -229,8 +231,6 @@ void velocity_solver_init_fo(double const *levelsRatio_F) {
     layersRatio[i] = levelsRatio_F[nLayers - 1 - i];
 
   mapCellsToVertices(velocityOnCells, velocityOnVertices, 2, nLayers, Ordering);
-
-  initialize_velocity = false;
 }
 
 void velocity_solver_solve_fo(double const* bedTopography_F, double const* lowerSurface_F,
@@ -279,7 +279,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
 
     double dt = (*deltat)/secondsInAYear;
     int albany_error;
-    velocity_solver_solve_fo__(nLayers, nGlobalVertices, nGlobalTriangles,
+    velocity_solver_solve_fo__(nLayers, globalVertexStride, globalTriangleStride,
         Ordering, first_time_step, indexToVertexID, indexToTriangleID, minBeta,
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
@@ -308,21 +308,14 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
     xVelocityOnCell[indexReversed] = velocityOnCells[index];
     yVelocityOnCell[indexReversed] = velocityOnCells[index+sizeVelOnCell];
   }
-
-  if (!isDomainEmpty)
     get_prism_velocity_on_FEdges(u_normal_F, velocityOnCells, edgeToFEdge);
-
+    allToAll(u_normal_F, sendEdgesList_F, recvEdgesList_F, nLayers+1);
   std::vector<double> velOnEdges(nEdges * (nLayers+1));
   for (int i = 0; i < nEdges; i++) {
     for (int il = 0; il < nLayers+1; il++) {
       velOnEdges[i * (nLayers+1) + il] = u_normal_F[edgeToFEdge[i] * (nLayers+1) + il];
     }
   }
-
-  allToAll(u_normal_F, &sendEdgesListReversed, &recvEdgesListReversed, nLayers+1);
-
-  allToAll(u_normal_F, sendEdgesList_F, recvEdgesList_F, nLayers+1);
-
   first_time_step = false;
 }
 
@@ -357,7 +350,6 @@ void velocity_solver_finalize() {
 
 void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cellsMask_F, int const* _dirichletCellsMask_F, int const* _floatingEdgesMask_F) {
   int numProcs, me;
-
   verticesMask_F = _verticesMask_F;
   cellsMask_F = _cellsMask_F;
   verticesMask_F = _verticesMask_F;
@@ -370,62 +362,138 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
       numProcs + 1), globalOffsetVertices(numProcs + 1), globalOffsetEdge(
       numProcs + 1);
 
+
+
+  // First, we compute the FE triangles belonging to this processor.
+  // If changeTrianglesOwnership is not define, the triangles belonging to this
+  // processor will be the subset of the triangles (MPAS vertices) owned by this proc
+  // that contain dynamic ice.
+  // If changeTrianglesOwnership is define, we rearrange the ownership of the triangles
+  // to improve the quality of the FE mesh and avoid corner cases (see below).
+
   triangleToFVertex.clear();
   triangleToFVertex.reserve(nVertices_F);
   std::vector<int> fVertexToTriangle(nVertices_F, NotAnId);
-  bool changed = false;
+
+  //vector containing proc ranks for owned and shared FE triangles
+  trianglesProcIds.assign(nVertices_F,NotAnId);
+
+  //vector containing proc ranks for owned and shared MPAS cells
+  std::vector<int> fCellsProcIds(nCells_F);
+  getProcIds(fCellsProcIds, recvCellsList_F);
+#ifdef changeTrianglesOwnership
+  std::vector<int> fVerticesProcIds(nVertices_F);
+  getProcIds(fVerticesProcIds, recvVerticesList_F);
+  for (int i(0); i < nVertices_F; i++) {
+    int cellWithMinID=nCellsSolve_F;
+    if ((verticesMask_F[i] & dynamic_ice_bit_value)) {
+      int minCellId = std::numeric_limits<int>::max();
+      int minCellIdProc(0);
+
+      int cellProc[3];
+      bool invalidCell=false;
+      for (int j = 0; j < 3; j++) {
+        int iCell = cellsOnVertex_F[3 * i + j] - 1;
+        if(iCell >= nCells_F) {
+          invalidCell = true;
+          break;
+        }
+        int cellID = indexToCellID_F[iCell];
+        cellProc[j] = fCellsProcIds[iCell];
+        if(cellID < minCellId) {
+          minCellId = cellID;
+          cellWithMinID = iCell;
+          minCellIdProc = cellProc[j];
+        }
+      }
+
+      if(invalidCell) continue;
+
+      // the proc that owns at least 2 nodes of the triangle i. If all nodes belong to different procs, procOwns2Nodes is set to -1
+      int procOwns2Nodes = ((cellProc[0] ==  cellProc[1]) || (cellProc[0] ==  cellProc[2])) ? cellProc[0] :
+                           (cellProc[1] == cellProc[2]) ? cellProc[1] : -1;
+
+      int vertexProc = fVerticesProcIds[i];
+      bool triangleOwnsANode = (cellProc[0] == vertexProc) || (cellProc[1] == vertexProc) || (cellProc[2] == vertexProc);
+
+      //A triangle will be owned by a proc if:
+      // 1. the proc owns at least 2 nodes of the triangle associated to that vertex, OR
+      // 2. all the nodes of the triangle belong to three different procs, and the proc owns the fortran vertex  and a node OR
+      // 3. the three nodes of the triangle and the fortran vertex belong to four different procs, and the proc owns the node with the minimum ID
+
+      trianglesProcIds[i] = (procOwns2Nodes != -1) ? procOwns2Nodes :
+                       triangleOwnsANode ? vertexProc :
+                       minCellIdProc;
+
+      if (trianglesProcIds[i] == me) {
+        fVertexToTriangle[i] = triangleToFVertex.size();
+        triangleToFVertex.push_back(i);
+      } 
+    }
+  }
+#else
+  //in this case we just set the proc ranks for owned and shared FE triangles to the be the same as MPAS owned and shared vertices
+  getProcIds(trianglesProcIds, recvVerticesList_F);
   for (int i(0); i < nVerticesSolve_F; i++) {
-    if ((verticesMask_F[i] & dynamic_ice_bit_value) && !isGhostTriangle(i)) {
+    if (verticesMask_F[i] & dynamic_ice_bit_value) {
       fVertexToTriangle[i] = triangleToFVertex.size();
       triangleToFVertex.push_back(i);
     }
-    changed = changed || (verticesMask_F[i] != mask[i]);
   }
-
-  for (int i(0); i < nVertices_F; i++)
-    mask[i] = verticesMask_F[i];
-
-  if (changed)
-    std::cout << "mask changed!!" << std::endl;
-
-  if ((me == 0) && (triangleToFVertex.size() == 0))
-    for (int i(0); i < nVerticesSolve_F; i++) {
-      if (!isGhostTriangle(i)) {
-        fVertexToTriangle[i] = triangleToFVertex.size();
-        triangleToFVertex.push_back(i);
-        break;
-      }
-    }
+#endif
 
   nTriangles = triangleToFVertex.size();
 
+  //Initialize the ice sheet problem with the number of FE triangles on this prov
   initialize_iceProblem(nTriangles);
 
-  //Compute the global number of triangles, and the localOffset on the local processor, such that a globalID = localOffset + index
-  int localOffset(0);
-  nGlobalTriangles = 0;
-  computeLocalOffset(nTriangles, localOffset, nGlobalTriangles);
-
-  //Communicate the globalIDs, computed locally, to the other processors.
-  indexToTriangleID.resize(nTriangles);
-
-  //To make local, not used
+  //If useContiguousIDs is defined, create a contiguous list of global triangle IDs, otherwise use MPAS vertices IDs
   fVertexToTriangleID.assign(nVertices_F, NotAnId);
-  //   std::vector<int> fVertexToTriangleID(nVertices_F, NotAnId);
+#ifdef useContiguousIDs
+  // Compute the localOffset on the local processor, such that a globalID = localOffset + index
+  int localOffset(0);
+  int nGlobalTriangles = 0;
+  computeLocalOffset(nTriangles, localOffset, nGlobalTriangles);
   for (int index(0); index < nTriangles; index++)
     fVertexToTriangleID[triangleToFVertex[index]] = index + localOffset;
+#else
+  for (int index(0); index < nTriangles; index++) {
+    fVertexToTriangleID[triangleToFVertex[index]] = indexToVertexID_F[triangleToFVertex[index]];
+  }
+#endif
 
+  //Communicate the local and global triangle IDs to the other processors.
+#ifdef changeTrianglesOwnership
+  // because we change the ownership of some triangles, we need to first communicate back to the processors that used to own those triangles
+  // the data of the newly owned triangles. We do this by defining "reversed" send and receive lists, communicate back using those lists, and
+  // then communicate "forward" using the usual send and receive lists.
+  // We could join these two step in one communication, but for the moment we do that separately
+  createReverseVerticesExchangeLists(sendVerticesListReversed, recvVerticesListReversed, trianglesProcIds, indexToVertexID_F);
+  allToAll(fVertexToTriangleID, &sendVerticesListReversed, &recvVerticesListReversed);
+  allToAll(fVertexToTriangle, &sendVerticesListReversed, &recvVerticesListReversed);
+  allToAll(trianglesProcIds, sendVerticesList_F, recvVerticesList_F);
+#endif
   allToAll(fVertexToTriangleID, sendVerticesList_F, recvVerticesList_F);
+  allToAll(fVertexToTriangle, sendVerticesList_F, recvVerticesList_F);
 
-  for (int index(0); index < nTriangles; index++)
+
+  //we define the vector of global triangles Ids and compute the stride between the largest and the smallest Id globally
+  //This will be needed by the velocity solver to create the 3D FE mesh.
+  indexToTriangleID.resize(nTriangles);
+  int maxTriangleID=std::numeric_limits<int>::min(), minTriangleID=std::numeric_limits<int>::max(), maxGlobalTriangleID, minGlobalTriangleID;
+  for (int index(0); index < nTriangles; index++) {
     indexToTriangleID[index] = fVertexToTriangleID[triangleToFVertex[index]];
+    maxTriangleID = (indexToTriangleID[index] > maxTriangleID) ? indexToTriangleID[index] : maxTriangleID;
+    minTriangleID = (indexToTriangleID[index] < minTriangleID) ? indexToTriangleID[index] : minTriangleID;
+  }
 
-  //Compute triangle edges
-  std::vector<int> fEdgeToEdge(nEdges_F), edgesToSend, trianglesProcIds(
-      nVertices_F);
-  getProcIds(trianglesProcIds, recvVerticesList_F);
+  MPI_Allreduce(&maxTriangleID, &maxGlobalTriangleID, 1, MPI_INT, MPI_MAX, comm);
+  MPI_Allreduce(&minTriangleID, &minGlobalTriangleID, 1, MPI_INT, MPI_MIN, comm);
+  globalTriangleStride = maxGlobalTriangleID - minGlobalTriangleID +1;
 
-  int interfaceSize(0);
+  // Second, we compute the FE edges belonging to the FE triangles owned by this processor.
+  // We first compute boundary edges, and then all the other edges.
+  std::vector<int> fEdgeToEdge(nEdges_F), edgesToSend;
 
   std::vector<int> fEdgeToEdgeID(nEdges_F, NotAnId);
   edgesToReceive.clear();
@@ -439,19 +507,26 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   edgesToSend.reserve(nEdgesSolve_F);
   isBoundaryEdge.reserve(nEdges_F);
 
-  //first, we compute boundary edges (boundary edges must be the first edges)
+  //we compute boundary edges (boundary edges must be the first edges)
   for (int i = 0; i < nEdges_F; i++) {
     ID fVertex1(verticesOnEdge_F[2 * i] - 1), fVertex2(
         verticesOnEdge_F[2 * i + 1] - 1);
+
+    // skip the (shared) edge when the associated MPAS vertices are not  valid
+    if((fVertex1>=nVertices_F) || (fVertex2>=nVertices_F))
+      continue;
+
     ID triaId_1 = fVertexToTriangleID[fVertex1];
     ID triaId_2 = fVertexToTriangleID[fVertex2];
     bool isboundary = (triaId_1 == NotAnId) || (triaId_2 == NotAnId);
 
     ID iTria1 = fVertexToTriangle[fVertex1];
     ID iTria2 = fVertexToTriangle[fVertex2];
-    if (iTria1 == NotAnId)
+    if (trianglesProcIds[fVertex1] != me) {
+      std::swap(fVertex1, fVertex2);
       std::swap(iTria1, iTria2);
-    bool belongsToLocalTriangle = (iTria1 != NotAnId) || (iTria2 != NotAnId);
+    }
+    bool belongsToLocalTriangle = (trianglesProcIds[fVertex1] == me);
 
     if (belongsToLocalTriangle) {
       if (isboundary) {
@@ -460,36 +535,36 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
         trianglesOnEdge.push_back(iTria1);
         trianglesOnEdge.push_back(iTria2);
         isBoundaryEdge.push_back(true);
-      } else
-        interfaceSize += (iTria2 == NotAnId);
+      }
     }
   }
 
   numBoundaryEdges = edgeToFEdge.size();
-
-  //procOnInterfaceEdge contains the pairs <id of interface edge, rank of processor that owns the non local element adjacent to the edge>.
-  std::vector < std::pair<int, int> > procOnInterfaceEdge;
-  procOnInterfaceEdge.reserve(interfaceSize);
 
   //then, we compute the other edges
   for (int i = 0; i < nEdges_F; i++) {
 
     ID fVertex1(verticesOnEdge_F[2 * i] - 1), fVertex2(
         verticesOnEdge_F[2 * i + 1] - 1);
+
+    // skip the (shared) edge when the associated MPAS vertices are not  valid
+    if((fVertex1>=nVertices_F) || (fVertex2>=nVertices_F))
+      continue;
+
     ID iTria1 = fVertexToTriangle[fVertex1];
     ID iTria2 = fVertexToTriangle[fVertex2];
 
     ID triaId_1 = fVertexToTriangleID[fVertex1]; //global Triangle
     ID triaId_2 = fVertexToTriangleID[fVertex2]; //global Triangle
 
-    if (iTria1 == NotAnId) {
-      std::swap(iTria1, iTria2);
+    if (trianglesProcIds[fVertex1] != me) {
       std::swap(fVertex1, fVertex2);
+      std::swap(iTria1, iTria2);
     }
 
     bool belongsToAnyTriangle = (triaId_1 != NotAnId) || (triaId_2 != NotAnId);
     bool isboundary = (triaId_1 == NotAnId) || (triaId_2 == NotAnId);
-    bool belongsToLocalTriangle = (iTria1 != NotAnId);
+    bool belongsToLocalTriangle = (trianglesProcIds[fVertex1] == me);
     bool isMine = i < nEdgesSolve_F;
 
     if (belongsToLocalTriangle && !isboundary) {
@@ -498,9 +573,6 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
       trianglesOnEdge.push_back(iTria1);
       trianglesOnEdge.push_back(iTria2);
       isBoundaryEdge.push_back(false);
-      if (iTria2 == NotAnId)
-        procOnInterfaceEdge.push_back(
-            std::make_pair(fEdgeToEdge[i], trianglesProcIds[fVertex2]));
     }
 
     if (belongsToAnyTriangle && isMine) {
@@ -511,27 +583,42 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
 
   }
 
-  //Compute the global number of edges, and the localOffset on the local processor, such that a globalID = localOffset + index
+  //If useContiguousIDs is defined, create a contiguous list of global edge IDs, otherwise use MPAS edges IDs
+#ifdef useContiguousIDs
+  //Compute the localOffset on the local processor, such that a globalID = localOffset + index
+  int nGlobalEdges;
   computeLocalOffset(edgesToSend.size(), localOffset, nGlobalEdges);
-
-  //Communicate the globalIDs, computed locally, to the other processors.
   for (ID index = 0; index < edgesToSend.size(); index++)
     fEdgeToEdgeID[edgesToSend[index]] = index + localOffset;
-
+  //Communicate the globalIDs, computed locally, to the other processors.
   allToAll(fEdgeToEdgeID, sendEdgesList_F, recvEdgesList_F);
+#else
+  for (int fEdge = 0; fEdge < nEdges_F; fEdge++)
+    fEdgeToEdgeID[fEdge] = indexToEdgeID_F[fEdge];
+#endif
 
   nEdges = edgeToFEdge.size();
   indexToEdgeID.resize(nEdges);
   floatingEdgesIds.clear();
   floatingEdgesIds.reserve(nEdges);
+  int maxEdgeID=std::numeric_limits<int>::min(), minEdgeID=std::numeric_limits<int>::max(), maxGlobalEdgeID, minGlobalEdgeID;
   for (int index = 0; index < nEdges; index++) {
     int fEdge = edgeToFEdge[index];
     indexToEdgeID[index] = fEdgeToEdgeID[fEdge];
+    maxEdgeID = (indexToEdgeID[index] > maxEdgeID) ? indexToEdgeID[index] : maxEdgeID;
+    minEdgeID = (indexToEdgeID[index] < minEdgeID) ? indexToEdgeID[index] : minEdgeID;
     if((floatingEdgesMask_F[fEdge]!=0)&&(index<numBoundaryEdges))
       floatingEdgesIds.push_back(indexToEdgeID[index]);
   }
 
-  //Compute vertices:
+  MPI_Allreduce(&maxEdgeID, &maxGlobalEdgeID, 1, MPI_INT, MPI_MAX, comm);
+  MPI_Allreduce(&minEdgeID, &minGlobalEdgeID, 1, MPI_INT, MPI_MIN, comm);
+  globalEdgeStride = maxGlobalEdgeID - minGlobalEdgeID + 1;
+
+
+  // Third, we compute the FE vertices belonging to the FE triangles owned by this processor.
+  // We need to make sure that an FE vertex is owned by a proc that owns a FE triangle that contain that vertex
+  // Otherwise we might end up with weird situation where a vertex could belong to a process with no associated triangle.
   std::vector<int> fCellsToSend;
   fCellsToSend.reserve(nCellsSolve_F);
 
@@ -542,20 +629,41 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   std::vector<int> fCellToVertexID(nCells_F, NotAnId);
 
   fCellsToReceive.clear();
+  vertexProcIDs.clear();
+
+  std::vector<int> verticesProcIds(nCells_F, NotAnId);
 
   fCellsToReceive.reserve(nCells_F - nCellsSolve_F);
+  vertexProcIDs.reserve(nCells_F);
   for (int i = 0; i < nCells_F; i++) {
     bool isMine = i < nCellsSolve_F;
     bool belongsToLocalTriangle = false;
     bool belongsToAnyTriangle = false;
     int nEdg = nEdgesOnCells_F[i];
+    bool invalidVertex = false;
+    int minTriangleProcId = std::numeric_limits<int>::max();
+    bool nodeOwnedByATriaProc = false;
     for (int j = 0; j < nEdg; j++) {
       ID fVertex(verticesOnCell_F[maxNEdgesOnCell_F * i + j] - 1);
-      ID iTria = fVertexToTriangle[fVertex];
+      if(fVertex >= nVertices_F) {
+        invalidVertex = true;
+        break;
+      }
+
       ID triaId = fVertexToTriangleID[fVertex];
-      belongsToLocalTriangle = belongsToLocalTriangle || (iTria != NotAnId);
+      belongsToLocalTriangle = belongsToLocalTriangle || (trianglesProcIds[fVertex] == me);
       belongsToAnyTriangle = belongsToAnyTriangle || (triaId != NotAnId);
+
+      if(triaId != NotAnId) {
+        nodeOwnedByATriaProc = nodeOwnedByATriaProc || (trianglesProcIds[fVertex] == fCellsProcIds[i]);
+        minTriangleProcId = (trianglesProcIds[fVertex] < minTriangleProcId) ? trianglesProcIds[fVertex] : minTriangleProcId;
+      }
     }
+
+    if(invalidVertex) continue;
+
+    if(belongsToAnyTriangle)
+      verticesProcIds[i] = nodeOwnedByATriaProc ? fCellsProcIds[i] : minTriangleProcId;
 
     if (belongsToAnyTriangle && isMine) {
       fCellsToSend.push_back(i);
@@ -566,42 +674,73 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
     if (belongsToLocalTriangle) {
       fCellToVertex[i] = vertexToFCell.size();
       vertexToFCell.push_back(i);
+      vertexProcIDs.push_back(reduced_ranks[verticesProcIds[i]]);
     }
   }
+  nVertices = vertexToFCell.size();
 
-  //Compute the global number of vertices, and the localOffset on the local processor, such that a globalID = localOffset + index
+  //If useContiguousIDs is defined, create a contiguous list of global FE vertices IDs, otherwise use MPAS cells IDs
+#ifdef useContiguousIDs
+  //Compute the localOffset on the local processor, such that a globalID = localOffset + index
+  int nGlobalVertices;
   computeLocalOffset(fCellsToSend.size(), localOffset, nGlobalVertices);
-
-  //Communicate the globalIDs, computed locally, to the other processors.
   for (int index = 0; index < int(fCellsToSend.size()); index++)
     fCellToVertexID[fCellsToSend[index]] = index + localOffset;
-
+  //Communicate the globalIDs, computed locally, to the other processors.
   allToAll(fCellToVertexID, sendCellsList_F, recvCellsList_F);
+#else
+  for (int fcell = 0; fcell < nCells_F; fcell++)
+      fCellToVertexID[fcell] = indexToCellID_F[fcell];
+#endif
 
-  nVertices = vertexToFCell.size();
-  int vertexColumnShift = (Ordering == 1) ? 1 : nGlobalVertices;
-  int vertexLayerShift = (Ordering == 0) ? 1 : nLayers + 1;
 
 
-  std::cout << "\n nvertices: " << nVertices << " " << nGlobalVertices << "\n"
-      << std::endl;
-
+  int maxVertexID=std::numeric_limits<int>::min(), minVertexID=std::numeric_limits<int>::max(), maxGlobalVertexID, minGlobalVertexID;
   indexToVertexID.resize(nVertices);
-  dirichletNodesIDs.clear();
-  dirichletNodesIDs.reserve(nVertices); //need to improve storage efficiency
   for (int index = 0; index < nVertices; index++) {
     int fCell = vertexToFCell[index];
     indexToVertexID[index] = fCellToVertexID[fCell];
+    maxVertexID = (indexToVertexID[index] > maxVertexID) ? indexToVertexID[index] : maxVertexID;
+    minVertexID = (indexToVertexID[index] < minVertexID) ? indexToVertexID[index] : minVertexID;
+  }
+
+  MPI_Allreduce(&maxVertexID, &maxGlobalVertexID, 1, MPI_INT, MPI_MAX, comm);
+  MPI_Allreduce(&minVertexID, &minGlobalVertexID, 1, MPI_INT, MPI_MIN, comm);
+  globalVertexStride = maxGlobalVertexID - minGlobalVertexID + 1;
+
+
+  int vertexColumnShift = (Ordering == 1) ? 1 : globalVertexStride;
+  int vertexLayerShift = (Ordering == 0) ? 1 : nLayers + 1;
+  dirichletNodesIDs.clear();
+  dirichletNodesIDs.reserve(nVertices); //need to improve storage efficiency
+  isVertexBoundary.assign(nVertices, false);
+  for (int index = 0; index < nVertices; index++) {
+    int fCell = vertexToFCell[index];
     for(int il=0; il< nLayers+1; ++il)
     {
       int imask_F = il+(nLayers+1)*fCell;
       if(dirichletCellsMask_F[imask_F]!=0)
         dirichletNodesIDs.push_back((nLayers-il)*vertexColumnShift+indexToVertexID[index]*vertexLayerShift);
     }
+
+    int nEdg = nEdgesOnCells_F[fCell];
+    int j = 0;
+    bool isBoundary;
+    do {
+      int fVertex = verticesOnCell_F[maxNEdgesOnCell_F * fCell + j++] - 1;
+      isBoundary = !(verticesMask_F[fVertex] & dynamic_ice_bit_value);
+    } while ((j < nEdg) && (!isBoundary));
+    isVertexBoundary[index] = isBoundary;
   }
 
+  // because we change the ownership of some vertices, we need to first communicate back to the processors that used to own those vertices
+  // the data of the newly owned vertices. We do this by defining "reversed" send and receive lists, communicate back using that list, and
+  // then communicate forward with the usual send and receive lists.
+  // We could join these two step in one communication, but for the moment we do that separately.
+  // We need to communicate info about the vertices when we get the ice velocity on vertices form the velocity solver/
+
   createReverseCellsExchangeLists(sendCellsListReversed, recvCellsListReversed,
-      fVertexToTriangleID, fCellToVertexID);
+      verticesProcIds, indexToCellID_F);
 
   //construct the local vector vertices on triangles making sure the area is positive
   verticesOnTria.resize(nTriangles * 3);
@@ -620,96 +759,24 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
       std::swap(verticesOnTria[3 * index + 1], verticesOnTria[3 * index + 2]);
   }
 
-  //construct the local vector vertices on edges
-  trianglesPositionsOnEdge.resize(2 * nEdges);
-  isVertexBoundary.assign(nVertices, false);
-
   verticesOnEdge.resize(2 * nEdges);
-
-  //contains the local id of a triangle and the global id of the edges of the triangle.
-  //dataForGhostTria[4*i] contains the triangle id
-  //dataForGhostTria[4*i+1+k] contains the global id of the edge (at position k = 0,1,2) of the triangle.
-  //Possible Optimization: for our purposes it would be enough to store two of the three edges of a triangle.
-  std::vector<int> dataForGhostTria(nVertices_F * 4, NotAnId);
-
-  //*
-  for (int iV = 0; iV < nVertices; iV++) {
-    int fCell = vertexToFCell[iV];
-    int nEdg = nEdgesOnCells_F[fCell];
-    int j = 0;
-    bool isBoundary;
-    do {
-      int fVertex = verticesOnCell_F[maxNEdgesOnCell_F * fCell + j++] - 1;
-      isBoundary = !(verticesMask_F[fVertex] & dynamic_ice_bit_value);
-    } while ((j < nEdg) && (!isBoundary));
-    isVertexBoundary[iV] = isBoundary;
-  }
-  /*/
-   for(int index=0; index<numBoundaryEdges; index++)
-   {
-   int fEdge = edgeToFEdge[index];
-   int v1 = fCellToVertex[cellsOnEdge_F[2*fEdge]-1];
-   int v2 = fCellToVertex[cellsOnEdge_F[2*fEdge+1]-1];
-   isVertexBoundary[ v1 ] = isVertexBoundary[ v2 ] = true;
-   }
-   //*/
-  //computing the position and local ids of the triangles adjacent to edges.
-  //in the case an adjacent triangle is not local, the position and id will be NotAnId.
-  //We will get the needed information about the non local edge leter on,
-  //for this purpose we fill the vector dataForGhostTria.
   for (int index = 0; index < nEdges; index++) {
-    int p1, p2, v1, v2, v3, t, position;
     int fEdge = edgeToFEdge[index];
     int fCell1 = cellsOnEdge_F[2 * fEdge] - 1;
     int fCell2 = cellsOnEdge_F[2 * fEdge + 1] - 1;
-    verticesOnEdge[2 * index] = p1 = fCellToVertex[fCell1];
-    verticesOnEdge[2 * index + 1] = p2 = fCellToVertex[fCell2];
-
-    for (int k = 0; k < 2 && (t = trianglesOnEdge[2 * index + k]) != NotAnId;
-        k++) {
-      v1 = verticesOnTria[3 * t];
-      v2 = verticesOnTria[3 * t + 1];
-      v3 = verticesOnTria[3 * t + 2];
-      position = (((p1 == v2) && (p2 == v3)) || ((p1 == v3) && (p2 == v2)))
-          + 2 * (((p1 == v1) && (p2 == v3)) || ((p1 == v3) && (p2 == v1)));
-      trianglesPositionsOnEdge[2 * index + k] = position;
-      int dataIndex = 4 * triangleToFVertex[t];
-
-      dataForGhostTria[dataIndex] = t;
-      dataForGhostTria[dataIndex + position + 1] = indexToEdgeID[index];
-    }
+    verticesOnEdge[2 * index] = fCellToVertex[fCell1];
+    verticesOnEdge[2 * index + 1] = fCellToVertex[fCell2];
   }
 
-  createReverseEdgesExchangeLists(sendEdgesListReversed, recvEdgesListReversed,
-      fVertexToTriangleID, fEdgeToEdgeID);
 
-  //send the information about ghost elements.
-  allToAll(dataForGhostTria, sendVerticesList_F, recvVerticesList_F, 4);
-
-  //retrieving the position, local id and owner processor of non local triangles adjacent to interface edges.
-  for (int index = 0; index < (int) procOnInterfaceEdge.size(); index++) {
-    int iEdge = procOnInterfaceEdge[index].first;
-    int fEdge = edgeToFEdge[iEdge];
-    ID fVertex1(verticesOnEdge_F[2 * fEdge] - 1), fVertex2(
-        verticesOnEdge_F[2 * fEdge + 1] - 1);
-    if ((ID) fVertexToTriangle[fVertex1] == NotAnId)
-      fVertex2 = fVertex1;
-    int dataIndex = 4 * fVertex2;
-    int edgeID = indexToEdgeID[iEdge];
-    int position = (dataForGhostTria[dataIndex + 2] == edgeID)
-        + 2 * (dataForGhostTria[dataIndex + 3] == edgeID);
-    trianglesOnEdge[2 * iEdge + 1] = dataForGhostTria[dataIndex];
-    trianglesPositionsOnEdge[2 * iEdge + 1] = position;
-  }
-
+  //call the velocity solver only on procs owning some FE triangles
   if (isDomainEmpty)
     return;
 
   velocity_solver_compute_2d_grid__(reducedComm);
 }
 
-void velocity_solver_extrude_3d_grid(double const* levelsRatio_F,
-    double const* lowerSurface_F, double const* thickness_F) {
+void velocity_solver_extrude_3d_grid(double const* levelsRatio_F) {
 
   if (isDomainEmpty)
     return;
@@ -718,7 +785,6 @@ void velocity_solver_extrude_3d_grid(double const* levelsRatio_F,
   // !!Indexing of layers is reversed
   for (int i = 0; i < nLayers; i++)
     layersRatio[i] = levelsRatio_F[nLayers - 1 - i];
-  //std::copy(levelsRatio_F, levelsRatio_F+nLayers, layersRatio.begin());
 
   levelsNormalizedThickness.resize(nLayers + 1);
 
@@ -745,10 +811,10 @@ void velocity_solver_extrude_3d_grid(double const* levelsRatio_F,
   for(int i=0; i< nVertices; i++)
     procsSharingVertex(i, procsSharingVertices[i]);
 
-  velocity_solver_extrude_3d_grid__(nLayers, nGlobalTriangles, nGlobalVertices,
-      nGlobalEdges, Ordering, reducedComm, indexToVertexID, mpasIndexToVertexID,
-      verticesCoords, isVertexBoundary, verticesOnTria, procsSharingVertices, isBoundaryEdge,
-      trianglesOnEdge, trianglesPositionsOnEdge, verticesOnEdge, indexToEdgeID,
+  velocity_solver_extrude_3d_grid__(nLayers, globalTriangleStride, globalVertexStride,
+      globalEdgeStride, Ordering, reducedComm, indexToVertexID, mpasIndexToVertexID, vertexProcIDs,
+      verticesCoords, verticesOnTria, procsSharingVertices, isBoundaryEdge,
+      trianglesOnEdge, verticesOnEdge, indexToEdgeID,
       indexToTriangleID, dirichletNodesIDs, floatingEdgesIds);
   }
 
@@ -790,11 +856,7 @@ void interface_init_log(){
   }
   strcat(oformat, ".out");
 
-  if (me == 0) {
-    sprintf(albany_log_filename, oformat, me);
-  } else {
-    strcpy(albany_log_filename, "/dev/null");
-  }
+  sprintf(albany_log_filename, oformat, me);
 
   Interface_stdout = open(albany_log_filename, O_CREAT|O_WRONLY|O_TRUNC,0644);
   if(Interface_stdout >=  0) {
@@ -856,14 +918,9 @@ void get_prism_velocity_on_FEdges(double * uNormal,
 
   UInt nPoints3D = nCells_F * (nLayers + 1);
 
-  // Loop over all edges of the triangulation - MPAS will decide which edges it should use.
-  for (int i = 0; i < nEdges; i++) {
-
-    //identifying vertices on the edge
-    ID lId0 = verticesOnEdge[2 * i];
-    ID lId1 = verticesOnEdge[2 * i + 1];
-    int iCell0 = vertexToFCell[lId0];
-    int iCell1 = vertexToFCell[lId1];
+  for (int iEdge = 0; iEdge < nEdgesSolve_F; iEdge++) {
+    int iCell0 = cellsOnEdge_F[2 * iEdge] - 1;
+    int iCell1 = cellsOnEdge_F[2 * iEdge + 1] - 1;
 
     //computing normal to the cell edge (dual of triangular edge)
     double nx = xCell_F[iCell1] - xCell_F[iCell0];
@@ -873,9 +930,14 @@ void get_prism_velocity_on_FEdges(double * uNormal,
     ny /= n;
 
     //identifying triangles that shares the edge
-    ID iEdge = edgeToFEdge[i];
     ID fVertex0 = verticesOnEdge_F[2 * iEdge] - 1;
     ID fVertex1 = verticesOnEdge_F[2 * iEdge + 1] - 1;
+
+
+    int iTria0 = fVertexToTriangleID[fVertex0];
+    int iTria1 = fVertexToTriangleID[fVertex1];
+    if((iTria0 == NotAnId) && (iTria1 == NotAnId)) continue;
+
     double t0[2*3], t1[2*3]; //t0[0] contains the x-coords of vertices of triangle 0 and t0[1] its y-coords.
     for (int j = 0; j < 3; j++) {
       int iCell = cellsOnVertex_F[3 * fVertex0 + j] - 1;
@@ -906,7 +968,7 @@ void get_prism_velocity_on_FEdges(double * uNormal,
       for (int j = 0; j < 3; j++)
         iCells[j] = cellsOnVertex_F[3 * fVertex1 + j] - 1;
       }
-   else if(i<numBoundaryEdges) {
+   else if((iTria0 == NotAnId) || (iTria1 == NotAnId)) { //is on Boundary
       //edge is on boundary and wasn't found by previous two cases
       //For boundary edges one of the two triangles sharing the edge won't be part of the velocity solver's mesh and the dynamic_ice_bit_value will be 0.
 
@@ -942,7 +1004,6 @@ void get_prism_velocity_on_FEdges(double * uNormal,
       std::cout <<"\n midpoint: ("<<e_mid[0]<<","<<e_mid[1]<<")"<<std::endl;
       exit(1);
    }
-
 
     for (int il = 0; il < nLayers+1; il++) { //loop over layers
       int ilReversed = nLayers - il;
@@ -996,34 +1057,21 @@ void mapVerticesToCells(const std::vector<double>& velocityOnVertices,
   }
 }
 
-void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
+void createReverseVerticesExchangeLists(exchangeList_Type& sendListReverse_F,
     exchangeList_Type& receiveListReverse_F,
-    const std::vector<int>& fVertexToTriangleID,
-    const std::vector<int>& fCellToVertexID) {
+    const std::vector<int>& trianglesProcIds, const int* indexToVertexID_F) {
   sendListReverse_F.clear();
   receiveListReverse_F.clear();
-  //std::map<int, std::vector<int> > sendMap;
   std::map<int, std::map<int, int> > sendMap, receiveMap;
-  std::vector<int> cellsProcId(nCells_F), trianglesProcIds(nVertices_F);
-  getProcIds(cellsProcId, recvCellsList_F);
-  getProcIds(trianglesProcIds, recvVerticesList_F);
-
-  for (int i = 0; i < nVertices; i++) {
-    int iCell = vertexToFCell[i];
-    if (iCell < nCellsSolve_F)
-      continue;
-    bool belongToTriaOnSameProc = false;
-    int j(0);
-    int nEdg = nEdgesOnCells_F[iCell];
-    do {
-      ID fVertex(verticesOnCell_F[maxNEdgesOnCell_F * iCell + j] - 1);
-      ID triaId = fVertexToTriangleID[fVertex];
-      belongToTriaOnSameProc = (triaId != NotAnId)
-          && (trianglesProcIds[fVertex] == cellsProcId[iCell]);
-    } while ((belongToTriaOnSameProc == false) && (++j < nEdg));
-    if (!belongToTriaOnSameProc) {
-      sendMap[cellsProcId[iCell]].insert(
-          std::make_pair(fCellToVertexID[iCell], iCell));
+  std::vector<int> verticesProcIds(nVertices_F);
+  getProcIds(verticesProcIds, recvVerticesList_F);
+  int me;
+  MPI_Comm_rank(comm, &me);
+  for (int i = 0; i < nTriangles; i++) {
+    int iVertex = triangleToFVertex[i];
+    if ((iVertex >= nVerticesSolve_F) && (trianglesProcIds[iVertex] == me)) {
+      sendMap[verticesProcIds[iVertex]].insert(
+        std::make_pair(indexToVertexID_F[iVertex]-1, iVertex));
     }
   }
 
@@ -1038,16 +1086,10 @@ void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
         exchange(it->first, &sendVec[0], &sendVec[0] + sendVec.size()));
   }
 
-  for (UInt i = 0; i < fCellsToReceive.size(); i++) {
-    int iCell = fCellsToReceive[i];
-    int nEdg = nEdgesOnCells_F[iCell];
-    for (int j = 0; j < nEdg; j++) {
-      ID fVertex(verticesOnCell_F[maxNEdgesOnCell_F * iCell + j] - 1);
-      ID triaId = fVertexToTriangleID[fVertex];
-      if (triaId != NotAnId) {
-        receiveMap[trianglesProcIds[fVertex]].insert(
-            std::make_pair(fCellToVertexID[iCell], iCell));
-      }
+  for (int iVertex = 0; iVertex < nVerticesSolve_F; iVertex++) {
+    if((trianglesProcIds[iVertex] != NotAnId) && (trianglesProcIds[iVertex] != me)) {
+      receiveMap[trianglesProcIds[iVertex]].insert(
+        std::make_pair(indexToVertexID_F[iVertex]-1, iVertex));
     }
   }
 
@@ -1064,33 +1106,21 @@ void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
   }
 }
 
-void createReverseEdgesExchangeLists(exchangeList_Type& sendListReverse_F,
+void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
     exchangeList_Type& receiveListReverse_F,
-    const std::vector<int>& fVertexToTriangleID,
-    const std::vector<int>& fEdgeToEdgeID) {
+    const std::vector<int>& verticesProcIds, const int* indexToCellID_F) {
   sendListReverse_F.clear();
   receiveListReverse_F.clear();
-  //std::map<int, std::vector<int> > sendMap;
   std::map<int, std::map<int, int> > sendMap, receiveMap;
-  std::vector<int> edgesProcId(nEdges_F), trianglesProcIds(nVertices_F);
-  getProcIds(edgesProcId, recvEdgesList_F);
-  getProcIds(trianglesProcIds, recvVerticesList_F);
-
-  for (int i = 0; i < nEdges; i++) {
-    int iEdge = edgeToFEdge[i];
-    if (iEdge < nEdgesSolve_F)
-      continue;
-    bool belongToTriaOnSameProc = false;
-    int j(0);
-    do {
-      ID fVertex(verticesOnEdge_F[2 * iEdge + j] - 1);
-      ID triaId = fVertexToTriangleID[fVertex];
-      belongToTriaOnSameProc = (triaId != NotAnId)
-          && (trianglesProcIds[fVertex] == edgesProcId[iEdge]);
-    } while ((belongToTriaOnSameProc == false) && (++j < 2));
-    if (!belongToTriaOnSameProc) {
-      sendMap[edgesProcId[iEdge]].insert(
-          std::make_pair(fEdgeToEdgeID[iEdge], iEdge));
+  std::vector<int> CellsProcIds(nCells_F);
+  getProcIds(CellsProcIds, recvCellsList_F);
+  int me;
+  MPI_Comm_rank(comm, &me);
+  for (int i = 0; i < nVertices; i++) {
+    int iCell = vertexToFCell[i];
+    if ((iCell >= nCellsSolve_F) && (verticesProcIds[iCell] == me)) {
+      sendMap[CellsProcIds[iCell]].insert(
+        std::make_pair(indexToCellID_F[iCell]-1, iCell));
     }
   }
 
@@ -1105,15 +1135,10 @@ void createReverseEdgesExchangeLists(exchangeList_Type& sendListReverse_F,
         exchange(it->first, &sendVec[0], &sendVec[0] + sendVec.size()));
   }
 
-  for (UInt i = 0; i < edgesToReceive.size(); i++) {
-    int iEdge = edgesToReceive[i];
-    for (int j = 0; j < 2; j++) {
-      ID fVertex(verticesOnEdge_F[2 * iEdge + j] - 1);
-      ID triaId = fVertexToTriangleID[fVertex];
-      if (triaId != NotAnId) {
-        receiveMap[trianglesProcIds[fVertex]].insert(
-            std::make_pair(fEdgeToEdgeID[iEdge], iEdge));
-      }
+  for (int iCell = 0; iCell < nCellsSolve_F; iCell++) {
+    if((verticesProcIds[iCell] != NotAnId) && (verticesProcIds[iCell] != me)) {
+      receiveMap[verticesProcIds[iCell]].insert(
+      std::make_pair(indexToCellID_F[iCell]-1, iCell));
     }
   }
 
@@ -1152,19 +1177,6 @@ void mapCellsToVertices(const std::vector<double>& velocityOnCells,
       vertexIndex += nVertices3D;
     }
   }
-}
-
-bool isGhostTriangle(int i, double relTol) {
-  double x[3], y[3], area;
-
-  for (int j = 0; j < 3; j++) {
-    int iCell = cellsOnVertex_F[3 * i + j] - 1;
-    x[j] = xCell_F[iCell];
-    y[j] = yCell_F[iCell];
-  }
-
-  area = std::fabs(signedTriangleArea(x, y));
-  return false; //(std::fabs(areaTriangle_F[i]-area)/areaTriangle_F[i] > relTol);
 }
 
 double signedTriangleArea(const double* x, const double* y) {
@@ -1273,11 +1285,6 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
          bool foundNeighbor = false;
          for (int j = 0; j < nEdg; j++) {
            int fEdge = edgesOnCell_F[maxNEdgesOnCell_F * fCell + j] - 1;
-           //bool keep = (mask[verticesOnEdge_F[2 * fEdge] - 1] & dynamic_ice_bit_value)
-           //    && (mask[verticesOnEdge_F[2 * fEdge + 1] - 1] & dynamic_ice_bit_value);
-           //if (!keep)
-           //  continue;
-
            int c0 = cellsOnEdge_F[2 * fEdge] - 1;
            int c1 = cellsOnEdge_F[2 * fEdge + 1] - 1;
            c = (fCellToVertex[c0] == iV) ? c1 : c0;
@@ -1426,7 +1433,9 @@ void exportDissipationHeat(double * dissipationHeat_F) {
 
     }
   }
-  //allToAll (dissipationHeat_F,  &sendVerticesListReversed, &recvEdgesListReversed, nLayers+1);
+#ifdef  changeTrianglesOwnership
+  allToAll (dissipationHeat_F,  &sendVerticesListReversed, &recvVerticesListReversed, nLayers);
+#endif
   allToAll (dissipationHeat_F,  sendVerticesList_F, recvVerticesList_F, nLayers);
 }
 
@@ -1441,7 +1450,7 @@ void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id) {
   int nonEmpty = int(nLocalEntities > 0);
   MPI_Allgather(&nonEmpty, 1, MPI_INT, &haveElements[0], 1, MPI_INT, comm);
   std::vector<int> ranks;
-  reduced_ranks.resize(numProcs,0);
+  reduced_ranks.assign(numProcs,-1);
   for (int i = 0; i < numProcs; i++) {
     if (haveElements[i]) {
       reduced_ranks[i] = ranks.size();
@@ -1701,7 +1710,6 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     int nEdg = nEdgesOnCells_F[fCell];
     int me;
     MPI_Comm_rank(comm, &me);
-    procIds.reserve(nEdg);
     for(int i=0; i<nEdg; ++i) {
       int fVertex = verticesOnCell_F[maxNEdgesOnCell_F * fCell + i]-1;
       if (verticesMask_F[fVertex] & dynamic_ice_bit_value) {

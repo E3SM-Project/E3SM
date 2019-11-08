@@ -106,6 +106,8 @@ void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
     int const* _verticesOnCell_F, int const* _verticesOnEdge_F,
     int const* _edgesOnCell_F, int const* _nEdgesOnCells_F,
     int const* _indexToCellID_F,
+    int const* _indexToEdgeID_F,
+    int const* _indexToVertexID_F,
     double const* _xCell_F, double const* _yCell_F, double const* _zCell_F,
     double const* _xVertex_F, double const* _yVertex_F, double const* _zVertex_F,
     double const* _areaTriangle_F,
@@ -113,8 +115,7 @@ void velocity_solver_set_grid_data(int const* _nCells_F, int const* _nEdges_F,
     int const* sendEdgesArray_F, int const* recvEdgesArray_F,
     int const* sendVerticesArray_F, int const* recvVerticesArray_F);
 
-void velocity_solver_extrude_3d_grid(double const* levelsRatio_F,
-    double const* lowerSurface_F, double const* thickness_F);
+void velocity_solver_extrude_3d_grid(double const* levelsRatio_F);
 
 void velocity_solver_export_l1l2_velocity();
 
@@ -140,7 +141,7 @@ void write_ascii_mesh(int const* indexToCellID_F,
 
 } // extern "C"
 
-extern int velocity_solver_init_mpi__(int* fComm);
+extern int velocity_solver_init_mpi__(MPI_Comm comm);
 extern void velocity_solver_finalize__();
 
 extern void velocity_solver_set_physical_parameters__(double const& gravity, double const& ice_density, double const& ocean_density, double const& sea_level, double const& flowParamA, 
@@ -174,17 +175,17 @@ extern void velocity_solver_export_2d_data__(MPI_Comm reducedComm,
     const std::vector<double>& betaData,
     const std::vector<int>& indexToVertexID);
 
-extern void velocity_solver_extrude_3d_grid__(int nLayers, int nGlobalTriangles,
-    int nGlobalVertices, int nGlobalEdges, int Ordering, MPI_Comm reducedComm,
+extern void velocity_solver_extrude_3d_grid__(
+    int nLayers, int globalTriangleStride, int globalVertexStride, int globalEdgeStride,
+    int Ordering, MPI_Comm reducedComm,
     const std::vector<int>& indexToVertexID,
     const std::vector<int>& mpasIndexToVertexID,
+    const std::vector<int>& vertexProcIDs,
     const std::vector<double>& verticesCoords,
-    const std::vector<bool>& isVertexBoundary,
     const std::vector<int>& verticesOnTria,
     const std::vector<std::vector<int>> procsSharingVertices,
     const std::vector<bool>& isBoundaryEdge,
     const std::vector<int>& trianglesOnEdge,
-    const std::vector<int>& trianglesPositionsOnEdge,
     const std::vector<int>& verticesOnEdge,
     const std::vector<int>& indexToEdgeID,
     const std::vector<int>& indexToTriangleID,
@@ -194,8 +195,6 @@ extern void velocity_solver_extrude_3d_grid__(int nLayers, int nGlobalTriangles,
 extern void velocity_solver_export_fo_velocity__(MPI_Comm reducedComm);
 
 exchangeList_Type unpackMpiArray(int const* array);
-
-bool isGhostTriangle(int i, double relTol = 1e-1);
 
 double signedTriangleArea(const double* x, const double* y);
 
@@ -232,15 +231,14 @@ void get_prism_velocity_on_FEdges(double* uNormal,
 
 int initialize_iceProblem(int nTriangles);
 
+void createReverseVerticesExchangeLists(exchangeList_Type& sendListReverse_F,
+    exchangeList_Type& receiveListReverse_F,
+    const std::vector<int>& fVertexToTriangleID, const int* indexToVertexID_F);
+
 void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
     exchangeList_Type& receiveListReverse_F,
-    const std::vector<int>& fVertexToTriangleID,
-    const std::vector<int>& fCellToVertexID);
-
-void createReverseEdgesExchangeLists(exchangeList_Type& sendListReverse_F,
-    exchangeList_Type& receiveListReverse_F,
-    const std::vector<int>& fVertexToTriangleID,
-    const std::vector<int>& fEdgeToEdgeID);
+    const std::vector<int>& fCellToVertexID,
+    const int* indexToCellID_F);
 
 void mapCellsToVertices(const std::vector<double>& velocityOnCells,
     std::vector<double>& velocityOnVertices, int fieldDim, int numLayers,
