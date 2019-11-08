@@ -752,8 +752,6 @@ class EnvBatch(EnvBase):
     def _get_all_queue_names(self):
         all_queues = []
         all_queues = self.get_all_queues()
-        # Default queue needs to be first
-        all_queues.insert(0, self.get_default_queue())
 
         queue_names = []
         for queue in all_queues:
@@ -811,6 +809,7 @@ class EnvBatch(EnvBase):
     def get_all_queues(self, name=None):
         bs_nodes = self.get_children("batch_system")
         nodes = []
+        default_idx = None
         for bsnode in bs_nodes:
             qsnode = self.get_optional_child("queues", root=bsnode)
             if qsnode is not None:
@@ -818,6 +817,14 @@ class EnvBatch(EnvBase):
                 for qnode in qnodes:
                     if name is None or self.text(qnode) == name:
                         nodes.append(qnode)
+                        if self.get(qnode, "default", default="false") == "true":
+                            default_idx = len(nodes) - 1
+
+        # Queues are selected by first match, so we want the queue marked
+        # as default to come first.
+        if default_idx is not None:
+            def_node = nodes.pop(default_idx)
+            nodes.insert(0, def_node)
 
         return nodes
 
