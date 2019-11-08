@@ -7,10 +7,8 @@ module shr_carma_mod
 
   use shr_kind_mod , only : r8 => shr_kind_r8, CX => SHR_KIND_CX
   use shr_sys_mod  , only : shr_sys_abort
-  use shr_log_mod  , only : loglev  => shr_log_Level
   use shr_log_mod  , only : logunit => shr_log_Unit
   use shr_nl_mod   , only : shr_nl_find_group_name
-  use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
 
   implicit none
   private
@@ -51,11 +49,8 @@ contains
     if (localpet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
-          unitn = shr_file_getUnit()
-          open( unitn, file=trim(NLFilename), status='old' )
-          if ( loglev > 0) then
-             write(logunit,F00) 'Read in carma_inparm namelist from: ', trim(NLFilename)
-          end if
+          open(newunit=unitn, file=trim(NLFilename), status='old' )
+          write(logunit,F00) 'Read in carma_inparm namelist from: ', trim(NLFilename)
           call shr_nl_find_group_name(unitn, 'carma_inparm', status=ierr)
           if (ierr == 0) then
              read(unitn, carma_inparm, iostat=ierr)
@@ -66,7 +61,6 @@ contains
              write(logunit,*) 'shr_carma_readnl:  no carma_inparm namelist found in ',NLFilename
           end if
           close( unitn )
-          call shr_file_freeUnit( unitn )
        else
           write(logunit,*) 'shr_carma_readnl:  no file ',NLFilename, ' found'
        end if
