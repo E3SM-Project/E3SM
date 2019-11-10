@@ -2761,7 +2761,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
-  use nudging,             only: Nudge_Model,nudging_timestep_init
+  use nudging,             only: Nudge_Model,Nudge_Data,nudging_timestep_init
 
   use seasalt_model,       only: advance_ocean_data, has_mam_mom
 
@@ -2831,6 +2831,24 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
 
   ! age of air tracers
   call aoa_tracers_timestep_init(phys_state)
+
+  !--------------------------------------------------------
+  ! Generate Nudging data if needed. This data is used 
+  ! for nudging to CLIM experiment the output here is 
+  ! to make the output nudging data and calculation of 
+  ! nudging tendency  in the same time level
+  !-------------------------------------------------------
+  if (Nudge_Data)  then
+   call cnst_get_ind('Q',indw)
+   do c=begchunk, endchunk
+    ncol = phys_state(c)%ncol
+    call outfld('T_ndg   ',phys_state(c)%t        , pcols   ,c   )
+    call outfld('PS_ndg  ',phys_state(c)%ps       , pcols   ,c   )
+    call outfld('U_ndg   ',phys_state(c)%u        , pcols   ,c   )
+    call outfld('V_ndg   ',phys_state(c)%v        , pcols   ,c   )
+    call outfld('Q_ndg   ',phys_state(c)%q(1,1,1) , pcols   ,c   )
+   end do
+  end if
 
   ! Update Nudging values, if needed
   !----------------------------------

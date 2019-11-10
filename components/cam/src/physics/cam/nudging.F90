@@ -234,6 +234,9 @@ module nudging
   public:: nudging_init
   public:: nudging_timestep_init
   public:: nudging_timestep_tend
+!!==> SZ ADD  
+  public:: Nudge_Data
+!!==> SZ END  
   private::nudging_update_analyses_se
   private::nudging_update_analyses_eul
   private::nudging_update_analyses_fv
@@ -252,6 +255,9 @@ module nudging
   logical::         Nudge_ON          =.false.
   logical::         Nudge_File_Present=.false.
   logical::         Nudge_Initialized =.false.
+!!==> SZ ADD  
+  logical::         Nudge_Data        =.false.
+!!==> SZ END  
   character(len=cl) Nudge_Path
   character(len=cs) Nudge_File,Nudge_File_Template
   integer           Nudge_Times_Per_Day
@@ -324,6 +330,7 @@ module nudging
 !!==> JS ADD
   character(len=10) :: Nudge_Method         ! nudge method 
   real(r8)          :: Nudge_Tau            ! nudge relaxation timescale
+!!==> JS END
   integer :: p_cur                          ! current time index of interpolated 
 					    ! nudge data within an interval
   integer :: n_cnt			    ! number of read-in nudge data
@@ -338,6 +345,13 @@ module nudging
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_T       ! (pcols,pver,begchunk:endchunk,:)
   real(r8), allocatable, dimension(:,:,:,:) :: INTP_Q       ! (pcols,pver,begchunk:endchunk,:)
 !!==> JS END
+!!==> SZ ADD
+  character(len=10) :: Nudge_Unam           ! nudge method
+  character(len=10) :: Nudge_Vnam           ! nudge method
+  character(len=10) :: Nudge_Qnam           ! nudge method
+  character(len=10) :: Nudge_Tnam           ! nudge method
+!!==> SZ END
+
 
 contains
   !================================================================
@@ -377,8 +391,12 @@ contains
                          Nudge_Vwin_Lindex,Nudge_Vwin_Hindex,          &
                          Nudge_Vwin_Ldelta,Nudge_Vwin_Hdelta,          &
 !!==> JS ADD
-                         Nudge_Method, Nudge_Tau
+                         Nudge_Method, Nudge_Tau,                      &
 !!==> JS END
+!!==> SZ ADD
+                         Nudge_Data,Nudge_Unam, Nudge_Vnam,            &
+                         Nudge_Tnam, Nudge_Qnam 
+!!==> SZ END
 
    ! Nudging is NOT initialized yet, For now
    ! Nudging will always begin/end at midnight.
@@ -430,6 +448,14 @@ contains
    Nudge_Method       = 'Step'
    Nudge_Tau          = 0._r8
 !!==> JS END
+!!==> SZ ADD          
+   Nudge_Data         = .false.
+   Nudge_Unam         = 'U'
+   Nudge_Vnam         = 'V'
+   Nudge_Tnam         = 'T'
+   Nudge_Qnam         = 'Q'
+!!==> SZ END
+
    ! Read in namelist values
    !------------------------
    if(masterproc) then
@@ -546,6 +572,13 @@ contains
    call mpibcast(Nudge_Method,len(Nudge_Method),mpichar,0,mpicom)
    call mpibcast(Nudge_Tau,1,mpir8,0,mpicom)
 !!==> JS END
+!!==> SZ ADD
+   call mpibcast(Nudge_Data, 1, mpilog, 0, mpicom)
+   call mpibcast(Nudge_Unam,len(Nudge_Unam),mpichar,0,mpicom)
+   call mpibcast(Nudge_Vnam,len(Nudge_Vnam),mpichar,0,mpicom)
+   call mpibcast(Nudge_Tnam,len(Nudge_Tnam),mpichar,0,mpicom)
+   call mpibcast(Nudge_Qnam,len(Nudge_Qnam),mpichar,0,mpicom)
+!!==> SZ END
 #endif
 
    ! End Routine
@@ -630,6 +663,7 @@ contains
    call alloc_err(istat,'nudging_init','Nudge_Qstep',pcols*pver*((endchunk-begchunk)+1))
    allocate(Nudge_PSstep(pcols,begchunk:endchunk),stat=istat)
    call alloc_err(istat,'nudging_init','Nudge_PSstep',pcols*((endchunk-begchunk)+1))
+
 
    ! Register output fields with the cam history module
    !-----------------------------------------------------
@@ -824,6 +858,13 @@ contains
      write(iulog,*) 'NUDGING: Nudge_Method        =',Nudge_Method
      write(iulog,*) 'NUDGING: Nudge_Tau           =',Nudge_Tau
 !!==> JS END
+!!==> SZ ADD
+     write(iulog,*) 'NUDGING: Nudge_Data          =',Nudge_Data
+     write(iulog,*) 'NUDGING: Nudge_Unam          =',Nudge_Unam
+     write(iulog,*) 'NUDGING: Nudge_Vnam          =',Nudge_Vnam
+     write(iulog,*) 'NUDGING: Nudge_Tnam          =',Nudge_Tnam
+     write(iulog,*) 'NUDGING: Nudge_Qnam          =',Nudge_Qnam
+!!==> SZ END
      write(iulog,*) ' '
      write(iulog,*) ' '
 
@@ -1109,16 +1150,16 @@ contains
             case ('Linear')
                  call t_startf ('nudging_interp')
                  if (Nudge_Uprof .ne. 0) then 
-                    call linear_interpolation (INTP_U, Target_U, interval, p_cur)
+                    call linear_interpolation (INTP_U, Target_U, interval, p_cur-1)
                  end if
                  if (Nudge_Vprof .ne. 0) then 
-                    call linear_interpolation (INTP_V, Target_V, interval, p_cur)
+                    call linear_interpolation (INTP_V, Target_V, interval, p_cur-1)
                  end if
                  if (Nudge_Qprof .ne. 0) then 
-                    call linear_interpolation (INTP_Q, Target_Q, interval, p_cur)
+                    call linear_interpolation (INTP_Q, Target_Q, interval, p_cur-1)
                  end if
                  if (Nudge_Tprof .ne. 0) then 
-                    call linear_interpolation (INTP_T, Target_T, interval, p_cur)
+                    call linear_interpolation (INTP_T, Target_T, interval, p_cur-1)
                  end if
                  call t_stopf ('nudging_interp')
             case default
@@ -1409,10 +1450,10 @@ contains
               cnt3(2)  = pver
               cnt3(3)  = 1
            end if
-           call read_and_scatter_se(ncid, 'U', Nudge_Uprof, strt3, cnt3, Target_U)
-           call read_and_scatter_se(ncid, 'V', Nudge_Vprof, strt3, cnt3, Target_V)
-           call read_and_scatter_se(ncid, 'T', Nudge_Tprof, strt3, cnt3, Target_T)
-           call read_and_scatter_se(ncid, 'Q', Nudge_Qprof, strt3, cnt3, Target_Q)
+           call read_and_scatter_se(ncid, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt3, cnt3, Target_U)
+           call read_and_scatter_se(ncid, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt3, cnt3, Target_V)
+           call read_and_scatter_se(ncid, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt3, cnt3, Target_T)
+           call read_and_scatter_se(ncid, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt3, cnt3, Target_Q)
 
       case ('IMT')
            if (masterproc) then
@@ -1431,10 +1472,10 @@ contains
            end if
            ! Use the CURR time slice for nudging
            !------------------------------------
-           call read_and_scatter_se(ncid1, 'U', Nudge_Uprof, strt3, cnt3, Target_U)
-           call read_and_scatter_se(ncid1, 'V', Nudge_Vprof, strt3, cnt3, Target_V)
-           call read_and_scatter_se(ncid1, 'T', Nudge_Tprof, strt3, cnt3, Target_T)
-           call read_and_scatter_se(ncid1, 'Q', Nudge_Qprof, strt3, cnt3, Target_Q)
+           call read_and_scatter_se(ncid1, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt3, cnt3, Target_U)
+           call read_and_scatter_se(ncid1, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt3, cnt3, Target_V)
+           call read_and_scatter_se(ncid1, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt3, cnt3, Target_T)
+           call read_and_scatter_se(ncid1, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt3, cnt3, Target_Q)
            n_cnt = n_cnt + 1
 
       case ('Linear')
@@ -1457,17 +1498,17 @@ contains
                   
                   ! The start point uses the CURR time slice
                   !-----------------------------------------
-                  call read_and_scatter_se(ncid1, 'U', Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,1))
-                  call read_and_scatter_se(ncid1, 'V', Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,1))
-                  call read_and_scatter_se(ncid1, 'T', Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,1))
-                  call read_and_scatter_se(ncid1, 'Q', Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,1))
+                  call read_and_scatter_se(ncid1, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,1))
+                  call read_and_scatter_se(ncid1, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,1))
+                  call read_and_scatter_se(ncid1, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,1))
+                  call read_and_scatter_se(ncid1, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,1))
                 
                   ! The end point uses the NEXT time slice
                   !---------------------------------------
-                  call read_and_scatter_se(ncid, 'U', Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,2))
-                  call read_and_scatter_se(ncid, 'V', Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,2))
-                  call read_and_scatter_se(ncid, 'T', Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,2))
-                  call read_and_scatter_se(ncid, 'Q', Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,2))
 
                   call t_startf ('read_nudging_data')
                   if (masterproc) then
@@ -1493,10 +1534,10 @@ contains
                   cnt3(1)  = ncol
                   cnt3(2)  = pver
                   cnt3(3)  = 1
-                  call read_and_scatter_se(ncid, 'U', Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,2))
-                  call read_and_scatter_se(ncid, 'V', Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,2))
-                  call read_and_scatter_se(ncid, 'T', Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,2))
-                  call read_and_scatter_se(ncid, 'Q', Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,2))
 
               end if    ! first file for single time slice per file
 
@@ -1514,10 +1555,10 @@ contains
                      cnt3(1)  = ncol
                      cnt3(2)  = pver
                      cnt3(3)  = 1
-                     call read_and_scatter_se(ncid, 'U', Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,n))
-                     call read_and_scatter_se(ncid, 'V', Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,n))
-                     call read_and_scatter_se(ncid, 'T', Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,n))
-                     call read_and_scatter_se(ncid, 'Q', Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,n))
+                     call read_and_scatter_se(ncid, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,n))
+                     call read_and_scatter_se(ncid, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,n))
+                     call read_and_scatter_se(ncid, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,n))
+                     call read_and_scatter_se(ncid, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,n))
                   end do
                   n_cnt = n_cnt + 2
 
@@ -1539,10 +1580,10 @@ contains
                   cnt3(1)  = ncol
                   cnt3(2)  = pver
                   cnt3(3)  = 1
-                  call read_and_scatter_se(ncid, 'U', Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,2))
-                  call read_and_scatter_se(ncid, 'V', Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,2))
-                  call read_and_scatter_se(ncid, 'T', Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,2))
-                  call read_and_scatter_se(ncid, 'Q', Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt3, cnt3, INTP_U(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt3, cnt3, INTP_V(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt3, cnt3, INTP_T(:,:,:,2))
+                  call read_and_scatter_se(ncid, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt3, cnt3, INTP_Q(:,:,:,2))
                   n_cnt = n_cnt + 1
 
               end if ! first_file for multiple time slices
@@ -2014,10 +2055,10 @@ contains
               cnt4(3)  = pver
               cnt4(4)  = 1
            end if
-           call read_and_scatter_fv(ncid, 'U', Nudge_Uprof, strt4, cnt4, Target_U)
-           call read_and_scatter_fv(ncid, 'V', Nudge_Vprof, strt4, cnt4, Target_V)
-           call read_and_scatter_fv(ncid, 'T', Nudge_Tprof, strt4, cnt4, Target_T)
-           call read_and_scatter_fv(ncid, 'Q', Nudge_Qprof, strt4, cnt4, Target_Q)
+           call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt4, cnt4, Target_U)
+           call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt4, cnt4, Target_V)
+           call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt4, cnt4, Target_T)
+           call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt4, cnt4, Target_Q)
 
       case ('IMT')
            if (masterproc) then
@@ -2038,10 +2079,10 @@ contains
            end if
            ! Use the CURR time slice for nudging
            !------------------------------------
-           call read_and_scatter_fv(ncid1, 'U', Nudge_Uprof, strt4, cnt4, Target_U)
-           call read_and_scatter_fv(ncid1, 'V', Nudge_Vprof, strt4, cnt4, Target_V)
-           call read_and_scatter_fv(ncid1, 'T', Nudge_Tprof, strt4, cnt4, Target_T)
-           call read_and_scatter_fv(ncid1, 'Q', Nudge_Qprof, strt4, cnt4, Target_Q)
+           call read_and_scatter_fv(ncid1, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt4, cnt4, Target_U)
+           call read_and_scatter_fv(ncid1, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt4, cnt4, Target_V)
+           call read_and_scatter_fv(ncid1, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt4, cnt4, Target_T)
+           call read_and_scatter_fv(ncid1, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt4, cnt4, Target_Q)
            n_cnt = n_cnt + 1
 
       case ('Linear')
@@ -2066,17 +2107,17 @@ contains
 
                   ! The start point uses the CURR time slice
                   !-----------------------------------------
-                  call read_and_scatter_fv(ncid1, 'U', Nudge_Uprof, strt4, cnt4, INTP_U(:,:,:,1))
-                  call read_and_scatter_fv(ncid1, 'V', Nudge_Vprof, strt4, cnt4, INTP_V(:,:,:,1))
-                  call read_and_scatter_fv(ncid1, 'T', Nudge_Tprof, strt4, cnt4, INTP_T(:,:,:,1))
-                  call read_and_scatter_fv(ncid1, 'Q', Nudge_Qprof, strt4, cnt4, INTP_Q(:,:,:,1))
+                  call read_and_scatter_fv(ncid1, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt4, cnt4, INTP_U(:,:,:,1))
+                  call read_and_scatter_fv(ncid1, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt4, cnt4, INTP_V(:,:,:,1))
+                  call read_and_scatter_fv(ncid1, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt4, cnt4, INTP_T(:,:,:,1))
+                  call read_and_scatter_fv(ncid1, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt4, cnt4, INTP_Q(:,:,:,1))
 
                   ! The end point uses the NEXT time slice
                   !---------------------------------------
-                  call read_and_scatter_fv(ncid, 'U', Nudge_Uprof, strt4, cnt4, INTP_U(:,:,:,2))
-                  call read_and_scatter_fv(ncid, 'V', Nudge_Vprof, strt4, cnt4, INTP_V(:,:,:,2))
-                  call read_and_scatter_fv(ncid, 'T', Nudge_Tprof, strt4, cnt4, INTP_T(:,:,:,2))
-                  call read_and_scatter_fv(ncid, 'Q', Nudge_Qprof, strt4, cnt4, INTP_Q(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt4, cnt4, INTP_U(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt4, cnt4, INTP_V(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt4, cnt4, INTP_T(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt4, cnt4, INTP_Q(:,:,:,2))
 
                   call t_startf ('read_nudging_data')
                   if (masterproc) then
@@ -2104,10 +2145,10 @@ contains
                   cnt4(2)  = nlat
                   cnt4(3)  = pver
                   cnt4(4)  = 1
-                  call read_and_scatter_fv(ncid, 'U', Nudge_Uprof, strt4, cnt4, INTP_U(:,:,:,2))
-                  call read_and_scatter_fv(ncid, 'V', Nudge_Vprof, strt4, cnt4, INTP_V(:,:,:,2))
-                  call read_and_scatter_fv(ncid, 'T', Nudge_Tprof, strt4, cnt4, INTP_T(:,:,:,2))
-                  call read_and_scatter_fv(ncid, 'Q', Nudge_Qprof, strt4, cnt4, INTP_Q(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt4, cnt4, INTP_U(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt4, cnt4, INTP_V(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt4, cnt4, INTP_T(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt4, cnt4, INTP_Q(:,:,:,2))
 
               end if    ! first file for single time slice per file
 
@@ -2127,10 +2168,10 @@ contains
                      cnt4(2)  = nlat
                      cnt4(3)  = pver
                      cnt4(4)  = 1
-                     call read_and_scatter_fv(ncid, 'U', Nudge_Uprof, strt4, cnt4, INTP_U(:,:,:,n))
-                     call read_and_scatter_fv(ncid, 'V', Nudge_Vprof, strt4, cnt4, INTP_V(:,:,:,n))
-                     call read_and_scatter_fv(ncid, 'T', Nudge_Tprof, strt4, cnt4, INTP_T(:,:,:,n))
-                     call read_and_scatter_fv(ncid, 'Q', Nudge_Qprof, strt4, cnt4, INTP_Q(:,:,:,n))
+                     call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt4, cnt4, INTP_U(:,:,:,n))
+                     call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt4, cnt4, INTP_V(:,:,:,n))
+                     call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt4, cnt4, INTP_T(:,:,:,n))
+                     call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt4, cnt4, INTP_Q(:,:,:,n))
                   end do
                   n_cnt = n_cnt + 2
 
@@ -2154,10 +2195,10 @@ contains
                   cnt4(2)         = nlat
                   cnt4(3)         = pver
                   cnt4(4)         = 1
-                  call read_and_scatter_fv(ncid, 'U', Nudge_Uprof, strt4, cnt4, INTP_U(:,:,:,2))
-                  call read_and_scatter_fv(ncid, 'V', Nudge_Vprof, strt4, cnt4, INTP_V(:,:,:,2))
-                  call read_and_scatter_fv(ncid, 'T', Nudge_Tprof, strt4, cnt4, INTP_T(:,:,:,2))
-                  call read_and_scatter_fv(ncid, 'Q', Nudge_Qprof, strt4, cnt4, INTP_Q(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Unam)), Nudge_Uprof, strt4, cnt4, INTP_U(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Vnam)), Nudge_Vprof, strt4, cnt4, INTP_V(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Tnam)), Nudge_Tprof, strt4, cnt4, INTP_T(:,:,:,2))
+                  call read_and_scatter_fv(ncid, trim(adjustl(Nudge_Qnam)), Nudge_Qprof, strt4, cnt4, INTP_Q(:,:,:,2))
                   n_cnt = n_cnt + 1
 
               end if ! first_file for multiple time slices
