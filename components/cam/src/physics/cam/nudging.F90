@@ -236,6 +236,8 @@ module nudging
   public:: nudging_timestep_tend
 !!==> SZ ADD  
   public:: Nudge_Data
+  public:: Nudge_Clim
+  public:: Nudge_Anls
 !!==> SZ END  
   private::nudging_update_analyses_se
   private::nudging_update_analyses_eul
@@ -257,6 +259,8 @@ module nudging
   logical::         Nudge_Initialized =.false.
 !!==> SZ ADD  
   logical::         Nudge_Data        =.false.
+  logical::         Nudge_Clim        =.false.
+  logical::         Nudge_Anls        =.false.
 !!==> SZ END  
   character(len=cl) Nudge_Path
   character(len=cs) Nudge_File,Nudge_File_Template
@@ -394,8 +398,8 @@ contains
                          Nudge_Method, Nudge_Tau,                      &
 !!==> JS END
 !!==> SZ ADD
-                         Nudge_Data,Nudge_Unam, Nudge_Vnam,            &
-                         Nudge_Tnam, Nudge_Qnam 
+                         Nudge_Data,Nudge_Clim,Nudge_Anls,             &
+                         Nudge_Unam,Nudge_Vnam,Nudge_Tnam,Nudge_Qnam 
 !!==> SZ END
 
    ! Nudging is NOT initialized yet, For now
@@ -450,6 +454,8 @@ contains
 !!==> JS END
 !!==> SZ ADD          
    Nudge_Data         = .false.
+   Nudge_Clim         = .false.
+   Nudge_Anls         = .false.
    Nudge_Unam         = 'U'
    Nudge_Vnam         = 'V'
    Nudge_Tnam         = 'T'
@@ -860,6 +866,8 @@ contains
 !!==> JS END
 !!==> SZ ADD
      write(iulog,*) 'NUDGING: Nudge_Data          =',Nudge_Data
+     write(iulog,*) 'NUDGING: Nudge_Clim          =',Nudge_Clim
+     write(iulog,*) 'NUDGING: Nudge_Anls          =',Nudge_Anls
      write(iulog,*) 'NUDGING: Nudge_Unam          =',Nudge_Unam
      write(iulog,*) 'NUDGING: Nudge_Vnam          =',Nudge_Vnam
      write(iulog,*) 'NUDGING: Nudge_Tnam          =',Nudge_Tnam
@@ -1018,7 +1026,7 @@ contains
    integer YMD1,YMD2,YMD
    logical Update_Model,Update_Nudge,Sync_Error
    logical After_Beg   ,Before_End
-   integer lchnk,ncol,indw
+   integer lchnk,ncol,indw,i_cur
 
    ! Check if Nudging is initialized
    !---------------------------------
@@ -1146,20 +1154,25 @@ contains
 !!==> JS ADD
    if ( .not. dycore_is('EUL') ) then
       if ((Before_End).and.(Update_Model)) then
+ 
+         i_cur = p_cur - 1
+         if (Nudge_Anls) i_cur = p_cur 
+         if (Nudge_Clim) i_cur = p_cur - 1
+         
          select case (Nudge_Method)
             case ('Linear')
                  call t_startf ('nudging_interp')
                  if (Nudge_Uprof .ne. 0) then 
-                    call linear_interpolation (INTP_U, Target_U, interval, p_cur-1)
+                    call linear_interpolation (INTP_U, Target_U, interval, i_cur)
                  end if
                  if (Nudge_Vprof .ne. 0) then 
-                    call linear_interpolation (INTP_V, Target_V, interval, p_cur-1)
+                    call linear_interpolation (INTP_V, Target_V, interval, i_cur)
                  end if
                  if (Nudge_Qprof .ne. 0) then 
-                    call linear_interpolation (INTP_Q, Target_Q, interval, p_cur-1)
+                    call linear_interpolation (INTP_Q, Target_Q, interval, i_cur)
                  end if
                  if (Nudge_Tprof .ne. 0) then 
-                    call linear_interpolation (INTP_T, Target_T, interval, p_cur-1)
+                    call linear_interpolation (INTP_T, Target_T, interval, i_cur)
                  end if
                  call t_stopf ('nudging_interp')
             case default
@@ -1281,10 +1294,10 @@ contains
    if(Nudge_ON) then
      lchnk=phys_state%lchnk
      ncol =phys_state%ncol
-     phys_tend%u(:ncol,:pver)     =Nudge_Ustep(:ncol,:pver,lchnk)
-     phys_tend%v(:ncol,:pver)     =Nudge_Vstep(:ncol,:pver,lchnk)
-     phys_tend%s(:ncol,:pver)     =Nudge_Tstep(:ncol,:pver,lchnk)
-     phys_tend%q(:ncol,:pver,indw)=Nudge_Qstep(:ncol,:pver,lchnk)
+     phys_tend%u(:ncol,:pver)     = Nudge_Ustep(:ncol,:pver,lchnk)
+     phys_tend%v(:ncol,:pver)     = Nudge_Vstep(:ncol,:pver,lchnk)
+     phys_tend%s(:ncol,:pver)     = Nudge_Tstep(:ncol,:pver,lchnk)
+     phys_tend%q(:ncol,:pver,indw)= Nudge_Qstep(:ncol,:pver,lchnk)
 
      call outfld('Nudge_U',phys_tend%u          ,pcols,lchnk)
      call outfld('Nudge_V',phys_tend%v          ,pcols,lchnk)

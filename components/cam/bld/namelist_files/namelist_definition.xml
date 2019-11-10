@@ -498,6 +498,16 @@
        Toggle Generating Nudging Data ON/OFF.
        Default: FALSE
        </entry>
+<entry id="Nudge_Clim" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Toggle Nudging to Climo ON/OFF.
+       Default: FALSE
+       </entry>
+<entry id="Nudge_Anls" type="logical" category="nudging"
+       group="nudging_nl" valid_values="" >
+       Toggle Nudging to Reanalysis ON/OFF.
+       Default: FALSE
+       </entry>
 <entry id="Nudge_Unam" type="char*80" category="nudging"
        group="nudging_nl" valid_values="" >
        U-name in Nudging data.

@@ -937,6 +937,9 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
      use metdata,       only: get_met_srf1
 #endif
 
+    !! SZhang Nov 11, 2019   
+    use nudging,             only: Nudge_Model,Nudge_Data,nudging_timestep_init
+
     !
     ! Input arguments
     !
@@ -945,6 +948,8 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     ! Input/Output arguments
     !
     type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
+    type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state_ndg
+
     type(physics_tend ), intent(inout), dimension(begchunk:endchunk) :: phys_tend
 
     type(physics_buffer_desc), pointer, dimension(:,:) :: pbuf2d
@@ -1035,12 +1040,39 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
           call tphysbc (ztodt, fsns(1,c), fsnt(1,c), flns(1,c), flnt(1,c), phys_state(c),        &
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
-                       sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
+                       sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c), phys_state_ndg(c))
 
        end do
 
        !call t_adj_detailf(-1)
        call t_stopf ('bc_physics')
+
+       call t_startf ('cal_nudging_tend')
+
+       !--------------------------------------------------------
+       ! Generate Nudging data if needed. This data is used 
+       ! for nudging to CLIM experiment the output here is 
+       ! to make the output nudging data and calculation of 
+       ! nudging tendency  in the same time level
+       !-------------------------------------------------------
+       if (Nudge_Data)  then
+        call cnst_get_ind('Q',indw)
+        do c=begchunk, endchunk
+          call outfld('T_ndg   ',phys_state_ndg(c)%t        , pcols   ,c   )
+          call outfld('PS_ndg  ',phys_state_ndg(c)%ps       , pcols   ,c   )
+          call outfld('U_ndg   ',phys_state_ndg(c)%u        , pcols   ,c   )
+          call outfld('V_ndg   ',phys_state_ndg(c)%v        , pcols   ,c   )
+          call outfld('Q_ndg   ',phys_state_ndg(c)%q(1,1,1) , pcols   ,c   )
+        end do
+       end if
+
+       !--------------------------------------------------------
+       ! Update Nudging values, if needed
+       !----------------------------------
+       if(Nudge_Model) call nudging_timestep_init(phys_state_ndg)
+
+       call t_stopf ('cal_nudging_tend')
+
 
        ! Don't call the rest in CRM mode
        if(single_column.and.scm_crm_mode) return
@@ -1785,7 +1817,7 @@ end subroutine tphysac
 subroutine tphysbc (ztodt,               &
        fsns,    fsnt,    flns,    flnt,    state,   &
        tend,    pbuf,     fsds,    landm,            &
-       sgh, sgh30, cam_out, cam_in )
+       sgh, sgh30, cam_out, cam_in, state_ndg )
     !----------------------------------------------------------------------- 
     ! 
     ! Purpose: 
@@ -1870,6 +1902,7 @@ subroutine tphysbc (ztodt,               &
     real(r8), intent(in) :: sgh30(pcols)                     ! Std. deviation of 30 s orography for tms
 
     type(physics_state), intent(inout) :: state
+    type(physics_state), intent(inout) :: state_ndg          ! save state used for nudging
     type(physics_tend ), intent(inout) :: tend
     type(physics_buffer_desc), pointer :: pbuf(:)
 
@@ -2682,6 +2715,11 @@ end if ! l_tracer_aero
 
     call t_stopf('bc_cld_diag_history_write')
 
+    !===================================================
+    ! save the state to calculate nudging tendency 
+    !===================================================
+    call physics_state_copy(state,state_ndg)
+
 if (l_rad) then
     !===================================================
     ! Radiation computations
@@ -2761,7 +2799,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   use aerodep_flx,         only: aerodep_flx_adv
   use aircraft_emit,       only: aircraft_emit_adv
   use prescribed_volcaero, only: prescribed_volcaero_adv
-  use nudging,             only: Nudge_Model,Nudge_Data,nudging_timestep_init
 
   use seasalt_model,       only: advance_ocean_data, has_mam_mom
 
@@ -2832,27 +2869,6 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
   ! age of air tracers
   call aoa_tracers_timestep_init(phys_state)
 
-  !--------------------------------------------------------
-  ! Generate Nudging data if needed. This data is used 
-  ! for nudging to CLIM experiment the output here is 
-  ! to make the output nudging data and calculation of 
-  ! nudging tendency  in the same time level
-  !-------------------------------------------------------
-  if (Nudge_Data)  then
-   call cnst_get_ind('Q',indw)
-   do c=begchunk, endchunk
-    ncol = phys_state(c)%ncol
-    call outfld('T_ndg   ',phys_state(c)%t        , pcols   ,c   )
-    call outfld('PS_ndg  ',phys_state(c)%ps       , pcols   ,c   )
-    call outfld('U_ndg   ',phys_state(c)%u        , pcols   ,c   )
-    call outfld('V_ndg   ',phys_state(c)%v        , pcols   ,c   )
-    call outfld('Q_ndg   ',phys_state(c)%q(1,1,1) , pcols   ,c   )
-   end do
-  end if
-
-  ! Update Nudging values, if needed
-  !----------------------------------
-  if(Nudge_Model) call nudging_timestep_init(phys_state)
 
 end subroutine phys_timestep_init
 
