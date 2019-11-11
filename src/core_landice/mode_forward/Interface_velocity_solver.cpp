@@ -22,7 +22,6 @@ distributed with this code, or at http://mpas-dev.github.com/license.html
 //! Namespaces
 // ===================================================
 
-//#define useContiguousIDs
 #define changeTrianglesOwnership
 
 
@@ -62,7 +61,7 @@ int original_stderr; // the location of stderr before we captured it
 int Interface_stdout; // the location of stdout as we use it here
 
 //void *phgGrid = 0;
-std::vector<int> edgesToReceive, fCellsToReceive, indexToTriangleID,
+std::vector<int> indexToTriangleID,
     verticesOnTria, trianglesOnEdge, verticesOnEdge,
     trianglesProcIds, reduced_ranks;
 std::vector<int> indexToVertexID, vertexToFCell, vertexProcIDs, triangleToFVertex, indexToEdgeID, edgeToFEdge,
@@ -288,13 +287,8 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         albany_error, dt);
     *error=albany_error;
   }
-  
-  exportDissipationHeat(dissipation_heat_F);
 
-  std::vector<int> mpasIndexToVertexID(nVertices);
-  for (int i = 0; i < nVertices; i++) {
-      mpasIndexToVertexID[i] = indexToCellID_F[vertexToFCell[i]];
-  }
+  exportDissipationHeat(dissipation_heat_F);
 
   mapVerticesToCells(velocityOnVertices, &velocityOnCells[0], 2, nLayers,
       Ordering);
@@ -361,7 +355,6 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   std::vector<int> partialOffset(numProcs + 1), globalOffsetTriangles(
       numProcs + 1), globalOffsetVertices(numProcs + 1), globalOffsetEdge(
       numProcs + 1);
-
 
 
   // First, we compute the FE triangles belonging to this processor.
@@ -447,22 +440,12 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   //Initialize the ice sheet problem with the number of FE triangles on this prov
   initialize_iceProblem(nTriangles);
 
-  //If useContiguousIDs is defined, create a contiguous list of global triangle IDs, otherwise use MPAS vertices IDs
+  //Create a list of global IDs for FE triangles, using MPAS vertices IDs
   fVertexToTriangleID.assign(nVertices_F, NotAnId);
-#ifdef useContiguousIDs
-  // Compute the localOffset on the local processor, such that a globalID = localOffset + index
-  int localOffset(0);
-  int nGlobalTriangles = 0;
-  computeLocalOffset(nTriangles, localOffset, nGlobalTriangles);
-  for (int index(0); index < nTriangles; index++)
-    fVertexToTriangleID[triangleToFVertex[index]] = index + localOffset;
-#else
   for (int index(0); index < nTriangles; index++) {
     fVertexToTriangleID[triangleToFVertex[index]] = indexToVertexID_F[triangleToFVertex[index]];
   }
-#endif
 
-  //Communicate the local and global triangle IDs to the other processors.
 #ifdef changeTrianglesOwnership
   // because we change the ownership of some triangles, we need to first communicate back to the processors that used to own those triangles
   // the data of the newly owned triangles. We do this by defining "reversed" send and receive lists, communicate back using those lists, and
@@ -475,7 +458,6 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
 #endif
   allToAll(fVertexToTriangleID, sendVerticesList_F, recvVerticesList_F);
   allToAll(fVertexToTriangle, sendVerticesList_F, recvVerticesList_F);
-
 
   //we define the vector of global triangles Ids and compute the stride between the largest and the smallest Id globally
   //This will be needed by the velocity solver to create the 3D FE mesh.
@@ -493,18 +475,15 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
 
   // Second, we compute the FE edges belonging to the FE triangles owned by this processor.
   // We first compute boundary edges, and then all the other edges.
-  std::vector<int> fEdgeToEdge(nEdges_F), edgesToSend;
+  std::vector<int> fEdgeToEdge(nEdges_F);
 
   std::vector<int> fEdgeToEdgeID(nEdges_F, NotAnId);
-  edgesToReceive.clear();
   edgeToFEdge.clear();
   isBoundaryEdge.clear();
   trianglesOnEdge.clear();
 
-  edgesToReceive.reserve(nEdges_F - nEdgesSolve_F);
   edgeToFEdge.reserve(nEdges_F);
   trianglesOnEdge.reserve(nEdges_F * 2);
-  edgesToSend.reserve(nEdgesSolve_F);
   isBoundaryEdge.reserve(nEdges_F);
 
   //we compute boundary edges (boundary edges must be the first edges)
@@ -574,28 +553,10 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
       trianglesOnEdge.push_back(iTria2);
       isBoundaryEdge.push_back(false);
     }
-
-    if (belongsToAnyTriangle && isMine) {
-      edgesToSend.push_back(i);
-      if (!belongsToLocalTriangle)
-        edgesToReceive.push_back(i);
-    }
-
   }
 
-  //If useContiguousIDs is defined, create a contiguous list of global edge IDs, otherwise use MPAS edges IDs
-#ifdef useContiguousIDs
-  //Compute the localOffset on the local processor, such that a globalID = localOffset + index
-  int nGlobalEdges;
-  computeLocalOffset(edgesToSend.size(), localOffset, nGlobalEdges);
-  for (ID index = 0; index < edgesToSend.size(); index++)
-    fEdgeToEdgeID[edgesToSend[index]] = index + localOffset;
-  //Communicate the globalIDs, computed locally, to the other processors.
-  allToAll(fEdgeToEdgeID, sendEdgesList_F, recvEdgesList_F);
-#else
   for (int fEdge = 0; fEdge < nEdges_F; fEdge++)
     fEdgeToEdgeID[fEdge] = indexToEdgeID_F[fEdge];
-#endif
 
   nEdges = edgeToFEdge.size();
   indexToEdgeID.resize(nEdges);
@@ -619,8 +580,6 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   // Third, we compute the FE vertices belonging to the FE triangles owned by this processor.
   // We need to make sure that an FE vertex is owned by a proc that owns a FE triangle that contain that vertex
   // Otherwise we might end up with weird situation where a vertex could belong to a process with no associated triangle.
-  std::vector<int> fCellsToSend;
-  fCellsToSend.reserve(nCellsSolve_F);
 
   vertexToFCell.clear();
   vertexToFCell.reserve(nCells_F);
@@ -628,12 +587,10 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   fCellToVertex.assign(nCells_F, NotAnId);
   std::vector<int> fCellToVertexID(nCells_F, NotAnId);
 
-  fCellsToReceive.clear();
   vertexProcIDs.clear();
 
   std::vector<int> verticesProcIds(nCells_F, NotAnId);
 
-  fCellsToReceive.reserve(nCells_F - nCellsSolve_F);
   vertexProcIDs.reserve(nCells_F);
   for (int i = 0; i < nCells_F; i++) {
     bool isMine = i < nCellsSolve_F;
@@ -665,12 +622,6 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
     if(belongsToAnyTriangle)
       verticesProcIds[i] = nodeOwnedByATriaProc ? fCellsProcIds[i] : minTriangleProcId;
 
-    if (belongsToAnyTriangle && isMine) {
-      fCellsToSend.push_back(i);
-      if (!belongsToLocalTriangle)
-        fCellsToReceive.push_back(i);
-    }
-
     if (belongsToLocalTriangle) {
       fCellToVertex[i] = vertexToFCell.size();
       vertexToFCell.push_back(i);
@@ -679,21 +630,8 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   }
   nVertices = vertexToFCell.size();
 
-  //If useContiguousIDs is defined, create a contiguous list of global FE vertices IDs, otherwise use MPAS cells IDs
-#ifdef useContiguousIDs
-  //Compute the localOffset on the local processor, such that a globalID = localOffset + index
-  int nGlobalVertices;
-  computeLocalOffset(fCellsToSend.size(), localOffset, nGlobalVertices);
-  for (int index = 0; index < int(fCellsToSend.size()); index++)
-    fCellToVertexID[fCellsToSend[index]] = index + localOffset;
-  //Communicate the globalIDs, computed locally, to the other processors.
-  allToAll(fCellToVertexID, sendCellsList_F, recvCellsList_F);
-#else
   for (int fcell = 0; fcell < nCells_F; fcell++)
-      fCellToVertexID[fcell] = indexToCellID_F[fcell];
-#endif
-
-
+    fCellToVertexID[fcell] = indexToCellID_F[fcell];
 
   int maxVertexID=std::numeric_limits<int>::min(), minVertexID=std::numeric_limits<int>::max(), maxGlobalVertexID, minGlobalVertexID;
   indexToVertexID.resize(nVertices);
@@ -793,10 +731,6 @@ void velocity_solver_extrude_3d_grid(double const* levelsRatio_F) {
     levelsNormalizedThickness[i + 1] = levelsNormalizedThickness[i]
         + layersRatio[i];
 
-  std::vector<int> mpasIndexToVertexID(nVertices);
-  for (int i = 0; i < nVertices; i++)
-    mpasIndexToVertexID[i] = indexToCellID_F[vertexToFCell[i]];
-
   //construct the local vector of coordinates
   std::vector<double> verticesCoords(3 * nVertices);
 
@@ -812,7 +746,7 @@ void velocity_solver_extrude_3d_grid(double const* levelsRatio_F) {
     procsSharingVertex(i, procsSharingVertices[i]);
 
   velocity_solver_extrude_3d_grid__(nLayers, globalTriangleStride, globalVertexStride,
-      globalEdgeStride, Ordering, reducedComm, indexToVertexID, mpasIndexToVertexID, vertexProcIDs,
+      globalEdgeStride, Ordering, reducedComm, indexToVertexID, vertexProcIDs,
       verticesCoords, verticesOnTria, procsSharingVertices, isBoundaryEdge,
       trianglesOnEdge, verticesOnEdge, indexToEdgeID,
       indexToTriangleID, dirichletNodesIDs, floatingEdgesIds);
@@ -992,7 +926,7 @@ void get_prism_velocity_on_FEdges(double * uNormal,
       //Scale the coordinates so that they sum to 1.
       for(int j=0; j<3; j++)
         bcoords[j] /= sum;
-      }    
+      }
    else { //error, edge midpont does not belong to either triangle
       std::cout << "Error, edge midpont does not belong to either triangle" << std::endl;
 
@@ -1249,7 +1183,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
       int v = verticesOnTria[iVertex + 3 * index];
       int iCell = vertexToFCell[v];
       //compute temperature by averaging temperature values of triangles vertices where ice is present
-      if (cellsMask_F[iCell] & ice_present_bit_value) { 
+      if (cellsMask_F[iCell] & ice_present_bit_value) {
         temperature += temperature_F[iCell * nLayers + ilReversed];
         nPoints++;
          }
@@ -1461,24 +1395,6 @@ void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id) {
   MPI_Comm_group(comm, &world_group_id);
   MPI_Group_incl(world_group_id, ranks.size(), &ranks[0], &reduced_group_id);
   MPI_Comm_create(comm, reduced_group_id, &reduced_comm_id);
-}
-
-void computeLocalOffset(int nLocalEntities, int& localOffset,
-    int& nGlobalEntities) {
-  int numProcs, me;
-  MPI_Comm_size(comm, &numProcs);
-  MPI_Comm_rank(comm, &me);
-  std::vector<int> offsetVec(numProcs);
-
-  MPI_Allgather(&nLocalEntities, 1, MPI_INT, &offsetVec[0], 1, MPI_INT, comm);
-
-  localOffset = 0;
-  for (int i = 0; i < me; i++)
-    localOffset += offsetVec[i];
-
-  nGlobalEntities = localOffset;
-  for (int i = me; i < numProcs; i++)
-    nGlobalEntities += offsetVec[i];
 }
 
 void getProcIds(std::vector<int>& field, int const * recvArray) {
@@ -1799,9 +1715,9 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
 
     // individual field values
     // Call needed functions to process MPAS fields to Albany units/format
-    
+
     std::map<int, int> bdExtensionMap;  // local map to be created by import2DFields
-    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, 
+    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F,
                    stiffnessFactor_F, effecPress_F, temperature_F, smb_F, minThickness);
 
     import2DFieldsObservations(bdExtensionMap,
@@ -1837,13 +1753,13 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     outfile.open ("temperature.ascii", std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
        outfile << nTriangles << " " << nLayers << "\n";  //number of triangles and number of layers on first line
-       
+
        double midLayer = 0;
        for (int il = 0; il < nLayers; il++) { //sigma coordinates for temperature
          midLayer += layersRatio[il]/2.0;
          outfile << midLayer << "\n";
          midLayer += layersRatio[il]/2.0;
-       }    
+       }
 
        for(int il = 0; il<nLayers; ++il)
          for(int i = 0; i<nTriangles; ++i)  //temperature values layer by layer
@@ -1913,4 +1829,4 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
        std::cout << "Error: Failed to open  "+filename << std::endl;
     }
   }
- 
+

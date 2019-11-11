@@ -179,7 +179,6 @@ extern void velocity_solver_extrude_3d_grid__(
     int nLayers, int globalTriangleStride, int globalVertexStride, int globalEdgeStride,
     int Ordering, MPI_Comm reducedComm,
     const std::vector<int>& indexToVertexID,
-    const std::vector<int>& mpasIndexToVertexID,
     const std::vector<int>& vertexProcIDs,
     const std::vector<double>& verticesCoords,
     const std::vector<int>& verticesOnTria,
@@ -246,9 +245,6 @@ void mapCellsToVertices(const std::vector<double>& velocityOnCells,
 
 void mapVerticesToCells(const std::vector<double>& velocityOnVertices,
     double* velocityOnCells, int fieldDim, int numLayers, int ordering);
-
-void computeLocalOffset(int nLocalEntities, int& localOffset,
-    int& nGlobalEntities);
 
 void getProcIds(std::vector<int>& field, int const* recvArray);
 
