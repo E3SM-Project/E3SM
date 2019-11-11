@@ -463,9 +463,9 @@ contains
       if (read_pg_grid) then
          ! Load phis field to physics grid
          call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
-                    1, nelemd, phys_tmp, found, gridname='physgrid_d')
+                    1, nelemd, phis_tmp, found, gridname='physgrid_d')
          ! Copy phis data to dyn element state
-         call fv_phys_to_dyn_topo(elem,phys_tmp)
+         call fv_phys_to_dyn_topo(elem,phis_tmp)
       else
          if (fv_nphys == 0) then
             call infld(fieldname, ncid_topo, ncol_name,      &
@@ -488,8 +488,8 @@ contains
                end if
                read_pg_grid = .true.
                call infld(fieldname, ncid_topo, 'ncol', 1, nphys_sq, &
-                    1, nelemd, phys_tmp, found, gridname='physgrid_d')
-               call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phys_tmp)
+                    1, nelemd, phis_tmp, found, gridname='physgrid_d')
+               call gfr_fv_phys_to_dyn_topo(par, dom_mt, elem, phis_tmp)
             end if
          end if
       endif
