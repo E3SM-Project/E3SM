@@ -88,7 +88,7 @@ class GatherAllData(object):
         if is_cuda_machine and "OMPI_CXX" not in env_setup_str:
             extra_env = "OMPI_CXX={}/bin/nvcc_wrapper ".format(kokkos_loc)
         else:
-            extra_env = "OMP_PROC_BIND=FALSE KMP_AFFINITY=balanced "
+            extra_env = "OMP_PROC_BIND=FALSE KMP_AFFINITY=balanced OMP_PROC_BIND=spread "
 
         repo_setup = "true" if (self._local) else "git fetch && git checkout {} && git submodule update --init".format(self._commit)
 
