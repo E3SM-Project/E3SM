@@ -392,7 +392,7 @@ module namelist_mod
     semi_lagrange_hv_q = 0
     semi_lagrange_nearest_point_lev = 0
     disable_diagnostics = .false.
-    se_fv_phys_remap_alg = 0
+    se_fv_phys_remap_alg = 1
 
     theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
 #if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
