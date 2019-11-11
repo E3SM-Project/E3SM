@@ -8,11 +8,12 @@ class TestAllScream(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, cxx, kokkos, submit, baseline, machine, custom_cmake_opts, tests):
+    def __init__(self, cxx, kokkos, submit, fast_fail, baseline, machine, custom_cmake_opts, tests):
     ###########################################################################
         self._cxx               = cxx
         self._kokkos            = kokkos
         self._submit            = submit
+        self._fast_fail         = fast_fail
         self._baseline          = baseline
         self._machine           = machine
         self._custom_cmake_opts = custom_cmake_opts
@@ -145,11 +146,13 @@ class TestAllScream(object):
             if not self._tests or "dbg" in self._tests:
                 success &= self.run_test([("CMAKE_BUILD_TYPE", "Debug")],
                                          [], "full_debug", git_head)
+                if not success and self._fast_fail: return success
 
             # A full debug single precision
             if not self._tests or "sp" in self._tests:
                 success &= self.run_test([("CMAKE_BUILD_TYPE", "Debug"), ("SCREAM_DOUBLE_PRECISION", "False")],
                                          [], "full_sp_debug", git_head)
+                if not success and self._fast_fail: return success
 
             # A full debug test with packsize=1 and FPE
             if not self._tests or "fpe" in self._tests:

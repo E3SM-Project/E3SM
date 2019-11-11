@@ -37,6 +37,8 @@ OR
 
     parser.add_argument("-s", "--submit", action="store_true", help="Submit results to dashboad, requires machine")
 
+    parser.add_argument("-f", "--fast-fail", action="store_true", help="Stop testing when the first failure is detected")
+
     default_baseline = "HEAD" if "JENKINS_HOME" in os.environ else "origin/master"
     parser.add_argument("-b", "--baseline", default=default_baseline,
                         help="What commit to use to generate baselines")
