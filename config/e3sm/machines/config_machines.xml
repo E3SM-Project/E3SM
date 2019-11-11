@@ -1623,8 +1623,7 @@
         <command name="load">cray-libsci/19.06.1</command>
       </modules>
       <modules>
-        <command name="load">perftools-base/7.1.1</command>
-        <command name="load">darshan/3.1.5</command>
+        <command name="load">darshan</command>
         <command name="load">craype-mic-knl</command>
         <command name="load">cray-mpich/7.7.10</command>
         <command name="load">cray-hdf5/1.10.5.1</command>
