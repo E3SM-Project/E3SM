@@ -66,8 +66,8 @@ std::vector<int> indexToTriangleID,
     trianglesProcIds, reduced_ranks;
 std::vector<int> indexToVertexID, vertexToFCell, vertexProcIDs, triangleToFVertex, indexToEdgeID, edgeToFEdge,
     fVertexToTriangleID, fCellToVertex, floatingEdgesIds, dirichletNodesIDs;
-std::vector<double> temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices, velocityOnCells,
-    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, temperatureData, smbData, thicknessOnCells;
+std::vector<double> dissipationHeatOnPrisms, velocityOnVertices, velocityOnCells,
+    elevationData, thicknessData, betaData, bedTopographyData, stiffnessFactorData, effecPressData, temperatureDataOnPrisms, smbData, thicknessOnCells;
 std::vector<bool> isVertexBoundary, isBoundaryEdge;
 
 // only needed for creating ASCII mesh
@@ -264,15 +264,13 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
   if (!isDomainEmpty) {
 
     std::map<int, int> bdExtensionMap;
-    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, temperature_F, smb_F,  minThickness);
+    importFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F, stiffnessFactor_F, effecPress_F, temperature_F, smb_F,  minThickness);
 
     std::vector<double> regulThk(thicknessData);
     for (int index = 0; index < nVertices; index++)
       regulThk[index] = std::max(1e-4, thicknessData[index]);
 
-    importP0Temperature();
-
-    dissipationHeatOnTetra.resize(3 * nLayers * indexToTriangleID.size());
+    dissipationHeatOnPrisms.resize(nLayers * indexToTriangleID.size());
 
     std::cout << "\n\nTimeStep: "<< *deltat << "\n\n"<< std::endl;
 
@@ -283,7 +281,7 @@ void velocity_solver_solve_fo(double const* bedTopography_F, double const* lower
         regulThk, levelsNormalizedThickness, elevationData, thicknessData,
         betaData, bedTopographyData, smbData,
         stiffnessFactorData, effecPressData,
-        temperatureOnTetra, dissipationHeatOnTetra, velocityOnVertices,
+        temperatureDataOnPrisms, dissipationHeatOnPrisms, velocityOnVertices,
         albany_error, dt);
     *error=albany_error;
   }
@@ -451,7 +449,7 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   // the data of the newly owned triangles. We do this by defining "reversed" send and receive lists, communicate back using those lists, and
   // then communicate "forward" using the usual send and receive lists.
   // We could join these two step in one communication, but for the moment we do that separately
-  createReverseVerticesExchangeLists(sendVerticesListReversed, recvVerticesListReversed, trianglesProcIds, indexToVertexID_F);
+  createReverseExchangeLists(sendVerticesListReversed, recvVerticesListReversed, trianglesProcIds, indexToVertexID_F, recvVerticesList_F);
   allToAll(fVertexToTriangleID, &sendVerticesListReversed, &recvVerticesListReversed);
   allToAll(fVertexToTriangle, &sendVerticesListReversed, &recvVerticesListReversed);
   allToAll(trianglesProcIds, sendVerticesList_F, recvVerticesList_F);
@@ -576,7 +574,6 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   MPI_Allreduce(&minEdgeID, &minGlobalEdgeID, 1, MPI_INT, MPI_MIN, comm);
   globalEdgeStride = maxGlobalEdgeID - minGlobalEdgeID + 1;
 
-
   // Third, we compute the FE vertices belonging to the FE triangles owned by this processor.
   // We need to make sure that an FE vertex is owned by a proc that owns a FE triangle that contain that vertex
   // Otherwise we might end up with weird situation where a vertex could belong to a process with no associated triangle.
@@ -677,8 +674,7 @@ void velocity_solver_compute_2d_grid(int const* _verticesMask_F, int const* _cel
   // We could join these two step in one communication, but for the moment we do that separately.
   // We need to communicate info about the vertices when we get the ice velocity on vertices form the velocity solver/
 
-  createReverseCellsExchangeLists(sendCellsListReversed, recvCellsListReversed,
-      verticesProcIds, indexToCellID_F);
+  createReverseExchangeLists(sendCellsListReversed, recvCellsListReversed, verticesProcIds, indexToCellID_F, recvCellsList_F);
 
   //construct the local vector vertices on triangles making sure the area is positive
   verticesOnTria.resize(nTriangles * 3);
@@ -991,21 +987,22 @@ void mapVerticesToCells(const std::vector<double>& velocityOnVertices,
   }
 }
 
-void createReverseVerticesExchangeLists(exchangeList_Type& sendListReverse_F,
+
+void createReverseExchangeLists(exchangeList_Type& sendListReverse_F,
     exchangeList_Type& receiveListReverse_F,
-    const std::vector<int>& trianglesProcIds, const int* indexToVertexID_F) {
+    const std::vector<int>& newProcIds, const int* indexToID_F, exchangeList_Type const * recvList_F) {
   sendListReverse_F.clear();
   receiveListReverse_F.clear();
   std::map<int, std::map<int, int> > sendMap, receiveMap;
-  std::vector<int> verticesProcIds(nVertices_F);
-  getProcIds(verticesProcIds, recvVerticesList_F);
+  int nFEntities = newProcIds.size();
+  std::vector<int> procIds(nFEntities);
+  getProcIds(procIds, recvList_F);
   int me;
   MPI_Comm_rank(comm, &me);
-  for (int i = 0; i < nTriangles; i++) {
-    int iVertex = triangleToFVertex[i];
-    if ((iVertex >= nVerticesSolve_F) && (trianglesProcIds[iVertex] == me)) {
-      sendMap[verticesProcIds[iVertex]].insert(
-        std::make_pair(indexToVertexID_F[iVertex]-1, iVertex));
+  for (int fEntity = 0; fEntity < nFEntities; fEntity++) {
+    if ((procIds[fEntity] != me) && (newProcIds[fEntity] == me)) {
+      sendMap[procIds[fEntity]].insert(
+        std::make_pair(indexToID_F[fEntity], fEntity));
     }
   }
 
@@ -1020,59 +1017,10 @@ void createReverseVerticesExchangeLists(exchangeList_Type& sendListReverse_F,
         exchange(it->first, &sendVec[0], &sendVec[0] + sendVec.size()));
   }
 
-  for (int iVertex = 0; iVertex < nVerticesSolve_F; iVertex++) {
-    if((trianglesProcIds[iVertex] != NotAnId) && (trianglesProcIds[iVertex] != me)) {
-      receiveMap[trianglesProcIds[iVertex]].insert(
-        std::make_pair(indexToVertexID_F[iVertex]-1, iVertex));
-    }
-  }
-
-  for (std::map<int, std::map<int, int> >::const_iterator it =
-      receiveMap.begin(); it != receiveMap.end(); it++) {
-    std::vector<int> receiveVec(it->second.size());
-    int i = 0;
-    for (std::map<int, int>::const_iterator iter = it->second.begin();
-        iter != it->second.end(); iter++)
-      receiveVec[i++] = iter->second;
-    receiveListReverse_F.push_back(
-        exchange(it->first, &receiveVec[0],
-            &receiveVec[0] + receiveVec.size()));
-  }
-}
-
-void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
-    exchangeList_Type& receiveListReverse_F,
-    const std::vector<int>& verticesProcIds, const int* indexToCellID_F) {
-  sendListReverse_F.clear();
-  receiveListReverse_F.clear();
-  std::map<int, std::map<int, int> > sendMap, receiveMap;
-  std::vector<int> CellsProcIds(nCells_F);
-  getProcIds(CellsProcIds, recvCellsList_F);
-  int me;
-  MPI_Comm_rank(comm, &me);
-  for (int i = 0; i < nVertices; i++) {
-    int iCell = vertexToFCell[i];
-    if ((iCell >= nCellsSolve_F) && (verticesProcIds[iCell] == me)) {
-      sendMap[CellsProcIds[iCell]].insert(
-        std::make_pair(indexToCellID_F[iCell]-1, iCell));
-    }
-  }
-
-  for (std::map<int, std::map<int, int> >::const_iterator it = sendMap.begin();
-      it != sendMap.end(); it++) {
-    std::vector<int> sendVec(it->second.size());
-    int i = 0;
-    for (std::map<int, int>::const_iterator iter = it->second.begin();
-        iter != it->second.end(); iter++)
-      sendVec[i++] = iter->second;
-    sendListReverse_F.push_back(
-        exchange(it->first, &sendVec[0], &sendVec[0] + sendVec.size()));
-  }
-
-  for (int iCell = 0; iCell < nCellsSolve_F; iCell++) {
-    if((verticesProcIds[iCell] != NotAnId) && (verticesProcIds[iCell] != me)) {
-      receiveMap[verticesProcIds[iCell]].insert(
-      std::make_pair(indexToCellID_F[iCell]-1, iCell));
+  for (int fEntity = 0; fEntity < nFEntities; fEntity++) {
+    if((procIds[fEntity] == me) && (newProcIds[fEntity] != NotAnId) && (newProcIds[fEntity] != me)) {
+      receiveMap[newProcIds[fEntity]].insert(
+        std::make_pair(indexToID_F[fEntity], fEntity));
     }
   }
 
@@ -1137,7 +1085,7 @@ double signedTriangleAreaOnSphere(const double* x, const double* y,
 }
 
 
-void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
+void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const * lowerSurface_F, double const * thickness_F,
     double const * beta_F, double const* stiffnessFactor_F, double const* effecPress_F,
     double const * temperature_F, double const * smb_F, double eps) {
 
@@ -1152,7 +1100,7 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
   if (effecPress_F != 0)
     effecPressData.assign(nVertices, 1e10);
   if(temperature_F != 0)
-    temperatureData.assign(nLayers * nTriangles, 1e10);
+    temperatureDataOnPrisms.assign(nLayers * nTriangles, 1e10);
   if (smb_F != 0)
     smbData.assign(nVertices, 1e10);
 
@@ -1173,6 +1121,8 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
       effecPressData[index] = effecPress_F[iCell] / unit_length;  
   }
 
+  int lElemColumnShift = (Ordering == 1) ? 1 : nTriangles;
+  int elemLayerShift = (Ordering == 0) ? 1 : nLayers;
   if(temperature_F != 0) {
     for (int index = 0; index < nTriangles; index++) {
       for (int il = 0; il < nLayers; il++) {
@@ -1189,13 +1139,12 @@ void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopograp
          }
         }
         if (nPoints == 0)  //if triangle is in an ice-free area, set the temperature to T0
-      temperatureData[index+il*nTriangles] = T0;
+      temperatureDataOnPrisms[index*elemLayerShift + il*lElemColumnShift] = T0;
         else
-      temperatureData[index+il*nTriangles] = temperature / nPoints;
+      temperatureDataOnPrisms[index*elemLayerShift + il*lElemColumnShift] = temperature / nPoints;
       }
     }
   }
-
 
   //extend thickness elevation and basal friction data to the border for floating vertices
   std::set<int>::const_iterator iter;
@@ -1317,7 +1266,7 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
     indexToCellIDData[index] = indexToCellID_F[iCell];
   }
 
-  //extend to the border for floating vertices (using map created by import2DFields above)
+  //extend to the border for floating vertices (using map created by importFields above)
   for (std::map<int, int>::iterator it = bdExtensionMap.begin();
       it != bdExtensionMap.end(); ++it) {
     int iv = it->first;
@@ -1338,33 +1287,15 @@ void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
   }
 }
 
-
-void importP0Temperature() {
-  int lElemColumnShift = (Ordering == 1) ? 3 : 3 * indexToTriangleID.size();
-  int elemLayerShift = (Ordering == 0) ? 3 : 3 * nLayers;
-  temperatureOnTetra.resize(3 * nLayers * indexToTriangleID.size());
-  for (int index = 0; index < nTriangles; index++) {
-    for (int il = 0; il < nLayers; il++) {
-      for (int k = 0; k < 3; k++)
-        temperatureOnTetra[index * elemLayerShift + il * lElemColumnShift + k] =
-            temperatureData[index+il*nTriangles];
-    }
-  }
-}
-
 void exportDissipationHeat(double * dissipationHeat_F) {
   std::fill(dissipationHeat_F, dissipationHeat_F + nVertices_F * (nLayers), 0.);
-  int lElemColumnShift = (Ordering == 1) ? 3 : 3 * indexToTriangleID.size();
-  int elemLayerShift = (Ordering == 0) ? 3 : 3 * nLayers;
+  int lElemColumnShift = (Ordering == 1) ? 1 : indexToTriangleID.size();
+  int elemLayerShift = (Ordering == 0) ? 1 : nLayers;
   for (int index = 0; index < nTriangles; index++) {
     for (int il = 0; il < nLayers; il++) {
       int ilReversed = nLayers - il - 1;
       int fVertex = triangleToFVertex[index];
-      double dissipationHeat = 0;
-      for (int k = 0; k < 3; k++)
-        dissipationHeat += dissipationHeatOnTetra[index * elemLayerShift + il * lElemColumnShift + k]/3; //TODO: should be weighted average based on tets volumes
-      dissipationHeat_F[fVertex * nLayers + ilReversed] = dissipationHeat;
-
+      dissipationHeat_F[fVertex * nLayers + ilReversed] = dissipationHeatOnPrisms[index * elemLayerShift + il * lElemColumnShift];
     }
   }
 #ifdef  changeTrianglesOwnership
@@ -1716,8 +1647,8 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     // individual field values
     // Call needed functions to process MPAS fields to Albany units/format
 
-    std::map<int, int> bdExtensionMap;  // local map to be created by import2DFields
-    import2DFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F,
+    std::map<int, int> bdExtensionMap;  // local map to be created by importFields
+    importFields(bdExtensionMap, bedTopography_F, lowerSurface_F, thickness_F, beta_F,
                    stiffnessFactor_F, effecPress_F, temperature_F, smb_F, minThickness);
 
     import2DFieldsObservations(bdExtensionMap,
@@ -1752,20 +1683,23 @@ bool belongToTria(double const* x, double const* t, double bcoords[3], double ep
     std::cout << "Writing temperature.ascii." << std::endl;
     outfile.open ("temperature.ascii", std::ios::out | std::ios::trunc);
     if (outfile.is_open()) {
-       outfile << nTriangles << " " << nLayers << "\n";  //number of triangles and number of layers on first line
+      outfile << nTriangles << " " << nLayers << "\n";  //number of triangles and number of layers on first line
 
-       double midLayer = 0;
-       for (int il = 0; il < nLayers; il++) { //sigma coordinates for temperature
-         midLayer += layersRatio[il]/2.0;
-         outfile << midLayer << "\n";
-         midLayer += layersRatio[il]/2.0;
-       }
+      double midLayer = 0;
+      for (int il = 0; il < nLayers; il++) { //sigma coordinates for temperature
+        midLayer += layersRatio[il]/2.0;
+        outfile << midLayer << "\n";
+        midLayer += layersRatio[il]/2.0;
+      }
 
-       for(int il = 0; il<nLayers; ++il)
-         for(int i = 0; i<nTriangles; ++i)  //temperature values layer by layer
-           outfile << temperatureData[i + il*nTriangles]<<"\n";
-       outfile.close();
-       }
+      int lElemColumnShift = (Ordering == 1) ? 1 : nTriangles;
+      int elemLayerShift = (Ordering == 0) ? 1 : nLayers;
+      for(int il = 0; il<nLayers; ++il)
+        for(int i = 0; i<nTriangles; ++i)  //temperature values layer by layer
+          outfile << temperatureDataOnPrisms[i*elemLayerShift + il*lElemColumnShift]<<"\n";
+
+      outfile.close();
+    }
     else {
        std::cout << "Failed to open tempertature ascii file!"<< std::endl;
     }
