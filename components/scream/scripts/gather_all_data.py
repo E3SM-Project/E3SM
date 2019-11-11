@@ -86,7 +86,7 @@ class GatherAllData(object):
         if machine in ["waterman", "white", "lassen"] and "OMPI_CXX" not in " ".join(env_setup):
             extra_env = "OMPI_CXX={}/bin/nvcc_wrapper ".format(kokkos_loc)
         else:
-            extra_env = "OMP_PROC_BIND=FALSE "
+            extra_env = "OMP_PROC_BIND=FALSE KMP_AFFINITY=balanced "
 
         repo_setup = "true" if (self._local) else "git fetch && git checkout {} && git submodule update --init".format(self._commit)
 
