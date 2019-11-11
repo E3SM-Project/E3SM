@@ -107,9 +107,6 @@ module AllocationMod
   real(r8), allocatable :: plant_nh4demand_vr_fates(:,:) ! nutrient demands per competitor per soil layer
   real(r8), allocatable :: plant_no3demand_vr_fates(:,:)
   real(r8), allocatable :: plant_pdemand_vr_fates(:,:)
-  integer,  allocatable :: j_fates(:)                    ! For fates output boundary conditions, this
-                                                         ! is an index translation array for the decomposition
-                                                         ! layers
 
   real(r8), parameter   :: E_plant_scalar  = 0.0000125_r8 ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
   real(r8), parameter   :: E_decomp_scalar = 0.05_r8      ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
@@ -232,17 +229,6 @@ contains
        allocate(ft_index(bounds%begp:bounds%endp,1:nlevdecomp)); veg_rootc(bounds%begp:bounds%endp,1:nlevdecomp) = -1
        
        if (use_fates) then
-
-          ! If the FATES output array's second dimension is == 1, it implies it
-          ! wants a sum over decomposition layers
-          allocate(j_fates(1:nlevdecomp))
-          if( size( alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux,dim=2) .eq. 1) then
-             j_fates(:) = 1
-          else
-             do j=1,nlevdecomp
-                j_fates(j) = j
-             end do
-          end if
 
           max_comps = size(alm_fates%fates(1)%bc_out(1)%ft_index,dim=1)
           allocate(plant_nh4demand_vr_fates(max_comps,nlevdecomp)); plant_nh4demand_vr_fates(:,:) = nan
@@ -1152,7 +1138,9 @@ contains
     integer :: fp                                                    !lake filter pft index
     integer :: fc                                                    !lake filter column index
     integer :: ci, s                                                 ! used for FATES BC (clump index, site index)
-    
+    integer :: j_f                                                   ! local index that maps a decomposition
+                                                                     ! layer onto a fates uptake layer
+
     real(r8):: sum_ndemand_vr(bounds%begc:bounds%endc, 1:nlevdecomp) !total column N demand (gN/m3/s) at a given level
     real(r8):: nuptake_prof(bounds%begc:bounds%endc, 1:nlevdecomp)
     integer :: nlimit(bounds%begc:bounds%endc,0:nlevdecomp)          !flag for N limitation
@@ -2208,13 +2196,15 @@ contains
                   ! Note that nuptake_prof and fpg are both unitless fractions
                   ! units:  [g/m2] = [g/m3/s] * [/] * [/] * [s] [m]
                   
-                  alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_out(j)) = & 
-                       alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_out(j)) + & 
+                  j_f =  alm_fates%fates(ci)%bc_pconst%j_uptake(j)
+
+                  alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) = & 
+                       alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) + & 
                        alm_fates%fates(ci)%bc_out(s)%plant_ndemand(f,j) * & 
                        nuptake_prof(c,j)*fpg(c)*dt*dzsoi_decomp(j)
                   
-                  alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_out(j)) = & 
-                       alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_out(j)) + &
+                  alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) = & 
+                       alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) + &
                        alm_fates%fates(ci)%bc_out(s)%plant_pdemand(f,j) * &
                        puptake_prof(c,j)*fpg_p(c)*dt*dzsoi_decomp(j)
 
@@ -2225,14 +2215,14 @@ contains
 
             do f = 1,n_pcomp
                do j = 1,nlevdecomp
-
-                  alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_out(j)) = & 
-                       alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_out(j)) + & 
+                  j_f =  alm_fates%fates(ci)%bc_pconst%j_uptake(j)
+                  alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) = & 
+                       alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) + & 
                        (plant_nh4demand_vr_ptr(f,j) * fpg_nh4_vr(c,j) + & 
                         plant_no3demand_vr_ptr(f,j) * fpg_no3_vr(c,j)) * dzsoi_decomp(j) * dt
 
-                  alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_out(j)) = & 
-                       alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_out(j)) + & 
+                  alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) = & 
+                       alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) + & 
                        (plant_pdemand_vr_ptr(f,j) * fpg_p_vr(c,j)) * dzsoi_decomp(j) * dt
                   
                end do
