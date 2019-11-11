@@ -160,8 +160,8 @@ extern void velocity_solver_solve_fo__(int nLayers, int nGlobalVertices,
     const std::vector<double>& smbData,
     const std::vector<double>& stiffnessFactorData,
     const std::vector<double>& effecPressData,
-    const std::vector<double>& temperatureOnTetra,
-    std::vector<double>& dissipationHeatOnTetra,
+    const std::vector<double>& temperatureDataOnPrisms,
+    std::vector<double>& dissipationHeatOnPrisms,
     std::vector<double>& velocityOnVertices,
     int& error,
     const double& deltat = 0.0);
@@ -201,7 +201,7 @@ double signedTriangleArea(const double* x, const double* y, const double* z);
 
 void createReducedMPI(int nLocalEntities, MPI_Comm& reduced_comm_id);
 
-void import2DFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
+void importFields(std::map<int, int> bdExtensionMap, double const* bedTopography_F, double const* lowerSurface_F, double const* thickness_F,
     double const* beta_F = 0, double const* stiffnessFactor_F = 0, double const* effecPress_F = 0, double const* temperature_F = 0, double const* smb_F = 0, double eps = 0);
 
 void import2DFieldsObservations(std::map<int, int> bdExtensionMap,
@@ -220,8 +220,6 @@ void write_ascii_mesh_field_int(std::vector<int> fieldData, std::string filename
 
 std::vector<int> extendMaskByOneLayer(int const* verticesMask_F);
 
-void importP0Temperature();
-
 void exportDissipationHeat(double * dissipationHeat_F);
 
 void get_prism_velocity_on_FEdges(double* uNormal,
@@ -230,14 +228,9 @@ void get_prism_velocity_on_FEdges(double* uNormal,
 
 int initialize_iceProblem(int nTriangles);
 
-void createReverseVerticesExchangeLists(exchangeList_Type& sendListReverse_F,
+void createReverseExchangeLists(exchangeList_Type& sendListReverse_F,
     exchangeList_Type& receiveListReverse_F,
-    const std::vector<int>& fVertexToTriangleID, const int* indexToVertexID_F);
-
-void createReverseCellsExchangeLists(exchangeList_Type& sendListReverse_F,
-    exchangeList_Type& receiveListReverse_F,
-    const std::vector<int>& fCellToVertexID,
-    const int* indexToCellID_F);
+    const std::vector<int>& newProcIds, const int* indexToID_F, exchangeList_Type const * recvList_F);
 
 void mapCellsToVertices(const std::vector<double>& velocityOnCells,
     std::vector<double>& velocityOnVertices, int fieldDim, int numLayers,
