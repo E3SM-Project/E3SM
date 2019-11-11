@@ -317,12 +317,14 @@ contains
   subroutine compose_query_bufsz(sendsz, recvsz)
     integer, intent(out) :: sendsz, recvsz
 
+#ifdef HOMME_ENABLE_COMPOSE
     integer :: ssz, rsz
 
     call slmm_query_bufsz(sendsz, recvsz)
     call cedr_query_bufsz(ssz, rsz)
     sendsz = max(sendsz, ssz)
     recvsz = max(recvsz, rsz)
+#endif
   end subroutine compose_query_bufsz
 
   subroutine compose_set_bufs(sendbuf, recvbuf)
@@ -330,10 +332,12 @@ contains
 
     real(kind=real_kind), intent(in) :: sendbuf(:), recvbuf(:)
 
+#ifdef HOMME_ENABLE_COMPOSE
     ! CEDR and SLMM can use the same buffers because they operate in sequence
     ! and never leave persistent state in these buffers between top-level calls.
     call slmm_set_bufs(sendbuf, recvbuf, size(sendbuf), size(recvbuf))
     call cedr_set_bufs(sendbuf, recvbuf, size(sendbuf), size(recvbuf))
+#endif
   end subroutine compose_set_bufs
 
   subroutine compose_repro_sum(send, recv, nlocal, nfld, comm) bind(c)

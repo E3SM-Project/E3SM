@@ -996,7 +996,8 @@ contains
     !       tl%nm1   tracers:  t    dynamics:  t+(qsplit-1)*dt
     !       tl%n0    time t + dt_q
 
-    use control_mod,        only: statefreq, qsplit, rsplit, disable_diagnostics, dt_remap_factor, dt_tracer_factor
+    use control_mod,        only: statefreq, qsplit, rsplit, disable_diagnostics, &
+         dt_remap_factor, dt_tracer_factor, transport_alg
     use hybvcoord_mod,      only: hvcoord_t
     use parallel_mod,       only: abortmp
     use prim_state_mod,     only: prim_printstate
@@ -1025,9 +1026,9 @@ contains
     integer :: n0_qdp,np1_qdp,r,nstep_end,nets_in,nete_in,step_factor
     logical :: compute_diagnostics, independent_time_steps
 
-    ! Use the flexible time stepper if dt_remap_factor == 0
-    ! (vertically Eulerian dynamics) or dt_remap < dt_tracer.
-    independent_time_steps = dt_remap_factor < dt_tracer_factor
+    ! Use the flexible time stepper if dt_remap_factor == 0 (vertically Eulerian
+    ! dynamics) or dt_remap < dt_tracer. This applies to SL transport only.
+    independent_time_steps = transport_alg > 1 .and. dt_remap_factor < dt_tracer_factor
 
     ! compute timesteps for tracer transport and vertical remap
     dt_q = dt*dt_tracer_factor

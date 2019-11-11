@@ -81,7 +81,9 @@ contains
     use time_mod, only: nEndStep
     use control_mod, only: transport_alg
     use sl_advection, only: sl_unittest
+#ifdef HOMME_ENABLE_COMPOSE
     use compose_mod, only: cedr_unittest
+#endif
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
