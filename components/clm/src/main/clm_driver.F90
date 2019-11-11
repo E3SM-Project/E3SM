@@ -286,7 +286,7 @@ contains
             temperature_vars, canopystate_vars) 
 
        ! fates and use_cn "should" be mutually exclusive
-       if (use_cn .and. (.not.use_fates)) then
+       if (use_cn) then
           !  Note (WJS, 6-12-13): Because of this routine's placement in the driver sequence
           !  (it is called very early in each timestep, before weights are adjusted and
           !  filters are updated), it may be necessary for this routine to compute values over
@@ -1051,8 +1051,6 @@ contains
              end if !if (use_clm_interface)
              !--------------------------------------------------------------------------------
 
-             ! NOTE TO RYAN: BLOCK OUT ALL ISOTOPE ALLOCATIONS AND USAGE WHEN FATES ON
-
 
              call EcosystemDynNoLeaching2(bounds_clump,                                   &
                    filter(nc)%num_soilc, filter(nc)%soilc,                                  &
@@ -1085,13 +1083,19 @@ contains
                      waterstate_vars, canopystate_vars)
              end if
 
-         end if  ! end of if-use_cn   or if-use_fates
+          end if  ! end of if-use_cn   or if-use_fates
        end if ! end of is_active_betr_bgc
     
+       ! If FATES and nutrient fluxes are both enabled, send those
+       ! fluxes to the FATES model and have it unpack those fluxes
+       ! into its cohort structure. It will integrated these
+       ! fluxes over the day.
 
-    
+       call t_startf('fates_send_nutr_bcin')
+       if(use_fates) call WrapNutrientUptakeRates(bouncs_clump)
+       call t_stopf('fates_send_nutr_bcin')
 
-         call t_stopf('ecosysdyn')
+       call t_stopf('ecosysdyn')
 
          ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
          call t_startf('depvel')
@@ -1286,33 +1290,33 @@ contains
 
        call WaterBudget_SetEndingMonthlyStates(bounds_clump, waterstate_vars)
 
-       if (.not. use_fates)then
-          if (use_cn) then
-             nstep = get_nstep()
 
-             if (nstep < 2 )then
-                if (masterproc) then
-                   write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
-                end if
-             else
-                call t_startf('cnbalchk')
-
-                call ColCBalanceCheck(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     col_cs, carbonflux_vars)
-
-                call ColNBalanceCheck(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     nitrogenstate_vars, nitrogenflux_vars)
-
-                call ColPBalanceCheck(bounds_clump, &
-                     filter(nc)%num_soilc, filter(nc)%soilc, &
-                     phosphorusstate_vars, phosphorusflux_vars)
-
-                call t_stopf('cnbalchk')
+       if (use_cn .or. use_fates) then
+          nstep = get_nstep()
+          
+          if (nstep < 2 )then
+             if (masterproc) then
+                write(iulog,*) '--WARNING-- skipping CN balance check for first timestep'
              end if
+          else
+             call t_startf('cnbalchk')
+             
+             call ColCBalanceCheck(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  col_cs, carbonflux_vars)
+             
+             call ColNBalanceCheck(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  nitrogenstate_vars, nitrogenflux_vars)
+             
+             call ColPBalanceCheck(bounds_clump, &
+                  filter(nc)%num_soilc, filter(nc)%soilc, &
+                  phosphorusstate_vars, phosphorusflux_vars)
+             
+             call t_stopf('cnbalchk')
           end if
        end if
+
 
        ! ============================================================================
        ! Determine albedos for next time step

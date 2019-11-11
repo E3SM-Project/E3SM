@@ -728,19 +728,17 @@ contains
                   this%fates(nc)%bc_in(s))
             
       enddo
-      
-      ! call subroutine to aggregate ED litter output fluxes and 
-      ! package them for handing across interface
-      call FluxIntoLitterPools(this%fates(nc)%nsites, &
-            this%fates(nc)%sites,  &
-            this%fates(nc)%bc_in,  &
-            this%fates(nc)%bc_out)
 
       ! ---------------------------------------------------------------------------------
       ! Part III: Process FATES output into the dimensions and structures that are part
       ! of the HLMs API.  (column, depth, and litter fractions)
       ! ---------------------------------------------------------------------------------
       call this%UpdateLitterFluxes(bounds_clump)
+
+      call PrepNutrientAquisitionBCs(this%fates(nc)%sites,  &
+                                     this%fates(nc)%bc_in,  &
+                                     this%fates(nc)%bc_out)
+
 
       ! ---------------------------------------------------------------------------------
       ! Part III.2 (continued).
@@ -804,6 +802,46 @@ contains
 
 
    ! ------------------------------------------------------------------------------------
+
+   !subroutine WrapFatesNutrientSources(this,bounds_clump)
+
+     
+     ! Add in any N source from FATES
+     !sminn_vr(c,:)    = sminn_vr(c,:) + alm_fates(ci)%bc_out(s)%source_nh4(:)
+     !smin_nh4_vr(c,:) = smin_nh4_vr(c,:) + alm_fates(ci)%bc_out(s)%source_nh4(:)
+     
+
+    ! return
+   !end subroutine WrapFatesNutrientSources
+
+   ! =====================================================================================
+   
+   subroutine WrapNutrientUptakeRates(this,bounds_clump)
+
+     implicit none
+     class(hlm_fates_interface_type), intent(inout) :: this
+     type(bounds_type)              , intent(in)    :: bounds_clump
+
+     ! !LOCAL VARIABLES:
+     integer  :: s                        ! site index
+
+     ! This routine is simple.  We zero the nutrient uptake fluxes
+     ! that are calculated in the soil BGC acquisition schemes.  We need to zero
+     ! because those fluxes are incremented over the short time-steps
+     ! and then applied to the plant on the FATES dynamics call. We call this
+     ! at the end of the dynamics call, after the previous day's nutrient
+     ! fluxes have been parsed out and allocated.
+
+     if(fates_parteh_mode .ne. prt_cnp_flex_allom_hyp ) return
+     
+     nc = bounds_clump%clump_index
+     call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in)
+
+
+     return
+   end subroutine WrapNutrientUptakeRates
+   
+   ! ====================================================================================
 
    subroutine UpdateLitterFluxes(this,bounds_clump)
 
@@ -1285,6 +1323,8 @@ contains
                         this%fates(nc)%bc_in(s) )
                end do
 
+               call this%UpdateLitterFluxes(bounds_clump)
+
                ! ------------------------------------------------------------------------
                ! Re-populate all the hydraulics variables that are dependent
                ! on the key hydro state variables and plant carbon/geometry
@@ -1415,7 +1455,6 @@ contains
                  end do
 
               end do
-
               
               call HydrSiteColdStart(this%fates(nc)%sites,this%fates(nc)%bc_in)
            end if
@@ -1427,6 +1466,8 @@ contains
               call ed_update_site(this%fates(nc)%sites(s), &
                     this%fates(nc)%bc_in(s))
            end do
+
+           call this%UpdateLitterFluxes(bounds_clump)
 
            ! ------------------------------------------------------------------------
            ! Update diagnostics of FATES ecosystem structure used in HLM.

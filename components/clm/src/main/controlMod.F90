@@ -410,6 +410,19 @@ contains
               call endrun(msg=' ERROR:: n_com_nfix and use_fates cannot both be true'//&
                     errMsg(__FILE__, __LINE__))
           end if
+
+          ! If parteh mode > 1, then NP are turned on, potentially
+          if(fates_parteh_mode > 1 ) then
+             if(use_fates_ed_prescribed_phys.eq.1) then
+                call endrun(msg=' ERROR:: n_com_nfix and use_fates cannot both be true'//&
+                     errMsg(__FILE__, __LINE__))
+             end if
+             if(use_fates_ed_st3.eq.1) then
+                call endrun(msg=' ERROR:: n_com_nfix and use_fates cannot both be true'//&
+                     errMsg(__FILE__, __LINE__))
+             end if
+          end if
+
        end if
 
 

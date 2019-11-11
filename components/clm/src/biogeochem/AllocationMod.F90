@@ -107,7 +107,9 @@ module AllocationMod
   real(r8), allocatable :: plant_nh4demand_vr_fates(:,:) ! nutrient demands per competitor per soil layer
   real(r8), allocatable :: plant_no3demand_vr_fates(:,:)
   real(r8), allocatable :: plant_pdemand_vr_fates(:,:)
-
+  integer,  allocatable :: j_fates(:)                    ! For fates output boundary conditions, this
+                                                         ! is an index translation array for the decomposition
+                                                         ! layers
 
   real(r8), parameter   :: E_plant_scalar  = 0.0000125_r8 ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
   real(r8), parameter   :: E_decomp_scalar = 0.05_r8      ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
@@ -210,6 +212,7 @@ contains
     logical :: carbonnitrogen_only
     logical :: carbonphosphorus_only
     integer :: max_comps
+    integer :: j
     !-----------------------------------------------------------------------
 
 
@@ -229,6 +232,18 @@ contains
        allocate(ft_index(bounds%begp:bounds%endp,1:nlevdecomp)); veg_rootc(bounds%begp:bounds%endp,1:nlevdecomp) = -1
        
        if (use_fates) then
+
+          ! If the FATES output array's second dimension is == 1, it implies it
+          ! wants a sum over decomposition layers
+          allocate(j_fates(1:nlevdecomp))
+          if( size( alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux,dim=2) .eq. 1) then
+             j_fates(:) = 1
+          else
+             do j=1,nlevdecomp
+                j_fates(j) = j
+             end do
+          end if
+
           max_comps = size(alm_fates%fates(1)%bc_out(1)%ft_index,dim=1)
           allocate(plant_nh4demand_vr_fates(max_comps,nlevdecomp)); plant_nh4demand_vr_fates(:,:) = nan
           allocate(plant_no3demand_vr_fates(max_comps,nlevdecomp)); plant_no3demand_vr_fates(:,:) = nan
@@ -1327,6 +1342,9 @@ contains
          ! Use FATES vegetation
          ! ------------------------------------------------------------------------------
          if(use_fates) then
+
+
+            ! PERHAPS SEND THIS BLOCK TO CLMFATES_INTERFACEMOD ...
             
             ci             = bounds%clump_index
             s              = alm_fates%fates(ci)%hsites(c)
@@ -1351,7 +1369,7 @@ contains
                   col_plant_ndemand_vr(c,j) = plant_ndemand_col(c) * nuptake_prof(c,j)
                   col_plant_ndemand_vr(c,j) = plant_pdemand_col(c) * puptake_prof(c,j)
                end do
-
+               
             else  !(ECA)
 
                veg_rootc_ptr  => alm_fates%fates(ci)%bc_out(s)%veg_rootc
@@ -2181,26 +2199,42 @@ contains
       
       if(use_fates)then
          n_pcomp = alm_fates%fates(ci)%bc_out(s)%n_plant_comps
+         
          if (nu_com .eq. 'RD') then
+
             do f = 1,n_pcomp
-               alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f) = alm_fates%fates(ci)%bc_out(s)%plant_ndemand(f)*fpg(c)
-            end do
-            do f = 1,n_pcomp
-               alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f) = alm_fates%fates(ci)%bc_out(s)%plant_pdemand(f)*fpg_p(c)
-            end do
-         else ! ECA or MIC mode
-            do f = 1,n_pcomp
-               alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f) = 0._r8
                do j = 1,nlevdecomp
-                  alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f) = alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f) + &
-                       (plant_nh4demand_vr_ptr(f,j) * fpg_nh4_vr(c,j) + plant_no3demand_vr_ptr(f,j) * fpg_no3_vr(c,j)) * dzsoi_decomp(j)
+
+                  ! Note that nuptake_prof and fpg are both unitless fractions
+                  ! units:  [g/m2] = [g/m3/s] * [/] * [/] * [s] [m]
+                  
+                  alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_out(j)) = & 
+                       alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_out(j)) + & 
+                       alm_fates%fates(ci)%bc_out(s)%plant_ndemand(f,j) * & 
+                       nuptake_prof(c,j)*fpg(c)*dt*dzsoi_decomp(j)
+                  
+                  alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_out(j)) = & 
+                       alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_out(j)) + &
+                       alm_fates%fates(ci)%bc_out(s)%plant_pdemand(f,j) * &
+                       puptake_prof(c,j)*fpg_p(c)*dt*dzsoi_decomp(j)
+
                end do
             end do
+
+         else ! ECA or MIC mode
+
             do f = 1,n_pcomp
-               alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f) = 0._r8
                do j = 1,nlevdecomp
-                  alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f) = alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f) + & 
-                       (plant_pdemand_vr_ptr(f,j) * fpg_p_vr(c,j)) * dzsoi_decomp(j)
+
+                  alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_out(j)) = & 
+                       alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_out(j)) + & 
+                       (plant_nh4demand_vr_ptr(f,j) * fpg_nh4_vr(c,j) + & 
+                        plant_no3demand_vr_ptr(f,j) * fpg_no3_vr(c,j)) * dzsoi_decomp(j) * dt
+
+                  alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_out(j)) = & 
+                       alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_out(j)) + & 
+                       (plant_pdemand_vr_ptr(f,j) * fpg_p_vr(c,j)) * dzsoi_decomp(j) * dt
+                  
                end do
             end do
          end if
