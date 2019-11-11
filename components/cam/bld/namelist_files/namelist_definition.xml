@@ -6055,11 +6055,12 @@ Tracer transport algorithm:
 </entry>
 
 <entry id="semi_lagrange_cdr_alg" type="integer" category="se"
-       group="ctl_nl" valid_values="2,3,20,30" >
+       group="ctl_nl" valid_values="2,3,20,21,30" >
 Constrained density reconstuctor (CDR) for property preservation:
 2: QLT
 3: CAAS
 20: QLT with superlevels of 8 levels.
+21: QLT with superlevels of 8 levels; use local CAAS over sublevels.
 30: CAAS with superlevels of 8 levels.
 Default: 20
 </entry>

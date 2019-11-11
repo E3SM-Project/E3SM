@@ -232,7 +232,8 @@ contains
 
     independent_time_steps = dt_remap_factor < dt_tracer_factor
 
-    if (semi_lagrange_cdr_alg == 2 .or. semi_lagrange_cdr_alg == 20) then
+    if (semi_lagrange_cdr_alg == 2 .or. semi_lagrange_cdr_alg == 20 .or. &
+         semi_lagrange_cdr_alg == 21) then
        if (use_sgi) then
           call sgi_get_rank2sfc(rank2sfc)
           allocate(owned_ids(size(GridVertex)))

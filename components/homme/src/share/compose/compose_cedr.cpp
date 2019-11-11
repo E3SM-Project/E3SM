@@ -5801,21 +5801,28 @@ struct CDR {
   typedef compose::CAAS CAAST;
 
   struct Alg {
-    enum Enum { qlt, qlt_super_level, caas, caas_super_level };
+    enum Enum { qlt, qlt_super_level, qlt_super_level_local_caas, caas, caas_super_level };
     static Enum convert (Int cdr_alg) {
       switch (cdr_alg) {
       case 2:  return qlt;
       case 20: return qlt_super_level;
+      case 21: return qlt_super_level_local_caas;
       case 3:  return caas;
       case 30: return caas_super_level;
       case 42: return caas_super_level; // actually none
       default: cedr_throw_if(true,  "cdr_alg " << cdr_alg << " is invalid.");
       }
     }
-    static bool is_qlt (Enum e) { return e == qlt || e == qlt_super_level; }
-    static bool is_caas (Enum e) { return e == caas || e == caas_super_level; }
+    static bool is_qlt (Enum e) {
+      return (e == qlt || e == qlt_super_level ||
+              e == qlt_super_level_local_caas);
+    }
+    static bool is_caas (Enum e) {
+      return e == caas || e == caas_super_level;
+    }
     static bool is_suplev (Enum e) {
-      return e == qlt_super_level || e == caas_super_level;
+      return (e == qlt_super_level || e == caas_super_level ||
+              e == qlt_super_level_local_caas);
     }
   };
 
@@ -5840,8 +5847,7 @@ struct CDR {
       nsuplev((nlev + nsublev - 1) / nsublev),
       threed(independent_time_steps),
       cdr_over_super_levels(threed && Alg::is_caas(alg)),
-      // experimental; off
-      caas_in_suplev(false /* Alg::is_qlt(alg) && nsublev > 1 */),
+      caas_in_suplev(alg == Alg::qlt_super_level_local_caas && nsublev > 1),
       hard_zero(hard_zero_),
       p(p_), inited_tracers_(false)
   {
