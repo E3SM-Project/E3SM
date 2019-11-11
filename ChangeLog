@@ -1,6 +1,96 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 11-11-2019
+Tag: cime5.8.14
+Answer Changes: None, (except for X compsets with nuopc
+Tests: scripts_regression_tests, ERIO.f09_g16.X.cheyenne_intel
+Dependencies:
+
+Brief Summary:
+    - Revert "initialize albdif and albdir in seq_flux_mct"
+    - Initialize albdif and albdir in seq_flux_mct.
+    - Clean up env_batch.
+    - Test too short.
+    - set mpilib for custom test.
+    - Shorten the cime developer tests.
+    - Update time of day string in ERI test.
+    - Shr code cleanup.
+    - Update for compatibility with latest CMEPS.
+    - Omit broken netcdf4 on cheyenne with mpt.
+    - Exclude .ref1 and .ref2 from TestStatus files and move get_test_status_files to a common place.
+    - Fix issue with e3sm field.
+    - Minor fix to e3sm_cime_mgmt to properly handle submodules.
+    - Refactor how run_cmd handles strings.
+    - ACME merge 2019-10-25.
+
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+cad8477bb Merge pull request #3297 from ESMCI/revert-3296-master_seq_flux_init
+5f7bfb6a1 Merge pull request #3296 from jedwards4b/master_seq_flux_init
+96455e0d6 Merge pull request #3292 from ESMCI/jgfouca/cleanup_env_batch
+73dddb262 test too short
+ff5a4c07c set mpilib for custom test
+de2f7c3bb Merge pull request #3289 from jedwards4b/shorten_cime_developer
+62a77d1d5 Merge pull request #3288 from ESMCI/fischer/eri_test
+0bd9a353e Merge pull request #3285 from jedwards4b/shr_code_cleanup
+1529bac14 Merge pull request #3283 from ESMCI/nems_integration_fixed2
+edb013cb7 Merge pull request #3284 from jedwards4b/ERIO_on_cheyenne
+cafc94139 Merge pull request #3282 from jedwards4b/fix_get_test_status_files
+0945a4760 Merge pull request #3277 from jedwards4b/demand_better
+db4d8df17 Minor fix to e3sm_cime_mgmt to properly handle submodules
+4d6798451 Merge pull request #3273 from ESMCI/jgfouca/run_cmd_str_refactor
+bb9fc0a99 Merge pull request #3272 from ESMCI/jgfouca/branch-for-acme-split-2019-10-25
+
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/machines/config_machines.xml
+M	config/e3sm/allactive/config_pesall.xml
+M	config/e3sm/config_grids.xml
+M	config/e3sm/machines/config_batch.xml
+M	config/e3sm/machines/config_compilers.xml
+M	config/e3sm/machines/config_machines.xml
+M	config/e3sm/tests.py
+M	scripts/create_test
+M	scripts/lib/CIME/Servers/wget.py
+M	scripts/lib/CIME/SystemTests/eri.py
+M	scripts/lib/CIME/SystemTests/system_tests_common.py
+M	scripts/lib/CIME/XML/env_batch.py
+M	scripts/lib/CIME/bless_test_results.py
+M	scripts/lib/CIME/buildlib.py
+M	scripts/lib/CIME/case/case_run.py
+M	scripts/lib/CIME/case/case_submit.py
+M	scripts/lib/CIME/compare_test_results.py
+M	scripts/lib/CIME/test_scheduler.py
+M	scripts/lib/CIME/test_utils.py
+M	scripts/lib/CIME/utils.py
+M	scripts/lib/e3sm_cime_mgmt.py
+M	scripts/lib/get_tests.py
+M	scripts/tests/scripts_regression_tests.py
+M	src/components/data_comps/dlnd/mct/dlnd_comp_mod.F90
+M	src/components/data_comps/docn/nuopc/docn_comp_mod.F90
+M	src/components/data_comps/docn/nuopc/docn_shr_mod.F90
+M	src/components/xcpl_comps/xlnd/nuopc/lnd_comp_nuopc.F90
+M	src/drivers/mct/main/cime_comp_mod.F90
+M	src/drivers/mct/main/prep_aoflux_mod.F90
+M	src/drivers/mct/main/prep_rof_mod.F90
+M	src/drivers/mct/shr/seq_flds_mod.F90
+M	src/drivers/mct/shr/seq_timemgr_mod.F90
+M	src/share/nuopc/glc_elevclass_mod.F90
+M	src/share/nuopc/seq_drydep_mod.F90
+M	src/share/streams/shr_strdata_mod.F90
+M	src/share/util/mct_mod.F90
+M	src/share/util/shr_const_mod.F90
+M	src/share/util/shr_flux_mod.F90
+M	src/share/util/shr_mct_mod.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 10-24-2019
 Tag: cime5.8.13
 Answer Changes: None
