@@ -1,0 +1,3 @@
+#!/bin/bash
+./xmlchange HIST_OPTION=none
+./xmlchange SAVE_TIMING=TRUE
