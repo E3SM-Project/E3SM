@@ -18,7 +18,7 @@ module physpkg
   use physconst,        only: latvap, latice, rh2o
   use physics_types,    only: physics_state, physics_tend, physics_state_set_grid, &
        physics_ptend, physics_tend_init,    &
-       physics_type_alloc, physics_ptend_dealloc,&
+       physics_type_alloc, physics_ptend_dealloc, physics_state_copy, &
        physics_state_alloc, physics_state_dealloc, physics_tend_alloc, physics_tend_dealloc
   use physics_update_mod,  only: physics_update, physics_update_init, hist_vars, nvars_prtrb_hist, get_var
   use phys_grid,        only: get_ncols_p
@@ -948,8 +948,6 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     ! Input/Output arguments
     !
     type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state
-    type(physics_state), intent(inout), dimension(begchunk:endchunk) :: phys_state_ndg
-
     type(physics_tend ), intent(inout), dimension(begchunk:endchunk) :: phys_tend
 
     type(physics_buffer_desc), pointer, dimension(:,:) :: pbuf2d
@@ -966,6 +964,9 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     integer  :: mpicom = 0
 #endif
     type(physics_buffer_desc), pointer :: phys_buffer_chunk(:)
+   
+    !SZ Nov 11, 2019
+    type(physics_state), dimension(begchunk:endchunk) :: phys_state_ndg
 
     call t_startf ('physpkg_st1')
     nstep = get_nstep()
@@ -1004,6 +1005,12 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        !-----------------------------------------------------------------------
 
        call phys_timestep_init( phys_state, cam_out, pbuf2d)
+
+       ! Initialize physics tendency arrays, copy the phys_state to phys_state_ndg
+       ! array to use in calculating nudging tendency
+       do c=begchunk, endchunk
+         call physics_state_copy(phys_state(c),phys_state_ndg(c))
+       end do 
 
        call t_stopf ('physpkg_st1')
 
@@ -1049,22 +1056,21 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
        call t_startf ('cal_nudging_tend')
 
-       !--------------------------------------------------------
-       ! Generate Nudging data if needed. This data is used 
-       ! for nudging to CLIM experiment the output here is 
-       ! to make the output nudging data and calculation of 
-       ! nudging tendency  in the same time level
-       !-------------------------------------------------------
-       if (Nudge_Data)  then
-        call cnst_get_ind('Q',indw)
-        do c=begchunk, endchunk
-          call outfld('T_ndg   ',phys_state_ndg(c)%t        , pcols   ,c   )
-          call outfld('PS_ndg  ',phys_state_ndg(c)%ps       , pcols   ,c   )
-          call outfld('U_ndg   ',phys_state_ndg(c)%u        , pcols   ,c   )
-          call outfld('V_ndg   ',phys_state_ndg(c)%v        , pcols   ,c   )
-          call outfld('Q_ndg   ',phys_state_ndg(c)%q(1,1,1) , pcols   ,c   )
-        end do
-       end if
+!       !--------------------------------------------------------
+!       ! Generate Nudging data if needed. This data is used 
+!       ! for nudging to CLIM experiment the output here is 
+!       ! to make the output nudging data and calculation of 
+!       ! nudging tendency  in the same time level
+!       !-------------------------------------------------------
+!       if (Nudge_Data)  then
+!        do c=begchunk, endchunk
+!          call outfld('T_ndg   ',phys_state_ndg(c)%t        , pcols   ,c   )
+!          call outfld('PS_ndg  ',phys_state_ndg(c)%ps       , pcols   ,c   )
+!          call outfld('U_ndg   ',phys_state_ndg(c)%u        , pcols   ,c   )
+!          call outfld('V_ndg   ',phys_state_ndg(c)%v        , pcols   ,c   )
+!          call outfld('Q_ndg   ',phys_state_ndg(c)%q(1,1,1) , pcols   ,c   )
+!        end do
+!       end if
 
        !--------------------------------------------------------
        ! Update Nudging values, if needed
@@ -1885,6 +1891,8 @@ subroutine tphysbc (ztodt,               &
     use subcol,          only: subcol_gen, subcol_ptend_avg
     use subcol_utils,    only: subcol_ptend_copy, is_subcol_on
     use phys_control,    only: use_qqflx_fixer, use_mass_borrower
+
+    use nudging,         only: Nudge_Model,Nudge_Data
 
     implicit none
 
@@ -2718,7 +2726,21 @@ end if ! l_tracer_aero
     !===================================================
     ! save the state to calculate nudging tendency 
     !===================================================
-    call physics_state_copy(state,state_ndg)
+    if (Nudge_Model) call physics_state_copy(state,state_ndg)
+    !--------------------------------------------------------
+    ! Generate Nudging data if needed. This data is used 
+    ! for nudging to CLIM experiment the output here is 
+    ! to make the output nudging data and calculation of 
+    ! nudging tendency  in the same time level
+     !-------------------------------------------------------
+    if (Nudge_Data)  then
+      call outfld('T_ndg   ',state_ndg%t               , pcols   ,lchnk   )
+      call outfld('PS_ndg  ',state_ndg%ps              , pcols   ,lchnk   )
+      call outfld('U_ndg   ',state_ndg%u               , pcols   ,lchnk   )
+      call outfld('V_ndg   ',state_ndg%v               , pcols   ,lchnk   )
+      call outfld('Q_ndg   ',state_ndg%q(1,1, 1)       , pcols   ,lchnk   )
+    end if
+
 
 if (l_rad) then
     !===================================================
