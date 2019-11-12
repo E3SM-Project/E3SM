@@ -210,6 +210,7 @@ contains
     logical :: carbonphosphorus_only
     integer :: max_comps
     integer :: j
+    integer :: f
     !-----------------------------------------------------------------------
 
 
@@ -234,7 +235,10 @@ contains
           allocate(plant_nh4demand_vr_fates(max_comps,nlevdecomp)); plant_nh4demand_vr_fates(:,:) = nan
           allocate(plant_no3demand_vr_fates(max_comps,nlevdecomp)); plant_no3demand_vr_fates(:,:) = nan
           allocate(plant_pdemand_vr_fates(max_comps,nlevdecomp));   plant_pdemand_vr_fates(:,:) = nan
-          allocate(filter_pcomp(max_comps))                       ; filter_pcomp(:) = -1
+          allocate(filter_pcomp(max_comps))                       ;
+          do f = 1,max_comps
+             filter_pcomp(f) = f
+          end do
        else
           max_comps = bounds%endp-bounds%begp+1
           allocate(filter_pcomp(max_comps)); filter_pcomp(:) = -1
@@ -1331,9 +1335,6 @@ contains
          ! ------------------------------------------------------------------------------
          if(use_fates) then
 
-
-            ! PERHAPS SEND THIS BLOCK TO CLMFATES_INTERFACEMOD ...
-            
             ci             = bounds%clump_index
             s              = alm_fates%fates(ci)%hsites(c)
             n_pcomp        = alm_fates%fates(ci)%bc_out(s)%n_plant_comps
@@ -1366,18 +1367,18 @@ contains
 
                cn_scalar_ptr          => alm_fates%fates(ci)%bc_out(s)%cn_scalar          ! (i,j)
                plant_nh4demand_vr_ptr => plant_nh4demand_vr_fates
-               km_nh4_ptr    => alm_fates%fates(ci)%bc_out(s)%km_plant_nh4
-               vmax_nh4_ptr  => alm_fates%fates(ci)%bc_out(s)%vmax_plant_nh4
+               km_nh4_ptr    => alm_fates%fates(ci)%bc_pconst%eca_km_nh4
+               vmax_nh4_ptr  => alm_fates%fates(ci)%bc_pconst%eca_vmax_nh4
                if (use_nitrif_denitrif) then
                   plant_no3demand_vr_ptr => plant_no3demand_vr_fates
-                  km_no3_ptr   => alm_fates%fates(ci)%bc_out(s)%km_plant_no3
-                  vmax_no3_ptr => alm_fates%fates(ci)%bc_out(s)%vmax_plant_no3
+                  km_no3_ptr   => alm_fates%fates(ci)%bc_pconst%eca_km_no3
+                  vmax_no3_ptr => alm_fates%fates(ci)%bc_pconst%eca_vmax_no3
                end if
                
                cp_scalar_ptr        => alm_fates%fates(ci)%bc_out(s)%cp_scalar
                plant_pdemand_vr_ptr => plant_pdemand_vr_fates
-               km_p_ptr             => alm_fates%fates(ci)%bc_out(s)%km_plant_p
-               vmax_p_ptr           => alm_fates%fates(ci)%bc_out(s)%vmax_plant_p
+               km_p_ptr             => alm_fates%fates(ci)%bc_pconst%eca_km_p
+               vmax_p_ptr           => alm_fates%fates(ci)%bc_pconst%eca_vmax_p
                
             end if
    
