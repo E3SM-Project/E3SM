@@ -113,7 +113,10 @@ Building pFUnit
 
 For a serial build of pFUnit, follow these instructions:
 
-#. Download pFUnit from https://github.com/Goddard-Fortran-Ecosystem/pFUnit.
+#. Obtain pFUnit from https://github.com/Goddard-Fortran-Ecosystem/pFUnit (see
+   https://github.com/Goddard-Fortran-Ecosystem/pFUnit#obtaining-pfunit for details; note
+   that if you have an older version of cmake you may also need to use an older version of
+   pFUnit)
 
 #. Set up your environment to be similar to the environment used in CIME system builds.
    For example, load the appropriate compilers into your path.
@@ -400,7 +403,7 @@ You can also see examples of the unit test build scripts by viewing the
 Other pFUnit documentation sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Extensive documentation and examples are included in the following when you download
+Extensive documentation and examples are included in the following when you obtain
 pFUnit from https://github.com/Goddard-Fortran-Ecosystem/pFUnit:
 
 * documentation/pFUnit3-ReferenceManual.pdf
