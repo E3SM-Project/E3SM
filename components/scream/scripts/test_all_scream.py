@@ -154,9 +154,10 @@ class TestAllScream(object):
                                          [], "full_sp_debug", git_head)
                 if not success and self._fast_fail: return success
 
-            # A full debug test with packsize=1 and FPE
+            # A full debug test with packsize=1 and FPE on non-gpu machines
             if not self._tests or "fpe" in self._tests:
-                if self._machine not in ["waterman", "white"]:
+                is_cuda_machine = "OMPI_CXX" in os.environ
+                if not is_cuda_machine:
                     success &= self.run_test([("CMAKE_BUILD_TYPE", "Debug"), ("SCREAM_PACK_SIZE", "1"), ("SCREAM_SMALL_PACK_SIZE", "1")],
                                              [], "debug_nopack_fpe", git_head)
 

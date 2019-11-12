@@ -5,28 +5,28 @@ import concurrent.futures as threading3
 
 # MACHINE -> (env_setup, compiler, batch submit prefix)
 MACHINE_METADATA = {
-    "melvin"   : (["module purge && module load sems-env && module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.10.3 sems-python/3.5.2", "export CTEST_PARALLEL_LEVEL=48"],
+    "melvin"   : (["module purge", "module load sems-env", "module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.12.2 sems-python/3.5.2", "export CTEST_PARALLEL_LEVEL=24"],
                   "$(which mpicxx)",
                   ""),
-    "bowman"   : (["module purge && module load openmpi/1.10.6/intel/17.2.174 git/2.8.2 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-bowman/bin:$PATH", "export CTEST_PARALLEL_LEVEL=48"],
+    "bowman"   : (["module purge", "module load openmpi/1.10.6/intel/17.2.174 git/2.8.2 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-bowman/bin:$PATH", "export CTEST_PARALLEL_LEVEL=68"],
                   "$(which mpicxx)",
                   "srun"),
-    "blake"    : (["module purge && module load openmpi/2.1.5/intel/19.1.144 git/2.9.4 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-blake/bin:$PATH", "export CTEST_PARALLEL_LEVEL=48"],
+    "blake"    : (["module purge", "module load openmpi/2.1.5/intel/19.1.144 git/2.9.4 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-blake/bin:$PATH", "export CTEST_PARALLEL_LEVEL=48"],
                   "$(which mpicxx)",
                   "srun"),
-    "waterman" : (["module purge && module load devpack/latest/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1", "module switch cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-waterman/bin:$PATH"],
+    "waterman" : (["module purge", "module load devpack/latest/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1", "module switch cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-waterman/bin:$PATH"],
                   "$(which mpicxx)",
                   "bsub -I -q rhel7W"),
-    "white"    : (["module purge && module load devpack/20181011/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-white/bin:$PATH"],
+    "white"    : (["module purge", "module load devpack/20181011/openmpi/2.1.2/gcc/7.2.0/cuda/9.2.88 git/2.10.1 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-white/bin:$PATH"],
                   "$(which mpicxx)",
                   "bsub -I -q rhel7G"),
-    "lassen" : (["module purge && module load gcc/7.3.1 cuda/10.1.243 cmake/3.14.5 spectrum-mpi netcdf/4.7.0 python/3.7.2 && export LLNL_USE_OMPI_VARS='y'"],
+    "lassen" : (["module purge", "module load gcc/7.3.1 cuda/10.1.243 cmake/3.14.5 spectrum-mpi netcdf/4.7.0 python/3.7.2", "export LLNL_USE_OMPI_VARS='y'"],
                   "$(which mpicxx)",
                   "bsub -Ip"),
-    "quartz" : (["module purge &&  module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1"],
+    "quartz" : (["module purge", "module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1"],
                   "$(which mpicxx)",
                   "salloc --partition=pdebug"),
-    "syrah"  : (["module purge &&  module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1"],
+    "syrah"  : (["module purge", "module load StdEnv cmake/3.14.5 mkl/2019.0 intel/19.0.4 netcdf-fortran/4.4.4 netcdf/4.4.1.1"],
                   "$(which mpicxx)",
                   "salloc --partition=pdebug"),
 }
@@ -49,6 +49,7 @@ class GatherAllData(object):
     def formulate_command(self, machine):
     ###########################################################################
         env_setup, compiler, batch = MACHINE_METADATA[machine]
+        env_setup_str = " && ".join(env_setup)
 
         # Compute locations of key repos
         if self._local:
@@ -58,7 +59,7 @@ class GatherAllData(object):
             scream_docs_repo = "~/scream-docs-perf-{}/micro-apps".format(machine)
             scream_repo      = "~/scream-perf-{}/components/scream".format(machine)
 
-        repo       = scream_docs_repo if self._scream_docs else scream_repo
+        repo = scream_docs_repo if self._scream_docs else scream_repo
 
         # Need to know kokkos location in order to set up OMPI_CXX
         if self._kokkos:
@@ -83,14 +84,15 @@ class GatherAllData(object):
                 .format(scream_repo)
 
         extra_env = ""
-        if machine in ["waterman", "white", "lassen"] and "OMPI_CXX" not in " ".join(env_setup):
+        is_cuda_machine = "cuda" in env_setup_str
+        if is_cuda_machine and "OMPI_CXX" not in env_setup_str:
             extra_env = "OMPI_CXX={}/bin/nvcc_wrapper ".format(kokkos_loc)
         else:
-            extra_env = "OMP_PROC_BIND=FALSE "
+            extra_env = "OMP_PROC_BIND=spread "
 
         repo_setup = "true" if (self._local) else "git fetch && git checkout {} && git submodule update --init".format(self._commit)
 
-        cmd = "{}cd {} && {} && {} && {}{} {}".format(setup, repo, " && ".join(env_setup), repo_setup, extra_env, batch, local_cmd)
+        cmd = "{}cd {} && {} && {} && {}{} {}".format(setup, repo, env_setup_str, repo_setup, extra_env, batch, local_cmd)
 
         return cmd
 
