@@ -105,7 +105,9 @@ module CLMFatesInterfaceMod
 
    use FatesInterfaceMod     , only : fates_interface_type
    use FatesInterfaceMod     , only : allocate_bcin
+   use FatesInterfaceMod     , only : allocate_bcpconst
    use FatesInterfaceMod     , only : allocate_bcout
+   use FatesInterfaceMod     , only : set_bcpconst
    use FatesInterfaceMod     , only : SetFatesTime
    use FatesInterfaceMod     , only : set_fates_ctrlparms
    use FatesInterfaceMod     , only : InitPARTEHGlobals
@@ -485,7 +487,14 @@ contains
          ! Allocate and Initialize the Boundary Condition Arrays
          ! These are staticaly allocated at maximums, so
          ! No information about the patch or cohort structure is needed at this step
-         
+
+         ! Parameter Constants defined by FATES, but used in ELM
+         ! Note that FATES has its parameters defined, so we can also set the values
+         call allocate_bcpconst(this%fates(nc)%bc_pconst)
+
+         ! This also needs 
+         call set_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
+
          do s = 1, this%fates(nc)%nsites
 
             c = this%f2hmap(nc)%fcolumn(s)
@@ -498,7 +507,7 @@ contains
 
             call allocate_bcin(this%fates(nc)%bc_in(s),col_pp%nlevbed(c),ndecomp)
             call allocate_bcout(this%fates(nc)%bc_out(s),col_pp%nlevbed(c),ndecomp)
-            
+
             call this%fates(nc)%zero_bcs(s)
 
             ! Pass any grid-cell derived attributes to the site
@@ -714,6 +723,12 @@ contains
 
       end do
 
+      ! Nutrient uptake fluxes have been accumulating with each short
+      ! timestep, here, we unload them from the boundary condition
+      ! structures into the cohort structures.
+      call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in)
+
+
       ! ---------------------------------------------------------------------------------
       ! Part II: Call the FATES model now that input boundary conditions have been
       ! provided.
@@ -734,11 +749,6 @@ contains
       ! of the HLMs API.  (column, depth, and litter fractions)
       ! ---------------------------------------------------------------------------------
       call this%UpdateLitterFluxes(bounds_clump)
-
-      call PrepNutrientAquisitionBCs(this%fates(nc)%sites,  &
-                                     this%fates(nc)%bc_in,  &
-                                     this%fates(nc)%bc_out)
-
 
       ! ---------------------------------------------------------------------------------
       ! Part III.2 (continued).
@@ -801,7 +811,7 @@ contains
    end subroutine ReportFATESSiteStates
 
 
-   ! ------------------------------------------------------------------------------------
+   ! ====================================================================================
 
    !subroutine WrapFatesNutrientSources(this,bounds_clump)
 
@@ -814,32 +824,6 @@ contains
     ! return
    !end subroutine WrapFatesNutrientSources
 
-   ! =====================================================================================
-   
-   subroutine WrapNutrientUptakeRates(this,bounds_clump)
-
-     implicit none
-     class(hlm_fates_interface_type), intent(inout) :: this
-     type(bounds_type)              , intent(in)    :: bounds_clump
-
-     ! !LOCAL VARIABLES:
-     integer  :: s                        ! site index
-
-     ! This routine is simple.  We zero the nutrient uptake fluxes
-     ! that are calculated in the soil BGC acquisition schemes.  We need to zero
-     ! because those fluxes are incremented over the short time-steps
-     ! and then applied to the plant on the FATES dynamics call. We call this
-     ! at the end of the dynamics call, after the previous day's nutrient
-     ! fluxes have been parsed out and allocated.
-
-     if(fates_parteh_mode .ne. prt_cnp_flex_allom_hyp ) return
-     
-     nc = bounds_clump%clump_index
-     call UnPackNutrientAquisitionBCs(this%fates(nc)%sites, this%fates(nc)%bc_in)
-
-
-     return
-   end subroutine WrapNutrientUptakeRates
    
    ! ====================================================================================
 
@@ -1923,38 +1907,6 @@ contains
     call t_stopf('edpsn')
 
  end subroutine wrap_photosynthesis
-
- ! ======================================================================================
-
- subroutine wrap_veg_nutrient_struct(this, bounds_clump, c, veg_rootc, ft_index, decompmicc)
-
-   s = this%f2hmap(nc)%hsites(c)
-   
-   veg_rootc = this%fates(nc)%bc_out(s)%veg_rootc
-   ft_index  = this%fates(nc)%bc_out(s)%ft_index
-   decompmicc = this%fates(nc)%bc_out(s)%decompmicc
-
-
-   return
- end subroutine wrap_veg_nutrient_struct
-
- subroutine wrap_veg_nutrient_nh4(this, bounds_clump, 
-
-
-
-
- ! ========================================================================================
-
- subroutine wrap_nutrient_nh4(this, bounds_clump, c, )
-
-   
-   cn_scalar = this%fates(nc)%bc_out(s)%
-
-
-   return
- end subroutine wrap_nutrient_nh4
-
-
 
  ! ======================================================================================
 

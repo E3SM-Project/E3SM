@@ -1091,10 +1091,6 @@ contains
        ! into its cohort structure. It will integrated these
        ! fluxes over the day.
 
-       call t_startf('fates_send_nutr_bcin')
-       if(use_fates) call WrapNutrientUptakeRates(bouncs_clump)
-       call t_stopf('fates_send_nutr_bcin')
-
        call t_stopf('ecosysdyn')
 
          ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
@@ -1226,23 +1222,6 @@ contains
              
           end if
        end if
-
-       ! ------------------------------------------------------------------------------
-       ! Perform reduced capacity soil-bgc only calculations when FATES/ED is on
-       ! ------------------------------------------------------------------------------
-       !   
-       !   call FatesBGCDyn(bounds_clump,                           &
-       !        filter(nc)%num_soilc, filter(nc)%soilc,             &
-       !        filter(nc)%num_soilp, filter(nc)%soilp,             &
-       !        carbonflux_vars, carbonstate_vars, cnstate_vars,    &
-       !        c13_carbonflux_vars, c13_carbonstate_vars,          &
-       !        c14_carbonflux_vars, c14_carbonstate_vars,          &
-       !        canopystate_vars, soilstate_vars, temperature_vars, &
-       !        ch4_vars, nitrogenflux_vars, nitrogenstate_vars,    &
-       !        phosphorusstate_vars, phosphorusflux_vars,          &
-       !        alm_fates, crop_vars)
-          
-       
        
        ! ============================================================================
        ! Check the energy and water balance, also carbon and nitrogen balance

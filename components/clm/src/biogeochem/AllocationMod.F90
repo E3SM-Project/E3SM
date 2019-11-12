@@ -1387,6 +1387,12 @@ contains
             ! Use ELM Vegetation
             ! ---------------------------------------------------------------------------
 
+            do fp=1,num_soilp
+                p = filter_soilp(fp)
+                sminn_to_plant_patch(p) = 0.0_r8
+                sminp_to_plant_patch(p) = 0.0_r8
+            end do
+
             if (nu_com .eq. 'RD') then
 
                plant_pdemand_ptr     => veg_pf%plant_pdemand
@@ -1580,8 +1586,7 @@ contains
                
             endif
             
-            ! sum up N and P  fluxes to plant    ??????WAS sminn_to_plant(c)
-            ! INITIALIZED AS ZERO --- CHECK   X.YANG
+            ! sum up N and P  fluxes to plant
             sminn_to_plant(c) = 0._r8
             sminp_to_plant(c) = 0._r8
             do j = 1, nlevdecomp
@@ -1598,38 +1603,35 @@ contains
                   plant_ndemand_col(c) = plant_ndemand_col(c) + col_plant_ndemand_vr(c,j) * dzsoi_decomp(j)
                   plant_pdemand_col(c) = plant_pdemand_col(c) + col_plant_pdemand_vr(c,j) * dzsoi_decomp(j)
                end do
-
-               do fp=1,num_soilp
-                  p = filter_soilp(fp)
-                  sminn_to_plant_patch(p) = 0.0_r8
-                  sminp_to_plant_patch(p) = 0.0_r8
-               end do
                
                do j = 1, nlevdecomp  
                   
-                  if (col_plant_ndemand_vr(c,j) > 0._r8 ) then
-                     fpg_vr(c,j) = sminn_to_plant_vr(c,j)/col_plant_ndemand_vr(c,j)
-                  else
-                     fpg_vr(c,j) = 1.0_r8
-                  end if
-                  
-                  if (col_plant_pdemand_vr(c,j) > 0._r8) then
-                     fpg_p_vr(c,j) = sminp_to_plant_vr(c,j)/col_plant_pdemand_vr(c,j)
-                  else
-                     fpg_p_vr(c,j) = 1.0_r8
-                  end if
-                  do p = col_pp%pfti(c), col_pp%pftf(c)
-                     if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
-                        sminn_to_plant_patch(p) = sminn_to_plant_patch(p) + plant_ndemand_vr_patch(p,j) * &
-                             fpg_vr(c,j) *dzsoi_decomp(j)
-                        sminp_to_plant_patch(p) = sminp_to_plant_patch(p) + plant_pdemand_vr_patch(p,j) * &
-                             fpg_p_vr(c,j) *dzsoi_decomp(j)
-                     end if
-                  end do
+                   if (col_plant_ndemand_vr(c,j) > 0._r8 ) then
+                       fpg_vr(c,j) = sminn_to_plant_vr(c,j)/col_plant_ndemand_vr(c,j)
+                   else
+                       fpg_vr(c,j) = 1.0_r8
+                   end if
+                   
+                   if (col_plant_pdemand_vr(c,j) > 0._r8) then
+                       fpg_p_vr(c,j) = sminp_to_plant_vr(c,j)/col_plant_pdemand_vr(c,j)
+                   else
+                       fpg_p_vr(c,j) = 1.0_r8
+                   end if
+                   
+                   if(.not.use_fates)then
+                       do p = col_pp%pfti(c), col_pp%pftf(c)
+                           if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+                               sminn_to_plant_patch(p) = sminn_to_plant_patch(p) + plant_ndemand_vr_patch(p,j) * &
+                                     fpg_vr(c,j) *dzsoi_decomp(j)
+                               sminp_to_plant_patch(p) = sminp_to_plant_patch(p) + plant_pdemand_vr_patch(p,j) * &
+                                     fpg_p_vr(c,j) *dzsoi_decomp(j)
+                           end if
+                       end do
+                   end if
                end do
-               
-            end if
 
+            end if
+               
             ! RD: plants have second pass to obtain nutrient
             ! ECA/MIC: plants nutrient uptake is based on kinetics, no second pass nutrient uptake
             if (nu_com .eq. 'RD') then
@@ -1705,53 +1707,53 @@ contains
                      sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
                   end do
                end do
-            end if
-            
-            ! under conditions of excess N, some proportion is assumed to
-            ! be lost to denitrification, in addition to the constant
-            ! proportion lost in the decomposition pathways
-            do j = 1, nlevdecomp
+           end if      !if (nu_com .eq. 'RD') then
+           
+           ! under conditions of excess N, some proportion is assumed to
+           ! be lost to denitrification, in addition to the constant
+           ! proportion lost in the decomposition pathways
+           do j = 1, nlevdecomp
                do fc=1,num_soilc
-                  c = filter_soilc(fc)
-                  if ((sminn_to_plant_vr(c,j) + actual_immob_vr(c,j))*dt < sminn_vr(c,j)) then
-                     sminn_to_denit_excess_vr(c,j) = max(bdnr*((sminn_vr(c,j)/dt) - sum_ndemand_vr(c,j)),0._r8)
-                  else
-                     sminn_to_denit_excess_vr(c,j) = 0._r8
-                  endif
+                   c = filter_soilc(fc)
+                   if ((sminn_to_plant_vr(c,j) + actual_immob_vr(c,j))*dt < sminn_vr(c,j)) then
+                       sminn_to_denit_excess_vr(c,j) = max(bdnr*((sminn_vr(c,j)/dt) - sum_ndemand_vr(c,j)),0._r8)
+                   else
+                       sminn_to_denit_excess_vr(c,j) = 0._r8
+                   endif
                end do
-            end do
-            
-            ! sum up N and P fluxes to immobilization
-            do j = 1, nlevdecomp
+           end do
+           
+           ! sum up N and P fluxes to immobilization
+           do j = 1, nlevdecomp
                do fc=1,num_soilc
-                  c = filter_soilc(fc)
-                  actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j) * dzsoi_decomp(j)
-                  potential_immob(c) = potential_immob(c) + potential_immob_vr(c,j) * dzsoi_decomp(j)
-                  !!! phosphorus
-                  actual_immob_p(c) = actual_immob_p(c) + actual_immob_p_vr(c,j) * dzsoi_decomp(j)
-                  potential_immob_p(c) = potential_immob_p(c) + potential_immob_p_vr(c,j) * dzsoi_decomp(j)
+                   c = filter_soilc(fc)
+                   actual_immob(c) = actual_immob(c) + actual_immob_vr(c,j) * dzsoi_decomp(j)
+                   potential_immob(c) = potential_immob(c) + potential_immob_vr(c,j) * dzsoi_decomp(j)
+                   ! phosphorus
+                   actual_immob_p(c) = actual_immob_p(c) + actual_immob_p_vr(c,j) * dzsoi_decomp(j)
+                   potential_immob_p(c) = potential_immob_p(c) + potential_immob_p_vr(c,j) * dzsoi_decomp(j)
                end do
-            end do
+           end do
             
-            do fc=1,num_soilc
+           do fc=1,num_soilc
                c = filter_soilc(fc)
                ! calculate the fraction of potential growth that can be
                ! acheived with the N available to plants
                if (plant_ndemand_col(c) > 0.0_r8) then
-                  fpg(c) = sminn_to_plant(c) / plant_ndemand_col(c)
+                   fpg(c) = sminn_to_plant(c) / plant_ndemand_col(c)
                else
-                  fpg(c) = 1.0_r8
+                   fpg(c) = 1.0_r8
                end if
                
                ! calculate the fraction of immobilization realized (for diagnostic purposes)
                if (potential_immob(c) > 0.0_r8) then
-                  fpi(c) = actual_immob(c) / potential_immob(c)
+                   fpi(c) = actual_immob(c) / potential_immob(c)
                else
-                  fpi(c) = 1.0_r8
+                   fpi(c) = 1.0_r8
                end if
-            end do
+           end do
             
-            do fc=1,num_soilc
+           do fc=1,num_soilc
                c = filter_soilc(fc)
                ! calculate the fraction of potential growth that can be
                ! acheived with the P available to plants
@@ -1770,21 +1772,18 @@ contains
             end do
             
             ! for np imbalance
-            if (nu_com .ne. 'RD') then
-               do fc=1,num_soilc
-                  c = filter_soilc(fc)
-                  do p = col_pp%pfti(c), col_pp%pftf(c)
-                     pnup_pfrootc(p) =  0.0_r8
-                     if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
+            if (nu_com .ne. 'RD' .and. (.not.use_fates)) then
+                do p = col_pp%pfti(c), col_pp%pftf(c)
+                    pnup_pfrootc(p) =  0.0_r8
+                    if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
                         do j = 1, nlevdecomp
-                           pnup_pfrootc(p) = pnup_pfrootc(p) + plant_ndemand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
-                                ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
-                                * dzsoi_decomp(j)
+                            pnup_pfrootc(p) = pnup_pfrootc(p) + plant_ndemand_vr_patch(p,j) / max(frootc(p) * froot_prof(p,j)&
+                                  ,1e-20_r8) * fpg_nh4_vr(c,j) / max(cn_scalar(p),1e-20_r8) / max(t_scalar(c,j),1e-20_r8) &
+                                  * dzsoi_decomp(j)
                         end do
-                     end if
-                     pnup_pfrootc(p) =  pnup_pfrootc(p) / zisoi(nlevdecomp-1)
-                  end do
-               end do
+                    end if
+                    pnup_pfrootc(p) =  pnup_pfrootc(p) / zisoi(nlevdecomp-1)
+                end do
             end if
             
          else  !----------NITRIF_DENITRIF-------------!
@@ -2164,7 +2163,7 @@ contains
          end if
          
          ! for np imbalance
-         if (nu_com .ne. 'RD' .and. .not.use_fates) then
+         if (nu_com .ne. 'RD' .and. (.not.use_fates)) then
             do p = col_pp%pfti(c), col_pp%pftf(c)
                pnup_pfrootc(p) =  0.0_r8
                if (veg_pp%active(p).and. (veg_pp%itype(p) .ne. noveg)) then
