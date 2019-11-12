@@ -5,7 +5,7 @@ import concurrent.futures as threading3
 
 # MACHINE -> (env_setup, compiler, batch submit prefix)
 MACHINE_METADATA = {
-    "melvin"   : (["module purge", "module load sems-env", "module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.10.3 sems-python/3.5.2", "export CTEST_PARALLEL_LEVEL=24"],
+    "melvin"   : (["module purge", "module load sems-env", "module load sems-gcc/7.3.0 sems-openmpi/1.10.1 sems-gcc/7.3.0 sems-git/2.10.1 sems-cmake/3.12.2 sems-python/3.5.2", "export CTEST_PARALLEL_LEVEL=24"],
                   "$(which mpicxx)",
                   ""),
     "bowman"   : (["module purge", "module load openmpi/1.10.6/intel/17.2.174 git/2.8.2 cmake/3.12.3", "export PATH=/ascldap/users/jgfouca/packages/Python-3.6.8-bowman/bin:$PATH", "export CTEST_PARALLEL_LEVEL=68"],
