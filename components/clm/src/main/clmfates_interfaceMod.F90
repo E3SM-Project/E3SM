@@ -52,11 +52,15 @@ module CLMFatesInterfaceMod
    use clm_varctl        , only : use_fates_logging
    use clm_varctl        , only : use_fates_inventory_init
    use clm_varctl        , only : fates_inventory_ctrl_filename
+   use clm_varctl        , only : use_nitrif_denitrif
    use clm_varcon        , only : tfrz
    use clm_varcon        , only : spval 
    use clm_varcon        , only : denice
    use clm_varcon        , only : ispval
-
+   use clm_varctl        , only : nu_com
+   use clm_varctl        , only : cnallocate_carbon_only
+   use clm_varctl        , only : cnallocate_carbonnitrogen_only
+   use clm_varctl        , only : cnallocate_carbonphosphorus_only
    use clm_varpar        , only : natpft_size
    use clm_varpar        , only : numrad
    use clm_varpar        , only : ivis
@@ -91,6 +95,7 @@ module CLMFatesInterfaceMod
    use TopounitDataType  , only : top_as
    use ColumnType        , only : col_pp
    use ColumnDataType    , only : col_es, col_ws, col_wf, col_cs, col_cf
+   use ColumnDataType    , only : col_nf, col_pf
    use VegetationDataType, only : veg_es, veg_wf   
    use LandunitType      , only : lun_pp
    
@@ -490,7 +495,7 @@ contains
 
          ! Parameter Constants defined by FATES, but used in ELM
          ! Note that FATES has its parameters defined, so we can also set the values
-         call allocate_bcpconst(this%fates(nc)%bc_pconst)
+         call allocate_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
 
          ! This also needs 
          call set_bcpconst(this%fates(nc)%bc_pconst,nlevdecomp)
@@ -740,13 +745,15 @@ contains
                   this%fates(nc)%bc_in(s))
             
             call ed_update_site(this%fates(nc)%sites(s), &
-                  this%fates(nc)%bc_in(s))
+                  this%fates(nc)%bc_in(s), & 
+                  this%fates(nc)%bc_out(s))
             
       enddo
 
       ! ---------------------------------------------------------------------------------
       ! Part III: Process FATES output into the dimensions and structures that are part
       ! of the HLMs API.  (column, depth, and litter fractions)
+      
       ! ---------------------------------------------------------------------------------
       call this%UpdateLitterFluxes(bounds_clump)
 
@@ -776,39 +783,6 @@ contains
       
       return
    end subroutine dynamics_driv
-
-
-   subroutine ReportSiteStatesFates(this,bounds_clump)
-     
-     implicit none
-     class(hlm_fates_interface_type), intent(inout) :: this
-     type(bounds_type)              , intent(in)    :: bounds_clump
-     
-     ! !LOCAL VARIABLES:
-     integer  :: s                        ! site index
-     integer  :: c                        ! column index (HLM)
-     integer  :: nc                       ! clump index
-     integer  :: nld_si
-     real(r8) :: dtime
-     
-     ! The purpose here is to report ecosystem quantities (CNP)
-     ! that will enable the EcosystemBalanceCheck to pass,
-     ! and report a few key variables in the history
-
-     dtime = real(get_step_size(),r8)
-     nc = bounds_clump%clump_index
-     
-     do s = 1, this%fates(nc)%nsites
-        c = this%f2hmap(nc)%fcolumn(s)
-        
-        nld_si = this%fates(nc)%bc_in(s)%nlevdecomp
-        
-        
-        
-     end do
-
-     return
-   end subroutine ReportFATESSiteStates
 
 
    ! ====================================================================================
@@ -846,62 +820,62 @@ contains
       do s = 1, this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
 
-         nld_si = this%fates(nc)%bc_in(s)%nlevdecomp
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_met_lit) = 0._r8
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_cel_lit) = 0._r8
-         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp_full,i_lig_lit) = 0._r8
+!         nld_si = this%fates(nc)%bc_in(s)%nlevdecomp
 
-         col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_met_lit) = &
-               this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nld_si) * dtime
-         col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_cel_lit) = &
-               this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nld_si)* dtime
-         col_cf%decomp_cpools_sourcesink(c,1:nld_si,i_lig_lit) = &
-               this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nld_si) * dtime
+         ! These arrays have already been zero'd and and may have other source sinks
 
-         litfall(c) = & 
-               sum(this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + & 
-               sum(this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + &  
-               sum(this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si))
+         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
+              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) + & 
+              this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * dtime
+         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
+              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_cel_lit) + & 
+              this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp)* dtime
+         col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
+              col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_lig_lit) + & 
+              this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * dtime
+
+         col_cf%litfall(c) = & 
+               sum(this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
+               sum(this%fates(nc)%bc_out(s)%litt_flux_cel_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &  
+               sum(this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
 
 
          select case(fates_parteh_mode)
          case (prt_cnp_flex_allom_hyp )
             
-            ! Zero transfer arrays
-            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp_full,i_met_lit) = 0._r8
-            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp_full,i_cel_lit) = 0._r8
-            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp_full,i_lig_lit) = 0._r8
-            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp_full,i_met_lit) = 0._r8
-            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp_full,i_cel_lit) = 0._r8
-            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp_full,i_lig_lit) = 0._r8
-
             ! Transfer Phosphorus
-            col_pf%decomp_ppools_sourcesink(c,1:nld_si,i_met_lit) = &
-                 this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nld_si) * dtime
-            col_pf%decomp_ppools_sourcesink(c,1:nld_si,i_cel_lit) = &
-                 this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nld_si)* dtime
-            col_pf%decomp_ppools_sourcesink(c,1:nld_si,i_lig_lit) = &
-                 this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nld_si) * dtime
+            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
+                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
+                 this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp) * dtime
+            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
+                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_cel_lit) + & 
+                 this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)* dtime
+            col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
+                 col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
+                 this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp) * dtime
 
             ! Diagnostic for mass balancing (gP/m2/s)
             col_pf%plant_to_litter_pflux(c) = & 
-                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + &
-                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + & 
-                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si))
+                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
+                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
+                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
             
             ! Transfer Nitrogen
-            col_nf%decomp_npools_sourcesink(c,1:nld_si,i_met_lit) = &
-                  this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nld_si) * dtime
-            col_nf%decomp_npools_sourcesink(c,1:nld_si,i_cel_lit) = &
-                  this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nld_si)* dtime
-            col_nf%decomp_npools_sourcesink(c,1:nld_si,i_lig_lit) = &
-                  this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nld_si) * dtime
+            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
+                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) + & 
+                 this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp) * dtime
+            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
+                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
+                 this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)* dtime
+            col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
+                 col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
+                 this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp) * dtime
             
             ! Diagnostic for mass balancing  (gN/m2/s)
-            col_nf%plant_to_litter_nflux = & 
-                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + & 
-                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si)) + & 
-                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nld_si)*bc_in(s)%dz_decomp_sisl(1:nld_si))            
+            col_nf%plant_to_litter_nflux(c) = & 
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))            
 
          end select
        
@@ -1018,7 +992,7 @@ contains
           displa(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
           dleaf_patch(col_pp%pfti(c)+1:col_pp%pftf(c)) = 0.0_r8
 
-          frac_veg_nosno_alb(col_pp%pfti(c):col_pp%pftf(c)) = 0.0_r8
+          frac_veg_nosno_alb(col_pp%pfti(c):col_pp%pftf(c)) = 0
 
           ! Set the bareground patch indicator
           veg_pp%is_bareground(col_pp%pfti(c)) = .true.
@@ -1304,7 +1278,8 @@ contains
                ! update type stuff, should consolidate (rgk 11-2016)
                do s = 1,this%fates(nc)%nsites
                   call ed_update_site( this%fates(nc)%sites(s), &
-                        this%fates(nc)%bc_in(s) )
+                        this%fates(nc)%bc_in(s), & 
+                        this%fates(nc)%bc_out(s))
                end do
 
                call this%UpdateLitterFluxes(bounds_clump)
@@ -1448,7 +1423,8 @@ contains
 
            do s = 1,this%fates(nc)%nsites
               call ed_update_site(this%fates(nc)%sites(s), &
-                    this%fates(nc)%bc_in(s))
+                   this%fates(nc)%bc_in(s), & 
+                   this%fates(nc)%bc_out(s))
            end do
 
            call this%UpdateLitterFluxes(bounds_clump)
@@ -2295,13 +2271,13 @@ contains
     integer :: c  ! column index
     integer :: j  ! Depth index
     integer :: nlevsoil
-    integer :: nlevdecomp
+!    integer :: nlevdecomp
 
     do s = 1, this%fates(nc)%nsites
 
        c = this%f2hmap(nc)%fcolumn(s)
        nlevsoil = this%fates(nc)%bc_in(s)%nlevsoil
-       nlevdecomp = this%fates(nc)%bc_in(s)%nlevdecomp
+!       nlevdecomp = this%fates(nc)%bc_in(s)%nlevdecomp
        
        this%fates(nc)%bc_in(s)%zi_sisl(0:nlevsoil)    = col_pp%zi(c,0:nlevsoil)
        this%fates(nc)%bc_in(s)%dz_sisl(1:nlevsoil)    = col_pp%dz(c,1:nlevsoil)

@@ -53,7 +53,7 @@ contains
     ! !USES:
     use clm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
     use clm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
-    use clm_varctl  , only : use_vertsoilc, iulog, use_dynroot
+    use clm_varctl  , only : use_vertsoilc, iulog, use_dynroot, use_fates
     use pftvarcon   , only : rootprof_beta, noveg
     !
     ! !ARGUMENTS:

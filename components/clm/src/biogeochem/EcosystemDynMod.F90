@@ -432,7 +432,7 @@ contains
        ! This wrapper will deposit mineralized nutrient
        ! into the appropriate pools via source terms from
        ! FATES. This could be fixation, or exudation
-       call WrapFatesNutrientSources(bounds)
+       ! call WrapFatesNutrientSources(bounds)
 
     end if
     
