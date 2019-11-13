@@ -224,7 +224,8 @@ plt.scatter(xCell[iceIndices], yCell[iceIndices], markersize, c=np.array([[0.8, 
 #contour_intervals = np.linspace(0.0, 20.0, 20.0/2.0+1)
 contour_intervals = np.linspace(0.0, 16.0, 16.0/0.5+1)
 #contourMPAS(flwa[timelev,:,:].mean(axis=1) *3600.0*24.0*365.0 / 1.0e-17, contour_levs=contour_intervals)  # NOT SURE WHICH LEVEL FLWA SHOULD COME FROM - so taking column average
-contourMPAS(flwa[timelev,:,:].mean(axis=1) * 3600.0*24.0*365.0 / 1.0e-17)  # NOT SURE WHICH LEVEL FLWA SHOULD COME FROM - so taking column average
+if flwa[timelev,:,:].max()>0.0:  # this is not used if FO velo solver is used
+   contourMPAS(flwa[timelev,:,:].mean(axis=1) * 3600.0*24.0*365.0 / 1.0e-17)  # NOT SURE WHICH LEVEL FLWA SHOULD COME FROM - so taking column average
 ax.set_aspect('equal')
 plt.title('Final flow factor (10$^{-17}$ Pa$^{-3}$ a$^{-1}$)' )  # Note: the paper's figure claims units of 10$^{-25}$ Pa$^{-3}$ a$^{-1}$ but the time unit appears to be 10^-17
 #plt.xlim( (0.0, 750.0) ); plt.ylim( (0.0, 750.0) )
@@ -295,6 +296,7 @@ else:
     plt.ylabel('Volume (10$^6$ km$^3$)')
 plt.plot( (0.0,), volume, 'ro')  # MPAS results
 plt.xticks(())
+print("MALI volume = {}".format(volume))
 
 fig.add_subplot(152)
 area = (areaCell[iceIndices]).sum() / 1000.0**2 / 10.0**6
@@ -308,6 +310,7 @@ else:
     plt.ylabel('Area (10$^6$ km$^2$)')
 plt.plot( (0.0,), area, 'ro')  # MPAS results
 plt.xticks(())
+print("MALI area = {}".format(area))
 
 fig.add_subplot(153)
 warmBedIndices = np.where(np.logical_and(thickness[timelev,:] > 0.0, basalTemperature[timelev,:] >= (basalPmpTemperature[timelev,:] - 0.01) ) )[0]  # using threshold here to identify melted locations
@@ -326,6 +329,7 @@ else:
     plt.ylabel('Melt fraction')
 plt.plot( (0.0,), meltfraction, 'ro')  # MPAS results
 plt.xticks(())
+print("MALI melt fraction = {}".format(meltfraction))
 
 fig.add_subplot(154)
 dividethickness = thickness[timelev, divideIndex]
@@ -337,6 +341,7 @@ else:
     plt.ylabel('Divide thickness (m)')
 plt.plot( (0.0,), dividethickness, 'ro')  # MPAS results
 plt.xticks(())
+print("MALI divide thickness = {}".format(dividethickness[0]))
 
 fig.add_subplot(155)
 dividebasaltemp = basalTemperature[timelev, divideIndex]
@@ -349,6 +354,7 @@ else:
     plt.ylabel('Divide basal temp. (K)')
 plt.plot( (0.0,), dividebasaltemp, 'ro')  # MPAS results
 plt.xticks(())
+print("MALI divide basal temperature = {}".format(dividebasaltemp[0]))
 
 plt.tight_layout()
 
