@@ -238,6 +238,9 @@
 <config_cvmix_kpp_stop_OBL_search>100.0</config_cvmix_kpp_stop_OBL_search>
 <config_cvmix_kpp_use_enhanced_diff>.true.</config_cvmix_kpp_use_enhanced_diff>
 <config_cvmix_kpp_nonlocal_with_implicit_mix>.false.</config_cvmix_kpp_nonlocal_with_implicit_mix>
+<config_cvmix_kpp_use_theory_wave>.false.</config_cvmix_kpp_use_theory_wave>
+<config_cvmix_kpp_langmuir_mixing_opt>'NONE'</config_cvmix_kpp_langmuir_mixing_opt>
+<config_cvmix_kpp_langmuir_entrainment_opt>'NONE'</config_cvmix_kpp_langmuir_entrainment_opt>
 
 <!-- vmix_const -->
 <config_use_const_visc>.false.</config_use_const_visc>

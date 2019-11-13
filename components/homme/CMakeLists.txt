@@ -198,9 +198,6 @@ ELSE()
     FIND_PACKAGE(LAPACK REQUIRED)
   ELSE()
     SET(HOMME_FIND_BLASLAPACK FALSE)
-    # Build the blas and lapack provided with homme
-    ADD_SUBDIRECTORY(libs/blas)
-    ADD_SUBDIRECTORY(libs/lapack)
   ENDIF()
 ENDIF()
 

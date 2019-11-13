@@ -182,7 +182,7 @@ module control_mod
   logical, public :: disable_diagnostics  = .FALSE.
 
   ! Physgrid parameters
-  integer, public :: se_fv_phys_remap_alg = 0
+  integer, public :: se_fv_phys_remap_alg = 1
 
 
 

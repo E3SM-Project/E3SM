@@ -6,7 +6,7 @@
   <!-- attributes -->
   <xs:attribute name="version" type="xs:decimal"/>
   <xs:attribute name="MACH" type="xs:NCName"/>
-  <xs:attribute name="case" type="xs:NCName"/>
+  <xs:attribute name="id" type="xs:NCName"/>
   <xs:attribute name="prepend" type="xs:NCName"/>
   <xs:attribute name="append" type="xs:NCName"/>
   <xs:attribute name="name" type="xs:NCName"/>
@@ -35,7 +35,7 @@
       <xs:sequence>
         <xs:element maxOccurs="unbounded" ref="job"/>
       </xs:sequence>
-      <xs:attribute ref="case" use="required"/>
+      <xs:attribute ref="id" use="required"/>
       <xs:attribute ref="prepend"/>
       <xs:attribute ref="append"/>
     </xs:complexType>

@@ -688,7 +688,7 @@ contains
        found = .false.
        do c = bounds%begc,bounds%endc
           if (col_pp%active(c)) then
-             if (abs(errsoi_col(c)) > 1.0e-6_r8 ) then
+             if (abs(errsoi_col(c)) > 1.0e-5_r8 ) then
                 found = .true.
                 indexc = c
              end if

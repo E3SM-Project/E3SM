@@ -2219,7 +2219,9 @@ contains
        else
           call t_startf('mosartr_euler')
           ! debug 
+#ifdef DEBUG
           write(iulog,*) 'clm-mosart subT: (call Euler) ns=', ns
+#endif
           call Euler()
           call t_stopf('mosartr_euler')
        endif
