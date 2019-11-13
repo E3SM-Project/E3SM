@@ -15,7 +15,7 @@ def cellWidthVsLatLon():
     # Use 1.0 degree for fast scoping, and 0.1 for the final creation:
     params["ddeg"] = 0.1
 
-    params["dx_min_coastal"] = 8.0*km
+    params["dx_min_coastal"] = 12.0*km
     params["trans_start"] = 400.0*km
     params["trans_width"] = 600.0*km
     params["n_longest"] = 20
