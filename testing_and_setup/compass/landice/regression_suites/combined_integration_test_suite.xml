@@ -22,7 +22,7 @@
                 <script name="setup_and_run_EISMINT2_decomp_testcase.py"/>
         </test>
 
-        <test name="EISMINT2-F enthalpy decomposition test" core="landice" configuration="EISMINT2" resolution="25000m" test="decomposition_test">
+        <test name="EISMINT2-F enthalpy decomposition test" core="landice" configuration="EISMINT2" resolution="25000m" test="enthalpy_decomposition_test">
                 <script name="setup_and_run_EISMINT2_enthalpy_decomp_testcase.py"/>
         </test>
 
