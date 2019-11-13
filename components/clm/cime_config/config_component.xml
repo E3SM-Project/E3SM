@@ -26,6 +26,7 @@
       <value compset="_CLM45%[^_]*BC" >-phys clm4_5 -cppdefs -DMODAL_AER</value>
       <value compset="1950_CAM5%CMIP6-[LH]R[^_]*_CLM45%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
       <value compset="2010_CAM5%CMIP6-[LH]R[^_]*_CLM45%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
+      <value compset="20TR_CAM5%CMIP6-[LH]R[^_]*_CLM45%[^_]*BC"                >-phys clm4_5 -cppdefs '-DMODAL_AER -DAPPLY_POST_DECK_BUGFIXES'</value>
     </values>
     <group>build_component_clm</group>
     <file>env_build.xml</file>
@@ -83,6 +84,7 @@
       <value compset="1950_CAM5%CMIP6-HR_CLM">1950_CMIP6HR_control</value>
       <value compset="2010_CAM5%CMIP6-LR_CLM">2010_CMIP6LR_control</value>
       <value compset="2010_CAM5%CMIP6-HR_CLM">2010_CMIP6HR_control</value>
+      <value compset="20TR_CAM5%CMIP6-HR_CLM">20thC_CMIP6HR_transient</value>
       <value compset="SSP585_CAM5%CMIP6_CLM">2015-2100_SSP585_transient</value>
     </values>
     <group>run_component_clm</group>
