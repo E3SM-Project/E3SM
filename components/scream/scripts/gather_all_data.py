@@ -31,7 +31,7 @@ MACHINE_METADATA = {
                   "salloc --partition=pdebug"),
     "summit" : (["module purge", "module load cmake/3.15.2 gcc/6.4.0 spectrum-mpi/10.3.0.1-20190611 cuda/10.1.168 python/3.6.6-anaconda3-5.3.0"],
                 "$(which mpicxx)",
-                "bsub -I -q batch -W 0:10 -P cli115 -nnodes 1"),
+                "bsub -I -q batch -W 0:30 -P cli115 -nnodes 1"),
 }
 
 ###############################################################################

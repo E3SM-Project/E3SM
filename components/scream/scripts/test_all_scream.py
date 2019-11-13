@@ -1,7 +1,7 @@
 from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit
 check_minimum_python_version(3, 4)
 
-import os, shutil
+import os, shutil, time
 
 ###############################################################################
 class TestAllScream(object):
@@ -104,6 +104,9 @@ class TestAllScream(object):
     ###############################################################################
     def run_test(self, extra_cmake_configs, extra_ctest_configs, build_name, git_head):
     ###############################################################################
+        # Wait a few seconds between tests
+        time.sleep(5)
+
         cmake_config = self.generate_cmake_config(extra_cmake_configs)
 
         # Clean out whatever might have been left in the build area from
