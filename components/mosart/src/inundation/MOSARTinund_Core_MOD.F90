@@ -135,8 +135,7 @@ MODULE MOSARTinund_Core_MOD
     integer :: iu           ! Computation unit index.
     real( r8 ) :: hsV       ! Hillslope flow velocity (m/s).
       
-    !$OMP PARALLEL FIRSTPRIVATE( iu, hsV )
-    !$OMP DO SCHEDULE( GUIDED )
+    !$OMP PARALLEL DO PRIVATE(hsV) SCHEDULE(GUIDED)
     do iu = rtmCTL%begr, rtmCTL%endr
       !if ( TUnit%mask( iu ) .gt. 0 ) then
       if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
@@ -163,8 +162,7 @@ MODULE MOSARTinund_Core_MOD
         TRunoff%etin(iu, 1) = ( - TRunoff%ehout(iu, 1) + TRunoff%qsub(iu, 1)) * TUnit%area(iu) * TUnit%frac( iu ) 
       end if  
     end do      
-    !$OMP END DO
-    !$OMP END PARALLEL  
+    !$OMP END PARALLEL DO
     
   end subroutine inund_hillslopeRouting
   
@@ -221,8 +219,7 @@ MODULE MOSARTinund_Core_MOD
     integer :: iu           ! Computation unit index.
     real( r8 ) :: hydrR     ! Hydraulic radius (m).
     
-    !$OMP PARALLEL FIRSTPRIVATE ( iu, hydrR )
-    !$OMP DO SCHEDULE ( GUIDED )
+    !$OMP PARALLEL DO PRIVATE(hydrR) SCHEDULE(GUIDED)
     do iu = rtmCTL%begr, rtmCTL%endr
       
       !if ( TUnit%mask( iu ) .gt. 0 ) then
@@ -268,8 +265,7 @@ MODULE MOSARTinund_Core_MOD
       end if
       
     end do
-    !$OMP END DO
-    !$OMP END PARALLEL  
+    !$OMP END PARALLEL DO
     
   end subroutine inund_subnetworkRouting
 
@@ -301,8 +297,7 @@ MODULE MOSARTinund_Core_MOD
     real( r8 ) :: wr_over   ! Channel water storage between the final water level and the banktop ( = channel storage - channel storage capacity ) (m^3).
     character( len = * ), parameter :: subname = '(ChnlFPexchg)'
     
-    !$OMP PARALLEL FIRSTPRIVATE( iu, wr_rcd, w_over, j, d_s, d_e, hf, ff_unit, wr_over )
-    !$OMP DO SCHEDULE( GUIDED )
+    !$OMP PARALLEL DO PRIVATE(wr_rcd, w_over, j, d_s, d_e, hf, ff_unit, wr_over) SCHEDULE(GUIDED)
     do iu = rtmCTL%begr, rtmCTL%endr
       !if ( TUnit%mask( iu ) .gt. 0 ) then
       if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
@@ -421,8 +416,7 @@ MODULE MOSARTinund_Core_MOD
         end if    ! if ( the channel water level is higher than the floodplain water level, or on the contrary )
       end if      ! if ( TUnit%mask( iu ) .gt. 0 )
     end do
-    !$OMP END DO
-    !$OMP END PARALLEL
+    !$OMP END PARALLEL DO
     
   end subroutine ChnlFPexchg
   
@@ -481,7 +475,6 @@ MODULE MOSARTinund_Core_MOD
     
     implicit none
     integer :: iu
-    integer :: k
     real( r8 ) :: surfaceSlope                  ! Water surface slope ( from the current channel to the downstream channel ) (dimensionless).
     real( r8 ) :: y_c, len_c, slp_c             ! Water depth (m), length (m) and bed slope (dimensionless) of the current channel.
     real( r8 ) :: y_down, len_down, slp_down    ! Water depth (m), length (m) and bed slope (dimensionless) of the downstream channel.
@@ -489,8 +482,7 @@ MODULE MOSARTinund_Core_MOD
     real( r8 ) :: wv_gwl                        ! Water volume from glacier, wetlands or lakes (m^3). 
     character( len = * ), parameter :: subname = '(inund_Routing_DW)'
     
-    !$OMP PARALLEL FIRSTPRIVATE( iu, k, surfaceSlope, y_c, len_c, slp_c, y_down, len_down, slp_down, hydrR, wv_gwl )
-    !$OMP DO SCHEDULE( GUIDED )
+    !$OMP PARALLEL DO PRIVATE(surfaceSlope, y_c, len_c, slp_c, y_down, len_down, slp_down, hydrR, wv_gwl) SCHEDULE(GUIDED)
     do iu = rtmCTL%begr, rtmCTL%endr      
       !if ( TUnit%mask( iu ) .gt. 0 ) then
       if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
@@ -639,8 +631,7 @@ MODULE MOSARTinund_Core_MOD
     
       end if    ! end of if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 )
     end do
-    !$OMP END DO
-    !$OMP END PARALLEL
+    !$OMP END PARALLEL DO
     
   end subroutine inund_Routing_DW
   
@@ -655,13 +646,11 @@ MODULE MOSARTinund_Core_MOD
     
     implicit none
     integer :: iu
-    integer :: k
     real( r8 ) :: hydrR     ! Hydraulic radius (m).
     real( r8 ) :: wv_gwl    ! Water volume from glacier, wetlands or lakes (m^3).
     character( len = * ), parameter :: subname = '(inund_Routing_KW)'
     
-    !$OMP PARALLEL FIRSTPRIVATE( iu, k, hydrR, wv_gwl )
-    !$OMP DO SCHEDULE( GUIDED )
+    !$OMP PARALLEL DO PRIVATE(hydrR, wv_gwl) SCHEDULE(GUIDED)
     do iu = rtmCTL%begr, rtmCTL%endr
       !if ( TUnit%mask( iu ) .gt. 0 ) then
       if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).      
@@ -712,8 +701,7 @@ MODULE MOSARTinund_Core_MOD
     
       end if    ! end of if ( rtmCTL%mask(iu) .eq. 1 .or. rtmCTL%mask(iu) .eq. 3 )
     end do
-    !$OMP END DO
-    !$OMP END PARALLEL
+    !$OMP END PARALLEL DO
     
   end subroutine inund_Routing_KW
   

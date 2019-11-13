@@ -29,6 +29,9 @@ EXECUTE_PROCESS(COMMAND nc-config --prefix
 )
 SET (NetCDF_C_PATH "${NCCONFIG_OUTPUT}" CACHE STRING "")
 
+SET (ADD_Fortran_FLAGS "-traceback" CACHE STRING "")
+SET (ADD_C_FLAGS       "-traceback" CACHE STRING "")
+SET (ADD_CXX_FLAGS     "-traceback" CACHE STRING "")
 
 SET (USE_MPIEXEC "srun" CACHE STRING "")
 SET (USE_MPI_OPTIONS "--cpu_bind=cores" CACHE STRING "")

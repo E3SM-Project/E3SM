@@ -38,6 +38,10 @@ module VegetationPropertiesType
      real(r8), allocatable :: rootprof_beta (:)   ! rooting distribution parameter for C and N inputs [unitless]
      real(r8), allocatable :: dwood         (:)   ! wood density (gC/m3)
      real(r8), allocatable :: slatop        (:)   ! specific leaf area at top of canopy, projected area basis [m^2/gC]
+! for plant hydraulics
+     real(r8), allocatable :: root_radius   (:)   ! root radius (m)
+     real(r8), allocatable :: root_density  (:)   ! root density (gC/m3)
+!
      real(r8), allocatable :: dsladlai      (:)   ! dSLA/dLAI, projected area basis [m^2/gC]
      real(r8), allocatable :: leafcn        (:)   ! leaf C:N (gC/gN)
      real(r8), allocatable :: flnr          (:)   ! fraction of leaf N in the Rubisco enzyme (gN Rubisco / gN leaf)
@@ -229,6 +233,8 @@ contains
     allocate(this%stress_decid  (0:numpft))        ; this%stress_decid (:)   =nan
     allocate(this%season_decid  (0:numpft))        ; this%season_decid (:)   =nan
     allocate(this%dwood         (0:numpft))        ; this%dwood        (:)   =nan
+    allocate(this%root_radius   (0:numpft))        ; this%root_radius  (:)   =nan
+    allocate(this%root_density  (0:numpft))        ; this%root_density (:)   =nan
     allocate(this%rootprof_beta (0:numpft))        ; this%rootprof_beta(:)   =nan
     allocate(this%fertnitro     (0:numpft))        ; this%fertnitro    (:)   =nan
     allocate(this%fleafcn       (0:numpft))        ; this%fleafcn      (:)   =nan
@@ -335,6 +341,8 @@ contains
        this%stress_decid(m) = stress_decid(m)
        this%season_decid(m) = season_decid(m)
        this%dwood(m)        = dwood
+       this%root_radius(m)  = 0.29e-03_r8 !(m)
+       this%root_density(m) = 0.31e06_r8 !(g biomass / m3 root)
        this%fertnitro(m)    = fertnitro(m)
        this%fleafcn(m)      = fleafcn(m)
        this%ffrootcn(m)     = ffrootcn(m)
