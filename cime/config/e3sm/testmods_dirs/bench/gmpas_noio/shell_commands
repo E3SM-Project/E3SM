@@ -1,3 +1,6 @@
 #!/bin/bash
 ./xmlchange HIST_OPTION=none
 ./xmlchange SAVE_TIMING=TRUE
+
+#avoid errors on over-decomposing DATM's T62 grid beyond 9600 tasks
+if [ `./xmlquery --value NTASKS_ATM` -gt 9600 ]; then ./xmlchange NTASKS_ATM=9600; fi
