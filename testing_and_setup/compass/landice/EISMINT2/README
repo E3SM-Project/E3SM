@@ -1,0 +1,7 @@
+To run EISMINT2 experiments, first set up the test case like usual,
+including running the auto-generated python script in the work directory.
+
+Then in each experiment directory, first run the setup_initial_conditions_EISMINT2.py.
+Then manually run landice_model on the number of processors you wish.
+
+To view the results, run visualize_output_EISMINT2.py.

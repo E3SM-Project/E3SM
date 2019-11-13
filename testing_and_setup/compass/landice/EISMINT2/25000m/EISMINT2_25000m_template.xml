@@ -12,12 +12,18 @@
                 <option name="config_flowParamA_calculation">"PB1982"</option>
                 <option name="config_tracer_advection">'fo'</option>
                 <option name="config_thermal_solver">'temperature'</option>
+                <option name="config_thermal_calculate_bmb">.false.</option>
                 <option name="config_surface_air_temperature_source">'file'</option>
                 <option name="config_basal_heat_flux_source">'constant'</option>
                 <option name="config_basal_heat_flux_value">4.2e-2</option>
                 <option name="config_ice_density">910.0</option>
                 <option name="config_dynamic_thickness">10.0</option>
                 <option name="config_year_digits">6</option>
+
+                <option name="config_AM_globalStats_enable">.true.</option>
+                <option name="config_AM_globalStats_compute_interval">'output_interval'</option>
+                <option name="config_AM_globalStats_compute_on_startup">.true.</option>
+                <option name="config_AM_globalStats_write_on_startup">.true.</option>
         </namelist>
 
         <streams>
@@ -50,6 +56,23 @@
                                 <member name="allowableDtACFL" type="var"/>
                                 <member name="allowableDtDCFL" type="var"/>
                                 <member name="deltat" type="var"/>
+                        </add_contents>
+                </stream>
+
+                <stream name="globalStatsOutput">
+                        <attribute name="type">output</attribute>
+                        <attribute name="filename_template">globalStats.nc</attribute>
+                        <attribute name="output_interval">0000-00-01_00:00:00</attribute>
+                        <attribute name="reference_time">0000-01-01_00:00:00</attribute>
+                        <attribute name="clobber_mode">overwrite</attribute>
+                        <!-- <attribute name="io_type">netcdf</attribute> -->
+                        <add_contents>
+                                <member name="xtime" type="var"/>
+                                <member name="deltat" type="var"/>
+                                <member name="daysSinceStart" type="var"/>
+                                <member name="allowableDtACFL" type="var"/>
+                                <member name="allowableDtDCFL" type="var"/>
+                                <member name="globalStatsAM" type="var_struct"/>
                         </add_contents>
                 </stream>
 
