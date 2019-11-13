@@ -983,11 +983,11 @@ module five_intr
     
     logical :: do_limit
     
-    integer :: i, i1, i2, i3, i4, i5
+    integer :: i, i1, i2, i3, i4
     integer :: k, km3, km2, km1, k00
     integer :: kp1, kp2, ierr
     integer :: zi1, zi2
-    integer :: i5zi1
+    integer :: i4zi1
     
     ! Construct tendency profile from E3SM grid to FIVE grid
     
@@ -1075,9 +1075,9 @@ module five_intr
     call dgbtrf( pver, pver, ml, mu, a, lda, ipiv, info )    
     
     ! For interpolation
-    i5=0
+    i4=0
     do k=1,zi1-1
-      i5 = i5 + 1
+      i4 = i4 + 1
     enddo
     
     c0(:) = 0._r8
@@ -1090,26 +1090,29 @@ module five_intr
     
     weight(:) = 0._r8
     
-    i5zi1 = i5
+    i4zi1 = i4
     do k = zi1, zi2
-      i1 = i5 + 1
-      i2 = i1 + five_add_nlevels / 2 - 1 
-      i3 = i1 + five_add_nlevels / 2
-      i4 = i1 + five_add_nlevels / 2 + 1
-      i5 = i1 + five_add_nlevels 
+      i1 = i4 + 1
+      if (mod(five_add_nlevels,2) .ne. 0 ) then
+        i2 = i1 + (five_add_nlevels+1) / 2 - 1 
+      else
+        i2 = i1 + five_add_nlevels / 2 - 1 
+      end if
+        i3 = i2 + 1
+      i4 = i1 + five_add_nlevels 
       ! weight for linear interpolation
       weight(i1:i2) = ( zm_five(i1:i2) - zi(k) ) / ( zm(k) - zi(k) )
-      weight(i3) = 1.0_r8
-      weight(i4:i5) = ( zm_five(i4:i5) - zi(k+1) ) / ( zm(k) - zi(k+1) ) 
+      weight(i3:i4) = ( zm_five(i3:i4) - zi(k+1) ) / ( zm(k) - zi(k+1) ) 
       ! c1, c2, c3
       c0(k) = 2.0_r8 * (zi(k+1) - zi(k))
       c1(k) = zi(k+1) - zi(k)
-      c2(k) = zm_five(i3) - zi(k)
-      c3(k) = zi(k+1) - zm_five(i3)
+      c2(k) = zm(k) - zi(k)
+      c3(k) = zi(k+1) - zm(k)
       
       ic1(k) = 1.0_r8 / c1(k)
       ic2(k) = 1.0_r8 / c2(k) 
       ic3(k) = 1.0_r8 / c3(k)            
+
     enddo
  
     ! add flag computed?
@@ -1233,35 +1236,36 @@ module five_intr
     endif
     
     ! Construct the tendency profile
-    i5 = 0
+    i4 = 0
     ! Below zi1
     do k=1,zi1-1
-      i5=i5+1
-      df_zs(i5) = df_z(k)
+      i4=i4+1
+      df_zs(i4) = df_z(k)
     enddo
 
     ! between zi1 and zi2
     do k = zi1, zi2
-      i1 = i5 + 1
-      i2 = i1 + five_add_nlevels / 2 - 1 ! i2 = i3-1 or i2 = i1
-      i3 = i1 + five_add_nlevels / 2     ! zs(i3) = z(k)
-      i4 = i1 + five_add_nlevels / 2 + 1 ! i4 = i3+1 or i4 = i5
-      i5 = i1 + five_add_nlevels
+      i1 = i4 + 1
+      if (mod(five_add_nlevels,2) .ne. 0 ) then
+        i2 = i1 + (five_add_nlevels+1) / 2 - 1 
+      else
+        i2 = i1 + five_add_nlevels / 2 - 1 
+      end if
+        i3 = i2 + 1
+      i4 = i1 + five_add_nlevels 
       ! Compute df_zs for all zs levels
-      ! zi(k) < zs(i1:i2) < z(k)
+      ! zi(k) <= zs(i1:i2) < z(k)
       df_zs(i1:i2) = ( 1.0_r8 - weight(i1:i2) ) * rdf_zm_dn(k) + weight(i1:i2) * rdf_zs_ml(k)
-      ! zs(i3)
-      df_zs(i3) = rdf_zs_ml(k)
-      ! z(k) < zs(i4:i5) < zi(k+1)
-      df_zs(i4:i5) = ( 1.0_r8 - weight(i4:i5) ) * rdf_zm_up(k) + weight(i4:i5) * rdf_zs_ml(k)
+      ! z(k) <= zs(i3:i4) < zi(k+1)
+      df_zs(i3:i4) = ( 1.0_r8 - weight(i3:i4) ) * rdf_zm_up(k) + weight(i3:i4) * rdf_zs_ml(k)
       ! Non-mass weighted
-      df_zs(i1:i5) = df_zs(i1:i5) / rho_zs(i1:i5)
+      df_zs(i1:i4) = df_zs(i1:i4) / rho_zs(i1:i4)
     enddo
     
     ! Above zi2
     do k = zi2+1,pver
-      i5 = i5 + 1
-      df_zs(i5) = df_z(k)
+      i4 = i4 + 1
+      df_zs(i4) = df_z(k)
     enddo    
     
     ! Finally, "unflip" the tendency
