@@ -131,14 +131,21 @@ subroutine modal_aero_wateruptake_init(pbuf2d)
          'dry dgnum, interstitial, mode '//trnum(2:3))
       call addfld('dgnw_a'//trnum(2:3), (/ 'lev' /), 'A', 'm', &
          'wet dgnum, interstitial, mode '//trnum(2:3))
-      call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'm', &
+      call addfld('wat_a'//trnum(3:3), (/ 'lev' /), 'A', 'kg/kg', &
          'aerosol water, interstitial, mode '//trnum(2:3))
+!==> JS ADD
+      call addfld('hygro_a'//trnum(3:3), (/ 'lev' /), 'A', 'unitless', &
+         'volume-weighted mean hygroscopicity, interstitial, mode '//trnum(3:3))
+!==> JS END
       
       if (history_aerosol) then  
          if (history_verbose) then
             call add_default('dgnd_a'//trnum(2:3), 1, ' ')
             call add_default('dgnw_a'//trnum(2:3), 1, ' ')
             call add_default('wat_a'//trnum(3:3),  1, ' ')
+!==> JS ADD
+            call add_default('hygro_a'//trnum(3:3),  1, ' ')
+!==> JS END
          endif
       endif
 
@@ -545,6 +552,39 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          !                 A generalised form of the Kelvin equation for sulfate-non sea salt mixing (Stier et al., 2005), used for Aitken mode only
          call m7_wateruptake_scheme( ncol, nmodes, rhcrystal, rhdeliques, rh, t, pmid, maer, &
                                      naer, so4_aer, ss_aer, dryrad, wetrad, wetvol, wtrvol, dryvol )
+
+!!== KZ_INSITU
+   rhfix(:,:) = 0.40_r8
+   call m7_wateruptake_scheme(                      &
+      ncol, nmodes, rhcrystal, rhdeliques, rhfix,   &
+      t, pmid, maer, naer, so4_aer, ss_aer, dryrad, &
+      wetrad40, wetvol40, wtrvol40, dryvol          )
+
+   rhfix(:,:) = 0.55_r8
+   call m7_wateruptake_scheme(                      &
+      ncol, nmodes, rhcrystal, rhdeliques, rhfix,   &
+      t, pmid, maer, naer, so4_aer, ss_aer, dryrad, &
+      wetrad55, wetvol55, wtrvol55, dryvol          )
+
+   rhfix(:,:) = 0.65_r8
+   call m7_wateruptake_scheme(                      &
+      ncol, nmodes, rhcrystal, rhdeliques, rhfix,   &
+      t, pmid, maer, naer, so4_aer, ss_aer, dryrad, &
+      wetrad65, wetvol65, wtrvol65, dryvol          )
+
+   rhfix(:,:) = 0.75_r8
+   call m7_wateruptake_scheme(                      &
+      ncol, nmodes, rhcrystal, rhdeliques, rhfix,   &
+      t, pmid, maer, naer, so4_aer, ss_aer, dryrad, &
+      wetrad75, wetvol75, wtrvol75, dryvol          )
+
+   rhfix(:,:) = 0.85_r8
+   call m7_wateruptake_scheme(                      &
+      ncol, nmodes, rhcrystal, rhdeliques, rhfix,   &
+      t, pmid, maer, naer, so4_aer, ss_aer, dryrad, &
+      wetrad85, wetvol85, wtrvol85, dryvol          )
+!!== KZ_INSITU
+
    end if
 
    do m = 1, nmodes
@@ -587,6 +627,9 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
          call outfld( 'wat_a'//trnum(3:3),  qaerwat(:,:,m),     pcols, lchnk)
          call outfld( 'dgnd_a'//trnum(2:3), dgncur_a(:,:,m),    pcols, lchnk)
          call outfld( 'dgnw_a'//trnum(2:3), dgncur_awet(:,:,m), pcols, lchnk)
+!==> JS ADD
+         call outfld( 'hygro_a'//trnum(3:3), hygro(:,:,m), pcols, lchnk)
+!==> JS END
          if (history_aerosol .and. .not. history_verbose) &
          aerosol_water(:ncol,:) = aerosol_water(:ncol,:) + qaerwat(:ncol,:,m)
       end do
@@ -677,7 +720,7 @@ subroutine modal_aero_wateruptake_sub( &
             ! compute wet radius for each mode
             ! aw_scheme = 1 - solve kappa-kohler equation based on Petters and Kreidenweis, 2007, ACP
             !                 use bisection method to do the root-finding
-            !           = 0 - olve kohler equation in the original code
+            !           = 0 - solve kohler equation in the original code
             call modal_aero_kohler(dryrad(i:i,k,m), hygro(i:i,k,m), rh(i:i,k), wetrad(i:i,k,m), 1, aw_scheme)
 
             wetrad(i,k,m) = max(wetrad(i,k,m), dryrad(i,k,m))
@@ -690,17 +733,17 @@ subroutine modal_aero_wateruptake_sub( &
             ! for rhcrystal < rh < rhdeliques, aerosol water is a fraction of
             ! the "upper curve" value, and the fraction is a linear function of rh
             if ( aw_scheme .lt. 2 ) then            ! apply hyst to MAM and k-kohler only
-            if (rh(i,k) < rhcrystal(m)) then
-               wetrad(i,k,m) = dryrad(i,k,m)
-               wetvol(i,k,m) = dryvol(i,k,m)
-               wtrvol(i,k,m) = 0.0_r8
-            else if (rh(i,k) < rhdeliques(m)) then
+               if (rh(i,k) < rhcrystal(m)) then
+                  wetrad(i,k,m) = dryrad(i,k,m)
+                  wetvol(i,k,m) = dryvol(i,k,m)
+                  wtrvol(i,k,m) = 0.0_r8
+               else if (rh(i,k) < rhdeliques(m)) then
                   if ( aw_l_hysteresis ) then       ! JS added on 08-05-2019
-               wtrvol(i,k,m) = wtrvol(i,k,m)*hystfac*(rh(i,k) - rhcrystal(m))
-               wtrvol(i,k,m) = max(wtrvol(i,k,m), 0.0_r8)
-               wetvol(i,k,m) = dryvol(i,k,m) + wtrvol(i,k,m)
-               wetrad(i,k,m) = (wetvol(i,k,m)/pi43)**third
-            end if
+                     wtrvol(i,k,m) = wtrvol(i,k,m)*hystfac*(rh(i,k) - rhcrystal(m))
+                     wtrvol(i,k,m) = max(wtrvol(i,k,m), 0.0_r8)
+                     wetvol(i,k,m) = dryvol(i,k,m) + wtrvol(i,k,m)
+                     wetrad(i,k,m) = (wetvol(i,k,m)/pi43)**third
+                  end if
                end if
             end if
 
@@ -1265,37 +1308,37 @@ mode_loop: do n = 1, nmodes
                          else
                             ! apply RHmin and highest molality constraints
                             !--- NaCl:
-!                            zaw    = rh(i,k)
-!                            zaw    = max(zaw, 0.43_r8)
+                            zaw    = rh(i,k)
+                            zaw    = max(zaw, 0.43_r8)
                             zmo(1) = (  - 1.918004E2_r8            + 2.001540E3_r8*zaw            &
                                         - 8.557205E3_r8*zaw**2     + 1.987670E4_r8*zaw**3         &
                                         - 2.717192E4_r8*zaw**4     + 2.187103E4_r8*zaw**5         &
                                         - 9.591577E3_r8*zaw**6     + 1.763672E3_r8*zaw**7      )**2
-!                            zmo(1) = min(zmo(1), 13.6_r8)
+                            zmo(1) = min(zmo(1), 13.6_r8)
                             !--- NaHSO4:
-!                            zaw    = rh(i,k)
-!                            zaw    = max(zaw, 0._r8)
+                            zaw    = rh(i,k)
+                            zaw    = max(zaw, 0._r8)
                             zmo(2) = (  + 4.662777E0_r8            - 1.128472E1_r8*zaw            &
                                         + 7.049464E1_r8*zaw**2     - 2.788050E2_r8*zaw**3         &
                                         + 6.103105E2_r8*zaw**4     - 7.409417E2_r8*zaw**5         &
                                         + 4.614577E2_r8*zaw**6     - 1.150735E2_r8*zaw**7      )**2
-!                            zmo(2) = min(zmo(2), 20.5_r8)
+                            zmo(2) = min(zmo(2), 20.5_r8)
                             !--- Na2SO4:
-!                            zaw    = rh(i,k)
-!                            zaw    = max(zaw, 0.51_r8)
+                            zaw    = rh(i,k)
+                            zaw    = max(zaw, 0.51_r8)
                             zmo(3) = (  - 3.295311E3_r8            + 3.188349E4_r8*zaw            &
                                         - 1.305168E5_r8*zaw**2     + 2.935608E5_r8*zaw**3         &
                                         - 3.920423E5_r8*zaw**4     + 3.109519E5_r8*zaw**5         &
                                         - 1.356439E5_r8*zaw**6     + 2.510249E4_r8*zaw**7      )**2
-!                            zmo(3) = min(zmo(3), 12.8_r8)
+                            zmo(3) = min(zmo(3), 12.8_r8)
                             !--- H2SO4  
-!                            zaw    = rh(i,k)
-!                            zaw    = max(zaw, 0._r8)
+                            zaw    = rh(i,k)
+                            zaw    = max(zaw, 0._r8)
                             zmo(4) = (  + 5.611895_r8              - 1.387446E1_r8*zaw            &
                                         + 1.750682E1_r8*zaw**2     + 7.138146E1_r8*zaw**3         &
                                         - 3.109173E2_r8*zaw**4     + 4.662288E2_r8*zaw**5         &
                                         - 3.128612E2_r8*zaw**6     + 7.76097E1_r8*zaw**7       )**2
-!                            zmo(4) = min(zmo(4), 29.1_r8)
+                            zmo(4) = min(zmo(4), 29.1_r8)
                          end if
                      else
                          ! new coefficients and formula from Jacobson's book, 2005, Eq. 17.66 and Table B.10
@@ -1321,35 +1364,35 @@ mode_loop: do n = 1, nmodes
                          else
                             ! apply RHmin and highest molality constraints
                             !--- NaCl:
-!                            zaw    = rh(i,k)
-!                            zaw    = max(zaw, 0.47_r8)
+                            zaw    = rh(i,k)
+                            zaw    = max(zaw, 0.47_r8)
                             zmo(1) = (     5.875248E1_r8           - 1.8781997E2_r8*zaw           &
                                         + 2.7211377E2_r8*zaw**2    - 1.8458287E2_r8*zaw**3        &
                                         +  4.153689E1_r8*zaw**4                                   )
-!                            zmo(1) = min(zmo(1), 13.5_r8)
+                            zmo(1) = min(zmo(1), 13.5_r8)
                             !--- NaHSO4:
-!                            zaw    = rh(i,k)
-!                            zaw    = max(zaw, 0.019_r8)
+                            zaw    = rh(i,k)
+                            zaw    = max(zaw, 0.019_r8)
                             zmo(2) = (    1.8457001681E2_r8        - 1.6147765817E3_r8*zaw        &
                                         +  8.444076586E3_r8*zaw**2 - 2.6813441936E4_r8*zaw**3     &
                                         + 5.0821277356E4_r8*zaw**4 - 5.5964847603E4_r8*zaw**5     &
                                         + 3.2945298603E4_r8*zaw**6 -  8.002609678E3_r8*zaw**7     )
-!                            zmo(2) = min(zmo(2), 158._r8)
+                            zmo(2) = min(zmo(2), 158._r8)
                             !--- Na2SO4:
-!                            zaw    = rh(i,k)
-!                            zaw    = max(zaw, 0.58_r8)
+                            zaw    = rh(i,k)
+                            zaw    = max(zaw, 0.58_r8)
                             zmo(3) = (     5.5983158E2_r8          - 2.56942664E3_r8*zaw          &
                                         + 4.47450201E3_r8*zaw**2   - 3.45021842E3_r8*zaw**3       &
                                         +  9.8527913E2_r8*zaw**4                                  )
-!                            zmo(3) = min(zmo(3), 13.1_r8)
+                            zmo(3) = min(zmo(3), 13.1_r8)
                             !--- H2SO4
-!                            zaw    = rh(i,k)
-!                            zaw    = max(zaw, 0._r8)
+                            zaw    = rh(i,k)
+                            zaw    = max(zaw, 0._r8)
                             zmo(4) = (    3.0391387536E1_r8        - 1.8995058929E2_r8*zaw        &
                                         + 9.7428231047E2_r8*zaw**2 - 3.1680155761E3_r8*zaw**3     &
                                         + 6.1400925314E3_r8*zaw**4 - 6.9116348199E3_r8*zaw**5     &
                                         + 4.1631475226E3_r8*zaw**6 - 1.0383424491E3_r8*zaw**7     )
-!                            zmo(4) = min(zmo(4), 30.4_r8)
+                            zmo(4) = min(zmo(4), 30.4_r8)
                          end if
                      end if
                      !--- 2.2) Calculation of the water content in kg-water/kg-air:
@@ -1375,22 +1418,6 @@ mode_loop: do n = 1, nmodes
                   end if ! if for relative humidity < crh
 
                end if    ! if for sulfate + non sea-salt species
-
-               ! apply simple treatment of deliquesence/crystallization hysteresis
-               ! for rhcrystal < rh < rhdeliques, aerosol water is a fraction of
-               ! the "upper curve" value, and the fraction is a linear function of rh
-!               if (rh(i,k) < rhcrystal(n)) then
-!                  wetrad(i,k,n) = dryrad(i,k,n)
-!                  wetvol(i,k,n) = dryvol(i,k,n)
-!                  wtrvol(i,k,n) = 0.0_r8
-!               else if (rh(i,k) < rhdeliques(n)) then
-!                  if ( aw_l_hysteresis ) then       ! JS added on 08-05-2019
-!                     wtrvol(i,k,n) = wtrvol(i,k,n)*hystfac*(rh(i,k) - rhcrystal(n))
-!                     wtrvol(i,k,n) = max(wtrvol(i,k,n), 0.0_r8)
-!                     wetvol(i,k,n) = dryvol(i,k,n) + wtrvol(i,k,n)
-!                     wetrad(i,k,n) = (wetvol(i,k,n)/pi43)**third
-!                  end if
-!               end if
 
             end do ! i, ncol loop
          end do    ! k, pver loop

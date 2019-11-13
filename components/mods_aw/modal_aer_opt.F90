@@ -319,6 +319,9 @@ subroutine modal_aer_opt_init()
    call addfld ('AODPROT',horiz_only,    'A','  ','Aerosol optical depth 550 nm from marine prot', flag_xyfill=.true.)
    call addfld ('AODLIP',horiz_only,    'A','  ','Aerosol optical depth 550 nm from marine lip', flag_xyfill=.true.)
 #endif
+!==> JS ADD
+   call addfld ('AODAW',horiz_only,     'A','  ','Aerosol optical depth 550 nm from aerosol water', flag_xyfill=.true.)
+!==> JS END
    call addfld ('BURDEN1',horiz_only,  'A','kg/m2'      ,'Aerosol burden mode 1'      , flag_xyfill=.true.)
    call addfld ('BURDEN2',horiz_only,  'A','kg/m2'      ,'Aerosol burden mode 2'      , flag_xyfill=.true.)
    call addfld ('BURDEN3',horiz_only,  'A','kg/m2'      ,'Aerosol burden mode 3'      , flag_xyfill=.true.)
@@ -337,6 +340,9 @@ subroutine modal_aer_opt_init()
 #endif
    call addfld ('SSAVIS',horiz_only,    'A','  ','Aerosol singel-scatter albedo', flag_xyfill=.true.)
 
+!==> JS ADD
+   call addfld ('BURDENAW',horiz_only,   'A','kg/m2'    ,'Aerosol water burden'       , flag_xyfill=.true.)
+!==> JS END
  
 !!== KZ_INSITU
    call addfld ('SSAVISdry',horiz_only,    'A','  ','SSAVISdry', flag_xyfill=.true.)
@@ -424,6 +430,9 @@ if (history_amwg) then
       call add_default ('AODSOA'       , 1, ' ')
       call add_default ('AODBC'        , 1, ' ')
       call add_default ('AODSS'        , 1, ' ')
+!==> JS ADD
+      call add_default ('AODAW'        , 1, ' ')
+!==> JS END
       if (history_verbose) then
       call add_default ('ABSORB'       , 1, ' ')
       call add_default ('BURDEN1'      , 1, ' ')
@@ -442,6 +451,9 @@ if (history_amwg) then
       call add_default ('BURDENPROT'   , 1, ' ')
       call add_default ('BURDENLIP'    , 1, ' ')
 #endif
+!==> JS ADD
+      call add_default ('BURDENAW'     , 1, ' ')
+!==> JS END
       end if
       call add_default ('SSAVIS'       , 1, ' ')
       call add_default ('EXTINCT'      , 1, ' ')
@@ -626,7 +638,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: burdenpoly(pcols), burdenprot(pcols), burdenlip(pcols)
 #endif
-
+!==> JS ADD
+   real(r8) :: burdenaw(pcols)
+!==> JS END
    real(r8) :: aodmode(pcols)
    real(r8) :: dustaodmode(pcols)          ! dust aod in aerosol mode
 
@@ -638,6 +652,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: scatpoly(pcols), scatprot(pcols), scatlip(pcols)
 #endif
+!==> JS ADD
+   real(r8) :: scataw(pcols)
+!==> JS END
    real(r8) :: absdust(pcols), absso4(pcols), absbc(pcols), &
                abspom(pcols), abssoa(pcols), absseasalt(pcols)
 #if ( defined MODAL_AERO_4MODE_MOM )
@@ -645,6 +662,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: abspoly(pcols), absprot(pcols), abslip(pcols)
 #endif
+!==> JS ADD
+   real(r8) :: absaw(pcols)
+!==> JS END
    real(r8) :: hygrodust(pcols), hygroso4(pcols), hygrobc(pcols), &
                hygropom(pcols), hygrosoa(pcols), hygroseasalt(pcols)
 #if ( defined MODAL_AERO_4MODE_MOM )
@@ -664,7 +684,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 #elif ( defined MODAL_AERO_9MODE )
    real(r8) :: polyaod(pcols), protaod(pcols), lipaod(pcols)
 #endif
-
+!==> JS ADD
+   real(r8) :: awaod(pcols)
+!==> JS END
 
 
    logical :: savaervis ! true if visible wavelength (0.55 micron)
@@ -727,6 +749,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    burdenprot(:ncol)     = 0.0_r8
    burdenlip(:ncol)      = 0.0_r8
 #endif
+!==> JS ADD
+   burdenaw(:ncol)       = 0.0_r8
+!==> JS END
    ssavis(1:ncol)        = 0.0_r8
 
    aodabsbc(:ncol)       = 0.0_r8 
@@ -736,13 +761,18 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
    soaaod(:ncol)         = 0.0_r8
    bcaod(:ncol)          = 0.0_r8
    seasaltaod(:ncol)     = 0.0_r8
+!==> JS changes burden to aod
 #if ( defined MODAL_AERO_4MODE_MOM )
-   burdenmom(:ncol)      = 0.0_r8
+   momaod(:ncol)      = 0.0_r8
 #elif ( defined MODAL_AERO_9MODE )
-   burdenpoly(:ncol)     = 0.0_r8
-   burdenprot(:ncol)     = 0.0_r8
-   burdenlip(:ncol)      = 0.0_r8
+   polyaod(:ncol)     = 0.0_r8
+   protaod(:ncol)     = 0.0_r8
+   lipaod(:ncol)      = 0.0_r8
 #endif
+!==> JS END
+!==> JS ADD
+   awaod(:ncol)          = 0.0_r8
+!==> JS END
 
    ! diags for other bands
    aoduv(:ncol)          = 0.0_r8
@@ -833,6 +863,10 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
             abslip(:ncol)   = 0._r8
             hygrolip(:ncol) = 0._r8
 #endif
+!==> JS ADD
+            scataw(:ncol)   = 0.0_r8
+            absaw(:ncol)    = 0.0_r8
+!==> JS END
 
             ! aerosol species loop
             do l = 1, nspec
@@ -944,6 +978,14 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
 #endif
                end if
             end do ! species loop
+
+!==> JS ADD
+            if (savaervis) then
+               do i = 1, ncol
+                  burdenaw(i)        = burdenaw(i) + qaerwat(i,k)*mass(i,k)
+               end do
+            end if
+!==> JS END
 
             do i = 1, ncol
                watervol(i) = qaerwat(i,k)/rhoh2o
@@ -1115,7 +1157,12 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
                      scatlip(i) = (scatlip(i) + scath2o*hygrolip(i)/sumhygro)/sumscat
                      abslip(i)  = (abslip(i) + absh2o*hygrolip(i)/sumhygro)/sumabs                     
 #endif
-                     
+
+!==> JS ADD
+                     scataw(i)      = (scataw(i) + scath2o)/sumscat
+                     absaw(i)       = (absaw(i) + absh2o)/sumabs
+!==> JS END
+
                      aodabsbc(i)    = aodabsbc(i) + absbc(i)*dopaer(i)*(1.0_r8-palb(i))
 
                      aodc           = (absdust(i)*(1.0_r8 - palb(i)) + palb(i)*scatdust(i))*dopaer(i)
@@ -1150,7 +1197,10 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
                      aodc           = (abslip(i)*(1.0_r8 - palb(i)) + palb(i)*scatlip(i))*dopaer(i)
                      lipaod(i)  = lipaod(i) + aodc
 #endif
-
+!==> JS ADD
+                     aodc           = (absaw(i)*(1.0_r8 - palb(i)) + palb(i)*scataw(i))*dopaer(i)
+                     awaod(i)       = awaod(i) + aodc
+!==> JS END
                   endif
 
                end do
@@ -1316,6 +1366,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
          burdenprot(idxnite(i)) = fillvalue
          burdenlip(idxnite(i)) = fillvalue
 #endif
+!==> JS ADD
+         burdenaw(idxnite(i))   = fillvalue
+!==> JS END
 
          aodabsbc(idxnite(i))   = fillvalue
 
@@ -1331,6 +1384,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
          protaod(idxnite(i)) = fillvalue
          lipaod(idxnite(i)) = fillvalue
 #endif
+!==> JS ADD
+         awaod(idxnite(i))      = fillvalue
+!==> JS END
        end do
 
 !!== KZ_INSITU
@@ -1368,6 +1424,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
       call outfld('BURDENPROT', burdenprot, pcols, lchnk)
       call outfld('BURDENLIP', burdenlip, pcols, lchnk)
 #endif
+!==> JS ADD
+      call outfld('BURDENAW',  burdenaw,  pcols, lchnk)
+!==> JS END
 
       call outfld('AODABSBC',      aodabsbc,      pcols, lchnk)
 
@@ -1385,6 +1444,9 @@ subroutine modal_aero_sw(list_idx, state, pbuf, nnite, idxnite, is_cmip6_volc, e
       call outfld('AODPROT',         protaod,    pcols, lchnk)
       call outfld('AODLIP',         lipaod,    pcols, lchnk)
 #endif
+!==> JS ADD
+      call outfld('AODAW',          awaod,     pcols, lchnk)  
+!==> JS END
    end if
 
 end subroutine modal_aero_sw
