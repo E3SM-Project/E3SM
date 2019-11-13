@@ -229,21 +229,10 @@ _TESTS = {
                  "ERS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
                  )
     },
-    "e3sm_bench_g" : {
+    "e3sm_bench_hires_g" : {
         "share"    : True,
         "time"     : "01:00:00",
         "tests"    : (
-                 "SMS_P512x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "SMS_P640x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "SMS_P960x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "SMS_P1024x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "SMS_P1200x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "SMS_P1280x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "SMS_P1396x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "SMS_P1536x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "SMS_P1600x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "SMS_P2048x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
-                 "SMS_P2400x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
                  "SMS_P2560x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
                  "SMS_P2792x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
                  "SMS_P3072x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
@@ -278,11 +267,10 @@ _TESTS = {
                  "SMS_P96000x1.T62_oRRS18to6v3.GMPAS-IAF.bench-gmpas_noio",
                  )
     },
-    "e3sm_bench_f" : {
+    "e3sm_bench_hires_f" : {
         "share"    : True,
         "time"     : "01:00:00",
         "tests"    : (
-                 "SMS_P5400x1.ne120_ne120.FC5AV1C-H01A.bench-fcomp_noio",
                  "SMS_P7200x1.ne120_ne120.FC5AV1C-H01A.bench-fcomp_noio",
                  "SMS_P8640x1.ne120_ne120.FC5AV1C-H01A.bench-fcomp_noio",
                  "SMS_P10800x1.ne120_ne120.FC5AV1C-H01A.bench-fcomp_noio",
@@ -292,8 +280,8 @@ _TESTS = {
                  "SMS_P86400x1.ne120_ne120.FC5AV1C-H01A.bench-fcomp_noio",
                  )
     },
-    "e3sm_bench" : {
-        "inherit" : ("e3sm_bench_g", "e3sm_bench_f"),
+    "e3sm_bench_hires" : {
+        "inherit" : ("e3sm_bench_hires_g", "e3sm_bench_hires_f"),
         "time"    : "01:00:00",
         },
 }
