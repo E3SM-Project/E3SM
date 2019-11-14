@@ -414,8 +414,15 @@ class EnvBatch(EnvBase):
                             rval = val
                     else:
                         rval = val
+
+                    # We don't want floating-point data
+                    try:
+                        rval = round(float(rval))
+                    except ValueError:
+                        pass
+
                     # need a correction for tasks per node
-                    if flag == "-n" and rval<= 0:
+                    if flag == "-n" and rval <= 0:
                         rval = 1
 
                     if flag == "-q" and rval == "batch" and case.get_value("MACH") == "blues":
