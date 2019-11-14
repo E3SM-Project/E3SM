@@ -104,13 +104,16 @@ class TestAllScream(object):
     ###############################################################################
     def safe_remove_all(self):
     ###############################################################################
+        import time
         rm_stat = 1
         while rm_stat != 0:
+            time.sleep(1)
             rm_stat = run_cmd("/bin/rm -rf *")[0]
             if rm_stat != 0:
                 remaining_files = run_cmd_no_fail("find . -type f")
                 processes = run_cmd_no_fail("ps -u acmetest")
                 lsof_out = run_cmd_no_fail("lsof -u acmetest")
+                print("Lsof out:\n{}\n\n".format(lsof_out))
                 print("Had trouble removing: {}".format(remaining_files))
                 print("Active processes: {}".format(processes))
 
