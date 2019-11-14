@@ -22,6 +22,8 @@ module elm_cpl_indices
                                   ! (from coupler) - must equal maxpatch_glcmec from namelist
   integer , parameter, private:: glc_nec_max = 100
 
+  integer , public :: iac_npft    ! Number of veg pfts (index 0 for bare ground)
+
   ! lnd -> drv (required)
 
   integer, public ::index_l2x_Flrl_rofsur     ! lnd->rtm input liquid surface fluxes
@@ -46,7 +48,6 @@ module elm_cpl_indices
   integer, public ::index_l2x_Sl_fv           ! friction velocity  
   integer, public ::index_l2x_Sl_ram1         ! aerodynamical resistance
   integer, public ::index_l2x_Sl_soilw        ! volumetric soil water
-  integer, public ::index_l2x_Flrl_wslake       ! lake water storage
   integer, public ::index_l2x_Fall_taux       ! wind stress, zonal
   integer, public ::index_l2x_Fall_tauy       ! wind stress, meridional
   integer, public ::index_l2x_Fall_lat        ! latent          heat flux
@@ -59,7 +60,7 @@ module elm_cpl_indices
   integer, public ::index_l2x_Fall_flxdst2    ! dust flux size bin 2    
   integer, public ::index_l2x_Fall_flxdst3    ! dust flux size bin 3    
   integer, public ::index_l2x_Fall_flxdst4    ! dust flux size bin 4
-  integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes  
+  integer, public ::index_l2x_Fall_flxvoc     ! MEGAN fluxes
 
   ! In the following, index 0 is bare land, other indices are glc elevation classes
   integer, public ::index_l2x_Sl_tsrf(0:glc_nec_max)   = 0 ! glc MEC temperature
@@ -71,19 +72,20 @@ module elm_cpl_indices
 
   integer, public :: nflds_l2x = 0
 
+  ! IAC coupling
+  integer, public ::index_l2x_Sl_hr(0:iac_npft)  = 0
+  integer, public ::index_l2x_Sl_npp(0:iac_npft)  = 0
+  integer, public ::index_l2x_Sl_pftwgt(0:iac_npft)  = 0
+
   ! drv -> lnd (required)
 
   integer, public ::index_x2l_Sa_z            ! bottom atm level height
   integer, public ::index_x2l_Sa_u            ! bottom atm level zon wind
   integer, public ::index_x2l_Sa_v            ! bottom atm level mer wind
-  integer, public ::index_x2l_Sa_wsresp       ! first order response of wind to stress
-  integer, public ::index_x2l_Sa_tau_est      ! estimate of stress in equilibrium with wind
-  integer, public ::index_x2l_Sa_ugust        ! gustiness from atm
   integer, public ::index_x2l_Sa_ptem         ! bottom atm level pot temp
   integer, public ::index_x2l_Sa_shum         ! bottom atm level spec hum
   integer, public ::index_x2l_Sa_pbot         ! bottom atm level pressure
   integer, public ::index_x2l_Sa_tbot         ! bottom atm level temp
-  integer, public ::index_x2l_Sa_uovern      ! ratio of wind speed/brunt vaisalla frequency for precipitation downscaling
   integer, public ::index_x2l_Faxa_lwdn       ! downward lw heat flux
   integer, public ::index_x2l_Faxa_rainc      ! prec: liquid "convective"
   integer, public ::index_x2l_Faxa_rainl      ! prec: liquid "large scale"
@@ -147,6 +149,7 @@ contains
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
     use elm_varctl     , only: use_voc
+    use elm_varpar     , only: numpft
     !
     ! !ARGUMENTS:
     implicit none
@@ -200,7 +203,6 @@ contains
     index_l2x_Sl_ram1       = mct_avect_indexra(l2x,'Sl_ram1')
     index_l2x_Sl_fv         = mct_avect_indexra(l2x,'Sl_fv')
     index_l2x_Sl_soilw      = mct_avect_indexra(l2x,'Sl_soilw',perrwith='quiet')
-    index_l2x_Flrl_wslake     = mct_avect_indexra(l2x,'Flrl_wslake')
     if ( lnd_drydep )then
        index_l2x_Sl_ddvel = mct_avect_indexra(l2x, trim(drydep_fields_token))
     else
@@ -239,13 +241,9 @@ contains
     index_x2l_Sa_z          = mct_avect_indexra(x2l,'Sa_z')
     index_x2l_Sa_u          = mct_avect_indexra(x2l,'Sa_u')
     index_x2l_Sa_v          = mct_avect_indexra(x2l,'Sa_v')
-    index_x2l_Sa_wsresp     = mct_avect_indexra(x2l,'Sa_wsresp',perrwith='quiet')
-    index_x2l_Sa_tau_est    = mct_avect_indexra(x2l,'Sa_tau_est',perrwith='quiet')
-    index_x2l_Sa_ugust      = mct_avect_indexra(x2l,'Sa_ugust',perrwith='quiet')
     index_x2l_Sa_ptem       = mct_avect_indexra(x2l,'Sa_ptem')
     index_x2l_Sa_pbot       = mct_avect_indexra(x2l,'Sa_pbot')
     index_x2l_Sa_tbot       = mct_avect_indexra(x2l,'Sa_tbot')
-    index_x2l_Sa_uovern     = mct_avect_indexra(x2l,'Sa_uovern')
     index_x2l_Sa_shum       = mct_avect_indexra(x2l,'Sa_shum')
     index_x2l_Sa_co2prog    = mct_avect_indexra(x2l,'Sa_co2prog',perrwith='quiet')
     index_x2l_Sa_co2diag    = mct_avect_indexra(x2l,'Sa_co2diag',perrwith='quiet')
@@ -331,6 +329,21 @@ contains
           index_l2x_Flgl_qice(num) = mct_avect_indexra(l2x,trim(name))
        end do
     end if
+
+    !---------------------------------
+    ! IAC coupling
+    !---------------------------------
+
+    ! Probably need to compare with namelist 
+    iac_npft = numpft
+
+    do p = 0,iac_npft
+       write(cpft,'(I0)') 
+       cpft=trim(cpft)
+       index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,'Sl_hr_pft' // cpft)
+       index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,'Sl_npp_pft' // cpft)
+       index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,'Sl_pftwgt_pft' // cpft)
+    enddo
 
     call mct_aVect_clean(x2l)
     call mct_aVect_clean(l2x)
