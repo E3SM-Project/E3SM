@@ -109,7 +109,9 @@ class TestAllScream(object):
             rm_stat = run_cmd("/bin/rm -rf *")[0]
             if rm_stat != 0:
                 remaining_files = run_cmd_no_fail("find . -type f")
+                processes = run_cmd_no_fail("ps -u acmetest")
                 print("Had trouble removing: {}".format(remaining_files))
+                print("Active processes: {}".format(processes))
 
     ###############################################################################
     def run_test(self, extra_cmake_configs, extra_ctest_configs, build_name, git_head):
