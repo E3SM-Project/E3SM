@@ -60,13 +60,13 @@ def inject_meshDensity(cw_filename, mesh_filename, on_sphere=True):
     if on_sphere:
        meshDensity[:] = meshDensityInterp(
            np.vstack(
-            (ds.variables['lonCell'][:],
-             np.mod(
-                ds.variables['latCell'][:] +
+            (np.mod(
+                ds.variables['lonCell'][:] +
                 np.pi,
                 2 *
                 np.pi) -
-                np.pi)).T)
+                np.pi,
+             ds.variables['latCell'][:])).T)
     else:
        meshDensity[:] = meshDensityInterp(
            np.vstack(
