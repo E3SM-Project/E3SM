@@ -110,6 +110,7 @@ class TestAllScream(object):
             if rm_stat != 0:
                 remaining_files = run_cmd_no_fail("find . -type f")
                 processes = run_cmd_no_fail("ps -u acmetest")
+                lsof_out = run_cmd_no_fail("lsof {}".format(" ".join(remaining_files.splitlines())))
                 print("Had trouble removing: {}".format(remaining_files))
                 print("Active processes: {}".format(processes))
 
