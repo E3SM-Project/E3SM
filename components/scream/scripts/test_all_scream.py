@@ -102,33 +102,17 @@ class TestAllScream(object):
         return baseline_files, datas
 
     ###############################################################################
-    def safe_remove_all(self):
-    ###############################################################################
-        import time
-        rm_stat = 1
-        while rm_stat != 0:
-            time.sleep(1)
-            rm_stat = run_cmd("/bin/rm -rf *")[0]
-            if rm_stat != 0:
-                remaining_files = run_cmd_no_fail("find . -type f")
-                processes = run_cmd_no_fail("ps -u acmetest")
-                lsof_out = run_cmd_no_fail("lsof -u acmetest")
-                print("Lsof out:\n{}\n\n".format(lsof_out))
-                print("Had trouble removing: {}".format(remaining_files))
-                print("Active processes: {}".format(processes))
-
-    ###############################################################################
     def run_test(self, extra_cmake_configs, extra_ctest_configs, build_name, git_head):
     ###############################################################################
         cmake_config = self.generate_cmake_config(extra_cmake_configs)
 
         # Clean out whatever might have been left in the build area from
-        # previous tests
-        self.safe_remove_all()
+        # previous tests. This command can sometimes fail due to .nfs files
+        run_cmd("/bin/rm -rf *")
 
         if ("BUILD_ONLY", "True") not in extra_ctest_configs:
             filepaths, datas = self.generate_baselines(cmake_config, git_head)
-            self.safe_remove_all() # Clean out baseline build
+            run_cmd("/bin/rm -rf *") # Clean out baseline build
             for filepath, data in zip(filepaths, datas):
                 if not os.path.isdir(os.path.dirname(filepath)):
                     os.makedirs(os.path.dirname(filepath))
