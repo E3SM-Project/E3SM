@@ -94,3 +94,6 @@ ENV/
 
 # vi swap files
 *.swp
+
+# Temporary files
+*~
