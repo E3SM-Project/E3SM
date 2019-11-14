@@ -46,6 +46,7 @@ module prep_lnd_mod
   public :: prep_lnd_get_mapper_Fr2l
   public :: prep_lnd_get_mapper_Sg2l
   public :: prep_lnd_get_mapper_Fg2l
+  public :: prep_lnd_get_mapper_Sz2l
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -64,6 +65,7 @@ module prep_lnd_mod
   type(seq_map), pointer :: mapper_Fr2l           ! needed in seq_frac_mct.F90
   type(seq_map), pointer :: mapper_Sg2l           ! currently unused (all g2l mappings use the flux mapper)
   type(seq_map), pointer :: mapper_Fg2l
+  type(seq_map), pointer :: mapper_Sz2l           
 
   ! attribute vectors
   type(mct_aVect), pointer :: a2x_lx(:) ! Atm export, lnd grid, cpl pes - allocated in driver
@@ -109,6 +111,7 @@ contains
     logical                  :: samegrid_al   ! samegrid atm and land
     logical                  :: samegrid_lr   ! samegrid land and rof
     logical                  :: samegrid_lg   ! samegrid land and glc
+    logical                  :: samegrid_lz   ! samegrid land and iac
     logical                  :: esmf_map_flag ! .true. => use esmf for mapping
     logical                  :: lnd_present   ! .true. => land is present
     logical                  :: iamroot_CPLID ! .true. => CPLID masterproc
@@ -116,6 +119,7 @@ contains
     character(CL)            :: lnd_gnam      ! lnd grid
     character(CL)            :: rof_gnam      ! rof grid
     character(CL)            :: glc_gnam      ! glc grid
+    character(CL)            :: iac_gnam      ! iac grid
     type(mct_avect), pointer :: l2x_lx
     character(*), parameter  :: subname = '(prep_lnd_init)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
@@ -127,13 +131,15 @@ contains
          atm_gnam=atm_gnam,             &
          lnd_gnam=lnd_gnam,             &
          rof_gnam=rof_gnam,             &
-         glc_gnam=glc_gnam)
+         glc_gnam=glc_gnam,             &
+         iac_gnam=iac_gnam
 
     allocate(mapper_Sa2l)
     allocate(mapper_Fa2l)
     allocate(mapper_Fr2l)
     allocate(mapper_Sg2l)
     allocate(mapper_Fg2l)
+    allocate(mapper_Sz2l)
 
     if (lnd_present) then
 
@@ -162,9 +168,11 @@ contains
        samegrid_al = .true.
        samegrid_lr = .true.
        samegrid_lg = .true.
+       samegrid_lz = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
        if (trim(lnd_gnam) /= trim(rof_gnam)) samegrid_lr = .false.
        if (trim(lnd_gnam) /= trim(glc_gnam)) samegrid_lg = .false.
+       if (trim(lnd_gnam) /= trim(iac_gnam)) samegrid_lz = .false.
 
        if (rof_c2_lnd) then
           if (iamroot_CPLID) then
@@ -174,6 +182,17 @@ contains
           call seq_map_init_rcfile(mapper_Fr2l, rof(1), lnd(1), &
                'seq_maps.rc','rof2lnd_fmapname:','rof2lnd_fmaptype:',samegrid_lr, &
                string='mapper_Fr2l initialization',esmf_map=esmf_map_flag)
+       end if
+       call shr_sys_flush(logunit)
+
+       if (iac_c2_lnd) then
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Sz2l'
+          end if
+          call seq_map_init_rcfile(mapper_Sz2l, iac(1), lnd(1), &
+               'seq_maps.rc','iac2lnd_smapname:','iac2lnd_smaptype:',samegrid_lz, &
+               string='mapper_Sz2l initialization',esmf_map=esmf_map_flag)
        end if
        call shr_sys_flush(logunit)
 
@@ -275,7 +294,7 @@ contains
     character(len=*)     , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer                  :: eai, eri, egi, eli
+    integer                  :: eai, eri, egi, eli, ezi
     type(mct_aVect), pointer :: x2l_lx
     character(*), parameter  :: subname = '(prep_lnd_mrg)'
     !---------------------------------------------------------------
@@ -286,9 +305,10 @@ contains
        eai = mod((eli-1),num_inst_atm) + 1
        eri = mod((eli-1),num_inst_rof) + 1
        egi = mod((eli-1),num_inst_glc) + 1
+       ezi = mod((eli-1),num_inst_iac) + 1
 
        x2l_lx => component_get_x2c_cx(lnd(eli))  ! This is actually modifying x2l_lx
-       call prep_lnd_merge( a2x_lx(eai), r2x_lx(eri), g2x_lx(egi), x2l_lx )
+       call prep_lnd_merge( a2x_lx(eai), r2x_lx(eri), g2x_lx(egi), z2x_lx(ezi), x2l_lx )
     enddo
     call t_drvstopf (trim(timer_mrg))
 
@@ -296,7 +316,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_lnd_merge( a2x_l, r2x_l, g2x_l, x2l_l )
+  subroutine prep_lnd_merge( a2x_l, r2x_l, g2x_l, z2x_l, x2l_l )
     !---------------------------------------------------------------
     ! Description
     ! Create input land state directly from atm, runoff and glc outputs
@@ -305,6 +325,7 @@ contains
     type(mct_aVect), intent(in)     :: a2x_l
     type(mct_aVect), intent(in)     :: r2x_l
     type(mct_aVect), intent(in)     :: g2x_l
+    type(mct_aVect), intent(in)     :: z2x_l
     type(mct_aVect), intent(inout)  :: x2l_l
     !-----------------------------------------------------------------------
     integer       :: nflds,i,i1,o1
@@ -315,6 +336,7 @@ contains
     type(mct_aVect_sharedindices),save :: a2x_sharedindices
     type(mct_aVect_sharedindices),save :: r2x_sharedindices
     type(mct_aVect_sharedindices),save :: g2x_sharedindices
+    type(mct_aVect_sharedindices),save :: z2x_sharedindices
     character(*), parameter   :: subname = '(prep_lnd_merge) '
 
     !-----------------------------------------------------------------------
@@ -333,6 +355,7 @@ contains
        call mct_aVect_setSharedIndices(a2x_l, x2l_l, a2x_SharedIndices)
        call mct_aVect_setSharedIndices(r2x_l, x2l_l, r2x_SharedIndices)
        call mct_aVect_setSharedIndices(g2x_l, x2l_l, g2x_SharedIndices)
+       call mct_aVect_setSharedIndices(z2x_l, x2l_l, z2x_SharedIndices)
 
        !--- document copy operations ---
        do i=1,a2x_SharedIndices%shared_real%num_indices
@@ -353,11 +376,18 @@ contains
           field = mct_aVect_getRList2c(i1, g2x_l)
           mrgstr(o1) = trim(mrgstr(o1))//' = g2x%'//trim(field)
        enddo
+       do i=1,z2x_SharedIndices%shared_real%num_indices
+          i1=z2x_SharedIndices%shared_real%aVindices1(i)
+          o1=z2x_SharedIndices%shared_real%aVindices2(i)
+          field = mct_aVect_getRList2c(i1, z2x_l)
+          mrgstr(o1) = trim(mrgstr(o1))//' = z2x%'//trim(field)
+       enddo
     endif
 
     call mct_aVect_copy(aVin=a2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=a2x_SharedIndices)
     call mct_aVect_copy(aVin=r2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=r2x_SharedIndices)
     call mct_aVect_copy(aVin=g2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=g2x_SharedIndices)
+    call mct_aVect_copy(aVin=z2x_l, aVout=x2l_l, vector=mct_usevector, sharedIndices=z2x_SharedIndices)
 
     if (first_time) then
        if (iamroot) then
@@ -490,13 +520,17 @@ contains
     character(len=*)     , intent(in) :: timer
     !
     ! Local Variables
-    integer :: egi
-    type(mct_aVect), pointer :: z2x_gx
+    integer :: ezi
+    type(mct_aVect), pointer :: z2x_zx
     character(*), parameter :: subname = '(prep_lnd_calc_z2x_lx)'
     !---------------------------------------------------------------
 
-    ! Stub
-
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    do ezi = 1,num_inst_iac
+       z2x_zx => component_get_c2x_cx(iac(ezi))
+       call seq_map_map(mapper_Sz2l, z2x_zx, z2x_lx(ezi), norm=.true.)
+    enddo
+    call t_drvstopf  (trim(timer))
   end subroutine prep_lnd_calc_z2x_lx
 
   !================================================================================================
@@ -545,5 +579,10 @@ contains
     type(seq_map), pointer :: prep_lnd_get_mapper_Fg2l
     prep_lnd_get_mapper_Fg2l => mapper_Fg2l
   end function prep_lnd_get_mapper_Fg2l
+
+  function prep_lnd_get_mapper_Sz2l()
+    type(seq_map), pointer :: prep_lnd_get_mapper_Sz2l
+    prep_lnd_get_mapper_Sz2l => mapper_Sz2l
+  end function prep_lnd_get_mapper_Sz2l
 
 end module prep_lnd_mod
