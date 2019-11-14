@@ -2126,23 +2126,26 @@ contains
     ! lnd->iac, iac->lnd, iac->atm
     !----------------------------
     
-    ! Only hr and npp matter, for now
-    call seq_flds_add(l2x_states,'Sl_hr')
-    call seq_flds_add(x2z_states,'Sl_hr')
-    longname = 'Total heterotrophic respiration'
-    stdname  = 'lnd_total_heterotrophic_respiration'
-    units    = 'gC/m^2/s'
-    attname  = 'Sl_hr'
-    call metadata_set(attname, longname, stdname, units)
-
-    ! npp and pftwtgs need one field for each pft
+    ! lnd/iac coupling needs one field in each class per pft
+    ! Note that this ends up as 17*4=68 coupled fields...
     do i = 1,iac_npft
-       write(pftstr,'(I0)') i
+
+       ! Zero offset the tags, since that's how we access them in lnd and iac
+       write(pftstr,'(I0)') i-1
        pftstr=trim(pftstr)
 
+       ! Only hr and npp matter, for now
+       call seq_flds_add(l2x_states,'Sl_hr_pft' // pftstr)
+       call seq_flds_add(x2z_states,'Sl_hr_pft' // pftstr)
+       longname = 'Total heterotrophic respiration'
+       stdname  = 'lnd_total_heterotrophic_respiration'
+       units    = 'gC/m^2/s'
+       attname  = 'Sl_hr'
+       call metadata_set(attname, longname, stdname, units)
+       
        call seq_flds_add(l2x_states,'Sl_npp_pft' // pftstr)
        call seq_flds_add(x2z_states,'Sl_npp_pft' // pftstr)
-       longname = 'Net primary production for pft ' // pftstr
+1       longname = 'Net primary production for pft ' // pftstr
        stdname  = 'lnd_net_primary_production_pft' // pftstr
        units    = 'gC/m^2/s'
        attname  = 'Sl_npp_pft' // pftstr
@@ -2150,7 +2153,7 @@ contains
     
        ! Review
        call seq_flds_add(l2x_states,'Sl_pftwtg_pft' //pftstr)
-       call seq_flds_add(x2z_states,'Sl_pftwtg' //pftstr)
+       call seq_flds_add(x2z_states,'Sl_pftwtg_pft' //pftstr)
        longname = 'PFT weight relative to gridcell for pft ' //pftstr
        stdname  = 'lnd_pft_weight_pft' //pftstr
        units    = ''
@@ -3310,6 +3313,8 @@ contains
     seq_flds_x2r_states = trim(x2r_states)
     seq_flds_w2x_states = trim(w2x_states)
     seq_flds_x2w_states = trim(x2w_states)
+    seq_flds_x2z_states = trim(x2z_states)
+    seq_flds_z2x_states = trim(z2x_states)
 
     seq_flds_dom_other  = trim(dom_other )
     seq_flds_a2x_fluxes = trim(a2x_fluxes)
@@ -3332,6 +3337,8 @@ contains
     seq_flds_x2r_fluxes = trim(x2r_fluxes)
     seq_flds_w2x_fluxes = trim(w2x_fluxes)
     seq_flds_x2w_fluxes = trim(x2w_fluxes)
+    seq_flds_z2x_fluxes = trim(z2x_fluxes)
+    seq_flds_x2z_fluxes = trim(x2z_fluxes)
     seq_flds_r2o_liq_fluxes = trim(r2o_liq_fluxes)
     seq_flds_r2o_ice_fluxes = trim(r2o_ice_fluxes)
 

@@ -1810,7 +1810,7 @@ contains
        call t_adj_detailf(+2)
        if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
 
-       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_lnd)
+       call prep_atm_init(infodata, ocn_c2_atm, ice_c2_atm, lnd_c2_atm, iac_c2_atm)
 
        call prep_lnd_init(infodata, atm_c2_lnd, rof_c2_lnd, glc_c2_lnd, iac_c2_lnd)
 
@@ -2100,6 +2100,11 @@ contains
              call prep_atm_calc_l2x_ax(fractions_lx, timer='CPL:init_atminit')
           endif
 
+          if (iac_present) then
+             ! Get iac output on atm grid
+             call prep_atm_calc_z2x_ax(fractions_zx, timer='CPL:init_atminit')
+          endif
+
           if (ice_present) then
              ! Get ice output on atm grid
              call prep_atm_calc_i2x_ax(fractions_ix, timer='CPL:init_atminit')
@@ -2230,6 +2235,9 @@ contains
        endif
        if (glc_c2_lnd) then
           call prep_lnd_calc_g2x_lx(timer='CPL:init_gllndnd')
+       endif
+       if (iac_c2_lnd) then
+          call prep_lnd_calc_z2x_lx(timer='CPL:init_iac2lnd')
        endif
     endif
 
@@ -3294,7 +3302,7 @@ contains
     call component_final(EClock_o, ocn, ocn_final)
     call component_final(EClock_g, glc, glc_final)
     call component_final(EClock_w, wav, wav_final)
-    call component_final(EClock_w, iac, iac_final)
+    call component_final(EClock_z, iac, iac_final)
 
     !------------------------------------------------------------------------
     ! End the run cleanly
@@ -3747,7 +3755,7 @@ contains
        endif
 
 
-       call prep_iac_mrg(infodata, fractions_zx, timer_mrg='CPL:iacprep_mrgx2z')
+       call prep_iac_mrg(infodata, timer_mrg='CPL:iacprep_mrgx2z')
 
        call component_diag(infodata, iac, flow='x2c', comment= 'send iac', &
             info_debug=info_debug, timer_diag='CPL:iacprep_diagav')
@@ -3797,7 +3805,6 @@ contains
        call component_diag(infodata, iac, flow='c2x', comment= 'recv iac', &
             info_debug=info_debug, timer_diag='CPL:iacpost_diagav')
 
-       ! TRS I think this is wrong - review these prep functions.  I think it's more likely
        if (iac_c2_lnd) then
           call prep_lnd_calc_z2x_lx(timer='CPL:iacpost_iac2lnd')
        endif

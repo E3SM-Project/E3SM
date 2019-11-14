@@ -5,7 +5,7 @@ module prep_atm_mod
   use shr_kind_mod,     only: cl => SHR_KIND_CL
   use shr_sys_mod,      only: shr_sys_abort, shr_sys_flush
   use seq_comm_mct,     only: num_inst_atm, num_inst_ocn, num_inst_ice, num_inst_lnd, num_inst_xao, &
-       num_inst_frc, num_inst_max, CPLID, ATMID, logunit
+       num_inst_frc, num_inst_max, num_inst_iac, CPLID, ATMID, logunit
   use seq_comm_mct,     only: seq_comm_getData=>seq_comm_setptrs
   use seq_infodata_mod, only: seq_infodata_type, seq_infodata_getdata
   use seq_map_type_mod
@@ -15,7 +15,7 @@ module prep_atm_mod
   use mct_mod
   use perf_mod
   use component_type_mod, only: component_get_x2c_cx, component_get_c2x_cx
-  use component_type_mod, only: atm, lnd, ocn, ice
+  use component_type_mod, only: atm, lnd, ocn, ice, iac
 
   implicit none
   save
@@ -44,6 +44,7 @@ module prep_atm_mod
   public :: prep_atm_get_mapper_Fl2a
   public :: prep_atm_get_mapper_Si2a
   public :: prep_atm_get_mapper_Fi2a
+  public :: prep_atm_get_mapper_Fz2a
 
   !--------------------------------------------------------------------------
   ! Private interfaces
@@ -59,9 +60,11 @@ module prep_atm_mod
   type(seq_map), pointer :: mapper_So2a
   type(seq_map), pointer :: mapper_Sl2a
   type(seq_map), pointer :: mapper_Si2a
+  type(seq_map), pointer :: mapper_Sz2a
   type(seq_map), pointer :: mapper_Fo2a           ! needed for seq_frac_init
   type(seq_map), pointer :: mapper_Fl2a           ! needed for seq_frac_init
   type(seq_map), pointer :: mapper_Fi2a           ! needed for seq_frac_init
+  type(seq_map), pointer :: mapper_Fz2a
 
   ! attribute vectors
   type(mct_aVect), pointer :: l2x_ax(:)   ! Lnd export, atm grid, cpl pes - allocated in driver
@@ -96,14 +99,17 @@ contains
     integer                          :: eli, eii, emi
     logical                          :: samegrid_ao    ! samegrid atm and ocean
     logical                          :: samegrid_al    ! samegrid atm and land
+    logical                          :: samegrid_az    ! samegrid atm and iac
     logical                          :: esmf_map_flag  ! .true. => use esmf for mapping
     logical                          :: atm_present    ! .true.  => atm is present
     logical                          :: ocn_present    ! .true.  => ocn is present
     logical                          :: ice_present    ! .true.  => ice is present
     logical                          :: lnd_present    ! .true.  => lnd is prsent
+    logical                          :: iac_present    ! .true.  => iac is prsent
     character(CL)                    :: ocn_gnam       ! ocn grid
     character(CL)                    :: atm_gnam       ! atm grid
     character(CL)                    :: lnd_gnam       ! lnd grid
+    character(CL)                    :: iac_gnam       ! iac grid
     type(mct_avect), pointer         :: a2x_ax
     character(*), parameter          :: subname = '(prep_atm_init)'
     character(*), parameter          :: F00 = "('"//subname//" : ', 4A )"
@@ -117,6 +123,7 @@ contains
          atm_gnam=atm_gnam,             &
          ocn_gnam=ocn_gnam,             &
          lnd_gnam=lnd_gnam,             &
+         iac_gnam=iac_gnam,             &
          esmf_map_flag=esmf_map_flag)
 
     allocate(mapper_So2a)
@@ -125,6 +132,7 @@ contains
     allocate(mapper_Fo2a)
     allocate(mapper_Fl2a)
     allocate(mapper_Fi2a)
+    allocate(mapper_Fz2a)
 
     if (atm_present) then
 
@@ -149,11 +157,18 @@ contains
           call mct_aVect_init(i2x_ax(eii), rList=seq_flds_i2x_fields, lsize=lsize_a)
           call mct_aVect_zero(i2x_ax(eii))
        enddo
+       allocate(z2x_ax(num_inst_iac))
+       do ezi = 1,num_inst_ice
+          call mct_aVect_init(z2x_ax(ezi), rList=seq_flds_z2x_fields, lsize=lsize_a)
+          call mct_aVect_zero(z2x_ax(ezi))
+       enddo
 
        samegrid_al = .true.
        samegrid_ao = .true.
+       samegrid_az = .true.
        if (trim(atm_gnam) /= trim(lnd_gnam)) samegrid_al = .false.
        if (trim(atm_gnam) /= trim(ocn_gnam)) samegrid_ao = .false.
+       if (trim(atm_gnam) /= trim(iac_gnam)) samegrid_az = .false.
 
        if (ocn_c2_atm) then
           if (iamroot_CPLID) then
@@ -221,6 +236,16 @@ contains
                'mapper_Sl2a initialization',esmf_map_flag)
        end if
 
+       if (iac_present) then
+          if (iamroot_CPLID) then
+             write(logunit,*) ' '
+             write(logunit,F00) 'Initializing mapper_Fz2a'
+          end if
+          call seq_map_init_rcfile(mapper_Fz2a, iac(1), atm(1), &
+               'seq_maps.rc','iac2atm_fmapname:','iac2atm_fmaptype:',samegrid_az, &
+               'mapper_Fo2a initialization',esmf_map_flag)
+       endif
+       call shr_sys_flush(logunit)
 
     end if
 
@@ -241,7 +266,7 @@ contains
     character(len=*)        , intent(in)    :: timer_mrg
     !
     ! Local Variables
-    integer                  :: eli, eoi, eii, exi, efi, eai, emi
+    integer                  :: eli, eoi, eii, exi, efi, eai, emi, ezi
     type(mct_avect), pointer :: x2a_ax
     character(*), parameter  :: subname = '(prep_atm_mrg)'
     character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
@@ -256,9 +281,11 @@ contains
        exi = mod((eai-1),num_inst_xao) + 1
        efi = mod((eai-1),num_inst_frc) + 1
        emi = mod((eai-1),num_inst_max) + 1
+       ezi = mod((eai-1),num_inst_iac) + 1
 
        x2a_ax => component_get_x2c_cx(atm(eai)) ! This is actually modifying x2a_ax
-       call prep_atm_merge(l2x_ax(eli), o2x_ax(emi), xao_ax(exi), i2x_ax(eii), &
+       call prep_atm_merge(l2x_ax(eli), o2x_ax(emi), xao_ax(exi), &
+            i2x_ax(eii), z2x_ax(ezi), &
             fractions_ax(efi), x2a_ax)
     enddo
     call t_drvstopf  (trim(timer_mrg))
@@ -267,7 +294,7 @@ contains
 
   !================================================================================================
 
-  subroutine prep_atm_merge( l2x_a, o2x_a, xao_a, i2x_a, fractions_a, x2a_a )
+  subroutine prep_atm_merge( l2x_a, o2x_a, xao_a, i2x_a, z2x_a, fractions_a, x2a_a )
 
     !-----------------------------------------------------------------------
     !
@@ -276,12 +303,13 @@ contains
     type(mct_aVect), intent(in)    :: o2x_a
     type(mct_aVect), intent(in)    :: xao_a
     type(mct_aVect), intent(in)    :: i2x_a
+    type(mct_aVect), intent(in)    :: z2x_a
     type(mct_aVect), intent(in)    :: fractions_a
     type(mct_aVect), intent(inout) :: x2a_a
     !
     ! Local workspace
     real(r8) :: fracl, fraci, fraco
-    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,i,i1,o1
+    integer  :: n,ka,ki,kl,ko,kx,kof,kif,klf,i,i1,o1,kz
     integer  :: lsize
     integer  :: index_x2a_Sf_lfrac
     integer  :: index_x2a_Sf_ifrac
@@ -289,11 +317,13 @@ contains
     character(CL),allocatable :: field_atm(:)   ! string converted to char
     character(CL),allocatable :: field_lnd(:)   ! string converted to char
     character(CL),allocatable :: field_ice(:)   ! string converted to char
+    character(CL),allocatable :: field_iac(:)   ! string converted to char
     character(CL),allocatable :: field_xao(:)   ! string converted to char
     character(CL),allocatable :: field_ocn(:)   ! string converted to char
     character(CL),allocatable :: itemc_atm(:)   ! string converted to char
     character(CL),allocatable :: itemc_lnd(:)   ! string converted to char
     character(CL),allocatable :: itemc_ice(:)   ! string converted to char
+    character(CL),allocatable :: itemc_iac(:)   ! string converted to char
     character(CL),allocatable :: itemc_xao(:)   ! string converted to char
     character(CL),allocatable :: itemc_ocn(:)   ! string converted to char
     logical :: iamroot
@@ -302,10 +332,11 @@ contains
     type(mct_aVect_sharedindices),save :: l2x_sharedindices
     type(mct_aVect_sharedindices),save :: o2x_sharedindices
     type(mct_aVect_sharedindices),save :: i2x_sharedindices
+    type(mct_aVect_sharedindices),save :: z2x_sharedindices
     type(mct_aVect_sharedindices),save :: xao_sharedindices
-    logical, pointer, save :: lmerge(:),imerge(:),xmerge(:),omerge(:)
-    integer, pointer, save :: lindx(:), iindx(:), oindx(:),xindx(:)
-    integer, save          :: naflds, nlflds,niflds,noflds,nxflds
+    logical, pointer, save :: lmerge(:),imerge(:),xmerge(:),omerge(:),zmerge(:)
+    integer, pointer, save :: lindx(:), iindx(:), oindx(:),xindx(:),zindx(:)
+    integer, save          :: naflds, nlflds,niflds,noflds,nxflds,nzflds
     character(*), parameter   :: subname = '(prep_atm_merge) '
     !-----------------------------------------------------------------------
     !
@@ -316,16 +347,19 @@ contains
        naflds = mct_aVect_nRattr(x2a_a)
        nlflds = mct_aVect_nRattr(l2x_a)
        niflds = mct_aVect_nRattr(i2x_a)
+       nzflds = mct_aVect_nRattr(z2x_a)
        noflds = mct_aVect_nRattr(o2x_a)
        nxflds = mct_aVect_nRattr(xao_a)
 
        allocate(lindx(naflds), lmerge(naflds))
        allocate(iindx(naflds), imerge(naflds))
        allocate(xindx(naflds), xmerge(naflds))
+       allocate(zindx(naflds), zmerge(naflds))
        allocate(oindx(naflds), omerge(naflds))
        allocate(field_atm(naflds), itemc_atm(naflds))
        allocate(field_lnd(nlflds), itemc_lnd(nlflds))
        allocate(field_ice(niflds), itemc_ice(niflds))
+       allocate(field_iac(nzflds), itemc_iac(nzflds))
        allocate(field_ocn(noflds), itemc_ocn(noflds))
        allocate(field_xao(nxflds), itemc_xao(nxflds))
        allocate(mrgstr(naflds))
@@ -334,10 +368,12 @@ contains
        iindx(:) = 0
        xindx(:) = 0
        oindx(:) = 0
+       zindx(:) = 0
        lmerge(:)  = .true.
        imerge(:)  = .true.
        xmerge(:)  = .true.
        omerge(:)  = .true.
+       zmerge(:)  = .true.
 
        do ka = 1,naflds
           field_atm(ka) = mct_aVect_getRList2c(ka, x2a_a)
@@ -346,6 +382,10 @@ contains
        do kl = 1,nlflds
           field_lnd(kl) = mct_aVect_getRList2c(kl, l2x_a)
           itemc_lnd(kl) = trim(field_lnd(kl)(scan(field_lnd(kl),'_'):))
+       enddo
+       do kz = 1,nzflds
+          field_lnd(kz) = mct_aVect_getRList2c(kz, z2x_a)
+          itemc_lnd(kz) = trim(field_lnd(kz)(scan(field_lnd(kz),'_'):))
        enddo
        do ki = 1,niflds
           field_ice(ki) = mct_aVect_getRList2c(ki, i2x_a)
@@ -363,6 +403,7 @@ contains
        call mct_aVect_setSharedIndices(l2x_a, x2a_a, l2x_SharedIndices)
        call mct_aVect_setSharedIndices(o2x_a, x2a_a, o2x_SharedIndices)
        call mct_aVect_setSharedIndices(i2x_a, x2a_a, i2x_SharedIndices)
+       call mct_aVect_setSharedIndices(z2x_a, x2a_a, z2x_SharedIndices)
        call mct_aVect_setSharedIndices(xao_a, x2a_a, xao_SharedIndices)
 
        ! Field naming rules
@@ -393,6 +434,21 @@ contains
                 lindx(ka) = kl
              end if
           end do
+
+          do kz = 1,nzflds
+             if (trim(itemc_atm(ka)) == trim(itemc_iac(kz))) then
+                if ((trim(field_atm(ka)) == trim(field_iac(kz)))) then
+                   if (field_iac(kz)(1:1) == 'F') zmerge(ka) = .false.
+                end if
+                ! --- make sure only one field matches ---
+                if (zindx(ka) /= 0) then
+                   write(logunit,*) subname,' ERROR: found multiple kz field matches for ',trim(itemc_iac(kz))
+                   call shr_sys_abort(subname//' ERROR multiple kz field matches')
+                endif
+                zindx(ka) = kz
+             end if
+          end do
+
           do ki = 1,niflds
              if (field_ice(ki)(1:1) == 'F' .and. field_ice(ki)(2:4) == 'ioi') then
                 cycle ! ignore all fluxes that are ice/ocn fluxes
@@ -481,16 +537,19 @@ contains
 
     kif=mct_aVect_indexRA(fractions_a,"ifrac")
     klf=mct_aVect_indexRA(fractions_a,"lfrac")
+    kzf=mct_aVect_indexRA(fractions_a,"zfrac")
     kof=mct_aVect_indexRA(fractions_a,"ofrac")
     lsize = mct_avect_lsize(x2a_a)
 
     index_x2a_Sf_lfrac = mct_aVect_indexRA(x2a_a,'Sf_lfrac')
     index_x2a_Sf_ifrac = mct_aVect_indexRA(x2a_a,'Sf_ifrac')
     index_x2a_Sf_ofrac = mct_aVect_indexRA(x2a_a,'Sf_ofrac')
+    index_x2a_Sf_zfrac = mct_aVect_indexRA(x2a_a,'Sf_zfrac')
     do n = 1,lsize
        x2a_a%rAttr(index_x2a_Sf_lfrac,n) = fractions_a%Rattr(klf,n)
        x2a_a%rAttr(index_x2a_Sf_ifrac,n) = fractions_a%Rattr(kif,n)
        x2a_a%rAttr(index_x2a_Sf_ofrac,n) = fractions_a%Rattr(kof,n)
+       x2a_a%rAttr(index_x2a_Sf_zfrac,n) = fractions_a%Rattr(kzf,n)
     end do
 
     !--- document fraction operations ---
@@ -498,6 +557,7 @@ contains
        mrgstr(index_x2a_sf_lfrac) = trim(mrgstr(index_x2a_sf_lfrac))//' = fractions_a%lfrac'
        mrgstr(index_x2a_sf_ifrac) = trim(mrgstr(index_x2a_sf_ifrac))//' = fractions_a%ifrac'
        mrgstr(index_x2a_sf_ofrac) = trim(mrgstr(index_x2a_sf_ofrac))//' = fractions_a%ofrac'
+       mrgstr(index_x2a_sf_zfrac) = trim(mrgstr(index_x2a_sf_zfrac))//' = fractions_a%zfrac'
     endif
 
     ! Copy attributes that do not need to be merged
@@ -522,6 +582,11 @@ contains
           o1=i2x_SharedIndices%shared_real%aVindices2(i)
           mrgstr(o1) = trim(mrgstr(o1))//' = i2x%'//trim(field_ice(i1))
        enddo
+       do i=1,z2x_SharedIndices%shared_real%num_indices
+          i1=z2x_SharedIndices%shared_real%aVindices1(i)
+          o1=z2x_SharedIndices%shared_real%aVindices2(i)
+          mrgstr(o1) = trim(mrgstr(o1))//' = z2x%'//trim(field_ice(i1))
+       enddo
        do i=1,xao_SharedIndices%shared_real%num_indices
           i1=xao_SharedIndices%shared_real%aVindices1(i)
           o1=xao_SharedIndices%shared_real%aVindices2(i)
@@ -536,6 +601,7 @@ contains
     call mct_aVect_copy(aVin=l2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=l2x_SharedIndices)
     call mct_aVect_copy(aVin=o2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=o2x_SharedIndices)
     call mct_aVect_copy(aVin=i2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=i2x_SharedIndices)
+    call mct_aVect_copy(aVin=z2x_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=z2x_SharedIndices)
     call mct_aVect_copy(aVin=xao_a, aVout=x2a_a, vector=mct_usevector, sharedIndices=xao_SharedIndices)
 
     ! If flux to atm is coming only from the ocean (based on field being in o2x_a) -
@@ -551,6 +617,13 @@ contains
                 mrgstr(ka) = trim(mrgstr(ka))//' + lfrac*l2x%'//trim(field_lnd(lindx(ka)))
              else
                 mrgstr(ka) = trim(mrgstr(ka))//' = lfrac*l2x%'//trim(field_lnd(lindx(ka)))
+             end if
+          end if
+          if (zindx(ka) > 0) then
+             if (zmerge(ka)) then
+                mrgstr(ka) = trim(mrgstr(ka))//' + zfrac*z2x%'//trim(field_iac(zindx(ka)))
+             else
+                mrgstr(ka) = trim(mrgstr(ka))//' = zfrac*z2x%'//trim(field_iac(zindx(ka)))
              end if
           end if
           if (iindx(ka) > 0) then
@@ -581,11 +654,19 @@ contains
           fracl = fractions_a%Rattr(klf,n)
           fraci = fractions_a%Rattr(kif,n)
           fraco = fractions_a%Rattr(kof,n)
+          fracz = fractions_a%Rattr(kzf,n)
           if (lindx(ka) > 0 .and. fracl > 0._r8) then
              if (lmerge(ka)) then
                 x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + l2x_a%rAttr(lindx(ka),n) * fracl
              else
                 x2a_a%rAttr(ka,n) = l2x_a%rAttr(lindx(ka),n) * fracl
+             end if
+          end if
+          if (zindx(ka) > 0 .and. fracz > 0._r8) then
+             if (zmerge(ka)) then
+                x2a_a%rAttr(ka,n) = x2a_a%rAttr(ka,n) + z2x_a%rAttr(zindx(ka),n) * fracz
+             else
+                x2a_a%rAttr(ka,n) = z2x_a%rAttr(zindx(ka),n) * fracz
              end if
           end if
           if (iindx(ka) > 0 .and. fraci > 0._r8) then
@@ -626,6 +707,7 @@ contains
        deallocate(field_atm,itemc_atm)
        deallocate(field_lnd,itemc_lnd)
        deallocate(field_ice,itemc_ice)
+       deallocate(field_iac,itemc_iac)
        deallocate(field_ocn,itemc_ocn)
        deallocate(field_xao,itemc_xao)
     endif
@@ -753,6 +835,22 @@ contains
     character(len=*), intent(in) :: timer
     !
     ! Local Variables
+    integer :: ezi, efi
+    type(mct_avect), pointer :: z2x_zx
+    character(*), parameter  :: subname = '(prep_atm_calc_z2x_ax)'
+    character(*), parameter  :: F00 = "('"//subname//" : ', 4A )"
+    !---------------------------------------------------------------
+
+    call t_drvstartf (trim(timer),barrier=mpicom_CPLID)
+    do ezi = 1,num_inst_iac
+       efi = mod((ezi-1),num_inst_frc) + 1
+
+       z2x_zx => component_get_c2x_cx(iac(ezi))
+       call seq_map_map(mapper_Fz2a, z2x_zx, z2x_ax(ezi), &
+            fldlist=seq_flds_z2x_fluxes, norm=.true., &
+            avwts_s=fractions_zx(efi), avwtsfld_s='zfrac')
+    enddo
+    call t_drvstopf  (trim(timer))
 
   end subroutine prep_atm_calc_z2x_ax
 
@@ -807,6 +905,11 @@ contains
     type(seq_map), pointer :: prep_atm_get_mapper_Fi2a
     prep_atm_get_mapper_Fi2a => mapper_Fi2a
   end function prep_atm_get_mapper_Fi2a
+
+  function prep_atm_get_mapper_Fz2a()
+    type(seq_map), pointer :: prep_atm_get_mapper_Fz2a
+    prep_atm_get_mapper_Fz2a => mapper_Fz2a
+  end function prep_atm_get_mapper_Fz2a
 
   !================================================================================================
 

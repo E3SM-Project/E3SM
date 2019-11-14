@@ -143,6 +143,7 @@ module seq_frac_mct
   use prep_atm_mod, only: prep_atm_get_mapper_Fo2a
   use prep_atm_mod, only: prep_atm_get_mapper_Fi2a
   use prep_atm_mod, only: prep_atm_get_mapper_Fl2a
+  use prep_atm_mod, only: prep_atm_get_mapper_Fz2a
   use prep_glc_mod, only: prep_glc_get_mapper_Fl2g
 
   use component_type_mod
@@ -268,14 +269,14 @@ contains
     integer :: lsize          ! local size of ice av
     integer :: debug_old      ! old debug value
 
-    character(*),parameter :: fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin'
+    character(*),parameter :: fraclist_a = 'afrac:ifrac:ofrac:lfrac:lfrin:zfrac'
     character(*),parameter :: fraclist_o = 'afrac:ifrac:ofrac:ifrad:ofrad'
     character(*),parameter :: fraclist_i = 'afrac:ifrac:ofrac'
     character(*),parameter :: fraclist_l = 'afrac:lfrac:lfrin'
     character(*),parameter :: fraclist_g = 'gfrac:lfrac'
     character(*),parameter :: fraclist_r = 'lfrac:rfrac'
     character(*),parameter :: fraclist_w = 'wfrac'
-    character(*),parameter :: fraclist_z = 'afrac:lfrac'
+    character(*),parameter :: fraclist_z = 'zfrac'
 
     !----- formats -----
     character(*),parameter :: subName = '(seq_frac_init) '
@@ -438,6 +439,7 @@ contains
        kl = mct_aVect_indexRa(fractions_a,"lfrac",perrWith=subName)
        ko = mct_aVect_indexRa(fractions_a,"ofrac",perrWith=subName)
        kk = mct_aVect_indexRa(fractions_a,"lfrin",perrWith=subName)
+       kz = mct_aVect_indexRa(fractions_a,"zfrac",perrWith=subName)
        lSize = mct_aVect_lSize(fractions_a)
 
        if (ice_present .or. ocn_present) then
@@ -455,6 +457,14 @@ contains
              if (abs(fractions_a%rAttr(ko,n)) < eps_fraclim) then
                 fractions_a%rAttr(ko,n) = 0.0_r8
                 if (atm_frac_correct) fractions_a%rAttr(kl,n) = 1.0_r8
+             endif
+
+             ! For now, zfrac from iac will be identical to lfrac,
+             ! since they both represent land fraction for each grid
+             ! cell, and iac and lnd are currently always on the same
+             ! grid 
+             if (iac_present) then 
+                fractions_a%rAttr(kz,n) = fractions_a%rAttr(ko,n)
              endif
           enddo
        endif
