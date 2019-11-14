@@ -760,7 +760,7 @@ flags should be captured within MPAS CMake files.
 
 <compiler MACH="anvil" COMPILER="intel18">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
