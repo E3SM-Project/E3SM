@@ -39,8 +39,6 @@ ANONYMOUS:
         Immersed Ratio: 8.8521e-01
   Discretization: 
     Exodus Output File Name: albany_output.exo
-    Cubature Degree: 1
-    Interleaved Ordering: false
   Piro: 
     LOCA: 
       Bifurcation: { }

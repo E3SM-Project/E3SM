@@ -17,8 +17,7 @@ ANONYMOUS:
       Type: FO INTERP SURF GRAD
   Discretization: 
     Exodus Output File Name: albany_output.exo
-    Cubature Degree: 1
-    Interleaved Ordering: false
+    Element Shape: Tetrahedron
   Piro: 
     LOCA: 
       Bifurcation: { }
