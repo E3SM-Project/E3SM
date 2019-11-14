@@ -1,7 +1,7 @@
 from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit
 check_minimum_python_version(3, 4)
 
-import os, shutil, time
+import os, shutil
 
 ###############################################################################
 class TestAllScream(object):
@@ -102,20 +102,28 @@ class TestAllScream(object):
         return baseline_files, datas
 
     ###############################################################################
+    def safe_remove_all():
+    ###############################################################################
+        rm_stat = 1
+        while rm_stat != 0:
+            rm_stat = run_cmd("/bin/rm -rf *")[0]
+            if rm_stat != 0:
+                remaining_files = run_cmd_no_fail("find . -type f")
+                print("Had trouble removing: {}".format(remaining_files))
+
+
+    ###############################################################################
     def run_test(self, extra_cmake_configs, extra_ctest_configs, build_name, git_head):
     ###############################################################################
-        # Wait a few seconds between tests
-        time.sleep(5)
-
         cmake_config = self.generate_cmake_config(extra_cmake_configs)
 
         # Clean out whatever might have been left in the build area from
         # previous tests
-        run_cmd_no_fail("/bin/rm -rf *")
+        safe_remove_all()
 
         if ("BUILD_ONLY", "True") not in extra_ctest_configs:
             filepaths, datas = self.generate_baselines(cmake_config, git_head)
-            run_cmd_no_fail("/bin/rm -rf *") # Clean out baseline build
+            safe_remove_all() # Clean out baseline build
             for filepath, data in zip(filepaths, datas):
                 if not os.path.isdir(os.path.dirname(filepath)):
                     os.makedirs(os.path.dirname(filepath))
