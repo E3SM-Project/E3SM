@@ -22,6 +22,8 @@ module clm_cpl_indices
                                   ! (from coupler) - must equal maxpatch_glcmec from namelist
   integer , parameter, private:: glc_nec_max = 100
 
+  integer , public :: iac_npft    ! Number of veg pfts (index 0 for bare ground)
+
   ! lnd -> drv (required)
 
   integer, public ::index_l2x_Flrl_rofsur     ! lnd->rtm input liquid surface fluxes
@@ -65,6 +67,11 @@ module clm_cpl_indices
   integer, public ::index_l2x_Fall_methane
 
   integer, public :: nflds_l2x = 0
+
+  ! IAC coupling
+  integer, public ::index_l2x_Sl_hr(0:iac_npft)  = 0
+  integer, public ::index_l2x_Sl_npp(0:iac_npft)  = 0
+  integer, public ::index_l2x_Sl_pftwgt(0:iac_npft)  = 0
 
   ! drv -> lnd (required)
 
@@ -133,6 +140,7 @@ contains
     use seq_drydep_mod , only: drydep_fields_token, lnd_drydep
     use shr_megan_mod  , only: shr_megan_fields_token, shr_megan_mechcomps_n
     use clm_varctl     , only: use_voc
+    use clm_varpar     , only: numpft
     !
     ! !ARGUMENTS:
     implicit none
@@ -300,6 +308,21 @@ contains
           index_l2x_Flgl_qice(num) = mct_avect_indexra(l2x,trim(name))
        end do
     end if
+
+    !---------------------------------
+    ! IAC coupling
+    !---------------------------------
+
+    ! Probably need to compare with namelist 
+    iac_npft = numpft
+
+    do p = 0,iac_npft
+       write(cpft,'(I0)') 
+       cpft=trim(cpft)
+       index_l2x_Sl_hr(p) = mct_avect_indexra(l2x,'Sl_hr_pft' // cpft)
+       index_l2x_Sl_npp(p) = mct_avect_indexra(l2x,'Sl_npp_pft' // cpft)
+       index_l2x_Sl_pftwgt(p) = mct_avect_indexra(l2x,'Sl_pftwgt_pft' // cpft)
+    enddo
 
     call mct_aVect_clean(x2l)
     call mct_aVect_clean(l2x)
