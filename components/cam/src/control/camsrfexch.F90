@@ -105,6 +105,7 @@ module camsrfexch
      real(r8) :: snowhice(pcols)         ! snow depth over ice
      real(r8) :: fco2_lnd(pcols)         ! co2 flux from lnd
      real(r8) :: fco2_ocn(pcols)         ! co2 flux from ocn
+     real(r8) :: fco2_iac(pcols)         ! co2 flux from iac component
      real(r8) :: fdms(pcols)             ! dms flux
      real(r8) :: landfrac(pcols)         ! land area fraction
      real(r8) :: icefrac(pcols)          ! sea-ice areal fraction
@@ -226,6 +227,7 @@ CONTAINS
        cam_in(c)%snowhice (:) = 0._r8
        cam_in(c)%fco2_lnd (:) = 0._r8
        cam_in(c)%fco2_ocn (:) = 0._r8
+       cam_in(c)%fco2_iac (:) = 0._r8
        cam_in(c)%fdms     (:) = 0._r8
        cam_in(c)%landfrac (:) = posinf
        cam_in(c)%icefrac  (:) = posinf

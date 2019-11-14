@@ -118,6 +118,9 @@ contains
           if (index_x2a_Fall_fco2_lnd /= 0) then
              cam_in(c)%fco2_lnd(i) = -x2a(index_x2a_Fall_fco2_lnd,ig)
           end if
+          if (index_x2a_Fazz_fco2_iac /= 0) then
+             cam_in(c)%fco2_iac(i) = -x2a(index_x2a_Fazz_fco2_iac,ig)
+          endif
           if (index_x2a_Faoo_fco2_ocn /= 0) then
              cam_in(c)%fco2_ocn(i) = -x2a(index_x2a_Faoo_fco2_ocn,ig)
           end if
@@ -163,7 +166,10 @@ contains
              end if
              
              ! co2 flux from fossil fuel
-             if (co2_readFlux_fuel) then
+             ! Use iac component first if coupled, then check for data read
+             if (index_x2a_Fazz_fco2_iac /= 0) then
+                cam_in(c)%cflx(i,c_i(2)) = cam_in(c)%fco2_iac(i)
+             else if (co2_readFlux_fuel) then
                 cam_in(c)%cflx(i,c_i(2)) = data_flux_fuel%co2flx(i,c)
              else
                 cam_in(c)%cflx(i,c_i(2)) = 0._r8
