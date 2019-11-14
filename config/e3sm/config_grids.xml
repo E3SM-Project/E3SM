@@ -168,7 +168,7 @@
       <mask>360x720cru</mask>
     </model_grid>
 
-    <model_grid alias="NLDAS_NLDAS" compset="(DATM_SATM).+CLM">
+    <model_grid alias="NLDAS_NLDAS" compset="(DATM|SATM).+MOSART">
       <grid name="atm">NLDAS</grid>
       <grid name="lnd">NLDAS</grid>
       <grid name="ocnice">NLDAS</grid>
