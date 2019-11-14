@@ -203,8 +203,9 @@ class TestScheduler(object):
 
         # Compute baseline_root
         self._baseline_root = baseline_root if baseline_root is not None \
-                              else self._machobj.get_value("BASELINE_ROOT")
+                              else self._machobj.get_value("BASELINE_ROOT", resolved=False)
 
+        self._baseline_root = self._baseline_root.replace("$COMPILER", self._compiler)
         if self._project is not None:
             self._baseline_root = self._baseline_root.replace("$PROJECT", self._project)
 
