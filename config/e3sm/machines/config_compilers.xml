@@ -719,48 +719,6 @@ for mct, etc.
     <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs}  -L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl </append>
     <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
   </SLIBS>
-  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
-  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
-  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-</compiler>
-
-<compiler MACH="anvil" COMPILER="intel">
-  <CFLAGS>
-    <append compile_threaded="TRUE"> -static-intel</append>
-    <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
-  </CFLAGS>
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
-    <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --fflags} </append>
-    <append compile_threaded="TRUE"> -static-intel</append>
-    <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append compile_threaded="TRUE"> -static-intel</append>
-  </LDFLAGS>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <SLIBS>
-    <append> $SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs} </append>
-    <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
-    <append>-Wl,--start-group $ENV{MKLROOT}/lib/intel64/libmkl_intel_lp64.a $ENV{MKLROOT}/lib/intel64/libmkl_sequential.a $ENV{MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl</append>
-  </SLIBS>
-  <NETCDF_C_PATH>$ENV{NETCDF_C_PATH}</NETCDF_C_PATH>
-  <NETCDF_FORTRAN_PATH>$ENV{NETCDF_FORTRAN_PATH}</NETCDF_FORTRAN_PATH>
-  <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
-</compiler>
-
-<compiler MACH="anvil-centos7" COMPILER="gnu">
-  <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY  </append>
-  </CPPDEFS>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-  <SLIBS>
-    <append>$SHELL{$ENV{NETCDF_FORTRAN_PATH}/bin/nf-config --flibs}  -L$ENV{MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl </append>
-    <append> $SHELL{$ENV{NETCDF_C_PATH}/bin/nc-config --libs} </append>
-  </SLIBS>
   <CXX_LIBS>
     <base>-lstdc++</base>
   </CXX_LIBS>
@@ -769,7 +727,7 @@ for mct, etc.
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
-<compiler MACH="anvil-centos7" COMPILER="intel">
+<compiler MACH="anvil" COMPILER="intel">
   <CFLAGS>
     <append compile_threaded="TRUE"> -static-intel</append>
     <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
@@ -800,7 +758,7 @@ for mct, etc.
   <PNETCDF_PATH>$ENV{PNETCDF_PATH}</PNETCDF_PATH>
 </compiler>
 
-<compiler MACH="anvil-centos7" COMPILER="intel18">
+<compiler MACH="anvil" COMPILER="intel18">
   <CPPDEFS>
     <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
