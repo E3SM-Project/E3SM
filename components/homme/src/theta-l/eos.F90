@@ -303,50 +303,57 @@ implicit none
     real (kind=real_kind) :: alpha1(np,np),alpha2(np,np)
     real (kind=real_kind) :: e(np,np,nlev),dphi_temp(np,np,nlev),exner(np,np,nlev)
     real (kind=real_kind) :: dpnh2(np,np,nlev),dpnh_dp_i_epsie(np,np,nlevp)
-    real (kind=real_kind) :: dp3d_i(np,np,nlevp),ds(np,np,nlev),delta_mu(np,np,nlevp)
+    real (kind=real_kind) :: ds(np,np,nlev),delta_mu(np,np,nlevp)
+    real (kind=real_kind) :: a,b(np,np),ck(np,np),ckm1(np,np)
     !
     integer :: k,l,k2
     if (exact.eq.1) then ! use exact Jacobian
- 
-       dp3d_i(:,:,1) = dp3d(:,:,1)
-       dp3d_i(:,:,nlevp) = dp3d(:,:,nlev)
-       do k=2,nlev
-          dp3d_i(:,:,k)=(dp3d(:,:,k)+dp3d(:,:,k-1))/2
-       end do
-  
+       ! this code will need to change when the equation of state is changed.
+       ! add special cases for k==1 and k==nlev+1
+#if 1  
       do k=1,nlev
-        ! this code will need to change when the equation of state is changed.
-        ! add special cases for k==1 and k==nlev+1
         if (k==1) then
 
-           JacL(k,:,:) = -(dt2*g)**2*pnh(:,:,k)/&
-             (( -dphi(:,:,k) )*(1-kappa)*dp3d_i(:,:,k+1))
-
-           JacU(k,:,:) = -2*(dt2*g)**2 * pnh(:,:,k)/&
-             (( -dphi(:,:,k) )*(1-kappa)*dp3d_i(:,:,k))
-
-           JacD(k,:,:) = 1+2*(dt2*g)**2 *pnh(:,:,k)/&
-             (( -dphi(:,:,k) )*(1-kappa)*dp3d_i(:,:,k))
-
+           JacU(k,:,:) = 2*(dt2*g)**2 * pnh(:,:,k)/(dphi(:,:,k)*(1-kappa)*dp3d(:,:,k))
+           JacD(k,:,:) = 1 - JacU(k,:,:)
           
         else if (k.eq.nlev) then 
 
-           JacD(k,:,:) = 1+(dt2*g)**2 *(pnh(:,:,k)/(( -dphi(:,:,k) )*(1-kappa)) &
-             +pnh(:,:,k-1)/( ( -dphi(:,:,k-1) )*(1-kappa)))/dp3d_i(:,:,k)
+           JacL(k-1,:,:) =   (dt2*g)**2* pnh(:,:,k-1)/(dphi(:,:,k-1)*(1-kappa)*  ((dp3d(:,:,k)+dp3d(:,:,k-1))/2))
+           JacD(k  ,:,:) = 1-(dt2*g)**2*(pnh(:,:,k  )/(dphi(:,:,k  )*(1-kappa)) + &
+                                         pnh(:,:,k-1)/(dphi(:,:,k-1)*(1-kappa)))/((dp3d(:,:,k)+dp3d(:,:,k-1))/2)
 
         else ! k =2,...,nlev-1
 
-           JacL(k,:,:) = -(dt2*g)**2*pnh(:,:,k)/&
-             (( -dphi(:,:,k) )*(1-kappa)*dp3d_i(:,:,k+1))
-         
-           JacU(k,:,:) = -(dt2*g)**2 * pnh(:,:,k)/&
-             (( -dphi(:,:,k) )*(1-kappa)*dp3d_i(:,:,k))
-
-           JacD(k,:,:) = 1+(dt2*g)**2 *(pnh(:,:,k)/(( -dphi(:,:,k) )*(1-kappa)) &
-             +pnh(:,:,k-1)/( ( -dphi(:,:,k-1) )*(1-kappa)))/dp3d_i(:,:,k)
+           JacL(k-1,:,:) =   (dt2*g)**2* pnh(:,:,k-1)/(dphi(:,:,k-1)*(1-kappa)*  ((dp3d(:,:,k)+dp3d(:,:,k-1))/2))
+           JacU(k  ,:,:) =   (dt2*g)**2* pnh(:,:,k  )/(dphi(:,:,k  )*(1-kappa)*  ((dp3d(:,:,k)+dp3d(:,:,k-1))/2))
+           JacD(k,  :,:) = 1-(dt2*g)**2*(pnh(:,:,k  )/(dphi(:,:,k  )*(1-kappa)) + &
+                                         pnh(:,:,k-1)/(dphi(:,:,k-1)*(1-kappa)))/((dp3d(:,:,k)+dp3d(:,:,k-1))/2)
 
         end if
       end do
+#else
+      a  = (dt2*g)**2/(1-kappa)
+      k  = 1 ! Jacobian row 1
+      b  = a/dp3d(:,:,k)
+      ck = pnh(:,:,k)/dphi(:,:,k)
+      JacU(k,:,:) = 2*b*ck
+      JacD(k,:,:) = 1 - JacU(k,:,:)
+      ckm1 = ck
+      do k = 2,nlev-1 ! Jacobian row k
+         b  = 2*a/(dp3d(:,:,k-1) + dp3d(:,:,k))
+         ck = pnh(:,:,k)/dphi(:,:,k)
+         JacL(k-1,:,:) = b*ckm1
+         JacU(k,  :,:) = b*ck
+         JacD(k,  :,:) = 1 - JacL(k-1,:,:) - JacU(k,:,:)
+         ckm1 = ck
+      end do
+      k  = nlev ! Jacobian row nlev
+      b  = 2*a/(dp3d(:,:,k) + dp3d(:,:,k-1))
+      ck = pnh(:,:,k)/dphi(:,:,k)
+      JacL(k-1,:,:) = b*ckm1
+      JacD(k  ,:,:) = 1 - JacL(k-1,:,:) - b*ck
+#endif
     else ! use finite difference approximation to Jacobian with differencing size espie
       ! compute Jacobian of F(dphi) = phi +const + (dt*g)^2 *(1-dp/dpi) column wise
       ! if NEWTON_DPHI is defined, compute Jacobian of:
