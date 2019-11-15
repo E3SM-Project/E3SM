@@ -107,12 +107,12 @@ class TestAllScream(object):
         cmake_config = self.generate_cmake_config(extra_cmake_configs)
 
         # Clean out whatever might have been left in the build area from
-        # previous tests
-        run_cmd_no_fail("/bin/rm -rf *")
+        # previous tests. This command can sometimes fail due to .nfs files
+        run_cmd("/bin/rm -rf *")
 
         if ("BUILD_ONLY", "True") not in extra_ctest_configs:
             filepaths, datas = self.generate_baselines(cmake_config, git_head)
-            run_cmd_no_fail("/bin/rm -rf *") # Clean out baseline build
+            run_cmd("/bin/rm -rf *") # Clean out baseline build
             for filepath, data in zip(filepaths, datas):
                 if not os.path.isdir(os.path.dirname(filepath)):
                     os.makedirs(os.path.dirname(filepath))
