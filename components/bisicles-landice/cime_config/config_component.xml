@@ -102,6 +102,7 @@
   </entry>
 
   <description>
+    <desc compset="_MALIBISICLES">BISICLES Land Ice (with MALI):</desc>    
     <desc compset="_MALI">MPAS-Albany Land Ice default (Albany-FO solver):</desc>
     <desc compset="_MALI%SIA" >MPAS-Albany Land Ice (shallow ice solver):</desc>
     <desc compset="_BISICLES" >MPAS-Albany Land Ice (shallow ice solver):</desc>
