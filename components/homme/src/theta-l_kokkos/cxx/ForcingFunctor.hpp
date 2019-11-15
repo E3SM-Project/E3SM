@@ -144,16 +144,9 @@ public:
       });
 
       // Fix w at the surface
-      using MidInfo = ColInfo<NUM_PHYSICAL_LEV>;
-      using IntInfo = ColInfo<NUM_INTERFACE_LEV>;
-      constexpr int last_int_pack    = IntInfo::LastPack;
-      constexpr int last_int_vec_end = IntInfo::LastVecEnd;
-      constexpr int last_mid_pack    = MidInfo::LastPack;
-      constexpr int last_mid_vec_end = MidInfo::LastVecEnd;
-
-      w(last_int_pack)[last_int_vec_end] =
-        (u(last_mid_pack)[last_mid_vec_end]*m_geometry.m_gradphis(kv.ie,0,igp,jgp) +
-         v(last_mid_pack)[last_mid_vec_end]*m_geometry.m_gradphis(kv.ie,1,igp,jgp)) / PhysicalConstants::g;
+      w(LAST_INT_PACK)[LAST_INT_PACK_END] =
+        (u(LAST_MID_PACK)[LAST_MID_PACK_END]*m_geometry.m_gradphis(kv.ie,0,igp,jgp) +
+         v(LAST_MID_PACK)[LAST_MID_PACK_END]*m_geometry.m_gradphis(kv.ie,1,igp,jgp)) / PhysicalConstants::g;
     });
   }
 
@@ -174,6 +167,7 @@ public:
     Kokkos::fence();
   }
 
+  KOKKOS_INLINE_FUNCTION
   Real compute_fqdt (const int& k,
                      const ExecViewUnmanaged<Scalar[NUM_LEV]>& fq,
                      const ExecViewUnmanaged<Scalar[NUM_LEV]>& qdp) const {
@@ -191,6 +185,7 @@ public:
     return fqdt;
   }
 
+  KOKKOS_INLINE_FUNCTION
   Scalar compute_fqdt_pack (const int& ilev,
                             const ExecViewUnmanaged<Scalar[NUM_LEV]>& fq,
                             const ExecViewUnmanaged<Scalar[NUM_LEV]>& qdp) const {
@@ -392,8 +387,7 @@ public:
 
       // Compute phi as fcn of new theta, store in fphi
       auto phi_i  = Homme::subview(m_state.m_phinh_i,kv.ie,m_np1,igp,jgp);
-      using Info = ColInfo<NUM_INTERFACE_LEV>;
-      fphi(Info::LastPack)[Info::LastVecEnd] = phi_i(Info::LastPack)[Info::LastVecEnd];
+      fphi(LAST_INT_PACK)[LAST_INT_PACK_END] = phi_i(LAST_INT_PACK)[LAST_INT_PACK_END];
       auto integrand_provider = [&](const int ilev)->Scalar {
         return PhysicalConstants::Rgas*tn1(ilev)*exner(ilev)/pnh(ilev);
       };
@@ -410,12 +404,16 @@ public:
 
       // Last level
       Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-        fphi(Info::LastPack)[Info::LastVecEnd] = (fphi(Info::LastPack)[Info::LastVecEnd] - phi_i(Info::LastPack)[Info::LastVecEnd]) / m_dt;
+        fphi(LAST_INT_PACK)[LAST_INT_PACK_END] = (fphi(LAST_INT_PACK)[LAST_INT_PACK_END] - phi_i(LAST_INT_PACK)[LAST_INT_PACK_END]) / m_dt;
       });
     });
   }
 
 private:
+  const int LAST_MID_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+  const int LAST_MID_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
+  const int LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+  const int LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
 
   ElementsState     m_state;
   ElementsForcing   m_forcing;

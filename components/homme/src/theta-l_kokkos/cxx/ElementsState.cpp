@@ -145,40 +145,41 @@ void ElementsState::randomize(const int seed,
   // This ensures the pressure in a single column is monotonically increasing
   // and has fixed upper and lower values
   const auto make_pressure_partition = [=](
-      HostViewUnmanaged<Scalar[NUM_LEV]> pt_dp) {
+      ExecViewUnmanaged<Scalar[NUM_LEV]> pt_dp) {
 
-    Real* start = reinterpret_cast<Real*>(pt_dp.data());
-    Real* end   = start+NUM_PHYSICAL_LEV;
-    HostViewUnmanaged<Real[NUM_PHYSICAL_LEV]> dp(start);
+    auto h_pt_dp = Kokkos::create_mirror_view(pt_dp);
+    Kokkos::deep_copy(h_pt_dp,pt_dp);
+    Real* data = reinterpret_cast<Real*>(h_pt_dp.data());
+    Real* data_end = data+NUM_PHYSICAL_LEV;
 
     // Put in monotonic order
-    std::sort(start, end);
+    std::sort(data, data_end);
 
     // Check for no repetitions
-    if (std::unique(start,end)!=end) {
+    if (std::unique(data,data_end)!=data_end) {
       return false;
     }
 
     // Fix minimum pressure
-    dp(0) = min_value;
+    data[0] = min_value;
 
     // Compute dp from p (we assume p(last interface)=max_pressure)
     for (int i=0; i<NUM_PHYSICAL_LEV-1; ++i) {
-      dp(i) = dp(i+1)-dp(i);
+      data[i] = data[i+1]-data[i];
     }
-    dp(NUM_PHYSICAL_LEV-1) = max_pressure-dp(NUM_PHYSICAL_LEV-1);
+    data[NUM_PHYSICAL_LEV-1] = max_pressure-data[NUM_PHYSICAL_LEV-1];
 
     // Check that dp>=dp_min
     const Real min_dp = std::numeric_limits<Real>::epsilon()*1000;
-    for (auto it=start; it!=end; ++it) {
+    for (auto it=data; it!=data_end; ++it) {
       if (*it < min_dp) {
         return false;
       }
     }
 
     // Fill remainder of last vector pack with quiet nan's
-    Real* alloc_end = start+NUM_LEV*VECTOR_SIZE;
-    for (auto it=end; it!=alloc_end; ++it) {
+    Real* alloc_end = data+NUM_LEV*VECTOR_SIZE;
+    for (auto it=data_end; it!=alloc_end; ++it) {
       *it = std::numeric_limits<Real>::quiet_NaN();
     }
 

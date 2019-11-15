@@ -426,7 +426,7 @@ public:
   template<int NUM_LEV_OUT, int NUM_LEV_IN = NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere (const KernelVariables &kv,
-                     const typename ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>::const_type& v,
+                     const typename ViewConst<ExecViewUnmanaged<Scalar [2][NP][NP][NUM_LEV_IN]>>::type& v,
                      const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& div_v) const
   {
     static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");

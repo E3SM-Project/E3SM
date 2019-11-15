@@ -29,10 +29,16 @@ struct RemapStateProvider {
     // so no need to create any buffer
   }
 
+  KOKKOS_INLINE_FUNCTION
   int num_states_remap() const { return 3;}
+
+  KOKKOS_INLINE_FUNCTION
   int num_states_preprocess() const { return 0;}
+
+  KOKKOS_INLINE_FUNCTION
   int num_states_postprocess() const { return 0;}
 
+  KOKKOS_INLINE_FUNCTION
   bool is_intrinsic_state (const int istate) const {
     // Sanity check
     assert (istate>=0 && istate<num_states_remap());
@@ -44,6 +50,7 @@ struct RemapStateProvider {
     return true;
   }
 
+  KOKKOS_INLINE_FUNCTION
   void preprocess_state (const KernelVariables& /* kv */,
                          const int /* istate */,
                          const int /* np1 */,
@@ -51,6 +58,7 @@ struct RemapStateProvider {
     // Nothing to do here for preqx
   }
 
+  KOKKOS_INLINE_FUNCTION
   void postprocess_state (const KernelVariables& /* kv */,
                           const int /* istate */,
                           const int /* np1 */,

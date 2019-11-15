@@ -55,46 +55,39 @@ void ElementsState::randomize(const int seed, const Real max_pressure, const Rea
 
   // This ensures the pressure in a single column is monotonically increasing
   // and has fixed upper and lower values
-  const auto make_pressure_partition = [=](
-      HostViewUnmanaged<Scalar[NUM_LEV]> pt_pressure) {
+  const auto make_pressure_partition = [=](ExecViewUnmanaged<Scalar[NUM_LEV]> d_pt_dp) {
+    const auto eps = std::numeric_limits<Real>::epsilon();
+    const auto nan = std::numeric_limits<Real>::quiet_NaN();
+    auto h_pt_dp = Kokkos::create_mirror_view(d_pt_dp);
+    Kokkos::deep_copy(h_pt_dp,d_pt_dp);
     // Put in monotonic order
-    std::sort(
-        reinterpret_cast<Real *>(pt_pressure.data()),
-        reinterpret_cast<Real *>(pt_pressure.data() + pt_pressure.size()));
+    auto data = reinterpret_cast<Real*>(h_pt_dp.data());
+    constexpr auto data_size = NUM_PHYSICAL_LEV;
+    std::sort(data,data+data_size);
     // Ensure none of the values are repeated
     for (int level = NUM_PHYSICAL_LEV - 1; level > 0; --level) {
-      const int prev_ilev = (level - 1) / VECTOR_SIZE;
-      const int prev_vlev = (level - 1) % VECTOR_SIZE;
-      const int cur_ilev = level / VECTOR_SIZE;
-      const int cur_vlev = level % VECTOR_SIZE;
-      // Need to try again if these are the same or if the thickness is too
-      // small
-      if (pt_pressure(cur_ilev)[cur_vlev] <=
-          pt_pressure(prev_ilev)[prev_vlev] +
-              min_value * std::numeric_limits<Real>::epsilon()) {
+      // Need to try again if these are the same or if the thickness is too small
+      if (data[level] <= (data[level-1] + min_value * eps))  {
         return false;
       }
     }
+
     // We know the minimum thickness of a layer is min_value * epsilon
     // (due to floating point), so set the bottom layer thickness to that,
     // and subtract that from the top layer
     // This ensures that the total sum is max_pressure
-    pt_pressure(0)[0] = min_value * std::numeric_limits<Real>::epsilon();
-    const int top_ilev = (NUM_PHYSICAL_LEV - 1) / VECTOR_SIZE;
-    const int top_vlev = (NUM_PHYSICAL_LEV - 1) % VECTOR_SIZE;
+    data[0] = min_value * std::numeric_limits<Real>::epsilon();
+    const int top_lev = NUM_PHYSICAL_LEV - 1;
     // Note that this may not actually change the top level pressure
     // This is okay, because we only need to approximately sum to max_pressure
-    pt_pressure(top_ilev)[top_vlev] = max_pressure - pt_pressure(0)[0];
-    for (int e_vlev = top_vlev + 1; e_vlev < VECTOR_SIZE; ++e_vlev) {
-      pt_pressure(top_ilev)[e_vlev] = std::numeric_limits<Real>::quiet_NaN();
+    data[top_lev] = max_pressure - data[0];
+    for (int extra_lev = top_lev + 1; extra_lev < NUM_LEV*VECTOR_SIZE; ++extra_lev) {
+      data[extra_lev] = nan;
     }
+
     // Now compute the interval thicknesses
     for (int level = NUM_PHYSICAL_LEV - 1; level > 0; --level) {
-      const int prev_ilev = (level - 1) / VECTOR_SIZE;
-      const int prev_vlev = (level - 1) % VECTOR_SIZE;
-      const int cur_ilev = level / VECTOR_SIZE;
-      const int cur_vlev = level % VECTOR_SIZE;
-      pt_pressure(cur_ilev)[cur_vlev] -= pt_pressure(prev_ilev)[prev_vlev];
+      data[level] -= data[level-1];
     }
     return true;
   };

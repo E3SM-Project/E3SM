@@ -73,8 +73,8 @@ void combine (const Scalar1& newVal, Scalar2& result,
   
 class ColumnOps {
 public:
-  using MIDPOINTS = ColInfo<NUM_PHYSICAL_LEV>;
-  using INTERFACES = ColInfo<NUM_INTERFACE_LEV>;
+  using MIDPOINTS  = ColInfo<NUM_PHYSICAL_LEV>;
+  using INTERFACES = ColInfo<NUM_PHYSICAL_LEV>;
 
   using DefaultMidProvider = ExecViewUnmanaged<const Scalar [NUM_LEV]>;
   using DefaultIntProvider = ExecViewUnmanaged<const Scalar [NUM_LEV_P]>;
@@ -103,8 +103,6 @@ public:
       "' would discard beta altogether.\n");
   }
 
-  ColumnOps () = default;
-
   template<CombineMode CM = CombineMode::Replace, typename InputProvider = DefaultIntProvider>
   KOKKOS_INLINE_FUNCTION
   static void compute_midpoint_values (const KernelVariables& kv,
@@ -124,8 +122,13 @@ public:
         combine<CM>(tmp, x_m(ilev), alpha, beta);
       });
     } else {
+      constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
+      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPackEnd;
+      constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
+      constexpr int LAST_INT_PACK_END = INTERFACES::LastPackEnd;
+
       // Try to use SIMD operations as much as possible.
-      for (int ilev=0; ilev<MIDPOINTS::LastPack; ++ilev) {
+      for (int ilev=0; ilev<LAST_MID_PACK; ++ilev) {
         Scalar tmp = x_i(ilev);
         tmp.shift_left(1);
         tmp[VECTOR_END] = x_i(ilev+1)[0];
@@ -135,12 +138,12 @@ public:
       }
 
       // Last level pack treated separately, since ilev+1 may throw depending if NUM_LEV=NUM_LEV_P
-      Scalar tmp = x_i(MIDPOINTS::LastPack);
+      Scalar tmp = x_i(LAST_MID_PACK);
       tmp.shift_left(1);
-      tmp[MIDPOINTS::LastVecEnd] = x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
-      tmp += x_i(MIDPOINTS::LastPack);
+      tmp[LAST_MID_PACK_END] = x_i(LAST_INT_PACK)[LAST_INT_PACK_END];
+      tmp += x_i(LAST_MID_PACK);
       tmp /= 2.0;
-      combine<CM>(tmp, x_m(MIDPOINTS::LastPack), alpha, beta);
+      combine<CM>(tmp, x_m(LAST_MID_PACK), alpha, beta);
     }
   }
 
@@ -168,6 +171,11 @@ public:
         combine<CM>(x_m(NUM_PHYSICAL_LEV-1), x_i(NUM_INTERFACE_LEV-1), alpha, beta);
       });
     } else {
+      constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
+      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPack;
+      constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
+      constexpr int LAST_INT_PACK_END = INTERFACES::LastPack;
+
       // Try to use SIMD operations as much as possible: the last NUM_LEV-1 packs are treated uniformly, and can be vectorized
       for (int ilev=1; ilev<NUM_LEV; ++ilev) {
         Scalar tmp = x_m(ilev);
@@ -188,7 +196,7 @@ public:
 
       // Fix top/bottom
       combine<CM>(x_m(0)[0], x_i(0)[0], alpha, beta);
-      combine<CM>(x_m(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd], x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd], alpha, beta);
+      combine<CM>(x_m(LAST_MID_PACK)[LAST_MID_PACK_END], x_i(LAST_INT_PACK)[LAST_INT_PACK_END], alpha, beta);
     }
   }
 
@@ -222,6 +230,11 @@ public:
         combine<CM>(x_m(NUM_INTERFACE_LEV-1),x_i(NUM_PHYSICAL_LEV-1),alpha,beta);
       });
     } else {
+      constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
+      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPack;
+      constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
+      constexpr int LAST_INT_PACK_END = INTERFACES::LastPack;
+
       // Try to use SIMD operations as much as possible: the last NUM_LEV-1 packs are treated uniformly, and can be vectorized
       for (int ilev=1; ilev<NUM_LEV; ++ilev) {
         Scalar tmp = x_m(ilev)*weights_m(ilev);
@@ -242,7 +255,7 @@ public:
 
       // Fix top/bottom
       combine<CM>(x_m(0)[0], x_i(0)[0], alpha, beta);
-      combine<CM>(x_m(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd],x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd],alpha,beta);
+      combine<CM>(x_m(LAST_MID_PACK)[LAST_MID_PACK_END],x_i(LAST_INT_PACK)[LAST_INT_PACK_END],alpha,beta);
     }
   }
 
@@ -266,8 +279,13 @@ public:
         combine<CM>(tmp,dx_m(ilev),alpha,beta);
       });
     } else {
+      constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
+      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPack;
+      constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
+      constexpr int LAST_INT_PACK_END = INTERFACES::LastPack;
+
       // Try to use SIMD operations as much as possible. First NUM_LEV-1 packs can be treated the same
-      for (int ilev=0; ilev<MIDPOINTS::LastPack; ++ilev) {
+      for (int ilev=0; ilev<LAST_MID_PACK; ++ilev) {
         Scalar tmp = x_i(ilev);
         tmp.shift_left(1);
         tmp[VECTOR_END] = x_i(ilev+1)[0];
@@ -275,10 +293,10 @@ public:
       }
 
       // Last pack does not necessarily have a next pack, so needs to be treated a part.
-      Scalar tmp = x_i(MIDPOINTS::LastPack);
+      Scalar tmp = x_i(LAST_MID_PACK);
       tmp.shift_left(1);
-      tmp[MIDPOINTS::LastVecEnd] = x_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
-      combine<CM>(tmp - x_i(MIDPOINTS::LastPack),dx_m(MIDPOINTS::LastPack),alpha,beta);
+      tmp[LAST_MID_PACK_END] = x_i(LAST_INT_PACK)[LAST_INT_PACK_END];
+      combine<CM>(tmp - x_i(LAST_MID_PACK),dx_m(LAST_MID_PACK),alpha,beta);
     }
   }
 
@@ -333,14 +351,17 @@ public:
       tmp.shift_right(1);
       combine<CM>(x_m(0) - tmp, dx_i(0), alpha, beta);
 
+      constexpr int LAST_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+      constexpr int LAST_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
+
       if (bcType==BCType::Zero) {
         // Fix the top/bottom levels
         combine<CM>(0.0, dx_i(0)[0], alpha, beta);
-        combine<CM>(0.0, dx_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd], alpha, beta);
+        combine<CM>(0.0, dx_i(LAST_PACK)[LAST_PACK_END], alpha, beta);
       } else if (bcType==BCType::Value) {
         // Fix the top/bottom levels
         combine<CM>(bcVal, dx_i(0)[0], alpha, beta);
-        combine<CM>(bcVal, dx_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd], alpha, beta);
+        combine<CM>(bcVal, dx_i(LAST_PACK)[LAST_PACK_END], alpha, beta);
       }
     }
   }
@@ -368,17 +389,18 @@ public:
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
                     const Real s0 = 0.0)
   {
+    constexpr int LAST_PACK     = ColInfo<LENGTH>::LastPack;
+    constexpr int LAST_PACK_END = ColInfo<LENGTH>::LastPackEnd;
+
     // It is easier to write two loops for Forward true/false. There's no runtime penalty,
     // since the if is evaluated at compile time, so no big deal.
-    constexpr int lastPack = ColInfo<LENGTH>::LastPack;
     if (Forward) {
       // Running integral
       Real integration = s0;
 
       for (int ilev = 0; ilev<ColInfo<LENGTH>::NumPacks; ++ilev) {
         // In all but the last level pack, the loop is over the whole vector
-        const int vec_end = ilev == lastPack ? ColInfo<LENGTH>::LastVecEnd
-                                             : VECTOR_END;
+        const int vec_end = (ilev == LAST_PACK ? LAST_PACK_END : VECTOR_END);
 
         auto input = input_provider(ilev);
         // Integrate
@@ -395,10 +417,9 @@ public:
       // Running integral
       Real integration = s0;
 
-      for (int ilev = lastPack; ilev >= 0; --ilev) {
+      for (int ilev = LAST_PACK; ilev >= 0; --ilev) {
         // In all but the last level pack, the loop is over the whole vector
-        const int vec_start = ilev == lastPack ? ColInfo<LENGTH>::LastVecEnd
-                                               : VECTOR_END;
+        const int vec_start = (ilev == LAST_PACK ? LAST_PACK_END : VECTOR_END);
 
         auto input = input_provider(ilev);
         // Integrate
@@ -480,9 +501,15 @@ public:
       // Tricky: likely, the provider does not provide input at NUM_INTEFACE_LEV-1. So we cast this scan sum
       //         into an inclusive sum over NUM_PHYSICAL_LEV, with output cropped to NUM_LEV packs.
       // Note: we also need to init sum at NUM_PHYSICAL_LEV-1
+
+      constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
+      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPackEnd;
+      constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
+      constexpr int LAST_INT_PACK_END = INTERFACES::LastPackEnd;
+
       ExecViewUnmanaged<Scalar[NUM_LEV]> sum_cropped(sum.data());
-      const Real s0 = sum(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
-      sum_cropped(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd] = s0;
+      const Real s0 = sum(LAST_INT_PACK)[LAST_INT_PACK_END];
+      sum_cropped(LAST_MID_PACK)[LAST_MID_PACK_END] = s0;
       column_scan_impl<ExecSpace,false,true,NUM_PHYSICAL_LEV>(kv,input_provider,sum_cropped,s0);
     }
   }

@@ -63,10 +63,16 @@ struct RemapStateProvider {
     m_temp = decltype(m_temp)("temporary",nteams);
   }
 
+  KOKKOS_INLINE_FUNCTION
   int num_states_remap() const { return 5;}
+
+  KOKKOS_INLINE_FUNCTION
   int num_states_preprocess() const { return 2;}
+
+  KOKKOS_INLINE_FUNCTION
   int num_states_postprocess() const { return 2;}
 
+  KOKKOS_INLINE_FUNCTION
   bool is_intrinsic_state (const int istate) const {
     assert (istate>=0 && istate<num_states_remap());
 
@@ -79,6 +85,7 @@ struct RemapStateProvider {
     return false;
   }
 
+  KOKKOS_INLINE_FUNCTION
   void preprocess_state (const KernelVariables& kv,
                          const int istate,
                          const int np1,
@@ -127,6 +134,7 @@ struct RemapStateProvider {
     }
   }
 
+  KOKKOS_INLINE_FUNCTION
   void postprocess_state (const KernelVariables& kv,
                           const int istate,
                           const int np1,
@@ -148,14 +156,18 @@ struct RemapStateProvider {
 
         // Since u changed, update w_i b.c. at the surface
         Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+          constexpr int LAST_MID_PACK     = InfoM::LastPack;
+          constexpr int LAST_MID_PACK_END = InfoM::LastPack;
+          constexpr int LAST_INT_PACK     = InfoI::LastPack;
+          constexpr int LAST_INT_PACK_END = InfoI::LastPack;
           constexpr auto g = PhysicalConstants::g;
 
           const auto gradphis = Homme::subview(m_geometry.m_gradphis,kv.ie);
           const auto v        = Homme::subview(m_state.m_v,kv.ie,np1);
 
-          w_i(InfoI::LastPack)[InfoI::LastVecEnd] = 
-                (v(0,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd]*gradphis(0,igp,jgp) +
-                 v(1,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd]*gradphis(1,igp,jgp)) / g;
+          w_i(LAST_INT_PACK)[LAST_INT_PACK_END] = 
+                (v(0,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END]*gradphis(0,igp,jgp) +
+                 v(1,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END]*gradphis(1,igp,jgp)) / g;
         });
       });
     } else if (istate==1) {
@@ -208,7 +220,7 @@ struct RemapStateProvider {
     case 4:
       return Homme::subview(m_state.m_v, kv.ie, np1, 1);
     default:
-      Errors::runtime_abort("RemapStateProvider: invalid variable index.\n");
+      Kokkos::abort("RemapStateProvider: invalid variable index.\n");
       return ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>();
     }
   }

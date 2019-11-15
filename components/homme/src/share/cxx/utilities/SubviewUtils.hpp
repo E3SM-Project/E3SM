@@ -354,6 +354,7 @@ subview(ViewType<ScalarType ** [DIM1][DIM2][DIM3][DIM4], MemSpace,
 
 // Force a subview to be const
 template<typename View, typename... Ints>
+KOKKOS_INLINE_FUNCTION
 auto
 subviewConst(const View& v, const Ints... idx) ->
   // The compile will match the correct method above.

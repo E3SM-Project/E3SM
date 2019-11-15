@@ -56,8 +56,8 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
     auto n0 = tl.n0;
     constexpr auto LAST_LEV_P = ColInfo<NUM_INTERFACE_LEV>::LastPack;
     constexpr auto LAST_LEV   = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
-    constexpr auto LAST_INTERFACE_VEC_IDX = ColInfo<NUM_INTERFACE_LEV>::LastVecEnd;
-    constexpr auto LAST_MIDPOINT_VEC_IDX  = ColInfo<NUM_PHYSICAL_LEV>::LastVecEnd;
+    constexpr auto LAST_INTERFACE_VEC_IDX = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
+    constexpr auto LAST_MIDPOINT_VEC_IDX  = ColInfo<NUM_PHYSICAL_LEV>::LastPackEnd;
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,NP*NP*e.m_geometry.num_elems()),
                          KOKKOS_LAMBDA(const int idx) {
       const int ie  = idx / (NP*NP);

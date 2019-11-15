@@ -391,6 +391,10 @@ struct CaarFunctorImpl {
   void operator()(const TagPostExchange&, const int idx) const {
     using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
     using InfoI = ColInfo<NUM_INTERFACE_LEV>;
+    constexpr int LAST_MID_PACK     = InfoM::LastPack;
+    constexpr int LAST_MID_PACK_END = InfoM::LastPackEnd;
+    constexpr int LAST_INT_PACK     = InfoM::LastPack;
+    constexpr int LAST_INT_PACK_END = InfoM::LastPackEnd;
 
     // Note: make sure you run this only in non-hydro mode
     // KernelVariables kv(team);
@@ -398,9 +402,9 @@ struct CaarFunctorImpl {
     const int igp = (idx / NP) % NP;
     const int jgp =  idx % NP;
 
-    auto& u = m_state.m_v(ie,m_data.np1,0,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd];
-    auto& v = m_state.m_v(ie,m_data.np1,1,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd];
-    auto& w = m_state.m_w_i(ie,m_data.np1,igp,jgp,InfoI::LastPack)[InfoI::LastVecEnd];
+    auto& u = m_state.m_v(ie,m_data.np1,0,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END];
+    auto& v = m_state.m_v(ie,m_data.np1,1,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END];
+    auto& w = m_state.m_w_i(ie,m_data.np1,igp,jgp,LAST_INT_PACK)[LAST_INT_PACK_END];
     constexpr auto g = PhysicalConstants::g;
     const auto& phis_x = m_geometry.m_gradphis(ie,0,igp,jgp);
     const auto& phis_y = m_geometry.m_gradphis(ie,1,igp,jgp);
@@ -420,7 +424,7 @@ struct CaarFunctorImpl {
     //       exchange the last level, since phi=phis at surface.
     //       So to make sure we're not messing up, set phi back to phis on last interface
     // Note: this is *independent* of whether NUM_LEV==NUM_LEV_P or not.
-    auto& phi = m_state.m_phinh_i(ie,m_data.np1,igp,jgp,InfoI::LastPack)[InfoI::LastVecEnd];
+    auto& phi = m_state.m_phinh_i(ie,m_data.np1,igp,jgp,LAST_INT_PACK)[LAST_INT_PACK_END];
     phi = m_geometry.m_phis(ie,igp,jgp);
   }
 
@@ -452,7 +456,7 @@ struct CaarFunctorImpl {
       Kokkos::Min<Real,ExecSpace> reducer(min_diff);
       Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                               [&](const int k,Real& result) {
-        result = std::min(result,diff_as_real(k));
+        result = result<=diff_as_real(k) ? result : diff_as_real(k);
       }, reducer);
 
       if (min_diff<0) {
@@ -963,7 +967,7 @@ struct CaarFunctorImpl {
       Kokkos::single(Kokkos::PerThread(kv.team),[&](){
         using Info = ColInfo<NUM_INTERFACE_LEV>;
         constexpr int ilev = Info::LastPack;
-        constexpr int ivec = Info::LastVecEnd;
+        constexpr int ivec = Info::LastPackEnd;
 
         // Note: we only have 1 physical entry in the pack,
         // so we may as well operate on the Real level

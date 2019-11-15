@@ -52,8 +52,10 @@ struct RemapStateAndThicknessProvider<false> {
     , m_eta_dot_dpdn(elements.m_derived.m_eta_dot_dpdn)
   {}
 
+  KOKKOS_INLINE_FUNCTION
   int num_states_remap () const { return 0; }
 
+  KOKKOS_INLINE_FUNCTION
   bool is_intrinsic_state (const int /* istate */) const {
     // We should never reach this part
     assert(false);
@@ -71,7 +73,7 @@ struct RemapStateAndThicknessProvider<false> {
   KOKKOS_INLINE_FUNCTION
   ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>
   get_state(const KernelVariables &/* kv */, int /*np1*/, int /*var*/) const {
-    Errors::runtime_abort("Error! Asked for state in an rsplit=0 remap.\n");
+    Kokkos::abort("Error! Asked for state in an rsplit=0 remap.\n");
 
     // Dummy, to silence compiler warnings
     return ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>();
@@ -154,8 +156,10 @@ RemapStateAndThicknessProvider<true> {
     m_state_provider.allocate_buffers(m_policy_pre);
   }
 
+  KOKKOS_INLINE_FUNCTION
   int num_states_remap () const { return m_state_provider.num_states_remap(); }
 
+  KOKKOS_INLINE_FUNCTION
   bool is_intrinsic_state (const int istate) const {
     return m_state_provider.is_intrinsic_state(istate);
   }
@@ -478,7 +482,8 @@ private:
     kv.team_barrier();
   }
 
-  KOKKOS_INLINE_FUNCTION void compute_extrinsic_state(
+  KOKKOS_INLINE_FUNCTION
+  void compute_extrinsic_state(
       KernelVariables &kv,
       ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> src_layer_thickness,
       ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]> state_remap) const {

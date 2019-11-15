@@ -67,38 +67,18 @@ private:
   template<int LENGTH>
   struct Helper {
     static constexpr int NumPacks   = (LENGTH + VECTOR_SIZE - 1) / VECTOR_SIZE;
-    static constexpr int LastVecLen = LENGTH - (NumPacks-1)*VECTOR_SIZE;
+    static constexpr int LastPackLen = LENGTH - (NumPacks-1)*VECTOR_SIZE;
 
-    static constexpr int LastPack   = NumPacks - 1;
-    static constexpr int LastVecEnd = LastVecLen - 1;
+    static constexpr int LastPack    = NumPacks - 1;
+    static constexpr int LastPackEnd = LastPackLen - 1;
   };
 public:
-  static constexpr int NumPacks   = Helper<PHYSICAL_LENGTH>::NumPacks;
-  static constexpr int LastPack   = Helper<PHYSICAL_LENGTH>::LastPack;
-  static constexpr int LastVecLen = Helper<PHYSICAL_LENGTH>::LastVecLen;
-  static constexpr int LastVecEnd = Helper<PHYSICAL_LENGTH>::LastVecEnd;
 
-  static constexpr int PenultLevPackIdx = Helper<PHYSICAL_LENGTH-1>::NumPacks;
-  static constexpr int PenultLevVecIdx  = Helper<PHYSICAL_LENGTH-1>::LastVecEnd;
+  static constexpr int NumPacks    = Helper<PHYSICAL_LENGTH>::NumPacks   ;
+  static constexpr int LastPack    = Helper<PHYSICAL_LENGTH>::LastPack   ;
+  static constexpr int LastPackLen = Helper<PHYSICAL_LENGTH>::LastPackLen;
+  static constexpr int LastPackEnd = Helper<PHYSICAL_LENGTH>::LastPackEnd;
 };
-
-// TODO: remove the following lines if we start requiring C++17.
-//       The reason is that passing one of the constexpr variables to
-//       a function that odr-use them (e.g., takes them by reference)
-//       forces a namespace definition of the variable to be available.
-//       C++17 drops this requirement.
-template<int PL>
-const int ColInfo<PL>::NumPacks;
-template<int PL>
-const int ColInfo<PL>::LastPack;
-template<int PL>
-const int ColInfo<PL>::LastVecLen;
-template<int PL>
-const int ColInfo<PL>::LastVecEnd;
-template<int PL>
-const int ColInfo<PL>::PenultLevPackIdx;
-template<int PL>
-const int ColInfo<PL>::PenultLevVecIdx;
 
 } // namespace TinMan
 

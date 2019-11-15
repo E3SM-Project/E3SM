@@ -19,7 +19,7 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
 
   constexpr auto LAST_LEV_P = ColInfo<NUM_INTERFACE_LEV>::LastPack;
   constexpr auto LAST_LEV   = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
-  constexpr auto LAST_MIDPOINT_VEC_IDX  = ColInfo<NUM_PHYSICAL_LEV>::LastVecEnd;
+  constexpr auto LAST_LEV_PACK_IDX  = ColInfo<NUM_PHYSICAL_LEV>::LastPackEnd;
 
   constexpr int num_elems = 10;
 
@@ -135,7 +135,7 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
           }
 
           // Last interface should be equal to the last midpoint
-          REQUIRE(int_out(NUM_INTERFACE_LEV-1) == h_midpoints_field_in(ie,igp,jgp,LAST_LEV)[LAST_MIDPOINT_VEC_IDX]);
+          REQUIRE(int_out(NUM_INTERFACE_LEV-1) == h_midpoints_field_in(ie,igp,jgp,LAST_LEV)[LAST_LEV_PACK_IDX]);
         }
       }
     }
@@ -500,7 +500,9 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
   // Backward midpoints to interfaces
   SECTION("bwd_mid_to_int_field") {
     const Real s0 = pdf(engine);
-    using Specs = ColInfo<NUM_INTERFACE_LEV>;
+    using Info = ColInfo<NUM_INTERFACE_LEV>;
+    constexpr int LAST_PACK     = Info::LastPack;
+    constexpr int LAST_PACK_END = Info::LastPackEnd;
     Kokkos::deep_copy(d_interface_field_out,0.0);
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
@@ -513,7 +515,7 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
         auto in  = Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp);
         auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
 
-        out(Specs::LastPack)[Specs::LastVecEnd] = s0;
+        out(LAST_PACK)[LAST_PACK_END] = s0;
         ColumnOps::column_scan_mid_to_int<false>(kv, in, out);
       });
     });
@@ -600,7 +602,9 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
   // Backward midpoints to interfaces
   SECTION("bwd_mid_to_int_provider") {
     const Real s0 = pdf(engine);
-    using Specs = ColInfo<NUM_INTERFACE_LEV>;
+    using Info = ColInfo<NUM_INTERFACE_LEV>;
+    constexpr int LAST_PACK     = Info::LastPack;
+    constexpr int LAST_PACK_END = Info::LastPackEnd;
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
@@ -615,7 +619,7 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
         };
         auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
 
-        out(Specs::LastPack)[Specs::LastVecEnd] = s0;
+        out(LAST_PACK)[LAST_PACK_END] = s0;
         ColumnOps::column_scan_mid_to_int<false>(kv, provider, out);
       });
     });

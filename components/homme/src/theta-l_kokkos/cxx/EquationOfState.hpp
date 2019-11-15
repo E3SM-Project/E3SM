@@ -15,8 +15,10 @@ namespace Homme {
 class EquationOfState {
 public:
 
-  using MIDPOINTS = ColInfo<NUM_PHYSICAL_LEV>;
-  using INTERFACES = ColInfo<NUM_INTERFACE_LEV>;
+  const int LAST_MID_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+  const int LAST_MID_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
+  const int LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+  const int LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
 
   EquationOfState () = default;
 
@@ -98,10 +100,10 @@ public:
       // Top: pnh_i = pi_i = hyai(0)*ps0.
       // Bottom: approximate with hydrostatic, so that dpnh_dp_i=1
       dpnh_dp_i(0)[0] = 2*(pnh(0)[0] - m_hvcoord.hybrid_ai(0)*m_hvcoord.ps0)/dp_i(0)[0];
-      const Real pnh_last = pnh(MIDPOINTS::LastPack)[MIDPOINTS::LastVecEnd];
-      const Real dp_last = dp_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd];
+      const Real pnh_last = pnh(LAST_MID_PACK)[LAST_MID_PACK_END];
+      const Real dp_last = dp_i(LAST_INT_PACK)[LAST_INT_PACK_END];
       const Real pnh_i_last = pnh_last + dp_last/2;
-      dpnh_dp_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = 2*(pnh_i_last - pnh_last)/dp_last;
+      dpnh_dp_i(LAST_INT_PACK)[LAST_INT_PACK_END] = 2*(pnh_i_last - pnh_last)/dp_last;
     }
   }
 
@@ -136,7 +138,7 @@ public:
                       const ExecViewUnmanaged<      Scalar [NUM_LEV_P]>& phi_i) const
   {
     // Init phi on surface with phis
-    phi_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = phis;
+    phi_i(LAST_INT_PACK)[LAST_INT_PACK_END] = phis;
 
     // Use ColumnOps to do the scan sum
     auto integrand_provider = [&](const int ilev)->Scalar {
@@ -180,7 +182,7 @@ public:
                       const ExecViewUnmanaged<      Scalar [NUM_LEV_P]>& phi_i) const
   {
     // Init phi on surface with phis
-    phi_i(INTERFACES::LastPack)[INTERFACES::LastVecEnd] = phis;
+    phi_i(LAST_INT_PACK)[LAST_INT_PACK_END] = phis;
 
     // Use ColumnOps to do the scan sum
     auto integrand_provider = [&](const int ilev)->Scalar {

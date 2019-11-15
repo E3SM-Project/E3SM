@@ -311,7 +311,7 @@ TEST_CASE("eos", "eos") {
     for (int ie=0; ie<num_elems; ++ie) {
       for (int igp=0; igp<NP; ++igp) {
         for (int jgp=0; jgp<NP; ++ jgp) {
-          h_phis(ie,igp,jgp) = h_phi_i_in(ie,igp,jgp,int(Helper::LastPack))[Helper::LastVecEnd];
+          h_phis(ie,igp,jgp) = h_phi_i_in(ie,igp,jgp,int(Helper::LastPack))[Helper::LastPackEnd];
         }
       }
     }

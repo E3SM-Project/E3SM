@@ -262,14 +262,18 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
       Kokkos::single(Kokkos::PerThread(team),[&](){
         using InfoI = ColInfo<NUM_INTERFACE_LEV>;
         using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
+        constexpr int LAST_MID_PACK     = InfoM::LastPack;
+        constexpr int LAST_MID_PACK_END = InfoM::LastPack;
+        constexpr int LAST_INT_PACK     = InfoI::LastPack;
+        constexpr int LAST_INT_PACK_END = InfoI::LastPack;
         constexpr Real g = PhysicalConstants::g;
 
         const auto& grad_x = geo.m_gradphis(ie,0,igp,jgp);
         const auto& grad_y = geo.m_gradphis(ie,1,igp,jgp);
-        const auto& u = state.m_v(ie,np1,0,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd];
-        const auto& v = state.m_v(ie,np1,1,igp,jgp,InfoM::LastPack)[InfoM::LastVecEnd];
+        const auto& u = state.m_v(ie,np1,0,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END];
+        const auto& v = state.m_v(ie,np1,1,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END];
 
-        auto& w = state.m_w_i(ie,np1,igp,jgp,InfoI::LastPack)[InfoI::LastVecEnd];
+        auto& w = state.m_w_i(ie,np1,igp,jgp,LAST_INT_PACK)[LAST_INT_PACK_END];
 
         w = (u*grad_x+v*grad_y) / g;
       });
