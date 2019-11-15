@@ -1213,7 +1213,7 @@ contains
 
     nf = gfr%nphys
     call gfr_g2f_scalar(ie, gll_metdet, dp_g*g, f)
-    f = f(:nf,:nf,:)/dp_f(:nf,:nf,:)
+    f(:nf,:nf,:) = f(:nf,:nf,:)/dp_f(:nf,:nf,:)
   end subroutine gfr_g2f_scalar_dp
 
   subroutine gfr_g2f_vector(gfr, ie, elem, u_g, v_g, u_f, v_f)
@@ -2124,12 +2124,12 @@ contains
        qmin_g = minval(q1_g(:,:,k))
        qmax_g = maxval(q1_g(:,:,k))
        den = gfr%tolfac*max(1e-10_real_kind, maxval(abs(q0_g(:,:,k))))
+       mass0 = sum(elem(ie)%spheremp*dp(:,:,k)*q0_g(:,:,k))
+       mass1 = sum(elem(ie)%spheremp*dp(:,:,k)*q1_g(:,:,k))
        if (qmin_g < qmin_f - 50*eps*den .or. qmax_g > qmax_f + 50*eps*den) then
           write(iulog,*) 'gfr> f2g mixing ratio limits:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &
                qmin_f, qmin_g-qmin_f, qmax_g-qmax_f, qmax_f, mass0, mass1, 'ERROR'
        end if
-       mass0 = sum(elem(ie)%spheremp*dp(:,:,k)*q0_g(:,:,k))
-       mass1 = sum(elem(ie)%spheremp*dp(:,:,k)*q1_g(:,:,k))
        den = sum(elem(ie)%spheremp*dp(:,:,k)*maxval(abs(q0_g(:,:,k))))
        if (abs(mass1 - mass0) > gfr%tolfac*20*eps*den) then
           write(iulog,*) 'gfr> f2g mixing ratio mass:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &
