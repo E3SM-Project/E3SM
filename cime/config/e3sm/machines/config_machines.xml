@@ -519,6 +519,38 @@
     <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
   </machine>
 
+
+    <machine MACH="ANAG-workstation">
+    <DESC>LBL ANAG Linux workstation or laptop</DESC>
+    <NODENAME_REGEX>none</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>gnu</COMPILERS>
+    <MPILIBS>openmpi,mpich</MPILIBS>
+    <CIME_OUTPUT_ROOT>$ENV{HOME}/projects/acme/scratch</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>$ENV{HOME}/projects/acme/cesm-inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>$ENV{HOME}/projects/acme/ptclm-data</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$ENV{HOME}/projects/acme/scratch/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>$ENV{HOME}/projects/acme/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>$CCSMROOT/tools/cprnc/build/cprnc</CCSM_CPRNC>
+    <GMAKE_J>4</GMAKE_J>
+    <TESTS>e3sm_developer</TESTS>
+    <BATCH_SYSTEM>none</BATCH_SYSTEM>
+    <SUPPORTED_BY>jayesh at mcs dot anl dot gov</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>2</MAX_MPITASKS_PER_NODE>
+    <mpirun mpilib="default">
+      <executable>mpirun</executable>
+      <arguments>
+        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+      </arguments>
+    </mpirun>
+    <module_system type="none"/>
+    <RUNDIR>$ENV{HOME}/projects/acme/scratch/$CASE/run</RUNDIR>
+    <EXEROOT>$ENV{HOME}/projects/acme/scratch/$CASE/bld</EXEROOT>
+    <!-- cmake -DCMAKE_Fortran_COMPILER=/opt/local/bin/mpif90-mpich-gcc48 -DHDF5_DIR=/opt/local -DNetcdf_INCLUDE_DIR=/opt/local/include .. -->
+    <!--    <GMAKE>make</GMAKE> <- this doesn't actually work! -->
+  </machine>
+
   <machine MACH="melvin">
     <DESC>Linux workstation for Jenkins testing</DESC>
     <NODENAME_REGEX>(melvin|watson|s999964|climate|penn|sems)</NODENAME_REGEX>

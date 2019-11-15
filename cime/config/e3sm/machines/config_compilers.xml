@@ -2207,4 +2207,25 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </SLIBS>
 </compiler>
 
+<compiler MACH="ANAG-workstation" COMPILER="gnu">
+  <BISICLES_PATH>
+  $ENV{HOME}/code/BISICLES/E3SM-interface/E3SM-interface/libgnu</BISICLES_PATH> 
+  <ALBANY_PATH>/global/project/projectdirs/acme/software/AlbanyTrilinos20190823/albany-build/install</ALBANY_PATH>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <FFLAGS>
+    <base> -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent -fimf-use-svml </base>
+    <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align </append>
+  </FFLAGS>
+  <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
+  <SCC> icc </SCC>
+  <SCXX> icpc </SCXX>
+  <SFC> ifort </SFC>
+  <SLIBS>
+    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
+    <append> -mkl -lpthread </append>
+  </SLIBS>
+</compiler>
+
 </config_compilers>
