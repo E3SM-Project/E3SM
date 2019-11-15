@@ -445,7 +445,7 @@ struct CaarFunctorImpl {
       // Check if the minimum dp3d in this column is blow a certain threshold
       auto dp = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
       auto& dp0 = m_hvcoord.dp0;
-      auto diff = Homme::subview(m_buffers.vort,kv.ie,igp,jgp);
+      auto diff = Homme::subview(m_buffers.vort,kv.team_idx,igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
         diff(ilev) = (dp(ilev) - dp3d_thresh*dp0(ilev))*spheremp;
