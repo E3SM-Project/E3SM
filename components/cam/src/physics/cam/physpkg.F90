@@ -27,6 +27,7 @@ module physpkg
   use constituents,     only: pcnst, cnst_name, cnst_get_ind
   use camsrfexch,       only: cam_out_t, cam_in_t
 
+  use cam_history,      only: outfld
   use cam_control_mod,  only: ideal_phys, adiabatic
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
   use zm_conv,          only: trigmem
@@ -1056,21 +1057,21 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 
        call t_startf ('cal_nudging_tend')
 
-!       !--------------------------------------------------------
-!       ! Generate Nudging data if needed. This data is used 
-!       ! for nudging to CLIM experiment the output here is 
-!       ! to make the output nudging data and calculation of 
-!       ! nudging tendency  in the same time level
-!       !-------------------------------------------------------
-!       if (Nudge_Data)  then
-!        do c=begchunk, endchunk
-!          call outfld('T_ndg   ',phys_state_ndg(c)%t        , pcols   ,c   )
-!          call outfld('PS_ndg  ',phys_state_ndg(c)%ps       , pcols   ,c   )
-!          call outfld('U_ndg   ',phys_state_ndg(c)%u        , pcols   ,c   )
-!          call outfld('V_ndg   ',phys_state_ndg(c)%v        , pcols   ,c   )
-!          call outfld('Q_ndg   ',phys_state_ndg(c)%q(1,1,1) , pcols   ,c   )
-!        end do
-!       end if
+       !--------------------------------------------------------
+       ! Generate Nudging data if needed. This data is used 
+       ! for nudging to CLIM experiment the output here is 
+       ! to make the output nudging data and calculation of 
+       ! nudging tendency  in the same time level
+       !-------------------------------------------------------
+       if (Nudge_Data)  then
+        do c=begchunk, endchunk
+          call outfld('T_ndg   ',phys_state_ndg(c)%t        , pcols   ,c   )
+          call outfld('PS_ndg  ',phys_state_ndg(c)%ps       , pcols   ,c   )
+          call outfld('U_ndg   ',phys_state_ndg(c)%u        , pcols   ,c   )
+          call outfld('V_ndg   ',phys_state_ndg(c)%v        , pcols   ,c   )
+          call outfld('Q_ndg   ',phys_state_ndg(c)%q(1,1,1) , pcols   ,c   )
+        end do
+       end if
 
        !--------------------------------------------------------
        ! Update Nudging values, if needed
@@ -2726,20 +2727,7 @@ end if ! l_tracer_aero
     !===================================================
     ! save the state to calculate nudging tendency 
     !===================================================
-    if (Nudge_Model) call physics_state_copy(state,state_ndg)
-    !--------------------------------------------------------
-    ! Generate Nudging data if needed. This data is used 
-    ! for nudging to CLIM experiment the output here is 
-    ! to make the output nudging data and calculation of 
-    ! nudging tendency  in the same time level
-     !-------------------------------------------------------
-    if (Nudge_Data)  then
-      call outfld('T_ndg   ',state_ndg%t               , pcols   ,lchnk   )
-      call outfld('PS_ndg  ',state_ndg%ps              , pcols   ,lchnk   )
-      call outfld('U_ndg   ',state_ndg%u               , pcols   ,lchnk   )
-      call outfld('V_ndg   ',state_ndg%v               , pcols   ,lchnk   )
-      call outfld('Q_ndg   ',state_ndg%q(1,1, 1)       , pcols   ,lchnk   )
-    end if
+    if (Nudge_Model.or.Nudge_Data) call physics_state_copy(state,state_ndg)
 
 
 if (l_rad) then
