@@ -73,6 +73,8 @@ ifeq ($(strip $(USE_KOKKOS)), TRUE)
   USE_CXX = TRUE
 endif
 
+SLIBS ?= $(USER_SLIBS)
+
 ifeq ($(strip $(USE_FMS)), TRUE)
   SLIBS += -lfms
 endif
@@ -92,7 +94,7 @@ include $(CASEROOT)/Macros.make
 # Unless DEBUG mode is enabled, use NDEBUG to turn off assert statements.
 ifeq ($(strip $(DEBUG)),TRUE)
   # e3sm still has components that cannot build with -DDEBUG
-  ifeq ($(CIME_MODEL),cesm)
+  ifneq ($(CIME_MODEL),e3sm)
     CPPDEFS += -DDEBUG
   endif
 else
@@ -848,7 +850,7 @@ test_esmf: test_esmf.o
 #-------------------------------------------------------------------------------
 # create list of component libraries - hard-wired for current ccsm components
 #-------------------------------------------------------------------------------
-ifeq ($(CIME_MODEL),cesm)
+ifneq ($(CIME_MODEL),e3sm)
   ifeq ($(COMP_LND),clm)
     USE_SHARED_CLM=TRUE
   else

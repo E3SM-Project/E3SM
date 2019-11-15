@@ -119,6 +119,10 @@ def _build_model(build_threaded, exeroot, incroot, complist,
         file_build = os.path.join(exeroot, "{}.bldlog.{}".format(cime_model, lid))
 
         config_dir = os.path.join(cimeroot, "src", "drivers", comp_interface, "cime_config")
+        if not os.path.isdir(config_dir):
+            if cime_model == "ufs":
+                return logs
+            expect(False, "Config directory not found {}".format(config_dir))
         bldroot = os.path.join(exeroot, "cpl", "obj")
         if not os.path.isdir(bldroot):
             os.makedirs(bldroot)
@@ -328,9 +332,12 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         cmd = os.path.join(config_dir, "buildlib")
         expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
 
+    compile_cmd = "MODEL={} {} {} {} {} ".format(compclass, cmd, caseroot, libroot, bldroot)
+    if get_model() != "ufs":
+        compile_cmd = "SMP={} ".format(stringify_bool(smp))+compile_cmd
+
     with open(file_build, "w") as fd:
-        stat = run_cmd("MODEL={} SMP={} {} {} {} {} "
-                       .format(compclass, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
+        stat = run_cmd(compile_cmd,
                        from_dir=bldroot,  arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
 
@@ -463,8 +470,9 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     # Load some params into env
     os.environ["BUILD_THREADED"]       = stringify_bool(build_threaded)
+    cime_model = get_model()
 
-    if get_model() == "e3sm" and mach == "titan" and compiler == "pgiacc":
+    if cime_model == "e3sm" and mach == "titan" and compiler == "pgiacc":
         case.set_value("CAM_TARGET", "preqx_acc")
 
     # This is a timestamp for the build , not the same as the testid,
@@ -510,7 +518,7 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     t2 = time.time()
     logs = []
 
-    if not model_only:
+    if not model_only and cime_model != "ufs":
         logs = _build_libraries(case, exeroot, sharedpath, caseroot,
                                 cimeroot, libroot, lid, compiler, buildlist, comp_interface)
 
