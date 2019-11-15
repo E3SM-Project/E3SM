@@ -9,6 +9,7 @@ semi_lagrange_cdr_alg = 20
 semi_lagrange_cdr_check = .true.
 dt_remap_factor = 2
 dt_tracer_factor = 6
+se_tstep = 300
 se_ftype = 4
 se_limiter_option = 9
 semi_lagrange_nearest_point_lev = 256

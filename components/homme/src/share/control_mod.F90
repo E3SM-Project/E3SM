@@ -386,7 +386,7 @@ contains
        if (split_specified .and. (qsplit /= qsplit_prev .or. rsplit /= rsplit_prev) .and. &
             par%masterproc .and. .not. silent_in) then
           write(iulog,'(a,i2,a,i2,a,i2,a,i2,a)') &
-               'dt_remap_factor and dt_tracer_factor were specified, changing qsplit from ', &
+               'dt_remap_factor and dt_tracer_factor were specified; changing qsplit from ', &
                qsplit_prev, ' to ', qsplit, ' and rsplit from ', rsplit_prev, ' to ', rsplit, '.'
        end if
     end if
@@ -460,6 +460,7 @@ contains
              return
           end if
        else
+          print *,'um>',par%rank,par%masterproc,silent_in,nsplit,dtime,tstep
           if (par%masterproc .and. .not. silent_in) then
              write(iulog,*) 'If dtime is set to >0, then either nsplit or tstep must be >0.'
           end if

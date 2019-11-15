@@ -108,7 +108,7 @@ module namelist_mod
   use thread_mod,     only: nthreads, omp_set_num_threads, omp_get_max_threads, vthreads
   use dimensions_mod, only: ne, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
 #ifdef CAM
-  use time_mod,       only: nsplit, smooth, phys_tscale
+  use time_mod,       only: tstep, nsplit, smooth, phys_tscale
 #else
   use time_mod,       only: tstep, ndays,nmax, nendstep,secpday, smooth, secphr, nsplit, phys_tscale
 #endif
@@ -182,7 +182,7 @@ module namelist_mod
     integer :: i, ii, j
     integer  :: ierr
     character(len=80) :: errstr, arg
-    real(kind=real_kind) :: dt_max
+    real(kind=real_kind) :: dt_max, se_tstep
 #ifdef CAM
     character(len=MAX_STRING_LEN) :: se_topology
     integer :: se_partmethod
@@ -272,7 +272,8 @@ module namelist_mod
 
 #ifdef CAM
     namelist  /ctl_nl/ SE_NSPLIT,  &                ! number of dynamics steps per physics timestep
-      se_phys_tscale
+      se_phys_tscale, &
+      se_tstep
 #else
     namelist /ctl_nl/test_case,       &             ! test case idenitfier
       sub_case,        &             ! generic test case parameter
@@ -282,7 +283,7 @@ module namelist_mod
       restartfile,     &             ! name of the restart file for INPUT
       restartdir,      &             ! name of the restart directory for OUTPUT
       runtype,         &
-      tstep,           &             ! tracer time step
+      tstep,           &             ! dynamics time step
       moisture
     ! control parameters for dcmip stand-alone tests
     namelist /ctl_nl/     &
@@ -366,6 +367,7 @@ module namelist_mod
     se_topology = 'none'
     se_phys_tscale=0
     se_nsplit = 1
+    se_tstep = -1
     qsize = qsize_d
 #else
     ndays         = 0
@@ -654,6 +656,16 @@ module namelist_mod
     phys_tscale     = se_phys_tscale
     limiter_option  = se_limiter_option
     nsplit          = se_nsplit
+    tstep           = se_tstep
+    if (se_tstep > 0) then
+       if (par%masterproc .and. se_nsplit > 0) then
+          write(iulog,'(a,i3,a)') &
+               'se_tstep and se_nsplit were specified; changing se_nsplit from ', &
+               se_nsplit, ' to -1.'
+       end if
+       se_nsplit = -1
+       nsplit = -1
+    end if
 #else
     if(test_case == "dcmip2012_test4") then
        rearth = rearth/dcmip4_X
@@ -661,7 +673,6 @@ module namelist_mod
     endif
 
     call MPI_bcast(pertlim,         1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(tstep,           1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nmax,            1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(NTHREADS,        1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(ndays,           1, MPIinteger_t, par%root,par%comm,ierr)
@@ -685,6 +696,7 @@ module namelist_mod
     call MPI_bcast(smooth,          1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(phys_tscale,     1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(NSPLIT,          1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(tstep,           1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(limiter_option,  1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(theta_advect_form,1, MPIinteger_t, par%root,par%comm,ierr)
@@ -998,6 +1010,7 @@ module namelist_mod
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
 #ifdef CAM
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
+       write(iulog,*)"readnl: se_tstep         = ", tstep
        write(iulog,*)"readnl: se_ftype          = ",ftype
        write(iulog,*)"readnl: se_limiter_option = ",limiter_option
 #else

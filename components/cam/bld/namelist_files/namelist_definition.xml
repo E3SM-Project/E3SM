@@ -5887,6 +5887,11 @@ If rsplit=0, vertically lagrangian code is off.
 Default: Set by build-namelist.
 </entry>
 
+<entry id="se_tstep" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Dynamics timestep.
+</entry>
+
 <entry id="dt_tracer_factor" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 Tracer advection is done every dt_tracer_factor dynamics timesteps.
