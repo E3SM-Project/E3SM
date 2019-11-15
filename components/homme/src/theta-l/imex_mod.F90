@@ -115,7 +115,7 @@ contains
 
     real (kind=real_kind) :: wgdtmax
     integer :: maxiter
-    real*8 :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm,dt3
+    real*8 :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm,dt3,alpha
 
     integer :: i,j,k,l,ie,info(np,np),nt
     integer :: nsafe
@@ -211,11 +211,8 @@ contains
        call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk1')
        elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
             (1.0-dpnh_dp_i(:,:,1:nlev))
-       do k=nlev,1,-1 ! scan
-          delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
-       enddo
        do k=1,nlev
-          Fn(:,:,k) = delta_phi(:,:,k) - dt2*g*(elem(ie)%state%w_i(:,:,k,np1))
+          Fn(:,:,k) = (phi_np1(:,:,k) - phi_n0(:,:,k)) - dt2*g*(elem(ie)%state%w_i(:,:,k,np1))
        enddo
 
 
@@ -248,29 +245,32 @@ contains
                 enddo
                 dphi(i,j,nlev)=dphi(i,j,nlev) + (0 - x(nlev,i,j) )
 
+                alpha = 0
                 do nsafe=1,8
                    if (all(dphi(i,j,1:nlev) < 0 ))  exit
                    ! remove the last netwon increment, try reduced increment
+                   alpha = 1.0_real_kind/(2**nsafe)
                    do k=1,nlev-1
-                      dphi(i,j,k)=dphi(i,j,k) - (x(k+1,i,j)-x(k,i,j))/(2**nsafe)
+                      dphi(i,j,k)=dphi(i,j,k) - (x(k+1,i,j)-x(k,i,j))*alpha
                    enddo
-                   dphi(i,j,nlev)=dphi(i,j,nlev) - (0-x(nlev,i,j))/(2**nsafe)
+                   dphi(i,j,nlev)=dphi(i,j,nlev) - (0-x(nlev,i,j))*alpha
                 enddo
                 if (nsafe>1) write(iulog,*) 'WARNING:IMEX reducing newton increment, nsafe=',nsafe
                 ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
+
+                phi_np1(i,j,:) = phi_np1(i,j,:) + (1 - alpha)*x(:,i,j)
              end do
+          end do
+          do k=1,nlev
+             dphi(:,:,k) = phi_np1(:,:,k+1) - phi_np1(:,:,k)
           end do
           call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk2')
 
           ! update approximate solution of w
           elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
                (1.0-dpnh_dp_i(:,:,1:nlev))
-
-          do k=nlev,1,-1  ! scan
-             delta_phi(:,:,k) = delta_phi(:,:,k+1) - ( dphi(:,:,k)-dphi_n0(:,:,k))
-          enddo
           do k=1,nlev
-             Fn(:,:,k) = delta_phi(:,:,k)  - dt2*g*(elem(ie)%state%w_i(:,:,k,np1))
+             Fn(:,:,k) = (phi_np1(:,:,k) - phi_n0(:,:,k)) - dt2*g*(elem(ie)%state%w_i(:,:,k,np1))
           enddo
           reserr=maxval(abs(Fn))/wgdtmax   ! residual error in phi tendency, relative to source term gw
 
@@ -289,11 +289,6 @@ contains
           !if (reserr < restol) exit
           if (deltaerr<deltatol) exit
        end do ! end do for the do while loop
-
-       ! final phi_np1
-       do k=nlev,1,-1  ! scan
-          phi_np1(:,:,k) = phi_np1(:,:,k+1)-dphi(:,:,k)
-       enddo
 
        ! keep track of running  max iteraitons and max error (reset after each diagnostics output)
        max_itercnt=max(itercount,max_itercnt)
