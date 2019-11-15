@@ -55,13 +55,13 @@ foreach(ITEM IN LISTS COSP_SOURCES)
   list(FIND COSP_NOAUTO ${ITEM} ITEM_IS_NO_AUTO)
 
   if (ITEM IN_LIST COSP_FIXED)
-    set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FIXEDFLAGS}")
+    e3sm_add_flags("${ITEM}" "${FIXEDFLAGS}")
   else()
-    set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FREEFLAGS}")
+    e3sm_add_flags("${ITEM}" "${FREEFLAGS}")
   endif()
 
   if (NOT ITEM IN_LIST COSP_NOAUTO)
-    set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " ${FC_AUTO_R8}")
+    e3sm_add_flags("${ITEM}" "${FC_AUTO_R8}")
   endif()
 endforeach()
 

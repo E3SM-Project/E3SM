@@ -44,7 +44,7 @@ def buildlib(bldroot, installpath, case):
 ###############################################################################
     caseroot = case.get_value("CASEROOT")
     gptl_dir = os.path.join(case.get_value("CIMEROOT"), "src", "share", "timing")
-    gmake_opts = "-f {gptl}/Makefile install -C {bldroot} MACFILE={macfile} MODEL=gptl GPTL_DIR={gptl} GPTL_LIBDIR={bldroot}"\
+    gmake_opts = "-f {gptl}/Makefile install -C {bldroot} MACFILE={macfile} MODEL=gptl COMP_NAME=gptl GPTL_DIR={gptl} GPTL_LIBDIR={bldroot}"\
         " SHAREDPATH={install} {stdargs} "\
         .format(gptl=gptl_dir, bldroot=bldroot, macfile=os.path.join(caseroot,"Macros.make"),
                 install=installpath, stdargs=get_standard_makefile_args(case, shared_lib=True))
