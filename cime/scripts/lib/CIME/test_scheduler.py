@@ -146,7 +146,7 @@ class TestScheduler(object):
         self._machobj = Machines(machine=machine_name)
 
         if get_model() == "e3sm":
-            self._model_build_cost = (self._machobj.get_value("GMAKE_J") * 2) / 3 + 1
+            self._model_build_cost = int((self._machobj.get_value("GMAKE_J") * 2) / 3) + 1
         else:
             self._model_build_cost = 4
 
