@@ -246,7 +246,7 @@ contains
                 do k=1,nlev-1
                    dphi(i,j,k)=dphi(i,j,k) + x(k+1,i,j)-x(k,i,j)
                 enddo
-                dphi(i,j,nlev)=dphi(i,j,nlev) + (0 - x(k,i,j) )
+                dphi(i,j,nlev)=dphi(i,j,nlev) + (0 - x(nlev,i,j) )
 
                 do nsafe=1,8
                    if (all(dphi(i,j,1:nlev) < 0 ))  exit
@@ -254,7 +254,7 @@ contains
                    do k=1,nlev-1
                       dphi(i,j,k)=dphi(i,j,k) - (x(k+1,i,j)-x(k,i,j))/(2**nsafe)
                    enddo
-                   dphi(i,j,nlev)=dphi(i,j,nlev) - (0-x(k,i,j))/(2**nsafe)
+                   dphi(i,j,nlev)=dphi(i,j,nlev) - (0-x(nlev,i,j))/(2**nsafe)
                 enddo
                 if (nsafe>1) write(iulog,*) 'WARNING:IMEX reducing newton increment, nsafe=',nsafe
                 ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
