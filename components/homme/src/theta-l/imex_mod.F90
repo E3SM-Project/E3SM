@@ -130,12 +130,12 @@ contains
 
     ! dirk settings
     maxiter=20
-    deltatol=1e-13  ! exit if newton increment < deltatol
-    !restol=1e-13    ! exit if residual < restol  
+    deltatol=1.0e-13_real_kind  ! exit if newton increment < deltatol
+    !restol=1.0e-13_real_kind    ! exit if residual < restol  
     ! condition number and thus residual depends strongly on dt and min(dz)
     ! more work needed to exit iteration early based on residual error
     delta_phi(:,:,nlevp)=0
-    min_rcond=1e20
+    min_rcond=1.0e20_real_kind
 
     do ie=nets,nete
        w_n0 = elem(ie)%state%w_i(:,:,:,np1)
@@ -516,7 +516,7 @@ contains
        minjacerr = max( minval(jacerrorvec(:))/maxval(norminfJ0)   ,minjacerr)
        !     minjacerr = minval(jacerrorvec(:))
     end do
-    if (minjacerr > 1e-3) then 
+    if (minjacerr > 1.0e-3_real_kind) then 
        write(iulog,*)'WARNING:  Analytic and exact Jacobian differ by ', minjacerr
        write(iulog,*)'Please check that the IMEX exact Jacobian in eos.F90 is actually exact'
     else
