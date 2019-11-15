@@ -393,8 +393,8 @@ struct CaarFunctorImpl {
     using InfoI = ColInfo<NUM_INTERFACE_LEV>;
     constexpr int LAST_MID_PACK     = InfoM::LastPack;
     constexpr int LAST_MID_PACK_END = InfoM::LastPackEnd;
-    constexpr int LAST_INT_PACK     = InfoM::LastPack;
-    constexpr int LAST_INT_PACK_END = InfoM::LastPackEnd;
+    constexpr int LAST_INT_PACK     = InfoI::LastPack;
+    constexpr int LAST_INT_PACK_END = InfoI::LastPackEnd;
 
     // Note: make sure you run this only in non-hydro mode
     // KernelVariables kv(team);

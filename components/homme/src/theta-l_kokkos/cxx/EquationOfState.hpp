@@ -15,8 +15,8 @@ namespace Homme {
 class EquationOfState {
 public:
 
-  const int LAST_MID_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
-  const int LAST_MID_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
+  const int LAST_MID_PACK     = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
+  const int LAST_MID_PACK_END = ColInfo<NUM_PHYSICAL_LEV>::LastPackEnd;
   const int LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
   const int LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
 
@@ -103,6 +103,7 @@ public:
       const Real pnh_last = pnh(LAST_MID_PACK)[LAST_MID_PACK_END];
       const Real dp_last = dp_i(LAST_INT_PACK)[LAST_INT_PACK_END];
       const Real pnh_i_last = pnh_last + dp_last/2;
+
       dpnh_dp_i(LAST_INT_PACK)[LAST_INT_PACK_END] = 2*(pnh_i_last - pnh_last)/dp_last;
     }
   }

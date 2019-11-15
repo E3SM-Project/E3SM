@@ -114,6 +114,11 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagStates&, const TeamMember& team) const {
+    constexpr int LAST_MID_PACK     = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
+    constexpr int LAST_MID_PACK_END = ColInfo<NUM_PHYSICAL_LEV>::LastPackEnd;
+    constexpr int LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+    constexpr int LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
+
     KernelVariables kv(team);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -329,6 +334,9 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const TagTracersPost&, const TeamMember& team) const {
+    constexpr int LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+    constexpr int LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
+
     KernelVariables kv(team);
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -410,10 +418,6 @@ public:
   }
 
 private:
-  const int LAST_MID_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
-  const int LAST_MID_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
-  const int LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
-  const int LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
 
   ElementsState     m_state;
   ElementsForcing   m_forcing;
