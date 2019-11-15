@@ -631,6 +631,12 @@ end subroutine convect_shallow_init_cnst
       evapcsh     = 0._r8
       snow        = 0._r8
 
+      call pbuf_get_field(pbuf, sh_flxprc_idx, flxprec)
+      call pbuf_get_field(pbuf, sh_flxsnw_idx, flxsnow)
+
+      flxprec(:ncol,:) = 0._r8
+      flxsnow(:ncol,:) = 0._r8
+
    case('Hack') ! Hack scheme
                                    
       lq(:) = .TRUE.
