@@ -66,9 +66,9 @@ def parse_command_line(args, description):
         parser.add_argument("--use-old", action="store_true",
                             help="Use old Makefile build system (not cmake)")
 
-    parser.add_argument("--use-gmake", action="store_true",
-                        help="Use gmake backed for CMake (instead of ninja). "
-                        "The gmake backend does not always correctly scan fortran dependencies")
+        parser.add_argument("--use-gmake", action="store_true",
+                            help="Use gmake backed for CMake (instead of ninja). "
+                            "The gmake backend does not always correctly scan fortran dependencies")
 
     parser.add_argument("--dry-run", action="store_true",
                         help="Just print the cmake and ninja commands.")
@@ -117,6 +117,10 @@ def parse_command_line(args, description):
     cleanlist = args.clean if args.clean is None or len(args.clean) else comps
     buildlist = None if args.build is None or len(args.build) == 0 else args.build
 
+    if get_model() != "e3sm":
+        args.use_old   = False
+        args.use_gmake = False
+
     return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, not args.skip_provenance_check, args.use_old, args.use_gmake, args.dry_run
 
 ###############################################################################
@@ -128,6 +132,10 @@ def _main_func(description):
     success = True
     with Case(caseroot, read_only=False) as case:
         testname = case.get_value('TESTCASE')
+
+        if get_model() == "e3sm" and case.get_value("COMPILER") == "pgi" and not use_gmake:
+            logging.warning("ninja CMake backend does not work with pgi, switching to gmake backend")
+            use_gmake = True
 
         if cleanlist is not None or clean_all or clean_depends is not None:
             build.clean(case, cleanlist=cleanlist, clean_all=clean_all, clean_depends=clean_depends)
