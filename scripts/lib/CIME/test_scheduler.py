@@ -201,10 +201,12 @@ class TestScheduler(object):
         self._baseline_cmp_name = baseline_cmp_name # Implies comparison should be done if not None
         self._baseline_gen_name = baseline_gen_name # Implies generation should be done if not None
 
-        # Compute baseline_root. Do NOT resolve it since it could depend on other
-        # settings (compiler, project) that might not necessarily be defaulted.
+        # Compute baseline_root. Need to set some properties on machobj in order for
+        # the baseline_root to resolve correctly.
+        self._machobj.set_value("COMPILER", self._compiler)
+        self._machobj.set_value("PROJECT", self._project)
         self._baseline_root = os.path.abspath(baseline_root) if baseline_root is not None \
-                              else self._machobj.get_value("BASELINE_ROOT", resolved=False)
+                              else self._machobj.get_value("BASELINE_ROOT")
 
         if baseline_cmp_name or baseline_gen_name:
             if self._baseline_cmp_name:
