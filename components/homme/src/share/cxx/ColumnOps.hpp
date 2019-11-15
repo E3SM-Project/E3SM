@@ -74,7 +74,7 @@ void combine (const Scalar1& newVal, Scalar2& result,
 class ColumnOps {
 public:
   using MIDPOINTS  = ColInfo<NUM_PHYSICAL_LEV>;
-  using INTERFACES = ColInfo<NUM_PHYSICAL_LEV>;
+  using INTERFACES = ColInfo<NUM_INTERFACE_LEV>;
 
   using DefaultMidProvider = ExecViewUnmanaged<const Scalar [NUM_LEV]>;
   using DefaultIntProvider = ExecViewUnmanaged<const Scalar [NUM_LEV_P]>;
@@ -172,9 +172,9 @@ public:
       });
     } else {
       constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
-      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPack;
+      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPackEnd;
       constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
-      constexpr int LAST_INT_PACK_END = INTERFACES::LastPack;
+      constexpr int LAST_INT_PACK_END = INTERFACES::LastPackEnd;
 
       // Try to use SIMD operations as much as possible: the last NUM_LEV-1 packs are treated uniformly, and can be vectorized
       for (int ilev=1; ilev<NUM_LEV; ++ilev) {
@@ -231,9 +231,9 @@ public:
       });
     } else {
       constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
-      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPack;
+      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPackEnd;
       constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
-      constexpr int LAST_INT_PACK_END = INTERFACES::LastPack;
+      constexpr int LAST_INT_PACK_END = INTERFACES::LastPackEnd;
 
       // Try to use SIMD operations as much as possible: the last NUM_LEV-1 packs are treated uniformly, and can be vectorized
       for (int ilev=1; ilev<NUM_LEV; ++ilev) {
@@ -280,9 +280,9 @@ public:
       });
     } else {
       constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
-      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPack;
+      constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPackEnd;
       constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
-      constexpr int LAST_INT_PACK_END = INTERFACES::LastPack;
+      constexpr int LAST_INT_PACK_END = INTERFACES::LastPackEnd;
 
       // Try to use SIMD operations as much as possible. First NUM_LEV-1 packs can be treated the same
       for (int ilev=0; ilev<LAST_MID_PACK; ++ilev) {
