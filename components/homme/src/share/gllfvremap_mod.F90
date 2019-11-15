@@ -128,6 +128,11 @@ module gllfvremap_mod
      module procedure gfr_fv_phys_to_dyn_dom_mt
   end interface gfr_fv_phys_to_dyn
 
+  interface gfr_dyn_to_fv_phys_topo
+     module procedure gfr_dyn_to_fv_phys_topo_hybrid
+     module procedure gfr_dyn_to_fv_phys_topo_dom_mt
+  end interface gfr_dyn_to_fv_phys_topo
+
   interface gfr_fv_phys_to_dyn_topo
      module procedure gfr_fv_phys_to_dyn_topo_hybrid
      module procedure gfr_fv_phys_to_dyn_topo_dom_mt
@@ -445,7 +450,7 @@ contains
     end do
   end subroutine gfr_fv_phys_to_dyn_hybrid
 
-  subroutine gfr_dyn_to_fv_phys_topo(hybrid, elem, nets, nete, phis)
+  subroutine gfr_dyn_to_fv_phys_topo_hybrid(hybrid, elem, nets, nete, phis)
     ! If needed, remap topography data defined on the GLL grid to the
     ! FV grid. The intended EAM configuration is to use topography
     ! data on the FV grid, so this routine is unlikely to be used.
@@ -460,7 +465,7 @@ contains
     do ie = nets,nete
        call gfr_dyn_to_fv_phys_topo_elem(elem, ie, phis(:,ie))
     end do
-  end subroutine gfr_dyn_to_fv_phys_topo
+  end subroutine gfr_dyn_to_fv_phys_topo_hybrid
 
   subroutine gfr_fv_phys_to_dyn_topo_hybrid(hybrid, elem, nets, nete, phis)
     ! Remap FV topography data to the GLL grid. Prevent new
@@ -498,10 +503,8 @@ contains
        end if
     end do
 
-    if (hybrid%par%dynproc) then
-       call gfr_f2g_mixing_ratios_he(hybrid, nets, nete, gfr%qmin(:,:,nets:nete), &
-            gfr%qmax(:,:,nets:nete))
-    end if
+    call gfr_f2g_mixing_ratios_he(hybrid, nets, nete, gfr%qmin(:,:,nets:nete), &
+         gfr%qmax(:,:,nets:nete))
 
     if (nf > 1 .or. .not. gfr%boost_pg1) then
        do ie = nets,nete
@@ -545,6 +548,7 @@ contains
     type (hybrid_t) :: hybrid
     integer :: nets, nete
 
+    if (.not. par%dynproc) return
 #ifdef HORIZ_OPENMP
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
@@ -575,6 +579,7 @@ contains
     type (hybrid_t) :: hybrid
     integer :: nets, nete
 
+    if (.not. par%dynproc) return
 #ifdef HORIZ_OPENMP
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
@@ -584,6 +589,32 @@ contains
     !$omp end parallel
 #endif
   end subroutine gfr_fv_phys_to_dyn_dom_mt
+
+  subroutine gfr_dyn_to_fv_phys_topo_dom_mt(par, dom_mt, elem, phis)
+    ! Wrapper to the hybrid-threading main routine.
+
+    use parallel_mod, only: parallel_t
+    use domain_mod, only: domain1d_t
+    use thread_mod, only: hthreads
+
+    type (parallel_t), intent(in) :: par
+    type (domain1d_t), intent(in) :: dom_mt(:)
+    type (element_t), intent(in) :: elem(:)
+    real(kind=real_kind), intent(out) :: phis(:,:)
+
+    type (hybrid_t) :: hybrid
+    integer :: nets, nete
+
+    if (.not. par%dynproc) return
+#ifdef HORIZ_OPENMP
+    !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
+#endif
+    call gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
+    call gfr_dyn_to_fv_phys_topo_hybrid(hybrid, elem, nets, nete, phis)
+#ifdef HORIZ_OPENMP
+    !$omp end parallel
+#endif
+  end subroutine gfr_dyn_to_fv_phys_topo_dom_mt
 
   subroutine gfr_fv_phys_to_dyn_topo_dom_mt(par, dom_mt, elem, phis)
     ! Wrapper to the hybrid-threading main routine.
@@ -600,6 +631,7 @@ contains
     type (hybrid_t) :: hybrid
     integer :: nets, nete
 
+    if (.not. par%dynproc) return
 #ifdef HORIZ_OPENMP
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
@@ -1290,7 +1322,7 @@ contains
     integer, intent(in) :: nets, nete
     real(kind=real_kind), intent(inout) :: qmin(:,:,:), qmax(:,:,:)
 
-    call neighbor_minmax(hybrid, edgeAdvQminmax, nets, nete, qmin, qmax)
+    if (hybrid%par%dynproc) call neighbor_minmax(hybrid, edgeAdvQminmax, nets, nete, qmin, qmax)
   end subroutine gfr_f2g_mixing_ratios_he
 
   subroutine gfr_f2g_dss(hybrid, elem, nets, nete)
@@ -1325,7 +1357,7 @@ contains
        end do
        call edgeVpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FT, nlev, (qsize+2)*nlev, npack)
     end do
-    call bndry_exchangeV(hybrid, edge_g)
+    if (hybrid%par%dynproc) call bndry_exchangeV(hybrid, edge_g)
     do ie = nets, nete
        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%derived%FQ, qsize*nlev, 0, npack)
        do q = 1,qsize
@@ -1689,6 +1721,7 @@ contains
     type (hybrid_t) :: hybrid
     integer :: nets, nete
     
+    if (.not. par%dynproc) return
 #ifdef HORIZ_OPENMP
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
@@ -1713,6 +1746,7 @@ contains
     type (hybrid_t) :: hybrid
     integer :: nets, nete
     
+    if (.not. par%dynproc) return
 #ifdef HORIZ_OPENMP
     !$omp parallel num_threads(hthreads), default(shared), private(nets,nete,hybrid)
 #endif
@@ -1764,7 +1798,7 @@ contains
     integer, intent(out) :: nets, nete
 
     integer :: ithr
-
+    
     ithr = omp_get_thread_num()
     nets = dom_mt(ithr+1)%start
     nete = dom_mt(ithr+1)%end
@@ -2068,6 +2102,8 @@ contains
     ! Purposely construct our own hybrid object to test gfr_hybrid_create.
     type (hybrid_t) :: hybrid
     integer :: nets, nete
+
+    if (.not. par%dynproc) return
 
     nf = gfr%nphys
     nf2 = nf*nf

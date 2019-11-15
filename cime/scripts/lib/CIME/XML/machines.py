@@ -23,6 +23,7 @@ class Machines(GenericXML):
         self.machine_node = None
         self.machine = None
         self.machines_dir = None
+        self.custom_settings = {}
         schema = None
         if files is None:
             files = Files()
@@ -171,6 +172,7 @@ class Machines(GenericXML):
             self.machine = machine
 
         return machine
+
     #pylint: disable=arguments-differ
     def get_value(self, name, attributes=None, resolved=True, subgroup=None):
         """
@@ -179,6 +181,9 @@ class Machines(GenericXML):
         expect(self.machine_node is not None, "Machine object has no machine defined")
         expect(subgroup is None, "This class does not support subgroups")
         value = None
+
+        if name in self.custom_settings:
+            return self.custom_settings[name]
 
         # COMPILER and MPILIB are special, if called without arguments they get the default value from the
         # COMPILERS and MPILIBS lists in the file.
@@ -190,6 +195,7 @@ class Machines(GenericXML):
             node = self.get_optional_child(name, root=self.machine_node, attributes=attributes)
             if node is not None:
                 value = self.text(node)
+
         if resolved:
             if value is not None:
                 value = self.get_resolved_value(value)
@@ -298,14 +304,8 @@ class Machines(GenericXML):
         return None
 
     def set_value(self, vid, value, subgroup=None, ignore_type=True):
-        tmproot = self.root
-        self.root = self.machine_node
-        #pylint: disable=assignment-from-no-return
-        result = super(Machines, self).set_value(vid, value, subgroup=subgroup,
-                                               ignore_type=ignore_type)
-        self.root = tmproot
-        return result
-
+        # A temporary cache only
+        self.custom_settings[vid] = value
 
     def print_values(self):
         # write out machines
