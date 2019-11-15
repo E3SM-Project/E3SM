@@ -1,5 +1,5 @@
 	<dims>
-		<dim name="nLayerVolWeightedAvgFields" definition="30" units="unitless"
+		<dim name="nLayerVolWeightedAvgFields" definition="36" units="unitless"
 			 description="A number equal to or greater than the number of var arrays in the layerVolumeWeightedAverageAM var structure below."
 		/>
 		<dim name="nOceanRegionsTmp" definition="7" units="unitless"

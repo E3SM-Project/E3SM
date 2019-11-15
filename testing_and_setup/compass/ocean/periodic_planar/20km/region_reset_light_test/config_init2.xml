@@ -4,14 +4,13 @@
 	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<option name="config_init_configuration">'periodic_planar'</option>
 		<option name="config_vert_levels">100</option>
 		<option name="config_ocean_run_mode">'init'</option>
 		<option name="config_write_cull_cell_mask">.false.</option>
-		<option name="config_vertical_grid">'100layerACMEv1'</option>
+		<option name="config_vertical_grid">'100layerE3SMv1'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">

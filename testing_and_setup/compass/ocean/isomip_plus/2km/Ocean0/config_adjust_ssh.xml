@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <config case="adjust_ssh">
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../init_step2/ocean.nc" dest="init0.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<add_link source_path="script_core_dir" source="iterative_ssh_landIcePressure_scripts/iterate_init.py" dest="iterate_init.py"/>
 	<add_link source_path="script_core_dir" source="iterative_ssh_landIcePressure_scripts/plot_cart_ssh_landIcePressure.py" dest="plot_cart_ssh_landIcePressure.py"/>
@@ -13,6 +13,8 @@
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="template_adjust_ssh.xml" path_base="script_configuration_dir"/>
+		<option name="config_pio_num_iotasks">1</option>
+		<option name="config_pio_stride">4</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
@@ -25,7 +27,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
 		<step executable="./iterate_init.py">

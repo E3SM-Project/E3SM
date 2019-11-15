@@ -6,6 +6,7 @@
 		<option name="config_use_activeTracers_surface_bulk_forcing">.false.</option>
 		<option name="config_use_bulk_thickness_flux">.false.</option>
 		<option name="config_AM_globalStats_enable">.false.</option>
+		<option name="config_AM_timeSeriesStatsMonthly_enable">.false.</option>
 	</namelist>
 	<streams>
 		<stream name="mesh">

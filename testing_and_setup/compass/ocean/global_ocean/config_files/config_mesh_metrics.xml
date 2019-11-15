@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<config case="mesh_metrics">
+
+	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
+	<add_link source_path="bathymetry_database" source="SRTM15_plus/earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS/inject_bathymetry.py" dest="inject_bathymetry.py"/>
+
+	<run_script name="run.py">
+		<step executable="MpasMeshConverter.x">
+			<argument flag="mesh.nc"></argument>
+			<argument flag="mesh_with_metrics.nc"></argument>
+		</step>
+
+		<step executable="./inject_bathymetry.py">
+			<argument flag="mesh_with_metrics.nc"></argument>
+		</step>
+
+		<step executable="paraview_vtk_field_extractor.py">
+			<argument flag="-l"></argument>
+			<argument flag="-f"></argument>
+			<argument flag="mesh.nc"></argument>
+			<argument flag="-o"></argument>
+			<argument flag="hex_mesh"></argument>
+			<argument flag="-v"></argument>
+			<argument flag="areaCell"></argument>
+			<argument flag="--ignore_time"></argument>
+		</step>
+	</run_script>
+
+</config>

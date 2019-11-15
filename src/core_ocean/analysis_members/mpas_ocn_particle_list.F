@@ -18,8 +18,8 @@
 !-----------------------------------------------------------------------
 #define COMMA ,
 #ifdef MPAS_DEBUG
-#define LIGHT_DEBUG_WRITE(Z)   print *, Z
-#define LIGHT_DEBUG_ALL_WRITE(Z)  print *, Z
+#define LIGHT_DEBUG_WRITE(Z) ! print *, Z
+#define LIGHT_DEBUG_ALL_WRITE(Z) ! print *, Z
 #else
 #define LIGHT_DEBUG_WRITE(Z)  ! print *, Z
 #define LIGHT_DEBUG_ALL_WRITE(Z) ! print *, Z
@@ -3478,7 +3478,7 @@ end subroutine allocate_list_particlelists !}}}
 #ifdef _MPI
      !call MPI_Barrier(domain % dminfo % comm)
 #endif
-     
+
      numReals = 0
      numInts = 0
      call mpas_pool_get_subpool(domain % blocklist % structs, 'lagrPartTrackHalo', lagrPartTrackPool)
@@ -3486,9 +3486,9 @@ end subroutine allocate_list_particlelists !}}}
      do while(mpas_pool_get_next_member(lagrPartTrackPool, dimItr))
        if (dimItr % memberType == MPAS_POOL_FIELD) then
          !print *,  'transfering ', trim(dimItr % memberName)
-         if (dimItr % dataType == MPAS_POOL_REAL) then 
+         if (dimItr % dataType == MPAS_POOL_REAL) then
            numReals = numReals + 1
-         elseif (dimItr % dataType == MPAS_POOL_INTEGER) then 
+         elseif (dimItr % dataType == MPAS_POOL_INTEGER) then
            numInts = numInts + 1
          end if
        else
@@ -3496,13 +3496,13 @@ end subroutine allocate_list_particlelists !}}}
          write(message, *) "Different type expected in registry for key ", trim(dimItr % memberName), &
                            " of type", dimItr % memberType, "in halo data for communication-- don't know what to do!"
          LIGHT_DEBUG_ALL_WRITE(message)
-       end if 
+       end if
      end do
 
 ! NOTE, code assumes that memberName is consistent between processors in terms of pool interation
 !#ifdef mpas_debug
 !     ! verify that membername order is the same between processors
-!     call mpas_log_write('printing particle pool contents (verify that membername consistent between processors):') 
+!     call mpas_log_write('printing particle pool contents (verify that membername consistent between processors):')
 !     call mpas_pool_print_summary(lagrPartTrackPool, mpas_pool_field, .true.)
 !#endif
 
@@ -3524,7 +3524,7 @@ end subroutine allocate_list_particlelists !}}}
      allocate(array1DRealSend(numProcs), array1DRealRecv(numProcs))
      ! recv
      j = 1
-     do i=1,numProcs ! {{{ 
+     do i=1,numProcs ! {{{
        if(nPartRecv(i) > 0) then
          allocate(array1DRealRecv(i)%val(nPartRecv(i)*numReals))
 #ifdef _MPI
@@ -3607,12 +3607,12 @@ end subroutine allocate_list_particlelists !}}}
 
      deallocate(array1DRealSend, array1DRealRecv)
      !!!! end REALS !!!! ! }}}
-     
+
      !!!!! begin INTS !!!! ! {{{
      allocate(array1DIntSend(numProcs), array1DIntRecv(numProcs))
      ! recv
      j = 1
-     do i=1,numProcs ! {{{ 
+     do i=1,numProcs ! {{{
        if(nPartRecv(i) > 0) then
          allocate(array1DIntRecv(i)%val(nPartRecv(i)*numInts))
 #ifdef _MPI
@@ -3695,7 +3695,7 @@ end subroutine allocate_list_particlelists !}}}
 
      deallocate(array1DIntSend, array1DIntRecv)
      !!!! end INTS !!!! ! }}}
-     
+
      deallocate(recvRequestID, sendRequestID)
      LIGHT_DEBUG_WRITE('Finished primary MPI communication for halo')
 

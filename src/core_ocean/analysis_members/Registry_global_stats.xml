@@ -127,6 +127,9 @@
 			<var name="seaIceFreshWaterFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
 				 description="Minimum global value of seaIceFreshWaterFlux in ocean cells."
 			/>
+			<var name="icebergFreshWaterFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum global value of icebergFreshWaterFlux in ocean cells."
+			/>
 			<var name="riverRunoffFluxMin" array_group="mins" units="kg m^{-2} s^{-1}"
 				 description="Minimum global value of riverRunoffFlux in ocean cells."
 			/>
@@ -222,6 +225,9 @@
 			/>
 			<var name="seaIceFreshWaterFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
 				 description="Maximum global value of seaIceFreshWaterFlux in ocean cells."
+			/>
+			<var name="icebergFreshWaterFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
+				 description="Maximum global value of icebergFreshWaterFlux in ocean cells."
 			/>
 			<var name="riverRunoffFluxMax" array_group="maxes" units="kg m^{-2} s^{-1}"
 				 description="Maximum global value of riverRunoffFlux in ocean cells."
@@ -319,6 +325,9 @@
 			<var name="seaIceFreshWaterFluxSum" array_group="sums" units="kg s^{-1}"
 				 description="Accumulated global value of seaIceFreshWaterFlux in ocean cells."
 			/>
+			<var name="icebergFreshWaterFluxSum" array_group="sums" units="kg s^{-1}"
+				 description="Accumulated global value of icebergFreshWaterFlux in ocean cells."
+			/>
 			<var name="riverRunoffFluxSum" array_group="sums" units="kg s^{-1}"
 				 description="Accumulated global value of riverRunoffFlux in ocean cells."
 			/>
@@ -414,6 +423,9 @@
 			/>
 			<var name="seaIceFreshWaterFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
 				 description="Global root mean square value of seaIceFreshWaterFlux in ocean cells."
+			/>
+			<var name="icebergFreshWaterFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
+				 description="Global root mean square value of icebergFreshWaterFlux in ocean cells."
 			/>
 			<var name="riverRunoffFluxRms" array_group="rms" units="kg m^{-2} s^{-1}"
 				 description="Global root mean square value of riverRunoffFlux in ocean cells."
@@ -511,6 +523,9 @@
 			<var name="seaIceFreshWaterFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
 				 description="Average value of seaIceFreshWaterFlux in ocean cells."
 			/>
+			<var name="icebergFreshWaterFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Average value of icebergFreshWaterFlux in ocean cells."
+			/>
 			<var name="riverRunoffFluxAvg" array_group="avg" units="kg m^{-2} s^{-1}"
 				 description="Average value of riverRunoffFlux in ocean cells."
 			/>
@@ -607,6 +622,9 @@
 			<var name="seaIceFreshWaterFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
 				 description="Minimum vertical sum of seaIceFreshWaterFlux in ocean cells."
 			/>
+			<var name="icebergFreshWaterFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
+				 description="Minimum vertical sum of icebergFreshWaterFlux in ocean cells."
+			/>
 			<var name="riverRunoffFluxMinVertSum" array_group="vertSumMin" units="kg m^{-2} s^{-1}"
 				 description="Minimum vertical sum of riverRunoffFlux in ocean cells."
 			/>
@@ -702,6 +720,9 @@
 			/>
 			<var name="seaIceFreshWaterFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
 				 description="Maximum vertical sum of seaIceFreshWaterFlux in ocean cells."
+			/>
+			<var name="icebergFreshWaterFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
+				 description="Maximum vertical sum of icebergFreshWaterFlux in ocean cells."
 			/>
 			<var name="riverRunoffFluxMaxVertSum" array_group="vertSumMax" units="kg m^{-2} s^{-1}"
 				 description="Maximum vertical sum of riverRunoffFlux in ocean cells."

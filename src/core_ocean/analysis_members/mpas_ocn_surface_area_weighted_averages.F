@@ -175,9 +175,11 @@ contains
       real (kind=RKIND), dimension(:), pointer :: longWaveHeatFluxUp
       real (kind=RKIND), dimension(:), pointer :: longWaveHeatFluxDown
       real (kind=RKIND), dimension(:), pointer :: seaIceHeatFlux
+      real (kind=RKIND), dimension(:), pointer :: icebergHeatFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux
       real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux
+      real (kind=RKIND), dimension(:), pointer :: icebergFreshWaterFlux
       real (kind=RKIND), dimension(:), pointer :: riverRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: rainFlux
@@ -213,6 +215,7 @@ contains
       ! local variables
       integer :: iDataField, nDefinedDataFields
       integer :: iCell, iRegion, iTracer, err_tmp
+      integer :: n
 
       ! package flag
       logical, pointer :: activeTracersBulkRestoringPKG
@@ -320,9 +323,11 @@ contains
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxUp', longWaveHeatFluxUp)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDown)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'seaIceHeatFlux', seaIceHeatFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'icebergHeatFlux', icebergHeatFlux)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
+         if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFlux)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
          if (activeTracersBulkRestoringPKG) call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
@@ -343,58 +348,99 @@ contains
          call compute_mask(nCells, nCellsSolve, iRegion, lonCell, latCell, workMask)
 
          ! copy data into work array
-         workArray( :,:) = 0.0_RKIND
-         workArray( 1,:) = workMask(:)
-         workArray( 2,:) = areaCell(:)
-         if (activeTracersBulkRestoringPKG) workArray( 3,:) = latentHeatFlux(:)
-         if (activeTracersBulkRestoringPKG) workArray( 4,:) = sensibleHeatFlux(:)
-         if (activeTracersBulkRestoringPKG) workArray( 5,:) = longWaveHeatFluxUp(:)
-         if (activeTracersBulkRestoringPKG) workArray( 6,:) = longWaveHeatFluxDown(:)
-         if (activeTracersBulkRestoringPKG) workArray( 7,:) = seaIceHeatFlux(:)
-         if (activeTracersBulkRestoringPKG) workArray( 8,:) = shortWaveHeatFlux(:)
-         if (activeTracersBulkRestoringPKG) workArray( 9,:) = evaporationFlux(:)
-         if (activeTracersBulkRestoringPKG) workArray(10,:) = seaIceFreshWaterFlux(:)
-         if (activeTracersBulkRestoringPKG) workArray(11,:) = riverRunoffFlux(:)
-         if (activeTracersBulkRestoringPKG) workArray(12,:) = iceRunoffFlux(:)
-         if (activeTracersBulkRestoringPKG) workArray(13,:) = rainFlux(:)
-         if (activeTracersBulkRestoringPKG) workArray(14,:) = snowFlux(:)
-         if (frazilIcePkgActive) workArray(15,:) = seaIceEnergy(:)
-         workArray(16,:) = surfaceThicknessFlux(:)
-         workArray(17,:) = activeTracersSurfaceFlux(indexTemperature,:)
-         workArray(18,:) = activeTracersSurfaceFlux(indexSalinity,:)
-         if (activeTracersBulkRestoringPKG) workArray(19,:) = seaIceSalinityFlux(:)
-         workArray(20,:) = surfaceStressMagnitude(:)
-         if (activeTracersBulkRestoringPKG) workArray(21,:) = windStressZonal(:)
-         if (activeTracersBulkRestoringPKG) workArray(22,:) = windStressMeridional(:)
-         workArray(23,:) = atmosphericPressure(:)
-         workArray(24,:) = ssh(:)
-         workArray(25,:) = activeTracers(indexTemperature,1,:)
-         workArray(26,:) = activeTracers(indexSalinity,1,:)
-         workArray(27,:) = boundaryLayerDepth(:)
+         ! Note: Order of indices must match the ordering of vars in var_arrays in Registry_surface_area_weighted_averages.xml
+         !       (and all var_arrays in Registry_surface_area_weighted_averages.xml must have same ordering!)
+
+         !initialize workArray to zeros
+         workArray(:,:) = 0.0_RKIND
+         n = 1
+         workArray(n,:) = workMask(:)
+         n = n + 1
+         workArray(n,:) = areaCell(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = latentHeatFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = sensibleHeatFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = longWaveHeatFluxUp(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = longWaveHeatFluxDown(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = seaIceHeatFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = icebergHeatFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = shortWaveHeatFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = evaporationFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = seaIceFreshWaterFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = icebergFreshWaterFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = riverRunoffFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = iceRunoffFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = rainFlux(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = snowFlux(:)
+         n = n + 1
+         if (frazilIcePkgActive) workArray(n,:) = seaIceEnergy(:)
+         n = n + 1
+         workArray(n,:) = surfaceThicknessFlux(:)
+         n = n + 1
+         workArray(n,:) = activeTracersSurfaceFlux(indexTemperature,:)
+         n = n + 1
+         workArray(n,:) = activeTracersSurfaceFlux(indexSalinity,:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = seaIceSalinityFlux(:)
+         n = n + 1
+         workArray(n,:) = surfaceStressMagnitude(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = windStressZonal(:)
+         n = n + 1
+         if (activeTracersBulkRestoringPKG) workArray(n,:) = windStressMeridional(:)
+         n = n + 1
+         workArray(n,:) = atmosphericPressure(:)
+         n = n + 1
+         workArray(n,:) = ssh(:)
+         n = n + 1
+         workArray(n,:) = activeTracers(indexTemperature,1,:)
+         n = n + 1
+         workArray(n,:) = activeTracers(indexSalinity,1,:)
+         n = n + 1
+         workArray(n,:) = boundaryLayerDepth(:)
 
          ! build net heat, salinity and fresh water budget
          ! net heat into ocean = latentHeatFlux + sensibleHeatFlux + longWaveHeatFluxUp + longWaveHeatFluxDown
-         !                     + shortWaveHeatFlux + seaIceHeatFlux + (?seaIceEnergy?)
+         !                     + shortWaveHeatFlux + seaIceHeatFlux + icebergHeatFlux+ (?seaIceEnergy?)
          ! net salinity into ocean = seaIceSalinityFlux
-         ! net freshwater into ocean = evaporationFlux + seaIceFreshWaterFlux + riverRunoffFlux + iceRunoffFlux
+         ! net freshwater into ocean = evaporationFlux + seaIceFreshWaterFlux + icebergHeatFlux + riverRunoffFlux + iceRunoffFlux
          !                           + rainFlux + snowFlux + (?seaIceEnergy?)
          if (activeTracersBulkRestoringPKG) then
-            workArray(28,:) =   latentHeatFlux(:) &
+            n = n + 1
+            workArray(n,:) =   latentHeatFlux(:) &
                               + sensibleHeatFlux(:) &
                               + longWaveHeatFluxUp(:) &
                               + longWaveHeatFluxDown(:) &
                               + shortWaveHeatFlux(:)  &
-                              + seaIceHeatFlux(:)
+                              + seaIceHeatFlux(:) &
+                              + icebergHeatFlux(:)
                      !        + seaIceEnergy
-            workArray(29,:) =   seaIceSalinityFlux(:)
-            workArray(30,:) =   evaporationFlux(:) &
+            n = n + 1
+            workArray(n,:) =   seaIceSalinityFlux(:)
+            n = n + 1
+            workArray(n,:) =   evaporationFlux(:) &
                               + seaIceFreshWaterFlux(:) &
+                              + icebergFreshWaterFlux(:) &
                               + riverRunoffFlux(:) &
                               + iceRunoffFlux(:) &
                               + rainFlux(:) &
                               + snowFlux(:)
                      !        + seaIceEnergy(:)
          end if
+         ! Note: if any fields get added after this, the indexing for previous 3 needs to moved outside if-statement
 
          call compute_statistics(nDefinedDataFields, nCellsSolve, workArray, workMask, workMin, workMax, workSum)
 
@@ -417,6 +463,7 @@ contains
       call mpas_dmpar_max_real_array(dminfo, kBufferLength, workBufferMax, workBufferMaxReduced )
 
       ! unpack the buffer into intent(out) of this analysis member
+      ! Note: Order of indices matchies the ordering of vars in var_arrays in Registry_surface_area_weighted_averages.xml
       kBuffer=0
       do iRegion=1,nOceanRegions
         do iDataField=1,nDefinedDataFields
@@ -447,6 +494,9 @@ contains
       call mpas_deallocate_scratch_field(workSumField, .true.)
 
       ! deallocate buffers
+      deallocate(workBufferSum)
+      deallocate(workBufferMin)
+      deallocate(workBufferMax)
       deallocate(workBufferSumReduced)
       deallocate(workBufferMinReduced)
       deallocate(workBufferMaxReduced)

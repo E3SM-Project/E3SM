@@ -13,10 +13,8 @@
 	<add_link source_path="initial_condition_database" source="Ocean1_input_geom_v1.01.nc" dest="input_geometry.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
-	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
-	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
 	<add_link source_path="script_configuration_dir" source="processInputGeometry.py" dest="processInputGeometry.py"/>
+	<add_link source_path="script_configuration_dir" source="removePeriodic.py" dest="removePeriodic.py"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init.xml" path_base="script_configuration_dir"/>
@@ -32,24 +30,27 @@
 
 	<run_script name="run.py">
 		<step executable="./processInputGeometry.py">
-			<argument flag="">input_geometry.nc</argument>
-			<argument flag="">input_geometry_processed.nc</argument>
-			<argument flag="">2.0</argument>
-			<argument flag="">100.0</argument>
+			<argument flag="-i">input_geometry.nc</argument>
+			<argument flag="-o">input_geometry_processed.nc</argument>
+			<argument flag="-s">2.0</argument>
+			<argument flag="-m">100.0</argument>
 		</step>
 
-		<step executable="./MpasMeshConverter.x">
+		<step executable="MpasMeshConverter.x">
 			<argument flag="">base_mesh.nc</argument>
 			<argument flag="">mesh.nc</argument>
 		</step>
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">16</argument>
 		</step>
 
 		<model_run procs="16" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 
-		<step executable="./MpasCellCuller.x">
+		<step executable="MpasCellCuller.x">
 			<argument flag="">ocean.nc</argument>
+		</step>
+		<step executable="./removePeriodic.py">
+			<argument flag="">culled_mesh.nc</argument>
 		</step>
 	</run_script>
 </config>

@@ -137,7 +137,7 @@ contains
 
       nEdges = nEdgesArray( 1 )
 
-      !$omp do schedule(runtime) private(cell1, cell2, k, vertAleTransportTopEdge)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1,iEdge)
         cell2 = cellsOnEdge(2,iEdge)

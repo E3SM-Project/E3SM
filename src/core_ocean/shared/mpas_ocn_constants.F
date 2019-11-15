@@ -56,7 +56,8 @@ module ocn_constants
       latent_heat_fusion    ,&! lat heat of fusion (erg/g)
       latent_heat_fusion_mks,&! lat heat of fusion (J/kg)
       sea_ice_salinity      ,&! salinity of sea ice formed (psu)
-      ocn_ref_salinity        ! ocean reference salinity (psu)
+      ocn_ref_salinity      ,&! ocean reference salinity (psu)
+      atm_ref_pressure        ! standard sea level pressure (Pa)
 
    !  conversion factors
 
@@ -128,6 +129,7 @@ contains
        latent_heat_fusion_mks = 3.337e5_RKIND ! lat heat of fusion (J/kg)
        sea_ice_salinity   =  4.0_RKIND        ! (psu)
        ocn_ref_salinity   = 34.7_RKIND        ! (psu)
+       atm_ref_pressure   = 101325.0_RKIND    ! (Pa)
 
 
        !-----------------------------------------------------------------------
@@ -146,7 +148,7 @@ contains
 
        !-----------------------------------------------------------------------
        !
-       !  physical constants -- CCSM override
+       !  physical constants -- E3SM override
        !
        !-----------------------------------------------------------------------
 

@@ -86,8 +86,8 @@ contains
          call ocn_generate_60layerPHC_vertical_grid(interfaceLocations)
       else if ( trim(gridType) == '42layerWOCE' ) then
          call ocn_generate_42layerWOCE_vertical_grid(interfaceLocations)
-      else if ( trim(gridType) == '100layerACMEv1' ) then
-         call ocn_generate_100layerACMEv1_vertical_grid(interfaceLocations)
+      else if ( trim(gridType) == '100layerE3SMv1' ) then
+         call ocn_generate_100layerE3SMv1_vertical_grid(interfaceLocations)
       else if ( trim(gridType) == '1dCVTgenerator' ) then
          if (.not. present(configPool)) then
             call mpas_log_write("MPAS-ocean: requesting a 1d CVT vertical grid generation " &
@@ -307,16 +307,16 @@ contains
 
    !***********************************************************************
    !
-   !  routine ocn_generate_100layerACMEv1_vertical_grid
+   !  routine ocn_generate_100layerE3SMv1_vertical_grid
    !
-   !> \brief   100 vertical layer vertical grid generator for ACME v1
+   !> \brief   100 vertical layer vertical grid generator for E3SM v1
    !> \author  Todd Ringler
    !> \date    04/23/2015
    !> \details
    !>  This routine generates a 100 layer grid
    !
    !-----------------------------------------------------------------------
-   subroutine ocn_generate_100layerACMEv1_vertical_grid(interfaceLocations)!{{{
+   subroutine ocn_generate_100layerE3SMv1_vertical_grid(interfaceLocations)!{{{
       implicit none
 
       real (kind=RKIND), dimension(:), intent(out) :: interfaceLocations
@@ -437,7 +437,7 @@ contains
 
       interfaceLocations(:) = interfaceLocations(:) / maxInterfaceLocation
 
-   end subroutine ocn_generate_100layerACMEv1_vertical_grid!}}}
+   end subroutine ocn_generate_100layerE3SMv1_vertical_grid!}}}
 
 
 !***********************************************************************

@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<config case="init_step1">
+	<add_executable source="model" dest="ocean_model"/>
+
+	<namelist name="namelist.ocean" mode="init">
+		<option name="config_init_configuration">'dam_break'</option>
+		<option name="config_vert_levels">-1</option>
+		<option name="config_dam_break_vert_levels">3</option>
+		<option name="config_dam_break_eta0">0.6</option>
+		<option name="config_dam_break_dc">0.12</option>
+		<option name="config_dam_break_Xl">1.0</option>
+		<option name="config_dam_break_Yl">2.0</option>
+		<option name="config_dam_break_Inlet">0.4</option>
+		<option name="config_dam_break_R0">12.0</option>
+		<option name="config_drying_min_cell_height">1.0e-2</option>
+		<option name="config_ocean_run_mode">'init'</option>
+		<option name="config_write_cull_cell_mask">.true.</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="init">
+		<stream name="input_init">
+			<attribute name="filename_template">mesh.nc</attribute>
+		</stream>
+		<stream name="output_init">
+			<attribute name="type">output</attribute>
+			<attribute name="clobber_mode">truncate</attribute>
+			<attribute name="output_interval">0000_00:00:01</attribute>
+			<attribute name="filename_template">ocean.nc</attribute>
+			<add_contents>
+				<member name="input_init" type="stream"/>
+				<member name="bottomDepth" type="var"/>
+				<member name="refZMid" type="var"/>
+				<member name="refBottomDepth" type="var"/>
+				<member name="cullCell" type="var"/>
+				<member name="maxLevelCell" type="var"/>
+				<member name="normalVelocity" type="var"/>
+				<member name="layerThickness" type="var"/>
+				<member name="restingThickness" type="var"/>
+				<member name="ssh" type="var"/>
+			</add_contents>
+		</stream>
+	</streams>
+	<run_script name="run.py">
+		<step executable="planar_hex">
+			<argument flag="--nx">108</argument>
+			<argument flag="--ny">232</argument>
+			<argument flag="--dc">0.12</argument>
+			<argument flag="-o">grid.nc</argument>
+		</step>
+		<step executable="MpasMeshConverter.x">
+			<argument flag="">grid.nc</argument>
+		</step>
+		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<step executable="MpasCellCuller.x">
+			<argument flag="">ocean.nc</argument>
+    </step>
+	</run_script>
+</config>

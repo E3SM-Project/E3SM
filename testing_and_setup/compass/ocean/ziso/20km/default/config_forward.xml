@@ -5,14 +5,9 @@
 	<add_link source="../init_step2/mesh.nc" dest="mesh.nc"/>
 	<add_link source="../init_step2/graph.info" dest="graph.info"/>
 
-	<get_file dest_path="initial_condition_database" file_name="make_particle_resets.151222.py">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database"/>
-	</get_file>
-
-	<add_link source_path="initial_condition_database" source="make_particle_resets.151222.py" dest="make_particle_resets.py"/>
+	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/scripts/LIGHTparticles/make_particle_file.py" dest="make_particles.py"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="ziso_template.xml" path_base="script_configuration_dir"/>
@@ -23,6 +18,8 @@
 		<option name="config_pio_stride">4</option>
 		<option name="config_write_output_on_startup">.false.</option>
 		<option name="config_mom_del4">5.0e10</option>
+		<option name="config_AM_lagrPartTrack_sample_temperature">.true.</option>
+		<option name="config_AM_lagrPartTrack_sample_salinity">.true.</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
@@ -39,20 +36,31 @@
 		<template file="lagrangian_particle_tracking.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="ziso_template.xml" path_base="script_configuration_dir"/>
 		<stream name="output">
-                        <attribute name="output_interval">0000_00:01:30</attribute>
-                </stream>
+			<attribute name="output_interval">0000_00:01:30</attribute>
+	</stream>
+		<stream name="lagrPartTrackOutput">
+			<add_contents>
+				<member name="particleTemperature" type="var"/>
+				<member name="particleSalinity" type="var"/>
+			</add_contents>
+	</stream>
 	</streams>
-
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
 		<step executable="python">
-			<argument flag="">make_particle_resets.py</argument>
-			<argument flag="">mesh.nc</argument>
+			<argument flag="">make_particles.py</argument>
+			<argument flag="">-i</argument>
+			<argument flag="">init.nc</argument>
+			<argument flag="">-o</argument>
 			<argument flag="">particles.nc</argument>
-			<argument flag="">graph.info.part.4</argument>
-			<argument flag="">11</argument>
+			<argument flag="">-g</argument>
+			<argument flag="">graph.info.part.</argument>
+			<argument flag="">-p</argument>
+			<argument flag="">4</argument>
+			<argument flag="">--types</argument>
+			<argument flag="">buoyancy</argument>
 		</step>
 		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 	</run_script>

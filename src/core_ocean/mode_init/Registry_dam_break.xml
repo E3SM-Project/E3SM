@@ -1,0 +1,30 @@
+<nml_record name="dam_break" mode="init" configuration="dam_break">
+	<nml_option name="config_dam_break_vert_levels" type="integer" default_value="1" units="unitless"
+		description="Number of vertical levels in dam_break case. Default value is 1."
+		possible_values="Any positive integer number greater than 0."
+		/>
+	<nml_option name="config_dam_break_eta0" type="real" default_value="0.6" units="m"
+		description="Depth of the domain ($H$)."
+		possible_values="Any real number larger than zero."
+		/>
+	<nml_option name="config_dam_break_dc" type="real" default_value="0.04" units="m"
+		description="grid resolution in meters ($dc$)."
+		possible_values="Any real number larger than zero."
+		/>
+	<nml_option name="config_dam_break_R0" type="real" default_value="24.2" units="m"
+		description="max wave propagation radius in 10.0s."
+		possible_values="sqrt(eta*9.8)*10.0."
+		/>
+	<nml_option name="config_dam_break_Xl" type="real" default_value="1.0" units="m"
+		description="The length of dam along the X-direction."
+		possible_values="Any real number larger than or equal to zero."
+		/>
+	<nml_option name="config_dam_break_Yl" type="real" default_value="2.0" units="m"
+		description="The length of dam along the Y-direction."
+		possible_values="Any real number larger than or equal to zero."
+		/>
+	<nml_option name="config_dam_break_Inlet" type="real" default_value="0.4" units="m"
+		description="The width of inlet (dam mouth)."
+		possible_values="Any real number larger than or equal to zero."
+		/>
+</nml_record>

@@ -7,10 +7,7 @@
 
 	<add_link source_path="mesh_database" source="doubly_periodic_10km_540x1040km_planar.151225.nc" dest="base_mesh.nc"/>
 
-	<add_executable source="metis" dest="metis"/>
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
-	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<template file="template_init.xml" path_base="script_configuration_dir"/>
@@ -23,17 +20,17 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./MpasMeshConverter.x">
+		<step executable="MpasMeshConverter.x">
 			<argument flag="">base_mesh.nc</argument>
 			<argument flag="">mesh.nc</argument>
 		</step>
 
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
 		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 
-		<step executable="./MpasCellCuller.x">
+		<step executable="MpasCellCuller.x">
 			<argument flag="">ocean.nc</argument>
 		</step>
 	</run_script>

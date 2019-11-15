@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<config case="forward">
+	<add_link source="../init_step2/init.nc" dest="init.nc"/>
+	<add_link source="../init_step2/forcing.nc" dest="forcing.nc"/>
+	<add_link source="../init_step2/mesh.nc" dest="mesh.nc"/>
+	<add_link source="../init_step2/graph.info" dest="graph.info"/>
+	<add_link source="../init_step2/atmospheric_forcing.nc" dest="atmospheric_forcing.nc"/>
+
+	<add_executable source="model" dest="ocean_model"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<template file="soma_run.xml" path_base="script_configuration_dir"/>
+		<option name="config_dt">'00:10:00'</option>
+		<option name="config_run_duration">'0001_00:00:00'</option>
+		<option name="config_mom_del4">2.0e11</option>
+		<option name="config_btr_dt">'0000_00:00:25'</option>
+		<option name="config_pio_num_iotasks">0</option>
+		<option name="config_pio_stride">1</option>
+		<option name="config_use_time_varying_atmospheric_forcing">.true.</option>
+		<option name="config_time_varying_atmospheric_forcing_ramp">0.0000001</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<template file="output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="forcing_data.xml" path_base="script_core_dir" path="templates/streams"/>
+		<template file="soma_run.xml" path_base="script_configuration_dir"/>
+		<stream name="output">
+			<attribute name="output_interval">0000-00-00_01:00:00</attribute>
+			<add_contents>
+				<member name="windSpeedU" type="var"/>
+				<member name="windSpeedV" type="var"/>
+			</add_contents>
+			<remove_contents>
+				<member name="BruntVaisalaFreqTop"/>
+				<member name="seaIcePressure"/>
+				<member name="surfaceBuoyancyForcing"/>
+				<member name="surfaceFrictionVelocity"/>
+				<member name="divergence"/>
+				<member name="displacedDensity"/>
+				<member name="potentialDensity"/>
+				<member name="boundaryLayerDepth"/>
+				<member name="indexBoundaryLayerDepth"/>
+				<member name="indexSurfaceLayerDepth"/>
+				<member name="maxLevelEdgeTop"/>
+				<member name="vertCoordMovementWeights"/>
+				<member name="edgeMask"/>
+				<member name="vertexMask"/>
+				<member name="cellMask"/>
+				<member name="refZMid"/>
+				<member name="refLayerThickness"/>
+				<member name="zMid"/>
+				<member name="zTop"/>
+			</remove_contents>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="gpmetis">
+			<argument flag="graph.info">4</argument>
+		</step>
+		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

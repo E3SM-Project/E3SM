@@ -12,7 +12,6 @@
 	<add_link source_path="initial_condition_database" source="make_particle_resets.151222.py" dest="make_particle_resets.py"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="soma_template.xml" path_base="script_configuration_dir"/>
@@ -35,12 +34,18 @@
 		<template file="lagrangian_particle_tracking.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<template file="soma_template.xml" path_base="script_configuration_dir"/>
 		<stream name="output">
-                        <attribute name="output_interval">0000_00:01:30</attribute>
-                </stream>
+			<attribute name="output_interval">0000_00:01:30</attribute>
+		</stream>
+		<stream name="lagrPartTrackOutput">
+			<add_contents>
+				<member name="particleTemperature" type="var"/>
+				<member name="particleSalinity" type="var"/>
+			</add_contents>
+		</stream>
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
 		<step executable="python">

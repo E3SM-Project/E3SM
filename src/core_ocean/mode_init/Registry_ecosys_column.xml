@@ -3,9 +3,9 @@
 			description="Number of vertical levels in ecosys column unit test case."
 			possible_values="100"
 		/>
-		<nml_option name="config_ecosys_column_vertical_grid" type="character" default_value="100layerACMEv1" units="unitless"
+		<nml_option name="config_ecosys_column_vertical_grid" type="character" default_value="100layerE3SMv1" units="unitless"
 			description="prescription of setting the vertical resolution of the test case"
-			possible_values="'100layerACMEv1'"
+			possible_values="'100layerE3SMv1'"
 		/>
 		<nml_option name="config_ecosys_column_TS_filename" type="character" default_value="unknown" units="unitless"
 			description="Name of file containing column values of temperature and salinity"

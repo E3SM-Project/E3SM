@@ -211,7 +211,7 @@ contains
         character(len=strKind) :: timeStamp
 
         logical, intent(in) :: firstTimeStep
-        character(len=strKind), pointer :: config_dt
+        character(len=strKind), pointer :: config_surface_salinity_monthly_restoring_compute_interval
         real(kind=RKIND) :: dt, sumAreaDeltaS, sumArea, avgDeltaS, deltaS, sumAreaDeltaSGlobal, sumAreaGlobal
         real(kind=RKIND) :: avgDeltaS1
         type (block_type), pointer :: block
@@ -292,29 +292,25 @@ contains
            return
         endif  !  first timestep
 
-        call MPAS_pool_get_config(domain%configs, 'config_dt', config_dt)
+        call MPAS_pool_get_config(domain%configs, 'config_surface_salinity_monthly_restoring_compute_interval', &
+                                                   config_surface_salinity_monthly_restoring_compute_interval)
         call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_max_difference',  &
                                                           salinity_restoring_max_difference)
-
-        call mpas_pool_get_config(domain%configs, 'config_salinity_restoring_under_sea_ice', &
+        call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_under_sea_ice', &
                                                    config_salinity_restoring_under_sea_ice)
         call MPAS_pool_get_config(domain%configs, 'config_salinity_restoring_constant_piston_velocity',  &
-                                                   salinity_restoring_constant_piston_velocity)
-        call mpas_set_timeInterval(timeStepSurfaceSalinity,timeString=config_dt)
-        call mpas_get_timeInterval(timeStepSurfaceSalinity,dt=dt)
+                                                          salinity_restoring_constant_piston_velocity)
 
-        call mpas_pool_get_subpool(domain % blocklist % structs, 'surfaceSalinityMonthlyForcing',  &
+        call MPAS_set_timeInterval(timeStepSurfaceSalinity,timeString=config_surface_salinity_monthly_restoring_compute_interval)
+        call MPAS_get_timeInterval(timeStepSurfaceSalinity,dt=dt)
+
+        call MPAS_pool_get_subpool(domain % blocklist % structs, 'surfaceSalinityMonthlyForcing',  &
                                                                   surfaceSalinityMonthlyForcing)
-        call mpas_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
+        call MPAS_pool_get_array(surfaceSalinityMonthlyForcing, 'surfaceSalinityMonthlyClimatologyValue',   &
                                                                  surfaceSalinityMonthlyClimatologyValue)
 
-        if(firstTimestep .and. config_do_restart) then
-           call MPAS_forcing_get_forcing(forcingGroupHead, &
-                'surfaceSalinityMonthlyClimatology', streamManager, 0.0_RKIND)
-        else
-           call MPAS_forcing_get_forcing(forcingGroupHead, &
-                'surfaceSalinityMonthlyClimatology', streamManager, dt)
-        end if
+        call MPAS_forcing_get_forcing(forcingGroupHead, &
+             'surfaceSalinityMonthlyClimatology', streamManager, dt)
 
       sumAreaDeltaS = 0.0_RKIND
       sumArea = 0.0_RKIND

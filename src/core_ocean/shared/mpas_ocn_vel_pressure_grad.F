@@ -77,7 +77,7 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_vel_pressure_grad_tend(meshPool, pressure, montgomeryPotential, zMid, density, potentialDensity, &
+   subroutine ocn_vel_pressure_grad_tend(meshPool, ssh, pressure, montgomeryPotential, zMid, density, potentialDensity, &
       indexT, indexS, tracers, tend, err, inSituThermalExpansionCoeff,inSituSalineContractionCoeff)!{{{
 
       !-----------------------------------------------------------------
@@ -87,6 +87,9 @@ contains
       !-----------------------------------------------------------------
 
       integer, intent(in) :: indexT, indexS
+
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         ssh !< Input: Sea surface height
 
       real (kind=RKIND), dimension(:,:), intent(in) :: &
          pressure, & !< Input: Pressure field
@@ -154,7 +157,24 @@ contains
 
       nEdges = nEdgesArray( 1 )
 
-      if (config_pressure_gradient_type.eq.'pressure_and_zmid') then
+      if (config_pressure_gradient_type.eq.'ssh_gradient') then
+
+         ! pressure for sea surface height
+         ! - g grad ssh
+
+         !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k)
+         do iEdge=1,nEdges
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            invdcEdge = 1.0_RKIND / dcEdge(iEdge)
+
+            do k=1,maxLevelEdgeTop(iEdge)
+               tend(k,iEdge) = tend(k,iEdge) - gravity * edgeMask(k,iEdge) * invdcEdge * ( ssh(cell2) - ssh(cell1) )
+            end do
+         end do
+         !$omp end do
+
+      elseif (config_pressure_gradient_type.eq.'pressure_and_zmid') then
 
          ! pressure for generalized coordinates
          ! -1/density_0 (grad p_k + density g grad z_k^{mid})
@@ -218,7 +238,7 @@ contains
 
          allocate(JacobianDxDs(nVertLevels))
 
-         !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, k, pGrad)
+         !$omp do schedule(runtime)
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)
@@ -256,7 +276,7 @@ contains
          allocate(JacobianDxDs(nVertLevels),JacobianTz(nVertLevels),JacobianSz(nVertLevels), T1(nVertLevels))
          allocate(T2(nVertLevels), S1(nVertLevels), S2(nVertLevels))
 
-         !$omp do schedule(runtime) private(cell1, cell2, invdcEdge, kMax, k, pGrad, alpha, beta)
+         !$omp do schedule(runtime)
          do iEdge=1,nEdges
             cell1 = cellsOnEdge(1,iEdge)
             cell2 = cellsOnEdge(2,iEdge)

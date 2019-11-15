@@ -49,11 +49,13 @@ module ocn_forward_mode
    use ocn_vel_vadv
    use ocn_vel_hmix
    use ocn_vel_forcing
-   use ocn_vel_coriolis
+   use ocn_vel_hadv_coriolis
    use ocn_vel_forcing_surface_stress
    use ocn_surface_bulk_forcing
    use ocn_surface_land_ice_fluxes
    use ocn_frazil_forcing
+   use ocn_tidal_forcing
+   use ocn_tidal_potential_forcing
 
    use ocn_tracer_hmix
    use ocn_tracer_hmix_redi
@@ -76,6 +78,7 @@ module ocn_forward_mode
 
    use ocn_forcing
    use ocn_sea_ice
+   use ocn_time_varying_forcing
 
    use ocn_constants
 
@@ -199,7 +202,7 @@ module ocn_forward_mode
       call ocn_thick_ale_init(err_tmp)
       ierr = ior(ierr,err_tmp)
 
-      call ocn_vel_coriolis_init(err_tmp)
+      call ocn_vel_hadv_coriolis_init(err_tmp)
       ierr = ior(ierr, err_tmp)
       call ocn_vel_pressure_grad_init(err_tmp)
       ierr = ior(ierr, err_tmp)
@@ -217,6 +220,10 @@ module ocn_forward_mode
       ierr = ior(ierr, err_tmp)
       call ocn_frazil_forcing_init(err_tmp)
       ierr = ior(ierr, err_tmp)
+      call ocn_tidal_forcing_init(err_tmp)
+      ierr = ior(ierr, err_tmp)
+      call ocn_tidal_potential_forcing_init(domain,err_tmp)
+      ierr = ior(ierr, err_tmp)
 
       call ocn_tracer_hmix_init(err_tmp)
       ierr = ior(ierr, err_tmp)
@@ -228,7 +235,7 @@ module ocn_forward_mode
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_short_wave_absorption_init(domain,err_tmp)
       ierr = ior(ierr,err_tmp)
-      call ocn_gm_init(err_tmp)
+      call ocn_gm_init(domain, err_tmp)
       ierr = ior(ierr,err_tmp)
       call ocn_tracer_nonlocalflux_init(err_tmp)
       ierr = ior(ierr,err_tmp)
@@ -242,7 +249,7 @@ module ocn_forward_mode
       call ocn_vmix_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
 
-      call ocn_equation_of_state_init(err_tmp)
+      call ocn_equation_of_state_init(domain, err_tmp)
       ierr = ior(ierr, err_tmp)
 
       call ocn_tendency_init(err_tmp)
@@ -277,6 +284,7 @@ module ocn_forward_mode
       if (config_vert_coord_movement.ne.'fixed'.and. &
           config_vert_coord_movement.ne.'uniform_stretching'.and. &
           config_vert_coord_movement.ne.'impermeable_interfaces'.and. &
+          config_vert_coord_movement.ne.'tapered'.and. &
           config_vert_coord_movement.ne.'user_specified') then
          call mpas_log_write(' Incorrect choice of config_vert_coord_movement.')
          call mpas_log_write('Incorrect choice of config_vert_coord_movement.', MPAS_LOG_CRIT)
@@ -484,6 +492,8 @@ module ocn_forward_mode
       logical, pointer :: config_use_ecosysTracers
       logical, pointer :: config_use_activeTracers_surface_restoring
       logical, pointer :: config_use_surface_salinity_monthly_restoring
+      logical, pointer :: config_use_time_varying_atmospheric_forcing
+      logical, pointer :: config_use_time_varying_land_ice_forcing
 
       ierr = 0
 
@@ -495,6 +505,10 @@ module ocn_forward_mode
                                                    config_use_activeTracers_surface_restoring)
       call mpas_pool_get_config(domain % configs, 'config_use_surface_salinity_monthly_restoring',  &
                                                    config_use_surface_salinity_monthly_restoring)
+      call MPAS_pool_get_config(domain % configs, 'config_use_time_varying_atmospheric_forcing', &
+                                                   config_use_time_varying_atmospheric_forcing)
+      call MPAS_pool_get_config(domain % configs, 'config_use_time_varying_land_ice_forcing', &
+                                                   config_use_time_varying_land_ice_forcing)
 
       ! Eventually, dt should be domain specific
       timeStep = mpas_get_clock_timestep(domain % clock, ierr=ierr)
@@ -533,6 +547,10 @@ module ocn_forward_mode
         call ocn_get_surfaceSalinityData(domain % streamManager, domain, domain % clock, .true.)
         call mpas_timer_stop('io_monthly_surface_salinity')
       endif
+
+      ! initialize time-varying forcing
+      call ocn_time_varying_forcing_init(domain)
+      call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
 
       ! During integration, time level 1 stores the model state at the beginning of the
       !   time step, and time level 2 stores the state advanced dt in time by timestep(...)
@@ -575,6 +593,8 @@ module ocn_forward_mode
            call mpas_timer_stop("land_ice_build_arrays")
 
            call ocn_frazil_forcing_build_arrays(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)
+           
+           call ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)
 
            block_ptr => block_ptr % next
          end do
@@ -627,13 +647,15 @@ module ocn_forward_mode
                close(22)
             end if
 
-            if(trim(config_sw_absorption_type)=='ohlmann00') call ocn_shortwave_forcing_write_restart(domain)
+            ! write forcing restart if any type(s) time varying forcing is used
+            if (trim(config_sw_absorption_type)=='ohlmann00' .or. &
+                config_use_ecosysTracers .or. &
+                (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring) .or. &
+                config_use_time_varying_atmospheric_forcing .or. &
+                config_use_time_varying_land_ice_forcing) then
 
-            if (config_use_ecosysTracers) call ocn_ecosys_forcing_write_restart(domain)
-
-            if (config_use_activeTracers_surface_restoring .and. config_use_surface_salinity_monthly_restoring)  &
-               call ocn_salinity_restoring_forcing_write_restart(domain)
-
+                call ocn_time_varying_forcing_write_restart_times(domain)
+            end if
          end if
 
          call mpas_timer_start('io_write')
@@ -673,6 +695,9 @@ module ocn_forward_mode
               call mpas_timer_stop('io_monthly_surface_salinity')
            endif
          endif
+
+         ! read in next time level data required for time-varying forcing
+         call ocn_time_varying_forcing_get(domain % streamManager, domain, domain % clock)
 
          ! Validate that the state is OK to run with for the next timestep.
          call ocn_validate_state(domain, timeLevel=1)

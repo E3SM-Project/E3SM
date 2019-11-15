@@ -94,6 +94,8 @@ module ocn_analysis_driver
 
    character (len=StrKIND), parameter :: timeSeriesDailyTAG = 'Daily'
    character (len=StrKIND), parameter :: timeSeriesMonthlyTAG = 'Monthly'
+   character (len=StrKIND), parameter :: timeSeriesMonthlyMinTAG = 'MonthlyMin'
+   character (len=StrKIND), parameter :: timeSeriesMonthlyMaxTAG = 'MonthlyMax'
    character (len=StrKIND), parameter :: timeSeriesClimatologyTAG = 'Climatology'
    character (len=StrKIND), parameter :: timeSeriesCustomTAG = 'Custom'
    character (len=StrKIND), parameter :: regionalStatsDailyTAG = 'Daily'
@@ -180,6 +182,8 @@ contains
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthly', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsClimatology', 1)
       call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsCustom', 1)
+      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthlyMin', 1)
+      call mpas_pool_add_config(analysisMemberList, 'timeSeriesStatsMonthlyMax', 1)
       call mpas_pool_add_config(analysisMemberList, 'regionalStatsDaily', 1)
       call mpas_pool_add_config(analysisMemberList, 'regionalStatsWeekly', 1)
       call mpas_pool_add_config(analysisMemberList, 'regionalStatsMonthly', 1)
@@ -612,7 +616,7 @@ contains
                end if
             end if
 
-            ! Reset configs to false, so we don't write or compute the state every coupling interval for use within ACME.
+            ! Reset configs to false, so we don't write or compute the state every coupling interval for use within E3SM.
             ! This ensures that these startup options are only done once.
             if ( config_AM_compute_on_startup) then
               config_AM_compute_on_startup = .false.
@@ -1042,6 +1046,12 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call ocn_bootstrap_time_series_stats(domain, timeSeriesCustomTAG, &
            err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMin' ) then
+         call ocn_bootstrap_time_series_stats(domain, timeSeriesMonthlyMinTAG, &
+           err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMax' ) then
+         call ocn_bootstrap_time_series_stats(domain, timeSeriesMonthlyMaxTAG, &
+           err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'pointwiseStats' ) then
          call ocn_bootstrap_pointwise_stats(domain, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'transectTransport' ) then
@@ -1135,6 +1145,10 @@ contains
          call ocn_init_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call ocn_init_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMin' ) then
+         call ocn_init_time_series_stats(domain, timeSeriesMonthlyMinTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMax' ) then
+         call ocn_init_time_series_stats(domain, timeSeriesMonthlyMaxTAG, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1227,6 +1241,12 @@ contains
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call ocn_compute_time_series_stats(domain, timeLevel, &
            timeSeriesCustomTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMin' ) then
+         call ocn_compute_time_series_stats(domain, timeLevel, &
+           timeSeriesMonthlyMinTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMax' ) then
+         call ocn_compute_time_series_stats(domain, timeLevel, &
+           timeSeriesMonthlyMaxTAG, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1314,6 +1334,10 @@ contains
          call ocn_restart_time_series_stats(domain, timeSeriesClimatologyTAG, err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call ocn_restart_time_series_stats(domain, timeSeriesCustomTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMin' ) then
+         call ocn_restart_time_series_stats(domain, timeSeriesMonthlyMinTAG, err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMax' ) then
+         call ocn_restart_time_series_stats(domain, timeSeriesMonthlyMaxTAG, err_tmp)
       end if
 
       iErr = ior(iErr, err_tmp)
@@ -1404,6 +1428,12 @@ contains
            err_tmp)
       else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsCustom' ) then
          call ocn_finalize_time_series_stats(domain, timeSeriesCustomTAG, &
+           err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMin' ) then
+         call ocn_finalize_time_series_stats(domain, timeSeriesMonthlyMinTAG, &
+           err_tmp)
+      else if ( analysisMemberName(1:nameLength) == 'timeSeriesStatsMonthlyMax' ) then
+         call ocn_finalize_time_series_stats(domain, timeSeriesMonthlyMaxTAG, &
            err_tmp)
       end if
 

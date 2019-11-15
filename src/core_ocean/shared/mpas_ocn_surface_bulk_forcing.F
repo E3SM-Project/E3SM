@@ -195,7 +195,7 @@ contains
       nEdges = nEdgesArray( 4 )
       nCells = nCellsArray( 3 )
 
-      ! Convert CESM wind stress to MPAS-O wind stress
+      ! Convert coupled climate model wind stress to MPAS-O wind stress
       !$omp do schedule(runtime) private(cell1, cell2, zonalAverage, meridionalAverage)
       do iEdge = 1, nEdges
         cell1 = cellsOnEdge(1, iEdge)
@@ -272,7 +272,7 @@ contains
       integer, dimension(:,:), pointer :: cellsOnEdge
 
       real (kind=RKIND), dimension(:), pointer :: evaporationFlux, snowFlux
-      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, riverRunoffFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: rainFlux
 
       err = 0
@@ -286,6 +286,7 @@ contains
       call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
       call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
       call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
+      call mpas_pool_get_array(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
@@ -296,7 +297,7 @@ contains
       !$omp do schedule(runtime)
       do iCell = 1, nCells
         surfaceThicknessFlux(iCell) = surfaceThicknessFlux(iCell) + ( snowFlux(iCell) + rainFlux(iCell) + evaporationFlux(iCell) &
-                                    + seaIceFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
+                                    + seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell) + iceRunoffFlux(iCell) ) / rho_sw
         surfaceThicknessFluxRunoff(iCell) = riverRunoffFlux(iCell) / rho_sw
       end do
       !$omp end do
@@ -396,8 +397,8 @@ contains
       type(mpas_pool_type),pointer :: tracersSurfaceFluxPool
 
       real (kind=RKIND), dimension(:), pointer :: latentHeatFlux, sensibleHeatFlux, longWaveHeatFluxUp, longWaveHeatFluxDown, &
-                                                  seaIceHeatFlux, evaporationFlux, riverRunoffFlux
-      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
+                                                  seaIceHeatFlux, icebergHeatFlux, evaporationFlux, riverRunoffFlux
+      real (kind=RKIND), dimension(:), pointer :: seaIceFreshWaterFlux, icebergFreshWaterFlux, seaIceSalinityFlux, iceRunoffFlux
       real (kind=RKIND), dimension(:), pointer :: shortWaveHeatFlux, penetrativeTemperatureFlux
       real (kind=RKIND), dimension(:), pointer :: snowFlux, rainFlux
       real (kind=RKIND) :: requiredSalt, allowedSalt
@@ -416,12 +417,14 @@ contains
       call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxUp', longWaveHeatFluxUp)
       call mpas_pool_get_array(forcingPool, 'longWaveHeatFluxDown', longWaveHeatFluxDown)
       call mpas_pool_get_array(forcingPool, 'seaIceHeatFlux', seaIceHeatFlux)
+      call mpas_pool_get_array(forcingPool, 'icebergHeatFlux', icebergHeatFlux)
       call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
       call mpas_pool_get_array(forcingPool, 'snowFlux', snowFlux)
       call mpas_pool_get_array(forcingPool, 'shortWaveHeatFlux', shortWaveHeatFlux)
       call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
 
       call mpas_pool_get_array(forcingPool, 'seaIceFreshWaterFlux', seaIceFreshWaterFlux)
+      call mpas_pool_get_array(forcingPool, 'icebergFreshWaterFlux', icebergFreshWaterFlux)
       call mpas_pool_get_array(forcingPool, 'seaIceSalinityFlux', seaIceSalinityFlux)
       call mpas_pool_get_array(forcingPool, 'iceRunoffFlux', iceRunoffFlux)
       call mpas_pool_get_array(forcingPool, 'riverRunoffFlux', riverRunoffFlux)
@@ -435,7 +438,8 @@ contains
         tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
                                                            + (latentHeatFlux(iCell) + sensibleHeatFlux(iCell) &
                                                            + longWaveHeatFluxUp(iCell) + longWaveHeatFluxDown(iCell) &
-                                                           + seaIceHeatFlux(iCell) - (snowFlux(iCell) + iceRunoffFlux(iCell)) &
+                                                           + seaIceHeatFlux(iCell) + icebergHeatFlux(iCell) &
+                                                           - (snowFlux(iCell) + iceRunoffFlux(iCell)) &
                                                            * latent_heat_fusion_mks) * hflux_factor
 
         ! Negative seaIceSalinityFlux is an extraction of salt from the ocean
@@ -478,9 +482,9 @@ contains
 
            ! Accumulate fluxes that use the freezing point
            tracersSurfaceFlux(index_temperature_flux, iCell) = tracersSurfaceFlux(index_temperature_flux, iCell) &
-               + seaIceFreshWaterFlux(iCell) * ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell) , &
-                                                                         pressure=0.0_RKIND, &
-                                                                         inLandIceCavity=.false.) / rho_sw
+               + (seaIceFreshWaterFlux(iCell) + icebergFreshWaterFlux(iCell)) * &
+               ocn_freezing_temperature( tracerGroup(index_salinity_flux, 1, iCell), pressure=0.0_RKIND, inLandIceCavity=.false.)&
+               / rho_sw
 
            ! Fields with zero temperature are not accumulated. These include:
            !    snowFlux

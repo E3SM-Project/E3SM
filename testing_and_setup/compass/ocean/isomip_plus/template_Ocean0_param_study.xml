@@ -6,7 +6,6 @@
 	<add_link source="forcing_data_init.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<add_link source_path="script_configuration_dir" source="viz" dest="viz"/>
 	<add_link source_path="script_configuration_dir" source="update_evaporationFlux.py" dest="update_evaporationFlux.py"/>
@@ -18,6 +17,9 @@
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_land_ice_flux_jenkins_heat_transfer_coefficient">@GammaT</option>
 		<option name="config_land_ice_flux_jenkins_salt_transfer_coefficient">@GammaS</option>
+		<option name="config_run_duration">'0000-01-00_00:00:00'</option>
+		<option name="config_pio_num_iotasks">2</option>
+		<option name="config_pio_stride">68</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
@@ -25,16 +27,15 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
-			<argument flag="graph.info">64</argument>
+		<step executable="gpmetis">
+			<argument flag="graph.info">136</argument>
 		</step>
-		<model_run procs="64" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+		<model_run procs="136" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 		<step executable="./update_evaporationFlux.py">
-			<argument flag="--in_fluxes_file">land_ice_fluxes.nc</argument>
 			<argument flag="--in_forcing_file">forcing_data_init.nc</argument>
 			<argument flag="--out_forcing_file">forcing_data_updated.nc</argument>
 			<argument flag="--out_forcing_link">forcing_data.nc</argument>
-			<argument flag="--avg_years">0.25</argument>
+			<argument flag="--avg_months">3</argument>
 		</step>
 	</run_script>
 </config>

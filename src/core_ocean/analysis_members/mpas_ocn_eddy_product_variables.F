@@ -183,8 +183,9 @@ contains
       integer, dimension(:), pointer :: maxLevelCell
 
       real (kind=RKIND), dimension(:), pointer :: ssh, SSHSquared
-      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional, &
-           velocityZonalSquared, velocityMeridionalSquared, velocityZonalTimesTemperature, velocityMeridionalTimesTemperature
+      real (kind=RKIND), dimension(:,:), pointer :: velocityZonal, velocityMeridional, GMBolusVelocityZonal, GMBolusVelocityMeridional, &
+           velocityZonalSquared, velocityMeridionalSquared, velocityZonalTimesTemperature, velocityMeridionalTimesTemperature, &
+           velocityZonalTimesTemperature_GM, velocityMeridionalTimesTemperature_GM
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
 
       err = 0
@@ -208,7 +209,8 @@ contains
          call mpas_pool_get_array(statePool, 'ssh',ssh, 1)
          call mpas_pool_get_array(diagnosticsPool, 'velocityZonal', velocityZonal)
          call mpas_pool_get_array(diagnosticsPool, 'velocityMeridional', velocityMeridional)
-
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityZonal',GMBolusVelocityZonal)
+         call mpas_pool_get_array(diagnosticsPool, 'GMBolusVelocityMeridional', GMBolusVelocityMeridional)
          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'SSHSquared', SSHSquared)
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityZonalSquared', velocityZonalSquared)
@@ -216,6 +218,9 @@ contains
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityZonalTimesTemperature', velocityZonalTimesTemperature)
          call mpas_pool_get_array(eddyProductVariablesAMPool, 'velocityMeridionalTimesTemperature', &
             velocityMeridionalTimesTemperature)
+         call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityZonalTimesTemperature_GM', velocityZonalTimesTemperature_GM)
+         call mpas_pool_get_array(eddyProductVariablesAMPool,'velocityMeridionalTimesTemperature_GM', &
+            velocityMeridionalTimesTemperature_GM)
 
          do iCell = 1,nCellsSolve
             SSHSquared(iCell) = ssh(iCell)**2
@@ -224,7 +229,9 @@ contains
                velocityMeridionalSquared(k,iCell) = velocityMeridional(k,iCell)**2
                velocityZonalTimesTemperature(k,iCell) = velocityZonal(k,iCell)*activeTracers(index_temperature,k,iCell)
                velocityMeridionalTimesTemperature(k,iCell) = velocityMeridional(k,iCell)*activeTracers(index_temperature,k,iCell)
-            end do
+               velocityZonalTimesTemperature_GM(k,iCell) = GMBolusVelocityZonal(k,iCell)*activeTracers(index_temperature,k,iCell)
+               velocityMeridionalTimesTemperature_GM(k,iCell) = GMBolusVelocityMeridional(k,iCell)*activeTracers(index_temperature,k,iCell)
+             end do
          end do
 
          block => block % next

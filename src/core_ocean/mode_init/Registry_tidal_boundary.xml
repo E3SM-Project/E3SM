@@ -1,0 +1,54 @@
+	<nml_record name="tidal_boundary" mode="init" configuration="tidal_boundary">
+		<nml_option name="config_tidal_boundary_vert_levels" type="integer" default_value="100" units="unitless"
+			description="Number of vertical levels in tidal_boundary test case. Typical values are 40 and 100."
+			possible_values="Any positive integer number greater than 0."
+		/>
+		<nml_option name="config_tidal_boundary_min_vert_levels" type="integer" default_value="10" units="unitless"
+			description="Number of vertical levels where zstar coordinates transition to sigma."
+			possible_values="Any positive integer number greater than 0."
+		/>
+		<nml_option name="config_tidal_boundary_layer_type" type="character" default_value="zstar" units="unitless"
+			description="Vertical coordinate to be used."
+			possible_values="'zstar', 'sigma', 'hybrid'"
+		/>
+		<nml_option name="config_tidal_boundary_right_bottom_depth" type="real" default_value="10.0" units="m"
+			description="Depth of the bottom of the ocean in northern-most end."
+			possible_values="Any positive real value greater than 0."
+		/>
+		<nml_option name="config_tidal_start_dry" type="logical" default_value="false" units="m"
+			description="Logical to determine if channel should be started dry."
+			possible_values="True or False"
+		/>
+		<nml_option name="config_tidal_boundary_use_distances" type="logical" default_value="true" units="m"
+			description="Logical to determine if channel dimensions should to specific values."
+			possible_values="True or False"
+		/>
+		<nml_option name="config_tidal_boundary_left_value" type="real" default_value="0.0" units="m"
+			description="Coordinate of the southern-most end."
+			possible_values="Any positive real value greater than or equal to 0."
+		/>
+		<nml_option name="config_tidal_boundary_right_value" type="real" default_value="25.0e3" units="m"
+			description="Coordinate of the northern-most end."
+			possible_values="Any positive real value greater than or equal to 0."
+		/>
+		<nml_option name="config_tidal_boundary_left_bottom_depth" type="real" default_value="10.0" units="m"
+			description="Depth of the bottom of the ocean in southern-most end."
+			possible_values="Any positive real value greater than 0."
+		/>
+		<nml_option name="config_tidal_boundary_salinity" type="real" default_value="35.0" units="PSU"
+			description="Salinity of the water in the entire domain."
+			possible_values="Any real number greater than 0."
+		/>
+		<nml_option name="config_tidal_boundary_domain_temperature" type="real" default_value="20.0" units="deg C"
+			description="Temperature of water outside of the plug."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_tidal_boundary_plug_temperature" type="real" default_value="20.0" units="deg C"
+			description="Temperature of water in plug."
+			possible_values="Any real number"
+		/>
+		<nml_option name="config_tidal_boundary_plug_width_frac" type="real" default_value="0.10" units="fraction"
+			description="Fraction of the domain the plug should take up initially. Only in the y direction."
+			possible_values="Any real number between 0 and 1."
+		/>
+	</nml_record>

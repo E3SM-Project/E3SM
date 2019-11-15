@@ -95,6 +95,10 @@
 			description="Number of forcing groups"
 			definition="4"
 		/>
+		<dim name="maxTidalConstituents"
+			description="Max number of tidal potential constituents"
+			definition="37"
+		/>
 	</dims>
 
 	<!--*************************************-->
@@ -198,7 +202,7 @@
 		/>
 		<nml_option name="config_vertical_grid" type="character" default_value="uniform" units="unitless"
 					description="Name of vertical grid to use in configuration generation"
-					possible_values="'uniform', '60layerPHC', '42layerWOCE', '100layerACMEv1', '1dCVTgenerator', ..."
+					possible_values="'uniform', '60layerPHC', '42layerWOCE', '100layerE3SMv1', '1dCVTgenerator', ..."
 		/>
 	</nml_record>
 	<nml_record name="CVTgenerator" mode="init">
@@ -239,7 +243,19 @@
 	<nml_record name="ALE_vertical_grid" mode="forward">
 		<nml_option name="config_vert_coord_movement" type="character" default_value="uniform_stretching" units="unitless"
 					description="Determines the vertical coordinate movement type. 'uniform_stretching' distributes SSH perturbations through all vertical levels (z-star vertical coordinate); 'fixed' places them all in the top level (z-level vertical coordinate); 'user_specified' allows the input file to determine the distribution using the variable vertCoordMovementWeights (weighted z-star vertical coordinate); and 'impermeable_interfaces' makes the vertical transport between layers zero, i.e. $w^t=0$ (idealized isopycnal)."
-					possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces'"
+					possible_values="'uniform_stretching', 'fixed', 'user_specified', 'impermeable_interfaces', 'tapered'"
+		/>
+		<nml_option name="config_ALE_thickness_proportionality" type="character" default_value="restingThickness_times_weights" units="unitless"
+					description="When config_vert_coord_movement='uniform_stretching' (z-star type coordinate), determines whether ALE layer thickness is proportional to the resting thickness times weights, or just the weights. The first is standard for global runs and is what is specified in Petersen et al 2015 eqns 4 and 6. The second is useful for wetting/drying test cases where resting thickness may be zero at the coastlines."
+					possible_values="'restingThickness_times_weights' or 'weights_only'"
+		/>
+		<nml_option name="config_vert_taper_weight_depth_1" type="real" default_value="250.0" units="m"
+					description="Vertical coordinate taper weight is one above this depth, linearly decreases to zero below."
+					possible_values="any positive real value, but typically 100 to 1000 m."
+		/>
+		<nml_option name="config_vert_taper_weight_depth_2" type="real" default_value="500.0" units="m"
+					description="Vertical coordinate taper weight is zero below this depth, linearly increases to one above."
+					possible_values="any positive real value, but typically 100 to 1000 m and greater than config_vert_taper_weight_depth_1."
 		/>
 		<nml_option name="config_use_min_max_thickness" type="logical" default_value=".false." units="unitless"
 					description="If true, a minimum and maximum thicknesses are enforced to prevent massless and very thick layers."
@@ -375,6 +391,22 @@
 					description="If true, the standard GM for the tracer advection and mixing is turned on. This includes the redi portion which is captured in hmix."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_gm_lat_variable_c2" type="logical" default_value=".false." units="NA"
+					description="If true, spatially variable phase speed is used Following Ferrari et al (2010)"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_gm_kappa_lat_depth_variable" type="logical" default_value=".false." units="NA"
+					description="If true, spatitally and deph varying Bolus Kappa is used, following Danabasoglu et al (2007)"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_gm_min_stratification_ratio" type="real" default_value="0.1" units="NA"
+					description="minimum value for N2/Nmax2 ratio"
+					possible_values="small positive reals"
+		/>
+		<nml_option name="config_gm_min_phase_speed" type="real" default_value="0.1" units="m s^{-1}"
+					description="minimum allowed phase speed for spatially variable computation"
+					possible_values="small positive reals"
+		/>
 		<nml_option name="config_use_Redi_surface_layer_tapering" type="logical" default_value=".false." units="NA"
 					description="If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer."
 					possible_values=".true. or .false."
@@ -391,8 +423,27 @@
 					description="Vertical component of Redi mixing limited in bottom config_Redi_surface_layer_tapering_depth"
 					possible_values="Any positive real value, typically between 100 and 500 m."
 		/>
-		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
-					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$"
+		<nml_option name="config_GM_Bolus_kappa_function" type="character" default_value="constant" units="unitless"
+					description="Control what type of function is used for GM Bolus $\kappa$"
+					possible_values="'constant' and 'ramp'"
+		/>
+		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
+					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_Bolus_kappa_function is set to constant."
+		/>
+		<nml_option name="config_GM_Bolus_kappa_min" type="real" default_value="0.0" units="m^2 s^{-1}"
+					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GM_Bolus_kappa_max" type="real" default_value="600.0" units="m^2 s^{-1}"
+					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GM_Bolus_cell_size_min" type="real" default_value="20e3" units="m"
+					description="Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_GM_Bolus_cell_size_max" type="real" default_value="30e3" units="m"
+					description="Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge"
 					possible_values="Any positive real value."
 		/>
 		<nml_option name="config_Redi_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
@@ -436,6 +487,10 @@
 		<nml_option name="config_Rayleigh_damping_coeff" type="real" default_value="1.0e-4" units="s^{-1}"
 					description="Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level."
 					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_Rayleigh_damping_depth_variable" type="logical" default_value=".false." units="unitless"
+					description="If true applies r h^-1 instead of just r."
+					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Rayleigh_bottom_friction" type="logical" default_value=".false." units="unitless"
 					description="If true, Rayleigh friction is only applied to the bottom"
@@ -496,7 +551,7 @@
 					possible_values="any integer"
 		/>
 		<nml_option name="config_cvmix_use_BLD_smoothing" type="logical" default_value=".true." units="NA"
-					description="If true KPP bld is smoothed with a laplacian filter" 
+					description="If true KPP bld is smoothed with a laplacian filter"
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_cvmix_shear_mixing_scheme" type="character" default_value="PP" units="NA"
@@ -590,6 +645,18 @@
 		<nml_option name="config_cvmix_kpp_nonlocal_with_implicit_mix" type="logical" default_value=".false." units="none"
 					description="flag that moves the non-local computation and application of tendency to after main timestep loop"
 					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_cvmix_kpp_use_theory_wave" type="logical" default_value=".false." units="NA"
+					description="Flag for use of theory-wave in Li et al. (2017) to approximate the Langmuir number and enhancement factor"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_cvmix_kpp_langmuir_mixing_opt" type="character" default_value="NONE" units="NA"
+					description="Option of Langmuir enhanced mixing parameterization"
+					possible_values="NONE, LWF16, RWHGK16"
+		/>
+		<nml_option name="config_cvmix_kpp_langmuir_entrainment_opt" type="character" default_value="NONE" units="NA"
+					description="Option of Langmuir enhanced entrainment parameterization"
+					possible_values="NONE, LWF16, LF17, RWHGK16"
 		/>
 	</nml_record>
 	<nml_record name="vmix_const" mode="forward">
@@ -694,10 +761,72 @@
 					possible_values="Any positive real number."
 		/>
 	</nml_record>
+	<nml_record name="time_varying_forcing" mode="init;forward">
+		<nml_option name="config_use_time_varying_atmospheric_forcing" type="logical" default_value=".false." units="unitless"
+			description="If true calculate input forcing fields."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_type" type="character" default_value="WINDPRES" units="unitless"
+			description="Atmospheric forcing type."
+			possible_values="'WINDPRES'"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_start_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Forcing time to use at the simulation start time"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_reference_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Reference time for the forcing"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_cycle_start" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Start time for the forcing cycle."
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_cycle_duration" type="character" default_value="2-00-00_00:00:00" units="unitless"
+			description="Duration of the forcing cycle."
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_interval" type="character" default_value="01:00:00" units="unitless"
+			description="Time between forcing inputs"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_atmospheric_forcing_ramp" type="real" default_value="10.0" units="days"
+			description="Number of days to ramp up time varying forcing"
+			possible_values="Any positive real number"
+		/>
+		<nml_option name="config_use_time_varying_land_ice_forcing" type="logical" default_value=".false." units="unitless"
+			description="If true calculate input forcing fields."
+			possible_values=".true. or .false."
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_start_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Forcing time to use at the simulation start time"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_reference_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Reference time for the forcing"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_cycle_start" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+			description="Start time for the forcing cycle."
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_cycle_duration" type="character" default_value="2-00-00_00:00:00" units="unitless"
+			description="Duration of the forcing cycle."
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+		<nml_option name="config_time_varying_land_ice_forcing_interval" type="character" default_value="01:00:00" units="unitless"
+			description="Time between forcing inputs"
+			possible_values="'YYYY-MM-DD_HH:MM:SS"
+		/>
+	</nml_record>
 	<nml_record name="coupling" mode="init;forward">
 		<nml_option name="config_ssh_grad_relax_timescale" type="real" default_value="0.0" units="seconds"
 					description="Timescale for relaxation of the ssh gradient for coupling. A value of 0.0 (default) removes any relaxation and gives instantaneous response."
 					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_remove_AIS_coupler_runoff" type="logical" default_value=".false." units="unitless"
+					description="If true, solid and liquid runoff from the Antarctic Ice Sheet (below 60S latitude) coming from the coupled is zeroed in the coupler import routines.  To be used with data iceberg fluxes coming from the sea ice model."
+					possible_values=".true. or .false."
 		/>
 	</nml_record>
 	<nml_record name="shortwaveRadiation" mode="init;forward">
@@ -714,6 +843,86 @@
 					possible_values="Real Values greater than zero less than bottomDepth"
 		/>
 	</nml_record>
+	<nml_record name="tidal_forcing" mode="init;forward">
+		<nml_option name="config_use_tidal_forcing" type="logical" default_value=".false." units="unitless"
+					description="Controls if tidal forcing is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_forcing_tau" type="real" default_value="10000" units="s"
+					description="Controls time scale for relaxation of tidal forcing."
+					possible_values="Real non-zero value."
+		/>
+		<nml_option name="config_tidal_forcing_type" type="character" default_value="off" units="unitless"
+					description="Selects the way tidal forcing is applied."
+					possible_values="'thickness_source','direct'"
+		/>
+		<nml_option name="config_tidal_forcing_model" type="character" default_value="off" units="unitless"
+					description="Selects the mode in which tidal forcing is computed."
+					possible_values="'off','monochromatic'"
+		/>
+		<nml_option name="config_tidal_forcing_monochromatic_amp" type="real" default_value="2.0" units="m"
+					description="Value of amplitude of monochromatic tide."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_monochromatic_period" type="real" default_value="0.5" units="days"
+					description="Value of period of monochromatic tide."
+					possible_values="Any positive real number."
+		/>
+		<nml_option name="config_tidal_forcing_monochromatic_baseline" type="real" default_value="0.0" units="days"
+					description="Value of baseline monochromatic tide, e.g., sea level rise."
+					possible_values="Any positive real number."
+		/>
+	</nml_record>
+	<nml_record name="tidal_potential_forcing" mode="forward">
+		<nml_option name="config_use_tidal_potential_forcing" type="logical" default_value=".false." units="unitless"
+					description="Controls if tidal potential forcing is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_tidal_potential_reference_time" type="character" default_value="0001-01-01_00:00:00" units="unitless"
+					description="Timestamp describing the time used to initialize nodal factors."
+					possible_values="'YYYY-MM-DD_HH:MM:SS'"
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_M2" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the M2 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_S2" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the S2 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_N2" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the N2 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_K2" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the K2 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_K1" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the K1 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_O1" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the O1 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_Q1" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the Q1 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_use_tidal_potential_forcing_P1" type="logical" default_value=".true." units="unitless"
+					description="Controls if tidal potential forcing for the P1 constituent is used."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_tidal_potential_ramp" type="real" default_value="10.0" units="days"
+					description="Number of days over which the tidal potential forcing is ramped"
+					possible_values="Any positive real number"
+		/>
+		<nml_option name="config_self_attraction_and_loading_beta" type="real" default_value="0.09" units="unitless"
+					description="Coefficient for SAL scalar approximation"
+					possible_values="0.0 to turn off, 0.09 is typical value to use for scalar approximation"
+		/>
+	</nml_record>
 	<nml_record name="frazil_ice" mode="forward">
 		<nml_option name="config_use_frazil_ice_formation" type="logical" default_value=".false." units="unitless"
 					description="Controls if fluxes related to frazil ice process are computed."
@@ -728,11 +937,11 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_frazil_heat_of_fusion" type="real" default_value="3.34e5" units="J kg^{-1}"
-					description="Energy per kilogram released when sea water freezes. NOTE: test and make consistent with ACME."
+					description="Energy per kilogram released when sea water freezes. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_ice_density" type="real" default_value="1000.0" units="kg m^{-3}"
-					description="Assumed density of frazil. NOTE: test and make consistent with ACME."
+					description="Assumed density of frazil. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_fractional_thickness_limit" type="real" default_value="0.1" units="non-dimensional"
@@ -740,7 +949,7 @@
 					possible_values="Any positive real number between 0 and 1."
 		/>
 		<nml_option name="config_specific_heat_sea_water" type="real" default_value="3985.0" units="J kg^{-1} C^{-1}"
-					description="Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with ACME."
+					description="Energy per kilogram per C needed to raise ocean temperature 1 C. NOTE: test and make consistent with E3SM."
 					possible_values="Any positive real number."
 		/>
 		<nml_option name="config_frazil_maximum_depth" type="real" default_value="100.0" units="m"
@@ -859,6 +1068,36 @@
 					possible_values="any positive real, typically 1.0e-3"
 		/>
 	</nml_record>
+	<nml_record name="wetting_drying" mode="init;forward">
+		<nml_option name="config_use_wetting_drying" type="logical" default_value=".false." units="unitless"
+					description="If true, use wetting and drying algorithm to allow for dry cells to config_min_cell_height."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_prevent_drying" type="logical" default_value=".false." units="unitless"
+					description="If true, prevent cells from drying past config_min_cell_height."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_drying_min_cell_height" type="real" default_value="1.0e-3" units="m"
+					description="Minimum allowable cell height under drying.  Cell to be kept wet to at least this thickness."
+					possible_values="any positive real, typically 1.0e-3"
+		/>
+		<nml_option name="config_zero_drying_velocity" type="logical" default_value=".false." units="unitless"
+					description="If true, just zero out velocity that is contributing to drying for cell that is drying.  This option can be used to estimate acceptable minimum thicknesses for a run."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_verify_not_dry" type="logical" default_value=".false." units="unitless"
+					description="If true, verify that cells are at least config_min_cell_height thick."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_thickness_flux_type" type="character" default_value="centered" units="unitless"
+					description="If 'upwind', use upwind to evaluate the edge-value for layerThickness, i.e., layerThicknessEdge.  The standard MPAS-O approach is 'centered'."
+					possible_values="'upwind', 'centered'"
+		/>
+		<nml_option name="config_drying_safety_height" type="real" default_value="1.0e-10" units="m"
+					description="Safety factor on minimum cell height to ensure the minimum height is not violated due to round-off."
+					possible_values="Real value greater or equal to 0."
+		/>
+	</nml_record>
 	<nml_record name="ocean_constants">
 		<nml_option name="config_density0" type="real" default_value="1026.0" units="kg m^{-3}"
 					description="Density used as a coefficient of the pressure gradient terms, $\rho_0$. This is a constant due to the Boussinesq approximation."
@@ -867,8 +1106,8 @@
 	</nml_record>
 	<nml_record name="pressure_gradient" mode="forward">
 		<nml_option name="config_pressure_gradient_type" type="character" default_value="pressure_and_zmid" units="unitless"
-					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential."
-					possible_values="'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'"
+					description="Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure."
+					possible_values="'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'"
 		/>
 		<nml_option name="config_common_level_weight" type="real" default_value="0.5" units="unitless"
 					description="The weight between standard Jacobian and weighted Jacobian, $\gamma$."
@@ -1077,7 +1316,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_vel_coriolis" type="logical" default_value=".false." units="unitless"
-					description="Diables tendencies on the velocity field from the Coriolis force."
+					description="Diables tendencies on the velocity field from the Coriolis force and momentum advection."
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_disable_vel_pgrad" type="logical" default_value=".false." units="unitless"
@@ -1184,6 +1423,8 @@
 		/>
 	</nml_record>
 	<packages>
+		<package name="timeVaryingAtmosphericForcingPKG" description="This package includes variables required for time varying atmospheric forcing"/>
+		<package name="timeVaryingLandIceForcingPKG" description="This package includes variavles required for time varying land-ice forcing"/>
 		<package name="variableShortwave" description="This package includes variables required to compute spatially variable shortwave extinction coefficients"/>
 
 		<package name="splitTimeIntegrator" description="This package includes variables required for either the split or unsplit explicit time integrators."/>
@@ -1194,12 +1435,15 @@
 		<package name="landIceFluxesPKG" description="This package includes varibles required for land ice thickness, momentum and tracer fluxes."/>
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
+		<package name="tidalForcing" description="This package includes variables required for tidal forcing on a boundary."/>
 		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 		<package name="forwardMode" description="This package controls variables that are intended to be used within the forward run mode of the ocean model."/>
 		<package name="analysisMode" description="This package controls variables that are intended to be used within the analysis run mode of the ocean model."/>
 		<package name="initMode" description="This package controls variables that are intended to be used within the init run mode of the ocean model."/>
 		<package name="cullCells" description="This package controls variables that provide information on what cells should be culled."/>
 		<package name="tracerBudget" description="This package controls variables that record the tracer budget."/>
+		<package name="gm" description="This package is for GM variables, which are only needed at lower resolutions."/>
+		<package name="tidalPotentialForcingPKG" description="This package controls variables required for tidal potential forcing"/>
 	</packages>
 
 	<streams>
@@ -1578,6 +1822,28 @@
 			<var name="evaporationFlux"/>
 			<var name="rainFlux"/>
 		</stream>
+		<stream name="atmospheric_forcing"
+				type="input"
+				filename_template="atmospheric_forcing.nc"
+				filename_interval="none"
+				input_interval="none"
+				packages="timeVaryingAtmosphericForcingPKG"
+				immutable="true">
+			<var name="atmosPressure"/>
+			<var name="windSpeedU"/>
+			<var name="windSpeedV"/>
+		</stream>
+		<stream name="land_ice_forcing"
+				type="input"
+				filename_template="land_ice_forcing.nc"
+				filename_interval="none"
+				input_interval="none"
+				packages="timeVaryingLandIceForcingPKG"
+				immutable="true">
+			<var name="landIcePressureForcing"/>
+			<var name="landIceFractionForcing"/>
+			<var name="landIceDraftForcing"/>
+		</stream>
 
 		<!-- Diagnostics streams for forward mode -->
 		<stream name="additional_output"
@@ -1676,15 +1942,18 @@
 			<var name="longWaveHeatFluxUp"/>
 			<var name="longWaveHeatFluxDown"/>
 			<var name="seaIceHeatFlux"/>
+			<var name="icebergHeatFlux"/>
 			<var name="shortWaveHeatFlux"/>
 			<var name="evaporationFlux"/>
 			<var name="seaIceSalinityFlux"/>
 			<var name="seaIceFreshWaterFlux"/>
+			<var name="icebergFreshWaterFlux"/>
 			<var name="riverRunoffFlux"/>
 			<var name="iceRunoffFlux"/>
 			<var name="rainFlux"/>
 			<var name="snowFlux"/>
 			<var name="iceFraction"/>
+			<var name="windSpeed10m"/>
 			<var name="nAccumulatedCoupled"/>
 			<var name="thermalExpansionCoeff"/>
 			<var name="salineContractionCoeff"/>
@@ -2032,7 +2301,7 @@
 			 description="Reference depth of ocean for each vertical interface. Used in 'z-level' type runs."
 		/>
 		<var name="vertCoordMovementWeights" type="real" dimensions="nVertLevels" units="unitless"
-			 description="Weights used for distribution of sea surface heigh purturbations through multiple vertical levels."
+			 description="Weights used for distribution of sea surface height perturbations through multiple vertical levels."
 		/>
 		<var name="boundaryEdge" type="integer" dimensions="nVertLevels nEdges" units="unitless"
 			 description="Mask for determining boundary edges. A boundary edge has only one active ocean cell neighboring it."
@@ -2044,13 +2313,13 @@
 			 description="Mask for determining boundary cells. A boundary cell has at least one inactive cell neighboring it."
 		/>
 		<var name="edgeMask" type="integer" dimensions="nVertLevels nEdges" units="unitless"
-			 description="Mask on edges that determines if computations should be done on edge."
+			 description="Mask on edges that determines if computations should be done on edges."
 		/>
 		<var name="vertexMask" type="integer" dimensions="nVertLevels nVertices" units="unitless"
-			 description="Mask on vertices that determines if computations should be done on vertice."
+			 description="Mask on vertices that determines if computations should be done on vertices."
 		/>
 		<var name="cellMask" type="integer" dimensions="nVertLevels nCells" units="unitless"
-			 description="Mask on cells that determines if computations should be done on cell."
+			 description="Mask on cells that determines if computations should be done on cells."
 		/>
 		<var name="edgeSignOnCell" type="integer" dimensions="maxEdges nCells" units="unitless"
 			 description="Sign of edge contributions to a cell for each edge on cell. Used for bit-reproducible loops. Represents directionality of vector connecting cells."
@@ -2122,39 +2391,55 @@
 			/>
 		</var_array>
 		<var name="temperatureShortWaveTendency" dimensions="nVertLevels nCells Time" units="degrees Celsius per second" packages="tracerBudget" name_in_code="temperatureShortWaveTendency" type="real"
-			     description="potential temperature tendency due to penetrating shortwave"
+				 description="potential temperature tendency due to penetrating shortwave"
 		/>
 		<var_array name="activeTracerNonLocalTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-		      <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
-			     description="potential temperature tendency due to kpp non-local flux"
-		      />
-		      <var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="PSU per second" name_in_code="salinityNonLocalTendency"
-			     description="salinity tendency due to kpp non-local flux"
-		      />
+			  <var name="temperatureNonLocalTendency" array_group="activeTracerNLTendGroup" units="degrees Celsius per second" name_in_code="temperatureNonLocalTendency"
+				 description="potential temperature tendency due to kpp non-local flux"
+			  />
+			  <var name="salinityNonLocalTendency" array_group="activeTracerNLTendGroup" units="PSU per second" name_in_code="salinityNonLocalTendency"
+				 description="salinity tendency due to kpp non-local flux"
+			  />
+		</var_array>
+		<var_array name="activeTracerVerticalAdvectionTopFlux" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
+			<var name="temperatureVerticalAdvectionTopFlux" array_group="activeTracerVertTopFluxGroup" units="C m s^{-1}" name_in_code="temperatureVerticalAdvectionTopFlux"
+				description="potential temperature vertical advective flux through top of cell"
+			/>
+			<var name="salinityVerticalAdvectionTopFlux" array_group="activeTracerVertTopFluxGroup" units="PSU m s^{-1}" name_in_code="salinityVerticalAdvectionTopFlux"
+				description="salinity advective vertical advective flux through top of cell"
+			/>
+		</var_array>
+		<var_array name="activeTracerHorizontalAdvectionEdgeFlux" type="real" dimensions="nVertLevels nEdges Time" packages="tracerBudget">
+			<var name="temperatureHorizontalAdvectionEdgeFlux" array_group="activeTracerHorAdvEdgeFluxGroup" units="C m s^{-1}" name_in_code="temperatureHorizontalAdvectionEdgeFlux"
+				description="potential temperature advective flux due to horizontal advection through edges"
+			/>
+			<var name="salinityHorizontalAdvectionEdgeFlux" array_group="activeTracerHorAdvEdgeFluxGroup" units="PSU m s^{-1}" name_in_code="salinityHorizontalAdvectionEdgeFlux"
+				description="salinity advective flux due to horizontal advection through edges"
+			/>
 		</var_array>
 		<var_array name="activeTracerHorizontalAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-		      <var name="temperatureHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorizontaldvectionTendency"
-			     description="potential temperature tendency due to horizontal advection"
-		      />
-		      <var name="salinityHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="PSU per second" name_in_code="salinityHorizontalAdvectionTendency"
-			     description="salinity tendency due to horizontal advection"
-		      />
+			<var name="temperatureHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureHorizontaldvectionTendency"
+				description="potential temperature tendency due to horizontal advection"
+			/>
+			<var name="salinityHorizontalAdvectionTendency" array_group="activeTracerHorAdvTendGroup" units="PSU per second" name_in_code="salinityHorizontalAdvectionTendency"
+				description="salinity tendency due to horizontal advection"
+			/>
 		</var_array>
 		<var_array name="activeTracerVerticalAdvectionTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-		      <var name="temperatureVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureVerticalAdvectionTendency"
-			     description="potential temperature tendency due to vertical advection"
-		      />
-		      <var name="salinityVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="PSU per second" name_in_code="salinityVerticalAdvectionTendency"
-			     description="salinity tendency due to vertical advection"
-		      />
+			<var name="temperatureVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="degrees Celsius per second" name_in_code="temperatureVerticalAdvectionTendency"
+				description="potential temperature tendency due to vertical advection"
+			/>
+			<var name="salinityVerticalAdvectionTendency" array_group="activeTracerVertAdvTendGroup" units="PSU per second" name_in_code="salinityVerticalAdvectionTendency"
+				description="salinity tendency due to vertical advection"
+			/>
 		</var_array>
 		<var_array name="activeTracerVertMixTendency" type="real" dimensions="nVertLevels nCells Time" packages="tracerBudget">
-		      <var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
-			     description="potential temperature tendency due to vertical mixing"
-		      />
-		      <var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="PSU per second" name_in_code="salinityVertMixTendency"
-			     description="salinity tendency due to vertical mixing"
-		      />
+			  <var name="temperatureVertMixTendency" array_group="activeTracerVertMixTendGroup" units="degrees Celsius per second" name_in_code="temperatureVertMixTendency"
+				 description="potential temperature tendency due to vertical mixing"
+			  />
+			  <var name="salinityVertMixTendency" array_group="activeTracerVertMixTendGroup" units="PSU per second" name_in_code="salinityVertMixTendency"
+				 description="salinity tendency due to vertical mixing"
+			  />
 		</var_array>
 		<var_array name="tracersSurfaceValue" type="real" dimensions="nCells Time">
 			<var name="temperatureSurfaceValue" array_group="surfaceValues" units="degrees Celsius" name_in_code="temperatureSurfaceValue"
@@ -2241,6 +2526,10 @@
 			 description="horizontal velocity used to transport mass and tracers"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="wettingVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			 description="Velocity to prevent drying of cell."
+			 packages="forwardMode"
+		/>
 		<var name="vertAleTransportTop" type="real" dimensions="nVertLevelsP1 nCells Time" units="m s^{-1}"
 			 description="vertical transport through the layer interface at the top of the cell"
 			 packages="forwardMode;analysisMode"
@@ -2276,19 +2565,6 @@
 			 description="kinetic energy of horizonal velocity on cells"
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="hEddyFlux" type="real" dimensions="nVertLevels nEdges Time" units=""
-			 description="Eddy flux in Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="hKappa" type="real" dimensions="nVertLevels nEdges Time" units=""
-			 description="kappa parameter for Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="hKappaQ" type="real" dimensions="nVertLevels nEdges Time" units=""
-			 description="kappaQ parameter for Gent-McWilliams eddy parameterization"
-			 packages="forwardMode;analysisMode"
-		/>
-
 		<var name="viscosity" type="real" dimensions="nVertLevels nEdges Time" units="m^2 s^{-1}"
 			 description="horizontal viscosity"
 			 packages="forwardMode;analysisMode"
@@ -2394,10 +2670,17 @@
 			 description="Meridional Component of the gradient of sea surface height at cell centers."
 			 packages="forwardMode;analysisMode"
 		/>
-
 		<var name="normalGMBolusVelocity" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization"
 			 packages="forwardMode;analysisMode"
+		/>
+		<var name="cGMphaseSpeed" type="real" dimensions="nEdges Time" units="m s^{-1}"
+			description="phase speed for the bolus velocity calculation"
+			packages="forwardMode;analysisMode"
+			/>
+		<var name="kappaGM3D" type="real" dimensions="nVertLevels nEdges Time" units="m s^{-1}"
+			description="spatially and depth varying GM kappa"
+			packages="forwardMode;analysisMode"
 		/>
 		<var name="GMBolusVelocityX" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
 			 description="Bolus velocity in Gent-McWilliams eddy parameterization, x-direction"
@@ -2557,6 +2840,10 @@
 			 description="GM stream function"
 			 packages="forwardMode;analysisMode"
 		/>
+		<var name="gmBolusKappa" type="real" dimensions="nEdges" units="m^2 s^{-1}"
+			 description="GM Bolus Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
+			 packages="gm"
+		/>
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
 			description="The spatially-dependent length scale of exponential decay of surface fluxes. Fluxes are multiplied by $e^{z/\gamma}$, where this coefficient is $\gamma$."
 		/>
@@ -2569,7 +2856,7 @@
 			packages="landIceFluxesPKG"
 		/>
 		<var name="topDrag" type="real" dimensions="nEdges Time" units="N m^{-2}"
-			description="Top drag at the surface of the ocean defined at edge midpoints. Magintude in direction of edge normal."
+			description="Top drag at the surface of the ocean defined at edge midpoints. Magnitude in direction of edge normal."
 			packages="landIceFluxesPKG"
 		/>
 		<var name="topDragMagnitude" type="real" dimensions="nCells Time" units="N m^{-2}"
@@ -2688,7 +2975,7 @@
 		<var name="nForcingGroupCounter"		type="integer"	dimensions="Time"/>
 		<var name="forcingGroupNames"			type="text"	dimensions="nForcingGroupsMax Time"/>
 		<var name="forcingGroupRestartTimes"		type="text"	dimensions="nForcingGroupsMax Time"/>
-	
+
 		<!-- *********************************************************************
 
 				The fields listed below are constituent fields for coupling.
@@ -2742,6 +3029,10 @@
 			 description="Sea ice heat flux at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG"
 		/>
+		<var name="icebergHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
+			 description="Iceberg heat flux at cell centers from coupler. Positive into the ocean."
+			 packages="activeTracersBulkRestoringPKG"
+		/>
 		<var name="shortWaveHeatFlux" type="real" dimensions="nCells Time" units="W m^{-2}"
 			 description="Short wave flux at cell centers from coupler. Positive into the ocean."
 			 packages="activeTracersBulkRestoringPKG;ecosysTracersPKG"
@@ -2751,7 +3042,6 @@
 		<!-- Coupling fields associated with mass or salinity fluxes -->
 		<var name="evaporationFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Evaporation flux at cell centers from coupler. Positive into the ocean."
-			 packages="thicknessBulkPKG"
 		/>
 		<var name="seaIceSalinityFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Sea ice salinity flux at cell centers from coupler. Positive into the ocean."
@@ -2761,17 +3051,36 @@
 			 description="Fresh water flux from sea ice at cell centers from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
+		<var name="icebergFreshWaterFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from iceberg melt at cell centers from coupler. Positive into the ocean."
+			 packages="thicknessBulkPKG"
+		/>
 		<var name="riverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from river runoff at cell centers from coupler. Positive into the ocean."
+			 packages="thicknessBulkPKG"
+		/>
+		<var name="removedRiverRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 packages="thicknessBulkPKG"
+		/>
+		<var name="totalRemovedRiverRunoffFlux" type="real" dimensions="Time" units="kg s^{-1}"
+			 description="Global sum of fresh water flux from river runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
 			 packages="thicknessBulkPKG"
 		/>
 		<var name="iceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from ice runoff at cell centers from coupler. Positive into the ocean."
 			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
 		/>
+		<var name="removedIceRunoffFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
+			 description="Fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
+		/>
+		<var name="totalRemovedIceRunoffFlux" type="real" dimensions="Time" units="kg s^{-1}"
+			 description="Global sum of fresh water flux from ice runoff from the coupler that was removed due to config_remove_AIS_coupler_runoff option. Positive into the ocean."
+			 packages="thicknessBulkPKG;activeTracersBulkRestoringPKG"
+		/>
 		<var name="rainFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from rain at cell centers from coupler. Positive into the ocean."
-			 packages="thicknessBulkPKG"
 		/>
 		<var name="snowFlux" type="real" dimensions="nCells Time" units="kg m^{-2} s^{-1}"
 			 description="Fresh water flux from snow at cell centers from coupler. Positive into the ocean."
@@ -2781,6 +3090,9 @@
 		<!-- Misc. coupling fields -->
 		<var name="iceFraction" type="real" dimensions="nCells Time" units="fractional"
 			 description="Fraction of sea ice coverage at cell centers from coupler. Positive into the ocean."
+		/>
+        <var name="windSpeed10m" type="real" dimensions="nCells Time" units="m s^{-1}"
+			 description="Wind speed at 10 meter."
 		/>
 
 		<!-- Output fields for coupling -->
@@ -2887,6 +3199,22 @@
 			packages="landIceCouplingPKG"
 		/>
 
+		<!-- Input fields for forcing due to tides -->
+		<var name="tidalInputMask" type="real" dimensions="nCells" units="unitless"
+			 description="Input mask for application of tidal forcing where 1 is applied tidal forcing"
+			 packages="tidalForcing"
+		/>
+		<var name="tidalBCValue" type="real" dimensions="nCells Time" units="m"
+			 description="Value of ssh height in cell for tidal boundary condition"
+			 packages="tidalForcing"
+		/>
+
+		<!-- Output fields for forcing due to tides -->
+		<var name="tidalLayerThicknessTendency" type="real" dimensions="nVertLevels nCells Time" units="m s^{-1}"
+			 description="layer thickness tendency due to tidal forcing"
+			 packages="tidalForcing"
+		/>
+
 		<!-- Input fields for forcing due to frazil ice -->
 
 		<!-- Output fields for forcing due to frazil ice -->
@@ -2905,6 +3233,90 @@
 		<var name="frazilSurfacePressure" type="real" dimensions="nCells Time" units="Pa"
 			 description="surface pressure forcing due to weight of frazil ice"
 			 packages="frazilIce"
+		/>
+
+		<!-- Fields for tidal potential forcing -->
+		<var name="tidalPotentialEta" type="real" dimensions="nCells Time" units="m"
+			description="Equilibrium tidal potential"
+			packages="forwardMode"
+		/>
+		<var name="nTidalPotentialConstituents" type="integer" dimensions="Time" units="unitless"
+			description="Number of tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentFrequency" type="real" dimensions="maxTidalConstituents Time" units="s^{-1}"
+			description="Frequency of tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentAmplitude" type="real" dimensions="maxTidalConstituents Time" units="m"
+			description="Amplitude of tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentLoveNumbers" type="real" dimensions="maxTidalConstituents Time" units="unitless"
+			description="Love number combinations for tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentNodalAmplitude" type="real" dimensions="maxTidalConstituents Time" units="m"
+			description="Amplitude nodal factor for tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentNodalPhase" type="real" dimensions="maxTidalConstituents Time" units="s^{-1}"
+			description="Phase nodal factor for tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentAstronomical" type="real" dimensions="maxTidalConstituents Time" units="s^{-1}"
+			description="Astronomical argument for tidal constituents"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialConstituentType" type="integer" dimensions="maxTidalConstituents Time" units="unitless"
+			description="Spieces code for tidal constituents: long-period = 0, diurnal = 1, semi-diurnal = 2"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialLatitudeFunction" type="real" dimensions="nCells R3 Time" units="unitless"
+			description="Latitude function for tidal constituents: long-period = 3\sin^2(\phi)-1, diurnal = \sin(2\phi), semi-diurnal = \cos^2(\phi)"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="tidalPotentialZMid" type="real" dimensions="nVertLevels nCells Time" units="m"
+			description="zMid - Equilibrium tidal potential in RK4"
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="sshSubcycleCurWithTides" type="real" dimensions="nCells Time" units="m"
+			description="SSH - tidal potential in split explicit "
+			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="sshSubcycleNewWithTides" type="real" dimensions="nCells Time" units="m"
+			description="SSH - tidal potential in split explicit "
+			packages="tidalPotentialForcingPKG"
+		/>
+	</var_struct>
+	<var_struct name="timeVaryingForcing" time_levs="1">
+		<var name="windSpeedU" type="real" dimensions="nCells Time" units="m/s"
+			description="Zonal (eastward) component of wind speed at cell centers from coupler. Positive easthward."
+			packages="timeVaryingAtmosphericForcingPKG"
+		/>
+		<var name="windSpeedV" type="real" dimensions="nCells Time" units="m/s"
+			description="Meridional (northward) component of wind speed at cell centers from coupler. Positive northward."
+			packages="timeVaryingAtmosphericForcingPKG"
+		/>
+		<var name="windSpeedMagnitude" type="real" dimensions="nCells Time" units="m/s"
+			description="Magnitude of wind speed at cell centers from coupler."
+			packages="timeVaryingAtmosphericForcingPKG"
+		/>
+		<var name="atmosPressure" type="real" dimensions="nCells Time" units="Pa"
+			description="Pressure at the sea surface due to the atmosphere."
+			packages="timeVaryingAtmosphericForcingPKG"
+		/>
+		<var name="landIceFractionForcing" type="real" dimensions="nCells Time" units="unitless"
+			description="The fraction of each cell covered by land ice"
+			packages="timeVaryingLandIceForcingPKG"
+		/>
+		<var name="landIcePressureForcing" type="real" dimensions="nCells Time" units="Pa"
+			description="Pressure defined at the sea surface due to land ice."
+			packages="timeVaryingLandIceForcingPKG"
+		/>
+		<var name="landIceDraftForcing" type="real" dimensions="nCells Time" units="m"
+			description="The elevation of the interface between land ice and the ocean."
+			packages="timeVaryingLandIceForcingPKG"
 		/>
 	</var_struct>
 	<var_struct name="scratch" time_levs="1">
@@ -3205,6 +3617,9 @@
 		<var name="fluxOutgoing" persistence="scratch" type="real" dimensions="nVertLevels nCells" units=""
 			 description="Outgoing flux of a tracer for advection"
 		/>
+		<var name="lowOrderFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
+			 description="Low order flux scratch variable for both horizontal and vertical advection."
+		/>
 		<var name="highOrderFlux" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges" units=""
 			 description="High order flux scratch variable for both horizontal and vertical advection."
 		/>
@@ -3415,9 +3830,8 @@
 			/>
 	</var_struct>
 
-<!-- Include init modes registry file -->
-#include "mode_init/Registry.xml"
-
+<!-- Include registry files from subdirectories -->
 #include "tracer_groups/Registry_tracers.xml"
 #include "analysis_members/Registry_analysis_members.xml"
+#include "mode_init/Registry.xml"
 </registry>

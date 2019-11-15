@@ -1,0 +1,33 @@
+<!--
+This regression suite follows the test cases from Petersen et al. (2015):
+
+1. lock exchange, 0.5km
+2. overflow, 1km
+3. internal gravity wave, 5km
+4. baroclinic channel: 1, 4, 10km
+
+The purpose of these tests is to measure the change in the Reference Potential
+Energy (RPE), which is a measure of mixing. These tests are set to have zero
+horizontal and vertical tracer diffusion and zero surface fluxes, so all mixing
+measured by RPE is due to spurious numerical diffusion.
+-->
+<regression_suite name="rpe_test_suite">
+	<test name="Lock Exchange 0.5km - RPE Test" core="ocean" configuration="lock_exchange" resolution="0.5km" test="rpe_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Overflow 1km - RPE Test" core="ocean" configuration="overflow" resolution="1km" test="rpe_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Internal Waves 5km - RPE Test" core="ocean" configuration="internal_waves" resolution="5km" test="rpe_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Baroclinic Channel 10km - RPE Test" core="ocean" configuration="baroclinic_channel" resolution="10km" test="rpe_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Baroclinic Channel 4km - RPE Test" core="ocean" configuration="baroclinic_channel" resolution="4km" test="rpe_test">
+		<script name="run_test.py"/>
+	</test>
+	<test name="Baroclinic Channel 1km - RPE Test" core="ocean" configuration="baroclinic_channel" resolution="1km" test="rpe_test">
+		<script name="run_test.py"/>
+	</test>
+</regression_suite>

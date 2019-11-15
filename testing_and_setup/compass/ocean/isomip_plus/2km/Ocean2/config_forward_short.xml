@@ -6,12 +6,13 @@
 	<add_link source="forcing_data_init.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<template file="template_forward.xml" path_base="script_configuration_dir"/>
 		<template file="global_stats.xml" path_base="script_core_dir" path="templates/analysis_members"/>
 		<option name="config_run_duration">'0000-00-00_01:00:00'</option>
+		<option name="config_pio_num_iotasks">1</option>
+		<option name="config_pio_stride">4</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="forward">
@@ -19,7 +20,9 @@
 		<stream name="output">
 			<attribute name="output_interval">0000_01:00:00</attribute>
 		</stream>
+		<template file="land_ice_fluxes.xml" path_base="script_core_dir" path="templates/streams"/>
 		<stream name="land_ice_fluxes">
+			<attribute name="clobber_mode">overwrite</attribute>
 			<attribute name="output_interval">0000_01:00:00</attribute>
 		</stream>
 		<stream name="globalStatsOutput">
@@ -28,7 +31,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">4</argument>
 		</step>
 		<model_run procs="4" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>

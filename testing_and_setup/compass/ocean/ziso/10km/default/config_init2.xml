@@ -4,7 +4,6 @@
 	<add_link source="../init_step1/culled_graph.info" dest="graph.info"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="init">
 		<option name="config_init_configuration">'ziso'</option>
@@ -17,7 +16,7 @@
 		<option name="config_use_activeTracers_surface_restoring">.true.</option>
 		<option name="config_use_activeTracers_interior_restoring">.true.</option>
 		<option name="config_use_bulk_wind_stress">.true.</option>
-		<option name="config_vertical_grid">'100layerACMEv1'</option>
+		<option name="config_vertical_grid">'100layerE3SMv1'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">

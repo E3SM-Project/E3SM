@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<config case="forward">
+	<add_link source="../init/ocean.nc" dest="input.nc"/>
+	<add_link source="../init/graph.info" dest="graph.info"/>
+
+	<namelist name="namelist.ocean" mode="forward">
+		<option name="config_start_time">'0001-01-01_00:00:00'</option>
+		<option name="config_run_duration">'00_18:00:00'</option>
+
+<!--
+		<option name="config_time_integrator">'split_explicit'</option>
+		<option name="config_dt">'00:00:30'</option>
+		<option name="config_btr_dt">'0000_00:00:03'</option>
+-->
+		<option name="config_dt">'00:00:10'</option>
+		<option name="config_time_integrator">'RK4'</option>
+		<option name="config_hmix_scaleWithMesh">.true.</option>
+		<option name="config_mom_del4">4.0e8</option>
+		<option name="config_use_mom_del4">.true.</option>
+		<option name="config_vert_coord_movement">'uniform_stretching'</option>
+		<option name="config_ALE_thickness_proportionality">'weights_only'</option>
+		<option name="config_use_bulk_wind_stress">.true.</option>
+		<option name="config_use_time_varying_atmospheric_forcing">.false.</option>
+		<option name="config_check_ssh_consistency">.false.</option>
+		<option name="config_use_wetting_drying">.true.</option>
+		<option name="config_prevent_drying">.true.</option>
+		<option name="config_drying_min_cell_height">0.1</option>
+		<option name="config_verify_not_dry">.true.</option>
+		<option name="config_zero_drying_velocity">.true.</option>
+		<option name="config_thickness_flux_type">'upwind'</option>
+	</namelist>
+
+	<streams name="streams.ocean" keep="immutable" mode="forward">
+		<stream name="mesh">
+			<attribute name="filename_template">input.nc</attribute>
+		</stream>
+		<stream name="input">
+			<attribute name="filename_template">input.nc</attribute>
+		</stream>
+		<template file="minimal_output.xml" path_base="script_core_dir" path="templates/streams"/>
+		<stream name="output">
+			<attribute name="output_interval">01:00:00</attribute>
+			<add_contents>
+				<member name="ssh" type="var"/>
+				<member name="kineticEnergyCell" type="var"/>
+			</add_contents>
+			<remove_contents>
+				<member name="tracers"/>
+					<member name="normalVelocity"/>
+			</remove_contents>
+		</stream>
+	</streams>
+
+	<run_script name="run.py">
+		<step executable="gpmetis">
+			<argument flag="graph.info">360</argument>
+		</step>
+		<model_run procs="360" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
+	</run_script>
+</config>

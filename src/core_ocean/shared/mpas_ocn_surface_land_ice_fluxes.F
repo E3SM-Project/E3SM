@@ -394,8 +394,8 @@ contains
 
       type (mpas_pool_type), pointer :: tracersPool
 
-      integer :: iCell
-      integer, pointer :: nCellsSolve
+      integer :: iCell, nCells
+      integer, dimension(:), pointer :: nCellsArray
 
       real (kind=RKIND), pointer :: config_land_ice_flux_ISOMIP_gammaT
 
@@ -428,7 +428,6 @@ contains
                                      freezeInterfaceSalinityField, freezeInterfaceTemperatureField, &
                                      freezeFreshwaterFluxField, freezeHeatFluxField, &
                                      freezeIceHeatFluxField
-
       err = 0
 
       if ( .not. standaloneOn ) return
@@ -439,7 +438,7 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_useHollandJenkinsAdvDiff', &
                                 config_land_ice_flux_useHollandJenkinsAdvDiff)
 
-      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
       call mpas_pool_get_array(diagnosticsPool, 'landIceFrictionVelocity', landIceFrictionVelocity)
 
@@ -489,9 +488,11 @@ contains
          freezeIceHeatFlux => freezeIceHeatFluxField % array
       end if
 
+      nCells = nCellsArray( size(nCellsArray) )
+
       if(isomipOn) then
-         !$omp do schedule(runtime) private(heatFlux)
-         do iCell = 1, nCellsSolve
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
             if (landIceMask(iCell) == 0) cycle
 
             ! linearized equaiton for the S and p dependent potential freezing temperature
@@ -538,7 +539,7 @@ contains
                landIceFreshwaterFlux, &
                landIceHeatFlux, &
                heatFluxToLandIce, &
-               nCellsSolve, &
+               nCells, &
                err)
             if(err .ne. 0) then
                call mpas_log_write( &
@@ -559,7 +560,7 @@ contains
                freezeFreshwaterFlux, &
                freezeHeatFlux, &
                freezeIceHeatFlux, &
-               nCellsSolve, &
+               nCells, &
                err)
             if(err .ne. 0) then
                call mpas_log_write( &
@@ -567,7 +568,7 @@ contains
                   MPAS_LOG_CRIT)
             end if
 
-            do iCell = 1, nCellsSolve
+            do iCell = 1, nCells
                if ((landIceMask(iCell) == 0) .or. (landIceFreshwaterFlux(iCell) >= 0.0_RKIND)) cycle
 
                landIceInterfaceTracers(indexIS,iCell) = freezeInterfaceSalinity(iCell)
@@ -589,7 +590,7 @@ contains
                landIceFreshwaterFlux, &
                landIceHeatFlux, &
                heatFluxToLandIce, &
-               nCellsSolve, &
+               nCells, &
                err)
             if(err .ne. 0) then
                call mpas_log_write( &
@@ -599,7 +600,7 @@ contains
          end if
 
          ! modulate the fluxes by the landIceFraction
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
             if (landIceMask(iCell) == 0) cycle
 
             landIceFreshwaterFlux(iCell) = landIceFraction(iCell)*landIceFreshwaterFlux(iCell)
@@ -618,7 +619,7 @@ contains
       end if
 
       ! accumulate land-ice mass and heat
-      do iCell = 1, nCellsSolve
+      do iCell = 1, nCells
         accumulatedLandIceMassNew(iCell) = accumulatedLandIceMassOld(iCell) - dt*landIceFreshwaterFlux(iCell)
         accumulatedLandIceHeatNew(iCell) = accumulatedLandIceHeatOld(iCell) + dt*heatFluxToLandIce(iCell)
       end do
@@ -730,10 +731,7 @@ contains
     outOceanHeatFlux, &
     outIceHeatFlux, &
     nCells, &
-    err, &
-    iceTemperature, &
-    iceTemperatureDistance, &
-    kappa_land_ice) !{{{
+    err) !{{{
 
     !-----------------------------------------------------------------
     !
@@ -752,13 +750,6 @@ contains
       interfacePressure            !< Input: pressure at the ice-ocean interface
 
     integer, intent(in) :: nCells !< Input: number of cells in each array
-
-    real (kind=RKIND), dimension(:), intent(in), optional:: &
-      iceTemperature, &            !< Input: ice temperature in bottom layer
-      iceTemperatureDistance       !< Input: distance to ice temperature from ice-ocean interface
-
-    real (kind=RKIND), intent(in), optional:: &
-      kappa_land_ice     !< Input: the diffusivity of heat in land ice
 
     !-----------------------------------------------------------------
     !
@@ -781,8 +772,8 @@ contains
     !
     !-----------------------------------------------------------------
 
-    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, nu, a, b, c, eta, &
-                         iceHeatFluxCoeff, iceDeltaT, dTf_dS
+    real (kind=RKIND) :: T0, transferVelocityRatio, Tlatent, a, b, c, eta, &
+                         dTf_dS
     integer :: iCell
 
     logical :: coupled
@@ -790,22 +781,12 @@ contains
     real (kind=RKIND), parameter :: minInterfaceSalinity = 0.001_RKIND
 
     err = 0
-    coupled = present(iceTemperature) .and. present(iceTemperatureDistance) &
-            .and. present(kappa_land_ice)
     Tlatent = latent_heat_fusion_mks/cp_sw
 
-    !$omp do schedule(runtime) private(iceHeatFluxCoeff, nu, iceDeltaT, T0, transferVelocityRatio, a, b, c)
+    !$omp do schedule(runtime)
     do iCell = 1, nCells
       if (mask(iCell) == 0) cycle
 
-      if(coupled) then
-        iceHeatFluxCoeff = rho_land_ice*cp_land_ice*kappa_land_ice/iceTemperatureDistance(iCell)
-        nu = iceHeatFluxCoeff/(rho_sw*cp_sw*oceanHeatTransferVelocity(iCell))
-        iceDeltaT = T0 - iceTemperature(iCell)
-      else
-        nu = 0.0_RKIND
-        iceDeltaT = 0.0_RKIND
-      end if
       T0 = ocn_freezing_temperature(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
                                     inLandIceCavity=.true.)
       dTf_dS = ocn_freezing_temperature_salinity_deriv(salinity=0.0_RKIND, pressure=interfacePressure(iCell), &
@@ -813,8 +794,8 @@ contains
 
       transferVelocityRatio = oceanSaltTransferVelocity(iCell)/oceanHeatTransferVelocity(iCell)
 
-      a = -dTf_dS*(1.0_RKIND + nu)
-      b = transferVelocityRatio*Tlatent - nu*iceDeltaT + oceanTemperature(iCell) - T0
+      a = -dTf_dS
+      b = transferVelocityRatio*Tlatent + oceanTemperature(iCell) - T0
       c = -transferVelocityRatio*Tlatent*max(oceanSalinity(iCell), 0.0_RKIND)
 
       ! a is non-negative; c is strictly non-positive so we never get imaginary roots.
@@ -844,10 +825,6 @@ contains
       !      the reference point in the ice (either the surface or the middle of the bottom layer)
       !      and the interface
       outIceHeatFlux(iCell) = -cp_land_ice*outFreshwaterFlux(iCell)*outInterfaceTemperature(iCell)
-      if(coupled) then
-        outIceHeatFlux(iCell) = outIceHeatFlux(iCell) &
-          - iceHeatFluxCoeff*(iceTemperature(iCell) - outInterfaceTemperature(iCell))
-      end if
     end do
     !$omp end do
 
@@ -951,7 +928,7 @@ contains
 
     err = 0
     cpRatio = cp_land_ice/cp_sw
-    !$omp do schedule(runtime) private(T0, transferVelocityRatio, Tlatent, eta, TlatentStar, a, b, c)
+    !$omp do schedule(runtime) reduction(+:err)
     do iCell = 1, nCells
       if (mask(iCell) == 0) cycle
 
@@ -974,9 +951,7 @@ contains
       outInterfaceSalinity(iCell) = (-b + sqrt(b**2 - 4.0_RKIND*a*c*oceanSalinity(iCell)))/(2.0_RKIND*a)
       if (outInterfaceSalinity(iCell) .le. 0.0_RKIND) then
          err = 1
-         call mpas_log_write( &
-            'interfaceSalinity is negative.', &
-            MPAS_LOG_CRIT)
+         call mpas_log_write('interfaceSalinity is negative.', MPAS_LOG_CRIT)
       end if
       outInterfaceTemperature(iCell) = dTf_dS*outInterfaceSalinity(iCell)+T0
 

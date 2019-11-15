@@ -529,9 +529,7 @@ contains
             BGC_output%PH_PREV_3D(iLevel,column) = PH_PREV_3D(iLevel,iCell)
             BGC_output%PH_PREV_ALT_CO2_3D(iLevel,column) = PH_PREV_ALT_CO2_3D(iLevel,iCell)
 
-!maltrud increase FESEDFLUX by factor of 5
-!           BGC_forcing%FESEDFLUX(iLevel,column) = FESEDFLUX(iLevel,iCell)*convertLengthMKStoCGS
-            BGC_forcing%FESEDFLUX(iLevel,column) = FESEDFLUX(iLevel,iCell)*convertLengthMKStoCGS*5.0_RKIND
+            BGC_forcing%FESEDFLUX(iLevel,column) = FESEDFLUX(iLevel,iCell)*convertLengthMKStoCGS
             BGC_forcing%NUTR_RESTORE_RTAU(iLevel,column) = 0.0_RKIND
             BGC_forcing%NO3_CLIM(iLevel,column) = 0.0_RKIND
             BGC_forcing%PO4_CLIM(iLevel,column) = 0.0_RKIND

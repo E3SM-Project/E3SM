@@ -59,7 +59,8 @@ module ocn_diagnostics
              ocn_reconstruct_gm_vectors, &
              ocn_diagnostics_init, &
              ocn_compute_kpp_input_fields, &
-             ocn_validate_state
+             ocn_validate_state, &
+             ocn_build_log_filename
 
    !--------------------------------------------------------------------
    !
@@ -145,8 +146,10 @@ contains
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
       logical, pointer :: config_use_cvmix_kpp
+      logical, pointer :: config_use_wetting_drying
       real (kind=RKIND), pointer :: config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_averaging
       character (len=StrKIND), pointer :: config_pressure_gradient_type
+      character (len=StrKIND), pointer :: config_thickness_flux_type
 
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient_runoff
@@ -173,6 +176,8 @@ contains
       call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
       call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient_runoff',  &
                                              config_flux_attenuation_coefficient_runoff)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_wetting_drying', config_use_wetting_drying)
+      call mpas_pool_get_config(ocnConfigs, 'config_thickness_flux_type', config_thickness_flux_type)
 
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
@@ -265,18 +270,45 @@ contains
       nCells = nCellsArray( size(nCellsArray) )
       nVertices = nVerticesArray( size(nVerticesArray) )
 
-
-      !$omp do schedule(runtime) private(cell1, cell2, k)
-      do iEdge = 1, nEdges
-         ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
-         layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
-         cell1 = cellsOnEdge(1,iEdge)
-         cell2 = cellsOnEdge(2,iEdge)
-         do k = 1, maxLevelEdgeTop(iEdge)
+      if (.not. config_use_wetting_drying .or. (config_use_wetting_drying .and. (trim(config_thickness_flux_type) .eq. 'centered'))) then
+        !$omp do schedule(runtime) private(cell1, cell2, k)
+        do iEdge = 1, nEdges
+          ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
+          layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
+          cell1 = cellsOnEdge(1,iEdge)
+          cell2 = cellsOnEdge(2,iEdge)
+          do k = 1, maxLevelEdgeTop(iEdge)
+            ! central differenced
             layerThicknessEdge(k,iEdge) = 0.5_RKIND * (layerThickness(k,cell1) + layerThickness(k,cell2))
-         end do
-      end do
-      !$omp end do
+          end do
+        end do
+        !$omp end do
+      else
+        if (config_use_wetting_drying .and. (trim(config_thickness_flux_type) .ne. 'centered')) then
+          if ( trim(config_thickness_flux_type) .eq. 'upwind') then
+            !$omp do schedule(runtime) private(cell1, cell2, k)
+            do iEdge = 1, nEdges
+              ! initialize layerThicknessEdge to avoid divide by zero and NaN problems.
+              layerThicknessEdge(:, iEdge) = -1.0e34_RKIND
+              cell1 = cellsOnEdge(1,iEdge)
+              cell2 = cellsOnEdge(2,iEdge)
+              do k = 1, maxLevelEdgeTop(iEdge)
+                ! upwind
+                if (normalVelocity(k, iEdge) > 0.0_RKIND) then
+                  layerThicknessEdge(k,iEdge) = layerThickness(k,cell1)
+                elseif (normalVelocity(k, iEdge) < 0.0_RKIND) then
+                  layerThicknessEdge(k,iEdge) = layerThickness(k,cell2)
+                else
+                  layerThicknessEdge(k,iEdge) = max(layerThickness(k,cell1), layerThickness(k,cell2))
+                end if
+              end do
+            end do
+            !$omp end do
+          end if
+        else
+          call mpas_log_write('Thickness flux option of ' // trim(config_thickness_flux_type) // 'is not known', MPAS_LOG_CRIT)
+        end if
+      end if
 
       coef_3rd_order = config_coef_3rd_order
 
@@ -285,12 +317,13 @@ contains
       !    used -1e34 so error clearly occurs if these values are used.
       !
 
-      !$omp single
+      !$omp master
       normalVelocity(:,nEdges+1) = -1e34
       layerThickness(:,nCells+1) = -1e34
       activeTracers(indexTemperature,:,nCells+1) = -1e34
       activeTracers(indexSalinity,:,nCells+1) = -1e34
-      !$omp end single
+      !$omp end master
+      call mpas_threading_barrier()
 
       call ocn_relativeVorticity_circulation(relativeVorticity, circulation, meshPool, normalVelocity, err)
 
@@ -313,14 +346,14 @@ contains
       end do
       !$omp end do
 
-      ! Need 0 and 1 halo cells
-      nCells = nCellsArray( 2 )
+      ! Need 0,1,2 halo cells
+      nCells = nCellsArray( 3 )
       !
       ! Compute divergence, kinetic energy, and vertical velocity
       !
       allocate(div_hu(nVertLevels),div_huTransport(nVertLevels),div_huGMBolus(nVertLevels))
 
-      !$omp do schedule(runtime) private(invAreaCell1, iEdge, r_tmp, i, k)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          divergence(:, iCell) = 0.0_RKIND
          kineticEnergyCell(:, iCell) = 0.0_RKIND
@@ -364,7 +397,7 @@ contains
 
       nEdges = nEdgesArray( 2 )
 
-      !$omp do schedule(runtime) private(eoe, i, k)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
          tangentialVelocity(:, iEdge) = 0.0_RKIND
          ! Compute v (tangential) velocities
@@ -379,8 +412,8 @@ contains
       end do
       !$omp end do
 
-      nCells = nCellsArray( size(nCellsArray) )
-
+      ! Need 0,1,2 halo cells
+      nCells = nCellsArray( 3 )
       !
       ! Compute kinetic energy
       !
@@ -389,7 +422,6 @@ contains
          call mpas_pool_get_field(scratchPool, 'kineticEnergyVertexOnCells', kineticEnergyVertexOnCellsField)
          call mpas_allocate_scratch_field(kineticEnergyVertexField, .true.)
          call mpas_allocate_scratch_field(kineticEnergyVertexOnCellsField, .true.)
-         call mpas_threading_barrier()
 
          kineticEnergyVertex         => kineticEnergyVertexField % array
          kineticEnergyVertexOnCells  => kineticEnergyVertexOnCellsField % array
@@ -434,7 +466,6 @@ contains
          end do
          !$omp end do
 
-         call mpas_threading_barrier()
          call mpas_deallocate_scratch_field(kineticEnergyVertexField, .true.)
          call mpas_deallocate_scratch_field(kineticEnergyVertexOnCellsField, .true.)
       end if
@@ -446,7 +477,6 @@ contains
       call mpas_pool_get_field(scratchPool, 'normalizedPlanetaryVorticityVertex', normalizedPlanetaryVorticityVertexField)
       call mpas_allocate_scratch_field(normalizedRelativeVorticityVertexField, .true., .false.)
       call mpas_allocate_scratch_field(normalizedPlanetaryVorticityVertexField, .true., .false.)
-      call mpas_threading_barrier()
 
       normalizedPlanetaryVorticityVertex  => normalizedPlanetaryVorticityVertexField % array
       normalizedRelativeVorticityVertex  => normalizedRelativeVorticityVertexField % array
@@ -516,7 +546,6 @@ contains
          call mpas_pool_get_field(scratchPool, 'vorticityGradientTangentialComponent', vorticityGradientTangentialComponentField)
          call mpas_allocate_scratch_field(vorticityGradientNormalComponentField, .true.)
          call mpas_allocate_scratch_field(vorticityGradientTangentialComponentField, .true.)
-         call mpas_threading_barrier()
 
          vorticityGradientNormalComponent => vorticityGradientNormalComponentField % array
          vorticityGradientTangentialComponent => vorticityGradientTangentialComponentField % array
@@ -563,13 +592,11 @@ contains
          enddo
          !$omp end do
 
-         call mpas_threading_barrier()
          call mpas_deallocate_scratch_field(vorticityGradientNormalComponentField, .true.)
          call mpas_deallocate_scratch_field(vorticityGradientTangentialComponentField, .true.)
 
       endif
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(normalizedRelativeVorticityVertexField, .true.)
       call mpas_deallocate_scratch_field(normalizedPlanetaryVorticityVertexField, .true.)
 
@@ -621,7 +648,7 @@ contains
 
         allocate(pTop(nVertLevels))
 
-        !$omp do schedule(runtime) private(k)
+        !$omp do schedule(runtime)
         do iCell = 1, nCells
 
            ! assume atmospheric pressure at the surface is zero for now.
@@ -752,7 +779,7 @@ contains
 
         nCells = nCellsArray( 1 )
 
-        !$omp do schedule(runtime) private(surfaceLayerDepth, sumSurfaceLayer, k, rSurfaceLayer)
+        !$omp do schedule(runtime)
         do iCell=1,nCells
           surfaceLayerDepth = config_cvmix_kpp_surface_layer_averaging
           sumSurfaceLayer=0.0_RKIND
@@ -861,10 +888,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
-
-      call mpas_deallocate_scratch_field(normalizedRelativeVorticityVertexField, .true.)
-      call mpas_deallocate_scratch_field(normalizedPlanetaryVorticityVertexField, .true.)
       call mpas_timer_stop('diagnostic solve')
 
    end subroutine ocn_diagnostic_solve!}}}
@@ -982,8 +1005,6 @@ contains
       call mpas_allocate_scratch_field(projectedSSHField, .true.)
       call mpas_allocate_scratch_field(ALE_ThicknessField, .true.)
 
-      call mpas_threading_barrier()
-
       div_hu => div_huField % array
       projectedSSH => projectedSSHField % array
       ALE_Thickness => ALE_ThicknessField % array
@@ -1040,7 +1061,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(div_huField, .true.)
       call mpas_deallocate_scratch_field(projectedSSHField, .true.)
       call mpas_deallocate_scratch_field(ALE_ThicknessField, .true.)
@@ -1083,7 +1103,6 @@ contains
       end if
 
       call mpas_timer_start("ocn_fuperp")
-      call mpas_threading_barrier()
 
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
       call mpas_pool_get_array(statePool, 'normalBaroclinicVelocity', normalBaroclinicVelocity, timeLevel)
@@ -1121,7 +1140,6 @@ contains
       end do
       !$omp end do
 
-      call mpas_threading_barrier()
       call mpas_timer_stop("ocn_fuperp")
 
    end subroutine ocn_fuperp!}}}
@@ -1168,7 +1186,7 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
-      !$omp do schedule(runtime) private(normalThicknessFluxSum, thicknessSum, k, vertSum)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
 
         ! thicknessSum is initialized outside the loop because on land boundaries
@@ -1188,8 +1206,6 @@ contains
         enddo
       enddo ! iEdge
       !$omp end do
-
-      call mpas_threading_barrier()
 
       call mpas_timer_stop("ocn_filter_btr_mode_vel")
 
@@ -1239,7 +1255,7 @@ contains
 
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
 
-      !$omp do schedule(runtime) private(normalThicknessFluxSum, thicknessSum, vertSum, k)
+      !$omp do schedule(runtime)
       do iEdge = 1, nEdges
 
         ! thicknessSum is initialized outside the loop because on land boundaries
@@ -1351,7 +1367,7 @@ contains
       real (kind=RKIND), dimension(:), pointer :: dcEdge, dvEdge, areaCell
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceThicknessFlux, &
            surfaceBuoyancyForcing, surfaceFrictionVelocity, penetrativeTemperatureFluxOBL, &
-           normalVelocitySurfaceLayer, surfaceThicknessFluxRunoff
+           normalVelocitySurfaceLayer, surfaceThicknessFluxRunoff, rainFlux, evaporationFlux
       real (kind=RKIND), pointer :: config_flux_attenuation_coefficient, config_flux_attenuation_coefficient_runoff
 
       real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
@@ -1425,6 +1441,8 @@ contains
       call mpas_pool_get_array(forcingPool, 'penetrativeTemperatureFlux', penetrativeTemperatureFlux)
       call mpas_pool_get_array(forcingPool, 'surfaceStress', surfaceStress)
       call mpas_pool_get_array(forcingPool, 'surfaceStressMagnitude', surfaceStressMagnitude)
+      call mpas_pool_get_array(forcingPool, 'rainFlux', rainFlux)
+      call mpas_pool_get_array(forcingPool, 'evaporationFlux', evaporationFlux)
 
       call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, 1)
       call mpas_pool_get_array(tracersSurfaceFluxPool, 'activeTracersSurfaceFlux', activeTracersSurfaceFlux)
@@ -1436,7 +1454,6 @@ contains
       call mpas_allocate_scratch_field(densitySurfaceDisplacedField, .true., .false.)
       call mpas_allocate_scratch_field(thermalExpansionCoeffField, .true., .false.)
       call mpas_allocate_scratch_field(salineContractionCoeffField, .true., .false.)
-      call mpas_threading_barrier()
 
       densitySurfaceDisplaced => densitySurfaceDisplacedField % array
       thermalExpansionCoeff => thermalExpansionCoeffField % array
@@ -1450,8 +1467,7 @@ contains
                                          densitySurfaceDisplaced, err, thermalExpansionCoeff, salineContractionCoeff, &
                                          timeLevel)
 
-      !$omp do schedule(runtime) private(invAreaCell, deltaVelocitySquared, i, iEdge, factor, delU2, fracAbsorbed, &
-      !$omp                              fracAbsorbedRunoff)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
        invAreaCell = 1.0_RKIND / areaCell(iCell)
 
@@ -1482,12 +1498,14 @@ contains
        ! transport code.  This includes tracer forcing due to thickness
 
        nonLocalSurfaceTracerFlux(indexTempFlux, iCell) = activeTracersSurfaceFlux(indexTempFlux,iCell) &
-               + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell) - fracAbsorbed * &
-               surfaceThicknessFlux(iCell) * activeTracers(indexTempFlux,1,iCell) + &
-               activeTracersSurfaceFluxRunoff(indexTempFlux,iCell) * fracAbsorbedRunoff
+               + penetrativeTemperatureFlux(iCell) - penetrativeTemperatureFluxOBL(iCell)  &
+               - fracAbsorbed * (rainFlux(iCell) + evaporationFlux(iCell)) * activeTracers(indexTempFlux,1,iCell)/rho_sw  &
+               - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) &
+                * min(activeTracers(indexTempFlux,1,iCell),0.0_RKIND)/rho_sw
 
        nonLocalSurfaceTracerFlux(indexSaltFlux,iCell) = activeTracersSurfaceFlux(indexSaltFlux,iCell) &
-               - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell)
+               - fracAbsorbed * surfaceThicknessFlux(iCell) * activeTracers(indexSaltFlux,1,iCell) &
+               - fracAbsorbedRunoff * surfaceThicknessFluxRunoff(iCell) * activeTracers(indexSaltFlux,1,iCell)
 
        surfaceBuoyancyForcing(iCell) =  thermalExpansionCoeff (1,iCell) &
               * nonLocalSurfaceTracerFlux(indexTempFlux,iCell) &
@@ -1513,8 +1531,6 @@ contains
 
       enddo
       !$omp end do
-
-      call mpas_threading_barrier()
 
       ! deallocate scratch space
       call mpas_deallocate_scratch_field(thermalExpansionCoeffField, .true.)
@@ -1699,7 +1715,7 @@ contains
       call mpas_pool_get_field(scratchPool, 'boundaryLayerSalinityScratch', boundaryLayerSalinityField)
       call mpas_allocate_scratch_field(boundaryLayerTemperatureField, .true.)
       call mpas_allocate_scratch_field(boundaryLayerSalinityField, .true.)
-      call mpas_threading_barrier()
+
       blTempScratch => boundaryLayerTemperatureField % array
       blSaltScratch => boundaryLayerSalinityField % array
 
@@ -1740,7 +1756,7 @@ contains
 
 
       ! average temperature and salinity over horizontal neighbors and the sub-ice-shelf boundary layer
-      !$omp do schedule(runtime) private(blThickness, iLevel, dz)
+      !$omp do schedule(runtime)
       do iCell = 1, nCells
          blThickness = 0.0_RKIND
          blTempScratch(iCell) = 0.0_RKIND
@@ -1810,7 +1826,6 @@ contains
          !$omp end do
       end if
 
-      call mpas_threading_barrier()
       call mpas_deallocate_scratch_field(boundaryLayerTemperatureField, .true.)
       call mpas_deallocate_scratch_field(boundaryLayerSalinityField, .true.)
 
@@ -2167,8 +2182,8 @@ contains
                call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
             end if
 
-            ! Test snowFlow
-            fieldName = 'snowFlow'
+            ! Test snowFlux
+            fieldName = 'snowFlux'
             minValue = HUGE(minValue)
             maxValue = -HUGE(maxValue)
             call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
@@ -2391,8 +2406,8 @@ contains
                call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
             end if
 
-            ! Test seaIceFreshWaterFlux
-            fieldName = 'snowFlux'
+            ! Test icebergHeatFlux
+            fieldName = 'icebergHeatFlux'
             minValue = HUGE(minValue)
             maxValue = -HUGE(maxValue)
             call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
@@ -2404,6 +2419,31 @@ contains
                call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
             end if
 
+            ! Test seaIceFreshWaterFlux
+            fieldName = 'seaIceFreshWaterFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
+
+            ! Test icebergFreshWaterFlux
+            fieldName = 'icebergFreshWaterFlux'
+            minValue = HUGE(minValue)
+            maxValue = -HUGE(maxValue)
+            call mpas_pool_get_array(forcingPool, fieldName, real1DArr)
+            if ( associated(real1DArr) ) then
+               do iCell = 1, nCellsSolve
+                  minValue = min( minValue, real1DArr(iCell) )
+                  maxValue = max( maxValue, real1DArr(iCell) )
+               end do
+               call ocn_write_field_statistics(debugUnit, fieldName, minValue, maxValue)
+            end if
 
             ! Test rainFlux
             fieldName = 'rainFlux'

@@ -119,8 +119,13 @@ module ocn_core_interface
       logical, pointer :: landIceCouplingPKGActive
       logical, pointer :: thicknessBulkPKGActive
       logical, pointer :: frazilIceActive
+      logical, pointer :: tidalForcingActive
+      logical, pointer :: tidalPotentialForcingPKGActive
       logical, pointer :: inSituEOSActive
       logical, pointer :: variableShortwaveActive
+      logical, pointer :: gmActive
+      logical, pointer :: timeVaryingAtmosphericForcingPKGActive
+      logical, pointer :: timeVaryingLandIceForcingPKGActive
 
       type (mpas_pool_iterator_type) :: pkgItr
       logical, pointer :: packageActive
@@ -143,6 +148,12 @@ module ocn_core_interface
 
       logical, pointer :: config_use_freq_filtered_thickness
       logical, pointer :: config_use_frazil_ice_formation
+      logical, pointer :: config_use_tidal_forcing
+      logical, pointer :: config_use_tidal_potential_forcing
+      logical, pointer :: config_use_standardGM
+      logical, pointer :: config_use_time_varying_atmospheric_forcing
+      logical, pointer :: config_use_time_varying_land_ice_forcing
+
       character (len=StrKIND), pointer :: config_time_integrator
       character (len=StrKIND), pointer :: config_ocean_run_mode
       character (len=StrKIND), pointer :: config_pressure_gradient_type
@@ -268,6 +279,24 @@ module ocn_core_interface
       end if
 
       !
+      ! test for use of tidal forcing, tidalForcingActive
+      !
+      call mpas_pool_get_package(packagePool, 'tidalForcingActive', tidalForcingActive)
+      call mpas_pool_get_config(configPool, 'config_use_tidal_forcing', config_use_tidal_forcing)
+      if (config_use_tidal_forcing) then
+         tidalForcingActive = .true.
+      end if
+
+      !
+      ! test for use of tidal potential forcing, tidalPotentialForcingPKGActive
+      !
+      call mpas_pool_get_package(packagePool, 'tidalPotentialForcingPKGActive', tidalPotentialForcingPKGActive)
+      call mpas_pool_get_config(configPool, 'config_use_tidal_potential_forcing', config_use_tidal_potential_forcing)
+      if (config_use_tidal_potential_forcing) then
+         tidalPotentialForcingPKGActive = .true.
+      end if
+
+      !
       ! test for form of pressure gradient computation
       !
       ! TDR: need to add PKG
@@ -276,6 +305,31 @@ module ocn_core_interface
       if (config_pressure_gradient_type.eq.'Jacobian_from_TS') then
          inSituEOSActive = .true.
       end if
+
+      !
+      ! test for use of gm
+      !
+      call mpas_pool_get_package(packagePool, 'gmActive', gmActive)
+      call mpas_pool_get_config(configPool, 'config_use_standardGM', config_use_standardGM)
+      if (config_use_standardGM) then
+         gmActive = .true.
+      end if
+
+      ! test for time-varying forcing
+      !
+      call mpas_pool_get_package(packagePool, 'timeVaryingAtmosphericForcingPKGActive', timeVaryingAtmosphericForcingPKGActive)
+      call mpas_pool_get_config(configPool, &
+                               'config_use_time_varying_atmospheric_forcing', &
+                                config_use_time_varying_atmospheric_forcing)
+      if (config_use_time_varying_atmospheric_forcing) then
+         timeVaryingAtmosphericForcingPKGActive = .true.
+      endif
+
+      call mpas_pool_get_package(packagePool, 'timeVaryingLandIceForcingPKGActive', timeVaryingLandIceForcingPKGActive)
+      call mpas_pool_get_config(configPool, 'config_use_time_varying_land_ice_forcing', config_use_time_varying_land_ice_forcing)
+      if (config_use_time_varying_land_ice_forcing) then
+         timeVaryingLandIceForcingPKGActive = .true.
+      endif
 
       !
       ! call into analysis member driver to set analysis member packages

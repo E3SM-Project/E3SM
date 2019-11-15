@@ -4,8 +4,6 @@
 	<add_link source_path="mesh_scripts" source="soma_32to4km.m" dest="base_mesh.m"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="cell_culler" dest="MpasCellCuller.x"/>
-	<add_executable source="mesh_converter" dest="MpasMeshConverter.x"/>
 	<add_executable source="mesh_generator" dest="MpasMeshGenerator.sh"/>
 
 	<namelist name="namelist.ocean" mode="init">
@@ -15,7 +13,7 @@
 		<option name="config_write_cull_cell_mask">.true.</option>
 		<option name="config_realistic_coriolis_parameter">.true.</option>
 		<option name="config_use_bulk_wind_stress">.true.</option>
-		<option name="config_vertical_grid">'100layerACMEv1'</option>
+		<option name="config_vertical_grid">'100layerE3SMv1'</option>
 	</namelist>
 
 	<streams name="streams.ocean" keep="immutable" mode="init">
@@ -54,14 +52,14 @@
       <argument flag="">base_mesh.m</argument>
 		</step>
 
-		<step executable="./MpasMeshConverter.x">
+		<step executable="MpasMeshConverter.x">
 			<argument flag="">base_mesh.nc</argument>
 			<argument flag="">mesh.nc</argument>
 		</step>
 
 		<model_run procs="1" threads="1" namelist="namelist.ocean" streams="streams.ocean"/>
 
-		<step executable="./MpasCellCuller.x">
+		<step executable="MpasCellCuller.x">
 			<argument flag="">ocean.nc</argument>
 		</step>
 	</run_script>

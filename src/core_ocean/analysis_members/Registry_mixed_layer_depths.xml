@@ -77,7 +77,16 @@
 			 description="mixed layer depth based on gradient of density"
 		/>
 	</var_struct>
-	<streams>
+	<var_struct name="mixedLayerDepthAMScratch" time_levs="1">
+		<var name="pressureAdjustedForLandIceScratch"
+			persistence="scratch"
+			type="real"
+			dimensions="nVertLevels nCells Time"
+			units="various"
+			description="temporary array to hold pressure "
+		/>
+	</var_struct>
+  	<streams>
 		<stream name="mixedLayerDepthsOutput" type="output"
 				mode="forward;analysis"
 				filename_template="analysis_members/mixedLayerDepths.$Y-$M-$D.nc"

@@ -1,0 +1,345 @@
+! Copyright (c) 2013,  Los Alamos National Security, LLC (LANS)
+! and the University Corporation for Atmospheric Research (UCAR).
+!
+! Unless noted otherwise source code is licensed under the BSD license.
+! Additional copyright and license information can be found in the LICENSE file
+! distributed with this code, or at http://mpas-dev.github.com/license.html
+!
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  ocn_tidal_forcing
+!
+!> \brief MPAS ocean tidal forcing module
+!> \author Phillip J. Wolfram
+!> \date   04/05/2019
+!> \details
+!>  This module contains routines for the tidal forcing.
+!
+!-----------------------------------------------------------------------
+
+module ocn_tidal_forcing
+
+   use mpas_kind_types
+   use mpas_constants
+   use mpas_derived_types
+   use mpas_pool_routines
+   use mpas_timekeeping
+   use mpas_timer
+   use ocn_constants
+   use ocn_equation_of_state
+
+   implicit none
+   private
+   save
+
+   !--------------------------------------------------------------------
+   !
+   ! Public parameters
+   !
+   !--------------------------------------------------------------------
+
+   !--------------------------------------------------------------------
+   !
+   ! Public member functions
+   !
+   !--------------------------------------------------------------------
+
+   public :: ocn_tidal_forcing_build_array, &
+             ocn_tidal_forcing_layer_thickness, &
+             ocn_tidal_forcing_init
+
+   !--------------------------------------------------------------------
+   !
+   ! Private module variables
+   !
+   !--------------------------------------------------------------------
+
+   logical :: tidalFluxOn
+
+!***********************************************************************
+
+contains
+
+!***********************************************************************
+!
+!  routine ocn_tidal_forcing_layer_thickness
+!
+!> \brief   Add tendency due to tidal forcing
+!> \author  Phillip J. Wolfram
+!> \date    04/05/2019
+!> \details
+!>  This routine adds a tendency to layer thickness due to tidal forcing
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_tidal_forcing_layer_thickness(meshPool, forcingPool, layerThicknessTend, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+      type (mpas_pool_type), intent(in) :: meshPool !< Input: mesh information
+      type (mpas_pool_type), intent(in) :: forcingPool !< Input: Forcing information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      real (kind=RKIND), intent(inout), dimension(:,:) :: layerThicknessTend
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      integer, intent(out) :: err !< Output: Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      integer :: iCell, k, nCells
+      integer, dimension(:), pointer :: nCellsArray
+      integer, dimension(:), pointer :: maxLevelCell
+      real (kind=RKIND), dimension(:,:), pointer :: tidalLayerThicknessTendency
+
+      err = 0
+
+      if ( .not. tidalfluxOn ) return
+
+      call mpas_timer_start("tidal thickness tendency")
+
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_array(forcingPool, 'tidalLayerThicknessTendency', &
+                                             tidalLayerThicknessTendency)
+
+      ! frazil fields are needed only over 0 and 1 halos
+      nCells = nCellsArray( 2 )
+
+      ! Build surface fluxes at cell centers
+      !$omp do schedule(runtime) private(k)
+      do iCell = 1, nCells
+        do k = 1, maxLevelCell(iCell)
+          layerThicknessTend(k,iCell) = layerThicknessTend(k,iCell) + &
+                                        tidalLayerThicknessTendency(k,iCell)
+
+        end do
+      end do
+      !$omp end do
+
+      call mpas_timer_stop("tidal thickness tendency")
+
+   end subroutine ocn_tidal_forcing_layer_thickness !}}}
+
+
+!***********************************************************************
+!
+!  routine ocn_tidal_forcing_build_array
+!
+!> \brief   Computes tidal forcing functions.
+!> \author  Phillip J. Wolfram
+!> \date    04/05/2019
+!> \details
+!>   ocn_tidal_forcing_build_array computes the tendencies to layer thickness
+!>   due to tidal forcing of layer thickness
+!>
+!>   this routine should be call at the beginning of whatever time stepping method is utilized
+!>      and the tendencies should be retieved when building up the RHS of the thickess, temperature
+!>      and salinity equations.
+!>
+!>   this routine is only applicable to the thickness fields
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_tidal_forcing_build_array(domain, meshPool, forcingPool, diagnosticsPool, statePool, err)!{{{
+
+      !-----------------------------------------------------------------
+      !
+      ! input variables
+      !
+      !-----------------------------------------------------------------
+
+      type (mpas_pool_type), pointer, intent(in) :: meshPool !< Input: Mesh information
+      type (mpas_pool_type), pointer, intent(in) :: diagnosticsPool !< Input: Diagnostic information
+
+      !-----------------------------------------------------------------
+      !
+      ! input/output variables
+      !
+      !-----------------------------------------------------------------
+      type (domain_type), intent(inout) :: domain
+      type (mpas_pool_type), pointer, intent(inout) :: statePool !< Input: State information
+      type (mpas_pool_type), pointer, intent(inout) :: forcingPool !< Input: Forcing information
+      integer, intent(inout) :: err !< Error flag
+
+      !-----------------------------------------------------------------
+      !
+      ! output variables
+      !
+      !-----------------------------------------------------------------
+
+      !-----------------------------------------------------------------
+      !
+      ! local variables
+      !
+      !-----------------------------------------------------------------
+
+      real (kind=RKIND), dimension(:,:), pointer :: tidalLayerThicknessTendency
+      real (kind=RKIND), dimension(:), pointer :: tidalInputMask
+      real (kind=RKIND), dimension(:), pointer :: tidalBCValue
+      real (kind=RKIND), pointer :: config_tidal_forcing_monochromatic_amp
+      real (kind=RKIND), pointer :: config_tidal_forcing_monochromatic_period
+      real (kind=RKIND), pointer :: config_tidal_forcing_monochromatic_baseline
+      real (kind=RKIND), pointer :: config_use_tidal_forcing_tau
+      character (len=StrKIND), pointer :: config_tidal_forcing_type
+      character (len=StrKIND), pointer :: config_tidal_forcing_model
+      logical, pointer :: config_use_wetting_drying
+      real (kind=RKIND), pointer :: config_drying_min_cell_height
+      real (kind=RKIND), dimension(:), pointer :: bottomDepth
+
+      integer :: iCell, k, nCells
+      integer, dimension(:), pointer :: nCellsArray
+      integer, pointer, dimension(:) :: maxLevelCell
+      integer, pointer :: nVertLevels
+      real (kind=RKIND) :: dt
+
+      type (MPAS_time_type) :: currentTime
+      real (kind=RKIND), pointer, dimension(:)     :: ssh
+      real (kind=RKIND), pointer, dimension(:,:)   :: zMid
+      real (kind=RKIND), pointer, dimension(:,:)   :: layerThickness
+
+      ! local variables
+      real (kind=RKIND) :: totalDepth, tidalHeight
+
+      character (len=StrKIND), pointer :: simulationStartTime, xtime
+      real (kind=RKIND), pointer :: daysSinceStartOfSim
+      type (MPAS_Time_type) :: startTime, xtime_timeType, simulationStartTime_timeType
+
+      if ( .not. tidalfluxOn ) return
+
+      call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, 1)
+      call mpas_pool_get_array(forcingPool, 'tidalLayerThicknessTendency', &
+                                             tidalLayerThicknessTendency)
+      call mpas_pool_get_array(forcingPool, 'tidalInputMask', tidalInputMask)
+      call mpas_pool_get_array(forcingPool, 'tidalBCValue', tidalBCValue)
+
+      ! compute time since start of simulation, in days
+      call mpas_pool_get_array(diagnosticsPool, 'daysSinceStartOfSim', daysSinceStartOfSim)
+
+      call mpas_pool_get_config(ocnConfigs, 'config_tidal_forcing_type', config_tidal_forcing_type)
+      call mpas_pool_get_config(ocnConfigs, 'config_tidal_forcing_model', config_tidal_forcing_model)
+      call mpas_pool_get_config(ocnConfigs, 'config_tidal_forcing_monochromatic_amp', &
+                                             config_tidal_forcing_monochromatic_amp)
+      call mpas_pool_get_config(ocnConfigs, 'config_tidal_forcing_monochromatic_period', &
+                                             config_tidal_forcing_monochromatic_period)
+      call mpas_pool_get_config(ocnConfigs, 'config_tidal_forcing_monochromatic_baseline', &
+                                             config_tidal_forcing_monochromatic_baseline)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_forcing_tau', &
+                                             config_use_tidal_forcing_tau)
+
+      ! wetting and drying considerations
+      call mpas_pool_get_config(ocnConfigs, 'config_use_wetting_drying', &
+                                             config_use_wetting_drying)
+      call mpas_pool_get_config(ocnConfigs, 'config_drying_min_cell_height', &
+                                             config_drying_min_cell_height)
+
+      call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+      call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+      call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
+
+      ! tidal fields are needed only over 0 and 1 halos
+      nCells = nCellsArray( 2 )
+
+      ! loop over all columns
+      do iCell = 1, nCells
+
+        ! compute the tidalHeight
+        if (trim(config_tidal_forcing_model) == 'monochromatic') then
+          tidalHeight = config_tidal_forcing_monochromatic_amp * &
+            SIN(2.0_RKIND*pii/config_tidal_forcing_monochromatic_period * daysSinceStartOfSim) - &
+            config_tidal_forcing_monochromatic_baseline
+        !else if (trim(config_tidal_forcing_type) == 'data') then
+        !  ! data option
+        !  ! pass
+        else
+          tidalHeight = 0.0_RKIND
+        end if
+
+        ! ensure tidalHeight can't push flow below anticipated minimum
+        if (config_use_wetting_drying .and. tidalInputMask(iCell) == 1.0_RKIND) then
+          ! ensure that tidal height can't force below total minimum thickness
+          ! condition wrong to ensure that there isn't any drying according to criteria
+          tidalHeight = max(-bottomDepth(iCell) + (float(maxLevelCell(iCell))+1.0_RKIND)*config_drying_min_cell_height, tidalHeight)
+        end if
+
+        ! compute total depth for relative thickness contribution
+        totalDepth = 0.0_RKIND
+        do k = 1, maxLevelCell(iCell)
+          totalDepth = totalDepth + layerThickness(k,iCell)
+        end do
+
+        do k = 1, maxLevelCell(iCell)
+          tidalLayerThicknessTendency(:,iCell) = 0.0_RKIND
+        end do
+        if (trim(config_tidal_forcing_type) == 'thickness_source') then
+          ! distribute tidal forcing tendency fractionally over water column
+          do k = 1, maxLevelCell(iCell)
+            tidalLayerThicknessTendency(k,iCell) = tidalInputMask(iCell) / config_use_tidal_forcing_tau &
+              * (layerThickness(k,iCell)/totalDepth) * (tidalHeight - ssh(iCell))
+          end do
+          ! else if
+          ! using the 'direct' option to immediately force the free surface as a prescribe boundary
+          ! in src/core_ocean/mode_forward/mpas_ocn_time_integration_rk4.F
+        end if
+
+        ! store tidal boundary cell values (e.g., for config_tidal_forcing_type == 'direct')
+        tidalBCValue(iCell) = tidalHeight
+
+      end do   ! do iCell = 1, nCells
+
+   end subroutine ocn_tidal_forcing_build_array !}}}
+
+
+!***********************************************************************
+!
+!  routine ocn_tidal_forcing_init
+!
+!> \brief   Initializes ocean tidal forcing module.
+!> \author  Phillip J. Wolfram
+!> \date    04/05/2019
+!> \details
+!>  This routine initializes the ocean tidal forcing module and variables.
+!
+!-----------------------------------------------------------------------
+
+   subroutine ocn_tidal_forcing_init(err)!{{{
+
+      integer, intent(out) :: err !< Output: error flag
+      logical, pointer :: config_use_tidal_forcing
+
+      err = 0
+
+      call mpas_pool_get_config(ocnConfigs, 'config_use_tidal_forcing', config_use_tidal_forcing)
+
+      tidalFluxOn = .false.
+
+      if(config_use_tidal_forcing) then
+        tidalFluxOn = .true.
+      end if
+
+   end subroutine ocn_tidal_forcing_init!}}}
+
+
+!***********************************************************************
+
+end module ocn_tidal_forcing
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+! vim: foldmethod=marker

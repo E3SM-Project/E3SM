@@ -1,17 +1,16 @@
 #!/bin/bash
 
 ## BGC Tag for build
-#BGC_TAG=fa3d49a
-BGC_TAG=9c31e70
+BGC_TAG=5588636
 
 ## Subdirectory in BGC repo to use
 BGC_SUBDIR=.
 
 ## Available protocols for acquiring BGC source code
-BGC_GIT_HTTP_ADDRESS=https://github.com/ACME-Climate/Ocean-BGC.git
-BGC_GIT_SSH_ADDRESS=git@github.com:ACME-Climate/Ocean-BGC.git
-BGC_SVN_ADDRESS=https://github.com/ACME-Climate/Ocean-BGC-src/tags
-BGC_WEB_ADDRESS=https://github.com/ACME-Climate/Ocean-BGC-src/archive
+BGC_GIT_HTTP_ADDRESS=https://github.com/E3SM-Project/Ocean-BGC.git
+BGC_GIT_SSH_ADDRESS=git@github.com:E3SM-Project/Ocean-BGC.git
+BGC_SVN_ADDRESS=https://github.com/E3SM-Project/Ocean-BGC-src/tags
+BGC_WEB_ADDRESS=https://github.com/E3SM-Project/Ocean-BGC-src/archive
 
 GIT=`which git`
 SVN=`which svn`

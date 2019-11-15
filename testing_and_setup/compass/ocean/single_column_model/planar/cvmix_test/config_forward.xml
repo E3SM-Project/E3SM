@@ -5,7 +5,6 @@
 	<add_link source="../init_step/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
 
 	<add_executable source="model" dest="ocean_model"/>
-	<add_executable source="metis" dest="metis"/>
 
 	<namelist name="namelist.ocean" mode="forward">
 		<option name="config_ocean_run_mode">'forward'</option>
@@ -76,7 +75,7 @@
 	</streams>
 
 	<run_script name="run.py">
-		<step executable="./metis">
+		<step executable="gpmetis">
 			<argument flag="graph.info">8</argument>
 		</step>
 		<step executable="mpirun">

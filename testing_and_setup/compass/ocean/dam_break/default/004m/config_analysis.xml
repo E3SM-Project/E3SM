@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<config case="analysis">
+	<add_link source_path="script_resolution_dir" source="analysis/comparison.py" dest="comparison.py"/>
+	<add_link source_path="script_resolution_dir" source="analysis/dam_break.png" dest="dam_break.png"/>
+	<add_link source_path="script_resolution_dir" source="analysis/stations" dest="stations"/>
+	<add_link source="../forward/output.nc" dest="output.nc"/>
+
+	<run_script name="run.py">
+		<step executable="./comparison.py">
+		</step>
+	</run_script>
+</config>

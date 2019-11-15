@@ -1,5 +1,5 @@
 	<dims>
-		<dim name="nSfcAreaWeightedAvgFields" definition="30" units="unitless"
+		<dim name="nSfcAreaWeightedAvgFields" definition="36" units="unitless"
 			 description="A number equal to or greater than the number of var arrays in the surfaceAreaWeightedAveragesAM var structure below."
 		/>
 		<dim name="nOceanRegions" definition="7" units="unitless"
@@ -54,6 +54,9 @@
 			<var name="minSeaIceHeatFlux" array_group="mins" units="W m^{-2}"
 				 description="Minimum sea ice heat flux in each region"
 			/>
+			<var name="minIcebergHeatFlux" array_group="mins" units="W m^{-2}"
+				 description="Minimum iceberg heat flux in each region"
+			/>
 			<var name="minShortWaveHeatFlux" array_group="mins" units="W m^{-2}"
 				 description="Minimum short wave heat flux in each region"
 			/>
@@ -62,6 +65,9 @@
 			/>
 			<var name="minSeaIceFreshWaterFlux" array_group="mins" units="kg m^{-2} s^{-1}"
 				 description="Minimum sea ice melt rate in each region"
+			/>
+			<var name="minIcebergFreshWaterFlux" array_group="mins" units="kg m^{-2} s^{-1}"
+				 description="Minimum iceberg melt rate in each region"
 			/>
 			<var name="minRiverRunoffFlux" array_group="mins" units="kg m^{-2} s^{-1}"
 				 description="Minimum river run off in each region"
@@ -146,6 +152,9 @@
 			<var name="maxSeaIceHeatFlux" array_group="maxs" units="W m^{-2}"
 				 description="Maximum sea ice heat flux in each region"
 			/>
+			<var name="maxIcebergHeatFlux" array_group="maxs" units="W m^{-2}"
+				 description="Maximum iceberg heat flux in each region"
+			/>
 			<var name="maxShortWaveHeatFlux" array_group="maxs" units="W m^{-2}"
 				 description="Maximum short wave heat flux in each region"
 			/>
@@ -154,6 +163,9 @@
 			/>
 			<var name="maxSeaIceFreshWaterFlux" array_group="maxs" units="kg m^{-2} s^{-1}"
 				 description="Maximum sea ice melt rate in each region"
+			/>
+			<var name="maxIcebergFreshWaterFlux" array_group="maxs" units="kg m^{-2} s^{-1}"
+				 description="Maximum iceberg melt rate in each region"
 			/>
 			<var name="maxRiverRunoffFlux" array_group="maxs" units="kg m^{-2} s^{-1}"
 				 description="Maximum river run off in each region"
@@ -238,6 +250,9 @@
 			<var name="avgSeaIceHeatFlux" array_group="avg" units="W m^{-2}"
 				 description="Surface area-weighted average of sea ice heat flux in each region"
 			/>
+			<var name="avgIcebergHeatFlux" array_group="avg" units="W m^{-2}"
+				 description="Surface area-weighted average of iceberg heat flux in each region"
+			/>
 			<var name="avgShortWaveHeatFlux" array_group="avg" units="W m^{-2}"
 				 description="Surface area-weighted average of short wave heat flux in each region"
 			/>
@@ -246,6 +261,9 @@
 			/>
 			<var name="avgSeaIceFreshWaterFlux" array_group="avg" units="kg m^{-2} s^{-1}"
 				 description="Surface area-weighted average of sea ice melt rate in each region"
+			/>
+			<var name="avgIcebergFreshWaterFlux" array_group="avg" units="kg m^{-2} s^{-1}"
+				 description="Surface area-weighted average of iceberg melt rate in each region"
 			/>
 			<var name="avgRiverRunoffFlux" array_group="avg" units="kg m^{-2} s^{-1}"
 				 description="Surface area-weighted average of river run off in each region"

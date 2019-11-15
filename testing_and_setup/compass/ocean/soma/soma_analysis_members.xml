@@ -43,6 +43,6 @@
 		<stream name="lagrPartTrackInput">
 			<attribute name="filename_template">particles.nc</attribute>
 		</stream>
-  </streams>
+	</streams>
 
 </template>
