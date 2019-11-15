@@ -2,6 +2,7 @@
 
 MACRO(THETAL_KOKKOS_SETUP)
 
+SET(THETA_SHARE_DIR   ${HOMME_SOURCE_DIR}/src/theta-l/share)
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta-l_kokkos)
 SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
@@ -24,20 +25,20 @@ SET (EXEC_INCLUDE_DIRS
 # Find F90 files in share and test directories
 # TODO: share files among different theta folders
 SET (TARGET_F90
-  ${TARGET_DIR}/bndry_mod.F90
-  ${TARGET_DIR}/derivative_mod.F90
-  ${TARGET_DIR}/edge_mod.F90
-  ${TARGET_DIR}/element_ops.F90
+  ${THETA_SHARE_DIR}/bndry_mod.F90
+  ${THETA_SHARE_DIR}/derivative_mod.F90
+  ${THETA_SHARE_DIR}/edge_mod.F90
+  ${THETA_SHARE_DIR}/element_ops.F90
+  ${THETA_SHARE_DIR}/eos.F90
+  ${THETA_SHARE_DIR}/model_init_mod.F90
+  ${THETA_SHARE_DIR}/prim_advance_mod.F90
+  ${THETA_SHARE_DIR}/prim_advection_mod.F90
+  ${THETA_SHARE_DIR}/prim_state_mod.F90
+  ${THETA_SHARE_DIR}/vertremap_mod.F90
+  ${THETA_SHARE_DIR}/viscosity_mod.F90
+  ${THETA_SHARE_DIR}/viscosity_theta.F90
   ${TARGET_DIR}/element_state.F90
-  ${TARGET_DIR}/eos.F90
-  ${TARGET_DIR}/model_init_mod.F90
-  ${TARGET_DIR}/prim_advance_mod.F90
-  ${TARGET_DIR}/prim_advection_mod.F90
   ${TARGET_DIR}/prim_driver_mod.F90
-  ${TARGET_DIR}/prim_state_mod.F90
-  ${TARGET_DIR}/vertremap_mod.F90
-  ${TARGET_DIR}/viscosity_mod.F90
-  ${TARGET_DIR}/viscosity_theta.F90
 )
 
 SET (SRC_SHARE_F90
