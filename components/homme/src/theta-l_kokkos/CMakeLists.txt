@@ -37,6 +37,7 @@ SET (TARGET_F90
   ${THETA_SHARE_DIR}/vertremap_mod.F90
   ${THETA_SHARE_DIR}/viscosity_mod.F90
   ${THETA_SHARE_DIR}/viscosity_theta.F90
+  ${THETA_SHARE_DIR}/imex_mod.F90
   ${TARGET_DIR}/element_state.F90
   ${TARGET_DIR}/prim_driver_mod.F90
 )

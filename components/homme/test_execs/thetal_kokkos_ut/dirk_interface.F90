@@ -32,7 +32,7 @@ contains
   subroutine compute_gwphis_f90(gwh_i,dp3d,v,gradphis) bind(c)
     use dimensions_mod,        only: nlev, nlevp, np
     use thetal_test_interface, only: hvcoord
-    use prim_advance_mod,      only: compute_gwphis
+    use imex_mod,              only: compute_gwphis
 
     real (kind=real_kind) :: gwh_i(np,np,nlevp)
     real (kind=real_kind) :: dp3d(np,np,nlev)
@@ -44,7 +44,7 @@ contains
 
   subroutine get_dirk_jacobian_f90(JacL,JacD,JacU,dt2,dp3d,dphi,pnh) bind(c)
     use dimensions_mod,        only: nlev, nlevp, np
-    use eos,                   only: get_dirk_jacobian
+    use imex_mod,              only: get_dirk_jacobian
 
     real (kind=real_kind), intent(in)    :: dp3d(np,np,nlev)
     real (kind=real_kind), intent(in)    :: dphi(np,np,nlev)
