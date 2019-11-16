@@ -374,7 +374,7 @@ MODULE WRM_subw_IO_mod
            enddo
         enddo
         if (cnt /= cntw) then
-           write(iulog,"(a,3i8)"), subname//'ERROR: sMat g2d cnt errora',cntw,cnt
+           write(iulog,"(a,3i8)") subname//'ERROR: sMat g2d cnt errora',cntw,cnt
            call shr_sys_abort(subname//' ERROR: sMat g2d cnt errora')
         endif
 
@@ -396,7 +396,7 @@ MODULE WRM_subw_IO_mod
            enddo
         enddo
         if (cnt /= cntw) then
-           write(iulog,"(a,3i8)"), subname//'ERROR: sMat d2g cnt errora',cntw,cnt
+           write(iulog,"(a,3i8)") subname//'ERROR: sMat d2g cnt errora',cntw,cnt
            call shr_sys_abort(subname//' ERROR: sMat d2g cnt errora')
         endif
 
@@ -422,7 +422,7 @@ MODULE WRM_subw_IO_mod
               enddo
            enddo
            if (cnt /= cntg) then
-              write(iulog,"(a,3i8)"), subname//'ERROR: sMat g2d cnt errorb',cntg,cnt
+              write(iulog,"(a,3i8)") subname//'ERROR: sMat g2d cnt errorb',cntg,cnt
               call shr_sys_abort(subname//' ERROR: sMat g2d cnt errorb')
            endif
         else
@@ -448,7 +448,7 @@ MODULE WRM_subw_IO_mod
               enddo
            enddo
            if (cnt /= cntg) then
-              write(iulog,"(a,3i8)"), subname//'ERROR: sMat d2g cnt errorb',cntg,cnt
+              write(iulog,"(a,3i8)") subname//'ERROR: sMat d2g cnt errorb',cntg,cnt
               call shr_sys_abort(subname//' ERROR: sMat d2g cnt errorb')
            endif
         else

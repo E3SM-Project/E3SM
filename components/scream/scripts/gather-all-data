@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+
+"""
+Gather results from a generic command distributed to known machines and
+known environments. You can use --local if you only want the environment
+management (used for Jenkins for example).
+
+It is expected that you are able to do a passwordless ssh to all
+machines and that the given repo on the target machines are clean.
+Since testbeds do not allow login via ssh key, you'll need to use kinit.
+Waterman is on the SRN, so you'll need to start from a SRN machine. I've
+had good luck using face.sandia.gov as my launch machine.
+
+It is expected that your current repo is clean and that your current commit
+is the one you want to test.
+"""
+
+from utils import expect, check_minimum_python_version, get_current_commit
+check_minimum_python_version(3, 5)
+
+import argparse, sys, os
+
+from gather_all_data import GatherAllData, MACHINE_METADATA
+
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
+    parser = argparse.ArgumentParser(
+        usage="""\n{0} <PERF-ANALYSIS-ARGS> [--verbose]
+OR
+{0} --help
+
+\033[1mEXAMPLES:\033[0m
+    \033[1;32m# Test scream on all platforms \033[0m
+    > {0} './scripts/test-all-scream $compiler -m $machine'
+
+    \033[1;32m# Do correctness testing locally for SCREAM (expects ./scream and ./scream-docs) \033[0m
+    > {0} './scripts/test-all-scream $compiler -m $machine' -l -m $machine
+
+    \033[1;32m# Do correctness testing for scream-docs micro apps \033[0m
+    > {0} './test-all $compiler $kokkos' -d
+
+    \033[1;32m# Do a scaling performance test for lin-interp on blake \033[0m
+    > {0} '$scream/scripts/perf-analysis ncol:8000 km1:128 km2:256 minthresh:0.001 repeat:10 --kokkos=$kokkos --test=lin-interp/li_ref --test=lin-interp/li_kokkos --test=lin-interp/li_vect -s ncol:2:128000' -m blake -d
+""".format(os.path.basename(args[0])),
+        description=description,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+
+    parser.add_argument("run", help="What to run on the machine, cwd will be either scream-perf-$machine/components/scream or scream-docs-perf-$machine/micro-apps depending on if --scream-docs was provided")
+
+    default_commit = get_current_commit(short=True)
+    parser.add_argument("-c", "--commit", default=default_commit, help="Commit to test. Default is current HEAD.")
+
+    parser.add_argument("-m", "--machine", dest="machines", action="append", choices=MACHINE_METADATA.keys(),
+                        help="Select which machines to run on, default is all")
+
+    parser.add_argument("-d", "--scream-docs", action="store_true", help="Test scream-docs instead of scream.")
+
+    parser.add_argument("-l", "--local", action="store_true",
+                        help="Run tests on local machine. Assumes ./scream and ./scream-docs")
+
+    parser.add_argument("-k", "--kokkos", help="Use to select specific kokkos installation. Can refer to this in run cmd with $kokkos")
+
+    args = parser.parse_args(args[1:])
+
+    if not args.machines:
+        args.machines = MACHINE_METADATA.keys()
+
+    expect(not (args.local and len(args.machines) > 1),
+           "Cannot run on multiple machines if local")
+
+    if args.local:
+        expect(os.path.isdir("scream"), "Expected to see ./scream")
+        if args.scream_docs:
+            expect(os.path.isdir("scream-docs"), "Expected to see ./scream-docs")
+
+    if not args.commit:
+        expect(args.local, "Could not determine commit")
+        args.commit = get_current_commit(short=True, repo="./scream") if not args.scream_docs else get_current_commit(short=True, repo="./scream-docs")
+
+    return args
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    gad = GatherAllData(**vars(parse_command_line(sys.argv, description)))
+
+    success = gad.gather_all_data()
+
+    sys.exit(0 if success else 1)
+
+###############################################################################
+
+if (__name__ == "__main__"):
+    _main_func(__doc__)

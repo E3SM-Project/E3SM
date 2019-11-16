@@ -334,6 +334,7 @@ end subroutine micro_p3_readnl
   subroutine micro_p3_init(pbuf2d)
     use micro_p3,       only: p3_init
     use cam_history,    only: addfld, add_default, horiz_only
+    use cam_history_support, only: add_hist_coord 
     use micro_p3_utils, only: micro_p3_utils_init
 
     type(physics_buffer_desc),  pointer :: pbuf2d(:,:)
@@ -347,6 +348,7 @@ end subroutine micro_p3_readnl
 
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,iulog,masterproc)
+
 
     ! CALL P3 INIT:
     !==============
@@ -489,6 +491,11 @@ end subroutine micro_p3_readnl
    ! precipitation efficiency & other diagnostic fields
    call addfld('UMR', (/ 'lev' /), 'A',   'm/s', 'Mass-weighted rain  fallspeed'              )
 
+   ! Record of inputs/outputs from p3_main
+   call add_hist_coord('P3_input_dim',  16, 'Input field dimension for p3_main subroutine',  'N/A', (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 /))
+   call add_hist_coord('P3_output_dim', 32, 'Output field dimension for p3_main subroutine', 'N/A', (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32 /))
+   call addfld('P3_input', (/ 'ilev', 'P3_input_dim' /),  'I', 'N/A', 'Inputs for p3_main subroutine')
+   call addfld('P3_output', (/ 'ilev', 'P3_output_dim' /), 'I', 'N/A', 'Outputs for p3_main subroutine')
    ! Record of microphysics tendencies
    ! warm-phase process rates
    call addfld('P3_qrcon',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain condensation   (Not in paper?)')
@@ -745,34 +752,46 @@ end subroutine micro_p3_readnl
              cldm(i,k)  = max(ast(i,k), mincld)
              icldm(i,k) = max(ast(i,k), mincld)
              lcldm(i,k) = max(ast(i,k), mincld)
+             rcldm(i,k) = cldm(i,k)
           end do
        end do
 
-       DO k = ktop,kbot,-kdir  !AaronDonahue TODO: Check to make sure this is correct.  Are we going the correct direction?
-          DO i=its,ite
        !! 
        !! precipitation fraction 
        !! 
-          rcldm(i,k) = cldm(i,k)
-          IF (trim(method) == 'in_cloud') THEN
-             IF (k /= ktop) THEN
+       IF (trim(method) == 'in_cloud') THEN
+          DO k = ktop-kdir,kbot,-kdir 
+             DO i=its,ite
+                ! in_cloud means that precip_frac (rcldm) = cloud (cldm) frac when cloud mass
+                ! is present. Below cloud, precip frac is equal to the cloud
+                ! fraction from the last layer that had cloud. Since presence or
+                ! absence of cloud is defined as mass > qsmall, sub-cloud precip
+                ! frac for the in_cloud method tends to be very small and is
+                ! very sensitive to tiny changes in condensate near cloud base.
                 IF (qc(i,k) .lt. qsmall .and. qitot(i,k) .lt. qsmall) THEN
-                   rcldm(i,k) = rcldm(i,k+kdir)
+                   ! max(rcldm above and rcldm for this layer) is taken here
+                   ! because code is incapable of handling rcldm<cldm for a
+                   ! given grid cell
+                   rcldm(i,k) = max(rcldm(i,k+kdir),rcldm(i,k))
                 END IF
-             END IF
-          ELSE IF (trim(method) == 'max_overlap') THEN
-          ! calculate precip fraction based on maximum overlap assumption
+             END DO !i
+          END DO !k
+       ELSE IF (trim(method) == 'max_overlap') THEN
+       ! max overlap is the max cloud fraction in all layers above which are
+       ! connected to this one by a continuous band of precip mass. If
+       ! there's no precip mass falling into a cell, it's precip frac is equal
+       ! to the cloud frac, which is probably ~zero.
 
-          ! IF rain or snow mix ratios are smaller than threshold,
-          ! then leave rcldm as cloud fraction at current level
-             IF (k /= ktop) THEN
+       ! IF rain or ice mix ratios are smaller than threshold,
+       ! then leave rcldm as cloud fraction at current level
+          DO k = ktop-kdir,kbot,-kdir 
+             DO i=its,ite
                 IF (qr(i,k+kdir) .ge. qsmall .or. qitot(i,k+kdir) .ge. qsmall) THEN
-                   rcldm(i,k) = max(cldm(i,k+kdir),rcldm(i,k))
+                   rcldm(i,k) = max(rcldm(i,k+kdir),rcldm(i,k))
                 END IF
-             END IF
-          END IF
-          END DO ! i
-       END DO    ! k
+             END DO ! i
+          END DO ! k
+       END IF
 
 
        call t_stopf('micro_p3_get_cloud_fraction')
@@ -881,6 +900,9 @@ end subroutine micro_p3_readnl
     real(rtype), pointer :: mu(:,:)           ! Size distribution shape parameter for radiation
     real(rtype), pointer :: lambdac(:,:)      ! Size distribution slope parameter for radiation
     ! DONE PBUF
+    ! For recording inputs/outputs to p3_main
+    real(rtype) :: p3_main_inputs(pcols,pver+1,16) ! Record of inputs for p3_main
+    real(rtype) :: p3_main_outputs(pcols,pver+1,32) ! Record of outputs for p3_main
 
     ! Derived Variables
     real(rtype) :: tgliqwp(pcols)   ! column liquid
@@ -1109,6 +1131,28 @@ end subroutine micro_p3_readnl
                 rain(its:ite,kts:kte),ice(its:ite,kts:kte),precip_frac_method, &
                 icldm(its:ite,kts:kte),lcldm(its:ite,kts:kte),rcldm(its:ite,kts:kte))
     call t_stopf('micro_p3_tend_init')
+
+    p3_main_inputs(:,:,:) = -999._rtype
+    do k = 1,pver
+      p3_main_inputs(1,k,1)  = ast(1,k)
+      p3_main_inputs(1,k,2)  = naai(1,k)
+      p3_main_inputs(1,k,3)  = npccn(1,k)
+      p3_main_inputs(1,k,4)  = state%pmid(1,k)
+      p3_main_inputs(1,k,5)  = state%zi(1,k)
+      p3_main_inputs(1,k,6)  = state%T(1,k)
+      p3_main_inputs(1,k,7)  = qv(1,k)
+      p3_main_inputs(1,k,8)  = cldliq(1,k)
+      p3_main_inputs(1,k,9)  = ice(1,k)
+      p3_main_inputs(1,k,10) = numliq(1,k)
+      p3_main_inputs(1,k,11) = numice(1,k)
+      p3_main_inputs(1,k,12) = rain(1,k)
+      p3_main_inputs(1,k,13) = numrain(1,k)
+      p3_main_inputs(1,k,14) = qirim(1,k)
+      p3_main_inputs(1,k,15) = rimvol(1,k)
+      p3_main_inputs(1,k,16) = state%pdel(1,k)
+    end do
+    p3_main_inputs(1,pver+1,5) = state%zi(1,pver+1)
+
     ! CALL P3
     !==============
     ! TODO: get proper value for 'it' from time module
@@ -1165,6 +1209,46 @@ end subroutine micro_p3_readnl
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
          vap_cld_exchange(its:ite,kts:kte) & ! OUT sum of vap-cld phase change tendencies
          )
+
+    p3_main_outputs(:,:,:) = -999._rtype
+    do k = 1,pver
+      p3_main_outputs(1,k, 1) = cldliq(1,k)
+      p3_main_outputs(1,k, 2) = numliq(1,k)
+      p3_main_outputs(1,k, 3) = rain(1,k)
+      p3_main_outputs(1,k, 4) = numrain(1,k)
+      p3_main_outputs(1,k, 5) = th(1,k)
+      p3_main_outputs(1,k, 6) = qv(1,k)
+      p3_main_outputs(1,k, 7) = ice(1,k)
+      p3_main_outputs(1,k, 8) = qirim(1,k)
+      p3_main_outputs(1,k, 9) = numice(1,k)
+      p3_main_outputs(1,k,10) = rimvol(1,k)
+      p3_main_outputs(1,k,13) = diag_ze(1,k)
+      p3_main_outputs(1,k,14) = rel(1,k)
+      p3_main_outputs(1,k,15) = rei(1,k)
+      p3_main_outputs(1,k,16) = diag_vmi(1,k)
+      p3_main_outputs(1,k,17) = diag_di(1,k)
+      p3_main_outputs(1,k,18) = diag_rhoi(1,k)
+      p3_main_outputs(1,k,19) = cmeiout(1,k)
+      p3_main_outputs(1,k,20) = prain(1,k)
+      p3_main_outputs(1,k,21) = nevapr(1,k)
+      p3_main_outputs(1,k,22) = prer_evap(1,k)
+      p3_main_outputs(1,k,23) = rflx(1,k)
+      p3_main_outputs(1,k,24) = sflx(1,k)
+      p3_main_outputs(1,k,25) = pratot(1,k)
+      p3_main_outputs(1,k,26) = prctot(1,k)
+      p3_main_outputs(1,k,27) = mu(1,k)
+      p3_main_outputs(1,k,28) = lambdac(1,k)
+      p3_main_outputs(1,k,29) = liq_ice_exchange(1,k)
+      p3_main_outputs(1,k,30) = vap_liq_exchange(1,k)
+      p3_main_outputs(1,k,31) = vap_ice_exchange(1,k)
+      p3_main_outputs(1,k,32) = vap_cld_exchange(1,k)
+    end do
+    p3_main_outputs(1,1,11) = prt_liq(1)
+    p3_main_outputs(1,1,12) = prt_sol(1)
+    p3_main_outputs(1,pver+1,23) = rflx(1,pver+1)
+    p3_main_outputs(1,pver+1,24) = sflx(1,pver+1)
+    call outfld('P3_input',  p3_main_inputs,  pcols, lchnk)
+    call outfld('P3_output', p3_main_outputs, pcols, lchnk)
 
     !MASSAGE OUTPUT TO FIT E3SM EXPECTATIONS
     !============= 

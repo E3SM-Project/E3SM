@@ -132,10 +132,8 @@ def expect(condition, error_msg, exc_type=CIMEError, error_prefix="ERROR:"):
         if logger.isEnabledFor(logging.DEBUG):
             import pdb
             pdb.set_trace()
-        try:
-            msg = str(error_prefix + " " + error_msg)
-        except UnicodeEncodeError:
-            msg = (error_prefix + " " + error_msg).encode('utf-8')
+
+        msg = error_prefix + " " + error_msg
         raise exc_type(msg)
 
 def id_generator(size=6, chars=string.ascii_lowercase + string.digits):
@@ -463,16 +461,28 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
                             env=env)
 
     output, errput = proc.communicate(input_str)
-    if output is not None:
-        try:
-            output = output.decode('utf-8', errors='ignore').strip()
-        except AttributeError:
-            pass
-    if errput is not None:
-        try:
-            errput = errput.decode('utf-8', errors='ignore').strip()
-        except AttributeError:
-            pass
+
+    # In Python3, subprocess.communicate returns bytes. We want to work with strings
+    # as much as possible, so we convert bytes to string (which is unicode in py3) via
+    # decode. For python2, we do NOT want to do this since decode will yield unicode
+    # strings which are not necessarily compatible with the system's default base str type.
+    if not six.PY2:
+        if output is not None:
+            try:
+                output = output.decode('utf-8', errors='ignore')
+            except AttributeError:
+                pass
+        if errput is not None:
+            try:
+                errput = errput.decode('utf-8', errors='ignore')
+            except AttributeError:
+                pass
+
+    # Always strip outputs
+    if output:
+        output = output.strip()
+    if errput:
+        errput = errput.strip()
 
     stat = proc.wait()
     if six.PY2:
@@ -531,7 +541,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
             else:
                 errput = ""
 
-        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput.encode('utf-8'), os.getcwd() if from_dir is None else from_dir))
+        expect(False, "Command: '{}' failed with error '{}' from dir '{}'".format(cmd, errput, os.getcwd() if from_dir is None else from_dir))
 
     return output
 
@@ -1024,8 +1034,7 @@ def find_files(rootdir, pattern):
 
 
 def setup_standard_logging_options(parser):
-    helpfile = "{}.log".format(sys.argv[0])
-    helpfile = os.path.join(os.getcwd(),os.path.basename(helpfile))
+    helpfile = os.path.join(os.getcwd(),os.path.basename("{}.log".format(sys.argv[0])))
     parser.add_argument("-d", "--debug", action="store_true",
                         help="Print debug information (very verbose) to file {}".format(helpfile))
     parser.add_argument("-v", "--verbose", action="store_true",
@@ -1580,6 +1589,9 @@ def _get_most_recent_lid_impl(files):
     >>> files = ['/foo/bar/e3sm.log.20160905_111212', '/foo/bar/e3sm.log.20160906_111212.gz']
     >>> _get_most_recent_lid_impl(files)
     ['20160905_111212', '20160906_111212']
+    >>> files = ['/foo/bar/e3sm.log.20160905_111212', '/foo/bar/e3sm.log.20160905_111212.gz']
+    >>> _get_most_recent_lid_impl(files)
+    ['20160905_111212']
     """
     results = []
     for item in files:
@@ -1590,7 +1602,7 @@ def _get_most_recent_lid_impl(files):
         else:
             logger.warning("Apparent model log file '{}' did not conform to expected name format".format(item))
 
-    return sorted(results)
+    return sorted(list(set(results)))
 
 def ls_sorted_by_mtime(path):
     ''' return list of path sorted by timestamp oldest first'''

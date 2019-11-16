@@ -1,7 +1,3 @@
-#ifdef _OPENMP
-# include <omp.h>
-#endif
-
 #include <catch2/catch.hpp>
 
 #include "share/scream_workspace.hpp"
@@ -142,9 +138,9 @@ static void unittest_workspace()
         Kokkos::single(Kokkos::PerTeam(team), [&] () {
           if (wsm.get_index(wssub[w]) != w) ++nerrs_local;
           if (wsm.get_next(wssub[w]) != w+1) ++nerrs_local;
+#ifndef NDEBUG
           char buf[8] = "ws";
           buf[2] = 48 + w; // 48 is offset to integers in ascii
-#ifndef NDEBUG
           if (util::strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
           if (ws.get_num_used() != 4) ++nerrs_local;
 #endif
@@ -175,7 +171,7 @@ static void unittest_workspace()
 #ifdef WS_EXPENSIVE_TEST
     if (true)
 #else
-    if (omp_get_max_threads() == 2) // the test below is expensive, we don't want all threads sweeps to run it
+    if ( ExeSpace::concurrency() == 2 ) // the test below is expensive, we don't want all threads sweeps to run it
 #endif
     {
       // Test weird take/release permutations.
@@ -202,9 +198,9 @@ static void unittest_workspace()
           // verify stuff
           for (int w = 0; w < num_ws; ++w) {
             Kokkos::single(Kokkos::PerTeam(team), [&] () {
+#ifndef NDEBUG
                 char buf[8] = "ws";
                 buf[2] = 48 + w; // 48 is offset to integers in ascii
-#ifndef NDEBUG
                 if (util::strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
                 if (ws.get_num_used() != 4) ++nerrs_local;
 #endif
@@ -270,10 +266,10 @@ static void unittest_workspace()
               int exp_num_active = 0;
 #endif
               for (int w = 0; w < num_ws; ++w) {
-                char buf[8] = "ws";
-                buf[2] = 48 + w; // 48 is offset to integers in ascii
                 if (exp_active[w]) {
 #ifndef NDEBUG
+                  char buf[8] = "ws";
+                  buf[2] = 48 + w; // 48 is offset to integers in ascii
                   if (util::strcmp(ws.get_name(wssub[w]), buf) != 0) ++nerrs_local;
                   ++exp_num_active;
                   if (!ws.template is_active<int>(wssub[w])) ++nerrs_local;

@@ -50,6 +50,7 @@ public:
   // ---- Getters ---- //
   bool is_committed   () const { return m_committed; }
   int  get_alloc_size () const;
+  int  get_last_dim_alloc_size () const;
 
   template<typename ValueType>
   bool is_allocation_compatible_with_value_type () const;
@@ -79,31 +80,33 @@ void FieldAllocProp::request_value_type_allocation () {
 
   error::runtime_check(!m_committed, "Error! Cannot change allocation properties after they have been commited.\n");
   
+  constexpr int vts = sizeof(ValueType);
   if (m_scalar_type_size==0) {
     // This is the first time we receive a request. Set the scalar type properties
     m_scalar_type_size = sizeof(typename util::ScalarProperties<ValueType>::scalar_type);
     m_scalar_type_name = util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name();
+  } else {
+
+    // Make sure the scalar_type of the new requested type coincides with the one already stored
+    error::runtime_check(util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name()==m_scalar_type_name,
+                         "Error! There was already a value type request for this allocation, and the stored scalar_type name (" +
+                         m_scalar_type_name + ") does not match the one from the new request (" + util::TypeName<ValueType>::name() + ").\n");
+    error::runtime_check(sizeof(typename util::ScalarProperties<ValueType>::scalar_type)==m_scalar_type_size,
+                         "Error! There was already a value type request for this allocation, and the size of the stored scalar_type (" +
+                         std::to_string(m_scalar_type_size) + ") does not match the size of the scalar_type of the new request (" +
+                         std::to_string(sizeof(typename util::ScalarProperties<ValueType>::scalar_type)) + ").\n");
+
+    // Furthermore, if value type is not the same as scalar type (by comparing name and size), ValueType *must* be a pack
+    const std::string vtn = util::TypeName<ValueType>::name();
+    error::runtime_check( (m_scalar_type_name==vtn && m_scalar_type_size==vts) || util::ScalarProperties<ValueType>::is_pack,
+                          "Error! Template argument ValueType must be either the ScalarType of this allocation, or a pack type.\n");
   }
 
-  // Make sure the scalar_type of the new requested type coincides with the one already stored
-  error::runtime_check(util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name()==m_scalar_type_name,
-                       "Error! There was already a value type request for this allocation, and the stored scalar_type name (" +
-                       m_scalar_type_name + ") does not match the one from the new request (" + util::TypeName<ValueType>::name() + ").\n");
-  error::runtime_check(sizeof(typename util::ScalarProperties<ValueType>::scalar_type)==m_scalar_type_size,
-                       "Error! There was already a value type request for this allocation, and the size of the stored scalar_type (" +
-                       std::to_string(m_scalar_type_size) + ") does not match the size of the scalar_type of the new request (" +
-                       std::to_string(sizeof(typename util::ScalarProperties<ValueType>::scalar_type)) + ").\n");
-  // Furthermore, if not the same as scalar type (by comparing name and size), ValueType *must* be a pack
-
-  constexpr int     vts = sizeof(ValueType);
-  const std::string vtn = util::TypeName<ValueType>::name();
-  error::runtime_check( (m_scalar_type_name==vtn && m_scalar_type_size==vts) || util::ScalarProperties<ValueType>::is_pack,
-                        "Error! Template argument ValueType must be either the ScalarType of this allocation, or a pack type.\n");
-
-  // This should always pass, given that the previous two did, but better safe than sorry
-  error::runtime_check(vts % m_scalar_type_size == 0,
-                       "Error! The size of the scalar_type (" + std::to_string(m_scalar_type_size) +
-                       ") does not divide the size of the given value_type (" + std::to_string(vts) + ").\n");
+  // If ValueType only contains N scalar_type inside, this will pass. If not, then it's a bad ValueType,
+  // or you have a wrong scalar_type in the specialization of ScalarProperties<ValueType>. Either way, error out.
+  scream_require_msg(vts % m_scalar_type_size == 0,
+                     "Error! The size of the scalar_type (" + std::to_string(m_scalar_type_size) +
+                     ") does not divide the size of the given value_type (" + std::to_string(vts) + ").\n");
 
   // Store the size of the value type.
   m_value_type_sizes.push_back(vts);
@@ -114,12 +117,20 @@ inline int FieldAllocProp::get_alloc_size () const {
   return m_alloc_size;
 }
 
+inline int FieldAllocProp::get_last_dim_alloc_size () const {
+  error::runtime_check(m_committed,"Error! You cannot query the allocation properties until they have been committed.");
+  return m_last_dim_alloc_size;
+}
+
 template<typename ValueType>
 bool FieldAllocProp::is_allocation_compatible_with_value_type () const {
-  constexpr int sts = sizeof(typename util::ScalarProperties<ValueType>::scalar_type);
-  constexpr int vts = sizeof(ValueType);
+  using NonConstValueType = typename std::remove_const<ValueType>::type;
 
-  return util::TypeName<typename util::ScalarProperties<ValueType>::scalar_type>::name()==m_scalar_type_name
+  constexpr int  sts = sizeof(typename util::ScalarProperties<ValueType>::scalar_type);
+  constexpr int  vts = sizeof(ValueType);
+  const auto stn = util::TypeName<typename util::ScalarProperties<NonConstValueType>::scalar_type>::name();
+
+  return stn==m_scalar_type_name
       && sts==m_scalar_type_size && (m_last_dim_alloc_size%vts==0);
 }
 

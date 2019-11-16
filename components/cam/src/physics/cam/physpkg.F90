@@ -396,7 +396,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
        if (masterproc) write(iulog,*) 'AQUA_PLANET simulation, sgh, sgh30, landm initialized to 0.'
     else
        if (masterproc) write(iulog,*) 'NOT AN AQUA_PLANET simulation, initialize &
-                                       sgh, sgh30, land m using data from file.'
+                                      &sgh, sgh30, land m using data from file.'
        fh_topo=>topo_file_get_id()
        call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
             sgh, found, gridname='physgrid')

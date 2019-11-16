@@ -75,6 +75,58 @@ interface
     real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
   end subroutine cloud_water_autoconversion_f
 
+  subroutine calc_first_order_upwind_step_f(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
+    use iso_c_binding
+
+    !arguments:
+    integer(kind=c_int), value, intent(in) :: kts, kte, kdir, kbot, k_qxtop, num_arrays
+    real(kind=c_real), value, intent(in) :: dt_sub
+    real(kind=c_real), dimension(kts:kte), intent(in) :: rho, inv_rho, inv_dzq
+    type(c_ptr), intent(in), dimension(num_arrays) :: fluxes, vs, qnx
+  end subroutine calc_first_order_upwind_step_f
+
+  subroutine generalized_sedimentation_f(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnx) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int), value, intent(in) :: kts, kte, kdir, k_qxtop, kbot, num_arrays
+    integer(kind=c_int), intent(inout) :: k_qxbot
+    real(kind=c_real), value, intent(in) :: Co_max
+    real(kind=c_real), intent(inout) :: dt_left, prt_accum
+    real(kind=c_real), dimension(kts:kte), intent(in) :: inv_dzq, inv_rho, rho
+
+    type(c_ptr), intent(in), dimension(num_arrays) :: vs, fluxes, qnx
+  end subroutine generalized_sedimentation_f
+
+  subroutine cloud_sedimentation_f(kts,kte,ktop,kbot,kdir,   &
+       qc_incld,rho,inv_rho,lcldm,acn,inv_dzq,&
+       dt,odt,log_predictNc, &
+       qc, nc, nc_incld,mu_c,lamc,prt_liq,qc_tend,nc_tend) bind(C)
+
+    use iso_c_binding
+
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+
+    real(kind=c_real), intent(in), dimension(kts:kte) :: qc_incld
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: lcldm
+    real(kind=c_real), intent(in), dimension(kts:kte) :: acn
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dzq
+
+    real(kind=c_real),    value, intent(in) :: dt
+    real(kind=c_real),    value, intent(in) :: odt
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: mu_c
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: lamc
+    real(kind=c_real), intent(inout) :: prt_liq
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qc_tend
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nc_tend
+  end subroutine cloud_sedimentation_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use

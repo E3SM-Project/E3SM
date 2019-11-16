@@ -441,42 +441,42 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">pgi/19.3</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gnu/7.3.0</command>
-        <command name="load">openblas/0.2.20</command>
+        <command name="load">gnu/8.3.0</command>
+        <command name="load">openblas/0.3.6</command>
       </modules>
       <modules mpilib="mpt" compiler="gnu">
-	<command name="load">mpt/2.16</command>
-	<command name="load">netcdf-mpi/4.6.1</command>
+	<command name="load">mpt/2.19</command>
+	<command name="load">netcdf-mpi/4.7.1</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.6.1</command>
+	<command name="load">netcdf-mpi/4.7.1</command>
 	<command name="load">pnetcdf/1.11.0</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.6.3</command>
+	<command name="load">netcdf-mpi/4.7.1</command>
 	<command name="load">pnetcdf/1.11.1</command>
       </modules>
       <modules mpilib="openmpi" compiler="pgi">
 	<command name="load">openmpi/3.1.4</command>
-	<command name="load">netcdf/4.6.3</command>
+	<command name="load">netcdf/4.7.1</command>
       </modules>
       <modules mpilib="openmpi" compiler="gnu">
-        <command name="load">openmpi/3.0.1</command>
-        <command name="load">netcdf/4.6.1</command>
+        <command name="load">openmpi/3.1.4</command>
+        <command name="load">netcdf/4.7.1</command>
       </modules>
       <modules>
 	<command name="load">ncarcompilers/0.5.0</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
-	<command name="load">netcdf/4.6.1</command>
+	<command name="load">netcdf/4.7.1</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial">
-	<command name="load">netcdf/4.6.1</command>
+	<command name="load">netcdf/4.7.1</command>
       </modules>
       <modules compiler="pgi" mpilib="mpi-serial">
-	<command name="load">netcdf/4.6.3</command>
+	<command name="load">netcdf/4.7.1</command>
       </modules>
     </module_system>
     <environment_variables>
@@ -486,11 +486,17 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
     </environment_variables>
+    <environment_variables comp_interface="nuopc" mpilib="mpi-serial" DEBUG="FALSE">
+      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libO/Linux.intel.64.mpiuni.default/esmf.mk</env>
+    </environment_variables>
+    <environment_variables comp_interface="nuopc" mpilib="mpi-serial" DEBUG="TRUE">
+      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libg/Linux.intel.64.mpiuni.default/esmf.mk</env>
+    </environment_variables>
     <environment_variables comp_interface="nuopc" DEBUG="FALSE">
-      <env name="ESMFMKFILE">/glade/work/dunlap/ESMF-INSTALL/8.0.0bs38/lib/libO/Linux.intel.64.mpt.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libO/Linux.intel.64.mpt.default/esmf.mk</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc" DEBUG="TRUE">
-      <env name="ESMFMKFILE">/glade/work/dunlap/ESMF-INSTALL/8.0.0bs38/lib/libg/Linux.intel.64.mpt.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libg/Linux.intel.64.mpt.default/esmf.mk</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
@@ -1516,6 +1522,8 @@ This allows using a different mpirun command to launch unit tests
     </module_system>
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
+      <!-- The following is needed in order to run qsub from the compute nodes -->
+      <env name="PATH">$ENV{PATH}:/cluster/torque/bin</env>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>

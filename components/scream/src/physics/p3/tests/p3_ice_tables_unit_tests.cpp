@@ -113,28 +113,30 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
 
     // Load some lookup inputs, need at least one per pack value
     LookupIceData lid[max_pack_size] = {
+      // qitot,   nitot,     qirim,     rhop
       {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
+      {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
+      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
+      {0.136E-08, 0.487E+07, 0.811E-10, 0.500E+02},
+
+      {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
+      {0.510E-02, 0.454E+01, 0.714E-05, 0.500E+02},
+      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
+      {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
+
+      {0.971E-07, 0.657E+06, 0.271E-06, 0.900E+03},
       {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
       {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
       {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
 
-      {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
-      {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
-      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
-      {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
-
-      {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
-      {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
-      {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
-      {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02},
-
-      {0.971E-07, 0.657E+06, 0.971E-07, 0.900E+03},
+      {0.971E-07, 0.657E+06, 0.971E-07, 0.200E+04},
       {0.510E-02, 0.454E+06, 0.714E-05, 0.500E+02},
       {0.500E-07, 0.545E+06, 0.000E+00, 0.000E+00},
       {0.136E-08, 0.487E+06, 0.811E-10, 0.500E+02}
     };
 
     LookupIceDataB lidb[max_pack_size] = {
+      // qr,      nr
       {0.263E-05, 0.100E+07},
       {0.100E-01, 0.100E+07},
       {0.000E+00, 0.100E-15},
@@ -222,7 +224,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     // Run the lookup from a kernel and copy results back to host
     view_1d<IntSmallPack> int_results("int results", 5);
     view_1d<Spack> real_results("real results", 7);
-    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
       // Init packs
       TableIce ti;
       TableRain tr;

@@ -28,20 +28,24 @@ template<typename ScalarType, typename Device>
 class Field {
 public:
 
+  using value_type           = ScalarType;
   using device_type          = Device;
-  using view_type            = typename KokkosTypes<device_type>::template view<ScalarType*>;
-  using value_type           = typename view_type::traits::value_type;
-  using const_value_type     = typename view_type::traits::const_value_type;
-  using non_const_value_type = typename view_type::traits::non_const_value_type;
-  using const_field_type     = Field<const_value_type, device_type>;
   using header_type          = FieldHeader;
   using identifier_type      = header_type::identifier_type;
+  using view_type            = typename KokkosTypes<device_type>::template view<value_type*>;
+  using host_view_type       = typename KokkosTypes<HostDevice>::template view<value_type*>;
+  using const_value_type     = typename std::add_const<value_type>::type;
+  using non_const_value_type = typename std::remove_const<value_type>::type;
+
+  using field_type           = Field<value_type, device_type>;
+  using const_field_type     = Field<const_value_type, device_type>;
+  using nonconst_field_type  = Field<non_const_value_type, device_type>;
 
   // Statically check that ScalarType is not an array.
   static_assert(view_type::Rank==1, "Error! ScalarType should not be an array type.\n");
 
   // Constructor(s)
-  Field () = delete;
+  Field () = default;
   explicit Field (const identifier_type& id);
 
   // This constructor allows const->const, nonconst->nonconst, and nonconst->const copies
@@ -57,7 +61,10 @@ public:
         header_type& get_header ()       { return *m_header; }
   const std::shared_ptr<header_type>& get_header_ptr () const { return m_header; }
 
-  const view_type&   get_view   () const { return  m_view;   }
+  const view_type& get_view   () const { return  m_view;   }
+
+  // Returns a const_field_type copy of this field
+  const_field_type get_const () const { return const_field_type(*this); }
 
   template<typename DT>
   ko::Unmanaged<typename KokkosTypes<device_type>::template view<DT> >
@@ -124,7 +131,7 @@ Field<ScalarType,Device>&
 Field<ScalarType,Device>::
 operator= (const Field<SrcScalarType,Device>& src) {
 
-  using src_field_type = decltype(src);
+  using src_field_type = typename std::remove_reference<decltype(src)>::type;
 #ifndef CUDA_BUILD // TODO Figure out why nvcc isn't like this bit of code.
   // Check that underlying value type
   static_assert(std::is_same<non_const_value_type,
@@ -136,7 +143,20 @@ operator= (const Field<SrcScalarType,Device>& src) {
                 std::is_same<typename src_field_type::value_type,non_const_value_type>::value,
                 "Error! Cannot create a nonconst field from a const field.\n");
 #endif
-  if (&src!=*this) {
+
+  // If the field has a valid header, we only allow assignment of fields with
+  // the *same* identifier.
+  scream_require_msg(m_header->get_identifier().get_id_string()=="" ||
+                     m_header->get_identifier()==src.get_header().get_identifier(),
+                     "Error! Assignment of fields with different (and non-null) identifiers is prohibited.\n");
+
+  // Since the type of *this and src may be different, we cannot do the usual
+  // `if (this!=&src)`, cause the compiler cannot compare those pointers.
+  // Therefore, we compare the stored pointers. Note that we don't compare
+  // the 'm_allocated' member, cause its superfluous.
+  // If either header or view are different, we copy everything
+  if (m_header!=src.get_header_ptr() ||
+      m_view!=src.get_view()) {
     m_header    = src.get_header_ptr();
     m_view      = src.get_view();
     m_allocated = src.is_allocated();
@@ -157,13 +177,13 @@ Field<ScalarType,Device>::get_reshaped_view () const {
   const auto& field_layout = m_header->get_identifier().get_layout();
 
   // Make sure input field is allocated
-  error::runtime_check(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
+  scream_require_msg(m_allocated, "Error! Cannot reshape a field that has not been allocated yet.\n");
 
   // Make sure DstDT has an eligible rank: can only reinterpret if the data type rank does not change or if either src or dst have rank 1.
   constexpr int DstRank = util::GetRanks<DT>::rank;
 
   // Check the reinterpret cast makes sense for the two value types (need integer sizes ratio)
-  error::runtime_check(alloc_prop.template is_allocation_compatible_with_value_type<DstValueType>(),
+  scream_require_msg(alloc_prop.template is_allocation_compatible_with_value_type<DstValueType>(),
                        "Error! Source field allocation is not compatible with the destination field's value type.\n");
 
   // The destination view type
@@ -181,7 +201,7 @@ Field<ScalarType,Device>::get_reshaped_view () const {
       kokkos_layout.dimension[i] = field_layout.dim(i);
 
       // Safety check: field_layout.dim(0)*...*field_layout.dim(field_layout.rank()-2) should divide num_values, so we check
-      error::runtime_check(num_last_dim_values % field_layout.dim(i) == 0, "Error! Something is wrong with the allocation properties.\n");
+      scream_require_msg(num_last_dim_values % field_layout.dim(i) == 0, "Error! Something is wrong with the allocation properties.\n");
       num_last_dim_values /= field_layout.dim(i);
     }
     kokkos_layout.dimension[field_layout.rank()-1] = num_last_dim_values;
@@ -198,7 +218,7 @@ void Field<ScalarType,Device>::allocate_view ()
   // a subview of the field). However, it *seems* suspicious to call
   // this method twice, and I think it's more likely than not that
   // such a scenario would indicate a bug. Therefore, I am prohibiting it.
-  error::runtime_check(!m_allocated, "Error! View was already allocated.\n");
+  scream_require_msg(!m_allocated, "Error! View was already allocated.\n");
 
   // Short names
   const auto& id     = m_header->get_identifier();
@@ -206,7 +226,7 @@ void Field<ScalarType,Device>::allocate_view ()
   auto& alloc_prop   = m_header->get_alloc_properties();
 
   // Check the identifier has all the dimensions set
-  error::runtime_check(layout.are_dimensions_set(), "Error! Cannot create a field until all the field's dimensions are set.\n");
+  scream_require_msg(layout.are_dimensions_set(), "Error! Cannot allocate the view until all the field's dimensions are set.\n");
 
   // Commit the allocation properties
   alloc_prop.commit();

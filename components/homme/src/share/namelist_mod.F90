@@ -85,7 +85,8 @@ module namelist_mod
     tol,           &
     debug_level,   &
     theta_advect_form,   &
-    vert_remap_q_alg
+    vert_remap_q_alg, &
+    se_fv_phys_remap_alg
 
 #ifndef CAM
   use control_mod, only:              &
@@ -260,7 +261,8 @@ module namelist_mod
       rotate_grid,   &
       mesh_file,     &               ! Name of mesh file
       theta_advect_form,     & 
-      vert_remap_q_alg
+      vert_remap_q_alg, &
+      se_fv_phys_remap_alg
 
 
 #ifdef CAM
@@ -388,6 +390,7 @@ module namelist_mod
     semi_lagrange_hv_q = 0
     semi_lagrange_nearest_point_lev = 0
     disable_diagnostics = .false.
+    se_fv_phys_remap_alg = 1
 
     theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
 #if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
@@ -727,6 +730,7 @@ module namelist_mod
     call MPI_bcast(LFTfreq,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(moisture,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
+    call MPI_bcast(se_fv_phys_remap_alg,1,MPIinteger_t ,par%root,par%comm,ierr)
 
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
@@ -998,6 +1002,7 @@ module namelist_mod
        write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
 
        write(iulog,*)"readnl: runtype       = ",runtype
+       write(iulog,*)"readnl: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
 
        if (hypervis_power /= 0)then
           write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power

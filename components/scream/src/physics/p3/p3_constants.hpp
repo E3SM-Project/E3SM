@@ -11,6 +11,9 @@ namespace p3 {
 
 /*
  * Mathematical constants used by p3.
+ *
+ * Note that a potential optimization could be to change the type of
+ * Scalar constants that have integer values to int.
  */
 
 template <typename Scalar>
@@ -49,6 +52,8 @@ struct Constants
   static constexpr Scalar INV_CP      = 1.0/CP;
   static constexpr Scalar Tol         = util::is_single_precision<Real>::value ? 2e-5 : 1e-14;
   static constexpr Scalar mu_r_const  = 1.0;
+  static constexpr Scalar dt_left_tol = 1.e-4;
+  static constexpr Scalar bcn         = 2.;
 };
 
 template <typename Scalar>

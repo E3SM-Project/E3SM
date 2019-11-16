@@ -641,12 +641,13 @@ subroutine shr_scam_checkSurface(scmlon, scmlat, ocn_compid, ocn_mpicom, &
    character(*),parameter :: subname = "(shr_scam_checkSurface) "
    character(*),parameter :: F00   = "('(shr_scam_checkSurface) ',8a)"
    character(len=CL)      :: decomp = '1d' ! restart pointer file
+   real(r8)               :: sst_constant_value 
    character(len=CL)      :: restfilm = 'unset'
    character(len=CL)      :: restfils = 'unset'
    integer(IN)   :: nfrac
    logical :: force_prognostic_true = .false.
    namelist /dom_inparm/ sstcyc, nrevsn, rest_pfile, bndtvs, focndomain
-   namelist / docn_nml / decomp, force_prognostic_true, &
+   namelist / docn_nml / decomp, sst_constant_value, force_prognostic_true, &
         restfilm, restfils
 
 !-------------------------------------------------------------------------------

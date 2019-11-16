@@ -3,6 +3,7 @@
 
 #include "share/scream_types.hpp"
 #include "share/scream_pack_kokkos.hpp"
+#include "share/scream_workspace.hpp"
 #include "p3_constants.hpp"
 
 namespace scream {
@@ -83,9 +84,14 @@ struct Functions
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
+  template <typename S>
+  using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
+
   using MemberType = typename KT::MemberType;
 
-  // -- Table3
+  using Workspace = typename WorkspaceManager<Spack, Device>::Workspace;
+
+  // -- Table3 --
 
   struct Table3 {
     IntSmallPack dumii, dumjj;
@@ -183,9 +189,9 @@ struct Functions
   template <int nfield>
   KOKKOS_FUNCTION
   static void calc_first_order_upwind_step(
-    const ko::Unmanaged<view_1d<const Spack> >& rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_rho, // 1/rho
-    const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho, // 1/rho
+    const uview_1d<const Spack>& inv_dzq,
     const MemberType& team,
     const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
     const view_1d_ptr_array<Spack, nfield>& flux, // workspace
@@ -195,28 +201,62 @@ struct Functions
   // Evolve 1 mixing ratio. This is a syntax-convenience version of the above.
   KOKKOS_FUNCTION
   static void calc_first_order_upwind_step(
-    const ko::Unmanaged<view_1d<const Spack> >& rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_rho, // 1/rho
-    const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho, // 1/rho
+    const uview_1d<const Spack>& inv_dzq,
     const MemberType& team,
     const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
-    const ko::Unmanaged<view_1d<Spack> >& flux,
-    const ko::Unmanaged<view_1d<const Spack> >& V,
-    const ko::Unmanaged<view_1d<Spack> >& r);
+    const uview_1d<Spack>& flux,
+    const uview_1d<const Spack>& V,
+    const uview_1d<Spack>& r);
 
   // This is the main routine. It can be called by the user if kdir is known at
   // compile time. So far it is not, so the above versions are called instead.
   template <Int kdir, int nfield>
   KOKKOS_FUNCTION
   static void calc_first_order_upwind_step(
-    const ko::Unmanaged<view_1d<const Spack> >& rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& inv_dzq,
     const MemberType& team,
     const Int& nk, const Int& k_bot, const Int& k_top, const Scalar& dt_sub,
     const view_1d_ptr_array<Spack, nfield>& flux,
     const view_1d_ptr_array<Spack, nfield>& V, // (behaviorally const)
     const view_1d_ptr_array<Spack, nfield>& r);
+
+  template <int nfield>
+  KOKKOS_FUNCTION
+  static void generalized_sedimentation(
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& inv_dzq,
+    const MemberType& team,
+    const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Int& kdir, const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,
+    const view_1d_ptr_array<Spack, nfield>& fluxes,
+    const view_1d_ptr_array<Spack, nfield>& Vs, // (behaviorally const)
+    const view_1d_ptr_array<Spack, nfield>& rs);
+
+  // Cloud sedimentation
+  KOKKOS_FUNCTION
+  static void cloud_sedimentation(
+    const uview_1d<const Spack>& qc_incld,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& lcldm,
+    const uview_1d<const Spack>& acn,
+    const uview_1d<const Spack>& inv_dzq,
+    const view_dnu_table& dnu,
+    const MemberType& team,
+    const Workspace& workspace,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt, const bool& log_predictNc,
+    const uview_1d<Spack>& qc,
+    const uview_1d<Spack>& nc,
+    const uview_1d<Spack>& nc_incld,
+    const uview_1d<Spack>& mu_c,
+    const uview_1d<Spack>& lamc,
+    const uview_1d<Spack>& qc_tend,
+    const uview_1d<Spack>& nc_tend,
+    Scalar& prt_liq);
 
   // -- Find layers
 
@@ -225,14 +265,14 @@ struct Functions
   KOKKOS_FUNCTION
   static Int find_bottom (
     const MemberType& team,
-    const ko::Unmanaged<view_1d<const Scalar> >& v, const Scalar& small,
+    const uview_1d<const Scalar>& v, const Scalar& small,
     const Int& kbot, const Int& ktop, const Int& kdir,
     bool& log_present);
 
   KOKKOS_FUNCTION
   static Int find_top (
     const MemberType& team,
-    const ko::Unmanaged<view_1d<const Scalar> >& v, const Scalar& small,
+    const uview_1d<const Scalar>& v, const Scalar& small,
     const Int& kbot, const Int& ktop, const Int& kdir,
     bool& log_present);
 
@@ -250,10 +290,11 @@ struct Functions
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
   // TODO: comment
-  KOKKOS_FUNCTION
+  template <bool zero_out=true>
+  KOKKOS_INLINE_FUNCTION
   static void get_cloud_dsd2(
     const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
-    const view_1d<const Scalar>& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm);
+    const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm);
 
   // Computes and returns rain size distribution parameters
   KOKKOS_FUNCTION
@@ -282,6 +323,7 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
 # include "p3_functions_autoconversion_impl.hpp"
+# include "p3_functions_cloud_sed_impl.hpp"
 #endif
 
 #endif
