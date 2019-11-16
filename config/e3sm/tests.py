@@ -283,5 +283,46 @@ _TESTS = {
     "e3sm_bench_hires" : {
         "inherit" : ("e3sm_bench_hires_g", "e3sm_bench_hires_f"),
         "time"    : "01:00:00",
-        },
+        "tests"   : (
+                 "SMS_PS.ne120_oRRS18v3_ICG.A_WCYCL1950S_CMIP6_HR.bench-wcycl",
+                 "SMS_PM.ne120_oRRS18v3_ICG.A_WCYCL1950S_CMIP6_HR.bench-wcycl",
+                 "SMS_PL.ne120_oRRS18v3_ICG.A_WCYCL1950S_CMIP6_HR.bench-wcycl",
+                 )
+    },
+    "e3sm_bench_lores_g" : {
+        "share"    : True,
+        "time"     : "01:00:00",
+        "tests"    : ( 
+                 "SMS_P320x1.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
+                 "SMS_P480x1.T62_oEC60to30v3.GMPAS-IAF.bench-gmpas_noio",
+                 "SMS_P640x1.T62_oEC60to30v3.GMPAS-IAF.bench-fcomp_noio",
+                 "SMS_P960x1.T62_oEC60to30v3.GMPAS-IAF.bench-fcomp_noio",
+                 "SMS_P1280x1.T62_oEC60to30v3.GMPAS-IAF.bench-fcomp_noio",
+                 )
+    },
+    "e3sm_bench_lores_f" : {
+        "share"    : True,
+        "time"     : "01:00:00",
+        "tests"    : (
+                 "SMS_P675x1.ne30_ne30.FC5AV1C-L.bench-fcomp_noio",
+                 "SMS_P900x1.ne30_ne30.FC5AV1C-L.bench-fcomp_noio",
+                 "SMS_P1350x1.ne30_ne30.FC5AV1C-L.bench-fcomp_noio",
+                 "SMS_P2700x1.ne30_ne30.FC5AV1C-L.bench-fcomp_noio",
+                 "SMS_P5400x1.ne30_ne30.FC5AV1C-L.bench-fcomp_noio",
+                 )
+    },
+    "e3sm_bench_lores" : {
+        "inherit" : ("e3sm_bench_lores_g", "e3sm_bench_lores_f"),
+        "time"    : "01:00:00",
+        "tests"   : (
+                 "SMS_PS.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.allactive-v1cmip6",
+                 "SMS_PM.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.allactive-v1cmip6",
+                 "SMS_PL.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.allactive-v1cmip6",
+                 )
+    },
+    "e3sm_bench_all" : {
+        "inherit" : ("e3sm_bench_hires", "e3sm_bench_lores"),
+        "time"    : "01:00:00",
+    },
+
 }
