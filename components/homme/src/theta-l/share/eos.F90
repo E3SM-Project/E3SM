@@ -24,6 +24,9 @@ module eos
   use parallel_mod,   only: abortmp
   use physical_constants, only : p0, kappa, g, Rgas
   use control_mod,    only: theta_hydrostatic_mode
+#ifdef XX_BFB_TESTING
+  use bfb_mod,        only: czeroulpn, cbfb_pow
+#endif
   implicit none
 
 
@@ -170,7 +173,13 @@ implicit none
 !==============================================================
   do k=1,nlev
      p_over_exner(:,:,k) = Rgas*vtheta_dp(:,:,k)/(-dphi(:,:,k))
+#ifndef XX_BFB_TESTING
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
+#else
+     pnh(:,:,k) = (p_over_exner(:,:,k)/p0);
+     call cbfb_pow(np*np, pnh(:,:,k), (1/(1-kappa)))
+     pnh(:,:,k) = p0 * pnh(:,:,k)
+#endif
      exner(:,:,k) =  pnh(:,:,k)/ p_over_exner(:,:,k)
   enddo
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

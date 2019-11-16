@@ -36,6 +36,54 @@ KOKKOS_INLINE_FUNCTION constexpr FPType max(const FPType val, FPPack... pack) {
   return val > max(pack...) ? val : max(pack...);
 }
 
+template <typename FPType>
+KOKKOS_INLINE_FUNCTION constexpr FPType square(const FPType& x) {
+  return x*x;
+}
+
+// Set the least significant n bits of the fraction to 0. Use this for
+// BFB-testing between GPU and host. Table 8 of Appendix E of the Cuda
+// programming guide gives the accuracy of various functions in base
+// 10. However, we also have to account for carries in the calculations. Thus,
+// even if an answer is accurate to 2 base-10 UL or ~7 bits, carries can make
+// more bits differ. Thus, zeroing (or any sort of rounding) is not assured to
+// work. However, you can reduce the probability of a diff to a small number by
+// choosing n to be large. Full double precision range is 53 bits; choose
+// something like n = 20 to get a carry-based diff every 1 in a million calls,
+// still leaving 33 bits.
+KOKKOS_INLINE_FUNCTION
+double zeroulpn (const double& a, const int n) {
+  // Use frexp, lexp, and bit shifts on a long long int representation to avoid
+  // manipulating bits of the FP number.
+  int e;
+  auto xd = std::frexp(a, &e);
+  const int sign = xd >= 0 ? 1 : -1;
+  xd = std::abs(xd);
+  const auto f = static_cast<double>(1LL << 54);
+  long long int x = f*xd;
+  x >>= n;
+  x <<= n;
+  xd = x/f;
+  return std::ldexp(sign*xd, e);
+}
+
+template <typename Pack>
+KOKKOS_INLINE_FUNCTION
+void zero_ulp_n (Pack& a, const int n) {
+  for (int s = 0; s < VECTOR_SIZE; ++s) a[s] = zeroulpn(a[s], n);
+}
+
+template <typename Pack>
+KOKKOS_INLINE_FUNCTION
+Pack bfb_pow (const Pack& a, const Real& e) {
+  Pack b;
+  for (int s = 0; s < VECTOR_SIZE; ++s)
+    b[s] = std::pow(a[s], e);
+  if (OnGpu<ExecSpace>::value)
+    zero_ulp_n(b, 20);
+  return b;
+}
+
 // Computes the greatest common denominator of a and b with Euclid's algorithm
 KOKKOS_INLINE_FUNCTION constexpr int gcd(const int a, const int b) {
 	return (a % b == 0) ? b : gcd(b, a % b);

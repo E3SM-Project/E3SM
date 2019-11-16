@@ -12,6 +12,7 @@ SET (INFRASTRUCTURE_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
+  ${SRC_SHARE_DIR}/cxx/utilities/MathUtils.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SHARE_UT_DIR}/infrastructure_ut.cpp
 )
@@ -79,6 +80,7 @@ SET (BOUNDARY_EXCHANGE_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/MpiBuffersManager.cpp
+  ${SRC_SHARE_DIR}/cxx/utilities/MathUtils.cpp
   ${SHARE_UT_DIR}/boundary_exchange_ut.cpp
 )
 
@@ -123,6 +125,7 @@ SET (SPHERE_OP_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
+  ${SRC_SHARE_DIR}/cxx/utilities/MathUtils.cpp
   ${SHARE_UT_DIR}/sphere_op_sl.cpp
   ${SHARE_UT_DIR}/sphere_op_ml.cpp
 )
@@ -167,6 +170,7 @@ SET (LIMITERS_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
+  ${SRC_SHARE_DIR}/cxx/utilities/MathUtils.cpp
   ${SHARE_UT_DIR}/limiters.cpp
 )
 
@@ -192,6 +196,7 @@ SET (COL_OPS_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
+  ${SRC_SHARE_DIR}/cxx/utilities/MathUtils.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SHARE_UT_DIR}/col_ops_ut.cpp
 )
@@ -232,6 +237,7 @@ SET (PPM_REMAP_UT_CXX_SRCS
   ${SRC_SHARE_DIR}/cxx/Context.cpp
   ${SRC_SHARE_DIR}/cxx/ErrorDefs.cpp
   ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
+  ${SRC_SHARE_DIR}/cxx/utilities/MathUtils.cpp
   ${SRC_SHARE_DIR}/cxx/Hommexx_Session.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/Comm.cpp
   ${SHARE_UT_DIR}/ppm_remap_ut.cpp

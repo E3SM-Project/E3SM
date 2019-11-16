@@ -4,6 +4,7 @@
  * See the file 'COPYRIGHT' in the HOMMEXX/src/share/cxx directory
  *******************************************************************************/
 
+#if 0
 #include "DirkFunctor.hpp"
 #include "DirkFunctorImpl.hpp"
 #include "Context.hpp"
@@ -27,3 +28,4 @@ void DirkFunctor::run ()
 }
 
 } // Namespace Homme
+#endif

@@ -53,25 +53,34 @@ public:
   {
     // If you're hydrostatic, check outside the function
     assert (!m_theta_hydrostatic_mode);
-    // Compute:
-    //  1) p_over_exner = -Rgas*vtheta_dp/delta(phi_i)
-    //  2) pnh = p0 (p_over_exner/p0)^(1/(1-kappa))
-    //  3) exner = pnh/p_over_exner
 
     // To avoid temporaries, use exner to store some temporaries
     ColumnOps::compute_midpoint_delta(kv,phi_i,exner);
 
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                          [&](const int ilev) {
-
-      // TODO: should do *= Rgas/p0, but would lose BFB with F90.
-      exner(ilev) = (-PhysicalConstants::Rgas)*vtheta_dp(ilev) / exner(ilev);
-      pnh(ilev) = exner(ilev)/PhysicalConstants::p0;
-      pnh(ilev) = pow(pnh(ilev),1.0/(1.0-PhysicalConstants::kappa));
-      pnh(ilev) *= PhysicalConstants::p0;
-
-      exner(ilev) = pnh(ilev)/exner(ilev);
+      compute_pnh_and_exner(vtheta_dp(ilev), exner(ilev), pnh(ilev), exner(ilev));
     });
+  }
+
+  // Compute:
+  //  1) p_over_exner = -Rgas*vtheta_dp/delta(phi_i)
+  //  2) pnh = p0 (p_over_exner/p0)^(1/(1-kappa))
+  //  3) exner = pnh/p_over_exner
+  template<typename Scalar>
+  KOKKOS_INLINE_FUNCTION
+  static void compute_pnh_and_exner (const Scalar& vtheta_dp, const Scalar& dphi,
+                                     Scalar& pnh, Scalar& exner) {
+    // TODO: should do *= Rgas/p0, but would lose BFB with F90.
+    exner = (-PhysicalConstants::Rgas)*vtheta_dp / dphi;
+    pnh = exner/PhysicalConstants::p0;
+#ifndef XX_BFB_TESTING
+    pnh = pow(pnh,1.0/(1.0-PhysicalConstants::kappa));
+#else
+    pnh = bfb_pow(pnh,1.0/(1.0-PhysicalConstants::kappa));
+#endif
+    pnh *= PhysicalConstants::p0;
+    exner = pnh/exner;    
   }
 
   KOKKOS_INLINE_FUNCTION

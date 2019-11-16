@@ -7,6 +7,7 @@
 
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/TestUtils.hpp"
+#include "utilities/MathUtils.hpp"
 
 using namespace Homme;
 
@@ -219,6 +220,29 @@ TEST_CASE("Parallel_scan",
         rel_error = compare_answers(exact, computed_dispatch);
         REQUIRE(rel_error<=rel_threshold);
       }
+    }
+  }
+}
+
+TEST_CASE("zeroulpn", "Test zero'ing n ulp.") {
+  Kokkos::View<Scalar> a("a");
+  const auto am = Kokkos::create_mirror_view(a);
+  const double a0 = 1 - std::ldexp(1, -53);
+  for (int i = 0; i < 10; ++i) {
+    int scl = 1;
+    scl <<= i;
+    const auto a0s = scl*a0;
+    am() = a0s;
+    deep_copy(a, am);
+    const int n = 17;
+    const auto f = KOKKOS_LAMBDA(const int i) { zero_ulp_n(a(), n); };
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,1), f); Kokkos::fence();
+    deep_copy(am, a);
+    for (int s = 0; s < VECTOR_SIZE; ++s) {
+      const auto zeroed_bits = 54 + std::log2(std::abs((am()[s]-a0s)/std::abs(a0s)));
+      // This assertion is only roughly true in general, subject to many
+      // caveats. But for an all-1 bit vector as a0s is, it's true.
+      REQUIRE(std::abs(zeroed_bits - n) <= 0.1);
     }
   }
 }

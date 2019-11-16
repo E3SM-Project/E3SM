@@ -267,10 +267,6 @@ public:
                                const ExecViewUnmanaged<Scalar [NUM_LEV]>& dx_m,
                                const Real alpha = 1.0, const Real beta = 0.0)
   {
-#ifndef NDEBUG
-    sanity_check<CM>(alpha,beta);
-#endif
-
     // Compute increment of interface values at midpoints.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,0,NUM_PHYSICAL_LEV),
@@ -279,6 +275,9 @@ public:
         combine<CM>(tmp,dx_m(ilev),alpha,beta);
       });
     } else {
+#ifndef NDEBUG
+      sanity_check<CM>(alpha,beta);
+#endif
       constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
       constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPackEnd;
       constexpr int LAST_INT_PACK     = INTERFACES::LastPack;

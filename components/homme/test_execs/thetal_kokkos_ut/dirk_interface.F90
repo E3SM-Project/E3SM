@@ -13,7 +13,7 @@ contains
     use thetal_test_interface,  only: hvcoord
 
     real (kind=real_kind), intent(in)  :: hyai(nlevp), hybi(nlevp), hyam(nlev), hybm(nlev)
-    real (kind=real_kind), intent(in)  :: ps0
+    real (kind=real_kind), value, intent(in)  :: ps0
 
     integer :: k
 
@@ -28,6 +28,22 @@ contains
     enddo
     call set_layer_locations (hvcoord,.false.,.false.)
   end subroutine init_dirk_f90
+
+  subroutine pnh_and_exner_from_eos_f90(vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i) bind(c)
+    use dimensions_mod,        only: nlev, nlevp, np
+    use thetal_test_interface, only: hvcoord
+    use eos,                   only: pnh_and_exner_from_eos2
+
+    real (kind=real_kind), intent(in) :: vtheta_dp(np,np,nlev)   
+    real (kind=real_kind), intent(in) :: dp3d(np,np,nlev)   
+    real (kind=real_kind), intent(in) :: dphi(np,np,nlev)
+    real (kind=real_kind), intent(out) :: pnh(np,np,nlev)        ! nh nonhyrdo pressure
+    real (kind=real_kind), intent(out) :: dpnh_dp_i(np,np,nlevp) ! d(pnh) / d(pi)
+    real (kind=real_kind), intent(out) :: exner(np,np,nlev)      ! exner nh pressure
+
+    call pnh_and_exner_from_eos2(hvcoord, vtheta_dp, dp3d, dphi, pnh, exner, dpnh_dp_i, &
+         'dirk_interface')
+  end subroutine pnh_and_exner_from_eos_f90
 
   subroutine compute_gwphis_f90(gwh_i,dp3d,v,gradphis) bind(c)
     use dimensions_mod,        only: nlev, nlevp, np
