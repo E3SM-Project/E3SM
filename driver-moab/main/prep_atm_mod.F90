@@ -82,6 +82,9 @@ module prep_atm_mod
   ! other module variables
   integer :: mpicom_CPLID  ! MPI cpl communicator
   logical :: iamroot_CPLID ! .true. => CPLID masterproc
+
+  save
+  integer ::       num_proj ! to index the coupler projection calls
   !================================================================================================
 
 contains
@@ -191,6 +194,7 @@ contains
             outfile = 'intx'//trim(lnum)// '.h5m' // CHAR(0)
             ierr = iMOAB_WriteMesh(mbintxoa, outfile, wopts) ! write local intx file
           endif
+          num_proj = 0 ! to index projection files on coupler pes
 #endif
        end if
 
@@ -405,7 +409,7 @@ contains
     integer                  :: atmid
     integer                  :: context_id ! we will use ocean context
     character*32             :: dm1, dm2, tagName, wgtIdef
-    character*50             :: outfile, wopts, tagnameProj
+    character*50             :: outfile, wopts, tagnameProj, lnum
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
     integer, external :: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
@@ -433,6 +437,7 @@ contains
     !  the separator will be ';' semicolon
     tagNameProj = 'a2oTbot_proj;a2oUbot_proj;a2oVbot_proj;'//CHAR(0)
     wgtIdef = 'scalar'//CHAR(0)
+    num_proj = num_proj + 1
     if (atm_present .and. ocn_present) then
       if (mhid .ge. 0) then !  send because we are on atm pes
 
@@ -465,7 +470,8 @@ contains
 #ifdef MOABDEBUG
         ! we can also write the ocean mesh to file, just to see the projectd tag
         !      write out the mesh file to disk
-        outfile = 'ocn_proj.h5m'//CHAR(0)
+        write(lnum,"(I0.2)")num_proj
+        outfile = 'ocnCplProj'//trim(lnum)//'.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
         ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
 #endif
@@ -510,7 +516,8 @@ contains
 #ifdef MOABDEBUG
         ! we can also write the ocean mesh to file, just to see the projectd tag
         !      write out the mesh file to disk
-        outfile = 'lndCplProj.h5m'//CHAR(0)
+        write(lnum,"(I0.2)")num_proj
+        outfile = 'lndCplProj'//trim(lnum)//'.h5m'//CHAR(0)
         wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
         ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
 #endif
