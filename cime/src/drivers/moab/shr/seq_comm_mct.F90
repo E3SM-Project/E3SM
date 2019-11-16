@@ -523,11 +523,15 @@ contains
        write(logunit,*) trim(subname), ' global_mype=', global_mype
     endif
 #endif
-    mhid = -1
-    mpoid = -1
+    mhid = -1     ! iMOAB id for atm comp, coarse mesh
+    mhfid = -1    ! iMOAB id for atm, fine mesh
+    mpoid = -1    ! iMOAB id for ocn comp
+    mlnid = -1    ! iMOAB id for land comp
     mbaxid = -1 ! iMOAB id for atm migrated mesh to coupler pes
     mboxid = -1  ! iMOAB id for mpas ocean migrated mesh to coupler pes
     mbintxoa = -1 ! iMOAB id for atm intx with mpas ocean
+    mblxid = -1   ! iMOAB id for land on coupler pes
+    mbintxla = -1 ! iMOAB id for land intx with atm on coupler pes
 
     deallocate(comps,comms)
 

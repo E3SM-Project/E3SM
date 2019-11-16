@@ -26,7 +26,7 @@ module semoab_mod
 
   integer local_map(np,np) !  what is the index of gll point (i,j) in a local moabconn(start: start+(np-1)*(np-1)*4-1)
   integer, allocatable :: moabconn(:) ! will have the connectivity in terms of local index in verts
-  integer                         num_calls_export
+  integer  ::                     num_calls_export
   
 contains
 
@@ -451,7 +451,7 @@ contains
 
       ! create a new tag, for transfer example ; will use it now for temperature on the surface
       !  (bottom atm to surface of ocean); for debugging, use it on fine mesh
-      tagname='a2oDBG'//CHAR(0) !  atm to ocean tag
+      tagname='a2o_T'//CHAR(0) !  atm to ocean tag
       tagtype = 1  ! dense, double
       numco = 1 !  usually, it is 1; one value per gdof
       ierr = iMOAB_DefineTagStorage(MHFID, tagname, tagtype, numco,  tagindex )
@@ -593,12 +593,12 @@ contains
       end do
     end do
 
-    tagname='a2oDBG'//CHAR(0) !  atm to ocean tag, on fine mesh
+    tagname='a2o_T'//CHAR(0) !  atm to ocean tag, on fine mesh
     ierr  = iMOAB_GetMeshInfo ( MHFID, nvert, nvise, nbl, nsurf, nvisBC );
     ent_type = 0 ! vertex type
     ierr = iMOAB_SetDoubleTagStorage ( MHFID, tagname, nvert(1), ent_type, valuesTag)
     if (ierr > 0 )  &
-      call endrun('Error: fail to set a2oDBG tag for fine vertices')
+      call endrun('Error: fail to set a2o_T tag for fine vertices')
 
 #ifdef MOABDEBUG
     !     write out the mesh file to disk, in parallel
