@@ -144,6 +144,7 @@ SET(THETAL_DEPS_CXX
   ${TARGET_DIR}/cxx/ElementsForcing.cpp
   ${TARGET_DIR}/cxx/ElementsState.cpp
   ${TARGET_DIR}/cxx/HyperviscosityFunctorImpl.cpp
+  ${TARGET_DIR}/cxx/DirkFunctor.cpp
   ${TARGET_DIR}/cxx/cxx_f90_interface_theta.cpp
   ${TARGET_DIR}/cxx/prim_advance_exp.cpp
   ${SRC_SHARE_DIR}/cxx/CaarFunctor.cpp
