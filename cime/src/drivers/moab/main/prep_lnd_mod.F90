@@ -88,6 +88,9 @@ module prep_lnd_mod
   character(CXX) :: glc2lnd_ec_extra_fields
   !================================================================================================
 
+#ifdef MOABDEBUG
+  integer :: number_calls ! it is a static variable, used to count the number of projections
+#endif
 contains
 
   !================================================================================================
@@ -218,7 +221,9 @@ contains
        call shr_sys_flush(logunit)
 
     end if
-
+#ifdef MOABDEBUG
+   number_calls = 0 ! it is a static variable, used to count the number of projections
+#endif
   end subroutine prep_lnd_init
 
   !================================================================================================
@@ -544,7 +549,7 @@ contains
     integer                  :: context_id
     character*32             :: dm1, dm2
     character*50             :: tagName
-    character*32             :: outfile, wopts
+    character*32             :: outfile, wopts, lnum
     integer                  :: orderLND, orderATM, volumetric, noConserve, validate
 
     integer, external :: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
@@ -585,8 +590,9 @@ contains
 
 #ifdef MOABDEBUG
     if (mlnid .ge. 0 ) then !  we are on land pes, for sure
-
-      outfile = 'wholeLND_proj.h5m'//CHAR(0)
+      number_calls = number_calls + 1
+      write(lnum,"(I0.2)") number_calls
+      outfile = 'wholeLND_proj'//trim(lnum)//'.h5m'//CHAR(0)
       wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
       ierr = iMOAB_WriteMesh(mlnid, trim(outfile), trim(wopts))
     endif

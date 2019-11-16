@@ -116,6 +116,10 @@ module prep_ocn_mod
 #endif
   !================================================================================================
 
+#ifdef MOABDEBUG
+  integer :: number_proj ! it is a static variable, used to count the number of projections
+#endif
+
 contains
 
   !================================================================================================
@@ -366,7 +370,9 @@ contains
        call shr_sys_flush(logunit)
 
     end if
-
+#ifdef MOABDEBUG
+    number_proj = 0 ! it is a static variable, used to count the number of projections
+#endif
   end subroutine prep_ocn_init
 
   !================================================================================================
@@ -1400,7 +1406,7 @@ contains
     integer                  :: context_id
     character*32             :: dm1, dm2
     character*50             :: tagName
-    character*32             :: outfile, wopts
+    character*32             :: outfile, wopts, lnum
     integer                  :: orderOCN, orderATM, volumetric, noConserve, validate
 
     integer, external :: iMOAB_SendElementTag, iMOAB_ReceiveElementTag, iMOAB_FreeSenderBuffers
@@ -1441,8 +1447,9 @@ contains
 
 #ifdef MOABDEBUG
     if (mpoid .ge. 0 ) then !  we are on ocean pes, for sure
-
-      outfile = 'wholeMPAS_proj.h5m'//CHAR(0)
+      number_proj = number_proj+1 ! count the number of projections
+      write(lnum,"(I0.2)") number_proj
+      outfile = 'wholeMPAS_proj'//trim(lnum)//'.h5m'//CHAR(0)
       wopts   = ';PARALLEL=WRITE_PART'//CHAR(0) !
       ierr = iMOAB_WriteMesh(mpoid, trim(outfile), trim(wopts))
 
