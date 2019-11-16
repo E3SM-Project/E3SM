@@ -5,6 +5,8 @@
  *******************************************************************************/
 
 #include "ElementsState.hpp"
+#include "ElementOps.hpp"
+#include "EquationOfState.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/SyncUtils.hpp"
 #include "utilities/TestUtils.hpp"
@@ -16,7 +18,78 @@
 
 namespace Homme {
 
-void StateStorage::init_storage(const int num_elems) {
+void RefStates::init(const int num_elems) {
+  dp_ref = decltype(dp_ref)("dp_ref",num_elems);
+  phi_i_ref = decltype(phi_i_ref)("phi_i_ref",num_elems);
+  theta_ref = decltype(theta_ref)("theta_ref",num_elems);
+}
+
+void RefStates::compute(const bool hydrostatic,
+                        const HybridVCoord& hvcoord,
+                        const ExecViewUnmanaged<Real *[NP][NP]>& phis) {
+  EquationOfState eos;
+  eos.init(hydrostatic,hvcoord);
+
+  ElementOps elem_ops;
+  elem_ops.init(hvcoord);
+
+  const int num_elems = dp_ref.extent_int(0);
+  assert(num_elems>0);
+
+  // Local copies, to avoid cuda issues with *this
+  auto l_dp_ref = dp_ref;
+  auto l_phi_i_ref = phi_i_ref;
+  auto l_theta_ref = theta_ref;
+
+  constexpr Real Rgas = PhysicalConstants::Rgas;
+  constexpr Real Tref = PhysicalConstants::Tref;
+
+  auto policy = get_default_team_policy<ExecSpace>(num_elems);
+  const int num_teams = get_num_concurrent_teams(policy);
+
+  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]> buf_p("",num_teams);
+  ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> buf_p_i("",num_teams);
+  Kokkos::parallel_for(policy,KOKKOS_LAMBDA(const TeamMember& team){
+    KernelVariables kv(team);
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,NP*NP),
+                         [&](const int idx){
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      auto dpRef    = Homme::subview(l_dp_ref,kv.ie,igp,jgp);
+      auto phiRef   = Homme::subview(l_phi_i_ref,kv.ie,igp,jgp);
+      auto thetaRef = Homme::subview(l_theta_ref,kv.ie,igp,jgp);
+      auto p        = Homme::subview(buf_p,kv.team_idx,igp,jgp);
+      auto p_i      = Homme::subview(buf_p_i,kv.team_idx,igp,jgp);
+
+      // Step 0: compute ps_ref
+      const Real ps_ref = hvcoord.ps0 * exp(-phis(kv.ie,igp,jgp)/(Rgas*Tref));
+
+      // Step 1: compute dp_ref = delta_hyai(k)*ps0 + delta_hybi(k)*ps_ref
+      hvcoord.compute_dp_ref(kv,ps_ref,dpRef);
+
+      // Step 2: compute p_ref = p(p_i(dp))
+      p_i(0)[0] = hvcoord.hybrid_ai0*hvcoord.ps0;
+      ColumnOps::column_scan_mid_to_int<true>(kv,dpRef,p_i);
+      ColumnOps::compute_midpoint_values(kv,p_i,p);
+
+      // Step 3: compute theta_ref = theta(exner(p_ref))
+      elem_ops.compute_theta_ref(kv,p,thetaRef);
+
+      // Step 3: compute phi_i_ref = phi(theta_ref,dp_ref,p_ref)
+      // TODO: you could exploit exner computed in compute_theta_ref, to replace (p/p0)^(k-1) with exner*p0/p.
+      auto theta_dp = [&thetaRef,&dpRef](const int ilev)->Scalar {
+        return thetaRef(ilev)*dpRef(ilev);
+      };
+      eos.compute_phi_i(kv,phis(kv.ie,igp,jgp),
+                           theta_dp,p,phiRef);
+    });
+  });
+  Kokkos::fence();
+}
+
+void ElementsState::init(const int num_elems) {
+  m_num_elems = num_elems;
 
   m_v         = ExecViewManaged<Scalar * [NUM_TIME_LEVELS][2][NP][NP][NUM_LEV  ]>("Horizontal velocity", num_elems);
   m_w_i       = ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV_P]>("Vertical velocity at interfaces", num_elems);
@@ -25,21 +98,8 @@ void StateStorage::init_storage(const int num_elems) {
   m_dp3d      = ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV  ]>("Delta p at levels", num_elems);
 
   m_ps_v = ExecViewManaged<Real * [NUM_TIME_LEVELS][NP][NP]>("PS_V", num_elems);
-}
 
-void StateStorage::copy_state(const StateStorage& src) {
-
-  Kokkos::deep_copy(m_v        , src.m_v         );
-  Kokkos::deep_copy(m_w_i      , src.m_w_i       );
-  Kokkos::deep_copy(m_vtheta_dp, src.m_vtheta_dp );
-  Kokkos::deep_copy(m_phinh_i  , src.m_phinh_i   );
-  Kokkos::deep_copy(m_dp3d     , src.m_dp3d      );
-  Kokkos::deep_copy(m_ps_v     , src.m_ps_v      );
-}
-
-void ElementsState::init(const int num_elems) {
-  m_num_elems = num_elems;
-  StateStorage::init_storage(num_elems);
+  m_ref_states.init(num_elems);
 }
 
 void ElementsState::randomize(const int seed) {
@@ -203,14 +263,6 @@ void ElementsState::randomize(const int seed,
       }
     }
   }
-}
-
-void ElementsState::save_state ()
-{
-  if (m_state0.m_v.extent_int(0)==0) {
-    m_state0.init_storage(m_num_elems);
-  }
-  m_state0.copy_state(*this);
 }
 
 void ElementsState::pull_from_f90_pointers (CF90Ptr& state_v,         CF90Ptr& state_w_i,

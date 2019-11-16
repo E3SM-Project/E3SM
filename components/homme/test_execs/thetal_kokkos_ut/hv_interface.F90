@@ -128,6 +128,7 @@ contains
   end subroutine biharmonic_wk_theta_f90
 
   subroutine advance_hypervis_f90(np1, dt, eta_ave_w, hv_scaling, hydrostatic, &
+                                  dp_ref_ptr, theta_ref_ptr, phi_ref_ptr,      &
                                   v_ptr,w_ptr,vtheta_ptr,dp_ptr,phinh_ptr) bind(c)
     use control_mod,            only: hypervis_scaling, theta_hydrostatic_mode
     use prim_advance_mod,       only: advance_hypervis
@@ -140,6 +141,7 @@ contains
     !
     integer (kind=c_int), intent(in) :: np1
     type (c_ptr), intent(in) :: dp_ptr, vtheta_ptr, w_ptr, phinh_ptr, v_ptr
+    type (c_ptr), intent(in) :: dp_ref_ptr, theta_ref_ptr, phi_ref_ptr
     real (kind=c_double), intent(in) :: dt, eta_ave_w, hv_scaling
     logical (kind=c_bool), intent(in) :: hydrostatic
     !
@@ -152,6 +154,10 @@ contains
     real (kind=real_kind), pointer :: phinh  (:,:,:,:,:)
     real (kind=real_kind), pointer :: v      (:,:,:,:,:,:)
 
+    real (kind=real_kind), pointer :: dp_ref    (:,:,:,:)
+    real (kind=real_kind), pointer :: theta_ref (:,:,:,:)
+    real (kind=real_kind), pointer :: phi_ref   (:,:,:,:)
+
     hypervis_scaling = hv_scaling
     theta_hydrostatic_mode = hydrostatic
 
@@ -161,6 +167,10 @@ contains
     call c_f_pointer(dp_ptr,     dp,     [np,np,  nlev,  timelevels, nelemd])
     call c_f_pointer(phinh_ptr,  phinh,  [np,np,  nlevp, timelevels, nelemd])
 
+    call c_f_pointer(dp_ref_ptr,    dp_ref,    [np,np, nlev,  nelemd])
+    call c_f_pointer(theta_ref_ptr, theta_ref, [np,np, nlev,  nelemd])
+    call c_f_pointer(phi_ref_ptr,   phi_ref,   [np,np, nlevp, nelemd])
+
     do ie=1,nelemd
       ! Copy input-outputs in the elem%state
       elem(ie)%state%v(:,:,:,:,:)       = v(:,:,:,:,:,ie)
@@ -168,6 +178,10 @@ contains
       elem(ie)%state%vtheta_dp(:,:,:,:) = vtheta(:,:,:,:,ie)
       elem(ie)%state%dp3d(:,:,:,:)      = dp(:,:,:,:,ie)
       elem(ie)%state%phinh_i(:,:,:,:)   = phinh(:,:,:,:,ie)
+
+      elem(ie)%derived%dp_ref(:,:,:)    = dp_ref(:,:,:,ie)
+      elem(ie)%derived%theta_ref(:,:,:) = theta_ref(:,:,:,ie)
+      elem(ie)%derived%phi_ref(:,:,:)   = phi_ref(:,:,:,ie)
     enddo
 
     call advance_hypervis(elem,hvcoord,hybrid,deriv,np1,1,nelemd,dt,eta_ave_w)

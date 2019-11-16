@@ -157,9 +157,9 @@ struct RemapStateProvider {
         // Since u changed, update w_i b.c. at the surface
         Kokkos::single(Kokkos::PerThread(kv.team),[&](){
           constexpr int LAST_MID_PACK     = InfoM::LastPack;
-          constexpr int LAST_MID_PACK_END = InfoM::LastPack;
+          constexpr int LAST_MID_PACK_END = InfoM::LastPackEnd;
           constexpr int LAST_INT_PACK     = InfoI::LastPack;
-          constexpr int LAST_INT_PACK_END = InfoI::LastPack;
+          constexpr int LAST_INT_PACK_END = InfoI::LastPackEnd;
           constexpr auto g = PhysicalConstants::g;
 
           const auto gradphis = Homme::subview(m_geometry.m_gradphis,kv.ie);

@@ -42,6 +42,7 @@ void biharmonic_wk_theta_f90 (const int& np1, const Real& hv_scaling, const bool
                               Real*& phitens, Real*& vtens);
 void advance_hypervis_f90 (const int& np1, const Real& dt, const Real& eta_ave_w,
                            const Real& hv_scaling, const bool& hydrostatic,
+                           const Real*& dp_ref_ptr, const Real*& theta_ref_ptr, const Real*& phi_ref_ptr,
                            Real*& v_state, Real*& w_state, Real*& vtheta_state,
                            Real*& dp_state, Real*& phinh_state);
 void cleanup_f90();
@@ -59,12 +60,7 @@ public:
              const ElementsDerivedState& derived)
    : HyperviscosityFunctorImpl(params,geometry,state,derived)
   {
-    // Zero out ref states
-    Kokkos::deep_copy(m_buffers.dp_ref,0.0);
-#ifdef HV_USE_THETA_REF
-    Kokkos::deep_copy(m_buffers.theta_ref,0.0);
-#endif
-    Kokkos::deep_copy(m_buffers.phi_i_ref,0.0);
+    // Nothing to do here
   }
 
   ~HVFTester () = default;
@@ -263,6 +259,7 @@ TEST_CASE("hvf", "biharmonic") {
     std::cout << "Biharmonic wk theta test:\n";
     for (const bool hydrostatic : {true, false}) {
       std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
+
       for (Real hv_scaling : {0.0, RPDF(0.5,5.0)(engine)}) {
         std::cout << "   -> hypervis scaling = " << hv_scaling << "\n";
         params.theta_hydrostatic_mode = hydrostatic;
@@ -415,6 +412,22 @@ TEST_CASE("hvf", "biharmonic") {
     std::cout << "Hypervis test:\n";
     for (const bool hydrostatic : {true}) {
       std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
+
+      // Compute ref states, given the choice for hydrostatic mode
+      state.m_ref_states.compute(hydrostatic,hvcoord,geo.m_phis);
+
+      HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> dp_ref_f90("",num_elems);
+      HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]> theta_ref_f90("",num_elems);
+      HostViewManaged<Real*[NUM_INTERFACE_LEV][NP][NP]> phi_ref_f90("",num_elems);
+
+      sync_to_host(state.m_ref_states.dp_ref,dp_ref_f90);
+      sync_to_host(state.m_ref_states.theta_ref,theta_ref_f90);
+      sync_to_host(state.m_ref_states.phi_i_ref,phi_ref_f90);
+
+      const Real* dp_ref_ptr    = dp_ref_f90.data();
+      const Real* theta_ref_ptr = theta_ref_f90.data();
+      const Real* phi_ref_ptr   = phi_ref_f90.data();
+
       for (Real hv_scaling : {0.0}) {
         std::cout << "   -> hypervis scaling = " << hv_scaling << "\n";
         params.theta_hydrostatic_mode = hydrostatic;
@@ -529,6 +542,7 @@ TEST_CASE("hvf", "biharmonic") {
 
         // Run the f90 functor
         advance_hypervis_f90(np1+1,dt,eta_ave_w, hv_scaling, hydrostatic,
+                             dp_ref_ptr, theta_ref_ptr, phi_ref_ptr,
                              v_f90_ptr, w_f90_ptr, vtheta_f90_ptr, dp_f90_ptr, phinh_f90_ptr);
 
 
@@ -598,15 +612,8 @@ TEST_CASE("hvf", "biharmonic") {
 
               // Last interface
               const int k = NUM_INTERFACE_LEV-1;
-              const int ilev = k / VECTOR_SIZE;
-              const int ivec = k % VECTOR_SIZE;
-
-              if (w_cxx(ie,np1,igp,jgp,ilev)[ivec]!=w_f90(ie,np1,k,igp,jgp)) {
-                printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                printf ("w_cxx: %3.16f\n",w_cxx(ie,np1,igp,jgp,ilev)[ivec]);
-                printf ("w_f90: %3.16f\n",w_f90(ie,np1,k,igp,jgp));
-              }
-              REQUIRE (w_cxx(ie,np1,igp,jgp,ilev)[ivec]==w_f90(ie,np1,k,igp,jgp));
+              const int ilev = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+              const int ivec = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
 
               if (phinh_cxx(ie,np1,igp,jgp,ilev)[ivec]!=phinh_f90(ie,np1,k,igp,jgp)) {
                 printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
@@ -614,6 +621,13 @@ TEST_CASE("hvf", "biharmonic") {
                 printf ("phinh_f90: %3.16f\n",phinh_f90(ie,np1,k,igp,jgp));
               }
               REQUIRE (phinh_cxx(ie,np1,igp,jgp,ilev)[ivec]==phinh_f90(ie,np1,k,igp,jgp));
+
+              if (w_cxx(ie,np1,igp,jgp,ilev)[ivec]!=w_f90(ie,np1,k,igp,jgp)) {
+                printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
+                printf ("w_cxx: %3.16f\n",w_cxx(ie,np1,igp,jgp,ilev)[ivec]);
+                printf ("w_f90: %3.16f\n",w_f90(ie,np1,k,igp,jgp));
+              }
+              REQUIRE (w_cxx(ie,np1,igp,jgp,ilev)[ivec]==w_f90(ie,np1,k,igp,jgp));
             }
           }
         }
