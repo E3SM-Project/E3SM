@@ -71,7 +71,7 @@ list(APPEND RAW_SOURCES
   core_landice/mode_forward/mpas_li_subglacial_hydro.F
 )
 
-if (CPPFLAGS MATCHES ".*MPAS_LI_BUILD_INTERFACE.*")
+if (CPPDEFS MATCHES ".*MPAS_LI_BUILD_INTERFACE.*")
   list(APPEND RAW_SOURCES core_landice/mode_forward/Interface_velocity_solver.cpp)
 endif()
 
