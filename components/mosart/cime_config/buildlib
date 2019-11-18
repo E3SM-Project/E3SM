@@ -1,66 +1,44 @@
-#!/usr/bin/env python
+#! /usr/bin/env perl
+use strict;
 
-"""
-build mosart library
-"""
-import sys, os
+if ($#ARGV == -1) {
+    die " ERROR mosart.buildexe: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
 
-_CIMEROOT = os.environ.get("CIMEROOT")
-if _CIMEROOT is None:
-    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+my $CASEBUILD = `./xmlquery CASEBUILD -value`;
+my $SRCROOT  = `./xmlquery SRCROOT  -value`;
+my $CASETOOLS = `./xmlquery CASETOOLS -value`;
+my $OBJROOT   = `./xmlquery OBJROOT   -value`;
+my $LIBROOT   = `./xmlquery LIBROOT   -value`;
+my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
+my $GMAKE     = `./xmlquery GMAKE     -value`;
+my $MAKE_ARGS = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
 
-_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
-sys.path.append(_LIBDIR)
+chdir "${OBJROOT}/rof/obj";
 
-from standard_script_setup import *
-from CIME.buildlib         import parse_input
-from CIME.case             import Case
-from CIME.utils            import expect, run_bld_cmd_ensure_logging
-from CIME.build            import get_standard_cmake_args
+open(file,">tmp_filepath") or die "ERROT: mosart.buildexe could not open file Filepath to write";
+print file "$CASEROOT/SourceMods/src.mosart \n";
+print file "$SRCROOT/components/mosart/src/riverroute \n";
+print file "$SRCROOT/components/mosart/src/cpl \n";
+print file "$SRCROOT/components/mosart/src/wrm \n";
+print file "$SRCROOT/components/mosart/src/inundation \n";
+print file "$SRCROOT/components/mosart/src/cpl_share \n";
+close(file);
 
-logger = logging.getLogger(__name__)
+if (-f "Filepath") {
+    my $sysmod = "cmp -s tmp_filepath Filepath || mv -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR: mosart.buidexe $sysmod failed: $?\n";
+} else {
+    my $sysmod = "mv -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR: mosart.buidexe $sysmod failed: $?\n";
+}
 
-###############################################################################
-def buildlib(bldroot, installpath, case):
-###############################################################################
-    caseroot  = case.get_value("CASEROOT")
-    srcroot   = case.get_value("SRCROOT")
-    gmake_j   = case.get_value("GMAKE_J")
-    gmake     = case.get_value("GMAKE")
-    cmake_args = get_standard_cmake_args(case)
+my $sysmod = "$GMAKE complib -j $GMAKE_J MODEL=mosart COMPLIB=$LIBROOT/librof.a -f $CASETOOLS/Makefile ${MAKE_ARGS}";
+system($sysmod) == 0 or die "ERROR: mosart.buildexe $sysmod failed: $?\n";
 
-    #-------------------------------------------------------
-    # create Filepath in bldroot, unlike most other components,
-    # mosart makes it's Filepath right here.
-    #-------------------------------------------------------
+exit(0);
 
-    filepaths = \
- """{caseroot}/SourceMods/src.mosart
-{srcroot}/components/mosart/src/riverroute
-{srcroot}/components/mosart/src/cpl
-{srcroot}/components/mosart/src/wrm
-{srcroot}/components/mosart/src/inundation
-{srcroot}/components/mosart/src/cpl_share
-""".format(caseroot=caseroot, srcroot=srcroot)
 
-    with open(os.path.join(bldroot, "Filepath"), "w") as fd:
-        fd.write(filepaths)
-
-    #-------------------------------------------------------
-    # create the library in libroot
-    #-------------------------------------------------------
-
-    run_bld_cmd_ensure_logging('cmake -DMODEL=mosart -DCOMPLIB=rof {cmake_args} {srcroot}/components'.format(cmake_args=cmake_args, srcroot=srcroot), logger, from_dir=bldroot)
-    run_bld_cmd_ensure_logging("{} -j {}".format(gmake, gmake_j), logger, from_dir=bldroot)
-
-###############################################################################
-def _main_func():
-###############################################################################
-    caseroot, libroot, bldroot = parse_input(sys.argv)
-    with Case(caseroot, read_only=False) as case:
-        buildlib(bldroot, libroot, case)
-
-###############################################################################
-
-if __name__ == "__main__":
-    _main_func()

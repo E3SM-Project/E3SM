@@ -1,68 +1,75 @@
-#!/usr/bin/env python
+#! /usr/bin/env perl
+use strict;
+use File::Compare;
 
-"""
-build cice library
-"""
-import sys, os
+if ($#ARGV == -1) {
+    die " ERROR cice buildlib: must specify a caseroot input argument";
+}
+my ($CASEROOT) = @ARGV;
+chdir "${CASEROOT}";
 
-_CIMEROOT = os.environ.get("CIMEROOT")
-if _CIMEROOT is None:
-    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+my $CASEBUILD    = `./xmlquery CASEBUILD    -value`;
+my $CASETOOLS    = `./xmlquery CASETOOLS    -value`;
+my $OBJROOT      = `./xmlquery OBJROOT	    -value`;
+my $LIBROOT      = `./xmlquery LIBROOT	    -value`;
+my $GMAKE_J      = `./xmlquery GMAKE_J	    -value`;
+my $GMAKE        = `./xmlquery GMAKE	    -value`;
+my $MACH         = `./xmlquery MACH         -value`;
+my $CICE_BLCKX   = `./xmlquery CICE_BLCKX   -value`;
+my $CICE_BLCKY   = `./xmlquery CICE_BLCKY   -value`;
+my $CICE_MXBLCKS = `./xmlquery CICE_MXBLCKS -value`;
+my $MAKE_ARGS    = `./Tools/get_standard_makefile_args`;
+chomp($MAKE_ARGS);
 
-_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
-sys.path.append(_LIBDIR)
+chdir "${OBJROOT}/ice/obj";
 
-from standard_script_setup import *
-from CIME.buildlib         import parse_input
-from CIME.case             import Case
-from CIME.utils            import expect, run_bld_cmd_ensure_logging, safe_copy
-from CIME.build            import get_standard_cmake_args
+#-------------------------------------------------------
+# Create Filepath in $CASEBUILD/ciceconf
+#-------------------------------------------------------
 
-logger = logging.getLogger(__name__)
+my $sysmod = "cp $CASEBUILD/ciceconf/Filepath ${OBJROOT}/ice/obj/tmp_filepath";
+system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
 
-###############################################################################
-def buildlib(bldroot, installpath, case):
-###############################################################################
+if (-f "Filepath") {
+    if (compare("tmp_filepath", "Filepath") != 0) {
+	my $sysmod = "mv -f tmp_filepath Filepath";
+	system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
+    }
+} else {
+    my $sysmod = "mv -f tmp_filepath Filepath ";
+    system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
+#-------------------------------------------------------------- 
+#  force gmake to recompile if any of the cppdefs are different 
+#-------------------------------------------------------------- 
+my $recompile = 'FALSE';
+if (-e "$OBJROOT/ice/obj/CCSM_cppdefs") {
+    if (compare("$OBJROOT/ice/obj/CCSM_cppdefs.new", "$OBJROOT/ice/obj/CCSM_cppdefs") != 0) {
+        $recompile = 'TRUE'; 
+    }   
+    # NOTE - the following remove statements are what force cice to recompile if
+    # the cppdefs are different
+    print "recompile is $recompile \n";
+    if ($recompile eq 'TRUE') {
+        my $sysmod = "rm -f $OBJROOT/ice/obj/*.o";
+        system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
+    }   
+}
+my $sysmod = "cp -f $OBJROOT/ice/obj/CCSM_cppdefs.new $OBJROOT/ice/obj/CCSM_cppdefs";
+system($sysmod) == 0 or die "ERROR: cice buidlib $sysmod failed: $?\n";}
 
-    casebuild    = case.get_value("CASEBUILD")
-    srcroot      = case.get_value("SRCROOT")
-    gmake_j      = case.get_value("GMAKE_J")
-    gmake        = case.get_value("GMAKE")
-    cice_blckx   = case.get_value("CICE_BLCKX")
-    cice_blcky   = case.get_value("CICE_BLCKY")
-    cice_mxblcks = case.get_value("CICE_MXBLCKS")
-    cppdefs      = case.get_value("CICE_CPPDEFS")
-    cmake_args = get_standard_cmake_args(case)
+chdir $CASEROOT;
+my $cppdefs = `./xmlquery CICE_CPPDEFS -value`;
+chomp($cppdefs);
+$cppdefs = "$cppdefs -DBLCKX=$CICE_BLCKX -DBLCKY=$CICE_BLCKY -DMXBLCKS=$CICE_MXBLCKS";
 
-    #-------------------------------------------------------
-    # Create Filepath in $CASEBUILD/ciceconf
-    #-------------------------------------------------------
+#-------------------------------------------------------
+# Build the library
+#-------------------------------------------------------
 
-    filepath_src = os.path.join(casebuild, "ciceconf", "Filepath")
-    expect(os.path.exists(filepath_src), "Missing {}".format(filepath_src))
-    safe_copy(filepath_src, bldroot)
+chdir "${OBJROOT}/ice/obj";
+my $sysmod = "$GMAKE complib -j ${GMAKE_J} MODEL=cice COMPLIB=${LIBROOT}/libice.a MACFILE=${CASEROOT}/Macros.${MACH} USER_CPPDEFS=\"$cppdefs\" -f ${CASETOOLS}/Makefile ${MAKE_ARGS}";
+system($sysmod) == 0 or die "ERROR cice buildlib: $sysmod failed: $?\n";
 
-    #-------------------------------------------------------
-    # compute all cppdefs, unlike other components, ignores CCSM_cppdefs file
-    #-------------------------------------------------------
+exit(0);
 
-    cppdefs += " -DBLCKX={} -DBLCKY={} -DMXBLCKS={}".format(cice_blckx, cice_blcky, cice_mxblcks)
 
-    #-------------------------------------------------------
-    # Build the library
-    #-------------------------------------------------------
-
-    run_bld_cmd_ensure_logging('cmake -DMODEL=cice -DCOMPLIB=ice -DUSER_CPPDEFS="{cppdefs}" {cmake_args} {srcroot}/components'.format(cppdefs=cppdefs, cmake_args=cmake_args, srcroot=srcroot), logger, from_dir=bldroot)
-    run_bld_cmd_ensure_logging("{} -j {}".format(gmake, gmake_j), logger, from_dir=bldroot)
-
-###############################################################################
-def _main_func():
-###############################################################################
-    caseroot, libroot, bldroot = parse_input(sys.argv)
-    with Case(caseroot, read_only=False) as case:
-        buildlib(bldroot, libroot, case)
-
-###############################################################################
-
-if __name__ == "__main__":
-    _main_func()

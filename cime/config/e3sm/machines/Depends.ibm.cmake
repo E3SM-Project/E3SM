@@ -4,11 +4,11 @@ set(SSOBJS
   cam/src/chemistry/mozart/mo_drydep.F90)
 
 foreach(ITEM IN LISTS SSOBJS)
-  set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " -qsmallstack ")
+  e3sm_add_flags("${ITEM}" "-qsmallstack")
 endforeach()
 
 if (compile_threaded)
-  set_property(SOURCE share/util/shr_reprosum_mod.F90 APPEND_STRING PROPERTY COMPILE_FLAGS " -qsmp=noauto:noomp ")
+  e3sm_add_flags("share/util/shr_reprosum_mod.F90" "-qsmp=noauto:noomp")
 endif()
 
 # These routines benefit from -qnostrict without violating the bfb test
@@ -37,11 +37,11 @@ set(NOINLINE
 
 if (NOT DEBUG)
   foreach(ITEM IN LISTS PERFOBJS)
-    set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " -qnostrict ")
+    e3sm_add_flags("${ITEM}" "-qnostrict")
   endforeach()
 
   foreach(ITEM IN LISTS REDUCEOPT)
-    set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " -O2 ")
+    e3sm_add_flags("${ITEM}" "-O2")
   endforeach()
 
 endif()
@@ -52,5 +52,5 @@ endif()
 list(APPEND NOOPT_FILES cam/src/utils/buffer.F90)
 
 foreach(ITEN IN LISTS NOINLINE)
-  set_property(SOURCE ${ITEM} APPEND_STRING PROPERTY COMPILE_FLAGS " -Q! ")
+  e3sm_add_flags("${ITEM}" "-Q!")
 endforeach()
