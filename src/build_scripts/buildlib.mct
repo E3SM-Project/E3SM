@@ -55,7 +55,7 @@ def buildlib(bldroot, installpath, case):
     gmake_opts = "-f {} ".format(os.path.join(caseroot,"Tools","Makefile"))
     gmake_opts += " -C {} ".format(bldroot)
     gmake_opts += get_standard_makefile_args(case, shared_lib=True)
-    gmake_opts += "MODEL=mct {}".format(os.path.join(bldroot,"Makefile.conf"))
+    gmake_opts += "MODEL=mct COMP_NAME=mct {}".format(os.path.join(bldroot,"Makefile.conf"))
 
     gmake_cmd = case.get_value("GMAKE")
 

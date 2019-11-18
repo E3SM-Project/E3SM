@@ -3023,6 +3023,9 @@
       <modules compiler="gnu">
         <command name="load">gcc/6.4.0</command>
       </modules>
+      <modules compiler="pgiacc">
+        <command name="load">cuda/10.1.168</command>
+      </modules>
 
       <modules>
         <command name="load">netcdf/4.6.1</command>
@@ -3078,6 +3081,9 @@
     <environment_variables mpilib="!mpi-serial">
       <env name="HDF5_PATH">$ENV{OLCF_HDF5_ROOT}</env>
       <env name="PNETCDF_PATH">$ENV{OLCF_PARALLEL_NETCDF_ROOT}</env>
+    </environment_variables>
+    <environment_variables mpilib="!mpi-serial" compiler="pgiacc">
+      <env name="OMPI_CXX">$SRCROOT/externals/kokkos/bin/nvcc_wrapper</env>
     </environment_variables>
   </machine>
 

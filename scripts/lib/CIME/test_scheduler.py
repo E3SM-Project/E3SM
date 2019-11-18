@@ -145,7 +145,10 @@ class TestScheduler(object):
 
         self._machobj = Machines(machine=machine_name)
 
-        self._model_build_cost = 4
+        if get_model() == "e3sm":
+            self._model_build_cost = int((self._machobj.get_value("GMAKE_J") * 2) / 3) + 1
+        else:
+            self._model_build_cost = 4
 
         # If user is forcing procs or threads, re-write test names to reflect this.
         if force_procs or force_threads:
