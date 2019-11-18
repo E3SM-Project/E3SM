@@ -583,7 +583,7 @@ contains
 !!!    call mpas_log_write('MALI gsMap lsize = $i', intArgs=(/lsize/))
 !!!
     ! Initialize mct glc domain (needs glc initialization info)
-!!!    call glc_domain_mct( lsize, gsMap_g, dom_g )
+    call glc_domain_mct( lsize, gsMap_g, dom_g )
 !!!
 !!!    ! Initialize mct attribute vectors
 !!!
@@ -1189,91 +1189,91 @@ contains
 ! !ROUTINE: glc_domain_mct
 ! !INTERFACE:
 
-!  subroutine glc_domain_mct( lsize, gsMap_g, dom_g )!{{{
+  subroutine glc_domain_mct( lsize, gsMap_g, dom_g )!{{{
+
+! !DESCRIPTION:
+!  This routine sets up the MCT domain for MALI
 !
-!! !DESCRIPTION:
-!!  This routine sets up the MCT domain for MALI
-!!
-!! !REVISION HISTORY:
-!!  same as module
-!!
-!! !INPUT/OUTPUT PARAMETERS:
+! !REVISION HISTORY:
+!  same as module
 !
-!    use shr_const_mod, only: SHR_CONST_PI
+! !INPUT/OUTPUT PARAMETERS:
+
+    use shr_const_mod, only: SHR_CONST_PI
+
+    implicit none
+    integer        , intent(in)    :: lsize
+    type(mct_gsMap), intent(in)    :: gsMap_g
+    type(mct_ggrid), intent(inout) :: dom_g
+
+!-----------------------------------------------------------------------
 !
-!    implicit none
-!    integer        , intent(in)    :: lsize
-!    type(mct_gsMap), intent(in)    :: gsMap_g
-!    type(mct_ggrid), intent(inout) :: dom_g
+!  local variables
 !
-!!-----------------------------------------------------------------------
-!!
-!!  local variables
-!!
-!!-----------------------------------------------------------------------
-!
-!    integer, pointer :: idata(:)
-!
-!    real(kind=RKIND), pointer :: data(:)
-!    real(kind=RKIND) :: r2d
-!
-!    integer :: i,j, k, n, ier
-!
-!    type (block_type), pointer :: block_ptr
-!
+!-----------------------------------------------------------------------
+
+    integer, pointer :: idata(:)
+
+    real(kind=RKIND), pointer :: data(:)
+    real(kind=RKIND) :: r2d
+
+    integer :: i,j, k, n, ier
+
+    type (block_type), pointer :: block_ptr
+
 !    type (mpas_pool_type), pointer :: meshPool
+
+    integer, pointer :: nCellsSolve
+
+    real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell
+
+    real (kind=RKIND), pointer :: sphere_radius
+
+    r2d = 180.0_RKIND / SHR_CONST_PI
+
+!-------------------------------------------------------------------
 !
-!    integer, pointer :: nCellsSolve
+!  initialize mct domain type
 !
-!    real (kind=RKIND), dimension(:), pointer :: lonCell, latCell, areaCell
+!-------------------------------------------------------------------
+
+    call mct_gGrid_init( GGrid=dom_g, CoordChars=trim(seq_flds_dom_coord), &
+       OtherChars=trim(seq_flds_dom_other), lsize=lsize )
+    call mct_aVect_zero(dom_g%data)
+    allocate(data(lsize))
+
+!-------------------------------------------------------------------
 !
-!    real (kind=RKIND), pointer :: sphere_radius
+! Determine global gridpoint number attribute, GlobGridNum, which is set automatically by MCT
 !
-!    r2d = 180.0_RKIND / SHR_CONST_PI
+!-------------------------------------------------------------------
+
+    call mct_gsMap_orderedPoints(gsMap_g, my_task, idata)
+    call mct_gGrid_importIAttr(dom_g,'GlobGridNum',idata,lsize)
+
+!-------------------------------------------------------------------
 !
-!!-------------------------------------------------------------------
-!!
-!!  initialize mct domain type
-!!
-!!-------------------------------------------------------------------
+! Determine domain
+! Initialize attribute vector with special value
 !
-!    call mct_gGrid_init( GGrid=dom_g, CoordChars=trim(seq_flds_dom_coord), &
-!       OtherChars=trim(seq_flds_dom_other), lsize=lsize )
-!    call mct_aVect_zero(dom_g%data)
-!    allocate(data(lsize))
+!-------------------------------------------------------------------
+
+    data(:) = -9999.0_RKIND
+    call mct_gGrid_importRAttr(dom_g,"lat"  ,data,lsize)
+    call mct_gGrid_importRAttr(dom_g,"lon"  ,data,lsize)
+    call mct_gGrid_importRAttr(dom_g,"area" ,data,lsize)
+    call mct_gGrid_importRAttr(dom_g,"aream",data,lsize)
+    data(:) = 1.0_RKIND
+    call mct_gGrid_importRAttr(dom_g,"mask",data,lsize)
+    call mct_gGrid_importRAttr(dom_g,"frac",data,lsize)
+
+!-------------------------------------------------------------------
 !
-!!-------------------------------------------------------------------
-!!
-!! Determine global gridpoint number attribute, GlobGridNum, which is set automatically by MCT
-!!
-!!-------------------------------------------------------------------
+! Fill in correct values for domain components
 !
-!    call mct_gsMap_orderedPoints(gsMap_g, my_task, idata)
-!    call mct_gGrid_importIAttr(dom_g,'GlobGridNum',idata,lsize)
-!
-!!-------------------------------------------------------------------
-!!
-!! Determine domain
-!! Initialize attribute vector with special value
-!!
-!!-------------------------------------------------------------------
-!
-!    data(:) = -9999.0_RKIND
-!    call mct_gGrid_importRAttr(dom_g,"lat"  ,data,lsize)
-!    call mct_gGrid_importRAttr(dom_g,"lon"  ,data,lsize)
-!    call mct_gGrid_importRAttr(dom_g,"area" ,data,lsize)
-!    call mct_gGrid_importRAttr(dom_g,"aream",data,lsize)
-!    data(:) = 1.0_RKIND
-!    call mct_gGrid_importRAttr(dom_g,"mask",data,lsize)
-!    call mct_gGrid_importRAttr(dom_g,"frac",data,lsize)
-!
-!!-------------------------------------------------------------------
-!!
-!! Fill in correct values for domain components
-!!
-!!-------------------------------------------------------------------
-!
-!    n = 0
+!-------------------------------------------------------------------
+
+    n = 0
 !    block_ptr => domain % blocklist
 !    do while(associated(block_ptr))
 !      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -1289,10 +1289,10 @@ contains
 !
 !      block_ptr => block_ptr % next
 !    end do
-!    !write(stderrUnit,*) 'lonrange',minval(data), maxval(data), n
-!    call mct_gGrid_importRattr(dom_g,"lon",data,lsize)
-!
-!    n = 0
+    !write(stderrUnit,*) 'lonrange',minval(data), maxval(data), n
+    call mct_gGrid_importRattr(dom_g,"lon",data,lsize)
+
+    n = 0
 !    block_ptr => domain % blocklist
 !    do while(associated(block_ptr))
 !      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -1309,10 +1309,10 @@ contains
 !      end do
 !      block_ptr => block_ptr % next
 !    end do
-!    !write(stderrUnit,*) 'latrange',minval(data), maxval(data), n
-!    call mct_gGrid_importRattr(dom_g,"lat",data,lsize)
-!
-!    n = 0
+    !write(stderrUnit,*) 'latrange',minval(data), maxval(data), n
+    call mct_gGrid_importRattr(dom_g,"lat",data,lsize)
+
+    n = 0
 !    block_ptr => domain % blocklist
 !    do while(associated(block_ptr))
 !      call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -1331,20 +1331,20 @@ contains
 !      end do
 !      block_ptr => block_ptr % next
 !    end do
-!    !write(stderrUnit,*) 'arearange',minval(data), maxval(data), n
-!    call mct_gGrid_importRattr(dom_g,"area",data,lsize)
-!
-!    ! For now, assume mask and frac are 1 everywhere.
-!    ! This may need to be changed in the future.
-!    data(:) = 1.0_RKIND
-!    call mct_gGrid_importRattr(dom_g,"mask",data,lsize)
-!    call mct_gGrid_importRattr(dom_g,"frac",data,lsize)
-!
-!    deallocate(data)
-!    deallocate(idata)
-!
-!!-----------------------------------------------------------------------
-!  end subroutine glc_domain_mct!}}}
+    !write(stderrUnit,*) 'arearange',minval(data), maxval(data), n
+    call mct_gGrid_importRattr(dom_g,"area",data,lsize)
+
+    ! For now, assume mask and frac are 1 everywhere.
+    ! This may need to be changed in the future.
+    data(:) = 1.0_RKIND
+    call mct_gGrid_importRattr(dom_g,"mask",data,lsize)
+    call mct_gGrid_importRattr(dom_g,"frac",data,lsize)
+
+    deallocate(data)
+    deallocate(idata)
+
+!-----------------------------------------------------------------------
+  end subroutine glc_domain_mct!}}}
 
 
 !=================================================================================

@@ -5,6 +5,7 @@ use File::Compare;
 my $component = "bisicles-landice";
 my $component_dir = "glc";
 my $component_driver = "glc_cesm_driver_bisicles";
+my $mali_component_driver = "glc_cesm_driver";
 my $core = "landice";
 my $esm = "E3SM";
 
@@ -45,9 +46,6 @@ if ($COMPNAME =~ /BISICLES/) {
   mkdir "$OBJROOT/$component_dir";
   mkdir "$OBJROOT/$component_dir/source";
  
-
-
-
   my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/Makefile* $OBJROOT/$component_dir/source/.";
   system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
   my $srccpy = "cp -fpR $SRCROOT/components/mpas-source/src/core_landice $OBJROOT/$component_dir/source/.";
@@ -62,6 +60,8 @@ if ($COMPNAME =~ /BISICLES/) {
   system($srccpy) == 0 or die "ERROR: $component buildlib $srccpy failed: $?\n";
 
 
+  my $malidrverase = "rm -rf ${OBJROOT}/$component_dir/source/$mali_component_driver";
+  system($malidrverase) == 0 or die "ERROR: $component buildlib $malidrverase failed: $?\n";
 
  
   my $drvcpy = "cp -fpR $SRCROOT/components/$component/driver ${OBJROOT}/$component_dir/source/$component_driver";
@@ -86,7 +86,8 @@ if ($COMPNAME =~ /BISICLES/) {
   $bldcmd .= ' BISICLES=true';
  
   print "Compiling BISICLES interface with this command: $bldcmd \n";
-  
+
+
   system($bldcmd) == 0 or die "ERROR: $component buildlib $bldcmd failed: $?\n";
   
   my $cpyobjs = "find $root_path -name *.mod -exec cp -p {} $OBJROOT/$component_dir/obj/. \\\;";

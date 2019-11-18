@@ -1,11 +1,19 @@
 .SUFFIXES: .F .o
 
-OBJS = glc_comp_mct_bisicles.o
+OBJS = glc_comp_mct.o \
+       glc_cpl_indices.o \
+       glc_mct_vars.o \
+       glc_import_export.o
 
 all: $(OBJS)
 
-glc_comp_mct_bisicles.o: 
+glc_comp_mct.o: glc_cpl_indices.o glc_mct_vars.o glc_import_export.o
 
+glc_cpl_indices.o:
+
+glc_mct_vars.o:
+
+glc_import_export.o:
 
 clean:
 	$(RM) *.o *.mod *.f90
