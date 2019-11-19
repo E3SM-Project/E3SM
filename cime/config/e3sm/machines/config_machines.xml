@@ -520,7 +520,7 @@
   </machine>
 
 
-    <machine MACH="ANAG-workstation">
+  <machine MACH="ANAG-workstation">
     <DESC>LBL ANAG Linux workstation or laptop</DESC>
     <NODENAME_REGEX>none</NODENAME_REGEX>
     <OS>LINUX</OS>

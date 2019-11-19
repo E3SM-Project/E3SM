@@ -2226,12 +2226,12 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append> -g -ggdb  </append>
   </FFLAGS>
   <PETSC_PATH>$ENV{PETSC_DIR}</PETSC_PATH>
-  <SCC> icc </SCC>
-  <SCXX> icpc </SCXX>
-  <SFC> ifort </SFC>
+  <SCC>  gcc      </SCC>
+  <SCXX> g++      </SCXX>
+  <SFC>  gfortran </SFC>
   <SLIBS>
-    <append> -L$ENV{NETCDF_DIR} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_DIR}/lib -lnetcdff -lnetcdf </append>
-    <append> -mkl -lpthread </append>
+    <append> -L$ENV{NETCDF_PATH} -lnetcdff -Wl,--as-needed,-L$ENV{NETCDF_PATH}/lib -lnetcdff -lnetcdf </append>
+    <append> -lpthread </append>
   </SLIBS>
 </compiler>
 
