@@ -8,14 +8,15 @@ module shr_fire_emis_mod
   ! that are to be passed through the model coupler.
   !================================================================================
 
+  use ESMF         , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
+  use ESMF         , only : ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
   use shr_kind_mod , only : r8 => shr_kind_r8
   use shr_kind_mod , only : CL => SHR_KIND_CL, CX => SHR_KIND_CX, CS => SHR_KIND_CS
   use shr_sys_mod  , only : shr_sys_abort
-  use shr_log_mod  , only : loglev  => shr_log_Level
   use shr_log_mod  , only : logunit => shr_log_Unit
+  use shr_nl_mod   , only : shr_nl_find_group_name
 
   implicit none
-  save
   private
 
   public :: shr_fire_emis_readnl           ! reads fire_emis_nl namelist
@@ -94,13 +95,9 @@ contains
     !
     !-------------------------------------------------------------------------
     
-    use ESMF         , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet, ESMF_VMBroadcast
-    use shr_nl_mod   , only : shr_nl_find_group_name
-    use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
-
     ! input/output variables
     character(len=*), intent(in)  :: NLFileName  ! name of namelist file
-    integer, intent(out) :: emis_nflds
+    integer         , intent(out) :: emis_nflds
 
     ! local variables
     type(ESMF_VM)       :: vm
@@ -119,16 +116,18 @@ contains
 
     namelist /fire_emis_nl/ fire_emis_specifier, fire_emis_factors_file, fire_emis_elevated
 
-    call ESMF_VMGetCurrent(vm, rc=rc)
-    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
     emis_nflds=0
+    call ESMF_VMGetCurrent(vm, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+
+    call ESMF_VMGet(vm, localPet=localPet, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+
     if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
-
        if ( exists ) then
-          unitn = shr_file_getUnit()
-          open( unitn, file=trim(NLFilename), status='old' )
-          if ( loglev > 0 ) write(logunit,F00) 'Read in fire_emis_readnl namelist from: ', trim(NLFilename)
+          open(newunit=unitn, file=trim(NLFilename), status='old' )
+          write(logunit,F00) 'Read in fire_emis_readnl namelist from: ', trim(NLFilename)
           call shr_nl_find_group_name(unitn, 'fire_emis_nl', status=ierr)
           ! If ierr /= 0, no namelist present.
           if (ierr == 0) then
@@ -138,23 +137,28 @@ contains
              endif
           endif
           close( unitn )
-          call shr_file_freeUnit( unitn )
           do i=1,maxspc
-             if(len_trim(fire_emis_specifier(i))>0) then
+             if (len_trim(fire_emis_specifier(i))>0) then
                 emis_nflds=emis_nflds+1
              endif
           enddo
        end if
     end if
+
     tmp = emis_nflds
     call ESMF_VMBroadcast( vm, tmp, 1, 0, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
+
     emis_nflds = tmp(1)
     if (emis_nflds > 0) then
        call ESMF_VMBroadcast( vm, fire_emis_specifier, 2*CX*emis_nflds, 0, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
        call ESMF_VMBroadcast( vm, fire_emis_factors_file, CL, 0, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
        tmp = 0
        if (fire_emis_elevated) tmp = 1
        call ESMF_VMBroadcast( vm, tmp, 1, 0, rc=rc)
+       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return 
        if(tmp(1) == 1) fire_emis_elevated = .true.
     endif
 

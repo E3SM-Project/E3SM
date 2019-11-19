@@ -17,7 +17,6 @@ module shr_megan_mod
   use shr_kind_mod,only : r8 => shr_kind_r8
   use shr_kind_mod,only : CL => SHR_KIND_CL, CX => SHR_KIND_CX, CS => SHR_KIND_CS
   use shr_sys_mod, only : shr_sys_abort
-  use shr_log_mod, only : loglev  => shr_log_Level
   use shr_log_mod, only : logunit => shr_log_Unit
 
   implicit none
@@ -111,7 +110,6 @@ contains
     
     use ESMF         , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMBroadcast, ESMF_VMGet
     use shr_nl_mod   , only : shr_nl_find_group_name
-    use shr_file_mod , only : shr_file_getUnit, shr_file_freeUnit
 
     ! input/output variables
     character(len=*), intent(in)  :: NLFileName
@@ -148,8 +146,7 @@ contains
     if (localPet==0) then
        inquire( file=trim(NLFileName), exist=exists)
        if ( exists ) then
-          unitn = shr_file_getUnit()
-          open( unitn, file=trim(NLFilename), status='old' )
+          open(newunit=unitn, file=trim(NLFilename), status='old' )
           write(logunit,F00) 'Read in megan_emis_readnl namelist from: ', trim(NLFilename)
           call shr_nl_find_group_name(unitn, 'megan_emis_nl', status=ierr)
           if (ierr == 0) then
@@ -160,7 +157,6 @@ contains
              endif
           endif
           close( unitn )
-          call shr_file_freeUnit( unitn )
           do i=1,maxspc
              if (len_trim(megan_specifier(i)) > 0) then
                 megan_nflds=megan_nflds+1
