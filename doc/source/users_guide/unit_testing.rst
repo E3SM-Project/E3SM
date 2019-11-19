@@ -129,6 +129,14 @@ For a serial build of pFUnit, follow these instructions:
    If you are doing an MPI-enabled build, also change the ``--mpilib`` argument.
    Then source either **./.env_mach_specific.sh** or **./.env_mach_specific.csh**, depending on your shell.
 
+   On some systems, you may still need to explicitly set the ``FC`` and ``CC`` environment
+   variables, e.g., with:
+
+   .. code-block:: shell
+
+      > export FC=ifort
+      > export CC=icc
+
 #. For convenience, set the ``PFUNIT`` environment variable to point to the location where you want to install pFUnit. For example (in bash):
 
    .. code-block:: shell
