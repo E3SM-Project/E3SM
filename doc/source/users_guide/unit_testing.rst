@@ -35,7 +35,7 @@ These consist of:
 
 #. A Python script that provides a simple front end for the CMake-based tests.
 
-The Fortran unit tests use `pFUnit <https://sourceforge.net/projects/pfunit/>`_, which is a Fortran testing framework that follows conventions of other xUnit frameworks.
+The Fortran unit tests use `pFUnit <https://github.com/Goddard-Fortran-Ecosystem/pFUnit>`_, which is a Fortran testing framework that follows conventions of other xUnit frameworks.
 
 .. _running_unit_tests:
 
@@ -113,7 +113,10 @@ Building pFUnit
 
 For a serial build of pFUnit, follow these instructions:
 
-#. Download pFUnit from https://sourceforge.net/projects/pfunit/.
+#. Obtain pFUnit from https://github.com/Goddard-Fortran-Ecosystem/pFUnit (see
+   https://github.com/Goddard-Fortran-Ecosystem/pFUnit#obtaining-pfunit for details; note
+   that if you have an older version of cmake you may also need to use an older version of
+   pFUnit)
 
 #. Set up your environment to be similar to the environment used in CIME system builds.
    For example, load the appropriate compilers into your path.
@@ -400,10 +403,8 @@ You can also see examples of the unit test build scripts by viewing the
 Other pFUnit documentation sources
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Some pFUnit documentation is available here: http://pfunit.sourceforge.net/.
-
-Extensive documentation and examples are included in the following when you download
-pFUnit from http://sourceforge.net/projects/pfunit/:
+Extensive documentation and examples are included in the following when you obtain
+pFUnit from https://github.com/Goddard-Fortran-Ecosystem/pFUnit:
 
 * documentation/pFUnit3-ReferenceManual.pdf
 
