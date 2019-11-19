@@ -4,6 +4,7 @@ case_run is a member of Class Case
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
 from CIME.utils                     import run_sub_or_cmd, append_status, safe_copy, model_log
+from CIME.utils                     import get_model
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
 
@@ -169,11 +170,12 @@ def _post_run_check(case, lid):
     rundir = case.get_value("RUNDIR")
     model = case.get_value("MODEL")
     driver = case.get_value("COMP_INTERFACE")
+    model = get_model()
 
     if driver == 'nuopc':
         compset = case.get_value("COMPSET")
         if "FV3GFS" in compset:
-            file_prefix = 'cesm'
+            file_prefix = model
         else:
             file_prefix = 'med'
     else:
@@ -206,6 +208,9 @@ def _post_run_check(case, lid):
                 break
             with open(cpl_logfile, 'r') as fd:
                 if 'SUCCESSFUL TERMINATION' in fd.read():
+                    count_ok += 1
+                fd.seek(0)
+                if "FV3GFS" in compset and 'HAS ENDED' in fd.read():
                     count_ok += 1
         if count_ok != cpl_ninst:
             expect(False, "Model did not complete - see {} \n " .format(cpl_logfile))
