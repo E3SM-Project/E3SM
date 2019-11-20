@@ -2100,7 +2100,7 @@ subroutine tphysbc (ztodt,               &
     rtdt = 1._r8/ztodt
 
     nstep = get_nstep()
-
+    !if(masterproc)write(102,*)'nstep:',nstep,lchnk
     if (pergro_test_active) then 
        !call outfld calls
        do ihist = 1 , nvars_prtrb_hist

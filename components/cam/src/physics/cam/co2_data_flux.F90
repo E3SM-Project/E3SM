@@ -15,11 +15,14 @@ module co2_data_flux
   use cam_pio_utils,    only: cam_pio_openfile
   use pio,              only: file_desc_t, pio_nowrite, pio_closefile, pio_inq_dimid, pio_bcast_error, &
        pio_seterrorhandling, pio_noerr, pio_inquire_dimension
+  use time_manager,   only: get_nstep
 
 #ifdef CO2_BILIN_REGRID
   use tracer_data,      only : trfld, trfile, trcdata_init, advance_trcdata
 #endif
-  
+
+  use spmd_utils,       only: masterproc
+
   implicit none
 
 ! public type
@@ -171,7 +174,7 @@ subroutine co2_data_flux_init (input_file, varname, xin)
    !BALLI: Not sure why dtime is defined this way...try a run without sending this optional arg to see if the results are different
    !initialze time coord, this is used....BALLI??
    dtime = 1.0_r8 - 200.0_r8 / 86400.0_r8
-   call xin%time_coord%initialize(input_file, delta_days=dtime)
+   call xin%time_coord%initialize(input_file, force_time_interp=.true., delta_days=dtime)
 
    !xin%co2bdy will store values of co2 for two time levels 
    !xin%co2flx is the co2 interpolated in time based on model time
@@ -204,13 +207,15 @@ subroutine co2_data_flux_advance (xin)
    integer           :: indx2_pre_adv
    type(file_desc_t) :: fh_co2_data_flux
    logical           :: found
+   integer :: nstep, i, j, k
 
+   real(r8), dimension(pcols,begchunk:endchunk) :: co2bdy_dum
    !----------------------------------------------------------------------------
 
    read_data = xin%time_coord%read_more() .or. .not. xin%initialized
 
    indx2_pre_adv = xin%time_coord%indxs(2)
-
+   !if(masterproc)write(102,*)'time_adv_surf'
    call xin%time_coord%advance()
 
    if ( read_data ) then
@@ -237,6 +242,17 @@ subroutine co2_data_flux_advance (xin)
            1, pcols, begchunk, endchunk, xin%co2bdy(:,:,2), found, &
            gridname='physgrid', timelevel=xin%time_coord%indxs(2))
 
+      do j = -10,12222
+         call infld(trim(xin%spec_name), fh_co2_data_flux, dim1name, dim2name, &
+              1, pcols, begchunk, endchunk, co2bdy_dum, found, &
+              gridname='physgrid', timelevel=j)
+         i = j+1
+      enddo
+
+
+
+
+
       if (.not. found) then
          call endrun('ERROR: ' // trim(xin%varname) // ' not found'//errmsg(__FILE__,__LINE__))
       endif
@@ -249,11 +265,29 @@ subroutine co2_data_flux_advance (xin)
    ! then the time_coordinate class will produce time_coord%wghts(2) == 0.0,
    ! generating fluxes that are piecewise constant in time.
 
+   if(masterproc)then
+      nstep = get_nstep()
+      
+      do j = begchunk,endchunk
+         do i = 1, pcols
+            if(xin%co2bdy(i,j,1) == xin%co2bdy(i,j,2)) then
+               write(102,*)'SAME:',nstep,xin%time_coord%indxs(1),xin%time_coord%indxs(2)
+            else
+               write(102,*)'DIFF:',nstep,xin%time_coord%indxs(1),xin%time_coord%indxs(2)
+            endif
+            write(102,*)i,j,xin%co2bdy(i,j,1),xin%co2bdy(i,j,2)
+         enddo
+      enddo
+   endif
+
+
    if (xin%time_coord%wghts(2) == 0.0_r8) then
-      xin%co2flx(:,:) = xin%co2bdy(:,:,1)
+      !if(masterproc)write(102,*)'No weights'
+      xin%co2flx(:,:) = xin%co2bdy(:,:,1)!real(nstep,r8) * 10e-7_r8 !xin%co2bdy(:,:,1)
    else
-      xin%co2flx(:,:) = xin%co2bdy(:,:,1) + &
-           xin%time_coord%wghts(2) * (xin%co2bdy(:,:,2) - xin%co2bdy(:,:,1))
+      !if(masterproc)write(102,*)'weights are:', xin%time_coord%wghts(2)
+      xin%co2flx(:,:) = xin%time_coord%wghts(2)! real(nstep,r8) * 10e-7_r8 !xin%co2bdy(:,:,1) + &
+           !xin%time_coord%wghts(2) * (xin%co2bdy(:,:,2) - xin%co2bdy(:,:,1))
    endif
    !BRYCE-unit conversion?????
    ! atm_import_export.F90 wants surface fluxes in kgCO2/m2/s so no conversion necessary
