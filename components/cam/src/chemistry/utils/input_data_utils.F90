@@ -237,6 +237,7 @@ contains
           datesecs(:) = 0
        endif
 
+       !datesecs(:) = 0
        call convert_dates( dates, datesecs, times_modl )
 
        deallocate( dates, datesecs )
@@ -359,6 +360,7 @@ contains
     integer :: index, i
     character(len=cl) :: errmsg
 
+    !if(masterproc)write(102,*)'input_data-set_weight'
     ! set time indices and time-interpolation weights 
     fixed_time: if (obj%fixed) then
        yr = obj%fixed_ymd/10000
@@ -378,7 +380,7 @@ contains
           datatp = obj%time_bnds(2,i)
        else
           if (i .ge. obj%ntimes) then
-             errmsg = 'input_data_utils::set_wghts_indices cannot not find model time in: '&
+             errmsg = '1:input_data_utils::set_wghts_indices cannot not find model time in: '&
                     // trim(obj%filename)
              write(iulog,*) trim(errmsg)
              call endrun(trim(errmsg))
@@ -387,7 +389,7 @@ contains
           datatp = obj%times(i+1)
        endif
        if ( model_time .lt. datatm ) then
-          errmsg = 'input_data_utils::set_wghts_indices cannot not find model time in: '&
+          errmsg = '2:input_data_utils::set_wghts_indices cannot not find model time in: '&
                  // trim(obj%filename)
           write(iulog,*) trim(errmsg)
           call endrun(trim(errmsg))
