@@ -106,57 +106,47 @@ contains
        c = filter_soilc(fc)
 
        col_cs%prod10c(c)    = col_cs%prod10c(c)             &
-            + col_cf%dwt_prod10c_gain(c)*dt                 & ! from landcover change
             + col_cf%hrv_deadstemc_to_prod10c(c)*dt         & ! from harvest
             - col_cf%prod10c_loss(c)*dt                       ! from decomposition
 
        col_cs%prod100c(c)   = col_cs%prod100c(c)            &
-            + col_cf%dwt_prod100c_gain(c)*dt                & ! from landcover change
             + col_cf%hrv_deadstemc_to_prod100c(c)*dt        & ! from harvest
             - col_cf%prod100c_loss(c)*dt                      ! from decomposition
 
 
        if ( use_c13 ) then
           c13_col_cs%prod10c(c)  = c13_col_cs%prod10c(c)    &
-               + c13_col_cf%dwt_prod10c_gain(c) *dt         & ! from landcover change
                + c13_col_cf%hrv_deadstemc_to_prod10c(c)*dt  & ! from harvest
                - c13_col_cf%prod10c_loss(c)*dt                ! from decomposition
 
           c13_col_cs%prod100c(c) = c13_col_cs%prod100c(c)   &
-               + c13_col_cf%dwt_prod100c_gain(c)*dt         & ! from landcover change
                + c13_col_cf%hrv_deadstemc_to_prod100c(c)*dt & ! from harvest
                - c13_col_cf%prod100c_loss(c)*dt               ! from decomposition
        endif
 
        if ( use_c14 ) then
           c14_col_cs%prod10c(c)  = c14_col_cs%prod10c(c)    &
-               + c14_col_cf%dwt_prod10c_gain(c) *dt         & ! from landcover change
                + c14_col_cf%hrv_deadstemc_to_prod10c(c)*dt  & ! from harvest
                - c14_col_cf%prod10c_loss(c)*dt                ! from decomposition
 
           c14_col_cs%prod100c(c) = c14_col_cs%prod100c(c)   &
-               + c14_col_cf%dwt_prod100c_gain(c)*dt         & ! from landcover change
                + c14_col_cf%hrv_deadstemc_to_prod100c(c)*dt & ! from harvest
                - c14_col_cf%prod100c_loss(c)*dt               ! from decomposition
        endif
 
        col_ns%prod10n(c)    = col_ns%prod10n(c)             &
-            + col_nf%dwt_prod10n_gain(c)*dt                 & ! from landcover change
             + col_nf%hrv_deadstemn_to_prod10n(c)*dt         & ! from harvest
             - col_nf%prod10n_loss(c)*dt                       ! from decomposition
 
        col_ns%prod100n(c)   = col_ns%prod100n(c)            &
-            + col_nf%dwt_prod100n_gain(c)*dt                & ! from landcover change
             + col_nf%hrv_deadstemn_to_prod100n(c)*dt        & ! from harvest
             - col_nf%prod100n_loss(c)*dt                      ! from decomposition
 
        col_ps%prod10p(c)    = col_ps%prod10p(c)             &
-            + col_pf%dwt_prod10p_gain(c)*dt                 & ! from landcover change
             + col_pf%hrv_deadstemp_to_prod10p(c)*dt         & ! from harvest
             - col_pf%prod10p_loss(c)*dt                       ! from decomposition
 
        col_ps%prod100p(c)   = col_ps%prod100p(c)            &
-            + col_pf%dwt_prod100p_gain(c)*dt                & ! from landcover change
             + col_pf%hrv_deadstemp_to_prod100p(c)*dt        & ! from harvest
             - col_pf%prod100p_loss(c)*dt                      ! from decomposition
 

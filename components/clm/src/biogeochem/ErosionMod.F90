@@ -409,7 +409,7 @@ contains
                         if (k1<=nlevdecomp) then
                            primp_vr_new = primp_vr(c,k1)
                         else
-                           primp_vr_new = 0._r8
+                           primp_vr_new = primp_vr(c,nlevdecomp)
                         end if
                      else
                         primp_vr_new = primp_vr(c,j)
@@ -462,7 +462,8 @@ contains
                            primp_vr_new = primp_vr(c,k1)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
                               primp_vr(c,k2)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j))
                         else
-                           primp_vr_new = primp_vr(c,k1)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j)
+                           primp_vr_new = primp_vr(c,k1)*(zsoi_tot-zsoi_top)/dzsoi_decomp(j) + &
+                              primp_vr(c,nlevdecomp)*(1._r8-(zsoi_tot-zsoi_top)/dzsoi_decomp(j))
                         end if
                      else
                         primp_vr_new = primp_vr(c,j)

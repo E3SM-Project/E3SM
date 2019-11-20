@@ -95,41 +95,28 @@ contains
 
        ! fluxes into wood product pools, from harvest
        col_cs%prod1c(c)    = col_cs%prod1c(c)    + &
-            col_cf%hrv_cropc_to_prod1c(c)*dt
+            col_cf%hrv_cropc_to_prod1c(c)*dt     - & ! from harvest 
+            col_cf%prod1c_loss(c)*dt                 ! from decomposition 
 
        if ( use_c13 ) then
           c13_col_cs%prod1c(c)  = c13_col_cs%prod1c(c)  + &
-               c13_col_cf%hrv_cropc_to_prod1c(c)*dt
+               c13_col_cf%hrv_cropc_to_prod1c(c)*dt     - & ! from harvest 
+               c13_col_cf%prod1c_loss(c)*dt                 ! from decomposition
        endif
 
        if ( use_c14 ) then
           c14_col_cs%prod1c(c)  = c14_col_cs%prod1c(c)  + &
-               c14_col_cf%hrv_cropc_to_prod1c(c)*dt
+               c14_col_cf%hrv_cropc_to_prod1c(c)*dt     - & ! from harvest
+               c14_col_cf%prod1c_loss(c)*dt                 ! from decomposition
        endif
 
        col_ns%prod1n(c)    = col_ns%prod1n(c)    + &
-            col_nf%hrv_cropn_to_prod1n(c)*dt
+            col_nf%hrv_cropn_to_prod1n(c)*dt     - & ! from harvest
+            col_nf%prod1n_loss(c)*dt                 ! from decomposition
+
        col_ps%prod1p(c)    = col_ps%prod1p(c)    + &
-            col_pf%hrv_cropp_to_prod1p(c)*dt
-
-       ! fluxes out of wood product pools, from decomposition
-       col_cs%prod1c(c)    = col_cs%prod1c(c)    - &
-            col_cf%prod1c_loss(c)*dt
-
-       if ( use_c13 ) then
-          c13_col_cs%prod1c(c)  = c13_col_cs%prod1c(c)  - &
-               c13_col_cf%prod1c_loss(c)*dt
-       endif
-
-       if ( use_c14 ) then
-          c14_col_cs%prod1c(c)  = c14_col_cs%prod1c(c)  - &
-               c14_col_cf%prod1c_loss(c)*dt
-       endif
-
-       col_ns%prod1n(c)    = col_ns%prod1n(c)    - &
-            col_nf%prod1n_loss(c)*dt
-       col_ps%prod1p(c)  = col_ps%prod1p(c)  - &
-            col_pf%prod1p_loss(c)*dt
+            col_pf%hrv_cropp_to_prod1p(c)*dt     - & ! from harvest
+            col_pf%prod1p_loss(c)*dt                 ! from decomposition
 
     end do ! end of column loop
 

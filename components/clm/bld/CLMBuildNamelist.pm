@@ -1428,7 +1428,7 @@ sub setup_cmdl_maxpft {
     # NOTE: maxpatchpft sizes already checked for clm4_0 by configure.
   } else {
     my %maxpatchpft;
-    $maxpatchpft{'.true.'}   = 79;
+    $maxpatchpft{'.true.'}   = 25;
     $maxpatchpft{'.false.'} = 17;
     if ( $opts->{$var} ne "default") {
       $val = $opts->{$var};
