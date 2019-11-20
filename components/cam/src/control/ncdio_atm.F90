@@ -115,6 +115,7 @@ contains
     integer                   :: lonidx, latidx
 
     nullify(iodesc)
+    field = huge(1.0_r8)
 
     !
     !-----------------------------------------------------------------------
@@ -294,7 +295,7 @@ contains
     integer                   :: lonidx, latidx
 
     nullify(iodesc)
-
+    field = huge(1.0_r8)
     !
     !-----------------------------------------------------------------------
     !
@@ -515,7 +516,7 @@ contains
     integer                   :: lonidx, latidx
 
     nullify(iodesc)
-
+    field = huge(1.0_r8)
     !
     !-----------------------------------------------------------------------
     !
@@ -695,7 +696,7 @@ contains
     integer                   :: lonidx, latidx
 
     nullify(iodesc)
-
+    field = huge(1.0_r8)
     !
     !-----------------------------------------------------------------------
     !

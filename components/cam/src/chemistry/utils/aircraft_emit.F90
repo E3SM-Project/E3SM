@@ -28,6 +28,8 @@ module aircraft_emit
   use cam_logfile,      only: iulog
   use shr_log_mod ,     only: errMsg => shr_log_errMsg
   use input_data_utils, only: time_coordinate
+  use time_manager,   only: get_nstep
+
   
   implicit none
   private
@@ -254,6 +256,8 @@ contains
     integer :: dimlevid, var_id, errcode, dim1id, dim2id, dim1len, dim2len
     integer :: dimbndid, nbnd
     integer :: hdim1_d, hdim2_d    ! model grid size
+
+    real(r8) :: dtime
     
     !------------------------------------------------------------------
     ! Return if aircraft_cnt is zero (no aircraft data to process)
@@ -701,6 +705,8 @@ contains
     integer  :: indx2_pre_adv
     logical  :: found
 
+    integer :: nstep, i, j, k
+
     !obtain name of the specie
     spc_name = native_grid_strct%spc_name_ngrd
     
@@ -711,6 +717,7 @@ contains
     indx2_pre_adv = native_grid_strct%time_coord%indxs(2)
     
     !compute weights for time interpolation (time_coord%wghts) by advancing in time
+    !if(masterproc)write(102,*)'time_adv_air'
     call native_grid_strct%time_coord%advance()
     
     if ( read_data ) then
@@ -739,6 +746,16 @@ contains
             native_grid_strct%native_grid_flds_tslices(:,:,:,2), found, &
             gridname='physgrid', timelevel=native_grid_strct%time_coord%indxs(2))
        
+       do j = 1,12222
+          call infld(trim(spc_name), fh, dim1name, dim2name, 'lev',&
+            1, pcols, 1, native_grid_strct%lev_frc, begchunk, endchunk, &
+            native_grid_strct%native_grid_flds_tslices(:,:,:,2), found, &
+            gridname='physgrid', timelevel=j)
+          i = j+1
+       enddo
+
+
+
        if (.not. found) then
           call endrun(trim(spc_name) // ' not found '//errmsg(__FILE__,__LINE__))
        endif
@@ -746,14 +763,28 @@ contains
        !close file
        call pio_closefile(fh)
     endif
+
+    if(masterproc)then
+       nstep = get_nstep()
+       
+       do j = begchunk,endchunk
+          do i = 1, pcols
+             write(103,*)nstep,native_grid_strct%time_coord%indxs(1),native_grid_strct%time_coord%indxs(2)
+          enddo
+       enddo
+    endif
+
+
     ! interpolate between time-levels
     ! If time:bounds is in the dataset, and the dataset calendar is compatible with EAM's,
     ! then the time_coordinate class will produce time_coord%wghts(2) == 0.0,
     ! generating fluxes that are piecewise constant in time.
     
     if (native_grid_strct%time_coord%wghts(2) == 0.0_r8) then
+       !if(masterproc)write(102,*)'No weights air'
        native_grid_strct%native_grid_flds(:,:,:) = native_grid_strct%native_grid_flds_tslices(:,:,:,1)
     else
+       !if(masterproc)write(102,*)'weights air are:', native_grid_strct%time_coord%wghts(2)
        native_grid_strct%native_grid_flds(:,:,:) = native_grid_strct%native_grid_flds_tslices(:,:,:,1) + &
             native_grid_strct%time_coord%wghts(2) * (native_grid_strct%native_grid_flds_tslices(:,:,:,2) - &
             native_grid_strct%native_grid_flds_tslices(:,:,:,1))
