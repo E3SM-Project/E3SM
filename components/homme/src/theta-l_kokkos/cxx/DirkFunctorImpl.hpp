@@ -14,12 +14,11 @@
 #include "KernelVariables.hpp"
 #include "SimulationParams.hpp"
 #include "PhysicalConstants.hpp"
-
-#include "utilities/SubviewUtils.hpp"
-#include "utilities/ViewUtils.hpp"
-
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
+#include "utilities/SubviewUtils.hpp"
+#include "utilities/ViewUtils.hpp"
+#include "utilities/scream_tridiag.hpp"
 
 #include <assert.h>
 
@@ -31,6 +30,7 @@ struct DirkFunctorImpl {
   enum : int { npack = (scaln + packn - 1)/packn };
   enum : int { max_num_lev_pack = NUM_LEV_P };
   enum : int { num_lev_aligned = max_num_lev_pack*packn };
+  enum : int { num_phys_lev = NUM_PHYSICAL_LEV };
   enum : int { num_work = 8 };
 
   using TeamPolicy = Kokkos::TeamPolicy<ExecSpace>;
@@ -47,9 +47,25 @@ struct DirkFunctorImpl {
     = Kokkos::View<const Scalar     [num_lev_aligned][npack],
                    Kokkos::LayoutRight, ExecSpace,
                    Kokkos::MemoryTraits<Kokkos::Unmanaged> >;
+  using LinearSystem
+    = Kokkos::View<Scalar*[4][num_phys_lev][npack],
+                   Kokkos::LayoutRight, ExecSpace>;
+  using LinearSystemSlot
+    = Kokkos::View<Scalar    [num_phys_lev][npack],
+                   Kokkos::LayoutRight, ExecSpace,
+                   Kokkos::MemoryTraits<Kokkos::Unmanaged> >;
 
   KOKKOS_INLINE_FUNCTION
-  static WorkSlot get_slot (const Work& w, const int& wi, const int& si) {
+  static WorkSlot get_work_slot (const Work& w, const int& wi, const int& si) {
+    using Kokkos::subview;
+    using Kokkos::ALL;
+    const auto a = ALL();
+    return subview(w, wi, si, a, a);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  static LinearSystemSlot get_ls_slot (const LinearSystem& w, const int& wi,
+                                       const int& si) {
     using Kokkos::subview;
     using Kokkos::ALL;
     const auto a = ALL();
@@ -57,6 +73,7 @@ struct DirkFunctorImpl {
   }
 
   Work m_work;
+  LinearSystem m_ls;
   TeamPolicy m_policy;
 
   KOKKOS_INLINE_FUNCTION
@@ -88,26 +105,10 @@ struct DirkFunctorImpl {
     }
     const int nteam = get_num_concurrent_teams(m_policy);
     m_work = Work("DirkFunctorImpl::m_work", nteam);
+    m_ls = LinearSystem("DirkFunctorImpl::m_ls", nteam);
   }
 
   void run () {
-    const auto work = m_work;
-
-    const auto f = KOKKOS_LAMBDA (const MT& t) {
-      KernelVariables kv(t);
-
-      const ConstWorkSlot
-      dp3d = get_slot(work, kv.team_idx, 0),
-      dphi = get_slot(work, kv.team_idx, 1),
-      pnh  = get_slot(work, kv.team_idx, 2);
-      const WorkSlot
-      dl   = get_slot(work, kv.team_idx, 3),
-      d    = get_slot(work, kv.team_idx, 4),
-      du   = get_slot(work, kv.team_idx, 5);
-
-      calc_jacobian(kv, 1.0, dp3d, dphi, pnh, dl, d, du);
-    };
-    Kokkos::parallel_for(m_policy, f);
   }
 
   // Format of rest of Hxx -> DIRK Newton iteration format.
@@ -166,17 +167,61 @@ struct DirkFunctorImpl {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP*NP), f);
   }
 
+  // Compute a vertical velocity induced by surface topography:
+  //     wh_i = ubar grad phis
   template <typename R, typename Rv, typename Rgphis, typename Rhybi, typename W>
   KOKKOS_INLINE_FUNCTION
   static void calc_gwphis (
     const KernelVariables& kv,
     // All in arrays are in Hxx format.
     const R& dp3d, const Rv& v, const Rgphis& gradphis, const Rhybi& hybi,
-    // Out array is in DIRK format.
+    // Out array is in DIRK format. gwh_i(nlevp,:) is not written since it is
+    // not used.
     const W& gwh_i,
     const int nlev = NUM_PHYSICAL_LEV)
   {
-    
+    using Kokkos::parallel_for;
+
+    const int n = npack;
+    const auto pv = Kokkos::ThreadVectorRange(kv.team, n);
+
+    const auto f1 = [&] (const int) {
+      const auto k0 = [&] (const int i) { gwh_i(0,i) = 0; };
+      parallel_for(pv, k0);
+    };
+    parallel_for(Kokkos::TeamThreadRange(kv.team, 1), f1);
+
+    const auto f2 = [&] (const int km1) {
+      const auto
+      k = km1 + 1,
+      pk = k / packn,
+      sk = k % packn,
+      pkm1 = (k-1) / packn,
+      skm1 = (k-1) % packn;
+      const auto g = [&] (const int i) {
+        Scalar dp3dk, dp3dkm1, v1k, v2k, v1km1, v2km1, gphis1, gphis2;
+        for (int s = 0; s < packn; ++s) {
+          const auto
+          idx = packn*i + s,
+          gi = idx / NP,
+          gj = idx % NP;
+          dp3dkm1[s] = dp3d(gi,gj,pkm1)[skm1];
+          dp3dk  [s] = dp3d(gi,gj,pk  )[sk];
+          v1km1  [s] = v (0,gi,gj,pkm1)[skm1];
+          v2km1  [s] = v (1,gi,gj,pkm1)[skm1];
+          v1k    [s] = v (0,gi,gj,pk  )[sk];
+          v2k    [s] = v (1,gi,gj,pk  )[sk];
+          gphis1 [s] = gradphis(0,gi,gj);
+          gphis2 [s] = gradphis(1,gi,gj);
+        }
+        const auto den = dp3dkm1 + dp3dk;
+        const auto v1_i = (dp3dk*v1k + dp3dkm1*v1km1) / den;
+        const auto v2_i = (dp3dk*v2k + dp3dkm1*v2km1) / den;
+        gwh_i(k,i) = (v1_i*gphis1 + v2_i*gphis2)*hybi(k);
+      };
+      parallel_for(pv, g);
+    };
+    parallel_for(Kokkos::TeamThreadRange(kv.team, nlev-1), f2);
   }
 
   template <typename R, typename W, typename Wi>
@@ -264,6 +309,12 @@ struct DirkFunctorImpl {
         const auto b = 2*a/(dp3d(k-1,i) + dp3d(k,i));
         dl(k,i) = b*(pnh(k-1,i)/dphi(k-1,i));
         du(k,i) = b*(pnh(k  ,i)/dphi(k  ,i));
+        // In all rows k,
+        //     dl <= 0, du <= 0,
+        // and thus
+        //     d = 1 + |dl| + |du| > |dl| + |du|,
+        // making this Jacobian matrix strictly diagonally dominant. Thus, we
+        // need not pivot when factorizing the matrix.
         d (k,i) = 1 - dl(k,i) - du(k,i);
       };
       parallel_for(pv, kmid);
@@ -279,6 +330,28 @@ struct DirkFunctorImpl {
       parallel_for(pv, ke);
     };
     parallel_for(pt1, f3);
+  }
+
+  template <typename W>
+  KOKKOS_INLINE_FUNCTION
+  static void solve (const KernelVariables& kv,
+                     const W& dl, const W& d, const W& du, const W& x) {
+    assert(d.extent_int(0) == num_phys_lev);
+    using Kokkos::subview;
+    if (OnGpu<ExecSpace>::value)
+      scream::tridiag::cr(kv.team, dl, d, du, x);
+    else {
+      const auto f = [&] () { scream::tridiag::thomas(dl, d, du, x); };
+      Kokkos::single(Kokkos::PerTeam(kv.team), f);
+    }
+  }
+
+  template <typename W>
+  KOKKOS_INLINE_FUNCTION
+  static void solvebfb (const KernelVariables& kv,
+                        const W& dl, const W& d, const W& du, const W& x) {
+    assert(d.extent_int(0) == num_phys_lev);
+    scream::tridiag::bfb(kv.team, dl, d, du, x);
   }
 };
 

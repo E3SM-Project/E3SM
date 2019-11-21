@@ -22,6 +22,7 @@ using Kokkos::create_mirror_view;
 using Kokkos::deep_copy;
 using FA3 = Kokkos::View<Real*[NP][NP], Kokkos::LayoutRight, Kokkos::HostSpace>;
 using FA3d = Kokkos::View<Real***, Kokkos::LayoutRight, Kokkos::HostSpace>;
+using FA4 = Kokkos::View<Real*[2][NP][NP], Kokkos::LayoutRight, Kokkos::HostSpace>;
 using dfi = DirkFunctorImpl;
 
 extern "C" {
@@ -29,8 +30,10 @@ extern "C" {
                      Real ps0);
   void pnh_and_exner_from_eos_f90(const Real* vtheta_dp, const Real* dp3d, const Real* dphi,
                                   Real* pnh, Real* exner, Real* dpnh_dp_i);
+  void compute_gwphis_f90(Real* gwh_i, const Real* dp3d, const Real* v, const Real* gradphis);
   void get_dirk_jacobian_f90(Real* dl, Real* d, Real* du, Real dt, const Real* dp3d,
                              const Real* dphi, const Real* pnh);
+  void tridiag_diagdom_bfb_a1x1(int n, Real* dl, Real* d, Real* du, Real* x);
 } // extern "C"
 
 class Random {
@@ -71,7 +74,21 @@ void fill (Random& r, const V& a,
     for (int j = 0; j < a.extent_int(1); ++j)
       for (int k = 0; k < a.extent_int(2); ++k)
         for (int s = 0; s < dfi::packn; ++s)
-          am(i,j,k)[s] = r.urrng(); 
+          am(i,j,k)[s] = r.urrng(-1,1); 
+  deep_copy(a, am);
+}
+
+template <typename V>
+void fill (Random& r, const V& a,
+           typename std::enable_if<V::rank == 4>::type* = 0) {
+  const auto am = create_mirror_view(a);
+  deep_copy(am, a);
+  for (int i = 0; i < a.extent_int(0); ++i)
+    for (int j = 0; j < a.extent_int(1); ++j)
+      for (int k = 0; k < a.extent_int(2); ++k)
+        for (int l = 0; l < a.extent_int(3); ++l)
+          for (int s = 0; s < dfi::packn; ++s)
+            am(i,j,k,l)[s] = r.urrng(-1,1); 
   deep_copy(a, am);
 }
 
@@ -140,6 +157,19 @@ void c2f(const V& c, const FA3& f) {
     }
 }
 
+template <typename V>
+void c2f(const V& c, const FA4& f) {
+  const auto cm = create_mirror_view(c);
+  deep_copy(cm, c);
+  for (int d = 0; d < c.extent_int(0); ++d)
+    for (int i = 0; i < c.extent_int(1); ++i)
+      for (int j = 0; j < c.extent_int(2); ++j) {
+        Real* const p = &cm(d,i,j,0)[0];
+        for (int k = 0; k < f.extent(0); ++k)
+          f(k,d,i,j) = p[k];
+      }
+}
+
 TEST_CASE("dirk", "dirk_testing") {
   using Kokkos::parallel_for;
   using Kokkos::fence;
@@ -158,7 +188,7 @@ TEST_CASE("dirk", "dirk_testing") {
     fill(r, hai0);
     dfi d(nelem);
     const auto w = d.m_work;
-    const auto a = dfi::get_slot(w, 0, 0);
+    const auto a = dfi::get_work_slot(w, 0, 0);
     const auto f1 = KOKKOS_LAMBDA(const dfi::MT& t) {
       KernelVariables kv(t);
       dfi::transpose(kv, nlev, ham0, a);
@@ -189,14 +219,16 @@ TEST_CASE("dirk", "dirk_testing") {
     dfi d1(1);
     const auto w = d1.m_work;
     const auto
-      dp3dw = dfi::get_slot(w, 0, 0),
-      dphiw = dfi::get_slot(w, 0, 1),
-      pnhw  = dfi::get_slot(w, 0, 2),
-      dl = dfi::get_slot(w, 0, 3),
-      d  = dfi::get_slot(w, 0, 4),
-      du = dfi::get_slot(w, 0, 5);
+      dp3dw = dfi::get_work_slot(w, 0, 0),
+      dphiw = dfi::get_work_slot(w, 0, 1),
+      pnhw  = dfi::get_work_slot(w, 0, 2);
+    const auto ls = d1.m_ls;
+    const auto
+      dl = dfi::get_ls_slot(ls, 0, 0),
+      d  = dfi::get_ls_slot(ls, 0, 1),
+      du = dfi::get_ls_slot(ls, 0, 2);
 
-    const auto f = KOKKOS_LAMBDA(const dfi::MT& t) {
+    const auto f1 = KOKKOS_LAMBDA(const dfi::MT& t) {
       KernelVariables kv(t);
       dfi::transpose(kv, nlev, dp3d, dp3dw);
       dfi::transpose(kv, nlev, dphi, dphiw);
@@ -204,7 +236,7 @@ TEST_CASE("dirk", "dirk_testing") {
       kv.team_barrier();
       dfi::calc_jacobian(kv, dt, dp3dw, dphiw, pnhw, dl, d, du);
     };
-    parallel_for(d1.m_policy, f); fence();
+    parallel_for(d1.m_policy, f1); fence();
 
     const auto dlm = create_mirror_view(dl), dm = create_mirror_view(d),
       dum = create_mirror_view(du);
@@ -231,6 +263,59 @@ TEST_CASE("dirk", "dirk_testing") {
         }
     };
     eq(dlm, 1, dlf, nlev-1); eq(dm, 0, df, nlev); eq(dum, 0, duf, nlev-1);
+
+    // Test solvers.
+    dfi::LinearSystem ls1("w1", 1);
+    const auto
+      x1  = dfi::get_ls_slot(ls , 0, 3),
+      x2  = dfi::get_ls_slot(ls1, 0, 0),
+      dl2 = dfi::get_ls_slot(ls1, 0, 1),
+      d2  = dfi::get_ls_slot(ls1, 0, 2),
+      du2 = dfi::get_ls_slot(ls1, 0, 3);
+    FA3d x3("x3", np, np, nlev);
+    const auto x1m = create_mirror_view(x1);
+    // Fill RHS with random numbers.
+    for (int k = 0; k < nlev; ++k)
+      for (int i = 0; i < np; ++i)
+        for (int j = 0; j < np; ++j) {
+          const auto
+            idx = i*np + j,
+            pi = idx / dfi::packn,
+            si = idx % dfi::packn;
+          const auto v = r.urrng(-1,1);
+          x1m(k,pi)[si] = v;
+          x3(i,j,k) = v;
+        }
+    deep_copy(x1, x1m);
+    deep_copy(x2, x1);
+    deep_copy(dl2, dl); deep_copy(d2, d); deep_copy(du2, du);
+    const auto f2 = KOKKOS_LAMBDA(const dfi::MT& t) {
+      KernelVariables kv(t);
+      dfi::solve   (kv, dl , d , du , x1);
+      dfi::solvebfb(kv, dl2, d2, du2, x2);
+    };
+    parallel_for(d1.m_policy, f2); fence();
+    // Test that BFB and non-BFB solvers give nearly the same answers.
+    deep_copy(x1m, x1);
+    const auto x2m = create_mirror_view(x2); deep_copy(x2m, x2);
+    for (int i = 0; i < np; ++i)
+      for (int j = 0; j < np; ++j) {
+        const auto
+          idx = np*i + j,
+          pi = idx / dfi::packn,
+          si = idx % dfi::packn;
+        for (int k = 0; k < nlev; ++k) {
+          const auto a = x1m(k,pi)[si];
+          const auto b = x2m(k,pi)[si];
+          const auto re = std::abs(a - b)/std::abs(1 + std::abs(a));
+          REQUIRE(re <= 1e3*std::numeric_limits<Real>::epsilon());
+        }
+      }
+    // Test BFB F90 and C++.
+    for (int i = 0; i < dfi::scaln; ++i)
+      tridiag_diagdom_bfb_a1x1(nlev, dlf.data() + (nlev-1)*i - 1, df.data() + nlev*i,
+                               duf.data() + (nlev-1)*i, x3.data() + nlev*i);
+    eq(x2m, 0, x3, nlev);
   }
 
   SECTION ("pnh_and_exner_from_eos") {
@@ -244,12 +329,12 @@ TEST_CASE("dirk", "dirk_testing") {
     dfi d1(1);
     const auto w = d1.m_work;
     const auto
-      dp3dw = dfi::get_slot(w, 0, 0),
-      dphiw = dfi::get_slot(w, 0, 1),
-      vtheta_dpw = dfi::get_slot(w, 0, 2),
-      pnhw = dfi::get_slot(w, 0, 3),
-      exnerw = dfi::get_slot(w, 0, 4),
-      dpnh_dp_iw = dfi::get_slot(w, 0, 5);
+      dp3dw = dfi::get_work_slot(w, 0, 0),
+      dphiw = dfi::get_work_slot(w, 0, 1),
+      vtheta_dpw = dfi::get_work_slot(w, 0, 2),
+      pnhw = dfi::get_work_slot(w, 0, 3),
+      exnerw = dfi::get_work_slot(w, 0, 4),
+      dpnh_dp_iw = dfi::get_work_slot(w, 0, 5);
 
     const auto f = KOKKOS_LAMBDA(const dfi::MT& t) {
       KernelVariables kv(t);
@@ -281,6 +366,50 @@ TEST_CASE("dirk", "dirk_testing") {
           si = idx % dfi::packn;
         for (int k = 0; k < nlev; ++k)
           REQUIRE(equal(dpnh_dp_im(k,pi)[si], dpnh_dp_if(k,i,j)));
+      }
+  }
+
+  SECTION ("calc_gwphis") {
+    const int nlev = NUM_PHYSICAL_LEV, np = NP;
+
+    ExecView<Scalar[NP][NP][NUM_LEV]> dp3d("dp3d");
+    fill_inc(r, nlev, 5, 10000, dp3d);
+    ExecView<Scalar[2][NP][NP][NUM_LEV]> v("v");
+    fill(r, v);
+    ExecView<Real[2][NP][NP]> gradphis("gradphis");
+    const auto gpm = create_mirror_view(gradphis);
+    for (int d = 0; d < 2; ++d)
+      for (int i = 0; i < np; ++i)
+        for (int j = 0; j < np; ++j)
+          gpm(d,i,j) = r.urrng(-1,1);
+    deep_copy(gradphis, gpm);
+    const auto hybi = hvcoord.hybrid_bi;
+    
+    dfi d1(1);
+    const auto w = d1.m_work;
+    const auto gwh_i = dfi::get_work_slot(w, 0, 0);
+
+    const auto f = KOKKOS_LAMBDA(const dfi::MT& t) {
+      KernelVariables kv(t);
+      dfi::calc_gwphis(kv, dp3d, v, gradphis, hybi, gwh_i);
+    };
+    parallel_for(d1.m_policy, f); fence();
+    const auto gwh_im = create_mirror_view(gwh_i); deep_copy(gwh_im, gwh_i);
+
+    FA3 dp3df("dp3df", nlev), gwh_if("gwh_if", nlev+1);
+    c2f(dp3d, dp3df);
+    FA4 vf("vf", nlev);
+    c2f(v, vf);
+    compute_gwphis_f90(gwh_if.data(), dp3df.data(), vf.data(), gpm.data());
+
+    for (int i = 0; i < np; ++i)
+      for (int j = 0; j < np; ++j) {
+        const auto
+          idx = np*i + j,
+          pi = idx / dfi::packn,
+          si = idx % dfi::packn;
+        for (int k = 0; k < nlev; ++k)
+          REQUIRE(equal(gwh_im(k,pi)[si], gwh_if(k,i,j)));
       }
   }
 }
