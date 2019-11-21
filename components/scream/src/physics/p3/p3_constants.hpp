@@ -42,7 +42,7 @@ struct Constants
   static constexpr Scalar PIOV6       = Pi*SXTH;
   static constexpr Scalar CONS1       = PIOV6*RHOW;
   static constexpr Scalar CONS2       = 4.*PIOV3*RHOW;
-  static constexpr Scalar CONS3       = 1./(CONS2*pow(sp(25.e-6),3));
+  static constexpr Scalar CONS3       = 1./(CONS2*25.e-6*25.e-6*25.e-6);
   static constexpr Scalar QSMALL      = 1.e-14;
   static constexpr Scalar NSMALL      = 1.e-16;
   static constexpr Scalar P0          = 100000.0;        // reference pressure, Pa
