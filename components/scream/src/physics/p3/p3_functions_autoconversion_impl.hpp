@@ -15,11 +15,12 @@ void Functions<S,D>
 {
     // Khroutdinov and Kogan (2000)
     const auto qc_not_small = qc_incld >=  1e-8;
+    constexpr Scalar CONS3 = C::CONS3;
     if(qc_not_small.any()){
         qcaut.set(qc_not_small,
             sp(1350.0)*pow(qc_incld,sp(2.47))*pow(nc_incld*sp(1.e-6)*rho,sp(-1.79)));
         // note: ncautr is change in Nr; ncautc is change in Nc
-        ncautr.set(qc_not_small, qcaut*C::CONS3);
+        ncautr.set(qc_not_small, qcaut*CONS3);
         ncautc.set(qc_not_small, qcaut*nc_incld/qc_incld);
     }
 
