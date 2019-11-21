@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include "/home/ambradl/climate/sik/hommexx/dbg.hpp"
+//#include "/home/ambradl/climate/sik/hommexx/dbg.hpp"
 // make -j8 dirk_ut;if [ $? == 0 ]; then OMP_NUM_THREADS=1 ./test_execs/thetal_kokkos_ut/dirk_ut; fi
 // OMP_NUM_THREADS=2 ctest -R dirk_ut -VV
 
