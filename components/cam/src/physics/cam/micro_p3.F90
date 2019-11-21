@@ -2769,7 +2769,7 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,    &
    qcaut,ncautc,ncautr)
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-   use micro_p3_iso_f, only: cloud_water_autoconversion_f
+   use micro_p3_iso_f, only: cloud_water_autoconversion_f, cxx_pow
 #endif
 
    implicit none
@@ -2796,8 +2796,8 @@ subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,    &
 
       !Khroutdinov and Kogan (2000)
       dum   = qc_incld
-      qcaut = 1350._rtype*dum**2.47_rtype*(nc_incld*1.e-6_rtype*rho)**(-1.79_rtype)
-      ! note: ncautr is change in Nr; ncautc is change in Nc
+      qcaut = 1350._rtype*bfb_pow(dum,2.47_rtype)*bfb_pow(nc_incld*1.e-6_rtype*rho,-1.79_rtype)
+      ! note: ncautr is change in Nr; ncautc is change in Ncs
       ncautr = qcaut*cons3
       ncautc = qcaut*nc_incld/qc_incld
 

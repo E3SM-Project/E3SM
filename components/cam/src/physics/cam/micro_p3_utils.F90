@@ -1,7 +1,26 @@
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+#  define bfb_pow(base, exp) cxx_pow(base, exp)
+#  define bfb_cbrt(base) cxx_cbrt(base)
+#  define bfb_gamma(val) cxx_gamma(val)
+#  define bfb_log(val) cxx_log(val)
+#  define bfb_log10(val) cxx_log10(val)
+#  define bfb_exp(val) cxx_exp(val)
+#else
+#  define bfb_pow(base, exp) (base)**exp
+#  define bfb_cbrt(base) (base)**thrd
+#  define bfb_gamma(val) gamma(val)
+#  define bfb_log(val) log(val)
+#  define bfb_log10(val) log10(val)
+#  define bfb_exp(val) exp(val)
+#endif
+
+
 module micro_p3_utils
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
   use iso_c_binding, only: c_double, c_float, c_bool
+  use micro_p3_iso_f, only: cxx_pow
 #else
   use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
 #endif
@@ -195,7 +214,7 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
 
     cons1 = piov6*rhow
     cons2 = 4._rtype*piov3*rhow
-    cons3 = 1._rtype/(cons2*(25.e-6_rtype)**3)
+    cons3 = 1._rtype/(cons2*bfb_pow(25.e-6_rtype,3.0_rtype))
     cons4 = 1._rtype/(dbrk**3*pi*rhow)
     cons5 = piov6*bimm
     cons6 = piov6**2*rhow*bimm
