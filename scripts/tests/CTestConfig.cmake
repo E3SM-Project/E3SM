@@ -2,7 +2,7 @@
 # Environment variables CIME_COMPILER and CIME_MPILIB
 # can be used to send --compiler and --mpilib settings to scripts_regression_tests.py
 #
-
+set(CTEST_SITE "$CIME_MACHINE $CIME_COMPILER")
 set(CTEST_PROJECT_NAME "CIME")
 string(TIMESTAMP CURRTIME "%H:%M:%S" UTC)
 set(CTEST_NIGHTLY_START_TIME "${CURRTIME} UTC")

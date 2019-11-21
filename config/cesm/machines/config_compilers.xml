@@ -471,38 +471,6 @@ using a fortran linker.
   </FFLAGS>
 </compiler>
 
-<compiler MACH="athena">
-  <CPPDEFS>
-    <!-- these flags enable nano timers -->
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
-  <AR>xiar</AR>
-  <ARFLAGS>
-    <base>cru</base>
-  </ARFLAGS>
-</compiler>
-
-<compiler MACH="athena" COMPILER="intel">
-  <CFLAGS>
-    <append>  -xHost </append>
-  </CFLAGS>
-  <CPPDEFS>
-    <append> -DINTEL_MKL -DHAVE_SSE2 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append>  -xHost </append>
-  </FFLAGS>
-  <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
-  <MPICC MPILIB="mpich2">mpiicc</MPICC>
-  <MPIFC MPILIB="mpich2">mpiifort</MPIFC>
-  <SCC>icc</SCC>
-  <SFC>ifort</SFC>
-  <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
-</compiler>
-
 <compiler MACH="aleph" COMPILER="intel">
   <CONFIG_ARGS>
     <base> --host=Linux </base>
