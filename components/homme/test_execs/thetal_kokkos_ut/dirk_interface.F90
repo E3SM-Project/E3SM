@@ -6,27 +6,22 @@ module dirk_interface
 
 contains
   
-  subroutine init_dirk_f90(hyai, hybi, hyam, hybm, ps0) bind(c)
+  subroutine init_dirk_f90(ne, hyai, hybi, hyam, hybm, ps0) bind(c)
     use iso_c_binding,          only: c_int
     use hybvcoord_mod,          only: set_layer_locations
     use dimensions_mod,         only: nlev, nlevp, np
-    use thetal_test_interface,  only: hvcoord
+    use thetal_test_interface,  only: init_f90
+    use edge_mod_base,          only: initEdgeBuffer, edge_g
+    use geometry_interface_mod, only: par, elem
 
-    real (kind=real_kind), intent(in)  :: hyai(nlevp), hybi(nlevp), hyam(nlev), hybm(nlev)
-    real (kind=real_kind), value, intent(in)  :: ps0
+    real (kind=real_kind), intent(in) :: hyai(nlevp), hybi(nlevp), hyam(nlev), hybm(nlev)
+    integer (kind=c_int), value, intent(in) :: ne
+    real (kind=real_kind), value, intent(in) :: ps0
 
-    integer :: k
+    real (kind=real_kind) :: mp(np,np), dvv(np,np)
 
-    hvcoord%hyai = hyai
-    hvcoord%hybi = hybi
-    hvcoord%hyam = hyam
-    hvcoord%hybm = hybm
-    hvcoord%ps0 = ps0
-    do k = 1,nlev
-      hvcoord%dp0(k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*ps0 + &
-                       (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps0
-    enddo
-    call set_layer_locations (hvcoord,.false.,.false.)
+    call init_f90(ne, hyai, hybi, hyam, hybm, dvv, mp, ps0)
+    call initEdgeBuffer(par, edge_g, elem, 6*nlev+1)
   end subroutine init_dirk_f90
 
   subroutine pnh_and_exner_from_eos_f90(vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i) bind(c)
@@ -71,5 +66,121 @@ contains
 
     call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,1)
   end subroutine get_dirk_jacobian_f90
+
+  subroutine c2f_f90(n, cnlev, cnlevp, dp3d, w_i, v, vtheta_dp, phinh_i, gradphis) bind(c)
+    use iso_c_binding,         only: c_int
+    use dimensions_mod,        only: nlev, nlevp, np
+    use geometry_interface_mod,only: elem
+
+    integer, parameter :: ntl = 3
+
+    integer (kind=c_int), value, intent(in) :: n, cnlev, cnlevp
+    real (kind=real_kind), intent(in) :: &
+         dp3d(cnlev,np,np,ntl,n), w_i(cnlevp,np,np,ntl,n), v(cnlev,np,np,2,ntl,n), &
+         vtheta_dp(cnlev,np,np,ntl,n), phinh_i(cnlevp,np,np,ntl,n), gradphis(np,np,2,n)
+
+    integer :: ie, t, k, j, i
+
+    if (n /= size(elem)) print *, 'n /= size(nelem)'
+    if (cnlev < nlev) print *, 'nlev < cnlev'
+    if (cnlevp < nlevp) print *, 'nlevp < cnlevp'
+
+    do ie = 1,n
+       do t = 1,ntl
+          do k = 1,nlevp
+             do j = 1,np
+                do i = 1,np
+                   elem(ie)%state%w_i(i,j,k,t) = w_i(k,j,i,t,ie)
+                   elem(ie)%state%phinh_i(i,j,k,t) = phinh_i(k,j,i,t,ie)
+                   if (k /= nlevp) then
+                      elem(ie)%state%dp3d(i,j,k,t) = dp3d(k,j,i,t,ie)
+                      elem(ie)%state%v(i,j,1,k,t) = v(k,j,i,1,t,ie)
+                      elem(ie)%state%v(i,j,2,k,t) = v(k,j,i,2,t,ie)
+                      elem(ie)%state%vtheta_dp(i,j,k,t) = vtheta_dp(k,j,i,t,ie)
+                   end if
+                end do
+             end do
+          end do
+       end do
+       do j = 1,np
+          do i = 1,np
+             elem(ie)%derived%gradphis(i,j,1) = gradphis(j,i,1,ie)
+             elem(ie)%derived%gradphis(i,j,2) = gradphis(j,i,2,ie)
+          end do
+       end do
+    end do
+  end subroutine c2f_f90
+
+  subroutine f2c_f90(n, cnlev, cnlevp, dp3d, w_i, v, vtheta_dp, phinh_i, gradphis) bind(c)
+    use iso_c_binding,         only: c_int
+    use dimensions_mod,        only: nlev, nlevp, np
+    use geometry_interface_mod,only: elem
+
+    integer, parameter :: ntl = 3
+
+    integer (kind=c_int), value, intent(in) :: n, cnlev, cnlevp
+    real (kind=real_kind), intent(out) :: &
+         dp3d(cnlev,np,np,ntl,n), w_i(cnlevp,np,np,ntl,n), v(cnlev,np,np,2,ntl,n), &
+         vtheta_dp(cnlev,np,np,ntl,n), phinh_i(cnlevp,np,np,ntl,n), gradphis(np,np,2,n)
+
+    integer :: ie, t, k, j, i
+
+    if (n /= size(elem)) print *, 'n /= size(nelem)'
+    if (cnlev < nlev) print *, 'nlev < cnlev'
+    if (cnlevp < nlevp) print *, 'nlevp < cnlevp'
+
+    do ie = 1,n
+       do t = 1,ntl
+          do k = 1,nlevp
+             do j = 1,np
+                do i = 1,np
+                   w_i(k,j,i,t,ie) = elem(ie)%state%w_i(i,j,k,t)
+                   phinh_i(k,j,i,t,ie) = elem(ie)%state%phinh_i(i,j,k,t)
+                   if (k /= nlevp) then
+                      dp3d(k,j,i,t,ie) = elem(ie)%state%dp3d(i,j,k,t)
+                      v(k,j,i,1,t,ie) = elem(ie)%state%v(i,j,1,k,t)
+                      v(k,j,i,2,t,ie) = elem(ie)%state%v(i,j,2,k,t)
+                      vtheta_dp(k,j,i,t,ie) = elem(ie)%state%vtheta_dp(i,j,k,t)
+                   end if
+                end do
+             end do
+          end do
+       end do
+       do j = 1,np
+          do i = 1,np
+             gradphis(j,i,1,ie) = elem(ie)%derived%gradphis(i,j,1)
+             gradphis(j,i,2,ie) = elem(ie)%derived%gradphis(i,j,2)
+          end do
+       end do
+    end do
+  end subroutine f2c_f90
+
+  subroutine compute_stage_value_dirk_f90(nm1,n0,np1,alphadt,dt2) bind(c)
+    use iso_c_binding,         only: c_int
+    use hybrid_mod,            only: hybrid_t
+    use derivative_mod,        only: derivative_t
+    use geometry_interface_mod,only: elem
+    use thetal_test_interface, only: hvcoord
+    use imex_mod,              only: compute_stage_value_dirk
+
+    integer (kind=c_int), value, intent(in)  :: nm1, n0, np1
+    real (kind=real_kind), value, intent(in) :: alphadt, dt2
+
+    ! compute_stage_value_dirk doesn't actually use these.
+    type (hybrid_t) :: hybrid
+    type (derivative_t) :: deriv
+    integer :: qn0, itercount, nets, nete
+    real (kind=real_kind) :: itererr
+    
+    nets = 1
+    nete = size(elem)
+    if (nm1 > 0) then
+       call compute_stage_value_dirk(n0, np1, alphadt, qn0, dt2, elem, hvcoord, hybrid, deriv, &
+            nets, nete, itercount, itererr, nm1)
+    else
+       call compute_stage_value_dirk(n0, np1, alphadt, qn0, dt2, elem, hvcoord, hybrid, deriv, &
+            nets, nete, itercount, itererr)
+    end if
+  end subroutine compute_stage_value_dirk_f90
 
 end module dirk_interface

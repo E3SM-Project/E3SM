@@ -10,14 +10,12 @@
 #include "Types.hpp"
 #include "EquationOfState.hpp"
 #include "FunctorsBuffersManager.hpp"
+#include "Elements.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
-#include "SimulationParams.hpp"
 #include "PhysicalConstants.hpp"
 #include "profiling.hpp"
 #include "ErrorDefs.hpp"
-#include "utilities/SubviewUtils.hpp"
-#include "utilities/ViewUtils.hpp"
 #include "utilities/scream_tridiag.hpp"
 
 #include <assert.h>
@@ -31,7 +29,10 @@ struct DirkFunctorImpl {
   enum : int { max_num_lev_pack = NUM_LEV_P };
   enum : int { num_lev_aligned = max_num_lev_pack*packn };
   enum : int { num_phys_lev = NUM_PHYSICAL_LEV };
-  enum : int { num_work = 8 };
+  enum : int { num_work = 12 };
+
+  static_assert(num_lev_aligned >= 3,
+                "We use wrk(0:2,:) and so need num_lev_aligned >= 3");
 
   using TeamPolicy = Kokkos::TeamPolicy<ExecSpace>;
   using MT = typename TeamPolicy::member_type;
@@ -81,13 +82,13 @@ struct DirkFunctorImpl {
     return KernelVariables::shmem_size(team_size);
   }
 
-  DirkFunctorImpl (const int& nelem)
+  DirkFunctorImpl (const int nelem)
     : m_policy(1,1,1) // throwaway settings
   {
     init(nelem);
   }
 
-  void init (const int& nelem) {
+  void init (const int nelem) {
     if (OnGpu<ExecSpace>::value) {
       ThreadPreferences tp;
       tp.max_threads_usable = NUM_PHYSICAL_LEV;
@@ -101,14 +102,188 @@ struct DirkFunctorImpl {
         nthr = nhwthr/nvec;
       m_policy = TeamPolicy(nelem, nthr, nvec);
     } else {
-      m_policy = TeamPolicy(nelem, 1, 1);
+      ThreadPreferences tp;
+      tp.max_threads_usable = NUM_PHYSICAL_LEV;
+      tp.max_vectors_usable = 1;
+      tp.prefer_threads = true;
+      const auto p = DefaultThreadsDistribution<ExecSpace>
+        ::team_num_threads_vectors(nelem, tp);
+      m_policy = TeamPolicy(nelem, p.first, 1);
     }
-    const int nteam = get_num_concurrent_teams(m_policy);
+    const int nteam = std::min(nelem, get_num_concurrent_teams(m_policy));
     m_work = Work("DirkFunctorImpl::m_work", nteam);
     m_ls = LinearSystem("DirkFunctorImpl::m_ls", nteam);
   }
 
-  void run () {
+  void run (int nm1, int n0, int np1, Real alphadt, Real dt2,
+            const Elements& e, const HybridVCoord& hvcoord,
+            const bool bfb_solver = false) {
+    using Kokkos::subview;
+    using Kokkos::parallel_for;
+    const auto a = Kokkos::ALL();
+
+    const auto grav = PhysicalConstants::g;
+    const int nvec = npack;
+    const int maxiter = 20;
+    const Real deltatol = 1e-13; // exit if newton increment < deltatol
+
+    const auto work = m_work;
+    const auto ls = m_ls;
+    const auto e_w_i = e.m_state.m_w_i;
+    const auto e_vtheta_dp = e.m_state.m_vtheta_dp;
+    const auto e_phinh_i = e.m_state.m_phinh_i;
+    const auto e_dp3d = e.m_state.m_dp3d;
+    const auto e_v = e.m_state.m_v;
+    const auto e_gradphis = e.m_geometry.m_gradphis;
+    const auto hybi = hvcoord.hybrid_bi;
+
+    const auto toplevel = KOKKOS_LAMBDA (const MT& team) {
+      KernelVariables kv(team);
+      const auto ie = kv.ie;
+      const int nlev = num_phys_lev;
+
+      const auto
+      phi_n0    = get_work_slot(work, kv.team_idx,  0),
+      phi_np1   = get_work_slot(work, kv.team_idx,  1),
+      dphi      = get_work_slot(work, kv.team_idx,  2),
+      w_n0      = get_work_slot(work, kv.team_idx,  3),
+      w_i       = get_work_slot(work, kv.team_idx,  4),
+      dpnh_dp_i = get_work_slot(work, kv.team_idx,  5),
+      gwh_i     = get_work_slot(work, kv.team_idx,  6),
+      vtheta_dp = get_work_slot(work, kv.team_idx,  7),
+      dp3d      = get_work_slot(work, kv.team_idx,  8),
+      pnh       = get_work_slot(work, kv.team_idx,  9),
+      wrk       = get_work_slot(work, kv.team_idx, 10),
+      xfull     = get_work_slot(work, kv.team_idx, 11);
+      const auto
+      dl = get_ls_slot(ls, kv.team_idx, 0),
+      d  = get_ls_slot(ls, kv.team_idx, 1),
+      du = get_ls_slot(ls, kv.team_idx, 2);
+
+      // View of xfull for use in the solver. We want xfull so that we
+      // can use the nlevp-1 entry, which is 0, when convenient.
+      LinearSystemSlot x = subview(xfull, Kokkos::pair<int,int>(0,nlev), a);
+      assert(xfull(nlev,0)[0] == 0);
+
+      const auto transpose4 = [&] (const int nt) {
+        transpose(kv, nlev+1, subview(e_phinh_i  ,ie,nt,a,a,a), phi_np1  );
+        transpose(kv, nlev+1, subview(e_w_i      ,ie,nt,a,a,a), w_i      );
+        transpose(kv, nlev,   subview(e_vtheta_dp,ie,nt,a,a,a), vtheta_dp);
+        transpose(kv, nlev,   subview(e_dp3d     ,ie,nt,a,a,a), dp3d     );        
+      };
+
+      const auto accum_n0 = [&] (const Real dt3, const int nt) {
+        // This transpose is inefficient, but it lets us use the same
+        // pnh_and_exner_from_eos as we use elsewhere. This function
+        // is called only in ~1 out of 5 DIRK stage calls, and only
+        // outside of the Newton iteration.
+        transpose4(nt);
+        calc_gwphis(kv, subview(e_dp3d,ie,nt,a,a,a), subview(e_v,ie,nt,a,a,a,a),
+                    subview(e_gradphis,ie,a,a,a), hybi, gwh_i);
+        kv.team_barrier();
+        loop_ki(kv, nlev, nvec, [&] (int k, int i) {
+          dphi(k,i) = phi_np1(k+1,i) - phi_np1(k,i);
+        });
+        kv.team_barrier();
+        pnh_and_exner_from_eos(kv, hvcoord, vtheta_dp, dp3d, dphi, pnh, wrk, dpnh_dp_i);
+        kv.team_barrier();
+        loop_ki(kv, nlev, nvec, [&] (const int k, const int i) {
+          w_n0(k,i) += dt3*grav*(dpnh_dp_i(k,i) - 1);
+        });
+        loop_ki(kv, nlev, nvec, [&] (int k, int i) {
+          phi_n0(k,i) = phi_n0(k,i) + dt3*grav*w_i(k,i) - dt3*gwh_i(k,i);
+        });
+      };
+
+      // Compute w_n0, phi_n0.
+      transpose(kv, nlev+1, subview(e_phinh_i,ie,np1,a,a,a), phi_n0);
+      transpose(kv, nlev+1, subview(e_w_i    ,ie,np1,a,a,a), w_n0  );
+      // Computed only in some cases.
+      if (alphadt != 0) {
+        accum_n0(alphadt, n0);
+        kv.team_barrier();
+        if (nm1 >= 0) {
+          accum_n0(alphadt, nm1);
+          kv.team_barrier();
+        }
+      }
+      // Always computed.
+      transpose4(np1);
+      calc_gwphis(kv, subview(e_dp3d,ie,np1,a,a,a), subview(e_v,ie,np1,a,a,a,a),
+                  subview(e_gradphis,ie,a,a,a), hybi, gwh_i);
+      kv.team_barrier();
+      loop_ki(kv, nlev, nvec, [&] (int k, int i) { phi_n0(k,i) -= dt2*gwh_i(k,i); });
+
+      for (int it = 0; it <= maxiter; ++it) { // Newton iteration
+        kv.team_barrier();
+        loop_ki(kv, nlev, nvec, [&] (int k, int i) {
+          dphi(k,i) = phi_np1(k+1,i) - phi_np1(k,i);
+        });
+        kv.team_barrier();
+        pnh_and_exner_from_eos(kv, hvcoord, vtheta_dp, dp3d, dphi, pnh, wrk, dpnh_dp_i);
+        kv.team_barrier();
+        loop_ki(kv, nlev, nvec, [&] (const int k, const int i) {
+          w_i(k,i) = w_n0(k,i) - grav*dt2*(1 - dpnh_dp_i(k,i));
+        });
+
+        if (it > 0 &&
+            (it == maxiter ||
+             exit_on_step(kv, nlev, nvec, deltatol, x, phi_n0)))
+          break; // from Newton iteration
+
+        kv.team_barrier();
+        loop_ki(kv, nlev, nvec, [&] (const int k, const int i) {
+          x(k,i) = -((phi_np1(k,i) - phi_n0(k,i)) - dt2*grav*w_i(k,i)); // -residual
+        });
+
+        calc_jacobian(kv, dt2, dp3d, dphi, pnh, dl, d, du);
+        kv.team_barrier();
+        if (bfb_solver) solvebfb(kv, dl, d, du, x); else solve(kv, dl, d, du, x);
+        kv.team_barrier();
+
+        calc_step_size(kv, nlev, nvec, xfull, dphi, wrk);
+
+        loop_ki(kv, nlev, nvec, [&] (int k, int i) {
+          phi_np1(k,i) += (1 - wrk(0,i))*x(k,i);
+        });
+      } // Newton iteration
+
+      kv.team_barrier();
+      transpose(kv, nlev+1, phi_np1, subview(e_phinh_i,ie,np1,a,a,a));
+      transpose(kv, nlev+1, w_i,     subview(e_w_i    ,ie,np1,a,a,a));
+    };
+
+    Kokkos::parallel_for(m_policy, toplevel);
+  }
+
+  template <typename Fn>
+  KOKKOS_INLINE_FUNCTION
+  static void loop_ki (const KernelVariables& kv, const int klim,
+                       const int ilim, const Fn& g) {
+    using Kokkos::parallel_for;
+    using Kokkos::TeamThreadRange;
+    using Kokkos::ThreadVectorRange;
+
+    if (OnGpu<ExecSpace>::value) {
+      const auto tr = TeamThreadRange  (kv.team, klim);
+      const auto vr = ThreadVectorRange(kv.team, ilim);
+      const auto f = [&] (const int k) {
+        const auto h = [&] (const int i) { g(k,i); };
+        parallel_for(vr, h);
+      };
+      parallel_for(tr, f);
+    } else if (kv.team.team_size() == 1) {
+      for (int k = 0; k < klim; ++k)
+        for (int i = 0; i < ilim; ++i)
+          g(k,i);
+    } else {
+      const auto tr = TeamThreadRange  (kv.team, klim);
+      const auto f = [&] (const int k) {
+        for (int i = 0; i < ilim; ++i)
+          g(k,i);
+      };
+      parallel_for(tr, f);
+    }
   }
 
   // Format of rest of Hxx -> DIRK Newton iteration format.
@@ -181,15 +356,17 @@ struct DirkFunctorImpl {
     const int nlev = NUM_PHYSICAL_LEV)
   {
     using Kokkos::parallel_for;
+    using Kokkos::TeamThreadRange;
+    using Kokkos::ThreadVectorRange;
 
     const int n = npack;
-    const auto pv = Kokkos::ThreadVectorRange(kv.team, n);
+    const auto pv = ThreadVectorRange(kv.team, n);
 
     const auto f1 = [&] (const int) {
       const auto k0 = [&] (const int i) { gwh_i(0,i) = 0; };
       parallel_for(pv, k0);
     };
-    parallel_for(Kokkos::TeamThreadRange(kv.team, 1), f1);
+    parallel_for(TeamThreadRange(kv.team, 1), f1);
 
     const auto f2 = [&] (const int km1) {
       const auto
@@ -221,7 +398,7 @@ struct DirkFunctorImpl {
       };
       parallel_for(pv, g);
     };
-    parallel_for(Kokkos::TeamThreadRange(kv.team, nlev-1), f2);
+    parallel_for(TeamThreadRange(kv.team, nlev-1), f2);
   }
 
   template <typename R, typename W, typename Wi>
@@ -269,6 +446,36 @@ struct DirkFunctorImpl {
       parallel_for(pv, kr);
     };
     parallel_for(Kokkos::TeamThreadRange(kv.team, nlev-1), f3);
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  static bool exit_on_step (const KernelVariables& kv, const int nlev,
+                            const int nvec, const Real& deltatol,
+                            const LinearSystemSlot& x, const WorkSlot& phi_n0) {
+    using Kokkos::parallel_reduce;
+    using Kokkos::TeamThreadRange;
+    using Kokkos::ThreadVectorRange;
+
+    // deltaerr = maxval(abs(x) / max(g, abs(dphi_n0)))
+    const auto f = [&] (int k, Real& maxval) {
+      const auto g = [&] (int i, Real& lmaxval) {
+        Scalar d;
+        d = phi_n0(k+1,i) - phi_n0(k,i);
+        for (int s = 0; s < packn; ++s)
+          d[s] = max(PhysicalConstants::g, std::abs(d[s]));
+        const auto v = x(k,i)/d;
+        for (int s = 0; s < packn; ++s)
+          lmaxval = max(lmaxval, std::abs(v[s]));
+      };
+      Real lmaxval;
+      const auto vr = ThreadVectorRange(kv.team, nvec);
+      parallel_reduce(vr, g, Kokkos::Max<Real>(lmaxval));
+      maxval = max(maxval, lmaxval); // benign write race
+    };
+    Real deltaerr;
+    const auto tr = TeamThreadRange(kv.team, nlev);
+    parallel_reduce(tr, f, Kokkos::Max<Real>(deltaerr));
+    return deltaerr < deltatol;
   }
 
   /* Compute Jacobian of F(phi) = sum(dphi) + const + (dt*g)^2 *(1-dp/dpi)
@@ -337,7 +544,6 @@ struct DirkFunctorImpl {
   static void solve (const KernelVariables& kv,
                      const W& dl, const W& d, const W& du, const W& x) {
     assert(d.extent_int(0) == num_phys_lev);
-    using Kokkos::subview;
     if (OnGpu<ExecSpace>::value)
       scream::tridiag::cr(kv.team, dl, d, du, x);
     else {
@@ -352,6 +558,48 @@ struct DirkFunctorImpl {
                         const W& dl, const W& d, const W& du, const W& x) {
     assert(d.extent_int(0) == num_phys_lev);
     scream::tridiag::bfb(kv.team, dl, d, du, x);
+  }
+
+  // Determine a step length 0 < alpha <= 1.
+  //todo-future This step-length procedure should be reworked to not use
+  // dphi. Currently it's done this way to be BFB with the F90.
+  KOKKOS_INLINE_FUNCTION
+  static void calc_step_size (const KernelVariables& kv, const int nlev,
+                              const int nvec, const WorkSlot& xfull,
+                              const WorkSlot& dphi, // work array
+                              // On output, alpha is in wrk(0,:)
+                              const WorkSlot& wrk) {
+    loop_ki(kv, 1, nvec, [&] (int k, int i) {
+      wrk(0,i) = 0;
+    });
+    loop_ki(kv, nlev, nvec, [&] (int k, int i) {
+      dphi(k,i) += xfull(k+1,i) - xfull(k,i);
+    });
+    int alpha_den = 1;
+    for (int nsafe = 0; nsafe < 8; ++nsafe) {
+      loop_ki(kv, 2, nvec, [&] (int k, int i) { wrk(k+1,i) = 0; });
+      kv.team_barrier();
+      loop_ki(kv, nlev, nvec, [&] (int k, int i) {
+        for (int s = 0; s < packn; ++s) {
+          if (dphi(k,i)[s] < 0) continue;
+          wrk(1,i)[s] = 1;
+          wrk(2,0)[0] = 1;
+        }
+      });
+      kv.team_barrier();
+      if (wrk(2,0)[0] != 1) break;
+      alpha_den <<= 1;
+      const Real alpha = 1.0/alpha_den;
+      loop_ki(kv, nlev, nvec, [&] (int k, int i) {
+        for (int s = 0; s < packn; ++s) {
+          if (wrk(1,i)[s] != 1) continue;
+          wrk(0,i)[s] = alpha;
+          // Remove the last Newton increment; try reduced increment.
+          dphi(k,i)[s] -= (xfull(k+1,i)[s] - xfull(k,i)[s])*alpha;
+        }
+      });
+      kv.team_barrier();
+    }
   }
 };
 

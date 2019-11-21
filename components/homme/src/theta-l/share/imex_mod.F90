@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 module imex_mod
   use kinds,              only: iulog, real_kind
   use dimensions_mod,     only: nlev, nlevp, np
@@ -11,6 +15,9 @@ module imex_mod
   use element_state,      only: max_itercnt, max_deltaerr, max_reserr
   use control_mod,        only: theta_hydrostatic_mode, qsplit
   use perf_mod,           only: t_startf, t_stopf
+#ifdef XX_BFB_TESTING
+  use bfb_mod,            only: tridiag_diagdom_bfb_a1x1
+#endif
 
   implicit none
 
@@ -228,6 +235,9 @@ contains
           do i=1,np
              do j=1,np
                 x(1:nlev,i,j) = -Fn(i,j,1:nlev)  !+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
+#ifdef XX_BFB_TESTING
+                call tridiag_diagdom_bfb_a1x1(nlev, JacL(:,i,j), jacD(:,i,j), jacU(:,i,j), x(:,i,j))
+#else
 #ifdef NEWTONCOND
                 ! nlev condition number: 500e3 with phi, 850e3 with dphi
                 anorm=DLANGT('1-norm', nlev, JacL(:,i,j),jacD(:,i,j),jacU(:,i,j))
@@ -239,6 +249,7 @@ contains
 #endif
                 ! Tridiagonal solve
                 call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
+#endif
                 ! update approximate solution of phi
                 do k=1,nlev-1
                    dphi(i,j,k)=dphi(i,j,k) + x(k+1,i,j)-x(k,i,j)

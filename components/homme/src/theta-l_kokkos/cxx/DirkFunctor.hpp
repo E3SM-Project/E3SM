@@ -12,15 +12,21 @@
 
 namespace Homme {
 
-struct DirkFunctorImpl;
+class DirkFunctorImpl;
+class Elements;
+class HybridVCoord;
 
 class DirkFunctor {
 public:
-  DirkFunctor();
+  DirkFunctor(const int nelem);
   DirkFunctor(const DirkFunctor &) = delete;
   DirkFunctor &operator=(const DirkFunctor &) = delete;
 
-  void run();
+  // Top-level interface, equivalent to compute_stage_value_dirk_stripped.
+  //   Set alphadt = 0 if the alphadt-dependent term is not to be added to the RHS.
+  //   Set nm1 = -1 if the nm1-dependent term is not to be added to the RHS.
+  void run(int n0, int nm1, int np1, Real alphadt, Real dt2,
+           const Elements& elements, const HybridVCoord& hvcoord);
 
 private:
   std::unique_ptr<DirkFunctorImpl> m_dirk_impl;

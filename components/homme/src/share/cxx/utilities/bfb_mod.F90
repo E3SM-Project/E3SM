@@ -28,13 +28,7 @@ module bfb_mod
      subroutine tridiag_diagdom_bfb_a1x1(n, dl, d, du, x) bind(c)
        use iso_c_binding, only: c_int, c_double
        integer(c_int), value, intent(in) :: n
-       real(c_double), intent(inout) :: dl(n), d(n), du(n), x(n)
+       real(c_double), intent(inout) :: dl(n-1), d(n), du(n-2), x(n)
      end subroutine tridiag_diagdom_bfb_a1x1
-
-     subroutine tridiag_diagdom_bfb_a1xm(n, nrhs, dl, d, du, x) bind(c)
-       use iso_c_binding, only: c_int, c_double
-       integer(c_int), value, intent(in) :: n, nrhs
-       real(c_double), intent(inout) :: dl(n), d(n), du(n), x(nrhs,n)
-     end subroutine tridiag_diagdom_bfb_a1xm
   end interface
 end module bfb_mod
