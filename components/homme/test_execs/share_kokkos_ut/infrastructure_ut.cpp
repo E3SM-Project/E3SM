@@ -8,6 +8,7 @@
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/TestUtils.hpp"
 #include "utilities/MathUtils.hpp"
+#include "utilities/VectorUtils.hpp"
 
 using namespace Homme;
 
@@ -224,25 +225,69 @@ TEST_CASE("Parallel_scan",
   }
 }
 
+// Always call zero_ulp_n.
+template <typename Pack>
+KOKKOS_INLINE_FUNCTION
+Pack test_bfb_pow (const Pack& a, const Real& e) {
+  Pack b;
+  for (int s = 0; s < VECTOR_SIZE; ++s)
+    b[s] = std::pow(a[s], e);
+  zero_ulp_n(b, 20, a);
+  return b;
+}
+
 TEST_CASE("zeroulpn", "Test zero'ing n ulp.") {
-  Kokkos::View<Scalar> a("a");
-  const auto am = Kokkos::create_mirror_view(a);
+  using Kokkos::create_mirror_view;
+
+  Kokkos::View<Scalar> a("a"), b("b"), x("x"), z("z"), zp("zp"), zt("zt");
+  const auto am = create_mirror_view(a);
+  const auto bm = create_mirror_view(b);
+  const auto xm = create_mirror_view(x);
+  const auto zm = create_mirror_view(z);
+  const auto zpm = create_mirror_view(zp);
+  const auto ztm = create_mirror_view(zt);
   const double a0 = 1 - std::ldexp(1, -53);
   for (int i = 0; i < 10; ++i) {
     int scl = 1;
     scl <<= i;
     const auto a0s = scl*a0;
     am() = a0s;
+    const auto b0s = std::pow(4.2, 3.2);
+    bm() = b0s;
+    xm() = b0s;
     deep_copy(a, am);
+    deep_copy(b, bm);
+    deep_copy(x, xm);
     const int n = 17;
-    const auto f = KOKKOS_LAMBDA(const int i) { zero_ulp_n(a(), n); };
+    const auto f = KOKKOS_LAMBDA(const int i) {
+      zero_ulp_n(a(), n, 0*a());
+      // Show zero_ulp_n returns exactly a in this case.
+      zero_ulp_n(b(), n, b());
+      // Show z is sensitive to a perturbation far smaller than the zeroed
+      // amount.
+      const auto t0 = std::pow((i+1)*0.1442, 1.7);
+      z() = test_bfb_pow((i+1)*x(), t0);
+      zp() = test_bfb_pow((i+1)*x()*(1 + 1e-15), t0);
+      zt() = pow((i+1)*x(), t0);
+    };
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,1), f); Kokkos::fence();
     deep_copy(am, a);
+    deep_copy(bm, b);
+    deep_copy(zm, z);
+    deep_copy(zpm, zp);
+    deep_copy(ztm, zt);
     for (int s = 0; s < VECTOR_SIZE; ++s) {
       const auto zeroed_bits = 54 + std::log2(std::abs((am()[s]-a0s)/std::abs(a0s)));
       // This assertion is only roughly true in general, subject to many
       // caveats. But for an all-1 bit vector as a0s is, it's true.
       REQUIRE(std::abs(zeroed_bits - n) <= 0.1);
+      // If replace=a in zeroulpn(a,n,replace), then a should be recovered
+      // exactly.
+      REQUIRE(bm()[s] == b0s);
+      // A small perturbation to the input to bfb_pow resulted in a difference.
+      REQUIRE(zm()[s] != zpm()[s]);
+      // test_bfb_pow made a large change.
+      REQUIRE(std::abs(zm()[s] - ztm()[s]) >= 1e-12*std::abs(ztm()[s]));
     }
   }
 }
