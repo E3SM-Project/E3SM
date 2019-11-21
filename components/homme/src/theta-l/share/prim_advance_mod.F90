@@ -1041,7 +1041,7 @@ contains
         kptr=2*nlev; call edgeVpack_nlyr(edge_g,elem(ie)%desc,stens(:,:,:,:,ie),ssize,kptr,nlyr_tot)
         
      enddo
-     
+
      call t_startf('ahdp_bexchV2')
      call bndry_exchangeV(hybrid,edge_g)
      call t_stopf('ahdp_bexchV2')

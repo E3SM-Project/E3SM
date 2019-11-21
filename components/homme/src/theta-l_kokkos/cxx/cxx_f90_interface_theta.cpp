@@ -260,6 +260,11 @@ void init_elements_c (const int& num_elems)
   const bool consthv = (params.hypervis_scaling==0.0);
   e.init (num_elems, consthv, /* alloc_gradphis = */ true);
 
+  // Compute reference states, since we have all we need
+  e.m_state.m_ref_states.compute(params.theta_hydrostatic_mode,
+                                 c.get<HybridVCoord>(),
+                                 e.m_geometry.m_phis);
+
   // Init also the tracers structure
   Tracers& t = c.create<Tracers> ();
   t.init(num_elems,params.qsize);

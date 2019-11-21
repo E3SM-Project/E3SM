@@ -28,7 +28,6 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
  , m_geometry (geometry)
  , m_sphere_ops (Context::singleton().get<SphereOperators>())
  , m_hvcoord (Context::singleton().get<HybridVCoord>())
- , m_policy_ref_states (Homme::get_default_team_policy<ExecSpace,TagRefStates>(state.num_elems()))
  , m_policy_update_states (Homme::get_default_team_policy<ExecSpace,TagUpdateStates>(state.num_elems()))
  , m_policy_first_laplace (Homme::get_default_team_policy<ExecSpace,TagFirstLaplaceHV>(state.num_elems()))
  , m_policy_pre_exchange (Homme::get_default_team_policy<ExecSpace, TagHyperPreExchange>(state.num_elems()))
@@ -74,30 +73,22 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
 
   // Number of scalar/vector int/mid/bhm buffers needed, with size nteams/nelems
   constexpr int mid_vectors_nelems = 1;
-  int int_scalars_nelems = 1;
-  int mid_scalars_nelems = 5;
+  int int_scalars_nelems = 0;
+  int mid_scalars_nelems = 4;
 #ifdef XX_NONBFB_COMING
   // wtens on interfaces
   ++int_scalars_nelems;
   --mid_scalars_nelems;
 #endif
 
-#ifdef HV_USE_THETA_REF
-  ++mid_scalars_nelems;
-#endif
-
   constexpr int bhm_scalars_nteams = 4;
   constexpr int bhm_vectors_nteams = 1;
-  constexpr int int_scalars_nteams = 1;
-  constexpr int mid_scalars_nteams = 1;
 
   const int size = nelems*(mid_scalars_nelems*size_mid_scalar +
                            mid_vectors_nelems*size_mid_vector +
                            int_scalars_nelems*size_int_scalar) +
                    nteams*(bhm_scalars_nteams*size_bhm_scalar +
-                           bhm_vectors_nteams*size_bhm_vector +
-                           mid_scalars_nteams*size_mid_scalar +
-                           int_scalars_nteams*size_int_scalar);
+                           bhm_vectors_nteams*size_bhm_vector);
 
   return size;
 }
@@ -107,7 +98,6 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
   constexpr int size_mid_scalar =   NP*NP*NUM_LEV;
   constexpr int size_mid_vector = 2*NP*NP*NUM_LEV;
-  constexpr int size_int_scalar =   NP*NP*NUM_LEV_P;
   constexpr int size_bhm_scalar =   NP*NP*NUM_BIHARMONIC_LEV;
   constexpr int size_bhm_vector = 2*NP*NP*NUM_BIHARMONIC_LEV;
 
@@ -115,18 +105,6 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
   const int nelems = m_geometry.num_elems();
   const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
-
-  // Ref states (persistent views => nelems)
-  m_buffers.dp_ref = decltype(m_buffers.dp_ref)(mem,nelems);
-  mem += size_mid_scalar*nelems;
-
-#ifdef HV_USE_THETA_REF
-  m_buffers.theta_ref = decltype(m_buffers.theta_ref)(mem,nelems);
-  mem += size_mid_scalar*nelems;
-#endif
-
-  m_buffers.phi_i_ref = decltype(m_buffers.phi_i_ref)(mem,nelems);
-  mem += size_int_scalar*nelems;
 
   // Tens quantities (persistent views => nelems)
   m_buffers.dptens = decltype(m_buffers.dptens)(mem,nelems);
@@ -137,6 +115,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
   m_buffers.wtens = decltype(m_buffers.wtens)(mem,nelems);
 #ifdef XX_NONBFB_COMING
+  constexpr int size_int_scalar = NP*NP*NUM_LEV_P;
   mem += size_int_scalar*nelems;
 #else
   mem += size_mid_scalar*nelems;
@@ -163,16 +142,6 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
 
   m_buffers.lapl_v = decltype(m_buffers.lapl_v)(mem,nteams);
   mem += size_bhm_vector*nteams;
-
-  // Service views (non-persistent views => nteams)
-  m_buffers.p = decltype(m_buffers.p)(mem,nteams);
-  mem += size_mid_scalar*nteams;
-
-  m_buffers.p_i = decltype(m_buffers.p_i)(mem,nteams);
-  mem += size_int_scalar*nteams;
-
-  // ps_ref can alias anything (except dp_ref), since it's used to compute dp_ref, then tossed
-  m_buffers.ps_ref = decltype(m_buffers.ps_ref)(reinterpret_cast<Real*>(m_buffers.p.data()),nteams);
 
   const int used_mem = reinterpret_cast<Real*>(mem)-mem_in;
   if (used_mem < requested_buffer_size()) {
@@ -216,7 +185,26 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
   m_data.dt = dt/m_data.hypervis_subcycle;
   m_data.eta_ave_w = eta_ave_w;
 
-  Kokkos::parallel_for(m_policy_ref_states,*this);
+  // Convert vtheta_dp -> theta
+  auto state = m_state;
+  Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(state.num_elems()),
+                       KOKKOS_LAMBDA(const TeamMember& team) {
+    const int ie = team.league_rank();
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,NP*NP),
+                         [&](const int idx) {
+      const int igp = idx / NP;
+      const int jgp = idx % NP;
+
+      // theta->vtheta
+      auto vtheta = Homme::subview(state.m_vtheta_dp,ie,np1,igp,jgp);
+      auto dp = Homme::subview(state.m_dp3d,ie,np1,igp,jgp);
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(team,NUM_LEV),
+                           [&](const int ilev) {
+        vtheta(ilev) /= dp(ilev);
+      });
+    });
+  });
+  Kokkos::fence();
 
   for (int icycle = 0; icycle < m_data.hypervis_subcycle; ++icycle) {
     GPTLstart("hvf-bhwk");
@@ -239,7 +227,6 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
   }
 
   // Finally, convert theta back to vtheta, and adjust w at surface
-  auto state = m_state;
   auto geo = m_geometry;
   Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(state.num_elems()),
                        KOKKOS_LAMBDA(const TeamMember& team) {
@@ -263,9 +250,9 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
         using InfoI = ColInfo<NUM_INTERFACE_LEV>;
         using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
         constexpr int LAST_MID_PACK     = InfoM::LastPack;
-        constexpr int LAST_MID_PACK_END = InfoM::LastPack;
+        constexpr int LAST_MID_PACK_END = InfoM::LastPackEnd;
         constexpr int LAST_INT_PACK     = InfoI::LastPack;
-        constexpr int LAST_INT_PACK_END = InfoI::LastPack;
+        constexpr int LAST_INT_PACK_END = InfoI::LastPackEnd;
         constexpr Real g = PhysicalConstants::g;
 
         const auto& grad_x = geo.m_gradphis(ie,0,igp,jgp);

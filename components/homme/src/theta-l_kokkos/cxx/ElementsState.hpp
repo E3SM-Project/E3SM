@@ -13,7 +13,23 @@ namespace Homme {
 
 class HybridVCoord;
 
-struct StateStorage {
+// Reference states, needed in HV and vert remap
+struct RefStates {
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]> phi_i_ref;
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV  ]> theta_ref;
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV  ]> dp_ref;
+
+  void init (const int num_elems);
+  void compute (const bool hydrostatic,const HybridVCoord& hvcoord,
+                const ExecViewUnmanaged<Real *[NP][NP]>& phis);
+};
+
+/* Per element data - specific velocity, temperature, pressure, etc. */
+class ElementsState {
+public:
+
+  RefStates m_ref_states;
+
   ExecViewManaged<Scalar * [NUM_TIME_LEVELS][2][NP][NP][NUM_LEV  ]> m_v;          // Horizontal velocity
   ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV_P]> m_w_i;        // Vertical velocity at interfaces
   ExecViewManaged<Scalar * [NUM_TIME_LEVELS]   [NP][NP][NUM_LEV  ]> m_vtheta_dp;  // Virtual potential temperature (mass)
@@ -23,16 +39,6 @@ struct StateStorage {
   ExecViewManaged<Real   * [NUM_TIME_LEVELS]   [NP][NP]           > m_ps_v;       // Surface pressure
 
   void init_storage(const int num_elems);
-
-  void copy_state (const StateStorage& src);
-};
-
-/* Per element data - specific velocity, temperature, pressure, etc. */
-class ElementsState : public StateStorage {
-public:
-
-  // A copy of this state. We will use it to store the initial state
-  StateStorage m_state0;
 
   ElementsState() : m_num_elems(0) {}
 
@@ -44,9 +50,6 @@ public:
 
   void randomize(const int seed, const Real max_pressure, const Real ps0,
                  const ExecViewUnmanaged<const Real*[NP][NP]>& phis);
-
-  // Copies current state into m_state0
-  void save_state();
 
   KOKKOS_INLINE_FUNCTION
   int num_elems() const { return m_num_elems; }
