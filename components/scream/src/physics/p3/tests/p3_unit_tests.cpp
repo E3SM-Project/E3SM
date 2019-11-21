@@ -85,7 +85,7 @@ template <typename D>
 struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion
 {
 
-KOKKOS_FUNCTION static void  cloud_water_autoconversion_unit_bfb_tests(){
+static void  cloud_water_autoconversion_unit_bfb_tests(){
   using KTH = KokkosTypes<HostDevice>;
 
   static constexpr Int max_pack_size = 16;
