@@ -1,0 +1,122 @@
+#inputs file for Amr ice-sheet solver
+# template for twisty-stream convergence test runs
+main.maxTime = 10000000  # maximum time to run to
+main.maxStep = 0   # maximum number of steps to run
+amr.maxLevel = 2   # finest level allowed in simulation
+
+main.constitutiveRelation = L1L2
+
+main.poutBaseName = petscOut
+
+main.domain_size = 160000.0 160000.0 160000.0 
+
+geometry.problem_type = basic
+#geometry.basal_type = xInclineZb
+geometry.basal_type = constantZb
+geometry.thickness_type = constantThickness1km
+
+geometry.beta_type = twistyStreamx
+geometry.betaValue = 1000
+geometry.betaEps = 0.0001
+# slope should correspond to a .5 degree x-slope
+geometry.basalSlope = -0.087488664 0.0  # 0.5 degree slope
+#geometry.basalSlope = -0.001745331 0.0 # 0.1 degree slope
+
+surfaceFlux.type = zeroFlux
+basalFlux.type = zeroFlux
+#constFlux.flux_value = 0.0
+
+CalvingModel.type = NoCalvingModel
+
+amr.ref_ratio = 2 2 2 2 2 2 2
+amr.num_cells = 0016 0016 16   #number of cells in base grid
+#amr.num_cells = 0032 0032 16   #number of cells in base grid
+#amr.num_cells = 0064 0064 16   #number of cells in base grid
+#amr.num_cells = 0128 0128 16   #number of cells in base grid
+#amr.num_cells = 0256 0256 16   #number of cells in base grid
+#amr.num_cells = 0512 0512 16   #number of cells in base grid
+amr.is_periodic = 1 1 1    # 1 if domain is periodic 
+# (note that periodic BC's override physical BC types)
+# physical BC types:  0 = homogeneous Dirichlet
+#                     1 = homogeneous Neumann
+bc.lo_bc = 0 0 0  
+bc.hi_bc = 0 0 0  
+
+amr.cfl = 0.1  # "cfl" number
+amr.initial_cfl = 0.1  # "cfl" number
+amr.max_dt_grow_factor = 1.1 #max amount dt can grow from one timestep to another
+
+amr.eliminate_remote_ice = 1
+amr.cc_iceberg_detection = 1
+
+amr.plot_interval = 1  
+amr.write_dHDt = 1 
+amr.plot_prefix = stream.L1L2.0032.petsc.
+amr.write_solver_rhs = 0
+amr.write_divuh = 1
+amr.check_interval = 1
+amr.check_prefix = chk
+amr.verbosity = 5
+
+amr.regrid_interval = 10000   # number of timesteps between regridding
+amr.blockFactor = 4           # block factor used in grid generation
+amr.fill_ratio = 0.8          # how efficient are the grids
+amr.nestingRadius = 3         # proper nesting radius required
+amr.tags_grow = 1             # amount to buffer tags
+amr.max_box_size = 32         # largest box length allowed
+#amr.tagging_val = .0001       # min undivided grad(vel) resulting in tagging
+
+amr.tag_on_laplacian_velocity = 1
+amr.lap_vel_tagging_val = 1000
+#amr.lap_vel_tagging_val = 1
+
+#initial guess 
+amr.do_initial_velocity_guess = 1
+amr.do_initial_velocity_solve = 1
+amr.initial_velocity_guess_type = 1 # linear PDE
+amr.initial_velocity_guess_const_mu = 1.0e+6
+amr.initial_velocity_guess_solver_type = 1 # use JFNK solver's linear mode
+
+picardSolver.linearSolver = petsc
+picardSolver.linearsolver_tolerance = 1.0e-4
+picardSolver.max_picard_iterations = 0
+
+amr.max_solver_iterations = 50
+amr.velocity_solver_tolerance = 1.e-8
+
+#velocity solve type -- 0=Picard, 1=JFNK, 2=knownVel, 3=petsc, 4=FAS-MG
+amr.velocity_solver_type = 1
+
+#petsc.maxIter = 50
+#petsc.absNLTol = 1.e-30
+#petsc.relNLTol = 1.e-8
+#petsc.minPicardIterations = 5
+#petsc.plotResidual = true
+
+#JFNK parameters
+JFNKSolver.vtopSafety = 0.95
+JFNKSolver.minPicardIterations = 3
+JFNKSolver.maxIter = 20
+JFNKSolver.absTol = 1.0e-3
+JFNKSolver.relTol = 1.0e-8
+# 0 = relax, 1 = BiCGStab, 2 = GMRES, 3 = CG, 4 = petsc
+JFNKSolver.solverType = 4
+JFNKSolver.bottom_solver_type = 1  # = petsc
+JFNKSolver.RelaxRelTol = 2.0e-3
+JFNKSolver.RelaxHang = 0.8
+JFNKSolver.maxRelaxIter = 30
+JFNKSolver.normType = 2
+JFNKSolver.verbosity = 5
+JFNKSolver.vtopRelaxTol = 0.005
+JFNKSolver.vtopRelaxMinIter = 8
+JFNKSolver.numMGSmooth = 8
+JFNKSolver.numMGIter = 1
+JFNKSolver.h = 0.025
+JFNKSolver.switchRate = 2.0
+#JFNKSolver.writeResiduals = true
+#JFNKSolver.muMin = 1.0e+4
+#JFNKSolver.uMaxAbs = 1.0e+6
+#JFNKSolver.repartition_petsc = 1
+
+#input file for solver benchmark
+main.filename = stream.L1L2.0032.r2.l0.000000.2d.hdf5
