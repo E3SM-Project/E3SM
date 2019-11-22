@@ -39,29 +39,30 @@ module co2_data_flux
  
 !--------------------------------------------------------------------------------------------------
 type :: co2_data_flux_type          
-   !BALLI- clean this
-  real(r8), pointer, dimension(:,:)   :: co2flx
-                       ! Interpolated output in time only (pcols,begchunk:endchunk)
-  real(r8), pointer, dimension(:,:,:) :: co2bdy
-                       ! bracketing data     (pcols,begchunk:endchunk,2)
-  real(r8) :: cdayfm   ! Calendar day for prv. month read in
-  real(r8) :: cdayfp   ! Calendar day for nxt. month read in
-  integer :: nm_f      ! Array indices for prv. month data
-  integer :: np_f      ! Array indices for nxt. month data
-  integer :: np1_f     ! current forward time index of dataset
-  integer :: timesz    ! size of time dimension on dataset
-  integer, pointer :: date_f(:)      ! Date on dataset (YYYYMMDD)
-  integer, pointer :: sec_f(:)       ! seconds of date on dataset (0-86399) 
-  character(len=cl) :: filename   ! dataset name
-  integer :: ncid_f             ! netcdf id for dataset       
-  integer :: fluxid             ! netcdf id for dataset flux      
-  real(r8), pointer :: xvar(:,:,:) ! work space for dataset  
-  type(time_coordinate) :: time_coord
-  character(len=cl)     :: varname
-  logical               :: initialized
+   
+   !To store two time samples from a file to do time interpolation in the next step
+   !(pcols,begchunk:endchunk,2)
+   real(r8), pointer, dimension(:,:,:) :: co2bdy
+
+   !To store data after time interpolation from two time samples
+   !(pcols,begchunk:endchunk)
+   real(r8), pointer, dimension(:,:)   :: co2flx
+
+   !Forcing file name
+   character(len=cl) :: filename   
+
+   !Data structure to keep track of time
+   type(time_coordinate) :: time_coord
+
+   !specie name
+   character(len=cl)     :: spec_name
+   
+   !logical to control first data read
+   logical               :: initialized
+
 #ifdef CO2_BILIN_REGRID
-  type(trfld),  pointer, dimension(:)   :: fields
-  type(trfile)                          :: file
+   type(trfld),  pointer, dimension(:)   :: fields
+   type(trfile)                          :: file
 #endif
  
 end type co2_data_flux_type
@@ -74,7 +75,7 @@ character(len=8)  :: dim1name, dim2name
 contains
 !===============================================================================
 
-subroutine co2_data_flux_init (input_file, varname, xin)
+subroutine co2_data_flux_init (input_file, spec_name, xin)
 
 !-------------------------------------------------------------------------------
 ! Initialize co2_data_flux_type instance
@@ -88,7 +89,7 @@ subroutine co2_data_flux_init (input_file, varname, xin)
 
    ! Arguments
    character(len=*),          intent(in)    :: input_file
-   character(len=*),          intent(in)    :: varname
+   character(len=*),          intent(in)    :: spec_name
    type(co2_data_flux_type),  intent(inout) :: xin
 
    ! Local variables
@@ -168,7 +169,7 @@ subroutine co2_data_flux_init (input_file, varname, xin)
 
 
    !Populate xin data structure
-   xin%varname = varname
+   xin%spec_name = spec_name
    xin%initialized = .false.
 
    !BALLI: Not sure why dtime is defined this way...try a run without sending this optional arg to see if the results are different
@@ -228,17 +229,17 @@ subroutine co2_data_flux_advance (xin)
          xin%co2bdy(:,:,1) = xin%co2bdy(:,:,2)
       else
          !NOTE: infld call doesn't do any interpolation in space, it just reads in the data
-         call infld(trim(xin%varname), fh_co2_data_flux, dim1name, dim2name, &
+         call infld(trim(xin%spec_name), fh_co2_data_flux, dim1name, dim2name, &
               1, pcols, begchunk, endchunk, xin%co2bdy(:,:,1), found, &
               gridname='physgrid', timelevel=xin%time_coord%indxs(1))
 
          if (.not. found) then
-            call endrun('ERROR: ' // trim(xin%varname) // ' not found'//errmsg(__FILE__,__LINE__))
+            call endrun('ERROR: ' // trim(xin%spec_name) // ' not found'//errmsg(__FILE__,__LINE__))
          endif
       endif
 
       ! read time-level 2
-      call infld(trim(xin%varname), fh_co2_data_flux, dim1name, dim2name, &
+      call infld(trim(xin%spec_name), fh_co2_data_flux, dim1name, dim2name, &
            1, pcols, begchunk, endchunk, xin%co2bdy(:,:,2), found, &
            gridname='physgrid', timelevel=xin%time_coord%indxs(2))
 
@@ -254,7 +255,7 @@ subroutine co2_data_flux_advance (xin)
 
 
       if (.not. found) then
-         call endrun('ERROR: ' // trim(xin%varname) // ' not found'//errmsg(__FILE__,__LINE__))
+         call endrun('ERROR: ' // trim(xin%spec_name) // ' not found'//errmsg(__FILE__,__LINE__))
       endif
 
       call pio_closefile(fh_co2_data_flux)
