@@ -19,8 +19,6 @@ set(PERFOBJS
   homme/src/share/derivative_mod_base.F90
   homme/src/share/bndry_mod_base.F90
   homme/src/theta-l/prim_advance_mod.F90
-  homme/src/pese/prim_advance_mod.F90
-  homme/src/theta/prim_advance_mod.F90
   homme/src/preqx/share/prim_advance_mod.F90
   cam/src/physics/cam/uwshcu.F90
   cam/src/chemistry/aerosol/wetdep.F90)
@@ -49,8 +47,8 @@ endif()
 # These files take long time to compile with default optimization flags.
 # Reducing optimization gives <1min build-times and little impact on model run time.
 # begin
-list(APPEND NOOPT_FILES cam/src/utils/buffer.F90)
+list(APPEND NOOPT_FILES ${CMAKE_CURRENT_BINARY_DIR}/buffer.F90)
 
-foreach(ITEN IN LISTS NOINLINE)
+foreach(ITEM IN LISTS NOINLINE)
   e3sm_add_flags("${ITEM}" "-Q!")
 endforeach()
