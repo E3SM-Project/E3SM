@@ -170,6 +170,9 @@ contains
     character(kind=c_char), dimension(StrKIND+1) :: c_ref_time_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_filename_interval_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_iotype
+
+    character(len=16) :: c_myString
+
     character(len=8) :: c_inst_index ! instance number
     character(len=8) :: c_npes       ! number of pes
     type (MPAS_Time_type) :: start_time
@@ -241,8 +244,10 @@ contains
 
     call MPI_comm_rank(mpicom_g,iam,ierr)
 
+    c_myString = "Hi TJL..."
+
     write(glcLogUnit,'(a)') 'Calling bike_driver_init'
-    call bike_driver_init(mpicom_g)
+    call bike_driver_init(mpicom_g,c_myString)
     write(glcLogUnit,'(a)') 'Back from bike_driver_init'
 
 #if (defined _MEMTRACE)
