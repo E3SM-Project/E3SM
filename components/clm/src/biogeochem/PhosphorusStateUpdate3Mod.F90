@@ -12,7 +12,7 @@ module PhosphorusStateUpdate3Mod
   use clm_time_manager    , only : get_step_size
   use clm_varctl          , only : iulog, use_nitrif_denitrif
   use clm_varpar          , only : i_cwd, i_met_lit, i_cel_lit, i_lig_lit
-  use clm_varctl          , only : use_erosion, ero_ccycle
+  use clm_varctl          , only : use_erosion, ero_ccycle, use_fates
   use CNDecompCascadeConType , only : decomp_cascade_con
   use CNStateType         , only : cnstate_type
   use PhosphorusStateType , only : phosphorusstate_type

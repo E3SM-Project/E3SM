@@ -77,7 +77,7 @@ module clm_driver
   use CH4Mod                 , only : CH4
   use DUSTMod                , only : DustDryDep, DustEmission
   use VOCEmissionMod         , only : VOCEmission
-  use FatesBGCDynMod         , only : FatesBGCDyn
+
   !
   use filterMod              , only : setFilters
   !
@@ -1211,8 +1211,7 @@ contains
              
              call alm_fates%dynamics_driv( bounds_clump, top_as,          &
                   top_af, atm2lnd_vars, soilstate_vars, temperature_vars, &
-                  waterstate_vars, canopystate_vars, carbonflux_vars,     &
-                  frictionvel_vars)
+                  waterstate_vars, canopystate_vars, frictionvel_vars)
 
              
              ! TODO(wjs, 2016-04-01) I think this setFilters call should be replaced by a

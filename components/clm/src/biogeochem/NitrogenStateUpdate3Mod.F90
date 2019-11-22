@@ -18,7 +18,7 @@ module NitrogenStateUpdate3Mod
   use ColumnDataType      , only : col_ns, col_nf
   use VegetationDataType  , only : veg_ns, veg_nf
   ! bgc interface & pflotran:
-  use clm_varctl          , only : use_pflotran, pf_cmode
+  use clm_varctl          , only : use_pflotran, pf_cmode, use_fates
   !
   implicit none
   save

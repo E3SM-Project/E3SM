@@ -217,8 +217,10 @@ contains
          hrv_deadstemc_to_prod100c =>    col_cf%hrv_deadstemc_to_prod100c , & ! Input:  [real(r8) (:) ]  (gC/m2/s) dead stem C harvest mortality to 100-year product pool
          col_begcb                 =>    col_cs%begcb                    , & ! Output: [real(r8) (:) ]  carbon mass, beginning of time step (gC/m**2)
          col_endcb                 =>    col_cs%endcb                    , & ! Output: [real(r8) (:) ]  carbon mass, end of time step (gC/m**2)
-         col_errcb                 =>    col_cs%errcb                      & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
-         )
+         col_errcb                 =>    col_cs%errcb                    ,  & ! Output: [real(r8) (:) ]  carbon balance error for the timestep (gC/m**2)
+         hr                        =>    col_cf%hr                       , &  ! Input: heterotrophic respiration flux (gC/m2/s)
+         litfall                   =>    col_cf%litfall )                     ! Input: carbon flux from litterfall (particularly fates) ( gc/m2/s)
+
 
       ! set time steps
       dt = real( get_step_size(), r8 )
@@ -383,8 +385,9 @@ contains
          col_noutputs              =>    col_nf%noutputs                  , & ! Output: [real(r8) (:)]  column-level N outputs (gN/m2/s)
          col_begnb                 =>    col_ns%begnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, beginning of time step (gN/m**2)
          col_endnb                 =>    col_ns%endnb                    , & ! Output: [real(r8) (:)]  nitrogen mass, end of time step (gN/m**2)
-         col_errnb                 =>    col_ns%errnb                      & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
-         )
+         col_errnb                 =>    col_ns%errnb                    ,  & ! Output: [real(r8) (:)]  nitrogen balance error for the timestep (gN/m**2)
+         sminn_to_plant            =>    col_nf%sminn_to_plant           )  ! nitrogen flux to plants [gN/m2/s]
+
 
       ! set time steps
       dt = real( get_step_size(), r8 )

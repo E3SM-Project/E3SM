@@ -41,6 +41,7 @@ module SoilLittDecompMod
   use VegetationDataType     , only : veg_ps, veg_pf
   ! clm interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
+  use clm_varctl             , only : use_fates
   !
   implicit none
   save

@@ -33,7 +33,9 @@ module PhosphorusDynamicsMod
   use clm_varctl          , only : NFIX_PTASE_plant
   use shr_log_mod         , only : errMsg => shr_log_errMsg
   use clm_varctl          , only : iulog
+  use clm_varctl          , only : use_fates
   use abortutils          , only : endrun
+  use clm_instMod         , only : alm_fates
 
   !
   implicit none
@@ -627,7 +629,7 @@ contains
     real(r8) :: lamda_up       ! nitrogen cost of phosphorus uptake
     real(r8) :: sop_profile(1:ndecomp_pools)
     real(r8) :: biochem_pmin_to_ecosysp_vr_col_pot(bounds%begc:bounds%endc,1:nlevdecomp)
-    real(r8), allocatable :: biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp)
+    real(r8), allocatable :: biochem_pmin_to_plant_vr_patch(:,:)
     real(r8) :: sop_tot
     real(r8) :: fr_frac        ! fine-root fraction of mass in current layer
     integer  :: dt
@@ -658,7 +660,6 @@ contains
 
     ! set initial values for potential C and N fluxes
     biochem_pmin_ppools_vr_col(bounds%begc : bounds%endc, :, :) = 0._r8
-    biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp) = 0._r8
     
     if(use_fates) then
         ci = bounds%clump_index
@@ -668,12 +669,13 @@ contains
         allocate(biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp))
     end if
     biochem_pmin_to_plant_patch(:) = 0._r8
+    biochem_pmin_to_plant_vr_patch(:,:) = 0._r8
 
     do fc = 1,num_soilc
         c = filter_soilc(fc)
 
         if(use_fates) then
-            s  = alm_fates%fates(ci)%hsites(c)
+            s  = alm_fates%f2hmap(ci)%hsites(c)
         end if
 
         do j = 1,nlevdecomp
@@ -693,10 +695,10 @@ contains
                           sum(alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,:))
                     
                     pft = alm_fates%fates(ci)%bc_out(s)%ft_index(p)
-                    ptase_tmp = alm_fates%fates(ci)%bc_pconst%vmax_pl_ptase(pft) *  &
+                    ptase_tmp = alm_fates%fates(ci)%bc_pconst%eca_vmax_ptase(pft) *  &
                           fr_frac * max(lamda_up - lamda_ptase, 0.0_r8) / &
-                          ( alm_fates%fates(ci)%bc_pconst%km_pl_ptase(pft) + &
-                          max(lamda_up - alm_fates%fates(ci)%bc_pconst%lambda_pl_ptase(pft), 0.0_r8)) 
+                          ( alm_fates%fates(ci)%bc_pconst%eca_km_ptase(pft) + &
+                          max(lamda_up - alm_fates%fates(ci)%bc_pconst%eca_lambda_ptase(pft), 0.0_r8)) 
 
                     biochem_pmin_to_plant_vr_patch(p,j) = ptase_tmp * alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft)
                     biochem_pmin_vr(c,j) = biochem_pmin_vr(c,j) + ptase_tmp*(1._r8 - alm_fates%fates(ci)%bc_pconst%eca_alpha_ptase(pft))

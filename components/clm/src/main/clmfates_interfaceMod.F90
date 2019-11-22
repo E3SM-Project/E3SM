@@ -136,6 +136,7 @@ module CLMFatesInterfaceMod
    use EDCanopyStructureMod  , only : canopy_summarization, update_hlm_dynamics
    use FatesPlantRespPhotosynthMod, only : FatesPlantRespPhotosynthDrive
    use EDAccumulateFluxesMod , only : AccumulateFluxes_ED
+   use EDPhysiologyMod       , only : UnPackNutrientAquisitionBCs
    use EDPhysiologyMod       , only : FluxIntoLitterPools
    use PRTGenericMod, only : prt_cnp_flex_allom_hyp
    use FatesPlantHydraulicsMod, only : hydraulics_drive
@@ -742,7 +743,8 @@ contains
       do s = 1,this%fates(nc)%nsites
 
             call ed_ecosystem_dynamics(this%fates(nc)%sites(s),    &
-                  this%fates(nc)%bc_in(s))
+                  this%fates(nc)%bc_in(s), & 
+                  this%fates(nc)%bc_out(s))
             
             call ed_update_site(this%fates(nc)%sites(s), &
                   this%fates(nc)%bc_in(s), & 
@@ -1274,14 +1276,24 @@ contains
                call this%fates_restart%get_restart_vectors(nc, this%fates(nc)%nsites, &
                     this%fates(nc)%sites )
 
+               
+
                ! I think ed_update_site and update_hlmfates_dyn are doing some similar
                ! update type stuff, should consolidate (rgk 11-2016)
                do s = 1,this%fates(nc)%nsites
                   call ed_update_site( this%fates(nc)%sites(s), &
                         this%fates(nc)%bc_in(s), & 
                         this%fates(nc)%bc_out(s))
+
+                  ! This call sends internal fates variables into the
+                  ! output boundary condition structures. Note: this is called
+                  ! internally in fates dynamics as well.
+                  call FluxIntoLitterPools(this%fates(nc)%sites(s), &
+                       this%fates(nc)%bc_in(s), & 
+                       this%fates(nc)%bc_out(s))
                end do
 
+               ! this call transfers fates output bcs to the HLM
                call this%UpdateLitterFluxes(bounds_clump)
 
                ! ------------------------------------------------------------------------
@@ -1423,6 +1435,12 @@ contains
 
            do s = 1,this%fates(nc)%nsites
               call ed_update_site(this%fates(nc)%sites(s), &
+                   this%fates(nc)%bc_in(s), & 
+                   this%fates(nc)%bc_out(s))
+              ! This call sends internal fates variables into the
+              ! output boundary condition structures. Note: this is called
+              ! internally in fates dynamics as well.
+              call FluxIntoLitterPools(this%fates(nc)%sites(s), &
                    this%fates(nc)%bc_in(s), & 
                    this%fates(nc)%bc_out(s))
            end do
