@@ -656,7 +656,6 @@ contains
     use wv_saturation,      only : qsat
     use molec_diff,         only : compute_molec_diff, vd_lu_qdecomp
     use constituents,       only : qmincg, qmin, cnst_type
-    use co2_cycle,          only : co2_cycle_set_cnst_type
     use diffusion_solver,   only : compute_vdiff, any, operator(.not.)
     use physconst,          only : cpairv, rairv !Needed for calculation of upward H flux
     use time_manager,       only : get_nstep
@@ -816,17 +815,12 @@ contains
 
     logical  :: lq(pcnst)
 
-    character(len=3), dimension(pcnst) :: cnst_type_loc             ! local override option for constituents cnst_type
-
     ! ----------------------- !
     ! Main Computation Begins !
     ! ----------------------- !
 
     ! Assume 'wet' mixing ratios in diffusion code.
-    ! don't convert co2 tracers to wet mixing ratios
-    cnst_type_loc(:) = cnst_type(:)
-    call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
-    call set_dry_to_wet(state, cnst_type_loc)
+    call set_dry_to_wet(state)
 
     rztodt = 1._r8 / ztodt
     lchnk  = state%lchnk
@@ -1232,10 +1226,7 @@ contains
        endif
     end do
     ! convert wet mmr back to dry before conservation check
-    ! avoid converting co2 tracers again
-    cnst_type_loc(:) = cnst_type(:)
-    call co2_cycle_set_cnst_type(cnst_type_loc, 'wet')
-    call set_wet_to_dry(state, cnst_type_loc)
+    call set_wet_to_dry(state)
 
     slten(:ncol,:)         = ( sl(:ncol,:) - sl_prePBL(:ncol,:) ) * rztodt
     qtten(:ncol,:)         = ( qt(:ncol,:) - qt_prePBL(:ncol,:) ) * rztodt
