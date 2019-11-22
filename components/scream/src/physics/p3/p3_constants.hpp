@@ -4,7 +4,6 @@
 #include "share/scream_types.hpp"
 
 #include <vector>
-#include <math.h>
 
 namespace scream {
 namespace p3 {
