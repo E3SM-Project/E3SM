@@ -243,6 +243,7 @@ contains
 
     write(glcLogUnit,'(a)') 'Calling bike_driver_init'
     call bike_driver_init(mpicom_g)
+    write(glcLogUnit,'(a)') 'Back from bike_driver_init'
 
 #if (defined _MEMTRACE)
      if(iam == 0) then
