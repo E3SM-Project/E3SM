@@ -171,7 +171,7 @@ contains
     character(kind=c_char), dimension(StrKIND+1) :: c_filename_interval_temp
     character(kind=c_char), dimension(StrKIND+1) :: c_iotype
 
-    character(len=16) :: c_myString
+    character(kind=c_char,len=32) :: c_inputFilename
 
     character(len=8) :: c_inst_index ! instance number
     character(len=8) :: c_npes       ! number of pes
@@ -211,6 +211,7 @@ contains
        end subroutine xml_stream_get_attributes
     end interface
 
+    write(*,'(a)') 'Entering glc_init_mct'
 !-----------------------------------------------------------------------
 !
 !   setup mali data structures
@@ -244,12 +245,13 @@ contains
 
     call MPI_comm_rank(mpicom_g,iam,ierr)
 
-    c_myString = "Hi TJL..."
+    c_inputFilename = "input.bisiclesTest"
 
-    write(glcLogUnit,'(a)') 'Calling bike_driver_init'
-    call bike_driver_init(mpicom_g,c_myString)
-    write(glcLogUnit,'(a)') 'Back from bike_driver_init'
+    write(*,'(a)') 'Calling bike_driver_init'
+    call bike_driver_init(mpicom_g,c_inputFilename)
+    write(*,'(a)') 'Back from bike_driver_init'
 
+#if 0
 #if (defined _MEMTRACE)
      if(iam == 0) then
          lbnum=1
@@ -365,7 +367,6 @@ contains
        call mpas_dmpar_abort(domain % dminfo)
     end if
     ! ===========
-
 
     ! ----------
     ! Process namelist and streams files
@@ -773,6 +774,8 @@ contains
 
 !-----------------------------------------------------------------------
 !EOC
+#endif
+    write(*,'(a)') 'Exiting glc_init_mct'
 
   end subroutine glc_init_mct!}}}
 
@@ -822,6 +825,8 @@ contains
       character(len=StrKIND) :: timeStamp, streamName
       integer :: err, err_tmp, globalErr, streamDirection, iam
       logical :: solveVelo, streamActive
+
+      write(*,'(a)') 'Entering glc_run_mct'
 
       iam = domain % dminfo % my_proc_id
 
@@ -1027,6 +1032,7 @@ contains
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
+      write(*,'(a)') 'Exiting glc_run_mct'
 !-----------------------------------------------------------------------
   end subroutine glc_run_mct!}}}
 
@@ -1068,6 +1074,8 @@ contains
 
 !-----------------------------------------------------------------------
 
+    write(*,'(a)') 'Entering glc_final_mct'
+
     iam = domain % dminfo % my_proc_id
 
     ! Set MPAS Log module instance
@@ -1099,6 +1107,8 @@ contains
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
+
+    write(*,'(a)') 'Exiting glc_final_mct'
 
   end subroutine glc_final_mct!}}}
 
