@@ -251,7 +251,7 @@ contains
     call bike_driver_init(mpicom_g,c_inputFilename)
     write(*,'(a)') 'Back from bike_driver_init'
 
-#if 0
+#if 1
 #if (defined _MEMTRACE)
      if(iam == 0) then
          lbnum=1
