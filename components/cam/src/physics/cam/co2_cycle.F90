@@ -33,6 +33,7 @@ public co2_init                      ! initialize (history) variables
 public co2_time_interp_ocn           ! time interpolate co2 flux
 public co2_time_interp_fuel          ! time interpolate co2 flux
 public co2_cycle_set_ptend           ! set tendency from aircraft emissions
+public co2_cycle_set_cnst_type       ! set co2 tracers mixing type for local versions of cnst_type
 
 ! Public data
 public data_flux_ocn                 ! data read in for co2 flux from ocn
@@ -430,5 +431,35 @@ subroutine co2_cycle_set_ptend(state, pbuf, ptend)
    end do
 
 end subroutine co2_cycle_set_ptend
+
+!===============================================================================
+
+subroutine co2_cycle_set_cnst_type(cnst_type_loc, cnst_type_val)
+
+!----------------------------------------------------------------------- 
+! 
+! Purpose: 
+! Set a local copy of cnst_type to be 'wet' or 'dry'       
+!
+!-----------------------------------------------------------------------
+   use constituents, only: pcnst
+
+! Arguments
+   character(len=3), intent(inout) :: cnst_type_loc(pcnst) ! a local copy of cnst_type
+   character(len=3), intent(in)    :: cnst_type_val        ! set mmr type: 'wet' or 'dry'
+   integer                         :: m                    ! loop index
+!-----------------------------------------------------------------------
+
+   if (.not. co2_flag) return
+
+   ! set cnst_type_loc for each CO2 tracer
+   do m = 1, ncnst
+      cnst_type_loc(c_i(m)) = cnst_type_val
+   end do
+
+end subroutine co2_cycle_set_cnst_type
+!===============================================================================
+ 
+
 
 end module co2_cycle
