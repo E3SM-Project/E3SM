@@ -40,6 +40,7 @@ struct Constants
   static constexpr Scalar PIOV6       = Pi*SXTH;
   static constexpr Scalar CONS1       = PIOV6*RHOW;
   static constexpr Scalar QSMALL      = 1.e-14;
+  static constexpr Scalar BSMALL      = 1.e-15;
   static constexpr Scalar NSMALL      = 1.e-16;
   static constexpr Scalar P0          = 100000.0;        // reference pressure, Pa
   static constexpr Scalar RD          = 287.15;          // gas constant for dry air, J/kg/K
@@ -50,6 +51,8 @@ struct Constants
   static constexpr Scalar mu_r_const  = 1.0;
   static constexpr Scalar dt_left_tol = 1.e-4;
   static constexpr Scalar bcn         = 2.;
+  static constexpr Scalar rho_rimeMin = 50.;
+  static constexpr Scalar rho_rimeMax = 900.;
 };
 
 template <typename Scalar>
