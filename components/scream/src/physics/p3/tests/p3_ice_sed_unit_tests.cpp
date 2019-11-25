@@ -40,7 +40,7 @@ static void run_phys()
 
 static void run_bfb_calc_bulk_rhime()
 {
-  static constexpr Scalar qsmall = C::QSMALL;
+  constexpr Scalar qsmall = C::QSMALL;
   static constexpr Int max_pack_size = 16;
   REQUIRE(Spack::n <= max_pack_size);
 
