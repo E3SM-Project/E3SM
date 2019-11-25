@@ -1,26 +1,7 @@
-
-#ifdef SCREAM_CONFIG_IS_CMAKE
-#  define bfb_pow(base, exp) cxx_pow(base, exp)
-#  define bfb_cbrt(base) cxx_cbrt(base)
-#  define bfb_gamma(val) cxx_gamma(val)
-#  define bfb_log(val) cxx_log(val)
-#  define bfb_log10(val) cxx_log10(val)
-#  define bfb_exp(val) cxx_exp(val)
-#else
-#  define bfb_pow(base, exp) (base)**exp
-#  define bfb_cbrt(base) (base)**thrd
-#  define bfb_gamma(val) gamma(val)
-#  define bfb_log(val) log(val)
-#  define bfb_log10(val) log10(val)
-#  define bfb_exp(val) exp(val)
-#endif
-
-
 module micro_p3_utils
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
   use iso_c_binding, only: c_double, c_float, c_bool
-  use micro_p3_iso_f, only: cxx_pow
 #else
   use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
 #endif
