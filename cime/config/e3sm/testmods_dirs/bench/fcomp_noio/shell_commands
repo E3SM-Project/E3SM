@@ -1,4 +1,3 @@
 #!/bin/bash
-./xmlchange CAM_TARGET=theta-l
 ./xmlchange HIST_OPTION=none
 ./xmlchange SAVE_TIMING=TRUE
