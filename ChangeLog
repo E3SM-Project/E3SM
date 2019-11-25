@@ -1,6 +1,34 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 11-25-2019
+Tag: cime5.6.26
+Answer Changes: None
+Tests: CLM PFunit testing on izumi, scripts_regression_tests
+       SMS_Ld5.f09_g16.B1850G.cheyenne_intel.allactive-cism-test_coupling
+Dependencies:
+
+Brief Summary:
+    - Add path for PFUNIT on izumi and add path for batch commands to $PATH.
+    - Initialize albdif and albdir
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+0f0531e18 Merge pull request #3302 from ekluzek/izumipgi
+21476986b Merge pull request #3295 from jedwards4b/seq_flux_vars_init
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_compilers.xml
+M       config/cesm/machines/config_machines.xml
+M       src/drivers/mct/main/seq_flux_mct.F90
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 10-25-2019
 Tag: cime5.6.25
 Answer Changes: None
