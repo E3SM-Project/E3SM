@@ -25,25 +25,32 @@ Functions<S,D>
 
   Spack rho_rime(0);
 
-  Smask bi_rim_gt_small = bi_rim >= bsmall;
-  rho_rime.set(qi_gt_small && bi_rim_gt_small, qi_rim / bi_rim);
+  Smask bi_rim_gt_small = (bi_rim >= bsmall) && qi_gt_small;
+  if (bi_rim_gt_small.any()) {
+    rho_rime.set(qi_gt_small && bi_rim_gt_small, qi_rim / bi_rim);
+  }
 
   Smask rho_rime_lt_min = rho_rime < rho_rime_min;
   Smask rho_rime_gt_max = rho_rime > rho_rime_max;
 
   // impose limits on rho_rime;  adjust bi_rim if needed
-  rho_rime.set(qi_gt_small && bi_rim_gt_small && rho_rime_lt_min, rho_rime_min);
-  rho_rime.set(qi_gt_small && bi_rim_gt_small && rho_rime_gt_max, rho_rime_max);
-  bi_rim.set(qi_gt_small && bi_rim_gt_small && (rho_rime_gt_max || rho_rime_lt_min), qi_rim / rho_rime);
+  rho_rime.set(bi_rim_gt_small && rho_rime_lt_min, rho_rime_min);
+  rho_rime.set(bi_rim_gt_small && rho_rime_gt_max, rho_rime_max);
+  Smask adjust = bi_rim_gt_small && (rho_rime_gt_max || rho_rime_lt_min);
+  if (adjust.any()) {
+    bi_rim.set(adjust, qi_rim / rho_rime);
+  }
 
-  qi_rim.set(qi_gt_small && !bi_rim_gt_small, 0);
-  bi_rim.set(qi_gt_small && !bi_rim_gt_small, 0);
+  qi_rim.set  (qi_gt_small && !bi_rim_gt_small, 0);
+  bi_rim.set  (qi_gt_small && !bi_rim_gt_small, 0);
   rho_rime.set(qi_gt_small && !bi_rim_gt_small, 0);
 
   // set upper constraint qi_rim <= qi_tot
   Smask qi_rim_gt_qi = (qi_rim > qi_tot) && (rho_rime > 0) && qi_gt_small;
-  qi_rim.set(qi_rim_gt_qi, qi_tot);
-  bi_rim.set(qi_rim_gt_qi, qi_rim / rho_rime);
+  if (qi_rim_gt_qi.any()) {
+    qi_rim.set(qi_rim_gt_qi, qi_tot);
+    bi_rim.set(qi_rim_gt_qi, qi_rim / rho_rime);
+  }
 
   // impose consistency
   Smask qi_rim_lt_small = (qi_rim < qsmall) && qi_gt_small;
