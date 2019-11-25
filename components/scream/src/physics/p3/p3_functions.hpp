@@ -327,6 +327,7 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
+# include "p3_functions_ice_sed_impl.hpp"
 #endif
 
 #endif
