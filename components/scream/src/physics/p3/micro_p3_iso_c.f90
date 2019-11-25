@@ -322,4 +322,15 @@ contains
 
   end subroutine cloud_sedimentation_c
 
+  subroutine calc_bulk_rho_rime_c(qi_tot, qi_rim, bi_rim, rho_rime) bind(C)
+    use micro_p3, only: calc_bulkRhoRime
+
+    ! arguments:
+    real(kind=c_real),   value, intent(in)  :: qi_tot
+    real(kind=c_real),   intent(inout) :: qi_rim, bi_rim
+    real(kind=c_real),   intent(out) :: rho_rime
+
+    call calc_bulkRhoRime(qi_tot, qi_rim, bi_rim, rho_rime)
+  end subroutine calc_bulk_rho_rime_c
+
 end module micro_p3_iso_c

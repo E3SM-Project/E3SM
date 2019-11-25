@@ -302,6 +302,13 @@ struct Functions
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
 
+  //--------------------------------------------------------------------------------
+  //  Calculates and returns the bulk rime density from the prognostic ice variables
+  //  and adjusts qirim and birim appropriately.
+  //--------------------------------------------------------------------------------
+  KOKKOS_FUNCTION
+  static Spack calc_bulk_rho_rime(
+    const Smask& qi_gt_small, const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim);
 };
 
 template <typename ScalarT, typename DeviceT>

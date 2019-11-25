@@ -119,6 +119,15 @@ interface
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nc_tend
   end subroutine cloud_sedimentation_f
 
+  subroutine calc_bulk_rho_rime_f(qi_tot, qi_rim, bi_rim, rho_rime) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real),   value, intent(in)  :: qi_tot
+    real(kind=c_real),   intent(inout) :: qi_rim, bi_rim
+    real(kind=c_real),   intent(out) :: rho_rime
+  end subroutine calc_bulk_rho_rime_f
+
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use
