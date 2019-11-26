@@ -245,7 +245,7 @@ contains
 
     call MPI_comm_rank(mpicom_g,iam,ierr)
 
-    c_inputFilename = "input.bisiclesTest"
+    c_inputFilename = "inputs.bisiclesTest"
 
     write(*,'(a)') 'Calling bike_driver_init'
     call bike_driver_init(mpicom_g,c_inputFilename)
