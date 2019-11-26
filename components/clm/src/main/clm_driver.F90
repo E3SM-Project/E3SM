@@ -285,23 +285,20 @@ contains
        call alt_calc(filter(nc)%num_soilc, filter(nc)%soilc, &
             temperature_vars, canopystate_vars) 
 
-       ! fates and use_cn "should" be mutually exclusive
-       if (use_cn) then
-          !  Note (WJS, 6-12-13): Because of this routine's placement in the driver sequence
-          !  (it is called very early in each timestep, before weights are adjusted and
-          !  filters are updated), it may be necessary for this routine to compute values over
-          !  inactive as well as active points (since some inactive points may soon become
-          !  active) - so that's what is done now. Currently, it seems to be okay to do this,
-          !  because the variables computed here seem to only depend on quantities that are
-          !  valid over inactive as well as active points.
-
-          call decomp_vertprofiles(bounds_clump, &
-               filter_inactive_and_active(nc)%num_soilc, &
-               filter_inactive_and_active(nc)%soilc, &
-               filter_inactive_and_active(nc)%num_soilp, &
-               filter_inactive_and_active(nc)%soilp, &
-               soilstate_vars, canopystate_vars, cnstate_vars)
-       end if
+       !  Note (WJS, 6-12-13): Because of this routine's placement in the driver sequence
+       !  (it is called very early in each timestep, before weights are adjusted and
+       !  filters are updated), it may be necessary for this routine to compute values over
+       !  inactive as well as active points (since some inactive points may soon become
+       !  active) - so that's what is done now. Currently, it seems to be okay to do this,
+       !  because the variables computed here seem to only depend on quantities that are
+       !  valid over inactive as well as active points.
+       
+       call decomp_vertprofiles(bounds_clump, &
+            filter_inactive_and_active(nc)%num_soilc, &
+            filter_inactive_and_active(nc)%soilc, &
+            filter_inactive_and_active(nc)%num_soilp, &
+            filter_inactive_and_active(nc)%soilp, &
+            soilstate_vars, canopystate_vars, cnstate_vars)
 
        call t_stopf("decomp_vert")
     end do
@@ -329,18 +326,56 @@ contains
          call ep_betr%BeginMassBalanceCheck(bounds_clump)
        endif
        
-       
-       if (use_cn .or. use_fates) then
-          call t_startf('cnpinit')
+       if (use_cn) then
+          call t_startf('cnpvegzero')
+          call veg_cs%ZeroDwt(bounds_clump)
+          if (use_c13) then
+             call c13_grc_cf%ZeroDWT(bounds_clump)
+             call c13_col_cf%ZeroDWT(bounds_clump)
+          end if
+          if (use_c14) then
+             call c14_grc_cf%ZeroDWT(bounds_clump)
+             call c14_col_cf%ZeroDWT(bounds_clump)
+          end if
+          call veg_ns%ZeroDWT(bounds_clump)
+          call veg_ps%ZeroDWT(bounds_clump)
+          call t_stopf('cnpvegzero')
+       end if
 
+       if (use_cn .or. use_fates) then
+          call t_startf('cnpzero')
           call grc_cf%ZeroDWT(bounds_clump)
           call col_cf%ZeroDWT(bounds_clump)
-
           call grc_nf%ZeroDWT(bounds_clump)
           call col_nf%ZeroDWT(bounds_clump)
-
           call grc_pf%ZeroDWT(bounds_clump)
           call col_pf%ZeroDWT(bounds_clump)
+          call t_stopf('cnpzero')
+       end if
+
+       call t_startf('cnpvegsumm')
+       if(use_cn) then
+          call veg_cs%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
+          call veg_ns%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
+          call veg_ps%Summary(bounds_clump, &
+               filter(nc)%num_soilc, filter(nc)%soilc, &
+               filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
+
+       elseif(use_fates)then
+          ! In this scenario, we simply zero all of the 
+          ! column level variables that would had been upscaled
+          ! in the veg summary with p2c
+          call col_cs%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_ns%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_ps%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+       end if
+       call t_stopf('cnpvegsumm')
+       
+       if(use_cn .or. use_fates)then
           
           call col_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc)
@@ -358,32 +393,7 @@ contains
           call t_stopf('cnpinit')
        end if
 
-       if (use_cn) then
-          call t_startf('cnpveginit')
-
-          call veg_cs%ZeroDwt(bounds_clump)
-          if (use_c13) then
-             call c13_grc_cf%ZeroDWT(bounds_clump)
-             call c13_col_cf%ZeroDWT(bounds_clump)
-          end if
-          if (use_c14) then
-             call c14_grc_cf%ZeroDWT(bounds_clump)
-             call c14_col_cf%ZeroDWT(bounds_clump)
-          end if
-          call veg_ns%ZeroDWT(bounds_clump)
-          call veg_ps%ZeroDWT(bounds_clump)
-          call veg_cs%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-          call veg_ns%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
-          call veg_ps%Summary(bounds_clump, &
-               filter(nc)%num_soilc, filter(nc)%soilc, &
-               filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
-
-          call t_stopf('cnpveginit')
-       end if
+      
 
     end do
     !$OMP END PARALLEL DO
@@ -416,16 +426,16 @@ contains
           end if
        else
           call t_startf('cnbalchk_at_grid')
-          
-          if(use_cn) then
-             !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
-             do nc = 1,nclumps
-                call get_clump_bounds(nc, bounds_clump)
-
+         
+          !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
+          do nc = 1,nclumps
+             call get_clump_bounds(nc, bounds_clump)
+             
+             if(use_cn) then
                 call veg_cs%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
-
+                
                 call veg_ns%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_ns)
@@ -433,14 +443,15 @@ contains
                 call veg_ps%Summary(bounds_clump, &
                      filter(nc)%num_soilc, filter(nc)%soilc, &
                      filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
-                
-             end do
-             !$OMP END PARALLEL DO
-          end if
-          
-          !$OMP PARALLEL DO PRIVATE (nc,bounds_clump)
-          do nc = 1,nclumps
-             call get_clump_bounds(nc, bounds_clump)
+
+             elseif(use_fates)then
+                ! In this scenario, we simply zero all of the 
+                ! column level variables that would had been upscaled
+                ! in the veg summary with p2c
+                call col_cs%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                call col_ns%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+                call col_ps%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+             end if
              
              call col_cs%Summary(bounds_clump, &
                   filter(nc)%num_soilc, filter(nc)%soilc)
@@ -498,9 +509,10 @@ contains
             soilhydrology_vars, waterstate_vars)
        call t_stopf('begwbal')
 
+       
+       call t_startf('begcnpbal')
+       ! call veg summary before col summary, for p2c
        if (use_cn) then
-          call t_startf('begcnpbal')
-          ! call veg summary before col summary, for p2c
           call veg_cs%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_cs)
@@ -510,8 +522,16 @@ contains
           call veg_ps%Summary(bounds_clump, &
                filter(nc)%num_soilc, filter(nc)%soilc, &
                filter(nc)%num_soilp, filter(nc)%soilp, col_ps)
-          call t_stopf('begcnpbal')
+       elseif(use_fates)then
+          ! In this scenario, we simply zero all of the 
+          ! column level variables that would had been upscaled
+          ! in the veg summary with p2c
+          call col_cs%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_ns%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
+          call col_ps%ZeroUpscaled(bounds_clump,filter(nc)%num_soilc, filter(nc)%soilc)
        end if
+       call t_stopf('begcnpbal')
+
        
        if (use_cn  .or. use_fates) then
           call t_startf('begcnpbalwf')

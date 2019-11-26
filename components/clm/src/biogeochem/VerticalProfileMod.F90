@@ -236,8 +236,15 @@ contains
                  endif
              end do
 
+          else
 
-         end if  ! if .not.use_fates
+             ! If FATES is on, set a nominal fixation 
+             ! profile to the top layer (unused, just needs to pass check)
+             nfixation_prof(begc:endc,:) = 0._r8
+             nfixation_prof(begc:endc,1) = 1./dzsoi_decomp(1)
+             
+
+          end if  ! if .not.use_fates
 
          ! repeat for column-native profiles: Ndep and Nfix
          do fc = 1,num_soilc
@@ -266,9 +273,8 @@ contains
              froot_prof(begp:endp, :) = 1._r8
              croot_prof(begp:endp, :) = 1._r8
              stem_prof(begp:endp, :) = 1._r8
-             nfixation_prof(begc:endc, :) = 1._r8
          end if
-
+         nfixation_prof(begc:endc, :) = 1._r8
          ndep_prof(begc:endc, :) = 1._r8
          pdep_prof(begc:endc, :) = 1._r8
          
@@ -306,24 +312,26 @@ contains
          endif
       end do
 
-      do fp = 1,num_soilp
-         p = filter_soilp(fp)
-         froot_prof_sum = 0.
-         croot_prof_sum = 0.
-         leaf_prof_sum = 0.
-         stem_prof_sum = 0.
-         do j = 1, nlevdecomp
-            froot_prof_sum = froot_prof_sum + froot_prof(p,j) *  dzsoi_decomp(j)
-            croot_prof_sum = croot_prof_sum + croot_prof(p,j) *  dzsoi_decomp(j)
-            leaf_prof_sum = leaf_prof_sum + leaf_prof(p,j) *  dzsoi_decomp(j)
-            stem_prof_sum = stem_prof_sum + stem_prof(p,j) *  dzsoi_decomp(j)
+      if(.not.use_fates)then
+         do fp = 1,num_soilp
+            p = filter_soilp(fp)
+            froot_prof_sum = 0.
+            croot_prof_sum = 0.
+            leaf_prof_sum = 0.
+            stem_prof_sum = 0.
+            do j = 1, nlevdecomp
+               froot_prof_sum = froot_prof_sum + froot_prof(p,j) *  dzsoi_decomp(j)
+               croot_prof_sum = croot_prof_sum + croot_prof(p,j) *  dzsoi_decomp(j)
+               leaf_prof_sum = leaf_prof_sum + leaf_prof(p,j) *  dzsoi_decomp(j)
+               stem_prof_sum = stem_prof_sum + stem_prof(p,j) *  dzsoi_decomp(j)
+            end do
+            if ( ( abs(froot_prof_sum - 1._r8) > delta ) .or.  ( abs(croot_prof_sum - 1._r8) > delta ) .or. &
+                 ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) ) then
+               write(iulog, *) 'profile sums: ', froot_prof_sum, croot_prof_sum, leaf_prof_sum, stem_prof_sum
+               call endrun(msg=' ERROR: sum-1 > delta'//errMsg(__FILE__, __LINE__))
+            endif
          end do
-         if ( ( abs(froot_prof_sum - 1._r8) > delta ) .or.  ( abs(croot_prof_sum - 1._r8) > delta ) .or. &
-              ( abs(stem_prof_sum - 1._r8) > delta ) .or.  ( abs(leaf_prof_sum - 1._r8) > delta ) ) then
-            write(iulog, *) 'profile sums: ', froot_prof_sum, croot_prof_sum, leaf_prof_sum, stem_prof_sum
-            call endrun(msg=' ERROR: sum-1 > delta'//errMsg(__FILE__, __LINE__))
-         endif
-      end do
+      end if
 
     end associate 
 

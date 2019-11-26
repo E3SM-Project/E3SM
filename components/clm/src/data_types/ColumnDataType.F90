@@ -219,6 +219,7 @@ module ColumnDataType
     procedure, public :: Restart => col_cs_restart
     procedure, public :: Summary => col_cs_summary
     procedure, public :: Clean   => col_cs_clean
+    procedure, public :: ZeroUpscaled => col_cs_zero_upscaled_veg
   end type column_carbon_state
   
   !-----------------------------------------------------------------------
@@ -287,6 +288,7 @@ module ColumnDataType
     procedure, public :: SetValues  => col_ns_setvalues
     procedure, public :: Summary    => col_ns_summary
     procedure, public :: Clean      => col_ns_clean
+    procedure, public :: ZeroUpscaled => col_ns_zero_upscaled_veg
   end type column_nitrogen_state
   
   !-----------------------------------------------------------------------
@@ -359,6 +361,7 @@ module ColumnDataType
     procedure, public :: SetValues => col_ps_setvalues
     procedure, public :: Summary   => col_ps_summary
     procedure, public :: Clean     => col_ps_clean
+    procedure, public :: ZeroUpscaled => col_ps_zero_upscaled_veg
   end type column_phosphorus_state
 
   !-----------------------------------------------------------------------
@@ -1931,6 +1934,10 @@ contains
                ptr_col=this%totsomc)
 
        end if ! c12
+
+       
+
+
     
     else if (carbon_type == 'c12') then
        this%decomp_cpools(begc:endc,:) = spval
@@ -2281,7 +2288,7 @@ contains
        end if !  landunit istsoil or istcrop
 
     end do ! columns loop
-
+    
     ! now loop through special filters and explicitly set the variables that
     ! have to be in place for biogeophysics
     num_special_col = 0
@@ -2960,40 +2967,69 @@ contains
        c = filter_soilc(fc)
 
        ! total product carbon
-       this%totprodc(c) = &
+       this%totprodc(c) =      &
             this%prod10c(c)  + &
             this%prod100c(c) + &
             this%prod1c(c) 
 
        ! total ecosystem carbon, including veg but excluding cpool (TOTECOSYSC)
-       this%totecosysc(c) = &
+       this%totecosysc(c) =    &
             this%cwdc(c)     + &
             this%totlitc(c)  + &
             this%totsomc(c)  + &
-            this%totprodc(c) + &
+            this%totprodc(c) + & 
             this%totvegc(c)
 
        ! total column carbon, including veg and cpool (TOTCOLC)
        ! adding col_ctrunc, seedc
-       ! FATES: totpftc, prod1c,ctrunc and cropseedc_deficit should
-       ! all be zero.
-       this%totcolc(c) = &
-            this%totpftc(c)  + &
+
+       this%totcolc(c) =       &
             this%cwdc(c)     + &
             this%totlitc(c)  + &
             this%totsomc(c)  + &
             this%prod1c(c)   + &
-            this%ctrunc(c)   + &
+            this%ctrunc(c)   + & 
+            this%totpftc(c)  + & 
             this%cropseedc_deficit(c)
-
             
-       this%totabgc(c) = &
-            this%totpftc(c)  + &
+       this%totabgc(c) =       &
             this%totprodc(c) + &
             this%seedc(c)    + &
-            this%ctrunc(c)    
+            this%ctrunc(c)   + & 
+            this%totpftc(c)
+
+
     end do
   end subroutine col_cs_summary 
+
+  ! -----------------------------------------------------------------------
+
+  subroutine col_cs_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation states in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_state) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totpftc(c) = 0._r8
+       this%totvegc(c) = 0._r8
+       this%totvegc_abg(c) = 0._r8
+       this%cropseedc_deficit(c) = 0._r8
+    end do
+
+    return
+  end subroutine col_cs_zero_upscaled_veg
 
   !------------------------------------------------------------------------
   subroutine col_cs_clean(this)
@@ -3917,6 +3953,8 @@ contains
             this%sminn(c) + &
             this%totprodn(c) + &
             this%totvegn(c)
+       
+
     
        ! total column nitrogen, including pft (TOTCOLN)
        this%totcoln(c) = &
@@ -3945,6 +3983,35 @@ contains
     end do
     
   end subroutine col_ns_summary
+
+  ! -------------------------------------------------------------------------------------
+
+  subroutine col_ns_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation states in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_state) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%plant_n_buffer(c) = 0._r8
+       this%totvegn(c) = 0._r8
+       this%totpftn(c) = 0._r8
+       this%cropseedn_deficit(c) = 0._r8
+    end do
+    
+    return
+  end subroutine col_ns_zero_upscaled_veg
 
   !------------------------------------------------------------------------
   subroutine col_ns_clean(this)
@@ -4931,6 +4998,33 @@ contains
 
   end subroutine col_ps_summary
   
+  subroutine col_ps_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation states in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_phosphorus_state) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%totpftp(c) = 0._r8
+       this%totvegp(c) = 0._r8
+       this%cropseedp_deficit(c) = 0._r8
+    end do
+
+    return
+  end subroutine col_ps_zero_upscaled_veg
+
+
   !------------------------------------------------------------------------
   subroutine col_ps_clean(this)
     !
