@@ -1131,7 +1131,7 @@ class TestCreateTestCommon(unittest.TestCase):
         if driver == 'nuopc':
             extra_args.append(" ^SMS.T42_T42.S")
 
-        test_id = CIME.utils.get_timestamp() if test_id is None else test_id
+        test_id = "{}-{}".format(self._baseline_name, CIME.utils.get_timestamp()) if test_id is None else test_id
         extra_args.append("-t {}".format(test_id))
         extra_args.append("--baseline-root {}".format(self._baseline_area))
         if NO_BATCH:
@@ -1140,7 +1140,7 @@ class TestCreateTestCommon(unittest.TestCase):
             extra_args.append("--compiler={}".format(TEST_COMPILER))
         if TEST_MPILIB and ([extra_arg for extra_arg in extra_args if "--mpilib" in extra_arg] == []):
             extra_args.append("--mpilib={}".format(TEST_MPILIB))
-        extra_args.append("--test-root={0} --output-root={0}".format(TEST_ROOT))
+        extra_args.append("--test-root={0} --output-root={0}".format(self._testroot))
 
         full_run = (set(extra_args) & set(["-n", "--namelist-only", "--no-setup", "--no-build"])) == set()
 
@@ -1181,7 +1181,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
                                                        "^TESTRUNFAILEXC_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         self.assertEqual(len(tests), 3)
-        ct = TestScheduler(tests, test_root=TEST_ROOT, output_root=TEST_ROOT,
+        ct = TestScheduler(tests, test_root=self._testroot, output_root=self._testroot,
                            compiler=self._compiler, mpilib=TEST_MPILIB)
 
         build_fail_test = [item for item in tests if "TESTBUILDFAIL" in item][0]
@@ -1252,8 +1252,8 @@ class O_TestTestScheduler(TestCreateTestCommon):
     ###########################################################################
         tests = get_tests.get_full_test_names(["cime_test_only"], self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,
-                           output_root=TEST_ROOT,compiler=self._compiler, mpilib=TEST_MPILIB)
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=self._testroot,
+                           output_root=self._testroot,compiler=self._compiler, mpilib=TEST_MPILIB)
 
         build_fail_test     = [item for item in tests if "TESTBUILDFAIL_" in item][0]
         build_fail_exc_test = [item for item in tests if "TESTBUILDFAILEXC" in item][0]
@@ -1323,8 +1323,8 @@ class O_TestTestScheduler(TestCreateTestCommon):
         tests = get_tests.get_full_test_names(["TESTBUILDFAIL_P1.f19_g16_rx1.A", "TESTRUNFAIL_P1.f19_g16_rx1.A", "TESTRUNPASS_P1.f19_g16_rx1.A"],
                                                       self._machine, self._compiler)
         test_id="%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
-        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=TEST_ROOT,
-                           output_root=TEST_ROOT,compiler=self._compiler, mpilib=TEST_MPILIB)
+        ct = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, test_root=self._testroot,
+                           output_root=self._testroot,compiler=self._compiler, mpilib=TEST_MPILIB)
 
         build_fail_test     = [item for item in tests if "TESTBUILDFAIL" in item][0]
         run_fail_test       = [item for item in tests if "TESTRUNFAIL" in item][0]
@@ -1363,7 +1363,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         os.environ["TESTBUILDFAIL_PASS"] = "True"
         os.environ["TESTRUNFAIL_PASS"] = "True"
         ct2 = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, use_existing=True,
-                            test_root=TEST_ROOT,output_root=TEST_ROOT,compiler=self._compiler,
+                            test_root=self._testroot,output_root=self._testroot,compiler=self._compiler,
                             mpilib=TEST_MPILIB)
 
         log_lvl = logging.getLogger().getEffectiveLevel()
@@ -1388,7 +1388,7 @@ class O_TestTestScheduler(TestCreateTestCommon):
         # test that passed tests are not re-run
 
         ct2 = TestScheduler(tests, test_id=test_id, no_batch=NO_BATCH, use_existing=True,
-                            test_root=TEST_ROOT,output_root=TEST_ROOT,compiler=self._compiler,
+                            test_root=self._testroot,output_root=self._testroot,compiler=self._compiler,
                             mpilib=TEST_MPILIB)
 
         log_lvl = logging.getLogger().getEffectiveLevel()
@@ -1659,7 +1659,7 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
 
         # compare_test_results should detect the fail
         cpr_cmd = "{}/compare_test_results --test-root {} -t {} 2>&1" \
-                  .format(TOOLS_DIR, TEST_ROOT, test_id)
+                  .format(TOOLS_DIR, self._testroot, test_id)
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
@@ -1670,7 +1670,7 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
 
         # Bless
         run_cmd_no_fail("{}/bless_test_results --test-root {} --hist-only --force -t {}"
-                        .format(TOOLS_DIR, TEST_ROOT, test_id))
+                        .format(TOOLS_DIR, self._testroot, test_id))
 
         # Hist compare should now pass again
         self._create_test(compargs)
@@ -1702,7 +1702,7 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
 
         # compare_test_results should pass
         cpr_cmd = "{}/compare_test_results --test-root {} -n -t {} 2>&1" \
-            .format(TOOLS_DIR, TEST_ROOT, test_id)
+            .format(TOOLS_DIR, self._testroot, test_id)
         output = run_cmd_assert_result(self, cpr_cmd)
 
         # use regex
@@ -1745,7 +1745,7 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
 
         # compare_test_results should fail
         cpr_cmd = "{}/compare_test_results --test-root {} -n -t {} 2>&1" \
-            .format(TOOLS_DIR, TEST_ROOT, test_id)
+            .format(TOOLS_DIR, self._testroot, test_id)
         output = run_cmd_assert_result(self, cpr_cmd, expected_stat=CIME.utils.TESTS_FAILED_ERR_CODE)
 
         # use regex
@@ -1755,8 +1755,9 @@ class Q_TestBlessTestResults(TestCreateTestCommon):
                             msg="Cmd '%s' failed to display passed test in output:\n%s" % (cpr_cmd, output))
 
         # Bless
-        run_cmd_no_fail("{}/bless_test_results --test-root {} -n --force -t {}"
-                        .format(TOOLS_DIR, TEST_ROOT, test_id))
+        new_test_id = "%s-%s" % (self._baseline_name, CIME.utils.get_timestamp())
+        run_cmd_no_fail("{}/bless_test_results --test-root {} -n --force -t {} --new-test-root={} --new-test-id={}"
+                        .format(TOOLS_DIR, self._testroot, test_id, self._testroot, new_test_id))
 
         # Basic namelist compare should now pass again
         self._create_test(compargs)
@@ -1802,7 +1803,7 @@ class Z_FullSystemTest(TestCreateTestCommon):
         # Test that re-running works
         tests = get_tests.get_test_suite("cime_developer", machine=self._machine, compiler=self._compiler)
         for test in tests:
-            casedir = os.path.join(TEST_ROOT, "%s.%s" % (test, self._baseline_name))
+            casedir = os.path.join(self._testroot, "%s.%s" % (test, self._baseline_name))
 
             # Subtle issue: The run phases of these tests will be in the PASS state until
             # the submitted case.test script is run, which could take a while if the system is
@@ -1862,7 +1863,7 @@ class K_TestCimeCase(TestCreateTestCommon):
     def _batch_test_fixture(self, testcase_name):
         if not MACHINE.has_batch_system() or NO_BATCH:
             self.skipTest("Skipping testing user prerequisites without batch systems")
-        testdir = os.path.join(TEST_ROOT, testcase_name)
+        testdir = os.path.join(self._testroot, testcase_name)
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
         args = "--case {name} --script-root {testdir} --compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {testdir}".format(name=testcase_name, testdir=testdir)
