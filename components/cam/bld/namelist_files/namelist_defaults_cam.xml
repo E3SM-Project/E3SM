@@ -24,6 +24,7 @@
 <dtime dyn="se"    hgrid="ne240np4">600 </dtime>
 <dtime dyn="se"    hgrid="ne0np4_arm_x8v3_lowcon"  >600</dtime>
 <dtime dyn="se"    hgrid="ne0np4_conus_x4v1_lowcon"  >900</dtime>
+<dtime dyn="se"    hgrid="ne0np4_northamericax4v1"  >900</dtime>
 <dtime dyn="se"    hgrid="ne0np4_svalbard_x8v1_lowcon"  >600</dtime>
 <dtime dyn="se"    hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >600</dtime>
 <dtime dyn="se"    hgrid="ne0np4_enax4v1">900</dtime>
@@ -184,6 +185,9 @@
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_conusx4v1np4_L30_c141106.nc</ncdata>
 <ncdata dyn="se" hgrid="ne0np4_conus_x4v1_lowcon"  nlev="30" ocn="aquaplanet"    >atm/cam/inic/homme/cami_0003-01-01_conusx4v1np4_L30_ape_c000000.nc</ncdata>
 
+<!-- Worked, and used to generate the inic below for northamerica:  ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >/global/cscratch1/sd/wlin/northamericax4v1/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_northamericax4v1_topoadj_L72.nc</ncdata-->
+<ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72"    >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>
+
 <!--Initial file from interpic utility:  ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c100618.nc</ncdata-->
 <!-- New file from 1 month spin-up, the renamed $CASE.cam.i* file. -->
 <ncdata dyn="se" hgrid="ne0np4_svalbard_x8v1_lowcon"  nlev="30"                     >atm/cam/inic/homme/cami-mam3_0000-01-01_svalbardx8v1np4_L30_c141107.nc</ncdata>
@@ -231,6 +235,7 @@
 
 <bnd_topo hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/USGS-gtopo30_arm_x8v3_lowcon_tensor12xconsistentSGH.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/topo/USGS_conusx4v1-tensor12x_consistentSGH_c150924.nc</bnd_topo>
+<bnd_topo hgrid="ne0np4_northamericax4v1"  >atm/cam/topo/USGS_northamericax4v1_12xdel2_consistentSGH_191023.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/topo/USGS_svalbardx8v1-tensor12x_c150612.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/topo/USGS_sooberingoax4x8v1-tensor12x_c150612.nc</bnd_topo>
 <bnd_topo hgrid="ne0np4_enax4v1">atm/cam/topo/USGS_enax4v1_tensorx12_consistentSGH_170522.nc</bnd_topo>
@@ -815,6 +820,7 @@
 <drydep_srf_file hgrid="ne1024np4">atm/cam/chem/trop_mam/atmsrf_ne1024np4_20190621.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_arm_x8v3_lowcon">atm/cam/chem/trop_mam/atmsrf_armx8v3.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_conus_x4v1_lowcon">atm/cam/chem/trop_mam/atmsrf_conusx4v1.nc</drydep_srf_file>
+<drydep_srf_file hgrid="ne0np4_northamericax4v1">atm/cam/chem/trop_mam/atmsrf_northamericax4v1np4_20191023.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_svalbard_x8v1_lowcon">atm/cam/chem/trop_mam/atmsrf_svalbardx8v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon">atm/cam/chem/trop_mam/atmsrf_sooberingoax4x8v1.nc</drydep_srf_file>
 <drydep_srf_file hgrid="ne0np4_twpx4v1">atm/cam/chem/trop_mam/atmsrf_twpx4v1_170629.nc</drydep_srf_file>
@@ -1406,6 +1412,7 @@
 <mesh_file>/dev/null</mesh_file>
 <mesh_file hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/arm_x8v3_lowcon.g</mesh_file>
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
+<mesh_file hgrid="ne0np4_northamericax4v1"  >atm/cam/inic/homme/northamericax4v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_svalbard_x8v1_lowcon"  >atm/cam/inic/homme/svalbardx8v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  >atm/cam/inic/homme/sooberingoax4x8v1.g</mesh_file>
 <mesh_file hgrid="ne0np4_enax4v1">atm/cam/inic/homme/enax4v1.g</mesh_file>
@@ -1426,16 +1433,12 @@
 <nu hgrid="ne1024np4"> 2.5e10 </nu>
 <nu hgrid="ne0np4_arm_x8v3_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu>
+<nu hgrid="ne0np4_northamericax4v1"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_enax4v1">8.0e-8</nu>
-
-
-<nu hgrid="ne0np4_arm_x8v3_lowcon"  > 8.0e-8</nu>
-<nu hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu>
-<nu hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu>
-<nu hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu>
 <nu hgrid="ne0np4_twpx4v1" >8.0e-8</nu>
+
 
 <!-- This will set nu_q to nu internally. -->
 <nu_q> -1.0 </nu_q>
@@ -1452,6 +1455,7 @@
 <nu_p hgrid="ne1024np4"> 2.5e10 </nu_p>
 <nu_p hgrid="ne0np4_arm_x8v3_lowcon"  > 8.0e-8</nu_p>
 <nu_p hgrid="ne0np4_conus_x4v1_lowcon"  > 8.0e-8</nu_p>
+<nu_p hgrid="ne0np4_northamericax4v1"  > 8.0e-8</nu_p>
 <nu_p hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8.0e-8</nu_p>
 <nu_p hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8.0e-8</nu_p>
 <nu_p hgrid="ne0np4_enax4v1">8.0e-8</nu_p>
@@ -1470,6 +1474,7 @@
 <nu_div hgrid="ne1024np4"> 6.25e10 </nu_div>
 <nu_div hgrid="ne0np4_arm_x8v3_lowcon"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_conus_x4v1_lowcon"  > 20.0e-8</nu_div>
+<nu_div hgrid="ne0np4_northamericax4v1"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_svalbard_x8v1_lowcon"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_enax4v1">20.0e-8</nu_div>
@@ -1490,6 +1495,7 @@
 <hypervis_subcycle dyn="se" waccm_phys="1">  1 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_arm_x8v3_lowcon"  > 8 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_conus_x4v1_lowcon"  > 7 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne0np4_northamericax4v1"  > 7 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_svalbard_x8v1_lowcon"  > 8 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 8 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_enax4v1">7</hypervis_subcycle>
@@ -1524,6 +1530,7 @@
 <se_nsplit hgrid="ne1024np4"> 10 </se_nsplit>
 <se_nsplit hgrid="ne0np4_arm_x8v3_lowcon"  > 5 </se_nsplit>
 <se_nsplit hgrid="ne0np4_conus_x4v1_lowcon"  > 4 </se_nsplit>
+<se_nsplit hgrid="ne0np4_northamericax4v1"  > 4 </se_nsplit>
 <se_nsplit hgrid="ne0np4_svalbard_x8v1_lowcon"  > 5 </se_nsplit>
 <se_nsplit hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 5 </se_nsplit>
 <se_nsplit hgrid="ne0np4_enax4v1">4</se_nsplit>
@@ -1539,6 +1546,7 @@
 <hypervis_scaling> 0 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_arm_x8v3_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_conus_x4v1_lowcon"  > 3.2 </hypervis_scaling>
+<hypervis_scaling  hgrid="ne0np4_northamericax4v1"  > 3.2 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_svalbard_x8v1_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 3.2 </hypervis_scaling>
 <hypervis_scaling  hgrid="ne0np4_enax4v1">3.2</hypervis_scaling>
@@ -1546,6 +1554,7 @@
 
 <se_ne hgrid="ne0np4_arm_x8v3_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_conus_x4v1_lowcon"  > 0 </se_ne>
+<se_ne hgrid="ne0np4_northamericax4v1"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_svalbard_x8v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 0 </se_ne>
 <se_ne hgrid="ne0np4_enax4v1">0</se_ne>
