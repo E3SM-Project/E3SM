@@ -797,12 +797,15 @@ contains
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: meshPool
       real (kind=RKIND), dimension(:), pointer :: betaSolve, beta
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: basalTemperature, basalPmpTemperature
       integer, dimension(:), pointer :: cellMask
       logical, pointer :: config_use_glp
       logical, pointer :: config_beta_use_effective_pressure
+      logical, pointer :: config_beta_thawed_only
       logical, pointer :: hydroActive
       real (kind=RKIND) :: betaAccum
       integer :: nBetaValues
@@ -816,9 +819,11 @@ contains
 
       call mpas_pool_get_config(liConfigs, 'config_use_glp', config_use_glp)
       call mpas_pool_get_config(liConfigs, 'config_beta_use_effective_pressure', config_beta_use_effective_pressure)
+      call mpas_pool_get_config(liConfigs, 'config_beta_thawed_only', config_beta_thawed_only)
 
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+      call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
       call mpas_pool_get_array(velocityPool, 'betaSolve', betaSolve)
@@ -868,6 +873,14 @@ contains
 
       end if ! if config_beta_use_effective_pressure
 
+      if (config_beta_thawed_only) then
+         call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
+         call mpas_pool_get_array(thermalPool, 'basalPmpTemperature', basalPmpTemperature)
+         where (basalPmpTemperature - basalTemperature > 0.01_RKIND)
+            ! Use a small difference to account for roundoff.  0.01 is value used in thermal module.
+            betaSolve = 1.0e6_RKIND  ! no-slip value for frozen bed locations
+         end where
+      endif
 
       if (.not. config_use_glp) then
          where (li_mask_is_floating_ice(cellMask))

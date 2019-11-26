@@ -92,6 +92,10 @@
 		            description="If true, then multiply beta by effective pressure before passing to Albany.  This allows, e.g., a Weertman basal friction law with an effective pressure term.  Note that basal friction still needs to be selected in Albany xml file."
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_beta_thawed_only" type="logical" default_value=".false." units="unitless"
+		            description="If true, then beta is zeroed wherever the basal temperature is below the pressure-melting temperature"
+		            possible_values=".true. or .false."
+		/>
         <nml_option name="config_unrealistic_velocity" type="real" default_value="0.01592356685" units="m s^{-1}"
 		            description="Ice is removed at any locations with surface speed faster than this value and sent to the calving flux. The presence of icebergs can lead to unrealistically large velocities.  A simple method to remove icebergs is to remove ice where the velocity is faster than an arbitrarily large value."
 		            possible_values="Any positive, real number."
