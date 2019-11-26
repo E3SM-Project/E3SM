@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+
+<namelist_defaults>
+
+<use_case_desc                 >Simulate ne120 transient land-use, and aerosol deposition changes from 1850 to 2014</use_case_desc>
+<use_case_desc bgc="cn"        >Simulate ne120 transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2014</use_case_desc>
+<use_case_desc bgc="cndv"      >Simulate ne120 transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2014</use_case_desc>
+<use_case_desc use_cn=".true." >Simulate ne120 transient land-use, aerosol deposition, and Nitrogen deposition changes from 1850 to 2014</use_case_desc>
+
+<!-- sim_year is not used 
+<sim_year>1955</sim_year>
+<sim_year_range>1850-2000</sim_year_range>
+-->
+
+
+<clm_start_type>arb_ic</clm_start_type>
+
+<clm_demand >flanduse_timeseries</clm_demand>
+
+<!-- ndep, pdep, and popdens are not used for watercycle configuration
+<stream_year_first_ndep phys="clm4_5" use_cn=".true."   >1850</stream_year_first_ndep>
+<stream_year_last_ndep  phys="clm4_5" use_cn=".true."   >2005</stream_year_last_ndep>
+<model_year_align_ndep  phys="clm4_5" use_cn=".true."   >1850</model_year_align_ndep>
+
+<stream_year_first_pdep phys="clm4_5" use_cn=".true."   >2000</stream_year_first_pdep>
+<stream_year_last_pdep  phys="clm4_5" use_cn=".true."   >2000</stream_year_last_pdep>
+<model_year_align_pdep  phys="clm4_5" use_cn=".true."   >2000</model_year_align_pdep>
+
+<stream_year_first_popdens phys="clm4_5" use_cn=".true."   >1850</stream_year_first_popdens>
+<stream_year_last_popdens  phys="clm4_5" use_cn=".true."   >2010</stream_year_last_popdens>
+<model_year_align_popdens  phys="clm4_5" use_cn=".true."   >1850</model_year_align_popdens>
+-->
+
+
+<!-- CMIP6 DECK compsets -->
+
+<!-- CMIP6 HighResMIP compsets -->
+<fsurdat hgrid="ne120np4" >lnd/clm2/surfdata_map/surfdata_ne120np4_simyr1850_c190904.nc </fsurdat>
+<finidat hgrid="ne120np4" >lnd/clm2/initdata_map/theta.20180906.branch_noCNT.A_WCYCL1950S_CMIP6_HR.ne120_oRRS18v3_ICG.clm2.r.0056-01-01-00000.nc </finidat>
+<flanduse_timeseries hgrid="ne120np4">lnd/clm2/surfdata_map/landuse.timeseries_ne120np4_historical_simyr1850-2015_c190904.nc</flanduse_timeseries>
+
+
+<!-- ELM Consistency Checks -->
+<check_finidat_year_consistency>.false.</check_finidat_year_consistency>
+
+<!-- NOTE: When using initial condiditions from another simulation, it may be necessary to add the following to the user_nl_clm: -->
+<!-- check_dynpft_consistency          = .false. -->
+<!-- check_finidat_fsurdat_consistency = .false. -->
+
+
+</namelist_defaults>
