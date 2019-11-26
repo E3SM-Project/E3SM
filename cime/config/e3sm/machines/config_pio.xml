@@ -56,6 +56,7 @@
       <value mach="lawrencium-lr2">netcdf</value>
       <value mach="lawrencium-lr3">netcdf</value>
       <value mach="lawrencium-lr6">netcdf</value>
+	  <value mach="eddi">netcdf</value>
       <value mach="cades">netcdf</value>
       <value mach="grizzly">netcdf</value>
       <value mach="badger">netcdf</value>
