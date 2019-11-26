@@ -130,10 +130,12 @@ MODULE MOSART_physics_mod
     TRunoff%eroup_lagf = 0._r8
     TRunoff%eroutup_avg = 0._r8
     TRunoff%erlat_avg = 0._r8
-    THeat%Ha_eroutup_avg = 0._r8
-    THeat%Ha_erlat_avg = 0._r8
-    THeat%Tt_avg = 0._r8
-    THeat%Tr_avg = 0._r8
+    if (heatflag) then
+       THeat%Ha_eroutup_avg = 0._r8
+       THeat%Ha_erlat_avg = 0._r8
+       THeat%Tt_avg = 0._r8
+       THeat%Tr_avg = 0._r8
+    endif
     negchan = 9999.0_r8
     do m=1,Tctl%DLevelH2R
 
@@ -143,7 +145,7 @@ MODULE MOSART_physics_mod
 
        call t_startf('mosartr_subnetwork')    
        TRunoff%erlateral(:,:) = 0._r8
-       THeat%ha_lateral(:) = 0._r8
+       if (heatflag) THeat%ha_lateral(:) = 0._r8
        do nt=1,nt_rtm
        if (TUnit%euler_calc(nt)) then
        do iunit=rtmCTL%begr,rtmCTL%endr
@@ -225,7 +227,7 @@ MODULE MOSART_physics_mod
 
        call t_startf('mosartr_SMeroutUp')    
        TRunoff%eroutUp = 0._r8
-       THeat%Ha_eroutUp = 0._r8
+       if (heatflag) THeat%Ha_eroutUp = 0._r8
 #ifdef NO_MCT
        do iunit=rtmCTL%begr,rtmCTL%endr
        do k=1,TUnit%nUp(iunit)
