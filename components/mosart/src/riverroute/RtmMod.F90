@@ -31,7 +31,7 @@ module RtmMod
                                max_tapes, max_namlen
   use RtmRestFile     , only : RtmRestTimeManager, RtmRestGetFile, RtmRestFileRead, &
                                RtmRestFileWrite, RtmRestFileName
-  use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, &
+  use RunoffMod       , only : RunoffInit, rtmCTL, Tctl, Tunit, TRunoff, Tpara, Theat, &
                                gsmap_r, &
                                SMatP_dnstrm, avsrc_dnstrm, avdst_dnstrm, &
                                SMatP_upstrm, avsrc_upstrm, avdst_upstrm, &
@@ -259,8 +259,8 @@ contains
     ice_runoff  = .true.
     wrmflag     = .false.
     inundflag   = .false.
-	sediflag    = .false.
-	heatflag    = .false.
+    sediflag    = .false.
+    heatflag    = .false.
     barrier_timers = .false.
     finidat_rtm = ' '
     nrevsn_rtm  = ' '
@@ -338,6 +338,8 @@ contains
     call mpi_bcast (do_rtmflood,    1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (ice_runoff,     1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (wrmflag,        1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (sediflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
+    call mpi_bcast (heatflag,       1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (inundflag,      1, MPI_LOGICAL, 0, mpicom_rof, ier)
     call mpi_bcast (barrier_timers, 1, MPI_LOGICAL, 0, mpicom_rof, ier)
 
@@ -411,6 +413,8 @@ contains
        write(iulog,*) '   smat_option           = ',trim(smat_option)
        write(iulog,*) '   wrmflag               = ',wrmflag
        write(iulog,*) '   inundflag             = ',inundflag
+       write(iulog,*) '   sediflag              = ',inundflag
+       write(iulog,*) '   heatflag              = ',inundflag
        write(iulog,*) '   barrier_timers        = ',barrier_timers
        write(iulog,*) '   RoutingMethod         = ',Tctl%RoutingMethod
        write(iulog,*) '   DLevelH2R             = ',Tctl%DLevelH2R
@@ -1350,6 +1354,7 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
+    write(rList,'(a,i3.3)') trim(rList)//':tr',nt_rtm+1
     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_upstrm,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_upstrm,rList=rList,lsize=rtmCTL%lnumr)
@@ -1465,6 +1470,7 @@ contains
     do nt = 2,nt_rtm
        write(rList,'(a,i3.3)') trim(rList)//':tr',nt
     enddo
+    write(rList,'(a,i3.3)') trim(rList)//':tr',nt_rtm+1
     if (masterproc) write(iulog,*) trim(subname),' MOSART initialize avect ',trim(rList)
     call mct_aVect_init(avsrc_direct,rList=rList,lsize=rtmCTL%lnumr)
     call mct_aVect_init(avdst_direct,rList=rList,lsize=rtmCTL%lnumr)
@@ -1944,6 +1950,21 @@ contains
        chnlNum_up(:) = 0
     end if
 
+    if(heatflag) then
+      rtmCTL%templand_Tqsur = spval
+      rtmCTL%templand_Tqsub = spval
+      rtmCTL%templand_Ttrib = spval
+      rtmCTL%templand_Tchanr = spval
+      do n = rtmCTL%begr,rtmCTL%endr
+          if (rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+              rtmCTL%templand_Tqsur(n) = 0._r8
+              rtmCTL%templand_Tqsub(n) = 0._r8
+              rtmCTL%templand_Ttrib(n) = 0._r8
+              rtmCTL%templand_Tchanr(n) = 0._r8
+          end if
+      end do
+    end if
+    
     if (budget_check) then
        call t_startf('mosartr_budget')
        do nt = 1,nt_rtm
@@ -2332,6 +2353,17 @@ contains
           end if
        end if
 
+       if(heatflag) then
+         do n = rtmCTL%begr,rtmCTL%endr
+             if (rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+                 rtmCTL%templand_Tqsur(n) = rtmCTL%templand_Tqsur(n) + THeat%Tqsur(n)
+                 rtmCTL%templand_Tqsub(n) = rtmCTL%templand_Tqsub(n) + THeat%Tqsub(n)
+                 rtmCTL%templand_Ttrib(n) = rtmCTL%templand_Ttrib(n) + THeat%Tt_avg(n)
+                 rtmCTL%templand_Tchanr(n) = rtmCTL%templand_Tchanr(n) + THeat%Tr_avg(n)
+             end if
+         enddo
+       end if
+       
     enddo ! nsub
 
     !-----------------------------------
@@ -2367,6 +2399,28 @@ contains
       rtmCTL%inundhf(:) = TRunoff%hf_ini(:)
       rtmCTL%inundff(:) = TRunoff%ff_ini(:)
       rtmCTL%inundffunit(:) = TRunoff%ffunit_ini(:)
+    end if
+
+    if (heatflag) then
+      rtmCTL%Tqsur   = THeat%Tqsur
+      rtmCTL%Tqsub   = THeat%Tqsub
+      rtmCTL%Tt      = THeat%Tt
+      rtmCTL%Tr      = THeat%Tr
+      rtmCTL%Ha_rout   = THeat%Ha_rout
+    
+      do n = rtmCTL%begr,rtmCTL%endr
+         if(rtmCTL%mask(n) .eq. 1 .or. rtmCTL%mask(n) .eq. 3) then
+            rtmCTL%templand_Tqsur(n) = rtmCTL%templand_Tqsur(n) / float(nsub)
+            rtmCTL%templand_Tqsub(n) = rtmCTL%templand_Tqsub(n) / float(nsub)
+            rtmCTL%templand_Ttrib(n) = rtmCTL%templand_Ttrib(n) / float(nsub)
+            rtmCTL%templand_Tchanr(n) = rtmCTL%templand_Tchanr(n) / float(nsub)
+         else
+            rtmCTL%templand_Tqsur(n) = spval
+            rtmCTL%templand_Tqsub(n) = spval
+            rtmCTL%templand_Ttrib(n) = spval
+            rtmCTL%templand_Tchanr(n) = spval
+         end if
+      end do
     end if
 
     do nt = 1,nt_rtm
@@ -3467,61 +3521,61 @@ contains
           allocate( TUnit%e_eprof_in2( 11, begr:endr ) )    
           ! --------------------------------- 
           ! (assign elevation values to TUnit%e_eprof_in2( :, : ) ). Tian Apr. 2018
-		   
-     ier = pio_inq_varid(ncid, name='ele0', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(1,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele0 ',minval(TUnit%e_eprof_in2(1,:)),maxval(TUnit%e_eprof_in2(1,:))
-     call shr_sys_flush(iulog)
-     
-     ier = pio_inq_varid(ncid, name='ele1', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(2,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele1 ',minval(TUnit%e_eprof_in2(2,:)),maxval(TUnit%e_eprof_in2(2,:))
-     call shr_sys_flush(iulog)
-     
-     ier = pio_inq_varid(ncid, name='ele2', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(3,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele2 ',minval(TUnit%e_eprof_in2(3,:)),maxval(TUnit%e_eprof_in2(3,:))
-     call shr_sys_flush(iulog)
-     
-     ier = pio_inq_varid(ncid, name='ele3', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(4,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele3 ',minval(TUnit%e_eprof_in2(4,:)),maxval(TUnit%e_eprof_in2(4,:))
-     call shr_sys_flush(iulog)
-     
-     ier = pio_inq_varid(ncid, name='ele4', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(5,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele4 ',minval(TUnit%e_eprof_in2(5,:)),maxval(TUnit%e_eprof_in2(5,:))
-     call shr_sys_flush(iulog)
-     
-     ier = pio_inq_varid(ncid, name='ele5', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(6,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele5 ',minval(TUnit%e_eprof_in2(6,:)),maxval(TUnit%e_eprof_in2(6,:))
-     call shr_sys_flush(iulog)
-     
-     ier = pio_inq_varid(ncid, name='ele6', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(7,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele6 ',minval(TUnit%e_eprof_in2(7,:)),maxval(TUnit%e_eprof_in2(7,:))
-     call shr_sys_flush(iulog)
-     
-     ier = pio_inq_varid(ncid, name='ele7', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(8,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele7 ',minval(TUnit%e_eprof_in2(8,:)),maxval(TUnit%e_eprof_in2(8,:))
-     call shr_sys_flush(iulog)
-     
-     ier = pio_inq_varid(ncid, name='ele8', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(9,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele8 ',minval(TUnit%e_eprof_in2(9,:)),maxval(TUnit%e_eprof_in2(9,:))
-     call shr_sys_flush(iulog)
-     
-     ier = pio_inq_varid(ncid, name='ele9', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(10,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele9 ',minval(TUnit%e_eprof_in2(10,:)),maxval(TUnit%e_eprof_in2(10,:))
-     call shr_sys_flush(iulog)
-     
-     ier = pio_inq_varid(ncid, name='ele10', vardesc=vardesc)
-     call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(11,:), ier)
-     if (masterproc) write(iulog,FORMR) trim(subname),' read ele10 ',minval(TUnit%e_eprof_in2(11,:)),maxval(TUnit%e_eprof_in2(11,:))
-     call shr_sys_flush(iulog)
+           
+          ier = pio_inq_varid(ncid, name='ele0', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(1,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele0 ',minval(TUnit%e_eprof_in2(1,:)),maxval(TUnit%e_eprof_in2(1,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele1', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(2,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele1 ',minval(TUnit%e_eprof_in2(2,:)),maxval(TUnit%e_eprof_in2(2,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele2', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(3,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele2 ',minval(TUnit%e_eprof_in2(3,:)),maxval(TUnit%e_eprof_in2(3,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele3', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(4,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele3 ',minval(TUnit%e_eprof_in2(4,:)),maxval(TUnit%e_eprof_in2(4,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele4', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(5,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele4 ',minval(TUnit%e_eprof_in2(5,:)),maxval(TUnit%e_eprof_in2(5,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele5', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(6,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele5 ',minval(TUnit%e_eprof_in2(6,:)),maxval(TUnit%e_eprof_in2(6,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele6', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(7,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele6 ',minval(TUnit%e_eprof_in2(7,:)),maxval(TUnit%e_eprof_in2(7,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele7', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(8,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele7 ',minval(TUnit%e_eprof_in2(8,:)),maxval(TUnit%e_eprof_in2(8,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele8', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(9,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele8 ',minval(TUnit%e_eprof_in2(9,:)),maxval(TUnit%e_eprof_in2(9,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele9', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(10,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele9 ',minval(TUnit%e_eprof_in2(10,:)),maxval(TUnit%e_eprof_in2(10,:))
+          call shr_sys_flush(iulog)
+          
+          ier = pio_inq_varid(ncid, name='ele10', vardesc=vardesc)
+          call pio_read_darray(ncid, vardesc, iodesc_dbl, TUnit%e_eprof_in2(11,:), ier)
+          if (masterproc) write(iulog,FORMR) trim(subname),' read ele10 ',minval(TUnit%e_eprof_in2(11,:)),maxval(TUnit%e_eprof_in2(11,:))
+          call shr_sys_flush(iulog)
      
           ! --------------------------------- 
 
@@ -3756,7 +3810,95 @@ contains
            TRunoff%ff_unit = 0.0_r8
         endif
      end if
+     
+     if(heatflag) then
+        ! initialize heat states and fluxes
+        allocate (THeat%forc_t(begr:endr))
+        THeat%forc_t = 273.15_r8
+        allocate (THeat%forc_pbot(begr:endr))
+        THeat%forc_pbot = 0._r8
+        allocate (THeat%forc_vp(begr:endr))
+        THeat%forc_vp = 0._r8
+        allocate (THeat%forc_wind(begr:endr))
+        THeat%forc_wind = 0._r8
+        allocate (THeat%forc_lwrad(begr:endr))
+        THeat%forc_lwrad = 0._r8
+        allocate (THeat%forc_solar(begr:endr))
+        THeat%forc_solar = 0._r8
 
+        allocate (THeat%Tqsur(begr:endr))
+        THeat%Tqsur = 273.15_r8
+        allocate (THeat%Tqsub(begr:endr))
+        THeat%Tqsub = 273.15_r8
+
+        allocate (THeat%Tt(begr:endr))
+        THeat%Tt = 273.15_r8
+        allocate (THeat%Ha_h2t(begr:endr))
+        THeat%Ha_h2t = 0._r8
+        allocate (THeat%Ha_t2r(begr:endr))
+        THeat%Ha_t2r = 0._r8
+        allocate (THeat%Ha_lateral(begr:endr))
+        THeat%Ha_lateral = 0._r8
+        allocate (THeat%Hs_t(begr:endr))
+        THeat%Hs_t = 0._r8
+        allocate (THeat%Hl_t(begr:endr))
+        THeat%Hl_t = 0._r8
+        allocate (THeat%He_t(begr:endr))
+        THeat%He_t = 0._r8
+        allocate (THeat%Hh_t(begr:endr))
+        THeat%Hh_t = 0._r8
+        allocate (THeat%Hc_t(begr:endr))
+        THeat%Hc_t = 0._r8
+        allocate (THeat%deltaH_t(begr:endr))
+        THeat%deltaH_t = 0._r8
+        allocate (THeat%deltaM_t(begr:endr))
+        THeat%deltaM_t = 0._r8
+
+        allocate (THeat%Tr(begr:endr))
+        THeat%Tr = 273.15_r8
+        allocate (THeat%Ha_rin(begr:endr))
+        THeat%Ha_rin = 0._r8
+        allocate (THeat%Ha_rout(begr:endr))
+        THeat%Ha_rout = 0._r8
+        allocate (THeat%Ha_eroutUp(begr:endr))
+        THeat%Ha_eroutUp = 0._r8
+        allocate (THeat%Ha_eroutUp_avg(begr:endr))
+        THeat%Ha_eroutUp_avg = 0._r8
+        allocate (THeat%Ha_erlat_avg(begr:endr))
+        THeat%Ha_erlat_avg = 0._r8
+        allocate (THeat%Hs_r(begr:endr))
+        THeat%Hs_r = 0._r8
+        allocate (THeat%Hl_r(begr:endr))
+        THeat%Hl_r = 0._r8
+        allocate (THeat%He_r(begr:endr))
+        THeat%He_r = 0._r8
+        allocate (THeat%Hh_r(begr:endr))
+        THeat%Hh_r = 0._r8
+        allocate (THeat%Hc_r(begr:endr))
+        THeat%Hc_r = 0._r8
+        allocate (THeat%deltaH_r(begr:endr))
+        THeat%deltaH_r = 0._r8
+        allocate (THeat%deltaM_r(begr:endr))
+        THeat%deltaM_r = 0._r8
+
+        allocate (THeat%Tt_avg(begr:endr))
+        THeat%Tt_avg = 273.15_r8
+        allocate (THeat%Tr_avg(begr:endr))
+        THeat%Tr_avg = 273.15_r8
+        
+       ! read the parameters for mosart-heat
+        if(endr >= begr) then
+            allocate(TPara%t_alpha(begr:endr))    
+           TPara%t_alpha = 27.19_r8
+            allocate(TPara%t_beta(begr:endr))
+           TPara%t_beta = 13.63_r8
+            allocate(TPara%t_gamma(begr:endr))
+           TPara%t_gamma = 0.1576_r8
+             allocate(TPara%t_mu(begr:endr))
+           TPara%t_mu = 0.5278_r8
+        end if
+     end if
+    
      call pio_freedecomp(ncid, iodesc_dbl)
      call pio_freedecomp(ncid, iodesc_int)
      call pio_closefile(ncid)
