@@ -72,6 +72,35 @@ module ocn_diagnostics
    real (kind=RKIND) ::  fCoef
    real (kind=RKIND), pointer ::  coef_3rd_order
 
+   !--------------------------------------------------------------------
+   !
+   ! Config variables moved from subroutines to module level so calls to 
+   ! mpas_pool_get_config only needs to be called during init
+   !
+   !--------------------------------------------------------------------
+
+   logical, pointer :: config_use_cvmix_kpp
+   logical, pointer :: config_use_wetting_drying
+   real (kind=RKIND), pointer :: config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_averaging
+   character (len=StrKIND), pointer :: config_pressure_gradient_type
+   character (len=StrKIND), pointer :: config_thickness_flux_type
+
+   real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
+   real (kind=RKIND), pointer :: config_flux_attenuation_coefficient_runoff
+
+   character (len=StrKIND), pointer :: config_vert_coord_movement
+
+   character (len=StrKIND), pointer :: config_land_ice_flux_mode
+   character (len=StrKIND), pointer :: config_land_ice_flux_formulation
+   real (kind=RKIND), pointer :: config_land_ice_flux_boundaryLayerThickness
+   real (kind=RKIND), pointer :: config_land_ice_flux_boundaryLayerNeighborWeight
+   real (kind=RKIND), pointer :: config_land_ice_flux_topDragCoeff
+   real (kind=RKIND), pointer :: config_land_ice_flux_rms_tidal_velocity
+   real (kind=RKIND), pointer :: config_land_ice_flux_jenkins_heat_transfer_coefficient
+   real (kind=RKIND), pointer :: config_land_ice_flux_jenkins_salt_transfer_coefficient
+   real (kind=RKIND), pointer :: config_land_ice_flux_attenuation_coefficient
+   logical :: jenkinsOn, hollandJenkinsOn
+
 !***********************************************************************
 
 contains
@@ -145,14 +174,7 @@ contains
 
       integer :: timeLevel
       integer, pointer :: indexTemperature, indexSalinity
-      logical, pointer :: config_use_cvmix_kpp
-      logical, pointer :: config_use_wetting_drying
-      real (kind=RKIND), pointer :: config_apvm_scale_factor,  config_coef_3rd_order, config_cvmix_kpp_surface_layer_averaging
-      character (len=StrKIND), pointer :: config_pressure_gradient_type
-      character (len=StrKIND), pointer :: config_thickness_flux_type
 
-      real (kind=RKIND), pointer :: config_flux_attenuation_coefficient
-      real (kind=RKIND), pointer :: config_flux_attenuation_coefficient_runoff
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
       real (kind=RKIND) :: areaTri1, layerThicknessVertexInv, tempRiVal, dcEdge_temp, dvEdge_temp, weightsOnEdge_temp
@@ -166,17 +188,6 @@ contains
       else
          timeLevel = 1
       end if
-
-      call mpas_pool_get_config(ocnConfigs, 'config_apvm_scale_factor', config_apvm_scale_factor)
-      call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
-      call mpas_pool_get_config(ocnConfigs, 'config_coef_3rd_order', config_coef_3rd_order)
-      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_surface_layer_averaging', config_cvmix_kpp_surface_layer_averaging)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
-      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient_runoff',  &
-                                             config_flux_attenuation_coefficient_runoff)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_wetting_drying', config_use_wetting_drying)
-      call mpas_pool_get_config(ocnConfigs, 'config_thickness_flux_type', config_thickness_flux_type)
 
       call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
       call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
@@ -966,11 +977,7 @@ contains
          div_hu           !> divergence of (thickness*velocity)
       type (field2DReal), pointer :: ALE_ThicknessField, div_huField
 
-      character (len=StrKIND), pointer :: config_vert_coord_movement
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_vert_coord_movement', config_vert_coord_movement)
 
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
@@ -1293,6 +1300,46 @@ contains
 
       err = 0
 
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_formulation', config_land_ice_flux_formulation)
+
+      jenkinsOn = .false.
+      hollandJenkinsOn = .false.
+      if ( trim(config_land_ice_flux_formulation) == 'Jenkins' ) then
+         jenkinsOn = .true.
+      else if ( trim(config_land_ice_flux_formulation) == 'HollandJenkins' ) then
+         hollandJenkinsOn = .true.
+      end if
+
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_topDragCoeff', config_land_ice_flux_topDragCoeff)
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_boundaryLayerThickness', &
+                                config_land_ice_flux_boundaryLayerThickness)
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_boundaryLayerNeighborWeight', &
+                                config_land_ice_flux_boundaryLayerNeighborWeight)
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_rms_tidal_velocity', config_land_ice_flux_rms_tidal_velocity)
+      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_attenuation_coefficient', &
+                                config_land_ice_flux_attenuation_coefficient)
+
+      if(jenkinsOn) then
+         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_jenkins_heat_transfer_coefficient', &
+                                   config_land_ice_flux_jenkins_heat_transfer_coefficient)
+         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_jenkins_salt_transfer_coefficient', &
+                                   config_land_ice_flux_jenkins_salt_transfer_coefficient)
+      end if
+
+      call mpas_pool_get_config(ocnConfigs, 'config_vert_coord_movement', config_vert_coord_movement)
+
+      call mpas_pool_get_config(ocnConfigs, 'config_apvm_scale_factor', config_apvm_scale_factor)
+      call mpas_pool_get_config(ocnConfigs, 'config_pressure_gradient_type', config_pressure_gradient_type)
+      call mpas_pool_get_config(ocnConfigs, 'config_coef_3rd_order', config_coef_3rd_order)
+      call mpas_pool_get_config(ocnConfigs, 'config_cvmix_kpp_surface_layer_averaging', config_cvmix_kpp_surface_layer_averaging)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
+      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
+      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient_runoff',  &
+                                             config_flux_attenuation_coefficient_runoff)
+      call mpas_pool_get_config(ocnConfigs, 'config_use_wetting_drying', config_use_wetting_drying)
+      call mpas_pool_get_config(ocnConfigs, 'config_thickness_flux_type', config_thickness_flux_type)
+
       call mpas_pool_get_config(ocnConfigs, 'config_include_KE_vertex', config_include_KE_vertex)
       call mpas_pool_get_config(ocnConfigs, 'config_time_integrator', config_time_integrator)
 
@@ -1361,7 +1408,6 @@ contains
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, surfaceThicknessFlux, &
            surfaceBuoyancyForcing, surfaceFrictionVelocity, penetrativeTemperatureFluxOBL, &
            normalVelocitySurfaceLayer, surfaceThicknessFluxRunoff, rainFlux, evaporationFlux
-      real (kind=RKIND), pointer :: config_flux_attenuation_coefficient, config_flux_attenuation_coefficient_runoff
 
       real (kind=RKIND), dimension(:), pointer :: surfaceStress, surfaceStressMagnitude
       real (kind=RKIND), dimension(:,:), pointer ::  &
@@ -1396,9 +1442,6 @@ contains
 
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
-      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient', config_flux_attenuation_coefficient)
-      call mpas_pool_get_config(ocnConfigs, 'config_flux_attenuation_coefficient_runoff',   &
-              config_flux_attenuation_coefficient_runoff)
       ! set the parameter turbulentVelocitySquared
       turbulentVelocitySquared = 0.001_RKIND
 
@@ -1570,16 +1613,6 @@ contains
 
       integer, pointer :: indexT, indexS, indexBLT, indexBLS, indexHeatTrans, indexSaltTrans
 
-      character (len=StrKIND), pointer :: config_land_ice_flux_formulation, config_land_ice_flux_mode
-
-      real (kind=RKIND), pointer :: config_land_ice_flux_boundaryLayerThickness, &
-                                    config_land_ice_flux_boundaryLayerNeighborWeight, &
-                                    config_land_ice_flux_topDragCoeff, &
-                                    config_land_ice_flux_rms_tidal_velocity, &
-                                    config_land_ice_flux_jenkins_heat_transfer_coefficient, &
-                                    config_land_ice_flux_jenkins_salt_transfer_coefficient, &
-                                    config_land_ice_flux_attenuation_coefficient
-
       real (kind=RKIND) :: blThickness, dz, weightSum, h_nu, Gamma_turb, landIceEdgeFraction, velocityMagnitude
 
       real (kind=RKIND), dimension(:), pointer :: landIceFraction, &
@@ -1597,8 +1630,6 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       type (field1DReal), pointer :: boundaryLayerTemperatureField, boundaryLayerSalinityField
 
-      logical :: jenkinsOn, hollandJenkinsOn
-
       ! constants for Holland and Jenkins 1999 parameterization of the boundary layer
       real (kind=RKIND), parameter :: &
          Pr = 13.8_RKIND, &             ! the Prandtl number
@@ -1607,38 +1638,36 @@ contains
          kVonKarman = 0.4_RKIND, &      ! the von Karman constant
          xiN = 0.052_RKIND              ! dimensionless planetary boundary layer constant
 
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+
+      if ( trim(config_land_ice_flux_mode) .ne. 'off' ) then
+
+         ! we need to compute the landiceMask regardless of which mode we're in so it can be
+         ! added to the restart file
+
+         call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
+         call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+
+         call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+         ! compute landIceMask from landIceFraction
+         !$omp do schedule(runtime)
+         do iCell = 1, nCells
+            if (landIceFraction(iCell) >= 0.5_RKIND) then
+               landIceMask(iCell) = 1
+            else
+               landIceMask(iCell) = 0
+               ! don't allow land-ice fluxes if land ice is masked out
+               landIceFraction(iCell) = 0.0_RKIND
+            end if
+         end do
+         !$omp end do
+
+      end if
 
       if ( trim(config_land_ice_flux_mode) .ne. 'standalone' .and. trim(config_land_ice_flux_mode) .ne. 'coupled' ) then
          return
       end if
 
       call mpas_timer_start("land_ice_diagnostic_fields", .false.)
-
-      jenkinsOn = .false.
-      hollandJenkinsOn = .false.
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_formulation', config_land_ice_flux_formulation)
-      if ( trim(config_land_ice_flux_formulation) == 'Jenkins' ) then
-         jenkinsOn = .true.
-      else if ( trim(config_land_ice_flux_formulation) == 'HollandJenkins' ) then
-         hollandJenkinsOn = .true.
-      end if
-
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_topDragCoeff', config_land_ice_flux_topDragCoeff)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_boundaryLayerThickness', &
-                                config_land_ice_flux_boundaryLayerThickness)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_boundaryLayerNeighborWeight', &
-                                config_land_ice_flux_boundaryLayerNeighborWeight)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_rms_tidal_velocity', config_land_ice_flux_rms_tidal_velocity)
-      call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_attenuation_coefficient', &
-                                config_land_ice_flux_attenuation_coefficient)
-
-      if(jenkinsOn) then
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_jenkins_heat_transfer_coefficient', &
-                                   config_land_ice_flux_jenkins_heat_transfer_coefficient)
-         call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_jenkins_salt_transfer_coefficient', &
-                                   config_land_ice_flux_jenkins_salt_transfer_coefficient)
-      end if
 
       call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
       call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
