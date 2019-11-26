@@ -4,7 +4,7 @@ Originator: Bill Sacks
 Date: 11-26-2019
 Tag: cime5.8.15
 Answer Changes: None
-Tests: scripts_regression_tests
+Tests: scripts_regression_tests, aux_clm
 Dependencies: none
 
 Brief Summary:
