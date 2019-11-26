@@ -1038,7 +1038,7 @@ cleanrof:
 
 cleanlnd:
 	$(RM) -f $(LIBROOT)/$(LNDLIB)
-	$(RM) -fr $(EXEROOT)/lnd/obj
+	$(RM) -fr $(LNDOBJDIR)
 
 cleancsmshare:
 	$(RM) -f $(CSMSHARELIB)
