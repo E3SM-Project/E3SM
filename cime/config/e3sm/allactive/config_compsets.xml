@@ -121,6 +121,16 @@
   <lname>2000_DATM%NYF_SLND_MPASSI_MPASO_DROF%NYF_MALIBISICLES_SWAV</lname>
 </compset>
 
+<compset>
+  <alias>TEST_BISICLES</alias>
+  <lname>2000_DATM%NYF_SLND_SICE_SOCN_DROF%NYF_BISICLES_SWAV</lname>
+</compset>
+
+<compset>
+  <alias>TEST_MALIBISICLES</alias>
+  <lname>2000_DATM%NYF_SLND_SICE_SOCN_DROF%NYF_MALIBISICLES_SWAV</lname>
+</compset>
+
 
 
 <!-- E3SM v1 science compsets (hires) -->
