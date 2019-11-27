@@ -3,11 +3,8 @@
 # Print component run times, sorted by the number of cores in a run
 # Exec from bench root-dir
 
-# based on PASS test result
-#for cores in `./cs.status* | grep "Overall: PASS" | awk '{print $1}' | sed 's@^[^0-9]*\([0-9]\+\).*@\1@' | sort -n `; do echo $cores; cat SMS_P$cores.*/timing/e3sm_timing.* | grep -E "TOT Run Time|CPL Run Time:|ICE Run Time|OCN Run Time" ; done
-
 # based on existence of "timing" sub-dir
-for cores in `for dir in $(ls -d */); do if [ -d "$dir/timing" ]; then echo $dir; fi; done | sed 's@^[^0-9]*\([0-9]\+\).*@\1@' | sort -n `; do echo SMS_P$cores*; echo $cores; cat SMS_P$cores*/timing/e3sm_timing.* | grep -E "(TOT|CPL|ATM|LND|ICE|OCN|ROF) Run Time:|CPL COMM" ; done
+for cores in `for dir in $(ls -d */); do if [ -d "$dir/timing" ]; then echo $dir; fi; done | sed 's@^SMS_P[^0-9SML]*\([0-9]\+\|S\|M\|L\).*@\1@' | sort -n `; do echo SMS_P$cores*; echo $cores; cat SMS_P$cores*/timing/e3sm_timing.* | grep -E "(TOT|CPL|ATM|LND|ICE|OCN|ROF) Run Time:|CPL COMM" ; done
 
 # sample output
 #SMS_P4096.T62_oRRS18to6v3.GMPAS-IAF.cori-knl_intel.bench-gmpas_noio.20191112_144813_5wmx0d
@@ -20,7 +17,7 @@ for cores in `for dir in $(ls -d */); do if [ -d "$dir/timing" ]; then echo $dir
 #    OCN Run Time:    1663.098 seconds      332.620 seconds/mday         0.71 myears/wday 
 #    ROF Run Time:       2.421 seconds        0.484 seconds/mday       488.87 myears/wday 
 #    CPL COMM Time:    104.920 seconds       20.984 seconds/mday        11.28 myears/wday 
-#SMS_P48000.T62_oRRS18to6v3.GMPAS-IAF.cori-knl_intel.bench-gmpas_noio.20191112_144813_5wmx0d
+#SMS_P4800.T62_oRRS18to6v3.GMPAS-IAF.cori-knl_intel.bench-gmpas_noio.20191112_144813_5wmx0d
 #4800
 #    TOT Run Time:    2920.669 seconds      584.134 seconds/mday         0.41 myears/wday 
 #    CPL Run Time:     718.009 seconds      143.602 seconds/mday         1.65 myears/wday 
