@@ -14,7 +14,6 @@ The revised nudging code can be found at:
 
 https://github.com/E3SM-Project/E3SM/blob/jiansunpnnl/ms2019/components/cam/src/physics/cam/nudging.F90
 
-
 Code modifications
 --------------------------------------------------------------------------------
 Code modifications can be viewed at: 
@@ -34,6 +33,7 @@ The nudging code can be further improved as:
   * The nudging tendency is calculated at the location different from where the nudging data are output in the CLIM simulation.
 
 Such kind of improvements are available at:
+https://github.com/E3SM-Project/E3SM/tree/jiansunpnnl/ndg_loc
 
 Reference
 --------------------------------------------------------------------------------
