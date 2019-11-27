@@ -240,6 +240,15 @@ contains
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
 
+  subroutine cloud_water_autoconversion_c(rho,qc_incld,nc_incld,qcaut,ncautc,ncautr) bind(C)
+
+      use micro_p3, only: cloud_water_autoconversion
+      real(kind=c_real), value, intent(in) :: rho, qc_incld, nc_incld
+      real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
+
+      call cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr)
+  end subroutine cloud_water_autoconversion_c
+
   subroutine calc_first_order_upwind_step_c(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
     use micro_p3, only: calc_first_order_upwind_step, realptr
 

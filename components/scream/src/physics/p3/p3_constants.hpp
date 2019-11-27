@@ -37,8 +37,11 @@ struct Constants
   static constexpr Scalar INV_RHOW    = 1.0/RHOW;
   static constexpr Scalar THIRD       = 1.0/3.0;
   static constexpr Scalar SXTH        = 1.0/6.0;
+  static constexpr Scalar PIOV3       = Pi*THIRD;
   static constexpr Scalar PIOV6       = Pi*SXTH;
   static constexpr Scalar CONS1       = PIOV6*RHOW;
+  static constexpr Scalar CONS2       = 4.*PIOV3*RHOW;
+  static constexpr Scalar CONS3       =  1.0/(CONS2*1.562500000000000e-14); // 1./(CONS2*pow(25.e-6,3.0));
   static constexpr Scalar QSMALL      = 1.e-14;
   static constexpr Scalar BSMALL      = 1.e-15;
   static constexpr Scalar NSMALL      = 1.e-16;

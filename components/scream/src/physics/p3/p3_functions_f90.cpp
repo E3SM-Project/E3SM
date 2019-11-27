@@ -36,6 +36,8 @@ void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
+void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real* qcaut, Real* ncautc, Real* ncautr);
+
 void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
 
 void generalized_sedimentation_c(Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
@@ -95,6 +97,11 @@ void access_lookup_table_coll(AccessLookupTableCollData& d)
   p3_init(true);
   access_lookup_table_coll_c(d.lid.dumjj, d.lid.dumii, d.lidb.dumj, d.lid.dumi, d.index,
                              d.lid.dum1, d.lidb.dum3, d.lid.dum4, d.lid.dum5, &d.proc);
+}
+
+void cloud_water_autoconversion(CloudWaterAutoconversionData & d){
+  p3_init(true);
+  cloud_water_autoconversion_c(d.rho, d.qc_incld, d.nc_incld, &d.qcaut, &d.ncautc, &d.ncautr);
 }
 
 void get_cloud_dsd2(GetCloudDsd2Data& d)
@@ -474,6 +481,7 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   *logn0r_ = t_h(4);
 }
 
+
 template <int N, typename T>
 Kokkos::Array<T*, N> ptr_to_arr(T** data)
 {
@@ -740,6 +748,32 @@ void cloud_sedimentation_f(
   // Sync back to host
   Kokkos::Array<view_1d, 7> inout_views = {qc_d, nc_d, nc_incld_d, mu_c_d, lamc_d, qc_tend_d, nc_tend_d};
   pack::device_to_host({qc, nc, nc_incld, mu_c, lamc, qc_tend, nc_tend}, nk, inout_views);
+}
+
+void cloud_water_autoconversion_f(Real rho_, Real qc_incld_, Real nc_incld_, Real* qcaut_, Real* ncautc_, Real* ncautr_){
+
+    using P3F = Functions<Real, DefaultDevice>;
+
+    typename P3F::view_1d<Real> t_d("t_h", 3);
+    auto t_h = Kokkos::create_mirror_view(t_d);
+    Real local_qcaut = *qcaut_;
+    Real local_ncautc = *ncautc_;
+    Real local_ncautr = *ncautr_;
+
+    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack rho(rho_), qc_incld(qc_incld_), nc_incld(nc_incld_), qcaut(local_qcaut), ncautc(local_ncautc), ncautr(local_ncautr);
+      P3F::cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr);
+
+      t_d(0) = qcaut[0];
+      t_d(1) = ncautc[0];
+      t_d(2) = ncautr[0];
+
+    });
+    Kokkos::deep_copy(t_h, t_d);
+
+    *qcaut_ = t_h(0);
+    *ncautc_ = t_h(1);
+    *ncautr_ = t_h(2);
 }
 
 void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_rime_)

@@ -286,7 +286,7 @@ struct Functions
   // Calls polysvp1 to obtain the saturation vapor pressure, and then computes
   // and returns the saturation mixing ratio, with respect to either liquid or ice,
   // depending on value of 'ice'
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_FUNCTION
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
   // TODO: comment
@@ -297,10 +297,14 @@ struct Functions
     const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm);
 
   // Computes and returns rain size distribution parameters
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_FUNCTION
   static void get_rain_dsd2 (
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
+
+  KOKKOS_FUNCTION
+  static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& nc_incld,
+    Spack& qcaut, Spack& ncautc, Spack& ncautr);
 
   //--------------------------------------------------------------------------------
   //  Calculates and returns the bulk rime density from the prognostic ice variables
@@ -326,6 +330,7 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 # include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
+# include "p3_functions_autoconversion_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
 # include "p3_functions_ice_sed_impl.hpp"
 #endif

@@ -67,6 +67,14 @@ interface
     real(kind=c_real), intent(out)       :: lamr,mu_r,cdistr,logn0r
   end subroutine get_rain_dsd2_f
 
+  subroutine cloud_water_autoconversion_f(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr) bind(C)
+    use iso_c_binding
+
+    !arguments: 
+    real(kind=c_real), value, intent(in) :: rho, qc_incld, nc_incld
+    real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
+  end subroutine cloud_water_autoconversion_f
+
   subroutine calc_first_order_upwind_step_f(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
     use iso_c_binding
 
