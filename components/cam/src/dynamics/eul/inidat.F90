@@ -21,7 +21,7 @@ module inidat
    use spmd_utils,          only: masterproc, mpicom, mpir8
    use cam_control_mod,     only: ideal_phys, aqua_planet, moist_physics, adiabatic
    use cam_initfiles,       only: initial_file_get_id, topo_file_get_id
-   use scamMod,             only: single_column, use_camiop, have_u, have_v, &
+   use scamMod,             only: single_column, use_replay, have_u, have_v, &
                                   have_cldliq, have_cldice,loniop,latiop,scmlat,scmlon
    use cam_logfile,         only: iulog
    use pio,                 only: file_desc_t, pio_noerr, pio_inq_varid, pio_get_att, &
@@ -233,7 +233,7 @@ contains
     deallocate ( phis_tmp )
 
     if (single_column) then
-       if ( use_camiop ) then
+       if ( use_replay ) then
           fieldname = 'CLAT1'
           call infld(fieldname, fh_ini, 'lon', 'lat', 1, pcols, begchunk, endchunk, &
                clat2d, readvar, gridname='physgrid')
@@ -346,7 +346,6 @@ contains
     use tracers     , only: tracers_implements_cnst, tracers_init_cnst
     use aoa_tracers , only: aoa_tracers_implements_cnst, aoa_tracers_init_cnst
     use clubb_intr  , only: clubb_implements_cnst, clubb_init_cnst
-    use shoc_intr   , only: shoc_implements_cnst, shoc_init_cnst
     use stratiform  , only: stratiform_implements_cnst, stratiform_init_cnst
     use microp_driver,only: microp_driver_implements_cnst, microp_driver_init_cnst
     use phys_control, only: phys_getopts
@@ -525,10 +524,6 @@ contains
               call clubb_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
               if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
                                          ' initialized by "clubb_init_cnst"'
-           else if (shoc_implements_cnst(cnst_name(m_cnst))) then
-              call shoc_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
-              if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&
-                                         ' initialized by "shoc_init_cnst"'
            else if (stratiform_implements_cnst(cnst_name(m_cnst))) then
               call stratiform_init_cnst(cnst_name(m_cnst), arr3d_a(:,:,j), gcid)
               if (masterproc .and. j==1) write(iulog,*) '   ', trim(cnst_name(m_cnst)),&

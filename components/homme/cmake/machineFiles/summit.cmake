@@ -1,9 +1,6 @@
 #interactive job
 #bsub -W 2:00 -nnodes 1 -P cli115 -Is /bin/bash
 
-#module load cmake/3.6.1 cuda/9.1.76 gcc/6.4.0 netlib-lapack/3.6.1
-#module load netcdf/4.6.1 netcdf-fortran/4.4.4
-#module load hdf5/1.10.3
 
 SET (NETCDF_DIR $ENV{OLCF_NETCDF_FORTRAN_ROOT} CACHE FILEPATH "")
 SET (HDF5_DIR $ENV{OLCF_HDF5_ROOT} CACHE FILEPATH "")

@@ -1,6 +1,10 @@
 #ifndef SCREAM_TIME_STAMP_HPP
 #define SCREAM_TIME_STAMP_HPP
 
+#include "share/scream_types.hpp"
+
+#include <string>
+
 namespace scream {
 namespace util {
 
@@ -10,30 +14,45 @@ namespace util {
 class TimeStamp {
 public:
 
-  // Default constructor/copy is good enough
-  TimeStamp() = default;
+  TimeStamp();
+  TimeStamp(const int yy, const int dd, const Real ss);
   TimeStamp(const TimeStamp&) = default;
+
+  // === Query methods === //
+
+  int    get_years   () const { return m_yy; }
+  int    get_days    () const { return m_dd; }
+  Real   get_seconds () const { return m_ss; }
+  bool   is_valid    () const;
+
+  std::string to_string () const;
+
+  // === Update method(s) === //
+
   TimeStamp& operator= (const TimeStamp&) = default;
 
-  friend bool operator== (const TimeStamp& ts1, const TimeStamp& ts2);
-  friend bool operator<  (const TimeStamp& ts1, const TimeStamp& ts2);
+  // This methods will check that time shifts forward
+  TimeStamp& operator+= (const Real seconds);
+  TimeStamp& operator+= (const TimeStamp& dt);
 
 protected:
 
-  // We prevent modification, so one cannot mess with time stamps.
-  // TODO: you will need to grant someone friend's access to this class,
-  //       cause you WILL need to modify time stamps. When you have decided
-  //       what class/function should have this privilege, come back and
-  //       grant them friendship here.
-  void set_time (const int year, const int day, const int second);  
-
-  int m_yy;   // Year
-  int m_dd;   // Day (of the year)
-  int m_ss;   // Second (of the day)
+  int m_yy;       // Year
+  int m_dd;       // Day (of the year)
+  Real m_ss;    // Second (of the day)
 };
 
 bool operator== (const TimeStamp& ts1, const TimeStamp& ts2);
 bool operator<  (const TimeStamp& ts1, const TimeStamp& ts2);
+bool operator<= (const TimeStamp& ts1, const TimeStamp& ts2);
+TimeStamp operator- (const TimeStamp& ts1, const TimeStamp& ts2);
+TimeStamp operator+ (const TimeStamp& ts, const TimeStamp& dt);
+TimeStamp operator+ (const TimeStamp& ts, const Real dt);
+
+// Define here instead of inside the class, so we can call op==
+inline bool TimeStamp::is_valid () const {
+  return !(*this==TimeStamp());
+}
 
 } // namespace util
 

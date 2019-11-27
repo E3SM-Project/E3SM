@@ -246,7 +246,7 @@ class Machines(GenericXML):
         """
         Check the compiler is valid for the current machine
 
-        >>> machobj = Machines(machine="edison")
+        >>> machobj = Machines(machine="cori-knl")
         >>> machobj.get_default_compiler()
         'intel'
         >>> machobj.is_valid_compiler("gnu")
@@ -260,7 +260,7 @@ class Machines(GenericXML):
         """
         Check the MPILIB is valid for the current machine
 
-        >>> machobj = Machines(machine="edison")
+        >>> machobj = Machines(machine="cori-knl")
         >>> machobj.is_valid_MPIlib("mpi-serial")
         True
         >>> machobj.is_valid_MPIlib("fake-mpi")
@@ -273,7 +273,7 @@ class Machines(GenericXML):
         """
         Return if this machine has a batch system
 
-        >>> machobj = Machines(machine="edison")
+        >>> machobj = Machines(machine="cori-knl")
         >>> machobj.has_batch_system()
         True
         >>> machobj.set_machine("melvin")

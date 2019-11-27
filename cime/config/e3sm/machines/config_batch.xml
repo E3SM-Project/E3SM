@@ -282,6 +282,14 @@
       </queues>
     </batch_system>
 
+    <batch_system MACH="anvil-centos7" type="slurm" >
+      <queues>
+	<queue walltimemax="48:00:00" nodemax="5" default="true" strict="true">acme-small</queue>
+	<queue walltimemax="24:00:00" nodemin="6" nodemax="60" strict="true">acme-medium</queue>
+	<queue walltimemax="12:00:00" nodemin="61" strict="true">acme-large</queue>
+      </queues>
+    </batch_system>
+
     <batch_system MACH="bebop" type="slurm" >
       <queues>
 	<queue walltimemax="00:30:00" nodemax="64" strict="true">debug</queue>
@@ -352,8 +360,12 @@
 
     <batch_system MACH="theta" type="cobalt_theta">
       <queues>
-        <queue walltimemax="01:00:00" nodemax="16" strict="true">debug-cache-quad</queue>
-        <queue walltimemin="00:30:00" walltimemax="24:00:00" nodemin="17" strict="true" default="true">default</queue>
+        <queue walltimemax="01:00:00" nodemin="1" nodemax="8" strict="true">debug-cache-quad</queue>
+        <queue walltimemin="00:30:00" walltimemax="03:00:00" nodemin="128" nodemax="255"  strict="true">default</queue>
+        <queue walltimemin="00:30:00" walltimemax="06:00:00" nodemin="256" nodemax="383"  strict="true">default</queue>
+        <queue walltimemin="00:30:00" walltimemax="09:00:00" nodemin="384" nodemax="639"  strict="true">default</queue>
+        <queue walltimemin="00:30:00" walltimemax="12:00:00" nodemin="640" nodemax="801"  strict="true">default</queue>
+        <queue walltimemin="00:30:00" walltimemax="24:00:00" nodemin="802" strict="true" default="true">default</queue>
       </queues>
     </batch_system>
 
@@ -387,12 +399,9 @@
    </batch_system>
 
    <batch_system MACH="compy" type="slurm">
-    <directives>
-      <directive>--output=slurm.out</directive>
-      <directive>--error=slurm.err</directive>
-    </directives>
     <queues>
-      <queue walltimemax="00:59:00" default="true">slurm</queue>
+      <queue walltimemax="02:00:00" strict="true" nodemin="1" nodemax="40" default="true">short</queue>
+      <queue walltimemax="06:00:00" nodemin="1" nodemax="460">slurm</queue>
     </queues>
    </batch_system>
 
@@ -409,7 +418,7 @@
 
   <batch_system MACH="sandiatoss3" type="slurm" >
     <queues>
-      <queue nodemax="12" walltimemax="04:00:00" strict="true" default="true">short,batch</queue>
+      <queue nodemax="16" walltimemax="04:00:00" strict="true" default="true">short,batch</queue>
       <queue walltimemax="24:00:00">batch</queue>
     </queues>
   </batch_system>
@@ -573,29 +582,4 @@
     </queues>
    </batch_system>
 
-  <batch_jobs>
-    <!-- order matters, with no-batch jobs will be run in the order listed here -->
-    <job name="case.run">
-      <template>template.case.run</template>
-      <prereq>$BUILD_COMPLETE and not $TEST</prereq>
-    </job>
-    <job name="case.run.sh">
-      <template>template.case.run.sh</template>
-      <prereq>False</prereq>
-    </job>
-   <job name="case.test">
-      <template>template.case.test</template>
-      <prereq>$BUILD_COMPLETE and $TEST</prereq>
-    </job>
-    <job name="case.st_archive">
-      <template>template.st_archive</template>
-      <task_count>1</task_count>
-      <walltime>0:20:00</walltime>
-      <!-- If DOUT_S is true and case.run (or case.test) exits successfully then run st_archive-->
-      <dependency>case.run case.test</dependency>
-      <prereq>$DOUT_S</prereq>
-    </job>
-  </batch_jobs>
-
 </config_batch>
-

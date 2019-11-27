@@ -28,12 +28,14 @@ module rof_cpl_indices
   integer, public :: index_x2r_Flrl_rofsub = 0  ! lnd->rof liquid subsurface runoff from land
   integer, public :: index_x2r_Flrl_rofdto = 0  ! lnd->rof liquid direct to ocean runoff
   integer, public :: index_x2r_Flrl_rofi  = 0   ! lnd->rof ice runoff forcing from land
-
+  integer, public :: index_x2r_Flrl_demand = 0  ! lnd->rof input total fluxes (<= 0)
   integer, public :: nflds_x2r = 0
 
   !TODO - nt_rtm and rtm_tracers need to be removed and set by access to the index array
   integer, parameter, public :: nt_rtm = 2    ! number of tracers
   character(len=3), parameter, public :: rtm_tracers(nt_rtm) =  (/'LIQ','ICE'/)
+  integer, parameter, public :: nt_nliq = 1    ! number of tracers
+  integer, parameter, public :: nt_nice = 2    ! number of tracers
 
   ! roff to driver (part of land for now) (optional if ROF is off)
 
@@ -42,6 +44,7 @@ module rof_cpl_indices
   integer, public :: index_r2x_Flrr_flood = 0   ! rof->lnd flood runoff (>fthresh) back to land
   integer, public :: index_r2x_Flrr_volr = 0    ! rof->lnd volr total volume back to land
   integer, public :: index_r2x_Flrr_volrmch = 0 ! rof->lnd volr main channel back to land
+  integer, public :: index_r2x_Flrr_supply = 0  ! rof->lnd supply flux for land use
   integer, public :: nflds_r2x = 0
 
 !=======================================================================
@@ -83,7 +86,7 @@ contains
     index_x2r_Flrl_rofsub = mct_avect_indexra(avtmp,'Flrl_rofsub')
     index_x2r_Flrl_rofdto = mct_avect_indexra(avtmp,'Flrl_rofdto',perrwith='quiet')
     index_x2r_Flrl_rofi   = mct_avect_indexra(avtmp,'Flrl_rofi')
-
+    index_x2r_Flrl_demand = mct_avect_indexra(avtmp,'Flrl_demand')
     nflds_x2r = mct_avect_nRattr(avtmp)
 
     call mct_aVect_clean(avtmp)
@@ -97,7 +100,7 @@ contains
     index_r2x_Flrr_flood = mct_avect_indexra(avtmp,'Flrr_flood')
     index_r2x_Flrr_volr  = mct_avect_indexra(avtmp,'Flrr_volr')
     index_r2x_Flrr_volrmch = mct_avect_indexra(avtmp,'Flrr_volrmch')
-
+    index_r2x_Flrr_supply = mct_avect_indexra(avtmp,'Flrr_supply')
     nflds_r2x = mct_avect_nRattr(avtmp)
 
     call mct_aVect_clean(avtmp)

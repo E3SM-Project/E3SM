@@ -2,8 +2,9 @@
 #define SCREAM_FIELD_IDENTIFIER_HPP
 
 #include "share/field/field_layout.hpp"
+#include "share/util/string_utils.hpp"
+#include "share/util/units.hpp"
 
-#include <string>
 #include <vector>
 
 namespace scream
@@ -20,33 +21,38 @@ namespace scream
 
 class FieldIdentifier {
 public:
-  using layout_type   = FieldLayout;
+  using layout_type = FieldLayout;
+  using ci_string   = util::CaseInsensitiveString;
 
   // Constructor(s)
   FieldIdentifier () = delete;
   FieldIdentifier (const FieldIdentifier&) = default;
   FieldIdentifier (const std::string& name,
                    const layout_type& layout,
+                   const units::Units& units,
                    const std::string& grid_name = "");
   FieldIdentifier (const std::string& name,
                    const std::vector<FieldTag>& tags,
+                   const units::Units& units,
                    const std::string& grid_name = "");
   FieldIdentifier (const std::string& name,
                    const std::initializer_list<FieldTag>& tags,
+                   const units::Units& units,
                    const std::string& grid_name = "");
 
-  // Assignment (defaulted)
-  FieldIdentifier& operator= (const FieldIdentifier&) = default;
+  // Delete assignment, to prevent overwriting identifiers sneakyly
+  FieldIdentifier& operator= (const FieldIdentifier&) = delete;
 
   // ----- Getters ----- //
 
   // Name and layout informations
   const std::string&  name          () const { return m_name;      }
   const layout_type&  get_layout    () const { return m_layout;    }
+  const units::Units& get_units     () const { return m_units;     }
   const std::string&  get_grid_name () const { return m_grid_name; }
 
   // The identifier string
-  const std::string& get_identifier () const { return m_identifier; }
+  const std::string& get_id_string () const { return m_identifier; }
 
   // ----- Setters ----- //
 
@@ -63,15 +69,17 @@ protected:
 
   void update_identifier ();
 
-  std::string     m_name;
+  ci_string       m_name;
 
   layout_type     m_layout;
 
-  std::string     m_grid_name;
+  units::Units    m_units;
+
+  ci_string       m_grid_name;
 
   // The identifier string is a conveniet way to display the information of
   // the identifier, so that it can be easily read.
-  std::string     m_identifier;
+  ci_string       m_identifier;
 };
 
 bool operator== (const FieldIdentifier& fid1, const FieldIdentifier& fid2);

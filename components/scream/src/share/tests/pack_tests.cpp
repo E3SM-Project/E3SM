@@ -50,6 +50,10 @@ struct TestMask {
       const auto m2 = b < a;
       scream_masked_loop_no_vec(m2, s) REQUIRE(m2[s] == (s % 2 == 1));
       REQUIRE(sum_true(m1 && m2) == Mask::n / 2);
+      REQUIRE(sum_true(m1 && true) == Mask::n / 2);
+      REQUIRE(sum_true(m1 && false) == 0);
+      REQUIRE(sum_true(m1 || true) == Mask::n);
+      REQUIRE(sum_true(m1 || false) == Mask::n / 2);
       REQUIRE(sum_true(m1 || m2) == Mask::n / 2);
       REQUIRE(sum_true(m1 && ! m2) == 0);
       REQUIRE(sum_true(m1 || ! m2) == Mask::n);
@@ -248,6 +252,7 @@ struct TestPack {
     test_pack_gen_unary_stdfn(tgamma);
 
     test_mask_gen_bin_op_all(==);
+    test_mask_gen_bin_op_all(!=);
     test_mask_gen_bin_op_all(>=);
     test_mask_gen_bin_op_all(<=);
     test_mask_gen_bin_op_all(>);

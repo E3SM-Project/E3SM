@@ -13,8 +13,19 @@ module med_phases_prep_rof_mod
   use ESMF                  , only : ESMF_FieldBundle
   use esmFlds               , only : ncomps, complnd, comprof, compname, mapconsf
   use med_constants_mod     , only : R8, CS
-  use med_constants_mod     , only : dbug_flag=>med_constants_dbug_flag
-  use shr_nuopc_methods_mod , only : chkerr => shr_nuopc_methods_chkerr
+  use med_constants_mod     , only : dbug_flag       => med_constants_dbug_flag
+  use shr_nuopc_utils_mod   , only : chkerr          => shr_nuopc_utils_ChkErr
+  use shr_nuopc_methods_mod , only : FB_init         => shr_nuopc_methods_FB_init
+  use shr_nuopc_methods_mod , only : FB_diagnose     => shr_nuopc_methods_FB_diagnose
+  use shr_nuopc_methods_mod , only : FB_getNumFlds   => shr_nuopc_methods_FB_getNumFlds
+  use shr_nuopc_methods_mod , only : FB_accum        => shr_nuopc_methods_FB_accum
+  use shr_nuopc_methods_mod , only : FB_getFldPtr    => shr_nuopc_methods_FB_getFldPtr
+  use shr_nuopc_methods_mod , only : FB_average      => shr_nuopc_methods_FB_average
+  use shr_nuopc_methods_mod , only : FB_reset        => shr_nuopc_methods_FB_reset
+  use shr_nuopc_methods_mod , only : FB_clean        => shr_nuopc_methods_FB_clean
+  use shr_nuopc_methods_mod , only : FB_FieldRegrid  => shr_nuopc_methods_FB_FieldRegrid
+  use shr_nuopc_methods_mod , only : State_GetScalar => shr_nuopc_methods_State_GetScalar
+  use shr_nuopc_methods_mod , only : State_SetScalar => shr_nuopc_methods_State_SetScalar
   use perf_mod              , only : t_startf, t_stopf
 
   implicit none
@@ -55,8 +66,6 @@ contains
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_FieldBundleGet, ESMF_StateIsCreated, ESMF_StateGet
     use ESMF                  , only : ESMF_FieldBundleIsCreated
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_accum
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
     use med_internalstate_mod , only : InternalState
 
     ! input/output variables
@@ -108,7 +117,7 @@ contains
     !---------------------------------------
 
     if (ncnt > 0) then
-       call shr_nuopc_methods_FB_accum(&
+       call FB_accum(&
             is_local%wrap%FBImpAccum(complnd,complnd), &
             is_local%wrap%FBImp(complnd,complnd), rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -116,7 +125,7 @@ contains
        is_local%wrap%FBImpAccumCnt(complnd) = is_local%wrap%FBImpAccumCnt(complnd) + 1
 
        if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,complnd), &
+          call FB_diagnose(is_local%wrap%FBImpAccum(complnd,complnd), &
                string=trim(subname)//' FBImpAccum(complnd,complnd) ', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end if
@@ -142,10 +151,6 @@ contains
     use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_SUCCESS
     use ESMF                  , only : ESMF_FieldBundleGet
     use esmFlds               , only : fldListTo, fldListFr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_diagnose
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_average
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
     use med_merge_mod         , only : med_merge_auto
     use med_map_mod           , only : med_map_FB_Regrid_Norm
     use med_internalstate_mod , only : InternalState, mastertask
@@ -198,12 +203,12 @@ contains
        !--- average import from land accumuled FB
        !---------------------------------------
 
-       call shr_nuopc_methods_FB_average(is_local%wrap%FBImpAccum(complnd,complnd), &
+       call FB_average(is_local%wrap%FBImpAccum(complnd,complnd), &
                                          is_local%wrap%FBImpAccumCnt(complnd), rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,complnd), &
+          call FB_diagnose(is_local%wrap%FBImpAccum(complnd,complnd), &
                string=trim(subname)//' FBImpAccum(complnd,complnd) after avg ', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end if
@@ -229,7 +234,7 @@ contains
           if (chkerr(rc,__LINE__,u_FILE_u)) return
 
           if (dbug_flag > 1) then
-             call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBImpAccum(complnd,comprof), &
+             call FB_diagnose(is_local%wrap%FBImpAccum(complnd,comprof), &
                   string=trim(subname)//' FBImpAccum(complnd,comprof) after avg ', rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
           end if
@@ -240,7 +245,7 @@ contains
              if (chkerr(rc,__LINE__,u_FILE_u)) return
           else
              ! This will ensure that no irrig is sent from the land
-             call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImpAccum(complnd,comprof), &
+             call FB_getFldPtr(is_local%wrap%FBImpAccum(complnd,comprof), &
                   trim(irrig_flux_field), dataptr, rc=rc)
              if (chkerr(rc,__LINE__,u_FILE_u)) return
              dataptr(:) = 0._r8
@@ -252,7 +257,7 @@ contains
        !---------------------------------------
 
        if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBFrac(comprof), &
+          call FB_diagnose(is_local%wrap%FBFrac(comprof), &
                string=trim(subname)//' FBFrac(comprof) before merge ', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end if
@@ -265,7 +270,7 @@ contains
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        if (dbug_flag > 1) then
-          call shr_nuopc_methods_FB_diagnose(is_local%wrap%FBExp(comprof), &
+          call FB_diagnose(is_local%wrap%FBExp(comprof), &
                string=trim(subname)//' FBexp(comprof) ', rc=rc)
           if (chkerr(rc,__LINE__,u_FILE_u)) return
        end if
@@ -276,7 +281,7 @@ contains
 
        is_local%wrap%FBImpAccumCnt(complnd) = 0
 
-       call shr_nuopc_methods_FB_reset(is_local%wrap%FBImpAccum(complnd,complnd), value=czero, rc=rc)
+       call FB_reset(is_local%wrap%FBImpAccum(complnd,complnd), value=czero, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
 
        !---------------------------------------
@@ -325,12 +330,6 @@ contains
     use ESMF                  , only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_FieldBundleIsCreated
     use ESMF                  , only : ESMF_SUCCESS, ESMF_FAILURE, ESMF_RouteHandleIsCreated
     use ESMF                  , only : ESMF_LOGMSG_INFO, ESMF_LogWrite
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_getFldPtr
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_init
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_reset
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_clean
-    use shr_nuopc_methods_mod , only : shr_nuopc_methods_FB_FieldRegrid
-    use shr_nuopc_scalars_mod , only : flds_scalar_name
     use med_internalstate_mod , only : InternalState, mastertask
     use med_map_mod           , only : med_map_FB_Regrid_norm
 
@@ -390,22 +389,26 @@ contains
         .not. ESMF_FieldBundleIsCreated(FBlndIrrig) .and. &
         .not. ESMF_FieldBundleIsCreated(FBrofIrrig)) then
 
-       call shr_nuopc_methods_FB_init(FBout=FBlndVolr, flds_scalar_name=flds_scalar_name, &
+       call FB_init(FBout=FBlndVolr, &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
             FBgeom=is_local%wrap%FBImp(complnd,complnd), &
             fieldNameList=(/trim(volr_field)/), rc=rc)
        if (chkerr(rc,__line__,u_file_u)) return
 
-       call shr_nuopc_methods_FB_init(FBout=FBrofVolr, flds_scalar_name=flds_scalar_name, &
+       call FB_init(FBout=FBrofVolr, &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
             FBgeom=is_local%wrap%FBImp(comprof,comprof), &
             fieldNameList=(/trim(volr_field)/), rc=rc)
        if (chkerr(rc,__line__,u_file_u)) return
 
-       call shr_nuopc_methods_FB_init(FBout=FBlndIrrig, flds_scalar_name=flds_scalar_name, &
+       call FB_init(FBout=FBlndIrrig, &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
             FBgeom=is_local%wrap%FBImp(complnd,complnd), &
             fieldNameList=(/trim(irrig_normalized_field), trim(irrig_volr0_field)/), rc=rc)
        if (chkerr(rc,__line__,u_file_u)) return
 
-       call shr_nuopc_methods_FB_init(FBout=FBrofIrrig, flds_scalar_name=flds_scalar_name, &
+       call FB_init(FBout=FBrofIrrig, &
+            flds_scalar_name=is_local%wrap%flds_scalar_name, &
             FBgeom=is_local%wrap%FBImp(comprof,comprof), &
             fieldNameList=(/trim(irrig_normalized_field), trim(irrig_volr0_field)/), rc=rc)
        if (chkerr(rc,__line__,u_file_u)) return
@@ -420,11 +423,11 @@ contains
     ! cells: while conservative, this would be unphysical (it would mean that irrigation
     ! actually adds water to those cells).
 
-    call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImp(comprof,comprof), &
+    call FB_getFldPtr(is_local%wrap%FBImp(comprof,comprof), &
          trim(volr_field), volr_r_import, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_FB_getFldPtr(FBrofVolr, trim(volr_field), volr_r, rc=rc)
+    call FB_getFldPtr(FBrofVolr, trim(volr_field), volr_r, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     do r = 1, size(volr_r)
@@ -436,12 +439,12 @@ contains
     end do
 
     ! Map volr_r to volr_l (rof->lnd) using conservative mapping without any fractional weighting
-    call shr_nuopc_methods_FB_FieldRegrid(FBrofVolr, trim(volr_field), FBlndVolr, trim(volr_field), &
+    call FB_FieldRegrid(FBrofVolr, trim(volr_field), FBlndVolr, trim(volr_field), &
          is_local%wrap%RH(comprof, complnd, mapconsf), rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Get volr_l
-    call shr_nuopc_methods_FB_getFldPtr(FBlndVolr, trim(volr_field), volr_l, rc=rc)
+    call FB_getFldPtr(FBlndVolr, trim(volr_field), volr_l, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! ------------------------------------------------------------------------
@@ -460,15 +463,15 @@ contains
     ! flux on the rof grid.
 
     ! First extract accumulated irrigation flux from land
-    call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImpAccum(complnd,complnd), &
+    call FB_getFldPtr(is_local%wrap%FBImpAccum(complnd,complnd), &
          trim(irrig_flux_field), irrig_flux_l, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Fill in values for irrig_normalized_l and irrig_volr0_l in temporary FBlndIrrig field bundle
-    call shr_nuopc_methods_FB_getFldPtr(FBlndIrrig, trim(irrig_normalized_field), irrig_normalized_l, rc=rc)
+    call FB_getFldPtr(FBlndIrrig, trim(irrig_normalized_field), irrig_normalized_l, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_FB_getFldPtr(FBlndIrrig, trim(irrig_volr0_field), irrig_volr0_l, rc=rc)
+    call FB_getFldPtr(FBlndIrrig, trim(irrig_volr0_field), irrig_volr0_l, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     do l = 1, size(volr_l)
@@ -493,14 +496,14 @@ contains
          is_local%wrap%RH(complnd, comprof, mapconsf), &
          string='mapping normalized irrig from lnd to to rof', rc=rc)
 
-    call shr_nuopc_methods_FB_getFldPtr(FBrofIrrig, trim(irrig_normalized_field), irrig_normalized_r, rc=rc)
+    call FB_getFldPtr(FBrofIrrig, trim(irrig_normalized_field), irrig_normalized_r, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call shr_nuopc_methods_FB_getFldPtr(FBrofIrrig, trim(irrig_volr0_field), irrig_volr0_r, rc=rc)
+    call FB_getFldPtr(FBrofIrrig, trim(irrig_volr0_field), irrig_volr0_r, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Convert to a total irrigation flux on the ROF grid, and put this in the pre-merge FBImpAccum(complnd,comprof)
-    call shr_nuopc_methods_FB_getFldPtr(is_local%wrap%FBImpAccum(complnd,comprof), &
+    call FB_getFldPtr(is_local%wrap%FBImpAccum(complnd,comprof), &
          trim(irrig_flux_field), irrig_flux_r, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 

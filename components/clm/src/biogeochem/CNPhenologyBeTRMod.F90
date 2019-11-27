@@ -35,8 +35,9 @@ module CNPhenologyBeTRMod
   use GridcellType        , only : grc_pp
   use ColumnType          , only : col_pp
   use ColumnDataType      , only : col_es, col_ws, col_cf, col_nf, col_pf
+  use TopounitDataType    , only : top_af, top_as
   use VegetationType      , only : veg_pp
-  use VegetationDataType  , only : veg_es, veg_cs, veg_cf, veg_ns, veg_nf
+  use VegetationDataType  , only : veg_es, veg_ef, veg_cs, veg_cf, veg_ns, veg_nf
   use VegetationDataType  , only : veg_ps, veg_pf
   !
   implicit none
@@ -200,7 +201,7 @@ contains
     logical                  , intent(in)    :: doalb           ! true if time for sfc albedo calc
     type(waterstate_type)    , intent(in)    :: waterstate_vars
     type(temperature_type)   , intent(inout) :: temperature_vars
-    type(crop_type)          , intent(inout)    :: crop_vars
+    type(crop_type)          , intent(inout) :: crop_vars
     type(canopystate_type)   , intent(in)    :: canopystate_vars
     type(soilstate_type)     , intent(in)    :: soilstate_vars
     type(cnstate_type)       , intent(inout) :: cnstate_vars
@@ -217,7 +218,7 @@ contains
     ! to operate only on the relevant patches
 
     call CNPhenologyClimate(num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-         temperature_vars, cnstate_vars)
+         temperature_vars, cnstate_vars,crop_vars)
 
     call CNEvergreenPhenology(num_soilp, filter_soilp, &
          cnstate_vars)
@@ -231,6 +232,11 @@ contains
          soilstate_vars, temperature_vars, cnstate_vars, &
          carbonstate_vars, nitrogenstate_vars, carbonflux_vars, nitrogenflux_vars,&
          phosphorusstate_vars,phosphorusflux_vars)
+
+    if (num_pcropp > 0 ) then
+       call CropPlantDate(num_soilp, filter_soilp, num_pcropp, filter_pcropp,&
+             temperature_vars, cnstate_vars, crop_vars)
+    end if
 
     if (doalb .and. num_pcropp > 0 ) then
        call CropPhenology(num_pcropp, filter_pcropp, &
@@ -343,7 +349,7 @@ contains
 
   !-----------------------------------------------------------------------
   subroutine CNPhenologyClimate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
-       temperature_vars, cnstate_vars)
+       temperature_vars, cnstate_vars, crop_vars)
     !
     ! !DESCRIPTION:
     ! For coupled carbon-nitrogen code (CN).
@@ -359,11 +365,11 @@ contains
     integer                , intent(in)    :: filter_pcropp(:)! filter for prognostic crop patches
     type(temperature_type) , intent(inout) :: temperature_vars
     type(cnstate_type)     , intent(inout) :: cnstate_vars
+    type(crop_type)        , intent(inout) :: crop_vars
     !
     ! !LOCAL VARIABLES:
     integer :: p                    ! indices
     integer :: fp                   ! lake filter pft index
-    integer :: nyrs                 ! number of years prognostic crop has run
     real(r8):: dayspyr              ! days per year (days)
     integer kyr                     ! current year
     integer kmo                     !         month of year  (1, ..., 12)
@@ -374,6 +380,7 @@ contains
     !-----------------------------------------------------------------------
 
     associate(                                                  &
+         nyrs_crop_active => crop_vars%nyrs_crop_active_patch,   & ! InOut: [integer (:)  ]  number of years this crop patch has been active
          t_ref2m        => veg_es%t_ref2m     , & ! Input:  [real(r8) (:) ]  2m air temperature (K)
          gdd0           => veg_es%gdd0        , & ! Output: [real(r8) (:) ]  growing deg. days base 0 deg C (ddays)
          gdd8           => veg_es%gdd8        , & ! Output: [real(r8) (:) ]     "     "    "    "   8  "  "    "
@@ -404,18 +411,17 @@ contains
       if (num_pcropp > 0) then
          ! get time-related info
          call get_curr_date(kyr, kmo, kda, mcsec)
-         nyrs = cnstate_vars%CropRestYear
       end if
 
       do fp = 1,num_pcropp
          p = filter_pcropp(fp)
-         if (kmo == 1 .and. kda == 1 .and. nyrs == 0) then ! YR 1:
+         if (kmo == 1 .and. kda == 1 .and. nyrs_crop_active(p) == 0) then ! YR 1:
             gdd020(p)  = 0._r8                             ! set gdd..20 variables to 0
             gdd820(p)  = 0._r8                             ! and crops will not be planted
             gdd1020(p) = 0._r8
          end if
          if (kmo == 1 .and. kda == 1 .and. mcsec == 0) then        ! <-- END of EVERY YR:
-            if (nyrs  == 1) then                                   ! <-- END of YR 1
+            if (nyrs_crop_active(p)  == 1) then                    ! <-- END of YR 1
                gdd020(p)  = gdd0(p)                                ! <-- END of YR 1
                gdd820(p)  = gdd8(p)                                ! <-- END of YR 1
                gdd1020(p) = gdd10(p)                               ! <-- END of YR 1
@@ -1316,6 +1322,7 @@ contains
     use pftvarcon        , only : nwcerealirrig, nsoybeanirrig, ncornirrig, nscerealirrig
     use pftvarcon        , only : lfemerg, grnfill, mxmat, minplanttemp, planttemp
     use clm_varcon       , only : spval, secspday
+    use CropType         , only : tcvp, tcvt, cst
     !
     ! !ARGUMENTS:
     integer                  , intent(in)    :: num_pcropp       ! number of prog crop patches in filter
@@ -1342,11 +1349,18 @@ contains
     integer fp,p      ! patch indices
     integer c         ! column indices
     integer g         ! gridcell indices
+    integer t         ! topographic indices
     integer h         ! hemisphere indices
     integer idpp      ! number of days past planting
     real(r8) dayspyr  ! days per year
     real(r8) crmcorn  ! comparitive relative maturity for corn
     real(r8) ndays_on ! number of days to fertilize
+    logical p_season  ! precipitation seasonal
+    logical t_season  ! temperature seasonal
+    logical no_season ! neither temperature or precipitation seasonal
+    real(r8), parameter :: minrain = 0.1    ! minimum rainfall for planting
+    real(r8), parameter :: minwet = 0.2     ! minimum fraction of saturation for planting
+    real(r8), parameter :: maxwet = 0.8     ! maximum fraction of saturation for planting
     !------------------------------------------------------------------------
 
     associate(                                                                 &
@@ -1398,7 +1412,15 @@ contains
          leafcp             =>    veg_vp%leafcp                              , & ! Input:  [real(r8) (:) ]  leaf C:P (gC/gP)
          leafp_xfer         =>    veg_ps%leafp_xfer      , & ! Output: [real(r8) (:) ]  (gP/m2)   leaf P transfer
          crop_seedp_to_leaf =>    veg_pf%crop_seedp_to_leaf , & ! Output: [real(r8) (:) ]  (gP/m2/s) seed source to PFT-level
-         fert               =>    veg_nf%fert                 & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         fert               =>    veg_nf%fert               , & ! Output: [real(r8) (:) ]  (gN/m2/s) fertilizer applied each timestep
+         cvt                =>    crop_vars%cvt_patch                     , & ! Output:  [real(r8) ):)]  exp weighted moving average CV precip
+         cvp                =>    crop_vars%cvp_patch                     , & ! Output:  [real(r8) ):)]  exp weighted moving average average CV temp
+         xt_bar             =>    crop_vars%xt_bar_patch                  , & ! Output:  [real(r8) ):)]  exp weighted moving average average monthly temp
+         plantmonth         =>    crop_vars%plantmonth_patch              , & ! Output:  [real(r8) ):)]  plant month
+         plantday           =>    crop_vars%plantday_patch                , & ! Output:  [real(r8) ):)]  plant day
+         harvday            =>    crop_vars%harvday_patch                 , & ! Ouptut:  [real(r8) ):)]  harvest day
+         forc_rain          =>    top_af%rain                             , & ! Input:   [real(r8) (:)]  rainfall rate
+         wf2                =>    col_ws%wf2                                & ! Output:  [real(r8) (:)]  soil water as frac. of whc for top 0.17 m
          )
 
       ! get time info
@@ -1412,6 +1434,7 @@ contains
          p = filter_pcropp(fp)
          c = veg_pp%column(p)
          g = veg_pp%gridcell(p)
+         t = veg_pp%topounit(p)
          h = inhemi(p)
 
          ! background litterfall and transfer rates; long growing season factor
@@ -1442,6 +1465,7 @@ contains
             if (.not. croplive(p))  then
                cropplant(p) = .false.
                idop(p)      = NOT_Planted
+               plantday(p)  = NOT_Planted
 
                ! keep next for continuous, annual winter temperate cereal type crop;
                ! if we removed elseif,
@@ -1451,6 +1475,10 @@ contains
             else if (croplive(p) .and. (ivt(p) == nwcereal .or. ivt(p) == nwcerealirrig)) then
                cropplant(p) = .false.
                !           else ! not possible to have croplive and ivt==cornORsoy? (slevis)
+               ! keep next for precip based annual crop that may be planted in
+               ! January in the SH to prevent from cereal/fallow rotation
+            else if (croplive(p) .and. cvp(p) > 0.4_r8) then
+               cropplant(p) = .false.
             end if
 
          end if
@@ -1503,6 +1531,8 @@ contains
                   croplive(p)    = .true.
                   cropplant(p)   = .true.
                   idop(p)        = jday
+                  plantday(p)    = jday
+                  harvday(p)     = NOT_Harvested
                   harvdate(p)    = NOT_Harvested
                   gddmaturity(p) = hybgdd(ivt(p))
                   leafc_xfer(p)  = 1._r8 ! initial seed at planting to appear
@@ -1526,6 +1556,8 @@ contains
                   croplive(p)    = .true.
                   cropplant(p)   = .true.
                   idop(p)        = jday
+                  plantday(p)    = jday
+                  harvday(p)     = NOT_Harvested
                   harvdate(p)    = NOT_Harvested
                   gddmaturity(p) = hybgdd(ivt(p))
                   leafc_xfer(p)  = 1._r8 ! initial seed at planting to appear
@@ -1542,45 +1574,78 @@ contains
             else ! not winter cereal... slevis: added distinction between NH and SH
                ! slevis: The idea is that jday will equal idop sooner or later in the year
                !         while the gdd part is either true or false for the year.
-               if (t10(p) /= spval.and. a10tmin(p) /= spval   .and. &
-                    t10(p)     > planttemp(ivt(p))             .and. &
-                    a10tmin(p) > minplanttemp(ivt(p))          .and. &
-                    jday       >= minplantjday(ivt(p),h)       .and. &
-                    jday       <= maxplantjday(ivt(p),h)       .and. &
-                    t10(p) /= spval .and. a10tmin(p) /= spval  .and. &
-                    gdd820(p) /= spval                         .and. &
-                    gdd820(p) >= gddmin(ivt(p))) then
-
-                  ! impose limit on growing season length needed
-                  ! for crop maturity - for cold weather constraints
-                  croplive(p)  = .true.
-                  cropplant(p) = .true.
-                  idop(p)      = jday
-                  harvdate(p)  = NOT_Harvested
-
-                  ! go a specified amount of time before/after
-                  ! climatological date
-                  if (ivt(p)==nsoybean .or. ivt(p) == nsoybeanirrig) gddmaturity(p)=min(gdd1020(p),hybgdd(ivt(p)))
-                  if (ivt(p)==ncorn .or. ivt(p)==ncornirrig) then
-                     gddmaturity(p)=max(950._r8, min(gdd820(p)*0.85_r8, hybgdd(ivt(p))))
-                     gddmaturity(p)=max(950._r8, min(gddmaturity(p)+150._r8,1850._r8))
+               ! Assign seasonality - either temperature or precipitation
+               t_season = .false.
+               p_season = .false.
+               no_season = .false.
+               if (cvp(p) > tcvp) then        ! precipitation CV indicator
+                  if (cvt(p) >= tcvt) then    ! Both temperature and precip seasonality
+                     if (minval(xt_bar(p,:)) .lt. cst)then ! cold season exists (i.e., min temp below 10 deg C)
+                        t_season = .true.
+                     else                            ! no cold season
+                        p_season = .true.
+                     end if
+                  else                     ! precipitation seasonality
+                     p_season = .true.
                   end if
-                  if (ivt(p)==nscereal .or. ivt(p) == nscerealirrig) gddmaturity(p)=min(gdd020(p),hybgdd(ivt(p)))
+               else if (cvt(p) >= tcvt) then   ! temperature seasonality
+                  t_season = .true.
+               else                        ! no seasonality at all - tropics
+                  no_season = .true.
+               end if
 
-                  leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
-                  leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
-                  crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
-                  crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
+               if (kmo .eq. plantmonth(p)               .and. &
+                    gdd820(p) /= spval                  .and. &
+                    gdd820(p) >= gddmin(ivt(p))) then
+                  ! also require reasonable soil moisture to plant
+                  ! between 0.2 (dry) and 0.8 (wet) saturation in top soil
+                  ! layers
+                  if ( (wf2(c) .ge. minwet .and. wf2(c) .le. maxwet)  .and. &
+                     (t_season                                  .and. &
+                     t10(p) /= spval .and. a10tmin(p) /= spval  .and. &
+                     t10(p)     > planttemp(ivt(p))             .and. &
+                     a10tmin(p) > minplanttemp(ivt(p)))               &
+                                                                .or.  &
+                     (p_season                                  .and. &
+                     forc_rain(t) .gt. minrain/dt)                    & ! rain threshold to trigger
+                                                                .or.  & ! the beginnig of rain season
+                     (no_season)) then
 
-                  leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
-                  crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
 
-                  ! If hit the max planting julian day -- go ahead and plant
-               else if (jday == maxplantjday(ivt(p),h) .and. gdd820(p) > 0._r8 .and. &
-                    gdd820(p) /= spval ) then
+                     ! impose limit on growing season length needed
+                     ! for crop maturity - for cold weather constraints
+                     croplive(p)  = .true.
+                     cropplant(p) = .true.
+                     idop(p)      = jday
+                     harvday(p)   = NOT_Harvested
+                     harvdate(p)  = NOT_Harvested
+                     harvdate(p)  = NOT_Harvested
+
+                     ! go a specified amount of time before/after
+                     ! climatological date
+                     if (ivt(p)==nsoybean .or. ivt(p) == nsoybeanirrig) gddmaturity(p)=min(gdd1020(p),hybgdd(ivt(p)))
+                     if (ivt(p)==ncorn .or. ivt(p)==ncornirrig) then
+                        gddmaturity(p)=max(950._r8, min(gdd820(p)*0.85_r8, hybgdd(ivt(p))))
+                        gddmaturity(p)=max(950._r8, min(gddmaturity(p)+150._r8,1850._r8))
+                     end if
+                     if (ivt(p)==nscereal .or. ivt(p) == nscerealirrig) gddmaturity(p)=min(gdd020(p),hybgdd(ivt(p)))
+
+                     leafc_xfer(p) = 1._r8 ! initial seed at planting to appear
+                     leafn_xfer(p) = leafc_xfer(p) / leafcn(ivt(p)) ! with onset
+                     crop_seedc_to_leaf(p) = leafc_xfer(p)/dt
+                     crop_seedn_to_leaf(p) = leafn_xfer(p)/dt
+
+                     leafp_xfer(p) = leafc_xfer(p) / leafcp(ivt(p)) ! with onset
+                     crop_seedp_to_leaf(p) = leafp_xfer(p)/dt
+                  end if
+                     ! If hit the max planting julian day -- go ahead and plant
+               else if (kmo .eq. (plantmonth(p) + 1) .and. gdd820(p) > 0._r8 .and. &
+                       gdd820(p) /= spval ) then
                   croplive(p)  = .true.
                   cropplant(p) = .true.
                   idop(p)      = jday
+                  plantday(p)  = jday
+                  harvday(p)   = NOT_Harvested
                   harvdate(p)  = NOT_Harvested
 
                   if (ivt(p)==nsoybean .or. ivt(p) == nsoybeanirrig) gddmaturity(p)=min(gdd1020(p),hybgdd(ivt(p)))
@@ -1732,6 +1797,7 @@ contains
 
             else if (hui(p) >= gddmaturity(p) .or. idpp >= mxmat(ivt(p))) then
                if (harvdate(p) >= NOT_Harvested) harvdate(p) = jday
+               if (harvday(p) >= NOT_Harvested) harvday(p) = jday
                croplive(p) = .false.     ! no re-entry in greater if-block
                if (tlai(p) > 0._r8) then ! plant had emerged before harvest
                   offset_flag(p) = 1._r8
@@ -1991,6 +2057,194 @@ contains
     end associate
 
   end subroutine vernalization
+
+  !-----------------------------------------------------------------------
+  subroutine CropPlantDate (num_soilp, filter_soilp, num_pcropp, filter_pcropp, &
+        temperature_vars, cnstate_vars, crop_vars)
+    !
+    ! !DESCRIPTION:
+    ! For determining the plant month for crops, plant day is established in
+    ! CropPhenologyMod
+    !
+    ! !USES:
+    use clm_time_manager , only : get_curr_date
+    use clm_time_manager , only : get_step_size
+    use clm_varcon       , only : secspday
+    use clm_varpar       , only : numpft
+    use pftvarcon        , only : planttemp
+    use CropMod          , only : calculate_eto, plant_month
+
+    !
+    ! !ARGUMENTS:
+    integer                , intent(in)    :: num_soilp       ! number of soil patches in filter
+    integer                , intent(in)    :: filter_soilp(:) ! filter for soil patches
+    integer                , intent(in)    :: num_pcropp      ! number of prognostic crops in filter
+    integer                , intent(in)    :: filter_pcropp(:)! filter for prognostic crop patches
+    type(temperature_type) , intent(in)    :: temperature_vars
+    type(cnstate_type)     , intent(inout) :: cnstate_vars
+    type(crop_type)        , intent(inout) :: crop_vars
+
+    !
+    ! !LOCAL VARIABLES:
+    integer :: p,c,m,t,n,h          ! indices
+    integer :: fp                   ! lake filter pft index
+    integer kyr                     ! current year
+    integer kmo                     ! month of year  (1, ..., 12)
+    integer kda                     ! day of month   (1, ..., 31)
+    integer mcsec                   ! seconds of day (0, ..., seconds/day)
+    integer , parameter :: nmon = 12        ! number months in year
+    real(r8), parameter :: alpha = 0.05_r8  ! coefficient representing degree of weighting decrease
+    real(r8), parameter :: mon = 12._r8     ! used for some calculations (number of days in month)
+    real(r8) :: mu_p, mu_t, sigmasum_t, sigmasum_p, sigma_t, sigma_p
+    real(r8) :: es, ETout
+    integer, dimension(12) :: ndaypm= &
+         (/31,28,31,30,31,30,31,31,30,31,30,31/) !days per month
+    !-----------------------------------------------------------------------
+
+    associate(                                                &
+         ivt            => veg_pp%itype                     , &
+         t_ref2m        => veg_es%t_ref2m                   , & ! Input: [real(r8) (:) ]  2m air temperature (K)
+         forc_rain      => top_af%rain                      , & ! Input: [real(r8) (:) ]  rainfall rate
+         forc_snow      => top_af%snow                      , & ! Input: [real(r8) (:) ]  downscaled snow
+         forc_rh        => top_as%rhbot                     , & ! Input: [real(r8) (:) ]  relative humidity
+         forc_wind      => top_as%windbot                   , & ! Input: [real(r8) (:) ]  atmospheric wind speed (m/s)
+         forc_pbot      => top_as%pbot                      , & ! Input: [real(r8) (:) ]  downscaled surface pressure (Pa)
+         eflx_soil_grnd => veg_ef%eflx_soil_grnd            , & ! Input: [real(r8) (:) ]  soil heat flux (W/m**2) [+ = into soil]
+         netrad         => veg_ef%netrad                    , & ! Input: [real(r8) (:) ]  net radiation (positive downward) (W/m**2)
+         nyrs_crop_active => crop_vars%nyrs_crop_active_patch,   & ! InOut:  [integer (:)  ]  number of years this crop patch has been active
+         cvt            => crop_vars%cvt_patch              , & ! Output: [real(r8) (:) ]  coefficient of variance temperature
+         cvp            => crop_vars%cvp_patch              , & ! Output: [real(r8) (:) ]     "     "    "    "    precipitation
+         xt             => crop_vars%xt_patch               , & ! Output: [real(r8) (:) ]  monthly average temperature
+         xp             => crop_vars%xp_patch               , & ! Output: [real(r8) (:) ]  monthly total precipitation
+         xt_bar         => crop_vars%xt_bar_patch           , & ! Output: [real(r8) (:) ]  exp weighted moving ave of temp
+         xp_bar         => crop_vars%xp_bar_patch           , & ! Output: [real(r8) (:) ]  exp weighted moving ave of precip
+         prev_xt_bar    => crop_vars%prev_xt_bar_patch      , & ! Output: [real(r8) (:) ]  previous years exp weighted moving ave of temp
+         prev_xp_bar    => crop_vars%prev_xp_bar_patch      , & ! Output: [real(r8) (:) ]  previous years exp weighted moving ave of prec
+         p2ETo          => crop_vars%p2ETo_patch            , & ! Output: [real(r8) (:) ]  precipitation:evapotranspiration ratio
+         p2ETo_bar      => crop_vars%p2ETo_bar_patch        , & ! Output: [real(r8) (:) ]  exp weighted moving ave of P:PET
+         prev_p2ETo_bar => crop_vars%prev_p2ETo_bar_patch   , & ! Output: [real(r8) (:) ]  previous years exp weighted moving ave of P:PET
+         P2E_rm         => crop_vars%P2E_rm_patch           , & ! Output: [real(r8) (:) ]  precipitation:evapotranspiration ratio 4-month sum
+         ETo            => crop_vars%ETo_patch              , & ! Output: [real(r8) (:) ]  reference evapotranspiration (mm)
+         plantmonth     => crop_vars%plantmonth_patch         & ! Output: [real(r8) (:) ]  month to plant crops
+         )
+
+      !
+      ! The following crop related steps are done here rather than CropPhenology
+      ! so that they will be completed each time-step rather than with doalb.
+      !
+      ! The following lines of code will determine the precipitation or
+      ! temperature seasonality of the grid cell for determing the plant trigger
+      ! The method is from Waha et al., 2012 which calculates the coefficient of
+      ! variation of temperature and precipitation to determin which climate
+      ! variable drives the growing season. Then thresholds for the warm season
+      ! and wet season are determined from either temperature thresholds or the
+      ! P:PET ratio
+
+      dt      = real( get_step_size(), r8 )
+      fracday = dt/secspday
+
+      if (num_pcropp > 0) then
+         ! get time-related info
+         call get_curr_date(kyr, kmo, kda, mcsec)
+      end if
+
+      do fp = 1,num_pcropp
+         p = filter_pcropp(fp)
+         c = veg_pp%column(p)
+         t = veg_pp%topounit(p)
+         h = inhemi(p)
+         if (kmo == 1 .and. kda == 1 .and. nyrs_crop_active(p) == 0) then ! YR 1:
+            P2E_rm(p,:) = 0._r8
+            if (mcsec == 3600) then
+               xt(p,:) = 0._r8          ! set these values to zero the first of the year
+               xp(p,:) = 0._r8
+               ETo(p,:) = 0._r8
+            end if
+         end if
+         if (kmo == 1 .and. kda == 1 .and. mcsec == 0) then        ! <-- END of EVERY YR:
+            if (nyrs_crop_active(p) > 0) then
+               ! grab the precipitation to evapotranspiration from previous year
+               ! last months (oct-dec) before it is overwritten
+               ! for the 4-month sum, zero out the remainder
+               P2E_rm(p,1) = sum(prev_p2ETo_bar(p,10:12))
+               P2E_rm(p,2) = sum(prev_p2ETo_bar(p,11:12))
+               P2E_rm(p,3) = prev_p2ETo_bar(p,12)
+               P2E_rm(p,4:12) = 0._r8
+               ! calculate the annual mean temperature and precipitation
+               mu_t = 0._r8
+               mu_p = 0._r8
+               do m=1,nmon
+                  mu_t = mu_t + (xt_bar(p,m))
+                  mu_p = mu_p + (xp_bar(p,m))
+               end do
+               mu_t = mu_t/mon
+               mu_p = mu_p/mon
+               ! calculate the standard deviation of temperature and
+               ! precipitation
+               sigmasum_t = 0._r8
+               sigmasum_p = 0._r8
+               do m = 1,nmon
+                  sigmasum_t = sigmasum_t + (xt_bar(p,m) - mu_t)**2
+                  sigmasum_p = sigmasum_p + (xp_bar(p,m) - mu_p)**2
+               end do
+               sigma_t = sqrt( (1._r8/(mon-1._r8)) * sigmasum_t)
+               sigma_p = sqrt( (1._r8/(mon-1._r8)) * sigmasum_p)
+               ! calculate the new coefficient of variance of temperature and
+               ! precipitation
+               cvt(p) = sigma_t/mu_t
+               cvp(p) = sigma_p/mu_p
+               ! calculate the P:ET0 ratio for precipitation seasonality
+               ! now finish the P:PET calculation for the 4-month sum
+               P2E_rm(p,1) = P2E_rm(p,1) + p2ETo_bar(p,1)
+               P2E_rm(p,2) = P2E_rm(p,2) + p2ETo_bar(p,1) + p2ETo_bar(p,2)
+               P2E_rm(p,3) = P2E_rm(p,3) + p2ETo_bar(p,1) + p2ETo_bar(p,2) + p2ETo_bar(p,3)
+               do m=4,nmon
+                  n = m-3
+                  P2E_rm(p,m) = P2E_rm(p,m) + sum(p2ETo_bar(p,n:m))
+               end do
+            else
+               cvt(p) = 0._r8
+               cvp(p) = 0._r8
+            end if
+            ! the next call will determine next years plant month
+            call plant_month(p, cvt(p), cvp(p), xt_bar(p,:), P2E_rm(p,:), minplantjday(ivt(p),h), plantmonth(p))
+            prev_xt_bar(p,:) = xt_bar(p,:)   ! save last years values
+            prev_xp_bar(p,:) = xp_bar(p,:)
+            prev_p2ETo_bar(p,:) = p2ETo_bar(p,:)
+            xt(p,:) = 0._r8          ! reset monthly averages
+            xp(p,:) = 0._r8
+            ETo(p,:) = 0._r8
+         end if
+
+         xt(p,kmo) = xt(p,kmo) + t_ref2m(p) * fracday/ndaypm(kmo) ! monthly average temperature
+         xp(p,kmo) = xp(p,kmo) + (forc_rain(t)+forc_snow(t))*dt   ! monthly average precipitation
+         ! calculate the potential evapotranspiration
+         call calculate_eto(t_ref2m(p), netrad(p), eflx_soil_grnd(p), forc_pbot(t), forc_rh(t), forc_wind(t), es, dt, ETout)
+         ! monthly ETo
+         ETo(p,kmo) = ETo(p,kmo) + ETout
+         ! calculate the P:PET for each month
+         p2ETo(p,kmo) = xp(p,kmo)/ETo(p,kmo)
+
+         if (nyrs_crop_active(p) == 0) then ! for the first year, use last years values
+            prev_xt_bar(p,kmo) = xt(p,kmo)
+            prev_xp_bar(p,kmo) = xp(p,kmo)
+            prev_p2ETo_bar(p,kmo) = p2ETo(p,kmo)
+         end if
+
+         ! the following calculates the exponential weighted moving average of
+         ! temperature, precipitation and P:PET for each month. This still  gives an
+         ! average, but with more weight toward recent years to account for farmer
+         ! memory, rather than a simple 20-year average with is used for growing
+         ! season calculations (i.e., GDD). It is used in the plant_month call
+         xt_bar(p,kmo) = alpha * xt(p,kmo) + (1-alpha) * prev_xt_bar(p,kmo)
+         xp_bar(p,kmo) = alpha * xp(p,kmo) + (1-alpha) * prev_xp_bar(p,kmo)
+         p2ETo_bar(p,kmo) = alpha * p2ETo(p,kmo) + (1-alpha) * prev_p2ETo_bar(p,kmo)
+
+      end do
+
+    end associate
+
+  end subroutine CropPlantDate
 
   !-----------------------------------------------------------------------
   subroutine CNOnsetGrowth (num_soilp, filter_soilp, &

@@ -121,6 +121,7 @@ module cam_history_support
     character(len=max_fieldname_len) :: name ! field name
     character(len=max_chars) :: long_name    ! long name
     character(len=max_chars) :: units        ! units
+    character(len=3)         :: mixing_ratio ! 'dry' or 'wet'
     character(len=max_chars) :: sampling_seq ! sampling sequence - if not every timestep, how often field is sampled
     ! (i.e., how often "outfld" is called):  every other; only during LW/SW
     ! radiation calcs; etc.
@@ -195,7 +196,7 @@ module cam_history_support
     type(var_desc_t) :: f12vmrid         ! var id for f12 volume mixing ratio
     type(var_desc_t) :: sol_tsiid        ! var id for total solar irradiance (W/m2)
     type(var_desc_t) :: datesecid        ! var id for curent seconds of current date
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
     type(var_desc_t) :: bdateid         ! var id for base date
     type(var_desc_t) :: tsecid        ! var id for curent seconds of current date
 #endif

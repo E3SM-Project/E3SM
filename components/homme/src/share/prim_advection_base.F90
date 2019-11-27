@@ -73,9 +73,9 @@ module prim_advection_base
   public :: Prim_Advec_Init1_rk2
   public :: Prim_Advec_Tracers_remap
   public :: Prim_Advec_Tracers_remap_rk2   
+  public :: advance_physical_vis ! so sl_advection can use it
 
-
-  type (EdgeBuffer_t)      :: edgeAdvQminmax
+  type (EdgeBuffer_t), public :: edgeAdvQminmax ! so gllfvremap_mod can use it
 
   integer,parameter :: DSSeta = 1
   integer,parameter :: DSSomega = 2
@@ -96,7 +96,7 @@ contains
 
   subroutine Prim_Advec_Init1_rk2(par, elem)
     use dimensions_mod, only : nlev, qsize, nelemd
-    use control_mod, only : use_semi_lagrange_transport
+    use control_mod, only : transport_alg
     use interpolate_mod,        only : interpolate_tracers_init
     type(parallel_t) :: par
     type (element_t) :: elem(:)
@@ -137,7 +137,7 @@ contains
   subroutine Prim_Advec_Tracers_remap_rk2( elem , deriv , hvcoord , hybrid , dt , tl , nets , nete )
     use perf_mod      , only : t_startf, t_stopf            ! _EXTERNAL
     use derivative_mod, only : divergence_sphere
-    use control_mod   , only : qsplit, dcmip16_mu_s
+    use control_mod   , only : qsplit, dcmip16_mu_s, dcmip16_mu_q
     implicit none
     type (element_t)     , intent(inout) :: elem(:)
     type (derivative_t)  , intent(in   ) :: deriv
@@ -210,8 +210,8 @@ contains
 !    call extrae_user_function(0)
 
     ! physical viscosity for supercell test case
-    if (dcmip16_mu_s>0) then
-        call advance_physical_vis(elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt,dcmip16_mu_s)
+    if (dcmip16_mu_q>0) then
+        call advance_physical_vis(elem,hvcoord,hybrid,deriv,tl%np1,np1_qdp,nets,nete,dt,dcmip16_mu_q)
      endif
 
     call t_stopf('prim_advec_tracers_remap_rk2')

@@ -56,6 +56,7 @@ module lnd2atmType
      real(r8), pointer :: qflx_rofliq_qsub_grc (:) => null() ! rof liq -- subsurface runoff component
      real(r8), pointer :: qflx_rofliq_qsubp_grc(:) => null() ! rof liq -- perched subsurface runoff component
      real(r8), pointer :: qflx_rofliq_qgwl_grc (:) => null() ! rof liq -- glacier, wetland and lakes water balance residual component
+     real(r8), pointer :: qflx_irr_demand_grc  (:) => null() ! rof liq -- demand term
      real(r8), pointer :: qflx_rofice_grc      (:) => null() ! rof ice forcing
 
      real(r8), pointer :: qflx_rofliq_qsur_doc_grc(:) => null()
@@ -128,6 +129,7 @@ contains
     allocate(this%qflx_rofliq_qsub_grc (begg:endg))            ; this%qflx_rofliq_qsub_grc (:) =ival
     allocate(this%qflx_rofliq_qsubp_grc(begg:endg))            ; this%qflx_rofliq_qsubp_grc(:) =ival
     allocate(this%qflx_rofliq_qgwl_grc (begg:endg))            ; this%qflx_rofliq_qgwl_grc (:) =ival
+    allocate(this%qflx_irr_demand_grc  (begg:endg))            ; this%qflx_irr_demand_grc  (:) =ival
     allocate(this%qflx_rofice_grc      (begg:endg))            ; this%qflx_rofice_grc      (:) =ival
 
     allocate(this%qflx_rofliq_qsur_doc_grc(begg:endg))          ; this%qflx_rofliq_qsur_doc_grc(:) = ival

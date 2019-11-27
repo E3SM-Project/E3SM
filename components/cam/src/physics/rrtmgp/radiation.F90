@@ -414,7 +414,7 @@ contains
       use physics_types, only: physics_state
 
       ! RRTMGP modules
-      use mo_load_coefficients, only: rrtmgp_load_coefficients=>load_and_init
+      use rrtmgp_coefficients, only: rrtmgp_load_coefficients=>load_and_init
       use mo_gas_concentrations, only: ty_gas_concs
 
       ! For optics
@@ -450,7 +450,7 @@ contains
       ! methods).
       type(ty_gas_concs) :: available_gases
 
-      real(r8), target :: sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands)
+      real(r8), allocatable :: sw_band_midpoints(:), lw_band_midpoints(:)
       character(len=32) :: subname = 'radiation_init'
 
       !-----------------------------------------------------------------------
@@ -474,11 +474,11 @@ contains
       ! than trying to fully populate the ty_gas_concs object here, which would be
       ! impossible from this initialization routine because I do not thing the
       ! rad_cnst objects are setup yet.
+      ! the other tasks!
+      ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast to
       call set_available_gases(active_gases, available_gases)
-      print *, 'Load RRTMGP coefficients from file...'
       call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
       call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
-      print *, 'Done loading RRTMGP coefficients.'
 
       ! Get number of bands used in shortwave and longwave and set module data
       ! appropriately so that these sizes can be used to allocate array sizes.
@@ -556,11 +556,13 @@ contains
       !
       
       ! Register new dimensions
+      allocate(sw_band_midpoints(nswbands), lw_band_midpoints(nlwbands))
       sw_band_midpoints(:) = get_band_midpoints(nswbands, k_dist_sw)
       lw_band_midpoints(:) = get_band_midpoints(nlwbands, k_dist_lw)
       call assert(all(sw_band_midpoints > 0), subname // ': negative sw_band_midpoints')
       call add_hist_coord('swband', nswbands, 'Shortwave band', 'wavelength', sw_band_midpoints)
       call add_hist_coord('lwband', nlwbands, 'Longwave band', 'wavelength', lw_band_midpoints)
+      deallocate(sw_band_midpoints, lw_band_midpoints)
 
       ! Shortwave radiation
       call addfld('TOT_CLD_VISTAU', (/ 'lev' /), 'A',   '1', &
@@ -1124,13 +1126,13 @@ contains
       ! ---------------------------------------------------------------------------
 
       ! Pointers to heating rates on physics buffer
-      real(r8), pointer :: qrs(:,:) => null()  ! shortwave radiative heating rate 
-      real(r8), pointer :: qrl(:,:) => null()  ! longwave  radiative heating rate 
+      real(r8), pointer :: qrs(:,:)  ! shortwave radiative heating rate 
+      real(r8), pointer :: qrl(:,:)  ! longwave  radiative heating rate 
 
       ! Clear-sky heating rates are not on the physics buffer, and we have no
       ! reason to put them there, so declare these are regular arrays here
-      real(r8) :: qrsc(pcols,pver) = 0._r8
-      real(r8) :: qrlc(pcols,pver) = 0._r8
+      real(r8) :: qrsc(pcols,pver)
+      real(r8) :: qrlc(pcols,pver)
 
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
@@ -1145,6 +1147,7 @@ contains
       ! Radiative fluxes
       type(ty_fluxes_byband) :: fluxes_allsky, fluxes_clrsky
 
+
       !----------------------------------------------------------------------
 
       ! Number of physics columns in this "chunk"
@@ -1154,6 +1157,11 @@ contains
       ! modified in this routine.
       call pbuf_get_field(pbuf, pbuf_get_index('QRS'), qrs)
       call pbuf_get_field(pbuf, pbuf_get_index('QRL'), qrl)
+
+      ! Initialize clearsky-heating rates to make sure we do not get garbage
+      ! for columns beyond ncol or nday
+      qrsc(:,:) = 0
+      qrlc(:,:) = 0
      
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
@@ -1396,6 +1404,7 @@ contains
       ! simulations...or alternatively add logic within the set_cloud_optics
       ! routines to handle this.
       call t_startf('shortwave cloud optics')
+      call handle_error(cloud_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw, name='shortwave cloud optics'))
       call set_cloud_optics_sw(state, pbuf, &
                                day_indices(1:nday), &
                                k_dist_sw, cloud_optics_sw)
@@ -1408,8 +1417,9 @@ contains
       ! treatment of aerosol optics in the model, and prevents us from having to
       ! map bands to g-points ourselves since that will all be handled by the
       ! private routines internal to the optics class.
-      call handle_error(aerosol_optics_sw%alloc_2str(nday, nlev_rad, k_dist_sw%get_band_lims_wavenumber()))
-      call aerosol_optics_sw%set_name('shortwave aerosol optics')
+      call handle_error(aerosol_optics_sw%alloc_2str(nday, nlev_rad, &
+                                                     k_dist_sw%get_band_lims_wavenumber(), &
+                                                     name='shortwave aerosol optics'))
 
       ! Loop over diagnostic calls 
       ! TODO: more documentation on what this means
@@ -1562,6 +1572,7 @@ contains
 
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')
+      call handle_error(cloud_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
       call set_cloud_optics_lw(state, pbuf, k_dist_lw, cloud_optics_lw)
       call t_stopf('longwave cloud optics')
 
@@ -1925,7 +1936,7 @@ contains
       ! Albedos are input as broadband (visible, and near-IR), and we need to map
       ! these to appropriate bands. Bands are categorized broadly as "visible" or
       ! "infrared" based on wavenumber, so we get the wavenumber limits here
-      wavenumber_limits = k_dist_sw%get_band_lims_wavenumber()
+      wavenumber_limits(:,:) = k_dist_sw%get_band_lims_wavenumber()
 
       ! Loop over bands, and determine for each band whether it is broadly in the
       ! visible or infrared part of the spectrum (visible or "not visible")
@@ -2310,7 +2321,10 @@ subroutine set_gas_concentrations(icall, state, pbuf, &
 
       ! Map to radiation grid
       vol_mix_ratio_out(1:ncol,ktop:kbot) = vol_mix_ratio(1:ncol,1:pver)
-      vol_mix_ratio_out(1:ncol,1) = vol_mix_ratio(1:ncol,ktop)
+
+      ! Copy top-most model level to top-most rad level (which could be above
+      ! the top of the model)
+      vol_mix_ratio_out(1:ncol,1) = vol_mix_ratio(1:ncol,1)
 
       ! Populate the RRTMGP gas concentration object with values for this gas.
       ! NOTE: RRTMGP makes some assumptions about gas names internally, so we

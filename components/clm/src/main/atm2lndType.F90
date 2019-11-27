@@ -39,6 +39,7 @@ module atm2lndType
       !DMR additions for CPL_BYPASS option
 #ifdef CPL_BYPASS
       integer*2, pointer :: atm_input                (:,:,:,:) => null()  !Single-site meteorological input
+      integer, pointer  :: loaded_bypassdata                   => null()
       real(r8), pointer :: add_offsets                     (:) => null()  !offsets for compressed met drivers
       real(r8), pointer :: scale_factors                   (:) => null()  !scale factors for compressed met drivers      
       integer(r8), pointer :: startyear_met                    => null()  !staring driver met year
@@ -56,9 +57,15 @@ module atm2lndType
       real(r8), pointer :: c13o2_input                 (:,:,:) => null()  !annual C13O2 input data
       integer, pointer :: ndepind                        (:,:) => null()  !annual nitrogen deposition data
       integer, pointer :: hdmind                         (:,:) => null()  !popluation density
-      integer, pointer :: lnfmind                        (:,:) => null()  !lightning
       real(r8), pointer :: forc_hdm                      (:)   => null() 
       real(r8), pointer :: forc_lnfm                     (:)   => null()
+      real(r8), pointer ::  hdm1                       (:,:,:) => null() 
+      real(r8), pointer ::  hdm2                       (:,:,:) => null()
+      real(r8), pointer ::  lnfm_all                   (:,:,:) => null()
+      real(r8), pointer ::  lnfm                         (:,:) => null()
+      real(r8), pointer ::  ndep1                      (:,:,:) => null()
+      real(r8), pointer ::  ndep2                      (:,:,:) => null()
+      real(r8), pointer ::  aerodata                 (:,:,:,:) => null()
 #endif
      ! atm->lnd not downscaled
      real(r8), pointer :: forc_u_grc                    (:)   => null() ! atm wind speed, east direction (m/s)
@@ -104,7 +111,8 @@ module atm2lndType
      real(r8), pointer :: forc_flood_grc                (:)   => null() ! rof flood (mm/s)
      real(r8), pointer :: volr_grc                      (:)   => null() ! rof volr total volume (m3)
      real(r8), pointer :: volrmch_grc                   (:)   => null() ! rof volr main channel (m3)
-
+     real(r8), pointer :: supply_grc                    (:)   => null() ! rof volr supply (mm/s)
+	 
      ! anomaly forcing
      real(r8), pointer :: af_precip_grc                 (:)   => null() ! anomaly forcing 
      real(r8), pointer :: af_uwind_grc                  (:)   => null() ! anomaly forcing 
@@ -189,7 +197,8 @@ contains
     allocate(this%tindex               (begg:endg,1:14,1:2))        ; this%tindex                    (:,:,:)   = ival_int
     allocate(this%metsource                                )        ; this%metsource                           = ival_int   
     allocate(this%npf                                (1:14))        ; this%npf                           (:)   = ival
-    allocate(this%atm_input       (14,begg:endg,1,1:600000))        ; this%atm_input               (:,:,:,:)   = ival_short
+    !allocate(this%atm_input       (14,begg:endg,1,1:600000))        ; this%atm_input               (:,:,:,:)   = ival_short
+    allocate(this%loaded_bypassdata                        )        ; this%loaded_bypassdata                   = 0
     allocate(this%add_offsets                        (1:14))        ; this%add_offsets                   (:)   = ival_float 
     allocate(this%scale_factors                      (1:14))        ; this%scale_factors                 (:)   = ival_float
     allocate(this%startyear_met                            )        ; this%startyear_met                       = ival_int
@@ -202,9 +211,14 @@ contains
     allocate(this%c13o2_input                    (1,1,3000))        ; this%c13o2_input               (:,:,:)   = ival
     allocate(this%ndepind                     (begg:endg,2))        ; this%ndepind                     (:,:)   = ival_int
     allocate(this%hdmind                      (begg:endg,2))        ; this%hdmind                      (:,:)   = ival_int
-    allocate(this%lnfmind                     (begg:endg,2))        ; this%lnfmind                     (:,:)   = ival_int
     allocate(this%forc_hdm                      (begg:endg))        ; this%forc_hdm                      (:)   = ival
     allocate(this%forc_lnfm                     (begg:endg))        ; this%forc_lnfm                     (:)   = ival
+    allocate(this%hdm1                          (720,360,1))        ; this%hdm1                      (:,:,:)   = ival
+    allocate(this%hdm2                          (720,360,1))        ; this%hdm2                      (:,:,:)   = ival
+    allocate(this%lnfm                     (begg:endg,2920))        ; this%lnfm                        (:,:)   = ival 
+    allocate(this%ndep1                          (144,96,1))        ; this%ndep1                     (:,:,:)   = ival
+    allocate(this%ndep2                          (144,96,1))        ; this%ndep2                     (:,:,:)   = ival
+    allocate(this%aerodata                   (14,144,96,14))        ; this%aerodata                (:,:,:,:)   = ival
     !END DMR
 #endif
     allocate(this%forc_u_grc                    (begg:endg))        ; this%forc_u_grc                    (:)   = ival
@@ -251,6 +265,7 @@ contains
     allocate(this%forc_flood_grc                (begg:endg))        ; this%forc_flood_grc                (:)   = ival
     allocate(this%volr_grc                      (begg:endg))        ; this%volr_grc                      (:)   = ival
     allocate(this%volrmch_grc                   (begg:endg))        ; this%volrmch_grc                   (:)   = ival
+    allocate(this%supply_grc                    (begg:endg))        ; this%supply_grc                    (:)   = ival
 
     ! anomaly forcing
     allocate(this%bc_precip_grc                 (begg:endg))        ; this%bc_precip_grc                 (:)   = ival
@@ -312,6 +327,11 @@ contains
     call hist_addfld1d (fname='VOLRMCH',  units='m3',  &
          avgflag='A', long_name='river channel main channel water storage', &
          ptr_lnd=this%volrmch_grc)
+		 
+    this%supply_grc(begg:endg) = spval
+    call hist_addfld1d (fname='SUPPLY',  units='mm/s',  &
+         avgflag='A', long_name='runoff supply for land use', &
+         ptr_lnd=this%supply_grc)
 
 !    this%forc_wind_grc(begg:endg) = spval
 !    call hist_addfld1d (fname='WIND', units='m/s',  &

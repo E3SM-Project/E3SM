@@ -46,16 +46,22 @@ if ($CONTINUE_RUN eq 'TRUE') {
         add_default($nl, 'config_do_restart_hbrine', 'val'=>".true.");
         add_default($nl, 'config_do_restart_zsalinity', 'val'=>".true.");
         add_default($nl, 'config_do_restart_bgc', 'val'=>".true.");
+        add_default($nl, 'config_do_restart_snow_density', 'val'=>".true.");
+        add_default($nl, 'config_do_restart_snow_grain_radius', 'val'=>".true.");
 } else {
         add_default($nl, 'config_do_restart', 'val'=>".false.");
         add_default($nl, 'config_do_restart_hbrine', 'val'=>".false.");
         add_default($nl, 'config_do_restart_zsalinity', 'val'=>".false.");
         add_default($nl, 'config_do_restart_bgc', 'val'=>".false.");
+        add_default($nl, 'config_do_restart_snow_density', 'val'=>".false.");
+        add_default($nl, 'config_do_restart_snow_grain_radius', 'val'=>".false.");
 }
 add_default($nl, 'config_restart_timestamp_name');
 add_default($nl, 'config_do_restart_hbrine');
 add_default($nl, 'config_do_restart_zsalinity');
 add_default($nl, 'config_do_restart_bgc');
+add_default($nl, 'config_do_restart_snow_density');
+add_default($nl, 'config_do_restart_snow_grain_radius');
 
 ##############################
 # Namelist group: dimensions #
@@ -149,6 +155,7 @@ add_default($nl, 'config_use_column_vertical_thermodynamics');
 add_default($nl, 'config_use_column_biogeochemistry');
 add_default($nl, 'config_use_column_itd_thermodynamics');
 add_default($nl, 'config_use_column_ridging');
+add_default($nl, 'config_use_column_snow_tracers');
 
 ##################################
 # Namelist group: column_tracers #
@@ -161,6 +168,8 @@ add_default($nl, 'config_use_cesm_meltponds');
 add_default($nl, 'config_use_level_meltponds');
 add_default($nl, 'config_use_topo_meltponds');
 add_default($nl, 'config_use_aerosols');
+add_default($nl, 'config_use_effective_snow_density');
+add_default($nl, 'config_use_snow_grain_radius');
 
 ###################################
 # Namelist group: biogeochemistry #
@@ -289,6 +298,7 @@ add_default($nl, 'config_mobility_type_DMSPd');
 add_default($nl, 'config_mobility_type_humics');
 add_default($nl, 'config_mobility_type_saccharids');
 add_default($nl, 'config_mobility_type_lipids');
+add_default($nl, 'config_mobility_type_inorganic_carbon');
 add_default($nl, 'config_mobility_type_proteins');
 add_default($nl, 'config_mobility_type_dissolved_iron');
 add_default($nl, 'config_mobility_type_particulate_iron');
@@ -315,6 +325,7 @@ add_default($nl, 'config_ratio_C_to_N_proteins');
 
 add_default($nl, 'config_shortwave_type');
 add_default($nl, 'config_albedo_type');
+add_default($nl, 'config_use_snicar_ad');
 add_default($nl, 'config_visible_ice_albedo');
 add_default($nl, 'config_infrared_ice_albedo');
 add_default($nl, 'config_visible_snow_albedo');
@@ -326,6 +337,19 @@ add_default($nl, 'config_snow_shortwave_tuning_parameter');
 add_default($nl, 'config_temp_change_snow_grain_radius_change');
 add_default($nl, 'config_max_melting_snow_grain_radius');
 add_default($nl, 'config_algae_absorption_coefficient');
+
+########################
+# Namelist group: snow #
+########################
+
+add_default($nl, 'config_snow_redistribution_scheme');
+add_default($nl, 'config_fallen_snow_radius');
+add_default($nl, 'config_use_snow_liquid_ponds');
+add_default($nl, 'config_new_snow_density');
+add_default($nl, 'config_max_snow_density');
+add_default($nl, 'config_minimum_wind_compaction');
+add_default($nl, 'config_wind_compaction_factor');
+add_default($nl, 'config_max_dry_snow_radius');
 
 #############################
 # Namelist group: meltponds #

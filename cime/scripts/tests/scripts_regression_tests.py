@@ -7,7 +7,7 @@ to confirm overall CIME correctness.
 
 import glob, os, re, shutil, signal, sys, tempfile, \
     threading, time, logging, unittest, getpass, \
-    filecmp, time
+    filecmp, time, atexit
 
 from xml.etree.ElementTree import ParseError
 
@@ -306,7 +306,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         testdir = os.path.join(cls._testroot, 'testcreatenewcase')
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        args =  " --case %s --compset X --output-root %s --handle-preexisting-dirs=r --debug " % (testdir, cls._testroot)
+        args =  " --case %s --compset X --output-root %s --handle-preexisting-dirs=r " % (testdir, cls._testroot)
         if TEST_COMPILER is not None:
             args = args +  " --compiler %s"%TEST_COMPILER
         if TEST_MPILIB is not None:
@@ -427,6 +427,7 @@ class J_TestCreateNewcase(unittest.TestCase):
         cmd = "%s/create_clone --clone %s --case %s --keepexe --user-mods-dir %s" \
               % (SCRIPT_DIR, prevtestdir, testdir, user_mods_dir)
         run_cmd_assert_result(self, cmd, from_dir=SCRIPT_DIR, expected_stat=1)
+        cls._do_teardown.append(testdir)
 
     def test_d_create_clone_new_user(self):
         cls = self.__class__
@@ -469,6 +470,7 @@ class J_TestCreateNewcase(unittest.TestCase):
             case2 = case1.create_clone(testdir)
             with self.assertRaises(CIMEError):
                 case2.set_value("CHARGE_ACCOUNT", "fouc")
+        cls._do_teardown.append(testdir)
 
     def test_e_xmlquery(self):
         # Set script and script path
@@ -671,6 +673,7 @@ class J_TestCreateNewcase(unittest.TestCase):
             with open(os.path.join(dir1,_file),"r") as fi:
                 file_text = fi.read()
                 file_text = file_text.replace(os.path.basename(testdir1),"PATH")
+                file_text = re.sub(r"logfile =.*","",file_text)
             with open(os.path.join(dir2,_file), "w") as fo:
                 fo.write(file_text)
         cleancasedocs1 = dir2
@@ -700,6 +703,7 @@ class J_TestCreateNewcase(unittest.TestCase):
             with open(os.path.join(dir1,_file),"r") as fi:
                 file_text = fi.read()
                 file_text = file_text.replace(os.path.basename(testdir2),"PATH")
+                file_text = re.sub(r"logfile =.*","",file_text)
             with open(os.path.join(dir2,_file), "w") as fo:
                 fo.write(file_text)
 
@@ -729,6 +733,8 @@ class J_TestCreateNewcase(unittest.TestCase):
         cls = self.__class__
         model = CIME.utils.get_model()
         for driver in ("nuopc", "moab"):
+            if not os.path.exists(os.path.join(get_cime_root(),"src","drivers",driver)):
+                self.skipTest("Skipping driver test for {}, driver not found".format(driver))
             if ((model == 'cesm' and driver == 'moab') or
                 (model == 'e3sm' and driver == 'nuopc')):
                 continue
@@ -756,21 +762,48 @@ class J_TestCreateNewcase(unittest.TestCase):
 
             cls._do_teardown.append(testdir)
 
+    def test_n_createnewcase_bad_compset(self):
+        cls = self.__class__
+        model = CIME.utils.get_model()
+
+        testdir = os.path.join(cls._testroot, 'testcreatenewcase_bad_compset')
+        if os.path.exists(testdir):
+            shutil.rmtree(testdir)
+        args =  " --case %s --compset InvalidCompsetName --output-root %s --handle-preexisting-dirs=r " % (testdir, cls._testroot)
+        if model == "cesm":
+            args += " --run-unsupported"
+        if TEST_COMPILER is not None:
+            args = args +  " --compiler %s"%TEST_COMPILER
+        if TEST_MPILIB is not None:
+            args = args +  " --mpilib %s"%TEST_MPILIB
+        if CIME.utils.get_cime_default_driver() == "nuopc":
+            args += " --res f19_g17 "
+        else:
+            args += " --res f19_g16 "
+
+        run_cmd_assert_result(self, "./create_newcase %s"%(args),
+                              from_dir=SCRIPT_DIR, expected_stat=1)
+        self.assertFalse(os.path.exists(testdir))
 
     @classmethod
     def tearDownClass(cls):
         do_teardown = len(cls._do_teardown) > 0 and sys.exc_info() == (None, None, None) and not NO_TEARDOWN
-
+        rmtestroot = True
         for tfile in cls._testdirs:
             if tfile not in cls._do_teardown:
                 print("Detected failed test or user request no teardown")
                 print("Leaving case directory : %s"%tfile)
+                rmtestroot = False
             elif do_teardown:
                 try:
                     print ("Attempt to remove directory {}".format(tfile))
                     shutil.rmtree(tfile)
                 except BaseException:
                     print("Could not remove directory {}".format(tfile))
+        if rmtestroot:
+            shutil.rmtree(cls._testroot)
+
+
 
 ###############################################################################
 class M_TestWaitForTests(unittest.TestCase):
@@ -1073,7 +1106,7 @@ class TestCreateTestCommon(unittest.TestCase):
                 files_to_clean.append(leftover)
 
         do_teardown = self._do_teardown and sys.exc_info() == (None, None, None)
-        if (not do_teardown):
+        if (not do_teardown and files_to_clean):
             print("Detected failed test or user request no teardown")
             print("Leaving files:")
             for file_to_clean in files_to_clean:
@@ -1093,6 +1126,11 @@ class TestCreateTestCommon(unittest.TestCase):
     ###########################################################################
     def _create_test(self, extra_args, test_id=None, pre_run_errors=False, run_errors=False, env_changes=""):
     ###########################################################################
+        # All stub model not supported in nuopc driver
+        driver = CIME.utils.get_cime_default_driver()
+        if driver == 'nuopc':
+            extra_args.append(" ^SMS.T42_T42.S")
+
         test_id = CIME.utils.get_timestamp() if test_id is None else test_id
         extra_args.append("-t {}".format(test_id))
         extra_args.append("--baseline-root {}".format(self._baseline_area))
@@ -1827,11 +1865,14 @@ class K_TestCimeCase(TestCreateTestCommon):
         testdir = os.path.join(TEST_ROOT, testcase_name)
         if os.path.exists(testdir):
             shutil.rmtree(testdir)
-        run_cmd_assert_result(self, ("{}/create_newcase --case {} --script-root {} " +
+        args = "--case {name} --script-root {testdir} --compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {testdir}".format(name=testcase_name, testdir=testdir)
+        if CIME.utils.get_cime_default_driver() == 'nuopc':
+            args += " --run-unsupported"
 
-                                     "--compset X --res f19_g16 --handle-preexisting-dirs=r --output-root {}").format(
-                                         SCRIPT_DIR, testcase_name, testdir, testdir),
+        run_cmd_assert_result(self, "{}/create_newcase {}".format(SCRIPT_DIR, args),
                               from_dir=SCRIPT_DIR)
+        run_cmd_assert_result(self, "./case.setup", from_dir=testdir)
+
         return testdir
 
     ###########################################################################
@@ -2249,6 +2290,8 @@ class K_TestCimeCase(TestCreateTestCommon):
         except ImportError:
             print("imp not found, skipping case.submit interface test")
             return
+        # the current directory may not exist, so make sure we are in a real directory
+        os.chdir(os.getenv("HOME"))
         sys.path.append(TOOLS_DIR)
         case_submit_path = os.path.join(TOOLS_DIR, "case.submit")
         submit_interface = imp.load_source("case_submit_interface", case_submit_path)
@@ -2773,17 +2816,17 @@ class H_TestMakeMacros(unittest.TestCase):
         xml3 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><append>x y z</append></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
         xml4 = """<compiler MACH="{}" COMPILER="{}"><CFLAGS><base>x y z</base></CFLAGS></compiler>""".format(self.test_machine,self.test_compiler)
         tester = self.xml_to_tester(xml1)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "a b c",var={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "a b c",var={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml2+xml1)
-        tester.assert_variable_equals("CFLAGS", "a b c",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "a b c",var={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml3)
-        tester.assert_variable_equals("CFLAGS", "a b c x y z",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "a b c x y z",var={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml1+xml4)
-        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "x y z",var={"COMPILER":self.test_compiler})
         tester = self.xml_to_tester(xml4+xml1)
-        tester.assert_variable_equals("CFLAGS", "x y z",env={"COMPILER":self.test_compiler})
+        tester.assert_variable_equals("CFLAGS", "x y z",var={"COMPILER":self.test_compiler})
 
     def test_mach_beats_os(self):
         """The macro writer chooses machine-specific over os-specific matches."""
@@ -2811,12 +2854,12 @@ class H_TestMakeMacros(unittest.TestCase):
         xml3 = """<compiler><MPI_PATH>/path/to/default</MPI_PATH></compiler>"""
         tester = self.xml_to_tester(xml1+xml2+xml3)
         tester.assert_variable_equals("MPI_PATH", "/path/to/default")
-        tester.assert_variable_equals("MPI_PATH", "/path/to/mpich", env={"MPILIB": "mpich"})
-        tester.assert_variable_equals("MPI_PATH", "/path/to/openmpi", env={"MPILIB": "openmpi"})
+        tester.assert_variable_equals("MPI_PATH", "/path/to/mpich", var={"MPILIB": "mpich"})
+        tester.assert_variable_equals("MPI_PATH", "/path/to/openmpi", var={"MPILIB": "openmpi"})
         tester = self.xml_to_tester(xml3+xml2+xml1)
         tester.assert_variable_equals("MPI_PATH", "/path/to/default")
-        tester.assert_variable_equals("MPI_PATH", "/path/to/mpich", env={"MPILIB": "mpich"})
-        tester.assert_variable_equals("MPI_PATH", "/path/to/openmpi", env={"MPILIB": "openmpi"})
+        tester.assert_variable_equals("MPI_PATH", "/path/to/mpich", var={"MPILIB": "mpich"})
+        tester.assert_variable_equals("MPI_PATH", "/path/to/openmpi", var={"MPILIB": "openmpi"})
 
     def test_reject_duplicate_defaults(self):
         """The macro writer dies if given many defaults."""
@@ -2850,7 +2893,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml1 = """<compiler><SUPPORTS_CXX>FALSE</SUPPORTS_CXX></compiler>"""
         xml2 = """<compiler COMPILER="gnu"><SUPPORTS_CXX>TRUE</SUPPORTS_CXX></compiler>"""
         tester = self.xml_to_tester(xml1+xml2)
-        tester.assert_variable_equals("SUPPORTS_CXX", "TRUE", env={"COMPILER": "gnu"})
+        tester.assert_variable_equals("SUPPORTS_CXX", "TRUE", var={"COMPILER": "gnu"})
         tester.assert_variable_equals("SUPPORTS_CXX", "FALSE")
 
     def test_base_flags(self):
@@ -2872,7 +2915,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><FFLAGS><base DEBUG="TRUE">-O3</base></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1+xml2)
         tester.assert_variable_equals("FFLAGS", "-O2")
-        tester.assert_variable_equals("FFLAGS", "-O3", env={"DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-O3", var={"DEBUG": "TRUE"})
 
     def test_build_time_base_flags_same_parent(self):
         """Test selection of base flags in the same parent element."""
@@ -2880,11 +2923,11 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<base DEBUG="TRUE">-O3</base>"""
         tester = self.xml_to_tester("<compiler><FFLAGS>"+xml1+xml2+"</FFLAGS></compiler>")
         tester.assert_variable_equals("FFLAGS", "-O2")
-        tester.assert_variable_equals("FFLAGS", "-O3", env={"DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-O3", var={"DEBUG": "TRUE"})
         # Check for order independence here, too.
         tester = self.xml_to_tester("<compiler><FFLAGS>"+xml2+xml1+"</FFLAGS></compiler>")
         tester.assert_variable_equals("FFLAGS", "-O2")
-        tester.assert_variable_equals("FFLAGS", "-O3", env={"DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-O3", var={"DEBUG": "TRUE"})
 
     def test_append_flags(self):
         """Test appending flags to a list."""
@@ -2933,7 +2976,7 @@ class H_TestMakeMacros(unittest.TestCase):
         xml2 = """<compiler><FFLAGS><append DEBUG="TRUE">-and-pie</append></FFLAGS></compiler>"""
         tester = self.xml_to_tester(xml1+xml2)
         tester.assert_variable_equals("FFLAGS", "-cake")
-        tester.assert_variable_matches("FFLAGS", "^(-cake -and-pie|-and-pie -cake)$", env={"DEBUG": "TRUE"})
+        tester.assert_variable_matches("FFLAGS", "^(-cake -and-pie|-and-pie -cake)$", var={"DEBUG": "TRUE"})
 
     def test_environment_variable_insertion(self):
         """Test that ENV{..} inserts environment variables."""
@@ -3019,17 +3062,17 @@ class H_TestMakeMacros(unittest.TestCase):
 
         tester = self.xml_to_tester(xml1+xml2)
 
-        tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("SCC", "icc", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICXX", "mpifoo", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpiffoo", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICC", "mpicc", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
 
         tester = self.xml_to_tester(xml2+xml1)
 
-        tester.assert_variable_equals("SCC", "icc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPICXX", "mpifoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPIFC", "mpiffoo", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
-        tester.assert_variable_equals("MPICC", "mpicc", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("SCC", "icc", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICXX", "mpifoo", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpiffoo", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPICC", "mpicc", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
 
     def test_override_with_machine_and_same_attributes(self):
         """Test that machine-specific conditional overrides with the same attribute work correctly."""
@@ -3045,11 +3088,11 @@ class H_TestMakeMacros(unittest.TestCase):
 
         tester = self.xml_to_tester(xml1+xml2)
 
-        tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpif90", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
 
         tester = self.xml_to_tester(xml2+xml1)
 
-        tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
+        tester.assert_variable_equals("MPIFC", "mpif90", var={"COMPILER":self.test_compiler, "MPILIB":self.test_mpilib})
 
     def test_appends_not_overriden(self):
         """Test that machine-specific base value changes don't interfere with appends."""
@@ -3071,15 +3114,15 @@ class H_TestMakeMacros(unittest.TestCase):
 
         tester = self.xml_to_tester(xml1+xml2)
 
-        tester.assert_variable_equals("FFLAGS", "-base2", env={"COMPILER": self.test_compiler})
-        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", env={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
-        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", env={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
+        tester.assert_variable_equals("FFLAGS", "-base2", var={"COMPILER": self.test_compiler})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", var={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", var={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
 
         tester = self.xml_to_tester(xml2+xml1)
 
-        tester.assert_variable_equals("FFLAGS", "-base2", env={"COMPILER": self.test_compiler})
-        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", env={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
-        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", env={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
+        tester.assert_variable_equals("FFLAGS", "-base2", var={"COMPILER": self.test_compiler})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug2", var={"COMPILER": self.test_compiler, "DEBUG": "TRUE"})
+        tester.assert_variable_equals("FFLAGS", "-base2 -debug1", var={"COMPILER": self.test_compiler, "DEBUG": "FALSE"})
 
     def test_multilevel_specificity(self):
         """Check that settings with multiple levels of machine-specificity can be resolved."""
@@ -3108,9 +3151,9 @@ class H_TestMakeMacros(unittest.TestCase):
         testers.append(self.xml_to_tester(xml3+xml2+xml1))
 
         for tester in testers:
-            tester.assert_variable_equals("MPIFC", "mpif90", env={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "TRUE"})
-            tester.assert_variable_equals("MPIFC", "mpif03", env={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "FALSE"})
-            tester.assert_variable_equals("MPIFC", "mpifc", env={"COMPILER": self.test_compiler, "MPILIB": "NON_MATCHING_MPI", "DEBUG": "FALSE"})
+            tester.assert_variable_equals("MPIFC", "mpif90", var={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "TRUE"})
+            tester.assert_variable_equals("MPIFC", "mpif03", var={"COMPILER": self.test_compiler, "MPILIB": self.test_mpilib, "DEBUG": "FALSE"})
+            tester.assert_variable_equals("MPIFC", "mpifc", var={"COMPILER": self.test_compiler, "MPILIB": "NON_MATCHING_MPI", "DEBUG": "FALSE"})
 
     def test_remove_dependency_issues(self):
         """Check that overridden settings don't cause inter-variable dependencies."""
@@ -3229,7 +3272,14 @@ def write_provenance_info():
         logging.info("Testing compiler = %s"% TEST_COMPILER)
     if TEST_MPILIB is not None:
         logging.info("Testing mpilib = %s"% TEST_MPILIB)
-    logging.info("Test root: %s\n" % TEST_ROOT)
+    logging.info("Test root: %s" % TEST_ROOT)
+    logging.info("Test driver: %s\n" % CIME.utils.get_cime_default_driver())
+
+def cleanup():
+    # if the TEST_ROOT directory exists and is empty, remove it
+    if os.path.exists(TEST_ROOT) and not os.listdir(TEST_ROOT):
+        print("All pass, removing directory:", TEST_ROOT)
+        os.rmdir(TEST_ROOT)
 
 def _main_func(description):
     global MACHINE
@@ -3350,6 +3400,7 @@ OR
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, None)
 
     write_provenance_info()
+    atexit.register(cleanup)
 
     # Find all python files in repo and create a pylint test for each
     if check_for_pylint():
@@ -3366,12 +3417,8 @@ OR
     except CIMEError as e:
         if e.__str__() != "False":
             print("Detected failures, leaving directory:", TEST_ROOT)
-        else:
-            print("All pass, removing directory:", TEST_ROOT)
-            if os.path.exists(TEST_ROOT) and not NO_TEARDOWN:
-                shutil.rmtree(TEST_ROOT)
+            raise
 
-        raise
 
 if (__name__ == "__main__"):
     _main_func(__doc__)

@@ -16,7 +16,7 @@ KOKKOS_FUNCTION
 Int Functions<S,D>
 ::find_bottom (
     const MemberType& team,
-    const ko::Unmanaged<view_1d<const Scalar> >& v, const Scalar& small,
+    const uview_1d<const Scalar>& v, const Scalar& small,
     const Int& kbot, const Int& ktop, const Int& kdir,
     bool& log_present)
 {
@@ -56,7 +56,7 @@ KOKKOS_FUNCTION
 Int Functions<S,D>
 ::find_top (
     const MemberType& team,
-    const ko::Unmanaged<view_1d<const Scalar> >& v, const Scalar& small,
+    const uview_1d<const Scalar>& v, const Scalar& small,
     const Int& kbot, const Int& ktop, const Int& kdir,
     bool& log_present)
 {

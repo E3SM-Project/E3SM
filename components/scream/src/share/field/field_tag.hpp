@@ -22,12 +22,6 @@ namespace scream
  *   is equal to the number of points, even a check on the extents
  *   would not distinguish the two. At this point, using a tag for each
  *   dimension is the only way to distiguish the two.
- *   
- *   This can also be used (by the driver, or by the atm processes) to
- *   determine whether an input/output field has the same layout in the
- *   field repository as in the atm process, and therefore whether it
- *   needs 'remapping' or not (here 'remapping' is in the programming
- *   sense, not in the mathematical (e.g. eulerian-lagrangian) sense).
  */
 
 enum class FieldTag {
@@ -77,10 +71,24 @@ inline std::string tag2string (const FieldTag ft) {
       name = "Variable";
       break;
     default:
-      error::runtime_abort("Error! Unrecognized field tag.",-1);
+      scream_error_msg("Error! Unrecognized field tag.");
   }
 
   return name;
+}
+
+// If using tags a lot, consider adding 'using namespace ShortFieldTagsNames' locally to your function or cpp file.
+namespace ShortFieldTagsNames {
+
+  constexpr auto EL   = FieldTag::Element;
+  constexpr auto COL  = FieldTag::Column;
+  constexpr auto GP   = FieldTag::GaussPoint;
+  constexpr auto TL   = FieldTag::TimeLevel;
+  constexpr auto VAR  = FieldTag::Variable;
+  constexpr auto VL   = FieldTag::VerticalLevel;
+  constexpr auto CMP  = FieldTag::Component;
+  constexpr auto CMPX = FieldTag::ComponentX;
+  constexpr auto CMPY = FieldTag::ComponentY;
 }
 
 } // namespace scream

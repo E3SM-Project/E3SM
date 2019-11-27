@@ -10,6 +10,9 @@ namespace p3 {
 
 /*
  * Mathematical constants used by p3.
+ *
+ * Note that a potential optimization could be to change the type of
+ * Scalar constants that have integer values to int.
  */
 
 template <typename Scalar>
@@ -21,6 +24,7 @@ struct Constants
   static constexpr Scalar RhoH2O      = 1000.0;
   static constexpr Scalar MWH2O       = 18.016;
   static constexpr Scalar MWdry       = 28.966;
+  static constexpr Scalar ep_2        = MWH2O/MWdry;  // ratio of molecular mass of water to the molecular mass of dry air !0.622
   static constexpr Scalar gravit      = 9.80616;
   static constexpr Scalar LatVap      = 2501000.0;
   static constexpr Scalar LatIce      = 333700.0;
@@ -29,23 +33,36 @@ struct Constants
   static constexpr Scalar Pi          = 3.14159265;
   static constexpr long long int    iulog       = 98;
   static constexpr bool   masterproc  = true;
-  static constexpr Scalar RHOW     = RhoH2O;
-  static constexpr Scalar INV_RHOW = 1.0/RHOW;
-  static constexpr Scalar THIRD    = 1.0/3.0;
-  static constexpr Scalar SXTH     = 1.0/6.0;
-  static constexpr Scalar PIOV6    = Pi*SXTH;
-  static constexpr Scalar CONS1    = PIOV6*RHOW;
-  static constexpr Scalar QSMALL   = 1.e-14;
-  static constexpr Scalar NSMALL   = 1.e-16;
-  static constexpr Scalar P0       = 100000.0;        // reference pressure, Pa
-  static constexpr Scalar RD       = 287.15;          // gas constant for dry air, J/kg/K
-  static constexpr Scalar RHOSUR   = P0/(RD*273.15);
-  static constexpr Scalar CP       = Cpair;          // heat constant of air at constant pressure, J/kg
-  static constexpr Scalar INV_CP   = 1.0/CP;
+  static constexpr Scalar RHOW        = RhoH2O;
+  static constexpr Scalar INV_RHOW    = 1.0/RHOW;
+  static constexpr Scalar THIRD       = 1.0/3.0;
+  static constexpr Scalar SXTH        = 1.0/6.0;
+  static constexpr Scalar PIOV6       = Pi*SXTH;
+  static constexpr Scalar CONS1       = PIOV6*RHOW;
+  static constexpr Scalar QSMALL      = 1.e-14;
+  static constexpr Scalar BSMALL      = 1.e-15;
+  static constexpr Scalar NSMALL      = 1.e-16;
+  static constexpr Scalar P0          = 100000.0;        // reference pressure, Pa
+  static constexpr Scalar RD          = 287.15;          // gas constant for dry air, J/kg/K
+  static constexpr Scalar RHOSUR      = P0/(RD*Tmelt);
+  static constexpr Scalar CP          = Cpair;          // heat constant of air at constant pressure, J/kg
+  static constexpr Scalar INV_CP      = 1.0/CP;
+  static constexpr Scalar Tol         = util::is_single_precision<Real>::value ? 2e-5 : 1e-14;
+  static constexpr Scalar mu_r_const  = 1.0;
+  static constexpr Scalar dt_left_tol = 1.e-4;
+  static constexpr Scalar bcn         = 2.;
+  static constexpr Scalar rho_rimeMin = 50.;
+  static constexpr Scalar rho_rimeMax = 900.;
 };
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::NSMALL;
+
+template <typename Scalar>
+constexpr Scalar Constants<Scalar>::QSMALL;
+
+template <typename Scalar>
+constexpr Scalar Constants<Scalar>::Tmelt;
 
 template <typename Scalar>
 using vector_2d_t = std::vector<std::vector<Scalar> >;

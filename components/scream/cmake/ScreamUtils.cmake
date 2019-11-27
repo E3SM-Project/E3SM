@@ -10,9 +10,9 @@ include(CMakeParseArguments) # Needed for backwards compatibility
 #    - threads (optional): the number of threads for the test, if 2 values, it's a range, if 3, it's a range plus an increment. default is 1 thread
 #      Note: One test will be created per combination of valid mpi-rank and thread value
 
-FUNCTION(CreateUnitTest target_name target_srcs scream_libs)
+function(CreateUnitTest target_name target_srcs scream_libs)
   set(options OPTIONAL EXCLUDE_MAIN_CPP)
-  set(oneValueArgs NAMELIST_FILE)
+  set(oneValueArgs EXE_ARGS DEP)
   set(multiValueArgs MPI_RANKS THREADS CONFIG_DEFS INCLUDE_DIRS)
   cmake_parse_arguments(CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
@@ -26,7 +26,7 @@ FUNCTION(CreateUnitTest target_name target_srcs scream_libs)
   endif ()
   add_executable (${target_name} ${target_srcs} ${SRC_MAIN})
 
-  SET (TEST_INCLUDE_DIRS
+  set (TEST_INCLUDE_DIRS
        ${SCREAM_INCLUDE_DIRS}
        ${CATCH_INCLUDE_DIR}
        ${CMAKE_CURRENT_SOURCE_DIR}
@@ -103,27 +103,33 @@ FUNCTION(CreateUnitTest target_name target_srcs scream_libs)
   set(CURR_RANKS ${MPI_START_RANK})
   set(CURR_THREADS ${THREAD_START})
 
-  IF (CreateUnitTest_NAMELIST_FILE)
-    SET  (invokeExec "./${target_name} < ${CreateUnitTest_NAMELIST_FILE}")
-  ELSE()
-    SET  (invokeExec "./${target_name}")
-  ENDIF()
+  if (CreateUnitTest_EXE_ARGS)
+    set(invokeExec "./${target_name} ${CreateUnitTest_EXE_ARGS}")
+  else()
+    set(invokeExec "./${target_name}")
+  endif()
 
   while (NOT CURR_RANKS GREATER ${MPI_END_RANK})
     while (NOT CURR_THREADS GREATER ${THREAD_END})
       # Create the test
-      IF (${CURR_RANKS} GREATER 1)
-        ADD_TEST(NAME ${target_name}_ut_np${CURR_RANKS}_omp${CURR_THREADS}
-                 COMMAND sh -c "mpiexec -np ${CURR_RANKS} ${SCREAM_MPI_EXTRA_ARGS} ${invokeExec}")
-      ELSE()
-        ADD_TEST(NAME ${target_name}_ut_np1_omp${CURR_THREADS}
+      set(FULL_TEST_NAME ${target_name}_ut_np${CURR_RANKS}_omp${CURR_THREADS})
+      if (${CURR_RANKS} GREATER 1)
+        add_test(NAME ${FULL_TEST_NAME}
+                 COMMAND sh -c "${SCREAM_MPIRUN_EXE} -np ${CURR_RANKS} ${SCREAM_MPI_EXTRA_ARGS} ${invokeExec}")
+      else()
+        add_test(NAME ${FULL_TEST_NAME}
                  COMMAND sh -c "${invokeExec}")
-      ENDIF()
-      set_tests_properties(${target_name}_ut_np${CURR_RANKS}_omp${CURR_THREADS} PROPERTIES ENVIRONMENT OMP_NUM_THREADS=${CURR_THREADS})
-      MATH(EXPR CURR_THREADS "${CURR_THREADS}+${THREAD_INCREMENT}")
+      endif()
+      math(EXPR CURR_CORES "${CURR_RANKS}*${CURR_THREADS}")
+      set_tests_properties(${FULL_TEST_NAME} PROPERTIES ENVIRONMENT OMP_NUM_THREADS=${CURR_THREADS} PROCESSORS ${CURR_CORES} PROCESSOR_AFFINITY True)
+      if (CreateUnitTest_DEP AND NOT CreateUnitTest_DEP STREQUAL "${FULL_TEST_NAME}")
+        set_tests_properties(${FULL_TEST_NAME} PROPERTIES DEPENDS ${CreateUnitTest_DEP})
+      endif()
+
+      math(EXPR CURR_THREADS "${CURR_THREADS}+${THREAD_INCREMENT}")
     endwhile()
     set(CURR_THREADS ${THREAD_START})
-    MATH(EXPR CURR_RANKS "${CURR_RANKS}+${MPI_INCREMENT}")
+    math(EXPR CURR_RANKS "${CURR_RANKS}+${MPI_INCREMENT}")
   endwhile()
 
-ENDFUNCTION(CreateUnitTest)
+endfunction(CreateUnitTest)

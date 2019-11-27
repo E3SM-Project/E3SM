@@ -192,7 +192,7 @@ int main(int argc, char **argv)
                 return ret;
 
             /* Finalize PIO system. */
-            if ((ret = PIOc_finalize(iosysid)))
+            if ((ret = PIOc_free_iosystem(iosysid)))
                 return ret;
 
             /* Free the computation conomponent communicator. */
@@ -210,6 +210,8 @@ int main(int argc, char **argv)
     /* Finalize the MPI library. */
     if ((ret = pio_test_finalize(&test_comm)))
         return ret;
+    /* if ((ret = pio_test_finalize2(&test_comm, TEST_NAME))) */
+    /*     return ret; */
 
     printf("%d %s SUCCESS!!\n", my_rank, TEST_NAME);
 

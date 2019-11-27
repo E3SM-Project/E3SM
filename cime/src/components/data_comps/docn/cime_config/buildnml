@@ -89,16 +89,7 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
         inst_stream = stream + inst_string
         logger.debug("DOCN stream is {}".format(inst_stream))
         stream_path = os.path.join(confdir, "docn.streams.txt." + inst_stream)
-        user_stream_path = os.path.join(case.get_case_root(),
-                                        "user_docn.streams.txt." + inst_stream)
-
-        # Use the user's stream file, or create one if necessary.
-        if os.path.exists(user_stream_path):
-            safe_copy(user_stream_path, stream_path)
-            config['stream'] = stream
-            nmlgen.update_shr_strdata_nml(config, stream, stream_path)
-        else:
-            nmlgen.create_stream_file_and_update_shr_strdata_nml(config, stream, stream_path, data_list_path)
+        nmlgen.create_stream_file_and_update_shr_strdata_nml(config, case.get_value("CASEROOT"), stream, stream_path, data_list_path)
 
     # For aquaplanet prescribed have no streams
     match = re.match(r'^sst_aquap\d+',docn_mode)
@@ -107,6 +98,12 @@ def _create_namelists(case, confdir, inst_string, infile, nmlgen, data_list_path
             value = ['null']
             nmlgen.set_value("streams",value)
 
+    # globally uniform SST mode
+    if docn_mode=='sst_aquap_constant':
+        value = ['null']
+        nmlgen.set_value("streams",value)
+        value = [case.get_value('DOCN_AQPCONST_VALUE')]
+        nmlgen.set_value("sst_constant_value",value)
     #----------------------------------------------------
     # Create `shr_strdata_nml` namelist group.
     #----------------------------------------------------

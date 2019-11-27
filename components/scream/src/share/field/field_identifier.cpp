@@ -1,5 +1,4 @@
 #include "share/field/field_identifier.hpp"
-#include "share/grid/default_grid.hpp"
 
 namespace scream
 {
@@ -7,9 +6,11 @@ namespace scream
 FieldIdentifier::
 FieldIdentifier (const std::string& name,
                  const layout_type& layout,
+                 const units::Units& units,
                  const std::string& grid_name)
  : m_name   (name)
  , m_layout (layout)
+ , m_units  (units)
 {
   // This also calls 'update_identifier'
   set_grid_name(grid_name);
@@ -18,9 +19,11 @@ FieldIdentifier (const std::string& name,
 FieldIdentifier::
 FieldIdentifier (const std::string& name,
                  const std::vector<FieldTag>& tags,
+                 const units::Units& units,
                  const std::string& grid_name)
  : m_name   (name)
  , m_layout (tags)
+ , m_units  (units)
 {
   // This also calls 'update_identifier'
   set_grid_name(grid_name);
@@ -29,9 +32,11 @@ FieldIdentifier (const std::string& name,
 FieldIdentifier::
 FieldIdentifier (const std::string& name,
                  const std::initializer_list<FieldTag>& tags,
+                 const units::Units& units,
                  const std::string& grid_name)
  : m_name   (name)
  , m_layout (tags)
+ , m_units  (units)
 {
   // This also calls 'update_identifier'
   set_grid_name(grid_name);
@@ -67,18 +72,18 @@ void FieldIdentifier::update_identifier () {
   for (int dim=1; dim<m_layout.rank(); ++dim) {
     m_identifier += "," + std::to_string(m_layout.dims()[dim]);
   }
-  m_identifier += ")";
+  m_identifier += ") [" + m_units.get_string() + "]";
 }
 
 // Free functions for identifiers comparison
 bool operator== (const FieldIdentifier& fid1, const FieldIdentifier& fid2) {
   // Simply compare the identifiers
-  return (fid1.get_identifier()==fid2.get_identifier());
+  return (fid1.get_id_string()==fid2.get_id_string());
 }
 
 bool operator< (const FieldIdentifier& fid1, const FieldIdentifier& fid2) {
   // Simply compare the identifiers
-  return (fid1.get_identifier()<fid2.get_identifier());
+  return (fid1.get_id_string()<fid2.get_id_string());
 }
 
 } // namespace scream

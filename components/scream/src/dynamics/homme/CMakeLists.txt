@@ -29,6 +29,7 @@ FOREACH (target IN ITEMS ${HOMME_TARGETS})
   ENDIF()
 ENDFOREACH()
 
+SET (E3SM_INTERNAL_KOKKOS_ALREADY_BUILT TRUE)
 ADD_SUBDIRECTORY(homme)
 
 # Take the variable that homme set, and mark them as (internal) cached, so they are globally visible.
@@ -114,9 +115,17 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
     ADD_DEFINITIONS(-DHAVE_CONFIG_H)
 
     # Convert strings to lists
-    STRING(REPLACE " " ";" HOMME_C_FLAGS_LIST       "${HOMME_C_FLAGS}")
-    STRING(REPLACE " " ";" HOMME_CXX_FLAGS_LIST     "${HOMME_CXX_FLAGS}")
-    STRING(REPLACE " " ";" HOMME_Fortran_FLAGS_LIST "${HOMME_Fortran_FLAGS}")
+    # Note: TARGET_COMPILE_OPTIONS perform 'de-duplication' of repeated flags.
+    #       this causes the repeated "-fp-model X -fp-model Y" to be turned into
+    #       "-fp-model X Y", which the compiler does not like.
+    #       Thankfully, there is a remedy, albeit a bit ugly: prepend the flag to be kept
+    #       (even if repeated) with 'SHELL: '.
+    STRING(REPLACE "-fp-model" "SHELL: -fp-model" HOMME_C_FLAGS_LIST_TMP       "${HOMME_C_FLAGS}")
+    STRING(REPLACE "-fp-model" "SHELL: -fp-model" HOMME_CXX_FLAGS_LIST_TMP     "${HOMME_CXX_FLAGS}")
+    STRING(REPLACE "-fp-model" "SHELL: -fp-model" HOMME_Fortran_FLAGS_LIST_TMP "${HOMME_Fortran_FLAGS}")
+    STRING(REPLACE " " ";" HOMME_C_FLAGS_LIST       "${HOMME_C_FLAGS_TMP}")
+    STRING(REPLACE " " ";" HOMME_CXX_FLAGS_LIST     "${HOMME_CXX_FLAGS_TMP}")
+    STRING(REPLACE " " ";" HOMME_Fortran_FLAGS_LIST "${HOMME_Fortran_FLAGS_TMP}")
 
     ADD_LIBRARY(${dynLibName} ${SCREAM_DYNAMICS_SOURCES})
     target_link_libraries(${dynLibName} ${SCREAM_DYNAMICS_LINK_LIBRARIES})
@@ -140,9 +149,6 @@ MACRO (CreateDynamicsLib HOMME_TARGET NP PLEV QSIZE USE_PIO USE_ENERGY)
       LIBRARY_OUTPUT_DIRECTORY "${dynLibDir}"
       RUNTIME_OUTPUT_DIRECTORY "${dynLibDir}"
     )
-    GET_TARGET_PROPERTY(dynOpts ${dynLibName} COMPILE_OPTIONS)
-    GET_TARGET_PROPERTY(dynFlags ${dynLibName} COMPILE_FLAGS)
-    GET_TARGET_PROPERTY(dynDefs ${dynLibName} COMPILE_DEFINITIONS)
   ENDIF()
 ENDMACRO(CreateDynamicsLib)
 

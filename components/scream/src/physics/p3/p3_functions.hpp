@@ -3,6 +3,7 @@
 
 #include "share/scream_types.hpp"
 #include "share/scream_pack_kokkos.hpp"
+#include "share/scream_workspace.hpp"
 #include "p3_constants.hpp"
 
 namespace scream {
@@ -20,6 +21,31 @@ namespace p3 {
 template <typename ScalarT, typename DeviceT>
 struct Functions
 {
+  //
+  // ---------- P3 constants ---------
+  //
+  struct P3C {
+    // Constants for ice lookup tables
+    enum {
+      densize     = 5,
+      rimsize     = 4,
+      isize       = 50,
+      tabsize     = 12, // number of quantities used from lookup table
+      rcollsize   = 30,
+      coltabsize  = 2,  // number of ice-rain collection  quantities used from lookup table
+
+      // switch for warm-rain parameterization
+      // 1 => Seifert and Beheng 2001
+      // 2 => Beheng 1994
+      // 3 => Khairoutdinov and Kogan 2000
+      iparam      = 3,
+      dnusize     = 16,
+    };
+
+    static constexpr ScalarT lookup_table_1a_dum1_c =  4.135985029041767e+00; // 1.0/(0.1*log10(261.7))
+    static constexpr const char* p3_lookup_base = "p3_lookup_table_1.dat-v";
+    static constexpr const char* p3_version = "4"; // TODO: Change this so that the table version and table path is a runtime option.
+  };
 
   //
   // ------- Types --------
@@ -47,38 +73,85 @@ struct Functions
 
   using KT = KokkosTypes<Device>;
 
+  using G = Globals<Scalar>;
+  using C = Constants<Scalar>;
+
   template <typename S>
   using view_1d = typename KT::template view_1d<S>;
   template <typename S>
   using view_2d = typename KT::template view_2d<S>;
 
-  using view_1d_table = typename KT::template view_1d_table<Scalar, Globals<Scalar>::MU_R_TABLE_DIM>;
-  using view_2d_table = typename KT::template view_2d_table<Scalar, Globals<ScalarT>::VTABLE_DIM0, Globals<ScalarT>::VTABLE_DIM1>;
-
   template <typename S, int N>
   using view_1d_ptr_array = typename KT::template view_1d_ptr_carray<S, N>;
 
+  template <typename S>
+  using uview_1d = typename ko::template Unmanaged<view_1d<S> >;
+
   using MemberType = typename KT::MemberType;
 
-  //
-  // --------- Functions ---------
-  //
+  using Workspace = typename WorkspaceManager<Spack, Device>::Workspace;
 
-  // -- Table3
+  // -- Table3 --
 
   struct Table3 {
     IntSmallPack dumii, dumjj;
     Spack rdumii, rdumjj;
   };
 
+  struct TableIce {
+    IntSmallPack dumi, dumjj, dumii, dumzz;
+    Spack dum1, dum4, dum5, dum6;
+  };
+
+  struct TableRain {
+    IntSmallPack dumj;
+    Spack dum3;
+  };
+
+  // lookup table values for rain shape parameter mu_r
+  using view_1d_table = typename KT::template view_1d_table<Scalar, G::MU_R_TABLE_DIM>;
+
+  // lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
+  using view_2d_table = typename KT::template view_2d_table<Scalar, G::VTABLE_DIM0, G::VTABLE_DIM1>;
+
+  // ice lookup table values
+  using view_itab_table    = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::tabsize]>;
+
+  // ice lookup table values for ice-rain collision/collection
+  using view_itabcol_table = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::rcollsize][P3C::coltabsize]>;
+
+  // droplet spectral shape parameter for mass spectra, used for Seifert and Beheng (2001)
+  // warm rain autoconversion/accretion option only (iparam = 1)
+  using view_dnu_table = typename KT::template view_1d_table<Scalar, P3C::dnusize>;
+
+  //
+  // --------- Functions ---------
+  //
+
   // Call from host to initialize the static table entries.
   static void init_kokkos_tables(
-    view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table);
+    view_2d_table& vn_table, view_2d_table& vm_table, view_1d_table& mu_r_table, view_dnu_table& dnu);
+
+  static void init_kokkos_ice_lookup_tables(
+    view_itab_table& itab, view_itabcol_table& itabcol);
 
   // Map (mu_r, lamr) to Table3 data.
   KOKKOS_FUNCTION
   static void lookup(const Smask& qr_gt_small, const Spack& mu_r, const Spack& lamr,
                      Table3& t);
+
+  //------------------------------------------------------------------------------------------!
+  // Finds indices in 3D ice (only) lookup table
+  // ------------------------------------------------------------------------------------------!
+  KOKKOS_FUNCTION
+  static void lookup_ice(const Smask& qiti_gt_small, const Spack& qitot, const Spack& nitot,
+                         const Spack& qirim, const Spack& rhop, TableIce& t);
+
+  //------------------------------------------------------------------------------------------!
+  // Finds indices in 3D rain lookup table
+  //------------------------------------------------------------------------------------------!
+  KOKKOS_FUNCTION
+  static void lookup_rain(const Smask& qiti_gt_small, const Spack& qr, const Spack& nr, TableRain& t);
 
   // Apply Table3 data to the table to return a value. This performs bilinear
   // interpolation within the quad given by {t.dumii, t.dumjj} x {t.dumii+1,
@@ -86,6 +159,16 @@ struct Functions
   KOKKOS_FUNCTION
   static Spack apply_table(const Smask& qr_gt_small, const view_2d_table& table,
                            const Table3& t);
+
+  // Apply TableIce data to the ice tables to return a value.
+  KOKKOS_FUNCTION
+  static Spack apply_table_ice(const Smask& qiti_gt_small, const int& index, const view_itab_table& itab,
+                               const TableIce& t);
+
+  // Interpolates lookup table values for rain/ice collection processes
+  KOKKOS_FUNCTION
+  static Spack apply_table_coll(const Smask& qiti_gt_small, const int& index, const view_itabcol_table& itabcoll,
+                                const TableIce& ti, const TableRain& tr);
 
   // -- Sedimentation time step
 
@@ -106,9 +189,9 @@ struct Functions
   template <int nfield>
   KOKKOS_FUNCTION
   static void calc_first_order_upwind_step(
-    const ko::Unmanaged<view_1d<const Spack> >& rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_rho, // 1/rho
-    const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho, // 1/rho
+    const uview_1d<const Spack>& inv_dzq,
     const MemberType& team,
     const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
     const view_1d_ptr_array<Spack, nfield>& flux, // workspace
@@ -118,28 +201,62 @@ struct Functions
   // Evolve 1 mixing ratio. This is a syntax-convenience version of the above.
   KOKKOS_FUNCTION
   static void calc_first_order_upwind_step(
-    const ko::Unmanaged<view_1d<const Spack> >& rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_rho, // 1/rho
-    const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho, // 1/rho
+    const uview_1d<const Spack>& inv_dzq,
     const MemberType& team,
     const Int& nk, const Int& k_bot, const Int& k_top, const Int& kdir, const Scalar& dt_sub,
-    const ko::Unmanaged<view_1d<Spack> >& flux,
-    const ko::Unmanaged<view_1d<const Spack> >& V,
-    const ko::Unmanaged<view_1d<Spack> >& r);
+    const uview_1d<Spack>& flux,
+    const uview_1d<const Spack>& V,
+    const uview_1d<Spack>& r);
 
   // This is the main routine. It can be called by the user if kdir is known at
   // compile time. So far it is not, so the above versions are called instead.
   template <Int kdir, int nfield>
   KOKKOS_FUNCTION
   static void calc_first_order_upwind_step(
-    const ko::Unmanaged<view_1d<const Spack> >& rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_rho,
-    const ko::Unmanaged<view_1d<const Spack> >& inv_dzq,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& inv_dzq,
     const MemberType& team,
     const Int& nk, const Int& k_bot, const Int& k_top, const Scalar& dt_sub,
     const view_1d_ptr_array<Spack, nfield>& flux,
     const view_1d_ptr_array<Spack, nfield>& V, // (behaviorally const)
     const view_1d_ptr_array<Spack, nfield>& r);
+
+  template <int nfield>
+  KOKKOS_FUNCTION
+  static void generalized_sedimentation(
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& inv_dzq,
+    const MemberType& team,
+    const Int& nk, const Int& k_qxtop, Int& k_qxbot, const Int& kbot, const Int& kdir, const Scalar& Co_max, Scalar& dt_left, Scalar& prt_accum,
+    const view_1d_ptr_array<Spack, nfield>& fluxes,
+    const view_1d_ptr_array<Spack, nfield>& Vs, // (behaviorally const)
+    const view_1d_ptr_array<Spack, nfield>& rs);
+
+  // Cloud sedimentation
+  KOKKOS_FUNCTION
+  static void cloud_sedimentation(
+    const uview_1d<const Spack>& qc_incld,
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& lcldm,
+    const uview_1d<const Spack>& acn,
+    const uview_1d<const Spack>& inv_dzq,
+    const view_dnu_table& dnu,
+    const MemberType& team,
+    const Workspace& workspace,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt, const bool& log_predictNc,
+    const uview_1d<Spack>& qc,
+    const uview_1d<Spack>& nc,
+    const uview_1d<Spack>& nc_incld,
+    const uview_1d<Spack>& mu_c,
+    const uview_1d<Spack>& lamc,
+    const uview_1d<Spack>& qc_tend,
+    const uview_1d<Spack>& nc_tend,
+    Scalar& prt_liq);
 
   // -- Find layers
 
@@ -148,17 +265,54 @@ struct Functions
   KOKKOS_FUNCTION
   static Int find_bottom (
     const MemberType& team,
-    const ko::Unmanaged<view_1d<const Scalar> >& v, const Scalar& small,
+    const uview_1d<const Scalar>& v, const Scalar& small,
     const Int& kbot, const Int& ktop, const Int& kdir,
     bool& log_present);
 
   KOKKOS_FUNCTION
   static Int find_top (
     const MemberType& team,
-    const ko::Unmanaged<view_1d<const Scalar> >& v, const Scalar& small,
+    const uview_1d<const Scalar>& v, const Scalar& small,
     const Int& kbot, const Int& ktop, const Int& kdir,
     bool& log_present);
+
+  //  compute saturation vapor pressure
+  //  polysvp1 returned in units of pa.
+  //  t is input in units of k.
+  //  ice refers to saturation with respect to liquid (false) or ice (true)
+  KOKKOS_FUNCTION
+  static Spack polysvp1(const Spack& t, const bool ice);
+
+  // Calls polysvp1 to obtain the saturation vapor pressure, and then computes
+  // and returns the saturation mixing ratio, with respect to either liquid or ice,
+  // depending on value of 'ice'
+  KOKKOS_INLINE_FUNCTION
+  static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
+
+  // TODO: comment
+  template <bool zero_out=true>
+  KOKKOS_INLINE_FUNCTION
+  static void get_cloud_dsd2(
+    const Smask& qc_gt_small, const Spack& qc, Spack& nc, Spack& mu_c, const Spack& rho, Spack& nu,
+    const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm);
+
+  // Computes and returns rain size distribution parameters
+  KOKKOS_INLINE_FUNCTION
+  static void get_rain_dsd2 (
+    const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
+    Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
+
+  //--------------------------------------------------------------------------------
+  //  Calculates and returns the bulk rime density from the prognostic ice variables
+  //  and adjusts qirim and birim appropriately.
+  //--------------------------------------------------------------------------------
+  KOKKOS_FUNCTION
+  static Spack calc_bulk_rho_rime(
+    const Smask& qi_gt_small, const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim);
 };
+
+template <typename ScalarT, typename DeviceT>
+constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 
 } // namespace p3
 } // namespace scream
@@ -166,9 +320,14 @@ struct Functions
 // If a GPU build, make all code available to the translation unit; otherwise,
 // ETI is used.
 #ifdef KOKKOS_ENABLE_CUDA
+# include "p3_functions_math_impl.hpp"
 # include "p3_functions_table3_impl.hpp"
+# include "p3_functions_table_ice_impl.hpp"
+# include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
+# include "p3_functions_cloud_sed_impl.hpp"
+# include "p3_functions_ice_sed_impl.hpp"
 #endif
 
 #endif

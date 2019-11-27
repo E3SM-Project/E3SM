@@ -1062,7 +1062,7 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.gis20km,mpas.ais20km,null</valid_values>
+    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.aisgis20km,mpas.gis20km,mpas.ais20km,null</valid_values>
     <default_value>gland5UM</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
@@ -1635,6 +1635,42 @@
     <desc>glc2lnd state mapping file decomp type</desc>
   </entry>
 
+  <entry id="GLC2ICE_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2ICE_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2ICE_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2ICE_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice state mapping file decomp type</desc>
+  </entry>
+
   <entry id="GLC2ICE_RMAPNAME">
     <type>char</type>
     <default_value>idmap_ignore</default_value>
@@ -1651,6 +1687,42 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>glc2ice runoff mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2OCN_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2OCN_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn state mapping file decomp type</desc>
   </entry>
 
   <entry id="GLC2OCN_LIQ_RMAPNAME">
@@ -1687,6 +1759,42 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>glc2ocn runoff mapping file decomp type for ice runoff</desc>
+  </entry>
+
+  <entry id="OCN2GLC_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="OCN2GLC_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="OCN2GLC_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="OCN2GLC_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file decomp type</desc>
   </entry>
 
   <entry id="OCN2WAV_SMAPNAME">
@@ -1867,7 +1975,7 @@
 
   <entry id="EPS_OGRID">
     <type>real</type>
-    <default_value>1.0e-02</default_value>
+    <default_value>1.0e-01</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
@@ -2748,18 +2856,27 @@
     <desc>External script to be run after model completion</desc>
   </entry>
 
+ <entry id="EXTERNAL_WORKFLOW">
+   <type>logical</type>
+   <valid_values>TRUE,FALSE</valid_values>
+   <default_value>FALSE</default_value>
+   <group>external_tools</group>
+   <file>env_run.xml</file>
+   <desc>whether the case uses an external workflow driver </desc>
+ </entry>
+
  <!-- Job Submission stuff -->
  <entry id="USER_REQUESTED_QUEUE">
    <type>char</type>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>Store user override for queue</desc>
  </entry>
 
  <entry id="USER_REQUESTED_WALLTIME">
    <type>char</type>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>Store user override for walltime</desc>
  </entry>
 
@@ -2768,7 +2885,7 @@
    <valid_values></valid_values>
    <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>The machine queue in which to submit the job.  Default determined in config_machines.xml can be overwritten by testing</desc>
  </entry>
 
@@ -2777,8 +2894,12 @@
    <valid_values></valid_values>
    <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
-   <desc>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</desc>
+   <file>env_workflow.xml</file>
+   <desc>The machine wallclock setting.  Default determined in
+   config_machines.xml can be overwritten by testing.  Format is
+   DD:HH:MM with DD assumed 0 if not present, this is translated to
+   the format specified by walltime format defined in
+   config_batch.xml</desc>
  </entry>
 
   <entry id="BATCH_COMMAND_FLAGS">
@@ -2786,7 +2907,7 @@
     <valid_values></valid_values>
     <default_value></default_value>
     <group>job_submission</group>
-    <file>env_batch.xml</file>
+    <file>env_workflow.xml</file>
     <desc>Override the batch submit command this job. Do not include executable or dependencies</desc>
   </entry>
 
@@ -2794,7 +2915,7 @@
    <type>char</type>
    <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>project for project-sensitive build and run paths, and job scripts</desc>
  </entry>
 
@@ -2802,7 +2923,7 @@
    <type>char</type>
    <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>project to charge in scripts if different from PROJECT</desc>
  </entry>
 
@@ -2831,7 +2952,6 @@
    <file>env_build.xml</file>
    <desc>TRUE=>turn on CPP variable COMPARE_TO_NUOPC</desc>
  </entry>
-
 
  <help>
     =========================================

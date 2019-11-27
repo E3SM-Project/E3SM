@@ -14,28 +14,27 @@ namespace p3 {
 struct FortranData {
   typedef std::shared_ptr<FortranData> Ptr;
 
-  typedef Kokkos::HostSpace ExeSpace;
-  typedef Kokkos::LayoutLeft Layout;
-  typedef Real Scalar;
+  using KT     = KokkosTypes<HostDevice>;
+  using Scalar = Real;
 
-  using Array1 = Kokkos::View<Scalar*, Layout, ExeSpace>;
-  using Array2 = Kokkos::View<Scalar**, Layout, ExeSpace>;
-  using Array3 = Kokkos::View<Scalar***, Layout, ExeSpace>;
+  using Array1 = typename KT::template lview<Scalar*>;
+  using Array2 = typename KT::template lview<Scalar**>;
+  using Array3 = typename KT::template lview<Scalar***>;
 
-  static constexpr bool log_predictnc = true;
-
+  bool log_predictNc;
   const Int ncol, nlev;
 
   // In
   Real dt;
   Int it;
-  Array2 qv, th, qv_old, th_old, pres, dzq, npccn, naai, qc, nc, qr, nr, ssat, qitot, nitot, qirim, birim, pdel, exner;
+  Array2 qv, th, pres, dzq, npccn, naai, qc, nc, qr, nr,  qitot, nitot, qirim, birim, pdel, exner;
   // Out
   Array1 prt_liq, prt_sol;
   Array2 diag_ze, diag_effc, diag_effi, diag_vmi, diag_di, diag_rhoi, cmeiout, prain, nevapr, prer_evap, rflx, sflx, rcldm, lcldm, icldm;
   Array2 pratot, prctot;
   Array3 p3_tend_out;
   Array2 mu_c, lamc;
+  Array2 liq_ice_exchange,vap_liq_exchange,vap_ice_exchange,vap_cld_exchange;
 
   FortranData(Int ncol, Int nlev);
 };
@@ -62,7 +61,7 @@ private:
   void init(const FortranData::Ptr& d);
 };
 
-void p3_init();
+void p3_init(bool use_fortran=false);
 void p3_main(const FortranData& d);
 
 // We will likely want to remove these checks in the future, as we're not tied
@@ -72,9 +71,8 @@ void p3_main(const FortranData& d);
 Int check_against_python(const FortranData& d);
 
 int test_FortranData();
-int test_p3_init();
-int test_p3_main();
-int test_p3_ic();
+int test_p3_init(bool use_fortran);
+int test_p3_ic(bool use_fortran);
 
 }  // namespace p3
 }  // namespace scream

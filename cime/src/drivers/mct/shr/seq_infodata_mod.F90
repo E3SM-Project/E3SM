@@ -106,6 +106,7 @@ MODULE seq_infodata_mod
      character(SHR_KIND_CL)  :: flux_epbal      ! selects E,P,R adjustment technique
      logical                 :: flux_albav      ! T => no diurnal cycle in ocn albedos
      logical                 :: flux_diurnal    ! T => diurnal cycle in atm/ocn fluxes
+     integer                 :: ocn_surface_flux_scheme  ! 0: E3SMv1 1: COARE 2: UA
      logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
      real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
      integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -143,7 +144,7 @@ MODULE seq_infodata_mod
      logical                 :: histaux_a2x24hr ! cpl writes aux hist files: a2x daily all
      logical                 :: histaux_l2x1yrg ! cpl writes aux hist files: l2x annual glc forcings
      logical                 :: histaux_l2x     ! cpl writes aux hist files: l2x every c2l comm
-     logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x daily
+     logical                 :: histaux_r2x     ! cpl writes aux hist files: r2x every c2o comm
      logical                 :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
      logical                 :: histavg_atm     ! cpl writes atm fields in average history file
      logical                 :: histavg_lnd     ! cpl writes lnd fields in average history file
@@ -187,6 +188,7 @@ MODULE seq_infodata_mod
      logical                 :: ocn_present     ! does component model exist
      logical                 :: ocn_prognostic  ! does component model need input data from driver
      logical                 :: ocnrof_prognostic ! does component need rof data
+     logical                 :: ocn_c2_glcshelf   ! will ocn component send data for ice shelf fluxes in driver
      logical                 :: ice_present     ! does component model exist
      logical                 :: ice_prognostic  ! does component model need input data from driver
      logical                 :: iceberg_prognostic ! does the ice model support icebergs
@@ -352,6 +354,7 @@ CONTAINS
     character(SHR_KIND_CL) :: flux_epbal         ! selects E,P,R adjustment technique
     logical                :: flux_albav         ! T => no diurnal cycle in ocn albedos
     logical                :: flux_diurnal       ! T => diurnal cycle in atm/ocn fluxes
+    integer                :: ocn_surface_flux_scheme  ! 0: E3SMv1 1: COARE  2: UA
     logical                 :: coldair_outbreak_mod ! (Mahrt & Sun 1995,MWR)
     real(SHR_KIND_R8)       :: flux_convergence   ! atmocn flux calc convergence value
     integer                 :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -388,7 +391,7 @@ CONTAINS
     logical                :: histaux_a2x24hr    ! cpl writes aux hist files: a2x daily all
     logical                :: histaux_l2x1yrg    ! cpl writes aux hist files: l2x annual glc forcings
     logical                :: histaux_l2x        ! cpl writes aux hist files: l2x every c2l comm
-    logical                :: histaux_r2x        ! cpl writes aux hist files: r2x daily
+    logical                :: histaux_r2x        ! cpl writes aux hist files: r2x every c2o comm
     logical                :: histaux_double_precision ! if true, use double-precision for cpl aux hist files
     logical                :: histavg_atm        ! cpl writes atm fields in average history file
     logical                :: histavg_lnd        ! cpl writes lnd fields in average history file
@@ -425,6 +428,7 @@ CONTAINS
          restart_pfile, restart_file, run_barriers,        &
          single_column, scmlat, force_stop_at,             &
          scmlon, iop_scream, logFilePostFix, outPathRoot, flux_diurnal,&
+	 ocn_surface_flux_scheme, &
          coldair_outbreak_mod, &
          flux_convergence, flux_max_iteration,             &
          perpetual, perpetual_ymd, flux_epbal, flux_albav, &
@@ -506,6 +510,7 @@ CONTAINS
        flux_epbal            = 'off'
        flux_albav            = .false.
        flux_diurnal          = .false.
+       ocn_surface_flux_scheme = 0
        coldair_outbreak_mod = .false.
        flux_convergence      = 0.0_SHR_KIND_R8
        flux_max_iteration    = 2
@@ -634,6 +639,7 @@ CONTAINS
        infodata%flux_epbal            = flux_epbal
        infodata%flux_albav            = flux_albav
        infodata%flux_diurnal          = flux_diurnal
+       infodata%ocn_surface_flux_scheme = ocn_surface_flux_scheme
        infodata%flux_convergence      = flux_convergence
        infodata%coldair_outbreak_mod      = coldair_outbreak_mod
        infodata%flux_max_iteration    = flux_max_iteration
@@ -723,6 +729,7 @@ CONTAINS
        infodata%rof_prognostic = .false.
        infodata%ocn_prognostic = .false.
        infodata%ocnrof_prognostic = .false.
+       infodata%ocn_c2_glcshelf = .false.
        infodata%ice_prognostic = .false.
        infodata%glc_prognostic = .false.
        ! It's safest to assume glc_coupled_fluxes = .true. if it's not set elsewhere,
@@ -949,10 +956,13 @@ CONTAINS
        model_version, username, hostname, rest_case_name, tchkpt_dir,     &
        start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
        aqua_planet,aqua_planet_sst, brnch_retain_casename, &
-       single_column, scmlat,scmlon,iop_scream,logFilePostFix, outPathRoot,          &
-       atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
-       rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
-       ice_present, ice_prognostic, glc_present, glc_prognostic,          &
+       single_column, scmlat,scmlon,iop_scream,logFilePostFix, outPathRoot,&
+       atm_present, atm_prognostic,                                       &
+       lnd_present, lnd_prognostic,                                       &
+       rof_present, rof_prognostic,                                       &
+       ocn_present, ocn_prognostic, ocnrof_prognostic, ocn_c2_glcshelf,   &
+       ice_present, ice_prognostic,                                       &
+       glc_present, glc_prognostic,                                       &
        iac_present, iac_prognostic,                                       &
        glc_coupled_fluxes,                                                &
        flood_present, wav_present, wav_prognostic, rofice_present,        &
@@ -965,6 +975,7 @@ CONTAINS
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
        glc_g2lupdate, atm_aero, run_barriers, esmf_map_flag,              &
        do_budgets, do_histinit, drv_threading, flux_diurnal,              &
+       ocn_surface_flux_scheme, &
        coldair_outbreak_mod, &
        flux_convergence, flux_max_iteration,                              &
        budget_inst, budget_daily, budget_month, wall_time_limit,          &
@@ -1036,6 +1047,7 @@ CONTAINS
     character(len=*),       optional, intent(OUT) :: flux_epbal              ! selects E,P,R adjustment technique
     logical,                optional, intent(OUT) :: flux_albav              ! T => no diurnal cycle in ocn albedos
     logical,                optional, intent(OUT) :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
+    integer,                optional, intent(OUT) :: ocn_surface_flux_scheme ! 0: E3SMv1  1: COARE  2: UA
     real(SHR_KIND_R8), optional, intent(out)      :: flux_convergence   ! atmocn flux calc convergence value
     logical, optional, intent(out) :: coldair_outbreak_mod        ! (Mahrt & Sun 1995, MWR)
     integer, optional, intent(OUT)                :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -1114,6 +1126,7 @@ CONTAINS
     logical,                optional, intent(OUT) :: ocn_present
     logical,                optional, intent(OUT) :: ocn_prognostic
     logical,                optional, intent(OUT) :: ocnrof_prognostic
+    logical,                optional, intent(OUT) :: ocn_c2_glcshelf
     logical,                optional, intent(OUT) :: ice_present
     logical,                optional, intent(OUT) :: ice_prognostic
     logical,                optional, intent(OUT) :: iceberg_prognostic
@@ -1213,6 +1226,8 @@ CONTAINS
     if ( present(flux_epbal)     ) flux_epbal     = infodata%flux_epbal
     if ( present(flux_albav)     ) flux_albav     = infodata%flux_albav
     if ( present(flux_diurnal)   ) flux_diurnal   = infodata%flux_diurnal
+    if ( present(ocn_surface_flux_scheme) ) ocn_surface_flux_scheme = &
+         infodata%ocn_surface_flux_scheme
     if ( present(coldair_outbreak_mod)) coldair_outbreak_mod = infodata%coldair_outbreak_mod
     if ( present(flux_convergence)) flux_convergence = infodata%flux_convergence
     if ( present(flux_max_iteration)) flux_max_iteration = infodata%flux_max_iteration
@@ -1290,6 +1305,7 @@ CONTAINS
     if ( present(ocn_present)    ) ocn_present    = infodata%ocn_present
     if ( present(ocn_prognostic) ) ocn_prognostic = infodata%ocn_prognostic
     if ( present(ocnrof_prognostic) ) ocnrof_prognostic = infodata%ocnrof_prognostic
+    if ( present(ocn_c2_glcshelf) ) ocn_c2_glcshelf = infodata%ocn_c2_glcshelf
     if ( present(ice_present)    ) ice_present    = infodata%ice_present
     if ( present(ice_prognostic) ) ice_prognostic = infodata%ice_prognostic
     if ( present(iceberg_prognostic)) iceberg_prognostic = infodata%iceberg_prognostic
@@ -1478,9 +1494,12 @@ CONTAINS
        start_type, restart_pfile, restart_file, perpetual, perpetual_ymd, &
        aqua_planet,aqua_planet_sst, brnch_retain_casename, &
        single_column, scmlat,scmlon,iop_scream,logFilePostFix, outPathRoot,          &
-       atm_present, atm_prognostic, lnd_present, lnd_prognostic, rof_prognostic, &
-       rof_present, ocn_present, ocn_prognostic, ocnrof_prognostic,       &
-       ice_present, ice_prognostic, glc_present, glc_prognostic,          &
+       atm_present, atm_prognostic,                                       &
+       lnd_present, lnd_prognostic,                                       &
+       rof_present, rof_prognostic,                                       &
+       ocn_present, ocn_prognostic, ocnrof_prognostic, ocn_c2_glcshelf,   &
+       ice_present, ice_prognostic,                                       &
+       glc_present, glc_prognostic,                                       &
        glc_coupled_fluxes,                                                &
        flood_present, wav_present, wav_prognostic, rofice_present,        &
        glclnd_present, glcocn_present, glcice_present, iceberg_prognostic,&
@@ -1493,6 +1512,7 @@ CONTAINS
        nextsw_cday, precip_fact, flux_epbal, flux_albav,                  &
        glc_g2lupdate, atm_aero, esmf_map_flag, wall_time_limit,           &
        do_budgets, do_histinit, drv_threading, flux_diurnal,              &
+       ocn_surface_flux_scheme, &
        coldair_outbreak_mod,                                                           &
        flux_convergence, flux_max_iteration,                              &
        budget_inst, budget_daily, budget_month, force_stop_at,            &
@@ -1563,6 +1583,7 @@ CONTAINS
     character(len=*),       optional, intent(IN)    :: flux_epbal              ! selects E,P,R adjustment technique
     logical,                optional, intent(IN)    :: flux_albav              ! T => no diurnal cycle in ocn albedos
     logical,                optional, intent(IN)    :: flux_diurnal            ! T => diurnal cycle in atm/ocn flux
+    integer,                optional, intent(IN)    :: ocn_surface_flux_scheme ! 0: E3SMv1 1: COARE 2:UA
     logical, optional, intent(in) :: coldair_outbreak_mod
     real(SHR_KIND_R8),      optional, intent(IN)    :: flux_convergence   ! atmocn flux calc convergence value
     integer,                optional, intent(IN)    :: flux_max_iteration ! max number of iterations of atmocn flux loop
@@ -1640,6 +1661,7 @@ CONTAINS
     logical,                optional, intent(IN)    :: ocn_present
     logical,                optional, intent(IN)    :: ocn_prognostic
     logical,                optional, intent(IN)    :: ocnrof_prognostic
+    logical,                optional, intent(IN)    :: ocn_c2_glcshelf
     logical,                optional, intent(IN)    :: ice_present
     logical,                optional, intent(IN)    :: ice_prognostic
     logical,                optional, intent(IN)    :: iceberg_prognostic
@@ -1737,6 +1759,8 @@ CONTAINS
     if ( present(flux_epbal)     ) infodata%flux_epbal     = flux_epbal
     if ( present(flux_albav)     ) infodata%flux_albav     = flux_albav
     if ( present(flux_diurnal)   ) infodata%flux_diurnal   = flux_diurnal
+    if ( present(ocn_surface_flux_scheme) ) infodata%ocn_surface_flux_scheme = &
+         ocn_surface_flux_scheme
     if ( present(coldair_outbreak_mod)   ) infodata%coldair_outbreak_mod  = coldair_outbreak_mod
     if ( present(flux_convergence)) infodata%flux_convergence  = flux_convergence
     if ( present(flux_max_iteration)) infodata%flux_max_iteration   = flux_max_iteration
@@ -1814,6 +1838,7 @@ CONTAINS
     if ( present(ocn_present)    ) infodata%ocn_present    = ocn_present
     if ( present(ocn_prognostic) ) infodata%ocn_prognostic = ocn_prognostic
     if ( present(ocnrof_prognostic)) infodata%ocnrof_prognostic = ocnrof_prognostic
+    if ( present(ocn_c2_glcshelf)) infodata%ocn_c2_glcshelf = ocn_c2_glcshelf
     if ( present(ice_present)    ) infodata%ice_present    = ice_present
     if ( present(ice_prognostic) ) infodata%ice_prognostic = ice_prognostic
     if ( present(iceberg_prognostic)) infodata%iceberg_prognostic = iceberg_prognostic
@@ -2036,7 +2061,8 @@ CONTAINS
     call shr_mpi_bcast(infodata%flux_epbal,              mpicom)
     call shr_mpi_bcast(infodata%flux_albav,              mpicom)
     call shr_mpi_bcast(infodata%flux_diurnal,            mpicom)
-    call shr_mpi_bcast(infodata%coldair_outbreak_mod,            mpicom)
+    call shr_mpi_bcast(infodata%ocn_surface_flux_scheme, mpicom)
+    call shr_mpi_bcast(infodata%coldair_outbreak_mod,    mpicom)
     call shr_mpi_bcast(infodata%flux_convergence,        mpicom)
     call shr_mpi_bcast(infodata%flux_max_iteration,      mpicom)
     call shr_mpi_bcast(infodata%glc_renormalize_smb,     mpicom)
@@ -2113,6 +2139,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%ocn_present,             mpicom)
     call shr_mpi_bcast(infodata%ocn_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%ocnrof_prognostic,       mpicom)
+    call shr_mpi_bcast(infodata%ocn_c2_glcshelf,         mpicom)
     call shr_mpi_bcast(infodata%ice_present,             mpicom)
     call shr_mpi_bcast(infodata%ice_prognostic,          mpicom)
     call shr_mpi_bcast(infodata%iceberg_prognostic,      mpicom)
@@ -2396,6 +2423,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cmppe)
+       call shr_mpi_bcast(infodata%ocn_c2_glcshelf,    mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocn_nx,             mpicom, pebcast=cmppe)
        call shr_mpi_bcast(infodata%ocn_ny,             mpicom, pebcast=cmppe)
        ! dead_comps is true if it's ever set to true
@@ -2470,6 +2498,7 @@ CONTAINS
        call shr_mpi_bcast(infodata%ocn_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ocn_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ocnrof_prognostic,  mpicom, pebcast=cplpe)
+       call shr_mpi_bcast(infodata%ocn_c2_glcshelf,    mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ice_present,        mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%ice_prognostic,     mpicom, pebcast=cplpe)
        call shr_mpi_bcast(infodata%iceberg_prognostic, mpicom, pebcast=cplpe)
@@ -2730,6 +2759,7 @@ CONTAINS
     write(logunit,F0A) subname,'flux_epbal               = ', trim(infodata%flux_epbal)
     write(logunit,F0L) subname,'flux_albav               = ', infodata%flux_albav
     write(logunit,F0L) subname,'flux_diurnal             = ', infodata%flux_diurnal
+    write(logunit,F0L) subname,'ocn_surface_flux_scheme  = ', infodata%ocn_surface_flux_scheme
     write(logunit,F0L) subname,'coldair_outbreak_mod            = ', infodata%coldair_outbreak_mod
     write(logunit,F0R) subname,'flux_convergence         = ', infodata%flux_convergence
     write(logunit,F0I) subname,'flux_max_iteration       = ', infodata%flux_max_iteration
@@ -2811,6 +2841,7 @@ CONTAINS
     write(logunit,F0L) subname,'ocn_present              = ', infodata%ocn_present
     write(logunit,F0L) subname,'ocn_prognostic           = ', infodata%ocn_prognostic
     write(logunit,F0L) subname,'ocnrof_prognostic        = ', infodata%ocnrof_prognostic
+    write(logunit,F0L) subname,'ocn_c2_glcshelf          = ', infodata%ocn_c2_glcshelf
     write(logunit,F0L) subname,'ice_present              = ', infodata%ice_present
     write(logunit,F0L) subname,'ice_prognostic           = ', infodata%ice_prognostic
     write(logunit,F0L) subname,'iceberg_prognostic       = ', infodata%iceberg_prognostic

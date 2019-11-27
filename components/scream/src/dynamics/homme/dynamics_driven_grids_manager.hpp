@@ -22,22 +22,25 @@ public:
 
 protected:
 
+  remapper_ptr_type
+  do_create_remapper (const grid_ptr_type from_grid,
+                      const grid_ptr_type to_grid) const;
+
   void build_grid (const std::string& grid_names);
 
   void build_dynamics_grid ();
   void build_physics_grid  ();
 
-  const repo_type& get_repo () const { return m_grids; }
+  const grid_repo_type& get_repo () const { return m_grids; }
 
-  repo_type  m_grids;
+  grid_repo_type  m_grids;
 
-  AbstractGrid::dofs_map_type m_phys_dofs;
-  AbstractGrid::dofs_map_type m_dyn_dofs;
+  ParameterList m_params;
 };
 
-inline GridsManager*
+inline std::shared_ptr<GridsManager>
 create_dynamics_driven_grids_manager (const Comm& comm, const ParameterList& p) {
-  return new DynamicsDrivenGridsManager(comm,p);
+  return std::make_shared<DynamicsDrivenGridsManager>(comm,p);
 }
 
 } // namespace scream

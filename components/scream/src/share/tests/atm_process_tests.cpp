@@ -30,19 +30,17 @@ public:
   // The communicator associated with this atm process
   const Comm& get_comm () const { return m_comm; }
 
-  void set_grid (const std::shared_ptr<const GridsManager> /* grids_manager */) {
+  void set_grids (const std::shared_ptr<const GridsManager> /* grids_manager */) {
     // Do nothing
   }
 
   // The initialization method should prepare all stuff needed to import/export from/to
   // f90 structures.
-  void initialize () {
-    // Do nothing
-  }
+  void initialize (const util::TimeStamp& /* t0 */ ) {}
 
   // The run method is responsible for exporting atm states to the e3sm coupler, and
   // import surface states from the e3sm coupler.
-  void run ( /* inputs? */ ) {}
+  void run (const Real /* dt */) {}
 
   // Clean up
   void finalize ( /* inputs */ ) {}
@@ -64,11 +62,6 @@ protected:
 
   Comm    m_comm;
 };
-
-template<AtmosphereProcessType PType>
-AtmosphereProcess* create_dummy_process (const Comm& comm, const ParameterList& p) {
-  return new DummyProcess<PType>(comm,p);
-}
 
 TEST_CASE("process_factory", "") {
   using namespace scream;
@@ -98,9 +91,9 @@ TEST_CASE("process_factory", "") {
 
   // Create then factory, and register constructors
   auto& factory = AtmosphereProcessFactory::instance();
-  factory.register_product("duMmy pHySics",&create_dummy_process<AtmosphereProcessType::Physics>);
-  factory.register_product("dummY dynAmics",&create_dummy_process<AtmosphereProcessType::Dynamics>);
-  factory.register_product("grouP",&create_atmosphere_process_group);
+  factory.register_product("duMmy pHySics",&create_atmosphere_process<DummyProcess<AtmosphereProcessType::Physics>>);
+  factory.register_product("dummY dynAmics",&create_atmosphere_process<DummyProcess<AtmosphereProcessType::Dynamics>>);
+  factory.register_product("grouP",&create_atmosphere_process<AtmosphereProcessGroup>);
 
   // Create the processes
   std::shared_ptr<AtmosphereProcess> atm_process (factory.create("group",comm,params));
@@ -108,16 +101,16 @@ TEST_CASE("process_factory", "") {
   // CHECKS
   auto group = std::dynamic_pointer_cast<AtmosphereProcessGroup>(atm_process);
 
-  // 1) must be a group
+  // 1) Must be a group
   REQUIRE (static_cast<bool>(group));
 
-  // 2) must store 2 processes: a dynamics and a group
+  // 2) Must store 2 processes: a dynamics and a group
   REQUIRE (group->get_num_processes()==2);
   REQUIRE (group->get_process(0)->type()==AtmosphereProcessType::Dynamics);
   REQUIRE (group->get_process(1)->type()==AtmosphereProcessType::Group);
 
-  // 3) 
-  auto group_2 = std::dynamic_pointer_cast<AtmosphereProcessGroup>(group->get_process(1));
+  // 3) The group must store two physics
+  auto group_2 = std::dynamic_pointer_cast<const AtmosphereProcessGroup>(group->get_process(1));
   REQUIRE (static_cast<bool>(group_2));
   REQUIRE (group_2->get_num_processes()==2);
   REQUIRE (group_2->get_process(0)->type()==AtmosphereProcessType::Physics);

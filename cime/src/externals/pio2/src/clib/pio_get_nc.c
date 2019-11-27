@@ -1,16 +1,21 @@
 /**
  * @file
- * PIO functions to get data (excluding varm functions).
+ * PIO functions to get data.
  *
  * @author Ed Hartnett
  * @date  2016
  *
  * @see http://code.google.com/p/parallelio/
  */
-
 #include <config.h>
 #include <pio.h>
 #include <pio_internal.h>
+
+/**
+ * @addtogroup PIO_get_vars_c Read Strided Arrays
+ * Read strided arrays of data from a variable in C.
+ * @{
+ */
 
 /**
  * Get strided, muti-dimensional subset of a text variable.
@@ -341,6 +346,45 @@ int PIOc_get_vars_longlong(int ncid, int varid, const PIO_Offset *start,
 }
 
 /**
+ * Get strided, muti-dimensional subset of a variable of the same type
+ * as the variable in the file.
+ *
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm.
+ *
+ * @param ncid identifies the netCDF file
+ * @param varid the variable ID number
+ * @param start an array of start indicies (must have same number of
+ * entries as variable has dimensions). If NULL, indices of 0 will be
+ * used.
+ * @param count an array of counts (must have same number of entries
+ * as variable has dimensions). If NULL, counts matching the size of
+ * the variable will be used.
+ * @param stride an array of strides (must have same number of
+ * entries as variable has dimensions). If NULL, strides of 1 will be
+ * used.
+ * @param buf pointer that will get the data.
+ * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
+ */
+int PIOc_get_vars(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+                  const PIO_Offset *stride, void *buf)
+{
+    return PIOc_get_vars_tc(ncid, varid, start, count, stride, NC_NAT, buf);
+}
+
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup PIO_get_vara_c Read Arrays
+ * Read arrays of data from a variable in C, specifying start and
+ * count arrays.
+ * @{
+ */
+
+/**
  * Get a muti-dimensional subset of a text variable.
  *
  * This routine is called collectively by all tasks in the
@@ -631,6 +675,41 @@ int PIOc_get_vara_longlong(int ncid, int varid, const PIO_Offset *start,
 }
 
 /**
+ * Get a muti-dimensional subset of a variable the same type
+ * as the variable in the file.
+ *
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm.
+ *
+ * @param ncid identifies the netCDF file
+ * @param varid the variable ID number
+ * @param start an array of start indicies (must have same number of
+ * entries as variable has dimensions). If NULL, indices of 0 will be
+ * used.
+ * @param count an array of counts (must have same number of entries
+ * as variable has dimensions). If NULL, counts matching the size of
+ * the variable will be used.
+ * @param buf pointer that will get the data.
+ * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
+ */
+int PIOc_get_vara(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
+                  void *buf)
+{
+    return PIOc_get_vars_tc(ncid, varid, start, count, NULL, NC_NAT, buf);
+}
+
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup PIO_get_var_c Read Entire Variable
+ * Read the entire variable at one time into an array in C.
+ * @{
+ */
+
+/**
  * Get all data of a text variable.
  *
  * This routine is called collectively by all tasks in the
@@ -835,6 +914,34 @@ int PIOc_get_var_longlong(int ncid, int varid, long long *buf)
 }
 
 /**
+ * Get all data from a variable the same type as the variable in the
+ * file.
+ *
+ * This routine is called collectively by all tasks in the
+ * communicator ios.union_comm.
+ *
+ * @param ncid identifies the netCDF file
+ * @param varid the variable ID number
+ * @param buf pointer that will get the data.
+ * @return PIO_NOERR on success, error code otherwise.
+ * @author Ed Hartnett
+ */
+int PIOc_get_var(int ncid, int varid, void *buf)
+{
+    return PIOc_get_var_tc(ncid, varid, NC_NAT, buf);
+}
+
+/**
+ * @}
+ */
+
+/**
+ * @addtogroup PIO_get_var1_c Read One Value
+ * Read one value from a variable in C.
+ * @{
+ */
+
+/**
  * Get one value of a text variable.
  *
  * This routine is called collectively by all tasks in the
@@ -932,7 +1039,7 @@ int PIOc_get_var1_ushort(int ncid, int varid, const PIO_Offset *index, unsigned 
 int PIOc_get_var1_short(int ncid, int varid, const PIO_Offset *index, short *buf)
 {
     int ret = PIOc_get_var1_tc(ncid, varid, index, NC_SHORT, buf);
-    LOG((1, "PIOc_get_var1_short returned %d", ret));
+    PLOG((1, "PIOc_get_var1_short returned %d", ret));
     return ret;
 }
 
@@ -1079,24 +1186,6 @@ int PIOc_get_var1_longlong(int ncid, int varid, const PIO_Offset *index,
 }
 
 /**
- * Get all data from a variable the same type as the variable in the
- * file.
- *
- * This routine is called collectively by all tasks in the
- * communicator ios.union_comm.
- *
- * @param ncid identifies the netCDF file
- * @param varid the variable ID number
- * @param buf pointer that will get the data.
- * @return PIO_NOERR on success, error code otherwise.
- * @author Ed Hartnett
- */
-int PIOc_get_var(int ncid, int varid, void *buf)
-{
-    return PIOc_get_var_tc(ncid, varid, NC_NAT, buf);
-}
-
-/**
  * Get one value from a variable the same type as the variable in the
  * file.
  *
@@ -1118,54 +1207,5 @@ int PIOc_get_var1(int ncid, int varid, const PIO_Offset *index, void *buf)
 }
 
 /**
- * Get a muti-dimensional subset of a variable the same type
- * as the variable in the file.
- *
- * This routine is called collectively by all tasks in the
- * communicator ios.union_comm.
- *
- * @param ncid identifies the netCDF file
- * @param varid the variable ID number
- * @param start an array of start indicies (must have same number of
- * entries as variable has dimensions). If NULL, indices of 0 will be
- * used.
- * @param count an array of counts (must have same number of entries
- * as variable has dimensions). If NULL, counts matching the size of
- * the variable will be used.
- * @param buf pointer that will get the data.
- * @return PIO_NOERR on success, error code otherwise.
- * @author Ed Hartnett
+ * @}
  */
-int PIOc_get_vara(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                  void *buf)
-{
-    return PIOc_get_vars_tc(ncid, varid, start, count, NULL, NC_NAT, buf);
-}
-
-/**
- * Get strided, muti-dimensional subset of a variable of the same type
- * as the variable in the file.
- *
- * This routine is called collectively by all tasks in the
- * communicator ios.union_comm.
- *
- * @param ncid identifies the netCDF file
- * @param varid the variable ID number
- * @param start an array of start indicies (must have same number of
- * entries as variable has dimensions). If NULL, indices of 0 will be
- * used.
- * @param count an array of counts (must have same number of entries
- * as variable has dimensions). If NULL, counts matching the size of
- * the variable will be used.
- * @param stride an array of strides (must have same number of
- * entries as variable has dimensions). If NULL, strides of 1 will be
- * used.
- * @param buf pointer that will get the data.
- * @return PIO_NOERR on success, error code otherwise.
- * @author Ed Hartnett
- */
-int PIOc_get_vars(int ncid, int varid, const PIO_Offset *start, const PIO_Offset *count,
-                  const PIO_Offset *stride, void *buf)
-{
-    return PIOc_get_vars_tc(ncid, varid, start, count, stride, NC_NAT, buf);
-}

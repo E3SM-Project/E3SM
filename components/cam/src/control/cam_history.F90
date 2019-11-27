@@ -3408,7 +3408,7 @@ end subroutine print_active_fldlst
       ierr=pio_inq_varid (tape(t)%File,'time_bnds',   tape(t)%tbndid)
       ierr=pio_inq_varid (tape(t)%File,'date_written',tape(t)%date_writtenid)
       ierr=pio_inq_varid (tape(t)%File,'time_written',tape(t)%time_writtenid)
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
       ierr=pio_inq_varid (tape(t)%File,'tsec    ',tape(t)%tsecid)
       ierr=pio_inq_varid (tape(t)%File,'bdate   ',tape(t)%bdateid)
 #endif
@@ -3662,7 +3662,6 @@ end subroutine print_active_fldlst
     integer                          :: mdimsize
     integer                          :: ierr
     integer,          allocatable    :: mdimids(:)
-    integer                          :: amode
     logical                          :: interpolate
     logical                          :: patch_output
 
@@ -3674,12 +3673,10 @@ end subroutine print_active_fldlst
       if(masterproc) write(iulog,*)'Opening netcdf history file ', trim(nhfil(t))
     end if
 
-    amode = PIO_CLOBBER
-
     if(restart) then
-      call cam_pio_createfile (tape(t)%File, hrestpath(t), amode)
+      call cam_pio_createfile (tape(t)%File, hrestpath(t))
     else
-      call cam_pio_createfile (tape(t)%File, nhfil(t), amode)
+      call cam_pio_createfile (tape(t)%File, nhfil(t))
     end if
     if(is_satfile(t)) then
       interpolate = .false. ! !!XXgoldyXX: Do we ever want to support this?
@@ -3764,8 +3761,8 @@ end subroutine print_active_fldlst
     str = 'CF-1.0'
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'Conventions', trim(str))
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'source', 'CAM')
-#if ( defined BFB_CAM_SCAM_IOP )
-    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'CAM_GENERATED_FORCING','create SCAM IOP dataset')
+#if defined (E3SM_SCM_REPLAY)
+    ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'E3SM_GENERATED_FORCING','create SCM IOP dataset')
 #endif
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'case',caseid)
     ierr=pio_put_att (tape(t)%File, PIO_GLOBAL, 'title',ctitle)
@@ -3825,7 +3822,7 @@ end subroutine print_active_fldlst
       str = 'base date (YYYYMMDD)'
       ierr=pio_put_att (tape(t)%File, tape(t)%nbdateid, 'long_name', trim(str))
 
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
       ierr=pio_def_var (tape(t)%File,'bdate',PIO_INT,tape(t)%bdateid)
       str = 'base date (YYYYMMDD)'
       ierr=pio_put_att (tape(t)%File, tape(t)%bdateid, 'long_name', trim(str))
@@ -3902,7 +3899,7 @@ end subroutine print_active_fldlst
       end if
 
 
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
       ierr=pio_def_var (tape(t)%File,'tsec ',pio_int,(/timdim/), tape(t)%tsecid)
       str = 'current seconds of current date needed for scam'
       ierr=pio_put_att (tape(t)%File, tape(t)%tsecid, 'long_name', trim(str))
@@ -4064,6 +4061,13 @@ end subroutine print_active_fldlst
                'h_define: cannot define units for '//trim(fname_tmp))
         end if
 
+        str = tape(t)%hlist(f)%field%mixing_ratio
+        if (len_trim(str) > 0) then
+          ierr=pio_put_att (tape(t)%File, varid, 'mixing_ratio', trim(str))
+          call cam_pio_handle_error(ierr,                                     &
+               'h_define: cannot define mixing_ratio for '//trim(fname_tmp))
+        end if
+
         str = tape(t)%hlist(f)%field%long_name
         ierr=pio_put_att (tape(t)%File, varid, 'long_name', trim(str))
         call cam_pio_handle_error(ierr,                                       &
@@ -4145,7 +4149,7 @@ end subroutine print_active_fldlst
 
       ierr = pio_put_var(tape(t)%File, tape(t)%nbdateid, (/nbdate/))
       call cam_pio_handle_error(ierr, 'h_define: cannot put nbdate')
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
       ierr = pio_put_var(tape(t)%File, tape(t)%bdateid, (/nbdate/))
       call cam_pio_handle_error(ierr, 'h_define: cannot put bdate')
 #endif
@@ -4526,7 +4530,7 @@ end subroutine print_active_fldlst
     character(len=max_string_len) :: fname ! Filename
     logical :: prev              ! Label file with previous date rather than current
     integer :: ierr
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
     integer :: tsec             ! day component of current time
     integer :: dtime            ! seconds component of current time
 #endif
@@ -4670,7 +4674,7 @@ end subroutine print_active_fldlst
           end if
 
           ierr = pio_put_var (tape(t)%File, tape(t)%datesecid,(/start/),(/count1/),(/ncsec/))
-#if ( defined BFB_CAM_SCAM_IOP )
+#if ( defined E3SM_SCM_REPLAY )
           dtime = get_step_size()
           tsec=dtime*nstep
           ierr = pio_put_var (tape(t)%File, tape(t)%tsecid,(/start/),(/count1/),(/tsec/))
@@ -4813,6 +4817,7 @@ end subroutine print_active_fldlst
     !-----------------------------------------------------------------------
     use cam_history_support, only: fillvalue, hist_coord_find_levels
     use cam_grid_support,    only: cam_grid_id
+    use constituents,        only: pcnst, cnst_get_ind, cnst_get_type_byind
 
     !
     ! Arguments
@@ -4836,9 +4841,11 @@ end subroutine print_active_fldlst
     !
     character(len=max_fieldname_len) :: fname_tmp ! local copy of fname
     character(len=128)               :: errormsg
+    character(len=3)                 :: mixing_ratio
     type(master_entry), pointer      :: listentry
 
     integer :: dimcnt
+    integer :: idx
 
     if (htapes_defined) then
       call endrun ('ADDFLD: Attempt to add field '//trim(fname)//' after history files set')
@@ -4871,6 +4878,14 @@ end subroutine print_active_fldlst
       call endrun ('ADDFLD:  '//fname//' already on list')
     end if
 
+    ! If the field is an advected constituent determine whether its concentration
+    ! is based on dry or wet air.
+    call cnst_get_ind(fname_tmp, idx, abort=.false.)
+    mixing_ratio = ''
+    if (idx > 0) then
+       mixing_ratio = cnst_get_type_byind(idx)
+    end if
+
     !
     ! Add field to Master Field List arrays fieldn and iflds
     !
@@ -4879,6 +4894,7 @@ end subroutine print_active_fldlst
     listentry%field%long_name   = long_name
     listentry%field%numlev      = 1        ! Will change if lev or ilev in shape
     listentry%field%units       = units
+    listentry%field%mixing_ratio = mixing_ratio
     listentry%field%meridional_complement = -1
     listentry%field%zonal_complement      = -1
     listentry%htapeindx(:) = -1

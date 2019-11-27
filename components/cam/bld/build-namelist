@@ -548,6 +548,15 @@ add_default($nl, 'start_type');
 my $dyn = $cfg->get('dyn');
 if ($dyn =~ /se/) {add_default($nl, 'vect_map', 'val'=>'cart3d');}
 
+if ($dyn =~ /se/) {
+  my $npg = $cfg->get('npg');
+  my $se_fv_nphys = $nl->get_value('se_fv_nphys');
+  if (defined($se_fv_nphys) and $se_fv_nphys != $npg) {
+    die "$ProgName - ERROR: se_fv_nphys should not be set by the user\n";
+  }
+  add_default($nl, 'se_fv_nphys', 'val'=>$npg);
+}
+
 # Adiabatic or Ideal physics
 my $phys = $cfg->get('phys');
 if ($phys eq 'adiabatic') { add_default($nl, 'atm_adiabatic',  'val'=>'.true.'); }
@@ -3328,8 +3337,8 @@ if ( $chem ) {
 
     # drydep_srf_file is only needed for prognostic MAM when the grid is unstructured.
     # structured grids can do interpolation on the fly.
-    if ($chem =~ /_mam/ and $dyn =~ /se/) {
-	add_default($nl, 'drydep_srf_file');
+    if ($chem =~ /_mam/ and $dyn =~ /se/ and !$aqua_mode ) {
+      add_default($nl, 'drydep_srf_file');
     }
 }
 
@@ -3999,7 +4008,7 @@ if ($cfg->get('scam')) {
 }
 
 # CAM generates IOP file for SCAM
-if ($cfg->get('camiop')) {
+if ($cfg->get('e3smreplay')) {
     add_default($nl, 'inithist', 'val'=>'CAMIOP');
     add_default($nl, 'ndens', 'val'=>'1,1');
     add_default($nl, 'mfilt', 'val'=>'1,10');

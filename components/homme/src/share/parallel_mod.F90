@@ -28,6 +28,10 @@ module parallel_mod
   integer,      public :: MPIreal_t,MPIinteger_t,MPIChar_t,MPILogical_t
   integer,      public :: iam
 
+#ifdef _MPI
+  integer, public            :: MPI2real_t
+#endif
+
   integer,      public, allocatable    :: status(:,:)
   integer,      public, allocatable    :: Rrequest(:)
   integer,      public, allocatable    :: Srequest(:)
@@ -117,8 +121,6 @@ contains
     type(parallel_t), intent(out) ::  par
 
 #ifdef _MPI
-#include <mpif.h>
-
     integer(kind=int_kind)                              :: ierr
     logical :: running   ! state of MPI at beginning of initmp call
 #ifdef CAM
@@ -158,6 +160,7 @@ contains
     if (color == 0) par%dynproc = .TRUE.
 #else
     par%comm     = MPI_COMM_WORLD
+    par%dynproc  = .TRUE.
 #endif
     call MPI_comm_rank(par%comm,par%rank,ierr)
     call MPI_comm_size(par%comm,par%nprocs,ierr)
@@ -167,7 +170,7 @@ contains
     if (par%masterproc) write(iulog,*)'number of MPI processes: ',par%nprocs
     if (par%masterproc) write(iulog,*)'MPI processors stride: ',npes_cam_stride
 #else
-    par%root          =  0 
+    par%root          =  0
     par%rank          =  0
     par%nprocs        =  1
     par%comm          = -1
@@ -177,6 +180,7 @@ contains
 
   subroutine initmp_from_par(par)
     type (parallel_t),intent(in):: par
+#ifdef _MPI
     character(len=MPI_MAX_PROCESSOR_NAME)               :: my_name
     character(len=MPI_MAX_PROCESSOR_NAME), allocatable  :: the_names(:)
     integer(kind=int_kind),allocatable                  :: tarray(:)
@@ -184,8 +188,6 @@ contains
     integer(kind=int_kind)                              :: ierr,tmp_min,tmp_max
     integer :: node_color
            
-#ifdef _MPI
-#include <mpif.h>
     if (MPI_DOUBLE_PRECISION==20 .and. MPI_REAL8==18) then
        ! LAM MPI defined MPI_REAL8 differently from MPI_DOUBLE_PRECISION
        ! and LAM MPI's allreduce does not accept on MPI_REAL8
@@ -193,6 +195,12 @@ contains
     else
        MPIreal_t    = MPI_REAL8
     endif
+
+    ! this type is only to use mpi_minloc and mpi_maxloc in print_state()
+    ! on a machine where MPIreal_t != MPI_DOUBLE_PRECISION there will be
+    ! truncation in calls with maxloc, minloc and loss of reproducibility
+    MPI2real_t   = MPI_2DOUBLE_PRECISION
+
     MPIinteger_t = MPI_INTEGER
     MPIchar_t    = MPI_CHARACTER 
     MPILogical_t = MPI_LOGICAL
@@ -265,7 +273,6 @@ contains
 
   end subroutine initmp_from_par
 
-     
   function initmp(npes_in,npes_stride) result(par)
     integer, intent(in), optional ::  npes_in
     integer, intent(in), optional ::  npes_stride
@@ -344,7 +351,6 @@ end subroutine haltmp
     type (parallel_t) par
 
 #ifdef _MPI
-#include <mpif.h>
     integer                         :: errorcode,errorlen,ierr
     character(len=MPI_MAX_ERROR_STRING)               :: errorstring
 
@@ -369,7 +375,6 @@ end subroutine haltmp
     integer :: comm
 
 #ifdef _MPI
-#include <mpif.h>
     integer                         :: errorcode,errorlen,ierr
     character(len=MPI_MAX_ERROR_STRING)               :: errorstring
 

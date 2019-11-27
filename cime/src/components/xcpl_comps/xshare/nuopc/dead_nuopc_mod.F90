@@ -1,15 +1,16 @@
 module dead_nuopc_mod
 
-  use med_constants_mod     , only : R8, CL
-  use shr_nuopc_methods_mod , only : chkerr => shr_nuopc_methods_ChkErr 
-  use shr_sys_mod           , only : shr_sys_abort
-  use ESMF                  , only : ESMF_Gridcomp, ESMF_State, ESMF_StateGet
-  use ESMF                  , only : ESMF_Clock, ESMF_Time, ESMF_TimeInterval, ESMF_Alarm
-  use ESMF                  , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_ClockSet, ESMF_ClockAdvance, ESMF_AlarmSet
-  use ESMF                  , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
-  use ESMF                  , only : ESMF_FAILURE
-  use ESMF                  , only : operator(/=), operator(==), operator(+)
-
+  use ESMF              , only : ESMF_Gridcomp, ESMF_State, ESMF_StateGet
+  use ESMF              , only : ESMF_Clock, ESMF_Time, ESMF_TimeInterval, ESMF_Alarm
+  use ESMF              , only : ESMF_GridCompGet, ESMF_ClockGet, ESMF_ClockSet, ESMF_ClockAdvance, ESMF_AlarmSet
+  use ESMF              , only : ESMF_SUCCESS, ESMF_LogWrite, ESMF_LOGMSG_INFO, ESMF_METHOD_INITIALIZE
+  use ESMF              , only : ESMF_FAILURE, ESMF_LOGMSG_ERROR
+  use ESMF              , only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
+  use ESMF              , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VmGet
+  use ESMF              , only : operator(/=), operator(==), operator(+)
+  use shr_kind_mod      , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cl=>shr_kind_cl, cs=>shr_kind_cs
+  use shr_sys_mod       , only : shr_sys_abort
+  use dead_methods_mod  , only : chkerr, alarmInit
 
   implicit none
   private
@@ -49,8 +50,6 @@ contains
 
   subroutine dead_read_inparms(model,  inst_suffix, logunit, &
        nxg, nyg, decomp_type, nproc_x, seg_len)
-
-    use ESMF, only : ESMF_VMGetCurrent, ESMF_VM, ESMF_VMBroadcast, ESMF_VMGet
 
     ! input/output variables
     character(len=*) , intent(in)    :: model
@@ -134,7 +133,6 @@ contains
     ! This sets up some defaults.  The user may want to overwrite some
     ! of these fields in the main program after initialization in complete.
 
-    use ESMF          , only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VmGet
     use shr_const_mod , only : shr_const_pi, shr_const_rearth
 
     ! input/output parameters:
@@ -393,8 +391,6 @@ contains
 
     ! finalize method for xcpl component
 
-    use ESMF, only : ESMF_VM, ESMF_VMGetCurrent, ESMF_VMGet
-
     ! input/output parameters:
     character(len=*) , intent(in) :: model
     integer          , intent(in) :: logunit     ! logging unit number
@@ -424,8 +420,6 @@ contains
   !===============================================================================
 
   subroutine fld_list_add(num, fldlist, stdname, ungridded_lbound, ungridded_ubound)
-
-    use ESMF, only : ESMF_LogWrite, ESMF_LOGMSG_ERROR
 
     ! input/output variables
     integer                    , intent(inout) :: num
@@ -478,7 +472,7 @@ contains
     type(ESMF_Field)  :: field
     character(len=80) :: stdname
     integer           :: gridtoFieldMap=2
-    character(len=*),parameter  :: subname='(dshr_nuopc_mod:fld_list_realize)'
+    character(len=*),parameter  :: subname='(dead_nuopc_mod:fld_list_realize)'
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -540,7 +534,7 @@ contains
       ! local variables
       type(ESMF_Distgrid) :: distgrid
       type(ESMF_Grid)     :: grid
-      character(len=*), parameter :: subname='(dshr_nuopc_mod:SetScalarField)'
+      character(len=*), parameter :: subname='(dead_nuopc_mod:SetScalarField)'
       ! ----------------------------------------------
 
       rc = ESMF_SUCCESS
@@ -584,7 +578,6 @@ contains
 
   subroutine ModelSetRunClock(gcomp, rc)
 
-    use shr_nuopc_time_mod , only : shr_nuopc_time_alarmInit
     use ESMF               , only : ESMF_ClockGetAlarmList, ESMF_ALARMLIST_ALL
     use NUOPC_Model        , only : NUOPC_ModelGet
     use NUOPC              , only : NUOPC_CompAttributeGet
@@ -605,7 +598,7 @@ contains
     type(ESMF_ALARM)         :: restart_alarm
     character(len=128)       :: name
     integer                  :: alarmcount
-    character(len=*),parameter :: subname='dshr_nuopc_mod:(ModelSetRunClock) '
+    character(len=*),parameter :: subname='dead_nuopc_mod:(ModelSetRunClock) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -653,7 +646,7 @@ contains
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) restart_ymd
 
-       call shr_nuopc_time_alarmInit(mclock, restart_alarm, restart_option, &
+       call alarmInit(mclock, restart_alarm, restart_option, &
             opt_n   = restart_n,           &
             opt_ymd = restart_ymd,         &
             RefTime = mcurrTime,           &
@@ -687,13 +680,12 @@ contains
     ! create an Emesh object for Fields
     !-----------------------------------------
 
-    use shr_kind_mod , only : R8=>shr_kind_r8
-    use ESMF         , only : ESMF_GridComp, ESMF_VM, ESMF_Mesh
-    use ESMF         , only : ESMF_VMGet, ESMF_GridCompGet, ESMF_VMBroadCast, ESMF_VMAllGatherV
-    use ESMF         , only : ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_LogWrite
-    use ESMF         , only : ESMF_VMGather, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
-    use ESMF         , only : ESMF_MeshCreate, ESMF_COORDSYS_SPH_DEG, ESMF_REDUCE_SUM
-    use ESMF         , only : ESMF_VMAllReduce, ESMF_MESHELEMTYPE_QUAD
+    use ESMF , only : ESMF_GridComp, ESMF_VM, ESMF_Mesh
+    use ESMF , only : ESMF_VMGet, ESMF_GridCompGet, ESMF_VMBroadCast, ESMF_VMAllGatherV
+    use ESMF , only : ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_LogWrite
+    use ESMF , only : ESMF_VMGather, ESMF_LogFoundError, ESMF_LOGERR_PASSTHRU
+    use ESMF , only : ESMF_MeshCreate, ESMF_COORDSYS_SPH_DEG, ESMF_REDUCE_SUM
+    use ESMF , only : ESMF_VMAllReduce, ESMF_MESHELEMTYPE_QUAD
 
     ! input/output arguments
     type(ESMF_GridComp)               :: gcomp
@@ -730,7 +722,7 @@ contains
     integer          :: sendData(1)
     type(ESMF_VM)    :: vm
     integer          :: petCount
-    character(len=*),parameter :: subname='(shr_nuopc_grid_MeshInit)'
+    character(len=*),parameter :: subname='(dead_MeshInit)'
     !--------------------------------------------------------------
 
     rc = ESMF_SUCCESS

@@ -5,6 +5,7 @@
 #include "share/scream_assert.hpp"
 
 #include "physics/p3/p3_f90.hpp"
+#include "physics/p3/p3_functions_f90.hpp"
 #include "physics/p3/p3_ic_cases.hpp"
 
 #include <vector>
@@ -23,6 +24,11 @@ static Int compare (const std::string& label, const Scalar* a,
     den = std::max(den, std::abs(a[i]));
   Real worst = 0;
   for (Int i = 0; i < n; ++i) {
+    if (std::isnan(a[i]) || std::isinf(a[i]) ||
+        std::isnan(b[i]) || std::isinf(b[i])) {
+      ++nerr;
+      continue;
+    }
     const auto num = std::abs(a[i] - b[i]);
     if (num > tol*den) {
       ++nerr;
@@ -52,18 +58,20 @@ Int compare (const std::string& label, const double& tol,
 
 struct Baseline {
   Baseline () {
-    params_.push_back({ic::Factory::mixed, 1800});
+    for (const bool log_predictNc : {true, false})
+      for (const int it : {1, 2})
+        params_.push_back({ic::Factory::mixed, 1800, it, log_predictNc});
   }
 
-  Int generate_baseline (const std::string& filename) {
+  Int generate_baseline (const std::string& filename, bool use_fortran) {
     auto fid = FILEPtr(fopen(filename.c_str(), "w"));
     scream_require_msg( fid, "generate_baseline can't write " << filename);
     Int nerr = 0;
     for (auto ps : params_) {
       // Run reference p3 on this set of parameters.
-      const auto d = ic::Factory::create(ps.ic);
-      d->dt = ps.dt;
-      p3_init();
+      const auto d = ic::Factory::create(ps.ic, ic_ncol);
+      set_params(ps, *d);
+      p3_init(use_fortran);
       p3_main(*d);
       // Save the fields to the baseline file.
       write(fid, d);
@@ -71,20 +79,21 @@ struct Baseline {
     return nerr;
   }
 
-  Int run_and_cmp (const std::string& filename, const double& tol) {
+  Int run_and_cmp (const std::string& filename, const double& tol, bool use_fortran) {
     auto fid = FILEPtr(fopen(filename.c_str(), "r"));
     scream_require_msg( fid, "generate_baseline can't read " << filename);
     Int nerr = 0, ne;
     for (auto ps : params_) {
       // Read the reference impl's data from the baseline file.
-      const auto d_ref = ic::Factory::create(ps.ic);
-      d_ref->dt = ps.dt;
+      const auto d_ref = ic::Factory::create(ps.ic, ic_ncol);
+      set_params(ps, *d_ref);
       read(fid, d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
-        const auto d = ic::Factory::create(ps.ic);
-        p3_init();
+        const auto d = ic::Factory::create(ps.ic, ic_ncol);
+        set_params(ps, *d);
+        p3_init(use_fortran);
         p3_main(*d);
         ne = compare("ref", tol, d_ref, d);
         if (ne) std::cout << "Ref impl failed.\n";
@@ -95,10 +104,20 @@ struct Baseline {
   }
 
 private:
+  static Int ic_ncol;
+
   struct ParamSet {
     ic::Factory::IC ic;
     Real dt;
+    Int it;
+    bool log_predictNc;
   };
+
+  static void set_params (const ParamSet& ps, FortranData& d) {
+    d.dt = ps.dt;
+    d.it = ps.it;
+    d.log_predictNc = ps.log_predictNc;
+  }
 
   std::vector<ParamSet> params_;
 
@@ -132,6 +151,8 @@ private:
   }
 };
 
+Int Baseline::ic_ncol = 3;
+
 void expect_another_arg (int i, int argc) {
   scream_require_msg(i != argc-1, "Expected another cmd-line arg.");
 }
@@ -139,7 +160,6 @@ void expect_another_arg (int i, int argc) {
 } // namespace anon
 
 int main (int argc, char** argv) {
-
   int nerr = 0;
 
   if (argc == 1) {
@@ -147,14 +167,16 @@ int main (int argc, char** argv) {
       argv[0] << " [options] baseline-filename\n"
       "Options:\n"
       "  -g        Generate baseline file.\n"
+      "  -f        Use fortran impls instead of c++.\n"
       "  -t <tol>  Tolerance for relative error.\n";
     return 1;
   }
 
-  bool generate = false;
+  bool generate = false, use_fortran = false;
   scream::Real tol = 0;
   for (int i = 1; i < argc-1; ++i) {
     if (util::eq(argv[i], "-g", "--generate")) generate = true;
+    if (util::eq(argv[i], "-f", "--fortran")) use_fortran = true;
     if (util::eq(argv[i], "-t", "--tol")) {
       expect_another_arg(i, argc);
       ++i;
@@ -170,11 +192,12 @@ int main (int argc, char** argv) {
     Baseline bln;
     if (generate) {
       std::cout << "Generating to " << baseline_fn << "\n";
-      nerr += bln.generate_baseline(baseline_fn);
+      nerr += bln.generate_baseline(baseline_fn, use_fortran);
     } else {
       printf("Comparing with %s at tol %1.1e\n", baseline_fn.c_str(), tol);
-      nerr += bln.run_and_cmp(baseline_fn, tol);
+      nerr += bln.run_and_cmp(baseline_fn, tol, use_fortran);
     }
+    P3GlobalForFortran::deinit();
   } scream::finalize_scream_session();
 
   return nerr != 0 ? 1 : 0;

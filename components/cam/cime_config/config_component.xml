@@ -121,6 +121,8 @@
       <!-- Aquaplanet -->
       <value compset="_CAM5%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
 
+      <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
+      <value compset="_SCREAM%AV1C-L">-phys cam5 -shoc_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -rad rrtmgp</value>
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
@@ -183,10 +185,12 @@
       <value compset="1850_CAM5.*AV1C-H01B">1850_cam5_av1c-h01b</value>
       <value compset="1850_CAM5.*AV1C-H01C">1850_cam5_av1c-h01c</value>
       <value compset="1850_CAM5.*CMIP6"  >1850_cam5_CMIP6</value>
+      <value compset="1850S_CAM5.*CMIP6"  >1850S_cam5_CMIP6</value>
       <value compset="1950_CAM5.*CMIP6-LR"  >1950_cam5_CMIP6-LR</value>
       <value compset="1950_CAM5.*CMIP6-HR"  >1950_cam5_CMIP6-HR</value>
       <value compset="1950_CAM5.*CMIP6-LRtunedHR"  >1950_cam5_CMIP6-LRtunedHR</value>
       <value compset="1850_CAM5.*CMIP6.*_BGC%B"  >1850_cam5_CMIP6_bgc</value>
+      <value compset="2010S_CAM5.*CMIP6"  >2010S_cam5_CMIP6</value>
       <value compset="2000_CAM5.*AV1C-01">2000_cam5_av1c-01</value>
       <value compset="2000_CAM5.*AV1C-02">2000_cam5_av1c-02</value>
       <value compset="2000_CAM5.*AV1C-03">2000_cam5_av1c-03</value>
@@ -212,6 +216,7 @@
       <value compset="20TR_CAM5.*AV1C-H01C">20TR_cam5_av1c-h01c</value>
       <value compset="20TR_CAM5.*CMIP6"  >20TR_cam5_CMIP6</value>
       <value compset="20TR_CAM5.*CMIP6*_BGC%B"  >20TR_cam5_CMIP6_bgc</value>
+      <value compset="SSP585_CAM5.*CMIP6"  >SSP585_cam5_CMIP6</value>          <!-- PJC -->
       <value compset="2000_CAM5%COSP"   >2000_cam5_cosp</value>
       <value compset="2000_CAM4%WCMX"   >waccmx_2000_cam4</value>
       <value compset="1996_CAM4%WCMX"   >waccmx_1996_cam4</value>
@@ -249,6 +254,7 @@
       <value compset="2000_CAM5.*SCREAM-HR" >2000_scream_hr_av1c-04p2</value>
       <!-- Aqua planet -->
       <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
+      <value compset="2000_SCREAM.*AV1C-L" >2000_scream_av1c-04p2</value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>

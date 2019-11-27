@@ -19,6 +19,7 @@ module prim_driver_mod
   public :: prim_init_kokkos_functors
   public :: prim_run_subcycle
   public :: prim_finalize
+  public :: deriv1
 
   private :: generate_global_to_local
   private :: init_cxx_connectivity_internal
@@ -30,14 +31,15 @@ module prim_driver_mod
   subroutine prim_init1(elem, par, dom_mt, tl)
     use iso_c_binding,    only : c_int, c_loc
     use derivative_mod,   only : derivinit
-    use dimensions_mod,   only : nelemd, np
+    use dimensions_mod,   only : nelemd, nlev, np
     use domain_mod,       only : domain1d_t
     use element_mod,      only : element_t
+    use edge_mod,         only : initEdgeBuffer, edge_g
     use kinds,            only : iulog, real_kind
     use parallel_mod,     only : parallel_t
     use time_mod,         only : TimeLevel_t, TimeLevel_init
-    use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, prim_init1_cleanup, &
-                                 MetaVertex, GridEdge, deriv1
+    use prim_driver_base, only : prim_init1_geometry, prim_init1_elem_arrays, &
+                                 prim_init1_cleanup, MetaVertex, GridEdge
 #ifndef CAM
     use prim_driver_base, only : prim_init1_no_cam
 #endif
@@ -100,6 +102,14 @@ module prim_driver_mod
     ! ==================================
     call prim_init1_elem_arrays(elem,par)
 
+    ! ==================================
+    ! Initialize the buffers for exchanges
+    ! ==================================
+    ! Note: we don't really need edge buffers in the kokkos target,
+    !       since we handle MPI in C++. However, we do need an edge
+    !       buffer for tests initialization
+    call initEdgeBuffer(par,edge_g,elem,nlev)
+
     ! Initialize the time levels
     call TimeLevel_init(tl)
 
@@ -143,12 +153,11 @@ module prim_driver_mod
                                  nu, nu_p, nu_q, nu_s, nu_div, nu_top, vert_remap_q_alg, &
                                  hypervis_order, hypervis_subcycle, hypervis_scaling,    &
                                  ftype, prescribed_wind, moisture, disable_diagnostics,  &
-                                 use_cpstar, use_semi_lagrange_transport
+                                 use_cpstar, transport_alg
     use dimensions_mod,   only : qsize, nelemd, np, qsize
     use hybvcoord_mod,    only : hvcoord_t
     use time_mod,         only : timelevel_t
     use kinds,            only : real_kind
-    use prim_driver_base, only : deriv1
 
     interface
       subroutine init_derivative_c (dvv_ptr) bind(c)
@@ -208,6 +217,7 @@ module prim_driver_mod
     ! Locals
     !
     real (kind=real_kind), target :: dvv (np,np)
+    logical :: use_semi_lagrange_transport
 
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
 
@@ -216,6 +226,7 @@ module prim_driver_mod
     call init_derivative_c(c_loc(dvv))
 
     ! Fill the simulation params structures in C++
+    use_semi_lagrange_transport = transport_alg > 0
     call init_simulation_params_c (vert_remap_q_alg, limiter_option, rsplit, qsplit, tstep_type,  &
                                    qsize, statefreq, nu, nu_p, nu_q, nu_s, nu_div, nu_top,        &
                                    hypervis_order, hypervis_subcycle, hypervis_scaling,           &

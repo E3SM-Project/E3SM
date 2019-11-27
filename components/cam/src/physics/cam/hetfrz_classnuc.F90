@@ -22,7 +22,9 @@ module hetfrz_classnuc
 
 use shr_kind_mod,  only: r8 => shr_kind_r8
 use wv_saturation, only: svp_water, svp_ice
+#ifndef HAVE_ERF_INTRINSICS
 use shr_spfn_mod,  only: erf => shr_spfn_erf
+#endif
 
 implicit none
 private

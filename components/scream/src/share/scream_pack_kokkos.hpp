@@ -32,6 +32,36 @@ index (const Array2& a, const IdxPack& i0, const IdxPack& i1,
   return p;
 }
 
+template<typename Array3, typename IdxPack> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<IdxPack, Pack<typename Array3::non_const_value_type, IdxPack::n> >
+index (const Array3& a, const IdxPack& i0, const IdxPack& i1, const IdxPack& i2,
+       typename std::enable_if<Array3::Rank == 3>::type* = nullptr) {
+  Pack<typename Array3::non_const_value_type, IdxPack::n> p;
+  vector_simd for (int i = 0; i < IdxPack::n; ++i)
+    p[i] = a(i0[i], i1[i], i2[i]);
+  return p;
+}
+
+template<typename Array4, typename IdxPack> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<IdxPack, Pack<typename Array4::non_const_value_type, IdxPack::n> >
+index (const Array4& a, const IdxPack& i0, const IdxPack& i1, const IdxPack& i2, const IdxPack& i3,
+       typename std::enable_if<Array4::Rank == 4>::type* = nullptr) {
+  Pack<typename Array4::non_const_value_type, IdxPack::n> p;
+  vector_simd for (int i = 0; i < IdxPack::n; ++i)
+    p[i] = a(i0[i], i1[i], i2[i], i3[i]);
+  return p;
+}
+
+template<typename Array5, typename IdxPack> KOKKOS_INLINE_FUNCTION
+OnlyPackReturn<IdxPack, Pack<typename Array5::non_const_value_type, IdxPack::n> >
+index (const Array5& a, const IdxPack& i0, const IdxPack& i1, const IdxPack& i2, const IdxPack& i3, const IdxPack& i4,
+       typename std::enable_if<Array5::Rank == 5>::type* = nullptr) {
+  Pack<typename Array5::non_const_value_type, IdxPack::n> p;
+  vector_simd for (int i = 0; i < IdxPack::n; ++i)
+    p[i] = a(i0[i], i1[i], i2[i], i3[i], i4[i]);
+  return p;
+}
+
 // Index a scalar array with Pack indices, returning a two compatible Packs of array
 // values, one with the indexes shifted by Shift. This is useful for implementing
 // functions like:
@@ -222,6 +252,52 @@ template <typename T, typename ...Parms> KOKKOS_FORCEINLINE_FUNCTION
 ko::Unmanaged<Kokkos::View<SmallPack<T>*, Parms...> >
 smallize (const Kokkos::View<BigPack<T>*, Parms...>& vp) {
   return repack<SCREAM_SMALL_PACK_SIZE>(vp);
+}
+
+//
+// Take an array of Host scalar pointers and turn them into device pack views
+//
+template <size_t N, typename ViewT>
+void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const*, N>& data,
+                    const size_t size,
+                    Kokkos::Array<ViewT, N>& views)
+{
+  using PackT = typename ViewT::value_type;
+
+  for (size_t i = 0; i < N; ++i) {
+    const size_t npack = (size + PackT::n - 1) / PackT::n;
+    views[i] = ViewT("", npack);
+    auto host_view = Kokkos::create_mirror_view(views[i]);
+    for (size_t k = 0; k < npack; ++k) {
+      const size_t scalar_offset = k*PackT::n;
+      for (size_t s = 0; s < PackT::n && scalar_offset+s < size; ++s) {
+        host_view(k)[s] = data[i][scalar_offset + s];
+      }
+    }
+    Kokkos::deep_copy(views[i], host_view);
+  }
+}
+
+//
+// Take an array of device pack views and sync them to host scalar pointers
+//
+template <size_t N, typename ViewT>
+void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>& data,
+                    const size_t size,
+                    Kokkos::Array<ViewT, N>& views)
+{
+  using PackT = typename ViewT::value_type;
+
+  for (size_t i = 0; i < N; ++i) {
+    const auto host_view = Kokkos::create_mirror_view(views[i]);
+    Kokkos::deep_copy(host_view, views[i]);
+    for (size_t k = 0; k < views[i].extent(0); ++k) {
+      const size_t scalar_offset = k*PackT::n;
+      for (size_t s = 0; s < PackT::n && scalar_offset+s < size; ++s) {
+        data[i][scalar_offset + s] = host_view(k)[s];
+      }
+    }
+  }
 }
 
 } // namespace pack

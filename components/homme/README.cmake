@@ -3,7 +3,7 @@
 10/2016 DMH
 
 The CMAKE build system supports a number of user-configurable targets:
-sweqx, preqx, preqx_acc, pese, swim, prim
+sweqx, preqx, preqx_acc, theta-l, swim, prim
 
 Scripts which will CMake configure, build, construct namelists and run a simulation using these
 targets, see:
@@ -37,9 +37,15 @@ To compile cprnc outside of CIME, edit the cprnc Makefile to comment out the Mac
 and set NETCDF_PATH, FC, and LDFLAGS=-L$(LIB_NETCDF) -lnetcdff -lnetcdf
 
 
-DCMIP tests provide a standard means for testing and comparing the ACME HOMME dycore with other dycores
-both hydrostatic and nonhydrostatic. They have been placed in their own dcmip_test directory for now.
-To run a DCMIP tests, navigate to the appropriate directory and type make install to install test scripts and namelists.
+DCMIP tests provide a standard means for testing and comparing the HOMME dycore with other dycores
+both hydrostatic and nonhydrostatic. They have been placed in their own dcmip_test directory.
+To run a DCMIP tests after configuring with cmake:
+   1. navigate to the appropriate DCMIP working directory associated with the
+   test case and model version, e.g. $WDIR/dcmip_tests/dcmip2016_test1_baroclinic_wave/theta-l
+   2. "make install" to install test scripts and namelists.
+   3. "./build.sh" to compile the executable
+   4. edit one of the example jobscripts for your platform and then run it
+
 
 The CMAKE code could use some cleanup. 
 - user configured variables should not need to be prefixed by the exectuable name

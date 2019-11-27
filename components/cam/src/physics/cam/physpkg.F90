@@ -30,7 +30,7 @@ module physpkg
 
   use cam_control_mod,  only: ideal_phys, adiabatic
   use phys_control,     only: phys_do_flux_avg, phys_getopts, waccmx_is
-  use zm_conv,          only: trigmem
+  use zm_conv,          only: trigmem, do_zmconv_dcape_ull => trigdcape_ull
   use scamMod,          only: single_column, scm_crm_mode
   use flux_avg,         only: flux_avg_init
 #ifdef SPMD
@@ -959,7 +959,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
     use check_energy,   only: check_energy_gmean
 
     use physics_buffer,         only: physics_buffer_desc, pbuf_get_chunk, pbuf_allocate
-#if (defined BFB_CAM_SCAM_IOP )
+#if (defined E3SM_SCM_REPLAY )
     use cam_history,    only: outfld
 #endif
     use comsrf,         only: fsns, fsnt, flns, sgh, sgh30, flnt, landm, fsds
@@ -1475,6 +1475,11 @@ subroutine tphysac (ztodt,   cam_in,  &
 
     logical :: do_clubb_sgs 
 
+    !DCAPE-ULL: physics buffer fields to compute tendencies for dcape
+    real(r8), pointer, dimension(:,:) :: t_star   ! temperature
+    real(r8), pointer, dimension(:,:) :: q_star   ! moisture
+    logical :: do_zmconv_trigdcape_ull            ! switch if using dcape-ull as trigger for ZM convection
+                                                  ! default to false, to bbe made controllable by nml
     ! Debug physics_state.
     logical :: state_debug_checks
 
@@ -1815,6 +1820,19 @@ end if ! l_ac_energy_chk
 
     call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
          tmp_t, qini, cldliqini, cldiceini)
+
+    ! DCAPE-ULL: record current state of T and q for computing dynamical tendencies
+    !            the calculation follows the same format as in diag_phys_tend_writeout
+    if (do_zmconv_dcape_ull) then
+      ifld = pbuf_get_index('T_STAR')
+      call pbuf_get_field(pbuf, ifld, t_star, (/1,1/),(/pcols,pver/))
+      ifld = pbuf_get_index('Q_STAR')
+      call pbuf_get_field(pbuf, ifld, q_star, (/1,1/),(/pcols,pver/))
+      do k=1,pver
+         q_star(:ncol,k) = state%q(:ncol,k,1)
+         t_star(:ncol,k) = state%t(:ncol,k)
+      enddo
+    endif
 
     call clybry_fam_set( ncol, lchnk, map2chm, state%q, pbuf )
 

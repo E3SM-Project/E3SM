@@ -53,6 +53,8 @@
 <config_do_restart_hbrine>false</config_do_restart_hbrine>
 <config_do_restart_zsalinity>false</config_do_restart_zsalinity>
 <config_do_restart_bgc>false</config_do_restart_bgc>
+<config_do_restart_snow_density>false</config_do_restart_snow_density>
+<config_do_restart_snow_grain_radius>false</config_do_restart_snow_grain_radius>
 
 <!-- dimensions -->
 <config_nCategories>5</config_nCategories>
@@ -142,6 +144,7 @@
 <config_use_column_biogeochemistry>false</config_use_column_biogeochemistry>
 <config_use_column_itd_thermodynamics>true</config_use_column_itd_thermodynamics>
 <config_use_column_ridging>true</config_use_column_ridging>
+<config_use_column_snow_tracers>false</config_use_column_snow_tracers>
 
 <!-- column_tracers -->
 <config_use_ice_age>true</config_use_ice_age>
@@ -151,6 +154,8 @@
 <config_use_level_meltponds>true</config_use_level_meltponds>
 <config_use_topo_meltponds>false</config_use_topo_meltponds>
 <config_use_aerosols>false</config_use_aerosols>
+<config_use_effective_snow_density>false</config_use_effective_snow_density>
+<config_use_snow_grain_radius>false</config_use_snow_grain_radius>
 
 <!-- biogeochemistry -->
 <config_use_brine>false</config_use_brine>
@@ -243,9 +248,9 @@
 <config_iron_saturation_phaeocystis>0.1</config_iron_saturation_phaeocystis>
 <config_fraction_spilled_to_DON>0.6</config_fraction_spilled_to_DON>
 <config_degredation_of_DON>0.03</config_degredation_of_DON>
-<config_fraction_DON_ammonium>0.25</config_fraction_DON_ammonium>
-<config_fraction_loss_to_saccharids>0.4</config_fraction_loss_to_saccharids>
-<config_fraction_loss_to_lipids>0.4</config_fraction_loss_to_lipids>
+<config_fraction_DON_ammonium>1.0</config_fraction_DON_ammonium>
+<config_fraction_loss_to_saccharids>0.5</config_fraction_loss_to_saccharids>
+<config_fraction_loss_to_lipids>0.5</config_fraction_loss_to_lipids>
 <config_fraction_exudation_to_saccharids>1.0</config_fraction_exudation_to_saccharids>
 <config_fraction_exudation_to_lipids>1.0</config_fraction_exudation_to_lipids>
 <config_remineralization_saccharids>0.03</config_remineralization_saccharids>
@@ -276,6 +281,7 @@
 <config_mobility_type_humics>0.0</config_mobility_type_humics>
 <config_mobility_type_saccharids>0.0</config_mobility_type_saccharids>
 <config_mobility_type_lipids>0.0</config_mobility_type_lipids>
+<config_mobility_type_inorganic_carbon>-1.0</config_mobility_type_inorganic_carbon>
 <config_mobility_type_proteins>0.0</config_mobility_type_proteins>
 <config_mobility_type_dissolved_iron>0.0</config_mobility_type_dissolved_iron>
 <config_mobility_type_particulate_iron>0.5</config_mobility_type_particulate_iron>
@@ -294,11 +300,12 @@
 <config_scales_absorption_diatoms>2.0</config_scales_absorption_diatoms>
 <config_scales_absorption_small_plankton>4.0</config_scales_absorption_small_plankton>
 <config_scales_absorption_phaeocystis>5.0</config_scales_absorption_phaeocystis>
-<config_ratio_C_to_N_proteins>7.0</config_ratio_C_to_N_proteins>
+<config_ratio_C_to_N_proteins>5.0</config_ratio_C_to_N_proteins>
 
 <!-- shortwave -->
 <config_shortwave_type>'dEdd'</config_shortwave_type>
 <config_albedo_type>'ccsm3'</config_albedo_type>
+<config_use_snicar_ad>false</config_use_snicar_ad>
 <config_visible_ice_albedo>0.78</config_visible_ice_albedo>
 <config_infrared_ice_albedo>0.36</config_infrared_ice_albedo>
 <config_visible_snow_albedo>0.98</config_visible_snow_albedo>
@@ -310,6 +317,16 @@
 <config_temp_change_snow_grain_radius_change>1.5</config_temp_change_snow_grain_radius_change>
 <config_max_melting_snow_grain_radius>1500.0</config_max_melting_snow_grain_radius>
 <config_algae_absorption_coefficient>0.6</config_algae_absorption_coefficient>
+
+<!-- snow -->
+<config_snow_redistribution_scheme>'none'</config_snow_redistribution_scheme>
+<config_fallen_snow_radius>54.4</config_fallen_snow_radius>
+<config_use_snow_liquid_ponds>false</config_use_snow_liquid_ponds>
+<config_new_snow_density>100.0</config_new_snow_density>
+<config_max_snow_density>450.0</config_max_snow_density>
+<config_minimum_wind_compaction>10.0</config_minimum_wind_compaction>
+<config_wind_compaction_factor>27.3</config_wind_compaction_factor>
+<config_max_dry_snow_radius>2800.0</config_max_dry_snow_radius>
 
 <!-- meltponds -->
 <config_snow_to_ice_transition_depth>0.0</config_snow_to_ice_transition_depth>

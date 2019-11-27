@@ -23,6 +23,15 @@ template <typename Real> struct is_single_precision {};
 template <> struct is_single_precision<float> { enum : bool { value = true }; };
 template <> struct is_single_precision<double> { enum : bool { value = false }; };
 
+// macro for floating point literals that match the scream precision. This can be
+// especially useful for bfb tests agaisnt fortran to ensure that literals are not
+// a source of round-off differences.
+#ifdef SCREAM_DOUBLE_PRECISION
+#define sp(val) val
+#else
+#define sp(val) val##F
+#endif
+
 bool eq(const std::string& a, const char* const b1, const char* const b2 = 0);
 
 // A templated class to return a human-readable name for a type (defaults to type_info implementation)
@@ -119,6 +128,43 @@ void transpose(const Scalar* sv, Scalar* dv, Int ni, Int nk) {
       else
         dv[nk*i + k] = sv[ni*k + i];
 };
+
+namespace check_overloads
+{
+// Note: the trick used here is taken from Alexandrescu's 'Modern C++ Design' book.
+//       We do not need implementations for the dummy functions below, since
+//       sizeof is guaranteed to not actually evaluate any expression.
+
+// We are *guaranteed* that the sizes of Yes and No are different
+using Yes = char;
+struct No
+{
+  char b[2];
+};
+
+bool Check (bool);
+bool Check (std::ostream&);
+No& Check (...);
+
+// Equality operator
+template<typename T, typename Arg>
+Yes operator== (const T&, const Arg&);
+
+template <typename T, typename Arg = T>
+struct EqualExists {
+  enum : int { value = (sizeof(Check(*(T*)(0) == *(Arg*)(0))) == sizeof(Yes)) };
+};
+
+// Streaming operator
+template<typename T>
+Yes operator<< (const std::ostream&, const T&);
+
+template<typename T>
+struct StreamExists {
+  enum : int { value = (sizeof(std::declval<std::ostream>() << std::declval<T>()) == sizeof(Yes)) };
+};
+
+} // namespace check_overloads
 
 } // namespace util
 } // namespace scream

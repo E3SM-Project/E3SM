@@ -311,15 +311,18 @@ class GenericXML(object):
         version = 1.0 if version is None else float(version)
         return version
 
-    def write(self, outfile=None, force_write=False):
-        """
-        Write an xml file from data in self
-        """
+    def check_timestamp(self):
         timestamp_cache = self._FILEMAP[self.filename].modtime
         if timestamp_cache != 0.0:
             timestamp_file  = os.path.getmtime(self.filename)
             expect(timestamp_file == timestamp_cache,
                    "File {} appears to have changed without a corresponding invalidation, modtimes {:0.2f} != {:0.2f}".format(self.filename, timestamp_cache, timestamp_file))
+
+    def write(self, outfile=None, force_write=False):
+        """
+        Write an xml file from data in self
+        """
+        self.check_timestamp()
 
         if not (self.needsrewrite or force_write):
             return
@@ -367,7 +370,7 @@ class GenericXML(object):
         """
         nodes = self.scan_children(nodename, attributes=attributes, root=root)
 
-        expect(len(nodes) <= 1, "Multiple matches for nodename '{}' and attrs '{}' in file '{}'".format(nodename, attributes, self.filename))
+        expect(len(nodes) <= 1, "Multiple matches for nodename '{}' and attrs '{}' in file '{}', found {} matches".format(nodename, attributes, self.filename, len(nodes)))
         return nodes[0] if nodes else None
 
     def scan_children(self, nodename, attributes=None, root=None):

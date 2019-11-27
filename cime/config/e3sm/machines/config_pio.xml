@@ -61,13 +61,13 @@
       <value mach="badger">netcdf</value>
       <value mpilib="mpi-serial">netcdf</value>
       <value mach="bebop" mpilib="impi" compset=".*CAM5.+MPAS.*">netcdf</value>
-      <value mach="anvil">netcdf</value>
     </values>
   </entry>
 
+  <!-- Using the BOX rearranger as the default -->
   <entry id="PIO_REARRANGER">
     <values>
-      <value>$PIO_VERSION</value>
+      <value>1</value>
     </values>
   </entry>
 

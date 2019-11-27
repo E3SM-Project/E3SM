@@ -1,33 +1,40 @@
 module micro_p3_utils
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
-    use iso_c_binding, only: c_double, c_float
+  use iso_c_binding, only: c_double, c_float, c_bool
 #else
-    use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
+  use shr_kind_mod,   only: rtype=>shr_kind_r8, itype=>shr_kind_i8
 #endif
 
-    implicit none
-    private
-    save
+  implicit none
+  private
+  save
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
 #include "scream_config.f"
 
-#ifdef SCREAM_DOUBLE_PRECISION
+  integer,parameter,public :: rtype8 = c_double ! 8 byte real, compatible with c type double
+  integer,parameter,public :: btype  = c_bool ! boolean type, compatible with c
+
+#  ifdef SCREAM_DOUBLE_PRECISION
   integer,parameter,public :: rtype = c_double ! 8 byte real, compatible with c type double
-#else
+#  else
   integer,parameter,public :: rtype = c_float ! 4 byte real, compatible with c type float
-#endif
+#  endif
+
   integer,parameter :: itype = selected_int_kind (13) ! 8 byte integer
+
 #else
-    public :: rtype
+  integer,parameter,public :: btype = kind(.true.) ! native logical
+  public :: rtype
+  integer,parameter,public :: rtype8 = selected_real_kind(15, 307) ! 8 byte real, compatible with c type double
 #endif
 
     public :: get_latent_heat, micro_p3_utils_init, &
               avg_diameter, calculate_incloud_mixingratios
 
     integer, public :: iulog_e3sm
-    logical, public :: masterproc_e3sm
+    logical(btype), public :: masterproc_e3sm
 
     ! Signaling NaN bit pattern that represents a limiter that's turned off.
     integer(itype), parameter :: limiter_off = int(Z'7FF1111111111111', itype)
@@ -46,7 +53,7 @@ module micro_p3_utils
     real(rtype),dimension(16), public :: dnu
 
     real(rtype), public, parameter :: mu_r_constant = 1.0_rtype
-    real(rtype), public, parameter :: lookup_table_1a_dum1_c = 1.0_rtype/(0.1_rtype*log10(261.7_rtype))
+    real(rtype), public, parameter :: lookup_table_1a_dum1_c =  4.135985029041767d+00 ! 1.0/(0.1*log10(261.7))
 
     real(rtype),public :: zerodegc  ! Temperature at zero degree celcius ~K
     real(rtype),public :: rainfrze  ! Contact and immersion freexing temp, -4C  ~K
@@ -110,7 +117,7 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
     real(rtype), intent(in) :: tmelt
     real(rtype), intent(in) :: pi
     integer, intent(in)     :: iulog
-    logical, intent(in)     :: masterproc
+    logical(btype), intent(in)     :: masterproc
 
     real(rtype) :: ice_lambda_bounds(2)
 

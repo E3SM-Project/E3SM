@@ -32,20 +32,24 @@ _TESTS = {
             "ERS.f19_g16.I1850GSWCNPRDCTCBC.clm-ctc_f19_g16_I1850GSWCNPRDCTCBC",
             "ERS.f19_g16.I20TRGSWCNPRDCTCBC.clm-ctc_f19_g16_I20TRGSWCNPRDCTCBC",
             "ERS.f09_g16.ICLM45BC",
+            "SMS.r05_r05.I1850CLM45CN",
             )
         },
 
     "e3sm_atm_developer" : {
-        "tests" : (
+        "tests"   : (
             "ERP_Ln9.ne4_ne4.FC5AV1C-L",
             "SMS_Ln9.ne4_ne4.FC5AV1C-L.cam-outfrq9s",
             "SMS.ne4_ne4.FC5AV1C-L.cam-cosplite",
-            "SMS_R_Ld5.T42_T42.FSCM5A97",
+            "SMS_R_Ld5.ne4_ne4.FSCM5A97",
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
+            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L",
+            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_pg2",
             )
         },
 
     "e3sm_atm_integration" : {
+        "inherit" : ("eam_preqx", "eam_theta"),
         "tests" : (
             "ERP_Ln9.ne4_ne4.F-EAMv1-AQP1",
             "SMS_Ld1.ne4_ne4.F-EAMv1-AQP1.cam-clubb_only",
@@ -65,7 +69,7 @@ _TESTS = {
             "ERS_Ld31.ne4_ne4.FC5AV1C-L",
             "ERP_Lm3.ne4_ne4.FC5AV1C-L",
             "SMS_D_Ln5.ne30_ne30.FC5AV1C-L",
-            "ERP_Ln5.ne30_ne30.FC5AV1C-L",
+            "ERP_Ln7.ne30_ne30.FC5AV1C-L",
             "SMS_Ly1.ne4_ne4.FC5AV1C-L",
             )
         },
@@ -78,7 +82,10 @@ _TESTS = {
 
     #atmopheric tests to mimic low res production runs
     "e3sm_atm_prod" : {
-        "tests" : "SMS_Ln5.ne30_ne30.FC5AV1C-L.cam-cosplite"
+        "tests" : (
+            "SMS_Ln5.ne30_ne30.FC5AV1C-L.cam-cosplite",
+            "SMS.ne30_r05_ne30.F20TRC5-CMIP6",
+            )
         },
 
     #atmopheric nbfb tests
@@ -86,6 +93,7 @@ _TESTS = {
         "tests" : (
             "PGN_P1x1.ne4_ne4.FC5AV1C-L",
             "TSC.ne4_ne4.FC5AV1C-L",
+            "MVK_PL.ne4_ne4.FC5AV1C-L",
             )
         },
 
@@ -134,6 +142,8 @@ _TESTS = {
             "SMS_D_Ln5.conusx4v1_conusx4v1.FC5AV1C-L",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPECACNT_1850.clm-bgcexp",
             "SMS.ne30_oECv3.BGCEXP_BCRC_CNPRDCTC_1850.clm-bgcexp",
+            "SMS_D_Ld1.T62_oEC60to30v3.DTESTM",
+            "SMS_D_Ld1.ne30_r05_oECv3.A_WCYCL1850",
             )
         },
 
@@ -177,5 +187,47 @@ _TESTS = {
             "SMS_D_Lm6.1x1_brazil.ICLM45ED",
             )
         },
+
+
+    #atmopheric tests for ftypes with 2 builds only
+    #ftype2 is a default and tested in other suites for preqx
+    # preqx ftype0
+    # preqx ftype1
+    # preqx ftype4
+    # theta-l hy ftype0
+    # theta-l hy ftype1
+    # theta-l hy ftype2
+    # theta-l hy ftype4
+    # theta-l nh ftype0
+    # theta-l nh ftype1
+    # theta-l nh ftype2
+    # theta-l nh ftype4
+    # theta-l hy SL
+    "eam_preqx" : {
+        "share"    : True,
+        "time"     : "01:00:00",
+        "tests"    : (
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-preqx_ftype4",
+                 )
+    },
+    "eam_theta" : {
+        "share"    : True,
+        "time"     : "02:00:00",
+        "tests"    : (
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype2",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype0",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype1",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype4",
+                 "SMS.ne4_ne4.FC5AV1C-L.cam-thetahy_sl",
+                 "ERS.ne4_ne4.FC5AV1C-L.cam-thetahy_ftype2",
+                 "ERS.ne4_ne4.FC5AV1C-L.cam-thetanh_ftype2",
+                 )
+    },
 
 }

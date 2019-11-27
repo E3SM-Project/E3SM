@@ -261,6 +261,22 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_do_restart_snow_density" type="logical"
+	category="restart" group="restart">
+Restart the snow density tracers
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_do_restart_snow_grain_radius" type="logical"
+	category="restart" group="restart">
+Restart the snow grain radius tracer
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- dimensions -->
 
@@ -709,6 +725,14 @@ Valid values: true or false
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_column_snow_tracers" type="logical"
+	category="column_package" group="column_package">
+Allow snow modifications plus additional snow tracers
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- column_tracers -->
 
@@ -763,6 +787,22 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_use_aerosols" type="logical"
 	category="column_tracers" group="column_tracers">
 Carry aerosols in the ice (NCAR scheme)
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_effective_snow_density" type="logical"
+	category="column_tracers" group="column_tracers">
+Use effective snow density
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_snow_grain_radius" type="logical"
+	category="column_tracers" group="column_tracers">
+Use prognosed snow grain radius aging
 
 Valid values: true or false
 Default: Defined in namelist_defaults.xml
@@ -1755,6 +1795,14 @@ Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = re
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_mobility_type_inorganic_carbon" type="real"
+	category="biogeochemistry" group="biogeochemistry">
+Transport type of dissolved inorganic carbon
+
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_mobility_type_proteins" type="real"
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of proteins
@@ -1926,6 +1974,14 @@ Valid values: 'ccsm3' or 'constant'
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_use_snicar_ad" type="logical"
+	category="shortwave" group="shortwave">
+If true turn on snicar_ad 5-band snow system
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_visible_ice_albedo" type="real"
 	category="shortwave" group="shortwave">
 Visible ice albedo for ice thickness greater than config_variable_albedo_thickness_limit.
@@ -2011,6 +2067,73 @@ Default: Defined in namelist_defaults.xml
 Algae absorption coefficient for 0.5 m thick layer.
 
 Valid values: 
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- snow -->
+
+<entry id="config_snow_redistribution_scheme" type="char*1024"
+	category="snow" group="snow">
+Use a snow redistribution scheme
+
+Valid values: '30percent (30% rule, precip only)','30percentsw (30% rulewith shortwave)','ITDsd (Lecomte PhD, 2014)','ITDrdg (like ITDsd but use level/ridged ice)','default or none (none)'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_fallen_snow_radius" type="real"
+	category="snow" group="snow">
+fallen snow grain radius
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_use_snow_liquid_ponds" type="logical"
+	category="snow" group="snow">
+use snow liquid tracer for ponds
+
+Valid values: true or false
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_new_snow_density" type="real"
+	category="snow" group="snow">
+new snow density
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_snow_density" type="real"
+	category="snow" group="snow">
+maximum snow density
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_minimum_wind_compaction" type="real"
+	category="snow" group="snow">
+minimum wind speed to compact snow
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_wind_compaction_factor" type="real"
+	category="snow" group="snow">
+wind compaction factor
+
+Valid values: positive real
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_dry_snow_radius" type="real"
+	category="snow" group="snow">
+maximum dry metamorphism snow grain radius
+
+Valid values: positive real
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -2298,7 +2421,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ocean_surface_type" type="char*1024"
 	category="ocean" group="ocean">
-Type of coupled ocean surface: (MPASO:'free'), (SOM:'non-free')
+Type of coupled ocean surface: (MPAS-O:'free'), (SOM:'non-free')
 
 Valid values: 'free' or 'non-free'
 Default: Defined in namelist_defaults.xml

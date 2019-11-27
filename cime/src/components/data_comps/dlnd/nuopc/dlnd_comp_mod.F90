@@ -1,10 +1,5 @@
-#ifdef AIX
-@PROCESS ALIAS_SIZE(805306368)
-#endif
-
 module dlnd_comp_mod
 
-  ! !USES:
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE
   use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
@@ -12,10 +7,7 @@ module dlnd_comp_mod
   use mct_mod               , only : mct_gsmap_init
   use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
   use mct_mod               , only : mct_avect_init, mct_avect_lsize
-  use shr_sys_mod           , only : shr_sys_abort
-  use shr_kind_mod          , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
-  use shr_kind_mod          , only : CXX=>SHR_KIND_CXX
-  use shr_string_mod        , only : shr_string_listGetName
+  use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod           , only : shr_sys_abort
   use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod           , only : shr_mpi_bcast
@@ -28,8 +20,7 @@ module dlnd_comp_mod
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use shr_cal_mod           , only : shr_cal_calendarname
   use shr_cal_mod           , only : shr_cal_datetod2string
-  use shr_nuopc_scalars_mod , only : flds_scalar_name
-  use shr_nuopc_methods_mod , only : shr_nuopc_methods_ChkErr
+  use dshr_methods_mod      , only : ChkErr
   use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_import, dshr_export
   use glc_elevclass_mod     , only : glc_elevclass_as_string, glc_elevclass_init
   use dlnd_shr_mod          , only : datamode        ! namelist input
@@ -58,10 +49,10 @@ module dlnd_comp_mod
 
   type(mct_aVect)             :: x2l
   type(mct_aVect)             :: l2x
-  character(len=CS), pointer  :: avifld(:)           ! char array field names coming from streams
-  character(len=CS), pointer  :: avofld(:)           ! char array field names to be sent/recd from med
   character(len=CXX)          :: flds_l2x = ''
   character(len=CXX)          :: flds_x2l = ''
+  character(len=CS), pointer  :: avifld(:)           ! char array field names coming from streams
+  character(len=CS), pointer  :: avofld(:)           ! char array field names to be sent/recd from med
   integer                     :: kf                  ! index for frac in AV
   integer                     :: glc_nec 
   real(R8), pointer           :: lfrac(:)            ! land frac
@@ -74,7 +65,7 @@ module dlnd_comp_mod
 contains
 !===============================================================================
 
-  subroutine dlnd_comp_advertise(importState, exportState, &
+  subroutine dlnd_comp_advertise(importState, exportState, flds_scalar_name, &
        lnd_present, lnd_prognostic, glc_nec_in, &
        fldsFrLnd_num, fldsFrLnd, fldsToLnd_num, fldsToLnd, rc)
 
@@ -84,6 +75,7 @@ contains
     ! input/output arguments
     type(ESMF_State)                     :: importState
     type(ESMF_State)                     :: exportState
+    character(len=*)     , intent(in)    :: flds_scalar_name 
     integer              , intent(in)    :: glc_nec_in
     logical              , intent(in)    :: lnd_present
     logical              , intent(in)    :: lnd_prognostic
@@ -138,19 +130,20 @@ contains
           model_fld_name = "Flgl_qice" // nec_str
           call dshr_fld_add(data_fld=trim(data_fld_name), data_fld_array=avifld, &
                model_fld=trim(model_fld_name), model_fld_array=avofld, model_fld_concat=flds_l2x)
-          if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end do
 
        ! The following puts all of the elevation class fields as an
-       ! undidstributed dimension in the export state field
+       ! undidstributed dimension in the export state field - index1 is bare land - and the total number of 
+       ! elevation classes not equal to bare land go from index2 -> glc_nec+1 
 
        call dshr_fld_add(med_fld="Sl_lfrin", fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
        call dshr_fld_add(med_fld='Sl_tsrf_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
-            ungridded_lbound=1, ungridded_ubound=glc_nec)
+            ungridded_lbound=1, ungridded_ubound=glc_nec+1)
        call dshr_fld_add(med_fld='Sl_topo_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
-            ungridded_lbound=1, ungridded_ubound=glc_nec)
+            ungridded_lbound=1, ungridded_ubound=glc_nec+1)
        call dshr_fld_add(med_fld='Flgl_qice_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
-            ungridded_lbound=1, ungridded_ubound=glc_nec)
+            ungridded_lbound=1, ungridded_ubound=glc_nec+1)
 
     end if
 
@@ -164,7 +157,7 @@ contains
 
     do n = 1,fldsFrLnd_num
        call NUOPC_Advertise(exportState, standardName=fldsFrLnd(n)%stdname, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
 
   end subroutine dlnd_comp_advertise
@@ -177,7 +170,7 @@ contains
 
     ! !DESCRIPTION: initialize dlnd model
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output variables
     integer                , intent(in)    :: mpicom       ! mpi communicator
     integer                , intent(in)    :: compid       ! mct comp id
     integer                , intent(in)    :: my_task      ! my task in mpi communicator mpicom
@@ -194,7 +187,7 @@ contains
     type(ESMF_Mesh)        , intent(in)    :: mesh         ! ESMF docn mesh
     integer                , intent(out)   :: nxg, nyg     ! global size of model grid
 
-    !--- local variables ---
+    ! local variables
     integer                      :: n,k             ! generic counters
     integer                      :: lsize           ! local size
     logical                      :: exists          ! file existance
@@ -238,24 +231,24 @@ contains
 
     ! obtain the distgrid from the mesh that was read in
     call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determin local size on my processor
     call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine global index space for my processor
     allocate(gindex(lsize))
     call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! determine global size of distgrid
     call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     allocate(elementCountPTile(tileCount))
     call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     gsize = 0
     do n = 1,size(elementCountPTile)
        gsize = gsize + elementCountPTile(n)
@@ -291,11 +284,11 @@ contains
 
     ! obtain mesh lats and lons
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
     allocate(xc(numOwnedElements), yc(numOwnedElements))
     call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (numOwnedElements /= lsize) then
        call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
     end if
@@ -540,22 +533,22 @@ contains
 
     k = mct_aVect_indexRA(l2x, "Sl_lfrin")
     call dshr_export(l2x%rattr(k,:), exportState, "Sl_lfrin", rc=rc)
-    if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    do n = 1,glc_nec
+    do n = 0,glc_nec
        nec_str = glc_elevclass_as_string(n)
 
        k = mct_aVect_indexRA(l2x, "Sl_tsrf" // nec_str)
-       call dshr_export(l2x%rattr(k,:), exportState, "Sl_tsrf_elev", ungridded_index=n, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call dshr_export(l2x%rattr(k,:), exportState, "Sl_tsrf_elev", ungridded_index=n+1, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        k = mct_aVect_indexRA(l2x, "Sl_topo" // nec_str)
-       call dshr_export(l2x%rattr(k,:), exportState, "Sl_topo_elev", ungridded_index=n, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call dshr_export(l2x%rattr(k,:), exportState, "Sl_topo_elev", ungridded_index=n+1, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        k = mct_aVect_indexRA(l2x, "Flgl_qice" // nec_str)
-       call dshr_export(l2x%rattr(k,:), exportState, "Flgl_qice_elev", ungridded_index=n, rc=rc)
-       if (shr_nuopc_methods_ChkErr(rc,__LINE__,u_FILE_u)) return
+       call dshr_export(l2x%rattr(k,:), exportState, "Flgl_qice_elev", ungridded_index=n+1, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end do
 
   end subroutine dlnd_comp_export

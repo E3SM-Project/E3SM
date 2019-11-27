@@ -1,8 +1,11 @@
+! Sept 2019 O. Guba Add w_i, mu_i, geo_i, pnh to native output 
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
 module prim_movie_mod
+#ifndef HOMME_WITHOUT_PIOLIBRARY
 #ifndef PIO_INTERP
   use kinds, only : real_kind, longdouble_kind
   use dimensions_mod, only :  nlev, nelem, nelemd, np, ne, nelemdmax, GlobalUniqueCols, nlevp, qsize
@@ -48,8 +51,9 @@ module prim_movie_mod
   use coordinate_systems_mod, only : cartesian2D_t, spherical_polar_t, cartesian3D_t, spherical_to_cart
   use physical_constants, only : g, kappa, p0, dd_pi
   use dof_mod, only : UniquePoints, UniqueCoords, UniqueNcolsP, createmetadata
+#ifndef HOMME_WITHOUT_PIOLIBRARY
   use pio, only  : io_desc_t, pio_iotask_rank !_EXTERNAL
-
+#endif
 
     use hybrid_mod, only : hybrid_t, hybrid_create
     use edgetype_mod, only : EdgeBuffer_t
@@ -65,7 +69,6 @@ module prim_movie_mod
 
   type(nf_handle) :: ncdf(max_output_streams)
   integer, private :: nxyp
-  integer(kind=nfsizekind) :: piostart2d, piocount2d, piocount3d(2), piostart3d(2)
 
 contains
 
@@ -95,7 +98,7 @@ contains
     use hybvcoord_mod, only : hvcoord_t
     use parallel_mod, only : abortmp
     use pio, only : PIO_InitDecomp, pio_setdebuglevel, pio_int, pio_double, pio_closefile !_EXTERNAL
-    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, pio_subsystem 
+    use netcdf_io_mod, only : iodesc2d, iodesc3d, iodesc3d_subelem, iodesct, pio_subsystem, iodesc3dp1 
     use common_io_mod, only : num_io_procs, num_agg, io_stride
     use reduction_mod, only : parallelmax
     type (element_t), intent(in) :: elem(:)
@@ -112,6 +115,7 @@ contains
     integer*8 :: ii,jj,base
     integer(kind=nfsizekind) :: start(2), count(2)
     integer*8, allocatable :: compDOF(:)
+    integer*8, allocatable :: compDOFp1(:)
     type(io_desc_t) :: iodescv, iodescvp1
     integer,allocatable  :: subelement_corners(:,:)
     real(kind=real_kind),allocatable  :: var1(:,:),var2(:,:)
@@ -142,7 +146,7 @@ contains
     call nf_output_register_dims(ncdf,maxdims, dimnames, dimsize)
 
 
-    allocate(compdof(nxyp*nlev), latp(nxyp),lonp(nxyp))
+    allocate(compdof(nxyp*nlevp), latp(nxyp),lonp(nxyp))
     
     ! Create the DOF arrays for GLL points
     iorank=pio_iotask_rank(pio_subsystem)
@@ -152,13 +156,15 @@ contains
     call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols/),&
          compDOF(1:nxyp),IOdesc2D)
 
-    if (par%masterproc) print *,'compDOF for 3d'
+    if (par%masterproc) print *,'compDOF for 3d nlev'
     call getDOF(elem, GlobalUniqueCols, nlev, compdof)
     call PIO_initDecomp(pio_subsystem, pio_double,(/GlobalUniqueCols,nlev/),&
-         compDOF,IOdesc3D)
+         compDOF(1:nxyp*nlev),IOdesc3D)
 
-    
-
+    if (par%masterproc) print *,'compDOF for 3d nlevp'
+    call getDOF(elem, GlobalUniqueCols, nlevp, compdof)
+    call PIO_initDecomp(pio_subsystem,pio_double,(/GlobalUniqueCols,nlevp/),&
+         compDOF,iodesc3dp1)
 
 ! trivial case for vertical variables
     if(par%masterproc) then
@@ -213,13 +219,20 @@ contains
     call nf_global_attribute(ncdf, 'np', np)
     call nf_global_attribute(ncdf, 'ne', ne)
 
-    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','pascals','coordinates','lat lon')
+    call nf_variable_attributes(ncdf, 'ps', 'surface pressure','Pa','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'area', 'area weights','radians^2','coordinates','lat lon')
     call nf_variable_attributes(ncdf, 'u', 'longitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'v', 'latitudinal wind component','meters/second')
     call nf_variable_attributes(ncdf, 'T', 'Temperature','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'Th','potential temperature \theta','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'w', 'vertical wind component','meters/second')
+    call nf_variable_attributes(ncdf, 'w_i',  'vertical wind component on interfaces','meters/second')
+    call nf_variable_attributes(ncdf, 'mu_i', 'mu=dp/d\pi on interfaces','dimensionless')
+    call nf_variable_attributes(ncdf, 'geo_i','geopotential on interfaces','meters')
+    call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
 #ifdef _PRIM
     call nf_variable_attributes(ncdf, 'geos', 'surface geopotential','m^2/s^2')
+    call nf_variable_attributes(ncdf, 'precl','Precipitation rate','meters of water/s')
 #endif
     call nf_variable_attributes(ncdf, 'lat', 'column latitude','degrees_north')
     call nf_variable_attributes(ncdf, 'lon', 'column longitude','degrees_east')
@@ -370,7 +383,6 @@ contains
              deallocate(var2d)
           endif
 
-
           if (par%masterproc) print *,'done writing coordinates ios=',ios
        end if
     end do
@@ -414,8 +426,9 @@ contains
     use pio, only : pio_syncfile !_EXTERNAL
     use perf_mod, only : t_startf, t_stopf !_EXTERNAL
     use viscosity_mod, only : compute_zeta_C0
-    use element_ops, only : get_field
-
+    use element_ops, only : get_field, get_field_i
+    use dcmip16_wrapper, only: precl
+    use netcdf_io_mod, only : iodesc3dp1 
 
     type (element_t)    :: elem(:)
 
@@ -428,14 +441,15 @@ contains
     integer :: ie,ios, i, j, k,jj
     real (kind=real_kind) :: pfull, pr0
     real(kind=real_kind),parameter :: dayspersec=1d0/(3600.*24.)
-    real (kind=real_kind) :: vartmp(np,np,nlev),arealocal(np,np)
-    real (kind=real_kind) :: var2d(nxyp), var3d(nxyp,nlev), ke(np,np,nlev)
+    real (kind=real_kind) :: vartmp(np,np,nlev), vartmp1(np,np,nlevp), arealocal(np,np)
+    real (kind=real_kind) :: var2d(nxyp), var3d(nxyp,nlev), var3dp1(nxyp,nlevp), ke(np,np,nlev)
     real (kind=real_kind) :: temp3d(np,np,nlev,nelemd)
 
     integer :: st, en, kmax, qindex, n0, n0_Q
     character(len=2) :: vname
 
-    integer(kind=nfsizekind) :: start(3), count(3), start2d(2),count2d(2)
+    integer(kind=nfsizekind) :: start(3), count(3), start2d(2),count2d(2), &
+                                startp1(3), countp1(3)
     integer :: ncnt
     call t_startf('prim_movie_output:pio')
 
@@ -448,15 +462,20 @@ contains
                (output_end_time(ios) .ge. tl%nstep) .and. &
                MODULO(tl%nstep,output_frequency(ios)) .eq. 0) then
              output_varnames=>get_current_varnames(ios)
-             start2d(1)=piostart2d
+             start2d(1)=0
              start2d(2)=nf_get_frame(ncdf(ios))
-             count2d(1)=piocount2d
+             count2d(1)=0
              count2d(2)=1
 
-             count(1:2)=piocount3d
-             start(1:2)=piostart3d
+             count(1:2)=0 
+             start(1:2)=0 
              start(3)=nf_get_frame(ncdf(ios))
              count(3)=1
+
+             countp1(1:2)=0 
+             startp1(1:2)=0 
+             startp1(3)=start(3)
+             countp1(3)=1
 
              if(nf_selectedvar('ps', output_varnames)) then
                 if (par%masterproc) print *,'writing ps...'
@@ -468,6 +487,19 @@ contains
                    st=en+1
                 enddo
                 call nf_put_var(ncdf(ios),var2d,start2d,count2d,name='ps')
+             endif
+
+             if(nf_selectedvar('precl', output_varnames)) then
+                if (par%masterproc) print *,'writing precl...'
+                st=1
+                do ie=1,nelemd
+                   vartmp(:,:,1) = precl(:,:,ie)
+                   !vartmp(:,:,1) = elem(ie)%state%Q(:,:,(nlev*2)/3,1)  ! hack for movies
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call UniquePoints(elem(ie)%idxP,vartmp(:,:,1),var2d(st:en))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var2d,start2d,count2d,name='precl')
              endif
 
              if(nf_selectedvar('hypervis', output_varnames)) then
@@ -618,6 +650,66 @@ contains
                 call nf_put_var(ncdf(ios),var3d,start, count, name='geo')
              end if
 
+             if(nf_selectedvar('geo_i', output_varnames)) then
+                if (par%masterproc) print *,'writing geo_i...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field_i(elem(ie),'geo_i',vartmp1,hvcoord,n0)
+                   call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3dp1,startp1,countp1,name='geo_i',iodescin=iodesc3dp1)
+             end if
+
+             if(nf_selectedvar('w', output_varnames)) then
+                if (par%masterproc) print *,'writing w...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field(elem(ie),'w',vartmp,hvcoord,n0,n0_Q)
+                   call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3d,start, count, name='w')
+             end if
+
+             if(nf_selectedvar('w_i', output_varnames)) then
+                if (par%masterproc) print *,'writing w_i...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field_i(elem(ie),'w_i',vartmp1,hvcoord,n0)
+                   call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='w_i',iodescin=iodesc3dp1)
+             end if
+
+
+             if(nf_selectedvar('mu_i', output_varnames)) then
+                if (par%masterproc) print *,'writing mu_i...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field_i(elem(ie),'mu_i',vartmp1,hvcoord,n0)
+                   call UniquePoints(elem(ie)%idxP,nlevp,vartmp1,var3dp1(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3dp1,startp1, countp1, name='mu_i',iodescin=iodesc3dp1)
+             end if
+
+             if(nf_selectedvar('pnh', output_varnames)) then
+                if (par%masterproc) print *,'writing pnh...'
+                st=1
+                do ie=1,nelemd
+                   en=st+elem(ie)%idxp%NumUniquePts-1
+                   call get_field(elem(ie),'pnh',vartmp,hvcoord,n0,n0_Q)
+                   call UniquePoints(elem(ie)%idxP,nlev,vartmp,var3d(st:en,:))
+                   st=en+1
+                enddo
+                call nf_put_var(ncdf(ios),var3d,start,count,name='pnh')
+             end if
 
              if(nf_selectedvar('omega', output_varnames)) then
                 st=1
@@ -658,5 +750,8 @@ contains
  end subroutine prim_movie_output
 
 #endif
+!for PIOINTERP
+#endif
+!for WITHOUT_PIOLIB
 end module prim_movie_mod
 

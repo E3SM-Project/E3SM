@@ -33,7 +33,7 @@ public:
 
   std::set<std::string> get_required_grids () const {
     static std::set<std::string> s;
-    s.insert("Dynamics");
+    s.insert("SE Dynamics");
     return s;
   }
 
@@ -44,11 +44,11 @@ public:
   const Comm& get_comm () const { return m_dynamics_comm; }
 
   // Set the grid
-  void set_grid (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // These are the three main interfaces:
-  void initialize ();
-  void run        (/* what inputs? */);
+  void initialize (const util::TimeStamp& t0);
+  void run        (const Real dt);
   void finalize   (/* what inputs? */);
 
   // Register all fields in the given repo
@@ -70,13 +70,9 @@ protected:
   std::map<std::string,const_field_type>  m_dyn_fields_in;
   std::map<std::string,field_type>        m_dyn_fields_out;
 
-  Comm      m_dynamics_comm;
+  util::TimeStamp   m_current_ts;
+  Comm              m_dynamics_comm;
 };
-
-inline AtmosphereProcess*
-create_atmosphere_dynamics(const Comm& comm, const ParameterList& p) {
-  return new HommeDynamics(comm,p);
-}
 
 } // namespace scream
 

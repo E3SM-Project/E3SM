@@ -501,6 +501,12 @@ contains
        ier = pio_inq_dimlen(ncid, dimid, ni)
        if (ier == PIO_NOERR) nj = 1
     end if
+    
+    ier = pio_inq_dimid (ncid, 'topounit', dimid)
+    if (ier == PIO_NOERR) then
+       ier = pio_inq_dimlen(ncid, dimid, ni)
+       if (ier == PIO_NOERR) nj = 1
+    end if       
 
     call pio_seterrorhandling(ncid, PIO_INTERNAL_ERROR)
 
@@ -2196,7 +2202,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        if ( trim(dimname)=='nj'.or. trim(dimname)=='lat'.or. trim(dimname)=='lsmlat') then
           start(i)=latidx
           count(i)=1
-       else if ( trim(dimname)=='ni'.or. trim(dimname)=='lon'.or. trim(dimname)=='lsmlon' .or. trim(dimname)=='gridcell') then
+       else if ( trim(dimname)=='ni'.or. trim(dimname)=='lon'.or. trim(dimname)=='lsmlon' .or. trim(dimname)=='gridcell' .or. trim(dimname)=='topounit') then
           start(i)=lonidx
           count(i)=1
        else if ( trim(dimname)=='column') then

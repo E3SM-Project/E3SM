@@ -60,7 +60,7 @@ end subroutine gw_convect_init
 
 subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
      zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, &
-     hdepth, maxq0)
+     hdepth, maxq0, CF)
 !-----------------------------------------------------------------------
 ! Driver for multiple gravity wave drag parameterization.
 !
@@ -88,6 +88,9 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   real(r8), intent(in) :: netdt(:,:)
   ! Midpoint altitudes.
   real(r8), intent(in) :: zm(ncol,pver)
+
+  ! Heating conversion factor
+  real(r8), intent(in) :: CF
 
   ! Indices of top gravity wave source level and lowest level where wind
   ! tendencies are allowed.
@@ -133,8 +136,8 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   ! Index to shift spectra relative to ground.
   integer :: shift
 
-  ! Heating rate conversion factor.
-  real(r8), parameter :: CF = 20._r8
+  ! Heating rate conversion factor. Change to take the value from caller and controllable by namelist (to tune QBO)
+  ! real(r8), parameter :: CF = 20._r8
   ! Averaging length.
   real(r8), parameter :: AL = 1.0e5_r8
 

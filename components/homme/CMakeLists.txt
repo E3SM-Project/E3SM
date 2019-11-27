@@ -40,6 +40,16 @@ IF (${HOMME_BUILD_EXECS})
   ENDIF()
 ENDIF()
 
+#option to build without pio and any netcdf in homme (no mesh runs either),
+#by default is not on.
+IF(NOT DEFINED BUILD_HOMME_WITHOUT_PIOLIBRARY)
+  SET(BUILD_HOMME_WITHOUT_PIOLIBRARY FALSE CACHE BOOL "")
+ENDIF()
+IF(BUILD_HOMME_WITHOUT_PIOLIBRARY)
+  ADD_DEFINITIONS(-DHOMME_WITHOUT_PIOLIBRARY)
+  MESSAGE(STATUS "This configuration builds without PIO library and NetCDF calls")
+ENDIF()
+
 # Add the cmake/CMakeLists.txt file
 SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -89,12 +99,13 @@ OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
 OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
-OPTION(BUILD_HOMME_PESE  "Primitive equations with vertical spectral elements" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
+OPTION(HOMME_ENABLE_COMPOSE "Build COMPOSE semi-Lagrangian tracer transport code" ON)
 
 #by default we don't need cxx
 SET(HOMME_USE_CXX FALSE)
+SET(HOMME_USE_KOKKOS FALSE)
 
 # swim and prim executables require C++ compiler
 IF(${BUILD_HOMME_SWIM} OR ${BUILD_HOMME_PRIM})
@@ -106,22 +117,26 @@ IF (${HOMME_USE_TRILINOS})
   SET (HOMME_USE_CXX TRUE)
 ENDIF()
 #if kokkos is needed, then so is cxx
-SET (HOMME_USE_KOKKOS FALSE)
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   SET (HOMME_USE_KOKKOS TRUE)
   SET (HOMME_USE_CXX TRUE)
   IF (NOT ${BUILD_HOMME_PREQX} AND ${HOMME_BUILD_EXECS})
-    # If we build theta kokkos, we also build theta, so we can compare
+    # If we build preqx kokkos, we also build preqx, so we can compare
     MESSAGE (STATUS "Setting manually disabled BUILD_HOMME_PREQX to ON, since BUILD_HOMME_PREQX_KOKKOS is ON.")
 
     # We need to compare against F90 implementation, so turn this on
     SET (BUILD_HOMME_PREQX TRUE)
   ENDIF ()
 ENDIF ()
+IF (${HOMME_ENABLE_COMPOSE})
+  SET (HOMME_USE_CXX TRUE)
+  SET (HOMME_USE_KOKKOS TRUE)
+ENDIF ()
 
 IF (${HOMME_USE_CXX})
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
   ENABLE_LANGUAGE(CXX)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ENDIF ()
 
 # Option to use ARKode package from SUNDIALS
@@ -183,9 +198,6 @@ ELSE()
     FIND_PACKAGE(LAPACK REQUIRED)
   ELSE()
     SET(HOMME_FIND_BLASLAPACK FALSE)
-    # Build the blas and lapack provided with homme
-    ADD_SUBDIRECTORY(libs/blas)
-    ADD_SUBDIRECTORY(libs/lapack)
   ENDIF()
 ENDIF()
 
@@ -276,16 +288,26 @@ SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio
 # PIO
 #
 #set search paths for PIO's findNetCDF
+# HOMME machine files set NETCDF_DIR, PNETCDF_DIR which we copy
+# to variables used by PIO.  Newer machine files sould direclty set
+# necessyar PIO variables:
+#
 ADD_DEFINITIONS(-D_NO_MPI_RSEND)
+
+if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
 SET(NetCDF_PATH ${NETCDF_DIR})
 SET(PnetCDF_PATH ${PNETCDF_DIR})
 message("** Configuring PIO with:")
 message("-- NetCDF_PATH = ${NetCDF_PATH}")
 message("-- PnetCDF_PATH = ${PnetCDF_PATH}")
+message("-- NetCDF_Fortran_PATH = ${NetCDF_Fortran_PATH}")
+message("-- NetCDF_C_PATH = ${NetCDF_C_PATH}")
+message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
+message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
 ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
-
+ENDIF()
 
 
 # CPRNC locations
@@ -301,28 +323,48 @@ IF (CPRNC_DIR)
   ENDIF ()
 ENDIF ()
 
-IF (NOT (CPRNC_DIR))
-  # compile CPRNC from CIME source code. Requires CIME support for machine
-  message("-- CPRNC_BINARY = will compile from source")
-  message("-- If cmake aborts, set CPRNC_DIR to location of external cprnc executable")
+#compile cprnc only if pio is built
+if(NOT BUILD_HOMME_WITHOUT_PIOLIBRARY)
+  IF (NOT (CPRNC_DIR))
+    # compile CPRNC from CIME source code. Requires CIME support for machine
+    message("-- CPRNC_BINARY = will compile from source")
+    message("-- If cmake aborts, set CPRNC_DIR to location of external cprnc executable")
 
-  # cprnc's cmake wont search for netcdf, so we have to find it first:
-  FIND_PACKAGE(NetCDF "4.0" COMPONENTS C Fortran)
-  set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
-  set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
+    # cprnc's cmake wont search for netcdf, so we have to find it first:
+    FIND_PACKAGE(NetCDF "4.0" COMPONENTS C Fortran)
+    set(NETCDF_LIBRARIES ${NetCDF_Fortran_LIBRARIES})
+    set(NETCDF_INCLUDE_DIR ${NetCDF_Fortran_INCLUDE_DIRS})
 
-  # needed for CPRNC build system
-  file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake" "#dummy Macros file for non-CIME machines")
+    # needed for CPRNC build system
+    set (cprnc_dummy_file "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/tools/cprnc/Macros.cmake")
+    if (NOT EXISTS "${cprnc_dummy_file}")
+      file(WRITE "${cprnc_dummy_file}" "#dummy Macros file for non-CIME machines")
+    endif ()
 
-  SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
-  SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
-  ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+    SET (CPRNC_INSTALL_DIR ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc)
+    SET (CPRNC_BINARY ${HOMME_BINARY_DIR}/utils/cime/tools/cprnc/cprnc)
+    ADD_SUBDIRECTORY(utils/cime/tools/cprnc)
+  ENDIF ()
+ENDIF ()
+
+IF (${HOMME_USE_KOKKOS})
+  INCLUDE(Kokkos)
 ENDIF ()
 
 IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS})
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
 ENDIF ()
+
+# Add libcompose, consisting of just C++ files, so we can build it just once for
+# all exes. It does not depend on compile-time sizes.
+if (HOMME_ENABLE_COMPOSE)
+  add_definitions(-DHOMME_ENABLE_COMPOSE)
+  set (COMPOSE_LIBRARY "compose")
+  add_subdirectory(src/share/compose)
+else ()
+  message ("-- COMPOSE semi-Lagrangian transport was explicitly disabled")
+endif ()
 
 SET(EXEC_LIST ""  CACHE INTERNAL "List of configured executables")
 IF(${BUILD_HOMME_SWEQX})
@@ -334,7 +376,6 @@ IF(${BUILD_HOMME_PREQX})
 ENDIF()
 
 IF(${BUILD_HOMME_THETA})
-  ADD_SUBDIRECTORY(src/theta)
   ADD_SUBDIRECTORY(src/theta-l)
 ENDIF()
 
@@ -344,10 +385,6 @@ ENDIF()
 
 IF(${BUILD_HOMME_PREQX_KOKKOS})
   ADD_SUBDIRECTORY(src/preqx_kokkos)
-ENDIF()
-
-IF(${BUILD_HOMME_PESE})
-  ADD_SUBDIRECTORY(src/pese)
 ENDIF()
 
 IF(${BUILD_HOMME_SWIM})
@@ -375,4 +412,11 @@ IF (NOT "${PROJECT_NAME}" STREQUAL "HOMME")
   SET (HOMME_C_FLAGS ${CMAKE_C_FLAGS} PARENT_SCOPE)
   SET (HOMME_CXX_FLAGS ${CMAKE_CXX_FLAGS} PARENT_SCOPE)
   SET (HOMME_Fortran_FLAGS ${CMAKE_Fortran_FLAGS} PARENT_SCOPE)
+  SET (HOMME_LINKER_FLAGS ${CMAKE_EXE_LINKER_FLAGS} PARENT_SCOPE)
+ENDIF ()
+
+IF (${HOMME_USE_KOKKOS})
+  # Put this last so that tribits.cmake's 'check' target doesn't conflict with
+  # Homme's.
+  install_kokkos_if_needed()
 ENDIF ()

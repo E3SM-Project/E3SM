@@ -8,45 +8,73 @@
 
 namespace {
 
-template <typename View, int rank>
-using OnlyRank = typename std::enable_if<View::Rank == rank>::type;
+template <typename View, int rank, typename T = void>
+using OnlyRank = typename std::enable_if<View::Rank == rank, T>::type;
 
 template <typename View>
-OnlyRank<View, 1> fill (const View& a) {
+void fill(const View& a)
+{
   const auto m = Kokkos::create_mirror_view(a);
-  for (int i = 0; i < m.extent_int(0); ++i)
-    m(i) = i;
-  Kokkos::deep_copy(a, m);
-}
-
-template <typename View>
-OnlyRank<View, 2> fill (const View& a) {
-  const auto m = Kokkos::create_mirror_view(a);
-  for (int i = 0; i < m.extent_int(0); ++i)
-    for (int j = 0; j < m.extent_int(1); ++j)
-      m(i,j) = j*m.extent_int(0) + i;
+  int span = m.span();
+  auto raw = m.data();
+  for (int i = 0; i < span; ++i) raw[i] = i;
   Kokkos::deep_copy(a, m);
 }
 
 template <typename VA, typename VB>
-OnlyRank<VA, 1> compare (const VA& a, const VB& b) {
+void compare (const VA& a, const VB& b) {
   const auto ma = Kokkos::create_mirror_view(a);
   const auto mb = Kokkos::create_mirror_view(b);
   Kokkos::deep_copy(ma, a);
   Kokkos::deep_copy(mb, b);
-  for (int i = 0; i < ma.extent_int(0); ++i)
-    REQUIRE(ma(i) == mb(i));
+  int spana = ma.span(), spanb = mb.span();
+  auto rawa = ma.data(); auto rawb = mb.data();
+  REQUIRE(spana == spanb);
+  for (int i = 0; i < spana; ++i) REQUIRE(rawa[i] == rawb[i]);
 }
 
-template <typename VA, typename VB>
-OnlyRank<VA, 2> compare (const VA& a, const VB& b) {
-  const auto ma = Kokkos::create_mirror_view(a);
-  const auto mb = Kokkos::create_mirror_view(b);
-  Kokkos::deep_copy(ma, a);
-  Kokkos::deep_copy(mb, b);
-  for (int i = 0; i < ma.extent_int(0); ++i)
-    for (int j = 0; j < ma.extent_int(1); ++j)
-      REQUIRE(ma(i,j) == mb(i,j));
+#define make_get_index(rank, ...)                                         \
+template<typename View, typename IdxView, OnlyRank<View, rank, int> = 0 > \
+KOKKOS_INLINE_FUNCTION                                                    \
+scream::pack::Pack<typename View::value_type, IdxView::value_type::n> get_index(const View& data, const IdxView& idx) { return index(data, __VA_ARGS__); }
+
+#define make_get_data(rank, ...)                                        \
+template<typename View, typename IdxView, OnlyRank<View, rank, int> = 0 > \
+KOKKOS_INLINE_FUNCTION                                                  \
+typename View::value_type get_data(const View& data, const IdxView& idx, int slot) { return data(__VA_ARGS__); }
+
+make_get_index(1, idx(0))
+make_get_data(1, idx(0)[slot])
+make_get_index(2, idx(0), idx(1))
+make_get_data(2, idx(0)[slot], idx(1)[slot])
+make_get_index(3, idx(0), idx(1), idx(2))
+make_get_data(3, idx(0)[slot], idx(1)[slot], idx(2)[slot])
+make_get_index(4, idx(0), idx(1), idx(2), idx(3))
+make_get_data(4, idx(0)[slot], idx(1)[slot], idx(2)[slot], idx(3)[slot])
+make_get_index(5, idx(0), idx(1), idx(2), idx(3), idx(4))
+make_get_data(5, idx(0)[slot], idx(1)[slot], idx(2)[slot], idx(3)[slot], idx(4)[slot])
+
+template<int Packn, typename View>
+void do_index_test(const View& data)
+{
+  static constexpr int pack_size = Packn;
+  using IdxPack = scream::pack::Pack<int, pack_size>;
+  fill(data);
+  Kokkos::View<IdxPack[View::Rank]> idx("idx");
+  Kokkos::parallel_for(View::Rank, KOKKOS_LAMBDA(const int r) {
+    for (int i = 0; i < pack_size; ++i) { idx(r)[i] = (r+2)*i; } // 2*i, 3*i, etc as rank increases
+  });
+
+  int nerr = 0;
+  Kokkos::parallel_reduce(
+    1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
+      const auto data_idx = get_index(data, idx);
+      for (int i = 0; i < pack_size; ++i)
+        if (data_idx[i] != get_data(data, idx, i))
+          ++nerr;
+    },
+    nerr);
+  REQUIRE(nerr == 0);
 }
 
 TEST_CASE("index", "scream::pack") {
@@ -54,42 +82,28 @@ TEST_CASE("index", "scream::pack") {
   using scream::pack::Pack;
 
   {
-    static constexpr int pack_size = 16;
-    using IdxPack = Pack<int, pack_size>;
     Kokkos::View<double*> data("data", 100);
-    fill(data);
-    IdxPack idx;
-    for (int i = 0; i < pack_size; ++i) idx[i] = 2*i;
-    int nerr = 0;
-    Kokkos::parallel_reduce(
-      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
-        const auto data_idx = index(data, idx);
-        for (int i = 0; i < pack_size; ++i)
-          if (data_idx[i] != idx[i])
-            ++nerr;
-      },
-      nerr);
-    REQUIRE(nerr == 0);
+    do_index_test<16>(data);
   }
 
   {
-    static constexpr int pack_size = 8;
-    using IdxPack = Pack<int, pack_size>;
     Kokkos::View<double**> data("data", 19, 24);
-    fill(data);
-    IdxPack i0, i1;
-    for (int i = 0; i < pack_size; ++i) i0[i] = 2*i;
-    for (int i = 0; i < pack_size; ++i) i1[i] = 3*i;
-    int nerr = 0;
-    Kokkos::parallel_reduce(
-      1, KOKKOS_LAMBDA (const int /* unused */, int& nerr) {
-        const auto data_idx = index(data, i0, i1);
-        for (int i = 0; i < pack_size; ++i)
-          if (data_idx[i] != data(i0[i], i1[i]))
-            ++nerr;
-      },
-      nerr);
-    REQUIRE(nerr == 0);
+    do_index_test<8>(data);
+  }
+
+  {
+    Kokkos::View<double***> data("data", 9, 13, 17);
+    do_index_test<4>(data);
+  }
+
+  {
+    Kokkos::View<double****> data("data", 5, 10, 10, 15);
+    do_index_test<2>(data);
+  }
+
+  {
+    Kokkos::View<double*****> data("data", 5, 5, 5, 10, 10);
+    do_index_test<1>(data);
   }
 }
 
@@ -106,7 +120,7 @@ TEST_CASE("scalarize", "scream::pack") {
     const Array1 a1("a1", 10);
     const auto a2 = scalarize(a1);
     typedef decltype(a2) VT;
-    static_assert(VT::traits::memory_traits::Unmanaged, "Um");
+    static_assert(VT::memory_traits::Unmanaged, "Um");
     REQUIRE(a2.extent_int(0) == 160);
   }
 
@@ -114,7 +128,7 @@ TEST_CASE("scalarize", "scream::pack") {
     const Array2 a1("a2", 10, 4);
     const auto a2 = scalarize(a1);
     typedef decltype(a2) VT;
-    static_assert(VT::traits::memory_traits::Unmanaged, "Um");
+    static_assert(VT::memory_traits::Unmanaged, "Um");
     REQUIRE(a2.extent_int(0) == 10);
     REQUIRE(a2.extent_int(1) == 128);
   }
@@ -123,7 +137,7 @@ TEST_CASE("scalarize", "scream::pack") {
     const Array3 a1("a3", 3, 2, 4);
     const auto a2 = scalarize(a1);
     typedef decltype(a2) VT;
-    static_assert(VT::traits::memory_traits::Unmanaged, "Um");
+    static_assert(VT::memory_traits::Unmanaged, "Um");
     REQUIRE(a2.extent_int(0) == 3);
     REQUIRE(a2.extent_int(1) == 2);
     REQUIRE(a2.extent_int(2) == 32);
@@ -133,7 +147,7 @@ TEST_CASE("scalarize", "scream::pack") {
     const Array4 a1("a4", 3, 2, 4, 2);
     const auto a2 = scalarize(a1);
     typedef decltype(a2) VT;
-    static_assert(VT::traits::memory_traits::Unmanaged, "Um");
+    static_assert(VT::memory_traits::Unmanaged, "Um");
     REQUIRE(a2.extent_int(0) == 3);
     REQUIRE(a2.extent_int(1) == 2);
     REQUIRE(a2.extent_int(2) == 4);
@@ -143,7 +157,7 @@ TEST_CASE("scalarize", "scream::pack") {
 
 template <int repack_size, typename Src, typename Dst>
 OnlyRank<Src, 1> repack_test (const Src& a_src, const Dst& a) {
-  static_assert(Dst::traits::memory_traits::Unmanaged, "Um");
+  static_assert(Dst::memory_traits::Unmanaged, "Um");
   static_assert(Dst::value_type::n == repack_size, "Pack::n");
   REQUIRE(a.extent_int(0) == (Src::value_type::n/repack_size)*a_src.extent_int(0));
   compare(scalarize(a_src), scalarize(a));
@@ -151,7 +165,7 @@ OnlyRank<Src, 1> repack_test (const Src& a_src, const Dst& a) {
 
 template <int repack_size, typename Src, typename Dst>
 OnlyRank<Src, 2> repack_test (const Src& a_src, const Dst& a) {
-  static_assert(Dst::traits::memory_traits::Unmanaged, "Um");
+  static_assert(Dst::memory_traits::Unmanaged, "Um");
   static_assert(Dst::value_type::n == repack_size, "Pack::n");
   REQUIRE(a.extent_int(0) == a_src.extent_int(0));
   REQUIRE(a.extent_int(1) == (Src::value_type::n/repack_size)*a_src.extent_int(1));
@@ -266,6 +280,74 @@ TEST_CASE("kokkos_packs", "scream::pack") {
   // NOTE: catch2 documentation says that its assertion macros are not
   // thread safe, so we have to put them outside of kokkos kernels.
   REQUIRE(nerr == 0);
+}
+
+TEST_CASE("host_device_packs", "scream::pack")
+{
+  static constexpr int size = 59;
+  static constexpr int num_vecs = 3;
+
+  using KT = scream::KokkosTypes<scream::DefaultDevice>;
+
+  using Pack1T = scream::pack::Pack<int, 1>;
+  using Pack2T = scream::pack::Pack<int, 2>;
+  using Pack4T = scream::pack::Pack<int, 4>;
+
+  using view_p1_t = typename KT::template view_1d<Pack1T>;
+  using view_p2_t = typename KT::template view_1d<Pack2T>;
+  using view_p4_t = typename KT::template view_1d<Pack4T>;
+
+  std::vector<std::vector<int> > raw_data(num_vecs, std::vector<int>(size));
+
+  for (int i = 0; i < num_vecs; ++i) {
+    for (int k = 0; k < size; ++k) {
+      raw_data[i][k] = k*(i+1);
+    }
+  }
+
+  Kokkos::Array<int, num_vecs> pk_sizes = {1, 2, 4};
+  Kokkos::Array<view_p1_t, 1> p1_d;
+  Kokkos::Array<view_p2_t, 1> p2_d;
+  Kokkos::Array<view_p4_t, 1> p4_d;
+
+  scream::pack::host_to_device( {raw_data[0].data()}, size, p1_d);
+  scream::pack::host_to_device( {raw_data[1].data()}, size, p2_d);
+  scream::pack::host_to_device( {raw_data[2].data()}, size, p4_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int&) {
+    for (int i = 0; i < num_vecs; ++i) {
+      for (int k = 0; k < size; ++k) {
+        const int view_idx = k / pk_sizes[i];
+        const int pk_idx = k % pk_sizes[i];
+
+        if (i == 0) {
+          scream_krequire(p1_d[0](view_idx)[pk_idx] == k*(i+1));
+          p1_d[0](view_idx)[pk_idx] += i;
+        }
+        else if (i == 1) {
+          scream_krequire(p2_d[0](view_idx)[pk_idx] == k*(i+1));
+          p2_d[0](view_idx)[pk_idx] += i;
+        }
+        else if (i == 2) {
+          scream_krequire(p4_d[0](view_idx)[pk_idx] == k*(i+1));
+          p4_d[0](view_idx)[pk_idx] += i;
+        }
+        else {
+          scream_krequire_msg(false, "Unhandled i");
+        }
+      }
+    }
+  });
+
+  scream::pack::device_to_host( {raw_data[0].data()}, size, p1_d);
+  scream::pack::device_to_host( {raw_data[1].data()}, size, p2_d);
+  scream::pack::device_to_host( {raw_data[2].data()}, size, p4_d);
+
+  for (int i = 0; i < num_vecs; ++i) {
+    for (int k = 0; k < size; ++k) {
+      REQUIRE(raw_data[i][k] == k*(i+1) + i);
+    }
+  }
 }
 
 } // namespace

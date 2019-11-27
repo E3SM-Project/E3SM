@@ -3,6 +3,13 @@
 !! @file
 !! @brief Read Routines for non-decomposed NetCDF data.
 !<
+!>
+!! @defgroup PIO_get_var Read Non-Decomposed Data
+!! Reads non-decomposed data from a NetCDF file in Fortran.  The
+!! get_var interface is provided as a simplified interface to read
+!! variables from a NetCDF format file. The variable is read on the
+!! root IO task and broadcast in its entirety to all tasks.
+!<
 module pionfget_mod
   use iso_c_binding
 #ifdef TIMING
@@ -13,13 +20,6 @@ module pionfget_mod
   use pio_support, only : replace_c_null
   implicit none
   private
-!>
-!! @defgroup PIO_get_var PIO_get_var
-!! @brief Reads non-decomposed data from a NetCDF file
-!! @details The get_var interface is provided as a simplified interface to
-!!  read variables from a NetCDF format file.   The variable is read on the
-!!  root IO task and broadcast in its entirety to all tasks.
-!<
   public :: get_var
   interface get_var
      module procedure get_var_{DIMS}d_{TYPE}, get_var_vdesc_{DIMS}d_{TYPE}
@@ -450,7 +450,7 @@ CONTAINS
     integer, intent(in) :: start(:)
     integer, intent(in) :: count(:)
     integer, intent(in) :: nstrs
-    character, intent(out) :: ival(*)
+    character(len=*), intent(out) :: ival(*)
     integer :: j
     integer(C_SIZE_T), allocatable :: cstart(:), ccount(:)
     integer :: i, ndims

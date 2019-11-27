@@ -1,10 +1,12 @@
 #ifndef SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 #define SCREAM_ATMOSPHERE_PROCESS_GROUP_HPP
 
-#include <string>
-
+#include "share/remap/abstract_remapper.hpp"
 #include "share/atmosphere_process.hpp"
 #include "share/parameter_list.hpp"
+
+#include <string>
+#include <list>
 
 namespace scream
 {
@@ -22,7 +24,9 @@ namespace scream
 class AtmosphereProcessGroup : public AtmosphereProcess
 {
 public:
-  using atm_proc_ptr_type = std::shared_ptr<AtmosphereProcess>;
+  using atm_proc_type     = AtmosphereProcess;
+  using remapper_type     = AbstractRemapper<Real, device_type>;
+  using remapper_ptr_type = std::shared_ptr<remapper_type>;
 
   // Enum to specify whether processes in the group have to be run sequentially or in parallel.
   enum class GroupScheduleType {
@@ -48,11 +52,11 @@ public:
   const Comm& get_comm () const { return m_comm; }
 
   // Grab the proper grid from the grids manager
-  void set_grid (const std::shared_ptr<const GridsManager> grids_manager);
+  void set_grids (const std::shared_ptr<const GridsManager> grids_manager);
 
   // The initialization, run, and finalization methods
-  void initialize ();
-  void run        (/* what inputs? */);
+  void initialize (const util::TimeStamp& t0);
+  void run        (const Real dt);
   void finalize   (/* what inputs? */);
 
   void final_setup ();
@@ -63,21 +67,38 @@ public:
   // The methods used to query the process for its inputs/outputs
   const std::set<FieldIdentifier>&  get_required_fields () const { return m_required_fields; }
   const std::set<FieldIdentifier>&  get_computed_fields () const { return m_computed_fields; }
+  const std::set<FieldIdentifier>&  get_internal_fields () const { return m_internal_fields; }
 
   // --- Methods specific to AtmosphereProcessGroup --- //
 
   int get_num_processes () const { return m_atm_processes.size(); }
 
-  atm_proc_ptr_type get_process (const int i) const {
+  std::shared_ptr<const atm_proc_type> get_process (const int i) const {
     return m_atm_processes.at(i);
   }
 
+  void setup_remappers (const FieldRepository<Real, device_type>& field_repo);
+
+#ifdef SCREAM_DEBUG
+  void set_field_repos (const FieldRepository<Real, device_type>& repo,
+                        const FieldRepository<Real, device_type>& bkp_repo);
+#endif
+
+  void set_internal_field (const Field<Real, device_type>& f);
+
 protected:
+
+  void run_sequential (const Real dt);
+  void run_parallel   (const Real dt);
 
   // The methods to set the fields in the process
   void set_required_field_impl (const Field<const Real, device_type>& f);
   void set_computed_field_impl (const Field<      Real, device_type>& f);
 
+  // Method to build the identifier of a field on the reference grid given
+  // an identifier on a different grid
+  FieldIdentifier create_ref_fid (const FieldIdentifier& fid,
+                                  const remapper_ptr_type& remapper);
 
   // The communicator that each process in this group uses
   Comm              m_comm;
@@ -87,23 +108,57 @@ protected:
   int               m_group_size;
 
   // The list of atm processes in this group
-  std::vector<atm_proc_ptr_type>  m_atm_processes;
+  std::vector<std::shared_ptr<atm_proc_type>>  m_atm_processes;
 
   // The grids required by this process
   std::set<std::string>  m_required_grids;
 
+  // The reference grid name.
+  std::string m_ref_grid_name;
+
   // The schedule type: Parallel vs Sequential
   GroupScheduleType   m_group_schedule_type;
 
-  // The cumulative list of required/computed fields of the atm processes in the group
+  // The cumulative set of required/computed fields of the atm processes in the group
   std::set<FieldIdentifier>      m_required_fields;
   std::set<FieldIdentifier>      m_computed_fields;
-};
 
-inline AtmosphereProcess*
-create_atmosphere_process_group(const Comm& comm, const ParameterList& p) {
-  return new AtmosphereProcessGroup(comm,p);
-}
+  // This is useful only for sequential splitting. Internal fields are fields that are
+  // required fields for some atm proc, but that are computed by some other PREVIOUS
+  // atm proc in the group. These fields may not be used outside of the group.
+  std::set<FieldIdentifier>      m_internal_fields;
+
+  // The remappers are to map output/input fields to/from the reference grid
+  // Note: the i-th entry of the vector is a map of remappers needed by the i-th process.
+  //       the map's key is the name of the non-reference grid.
+  //       Notice that, as of today (07/2019), only AtmosphereProcessGroup (APG)
+  //       can have more than one grid associated with it (the union of the
+  //       grids of all the stored processes), while 'normal' atm processes
+  //       should act on *only one grid*. Furthermore, we don't need to perform
+  //       remapping for a stored APG, since the APG will already do it itself,
+  //       so we only need remappers for 'normal' processes.
+  //       It would then be tempting to replace std::map<std::string,remapper_ptr_type>
+  //       with simply a remapper_ptr_type. This would be probably fine.
+  //       However, if this assumption (only one grid per atm proc) becomes
+  //       wrong, it may be hard for someone to jump in and adapt the code.
+  //       At the very least, it would be harder than it is for me to write
+  //       the code in a more general fashion right from the beginning.
+  //       There's no real performance issue in coding for a more general
+  //       scenario, and may prevent headaches in the future.
+  std::vector<std::map<std::string,remapper_ptr_type>> m_inputs_remappers;
+  std::vector<std::map<std::string,remapper_ptr_type>> m_outputs_remappers;
+
+#ifdef SCREAM_DEBUG
+  using field_type = Field<Real, device_type>;
+  bool views_are_equal (const field_type& v1, const field_type& v2);
+
+  const FieldRepository<Real, device_type>*   m_field_repo;
+  const FieldRepository<Real, device_type>*   m_bkp_field_repo;
+
+#endif
+
+  util::TimeStamp                             m_current_ts;
+};
 
 } // namespace scream
 
