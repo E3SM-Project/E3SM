@@ -664,7 +664,7 @@ contains
        call SatellitePhenologyInit(bounds_proc)
     end if
 
-    if (use_cn .and. n_drydep > 0 .and. drydep_method == DD_XLND) then
+    if ((use_cn.or.use_fates) .and. n_drydep > 0 .and. drydep_method == DD_XLND) then
        ! Must do this also when drydeposition is used so that estimates of monthly 
        ! differences in LAI can be computed
        call SatellitePhenologyInit(bounds_proc)
@@ -803,7 +803,7 @@ contains
     ! Initialize nitrogen deposition
     ! ------------------------------------------------------------------------
 
-    if (use_cn) then
+    if (use_cn .or. use_fates) then
        call t_startf('init_ndep')
        call ndep_init(bounds_proc)
        call ndep_interp(bounds_proc, atm2lnd_vars)
@@ -814,7 +814,7 @@ contains
     ! Initialize phosphorus deposition
     ! ------------------------------------------------------------------------
 
-    if (use_cn) then
+    if (use_cn .or. use_fates) then
        call t_startf('init_pdep')
        call pdep_init(bounds_proc)
        call pdep_interp(bounds_proc, atm2lnd_vars)

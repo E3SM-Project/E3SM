@@ -423,6 +423,13 @@ contains
              end if
           end if
 
+          ! Deposition may work with FATES
+          ! but not when lai streams are turned on
+          if(use_lai_streams) then
+             call endrun(msg=' ERROR:: use_lai_streams and use_fates cannot both be true'//&
+                  errMsg(__FILE__, __LINE__))
+          end if
+
        end if
 
 

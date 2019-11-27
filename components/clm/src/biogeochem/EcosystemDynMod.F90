@@ -383,8 +383,8 @@ contains
     end if
     
     call col_cf%SetValues(num_soilc, filter_soilc, 0._r8)
-    call col_nf%SetValues (num_soilc, filter_soilc, 0._r8)
-    call col_pf%SetValues (num_soilc, filter_soilc, 0._r8)
+    call col_nf%SetValues(num_soilc, filter_soilc, 0._r8)
+    call col_pf%SetValues(num_soilc, filter_soilc, 0._r8)
     
     call t_stopf('CNZero')
     
