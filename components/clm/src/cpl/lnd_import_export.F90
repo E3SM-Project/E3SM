@@ -597,22 +597,10 @@ contains
                         3.14159265358979/180.0d0), 0.001d0)
         avgcosz = 0d0
         if (atm2lnd_vars%npf(4) - 1._r8 .gt. 1e-3) then 
-<<<<<<< HEAD
           swrad_period_len   = get_step_size()*nint(atm2lnd_vars%npf(4))
           swrad_period_start = ((tod-get_step_size()/2)/swrad_period_len) * swrad_period_len
           !set to last period if first model timestep of the day
           if (tod-get_step_size()/2 < 0) swrad_period_start = ((86400-get_step_size()/2)/swrad_period_len) * swrad_period_len   
-=======
-          do tm=1,nint(atm2lnd_vars%npf(4))  
-            !Get the average cosine zenith angle over the time resolution of the input data      
-            if (tod-2*get_step_size() >= 0) then 
-              tod_start =  int(((tod-2*get_step_size())/nint(3600*atm2lnd_vars%timeres(4)))*atm2lnd_vars%timeres(4))
-              calday_start = int(thiscalday)
-            else
-              tod_start =  int(((86400+tod-2*get_step_size())/nint(3600*atm2lnd_vars%timeres(4)))*atm2lnd_vars%timeres(4))
-              calday_start = int(thiscalday-1d0)
-            end if 
->>>>>>> parent of e586f2fc2... Revert "Merge branch 'hongyili/mosart/mosart-heat2' into next (PR #3133)"
 
           do tm=1,nint(atm2lnd_vars%npf(4))  
             !Get the average cosine zenith angle over the time resolution of the input data
