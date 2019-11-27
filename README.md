@@ -2,7 +2,7 @@
 Revised nudging code for E3SMv1 
 ================================================================================
 
-This is a branch of the E3SM model repository (https://github.com/E3SM-Project/E3SM/). It contains the new nudging code for E3SMv1 (Sun et al., 2019). 
+This is a branch checked out based on the branch jiansunpnnl/ms2019, which is a branch of the E3SM model repository (https://github.com/E3SM-Project/E3SM/) and contains the new nudging code for E3SMv1 (Sun et al., 2019). 
 
 Nudging code 
 --------------------------------------------------------------------------------
