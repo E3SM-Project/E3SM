@@ -27,10 +27,10 @@ Code modifications can be viewed at:
 https://github.com/E3SM-Project/E3SM/commit/267911c6d9deda95b81b1fc8850d880a8d3f6bb5
 
 The modifications against the version used in Sun et al. (2019) mainly include:
-  * Fix the issue for restart/branch run.
+  * Fixed the issue for restart/branch run.
   * The nudging tendency can be optionally calculated at the same location where the nudging data are output in the CLIM simulation.
-  * The linear interpolation can interpolate the nudging data to the current or future model time step.
-  * Update nudging code for FV dycore. Note that the location to apply the nudging tendency is changed in the physpkg.F90, because we think the implementation in the original nudging code is problematic. Such a change does not affect the results of SE dycore but has a notable impact on the FV dycore. 
+  * The linear interpolation can interpolate the nudging data to the current or future (default) model time step.
+  * Updated nudging code for FV dycore. Note that the location to apply the nudging tendency is changed in the physpkg.F90, because the implementation in the original nudging code is problematic. Such a change does not affect the simulations with the SE dycore but has a notable impact on those with the FV dycore. 
   * Add a namelist variable to explicitly specify the number of time slices per file.
 
 Reference
