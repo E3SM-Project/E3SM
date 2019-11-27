@@ -1579,7 +1579,7 @@
       <mask>oQU120</mask>
     </model_grid>
 
-    <model_grid alias="T62_oQU120_ais20_malibisicles" compset="MPASO.*_MALIBISICLES">
+    <model_grid alias="T62_oQU120_ais20_malibisicles" compset=".*_MALIBISICLES">
       <grid name="atm">T62</grid>
       <grid name="lnd">T62</grid>
       <grid name="ocnice">oQU120</grid>
@@ -1588,8 +1588,6 @@
       <grid name="wav">null</grid>
       <mask>oQU120</mask>
     </model_grid>
-
-
 
     <model_grid alias="T62_oEC60to30v3wLI_ais20" compset="MPASO.*_MALI">
       <grid name="atm">T62</grid>
