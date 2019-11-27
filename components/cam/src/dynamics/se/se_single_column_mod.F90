@@ -28,7 +28,7 @@ subroutine scm_setinitial(elem)
 
   type(element_t), intent(inout) :: elem(:)
 
-#ifndef MODEL_THETA_L
+!#ifndef MODEL_THETA_L
 
   integer i, j, k, ie, thelev
   integer inumliq, inumice, icldliq, icldice
@@ -39,6 +39,10 @@ subroutine scm_setinitial(elem)
     call cnst_get_ind('CLDLIQ', icldliq)
     call cnst_get_ind('CLDICE', icldice)
 
+    if (get_nstep() .eq. 0) then
+      write(*,*) elem(1)%derived%FT(1,1,:)
+    endif
+    
     do ie=1,nelemd
       do j=1,np
         do i=1,np
@@ -56,17 +60,29 @@ subroutine scm_setinitial(elem)
 
           if (get_nstep() .le. 1) then
             do k=1,thelev-1
+#ifdef MODEL_THETA_L
+              tobs(k)=elem(ie)%derived%FT(i,j,k)
+#else
               tobs(k)=elem(ie)%state%T(i,j,k,1)
+#endif
               qobs(k)=elem(ie)%state%Q(i,j,k,1)
             enddo
           else
+#ifdef MODEL_THETA_L
+            tobs(:)=elem(ie)%derived%FT(i,j,:)
+#else
             tobs(:)=elem(ie)%state%T(i,j,:,1)
+#endif
             qobs(:)=elem(ie)%state%Q(i,j,:,1)
           endif
 
           if (get_nstep() .eq. 0) then
             do k=thelev, PLEV
+#ifdef MODEL_THETA_L
+              if (have_t) elem(ie)%derived%FT(i,j,k)=tobs(k)
+#else
               if (have_t) elem(ie)%state%T(i,j,k,1)=tobs(k)
+#endif
               if (have_q) elem(ie)%state%Q(i,j,k,1)=qobs(k)
             enddo
 
@@ -88,7 +104,7 @@ subroutine scm_setinitial(elem)
     enddo
   endif
 
-#endif
+!#endif
 
 end subroutine scm_setinitial
 
@@ -139,7 +155,7 @@ subroutine scm_setfield(elem)
 
   type(element_t), intent(inout) :: elem(:)
 
-#ifndef MODEL_THETA_L
+!#ifndef MODEL_THETA_L
 
   integer i, j, k, ie
 
@@ -150,7 +166,7 @@ subroutine scm_setfield(elem)
     end do
   end do
 
-#endif
+!#endif
 
 end subroutine scm_setfield
 
@@ -177,7 +193,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
 
 
-#ifndef MODEL_THETA_L
+!#ifndef MODEL_THETA_L
 
     integer :: ie,k,i,j,t,nm_f
     integer :: nelemd_todo, np_todo
@@ -252,12 +268,20 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
             elem(ie)%state%v(i,j,1,:,t1),elem(ie)%state%v(i,j,1,:,t1),&
             forecast_v,elem(ie)%state%v(i,j,2,:,t1),&
             elem(ie)%state%v(i,j,2,:,t1),forecast_t,&
+#ifdef MODEL_THETA_L	    
+	    elem(ie)%derived%FT(i,j,:),elem(ie)%derived%FT(i,j,:),&
+#else
             elem(ie)%state%T(i,j,:,t1),elem(ie)%state%T(i,j,:,t1),&
+#endif
             forecast_q,stateQin2,stateQin1,dt,dummy1,dummy2,dummy2,&
             stateQin_qfcst,p(i,j,:),stateQin1,1,&
 	    tdiff_dyn,qdiff_dyn)         
 
+#ifdef MODEL_THETA_L
+          elem(ie)%derived%FT(i,j,:) = forecast_t(:)
+#else
           elem(ie)%state%T(i,j,:,t1) = forecast_t(:)
+#endif
           elem(ie)%state%v(i,j,1,:,t1) = forecast_u(:)
           elem(ie)%state%v(i,j,2,:,t1) = forecast_v(:)
           elem(ie)%state%Q(i,j,:,:) = forecast_q(:,:)
@@ -273,7 +297,7 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
       
     enddo
 
-#endif
+!#endif
 
     end subroutine apply_SC_forcing
 

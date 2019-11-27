@@ -192,7 +192,11 @@ subroutine forecast(lat, psm1, psm2,ps, &
       i=1
       do k=1,plev
 !         tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+#ifdef MODEL_THETA_L
+        tfcst(k) = t3m2(i) + divt(k)
+#else
         tfcst(k) = t3m2(k) + ztodt*divt(k)
+#endif
       end do
       do m=1,pcnst
          do k=1,plev
