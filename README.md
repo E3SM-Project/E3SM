@@ -25,16 +25,10 @@ The modifications mainly include:
   * The original code can only use the step-function nudging. The revised code can linearly interpolate the nudging data to the current model time step. 
   * Fixed bugs for the intermittent nudging configuration.
 
-Further development
+Newer versions
 -------------------------------------------------------------------------------- 
-The nudging code can be further improved as:
-  * The modified nudging code is only tested for SE dycore, not for FV dycore.
-  * The modified nudging code works as expected for start-up run, but not for restart/branch run.
-  * The nudging tendency is calculated at the location different from where the nudging data are output in the CLIM simulation.
-
-Such kind of improvements are available at:
-https://github.com/E3SM-Project/E3SM/tree/jiansunpnnl/ndg_loc
+The nudging code is under further development. The development branch can be found here: https://github.com/E3SM-Project/E3SM/tree/jiansunpnnl/ndg_loc. For details about the new code features and improvements, please contact Jian Sun (jian.sun@pnnl.gov) and Kai Zhang (kai.zhang@pnnl.gov).
 
 Reference
 --------------------------------------------------------------------------------
-Sun, J., Zhang, K., Wan, H., Ma, P.-L., Tang, Q., Zhang, S. (2019), Impact of nudging strategy on the climate representativeness and hindcast skill of constrained EAMv1 simulations, journal of advances in modeling earth systems, doi: 10.1029/2019MS001831.
+Sun, J., Zhang, K., Wan, H., Ma, P.-L., Tang, Q., Zhang, S. (2019), Impact of nudging strategy on the climate representativeness and hindcast skill of constrained EAMv1 simulations, Journal of Advances in Modeling Earth Systems, doi: 10.1029/2019MS001831.
