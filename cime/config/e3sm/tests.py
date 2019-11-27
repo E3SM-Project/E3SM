@@ -310,7 +310,7 @@ _TESTS = {
                  )
     },
     "e3sm_bench_lores" : {
-        #"inherit" : ("e3sm_bench_lores_g", "e3sm_bench_lores_f"),
+        "inherit" : ("e3sm_bench_lores_g", "e3sm_bench_lores_f"),
         "time"    : "01:00:00",
         "tests"   : (
                  "SMS_PS.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6.bench-wcycl-lores",
