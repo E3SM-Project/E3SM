@@ -25,9 +25,9 @@ The modifications mainly include:
   * The original code can only use the step-function nudging. The revised code can linearly interpolate the nudging data to the current model time step. 
   * Fixed bugs for the intermittent nudging configuration.
 
-Newer versions
+Newer version
 -------------------------------------------------------------------------------- 
-The nudging code is under further development. The development branch can be found here: https://github.com/E3SM-Project/E3SM/tree/jiansunpnnl/ndg_loc. For details about the new code features and improvements, please contact Jian Sun (jian.sun@pnnl.gov) and Kai Zhang (kai.zhang@pnnl.gov).
+The nudging code is under further development. The development branch can be found here: https://github.com/E3SM-Project/E3SM/tree/jiansunpnnl/ndg_loc. For details about the new code features and improvements, please contact Kai Zhang (kai.zhang@pnnl.gov) and Jian Sun (jian.sun@pnnl.gov).
 
 Reference
 --------------------------------------------------------------------------------
