@@ -212,8 +212,8 @@ subroutine stepon_run1( dtime_out, phys_state, phys_tend,               &
   end if
   
   if (single_column) then
-    iop_update_surface = .true. 
-    if (doiopupdate .and. masterproc) call readiopdata( iop_update_surface,hyam,hybm )
+    iop_update_phase1 = .true. 
+    if (doiopupdate .and. masterproc) call readiopdata( iop_update_phase1,hyam,hybm )
     call scm_broadcast()
     call scm_setfield(elem,iop_update_phase1)       
   endif 
@@ -538,7 +538,7 @@ subroutine stepon_run3(dtime, cam_out, phys_state, dyn_in, dyn_out)
 #ifdef SPMD
     call mpibcast(doiopupdate,1,mpilog,0,mpicom)
 #endif     
-     iop_update_surface = .false. 
+     iop_update_phase1 = .false. 
      if (doiopupdate) then
        call scm_setinitial(elem)
        if (masterproc) call readiopdata(iop_update_phase1,hyam,hybm)

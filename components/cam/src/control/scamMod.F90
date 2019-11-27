@@ -434,7 +434,6 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   
 #ifdef SPMD
   call mpibcast(use_iop,1,mpilog,0,mpicom)
-  call mpibcast(use_camiop,1,mpilog,0,mpicom)
 #endif
 
 
