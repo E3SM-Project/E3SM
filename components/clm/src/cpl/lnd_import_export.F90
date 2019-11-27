@@ -113,7 +113,7 @@ contains
     character(len=CL)  :: stream_fldFileName_popdens ! poplulation density stream filename
     character(len=CL)  :: stream_fldFileName_ndep    ! nitrogen deposition stream filename
     logical :: use_sitedata, has_zonefile, use_daymet, use_livneh
-    data caldaym / 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 /	
+    data caldaym / 1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 /    
 
     ! Constants to compute vapor pressure
     parameter (a0=6.107799961_r8    , a1=4.436518521e-01_r8, &
@@ -149,7 +149,7 @@ contains
 
     namelist /ndepdyn_nml/        &
         stream_year_first_ndep,  &
-	stream_year_last_ndep,   &
+    stream_year_last_ndep,   &
         model_year_align_ndep,   &
         ndepmapalgo,             &
         stream_fldFileName_ndep
@@ -414,7 +414,7 @@ contains
             !get the conversion factors
             ierr = nf90_get_att(met_ncids(v), varid, 'scale_factor', atm2lnd_vars%scale_factors(v))
             ierr = nf90_get_att(met_ncids(v), varid, 'add_offset', atm2lnd_vars%add_offsets(v))
-            !get the met data	     
+            !get the met data         
             starti(1) = 1
             starti(2) = gtoget
             counti(1) = atm2lnd_vars%timelen_spinup(v)
@@ -566,7 +566,7 @@ contains
                                                      *atm2lnd_vars%scale_factors(3)+atm2lnd_vars%add_offsets(3))*wt2(3)) * &
                                                      atm2lnd_vars%var_mult(3,g,mon) + atm2lnd_vars%var_offset(3,g,mon), 1e-9_r8)
 
-        if (atm2lnd_vars%metsource == 2) then  !convert RH to qbot						     
+        if (atm2lnd_vars%metsource == 2) then  !convert RH to qbot                             
           if (tbot > SHR_CONST_TKFRZ) then
             e = esatw(tdc(tbot))
           else
@@ -1402,6 +1402,8 @@ contains
            write(iulog,*)'l2x(index_l2x_Flrl_demand,i) is',l2x(index_l2x_Flrl_demand,i)
            call endrun( sub//' ERROR: demand must be <= 0.')
        endif
+       l2x(index_l2x_Flrl_Tqsur,i)  = lnd2atm_vars%Tqsur_grc(g)
+       l2x(index_l2x_Flrl_Tqsub,i)  = lnd2atm_vars%Tqsub_grc(g)
 
        ! glc coupling
 
