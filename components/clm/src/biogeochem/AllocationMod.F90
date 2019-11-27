@@ -4427,32 +4427,35 @@ contains
     cp_scalar_runmean    => cnstate_vars%cp_scalar_runmean , &
     ndep_prof           => cnstate_vars%ndep_prof_col      , &
     isoilorder                   => cnstate_vars%isoilorder, &
-    plant_eff_ncompet_b_vr_patch    => PlantMicKinetics_vars%plant_eff_ncompet_b_vr_patch, &
-    plant_eff_pcompet_b_vr_patch    => PlantMicKinetics_vars%plant_eff_pcompet_b_vr_patch, &
-    plant_nh4_vmax_vr_patch => PlantMicKinetics_vars%plant_nh4_vmax_vr_patch, &
-    plant_no3_vmax_vr_patch => PlantMicKinetics_vars%plant_no3_vmax_vr_patch, &
-    plant_p_vmax_vr_patch => PlantMicKinetics_vars%plant_p_vmax_vr_patch, &
-    plant_nh4_km_vr_patch => PlantMicKinetics_vars%plant_nh4_km_vr_patch, &
-    plant_no3_km_vr_patch => PlantMicKinetics_vars%plant_no3_km_vr_patch, &
-    plant_p_km_vr_patch => PlantMicKinetics_vars%plant_p_km_vr_patch, &
-    decomp_eff_ncompet_b_vr_col => PlantMicKinetics_vars%decomp_eff_ncompet_b_vr_col, &
-    decomp_eff_pcompet_b_vr_col => PlantMicKinetics_vars%decomp_eff_pcompet_b_vr_col, &
-    nit_eff_ncompet_b_vr_col => PlantMicKinetics_vars%nit_eff_ncompet_b_vr_col, &
-    den_eff_ncompet_b_vr_col => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col, &
-    km_nit_nh4_vr_col => PlantMicKinetics_vars%km_nit_nh4_vr_col, &
-    km_den_no3_vr_col => PlantMicKinetics_vars%km_den_no3_vr_col, &
-    km_minsurf_p_vr_col => PlantMicKinetics_vars%km_minsurf_p_vr_col,  &
-    vmax_minsurf_p_vr_col => PlantMicKinetics_vars%vmax_minsurf_p_vr_col, &
-    km_decomp_no3_vr_col  => PlantMicKinetics_vars%km_decomp_no3_vr_col, &
-    km_decomp_nh4_vr_col  => PlantMicKinetics_vars%km_decomp_nh4_vr_col, &
-    km_decomp_p_vr_col    =>  PlantMicKinetics_vars%km_decomp_p_vr_col, &
-    dsolutionp_dt_vr_col => PlantMicKinetics_vars%dsolutionp_dt_vr_col ,&
-    dlabp_dt_vr_col      => PlantMicKinetics_vars%dlabp_dt_vr_col, &
-    pdep_to_sminp        => col_pf%pdep_to_sminp    , &
-    biochem_pmin_vr => col_pf%biochem_pmin_vr, &
+    minsurf_p_compet             => PlantMicKinetics_vars%minsurf_p_compet_vr_col    , &
+    minsurf_nh4_compet           => PlantMicKinetics_vars%minsurf_nh4_compet_vr_col  , &    
+    plant_eff_ncompet_b_vr_patch => PlantMicKinetics_vars%plant_eff_ncompet_b_vr_patch, &
+    plant_eff_pcompet_b_vr_patch => PlantMicKinetics_vars%plant_eff_pcompet_b_vr_patch, &
+    plant_nh4_vmax_vr_patch      => PlantMicKinetics_vars%plant_nh4_vmax_vr_patch, &
+    plant_no3_vmax_vr_patch      => PlantMicKinetics_vars%plant_no3_vmax_vr_patch, &
+    plant_p_vmax_vr_patch        => PlantMicKinetics_vars%plant_p_vmax_vr_patch, &
+    plant_nh4_km_vr_patch        => PlantMicKinetics_vars%plant_nh4_km_vr_patch, &
+    plant_no3_km_vr_patch        => PlantMicKinetics_vars%plant_no3_km_vr_patch, &
+    plant_p_km_vr_patch          => PlantMicKinetics_vars%plant_p_km_vr_patch, &
+    decomp_eff_ncompet_b_vr_col  => PlantMicKinetics_vars%decomp_eff_ncompet_b_vr_col, &
+    decomp_eff_pcompet_b_vr_col  => PlantMicKinetics_vars%decomp_eff_pcompet_b_vr_col, &
+    nit_eff_ncompet_b_vr_col     => PlantMicKinetics_vars%nit_eff_ncompet_b_vr_col, &
+    den_eff_ncompet_b_vr_col     => PlantMicKinetics_vars%den_eff_ncompet_b_vr_col, &
+    km_nit_nh4_vr_col            => PlantMicKinetics_vars%km_nit_nh4_vr_col, &
+    km_den_no3_vr_col            => PlantMicKinetics_vars%km_den_no3_vr_col, &
+    km_minsurf_p_vr_col          => PlantMicKinetics_vars%km_minsurf_p_vr_col,  &
+    km_minsurf_nh4_vr            => PlantMicKinetics_vars%km_minsurf_nh4_vr_col, &
+    vmax_minsurf_p_vr_col        => PlantMicKinetics_vars%vmax_minsurf_p_vr_col, &
+    km_decomp_no3_vr_col         => PlantMicKinetics_vars%km_decomp_no3_vr_col, &
+    km_decomp_nh4_vr_col         => PlantMicKinetics_vars%km_decomp_nh4_vr_col, &
+    km_decomp_p_vr_col           =>  PlantMicKinetics_vars%km_decomp_p_vr_col, &
+    dsolutionp_dt_vr_col         => PlantMicKinetics_vars%dsolutionp_dt_vr_col ,&
+    dlabp_dt_vr_col              => PlantMicKinetics_vars%dlabp_dt_vr_col, &
+    pdep_to_sminp                => col_pf%pdep_to_sminp    , &
+    biochem_pmin_vr              => col_pf%biochem_pmin_vr, &
     col_plant_pdemand_vr         => col_pf%col_plant_pdemand_vr, &
     labilep_vr                   => col_ps%labilep_vr, &
-    primp_to_labilep_vr => col_pf%primp_to_labilep_vr &
+    primp_to_labilep_vr          => col_pf%primp_to_labilep_vr &
   )
   dt = real( get_step_size(), r8 )
    do j = 1, nlevdecomp
@@ -4505,6 +4508,9 @@ contains
          dsolutionp_dt_vr_col(c,j) = biochem_pmin_vr(c,j) + primp_to_labilep_vr(c,j) +&
                         pdep_to_sminp(c)*ndep_prof(c,j) - col_plant_pdemand_vr(c,j)
          dlabp_dt_vr_col(c,j) = labilep_vr(c,j)/dt
+         minsurf_p_compet(c,j) = 0._r8
+         minsurf_nh4_compet(c,j) = 0._r8
+         km_minsurf_nh4_vr(c,j)=0._r8
     enddo
   enddo
   end associate

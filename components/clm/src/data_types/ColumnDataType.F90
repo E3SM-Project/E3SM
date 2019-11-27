@@ -198,7 +198,9 @@ module ColumnDataType
     real(r8), pointer :: totecosysc           (:)    => null() ! (gC/m2) total ecosystem carbon, incl veg but excl cpool
     real(r8), pointer :: totcolc              (:)    => null() ! (gC/m2) total column carbon, incl veg and cpool
     real(r8), pointer :: totabgc              (:)    => null() ! (gC/m2) total column above ground carbon, excluding som
+    real(r8), pointer :: totabgc_beg          (:)    => null() ! (gC/m2) total column above ground carbon, excluding som
     real(r8), pointer :: totblgc              (:)    => null() ! (gc/m2) total column non veg carbon
+    real(r8), pointer :: totblgc_beg          (:)    => null() ! (gc/m2) total column non veg carbon
     real(r8), pointer :: totvegc_abg          (:)    => null() ! (gC/m2) total above vegetation carbon, excluding cpool averaged to column (p2c)
     real(r8), pointer :: begcb                (:)    => null() ! (gC/m2) carbon mass, beginning of time step
     real(r8), pointer :: endcb                (:)    => null() ! (gc/m2) carbon mass, end of time step
@@ -250,6 +252,8 @@ module ColumnDataType
     real(r8), pointer :: totcoln                  (:)     => null() ! (gN/m2) total column nitrogen, incl veg
     real(r8), pointer :: totabgn                  (:)     => null() ! (gN/m2)
     real(r8), pointer :: totblgn                  (:)     => null() ! (gN/m2) total below ground nitrogen
+    real(r8), pointer :: totabgn_beg              (:)     => null() ! (gN/m2)
+    real(r8), pointer :: totblgn_beg              (:)     => null() ! (gN/m2) total below ground nitrogen
     real(r8), pointer :: totvegn                  (:)     => null() ! (gN/m2) total vegetation nitrogen (p2c)
     real(r8), pointer :: totpftn                  (:)     => null() ! (gN/m2) total pft-level nitrogen (p2c)
     real(r8), pointer :: plant_n_buffer           (:)     => null() ! (gN/m2) col-level abstract N storage
@@ -330,6 +334,10 @@ module ColumnDataType
     real(r8), pointer :: totsomp_1m               (:)      => null() ! (gP/m2) total soil organic matter phosphorus to 1 meter
     real(r8), pointer :: totecosysp               (:)      => null() ! (gP/m2) total ecosystem phosphorus, incl veg
     real(r8), pointer :: totcolp                  (:)      => null() ! (gP/m2) total column phosphorus, incl veg
+    real(r8), pointer :: totabgp                  (:)      => null() ! (gP/m2)
+    real(r8), pointer :: totblgp                  (:)      => null() ! (gP/m2)
+    real(r8), pointer :: totabgp_beg              (:)      => null() ! (gP/m2)
+    real(r8), pointer :: totblgp_beg              (:)      => null() ! (gP/m2)
     real(r8), pointer :: totvegp                  (:)      => null() ! (gP/m2) total vegetation phosphorus (p2c)
     real(r8), pointer :: totpftp                  (:)      => null() ! (gP/m2) total pft-level phosphorus (p2c)
     real(r8), pointer :: begpb                    (:)      => null() ! phosphorus mass, beginning of time step (gP/m**2)
@@ -633,6 +641,7 @@ module ColumnDataType
     procedure, public :: ZeroDWT    => col_cf_zerodwt
     procedure, public :: Clean      => col_cf_clean
     procedure, private ::              col_cf_summary_pf ! summary calculations for PFLOTRAN interface
+    procedure, private ::              col_cf_summary_bgc_cascade
   end type column_carbon_flux
 
   !-----------------------------------------------------------------------
@@ -827,6 +836,7 @@ module ColumnDataType
     real(r8), pointer :: nflx_minn_input_nh4_vr              (:,:) => null()
     real(r8), pointer :: nflx_minn_input_no3_vr              (:,:) => null()
     real(r8), pointer :: nh3_soi_flx                         (:)=> null()
+    real(r8), pointer :: supplement_to_plantn                (:) => null()
   contains
     procedure, public :: Init       => col_nf_init
     procedure, public :: Restart    => col_nf_restart
@@ -835,6 +845,7 @@ module ColumnDataType
     procedure, public :: Summary    => col_nf_summary
     procedure, public :: SummaryInt => col_nf_summaryint
     procedure, public :: Clean      => col_nf_clean
+    procedure, private::               col_nf_summary_bgc_cascade
   end type column_nitrogen_flux
 
   !-----------------------------------------------------------------------
@@ -976,6 +987,7 @@ module ColumnDataType
     procedure, public :: Summary    => col_pf_summary
     procedure, public :: SummaryInt => col_pf_summaryint
     procedure, public :: Clean      => col_pf_clean
+    procedure, private::               col_pf_summary_bgc_cascade
   end type column_phosphorus_flux
 
   !-----------------------------------------------------------------------
@@ -1919,8 +1931,10 @@ contains
     allocate(this%totsomc_1m           (begc:endc))     ; this%totsomc_1m           (:)     = nan
     allocate(this%totecosysc           (begc:endc))     ; this%totecosysc           (:)     = nan
     allocate(this%totcolc              (begc:endc))     ; this%totcolc              (:)     = nan
-    allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = nan
     allocate(this%totblgc              (begc:endc))     ; this%totblgc              (:)     = nan
+    allocate(this%totblgc_beg          (begc:endc))     ; this%totblgc_beg          (:)     = nan
+    allocate(this%totabgc              (begc:endc))     ; this%totabgc              (:)     = nan
+    allocate(this%totabgc_beg          (begc:endc))     ; this%totabgc_beg          (:)     = nan
     allocate(this%totvegc_abg          (begc:endc))     ; this%totvegc_abg          (:)     = nan
     allocate(this%begcb                (begc:endc))     ; this%begcb                (:)     = nan
     allocate(this%endcb                (begc:endc))     ; this%endcb                (:)     = nan
@@ -3024,6 +3038,19 @@ contains
             this%totprodc(c) + &
             this%seedc(c)    + &
             this%ctrunc(c)
+
+       this%totblgc(c) =  &
+            this%cwdc(c)     + &
+            this%totlitc(c)  + &
+            this%totsomc(c)
+
+       this%totabgc(c) = &
+            this%totpftc(c)  + &
+            this%prod1c(c)   + &
+            this%ctrunc(c)   + &
+            this%cropseedc_deficit(c)
+
+
     end do
   end subroutine col_cs_summary
 
@@ -3083,6 +3110,8 @@ contains
     allocate(this%totcoln               (begc:endc))                     ; this%totcoln               (:)   = nan
     allocate(this%totabgn               (begc:endc))                     ; this%totabgn               (:)   = nan
     allocate(this%totblgn               (begc:endc))                     ; this%totblgn               (:)   = nan
+    allocate(this%totabgn_beg           (begc:endc))                     ; this%totabgn_beg           (:)   = nan
+    allocate(this%totblgn_beg           (begc:endc))                     ; this%totblgn_beg           (:)   = nan
     allocate(this%totvegn               (begc:endc))                     ; this%totvegn               (:)   = nan
     allocate(this%totpftn               (begc:endc))                     ; this%totpftn               (:)   = nan
     allocate(this%plant_n_buffer        (begc:endc))                     ; this%plant_n_buffer        (:)   = nan
@@ -3748,6 +3777,7 @@ contains
     nlev = nlevdecomp
     if (use_pflotran .and. pf_cmode) nlev = nlevdecomp_full
 
+
     if (use_nitrif_denitrif .or. (use_pflotran .and. pf_cmode)) then
        do fc = 1,num_soilc
           c = filter_soilc(fc)
@@ -3774,9 +3804,16 @@ contains
              end if
            end do
         end do
-
      end if
-
+     if (use_nitrif_denitrif .and. .not. (use_pflotran .and. pf_cmode)) then
+       do j = 1, nlev
+         do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           this%sminn_vr(c,j) = &
+             this%smin_nh4_vr(c,j) + this%smin_no3_vr(c,j)
+         enddo
+       enddo
+     endif
     ! vertically integrate each of the decomposing N pools
     do l = 1, ndecomp_pools
        do fc = 1,num_soilc
@@ -3977,6 +4014,14 @@ contains
             this%totlitn(c) + &
             this%totsomn(c) + &
             this%sminn(c)
+
+       this%totabgn(c) = &
+            this%totpftn(c) + &
+            this%prod1n(c) + &
+            this%ntrunc(c)+ &
+            this%plant_n_buffer(c) + &
+            this%cropseedn_deficit(c)
+
     end do
 
   end subroutine col_ns_summary
@@ -4041,6 +4086,10 @@ contains
     allocate(this%totsomp_1m           (begc:endc))                   ; this%totsomp_1m           (:)   = nan
     allocate(this%totecosysp           (begc:endc))                   ; this%totecosysp           (:)   = nan
     allocate(this%totcolp              (begc:endc))                   ; this%totcolp              (:)   = nan
+    allocate(this%totabgp              (begc:endc))                   ; this%totabgp              (:)   = nan
+    allocate(this%totblgp              (begc:endc))                   ; this%totblgp              (:)   = nan
+    allocate(this%totabgp_beg          (begc:endc))                   ; this%totabgp_beg          (:)   = nan
+    allocate(this%totblgp_beg          (begc:endc))                   ; this%totblgp_beg          (:)   = nan
     allocate(this%decomp_ppools        (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools        (:,:) = nan
     allocate(this%decomp_ppools_1m     (begc:endc,1:ndecomp_pools))   ; this%decomp_ppools_1m     (:,:) = nan
     allocate(this%totpftp              (begc:endc))                   ; this%totpftp              (:)   = nan
@@ -4983,6 +5032,20 @@ contains
            this%secondp(c) + &
            this%ptrunc(c) + &
            this%cropseedp_deficit(c)
+
+      this%totabgp(c) = &
+           this%totpftp(c) + &
+           this%prod1p(c) + &
+           this%ptrunc(c) + &
+           this%cropseedp_deficit(c)
+
+      this%totblgp(c) = &
+           this%cwdp(c) + &
+           this%totlitp(c) + &
+           this%totsomp(c) + &
+           this%solutionp(c) + &
+           this%labilep(c) + &
+           this%secondp(c)
    end do
 
   end subroutine col_ps_summary
@@ -6671,105 +6734,24 @@ contains
        this%som_c_runoff(c)       = 0._r8
     end do
 
-    if ( (.not. is_active_betr_bgc           ) .and. &
-         (.not. (use_pflotran .and. pf_cmode))) then
-
-       ! vertically integrate HR and decomposition cascade fluxes
-       do k = 1, ndecomp_cascade_transitions
-
-       do j = 1,nlev
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-
-                this%decomp_cascade_ctransfer(c,k) = &
-                     this%decomp_cascade_ctransfer(c,k) + &
-                     this%decomp_cascade_ctransfer_vr(c,j,k) * dzsoi_decomp(j)
-             end do
-          end do
-       end do
-
-
-       ! total heterotrophic respiration (HR)
-       do fc = 1,num_soilc
-          c = filter_soilc(fc)
-          this%hr(c) = &
-               this%lithr(c) + &
-               this%somhr(c)
-       end do
-
-
-    elseif (is_active_betr_bgc) then
-
-       do fc = 1, num_soilc
-          c = filter_soilc(fc)
-          this%hr(c) = dot_sum(this%hr_vr(c,1:nlevdecomp),dzsoi_decomp(1:nlevdecomp))
-       enddo
-    endif
-
     ! some zeroing
     do fc = 1,num_soilc
        c = filter_soilc(fc)
-       this%somhr(c)              = 0._r8
-       this%lithr(c)              = 0._r8
        this%decomp_cascade_hr(c,1:ndecomp_cascade_transitions)= 0._r8
-       if (.not. (use_pflotran .and. pf_cmode)) then
-       ! pflotran has returned 'hr_vr(begc:endc,1:nlevdecomp)' to ALM before this subroutine is called in CNEcosystemDynNoLeaching2
-       ! thus 'hr_vr_col' should NOT be set to 0
-            this%hr_vr(c,1:nlevdecomp) = 0._r8
-       end if
     enddo
+    if(.not. is_active_betr_bgc)call this%col_cf_summary_bgc_cascade(bounds, num_soilc, filter_soilc)
 
-    ! vertically integrate HR and decomposition cascade fluxes
-    do k = 1, ndecomp_cascade_transitions
-
-       do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-
-             this%decomp_cascade_hr(c,k) = &
-                this%decomp_cascade_hr(c,k) + &
-                this%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j)
-
-          end do
+    if ((.not. (use_pflotran .and. pf_cmode))) then
+      ! total heterotrophic respiration (HR)
+      do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%hr(c) = 0._r8
+        do j = 1,nlevdecomp
+          this%hr(c) = this%hr(c) + &
+             this%hr_vr(c,j) * dzsoi_decomp(j)
        end do
-    end do
-
-    ! litter heterotrophic respiration (LITHR)
-    do k = 1, ndecomp_cascade_transitions
-       if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%lithr(c) = &
-              this%lithr(c) + &
-              this%decomp_cascade_hr(c,k)
-          end do
-       end if
-    end do
-
-    ! soil organic matter heterotrophic respiration (SOMHR)
-    do k = 1, ndecomp_cascade_transitions
-       if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%somhr(c) = &
-              this%somhr(c) + &
-              this%decomp_cascade_hr(c,k)
-          end do
-       end if
-    end do
-
-    ! total heterotrophic respiration, vertically resolved (HR)
-
-    do k = 1, ndecomp_cascade_transitions
-       do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-            c = filter_soilc(fc)
-            this%hr_vr(c,j) = &
-                this%hr_vr(c,j) + &
-                this%decomp_cascade_hr_vr(c,j,k)
-          end do
-       end do
-    end do
+      end do
+    end if
 
     !----------------------------------------------------------------
     ! bgc interface & pflotran:
@@ -6920,17 +6902,6 @@ contains
           end if
        end do
 
-       do k = 1, ndecomp_cascade_transitions
-          if ( is_cwd(decomp_cascade_con%cascade_donor_pool(k)) ) then
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%cwdc_loss(c) = &
-                     this%cwdc_loss(c) + &
-                     this%decomp_cascade_ctransfer(c,k)
-             end do
-          end if
-       end do
-
        if (.not.(use_pflotran .and. pf_cmode)) then
           ! (LITTERC_LOSS) - litter C loss
           do fc = 1,num_soilc
@@ -6948,18 +6919,6 @@ contains
                     this%m_decomp_cpools_to_fire(c,l)
              end do
           end if
-       end do
-
-
-       do k = 1, ndecomp_cascade_transitions
-         if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
-           do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%litterc_loss(c) = &
-                  this%litterc_loss(c) + &
-                  this%decomp_cascade_ctransfer(c,k)
-           end do
-         end if
        end do
 
        if (use_pflotran .and. pf_cmode) then
@@ -7015,7 +6974,122 @@ contains
     end associate
 
     end subroutine col_cf_summary
+  !------------------------------------------------------------
 
+   subroutine col_cf_summary_bgc_cascade(this, bounds, num_soilc, filter_soilc)
+   !
+   ! !DESCRIPTION:
+   ! column-level carbon flux summary calculations
+   !
+   !
+   ! !ARGUMENTS:
+   class(column_carbon_flux)              :: this
+   type(bounds_type)      , intent(in)    :: bounds
+   integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+   integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+
+   integer :: fc, c, k, j
+    !-----------------------------------------------------------------------
+    associate(&
+         is_litter =>    decomp_cascade_con%is_litter , & ! Input:  [logical (:) ]  TRUE => pool is a litter pool
+         is_soil   =>    decomp_cascade_con%is_soil   , & ! Input:  [logical (:) ]  TRUE => pool is a soil pool
+         is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool
+         )
+
+     do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%somhr(c)              = 0._r8
+       this%lithr(c)              = 0._r8
+       this%hr_vr(c,1:nlevdecomp) = 0._r8
+     enddo
+     if ((.not. (use_pflotran .and. pf_cmode))) then
+
+        ! vertically integrate HR and decomposition cascade fluxes
+        do k = 1, ndecomp_cascade_transitions
+          do j = 1,nlevdecomp
+            do fc = 1,num_soilc
+              c = filter_soilc(fc)
+              this%decomp_cascade_ctransfer(c,k) = &
+                     this%decomp_cascade_ctransfer(c,k) + &
+                     this%decomp_cascade_ctransfer_vr(c,j,k) * dzsoi_decomp(j)
+            end do
+          end do
+        end do
+      endif
+
+      ! vertically integrate HR and decomposition cascade fluxes
+      do k = 1, ndecomp_cascade_transitions
+        do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%decomp_cascade_hr(c,k) = &
+                this%decomp_cascade_hr(c,k) + &
+                this%decomp_cascade_hr_vr(c,j,k) * dzsoi_decomp(j)
+           end do
+        end do
+      end do
+
+      ! litter heterotrophic respiration (LITHR)
+      do k = 1, ndecomp_cascade_transitions
+        if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) .or. is_cwd((decomp_cascade_con%cascade_donor_pool(k)))) then
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%lithr(c) = &
+              this%lithr(c) + &
+              this%decomp_cascade_hr(c,k)
+          end do
+        end if
+      end do
+
+      ! soil organic matter heterotrophic respiration (SOMHR)
+      do k = 1, ndecomp_cascade_transitions
+        if ( is_soil(decomp_cascade_con%cascade_donor_pool(k)) ) then
+          do fc = 1,num_soilc
+            c = filter_soilc(fc)
+            this%somhr(c) = &
+              this%somhr(c) + &
+              this%decomp_cascade_hr(c,k)
+           end do
+         end if
+      end do
+
+      ! total heterotrophic respiration, vertically resolved (HR)
+
+      do k = 1, ndecomp_cascade_transitions
+         do j = 1,nlevdecomp
+           do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%hr_vr(c,j) = &
+                this%hr_vr(c,j) + &
+                this%decomp_cascade_hr_vr(c,j,k)
+           end do
+        end do
+     end do
+
+     do k = 1, ndecomp_cascade_transitions
+        if ( is_cwd(decomp_cascade_con%cascade_donor_pool(k)) ) then
+           do fc = 1,num_soilc
+              c = filter_soilc(fc)
+              this%cwdc_loss(c) = &
+                   this%cwdc_loss(c) + &
+                   this%decomp_cascade_ctransfer(c,k)
+           end do
+        end if
+     end do
+
+     do k = 1, ndecomp_cascade_transitions
+       if ( is_litter(decomp_cascade_con%cascade_donor_pool(k)) ) then
+         do fc = 1,num_soilc
+           c = filter_soilc(fc)
+           this%litterc_loss(c) = &
+                this%litterc_loss(c) + &
+                this%decomp_cascade_ctransfer(c,k)
+         end do
+       end if
+     end do
+
+    end associate
+  end subroutine col_cf_summary_bgc_cascade
   !------------------------------------------------------------
   subroutine col_cf_summary_for_ch4( this, bounds, num_soilc, filter_soilc)
     !
@@ -7698,6 +7772,7 @@ contains
     allocate(this%nflx_minn_input_nh4_vr      (begc:endc,1:nlevdecomp_full)); this%nflx_minn_input_nh4_vr(:,:)=nan
     allocate(this%nflx_minn_input_no3_vr      (begc:endc,1:nlevdecomp_full)); this%nflx_minn_input_no3_vr(:,:)=nan
     allocate(this%nh3_soi_flx                 (begc:endc)); this%nh3_soi_flx(:) = nan
+    allocate(this%supplement_to_plantn        (begc:endc)); this%supplement_to_plantn(:) = nan
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of col_nf
     !-----------------------------------------------------------------------
@@ -8761,6 +8836,8 @@ contains
        this%gross_nmin(i)                = value_column
        this%net_nmin(i)                  = value_column
        this%denit(i)                     = value_column
+       this%supplement_to_plantn(i)      = value_column
+       this%fire_nloss_p2c(i)            = value_column
        if (use_nitrif_denitrif) then
           this%f_nit(i)                  = value_column
           this%pot_f_nit(i)              = value_column
@@ -8960,39 +9037,30 @@ contains
        this%somn_erode(c)          = 0._r8
        this%somn_deposit(c)        = 0._r8
        this%somn_yield(c)          = 0._r8
+
+       this%f_nit(c) = 0._r8
+       this%f_denit(c) = 0._r8
+       this%pot_f_nit(c) = 0._r8
+       this%pot_f_denit(c) = 0._r8
+       this%f_n2o_nit(c) = 0._r8
+       this%f_n2o_denit(c) = 0._r8
+
+       this%supplement_to_sminn(c) = 0._r8
+       this%sminn_input(c) = 0._r8
+       this%sminn_nh4_input(c) = 0._r8
+       this%sminn_no3_input(c) = 0._r8
     end do
-
+    do k = 1, ndecomp_pools
+      do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%m_decomp_npools_to_fire(c,k) = 0._r8
+      enddo
+    enddo
     if (  (.not. (use_pflotran .and. pf_cmode)) ) then
-       ! BeTR is off AND PFLOTRAN's pf_cmode is false
-       ! vertically integrate decomposing N cascade fluxes and
-       !soil mineral N fluxes associated with decomposition cascade
-       do k = 1, ndecomp_cascade_transitions
-          do j = 1,nlev
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%decomp_cascade_ntransfer(c,k) = &
-                     this%decomp_cascade_ntransfer(c,k) + &
-                     this%decomp_cascade_ntransfer_vr(c,j,k) * dzsoi_decomp(j)
 
-                this%decomp_cascade_sminn_flux(c,k) = &
-                     this%decomp_cascade_sminn_flux(c,k) + &
-                     this%decomp_cascade_sminn_flux_vr(c,j,k) * dzsoi_decomp(j)
-             end do
-          end do
-       end do
-
+       if ( .not. is_active_betr_bgc) call this%col_nf_summary_bgc_cascade(bounds, num_soilc, filter_soilc)
        if (.not. use_nitrif_denitrif) then
-          ! vertically integrate each denitrification flux
-          do l = 1, ndecomp_cascade_transitions
-             do j = 1, nlev
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%sminn_to_denit_decomp_cascade(c,l) = &
-                        this%sminn_to_denit_decomp_cascade(c,l) + &
-                        this%sminn_to_denit_decomp_cascade_vr(c,j,l) * dzsoi_decomp(j)
-                end do
-             end do
-          end do
+
           ! vertically integrate bulk denitrification and  leaching flux
           do j = 1, nlev
              do fc = 1,num_soilc
@@ -9006,15 +9074,7 @@ contains
                      this%sminn_leached_vr(c,j) * dzsoi_decomp(j)
              end do
           end do
-          ! total N denitrification (DENIT)
-          do l = 1, ndecomp_cascade_transitions
-             do fc = 1,num_soilc
-                c = filter_soilc(fc)
-                this%denit(c) = &
-                     this%denit(c) + &
-                     this%sminn_to_denit_decomp_cascade(c,l)
-             end do
-          end do
+
           do fc = 1,num_soilc
              c = filter_soilc(fc)
              this%denit(c) =  &
@@ -9052,14 +9112,16 @@ contains
                      this%f_n2o_denit(c) + &
                      this%f_n2o_denit_vr(c,j) * dzsoi_decomp(j)
 
+                if ( .not. is_active_betr_bgc) then
                 ! leaching/runoff flux
-                this%smin_no3_leached(c) = &
+                  this%smin_no3_leached(c) = &
                         this%smin_no3_leached(c) + &
                         this%smin_no3_leached_vr(c,j) * dzsoi_decomp(j)
 
-                this%smin_no3_runoff(c) = &
+                  this%smin_no3_runoff(c) = &
                         this%smin_no3_runoff(c) + &
                         this%smin_no3_runoff_vr(c,j) * dzsoi_decomp(j)
+                endif
              end do
           end do
           do fc = 1,num_soilc
@@ -9228,6 +9290,61 @@ contains
     end if
 
   end subroutine col_nf_summary
+  !------------------------------------------------------------------------
+  subroutine col_nf_summary_bgc_cascade(this, bounds, num_soilc, filter_soilc)
+    !
+    ! !DESCRIPTION:
+    ! Column-level nitrogen summary calculations
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_flux)            :: this
+    type(bounds_type)      , intent(in)    :: bounds
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+
+    integer :: fc, c, k, j, l
+
+    ! BeTR is off AND PFLOTRAN's pf_cmode is false
+    ! vertically integrate decomposing N cascade fluxes and
+    !soil mineral N fluxes associated with decomposition cascade
+
+    do k = 1, ndecomp_cascade_transitions
+      do j = 1,nlevdecomp
+        do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%decomp_cascade_ntransfer(c,k) = &
+             this%decomp_cascade_ntransfer(c,k) + &
+             this%decomp_cascade_ntransfer_vr(c,j,k) * dzsoi_decomp(j)
+
+          this%decomp_cascade_sminn_flux(c,k) = &
+             this%decomp_cascade_sminn_flux(c,k) + &
+             this%decomp_cascade_sminn_flux_vr(c,j,k) * dzsoi_decomp(j)
+         end do
+       end do
+    end do
+    if (.not. use_nitrif_denitrif) then
+       ! vertically integrate each denitrification flux
+       do l = 1, ndecomp_cascade_transitions
+          do j = 1, nlevdecomp
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%sminn_to_denit_decomp_cascade(c,l) = &
+                     this%sminn_to_denit_decomp_cascade(c,l) + &
+                     this%sminn_to_denit_decomp_cascade_vr(c,j,l) * dzsoi_decomp(j)
+             end do
+          end do
+       end do
+       ! total N denitrification (DENIT)
+       do l = 1, ndecomp_cascade_transitions
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+             this%denit(c) = &
+                  this%denit(c) + &
+                  this%sminn_to_denit_decomp_cascade(c,l)
+          end do
+       end do
+    endif
+  end subroutine col_nf_summary_bgc_cascade
 
   !------------------------------------------------------------------------
   subroutine col_nf_summaryint (this,bounds,num_soilc, filter_soilc)
@@ -10149,7 +10266,7 @@ contains
        c = special_col(fc)
        this%dwt_ploss(c) = 0._r8
     end do
-    
+
     call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
   end subroutine col_pf_init
 
@@ -10497,26 +10614,24 @@ contains
        this%secondp_yield(c)       = 0._r8
        this%occlp_yield(c)         = 0._r8
        this%primp_yield(c)         = 0._r8
+
+       this%primp_to_labilep(c) = 0._r8
+       this%labilep_to_secondp(c) = 0._r8
+       this%secondp_to_labilep(c) = 0._r8
+       this%secondp_to_occlp(c) = 0._r8
+       this%sminp_leached(c) = 0._r8
     end do
+
+    do k = 1, ndecomp_pools
+      do fc = 1,num_soilc
+        c = filter_soilc(fc)
+        this%m_decomp_ppools_to_fire(c,k) = 0._r8
+      enddo
+    enddo
 
     ! pflotran
     if (.not.(use_pflotran .and. pf_cmode)) then
-    ! vertically integrate decomposing P cascade fluxes and soil mineral P fluxes associated with decomposition cascade
-    do k = 1, ndecomp_cascade_transitions
-       do j = 1,nlevdecomp
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-
-             this%decomp_cascade_ptransfer(c,k) = &
-                  this%decomp_cascade_ptransfer(c,k) + &
-                  this%decomp_cascade_ptransfer_vr(c,j,k) * dzsoi_decomp(j)
-
-             this%decomp_cascade_sminp_flux(c,k) = &
-                  this%decomp_cascade_sminp_flux(c,k) + &
-                  this%decomp_cascade_sminp_flux_vr(c,j,k) * dzsoi_decomp(j)
-          end do
-       end do
-    end do
+      if (.not. is_active_betr_bgc) call this%col_pf_summary_bgc_cascade(bounds, num_soilc, filter_soilc)
     end if !if (.not.(use_pflotran .and. pf_cmode))
 
     ! vertically integrate inorganic P flux
@@ -10732,6 +10847,7 @@ contains
                this%actual_immob_p_vr(c,j) * dzsoi_decomp(j)
           this%smin_p_to_plant(c)= this%smin_p_to_plant(c) + &
                this%sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
+
           this%plant_to_litter_pflux(c) = &
                this%plant_to_litter_pflux(c)  + &
                this%phenology_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
@@ -10743,6 +10859,7 @@ contains
                this%m_p_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
                this%m_p_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
                this%m_p_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+
           this%plant_to_cwd_pflux(c) = &
                this%plant_to_cwd_pflux(c) + &
                this%gap_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j) + &
@@ -10756,6 +10873,37 @@ contains
     end if
 
   end subroutine col_pf_summary
+
+  !-------------------------------------------------------------------------------------------------
+  subroutine col_pf_summary_bgc_cascade(this, bounds, num_soilc, filter_soilc)
+  !
+  ! !ARGUMENTS:
+  class (column_phosphorus_flux) :: this
+  type(bounds_type) , intent(in) :: bounds
+  integer           , intent(in) :: num_soilc       ! number of soil columns in filter
+  integer           , intent(in) :: filter_soilc(:) ! filter for soil columns
+  !
+  ! !LOCAL VARIABLES:
+  integer  :: c,j,k,l   ! indices
+  integer  :: fc       ! lake filter indices
+
+    ! vertically integrate decomposing P cascade fluxes and soil mineral P fluxes associated with decomposition cascade
+    do k = 1, ndecomp_cascade_transitions
+       do j = 1,nlevdecomp
+          do fc = 1,num_soilc
+             c = filter_soilc(fc)
+
+             this%decomp_cascade_ptransfer(c,k) = &
+                  this%decomp_cascade_ptransfer(c,k) + &
+                  this%decomp_cascade_ptransfer_vr(c,j,k) * dzsoi_decomp(j)
+
+             this%decomp_cascade_sminp_flux(c,k) = &
+                  this%decomp_cascade_sminp_flux(c,k) + &
+                  this%decomp_cascade_sminp_flux_vr(c,j,k) * dzsoi_decomp(j)
+          end do
+       end do
+    end do
+  end subroutine col_pf_summary_bgc_cascade
 
   !-------------------------------------------------------------------------------------------------
   subroutine col_pf_summaryint(this,bounds,num_soilc, filter_soilc)

@@ -8444,6 +8444,10 @@ module VegetationDataType
            col_cf_input%rr(bounds%begc:bounds%endc))
 
     if(present(cnstate_vars))then
+      do fc = 1, num_soilc
+        c = filter_soilc(fc)
+        col_cf_input%rr_vr(c,1:nlevdecomp_full)=0._r8
+      enddo
       do j = 1, nlevdecomp_full
         do pi = 1,maxpatch_pft
           do fc = 1,num_soilc
@@ -9867,6 +9871,9 @@ module VegetationDataType
          this%wood_harvestn(bounds%begp:bounds%endp), &
          col_nf%wood_harvestn(bounds%begc:bounds%endc))
 
+    call p2c(bounds, num_soilc, filter_soilc, &
+         this%supplement_to_plantn(bounds%begp:bounds%endp), &
+         col_nf%supplement_to_plantn(bounds%begc:bounds%endc))
   end subroutine veg_nf_summary
 
   !------------------------------------------------------------------------
