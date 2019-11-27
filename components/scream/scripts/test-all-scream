@@ -37,6 +37,8 @@ OR
 
     parser.add_argument("-s", "--submit", action="store_true", help="Submit results to dashboad, requires machine")
 
+    parser.add_argument("-p", "--parallel", action="store_true", help="Launch the different build types stacks in parallel")
+
     parser.add_argument("-f", "--fast-fail", action="store_true", help="Stop testing when the first failure is detected")
 
     default_baseline = "HEAD" if "JENKINS_HOME" in os.environ else "origin/master"
@@ -66,6 +68,16 @@ OR
 def _main_func(description):
 ###############################################################################
     tas = TestAllScream(**vars(parse_command_line(sys.argv, description)))
+
+    for t in tas._tests:
+        if t not in tas._test_full_names:
+            print ("Error! Requested test '{}' is not supported by test-all-scream.".format(t))
+            keys = []
+            for k in tas._test_full_names.keys():
+                keys.append(k)
+            print ("       Valid options are: {}".format(', '.join(keys)))
+            print("OVERALL STATUS: FAIL")
+            sys.exit(1)
 
     success = tas.test_all_scream()
 
