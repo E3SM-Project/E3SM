@@ -28,8 +28,6 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
 
   static void run_cloud_bfb()
   {
-    using KTH = KokkosTypes<HostDevice>;
-
     // Read in tables
     view_2d_table vn_table; view_2d_table vm_table; view_1d_table mu_r_table; view_dnu_table dnu;
     Functions::init_kokkos_tables(vn_table, vm_table, mu_r_table, dnu);
@@ -67,8 +65,8 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     }
 
     // Sync to device
-    KTH::view_1d<GetCloudDsd2Data> gcdd_host("gcdd_host", Spack::n);
-    view_1d<GetCloudDsd2Data> gcdd_device("gcdd_host", Spack::n);
+    view_1d<GetCloudDsd2Data> gcdd_device("gcdd", Spack::n);
+    const auto gcdd_host = Kokkos::create_mirror_view(gcdd_device);
     std::copy(&gcdd[0], &gcdd[0] + Spack::n, gcdd_host.data());
     Kokkos::deep_copy(gcdd_device, gcdd_host);
 

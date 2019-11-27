@@ -58,6 +58,8 @@ struct P3GlobalForFortran
   static std::shared_ptr<Views> s_views;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct P3InitAFortranData
 {
   // Must use Host as device, f90 code might not be able to use Device memory
@@ -78,6 +80,8 @@ struct P3InitAFortranData
 };
 void p3_init_a(P3InitAFortranData& d);
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct LookupIceData
 {
   // Inputs
@@ -97,6 +101,8 @@ void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct LookupIceDataB
 {
   // Inputs
@@ -113,6 +119,8 @@ extern "C" {
 void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr, Real nr);
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct AccessLookupTableData
 {
@@ -132,6 +140,8 @@ void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct AccessLookupTableCollData
 {
   // Inputs
@@ -150,6 +160,8 @@ void access_lookup_table_coll_f(Int dumjj, Int dumii, Int dumj, Int dumi, Int in
                                 Real dum1, Real dum3, Real dum4, Real dum5, Real* proc);
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct CloudWaterAutoconversionData
 {
@@ -171,6 +183,8 @@ extern "C"{
     Real* qcaut, Real* ncautc, Real* ncautr);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct GetCloudDsd2Data
 {
   // Inputs
@@ -188,6 +202,8 @@ void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct GetRainDsd2Data
 {
   // Inputs
@@ -203,6 +219,8 @@ extern "C" {
 void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct CalcUpwindData
 {
@@ -242,6 +260,8 @@ void calc_first_order_upwind_step_f(Int kts, Int kte, Int kdir, Int kbot, Int k_
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct GenSedData : public CalcUpwindData
 {
   // Inputs
@@ -266,6 +286,8 @@ void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int *k
                                  Int num_arrays, Real** vs, Real** fluxes, Real** qnx);
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct CloudSedData
 {
@@ -315,6 +337,31 @@ void cloud_sedimentation_f(
   Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CalcBulkRhoRimeData
+{
+  // Inputs
+  Real qi_tot;
+
+  // In/out
+  Real qi_rim, bi_rim;
+
+  // Outputs
+  Real rho_rime;
+};
+void calc_bulk_rho_rime(CalcBulkRhoRimeData& d);
+
+extern "C" {
+
+void calc_bulk_rho_rime_f(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rime);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// BFB math stuff
+///////////////////////////////////////////////////////////////////////////////
 
 extern "C" {
 

@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.3)
 cmake_policy(SET CMP0057 NEW)
 
+# Add the ./cmake folder to cmake path
+SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
+IF (KOKKOS_ENABLE_CUDA)
+  INCLUDE (SetMpiCxxBackendCompilerVarName)
+  SET_MPI_CXX_BACKEND_COMPILER_VAR_NAME()
+  # Before starting the project, wrap mpicxx in the scream_mpicxx script, which
+  # takes care of setting OMPI_CXX to point to nvcc_wrapper
+  CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/bin/scream_mpicxx.in ${CMAKE_CURRENT_BINARY_DIR}/bin/scream_mpicxx @ONLY)
+  SET (CMAKE_CXX_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/bin/scream_mpicxx CACHE STRING "" FORCE)
+ENDIF()
+
 project(SCREAM CXX Fortran)
 set (CMAKE_CXX_STANDARD 11)
 
@@ -16,9 +28,6 @@ MESSAGE (STATUS "The sha of the last commit is ${LAST_GIT_COMMIT_SHA}")
 SET (SCREAM_BASE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 SET (SCREAM_SRC_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/src)
 SET (SCREAM_DATA_DIR  ${CMAKE_CURRENT_SOURCE_DIR}/data)
-
-# Add the ./cmake folder to cmake path
-SET (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 # Shortcut function, to print a variable
 function (print_var var)
@@ -81,7 +90,7 @@ set(SCREAM_MPIRUN_EXE ${DEFAULT_MPIRUN_EXE} CACHE STRING "The executable name fo
 
 ## Work out pack sizes.
 # Determine the master pack size.
-set(SCREAM_PACK_SIZE ${DEFAULT_PACK_SIZE} CACHE INTEGER
+set(SCREAM_PACK_SIZE ${DEFAULT_PACK_SIZE} CACHE STRING
   "The number of scalars in a scream::pack::Pack and Mask. Larger packs have good performance on conditional-free loops due to improved caching.")
 # With the master pack size determined, we have constraints on the others.
 set(DEFAULT_SMALL_PACK_SIZE ${SCREAM_PACK_SIZE})
@@ -89,7 +98,7 @@ set(DEFAULT_SMALL_PACK_SIZE ${SCREAM_PACK_SIZE})
 if ("${KOKKOS_GMAKE_ARCH}" STREQUAL "SKX")
   set(DEFAULT_POSSIBLY_NO_PACK TRUE)
 endif ()
-set(SCREAM_SMALL_PACK_SIZE ${DEFAULT_SMALL_PACK_SIZE} CACHE INTEGER
+set(SCREAM_SMALL_PACK_SIZE ${DEFAULT_SMALL_PACK_SIZE} CACHE STRING
   "The number of scalars in a scream::pack::SmallPack and SmallMask. Smaller packs can have better performance in loops with conditionals since more of the packs will have masks with uniform value.")
 set(SCREAM_POSSIBLY_NO_PACK ${DEFAULT_POSSIBLY_NO_PACK} CACHE BOOL
   "Set possibly-no-pack to this value. You can set it to something else to restore packs on SKX for testing.")
@@ -119,8 +128,8 @@ set(SCREAM_FPE ${DEFAULT_FPE} CACHE BOOL "Enable floating point error exception"
 set(CATCH_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/extern/catch2/include)
 
 # Scream test configuration options
-set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE INTEGER "Upper limit on threads for threaded tests")
-set(SCREAM_TEST_THREAD_INC 1 CACHE INTEGER "Thread count increment for threaded tests")
+set(SCREAM_TEST_MAX_THREADS ${DEFAULT_MAX_THREADS} CACHE STRING "Upper limit on threads for threaded tests")
+set(SCREAM_TEST_THREAD_INC 1 CACHE STRING "Thread count increment for threaded tests")
 
 # Set compiler-specific flags
 include(SetCompilerFlags)

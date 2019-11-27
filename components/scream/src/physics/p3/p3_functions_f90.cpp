@@ -48,6 +48,9 @@ void cloud_sedimentation_c(
   Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
   Real dt, Real odt, bool log_predictNc,
   Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
+
+void calc_bulk_rho_rime_c(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rime);
+
 }
 
 namespace scream {
@@ -279,6 +282,12 @@ void cloud_sedimentation(CloudSedData& d)
                         d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.prt_liq, d.qc_tend, d.nc_tend);
 }
 
+void calc_bulk_rho_rime(CalcBulkRhoRimeData& d)
+{
+  p3_init(true);
+  calc_bulk_rho_rime_c(d.qi_tot, &d.qi_rim, &d.bi_rim, &d.rho_rime);
+}
+
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
 
 const P3GlobalForFortran::Views& P3GlobalForFortran::get()
@@ -414,7 +423,7 @@ void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Re
   using P3F = Functions<Real, DefaultDevice>;
 
   typename P3F::Smask qc_gt_small(qc_ > P3F::C::QSMALL);
-  typename P3F::view_1d<Real> t_d("t_h", 6);
+  typename P3F::view_1d<Real> t_d("t_d", 6);
   auto t_h = Kokkos::create_mirror_view(t_d);
 
   Real local_nc = *nc_;
@@ -765,6 +774,34 @@ void cloud_water_autoconversion_f(Real rho_, Real qc_incld_, Real nc_incld_, Rea
     *qcaut_ = t_h(0);
     *ncautc_ = t_h(1);
     *ncautr_ = t_h(2);
+}
+
+void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_rime_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename P3F::Spack;
+  using Smask   = typename P3F::Smask;
+  using view_1d = typename P3F::view_1d<Real>;
+
+  Real local_qi_rim = *qi_rim_, local_bi_rim = *bi_rim_;
+  view_1d t_d("t_d", 3);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Smask qi_gt_small(qi_tot_ > P3F::C::QSMALL);
+    Spack qi_tot(qi_tot_), qi_rim(local_qi_rim), bi_rim(local_bi_rim);
+
+    const auto result = P3F::calc_bulk_rho_rime(qi_gt_small, qi_tot, qi_rim, bi_rim);
+    t_d(0) = qi_rim[0];
+    t_d(1) = bi_rim[0];
+    t_d(2) = result[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qi_rim_   = t_h(0);
+  *bi_rim_   = t_h(1);
+  *rho_rime_ = t_h(2);
 }
 
 // Cuda implementations of std math routines are not necessarily BFB

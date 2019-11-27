@@ -1865,6 +1865,10 @@ contains
     !  and adjusts qirim and birim appropriately.
     !--------------------------------------------------------------------------------
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: calc_bulk_rho_rime_f
+#endif
+
     implicit none
 
     !arguments:
@@ -1873,6 +1877,12 @@ contains
     real(rtype), intent(out)   :: rho_rime
 
     !--------------------------------------------------------------------------
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    if (use_cxx) then
+       call calc_bulk_rho_rime_f(qi_tot, qi_rim, bi_rim, rho_rime)
+       return
+    endif
+#endif
 
     if (bi_rim.ge.1.e-15_rtype) then
        rho_rime = qi_rim/bi_rim
