@@ -1910,7 +1910,7 @@
         <command name="load">cmake/3.11.4</command>
       </modules>
       <modules compiler="intel">
-        <command name="load">intel/19.0.3</command>
+        <command name="load">intel/19.0.5</command>
       </modules>
       <modules compiler="pgi">
         <command name="load">pgi/18.10</command>
@@ -1919,20 +1919,21 @@
         <command name="load">mvapich2/2.3.1</command>
       </modules>
       <modules mpilib="impi">
+        <command name="load">intelmpi/2019u4</command>
+      </modules>
+      <modules mpilib="impi" compiler="pgi">
         <command name="load">intelmpi/2019u3</command>
       </modules>
-      <modules mpilib="!mpi-serial">
+      <modules>
         <command name="load">netcdf/4.6.3</command>
         <command name="load">pnetcdf/1.9.0</command>
-        <command name="load">mkl/2019u3</command>
-      </modules>
-      <modules mpilib="mpi-serial">
-        <command name="load">netcdf/4.6.3</command>
-        <command name="load">mkl/2019u3</command>
+        <command name="load">mkl/2019u5</command>
       </modules>
     </module_system>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
     <EXEROOT>$CIME_OUTPUT_ROOT/$CASE/bld</EXEROOT>
+    <TEST_TPUT_TOLERANCE>0.05</TEST_TPUT_TOLERANCE>
+    <MAX_GB_OLD_TEST_DATA>1000</MAX_GB_OLD_TEST_DATA>
     <environment_variables>
       <env name="NETCDF_HOME">$ENV{NETCDF_ROOT}/</env>
       <env name="MKL_PATH">$ENV{MKLROOT}</env>
@@ -1941,16 +1942,15 @@
       <env name="MV2_ENABLE_AFFINITY">0</env>
       <env name="MV2_SHOW_CPU_BINDING">1</env>
     </environment_variables>
+    <environment_variables mpilib="impi">
+      <env name="I_MPI_ADJUST_ALLREDUCE">1</env>
+    </environment_variables>
     <environment_variables mpilib="impi" DEBUG="TRUE">
       <env name="I_MPI_DEBUG">10</env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE">
       <env name="OMP_STACKSIZE">64M</env>
-      <env name="OMP_PROC_BIND">spread</env>
-      <env name="OMP_PLACES">threads</env>
-    </environment_variables>
-    <environment_variables mpilib="!mpi-serial">
-      <env name="PNETCDF_PATH">$SHELL{dirname $(dirname $(which pnetcdf_version))}</env>
+      <env name="OMP_PLACES">cores</env>
     </environment_variables>
   </machine>
 

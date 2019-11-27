@@ -1404,10 +1404,11 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame </ADD_FFLAGS>
   <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDF_HOME)</PNETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <GPTL_CPPDEFS> -DHAVE_SLASHPROC </GPTL_CPPDEFS>
   <SFC>pgfortran</SFC>
   <SCC>pgcc</SCC>
   <SCXX>pgc++</SCXX>
@@ -1415,15 +1416,20 @@ for mct, etc.
   <MPIFC MPILIB="impi"> mpipgf90 </MPIFC>
   <MPICC MPILIB="impi"> mpipgcc  </MPICC>
   <MPICXX MPILIB="impi"> mpipgcxx </MPICXX>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LIBS>-lstdc++</CXX_LIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
 </compiler>
 
 <compiler COMPILER="intel" MACH="compy">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDF_HOME)</PNETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <GPTL_CPPDEFS> -DHAVE_SLASHPROC </GPTL_CPPDEFS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv -init=snan</ADD_FFLAGS>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>
