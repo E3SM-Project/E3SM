@@ -2,7 +2,7 @@
 Revised nudging code for E3SMv1 
 ================================================================================
 
-This is a branch checked out based on the branch jiansunpnnl/ms2019, which is a branch of the E3SM model repository (https://github.com/E3SM-Project/E3SM/) and contains the new nudging code for E3SMv1 (Sun et al., 2019). 
+This is a branch created based on the branch jiansunpnnl/ms2019, which is a branch of the E3SM model repository (https://github.com/E3SM-Project/E3SM/) and contains the new nudging code for E3SMv1 (Sun et al., 2019). 
 
 Nudging code 
 --------------------------------------------------------------------------------
@@ -15,10 +15,10 @@ https://github.com/E3SM-Project/E3SM/blob/jiansunpnnl/ms2019/components/cam/src/
 
 The revised nudging code can be found at: 
 
-https://github.com/E3SM-Project/E3SM/blob/jiansunpnnl/ndg\_loc/components/cam/src/physics/cam/nudging.F90
+https://github.com/E3SM-Project/E3SM/blob/jiansunpnnl/ndg_loc/components/cam/src/physics/cam/nudging.F90
 
 Note that the physpkg.F90 is also changed and can be found at:
-https://github.com/E3SM-Project/E3SM/blob/jiansunpnnl/ndg\_loc/components/cam/src/physics/cam/physpkg.F90
+https://github.com/E3SM-Project/E3SM/blob/jiansunpnnl/ndg_loc/components/cam/src/physics/cam/physpkg.F90
 
 Code modifications
 --------------------------------------------------------------------------------
