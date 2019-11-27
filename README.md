@@ -24,9 +24,17 @@ https://github.com/E3SM-Project/E3SM/commit/c41728fdce93692e1480441dc4673a64f3f0
 The modifications mainly include:
   * The original code requires the nudging data to have only one time slice per file. The revised code can handle multiple time slices. 
   * The original code can only use the step-function nudging. The revised code can linearly interpolate the nudging data to the current model time step. 
-  * Fixed bugs for the intermittent nudging configuration. 
-  * The modified nudging code only works for SE and FV dycores.
+  * Fixed bugs for the intermittent nudging configuration.
+
+Further development
+-------------------------------------------------------------------------------- 
+The nudging code can be further improved as:
+  * The modified nudging code is only tested for SE dycore, not for FV dycore.
+  * The modified nudging code works as expected for start-up run, but not for restart/branch run.
+  * The nudging tendency is calculated at the location different from where the nudging data are output in the CLIM simulation.
+
+Such kind of improvements are available at:
 
 Reference
 --------------------------------------------------------------------------------
-Sun et al. (2019) Impact of nudging strategy on the climate representativeness and hindcast skill of constrained EAMv1 simulations. Under review for JAMES. 
+Sun, J., Zhang, K., Wan, H., Ma, P.-L., Tang, Q., Zhang, S. (2019), Impact of nudging strategy on the climate representativeness and hindcast skill of constrained EAMv1 simulations, journal of advances in modeling earth systems, doi: 10.1029/2019MS001831.
