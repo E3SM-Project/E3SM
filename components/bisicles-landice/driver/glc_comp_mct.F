@@ -88,6 +88,8 @@ module glc_comp_mct
              glc_cpl_dt    ! length of coupling interval in seconds - set by coupler/ESMF
   character (len=*), parameter :: coupleAlarmID = 'coupling'  ! the MPAS alarm for coupling intervals
 
+  real(kind=RKIND) :: cur_time
+
 !=======================================================================
 
 contains
@@ -211,7 +213,6 @@ contains
        end subroutine xml_stream_get_attributes
     end interface
 
-    write(*,'(a)') 'Entering glc_init_mct'
 !-----------------------------------------------------------------------
 !
 !   setup mali data structures
@@ -247,9 +248,8 @@ contains
 
     c_inputFilename = "inputs.bisiclesTest"
 
-    write(*,'(a)') 'Calling bike_driver_init'
+    cur_time = 0.0
     call bike_driver_init(mpicom_g,c_inputFilename)
-    write(*,'(a)') 'Back from bike_driver_init'
 
 #if 1
 #if (defined _MEMTRACE)
@@ -775,8 +775,6 @@ contains
 !-----------------------------------------------------------------------
 !EOC
 #endif
-    write(*,'(a)') 'Exiting glc_init_mct'
-
   end subroutine glc_init_mct!}}}
 
 
@@ -825,8 +823,8 @@ contains
       character(len=StrKIND) :: timeStamp, streamName
       integer :: err, err_tmp, globalErr, streamDirection, iam
       logical :: solveVelo, streamActive
-
-      write(*,'(a)') 'Entering glc_run_mct'
+      
+      real(kind=RKIND) :: cur_dt
 
       iam = domain % dminfo % my_proc_id
 
@@ -859,6 +857,9 @@ contains
       ! Import state from coupler
       call glc_import_mct(x2g_g, err_tmp)
       err = ior(err,err_tmp)
+
+      cur_dt = 0.005
+      call bike_driver_run(cur_time,cur_dt)
 
       ! Initialize time average fields
 !      block_ptr => domain % blocklist
@@ -1032,7 +1033,6 @@ contains
       call shr_file_setLogUnit (shrlogunit)
       call shr_file_setLogLevel(shrloglev)
 
-      write(*,'(a)') 'Exiting glc_run_mct'
 !-----------------------------------------------------------------------
   end subroutine glc_run_mct!}}}
 
@@ -1074,8 +1074,6 @@ contains
 
 !-----------------------------------------------------------------------
 
-    write(*,'(a)') 'Entering glc_final_mct'
-
     iam = domain % dminfo % my_proc_id
 
     ! Set MPAS Log module instance
@@ -1107,8 +1105,6 @@ contains
     ! Reset I/O logs
     call shr_file_setLogUnit (shrlogunit)
     call shr_file_setLogLevel(shrloglev)
-
-    write(*,'(a)') 'Exiting glc_final_mct'
 
   end subroutine glc_final_mct!}}}
 
