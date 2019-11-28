@@ -195,10 +195,12 @@ class TestAllScream(object):
                 tests_success[test] = future.result()
                 success &= tests_success[test]
                 # If failed, and fast fail is requested, return immediately
+                # Note: this is effective only if num_worksers=1
                 if not success and self._fast_fail:
                     name = self._test_full_names[test]
                     print('Build type {} failed. Here''s a list of failed tests:'.format(name))
-                    run_cmd("cat ctest-build-{}/Testing/Temporary/LastTestsFailed.log".format(name))
+                    stat,out,err = run_cmd("cat ctest-build-{}/Testing/Temporary/LastTestsFailed*".format(name))
+                    print(out.strip())
 
                     return success
 
@@ -206,7 +208,8 @@ class TestAllScream(object):
             if not s:
                 name = self._test_full_names[t]
                 print('Build type {} failed. Here''s a list of failed tests:'.format(name))
-                run_cmd("cat ctest-build-{}/Testing/Temporary/LastTestsFailed.log".format(name))
+                stat,out,err = run_cmd("cat ctest-build-{}/Testing/Temporary/LastTestsFailed*".format(name))
+                print(out.strip())
         return success
 
     ###############################################################################
