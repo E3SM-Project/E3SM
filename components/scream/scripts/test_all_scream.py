@@ -97,7 +97,7 @@ class TestAllScream(object):
     def generate_baselines(self, test):
     ###############################################################################
         name = self._test_full_names[test]
-        test_dir = "ctest-build-{}".format(name)
+        test_dir = "ctest-build/{}".format(name)
 
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
 
@@ -168,7 +168,7 @@ class TestAllScream(object):
         git_head = get_current_head()
         print("Testing '{}' for build type '{}'".format(git_head,name))
 
-        test_dir = "ctest-build-{}".format(name)
+        test_dir = "ctest-build/{}".format(name)
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
@@ -199,7 +199,7 @@ class TestAllScream(object):
                 if not success and self._fast_fail:
                     name = self._test_full_names[test]
                     print('Build type {} failed. Here''s a list of failed tests:'.format(name))
-                    stat,out,err = run_cmd("cat ctest-build-{}/Testing/Temporary/LastTestsFailed*".format(name))
+                    stat,out,err = run_cmd("cat ctest-build/{}/Testing/Temporary/LastTestsFailed*".format(name))
                     print(out.strip())
 
                     return success
@@ -208,7 +208,7 @@ class TestAllScream(object):
             if not s:
                 name = self._test_full_names[t]
                 print('Build type {} failed. Here''s a list of failed tests:'.format(name))
-                stat,out,err = run_cmd("cat ctest-build-{}/Testing/Temporary/LastTestsFailed*".format(name))
+                stat,out,err = run_cmd("cat ctest-build/{}/Testing/Temporary/LastTestsFailed*".format(name))
                 print(out.strip())
         return success
 
@@ -224,7 +224,7 @@ class TestAllScream(object):
         for test in self._tests:
             # Get this test's build dir name and cmake args
             full_name = self._test_full_names[test]
-            test_dir = "ctest-build-{}".format(full_name)
+            test_dir = "ctest-build/{}".format(full_name)
 
             # Create this test's build dir
             if os.path.exists(test_dir):
