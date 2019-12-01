@@ -581,7 +581,11 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
     type(elem_state_t), intent(inout):: state
     integer,            intent(in)   :: ie     ! element index
 
+!$OMP BARRIER    
+!$OMP MASTER
     if(.not. allocated(state0)) allocate( state0(nelemd) )
+!$OMP END MASTER
+!$OMP BARRIER    
     state0(ie) = state
 
   end subroutine
