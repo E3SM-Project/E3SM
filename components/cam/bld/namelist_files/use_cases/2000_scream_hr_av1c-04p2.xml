@@ -113,6 +113,9 @@
 <use_gw_oro>.false.</use_gw_oro>
 <use_gw_convect>.false.</use_gw_convect>
 
+<!-- SHOC timestep -->
+<shoc_timestep>20</shoc_timestep>
+
 <!-- Prescribed aerosol options -->
 <use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
 <aerodep_flx_type>'CYCLICAL'</aerodep_flx_type>
