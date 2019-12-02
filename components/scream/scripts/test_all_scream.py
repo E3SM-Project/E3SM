@@ -1,4 +1,4 @@
-from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit
+from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit, expect
 check_minimum_python_version(3, 4)
 
 import os, shutil
@@ -39,7 +39,7 @@ class TestAllScream(object):
         else:
             for t in self._tests:
                 expect(t in self._test_full_names,
-                       "Error! Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
+                       "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
                            format(t, ", ".join(self._test_full_names.keys())))
 
         # Deduce how many resources per test
@@ -116,7 +116,7 @@ class TestAllScream(object):
         # We cannot just crash if we fail to generate baselines, since we would
         # not get a dashboard report if we did that. Instead, just ensure there is
         # no baseline file to compare against if there's a problem.
-        stat, _, err = run_cmd("{} {}".format(cmake_config,self._src_dir),from_dir=test_dir, verbose=True)
+        stat, _, err = run_cmd("{} {}".format(cmake_config, self._src_dir), from_dir=test_dir, verbose=True)
         if stat == 0:
 
             stat, _, err = run_cmd("make -j{} && make baseline".format(self._proc_count), from_dir=test_dir, verbose=True)
@@ -124,7 +124,7 @@ class TestAllScream(object):
         if stat != 0:
             print("WARNING: Failed to create baselines:\n{}".format(err))
 
-        baseline_files = run_cmd_no_fail("find . -name ""*baseline*"" -type f").split()
+        baseline_files = run_cmd_no_fail('find . -name "*baseline*" -type f').split()
         datas = []
         for baseline_file in baseline_files:
             if stat == 0:
@@ -133,25 +133,26 @@ class TestAllScream(object):
             else:
                 os.remove(baseline_file)
 
-        # Clean baseline build files
-        run_cmd_no_fail("/bin/rm -rf *",from_dir=test_dir) # Clean out baseline build
+        # Clean baseline build files. This command can sometimes fail due to .nfs files
+        run_cmd("/bin/rm -rf *", from_dir=test_dir) # Clean out baseline build
 
         return baseline_files, datas
 
     ###############################################################################
-    def generate_all_baselines(self,git_baseline_head,git_head):
+    def generate_all_baselines(self, git_baseline_head, git_head):
     ###############################################################################
         print("Generating baselines for ref {}".format(git_baseline_head))
 
-        run_cmd_no_fail("git checkout {}".format(git_baseline_head))
-        print("  Switched to {} ({})".format(git_baseline_head,get_current_commit()))
+        if git_baseline_head != "HEAD":
+            run_cmd_no_fail("git checkout {}".format(git_baseline_head))
+            print("  Switched to {} ({})".format(git_baseline_head, get_current_commit()))
 
         success = True
         num_workers = len(self._tests) if self._parallel else 1
         with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
 
             future_to_test = {
-                executor.submit(self.generate_baselines,test) : test
+                executor.submit(self.generate_baselines, test) : test
                 for test in self._tests}
 
             for future in threading3.as_completed(future_to_test):
@@ -163,11 +164,14 @@ class TestAllScream(object):
                             os.makedirs(os.path.dirname(filepath))
                         with open(filepath, "wb") as fd:
                             fd.write(data)
+
                 except RuntimeError:
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     success &= False
 
-        print("  Switched back to {} ({})".format(git_head,get_current_commit()))
+        if git_baseline_head != "HEAD":
+            run_cmd_no_fail("git checkout {}".format(git_head))
+            print("  Switched back to {} ({})".format(git_head, get_current_commit()))
 
         return success
 
@@ -249,7 +253,7 @@ class TestAllScream(object):
             print("WARNING: baseline commit is same as current HEAD")
 
         git_baseline_head = "HEAD" if self._baseline is None else self._baseline
-        success = self.generate_all_baselines(git_baseline_head,git_head)
+        success = self.generate_all_baselines(git_baseline_head, git_head)
         if not success:
             print ("Error(s) occurred during baselines generation phase")
             return success
