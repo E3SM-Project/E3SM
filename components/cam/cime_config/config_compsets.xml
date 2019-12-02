@@ -455,19 +455,7 @@
       <values>
         <value compset="AR9[57]_CAM">262.5</value>
       </values>
-    </entry>
-    
-    <entry id="LND2ATM_FMAPTYPE">
-      <values>
-        <value compset="_CAM5%SCREAM-HR">X</value>
-      </values>
-    </entry>
-    
-    <entry id="LND2ATM_SMAPTYPE">
-      <values>
-        <value compset="_CAM5%SCREAM-HR">X</value>
-      </values>
-    </entry>    
+    </entry> 
     
     <entry id="NCPL_ATM">
       <values>
