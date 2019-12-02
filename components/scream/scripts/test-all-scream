@@ -69,16 +69,6 @@ def _main_func(description):
 ###############################################################################
     tas = TestAllScream(**vars(parse_command_line(sys.argv, description)))
 
-    for t in tas._tests:
-        if t not in tas._test_full_names:
-            print ("Error! Requested test '{}' is not supported by test-all-scream.".format(t))
-            keys = []
-            for k in tas._test_full_names.keys():
-                keys.append(k)
-            print ("       Valid options are: {}".format(', '.join(keys)))
-            print("OVERALL STATUS: FAIL")
-            sys.exit(1)
-
     success = tas.test_all_scream()
 
     print("OVERALL STATUS: {}".format("PASS" if success else "FAIL"))

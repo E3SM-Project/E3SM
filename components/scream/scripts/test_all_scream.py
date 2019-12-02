@@ -22,8 +22,6 @@ class TestAllScream(object):
         self._custom_cmake_opts = custom_cmake_opts
         self._tests             = tests
         self._src_dir           = os.getcwd()
-        if not self._tests:
-            self._tests = ["dbg", "sp", "fpe"]
 
         self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug")],
                                   "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
@@ -36,13 +34,27 @@ class TestAllScream(object):
                                   "sp"  : "full_sp_debug",
                                   "fpe" : "debug_nopack_fpe"}
 
+        if not self._tests:
+            self._tests = ["dbg", "sp", "fpe"]
+        else:
+            for t in self._tests:
+                expect(t in self._test_full_names,
+                       "Error! Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
+                           format(t, ", ".join(self._test_full_names.keys())))
+
         # Deduce how many resources per test
         self._proc_count = 4 # default
+        proc_set = False
         if "CTEST_PARALLEL_LEVEL" in os.environ:
             try:
                 self._proc_count = int(os.environ["CTEST_PARALLEL_LEVEL"])
+                proc_set = True
             except ValueError:
                 pass
+
+        if not proc_set:
+            print("WARNING: env var CTEST_PARALLEL_LEVEL unset, defaulting to {} which probably underutilizes your machine".\
+                      format(self._proc_count))
 
         if self._parallel:
             # We need to be aware that other builds may be running too.
@@ -59,7 +71,7 @@ class TestAllScream(object):
         if self._kokkos:
             kokkos_cmake = "-DKokkos_DIR={}".format(self._kokkos)
         else:
-            kokkos_cmake = "-C {}/cmake/machine-files/{}.cmake".format(self._src_dir,self._machine)
+            kokkos_cmake = "-C {}/cmake/machine-files/{}.cmake".format(self._src_dir, self._machine)
 
         result = "cmake -DCMAKE_CXX_COMPILER={} {}".format(self._cxx, kokkos_cmake)
         for key, value in extra_configs:
@@ -78,7 +90,7 @@ class TestAllScream(object):
         if self._submit:
             result += "CIME_MACHINE={} ".format(self._machine)
 
-        result += "ctest -V --output-on-failure "
+        result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._proc_count)
 
         if not self._submit:
             result += "-DNO_SUBMIT=True "
@@ -87,9 +99,7 @@ class TestAllScream(object):
             result += "-D{}={} ".format(key, value)
 
         result += "-DBUILD_NAME_MOD={} ".format(name)
-        result += "-DBUILD_PARALLEL_RESOURCES={} ".format(self._proc_count)
-
-        result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._src_dir,cmake_config)
+        result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._src_dir, cmake_config)
 
         return result
 
