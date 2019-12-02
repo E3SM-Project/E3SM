@@ -127,25 +127,18 @@ class TestAllScream(object):
         # no baseline file to compare against if there's a problem.
         stat, _, err = run_cmd("{} {}".format(cmake_config, self._src_dir), from_dir=test_dir, verbose=True)
         if stat == 0:
-
             stat, _, err = run_cmd("make -j{} && make baseline".format(self._proc_count), from_dir=test_dir, verbose=True)
+        else:
+            print ("WARNING: Failed to configure baselines:\n{}".format(err))
+            return False
 
         if stat != 0:
             print("WARNING: Failed to create baselines:\n{}".format(err))
+            return False
 
-        baseline_files = run_cmd_no_fail('find . -name "*baseline*" -type f').split()
-        datas = []
-        for baseline_file in baseline_files:
-            if stat == 0:
-                with open(baseline_file, "rb") as fd:
-                    datas.append(fd.read())
-            else:
-                os.remove(baseline_file)
+        run_cmd_no_fail("ls | grep -v data | xargs rm -rf ", from_dir=test_dir)
 
-        # Clean baseline build files. This command can sometimes fail due to .nfs files
-        run_cmd("/bin/rm -rf *", from_dir=test_dir) # Clean out baseline build
-
-        return baseline_files, datas
+        return True
 
     ###############################################################################
     def generate_all_baselines(self, git_baseline_head, git_head):
@@ -166,17 +159,12 @@ class TestAllScream(object):
 
             for future in threading3.as_completed(future_to_test):
                 test = future_to_test[future]
-                try:
-                    baseline_files, datas = future.result()
-                    for filepath, data in zip(baseline_files, datas):
-                        if not os.path.isdir(os.path.dirname(filepath)):
-                            os.makedirs(os.path.dirname(filepath))
-                        with open(filepath, "wb") as fd:
-                            fd.write(data)
+                success &= future.result()
 
-                except RuntimeError:
+                if not success and self._fast_fail:
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
-                    success &= False
+                    return False
+                    
 
         if git_baseline_head != "HEAD":
             run_cmd_no_fail("git checkout {}".format(git_head))
