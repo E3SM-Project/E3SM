@@ -221,7 +221,6 @@ class TestAllScream(object):
         print("Testing git ref {} ({})".format(git_head, git_head_commit))
 
         # First, create build directories (one per test)
-        os.mkdir("./ctest-build")
         for test in self._tests:
             # Get this test's build dir name and cmake args
             full_name = self._test_full_names[test]
@@ -230,7 +229,8 @@ class TestAllScream(object):
             # Create this test's build dir
             if os.path.exists(test_dir):
                 shutil.rmtree(test_dir)
-            os.mkdir(test_dir)
+
+            os.makedirs(test_dir)
 
         # Second, generate baselines
         git_baseline_commit = get_current_commit(commit=self._baseline)
