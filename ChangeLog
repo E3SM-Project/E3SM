@@ -1,6 +1,30 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 12-2-2019
+Tag: cime5.6.27
+Answer Changes: Only RCE
+Tests: QPRCEMIP 
+Dependencies:
+
+Brief Summary:
+    - Change sst_aquap11 to sst_aquap_constant.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+b92cea675 Merge pull request #3316 from cacraigucar/maint-5.6
+
+
+Modified files: git diff --name-status [previous_tag]
+M       src/drivers/mct/cime_config/namelist_definition_drv.xml
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 11-25-2019
 Tag: cime5.6.26
 Answer Changes: None
