@@ -115,6 +115,8 @@ class TestAllScream(object):
         result += "-DBUILD_NAME_MOD={} ".format(name)
         result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._src_dir, cmake_config)
 
+        # Ctest can only competently manage test pinning across a single instance of ctest. For
+        # multiple concurrent instances of ctest, we have to help it.
         if self._parallel:
             myid = self.get_taskset_id(test)
             start = myid * self._proc_count
