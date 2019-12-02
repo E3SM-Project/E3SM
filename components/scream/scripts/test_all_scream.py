@@ -91,7 +91,7 @@ class TestAllScream(object):
     ###############################################################################
     def get_taskset_id(self, test):
     ###############################################################################
-        myid = self.get_taskset_id(test)
+        myid = self._tests.index(test)
         start = myid * self._proc_count
         end   = (myid+1) * self._proc_count - 1
 
