@@ -44,7 +44,7 @@ class TestAllScream(object):
                        "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
                            format(t, ", ".join(self._test_full_names.keys())))
 
-        if not self._baseline_dir == "":
+        if not self._baseline_dir == "NONE":
             print ("Ignoring baseline ref {}, and using baselines in directory {} instead".format(self._baseline_ref,self._baseline_dir))
             print ("NOTE: baselines for each build type BT must be in '{}/BT/data'. We don't check this, but there will be errors if the baselines are not found.".format(self._baseline_dir))
 
