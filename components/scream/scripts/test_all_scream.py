@@ -91,7 +91,11 @@ class TestAllScream(object):
     ###############################################################################
     def get_taskset_id(self, test):
     ###############################################################################
-        return self._tests.index(test)
+        myid = self.get_taskset_id(test)
+        start = myid * self._proc_count
+        end   = (myid+1) * self._proc_count - 1
+
+        return start, end
 
     ###############################################################################
     def generate_ctest_config(self, cmake_config, extra_configs, test):
@@ -118,9 +122,7 @@ class TestAllScream(object):
         # Ctest can only competently manage test pinning across a single instance of ctest. For
         # multiple concurrent instances of ctest, we have to help it.
         if self._parallel:
-            myid = self.get_taskset_id(test)
-            start = myid * self._proc_count
-            end   = (myid+1) * self._proc_count - 1
+            start, end = self.get_taskset_id(test)
             result = "taskset -c {}-{} sh -c '{}'".format(start,end,result)
 
         return result
@@ -145,10 +147,8 @@ class TestAllScream(object):
 
         cmd = "make -j{} && make baseline".format(self._proc_count);
         if self._parallel:
-            test_id = self.get_taskset_id(test)
-            start = test_id*self._proc_count
-            end   = (test_id+1)*self._proc_count - 1
-            cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd) 
+            start, end = self.get_taskset_id(test)
+            cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
 
         stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True)
 
