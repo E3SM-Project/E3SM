@@ -145,8 +145,9 @@ class TestAllScream(object):
 
         cmd = "make -j{} && make baseline".format(self._proc_count);
         if self._parallel:
-            start = self._test_id[test]*self._proc_count
-            end   = (self._test_id[test]+1)*self._proc_count - 1
+            test_id = self.get_taskset_id(test)
+            start = test_id*self._proc_count
+            end   = (test_id+1)*self._proc_count - 1
             cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd) 
 
         stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True)
