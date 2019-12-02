@@ -15,7 +15,7 @@ class TestAllScream(object):
         self._cxx               = cxx
         self._kokkos            = kokkos
         self._submit            = submit
-        self._parallel          = parallel 
+        self._parallel          = parallel
         self._fast_fail         = fast_fail
         self._baseline          = baseline
         self._machine           = machine
@@ -151,7 +151,7 @@ class TestAllScream(object):
                     for filepath, data in zip(baseline_files, datas):
                         if not os.path.isdir(os.path.dirname(filepath)):
                             os.makedirs(os.path.dirname(filepath))
-                        with open(filepath, "wb") as fd: 
+                        with open(filepath, "wb") as fd:
                             fd.write(data)
                 except RuntimeError:
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
