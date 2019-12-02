@@ -45,7 +45,7 @@ class TestAllScream(object):
                            format(t, ", ".join(self._test_full_names.keys())))
 
         if not self._baseline_dir == "NONE":
-            print ("Ignoring baseline ref {}, and using baselines in directory {} instead".format(self._baseline_ref,self._baseline_dir))
+            print ("Ignoring baseline ref {}, and using baselines in directory {} instead".format(self._baseline_ref, self._baseline_dir))
             print ("NOTE: baselines for each build type BT must be in '{}/BT/data'. We don't check this, but there will be errors if the baselines are not found.".format(self._baseline_dir))
 
         # Deduce how many resources per test
@@ -71,12 +71,6 @@ class TestAllScream(object):
             if self._proc_count == 0:
                 self._proc_count = 1
 
-        self._test_id = {}
-        self._test_id ["dbg"] = 0
-        self._test_id ["sp"]  = 1
-        self._test_id ["fpe"] = 2
-        
-
     ###############################################################################
     def generate_cmake_config(self, extra_configs):
     ###############################################################################
@@ -93,6 +87,11 @@ class TestAllScream(object):
             result += " -D{}".format(self._custom_cmake_opts)
 
         return result
+
+    ###############################################################################
+    def get_taskset_id(self, test):
+    ###############################################################################
+        return self._tests.index(test)
 
     ###############################################################################
     def generate_ctest_config(self, cmake_config, extra_configs, test):
@@ -117,9 +116,10 @@ class TestAllScream(object):
         result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._src_dir, cmake_config)
 
         if self._parallel:
-            start = self._test_id[test]*self._proc_count
-            end   = (self._test_id[test]+1)*self._proc_count - 1
-            result = "taskset -c {}-{} sh -c '{}'".format(start,end,result) 
+            myid = self.get_taskset_id(test)
+            start = myid * self._proc_count
+            end   = (myid+1) * self._proc_count - 1
+            result = "taskset -c {}-{} sh -c '{}'".format(start,end,result)
 
         return result
 
@@ -175,7 +175,6 @@ class TestAllScream(object):
                 if not success and self._fast_fail:
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     return False
-                    
 
         if git_baseline_head != "HEAD":
             run_cmd_no_fail("git checkout {}".format(git_head))
