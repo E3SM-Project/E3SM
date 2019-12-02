@@ -1213,7 +1213,8 @@ leveraging version control (git or svn).
 
         for component in components:
             directory = os.path.join(self._caseroot,"SourceMods","src.{}".format(component))
-            if not os.path.exists(directory):
+            # don't make SourceMods for stub components
+            if not os.path.exists(directory) and component not in ('satm','slnd','sice','socn','sesp','sglc','swav'):
                 os.makedirs(directory)
                 # Besides giving some information on SourceMods, this
                 # README file serves one other important purpose: By
