@@ -195,7 +195,7 @@ class TestAllScream(object):
         cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
-        success = run_cmd(ctest_config, from_dir=test_dir, arg_stderr=None, verbose=True)[0] == 0
+        success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True)[0] == 0
 
         return success
 
@@ -220,19 +220,15 @@ class TestAllScream(object):
                 # If failed, and fast fail is requested, return immediately
                 # Note: this is effective only if num_worksers=1
                 if not success and self._fast_fail:
-                    name = self._test_full_names[test]
-                    print('Build type {} failed. Here''s a list of failed tests:'.format(name))
-                    stat,out,err = run_cmd("cat ctest-build/{}/Testing/Temporary/LastTestsFailed*".format(name))
-                    print(out.strip())
-
-                    return success
+                    break
 
         for t,s in tests_success.items():
             if not s:
                 name = self._test_full_names[t]
-                print('Build type {} failed. Here''s a list of failed tests:'.format(name))
-                stat,out,err = run_cmd("cat ctest-build/{}/Testing/Temporary/LastTestsFailed*".format(name))
-                print(out.strip())
+                print("Build type {} failed. Here's a list of failed tests:".format(name))
+                out = run_cmd("cat ctest-build/{}/Testing/Temporary/LastTestsFailed*".format(name))[1]
+                print(out)
+
         return success
 
     ###############################################################################
