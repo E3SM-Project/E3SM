@@ -71,6 +71,12 @@ class TestAllScream(object):
             if self._proc_count == 0:
                 self._proc_count = 1
 
+        self._test_id = {}
+        self._test_id ["dbg"] = 0
+        self._test_id ["sp"]  = 1
+        self._test_id ["fpe"] = 2
+        
+
     ###############################################################################
     def generate_cmake_config(self, extra_configs):
     ###############################################################################
@@ -109,6 +115,11 @@ class TestAllScream(object):
 
         result += "-DBUILD_NAME_MOD={} ".format(name)
         result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._src_dir, cmake_config)
+
+        if self._parallel:
+            start = self._test_id[test]*self._proc_count
+            end   = (self._test_id[test]+1)*self._proc_count - 1
+            result = "taskset -c {}-{} sh -c '{}'".format(start,end,result) 
 
         return result
 
