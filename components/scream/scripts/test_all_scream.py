@@ -9,7 +9,7 @@ class TestAllScream(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, cxx, kokkos, submit, parallel, fast_fail, baseline, machine, custom_cmake_opts, tests):
+    def __init__(self, cxx, kokkos, submit, parallel, fast_fail, baseline_ref, baseline_dir, machine, no_tests, custom_cmake_opts, tests):
     ###########################################################################
 
         self._cxx               = cxx
@@ -17,8 +17,10 @@ class TestAllScream(object):
         self._submit            = submit
         self._parallel          = parallel
         self._fast_fail         = fast_fail
-        self._baseline          = baseline
+        self._baseline_ref      = baseline_ref
         self._machine           = machine
+        self._perform_tests     = not no_tests
+        self._baseline_dir      = baseline_dir
         self._custom_cmake_opts = custom_cmake_opts
         self._tests             = tests
         self._src_dir           = os.getcwd()
@@ -41,6 +43,10 @@ class TestAllScream(object):
                 expect(t in self._test_full_names,
                        "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
                            format(t, ", ".join(self._test_full_names.keys())))
+
+        if not self._baseline_dir == "":
+            print ("Ignoring baseline ref {}, and using baselines in directory {} instead".format(self._baseline_ref,self._baseline_dir))
+            print ("NOTE: baselines for each build type BT must be in '{}/BT/data'. We don't check this, but there will be errors if the baselines are not found.".format(self._baseline_dir))
 
         # Deduce how many resources per test
         self._proc_count = 4 # default
@@ -91,6 +97,9 @@ class TestAllScream(object):
             result += "CIME_MACHINE={} ".format(self._machine)
 
         result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._proc_count)
+
+        if not self._baseline_dir == "":
+            cmake_config += "-DSCREAM_TEST_DATA_DIR={}/{}/data".format(self._baseline_dir,name)
 
         if not self._submit:
             result += "-DNO_SUBMIT=True "
@@ -234,6 +243,7 @@ class TestAllScream(object):
 
         print("Testing git ref {} ({})".format(git_head, git_head_commit))
 
+        success = True
         # First, create build directories (one per test)
         for test in self._tests:
             # Get this test's build dir name and cmake args
@@ -246,21 +256,23 @@ class TestAllScream(object):
 
             os.makedirs(test_dir)
 
-        # Second, generate baselines
-        git_baseline_commit = get_current_commit(commit=self._baseline)
-        if git_baseline_commit == git_head_commit:
-            self._baseline = None
-            print("WARNING: baseline commit is same as current HEAD")
+        if self._baseline_dir=="NONE":
+            # Second, generate baselines
+            git_baseline_commit = get_current_commit(commit=self._baseline_ref)
+            if git_baseline_commit == git_head_commit:
+                self._baseline_ref = None
+                print("WARNING: baseline commit is same as current HEAD")
 
-        git_baseline_head = "HEAD" if self._baseline is None else self._baseline
-        success = self.generate_all_baselines(git_baseline_head, git_head)
-        if not success:
-            print ("Error(s) occurred during baselines generation phase")
-            return success
+            git_baseline_head = "HEAD" if self._baseline_ref is None else self._baseline_ref
+            success = self.generate_all_baselines(git_baseline_head,git_head)
+            if not success:
+                print ("Error(s) occurred during baselines generation phase")
+                return success
 
-        # Finally, run the tests
-        success &= self.run_all_tests()
-        if not success:
-            print ("Error(s) occurred during test phase")
+        if self._perform_tests:
+            # Finally, run the tests
+            success &= self.run_all_tests()
+            if not success:
+                print ("Error(s) occurred during test phase")
 
         return success
