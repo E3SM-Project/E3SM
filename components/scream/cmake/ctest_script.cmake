@@ -4,7 +4,7 @@ set(CTEST_BUILD_NAME "scream_unit_tests${BUILD_NAME_MOD}")
 
 get_filename_component(working_dir ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
 set(CTEST_SOURCE_DIRECTORY "${working_dir}")
-set(CTEST_BINARY_DIRECTORY "${working_dir}/ctest-build-${BUILD_NAME_MOD}")
+set(CTEST_BINARY_DIRECTORY "${working_dir}/ctest-build/${BUILD_NAME_MOD}")
 
 if(NOT DEFINED dashboard_model)
   set(dashboard_model Experimental)
