@@ -139,11 +139,17 @@ class TestAllScream(object):
         # not get a dashboard report if we did that. Instead, just ensure there is
         # no baseline file to compare against if there's a problem.
         stat, _, err = run_cmd("{} {}".format(cmake_config, self._src_dir), from_dir=test_dir, verbose=True)
-        if stat == 0:
-            stat, _, err = run_cmd("make -j{} && make baseline".format(self._proc_count), from_dir=test_dir, verbose=True)
-        else:
+        if stat!= 0:
             print ("WARNING: Failed to configure baselines:\n{}".format(err))
             return False
+
+        cmd = "make -j{} && make baseline".format(self._proc_count);
+        if self._parallel:
+            start = self._test_id[test]*self._proc_count
+            end   = (self._test_id[test]+1)*self._proc_count - 1
+            cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd) 
+
+        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True)
 
         if stat != 0:
             print("WARNING: Failed to create baselines:\n{}".format(err))
