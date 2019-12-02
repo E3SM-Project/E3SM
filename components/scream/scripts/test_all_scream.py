@@ -98,7 +98,7 @@ class TestAllScream(object):
 
         result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._proc_count)
 
-        if not self._baseline_dir == "":
+        if not self._baseline_dir == "NONE":
             cmake_config += "-DSCREAM_TEST_DATA_DIR={}/{}/data".format(self._baseline_dir,name)
 
         if not self._submit:
