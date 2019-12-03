@@ -256,8 +256,7 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-      <!--<env name="UGCSINPUTPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/2012010100/gfs/fcst</env>-->
-      <env name="UGCSINPUTPATH">/glade/scratch/turuncu/fv3gfs/fv3_gfdlmprad</env>
+      <env name="UGCSINPUTPATH">/glade/work/turuncu/FV3GFS/fv3_gfs_v15_repro_ccpp/</env>
       <env name="UGCSFIXEDFILEPATH">/glade/work/turuncu/FV3GFS/fix_am</env>
       <env name="UGCSADDONPATH">/glade/work/turuncu/FV3GFS/addon</env>
     </environment_variables>
