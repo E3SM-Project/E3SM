@@ -422,11 +422,8 @@ contains
                 bedld_y(iCell) = phi_y*cff2*cff3
 
               elseif (bedld_formula == 'Engelund-Hansen') then
-                ! better provide a formula to calculate Chezy instead of assigning a constant value 
                 ! Chezy = 1/Manning * water_depth^(1/6) with unit [m^0.5 s^(-1)]
                 ! In ocean water, Manning coeffcient varies between [0.012 0.025],see P.C. Kerr et al, 2013 JGR-Ocean
-!!                Chezy = Umag*sqrt(g/(tau_mean+eps))
-!!                Chezy = 65.0_RKIND
                 Chezy = 1.0_RKIND/Manning*abs(ssh(iCell)+bottomDepth(iCell))**(1.0_RKIND/6.0_RKIND)
                 Chezy = max(20.0_RKIND, Chezy)
                 Chezy = min(100.0_RKIND, Chezy)
@@ -442,7 +439,7 @@ contains
               end if
             end if
 
-        end do !! iCell loop
+         end do !! iCell loop
 
          block => block % next
       end do !! do while (associated(block)) loop
