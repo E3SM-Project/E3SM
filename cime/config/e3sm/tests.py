@@ -155,13 +155,13 @@ _TESTS = {
                  ("SMS_P96000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"))
     ),
     "e3sm_bench_hires_f" : (None, "01:00:00", (
-                 ("SMS_P7200.ne120_ne120.FC5AV1C-H01A","bench-fcomp_noio"),
-                 ("SMS_P8640.ne120_ne120.FC5AV1C-H01A","bench-fcomp_noio"),
-                 ("SMS_P10800.ne120_ne120.FC5AV1C-H01A","bench-fcomp_noio"),
-                 ("SMS_P14400.ne120_ne120.FC5AV1C-H01A","bench-fcomp_noio"),
-                 ("SMS_P21600.ne120_ne120.FC5AV1C-H01A","bench-fcomp_noio"),
-                 ("SMS_P43200.ne120_ne120.FC5AV1C-H01A","bench-fcomp_noio"),
-                 ("SMS_P86400.ne120_ne120.FC5AV1C-H01A","bench-fcomp_noio"))
+                 ("SMS_P7200.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P8640.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P10800.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P14400.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P21600.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P43200.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P86400.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"))
     ),
     "e3sm_bench_hires" : (
                  ("e3sm_bench_hires_g", "e3sm_bench_hires_f"),
@@ -173,14 +173,14 @@ _TESTS = {
     "e3sm_bench_lores_g" : (None, "01:00:00", (
                  ("SMS_P320.T62_oEC60to30v3.GMPAS-IAF","bench-gmpas_noio"),
                  ("SMS_P480.T62_oEC60to30v3.GMPAS-IAF","bench-gmpas_noio"),
-                 ("SMS_P640.T62_oEC60to30v3.GMPAS-IAF","bench-fcomp_noio"),
-                 ("SMS_P960.T62_oEC60to30v3.GMPAS-IAF","bench-fcomp_noio"),
-                 ("SMS_P1280.T62_oEC60to30v3.GMPAS-IAF","bench-fcomp_noio"))
+                 ("SMS_P640.T62_oEC60to30v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P960.T62_oEC60to30v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P1280.T62_oEC60to30v3.GMPAS-IAF","bench-gmpas_noio"))
     ),
     "e3sm_bench_lores_f" : (None, "01:00:00", (
-                 ("SMS_P1350.ne30_ne30.FC5AV1C-L","bench-fcomp_noio"),
-                 ("SMS_P2700.ne30_ne30.FC5AV1C-L","bench-fcomp_noio"),
-                 ("SMS_P5400.ne30_ne30.FC5AV1C-L","bench-fcomp_noio"))
+                 ("SMS_P1350.ne30_ne30.FC5AV1C-L","cam-bench-noio"),
+                 ("SMS_P2700.ne30_ne30.FC5AV1C-L","cam-bench-noio"),
+                 ("SMS_P5400.ne30_ne30.FC5AV1C-L","cam-bench-noio"))
     ),
     "e3sm_bench_lores" : (
                  ("e3sm_bench_lores_g", "e3sm_bench_lores_f"),

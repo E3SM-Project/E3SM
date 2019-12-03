@@ -1043,7 +1043,7 @@
     <TESTS>e3sm_integration</TESTS>
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>mvapich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/anvil/bench/20191126-maint-lores</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/lcrc/group/acme/$USER/acme_scratch/anvil</CIME_OUTPUT_ROOT>
     <SAVE_TIMING_DIR>/lcrc/group/acme</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>.*</SAVE_TIMING_DIR_PROJECTS>
     <RUNDIR>$CIME_OUTPUT_ROOT/$CASE/run</RUNDIR>
