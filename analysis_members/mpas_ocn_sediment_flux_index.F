@@ -14,34 +14,6 @@
 !> \date   2019/02/26
 !> \details
 !>  MPAS ocean analysis mode member: sediment_flux_index
-!>  In order to add a new analysis member, do the following:
-!>  1. Copy these to your new analysis member name:
-!>     cp mpas_ocn_TEMPLATE.F mpas_ocn_your_new_name.F
-!>     cp Registry_TEMPLATE.xml Registry_your_new_name.xml
-!>
-!>  2. In those two new files, replace the following text:
-!>     temPlate, TEM_PLATE, FILL_IN_AUTHOR, FILL_IN_DATE
-!>     Typically temPlate uses camel case (variable names), like yourNewName,
-!>     while TEM_PLATE uses underscores (subroutine names), like your_new_name.
-!>     note: do not replace 'filename_template' in Registry_yourNewName.xml
-!>
-!>  3. Add a #include line for your registry to
-!>     Registry_analysis_members.xml
-!>
-!>  4. In mpas_ocn_analysis_driver.F, add a use statement for your new analysis member.
-!>     In addition, add lines for your analysis member, and replace TEM_PLATE
-!>     and temPlate as described in step 2. There should be 5 places that need additions:
-!>      - Adding the analysis member name to the analysis member list
-!>      - Adding an init if test can subroutine call
-!>      - Adding a compute if test can subroutine call
-!>      - Adding a restart if test can subroutine call
-!>      - Adding a finalize if test can subroutine call
-!>
-!>  5. In src/core_ocean/analysis_members/Makefile, add your
-!>     new analysis member to the list of members. See another analysis member
-!>     in that file for an example.
-!>     NOTE: If your analysis member depends on other files, add a dependency
-!>           line for the member and list them there. See okubo weiss for an example.
 !>
 !-----------------------------------------------------------------------
 
