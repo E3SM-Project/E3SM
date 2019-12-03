@@ -1437,6 +1437,9 @@
 <statefreq> 480 </statefreq>
 <integration> "explicit" </integration>
 
+<cubed_sphere_map>0</cubed_sphere_map>
+<cubed_sphere_map hgrid="ne1024np4">2</cubed_sphere_map>
+
 <mesh_file>/dev/null</mesh_file>
 <mesh_file hgrid="ne0np4_arm_x8v3_lowcon"  >atm/cam/inic/homme/arm_x8v3_lowcon.g</mesh_file>
 <mesh_file hgrid="ne0np4_conus_x4v1_lowcon"  >atm/cam/inic/homme/conusx4v1.g</mesh_file>
@@ -1447,6 +1450,7 @@
 
 <nu_top> 2.5e5 </nu_top>
 <nu_top hgrid="ne240np4"> 1.0e5 </nu_top>
+<nu_top hgrid="ne1024np4"> 2.5e10 </nu_top>
 
 <nu>                   1.0e15 </nu>
 <nu hgrid="ne4np4" >   5.0e17 </nu>
@@ -1501,7 +1505,7 @@
 <nu_div hgrid="ne120np4">  2.5e13 </nu_div>
 <nu_div hgrid="ne240np4">  2.5e12 </nu_div>
 <nu_div hgrid="ne512np4">  5.0e11 </nu_div>
-<nu_div hgrid="ne1024np4"> 6.25e10 </nu_div>
+<nu_div hgrid="ne1024np4"> 2.5e10 </nu_div>
 <nu_div hgrid="ne0np4_arm_x8v3_lowcon"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_conus_x4v1_lowcon"  > 20.0e-8</nu_div>
 <nu_div hgrid="ne0np4_svalbard_x8v1_lowcon"  > 20.0e-8</nu_div>
@@ -1520,7 +1524,7 @@
 <hypervis_subcycle hgrid="ne120np4">  4 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne240np4">  4 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne512np4">  10 </hypervis_subcycle>
-<hypervis_subcycle hgrid="ne1024np4"> 20 </hypervis_subcycle>
+<hypervis_subcycle hgrid="ne1024np4"> 4 </hypervis_subcycle>
 <hypervis_subcycle dyn="se" waccm_phys="1">  1 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_arm_x8v3_lowcon"  > 8 </hypervis_subcycle>
 <hypervis_subcycle hgrid="ne0np4_conus_x4v1_lowcon"  > 7 </hypervis_subcycle>
@@ -1531,7 +1535,11 @@
 
 <hypervis_subcycle_q> 1 </hypervis_subcycle_q>
 
+<hypervis_subcycle_tom> 0 </hypervis_subcycle_tom>
+<hypervis_subcycle_tom hgrid="ne1024np4"> 4 </hypervis_subcycle_tom>
+
 <tstep_type > 5 </tstep_type>
+<tstep_type hgrid="ne1024np4"> 10 </tstep_type>
 
 <qsplit > 1 </qsplit>
 
@@ -1544,7 +1552,7 @@
 <rsplit hgrid="ne120np4">  3 </rsplit>
 <rsplit hgrid="ne240np4">  3 </rsplit>
 <rsplit hgrid="ne512np4">  3 </rsplit>
-<rsplit hgrid="ne1024np4"> 3 </rsplit>
+<rsplit hgrid="ne1024np4"> 1 </rsplit>
 
 <se_nsplit>                   2 </se_nsplit>
 <se_nsplit hgrid="ne4np4" >   2 </se_nsplit>
@@ -1555,7 +1563,7 @@
 <se_nsplit hgrid="ne120np4">  4 </se_nsplit>
 <se_nsplit hgrid="ne240np4">  5 </se_nsplit>
 <se_nsplit hgrid="ne512np4">  5 </se_nsplit>
-<se_nsplit hgrid="ne1024np4"> 10 </se_nsplit>
+<se_nsplit hgrid="ne1024np4"> 90 </se_nsplit>
 <se_nsplit hgrid="ne0np4_arm_x8v3_lowcon"  > 5 </se_nsplit>
 <se_nsplit hgrid="ne0np4_conus_x4v1_lowcon"  > 4 </se_nsplit>
 <se_nsplit hgrid="ne0np4_svalbard_x8v1_lowcon"  > 5 </se_nsplit>
@@ -1587,9 +1595,11 @@
 
 
 <se_ftype> 0 </se_ftype>
+<se_ftype hgrid="ne1024np4"> 4 </se_ftype>
 
 <se_phys_tscale> 0 </se_phys_tscale>
 <se_limiter_option> 8 </se_limiter_option>
+<se_limiter_option hgrid="ne1024np4"> 9 </se_limiter_option>
 <vert_remap_q_alg> 1 </vert_remap_q_alg>
 
 <theta_hydrostatic_mode>.true.</theta_hydrostatic_mode>
@@ -1605,6 +1615,7 @@
 <semi_lagrange_cdr_alg> 20 </semi_lagrange_cdr_alg>
 <semi_lagrange_cdr_check> .false. </semi_lagrange_cdr_check>
 <semi_lagrange_nearest_point_lev> 0 </semi_lagrange_nearest_point_lev>
+<semi_lagrange_nearest_point_lev hgrid="ne1024np4"> 100 </semi_lagrange_nearest_point_lev>
 
 <se_fv_phys_remap_alg> 1 </se_fv_phys_remap_alg>
 

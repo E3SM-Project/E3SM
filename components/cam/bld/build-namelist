@@ -4039,7 +4039,9 @@ if ($cfg->get('dyn') =~ /se/) {
                   statefreq se_partmethod se_topology se_ftype
                   integration nu nu_div nu_p nu_q nu_top  se_phys_tscale
                   vert_remap_q_alg se_limiter_option qsplit rsplit tstep_type
-                  hypervis_scaling mesh_file vthreads);
+		  cubed_sphere_map semi_lagrange_nearest_point_lev
+		  hypervis_subcycle_tom hypervis_scaling 
+		  mesh_file vthreads);
 
     foreach my $var (@vars) {
 	add_default($nl, $var);

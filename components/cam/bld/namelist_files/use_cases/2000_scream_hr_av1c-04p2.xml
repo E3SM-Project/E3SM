@@ -71,30 +71,9 @@
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>2000</sim_year>
 
-<!-- Settings related to the NH dycore at ne1024 -->
+<!-- Settings related to the SCREAM NH dycore -->
 <theta_advect_form>		1</theta_advect_form>
 <theta_hydrostatic_mode>	.false.</theta_hydrostatic_mode>
-<tstep_type>			10</tstep_type>
-<cubed_sphere_map>		2</cubed_sphere_map>
-<se_nsplit>			90</se_nsplit> 
-<transport_alg>                  0</transport_alg>
-<se_ftype>                       4</se_ftype>
-<rsplit>                         1</rsplit>
-<qsplit>                         1</qsplit>
-<se_limiter_option>              9</se_limiter_option>
-<semi_lagrange_nearest_point_lev> 100</semi_lagrange_nearest_point_lev>
-<hypervis_order>                 2</hypervis_order>
-<hypervis_scaling>               0</hypervis_scaling>
-<hypervis_subcycle>              4</hypervis_subcycle>
-<hypervis_subcycle_tom>          4</hypervis_subcycle_tom>
-<hypervis_subcycle_q>            1</hypervis_subcycle_q>
-<nu_div>                    2.5e10</nu_div>
-<nu>                        2.5e10</nu>
-<nu_p>                      2.5e10</nu_p>  
-<nu_top>                    2.5e10</nu_top>
-<nu_q>                      2.5e10</nu_q>
-<se_partmethod>                  4</se_partmethod>
-<se_phys_tscale>                 0</se_phys_tscale>
 
 <!-- Do radiation every timestep -->
 <iradsw>  1</iradsw>
