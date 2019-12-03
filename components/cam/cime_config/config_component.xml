@@ -358,7 +358,7 @@
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
     <desc compset="_CAM5.*SCREAM-LR"   >Low Resolution Fortran version of SCREAM with SHOC, P3, and RRTMG.  All other aspects of this run are identical to E3SMv1</desc>
-    <desc compset="_CAM5.*SCREAM-HR"   >Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, and no deep convection scheme called.  Everything else is same as E3SMv1.</desc> 
+    <desc compset="_CAM5.*SCREAM-HR"   >Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, and no deep convection scheme called.</desc> 
   </description>
 
   <!-- Aqua planet uses this for setting orbital parameters -->
