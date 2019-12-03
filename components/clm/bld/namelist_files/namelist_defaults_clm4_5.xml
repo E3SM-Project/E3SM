@@ -140,6 +140,12 @@ ic_tod="0" sim_year="1850" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map
 ic_tod="0" sim_year="2000" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/clmi.ICRUCLM45.ne16_oQU240.1155ba0.clm2.r.nc
 </finidat>
 
+<!-- HOMME grid ne30 resolution -->
+
+<finidat hgrid="ne30np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="20150101" more_vertlayers=".false."
+ic_tod="0" sim_year="2015" glc_nec="0" use_crop=".false." >lnd/clm2/initdata_map/20180716.DECKv1b_A3.ne30_oEC.edison.clm2.r.2010-01-01-00000.nc
+</finidat>
+
 <!-- HOMME grid ne120 resolution -->
 
 <finidat hgrid="ne120np4"   maxpft="17"  mask="gx1v6" use_cn=".false." ic_ymd="18500101" more_vertlayers=".false."
@@ -250,6 +256,11 @@ lnd/clm2/surfdata_map/surfdata_1x1_vancouverCAN_simyr2000_c130927.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_1x1_mexicocityMEX_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="1x1_urbanc_alpha"    sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_urbanc_alpha_simyr2000_c130927.nc</fsurdat>
+
+<fsurdat hgrid="ne30np4" sim_year="2015" use_crop=".false.">
+lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025.nc</fsurdat>
+<fsurdat hgrid="ne4np4" sim_year="2015" use_crop=".false.">
+lnd/clm2/surfdata_map/surfdata_ne4np4_simyr2000_c160614.nc</fsurdat>
 
 <!-- for pre-industrial simulations - year 1850 -->
 <fsurdat hgrid="360x720cru"   sim_year="1850" use_crop=".false."                           >
