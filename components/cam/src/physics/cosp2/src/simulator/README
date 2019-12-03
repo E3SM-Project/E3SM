@@ -1,0 +1,14 @@
+Overview: This directory contains codes that interface between COSP and
+the instrument simulators.
+
+Subdirectories hold the core of each simulator, as listed below. The interface
+between COSP and each simulator is in this directory.   
+
+Subdirectories:
+actsim/:          LIDAR simulator source code
+icarus/:          ISCCP simulator source code
+MISR_simulator/:  MISR simulator source code
+MODIS_simulator/: MODIS simulator source code
+parasol/:         PARASOL simulator source code
+quickbeam/:       RADAR simulator source code
+rttov/:           RTTOV simulator interface (RTTOV source is NOT distributed with COSP!)
