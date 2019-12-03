@@ -40,8 +40,9 @@ module AllocationMod
   use SoilStatetype       , only : soilstate_type
   use WaterStateType      , only : waterstate_type
   use clm_varctl          , only : NFIX_PTASE_plant
-  use clm_instMod         , only : alm_fates
-
+  !use clm_instMod         , only : alm_fates
+  use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
+  
   !
   implicit none
   save
@@ -182,7 +183,7 @@ contains
   end subroutine readCNAllocParams
 
   !-----------------------------------------------------------------------
-  subroutine AllocationInit ( bounds )
+  subroutine AllocationInit ( bounds, elm_fates)
     !
     ! !DESCRIPTION:
     !
@@ -200,15 +201,16 @@ contains
     !
     ! !ARGUMENTS:
     implicit none
-    type(bounds_type), intent(in) :: bounds  
+    type(bounds_type), intent(in) :: bounds
+    type(hlm_fates_interface_type), intent(in) :: elm_fates
     !
     ! !LOCAL VARIABLES:
     character(len=32) :: subname = 'AllocationInit'
     integer :: yr, mon, day, sec
+    integer :: max_comps
     logical :: carbon_only
     logical :: carbonnitrogen_only
     logical :: carbonphosphorus_only
-    integer :: max_comps
     integer :: j
     integer :: f
     !-----------------------------------------------------------------------
@@ -223,10 +225,13 @@ contains
     end if
 
     ! Allocate scratch space for ECA and FATES/ECA
-    if(nu_com.ne.'RD') then
+    print*,"IN ALLOCATION INIT"
+
+    
+    if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
        allocate(decompmicc(1:nlevdecomp)); decompmicc(1:nlevdecomp) = nan
        if (use_fates) then
-          max_comps = size(alm_fates%fates(1)%bc_out(1)%ft_index,dim=1)
+          max_comps = size(elm_fates%fates(1)%bc_out(1)%ft_index)
           allocate(filter_pcomp(max_comps)) 
           do f = 1,max_comps
              filter_pcomp(f) = f
@@ -240,7 +245,6 @@ contains
           allocate(ft_index(bounds%begp:bounds%endp)); ft_index(bounds%begp:bounds%endp) = -1
           allocate(veg_rootc(bounds%begp:bounds%endp,1:nlevdecomp)); veg_rootc(bounds%begp:bounds%endp,1:nlevdecomp) = nan
        end if
-       
     end if
 
     ! set time steps
@@ -1088,7 +1092,8 @@ contains
                             carbonstate_vars, carbonflux_vars               , &
                             nitrogenstate_vars, nitrogenflux_vars           , &
                             phosphorusstate_vars,phosphorusflux_vars        , &
-                            soilstate_vars,waterstate_vars)
+                            soilstate_vars,waterstate_vars, &
+                            elm_fates)
 
     ! PHASE-2 of Allocation     :  resolving N/P limitation
     ! !USES                     :
@@ -1120,6 +1125,7 @@ contains
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(soilstate_type)       , intent(in)    :: soilstate_vars
     type(waterstate_type)      , intent(in)    :: waterstate_vars
+    type(hlm_fates_interface_type), intent(inout) :: elm_fates
 
     !
     ! !LOCAL VARIABLES:
@@ -1340,48 +1346,48 @@ contains
          if(use_fates) then
 
             ci             = bounds%clump_index
-            s              = alm_fates%f2hmap(ci)%hsites(c)
-            n_pcomp        = alm_fates%fates(ci)%bc_out(s)%n_plant_comps
-
-            ! The FATES filter is monotonically increasing from 1
-            do f = 1,n_pcomp
-               filter_pcomp(f) = f
-            end do
+            s              = elm_fates%f2hmap(ci)%hsites(c)
+            n_pcomp        = elm_fates%fates(ci)%bc_out(s)%n_plant_comps
             
             if( nu_com.eq.'RD') then
-
+               
                ! Overwrite the column level demands, since fates plants are all sharing
                ! the same space, in units per the same square meter, we just add demand
                ! to scale up to column
-               plant_ndemand_col(c) = sum(alm_fates%fates(ci)%bc_out(s)%n_demand(1:n_pcomp))
-               plant_pdemand_col(c) = sum(alm_fates%fates(ci)%bc_out(s)%p_demand(1:n_pcomp))
+               plant_ndemand_col(c) = sum(elm_fates%fates(ci)%bc_out(s)%n_demand(1:n_pcomp))
+               plant_pdemand_col(c) = sum(elm_fates%fates(ci)%bc_out(s)%p_demand(1:n_pcomp))
 
                ! We fill the vertically resolved array to simplify some jointly used code
                do j = 1, nlevdecomp
                   col_plant_ndemand_vr(c,j) = plant_ndemand_col(c) * nuptake_prof(c,j)
-                  col_plant_ndemand_vr(c,j) = plant_pdemand_col(c) * puptake_prof(c,j)
+                  col_plant_pdemand_vr(c,j) = plant_pdemand_col(c) * puptake_prof(c,j)
                end do
                
             else  !(ECA)
 
-               veg_rootc_ptr  => alm_fates%fates(ci)%bc_out(s)%veg_rootc
-               ft_index_ptr   => alm_fates%fates(ci)%bc_out(s)%ft_index      ! Should be 
-               decompmicc(:)  =  alm_fates%fates(ci)%bc_out(s)%decompmicc(:) ! Should be (nlevdecomp)
+               ! not necessary...?
+               do f = 1,n_pcomp
+                  filter_pcomp(f) = f
+               end do
+               
+               veg_rootc_ptr  => elm_fates%fates(ci)%bc_out(s)%veg_rootc
+               ft_index_ptr   => elm_fates%fates(ci)%bc_out(s)%ft_index      ! Should be 
+               decompmicc(:)  =  elm_fates%fates(ci)%bc_out(s)%decompmicc(:) ! Should be (nlevdecomp)
 
-               cn_scalar_ptr          => alm_fates%fates(ci)%bc_out(s)%cn_scalar          ! (i,j)
+               cn_scalar_ptr          => elm_fates%fates(ci)%bc_out(s)%cn_scalar          ! (i,j)
                plant_nh4demand_vr_ptr => plant_nh4demand_vr_fates
-               km_nh4_ptr    => alm_fates%fates(ci)%bc_pconst%eca_km_nh4
-               vmax_nh4_ptr  => alm_fates%fates(ci)%bc_pconst%eca_vmax_nh4
+               km_nh4_ptr    => elm_fates%fates(ci)%bc_pconst%eca_km_nh4
+               vmax_nh4_ptr  => elm_fates%fates(ci)%bc_pconst%eca_vmax_nh4
                if (use_nitrif_denitrif) then
                   plant_no3demand_vr_ptr => plant_no3demand_vr_fates
-                  km_no3_ptr   => alm_fates%fates(ci)%bc_pconst%eca_km_no3
-                  vmax_no3_ptr => alm_fates%fates(ci)%bc_pconst%eca_vmax_no3
+                  km_no3_ptr   => elm_fates%fates(ci)%bc_pconst%eca_km_no3
+                  vmax_no3_ptr => elm_fates%fates(ci)%bc_pconst%eca_vmax_no3
                end if
                
-               cp_scalar_ptr        => alm_fates%fates(ci)%bc_out(s)%cp_scalar
+               cp_scalar_ptr        => elm_fates%fates(ci)%bc_out(s)%cp_scalar
                plant_pdemand_vr_ptr => plant_pdemand_vr_fates
-               km_p_ptr             => alm_fates%fates(ci)%bc_pconst%eca_km_p
-               vmax_p_ptr           => alm_fates%fates(ci)%bc_pconst%eca_vmax_p
+               km_p_ptr             => elm_fates%fates(ci)%bc_pconst%eca_km_p
+               vmax_p_ptr           => elm_fates%fates(ci)%bc_pconst%eca_vmax_p
                
             end if
    
@@ -1401,7 +1407,7 @@ contains
                ! We fill the vertically resolved array to simplify some jointly used code
                do j = 1, nlevdecomp
                   col_plant_ndemand_vr(c,j) = plant_ndemand_col(c) * nuptake_prof(c,j)
-                  col_plant_ndemand_vr(c,j) = plant_pdemand_col(c) * puptake_prof(c,j)
+                  col_plant_pdemand_vr(c,j) = plant_pdemand_col(c) * puptake_prof(c,j)
                end do
                
             else
@@ -1556,6 +1562,7 @@ contains
             if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only() &
                  .and. .not.cnallocate_carbon_only() )then
 
+               print*,"THERE?"
                do j = 1, nlevdecomp
                   
                   if (nlimit(c,j) == 1.and.plimit(c,j) == 0) then
@@ -1586,17 +1593,30 @@ contains
                
             else if(cnallocate_carbonnitrogen_only())then
 
+               print*,"HERE",nlevdecomp
+               
                do j = 1, nlevdecomp
                   actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
+                  print*,j,c
+                  print*,col_plant_pdemand_vr(c,j)
                   sminp_to_plant_vr(c,j) = col_plant_pdemand_vr(c,j)
                end do
                
             endif
+
+            print*,"ACTIVE:"
+            print*,cnallocate_carbon_only()
+            print*,cnallocate_carbonnitrogen_only()
+            print*,cnallocate_carbonphosphorus_only()
             
             ! sum up N and P  fluxes to plant
             sminn_to_plant(c) = 0._r8
             sminp_to_plant(c) = 0._r8
             do j = 1, nlevdecomp
+               print*,j
+               print*,dzsoi_decomp(j)
+               print*,sminn_to_plant_vr(c,j)
+               print*,sminp_to_plant_vr(c,j)
                sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
                sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
             end do
@@ -2176,7 +2196,7 @@ contains
       ! Set the FATES N and P uptake fluxes
       
       if(use_fates)then
-         n_pcomp = alm_fates%fates(ci)%bc_out(s)%n_plant_comps
+         n_pcomp = elm_fates%fates(ci)%bc_out(s)%n_plant_comps
          
          if (nu_com .eq. 'RD') then
 
@@ -2186,16 +2206,16 @@ contains
                   ! Note that nuptake_prof and fpg are both unitless fractions
                   ! units:  [g/m2] = [g/m3/s] * [/] * [/] * [s] [m]
                   
-                  j_f =  alm_fates%fates(ci)%bc_pconst%j_uptake(j)
+                  j_f =  elm_fates%fates(ci)%bc_pconst%j_uptake(j)
 
-                  alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) = & 
-                       alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) + & 
-                       alm_fates%fates(ci)%bc_out(s)%n_demand(f) * & 
+                  elm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) = & 
+                       elm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) + & 
+                       elm_fates%fates(ci)%bc_out(s)%n_demand(f) * & 
                        nuptake_prof(c,j)*fpg(c)*dt*dzsoi_decomp(j)
                   
-                  alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) = & 
-                       alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) + &
-                       alm_fates%fates(ci)%bc_out(s)%p_demand(f) * &
+                  elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) = & 
+                       elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) + &
+                       elm_fates%fates(ci)%bc_out(s)%p_demand(f) * &
                        puptake_prof(c,j)*fpg_p(c)*dt*dzsoi_decomp(j)
 
                end do
@@ -2205,14 +2225,14 @@ contains
 
             do f = 1,n_pcomp
                do j = 1,nlevdecomp
-                  j_f =  alm_fates%fates(ci)%bc_pconst%j_uptake(j)
-                  alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) = & 
-                       alm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) + & 
+                  j_f =  elm_fates%fates(ci)%bc_pconst%j_uptake(j)
+                  elm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) = & 
+                       elm_fates%fates(ci)%bc_in(s)%plant_n_uptake_flux(f,j_f) + & 
                        (plant_nh4demand_vr_fates(f,j) * fpg_nh4_vr(c,j) + & 
                         plant_no3demand_vr_fates(f,j) * fpg_no3_vr(c,j)) * dzsoi_decomp(j) * dt
 
-                  alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) = & 
-                       alm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) + & 
+                  elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) = & 
+                       elm_fates%fates(ci)%bc_in(s)%plant_p_uptake_flux(f,j_f) + & 
                        (plant_pdemand_vr_fates(f,j) * fpg_p_vr(c,j)) * dzsoi_decomp(j) * dt
                   
                end do

@@ -618,6 +618,8 @@ module ColumnDataType
     procedure, public :: SetValues  => col_cf_setvalues
     procedure, public :: ZeroDWT    => col_cf_zerodwt
     procedure, public :: Clean      => col_cf_clean
+    procedure, public :: ZeroUpscaled => col_cf_zero_upscaled_veg
+    procedure, public :: ZeroUpscaledRR => col_cf_zero_upscaled_veg_rr
     procedure, private ::              col_cf_summary_pf ! summary calculations for PFLOTRAN interface
   end type column_carbon_flux
   
@@ -804,6 +806,7 @@ module ColumnDataType
     procedure, public :: Init       => col_nf_init
     procedure, public :: Restart    => col_nf_restart
     procedure, public :: SetValues  => col_nf_setvalues
+    procedure, public :: ZeroUpscaled => col_nf_zero_upscaled_veg
     procedure, public :: ZeroDWT    => col_nf_zerodwt
     procedure, public :: Summary    => col_nf_summary
     procedure, public :: SummaryInt => col_nf_summaryint
@@ -936,6 +939,7 @@ module ColumnDataType
     procedure, public :: Init       => col_pf_init
     procedure, public :: Restart    => col_pf_restart
     procedure, public :: SetValues  => col_pf_setvalues
+    procedure, public :: ZeroUpscaled => col_pf_zero_upscaled_veg
     procedure, public :: ZeroDWT    => col_pf_zerodwt
     procedure, public :: Summary    => col_pf_summary
     procedure, public :: SummaryInt => col_pf_summaryint
@@ -7307,6 +7311,67 @@ contains
     
   end subroutine col_cf_setvalues
   
+  subroutine col_cf_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+    
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation fluxes in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_flux) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%gpp(c) = 0._r8
+       this%ar(c) = 0._r8
+       this%npp(c) = 0._r8
+       this%vegfire(c) = 0._r8
+       this%wood_harvestc(c) = 0._r8
+       this%fire_closs_p2c(c) = 0._r8
+       !this%litfall(c) = 0._r8 (overwritten)
+       this%hrv_xsmrpool_to_atm(c) = 0._r8
+
+    end do
+
+
+  end subroutine col_cf_zero_upscaled_veg
+
+  subroutine col_cf_zero_upscaled_veg_rr(this, bounds, num_soilc, filter_soilc)
+    
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation fluxes in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_carbon_flux) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%rr(c) = 0._r8   ! This counterpart is
+                            ! actually in SummaryRR
+    end do
+
+
+  end subroutine col_cf_zero_upscaled_veg_rr
+
+
+  
   !-----------------------------------------------------------------------
   subroutine col_cf_zerodwt( this, bounds )
     !
@@ -8922,6 +8987,33 @@ contains
 
   end subroutine col_nf_zerodwt
   
+
+  subroutine col_nf_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation fluxes in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_nitrogen_flux) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%fire_nloss_p2c(c) = 0._r8
+       this%wood_harvestn(c)  = 0._r8
+    end do
+
+
+  end subroutine col_nf_zero_upscaled_veg
+    
   !-----------------------------------------------------------------------
   subroutine col_nf_summary(this, bounds, num_soilc, filter_soilc)
     !
@@ -10452,6 +10544,32 @@ contains
     end do
   
   end subroutine col_pf_zerodwt
+
+  subroutine col_pf_zero_upscaled_veg(this, bounds, num_soilc, filter_soilc)
+
+    !
+    ! !DESCRIPTION:
+    ! As an alternative to summarizing vegetation fluxes in CTC and then
+    ! upscaling to the column level, we just zero them when FATES is turned on
+    ! (or other potential models).
+    !
+    ! !ARGUMENTS:
+    class(column_phosphorus_flux) :: this
+    type(bounds_type)      , intent(in)    :: bounds          
+    integer                , intent(in)    :: num_soilc       ! number of soil columns in filter
+    integer                , intent(in)    :: filter_soilc(:) ! filter for soil columns
+    ! locals
+    integer :: fc
+    integer :: c
+
+    do fc = 1,num_soilc
+       c = filter_soilc(fc)
+       this%fire_ploss_p2c(c) = 0._r8
+       this%wood_harvestp(c)  = 0._r8
+    end do
+
+
+  end subroutine col_pf_zero_upscaled_veg
   
   !-----------------------------------------------------------------------
   subroutine col_pf_summary(this, bounds, num_soilc, filter_soilc)

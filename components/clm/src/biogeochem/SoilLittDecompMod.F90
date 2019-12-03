@@ -39,6 +39,7 @@ module SoilLittDecompMod
   use ColumnDataType         , only : col_ns, col_nf
   use ColumnDataType         , only : col_ps, col_pf
   use VegetationDataType     , only : veg_ps, veg_pf
+  use CLMFatesInterfaceMod   , only : hlm_fates_interface_type
   ! clm interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
   use clm_varctl             , only : use_fates
@@ -101,7 +102,8 @@ contains
                 cnstate_vars, ch4_vars,                         &
                 carbonstate_vars, carbonflux_vars,              &
                 nitrogenstate_vars, nitrogenflux_vars,          &
-                phosphorusstate_vars,phosphorusflux_vars)
+                phosphorusstate_vars,phosphorusflux_vars,       &
+                elm_fates)
 
     !-----------------------------------------------------------------------------
     ! DESCRIPTION:
@@ -140,7 +142,8 @@ contains
     ! add phosphorus --
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
-
+    type(hlm_fates_interface_type), intent(inout), optional :: elm_fates
+    
 !    type(crop_type)          , intent(in)    :: crop_vars
     !
     ! !LOCAL VARIABLES:
@@ -415,7 +418,8 @@ contains
                carbonstate_vars, carbonflux_vars,                   &
                nitrogenstate_vars, nitrogenflux_vars,               &
                phosphorusstate_vars,phosphorusflux_vars,            &
-               soilstate_vars,waterstate_vars)
+               soilstate_vars,waterstate_vars,                      &
+               elm_fates)
       call t_stopf('CNAllocation - phase-2')
 
       

@@ -822,13 +822,6 @@ contains
       do s = 1, this%fates(nc)%nsites
          c = this%f2hmap(nc)%fcolumn(s)
 
-!         nld_si = this%fates(nc)%bc_in(s)%nlevdecomp
-
-         ! These arrays have already been zero'd and and may have other source sinks
-         print*,"nlevdecomp",nlevdecomp,c,i_met_lit
-         print*,shape(col_cf%decomp_cpools_sourcesink)
-         print*,col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit)
-         
          col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
               col_cf%decomp_cpools_sourcesink(c,1:nlevdecomp,i_met_lit) + & 
               this%fates(nc)%bc_out(s)%litt_flux_lab_c_si(1:nlevdecomp) * dtime

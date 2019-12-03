@@ -43,7 +43,7 @@ module EcosystemDynMod
   use VegetationDataType  , only : veg_cf, c13_veg_cf, c14_veg_cf
   use VegetationDataType  , only : veg_ns, veg_nf
   use VegetationDataType  , only : veg_ps, veg_pf
-  use clm_instMod         , only : alm_fates
+  use CLMFatesInterfaceMod  , only : hlm_fates_interface_type
 
   ! bgc interface & pflotran
   use clm_varctl          , only : use_clm_interface, use_clm_bgc, use_pflotran, pf_cmode, pf_hmode
@@ -69,7 +69,7 @@ module EcosystemDynMod
 contains
 
   !-----------------------------------------------------------------------
-  subroutine EcosystemDynInit(bounds)
+  subroutine EcosystemDynInit(bounds, elm_fates)
     !
     ! !DESCRIPTION:
     ! Initialzation of the CN Ecosystem dynamics.
@@ -82,10 +82,12 @@ contains
     !
     ! !ARGUMENTS:
     implicit none
-    type(bounds_type), intent(in) :: bounds      
+    type(bounds_type), intent(in) :: bounds
+    type(hlm_fates_interface_type), intent(in) :: elm_fates
     !-----------------------------------------------------------------------
 
-    call AllocationInit (bounds)
+    print*,"CALLING allocationinit"
+    call AllocationInit (bounds, elm_fates)
 
     if(use_fates) return
 
@@ -248,6 +250,17 @@ contains
        call veg_ns%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ns)
        call veg_pf%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_pf)
        call veg_ps%Summary(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, col_ps)
+    else
+       ! In this scenario, we simply zero all of the 
+       ! column level variables that would had been upscaled
+       ! in the veg summary with p2c
+       call col_cs%ZeroUpscaled(bounds,num_soilc, filter_soilc)
+       call col_ns%ZeroUpscaled(bounds,num_soilc, filter_soilc)
+       call col_ps%ZeroUpscaled(bounds,num_soilc, filter_soilc)
+       call col_cf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
+       call col_nf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
+       call col_pf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
+       
     end if
 
     call col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
@@ -513,7 +526,7 @@ contains
        atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
        canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
        photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-       phosphorusflux_vars, phosphorusstate_vars, sedflux_vars)
+       phosphorusflux_vars, phosphorusstate_vars, sedflux_vars, elm_fates)
     !-------------------------------------------------------------------
     ! bgc interface
     ! Phase-2 of EcosystemDynNoLeaching
@@ -547,6 +560,7 @@ contains
     use WoodProductsMod      , only: WoodProducts
     use CropHarvestPoolsMod    , only: CropHarvestPools
     use SoilLittVertTranspMod, only: SoilLittVertTransp
+   
 !    use DecompCascadeBGCMod  , only: decomp_rate_constants_bgc
 !    use DecompCascadeCNMod   , only: decomp_rate_constants_cn
     use CropType               , only: crop_type
@@ -591,7 +605,7 @@ contains
     type(phosphorusflux_type)  , intent(inout) :: phosphorusflux_vars
     type(phosphorusstate_type) , intent(inout) :: phosphorusstate_vars
     type(sedflux_type)       , intent(in)    :: sedflux_vars
-
+    type(hlm_fates_interface_type), intent(inout) :: elm_fates
     !-----------------------------------------------------------------------
 
     ! Call the main CN routines
@@ -609,7 +623,8 @@ contains
             cnstate_vars, ch4_vars,                      &
             carbonstate_vars, carbonflux_vars,           &
             nitrogenstate_vars, nitrogenflux_vars,       &
-            phosphorusstate_vars,phosphorusflux_vars)
+            phosphorusstate_vars,phosphorusflux_vars,    &
+            elm_fates)
     end if !if(.not.use_clm_interface)
     call t_stopf('SoilLittDecompAlloc')
 
@@ -658,15 +673,16 @@ contains
         call GrowthResp(num_soilp, filter_soilp, &
               carbonflux_vars)
         call t_stopf('GrowthResp')
-        
+
         call veg_cf%SummaryRR(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, col_cf)
         if(use_c13) then
-            call c13_veg_cf%SummaryRR(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, c13_col_cf)
+           call c13_veg_cf%SummaryRR(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, c13_col_cf)
         endif
         if(use_c14) then
-            call c14_veg_cf%SummaryRR(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, c14_col_cf)
+           call c14_veg_cf%SummaryRR(bounds, num_soilp, filter_soilp, num_soilc, filter_soilc, c14_col_cf)
         endif
-        
+
+     
         !--------------------------------------------
         ! Dynamic Roots
         !--------------------------------------------
@@ -729,12 +745,20 @@ contains
                   cnstate_vars, carbonflux_vars, carbonstate_vars, &
                   isotopeflux_vars=c14_carbonflux_vars, isotopestate_vars=c14_carbonstate_vars, &
                   isotope='c14', isocol_cs=c14_col_cs, isoveg_cs=c14_veg_cs, isocol_cf=c14_col_cf, isoveg_cf=c14_veg_cf)
-        end if
+         end if
+         
     end if  ! if(.not.use_fates)
 
-   ! Update the FATES litter fluxes into the sourcesink pools
-   if(use_fates) call alm_fates%UpdateLitterFluxes(bounds)
+    if(use_fates) then
+       ! In this scenario, we simply zero all of the 
+       ! column level variables that would had been upscaled
+       ! in the veg summary with p2c
+       call col_cf%ZeroUpscaledRR(bounds,num_soilc, filter_soilc)
 
+       ! Transfer fates litter fluxes into ELM source arrays
+       call elm_fates%UpdateLitterFluxes(bounds)
+    end if
+    
    call CarbonStateUpdate1(bounds, num_soilc, filter_soilc, num_soilp, filter_soilp, &
          crop_vars, col_cs, veg_cs, col_cf, veg_cf)
    
@@ -920,7 +944,6 @@ contains
                cnstate_vars)
        end if
 
-       call col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
        call veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
        if( use_c13 ) then
           call c13_col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
@@ -931,8 +954,10 @@ contains
           call c14_veg_cf%SummaryCH4(bounds, num_soilp, filter_soilp)
        endif    
 
-   end if !end of if not use_fates block
+    end if !end of if not use_fates block
 
+    call col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)
+    
 
 
 end subroutine EcosystemDynNoLeaching2

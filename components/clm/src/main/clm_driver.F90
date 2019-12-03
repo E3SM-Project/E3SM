@@ -572,7 +572,7 @@ contains
        call t_stopf('fireinterp')       
     end if
     
-    if (use_cn .or. use_fates) then
+    if (use_cn) then
        ! ============================================================================
        ! Update dynamic N deposition field, on albedo timestep
        ! currently being done outside clumps loop, but no reason why it couldn't be
@@ -1083,7 +1083,7 @@ contains
                    atm2lnd_vars, waterstate_vars, waterflux_vars,                           &
                    canopystate_vars, soilstate_vars, temperature_vars, crop_vars, ch4_vars, &
                    photosyns_vars, soilhydrology_vars, energyflux_vars,          &
-                   phosphorusflux_vars, phosphorusstate_vars, sedflux_vars)
+                   phosphorusflux_vars, phosphorusstate_vars, sedflux_vars, alm_fates)
 
              !===========================================================================================
              ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
@@ -1105,61 +1105,60 @@ contains
 
           end if  ! end of if-use_cn   or if-use_fates
        end if ! end of is_active_betr_bgc
-    
-       ! If FATES and nutrient fluxes are both enabled, send those
-       ! fluxes to the FATES model and have it unpack those fluxes
-       ! into its cohort structure. It will integrated these
-       ! fluxes over the day.
-
+       
        call t_stopf('ecosysdyn')
+       
+       ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
+       call t_startf('depvel')
+       if(.not.use_fates)then
+          call depvel_compute(bounds_clump, &
+               atm2lnd_vars, canopystate_vars, waterstate_vars, frictionvel_vars, &
+               photosyns_vars, drydepvel_vars)
+       end if
+       call t_stopf('depvel')
 
-         ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
-         call t_startf('depvel')
-         call depvel_compute(bounds_clump, &
-              atm2lnd_vars, canopystate_vars, waterstate_vars, frictionvel_vars, &
-              photosyns_vars, drydepvel_vars)
-         call t_stopf('depvel')
-
-         if (use_betr)then
-           call ep_betr%CalcSmpL(bounds_clump, 1, nlevsoi, filter(nc)%num_soilc, filter(nc)%soilc, &
-              col_es%t_soisno(bounds_clump%begc:bounds_clump%endc,1:nlevsoi), &
-              soilstate_vars, waterstate_vars, soil_water_retention_curve)
-
-           call ep_betr%SetBiophysForcing(bounds_clump, col_pp, veg_pp,                         &
-             carbonflux_vars=carbonflux_vars,                                                &
-             waterstate_vars=waterstate_vars,         waterflux_vars=waterflux_vars,         &
-             temperature_vars=temperature_vars,       soilhydrology_vars=soilhydrology_vars, &
-             atm2lnd_vars=atm2lnd_vars,               canopystate_vars=canopystate_vars,     &
-             chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
-             cnstate_vars = cnstate_vars, carbonstate_vars=carbonstate_vars)
-
-           if(is_active_betr_bgc)then
+       if (use_betr)then
+          call ep_betr%CalcSmpL(bounds_clump, 1, nlevsoi, filter(nc)%num_soilc, filter(nc)%soilc, &
+               col_es%t_soisno(bounds_clump%begc:bounds_clump%endc,1:nlevsoi), &
+               soilstate_vars, waterstate_vars, soil_water_retention_curve)
+          
+          call ep_betr%SetBiophysForcing(bounds_clump, col_pp, veg_pp,                         &
+               carbonflux_vars=carbonflux_vars,                                                &
+               waterstate_vars=waterstate_vars,         waterflux_vars=waterflux_vars,         &
+               temperature_vars=temperature_vars,       soilhydrology_vars=soilhydrology_vars, &
+               atm2lnd_vars=atm2lnd_vars,               canopystate_vars=canopystate_vars,     &
+               chemstate_vars=chemstate_vars,           soilstate_vars=soilstate_vars, &
+               cnstate_vars = cnstate_vars, carbonstate_vars=carbonstate_vars)
+          
+          if(is_active_betr_bgc)then
              call ep_betr%PlantSoilBGCSend(bounds_clump, col_pp, veg_pp, &
-               filter(nc)%num_soilc,  filter(nc)%soilc, cnstate_vars, &
-               carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars,&
-               PlantMicKinetics_vars)
-           endif
-           call ep_betr%StepWithoutDrainage(bounds_clump, col_pp, veg_pp)
-         endif  !end use_betr
+                  filter(nc)%num_soilc,  filter(nc)%soilc, cnstate_vars, &
+                  carbonflux_vars, c13_carbonflux_vars, c14_carbonflux_vars, nitrogenflux_vars, phosphorusflux_vars,&
+                  PlantMicKinetics_vars)
+          endif
+          call ep_betr%StepWithoutDrainage(bounds_clump, col_pp, veg_pp)
+       endif  !end use_betr
          
-         if (use_lch4 .and. .not. is_active_betr_bgc) then
-           !warning: do not call ch4 before AnnualUpdate, which will fail the ch4 model
-           call t_startf('ch4')
-           call CH4 (bounds_clump,                                                                  &
+       if (use_lch4 .and. .not. is_active_betr_bgc) then
+          !warning: do not call ch4 before AnnualUpdate, which will fail the ch4 model
+          call t_startf('ch4')
+          call CH4 (bounds_clump,                                                                  &
                filter(nc)%num_soilc, filter(nc)%soilc,                                             &
                filter(nc)%num_lakec, filter(nc)%lakec,                                             &
                filter(nc)%num_soilp, filter(nc)%soilp,                                             &
                atm2lnd_vars, lakestate_vars, canopystate_vars, soilstate_vars, soilhydrology_vars, &
                temperature_vars, energyflux_vars, waterstate_vars, waterflux_vars,                 &
                carbonstate_vars, carbonflux_vars, nitrogenflux_vars, ch4_vars, lnd2atm_vars)
-           call t_stopf('ch4')
-         end if
-
+          call t_stopf('ch4')
+       end if
+       
        ! Dry Deposition of chemical tracers (Wesely (1998) parameterizaion)
        call t_startf('depvel')
-       call depvel_compute(bounds_clump, &
-            atm2lnd_vars, canopystate_vars, waterstate_vars, frictionvel_vars, &
-            photosyns_vars, drydepvel_vars)
+       if(.not.use_fates)then
+          call depvel_compute(bounds_clump, &
+               atm2lnd_vars, canopystate_vars, waterstate_vars, frictionvel_vars, &
+               photosyns_vars, drydepvel_vars)
+       end if
        call t_stopf('depvel')     
        ! ============================================================================
        ! Calculate soil/snow hydrology with drainage (subsurface runoff)
