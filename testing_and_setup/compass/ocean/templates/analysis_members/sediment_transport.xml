@@ -45,7 +45,7 @@
 				<member name="velocityMeridional" type="var"/>
 				<member name="sedimentFallVelocity" type="var"/>
 				<member name="sedimentErosionFlux" type="var"/>
-        <member name="sedimentDepositionFlux" type="var"/>
+				<member name="sedimentDepositionFlux" type="var"/>
 				<member name="sedimentBedloadX" type="var"/>
 				<member name="sedimentBedloadY" type="var"/>
 				<member name="sedimentFluxVAX" type="var"/>
