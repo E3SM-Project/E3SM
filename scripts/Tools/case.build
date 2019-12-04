@@ -46,7 +46,7 @@ from standard_script_setup import *
 
 import CIME.build as build
 from CIME.case            import Case
-from CIME.utils           import find_system_test
+from CIME.utils           import find_system_test, get_model
 from CIME.test_status     import *
 
 ###############################################################################
@@ -61,6 +61,18 @@ def parse_command_line(args, description):
     parser.add_argument("caseroot", nargs="?", default=os.getcwd(),
                         help="Case directory to build.\n"
                         "Default is current directory.")
+
+    if get_model() == "e3sm":
+        parser.add_argument("--use-old", action="store_true",
+                            help="Use old Makefile build system (not cmake)")
+
+        parser.add_argument("--ninja", action="store_true",
+                            help="Use ninja backed for CMake (instead of gmake). "
+                            "The ninja backend is better at scanning fortran dependencies but "
+                            "seems to be less reliable across different platforms and compilers.")
+
+    parser.add_argument("--dry-run", action="store_true",
+                        help="Just print the cmake and ninja commands.")
 
     mutex_group = parser.add_mutually_exclusive_group()
 
@@ -106,12 +118,17 @@ def parse_command_line(args, description):
     cleanlist = args.clean if args.clean is None or len(args.clean) else comps
     buildlist = None if args.build is None or len(args.build) == 0 else args.build
 
-    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, not args.skip_provenance_check
+    if get_model() != "e3sm":
+        args.use_old = False
+        args.ninja   = False
+
+    return args.caseroot, args.sharedlib_only, args.model_only, cleanlist, args.clean_all, buildlist, clean_depends, not args.skip_provenance_check, args.use_old, args.ninja, args.dry_run
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist,clean_depends, save_build_provenance = parse_command_line(sys.argv, description)
+    caseroot, sharedlib_only, model_only, cleanlist, clean_all, buildlist,clean_depends, save_build_provenance, use_old, ninja, dry_run = \
+        parse_command_line(sys.argv, description)
 
     success = True
     with Case(caseroot, read_only=False) as case:
@@ -135,11 +152,12 @@ def _main_func(description):
                 raise
 
             expect(buildlist is None, "Build lists don't work with tests")
-            success = test.build(sharedlib_only=sharedlib_only, model_only=model_only)
+            success = test.build(sharedlib_only=sharedlib_only, model_only=model_only, old_build=use_old, ninja=ninja, dry_run=dry_run)
         else:
             success = build.case_build(caseroot, case=case, sharedlib_only=sharedlib_only,
                                        model_only=model_only, buildlist=buildlist,
-                                       save_build_provenance=save_build_provenance)
+                                       save_build_provenance=save_build_provenance,
+                                       use_old=use_old, ninja=ninja, dry_run=dry_run)
 
     sys.exit(0 if success else 1)
 

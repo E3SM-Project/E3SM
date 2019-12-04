@@ -101,7 +101,12 @@ class CMakeMacroWriter(MacroWriterBase):
         >>> str(s.getvalue())
         'if("foo" STREQUAL "bar")\\n'
         """
-        self.write_line('if("' + left + '" STREQUAL "' + right + '")')
+        if right.startswith("!"):
+            right = right.lstrip("!")
+            not_str = "NOT "
+        else:
+            not_str = ""
+        self.write_line('if({}"'.format(not_str) + left + '" STREQUAL "' + right + '")')
         self.indent_right()
 
     def end_ifeq(self):

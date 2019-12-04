@@ -6,7 +6,7 @@ for the same component
 """
 
 from standard_script_setup import *
-from CIME.utils import expect, run_cmd_no_fail
+from CIME.utils import run_cmd_no_fail
 
 import argparse, sys, os, gzip
 
@@ -41,7 +41,7 @@ OR
 ###############################################################################
 def is_compile_line(line):
 ###############################################################################
-    return line.count("-I") > 1 and not line.startswith("gmake ") and not line.startswith("make ")
+    return line.count("-I") > 0 and not line.startswith("gmake ") and not line.startswith("make ")
 
 ###############################################################################
 def get_compile_lines_from_log(logfile_text):
@@ -65,13 +65,18 @@ def parse_log(logfile_text):
         for item in items:
             for ending in _SRCFILE_ENDINGS:
                 if item.endswith(ending):
-                    expect(compiled_file is None, "Found multiple things that look like files in '{}'".format(compile_line))
-                    compiled_file = item
+                    #expect(compiled_file is None, "Found multiple things that look like files in '{}'".format(compile_line))
+                    compiled_file = os.path.basename(item)
+                    break
+
+            if compiled_file:
+                break
 
         if compiled_file is None:
             print("WARNING: Found nothing that looks like a file in '{}'".format(compile_line))
         else:
-            expect(compiled_file not in result, "Found multiple compilations of {}?".format(compiled_file))
+            if compiled_file in result:
+                print("WARNING: Found multiple compilations of {}".format(compiled_file))
             result[compiled_file] = items
 
     # TODO - Need to capture link lines too
@@ -131,12 +136,12 @@ def log_diff(log1, log2, repls, ignore_includes):
 
         # Let's not worry about order yet even though some flags are order-sensitive
         for flag in missing:
-            if not (ignore_includes and flag.startswith("-I")):
+            if not (ignore_includes and flag.startswith("-I")) and item not in flag:
                 print("  Missing flag {}".format(flag))
                 are_same = False
 
         for flag in extra:
-            if flag != "-o" and not flag.startswith("CMakeFiles") and not (ignore_includes and flag.startswith("-I")):
+            if flag != "-o" and not flag.startswith("CMakeFiles") and not (ignore_includes and flag.startswith("-I")) and item not in flag:
                 print("  Extra flag {}".format(flag))
                 are_same = False
 
