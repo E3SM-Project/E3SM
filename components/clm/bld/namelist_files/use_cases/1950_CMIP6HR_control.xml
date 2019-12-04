@@ -18,7 +18,6 @@
 <stream_year_last_popdens  phys="clm4_5" use_cn=".true." ndepsrc="stream" >1955</stream_year_last_popdens>
 
 <!-- CMIP6 HighResMIP compsets -->
-<fsurdat hgrid="ne120np4" >lnd/clm2/surfdata_map/surfdata_ne120np4_simyr1950_c20180108.nc </fsurdat>
 <finidat hgrid="ne120np4" >lnd/clm2/initdata_map/clmi.A_WCYCL1950.ne120np4_oRRS18to6v3_ICG_simyr1950_c20180124.nc </finidat>
 
 </namelist_defaults>
