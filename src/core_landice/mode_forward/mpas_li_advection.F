@@ -938,7 +938,7 @@ module li_advection
            config_thermal_solver
 
       integer, pointer :: &
-           nCellsSolve                ! number of locally owned cells
+           nCells                     ! number of cells
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,             & ! interior ice temperature
@@ -961,7 +961,7 @@ module li_advection
       integer :: iCell, iTracer
 
       ! get dimensions
-      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       ! get arrays from mesh pool
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
@@ -1001,7 +1001,7 @@ module li_advection
 
          ! Rather than assume that enthalpy is up to date, recompute it from temperature and waterfrac
 
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
 
             call li_temperature_to_enthalpy_kelvin(&
                  layerCenterSigma,      &
