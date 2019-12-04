@@ -359,7 +359,7 @@ module li_calving
       ! These are needed to initialize the temperature profile in restored columns.
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,           &   ! interior ice temperature
-           waterfrac                  ! interior water fraction
+           waterFrac                  ! interior water fraction
 
       real (kind=RKIND), dimension(:), pointer :: &
            surfaceAirTemperature, &   ! surface air temperature
@@ -406,7 +406,7 @@ module li_calving
 
          ! get required fields from the thermal pool
          call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-         call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+         call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
          call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
          call mpas_pool_get_array(thermalPool, 'surfaceTemperature', surfaceTemperature)
          call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
@@ -485,7 +485,7 @@ module li_calving
                        thickness(iCell),              &
                        surfaceAirTemperature(iCell),  &
                        temperature(:,iCell),          &
-                       waterfrac(:,iCell),            &
+                       waterFrac(:,iCell),            &
                        surfaceTemperature(iCell),     &
                        basalTemperature(iCell))
 
