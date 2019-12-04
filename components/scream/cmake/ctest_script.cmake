@@ -4,7 +4,7 @@ set(CTEST_BUILD_NAME "scream_unit_tests${BUILD_NAME_MOD}")
 
 get_filename_component(working_dir ${CMAKE_CURRENT_LIST_DIR} DIRECTORY)
 set(CTEST_SOURCE_DIRECTORY "${working_dir}")
-set(CTEST_BINARY_DIRECTORY "${working_dir}/ctest-build")
+set(CTEST_BINARY_DIRECTORY "${working_dir}/ctest-build/${BUILD_NAME_MOD}")
 
 if(NOT DEFINED dashboard_model)
   set(dashboard_model Experimental)
@@ -23,7 +23,7 @@ ctest_configure()
 if (DEFINED ENV{CTEST_PARALLEL_LEVEL})
   ctest_build(FLAGS "-j$ENV{CTEST_PARALLEL_LEVEL}" RETURN_VALUE BUILD_SUCCESS)
 else()
-  ctest_build(FLAGS "-j8" RETURN_VALUE BUILD_SUCCESS)
+  ctest_build(FLAGS "-j4" RETURN_VALUE BUILD_SUCCESS)
 endif()
 
 # Need this code so that build errors don't get buried
