@@ -2012,7 +2012,6 @@ contains
        units    = 'kg m-2 s-1'
        attname  = 'Flrl_demand'
        call metadata_set(attname, longname, stdname, units)
-    endif
     call seq_flds_add(l2x_fluxes,'Flrl_Tqsur')
     call seq_flds_add(x2r_fluxes,'Flrl_Tqsur')
     longname = 'Temperature of surface runoff'
@@ -2028,6 +2027,7 @@ contains
     units    = 'Kelvin'
     attname  = 'Flrl_Tqsub'
     call metadata_set(attname, longname, stdname, units)
+    endif
 
     ! Currently only the CESM land and runoff models treat irrigation as a separate
     ! field: in E3SM, this field is folded in to the other runoff fields. Eventually,
