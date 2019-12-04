@@ -52,7 +52,8 @@ module li_thermal
              li_init_linear_temperature_in_column,  &
              li_temperature_to_enthalpy, li_enthalpy_to_temperature, &
              li_temperature_to_enthalpy_kelvin, li_enthalpy_to_temperature_kelvin, &
-             li_compute_pressure_melting_point_fields
+             li_compute_pressure_melting_point_fields, &
+             li_basal_friction, li_heat_dissipation_sia
 
    !--------------------------------------------------------------------
    !
@@ -867,19 +868,9 @@ module li_thermal
          enddo
 
 
-         ! === Calculate mechanical heating terms ===
-
-         if (trim(config_velocity_solver) == 'sia') then
-            ! Compute interior heat dissipation
-            call heat_dissipation_sia(domain, err_tmp)
-            err = ior(err, err_tmp)
-         endif   ! sia
-         ! (FO dissipation is calculated within dycore)
-
-         ! Compute heat flux due to basal friction
-         !   appropriate for SIA or FO dycore, assuming Taub=beta*ub
-         call basal_friction(domain, err_tmp)
-         err = ior(err, err_tmp)
+         ! === mechanical heating terms now calculated in li_velocity_solve ===
+         ! (this makes restarts easier because just heatDissipation and basalFrictionFlux
+         !  need to be restart variables, rather than all of their inputs.)
 
 
          ! === Update surfaceTemperature if using a lapse rate ===
@@ -1393,7 +1384,7 @@ module li_thermal
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  !  routine heat_dissipation_sia
+!  !  routine li_heat_dissipation_sia
 !
 !> \brief MPAS land ice heat dissipation for SIA velocity solver
 !> \author William Lipscomb
@@ -1403,7 +1394,7 @@ module li_thermal
 !>  in the ice interior, based on the shallow-ice approximation.
 !-----------------------------------------------------------------------
 
-  subroutine heat_dissipation_sia(domain, err)
+  subroutine li_heat_dissipation_sia(domain, err)
 
      !-----------------------------------------------------------------
      ! input/output variables
@@ -1649,12 +1640,12 @@ module li_thermal
         block => block % next
      enddo  ! associated(block)
 
-   end subroutine heat_dissipation_sia
+   end subroutine li_heat_dissipation_sia
 
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
-!  !  routine basal_friction
+!  !  routine li_basal_friction
 !
 !> \brief MPAS heat flux due to basal friction for SIA dynamics
 !> \author William Lipscomb
@@ -1664,7 +1655,7 @@ module li_thermal
 !>  base of the ice, based on the shallow-ice approximation.
 !-----------------------------------------------------------------------
 
-   subroutine basal_friction(domain, err)
+   subroutine li_basal_friction(domain, err)
 
      !-----------------------------------------------------------------
      ! input/output variables
@@ -1772,7 +1763,7 @@ module li_thermal
         block => block % next
      enddo  ! associated(block)
 
-  end subroutine basal_friction
+  end subroutine li_basal_friction
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
