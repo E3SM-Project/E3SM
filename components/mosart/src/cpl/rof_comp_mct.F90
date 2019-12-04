@@ -36,7 +36,6 @@ module rof_comp_mct
                                 index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
                                 index_x2r_Flrl_rofdto, index_x2r_Flrl_demand, &
-                                index_x2r_Flrl_rofdto, &
                                 index_x2r_Flrl_Tqsur, index_x2r_Flrl_Tqsub, &
                                 index_x2r_Sa_tbot, index_x2r_Sa_pbot, &
                                 index_x2r_Sa_u   , index_x2r_Sa_v   , &
@@ -265,10 +264,10 @@ contains
        call mct_aVect_init(x2r_r, rList=seq_flds_x2r_fields, lsize=lsize)
        call mct_aVect_zero(x2r_r)
        
-       ! Initialize lnd -> mosart attribute vector        
+       ! Initialize lnd -> mosart attribute vector
        call mct_aVect_init(x2r_r, rList=seq_flds_x2r_fields, lsize=lsize)
        call mct_aVect_zero(x2r_r)
-       
+
        ! Initialize mosart -> ocn attribute vector        
        call mct_aVect_init(r2x_r, rList=seq_flds_r2x_fields, lsize=lsize)
        call mct_aVect_zero(r2x_r) 
