@@ -1437,7 +1437,7 @@
 <statefreq> 480 </statefreq>
 <integration> "explicit" </integration>
 
-<cubed_sphere_map>0</cubed_sphere_map>
+<cubed_sphere_map>-1</cubed_sphere_map>
 <cubed_sphere_map hgrid="ne1024np4">2</cubed_sphere_map>
 
 <mesh_file>/dev/null</mesh_file>
