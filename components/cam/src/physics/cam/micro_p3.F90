@@ -3699,6 +3699,15 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    real(rtype) :: dum1, dum4, dum5, dum6
    integer dumi, dumii, dumjj, dumzz
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call ice_sedimentation_f(kts,kte,ktop,kbot,kdir,    &
+           rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
+           qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend)
+      return
+   endif
+#endif
+
    log_qxpresent = .false.  !note: this applies to ice category 'iice' only
    k_qxtop       = kbot
 

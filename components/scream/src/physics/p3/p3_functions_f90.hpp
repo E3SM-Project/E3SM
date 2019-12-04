@@ -305,7 +305,7 @@ struct CloudSedData
   Real prt_liq;
 
   CloudSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
-               Real dt_, Real odt_, bool log_predictNc_, Real prt_liq,
+               Real dt_, Real odt_, bool log_predictNc_, Real prt_liq_,
                const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
 
   // deep copy
@@ -327,6 +327,49 @@ void cloud_sedimentation_f(
   Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
   Real dt, Real odt, bool log_predictNc,
   Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct IceSedData
+{
+  static constexpr size_t NUM_ARRAYS = 15;
+
+  // Inputs
+  Int kts, kte, ktop, kbot, kdir;
+  Real *rho, *inv_rho, *rhofaci, *icldm, *inv_dzq;
+  Real dt, odt;
+
+  // In/out
+  Real *qitot, *qitot_incld, *nitot, *nitot_incld, *qirim, *qirim_incld, *birim, *birim_incld, *qi_tend, *ni_tend;
+  Real prt_sol;
+
+  IceSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+             Real dt_, Real odt_, Real prt_sol_,
+             const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  IceSedData(const IceSedData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+
+void ice_sedimentation(IceSedData& d);
+
+extern "C" {
+
+void ice_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* icldm, Real* inv_dzq,
+  Real dt, Real odt,
+  Real* qitot, Real* qitot_incld, Real* nitot, Real* qirim, Real* qirim_incld, Real* birim, Real* birim_incld,
+  Real* nitot_incld, Real* prt_sol, Real* qi_tend, Real* ni_tend);
 
 }
 
