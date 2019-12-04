@@ -227,6 +227,7 @@ contains
       use mpas_vector_reconstruction
       use li_mask
       use li_advection
+      use li_thermal
 
       !-----------------------------------------------------------------
       ! input variables
@@ -312,7 +313,7 @@ contains
          config_do_velocity_reconstruction_for_external_dycore)
       call mpas_pool_get_config(liConfigs, 'config_print_velocity_cleanup_details', config_print_velocity_cleanup_details)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
-          call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
       uphillMarginEdgesFixed = 0
 
@@ -669,6 +670,21 @@ contains
 
          block => block % next
       end do
+
+      ! calculate velocity-related thermal source term fields
+      ! (do it here to make restarts easier - this way only the fields need to be restart
+      !  variables, rather than the fields that are input to the calculations.)
+      if (solveVelo) then
+         ! (on a restart value, do not try to calculate these - instead use the fields in the restart file)
+         call li_basal_friction(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+         if (trim(config_velocity_solver) == 'sia') then
+            ! For FO solver, heatDissipation is passed back from Albany
+            call li_heat_dissipation_sia(domain, err_tmp)
+            err = ior(err, err_tmp)
+         endif
+      endif
 
       ! === error check
       if (err > 0) then
