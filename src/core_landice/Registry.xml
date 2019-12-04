@@ -92,6 +92,10 @@
 		            description="If true, then multiply beta by effective pressure before passing to Albany.  This allows, e.g., a Weertman basal friction law with an effective pressure term.  Note that basal friction still needs to be selected in Albany xml file."
 		            possible_values=".true. or .false."
 		/>
+		<nml_option name="config_beta_thawed_only" type="logical" default_value=".false." units="unitless"
+		            description="If true, then beta is zeroed wherever the basal temperature is below the pressure-melting temperature"
+		            possible_values=".true. or .false."
+		/>
         <nml_option name="config_unrealistic_velocity" type="real" default_value="0.01592356685" units="m s^{-1}"
 		            description="Ice is removed at any locations with surface speed faster than this value and sent to the calving flux. The presence of icebergs can lead to unrealistically large velocities.  A simple method to remove icebergs is to remove ice where the velocity is faster than an arbitrarily large value."
 		            possible_values="Any positive, real number."
@@ -476,6 +480,8 @@
 
                 <package name="ismip6Melt" description="This package includes variables required for the ISMIP6 melt parameterization."/>
 
+                <package name="thermal" description="This package includes variables required for the thermal solver."/>
+
 	</packages>
 
 
@@ -528,7 +534,7 @@
 			<var name="meshDensity"/>
 		</stream>
 
-<!-- WHL: When using the enthalpy heat-balance solver, will need to add waterfrac to the streams with temperature. -->
+<!-- WHL: When using the enthalpy heat-balance solver, will need to add waterFrac to the streams with temperature. -->
 		<stream name="input"
 				type="input"
 				immutable="true"
@@ -540,6 +546,7 @@
 			<var name="basalWaterThickness"/>
 			<var name="bedTopography"/>
 			<var name="temperature"/>
+			<var name="waterFrac"/>
 			<var name="sfcMassBal"/>
                         <var name="floatingBasalMassBal"/>
                         <var name="surfaceAirTemperature"/>
@@ -611,10 +618,13 @@
                         <var name="xtime"/>
                         <var name="simulationStartTime"/>
 			<var name="thickness"/>
-			<var name="basalWaterThickness"/>
+			<var name="basalWaterThickness" packages="thermal"/>
 			<var name="temperature"/>
-                        <var name="surfaceAirTemperature"/>
-                        <var name="basalHeatFlux"/>
+			<var name="waterFrac" packages="thermal"/>
+                        <var name="surfaceAirTemperature" packages="thermal"/>
+                        <var name="basalHeatFlux" packages="thermal;hydro"/>
+                        <var name="basalFrictionFlux" packages="thermal"/>
+                        <var name="heatDissipation" packages="thermal"/>
 			<var name="cellMask"/>
 			<var name="bedTopography"/>
 			<var name="sfcMassBal"/>
@@ -1173,7 +1183,7 @@ is the value of that variable from the *previous* time level!
                 <var name="temperature" type="real" dimensions="nVertLevels nCells Time" units="K" default_value="273.15"
                      description="interior ice temperature"
                 />
-                <var name="waterfrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
+                <var name="waterFrac" type="real" dimensions="nVertLevels nCells Time" units="unitless"
                      description="interior ice water fraction"
                 />
                 <var name="enthalpy" type="real" dimensions="nVertLevels nCells Time" units="J m^{-3}"

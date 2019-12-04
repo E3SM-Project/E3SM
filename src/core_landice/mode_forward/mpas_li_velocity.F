@@ -227,6 +227,7 @@ contains
       use mpas_vector_reconstruction
       use li_mask
       use li_advection
+      use li_thermal
 
       !-----------------------------------------------------------------
       ! input variables
@@ -312,7 +313,7 @@ contains
          config_do_velocity_reconstruction_for_external_dycore)
       call mpas_pool_get_config(liConfigs, 'config_print_velocity_cleanup_details', config_print_velocity_cleanup_details)
       call mpas_pool_get_config(liConfigs, 'config_dynamic_thickness', config_dynamic_thickness)
-          call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
+      call mpas_pool_get_config(liConfigs, 'config_adaptive_timestep_include_DCFL', config_adaptive_timestep_include_DCFL)
 
       uphillMarginEdgesFixed = 0
 
@@ -670,6 +671,21 @@ contains
          block => block % next
       end do
 
+      ! calculate velocity-related thermal source term fields
+      ! (do it here to make restarts easier - this way only the fields need to be restart
+      !  variables, rather than the fields that are input to the calculations.)
+      if (solveVelo) then
+         ! (on a restart value, do not try to calculate these - instead use the fields in the restart file)
+         call li_basal_friction(domain, err_tmp)
+         err = ior(err, err_tmp)
+
+         if (trim(config_velocity_solver) == 'sia') then
+            ! For FO solver, heatDissipation is passed back from Albany
+            call li_heat_dissipation_sia(domain, err_tmp)
+            err = ior(err, err_tmp)
+         endif
+      endif
+
       ! === error check
       if (err > 0) then
           call mpas_log_write("An error has occurred in li_velocity_solve.", MPAS_LOG_ERR)
@@ -797,12 +813,15 @@ contains
       type (mpas_pool_type), pointer :: hydroPool
       type (mpas_pool_type), pointer :: geometryPool
       type (mpas_pool_type), pointer :: velocityPool
+      type (mpas_pool_type), pointer :: thermalPool
       type (mpas_pool_type), pointer :: meshPool
       real (kind=RKIND), dimension(:), pointer :: betaSolve, beta
       real (kind=RKIND), dimension(:), pointer :: effectivePressure
+      real (kind=RKIND), dimension(:), pointer :: basalTemperature, basalPmpTemperature
       integer, dimension(:), pointer :: cellMask
       logical, pointer :: config_use_glp
       logical, pointer :: config_beta_use_effective_pressure
+      logical, pointer :: config_beta_thawed_only
       logical, pointer :: hydroActive
       real (kind=RKIND) :: betaAccum
       integer :: nBetaValues
@@ -816,9 +835,11 @@ contains
 
       call mpas_pool_get_config(liConfigs, 'config_use_glp', config_use_glp)
       call mpas_pool_get_config(liConfigs, 'config_beta_use_effective_pressure', config_beta_use_effective_pressure)
+      call mpas_pool_get_config(liConfigs, 'config_beta_thawed_only', config_beta_thawed_only)
 
       call mpas_pool_get_subpool(block % structs, 'geometry', geometryPool)
       call mpas_pool_get_subpool(block % structs, 'velocity', velocityPool)
+      call mpas_pool_get_subpool(block % structs, 'thermal', thermalPool)
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
 
       call mpas_pool_get_array(velocityPool, 'betaSolve', betaSolve)
@@ -868,6 +889,14 @@ contains
 
       end if ! if config_beta_use_effective_pressure
 
+      if (config_beta_thawed_only) then
+         call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
+         call mpas_pool_get_array(thermalPool, 'basalPmpTemperature', basalPmpTemperature)
+         where (basalPmpTemperature - basalTemperature > 0.01_RKIND)
+            ! Use a small difference to account for roundoff.  0.01 is value used in thermal module.
+            betaSolve = 1.0e6_RKIND  ! no-slip value for frozen bed locations
+         end where
+      endif
 
       if (.not. config_use_glp) then
          where (li_mask_is_floating_ice(cellMask))

@@ -150,7 +150,7 @@ module li_advection
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,           & ! interior ice temperature
-           waterfrac,             & ! interior water fraction
+           waterFrac,             & ! interior water fraction
            enthalpy                 ! interior ice enthalpy
 
       real (kind=RKIND), dimension(:,:), pointer :: &
@@ -268,7 +268,7 @@ module li_advection
 
       ! get arrays from the thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-      call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+      call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
       call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
 
       ! get config variables
@@ -368,7 +368,7 @@ module li_advection
          endif
 
          ! Transport thickness and tracers using a first-order upwind scheme
-         ! Note:  For the enthalpy scheme, temperature and waterfrac are the primary prognostic
+         ! Note:  For the enthalpy scheme, temperature and waterFrac are the primary prognostic
          !        variables to be updated, but enthalpy is the advected tracer (for reasons of
          !        energy conservation).
 
@@ -544,7 +544,7 @@ module li_advection
          if (advectTracers) then
 
             ! Copy the advectedTracersNew values into the thermal tracer arrays
-            ! (temperature, waterfrac, enthalpy)
+            ! (temperature, waterFrac, enthalpy)
 
             call tracer_finish(&
                  meshPool,              &
@@ -938,11 +938,11 @@ module li_advection
            config_thermal_solver
 
       integer, pointer :: &
-           nCellsSolve                ! number of locally owned cells
+           nCells                     ! number of cells
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,             & ! interior ice temperature
-           waterfrac,               & ! interior water fraction
+           waterFrac,               & ! interior water fraction
            enthalpy                   ! interior ice enthalpy
 
       real (kind=RKIND), dimension(:), pointer :: &
@@ -961,7 +961,7 @@ module li_advection
       integer :: iCell, iTracer
 
       ! get dimensions
-      call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+      call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
       ! get arrays from mesh pool
       call mpas_pool_get_array(meshPool, 'layerCenterSigma', layerCenterSigma)
@@ -971,7 +971,7 @@ module li_advection
 
       ! get arrays from thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-      call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+      call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
       call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
       call mpas_pool_get_array(thermalPool, 'surfaceAirTemperature', surfaceAirTemperature)
       call mpas_pool_get_array(thermalPool, 'basalTemperature', basalTemperature)
@@ -985,8 +985,8 @@ module li_advection
 
       ! Notes:
       ! (1) For the enthalpy solver, it is necessary to transport enthalpy (rather than
-      !     temperature and waterfrac separately) in order to conserve energy.
-      ! (2) Temperature and waterfrac must be up to date (including halo cells)
+      !     temperature and waterFrac separately) in order to conserve energy.
+      ! (2) Temperature and waterFrac must be up to date (including halo cells)
       !     before calling this subroutine.
       ! (3) Surface and basal temperature (or enthalpy) are not transported, but their
       !     values are applied to new accumulation at either surface.
@@ -999,15 +999,15 @@ module li_advection
 
       if (trim(config_thermal_solver) == 'enthalpy') then  ! advect enthalpy
 
-         ! Rather than assume that enthalpy is up to date, recompute it from temperature and waterfrac
+         ! Rather than assume that enthalpy is up to date, recompute it from temperature and waterFrac
 
-         do iCell = 1, nCellsSolve
+         do iCell = 1, nCells
 
             call li_temperature_to_enthalpy_kelvin(&
                  layerCenterSigma,      &
                  thickness(iCell),      &
                  temperature(:,iCell),  &
-                 waterfrac(:,iCell),    &
+                 waterFrac(:,iCell),    &
                  enthalpy(:,iCell))
 
          enddo
@@ -1019,7 +1019,7 @@ module li_advection
          advectedTracers(iTracer,:,:) = enthalpy(:,:)
 
          ! set enthalpy of new ice at upper and lower surfaces
-         ! convert temperature to enthalpy assuming waterfrac = 0 for new ice
+         ! convert temperature to enthalpy assuming waterFrac = 0 for new ice
          surfaceTracers(iTracer,:) = min(surfaceAirTemperature(:), kelvin_to_celsius) * config_ice_density*cp_ice
          basalTracers(iTracer,:) = basalTemperature(:) * config_ice_density*cp_ice
 
@@ -1108,7 +1108,7 @@ module li_advection
 
       real (kind=RKIND), dimension(:,:), pointer :: &
            temperature,             & ! interior ice temperature
-           waterfrac,               & ! water fraction
+           waterFrac,               & ! water fraction
            enthalpy                   ! interior ice enthalpy
 
       integer :: iCell, iTracer
@@ -1124,7 +1124,7 @@ module li_advection
 
       ! get arrays from thermal pool
       call mpas_pool_get_array(thermalPool, 'temperature', temperature)
-      call mpas_pool_get_array(thermalPool, 'waterfrac', waterfrac)
+      call mpas_pool_get_array(thermalPool, 'waterFrac', waterFrac)
       call mpas_pool_get_array(thermalPool, 'enthalpy', enthalpy)
 
       ! get config variables
@@ -1146,7 +1146,7 @@ module li_advection
                  thickness(iCell),                           &
                  enthalpy(:,iCell),     &
                  temperature(:,iCell),  &
-                 waterfrac(:,iCell))
+                 waterFrac(:,iCell))
 
          enddo
 
