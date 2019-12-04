@@ -12,7 +12,7 @@ from distutils import dir_util
 
 logger = logging.getLogger(__name__)
 
-class HOMME(SystemTestsCommon):
+class HOMMEBFB(SystemTestsCommon):
 
     def __init__(self, case):
         """
@@ -85,7 +85,7 @@ class HOMME(SystemTestsCommon):
         # is pretty useless for this test.
         append_testlog(open(log, "r").read())
 
-        expect(stat == 0, "RUN FAIL for HOMME")
+        expect(stat == 0, "RUN FAIL for HOMMEBFB")
 
     # Homme is a bit of an oddball test since it's not really running the E3SM model
     # We need to override some methods to make the core infrastructure work.
