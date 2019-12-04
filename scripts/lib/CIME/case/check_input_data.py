@@ -276,7 +276,8 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     expect(os.path.isdir(data_list_dir), "Invalid data_list_dir directory: '{}'".format(data_list_dir))
 
     data_list_files = find_files(data_list_dir, "*.input_data_list")
-    expect(data_list_files, "No .input_data_list files found in dir '{}'".format(data_list_dir))
+    if not data_list_files:
+        logger.warning("WARNING: No .input_data_list files found in dir '{}'".format(data_list_dir))
 
     no_files_missing = True
     if download:
