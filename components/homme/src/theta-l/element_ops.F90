@@ -24,6 +24,8 @@
 ! Other routines:
 !  get_field() 
 !     returns temperature, potential temperature, phi, etc..
+!  get_field_i() 
+!     returns a few quantities on interfaces 
 !  copy_state()
 !     copy state variables from one timelevel to another timelevel 
 !  get_state()
@@ -65,7 +67,7 @@ module element_ops
 
   type(elem_state_t), dimension(:), allocatable :: state0 ! storage for save_initial_state routine
 
-  public get_field, get_state
+  public get_field, get_field_i, get_state
   public get_temperature, get_phi, get_R_star, get_hydro_pressure
   public set_thermostate, set_state, set_state_i, set_elem_state
   public set_forcing_rayleigh_friction, set_theta_ref
@@ -74,7 +76,8 @@ module element_ops
   
 contains
 
-  recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
+
+recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   implicit none
   type (element_t),       intent(in) :: elem
   character(len=*),       intent(in) :: name
@@ -86,15 +89,15 @@ contains
   integer :: k
   real(kind=real_kind), dimension(np,np,nlev) :: tmp, p, pnh, dp, omega, rho, T, cp_star, Rstar
   real(kind=real_kind), dimension(np,np,nlevp) :: phi_i,pi_i
-  
+
 
   select case(name)
     case ('temperature','T'); call get_temperature(elem,field,hvcoord,nt)
     case ('pottemp','Th');    call get_pottemp(elem,field,hvcoord,nt,ntQ)
     case ('phi','geo');       call get_phi(elem,field,phi_i,hvcoord,nt)
     case ('dpnh_dp');         call get_dpnh_dp(elem,field,hvcoord,nt)
-    case ('pnh');             call get_nonhydro_pressure(elem,field,tmp  ,hvcoord,nt)
-    case ('exner');           call get_nonhydro_pressure(elem,tmp  ,field,hvcoord,nt)
+    case ('pnh');             call get_nonhydro_pressure(elem,field,tmp ,hvcoord,nt)
+    case ('exner');           call get_nonhydro_pressure(elem,tmp ,field,hvcoord,nt)
 
     case ('p');
       call get_hydro_pressure(field,elem%state%dp3d(:,:,:,nt),hvcoord)
@@ -107,7 +110,7 @@ contains
       field = elem%derived%omega_p
 
     case('rho')
-       
+
       call get_nonhydro_pressure(elem,pnh,tmp,hvcoord,nt)
       call get_R_star(Rstar,elem%state%Q(:,:,:,1))
       call get_temperature(elem,T,hvcoord,nt)
@@ -131,6 +134,35 @@ contains
   end select
 
   end subroutine
+
+
+  subroutine get_field_i(elem,name,field,hvcoord,nt)
+  implicit none
+  type (element_t),       intent(in) :: elem
+  character(len=*),       intent(in) :: name
+  real (kind=real_kind),  intent(out):: field(np,np,nlevp)
+  integer,                intent(in) :: nt
+  type (hvcoord_t),       intent(in) :: hvcoord
+
+  select case(name)
+    case('w_i');
+      if(theta_hydrostatic_mode) then
+         call abortmp('ERROR: get_field_i is not supported for w in theta HY')
+      else
+         field = elem%state%w_i(:,:,1:nlevp,nt)
+      endif
+    case('geo_i');
+      !is phinh_i set for HY runs or should here be an abort?
+      field = elem%state%phinh_i(:,:,1:nlevp,nt)
+    case('mu_i');
+      call get_dpnh_dp_i(elem,field,hvcoord,nt)
+    case default
+      print *,'name = ',trim(name)
+      call abortmp('ERROR: get_field_i name not supported in this model')
+  end select
+ 
+  end subroutine get_field_i
+
 
   !_____________________________________________________________________
   subroutine get_pottemp(elem,pottemp,hvcoord,nt,ntQ)
@@ -189,7 +221,7 @@ contains
 
   end subroutine get_temperature
 
-
+!this routine averages mu to midlevels
   !_____________________________________________________________________
   subroutine get_dpnh_dp(elem,dpnh_dp,hvcoord,nt)
   implicit none
@@ -216,6 +248,27 @@ contains
   enddo
   end subroutine 
 
+!this routine returns mu at interfaces, mu_surface = 1, will be fixed later
+  !_____________________________________________________________________
+  subroutine get_dpnh_dp_i(elem,dpnh_dp_i,hvcoord,nt)
+  implicit none
+
+  type (element_t), intent(in)        :: elem
+  real (kind=real_kind), intent(out)  :: dpnh_dp_i(np,np,nlevp)
+  type (hvcoord_t),     intent(in)    :: hvcoord                      ! hybrid vertical coordinate struct
+  integer, intent(in) :: nt
+
+  !   local
+  real (kind=real_kind) :: dp(np,np,nlev)
+  real (kind=real_kind) :: exner(np,np,nlev)
+  real (kind=real_kind) :: pnh(np,np,nlev)
+  integer :: k
+
+  dp=elem%state%dp3d(:,:,:,nt)
+  call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,nt),&
+       dp,elem%state%phinh_i(:,:,:,nt),pnh,exner,dpnh_dp_i)
+ 
+  end subroutine get_dpnh_dp_i 
 
   !_____________________________________________________________________
   subroutine get_hydro_pressure(p,dp,hvcoord)
@@ -369,7 +422,7 @@ contains
   do k=1,nlev
      p(:,:,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps(:,:)
      dp(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
-          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*elem%state%ps_v(:,:,nt)
+          ( hvcoord%hybi(k+1) - hvcoord%hybi(k) )*ps(:,:)
   enddo
 
 !set vtheta
@@ -483,10 +536,10 @@ contains
     u   = elem%state%v   (:,:,1,:,nt)
     v   = elem%state%v   (:,:,2,:,nt)
     ps  = elem%state%ps_v(:,:,  nt)
+    dp  = elem%state%dp3d(:,:,:,nt)
     phi_i = elem%state%phinh_i(:,:,:,nt)
 
     do k=1,nlev
-       dp(:,:,k)=(hvcoord%hyai(k+1)-hvcoord%hyai(k))*hvcoord%ps0 +(hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps(:,:)
        w(:,:,k) = (elem%state%w_i(:,:,k,nt) + elem%state%w_i(:,:,k+1,nt))/2
     end do
 

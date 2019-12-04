@@ -17,11 +17,9 @@ module element_state
   integer, public, parameter :: diagtimes = 6
 
   ! maximum number of Newton iterations taken for an IMEX-RK stage per time-step
-  integer, public               :: max_itercnt_perstep
-  ! running average of max_itercnt_perstep
-  real (kind=real_kind), public :: avg_itercnt=0.0
-  ! maximum error of Newton iteration for an IMEX-RK stage per time-step
-  real (kind=real_kind), public :: max_itererr_perstep
+  integer, public               :: max_itercnt=0
+  real (kind=real_kind), public :: max_deltaerr=0
+  real (kind=real_kind), public :: max_reserr=0
 
   ! pressure based TOM sponge layer
   real (kind=real_kind),public :: nu_scale_top(nlev)
@@ -47,7 +45,6 @@ module element_state
     real (kind=real_kind) :: phis(np,np)                          ! surface geopotential (prescribed)  
     real (kind=real_kind) :: Q   (np,np,nlev,qsize_d)             ! Tracer concentration               
     real (kind=real_kind) :: Qdp (np,np,nlev,qsize_d,2)           ! Tracer mass                        
-
   end type elem_state_t
 
   !___________________________________________________________________
@@ -80,6 +77,9 @@ module element_state
     real (kind=real_kind) :: FQps(np,np)                   ! forcing of FQ on ps_v
 
     real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
+    real (kind=real_kind) :: dp_ref(np,np,nlev)    ! ref states based on PHIS
+    real (kind=real_kind) :: theta_ref(np,np,nlev)
+    real (kind=real_kind) :: phi_ref(np,np,nlevp)  
   end type derived_state_t
   
 

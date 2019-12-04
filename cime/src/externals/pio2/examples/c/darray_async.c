@@ -71,31 +71,6 @@ int dim_len[NDIM3] = {NC_UNLIMITED, DIM_LEN_X, DIM_LEN_Y};
 /* Names of dimensions. */
 char dim_name[NDIM3][PIO_MAX_NAME + 1] = {"unlimted", "x", "y"};
 
-/* Handle MPI errors. This should only be used with MPI library
- * function calls. */
-#define MPIERR(e) do {                                                  \
-	MPI_Error_string(e, err_buffer, &resultlen);			\
-	printf("MPI error, line %d, file %s: %s\n", __LINE__, __FILE__, err_buffer); \
-	MPI_Finalize();							\
-	return 2;							\
-    } while (0)
-
-/* Handle non-MPI errors by finalizing the MPI library and exiting
- * with an exit code. */
-#define ERR(e) do {				\
-	MPI_Finalize();				\
-	return e;				\
-    } while (0)
-
-/* Global err buffer for MPI. When there is an MPI error, this buffer
- * is used to store the error message that is associated with the MPI
- * error. */
-char err_buffer[MPI_MAX_ERROR_STRING];
-
-/* This is the length of the most recent MPI error message, stored
- * int the global error string. */
-int resultlen;
-
 /* @brief Check the output file.
  *
  *  Use netCDF to check that the output is as expected.

@@ -12,6 +12,7 @@ Module HydrologyNoDrainageMod
   use atm2lndType       , only : atm2lnd_type
   use AerosolType       , only : aerosol_type
   use EnergyFluxType    , only : energyflux_type
+  use CanopyStateType  , only : canopystate_type
   use TemperatureType   , only : temperature_type
   use SoilHydrologyType , only : soilhydrology_type  
   use SoilStateType     , only : soilstate_type
@@ -39,7 +40,7 @@ contains
        num_hydrononsoic, filter_hydrononsoic, &
        num_urbanc, filter_urbanc, &
        num_snowc, filter_snowc, &
-       num_nosnowc, filter_nosnowc, &
+       num_nosnowc, filter_nosnowc, canopystate_vars, &
        atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
        waterflux_vars, waterstate_vars, &
        soilhydrology_vars, aerosol_vars, &
@@ -75,7 +76,7 @@ contains
     use SoilWaterRetentionCurveMod, only : soil_water_retention_curve_type
     use clm_varctl           , only : use_vsfm
     use SoilHydrologyMod     , only : DrainageVSFM
-    use SoilWaterMovementMod , only : Compute_EffecRootFrac_And_VertTranSink_Default
+    use SoilWaterMovementMod , only : Compute_EffecRootFrac_And_VertTranSink
     use CLMFatesInterfaceMod , only : hlm_fates_interface_type
     use BeTRSimulationALM    , only : betr_simulation_alm_type
     !
@@ -96,6 +97,7 @@ contains
     type(atm2lnd_type)       , intent(in)    :: atm2lnd_vars
     type(soilstate_type)     , intent(inout) :: soilstate_vars
     type(energyflux_type)    , intent(in)    :: energyflux_vars
+    type(canopystate_type)   , intent(in)  :: canopystate_vars
     type(temperature_type)   , intent(inout) :: temperature_vars
     type(waterflux_type)     , intent(inout) :: waterflux_vars
     type(waterstate_type)    , intent(inout) :: waterstate_vars
@@ -227,9 +229,8 @@ contains
               waterstate_vars, waterflux_vars)
       endif
 
-      ! Calculate the root water uptake due to transpiration demand, per column soil layer
-      call Compute_EffecRootFrac_And_VertTranSink_Default(bounds, num_hydrologyc, &
-            filter_hydrologyc, soilstate_vars, waterflux_vars)
+      call Compute_EffecRootFrac_And_VertTranSink(bounds, num_hydrologyc, &
+           filter_hydrologyc, soilstate_vars, canopystate_vars, waterflux_vars,energyflux_vars)
 
       ! If FATES plant hydraulics is turned on, over-ride default transpiration sink calculation
       if( use_fates ) call alm_fates%ComputeRootSoilFlux(bounds, num_hydrologyc, filter_hydrologyc, &

@@ -18,13 +18,14 @@ module model_init_mod
   use hybvcoord_mod, 	  only: hvcoord_t
   use hybrid_mod,         only: hybrid_t
   use dimensions_mod,     only: np,nlev,nlevp
-  use eos          ,      only: pnh_and_exner_from_eos,get_dirk_jacobian
+  use eos          ,      only: pnh_and_exner_from_eos,get_dirk_jacobian,phi_from_eos
+  use element_ops,        only: set_theta_ref
   use element_state,      only: timelevels, nu_scale_top, nlev_tom
   use viscosity_mod,      only: make_c0_vector
   use kinds,              only: real_kind,iulog
   use control_mod,        only: qsplit,theta_hydrostatic_mode
   use time_mod,           only: timelevel_qdp, timelevel_t
-  use physical_constants, only: g
+  use physical_constants, only: g, TREF, Rgas, kappa
  
   implicit none
   
@@ -42,6 +43,7 @@ contains
     ! local variables
     integer :: ie,t,k
     real (kind=real_kind) :: gradtemp(np,np,2,nets:nete)
+    real (kind=real_kind) :: temp(np,np,nlev),ps_ref(np,np)
     real (kind=real_kind) :: ptop_over_press
 
 
@@ -62,12 +64,33 @@ contains
       do t=1,timelevels
          elem(ie)%state%phinh_i(:,:,nlevp,t) = elem(ie)%state%phis(:,:)
       enddo
+
+      ! initialize reference states used by hyberviscosity
+#define HV_REFSTATES_V1
+#ifdef HV_REFSTATES_V0
+      elem(ie)%derived%dp_ref=0
+      elem(ie)%derived%phi_ref=0
+      elem(ie)%derived%theta_ref=0
+#endif
+#ifdef HV_REFSTATES_V1
+      ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*TREF)) 
+      do k=1,nlev
+         elem(ie)%derived%dp_ref(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
+      enddo
+      call set_theta_ref(hvcoord,elem(ie)%derived%dp_ref,elem(ie)%derived%theta_ref)
+      temp=elem(ie)%derived%theta_ref*elem(ie)%derived%dp_ref
+      call phi_from_eos(hvcoord,elem(ie)%state%phis,&
+           temp,elem(ie)%derived%dp_ref,elem(ie)%derived%phi_ref)
+      elem(ie)%derived%theta_ref=0
+#endif
     enddo 
 
 
     ! unit test for analytic jacobian used by IMEX methods
-    if (.not. theta_hydrostatic_mode) &
-         call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
+!disable till membug is fixed
+!    if (.not. theta_hydrostatic_mode) &
+!         call test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
 
 
 
@@ -92,7 +115,10 @@ contains
        ! active for p<10*ptop (following cd_core.F90 in CAM-FV)
        ! CAM 26L and 30L:  top 3 levels 
        ! E3SM 72L:  top 6 levels
-       nu_scale_top(k) = 8*(1+tanh(log(ptop_over_press))) ! active for p<4*ptop
+       !original cam formula
+       !nu_scale_top(k) = 8*(1+tanh(log(ptop_over_press))) ! active for p<4*ptop
+       nu_scale_top(k) = 16*ptop_over_press**2 / (ptop_over_press**2 + 1)
+
        if (nu_scale_top(k)<0.15d0) nu_scale_top(k)=0
 
        !nu_scale_top(k) = 8*(1+.911*tanh(log(ptop_over_press))) ! active for p<6.5*ptop
@@ -117,21 +143,6 @@ contains
   end subroutine 
 
 
-
-  subroutine vertical_mesh_init2(elem, nets, nete, hybrid, hvcoord)
-
-    ! additional solver specific initializations (called from prim_init2)
-
-    type (element_t),			intent(inout), target :: elem(:)! array of element_t structures
-    integer,				intent(in) :: nets,nete		! start and end element indices
-    type (hybrid_t),			intent(in) :: hybrid		! mpi/omp data struct
-    type (hvcoord_t),			intent(inout)	:: hvcoord	! hybrid vertical coord data struct
-
-
-  end subroutine vertical_mesh_init2
-
-
-
   subroutine test_imex_jacobian(elem,hybrid,hvcoord,tl,nets,nete)
   ! the following code compares the analytic vs exact imex Jacobian
   ! can test over more elements if desired
@@ -148,6 +159,7 @@ contains
   
   real (kind=real_kind) :: dp3d(np,np,nlev), phis(np,np)
   real (kind=real_kind) :: phi_i(np,np,nlevp)
+  real (kind=real_kind) :: dphi(np,np,nlev)
   real (kind=real_kind) :: vtheta_dp(np,np,nlev)
   real (kind=real_kind) :: dpnh_dp_i(np,np,nlevp)
   real (kind=real_kind) :: exner(np,np,nlev)
@@ -172,7 +184,10 @@ contains
          
      dt=100.0
           
-     call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,phi_i,pnh,1)
+     do k=1,nlev
+        dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
+     enddo
+     call get_dirk_jacobian(JacL,JacD,JacU,dt,dp3d,dphi,pnh,1)
          
     ! compute infinity norm of the initial Jacobian 
      norminfJ0=0.d0
@@ -182,9 +197,9 @@ contains
         if (k.eq.1) then
           norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacD(k,i,j))+abs(JacU(k,i,j))))
         elseif (k.eq.nlev) then
-          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k,i,j))+abs(JacD(k,i,j))))
+          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k-1,i,j))+abs(JacD(k,i,j))))
         else
-          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k,i,j))+abs(JacD(k,i,j))+ &
+          norminfJ0(i,j) = max(norminfJ0(i,j),(abs(JacL(k-1,i,j))+abs(JacD(k,i,j))+ &
             abs(JacU(k,i,j))))
         end if
       end do
@@ -205,7 +220,10 @@ contains
         ! that the sweetspot where the finite difference error is minimized is
         ! =================================================================
         epsie=10.d0/(10.d0)**(j+1)
-        call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,phi_i,pnh,0,&
+        do k=1,nlev
+           dphi(:,:,k)=phi_i(:,:,k+1)-phi_i(:,:,k)
+        enddo
+        call get_dirk_jacobian(Jac2L,Jac2D,Jac2U,dt,dp3d,dphi,pnh,0,&
            epsie,hvcoord,dpnh_dp_i,vtheta_dp)
     
         if (maxval(abs(JacD(:,:,:)-Jac2D(:,:,:))) > jacerrorvec(j)) then 

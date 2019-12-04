@@ -182,6 +182,7 @@ contains
     logical(kind=c_bool) :: use_sgi, owned
     integer, allocatable :: owned_ids(:)
     integer, pointer :: rank2sfc(:) => null()
+    integer, target :: null_target(1)
 
 #ifdef HOMME_ENABLE_COMPOSE
     call t_startf('compose_init')
@@ -207,6 +208,12 @@ contains
              sc2rank(sc) = GridVertex(i)%processor_number - 1
           end do
        end if
+    else
+       ! These lines fix ifort -check catches. The data are not used,
+       ! but the function call cedr_init_impl makes -check think they
+       ! are used.
+       allocate(owned_ids(1))
+       rank2sfc => null_target
     end if
     if (use_sgi) then
        call cedr_init_impl(par%comm, semi_lagrange_cdr_alg, &

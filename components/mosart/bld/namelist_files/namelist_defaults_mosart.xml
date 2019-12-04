@@ -19,6 +19,13 @@ for the CLM data in the CESM distribution
 <delt_mosart>3600</delt_mosart> 
 <ice_runoff>.true.</ice_runoff>
 <wrmflag>.false.</wrmflag>
+<inundflag>.false.</inundflag>
+<sediflag>.false.</sediflag>
+<heatflag>.false.</heatflag>
+<barrier_timers>.false.</barrier_timers>
+<RoutingMethod>1</RoutingMethod>
+<DLevelH2R>5</DLevelH2R>
+<DLevelR>3</DLevelR>
 
 <decomp_option>'roundrobin'</decomp_option> 
 <smat_option>'Xonly'</smat_option> 
@@ -30,6 +37,36 @@ for the CLM data in the CESM distribution
 
 <frivinp_rtm rof_grid="r0125" >rof/mosart/MOSART_global_8th_20180211c.nc</frivinp_rtm>
 <frivinp_rtm rof_grid="r05" >rof/mosart/MOSART_global_half_20180721a.nc</frivinp_rtm>
-<frivinp_rtm rof_grid="NLDAS" >rof/mosart/MOSART_NLDAS_8th.nc</frivinp_rtm>
+<frivinp_rtm rof_grid="NLDAS" >rof/mosart/MOSART_NLDAS_8th_20160426.nc</frivinp_rtm>
+
+<!-- WRM -->
+
+<paraFile rof_grid="NLDAS" >rof/mosart/US_reservoir_8th_NLDAS3_c20161220_updated_20170314.nc</paraFile>
+<demandPath rof_grid="NLDAS" >rof/mosart/NLDAS2_GCAM_water_demand_</demandPath> 
+<ExtractionFlag>1</ExtractionFlag>
+<ExtractionMainChannelFlag>1</ExtractionMainChannelFlag>
+<RegulationFlag>1</RegulationFlag>
+<ReturnFlowFlag>0</ReturnFlowFlag>
+<TotalDemandFlag>1</TotalDemandFlag>
+<GroundWaterFlag>0</GroundWaterFlag>
+<ExternalDemandFlag>0</ExternalDemandFlag>
+<DemandVariableName>cons_total</DemandVariableName>
+
+<!-- inund -->
+<OPT_inund>1</OPT_inund>
+<OPT_trueDW>2</OPT_trueDW>
+<OPT_calcNr>1</OPT_calcNr>
+<nr_max>0.05</nr_max>
+<nr_min>0.03</nr_min>
+<nr_uniform>0.04</nr_uniform>
+<rdepth_max>50.0</rdepth_max>
+<rdepth_min>1.0</rdepth_min>
+<rwidth_max>5000.0</rwidth_max>
+<rwidth_min>20.0</rwidth_min>
+<rslp_assume>0.00001</rslp_assume>
+<minL_tribRouting>10.0</minL_tribRouting>
+<OPT_elevProf>2</OPT_elevProf>
+<npt_elevProf>11</npt_elevProf>
+<threshold_slpRatio>10.0</threshold_slpRatio>
 
 </namelist_defaults>

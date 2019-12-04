@@ -117,6 +117,7 @@ module clm_driver
   use clm_instMod            , only : surfalb_vars
   use clm_instMod            , only : surfrad_vars
   use clm_instMod            , only : temperature_vars
+  use clm_instMod            , only : col_es
   use clm_instMod            , only : waterflux_vars
   use clm_instMod            , only : waterstate_vars
   use clm_instMod            , only : atm2lnd_vars
@@ -800,7 +801,7 @@ contains
             filter(nc)%num_hydrononsoic, filter(nc)%hydrononsoic,            &
             filter(nc)%num_urbanc, filter(nc)%urbanc,                        &
             filter(nc)%num_snowc, filter(nc)%snowc,                          &
-            filter(nc)%num_nosnowc, filter(nc)%nosnowc,                      &
+            filter(nc)%num_nosnowc, filter(nc)%nosnowc,canopystate_vars,     &
             atm2lnd_vars, soilstate_vars, energyflux_vars, temperature_vars, &
             waterflux_vars, waterstate_vars, soilhydrology_vars, aerosol_vars, &
             soil_water_retention_curve, ep_betr,                             &
@@ -1341,10 +1342,10 @@ contains
 
     call t_startf('lnd2atm')
     call lnd2atm(bounds_proc,                                            &
-         atm2lnd_vars, surfalb_vars, temperature_vars, frictionvel_vars, &
+         atm2lnd_vars, surfalb_vars, frictionvel_vars, &
          waterstate_vars, waterflux_vars, energyflux_vars,               &
          solarabs_vars, carbonflux_vars, drydepvel_vars,                 &
-         vocemis_vars, dust_vars, ch4_vars, lnd2atm_vars) 
+         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
     call t_stopf('lnd2atm')
 
     ! ============================================================================
@@ -1735,7 +1736,7 @@ contains
          col_wf%qflx_dew_snow(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &
-         veg_wf%qflx_irrig(bounds%begp:bounds%endp), &
+         veg_wf%qflx_irrig_patch(bounds%begp:bounds%endp), &
          col_wf%qflx_irrig(bounds%begc:bounds%endc))
 
     call p2c (bounds, num_nolakec, filter_nolakec, &

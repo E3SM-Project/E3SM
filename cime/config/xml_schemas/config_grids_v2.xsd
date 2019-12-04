@@ -125,6 +125,7 @@
         <xs:extension base="xs:NCName">
           <xs:attribute ref="grid1" use="required" />
           <xs:attribute ref="grid2" use="required" />
+          <xs:attribute ref="compset" />
           <xs:attribute ref="not_compset" />
         </xs:extension>
       </xs:simpleContent>

@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+
+"""
+build mosart library
+"""
+import sys, os
+
+_CIMEROOT = os.environ.get("CIMEROOT")
+if _CIMEROOT is None:
+    raise SystemExit("ERROR: must set CIMEROOT environment variable")
+
+_LIBDIR = os.path.join(_CIMEROOT, "scripts", "Tools")
+sys.path.append(_LIBDIR)
+
+from standard_script_setup import *
+from CIME.buildlib         import parse_input
+from CIME.case             import Case
+from CIME.utils            import expect, run_bld_cmd_ensure_logging
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def buildlib(bldroot, installpath, case):
+###############################################################################
+    casebuild = case.get_value("CASEBUILD")
+    caseroot  = case.get_value("CASEROOT")
+    srcroot   = case.get_value("SRCROOT")
+
+    #-------------------------------------------------------
+    # create Filepath in bldroot, unlike most other components,
+    # mosart makes it's Filepath right here.
+    #-------------------------------------------------------
+
+    filepaths = \
+ """{caseroot}/SourceMods/src.mosart
+{srcroot}/components/mosart/src/riverroute
+{srcroot}/components/mosart/src/cpl
+{srcroot}/components/mosart/src/wrm
+{srcroot}/components/mosart/src/inundation
+{srcroot}/components/mosart/src/cpl_share
+""".format(caseroot=caseroot, srcroot=srcroot)
+
+    with open(os.path.join(casebuild, "mosartconf", "Filepath"), "w") as fd:
+        fd.write(filepaths)
+
+    with open(os.path.join(casebuild, "mosartconf", "CCSM_cppdefs"), "w") as fd:
+        fd.write("")
+
+###############################################################################
+def _main_func():
+###############################################################################
+    caseroot, libroot, bldroot = parse_input(sys.argv)
+    with Case(caseroot, read_only=False) as case:
+        buildlib(bldroot, libroot, case)
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()
