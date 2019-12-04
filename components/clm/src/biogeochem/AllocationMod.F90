@@ -225,8 +225,6 @@ contains
     end if
 
     ! Allocate scratch space for ECA and FATES/ECA
-    print*,"IN ALLOCATION INIT"
-
     
     if (nu_com .eq. 'ECA' .or. nu_com .eq. 'MIC') then
        allocate(decompmicc(1:nlevdecomp)); decompmicc(1:nlevdecomp) = nan
@@ -1562,7 +1560,6 @@ contains
             if( .not.cnallocate_carbonphosphorus_only().and. .not.cnallocate_carbonnitrogen_only() &
                  .and. .not.cnallocate_carbon_only() )then
 
-               print*,"THERE?"
                do j = 1, nlevdecomp
                   
                   if (nlimit(c,j) == 1.and.plimit(c,j) == 0) then
@@ -1593,30 +1590,17 @@ contains
                
             else if(cnallocate_carbonnitrogen_only())then
 
-               print*,"HERE",nlevdecomp
-               
                do j = 1, nlevdecomp
                   actual_immob_p_vr(c,j) = potential_immob_p_vr(c,j) * fpi_vr(c,j)
-                  print*,j,c
-                  print*,col_plant_pdemand_vr(c,j)
                   sminp_to_plant_vr(c,j) = col_plant_pdemand_vr(c,j)
                end do
                
             endif
-
-            print*,"ACTIVE:"
-            print*,cnallocate_carbon_only()
-            print*,cnallocate_carbonnitrogen_only()
-            print*,cnallocate_carbonphosphorus_only()
             
             ! sum up N and P  fluxes to plant
             sminn_to_plant(c) = 0._r8
             sminp_to_plant(c) = 0._r8
             do j = 1, nlevdecomp
-               print*,j
-               print*,dzsoi_decomp(j)
-               print*,sminn_to_plant_vr(c,j)
-               print*,sminp_to_plant_vr(c,j)
                sminn_to_plant(c) = sminn_to_plant(c) + sminn_to_plant_vr(c,j) * dzsoi_decomp(j)
                sminp_to_plant(c) = sminp_to_plant(c) + sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
             end do

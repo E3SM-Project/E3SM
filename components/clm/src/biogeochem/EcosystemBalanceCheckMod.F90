@@ -173,6 +173,20 @@ contains
       do fc = 1,num_soilc
          c = filter_soilc(fc)
          col_begpb(c) = totcolp(c)
+
+         write(iulog,*) 'BEG P:'
+         write(iulog,*) col_ps%totpftp(c)  !0
+         write(iulog,*) col_ps%cwdp(c)     !0
+         write(iulog,*) col_ps%totlitp(c)  !0
+         write(iulog,*) col_ps%totsomp(c) 
+         write(iulog,*) col_ps%prod1p(c)   !0
+         write(iulog,*) col_ps%solutionp(c) 
+         write(iulog,*) col_ps%labilep(c)
+         write(iulog,*) col_ps%secondp(c)
+         write(iulog,*) col_ps%ptrunc(c)               !0
+         write(iulog,*) col_ps%cropseedp_deficit(c)    !0
+
+         
       end do
 
     end associate
@@ -238,13 +252,13 @@ contains
          ! FATES also checks to see if input fluxes match
          ! a change in the total stock. So hwere we assume that
          ! the fates stocks are 0 for simplicity, and are only
-         ! conerned that the changes in the soil stocks (including
+         ! concerned that the changes in the soil stocks (including
          ! fragmented litter, match the fluxes in and out of fates
          if(use_fates) then
 
             col_cinputs  = litfall(c)
 
-            col_coutputs = hr(c) - som_c_leached(c)
+            col_coutputs = er(c) - som_c_leached(c)
             
             ! add erosion flux
             if (ero_ccycle) then
@@ -309,8 +323,24 @@ contains
          write(iulog,*)'hrv_to_prod100        = ',hrv_deadstemc_to_prod100c(c)*dt
          write(iulog,*)'leach                 = ',som_c_leached(c)*dt
          write(iulog,*)'begcb                 = ',col_begcb(c)
-         write(iulog,*)'endcb                 = ',col_endcb(c),col_cs%totsomc(c)
+         write(iulog,*)'endcb                 = ',col_endcb(c)
+         write(iulog,*)'totsomc               = ',col_cs%totsomc(c)
          write(iulog,*)'delta store           = ',col_endcb(c)-col_begcb(c)
+
+!         write(iulog,*)'delta somc            = ',col_cs%totsomc(c)-col_begcb
+         
+         write(iulog,*) col_fire_closs(c)*dt
+         write(iulog,*) col_hrv_xsmrpool_to_atm(c)*dt
+         write(iulog,*) hrv_deadstemc_to_prod10c(c)*dt
+         write(iulog,*) hrv_deadstemc_to_prod100c(c)*dt
+         write(iulog,*) col_prod1c_loss(c)*dt
+         write(iulog,*) 'cwd:', col_cs%cwdc(c)
+         write(iulog,*) col_cs%totlitc(c)
+         write(iulog,*)col_cs%totsomc(c)
+         write(iulog,*)col_cs%prod1c(c)
+         write(iulog,*)col_cs%ctrunc(c)
+         write(iulog,*)col_cs%totpftc(c)
+         write(iulog,*)col_cs%cropseedc_deficit(c)
          
          if (ero_ccycle) then
             write(iulog,*)'erosion               = ',som_c_yield(c)*dt
@@ -625,13 +655,15 @@ contains
 
       err_found = .false.
 
-      call p2c(bounds,num_soilc,filter_soilc, &
-           leafp_to_litter(bounds%begp:bounds%endp), &
-           leafp_to_litter_col(bounds%begc:bounds%endc))
-      call p2c(bounds,num_soilc,filter_soilc, &
-           frootp_to_litter(bounds%begp:bounds%endp), &
-           frootp_to_litter_col(bounds%begc:bounds%endc))
-
+      if(.not.use_fates)then
+         call p2c(bounds,num_soilc,filter_soilc, &
+              leafp_to_litter(bounds%begp:bounds%endp), &
+              leafp_to_litter_col(bounds%begc:bounds%endc))
+         call p2c(bounds,num_soilc,filter_soilc, &
+              frootp_to_litter(bounds%begp:bounds%endp), &
+              frootp_to_litter_col(bounds%begc:bounds%endc))
+      end if
+         
       !! immobilization/mineralization in litter-to-SOM and SOM-to-SOM fluxes
       ! column loop
       do fc = 1,num_soilc
@@ -752,6 +784,20 @@ contains
          write(iulog,*)'input mass  = ',col_pinputs(c)*dt
          write(iulog,*)'output mass = ',col_poutputs(c)*dt
          write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
+
+         write(iulog,*) 'ptol_pflux: = ',plant_to_litter_pflux(c)*dt
+         write(iulog,*) 'END P:'
+         write(iulog,*) col_ps%totpftp(c)
+         write(iulog,*) col_ps%cwdp(c)
+         write(iulog,*) col_ps%totlitp(c)
+         write(iulog,*) col_ps%totsomp(c)
+         write(iulog,*) col_ps%prod1p(c)
+         write(iulog,*) col_ps%solutionp(c)
+         write(iulog,*) col_ps%labilep(c)
+         write(iulog,*) col_ps%secondp(c)
+         write(iulog,*) col_ps%ptrunc(c)
+         write(iulog,*) col_ps%cropseedp_deficit(c)
+
          if (ero_ccycle) then
             write(iulog,*)'SOP erosion = ',som_p_yield(c)*dt
             write(iulog,*)'SIP erosion = ',(labilep_yield(c)+secondp_yield(c)+occlp_yield(c)+primp_yield(c))*dt

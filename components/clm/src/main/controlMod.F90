@@ -328,7 +328,6 @@ contains
        unitn = getavu()
        write(iulog,*) 'Read in clm_inparm namelist from: ', trim(NLFilename)
        open( unitn, file=trim(NLFilename), status='old' )
-       print*,trim(NLFilename),"X.YANG debug"
        call shr_nl_find_group_name(unitn, 'clm_inparm', status=ierr)
        if (ierr == 0) then
           read(unitn, clm_inparm, iostat=ierr)
@@ -337,7 +336,7 @@ contains
           end if
        end if
        
-       print*,"X.YANG debug SUPL NITROGEN and PHOSPHORUS ",suplnitro,suplphos
+       !write(iulog,*) "SUPL NITROGEN and PHOSPHORUS ",suplnitro,suplphos
        call relavu( unitn )
 
        ! ----------------------------------------------------------------------
@@ -674,8 +673,13 @@ contains
 
     ! BGC
     call mpi_bcast (co2_type, len(co2_type), MPI_CHARACTER, 0, mpicom, ier)
-    if (use_cn) then
+
+    
+    if (use_cn .or. use_fates) then
        call mpi_bcast (suplnitro, len(suplnitro), MPI_CHARACTER, 0, mpicom, ier)
+    end if
+    
+    if (use_cn) then
        call mpi_bcast (nfix_timeconst, 1, MPI_REAL8, 0, mpicom, ier)
        call mpi_bcast (spinup_state, 1, MPI_INTEGER, 0, mpicom, ier)
        call mpi_bcast (nyears_ad_carbon_only, 1, MPI_INTEGER, 0, mpicom, ier)

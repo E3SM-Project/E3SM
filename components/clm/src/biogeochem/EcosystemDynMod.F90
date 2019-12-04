@@ -86,7 +86,6 @@ contains
     type(hlm_fates_interface_type), intent(in) :: elm_fates
     !-----------------------------------------------------------------------
 
-    print*,"CALLING allocationinit"
     call AllocationInit (bounds, elm_fates)
 
     if(use_fates) return
@@ -260,7 +259,6 @@ contains
        call col_cf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
        call col_nf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
        call col_pf%ZeroUpscaled(bounds,num_soilc, filter_soilc)
-       
     end if
 
     call col_cf%SummaryCH4(bounds, num_soilc, filter_soilc)

@@ -1532,7 +1532,7 @@ contains
                 if (j > nlevbed) then
                    this%h2osoi_vol(c,j) = 0.0_r8
                 else
-		             if (use_fates_planthydro) then
+                   if (use_fates_planthydro) then
                       this%h2osoi_vol(c,j) = 0.70_r8*watsat_input(c,j) !0.15_r8 to avoid very dry conditions that cause errors in FATES HYDRO
                    else
                       this%h2osoi_vol(c,j) = 0.15_r8
@@ -2864,25 +2864,22 @@ contains
              endif
           end do
        end do
-       
-       if(.not.use_fates)then
 
-          ! total litter carbon in the top meter (TOTLITC_1m)
-          do fc = 1,num_soilc
-             c = filter_soilc(fc)
-             this%totlitc_1m(c)         = 0._r8
-          end do
-          do l = 1, ndecomp_pools
-             if ( decomp_cascade_con%is_litter(l) ) then
-                do fc = 1,num_soilc
-                   c = filter_soilc(fc)
-                   this%totlitc_1m(c) = &
-                        this%totlitc_1m(c) + &
-                        this%decomp_cpools_1m(c,l)
-                end do
-             endif
-          end do
-       end if
+       ! total litter carbon in the top meter (TOTLITC_1m)
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%totlitc_1m(c)         = 0._r8
+       end do
+       do l = 1, ndecomp_pools
+          if ( decomp_cascade_con%is_litter(l) ) then
+             do fc = 1,num_soilc
+                c = filter_soilc(fc)
+                this%totlitc_1m(c) = &
+                     this%totlitc_1m(c) + &
+                     this%decomp_cpools_1m(c,l)
+             end do
+          endif
+       end do
        
        ! total soil organic matter carbon in the top meter (TOTSOMC_1m)
        do fc = 1,num_soilc
@@ -2899,8 +2896,6 @@ contains
              end do
           end if
        end do
-
-
 
 
     end if ! nlevdecomp>1
@@ -4897,7 +4892,7 @@ contains
       end if
    end do
    
-   ! total soil organic matter phosphorus (TOTSOMN)
+   ! total soil organic matter phosphorus (TOTSOMP)
    do fc = 1,num_soilc
       c = filter_soilc(fc)
       this%totsomp(c)    = 0._r8
@@ -4937,8 +4932,8 @@ contains
    do j = 1, nlevdecomp
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         this%sminp_vr(c,j) = this%solutionp_vr(c,j)+ &
-                                  this%labilep_vr(c,j)+ &
+         this%sminp_vr(c,j) = this%solutionp_vr(c,j) + &
+                                  this%labilep_vr(c,j) + &
                                   this%secondp_vr(c,j)
       end do
    end do
@@ -6583,10 +6578,16 @@ contains
     real(r8), pointer :: ptr1d(:)   ! temp. pointers for slicing larger arrays
     character(len=128) :: varname   ! temporary
     !------------------------------------------------------------------------
-    ! -------------------------------------------
-    ! None of these restarts are needed for FATES
-    ! -------------------------------------------
-    if (use_fates) return
+
+    if (use_vertsoilc) then
+       ptr2d => this%t_scalar
+       call restartvar(ncid=ncid, flag=flag, varname='T_SCALAR', xtype=ncd_double,  &
+            dim1name='column',dim2name='levgrnd', switchdim=.true., &
+            long_name='T scaling factor', units='-', fill_value=spval, &
+            interpinic_flag='interp', readvar=readvar, data=ptr2d)
+    end if
+
+    if(use_fates) return
 
     !-------------------------------
     ! Prognostic crop variables
@@ -6601,15 +6602,7 @@ contains
          dim1name='column', &
          long_name='', units='', &
          interpinic_flag='interp', readvar=readvar, data=this%annsum_npp) 
-
-
-    if (use_vertsoilc) then
-       ptr2d => this%t_scalar
-       call restartvar(ncid=ncid, flag=flag, varname='T_SCALAR', xtype=ncd_double,  &
-            dim1name='column',dim2name='levgrnd', switchdim=.true., &
-            long_name='T scaling factor', units='-', fill_value=spval, &
-            interpinic_flag='interp', readvar=readvar, data=ptr2d)
-    end if
+    
 
     ! clm_interface & pflotran
     !------------------------------------------------------------------------
@@ -6666,7 +6659,6 @@ contains
          is_cwd    =>    decomp_cascade_con%is_cwd      & ! Input:  [logical (:) ]  TRUE => pool is a cwd pool   
          )
     
-    if (use_fates) return
 
     ! PET: retaining the following here during migration, but this is science code that should
     ! really be in the NDynamics module. Flag for relocation during ELM v2 code cleanup.

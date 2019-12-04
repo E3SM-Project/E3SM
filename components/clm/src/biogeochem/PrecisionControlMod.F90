@@ -731,29 +731,31 @@ contains
                end do
             end do
 
-            do fp = 1,num_soilp
-               p = filter_soilp(fp)
-               if (veg_ns%retransn(p) < 0._r8) then
-                  write(iulog, *) 'error retransn_patch is negative: ',p
-                  write(iulog, *) 'retransn_patch: ', veg_ns%retransn(p)
-                  call endrun(msg=errMsg(__FILE__, __LINE__))
-               end if
-               if (veg_ns%npool(p) < 0._r8) then
-                  write(iulog, *) 'error npool_patch is negative: ',p
-                  write(iulog, *) 'npool_patch: ', veg_ns%npool(p)
-                  call endrun(msg=errMsg(__FILE__, __LINE__))
-               end if
-               if (veg_ps%retransp(p) < 0._r8) then
-                  write(iulog, *) 'error retransp_patch is negative: ',p
-                  write(iulog, *) 'retransp_patch: ', veg_ps%retransp(p)
-                  call endrun(msg=errMsg(__FILE__, __LINE__))
-               end if
-               if (veg_ps%ppool(p) < 0._r8) then
-                  write(iulog, *) 'error ppool_patch is negative: ',p
-                  write(iulog, *) 'ppool_patch: ', veg_ps%ppool(p)
-                  call endrun(msg=errMsg(__FILE__, __LINE__))
-               end if
-            end do
+            if(.not.use_fates) then
+               do fp = 1,num_soilp
+                  p = filter_soilp(fp)
+                  if (veg_ns%retransn(p) < 0._r8) then
+                     write(iulog, *) 'error retransn_patch is negative: ',p
+                     write(iulog, *) 'retransn_patch: ', veg_ns%retransn(p)
+                     call endrun(msg=errMsg(__FILE__, __LINE__))
+                  end if
+                  if (veg_ns%npool(p) < 0._r8) then
+                     write(iulog, *) 'error npool_patch is negative: ',p
+                     write(iulog, *) 'npool_patch: ', veg_ns%npool(p)
+                     call endrun(msg=errMsg(__FILE__, __LINE__))
+                  end if
+                  if (veg_ps%retransp(p) < 0._r8) then
+                     write(iulog, *) 'error retransp_patch is negative: ',p
+                     write(iulog, *) 'retransp_patch: ', veg_ps%retransp(p)
+                     call endrun(msg=errMsg(__FILE__, __LINE__))
+                  end if
+                  if (veg_ps%ppool(p) < 0._r8) then
+                     write(iulog, *) 'error ppool_patch is negative: ',p
+                     write(iulog, *) 'ppool_patch: ', veg_ps%ppool(p)
+                     call endrun(msg=errMsg(__FILE__, __LINE__))
+                  end if
+               end do
+            end if
 
          endif
 

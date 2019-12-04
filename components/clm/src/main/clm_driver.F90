@@ -1088,12 +1088,13 @@ contains
              !===========================================================================================
              ! clm_interface: 'EcosystemDynNoLeaching' is divided into 2 subroutines (1 & 2): END
              !===========================================================================================
-
-             call AnnualUpdate(bounds_clump,            &
-                  filter(nc)%num_soilc, filter(nc)%soilc, &
-                  filter(nc)%num_soilp, filter(nc)%soilp, &
-                  cnstate_vars, carbonflux_vars)
-           else ! not use_cn
+             if(.not.use_fates)then
+                call AnnualUpdate(bounds_clump,            &
+                     filter(nc)%num_soilc, filter(nc)%soilc, &
+                     filter(nc)%num_soilp, filter(nc)%soilp, &
+                     cnstate_vars, carbonflux_vars)
+             end if
+          else ! not use_cn
 
              if (doalb) then
                 ! Prescribed biogeography - prescribed canopy structure, some prognostic carbon fluxes

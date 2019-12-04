@@ -319,34 +319,28 @@ contains
       call set_fates_ctrlparms('parteh_mode',ival=fates_parteh_mode)
 
 
-      call set_fates_ctrlparms('nu_com',cval=nu_com)  ! Should be 'RD','ECA', etc...
-
-
-      ! Determine which nitrogen and phosphorus species are tracked
-      ! in the soil bgc model, notify fates
-
-      if(cnallocate_carbon_only()) then
-         call set_fates_ctrlparms('nitrogen_spec',ival=0)
-         call set_fates_ctrlparms('phosphorus_spec',ival=0)
-      elseif(cnallocate_carbonnitrogen_only()) then
-         call set_fates_ctrlparms('phosphorus_spec',ival=0)
-         if(use_nitrif_denitrif) then
-            call set_fates_ctrlparms('nitrogen_spec',ival=2)
-         else
-            call set_fates_ctrlparms('nitrogen_spec',ival=1)
-         end if
-      elseif(cnallocate_carbonphosphorus_only()) then
-         call set_fates_ctrlparms('phosphorus_spec',ival=1)
-         call set_fates_ctrlparms('nitrogen_spec',ival=0)
+      if((trim(nu_com).eq.'ECA') .or. (trim(nu_com).eq.'MIC')) then
+         call set_fates_ctrlparms('nu_com',cval='ECA')
       else
-         call set_fates_ctrlparms('phosphorus_spec',ival=1)
-         if(use_nitrif_denitrif) then
-            call set_fates_ctrlparms('nitrogen_spec',ival=2)
-         else
-            call set_fates_ctrlparms('nitrogen_spec',ival=1)
-         end if
+         call set_fates_ctrlparms('nu_com',cval='RD')
       end if
 
+
+      ! ELM ALWAYS has nitrogen and phosphorus "on"
+      ! These may be in a non-limiting status (ie when supplements)
+      ! are added, but they are always allocated and cycled non-the less
+      ! FATES may want to interact differently with other models
+      ! that don't even have these arrays allocated.
+      ! FATES also checks that if NO3 is cycled in ELM, then
+      ! any plant affinity parameters are checked.
+
+      if(use_nitrif_denitrif) then
+         call set_fates_ctrlparms('nitrogen_spec',ival=1)
+      else
+         call set_fates_ctrlparms('nitrogen_spec',ival=2)
+      end if
+      call set_fates_ctrlparms('phosphorus_spec',ival=1)
+      
 
       if(is_restart()) then
          pass_is_restart = 1
@@ -838,33 +832,40 @@ contains
                sum(this%fates(nc)%bc_out(s)%litt_flux_lig_c_si(1:nlevdecomp) * this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
 
 
+         ! Since N and P are always allocated in ELM, AND, since on the FATES
+         ! side we have prepped these arrays, which may be zero fluxes in the case of
+         ! prescribed FATES nutrient mode, we can send the fluxes into the source pools
+         
          select case(fates_parteh_mode)
          case (prt_cnp_flex_allom_hyp )
             
-            ! Transfer Phosphorus
             col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
                  col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_met_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp) * dtime
+
             col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
                  col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_cel_lit) + & 
                  this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)* dtime
+
             col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
                  col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp) * dtime
-
+            
             ! Diagnostic for mass balancing (gP/m2/s)
             col_pf%plant_to_litter_pflux(c) = & 
-                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
-                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
-                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
-            
-            ! Transfer Nitrogen
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
+         
+            ! Transfer Nitrogen 
             col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
                  col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) + & 
                  this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp) * dtime
+            
             col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) = &
                  col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_cel_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)* dtime
+            
             col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
                  col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp) * dtime
@@ -873,8 +874,8 @@ contains
             col_nf%plant_to_litter_nflux(c) = & 
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
-                 sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))            
-
+                 sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
+               
          end select
        
       end do

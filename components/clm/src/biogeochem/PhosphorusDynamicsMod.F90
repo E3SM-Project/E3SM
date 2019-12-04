@@ -674,9 +674,8 @@ contains
     do fc = 1,num_soilc
         c = filter_soilc(fc)
 
-        if(use_fates) then
-            s  = alm_fates%f2hmap(ci)%hsites(c)
-        end if
+        if(use_fates) s = alm_fates%f2hmap(ci)%hsites(c)
+
 
         do j = 1,nlevdecomp
             
