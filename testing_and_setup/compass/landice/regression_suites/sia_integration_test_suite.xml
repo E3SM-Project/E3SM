@@ -25,6 +25,14 @@
                 <script name="setup_and_run_EISMINT2_enthalpy_decomp_testcase.py"/>
         </test>
 
+        <test name="EISMINT2-F restart test" core="landice" configuration="EISMINT2" resolution="25000m" test="restart_test">
+                <script name="setup_and_run_EISMINT2_restart_testcase.py"/>
+        </test>
+
+        <test name="EISMINT2-F enthalpy restart test" core="landice" configuration="EISMINT2" resolution="25000m" test="enthalpy_restart_test">
+                <script name="setup_and_run_EISMINT2_enthalpy_restart_testcase.py"/>
+        </test>
+
         <test name="GIS restart test" core="landice" configuration="greenland" resolution="20km" test="restart_test">
                 <script name="setup_and_run_testcase.py"/>
         </test>
