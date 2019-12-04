@@ -55,7 +55,7 @@ This allows using a different mpirun command to launch unit tests
     <OS>CNL</OS>
     <COMPILERS>intel,gnu,cray</COMPILERS>
     <MPILIBS>mpt,mpi-serial</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{BASEDIR}</CIME_OUTPUT_ROOT>
+    <CIME_OUTPUT_ROOT>/proj/$ENV{USER}</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{DIN_LOC_ROOT}</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>$DIN_LOC_ROOT</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>${CIME_OUTPUT_ROOT}/archive/$CASE</DOUT_S_ROOT>
