@@ -1,4 +1,14 @@
 # Lists of test files for the HOMME regression tests
+#### WIP
+
+#proposed tests:
+#nlev26-dry-rsplit0-(nudiv==nu)-consthv-lim8-qsplit1
+#nlev72-moist-rsplit3-(nudiv!=nu)-consthv-lim8-qsplit6
+#nlev72-moist-rsplit3-(nudiv==nu)-tensorhv-lim9-qsplit6
+
+#//this is what is tested now -- 26 and 72 levels,  dry/moist, rsplit 0 and 3, 
+#nudiv==nu and nudiv != nu, tensorhv and const hv, lim9 and lim8 (do we want lim8 still?), qsplit 1 and 6
+
 SET(HOMME_TESTS 
   swtc1.cmake
   swtc2.cmake
@@ -61,18 +71,20 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
   #Note: we run both a cprnc on the output nc files AND
   #      a comparison of the values of diagnostic quantities
   #      on the raw output files
-  SET (PREQX_COMPARE_F_C_TEST
-    preqx-nlev26-qsize4-r0-dry
-    preqx-nlev26-qsize4-r3-dry
-    preqx-nlev26-qsize4-r0-moist
-    preqx-nlev26-qsize4-r3-moist
-    preqx-nlev72-qsize4-r0-dry
-    preqx-nlev72-qsize4-r3-dry
-    preqx-nlev72-qsize4-r0-moist
-    preqx-nlev72-qsize4-r3-moist
-    preqx-nlev72-qsize4-r3-q6-dry
-    preqx-nlev72-qsize4-r3-tensorhv-dry
-    preqx-nlev72-qsize4-r3-nudiv-dry
-    preqx-nlev72-qsize10-r3-lim9-dry
-  )
+  IF (${ENABLE_PREQX_KOKKOS_BFB_TESTS})
+    SET (PREQX_COMPARE_F_C_TEST
+      preqx-nlev26-qsize4-r0-dry
+      preqx-nlev26-qsize4-r3-dry
+      preqx-nlev26-qsize4-r0-moist
+      preqx-nlev26-qsize4-r3-moist
+      preqx-nlev72-qsize4-r0-dry
+      preqx-nlev72-qsize4-r3-dry
+      preqx-nlev72-qsize4-r0-moist
+      preqx-nlev72-qsize4-r3-moist
+      preqx-nlev72-qsize4-r3-q6-dry
+      preqx-nlev72-qsize4-r3-tensorhv-dry
+      preqx-nlev72-qsize4-r3-nudiv-dry
+      preqx-nlev72-qsize10-r3-lim9-dry
+    )
+  ENDIF ()
 ENDIF()
