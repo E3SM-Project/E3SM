@@ -101,8 +101,6 @@ module ocn_diagnostics
    real (kind=RKIND), pointer :: config_land_ice_flux_attenuation_coefficient
    logical :: jenkinsOn, hollandJenkinsOn
 
-   integer, pointer :: indexTemperature, indexSalinity
-
    !--------------------------------------------------------------------
    !
    ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
@@ -204,6 +202,8 @@ contains
       type (field2DReal), pointer :: vorticityGradientNormalComponentField, vorticityGradientTangentialComponentField
 
       integer :: timeLevel
+      integer, pointer :: indexTemperature, indexSalinity
+
 
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficient
       real (kind=RKIND), dimension(:), pointer :: surfaceFluxAttenuationCoefficientRunoff
@@ -218,6 +218,9 @@ contains
       else
          timeLevel = 1
       end if
+
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
       call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
       call mpas_pool_get_array(statePool, 'normalVelocity', normalVelocity, timeLevel)
@@ -1326,9 +1329,6 @@ contains
       character (len=StrKIND), pointer :: config_time_integrator
 
       err = 0
-
-      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
-      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
       call mpas_pool_get_config(ocnConfigs, 'config_land_ice_flux_formulation', config_land_ice_flux_formulation)
