@@ -6,6 +6,7 @@
 
 #include "p3_functions.hpp"
 
+#include <array>
 #include <utility>
 
 //
@@ -291,6 +292,8 @@ void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int *k
 
 struct CloudSedData
 {
+  static constexpr size_t NUM_ARRAYS = 13;
+
   // Inputs
   Int kts, kte, ktop, kbot, kdir;
   Real *qc_incld, *rho, *inv_rho, *lcldm, *acn, *inv_dzq;
@@ -303,18 +306,7 @@ struct CloudSedData
 
   CloudSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
                Real dt_, Real odt_, bool log_predictNc_, Real prt_liq,
-               std::pair<Real, Real> qc_incld_range,
-               std::pair<Real, Real> rho_range,
-               std::pair<Real, Real> lcldm_range,
-               std::pair<Real, Real> acn_range,
-               std::pair<Real, Real> inv_dzq_range,
-               std::pair<Real, Real> qc_range,
-               std::pair<Real, Real> nc_range,
-               std::pair<Real, Real> nc_incld_range,
-               std::pair<Real, Real> mu_c_range,
-               std::pair<Real, Real> lamc_range,
-               std::pair<Real, Real> qc_tend_range,
-               std::pair<Real, Real> nc_tend_range);
+               const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
 
   // deep copy
   CloudSedData(const CloudSedData& rhs);

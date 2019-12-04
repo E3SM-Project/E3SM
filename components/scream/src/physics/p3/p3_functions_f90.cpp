@@ -56,6 +56,29 @@ void calc_bulk_rho_rime_c(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rim
 namespace scream {
 namespace p3 {
 
+// helper functions
+namespace {
+
+template <size_t N>
+void gen_random_data(const std::array<std::pair<Real, Real>, N>& ranges,
+                     const std::array<Real**, N>& ptrs,
+                     Real* data, Int nk)
+{
+  Int offset = 0;
+  std::default_random_engine generator;
+
+  for (size_t i = 0; i < N; ++i) {
+    std::uniform_real_distribution<Real> data_dist(ranges[i].first, ranges[i].second);
+    *ptrs[i] = data + offset;
+    offset += nk;
+    for(Int k = 0; k < nk; ++k) {
+      (*ptrs[i])[k] = data_dist(generator);
+    }
+  }
+}
+
+}
+
 //
 // In all C++ -> Fortran bridge functions you should see p3_init(true). P3 needs
 // to be initialized since most of its function depend on global tables to be
@@ -213,43 +236,17 @@ void generalized_sedimentation(GenSedData& d)
 CloudSedData::CloudSedData(
   Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
   Real dt_, Real odt_, bool log_predictNc_, Real prt_liq_,
-  std::pair<Real, Real> qc_incld_range,
-  std::pair<Real, Real> rho_range,
-  std::pair<Real, Real> lcldm_range,
-  std::pair<Real, Real> acn_range,
-  std::pair<Real, Real> inv_dzq_range,
-  std::pair<Real, Real> qc_range,
-  std::pair<Real, Real> nc_range,
-  std::pair<Real, Real> nc_incld_range,
-  std::pair<Real, Real> mu_c_range,
-  std::pair<Real, Real> lamc_range,
-  std::pair<Real, Real> qc_tend_range,
-  std::pair<Real, Real> nc_tend_range) :
+  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
   dt(dt_), odt(odt_), log_predictNc(log_predictNc_), prt_liq(prt_liq_),
   m_nk((kte_ - kts_) + 1),
-  m_data( 13 * m_nk, 0.0)
+  m_data( NUM_ARRAYS * m_nk, 0.0)
 {
-  Int offset = 0;
-  Real* data_begin = m_data.data();
+  std::array<Real**, NUM_ARRAYS> ptrs =
+    {&qc_incld, &rho, &inv_rho, &lcldm, &acn, &inv_dzq, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend};
+  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
 
-  Real** ptrs[12] =
-    {&qc_incld, &rho, &lcldm, &acn, &inv_dzq, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend};
-  std::pair<Real,Real>* ranges[12] =
-    {&qc_incld_range, &rho_range, &lcldm_range, &acn_range, &inv_dzq_range, &qc_range, &nc_range, &nc_incld_range, &mu_c_range, &lamc_range, &qc_tend_range, &nc_tend_range};
-
-  std::default_random_engine generator;
-
-  for (Int i = 0; i < 12; ++i) {
-    std::uniform_real_distribution<Real> data_dist(ranges[i]->first, ranges[i]->second);
-    *ptrs[i] = data_begin + offset;
-    offset += m_nk;
-    for(Int k = 0; k < m_nk; ++k) {
-      (*ptrs[i])[k] = data_dist(generator);
-    }
-  }
-
-  inv_rho = data_begin + offset;
+  // overwrite inv_rho
   for (Int k = 0; k < m_nk; ++k) {
     inv_rho[k] = 1 / rho[k];
   }
@@ -264,10 +261,10 @@ CloudSedData::CloudSedData(const CloudSedData& rhs) :
   Int offset = 0;
   Real* data_begin = m_data.data();
 
-  Real** ptrs[13] =
-    {&qc_incld, &rho, &lcldm, &acn, &inv_dzq, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend, &inv_rho};
+  Real** ptrs[NUM_ARRAYS] =
+    {&qc_incld, &rho, &inv_rho, &lcldm, &acn, &inv_dzq, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend};
 
-  for (Int i = 0; i < 13; ++i) {
+  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
     *ptrs[i] = data_begin + offset;
     offset += m_nk;
   }
