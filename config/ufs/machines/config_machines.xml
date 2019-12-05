@@ -265,7 +265,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="NCEP_LIBS">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install</env>
       <env name="NEMSIO_INC">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/include</env>
       <env name="NEMSIO_LIB">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libnemsio_v2.2.3.a</env>
-      <env name="BACIO_LIB4">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libbacio_v2.1.0_4.a</env> 
+      <env name="BACIO_LIB4">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libbacio_v2.1.0_4.a</env>
       <env name="SP_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libsp_v2.0.2_d.a</env>
       <env name="W3EMC_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libw3emc_v2.2.0_d.a</env>
       <env name="W3NCO_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libw3nco_v2.0.6_d.a</env>
@@ -343,6 +343,83 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="MPICH_ENV_DISPLAY">1</env>
+    </environment_variables>
+  </machine>
+
+  <machine MACH="hera">
+    <DESC>NOAA hera system</DESC>
+    <NODENAME_REGEX>hfe</NODENAME_REGEX>
+    <OS>LINUX</OS>
+    <COMPILERS>intel</COMPILERS>
+    <MPILIBS>impi</MPILIBS>
+    <PROJECT>nems</PROJECT>
+    <SAVE_TIMING_DIR/>
+    <CIME_OUTPUT_ROOT>/scratch1/NCEPDEV/nems/$USER</CIME_OUTPUT_ROOT>
+    <DIN_LOC_ROOT>/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
+    <BASELINE_ROOT>/scratch1/NCEPDEV/nems/Rocky.Dunlap/BASELINES</BASELINE_ROOT>
+    <CCSM_CPRNC>/scratch1/NCEPDEV/nems/Rocky.Dunlap/cesmdataroot/tools/cprnc</CCSM_CPRNC>
+    <GMAKE>make</GMAKE>
+    <GMAKE_J>8</GMAKE_J>
+    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
+    <SUPPORTED_BY>NCEP</SUPPORTED_BY>
+    <MAX_TASKS_PER_NODE>80</MAX_TASKS_PER_NODE>
+    <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
+    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
+    <mpirun mpilib="default">
+      <executable>srun</executable>
+      <arguments>
+	<arg name="num_tasks">-n $TOTALPES</arg>
+      </arguments>
+    </mpirun>
+    <mpirun mpilib="mpi-serial">
+      <executable></executable>
+    </mpirun>
+    <module_system type="module">
+      <init_path lang="sh">/apps/lmod/lmod/init/sh</init_path>
+      <init_path lang="csh">/apps/lmod/lmod/init/csh</init_path>
+      <cmd_path lang="sh">module</cmd_path>
+      <cmd_path lang="csh">module</cmd_path>
+      <cmd_path lang="python">/apps/lmod/lmod/libexec/lmod python</cmd_path>
+      <modules compiler="intel">
+        <command name="purge"/>
+        <command name="load">intel/18.0.5.274</command>
+      </modules>
+      <modules mpilib="impi">
+        <command name="load">impi/2018.0.4</command>
+      </modules>
+      <modules>
+        <command name="load">netcdf/4.7.0</command>
+        <command name="use">/scratch2/NCEPDEV/nwprod/NCEPLIBS/modulefiles</command>
+
+	<command name="load">bacio/2.0.3</command>
+	<command name="load">ip/3.0.2</command>
+	<command name="load">nemsio/2.2.4</command>
+	<command name="load">sp/2.0.3</command>
+	<command name="load">w3emc/2.3.1</command>
+	<command name="load">w3nco/2.0.7</command>
+	<command name="load">g2/3.1.1</command>
+	<command name="load">g2tmpl/1.5.1</command>
+	<command name="load">crtm/2.2.6</command>
+	<command name="load">jasper/1.900.1</command>
+	<command name="load">png/1.2.44</command>
+	<command name="load">z/1.2.11</command>
+	<command name="load">post/8.0.0</command>
+
+	<command name="use">/scratch1/NCEPDEV/nems/emc.nemspara/soft/modulefiles</command>
+	<command name="load">esmf/8.0.0</command>
+
+	<command name="use">/contrib/modulefiles</command>
+	<command name="load">cmake/3.9.0</command>
+      </modules>
+    </module_system>
+    <environment_variables comp_interface="nuopc">
+      <env name="ESMF_RUNTIME_PROFILE">ON</env>
+      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
+      <env name="UGCSINPUTPATH">/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA/fv3_gfs_v15_repro_ccpp</env>
+      <env name="UGCSFIXEDFILEPATH">/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA/fix_am</env>
+      <env name="UGCSADDONPATH">/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA/addon</env>
     </environment_variables>
   </machine>
 

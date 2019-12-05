@@ -218,6 +218,22 @@
     </queues>
   </batch_system>
 
+  <batch_system MACH="hera" type="slurm" >
+    <batch_submit>sbatch</batch_submit>
+    <submit_args>
+      <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
+      <arg flag="-q" name="$JOB_QUEUE"/>
+      <arg flag="--account" name="$PROJECT"/>
+    </submit_args>
+    <directives>
+      <directive>--partition=hera</directive>
+    </directives>
+    <queues>
+      <queue walltimemax="08:00:00" nodemin="1" nodemax="210">batch</queue>
+      <queue default="true" walltimemax="00:30:00" nodemin="1" nodemax="210">debug</queue>
+    </queues>
+  </batch_system>
+
   <batch_system type="pbs" MACH="izumi" >
     <batch_submit>ssh izumi cd $CASEROOT ; qsub</batch_submit>
     <jobid_pattern>(\d+.izumi.unified.ucar.edu)$</jobid_pattern>
@@ -289,4 +305,5 @@
       <queue walltimemax="01:00:00" nodemin="1" nodemax="171">batch</queue>
     </queues>
   </batch_system>
+
 </config_batch>
