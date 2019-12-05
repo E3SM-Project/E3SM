@@ -966,6 +966,7 @@ def get_project(machobj=None):
                 project = line.rstrip()
                 if not project.startswith("#"):
                     break
+        if (project is not None):
             logger.info("Using project from .cesm_proj: " + project)
             cime_config.set('main','PROJECT',project)
             return project
