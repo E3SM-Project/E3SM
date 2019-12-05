@@ -80,6 +80,7 @@ contains
     use hybvcoord_mod, only: hvcoord_t
     use time_mod, only: nEndStep
     use control_mod, only: transport_alg
+    use gllfvremap_util_mod, only: gfr_convert_topo
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
@@ -171,7 +172,7 @@ contains
     use perf_mod
     use sl_advection
     use gllfvremap_mod
-    use gllfvremap_test_mod
+    use gllfvremap_util_mod
 
     type (hybrid_t), intent(in) :: hybrid
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)

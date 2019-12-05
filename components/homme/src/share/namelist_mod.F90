@@ -134,6 +134,7 @@ module namelist_mod
        io_stride,           &
        varname_len,         &
        infilenames,         &
+       tool,                &
        MAX_INFILES
   use physical_constants, only: omega
   use common_movie_mod,   only : setvarnames
@@ -320,7 +321,8 @@ module namelist_mod
       interp_lon0,         &
       interp_gridtype,     &
       interp_type,         &
-      interpolate_analysis
+      interpolate_analysis, &
+      tool
 #endif
 ! ^ ifndef CAM
 
@@ -544,6 +546,7 @@ module namelist_mod
        num_io_procs=0
        output_type = 'netcdf' ! Change by MNL
 !     output_type = 'pnetcdf'
+       tool = 'none'
 
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
@@ -767,6 +770,7 @@ module namelist_mod
     call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
+    call MPI_bcast(tool,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
 #endif
 
 #if (defined MODEL_THETA_L && defined ARKODE)
