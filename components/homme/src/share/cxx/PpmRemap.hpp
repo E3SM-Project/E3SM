@@ -343,7 +343,6 @@ struct PpmVertRemap : public VertRemapAlg {
       const Real x2_cur_lev = integral_bounds(k);
 
       const int kk_cur_lev = k_id(k);
-      assert(kk_cur_lev + 1 >= k);
       assert(kk_cur_lev < parabola_coeffs.extent_int(1));
 
       const Real mass_2 = compute_mass(
