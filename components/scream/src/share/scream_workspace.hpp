@@ -129,6 +129,11 @@ class WorkspaceManager
     void release(const View& space, std::enable_if<View::rank == 1>* = 0) const
     { release_impl<typename View::value_type>(space); }
 
+    // Release several contiguous sub-blocks.
+    template <size_t N, typename S=T>
+    KOKKOS_INLINE_FUNCTION
+    void release_many_contiguous(const view_1d_ptr_array<S, N>& ptrs) const;
+
 #ifndef NDEBUG
     // Get the name of a sub-block
     template <typename View>
@@ -197,8 +202,8 @@ class WorkspaceManager
 
     const WorkspaceManager& m_parent;
     const MemberType& m_team;
-    const int m_ws_idx;
-    int& m_next_slot;
+    const int m_ws_idx; // Workspace idx for m_team
+    int& m_next_slot; // the next free ws slot to allocate
   }; // class Workspace
 
 #ifndef KOKKOS_ENABLE_CUDA

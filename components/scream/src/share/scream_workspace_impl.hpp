@@ -440,6 +440,34 @@ void WorkspaceManager<T, D>::Workspace::release_impl(const ko::Unmanaged<view_1d
   m_team.team_barrier();
 }
 
+template <typename T, typename D>
+template <size_t N, typename S>
+KOKKOS_INLINE_FUNCTION
+void WorkspaceManager<T, D>::Workspace::release_many_contiguous(
+  const view_1d_ptr_array<S, N>& ptrs) const
+{
+#ifndef NDEBUG
+  change_num_used(-static_cast<int>(N));
+  // Verify contiguous
+  for (int n = 0; n < static_cast<int>(N) - 1; ++n) {
+    const auto& space = *ptrs[n];
+    scream_kassert(m_parent.get_next<S>(space) == m_parent.get_index<S>(space) + 1);
+  }
+#endif
+
+  Kokkos::single(Kokkos::PerTeam(m_team), [&] () {
+    m_next_slot = m_parent.get_index<S>(*ptrs[0]);
+#ifndef NDEBUG
+    for (int n = 0; n < static_cast<int>(N); ++n) {
+      change_indv_meta<S>(*ptrs[n], "", true);
+    }
+#endif
+  });
+  // We need a barrier here so that a subsequent call to take or release
+  // starts with the metadata in the correct state.
+  m_team.team_barrier();
+}
+
 } // namespace scream
 
 #endif
