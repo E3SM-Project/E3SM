@@ -436,26 +436,29 @@ contains
        do k = ptend%top_level, ptend%bot_level
           state%s(:ncol,k)   = state%s(:ncol,k)   + ptend%s(:ncol,k) * dt
 
-!!!! here c_pv is used insteat of c_p????
           if (present(tend)) &
                tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
+
+! assuming c_p^star is c_p in eam, temperature adjust does not depend on vapor
+! dT = ds/c_p, so, state%t += ds/c_p
+          state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
+
        end do
     end if
 
-!only temperature is adjusted to keep dE=0?
-!but tend%dtdt is correct above up to c_pv
-
     ! Derive new temperature if heating or water tendency not 0.
     if (ptend%ls .or. ptend%lq(1)) then
-!c_pv???
-       call temperature_from_se(state%s,  cpairv(:,:,state%lchnk), state%t, ncol)
-    end if
+!old call
+!       call geopotential_dse(  &
+!             state%lnpint, state%lnpmid, state%pint  , state%pmid  , state%pdel, state%rpdel  , &
+!             state%s     , state%q(:,:,1),state%phis , rairv_loc(:,:,state%lchnk), gravit  , cpairv_loc(:,:,state%lchnk), &
+!             zvirv    , state%t     , state%zi    , state%zm    , ncol         )
 
-!why zm, zi were done in the if statement?
+!new call to recompute zm, zi
        call geopotential_t2(state%pint, state%pmid,    state%pdel, state%rpdel,&
-                           state%t,    state%q(:,:,1),rairv(:,:,state%lchnk), gravit,     &
+                           state%t,    state%q(:,:,1),rairv(:,:,state%lchnk),gravit,     &
                            zvirv,      state%zi,      state%zm, ncol)
-
+    end if
 
     ! Good idea to do this regularly.
     ! (The following causes a 'recursive I/O' error with some compilers.)

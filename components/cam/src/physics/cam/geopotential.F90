@@ -127,7 +127,7 @@ contains
 !trivial mod of geop_dse routine -- set phis and h coefs to zero to verify
 !that t = dse/cpair
 !===============================================================================
-  subroutine temperature_from_se( dse , cpair , t , ncol )
+  subroutine temperature_from_se( dse , phis , cpair , t , ncol )
 !----------------------------------------------------------------------- 
 ! 
 ! Purpose: 
@@ -141,6 +141,7 @@ contains
     ! cpair is passed in as slice of rank 3 arrays allocated
     ! at runtime. Don't specify size to avoid temporary copy.
     real(r8), intent(in) :: dse  (:,:)    ! (pcols,pver)  - dry static energy
+    real(r8), intent(in) :: phis (:)      ! (pcols)       - surface geopotential
     real(r8), intent(in) :: cpair(:,:)    !               - specific heat at constant p for dry air
 
 ! Output arguments
@@ -154,7 +155,7 @@ contains
 !----------------------------------------------------------------------------------
     do k = 1,pver
        do i = 1,ncol
-          t(i,k) = dse(i,k) / cpair(i,k)
+          t(i,k) = (dse(i,k) - phis(k)) / cpair(i,k)
        end do
     end do
 
