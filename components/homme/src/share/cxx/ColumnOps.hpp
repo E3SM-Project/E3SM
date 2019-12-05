@@ -80,27 +80,24 @@ public:
   using DefaultIntProvider = ExecViewUnmanaged<const Scalar [NUM_LEV_P]>;
 
   template<CombineMode CM>
+  KOKKOS_INLINE_FUNCTION
   static constexpr bool needsAlpha () {
     return CM==CombineMode::Scale || CM==CombineMode::ScaleAdd || CM==CombineMode::ScaleUpdate;
   }
 
   template<CombineMode CM>
+  KOKKOS_INLINE_FUNCTION
   static constexpr bool needsBeta () {
     return CM==CombineMode::Update || CM==CombineMode::ScaleUpdate;
   }
 
   template<CombineMode CM>
+  KOKKOS_INLINE_FUNCTION
   static void sanity_check (const Real alpha, const Real beta) {
-    Errors::runtime_check (
-      needsAlpha<CM>() || alpha==1.0,
-      "[ColumnOps] Error! You specified alpha!=1.0, but combine mode '"
-      + cm2str<CM>() +
-      "' would discard alpha altogether.\n");
-    Errors::runtime_check (
-      needsBeta<CM>() || beta==0.0,
-      "[ColumnOps] Error! You specified beta!=0.0, but combine mode '"
-      + cm2str<CM>() +
-      "' would discard beta altogether.\n");
+    assert ((needsAlpha<CM>() || alpha==1.0) &&
+            "Error! Input alpha would be discarded by the requested combine mode.\n");
+    assert ((needsBeta<CM>() || beta==0.0) &&
+            "Error! Input beta would be discarded by the requested combine mode.\n");
   }
 
   template<CombineMode CM = CombineMode::Replace, typename InputProvider = DefaultIntProvider>
@@ -446,35 +443,37 @@ public:
     static_assert (!OnGpu<ExecSpaceType>::value || ColInfo<LENGTH>::NumPacks==LENGTH, "Error! In a GPU build we expect VECTOR_SIZE=1.\n");
 
     if (Forward) {
-      // accumulate input in [0,LENGTH].
-      Dispatch<ExecSpaceType>::parallel_scan(kv.team, LENGTH,
+      // If exclusive, no need to go to access last input level
+      constexpr int offset = Inclusive ? 0 : 1;
+      constexpr int loop_size = LENGTH - offset;
+      Dispatch<ExecSpaceType>::parallel_scan(kv.team, loop_size,
                                             [&](const int k, Real& accumulator, const bool last) {
         accumulator += input_provider(k)[0];
         if (k==0) {
+          // First entry from the bottom: add initial value
           accumulator += s0;
         }
 
-        constexpr int last_idx = Inclusive ? LENGTH-1 : LENGTH-2;
-        constexpr int offset = Inclusive ? 0 : 1;
-        if (last && k<=last_idx) {
+        if (last && k<loop_size) {
           sum(k+offset) = accumulator;
         }
       });
     } else {
-      // accumulate input in [LENGTH,0].
-      Dispatch<ExecSpaceType>::parallel_scan(kv.team, LENGTH,
+      // If exclusive, no need to go to access first input level
+      constexpr int offset = Inclusive ? 0 : 1;
+      constexpr int loop_size = LENGTH - offset;
+      Dispatch<ExecSpaceType>::parallel_scan(kv.team, loop_size,
                                             [&](const int k, Real& accumulator, const bool last) {
         // level must range in (LENGTH,0], while k ranges in [0, LENGTH).
-        const int k_bwd = LENGTH-k-1;
+        const int k_bwd = LENGTH - k - 1;
 
         accumulator += input_provider(k_bwd)[0];
         if (k==0) {
+          // First entry from the top: add initial value
           accumulator += s0;
         }
 
-        constexpr int last_idx = Inclusive ? 0 : 1;
-        constexpr int offset = Inclusive ? 0 : 1;
-        if (last && k_bwd>=last_idx) {
+        if (last) {
           sum(k_bwd-offset) = accumulator;
         }
       });

@@ -540,10 +540,9 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
 
           // Check answer
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
-          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+          for (int k=NUM_INTERFACE_LEV-1; k>=0; --k) {
             REQUIRE (int_out(k) == int_sums[k]);
           }
-          REQUIRE (int_out(NUM_INTERFACE_LEV-1) == int_sums[NUM_INTERFACE_LEV-1]);
         }
       }
     }
@@ -590,10 +589,9 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
 
           // Check answer
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
-          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+          for (int k=0; k<NUM_INTERFACE_LEV; ++k) {
             REQUIRE (int_out(k) == int_sums[k]);
           }
-          REQUIRE (int_out(NUM_INTERFACE_LEV-1) == int_sums[NUM_INTERFACE_LEV-1]);
         }
       }
     }
@@ -644,10 +642,9 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
 
           // Check answer
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
-          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+          for (int k=0; k<NUM_INTERFACE_LEV; ++k) {
             REQUIRE (int_out(k) == int_sums[k]);
           }
-          REQUIRE (int_out(NUM_INTERFACE_LEV-1) == int_sums[NUM_INTERFACE_LEV-1]);
         }
       }
     }
