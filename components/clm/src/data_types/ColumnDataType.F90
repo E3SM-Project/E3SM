@@ -10168,6 +10168,7 @@ contains
 
           ! bgc interface & pflotran
           this%plant_pdemand_vr(i,j)                 = value_column 
+          this%col_plant_pdemand_vr(i,j)             = value_column
           this%adsorb_to_labilep_vr(i,j)             = value_column
           this%desorb_to_solutionp_vr(i,j)           = value_column
        end do
