@@ -391,7 +391,6 @@ This allows using a different mpirun command to launch unit tests
       <modules>
         <command name="load">netcdf/4.7.0</command>
         <command name="use">/scratch2/NCEPDEV/nwprod/NCEPLIBS/modulefiles</command>
-
 	<command name="load">bacio/2.0.3</command>
 	<command name="load">ip/3.0.2</command>
 	<command name="load">nemsio/2.2.4</command>
