@@ -1283,7 +1283,7 @@ end subroutine physics_ptend_copy
 !	    gravit, cpairv(:,:,state%lchnk), zvirv, &
 !            state%t     , state%zi      , state%zm   , ncol)
 
-       call temperature_from_se(state%s, cpairv(:,:,state%lchnk), state%t, ncol)
+       call temperature_from_se(state%s, state%phis, cpairv(:,:,state%lchnk), state%t, ncol)
 
        call geopotential_t2(state%pint, state%pmid,    state%pdel,             state%rpdel,&
                            state%t,    state%q(:,:,1),rairv(:,:,state%lchnk), gravit,     &
