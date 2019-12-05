@@ -27,6 +27,7 @@ program prim_main
   use arkode_mod,       only: calc_nonlinear_stats, finalize_nonlinear_stats
 #endif
   use compose_test_mod, only: compose_test
+  use test_mod,         only: print_test_results
 
 #ifdef PIO_INTERP
   use interp_movie_mod, only : interp_movie_output, interp_movie_finish, interp_movie_init
@@ -248,6 +249,8 @@ program prim_main
   if(par%masterproc) print *,"Finished main timestepping loop",tl%nstep
   call prim_finalize()
   if(par%masterproc) print *,"closing history files"
+
+  call print_test_results(elem, tl, hvcoord, par)
 
 #if defined PIO_INTERP
   call interp_movie_finish
