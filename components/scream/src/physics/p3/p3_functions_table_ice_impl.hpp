@@ -117,8 +117,8 @@ void Functions<S,D>
   // (account for uneven spacing in lookup table for density)
   const auto rhop_le_650 = qiti_gt_small && (rhop <= 650);
   const auto rhop_gt_650 = qiti_gt_small && (rhop > 650);
-  t.dum5.set(rhop_le_650, (rhop-50)*0.005 + 1);
-  t.dum5.set(rhop_gt_650, (rhop-650)*0.004 + 4);
+  t.dum5.set(rhop_le_650, (rhop-50)*sp(0.005) + 1);
+  t.dum5.set(rhop_gt_650, (rhop-650)*sp(0.004) + 4);
 
   // set limits
   t.dumjj = IntSmallPack(t.dum5);
