@@ -13,10 +13,10 @@ BEGIN{
 }
 #-----------------------------------------------------------------------------------------------
 # SYNOPSIS
-# 
+#
 # The following routines are contained here
 #
-# is_valid_value() 
+# is_valid_value()
 #       Returns true if the specified parameter name is contained in
 #       the configuration definition file, and either 1) the specified value is
 #       listed as a valid_value in the definition file, or 2) the definition file
@@ -63,12 +63,12 @@ sub expand_env
        $subst = $ENV{$1} unless defined $subst;
        $value =~ s/\$\{*${1}\}*/$subst/g;
     }
-    
+
     if ($value =~ /\$\{*[\w_]+\}*.*$/) {
-	$value = expand_env($value, $xmlvars_ref) 
+	$value = expand_env($value, $xmlvars_ref)
     }
-    return $value; 
-}       
+    return $value;
+}
 
 #-------------------------------------------------------------------------------
 sub expand_xml_var
@@ -96,43 +96,43 @@ sub expand_xml_var
 	    $value = expand_env($value, $xmlvars_ref) ;
 	}
     }
-	    
+
     if ($value =~ /\$\{*[\w_]+\}*.*$/) {
 	$value = expand_xml_var($value, $xmlvars_ref) ;
     }
-    return $value; 
-}       
+    return $value;
+}
 
 #-------------------------------------------------------------------------------
-sub getAllResolved 
+sub getAllResolved
 {
-    # hash for all the parsers, and a hash for  all the config variables. 
+    # hash for all the parsers, and a hash for  all the config variables.
     my %parsers;
     my %masterconfig;
-    
+
     # Get all the env*.xml files into an array...
-    my @xmlfiles = qw( env_build.xml env_case.xml env_mach_pes.xml env_run.xml);
+    my @xmlfiles = qw( env_build.xml env_case.xml env_mach_pes.xml env_run.xml env_batch.xml);
     push(@xmlfiles, "env_test.xml") if(-e "./env_test.xml");
     push(@xmlfiles, "env_archive.xml") if(-e "./env_archive.xml");
-    
-    # Set up a new XML::LibXML parser for each xml file. 
+
+    # Set up a new XML::LibXML parser for each xml file.
     foreach my $basefile(@xmlfiles)
     {
 	my $xml = XML::LibXML->new()->parse_file($basefile);
 	$parsers{$basefile} = $xml;
     }
-    
-    # find all the variable nodes. 
+
+    # find all the variable nodes.
     foreach my $basefile(@xmlfiles)
     {
-	my $parser = $parsers{$basefile};	
+	my $parser = $parsers{$basefile};
 	my @nodes = $parser->findnodes("//entry");
 	foreach my $node(@nodes)
 	{
 	    my $id = $node->getAttribute('id');
 	    my $value = $node->getAttribute('value');
-	    # if the variable value has an unresolved variable, 
-	    # we need to find it in whatever file it might be in. 
+	    # if the variable value has an unresolved variable,
+	    # we need to find it in whatever file it might be in.
 	    $value = _resolveValues($value, \%parsers);
 	    $masterconfig{$id} = $value;
 	}
@@ -153,13 +153,13 @@ sub getSingleResolved
     my @xmlfiles = qw (env_build.xml env_case.xml env_mach_pes.xml env_run.xml );
     push(@xmlfiles, "env_test.xml") if ( -e "./env_test.xml");
     push(@xmlfiles, "env_archive.xml") if ( -e "./env_archive.xml");
-    
+
     foreach my $basefile(@xmlfiles)
     {
         my $xml = XML::LibXML->new()->parse_file($basefile);
         $parsers{$basefile} = $xml;
     }
-        
+
     my @nodes;
     foreach my $basefile(@xmlfiles)
     {
@@ -173,7 +173,7 @@ sub getSingleResolved
             {
                 $value = _resolValues($value, \%parsers);
             }
-            
+
         }
         else
         {
@@ -188,7 +188,7 @@ sub getSingleResolved
     {
         return undef;
     }
-}           
+}
 
 #-------------------------------------------------------------------------------
 sub getxmlvars
@@ -208,6 +208,14 @@ sub getxmlvars
 	    $xmlvars->{$id} = $value;
 	}
     }
+# These represent a workaround for a problem in resolving variables in perl
+
+    if (defined ($xmlvars->{CIME_OUTPUT_ROOT})){
+	$xmlvars->{CIME_OUTPUT_ROOT}=expand_xml_var($xmlvars->{CIME_OUTPUT_ROOT}, $xmlvars);
+    }
+    if (defined ($xmlvars->{DIN_LOC_ROOT})){
+	$xmlvars->{DIN_LOC_ROOT}=expand_xml_var($xmlvars->{DIN_LOC_ROOT}, $xmlvars);
+    }
 }
 
 #-------------------------------------------------------------------------------
@@ -218,7 +226,7 @@ sub set_compiler
     # first, then use the standard compiler file if it is not available.
     my ($os,$compiler_file, $compiler, $machine, $mpilib, $macrosfile, $output_format) = @_;
 
-    # Read compiler xml 
+    # Read compiler xml
     my @compiler_settings;
     my @files = ("$ENV{\"HOME\"}/.cime/config_compilers.xml", "$compiler_file");
     foreach my $file (@files) {
@@ -231,17 +239,17 @@ sub set_compiler
 		my $MACH     = $node->getAttribute('MACH');
 		my $OS       = $node->getAttribute('OS');
 		my $MPILIB   = $node->getAttribute('MPILIB');
-		
+
 		# Only pick up settings for which the defined attributes match
 		next if (defined $COMPILER && $COMPILER ne $compiler);
 		next if (defined $MACH     && $MACH     ne $machine );
 		next if (defined $OS       && $OS       ne $os      );
 		next if (defined $MPILIB   && $MPILIB   ne $mpilib  );
-		
+
 		# compiler settings comprises child xml nodes
 		push (@compiler_settings ,$node->findnodes(".//*"));
 	    }
-	}	
+	}
     }
     if ($#compiler_settings <= 0) {
 	$logger->logdie( "set_compiler: unrecognized compiler") unless($#compiler_settings);
@@ -263,7 +271,7 @@ sub set_compiler
 
 	my %a = ();
 	my @attrs = $flag->attributes();
-	
+
 	foreach my $attr (@attrs) {
 	    if(defined $attr){
 		my $attr_value = $attr->getValue();
@@ -367,20 +375,20 @@ sub set_compiler
 	    }elsif($_ =~ /FFLAGS/){
 		print MACROS "add_flags(CMAKE_Fortran_FLAGS $value)\n\n";
             }elsif($_ =~ /CPPDEFS/){
-		print MACROS "list(APPEND COMPILE_DEFINITIONS $value)\n\n"; 
+		print MACROS "list(APPEND COMPILE_DEFINITIONS $value)\n\n";
             }elsif($_ =~ /SLIBS/ or $_ =~ /LDFLAGS/){
-		print MACROS "add_flags(CMAKE_EXE_LINKER_FLAGS $value)\n\n"; 
+		print MACROS "add_flags(CMAKE_EXE_LINKER_FLAGS $value)\n\n";
 		#	    }elsif($_ =~ /^ADD_(.*)/){
 		#		print MACROS "add_flags($1 $value)\n\n";
 		#	    }else{
 		#		print MACROS "add_flags($_ $value)\n\n";
 	    }
-	}	
+	}
 
     }
-    # Recursively print the conditionals, combining tests to avoid repetition    
+    # Recursively print the conditionals, combining tests to avoid repetition
     _parse_hash($macros->{_COND_}, 0, $output_format);
-	
+
     close MACROS;
 }
 
@@ -392,7 +400,7 @@ sub is_valid_value
 
     # Check that a list value is not supplied when parameter takes a scalar value.
     unless ($is_list_value) {  # this conditional is satisfied when the list attribute is false, i.e., for scalars
-	if ($value =~ /.*,.*/) {    
+	if ($value =~ /.*,.*/) {
 	    # the pattern matches when $value contains a comma, i.e., is a list
  	    $logger->logdie( "Error is_valid_value; variable $id is a scalar but has a list value $value ");
 	}
@@ -400,13 +408,13 @@ sub is_valid_value
 
     # Check that the value is valid
     # if no valid values are specified, then $value is automatically valid
-    if ( $valid_values ne "" ) {  
+    if ( $valid_values ne "" ) {
 	if ($is_list_value) {
-	    unless (_list_value_ok($value, $valid_values)) { 
+	    unless (_list_value_ok($value, $valid_values)) {
 		$logger->logdie( "ERROR is_valid_value: $id has value $value which is not a valid value ");
 	    }
 	} else {
-	    unless (_value_ok($value, $valid_values)) { 
+	    unless (_value_ok($value, $valid_values)) {
 		$logger->logdie("ERROR is_valid_value: $id has value $value which is not a valid value ");
 	    }
 	}
@@ -450,12 +458,12 @@ sub validate_variable_value
     my $valreal_repeat = "${valint}\\*$valreal1|${valint}\\*$valreal2";
 
     # Match for all valid data-types: integer, real or logical
-    # note: valreal MUST come before valint in this string to prevent integer portion of real 
+    # note: valreal MUST come before valint in this string to prevent integer portion of real
     #       being separated from decimal portion
     my $valall = "$vallogical|$valreal|$valint";
 
     # Match for all valid data-types with repeater: integer, real, logical, or string data
-    # note: valrepeat MUST come before valall in this string to prevent integer repeat specifier 
+    # note: valrepeat MUST come before valall in this string to prevent integer repeat specifier
     #       being accepted alone as a value
     my $valrepeat = "$vallogical_repeat|$valreal_repeat|$valint_repeat";
 
@@ -497,7 +505,7 @@ sub validate_variable_value
 	    } elsif ( $$type_ref{'type'} eq "real" ) {
 		$compare = $valreal;
 	    } else {
-		$logger->logdie( "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " . 
+		$logger->logdie( "ERROR: in $nm (package $pkg_nm): Type of variable name $var is " .
 		    "not a valid FORTRAN type (logical, integer, real, or char).");
 	    }
 	    if ( $i =~ /USERDEFINED/) {
@@ -530,7 +538,7 @@ sub _parse_hash
 			printf(MACROS "%${width}s"," ") if($width>0);
 			printf(MACROS "ifeq (\$(%s), %s) \n",$k1,$k2);
 		    }
-		    
+
 		    _parse_hash($href->{$k1}{$k2},$depth+1, $output_format, $k2);
 		}
 	    }
@@ -553,7 +561,7 @@ sub _parse_hash
 		    }elsif($k1 =~ /CPPDEF/){
 			printf(MACROS "add_config_definitions(DEBUG $value)\n\n");
 		    }elsif($_ =~ /SLIBS/ or $_ =~ /LDFLAGS/){
-			print MACROS "add_flags(CMAKE_EXE_LINKER_FLAGS_DEBUG $value)\n\n"; 
+			print MACROS "add_flags(CMAKE_EXE_LINKER_FLAGS_DEBUG $value)\n\n";
 		    }
 		}else{
 		    if($k1 =~ /CFLAGS/){
@@ -563,42 +571,42 @@ sub _parse_hash
 		    }elsif($k1 =~ /CPPDEF/){
 			printf(MACROS "add_config_definitions(RELEASE $value)\n\n");
 		    }elsif($_ =~ /SLIBS/ or $_ =~ /LDFLAGS/){
-			print MACROS "add_flags(CMAKE_EXE_LINKER_FLAGS_RELEASE $value)\n\n"; 
+			print MACROS "add_flags(CMAKE_EXE_LINKER_FLAGS_RELEASE $value)\n\n";
 		    }
-		}		    
+		}
 	    }
 	}
     }
     $width-=2;
     if($output_format eq "make"){
 	printf(MACROS "%${width}s"," ") if($width>0);
-	printf(MACROS "endif\n\n") if($depth>0) ;    
+	printf(MACROS "endif\n\n") if($depth>0) ;
     }
 }
 
 #-----------------------------------------------------------------------------------------------
 sub _resolveValues
 {
-    # Recursively resolve the unresolved vars in an variable value.  
+    # Recursively resolve the unresolved vars in an variable value.
     # Check the value passed in, and if it still has an unresolved var, keep calling the function
-    # until all pieces of the variable are resolved.  
+    # until all pieces of the variable are resolved.
 
     my $value = shift;
     my $parsers = shift;
 
     #print "in _resolveValues: value: $value\n";
-    # We want to resolve $values from either tthe other xml files, or 
-    # the value can come from the 
+    # We want to resolve $values from either tthe other xml files, or
+    # the value can come from the
     if($value =~ /(\$[\w_]+)/)
     {
 # too noisy
 #	$logger->debug( "in _resolveValues: value: $value\n");
 	my $unresolved = $1;
-	
+
 	#print "need to resolve: $unresolved\n";
 	my $needed = $unresolved;
 	$needed =~ s/\$//g;
-	
+
 	my $found = 0;
 	foreach my $parser(values %$parsers)
 	{
@@ -616,7 +624,7 @@ sub _resolveValues
 		}
 	    }
 	}
-	# Check the environment if not found in the xml files. 
+	# Check the environment if not found in the xml files.
 	if(!$found)
 	{
 	    if(exists $ENV{$needed})
@@ -627,7 +635,7 @@ sub _resolveValues
 	    }
 	}
 	#if the value is not found in any of the xml files or in the environment, then
-	# return undefined. 
+	# return undefined.
 	if(!$found)
 	{
 	    return undef;

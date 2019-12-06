@@ -17,20 +17,26 @@ use Getopt::Long;
 # hash reference containing at least the associated control file (key:
 # control), and possibly extra arguments to cprnc (key: extra_args)
 my %tests = ('copy.nc' => {control => 'control.nc'},
+             'extra_variables.nc' => {control => 'control.nc'},
              'diffs_in_vals.nc' => {control => 'control.nc'},
+             'diffs_in_vals_and_extra_and_missing.nc' => {control => 'control.nc'},
              'diffs_in_fill.nc' => {control => 'control.nc'},
              'diffs_in_vals_and_diffs_in_fill.nc' => {control => 'control.nc'},
              'diffs_in_vals_and_fill.nc' => {control => 'control.nc'},
              'lon_differs.nc' => {control => 'control.nc'},
+             'missing_variables.nc' => {control => 'control.nc'},
              'vals_differ_by_1.1.nc' => {control => 'control.nc'},
              'vals_differ_by_1.1_somewhere.nc' => {control => 'control.nc'},
              'vals_differ_by_varying_amounts.nc' => {control => 'control.nc'},
              'vals_differ_by_varying_amounts2.nc' => {control => 'control.nc'},
-             
+
              'multipleTimes_someTimeless_diffs_in_vals_and_fill.nc' => {control => 'control_multipleTimes_someTimeless.nc'},
+             'multipleTimes_someTimeless_extra_and_missing.nc' => {control => 'control_multipleTimes_someTimeless.nc'},
 
              'noTime_diffs_in_vals_and_fill.nc' => {control => 'control_noTime.nc',
                                                     extra_args => '-m'},
+             'noTime_extra_and_missing.nc' => {control => 'control_noTime.nc',
+                                               extra_args => '-m'},
 
              'diffs_0d.nc' => {control => 'control_0d.nc',
                                extra_args => '-m'},
@@ -38,6 +44,11 @@ my %tests = ('copy.nc' => {control => 'control.nc'},
              'cpl.hi.subset.test.nc' => {control => 'cpl.hi.subset.control.nc'},
              'clm2.h0.subset.test.nc' => {control => 'clm2.h0.subset.control.nc'},
              'clm2.h1.subset.test.nc' => {control => 'clm2.h1.subset.control.nc'},
+
+             'diffs_in_attribute.nc' => {control => 'control_attributes.nc'},
+
+             'copy_char.nc' => {control => 'control_char.nc',
+                                extra_args => '-m'},
              );
 
 #----------------------------------------------------------------------

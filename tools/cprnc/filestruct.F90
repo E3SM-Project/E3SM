@@ -4,16 +4,16 @@ module filestruct
   type dim_t
      integer :: dimsize
      integer :: start, kount  ! used for user requested dimension subsetting
-     character(len=nf90_MAX_NAME) ::name
+     character(len=nf90_MAX_NAME) ::name = ''
   end type dim_t
-     
+
   type var_t
      integer :: matchid
      integer :: ndims
      integer :: natts
      integer, pointer :: dimids(:)
      integer :: xtype
-     character(len=nf90_MAX_NAME) ::name
+     character(len=nf90_MAX_NAME) ::name = ''
   end type var_t
 
   type file_t
@@ -22,11 +22,24 @@ module filestruct
      type(dim_t), pointer :: dim(:)
      type(var_t), pointer :: var(:)
      integer :: unlimdimid
+   contains
+     procedure :: has_unlimited_dim  ! logical function; returns true if this file has an unlimited dimension
   end type file_t
 
   logical :: verbose
 
 contains
+  logical function has_unlimited_dim(file)
+    ! Returns true if this file has an unlimited dimension
+    class(file_t), intent(in) :: file
+
+    if (file%unlimdimid == -1) then
+       has_unlimited_dim = .false.
+    else
+       has_unlimited_dim = .true.
+    end if
+  end function has_unlimited_dim
+
   subroutine init_file_struct( file, dimoptions )
 
     type(file_t) :: file
@@ -89,7 +102,7 @@ contains
           end do
        end do
     end if
-    
+
     do i=1,nvars
        file%var(i)%matchid=-1
        ierr = nf90_inquire_variable(file%fh, i, file%var(i)%name, file%var(i)%xtype, file%var(i)%ndims, dimids, &
@@ -101,7 +114,7 @@ contains
 
   end subroutine init_file_struct
 
-  
+
   subroutine compare_metadata(file1, file2, vid)
     type(file_t) :: file1, file2
     integer, optional, intent(in) :: vid
@@ -133,13 +146,14 @@ contains
 
     do i=1,natts1
        found = .true.
+       attname = ''
        ierr = nf90_inq_attname(file1%fh, id1, i, attname)
        ierr = nf90_inquire_attribute(file1%fh, id1, trim(attname), atttype, attlen)
        select case(atttype)
        case(nf90_char)
           attchar1=' '
           attchar2=' '
-          
+
           ierr = nf90_get_att(file1%fh,id1, trim(attname), attchar1)
           ierr = nf90_get_att(file2%fh,id2, trim(attname), attchar2)
           if(ierr==NF90_NOERR) then
@@ -198,7 +212,7 @@ contains
              print *, 'Attribute ',trim(attname),' from file1: ',attdouble1,' not found on file2'
           end if
           deallocate(attdouble1, attdouble2)
-       case default             
+       case default
           print *,' Did not recognize attribute type ',atttype, trim(attname), attlen
        end select
     end do
@@ -252,14 +266,36 @@ contains
   end subroutine compare_dimensions
 
 
-  subroutine match_vars( file1, file2 )
+  subroutine match_vars( file1, file2, &
+       num_not_found_on_file1, num_not_found_on_file2, &
+       num_not_found_on_file1_timeconst, num_not_found_on_file2_timeconst)
     type(file_t), intent(inout) :: file1, file2
 
+    ! Accumulates count of variables on file2 not found on file1; this only considers (a)
+    ! fields with an unlimited (time) dimension, and (b) fields without an unlimited
+    ! (time) dimension on a file that doesn't have an unlimited dimension.
+    integer, intent(inout) :: num_not_found_on_file1
+
+    ! Accumulates count of variables on file1 not found on file2; this only considers (a)
+    ! fields with an unlimited (time) dimension, and (b) fields without an unlimited
+    ! (time) dimension on a file that doesn't have an unlimited dimension.
+    integer, intent(inout) :: num_not_found_on_file2
+
+    ! Accumulates count of variables on file2 not found on file1; this only considers
+    ! fields without an unlimited (time) dimension on a file that has an unlimited
+    ! dimension.
+    integer, intent(inout) :: num_not_found_on_file1_timeconst
+
+    ! Accumulates count of variables on file1 not found on file2; this only considers
+    ! fields without an unlimited (time) dimension on a file that has an unlimited
+    ! dimension.
+    integer, intent(inout) :: num_not_found_on_file2_timeconst
+
     type(var_t), pointer :: varfile1(:),varfile2(:)
-    
+
     integer :: vs1, vs2, i, j
 
-    
+
 
     varfile1 => file1%var
     varfile2 => file2%var
@@ -278,20 +314,47 @@ contains
     do i=1,vs1
        if(varfile1(i)%matchid<0) then
           print *, 'Could not find match for file1 variable ',trim(varfile1(i)%name), ' in file2'
+          if (file1%has_unlimited_dim() .and. &
+               .not. is_time_varying(varfile1(i), file1%has_unlimited_dim(), file1%unlimdimid)) then
+             num_not_found_on_file2_timeconst = num_not_found_on_file2_timeconst + 1
+          else
+             num_not_found_on_file2 = num_not_found_on_file2 + 1
+          end if
        end if
     end do
     do i=1,vs2
        if(varfile2(i)%matchid<0) then
           print *, 'Could not find match for file2 variable ',trim(varfile2(i)%name), ' in file1'
+          if (file2%has_unlimited_dim() .and. &
+               .not. is_time_varying(varfile2(i), file2%has_unlimited_dim(), file2%unlimdimid)) then
+             num_not_found_on_file1_timeconst = num_not_found_on_file1_timeconst + 1
+          else
+             num_not_found_on_file1 = num_not_found_on_file1 + 1
+          end if
        end if
     end do
   end subroutine match_vars
 
 
+  function is_time_varying(var, file_has_unlimited_dim, unlimdimid)
+    type(var_t), intent(in) :: var                    ! variable of interest
+    logical    , intent(in) :: file_has_unlimited_dim ! true if the file has an unlimited dimension
+    integer    , intent(in) :: unlimdimid             ! the file's unlimited dim id (if it has one)
+
+    logical :: is_time_varying     ! true if the given variable is time-varying
+
+    if (file_has_unlimited_dim) then
+       is_time_varying = any(var%dimids == unlimdimid)
+    else
+       is_time_varying = .false.
+    end if
+  end function is_time_varying
+
+
   function vdimsize(dims, dimids)
     type(dim_t), intent(in) :: dims(:)
     integer, intent(in) :: dimids(:)
-    
+
     integer :: vdimsize
     integer :: i
 
@@ -334,7 +397,7 @@ contains
     n1 = size(f1%var(i1)%dimids)
     start = 1
     do i=1,n1
-       count(i) =  f1%dim(f1%var(i1)%dimids(i))%dimsize
+       count(i) = f1%dim(f1%var(i1)%dimids(i))%dimsize
        if(f1%var(i1)%dimids(i) == f1%unlimdimid) then
           count(i)=1
           start(i)=t1
@@ -468,12 +531,12 @@ contains
 
     deallocate(v1,v2)
   end subroutine compare_var_double
-  
 
 
-  
 
-  
+
+
+
 
 
 

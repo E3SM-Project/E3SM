@@ -29,18 +29,29 @@ $ gen_domain -m <filemap>
              -l <gridlnd>
              [-p set_fv_pole_yc]
              [-c <user comment gen_domain.nml>]
-
+             [--fminval <fminval>]
+             [--fmaxval <fmaxval>]
+             [--set-omask]
+ 
 where:
     filemap = input mapping file name  (character string)
     gridocn = output ocean grid name   (NOT A FILE NAME!)
     gridlnd = output land grid name    (NOT A FILE NAME!)
     usercomment = optional, netcdf global attribute (character string)
     set_fv_pole_yc = [0,1,2] ~ optional, default = 0 (see comments below)
+    fminval = minimum allowable land fraction (reset to 0 below fminval)
+    fmaxval = maximum allowable land fraction (reset to 1 above fmaxval)
+
+Notes:
+    If --set-omask is passed, then an ocean mask is not required and will
+    simply be set to a vector of 1s if mask_a is not present in the input
+    mapping file. If --set-omask is omitted, then mask_a is required and an
+    error will be raised if it does not exist in the input mapping file.
 
 The following output domain files are created:
   domain.lnd.gridlnd_gridocn.nc
   domain.ocn.gridlnd_gridocn.nc
-  domain.ocn.gridocn.nc'
+  domain.ocn.gridocn.nc
 
 =====
 NOTES
@@ -57,10 +68,10 @@ NOTES
     gridlnd has fractions that represent the complement of gridocn fraction
     data, as computed by the input mapping data.  Thus gridocn is intended
     to be an ocean domain file and gridlnd is intended to be the complementary
-    land domain file.  Related, the input mapping data, filemap, should be 
+    land domain file.  Related, the input mapping data, filemap, should be
     a conservative mapping: ocean -> atmosphere.
 
-    Computed land fractions will be truncated into the range [0,1] 
+    Computed land fractions will be truncated into the range [0,1]
     after the min/max land fraction values have been documented.
     Computed land fractions that are less than fminval will be truncated to 0
     to avoid active land cells with tiny land fractions.
@@ -72,12 +83,12 @@ NOTES
 (b) Fraction error reported in stdout
 
     In the stdout, the min/max land fraction is reported.  Land fractions should
-    be in the range [0,1], but due to either unavoidable/acceptable numerical 
+    be in the range [0,1], but due to either unavoidable/acceptable numerical
     errors or other avoidable/unacceptable errors (eg. bad mapping matrix data)
     this code may compute land fractions outside the range [0,1].
 
-    *** THE USER IS RESPONSIBLE FOR EXAMINING THE STDOUT MIN/MAX LAND 
-    *** FRACTION DATA AND MAKING THEIR OWN SUBJECTIVE DECISION ABOUT WHETHER 
+    *** THE USER IS RESPONSIBLE FOR EXAMINING THE STDOUT MIN/MAX LAND
+    *** FRACTION DATA AND MAKING THEIR OWN SUBJECTIVE DECISION ABOUT WHETHER
     *** SUCH ERRORS ARE ACCEPTABLE OR NOT.
 
 (c) The "pole fix" option
@@ -86,26 +97,26 @@ NOTES
     set_fv_pole_yc = 1 => do the pole-fix on gridocn
     set_fv_pole_yc = 2 => do the pole-fix on gridlnd
 
-    The "pole fix" means setting 
+    The "pole fix" means setting
     yc(i,j) = -90 for j=1  (the min value of j: 1), and
     yc(i,j) =  90 for j=nj (the max value of j, the size of the j-dimension)
     regardless of what the coordinate values are in the input mapping data file.
 
-    In other words, if the input mapping data min/max yc coordinates ARE NOT at 
-    +/- 90 degrees but the desire is to have domain data with min/max yc coordinates 
+    In other words, if the input mapping data min/max yc coordinates ARE NOT at
+    +/- 90 degrees but the desire is to have domain data with min/max yc coordinates
     at +/- 90, the "pole fix" namelist option can be activated to accomplish this.
     This would only work for lat/lon grids, ie. grids that could be described
     by x(i) and y(j) coordinate arrays.
-    
+
     Why?
 
-    This option was introduced to accommodate a request by the CESM Atmosphere 
-    Model Working Group wherein they want certain finite volume grids 
-    with min/max yc coordinates (latitude of grid cell "centers") at +/- 90 degrees, 
+    This option was introduced to accommodate a request by the CESM Atmosphere
+    Model Working Group wherein they want certain finite volume grids
+    with min/max yc coordinates (latitude of grid cell "centers") at +/- 90 degrees,
     yet they want the corresponding mapping data created for grids
-    where the min/max yc coordinates ARE NOT at +/- 90 degrees, 
-    (they are somewhat displaced toward the equator).  
+    where the min/max yc coordinates ARE NOT at +/- 90 degrees,
+    (they are somewhat displaced toward the equator).
 
-    While this type of manipulation has been requested by the AMWG, it is not 
+    While this type of manipulation has been requested by the AMWG, it is not
     required by the CESM model, CESM coupler, or the SCRIP map generation tool.
 

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+  <!-- attributes -->
+  <xs:attribute name="id" type="xs:NCName"/>
+  <xs:attribute name="value" type="xs:string"/>
+  <xs:attribute name="version" type="xs:decimal"/>
+
+  <!-- simple elements -->
+  <xs:element name="comment" type="xs:string"/>
+  <xs:element name="header" type="xs:string"/>
+  <xs:element name="type" type="xs:NCName"/>
+  <xs:element name="valid_values" type="xs:string"/>
+  <xs:element name="desc" type="xs:string"/>
+
+  <!-- complex elements -->
+  <xs:element name="file">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="header"/>
+	<xs:element ref="comment" minOccurs="0" maxOccurs="1"/>
+        <xs:element maxOccurs="unbounded" ref="group"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required" />
+      <xs:attribute ref="version" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="group">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="entry"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required"/>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="entry">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="type"/>
+        <xs:element minOccurs="0" ref="valid_values"/>
+        <xs:element minOccurs="0" ref="values"/>
+        <xs:element ref="desc"/>
+      </xs:sequence>
+      <xs:attribute ref="id" use="required"/>
+      <xs:attribute ref="value" />
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="values">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" ref="value"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="value">
+    <xs:complexType>
+      <xs:simpleContent>
+        <xs:extension base="xs:NMTOKEN">
+          <xs:attribute name="compclass" use="required" type="xs:NCName"/>
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

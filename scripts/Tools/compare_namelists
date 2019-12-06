@@ -6,7 +6,7 @@ to not be sensitive to order or whitespace.
 """
 
 from standard_script_setup import *
-import compare_namelists
+import CIME.compare_namelists
 from CIME.utils import expect
 
 import argparse, sys, os
@@ -15,16 +15,14 @@ import argparse, sys, os
 def parse_command_line(args, description):
 ###############################################################################
     parser = argparse.ArgumentParser(
-usage="""\n%s <Path to gold namelist file> <Path to new namelist file> [-c <CASEBASEID>] [--verbose]
+usage="""\n{0} <Path to gold namelist file> <Path to new namelist file> [-c <CASEBASEID>] [--verbose]
 OR
-%s --help
-OR
-%s --test
+{0} --help
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Compare namelist files\033[0m
-    > %s baseline_dir/test/namelistfile mytestarea/namelistfile -c <CASE>
-""" % ((os.path.basename(args[0]), ) * 4),
+    > {0} baseline_dir/test/namelistfile mytestarea/namelistfile -c <CASE>
+""".format(os.path.basename(args[0])),
 
 description=description,
 
@@ -40,9 +38,7 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
     parser.add_argument("-c", "--case", action="store", dest="case", default=None,
                         help="The case base id (<TESTCASE>.<GRID>.<COMPSET>). Helps us normalize data.")
 
-    args = parser.parse_args(args[1:])
-
-    CIME.utils.handle_standard_logging_options(args)
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
     # Normalize case
     if (args.case is not None):
@@ -53,22 +49,19 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    if ("--test" in sys.argv):
-        CIME.utils.run_cmd("python -m doctest %s/compare_namelists.py -v" % CIME.utils.get_python_libs_root(), arg_stdout=None, arg_stderr=None)
-        return
-
     gold_file, compare_file, case = \
         parse_command_line(sys.argv, description)
 
     if (case is None):
         logging.warning("No case id data available, will not be able to normalize values as effectively")
     else:
-        logging.info("Using case: '%s'" % case)
+        logging.info("Using case: '{}'".format(case))
 
-    expect(compare_namelists.compare_namelist_files(gold_file, compare_file, case),
-           "Namelist diff between files %s and %s" % (gold_file, compare_file))
+    success, comments = CIME.compare_namelists.compare_namelist_files(gold_file, compare_file, case)
+    expect(success,
+           "Namelist diff between files {} and {}\n{}".format(gold_file, compare_file, comments))
 
-    print "Files %s and %s MATCH" % (gold_file, compare_file)
+    print("Files {} and {} MATCH".format(gold_file, compare_file))
 
 ###############################################################################
 

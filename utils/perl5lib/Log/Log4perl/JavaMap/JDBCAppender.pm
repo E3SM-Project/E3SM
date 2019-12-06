@@ -7,15 +7,15 @@ sub new {
     my ($class, $appender_name, $data) = @_;
     my $stderr;
 
-    my $pwd =  $data->{password}{value} || 
+    my $pwd =  $data->{password}{value} ||
                 die "'password' not supplied for appender '$appender_name', required for a '$data->{value}'\n";
 
-    my $username =  $data->{user}{value} || 
-                $data->{username}{value} || 
+    my $username =  $data->{user}{value} ||
+                $data->{username}{value} ||
                 die "'user' not supplied for appender '$appender_name', required for a '$data->{value}'\n";
 
 
-    my $sql =  $data->{sql}{value} || 
+    my $sql =  $data->{sql}{value} ||
                 die "'sql' not supplied for appender '$appender_name', required for a '$data->{value}'\n";
 
 
@@ -48,11 +48,11 @@ sub new {
     return Log::Log4perl::Appender->new("Log::Log4perl::Appender::DBI",
         datasource    => $dsn,
         username      => $username,
-        password      => $pwd, 
+        password      => $pwd,
         sql           => $sql,
         params        => \%bind_value_params,
             #warp_message also not a log4j thing, but see above
-        warp_message=> $data->{warp_message}{value},  
+        warp_message=> $data->{warp_message}{value},
     );
 }
 
@@ -69,9 +69,9 @@ Log::Log4perl::JavaMap::JDBCAppender - wraps Log::Log4perl::Appender::DBI
 
 =head1 DESCRIPTION
 
-Possible config properties for log4j JDBCAppender are 
+Possible config properties for log4j JDBCAppender are
 
-    bufferSize 
+    bufferSize
     sql
     password
     user
@@ -80,17 +80,17 @@ Possible config properties for log4j JDBCAppender are
 
 Possible config properties for Log::Log4perl::Appender::DBI are
 
-    bufferSize 
+    bufferSize
     sql
     password
     username
     datasource
-    
+
     usePreparedStmt 0|1
-    
+
     (patternLayout).dontCollapseArrayRefs 0|1
-    
-    
+
+
 =head1 SEE ALSO
 
 http://jakarta.apache.org/log4j/docs/
@@ -101,11 +101,11 @@ Log::Log4perl::Appender::DBI
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -115,7 +115,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -126,8 +126,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

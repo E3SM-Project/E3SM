@@ -37,21 +37,17 @@ The following files are read
 The following files are created
   output_file
 
-=======
-EXAMPLE
-=======
+============
+HOW TO BUILD
+============
 
-To build:
+See INSTALL file in this directory
 
-> cd src
-> setenv CIMEROOT ~/cime1_1_0
-> $CIMEROOT/machines/configure -mach yellowstone
-> gmake
-> cd ../
+==========
+HOW TO RUN
+==========
 
-To run:
-
-> ./map_field -m "/glade/p/cesm/cseg/inputdata/cpl/cpl6/map_ar9v4_to_wr50a_aave_da_110107.nc" -if "/glade/u/home/tcraig/racm_masks_121108.nc" -iv POP_MASK -of x1.nc -ov atm_pop_frac
+$ ./map_field -m "/glade/p/cesm/cseg/inputdata/cpl/cpl6/map_ar9v4_to_wr50a_aave_da_110107.nc" -if "/glade/u/home/tcraig/racm_masks_121108.nc" -iv POP_MASK -of x1.nc -ov atm_pop_frac
 
 =====
 NOTES

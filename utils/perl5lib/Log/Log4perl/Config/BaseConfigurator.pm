@@ -13,7 +13,7 @@ sub new {
 ################################################
     my($class, %options) = @_;
 
-    my $self = { 
+    my $self = {
         utf8 => 0,
         %options,
     };
@@ -82,7 +82,7 @@ sub parse {
 sub parse_post_process {
 ################################################
     my($self, $data, $leaf_paths) = @_;
-    
+
     #   [
     #     'category',
     #     'value',
@@ -122,7 +122,7 @@ sub parse_post_process {
         print "path=@$path\n" if _INTERNAL_DEBUG;
 
         if(0) {
-        } elsif( 
+        } elsif(
             $path->[0] eq "appender" and
             $path->[2] eq "trigger"
           ) {
@@ -154,7 +154,7 @@ sub parse_post_process {
           ) {
               # could be either
               #    appender appndr layout cspec
-              # or 
+              # or
               #    PatternLayout cspec U value ...
               #
             # do nothing
@@ -202,7 +202,7 @@ Constructor, typically called like
 
     my $data = $config_parser->parse();
 
-Instead of C<file>, the derived class C<SomeConfigParser> may define any 
+Instead of C<file>, the derived class C<SomeConfigParser> may define any
 type of configuration input medium (e.g. C<url =E<gt> 'http://foobar'>).
 It just has to make sure its C<parse()> method will later pull the input
 data from the medium specified.
@@ -219,7 +219,7 @@ Specifies a file which the C<parse()> method later parses.
 =item C<< text >>
 
 Specifies a reference to an array of scalars, representing configuration
-records (typically lines of a file). Also accepts a simple scalar, which it 
+records (typically lines of a file). Also accepts a simple scalar, which it
 splits at its newlines and transforms it into an array:
 
     my $config_parser = MyYAMLParser->new(
@@ -232,10 +232,10 @@ splits at its newlines and transforms it into an array:
 
 =back
 
-If either C<file> or C<text> parameters have been specified in the 
+If either C<file> or C<text> parameters have been specified in the
 constructor call, a later call to the configurator's C<text()> method
 will return a reference to an array of configuration text lines.
-This will typically be used by the C<parse()> method to process the 
+This will typically be used by the C<parse()> method to process the
 input.
 
 =item C<< parse >>
@@ -255,7 +255,7 @@ to implement it.
 
 =item *
 
-The parser's C<parse()> method returns a reference to a hash of hashes (HoH). 
+The parser's C<parse()> method returns a reference to a hash of hashes (HoH).
 The top-most hash contains the
 top-level keywords (C<category>, C<appender>) as keys, associated
 with values which are references to more deeply nested hashes.
@@ -282,25 +282,25 @@ The following Log::Log4perl configuration:
     log4perl.appender.Screen.filename = test.log
     log4perl.appender.Screen.layout   = Log::Log4perl::Layout::SimpleLayout
 
-needs to be transformed by the parser's C<parse()> method 
+needs to be transformed by the parser's C<parse()> method
 into this data structure:
 
     { appender => {
         Screen  => {
-          layout => { 
+          layout => {
             value  => "Log::Log4perl::Layout::SimpleLayout" },
             value  => "Log::Log4perl::Appender::Screen",
         },
       },
-      category => { 
-        Bar => { 
-          Twix => { 
-            value => "WARN, Screen" } 
+      category => {
+        Bar => {
+          Twix => {
+            value => "WARN, Screen" }
         } }
     }
 
-For a full-fledged example, check out the sample YAML parser implementation 
-in C<eg/yamlparser>. It uses a simple YAML syntax to specify the Log4perl 
+For a full-fledged example, check out the sample YAML parser implementation
+in C<eg/yamlparser>. It uses a simple YAML syntax to specify the Log4perl
 configuration to illustrate the concept.
 
 =head1 SEE ALSO
@@ -313,11 +313,11 @@ Log::Log4perl::Config::LDAPConfigurator (tbd!)
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -327,7 +327,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -338,8 +338,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

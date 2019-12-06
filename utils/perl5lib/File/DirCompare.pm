@@ -46,7 +46,7 @@ sub _dir_compare
     # Only in $dir1
     if (! $d2{$f}) {
       $sub->($f1, undef) unless $opts->{ignore_unique};
-    } 
+    }
     # Only in $dir2
     elsif (! $d1{$f}) {
       $sub->(undef, $f2) unless $opts->{ignore_unique};
@@ -94,7 +94,7 @@ sub compare
 {
   my $self = shift;
   my ($dir1, $dir2, $sub, $opts) = @_;
-    
+
   croak "Not a directory: '$dir1'" unless -d $dir1;
   croak "Not a directory: '$dir2'" unless -d $dir2;
   croak "Not a subroutine: '$sub'" unless ref $sub eq 'CODE';
@@ -173,29 +173,29 @@ following signature:
 
 The first three arguments are required - $dir1 and $dir2 are paths
 to the two directories to be compared, and $sub is the subroutine
-reference called for all unique or different files. $opts is an 
+reference called for all unique or different files. $opts is an
 optional hashref of options - see L<OPTIONS> below.
 
-The provided subroutine is called for all unique files, and for 
-every pair of 'different' files encountered, with the following 
+The provided subroutine is called for all unique files, and for
+every pair of 'different' files encountered, with the following
 signature:
 
   $sub->($file1, $file2)
 
 where $file1 and $file2 are the paths to the two files. For 'unique'
-files i.e. where a file exists in only one directory, the subroutine 
+files i.e. where a file exists in only one directory, the subroutine
 is called with the other argument 'undef' i.e. for:
-  
+
   $sub->($file1, undef)
-  $sub->(undef, $file2) 
+  $sub->(undef, $file2)
 
 the first indicates $file1 exists only in the first directory given
-($dir1), and the second indicates $file2 exists only in the second 
+($dir1), and the second indicates $file2 exists only in the second
 directory given ($dir2).
 
 =head2 OPTIONS
 
-The following optional arguments are supported, passed in using a 
+The following optional arguments are supported, passed in using a
 hash reference after the three required arguments to compare() e.g.
 
   File::DirCompare->compare($dir1, $dir2, $sub, {
@@ -209,7 +209,7 @@ hash reference after the three required arguments to compare() e.g.
 
 =item cmp
 
-By default, two files are regarded as different if their contents do 
+By default, two files are regarded as different if their contents do
 not match (tested with File::Compare::compare). That default behaviour
 can be overridden by providing a 'cmp' subroutine to do the file
 comparison, returning zero if the two files are equal, and non-zero
@@ -217,25 +217,25 @@ if not.
 
 E.g. to compare using modification times instead of file contents:
 
-  File::DirCompare->compare($dir1, $dir2, $sub, { 
+  File::DirCompare->compare($dir1, $dir2, $sub, {
     cmp => sub { -M $_[0] <=> -M $_[1] },
   });
 
 =item ignore_cmp
 
 If you want to see I<all> corresponding files, not just 'different'
-ones, set the 'ignore_cmp' flag to tell File::DirCompare to skip its 
+ones, set the 'ignore_cmp' flag to tell File::DirCompare to skip its
 file comparison checks i.e.
 
-  File::DirCompare->compare($dir1, $dir2, $sub, 
+  File::DirCompare->compare($dir1, $dir2, $sub,
     { ignore_cmp => 1 });
 
 =item ignore_unique
 
-If you want to ignore files that only exist in one of the two 
+If you want to ignore files that only exist in one of the two
 directories, set the 'ignore_unique' flag i.e.
 
-  File::DirCompare->compare($dir1, $dir2, $sub, 
+  File::DirCompare->compare($dir1, $dir2, $sub,
     { ignore_unique => 1 });
 
 =item matches
@@ -251,9 +251,9 @@ These pairs are ordinarily ignored (unless C<ignore_cmp> is set).
 
 =head1 SEE ALSO
 
-File::Dircmp, which provides similar functionality (and whose 
+File::Dircmp, which provides similar functionality (and whose
 directory walking code I've adapted for this module), but a simpler
-reporting-only interface, something like the first example in the 
+reporting-only interface, something like the first example in the
 SYNOPSIS above.
 
 =head1 AUTHOR AND CREDITS
@@ -268,6 +268,6 @@ with whitespace.
 Copyright 2006-2012 by Gavin Carr E<lt>gavin@openfusion.com.auE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =cut

@@ -36,13 +36,13 @@ sub new {
             die "Connect to $self->{PeerAddr}:$self->{PeerPort} failed: $!";
         }
 
-        $self->{socket}->autoflush(1); 
+        $self->{socket}->autoflush(1);
         #autoflush has been the default behavior since 1997
     }
 
     return $self;
 }
-    
+
 ##################################################
 sub connect {
 ##################################################
@@ -61,17 +61,17 @@ sub log {
 
     {
             # If we were never able to establish
-            # a connection, try to establish one 
+            # a connection, try to establish one
             # here. If it fails, return.
-        if(($self->{silent_recovery} or $self->{defer_connection}) and 
+        if(($self->{silent_recovery} or $self->{defer_connection}) and
            !defined $self->{socket}) {
             if(! $self->connect(%$self)) {
                 return undef;
             }
         }
-  
+
             # Try to send the message across
-        eval { $self->{socket}->send($params{message}); 
+        eval { $self->{socket}->send($params{message});
              };
 
         if($@) {
@@ -140,7 +140,7 @@ method returns, discarding the message.
 If the option C<silent_recovery> is given to the constructor and
 set to a true value, the behaviour is different: If the socket connection
 can't be established at initialization time, a single warning is issued.
-Every log attempt will then try to establish the connection and 
+Every log attempt will then try to establish the connection and
 discard the message silently if it fails.
 If you don't even want the warning, set the C<no_warning> option to
 a true value.
@@ -194,11 +194,11 @@ Start it and then run the following script as a client:
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -208,7 +208,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -219,8 +219,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

@@ -1,4 +1,0 @@
-ifeq  ($(strip $(COMPILER)),intel)
-cube_mod.o: cube_mod.F90
-	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -O0 $<
-endif

@@ -13,9 +13,9 @@
 #   SRCFILE=<file> ~ file with list of src files, used to create SRCS
 #   DEPGEN=<exec>  ~ dependency generator utility, default is makdep
 #
-#   <macro defns>  ~ any macro definitions found in this file or the included 
+#   <macro defns>  ~ any macro definitions found in this file or the included
 #                    MACFILE will be over-riden by cmd-line macro definitions
-#   MODEL=<model>  ~ a standard macro definition, often found in the included 
+#   MODEL=<model>  ~ a standard macro definition, often found in the included
 #                    MACFILE, used to trigger special compilation flags
 #
 # Usage examples:
@@ -31,14 +31,14 @@
 
 EXEC     := ../runoff_map
 MACFILE  := Macros.make
-MODEL    := NONE 
+MODEL    := NONE
 VPFILE   := NONE
 VPATH    := $(shell pwd)
 SRCFILE  := NONE
 SRCS     := NONE
 DEPGEN   := ./makdep  # an externally provided dependency generator
-#compile_threaded := true
-compile_threaded := false
+#compile_threaded := TRUE
+compile_threaded := FALSE
 
 ifneq ($(VPATH),.)
   # this variable was specified on cmd line or in an env var
@@ -88,6 +88,7 @@ INCLDIR  += -I$(NETCDF_PATH)/include
 # echo file names, paths, compile flags, etc. used during build
 #-------------------------------------------------------------------------------
 
+.PHONY: db_files
 db_files:
 	@echo " "
 	@echo "* EXEC    := $(EXEC)"
@@ -99,6 +100,8 @@ db_files:
 	@echo "* SRCS    := $(SRCS)"
 	@echo "* OBJS    := $(OBJS)"
 	@echo "* DEPS    := $(DEPS)"
+
+.PHONY: db_flags
 db_flags:
 	@echo " "
 	@echo "* cc      := $(SCC)  $(CFLAGS) $(INCS) $(INCLDIR)"
@@ -110,7 +113,7 @@ db_flags:
 #-------------------------------------------------------------------------------
 
 $(EXEC): $(OBJS)
-	$(SFC) -o $(EXEC) $(OBJS) $(SLIBS) $(ULIBS) $(LDFLAGS) 
+	$(SFC) -o $(EXEC) $(OBJS) $(SLIBS) $(ULIBS) $(LDFLAGS)
 
 .c.o:
 	$(SCC) $(INCLDIR) $(INCS) $(CPPDEFS) $(CFLAGS)  $<
@@ -123,27 +126,26 @@ ifeq ($(CPP),NONE)
 	$(SFC) $(FFLAGS) $(FREEFLAGS)  $(CPPFLAGS) $(CPPDEFS) $(INCLDIR) $(INCS)  $<
 else
 .F.o:
-	$(SFC)  $(FFLAGS) $(FIXEDFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $*.f  
+	$(SFC)  $(FFLAGS) $(FIXEDFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $*.f
 
 .F90.o:
-	$(SFC)  $(FFLAGS) $(FREEFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $*.F90  
+	$(SFC)  $(FFLAGS) $(FREEFLAGS) $(CPPDEFS) $(INCS) $(INCLDIR) $*.F90
 endif
 
+.PHONY: clean
 clean:
-	$(RM) -f *.f *.f90 *.d *.mod $(OBJS)
+	$(RM) -f *.f *.f90 *.d *.mod *.optrpt $(OBJS) $(EXEC) $(DEPGEN)
 
-realclean: clean
-	$(RM) -f $(EXEC)
-
-distclean: realclean
-	$(RM) -f $(MACFILE) env_mach_specific Depends* makdep build.csh
+.PHONY: distclean
+distclean: clean
+	../../../../configure --clean
 
 #-------------------------------------------------------------------------------
 # Build & include dependency files
 #-------------------------------------------------------------------------------
 # ASSUMPTIONS:
-# o an externally provided dependency generator, $(DEPGEN), is available, 
-#   its cmd line syntax is compatible with the build rules below.   Eg, for 
+# o an externally provided dependency generator, $(DEPGEN), is available,
+#   its cmd line syntax is compatible with the build rules below.   Eg, for
 #   each .o file, there is a corresponding .d (dependency) file, and both
 #   will be dependent on the same src file, eg.    foo.o foo.d : foo.F90
 #   Also, the dependancy genorator's capabilities, limitations, and assumptions
@@ -169,11 +171,9 @@ $(DEPGEN) :
 # the if-tests prevent DEPS files from being created when they're not needed
 ifneq ($(MAKECMDGOALS), db_files)
 ifneq ($(MAKECMDGOALS), db_flags)
-ifneq ($(MAKECMDGOALS), mostlyclean)
 ifneq ($(MAKECMDGOALS), clean)
-ifneq ($(MAKECMDGOALS), realclean)
+ifneq ($(MAKECMDGOALS), distclean)
     -include $(DEPS)
-endif
 endif
 endif
 endif

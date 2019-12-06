@@ -28,7 +28,7 @@ begin
     print((/"Can not find "+gridfile+"!"/))
     status_exit(1)
   end if
-  
+
   if (.not.(plot_ortho.or.plot_stereo)) then
     print((/"WARNING: no plots specified!"/))
     exit
@@ -84,7 +84,7 @@ begin
   print("number of cells = "+nCells)
   print("number of verticies = "+nVerts)
   print("lat min/max = "+min(lat)+" "+max(lat))
-  
+
   ; polygon resources
   res_p             = True
 
@@ -103,7 +103,7 @@ begin
     res = True
     res@tiMainString = gridname
     res@mpProjection      = "Orthographic"
-  
+
     ; Center more towards Equator
     res@mpCenterLatF      =  center_lat
     res@mpCenterLonF      =  center_lon
@@ -175,7 +175,7 @@ begin
 
     res2@gsnDraw = False
     res2@gsnFrame = False
-  
+
     res2@mpLandFillColor        = "tan"
     res2@mpOceanFillColor       = "LightBlue"
     res2@mpInlandWaterFillColor = "Blue"

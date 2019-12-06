@@ -17,7 +17,7 @@ our %FILTERS_DEFINED = ();
 sub new {
 ##################################################
     my($class, $name, $action) = @_;
-  
+
     print "Creating filter $name\n" if _INTERNAL_DEBUG;
 
     my $self = { name => $name };
@@ -90,7 +90,7 @@ sub ok {
 
     my $decision = $self->{ok}->(%p);
 
-    print "$self->{name}'s ok'ed: ", 
+    print "$self->{name}'s ok'ed: ",
           ($decision ? "yes" : "no"), "\n" if _INTERNAL_DEBUG;
 
     return $decision;
@@ -147,12 +147,12 @@ Log4perl allows the use of customized filters in its appenders
 to control the output of messages. These filters might grep for
 certain text chunks in a message, verify that its priority
 matches or exceeds a certain level or that this is the 10th
-time the same message has been submitted -- and come to a log/no log 
+time the same message has been submitted -- and come to a log/no log
 decision based upon these circumstantial facts.
 
 Filters have names and can be specified in two different ways in the Log4perl
-configuration file: As subroutines or as filter classes. Here's a 
-simple filter named C<MyFilter> which just verifies that the 
+configuration file: As subroutines or as filter classes. Here's a
+simple filter named C<MyFilter> which just verifies that the
 oncoming message matches the regular expression C</let this through/i>:
 
     log4perl.filter.MyFilter        = sub { /let this through/i }
@@ -160,12 +160,12 @@ oncoming message matches the regular expression C</let this through/i>:
 It exploits the fact that when the subroutine defined
 above is called on a message,
 Perl's special C<$_> variable will be set to the message text (prerendered,
-i.e. concatenated but not layouted) to be logged. 
-The subroutine is expected to return a true value 
+i.e. concatenated but not layouted) to be logged.
+The subroutine is expected to return a true value
 if it wants the message to be logged or a false value if doesn't.
 
 Also, Log::Log4perl will pass a hash to the subroutine,
-containing all key/value pairs that it would pass to the corresponding 
+containing all key/value pairs that it would pass to the corresponding
 appender, as specified in Log::Log4perl::Appender. Here's an
 example of a filter checking the priority of the oncoming message:
 
@@ -176,16 +176,16 @@ example of a filter checking the priority of the oncoming message:
            return 1;                         \
        }                                     \
        return 0;                             \
-  }     
+  }
 
-If the message priority equals C<WARN> or C<INFO>, 
+If the message priority equals C<WARN> or C<INFO>,
 it returns a true value, causing
 the message to be logged.
 
 =head2 Predefined Filters
 
 For common tasks like verifying that the message priority matches
-a certain priority, there's already a 
+a certain priority, there's already a
 set of predefined filters available. To perform an exact level match, it's
 much cleaner to use Log4perl's C<LevelMatch> filter instead:
 
@@ -201,14 +201,14 @@ it otherwise. The statement can be negated by saying
 instead. This way, the message will be logged if its priority is
 anything but INFO.
 
-On a similar note, Log4perl's C<StringMatch> filter will check the 
+On a similar note, Log4perl's C<StringMatch> filter will check the
 oncoming message for strings or regular expressions:
 
   log4perl.filter.M1               = Log::Log4perl::Filter::StringMatch
   log4perl.filter.M1.StringToMatch = bl.. bl..
   log4perl.filter.M1.AcceptOnMatch = true
 
-This will open the gate for messages like C<blah blah> because the 
+This will open the gate for messages like C<blah blah> because the
 regular expression in the C<StringToMatch> matches them. Again,
 the setting of C<AcceptOnMatch> determines if the filter is defined
 in a positive or negative way.
@@ -238,15 +238,15 @@ planned or withdraw immediately.
 Sometimes, it's useful to combine the output of various filters to
 arrive at a log/no log decision. While Log4j, Log4perl's mother ship,
 has chosen to implement this feature as a filter chain, similar to Linux' IP chains,
-Log4perl tries a different approach. 
+Log4perl tries a different approach.
 
-Typically, filter results will not need to be bumped along chains but 
+Typically, filter results will not need to be bumped along chains but
 combined in a programmatic manner using boolean logic. "Log if
-this filter says 'yes' and that filter says 'no'" 
+this filter says 'yes' and that filter says 'no'"
 is a fairly common requirement, but hard to implement as a chain.
 
 C<Log::Log4perl::Filter::Boolean> is a specially predefined custom filter
-for Log4perl. It combines the results of other custom filters 
+for Log4perl. It combines the results of other custom filters
 in arbitrary ways, using boolean expressions:
 
     log4perl.logger = WARN, AppWarn, AppError
@@ -262,7 +262,7 @@ in arbitrary ways, using boolean expressions:
 
 C<Log::Log4perl::Filter::Boolean>'s boolean expressions allow for combining
 different appenders by name using AND (&& or &), OR (|| or |) and NOT (!) as
-logical expressions. Also, parentheses can be used for defining precedences. 
+logical expressions. Also, parentheses can be used for defining precedences.
 Operator precedence follows standard Perl conventions. Here's a bunch of examples:
 
     Match1 && !Match2            # Match1 and not Match2
@@ -285,7 +285,7 @@ and define its C<new> and C<ok> methods like this:
 
         my $self = { %options,
                    };
-     
+
         bless $self, $class;
 
         return $self;
@@ -315,7 +315,7 @@ like this:
     Log::Log4perl::Filter::MyFilter->new( name  => "MyFilter",
                                           color => "red" );
 
-The custom filter class should use this to set the object's attributes, 
+The custom filter class should use this to set the object's attributes,
 to have them available later to base log/nolog decisions on it.
 
 C<ok()> is the filter's method to tell if it agrees or disagrees with logging
@@ -336,11 +336,11 @@ L<Log::Log4perl::Filter::Boolean>
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -350,7 +350,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -361,8 +361,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

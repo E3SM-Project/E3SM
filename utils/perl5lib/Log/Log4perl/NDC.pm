@@ -63,11 +63,11 @@ Log::Log4perl::NDC - Nested Diagnostic Context
 
 =head1 DESCRIPTION
 
-Log::Log4perl allows loggers to maintain global thread-specific data, 
+Log::Log4perl allows loggers to maintain global thread-specific data,
 called the Nested Diagnostic Context (NDC).
 
 At some point, the application might decide to push a piece of
-data onto the NDC stack, which other parts of the application might 
+data onto the NDC stack, which other parts of the application might
 want to reuse. For example, at the beginning of a web request in a server,
 the application might decide to push the IP address of the client
 onto the stack to provide it for other loggers down the road without
@@ -80,7 +80,7 @@ of elements currently on the stack.
 This module maintains a simple stack which you can push data on to, query
 what's on top, pop it off again or delete the entire stack.
 
-Its purpose is to provide a thread-specific context which all 
+Its purpose is to provide a thread-specific context which all
 Log::Log4perl loggers can refer to without the application having to
 pass around the context data between its functions.
 
@@ -119,11 +119,11 @@ instances of this class.
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -133,7 +133,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -144,8 +144,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

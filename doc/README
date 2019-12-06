@@ -1,32 +1,35 @@
---------------------------------------------------------------------------------
-                         CESM1.3 DOCUMENTATION  README
 
-To generate documentation for a CESM1.3 tag, follow these steps:
+This requires Sphinx v1.7 or greater. 
 
-1. Check out the entire CESM code base tag from SVN
+Check the sphinx version as follows:
 
-2. generate usersguide using docbook
-   - cd scripts/doc/usersguide
-   - ./rundocbook.csh
-   - cp *.* [path-to-web-server-accessible-directory]
-     example on CGD host: cp *.* /cesmweb/html/models/cesm1.3/cesm/doc/usersguide
-     and corresponding URL: http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc/usersguide/book1.html
+>sphinx-build --version
 
-3. generate modelnl documentation
-   - cd scripts/doc/modelnl
-   - ./create_tables
-   - cp *.* [path-to-web-server-accessible-directory]
-     example on CGD host: cp * /cesmweb/html/models/cesm1.3/cesm/doc/modelnl
-     and corresponding URL: http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc/modelnl/index.html
+The documentation source is stored with the CIME master code base. However, 
+the built html files are stored seperately in the orphan gh-pages branch
+and can be viewed from a browser at URL:
 
-4. generate scripts and tools API documentation using doxygen
-   - cd scripts/doc/apidocs
-   - doxygen
-   - cd html
-   - cp *.* [path-to-web-server-accessible-directory]
-     example on CGD host: cp -R html /cesmweb/html/models/cesm1.3/cesm/doc/apidocs
-     and corresponding URL: http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc/apidocs/html
-   
-http://www.cesm.ucar.edu/models/cesm1.3/cesm/doc
+http://esmci.github.io/cime
 
---------------------------------------------------------------------------------
+Details for working with the documentation are contained in the following
+wiki page:
+
+https://github.com/ESMCI/cime/wiki/Working-with-Sphinx-and-reStructuredText
+
+Use the following commands to auto-build the html documentation from the main
+cime/doc directory:
+
+>make clean
+>make api
+>make html
+
+To copy the html to the orphan gh-pages, follow these steps:
+
+>git clone -b gh-pages https://github.com/ESMCI/cime.git cime.gh-pages
+>cd cime.gh-pages
+>rm -rf *
+>cp -R /path/to/cime-master/doc/build/html/* .
+>git commit -m 'update HTML for PR #...'
+>git push origin gh-pages
+
+

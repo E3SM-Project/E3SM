@@ -20,7 +20,7 @@ sub new {
 ###########################################
     my($class, $format) = @_;
 
-    my $self = { 
+    my $self = {
                   stack => [],
                   fmt   => undef,
                };
@@ -38,7 +38,7 @@ sub new {
         $format = "[EEE MMM dd HH:mm:ss yyyy]";
     }
 
-    if($format) { 
+    if($format) {
         $self->prepare($format);
     }
 
@@ -111,14 +111,14 @@ sub rep {
     # that can be used later on to compute the components of the placeholders
     # one by one when we get the components of the current time later on
     # via localtime.
-    
+
     # So, we're parsing the "yyyy/MM" format once, replace it by, say
     # "%04d:%02d" and store an array that says "for the first placeholder,
     # get the localtime-parameter on index #5 (which is years since the
-    # epoch), add 1900 to it and pass it on to sprintf(). For the 2nd 
+    # epoch), add 1900 to it and pass it on to sprintf(). For the 2nd
     # placeholder, get the localtime component at index #2 (which is hours)
     # and pass it on unmodified to sprintf.
-    
+
     # So, the array to compute the time format at logtime contains
     # as many elements as the original SimpleDateFormat contained. Each
     # entry is a array ref, holding an array with 2 elements: The index
@@ -143,7 +143,7 @@ sub rep {
 #e - epoch seconds#
 ###################
     } elsif($first eq "e") {
-          # index (0) irrelevant, but we return time() which 
+          # index (0) irrelevant, but we return time() which
           # comes in as 2nd parameter
         push @{$self->{stack}}, [0, sub { return $_[1] }];
         return "%d";
@@ -248,7 +248,7 @@ sub rep {
 #S - milliseconds    #
 ######################
     } elsif($first eq "S") {
-        push @{$self->{stack}}, 
+        push @{$self->{stack}},
              [9, sub { substr sprintf("%06d", $_[0]), 0, $len }];
         return "%s";
 
@@ -280,7 +280,7 @@ sub format {
 
     $msecs = 0 unless defined $msecs;
 
-    my @time; 
+    my @time;
 
     if($GMTIME) {
         @time = gmtime($secs);
@@ -334,7 +334,7 @@ Log::Log4perl::DateFormat - Log4perl advanced date formatter helper class
 
 =head1 DESCRIPTION
 
-C<Log::Log4perl::DateFormat> is a low-level helper class for the 
+C<Log::Log4perl::DateFormat> is a low-level helper class for the
 advanced date formatting functions in C<Log::Log4perl::Layout::PatternLayout>.
 
 Unless you're writing your own Layout class like
@@ -373,7 +373,7 @@ which allows the following placeholders to be recognized and processed:
     '      escape for text      (Delimiter)
     ''     single quote         (Literal)       '
 
-For example, if you want to format the current Unix time in 
+For example, if you want to format the current Unix time in
 C<"MM/dd HH:mm"> format, all you have to do is this:
 
     use Log::Log4perl::DateFormat;
@@ -384,7 +384,7 @@ C<"MM/dd HH:mm"> format, all you have to do is this:
     print $format->format($time), "\n";
 
 While the C<new()> method is expensive, because it parses the format
-strings and sets up all kinds of structures behind the scenes, 
+strings and sets up all kinds of structures behind the scenes,
 followup calls to C<format()> are fast, because C<DateFormat> will
 just call C<localtime()> and C<sprintf()> once to return the formatted
 date/time string.
@@ -392,7 +392,7 @@ date/time string.
 So, typically, you would initialize the formatter once and then reuse
 it over and over again to display all kinds of time values.
 
-Also, for your convenience, 
+Also, for your convenience,
 the following predefined formats are available, just as outlined in the
 log4j spec:
 
@@ -402,7 +402,7 @@ log4j spec:
     ISO8601  "yyyy-MM-dd HH:mm:ss,SSS"      "1999-11-27 15:49:37,459"
     APACHE   "[EEE MMM dd HH:mm:ss yyyy]"   "[Wed Mar 16 15:49:37 2005]"
 
-So, instead of passing 
+So, instead of passing
 
     Log::Log4perl::DateFormat->new("HH:mm:ss,SSS");
 
@@ -413,14 +413,14 @@ you could just as well say
 and get the same result later on.
 
 =head2 Known Shortcomings
- 
+
 The following placeholders are currently I<not> recognized, unless
 someone (and that could be you :) implements them:
 
     F day of week in month
-    w week in year 
+    w week in year
     W week in month
-    k hour in day 
+    k hour in day
     K hour in am/pm
     z timezone (but we got 'Z' for the numeric time zone value)
 
@@ -429,11 +429,11 @@ month names, internationalization support has to be added.
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -443,7 +443,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -454,8 +454,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

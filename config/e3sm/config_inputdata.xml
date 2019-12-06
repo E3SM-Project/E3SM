@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+
+<inputdata>
+<!-- server precidence is order in this file.  Highest preference at top -->
+  <server>
+    <protocol>wget</protocol>
+    <address>https://web.lcrc.anl.gov/public/e3sm/inputdata/</address>
+  </server>
+  <server>
+    <protocol>svn</protocol>
+    <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
+  </server>
+
+</inputdata>

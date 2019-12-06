@@ -1,0 +1,7 @@
+#! /bin/bash
+
+for item in $(\ls -1 *.<TESTID>/TestStatus); do
+    cd $(dirname $item)
+    <SETUP_CMD> && <BUILD_CMD> && <RUN_CMD>
+    cd -
+done

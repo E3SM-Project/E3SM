@@ -1,1118 +1,227 @@
-#!/usr/bin/env perl
-#-----------------------------------------------------------------------------------------------
-#
-# create_newcase
-#
-# This utility allows the users to specify configuration
-# options via a commandline interface.
-#
-# A few notes for clarification:
-# - All possible compset components will contain a cime_config directory containing
-# a file "config_component.xml" specifying the xml variable definitions for that component
-# - If the atmopsheric component was datm, then $file would be
-#     $cimeroot/components/data_comps/datm/cime_config/config_component.xml
-# note that for CESM, the only primary components are
-#     cam, clm, cice, cism, pop, drv, allactive
-# so the directories for the primary components will contain the additional two files:
-#     'compsets.xml', 'pelayouts.xml' and 'pio_settings.xml'
-#
-#-----------------------------------------------------------------------------------------------
-
-use strict;
-use English;
-use Getopt::Long;
-use Cwd qw( getcwd abs_path chdir);
-use IO::File;
-use IO::Handle;
-use Data::Dumper;
-use File::Basename;
-use File::Path qw(mkpath);
-
-# Check for the existence of XML::LibXML in whatever perl distribution happens to be in use.
-# If not found, print a warning message then exit.
-eval {
-    require XML::LibXML;
-    XML::LibXML->import();
-};
-if($@)
-{
-    my $warning = <<END;
-WARNING:
-    The perl module XML::LibXML is needed for XML parsing in the CIME script system.
-	Please contact your local systems administrators or IT staff and have them install it for
-	you, or install the module locally.
-
-END
-	print "$warning\n";
-    exit(1);
-}
-
-#-----------------------------------------------------------------------------------------------
-# Setting autoflush (an IO::Handle method) on STDOUT helps in debugging.  It forces the test
-# descriptions to be printed to STDOUT before the error messages start.
-*STDOUT->autoflush();
-
-#-----------------------------------------------------------------------------------------------
-# Set the directory that contains the CIME configuration scripts.  If the create_newcase command was
-# issued using a relative or absolute path, that path is in $ProgDir.  Otherwise assume the
-# command was issued from the current working directory.
-
-(my $ProgName = $0) =~ s!(.*)/!!;      # name of this script
-my $ProgDir = $1;                      # name of directory containing this script -- may be a
-                                       # relative or absolute path, or null if the script is in
-                                       # the user's PATH
-my $cwd = getcwd();                    # current working directory
-my $cfgdir;                            # absolute pathname of directory that contains this script
-if ($ProgDir) {
-    $cfgdir = abs_path($ProgDir);
-} else {
-    $cfgdir = $cwd;
-}
-
-my $cimeroot = abs_path("$cfgdir/../");
-(-d "$cimeroot")  or  die <<"EOF";
-** Cannot find cimeroot directory \"$cimeroot\" **
-EOF
-
-#-----------------------------------------------------------------------------------------------
-if ($#ARGV == -1) {
-    usage();
-}
-#-----------------------------------------------------------------------------------------------
-
-sub usage {
-    die <<EOF;
-
-SYNOPSIS
-  create_newcase [options]
-
-OPTIONS
-  User supplied values are denoted in angle brackets (<>).  Any value that contains
-  white-space must be quoted.  Long option names may be supplied with either single
-  or double leading dashes.  A consequence of this is that single letter options may
-  NOT be bundled.
-
-  -model <name>            Specifies target model system (cesm, acme, etc) (optional, default is cesm)
-  -case <name>             Specifies the case name (required).
-  -compset <name>          Specify a compset (required).
-  -res <name>              Specify a grid resolution (required).
-  -mach <name>             Specify a machine (required).
-  -pes_file <name>         Full pathname of pes file to use (will overwrite default settings) (optional)
-  -project <name>          Specify a project id for the case (optional)
-                           default: user-specified environment variable PROJECT or ACCOUNT
-                                    or read from ~/.cesm_proj or ~/.ccsm_proj
-  -compiler <name>         Specify a compiler for the target machine (optional)
-                           default: default compiler for the target machine
-  -mpilib <name>           Specify a mpi library for the target machine (optional)
-                           default: default mpi library for the target machine
-                           allowed: openmpi, mpich, ibm, mpi-serial, etc
-                                    redundant with _M confopts setting
-  -mach_dir <path>         Specify the locations of the Machines directory (optional).
-                           default: \$cimeroot/machines
-  -user_mods_dir <path>    Path to directory with user_nl_* files and xmlchange
-                           commands to utilize (optional). For non-test cases, this
-                           can also include SourceMods
-  -confopts <value>        Specify some additional configuration options (optional) as follows:
-                           _AOA  = aoflux on atm grid
-                           _AOE  = aoflux on exch grid
-                           _CG   = gregorian calendar
-                           _D    = debug
-                           _E    = esmf interfaces
-                           _IOP* = PnetCDF IO test where * is  A(atm), C(cpl), G(glc),
-                                   I(ice), L(lnd), O(ocn), W(wav) or blank (all components)
-                           _L*   = set run length y, m, d, h, s, n(nsteps) plus integer
-                                   (ie _Lm6 for 6 months)
-                           _M*   = set the mpilib where * is default, mpi-serial, mpich, etc
-                           _N*   = set NINST_ env value to * where * is an integer
-                           _P*   = set pecount to specific values include
-                                   T,S,M,L,X,1,1x1,16,16x1,4x4,16x1D, etc
-  -petype  <name>          Valid values are [threaded | mpionly]
-                           Force pes to be all threaded or all mpi
-			   default: this is not set
-  -pecount <name>          Value of S,M,L,X1,X2 (optional).
-                           default: M, partially redundant with confopts _P
-  -user_compset <name>     Long name for new user compset to use (optional)
-                           This assumes that all of the compset settings in the
-                           long name have been defined in cime_config/config_compsets.xml
-  -user_grid_file <name>   Full pathname of grid file to use (optional)
-                           This should be a "copy" of cime_config/config_grids.xml
-                           with the new user grid changes added to it
-  -user_pes_setby <name>   Component that sets the pe-layouts and pio settings
-                           For CESM this is [allactive, cam, clm, cice, cism, pop]
-  -nosavetiming            Change the default for SAVE_TIMING in env_run.xml to .FALSE. (optional).
-  -help [or -h]            Print usage to STDOUT (optional).
-  -testlist                List valid values for tests [normally only invoked by create_test] (optional).
-  -silent [or -s]          Turns on silent mode - only fatal messages issued (optional).
-  -verbose [or -v]         Turn on verbose echoing of settings made by create_newcase (optional).
-  -xmlmode <name>          Sets format of xml files; normal or expert (optional). (default is normal)
-  -nowarning               Turns off checking of the known_problems repository. (default is on)
-  -sharedlibroot           Used for re-using build components when building multiple cases,
-                           default is \$EXEROOT
-
-EXAMPLES
-
-  #  ./create_newcase -case mycase1 -res f19_g16 -compset B1850CN -mach yellowstone
-  #  ./create_newcase -case mycase2 -res f19_g16 -compset B1850CN -mach yellowstone -confopts _D_P16
-  #  ./create_newcase -case mycase5 -res f19_g16 -compset B1850CN -mach yellowstone -confopts _CG_E -pes_file mypes_file
-
-EOF
-}
-
-#-----------------------------------------------------------------------------------------------
-# Save commandline
-my $commandline = "create_newcase @ARGV";
-
-#-----------------------------------------------------------------------------------------------
-# Parse command-line options.
-my %opts = (
-    loglevel => "INFO",
-    user_mods_dir => undef,
-    );
-GetOptions(
-    "case=s"                    => \$opts{'case'},
-    "compset=s"                 => \$opts{'compset'},
-    "confopts=s"                => \$opts{'confopts'},
-    "project=s"                 => \$opts{'project'},
-    "compiler=s"                => \$opts{'compiler'},
-    "mpilib=s"                  => \$opts{'mpilib'},
-    "res=s"                     => \$opts{'res'},
-    "h|help"                    => \$opts{'help'},
-    "loglevel=s"             => \$opts{'loglevel'},
-    "mach=s"                    => \$opts{'mach'},
-    "mach_dir=s"                => \$opts{'mach_dir'},
-    "model=s"                   => \$opts{'model'},
-    "pecount=s"                 => \$opts{'pecount'},
-    "petype=s"                  => \$opts{'petype'},
-    "pes_file=s"                => \$opts{'pes_file'},
-    "testname=s"                => \$opts{'testname'},
-    "nosavetiming"              => \$opts{'nosavetiming'},
-    "testlist"                  => \$opts{'testlist'},
-    "xmlmode=s"                 => \$opts{'xmlmode'},
-    "nowarning"                 => \$opts{'nowarning'},
-    "sharedlibroot=s"           => \$opts{'sharedlibroot'},
-    "user_mods_dir=s"           => \$opts{'user_mods_dir'},
-    "user_grid_file=s"          => \$opts{'user_grid_file'},
-    "user_compset=s"            => \$opts{'user_compset'},
-    "user_pes_setby=s"          => \$opts{'user_pes_setby'},
-    )  or usage();
-
-# Give usage message.
-usage() if $opts{'help'};
-
-# Check for unparsed argumentss
-if (@ARGV) {
-    print "ERROR: unrecognized arguments: @ARGV\n";
-    usage();
-}
-
-#-----------------------------------------------------------------------------------------------
-# Add $cfgdir/perl5lib to the list of paths that Perl searches for modules
-my @dirs = ("$cfgdir", "$cimeroot/utils/perl5lib", "$cimeroot/utils/perl5lib/Config");
-unshift @INC, @dirs;
-require ConfigCase;
-require ConfigCompsetGrid;
-require ConfigPes;
-require ConfigMachine;
-require ConfigTests;
-require SetupTools;
-require Project::ProjectTools;
-require UserMods::UserModsTools;
-require Testing::TestLists;
-require Module::ModuleLoader;
-require Log::Log4perl;
-
-my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
-
-
-my $logger = Log::Log4perl::get_logger();
-
-# Global variables
-my $model;
-my $case;
-my $caseroot; # set in _check_input_options
-my $grid;     # set in _check_input_options
-my $compset; # set in _check_input_options
-my $compiler; # set in _check_input_options
-my $confopts; # set in _set_confopts
-my $mach_dir;
-my $machine;
-my $testname;
-my $pecount;
-my $petype;
-my $xmlmode;
-my $project;
-my $mpilib;
-my $header_file;
-my $sysmod;
-
-
-$logger->info( "Setting configuration directory to $cfgdir\n");
-
-#------------------------------------------------------------------------------------------
-# *** Check input
-#------------------------------------------------------------------------------------------
-# Note that check_input_options will use the global hash opts
-_check_input_options ();
-
-#------------------------------------------------------------------------------------------
-# *** Set hard-wired paths ***
-#------------------------------------------------------------------------------------------
-my $srcroot = abs_path("$cimeroot/../");
-
-#------------------------------------------------------------------------------------------
-# *** Set master config file ***
-#------------------------------------------------------------------------------------------
-# The following specifies all necessary files that will be used to configure the case
-my $files_spec_file = "$cimeroot/cime_config/${model}/config_files.xml";
-
-#------------------------------------------------------------------------------------------
-# *** Create config object ***
-#------------------------------------------------------------------------------------------
-# First create empty config object
-my $config = ConfigCase->new("");
-
-# Add all the elements of the config_files.xml to $config
-$config->add_config_variables($files_spec_file, $srcroot, $cimeroot, $model);
-
-# Determine the driver_cpl config_component.xml file
-my $file = $config->get('CONFIG_DRV_FILE');
-
-# Add all the elements of the driver_cpl/cime_config/config_component.xml to $config
-$config->add_config_variables($file, $srcroot, $cimeroot, $model);
-$config->set('CIMEROOT', $cimeroot);
-$config->set('SRCROOT' , $srcroot);
-$config->set('MODEL'   , $model);
-
-# Determine compset longname and component that sets pe-layouts, compsets and pio settings  ($pes_setby)
-my ($pes_setby, $compsets_file, $compset_longname, $support_level);
-if ($opts{'user_compset'}) {
-    $compset_longname = $opts{'user_compset'};
-    $pes_setby = $opts{'user_pes_setby'};
-    $config->set('COMPSET',$compset_longname);
-} else {
-    if (! $opts{'compset'}) {
-	$logger->logdie ("ERROR: must set the -compset option to create_newcase ");
-    }
-    #TODO - add support_level to config and query it here
-    ($pes_setby, $support_level) = ConfigCompsetGrid::getCompsetLongname($files_spec_file, $compset, $config);
-    $compset_longname = $config->get('COMPSET');
-}
-
-# Now given the target component, determine the full pathname of the file that
-# defines the compsets for this target component
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("$files_spec_file");
-foreach my $id ('PES_SPEC_FILE', 'PIO_SPEC_FILE', 'TESTS_SPEC_FILE', 'TESTS_MOD_DIRS') {
-    my @nodes = $xml->findnodes(".//entry[\@id=\"$id\"]/values/value[\@component=\"$pes_setby\"]");
-    if (@nodes) {
-	my $value = $nodes[0]->textContent();
-	$value =~ s/\$CIMEROOT/$cimeroot/;
-	$value =~ s/\$SRCROOT/$srcroot/;
-	$value =~ s/\$MODEL/$model/;
-	(-e $value) or $logger->logdie(  "ERROR: $value cannot be found on disk \n");
-	$config->set($id, $value);
-    }
-}
-
-# Given compset longname, determine the compset components
-my @compset_components;
-$compset_longname =~ m/(^\w\w\w\w\w)(.+)/; # remove the first date specified from the compset
-my $components = $2;
-my @elements = split /_/, $components;
-foreach my $element (@elements) {
-    my @element_components = split /%/, $element;
-    my $component = lc $element_components[0];
-    if ($component =~ m/\d+/) {
-	$component =~ s/\d//g;
-    }
-    push (@compset_components, $component);
-}
-
-# Given the compset components, determine the full pathname of each component definition file
-# (all have the generic name config_component.xml) and the directories each component's buildlib and buildnml files
-foreach my $comp ('ATM', 'LND', 'ROF', 'ICE', 'OCN', 'GLC', 'WAV', 'DRV') {
-    FOUND1: foreach my $component (@compset_components) {
-	my $name = "CONFIG_" . $comp . "_FILE";
-	my @nodes = $xml->findnodes(".//entry[\@id=\"$name\"]/values/value[\@component=\"$component\"]");
-	if (@nodes) {
-	    my $value = $nodes[0]->textContent();
-	    $value =~ s/\$CIMEROOT/$cimeroot/;
-	    $value =~ s/\$SRCROOT/$srcroot/;
-	    $value =~ s/\$MODEL/$comp/;
-	    $config->set($name, $value);
-	    last FOUND1;
-	}
-    }
-    FOUND2: foreach my $component (@compset_components) {
-	my $name = "CONFIG_" . $comp . "_DIR";
-	my @nodes = $xml->findnodes(".//entry[\@id=\"$name\"]/values/value[\@component=\"$component\"]");
-	if (@nodes) {
-	    my $value = $nodes[0]->textContent();
-	    $value =~ s/\$CIMEROOT/$cimeroot/;
-	    $value =~ s/\$SRCROOT/$srcroot/;
-	    $value =~ s/\$MODEL/$comp/;
-	    $config->set($name, $value);
-	    last FOUND2;
-	}
-    }
-}
-
-# Overwrite the non-default values for the following config elements (needed for the calls below)
-my $username = "$ENV{'USER'}";
-$config->set('USER'	  , "$username");
-$config->set('CASEROOT'	  , "$caseroot");
-$config->set('CASETOOLS'  , "$caseroot/Tools");
-$config->set('CASEBUILD'  , "$caseroot/Buildconf");
-$config->set('CASE'	  , "$case");
-$config->set('CIMEROOT'	  , "$cimeroot");
-$config->set('UTILROOT'	  , "$cimeroot/scripts/Tools");
-$config->set('SRCROOT'	  , "$srcroot");
-
-#------------------------------------------------------------------------------------------
-# *** Options for listing (exit after listing)
-#------------------------------------------------------------------------------------------
-if ($opts{'testlist'}) {
-    my $tests_file = $config->get('TESTS_SPEC_FILE');
-    ConfigTests::listTests("$tests_file");
-    exit;
-}
-
-#------------------------------------------------------------------------------------------
-# *** Determine grid settings
-#------------------------------------------------------------------------------------------
-# First determine the grid longname
-if (defined $opts{'user_grid_file'}){
-    # Determine file specifying set of supported model grids
-    $file = $opts{'user_grid_file'};
-    (-f "$file")  or  $logger->logdie ("** ERROR create_newcase: cannot find user specified grids file $file **\n");
-    $config->set('GRIDS_SPEC_FILE', "$file");
-}
-my $grid_longname = ConfigCompsetGrid::getGridLongname($grid, $config);
-$config->set('GRID', "$grid_longname");
-
-# Set grid component domains and mapping files
-my $file = $config->get('GRIDS_SPEC_FILE');
-ConfigCompsetGrid::setGridDomain($file, $config);
-ConfigCompsetGrid::setGridMaps($file, $config);
-
-#------------------------------------------------------------------------------------------
-# *** Determine compset component configurations
-#------------------------------------------------------------------------------------------
-# Loop over the component files (i.e. definitions_component.xml files)
-# determined by the compsets of the target component
-
-my @setup_comp_files;
-foreach my $name ('CONFIG_ATM_FILE', 'CONFIG_ICE_FILE', 'CONFIG_GLC_FILE', 'CONFIG_LND_FILE',
-		  'CONFIG_ROF_FILE', 'CONFIG_OCN_FILE', 'CONFIG_WAV_FILE') {
-    my $file = $config->get($name);
-    (-f $file) || die "ERROR create_newcase: config_file $file does not exist";
-    $config->add_config_variables($file, $srcroot, $cimeroot);
-    ConfigCompsetGrid::setComponent($file, $config);
-}
-
-#------------------------------------------------------------------------------------------
-# *** Determine machines file specifying set of out-of-the box machines and then
-#     set the machine parameters, including compilers
-#------------------------------------------------------------------------------------------
-my $file = $config->get('CONFIG_DRV_FILE');
-
-if(defined($opts{compiler})){
-    $config->set('COMPILER',$opts{compiler});
-}
-if(defined($opts{mpilib})){
-    $config->set('MPILIB',$opts{mpilib});
-}
-
-ConfigMachine::setMachineValues($file, $pes_setby, $machine, $config);
-
-# now potentially override with unsupported user config_pes.xml file.
-# TODO - put this change in for the new create_newcase changes - these were there in the old code
-# Set the parameters for the specified machine.  Try looking for
-# the machine in the users ~/.cesm directory. If it is not found
-# the machine in the users ~/.cime directory. If it is not found
-# then check the standard machines location. The parameters are
-# read from an input file, and if no machine matches are found
-# then issue error message.  This routine uses the configuration
-#my $pes_file = "$ENV{'HOME'}/.cime/config_pes.xml";
-#if ( -f "$pes_file") {
-#    print "\nUsing UNSUPPORTED userdefined config_pes.xml : \"~/.cime/config_pes.xml\"\n";
-#}
-
-#------------------------------------------------------------------------------------------
-# *** Set the input configure options if appropriate and also some additional $config variables
-#------------------------------------------------------------------------------------------
-if (defined $opts{'confopts'}) {
-    $confopts = $opts{'confopts'};
-    _set_confopts($confopts, $config);
-}
-
-
-#------------------------------------------------------------------------------------------
-# *** Set the case pe-layout
-#------------------------------------------------------------------------------------------
-ConfigPes::setPes($pecount, $pes_setby, \%opts, $config);
-
-#------------------------------------------------------------------------------------------
-# *** Determine all <value> settings in CONFIG_DRV_FILE
-#------------------------------------------------------------------------------------------
-# Note -this needs to come AFTER call to setPES since it might override some of the settings
-# e.g. this effectively works like an override mechanism for NTASKS_GLC and NTHRDS_GLC
-# which must be set to 1 when GLC is CISM1
-
-my $file = $config->get('CONFIG_DRV_FILE');
-ConfigCompsetGrid::setComponent($file, $config);
-
-#------------------------------------------------------------------------------------------
-# Determine <entry> settings in config_compsets.xml
-#------------------------------------------------------------------------------------------
-# This determines driver_cpl/cime_config/config_component.xml settings that are compset specific
-# and also check that compset is supported for target grid
-# Note- this needs to come last since it will overwrite any values set above
-
-if (!$opts{'user_compset'}) {
-    ConfigCompsetGrid::setCompsetGeneralVars($config);
-}
-
-# Special case - if land and river grids are different AND there is no mapping file
-# between land and river then set the river mode  to null if the river component is rtm
-my $rof_comp = $config->get('COMP_ROF');
-if ($rof_comp eq 'rtm' || $rof_comp eq 'mosart') {
-    my $lnd_grid    = $config->get('LND_GRID');
-    my $rof_grid    = $config->get('ROF_GRID');
-    my $map_lnd2rof = $config->get('LND2ROF_FMAPNAME');
-
-    if (($lnd_grid ne $rof_grid) && ($map_lnd2rof eq 'idmap')) {
-	$logger->warn("No lnd2rof_fmapname exists - RTM/MOSART mode set to null \n");
-	if ($rof_comp eq 'rtm') {
-	    $config->set('RTM_MODE', 'NULL');
-	}
-	if ($rof_comp eq 'mosart') {
-	    $config->set('MOSART_MODE', 'NULL');
-	}
-    }
-}
-
-# Determine run_refcase and run_refdate
-my $run_refcase = _clean($config->get('RUN_REFCASE'));
-my $run_refdate = _clean($config->get('RUN_REFDATE'));
-if ($run_refcase ne 'case.std') {
-    $config->set('RUN_TYPE','hybrid');
-    $config->set('GET_REFCASE','TRUE');
-    my $fh_case = new IO::File;
-    $fh_case->open(">>$caseroot/README.case") or $logger->logdie( "can't open file: README.case\n");
-    my $fh_stdout = *STDOUT;
-    my @file_handles = ($fh_stdout, $fh_case);
-    foreach my $fhandle (@file_handles) {
-	print $fhandle     "  RUN_REFCASE: $run_refcase \n";
-	print $fhandle     "  RUN_REFDATe: $run_refdate \n";
-    }
-}
-
-# Print compset/grid info
-my $file = $config->get('GRIDS_SPEC_FILE');
-ConfigCompsetGrid::printGridCompsetInfo($file, $config);
-
-if(defined $compset){
-    $logger->info( "Compset specifier: $compset. \nLongname: $compset_longname");
-    $logger->info( "Grid is valid for this compset. ");
-}else{
-    $logger->info( "Compset specifier: $compset_longname.");
-}
-
-#------------------------------------------------------------------------------------------
-# *** Inform the user of the current support level for the compset they are attempting to run.
-#------------------------------------------------------------------------------------------
-my $testsforcase;
-if ( $opts{'compset'} ) {
-   my %case;
-   $case{'compset'} = $opts{'compset'};
-   $case{'grid'}    = $opts{'res'};
-   #   my $testlistobj = Testing::TestLists->new(scriptsdir => $cfgdir); TODO
-   #   $testsforcase = $testlistobj->findTestsForCase(\%case); TODO
-} else {
-    my $compset = $config->get('COMPSET');
-    $testsforcase = "WARNING!:: Compset  $compset is NOT a tested configuration.\n" ;
-}
-my $banner = '-' x 80;
-# print "$banner\n";
-if ( defined($support_level) ) {
-   $logger->info( "Compset and grid support levels for this case are:");
-   $logger->info( "$support_level");
-}
-$logger->info( "$testsforcase") if(defined $testsforcase);
-
-#------------------------------------------------------------------------------------------
-# *** Set the testname parameters
-#------------------------------------------------------------------------------------------
-if (defined $opts{'testname'}) {
-    $testname = $opts{'testname'};
-    _set_test("$cfgdir/Testing/Testcases/config_tests.xml", $testname, $config);
-}
-
-#------------------------------------------------------------------------------------------
-# *** Set the input configure options if appropriate and also some additional $config variables
-#------------------------------------------------------------------------------------------
-#TODO - need to fix this
-if (defined $opts{'confopts'}) {
-    $confopts = $opts{'confopts'};
-    _set_confopts($confopts, $config);
-}
-
-#------------------------------------------------------------------------------------------
-# *** Set the project id
-# Check for optional project; if not given, see if we can find a project to use
-#------------------------------------------------------------------------------------------
-if ($opts{'project'}) {
-    $project = $opts{'project'};
-} else {
-    $project = ProjectTools::find_project();
-}
-# skip this check if SBN test
-unless(defined $testname && $testname eq "SBN"){
-    if ($config->get('PROJECT_REQUIRED') eq "TRUE") {
-	ProjectTools::check_project_required_but_unset($project);
-    }
-    $config->set('PROJECT',$project);
-}
-#------------------------------------------------------------------------------------------
-# *** Set the mpi library
-#------------------------------------------------------------------------------------------
-_set_mpi_library($mpilib, $config);
-
-#------------------------------------------------------------------------------------------
-# *** Set the sharedlibroot for building shared components
-#------------------------------------------------------------------------------------------
-if (defined $opts{'sharedlibroot'}) {
-    $config->set('SHAREDLIBROOT', $opts{'sharedlibroot'});
-}
-
-#------------------------------------------------------------------------------------------
-# *** Create the caseroot directory tree and all caseroot required files
-#------------------------------------------------------------------------------------------
-# create the caseroot directory and necessary subdirectories
-_create_caseroot($caseroot, $cimeroot, $config);
-
-#------------------------------------------------------------------------------------------
-# *** Determine user_mods_dir ***
-#------------------------------------------------------------------------------------------
-my $user_mods_dir = $opts{'user_mods_dir'};
-if ($user_mods_dir) {
-    if($user_mods_dir =~ /^\//){
-	# complete path specified
-	(-d "$user_mods_dir") or  $logger->logdie ("** Cannot find user_mods_dir directory $user_mods_dir **");
-    }else{
-	# relative path specified
-	my $user_mods_path = $config->get('USER_MODS_DIR', 'component', $pes_setby);
-	$user_mods_dir = "$user_mods_path/$user_mods_dir";
-    }
-
-   my $is_test = 0;
-   if ($testname) {$is_test = 1;}
-   UserModsTools::apply_mods($user_mods_dir, $caseroot, $is_test);
-}
-
-#------------------------------------------------------------------------------------------
-# finish
-#------------------------------------------------------------------------------------------
-$logger->info( "Successfully created the case for $machine ");
-$logger->info("create_xml done.");
-exit 0;
-
-#-----------------------------------------------------------------------------------------------
-#                               Private routines
-#-----------------------------------------------------------------------------------------------
-sub _check_input_options
-{
-
-    if (!$opts{'testlist'}) {
-	# Check for manditory case input
-	if ($opts{'case'}) {
-	    $case = $opts{'case'};
-	} else {
-	    $logger->logdie("ERROR: create_newcase must include the input argument, -case ");
-	}
-	if ($opts{'model'}) {
-	    $model = $opts{'model'};
-	} else {
-	    $model = 'cesm';
-	}
-	if (-d $case) {
-	    $logger->logdie("Case directory $case already exists ");
-	}
-	mkpath($case);
-	$caseroot = abs_path("$case");
-
-	my @dirs = split "/", $caseroot, -1;  # The -1 prevents split from stripping trailing nulls
-	my $num = scalar @dirs;
-	$case = $dirs[$num-1];
-
-	# Check for manditory compset input
-	if ($opts{'compset'}) {
-	    $compset = $opts{'compset'};
-	} else {
-	    if (!$opts{'user_compset'}) {
-		$logger->logdie ("ERROR: create_newcase must include the input argument, -compset OR user_compset");
-	    }
-	    if (!$opts{'user_pes_setby'}) {
-		$logger->logdie("ERROR: if the user_compset argument is specified, the user_pes_setby argument must also be specified");
-	    }
-	}
-	# Check for mandatory grid input
-	if ($opts{'res'}) {
-	    $grid = $opts{'res'};
-	} else {
-	    $logger->logdie ("ERROR: create_newcase must include the input argument, -res");
-	}
-	if($opts{mach_dir}){
-	    $mach_dir = $opts{mach_dir};
-	}else{
-	    $mach_dir => "$cimeroot/cime_config/${model}/machines",
-	}
-	# Check for manditory machine input
-	if ($opts{'mach'}) {
-	    $machine = $opts{'mach'};
-	} else {
-	    $logger->logdie ("ERROR: create_newcase must include the input argument, -mach \n");
-	}
-	# Check if machine compiler option is given
-	if ($opts{'compiler'}) {
-	    $compiler = $opts{'compiler'};
-	}
-	# Check if machine mpilib option is given
-	$mpilib = 'unset';
-	if ($opts{'mpilib'}) {
-	    $mpilib = $opts{'mpilib'};
-	}
-	# Check for pecount setting
-	$pecount = 'M';
-	if ($opts{'pecount'}) {
-	    $pecount = $opts{'pecount'};
-	}
-	# Check for xmlmode setting
-	$xmlmode = 'normal';
-	if ($opts{'xmlmode'}) {
-	    $xmlmode = $opts{'xmlmode'};
-	}
-    }
-}
-
-#-------------------------------------------------------------------------------
-sub _set_confopts
-{
-    # Print all currently supported valid grids
-
-    my ($coptions, $config) = @_;
-
-    $logger->info( "  confopts = $coptions");
-    if ($coptions =~ "_D" || $coptions =~ "_ED") {
-	$config->set('DEBUG', "TRUE");
-	$logger->info("    confopts DEBUG ON ");
-    }
-    if ($coptions =~ "_E" || $coptions =~ "_DE") {
-	$config->set('USE_ESMF_LIB', "TRUE");
-	$config->set('COMP_INTERFACE', "ESMF");
-	$logger->info("    confopts COMP_INTERFACE ESMF set ");
-    }
-    if ($coptions =~ "_P") {
-	my $popt = $coptions;
-	$popt =~ s/.*_P([A-Za-z0-9]*)_?.*/$1/;
-	$pecount = $popt;
-	$logger->info("    confopts pecount set to $pecount");
-    }
-    if ($coptions =~ "_M") {
-	my $mopt = $coptions;
-	$mopt =~ s/.*_M([A-Za-z0-9\-]*)_?.*/$1/;
-	$mpilib = $mopt;
-        if($mpilib =~ /\w+/){
-  	  $logger->info("    mpilib set to $mpilib ");
-        }else{
-	  $logger->logdie( "M option found but no MPILIB provided");
-        }
-    }
-    if ($coptions =~ "_L") {
-	my $lopt = $coptions;
-	$lopt =~ s/.*_L([A-Za-z0-9]*)_?.*/$1/;
-	my $loptc = substr($lopt,0,1);
-	my $lopti = substr($lopt,1);
-	my $lopts = 'unknown';
-	if ($loptc =~ "y") {$lopts = 'nyears'}
-	if ($loptc =~ "m") {$lopts = 'nmonths'}
-	if ($loptc =~ "d") {$lopts = 'ndays'}
-	if ($loptc =~ "h") {$lopts = 'nhours'}
-	if ($loptc =~ "s") {$lopts = 'nseconds'}
-	if ($loptc =~ "n") {$lopts = 'nsteps'}
-	if ($lopts =~ "unknown") {
-	    $logger->info("$0 _L confopts run length undefined, only y m d h s n allowed");
-	    exit -1;
-	}
-	$config->set('STOP_OPTION', $lopts);
-	$config->set('STOP_N', $lopti);
-	$logger->info("    confopts run length set to $lopt . $lopts . $lopti ");
-    }
-    if ($coptions =~ "_N") {
-	my $nopt = $coptions;
-	$nopt =~ s/.*_N([0-9]*)_?.*/$1/;
-	$config->set('NINST_ATM', $nopt);
-	$config->set('NINST_LND', $nopt);
-	$config->set('NINST_OCN', $nopt);
-	$config->set('NINST_ICE', $nopt);
-	$config->set('NINST_GLC', $nopt);
-	$config->set('NINST_ROF', $nopt);
-	$config->set('NINST_WAV', $nopt);
-	$logger->info("    confopts instances set to $nopt ");
-    }
-    if ($coptions =~ "_CG") {
-	$config->set('CALENDAR', "GREGORIAN");
-	$logger->info("    confopts CALENDAR set to GREGORIAN ");
-    }
-    if ($coptions =~ "_AOA") {
-	$config->set('AOFLUX_GRID', "atm");
-	$logger->info("    confopts AOFLUX_GRID set to atm ");
-    }
-    if ($coptions =~ "_AOE") {
-	$config->set('AOFLUX_GRID', "exch");
-	$logger->info("    confopts AOFLUX_GRID set to exch ");
-    }
-}
-
-#-------------------------------------------------------------------------------
-sub _set_mpi_library
-{
-    # set the mpi library, $mpilib
-    # $mpilib can be set by -mpilib, confopts, or automatically
-    # precedent is confopts, mpilib, automatic, default
-
-    my ($mpilib, $config) = @_;
-
-    my $mpilibs = $config->get('MPILIBS');
-    my @mpilibs = split ",", $mpilibs, -1;
-
-    if ($mpilib =~ 'unset')
-    {
-	if ($config->get('NTASKS_ATM') == 1 && $config->get('NTASKS_LND') == 1 &&
-	    $config->get('NTASKS_OCN') == 1 && $config->get('NTASKS_ICE') == 1 &&
-	    $config->get('NTASKS_ROF') == 1 && $config->get('NTASKS_GLC') == 1 &&
-	    $config->get('NTASKS_WAV') == 1 && $config->get('NTASKS_CPL') == 1)
-	{
-	    $mpilib = "mpi-serial";
-	}else{
-	    my $compiler = $config->get('COMPILER');
-	    $mpilib = "openmpi" if($compiler eq "nag");
-        }
-    }
-    if ( $mpilib =~ 'default' || $mpilib =~ m/^\s*$/ ) {
-	$mpilib = $mpilibs[0];
-    }
-    if (! ($mpilib =~ 'unset')) {
-	my $found = 0;
-	foreach my $mpi (@mpilibs) {
-	    if ($mpilib eq $mpi) {
-		$found = 1;
-	}
-	}
-	if (!$found) {
-	    $sysmod = "rm -rf $caseroot";
-	    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-	    die "ERROR: mpilib setting of $mpilib does not match supported values of $mpilibs \n";
-	}
-    } else {
-	if ($machine =~ /userdefined/){
-	    $mpilib = "USERDEFINED_required_build";
-	}else{
-	    $mpilib = $mpilibs[0];
-	}
-    }
-    $config->set('MPILIB', "$mpilib");
-    $logger->info( "Machine mpilib specifier: $mpilib.");
-}
-
-#-------------------------------------------------------------------------------
-sub _create_caseroot
-{
-    # Create caseroot directory and all necessary sub directories
-    my ($caseroot, $cimeroot, $config) = @_;
-
-    $logger->info( "Creating $caseroot ");
-    if(! -e $caseroot){
-	mkdir ("$caseroot") or $logger->logdie("Failed to create $caseroot directory");
-    }
-    chdir ("$caseroot");
-
-    # Create relevant directories in $caseroot
-    my @newdirs = qw(. SourceMods LockedFiles Buildconf Tools);
-    foreach my $newdir ( @newdirs ) {
-	mkpath($newdir);
-    }
-
-    # Open a new README.case file in $caseroot
-    my $file = "$caseroot/README.case";
-    my $fh = IO::File->new($file, '>' ) or $logger->logdie( "can't open file: $file\n");
-    print $fh "$commandline\n\n\n";
-    $fh->close;
-
-    # Copy README/disclaimer file
-    #TODO - this needs to be updated
-    #$sysmod = "cp $cimeroot/scripts/README $caseroot/README.science_support";
-    #system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-
-    _create_caseroot_sourcemods($config);
-    _create_caseroot_tools($config);
-    _create_caseroot_files($config);
-}
-
-#-------------------------------------------------------------------------------
-sub _create_caseroot_tools
-{
-    # Copy relevant files into $caseroot
-    my ($config) = @_;
-
-    my $cimeroot = $config->get('CIMEROOT');
-    my $caseroot = $config->get('CASEROOT');
-
-    my $sysmod;
-
-    my @files = (
-	"$cimeroot/scripts/Tools/case.setup",
-	"$cimeroot/scripts/Tools/testcase.setup",
-	"$cimeroot/scripts/Tools/archive_metadata.sh",
-	"$cimeroot/scripts/Tools/check_case",
-	"$cimeroot/scripts/Tools/create_production_test",
-	"$cimeroot/scripts/Tools/st_archive",
-	"$cimeroot/scripts/Tools/xmlquery",
-	"$cimeroot/scripts/Tools/README.post_process",
-	);
-    foreach my $file (@files) {
-	$sysmod = "cp -p $file $caseroot";
-	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-    }
-    $sysmod = "chmod u+w $caseroot/create_production_test";
-    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-
-    my $machines_file = $config->get('MACHINES_SPEC_FILE');
-    my $machines_dir  = dirname($machines_file);
-
-    my $mkbatch = "$ENV{'HOME'}/.cime/mkbatch.$machine";
-    if (! -f "$mkbatch") {
-	$mkbatch = "$machines_dir/mkbatch.$machine";
-    } else {
-	$logger->warn("\nUsing UNSUPPORTED userdefined mkbatch script: \"~/.cime/mkbatch.$machine\"");
-    }
-
-    # Copy relevant files into $caseroot/Tools/
-    @files = ("$cimeroot/scripts/Tools/check_lockedfiles",
-	      "$cimeroot/scripts/Tools/lt_archive.sh",
-	      "$cimeroot/scripts/Tools/getTiming",
-	      "$machines_dir/taskmaker.pl",
-	      "$machines_dir/Makefile",
-	      "$machines_dir/mkSrcfiles",
-	      "$machines_dir/mkDepends");
-
-    foreach my $file (@files) {
-	$sysmod = "ln -fs $file $caseroot/Tools/. ";
-	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-    }
-}
-
-#-------------------------------------------------------------------------------
-sub _create_caseroot_files
-{
-    my ($config, $print) = @_;
-
-    my $model         = $config->get('MODEL');
-    my $machines_file = $config->get('MACHINES_SPEC_FILE');
-    my $compiler      = $config->get('COMPILER');
-    my $cimeroot      = $config->get('CIMEROOT');
-    my $machine       = $config->get('MACH');
-    my $caseroot      = $config->get('CASEROOT');
-    my $case          = $config->get('CASE');
-
-    my $machines_dir  = dirname($machines_file);
-    my $mkbatch_file = "$ENV{'HOME'}/.cime/mkbatch.$machine";
-    if (! -f "$mkbatch_file") {
-	$mkbatch_file = "$machines_dir/mkbatch.$machine";
-    } else {
-	$logger->warn("\nUsing UNSUPPORTED userdefined mkbatch script: \"~/.cime/mkbatch.$machine\"\n");
-    }
-
-    # Create $caseroot/Buildconf/build.pl
-    $sysmod = "ln -s $cimeroot/scripts/Tools/check_input_data $caseroot/check_input_data";
-    system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-    my @pyscripts = qw(case.build xmlchange);
-    for (@pyscripts){
-	$sysmod = "ln -s $cimeroot/scripts/Tools/$_  $caseroot/$_";
-	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-	$sysmod = "chmod 755 $caseroot/$_";
-	system ($sysmod); if ($? == -1) {die "$sysmod failed: $!\n";}
-    }
-    # Create case.clean_build
-    $sysmod = "cp $cimeroot/scripts/Tools/clean_build $caseroot/case.clean_build";
-    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-
-    # Create case.submit
-    $sysmod = "cp  $cimeroot/scripts/Tools/case.submit $caseroot/case.submit";
-    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-
-    # Create machine specific module files (env_mach_specific)
-    my $dbug = $config->get("DEBUG");
-    my $moduleloader = Module::ModuleLoader->new(machine  => $machine,
-    						 compiler => $compiler,
-    						 mpilib   => $mpilib,
-    						 debug    => $dbug,
-    						 caseroot => $caseroot,
-    						 cimeroot => $cimeroot,
-     						 model    => $model);
-    $moduleloader->moduleInit();
-    $moduleloader->writeXMLFileForCase();
-
-    # Create $caseroot preview_namelist file
-    my $file = "${caseroot}/preview_namelists";
-    $sysmod = "ln -s $cimeroot/scripts/Tools/preview_namelists $file";
-    system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-
-    $sysmod = "chmod 755 $file";
-    system ($sysmod); if ($? == -1) {$logger->logdie ("$sysmod failed: $!");}
-
-    if ( -e "$machines_dir/Depends.$machine" ) {
-	$sysmod = "cp $machines_dir/Depends.$machine $caseroot/";
-	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-    }
-    if ( -e "$machines_dir/Depends.$compiler" ) {
-	$sysmod = "cp $machines_dir/Depends.$compiler $caseroot/";
-	system($sysmod) == 0 or $logger->logdie( "ERROR: $sysmod failed: $?\n");
-    }
-
-    # Create env_case.xml
-    my $file = $config->get('CASEFILE_HEADERS');
-    (-f $file) or $logger->logdie( "ERROR: create_newcase case header file $file does not exist \n");
-
-    $config->write_file("$caseroot/env_case.xml", "$file", $caseroot, $cimeroot );
-    $logger->info( "Created $caseroot/env_case.xml ");
-
-    # Create env_mach_pes.xml.xml
-    $config->write_file("$caseroot/env_mach_pes.xml", "$file", $caseroot, $cimeroot );
-    $logger->info( "Created $caseroot/env_mach_pes.xml ");
-
-    # Create env_build.xml
-    $config->write_file("$caseroot/env_build.xml", "$file", $caseroot, $cimeroot );
-    $logger->info( "Created $caseroot/env_build.xml ");
-
-    # Create env_run.xml
-    $config->write_file("$caseroot/env_run.xml", "$file", $caseroot, $cimeroot );
-    $logger->info( "Created $caseroot/env_run.xml ");
-
-    # Create env_archive.xml
-    $config->write_file("$caseroot/env_archive.xml", "$file", $caseroot, $cimeroot,
-			"$cimeroot/cime_config/${model}/archive.xml");
-    $logger->info( "Created $caseroot/env_archive.xml ");
-
-    # Create env_batch.xml
-    $config->write_file("$caseroot/env_batch.xml","$file", $caseroot, $cimeroot);
-    $logger->info( "Created $caseroot/env_batch.xml ");
-
-
-    # copy env_case.xml in to locked files
-    $sysmod = "cp $caseroot/env_case.xml $caseroot/LockedFiles/env_case.xml";
-    system($sysmod) == 0 or $logger->logdie( "ERROR: create_newcase $sysmod failed: $?");
-    $logger->info( "Locking file $caseroot/env_case.xml ");
-
-    # also create the CaseStatus file in $caseroot
-    my $file = "$caseroot/CaseStatus";
-    my $fh = IO::File->new($file, '>' ) or $logger->logdie( "can't open file: $file\n");
-    my $time = time;
-    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime(time);
-    $year = 1900+$year;
-    $mon = 1+$mon;
-    print $fh "$commandline\n";
-    printf ($fh "case created %04u-%02u-%02u %02u:%02u:%02u\n",$year,$mon,$mday,$hour,$min,$sec);
-
-    # set the default to not archive performance data and associated provenance
-    if ($opts{'nosavetiming'}) {
-        my $cwd = getcwd(); # current working directory
-        chdir "$caseroot";
-        $sysmod = './xmlchange --file env_run.xml --id SAVE_TIMING --val "FALSE"';
-        system($sysmod) == 0 or $logger->logdie("ERROR: $sysmod failed: $?\n");
-        chdir "$cwd";
-    }
-}
-
-#-------------------------------------------------------------------------------
-sub _create_caseroot_sourcemods
-{
-    my ($config) = @_;
-
-    my $caseroot   = $config->get('CASEROOT');
-    my $cimeroot   = $config->get('CIMEROOT');
-    my $comps_atm  = $config->get("COMP_ATM");
-    my $comps_lnd  = $config->get("COMP_LND");
-    my $comps_ocn  = $config->get("COMP_OCN");
-    my $comps_ice  = $config->get("COMP_ICE");
-    my $comps_glc  = $config->get("COMP_GLC");
-    my $comps_rof  = $config->get("COMP_ROF");
-    my $comps_wav  = $config->get("COMP_WAV");
-    my @comps  = ($comps_atm, $comps_lnd, $comps_ocn, $comps_ice, $comps_glc, $comps_rof, $comps_wav);
-
-    # Create sourcemods
-    foreach my $comp (@comps)  {
-	mkpath("$caseroot/SourceMods/src.$comp");
-
-	# Note: this is CESM specific given that we are referencing cism explitly
-	if ($comp eq 'cism') {
-	    mkpath("$caseroot/SourceMods/src.cism/glimmer-cism");
-	    open(README, ">", "$caseroot/SourceMods/src.$comp/README") or
-		$logger->logdie( "cannot open > $caseroot/SourceMods/src.cism/README: $!");
-	    print README
-		"Put source mods for the glimmer-cism library in the glimmer-cism subdirectory.\n",
-		"This includes any files that are in the glimmer-cism subdirectory of $cimeroot/../components/cism.\n\n",
-		"Anything else (e.g., mods to source_glc or drivers) goes in this directory, NOT in glimmer-cism/.\n";
-	    close(README);
-	}
-
-    }
-    mkpath("$caseroot/SourceMods/src.share");
-    mkpath("$caseroot/SourceMods/src.drv");
-}
-
-#-------------------------------------------------------------------------------
-sub _set_test
-{
-    # Set the parameters for the specified testname.  The
-    # parameters are read from an input file, and if no testname matches are
-    # found then issue error message.
-    # This routine uses the configuration defined at the package level ($config).
-
-    my ($test_file, $testname, $config) = @_;
-
-    my $parser = XML::LibXML->new( no_blanks => 1);
-    my $xml = $parser->parse_file($test_file);
-    my @nodes = $xml->findnodes(".//test[\@NAME=\"$testname\"]/*");
-    if (@nodes) {
-	foreach my $node (@nodes) {
-	    my $id = $node->nodeName();
-	    my $value = $node->textContent();
-	    $config->set($id, $value);
-	}
-    } else {
-	$logger->warn("_set_test: no match for test $testname - possible testnames are:");
-	@nodes = $xml->findnodes(".//test");
-	foreach my $node (@nodes) {
-	    my $name = $node->getAttribute('NAME');
-	    my @child_nodes = $node->findnodes('./DESC');
-	    my $desc = $child_nodes[0]->textContent();
-	    $logger->warn( " $name ($desc) ") ;
-	}
-	$logger->logdie( "_set_test: exiting");
-    }
-}
-
-#-------------------------------------------------------------------------------
-sub _clean
-{
-    my ($name) = @_;
-
-    $name =~ s/^\s+//; # strip any leading whitespace
-    $name =~ s/\s+$//; # strip any trailing whitespace
-    return ($name);
-}
-
-
+#!/usr/bin/env python
+
+"""
+Script to create a new CIME Case Control System (CSS) experimental case.
+"""
+
+from Tools.standard_script_setup import *
+from CIME.utils         import expect, get_model, get_cime_config, get_cime_default_driver
+from CIME.case          import Case
+from argparse           import RawTextHelpFormatter
+
+logger = logging.getLogger(__name__)
+
+###############################################################################
+def parse_command_line(args, cimeroot, description):
+###############################################################################
+    parser = argparse.ArgumentParser(description=description,
+                                     formatter_class=RawTextHelpFormatter)
+
+    CIME.utils.setup_standard_logging_options(parser)
+    try:
+        cime_config = get_cime_config()
+    except Exception:
+        cime_config = None
+
+    parser.add_argument("--case", "-case", required=True, metavar="CASENAME",
+                        help="(required) Specify the case name. "
+                        "\nIf this is simply a name (not a path), the case directory is created in the current working directory."
+                        "\nThis can also be a relative or absolute path specifying where the case should be created;"
+                        "\nwith this usage, the name of the case will be the last component of the path.")
+
+    parser.add_argument("--compset", "-compset", required=True,
+                        help="(required) Specify a compset. "
+                        "\nTo see list of current compsets, use the utility ./query_config --compsets in this directory.\n")
+
+    parser.add_argument("--res", "-res", required=True, metavar="GRID",
+                        help="(required) Specify a model grid resolution. "
+                        "\nTo see list of current model resolutions, use the utility "
+                        "\n./query_config --grids in this directory.")
+
+    parser.add_argument("--machine", "-mach",
+                        help="Specify a machine. "
+                        "The default value is the match to NODENAME_REGEX in config_machines.xml. To see "
+                        "\nthe list of current machines, invoke ./query_config --machines.")
+
+    parser.add_argument("--compiler", "-compiler",
+                        help="Specify a compiler. "
+                        "\nTo see list of supported compilers for each machine, use the utility "
+                        "\n./query_config --machines in this directory. "
+                        "\nThe default value will be the first one listed.")
+
+    parser.add_argument("--multi-driver",action="store_true",
+                        help="Specify that --ninst should modify the number of driver/coupler instances. "
+                        "\nThe default is to have one driver/coupler supporting multiple component instances.")
+
+    parser.add_argument("--ninst",default=1,
+                        help="Specify number of model ensemble instances. "
+                        "\nThe default is multiple components and one driver/coupler. "
+                        "\nUse --multi-driver to run multiple driver/couplers in the ensemble.")
+
+    parser.add_argument("--mpilib", "-mpilib",
+                        help="Specify the MPI library. "
+                        "To see list of supported mpilibs for each machine, invoke ./query_config --machines."
+                        "\nThe default is the first listing in MPILIBS in config_machines.xml.\n")
+
+    parser.add_argument("--project", "-project",
+                        help="Specify a project id for the case (optional)."
+                        "\nUsed for accounting and directory permissions when on a batch system."
+                        "\nThe default is user or machine specified by PROJECT."
+                        "\nAccounting (only) may be overridden by user or machine specified CHARGE_ACCOUNT.")
+
+    parser.add_argument("--pecount", "-pecount",  default="M",
+                        help="Specify a target size description for the number of cores. "
+                        "\nThis is used to query the appropriate config_pes.xml file and find the "
+                        "\noptimal PE-layout for your case - if it exists there. "
+                        "\nAllowed options are  ('S','M','L','X1','X2','[0-9]x[0-9]','[0-9]').\n")
+
+    parser.add_argument("--user-mods-dir",
+                        help="Full pathname to a directory containing any combination of user_nl_* files "
+                        "\nand a shell_commands script (typically containing xmlchange commands). "
+                        "\nThe directory can also contain an SourceMods/ directory with the same structure "
+                        "\nas would be found in a case directory.")
+
+    parser.add_argument("--pesfile",
+                        help="Full pathname of an optional pes specification file. "
+                        "\nThe file can follow either the config_pes.xml or the env_mach_pes.xml format.")
+
+    parser.add_argument("--gridfile",
+                        help="Full pathname of config grid file to use. "
+                        "\nThis should be a copy of config/config_grids.xml with the new user grid changes added to it. \n")
+
+    if cime_config and cime_config.has_option('main','workflow'):
+        workflow_default = cime_config.get('main', 'workflow')
+    else:
+        workflow_default = "default"
+
+    parser.add_argument("--workflow",default=workflow_default,
+                        help="A workflow from config_workflow.xml to apply to this case. ")
+
+
+    if cime_config and cime_config.has_option('main','SRCROOT'):
+        srcroot_default = cime_config.get('main', 'srcroot')
+    else:
+        srcroot_default = os.path.dirname(cimeroot)
+
+    parser.add_argument("--srcroot", default=srcroot_default,
+                        help="Alternative pathname for source root directory. "
+                        "The default is cimeroot/../")
+
+    parser.add_argument("--output-root",
+                        help="Alternative pathname for the directory where case output is written.")
+
+    # The following is a deprecated option
+    parser.add_argument("--script-root", dest="script_root", default=None, help=argparse.SUPPRESS)
+    if cime_config:
+        model = get_model()
+    else:
+        model = None
+
+    if model == "cesm":
+        parser.add_argument("--run-unsupported", action="store_true",
+                            help="Force the creation of a case that is not tested or supported by CESM developers.")
+    # hidden argument indicating called from create_test
+    # Indicates that create_newcase was called from create_test - do not use otherwise.
+    parser.add_argument("--test", "-test", action="store_true", help=argparse.SUPPRESS)
+
+    parser.add_argument("--walltime", default=os.getenv("CIME_GLOBAL_WALLTIME"),
+                        help="Set the wallclock limit for this case in the format (the usual format is HH:MM:SS). "
+                        "\nYou may use env var CIME_GLOBAL_WALLTIME to set this. "
+                        "\nIf CIME_GLOBAL_WALLTIME is not defined in the environment, then the walltime"
+                        "\nwill be the maximum allowed time defined for the queue in config_batch.xml.")
+
+    parser.add_argument("-q", "--queue", default=None,
+                        help="Force batch system to use the specified queue. ")
+
+    parser.add_argument("--handle-preexisting-dirs", dest="answer", choices=("a", "r", "u"), default=None,
+                        help="Do not query how to handle pre-existing bld/exe dirs. "
+                        "\nValid options are (a)bort (r)eplace or (u)se existing. "
+                        "\nThis can be useful if you need to run create_newcase non-iteractively.")
+
+    parser.add_argument("-i", "--input-dir",
+                        help="Use a non-default location for input files. This will change the xml value of DIN_LOC_ROOT.")
+    parser.add_argument("--driver", default=get_cime_default_driver(),
+                        choices=('mct','nuopc', 'moab'),
+                        help=argparse.SUPPRESS)
+
+    parser.add_argument("-n", "--non-local", action="store_true",
+                        help="Use when you've requested a machine that you aren't on. "
+                        "Will reduce errors for missing directories etc.")
+
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
+
+    if args.srcroot is not None:
+        expect(os.path.isdir(args.srcroot),
+               "Input non-default directory srcroot {} does not exist ".format(args.srcroot))
+        args.srcroot = os.path.abspath(args.srcroot)
+
+    if args.gridfile is not None:
+        expect(os.path.isfile(args.gridfile),
+               "Grid specification file {} does not exist ".format(args.gridfile))
+
+    if args.pesfile is not None:
+        expect(os.path.isfile(args.pesfile),
+               "Pes specification file {} cannot be found ".format(args.pesfile))
+
+    run_unsupported = False
+    if model == "cesm":
+        run_unsupported = args.run_unsupported
+
+    expect(CIME.utils.check_name(args.case, fullpath=True),
+           "Illegal case name argument provided")
+
+    if args.input_dir is not None:
+        args.input_dir = os.path.abspath(args.input_dir)
+    elif cime_config and cime_config.has_option("main","input_dir"):
+        args.input_dir = os.path.abspath(cime_config.get("main","input_dir"))
+
+    return args.case, args.compset, args.res, args.machine, args.compiler,\
+        args.mpilib, args.project, args.pecount, \
+        args.user_mods_dir, args.pesfile, \
+        args.gridfile, args.srcroot, args.test, args.multi_driver, \
+        args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
+        run_unsupported, args.answer, args.input_dir, args.driver, args.workflow, args.non_local
+
+###############################################################################
+def _main_func(description):
+###############################################################################
+    cimeroot  = os.path.abspath(CIME.utils.get_cime_root())
+
+    casename, compset, grid, machine, compiler, \
+        mpilib, project, pecount,  \
+        user_mods_dir, pesfile, \
+        gridfile, srcroot, test, multi_driver, ninst, walltime, \
+        queue, output_root, script_root, run_unsupported, \
+        answer, input_dir, driver, \
+        workflow, non_local = parse_command_line(sys.argv, cimeroot, description)
+
+
+    if script_root is None:
+        caseroot = os.path.abspath(casename)
+    else:
+        caseroot = os.path.abspath(script_root)
+
+    if user_mods_dir is not None:
+        if os.path.isdir(user_mods_dir):
+            user_mods_dir = os.path.abspath(user_mods_dir)
+
+    # create_test creates the caseroot before calling create_newcase
+    # otherwise throw an error if this directory exists
+    expect(not (os.path.exists(caseroot) and not test),
+           "Case directory {} already exists".format(caseroot))
+
+    with Case(caseroot, read_only=False) as case:
+        # Configure the Case
+        case.create(casename, srcroot, compset, grid, user_mods_dir=user_mods_dir,
+                    machine_name=machine, project=project,
+                    pecount=pecount, compiler=compiler, mpilib=mpilib,
+                    pesfile=pesfile,gridfile=gridfile,
+                    multi_driver=multi_driver, ninst=ninst, test=test,
+                    walltime=walltime, queue=queue, output_root=output_root,
+                    run_unsupported=run_unsupported, answer=answer,
+                    input_dir=input_dir, driver=driver, workflowid=workflow, non_local=non_local)
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func(__doc__)

@@ -1,9 +1,3 @@
-==========================================================================
-$Id: README 46983 2013-05-09 22:08:12Z tcraig $
-$URL: https://svn-ccsm-models.cgd.ucar.edu/tools/mapping/trunk_tags/mapping_141106/check_maps/README $
-==========================================================================
-
-
 ===============
 ABOUT THIS TOOL
 ===============
@@ -42,25 +36,31 @@ BUILD
 =====
 
 To compile this tool, you need to have the ESMFMKFILE environment variable set.
-The easiest way to do that is to load the ESMF modules. To do this, you must
-already have the intel module loaded. Then load the version of ESMF you want
-to use (as of April 2013, the most recent version available is 6.1.1):
+The easiest way to do that is to load the ESMF modules. On cheyenne, caldera,
+geyser, or pronghorn you must already have the intel module loaded. Then load the
+version of ESMF you want to use (as of May 2018, the most recent version on the
+NCAR machines is 7.0.0):
 
+Caldera, Geyser, Pronghorn:
 $ module load esmf
-$ module load esmf-6.3.0r-ncdfio-uni-O
+$ module load esmf-7.0.0-ncdfio-uni-O
 
-This will set ESMFMKFILE. With this variable set, enter the mapping/check_maps/src/
-directory and run gmake
+Cheyenne:
+$ module load esmf_libs/7.0.0
+$ module load esmf-7.0.0-ncdfio-uni-O
 
-$ cd mapping/check_maps/src
+This will set ESMFMKFILE. With this variable set, enter the src/ directory and
+run gmake
+
+$ cd src
 $ gmake [VERBOSE=TRUE]
 
 VERBOSE=TRUE turns on some extra diagnostic output and is optional.
 
-Back in the mapping/check_maps/ directory, you should now have an executable
-file named ESMF_RegridWeightGenCheck.
+Back in this directory, you should now have an executable file named
+ESMF_RegridWeightGenCheck.
 
-Note that at this time, the tool only works in serial mode (building with the 
+Note that at this time, the tool only works in serial mode (building with the
 mpi-enabled version of the ESMF makefile leads to a segmentation fault when
 running with more than one MPI task).
 
@@ -78,6 +78,6 @@ listed in FILELIST
   --help, -h        Output this usage information
 
 Notes:
-  1) For use on yellowstone, geyser, or caldera only!
+  1) For use on cheyenne, geyser, caldera, or pronghorn only!
   2) Need to set ESMFMKFILE (see comments in Makefile) or compilation will fail
   3) If -rc option is not enabled, -v flag is ignored and verbose / concise will depend on previous compilation

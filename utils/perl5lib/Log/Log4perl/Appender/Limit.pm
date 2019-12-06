@@ -26,7 +26,7 @@ sub new {
     my $self = {
         max_until_flushed   => undef,
         max_until_discarded => undef,
-        appender_method_on_flush 
+        appender_method_on_flush
                             => undef,
         appender            => undef,
         accumulate          => 1,
@@ -58,7 +58,7 @@ sub new {
 sub log {
 ###########################################
     my($self, %params) = @_;
-    
+
     local $Log::Log4perl::caller_depth =
         $Log::Log4perl::caller_depth + 2;
 
@@ -202,7 +202,7 @@ __END__
 
     my $conf = qq(
       log4perl.category = WARN, Limiter
-    
+
           # Email appender
       log4perl.appender.Mailer          = Log::Dispatch::Email::MailSend
       log4perl.appender.Mailer.to       = drone\@pageme.com
@@ -231,7 +231,7 @@ __END__
 
 Specifies the name of the appender used by the limiter. The
 appender specified must be defined somewhere in the configuration file,
-not necessarily before the definition of 
+not necessarily before the definition of
 C<Log::Log4perl::Appender::Limit>.
 
 =item C<block_period>
@@ -242,14 +242,14 @@ discarded (if C<accumulate> isn't set).
 
 =item C<persistent>
 
-File name in which C<Log::Log4perl::Appender::Limit> persistently stores 
+File name in which C<Log::Log4perl::Appender::Limit> persistently stores
 delivery times. If omitted, the appender will have no recollection of what
 happened when the program restarts.
 
 =item C<max_until_flushed>
 
-Maximum number of accumulated messages. If exceeded, the appender flushes 
-all messages, regardless if the interval set in C<block_period> 
+Maximum number of accumulated messages. If exceeded, the appender flushes
+all messages, regardless if the interval set in C<block_period>
 has passed or not. Don't mix with C<max_until_discarded>.
 
 =item C<max_until_discarded>
@@ -261,13 +261,13 @@ to flush all accumulated messages. Don't mix with C<max_until_flushed>.
 =item C<appender_method_on_flush>
 
 Optional method name to be called on the appender attached to the
-limiter when messages are flushed. For example, to have the sample code 
-in the SYNOPSIS section bundle buffered emails into one, change the 
-mailer's C<buffered> parameter to C<1> and set the limiters 
+limiter when messages are flushed. For example, to have the sample code
+in the SYNOPSIS section bundle buffered emails into one, change the
+mailer's C<buffered> parameter to C<1> and set the limiters
 C<appender_method_on_flush> value to the string C<"flush">:
 
       log4perl.category = WARN, Limiter
-    
+
           # Email appender
       log4perl.appender.Mailer          = Log::Dispatch::Email::MailSend
       log4perl.appender.Mailer.to       = drone\@pageme.com
@@ -291,7 +291,7 @@ C<flush()> method when it's own buffer gets flushed out.
 If the appender attached to C<Limit> uses C<PatternLayout> with a timestamp
 specifier, you will notice that the message timestamps are reflecting the
 original log event, not the time of the message rendering in the
-attached appender. Major trickery has been applied to accomplish 
+attached appender. Major trickery has been applied to accomplish
 this (Cough!).
 
 =head1 DEVELOPMENT NOTES
@@ -308,11 +308,11 @@ thresholds. This behaviour might change in the future.
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -322,7 +322,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -333,8 +333,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

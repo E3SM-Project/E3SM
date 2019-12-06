@@ -24,8 +24,8 @@ sub new {
     my $self = {
         appender=> undef,
         buffer  => [],
-        options => { 
-            max_messages  => undef, 
+        options => {
+            max_messages  => undef,
             trigger       => undef,
             trigger_level => undef,
         },
@@ -121,11 +121,11 @@ sub level_trigger {
         my($self, $params) = @_;
 
         return Log::Log4perl::Level::to_priority(
-                 $params->{log4p_level}) >= 
+                 $params->{log4p_level}) >=
                Log::Log4perl::Level::to_priority($level);
     };
 }
-    
+
 ###########################################
 sub DESTROY {
 ###########################################
@@ -182,7 +182,7 @@ C<Log::Log4perl::Appender::Buffer> takes these arguments:
 
 Specifies the name of the appender it buffers messages for. The
 appender specified must be defined somewhere in the configuration file,
-not necessarily before the definition of 
+not necessarily before the definition of
 C<Log::Log4perl::Appender::Buffer>.
 
 =item C<max_messages>
@@ -229,7 +229,7 @@ message category (key C<l4p_category>) and the content of the message
 
 If the subroutine returns 1, it will trigger a flush of buffered messages.
 
-Shortcut 
+Shortcut
 
 =back
 
@@ -247,11 +247,11 @@ thresholds. This behaviour might change in the future.
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -261,7 +261,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -272,8 +272,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

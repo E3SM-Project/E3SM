@@ -22,9 +22,9 @@ sub new {
     my $self = { params => {},
                  %options,
                };
-     
+
     bless $self, $class;
-     
+
     print "Compiling '$options{logic}'\n" if _INTERNAL_DEBUG;
 
         # Set up meta-decider for later
@@ -51,7 +51,7 @@ sub compile_logic {
     while($logic =~ /([\w_-]+)/g) {
             # Get the corresponding filter object
         my $filter = Log::Log4perl::Filter::by_name($1);
-        die "Filter $filter required by Boolean filter, but not defined" 
+        die "Filter $filter required by Boolean filter, but not defined"
             unless $filter;
 
         $self->{params}->{$1} = $filter;
@@ -61,13 +61,13 @@ sub compile_logic {
     my $plist = join ', ', map { '$' . $_ } keys %{$self->{params}};
 
         # Replace all the (dollar-less) placeholders in the code with
-        # calls to their respective coderefs.  
+        # calls to their respective coderefs.
         $logic =~ s/([\w_-]+)/\&\$$1/g;
 
         # Set up the meta decider, which transforms the config file
         # logic into compiled perl code
     my $func = <<EOT;
-        sub { 
+        sub {
             my($plist) = \@_;
             $logic;
         }
@@ -96,7 +96,7 @@ sub eval_logic {
         # not predictable, it is consistent :)
     for my $param (keys %{$self->{params}}) {
         # Pass a coderef as a param that will run the filter's ok method and
-        # return a 1 or 0.  
+        # return a 1 or 0.
         print "Passing filter $param\n" if _INTERNAL_DEBUG;
         push(@plist, sub {
             return $self->{params}->{$param}->ok(%$p) ? 1 : 0
@@ -138,15 +138,15 @@ Log::Log4perl::Filter::Boolean - Special filter to combine the results of others
 Sometimes, it's useful to combine the output of various filters to
 arrive at a log/no log decision. While Log4j, Log4perl's mother ship,
 chose to implement this feature as a filter chain, similar to Linux' IP chains,
-Log4perl tries a different approach. 
+Log4perl tries a different approach.
 
-Typically, filter results will not need to be passed along in chains but 
+Typically, filter results will not need to be passed along in chains but
 combined in a programmatic manner using boolean logic. "Log if
-this filter says 'yes' and that filter says 'no'" 
+this filter says 'yes' and that filter says 'no'"
 is a fairly common requirement but hard to implement as a chain.
 
 C<Log::Log4perl::Filter::Boolean> is a special predefined custom filter
-for Log4perl which combines the results of other custom filters 
+for Log4perl which combines the results of other custom filters
 in arbitrary ways, using boolean expressions:
 
     log4perl.logger = WARN, AppWarn, AppError
@@ -179,11 +179,11 @@ L<Log::Log4perl::Filter::StringRange>
 
 =head1 LICENSE
 
-Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt> 
+Copyright 2002-2013 by Mike Schilli E<lt>m@perlmeister.comE<gt>
 and Kevin Goess E<lt>cpan@goess.orgE<gt>.
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =head1 AUTHOR
 
@@ -193,7 +193,7 @@ Please contribute patches to the project on Github:
 
 Send bug reports or requests for enhancements to the authors via our
 
-MAILING LIST (questions, bug reports, suggestions/patches): 
+MAILING LIST (questions, bug reports, suggestions/patches):
 log4perl-devel@lists.sourceforge.net
 
 Authors (please contact them via the list above, not directly):
@@ -204,8 +204,8 @@ Contributors (in alphabetical order):
 Ateeq Altaf, Cory Bennett, Jens Berthold, Jeremy Bopp, Hutton
 Davidson, Chris R. Donnelly, Matisse Enzer, Hugh Esco, Anthony
 Foiani, James FitzGibbon, Carl Franks, Dennis Gregorovic, Andy
-Grundman, Paul Harrington, Alexander Hartmaier  David Hull, 
-Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter, 
-Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope, 
+Grundman, Paul Harrington, Alexander Hartmaier  David Hull,
+Robert Jacobson, Jason Kohles, Jeff Macdonald, Markus Peter,
+Brett Rann, Peter Rabbitson, Erik Selberg, Aaron Straup Cope,
 Lars Thegler, David Viner, Mac Yang.
 

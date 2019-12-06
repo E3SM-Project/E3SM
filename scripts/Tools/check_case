@@ -1,65 +1,60 @@
-#!/usr/bin/env perl
+#!/usr/bin/env python
 
-use strict;
-use Cwd;
-use English;
-use Getopt::Long;
-use File::Basename;
-use IO::File;
-use IO::Handle;
-use XML::LibXML;
-sub usage {
-    die <<'EOF';
+"""
+Script to verify that the case is ready for submission.
 
-SYNOPSIS 
+Typical usage is simply:
+   ./check_case
 
-  check_case [options]
+You can run this before running case.submit to:
+  - Ensure that all of the env xml files are in sync with the locked files
+  - Create namelists (thus verifying that there will be no problems with
+    namelist generation)
+  - Ensure that the build is complete
 
-  checks that case is set up correctly
+Running this is completely optional: these checks will be done
+automatically when running case.submit. However, you can run this if you
+want to perform these checks without actually submitting the case.
+"""
 
-OPTIONS
+from standard_script_setup import *
 
-  -help [or -h]  Print usage to STDOUT (optional).
+from CIME.utils import expect
+from CIME.case  import Case
 
-EOF
-} 
+import argparse
 
-my %opts = (loglevel=>"INFO" );
+logger = logging.getLogger(__name__)
 
-GetOptions(
-    "loglevel=s" => \$opts{loglevel},
-    "h|help"  => \$opts{'help'},
-    )  or usage();
+###############################################################################
+def parse_command_line(args, description):
+###############################################################################
 
-# Give usage message.
-usage() if $opts{'help'};
-my $xml = XML::LibXML->new( no_blanks => 1)->parse_file("env_case.xml"); 
-my @nodes = $xml->findnodes(".//entry[\@id=\"CIMEROOT\"]"); 
-my $cimeroot = $nodes[0]->getAttribute('value');
+    parser = argparse.ArgumentParser(
+        description=description,
+        formatter_class=argparse.RawTextHelpFormatter)
 
-unshift @INC, "$cimeroot/utils/perl5lib";
-require Log::Log4perl;
+    CIME.utils.setup_standard_logging_options(parser)
 
-my $level = Log::Log4perl::Level::to_priority($opts{loglevel});
-Log::Log4perl->easy_init({level=>$level,
-			  layout=>'%m%n'});
-my $logger = Log::Log4perl::get_logger();
+    args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
+###############################################################################
+def _main_func(description):
+###############################################################################
+    parse_command_line(sys.argv, description)
 
-my $sysmod = "./Tools/check_lockedfiles";
-system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
+    with Case(read_only=False) as case:
+        case.check_lockedfiles()
+        case.create_namelists()
+        build_complete = case.get_value("BUILD_COMPLETE")
 
-my $CASE           = `./xmlquery CASE           -value`;
-my $BUILD_COMPLETE = `./xmlquery BUILD_COMPLETE -value`;
+    if not build_complete:
+        expect(False,
+               "Please rebuild the model interactively by calling case.build")
 
-my $sysmod = "./preview_namelists";
-system($sysmod) == 0 or $logger->logdie ("ERROR: $sysmod failed: $?");
+    logger.info( "check_case OK ")
 
-if ($BUILD_COMPLETE ne "TRUE") {
-    $logger->logdie("BUILD_COMPLETE is not TRUE \n
-    Please rebuild the model interactively via calling 
-      ./${CASE}.build" );
-}
+###############################################################################
 
-$logger->info( "check_case OK ");
-
+if __name__ == "__main__":
+    _main_func(__doc__)

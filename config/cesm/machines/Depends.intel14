@@ -1,0 +1,28 @@
+#
+# 12/03/2012 the intel compiler on yellowstone 12.1.5 20120612
+# does not converge the pH computation without the -CU flag
+# root cause has not been determined.  JPE
+# this problem is resolved in intel 13.0.1
+#ecosys_mod.o: ecosys_mod.F90
+#	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -CU $<
+
+
+
+PERFOBJS=\
+prim_advection_mod_base.o \
+vertremap_mod_base.o \
+edge_mod_base.o \
+derivative_mod_base.o \
+bndry_mod_base.o \
+prim_advance_mod.o \
+uwshcu.o \
+wetdep.o
+
+ifeq ($(DEBUG),FALSE)
+  $(PERFOBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O3  -no-prec-div $<
+  $(REDUCED_OPT_OBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS)  -O1 $<
+  $(REDUCED_PRECISION_OBJS): %.o: %.F90
+	  $(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FREEFLAGS) -fimf-precision=low -fp-model fast $<
+endif

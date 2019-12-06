@@ -8,12 +8,12 @@ BEGIN {
 use warnings;
 
 use Carp;
-use File::Copy; 
+use File::Copy;
 use File::Spec; #not really needed because File::Copy already gets it, but for good measure :)
 
-use vars qw( 
-    @ISA      @EXPORT_OK $VERSION  $MaxDepth $KeepMode $CPRFComp $CopyLink 
-    $PFSCheck $RemvBase $NoFtlPth  $ForcePth $CopyLoop $RMTrgFil $RMTrgDir 
+use vars qw(
+    @ISA      @EXPORT_OK $VERSION  $MaxDepth $KeepMode $CPRFComp $CopyLink
+    $PFSCheck $RemvBase $NoFtlPth  $ForcePth $CopyLoop $RMTrgFil $RMTrgDir
     $CondCopy $BdTrgWrn $SkipFlop  $DirPerms
 );
 
@@ -24,7 +24,7 @@ $VERSION = '0.38';
 
 $MaxDepth = 0;
 $KeepMode = 1;
-$CPRFComp = 0; 
+$CPRFComp = 0;
 $CopyLink = eval { local $SIG{'__DIE__'};symlink '',''; 1 } || 0;
 $PFSCheck = 1;
 $RemvBase = 0;
@@ -36,7 +36,7 @@ $RMTrgDir = 0;
 $CondCopy = {};
 $BdTrgWrn = 0;
 $SkipFlop = 0;
-$DirPerms = 0777; 
+$DirPerms = 0777;
 
 my $samecheck = sub {
    return 1 if $^O eq 'MSWin32'; # need better way to check for this on winders...
@@ -66,7 +66,7 @@ my $samecheck = sub {
              carp "Caught Deep Recursion Condition: $_[0] contains $_[1]";
              return;
          }
-      
+
          pop @pth;
       }
    }
@@ -76,15 +76,15 @@ my $samecheck = sub {
 
 my $glob = sub {
     my ($do, $src_glob, @args) = @_;
-    
+
     local $CPRFComp = 1;
-    
+
     my @rt;
     for my $path ( glob($src_glob) ) {
         my @call = [$do->($path, @args)] or return;
         push @rt, \@call;
     }
-    
+
     return @rt;
 };
 
@@ -124,7 +124,7 @@ my $ok_todo_asper_condcopy = sub {
     return $copy;
 };
 
-sub fcopy { 
+sub fcopy {
    $samecheck->(@_) or return;
    if($RMTrgFil && (-d $_[1] || -e $_[1]) ) {
       my $trg = $_[1];
@@ -146,10 +146,10 @@ sub fcopy {
       pathmk(File::Spec->catpath($volm,$path,''), $NoFtlPth);
    }
    if( -l $_[0] && $CopyLink ) {
-      carp "Copying a symlink ($_[0]) whose target does not exist" 
+      carp "Copying a symlink ($_[0]) whose target does not exist"
           if !-e readlink($_[0]) && $BdTrgWrn;
       symlink readlink(shift()), shift() or return;
-   } else {  
+   } else {
       copy(@_) or return;
 
       my @base_file = File::Spec->splitpath($_[0]);
@@ -160,11 +160,11 @@ sub fcopy {
    return wantarray ? (1,0,0) : 1; # use 0's incase they do math on them and in case rcopy() is called in list context = no uninit val warnings
 }
 
-sub rcopy { 
+sub rcopy {
     if (-l $_[0] && $CopyLink) {
-        goto &fcopy;    
+        goto &fcopy;
     }
-    
+
     goto &dircopy if -d $_[0] || substr( $_[0], ( 1 * -1), 1) eq '*';
     goto &fcopy;
 }
@@ -191,9 +191,9 @@ sub dircopy {
 
    $samecheck->(  $_zero, $_[1] ) or return;
    if ( !-d $_zero || ( -e $_[1] && !-d $_[1] ) ) {
-       $! = 20; 
+       $! = 20;
        return;
-   } 
+   }
 
    if(!-d $_[1]) {
       pathmk($_[1], $NoFtlPth) or return;
@@ -212,9 +212,9 @@ sub dircopy {
    my $recurs; #must be my()ed before sub {} since it calls itself
    $recurs =  sub {
       my ($str,$end,$buf) = @_;
-      $filen++ if $end eq $baseend; 
+      $filen++ if $end eq $baseend;
       $dirn++ if $end eq $baseend;
-      
+
       $DirPerms = oct($DirPerms) if substr($DirPerms,0,1) eq '0';
       mkdir($end,$DirPerms) or return if !-d $end;
       chmod scalar((stat($str))[2]), $end if $KeepMode;
@@ -224,7 +224,7 @@ sub dircopy {
       }
       $level++;
 
-      
+
       my @files;
       if ( $] < 5.006 ) {
           opendir(STR_DH, $str) or return;
@@ -242,21 +242,21 @@ sub dircopy {
           my $org = File::Spec->catfile($str, $file_ut);
           my $new = File::Spec->catfile($end, $file_ut);
           if( -l $org && $CopyLink ) {
-              carp "Copying a symlink ($org) whose target does not exist" 
+              carp "Copying a symlink ($org) whose target does not exist"
                   if !-e readlink($org) && $BdTrgWrn;
               symlink readlink($org), $new or return;
-          } 
+          }
           elsif(-d $org) {
               $recurs->($org,$new,$buf) if defined $buf;
               $recurs->($org,$new) if !defined $buf;
               $filen++;
               $dirn++;
-          } 
+          }
           else {
               if($ok_todo_asper_condcopy->($org)) {
                   if($SkipFlop) {
                       fcopy($org,$new,$buf) or next if defined $buf;
-                      fcopy($org,$new) or next if !defined $buf;                      
+                      fcopy($org,$new) or next if !defined $buf;
                   }
                   else {
                       fcopy($org,$new,$buf) or return if defined $buf;
@@ -274,13 +274,13 @@ sub dircopy {
    return wantarray ? ($filen,$dirn,$level) : $filen;
 }
 
-sub fmove { $move->(1, @_) } 
+sub fmove { $move->(1, @_) }
 
-sub rmove { 
+sub rmove {
     if (-l $_[0] && $CopyLink) {
-        goto &fmove;    
+        goto &fmove;
     }
-    
+
     goto &dirmove if -d $_[0] || substr( $_[0], ( 1 * -1), 1) eq '*';
     goto &fmove;
 }
@@ -307,10 +307,10 @@ sub pathmk {
       $pth = File::Spec->catdir($pth, $parts[$_ + 1]) unless $_ == $#parts;
    }
    1;
-} 
+}
 
 sub pathempty {
-   my $pth = shift; 
+   my $pth = shift;
 
    return 2 if !-d $pth;
 
@@ -322,19 +322,19 @@ sub pathempty {
    }
    else {
        opendir($pth_dh, $pth) or return;
-       @names = grep !/^\.+$/, readdir($pth_dh);       
+       @names = grep !/^\.+$/, readdir($pth_dh);
    }
-   
+
    for my $name (@names) {
       my ($name_ut) = $name =~ m{ (.*) }xms;
       my $flpth     = File::Spec->catdir($pth, $name_ut);
 
       if( -l $flpth ) {
-	      unlink $flpth or return; 
+	      unlink $flpth or return;
       }
       elsif(-d $flpth) {
           pathrmdir($flpth) or return;
-      } 
+      }
       else {
           unlink $flpth or return;
       }
@@ -346,7 +346,7 @@ sub pathempty {
    else {
        closedir $pth_dh;
    }
-   
+
    1;
 }
 
@@ -356,13 +356,13 @@ sub pathrm {
    my @pth = File::Spec->splitdir( $path );
    my $force = shift;
 
-   while(@pth) { 
+   while(@pth) {
       my $cur = File::Spec->catdir(@pth);
-      last if !$cur; # necessary ??? 
+      last if !$cur; # necessary ???
       if(!shift()) {
          pathempty($cur) or return if $force;
          rmdir $cur or return;
-      } 
+      }
       else {
          pathempty($cur) if $force;
          rmdir $cur;
@@ -382,7 +382,7 @@ sub pathrmdir {
     }
 
     pathempty($dir) or return;
-    
+
     rmdir $dir or return;
 }
 
@@ -405,7 +405,7 @@ File::Copy::Recursive - Perl extension for recursively copying files and directo
   fmove($orig,$new[,$buf]) or die $!;
   rmove($orig,$new[,$buf]) or die $!;
   dirmove($orig,$new[,$buf]) or die $!;
-  
+
   rcopy_glob("orig/stuff-*", $trg [, $buf]) or die $!;
   rmove_glob("orig/stuff-*", $trg [,$buf]) or die $!;
 
@@ -428,7 +428,7 @@ returns the same as File::Copy::copy() in scalar context and 1,0,0 in list conte
 
 This function recursively traverses the $orig directory's structure and recursively copies it to the $new directory.
 $new is created if necessary (multiple non existant directories is ok (IE foo/bar/baz). The script logically and portably creates all of them if necessary).
-It attempts to preserve the mode (see Preserving Mode below) and 
+It attempts to preserve the mode (see Preserving Mode below) and
 by default it copies all the way down into the directory, (see Managing Depth) below.
 If a directory is not specified it croaks just like fcopy croaks if its not a file that is specified.
 
@@ -437,7 +437,7 @@ In list context it returns the number of files and directories, number of direct
 
   my $num_of_files_and_dirs = dircopy($orig,$new);
   my($num_of_files_and_dirs,$num_of_dirs,$depth_traversed) = dircopy($orig,$new);
-  
+
 Normally it stops and return's if a copy fails, to continue on regardless set $File::Copy::Recursive::SkipFlop to true.
 
     local $File::Copy::Recursive::SkipFlop = 1;
@@ -447,7 +447,7 @@ That way it will copy everythgingit can ina directory and won't stop because of 
 =head2 rcopy()
 
 This function will allow you to specify a file *or* directory. It calls fcopy() if its a file and dircopy() if its a directory.
-If you call rcopy() (or fcopy() for that matter) on a file in list context, the values will be 1,0,0 since no directories and no depth are used. 
+If you call rcopy() (or fcopy() for that matter) on a file in list context, the values will be 1,0,0 since no directories and no depth are used.
 This is important becasue if its a directory in list context and there is only the initial directory the return value is 1,1,1.
 
 =head2 rcopy_glob()
@@ -482,7 +482,7 @@ So if you:
 
    rmove('foo/bar/baz', '/etc/');
    # "baz" is removed from foo/bar after it is successfully copied to /etc/
-   
+
    local $File::Copy::Recursive::Remvbase = 1;
    rmove('foo/bar/baz','/etc/');
    # if baz is successfully copied to /etc/ :
@@ -572,7 +572,7 @@ to false;
 =head2 Managing Depth
 
 You can set the maximum depth a directory structure is recursed by setting:
-  $File::Copy::Recursive::MaxDepth 
+  $File::Copy::Recursive::MaxDepth
 to a whole number greater than 0.
 
 =head2 SymLinks
@@ -614,7 +614,7 @@ This should be unnecessary most of the time but its there if you need it :)
 
 =head2 Turning off stat() check
 
-By default the files or directories are checked to see if they are the same (IE linked, or two paths (absolute/relative or different relative paths) to the same file) by comparing the file's stat() info. 
+By default the files or directories are checked to see if they are the same (IE linked, or two paths (absolute/relative or different relative paths) to the same file) by comparing the file's stat() info.
 It's a very efficient check that croaks if they are and shouldn't be turned off but if you must for some weird reason just set $File::Copy::Recursive::PFSCheck to a false value. ("PFS" stands for "Physical File System")
 
 =head2 Emulating cp -rf dir1/ dir2/
@@ -665,7 +665,7 @@ This is false by default so that a check is done to see if the source directory 
 
 If you ever find a situation where $CopyLoop = 1 is desirable let me know (IE its a bad bad idea but is there if you want it)
 
-(Note: On Windows this was necessary since it uses stat() to detemine samedness and stat() is essencially useless for this on Windows. 
+(Note: On Windows this was necessary since it uses stat() to detemine samedness and stat() is essencially useless for this on Windows.
 The test is now simply skipped on Windows but I'd rather have an actual reliable check if anyone in Microsoft land would care to share)
 
 =head1 SEE ALSO
@@ -691,6 +691,6 @@ Daniel Muey, L<http://drmuey.com/cpan_contact.pl>
 Copyright 2004 by Daniel Muey
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself. 
+it under the same terms as Perl itself.
 
 =cut
