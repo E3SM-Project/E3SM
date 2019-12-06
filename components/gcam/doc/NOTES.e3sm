@@ -1,3 +1,2108 @@
+12/6/2019
+
+* Checklist time for iac_run_mct() in iac_comp_mct.F90:
+
+@XsetdensitycGCAM() updated to new GCAM_E3SM_interface_wrapper.cpp function
+
+@Xupdate runcGCAM() call in gcam_run_mod()
+
+@ update gcam_init_mod() for allocations for gcam2glm_data, gcam_emis_data
+  (outputs of runcGCAM()), to match what GCAM and GLM expect.
+
+@ gcam2glm_run_mod() review and revision
+@ glm_run_mod() review and revision
+
+@ iac_export() of gcam_emis_data and glm2lnd_data
+
+* For gcam_run_mod(), we apparently do not need gcami anymore - no input,
+  it's all taken care of by setdensity. 
+
+* Okay, this is what I was afraid of - glm uses the cdata structure, which
+  we've denuded mostly, to get some of the stuff it needs - in particular,
+  gcam2glm_run_mod() wants:
+
+    year1=cdata%i(iac_cdatai_gcam_yr1)
+    year2=cdata%i(iac_cdatai_gcam_yr2)
+    
+    naez=cdata%i(iac_cdatai_gcam_naez)
+    nreg=cdata%i(iac_cdatai_gcam_nreg)
+    ntime=cdata%i(iac_cdatai_gcamo_ntime)
+
+  So, it looks like naez, nreg, and ntime(?), should be namelist
+  variables.  They might even match up with num_gcam_energy_regions and
+  num_gcam_land_regions, but I'm not sure.  So I'll have to review
+  how cdata%i(iac_cdatai_gcam_naez) gets set, again.  Where is that?
+
+* Okay, here is the relevant section of iac_fields_mod.F90 (remember,
+  that's defunct), which has a lot of this stuff:
+
+-------------------- iac_fields_mod.F90
+    ! !PUBLIC DATA MEMBERS:
+    !--- this should be namelist or something like it ---
+
+    real*8,  parameter, public :: iac_spval = -999.0
+    integer, parameter, public :: iac_gcam_nreg =  14
+    integer, parameter, public :: iac_gcam_nsector =  12
+    integer, parameter, public :: iac_gcamoemis_nemis=  1
+    integer, parameter, public :: iac_gcam_naez =  18
+    integer, parameter, public :: iac_gcam_ncrops =  27
+    integer, parameter, public :: iac_gcam_timestep =  5
+    integer, parameter, public :: iac_gcam_ioyears =  15
+    integer, parameter, public :: iac_gcamo_ntime =  2
+    integer, parameter, public :: iac_glm_nx  = 720
+    integer, parameter, public :: iac_glm_ny  = 360
+    integer, parameter, public :: iac_iaco_npfts =  17
+    integer, parameter, public :: iac_iac_npfts  = 16
+    character(len=*), parameter, public :: iac_gcam2glm_map = 'some_map_file'
+-----------------
+
+* Here is how these values are set into cdata inside of the old gcam_comp_mod.f90
+
+================= old gcam_comp_mod.f90
+
+    cdata%l(iac_cdatal_gcam_present) = .true.
+    cdata%l(iac_cdatal_gcam_prognostic) = .true.
+    cdata%i(iac_cdatai_gcam_nreg) = iac_gcam_nreg
+    cdata%i(iac_cdatai_gcam_naez) = iac_gcam_naez
+    cdata%i(iac_cdatai_gcam_timestep) = iac_gcam_timestep
+    cdata%i(iac_cdatai_gcamo_ntime) = iac_gcamo_ntime
+    cdata%i(iac_cdatai_gcamo_nflds) = iac_gcamo_nflds
+    cdata%i(iac_cdatai_gcamo_size) = iac_gcam_nreg*iac_gcam_naez * iac_gcamo_ntime
+    cdata%i(iac_cdatai_gcamoemis_size) = iac_gcam_nreg*iac_gcam_nsector
+    cdata%i(iac_cdatai_gcami_nflds) = iac_gcami_nflds
+    cdata%i(iac_cdatai_gcami_size) = iac_gcam_nreg*iac_gcam_naez*iac_gcam_ncrops
+  
+    allocate(gcami(iac_gcami_nflds,cdata%i(iac_cdatai_gcami_size)))
+    allocate(gcamo(iac_gcamo_nflds,cdata%i(iac_cdatai_gcamo_size)))
+    allocate(gcamoemis(iac_gcamoemis_nemis,cdata%i(iac_cdatai_gcamoemis_size)))
+
+==========================
+
+12/5/2019
+
+* Okay, after a couple days of wheel-spinning, I think I need to rework the
+  variables in iac_comp_mct.F90.
+
+  The input to gcam is handled by gcam_set_density_mod(), which should take
+  the lnd2iac_vars structure on input, because the call to the interface
+  wrapper uses multiple 1D arrays (for npp, hp, pftfrct, area, landfrac) as
+  inputs.  So we might as well just pass in the structure, which has all
+  those things.
+
+  Note that a gcami(nflds,*) array wouldn't work anyway, as npp,hp,pft are
+  all 3D (lon,lat,pft) and area and landfrac are 2D (lon,lat), so we'd need
+  either two different arrays or a structure.  So use the structure.
+
+* That sets some values in the internal gcam object, so the runcGCAM()
+  function inside of gcam_run_mod() doesn't actually need inputs, just a
+  place to store outputs.  
+
+* Now, depending on how the interface to glm works, we may need to take
+  those outputs and refactor them, but for now let's assume Kate was savvy
+  enough to provide output in the format I need them.
+
+* Okay - I've moved the old gcam-core gcam_comp_mod.F90 function into the
+  regular gcam coupling area and out of gcam-core - so gcam-core will have
+  c++ functions for the interface, but no fortran.
+
+   .../components/gcam/src/iac/coupling/
+
+  The interface wrapper, that shows how the interface functions should be
+  called from gcam_comp_mod.F90, is in ~/gcam-core/cpl/source/ on anvil.
+  The inteface has CHANGED from the CCSM_E3SM interface, as well as from
+  the old original gcam-core files that Kate sent me originally - (those are
+  in ~/old/gcam-core).
+
+1 So, up next is modifying gcam_comp_mod.F90 to have the right arguments to
+  the interface function, and to make sure those are passed in via
+  gcam_run_mod() and gcam_setdensity_mod(), and/or via the iac_data_mod.F90
+  module structures.
+
+2 We need gcam_init_mod() to allocate the output arrays from
+  runcGCAM()/gcam_run_mod() correctly.  To see how this should be done,
+  look at ~/gcam-core/cpl/main/main.cpp, which I've printed out, which sets
+  up a run with the right dimensions and everything.
+
+3 Then, we need to interface with glm, and make sure the outputs of
+  gcam_run_mod() are available (inside of gcam_run_mct()) to call with
+  gcam2glm_run_mod() - actually, maybe that function converts from gcamo
+  mode to glmi mode or something.  Then glm_run_mod().
+
+4 Finally, review how the output of glm_run_mod(), whatever format it is
+  in, gets setnd back to the coupler.  I think I need to call
+  iac_export(z2x_z, ...), or something.  Dammit, I thought I was closer
+  than this...
+
+! Okay, namelist variables - time to figure out how to set and read those,
+  too.  in gcam_init_mod() we'll need to read the namelist and store those
+  values - setdensitycGCAM() needs a mapping_file and a set of 
+  read_scalars/write_scalars logicals as namelist variables.
+
+12/2/2019
+
+* Trying to grab Kate's updated gcam-core, via:
+
+  git clone https://github.com/JGCRI/gcam-core
+
+  I tried to do that inside of ~/gcam-dev, and that caused all kinds of
+  problems, putting stuff in ~/gcam-core/gcam-dev/gcam-core and then
+  getting messed up.  I tried it again from my home directory, and that
+  ?seems? to have worked - at least, it didn't fail.
+
+* Anyway, Kate's original gcam-core is in ~/old.
+
+* Um, okay, what I got now seems to be the original, original gcam branch,
+  with stuff in cvs and exe and input and output.  WTH?
+
+  (See after XXs)
+
+XXXXXXXXXXX
+* I tried using the branch Kate actually sent:
+
+  git clone https://github.com/JGCRI/gcam-core/tree/e3sm-integration
+
+  ...but that fails.
+
+  fatal: repository 'https://github.com/JGCRI/gcam-core/tree/e3sm-integration/' not found
+
+  I think that means I probably don't have access to this...
+
+  Anyway, the above XXd section gives me something that has no fortran, so
+  that can't be it.
+
+! So, I'm back to working through the original updated ~/gcam-core that
+  Kate sent me via tarball, with the proviso that once I get the new
+  gcam-core I may have to change things around.
+XXXXXXXXXXX
+
+* Okay, I'm such a git noob - obviously I need to checkout the
+  e3sm-integration branch.
+
+  ...well, it doesn't seem to have any fortran in it either!  Okay, so
+  either I do or don't have access to everything I need, and/or I do or do
+  not need to write my own gcam_comp_mod.f90 function to add to gcam-core.
+  Clear as mud!
+
+* Well, at any rate, the new gcam-core, e3sm-integration branch, seems to
+  have everything in cpl/source EXCEPT the gcam_comp_mod.f90, so we got
+  that going for us.  This actually simplifies some stuff - I can make sure
+  the fortran works, using the old gcam-core as a template, and using the
+  new gcam-core reordering of lon,lat,p as the way to go.
+
+* So, off to review the next bullet - iac_comp_mct.F90, gcam2glm_mod.F90,
+  and glm_comp_mod.F90, and also the old gcam_comp_mod.f90.
+
+11/16/2019 18:07:57 PST
+
+* WHERE TO START:
+
+  Review gcam2glm_mod.F90 and glm_comp_mod.F90 and how they are called from
+  iac_comp_mct.F90. 
+
+  In particular, review iac_comp_mct.F90 variables gcam2glm_data,
+  glmi_data, glm2lnd_data, glmo_data, etc.  Which do we need, what should
+  they be called, and are they all being initialized correctly in the init
+  functions?  (We have to assume the run functions are using them
+  correctly).
+
+11/16/2019
+
+* Okay, my plan is to simply move all the cdata/gdata stuff and everything
+  over to iac_data_mod.F90.  That way we can whittle it down without trying
+  to figure out if we need to re-get rid of iac_fields_mod.F90.  So we are
+  back to deleting iac_fields_mod.F90
+
+* So, for the gcam/glm wrapper functions I've removed the EClock and cdata
+  arguments, instead relying on this module to make them global within each
+  pertinent file:
+
+    use iac_data_mod, only : cdata => gdata, EClock => GClock
+
+  I'm pretty sure that's okay - the only issue is if the dynamic parts of
+  gdata and GCLock somehow cause a problem if included in a module rather
+  than passed as an argument.  This also renames gdata and GClock to what
+  they were in the original functions, which lets me call them the G names
+  outside of that to avoid collisions with the E3SM names.
+
+11/15/2019 09:45:20 PST
+
+* So, the mct functions are part of the gcam dist, so it no longer makes
+  sense to worry about moving stuff into and out of iac_comp_mct.F90 to
+  keep the submodule separate - it's all submodule stuff.  So go ahead and
+  use gcam functions willy-nilly inside of mct.
+
+* Annoyingly, I think we need iac_fields_mod.F90 after all - it defines the
+  gcam cdata, and I think some of the indeces and numbers are used in other
+  parts of the gcam code (maybe), and in the glm code (probably).  So I
+  have to add that back in...
+
+? I do not know how to allocate or initialize gcam cdata (which I'm calling
+  gdata, to distinguish it from the E3SM cdata_z, in the same way I have
+  GClock and EClock).  It looks like various parts of cdata are set in
+  various functions, so, great.  Time to grep...
+
+  ...great.  Lots of the cdata stuff is set and allocated in the unused
+  iac_comp_mod.F90 (from iESM, I think), assigning from namelist stuff.  I
+  also see a lot of allocations and assignments in the original
+  gcam_comp_mod.f90, from GCAM 3.  Oh, and some from glm_comp_mod.F90
+  wrapper, too.
+
+  Revise my grep to just find assignments:
+
+    cd .../components/gcam/src
+    find . -type f -exec egrep -inH 'cdata%.*=' {} \;
+
+  Returns:
+
+    gcam_comp_mod.F90 (old, in cvs/objects/ccsmcpl/source)
+    glm_comp_mod.F90
+    iac_comp_mod.F90 (in unused)
+    gcam2glm_mod.F90
+  
+  ...plus some duplicate and renamed versions, things like the 5year
+  versions.   Okay, so all that needs to be set in either the new
+  gcam_comp_mod or glm_comp_mod.F90 (except the two lines in
+  gcam2glm_mod.F90, which seem to be a way to pass yearly information back
+  and forth), and governed by namelist variables.
+
+? Another thing I'm beginning to worry about - there are a lot of text
+  .conf files in the glm stuff, pointing to specific files to read etc.  I
+  may have to refactor all of that to work with namelists, but hopefully
+  this is a residual from standalone glm and the iESM wrapper already set
+  up the namelists.  So, I should probably review the iESM nameslist files
+  again - I've done that before, right?
+
+11/15/2019
+
+* Trying to push up to gcam, which I forgot to do yesterday:
+
+	modified:   cpl/gcam_cpl_indices.F90
+	modified:   cpl/iac_comp_mct.F90
+	modified:   cpl/iac_import_export.F90
+	modified:   iac/coupling/gcam_var_mod.F90
+	deleted:    iac/coupling/iac2gcam_mod.F90
+	modified:   iac/coupling/iac_data_mod.F90
+	deleted:    iac/coupling/iac_fields_mod.F90
+	modified:   iac/coupling/iac_init_mod.F90
+
+  Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+
+	iac/coupling/iac_io_mod.F90
+	iac/coupling/orig/
+	iac/coupling/rename/
+	iac/coupling/unused/iac2gcam_mod.F90
+	iac/coupling/unused/iac_comp_mod.F90
+	iac/coupling/unused/iac_data_mod.F90.first_draft
+	iac/coupling/unused/iac_fields_mod.F90
+	iac/coupling/updateannuallanduse_v2.c
+	iac/gcam/cvs/objects/sectors/source/hide/
+	iac/gcam/cvs/objects/technologies/source/hide/
+	iac/glm/README
+	iac/glm/unused/
+
+* So:
+
+----------------
+  git add cpl/gcam_cpl_indices.F90 \
+      cpl/iac_comp_mct.F90 \
+      cpl/iac_import_export.F90 \
+      iac/coupling/gcam_var_mod.F90 \
+      iac/coupling/iac_data_mod.F90 \
+      iac/coupling/iac_init_mod.F90 \
+      iac/coupling/iac_io_mod.F90 \
+      iac/coupling/updateannuallanduse_v2.c      
+
+XXX git rm iac/coupling/iac2gcam_mod.F90 iac/coupling/iac_fields_mod.F90
+
+    (See above for 11/15/2019, I think we need iac_ields_mod.F90)
+
+----------------
+
+11/14/2019
+
+* iac2gcam_mod.F90 and iac_fields_mod.F90 are, I believe, obsolete, which
+  means I need to move the internal iac_cdata_type declaration to some
+  other module (probably iac_data_mod.F90 or maybe iac_init_mod.F90).
+
+* It seems like I should try to keep the gcam_comp functions out of
+  iac_comp_mct(), or at least call them iac_foo rather than gcam_foo, so we
+  could, in the future, sub in a non-GCAM iac module.  But for now I'm not
+  going to worry about it.
+
+* Which means maybe calling gcam_init_mod() from iac_init_mct() is okay.
+  The other option is in iac_init(), from iac_init_mod().
+
+  gcam_init_mod(EClock, cdata, gcami, gcamo, gcamoemis) allocates the gcam
+  variables, but EClock and cdata need to already be set.  I'm not sure
+  where any of that happens - it must be inside iac_init().  But since we
+  are calling these gcam_comp functions using Gclock and gdata inside
+  iac_comp_mct.F90, that means we either have to declare them as public in
+  some module, or declare them internally to iac_comp_mct.F90 and pass them
+  as arguments to iac_init() to get them allocated and set before
+  gcam_init_mod() needs them.
+
+* Okay, I need to rework iac_comp_mct() to get the calling sequence right,
+  but I want to get some commits pushed out first, so Kate and Gautam are
+  working with mostly the same code.
+
+  Here's my Git status:
+
+==============
+On branch shippert/gcam/active-gcam-coupled
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git checkout -- <file>..." to discard changes in working directory)
+  (commit or discard the untracked or modified content in submodules)
+
+	modified:   cime/src/drivers/mct/main/cime_comp_mod.F90
+	modified:   cime/src/drivers/mct/main/prep_atm_mod.F90
+	modified:   cime/src/drivers/mct/main/prep_iac_mod.F90
+	modified:   cime/src/drivers/mct/main/prep_lnd_mod.F90
+	modified:   cime/src/drivers/mct/main/seq_frac_mct.F90
+	modified:   cime/src/drivers/mct/shr/seq_flds_mod.F90
+	modified:   components/cam/src/control/camsrfexch.F90
+	modified:   components/cam/src/cpl/atm_import_export.F90
+	modified:   components/cam/src/cpl/cam_cpl_indices.F90
+	modified:   components/clm/src/cpl/clm_cpl_indices.F90
+	modified:   components/clm/src/cpl/lnd_comp_mct.F90
+	modified:   components/clm/src/cpl/lnd_import_export.F90
+	modified:   components/clm/src/main/clm_driver.F90
+	modified:   components/clm/src/main/clm_initializeMod.F90
+	modified:   components/clm/src/main/clm_instMod.F90
+	modified:   components/gcam/doc/NOTES.e3sm
+	modified:   components/gcam/src (modified content, untracked content)
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+
+	cime/config/e3sm/machines/config_machines.xml.dist
+	cime/scripts/Tools/mkDepends.orig
+	cime/scripts/lib/CIME/XML/env_mach_specific.pyc.dist
+	cime/src/drivers/mct/main/cime_comp_mod.F90.ps
+	cime/src/drivers/mct/main/cime_driver.F90.ps
+	components/clm/src/cpl/lnd_comp_mct.F90.ps
+	components/clm/src/iac
+	components/clm/src/main/#glc2lndMod.F90#
+	components/clm/src/main/.#glc2lndMod.F90
+	components/clm/src/main/iac2lndMod.F90
+	components/clm/src/main/lnd2iacMod.F90
+	components/clm/src/shr_kind_r8
+	components/clm/src/shr_log_errMsg
+	components/gcam/doc/.#NOTES.e3sm
+	components/mosart/src/cpl/rof_comp_mct.F90.ps
+	components/mosart/src/riverroute/#RtmMod.F90#
+	components/mosart/src/riverroute/.#RtmMod.F90
+==============
+
+* So I see three commits:
+
+1 git add cime/src/drivers/mct/main/cime_comp_mod.F90 \
+      cime/src/drivers/mct/main/prep_atm_mod.F90 \
+      cime/src/drivers/mct/main/prep_iac_mod.F90 \
+      cime/src/drivers/mct/main/prep_lnd_mod.F90 \
+      cime/src/drivers/mct/main/seq_frac_mct.F90 \
+      cime/src/drivers/mct/shr/seq_flds_mod.F90 
+
+   Commit message:
+
+---------------
+CIME modifications to couple with iac/gcam
+
+Changes to prep functions, cime_comp functions, and seq_flds to couple iac
+with lnd and atm
+---------------
+
+2 git add components/clm/src/cpl/clm_cpl_indices.F90 \
+      components/clm/src/cpl/lnd_comp_mct.F90 \
+      components/clm/src/cpl/lnd_import_export.F90 \
+      components/clm/src/main/clm_driver.F90 \
+      components/clm/src/main/clm_initializeMod.F90 \
+      components/clm/src/main/clm_instMod.F90 \
+      components/clm/src/main/iac2lndMod.F90 \
+      components/clm/src/main/lnd2iacMod.F90
+
+============
+CLM modifications to couple with iac/gcam
+
+Added modules to do iac2lnd and lnd2iac coupling, added new iac-based
+coupler fields in the cpl stuff, and modified arguments in some main clm
+functions to include the iac coupling vars
+============
+
+3 git add components/cam/src/control/camsrfexch.F90 \
+      components/cam/src/cpl/atm_import_export.F90 \
+      components/cam/src/cpl/cam_cpl_indices.F90
+
+------------
+CAM modification to couple with iac/gcam
+
+Modifications in cpl functions to grab and use co2flux from iac via
+coupler, and in rfexch structures to hold them.
+------------
+
+11/13/2019
+
+* Last few things: get the iac calling sequence right:
+
+1 call gcam_init_mod() somewhere that makes sense
+2 declare and allocate the gcam internal structures correctly
+3 declare and allocate the coupling structures used by iac_comp_mct.F90
+  correctly 
+4 clean up obsolete files and funcctions (i.e. iac2gcam_mod.F90)
+5 update init_mod() read the new grid file format
+
+* New compset from Xiaoying:
+
+    I just pushed my branch with the fully coupled compsets with GCAM
+    turning on to git. My branch is acme-y9s/gcam_compset, it is ready to
+    be tested. I can use the new compset to create a new case but fail to
+    build as we expected.
+
+* Okay, so the next step is how to merge these branches so I can use the
+  compset - I probably have to get my branch full committed (and pushed?),
+  and then it should just be 'git merge acme-y9s/gcam_compset'.  There
+  shouldn't be very many conflicts, as they hopefully just modified some 
+  config files.
+
+* Because I do not trust git to do things that I understand, mostly because
+  of my dumbness, I'll probably should do a git pull of master, or maybe if
+  I've got an old git master somewhere use that, and then git branch
+  acme-y9s/gcam_compset, and then do a diff or something to track down the
+  compset files.
+
+  Doing that, there's GCAM labels in some compsets in
+  ./cime/config/e3sm/allactive/config_compsets.xml in the
+  acme-y9s/gcam_compset branch.  Um, is there anything else in defining a
+  compset?  What did I do to define ZLND and Z?  I'm grepping for:
+
+  BGCEXP_BCRC_CNPRDCTC_20TR_GCAM
+
+  ...which was the alias I found, to see if I can find that somewhere
+  (nope). I'll have to review my notes way below on how compsets are
+  defined - is it just creating a string, and that's it?  There has to be
+  something somewhere, right?
+
+* The two aliases in her branch:
+
+    BGCEXP_BCRC_CNPRDCTC_20TR_GCAM
+        - 20TR_CAM5%CMIP6_CLM45%CNPRDCTCBC_MPASSI%BGC_MPASO%OIECOOIDMS_MOSART_SGLC_SWAV_BGC%BCRC_GCAM
+
+    G_BG1850CN
+        - 1850_CAM5_CLM45%CN_MPASSI_MPASO_MOSART_MALI%SIA_SWAV_GCAM
+
+* I don't see anything other than the case string anywhere - not in the
+  config_component.xml or config_compsets.xml in gcam, or in the cime
+  allactive area.
+
+  .../cime/config/e3sm/allactive/config_compsets.xml
+
+11/12/2019
+
+* Okay, at this point I I have to admit what the hell is happening in the
+  merging is beyond me.  All throughout these prep files for every
+  component, you see constructs like this:
+
+  prep_glc_mrg():
+
+    do egi = 1,num_inst_glc
+       ! Use fortran mod to address ensembles in merge
+       eli = mod((egi-1),num_inst_lnd) + 1
+       efi = mod((egi-1),num_inst_frc) + 1
+       x2g_gx => component_get_x2c_cx(glc(egi))
+       call prep_glc_merge(l2x_gx(eli), fractions_gx(efi), x2g_gx)
+    enddo
+
+  So, you are grabbing the avects from glc(egi), the egi-th decomp of glc, and
+  merging them with l2x_gx(eli), the eli-th decomp of lnd.
+
+  I don't know what that means.
+
+  Don't even get me started on "fractions", here.
+
+* The thing I'm getting messed up on is this: if glc and lnd have same
+  number of processors, then it's easy.  If glc has more, then we wrap
+  around and link up with lnd decomp elements more than once.  Okay, I
+  don't get that, but maybe it's a convention of some sort.
+
+  But...if glc has fewer procs than lnd, eli never spans all num_inst_lnd
+  decomp blocks.  So, how are we merging things?
+
+* I halfway think that there is some magic in setting up the mappings that
+  lets this happen - when you map from one component to the next, then mct
+  knows that (a) we have 4 glc procs, (b) we have 8 lnd procs, so we link
+  them up following this mod business so that l2x_gx(eli=1,4) has what we
+  need for x2g_gx{glc(egi)} to merge together onto the four glc procs.
+
+  So x2g_gx spans the egi decomp, and the first four blocks of l2x_gx lines
+  up, and we just need to copy them over to x2g_gx and do whatever other
+  things (like multiplying fluxes by landfrac or whatever) to get them to
+  the point where x2g_gx is usable.
+
+? But I can't really verify that is true - it seems like we have lots of
+  leftover parts of l2x_gx - why not just allocate it to span egi in the
+  first place?  Is it because of the "ensemble" configuration they talk
+  about, which might mean a specific way to run?
+
+? I also don't know why we use x2g_g in glc and l2x_r in rof.  Something in
+  the ocn suggested maybe it's because we accum after merging in some and
+  the other way around in others?
+
+* Anyway, I can't just keep banging my head against the wall, so I'll
+  follow rof, l2x_z, fortran mod, and hope the mapper magically fixes the
+  issues above.  It should work for nproc=1 for all components, at least,
+  and that should be enough of a smoke test to pass the PR.  But, yeesh.
+
+* Okay, I've got all the prep_iac, prep_lnd, and prep_atm functions to hook
+  in iac with these other components and teh coupler.  I *think*.  
+
+* Final thing, then, before I'm ready to build and test, is to review
+  iac_comp_mct.F90, follow the sequence there, and make sure the functions
+  are set up to use the gcam_core interface from Kate.  Then it's just a
+  matter of modifying buildlib to point to the new gcam tree and trying a
+  new build. 
+
+11/11/2019
+
+* Hey, it finally clicked - there's a seq_cplflds_inparm namelist - that's
+  where we have to put iac_npft.  Not only that, I *already* added it to
+  that namelist!  Why did I think there was something to search for that?
+
+  I think the issue is making sure that iac_npft is consistent with the iac
+  and lnd namelists.  Presumably, that's for the configuration files and/or
+  bldnml to get right.
+
+11/6/2019
+
+* So, the plan now is to go step by step through the driver code and make
+  sure all the functions I need to call and run an iac time step exist and
+  are no longer just stubs.  Note that this means I have to make sure the
+  prep functions and everything for lnd and atm are also correct.
+
+* Once I have that, I need to revamp buildnml to set the namelist, and then
+  try to build with the gcam_core stuff Kate sent me.  Hopefully, that will
+  be straightforward, as I've already done the hard work in getting
+  everything to build once before - but there are probably typos and
+  declarations I'll need to make sure are correct and consistent.
+
+* I want to build with the new compset that they generated for me, so I'll
+  need to merge in that branch.  That will make sure we are coupling with
+  lnd (I think, maybe atm too).
+
+* Then, I'm ready to try and run 
+
+11/4/2019
+
+* Now I'm trying to track down the domain and other elements of the
+  component_type, from component_type_mod.F90 - com_cx, gsMap_cx, x2c_cx,
+  c2x_cx, etc.  Are all these things getting initialized?  Do I have to
+  initialized them myself, or is there some kind of default behavior that
+  sets these up?
+
+  Start with land, search for lnd%dom_cx, and see if I can figure out what
+  the hell that is and how to make sure it's correct for iac.
+
+  There are _cx variables, which are (apparently) things done on the
+  coupler pes, and _cc variables, which apparently are things used on the
+  component pes, and then driver variables used on all pes.  Man, this
+  whole thing is a quagmire.
+
+* The good news is that it seems like all this stuff is created and used
+  completely within the mct code - so it's internal structures set up
+  automatically, presumably from the global mapping info we set up
+  somewhere. 
+
+11/3/2019
+
+* So, after thinking about it all night:
+
+  I think "merging" means - (a) putting all the input fields into one set
+  of AVects; (b) with the proper domain decomposition for the current
+  component; and (c) at least in the case of atm fluxes, scaled by the
+  appopriate grid cell fractions for the domain boundary you are fluxing
+  across. 
+
+  It might also mean (d) interpolated onto the current component's grid,
+  which is what the mapping stuff seems like it should do, but I'm not sure
+  about that.  I still don't know where a lot of thise mapper_Sy2z
+  structures get used - if they *aren't* used unless you have a specific
+  purpose for them, or if they are automatically used, assuming they are
+  named correctly, by constructing the names with some kind of macro or
+  whatever. 
+
+  Anyway, this means that the iac parts of prep_lnd_mod and prep_atm_mod
+  are *mostly* implemented - I just copied from other components, which has
+  to be the right thing.  There still may be some infrastructure stuff I
+  need to do to get, e.g., zfrac and fractions_az, and other things like
+  number of fields we are coupling and all that stuff.
+
+* So, today I've got this:
+
+@ Figure out seq_frac_mct.F90, and maybe seq_domain_mct.F90
+@ Work through prep_iac_mod.F90 and see if I can figure out what "merging",
+  in the above sense, the l2z stuff might look like.
+
+* So, looking at the top of seq_frac_mct, they do a big rundown of various
+  fractions.  The fundamental fractions are *frac, fraction of each
+  component on a grid.  So the idea is you build an set of fields
+  fractions_a(:) such that fractions_a(lfrac) is the fraction of land on
+  each grid cell in the atmosphere's grid.
+
+  That example is loaded, of course, because I'm going to say that we can
+  assert this:
+
+      fractions_a(zfrac) = fractions_a(lfrac)
+
+  I honestly think that may be the only fraction we need to generate, at
+  least initially.  The only flux we have wrt to iac, either input or
+  output, is Fz2a_co2flux, so we just need to know zfrac on the atmos grid,
+  and since zfrac on any grid is identical to lfrac on any grid, and if the
+  iac grid is defined to be identical to the lnd grid, then there we go -
+  zfrac and lfrac are transitive in all these calculations.
+
+? Now, just for fun, lets work through what would happen if the zgrid is
+  not the same as the lgrid, so there is interpolation involved.  In that
+  case, we would need the mapping_Fz2a to make this calculation:
+
+      fractions_a(zfrac) = mapz2a(fractions_z(zfrac))
+
+* But, that may not be *quite* how these things are calculated - well, sort
+  of.  First, they derive ocean and land fractions on their own grid:
+
+      fractions_o(ofrac) = dom_o(frac)  ! ocean "mask"
+      fractions_l(lfrin) = dom_l(frac)  ! land model fraction
+
+  ...then they use these to calculate ofrac and lfrin on the atmo grid:
+
+      fractions_a(ofrac) = mapo2a(fractions_o(ofrac))
+      fractions_a(lfrin) = mapl2a(fractions_l(lfrin))
+
+  ...then, finally, derive the land fraction on every grid from the ocean
+  fraction and subsequent mappings involving the land component
+
+      fractions_a(lfrac) = 1.0 - fractions_a(ofrac) (zero for very small values)
+
+      fractions_l(lfrac) = mapa2l(fractions_a(lfrac))
+      fractions_r(lfrac) = mapl2r(fractions_l(lfrac))
+      fractions_g(lfrac) = mapl2g(fractions_l(lfrac))
+
+  This is all very confusing and involved, but I think the idea is to keep
+  everything self-consistent.  We generate a landfrac on atm by inverting
+  the ocean fraction and zeroing out very small landfracs.  So now, to make
+  all these calculations consistent, we then generate landfrac on land grid
+  by mapping the land frac from the atmos grid.  Then we map this new
+  landfrac on the land grid, to rof and glc grids using l2r and l2g
+  mappings, as well.
+
+  Okay, if we assuming mapl2z is 1 (identity map), which is should be if
+  our grids are the same, then the way to make l,z, and a consistent is
+  what I said before:
+
+      fractions_a(zfrac) = fractions_a(lfrac)
+
+?  ...and if mapl2z is not, then we need to do this:
+? 
+?     fractions_l(zfrac) = fractions_l(lfrac)    ! since they are the same thing
+?     fractions_z(zfrac) = mapl2z(fractions_l(zfrac))    
+?     fractions_a(zfrac) = mapz2a(fractions_z(zfrac))
+
+   It's that first one I'm not sure about - I *think* that's right, since
+  by construction both lfrac and zfrac measure the exact same thing, the
+  amount of land in this grid cell.  So fractions_x(zfrac) =
+  fractions_x(lfrac) by definition.   From there we map from l to the z
+  grid, and then from z to the a grid.
+
+* Okay, so we now have fractions_a(zfrac), which is what we will need to
+  properly couple Fz2a_co2flux.  I already mocked in zfrac in
+  seq_frac_check, and I'm pretty sure at the moment I don't need
+  fractions_z for anything, since we aren't fluxing into the iac domain
+  space from anything.
+
+! Okay, hold on a sec - we might need some mapping after all, becasue
+  mapping *might* also matter with domain decomposition.  I'm not really
+  seeing how the decomp comes into it - there are things like dom_l()
+  floating around, but I don't understand what they do.  
+
+  I *think* I'm okay - zfrac is only calculated on fractions_a(), using
+  fractions_a(lfrac), so everywhere it shows up we are presumably using the
+  atmosphere decomp already.  But I don't really understand such things
+  well enough to declare for sure that's what's happening.
+
+11/2/2019
+
+* Holy crap.  I have *no* idea what prep_atm_merge() is doing.  It seems to
+  set lmerge(ka) to .false. if the field name starts with an "F", which,
+  what?  
+
+  Oh, it has to do with the calculation - if lmerge(ka) true, you add the
+  current value in the l2x_a avect to the old value in x2a_a.  If it's
+  false, then  you replace the current value in x2a_a with the new value in
+  l2x_a.  So "merging" has to do with accumulation, I think, whether you
+  are summing (probably for average) or replacing.  I guess all the "F"
+  fluxes are replaced, rather than accumulated.
+
+11/1/2019
+
+* So, there are some examples (atm mapper_Sl2a, etc.) of the mapper being
+  generated and then not used for anyting other then seq_map_map() call.
+  This suggests either (a) that these mappers get called automatically, in
+  a way that the actually mapper pointer name isn't explicitly named (a
+  macro or lookup table or something like that; or (b) some mappers are
+  defined and then not really used - maybe they exist for some later code
+  extensions or options to make use of, or maybe they used to be used and
+  then later were not.
+
+  Either way, I think it's obvious I need to define mapper_Fz2a (in
+  prep_atm_mod.F90) mapper_Sz2l (in prep_lnd_mod.F90), and mapper_Sl2z (in
+  prep_iac_mod.F90).  It looks like you map into the current component,
+  which makes sense, as that's the component currently doing the work.
+
+* Note that the *flux* maps *do* seem to be called elsewhere, in
+  seq_domain_mct.F90 and seq_frac_mct.F90.  That also makes sense, as the
+  flux calculation between components needs more setup - getting fractions,
+  domain decompositions, getting the interpolations right.  We'll see if
+  this cime code maybe does something with a state mapper, too?  That would
+  suggest, then, that (b) is correct above, and we define maps that we
+  don't end up using for whatever reason.
+
+* The prep_lnd_mod.F90 DOES do some additional stuff with their mapping -
+  calculating the "aream" stuff, which I don't understand yet.  I may run a
+  grep for that...See the aream bullet below.
+
+* seq_domain_mct.F90 uses the mapping...somehow...to do domain checking?
+  across components?  As part of this it seems to set or calculate either
+  frac or mask, depending upon whether they are on the samegrid or not.  I
+  don't really understand that, and there wasn't a lot of information in
+  the comments.
+
+  I need to track down some MCT/CIME documentation, at the function level,
+  to explain what problem these functions are trying to solve.
+
+* seq_frac_mct.F90 is concerned with "surface fractions" - at least it has
+  some extensive comments at the top.  Whew, I did not get that at all.
+
+  Okay, well, for each component there seems to be some mapping stuff, then
+  some fraction-based avects created, I guess having to do with the
+  fractions on all input component grids?  So if ice_present, we use
+  mapper_i2a and use the fractions_i and fractions_a to generate the ofrac
+  (ocean frac)...Man, I *really* do not get this at all.
+
+  I really want to basically just say fractions_z are the same as
+  fractions_l - or maybe just *use* fractions_l for the mapping_Fz2a
+  directly.  
+
+  I guess I need to review seq_map_map() again, to see what all these
+  calculations are. 
+
+* I see copying values for fractions in specific cases:
+
+  Man, I do NOT understand this frac stuff.
+
+------
+* Aream stuff:
+
+1 aream is read in by rof_comp_mct.F90, with a note that it is filled in by
+  atm-lnd mapper...
+
+2 There's some "area minimum" stuff for seaice and atmosphere in
+  mpas-source - do not know if that's related
+
+3 ocn_comp_mct.F also appears to import aream
+
+4 cam also has areamin, and then reads "aream" in atm_comp_mct.F90.  
+
+5 lnd_comp_mct.F90 - reads aream again with a note that it's filled in in
+  the atm-lnd mapper.
+
+6 Back in cime, we see it in seq_domain_mct.F90, component_mod.F90
+  (component_init_aream subroutine, I think) 
+
+7 prep_glc_mod.F90 has a lot of aream_g stuff - described as "cell areas on
+  glc grid, for mapping".  Some more comments comparing aream_g and area_g,
+  which apparently can differ for "CISM with a polar sterographic
+  projection".   Anyway, this seems to at least have some comments about
+  what is going on here.
+
+8 aream in seq_flds_mod.F90
+
+* Apparently aream is a different representation of area, possibly used for
+  mapping?  Anyway, if I *do* need it for z2a mapping, I should be able to
+  grab it from the a2l calculation, like rof and lnd apparently do.
+
+---------
+
+10/30/2019
+
+* Trying to track down the last little bit - the prep functions for
+  coupling, inside of cime/src/drivers/mct/main/prep_iac_mod.F90, and
+  probably modifications for prep_lnd_mod.F90 as well.
+
+  Ah, nertz, I probably need to modify prep_atm_mod.F90, especially since
+  that one involves an actual mapping from the lnd/iac grid to the atm
+  grid. 
+
+* So, mapping is complicated, but fortunately I'm mapping mostly state vectors,
+  which seems to be a little more straightforward.  Look at
+  prep_lnd_get_mapper_Sa2l() and the creation of mapper_Sa2l in
+  prep_lnd_mod.F90 - it looks like you simply call MCT to set up the state
+  mapping (also, there's a samegrid_lz (or whatever) argument, which I
+  guess simply sets an identity map, or at least that's what I hope).
+
+  But, we still use mapper_Sa2l via prep_lnd_get_mapper_Sa2l() in
+  component_mod.F90, so after I generate similar mapper_Sz2l and
+  mapper_Sl2z structures, I will need to modify that file:
+
+  .../cime/src/drivers/mct/main/component_mod.F90
+
+* And, of course, I *will* have to do a flux mapping for z2a; I should
+  probably look in atm_lnd_mod.F90 for how to do that, but that's where the
+  fractions and stuff get used, hopefully.
+
+! Okay, hold on.  I don't really know what these mappings do, and I can't
+  really find any instance of using mapper_Sa2l except to map aream,
+  whatever that is.  So I need to dig in deeper on whether we even need a
+  mapping at all from land to iac - it might be that we really don't.  
+
+  Anyway - see what seq_map_map() and seq_map_init_rcfile() do, and see how
+  other components seem to be using them (hopefully, with some comments or
+  something).  
+
+10/29/2019
+
+* Coupling with cam:
+
+1 cam_cpl_indices.F90: include index_x2a_Fazz_fco2_iac index
+
+2 camsrfexch.F90: add fco2_iac(pcols) into cam_in_t type, and initialize to 0.
+
+3 atm_import_export.F90:
+    read Fazz_fco2_iac into cam_in%fco2_iac.
+    Use cam_in%fco2_iac in cam_in%cflx(i,c_i(2)) (2 for fossil fuels)
+     tracer structure.
+
+? Here we need to make sure we've correctly scaled by the iacfrac (which
+  should be the same as landfrac), AND that we are in the right units.
+  There's a note saying the cpl already multiplies flux by land frac - I
+  don't know if that's automatic or something triggered by how lnd
+  couples. 
+
+  The units need to be kgCO2/m2/s - there's a conversion for ocean co2, but
+  land is apparently in the right units already, so hopefully that's what
+  we get from glm as well.
+
+* Jeez, I think that's it - the fossil fuel tracer infrastructure is
+  already there, so we just need to copy in from x2a into the cflx element
+  and everything downstream happens automatically in cam.
+  
+
+10/25/2019
+
+* The surfdata on compy is in:
+
+  /compyfs/inputdata/lnd/clm2/surfdata_map
+
+  For some reason, you don't get ncdump when module load netcdf, I had to
+  manually add it to my path:
+
+  PATH="$PATH:/share/apps/netcdf/4.6.3/gcc/4.8.5/bin/ncdump"
+
+* It looks like all the grid data is in one of the surfdata files, although
+  the names are different (capitalized) and the dimensions are different.
+  Anyway, it has landmask and landfrac as well, so it should server as a
+  configuration file.
+
+  But it brings up a point: the 2D grid cell dimension listed is in the
+  center of the bin; we have lone,lonw and lats,latn to define the edges.
+  Is any of this important?  Right now I'm thinking the center of the bin
+  is what I want as a coordinate, but it's possible the right thing is
+  (e.g.) the SW corner.
+
+* New topic: coupling with cam.  This, thankfully, looks pretty easy.  
+
+1 co2_cycle.F90 - c_i(ncnst) sets the co2 components: ocean, fossil fuels,
+  lnd, total.  
+
+2 atm_import_export.F90 - c. line 118 - the cam_in structure has elements
+  to hole the co2 constiuents, so import them directly from x2a.  Note that
+  flux up to atm is negative, so they've been stored negative in the
+  coupler, and thus have to have a -1 mult here.
+
+3 Then futher in, c. line 176, we combine these into a single cflux
+  structure, and then ultimately sum the constiutent elements to calculate
+  the total.
+
+! So, the solution is: 
+
+1 co2_cycle.F90 - set ncnst=5, add in constiuent elements for an IAC
+  component (name 'CO2_IAC', others the same).  My sense is this should be
+  i=4, with total moved to i=5, but I don't know if the 4th element is
+  hardcoded later on as the total co2.  It might be stupid to put CO2_IAC
+  as i=5, and sum 1-3,5 to make 4, but it's not really that big a deal.
+
+2 Follow the lnd coupling model - if the index exists, fill the fco2_iac(i)
+  element of the cam_in structure, use that to set cflx(i,c_i(4)), and then
+  make cflx(i,c_i(5) = the sum of cflux(i,c_i(1..4)).
+
+* Right now I'm grepping to see where c_i(4) is used...nuts, it looks like
+  it's hardcoded in contrl/camsrfexch.F90, line 491, probably where we sete
+  the co2 for use later on.  Okay
+
+? ???
+3 Change that to c_i(ncst), so we always use the largest as the total?
+? 
+
+* Okay, grepped for when we use cflx, in these files:
+
+  ./control/camsrfexch.F90 (line 245)
+  ./dynamics/fv/metdata.F90 (lines 513, 522, 539)
+  ./chemistry/modal_aero/aero_model.F90
+  ./chemistry/mozart/chemistry.F90
+  ./chemistry/bulk_aero/aero_model.F90
+
+  So, that should be easy enough to track down and make sure that simply
+  ncnst++ for co2_cycle and moving total from 4 to 5 doesn't hurt anything.
+
+* camsrfexch.F90 - this line is the problem, the only one that uses c_i(4)
+
+     cam_out%co2prog(i) = state%q(i,pver,c_i(4)) * 1.0e+6_r8 *mwdry/mwco2
+
+  ...where i loops over columns.  Need to look over state%q.
+
+! Actually, c_i(1..ncnst) is a global index for constituents, probably in
+  some kind of global array of things to track.  So the state%q is a master
+  3D array of global variables and stuff.  I assume c_i(:) gets set to some
+  index, from 1 to ncnst, so it can be used as needed, during
+  initialization.
+
+  Okay, so this should work:
+
+  In camsrfexch.F90, cam_export:
+
+    use co2_cycle, onlye: co2_transport, c_i, co2_ncnst => ncnst
+    ...
+    cam_out%co2prog(i) = state%q(i,pver,c_i(co2_ncnst)) * 1.0e+6_r8 *mwdry/mwco2
+
+  This will always use the last element of c_i as the index of total carbon
+  field. 
+
+* So, where is c_i used from co2_cycle?
+
+  ./physics/cam/cam_diagnostics.F90:840:   
+  ./physics/cam/cam_diagnostics.F90:1528:   
+  ./cpl/atm_import_export.F90:17:   
+  ./control/camsrfexch.F90:404:   
+
+  So, we know the last two - look at cam_diagnostics.  Well, it looks like
+  it's in a 'do m=1,4' loop, so of course all this stuff is hardcoded.
+  More worrisome is the second instance, line 1617:
+
+       do m = 1,4
+          call outfld(sflxnam(c_i(m)), cam_in%cflx(:,c_i(m)), pcols, lchnk)
+       end do
+
+  So, look up sflxnam, from the constiuents module.
+
+* Okay, it looks like, then the global index is this pcnst parameter, which
+  is the number of advected constituents, set by the environment or
+  configuration variable PCNST (I think).
+
+  Also, we never use ncnst from co2_cycle.
+
+! So, my conclusion here is that this is somewhat more complicated than I
+  had hoped.  I could add fco2_iac as c_i(5) and not worry about it.  Or, I
+  can add the iac co2flux as an addition to lnd co2flux, and not worry
+  about it.
+
+  But, if I want to do something better, like include iac co2 as a tracer,
+  then I have to learn how tracers are set up in cam, add the
+  infrastructure to include iac_co2 as a tracer, and make sure PCONST is
+  modified to include this extra tracer somewhere.
+
+! Wait!  One of the three component constituents of co2flux is "fossil
+  fuel", which you get by calling read_data_flux() on a file, and then each
+  step calling interp_time_flux on it.  My guess is this is standard model
+  - current fossil fuel contributions to co2, with 1% increase per year or
+  whatever. 
+
+  But, this means we can *use* the fossil fuel flux tracer for the iac
+  constituent!  We don't need a new tracer, we are replacing fossil fuel
+  fluxes from a data model with the iac model for co2flux.  I should
+  confirm this with Kate, but it really seems consistent to me - I can't
+  imagine we would have a data-driven fossil fuel model *alongside* the iac
+  model of human factors.
+
+  So, this means we put the iac_co2flux into c_in(2), and let the current
+  tracer infrastructure deal with it.  It's the simplest solution, and
+  it's, as a bonus, likely correct!
+
+  It's possible it might be mislabeled, of course - iac might include other
+  factors beside strictly fossil fuel burning (biomass fuels, etc.)  Still,
+  I think that makes sense to me.
+
+10/19/2019
+
+* Well, I'm coming to the realization that we should probably order things
+  (lon,lat) in the fortran code, rather than (lat, lon).  In the netcdf
+  files we see (lat,lon), but netCDF follows the C row-major ordering,
+  which means lon varies fastest.  So when you extract a 2D array from
+  netCDF it will be in (lon,lat) order in a fortran array.
+
+  Note, also, that the global indexing convention I see everywhere is:
+
+a start at south pole
+b go west to east (lon)
+c go south to north (lat)
+
+  Thus, lon varies faster than lat, in the global indexing.
+
+  So all this suggests we need to keep things this way - (lon,lat,pft),
+  etc. Reviewing Kate's test files, she goes lat,lon,pft - lat fastest, pft
+  slowest.  Thus, all my current dimensioning should be inverted -
+  lon,lat,pft.  Mostly, this should just affect the initialization and
+  allocation right now, but also in iac_import.
+
+@Xiac_init_mod.F90
+@Xiac_import_export.F90
+
+! Okay, I'm getting a little lost, yet again, in all the various places I'm
+  keeping things.
+
+? Storing area and landmask in iac_ctl, along with lat,lon, and a global
+  index apparently from 1,ngrid=nlat*nlon.  My idea is to put everything we
+  need for the global seg map into iac_ctl.  NOTE, however, that it's
+  possible that we need the 2D global index of lat and lon, in which case
+  maybe we need a whole separate structure...
+
+! HOWEVER! This means this structure is pretty big, so if we just want to find
+  the sizes nlat, nlon, npft, ngrid, we shouldn't drag this whole control
+  structure around.  Instead, that's what gcam_var_mod.F90 is for.  So
+  maybe we should move variables those over there, or duplicate them there,
+  or soemthing.
+
+? Working on RTM ID key - what I *want* it to be is a mapping from
+  contiguous integer regions to non-contiguous global regions.  That way,
+  you can say (e.g.) we have 8 procs, so domain 1 is [1,ngrid/8].  But, when
+  looking at which gridcells those are, use ID0_global(n) to find them.
+  That way, you can distribute non-contiguous grid cells, while still
+  keeping a contiguous array of indeces to deal with.
+
+  But!  I'm not at all sure that's what's going on.  It might be...
+
+XXXXX
+  Well, that's how it ends up in rtm - a dnID_global(n) and an IDkey(n)
+  which go back and forth between each other.  If you give an ID to IDkey,
+  you get the global index.  If you give the global index to dnID_global,
+  you get the IDkey.  I assume this is all for domain decomposition, but I
+  don't really know.
+XXXX
+  I don't think that's quite right - see below (up to next bullet).
+
+  If that's true, then none of it matters to me - we have no domain
+  decomposition for iac, so our global index is always contiguous and we
+  don't have to worry about any of this.
+
+  Okay, going further - it looks like teh dnID stuff has to do with
+  determining land, ocean, and ocean outlet from land masks.  I really
+  don't understand what is going on c. 575 in RtmMod.F90, where it (a) sets
+  all points to ocean mask, then loops over all points, and if the
+  dnID_global(n) is between 1,ngrid it sets to gmask to 3.  Then it does
+  the same thing, and if dnID_global(n) is between [1,ngrid] it sets
+  gmask(n) to 1.
+
+  I guess the dnID, read from a config file, lists grid points that are
+  downstream of a river basin.  The key keeps these all together,
+  contiguously - so basin is 1, downstream is 2, downstream is 3, outlet is
+  4.  The IDkey maps global indexes into this [1:4] numerical block, and
+  the dnID finds the next one in the block.
+
+  Okay, so this part of the code marks everyting ocean by default; then it
+  finds anything that has a downstream and marks the downstream as outlet.
+  Then it finds anything that has a downstream and marks it as land (which
+  overwrites everything but outlet cells as land).  In this way, we have
+  gmask==1 is the lnd/river boundary cells, and gmask=3 the ocean/river
+  boundary cells.
+
+* Once again, all of that doesn't matter to me at all, but it's nice to
+  finally figure it out.
+
+10/18/2019
+
+* Here's some grid output from a clm2.h1 file, which we either want to use
+  directly or could use to extract grid information for iac:
+
+-----------
+- clm2.h1
+-----------
+	float lon(lon) ;
+		lon:long_name = "coordinate longitude" ;
+		lon:units = "degrees_east" ;
+		lon:_FillValue = 1.e+36f ;
+		lon:missing_value = 1.e+36f ;
+	float lat(lat) ;
+		lat:long_name = "coordinate latitude" ;
+		lat:units = "degrees_north" ;
+		lat:_FillValue = 1.e+36f ;
+		lat:missing_value = 1.e+36f ;
+	float area(lat, lon) ;
+		area:long_name = "grid cell areas" ;
+		area:units = "km^2" ;
+		area:_FillValue = 1.e+36f ;
+		area:missing_value = 1.e+36f ;
+	float topo(lat, lon) ;
+		topo:long_name = "grid cell topography" ;
+		topo:units = "m" ;
+		topo:_FillValue = 1.e+36f ;
+		topo:missing_value = 1.e+36f ;
+	float landfrac(lat, lon) ;
+		landfrac:long_name = "land fraction" ;
+		landfrac:_FillValue = 1.e+36f ;
+		landfrac:missing_value = 1.e+36f ;
+	int landmask(lat, lon) ;
+		landmask:long_name = "land/ocean mask (0.=ocean and 1.=land)" ;
+		landmask:_FillValue = -9999 ;
+		landmask:missing_value = -9999 ;
+	int pftmask(lat, lon) ;
+		pftmask:long_name = "pft real/fake mask (0.=fake and 1.=real)" ;
+		pftmask:_FillValue = -9999 ;
+		pftmask:missing_value = -9999 ;
+	double grid1d_lon(gridcell) ;
+		grid1d_lon:long_name = "gridcell longitude" ;
+		grid1d_lon:units = "degrees_east" ;
+	double grid1d_lat(gridcell) ;
+		grid1d_lat:long_name = "gridcell latitude" ;
+		grid1d_lat:units = "degrees_north" ;
+	int grid1d_ixy(gridcell) ;
+		grid1d_ixy:long_name = "2d longitude index of corresponding gridcell" ;
+	int grid1d_jxy(gridcell) ;
+		grid1d_jxy:long_name = "2d latitude index of corresponding gridcell" ;
+----------
+
+* I should plot out grid1ld_lon and grid1d_lat to make sure my global index
+  is right.
+
+* Anyway, we need the landfrac and area for GCAM, but we also need landmask
+  (to turn into iacmask?) and the lat,lon grid for the global seg mapping.  
+
+! Okay, here's a problem!
+
+  It seems like from the way rtm is reading it's config file that it stores
+  things in the order lon,lat, rather than lat,lon like we see in clm2.h1.
+  Upon further reflection of the global index, it seems that might go
+  (lon,lat), too - start from lower left corner, and go across then up
+  (longitude, then latitude), and thus the lons vary fastest.
+
+  But!  This all might be because netcdf stores in row major (C-ish) order,
+  ratehr than column major (Fortran-ish) order.  So maybe when you call the
+  fortran netCDF functions, you have to reverse the indeces?
+
+  In other words: in fortran, you gotta dimension (lon,lat), while in C
+  (and netCDF) you dimension/store [lat,lon].  Both of them have lon moving
+  fastest, which matches with the way they describe the global index being
+  calculated. 
+
+! So, what this means is that in fortran, I probably need to dimension with
+  lon first, then lat, instead of the way I've been doing it.  My C
+  background has caught me up!
+
+! Furthermore, the 3D->1D flattening/unflattening we do to interface with
+  gcam is a problem: I need to send (lon,lat,pft), so Kate needs to expect
+  n=lon+nlon*lat+nlon*nlat*pft as the 1D index.
+
+@ I need to review the global index calculation in rtm and lnd, and see if
+  it really is going i=lon, j=lat, with i the inner loop.
+
+@ Also, rtm is doing something weird with the ID key for global index which
+  I don't get - review that with lnd.  Sheesh!  I thought I had this
+  figured out!
+
+10/15/2019
+
+* Kate's new gcam has a somewhat different (although better) interface tree
+  with E3SM.  Here's the calling sequence:
+
+  iac_comp_mct() calls
+    gcam_setdensity_mod(...,gcami) - this is where inputs are used
+
+       setdensitycGCAM(...,lndarea,lndfrac,pftwgt,npp,hr,nlon,nlat,npft,...)
+          - this call needs to be modified in the new gcam_comp_mod.f90
+
+    gcam_run_mod(...,gacmoluc,gcamoemis,...)
+       - this runs gcam and sets up the outputs for use in glm (luc) and
+       (maybe?) to send back to atm (emis).  Need to track down what
+       happens with gcamoemis.
+
+* Anyway, focusing on lnd->iac coupling then, gcami is (currently) what I'm
+  calling lnd2iac_vars(f,n), where n is the flattened [lat][lon][pft] index
+  and f runs over all the fields.  
+
+* My current thinking is that area and lndfrac can be read from a
+  configuration file (not needing to be coupled), and thus lnd2iac_vars()
+  will have nfields=3 - hr, npp, weights.
+
+! Okay, I need to talk with Kate about what format these inputs should
+  take.  Here is the setdensity call, cleaned up a bit:
+
+  void setdensitycgcam_(int *yyyymmdd,
+			double *aELMArea,
+			double *aELMLandFract,
+			double *aELMPFTFract,
+			double *aELMNPP,
+			double *aELMHR, 
+			int aNumLon, int aNumLat, int aNumPFT,
+			std::string aMappingFile,
+			bool aReadScalars, bool aWriteScalars)
+
+  So, if I had to guess, aELMArea and aELMLandFract are static and
+  dimensioned [lat][lon], or n = lon+nlon*lat
+
+  ...and, currently, aELMPFTFract, aELMNPP, aELMHR are [lat][lon][pft], or
+  n = pft+npft*lon+npft*nlon*lat
+
+  But I might have those backwards, because of the column order thing.  The
+  thing is, I can order them however I want if I linearize myself rather
+  than passing in foo[i][j][p] and having C automatically format them.  In
+  other words, in iac_import() I can store them as a 1D row major order
+  array directly, then they'll be row-major when I pass them through.
+
+* Well, in Kate's new gcam-core code, which contains a self-contained test
+  dataset in gcam-core/cpl/data/npp_mean_pft.txt etc., seems to suggest
+  that pft is slowest varying and lat is fastest varying.  That's the way
+  it would work in a fortran foo[lat][lon][pft] array, but (currently) in
+  iac_import() I'm building an n = pft+npft*lon+npft*nlon*lat, in which pft
+  is fastest and lat is slowest.
+
+  In other words, it *appears* that kate is expecting a fortran-ordered
+  [lat][lon][pft], rather than a C-ordered [lat][lon][pft].
+
+  Ultimately, we can flatten either via an nf or nc index:
+
+    nf = lat + nlat*lon + nlat*lon*pft
+    nc = pft + npft*lon + npft*nlon*lat
+
+! (Note - this is zero offset!  For one offset, you have to replace
+  anything with a non-one stride (anything multiplied) with x->(x-1)
+  (e.g. (lon-1) in both cases.  This suggests, maybe, it's better to just
+  store as a 3D array, since C will flatten automatically on Kate's end.)
+
+  We just need to make sure GCAM and my iac code does it the same way!
+
+! In main.cpp, the test executable that Kate mocked up, these things are
+  allocated in this way:
+
+    double *gcamiarea = new double [NUM_LAT * NUM_LON]();
+    double *gcamilfract = new double [NUM_LAT * NUM_LON]();
+    double *gcamipftfract = new double [NUM_LAT * NUM_LON * NUM_PFT]();
+    double *gcaminpp = new double [NUM_LAT * NUM_LON * NUM_PFT]();
+    double *gcamihr = new double [NUM_LAT * NUM_LON * NUM_PFT]();
+    double *gcamoluc = new double [NUM_GCAM_LAND_REGIONS * NUM_IAC2ELM_LANDTYPES]();
+    double *gcamoemis = new double [NUM_LAT * NUM_LON]();
+
+  The gcamo ones will also be allocated in E3SM, which brings up a point -
+  gcamoluc() is, I think, used internally by glm() and maybe other
+  downstream functions after the rungcam() call.  As such, I don't need to
+  worry too much about it - but what are num_iac2elm_landtypes and
+  num_gcam_land_regions? How are they related to pfts?
+
+* In particular, after all this mess, what is going to give me the iac2lnd
+  variables?  I think that's the output of updateannuallanduse(), through
+  that fortran interface, after glm runs.
+
+=======================================
+
+* On another topic, I've been fighting with the gsl domain mapping stuff,
+  and I think I got it figure out - the domains (based on the processor
+  decomposition of the grid) are how you have to talk to the global mapping
+  - that's why there's all this stuff in (e.g.) rof_domain_mct() about
+  setting up "lat", "lon", "area", etc. attribute vectors via
+  mct_gGrid_importRAttr().  For each of your domains, you need to define
+  the grid for that domain - this is how MCT knows how to transform data
+  to and from this domain.  E.g. - I'm giving you this field on this
+  domain, now you take it and put it on (a) a new grid, and (b) a new
+  decomposition for whatever component requests it.  So you gotta build a
+  grid associated with the domain pointer dom_r, and give it the lat, lon,
+  area, etc. information that you probably read from a configuration file
+  during initialization .  Then whenever you couple you send that dom_r
+  along, and there you go. 
+
+  Okay, so if this view is right, then the way it works for iac is: we have
+  ONE domain, but we still need to build a domain decomposition if only so
+  we can associate a grid with it.  I could use the whole iac_ctl%begg,
+  %endg construction, which would allow us to add a decomp later, but it
+  might just be easier to just run from 1,nglobal.  Or just make %begg=1,
+  %endg=nglobal and keep everything the same.  Honestly, from the way gcam
+  works, I'm not sure it makes sense to even consider a domain decomp...
+
+@ Check rof init to see where rtmCTL%latc,lonc,area,etc. are read in -
+  just to verify that we do, in fact, read all this stuff from a config
+  file into a global structure, and that rof_domain_mct() is about
+  extracting that stuff into the dom_r structure.
+
+? Also, look at rof_SetgsMap_mct() and rtmCTL%gindex into gsMap gindex -
+  I'm not sure what's happening, but maybe seeing how rtmCTL%gindex is set
+  will clear it up.  It's a lot more complicated in lnd - it sets the
+  global index into ldecomp%gdc2glo, which, hm.
+
+* Some notes on rof_comp_mct.F90:
+
+? The "iam" in c. line 484 of the
+? mct_gsMap_orderedPoints(gsMap_r,iam,idata)
+? is the processor number, and I guess it extracts into idata the global
+? gridpoint number, which we then  set in dom_r...I still don't quite get
+? this.  It might be handled automatically by MCT, assuming I've set
+? everything up correctly for all that.  
+
+
+
+10/11/2019
+
+* I've been looking into how we get lat/lon and number of pfts and stuff
+  like that - whether that's all coupled (so we need to import lat/lon,
+  etc.) and my conclusion is - no.  It *seems* like the way this stuff is
+  set is via a configuration file.  I've sort of been assuming we could use
+  the clm2.h1 file for this, or extract what we need from an exisiting one,
+  but it's possible we have to construct it all ourselves.  Regardless,
+  then, we need lon(lon) and lat(lat) and npfts; from there, we should be
+  able to construct the global mapping from nlat and nlon, and from there
+  we should be able to go back and forth between the [g] indexed coupled
+  fields and the [lat,lon,pft] indexed fields we need and/or get out of
+  gcam.  
+
+* Although, to be accurate, we want to flatten [lat,lon,pft] into a
+  one-dimensional index to pass to and from GCAM, if understand what Kate
+  wants.  I'm pretty sure we get a 1D linearized (flattened) array out of
+  the glm stuff (i.e. out of updateannuallanduse_v2.c), although I have to
+  review this.
+
+  That actually helps bypass the col-major (fortran) vs. row-major (c/c++)
+  issue, as long as we indicate how we linearize stuff.  It also means we
+  need nlat, nlon, and npft available everywhere to go back and forth
+  between 1D and 3D.
+
+  So, I'm thinking all this goes in the iac_ctl structure:
+
+  iac_ctl%nlat
+  iac_ctl%nlon
+  iac_ctl%npft
+
+  iac_ctl%ng - number of global indexed points, nlat*nlon
+
+  iac_ctl%latg[g]
+  iac_ctl%long[g] - get lat and lon from g
+  
+  iac_ctl%ijlat[g]
+  iac_ctl%ijlon[g] - lat and lon index from g
+
+* (Look up ne30 grid, probably discussed below - we may have configuration
+  files that give all these grid values for that, in our unit test runs, etc.)
+
+10/10/2019
+
+* I can't quite figure this out:
+
+  In iac2gcam_mod.F90 (orig) for iESM, we loop over n=1,npft (the
+  patch-level subgridded index), and extract i,j,k as (lat,lon,pft) using
+  the pfts1d_* variables from the .h1 file.
+
+  We also extract the mapping from pft->col into n1=pfts1d_cols(n), which,
+  as I note below, seems to follow from the hiearchy - there's a c for
+  every p.
+
+  So: clm p is "n" here, and clm c is "n1" here.
+
+  Okay, look at the heating rate calc at line 1696: 
+
+     hr_pft(i,j,k) = hr(n1,1)
+
+  To me, this is saying - set the hr for this *pft* directly from the value
+  for that pfts column.  In other words, the hr(c) is the same for every p
+  that maps to that c.
+
+  Shouldn't this be weighted by wgtscol(p)?
+
+  Or, maybe since the calculation involves a max over the month, it doesn't
+  matter...?
+
+  Anyway, I need to understand more about how this p->c mapping works.  I
+  get that (apparently) every p has a unique c, but I suspect the reverse
+  isn't true, so if the hr is a flux it really seems like it should be
+  weighted by the fraction its represented in each subgrid cell...
+
+  Or, not up here - maybe we apply the wgtcol later, after all the "yearly
+  means of month max" type stuff is taken care of.
+
+* I'm trying to understand the Vegetation types, as listed in
+  VegetationType.F90, vs. the gcam pfts, as indicated in (probably amongst
+  other places) iac2gcam_mod.F90.  I *want* to say that veg_itype maps
+  directly to pfts - but we have 25 of the former and 17 of the latter!
+  So, side by side, here's what I get for various index values:
+
+   p    veg_type                %pftname
+  --    --------		-------
+   0	not vegetated		bareground
+   1	needle ev temp tree	needle ev temp tree
+   2	needle ev bor  tree	needle ev bor tree
+   3	needle dec bor tree	needle dec bor tree
+   4	broad ev trop tree	broad ev trop tree
+   5	broad ev temp tree	broad ev trop tree
+   6 	broad dec trop tree	broad dec trop tree
+   7	broad dec temp tree	broad dec temp tree
+   8	broad dec bor tree	broad dec bor tree
+   9	broad evergreen shrub	evergreen shrub
+  10	broad dec temp shrub	temperate shrub
+  11	broad dec bor shrub	bor shrub
+  12	c3 arctic grass		arctic grass
+  13	c3 non-arctic grass	c3 grass
+  14	c4 grass      		c4 grass
+  15 	c3 crop			corn
+  16 	c3 irrigataed		wheat
+  17 	corn
+  18    irrigated corn
+  19    spring temp cereal
+  20 	irr spring temp cereal
+  21    winter temp cereal
+  22	irr winter temp cereal
+  23	soybean
+  24	irrigated soybean
+
+* Okay, so it looks like up to p=14 they match exactly.  After that, it
+  looks like they broke out corn and wheat into finer categories.
+
+? So, what does this mean - can our gcam handle 24 pfts vs. 17?  If not, do
+  I need to remap some of these to our 17 pfts?  
+
+  Also - note that the column on the left is just from the comments; is
+  there any reason to think it's accurate now?  Could it be from the
+  future, and everything now maps to just the first 17 elements?  Or could
+  it be old and there are even more pfts to deal with?
+
+  Finally, note that in iac2gcam we map our pfts further into somewhat
+  different crop ids - c3 grass goes to Grassland, Pasture,
+  UnmanagedPasture, and FodderGrass, whereas c4 grass goes into those four
+  crops as well as "miscanthus".
+
+? So, do we have to remap these p-values on the left to the iac gcam
+  related crop ids?
+
+  (Note that pft 16 "wheat" currently maps to zero crops...).
+
+* Well, looking at some clm2.h1 files I got lying around, I'm seeing
+  "natpft=17" in the header.  So it could be the 24 vegtypes aren't really
+  implemented, and we just go up to "c3 irrigated" or something.
+
+! I think I've convinced myself that we should just create a
+  pft-dimensioned hr, and use hr_pft[p]=hr_col[pfts1d_col(p)].  In other
+  words, map the hr directly from c to p, using the p(c) mapping.
+
+  The reason for this is that hr is a *flux*, which is stuff per unit area
+  per time.  Therefore, for all the p's for a given c, we are saying they
+  have the same hr.  We don't apply the weights here, because ultimately we
+  are going to use the p-to-gridcell weights - the reduced size of the pft
+  subgrid cell compared to the column-subgrid cell is handled automatically
+  by the using the p-weights themselves.  (Note that the sum of p-weights
+  for each p in a given column should equal the c-weight for that column.)
+
+  Okay, so hr_c[c] -> directly to hr_p[p].  I think that means we should
+  couple on the pft subgrid, rather than the column subgrid - have the
+  lnd2iac_vars convert to %hr[p] right there.
+
+? One question I have with all this - we are therefore coupling 51 new
+  fields (assuming npft=17), all on a global grid.  At 720x360 resolution,
+  that's 259,200 numbers per field, or 13,219,200 numbers total.  At 4 byte
+  floating point, that's 50 Megs of data we are sending through the
+  coupler.  Is that going to cause a problem?
+  
+10/9/2019
+
+* Just a note up top here, clarifying some things below:
+
+  clm has a number of different subgridding schemes based on land type,
+  that (I think) overlap and perhaps subset each other, depending on the
+  application.  There are 9 landunits (l), 11 columns (c), and 24
+  vegetation types (p - "patches"), all of which are possible in each
+  gridcell (g).  The VegetationType.F90 has conversions to map from p to
+  l,c, and g.  The ColumnType.F90 can map c to l and g, and
+  LandunitType.F90 provides maps from l to g.   So the hierarchy is
+  something like g -> l -> c -> p, from biggest (single) to smallest subunit.
+
+  So I want to claim that patch-level fields, "p" map to our 17 pfts, but
+  the 24 vegetation types listed in VegetationType.F90 belie that a
+  little.  I need a list of our 17 pfts and see how they line up.
+
+? Also, I need to review how we might go the other way, to build an hr[pft]
+  from our hr[c] output.  I no longer think I know how the iESM used hr -
+  I thought it was reduced down to a single value for the grid cell, and
+  then applied to all pfts, but now I wonder if there was some sort of
+  reverse calculation: for each [p], find the appropriate [c], get that
+  hr[c], then distribute to hp[p] via the weights of that p for that c
+  using %wtcol from the VegetationType.F90.
+
+  But all that doesn't sound at all like what I remember from
+  iac2gcam_mod.F90.  So, back to reviewing that...how did we construct
+  hr[lat,lon,pft] out of what we got out of that clm .h1 file.
+
+* I keep trying and failing to understand how clm does coupling, because
+  I'm trying to figure out the best way to do the same thing for iac.  So
+  I've been going through the lnd2atmMod.F90 and associated code to see how
+  we do l->a code.
+
+* The problem is that there's a big chain of disparate functions that are
+  called to put this all together, and ultimately lnd_run_mct() (a) gets
+  the lnd2atm_vars variable from lnd2atmMod.F90, and then (b) calls
+  lnd_export() with it as a variable.
+
+  Thus, to follow this path, we need to:
+
+@ Create a lnd2iacMod.F90 module, to deal with building lnd2iac_var
+
+@ Figure out where in the calling sequence we actually fill in lnd2iac_var
+
+@ Modify the call to lnd_export() to include a lnd2iac_var argument.  We
+  might use an interface, so that if we have iac we have three arguments
+  and without we have two, but I hate that.
+
+* Okay, the key issue I'm having is - I see where npp and hr and (I hope)
+  wgtcell are in the code, as discussed way below.  The question is how to
+  go from the patch level reduced 1D coordinates (begp:endp) into the
+  [gricell,pft] format we need to couple with.
+
+  The lnd2atm coupling all deals with these c2g and p2g functions from
+  subgridAveMod.F90, which involve some complicated averaging - but that's
+  because the lnd2atm coupling is all about getting an average value for
+  the boundary of the gridcell to flux into the atm component.  Hence,
+  p2g() averages over all the pfts, whereas c2g() averages over...um, I'm
+  not sure.  Does "column" mean "vertical extent"?  That doesn't make sense
+  (to me) for the land, although I guess we have the orography subgridding
+? to represent various heights.  Anyway, need to review c2g() again...
+
+? (Aside: does that mean the hr[c] is a vertically expressed variable?  I
+  don't see that in how we use it iac2gcam() etc., but maybe I'm missing
+  it.) 
+
+! Anyway, pft-averaging is NOT what we want to do for l->z coupling!  We want
+  to *keep* the pft distribution, not average over them!  In the context of
+  lnd2atm, pft  is "subgridding" - multiple values over the grid cell, that
+  you then need to condense down to a single value for that grid cell.
+  That's what subgrid averaging means.  So p2g() does something more than
+  what we want.
+
+* But, looking at p2g() might tell us how to go from the 1D patch [p]
+  representation to the 2D [gricell,pft] representation.  It appears that
+  the veg_pp struction has these kind of conversion functions built in:
+
+  c = veg_pp%column(p)
+  l = veg_pp%landunit(p)
+  g = veg_pp%gridcell(p)
+
+  ...to go from our reduced, combined coordinate p over patches to the
+  components.  It also means the "column" is a different thing than the
+  "gridcell", so I suspect col_pp%gridcell(c) also exists to do the same
+  thing. 
+
+* Anyway, this is promising - the question is, is "landunit" the same as
+  "pft"?  At the top of VegetationType.F90, we have a description of 24
+  "vegetation types" - I have no idea how this maps to pft, is it a
+  superset, a different decomposition, what?  
+
+? So I need to figure out how to go from "landunit" to "pft", as I
+  understand the term.
+
+! Okay, so looking at ColumnType.F90, we see 11 different "column types",
+  representing various broader categories - soil, ice, wetland, various
+  urban stuff, crops.
+
+  Also, col_pp%pfti(c) and col_pp%pftf(c) represent the start and end pft
+  index for each column, and col_pp%npfts also give the number of "patches"
+  for each column.
+
+? So, we take patch->column, then go from column to a continguous set of
+  pfts?  Yeesh.
+
+10/7/2019
+
+* I've been working on the coupling:
+
+@ seq_flds_mod.F90 needs more work - there are conversions from the
+  specific (local) z2x_states, x2z_states etc. variables to global
+  seq_flds_x2z etc. variables.  I'm not sure of why everything takes three
+  steps to do, but whatever.
+
+* So, we need to put all our coupled variables onto the 1D global index
+  grid, so the trick with coupling to and from clm is to go from the
+  reduced pft [p] and column [c] grid to the full global grid.  I'm
+  *pretty* sure that the global index simply runs from lat,lon=(0,0) to
+  (nlat,nlon) - the full global map, for the whole worlds.  That's why we
+  have those landfrac and landmask etc. variables that we send to and from
+  the coupling - to say which cells are land and sea and air etc., and to
+  find the boundary between domains to convert to fluxes, and to correctly
+  convert fractions and masks when we change the resolution of the grid.
+
+  So that's what that gsl mapping stuff does - providing information about
+  each and every cell in teh world in your grid, so MCT can convert and
+  flux into and out of a different coupled grid.
+
+* Now, since we only couple on the global [g] grid, we need to deal with
+  multidimensional variables on that grid - i.e. [lat,lon,pft] for us.  The
+  solution is to define npft different variables to couple, one for each
+  pft, and then convert each pft from [lat,lon]<->[g].  
+
+  As it turns out, we have an example of exactly this - the glc to lnd
+  coupling involves different topo heights for each cell.  So they do
+  exactly what I say above: couple glc_nec separate fields.  In
+  seq_flds_mod.F90, you declare the fields you are coupling by string tags,
+  which are (internally) assigned a field index that all components and
+  coupler use to pull out of the big massive 2D array of AVects.  So in
+  seq_flds_mod.F90 you simply need to loop over npts (like necs) to
+  declare and track your npfts variables.  Then in the coupling functions
+  you build an array of field indeces to use.
+
+  For example, see c. L265 in clm_cpl_indeces.F90 - you are building the
+  index_x2l_Sg_foo(num) index array, as num runs from 0 to glc_nec_max.
+  This makes it trivial to pull out the [g] for each [num], building a
+  [num,g] array of data, which you can then use to ultimately build a
+  [lat,lon,num] array to use internally.  (Or, I guess, in clm you build a
+  reduced [num,c] array or maybe a reduced 3D-to-1D topo-based [t] array,
+  or something like that).
+
+* The glc 3D coupling loop is moved into a subroutine in seq_flds_mod.F90,
+  for some reason, and it seems to call a glc module function to find
+  glc_nec.  I was thinking we'd just have a namelist variable somewhere
+  that seq_flds_mod.F90 can find it - either in the drv namelist or in a
+  iac namelist that the coupler reads.  I'm not sure the latter makes sense
+  - it may mean we have to defined it whether or not we are running with
+  iac, which is not what we want to do.  I haven't worked a lot with
+  namelists, though - it *seems* like we can just by default turn the iac
+  namelist variables off, and only turn them on in compsets where we are
+  running with iac.  So, in non-iac runs, we set iac_npfts to 0, and
+  active_gcam to 0, and everything is okay.
+
+* One advantage of definine iac_npfts by namelist is that it's a *variable*
+  - we don't want to hardcode 17 as npfts, because in later versions we are
+  going to want to define as many plant types as we want (Kate mentioned
+  this explicitly in the last phone call).  So, this lets us do that, as
+  long as the code knows how to deal with variable number of pfts.
+
+* Here's a list of the fields we need to couple, in all three directions:
+
+  l->z fields:
+
+    Sl_hr (non-pft indexed)
+    Sl_npp_pft1..17
+    Sl_pftwtg_pft1..17
+
+  z->l fields:
+
+    Sz_pct_pft1..17  ("Percent pft of vegetated land unit for pft [p]")
+
+  z->a fields:
+
+    Fazz_fco2_iac
+
+* I've probably taken notes on this below, but it is my contention that the
+  l<->z coupling should all use state variables rather than fluxes, even
+  though I think hr and npp both have units of a flux.
+
+  My contention is that there is no actual domain boundary between lnd and
+  iac components - they essentially sit on top of each other.  So we have
+  no boundary to flux across, which is something the MCT would want to do
+  if you declare it as a flux.  I am not certain about this, though - the
+  other component boundaries don't have to be across grid cells - for
+  example, land and air boundary is vertical, so the "boundary" is simply
+  the overlap between landfrac and atmfrac in each grid cell (and atmfrac
+  is always 1, because we have atmosphere in every cell).  So perhaps the
+  100% overlap between iac and lnd is normal, and the "flux" between them
+  is a straight up null-op, just like it might be for l->a in cells where
+  there is 100% land cover.
+
+  Similarly, the river and glc domains seem to be subsets of lnd, in the
+  same way lnd is a subset of atm.
+
+  Anyway, if that's the case, then we need to change Sl -> Fzll ("flux into
+  iac from land, calculated by land), and Sz -> Flzz ("flux into lnd from
+  iac, calculated by iac).
+
+  It may not matter - perhaps Sx and Fxyz give exactly the same answer in
+  cells where there is 100% overlap.  Still, it makes sense to me to keep
+  Sx, so we don't have any flux sign issues (there's a hierachy of
+  components that the flux arrow follows).
+
+  Of course, the co2 flux from gcam into atm is a straight up flux, just
+  like it would be from lnd to atm, hence it has to be Fazz.
+
+9/25/2019
+
+* Okay, everything below this X line is wrong, down through 9/23/2019.
+  According to Gautam, you can NOT couple an arbitrary 1D array - it *has*
+  to be on the grid.  I do not know why, but it does.  Thus, sending a [p]
+  based array through the coupler doesn't work - you have to extract the
+  [i,j] stuff first (or put it on the [c] grid, or maybe the [g] gridcell
+  grid).
+
+  This means that npp(lat,lon,pft) is a problem - it's 3D!  It is not
+  natively on the grid!
+
+  So the suggestion is to make *17* different npp fields to couple -
+  npp(lat,lon,1), npp(lat,lon,2), etc.  Same thing with pft_weights,
+  probably.  The hr should be okay, once it's reconstructed back into [c]
+  and/or [g].
+
+? Which, of course, brings up something else: what is [c] vs. [g] - column
+  vs. grid?  I think this has something to do with the "global mapping" and
+  global index stuff I sometimes see in reference to the global mapping.
+
+* Anyway, this means my plan to initialize stuff via the .h1. file is kaput
+  - instead, I'll need to figure out how to convert from the global mapping
+  index to lat,lon, and reconstruct the 3D [i,j,k] array.
+
+* Initialization is a problem, too - or is it?  Should I know from a
+  namelist or configuration how many pfts, lats, and lons to expect?
+  Assume that's true, then just allocate everything based on that.
+
+* Okay, I need to reread the MCT and GSL papers again, and reevaluate all
+  the global mapping in lnd, rof, atm with an eye towards figuring out how
+  to deal with the global mapping, how to put coupled info on that, and
+  stuff like that.
+
+* I think the ultimate idea was to put everything on their own
+  well-specified grid, and then MCT would know how to convert everything to
+  a different grid, so 
+
+* I also need to modify seq_flds_mod.F90 to deal with the 17 npps and 17
+  pft weights.  Great.
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+9/25/2019
+
+* Aha, *finally* got it.  iac2gcam has a lot of cruft I need to get rid of,
+  but lots I need to keep - reading restart files, first run
+  initialization, stuff like that.
+
+* Anyway, the key to going from coupler 1D indeces to [lat][lon][pft]
+  starts at line 1642.  We've read in our 1D arrays from the .h1 file,
+  along with mapping variables pfts1d_ixy(p), pfts1d_jxy(p),
+  pfts1d_itype_veg(p).  We've calculated a mapping from [p] to [c] as
+  pfts1d_cols(p) using cols1d_ix(c) and cols1d_jxy(c) - see below.
+
+  Also looks like we need cols1d_itype_lunit(c) and pfts1d_itype_lunit(p). 
+
+  So, we loop "n" over all our [p] values, calculate i (lat), j, (lon), k
+  (pft), and column index n1, and simply set npp_pft(i,j,k) = npp(n,1) on
+  line 1688 and hr_pft(i,j,k) = hr(n1,1).
+
+  (I'm not sure why we need a pft based value for hr_pft, since it isn't
+  indexed by pfts on input, but whatever.)
+
+? Also, I'm not sure what that second index is for npp(n,1) and hr(n1,1).
+  Right now, I'm assuming it comes from the netCDF read - see, eg., line
+  1617, where we read NPP using nf90_get_var().  My guess is the second
+  index is a dummy time index, and since we are (in this section) reading
+  monthly history files there is just one time to access.
+
+? In fact, we never see npp as a variable before line 1617 - will Fortran
+  really automatically declare a variable/pointer thing simply from a nf90
+  call?   I don't understand that, but it seems to work...
+
+  The rest of the calc_clmC() function calculates the average and all that
+  stuff, which we shouldn't need since we are pushing the aggregation back
+  to the coupler, hopefully.
+
+@ So: instead of all this, use iac_init_mct() to copy coupler linearized
+  [p] data into 3D [i,j,k] data in iaco, and pass that in to
+  iac2gcam_run_mod.F90.  Do not call call_clmC().  Restarts and non-coupled
+  runs handled in iac_init_mct() - read from appropriate file values, stuff
+  iaco, and there you go.
+
+  Also, rename iaco so it's something I understand.
+
+  Also, figure out what part of iac2gcam_run_mod.F90 needs to go, and what
+  part is doing some kind of actual calculation I need.
+
+* c = pfts1d_cols(p) - see line 1530.  It looks like we take our "n" index
+  (i.e. [p]), calculate i,j, then scan up all columns to find the
+  cols1d_ixy(c) and cols1d_jxy(c) that match these (and also of lunit = 1 -
+  probably indicating we are on land.)
+
+! Here is the thing: I really really want these mapping variables to be
+  static, so we can ready them directly from a clm.h1 file as a
+  configuration.  (See line 1203+ in iac2gcam_mod.F90 in clm_calC() for
+  declarations - allocatable, with a "save", which probably means
+  persistent in this function.  I think I want to make them local to the
+  iac_comp_mct.F90 file, so save shouldn't be important.)
+
+  pfts1d_ixy(p)
+  pfts1d_jxy(p)
+  pfts1d_itype_veg(p)
+  pfts1d_itype_lunit(p)
+
+  cols1d_ixy(c)
+  cols1d_jxy(c)
+  cols1d_itype_lunit(c)
+
+  npfts
+  ncols
+
+  nlat
+  nlon
+  lat(i)
+  lon(j)
+  pft(k)
+
+  area
+  landfrac
+
+XXXX
+  pfts1d_wtgcell 
+XXXX
+
+* There's a month-based weighting of pfts1d_wtgcell that turns it
+  ultimately into pft_weight_mean_g at line 1711.  This suggests the
+  pfts1d_wtgcell is dynamic, and changes from sample to sample, so we need
+  to couple that, too.
+
+* Here's the dimensionality of the 1d coupler based arrays, just for 
+
+  npp(p)
+  pfts1d_wtgcell(p)
+
+  hr(c)
+
+? Huh.  So, how do I do the reverse mapping - [i,j,k] -> [p]?  *Do* I need
+  the reverse mapping?  Maybe the landuse that we send back is fine in its
+  linearized i+ni*j+ni*nj*k (or the reverse) format?
+
+  If not, then we'll have to do what I suggest below somewhere - make a
+  one-D array that calculates x=i+ni*j+ni*nj*k, and fills with values such
+  that p = xyk_pfts1d[x].  Then loop over [i,j,k] to fill it before sending
+  back to coupler.
+
+9/24/2019
+
+* Okay, I'm trying to track down and initialize everything that we need -
+  here are my conclusions:
+
+1 The gcami (or iaci, or whatever) pointer(:,:) input to iac2gcam_mod.F90
+  does nothing - it was a stub to include the coupler stuff.
+
+2 Every other gcami/o/whatever set of pointers, which I have often renamed
+  something like glm2iac_var or whatever, *probably* does something
+  internally in the long chain of functions originally called by
+  iac_run_mod.F90.
+
+3 Therefore, it seems logical to extract the coupler variables, put them in
+  iaci, and then modify iac2gcam_mod.F90 to use those, rather than crack
+  the clm .h1 history file and read it.
+
+4 Outputs of everything EXCEPT the very last bits are important, but of
+  course we don't return a gcamo or anything either, since we didn't have
+  the coupler to deal with.  Logically, following the above, I should make
+  the final gcamo (and possibly the gcamoemiss somewhere in there) actually
+  hold the arrays to send back to the coupler.
+
+5 This means tracking down and initializing all these internal gcami/o/foo
+  and iac/i/o/foo arrays.
+
+? Open question: what is the dimensionality of these arrays?  The internal
+  ones I can assume are being handled correctly, but iac/i/o/foo should
+  probably be linearized using the clm-reduced coordinates like [p] and
+  [c].  But!  If it logically comes out of gcam in this 3D arrays, then
+  maybe the whole point of lnd_import_export.F90, or perhaps teh setup
+  inside iac_run_mod.F90, is to extract the 1D AVects into the ND
+  iaci/o/foo variables, and inport the other way.
+
+9/23/2019
+
+* Phone call with Peter Thornton where we worked through a few things about
+  coupling to the land model.
+
+* We discussed the dimensionality of the p- and c- based variables in clm.
+  These "column" and "pft" variables are 1D flattening of [lat][lon] and
+  [lat][lon][pft], as I suspected.  But, np is not nlat*nlon*npft, which is
+  something like 900,000 for the test case I have from iESM.  Instead, it's
+  something like 200,000 - it's a reduced, combined index, where
+  combinations of lat,lon,pft that do not hold information are removed.
+  This is obviously for cases where there is no pft of a given index for a
+  given grid cell; I *think* it's also for cases where there is no land in
+  a given grid cell - this is why ncol != nlat*nlon.  Or maybe I do not
+  understand the column index.
+
+  Anyway, what this means is that:
+
+1 we should be able to send (e.g.) veg_cff%npp[p] through the coupler
+  directly, since it's already reduced to a 1D array and should fit nicely
+  into a AVect.  
+
+2 We, however, will need a mapping of [p] -> [lat][lon][pft].  In other
+  words, give me a p, and out comes the lat, lon, and pft corresponding.
+  From there, I can reconstruct the full, possibly sparse
+  npp[lat][lon][pft] array needed by gcam.
+
+3 It might be possible to send the mapping through the coupler itself!
+  Make AVects of lat[p], lon[p], pft[p], so they are right there.   It
+  *seems* like we only need to send this once, maybe upon some kind of
+  initialization?  Are their init-only AVects?  Maybe AVects that get
+  coupled only on the first run?  Once I have this mapping, I don't need to
+  keep reading it each step.
+
+4 Peter seemed to think it was hard to generate this lat[p], lon[p], pft[p]
+  mapping, but it's got to exist somewhere.  I was hoping there was a
+  config file somewhere that contained this mapping - unless it's dynamic
+  or something, in which case coupling makes the most sense.
+
+5 I *also* need the reverse mapping - how to take the landuse we get out of
+  glm, and convert it back into a [c] or [p] index that clm expects from
+  its z->l inputs.  I think if I have p->lat,lon,pft, I can derive the
+  reverse mapping.  Just do something like x=pft[p]+npft*lon[p]+npft*nlon*lat[p],
+  and build a x2p[x] array to take unique triplets of pft,lon,lat back to
+  index p.  Or a hash table, although I don't know how to do those in
+  fortran (and I'd have to build my own in C).  Does c++ have a hash table?
+
+* So, that's the idea, then - figure out where the [p] and [c] mappings
+  come from, and either reimplement them in gcam or send them along via the
+  coupler.
+
+* I still need to work up the "max of monthly mean" aggregator - maybe just
+  start with a yearly mean and go from there?
+
+* Finally, I'm still stuck on initializing everything.  Using the other
+  components as a guide may not be helpful - there's a lot of really
+  complicated (and science-based, that I don't understand) stuff that's
+  going on behind the scenes that need to be set up.  I'm trying to keep
+  things simple, but worried about missing something important that I
+  should be concerned about.
+
+* I also need to talk to Kate about what changes she's making to
+  iac2gcam_mod - she claimed she's rewriting that in C++, but that's the
+  main link between the coupled stuff (iac) and the gcam stuff, which means
+  if it changes then I need to know how.  
+
+  There are also a bunch of gcam coupling functions that work with these
+  (:,:) 2D pointers - I think that's just a poor mans AVect, with
+  (field,generic_index) as the dimensions.  So for npp that the [p] index,
+  and then iac2gcam_mod will recompose back to lat,lon,pft - heck, it
+  probably already does that.  Time to reread that file for the fiftieth
+  time or something.
+
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+
+9/20/2019
+
+* Okay, the problem is that when we link with fortran we have to tell it to
+  use the -lstdc++ library, which would be included automatically by a c++
+  compiler.  So:
+
+  GLIBS += -L/home/shippert/local/lib -lxerces-c -lxqilla -lstdc++
+
+* There was also a problem building glm - there was a lot of redundant
+  source code in that directory.  ALSO, you should NOT use dots (.) in the
+  file name EXCEPT just before the extention.  The problem is that
+  'glm.future.c' confuses the build system - one thing (cmake, probably),
+  knows to compile into glm.future.o, but the source file stuff just sees
+  'glm.f' and then looks for 'glm.o'.
+
+  This is probably a problem with the build tool and it should be smarter
+  than this, but for now renamed to glm_future.c.
+
+  Also, of course, I had to find the right files to move to a "unused"
+  subdirectory - I looked at the exiting Makefile and saw which ones it
+  compiled, and kept those.  So glm_future.c is actual what was in
+  glm.future.iesm.c in the dist.
+
+  From the glm Makefile:
+
+  SOURCES=glm.future.iesm.c ccsm_glm_interface.c glm_comp_mod.F90
+
+* Hooray! I've built the executable!
+
+9/19/2019
+
+* Man, just building is a pain in the butt.  
+
+* Had to modify iac_build7/Tools/Makefile by hand to include a link to
+  xercesc and xqilla:
+
+  # These are needed for GCAM - need to have a USE_GCAM kind of tag here.
+XXXXXXXXXXXXXX
+  See 9/20/2019 above
+  GLIBS += -L/home/shippert/local/lib -lxerces-c -lxqilla
+XXXXXXXXXXXXXX
+    ...then add $GLIBS to end of $(EXEC_SE) target.
+
+* But!  Of course I built these libs by hand, probably without the same
+  environment, so I sourced ~/iac_build7/.env_mach_specific.sh, then
+  rebuilt xercesc and xqilla.
+
+* But!  .../xerces-c-3.2.2/src/xercesc/util/XMLAbstractDoubleFloat.cpp
+  didn't have DBL_MIN defined, which is crazy, since it should be in
+  <cfloat>, which is included in float.h, which is #included in this file.
+  The best solution is to just do what float.h should do, which is put this:
+
+  #define DBL_MIN __DBL_MIN___
+
+  ...in the .cpp file.  Apparently the latter is defined in some antecedant
+  #include, whatever.  I can never find anything with this module system (I
+  can't find float.h, for example).
+
+* Okay, so xerces-c built.  You have to include where xerces is explicitly
+  in the configure command for xqilla:
+
+     ./configure --prefix=/home/shippert/local --with-xerces=`pwd`/../xerces-c-3.2.2/
+
+  ...assuming both are in the same ~/local/src/ tree.
+
+XXXXXXXXXXXXX
+  Hopefully, this is just because I forgot to actually install xqilla after remaking.
+
+* Ah, crap, I'm still getting a linking error I don't understand, in the
+  ccsm_scenario_runner.cpp file.  Maybe I just don't include that
+  directory as part of the build?  Can I do that?  Otherwise, I need to
+  track down what the error is.
+
+  ld:
+	/lcrc/group/acme/shippert/acme_scratch/anvil/iac_build7/bld/lib//libiac.a(ccsm_scenario_runner.o):
+	undefined reference to symbol '_ZTISt8bad_cast@@GLIBCXX_3.4'
+/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/gcc-4.8.5/gcc-8.1.0-dc4tau6/lib64/libstdc++.so.6:
+	error adding symbols: DSO missing from command line
+
+* Here is my LIBRARY_PATH:
+  LIBRARY_PATH=/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/intel-18.0.4/netcdf-4.4.1-4odwn5a/lib:/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/intel-18.0.4/netcdf-fortran-4.4.4-kgp5hqm/lib:/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/intel-18.0.4/mvapich2-2.3.1-dtbb6xk/lib:/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/intel-18.0.4/intel-mkl-2018.4.274-jwaeshj/compilers_and_libraries_2018.5.274/linux/tbb/lib/intel64_lin/gcc4.7:/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/intel-18.0.4/intel-mkl-2018.4.274-jwaeshj/compilers_and_libraries_2018.5.274/linux/compiler/lib/intel64_lin:/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/intel-18.0.4/intel-mkl-2018.4.274-jwaeshj/compilers_and_libraries_2018.5.274/linux/mkl/lib/intel64_lin:/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/intel-18.0.4/intel-mkl-2018.4.274-jwaeshj/lib:/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/gcc-4.8.5/gcc-8.1.0-dc4tau6/lib64:/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/gcc-4.8.5/gcc-8.1.0-dc4tau6/lib:/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/gcc-8.1.0/intel-18.0.4-443hhug/compilers_and_libraries_2018.5.274/linux/tbb/lib/intel64/gcc4.7:/blues/gpfs/software/centos7/spack/opt/spack/linux-centos7-x86_64/gcc-8.1.0/intel-18.0.4-443hhug/lib
+XXXXXXXXXXXXXXXXXX
+
+9/12/2019
+
+* Two big things:
+
+1 Review lnd and rof import/export functions, to see how we grab stuff and
+  put stuff into the coupler.  In particular, how to deal with the
+  dimensions we are working with, and converting them into what we stuff
+  into an MCT avect.
+
+* My working theory is that the x2z input array is 2D, with attributes of
+
+  [particular field,linearized array of values]
+
+  Thus, you do something like x2z(index_x2z_Sl_npp,:) to get all the 1D
+  values of the npp array in linearized form.  Then we reform that array
+  into the dimensions of lnd2iac_vars%npp(:,...) and there we go.
+
+* If we are decomposing, then we grab x2z(index_x2z_Sl_npp,begg:endg) (g
+  for grid cell, c for column, p for pft) and put them into
+
+  lnd2iac_vars%npp(begg:endg,...) 
+
+* However! It may be that lnd2iac_vars%npp should stay linearized
+  (i.e. just 1D), since we have no decomposition.  Or, conversely, maybe we
+  need dimensions of %npp(lat,lon,pft), so we have to loop over the
+  x2z(index_x2z_Sl_npp) values and reform them as we go.  See how other
+  components deal with this, as well as what we expect from
+  iac2gcam_mod.F90.
+
+2 iac_comp_mct: initialization, running - review counterparts in other
+  components, plus these notes.  If I want to go with the build, I may have
+  to stub all this out, but it seems like it's time to actually figure out
+  what I need, and work back and forth between the init function, the
+  iac_data_mod modules, and the run function, to make sure we figure out
+  everything we are working with and where it all goes.
+
 9/6/2019
 
 * I'm running into issues where I copied things from clm - the problem is
@@ -23,6 +2128,42 @@
   it with a config file.  Same with every interaction - everythign is with
   the coupler, regardless of what the other components do or say.
 
+* Here's what to do if .../components/gcam/src is in a headless state,
+  which apparently happens a lot with submodules:
+
+  from https://medium.com/north-arrow-research/git-tips-what-is-a-headless-state-daa9bc4e1d5a:
+
+==========================
+
+  If you have made commit(s)
+  First of all don’t beat yourself up. It happens. Here’s what you want to do:
+
+  Make a new temporary branch: git checkout -b temp
+
+  Now you can rebase this new branch on top of the integration branch:
+  git rebase dev 
+
+  (or git rebase master, to rebase my temp branch onto master).
+
+  Checkout dev and merge with temp. Now that you’ve rebased temp should be
+  stacked directly on top of dev so the merge should happen cleanly in a
+  fast-forward way and without a commit. 
+
+  Last step is to delete your temporary branch: git branch -d temp 
+  If that last step complains don’t force it. It means you haven’t done
+  something right and temp isn’t merged properly. 
+
+===========================
+
+  I need to review what to do if I've been modifying a bunch of code and
+  then discover I'm in a headless state.  If I check out master I lose all
+  my changes; if I commit I'm doing it to a different branch.
+
+  Well, first I need to create a new branch for my changes - I think git
+  checkout -b temp makes a new branch with all my changes.  Then git rebase
+  master should make this new branch based off of master - then checkout
+  master and merge with temp, and now I've updated my master and should be
+  able to push back to the repository.
 
 9/4/2019
 
