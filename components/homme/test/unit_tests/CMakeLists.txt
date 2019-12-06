@@ -2,6 +2,8 @@ SET(UNITTESTER_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 
 macro(cxx_unit_test target_name target_f90_srcs target_cxx_srcs include_dirs config_defines NUM_CPUS)
   ADD_EXECUTABLE(${target_name} ${UNITTESTER_DIR}/tester.cpp ${target_f90_srcs} ${target_cxx_srcs})
+  #add exec to check target in makefile
+  ADD_DEPENDENCIES(check ${target_name})
   IF (${NUM_CPUS} EQUAL 1)
     ADD_TEST(${target_name}_test ${target_name})
   ELSE()
