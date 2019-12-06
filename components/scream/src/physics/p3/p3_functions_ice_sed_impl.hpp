@@ -101,7 +101,7 @@ void Functions<S,D>
   constexpr Scalar qsmall = C::QSMALL;
   constexpr Scalar nsmall = C::NSMALL;
   bool log_qxpresent;
-  const Int k_qxtop = find_top(team, sqc, qsmall, kbot, ktop, kdir, log_qxpresent);
+  const Int k_qxtop = find_top(team, sqitot, qsmall, kbot, ktop, kdir, log_qxpresent);
 
   if (log_qxpresent) {
     Scalar dt_left   = dt;  // time remaining for sedi over full model (mp) time step
@@ -167,14 +167,14 @@ void Functions<S,D>
     }
     Kokkos::single(
       Kokkos::PerTeam(team), [&] () {
-        prt_liq = prt_accum * C::INV_RHOW * odt;
+        prt_sol += prt_accum * C::INV_RHOW * odt;
     });
   }
 
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, qc_tend.extent(0)), [&] (int pk) {
-      qc_tend(pk) = (qitot(pk) - qc_tend(pk)) * odt; // Liq. sedimentation tendency, measure
-      nc_tend(pk) = (nitot(pk) - nc_tend(pk)) * odt; // Liq. # sedimentation tendency, measure
+    Kokkos::TeamThreadRange(team, qi_tend.extent(0)), [&] (int pk) {
+      qi_tend(pk) = (qitot(pk) - qi_tend(pk)) * odt; // Liq. sedimentation tendency, measure
+      ni_tend(pk) = (nitot(pk) - ni_tend(pk)) * odt; // Liq. # sedimentation tendency, measure
   });
 
   workspace.template release_many_contiguous<6>(

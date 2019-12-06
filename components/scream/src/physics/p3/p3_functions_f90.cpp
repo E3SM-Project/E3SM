@@ -855,7 +855,7 @@ void ice_sedimentation_f(
   // Call core function from kernel
   auto itab = P3GlobalForFortran::itab();
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
-  WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
+  WorkspaceManager<Spack> wsm(rho_d.extent(0), 6, policy);
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_sol_k) {
 
     uview_1d
