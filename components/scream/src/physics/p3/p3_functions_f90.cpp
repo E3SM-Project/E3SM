@@ -856,6 +856,7 @@ void ice_sedimentation_f(
   auto itab = P3GlobalForFortran::itab();
   auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
   WorkspaceManager<Spack> wsm(rho_d.extent(0), 6, policy);
+  Real my_prt_sol = 0;
   Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_sol_k) {
 
     uview_1d
@@ -883,7 +884,8 @@ void ice_sedimentation_f(
       uqi_tend_d, uni_tend_d, itab,
       prt_sol_k);
 
-  }, *prt_sol);
+  }, my_prt_sol);
+  *prt_sol += my_prt_sol;
 
   // Sync back to host
   Kokkos::Array<view_1d, 10> inout_views = {qitot_d, qitot_incld_d, nitot_d, nitot_incld_d, qirim_d, qirim_incld_d,

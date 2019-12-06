@@ -116,27 +116,30 @@ static void run_bfb_calc_bulk_rhime()
 
 static void run_bfb_ice_sed()
 {
+  const std::array< std::pair<Real, Real>, IceSedData::NUM_ARRAYS > ranges = {
+    std::make_pair(4.056E-03, 1.153E+00), // rho_range
+    std::make_pair(0,         1.),        // inv_rho (ignored)
+    std::make_pair(8.852E-01, 1.069E+00), // rhofaci
+    std::make_pair(1.000E+00, 1.100E+00), // icldm
+    std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
+    std::make_pair(1.221E-14, 2.708E-03), // qitot
+    std::make_pair(5.164E-10, 2.293E-03), // qitot_incld
+    std::make_pair(9.558E+04, 6.596E+05), // nitot
+    std::make_pair(9.538E+04, 6.596E+05), // nitot_incld
+    std::make_pair(6.774E-15, 2.293E-03), // qirim
+    std::make_pair(7.075E-08, 2.418E-03), // qirim_incld
+    std::make_pair(4.469E-14, 2.557E-03), // birim
+    std::make_pair(7.861E-11, 4.179E-06), // birim_incld
+    std::make_pair(5.164E-10, 2.733E-03), // qi_tend
+    std::make_pair(1.370E+05, 6.582E+05), // ni_tend
+  };
+
   IceSedData isds_fortran[] = {
-    //       kts, kte, ktop, kbot, kdir,        dt,       odt, prt_sol,
-    IceSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04, 0.0,
-      {
-        std::make_pair(4.056E-03, 1.153E+00), // rho_range
-        std::make_pair(0,         1.),        // inv_rho (ignored)
-        std::make_pair(8.852E-01, 1.069E+00), // rhofaci
-        std::make_pair(1.000E+00, 1.100E+00), // icldm
-        std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
-        std::make_pair(1.221E-14, 2.708E-03), // qitot
-        std::make_pair(5.164E-10, 2.293E-03), // qitot_incld
-        std::make_pair(9.558E+04, 6.596E+05), // nitot
-        std::make_pair(9.538E+04, 6.596E+05), // nitot_incld
-        std::make_pair(6.774E-15, 2.293E-03), // qirim
-        std::make_pair(7.075E-08, 2.418E-03), // qirim_incld
-        std::make_pair(4.469E-14, 2.557E-03), // birim
-        std::make_pair(7.861E-11, 4.179E-06), // birim_incld
-        std::make_pair(5.164E-10, 2.733E-03), // qi_tend
-        std::make_pair(1.370E+05, 6.582E+05), // ni_tend
-      }
-               ),
+    //       kts, kte, ktop, kbot, kdir,        dt,       odt, prt_sol, ranges
+    IceSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
+    IceSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,     1.0, ranges),
+    IceSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
+    IceSedData(1,  72,   27,   27,    1, 1.800E+03, 5.556E-04,     2.0, ranges),
   };
 
   static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(GenSedData);
@@ -145,6 +148,9 @@ static void run_bfb_ice_sed()
   // inout data is in original state
   IceSedData isds_cxx[num_runs] = {
     IceSedData(isds_fortran[0]),
+    IceSedData(isds_fortran[1]),
+    IceSedData(isds_fortran[2]),
+    IceSedData(isds_fortran[3]),
   };
 
     // Get data from fortran

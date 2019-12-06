@@ -3467,6 +3467,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
       endif two_moment
 
+      ! JGF: Is prt_liq intended to be inout or just out? Inconsistent with rain and ice sed.
       prt_liq = prt_accum*inv_rhow*odt  !note, contribution from rain is added below
 
    endif qc_present
