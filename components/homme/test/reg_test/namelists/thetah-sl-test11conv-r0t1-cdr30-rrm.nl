@@ -42,7 +42,7 @@
   vtop              = 0.2549944
 /
 &analysis_nl
-  output_prefix     = "PREFIX"
+!  output_prefix     = "PREFIX"
   output_dir        = "./movies/"               ! destination dir for netcdf file
   output_timeunits  = 1,                        ! 1=days, 2=hours, 0=timesteps
   output_frequency  = 6,
