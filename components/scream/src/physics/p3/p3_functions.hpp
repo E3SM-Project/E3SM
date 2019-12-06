@@ -279,6 +279,7 @@ struct Functions
     const uview_1d<Spack>& birim_incld,
     const uview_1d<Spack>& qi_tend,
     const uview_1d<Spack>& ni_tend,
+    const view_itab_table& itab,
     Scalar& prt_sol);
 
   // -- Find layers

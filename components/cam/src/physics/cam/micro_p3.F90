@@ -3648,6 +3648,10 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
    qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: ice_sedimentation_f
+#endif
+
    implicit none
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
