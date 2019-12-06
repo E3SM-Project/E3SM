@@ -1054,7 +1054,7 @@ contains
 
                 call SatellitePhenology(bounds_clump,               &
                      filter(nc)%num_nolakep, filter(nc)%nolakep,    &
-                     waterstate_vars, canopystate_vars, temperature_vars, soilstate_vars))
+                     waterstate_vars, canopystate_vars, temperature_vars, soilstate_vars)
              end if
 
           end if  ! end of if-use_cn

@@ -859,7 +859,7 @@ contains
     ! Even if CN is on, and dry-deposition is active, read CLMSP annual vegetation 
     ! to get estimates of monthly LAI
 
-    if ( .not. use_cn or ( n_drydep > 0 .and. drydep_method == DD_XLND) )then
+    if ( .not. use_cn .or. ( n_drydep > 0 .and. drydep_method == DD_XLND) )then
        call readAnnualVegetation(bounds_proc, canopystate_vars)
        if (nsrest == nsrStartup .and. finidat /= ' ') then
           ! Call interpMonthlyVeg for dry-deposition so that mlaidiff will be calculated

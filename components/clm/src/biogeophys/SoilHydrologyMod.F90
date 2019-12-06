@@ -1259,12 +1259,12 @@ contains
           qflx_drain_perched =>    col_wf%qflx_drain_perched , & ! Output: [real(r8) (:)   ] perched wt sub-surface runoff (mm H2O /s)         
 
           h2osoi_liq         =>    col_ws%h2osoi_liq        , & ! Output: [real(r8) (:,:) ] liquid water (kg/m2)                            
-          h2osoi_ice         =>    col_ws%h2osoi_ice        , & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)                                
 #if (defined HUM_HOL)
           qflx_surf_input      =>    col_wf%qflx_surf_input  , & ! Output: [real(r8) (:,:) ] surface runoff input to hollow (mmH2O/s)
           qflx_lat_aqu         =>    col_wf%qflx_lat_aqu     , & ! Output: [real(r8) (:,:) ] total lateral flow 
-          qflx_lat_aqu_layer   =>    col_wf%qflx_lat_aqu_layer    & ! Output: [real(r8) (:,:) ] lateral flow for each layer
+          qflx_lat_aqu_layer   =>    col_wf%qflx_lat_aqu_layer,    & ! Output: [real(r8) (:,:) ] lateral flow for each layer
 #endif
+          h2osoi_ice         =>    col_ws%h2osoi_ice         & ! Output: [real(r8) (:,:) ] ice lens (kg/m2)   
           )
 
        ! Get time step

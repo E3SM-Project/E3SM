@@ -23,7 +23,8 @@ module SatellitePhenologyMod
   use domainMod       , only : ldomain
   use fileutils       , only : getavu, relavu
   use GridcellType         , only : grc_pp
-  use VegetationType       , only : veg_pp, veg_es                
+  use VegetationType       , only : veg_pp                
+  use VegetationDataType   , only : veg_es
   use CanopyStateType , only : canopystate_type
   use WaterstateType  , only : waterstate_type
   use ColumnDataType  , only : col_ws

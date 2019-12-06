@@ -1617,7 +1617,7 @@ module VegetationDataType
        rbufslp(p) = this%t_ref2m(p)
     end do
     call update_accum_field  ('T_2M3650', rbufslp       , nstep)
-    call extract_accum_field ('T_2M3650', this%t_veg3650, nstep)
+    call extract_accum_field ('T_2M3650', this%t_2m3650, nstep)
 
 
     ! Accumulate and extract TREFAV - hourly average 2m air temperature

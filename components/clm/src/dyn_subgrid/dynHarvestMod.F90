@@ -373,9 +373,9 @@ contains
            else
              m = 0._r8
            end if
- #else
+#else
             m  = am/(days_per_year * secspday)
- #endif
+#endif
          else
             m = 0._r8
          end if   
