@@ -1,7 +1,7 @@
 module test_map_glc2lnd
-  
+
   ! Tests of map_glc2lnd_mod
-  
+
   use pfunit_mod
   use map_glc2lnd_mod
   use glc_elevclass_mod, only : glc_elevclass_init, glc_elevclass_clean, &
@@ -13,7 +13,7 @@ module test_map_glc2lnd
   use simple_map_mod
   use create_mapper_mod
   use shr_kind_mod, only : r8 => shr_kind_r8
-  
+
   implicit none
 
   real(r8), parameter :: tol = 1.e-11_r8
@@ -32,7 +32,7 @@ module test_map_glc2lnd
      ! Index 0 is bare land
      real(r8) :: data(0:n_elev_classes)
   end type lnd_field_type
-  
+
   @TestCase
   type, extends(TestCase) :: TestMapGlc2lnd
      type(seq_map) :: mapper
@@ -49,9 +49,9 @@ module test_map_glc2lnd
      procedure :: run_map_glc2lnd_ec
      procedure :: verify_data_l_field
   end type TestMapGlc2lnd
-  
+
 contains
-  
+
   ! ========================================================================
   ! Utility routines
   ! ========================================================================
@@ -60,9 +60,9 @@ contains
     class(TestMapGlc2lnd), intent(inout) :: this
 
     call mct_init()
-    
+
   end subroutine setUp
-  
+
   subroutine tearDown(this)
     class(TestMapGlc2lnd), intent(inout) :: this
 
@@ -79,19 +79,19 @@ contains
     real(r8), intent(in) :: frac_glc(:)  ! ice fraction in each glc cell
     real(r8), intent(in) :: topo_glc(:)  ! ice topographic height in each glc cell
     type(simple_map_type), intent(in) :: my_map  ! mapping information from glc to land
-    
+
     ! Optional extra data field on the glc grid, put in field named 'data' (if not
     ! present, the 'data' field is filled with all 0's).
     real(r8), intent(in), optional :: data_glc(:)
 
     ! Optional ice mask on the glc grid. If not present, it is filled with all 1's
     real(r8), intent(in), optional :: icemask_glc(:)
-    
+
     real(r8), allocatable :: l_data_glc(:)    ! local version of data_glc
     real(r8), allocatable :: l_icemask_glc(:) ! local version of icemask_glc
     integer :: npts_glc
     integer :: npts_lnd
-    
+
     ! ------------------------------------------------------------------------
     ! Do some initial error-checking to make sure this routine is being called properly
     ! ------------------------------------------------------------------------
@@ -102,7 +102,7 @@ contains
     if (present(data_glc)) then
        @assertEqual(npts_glc, size(data_glc))
     end if
-    
+
     ! ------------------------------------------------------------------------
     ! Set optional variables
     ! ------------------------------------------------------------------------
@@ -222,7 +222,7 @@ contains
     call this%setup_inputs([frac_glc], [topo_glc], my_map, data_glc = [l_data_glc], &
          icemask_glc = [0._r8])
   end subroutine setup_inputs_lnd_fully_outside_dynamic_glc_domain
-    
+
   subroutine setup_inputs_lnd_partially_outside_dynamic_glc_domain(this, &
        frac_glc_in_domain, frac_glc_outside_domain, &
        topo_glc_in_domain, topo_glc_outside_domain, &
@@ -255,12 +255,12 @@ contains
     if (present(data_glc_outside_domain)) then
        l_data_glc_outside_domain = data_glc_outside_domain
     end if
-       
+
     my_map = simple_map_type( &
          source_indices  = [1,       2], &
          dest_indices    = [1,       1], &
          overlap_weights = [0.75_r8, 0.25_r8])
-    
+
     call this%setup_inputs( &
          [frac_glc_in_domain, frac_glc_outside_domain], &
          [topo_glc_in_domain, topo_glc_outside_domain], &
@@ -268,7 +268,7 @@ contains
          data_glc = [l_data_glc_in_domain, l_data_glc_outside_domain], &
          icemask_glc = [1._r8, 0._r8])
   end subroutine setup_inputs_lnd_partially_outside_dynamic_glc_domain
-    
+
   subroutine run_map_glc2lnd_ec(this, extra_fields)
     ! This utility function wraps the call to the map_glc2lnd_ec routine
     class(TestMapGlc2lnd), intent(inout) :: this
@@ -280,14 +280,14 @@ contains
     if (present(extra_fields)) then
        l_extra_fields = extra_fields
     end if
-    
+
     call map_glc2lnd_ec(g2x_g = this%data_g, &
          frac_field = 'Sg_ice_covered', topo_field = 'Sg_topo', icemask_field = 'Sg_icemask', &
          extra_fields = l_extra_fields, &
          mapper = this%mapper, g2x_l = this%data_l)
 
   end subroutine run_map_glc2lnd_ec
-    
+
   subroutine verify_data_l_field(this, fieldname, expected_lnd, message, &
        first_lnd_index_to_verify, last_lnd_index_to_verify)
     ! Verify one field on the land grid
@@ -312,7 +312,7 @@ contains
     real(r8), allocatable :: actual_lnd_this_ec(:)
 
     ! Handle optional arguments
-    
+
     args_okay = .false.
     if (.not. present(first_lnd_index_to_verify) .and. &
          .not. present(last_lnd_index_to_verify)) then
@@ -328,7 +328,7 @@ contains
        args_okay = .true.
     end if
     @assertTrue(args_okay, message=message//': optional arguments')
-       
+
     ! Do the verification
     do n = 0, n_elev_classes
        ec_string = glc_elevclass_as_string(n)
@@ -350,7 +350,7 @@ contains
        topo_data(:)%data(n) = glc_mean_elevation_virtual(n)
     end do
   end subroutine set_topo_to_mean_elevation_virtual
-  
+
   ! ========================================================================
   ! Actual tests
   ! ========================================================================
@@ -358,7 +358,7 @@ contains
   ! ------------------------------------------------------------------------
   ! Tests of mapped ice fraction
   ! ------------------------------------------------------------------------
-  
+
   @Test
   subroutine test_mapGlc2lndEC_frac_with_EC0(this)
     ! Do a test of the map_glc2lnd_ec routine with only an elevation class 0 source
@@ -371,7 +371,7 @@ contains
     type(lnd_field_type) :: frac_lnd_expected(nlnd)
     type(simple_map_type) :: my_map
     real(r8), parameter :: irrelevant_topo = 125._r8  ! irrelevant for this test
-    
+
     ! Setup
 
     my_map = create_simple_map_with_one_source(ndest = nlnd)
@@ -389,7 +389,7 @@ contains
 
     frac_lnd_expected(1)%data(:) = 0._r8
     frac_lnd_expected(1)%data(0) = 1._r8
-    
+
     call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
          message = 'test_mapGlc2lndEC_frac_with_EC0: Sg_ice_covered')
   end subroutine test_mapGlc2lndEC_frac_with_EC0
@@ -405,7 +405,7 @@ contains
     real(r8) :: topo_glc(nglc)
     type(lnd_field_type) :: frac_lnd_expected(nlnd)
     type(simple_map_type) :: my_map
-    
+
     ! Setup
 
     my_map = create_simple_map_with_one_source(ndest = nlnd)
@@ -423,7 +423,7 @@ contains
 
     frac_lnd_expected(1)%data(:) = 0._r8
     frac_lnd_expected(1)%data(2) = 1._r8
-    
+
     call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
          message = 'test_mapGlc2lndEC_frac_with_EC2: Sg_ice_covered')
   end subroutine test_mapGlc2lndEC_frac_with_EC2
@@ -440,7 +440,7 @@ contains
     type(lnd_field_type) :: frac_lnd_expected(nlnd)
     type(simple_map_type) :: my_map
     real(r8), parameter :: irrelevant_topo = 125._r8
-    
+
     ! Setup
 
     frac_glc(:) = [1._r8,   1._r8,   1._r8,  0._r8]
@@ -460,7 +460,7 @@ contains
     ! Verify
 
     frac_lnd_expected(1)%data(:) = [0.1_r8, 0.2_r8, 0.3_r8, 0.4_r8]
-    
+
     call this%verify_data_l_field(fieldname='Sg_ice_covered', expected_lnd=frac_lnd_expected, &
          message = 'test_mapGlc2lndEC_frac_with_allECs: Sg_ice_covered')
   end subroutine test_mapGlc2lndEC_frac_with_allECs
@@ -590,7 +590,7 @@ contains
     type(simple_map_type) :: my_map
     real(r8) :: topo_expected_ec0(nlnd)
     real(r8), allocatable :: topo_actual_ec0(:)
-    
+
     ! Setup
 
     my_map = create_simple_map_with_one_source(ndest = nlnd)
@@ -623,7 +623,7 @@ contains
     type(simple_map_type) :: my_map
     real(r8) :: topo_expected_ec2(nlnd)
     real(r8), allocatable :: topo_actual_ec2(:)
-    
+
     ! Setup
 
     my_map = create_simple_map_with_one_source(ndest = nlnd)
@@ -643,7 +643,7 @@ contains
     topo_actual_ec2 = aVect_exportRattr(this%data_l, 'Sg_topo02')
     @assertEqual(topo_expected_ec2, topo_actual_ec2)
   end subroutine test_mapGlc2lndEC_topo_with_EC2
-  
+
   @Test
   subroutine test_mapGlc2lndEC_topo_virtual_elevation_class(this)
     ! Do a test of the map_glc2lnd_ec routine, checking mapped topo for virtual elevation
@@ -679,7 +679,7 @@ contains
     topo_lnd_expected(1)%data(3) = glc_mean_elevation_virtual(3)
     call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
          message = 'test_mapGlc2lndEC_topo_virtual_elevation_class: Sg_topo')
-    
+
   end subroutine test_mapGlc2lndEC_topo_virtual_elevation_class
 
   @Test
@@ -720,7 +720,7 @@ contains
     topo_lnd_expected(2)%data(3) = 225._r8
     call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
          message = 'test_mapGlc2lndEC_topo_virtual_elevation_class_multiple_points: Sg_topo')
-    
+
   end subroutine test_mapGlc2lndEC_topo_virtual_elevation_class_multiple_points
 
   @Test
@@ -768,7 +768,7 @@ contains
     call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
          message = 'test_mapGlc2lndEC_topo_partially_outside_static_domain: Sg_topo')
   end subroutine test_mapGlc2lndEC_topo_partially_outside_static_domain
-  
+
   @Test
   subroutine test_mapGlc2lndEC_topo_fully_outside_dynamic_domain(this)
     ! Test mapped topo with a land cell that is fully outside the dynamic GLC domain
@@ -849,7 +849,7 @@ contains
     real(r8) :: overlap(nglc)
     type(simple_map_type) :: my_map
     type(lnd_field_type) :: topo_lnd_expected(1)
-    
+
     ! Setup
 
     !              EC2    , EC2-fractional, EC0    , MASK0-FRAC1, MASK0-FRAC0, EC3
@@ -857,7 +857,7 @@ contains
     frac_glc(:) = [1._r8  , 0.8_r8        , 0._r8  , 1._r8      , 0._r8      , 1._r8]
     topo_glc(:) = [110._r8, 120._r8       , 130._r8, 140._r8    , 150._r8    , 210._r8]
     overlap(:)  = [0.2_r8 , 0.2_r8        , 0.2_r8 , 0.2_r8     , 0.1_r8     , 0.1_r8]
-    
+
     my_map = simple_map_type( &
          source_indices  = [1, 2, 3, 4, 5, 6], &
          dest_indices    = [1, 1, 1, 1, 1, 1], &
@@ -878,11 +878,11 @@ contains
     call this%verify_data_l_field(fieldname='Sg_topo', expected_lnd=topo_lnd_expected, &
          message = 'test_mapGlc2lndEC_topo_multiple_sources: Sg_topo')
   end subroutine test_mapGlc2lndEC_topo_multiple_sources
-  
+
   ! ------------------------------------------------------------------------
   ! Tests of mapped data field
   ! ------------------------------------------------------------------------
-  
+
   @Test
   subroutine test_mapGlc2lndEC_data(this)
     ! Do a test of the map_glc2lnd_ec routine with only an elevation class 2 source
@@ -897,7 +897,7 @@ contains
     type(simple_map_type) :: my_map
     real(r8) :: data_expected_ec2(nlnd)
     real(r8), allocatable :: data_actual_ec2(:)
-    
+
     ! Setup
 
     my_map = create_simple_map_with_one_source(ndest = nlnd)
@@ -911,7 +911,7 @@ contains
     ! Exercise
 
     call this%run_map_glc2lnd_ec(extra_fields = 'data')
-    
+
     ! Verify
 
     data_expected_ec2(1) = data_glc(1)
@@ -981,5 +981,5 @@ contains
     call this%verify_data_l_field(fieldname='data', expected_lnd=data_lnd_expected, &
          message = 'test_mapGlc2lndEC_data_partially_outside_dynamic_domain_diffECs: data')
   end subroutine test_mapGlc2lndEC_data_partially_outside_dynamic_domain_diffECs
-  
+
 end module test_map_glc2lnd

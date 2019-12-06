@@ -1,34 +1,64 @@
-#! /usr/bin/env perl
-use strict;
+#!/usr/bin/env python
 
-print " -------------------------------------------------------------------------\n";
-print " Building a single executable version of target coupled model  \n";
-print " -------------------------------------------------------------------------\n";
+"""
+build model executable
+"""
 
-my ($CASEROOT) = @ARGV;
-chdir "${CASEROOT}";
+import sys, os
 
-my $CASETOOLS = `./xmlquery CASETOOLS -value`;
-my $CIMEROOT  = `./xmlquery CIMEROOT  -value`;
-my $OBJROOT   = `./xmlquery OBJROOT   -value`;
-my $EXEROOT   = `./xmlquery EXEROOT   -value`;
-my $LIBROOT   = `./xmlquery LIBROOT   -value`;
-my $MACH      = `./xmlquery MACH      -value`;
-my $GMAKE_J   = `./xmlquery GMAKE_J   -value`;
-my $MODEL     = `./xmlquery MODEL     -value`;
-$ENV{PIO_VERSION}  = `./xmlquery PIO_VERSION   -value`;
+_CIMEROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..","..","..","..")
+sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
-chdir "${OBJROOT}/cpl/obj";
+from standard_script_setup import *
+from CIME.buildlib         import parse_input
+from CIME.case             import Case
+from CIME.utils            import expect, run_cmd
+from CIME.build            import get_standard_makefile_args
 
-open(file,">Filepath") or die "Could not open file Filepath to write";
-print file "${CASEROOT}/SourceMods/src.drv\n";
-print file "${CIMEROOT}/driver_cpl/driver\n";
-close(file);
+logger = logging.getLogger(__name__)
 
-my $sysmod = "gmake exec_se -j ${GMAKE_J} EXEC_SE=${EXEROOT}/${MODEL}.exe MODEL=driver LIBROOT=${LIBROOT} -f ${CASETOOLS}/Makefile ";
-system($sysmod) == 0 or die "ERROR: $sysmod failed: $?\n";
+###############################################################################
+def _main_func():
+###############################################################################
 
-exit(0);
+    caseroot, _, _ = parse_input(sys.argv)
+
+    logger.info("Building a single executable version of target coupled model")
+
+    with Case(caseroot) as case:
+        casetools = case.get_value("CASETOOLS")
+        cimeroot  = case.get_value("CIMEROOT")
+        gmake     = case.get_value("GMAKE")
+        gmake_j   = case.get_value("GMAKE_J")
+        num_esp   = case.get_value("NUM_COMP_INST_ESP")
+        ocn_model = case.get_value("COMP_OCN")
+        atm_model = case.get_value("COMP_ATM")
+        gmake_opts = get_standard_makefile_args(case)
+
+    if ocn_model == 'mom' or atm_model == "fv3gfs":
+        gmake_opts += "USE_FMS=TRUE"
 
 
+    expect((num_esp is None) or (int(num_esp) == 1), "ESP component restricted to one instance")
 
+
+    with open('Filepath', 'w') as out:
+        out.write(os.path.join(caseroot, "SourceMods", "src.drv") + "\n")
+        out.write(os.path.join(cimeroot, "src", "drivers", "mct", "main") + "\n")
+
+    # build model executable
+
+    makefile = os.path.join(casetools, "Makefile")
+    exename = os.path.join(case.get_value("EXEROOT"), case.get_value("MODEL") + ".exe")
+
+    cmd = "{gmake} exec_se -j {gmake_j} EXEC_SE={exename} MODEL=driver {gmake_opts} -f {makefile} ".format(gmake=gmake, gmake_j=gmake_j, exename=exename,
+                                                                                                           gmake_opts=gmake_opts, makefile=makefile)
+
+    rc, out, _ = run_cmd(cmd, combine_output=True)
+    expect(rc==0,"Command %s failed rc=%d\nout=%s"%(cmd,rc,out))
+    logger.info(out)
+
+###############################################################################
+
+if __name__ == "__main__":
+    _main_func()

@@ -1,33 +1,33 @@
 <?xml version="1.0"?>
 <testlist version="2.0">
-  <test name="CME_Ld3" grid="f45_g37_rx1" compset="A">
-    <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">0:10</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
   <test name="ERI" grid="T31_g37_rx1" compset="A">
     <machines>
-      <machine name="yellowstone" compiler="intel " category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="edison" compiler="cray" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="ERI" grid="ne30_g16" compset="X">
     <machines>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
+        </options>
+      </machine>
+    </machines>
+  </test>
+  <test name="ERS_C3" grid="f19_g17_rx1" compset="A">
+    <machines>
+      <machine name="cheyenne" compiler="pgi" category="prealpha">
+        <options>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -36,104 +36,128 @@
     <machines>
       <machine name="hobart" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
+      </machine>
+    </machines>
+  </test>
+  <test name="SMS" grid="f19_g16" compset="X">
+    <machines>
+      <machine name="cheyenne" compiler="intel" category="aux_cime_baselines">
+	<options>
+	  <option name="wallclock">00:10:00</option>
+	</options>
+      </machine>
+      <machine name="cheyenne" compiler="intel" category="jim">
+	<options>
+	  <option name="wallclock">00:10:00</option>
+	</options>
+      </machine>
+      <machine name="cheyenne" compiler="gnu" category="jim">
+	<options>
+	  <option name="wallclock">00:10:00</option>
+	</options>
+      </machine>
+      <machine name="cheyenne" compiler="pgi" category="jim">
+	<options>
+	  <option name="wallclock">00:10:00</option>
+	</options>
       </machine>
     </machines>
   </test>
   <test name="ERR" grid="f45_g37_rx1" compset="A">
     <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
+      <machine name="cheyenne" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="nag" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="eos" compiler="cray" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="bluewaters" compiler="pgi" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="mira" compiler="ibm" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="ERS_IOP_Ld3" grid="f19_g16_rx1" compset="A">
     <machines>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="ERS_IOP_Ld3" grid="ne30_g16_rx1" compset="A">
     <machines>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -142,47 +166,37 @@
     <machines>
       <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="eos" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="eos" compiler="cray" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="bluewaters" compiler="pgi" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="edison" compiler="cray" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -191,76 +205,56 @@
     <machines>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="pgi" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="goldbach" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="goldbach" compiler="pgi" category="prealpha">
-        <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="stampede" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
+      <machine name="cheyenne" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prealpha">
+      <machine name="cheyenne" compiler="pgi" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="lahey" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="ERS_Ld3" grid="ne30_f19_g16_rx1" compset="A">
+  <test name="ERS_Ld3" grid="f19_g16_rx1" compset="A">
     <machines>
       <machine name="bluewaters" compiler="pgi" category="prealpha">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="eos" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -269,17 +263,7 @@
     <machines>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -288,27 +272,27 @@
     <machines>
       <machine name="hobart" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="pgi" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
+      <machine name="cheyenne" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prealpha">
+      <machine name="cheyenne" compiler="pgi" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -317,16 +301,16 @@
     <machines>
       <machine name="hobart" compiler="lahey" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="ERS_Lm3" grid="T62_g16" compset="AIAF">
     <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
+      <machine name="cheyenne" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -335,32 +319,32 @@
     <machines>
       <machine name="hobart" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -369,27 +353,17 @@
     <machines>
       <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="eos" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -398,32 +372,32 @@
     <machines>
       <machine name="hobart" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="eos" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -432,193 +406,164 @@
     <machines>
       <machine name="bluewaters" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="eos" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="PEA_P1_Ld3" grid="f45_g37_rx1" compset="A">
     <machines>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="PEA_P1_Ld3" grid="T31_g37" compset="X">
     <machines>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
   <test name="PEM" grid="f19_g16_rx1" compset="A">
     <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
+      <machine name="cheyenne" compiler="intel" category="prealpha">
         <options>
-          <option name="wallclock">0:10</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="PET_E_CG" grid="f19_g16" compset="X">
-    <machines>
-      <machine name="yellowstone" compiler="intel" category="prealpha">
-        <options>
-          <option name="wallclock">0:10</option>
-        </options>
-      </machine>
-    </machines>
-  </test>
-  <test name="PET_PT_Ld3" grid="f45_g37_rx1" compset="A">
+  <test name="PET_Ld3" grid="f45_g37_rx1" compset="A">
     <machines>
       <machine name="eos" compiler="cray" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="PET_PT_Ld3" grid="f19_g16" compset="X">
+  <test name="PET_Ld3" grid="f19_g16" compset="X">
     <machines>
       <machine name="hobart" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="eos" compiler="cray" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="SEQ_IOP_PFC_Ld3" grid="f19_g16" compset="X">
+  <test name="SEQ_IOP_Ld3" grid="f19_g16" compset="X">
     <machines>
       <machine name="hobart" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="eos" compiler="cray" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="SEQ_PFC_Ld3" grid="f09_g16" compset="X">
+  <test name="SEQ_Ld3" grid="f09_g16" compset="X">
     <machines>
       <machine name="edison" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
-        </options>
-      </machine>
-      <machine name="melvin" compiler="gnu" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
-        </options>
-      </machine>
-      <machine name="skybridge" compiler="intel" category="prebeta">
-        <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="SEQ_PFC_Ld3" grid="f19_g16" compset="X">
+  <test name="SEQ_Ld3" grid="f19_g16" compset="X">
     <machines>
       <machine name="eos" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
@@ -627,52 +572,90 @@
     <machines>
       <machine name="hobart" compiler="nag" category="prealpha">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="hobart" compiler="nag" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="SMS_Ld3" grid="ne30_f19_g16_rx1" compset="A">
+  <test name="SMS_Ld3" grid="f19_g16_rx1" compset="A">
     <machines>
       <machine name="hobart" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">2:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
       <machine name="eos" compiler="cray" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="gnu" category="prebeta">
+      <machine name="cheyenne" compiler="gnu" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="intel" category="prebeta">
+      <machine name="cheyenne" compiler="intel" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
-      <machine name="yellowstone" compiler="pgi" category="prebeta">
+      <machine name="cheyenne" compiler="pgi" category="prebeta">
         <options>
-          <option name="wallclock">4:00</option>
+          <option name="wallclock">00:30:00</option>
+         </options>
+      </machine>
+      <machine name="cheyenne" compiler="intel" category="aux_cime_baselines">
+        <options>
+          <option name="wallclock">00:30:00</option>
         </options>
       </machine>
     </machines>
   </test>
-  <test name="SMS_Ld3" grid="ww3a_ww3a" compset="AWAV">
+  <test name="DAE" grid="ww3a" compset="ADWAV">
     <machines>
-      <machine name="hobart" compiler="pgi" category="prebeta">
-        <options>
-          <option name="wallclock">2:00</option>
-        </options>
-      </machine>
+      <machine name="hobart" compiler="nag" category="prealpha"/>
     </machines>
+    <options>
+      <option name="wallclock"> 00:20:00 </option>
+    </options>
+  </test>
+  <test name="PRE" grid="f09_f09" compset="ADESP">
+    <machines>
+      <machine name="hobart" compiler="nag" category="pauseresume"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:20:00 </option>
+    </options>
+  </test>
+  <test name="PRE" grid="f19_f19" compset="ADESP_TEST">
+    <machines>
+      <machine name="hobart" compiler="gnu" category="prealpha"/>
+      <machine name="hobart" compiler="nag" category="prealpha"/>
+      <machine name="hobart" compiler="nag" category="pauseresume"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:20:00 </option>
+    </options>
+  </test>
+  <test name="PRE_N2" grid="f19_f19" compset="ADESP_TEST">
+    <machines>
+      <machine name="hobart" compiler="nag" category="pauseresume"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:20:00 </option>
+    </options>
+  </test>
+  <test name="PRE_N2" grid="f19_f19" compset="ADESP_TEST" testmods="drv/multi_driver">
+    <machines>
+      <machine name="hobart" compiler="nag" category="pauseresume"/>
+    </machines>
+    <options>
+      <option name="wallclock"> 00:20:00 </option>
+    </options>
   </test>
 </testlist>

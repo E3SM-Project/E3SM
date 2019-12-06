@@ -1,9 +1,3 @@
-!===============================================================================
-! SVN $Id: seq_io_mod.F90 50621 2013-08-30 02:53:41Z mvertens $
-! SVN $URL: https://svn-ccsm-models.cgd.ucar.edu/drv/seq_mct/branches/comptype/shr/seq_io_mod.F90 $
-!===============================================================================
-!BOP ===========================================================================
-!
 ! !MODULE: seq_io_read_mod -- reads integer, real arrays and chacter of driver files
 !
 ! !REMARKS:
@@ -17,7 +11,7 @@
 !  - the original use of seq_io will now ONLY work with the cpl because
 !    of hardwiring cpl_io_type and cpl_io_iosystem.  want the original
 !    io capabilities to be usable by any component
-!  - the init1 method depends on seq_comm for name consistency but seq_comm_init 
+!  - the init1 method depends on seq_comm for name consistency but seq_comm_init
 !    wants to be called after init1 so the global_comm can be modified for
 !    async IO.  this needs to be reconciled.
 !  - this routine stores information for all components but most methods are
@@ -62,20 +56,20 @@ module seq_io_read_mod
      module procedure seq_io_read_r8
      module procedure seq_io_read_r81d
      module procedure seq_io_read_char
-  end interface
+  end interface seq_io_read
 
-!-------------------------------------------------------------------------------
-! Local data
-!-------------------------------------------------------------------------------
+  !-------------------------------------------------------------------------------
+  ! Local data
+  !-------------------------------------------------------------------------------
 
-   character(*) , parameter :: prefix = "seq_io_"
-   character(*) , parameter :: version ='cpl7v10'
-   character(*) , parameter :: version0='cpl7v00'
-   character(CL)            :: charvar   ! buffer for string read/write
+  character(*) , parameter :: prefix = "seq_io_"
+  character(*) , parameter :: version ='cpl7v10'
+  character(*) , parameter :: version0='cpl7v00'
+  character(CL)            :: charvar   ! buffer for string read/write
 
-!=================================================================================
+  !=================================================================================
 contains
-!=================================================================================
+  !=================================================================================
 
   !===============================================================================
   !BOP ===========================================================================
@@ -139,14 +133,13 @@ contains
 
     integer(in)                     :: rcode
     type(var_desc_t)                :: varid
-    logical                         :: exists
     character(CL)                   :: name1
     character(*),parameter          :: subName = '(seq_io_read_int1d) '
     logical :: addprefix
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
-    call seq_io_read_openfile(filename,pioid,addprefix) 
+    call seq_io_read_openfile(filename,pioid,addprefix)
 
     if (addprefix) then
        name1 = trim(prefix)//trim(dname)
@@ -268,7 +261,7 @@ contains
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
-    call seq_io_read_openfile(filename,pioid,addprefix) 
+    call seq_io_read_openfile(filename,pioid,addprefix)
 
     if (addprefix) then
        name1 = trim(prefix)//trim(dname)
@@ -313,7 +306,7 @@ contains
     !-------------------------------------------------------------------------------
     !
     !-------------------------------------------------------------------------------
-    call seq_io_read_openfile(filename,pioid,addprefix) 
+    call seq_io_read_openfile(filename,pioid,addprefix)
 
     if (addprefix) then
        name1 = trim(prefix)//trim(dname)
@@ -328,5 +321,5 @@ contains
   end subroutine seq_io_read_char
 
   !===============================================================================
-!===============================================================================
+  !===============================================================================
 end module seq_io_read_mod

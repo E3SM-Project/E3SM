@@ -2,23 +2,20 @@
 
 <?xml-stylesheet type="text/xsl" href="config_compsets.xsl" ?>
 
-<entries>
+<entry_id version="2.0">
 
 <!-- The list of component classes that this coupler/driver knows how
      to deal with.  Stub and data models for each component class
      should be provided by the driver. This list should follow the same order
      as compset longnames follows -->
 
-  <components>
-    <comp>DRV</comp>
-    <comp>ATM</comp>
-    <comp>LND</comp>
-    <comp>ICE</comp>
-    <comp>OCN</comp>
-    <comp>ROF</comp>
-    <comp>GLC</comp>
-    <comp>WAV</comp>
-  </components>
+  <entry id="COMP_CLASSES">
+    <type>char</type>
+    <default_value>CPL,ATM,LND,ICE,OCN,ROF,GLC,WAV,IAC,ESP</default_value>
+    <file>env_case.xml</file>
+    <group>case_comp</group>
+    <desc>List of component classes supported by this driver</desc>
+  </entry>
 
   <entry id="COMP_CPL">
     <type>char</type>
@@ -55,12 +52,13 @@
     <desc>full pathname of case</desc>
   </entry>
 
-  <entry id="LOGDIR">
-    <type>char</type>
-    <default_value>$CASEROOT/logs</default_value>
-    <group>run_desc</group>
-    <file>env_run.xml</file>
-    <desc>Extra copies of the component log files will be saved here.</desc>
+  <entry id="NONLOCAL">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>case_def</group>
+    <file>env_case.xml</file>
+    <desc>user is not on the requested machine</desc>
   </entry>
 
   <entry id="CASETOOLS">
@@ -116,7 +114,7 @@
   <!-- ===================================================================== -->
 
   <entry id="CASE">
-    <type>char*256</type>
+    <type>char</type>
     <default_value>UNSET</default_value>
     <group>case_def</group>
     <file>env_case.xml</file>
@@ -139,7 +137,7 @@
     <desc>Component set long name (for documentation only - DO NOT EDIT)</desc>
   </entry>
 
-  <entry id='GRID'>
+  <entry id="GRID">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>build_grid</group>
@@ -157,10 +155,18 @@
 
   <entry id="USER">
     <type>char</type>
-    <default_value>UNSET</default_value>
+    <default_value>$ENV{USER}</default_value>
     <group>case_desc</group>
     <file>env_case.xml</file>
     <desc>case user name</desc>
+  </entry>
+
+  <entry id="REALUSER">
+    <type>char</type>
+    <default_value>$ENV{USER}</default_value>
+    <group>case_desc</group>
+    <file>env_case.xml</file>
+    <desc>username of user who created case</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -228,8 +234,8 @@
   </entry>
 
   <entry id="RUN_REFDIR">
-    <type>char*256</type>
-    <default_value>ccsm4_init</default_value>
+    <type>char</type>
+    <default_value>cesm2_init</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
@@ -238,7 +244,7 @@
   </entry>
 
   <entry id="RUN_REFCASE">
-    <type>char*256</type>
+    <type>char</type>
     <default_value>case.std</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
@@ -248,7 +254,7 @@
   </entry>
 
   <entry id="RUN_REFDATE">
-    <type>char*10</type>
+    <type>char</type>
     <default_value>0001-01-01</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
@@ -264,17 +270,6 @@
     <file>env_run.xml</file>
     <desc>
       Reference time of day (seconds) for hybrid or branch runs (sssss)
-    </desc>
-  </entry>
-
-  <entry id="BRNCH_RETAIN_CASENAME">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_begin_stop_restart</group>
-    <file>env_run.xml</file>
-    <desc>
-      Allow same branch casename as reference casename. Only used for branch runs.
     </desc>
   </entry>
 
@@ -317,7 +312,7 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      Sets the run length along with STOP_N and STOP_DATE (must be nyear(s) for _GLC compsets for restarts to work properly).
+      Sets the run length along with STOP_N and STOP_DATE
     </desc>
   </entry>
 
@@ -349,13 +344,12 @@
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
     <desc>
-      sets frequency of model restart writes (same options as STOP_OPTION) (must be nyear(s) for _GLC compsets)
-      (must be nyear(s) for _GLC compsets)
+      sets frequency of model restart writes (same options as STOP_OPTION)
     </desc>
   </entry>
 
   <entry id="REST_N">
-    <type>char</type>
+    <type>integer</type>
     <default_value>$STOP_N</default_value>
     <group>run_begin_stop_restart</group>
     <file>env_run.xml</file>
@@ -372,6 +366,87 @@
     <desc>
       Alternative date in yyyymmdd format
       sets model restart write date with REST_OPTION and REST_N
+    </desc>
+  </entry>
+
+  <entry id="PAUSE_OPTION">
+    <type>char</type>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear</valid_values>
+    <default_value>never</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Sets the pause frequency along with PAUSE_N
+    </desc>
+  </entry>
+
+  <entry id="PAUSE_N">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Provides a numerical count for $PAUSE_OPTION.
+    </desc>
+  </entry>
+
+  <entry id="PAUSE_ACTIVE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Pause the model at times specified by PAUSE_OPTION and PAUSE_N.
+      Components 'pause' by writing a restart file.
+    </desc>
+    <values>
+      <value compclass="ATM">FALSE</value>
+      <value compclass="CPL">FALSE</value>
+      <value compclass="OCN">FALSE</value>
+      <value compclass="WAV">FALSE</value>
+      <value compclass="GLC">FALSE</value>
+      <value compclass="ICE">FALSE</value>
+      <value compclass="ROF">FALSE</value>
+      <value compclass="LND">FALSE</value>
+      <value compclass="IAC">FALSE</value>
+    </values>
+  </entry>
+
+  <entry id="BARRIER_N">
+    <type>char</type>
+    <default_value>1</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Sets periodic model barriers with BARRIER_OPTION and BARRIER_DATE for synchronization
+    </desc>
+  </entry>
+
+  <entry id="BARRIER_DATE">
+    <type>char</type>
+    <default_value>-999</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      Alternative date in yyyymmdd format
+      sets periodic model barriers with BARRIER_OPTION and BARRIER_N for synchronization
+    </desc>
+  </entry>
+
+  <entry id="ESP_RUN_ON_PAUSE">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_begin_stop_restart</group>
+    <file>env_run.xml</file>
+    <desc>
+      ESP component runs after driver 'pause cycle' If any component
+      'pauses' (see PAUSE_OPTION,
+      PAUSE_N and PAUSE_ACTIVE_XXX XML variables),
+      the ESP component (if present) will be run to process the
+      component 'pause' (restart) files and set any required 'resume'
+      signals.  If true, esp_cpl_dt and esp_cpl_offset settings are
+      ignored.  default: false
     </desc>
   </entry>
 
@@ -408,15 +483,25 @@
     </desc>
   </entry>
 
-  <entry id="RUN_WITH_SUBMIT">
+  <entry id="RESUBMIT_SETS_CONTINUE_RUN">
     <type>logical</type>
+    <default_value>TRUE</default_value>
     <group>run_begin_stop_restart</group>
-    <default_value>FALSE</default_value>
-    <valid_values>TRUE,FALSE</valid_values>
     <file>env_run.xml</file>
-    <desc>Logical to determine whether CESM run has been submitted with the submit script or not</desc>
+    <desc>This flag controls whether the RESUBMIT flag causes
+      CONTINUE_RUN to toggle from FALSE to TRUE.  The default is
+      TRUE.  This flag might be used in conjunction with COMP_RUN_BARRIERS for
+      timing tests.
+    </desc>
   </entry>
 
+ <entry id="JOB_IDS">
+   <type>char</type>
+   <default_value></default_value>
+   <group>run_begin_stop_restart</group>
+   <file>env_run.xml</file>
+   <desc>List of job ids for most recent case.submit</desc>
+ </entry>
 
   <!-- ===================================================================== -->
   <!-- definitions archive -->
@@ -432,38 +517,12 @@
     If TRUE, short term archiving will be turned on.</desc>
   </entry>
 
-  <entry id="DOUT_S_SAVE_INTERIM_RESTART_FILES">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
+  <entry id="SYSLOG_N">
+    <type>integer</type>
+    <default_value>900</default_value>
     <group>run_data_archive</group>
     <file>env_run.xml</file>
-    <desc>Logical to archive all interim restart files, not just those at eor
-    If TRUE, perform short term archiving on all interim restart files,
-    not just those at the end of the run. By default, this value is FALSE.
-    The restart files are saved under the specific component directory
-    ($DOUT_S_ROOT/$CASE/$COMPONENT/rest rather than the top-level $DOUT_S_ROOT/$CASE/rest directory).
-    Interim restart files are created using the REST_N and REST_OPTION variables.
-    This is for expert users ONLY and requires expert knowledge.
-    We will not document this further in this guide.</desc>
-  </entry>
-
-  <entry id="DOUT_L_MS">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc>If TRUE, perform long-term archiving on the output data.
-      logical to turn on long term archiving (if DOUT_S is also TRUE)</desc>
-  </entry>
-
-  <entry id="DOUT_L_HPSS_ACCNT">
-    <type>char</type>
-    <default_value>00000000</default_value>
-    <group>run_data_archive</group>
-    <file>env_run.xml</file>
-    <desc></desc>
+    <desc>system workload snapshot frequency (in seconds, if greater than 0; disabled otherwise)</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -476,6 +535,15 @@
      <group>config_batch</group>
      <file>env_mach_specific.xml</file>
      <desc>The environment variables that will be loaded for this machine</desc>
+  </entry>
+
+  <entry id="BATCH_SYSTEM">
+     <type>char</type>
+     <default_value>none</default_value>
+     <valid_values>nersc_slurm,lc_slurm,moab,pbs,lsf,slurm,cobalt,cobalt_theta,none</valid_values>
+     <group>config_batch</group>
+     <file>env_batch.xml</file>
+     <desc>The batch system type to use for this machine.</desc>
   </entry>
 
   <entry id="env">
@@ -514,77 +582,31 @@
     <desc>Perl 5 library directory</desc>
   </entry>
 
-  <entry id="batch_system">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The batch system type for this particular machine</desc>
-  </entry>
 
-  <entry id="mpirun">
-    <type>char</type>
-    valid_values=""
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The mpi run command associated with the machine configured batch system</desc>
-  </entry>
-
-  <entry id="module_system">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The module system type defined for this machine</desc>
-  </entry>
-
-  <entry id="module_init_path">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The module initialization path for module system defined for this machine</desc>
-  </entry>
-
-  <entry id="module_cmd_path">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>config_batch</group>
-    <file>env_case.xml</file>
-    <desc>The module command path for module system defined for this machine</desc>
-  </entry>
-
-  <entry id="BATCHREDIRECT">
-    <type>char</type>
-    <default_value></default_value>
-    <group>run_machine</group>
-    <file>env_case.xml</file>
-    <desc>Batch redirect character</desc>
-  </entry>
 
   <!-- ===================================================================== -->
   <!-- definitions build -->
   <!-- ===================================================================== -->
 
-  <entry id="CESMSCRATCHROOT">
+  <entry id="CIME_OUTPUT_ROOT">
     <type>char</type>
     <valid_values></valid_values>
     <default_value>UNSET</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
-    <desc>Scratch root directory for each machine. For now, primarily used for shared library builds
-      The scratchroot root directory.  Base diretory for build and run directories.</desc>
+    <desc>Output root directory for each machine.
+		Base directory for build and run directories.
+    </desc>
   </entry>
 
   <entry id="EXEROOT">
     <type>char</type>
     <valid_values></valid_values>
-    <default_value>UNSET</default_value>
+    <default_value>$CIME_OUTPUT_ROOT/$CASE/bld</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
     <desc>Case executable root directory.
-    (executable is $EXEROOT/cesm.exe, component libraries are in $EXEROOT/bld)
+    (executable is $EXEROOT/$MODEL.exe, component libraries are in $EXEROOT/lib)
     This is where the model builds its executable and by default runs the executable.
     Note that EXEROOT needs to have enough disk space for the experimental configuration
     requirements. As an example, a model run can produce more than a terabyte of
@@ -603,16 +625,6 @@
     <desc>Operating system - DO NOT EDIT UNLESS for userdefined machine - ignored once Macros has been created.</desc>
   </entry>
 
-  <entry id="COMPILERS">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value></default_value>
-    <group>build_macros</group>
-    <file>env_build.xml</file>
-    <desc>Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
-    Machine compiler (must match one the supported compilers) - ignored once Macros has been created.</desc>
-  </entry>
-
   <entry id="COMPILER">
     <type>char</type>
     <valid_values></valid_values>
@@ -622,26 +634,6 @@
     <desc>Machine compiler (must match one the supported compilers)
     Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
     Must be explicitly set in env_build.xml for userdefined machine.</desc>
-  </entry>
-
-  <entry id="MPILIBS">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value></default_value>
-    <group>build_macros</group>
-    <file>env_build.xml</file>
-    <desc>Supported mpi libraries for target machine - set in config_machines.xml - (DO NOT EDIT)
-      Set in $CIMEROOT/machines/config_machines.xml for each supported machine.
-      Must be explicitly set in env_build.xml for userdefined machine.</desc>
-  </entry>
-
-  <entry id="SUPPORTED_BY">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value></default_value>
-    <group>build_def</group>
-    <file>env_build.xml</file>
-    <desc>email address of person (or group) that supports the build and port for this machine (do not edit)</desc>
   </entry>
 
   <entry id="MPILIB">
@@ -667,15 +659,15 @@
 
   <entry id="COMP_INTERFACE">
     <type>char</type>
-    <valid_values>MCT,ESMF</valid_values>
-    <default_value>MCT</default_value>
+    <valid_values>mct,nuopc,moab</valid_values>
+    <default_value>mct</default_value>
     <group>build_def</group>
     <file>env_build.xml</file>
-    <desc>use MCT or ESMF component interfaces</desc>
+    <desc>use MCT component interface</desc>
   </entry>
 
   <entry id="USE_ESMF_LIB">
-    <type>char</type>
+    <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>build_def</group>
@@ -697,7 +689,7 @@
       runs (i.e., non-DEBUG), due to performance penalties associated with turning on these flags.</desc>
   </entry>
 
-  <entry id="BUILD_THREADED">
+  <entry id="FORCE_BUILD_SMP">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
@@ -709,6 +701,14 @@
       If TRUE, the component libraries are always built with OpenMP capability.</desc>
   </entry>
 
+  <entry id="SMP_PRESENT">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies that at least one of the components is built threaded (DO NOT EDIT)</desc>
+  </entry>
 
   <entry id="USE_PETSC">
     <type>logical</type>
@@ -731,10 +731,19 @@
     <desc>TRUE implies linking to the Albany library - set
     automatically by XXX_USE_ALBANY options (do not edit). Flag to
     turn on linking to the Albany library. Currently this is used by
-    MPASLI. Note that Albany is a C++ library, so setting this
+    MALI. Note that Albany is a C++ library, so setting this
     variable to TRUE will involve the inclusion of C++ code in the
-    MPASLI executable. This is currently only supported for certain
+    MALI executable. This is currently only supported for certain
     machines.</desc>
+  </entry>
+
+  <entry id="USE_MOAB">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>build_def</group>
+    <file>env_build.xml</file>
+    <desc>TRUE implies linking to the MOAB library</desc>
   </entry>
 
   <entry id="USE_TRILINOS">
@@ -755,7 +764,7 @@
     <valid_values></valid_values>
     <default_value>gmake</default_value>
     <group>build_def</group>
-    <file>env_build.xml</file>
+    <file>env_run.xml</file>
     <desc>GNU make command</desc>
   </entry>
 
@@ -764,17 +773,17 @@
     <valid_values></valid_values>
     <default_value>1</default_value>
     <group>build_def</group>
-    <file>env_build.xml</file>
+    <file>env_run.xml</file>
     <desc>Number of processors for gmake</desc>
   </entry>
 
   <entry id="BUILD_COMPLETE">
-    <type>int</type>
+    <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)</desc>
+    <desc>Status output: if TRUE, models have been built successfully. (DO NOT EDIT)></desc>
   </entry>
 
   <entry id="SMP_BUILD">
@@ -801,7 +810,7 @@
     <default_value>0</default_value>
     <group>build_status</group>
     <file>env_build.xml</file>
-    <desc>Status: ninst status of previous build, coded string. (DO NOT EDIT)</desc>
+    <desc>Status: ninst status of previous build, coded string. (DO NOT EDIT)></desc>
   </entry>
 
   <entry id="NINST_VALUE">
@@ -858,15 +867,6 @@
     <desc>Shared library root, (set automatically to $EXEROOT - DO NOT EDIT)</desc>
   </entry>
 
-  <entry id="SHAREDLIBROOTDIR">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value>$EXEROOT</default_value>
-    <group>build_derived</group>
-    <file>env_build.xml</file>
-    <desc>Shared library root directory, neeed for cleaning shared builds (set automatically to $EXEROOT - DO NOT EDIT)</desc>
-  </entry>
-
   <!-- ===================================================================== -->
   <!-- definitions performance -->
   <!-- ===================================================================== -->
@@ -880,32 +880,32 @@
     <desc>logical to diagnose model timing at the end of the run</desc>
   </entry>
 
-  <entry id="SAVE_TIMING">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>logical to save timing files in rundir</desc>
-  </entry>
-
-  <entry id="TIMER_LEVEL">
-    <type>integer</type>
-    <default_value>12</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>timer output depth</desc>
-  </entry>
-
   <entry id="PROFILE_PAPI_ENABLE">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
-    <group>run_cesm</group>
+    <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>Enables the papi hardware counters in gptl
     The papi library must be included in the build step for
     this to work.</desc>
+  </entry>
+
+  <entry id="ESMF_LOGFILE_KIND">
+    <type>char</type>
+    <valid_values>ESMF_LOGKIND_SINGLE,ESMF_LOGKIND_MULTI,ESMF_LOGKIND_MULTI_ON_ERROR,ESMF_LOGKIND_NONE</valid_values>
+    <default_value>ESMF_LOGKIND_NONE</default_value>
+    <group>run_flags</group>
+    <file>env_run.xml</file>
+    <desc>
+      Determines what ESMF log files (if any) are generated when
+          USE_ESMF_LIB is TRUE.
+      ESMF_LOGKIND_SINGLE: Use a single log file, combining messages from
+          all of the PETs. Not supported on some platforms.
+      ESMF_LOGKIND_MULTI: Use multiple log files -- one per PET.
+      ESMF_LOGKIND_NONE: Do not issue messages to a log file.
+      By default, no ESMF log files are generated.
+    </desc>
   </entry>
 
   <entry id="COMP_RUN_BARRIERS">
@@ -914,31 +914,10 @@
     <default_value>FALSE</default_value>
     <group>run_flags</group>
     <file>env_run.xml</file>
-    <desc>Turns on component barriers for component timing</desc>
-  </entry>
-
-  <entry id="CCSM_PCOST">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_last</group>
-    <file>env_mach_pes.xml</file>
-    <desc>cost relative to 64 pes (DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="CCSM_TCOST">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_last</group>
-    <file>env_mach_pes.xml</file>
-    <desc>relative cost of test where ERS is 1 (DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="CCSM_ESTCOST">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_last</group>
-    <file>env_mach_pes.xml</file>
-    <desc>relative total cost of case (DO NOT EDIT)</desc>
+    <desc>Turns on component barriers for component timing.
+	  This variable is for testing and debugging only and should never
+	  be set for a production run.
+    </desc>
   </entry>
 
   <entry id="COST_PES">
@@ -946,7 +925,7 @@
     <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
-    <desc>pes or cores used relative to PES_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
+    <desc>pes or cores used relative to MAX_MPITASKS_PER_NODE for accounting (0 means TOTALPES is valid)</desc>
   </entry>
 
   <!-- ===================================================================== -->
@@ -1083,10 +1062,11 @@
 
   <entry id="GLC_GRID">
     <type>char</type>
-    <default_value>UNSET</default_value>
+    <valid_values>gland20,gland10,gland5,gland5UM,gland4,mpas.aisgis20km,mpas.gis20km,mpas.ais20km,null</valid_values>
+    <default_value>gland5UM</default_value>
     <group>build_grid</group>
     <file>env_build.xml</file>
-    <desc>(glc) grid for the coupler</desc>
+    <desc>glacier (glc) grid - DO NOT EDIT (for experts only)</desc>
   </entry>
 
   <entry id="GLC_NX">
@@ -1105,14 +1085,6 @@
     <desc>number of glc cells in j direction - DO NOT EDIT (for experts only)</desc>
   </entry>
 
-  <entry id="GLC_GRID">
-    <type>char</type>
-    <valid_values>gland20,gland10,gland5,gland5UM,gland4,null</valid_values>
-    <default_value>gland5UM</default_value>
-    <group>run_component_cism</group>
-    <file>env_run.xml</file>
-    <desc>glacier (glc) grid - DO NOT EDIT (for experts only)</desc>
-  </entry>
 
   <entry id="WAV_GRID">
     <type>char</type>
@@ -1138,6 +1110,30 @@
     <desc>number of wav cells in j direction - DO NOT EDIT (for experts only)</desc>
   </entry>
 
+  <entry id="IAC_GRID">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>iac model (iac) grid</desc>
+  </entry>
+
+  <entry id="IAC_NX">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of iac cells in i direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
+  <entry id="IAC_NY">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>build_grid</group>
+    <file>env_build.xml</file>
+    <desc>number of iac cells in j direction - DO NOT EDIT (for experts only)</desc>
+  </entry>
+
   <entry id="MASK_GRID">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -1156,7 +1152,7 @@
   </entry>
 
   <entry id="PTS_LAT">
-    <type>real(1)</type>
+    <type>real</type>
     <default_value>-999.99</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
@@ -1164,7 +1160,7 @@
   </entry>
 
   <entry id="PTS_LON">
-    <type>real(1)</type>
+    <type>real</type>
     <default_value>-999.99</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
@@ -1237,6 +1233,22 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>path of wav domain file</desc>
+  </entry>
+
+  <entry id="IAC_DOMAIN_FILE">
+    <type>char</type>
+    <default_value>UNSET</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>iac domain file</desc>
+  </entry>
+
+  <entry id="IAC_DOMAIN_PATH">
+    <type>char</type>
+    <default_value>$DIN_LOC_ROOT/share/domains</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>path of iac domain file</desc>
   </entry>
 
   <entry id="ICE_DOMAIN_FILE">
@@ -1530,10 +1542,11 @@
 
   <entry id="ROF2OCN_FMAPNAME">
     <type>char</type>
-    <default_value>idmap</default_value>
+    <default_value>idmap_ignore</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>rof2ocn flux mapping file</desc>
+    <desc>rof2ocn flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
   </entry>
 
   <entry id="ROF2OCN_FMAPTYPE">
@@ -1545,7 +1558,7 @@
     <desc>rof2ocn flux mapping file decomp type</desc>
   </entry>
 
-  <entry id="ROF2OCN_RMAPNAME">
+  <entry id="ROF2OCN_LIQ_RMAPNAME">
     <type>char</type>
     <default_value>idmap</default_value>
     <group>run_domain</group>
@@ -1553,7 +1566,24 @@
     <desc>rof2ocn runoff mapping file</desc>
   </entry>
 
-  <entry id="ROF2OCN_RMAPTYPE">
+  <entry id="ROF2OCN_LIQ_RMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2ocn runoff mapping file decomp type</desc>
+  </entry>
+
+  <entry id="ROF2OCN_ICE_RMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>rof2ocn runoff mapping file</desc>
+  </entry>
+
+  <entry id="ROF2OCN_ICE_RMAPTYPE">
     <type>char</type>
     <valid_values>X,Y</valid_values>
     <default_value>Y</default_value>
@@ -1596,12 +1626,49 @@
     <desc>glc2lnd state mapping file decomp type</desc>
   </entry>
 
-  <entry id="GLC2ICE_RMAPNAME">
+  <entry id="GLC2ICE_FMAPNAME">
     <type>char</type>
-    <default_value>idmap</default_value>
+    <default_value>idmap_ignore</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>glc2ice runoff mapping file</desc>
+    <desc>glc2ice flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2ICE_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2ICE_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2ICE_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2ICE_RMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ice runoff mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
   </entry>
 
   <entry id="GLC2ICE_RMAPTYPE">
@@ -1613,21 +1680,112 @@
     <desc>glc2ice runoff mapping file decomp type</desc>
   </entry>
 
-  <entry id="GLC2OCN_RMAPNAME">
+  <entry id="GLC2OCN_FMAPNAME">
     <type>char</type>
-    <default_value>idmap</default_value>
+    <default_value>idmap_ignore</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>glc2ocn runoff mapping file</desc>
+    <desc>glc2ocn flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
   </entry>
 
-  <entry id="GLC2OCN_RMAPTYPE">
+  <entry id="GLC2OCN_FMAPTYPE">
     <type>char</type>
     <valid_values>X,Y</valid_values>
     <default_value>Y</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
-    <desc>glc2ocn runoff mapping file decomp type</desc>
+    <desc>glc2ocn flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2OCN_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="GLC2OCN_LIQ_RMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn runoff mapping file for liquid runoff - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2OCN_LIQ_RMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn runoff mapping file decomp type for liquid runoff</desc>
+  </entry>
+
+  <entry id="GLC2OCN_ICE_RMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn runoff mapping file for ice runoff - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="GLC2OCN_ICE_RMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>glc2ocn runoff mapping file decomp type for ice runoff</desc>
+  </entry>
+
+  <entry id="OCN2GLC_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc flux mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="OCN2GLC_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="OCN2GLC_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap_ignore</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file - the default value idmap_ignore, if set, will be ignored by buildnml and
+    will generate a runtime error if in fact a file is required for the given compset</desc>
+  </entry>
+
+  <entry id="OCN2GLC_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>Y</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>ocn2glc state mapping file decomp type</desc>
   </entry>
 
   <entry id="OCN2WAV_SMAPNAME">
@@ -1679,6 +1837,74 @@
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>wav2ocn state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="IAC2ATM_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>iac2atm flux mapping file</desc>
+  </entry>
+
+  <entry id="IAC2ATM_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>iac2atm flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="IAC2ATM_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>iac2atm state mapping file</desc>
+  </entry>
+
+  <entry id="IAC2ATM_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>iac2atm state mapping file decomp type</desc>
+  </entry>
+
+  <entry id="IAC2LND_FMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>iac2lnd flux mapping file</desc>
+  </entry>
+
+  <entry id="IAC2LND_FMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>iac2lnd flux mapping file decomp type</desc>
+  </entry>
+
+  <entry id="IAC2LND_SMAPNAME">
+    <type>char</type>
+    <default_value>idmap</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>iac2lnd state mapping file</desc>
+  </entry>
+
+  <entry id="IAC2LND_SMAPTYPE">
+    <type>char</type>
+    <valid_values>X,Y</valid_values>
+    <default_value>X</default_value>
+    <group>run_domain</group>
+    <file>env_run.xml</file>
+    <desc>iac2lnd state mapping file decomp type</desc>
   </entry>
 
   <entry id="VECT_MAP">
@@ -1740,7 +1966,7 @@
 
   <entry id="EPS_OGRID">
     <type>real</type>
-    <default_value>1.0e-02</default_value>
+    <default_value>1.0e-01</default_value>
     <group>run_domain</group>
     <file>env_run.xml</file>
     <desc>Error tolerance for differences in ocean/ice lon/lat in domain checking</desc>
@@ -1758,14 +1984,6 @@
     <desc>Machine name</desc>
   </entry>
 
-  <entry id="MACHINES_FILE">
-    <type>char</type>
-    <default_value></default_value>
-    <group>case_def</group>
-    <file>env_case.xml</file>
-    <desc>full pathname of file specifying supported machines location</desc>
-  </entry>
-
   <entry id="MACHDIR">
     <type>char</type>
     <default_value></default_value>
@@ -1776,7 +1994,7 @@
 
   <entry id="RUNDIR">
     <type>char</type>
-    <default_value>UNSET</default_value>
+    <default_value>$CIME_OUTPUT_ROOT/$CASE/run</default_value>
     <group>run_desc</group>
     <file>env_run.xml</file>
     <desc>
@@ -1796,6 +2014,37 @@
     </desc>
   </entry>
 
+  <entry id="NODE_FAIL_REGEX">
+    <type>char</type>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      A regular expression to search for an indication that a run failure
+       was caused by a node failure and should therefore be re-attempted.
+    </desc>
+  </entry>
+
+  <entry id="MPIRUN_RETRY_REGEX">
+    <type>char</type>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>
+      A regular expression to search for an indication that a run failure
+      was caused by a known event such as a timeout and should therefore
+      be re-attempted.
+    </desc>
+  </entry>
+
+  <entry id="MPIRUN_RETRY_COUNT">
+    <type>integer</type>
+    <default_value>0</default_value>
+    <group>run_din</group>
+    <file>env_run.xml</file>
+    <desc>The number of times to reattempt the mpirun command if
+    MPIRUN_RETRY_REGEX is matched but ALLOCATE_SPARE_NODES is False
+    </desc>
+  </entry>
+
   <entry id="PROXY">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -1806,13 +2055,13 @@
     </desc>
   </entry>
 
-  <entry id="TESTS">
-    <type>char</type>
-    <default_value>UNSET</default_value>
+  <entry id="TEST">
+    <type>logical</type>
+    <default_value>FALSE</default_value>
     <group>run_din</group>
     <file>env_run.xml</file>
     <desc>
-      The default test suite for this machine.
+      Indicates to case.submit that this is a test case.
     </desc>
   </entry>
 
@@ -1851,425 +2100,179 @@
     <desc>Root directory for short term archiving. This directory must be visible to compute nodes.</desc>
   </entry>
 
-  <entry id="DOUT_L_MSROOT">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>run_dout</group>
-    <file>env_run.xml</file>
-    <desc>Root directory on long term archiving store system for long-term data archives.</desc>
-  </entry>
-
-
-  <entry id="BATCHQUERY">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>run_machine</group>
-    <file>env_run.xml</file>
-    <desc>command used to query batch system</desc>
-  </entry>
-
-  <entry id="BATCHSUBMIT">
-    <type>char</type>
-    <default_value>UNSET</default_value>
-    <group>run_machine</group>
-    <file>env_run.xml</file>
-    <desc>command used to submit to batch system</desc>
-  </entry>
-
   <entry id="MPI_RUN_COMMAND">
     <type>char</type>
     <default_value>UNSET</default_value>
     <group>run_mpi</group>
     <file>env_run.xml</file>
-    <desc>mpi run command</desc>
+    <desc>override the mpi run command, do not include model executable</desc>
   </entry>
 
   <!-- ===================================================================== -->
   <!-- definitions pelayout -->
   <!-- ===================================================================== -->
 
-  <entry id="NTASKS_ATM">
+  <entry id="ALLOCATE_SPARE_NODES">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Allocate some spare nodes to handle node failures. The system will pick a reasonable number</desc>
+  </entry>
+
+  <entry id="FORCE_SPARE_NODES">
     <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_atm</group>
+    <default_value>-999</default_value>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>number of atmosphere tasks</desc>
+    <desc>Force this exact number of spare nodes to be allocated</desc>
   </entry>
 
-  <entry id="NTHRDS_ATM">
+  <entry id="NTASKS">
     <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_atm</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of atmosphere threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_ATM">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_atm</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root atm mpi task</desc>
-  </entry>
-
-  <entry id="NINST_ATM">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_atm</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of atmosphere instances</desc>
-  </entry>
-
-  <entry id="NINST_ATM_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_atm</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of atmosphere instances</desc>
-  </entry>
-
-  <entry id="NTASKS_LND">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of land mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_LND">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of land mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_LND">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root lnd mpi task</desc>
-  </entry>
-
-  <entry id="NINST_LND">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of land instances</desc>
-  </entry>
-
-  <entry id="NINST_LND_LAYOUT">
-    <type>integer</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_lnd</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of land instances</desc>
-  </entry>
-
-  <entry id="NTASKS_ICE">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of ice mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_ICE">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of ice mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_ICE">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root ice mpi task</desc>
-  </entry>
-
-  <entry id="NINST_ICE">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of sea ice instances</desc>
-  </entry>
-
-  <entry id="NINST_ICE_LAYOUT">
-    <type>integer</type>
-    <valid_values>equential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_ice</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of sea ice instances</desc>
-  </entry>
-
-  <entry id="NTASKS_OCN">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of ocean mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_OCN">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of ocean mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_OCN">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root ocn mpi task</desc>
-  </entry>
-
-  <entry id="NINST_OCN">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of ocean instances</desc>
-  </entry>
-
-  <entry id="NINST_OCN_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_ocn</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of ocean instances</desc>
-  </entry>
-
-  <entry id="NTASKS_CPL">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_cpl</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of coupler mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_CPL">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_cpl</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of coupler mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_CPL">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_cpl</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root cpl mpi task</desc>
-  </entry>
-
-  <entry id="NTASKS_GLC">
-    <type>integer</type>
-    <default_value>0</default_value>
     <values>
-      <value compset="_CISM1">1</value>
+      <value compclass="ATM"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="CPL"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="OCN"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="WAV"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="GLC"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ICE"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ROF"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="LND"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="ESP"> $MAX_MPITASKS_PER_NODE</value>
+      <value compclass="IAC"> $MAX_MPITASKS_PER_NODE</value>
     </values>
-    <group>mach_pes_glc</group>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>number of glc mpi tasks</desc>
+    <desc>number of tasks for each component</desc>
   </entry>
 
-  <entry id="NTHRDS_GLC">
+  <entry id="NTASKS_PER_INST">
     <type>integer</type>
-    <default_value>0</default_value>
     <values>
-      <value compset="_CISM1">1</value>
+      <value compclass="ATM"> 0</value>
+      <value compclass="OCN"> 0</value>
+      <value compclass="WAV"> 0</value>
+      <value compclass="GLC"> 0</value>
+      <value compclass="ICE"> 0</value>
+      <value compclass="ROF"> 0</value>
+      <value compclass="LND"> 0</value>
+      <value compclass="ESP"> 0</value>
+      <value compclass="IAC"> 0</value>
     </values>
-    <group>mach_pes_glc</group>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>number of glc mpi threads</desc>
+    <desc>Number of tasks per instance for each component. DO NOT EDIT: Set automatically by case.setup based on NTASKS, NINST and MULTI_DRIVER</desc>
   </entry>
 
-  <entry id="ROOTPE_GLC">
+  <entry id="NTHRDS">
     <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_glc</group>
+    <values>
+      <value compclass="ATM">1</value>
+      <value compclass="CPL">1</value>
+      <value compclass="OCN">1</value>
+      <value compclass="WAV">1</value>
+      <value compclass="GLC">1</value>
+      <value compclass="ICE">1</value>
+      <value compclass="ROF">1</value>
+      <value compclass="LND">1</value>
+      <value compclass="ESP">1</value>
+      <value compclass="IAC">1</value>
+    </values>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>root glc mpi task</desc>
+    <desc>number of threads for each task in each component</desc>
   </entry>
 
-  <entry id="NINST_GLC">
+  <entry id="ROOTPE">
     <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_glc</group>
+    <values>
+      <value compclass="ATM">0</value>
+      <value compclass="CPL">0</value>
+      <value compclass="OCN">0</value>
+      <value compclass="WAV">0</value>
+      <value compclass="GLC">0</value>
+      <value compclass="ICE">0</value>
+      <value compclass="ROF">0</value>
+      <value compclass="LND">0</value>
+      <value compclass="ESP">0</value>
+      <value compclass="IAC">0</value>
+    </values>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Number of glacier instances</desc>
+    <desc>ROOTPE (mpi task in MPI_COMM_WORLD) for each component</desc>
   </entry>
 
-  <entry id="NINST_GLC_LAYOUT">
+  <entry id="MULTI_DRIVER">
+    <type>logical</type>
+    <default_value>FALSE</default_value>
+    <valid_values>TRUE,FALSE</valid_values>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>MULTI_DRIVER mode provides a separate driver/coupler component for each
+    ensemble member.  All components must have an equal number of members.  If
+    MULTI_DRIVER mode is False prognostic components must have the same number
+    of members but data or stub components may also have 1 member. </desc>
+  </entry>
+
+  <entry id="NINST">
+    <type>integer</type>
+    <values>
+      <value compclass="ATM">1</value>
+      <value compclass="OCN">1</value>
+      <value compclass="WAV">1</value>
+      <value compclass="GLC">1</value>
+      <value compclass="ICE">1</value>
+      <value compclass="ROF">1</value>
+      <value compclass="LND">1</value>
+      <value compclass="ESP">1</value>
+      <value compclass="IAC">1</value>
+    </values>
+    <group>mach_pes</group>
+    <file>env_mach_pes.xml</file>
+    <desc>Number of instances for each component.  If MULTI_DRIVER is True
+    the NINST_MAX value will be used.
+    </desc>
+  </entry>
+
+  <entry id="NINST_LAYOUT">
     <type>char</type>
     <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_glc</group>
+    <values>
+      <value compclass="ATM">concurrent</value>
+      <value compclass="OCN">concurrent</value>
+      <value compclass="WAV">concurrent</value>
+      <value compclass="GLC">concurrent</value>
+      <value compclass="ICE">concurrent</value>
+      <value compclass="ROF">concurrent</value>
+      <value compclass="LND">concurrent</value>
+      <value compclass="ESP">concurrent</value>
+      <value compclass="IAC">concurrent</value>
+    </values>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>Layout of glacier instances</desc>
+    <desc>Layout of component instances for each component</desc>
   </entry>
 
-  <entry id="NTASKS_ROF">
+  <entry id="PSTRID">
     <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_rof</group>
+    <values>
+      <value compclass="ATM">1</value>
+      <value compclass="CPL">1</value>
+      <value compclass="OCN">1</value>
+      <value compclass="WAV">1</value>
+      <value compclass="GLC">1</value>
+      <value compclass="ICE">1</value>
+      <value compclass="ROF">1</value>
+      <value compclass="LND">1</value>
+      <value compclass="ESP">1</value>
+      <value compclass="IAC">1</value>
+    </values>
+    <group>mach_pes</group>
     <file>env_mach_pes.xml</file>
-    <desc>number of river runoff tasks</desc>
-  </entry>
+    <desc>The mpi global processors stride associated with the mpi tasks for the a component</desc>
 
-  <entry id="NTHRDS_ROF">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_rof</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of river runoff threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_ROF">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_rof</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root rof mpi task</desc>
-  </entry>
-
-  <entry id="NINST_ROF">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_rof</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of river runoff instances</desc>
-  </entry>
-
-  <entry id="NINST_ROF_LAYOUT">
-    <type>char</type>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_rof</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of river runoff instances</desc>
-  </entry>
-
-  <entry id="NTASKS_WAV">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of wav mpi tasks</desc>
-  </entry>
-
-  <entry id="NTHRDS_WAV">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>number of wav mpi threads</desc>
-  </entry>
-
-  <entry id="ROOTPE_WAV">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>root wav mpi task</desc>
-  </entry>
-
-  <entry id="NINST_WAV">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Number of wave instances</desc>
-  </entry>
-
-  <entry id="NINST_WAV_LAYOUT">
-    <type>char</type>
-    <valid_values>sequential,concurrent</valid_values>
-    <default_value>concurrent</default_value>
-    <group>mach_pes_wav</group>
-    <file>env_mach_pes.xml</file>
-    <desc>Layout of wave instances</desc>
-  </entry>
-
-  <entry id="PSTRID_ATM">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for atm comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_LND">
-    <type>integer</type>
-    <valid_values>1</valid_values>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for lnd comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_ICE">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for ice comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_OCN">
-    <type>integer</type>
-    <valid_values>1</valid_values>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for ocn comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_CPL">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for cpl comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_GLC">
-    <type>integer</type>
-    <valid_values>1</valid_values>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for glc comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_ROF">
-    <type>integer</type>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for rof comp - currently should always be set to 1</desc>
-  </entry>
-
-  <entry id="PSTRID_WAV">
-    <type>integer</type>
-    <valid_values>1</valid_values>
-    <default_value>1</default_value>
-    <group>mach_pes_stride</group>
-    <file>env_mach_pes.xml</file>
-    <desc>stride of mpi tasks for wav comp - currently should always be set to 1</desc>
   </entry>
 
   <entry id="TOTALPES">
@@ -2277,7 +2280,7 @@
     <default_value>0</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
-    <desc>total number of tasks and threads (setup automatically - DO NOT EDIT)</desc>
+    <desc>total number of physical cores used (setup automatically - DO NOT EDIT)</desc>
   </entry>
 
   <entry id="MAX_TASKS_PER_NODE">
@@ -2288,9 +2291,17 @@
     <desc>maximum number of tasks/ threads allowed per node </desc>
   </entry>
 
-  <entry id="PES_PER_NODE">
+  <entry id="MAX_MPITASKS_PER_NODE">
     <type>integer</type>
     <default_value>0</default_value>
+    <group>mach_pes_last</group>
+    <file>env_mach_pes.xml</file>
+    <desc>pes or cores per node for mpitasks </desc>
+  </entry>
+
+  <entry id="COSTPES_PER_NODE">
+    <type>integer</type>
+    <default_value>$MAX_MPITASKS_PER_NODE</default_value>
     <group>mach_pes_last</group>
     <file>env_mach_pes.xml</file>
     <desc>pes or cores per node for accounting purposes </desc>
@@ -2301,7 +2312,7 @@
   <!-- ===================================================================== -->
 
   <entry id="PIO_VERSION">
-    <type>int</type>
+    <type>integer</type>
     <default_value>1</default_value>
     <valid_values>1,2</valid_values>
     <group>build_macros</group>
@@ -2326,38 +2337,6 @@
     <desc>TRUE implies perform asynchronous i/o</desc>
   </entry>
 
-  <entry id="PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-1</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>mpi task stride between io tasks</desc>
-  </entry>
-
-  <entry id="PIO_ROOT">
-    <type>integer</type>
-    <default_value>-1</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-1</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>2</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
   <entry id="PIO_REARR_COMM_TYPE">
     <type>char</type>
     <valid_values>p2p,coll,default</valid_values>
@@ -2376,41 +2355,62 @@
     <desc>pio rearranger communication flow control direction</desc>
   </entry>
 
-  <entry id="PIO_REARR_COMM_MAX_PEND_REQ">
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ_COMP2IO">
     <type>integer</type>
     <valid_values></valid_values>
-    <default_value>64</default_value>
+    <default_value>0</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger communication max pending requests</desc>
+    <desc>pio rearranger communication max pending requests (comp2io) : 0 implies that CIME internally calculates the value ( = max(64, 2 * PIO_NUMTASKS) ), -1 implies no bound on max pending requests </desc>
   </entry>
 
-  <entry id="PIO_REARR_COMM_ENABLE_HS">
+  <entry id="PIO_REARR_COMM_ENABLE_HS_COMP2IO">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>TRUE</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger communiation options: TRUE implies enable handshake</desc>
+    <desc>pio rearranger communiation options (comp2io) : TRUE implies enable handshake </desc>
   </entry>
 
-  <entry id="PIO_REARR_COMM_ENABLE_ISEND">
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND_COMP2IO">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
     <default_value>FALSE</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio rearranger communiation options: TRUE implies enable isend</desc>
+    <desc>pio rearranger communiation options (comp2io) : TRUE implies enable isend</desc>
   </entry>
 
-  <entry id="PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
-    <default_value>pnetcdf</default_value>
+  <entry id="PIO_REARR_COMM_MAX_PEND_REQ_IO2COMP">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>64</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio io type</desc>
+    <desc>pio rearranger communication max pending requests (io2comp) : -1 implies no bound on max pending requests </desc>
   </entry>
+
+  <!-- Handshaking is a very bad idea for large process counts and for -->
+  <!-- io2comp (but important for comp2io -->
+  <entry id="PIO_REARR_COMM_ENABLE_HS_IO2COMP">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>FALSE</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communiation options (io2comp) : TRUE implies enable handshake</desc>
+  </entry>
+
+  <entry id="PIO_REARR_COMM_ENABLE_ISEND_IO2COMP">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>pio rearranger communiation options (io2comp) : TRUE implies enable isend</desc>
+  </entry>
+
 
   <entry id="PIO_DEBUG_LEVEL">
     <type>integer</type>
@@ -2436,332 +2436,130 @@
     <desc>pio buffer size limit for pnetcdf output</desc>
   </entry>
 
-  <entry id="OCN_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="OCN_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="OCN_PIO_ROOT">
-    <type>integer</type>
-    <default_value>0</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="OCN_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="OCN_PIO_TYPENAME">
+  <entry id="PIO_TYPENAME">
     <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
+    <valid_values>netcdf,pnetcdf,netcdf4p,netcdf4c,default</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio io type</desc>
+    <values>
+      <value compclass="ATM">default</value>
+      <value compclass="CPL">default</value>
+      <value compclass="OCN">default</value>
+      <value compclass="WAV">default</value>
+      <value compclass="GLC">default</value>
+      <value compclass="ICE">default</value>
+      <value compclass="ROF">default</value>
+      <value compclass="LND">default</value>
+      <value compclass="ESP">default</value>
+      <value compclass="IAC">default</value>
+    </values>
   </entry>
 
-  <entry id="LND_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
+  <entry id="PIO_NETCDF_FORMAT">
+    <type>char</type>
+    <valid_values>classic,64bit_offset,64bit_data</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio stride</desc>
+    <desc>pio netcdf format (ignored for netcdf4p and netcdf4c)
+    https://www.unidata.ucar.edu/software/netcdf/docs/data_type.html
+    </desc>
+    <values>
+      <value compclass="ATM">64bit_offset</value>
+      <value compclass="CPL">64bit_offset</value>
+      <value compclass="OCN">64bit_offset</value>
+      <value compclass="WAV">64bit_offset</value>
+      <value compclass="GLC">64bit_offset</value>
+      <value compclass="ICE">64bit_offset</value>
+      <value compclass="ROF">64bit_offset</value>
+      <value compclass="LND">64bit_offset</value>
+      <value compclass="ESP">64bit_offset</value>
+      <value compclass="IAC">64bit_offset</value>
+    </values>
   </entry>
 
-  <entry id="LND_PIO_REARRANGER">
+  <entry id="PIO_STRIDE">
     <type>integer</type>
-    <default_value>-99</default_value>
+    <group>run_pio</group>
+    <file>env_run.xml</file>
+    <desc>
+     stride in compute comm of io tasks for each component, if this value is -99 it will
+     be computed based on PIO_NUMTASKS and number of compute tasks
+    </desc>
+    <values>
+      <value compclass="ATM"></value>
+      <value compclass="CPL"></value>
+      <value compclass="OCN"></value>
+      <value compclass="WAV"></value>
+      <value compclass="GLC"></value>
+      <value compclass="ICE"></value>
+      <value compclass="ROF"></value>
+      <value compclass="LND"></value>
+      <value compclass="ESP"></value>
+      <value compclass="IAC"></value>
+    </values>
+  </entry>
+
+  <entry id="PIO_REARRANGER">
+    <type>integer</type>
+    <valid_values>1,2</valid_values>
     <group>run_pio</group>
     <file>env_run.xml</file>
     <desc>pio rearranger choice box=1, subset=2 </desc>
+    <values>
+      <value>$PIO_VERSION</value>
+      <value compclass="ATM"></value>
+      <value compclass="CPL"></value>
+      <value compclass="OCN"></value>
+      <value compclass="WAV"></value>
+      <value compclass="GLC"></value>
+      <value compclass="ICE"></value>
+      <value compclass="ROF"></value>
+      <value compclass="LND"></value>
+      <value compclass="ESP"></value>
+      <value compclass="IAC"></value>
+    </values>
   </entry>
 
-  <entry id="LND_PIO_ROOT">
+  <entry id="PIO_ROOT">
     <type>integer</type>
-    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio root processor</desc>
+    <desc>pio root processor relative to component root</desc>
+    <values>
+      <value component="ATM">1</value>
+      <value component="CPL">1</value>
+      <value component="OCN">1</value>
+      <value component="WAV">1</value>
+      <value component="GLC">1</value>
+      <value component="ICE">1</value>
+      <value component="ROF">1</value>
+      <value component="LND">1</value>
+      <value component="ESP">1</value>
+      <value component="IAC">1</value>
+    </values>
   </entry>
 
-  <entry id="LND_PIO_NUMTASKS">
+  <entry id="PIO_NUMTASKS">
     <type>integer</type>
-    <default_value>-99</default_value>
     <group>run_pio</group>
     <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="LND_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="ROF_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="ROF_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="ROF_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="ROF_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="ROF_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="ICE_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="ICE_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="ICE_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="ICE_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="ICE_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="ATM_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="ATM_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="ATM_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="ATM_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks, -99 value means inherit whatever the driver uses</desc>
-  </entry>
-
-  <entry id="ATM_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="CPL_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="CPL_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="CPL_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="CPL_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="CPL_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="GLC_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="GLC_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="GLC_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="GLC_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="GLC_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
-  </entry>
-
-  <entry id="WAV_PIO_STRIDE">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio stride</desc>
-  </entry>
-
-  <entry id="WAV_PIO_REARRANGER">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio rearranger choice box=1, subset=2 </desc>
-  </entry>
-
-  <entry id="WAV_PIO_ROOT">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio root processor</desc>
-  </entry>
-
-  <entry id="WAV_PIO_NUMTASKS">
-    <type>integer</type>
-    <default_value>-99</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio number of io tasks</desc>
-  </entry>
-
-  <entry id="WAV_PIO_TYPENAME">
-    <type>char</type>
-    <valid_values>nothing,netcdf,pnetcdf,netcdf4p,netcdf4c</valid_values>
-    <default_value>nothing</default_value>
-    <group>run_pio</group>
-    <file>env_run.xml</file>
-    <desc>pio io type</desc>
+    <desc>
+      pio number of io tasks, if this value is -99 it will be computed based on PIO_STRIDE and
+      number of tasks
+    </desc>
+    <values>
+      <value compclass="ATM">-99</value>
+      <value compclass="CPL">-99</value>
+      <value compclass="OCN">-99</value>
+      <value compclass="WAV">-99</value>
+      <value compclass="GLC">-99</value>
+      <value compclass="ICE">-99</value>
+      <value compclass="ROF">-99</value>
+      <value compclass="LND">-99</value>
+      <value compclass="ESP">-99</value>
+      <value compclass="IAC">-99</value>
+    </values>
   </entry>
 
   <!-- ===================================================================== -->
@@ -2800,6 +2598,15 @@
     <desc>Case base ID</desc>
   </entry>
 
+  <entry id="IS_FIRST_RUN">
+    <type>logical</type>
+    <valid_values>TRUE,FALSE</valid_values>
+    <default_value>TRUE</default_value>
+    <group>test</group>
+    <file>env_test.xml</file>
+    <desc>Is first run of test</desc>
+  </entry>
+
   <entry id="TEST_ARGV">
     <type>char</type>
     <default_value>UNSET</default_value>
@@ -2814,6 +2621,22 @@
     <group>test</group>
     <file>env_test.xml</file>
     <desc>supplied or computed test id</desc>
+  </entry>
+
+  <entry id="TEST_MEMLEAK_TOLERANCE">
+    <type>real</type>
+    <default_value>0.10</default_value>
+    <group>test</group>
+    <file>env_test.xml</file>
+    <desc>Expected relative memory usage growth for test</desc>
+  </entry>
+
+  <entry id="TEST_TPUT_TOLERANCE">
+    <type>real</type>
+    <default_value>0.25</default_value>
+    <group>test</group>
+    <file>env_test.xml</file>
+    <desc>Expected throughput deviation</desc>
   </entry>
 
   <entry id="GENERATE_BASELINE">
@@ -2883,17 +2706,9 @@
     <desc>Whether to clean the test after it is built/run</desc>
   </entry>
 
-  <entry id="CCSM_BASELINE">
-    <type>char</type>
-    <default_value>/UNSET</default_value>
-    <group>test</group>
-    <file>env_test.xml</file>
-    <desc>standard baselines root directory for testing</desc>
-  </entry>
-
   <entry id="CCSM_CPRNC">
     <type>char</type>
-    <default_value>/UNSET</default_value>
+    <default_value>UNSET</default_value>
     <group>test</group>
     <file>env_test.xml</file>
     <desc>standard full pathname of the cprnc executable</desc>
@@ -2902,38 +2717,6 @@
   <!-- ===================================================================== -->
   <!-- component coupling options and frequencies -->
   <!-- ===================================================================== -->
-
-  <entry id="CPL_SEQ_OPTION">
-    <type>char</type>
-    <valid_values>CESM1_ORIG,CESM1_ORIG_TIGHT,CESM1_MOD,CESM1_MOD_TIGHT,RASM_OPTION1,RASM_OPTION2</valid_values>
-    <default_value>CESM1_MOD_TIGHT</default_value>
-    <values>
-      <value compset="_DATM.*_DOCN%SOM"          >CESM1_MOD</value>
-      <value compset="_POP2"                     >CESM1_MOD</value>
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN">CESM1_MOD</value>
-      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">CESM1_MOD</value>
-      <value compset="_SOCN"                     >CESM1_MOD</value>
-      <value compset="_MPAS"                     >CESM1_MOD</value>
-    </values>
-    <group>run_coupling</group>
-    <file>env_run.xml</file>
-    <desc>
-      Coupler sequencing option. This is used to set the driver namelist variable cpl_seq_option.
-      CESM1_ORIG is the cesm1.1 implementation.
-      CESM1_MOD includes a cesm1.3 mod that swaps ocean merging and atm/ocn flux
-      computation.
-      RASM_OPTION1 runs prep ocean before the ocean coupling reducing
-      most of the lags and field inconsistency but still allowing the ocean to run
-      concurrently with the ice and atmosphere.
-      RASM_OPTION2 is similar to RASM_OPTION1
-      but sequences the ice model, prep ocean and ocean model in that order.  The
-      ocean model loses some of the concurrency with the ice model.
-      CESM1_ORIG_TIGHT and CESM1_MOD_TIGHT are consistent with the old variables
-      ocean_tight_coupling = true in the driver.  That namelist is gone and the
-      cpl_seq_option flags take it's place.
-      TIGHT coupling makes no sense with the OPTION5 and OPTION6 flags.
-    </desc>
-  </entry>
 
   <entry id="CPL_I2O_PER_CAT">
     <type>logical</type>
@@ -2944,219 +2727,14 @@
     <desc>determine if per ice thickness category fields are passed from ice to ocean - DO NOT EDIT (set by POP build-namelist)</desc>
   </entry>
 
-  <entry id="CCSM_BGC">
-    <type>char</type>
-    <valid_values>none,CO2A,CO2B,CO2C,CO2_DMSA</valid_values>
-    <default_value>none</default_value>
-    <values>
-      <value compset="_CAM"     >CO2A</value>
-      <value compset="_DATM"    >none</value>
-      <value compset="_BGC%BPRP">CO2C</value>
-      <value compset="_BGC%BDRD">CO2C</value>
-      <value compset="HIST.*_DATM%(QIA|CRU)">CO2A</value>
-      <value compset="RCP.*_DATM%(QIA|CRU)" >CO2A</value>
-    </values>
-    <group>run_coupling</group>
-    <file>env_run.xml</file>
-    <desc>Flag to turn on new fields in coupling.
-    If the value is not none, the coupler is compiled so that optional
-    BGC related fields are exchanged between component models.
-    </desc>
-  </entry>
-
-  <entry id="NCPL_BASE_PERIOD">
-    <type>char</type>
-    <valid_values>hour,day,year,decade</valid_values>
-    <group>run_coupling</group>
-    <file>env_run.xml</file>
-    <default_value>day</default_value>
-    <values>
-      <value compset="_DLND.*_CISM">year</value>
-      <value compset="_MPAS"       >hour</value>
-    </values>
-    <desc>Base period associated with NCPL coupling frequency.
-    This xml variable is only used to set the driver namelist variables,
-    atm_cpl_dt, lnd_cpl_dt, ocn_cpl_dt, ice_cpl_dt, glc_cpl_dt, rof_cpl_dt and wav_cpl_dt.</desc>
-  </entry>
-
-  <entry id="ATM_NCPL">
-    <type>char</type>
-    <default_value>48</default_value>
-    <values>
-      <value compset="_CAM[45]"             >48</value>
-      <value compset="_CAM[45]%WCBC"        >144</value>
-      <value compset="_CAM4%WCMX"           >288</value>
-      <value compset="_CAM4%WCXI"           >288</value>
-      <value compset="_CAM%ADIAB"           >48</value>
-      <value compset="_CAM%IDEAL"           >48</value>
-      <value compset="_DATM%COPYALL_NPS"    >72</value>
-      <value compset="_DATM.*_CLM"          >48</value>
-      <value compset="_DATM.*_DICE.*_POP2"  >4</value>
-      <value compset="_DATM.*_CICE.*_POP2"  >24</value>
-      <value compset="_DATM.*_CICE.*_DOCN"  >24</value>
-      <value compset="_DATM.*_DOCN%US20"    >24</value>
-      <value compset="_MPAS"                >1</value>
-      <value compset=".+" grid="a%0.23x0.31">96</value>
-      <value compset=".+" grid="a%ne60np4"  >96</value>
-      <value compset=".+" grid="a%ne120np4" >96</value>
-      <value compset=".+" grid="a%ne240np4" >96</value>
-      <value compset=".+" grid="a%T85"      >144</value>
-      <value compset=".+" grid="a%T341"     >288</value>
-      <value compset=".+" grid="1x1"        >48</value>
-      <value compset=".+" grid="1x1_urbanc" >48</value>
-      <value compset=".+" grid="1x1_mexico" >24</value>
-      <value compset=".+" grid="1x1_vancou" >24</value>
-      <value compset="_DLND.*_CISM"         >1</value>
-      <value compset="_DATM.*_DICE.*_POP2.*_WW3" >4</value>
-      <value compset="_DATM.*_DICE.*_POP2.*_DWAV">4</value>
-    </values>
-    <group>run_coupling</group>
-    <file>env_run.xml</file>
-    <desc>Number of atm coupling intervals per NCPL_BASE_PERIOD.
-    This is used to set the driver namelist atm_cpl_dt, equal to basedt/ATM_NCPL,
-    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
-  </entry>
-
-  <entry id="LND_NCPL">
-    <type>char</type>
-    <default_value>$ATM_NCPL</default_value>
-    <values>
-      <value compset="_DLND.*_CISM">1</value>
-    </values>
-    <group>run_coupling</group>
-    <file>env_run.xml</file>
-    <desc>Number of land coupling intervals per NCPL_BASE_PERIOD.
-    This is used to set the driver namelist atm_cpl_dt, equal to basedt/LND_NCPL,
-    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
-  </entry>
-
-  <entry id="ICE_NCPL">
-    <type>char</type>
-    <default_value>$ATM_NCPL</default_value>
-    <values>
-      <value compset="_DLND.*_CISM">1</value>
-    </values>
-    <group>run_coupling</group>
-    <file>env_run.xml</file>
-    <desc>Number of ice coupling intervals per NCPL_BASE_PERIOD.
-    This is used to set the driver namelist ice_cpl_dt, equal to basedt/ICE_NCPL
-    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
-  </entry>
-
-  <entry id="OCN_NCPL">
-    <type>char</type>
-    <default_value>$ATM_NCPL</default_value>
-    <values>
-      <value compset="_POP2">1</value>
-      <value compset="_POP2" grid="oi%tx0.1v2">4</value>
-      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_SWAV">1</value>
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DWAV">1</value>
-      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">1</value>
-      <value compset="_DATM.*_CLM4.*_SICE.*_SOCN">1</value>
-      <value compset="_SATM.*_SLND.*_SICE.*_SOCN">1</value>
-      <value compset="_DLND.*_CISM">1</value>
-    </values>
-    <group>run_coupling</group>
-    <file>env_run.xml</file>
-    <desc>Number of ocn coupling intervals per NCPL_BASE_PERIOD.
-    Thisn is used to set the driver namelist ocn_cpl_dt, equal to basedt/OCN_NCPL
-    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
-  </entry>
-
-  <entry id="GLC_NCPL">
-    <type>char</type>
-    <default_value>1</default_value>
-    <values>
-      <value compset="_DLND.*_CISM">1</value>
-    </values>
-    <group>run_coupling</group>
-    <file>env_run.xml</file>
-    <desc>Number of glc coupling intervals per NCPL_BASE_PERIOD.</desc>
-  </entry>
-
-  <entry id="ROF_NCPL">
-    <type>char</type>
-    <default_value>8</default_value>
-    <values>
-      <value compset="_DATM.*_POP2">$ATM_NCPL</value>
-      <value compset="_DATM.*_DOCN%SOM">$ATM_NCPL</value>
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN">$ATM_NCPL</value>
-      <value compset="_XATM.*_XLND.*_XICE.*_XOCN">$ATM_NCPL</value>
-      <value compset="_DLND.*_CISM">1</value>
-    </values>
-    <group>run_coupling</group>
-    <file>env_run.xml</file>
-    <desc>Number of rof coupling intervals per NCPL_BASE_PERIOD.
-    This is used to set the driver namelist rof_cpl_dt, equal to basedt/ROF_NCPL
-    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
-  </entry>
-
-  <entry id="WAV_NCPL">
-    <type>char</type>
-    <default_value>$ATM_NCPL</default_value>
-    <group>run_coupling</group>
-    <file>env_run.xml</file>
-    <desc>Number of wav coupling intervals per NCPL_BASE_PERIOD.
-    This is used to set the driver namelist wav_cpl_dt, equal to basedt/WAV_NCPL
-    where basedt is equal to NCPL_BASE_PERIOD in seconds.</desc>
-  </entry>
-
-
-  <entry id="CPL_ALBAV">
-    <type>logical</type>
-    <valid_values>true,false</valid_values>
-    <default_value>false</default_value>
-    <values>
-      <value compset="DATM.+POP">true</value>
-      <value compset="DATM.+DOCN%IAF">true</value>
-    </values>
-    <group>run_component_cpl</group>
-    <file>env_run.xml</file>
-    <desc>
-      Only used for compsets with DATM and POP (currently C and G):
-      If true, compute albedos to work with daily avg SW down
-      If false (default), albedos are computed with the assumption that downward
-      solar radiation from the atm component has a diurnal cycle and zenith-angle
-      dependence. This is normally the case when using an active atm component
-      If true, albedos are computed with the assumption that downward
-      solar radiation from the atm component is a daily average quantity and
-      does not have a zenith-angle dependence. This is often the case when
-      using a data atm component. Only used for compsets with DATM and POP (currently C and G)
-    </desc>
-  </entry>
-
-  <entry id="CPL_EPBAL">
-    <type>char</type>
-    <valid_values>off,ocn</valid_values>
-    <default_value>off</default_value>
-    <values>
-      <value compset="DATM.+POP">ocn</value>
-    </values>
-    <group>run_component_cpl</group>
-    <file>env_run.xml</file>
-    <desc>
-      Only used for compsets with DATM and POP (currently C and G):
-      If ocn, ocn provides EP balance factor for precipitation.
-      Provides EP balance factor for precip for POP. A factor computed by
-      POP is applied to precipitation so that precipitation balances
-      evaporation and ocn global salinity does not drift. This is intended
-      for use when coupling POP to a DATM. Only used for C and G compsets.
-      Default is off
-    </desc>
-  </entry>
-
   <!-- ===================================================================== -->
-  <!-- history / restart frequencies -->
+  <!-- history frequencies -->
   <!-- ===================================================================== -->
 
   <entry id="HIST_OPTION">
     <type>char</type>
-    <valid_values></valid_values>
+    <valid_values>none,never,nsteps,nstep,nseconds,nsecond,nminutes,nminute,nhours,nhour,ndays,nday,nmonths,nmonth,nyears,nyear,date,ifdays0,end</valid_values>
     <default_value>never</default_value>
-    <values>
-      <value compset="CISM">nyears</value>
-    </values>
     <group>run_drv_history</group>
     <file>env_run.xml</file>
     <desc>Sets driver snapshot history file frequency (like REST_OPTION)</desc>
@@ -3166,9 +2744,6 @@
     <type>integer</type>
     <valid_values></valid_values>
     <default_value>-999</default_value>
-    <values>
-      <value compset="CISM">1</value>
-    </values>
     <group>run_drv_history</group>
     <file>env_run.xml</file>
     <desc>Sets driver snapshot history file frequency (like REST_N)
@@ -3184,112 +2759,6 @@
     <desc>yyyymmdd format, sets coupler snapshot history date (like REST_DATE)</desc>
   </entry>
 
-  <entry id="AVGHIST_OPTION">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value>never</default_value>
-    <values>
-      <value compset="_DOCN%IAF">nmonths</value>
-    </values>
-    <group>run_drv_history</group>
-    <file>env_run.xml</file>
-    <desc>Sets driver average history file frequency (like REST_OPTION)</desc>
-  </entry>
-
-  <entry id="AVGHIST_N">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value>-999</default_value>
-    <values>
-      <value compset="_DOCN%IAF">1</value>
-    </values>
-    <group>run_drv_history</group>
-    <file>env_run.xml</file>
-    <desc>Sets driver average history file frequency (like REST_N)</desc>
-  </entry>
-
-  <entry id="AVGHIST_DATE">
-    <type>integer</type>
-    <valid_values></valid_values>
-    <default_value>-999</default_value>
-    <group>run_drv_history</group>
-    <file>env_run.xml</file>
-    <desc>yyyymmdd format, sets driver average history date (like REST_DATE)</desc>
-  </entry>
-
-  <entry id="BUDGETS">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <values>
-      <value compset="DATM.*_POP"    >TRUE</value>
-      <value compset="CAM.*_POP"     >TRUE</value>
-      <value compset="CAM.*_DOCN%SOM">TRUE</value>
-    </values>
-    <group>run_budgets</group>
-    <file>env_run.xml</file>
-    <desc>logical that turns on diagnostic budgets for driver</desc>
-  </entry>
-
-  <entry id="CCSM_CO2_PPMV">
-    <type>real</type>
-    <valid_values></valid_values>
-    <default_value>379.000</default_value>
-    <values>
-      <value compset="^1850"					>284.7</value>
-      <value compset="^HIST.+BGC%BPRP"				>284.7</value>
-      <value compset="^HIST_CAM4%FCHM"				>0.000001</value>
-      <value compset="^2000_"					>367.0</value>
-      <value compset="^1850.+DATM%NYF"				>379.000</value>
-      <value compset="^1850.+DATM%NYF.*_POP2%ECO"		>284.7</value>
-      <value compset="^2000.+DATM%NYF"				>379.000</value>
-      <value compset="^2000.+DATM%IAF"				>379.000</value>
-      <value compset="^HIST.+DATM"				>367.0</value>
-      <value compset="^4804.+DATM"				>367.0</value>
-      <value compset="^RCP2.+DATM"				>367.0</value>
-      <value compset="^RCP4.+DATM"				>367.0</value>
-      <value compset="^RCP6.+DATM"				>367.0</value>
-      <value compset="^RCP8.+DATM"				>367.0</value>
-      <value compset="^2000.+XATM"				>379.000</value>
-      <value compset="^HIST.+CAM"				>0.000001</value>
-      <value compset="^5505.+CAM"				>0.000001</value>
-      <value compset="^RCP2.+CAM"				>0.000001</value>
-      <value compset="^RCP4.+CAM"				>0.000001</value>
-      <value compset="^RCP6.+CAM"				>0.000001</value>
-      <value compset="^RCP8.+CAM"				>0.000001</value>
-      <value compset="^2013.+CAM"				>0.000001</value>
-      <value compset="^GEOS.+CAM"				>0.000001</value>
-      <value compset="^AMIP.+CAM"				>0.000001</value>
-      <value compset="^AR95"					>368.9</value>
-      <value compset="^AR97"					>368.9</value>
-      <value compset="^2003"					>367.0</value>
-      <!-- Override values based on CAM (WACCM) chemistry -->
-      <value compset="CAM[45]%W"				>0.000001</value>
-      <value compset="CAM[45]%SSOA"				>0.000001</value>
-      <value compset="^2000.+CAM[45]%WCSC"			>368.9</value>
-      <value compset="^2000.+CAM[45]%MOZM"			>0.000001</value>
-      <value compset="^2000.+CAM[45]%MMOS"			>0.000001</value>
-      <value compset="^2000.+CAM[45]%TMOZ"			>0.000001</value>
-      <value compset="^2000.+CAM[45]%SMA3"			>0.000001</value>
-      <value compset="^2000.+CAM[45]%SMA7"			>0.000001</value>
-      <value compset="^2000.+CAM[45]%SSOA"			>0.000001</value>
-    </values>
-    <group>run_co2</group>
-    <file>env_run.xml</file>
-    <desc>This set the namelist values of CO2 ppmv for CAM and CLM. This variables is
-      introduced to coordinate this value among multiple components.</desc>
-  </entry>
-
-  <entry id="DRV_THREADING">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>Turns on component varying thread control in the driver.
-    Used to set the driver namelist variable "drv_threading".</desc>
-  </entry>
-
   <entry id="CPL_DECOMP">
     <type>integer</type>
     <valid_values>0,1,2,3,4,5,6</valid_values>
@@ -3299,15 +2768,6 @@
     <desc>Coupler decomposition option.</desc>
   </entry>
 
-  <entry id="BFBFLAG">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>run_flags</group>
-    <file>env_run.xml</file>
-    <desc>turns on coupler bit-for-bit reproducibility with varying pe counts</desc>
-  </entry>
-
   <entry id="INFO_DBUG">
     <type>integer</type>
     <valid_values>0,1,2,3</valid_values>
@@ -3315,72 +2775,6 @@
     <group>run_flags</group>
     <file>env_run.xml</file>
     <desc>level of debug output, 0=minimum, 1=normal, 2=more, 3=too much</desc>
-  </entry>
-
-  <entry id="SCIENCE_SUPPORT">
-    <type>char*256</type>
-    <valid_values>on, off</valid_values>
-    <default_value>off</default_value>
-    <group>case_def</group>
-    <file>env_case.xml</file>
-    <desc>If set to off, this component set/ grid specification is not scientifically supported.
-    If set to on, this component set/ grid specification is scientifically supported</desc>
-  </entry>
-
-  <entry id="CCSM_CCOST">
-    <type>integer</type>
-    <valid_values></valid_values>
-    <default_value>0</default_value>
-    <values>
-      <!-- estimated cost (used only for development purposes) -->
-      <value compset="_DATM.*_DLND.*_DICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>-3</value> <!-- A -->
-      <value compset="_DATM.*_DICE.*_DOCN.*_WW3"				>-3</value> <!-- A_WAV -->
-      <value compset="_DATM.*_SLND.*_DICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- C -->
-      <value compset="_DATM.*_SLND.*_DICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- CECO -->
-      <value compset="_DATM.*_SLND.*_CICE.*_DOCN%SOM_DROF.*_SGLC_SWAV"		> 1</value> <!-- D -->
-      <value compset="_DATM.*_SLND.*_CICE.*_POP2_DROF.*_SGLC_SWAV"		>-1</value> <!-- G,H -->
-      <value compset="_DATM.*_SLND.*_CICE.*_POP2%ECO_DROF.*_SGLC_SWAV"		> 1</value> <!-- GECO -->
-      <value compset="_DATM.*_CLM.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-2</value> <!-- I -->
-      <value compset="_SATM_DLND.*_SICE_SOCN_SROF_CISM_SWAV"			>-5</value> <!-- TG -->
-      <value compset="_SATM_DLND.*_SICE_SOCN_RTM.*_SGLC_SWAV"			>-5</value> <!-- U -->
-      <value compset="_SATM_SLND_SICE_SOCN_SROF_SGLC_SWAV"			>-6</value> <!-- U -->
-      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_DROF.*_SGLC_SWAV"		>0</value>  <!-- E -->
-      <value compset="_CAM4.*_CLM.*_CICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- F -->
-      <value compset="_CAM4.*_CLM.*_DICE.*_DOCN.*_RTM.*_SGLC_SWAV"		>0</value>  <!-- K -->
-      <value compset="_CAM4.*_DLND.*_DICE.*_DOCN.*_SROF_SGLC_SWAV"		>0</value>  <!-- L -->
-      <value compset="_CAM4%TMOZ.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"		>1</value>  <!-- FMOZ -->
-      <value compset="GEOS_CAM4%TBAM.*_CLM.*_CICE_DOCN.*_RTM.*_SGLC_SWAV"	>3</value>  <!-- FSDBAM -->
-      <value compset="_CAM5"							>1</value>
-      <value compset="_CAM[45]%W"						>3</value>
-      <value compset="_CAM[45]%WCSC"						>1</value>
-      <value compset="_CAM5%MOZM"						>3</value>
-      <value compset="_CAM4%MOZS"						>3</value>
-      <value compset="_CAM4%SMA[37]"						>3</value>
-      <value compset="_CAM4%SSOA"						>3</value>
-      <value compset="_CAM4%TMOZ"						>1</value>
-      <value compset="_CAM4.*_BGC%BDRD"						>2</value>
-      <value compset="_CAM4.*_BGC%BPRP"						>2</value>
-      <value compset="CAM.*_CLM.*_CICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>2</value> <!-- BDAR -->
-      <value compset="DATM.*_DLND.*_DICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>1</value> <!-- CDAR -->
-      <value compset="DATM.*_DLND.*_CICE.*_POP2%DAR.*_RTM_SGLC_SWAV"		>1</value> <!-- GDAR -->
-    </values>
-    <group>case_cost</group>
-    <file>env_case.xml</file>
-    <desc>2**n relative cost of compset where B is 1 (DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="GLC_NEC">
-    <type>integer</type>
-    <valid_values>0,1,3,5,10,36</valid_values>
-    <default_value>0</default_value>
-    <values>
-      <value compset="_CISM">10</value>
-      <value compset="_X"   >10</value>
-    </values>
-    <group>run_glc</group>
-    <file>env_run.xml</file>
-    <desc>Glacier model number of elevation classes, 0 implies no glacier land unit in clm
-    Used by both CLM and CISM (even if CISM is not running, and only SGLC is used).</desc>
   </entry>
 
   <entry id="CLM_USE_PETSC">
@@ -3398,126 +2792,21 @@
       machines/compilers.</desc>
   </entry>
 
-  <!-- ======================================================================= -->
-  <!-- MOSART                                                                  -->
-  <!-- ======================================================================= -->
+  <!-- Prerun/postrun custom script options -->
 
-  <entry id="MOSART_MODE">
+  <entry id="PRERUN_SCRIPT">
     <type>char</type>
-    <valid_values>ACTIVE,NULL</valid_values>
-    <default_value>ACTIVE</default_value>
-    <group>build_component_mosart</group>
-    <file>env_build.xml</file>
-    <desc>mode for mosart model, NULL means mosart is turned off</desc>
-  </entry>
-
-  <entry id="MOSART_FLOOD_MODE">
-    <type>char</type>
-    <valid_values>ACTIVE,NULL</valid_values>
-    <default_value>NULL</default_value>
-    <group>build_component_mosart</group>
-    <file>env_build.xml</file>
-    <desc>mode for mosart flood feature, NULL means mosart flood is turned off</desc>
-  </entry>
-
-  <entry id="MOSART_BLDNML_OPTS">
-    <type>char</type>
-    <valid_values></valid_values>
     <default_value></default_value>
-    <group>run_component_mosart</group>
-    <file>env_build.xml</file>
-    <desc>MOSART build-namelist options</desc>
-  </entry>
-
-  <entry id="MOSART_NAMELIST_OPTS">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value></default_value>
-    <group>run_component_mosart</group>
-    <file>env_build.xml</file>
-    <desc>MOSART specific namelist settings MOSART-specific namelist
-    settings in the MOSART build-namelist.  MOSART_NAMELIST_OPTS is
-    normally set as a compset variable and in general should not be
-    modified for supported compsets.  It is recommended that if you
-    want to modify this value for your experiment, you should use your
-    own user-defined component sets via using create_newcase with a
-    compset_file argument.</desc>
-  </entry>
-
-  <entry id="MPASLI_CONFIG_OPTS">
-    <type>char</type>
-    <valid_values></valid_values>
-    <default_value></default_value>
-    <group>build_component_mpasli</group>
-    <file>env_build.xml</file>
-    <desc>MPASLI configure options. Currently not used</desc>
-  </entry>
-
-  <entry id="MPASLI_USE_ALBANY">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <group>build_component_mpasli</group>
-    <file>env_build.xml</file>
-    <desc>TRUE implies MPASLI is built with support for the Albany
-      library The first-order velocity solver in MPASLI uses the
-      Albany library.  In order to use that velocity solver, MPASLI
-      must be built with Albany support and linking to Albany must
-      occur when building the ACME executable.  This occurs if this
-      variable is set to TRUE.  Note that is only available on a
-      limited set of machines/compilers.  This must remain FALSE to
-      run MPASLI on a machine that does not have Albany, or for which
-      the CIME scripts are not aware of the existence of
-      Albany.</desc>
-  </entry>
-
-  <entry id="GLC_SMB">
-    <type>logical</type>
-    <valid_values>true,false</valid_values>
-    <default_value>true</default_value>
-    <group>run_component_mpasli</group>
+    <group>external_tools</group>
     <file>env_run.xml</file>
-    <desc>true => have LND calculate surface mass balance</desc>
+    <desc>External script to be run before model completion</desc>
   </entry>
-
-  <entry id="GLC_TWO_WAY_COUPLING">
-    <type>logical</type>
-    <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
-    <values>
-      <value compset="_CLM45.+CISM">TRUE</value>
-      <value compset="_CLM50.+CISM">TRUE</value>
-      <!-- Turn on two-way coupling for TG compsets - even though there are no
-	   feedbacks for a TG compset, this will give us additional diagnostics -->
-      <value compset="_DLND.+CISM">TRUE</value>
-    </values>
-    <group>run_glc</group>
+  <entry id="POSTRUN_SCRIPT">
+    <type>char</type>
+    <default_value></default_value>
+    <group>external_tools</group>
     <file>env_run.xml</file>
-    <desc>Whether the glacier component feeds back to the rest of the system
-      This affects:
-      (1) Whether CLM updates its areas based on glacier areas sent from GLC
-      (2) Whether GLC sends fluxes (e.g., calving fluxes) to the coupler
-      Note that this is set to TRUE by default for TG compsets - even though there are
-      no feedbacks for TG compsets, this enables extra coupler diagnostics for these
-      compsets.</desc>
-  </entry>
-
-  <entry id="CCSM_GCOST">
-    <type>integer</type>
-    <valid_values></valid_values>
-    <default_value>0</default_value>
-    <group>case_cost</group>
-    <file>env_case.xml</file>
-    <desc>2**n relative cost of grid where f19_g15 is 1 (DO NOT EDIT)</desc>
-  </entry>
-
-  <entry id="CCSM_MCOST">
-    <type>integer</type>
-    <valid_values></valid_values>
-    <default_value>0</default_value>
-    <group>case_cost</group>
-    <file>env_case.xml</file>
-    <desc>2**n relative cost of machine (DO NOT EDIT)</desc>
+    <desc>External script to be run after model completion</desc>
   </entry>
 
   <!-- Data Assimilation type stuff -->
@@ -3525,11 +2814,22 @@
   <entry id="DATA_ASSIMILATION">
     <type>logical</type>
     <valid_values>TRUE,FALSE</valid_values>
-    <default_value>FALSE</default_value>
     <group>external_tools</group>
     <file>env_run.xml</file>
     <desc> Run the external tool pointed to by DATA_ASSIMILATION_SCRIPT after the model run completes </desc>
+    <values>
+      <value compclass="ATM">FALSE</value>
+      <value compclass="CPL">FALSE</value>
+      <value compclass="OCN">FALSE</value>
+      <value compclass="WAV">FALSE</value>
+      <value compclass="GLC">FALSE</value>
+      <value compclass="ICE">FALSE</value>
+      <value compclass="ROF">FALSE</value>
+      <value compclass="LND">FALSE</value>
+      <value compclass="IAC">FALSE</value>
+    </values>
   </entry>
+
   <entry id="DATA_ASSIMILATION_CYCLES">
     <type>integer</type>
     <valid_values></valid_values>
@@ -3547,30 +2847,83 @@
     <desc>External script to be run after model completion</desc>
   </entry>
 
+ <entry id="EXTERNAL_WORKFLOW">
+   <type>logical</type>
+   <valid_values>TRUE,FALSE</valid_values>
+   <default_value>FALSE</default_value>
+   <group>external_tools</group>
+   <file>env_run.xml</file>
+   <desc>whether the case uses an external workflow driver </desc>
+ </entry>
+
  <!-- Job Submission stuff -->
+ <entry id="USER_REQUESTED_QUEUE">
+   <type>char</type>
+   <group>job_submission</group>
+   <file>env_workflow.xml</file>
+   <desc>Store user override for queue</desc>
+ </entry>
+
+ <entry id="USER_REQUESTED_WALLTIME">
+   <type>char</type>
+   <group>job_submission</group>
+   <file>env_workflow.xml</file>
+   <desc>Store user override for walltime</desc>
+ </entry>
+
  <entry id="JOB_QUEUE">
-   <type>character</type>
+   <type>char</type>
    <valid_values></valid_values>
    <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>The machine queue in which to submit the job.  Default determined in config_machines.xml can be overwritten by testing</desc>
  </entry>
+
  <entry id="JOB_WALLCLOCK_TIME">
-   <type>character</type>
+   <type>char</type>
    <valid_values></valid_values>
    <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
-   <desc>The machine wallclock setting.  Default determined in config_machines.xml can be overwritten by testing</desc>
+   <file>env_workflow.xml</file>
+   <desc>The machine wallclock setting.  Default determined in
+   config_machines.xml can be overwritten by testing.  Format is
+   DD:HH:MM with DD assumed 0 if not present, this is translated to
+   the format specified by walltime format defined in
+   config_batch.xml</desc>
  </entry>
+
+  <entry id="BATCH_COMMAND_FLAGS">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value></default_value>
+    <group>job_submission</group>
+    <file>env_workflow.xml</file>
+    <desc>Override the batch submit command this job. Do not include executable or dependencies</desc>
+  </entry>
 
  <entry id="PROJECT">
    <type>char</type>
-   <default_value>PROJECT_UNSET</default_value>
+   <default_value></default_value>
    <group>job_submission</group>
-   <file>env_batch.xml</file>
+   <file>env_workflow.xml</file>
    <desc>project for project-sensitive build and run paths, and job scripts</desc>
+ </entry>
+
+ <entry id="CHARGE_ACCOUNT">
+   <type>char</type>
+   <default_value></default_value>
+   <group>job_submission</group>
+   <file>env_workflow.xml</file>
+   <desc>project to charge in scripts if different from PROJECT</desc>
+ </entry>
+
+ <entry id="MODEL_VERSION">
+   <type>char</type>
+   <default_value>unknown</default_value>
+   <group>case_der</group>
+   <file>env_case.xml</file>
+   <desc>Apparent version of the model used for this case</desc>
  </entry>
 
  <entry id="PROJECT_REQUIRED">
@@ -3582,51 +2935,16 @@
    <desc>whether the PROJECT value is required on this machine</desc>
  </entry>
 
-  <description>
-    <desc compset="BGC%BPRP">BGC CO2=prog, rad CO2=prog:</desc>
-    <desc compset="BGC%BDRD">BGC CO2=diag, rad CO2=diag:</desc>
-    <desc compset="POP2%ECO">ECO in POP:</desc>
-    <desc compset="_TEST" >--DO NOT USE FOR LONG SIMULATIONS:</desc>
-    <desc compset="1850_">pre-industrial:</desc>
-    <desc compset="2000_">present day:</desc>
-    <desc compset="HIST_">Historical 1850 to 2000 transient:</desc>
-    <desc compset="AMIP_">AMIP for stand-alone cam:</desc>
-    <desc compset="C2R[68]_">CCMI REFC2 1950 to 2100 transient:</desc>
-    <desc compset="C2R4_">CCMI REFC2 2004 to 2100 transient:</desc>
-    <desc compset="4804_">1948 to 2004 transient:</desc>
-    <desc compset="FRC1_">CCMI REFC1 Free running, 1950 to 2010 transient:</desc>
-    <desc compset="SDC1_">CCMI REFC1 Specified dynamics, 1975 to 2010 transient:</desc>
-    <desc compset="C2R8_">RCP8.5 future scenario:</desc>
-    <desc compset="C2R6_">RCP6.0 future scenario:</desc>
-    <desc compset="C2R4_">RCP4.5 future scenario:</desc>
-    <desc compset="5505_">1955 to 2005 transient:</desc>
-    <desc compset="RCP8_">RCP8.5 future scenario:</desc>
-    <desc compset="RCP6_">RCP6.0 future scenario:</desc>
-    <desc compset="RCP4_">RCP4.5 future scenario:</desc>
-    <desc compset="RCP2_">RCP2.6 future scenario:</desc>
-    <desc compset="2013_">RCP4.5 based scenario from 2013 (control for WACCM/CARMA nuclear winter study):</desc>
-    <desc compset="9205_CAM">1992 to 2005 transient:</desc>
-    <desc compset="GEOS_CAM">GEOS5 meteorology: for stand-alone cam</desc>
-    <desc compset="AR95_CAM">ARM95 IOP: for stand-alone cam</desc>
-    <desc compset="AR97_CAM">ARM97 IOP: for stand-alone cam</desc>
-    <desc compset="HIST_CLM4[05]%CN">CLM transient land use:</desc>
-    <desc compset="PIPD">
-      pre-industrial (1850) to present day:
-      -----------------------------WARNING ------------------------------------------------
-      "PIPD" compsets use complete forcing data from observed sources
-      up to the year 2005. Following this period they are a combination of observed sources
-      (land-use, SST, sea ice, CO2, CH4, N2O) to present day and IPCC RCP4.5 scenario data.
-      -------------------------------------------------------------------------------------
-    </desc>
-    <desc compset="CAM4.*_BGC%B">
-      -----------------------------WARNING ------------------------------------------------
-      This compset is not spun-up! In later versions of the model, spun-up initial
-      conditions will be provided and this warning will be removed.
-      -------------------------------------------------------------------------------------
-    </desc>
-  </description>
+ <entry id="COMPARE_TO_NUOPC">
+   <type>logical</type>
+   <valid_values>TRUE,FALSE</valid_values>
+   <default_value>FALSE</default_value>
+   <group>comparison_to_nuopc</group>
+   <file>env_build.xml</file>
+   <desc>TRUE=>turn on CPP variable COMPARE_TO_NUOPC</desc>
+ </entry>
 
-  <help>
+ <help>
     =========================================
     Notes:
     (1) Time period is first four characters of
@@ -3634,6 +2952,4 @@
     =========================================
   </help>
 
-</entries>
-
-
+</entry_id>

@@ -4,13 +4,13 @@ module mct_wrapper_mod
   !
   ! Any test that uses mct should call mct_init in its initialization, and mct_clean in
   ! its teardown.
-  
+
   implicit none
   private
 
 #include <mpif.h>
 
-  public :: mct_init  ! initialize data structures needed to use mct 
+  public :: mct_init  ! initialize data structures needed to use mct
   public :: mct_clean ! clean up mct data structures that were set up by mct_init
 
   ! MPI communicator that can be used wherever mct routines expect a communicator
@@ -18,9 +18,9 @@ module mct_wrapper_mod
 
   ! value that can be used wherever mct routines expect a component ID
   integer, parameter, public :: mct_compid = 1
-  
+
 contains
-  
+
   !-----------------------------------------------------------------------
   subroutine mct_init()
     !
@@ -35,11 +35,11 @@ contains
     ! !ARGUMENTS:
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'mct_init'
     !-----------------------------------------------------------------------
 
-    call seq_comm_init(Comm_in = mct_communicator, nmlfile = ' ')
+    call seq_comm_init(mct_communicator, mct_communicator, nmlfile = ' ')
   end subroutine mct_init
 
   !-----------------------------------------------------------------------
@@ -54,12 +54,12 @@ contains
     ! !ARGUMENTS:
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'mct_clean'
     !-----------------------------------------------------------------------
 
     call seq_comm_clean()
-    
+
   end subroutine mct_clean
 
 

@@ -11,7 +11,7 @@ module glc_elevclass_mod
   use shr_sys_mod
   use seq_comm_mct, only : logunit
   use shr_log_mod, only : errMsg => shr_log_errMsg
-  
+
   implicit none
   save
   private
@@ -24,10 +24,12 @@ module glc_elevclass_mod
   public :: glc_elevclass_clean           ! deallocate memory allocated here
   public :: glc_get_num_elevation_classes ! get the number of elevation classes
   public :: glc_get_elevation_class       ! get the elevation class index for a given elevation
+  public :: glc_get_elevclass_bounds      ! get the boundaries of all elevation classes
   public :: glc_mean_elevation_virtual    ! get the mean elevation of a virtual elevation class
   public :: glc_elevclass_as_string       ! returns a string corresponding to a given elevation class
+  public :: glc_all_elevclass_strings     ! returns an array of strings for all elevation classes
   public :: glc_errcode_to_string         ! convert an error code into a string describing the error
-  
+
   interface glc_elevclass_init
      module procedure glc_elevclass_init_default
      module procedure glc_elevclass_init_override
@@ -43,7 +45,10 @@ module glc_elevclass_mod
   integer, parameter, public :: GLC_ELEVCLASS_ERR_UNDEFINED = 1 ! err_code indicating elevation classes have not been defined
   integer, parameter, public :: GLC_ELEVCLASS_ERR_TOO_LOW = 2   ! err_code indicating topo below lowest elevation class
   integer, parameter, public :: GLC_ELEVCLASS_ERR_TOO_HIGH = 3  ! err_code indicating topo above highest elevation class
-  
+
+  ! String length for glc elevation classes represented as strings
+  integer, parameter, public :: GLC_ELEVCLASS_STRLEN = 2
+
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
@@ -53,7 +58,7 @@ module glc_elevclass_mod
 
   ! upper elevation limit of each class (m)
   ! indexing starts at 0, with topomax(0) giving the lower elevation limit of EC 1
-  real(r8), allocatable :: topomax(:)  
+  real(r8), allocatable :: topomax(:)
 
 
 contains
@@ -70,13 +75,13 @@ contains
     integer, intent(in) :: my_glc_nec  ! number of GLC elevation classes
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'glc_elevclass_init'
     !-----------------------------------------------------------------------
 
     glc_nec = my_glc_nec
     allocate(topomax(0:glc_nec))
-    
+
     select case (glc_nec)
     case(0)
        ! do nothing
@@ -88,21 +93,21 @@ contains
        topomax = [0._r8,   500._r8,  1000._r8,  1500._r8, 2000._r8, 10000._r8]
     case(10)
        topomax = [0._r8,   200._r8,   400._r8,   700._r8,  1000._r8,  1300._r8,  &
-                          1600._r8,  2000._r8,  2500._r8,  3000._r8, 10000._r8]
+            1600._r8,  2000._r8,  2500._r8,  3000._r8, 10000._r8]
     case(36)
        topomax = [  0._r8,   200._r8,   400._r8,   600._r8,   800._r8,  &
-                 1000._r8,  1200._r8,  1400._r8,  1600._r8,  1800._r8,  &
-                 2000._r8,  2200._r8,  2400._r8,  2600._r8,  2800._r8,  &
-                 3000._r8,  3200._r8,  3400._r8,  3600._r8,  3800._r8,  &
-                 4000._r8,  4200._r8,  4400._r8,  4600._r8,  4800._r8,  &
-                 5000._r8,  5200._r8,  5400._r8,  5600._r8,  5800._r8,  &
-                 6000._r8,  6200._r8,  6400._r8,  6600._r8,  6800._r8,  &
-                 7000._r8, 10000._r8]
+            1000._r8,  1200._r8,  1400._r8,  1600._r8,  1800._r8,  &
+            2000._r8,  2200._r8,  2400._r8,  2600._r8,  2800._r8,  &
+            3000._r8,  3200._r8,  3400._r8,  3600._r8,  3800._r8,  &
+            4000._r8,  4200._r8,  4400._r8,  4600._r8,  4800._r8,  &
+            5000._r8,  5200._r8,  5400._r8,  5600._r8,  5800._r8,  &
+            6000._r8,  6200._r8,  6400._r8,  6600._r8,  6800._r8,  &
+            7000._r8, 10000._r8]
     case default
        write(logunit,*) subname,' ERROR: unknown glc_nec: ', glc_nec
        call shr_sys_abort(subname//' ERROR: unknown glc_nec')
     end select
-       
+
   end subroutine glc_elevclass_init_default
 
   !-----------------------------------------------------------------------
@@ -120,16 +125,16 @@ contains
     real(r8), intent(in) :: my_topomax(0:) ! elevation class boundaries (m)
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'glc_elevclass_init_override'
     !-----------------------------------------------------------------------
 
-    SHR_ASSERT_ALL((ubound(my_topomax) == (/my_glc_nec/)), errMsg(__FILE__, __LINE__))
+    SHR_ASSERT_ALL_FL((ubound(my_topomax) == (/my_glc_nec/)), __FILE__, __LINE__)
 
     glc_nec = my_glc_nec
     allocate(topomax(0:glc_nec))
     topomax = my_topomax
-    
+
   end subroutine glc_elevclass_init_override
 
   !-----------------------------------------------------------------------
@@ -137,7 +142,7 @@ contains
     !
     ! !DESCRIPTION:
     ! Deallocate memory allocated in this module
-    
+
     character(len=*), parameter :: subname = 'glc_elevclass_clean'
     !-----------------------------------------------------------------------
 
@@ -145,7 +150,7 @@ contains
        deallocate(topomax)
     end if
     glc_nec = 0
-    
+
   end subroutine glc_elevclass_clean
 
   !-----------------------------------------------------------------------
@@ -158,12 +163,12 @@ contains
     integer :: num_elevation_classes  ! function result
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'glc_get_num_elevation_classes'
     !-----------------------------------------------------------------------
 
     num_elevation_classes = glc_nec
-    
+
   end function glc_get_num_elevation_classes
 
   !-----------------------------------------------------------------------
@@ -194,7 +199,7 @@ contains
     !
     ! !LOCAL VARIABLES:
     integer :: ec  ! temporary elevation class
-    
+
     character(len=*), parameter :: subname = 'glc_get_elevation_class'
     !-----------------------------------------------------------------------
 
@@ -219,8 +224,32 @@ contains
 
        SHR_ASSERT(elevation_class > 0, subname//' elevation class was not assigned')
     end if
-       
+
   end subroutine glc_get_elevation_class
+
+  !-----------------------------------------------------------------------
+  function glc_get_elevclass_bounds() result(elevclass_bounds)
+    !
+    ! !DESCRIPTION:
+    ! Get the boundaries of all elevation classes.
+    !
+    ! This returns an array of size glc_nec+1, since it contains both the lower and upper
+    ! bounds of each elevation class.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    real(r8) :: elevclass_bounds(0:glc_nec)  ! function result
+    !
+    ! !LOCAL VARIABLES:
+
+    character(len=*), parameter :: subname = 'glc_get_elevclass_bounds'
+    !-----------------------------------------------------------------------
+
+    elevclass_bounds(:) = topomax(:)
+
+  end function glc_get_elevclass_bounds
+
 
   !-----------------------------------------------------------------------
   function glc_mean_elevation_virtual(elevation_class) result(mean_elevation)
@@ -235,7 +264,7 @@ contains
     ! !LOCAL VARIABLES:
     integer :: resulting_elevation_class
     integer :: err_code
-    
+
     character(len=*), parameter :: subname = 'glc_mean_elevation_virtual'
     !-----------------------------------------------------------------------
 
@@ -279,10 +308,10 @@ contains
           call shr_sys_abort(subname // ' ERROR: generated elevation outside the given elevation class')
        end if
     end if
-       
+
   end function glc_mean_elevation_virtual
 
-  
+
   !-----------------------------------------------------------------------
   function glc_elevclass_as_string(elevation_class) result(ec_string)
     !
@@ -298,16 +327,65 @@ contains
     ! !USES:
     !
     ! !ARGUMENTS:
-    character(len=2) :: ec_string  ! function result
+    character(len=GLC_ELEVCLASS_STRLEN) :: ec_string  ! function result
     integer, intent(in) :: elevation_class
     !
     ! !LOCAL VARIABLES:
-    
+    character(len=16) :: format_string
+
     character(len=*), parameter :: subname = 'glc_elevclass_as_string'
     !-----------------------------------------------------------------------
 
-    write(ec_string,'(i2.2)') elevation_class
+    ! e.g., for GLC_ELEVCLASS_STRLEN = 2, format_string will be '(i2.2)'
+    write(format_string,'(a,i0,a,i0,a)') '(i', GLC_ELEVCLASS_STRLEN, '.', GLC_ELEVCLASS_STRLEN, ')'
+
+    write(ec_string,trim(format_string)) elevation_class
   end function glc_elevclass_as_string
+
+  !-----------------------------------------------------------------------
+  function glc_all_elevclass_strings(include_zero) result(ec_strings)
+    !
+    ! !DESCRIPTION:
+    ! Returns an array of strings corresponding to all elevation classes from 1 to glc_nec
+    !
+    ! If include_zero is present and true, then includes elevation class 0 - so goes from
+    ! 0 to glc_nec
+    !
+    ! These strings can be used as suffixes for fields in MCT attribute vectors.
+    !
+    ! !USES:
+    !
+    ! !ARGUMENTS:
+    character(len=GLC_ELEVCLASS_STRLEN), allocatable :: ec_strings(:)  ! function result
+    logical, intent(in), optional :: include_zero   ! if present and true, include elevation class 0 (default is false)
+    !
+    ! !LOCAL VARIABLES:
+    logical :: l_include_zero  ! local version of optional include_zero argument
+    integer :: lower_bound
+    integer :: i
+
+    character(len=*), parameter :: subname = 'glc_all_elevclass_strings'
+    !-----------------------------------------------------------------------
+
+    if (present(include_zero)) then
+       l_include_zero = include_zero
+    else
+       l_include_zero = .false.
+    end if
+
+    if (l_include_zero) then
+       lower_bound = 0
+    else
+       lower_bound = 1
+    end if
+
+    allocate(ec_strings(lower_bound:glc_nec))
+    do i = lower_bound, glc_nec
+       ec_strings(i) = glc_elevclass_as_string(i)
+    end do
+
+  end function glc_all_elevclass_strings
+
 
   !-----------------------------------------------------------------------
   function glc_errcode_to_string(err_code) result(err_string)
@@ -322,7 +400,7 @@ contains
     integer, intent(in) :: err_code   ! error code (one of the GLC_ELEVCLASS_ERR* values)
     !
     ! !LOCAL VARIABLES:
-    
+
     character(len=*), parameter :: subname = 'glc_errcode_to_string'
     !-----------------------------------------------------------------------
 
@@ -338,9 +416,8 @@ contains
     case default
        err_string = 'UNKNOWN ERROR'
     end select
-    
+
   end function glc_errcode_to_string
 
-  
-end module glc_elevclass_mod
 
+end module glc_elevclass_mod
