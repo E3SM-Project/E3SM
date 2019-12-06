@@ -66,6 +66,13 @@ void  update_prognostic_ice_c(
   Real rhorime_c, Real* th, Real* qv, Real* qitot, Real* nitot, Real* qirim,
   Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
 
+void  update_prognostic_ice_c( Real qcheti, Real qccol, Real qcshd,  Real nccol,  Real ncheti, Real ncshdc,
+			       Real qrcol,  Real nrcol, Real qrheti, Real nrheti, Real nrshdr,
+			       Real qimlt, Real nimlt, Real qisub, Real qidep, Real qinuc, Real ninuc,
+			       Real nislf, Real nisub, Real qiberg, Real exner, Real xxls, Real xlf,
+			       bool log_predictNc_, bool log_wetgrowth, Real dt, Real nmltratio,
+			       Real rhorime_c, Real* th, Real* qv, Real* qitot, Real* nitot, Real* qirim,
+			       Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
 
 }
 
@@ -159,11 +166,10 @@ void get_rain_dsd2(GetRainDsd2Data& d)
   d.nr_out = nr_in;
 }
 
-void  update_prognostic_ice(UpdatePrognosticIce& d)
-{
-  p3_init(true);
-  update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc, 
- 			    d.qrcol,  d.nrcol, d.qrheti, d.nrheti, d.nrshdr, 
+  void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
+    p3_init(true);
+    update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc, 
+            		    d.qrcol,  d.nrcol, d.qrheti, d.nrheti, d.nrshdr, 
 			    d.qimlt,  d.nimlt, d.qisub,  d.qidep,  d.qinuc,  d.ninuc, 
 			    d.nislf,  d.nisub, d.qiberg, d.exner,  d.xxls,   d.xlf, 
 			    d.log_predictNc,  d.log_wetgrowth,    d.dt,     d.nmltratio, 

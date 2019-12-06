@@ -3058,6 +3058,12 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
 
    real(rtype) :: dum
 
+   write(102,*)''
+   write(102,*)'in:',qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr, qimlt, nimlt, qisub, &
+        qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xlf, xxls, log_predictNc,log_wetgrowth,dt,nmltratio,rhorime_c
+   write(102,*)'out:', th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim
+
+
 
 #ifdef SCREAM_CONFIG_IS_CMAKE
    if (use_cxx) then

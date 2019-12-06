@@ -408,7 +408,7 @@ Real cxx_log10(Real input);
 Real cxx_exp(Real input);
 
 }
-struct UpdatePrognosticIce
+struct P3UpdatePrognosticIceData
 {
 //inputs
   Real qcheti;
@@ -453,7 +453,7 @@ struct UpdatePrognosticIce
   Real nr;
 };
 
-void update_prognostic_ice(UpdatePrognosticIce& d);
+void update_prognostic_ice(P3UpdatePrognosticIceData& d);
 
 extern "C"{
 
