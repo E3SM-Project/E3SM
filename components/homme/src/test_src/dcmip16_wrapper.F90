@@ -765,7 +765,7 @@ subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl
      ! just look at the GLL values.
      max_w     = max( max_w    , maxval(w    ) )
      ! ps isn't updated by the physics, so just look at the GLL values.
-     min_ps    = min( min_ps,    minval(elem(i)%state%ps_v(:,:,nt)) )
+     min_ps    = min( min_ps,    minval(elem(ie)%state%ps_v(:,:,nt)) )
   enddo
 
   call t_startf('gfr_fv_phys_to_dyn')
