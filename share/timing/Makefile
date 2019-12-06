@@ -4,31 +4,35 @@
 
 VPATH := $(GPTL_DIR)
 
-# Determine whether to compile threaded or not
-ifeq ($(strip $(BUILD_THREADED)),TRUE)
-   compile_threaded = true
-endif
-ifeq ($(strip $(SMP)),TRUE)
-   compile_threaded = true
-endif
-
-
 ifndef MOD_SUFFIX
    MOD_SUFFIX := mod
 endif
 
 
 ifeq ($(strip $(MACFILE)),)
-   MACFILE  := Macros
+   MACFILE  := Macros.make
 endif
 
-# Machine specific macros file 
-# This must be included before any settings are overwritten 
+# Machine specific macros file
+# This must be included before any settings are overwritten
 # But must be AFTER any definitions it uses are defined.
 # So be careful if moving this either earlier or later in the makefile!!!
 include $(MACFILE)
+ifdef COMP_INTERFACE
+  UPVAR := $(shell echo $(COMP_INTERFACE) | tr a-z A-Z)
+  CPPDEFS+=-D$(UPVAR)_INTERFACE
+  ifeq ("$(COMP_INTERFACE)", "nuopc")
+    -include $(ESMFMKFILE)
+    FFLAGS += $(ESMF_F90COMPILEPATHS)
+  endif
+endif
+ifdef DEBUG
+  ifeq ("$(DEBUG)", "TRUE")
+    CPPDEFS+=-DDEBUG
+  endif
+endif
 ifdef GPTL_CPPDEFS
-  CPPDEFS+=$(GPTL_CPPDEFS)
+  CPPDEFS+=$(GPTL_CPPDEFS) -D$(OS) -DCPR$(shell echo $(COMPILER) | tr a-z A-z)
 endif
 INCLDIR += -I$(GPTL_DIR)
 
@@ -44,7 +48,7 @@ else
   CPPDEFS += -DHAVE_MPI
 endif
 ifdef CPRE
-  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(CPPDEFS)) 
+  FPPDEFS := $(patsubst -D%,$(CPRE)%,$(CPPDEFS))
 else
   FPPDEFS := $(CPPDEFS)
 endif
@@ -54,9 +58,11 @@ endif
 OBJS = gptl.o GPTLutil.o GPTLget_memusage.o GPTLprint_memusage.o \
        gptl_papi.o f_wrappers.o perf_mod.o perf_utils.o
 
+AR ?= ar
+ARFLAGS ?= ruv
 
 libgptl.a: $(OBJS)
-	$(AR) ruv $@ $(OBJS)
+	$(AR) $(ARFLAGS) $@ $(OBJS)
 
 
 
@@ -70,7 +76,7 @@ libgptl.a: $(OBJS)
 	$(FC) -c $(INCLDIR) $(INCS) $(FFLAGS) $(FPPDEFS) $(FREEFLAGS)  $<
 
 mostlyclean:
-	$(RM) -f *.f *.f90 
+	$(RM) -f *.f *.f90
 
 clean:
 	$(RM) -f *.f *.f90 *.d *.$(MOD_SUFFIX) $(OBJS)

@@ -2,7 +2,7 @@
 ** $Id: f_wrappers.c,v 1.56 2010-12-29 18:46:42 rosinski Exp $
 **
 ** Author: Jim Rosinski
-** 
+**
 ** Fortran wrappers for timing library routines
 */
 
@@ -15,21 +15,22 @@
 
 #define gptlinitialize GPTLINITIALIZE
 #define gptlfinalize GPTLFINALIZE
-#define gptlpr_set_append GPTLPR_SET_APPEND
-#define gptlpr_query_append GPTLPR_QUERY_APPEND
-#define gptlpr_set_write GPTLPR_SET_WRITE
-#define gptlpr_query_write GPTLPR_QUERY_WRITE
+#define gptlprint_mode_query GPTLPRINT_MODE_QUERY
+#define gptlprint_mode_set GPTLPRINT_MODE_SET
 #define gptlpr GPTLPR
 #define gptlpr_file GPTLPR_FILE
 #define gptlpr_summary GPTLPR_SUMMARY
 #define gptlpr_summary_FILE GPTLPR_SUMMARY_FILE
 #define gptlbarrier GPTLBARRIER
+#define gptlprefix_set GPTLPREFIX_SET
+#define gptlprefix_unset GPTLPREFIX_UNSET
 #define gptlreset GPTLRESET
 #define gptlstamp GPTLSTAMP
 #define gptlstart GPTLSTART
 #define gptlstart_handle GPTLSTART_HANDLE
 #define gptlstop GPTLSTOP
 #define gptlstop_handle GPTLSTOP_HANDLE
+#define gptlstartstop_vals GPTLSTARTSTOP_VALS
 #define gptlsetoption GPTLSETOPTION
 #define gptlenable GPTLENABLE
 #define gptldisable GPTLDISABLE
@@ -50,21 +51,22 @@
 
 #define gptlinitialize              FCI_GLOBAL(gptlinitialize,GPTLINITIALIZE)
 #define gptlfinalize                FCI_GLOBAL(gptlfinalize,GPTLFINALIZE)
-#define gptlpr_set_append           FCI_GLOBAL(gptlpr_set_append,GPTLPR_SET_APPEND)
-#define gptlpr_query_append         FCI_GLOBAL(gptlpr_query_append,GPTLPR_QUERY_APPEND)
-#define gptlpr_set_write            FCI_GLOBAL(gptlpr_set_write,GPTLPR_SET_WRITE)
-#define gptlpr_query_write          FCI_GLOBAL(gptlpr_query_write,GPTLPR_QUERY_WRITE)
+#define gptlprint_mode_query        FCI_GLOBAL(gptlprint_mode_query,GPTLPRINT_MODE_QUERY)
+#define gptlprint_mode_set          FCI_GLOBAL(gptlprint_mode_set,GPTLPRINT_MODE_SET)
 #define gptlpr                      FCI_GLOBAL(gptlpr,GPTLPR)
 #define gptlpr_file                 FCI_GLOBAL(gptlpr_file,GPTLPR_FILE)
 #define gptlpr_summary              FCI_GLOBAL(gptlpr_summary,GPTLPR_SUMMARY)
 #define gptlpr_summary_file         FCI_GLOBAL(gptlpr_summary_file,GPTLPR_SUMMARY_FILE)
 #define gptlbarrier                 FCI_GLOBAL(gptlbarrier,GPTLBARRIER)
+#define gptlprefix_set              FCI_GLOBAL(gptlprefix_set,GPTLPREFIX_SET)
+#define gptlprefix_unset            FCI_GLOBAL(gptlprefix_unset,GPTLPREFIX_UNSET)
 #define gptlreset                   FCI_GLOBAL(gptlreset,GPTLRESET)
 #define gptlstamp                   FCI_GLOBAL(gptlstamp,GPTLSTAMP)
 #define gptlstart                   FCI_GLOBAL(gptlstart,GPTLSTART)
 #define gptlstart_handle            FCI_GLOBAL(gptlstart_handle,GPTLSTART_HANDLE)
 #define gptlstop                    FCI_GLOBAL(gptlstop,GPTLSTOP)
 #define gptlstop_handle             FCI_GLOBAL(gptlstop_handle,GPTLSTOP_HANDLE)
+#define gptlstartstop_vals          FCI_GLOBAL(gptlstartstop_vals,GPTLSTARTSTOP_VALS)
 #define gptlsetoption               FCI_GLOBAL(gptlsetoption,GPTLSETOPTION)
 #define gptlenable                  FCI_GLOBAL(gptlenable,GPTLENABLE)
 #define gptldisable                 FCI_GLOBAL(gptldisable,GPTLDISABLE)
@@ -85,21 +87,22 @@
 
 #define gptlinitialize gptlinitialize_
 #define gptlfinalize gptlfinalize_
-#define gptlpr_set_append gptlpr_set_append_
-#define gptlpr_query_append gptlpr_query_append_
-#define gptlpr_set_write gptlpr_set_write_
-#define gptlpr_query_write gptlpr_query_write_
+#define gptlprint_mode_query gptlprint_mode_query_
+#define gptlprint_mode_set gptlprint_mode_set_
 #define gptlpr gptlpr_
 #define gptlpr_file gptlpr_file_
 #define gptlpr_summary gptlpr_summary_
 #define gptlpr_summary_file gptlpr_summary_file_
 #define gptlbarrier gptlbarrier_
+#define gptlprefix_set gptlprefix_set_
+#define gptlprefix_unset gptlprefix_unset_
 #define gptlreset gptlreset_
 #define gptlstamp gptlstamp_
 #define gptlstart gptlstart_
 #define gptlstart_handle gptlstart_handle_
 #define gptlstop gptlstop_
 #define gptlstop_handle gptlstop_handle_
+#define gptlstartstop_vals gptlstartstop_vals_
 #define gptlsetoption gptlsetoption_
 #define gptlenable gptlenable_
 #define gptldisable gptldisable_
@@ -120,21 +123,22 @@
 
 #define gptlinitialize gptlinitialize__
 #define gptlfinalize gptlfinalize__
-#define gptlpr_set_append gptlpr_set_append__
-#define gptlpr_query_append gptlpr_query_append__
-#define gptlpr_set_write gptlpr_set_write__
-#define gptlpr_query_write gptlpr_query_write__
+#define gptlprint_mode_query gptlprint_mode_query__
+#define gptlprint_mode_set gptlprint_mode_set__
 #define gptlpr gptlpr__
 #define gptlpr_file gptlpr_file__
 #define gptlpr_summary gptlpr_summary__
 #define gptlpr_summary_file gptlpr_summary_file__
 #define gptlbarrier gptlbarrier__
+#define gptlprefix_set gptlprefix_set__
+#define gptlprefix_unset gptlprefix_unset__
 #define gptlreset gptlreset__
 #define gptlstamp gptlstamp__
 #define gptlstart gptlstart__
 #define gptlstart_handle gptlstart_handle__
 #define gptlstop gptlstop__
 #define gptlstop_handle gptlstop_handle__
+#define gptlstartstop_vals gptlstartstop_vals__
 #define gptlsetoption gptlsetoption__
 #define gptlenable gptlenable__
 #define gptldisable gptldisable__
@@ -159,31 +163,32 @@
 
 int gptlinitialize (void);
 int gptlfinalize (void);
-int gptlpr_set_append (void);
-int gptlpr_query_append (void);
-int gptlpr_set_write (void);
-int gptlpr_query_write (void);
+int gptlprint_mode_query (void);
+int gptlprint_mode_set (int *pr_mode);
 int gptlpr (int *procid);
 int gptlpr_file (char *file, int nc1);
 int gptlpr_summary (int *fcomm);
 int gptlpr_summary_file (int *fcomm, char *name, int nc1);
 int gptlbarrier (int *fcomm, char *name, int nc1);
+int gptlprefix_set (char *name, int nc1);
+int gptlprefix_unset (void);
 int gptlreset (void);
 int gptlstamp (double *wall, double *usr, double *sys);
 int gptlstart (char *name, int nc1);
 int gptlstart_handle (char *name, void **, int nc1);
 int gptlstop (char *name, int nc1);
 int gptlstop_handle (char *name, void **, int nc1);
+int gptlstartstop_vals (char *name, double *val, int *cnt, int nc1);
 int gptlsetoption (int *option, int *val);
 int gptlenable (void);
 int gptldisable (void);
 int gptlsetutr (int *option);
-int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
-		      double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
+int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock,
+		      double *usr, double *sys, long long *papicounters_out, int *maxcounters,
 		      int nc);
 int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc);
 int gptlget_wallclock (const char *name, int *t, double *value, int nc);
-int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
+int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value,
 			int nc1, int nc2);
 int gptlget_nregions (int *t, int *nregions);
 int gptlget_regionname (int *t, int *region, char *name, int nc);
@@ -209,24 +214,14 @@ int gptlfinalize (void)
   return GPTLfinalize ();
 }
 
-int gptlpr_set_append (void)
+int gptlprint_mode_query (void)
 {
-  return GPTLpr_set_append ();
+  return GPTLprint_mode_query ();
 }
 
-int gptlpr_query_append (void)
+int gptlprint_mode_set (int *pr_mode)
 {
-  return GPTLpr_set_append ();
-}
-
-int gptlpr_set_write (void)
-{
-  return GPTLpr_set_append ();
-}
-
-int gptlpr_query_write (void)
-{
-  return GPTLpr_set_append ();
+  return GPTLprint_mode_set (*pr_mode);
 }
 
 int gptlpr (int *procid)
@@ -237,12 +232,17 @@ int gptlpr (int *procid)
 int gptlpr_file (char *file, int nc1)
 {
   char *locfile;
+  int c;
   int ret;
 
   if ( ! (locfile = (char *) malloc (nc1+1)))
     return GPTLerror ("gptlpr_file: malloc error\n");
 
-  snprintf (locfile, nc1+1, "%s", file);
+  //pw  snprintf (locfile, nc1+1, "%s", file);
+  for (c = 0; c < nc1; c++) {
+    locfile[c] = file[c];
+  }
+  locfile[c] = '\0';
 
   ret = GPTLpr_file (locfile);
   free (locfile);
@@ -261,7 +261,7 @@ int gptlpr_summary (int *fcomm)
 #endif
 #else
   int ccomm = 0;
-#endif 
+#endif
 
   return GPTLpr_summary (ccomm);
 }
@@ -269,6 +269,7 @@ int gptlpr_summary (int *fcomm)
 int gptlpr_summary_file (int *fcomm, char *file, int nc1)
 {
   char *locfile;
+  int c;
   int ret;
 
 #ifdef HAVE_MPI
@@ -281,12 +282,16 @@ int gptlpr_summary_file (int *fcomm, char *file, int nc1)
 #endif
 #else
   int ccomm = 0;
-#endif 
+#endif
 
   if ( ! (locfile = (char *) malloc (nc1+1)))
     return GPTLerror ("gptlpr_summary_file: malloc error\n");
 
-  snprintf (locfile, nc1+1, "%s", file);
+  //pw  snprintf (locfile, nc1+1, "%s", file);
+  for (c = 0; c < nc1; c++) {
+    locfile[c] = file[c];
+  }
+  locfile[c] = '\0';
 
   ret = GPTLpr_summary_file (ccomm, locfile);
   free (locfile);
@@ -296,6 +301,7 @@ int gptlpr_summary_file (int *fcomm, char *file, int nc1)
 int gptlbarrier (int *fcomm, char *name, int nc1)
 {
   char cname[MAX_CHARS+1];
+  int c;
   int numchars;
 #ifdef HAVE_MPI
   MPI_Comm ccomm;
@@ -307,12 +313,32 @@ int gptlbarrier (int *fcomm, char *name, int nc1)
 #endif
 #else
   int ccomm = 0;
-#endif 
+#endif
 
   numchars = MIN (nc1, MAX_CHARS);
-  strncpy (cname, name, numchars);
+  //pw  strncpy (cname, name, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = name[c];
+  }
   cname[numchars] = '\0';
   return GPTLbarrier (ccomm, cname);
+}
+
+int gptlprefix_set (char *name, int nc1)
+{
+  /*  char cname[MAX_CHARS+1]; */
+  /*  int numchars; */
+
+  /*  numchars = MIN (nc1, MAX_CHARS);*/
+  /*  strncpy (cname, name, numchars);*/
+  /*  cname[numchars] = '\0';*/
+  /*  return GPTLprefix_set (cname);*/
+  return GPTLprefix_setf (name, nc1);
+}
+
+int gptlprefix_unset (void)
+{
+  return GPTLprefix_unset ();
 }
 
 int gptlreset (void)
@@ -381,6 +407,22 @@ int gptlstop_handle (char *name, void **handle, int nc1)
   return GPTLstopf_handle (name, nc1, handle);
 }
 
+int gptlstartstop_vals (char *name, double *val, int *cnt, int nc1)
+{
+  /*  char cname[MAX_CHARS+1];*/
+  /*  int c;*/
+  /*  int numchars;*/
+
+  /*  numchars = MIN (nc1, MAX_CHARS);*/
+  //pw  strncpy (cname, name, numchars);
+  /*  for (c = 0; c < numchars; c++) {*/
+  /*    cname[c] = name[c];*/
+  /*  }*/
+  /*  cname[numchars] = '\0';*/
+  /*  return GPTLstartstop_vals (cname, *val, *cnt);*/
+  return GPTLstartstop_valsf (name, nc1, *val, *cnt);
+}
+
 int gptlsetoption (int *option, int *val)
 {
   return GPTLsetoption (*option, *val);
@@ -401,15 +443,19 @@ int gptlsetutr (int *option)
   return GPTLsetutr (*option);
 }
 
-int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock, 
-	       double *usr, double *sys, long long *papicounters_out, int *maxcounters, 
+int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclock,
+	       double *usr, double *sys, long long *papicounters_out, int *maxcounters,
 	       int nc)
 {
   char cname[MAX_CHARS+1];
+  int c;
   int numchars;
 
   numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
+  //pw  strncpy (cname, name, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = name[c];
+  }
   cname[numchars] = '\0';
   return GPTLquery (cname, *t, count, onflg, wallclock, usr, sys, papicounters_out, *maxcounters);
 }
@@ -417,10 +463,14 @@ int gptlquery (const char *name, int *t, int *count, int *onflg, double *wallclo
 int gptlquerycounters (const char *name, int *t, long long *papicounters_out, int nc)
 {
   char cname[MAX_CHARS+1];
+  int c;
   int numchars;
 
   numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
+  //pw  strncpy (cname, name, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = name[c];
+  }
   cname[numchars] = '\0';
   return GPTLquerycounters (cname, *t, papicounters_out);
 }
@@ -428,28 +478,39 @@ int gptlquerycounters (const char *name, int *t, long long *papicounters_out, in
 int gptlget_wallclock (const char *name, int *t, double *value, int nc)
 {
   char cname[MAX_CHARS+1];
+  int c;
   int numchars;
 
   numchars = MIN (nc, MAX_CHARS);
-  strncpy (cname, name, numchars);
+  //pw  strncpy (cname, name, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = name[c];
+  }
   cname[numchars] = '\0';
 
   return GPTLget_wallclock (cname, *t, value);
 }
 
-int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value, 
+int gptlget_eventvalue (const char *timername, const char *eventname, int *t, double *value,
 			int nc1, int nc2)
 {
   char ctimername[MAX_CHARS+1];
   char ceventname[MAX_CHARS+1];
+  int c;
   int numchars;
 
   numchars = MIN (nc1, MAX_CHARS);
-  strncpy (ctimername, timername, numchars);
+  //pw  strncpy (ctimername, timername, numchars);
+  for (c = 0; c < numchars; c++) {
+    ctimername[c] = timername[c];
+  }
   ctimername[numchars] = '\0';
 
   numchars = MIN (nc2, MAX_CHARS);
-  strncpy (ceventname, eventname, numchars);
+  //pw  strncpy (ceventname, eventname, numchars);
+  for (c = 0; c < numchars; c++) {
+    ceventname[c] = eventname[c];
+  }
   ceventname[numchars] = '\0';
 
   return GPTLget_eventvalue (ctimername, ceventname, *t, value);
@@ -481,9 +542,13 @@ int gptlget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 int gptlprint_memusage (const char *str, int nc)
 {
   char cname[128+1];
+  int c;
   int numchars = MIN (nc, 128);
 
-  strncpy (cname, str, numchars);
+  //pw  strncpy (cname, str, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = str[c];
+  }
   cname[numchars] = '\0';
   return GPTLprint_memusage (cname);
 }
@@ -499,9 +564,13 @@ int gptl_papilibraryinit (void)
 int gptlevent_name_to_code (const char *str, int *code, int nc)
 {
   char cname[PAPI_MAX_STR_LEN+1];
+  int c;
   int numchars = MIN (nc, PAPI_MAX_STR_LEN);
 
-  strncpy (cname, str, numchars);
+  //pw  strncpy (cname, str, numchars);
+  for (c = 0; c < numchars; c++) {
+    cname[c] = str[c];
+  }
   cname[numchars] = '\0';
 
   /* "code" is an int* and is an output variable */

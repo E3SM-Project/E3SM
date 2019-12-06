@@ -10,7 +10,9 @@
 #include <sys/time.h>
 
 #ifndef NO_COMM_F2C
+#ifndef HAVE_COMM_F2C
 #define HAVE_COMM_F2C
+#endif
 #endif
 
 #ifndef MIN
@@ -34,7 +36,7 @@
 /* longest timer name allowed (probably safe to just change) */
 #define MAX_CHARS 127
 
-/* 
+/*
 ** max allowable number of PAPI counters, or derived events. For convenience,
 ** set to max (# derived events, # papi counters required) so "avail" lists
 ** all available options.
@@ -54,16 +56,19 @@ typedef struct {
 
 typedef struct {
   double last;              /* timestamp from last call */
+  double latest;            /* most recent delta */
   double accum;             /* accumulated time */
   float max;                /* longest time for start/stop pair */
   float min;                /* shortest time for start/stop pair */
+  float prev_min;           /* previous shortest time for start/stop pair */
+  int latest_is_min;        /* whether min is current latest (1) or not (0) */
 } Wallstats;
 
 typedef struct {
   long long last[MAX_AUX];  /* array of saved counters from "start" */
   long long accum[MAX_AUX]; /* accumulator for counters */
 } Papistats;
-  
+
 typedef struct {
   int counter;      /* PAPI or Derived counter */
   char *namestr;    /* PAPI or Derived counter as string */
@@ -86,7 +91,7 @@ typedef struct TIMER {
 #endif
 #ifdef HAVE_PAPI
   Papistats aux;            /* PAPI stats  */
-#endif 
+#endif
   Wallstats wall;           /* wallclock stats */
   Cpustats cpu;             /* cpu stats */
   unsigned long count;      /* number of start/stop calls */
@@ -131,7 +136,7 @@ extern void __cyg_profile_func_exit (void *, void *);
 };
 #endif
 
-/* 
+/*
 ** These are needed for communication between gptl.c and gptl_papi.c
 */
 

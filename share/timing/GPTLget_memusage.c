@@ -4,7 +4,7 @@
 ** Author: Jim Rosinski
 **   Credit to Chuck Bardeen for MACOS section (__APPLE__ ifdef)
 **
-** get_memusage: 
+** get_memusage:
 **
 **   Designed to be called from Fortran, returns information about memory
 **   usage in each of 5 input int* args.  On Linux read from the /proc
@@ -17,6 +17,7 @@
 
 #include <sys/resource.h>
 #include "gptl.h"    /* additional cpp defs and function prototypes */
+#include <stdio.h>
 
 /* _AIX is automatically defined when using the AIX C compilers */
 #ifdef _AIX
@@ -31,7 +32,6 @@
 
 #include <sys/time.h>
 #include <sys/types.h>
-#include <stdio.h>
 #include <unistd.h>
 
 #elif (defined __APPLE__)
@@ -52,7 +52,7 @@
 
 #endif
 
-#ifdef BGQ
+#ifdef __bgq__
 
 #include <malloc.h>
 #include <spi/include/kernel/memory.h>
@@ -61,21 +61,13 @@
 
 int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack)
 {
-#if defined (BGP) || defined(BGQ)
-
-  long long alloc;
-  struct mallinfo m;
 #if defined (BGP)
-  Personality pers;
-#endif
-#if defined (BGQ)
-  uint64_t shared_mem_count;
-#endif
-  long long total;
+  long long alloc, total;
   int node_config;
- 
+  struct mallinfo m;
+  Personality pers;
+
  /* memory available */
-#if defined(BGP)
   Kernel_GetPersonality(&pers, sizeof(pers));
   total = BGP_Personality_DDRSizeMB(&pers);
 
@@ -84,17 +76,8 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   else if (node_config == _BGP_PERS_PROCESSCONFIG_2x2) total /= 2;
   total *= 1024*1024;
 
-  *size = total;
-#endif
-
-#if defined(BGQ)
-  Kernel_GetMemorySize(KERNEL_MEMSIZE_SHARED, &shared_mem_count);
-
-  shared_mem_count *= 1024*1024;
-  *size = shared_mem_count;
-
-#endif
   /* total memory used  - heap only (not static memory)*/
+  *size = total;
 
   m = mallinfo();
   alloc = m.hblkhd + m.uordblks;
@@ -103,7 +86,21 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   *share     = -1;
   *text     = -1;
   *datastack = -1;
+  return 0;
 
+#elif (defined __bgq__)
+  uint64_t heap, shared, stack;
+
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heap);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_SHARED, &shared);
+  Kernel_GetMemorySize(KERNEL_MEMSIZE_STACK, &stack);
+
+  *size      = heap/(1024*1024);
+  *rss       = heap/(1024*1024);
+  *share     = shared/(1024*1024);
+  *text      = -1;
+  *datastack = stack/(1024*1024);
+  return 0;
 
 #elif (defined HAVE_SLASHPROC)
   FILE *fd;                       /* file descriptor for fopen */
@@ -135,7 +132,7 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   ** arguments, close the file and return.
   */
 
-  ret = fscanf (fd, "%d %d %d %d %d %d %d", 
+  ret = fscanf (fd, "%d %d %d %d %d %d %d",
 		size, rss, share, text, datastack, &dum, &dum);
   ret = fclose (fd);
   return 0;
@@ -143,9 +140,9 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 #elif (defined __APPLE__)
 
   FILE *fd;
-  char cmd[60];  
+  char cmd[60];
   int pid = (int) getpid ();
-  
+
   sprintf (cmd, "ps -o vsz -o rss -o tsiz -p %d | grep -v RSS", pid);
   fd = popen (cmd, "r");
 
@@ -164,7 +161,7 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
 
   if (getrusage (RUSAGE_SELF, &usage) < 0)
     return -1;
-  
+
   *size      = -1;
   *rss       = usage.ru_maxrss;
   *share     = -1;
