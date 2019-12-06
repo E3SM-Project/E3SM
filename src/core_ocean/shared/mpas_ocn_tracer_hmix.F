@@ -26,6 +26,7 @@ module ocn_tracer_hmix
    use mpas_derived_types
    use mpas_pool_routines
    use ocn_constants
+   use ocn_config
    use ocn_tracer_hmix_del2
    use ocn_tracer_hmix_del4
    use ocn_tracer_hmix_redi
@@ -179,10 +180,6 @@ contains
       integer, intent(out) :: err !< Output: error flag
 
       integer :: err1, err2
-
-      logical, pointer :: config_disable_tr_hmix
-
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_tr_hmix', config_disable_tr_hmix)
 
       tracerHmixOn = .true.
 

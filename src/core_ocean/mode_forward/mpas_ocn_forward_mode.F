@@ -81,6 +81,7 @@ module ocn_forward_mode
    use ocn_time_varying_forcing
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -141,8 +142,11 @@ module ocn_forward_mode
       call mpas_get_time(startTime, dateTimeString=startTimeStamp)
       ierr = ior(ierr, err_tmp)
 
-      ! Setup ocean config pool
+      ! Set up ocean constants
       call ocn_constants_init(domain % configs, domain % packages)
+
+      ! Setup ocean config pool
+      call ocn_config_init(domain % configs)
 
       call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
       call mpas_pool_get_config(domain % configs, 'config_read_nearest_restart', config_read_nearest_restart)
