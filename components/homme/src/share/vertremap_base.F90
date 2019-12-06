@@ -538,7 +538,7 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
   real(kind=real_kind), dimension(3,     nlev   ) :: coefs  !PPM coefficients within each cell
   real(kind=real_kind), dimension(       nlev   ) :: z1, z2
   real(kind=real_kind) :: ppmdx(10,0:nlev+1)  !grid spacings
-  real(kind=real_kind) :: mymass, massn1, massn2
+  real(kind=real_kind) :: mymass, massn1, massn2, ext(2)
   integer :: i, j, k, q, kk, kid(nlev)
 
   call t_startf('remap_Q_ppm')
@@ -622,9 +622,11 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
               endif
             enddo
          elseif (vert_remap_q_alg == 10) then
-            call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1))
+            ext(1) = minval(ao)
+            ext(2) = maxval(ao)
+            call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1), ext(1), ext(2))
             call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
-                 ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2))
+                 ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2), ext(1), ext(2))
          endif
         !Compute monotonic and conservative PPM reconstruction over every cell
         coefs(:,:) = compute_ppm( ao , ppmdx )
@@ -776,8 +778,8 @@ end function integrate_parabola
   end subroutine binary_search
 
 
-  subroutine linextrap(dx1,dx2,dx3,dx4,y1,y2,y3,y4)
-    real(kind=real_kind), intent(in) :: dx1,dx2,dx3,dx4,y1,y2
+  subroutine linextrap(dx1,dx2,dx3,dx4,y1,y2,y3,y4,lo,hi)
+    real(kind=real_kind), intent(in) :: dx1,dx2,dx3,dx4,y1,y2,lo,hi
     real(kind=real_kind), intent(out) :: y3,y4
 
     real(kind=real_kind), parameter :: half = 0.5d0
@@ -792,12 +794,11 @@ end function integrate_parabola
     a  = (x3-x1)/(x2-x1)
     y3 = (1-a)*y1 + a*y2
     a  = (x4-x1)/(x2-x1)
-    y4 = (1-a)*y1 + a*y2    
+    y4 = (1-a)*y1 + a*y2
+
+    y3 = max(lo, min(hi, y3))
+    y4 = max(lo, min(hi, y4))
   end subroutine linextrap
 
 
 end module vertremap_base
-
-
-
-

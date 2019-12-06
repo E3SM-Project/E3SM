@@ -8,7 +8,6 @@ should only be used when the components buildlib is not written in python
 from standard_script_setup import *
 
 from CIME.build 	  import get_standard_makefile_args
-from CIME.build 	  import get_standard_cmake_args
 from CIME.case            import Case
 from CIME.test_status     import *
 
@@ -24,20 +23,18 @@ def parse_command_line(args, description):
                         help="Case directory to build.\n"
                         "Default is current directory.")
 
-    parser.add_argument("--cmake", action="store_true", help="Get cmake-style args instead of Make")
-
     args = CIME.utils.parse_args_and_handle_standard_logging_options(args, parser)
 
-    return args.caseroot, args.cmake
+    return args.caseroot
 
 ###############################################################################
 def _main_func(description):
 ###############################################################################
-    caseroot, cmake = parse_command_line(sys.argv, description)
+    caseroot = parse_command_line(sys.argv, description)
 
     success = True
     with Case(caseroot) as case:
-        print("{}".format(get_standard_cmake_args(case) if cmake else get_standard_makefile_args(case)))
+        print(get_standard_makefile_args(case))
 
     sys.exit(0 if success else 1)
 

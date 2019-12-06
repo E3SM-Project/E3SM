@@ -200,6 +200,8 @@ def buildnml(case, caseroot, compname):
 
     with open(os.path.join(casebuild, "mpassi.input_data_list"), "w") as input_list:
         input_list.write("mesh = {}\n".format(input_file))
+        input_list.write("snow_data = {}/ice/mpas-cice/general/snicar_drdt_bst_fit_60_c04262019.nc\n".format(din_loc_root))
+        input_list.write("snicar_data = {}/ice/mpas-cice/general/snicar_optics_5bnd_snow_and_aerosols.nc\n".format(din_loc_root))
         if points_file != '':
             input_list.write("points = {}/ice/mpas-cice/{}/{}\n".format(din_loc_root, ice_mask, points_file))
         if iceberg_mode == 'data':
@@ -399,6 +401,20 @@ def buildnml(case, caseroot, compname):
         lines.append('                  filename_template="snicar_optics_5bnd_mam_c140303_mpas_cice.nc"')
         lines.append('                  filename_interval="none"')
         lines.append('                  input_interval="none" />')
+        lines.append('')
+        lines.append('<immutable_stream name="SnowAgingPropertiesInput"')
+        lines.append('                  type="input"')
+        lines.append('                  io_type="{}"'.format(ice_pio_typename))
+        lines.append('                  filename_template="{}/ice/mpas-cice/general/snicar_drdt_bst_fit_60_c04262019.nc"'.format(din_loc_root))
+        lines.append('                  filename_interval="none"')
+        lines.append('                  input_interval="initial_only" />')
+        lines.append('')
+        lines.append('<immutable_stream name="SnicarInput"')
+        lines.append('                  type="input"')
+        lines.append('                  io_type="{}"'.format(ice_pio_typename))
+        lines.append('                  filename_template="{}/ice/mpas-cice/general/snicar_optics_5bnd_snow_and_aerosols.nc"'.format(din_loc_root))
+        lines.append('                  filename_interval="none"')
+        lines.append('                  input_interval="initial_only" />')
         lines.append('')
         lines.append('<immutable_stream name="abort_contents"')
         lines.append('                  type="none"')

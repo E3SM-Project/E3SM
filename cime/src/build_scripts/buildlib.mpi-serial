@@ -52,7 +52,7 @@ def buildlib(bldroot, installpath, case):
     gmake_opts = "-f {} ".format(os.path.join(caseroot,"Tools","Makefile"))
     gmake_opts += " -C {} ".format(bldroot)
     gmake_opts += " {} ".format(get_standard_makefile_args(case, shared_lib=True))
-    gmake_opts += "MODEL=mpi-serial {}".format(os.path.join(bldroot,"Makefile.conf"))
+    gmake_opts += "MODEL=mpi-serial COMP_NAME=mpi-serial {}".format(os.path.join(bldroot,"Makefile.conf"))
 
     gmake_cmd = case.get_value("GMAKE")
 

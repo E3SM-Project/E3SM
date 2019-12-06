@@ -19,6 +19,7 @@
 
 <!-- CMIP6 DECK compsets -->
 <fsurdat hgrid="ne30np4" >lnd/clm2/surfdata_map/surfdata_ne30np4_simyr2010_c20181025.nc </fsurdat>
+<fsurdat hgrid="r0125" >lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2010_c191025.nc </fsurdat>
 <finidat hgrid="ne30np4" >lnd/clm2/initdata_map/20180716.DECKv1b_A3.ne30_oEC.edison.clm2.r.2010-01-01-00000.nc </finidat>
 
 </namelist_defaults>
