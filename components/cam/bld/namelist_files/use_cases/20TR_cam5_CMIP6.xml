@@ -144,6 +144,9 @@
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >INTERP_MISSING_MONTHS</linoz_data_type>
 
+<!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
+<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
+
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>1850-2000</sim_year>
 
