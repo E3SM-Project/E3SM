@@ -134,7 +134,8 @@ subroutine gw_beres_src(ncol, ngwv, lat, u, v, netdt, &
   integer :: shift
 
   ! Heating rate conversion factor.
-  real(r8), parameter :: CF = 20._r8
+  !real(r8), parameter :: CF = 20._r8
+  real(r8), parameter :: CF = 12.5_r8
   ! Averaging length.
   real(r8), parameter :: AL = 1.0e5_r8
 
