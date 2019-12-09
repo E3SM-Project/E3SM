@@ -454,21 +454,31 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
     else:
         expect((cleanlist is not None and len(cleanlist) > 0) or
                (clean_depends is not None and len(clean_depends)),"Empty cleanlist not expected")
-        gmake           = case.get_value("GMAKE")
-        casetools       = case.get_value("CASETOOLS")
+        gmake = case.get_value("GMAKE")
 
-        cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
-        cmd += " {}".format(get_standard_makefile_args(case))
-        if cleanlist is not None:
-            for item in cleanlist:
-                tcmd = cmd + " clean" + item
-                logger.info("calling {} ".format(tcmd))
-                run_cmd_no_fail(tcmd)
+        if os.path.exists(os.path.join(exeroot, "cmake-bld")):
+            # Cmake build system
+            for thing_to_clean in [cleanlist, clean_depends]:
+                if thing_to_clean is not None:
+                    for item in thing_to_clean:
+                        logging.info("Cleaning {}".format(item))
+                        cmd = "{} clean".format(gmake)
+                        run_cmd_no_fail(cmd, from_dir=os.path.join(exeroot, "cmake-bld", "cmake", item))
         else:
-            for item in clean_depends:
-                tcmd = cmd + " clean_depends" + item
-                logger.info("calling {} ".format(tcmd))
-                run_cmd_no_fail(tcmd)
+            # legacy build system
+            casetools = case.get_value("CASETOOLS")
+            cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
+            cmd += " {}".format(get_standard_makefile_args(case))
+            if cleanlist is not None:
+                for item in cleanlist:
+                    tcmd = cmd + " clean" + item
+                    logger.info("calling {} ".format(tcmd))
+                    run_cmd_no_fail(tcmd)
+            else:
+                for item in clean_depends:
+                    tcmd = cmd + " clean_depends" + item
+                    logger.info("calling {} ".format(tcmd))
+                    run_cmd_no_fail(tcmd)
 
     # unlink Locked files directory
     unlock_file("env_build.xml")
