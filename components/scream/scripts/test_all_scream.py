@@ -84,7 +84,9 @@ class TestAllScream(object):
             result += " -D{}={}".format(key, value)
 
         if self._custom_cmake_opts:
-            result += " -D{}".format(self._custom_cmake_opts)
+            opt_list = self._custom_cmake_opts.split(';')
+            for opt in opt_list:
+                result += " -D{}".format(opt)
 
         return result
 
