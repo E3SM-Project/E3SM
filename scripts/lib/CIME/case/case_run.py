@@ -177,7 +177,6 @@ def _post_run_check(case, lid):
     if "CPL" not in case.get_values("COMP_CLASSES"):
         fv3_standalone = True
     if driver == 'nuopc':
-        compset = case.get_value("COMPSET")
         if fv3_standalone:
             file_prefix = model
         else:
