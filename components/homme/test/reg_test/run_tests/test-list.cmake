@@ -40,30 +40,12 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
   # performance, we can compare the kokkos output with the
   # fortran one later on.
   SET(HOMME_PREQX_TESTS_WITH_PROFILE
-    preqx-nlev26-qsize4-r0-dry.cmake
-    preqx-nlev26-qsize4-r0-dry-kokkos.cmake
-    preqx-nlev26-qsize4-r3-dry.cmake
-    preqx-nlev26-qsize4-r3-dry-kokkos.cmake
-    preqx-nlev26-qsize4-r0-moist.cmake
-    preqx-nlev26-qsize4-r0-moist-kokkos.cmake
-    preqx-nlev26-qsize4-r3-moist.cmake
-    preqx-nlev26-qsize4-r3-moist-kokkos.cmake
-    preqx-nlev72-qsize4-r0-dry.cmake
-    preqx-nlev72-qsize4-r0-dry-kokkos.cmake
-    preqx-nlev72-qsize4-r3-dry.cmake
-    preqx-nlev72-qsize4-r3-dry-kokkos.cmake
-    preqx-nlev72-qsize4-r0-moist.cmake
-    preqx-nlev72-qsize4-r0-moist-kokkos.cmake
-    preqx-nlev72-qsize4-r3-moist.cmake
-    preqx-nlev72-qsize4-r3-moist-kokkos.cmake
-    preqx-nlev72-qsize4-r3-q6-dry.cmake
-    preqx-nlev72-qsize4-r3-q6-dry-kokkos.cmake
-    preqx-nlev72-qsize4-r3-tensorhv-dry.cmake
-    preqx-nlev72-qsize4-r3-tensorhv-dry-kokkos.cmake
-    preqx-nlev72-qsize4-r3-nudiv-dry.cmake
-    preqx-nlev72-qsize4-r3-nudiv-dry-kokkos.cmake
-    preqx-nlev72-qsize10-r3-lim9-dry.cmake
-    preqx-nlev72-qsize10-r3-lim9-dry-kokkos.cmake
+    preqx-nlev26-dry-r0-samenu-consthv-lim8-q1.cmake
+    preqx-nlev26-dry-r0-samenu-consthv-lim8-q1-kokkos.cmake
+    preqx-nlev72-moist-r3-diffnu-consthv-lim9-q6.cmake
+    preqx-nlev72-moist-r3-diffnu-consthv-lim9-q6-kokkos.cmake
+    preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q6.cmake
+    preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q6-kokkos.cmake
   )
 
   #This list (COMPARE_F_C_TEST) contains tests for which
@@ -73,18 +55,9 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
   #      on the raw output files
   IF (${ENABLE_PREQX_KOKKOS_BFB_TESTS})
     SET (PREQX_COMPARE_F_C_TEST
-      preqx-nlev26-qsize4-r0-dry
-      preqx-nlev26-qsize4-r3-dry
-      preqx-nlev26-qsize4-r0-moist
-      preqx-nlev26-qsize4-r3-moist
-      preqx-nlev72-qsize4-r0-dry
-      preqx-nlev72-qsize4-r3-dry
-      preqx-nlev72-qsize4-r0-moist
-      preqx-nlev72-qsize4-r3-moist
-      preqx-nlev72-qsize4-r3-q6-dry
-      preqx-nlev72-qsize4-r3-tensorhv-dry
-      preqx-nlev72-qsize4-r3-nudiv-dry
-      preqx-nlev72-qsize10-r3-lim9-dry
+    preqx-nlev26-dry-r0-samenu-consthv-lim8-q1
+    preqx-nlev72-moist-r3-diffnu-consthv-lim9-q6
+    preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q6
     )
   ENDIF ()
 ENDIF()
