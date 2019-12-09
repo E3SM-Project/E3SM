@@ -64,10 +64,11 @@ def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
             basename = "Depends.{}{}".format(suffix, extra_suffix)
             dfile = os.path.join(machines_dir, basename)
             outputdfile = os.path.join(output_dir, basename)
-            if os.path.isfile(dfile) and not os.path.exists(outputdfile):
-                safe_copy(dfile, outputdfile)
+            if os.path.isfile(dfile):
                 if suffix == both and extra_suffix == "":
                     makefiles_done = True
+                if not os.path.exists(outputdfile):
+                    safe_copy(dfile, outputdfile)
 
 class FakeCase(object):
 
