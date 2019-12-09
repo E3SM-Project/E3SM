@@ -258,6 +258,30 @@ struct Functions
     const uview_1d<Spack>& nc_tend,
     Scalar& prt_liq);
 
+  // TODO: comment
+  KOKKOS_FUNCTION
+  static void ice_sedimentation(
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& rhofaci,
+    const uview_1d<const Spack>& icldm,
+    const uview_1d<const Spack>& inv_dzq,
+    const MemberType& team,
+    const Workspace& workspace,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const uview_1d<Spack>& qitot,
+    const uview_1d<Spack>& qitot_incld,
+    const uview_1d<Spack>& nitot,
+    const uview_1d<Spack>& nitot_incld,
+    const uview_1d<Spack>& qirim,
+    const uview_1d<Spack>& qirim_incld,
+    const uview_1d<Spack>& birim,
+    const uview_1d<Spack>& birim_incld,
+    const uview_1d<Spack>& qi_tend,
+    const uview_1d<Spack>& ni_tend,
+    const view_itab_table& itab,
+    Scalar& prt_sol);
+
   // -- Find layers
 
   // Find the bottom and top of the mixing ratio, e.g., qr. It's worth casing

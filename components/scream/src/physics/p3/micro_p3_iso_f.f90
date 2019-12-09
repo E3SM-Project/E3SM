@@ -127,6 +127,35 @@ interface
     real(kind=c_real), intent(inout), dimension(kts:kte) :: nc_tend
   end subroutine cloud_sedimentation_f
 
+  subroutine ice_sedimentation_f(kts,kte,ktop,kbot,kdir,    &
+       rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
+       qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend) bind(C)
+
+    use iso_c_binding
+
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rhofaci
+    real(kind=c_real), intent(in), dimension(kts:kte) :: icldm
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dzq
+    real(kind=c_real), value, intent(in) :: dt, odt
+
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: qitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qitot_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: nitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nitot_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: qirim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qirim_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: birim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: birim_incld
+
+    real(kind=c_real), intent(inout) :: prt_sol
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qi_tend
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: ni_tend
+  end subroutine ice_sedimentation_f
+
   subroutine calc_bulk_rho_rime_f(qi_tot, qi_rim, bi_rim, rho_rime) bind(C)
     use iso_c_binding
 

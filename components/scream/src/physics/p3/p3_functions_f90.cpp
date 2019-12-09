@@ -49,6 +49,13 @@ void cloud_sedimentation_c(
   Real dt, Real odt, bool log_predictNc,
   Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
 
+void ice_sedimentation_c(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* icldm, Real* inv_dzq,
+  Real dt, Real odt,
+  Real* qitot, Real* qitot_incld, Real* nitot, Real* qirim, Real* qirim_incld, Real* birim, Real* birim_incld,
+  Real* nitot_incld, Real* prt_sol, Real* qi_tend, Real* ni_tend);
+
 void calc_bulk_rho_rime_c(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rime);
 
 }
@@ -278,6 +285,55 @@ void cloud_sedimentation(CloudSedData& d)
                         d.dt, d.odt, d.log_predictNc,
                         d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.prt_liq, d.qc_tend, d.nc_tend);
 }
+
+IceSedData::IceSedData(
+  Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+  Real dt_, Real odt_, Real prt_sol_,
+  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
+  dt(dt_), odt(odt_), prt_sol(prt_sol_),
+  m_nk((kte_ - kts_) + 1),
+  m_data( NUM_ARRAYS * m_nk, 0.0)
+{
+  std::array<Real**, NUM_ARRAYS> ptrs =
+    {&rho, &inv_rho, &rhofaci, &icldm, &inv_dzq, &qitot, &qitot_incld, &nitot, &nitot_incld, &qirim, &qirim_incld,
+     &birim, &birim_incld, &qi_tend, &ni_tend};
+  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
+
+  // overwrite inv_rho
+  for (Int k = 0; k < m_nk; ++k) {
+    inv_rho[k] = 1 / rho[k];
+  }
+}
+
+IceSedData::IceSedData(const IceSedData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), ktop(rhs.ktop), kbot(rhs.kbot), kdir(rhs.kdir),
+  dt(rhs.dt), odt(rhs.odt), prt_sol(rhs.prt_sol),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  Real** ptrs[NUM_ARRAYS] =
+    {&rho, &inv_rho, &rhofaci, &icldm, &inv_dzq, &qitot, &qitot_incld, &nitot, &nitot_incld, &qirim, &qirim_incld,
+     &birim, &birim_incld, &qi_tend, &ni_tend};
+
+  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_nk;
+  }
+}
+
+void ice_sedimentation(IceSedData& d)
+{
+  p3_init(true);
+  ice_sedimentation_c(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+                      d.rho, d.inv_rho, d.rhofaci, d.icldm, d.inv_dzq, d.dt, d.odt,
+                      d.qitot, d.qitot_incld, d.nitot, d.qirim, d.qirim_incld, d.birim, d.birim_incld, d.nitot_incld,
+                      &d.prt_sol, d.qi_tend, d.ni_tend);
+}
+
 
 void calc_bulk_rho_rime(CalcBulkRhoRimeData& d)
 {
@@ -745,6 +801,96 @@ void cloud_sedimentation_f(
   // Sync back to host
   Kokkos::Array<view_1d, 7> inout_views = {qc_d, nc_d, nc_incld_d, mu_c_d, lamc_d, qc_tend_d, nc_tend_d};
   pack::device_to_host({qc, nc, nc_incld, mu_c, lamc, qc_tend, nc_tend}, nk, inout_views);
+}
+
+void ice_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* icldm, Real* inv_dzq,
+  Real dt, Real odt,
+  Real* qitot, Real* qitot_incld, Real* nitot, Real* qirim, Real* qirim_incld, Real* birim, Real* birim_incld,
+  Real* nitot_incld, Real* prt_sol, Real* qi_tend, Real* ni_tend)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename P3F::Spack;
+  using view_1d    = typename P3F::view_1d<Spack>;
+  using KT         = typename P3F::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using uview_1d   = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts  -= 1;
+  kte  -= 1;
+  ktop -= 1;
+  kbot -= 1;
+
+  const Int nk = (kte - kts) + 1;
+
+  // Set up views
+  Kokkos::Array<view_1d, 15> temp_d;
+
+  pack::host_to_device({rho, inv_rho, rhofaci, icldm, inv_dzq, qitot, qitot_incld, nitot, qirim, qirim_incld, birim, birim_incld, nitot_incld, qi_tend, ni_tend},
+                       nk, temp_d);
+
+  view_1d
+    rho_d        (temp_d[0]),
+    inv_rho_d    (temp_d[1]),
+    rhofaci_d    (temp_d[2]),
+    icldm_d      (temp_d[3]),
+    inv_dzq_d    (temp_d[4]),
+    qitot_d      (temp_d[5]),
+    qitot_incld_d(temp_d[6]),
+    nitot_d      (temp_d[7]),
+    qirim_d      (temp_d[8]),
+    qirim_incld_d(temp_d[9]),
+    birim_d      (temp_d[10]),
+    birim_incld_d(temp_d[11]),
+    nitot_incld_d(temp_d[12]),
+    qi_tend_d    (temp_d[13]),
+    ni_tend_d    (temp_d[14]);
+
+  // Call core function from kernel
+  auto itab = P3GlobalForFortran::itab();
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  WorkspaceManager<Spack> wsm(rho_d.extent(0), 6, policy);
+  Real my_prt_sol = 0;
+  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_sol_k) {
+
+    uview_1d
+      urho_d        (temp_d[0]),
+      uinv_rho_d    (temp_d[1]),
+      urhofaci_d    (temp_d[2]),
+      uicldm_d      (temp_d[3]),
+      uinv_dzq_d    (temp_d[4]),
+      uqitot_d      (temp_d[5]),
+      uqitot_incld_d(temp_d[6]),
+      unitot_d      (temp_d[7]),
+      uqirim_d      (temp_d[8]),
+      uqirim_incld_d(temp_d[9]),
+      ubirim_d      (temp_d[10]),
+      ubirim_incld_d(temp_d[11]),
+      unitot_incld_d(temp_d[12]),
+      uqi_tend_d    (temp_d[13]),
+      uni_tend_d    (temp_d[14]);
+
+    P3F::ice_sedimentation(
+      urho_d, uinv_rho_d, urhofaci_d, uicldm_d, uinv_dzq_d,
+      team, wsm.get_workspace(team),
+      nk, ktop, kbot, kdir, dt, odt,
+      uqitot_d, uqitot_incld_d, unitot_d, unitot_incld_d, uqirim_d, uqirim_incld_d, ubirim_d, ubirim_incld_d,
+      uqi_tend_d, uni_tend_d, itab,
+      prt_sol_k);
+
+  }, my_prt_sol);
+  *prt_sol += my_prt_sol;
+
+  // Sync back to host
+  Kokkos::Array<view_1d, 10> inout_views = {qitot_d, qitot_incld_d, nitot_d, nitot_incld_d, qirim_d, qirim_incld_d,
+                                            birim_d, birim_incld_d, qi_tend_d, ni_tend_d};
+  pack::device_to_host({qitot, qitot_incld, nitot, nitot_incld, qirim, qirim_incld, birim, birim_incld, qi_tend, ni_tend}, nk, inout_views);
 }
 
 void cloud_water_autoconversion_f(Real rho_, Real qc_incld_, Real nc_incld_, Real* qcaut_, Real* ncautc_, Real* ncautr_){

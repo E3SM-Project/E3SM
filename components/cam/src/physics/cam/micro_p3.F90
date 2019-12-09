@@ -3467,6 +3467,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
       endif two_moment
 
+      ! JGF: Is prt_liq intended to be inout or just out? Inconsistent with rain and ice sed.
       prt_liq = prt_accum*inv_rhow*odt  !note, contribution from rain is added below
 
    endif qc_present
@@ -3648,6 +3649,10 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
    qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: ice_sedimentation_f
+#endif
+
    implicit none
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
@@ -3698,6 +3703,15 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
 
    real(rtype) :: dum1, dum4, dum5, dum6
    integer dumi, dumii, dumjj, dumzz
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call ice_sedimentation_f(kts,kte,ktop,kbot,kdir,    &
+           rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
+           qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend)
+      return
+   endif
+#endif
 
    log_qxpresent = .false.  !note: this applies to ice category 'iice' only
    k_qxtop       = kbot
