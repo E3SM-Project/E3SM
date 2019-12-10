@@ -7754,7 +7754,7 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+" pesize="any">
-        <comment> -compset A_WCYCL* -res ne30_oEC* on 40 nodes pure-MPI, sypd=5.30 </comment>
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 46 nodes pure-MPI, sypd=5.30 </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
           <ntasks_lnd>1350</ntasks_lnd>
@@ -7808,7 +7808,7 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+" pesize="XL">
-        <comment> -compset A_WCYCL* -res ne30_oEC* on 185 nodes pure-MPI </comment>
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 185 nodes pure-MPI, sypd=10.26 </comment>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
           <ntasks_lnd>5400</ntasks_lnd>
