@@ -54,6 +54,9 @@ module atm_comp_mct
   use runtime_opts     , only: read_namelist
   use scamMod          , only: single_column,scmlat,scmlon
 
+#ifdef HAVE_MOAB
+  use seq_comm_mct     , only: mphaid ! atm physics grid id in MOAB, on atm pes
+#endif
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -370,6 +373,11 @@ CONTAINS
        
        call shr_file_setLogUnit (shrlogunit)
        call shr_file_setLogLevel(shrloglev)
+       ! when called first time, initialize MOAB atm phis grid, and create the mesh
+       ! on the atm
+#ifdef HAVE_MOAB
+       call initialize_moab_atm_phys( cdata_a )
+#endif
 
        first_time = .false.
 
@@ -961,5 +969,180 @@ CONTAINS
 
 
   end subroutine atm_write_srfrest_mct
+
+#ifdef HAVE_MOAB
+  subroutine initialize_moab_atm_phys( cdata_a )
+
+    use seq_comm_mct, only: mphaid ! imoab pid for atm physics
+    use shr_mpi_mod,       only: shr_mpi_commrank, shr_mpi_commsize
+    use shr_const_mod, only: SHR_CONST_PI
+!-------------------------------------------------------------------
+    use phys_grid, only : get_nlcols_p ! used to det local size ?
+
+    type(seq_cdata), intent(in)              :: cdata_a
+
+
+    integer :: ATMID
+    integer :: mpicom_atm
+
+    integer :: ATM_PHYS ! our numbering
+
+    integer , external :: iMOAB_RegisterFortranApplication, iMOAB_CreateVertices, iMOAB_WriteMesh, &
+         iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
+         iMOAB_ResolveSharedEntities
+    ! local variables to fill in data
+    integer, dimension(:), allocatable :: vgids
+    !  retrieve everything we need from mct
+    ! number of vertices is the size of mct grid
+    real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
+    real(r8), dimension(:), allocatable :: areavals
+    ! r
+    real(r8)   :: latv, lonv
+    integer   dims, i, ilat, ilon, igdx, ierr, tagindex
+    integer tagtype, numco, ent_type
+
+    integer ::  n, c, ncols, nlcols
+
+    real(r8) :: lats(pcols)           ! array of chunk latitudes pcol is defined in ppgrid
+    real(r8) :: lons(pcols)           ! array of chunk longitude
+    real(r8) :: area(pcols)           ! area in radians squared for each grid point
+    integer , dimension(:), allocatable :: chunk_index(:)    ! temporary
+    !real(r8), parameter:: radtodeg = 180.0_r8/SHR_CONST_PI
+
+    character*100 outfile, wopts, tagname
+    character*32 appname
+
+    !dims  =3 ! store as 3d mesh
+
+
+    call seq_cdata_setptrs(cdata_a, ID=ATMID, mpicom=mpicom_atm, &
+         infodata=infodata)
+
+    appname="ATM_PHYS"//CHAR(0)
+    ATM_PHYS = 200 + ATMID !
+    ierr = iMOAB_RegisterFortranApplication(appname, mpicom_atm, ATM_PHYS, mphaid)
+    if (ierr > 0 )  &
+       call endrun('Error: cannot register moab app for atm physics')
+    if(masterproc) then
+       write(iulog,*) " "
+       write(iulog,*) "register MOAB app:", trim(appname), "  mphaid=", mphaid
+       write(iulog,*) " "
+    endif
+
+    ! first, determine the size of local vertices
+
+    nlcols = get_nlcols_p()
+    dims = 3 !
+    allocate(vgids(nlcols))
+    allocate(moab_vert_coords(nlcols*dims))
+    allocate(areavals(nlcols))
+    allocate(chunk_index(nlcols))
+    n=0
+    do c = begchunk, endchunk
+       ncols = get_ncols_p(c)
+       call get_rlat_all_p(c, ncols, lats) !
+       call get_rlon_all_p(c, ncols, lons)
+       call get_area_all_p(c, ncols, area)
+       do i = 1,ncols
+          n=n+1
+          vgids(n) = get_gcol_p(c,i)
+          latv = lats(i) ! these are in rads ?
+          lonv = lons(i)
+          moab_vert_coords(3*n-2)=COS(latv)*COS(lonv)
+          moab_vert_coords(3*n-1)=COS(latv)*SIN(lonv)
+          moab_vert_coords(3*n  )=SIN(latv)
+          areavals(n) = area(i)
+          chunk_index(n) = c ! this is just for us, to see the chunk
+       end do
+    end do
+
+
+    ierr = iMOAB_CreateVertices(mphaid, nlcols*3, dims, moab_vert_coords)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create MOAB vertices in phys atm model')
+
+    tagtype = 0  ! dense, integer
+    numco = 1
+    tagname='GLOBAL_ID'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to retrieve GLOBAL_ID tag ')
+
+    ent_type = 0 ! vertex type
+    ierr = iMOAB_SetIntTagStorage ( mphaid, tagname, nlcols , ent_type, vgids)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set GLOBAL_ID tag ')
+
+    ierr = iMOAB_ResolveSharedEntities( mphaid, nlcols, vgids );
+    if (ierr > 0 )  &
+      call endrun('Error: fail to resolve shared entities')
+
+    !there are no shared entities, but we will set a special partition tag, in order to see the
+    ! partitions ; it will be visible with a Pseudocolor plot in VisIt
+    tagname='partition'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create new partition tag ')
+
+    vgids = iam
+    ierr = iMOAB_SetIntTagStorage ( mphaid, tagname, nlcols , ent_type, vgids)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set partition tag ')
+
+    ! chunk_index ; it will be visible with a Pseudocolor plot in VisIt
+    tagname='chunk_id'//CHAR(0)
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create new chunk index tag ')
+
+    ierr = iMOAB_SetIntTagStorage ( mphaid, tagname, nlcols , ent_type, chunk_index)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set partition tag ')
+
+    ! use areavals for areas
+
+    tagname='area'//CHAR(0)
+    tagtype = 1 ! dense, double
+    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+    if (ierr > 0 )  &
+      call endrun('Error: fail to create area tag ')
+
+
+    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, nlcols , ent_type, areavals)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to set area tag ')
+
+!    tagname='area'//CHAR(0)
+!    ierr = iMOAB_DefineTagStorage(mphaid, tagname, tagtype, numco,  tagindex )
+!    if (ierr > 0 )  &
+!      call endrun('Error: fail to create area tag ')
+!    do i = 1, lsz
+!      moab_vert_coords(i) = dom%data%rAttr(ixarea, i) ! use the same doubles for second tag :)
+!    enddo
+!
+!    ierr = iMOAB_SetDoubleTagStorage ( mphaid, tagname, lsz , ent_type, moab_vert_coords )
+!    if (ierr > 0 )  &
+!      call endrun('Error: fail to set area tag ')
+
+    !     write out the mesh file to disk, in parallel
+#ifdef MOABDEBUG
+    outfile = 'AtmPhys.h5m'//CHAR(0)
+    wopts   = 'PARALLEL=WRITE_PART'//CHAR(0)
+    ierr = iMOAB_WriteMesh(mphaid, outfile, wopts)
+    if (ierr > 0 )  &
+      call endrun('Error: fail to write the atm phys mesh file')
+#endif
+    deallocate(moab_vert_coords)
+    deallocate(vgids)
+    deallocate(areavals)
+    deallocate(chunk_index)
+
+    ! similar logic to get lat, lon, area, frac, for each local cam point
+!! start copy
+    !
+    ! Fill in correct values for domain components
+
+  end subroutine initialize_moab_atm_phys
+#endif
 
 end module atm_comp_mct

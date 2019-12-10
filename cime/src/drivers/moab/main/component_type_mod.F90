@@ -270,6 +270,7 @@ contains
 #ifdef MOABDEBUGMCT
   subroutine expose_mct_grid_moab (comp)
     use shr_mpi_mod,       only: shr_mpi_commrank, shr_mpi_commsize
+    use shr_const_mod, only SHR_CONST_PI
     type(component_type), intent(in) :: comp
     integer                :: lsz
     type(mct_gGrid), pointer :: dom
@@ -282,15 +283,14 @@ contains
          iMOAB_ResolveSharedEntities
     ! local variables to fill in data
     integer, dimension(:), allocatable :: vgids
-    !  retrieve everything we need from land domain mct_ldom
-    ! number of vertices is the size of land domain
+    !  retrieve everything we need from mct
+    ! number of vertices is the size of mct grid
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
     real(r8)   :: latv, lonv
     integer   dims, i, ilat, ilon, igdx, ierr, tagindex, ixarea, ixfrac
     integer tagtype, numco, ent_type
     character*100 outfile, wopts, localmeshfile, tagname
     character*32 appname
-    real(R8),parameter :: SHR_CONST_PI      = 3.14159265358979323846_R8  ! pi
 
     dims  =3 ! store as 3d mesh
 
