@@ -27,17 +27,16 @@ public:
                    const bool use_moisture,
                    const InputProvider& Q,
                    const ExecViewUnmanaged<Scalar[NUM_LEV]>& R) const {
+    using namespace PhysicalConstants;
     if (use_moisture) {
-      constexpr Real Rgas = PhysicalConstants::Rgas;
-      constexpr Real Rwv  = PhysicalConstants::Rwater_vapor;
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-        R(ilev) = (Rgas + (Rwv-Rgas)*Q(ilev));
+        R(ilev) = (Rgas + (Rwater_vapor-Rgas)*Q(ilev));
       });
     } else {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-        R(ilev) = PhysicalConstants::Rgas;
+        R(ilev) = Rgas;
       });
     }
   }
@@ -63,11 +62,12 @@ public:
     // exner = (p/p0)^k
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                          [&](const int ilev) {
+      using namespace PhysicalConstants;
       // Compute exner, store in theta_ref
       // TODO: F90 does p(k) = (p_i(k)+p_i(k+1)) / (2*p0).
       //       If this is a non BFB source, incorporate p0 scaling
       //       in the calculation of p
-      theta_ref(ilev) = pow(p(ilev)/PhysicalConstants::p0,PhysicalConstants::kappa);
+      theta_ref(ilev) = pow(p(ilev)/p0,kappa);
 
       // Compute theta_ref
       theta_ref(ilev) = T0/theta_ref(ilev) + T1;

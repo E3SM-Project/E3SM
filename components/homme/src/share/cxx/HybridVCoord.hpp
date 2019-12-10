@@ -18,6 +18,7 @@ namespace Homme
 class HybridVCoord
 {
 public:
+  KOKKOS_INLINE_FUNCTION
   HybridVCoord () : m_inited(false) {}
 
   // This method should only be called from the host
