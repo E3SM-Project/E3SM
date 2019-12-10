@@ -3,6 +3,8 @@
 	<add_link source="../../init/initial_state/initial_state.nc" dest="init.nc"/>
 	<add_link source="../../init/initial_state/graph.info" dest="graph.info"/>
 	<add_link source="../../init/initial_state/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
+	<add_link source="../spin_up1/Restart_timestamp" dest="Restart_timestamp"/>
+	<add_link source="../spin_up1/restarts" dest="restarts"/>
 
 	<add_executable source="model" dest="ocean_model"/>
 

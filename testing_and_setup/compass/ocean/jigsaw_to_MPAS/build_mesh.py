@@ -31,32 +31,49 @@ from define_base_mesh import define_base_mesh
 
 
 def build_mesh(preserve_floodplain=False, floodplain_elevation=20.0,
-               do_inject_bathymetry=False):
+               do_inject_bathymetry=False, geometry='sphere'):
 
-    print('Step 1. Build cellWidth array as function of latitude and '
-          'longitude')
-    cellWidth, lon, lat = define_base_mesh.cellWidthVsLatLon()
-    da = xarray.DataArray(cellWidth,
+    if geometry=='sphere':
+        on_sphere=True
+    else:
+        on_sphere=False
+
+    print('Step 1. Build cellWidth array as function of horizontal coordinates')
+    if on_sphere:
+       cellWidth, lon, lat = define_base_mesh.cellWidthVsLatLon()
+       da = xarray.DataArray(cellWidth,
                           dims=['lat','lon'],
                           coords={'lat':lat,'lon':lon},
                           name='cellWidth')
-    da.to_netcdf('cellWidthVsLatLon.nc')
-    
+       cw_filename='cellWidthVsLatLon.nc'
+       da.to_netcdf(cw_filename)
+    else:
+       cellWidth, x, y, geom_points, geom_edges = define_base_mesh.cellWidthVsXY()
+       da = xarray.DataArray(cellWidth,
+                          dims=['y','x'],
+                          coords={'y':y,'x':x},
+                          name='cellWidth')
+       cw_filename='cellWidthVsXY.nc'
+       da.to_netcdf(cw_filename)
+
 
     print('Step 2. Generate mesh with JIGSAW')
-    jigsaw_driver(cellWidth, lon, lat)
+    if on_sphere:
+       jigsaw_driver(cellWidth, lon, lat)
+    else:
+       jigsaw_driver(cellWidth, x, y, on_sphere=False, geom_points=geom_points, geom_edges=geom_edges)
 
     print('Step 3. Convert triangles from jigsaw format to netcdf')
     jigsaw_to_netcdf(msh_filename='mesh-MESH.msh',
-                     output_name='mesh_triangles.nc', on_sphere=True)
+                     output_name='mesh_triangles.nc', on_sphere=on_sphere)
 
     print('Step 4. Convert from triangles to MPAS mesh')
     write_netcdf(convert(xarray.open_dataset('mesh_triangles.nc')),
                  'base_mesh.nc')
 
     print('Step 5. Inject correct meshDensity variable into base mesh file')
-    inject_meshDensity(cw_filename='cellWidthVsLatLon.nc',
-                       mesh_filename='base_mesh.nc')
+    inject_meshDensity(cw_filename=cw_filename,
+                       mesh_filename='base_mesh.nc', on_sphere=on_sphere)
 
     if do_inject_bathymetry:
         print('Step 6. Injecting bathymetry')
@@ -89,6 +106,7 @@ if __name__ == '__main__':
     parser.add_argument('--floodplain_elevation', action='store',
                         type=float, default=20.0)
     parser.add_argument('--inject_bathymetry', action='store_true')
+    parser.add_argument('--geometry', default='sphere')
     cl_args = parser.parse_args()
     build_mesh(cl_args.preserve_floodplain, cl_args.floodplain_elevation,
-               cl_args.inject_bathymetry)
+               cl_args.inject_bathymetry, cl_args.geometry)
