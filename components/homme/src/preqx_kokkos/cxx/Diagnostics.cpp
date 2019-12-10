@@ -132,8 +132,8 @@ void Diagnostics::prim_energy_halftimes (const bool before_advance, const int iv
   }
 
   auto virtual_specific_heat = [] (const Real rin)->Real{
-    using PC = PhysicalConstants;
-    return PC::cp*(1.0 + (PC::Cpwater_vapor/PC::cp - 1.0)*rin);
+    using namespace PhysicalConstants;
+    return cp*(1.0 + (Cpwater_vapor/cp - 1.0)*rin);
   };
 
   // !   IE   Cp*dpdn*T  + (Cpv-Cp) Qdpdn*T
