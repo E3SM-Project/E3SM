@@ -385,20 +385,26 @@ public:
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
                     const Real s0 = 0.0)
   {
-    constexpr int LAST_PACK     = ColInfo<LENGTH>::LastPack;
-    constexpr int LAST_PACK_END = ColInfo<LENGTH>::LastPackEnd;
+    constexpr int OFFSET             = Inclusive ? 0 : 1;
+    constexpr int LOOP_RAW_SIZE      = LENGTH - OFFSET;
+    constexpr int LOOP_LAST_PACK     = ColInfo<LOOP_RAW_SIZE>::LastPack;
+    constexpr int LOOP_LAST_PACK_END = ColInfo<LOOP_RAW_SIZE>::LastPackEnd;
+    constexpr int LOOP_SIZE          = ColInfo<LOOP_RAW_SIZE>::NumPacks;
+    constexpr int LAST_PACK          = ColInfo<LENGTH>::LastPack;
 
     // It is easier to write two loops for Forward true/false. There's no runtime penalty,
     // since the if is evaluated at compile time, so no big deal.
     if (Forward) {
+
       // Running integral
       Real integration = s0;
 
-      for (int ilev = 0; ilev<ColInfo<LENGTH>::NumPacks; ++ilev) {
-        // In all but the last level pack, the loop is over the whole vector
-        const int vec_end = (ilev == LAST_PACK ? LAST_PACK_END : VECTOR_END);
+      for (int ilev = 0; ilev<LOOP_SIZE; ++ilev) {
+        // In all but the last level pack, the loop is over the whole pack
+        const int vec_end = (ilev == LOOP_LAST_PACK ? LOOP_LAST_PACK_END : VECTOR_END);
 
         auto input = input_provider(ilev);
+
         // Integrate
         auto& sum_val = sum(ilev);
         sum_val[0] = integration + (Inclusive ? input[0] : 0.0);
@@ -409,13 +415,28 @@ public:
         // Update running integral
         integration = sum_val[vec_end] + (Inclusive ? 0.0 : input[vec_end]);;
       }
+
+      // In an exclusive sum, where the last level it's on a different pack,
+      // the procedure above failed to update the last level
+      if (!Inclusive && LOOP_SIZE!=ColInfo<LENGTH>::NumPacks) {
+        sum(LAST_PACK)[0] = integration;
+      }
     } else {
       // Running integral
       Real integration = s0;
 
-      for (int ilev = LAST_PACK; ilev >= 0; --ilev) {
+      // In an exclusive sum, where the last level it's on a different pack,
+      // the procedure below would fail to add the input's last level value
+      // to the output's second-to-last level value
+      if (!Inclusive && LOOP_SIZE!=ColInfo<LENGTH>::NumPacks) {
+        integration += input_provider(LAST_PACK)[0];
+      }
+
+      for (int ipack=0; ipack<LOOP_SIZE; ++ipack) {
+        const int ilev = LAST_PACK-ipack-OFFSET;
+
         // In all but the last level pack, the loop is over the whole vector
-        const int vec_start = (ilev == LAST_PACK ? LAST_PACK_END : VECTOR_END);
+        const int vec_start = (ilev == LOOP_LAST_PACK ? LOOP_LAST_PACK_END : VECTOR_END);
 
         auto input = input_provider(ilev);
         // Integrate
