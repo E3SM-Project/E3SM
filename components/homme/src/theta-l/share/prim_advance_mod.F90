@@ -1056,7 +1056,7 @@ contains
         
         ! apply inverse mass matrix, accumulate tendencies
         do k=1,nlev
-#ifdef XX_NONBFB_COMING
+#ifdef XX_BFB_TESTING
            vtens(:,:,1,k,ie)=vtens(:,:,1,k,ie)*(elem(ie)%rspheremp(:,:)*dt)  ! u
            vtens(:,:,2,k,ie)=vtens(:,:,2,k,ie)*(elem(ie)%rspheremp(:,:)*dt)  ! v
            stens(:,:,k,1,ie)=stens(:,:,k,1,ie)*(elem(ie)%rspheremp(:,:)*dt)  ! dp3d
@@ -1576,7 +1576,7 @@ contains
         omega_i(:,:,k+1)=omega_i(:,:,k)+divdp(:,:,k)
      enddo
      do k=1,nlev
-#ifdef XX_NONBFB_COMING
+#ifdef XX_BFB_TESTING
         pi(:,:,k)=(pi_i(:,:,k) + pi_i(:,:,k+1))/2
 #else
         pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
@@ -1750,7 +1750,7 @@ contains
                 dp3d(:,:,k)*elem(ie)%state%v(:,:,1,k,n0)*v_theta(:,:,1,k) + &
                 dp3d(:,:,k)*elem(ie)%state%v(:,:,2,k,n0)*v_theta(:,:,2,k) 
         endif
-#ifdef XX_NONBFB_COMING
+#ifdef XX_BFB_TESTING
         theta_tens(:,:,k)=(-theta_vadv(:,:,k)-div_v_theta(:,:,k))
 #else
         theta_tens(:,:,k)=(-theta_vadv(:,:,k)-div_v_theta(:,:,k))*scale1
@@ -1808,7 +1808,7 @@ contains
               v1     = elem(ie)%state%v(i,j,1,k,n0)
               v2     = elem(ie)%state%v(i,j,2,k,n0)
 
-#ifdef XX_NONBFB_COMING
+#ifdef XX_BFB_TESTING
               vtens1(i,j,k) = ( - Cp*vtheta(i,j,k)*gradexner(i,j,1,k) &
                                 - (v_vadv(i,j,1,k) + gradKE(i,j,1,k)) &
                                 - (mgrad(i,j,1,k) + wvor(i,j,1,k))    &
@@ -1979,7 +1979,7 @@ contains
 
 
      do k=1,nlev
-#ifdef XX_NONBFB_COMING
+#ifdef XX_BFB_TESTING
         elem(ie)%state%v(:,:,1,k,np1) = (elem(ie)%spheremp(:,:)*scale3) * elem(ie)%state%v(:,:,1,k,nm1) &
           + (scale1*dt2*elem(ie)%spheremp(:,:))*vtens1(:,:,k)
         elem(ie)%state%v(:,:,2,k,np1) = (elem(ie)%spheremp(:,:)*scale3) * elem(ie)%state%v(:,:,2,k,nm1) &
@@ -2019,7 +2019,7 @@ contains
      enddo
      if ( .not. theta_hydrostatic_mode ) then
         k=nlevp
-#ifdef XX_NONBFB_COMING
+#ifdef XX_BFB_TESTING
         elem(ie)%state%w_i(:,:,k,np1)= (elem(ie)%spheremp(:,:)*scale3) * elem(ie)%state%w_i(:,:,k,nm1)   &
         + (elem(ie)%spheremp(:,:)*dt2)*w_tens(:,:,k)
 #else
@@ -2175,15 +2175,10 @@ contains
   enddo
 
   if (warn) then
-#ifndef XX_NONBFB_COMING
     vtheta_dp(:,:,:)=vtheta_dp(:,:,:)/dp3d(:,:,:)
-#endif
     do j = 1 , np
        do i = 1 , np
           if ( minval(dp3d(i,j,:) - dp3d_thresh*dp0(:)) < 0 ) then
-#ifdef XX_NONBFB_COMING
-             vtheta_dp(i,j,:)=vtheta_dp(i,j,:)/dp3d(i,j,:)
-#endif
              ! subtract min, multiply in by weights
              Qcol(:) = (dp3d(i,j,:) - dp3d_thresh*dp0(:))*spheremp(i,j)
              mass = 0
@@ -2207,15 +2202,10 @@ contains
              if ( mass     < 0 ) Qcol(:) = -Qcol(:)
              !
              dp3d(i,j,:) = Qcol(:)/spheremp(i,j) + dp3d_thresh*dp0(:)
-#ifdef XX_NONBFB_COMING
-             vtheta_dp(i,j,:)=vtheta_dp(i,j,:)*dp3d(i,j,:)
-#endif
           endif
        enddo
     enddo
-#ifndef XX_NONBFB_COMING
     vtheta_dp(:,:,:)=vtheta_dp(:,:,:)*dp3d(:,:,:)
-#endif
   endif
   end subroutine limiter_dp3d_k
 

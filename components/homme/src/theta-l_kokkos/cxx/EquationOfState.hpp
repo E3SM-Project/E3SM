@@ -39,7 +39,11 @@ public:
       // Avoid temporaries
       exner(ilev) = pi(ilev);
       exner(ilev) /= PhysicalConstants::p0;
+#ifdef XX_BFB_TESTING
+      exner(ilev) = bfb_pow(exner(ilev),PhysicalConstants::kappa);
+#else
       exner(ilev) = pow(exner(ilev),PhysicalConstants::kappa);
+#endif
     });
   }
 
@@ -71,7 +75,6 @@ public:
   KOKKOS_INLINE_FUNCTION
   static void compute_pnh_and_exner (const Scalar& vtheta_dp, const Scalar& dphi,
                                      Scalar& pnh, Scalar& exner) {
-    // TODO: should do *= Rgas/p0, but would lose BFB with F90.
     exner = (-PhysicalConstants::Rgas)*vtheta_dp / dphi;
     pnh = exner/PhysicalConstants::p0;
 #ifndef XX_BFB_TESTING
@@ -155,8 +158,12 @@ public:
       constexpr Real p0    = PhysicalConstants::p0;
       constexpr Real kappa = PhysicalConstants::kappa;
       constexpr Real Rgas  = PhysicalConstants::Rgas;
+#ifdef XX_BFB_TESTING
+      return (Rgas*vtheta_dp(ilev) * bfb_pow(p(ilev)/p0,kappa-1)) / p0;
+#else
       // TODO: remove temporaries
       return (Rgas*vtheta_dp(ilev) * pow(p(ilev)/p0,kappa-1)) / p0;
+#endif
     };
 
     ColumnOps::column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);

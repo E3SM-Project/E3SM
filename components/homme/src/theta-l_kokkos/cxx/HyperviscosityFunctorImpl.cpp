@@ -73,13 +73,8 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
 
   // Number of scalar/vector int/mid/bhm buffers needed, with size nteams/nelems
   constexpr int mid_vectors_nelems = 1;
-  int int_scalars_nelems = 0;
-  int mid_scalars_nelems = 4;
-#ifdef XX_NONBFB_COMING
-  // wtens on interfaces
-  ++int_scalars_nelems;
-  --mid_scalars_nelems;
-#endif
+  constexpr int int_scalars_nelems = 0;
+  constexpr int mid_scalars_nelems = 4;
 
   constexpr int bhm_scalars_nteams = 4;
   constexpr int bhm_vectors_nteams = 1;
@@ -114,12 +109,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   mem += size_mid_scalar*nelems;
 
   m_buffers.wtens = decltype(m_buffers.wtens)(mem,nelems);
-#ifdef XX_NONBFB_COMING
-  constexpr int size_int_scalar = NP*NP*NUM_LEV_P;
-  mem += size_int_scalar*nelems;
-#else
   mem += size_mid_scalar*nelems;
-#endif
 
   m_buffers.phitens = decltype(m_buffers.phitens)(mem,nelems);
   mem += size_mid_scalar*nelems;
@@ -163,11 +153,7 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   if (m_theta_hydrostatic_mode) {
     m_be->set_num_fields(0, 0, 4);
   } else {
-#ifdef XX_NONBFB_COMING
-    m_be->set_num_fields(0, 0, 5, 1);
-#else
     m_be->set_num_fields(0, 0, 6);
-#endif
   }
   m_be->register_field(m_buffers.dptens);
   m_be->register_field(m_buffers.ttens);

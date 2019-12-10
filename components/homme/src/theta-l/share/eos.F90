@@ -150,17 +150,19 @@ implicit none
      do k=1,nlev
         pi_i(:,:,k+1)=pi_i(:,:,k) + dp3d(:,:,k)
      enddo
-#ifdef XX_NONBFB_COMING
+#ifdef XX_BFB_TESTING
      do k=1,nlev
         pi(:,:,k) = (pi_i(:,:,k+1)+pi_i(:,:,k))/2
      enddo
+     exner  = (pi/p0)
+     call cbfb_pow(np*np*nlev,exner,kappa)
 #else
      do k=1,nlev
         pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
      enddo
-#endif
-     
      exner  = (pi/p0)**kappa
+#endif
+
      pnh = pi ! copy hydrostatic pressure into output variable
      dpnh_dp_i = 1
      if (present(pnh_i_out)) then  
@@ -176,7 +178,7 @@ implicit none
 #ifndef XX_BFB_TESTING
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
 #else
-     pnh(:,:,k) = (p_over_exner(:,:,k)/p0);
+     pnh(:,:,k) = p_over_exner(:,:,k)/p0
      call cbfb_pow(np*np, pnh(:,:,k), (1/(1-kappa)))
      pnh(:,:,k) = p0 * pnh(:,:,k)
 #endif
@@ -268,7 +270,13 @@ implicit none
  
   phi_i(:,:,nlevp) = phis(:,:)
   do k=nlev,1,-1
+#ifdef XX_BFB_TESTING
+     phi_i(:,:,k) = p(:,:,k)/p0
+     call cbfb_pow(np*np,phi_i(:,:,k),kappa-1)
+     phi_i(:,:,k) = (Rgas*vtheta_dp(:,:,k)*phi_i(:,:,k))/p0 + phi_i(:,:,k+1)
+#else
      phi_i(:,:,k) = phi_i(:,:,k+1)+(Rgas*vtheta_dp(:,:,k)*(p(:,:,k)/p0)**(kappa-1))/p0
+#endif
   enddo
   end subroutine
 

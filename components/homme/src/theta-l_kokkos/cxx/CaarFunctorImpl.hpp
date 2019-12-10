@@ -568,15 +568,7 @@ struct CaarFunctorImpl {
 
       ColumnOps::column_scan_mid_to_int<true>(kv,dp,pi_i);
 
-#ifdef XX_NONBFB_COMING
       ColumnOps::compute_midpoint_values(kv,pi_i,pi);
-#else
-      // Add dp(k)/2 to pi(k)
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-        pi(ilev) = pi_i(ilev) + dp(ilev)/2;
-      });
-#endif
 
       Kokkos::single(Kokkos::PerThread(kv.team),[&]() {
         omega_i(0)[0] = 0.0;
@@ -934,33 +926,17 @@ struct CaarFunctorImpl {
                            [&](const int ilev) {
 
         // Add w_tens to w_nm1 and multiply by spheremp
-#ifdef XX_NONBFB_COMING
         w_tens(ilev) *= m_data.dt*spheremp;
         w_np1(ilev) = m_state.m_w_i(kv.ie,m_data.nm1,igp,jgp,ilev);
         w_np1(ilev) *= m_data.scale3*spheremp;
         w_np1(ilev) += w_tens(ilev);
-#else
-        w_tens(ilev) *= m_data.dt;
-        w_np1(ilev) = m_state.m_w_i(kv.ie,m_data.nm1,igp,jgp,ilev);
-        w_np1(ilev) *= m_data.scale3;
-        w_np1(ilev) += w_tens(ilev);
-        w_np1(ilev) *= spheremp;
-#endif
 
         // Add phi_tens to phi_nm1 and multiply by spheremp
         // temp *= m_data.dt*spheremp;
-#ifdef XX_NONBFB_COMING
         phi_tens(ilev) *= m_data.dt*spheremp;
         phi_np1(ilev) = m_state.m_phinh_i(kv.ie,m_data.nm1,igp,jgp,ilev);
         phi_np1(ilev) *= m_data.scale3*spheremp;
         phi_np1(ilev) += phi_tens(ilev);
-#else
-        phi_tens(ilev) *= m_data.dt;
-        phi_np1(ilev) = m_state.m_phinh_i(kv.ie,m_data.nm1,igp,jgp,ilev);
-        phi_np1(ilev) *= m_data.scale3;
-        phi_np1(ilev) += phi_tens(ilev);
-        phi_np1(ilev) *= spheremp;
-#endif
       });
 
       // Last interface only for w, not phi (since phi=phis there)
@@ -976,18 +952,10 @@ struct CaarFunctorImpl {
           phi_np1(ilev)[ivec] = m_geometry.m_phis(kv.ie,igp,jgp);
         } else {
           // We didn't do anything on last interface, so update w
-#ifdef XX_NONBFB_COMING
           w_tens(ilev)[ivec] *= m_data.dt*spheremp;
           w_np1(ilev)[ivec]  = m_state.m_w_i(kv.ie,m_data.nm1,igp,jgp,ilev)[ivec];
           w_np1(ilev)[ivec] *= m_data.scale3*spheremp;
           w_np1(ilev)[ivec] += w_tens(ilev)[ivec];
-#else
-          w_tens(ilev)[ivec] *= m_data.dt;
-          w_np1(ilev)[ivec]  = m_state.m_w_i(kv.ie,m_data.nm1,igp,jgp,ilev)[ivec];
-          w_np1(ilev)[ivec] *= m_data.scale3;
-          w_np1(ilev)[ivec] += w_tens(ilev)[ivec];
-          w_np1(ilev)[ivec] *= spheremp;
-#endif
         }
       });
     });
@@ -1052,12 +1020,6 @@ struct CaarFunctorImpl {
           theta_tens(ilev) += m_buffers.grad_tmp(kv.team_idx,1,igp,jgp,ilev)*m_buffers.vdp(kv.team_idx,1,igp,jgp,ilev);
         }
         theta_tens(ilev) += m_buffers.theta_vadv(kv.team_idx,igp,jgp,ilev);
-#ifdef XX_NONBFB_COMING
-        // Defer multiplication by scale 1 to later, so we multiply by (dt*scale1),
-        // saving one Scalar x Real operation
-#else
-        theta_tens(ilev) *= -m_data.scale1;
-#endif
       });
     });
   }
@@ -1083,30 +1045,15 @@ struct CaarFunctorImpl {
                            [&](const int ilev) {
 
         // Add dp_tens to dp_nm1 and multiply by spheremp
-#ifdef XX_NONBFB_COMING
         dp_tens(ilev) *= m_data.scale1*m_data.dt*spheremp;
         dp_np1(ilev)   = m_data.scale3*spheremp*m_state.m_dp3d(kv.ie,m_data.nm1,igp,jgp,ilev);
         dp_np1(ilev)  -= dp_tens(ilev);
-#else
-        dp_tens(ilev) *= m_data.scale1*m_data.dt;
-        dp_np1(ilev)   = m_data.scale3*m_state.m_dp3d(kv.ie,m_data.nm1,igp,jgp,ilev);
-        dp_np1(ilev)  -= dp_tens(ilev);
-        dp_np1(ilev)  *= spheremp;
-#endif
 
         // Add theta_tens to vtheta_nm1 and multiply by spheremp
-#ifdef XX_NONBFB_COMING
         theta_tens(ilev) *= -m_data.scale1*m_data.dt*spheremp;
         vtheta_np1(ilev)  = m_state.m_vtheta_dp(kv.ie,m_data.nm1,igp,jgp,ilev);
         vtheta_np1(ilev) *= m_data.scale3*spheremp;
         vtheta_np1(ilev) += theta_tens(ilev);
-#else
-        theta_tens(ilev) *= m_data.dt;
-        vtheta_np1(ilev)  = m_state.m_vtheta_dp(kv.ie,m_data.nm1,igp,jgp,ilev);
-        vtheta_np1(ilev) *= m_data.scale3;
-        vtheta_np1(ilev) += theta_tens(ilev);
-        vtheta_np1(ilev) *= spheremp;
-#endif
       });
     });
     kv.team_barrier();
@@ -1260,14 +1207,6 @@ struct CaarFunctorImpl {
         // Add +/- v_j*(vort+fcor), where v_j=v for u_tens and v_j=u for v_tens
         u_tens(ilev) -= m_state.m_v(kv.ie,m_data.n0,1,igp,jgp,ilev)*vort(ilev);
         v_tens(ilev) += m_state.m_v(kv.ie,m_data.n0,0,igp,jgp,ilev)*vort(ilev);
-
-#ifdef XX_NONBFB_COMING
-        // Defer scaling until vtens is added to v, to avoid one packed op*
-#else
-        // Scale by scale1
-        u_tens(ilev) *= -m_data.scale1;
-        v_tens(ilev) *= -m_data.scale1;
-#endif
       });
     });
   }
@@ -1299,7 +1238,6 @@ struct CaarFunctorImpl {
         u_np1(ilev) = m_state.m_v(kv.ie,m_data.nm1,0,igp,jgp,ilev);
         v_np1(ilev) = m_state.m_v(kv.ie,m_data.nm1,1,igp,jgp,ilev);
 
-#ifdef XX_NONBFB_COMING
         u_tens(ilev) *= -m_data.scale1*m_data.dt*spheremp;
         v_tens(ilev) *= -m_data.scale1*m_data.dt*spheremp;
 
@@ -1308,19 +1246,6 @@ struct CaarFunctorImpl {
 
         u_np1(ilev) += u_tens(ilev);
         v_np1(ilev) += v_tens(ilev);
-#else
-        u_tens(ilev) *= m_data.dt;
-        v_tens(ilev) *= m_data.dt;
-
-        u_np1(ilev) *= m_data.scale3;
-        v_np1(ilev) *= m_data.scale3;
-
-        u_np1(ilev) += u_tens(ilev);
-        v_np1(ilev) += v_tens(ilev);
-
-        u_np1(ilev) *= spheremp;
-        v_np1(ilev) *= spheremp;
-#endif
       });
     });
 

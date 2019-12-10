@@ -64,11 +64,7 @@ class HyperviscosityFunctorImpl
   struct Buffers {
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    dptens;
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    ttens;
-#ifdef XX_NONBFB_COMING
-    ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]>  wtens;
-#else
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    wtens;
-#endif
     ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>    phitens;
     ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]> vtens;
 
@@ -158,11 +154,7 @@ public:
                    Homme::subview(m_buffers.ttens,kv.ie));
 
     // Laplacian of vertical velocity (do not compute last interface)
-#ifdef XX_NONBFB_COMING
-    m_sphere_ops.laplace_simple<NUM_LEV_P,NUM_LEV_P,NUM_LEV>(kv,
-#else
     m_sphere_ops.laplace_simple<NUM_LEV,NUM_LEV_P>(kv,
-#endif
                    Homme::subview(m_state.m_w_i,kv.ie,m_data.np1),
                    Homme::subview(m_buffers.wtens,kv.ie));
     // Laplacian of geopotential (do not compute last interface)
@@ -203,22 +195,10 @@ public:
           wtens(ilev) *= rspheremp;
           phitens(ilev) *= rspheremp;
         });
-#ifdef XX_NONBFB_COMING
-        if (NUM_LEV!=NUM_LEV_P) {
-          constexpr int LAST_INT_PACK = ColInfo<NUM_INTERFACE_LEV>::LastPack;
-          Kokkos::single(Kokkos::PerThread(team),[&](){
-            wtens(LAST_INT_PACK)[0] *= rspheremp;
-          });
-        }
-#endif
       });
     }
     // Laplacian of vertical velocity
-#ifdef XX_NONBFB_COMING
-    m_sphere_ops.laplace_simple<NUM_LEV_P,NUM_LEV_P,NUM_LEV>(kv,
-#else
     m_sphere_ops.laplace_simple(kv,
-#endif
                    Homme::subview(m_buffers.wtens,kv.ie),
                    Homme::subview(m_buffers.wtens,kv.ie));
     // Laplacian of vertical geopotential
@@ -259,22 +239,10 @@ public:
           wtens(ilev) *= rspheremp;
           phitens(ilev) *= rspheremp;
         });
-#ifdef XX_NONBFB_COMING
-        if (NUM_LEV!=NUM_LEV_P) {
-          constexpr int LAST_INT_PACK = ColInfo<NUM_INTERFACE_LEV>::LastPack;
-          Kokkos::single(Kokkos::PerThread(team),[&](){
-            wtens(LAST_INT_PACK)[0] *= rspheremp;
-          });
-        }
-#endif
       });
     }
     // Laplacian of vertical velocity
-#ifdef XX_NONBFB_COMING
-    m_sphere_ops.laplace_tensor<NUM_LEV_P,NUM_LEV_P,NUM_LEV>(kv,
-#else
     m_sphere_ops.laplace_tensor(kv,
-#endif
                    Homme::subview(m_geometry.m_tensorvisc,kv.ie),
                    Homme::subview(m_buffers.wtens,kv.ie),
                    Homme::subview(m_buffers.wtens,kv.ie));
@@ -316,27 +284,12 @@ public:
       const auto& rspheremp = m_geometry.m_rspheremp(kv.ie,igp,jgp);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-#ifdef XX_NONBFB_COMING
         utens(ilev)   *= m_data.dt*rspheremp;
         vtens(ilev)   *= m_data.dt*rspheremp;
         wtens(ilev)   *= m_data.dt*rspheremp;
         ttens(ilev)   *= m_data.dt*rspheremp;
         dptens(ilev)  *= m_data.dt*rspheremp;
         phitens(ilev) *= m_data.dt*rspheremp;
-#else
-        utens(ilev)   *= m_data.dt;
-        utens(ilev)   *= rspheremp;
-        vtens(ilev)   *= m_data.dt;
-        vtens(ilev)   *= rspheremp;
-        wtens(ilev)   *= m_data.dt;
-        wtens(ilev)   *= rspheremp;
-        ttens(ilev)   *= m_data.dt;
-        ttens(ilev)   *= rspheremp;
-        dptens(ilev)  *= m_data.dt;
-        dptens(ilev)  *= rspheremp;
-        phitens(ilev) *= m_data.dt;
-        phitens(ilev) *= rspheremp;
-#endif
 
         u(ilev)      += utens(ilev);
         v(ilev)      += vtens(ilev);
@@ -382,6 +335,10 @@ public:
         }
       });
 #ifndef XX_NONBFB_COMING
+      // It would be fine to not even bother with the surface level, since
+      // phitens is only NUM_LEV long, so all the hv stuff does not even happen
+      // at NUM_LEV_P (unless NUM_LEV_P==NUM_LEV). However, removing the subtraction
+      // and addition of phi_i_ref at NUM_LEV_P introduces NON BFB diffs.
       if (NUM_LEV!=NUM_LEV_P) {
         Kokkos::single(Kokkos::PerThread(kv.team),[&](){
           phi(NUM_LEV_P-1) += phi_ref(NUM_LEV_P-1);
