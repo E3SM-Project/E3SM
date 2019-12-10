@@ -72,21 +72,24 @@ class TestAllScream(object):
                 self._proc_count = 1
 
     ###############################################################################
-    def generate_cmake_config(self, extra_configs):
+    def generate_cmake_config(self, extra_configs, for_ctest=False):
     ###############################################################################
         if self._kokkos:
             kokkos_cmake = "-DKokkos_DIR={}".format(self._kokkos)
         else:
             kokkos_cmake = "-C {}/cmake/machine-files/{}.cmake".format(self._src_dir, self._machine)
 
-        result = "cmake -DCMAKE_CXX_COMPILER={} {}".format(self._cxx, kokkos_cmake)
+        result = "{}-DCMAKE_CXX_COMPILER={} {}".format("" if for_ctest else "cmake ", self._cxx, kokkos_cmake)
         for key, value in extra_configs:
             result += " -D{}={}".format(key, value)
 
-        if self._custom_cmake_opts:
-            opt_list = self._custom_cmake_opts.split(';')
-            for opt in opt_list:
-                result += " -D{}".format(opt)
+        for custom_opt in self._custom_cmake_opts:
+            if "=" in custom_opt:
+                name, value = custom_opt.split("=", 1)
+                # Some effort is needed to ensure quotes are perserved
+                result += " -D{}='{}'".format(name, value)
+            else:
+                result += " -D{}".format(custom_opt)
 
         return result
 
@@ -201,7 +204,7 @@ class TestAllScream(object):
         print("Testing '{}' for build type '{}'".format(git_head,name))
 
         test_dir = "ctest-build/{}".format(name)
-        cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
+        cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
         success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True)[0] == 0
