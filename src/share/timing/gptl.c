@@ -3669,7 +3669,7 @@ static int merge_thread_data()
     /* allocate memory to hold list of timer names */
     if( !( timerlist[t] = (char *)malloc( length * count[t] * sizeof (char)) ) && count[t])
       return GPTLerror ("%s: memory allocation failed\n", thisfunc);
-    memset( timerlist[t], length  * count[t] * sizeof (char), 0 );
+    memset( timerlist[t], 0, length  * count[t] * sizeof (char) );
 
     x = 0;
     for (ptr = timers[t]->next; ptr; ptr = ptr->next) {
@@ -3691,7 +3691,7 @@ static int merge_thread_data()
     return GPTLerror ("%s: memory allocation failed\n", thisfunc);
 
   for (t = 1; t < nthreads; t++) {
-    memset( newtimers, max_count * sizeof (char *), 0 );
+    memset( newtimers, 0, max_count * sizeof (char *) );
     k = 0;
     n = 0;
     num_newtimers = 0;
