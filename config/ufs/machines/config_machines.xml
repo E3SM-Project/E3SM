@@ -161,17 +161,17 @@ This allows using a different mpirun command to launch unit tests
       <executable>/opt/sgi/mpt/mpt-2.15/bin/mpirun $ENV{UNIT_TEST_HOST} -np 1 </executable>
     </mpirun>
     <module_system type="module">
-      <init_path lang="perl">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="csh">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/csh</init_path>
-      <init_path lang="sh">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/init/sh</init_path>
-      <cmd_path lang="perl">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/glade/u/apps/ch/opt/lmod/8.1.7/lmod/lmod/libexec/lmod python</cmd_path>
+      <init_path lang="perl">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/perl</init_path>
+      <init_path lang="python">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/env_modules_python.py</init_path>
+      <init_path lang="csh">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/csh</init_path>
+      <init_path lang="sh">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/init/sh</init_path>
+      <cmd_path lang="perl">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod perl</cmd_path>
+      <cmd_path lang="python">/glade/u/apps/ch/opt/lmod/7.5.3/lmod/lmod/libexec/lmod python</cmd_path>
       <cmd_path lang="sh">module</cmd_path>
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-	<command name="load">ncarenv/1.3</command>
+	<command name="load">ncarenv/1.2</command>
       </modules>
       <modules compiler="intel">
 	<command name="load">intel/19.0.2</command>
@@ -190,6 +190,22 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
         <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
       </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
+      </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
       </modules>
@@ -203,7 +219,7 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
-	<!-- netcdf-mpi is broken with mpt -->
+	<!-- known failure in parallel netcdf with mpt, use serial -->
 	<command name="load">netcdf/4.7.1</command>
 	<command name="load">pnetcdf/1.11.1</command>
       </modules>
@@ -241,18 +257,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
     </environment_variables>
-    <environment_variables comp_interface="nuopc" mpilib="mpi-serial" DEBUG="FALSE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libO/Linux.intel.64.mpiuni.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" mpilib="mpi-serial" DEBUG="TRUE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libg/Linux.intel.64.mpiuni.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" DEBUG="FALSE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libO/Linux.intel.64.mpt.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" DEBUG="TRUE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libg/Linux.intel.64.mpt.default/esmf.mk</env>
-    </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
@@ -268,6 +272,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="SP_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libsp_v2.0.2_d.a</env>
       <env name="W3EMC_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libw3emc_v2.2.0_d.a</env>
       <env name="W3NCO_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libw3nco_v2.0.6_d.a</env>
+      <env name="LD_LIBRARY_PATH">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib:/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib64:$ENV{ESMF_LIBDIR}:$ENV{LD_LIBRARY_PATH}</env>
     </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>
@@ -342,82 +347,6 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables>
       <env name="OMP_STACKSIZE">64M</env>
       <env name="MPICH_ENV_DISPLAY">1</env>
-    </environment_variables>
-  </machine>
-
-  <machine MACH="hera">
-    <DESC>NOAA hera system</DESC>
-    <NODENAME_REGEX>hfe</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
-    <MPILIBS>impi</MPILIBS>
-    <PROJECT>nems</PROJECT>
-    <SAVE_TIMING_DIR/>
-    <CIME_OUTPUT_ROOT>/scratch1/NCEPDEV/nems/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/scratch1/NCEPDEV/nems/Rocky.Dunlap/BASELINES</BASELINE_ROOT>
-    <CCSM_CPRNC>/scratch1/NCEPDEV/nems/Rocky.Dunlap/cesmdataroot/tools/cprnc</CCSM_CPRNC>
-    <GMAKE>make</GMAKE>
-    <GMAKE_J>8</GMAKE_J>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>NCEP</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>80</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>40</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>srun</executable>
-      <arguments>
-	<arg name="num_tasks">-n $TOTALPES</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="mpi-serial">
-      <executable></executable>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="sh">/apps/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/apps/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="python">/apps/lmod/lmod/libexec/lmod python</cmd_path>
-      <modules compiler="intel">
-        <command name="purge"/>
-        <command name="load">intel/18.0.5.274</command>
-      </modules>
-      <modules mpilib="impi">
-        <command name="load">impi/2018.0.4</command>
-      </modules>
-      <modules>
-        <command name="load">netcdf/4.7.0</command>
-        <command name="use">/scratch2/NCEPDEV/nwprod/NCEPLIBS/modulefiles</command>
-	<command name="load">bacio/2.0.3</command>
-	<command name="load">ip/3.0.2</command>
-	<command name="load">nemsio/2.2.4</command>
-	<command name="load">sp/2.0.3</command>
-	<command name="load">w3emc/2.3.1</command>
-	<command name="load">w3nco/2.0.7</command>
-	<command name="load">g2/3.1.1</command>
-	<command name="load">g2tmpl/1.5.1</command>
-	<command name="load">crtm/2.2.6</command>
-	<command name="load">jasper/1.900.1</command>
-	<command name="load">png/1.2.44</command>
-	<command name="load">z/1.2.11</command>
-	<command name="load">post/8.0.0</command>
-
-	<command name="use">/scratch1/NCEPDEV/nems/emc.nemspara/soft/modulefiles</command>
-	<command name="load">esmf/8.0.0</command>
-
-	<command name="use">/contrib/modulefiles</command>
-	<command name="load">cmake/3.9.0</command>
-      </modules>
-    </module_system>
-    <environment_variables comp_interface="nuopc">
-      <env name="ESMF_RUNTIME_PROFILE">ON</env>
-      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-      <env name="UGCSINPUTPATH">/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA/fv3_gfs_v15_repro_ccpp</env>
-      <env name="UGCSFIXEDFILEPATH">/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA/fix_am</env>
-      <env name="UGCSADDONPATH">/scratch1/NCEPDEV/nems/Rocky.Dunlap/INPUTDATA/addon</env>
     </environment_variables>
   </machine>
 
