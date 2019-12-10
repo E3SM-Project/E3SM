@@ -219,7 +219,7 @@ using a fortran linker.
 
 <compiler COMPILER="intel">
   <CFLAGS>
-    <base>  -qno-opt-dynamic-align -fp-model precise -std=gnu99 </base>
+    <base> -fp-model source -sox -std=gnu99 </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
@@ -235,10 +235,23 @@ using a fortran linker.
   <FC_AUTO_R8>
     <base> -r8 </base>
   </FC_AUTO_R8>
+  <FC_32BIT>
+    <base> -i4 -real-size 32 </base>
+  </FC_32BIT>
+  <FC_64BIT>
+    <base> -i4 -real-size 64 </base>
+  </FC_64BIT>
+  <FC_REPRO>
+    <base> -qno-opt-dynamic-align </base>
+  </FC_REPRO>
+  <FC_FAST>
+    <base> -no-prec-dif -no-preq-sqrt </base>
+  </FC_FAST>
   <FFLAGS>
-    <base> -qno-opt-dynamic-align  -convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model source  </base>
+    <base> -fpp -fno-alias -auto -safe-cray-ptr -ftz -assume byterecl -nowarn -sox -align array64byte</base>
     <append compile_threaded="TRUE"> -qopenmp </append>
-    <append DEBUG="TRUE"> -O0 -g -check uninit -check bounds -check pointers -fpe0 -check noarg_temp_created </append>
+
+    <append DEBUG="TRUE">  -g -O0 -check -check noarg_temp_created -check nopointer -warn -warn noerrors -fp-stack-check -fstack-protector-all -fpe0 -debug -traceback -ftrapuv </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
@@ -498,10 +511,10 @@ using a fortran linker.
 
 <compiler MACH="cheyenne" COMPILER="intel">
   <CFLAGS>
-    <append> -qopt-report -xCORE_AVX2 -no-fma</append>
+    <append> -qopt-report -xCORE-AVX2 </append>
   </CFLAGS>
   <FFLAGS>
-    <append> -qopt-report -xCORE_AVX2 -no-fma</append>
+    <append> -qopt-report -xCORE-AVX2 </append>
   </FFLAGS>
   <CMAKE_OPTS>
     <append DEBUG="TRUE"> -DPIO_ENABLE_LOGGING=ON </append>
@@ -517,6 +530,15 @@ using a fortran linker.
     <append> -llapack -lblas </append>
     <append MPILIB="mpi-serial"> -ldl </append>
   </SLIBS>
+</compiler>
+
+<compiler MACH="hera" COMPILER="intel">
+  <CFLAGS>
+    <append> -qopt-report -xCORE-AVX2 </append>
+  </CFLAGS>
+  <FFLAGS>
+    <append> -qopt-report -xCORE-AVX2 </append>
+  </FFLAGS>
 </compiler>
 
 <compiler MACH="izumi">
