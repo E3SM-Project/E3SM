@@ -120,5 +120,76 @@ _TESTS = {
                           "ERS_D_Ld9.1x1_brazil.ICLM45ED",
                           "SMS_D_Lm6.1x1_brazil.ICLM45ED")
                          ),
+    "e3sm_bench_hires_g" : (None, "01:00:00", (
+                 ("SMS_P2560.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P2792.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P3072.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P3200.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P4096.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P4800.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P5120.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P5200.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P5584.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P6400.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P7200.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P8192.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P9600.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P11168.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P12000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P12800.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P16000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P16384.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P19200.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P21600.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P22400.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P24000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P25600.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P26000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P28000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P28800.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P30000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P32000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P36000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P48000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P64000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P96000.T62_oRRS18to6v3.GMPAS-IAF","bench-gmpas_noio"))
+    ),
+    "e3sm_bench_hires_f" : (None, "01:00:00", (
+                 ("SMS_P7200.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P8640.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P10800.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P14400.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P21600.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P43200.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"),
+                 ("SMS_P86400.ne120_ne120.FC5AV1C-H01A","cam-bench-noio"))
+    ),
+    "e3sm_bench_hires" : (
+                 ("e3sm_bench_hires_g", "e3sm_bench_hires_f"),
+                 "01:00:00", (
+                 ("SMS_PS.ne120_oRRS18v3_ICG.A_WCYCL1950S_CMIP6_HR","bench-wcycl"),
+                 ("SMS_PM.ne120_oRRS18v3_ICG.A_WCYCL1950S_CMIP6_HR","bench-wcycl"),
+                 ("SMS_PL.ne120_oRRS18v3_ICG.A_WCYCL1950S_CMIP6_HR","bench-wcycl"))
+    ),
+    "e3sm_bench_lores_g" : (None, "01:00:00", (
+                 ("SMS_P320.T62_oEC60to30v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P480.T62_oEC60to30v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P640.T62_oEC60to30v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P960.T62_oEC60to30v3.GMPAS-IAF","bench-gmpas_noio"),
+                 ("SMS_P1280.T62_oEC60to30v3.GMPAS-IAF","bench-gmpas_noio"))
+    ),
+    "e3sm_bench_lores_f" : (None, "01:00:00", (
+                 ("SMS_P1350.ne30_ne30.FC5AV1C-L","cam-bench-noio"),
+                 ("SMS_P2700.ne30_ne30.FC5AV1C-L","cam-bench-noio"),
+                 ("SMS_P5400.ne30_ne30.FC5AV1C-L","cam-bench-noio"))
+    ),
+    "e3sm_bench_lores" : (
+                 ("e3sm_bench_lores_g", "e3sm_bench_lores_f"),
+                 "01:00:00", (
+                 ("SMS_PS.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","allactive-v1cmip6"),
+                 ("SMS_PM.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","allactive-v1cmip6"),
+                 ("SMS_PL.ne30_oECv3_ICG.A_WCYCL1850S_CMIP6","allactive-v1cmip6"))
+    ),
+    "e3sm_bench_all" : (("e3sm_bench_hires", "e3sm_bench_lores"),"01:00:00", ( )
+    ),
 
 }

@@ -1250,22 +1250,21 @@ for mct, etc.
   <ADD_LDFLAGS compile_threaded="true"> -qopenmp -static-intel</ADD_LDFLAGS>
   <ADD_CFLAGS compile_threaded="true" DEBUG="TRUE">-heap-arrays</ADD_CFLAGS>
   <ADD_FFLAGS compile_threaded="true" DEBUG="TRUE">-heap-arrays</ADD_FFLAGS>
-  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -Wl,-rpath -Wl,$(NETCDF_PATH)/lib</ADD_SLIBS>
-  <ADD_SLIBS>-mkl</ADD_SLIBS>
+  <ADD_FFLAGS>$(shell $(NETCDF_FORTRAN_PATH)/bin/nf-config --fflags)</ADD_FFLAGS>
+  <ADD_SLIBS>$(shell $(NETCDF_FORTRAN_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
+  <ADD_SLIBS>$(shell $(NETCDF_C_PATH)/bin/nc-config --libs)</ADD_SLIBS>
+  <ADD_SLIBS>-Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl</ADD_SLIBS>
   <GPTL_CPPDEFS> -DHAVE_SLASHPROC </GPTL_CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
 </compiler>
 
 <compiler COMPILER="gnu" MACH="anvil">
-  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
+  <ADD_SLIBS>$(shell $(NETCDF_FORTRAN_PATH)/bin/nf-config --flibs)</ADD_SLIBS>
+  <ADD_SLIBS>$(shell $(NETCDF_C_PATH)/bin/nc-config --libs)</ADD_SLIBS>
+  <ADD_SLIBS>-L$(MKLROOT)/lib/intel64 -Wl,--no-as-needed -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl</ADD_SLIBS>
   <GPTL_CPPDEFS> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</GPTL_CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
-</compiler>
-
-<compiler COMPILER="pgi" MACH="anvil">
-  <ADD_SLIBS>$(shell $(NETCDF_PATH)/bin/nf-config --flibs) -llapack -lblas</ADD_SLIBS>
-  <ADD_SLIBS> -rpath $(NETCDF_PATH)/lib </ADD_SLIBS>
-  <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
+  <CXX_LIBS>-lstdc++</CXX_LIBS>
 </compiler>
 
 <compiler COMPILER="intel" MACH="bebop">
@@ -1404,10 +1403,11 @@ for mct, etc.
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <ADD_FFLAGS DEBUG="TRUE"> -C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame </ADD_FFLAGS>
   <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
-  <PNETCDF_PATH>$(PNETCDFROOT)</PNETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDF_HOME)</PNETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <GPTL_CPPDEFS> -DHAVE_SLASHPROC </GPTL_CPPDEFS>
   <SFC>pgfortran</SFC>
   <SCC>pgcc</SCC>
   <SCXX>pgc++</SCXX>
@@ -1415,15 +1415,20 @@ for mct, etc.
   <MPIFC MPILIB="impi"> mpipgf90 </MPIFC>
   <MPICC MPILIB="impi"> mpipgcc  </MPICC>
   <MPICXX MPILIB="impi"> mpipgcxx </MPICXX>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
+  <CXX_LIBS>-lstdc++</CXX_LIBS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
 </compiler>
 
 <compiler COMPILER="intel" MACH="compy">
   <ADD_CFLAGS DEBUG="FALSE"> -O2 </ADD_CFLAGS>
   <ADD_FFLAGS DEBUG="FALSE"> -O2 </ADD_FFLAGS>
   <NETCDF_PATH> $(NETCDF_HOME)</NETCDF_PATH>
+  <PNETCDF_PATH>$(PNETCDF_HOME)</PNETCDF_PATH>
   <CONFIG_ARGS> --host=Linux </CONFIG_ARGS>
   <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
   <ADD_CPPDEFS> -DLINUX </ADD_CPPDEFS>
+  <GPTL_CPPDEFS> -DHAVE_SLASHPROC </GPTL_CPPDEFS>
   <ADD_FFLAGS DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv -init=snan</ADD_FFLAGS>
   <SFC> ifort </SFC>
   <SCC> icc </SCC>

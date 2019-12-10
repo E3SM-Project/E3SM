@@ -271,7 +271,9 @@
     <!-- anvil is slurm -->
     <batch_system MACH="anvil" type="slurm" >
       <queues>
-	<queue walltimemax="01:00:00" default="true">acme-centos6</queue>
+        <queue walltimemax="48:00:00" nodemax="5" default="true" strict="true">acme-small</queue>
+        <queue walltimemax="24:00:00" nodemin="6" nodemax="60" strict="true">acme-medium</queue>
+        <queue walltimemax="12:00:00" nodemin="61" strict="true">acme-large</queue>
       </queues>
     </batch_system>
 
@@ -376,7 +378,8 @@
 
    <batch_system MACH="compy" type="slurm">
     <queues>
-      <queue walltimemax="00:59:00" default="true">slurm</queue>
+      <queue walltimemax="02:00:00" strict="true" nodemin="1" nodemax="40" default="true">short</queue>
+      <queue walltimemax="06:00:00" nodemin="1" nodemax="460">slurm</queue>
     </queues>
    </batch_system>
 

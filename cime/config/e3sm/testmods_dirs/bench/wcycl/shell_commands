@@ -1,0 +1,6 @@
+#!/bin/bash
+./xmlchange HIST_OPTION=none
+./xmlchange SAVE_TIMING=TRUE
+
+./xmlchange --append CAM_CONFIG_OPTS='-cosp'
+./xmlchange --id BUDGETS --val TRUE

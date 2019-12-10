@@ -7727,13 +7727,13 @@
     </mach>
     <mach name="compy">
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+" pesize="S">
-        <comment> -compset A_WCYCL* -res ne30_oEC* on 27 nodes pure-MPI </comment>
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 32 nodes pure-MPI, sypd=4.01 </comment>
         <ntasks>
           <ntasks_atm>900</ntasks_atm>
           <ntasks_lnd>900</ntasks_lnd>
           <ntasks_rof>900</ntasks_rof>
           <ntasks_ice>900</ntasks_ice>
-          <ntasks_ocn>160</ntasks_ocn>
+          <ntasks_ocn>360</ntasks_ocn>
           <ntasks_cpl>900</ntasks_cpl>
         </ntasks>
         <nthrds>
@@ -7754,13 +7754,13 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+" pesize="any">
-        <comment> -compset A_WCYCL* -res ne30_oEC* on 40 nodes pure-MPI </comment>
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 46 nodes pure-MPI, sypd=5.30 </comment>
         <ntasks>
           <ntasks_atm>1350</ntasks_atm>
           <ntasks_lnd>1350</ntasks_lnd>
           <ntasks_rof>1350</ntasks_rof>
           <ntasks_ice>1350</ntasks_ice>
-          <ntasks_ocn>240</ntasks_ocn>
+          <ntasks_ocn>480</ntasks_ocn>
           <ntasks_cpl>1350</ntasks_cpl>
         </ntasks>
         <nthrds>
@@ -7781,7 +7781,7 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+" pesize="L">
-        <comment> -compset A_WCYCL* -res ne30_oEC* on 92 nodes pure-MPI </comment>
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 92 nodes pure-MPI, sypd=8.53 </comment>
         <ntasks>
           <ntasks_atm>2700</ntasks_atm>
           <ntasks_lnd>2700</ntasks_lnd>
@@ -7808,7 +7808,7 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASCICE.+MPASO.+MOSART.+" pesize="XL">
-        <comment> -compset A_WCYCL* -res ne30_oEC* on 185 nodes pure-MPI </comment>
+        <comment> -compset A_WCYCL* -res ne30_oEC* on 185 nodes pure-MPI, sypd=10.26 </comment>
         <ntasks>
           <ntasks_atm>5400</ntasks_atm>
           <ntasks_lnd>5400</ntasks_lnd>
