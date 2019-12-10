@@ -6443,7 +6443,7 @@
   <grid name="a%ne30np4_">
     <mach name="cori-knl">
       <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="L">
-        <comment>"cori-knl ne30 coupled compest on 120 nodes, 64x1 (2 threads CPL/OCN/ICE), (kmod125) sypd=4.1"</comment>
+        <comment>"cori-knl ne30 coupled compest on 105 nodes, 64x1 (2 threads CPL/OCN/ICE), (kmod125) sypd=3.6"</comment>
         <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -6451,7 +6451,7 @@
           <ntasks_lnd>822</ntasks_lnd>
           <ntasks_rof>128</ntasks_rof>
           <ntasks_ice>5120</ntasks_ice>
-          <ntasks_ocn>1920</ntasks_ocn>
+          <ntasks_ocn>640</ntasks_ocn>
           <ntasks_glc>64</ntasks_glc>
           <ntasks_wav>64</ntasks_wav>
           <ntasks_cpl>5952</ntasks_cpl>
@@ -6478,7 +6478,7 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="any">
-        <comment>"cori-knl ne30 coupled compest on 60 nodes, 67x2, (kmod060b) sypd=2.86"</comment>
+        <comment>"cori-knl ne30 coupled compest on 50 nodes, 67x2, (kmod060b) sypd=2.79"</comment>
         <MAX_MPITASKS_PER_NODE>67</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>268</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -6486,7 +6486,7 @@
           <ntasks_lnd>268</ntasks_lnd>
           <ntasks_rof>134</ntasks_rof>
           <ntasks_ice>2560</ntasks_ice>
-          <ntasks_ocn>960</ntasks_ocn>
+          <ntasks_ocn>335</ntasks_ocn>
           <ntasks_glc>67</ntasks_glc>
           <ntasks_wav>67</ntasks_wav>
           <ntasks_cpl>2881</ntasks_cpl>
@@ -6513,7 +6513,7 @@
         </rootpe>
       </pes>
       <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.*" pesize="S">
-        <comment>"cori-knl ne30 coupled compest on 31 nodes, 67x2, (kmod031b) sypd=1.71"</comment>
+        <comment>"cori-knl ne30 coupled compest on 26 nodes, 67x2, (kmod031b) sypd=1.79"</comment>
         <MAX_MPITASKS_PER_NODE>67</MAX_MPITASKS_PER_NODE>
         <MAX_TASKS_PER_NODE>134</MAX_TASKS_PER_NODE>
         <ntasks>
@@ -6521,7 +6521,7 @@
           <ntasks_lnd>670</ntasks_lnd>
           <ntasks_rof>64</ntasks_rof>
           <ntasks_ice>1350</ntasks_ice>
-          <ntasks_ocn>600</ntasks_ocn>
+          <ntasks_ocn>268</ntasks_ocn>
           <ntasks_glc>67</ntasks_glc>
           <ntasks_wav>67</ntasks_wav>
           <ntasks_cpl>1350</ntasks_cpl>
