@@ -263,10 +263,6 @@ contains
        ! Initialize lnd -> mosart attribute vector
        call mct_aVect_init(x2r_r, rList=seq_flds_x2r_fields, lsize=lsize)
        call mct_aVect_zero(x2r_r)
-       
-       ! Initialize lnd -> mosart attribute vector
-       call mct_aVect_init(x2r_r, rList=seq_flds_x2r_fields, lsize=lsize)
-       call mct_aVect_zero(x2r_r)
 
        ! Initialize mosart -> ocn attribute vector        
        call mct_aVect_init(r2x_r, rList=seq_flds_r2x_fields, lsize=lsize)
