@@ -74,14 +74,6 @@ else()
   set(USE_CXX TRUE)
 endif()
 
-# Decide whether to use a C++ or Fortran linker, based on whether we
-# are using any C++ code and the compiler-dependent CXX_LINKER variable
-if (USE_CXX AND CXX_LINKER STREQUAL "CXX")
-  set(LD "CXX")
-else()
-  set(LD "Fortran")
-endif()
-
 if (USE_CXX AND NOT SUPPORTS_CXX)
   message(FATAL_ERROR "Fatal attempt to include C++ code on a compiler/machine combo that has not been set up to support C++")
 endif()
@@ -415,12 +407,19 @@ if (USE_CXX)
   endif()
 
   if (CXX_LDFLAGS)
-    set(LDFLAGS "${LDFLAGS} ${SLIBS} ${CXX_LDFLAGS}")
+    set(LDFLAGS "${LDFLAGS} ${CXX_LDFLAGS}")
   endif()
 endif()
 
-# Remove arch flag if it exists
-string(REGEX REPLACE "-arch[^ ]+" "" F90_LDFLAGS "${LDFLAGS}")
+# Decide whether to use a C++ or Fortran linker, based on whether we
+# are using any C++ code and the compiler-dependent CXX_LINKER variable
+if (USE_CXX AND CXX_LINKER STREQUAL "CXX")
+  set(LD "CXX")
+else()
+  set(LD "Fortran")
+  # Remove arch flag if it exists, it break fortran linking
+  string(REGEX REPLACE "-arch[^ ]+" "" LDFLAGS "${LDFLAGS}")
+endif()
 
 if (NOT IO_LIB_SRCROOT)
   if (PIO_VERSION STREQUAL 2)
@@ -457,3 +456,4 @@ set(CMAKE_Fortran_COMPILER ${FC} PARENT_SCOPE)
 set(CMAKE_Fortran_FLAGS "${FFLAGS}" PARENT_SCOPE)
 set(CMAKE_C_FLAGS "${CFLAGS}" PARENT_SCOPE)
 set(CMAKE_CXX_FLAGS "${CXXFLAGS}" PARENT_SCOPE)
+set(CMAKE_EXE_LINKER_FLAGS "${LDFLAGS}" PARENT_SCOPE)
