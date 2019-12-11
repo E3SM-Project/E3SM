@@ -46,8 +46,8 @@ contains
     enddo
   end subroutine compute_gwphis
 
-  subroutine compute_stage_value_dirk(n0,np1,alphadt,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,itercount,itererr,nm1)
+  subroutine compute_stage_value_dirk(nm1,alphadt_nm1,n0,alphadt_n0,np1,dt2,qn0,elem,hvcoord,hybrid,&
+       deriv,nets,nete,itercount,itererr)
     !===================================================================================
     ! this subroutine solves a stage value equation for a DIRK method which takes the form
     !
@@ -59,8 +59,8 @@ contains
     ! w_0 = w(np1)
     ! phi_0 = phi(np1)
     ! Then solve (ovewriting w(np1),phi(np1): 
-    ! w(np1) = w_0 + alphadt1 * SW(n0)  + alphadt1*SW(nm1) +  dt2*SW(np1)
-    ! phi(np1) = phi_0 + alphadt1 * SPHI(n0)  + alphadt1*SPHI(nm1) +  dt2*SPHI(np1)
+    ! w(np1) = w_0 + alphadt_n0 * SW(n0)  + alphadt_nm1*SW(nm1) +  dt2*SW(np1)
+    ! phi(np1) = phi_0 + alphadt_n0 * SPHI(n0)  + alphadt_nm1*SPHI(nm1) +  dt2*SPHI(np1)
     !
     ! SW(nt) = g*dpnh_dp_i(nt)-1
     ! SPHI(nt) = g*w(nt) -g*a(k) u(nt) dot grad_phis
@@ -69,25 +69,24 @@ contains
     ! compute_gwphis()            used to compute g*a(k) u(nt) dot grad_phis  in SPHI(nt)   
     !
     ! We then precompute:
-    !  w_rhs = w_0 + alphadt1 * SW(n0)  + alphadt1*SW(nm1) 
-    !  phi_rhs = w_0 + alphadt1 * SPHI(n0)  + alphadt1*SPHI(nm1) -  dt2*compute_gwphi(np1)
+    !  w_rhs = w_0 + alphadt_n0 * SW(n0)  + alphadt_nm1*SW(nm1) 
+    !  phi_rhs = w_0 + alphad_n0 * SPHI(n0)  + alphadt1_nm1*SPHI(nm1) -  dt2*compute_gwphi(np1)
     ! and solve, via Newton iteraiton:
     !   w(np1) = w_rhs + dt2*SW(np1)
     !   phi(np1) = phi_rhs + dt2*g*w(np1)
     !
     !===================================================================================
 
-    integer, intent(in) :: n0,np1,qn0,nets,nete
+    integer, intent(in) :: nm1,n0,np1,qn0,nets,nete
     real (kind=real_kind), intent(in) :: dt2
     integer :: itercount
     real (kind=real_kind) :: itererr
-    real (kind=real_kind), intent(in) :: alphadt
+    real (kind=real_kind), intent(in) :: alphadt_n0,alphadt_nm1
 
     type (hvcoord_t)     , intent(in) :: hvcoord
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
     type (derivative_t)  , intent(in) :: deriv
-    integer, optional :: nm1
 
 
     ! local
@@ -146,8 +145,8 @@ contains
 
        phi_n0 = phi_np1
 
-       if (alphadt.ne.0d0) then ! add dt*alpha*S(un0) to the rhs
-          dt3=alphadt
+       if (alphadt_n0.ne.0d0) then ! add dt*alpha*S(un0) to the rhs
+          dt3=alphadt_n0
           nt=n0
           call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt), &
                elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),pnh,   &
@@ -162,8 +161,8 @@ contains
        end if
 
 
-       if (present(nm1)) then ! add dt*alpha*S(unm1) to the rhs
-          dt3=alphadt
+       if (alphadt_nm1.ne.0d0) then ! add dt*alpha*S(unm1) to the rhs
+          dt3=alphadt_nm1
           nt=nm1
           call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt), &
                elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),pnh,   &
