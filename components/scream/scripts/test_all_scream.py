@@ -133,7 +133,7 @@ class TestAllScream(object):
         return result
 
     ###############################################################################
-    def generate_baselines(self, test):
+    def generate_baselines(self, test, cleanup):
     ###############################################################################
         name = self._test_full_names[test]
         test_dir = "ctest-build/{}".format(name)
@@ -161,7 +161,8 @@ class TestAllScream(object):
             print("WARNING: Failed to create baselines:\n{}".format(err))
             return False
 
-        run_cmd_no_fail("ls | grep -v data | xargs rm -rf ", from_dir=test_dir)
+        if cleanup:        
+            run_cmd_no_fail("ls | grep -v data | xargs rm -rf ", from_dir=test_dir)
 
         return True
 
@@ -174,12 +175,14 @@ class TestAllScream(object):
             run_cmd_no_fail("git checkout {}".format(git_baseline_head))
             print("  Switched to {} ({})".format(git_baseline_head, get_current_commit()))
 
+
+        cleanup = git_baseline_head != "HEAD"
         success = True
         num_workers = len(self._tests) if self._parallel else 1
         with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
 
             future_to_test = {
-                executor.submit(self.generate_baselines, test) : test
+                executor.submit(self.generate_baselines, test, cleanup) : test
                 for test in self._tests}
 
             for future in threading3.as_completed(future_to_test):
