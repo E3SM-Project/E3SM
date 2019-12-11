@@ -58,6 +58,7 @@ module gllfvremap_mod
        ! Remap phis.
        gfr_dyn_to_fv_phys_topo, &
        gfr_fv_phys_to_dyn_topo, &
+       gfr_dyn_to_fv_phys_topo_data, &
        ! If nphys == 1, reconstruct the field to boost the OOA. If
        ! nphys > 1, returns immediately.
        gfr_pg1_reconstruct_topo, & ! call after the gfr_fv_phys_to_dyn_topo and the DSS
@@ -280,7 +281,7 @@ contains
        if (gfr%have_fv_topo_file_phis) then
           phis(:ncol,ie) = gfr%phis(:,ie)
        else
-          call gfr_dyn_to_fv_phys_topo_elem(elem, ie, phis(:,ie))
+          call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, elem(ie)%state%phis, phis(:,ie))
        end if
 
        dp = elem(ie)%state%dp3d(:,:,:,nt)
@@ -463,10 +464,96 @@ contains
     integer :: ie
 
     do ie = nets,nete
-       call gfr_dyn_to_fv_phys_topo_elem(elem, ie, phis(:,ie))
+       call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, elem(ie)%state%phis, phis(:,ie))
     end do
   end subroutine gfr_dyn_to_fv_phys_topo_hybrid
 
+  subroutine gfr_dyn_to_fv_phys_topo_data(par, elem, nets, nete, g, gsz, p, psz, square, augment)
+    ! Remap SGH, SGH30, phis, landm_coslat, landfrac from GLL to FV grids. For
+    ! SGH* fields, square should be true. Then variance is remapped and so
+    ! conserved. For SGH, but not SGH30, set augment to true to add the variance
+    ! increases due to the additional smoothness of remapping from GLL to
+    ! (first-order) FV bases. SGH30 does not require additional variance to be
+    ! added since it's the variance due to truncation of wave numbers at a
+    ! separation length scale; this is independent of grid.
+
+    use parallel_mod, only: parallel_t, abortmp
+    use hybrid_mod, only: hybrid_create
+
+    type (parallel_t), intent(in) :: par
+    type (element_t), intent(inout) :: elem(:)
+    integer, intent(in) :: nets, nete, gsz, psz
+    real(kind=real_kind), intent(in) :: g(gsz)
+    real(kind=real_kind), intent(out) :: p(psz)
+    logical, intent(in), optional :: square, augment
+
+    type (hybrid_t) :: hybrid
+    integer :: ie, ncol
+    logical :: augment_in
+    real(real_kind), allocatable :: phis_gll(:,:,:), phis_pg(:,:)
+
+    augment_in = .false.
+    if (present(augment)) augment_in = augment
+
+    ncol = gfr%nphys*gfr%nphys
+
+    do ie = nets,nete
+       call gfr_dyn_to_fv_phys_topo_data_elem(ie, elem, square, augment_in, &
+            g(npsq*(ie-nets)+1 : npsq*(ie-nets+1)), &
+            p(ncol*(ie-nets)+1 : ncol*(ie-nets+1)))
+    end do
+  end subroutine gfr_dyn_to_fv_phys_topo_data
+
+  subroutine gfr_dyn_to_fv_phys_topo_data_elem(ie, elem, square, augment_variance, g, p)
+    ! Element-level impl of gfr_dyn_to_fv_phys_topo_data.
+
+    use physical_constants, only: grav => g
+
+    integer, intent(in) :: ie
+    type (element_t), intent(in) :: elem(:)
+    logical, intent(in) :: square, augment_variance
+    real(kind=real_kind), intent(in) :: g(:)
+    real(kind=real_kind), intent(out) :: p(:)
+
+    real(kind=real_kind) :: wr(np,np,3), ones(np,np), qmin, qmax, phispg(npsq)
+    integer :: nf, ncol, i, j, k
+
+    ones = one
+    nf = gfr%nphys
+    ncol = nf*nf
+
+    if (augment_variance) then
+       ! Estimate additional variance due to remapping from GLL to FV
+       ! bases.
+       call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, elem(ie)%state%phis, phispg)
+       do j = 1,nf
+          do i = 1,nf
+             ! Integrate (phis_gll - phis_fv)^2 over FV subcell (i,j). Do this
+             ! using gfr_g2f_scalar; thus, only one entry out of nf^2 is used.
+             k = nf*(j-1) + i
+             wr(:,:,2) = ((elem(ie)%state%phis - phispg(k))/grav)**2
+             call gfr_g2f_scalar(ie, elem(ie)%metdet, wr(:,:,2:2), wr(:,:,1:1))
+             ! Use just entry (i,j).
+             wr(i,j,3) = max(zero, wr(i,j,1))
+          end do
+       end do
+
+       ! Original SGH. augment_variance implies we need to square and sqrt
+       ! quantities.
+       wr(:,:,1) = reshape(g(:npsq)**2, (/np,np/))
+       call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, wr(:,:,1), p(:ncol))
+
+       ! Combine the two sources of variance.
+       wr(:nf,:nf,2) = sqrt(reshape(p(:ncol), (/nf,nf/)) + wr(:nf,:nf,3))
+       p(:ncol) = reshape(wr(:nf,:nf,2), (/ncol/))
+    else
+       wr(:,:,1) = reshape(g(:npsq), (/np,np/))
+       if (square) wr(:,:,1) = wr(:,:,1)**2
+       call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, wr(:,:,1), p(:ncol))
+       if (square) p(:ncol) = sqrt(p(:ncol))
+    end if
+  end subroutine gfr_dyn_to_fv_phys_topo_data_elem
+  
   subroutine gfr_fv_phys_to_dyn_topo_hybrid(hybrid, elem, nets, nete, phis)
     ! Remap FV topography data to the GLL grid. Prevent new
     ! extrema. Conserve the integral of height.
@@ -1126,7 +1213,7 @@ contains
 
     nf = gfr%nphys
     call gfr_g2f_scalar(ie, gll_metdet, dp_g*g, f)
-    f = f(:nf,:nf,:)/dp_f(:nf,:nf,:)
+    f(:nf,:nf,:) = f(:nf,:nf,:)/dp_f(:nf,:nf,:)
   end subroutine gfr_g2f_scalar_dp
 
   subroutine gfr_g2f_vector(gfr, ie, elem, u_g, v_g, u_f, v_f)
@@ -1225,6 +1312,30 @@ contains
        call gfr_g2f_mixing_ratio(gfr, ie, gll_metdet, dp_g, dp_f, qdp_g(:,:,:,q), q_f(:,:,:,q))
     end do
   end subroutine gfr_g2f_mixing_ratios
+
+  subroutine gfr_g2f_scalar_and_limit(gfr, ie, gll_metdet, g, f)
+    ! After remap, limit using extremal values from g.
+
+    type (GllFvRemap_t), intent(in) :: gfr
+    integer, intent(in) :: ie
+    real(kind=real_kind), intent(in) :: gll_metdet(:,:), g(:,:)
+    real(kind=real_kind), intent(out) :: f(:)
+
+    real(kind=real_kind) :: wr(np,np,2), ones(np,np), qmin, qmax
+    integer :: nf, ncol
+
+    ones = one
+    nf = gfr%nphys
+    ncol = nf*nf
+
+    wr(:np,:np,1) = g
+    call gfr_g2f_scalar(ie, gll_metdet, wr(:,:,1:1), wr(:,:,2:2))
+    qmin = minval(g(:np,:np))
+    qmax = maxval(g(:np,:np))
+    wr(:nf,:nf,1) = reshape(gfr%w_ff(:ncol)*gfr%fv_metdet(:ncol,ie), (/nf,nf/))
+    call limiter_clip_and_sum(gfr%nphys, wr(:,:,1), qmin, qmax, ones, wr(:nf,:nf,2))
+    f(:ncol) = reshape(wr(:nf,:nf,2), (/ncol/))
+  end subroutine gfr_g2f_scalar_and_limit
 
   ! FV -> GLL (f2g)
 
@@ -1767,21 +1878,7 @@ contains
     integer, intent(in) :: ie
     real(kind=real_kind), intent(out) :: phis(:)
 
-    real(kind=real_kind) :: wr(np,np,2), ones(np,np), qmin, qmax
-    integer :: nf, nf2, ncol
-
-    ones = one
-    nf = gfr%nphys
-    nf2 = nf*nf
-    ncol = nf*nf
-
-    wr(:,:,1) = elem(ie)%state%phis(:,:)
-    call gfr_g2f_scalar(ie, elem(ie)%metdet, wr(:,:,1:1), wr(:,:,2:2))
-    qmin = minval(elem(ie)%state%phis)
-    qmax = maxval(elem(ie)%state%phis)
-    wr(:nf,:nf,1) = reshape(gfr%w_ff(:nf2)*gfr%fv_metdet(:nf2,ie), (/nf,nf/))
-    call limiter_clip_and_sum(gfr%nphys, wr(:,:,1), qmin, qmax, ones, wr(:nf,:nf,2))
-    phis(:ncol) = reshape(wr(:nf,:nf,2), (/ncol/))
+    call gfr_g2f_scalar_and_limit(gfr, ie, elem(ie)%metdet, elem(ie)%state%phis, phis)
   end subroutine gfr_dyn_to_fv_phys_topo_elem
 
   subroutine gfr_hybrid_create(par, dom_mt, hybrid, nets, nete)
@@ -1938,7 +2035,7 @@ contains
 
   ! ----------------------------------------------------------------------
   ! Everything below is for internal unit testing of this module. For
-  ! integration-level testing, see gllfvremap_test_mod and
+  ! integration-level testing, see gllfvremap_util_mod and
   ! dcmip2016_test1_pg_forcing.
 
   subroutine set_ps_Q(elem, nets, nete, timeidx, qidx, nlev)
@@ -2027,12 +2124,12 @@ contains
        qmin_g = minval(q1_g(:,:,k))
        qmax_g = maxval(q1_g(:,:,k))
        den = gfr%tolfac*max(1e-10_real_kind, maxval(abs(q0_g(:,:,k))))
+       mass0 = sum(elem(ie)%spheremp*dp(:,:,k)*q0_g(:,:,k))
+       mass1 = sum(elem(ie)%spheremp*dp(:,:,k)*q1_g(:,:,k))
        if (qmin_g < qmin_f - 50*eps*den .or. qmax_g > qmax_f + 50*eps*den) then
           write(iulog,*) 'gfr> f2g mixing ratio limits:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &
                qmin_f, qmin_g-qmin_f, qmax_g-qmax_f, qmax_f, mass0, mass1, 'ERROR'
        end if
-       mass0 = sum(elem(ie)%spheremp*dp(:,:,k)*q0_g(:,:,k))
-       mass1 = sum(elem(ie)%spheremp*dp(:,:,k)*q1_g(:,:,k))
        den = sum(elem(ie)%spheremp*dp(:,:,k)*maxval(abs(q0_g(:,:,k))))
        if (abs(mass1 - mass0) > gfr%tolfac*20*eps*den) then
           write(iulog,*) 'gfr> f2g mixing ratio mass:', hybrid%par%rank, hybrid%ithr, ie, qi, k, &

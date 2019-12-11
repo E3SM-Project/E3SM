@@ -80,6 +80,10 @@ contains
     use hybvcoord_mod, only: hvcoord_t
     use time_mod, only: nEndStep
     use control_mod, only: transport_alg
+    use sl_advection, only: sl_unittest
+#ifdef HOMME_ENABLE_COMPOSE
+    use compose_mod, only: cedr_unittest
+#endif
 
     type (parallel_t), intent(in) :: par
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)
@@ -88,7 +92,7 @@ contains
 
     type (hybrid_t) :: hybrid
     type (derivative_t) :: deriv
-    integer :: ithr, nets, nete
+    integer :: ithr, nets, nete, nerr
 
 #ifdef HOMME_ENABLE_COMPOSE
     if (transport_alg == 19) then
@@ -103,6 +107,10 @@ contains
 
     ! 1. Unit tests.
     call compose_unittest()
+    call sl_unittest(par)
+    nerr = 0
+    call cedr_unittest(par%comm, nerr)
+    if (nerr /= 0) print *, 'cedr_unittest returned', nerr
 
 #if (defined HORIZ_OPENMP)
     !$omp parallel num_threads(hthreads), default(SHARED), private(ithr,nets,nete,hybrid)
@@ -171,7 +179,7 @@ contains
     use perf_mod
     use sl_advection
     use gllfvremap_mod
-    use gllfvremap_test_mod
+    use gllfvremap_util_mod
 
     type (hybrid_t), intent(in) :: hybrid
     type (domain1d_t), pointer, intent(in) :: dom_mt(:)

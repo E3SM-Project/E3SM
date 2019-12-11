@@ -1,7 +1,7 @@
 """
 functions for building CIME models
 """
-import glob, shutil, time, threading, subprocess
+import glob, shutil, time, threading, subprocess, imp
 from CIME.XML.standard_module_setup  import *
 from CIME.utils                 import get_model, analyze_build_log, stringify_bool, run_and_log_case_status, get_timestamp, run_sub_or_cmd, run_cmd, get_batch_script_for_job, gzip_existing_file, safe_copy
 from CIME.provenance            import save_build_provenance as save_build_provenance_sub
@@ -15,7 +15,7 @@ _CMD_ARGS_FOR_BUILD = \
      "MACH", "MPILIB", "NINST_VALUE", "OS", "PIO_VERSION",
      "SHAREDLIBROOT", "SMP_PRESENT", "USE_ESMF_LIB", "USE_MOAB",
      "CAM_CONFIG_OPTS", "COMPARE_TO_NUOPC", "HOMME_TARGET",
-     "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC")
+     "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_TRILINOS", "USE_ALBANY", "USE_PETSC")
 
 def get_standard_makefile_args(case, shared_lib=False):
     make_args = "CIME_MODEL={} ".format(case.get_value("MODEL"))
@@ -27,10 +27,22 @@ def get_standard_makefile_args(case, shared_lib=False):
 
     return make_args
 
-def get_standard_cmake_args(case, shared_lib=False):
+def get_standard_cmake_args(case, sharedpath, shared_lib=False):
     cmake_args = "-DCIME_MODEL={} ".format(case.get_value("MODEL"))
+    cmake_args += " -Dcompile_threaded={} ".format(stringify_bool(case.get_build_threaded()))
+
+    ocn_model = case.get_value("COMP_OCN")
+    atm_model = case.get_value("COMP_ATM")
+    if ocn_model == 'mom' or atm_model == "fv3gfs":
+        cmake_args += " -DUSE_FMS=TRUE"
+
+    cmake_args += " -DINSTALL_SHAREDPATH={}".format(os.path.join(case.get_value("EXEROOT"), sharedpath))
+
     if not shared_lib:
         cmake_args += " -DUSE_KOKKOS={} ".format(stringify_bool(uses_kokkos(case)))
+        comps = [case.get_value("COMP_{}".format(comp_class)) for comp_class in case.get_values("COMP_CLASSES")]
+        cmake_args += " -DCOMP_NAMES='{}' ".format(";".join(comps))
+
     for var in _CMD_ARGS_FOR_BUILD:
         cmake_args += xml_to_make_variable(case, var, cmake=True)
 
@@ -55,7 +67,7 @@ def uses_kokkos(case):
 
 ###############################################################################
 def _build_model(build_threaded, exeroot, incroot, complist,
-                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case):
+                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface):
 ###############################################################################
     logs = []
 
@@ -99,7 +111,7 @@ def _build_model(build_threaded, exeroot, incroot, complist,
         # logs is a list of log files to be compressed and added to the case logs/bld directory
         t = threading.Thread(target=_build_model_thread,
             args=(config_dir, model, comp, caseroot, libroot, bldroot, incroot, file_build,
-                  thread_bad_results, smp, compiler, case))
+                  thread_bad_results, smp, compiler))
         t.start()
 
         logs.append(file_build)
@@ -139,6 +151,74 @@ def _build_model(build_threaded, exeroot, incroot, complist,
         logs.append(file_build)
 
     return logs
+
+###############################################################################
+def _build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
+                       comp_interface, sharedpath, ninja, dry_run, case):
+###############################################################################
+    cime_model = get_model()
+    bldroot    = os.path.join(exeroot, "cmake-bld")
+    libroot    = os.path.join(exeroot, "lib")
+    bldlog     = os.path.join(exeroot, "{}.bldlog.{}".format(cime_model, lid))
+    srcroot    = case.get_value("SRCROOT")
+    gmake_j    = case.get_value("GMAKE_J")
+    gmake      = case.get_value("GMAKE")
+
+    # make sure bldroot and libroot exist
+    for build_dir in [bldroot, libroot]:
+        if not os.path.exists(build_dir):
+            os.makedirs(build_dir)
+
+    for model, _, _, _, config_dir in complist:
+        if buildlist is not None and model.lower() not in buildlist:
+            continue
+
+        # Create the Filepath and CCSM_cppde3fs files
+        if model == "cpl":
+            config_dir = os.path.join(cimeroot, "src", "drivers", comp_interface, "cime_config")
+
+        _create_build_metadata_for_component(config_dir, libroot, bldroot, case)
+
+    # Call CMake
+    cmake_args = get_standard_cmake_args(case, sharedpath)
+    cmake_env = ""
+    ninja_path = os.path.join(srcroot, "externals/ninja/bin")
+    if ninja:
+        cmake_args += " -GNinja "
+        cmake_env += "PATH={}:$PATH ".format(ninja_path)
+
+    cmake_cmd = "{}cmake {} {}/components".format(cmake_env, cmake_args, srcroot)
+    stat = 0
+    if dry_run:
+        logger.info("CMake cmd:\ncd {} && {}\n\n".format(bldroot, cmake_cmd))
+    else:
+        with open(bldlog, "w") as fd:
+            fd.write("Configuring with cmake cmd:\n{}\n\n".format(cmake_cmd))
+
+        # Add logging before running
+        cmake_cmd = "{} >> {} 2>&1".format(cmake_cmd, bldlog)
+        stat = run_cmd(cmake_cmd, from_dir=bldroot)[0]
+
+    # Call Make
+    if stat == 0:
+        make_cmd = "{} -j {}".format(gmake if not ninja else "{} -v".format(os.path.join(ninja_path, "ninja")), gmake_j)
+        if dry_run:
+            logger.info("Build cmd:\ncd {} && {}\n\n".format(bldroot, make_cmd))
+            expect(False, "User requested dry-run only, terminating build")
+        else:
+            with open(bldlog, "a") as fd:
+                fd.write("\n\nBuilding with cmd:\n{}\n\n".format(make_cmd))
+
+            # Add logging before running
+            make_cmd = "{} >> {} 2>&1".format(make_cmd, bldlog)
+            stat = run_cmd(make_cmd, from_dir=bldroot)[0]
+
+    expect(stat == 0, "BUILD FAIL: build {} failed, cat {}".format(cime_model, bldlog))
+
+    # Copy the just-built ${MODEL}.exe to ${MODEL}.exe.$LID
+    safe_copy("{}/{}.exe".format(exeroot, cime_model), "{}/{}.exe.{}".format(exeroot, cime_model, lid))
+
+    return [bldlog]
 
 ###############################################################################
 def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
@@ -308,7 +388,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
             # logs is a list of log files to be compressed and added to the case logs/bld directory
             thread_bad_results = []
             _build_model_thread(config_lnd_dir, "lnd", comp_lnd, caseroot, libroot, bldroot, incroot,
-                                file_build, thread_bad_results, smp, compiler, case)
+                                file_build, thread_bad_results, smp, compiler)
             logs.append(file_build)
             expect(not thread_bad_results, "\n".join(thread_bad_results))
 
@@ -317,7 +397,7 @@ def _build_libraries(case, exeroot, sharedpath, caseroot, cimeroot, libroot, lid
 
 ###############################################################################
 def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldroot, incroot, file_build,
-                        thread_bad_results, smp, compiler, _): # (case not used yet)
+                        thread_bad_results, smp, compiler):
 ###############################################################################
     logger.info("Building {} with output to {}".format(compclass, file_build))
     t1 = time.time()
@@ -329,12 +409,10 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
 
     with open(file_build, "w") as fd:
-        stat = run_cmd("MODEL={} SMP={} {} {} {} {} "
-                       .format(compclass, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
+        stat = run_cmd("MODEL={} COMP_CLASS={} COMP_NAME={} SMP={} {} {} {} {} "
+                       .format(compclass, compclass, compname, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
                        from_dir=bldroot,  arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
-
-    analyze_build_log(compclass, file_build, compiler)
 
     if stat != 0:
         thread_bad_results.append("BUILD FAIL: {}.buildlib failed, cat {}".format(compname, file_build))
@@ -346,6 +424,16 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
 
     t2 = time.time()
     logger.info("{} built in {:f} seconds".format(compname, (t2 - t1)))
+
+###############################################################################
+def _create_build_metadata_for_component(config_dir, libroot, bldroot, case):
+###############################################################################
+    """
+    Ensure that crucial Filepath and CCSM_CPPDEFS files exist for this component.
+    In many cases, the bld/configure script will have already created these.
+    """
+    buildlib = imp.load_source("buildlib_cmake", os.path.join(config_dir, "buildlib_cmake"))
+    buildlib.buildlib(bldroot, libroot, case)
 
 ###############################################################################
 def _clean_impl(case, cleanlist, clean_all, clean_depends):
@@ -366,21 +454,31 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
     else:
         expect((cleanlist is not None and len(cleanlist) > 0) or
                (clean_depends is not None and len(clean_depends)),"Empty cleanlist not expected")
-        gmake           = case.get_value("GMAKE")
-        casetools       = case.get_value("CASETOOLS")
+        gmake = case.get_value("GMAKE")
 
-        cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
-        cmd += " {}".format(get_standard_makefile_args(case))
-        if cleanlist is not None:
-            for item in cleanlist:
-                tcmd = cmd + " clean" + item
-                logger.info("calling {} ".format(tcmd))
-                run_cmd_no_fail(tcmd)
+        if os.path.exists(os.path.join(exeroot, "cmake-bld")):
+            # Cmake build system
+            for thing_to_clean in [cleanlist, clean_depends]:
+                if thing_to_clean is not None:
+                    for item in thing_to_clean:
+                        logging.info("Cleaning {}".format(item))
+                        cmd = "{} clean".format(gmake)
+                        run_cmd_no_fail(cmd, from_dir=os.path.join(exeroot, "cmake-bld", "cmake", item))
         else:
-            for item in clean_depends:
-                tcmd = cmd + " clean_depends" + item
-                logger.info("calling {} ".format(tcmd))
-                run_cmd_no_fail(tcmd)
+            # legacy build system
+            casetools = case.get_value("CASETOOLS")
+            cmd = gmake + " -f " + os.path.join(casetools, "Makefile")
+            cmd += " {}".format(get_standard_makefile_args(case))
+            if cleanlist is not None:
+                for item in cleanlist:
+                    tcmd = cmd + " clean" + item
+                    logger.info("calling {} ".format(tcmd))
+                    run_cmd_no_fail(tcmd)
+            else:
+                for item in clean_depends:
+                    tcmd = cmd + " clean_depends" + item
+                    logger.info("calling {} ".format(tcmd))
+                    run_cmd_no_fail(tcmd)
 
     # unlink Locked files directory
     unlock_file("env_build.xml")
@@ -394,13 +492,15 @@ def _clean_impl(case, cleanlist, clean_all, clean_depends):
 
 ###############################################################################
 def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
-                     save_build_provenance):
+                     save_build_provenance, use_old, ninja, dry_run):
 ###############################################################################
 
     t1 = time.time()
 
     expect(not (sharedlib_only and model_only),
            "Contradiction: both sharedlib_only and model_only")
+    expect(not (dry_run and not model_only),
+           "Dry-run is only for model builds, please build sharedlibs first")
     logger.info("Building case in directory {}".format(caseroot))
     logger.info("sharedlib_only is {}".format(sharedlib_only))
     logger.info("model_only is {}".format(model_only))
@@ -515,10 +615,13 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
                                 cimeroot, libroot, lid, compiler, buildlist, comp_interface)
 
     if not sharedlib_only:
-        os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
-
-        logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
-                                 lid, caseroot, cimeroot, compiler, buildlist, comp_interface, case))
+        if get_model() == "e3sm" and not use_old:
+            logs.extend(_build_model_cmake(exeroot, complist, lid, cimeroot, buildlist,
+                                           comp_interface, sharedpath, ninja, dry_run, case))
+        else:
+            os.environ["INSTALL_SHAREDPATH"] = os.path.join(exeroot, sharedpath) # for MPAS makefile generators
+            logs.extend(_build_model(build_threaded, exeroot, incroot, complist,
+                                     lid, caseroot, cimeroot, compiler, buildlist, comp_interface))
 
         if not buildlist:
             # in case component build scripts updated the xml files, update the case object
@@ -559,10 +662,10 @@ def post_build(case, logs, build_complete=False, save_build_provenance=True):
         lock_file("env_build.xml", caseroot=case.get_value("CASEROOT"))
 
 ###############################################################################
-def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True):
+def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist=None, save_build_provenance=True, use_old=False, ninja=False, dry_run=False):
 ###############################################################################
     functor = lambda: _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
-                                       save_build_provenance)
+                                       save_build_provenance, use_old, ninja, dry_run)
     return run_and_log_case_status(functor, "case.build", caseroot=caseroot)
 
 ###############################################################################

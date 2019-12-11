@@ -9,7 +9,6 @@ SET(HOMME_TESTS
   baro2c.cmake
   baro2d.cmake
   baroCamMoist.cmake
-  baroCamMoist-SL.cmake
   baroCamMoist-acc.cmake
   baro2d-imp.cmake
   thetah-test22.cmake
@@ -23,6 +22,14 @@ SET(HOMME_TESTS
   thetanhwet-TC.cmake
   templates.cmake
 )
+
+IF (${HOMME_ENABLE_COMPOSE})
+  LIST(APPEND HOMME_TESTS
+    thetah-sl-test11conv-r1t2-cdr20.cmake
+    thetah-sl-test11conv-r0t1-cdr30-rrm.cmake
+    #thetah-sl-dcmip16_test1pg2.cmake
+    )
+ENDIF()
 
 IF (${BUILD_HOMME_PREQX_KOKKOS})
   # Lists of test files for the HOMME kokkos regression tests.

@@ -40,6 +40,8 @@ module common_io_mod
   character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames4
   character(len=varname_len), public, target,  dimension(max_output_variables) :: output_varnames5
 
+  character(len=MAX_STRING_LEN), public :: tool
+
   ! these are used for PIO output method
   integer, public :: num_io_procs
   integer, public :: num_agg

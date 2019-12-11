@@ -160,7 +160,7 @@ def buildnml(case, caseroot, compname):
                 if inst_string != "":
                     logger.warning("WARNING: {} is being used".format(cam_branch_file))
 
-        dtime = ( 3600 * 24 ) / atm_ncpl
+        dtime = ( 3600 * 24 ) // atm_ncpl
         start_ymd = run_startdate.replace("-", "")
         ntasks = ntasks_atm / ninst_atm
 
