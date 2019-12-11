@@ -417,7 +417,7 @@ class EnvBatch(EnvBase):
 
                     # We don't want floating-point data
                     try:
-                        rval = round(float(rval))
+                        rval = int(round(float(rval)))
                     except ValueError:
                         pass
 

@@ -113,6 +113,7 @@
       <value component="mpaso"    >$SRCROOT/components/mpas-ocean/cime_config/config_compsets.xml</value>
       <value component="mali"     >$SRCROOT/components/mpas-albany-landice/cime_config/config_compsets.xml</value>
       <value component="mpassi"   >$SRCROOT/components/mpas-seaice/cime_config/config_compsets.xml</value>
+      <value component="mosart"   >$SRCROOT/components/mosart/cime_config/config_compsets.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

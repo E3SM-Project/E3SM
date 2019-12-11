@@ -45,6 +45,7 @@ _TESTS = {
             "SMS_D_Ln5.ne4_ne4.FC5AV1C-L",
             "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L",
             "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_pg2",
+            "SMS_Ln5.ne4pg2_ne4pg2.FC5AV1C-L.cam-thetahy_sl_pg2",
             )
         },
 

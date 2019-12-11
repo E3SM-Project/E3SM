@@ -7794,7 +7794,7 @@
     </mach>
   </grid>
   <grid name="a%ne30np4_l%.+_oi%oEC60to30">
-    <mach name="anvil|bebop|anvil-centos7">
+    <mach name="anvil|bebop">
       <pes compset=".*CAM5.+CLM45.+MPASSI.+MPASO.+MOSART.+SGLC.+SWAV" pesize="S">
         <comment> -compset A_WCYCL* -res ne30_oEC* on 27 nodes pure-MPI </comment>
         <ntasks>
