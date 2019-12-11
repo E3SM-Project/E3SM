@@ -101,6 +101,7 @@ OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
+OPTION(BUILD_HOMME_TOOL  "Offline tool" ON)
 OPTION(HOMME_ENABLE_COMPOSE "Build COMPOSE semi-Lagrangian tracer transport code" ON)
 
 #by default we don't need cxx
@@ -393,6 +394,10 @@ ENDIF()
 
 IF(${BUILD_HOMME_PRIM})
   ADD_SUBDIRECTORY(src/prim)
+ENDIF()
+
+IF(${BUILD_HOMME_TOOL})
+  ADD_SUBDIRECTORY(src/tool)
 ENDIF()
 
 # Tests and execs only if this is a standalone build
