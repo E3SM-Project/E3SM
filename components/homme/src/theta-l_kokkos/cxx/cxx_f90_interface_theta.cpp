@@ -7,6 +7,7 @@
 #include "CaarFunctor.hpp"
 #include "Context.hpp"
 #include "Diagnostics.hpp"
+#include "DirkFunctor.hpp"
 #include "Elements.hpp"
 #include "ErrorDefs.hpp"
 #include "EulerStepFunctor.hpp"
@@ -48,7 +49,7 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
   Errors::check_option("init_simulation_params_c","prescribed_wind",prescribed_wind,{false});
   Errors::check_option("init_simulation_params_c","hypervis_order",hypervis_order,{2});
   Errors::check_option("init_simulation_params_c","use_semi_lagrangian_transport",use_semi_lagrangian_transport,{false});
-  Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{1,4,5,6,7});
+  Errors::check_option("init_simulation_params_c","time_step_type",time_step_type,{1,4,5,6,7,9,10});
   Errors::check_option("init_simulation_params_c","qsize",qsize,0,Errors::ComparisonOp::GE);
   Errors::check_option("init_simulation_params_c","qsize",qsize,QSIZE_D,Errors::ComparisonOp::LE);
   Errors::check_option("init_simulation_params_c","limiter_option",limiter_option,{8,9});
@@ -108,12 +109,10 @@ void init_simulation_params_c (const int& remap_alg, const int& limiter_option, 
     params.time_step_type = TimeStepType::IMEX_KG243;
   } else if (time_step_type==7) {
     params.time_step_type = TimeStepType::IMEX_KG254;
-  } else if (time_step_type==8) {
-    params.time_step_type = TimeStepType::IMEX_KG253;
   } else if (time_step_type==9) {
-    params.time_step_type = TimeStepType::IMEX_KG252;
+    params.time_step_type = TimeStepType::IMEX_KG355;
   } else if (time_step_type==10) {
-    params.time_step_type = TimeStepType::IMEX_KG232b;
+    params.time_step_type = TimeStepType::IMEX_KG255;
   }
 
   //set nu_ratios values
@@ -331,6 +330,14 @@ void init_functors_c ()
   auto& ff   = Context::singleton().create<ForcingFunctor>();
   auto& diag = Context::singleton().create<Diagnostics> ();
   Context::singleton().create<VerticalRemapManager>();
+
+  if (params.time_step_type==TimeStepType::IMEX_KG243 ||   
+      params.time_step_type==TimeStepType::IMEX_KG254 ||
+      params.time_step_type==TimeStepType::IMEX_KG255 ||
+      params.time_step_type==TimeStepType::IMEX_KG355) {
+    // Create dirk functor only if needed
+    Context::singleton().create<DirkFunctor>(elems.num_elems());
+  }
 
   // Make the functor request their buffer to the buffers manager
   // Note: diagnostics also needs buffers

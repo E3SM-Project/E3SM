@@ -22,6 +22,8 @@ public:
   DirkFunctor(const DirkFunctor &) = delete;
   DirkFunctor &operator=(const DirkFunctor &) = delete;
 
+  ~DirkFunctor();
+
   // Top-level interface, equivalent to compute_stage_value_dirk_stripped.
   //   Set alphadt = 0 if the alphadt-dependent term is not to be added to the RHS.
   //   Set nm1 = -1 if the nm1-dependent term is not to be added to the RHS.

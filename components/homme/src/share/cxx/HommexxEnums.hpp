@@ -111,9 +111,8 @@ enum class TimeStepType {
   // Implicit-Explicit
   IMEX_KG243      =  6,
   IMEX_KG254      =  7,
-  IMEX_KG253      =  8,
-  IMEX_KG252      =  9,
-  IMEX_KG232b     = 10,
+  IMEX_KG355      =  9,
+  IMEX_KG255      = 10,
 
   // Implicit
   BE              = 11, // Backward Euler

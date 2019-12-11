@@ -345,6 +345,14 @@ contains
       !  u5 = u0 + dt*N(u4) + dt*5/18*S(u0) + dt*5/18 S(u1) + dt*8/18* S(u5)
       
     else if (tstep_type==10) then ! KG5(2nd order CFL=4) + CN + offcenter
+
+!!!!!!!!!!!!!!!!!!!!
+! time level indices
+!   caar: np1, nm1, n0
+!   dirk: n0, np1
+!!!!!!!!!!!!!!!!!!!!
+
+
       a1=0d0
       a2=1-a1
       dt2=dt/4
