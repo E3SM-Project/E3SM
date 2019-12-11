@@ -379,10 +379,92 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
       Kokkos::deep_copy(pupidc_device, pupidc_host);
 
       // Get data from fortran
-      //for (Int i = 0; i < max_pack_size; ++i) {
-      update_prognostic_ice(pupidc[1]);
-	//}
-    
+      for (Int i = 0; i < max_pack_size; ++i) {
+	update_prognostic_ice(pupidc[i]);
+      }
+
+      // This copy also copies the output from the fortran function into the host view. These values
+      // are need to check the values returned from
+      std::copy(&pupidc[0], &pupidc[0] + Spack::n, pupidc_host.data());      
+      
+      // Run the lookup from a kernel and copy results back to host
+      Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+	  // Init pack inputs
+	  Spack qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr,
+            qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xlf, xxls,
+            nmltratio, rhorime_c, th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim;
+	  Scalar dt;
+	  Smask log_predictNc, log_wetgrowth;
+
+	  dt = pupidc_device[0].dt;
+	  for (Int s = 0; s < Spack::n; ++s) {
+	    
+	    qcheti[s] = pupidc_device(s).qcheti;
+	    qccol[s]  = pupidc_device(s).qccol; 
+	    qcshd[s]  = pupidc_device(s).qcshd; 
+	    nccol[s]  = pupidc_device(s).nccol; 
+	    ncheti[s] = pupidc_device(s).ncheti;
+	    ncshdc[s] = pupidc_device(s).ncshdc;
+	    qrcol[s]  = pupidc_device(s).qrcol;
+	    nrcol[s]  = pupidc_device(s).nrcol;
+	    qrheti[s] = pupidc_device(s).qrheti;
+	    nrheti[s] = pupidc_device(s).nrheti;
+	    nrshdr[s] = pupidc_device(s).nrshdr;	      
+	    qimlt[s]  = pupidc_device(s).qimlt;
+	    nimlt[s]  = pupidc_device(s).nimlt;
+	    qisub[s]  = pupidc_device(s).qisub;
+	    qidep[s]  = pupidc_device(s).qidep;
+	    qinuc[s]  = pupidc_device(s).qinuc;
+	    ninuc[s]  = pupidc_device(s).ninuc;
+	    nislf[s]  = pupidc_device(s).nislf;
+	    nisub[s]  = pupidc_device(s).nisub;
+	    qiberg[s] = pupidc_device(s).qiberg;
+	    exner[s]  = pupidc_device(s).exner;
+	    xlf[s]    = pupidc_device(s).xlf;
+	    xxls[s]   = pupidc_device(s).xxls;  
+	      
+	    //log_predictNc[s] = pupidc_device(s).log_predictNc;
+	    //log_wetgrowth[s] = pupidc_device(s).log_wetgrowth;
+
+	    //dt[s]    = pupidc_device(s).dt;
+	    nmltratio[s] = pupidc_device(s).nmltratio;
+	    rhorime_c[s] = pupidc_device(s).rhorime_c;
+	    th[s]    = pupidc_device(s).th;
+	    qv[s]    = pupidc_device(s).qv;
+	    qc[s]    = pupidc_device(s).qc;
+	    nc[s]    = pupidc_device(s).nc;
+	    qr[s]    = pupidc_device(s).qr;
+	    nr[s]    = pupidc_device(s).nr;	      
+	    qitot[s] = pupidc_device(s).qitot;
+	    nitot[s] = pupidc_device(s).nitot;
+	    qirim[s] = pupidc_device(s).qirim;
+	    birim[s] = pupidc_device(s).birim;
+	  }
+
+	  Functions::update_prognostic_ice(qcheti, qccol, qcshd, nccol, ncheti,ncshdc,
+					   qrcol,   nrcol,  qrheti,  nrheti,  nrshdr,
+					   qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc,
+					   nislf,  nisub,  qiberg,  exner,  xxls,  xlf,
+					   log_predictNc, log_wetgrowth,  dt,  nmltratio,
+					   rhorime_c, th, qv, qitot, nitot, qirim,
+					   birim, qc, nc, qr, nr);
+	  
+	  //Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld,
+	  //					qcaut, ncautc, ncautr);
+	  // Copy results back into views
+	  for (Int s = 0; s < Spack::n; ++s) {
+	    //cwadc_device(s).rho = rho[s];
+	    //cwadc_device(s).qc_incld = qc_incld[s];
+	    //cwadc_device(s).nc_incld = nc_incld[s];
+	    //cwadc_device(s).qcaut = qcaut[s];
+	    //cwadc_device(s).ncautc = ncautc[s];
+	    //cwadc_device(s).ncautr = ncautr[s];
+	    }
+
+	});
+
+
+
       
     }
   
@@ -390,6 +472,15 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
       update_prognostic_ice_unit_bfb_tests();
     }
     
+
+
+
+
+
+
+
+
+
 
   };//TestP3UpdatePrognosticIce
   
