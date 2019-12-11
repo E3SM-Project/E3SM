@@ -42,10 +42,10 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
   SET(HOMME_PREQX_TESTS_WITH_PROFILE
     preqx-nlev26-dry-r0-samenu-consthv-lim8-q1.cmake
     preqx-nlev26-dry-r0-samenu-consthv-lim8-q1-kokkos.cmake
-    preqx-nlev72-moist-r3-diffnu-consthv-lim9-q6.cmake
-    preqx-nlev72-moist-r3-diffnu-consthv-lim9-q6-kokkos.cmake
-    preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q6.cmake
-    preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q6-kokkos.cmake
+    preqx-nlev72-dry-r3-diffnu-consthv-lim9-q6.cmake
+    preqx-nlev72-dry-r3-diffnu-consthv-lim9-q6-kokkos.cmake
+    preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q1.cmake
+    preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q1-kokkos.cmake
   )
 
   #This list (COMPARE_F_C_TEST) contains tests for which
@@ -56,8 +56,8 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
   IF (${ENABLE_PREQX_KOKKOS_BFB_TESTS})
     SET (PREQX_COMPARE_F_C_TEST
     preqx-nlev26-dry-r0-samenu-consthv-lim8-q1
-    preqx-nlev72-moist-r3-diffnu-consthv-lim9-q6
-    preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q6
+    preqx-nlev72-dry-r3-diffnu-consthv-lim9-q6
+    preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q1
     )
   ENDIF ()
 ENDIF()

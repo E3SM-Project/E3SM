@@ -55,7 +55,7 @@ SET (ADD_C_FLAGS "-traceback -fp-model strict -qopenmp -O3" CACHE STRING "")
 SET (ADD_CXX_FLAGS "-traceback -fp-model strict -qopenmp -O3" CACHE STRING "")
 SET (BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
 SET (ENABLE_PREQX_KOKKOS_BFB_TESTS TRUE CACHE BOOL "")
-SET (HOMME_TESTING_PROFILE "dev" CACHE STRING "")
+SET (HOMME_TESTING_PROFILE "short" CACHE STRING "")
 
 # redsky upgrade 8/2017, need to load sems-netcdf module:
 SET (WITH_PNETCDF FALSE CACHE FILEPATH "")
