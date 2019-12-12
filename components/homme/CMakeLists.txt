@@ -233,10 +233,8 @@ MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 IF (${HOMME_USE_KOKKOS})
-  IF (${CUDA_FOUND})
-    # Note: If you ask for GPU to be bfb with CPU, you should also ask for a strict fp model on cpu.
-    OPTION (HOMMEXX_GPU_BFB_WITH_CPU "Whether we want cpu and gpu solution to be bfb" OFF)
-  ENDIF ()
+  # Note: If you ask for bfb testing, you should also ask for a strict fp model on cpu.
+  OPTION (HOMMEXX_BFB_TESTING "Whether we want bfb comparison cpu-vs-gpu and f90-vs-cxx" OFF)
 
   SET (HOMMEXX_VECTOR_SIZE 8 CACHE STRING
     "If AVX or Cuda don't take priority, use this software vector size.")

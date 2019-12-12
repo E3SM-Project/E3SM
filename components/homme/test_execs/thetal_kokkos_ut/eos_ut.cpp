@@ -369,7 +369,7 @@ TEST_CASE("eos", "eos") {
       for (int igp=0; igp<NP; ++igp) {
         for (int jgp=0; jgp<NP; ++jgp) {
           for (int k=0; k<NUM_INTERFACE_LEV; ++k) {
-            // Zero 10 ulps, since with XX_BFB_TESTING we zero 5 ulps
+            // Zero 10 ulps, since with HOMMEXX_BFB_TESTING we zero 5 ulps
             // at every call to bfb_pow, and we call bfb_pow twice (one each in
             // the compute_pnh_and_exner and compute_phi_i routines).
             zeroulpn(phi_i_in_ie(igp,jgp,k),10,0.0);

@@ -60,11 +60,5 @@
 /* Whether to use OpenMP4 */
 #cmakedefine OMP4
 
-/* Whether this is a build for CUDA (used mostly for f90-vs-cxx bfb math functions impl) */
-#cmakedefine CUDA_BUILD
-
 /* temporary flag to compare f90-cxx until we settle on either cxx or f90 implementation */
 #cmakedefine XX_NONBFB_COMING
-
-/* When doing BFB testing, we occasionally must modify bits. Use this flag to protect such code. */
-#cmakedefine XX_BFB_TESTING

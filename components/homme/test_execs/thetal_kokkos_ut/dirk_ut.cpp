@@ -110,9 +110,9 @@ private:
 std::shared_ptr<Session> Session::s_session;
 
 static bool equal (const Real& a, const Real& b,
-                   // Used only if not defined XX_BFB_TESTING.
+                   // Used only if not defined HOMMEXX_BFB_TESTING.
                    const Real tol = 0) {
-#ifdef XX_BFB_TESTING
+#ifdef HOMMEXX_BFB_TESTING
   if (a != b)
     printf("equal: a,b = %23.16e %23.16e re = %23.16e\n",
            a, b, std::abs((a-b)/a));

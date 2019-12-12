@@ -15,7 +15,7 @@ module imex_mod
   use element_state,      only: max_itercnt, max_deltaerr, max_reserr
   use control_mod,        only: theta_hydrostatic_mode, qsplit
   use perf_mod,           only: t_startf, t_stopf
-#ifdef XX_BFB_TESTING
+#ifdef HOMMEXX_BFB_TESTING
   use bfb_mod,            only: tridiag_diagdom_bfb_a1x1
   use iso_c_binding,      only: c_loc
 #endif
@@ -236,7 +236,7 @@ contains
           do i=1,np
              do j=1,np
                 x(1:nlev,i,j) = -Fn(i,j,1:nlev)  !+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
-#ifdef XX_BFB_TESTING
+#ifdef HOMMEXX_BFB_TESTING
                 ! Note: the C function is designed to accept both single and double precision,
                 !       so we need to pass also the size of a real (last argument)
                 call tridiag_diagdom_bfb_a1x1(nlev, JacL(:,i,j), jacD(:,i,j), jacU(:,i,j), x(:,i,j),INT(SIZEOF(JacL)/SIZE(JacL),4))
@@ -317,7 +317,7 @@ contains
 ! For BFB testing on GPU, we zero out some bits in calls to pow functions,
 ! to preserve bfb GPU vs F90, so we *expect* issues in convergence.
 ! In any other build, this should be concerning though.
-#if !(defined(XX_BFB_TESTING) && defined(CUDA_BUILD))
+#if !(defined(HOMMEXX_BFB_TESTING) && defined(CUDA_BUILD))
        if (itercount >= maxiter) then
           write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',deltaerr,reserr
           do k=1,nlev

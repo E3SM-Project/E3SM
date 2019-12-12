@@ -39,7 +39,7 @@ public:
       // Avoid temporaries
       exner(ilev) = pi(ilev);
       exner(ilev) /= PhysicalConstants::p0;
-#ifdef XX_BFB_TESTING
+#ifdef HOMMEXX_BFB_TESTING
       exner(ilev) = bfb_pow(exner(ilev),PhysicalConstants::kappa);
 #else
       exner(ilev) = pow(exner(ilev),PhysicalConstants::kappa);
@@ -77,7 +77,7 @@ public:
                                      Scalar& pnh, Scalar& exner) {
     exner = (-PhysicalConstants::Rgas)*vtheta_dp / dphi;
     pnh = exner/PhysicalConstants::p0;
-#ifndef XX_BFB_TESTING
+#ifndef HOMMEXX_BFB_TESTING
     pnh = pow(pnh,1.0/(1.0-PhysicalConstants::kappa));
 #else
     pnh = bfb_pow(pnh,1.0/(1.0-PhysicalConstants::kappa));
@@ -158,7 +158,7 @@ public:
       constexpr Real p0    = PhysicalConstants::p0;
       constexpr Real kappa = PhysicalConstants::kappa;
       constexpr Real Rgas  = PhysicalConstants::Rgas;
-#ifdef XX_BFB_TESTING
+#ifdef HOMMEXX_BFB_TESTING
       return (Rgas*vtheta_dp(ilev) * bfb_pow(p(ilev)/p0,kappa-1)) / p0;
 #else
       // TODO: remove temporaries

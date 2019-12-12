@@ -172,7 +172,7 @@ SET(THETAL_DEPS_CXX
   ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
 )
 
-IF (XX_BFB_TESTING)
+IF (HOMMEXX_BFB_TESTING)
   SET(THETAL_DEPS_F90
       ${THETAL_DEPS_F90}
       ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90

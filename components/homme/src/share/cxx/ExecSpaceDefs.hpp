@@ -258,7 +258,7 @@ struct Memory<Hommexx_Cuda> {
 // dispatches.
 template <typename ExeSpace=ExecSpace>
 struct Dispatch {
-  // Match the HOMMEXX_GPU_BFB_WITH_CPU function in the Cuda
+  // Match the HOMMEXX_BFB_TESTING function in the Cuda
   // specialization.
   template<typename LoopBdyType, class Lambda, typename ValueType>
   static KOKKOS_FORCEINLINE_FUNCTION
@@ -318,7 +318,7 @@ struct Dispatch<Kokkos::Cuda> {
     const LoopBdyType& loop_boundaries,
     const Lambda& lambda, ValueType& result)
   {
-#if HOMMEXX_GPU_BFB_WITH_CPU
+#ifdef HOMMEXX_BFB_TESTING
     // We want to get C++ on GPU to match F90 on CPU. Thus, need to
     // serialize parallel reductions.
 
@@ -365,7 +365,7 @@ struct Dispatch<Kokkos::Cuda> {
     const int num_iters,
     const Lambda& lambda)
   {
-#if HOMMEXX_GPU_BFB_WITH_CPU
+#ifdef HOMMEXX_BFB_TESTING
     // We want to get C++ on GPU to match F90 on CPU. Thus, need to
     // serialize parallel scans.
 

@@ -182,17 +182,17 @@ TEST_CASE("Parallel_scan",
 
   // Note: we want to check whether Dispatch<ExecSpace>::parallel_scan
   //       computes a correct parallel scan. We do not know if the macro
-  //       HOMMEXX_GPU_BFB_WITH_CPU is defined or not, so we do not know
+  //       HOMMEXX_BFB_TESTING is defined or not, so we do not know
   //       if we rely on the BFB version or the Kokkos one (which computes
   //       the sum with a parallel-friendly reorganization of sums).
   //       However, we know exactly the mathematical scan sum (see above),
-  //       so we can check if, regardless of the HOMMEXX_GPU_BFB_WITH_CPU
+  //       so we can check if, regardless of the HOMMEXX_BFB_TESTING
   //       macro, Dispatch<ExecSpace>::parallel_scan computes a scan sum
   //       within a given tolerance of the correct value
 
   // Computing a scan sum with Dispatch<ExecSpace> version
   // Note: we do not know if the BFB version is used or not. It depends
-  //       on whether HOMMEXX_GPU_BFB_WITH_CPU was defined BEFORE including
+  //       on whether HOMMEXX_BFB_TESTING was defined BEFORE including
   //       the ExecSpaceDefs.hpp header.
   test_parallel_scan<Dispatch<ExecSpace>, num_points, scan_length>(
       policy, input, output_dispatch);
