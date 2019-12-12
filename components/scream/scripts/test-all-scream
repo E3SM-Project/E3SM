@@ -26,6 +26,10 @@ OR
     \033[1;32m# Run all tests on current machine \033[0m
     > cd $scream_repo/components/scream
     > ./scripts/test-all-scream $(which mpicxx) -m melvin
+
+    \033[1;32m# Run all tests on current machine with custom flags\033[0m
+    > cd $scream_repo/components/scream
+    > ./scripts/test-all-scream $(which mpicxx) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
 """.format(os.path.basename(args[0])),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -52,8 +56,8 @@ OR
 
     parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
 
-    parser.add_argument("-c", "--custom-cmake-opts",
-                        help="Extra custom options to pass to cmake")
+    parser.add_argument("-c", "--custom-cmake-opts", action="append", default=[],
+                        help="Extra custom options to pass to cmake. Can use multiple times for multiple cmake options. The -D is added for you")
 
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
                         help="Only run specific test configurations, choices='dbg' (debug), 'sp' (single-prec), 'fpe' (floating-point exceptions)")

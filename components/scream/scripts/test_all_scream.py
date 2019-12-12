@@ -72,19 +72,24 @@ class TestAllScream(object):
                 self._proc_count = 1
 
     ###############################################################################
-    def generate_cmake_config(self, extra_configs):
+    def generate_cmake_config(self, extra_configs, for_ctest=False):
     ###############################################################################
         if self._kokkos:
             kokkos_cmake = "-DKokkos_DIR={}".format(self._kokkos)
         else:
             kokkos_cmake = "-C {}/cmake/machine-files/{}.cmake".format(self._src_dir, self._machine)
 
-        result = "cmake -DCMAKE_CXX_COMPILER={} {}".format(self._cxx, kokkos_cmake)
+        result = "{}-DCMAKE_CXX_COMPILER={} {}".format("" if for_ctest else "cmake ", self._cxx, kokkos_cmake)
         for key, value in extra_configs:
             result += " -D{}={}".format(key, value)
 
-        if self._custom_cmake_opts:
-            result += " -D{}".format(self._custom_cmake_opts)
+        for custom_opt in self._custom_cmake_opts:
+            if "=" in custom_opt:
+                name, value = custom_opt.split("=", 1)
+                # Some effort is needed to ensure quotes are perserved
+                result += " -D{}='{}'".format(name, value)
+            else:
+                result += " -D{}".format(custom_opt)
 
         return result
 
@@ -128,7 +133,7 @@ class TestAllScream(object):
         return result
 
     ###############################################################################
-    def generate_baselines(self, test):
+    def generate_baselines(self, test, cleanup):
     ###############################################################################
         name = self._test_full_names[test]
         test_dir = "ctest-build/{}".format(name)
@@ -156,7 +161,8 @@ class TestAllScream(object):
             print("WARNING: Failed to create baselines:\n{}".format(err))
             return False
 
-        run_cmd_no_fail("ls | grep -v data | xargs rm -rf ", from_dir=test_dir)
+        if cleanup:        
+            run_cmd_no_fail("ls | grep -v data | xargs rm -rf ", from_dir=test_dir)
 
         return True
 
@@ -169,12 +175,14 @@ class TestAllScream(object):
             run_cmd_no_fail("git checkout {}".format(git_baseline_head))
             print("  Switched to {} ({})".format(git_baseline_head, get_current_commit()))
 
+
+        cleanup = git_baseline_head != "HEAD"
         success = True
         num_workers = len(self._tests) if self._parallel else 1
         with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
 
             future_to_test = {
-                executor.submit(self.generate_baselines, test) : test
+                executor.submit(self.generate_baselines, test, cleanup) : test
                 for test in self._tests}
 
             for future in threading3.as_completed(future_to_test):
@@ -199,7 +207,7 @@ class TestAllScream(object):
         print("Testing '{}' for build type '{}'".format(git_head,name))
 
         test_dir = "ctest-build/{}".format(name)
-        cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
+        cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
         ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
         success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True)[0] == 0
