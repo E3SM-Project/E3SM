@@ -150,7 +150,7 @@ contains
           nt=n0
           call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt), &
                elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),pnh,   &
-               exner,dpnh_dp_i,caller='dirk0')
+               exner,dpnh_dp_i,caller='dirkn0')
           w_n0(:,:,1:nlev)     = w_n0(:,:,1:nlev) + &
                dt3*g*(dpnh_dp_i(:,:,1:nlev)-1d0)
 
@@ -166,7 +166,7 @@ contains
           nt=nm1
           call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt), &
                elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),pnh,   &
-               exner,dpnh_dp_i,caller='dirk0')
+               exner,dpnh_dp_i,caller='dirknm1')
           w_n0(:,:,1:nlev)     = w_n0(:,:,1:nlev) + &
                dt3*g*(dpnh_dp_i(:,:,1:nlev)-1d0)
 
