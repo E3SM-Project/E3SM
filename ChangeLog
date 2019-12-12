@@ -1,5 +1,30 @@
 ======================================================================
 
+Originator: Chris Fischer
+Date: 12-12-2019 
+Tag: cime5.6.28
+Answer Changes: None
+Tests: 
+Dependencies:
+
+Brief Summary:
+    - Update CIME_OUTPUT_ROOT for aleph.
+    - Update exp_types.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+fd98044f7 Merge branch 'maint-5.6' of https://github.com/ESMCI/cime into maint-5.6
+cfcce68b9 update scratch directory
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+M       scripts/Tools/archive_metadata
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 12-2-2019
 Tag: cime5.6.27
