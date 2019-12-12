@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <config case="prep_spin_up1">
-	<add_link source="../../init/ssh_adjustment/init.nc" dest="init.nc"/>
+	<add_link source="../../init/ssh_adjustment/init20.nc" dest="init.nc"/>
 	<add_link source="../../init/initial_state/graph.info" dest="graph.info"/>
 	<add_link source="../../init/initial_state/init_mode_forcing_data.nc" dest="forcing_data.nc"/>
 
