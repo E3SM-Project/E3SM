@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #ifdef __bgq__
 #include <spi/include/kernel/memory.h>
 #endif
@@ -52,14 +53,22 @@ int GPTLprint_memusage (const char *str)
   int text, text2;                        /* text segment size (returned from OS) */
   int datastack, datastack2;              /* data/stack size (returned from OS) */
   static int bytesperblock = -1;          /* convert to bytes (init to invalid) */
-  static const int nbytes = 1024*1024*10; /* allocate 10 MB */
+  static const int nbytes =1024*1024*1024;/* allocate 1 GB */
   static double blockstomb;               /* convert blocks to MB */
   void *space;                            /* allocated space */
 
-  if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0)
+  setbuf(stdout, NULL); // don't buffer stdout, flush
+  if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0) {
+    printf ("GPTLprint_memusage: GPTLget_memusage failed.\n");
     return -1;
+  }
 
 #if (defined HAVE_SLASHPROC || defined __APPLE__)
+  if (bytesperblock == -1) {
+    bytesperblock = sysconf(_SC_PAGESIZE);
+    printf ("GPTLprint_memusage: Using bytesperpage=%d\n", bytesperblock);
+  }
+
   /*
   ** Determine size in bytes of memory usage info presented by the OS. Method: allocate a
   ** known amount of memory and see how much bigger the process becomes.
@@ -76,20 +85,25 @@ int GPTLprint_memusage (const char *str)
 	*/
 	bytesperblock = (int) ((nbytes / (double) (size2 - size)) + 0.5);
 	bytesperblock = nearest_powerof2 (bytesperblock);
-	blockstomb = bytesperblock / (1024.*1024.);
 	printf ("GPTLprint_memusage: Using bytesperblock=%d\n", bytesperblock);
+      } else {
+        printf ("GPTLprint_memusage: highwater did not increase.\n");
       }
+    } else {
+      printf ("GPTLprint_memusage: call GPTLget_memusage failed.\n");
     }
     free (space);
   }
 
-  if (bytesperblock > 0)
+  if (bytesperblock > 0) {
+    blockstomb = bytesperblock / (1024.*1024.);
     printf ("%s size=%.1f MB rss=%.4f MB share=%.1f MB text=%.1f MB datastack=%.1f MB\n",
 	    str, size*blockstomb, rss*blockstomb, share*blockstomb,
 	    text*blockstomb, datastack*blockstomb);
-  else
+  } else {
     printf ("%s size=%d rss=%d share=%d text=%d datastack=%d\n",
 	    str, size, rss, share, text, datastack);
+  }
 
 #else
 
