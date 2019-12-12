@@ -593,8 +593,8 @@ void  update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncc
   typename P3F::Spack xlf(xlf_);
   typename P3F::Spack xxls(xxls_);
 
-  typename P3F::Smask log_predictNc(log_predictNc_);
-  typename P3F::Smask log_wetgrowth(log_wetgrowth_);
+  bool log_predictNc(log_predictNc_);
+  bool log_wetgrowth(log_wetgrowth_);
 
   typename P3F::Scalar dt(dt_);
   typename P3F::Spack nmltratio(nmltratio_);

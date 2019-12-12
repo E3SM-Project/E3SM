@@ -16,43 +16,73 @@ void Functions<S,D>
     const Spack& nrshdr, const Spack& qimlt,  const Spack& nimlt,  const Spack& qisub,
     const Spack& qidep,  const Spack& qinuc,  const Spack& ninuc,  const Spack& nislf,
     const Spack& nisub,  const Spack& qiberg, const Spack& exner,  const Spack& xxls,
-    const Spack& xlf,    const Smask log_predictNc, const Smask log_wetgrowth, const Scalar dt,
+    const Spack& xlf,    const bool log_predictNc, const bool log_wetgrowth, const Scalar dt,
     const Spack& nmltratio, const Spack& rhorime_c, Spack& th, Spack& qv, Spack& qitot,
     Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,  Spack& nc, Spack& qr,
     Spack& nr)
 {
-  /*const auto sinks = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt; // Sinks of cloud water
-  const auto sources = qc + (qcnuc)*dt; // Source of cloud water
-  Spack ratio;
 
-  Smask enforce_conservation  = sinks > sources && sinks >= C::QTENDSMALL;  // determine if  conservation corrction is necessary
-  Smask nothing_todo = !enforce_conservation;
+qc = qc - (qcheti+qccol+qcshd+qiberg)*dt;
 
-  if (enforce_conservation.any()){
-    ratio.set(enforce_conservation, sources/sinks);
-    qcaut.set(enforce_conservation, qcaut*ratio);
-    qcacc.set(enforce_conservation, qcacc*ratio);
-    qccol.set(enforce_conservation, qccol*ratio);
-    qcheti.set(enforce_conservation, qcheti*ratio);
-    qcshd.set(enforce_conservation, qcshd*ratio);
-    qiberg.set(enforce_conservation, qiberg*ratio);
-  }
+if (log_predictNc){
+   nc = nc - (nccol+ncheti)*dt;
+}
 
-  if(nothing_todo.any()){
-    ratio.set(nothing_todo, 1.0); // If not limiting sinks on qc then most likely did not run out of qc
-  }
+qr = qr - (qrcol-qimlt+qrheti-qcshd)*dt;
+
+//apply factor to source for rain number from melting of ice, (ad-hoc
+// but accounts for rapid evaporation of small melting ice particles)
+nr = nr - (nrcol+nrheti-nmltratio*nimlt-nrshdr-ncshdc)*dt;
+
+constexpr Scalar QSMALL = C::QSMALL;
+const auto qitot_not_small = qitot >= QSMALL;
+if(qitot_not_small.any()){
+   birim.set(qitot_not_small, birim - ((qisub+qimlt)/qitot)*dt*birim);
+   qirim.set(qitot_not_small, qirim - ((qisub+qimlt)*qirim/qitot)*dt);
+   qitot.set(qitot_not_small, qitot - (qisub+qimlt)*dt);
+}
+
+const auto dum = (qrcol+qccol+qrheti+qcheti)*dt;
+qitot = qitot + (qidep+qinuc+qiberg)*dt + dum;
+qirim = qirim + dum;
+
+constexpr Scalar INV_RHO_RIMEMAX = C::INV_RHO_RIMEMAX;
+birim = birim + (qrcol*INV_RHO_RIMEMAX+qccol/rhorime_c+(qrheti+
+     qcheti)*INV_RHO_RIMEMAX)*dt;
+
+nitot = nitot + (ninuc-nimlt-nisub-nislf+nrheti+ncheti)*dt;
+
+//PMC nCat deleted interactions_loop
+
+const auto qirim_lt_thresh = qirim < 0.0 ; 
+ if (qirim_lt_thresh.any()){
+      qirim.set(qirim_lt_thresh,0.0);
+      birim.set(qirim_lt_thresh,0.0);
+ }
+
+// densify under wet growth
+// -- to be removed post-v2.1.  Densification automatically happens
+//    during wet growth due to parameterized rime density --
+
+if (log_wetgrowth){
+   qirim = qitot;
+   birim = qirim*INV_RHO_RIMEMAX;
+}
+
+// densify in above freezing conditions and melting
+// -- future work --
+//   Ideally, this will be treated with the predicted liquid fraction in ice.
+//   Alternatively, it can be simplified by tending qirim -- qitot
+//   and birim such that rho_rim (qirim/birim) --> rho_liq during melting.
+// ==
+
+qv = qv - (qidep-qisub+qinuc)*dt;
 
 
-  //PMC: ratio is also frac of step w/ liq. thus we apply qiberg for
-  //"ratio" of timestep and vapor deposition and sublimation  for the
-  //remaining frac of the timestep.  Only limit if there will be cloud
-  // water to begin with.
-  enforce_conservation = sources > C::QTENDSMALL;
-  if (enforce_conservation.any()){
-    qidep.set(enforce_conservation, qidep*(1.0-ratio));
-    qisub.set(enforce_conservation, qisub*(1.0-ratio));
-  }
-*/
+constexpr Scalar INV_CP = C::INV_CP;
+th = th + exner*((qidep-qisub+qinuc)*xxls*INV_CP +(qrcol+qccol+
+        qcheti+qrheti-qimlt+qiberg)* xlf*INV_CP)*dt;
+
 }
 
 } // namespace p3

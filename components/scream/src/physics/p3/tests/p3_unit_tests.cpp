@@ -394,9 +394,13 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
             qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xlf, xxls,
             nmltratio, rhorime_c, th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim;
 	  Scalar dt;
-	  Smask log_predictNc, log_wetgrowth;
+	  bool log_predictNc, log_wetgrowth;
 
-	  dt = pupidc_device[0].dt;
+	  // variables with single values assigned outside of the for loop
+	  dt            = pupidc_device(0).dt;
+	  log_predictNc = pupidc_device(0).log_predictNc;
+	  log_wetgrowth = pupidc_device(0).log_wetgrowth;
+
 	  for (Int s = 0; s < Spack::n; ++s) {
 	    
 	    qcheti[s] = pupidc_device(s).qcheti;
@@ -421,10 +425,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 	    qiberg[s] = pupidc_device(s).qiberg;
 	    exner[s]  = pupidc_device(s).exner;
 	    xlf[s]    = pupidc_device(s).xlf;
-	    xxls[s]   = pupidc_device(s).xxls;  
-	      
-	    //log_predictNc[s] = pupidc_device(s).log_predictNc;
-	    //log_wetgrowth[s] = pupidc_device(s).log_wetgrowth;
+	    xxls[s]   = pupidc_device(s).xxls;
 
 	    //dt[s]    = pupidc_device(s).dt;
 	    nmltratio[s] = pupidc_device(s).nmltratio;
@@ -449,47 +450,108 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 					   rhorime_c, th, qv, qitot, nitot, qirim,
 					   birim, qc, nc, qr, nr);
 	  
-	  //Functions::cloud_water_autoconversion(rho, qc_incld, nc_incld,
-	  //					qcaut, ncautc, ncautr);
 	  // Copy results back into views
+	  pupidc_device(0).dt            = dt;
+	  pupidc_device(0).log_predictNc = log_predictNc;
+	  pupidc_device(0).log_wetgrowth = log_wetgrowth;
 	  for (Int s = 0; s < Spack::n; ++s) {
-	    //cwadc_device(s).rho = rho[s];
-	    //cwadc_device(s).qc_incld = qc_incld[s];
-	    //cwadc_device(s).nc_incld = nc_incld[s];
-	    //cwadc_device(s).qcaut = qcaut[s];
-	    //cwadc_device(s).ncautc = ncautc[s];
-	    //cwadc_device(s).ncautr = ncautr[s];
-	    }
-
+	    
+	    pupidc_device(s).qcheti = qcheti[s]; 	
+	    pupidc_device(s).qccol  = qccol[s]; 		   
+	    pupidc_device(s).qcshd  = qcshd[s];
+	    pupidc_device(s).nccol  = nccol[s];		   
+	    pupidc_device(s).ncheti = ncheti[s];		   
+	    pupidc_device(s).ncshdc = ncshdc[s];		   
+	    pupidc_device(s).qrcol  = qrcol[s];			   
+	    pupidc_device(s).nrcol  = nrcol[s];			   
+	    pupidc_device(s).qrheti = qrheti[s];		   
+	    pupidc_device(s).nrheti = nrheti[s];		   
+	    pupidc_device(s).nrshdr = nrshdr[s];		   
+	    pupidc_device(s).qimlt  = qimlt[s];			   
+	    pupidc_device(s).nimlt  = nimlt[s];			   
+	    pupidc_device(s).qisub  = qisub[s];			   
+	    pupidc_device(s).qidep  = qidep[s];			   
+	    pupidc_device(s).qinuc  = qinuc[s];			   
+	    pupidc_device(s).ninuc  = ninuc[s];			   
+	    pupidc_device(s).nislf  = nislf[s];			   
+	    pupidc_device(s).nisub  = nisub[s];			   
+	    pupidc_device(s).qiberg = qiberg[s];		   
+	    pupidc_device(s).exner  = exner[s];			   
+	    pupidc_device(s).xlf    = xlf[s];			   
+	    pupidc_device(s).xxls   = xxls[s];  		   
+	    
+	    pupidc_device(s).nmltratio = nmltratio[s];
+	    pupidc_device(s).rhorime_c = rhorime_c[s];
+	    pupidc_device(s).th    = th[s];
+	    pupidc_device(s).qv	   = qv[s];		 
+	    pupidc_device(s).qc	   = qc[s];		 
+	    pupidc_device(s).nc	   = nc[s];		 
+	    pupidc_device(s).qr	   = qr[s];		 
+	    pupidc_device(s).nr    = nr[s];	  	 
+	    pupidc_device(s).qitot = qitot[s];
+	    pupidc_device(s).nitot = nitot[s];
+	    pupidc_device(s).qirim = qirim[s];
+	    pupidc_device(s).birim = birim[s];
+	  }
+	  
 	});
-
-
-
       
+      // Sync back to host
+      Kokkos::deep_copy(pupidc_host, pupidc_device);
+
+      // Validate results
+      //First verify the single value variables and then the ones in a pack
+      REQUIRE(pupidc[0].dt            == pupidc_host(0).dt);
+      REQUIRE(pupidc[0].log_predictNc == pupidc_host(0).log_predictNc);
+      REQUIRE(pupidc[0].log_wetgrowth == pupidc_host(0).log_wetgrowth);
+
+      for (Int s = 0; s < Spack::n; ++s) {
+
+	REQUIRE(pupidc[s].qcheti== pupidc_host(s).qcheti);
+	REQUIRE(pupidc[s].qccol == pupidc_host(s).qccol);
+	REQUIRE(pupidc[s].qcshd == pupidc_host(s).qcshd);
+	REQUIRE(pupidc[s].nccol == pupidc_host(s).nccol);
+	REQUIRE(pupidc[s].ncheti== pupidc_host(s).ncheti);
+	REQUIRE(pupidc[s].ncshdc== pupidc_host(s).ncshdc);
+	REQUIRE(pupidc[s].qrcol == pupidc_host(s).qrcol);
+	REQUIRE(pupidc[s].nrcol == pupidc_host(s).nrcol);
+	REQUIRE(pupidc[s].qrheti== pupidc_host(s).qrheti);
+	REQUIRE(pupidc[s].nrheti== pupidc_host(s).nrheti);
+	REQUIRE(pupidc[s].nrshdr== pupidc_host(s).nrshdr);
+	REQUIRE(pupidc[s].qimlt == pupidc_host(s).qimlt);
+	REQUIRE(pupidc[s].nimlt == pupidc_host(s).nimlt);
+	REQUIRE(pupidc[s].qisub == pupidc_host(s).qisub);
+	REQUIRE(pupidc[s].qidep == pupidc_host(s).qidep);
+	REQUIRE(pupidc[s].qinuc == pupidc_host(s).qinuc);
+	REQUIRE(pupidc[s].ninuc == pupidc_host(s).ninuc);
+	REQUIRE(pupidc[s].nislf == pupidc_host(s).nislf);
+	REQUIRE(pupidc[s].nisub == pupidc_host(s).nisub);
+	REQUIRE(pupidc[s].qiberg== pupidc_host(s).qiberg);
+	REQUIRE(pupidc[s].exner == pupidc_host(s).exner);
+	REQUIRE(pupidc[s].xlf   == pupidc_host(s).xlf);
+	REQUIRE(pupidc[s].xxls  == pupidc_host(s).xxls);
+
+	REQUIRE(pupidc[s].nmltratio == pupidc_host(s).nmltratio);
+	REQUIRE(pupidc[s].rhorime_c == pupidc_host(s).rhorime_c);
+	REQUIRE(pupidc[s].qc        == pupidc_host(s).qc); 
+	REQUIRE(pupidc[s].nr        == pupidc_host(s).nr);
+	REQUIRE(pupidc[s].qr        == pupidc_host(s).qr);     
+	REQUIRE(pupidc[s].qv        == pupidc_host(s).qv);  
+	REQUIRE(pupidc[s].nc        == pupidc_host(s).nc);
+	REQUIRE(pupidc[s].qitot     == pupidc_host(s).qitot); 
+	REQUIRE(pupidc[s].nitot     == pupidc_host(s).nitot);
+	REQUIRE(pupidc[s].qirim     == pupidc_host(s).qirim);
+	REQUIRE(pupidc[s].birim     == pupidc_host(s).birim );
+	REQUIRE(pupidc[s].th        == pupidc_host(s).th);   
+
+	}
     }
   
     static void run_bfb(){
       update_prognostic_ice_unit_bfb_tests();
     }
-    
-
-
-
-
-
-
-
-
-
 
   };//TestP3UpdatePrognosticIce
-  
-  
-    //---balli code changes above
-  
-  
-  
-  
 }//namespace unit_test 
 }//namespace p3 
 }//namespace scream 
