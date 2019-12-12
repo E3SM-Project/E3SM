@@ -1249,7 +1249,6 @@ def buildnml(case, caseroot, compname):
         lines.append('    <var name="snowFlux"/>')
         lines.append('    <var name="iceFraction"/>')
         lines.append('    <var name="nAccumulatedCoupled"/>')
-        lines.append('    <var name="salineContractionCoeff"/>')
         lines.append('</stream>')
         lines.append('')
         lines.append('</streams>')
