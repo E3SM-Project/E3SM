@@ -194,7 +194,10 @@ ENDIF()
 
 IF (${BUILD_HOMME_THETA_KOKKOS})
   ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
-  ADD_SUBDIRECTORY(thetal_kokkos_ut)
+
+  IF (HOMMEXX_BFB_TESTING)
+    ADD_SUBDIRECTORY(thetal_kokkos_ut)
+  ENDIF()
 ENDIF()
 
 # Add the test exec subdirs for the prim executable

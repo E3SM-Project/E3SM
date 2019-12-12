@@ -224,7 +224,7 @@ public:
       // Fix the top/bottom
       Kokkos::single(Kokkos::PerThread(kv.team),[&](){
         combine<CM>(x_m(0),x_i(0),alpha,beta);
-        combine<CM>(x_m(NUM_INTERFACE_LEV-1),x_i(NUM_PHYSICAL_LEV-1),alpha,beta);
+        combine<CM>(x_m(NUM_PHYSICAL_LEV-1),x_i(NUM_INTERFACE_LEV-1),alpha,beta);
       });
     } else {
       constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
