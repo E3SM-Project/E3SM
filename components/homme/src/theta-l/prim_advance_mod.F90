@@ -363,7 +363,7 @@ contains
       a2=10d0/22
       call compute_andor_apply_rhs(np1,n0,np1,qn0,dt,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,eta_ave_w*1d0,1.d0,0d0,1.d0)
-      call compute_stage_value_dirk(nm1,0d0,n0,a1*dt,np1,a2*dt,qn0,elem,hvcoord,hybrid,&
+      call compute_stage_value_dirk(nm1,a1*dt,n0,a1*dt,np1,a2*dt,qn0,elem,hvcoord,hybrid,&
         deriv,nets,nete,maxiter,itertol)
       !  u0 saved in elem(n0)
       !  u2 saved in elem(nm1)
