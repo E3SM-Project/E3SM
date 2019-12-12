@@ -286,7 +286,7 @@ ADD_SUBDIRECTORY(utils/cime/src/share/timing)
 # CMAKE_CURRENT_SOURCE_DIR == homme
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/CMake" ${CMAKE_MODULE_PATH})
-SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/pio2/cmake" ${CMAKE_MODULE_PATH})
+SET (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/utils/externals/scorpio/cmake" ${CMAKE_MODULE_PATH})
 
 
 
@@ -312,7 +312,7 @@ message("-- PnetCDF_Fortran_PATH = ${PnetCDF_Fortran_PATH}")
 message("-- PnetCDF_C_PATH = ${PnetCDF_C_PATH}")
 # pio needs cime/externals/genf90/genf90.pl
 SET(GENF90_PATH ${CMAKE_CURRENT_SOURCE_DIR}/utils/cime/src/externals/genf90)
-ADD_SUBDIRECTORY(utils/cime/src/externals/pio1)
+ADD_SUBDIRECTORY(utils/externals/scorpio_classic)
 ENDIF()
 
 
