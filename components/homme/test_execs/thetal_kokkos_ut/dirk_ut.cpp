@@ -24,7 +24,7 @@ extern "C" {
   void pnh_and_exner_from_eos_f90(const Real* vtheta_dp, const Real* dp3d, const Real* dphi,
                                   Real* pnh, Real* exner, Real* dpnh_dp_i);
   void compute_gwphis_f90(Real* gwh_i, const Real* dp3d, const Real* v, const Real* gradphis);
-  void tridiag_diagdom_bfb_a1x1(int n, Real* dl, Real* d, Real* du, Real* x);
+  void tridiag_diagdom_bfb_a1x1(int n, Real* dl, Real* d, Real* du, Real* x, int real_size);
   void c2f_f90(int nelem, int nlev, int nlevp, const Real* dp3d, const Real* w_i, const Real* v,
                const Real* vtheta_dp, const Real* phinh_i, const Real* gradphis);
   void f2c_f90(int nelem, int nlev, int nlevp, Real* dp3d, Real* w_i, Real* v,
@@ -383,7 +383,7 @@ TEST_CASE ("dirk_pieces_testing") {
     // Test BFB F90 and C++.
     for (int i = 0; i < np; ++i)
       for (int j = 0; j < np; ++j)
-        tridiag_diagdom_bfb_a1x1(nlev, &dlf(i,j,0), &df(i,j,0), &duf(i,j,0), &x3(i,j,0));
+        tridiag_diagdom_bfb_a1x1(nlev, &dlf(i,j,0), &df(i,j,0), &duf(i,j,0), &x3(i,j,0), sizeof(Real));
     eq(x2m, 0, x3, nlev);
   }
 

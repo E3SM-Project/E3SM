@@ -9,6 +9,7 @@
 
 #include <Kokkos_Core.hpp>
 
+#include "PackTraits.hpp"
 #include "Config.hpp"
 #include "ExecSpaceDefs.hpp"
 #include "Dimensions.hpp"
@@ -41,6 +42,13 @@ using VectorType =
     KokkosKernels::Batched::Experimental::VectorTag<VectorTagType, VECTOR_SIZE>;
 
 using Scalar = KokkosKernels::Batched::Experimental::Vector<VectorType>;
+
+// Specialize PackTraits for Scalar
+template<>
+struct PackTraits<Scalar> {
+  static constexpr int pack_length = Scalar::vector_length;
+  using value_type = Real;
+};
 
 static_assert(sizeof(Scalar) > 0, "Vector type has 0 size");
 static_assert(sizeof(Scalar) == sizeof(Real[VECTOR_SIZE]), "Vector type is not correctly defined");

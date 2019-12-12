@@ -59,6 +59,23 @@ IF (HOMME_USE_ARKODE)
   )
 ENDIF ()
 
+IF (XX_BFB_TESTING)
+  SET(THETAL_SRCS_F90
+      ${THETAL_SRCS_F90}
+      ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
+  )
+
+  SET(THETAL_SRCS_C
+      ${THETAL_SRCS_C}
+      ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
+  )
+
+  SET (EXEC_INCLUDE_DIRS
+      ${EXEC_INCLUDE_DIRS}
+      ${SRC_SHARE_DIR}/cxx
+  )
+ENDIF()
+
 # If the user specified a file for custom compiler options use those
 IF (DEFINED THETA_CUSTOM_FLAGS_FILE)
   setCustomCompilerFlags(THETA_CUSTOM_FLAGS_FILE THETAL_SRCS_F90)

@@ -78,7 +78,7 @@ struct RemapStateProvider {
     case 2:
       return Homme::subview(m_state.m_t, kv.ie, np1);
     default:
-      Errors::runtime_abort("RemapStateProvider: invalid variable index.\n");
+      Kokkos::abort("RemapStateProvider: invalid variable index.\n");
       return ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>();
     }
   }

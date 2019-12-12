@@ -135,7 +135,6 @@ SET(THETAL_DEPS_F90
   ${UTILS_SHARE_DIR}/shr_vmath_mod.F90 
   ${UTILS_SHARE_DIR}/shr_const_mod.F90 
   ${UTILS_SHARE_DIR}/shr_spfn_mod.F90
-  ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
 )
 
 SET(THETAL_DEPS_CXX
@@ -171,9 +170,18 @@ SET(THETAL_DEPS_CXX
   ${SRC_SHARE_DIR}/cxx/mpi/Connectivity.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/MpiBuffersManager.cpp
   ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
-  ${SRC_SHARE_DIR}/cxx/utilities/tridiag_bfb.cpp
-  ${SRC_SHARE_DIR}/cxx/utilities/MathUtils.cpp
 )
+
+IF (XX_BFB_TESTING)
+  SET(THETAL_DEPS_F90
+      ${THETAL_DEPS_F90}
+      ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
+  )
+  SET(THETAL_DEPS_CXX
+      ${THETAL_DEPS_CXX}
+      ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
+  )
+ENDIF()
 
 IF (HOMME_USE_ARKODE)
   SET(THETAL_DEPS_F90
