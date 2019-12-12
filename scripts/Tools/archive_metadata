@@ -30,7 +30,7 @@ from six.moves      import configparser, urllib
 # define global constants
 logger = logging.getLogger(__name__)
 _svn_expdb_url = 'https://svn-cesm2-expdb.cgd.ucar.edu'
-_exp_types = ['CMIP6', 'production', 'tuning','lens']
+_exp_types = ['CMIP6', 'production', 'tuning','lens','C1','C2','C3','C4','C5']
 _xml_vars = ['CASE', 'COMPILER', 'COMPSET', 'CONTINUE_RUN', 'DOUT_S', 'DOUT_S_ROOT',
              'GRID', 'MACH', 'MPILIB', 'MODEL', 'MODEL_VERSION', 'REST_N', 'REST_OPTION',
              'RUNDIR', 'RUN_REFCASE', 'RUN_REFDATE', 'RUN_STARTDATE', 'RUN_TYPE',
