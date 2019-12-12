@@ -1,30 +1,33 @@
 # The name of this test (should be the basename of this file)
-SET(TEST_NAME preqx-nlev72-qsize4-r3-moist-kokkos)
+SET(TEST_NAME preqx-nlev72-moist-r3-samenu-tensorhv-lim9-q1)
 # The specifically compiled executable that this test uses
-SET(EXEC_NAME preqx-nlev72-kokkos)
+SET(EXEC_NAME preqx-nlev72)
 
 SET(NUM_CPUS 16)
 
 SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/preqx.nl)
-SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/acme-72*)
+SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/acme-72*.ascii)
 
 # compare all of these files against baselines:
 SET(NC_OUTPUT_FILES
   jw_baroclinic1.nc
   jw_baroclinic2.nc)
 
-#not flexible way to deal with threads, be fixed in future
-set (OMP_NUM_THREADS 1)
-
 # Specify test options, used to replace the cmake variables in the namelist
-SET (HOMME_TEST_QSIZE 4)
+SET (HOMME_TEST_LIM 9)
+SET (HOMME_TEST_QSIZE 1)
 SET (HOMME_TEST_RSPLIT 3)
+SET (HOMME_TEST_MOISTURE moist)
+
+#const HV is HVSCALING=0, tensor HV is 3.2
+#const HV: all preqxx tests use nu=7e15, to test nu!=nudiv, set nudiv to 1e15
+#tensor HV: nu=nudiv=1e-9
+SET (HOMME_TEST_HVSCALING 3.2)
+SET (HOMME_TEST_NU 4.9e-7)
+SET (HOMME_TEST_NUDIV 4.9e-7)
+SET (HOMME_TEST_NUTOP 0)
+
 SET (HOMME_TEST_TIME_STEP 300)
-SET (HOMME_TEST_MOISTURE notdry)
 SET (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
 SET (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
 
-# For GPU testbeds, for now. This particular TIMEOUT should not be required; the
-# test should pass. But set it until we figure out why it's not. Seems to have
-# something to do with MPI.
-SET(TIMEOUT 400)
