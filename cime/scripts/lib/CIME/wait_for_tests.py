@@ -13,7 +13,7 @@ from CIME.test_status import *
 
 
 SIGNAL_RECEIVED           = False
-E3SM_MAIN_CDASH           = "ACME_Climate"
+E3SM_MAIN_CDASH           = "E3SM"
 CDASH_DEFAULT_BUILD_GROUP = "ACME_Latest"
 SLEEP_INTERVAL_SEC        = .1
 
