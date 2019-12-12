@@ -206,13 +206,14 @@ void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w
     });
     // If NUM_LEV==NUM_LEV_P, the code above will take care also of the last interface
     if (NUM_LEV_P>NUM_LEV) {
+      const int LAST_INT = NUM_LEV_P-1;
       Kokkos::parallel_for(
         Kokkos::RangePolicy<ExecSpace>(0, elements.num_elems()*NP*NP),
         KOKKOS_LAMBDA(const int it) {
            const int ie  =  it / (NP*NP);
            const int igp = (it / NP) % NP;
            const int jgp =  it % NP;
-           w(ie,nm1,igp,jgp,NUM_LEV_P) = (5.0*w(ie,nm1,igp,jgp,NUM_LEV_P)-w(ie,n0,igp,jgp,NUM_LEV_P))/4.0;
+           w(ie,nm1,igp,jgp,LAST_INT) = (5.0*w(ie,nm1,igp,jgp,LAST_INT)-w(ie,n0,igp,jgp,LAST_INT))/4.0;
       });
     }
   }
