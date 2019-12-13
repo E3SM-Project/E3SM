@@ -193,6 +193,7 @@ contains
           dphi(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
        enddo
 
+       nsafe=0
        do k=1,nlev
           do j=1,np
              do i=1,np
@@ -200,10 +201,17 @@ contains
                    write(iulog,*) 'WARNING:IMEX inital PHI is bad, delta z < 1m. ie,i,j,k=',ie,i,j,k
                    write(iulog,*) 'dphi(i,j,k)=  ',dphi(i,j,k)
                    dphi(i,j,k)=-g
+                   nsafe=1
                 endif
              enddo
           enddo
        enddo
+       if (nsafe==1) then
+          ! in rare cases when limter was triggered, just recompute:
+          do k=nlev,1,-1  ! scan                                                                                                      
+             phi_np1(:,:,k) = phi_np1(:,:,k+1)-dphi(:,:,k)
+          enddo
+       endif
 
        ! initial residual
        call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk1')
@@ -255,7 +263,7 @@ contains
                 enddo
                 if (nsafe>1) write(iulog,*) 'WARNING:IMEX reducing newton increment, nsafe=',nsafe
                 ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
-#undef NOSCAN
+#define NOSCAN
 #ifdef NOSCAN
                 phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + (1 - alpha)*x(1:nlev,i,j)
 #endif
@@ -265,24 +273,19 @@ contains
           do k=1,nlev
              dphi(:,:,k) = phi_np1(:,:,k+1) - phi_np1(:,:,k)
           end do
+#else
+          do k=nlev,1,-1  ! scan                                                                                                      
+             phi_np1(:,:,k) = phi_np1(:,:,k+1)-dphi(:,:,k)
+          enddo
 #endif
           call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk2')
           ! update approximate solution of w
           elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
                (1.0-dpnh_dp_i(:,:,1:nlev))
 
-#ifdef NOSCAN         
           do k=1,nlev
              Fn(:,:,k) = (phi_np1(:,:,k) - phi_n0(:,:,k)) - dt2*g*(elem(ie)%state%w_i(:,:,k,np1))
           enddo
-#else
-          do k=nlev,1,-1  ! scan                                                                                                      
-             phi_np1(:,:,k) = phi_np1(:,:,k+1)-dphi(:,:,k)
-          enddo
-          do k=1,nlev
-             Fn(:,:,k) = (phi_np1(:,:,k) - phi_n0(:,:,k)) - dt2*g*(elem(ie)%state%w_i(:,:,k,np1))
-          enddo
-#endif
           reserr=maxval(abs(Fn))/wgdtmax   ! residual error in phi tendency, relative to source term gw
 
           deltaerr=0
@@ -291,9 +294,9 @@ contains
              do i=1,np
                 do j=1,np
 #ifdef NOSCAN
-                   deltaerr=max(deltaerr, abs(x(k,i,j))/max(g,abs(dphi_n0(i,j,k))) )
-#else
                    deltaerr=max(deltaerr, abs(x(k,i,j))/max(g,abs(phi_n0(i,j,k))) )
+#else
+                   deltaerr=max(deltaerr, abs(x(k,i,j))/max(g,abs(dphi_n0(i,j,k))) )
 #endif
                 enddo
              enddo
