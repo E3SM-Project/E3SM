@@ -428,10 +428,6 @@ contains
     ! Update dry static energy(moved from above for WACCM-X so updating after cpairv_loc update)
     !-------------------------------------------------------------------------------------------
 
-
-!!!! how is ptend%s computed?
-! it seems that temperature itself is never updated in params, only s
-! then s is used to update temperature
     if(ptend%ls) then
        do k = ptend%top_level, ptend%bot_level
           state%s(:ncol,k)   = state%s(:ncol,k)   + ptend%s(:ncol,k) * dt
@@ -453,11 +449,6 @@ contains
 !             state%lnpint, state%lnpmid, state%pint  , state%pmid  , state%pdel, state%rpdel  , &
 !             state%s     , state%q(:,:,1),state%phis , rairv_loc(:,:,state%lchnk), gravit  , cpairv_loc(:,:,state%lchnk), &
 !             zvirv    , state%t     , state%zi    , state%zm    , ncol         )
-
-!new call to recompute zm, zi
-!       call geopotential_t2(state%pint, state%pmid,    state%pdel, state%rpdel,&
-!                           state%t,    state%q(:,:,1),rairv(:,:,state%lchnk),gravit,     &
-!                           zvirv,      state%zi,      state%zm, ncol)
 
       call geopotential_t(state%lnpint, state%lnpmid  ,&
                           state%pint  , state%pmid    ,&
