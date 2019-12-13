@@ -5,6 +5,7 @@ module atm_comp_mct
   use ESMF_ClockMod,   only: ESMF_Clock
   use seq_cdata_mod,   only: seq_cdata
   use seq_timemgr_mod, only: seq_timemgr_EClockGetData
+  use shr_kind_mod,    only: SHR_KIND_IN
 
   implicit none
 
@@ -21,18 +22,16 @@ contains
 !================================================================================
 
   subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
-    use SHR_KIND_mod, only: SHR_KIND_IN
     !
     ! F90<->CXX interfaces
     !
     interface
-      subroutine scream_init (f_comm,start_ymd,start_tod) bind(c)
+      subroutine scream_init(f_comm,start_ymd,start_tod) bind(c)
         use iso_c_binding, only: c_int
-        integer (kind=SHR_KIND_IN) :: start_tod, start_ymd
         !
         ! Arguments
         !
-        integer(kind=c_int), intent(in) :: f_comm
+        integer (kind=c_int), intent(in) :: start_tod, start_ymd, f_comm
       end subroutine scream_init
     end interface
     !
@@ -41,7 +40,7 @@ contains
     type(ESMF_Clock),intent(inout)              :: EClock
     type(seq_cdata), intent(inout)              :: cdata_a
     type(mct_aVect), intent(inout)              :: x2a_a
-    type(mct_aVect), intent(inout)              :: a2x_a   
+    type(mct_aVect), intent(inout)              :: a2x_a
     character(len=*), optional,   intent(IN)    :: NLFilename ! Namelist filename
     !
     ! Locals
@@ -59,7 +58,7 @@ contains
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
 
     ! Init scream
-    call scream_init (f_mpicomm,start_ymd,start_tod)
+    call scream_init (f_mpiocomm, INT(start_ycm, KIND=c_int), INT(start_tod, KIND=c_int))
  end subroutine atm_init_mct
 
 !================================================================================
@@ -88,7 +87,7 @@ contains
     print *, "Hello world, from scream run function"
 
     call scream_run(dt)
-    
+
   end subroutine atm_run_mct
 
 !================================================================================

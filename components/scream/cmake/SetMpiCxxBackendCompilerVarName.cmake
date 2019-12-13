@@ -1,7 +1,7 @@
 MACRO (SET_MPI_CXX_BACKEND_COMPILER_VAR_NAME)
 
   execute_process(COMMAND ${CMAKE_CXX_COMPILER} 
-                  ${CMAKE_SOURCE_DIR}/cmake/TryCompileOpenMPI.cpp
+                  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryCompileOpenMPI.cpp
                   OUTPUT_QUIET ERROR_QUIET
                   RESULT_VARIABLE HAVE_OPENMPI_MPI)
 
@@ -9,7 +9,7 @@ MACRO (SET_MPI_CXX_BACKEND_COMPILER_VAR_NAME)
     SET (MPI_CXX_BACKEND_COMPILER_VAR_NAME  OMPI_CXX)
   ELSE ()
     execute_process(COMMAND ${CMAKE_CXX_COMPILER} 
-                    ${CMAKE_SOURCE_DIR}/cmake/TryCompileMPICH.cpp
+                    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/TryCompileMPICH.cpp
                     OUTPUT_QUIET ERROR_QUIET
                     RESULT_VARIABLE HAVE_MPICH_MPI)
 
