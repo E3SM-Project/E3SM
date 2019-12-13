@@ -455,7 +455,13 @@
       <values>
         <value compset="AR9[57]_CAM">262.5</value>
       </values>
-    </entry>
+    </entry> 
+    
+    <entry id="NCPL_ATM">
+      <values>
+        <value compset="_CAM5%SCREAM-HR">720</value>
+      </values>
+    </entry>      
 
   </entries>
 

@@ -14,7 +14,6 @@
 <f12vmr>537.05e-12</f12vmr>
 
 <!-- Ice nucleation mods-->
-<use_hetfrz_classnuc>.true.</use_hetfrz_classnuc>
 <use_preexisting_ice>.false.</use_preexisting_ice>
 <hist_hetfrz_classnuc>.false.</hist_hetfrz_classnuc>
 <microp_aero_wsub_scheme>1</microp_aero_wsub_scheme>
@@ -61,7 +60,6 @@
 <prc_coef1               >30500.0D0</prc_coef1>
 <prc_exp                 >3.19D0</prc_exp>
 <prc_exp1                >-1.2D0</prc_exp1>
-<se_ftype                >2</se_ftype>
 <rrtmg_temp_fix          >.true.</rrtmg_temp_fix>
 <nucleate_ice_subgrid    >1.2D0</nucleate_ice_subgrid>
 <cld_sed                 >1.0D0</cld_sed>
@@ -70,39 +68,37 @@
 <!-- Macrophysics/microphysics coupling -->
 <cld_macmic_num_steps    > 6</cld_macmic_num_steps>
 
-<!-- External forcing for BAM or MAM -->
-<soag_ext_file	 ver="mam" >atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160427.nc</soag_ext_file>
-
-<!-- Surface emissions for MAM4 -->
-<dms_emis_file	      >atm/cam/chem/trop_mozart_aero/emis/DMSflux.2000.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160226.nc</dms_emis_file>
-
-<!-- Marine organic aerosol namelist settings -->
-<mam_mom_mixing_state>3</mam_mom_mixing_state>
-<mam_mom_cycle_yr  >1                                                                                    </mam_mom_cycle_yr  >
-<mam_mom_datapath  >'atm/cam/chem/trop_mam/marine_BGC/'                                                  </mam_mom_datapath  >
-<mam_mom_datatype  >'CYCLICAL'										 </mam_mom_datatype  >
-<mam_mom_filename  >'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc'                 </mam_mom_filename  > <!-- Using the 2000 file, for now -->
-<mam_mom_fixed_tod >0											 </mam_mom_fixed_tod >
-<mam_mom_fixed_ymd >0											 </mam_mom_fixed_ymd >
-<mam_mom_specifier >'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'			 </mam_mom_specifier >
-
-<!-- Stratospheric ozone (Linoz) -->
-<chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/EESC_1850-2100_c090603.nc</chlorine_loading_file>
-<chlorine_loading_fixed_ymd >20000101</chlorine_loading_fixed_ymd>
-<chlorine_loading_type      >FIXED</chlorine_loading_type>
-<linoz_data_cycle_yr        >2000</linoz_data_cycle_yr>
-<linoz_data_file            >linoz1800-2100_2006jpl_climo_1.9x2.5_26L_extended.c160204.nc</linoz_data_file>
-<linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
-<linoz_data_type            >CYCLICAL</linoz_data_type>
-
 <!-- sim_year used for CLM datasets and SSTs forcings -->
 <sim_year>2000</sim_year>
 
-<!-- Settings related to the NH dycore -->
+<!-- Settings related to the SCREAM NH dycore -->
 <theta_advect_form>		1</theta_advect_form>
 <theta_hydrostatic_mode>	.false.</theta_hydrostatic_mode>
-<tstep_type>			7</tstep_type>
-<cubed_sphere_map>		0</cubed_sphere_map>
-<se_nsplit>			20</se_nsplit> 
+
+<!-- Do radiation every timestep -->
+<iradsw>  1</iradsw>
+<iradlw>  1</iradlw>
+
+<!-- Turn off Gravity Waves -->
+<use_gw_front>.false.</use_gw_front>
+<use_gw_oro>.false.</use_gw_oro>
+<use_gw_convect>.false.</use_gw_convect>
+
+<!-- SHOC timestep -->
+<shoc_timestep>20</shoc_timestep>
+
+<!-- Prescribed aerosol options -->
+<use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
+<aerodep_flx_type>'CYCLICAL'</aerodep_flx_type>
+<aerodep_flx_datapath>atm/cam/chem/trop_mam/aero</aerodep_flx_datapath>
+<aerodep_flx_file>mam4_0.9x1.2_L128_2000clim_c191106.nc</aerodep_flx_file>
+<aerodep_flx_cycle_yr>01</aerodep_flx_cycle_yr>
+<prescribed_aero_type>'CYCLICAL'</prescribed_aero_type>
+<prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
+<prescribed_aero_file>mam4_0.9x1.2_L128_2000clim_c191106.nc</prescribed_aero_file>
+<prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
+
+<!-- Initial condition file -->
+<ncdata    >atm/cam/inic/homme/ifs_oper_T1279_2016080100_mod_subset_to_e3sm_ne1024np4_topoadj_L128_v20191116.nc</ncdata>
 
 </namelist_defaults>
