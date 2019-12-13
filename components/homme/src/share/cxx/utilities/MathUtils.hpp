@@ -10,7 +10,6 @@
 #include <Kokkos_Core.hpp>
 #include <cmath>
 #include "Types.hpp"
-#include "utilities/BfbUtils.hpp"
 
 namespace Homme
 {

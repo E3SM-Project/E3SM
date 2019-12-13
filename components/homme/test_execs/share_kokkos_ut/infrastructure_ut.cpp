@@ -7,7 +7,7 @@
 
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/TestUtils.hpp"
-#include "utilities/MathUtils.hpp"
+#include "utilities/BfbUtils.hpp"
 #include "utilities/VectorUtils.hpp"
 
 using namespace Homme;
@@ -225,17 +225,6 @@ TEST_CASE("Parallel_scan",
   }
 }
 
-// Always call zero_ulp_n.
-template <typename Pack>
-KOKKOS_INLINE_FUNCTION
-Pack test_bfb_pow (const Pack& a, const Real& e) {
-  Pack b;
-  for (int s = 0; s < VECTOR_SIZE; ++s)
-    b[s] = std::pow(a[s], e);
-  zero_ulp_n(b, 20, a);
-  return b;
-}
-
 TEST_CASE("zeroulpn", "Test zero'ing n ulp.") {
   using Kokkos::create_mirror_view;
 
@@ -266,8 +255,8 @@ TEST_CASE("zeroulpn", "Test zero'ing n ulp.") {
       // Show z is sensitive to a perturbation far smaller than the zeroed
       // amount.
       const auto t0 = std::pow((i+1)*0.1442, 1.7);
-      z() = test_bfb_pow((i+1)*x(), t0);
-      zp() = test_bfb_pow((i+1)*x()*(1 + 1e-15), t0);
+      z() = bfb_pow((i+1)*x(), t0);
+      zp() = bfb_pow((i+1)*x()*(1 + 1e-15), t0);
       zt() = pow((i+1)*x(), t0);
     };
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,1), f); Kokkos::fence();
@@ -286,10 +275,15 @@ TEST_CASE("zeroulpn", "Test zero'ing n ulp.") {
       REQUIRE(bm()[s] == b0s);
       // A small perturbation to the input to bfb_pow resulted in a difference.
       REQUIRE(zm()[s] != zpm()[s]);
-      // test_bfb_pow made a large change ...
+#ifdef CUDA_BUILD
+      // bfb_pow made a large change ...
       REQUIRE(std::abs(zm()[s] - ztm()[s]) >= 1e-12*std::abs(ztm()[s]));
       // ... but not too large.
-      REQUIRE(std::abs(zm()[s] - ztm()[s]) <= 1e-10*std::abs(ztm()[s]));
+      REQUIRE(std::abs(zm()[s] - ztm()[s]) <= 1e-9*std::abs(ztm()[s]));
+#else
+      // bfb_pow made no change
+      REQUIRE(zm()[s] == ztm()[s]);
+#endif
     }
   }
 }
