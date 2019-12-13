@@ -18,9 +18,10 @@ if (KOKKOS_ENABLE_CUDA)
   set(CMAKE_CXX_COMPILER ${CMAKE_CURRENT_BINARY_DIR}/bin/scream_mpicxx CACHE STRING "" FORCE)
 endif()
 
+set (CMAKE_CXX_STANDARD 11)
+
 if (NOT DEFINED PROJECT_NAME)
   project(SCREAM CXX Fortran)
-  set (CMAKE_CXX_STANDARD 11)
 
   # Print the sha of the last commit (useful to double check which version was tested on CDash)
   execute_process (COMMAND git rev-parse HEAD
