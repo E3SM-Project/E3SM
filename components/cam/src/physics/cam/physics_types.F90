@@ -284,8 +284,6 @@ contains
        allocate (cpairv_loc(state%psetcols,pver,begchunk:endchunk))
        cpairv_loc(:,:,:) = cpairv(:,:,:)
     else if (state%psetcols > pcols .and. all(cpairv(:,:,:) == cpair)) then
-!allocate?
-!called each physics_update, see also below rairv_loc
        allocate(cpairv_loc(state%psetcols,pver,begchunk:endchunk))
        cpairv_loc(:,:,:) = cpair
     else
@@ -442,7 +440,7 @@ contains
        end do
     end if
 
-    ! Derive new temperature if heating or water tendency not 0.
+    ! Derive new zi,zm if heating or water tendency not 0.
     if (ptend%ls .or. ptend%lq(1)) then
 !old call
 !       call geopotential_dse(  &

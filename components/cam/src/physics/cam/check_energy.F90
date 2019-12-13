@@ -298,14 +298,17 @@ end subroutine check_energy_get_integrals
     wr = 0._r8
     ws = 0._r8
 
-!!! assuming s was computed correctly
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
           se(i) = se(i) + state%s(i,k         )*state%pdel(i,k)/gravit
+!!! cam6  se(i) = se(i) +         state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
           wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
        end do
     end do
+!!! cam6    do i = 1, ncol
+!!! cam6       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
+!!! cam6    end do
 
     ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
     if (ixcldliq > 1  .and.  ixcldice > 1) then
@@ -445,15 +448,17 @@ end subroutine check_energy_get_integrals
     wr = 0._r8
     ws = 0._r8
 
-
-!repeated quastion , remove
     do k = 1, pver
        do i = 1, ncol
           ke(i) = ke(i) + 0.5_r8*(state%u(i,k)**2 + state%v(i,k)**2)*state%pdel(i,k)/gravit
           se(i) = se(i) + state%s(i,k         )*state%pdel(i,k)/gravit
+!!!cam6   se(i) = se(i) + state%t(i,k)*cpairv_loc(i,k,lchnk)*state%pdel(i,k)/gravit
           wv(i) = wv(i) + state%q(i,k,1       )*state%pdel(i,k)/gravit
        end do
     end do
+!!!cam6    do i = 1, ncol
+!!!cam6       se(i) = se(i) + state%phis(i)*state%ps(i)/gravit
+!!!cam6    end do
 
     ! Don't require cloud liq/ice to be present.  Allows for adiabatic/ideal phys.
     if (ixcldliq > 1  .and.  ixcldice > 1) then
