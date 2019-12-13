@@ -10,10 +10,12 @@
 
  <!-- definition of simple elements -->
  <xs:element name="rest_file_extension" type="xs:string"/>
+ <xs:element name="rest_file_regex" type="xs:string"/>
  <xs:element name="rest_history_varname" type="xs:string"/>
  <xs:element name="rpointer_file" type="xs:string"/>
  <xs:element name="rpointer_content" type="xs:string"/>
  <xs:element name="hist_file_extension" type="xs:string"/>
+ <xs:element name="hist_file_regex" type="xs:string"/>
 
  <!-- definition of complex elements -->
  <xs:element name="rpointer">
@@ -30,6 +32,8 @@
      <xs:sequence>
        <xs:element ref="rest_file_extension" minOccurs="0" maxOccurs="unbounded"/>
        <xs:element ref="hist_file_extension" minOccurs="0" maxOccurs="unbounded"/>
+       <xs:element ref="hist_file_regex" minOccurs="0" maxOccurs="unbounded"/>
+       <xs:element ref="rest_file_regex" minOccurs="0" maxOccurs="unbounded"/>
        <xs:element ref="rest_history_varname" minOccurs="0" maxOccurs="unbounded"/>
        <xs:element ref="rpointer" minOccurs="0" maxOccurs="unbounded"/>
        <xs:element ref="test_file_names" minOccurs="0" maxOccurs="1"/>

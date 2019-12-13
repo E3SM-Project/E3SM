@@ -40,31 +40,9 @@ def _iter_model_file_substrs(case):
     for model in models:
         yield model
 
-def _get_all_hist_files(model, from_dir, file_extensions, suffix="", ref_case=None):
-    suffix = (".{}".format(suffix) if suffix else "")
-
-    test_hists = []
-    # Match hist files produced by run
-    for extension in file_extensions:
-        if 'initial' in extension:
-            continue
-        if extension.endswith('$'):
-            extension = extension[:-1]
-        string = model+r'\d?_?(\d{4})?\.'+extension+suffix+'$'
-        logger.debug ("Regex is {}".format(string))
-        pfile = re.compile(string)
-        test_hists.extend([os.path.join(from_dir,f) for f in os.listdir(from_dir) if pfile.search(f)])
-
-    if ref_case:
-        test_hists = [h for h in test_hists if not (ref_case in os.path.basename(h))]
-
-    test_hists = list(set(test_hists))
-    test_hists.sort()
-    logger.debug("_get_all_hist_files returns {} for model {}".format(test_hists, model))
-    return test_hists
-
-def _get_latest_hist_files(model, from_dir, file_extensions, suffix="", ref_case=None):
-    test_hists = _get_all_hist_files(model, from_dir, file_extensions, suffix=suffix, ref_case=ref_case)
+def _get_latest_hist_files(archive, model, from_dir, suffix="", ref_case=None):
+    print "Here I am"
+    test_hists = archive.get_all_hist_files(model, from_dir, suffix=suffix, ref_case=ref_case)
     latest_files = {}
     histlist = []
     for hist in test_hists:
@@ -137,11 +115,12 @@ def rename_all_hist_files(case, suffix):
     num_renamed = 0
     for model in _iter_model_file_substrs(case):
         comments += "  Renaming hist files for model '{}'\n".format(model)
+
         if model == 'cpl':
-            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
+            mname = 'drv'
         else:
-            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
-        test_hists = _get_all_hist_files(model, rundir, file_extensions, ref_case=ref_case)
+            mname = model
+        test_hists = archive.get_all_hist_files(mname, rundir, ref_case=ref_case)
         num_renamed += len(test_hists)
         for test_hist in test_hists:
             new_file = "{}.{}".format(test_hist, suffix)

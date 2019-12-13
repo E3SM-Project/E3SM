@@ -257,36 +257,23 @@ def _archive_history_files(archive, archive_entry,
 
     # archive history files - the only history files that kept in the
     # run directory are those that are needed for restarts
+    histfiles = archive.get_all_hist_files(compname, rundir)
+    print "HERE histfiles {}".format(histfiles)
 
-    for suffix in archive.get_hist_file_extensions(archive_entry):
-        if compname.find('mpas') == 0 or compname == 'mali':
-            newsuffix =                    compname + r'\d*'
-        else:
-            newsuffix = casename + r'\.' + compname + r'_?' + r'\d*'
-        newsuffix += r'\.' + suffix
-        if not suffix.endswith('$'):
-            newsuffix += r'\.'
-
-        logger.debug("short term archiving suffix is {} ".format(newsuffix))
-
-        pfile = re.compile(newsuffix)
-        histfiles = [f for f in os.listdir(rundir) if pfile.search(f)]
-        logger.debug("histfiles = {} ".format(histfiles))
-
-        if histfiles:
-            for histfile in histfiles:
-                file_date = get_file_date(os.path.basename(histfile))
-                if last_date is None or file_date is None or file_date <= last_date:
-                    srcfile = join(rundir, histfile)
-                    expect(os.path.isfile(srcfile),
-                           "history file {} does not exist ".format(srcfile))
-                    destfile = join(archive_histdir, histfile)
-                    if histfile in histfiles_savein_rundir:
-                        logger.info("copying {} to {} ".format(srcfile, destfile))
-                        safe_copy(srcfile, destfile)
-                    else:
-                        logger.info("moving {} to {} ".format(srcfile, destfile))
-                        archive_file_fn(srcfile, destfile)
+    if histfiles:
+        for histfile in histfiles:
+            file_date = get_file_date(os.path.basename(histfile))
+            if last_date is None or file_date is None or file_date <= last_date:
+                srcfile = join(rundir, histfile)
+                expect(os.path.isfile(srcfile),
+                       "history file {} does not exist ".format(srcfile))
+                destfile = join(archive_histdir, histfile)
+                if histfile in histfiles_savein_rundir:
+                    logger.info("copying {} to {} ".format(srcfile, destfile))
+                    safe_copy(srcfile, destfile)
+                else:
+                    logger.info("moving {} to {} ".format(srcfile, destfile))
+                    archive_file_fn(srcfile, destfile)
 
 ###############################################################################
 def get_histfiles_for_restarts(rundir, archive, archive_entry, restfile, testonly=False):
@@ -652,22 +639,24 @@ def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None):
         dout_s_root = self.get_value("DOUT_S_ROOT")
     if rundir is None:
         rundir = self.get_value("RUNDIR")
-    if rest_dir is not None:
+    if rest_dir:
         if not os.path.isabs(rest_dir):
             rest_dir = os.path.join(dout_s_root, "rest", rest_dir)
     else:
-        rest_dir = os.path.join(dout_s_root, "rest", ls_sorted_by_mtime(os.path.join(dout_s_root, "rest"))[-1])
+        rest_root = os.path.join(dout_s_root, "rest")
+        if os.path.exists(rest_root):
+            rest_dir = os.path.join(rest_root, ls_sorted_by_mtime(os.path.join(dout_s_root, "rest"))[-1])
+    if rest_dir:
+        logger.info("Restoring restart from {}".format(rest_dir))
 
-    logger.info("Restoring restart from {}".format(rest_dir))
+        for item in glob.glob("{}/*".format(rest_dir)):
+            base = os.path.basename(item)
+            dst = os.path.join(rundir, base)
+            if os.path.exists(dst):
+                os.remove(dst)
+            logger.info("Restoring {} from {} to {}".format(item, rest_dir, rundir))
 
-    for item in glob.glob("{}/*".format(rest_dir)):
-        base = os.path.basename(item)
-        dst = os.path.join(rundir, base)
-        if os.path.exists(dst):
-            os.remove(dst)
-        logger.info("Restoring {} from {} to {}".format(item, rest_dir, rundir))
-
-        safe_copy(item, rundir)
+            safe_copy(item, rundir)
 
 ###############################################################################
 def archive_last_restarts(self, archive_restdir, rundir, last_date=None, link_to_restart_files=False):
@@ -880,10 +869,10 @@ def test_env_archive(self, testdir="env_archive_test"):
     # Now test the restore capability
     testdir2 = os.path.join(testdir,"run2")
     os.makedirs(testdir2)
-
+    restfiles = []
     restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root)
-
-    restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
+    if os.path.exists(os.path.join(testdir,"archive","rest")):
+        restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
     for _file in restfiles:
         expect(os.path.isfile(os.path.join(testdir2,_file)), "Expected file {} to be restored from rest dir".format(_file))
 

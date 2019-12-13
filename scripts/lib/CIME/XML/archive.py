@@ -27,7 +27,7 @@ class Archive(ArchiveBase):
         components_node = env_archive.make_child("components", attributes={"version":"2.0"})
 
         model = get_model()
-        if 'drv' not in components:
+        if 'drv' not in components and model != 'ufs':
             components.append('drv')
         if 'dart' not in components and model == 'cesm':
             components.append('dart')
