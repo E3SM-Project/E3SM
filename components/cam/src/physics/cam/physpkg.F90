@@ -1753,7 +1753,7 @@ if (l_ac_energy_chk) then
     !*** BAB's FV heating kludge *** apply the heating as temperature tendency.
     !*** BAB's FV heating kludge *** modify the temperature in the state structure
     tmp_t(:ncol,:pver) = state%t(:ncol,:pver)
-    state%t(:ncol,:pver) = tini(:ncol,:pver) + ztodt*tend%dtdt(:ncol,:pver)
+    !state%t(:ncol,:pver) = tini(:ncol,:pver) + ztodt*tend%dtdt(:ncol,:pver)
 
     ! store dse after tphysac in buffer
     do k = 1,pver
