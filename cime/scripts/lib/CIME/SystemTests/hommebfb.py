@@ -3,11 +3,11 @@ from CIME.SystemTests.hommebaseclass import HommeBase
 import shutil
 from distutils import dir_util
 
-class HOMME(HommeBase):
+class HOMMEBFB(HommeBase):
 
     def __init__(self,case):
        HommeBase.__init__(self,case)
-       self.cmakesuffix=''
+       self.cmakesuffix='-bfb'
 
 
 
