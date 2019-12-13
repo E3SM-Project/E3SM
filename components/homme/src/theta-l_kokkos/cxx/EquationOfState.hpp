@@ -9,16 +9,17 @@
 
 #include "utilities/VectorUtils.hpp"
 #include "utilities/ViewUtils.hpp"
+#include "utilities/BfbUtils.hpp"
 
 namespace Homme {
 
 class EquationOfState {
 public:
 
-  const int LAST_MID_PACK     = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
-  const int LAST_MID_PACK_END = ColInfo<NUM_PHYSICAL_LEV>::LastPackEnd;
-  const int LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
-  const int LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
+  enum : int { LAST_MID_PACK     = ColInfo<NUM_PHYSICAL_LEV>::LastPack     };
+  enum : int { LAST_MID_PACK_END = ColInfo<NUM_PHYSICAL_LEV>::LastPackEnd  };
+  enum : int { LAST_INT_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack    };
+  enum : int { LAST_INT_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd };
 
   EquationOfState () = default;
 
@@ -52,8 +53,8 @@ public:
   void compute_pnh_and_exner (const KernelVariables& kv,
                               const VThetaProvider& vtheta_dp,
                               const PhiProvider&    phi_i,
-                              const ExecViewUnmanaged<Scalar[NUM_LEV  ]>& pnh,
-                              const ExecViewUnmanaged<Scalar[NUM_LEV  ]>& exner) const
+                              const ExecViewUnmanaged<Scalar[NUM_LEV]>& pnh,
+                              const ExecViewUnmanaged<Scalar[NUM_LEV]>& exner) const
   {
     // If you're hydrostatic, check outside the function
     assert (!m_theta_hydrostatic_mode);

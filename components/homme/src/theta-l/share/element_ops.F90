@@ -672,6 +672,9 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
 
   !_____________________________________________________________________
   subroutine set_theta_ref(hvcoord,dp,theta_ref)
+#ifdef HOMMEXX_BFB_TESTING
+    use bfb_mod, only: cbfb_pow
+#endif
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! a reference profile for theta = theta(exner)
@@ -700,7 +703,12 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
      p_i(:,:,k+1) = p_i(:,:,k) + dp(:,:,k)
   enddo
   do k=1,nlev
+#ifdef HOMMEXX_BFB_TESTING
+     exner(:,:,k) = ((p_i(:,:,k) + p_i(:,:,k+1))/2)/p0
+     call cbfb_pow(np*np,exner(:,:,k),kappa)
+#else
      exner(:,:,k) = ( (p_i(:,:,k) + p_i(:,:,k+1))/(2*p0)) **kappa
+#endif
      !theta_ref(:,:,k,ie) = (T0/exner(:,:,k) + T1)*Cp*dp_ref(:,:,k,ie)
      theta_ref(:,:,k) = (T0/exner(:,:,k) + T1)
   enddo

@@ -7,6 +7,8 @@
 #include "ColumnOps.hpp"
 #include "PhysicalConstants.hpp"
 
+#include "utilities/BfbUtils.hpp"
+
 namespace Homme {
 
 class ElementOps {
@@ -67,7 +69,11 @@ public:
       // TODO: F90 does p(k) = (p_i(k)+p_i(k+1)) / (2*p0).
       //       If this is a non BFB source, incorporate p0 scaling
       //       in the calculation of p
+#ifdef HOMMEXX_BFB_TESTING
+      theta_ref(ilev) = bfb_pow(p(ilev)/p0,kappa);
+#else
       theta_ref(ilev) = pow(p(ilev)/p0,kappa);
+#endif
 
       // Compute theta_ref
       theta_ref(ilev) = T0/theta_ref(ilev) + T1;

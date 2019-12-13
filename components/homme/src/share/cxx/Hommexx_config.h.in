@@ -34,11 +34,4 @@
 
 #define HOMMEXX_SHA1 "${LAST_GIT_COMMIT_SHA}"
 
-// Identifies whether this is a cuda build
-#cmakedefine CUDA_BUILD
-
-// When doing BFB testing, we occasionally must modify bits.
-// Use this flag to protect such code.
-#cmakedefine HOMMEXX_BFB_TESTING
-
 #endif // HOMMEXX_CONFIG_H
