@@ -850,13 +850,13 @@ contains
             col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
                  col_pf%decomp_ppools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp) * dtime
-            
+
             ! Diagnostic for mass balancing (gP/m2/s)
             col_pf%plant_to_litter_pflux(c) = & 
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + &
                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_p_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
-         
+
             ! Transfer Nitrogen 
             col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) = &
                  col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_met_lit) + & 
@@ -869,13 +869,13 @@ contains
             col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) = &
                  col_nf%decomp_npools_sourcesink(c,1:nlevdecomp,i_lig_lit) + &
                  this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp) * dtime
-            
+
             ! Diagnostic for mass balancing  (gN/m2/s)
             col_nf%plant_to_litter_nflux(c) = & 
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lab_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
                  sum(this%fates(nc)%bc_out(s)%litt_flux_cel_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp)) + & 
                  sum(this%fates(nc)%bc_out(s)%litt_flux_lig_n_si(1:nlevdecomp)*this%fates(nc)%bc_in(s)%dz_decomp_sisl(1:nlevdecomp))
-               
+            
          end select
        
       end do

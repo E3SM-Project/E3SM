@@ -31,6 +31,7 @@ module NitrogenDynamicsMod
   use TemperatureType     , only : temperature_type
   use PhosphorusStateType , only : phosphorusstate_type
   use clm_varctl          , only : NFIX_PTASE_plant
+  use clm_varctl          , only : use_fates
  
   !
   implicit none
@@ -192,7 +193,7 @@ contains
 
       dayspyr = get_days_per_year()
 
-      if (do_et_bnf) then
+      if (do_et_bnf .or. use_fates) then
          secspyr = dayspyr * 86400._r8
          do fc = 1, num_soilc
             c =filter_soilc(fc)

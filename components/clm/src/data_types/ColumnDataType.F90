@@ -6587,7 +6587,7 @@ contains
             interpinic_flag='interp', readvar=readvar, data=ptr2d)
     end if
 
-    if(use_fates) return
+!    if(use_fates) return
 
     !-------------------------------
     ! Prognostic crop variables
@@ -9259,34 +9259,38 @@ contains
        end do
     end do
 
-    do fc = 1,num_soilc
-       c = filter_soilc(fc)
-       this%smin_no3_to_plant(c) = 0._r8
-       this%smin_nh4_to_plant(c) = 0._r8
-       this%plant_to_litter_nflux(c) = 0._r8
-       this%plant_to_cwd_nflux(c) = 0._r8
-       do j = 1, nlev
-          this%plant_to_litter_nflux(c) = &
-               this%plant_to_litter_nflux(c)  + &
-               this%phenology_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
-               this%phenology_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
-               this%phenology_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
-               this%m_n_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-               this%m_n_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-               this%m_n_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-          this%plant_to_cwd_nflux(c) = &
-               this%plant_to_cwd_nflux(c) + &
-               this%gap_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j) + &
-               this%fire_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j)
+    ! FATES uses the plant_to_litter_nflux variable for mass accounting, so bypass here
+    if(.not.use_fates)then
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+         
+          this%plant_to_litter_nflux(c) = 0._r8
+          this%plant_to_cwd_nflux(c) = 0._r8
+          do j = 1, nlev
+             this%plant_to_litter_nflux(c) = &
+                  this%plant_to_litter_nflux(c)  + &
+                  this%phenology_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
+                  this%phenology_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
+                  this%phenology_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_n_to_litr_met_n(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_n_to_litr_cel_n(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_n_to_litr_lig_n(c,j)* dzsoi_decomp(j) + &
+                  this%m_n_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+                  this%m_n_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+                  this%m_n_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+             this%plant_to_cwd_nflux(c) = &
+                  this%plant_to_cwd_nflux(c) + &
+                  this%gap_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j) + &
+                  this%fire_mortality_n_to_cwdn(c,j)* dzsoi_decomp(j)
+          end do
        end do
-    end do
-
+    end if
+       
     if (use_nitrif_denitrif) then
        do fc = 1,num_soilc
           c = filter_soilc(fc)
+          this%smin_no3_to_plant(c) = 0._r8
+          this%smin_nh4_to_plant(c) = 0._r8
           do j = 1, nlev
              this%smin_no3_to_plant(c)= this%smin_no3_to_plant(c) + & 
                   this%smin_no3_to_plant_vr(c,j) * dzsoi_decomp(j)
@@ -10810,37 +10814,46 @@ contains
           this%desorb_to_solutionp(c) = this%desorb_to_solutionp(c) + &
                this%desorb_to_solutionp_vr(c,j)* dzsoi_decomp(j)
        end do
-    end do    
+    end do
 
     do fc = 1,num_soilc
        c = filter_soilc(fc)
        this%actual_immob_p(c) = 0._r8
        this%smin_p_to_plant(c) = 0._r8
-       this%plant_to_litter_pflux(c) = 0._r8
-       this%plant_to_cwd_pflux(c) = 0._r8
+       
        do j = 1, nlevdecomp
           this%actual_immob_p(c)= this%actual_immob_p(c) + & 
                this%actual_immob_p_vr(c,j) * dzsoi_decomp(j)
           this%smin_p_to_plant(c)= this%smin_p_to_plant(c) + & 
                this%sminp_to_plant_vr(c,j) * dzsoi_decomp(j)
-          this%plant_to_litter_pflux(c) = &
-               this%plant_to_litter_pflux(c)  + &
-               this%phenology_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
-               this%phenology_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
-               this%phenology_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
-               this%gap_mortality_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
-               this%m_p_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
-               this%m_p_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
-               this%m_p_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
-          this%plant_to_cwd_pflux(c) = &
-               this%plant_to_cwd_pflux(c) + &
-               this%gap_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j) + &
-               this%fire_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j)
        end do
     end do
 
+    if(.not.use_fates)then
+       do fc = 1,num_soilc
+          c = filter_soilc(fc)
+          this%plant_to_litter_pflux(c) = 0._r8
+          this%plant_to_cwd_pflux(c) = 0._r8
+          do j = 1, nlevdecomp
+             this%plant_to_litter_pflux(c) = &
+                  this%plant_to_litter_pflux(c)  + &
+                  this%phenology_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
+                  this%phenology_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
+                  this%phenology_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_p_to_litr_met_p(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_p_to_litr_cel_p(c,j)* dzsoi_decomp(j) + &
+                  this%gap_mortality_p_to_litr_lig_p(c,j)* dzsoi_decomp(j) + &
+                  this%m_p_to_litr_met_fire(c,j)* dzsoi_decomp(j) + &
+                  this%m_p_to_litr_cel_fire(c,j)* dzsoi_decomp(j) + &
+                  this%m_p_to_litr_lig_fire(c,j)* dzsoi_decomp(j)
+             this%plant_to_cwd_pflux(c) = &
+                  this%plant_to_cwd_pflux(c) + &
+                  this%gap_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j) + &
+                  this%fire_mortality_p_to_cwdp(c,j)* dzsoi_decomp(j)
+          end do
+       end do
+    end if
+       
     ! bgc interface & pflotran:
     if (use_clm_interface) then
         call this%SummaryInt(bounds, num_soilc, filter_soilc)

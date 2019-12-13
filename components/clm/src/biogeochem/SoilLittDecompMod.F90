@@ -42,7 +42,7 @@ module SoilLittDecompMod
   use CLMFatesInterfaceMod   , only : hlm_fates_interface_type
   ! clm interface & pflotran:
   use clm_varctl             , only : use_clm_interface, use_pflotran, pf_cmode
-  use clm_varctl             , only : use_fates
+  use clm_varctl             , only : use_cn
   !
   implicit none
   save
@@ -828,7 +828,7 @@ contains
 
       !------------------------------------------------------------------
       ! phase-3 Allocation for plants
-      if(.not.use_fates)then
+      if(use_cn)then
           call t_startf('CNAllocation - phase-3')
           call Allocation3_PlantCNPAlloc (bounds                      , &
                 num_soilc, filter_soilc, num_soilp, filter_soilp    , &

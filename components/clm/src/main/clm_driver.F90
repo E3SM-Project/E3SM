@@ -11,7 +11,7 @@ module clm_driver
   use shr_kind_mod           , only : r8 => shr_kind_r8
   use shr_sys_mod            , only : shr_sys_flush
   use shr_log_mod            , only : errMsg => shr_log_errMsg
-  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates
+  use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit
   use clm_varpar             , only : nlevtrc_soil, nlevsoi
   use clm_varctl             , only : wrtdia, iulog, create_glacier_mec_landunit, use_fates, use_betr  
   use clm_varctl             , only : use_cn, use_lch4, use_voc, use_noio, use_c13, use_c14
@@ -572,7 +572,7 @@ contains
        call t_stopf('fireinterp')       
     end if
     
-    if (use_cn) then
+    if (use_cn .or. use_fates) then
        ! ============================================================================
        ! Update dynamic N deposition field, on albedo timestep
        ! currently being done outside clumps loop, but no reason why it couldn't be

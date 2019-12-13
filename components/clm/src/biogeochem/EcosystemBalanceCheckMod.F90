@@ -172,21 +172,7 @@ contains
       ! calculate beginning column-level phosphorus balance, for mass conservation check
       do fc = 1,num_soilc
          c = filter_soilc(fc)
-         col_begpb(c) = totcolp(c)
-
-         write(iulog,*) 'BEG P:'
-         write(iulog,*) col_ps%totpftp(c)  !0
-         write(iulog,*) col_ps%cwdp(c)     !0
-         write(iulog,*) col_ps%totlitp(c)  !0
-         write(iulog,*) col_ps%totsomp(c) 
-         write(iulog,*) col_ps%prod1p(c)   !0
-         write(iulog,*) col_ps%solutionp(c) 
-         write(iulog,*) col_ps%labilep(c)
-         write(iulog,*) col_ps%secondp(c)
-         write(iulog,*) col_ps%ptrunc(c)               !0
-         write(iulog,*) col_ps%cropseedp_deficit(c)    !0
-
-         
+         col_begpb(c) = totcolp(c)         
       end do
 
     end associate
@@ -434,10 +420,12 @@ contains
          if(use_fates) then
 
             ! calculate total column-level inputs
+            ! In FATES the nfix sent to the plant, if any, is not contained in
+            ! sminn_to_plant(c), therefore, in neither case do we account for nfix_to_ecosysn
             if (NFIX_PTASE_plant) then
-               col_ninputs(c) = ndep_to_sminn(c) + supplement_to_sminn(c)
+               col_ninputs(c) = ndep_to_sminn(c) + supplement_to_sminn(c) + nfix_to_sminn(c)
             else
-               col_ninputs(c) = ndep_to_sminn(c) + supplement_to_sminn(c)
+               col_ninputs(c) = ndep_to_sminn(c) + supplement_to_sminn(c) + nfix_to_sminn(c)
             end if
 
             ! plant_to_litter_nflux is used by FATES to store
@@ -555,6 +543,8 @@ contains
          write(iulog,*)'ndep                  = ',ndep_to_sminn(c)*dt
          write(iulog,*)'nfix                  = ',nfix_to_sminn(c)*dt
          write(iulog,*)'nsup                  = ',supplement_to_sminn(c)*dt
+         write(iulog,*)'n_to_plant            = ',sminn_to_plant(c)*dt
+         write(iulog,*)'plant_to_litter       = ',plant_to_litter_nflux(c)*dt
          if(crop_prog) then
             write(iulog,*)'fertm                 = ',fert_to_sminn(c)*dt
             write(iulog,*)'soyfx                 = ',soyfixn_to_sminn(c)*dt
@@ -784,8 +774,14 @@ contains
          write(iulog,*)'input mass  = ',col_pinputs(c)*dt
          write(iulog,*)'output mass = ',col_poutputs(c)*dt
          write(iulog,*)'net flux    = ',(col_pinputs(c)-col_poutputs(c))*dt
-
-         write(iulog,*) 'ptol_pflux: = ',plant_to_litter_pflux(c)*dt
+         write(iulog,*)'ptol_pflux: = ',plant_to_litter_pflux(c)*dt
+         write(iulog,*)'sminp_to_plant: = ',sminp_to_plant(c)*dt
+         write(iulog,*)'primp_to_labilep = ',primp_to_labilep(c)*dt
+         write(iulog,*)'supplement_to_sminp = ',supplement_to_sminp(c)*dt
+         write(iulog,*)'secondp_to_occlp = ',secondp_to_occlp(c)*dt
+         write(iulog,*)'sminp_leached = ',sminp_leached(c)*dt
+         write(iulog,*)'deadstmp = ',hrv_deadstemp_to_prod10p(c)*dt
+         write(iulog,*)'prod100 = ',hrv_deadstemp_to_prod100p(c)*dt
          write(iulog,*) 'END P:'
          write(iulog,*) col_ps%totpftp(c)
          write(iulog,*) col_ps%cwdp(c)

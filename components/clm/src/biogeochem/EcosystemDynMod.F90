@@ -189,11 +189,11 @@ contains
             cnstate_vars,phosphorusstate_vars,phosphorusflux_vars)
        call t_stopf('PhosphorusBiochemMin')
     else
-       ! nu_com_phosphatase is true
-       !call t_startf('PhosphorusBiochemMin')
-       !call PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
-       !     cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
-       !call t_stopf('PhosphorusBiochemMin')
+!       nu_com_phosphatase is true
+!       call t_startf('PhosphorusBiochemMin')
+!       call PhosphorusBiochemMin_balance(bounds,num_soilc, filter_soilc, &
+!            cnstate_vars,nitrogenstate_vars,phosphorusstate_vars,phosphorusflux_vars)
+!       call t_stopf('PhosphorusBiochemMin')
     end if
     !end if
        
@@ -408,21 +408,22 @@ contains
          atm2lnd_vars, nitrogenflux_vars)
     call t_stopf('CNDeposition')
 
-    if(.not.use_fates) then
-       if (.not. nu_com_nfix) then 
-          call t_startf('CNFixation')
-          call NitrogenFixation( num_soilc, filter_soilc, &
-               waterflux_vars, carbonflux_vars, nitrogenflux_vars)
-          call t_stopf('CNFixation')
-       else
-          ! nu_com_nfix is true
-          call t_startf('CNFixation')
-          call NitrogenFixation_balance( num_soilc, filter_soilc, &
-               cnstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars, &
+    if (.not. nu_com_nfix .or. use_fates) then 
+       call t_startf('CNFixation')
+       call NitrogenFixation( num_soilc, filter_soilc, &
+            waterflux_vars, carbonflux_vars, nitrogenflux_vars)
+       call t_stopf('CNFixation')
+    else
+       ! nu_com_nfix is true
+       call t_startf('CNFixation')
+       call NitrogenFixation_balance( num_soilc, filter_soilc, &
+            cnstate_vars, carbonflux_vars, nitrogenstate_vars, nitrogenflux_vars, &
             temperature_vars, waterstate_vars, carbonstate_vars, phosphorusstate_vars)
-          call t_stopf('CNFixation')
-       end if
-       
+       call t_stopf('CNFixation')
+    end if
+ 
+   if(.not.use_fates)then
+   
        call t_startf('MaintenanceResp')
        if (crop_prog) then
           call NitrogenFert(bounds, num_soilc,filter_soilc, &

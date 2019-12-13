@@ -1346,6 +1346,7 @@ contains
             ci             = bounds%clump_index
             s              = elm_fates%f2hmap(ci)%hsites(c)
             n_pcomp        = elm_fates%fates(ci)%bc_out(s)%n_plant_comps
+
             
             if( nu_com.eq.'RD') then
                
@@ -1389,7 +1390,7 @@ contains
                
             end if
    
-         else         
+            else         
 
             ! Use ELM Vegetation
             ! ---------------------------------------------------------------------------
@@ -2275,7 +2276,8 @@ end subroutine Allocation2_ResolveNPLimit
    ! Competitive allocation of NH4 and NO3 nutrient species per ECA
    ! kinetics following  Zhu et al., 2016 DOI: 10.1002/2016JG003554
    ! ------------------------------------------------------------------------------------
-
+   use clm_varpar      , only: nlevdecomp
+   
    ! Arguments (that are indifferent of NH4/NO3 species)
    real(r8), intent(in)  :: dt              ! Time step duration [s]
    real(r8), intent(in)  :: bd(:)           ! Bulk density of dry soil material [kg m-3]
@@ -2338,7 +2340,6 @@ end subroutine Allocation2_ResolveNPLimit
    integer :: j                      ! loop index for soil layers
    integer :: i,ip                   ! loop index for competitors
    integer :: ft                     ! loop index for pfts
-   integer :: nlevdecomp             ! number of decomposition layers
 
    ! 2.76 consider soil adsorption effect on [NH4+] availability, 
    ! based on Zhu et al., 2016 DOI: 10.1002/2016JG003554
@@ -2350,10 +2351,6 @@ end subroutine Allocation2_ResolveNPLimit
    ! scaling factor for plant fine root biomass to calculate nutrient carrier enzyme abundance
    real(r8), parameter :: e_decomp_scalar = 0.05_r8      
 
-
-   nlevdecomp = size(smin_nh4_vr,dim=1)
-   
-
    do j = 1, nlevdecomp
 
       ! Plant, microbial decomposers compete for NH4. Thus loop over each 
@@ -2364,6 +2361,8 @@ end subroutine Allocation2_ResolveNPLimit
       ! concentration of mineralized nutrient, per soil water
       solution_conc = smin_nh4_vr(j) / (bd(j)*adsorp_nh4_eff + h2osoi_vol(j))
 
+     
+      
       e_km = 0._r8
       do i = 1, n_pcomp
          ft = ft_index(i)
@@ -2397,7 +2396,7 @@ end subroutine Allocation2_ResolveNPLimit
          ! This is the demand per m3 of the column (not patch) 
          ! (for native ELM divide through by the patch weight to get per m3 of patch)
          plant_nh4demand_vr(ip,j) = max(0._r8,vmax_nh4_plant(ft) * veg_rootc(i,j) * &
-                                             cn_scalar(i) * t_scalar(j) *  compet_plant(i))
+              cn_scalar(i) * t_scalar(j) *  compet_plant(i))
 
          ! This is the total demand across all plant competitors
          col_plant_nh4demand_vr(j) = col_plant_nh4demand_vr(j) + plant_nh4demand_vr(ip,j)
@@ -2600,7 +2599,8 @@ end subroutine Allocation2_ResolveNPLimit
 
 
    use clm_varctl       , only: cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
-                                cnallocate_carbonphosphorus_only
+        cnallocate_carbonphosphorus_only
+   use clm_varpar, only : nlevdecomp
 
    real(r8), intent(in) :: h2osoi_vol(:)
    real(r8), intent(in) :: t_scalar(:)
@@ -2636,7 +2636,6 @@ end subroutine Allocation2_ResolveNPLimit
    real(r8), intent(out) :: supplement_to_sminp_vr(:)
 
    ! Locals
-   integer :: nlevdecomp
    integer :: i,ip
    integer :: j
    integer :: ft
@@ -2653,9 +2652,6 @@ end subroutine Allocation2_ResolveNPLimit
    ! assume solutionP - labileP not equilibrate within 30 min, due to instantaneous
    ! plant P uptake, microbial P uptake/release
    ! secondary P desorption is assumed to go into solution P pool
-
-   nlevdecomp = size(gross_pmin_vr,dim=1)
-
 
    do j = 1, nlevdecomp  
        
@@ -2800,6 +2796,7 @@ end subroutine Allocation2_ResolveNPLimit
                          f_nit_vr,             &   ! OUT (j) OPTIONAL
                          f_denit_vr)               ! OUT (j) OPTIONAL
 
+   use clm_varpar, only : nlevdecomp
    ! Arguments
    real(r8), intent(in)  :: col_plant_ndemand       ! How much N all plants demand as group [g/m3]
    real(r8), intent(in)  :: nuptake_prof(:)         ! The normalized soil profile of
@@ -2834,11 +2831,8 @@ end subroutine Allocation2_ResolveNPLimit
    real(r8) :: sum_nh4_demand_scaled ! Total nh4 demand, but scaled by competitivness
    real(r8) :: sum_no3_demand        ! "" no3
    real(r8) :: sum_no3_demand_scaled ! "" no3
-   integer  :: nlevdecomp            ! number of decomp layers
    integer  :: j                     ! soil decomp layer loop
    
-
-   nlevdecomp = size(nuptake_prof,dim=1)
 
    do j = 1, nlevdecomp
       
@@ -2964,7 +2958,8 @@ end subroutine Allocation2_ResolveNPLimit
                           supplement_to_sminp_vr)    ! OUT (j)
 
    use clm_varctl       , only: cnallocate_carbon_only,cnallocate_carbonnitrogen_only,&
-                                cnallocate_carbonphosphorus_only
+        cnallocate_carbonphosphorus_only
+   use clm_varpar, only : nlevdecomp
 
    ! Arguments
    real(r8), intent(in) :: col_plant_pdemand        ! demand on phos, all plant grouped [g/m3]
@@ -2981,7 +2976,6 @@ end subroutine Allocation2_ResolveNPLimit
 
    ! Locals
    real(r8) :: sum_pdemand          ! Total phos demand over all competitors
-   integer  :: nlevdecomp            ! number of decomp layers
    integer  :: j                     ! soil decomp layer loop
    
    ! Trivial solution (P not turned on)
@@ -2998,8 +2992,6 @@ end subroutine Allocation2_ResolveNPLimit
       end do
       return
    end if
-
-   nlevdecomp = size(puptake_prof,dim=1)
 
    do j = 1, nlevdecomp
       

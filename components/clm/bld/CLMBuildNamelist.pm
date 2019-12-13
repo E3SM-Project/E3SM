@@ -90,7 +90,7 @@ REQUIRED OPTIONS
                               "-sim_year list" to list valid simulation years
                               (default 2000)
 OPTIONS
-     -bgc "value"             Build CLM with BGC package [ sp | cn | bgc | fates ]
+     -bgc "value"             Build CLM with BGC package [ sp | cn | bgc | ed ]
                               (default is sp).
                                 CLM Biogeochemistry mode
                                 sp    = Satellite Phenology (SP)
@@ -104,7 +104,7 @@ OPTIONS
                                         This toggles on the namelist variables:
                                          use_cn, use_lch4, use_nitrif_denitrif, use_vertsoilc, use_century_decomp,
                                          use_dynroot
-                                fates    = functionaly assembled terrestrial ecosystem simulator
+                                ed     = functionaly assembled terrestrial ecosystem simulator
                                           with native below ground bgc
                                           This toggles on the namelist variables:
                                           use_fates, use_vertsoilc, use_century_decomp
@@ -1591,8 +1591,8 @@ sub setup_cmdl_bgc_spinup {
       my @valid_values   = $definition->get_valid_values( $var );
       fatal_error("$var has an invalid value ($val). Valid values are: @valid_values\n");
     }
-    if ( $nl_flags->{'bgc_spinup'} eq "on" && $nl_flags->{'use_cn'} ne ".true.") {
-      fatal_error("$var can not be '$nl_flags->{'bgc_spinup'}' if CN is turned off (use_cn=$nl_flags->{'use_cn'}).");
+    if ( $nl_flags->{'bgc_spinup'} eq "on" && ($nl_flags->{'use_cn'} ne ".true." && $nl_flags->{'bgc_mode'} ne "ed" )) {
+      fatal_error("$var can not be '$nl_flags->{'bgc_spinup'} $nl_flags->{'bgc_mode'} if CN is turned off (use_cn=$nl_flags->{'use_cn'} use_fates=$nl_flags->{'use_fates'}).");
     }
     if ( $nl->get_value("spinup_state") eq 0 && $nl_flags->{'bgc_spinup'} eq "on" ) {
       fatal_error("Namelist spinup_state contradicts the command line option bgc_spinup" );
@@ -1607,7 +1607,7 @@ sub setup_cmdl_bgc_spinup {
   } else {
     $val = $nl_flags->{'bgc_spinup'};
   }
-  verbose_message("CLM CN bgc_spinup mode is $val");
+  verbose_message("CLM bgc_spinup mode is $val");
 }
 
 #-------------------------------------------------------------------------------
@@ -1955,11 +1955,12 @@ sub process_namelist_inline_logic {
   setup_logic_surface_dataset($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_initial_conditions($opts, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_dynamic_subgrid($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
-  setup_logic_bgc_spinup($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
-  setup_logic_supplemental_nitrogen($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  
 #  setup_logic_snowpack($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
   setup_logic_fates($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
-
+  setup_logic_bgc_spinup($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  setup_logic_supplemental_nitrogen($opts->{'test'}, $nl_flags, $definition, $defaults, $nl, $physv);
+  
   #########################################
   # namelist group: clm_humanindex_inparm #
   #########################################
@@ -3025,9 +3026,11 @@ sub setup_logic_nitrogen_deposition {
   my ($test_files, $nl_flags, $definition, $defaults, $nl, $physv) = @_;
 
   #
-  # Nitrogen deposition for bgc=CN
+  # Nitrogen deposition for bgc=CN,FATES
   #
 
+  verbose_message("BGC MODE: $nl_flags->{'bgc_mode'}");
+  
   if ( $physv->as_long() == $physv->as_long("clm4_0") && $nl_flags->{'bgc_mode'} ne "none" ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'ndepmapalgo', 'phys'=>$nl_flags->{'phys'}, 
                 'bgc'=>$nl_flags->{'bgc_mode'}, 'hgrid'=>$nl_flags->{'res'} );
@@ -3048,7 +3051,7 @@ sub setup_logic_nitrogen_deposition {
                 'bgc'=>$nl_flags->{'bgc_mode'}, 'rcp'=>$nl_flags->{'rcp'},
                 'hgrid'=>"1.9x2.5" );
 
-  } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
+  } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc|ed/ ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'ndepmapalgo', 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_ndep', 'phys'=>$nl_flags->{'phys'},
@@ -3074,7 +3077,7 @@ sub setup_logic_nitrogen_deposition {
        ) {
       fatal_error("When bgc is NOT CN or CNDV none of: stream_year_first_ndep," .
                   "stream_year_last_ndep, model_year_align_ndep, nor stream_fldfilename_ndep" .
-                  " can be set!\n");
+                  " can be set! $nl_flags->{'bgc_mode'} \n");
     }
   }
 }
@@ -3109,7 +3112,7 @@ sub setup_logic_phosphorus_deposition {
  #               'hgrid'=>"1.9x2.5" );
 
  # } elsif ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} ne "sp" ) {
-    if ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc/ ) {
+    if ( $physv->as_long() >= $physv->as_long("clm4_5") && $nl_flags->{'bgc_mode'} =~/cn|bgc|ed/ ) {
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'pdepmapalgo', 'phys'=>$nl_flags->{'phys'},
                 'use_cn'=>$nl_flags->{'use_cn'}, 'hgrid'=>$nl_flags->{'res'} );
     add_default($test_files, $nl_flags->{'inputdata_rootdir'}, $definition, $defaults, $nl, 'stream_year_first_pdep', 'phys'=>$nl_flags->{'phys'},

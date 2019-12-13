@@ -159,25 +159,27 @@ contains
       ! if coupled with pflotran, the following updates are NOT needed
       ! if (.not.(use_pflotran .and. pf_cmode)) then
       !------------------------------------------------------------------
-      if((.not.is_active_betr_bgc) .and. (.not.use_fates))then
-         do j = 1, nlevdecomp
-         do fc = 1,num_soilc
-            c = filter_soilc(fc)
+      if((.not.is_active_betr_bgc) )then
 
-            ! plant to litter fluxes
-            ! phenology and dynamic landcover fluxes
-            col_pf%decomp_ppools_sourcesink(c,j,i_met_lit) = &
-                 col_pf%phenology_p_to_litr_met_p(c,j) * dt
-
-            col_pf%decomp_ppools_sourcesink(c,j,i_cel_lit) = &
-                 col_pf%phenology_p_to_litr_cel_p(c,j) * dt
-
-            col_pf%decomp_ppools_sourcesink(c,j,i_lig_lit) = &
-                 col_pf%phenology_p_to_litr_lig_p(c,j) * dt
-
-         end do
-      end do
-
+         if(.not.use_fates)then
+            do j = 1, nlevdecomp
+               do fc = 1,num_soilc
+                  c = filter_soilc(fc)
+                  
+                  ! plant to litter fluxes
+                  ! phenology and dynamic landcover fluxes
+                  col_pf%decomp_ppools_sourcesink(c,j,i_met_lit) = &
+                       col_pf%phenology_p_to_litr_met_p(c,j) * dt
+                  
+                  col_pf%decomp_ppools_sourcesink(c,j,i_cel_lit) = &
+                       col_pf%phenology_p_to_litr_cel_p(c,j) * dt
+                  
+                  col_pf%decomp_ppools_sourcesink(c,j,i_lig_lit) = &
+                       col_pf%phenology_p_to_litr_lig_p(c,j) * dt
+                  
+               end do
+            end do
+         end if
 
       ! decomposition fluxes
       do k = 1, ndecomp_cascade_transitions

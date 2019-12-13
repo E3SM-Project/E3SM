@@ -53,7 +53,7 @@ contains
     ! !USES:
     use clm_varcon  , only : zsoi, dzsoi, zisoi, dzsoi_decomp
     use clm_varpar  , only : nlevdecomp, nlevgrnd, nlevdecomp_full, maxpatch_pft
-    use clm_varctl  , only : use_vertsoilc, iulog, use_dynroot, use_fates
+    use clm_varctl  , only : use_vertsoilc, iulog, use_dynroot, use_fates, use_cn
     use pftvarcon   , only : rootprof_beta, noveg
     !
     ! !ARGUMENTS:
@@ -122,17 +122,17 @@ contains
               surface_prof(j) = exp(-surfprof_exp * zsoi(j)) / dzsoi_decomp(j)
           end do
 
-         if (.not.use_fates) then
+          nfixation_prof(begc:endc, :) = 0._r8
+          ndep_prof(begc:endc, :)      = 0._r8
+          pdep_prof(begc:endc, :)      = 0._r8
+          
+         if (use_cn) then
              
              ! initialize profiles to zero
              leaf_prof(begp:endp, :)      = 0._r8
              froot_prof(begp:endp, :)     = 0._r8
              croot_prof(begp:endp, :)     = 0._r8
              stem_prof(begp:endp, :)      = 0._r8
-             nfixation_prof(begc:endc, :) = 0._r8
-             ndep_prof(begc:endc, :)      = 0._r8
-             pdep_prof(begc:endc, :)      = 0._r8
-             
              cinput_rootfr(begp:endp, :)     = 0._r8
              col_cinput_rootfr(begc:endc, :) = 0._r8
              
@@ -168,7 +168,7 @@ contains
                          cinput_rootfr(p,j) = rootfr(p,j) / dzsoi_decomp(j)
                      end do
                  end do
-             endif
+              endif
              
              do fp = 1,num_soilp
                  p = filter_soilp(fp)
@@ -236,15 +236,14 @@ contains
                  endif
              end do
 
-          else
+          elseif(use_fates) then
 
              ! If FATES is on, set a nominal fixation 
              ! profile to the top layer (unused, just needs to pass check)
              nfixation_prof(begc:endc,:) = 0._r8
              nfixation_prof(begc:endc,1) = 1./dzsoi_decomp(1)
-             
 
-          end if  ! if .not.use_fates
+          end if  ! if use_cn
 
          ! repeat for column-native profiles: Ndep and Nfix
          do fc = 1,num_soilc
@@ -268,12 +267,13 @@ contains
      else
 
          ! for one layer decomposition model, set profiles to unity
-         if(.not.use_fates)then
+         if(use_cn)then
              leaf_prof(begp:endp, :) = 1._r8
              froot_prof(begp:endp, :) = 1._r8
              croot_prof(begp:endp, :) = 1._r8
              stem_prof(begp:endp, :) = 1._r8
          end if
+          
          nfixation_prof(begc:endc, :) = 1._r8
          ndep_prof(begc:endc, :) = 1._r8
          pdep_prof(begc:endc, :) = 1._r8
@@ -312,7 +312,7 @@ contains
          endif
       end do
 
-      if(.not.use_fates)then
+      if(use_cn)then
          do fp = 1,num_soilp
             p = filter_soilp(fp)
             froot_prof_sum = 0.

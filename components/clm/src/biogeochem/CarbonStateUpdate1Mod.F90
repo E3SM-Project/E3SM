@@ -13,7 +13,7 @@ module CarbonStateUpdate1Mod
   use clm_varpar              , only : i_met_lit, i_cel_lit, i_lig_lit, i_cwd
   use clm_varcon              , only : dzsoi_decomp
   use clm_varctl              , only : nu_com
-  use clm_varctl              , only : use_pflotran, pf_cmode, use_fates
+  use clm_varctl              , only : use_pflotran, pf_cmode, use_cn
   use pftvarcon               , only : npcropmin, nc3crop
   use CNDecompCascadeConType  , only : decomp_cascade_type
   use CNStateType             , only : cnstate_type
@@ -66,7 +66,7 @@ contains
 
     dt = real( get_step_size(), r8 )
 
-    if (.not.use_fates) then
+    if (use_cn) then
 
        do g = bounds%begg, bounds%endg
           grc_cs%seedc(g) = grc_cs%seedc(g) &
@@ -177,7 +177,7 @@ contains
       if (.not. is_active_betr_bgc .and. .not.(use_pflotran .and. pf_cmode) ) then
 
          ! plant to litter fluxes
-         if(.not.use_fates)then
+         if(use_cn)then
             do j = 1,nlevdecomp
                ! column loop
                do fc = 1,num_soilc
@@ -221,7 +221,7 @@ contains
 
       endif   !end if is_active_betr_bgc()
 
-      if (.not.use_fates) then
+      if (use_cn) then
     
       ! patch loop
       do fp = 1,num_soilp
@@ -415,7 +415,7 @@ contains
 
       end do ! end of patch loop
 
-  end if
+   end if
 
  end associate
 

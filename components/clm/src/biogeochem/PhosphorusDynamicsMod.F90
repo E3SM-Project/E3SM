@@ -286,7 +286,7 @@ contains
             else
               secondp_to_labilep(c,j) = 0._r8
             endif
-
+            
          end do
        end do
     end associate
@@ -356,7 +356,7 @@ contains
             else
                secondp_to_occlp(c,j) =0._r8
             endif
-
+            
          end do
        end do
     end associate
@@ -666,9 +666,9 @@ contains
         max_comps = size(alm_fates%fates(ci)%bc_out(1)%cp_scalar,dim=1)
         allocate(biochem_pmin_to_plant_vr_patch(max_comps,nlevdecomp))
     else
-        allocate(biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp))
+       allocate(biochem_pmin_to_plant_vr_patch(bounds%begp:bounds%endp,1:nlevdecomp))
+       biochem_pmin_to_plant_patch(:) = 0._r8
     end if
-    biochem_pmin_to_plant_patch(:) = 0._r8
     biochem_pmin_to_plant_vr_patch(:,:) = 0._r8
 
     do fc = 1,num_soilc
@@ -690,6 +690,7 @@ contains
                     lamda_up = alm_fates%fates(ci)%bc_out(s)%cp_scalar(p)/ & 
                           max(alm_fates%fates(ci)%bc_out(s)%cn_scalar(p),1e-20_r8)
                     lamda_up = min(max(lamda_up,0.0_r8), 150.0_r8)
+                    
                     fr_frac = alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,j) / & 
                           sum(alm_fates%fates(ci)%bc_out(s)%veg_rootc(p,:))
                     
@@ -796,7 +797,7 @@ contains
 
             end do
 
-        else
+         else
             
             if (NFIX_PTASE_plant) then   
                 do j = 1,nlevdecomp
@@ -832,9 +833,8 @@ contains
                     biochem_pmin_vr(c,j) = biochem_pmin_to_ecosysp_vr_col(c,j)
                 enddo
             end if
-        end if
+         end if
     end do
-
 
     do j = 1, nlevdecomp
        do fc = 1,num_soilc
