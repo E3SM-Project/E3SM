@@ -22,42 +22,44 @@ void Functions<S,D>
     Spack& nr)
 {
 
-qc = qc - (qcheti+qccol+qcshd+qiberg)*dt;
+qc = qc - (qcheti + qccol + qcshd + qiberg) * dt;
 
-if (log_predictNc){
-   nc = nc - (nccol+ncheti)*dt;
+if ( log_predictNc ){
+   nc = nc - (nccol + ncheti) * dt;
 }
 
-qr = qr - (qrcol-qimlt+qrheti-qcshd)*dt;
+qr = qr - (qrcol - qimlt + qrheti - qcshd) * dt;
 
 //apply factor to source for rain number from melting of ice, (ad-hoc
 // but accounts for rapid evaporation of small melting ice particles)
-nr = nr - (nrcol+nrheti-nmltratio*nimlt-nrshdr-ncshdc)*dt;
+nr = nr - (nrcol + nrheti - nmltratio * nimlt - nrshdr - ncshdc) * dt;
 
-constexpr Scalar QSMALL = C::QSMALL;
+constexpr Scalar QSMALL    = C::QSMALL;
 const auto qitot_not_small = qitot >= QSMALL;
-if(qitot_not_small.any()){
-   birim.set(qitot_not_small, birim - ((qisub+qimlt)/qitot)*dt*birim);
-   qirim.set(qitot_not_small, qirim - ((qisub+qimlt)*qirim/qitot)*dt);
-   qitot.set(qitot_not_small, qitot - (qisub+qimlt)*dt);
+
+if ( qitot_not_small.any() ) {
+   birim.set(qitot_not_small, birim - ((qisub + qimlt) / qitot) * dt * birim);
+   qirim.set(qitot_not_small, qirim - ((qisub + qimlt) * qirim / qitot) * dt);
+   qitot.set(qitot_not_small, qitot - (qisub + qimlt) * dt);
 }
 
-const auto dum = (qrcol+qccol+qrheti+qcheti)*dt;
-qitot = qitot + (qidep+qinuc+qiberg)*dt + dum;
+const auto dum = (qrcol + qccol + qrheti + qcheti) * dt;
+qitot = qitot + (qidep + qinuc + qiberg) * dt + dum;
 qirim = qirim + dum;
 
 constexpr Scalar INV_RHO_RIMEMAX = C::INV_RHO_RIMEMAX;
-birim = birim + (qrcol*INV_RHO_RIMEMAX+qccol/rhorime_c+(qrheti+
-     qcheti)*INV_RHO_RIMEMAX)*dt;
 
-nitot = nitot + (ninuc-nimlt-nisub-nislf+nrheti+ncheti)*dt;
+birim = birim + (qrcol * INV_RHO_RIMEMAX + qccol / rhorime_c + (qrheti +
+     qcheti) * INV_RHO_RIMEMAX) * dt;
+
+nitot = nitot + (ninuc - nimlt - nisub - nislf + nrheti + ncheti) * dt;
 
 //PMC nCat deleted interactions_loop
 
 const auto qirim_lt_thresh = qirim < 0.0 ; 
  if (qirim_lt_thresh.any()){
-      qirim.set(qirim_lt_thresh,0.0);
-      birim.set(qirim_lt_thresh,0.0);
+      qirim.set(qirim_lt_thresh, 0.0);
+      birim.set(qirim_lt_thresh, 0.0);
  }
 
 // densify under wet growth
@@ -66,7 +68,7 @@ const auto qirim_lt_thresh = qirim < 0.0 ;
 
 if (log_wetgrowth){
    qirim = qitot;
-   birim = qirim*INV_RHO_RIMEMAX;
+   birim = qirim * INV_RHO_RIMEMAX;
 }
 
 // densify in above freezing conditions and melting
@@ -76,12 +78,12 @@ if (log_wetgrowth){
 //   and birim such that rho_rim (qirim/birim) --> rho_liq during melting.
 // ==
 
-qv = qv - (qidep-qisub+qinuc)*dt;
+qv = qv - (qidep - qisub + qinuc) * dt;
 
 
 constexpr Scalar INV_CP = C::INV_CP;
-th = th + exner*((qidep-qisub+qinuc)*xxls*INV_CP +(qrcol+qccol+
-        qcheti+qrheti-qimlt+qiberg)* xlf*INV_CP)*dt;
+th = th + exner * ((qidep - qisub + qinuc) * xxls * INV_CP + (qrcol + qccol +
+        qcheti + qrheti - qimlt + qiberg) * xlf * INV_CP) * dt;
 
 }
 

@@ -201,9 +201,6 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 
 }; //  TestP3CloudWaterAutoconversion
 
- 
-  ///BALLI-new code
-  
   template <typename D>
   struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
   {
@@ -427,7 +424,6 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 	    xlf[s]    = pupidc_device(s).xlf;
 	    xxls[s]   = pupidc_device(s).xxls;
 
-	    //dt[s]    = pupidc_device(s).dt;
 	    nmltratio[s] = pupidc_device(s).nmltratio;
 	    rhorime_c[s] = pupidc_device(s).rhorime_c;
 	    th[s]    = pupidc_device(s).th;
@@ -552,6 +548,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
     }
 
   };//TestP3UpdatePrognosticIce
+
 }//namespace unit_test 
 }//namespace p3 
 }//namespace scream 

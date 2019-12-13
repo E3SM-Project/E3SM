@@ -14,13 +14,25 @@ set(P3_SRCS
   micro_p3_iso_f.f90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/micro_p3.F90
   ${SCREAM_BASE_DIR}/../cam/src/physics/cam/micro_p3_utils.F90
+  atmosphere_microphysics.cpp
+  scream_p3_interface.F90
 )
 
 list(APPEND P3_SRCS ${share_sources})
 
 # Add ETI source files if not on CUDA
 if (NOT CUDA_BUILD)
-  list(APPEND P3_SRCS p3_functions_upwind.cpp p3_functions_table3.cpp p3_functions_table_ice.cpp p3_functions_update_prognostics.cpp p3_functions_find.cpp p3_functions_math.cpp)
+  list(APPEND P3_SRCS
+    p3_functions_upwind.cpp
+    p3_functions_cloud_sed.cpp
+    p3_functions_ice_sed.cpp
+    p3_functions_table3.cpp
+    p3_functions_table_ice.cpp
+    p3_functions_dsd2.cpp
+    p3_functions_find.cpp
+    p3_functions_math.cpp
+    p3_functions_autoconversion.cpp
+    p3_functions_update_prognostics.cpp)
 endif()
 
 # link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})

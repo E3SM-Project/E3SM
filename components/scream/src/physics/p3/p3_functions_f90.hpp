@@ -395,22 +395,10 @@ void calc_bulk_rho_rime_f(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rim
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// BFB math stuff
-///////////////////////////////////////////////////////////////////////////////
 
-extern "C" {
-
-Real cxx_pow(Real base, Real exp);
-Real cxx_cbrt(Real base);
-Real cxx_gamma(Real input);
-Real cxx_log(Real input);
-Real cxx_log10(Real input);
-Real cxx_exp(Real input);
-
-}
 struct P3UpdatePrognosticIceData
 {
-//inputs
+  //inputs
   Real qcheti;
   Real qccol;
   Real qcshd;
@@ -464,7 +452,20 @@ bool log_predictNc, bool log_wetgrowth, Real dt, Real nmltratio, Real rhorime_c,
 Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
 
 }
+///////////////////////////////////////////////////////////////////////////////
+// BFB math stuff
+///////////////////////////////////////////////////////////////////////////////
 
+extern "C" {
+
+Real cxx_pow(Real base, Real exp);
+Real cxx_cbrt(Real base);
+Real cxx_gamma(Real input);
+Real cxx_log(Real input);
+Real cxx_log10(Real input);
+Real cxx_exp(Real input);
+
+}
 
 }  // namespace p3
 }  // namespace scream

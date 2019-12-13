@@ -175,8 +175,8 @@ interface
          qrheti, nrheti, nrshdr, qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, &
          xlf, xxls, dt, nmltratio, rhorime_c
  
-    logical, intent(in) :: log_predictNc
-    logical, intent(in) :: log_wetgrowth
+    logical(kind=c_bool), intent(in) :: log_predictNc
+    logical(kind=c_bool), intent(in) :: log_wetgrowth
 
     real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim
     

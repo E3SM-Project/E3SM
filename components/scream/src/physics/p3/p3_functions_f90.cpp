@@ -62,17 +62,9 @@ void  update_prognostic_ice_c(
   Real qrcol,  Real nrcol, Real qrheti, Real nrheti, Real nrshdr,
   Real qimlt, Real nimlt, Real qisub, Real qidep, Real qinuc, Real ninuc,
   Real nislf, Real nisub, Real qiberg, Real exner, Real xxls, Real xlf,
-  bool log_predictNc_, bool log_wetgrowth, Real dt, Real nmltratio,
+  bool log_predictNc, bool log_wetgrowth, Real dt, Real nmltratio,
   Real rhorime_c, Real* th, Real* qv, Real* qitot, Real* nitot, Real* qirim,
   Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
-
-void  update_prognostic_ice_c( Real qcheti, Real qccol, Real qcshd,  Real nccol,  Real ncheti, Real ncshdc,
-			       Real qrcol,  Real nrcol, Real qrheti, Real nrheti, Real nrshdr,
-			       Real qimlt, Real nimlt, Real qisub, Real qidep, Real qinuc, Real ninuc,
-			       Real nislf, Real nisub, Real qiberg, Real exner, Real xxls, Real xlf,
-			       bool log_predictNc_, bool log_wetgrowth, Real dt, Real nmltratio,
-			       Real rhorime_c, Real* th, Real* qv, Real* qitot, Real* nitot, Real* qirim,
-			       Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
 
 }
 
@@ -175,7 +167,7 @@ void get_rain_dsd2(GetRainDsd2Data& d)
 			    d.log_predictNc,  d.log_wetgrowth,    d.dt,     d.nmltratio, 
 			    d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim, 
 			    &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
-
+  }
 CalcUpwindData::CalcUpwindData(
   Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
   std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
@@ -568,69 +560,70 @@ void  update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncc
 			       Real rhorime_c_, Real* th_, Real* qv_, Real* qitot_, Real* nitot_, Real* qirim_, 
 			       Real* birim_, Real* qc_, Real* nc_, Real* qr_, Real* nr_)
 {
-  using P3F = Functions<Real, HostDevice>;
-  typename P3F::Spack qcheti(qcheti_);
-  typename P3F::Spack qccol(qccol_);
-  typename P3F::Spack qcshd(qcshd_);
-  typename P3F::Spack nccol(nccol_);
-  typename P3F::Spack ncheti(ncheti_);
-  typename P3F::Spack ncshdc(ncshdc_);
-  typename P3F::Spack qrcol(qrcol_);
-  typename P3F::Spack nrcol(nrcol_);
-  typename P3F::Spack qrheti(qrheti_);
-  typename P3F::Spack nrheti(nrheti_);
-  typename P3F::Spack nrshdr(nrshdr_);
-  typename P3F::Spack qimlt(qimlt_);
-  typename P3F::Spack nimlt(nimlt_);
-  typename P3F::Spack qisub(qisub_);
-  typename P3F::Spack qidep(qidep_);
-  typename P3F::Spack qinuc(qinuc_);
-  typename P3F::Spack ninuc(ninuc_);
-  typename P3F::Spack nislf(nislf_);
-  typename P3F::Spack nisub(nisub_);
-  typename P3F::Spack qiberg(qiberg_);
-  typename P3F::Spack exner(exner_);
-  typename P3F::Spack xlf(xlf_);
-  typename P3F::Spack xxls(xxls_);
+  using P3F = Functions<Real, DefaultDevice>;
 
-  bool log_predictNc(log_predictNc_);
-  bool log_wetgrowth(log_wetgrowth_);
+  typename P3F::view_1d<Real> t_d("t_h", 10);
+  auto t_h = Kokkos::create_mirror_view(t_d);
 
-  typename P3F::Scalar dt(dt_);
-  typename P3F::Spack nmltratio(nmltratio_);
-  typename P3F::Spack rhorime_c(rhorime_c_);
+  Real local_th     = *th_;
+  Real local_qv	    = *qv_;	  
+  Real local_qc	    = *qc_;	  
+  Real local_nc	    = *nc_;
+  Real local_qr	    = *qr_;	  
+  Real local_nr	    = *nr_;	  
+  Real local_qitot  = *qitot_;
+  Real local_nitot  = *nitot_;
+  Real local_qirim  = *qirim_;
+  Real local_birim  = *birim_;
 
-  typename P3F::Spack  th(*th_);
-  typename P3F::Spack  qv(*qv_);
-  typename P3F::Spack  qc(*qc_);
-  typename P3F::Spack  nc(*nc_);
-  typename P3F::Spack  qr(*qr_);
-  typename P3F::Spack  nr(*nr_);
-  typename P3F::Spack  qitot(*qitot_);
-  typename P3F::Spack  nitot(*nitot_);
-  typename P3F::Spack  qirim(*qirim_);
-  typename P3F::Spack  birim(*birim_);
 
-  P3F::update_prognostic_ice(qcheti, qccol, qcshd, nccol, ncheti,ncshdc,
-			     qrcol,   nrcol,  qrheti,  nrheti,  nrshdr, 
-			     qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc, 
-			     nislf,  nisub,  qiberg,  exner,  xxls,  xlf, 
-			     log_predictNc, log_wetgrowth,  dt,  nmltratio, 
-			     rhorime_c, th, qv, qitot, nitot, qirim, 
-			     birim, qc, nc, qr, nr);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack qcheti(qcheti_), qccol(qccol_),qcshd(qcshd_),  nccol(nccol_),  
+	ncheti(ncheti_),  ncshdc(ncshdc_),  qrcol(qrcol_),  nrcol(nrcol_),  qrheti(qrheti_),
+	nrheti(nrheti_),  nrshdr(nrshdr_),  qimlt(qimlt_),  nimlt(nimlt_),  qisub(qisub_),
+	qidep(qidep_),  qinuc(qinuc_),  ninuc(ninuc_),  nislf(nislf_),  nisub(nisub_),
+	qiberg(qiberg_),  exner(exner_),  xlf(xlf_),  xxls(xxls_),  nmltratio(nmltratio_),
+	rhorime_c(rhorime_c_);
+      bool log_predictNc(log_predictNc_), log_wetgrowth(log_wetgrowth_);
+      typename P3F::Scalar dt(dt_);
+
+      typename P3F::Spack th(local_th), qv(local_qv), qc(local_qc), nc(local_nc), qr(local_qr), 
+	nr(local_nr), qitot(local_qitot), nitot(local_nitot), qirim(local_qirim), birim(local_birim);
+
+      P3F::update_prognostic_ice(qcheti, qccol, qcshd, nccol, ncheti,ncshdc,
+				 qrcol,   nrcol,  qrheti,  nrheti,  nrshdr, 
+				 qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc, 
+				 nislf,  nisub,  qiberg,  exner,  xxls,  xlf, 
+				 log_predictNc, log_wetgrowth,  dt,  nmltratio, 
+				 rhorime_c, th, qv, qitot, nitot, qirim, 
+				 birim, qc, nc, qr, nr);
+
   
-  *th_    = th[0];
-  *qv_    = qv[0];
-  *qitot_ = qitot[0];
-  *nitot_ = nitot[0];
-  *qirim_ = qirim[0];
-  
-  *birim_ = birim[0];
-  *qc_    = qc[0];
-  *nc_    = nc[0];
-  *qr_    = qr[0];
-  *nr_     = nr[0];
-  }
+      t_d(0) = th[0];
+      t_d(1) = qv[0];
+      t_d(2) = qitot[0];
+      t_d(3) = nitot[0];
+      t_d(4) = qirim[0];
+      t_d(5) = birim[0];
+      t_d(6) = qc[0];
+      t_d(7) = nc[0];
+      t_d(8) = qr[0];
+      t_d(9) = nr[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *th_    = t_h(0);
+  *qv_    = t_h(1);
+  *qitot_ = t_h(2);
+  *nitot_ = t_h(3);
+  *qirim_ = t_h(4);
+  *birim_ = t_h(5);
+  *qc_    = t_h(6);
+  *nc_    = t_h(7);
+  *qr_    = t_h(8);
+  *nr_    = t_h(9);
+}
 
 
 template <int N, typename T>
