@@ -146,7 +146,7 @@ contains
     end if
 
 !   Determine column closest to SCM point
-    if (single_column) then
+    if (single_column .and. par%dynproc) then
       if (scmlon .lt. 0._r8) then
         scmposlon=scmlon+360._r8
       else

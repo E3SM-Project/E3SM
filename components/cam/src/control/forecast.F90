@@ -551,13 +551,17 @@ end if
 	 
 	 ! Relax winds for IOP_script
 	 if (iop_scream) then
-	   rtau(k) = 10800._r8
-	   rtau(k) = max(ztodt,rtau(k))
-	   relaxu(k) = -(ufcst(k) - uobs(k))/rtau(k)
-	   relaxv(k) = -(vfcst(k) - vobs(k))/rtau(k)
+	 
+	   do k=1,plev
+	     rtau(k) = 10800._r8
+	     rtau(k) = max(ztodt,rtau(k))
+	     relaxu(k) = -(ufcst(k) - uobs(k))/rtau(k)
+	     relaxv(k) = -(vfcst(k) - vobs(k))/rtau(k)
 	   
-	   ufcst(k) = ufcst(k) + relaxu(k)*ztodt
-	   vfcst(k) = vfcst(k) + relaxv(k)*ztodt
+	     ufcst(k) = ufcst(k) + relaxu(k)*ztodt
+	     vfcst(k) = vfcst(k) + relaxv(k)*ztodt
+	   enddo
+	   
 	 endif
 
       endif      ! from  if (use_iop .and. have_v .and. have_u) 

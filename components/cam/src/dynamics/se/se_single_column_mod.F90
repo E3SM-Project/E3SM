@@ -10,6 +10,7 @@ use dimensions_mod, only: nelemd, np
 use time_manager, only: get_nstep, dtime
 use ppgrid, only: begchunk
 use pmgrid, only: plev
+use parallel_mod,            only: par
 
 implicit none
 
@@ -33,15 +34,11 @@ subroutine scm_setinitial(elem)
   integer i, j, k, ie, thelev
   integer inumliq, inumice, icldliq, icldice
 
-  if (.not. use_replay .and. get_nstep() .eq. 0) then
+  if (.not. use_replay .and. get_nstep() .eq. 0 .and. par%dynproc) then
     call cnst_get_ind('NUMLIQ', inumliq, abort=.false.)
     call cnst_get_ind('NUMICE', inumice, abort=.false.)
     call cnst_get_ind('CLDLIQ', icldliq)
     call cnst_get_ind('CLDICE', icldice)
-
-    if (get_nstep() .eq. 0) then
-      write(*,*) elem(1)%derived%FT(1,1,:)
-    endif
     
     do ie=1,nelemd
       do j=1,np
