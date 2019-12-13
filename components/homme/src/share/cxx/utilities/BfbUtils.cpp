@@ -24,10 +24,12 @@ void czeroulpn(int a_len, double* a, int nbit, double* replace) {
 
 void cbfb_pow(int a_len, double* a, const double e) {
   for (int i = 0; i < a_len; ++i) {
-    a[i] = std::pow(a[i], e);
 #ifdef CUDA_BUILD
     const auto replace = a[i];
+    a[i] = std::pow(a[i], e);
     a[i] = Homme::zeroulpn(a[i], 25, replace);
+#else
+    a[i] = std::pow(a[i], e);
 #endif
   }
 }
