@@ -590,7 +590,7 @@ CONTAINS
        ! Compute initial dry static energy, include surface geopotential
        do k = 1, pver
           do i=1,ncol
-#if 1 
+#if 1
              ! general formula:  E = CV_air T + phis + gravit*zi )
              ! hydrostatic case: integrate zi term by parts, use CP=CV+R to get:
              ! E = CP_air T + phis   (Holton Section 8.3)
