@@ -86,7 +86,6 @@ struct UnitWrap::UnitTest<D>::TestP3CloudWaterAutoconversion
 {
 
 static void  cloud_water_autoconversion_unit_bfb_tests(){
-  using KTH = KokkosTypes<HostDevice>;
 
   static constexpr Int max_pack_size = 16;
   REQUIRE(Spack::n <= max_pack_size);
@@ -114,8 +113,8 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   };
 
   // Sync to device
-  KTH::view_1d<CloudWaterAutoconversionData> cwadc_host("cwadc_host", Spack::n);
-  view_1d<CloudWaterAutoconversionData> cwadc_device("cwadc_host", Spack::n);
+  view_1d<CloudWaterAutoconversionData> cwadc_device("cwadc", Spack::n);
+  auto cwadc_host = Kokkos::create_mirror_view(cwadc_device);
 
   // This copy only copies the input variables.
   std::copy(&cwadc[0], &cwadc[0] + Spack::n, cwadc_host.data());
@@ -125,10 +124,6 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   for (Int i = 0; i < max_pack_size; ++i) {
     cloud_water_autoconversion(cwadc[i]);
   }
-
-  // This copy also copies the output from the fortran function into the host view. These values
-  // are need to check the values returned from
-  std::copy(&cwadc[0], &cwadc[0] + Spack::n, cwadc_host.data());
 
     // Run the lookup from a kernel and copy results back to host
   Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
@@ -205,117 +200,116 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
   {
     KOKKOS_FUNCTION static void  update_prognostic_ice_unit_bfb_tests(){
-      using KTH = KokkosTypes<HostDevice>;
-      
+
       static constexpr Int max_pack_size = 16;
-      
+
       REQUIRE(Spack::n <= max_pack_size);
-      
-      //fortran generated data is input to the following 
+
+      //fortran generated data is input to the following
       P3UpdatePrognosticIceData pupidc[max_pack_size] = {
-	
-	{4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15, 
-	 3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02, 
-	 0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+
+	{4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
+	 3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
+	 0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 6.4286E-05, 1.0000E-02},
 
-	{2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15, 
-	 1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02, 
-	 0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
+	 1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
+	 0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 7.1429E-05, 1.0000E-02},
 
-	{8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14, 
-	 5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02, 
-	 0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
+	 5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
+	 0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 7.8571E-05, 1.0000E-02},
 
-	{3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14, 
-	 2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02, 
-	 0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
+	 2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
+	 0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 8.5714E-05, 1.0000E-02},
 
-	{4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15, 
-	 3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02, 
-	 0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
+	 3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
+	 0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 6.4286E-05, 1.0000E-02},
 
-	{2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15, 
-	 1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02, 
-	 0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
+	 1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
+	 0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 7.1429E-05, 1.0000E-02},
 
-	{8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14, 
-	 5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02, 
-	 0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
+	 5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
+	 0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 7.8571E-05, 1.0000E-02},
 
-	{3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14, 
-	 2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02, 
-	 0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
+	 2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
+	 0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 8.5714E-05, 1.0000E-02},
 
-	{4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15, 
-	 3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02, 
-	 0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
+	 3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
+	 0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 6.4286E-05, 1.0000E-02},
 
-	{2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15, 
-	 1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02, 
-	 0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
+	 1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
+	 0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 7.1429E-05, 1.0000E-02},
 
-	{8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14, 
-	 5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02, 
-	 0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
+	 5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
+	 0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 7.8571E-05, 1.0000E-02},
 
-	{3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14, 
-	 2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02, 
-	 0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
+	 2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
+	 0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 8.5714E-05, 1.0000E-02},
 
-	{4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15, 
-	 3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02, 
-	 0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{4.9078E-19, 1.5312E-09, 4.4387E-09, 3.7961E+06, 1.7737E-04, 0.0000E+00, 3.8085E-08, 5.1281E+04, 1.9251E-15,
+	 3.4778E-04, 3.5801E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 5.1386E-07, 0.0000E+00, 0.0000E+00, 2.7053E-02,
+	 0.0000E+00, 1.9209E-10, 1.0686E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 4.5312E+02, 2.8720E+02, 5.0000E-03, 6.4286E-05, 1.2344E+08, 7.3684E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 6.4286E-05, 1.0000E-02},
 
-	{2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15, 
-	 1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02, 
-	 0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{2.1097E-18, 2.7648E-09, 3.8261E-09, 3.7754E+06, 6.8685E-04, 0.0000E+00, 4.1018E-08, 5.1227E+04, 4.8876E-15,
+	 1.3468E-03, 2.8059E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 7.1049E-07, 0.0000E+00, 0.0000E+00, 2.4547E-02,
+	 0.0000E+00, 2.8615E-10, 1.0741E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 3.4890E+02, 2.8642E+02, 5.0000E-03, 7.1429E-05, 1.2345E+08, 7.8947E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 7.1429E-05, 1.0000E-02},
 
-	{8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14, 
-	 5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02, 
-	 0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{8.9820E-18, 4.2529E-09, 2.9520E-09, 3.7537E+06, 2.6598E-03, 0.0000E+00, 4.3700E-08, 5.1171E+04, 1.4266E-14,
+	 5.2153E-03, 1.9880E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 9.0244E-07, 0.0000E+00, 0.0000E+00, 2.1083E-02,
+	 0.0000E+00, 3.7631E-10, 1.0796E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 2.8656E+02, 2.8565E+02, 5.0000E-03, 7.8571E-05, 1.2345E+08, 8.4211E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 7.8571E-05, 1.0000E-02},
 
-	{3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14, 
-	 2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02, 
-	 0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01, 
-	 2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06, 
+	{3.7942E-17, 6.0115E-09, 1.8004E-09, 3.7310E+06, 1.0300E-02, 0.0000E+00, 4.6119E-08, 5.1112E+04, 4.4518E-14,
+	 2.0196E-02, 1.1226E+03, 0.0000E+00, 0.0000E+00, 0.0000E+00, 1.0879E-06, 0.0000E+00, 0.0000E+00, 1.7646E-02,
+	 0.0000E+00, 4.5891E-10, 1.0853E+00, 3.3370E+05, 2.8347E+06, true,       true,       1.8000E+03, 2.0000E-01,
+	 2.4570E+02, 2.8489E+02, 5.0000E-03, 8.5714E-05, 1.2345E+08, 8.9474E-06, 1.0000E+06, 1.0000E-04, 1.0000E+06,
 	 8.5714E-05, 1.0000E-02},
-      };                  
+      };
 
-      
+
       // Sync to device
-      KTH::view_1d<P3UpdatePrognosticIceData> pupidc_host("pupidc_host", Spack::n);
-      view_1d<P3UpdatePrognosticIceData> pupidc_device("pupidc_host", Spack::n);
-      
+      view_1d<P3UpdatePrognosticIceData> pupidc_device("pupidc", Spack::n);
+      auto pupidc_host = Kokkos::create_mirror_view(pupidc_device);
+
       // This copy only copies the input variables.
       std::copy(&pupidc[0], &pupidc[0] + Spack::n, pupidc_host.data());
       Kokkos::deep_copy(pupidc_device, pupidc_host);
@@ -325,10 +319,6 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 	update_prognostic_ice(pupidc[i]);
       }
 
-      // This copy also copies the output from the fortran function into the host view. These values
-      // are need to check the values returned from
-      std::copy(&pupidc[0], &pupidc[0] + Spack::n, pupidc_host.data());      
-      
       // Run the lookup from a kernel and copy results back to host
       Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
 	  // Init pack inputs
@@ -337,25 +327,25 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
             nmltratio, rhorime_c, th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim;
 	  Scalar dt;
 	  bool log_predictNc, log_wetgrowth;
-	  
+
 	  // variables with single values assigned outside of the for loop
 	  dt            = pupidc_device(0).dt;
 	  log_predictNc = pupidc_device(0).log_predictNc;
 	  log_wetgrowth = pupidc_device(0).log_wetgrowth;
 
 	  for (Int s = 0; s < Spack::n; ++s) {
-	    
+
 	    qcheti[s] = pupidc_device(s).qcheti;
-	    qccol[s]  = pupidc_device(s).qccol; 
-	    qcshd[s]  = pupidc_device(s).qcshd; 
-	    nccol[s]  = pupidc_device(s).nccol; 
+	    qccol[s]  = pupidc_device(s).qccol;
+	    qcshd[s]  = pupidc_device(s).qcshd;
+	    nccol[s]  = pupidc_device(s).nccol;
 	    ncheti[s] = pupidc_device(s).ncheti;
 	    ncshdc[s] = pupidc_device(s).ncshdc;
 	    qrcol[s]  = pupidc_device(s).qrcol;
 	    nrcol[s]  = pupidc_device(s).nrcol;
 	    qrheti[s] = pupidc_device(s).qrheti;
 	    nrheti[s] = pupidc_device(s).nrheti;
-	    nrshdr[s] = pupidc_device(s).nrshdr;	      
+	    nrshdr[s] = pupidc_device(s).nrshdr;
 	    qimlt[s]  = pupidc_device(s).qimlt;
 	    nimlt[s]  = pupidc_device(s).nimlt;
 	    qisub[s]  = pupidc_device(s).qisub;
@@ -376,7 +366,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 	    qc[s]    = pupidc_device(s).qc;
 	    nc[s]    = pupidc_device(s).nc;
 	    qr[s]    = pupidc_device(s).qr;
-	    nr[s]    = pupidc_device(s).nr;	      
+	    nr[s]    = pupidc_device(s).nr;
 	    qitot[s] = pupidc_device(s).qitot;
 	    nitot[s] = pupidc_device(s).nitot;
 	    qirim[s] = pupidc_device(s).qirim;
@@ -390,80 +380,80 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 					   log_predictNc, log_wetgrowth,  dt,  nmltratio,
 					   rhorime_c, th, qv, qitot, nitot, qirim,
 					   birim, qc, nc, qr, nr);
-	  
+
 	  // Copy results back into views
 	  pupidc_device(0).dt            = dt;
 	  pupidc_device(0).log_predictNc = log_predictNc;
 	  pupidc_device(0).log_wetgrowth = log_wetgrowth;
 	  for (Int s = 0; s < Spack::n; ++s) {
-	    
-	    pupidc_device(s).qcheti = qcheti[s]; 	
-	    pupidc_device(s).qccol  = qccol[s]; 		   
+
+	    pupidc_device(s).qcheti = qcheti[s];
+	    pupidc_device(s).qccol  = qccol[s];
 	    pupidc_device(s).qcshd  = qcshd[s];
-	    pupidc_device(s).nccol  = nccol[s];		   
-	    pupidc_device(s).ncheti = ncheti[s];		   
-	    pupidc_device(s).ncshdc = ncshdc[s];		   
-	    pupidc_device(s).qrcol  = qrcol[s];			   
-	    pupidc_device(s).nrcol  = nrcol[s];			   
-	    pupidc_device(s).qrheti = qrheti[s];		   
-	    pupidc_device(s).nrheti = nrheti[s];		   
-	    pupidc_device(s).nrshdr = nrshdr[s];		   
-	    pupidc_device(s).qimlt  = qimlt[s];			   
-	    pupidc_device(s).nimlt  = nimlt[s];			   
-	    pupidc_device(s).qisub  = qisub[s];			   
-	    pupidc_device(s).qidep  = qidep[s];			   
-	    pupidc_device(s).qinuc  = qinuc[s];			   
-	    pupidc_device(s).ninuc  = ninuc[s];			   
-	    pupidc_device(s).nislf  = nislf[s];			   
-	    pupidc_device(s).nisub  = nisub[s];			   
-	    pupidc_device(s).qiberg = qiberg[s];		   
-	    pupidc_device(s).exner  = exner[s];			   
-	    pupidc_device(s).xlf    = xlf[s];			   
-	    pupidc_device(s).xxls   = xxls[s];  		   
-	    
+	    pupidc_device(s).nccol  = nccol[s];
+	    pupidc_device(s).ncheti = ncheti[s];
+	    pupidc_device(s).ncshdc = ncshdc[s];
+	    pupidc_device(s).qrcol  = qrcol[s];
+	    pupidc_device(s).nrcol  = nrcol[s];
+	    pupidc_device(s).qrheti = qrheti[s];
+	    pupidc_device(s).nrheti = nrheti[s];
+	    pupidc_device(s).nrshdr = nrshdr[s];
+	    pupidc_device(s).qimlt  = qimlt[s];
+	    pupidc_device(s).nimlt  = nimlt[s];
+	    pupidc_device(s).qisub  = qisub[s];
+	    pupidc_device(s).qidep  = qidep[s];
+	    pupidc_device(s).qinuc  = qinuc[s];
+	    pupidc_device(s).ninuc  = ninuc[s];
+	    pupidc_device(s).nislf  = nislf[s];
+	    pupidc_device(s).nisub  = nisub[s];
+	    pupidc_device(s).qiberg = qiberg[s];
+	    pupidc_device(s).exner  = exner[s];
+	    pupidc_device(s).xlf    = xlf[s];
+	    pupidc_device(s).xxls   = xxls[s];
+
 	    pupidc_device(s).nmltratio = nmltratio[s];
 	    pupidc_device(s).rhorime_c = rhorime_c[s];
 	    pupidc_device(s).th    = th[s];
-	    pupidc_device(s).qv	   = qv[s];		 
-	    pupidc_device(s).qc	   = qc[s];		 
-	    pupidc_device(s).nc	   = nc[s];		 
-	    pupidc_device(s).qr	   = qr[s];		 
-	    pupidc_device(s).nr    = nr[s];	  	 
+	    pupidc_device(s).qv	   = qv[s];
+	    pupidc_device(s).qc	   = qc[s];
+	    pupidc_device(s).nc	   = nc[s];
+	    pupidc_device(s).qr	   = qr[s];
+	    pupidc_device(s).nr    = nr[s];
 	    pupidc_device(s).qitot = qitot[s];
 	    pupidc_device(s).nitot = nitot[s];
 	    pupidc_device(s).qirim = qirim[s];
 	    pupidc_device(s).birim = birim[s];
 	  }
-	  
+
 	});
-      
+
       // Sync back to host
       Kokkos::deep_copy(pupidc_host, pupidc_device);
 
       // Validate results
       for (Int s = 0; s < Spack::n; ++s) {
-	REQUIRE(pupidc[s].qc    == pupidc_host(s).qc); 
+	REQUIRE(pupidc[s].qc    == pupidc_host(s).qc);
 	REQUIRE(pupidc[s].nr    == pupidc_host(s).nr);
-	REQUIRE(pupidc[s].qr    == pupidc_host(s).qr);     
-	REQUIRE(pupidc[s].qv    == pupidc_host(s).qv);  
+	REQUIRE(pupidc[s].qr    == pupidc_host(s).qr);
+	REQUIRE(pupidc[s].qv    == pupidc_host(s).qv);
 	REQUIRE(pupidc[s].nc    == pupidc_host(s).nc);
-	REQUIRE(pupidc[s].qitot == pupidc_host(s).qitot); 
+	REQUIRE(pupidc[s].qitot == pupidc_host(s).qitot);
 	REQUIRE(pupidc[s].nitot == pupidc_host(s).nitot);
 	REQUIRE(pupidc[s].qirim == pupidc_host(s).qirim);
 	REQUIRE(pupidc[s].birim == pupidc_host(s).birim );
-	REQUIRE(pupidc[s].th    == pupidc_host(s).th);   
+	REQUIRE(pupidc[s].th    == pupidc_host(s).th);
 	}
     }
-  
+
     static void run_bfb(){
       update_prognostic_ice_unit_bfb_tests();
     }
 
   };//TestP3UpdatePrognosticIce
 
-}//namespace unit_test 
-}//namespace p3 
-}//namespace scream 
+}//namespace unit_test
+}//namespace p3
+}//namespace scream
 
 namespace {
 

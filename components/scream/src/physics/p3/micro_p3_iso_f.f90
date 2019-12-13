@@ -70,7 +70,7 @@ interface
   subroutine cloud_water_autoconversion_f(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr) bind(C)
     use iso_c_binding
 
-    !arguments: 
+    !arguments:
     real(kind=c_real), value, intent(in) :: rho, qc_incld, nc_incld
     real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
   end subroutine cloud_water_autoconversion_f
@@ -174,12 +174,12 @@ interface
     real(kind=c_real), value, intent(in) :: qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, &
          qrheti, nrheti, nrshdr, qimlt, nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, &
          xlf, xxls, dt, nmltratio, rhorime_c
- 
+
     logical(kind=c_bool), intent(in) :: log_predictNc
     logical(kind=c_bool), intent(in) :: log_wetgrowth
 
     real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim
-    
+
   end subroutine update_prognostic_ice_f
 
 

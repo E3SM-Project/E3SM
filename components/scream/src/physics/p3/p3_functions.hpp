@@ -342,17 +342,17 @@ struct Functions
   // update prognostic microphysics and thermodynamics variables
   //---------------------------------------------------------------------------------
   //-- ice-phase dependent processes:
-  KOKKOS_FUNCTION	    
-  static void update_prognostic_ice(const Spack& qcheti, const Spack& qccol, 
-    const Spack& qcshd,  const Spack& nccol,  const Spack& ncheti, const Spack& ncshdc, 
-    const Spack& qrcol,  const Spack& nrcol,  const Spack& qrheti, const Spack& nrheti, 
-    const Spack& nrshdr, const Spack& qimlt,  const Spack& nimlt,  const Spack& qisub, 
-    const Spack& qidep,  const Spack& qinuc,  const Spack& ninuc,  const Spack& nislf, 
-    const Spack& nisub,  const Spack& qiberg, const Spack& exner,  const Spack& xxls, 
-    const Spack& xlf,    const bool log_predictNc, const bool log_wetgrowth, const Scalar dt, 
+  KOKKOS_FUNCTION
+  static void update_prognostic_ice(const Spack& qcheti, const Spack& qccol,
+    const Spack& qcshd,  const Spack& nccol,  const Spack& ncheti, const Spack& ncshdc,
+    const Spack& qrcol,  const Spack& nrcol,  const Spack& qrheti, const Spack& nrheti,
+    const Spack& nrshdr, const Spack& qimlt,  const Spack& nimlt,  const Spack& qisub,
+    const Spack& qidep,  const Spack& qinuc,  const Spack& ninuc,  const Spack& nislf,
+    const Spack& nisub,  const Spack& qiberg, const Spack& exner,  const Spack& xxls,
+    const Spack& xlf,    const bool log_predictNc, const bool log_wetgrowth, const Scalar dt,
     const Spack& nmltratio, const Spack& rhorime_c, Spack& th, Spack& qv, Spack& qitot,
     Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,  Spack& nc, Spack& qr,
-    Spack& nr); 
+    Spack& nr);
 };
 
 template <typename ScalarT, typename DeviceT>

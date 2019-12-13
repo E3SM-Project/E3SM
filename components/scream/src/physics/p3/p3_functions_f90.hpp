@@ -180,7 +180,7 @@ struct CloudWaterAutoconversionData
 void cloud_water_autoconversion(CloudWaterAutoconversionData& d);
 extern "C"{
 
-  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld, 
+  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld,
     Real* qcaut, Real* ncautc, Real* ncautr);
 }
 
@@ -399,7 +399,7 @@ void calc_bulk_rho_rime_f(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rim
 struct P3UpdatePrognosticIceData
 {
   // Inputs
-  Real qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr, qimlt, 
+  Real qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr, qimlt,
     nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xxls, xlf;
   bool log_predictNc, log_wetgrowth;
   Real dt, nmltratio, rhorime_c;
@@ -413,9 +413,9 @@ void update_prognostic_ice(P3UpdatePrognosticIceData& d);
 extern "C"{
 
 void update_prognostic_ice_f( Real qcheti,Real qccol, Real qcshd,  Real nccol,  Real ncheti, Real ncshdc,
-Real qrcol,  Real nrcol, Real qrheti, Real nrheti, Real nrshdr, Real qimlt, Real nimlt, Real qisub, 
+Real qrcol,  Real nrcol, Real qrheti, Real nrheti, Real nrshdr, Real qimlt, Real nimlt, Real qisub,
 Real qidep, Real qinuc, Real ninuc, Real nislf, Real nisub, Real qiberg, Real exner, Real xxls, Real xlf,
-bool log_predictNc, bool log_wetgrowth, Real dt, Real nmltratio, Real rhorime_c, Real* th, Real* qv, 
+bool log_predictNc, bool log_wetgrowth, Real dt, Real nmltratio, Real rhorime_c, Real* th, Real* qv,
 Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
 
 }

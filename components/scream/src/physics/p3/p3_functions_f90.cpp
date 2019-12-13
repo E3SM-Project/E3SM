@@ -160,12 +160,12 @@ void get_rain_dsd2(GetRainDsd2Data& d)
 
   void  update_prognostic_ice(P3UpdatePrognosticIceData& d){
     p3_init(true);
-    update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc, 
-            		    d.qrcol,  d.nrcol, d.qrheti, d.nrheti, d.nrshdr, 
-			    d.qimlt,  d.nimlt, d.qisub,  d.qidep,  d.qinuc,  d.ninuc, 
-			    d.nislf,  d.nisub, d.qiberg, d.exner,  d.xxls,   d.xlf, 
-			    d.log_predictNc,  d.log_wetgrowth,    d.dt,     d.nmltratio, 
-			    d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim, 
+    update_prognostic_ice_c(d.qcheti, d.qccol, d.qcshd,  d.nccol,  d.ncheti, d.ncshdc,
+            		    d.qrcol,  d.nrcol, d.qrheti, d.nrheti, d.nrshdr,
+			    d.qimlt,  d.nimlt, d.qisub,  d.qidep,  d.qinuc,  d.ninuc,
+			    d.nislf,  d.nisub, d.qiberg, d.exner,  d.xxls,   d.xlf,
+			    d.log_predictNc,  d.log_wetgrowth,    d.dt,     d.nmltratio,
+			    d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim,
 			    &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
   }
 CalcUpwindData::CalcUpwindData(
@@ -553,11 +553,11 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
 }
 
 void  update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real nccol_,  Real ncheti_, Real ncshdc_,
-			       Real qrcol_,  Real nrcol_, Real qrheti_, Real nrheti_, Real nrshdr_, 
-			       Real qimlt_, Real nimlt_, Real qisub_, Real qidep_, Real qinuc_, Real ninuc_, 
-			       Real nislf_, Real nisub_, Real qiberg_, Real exner_, Real xxls_, Real xlf_, 
-			       bool log_predictNc_, bool log_wetgrowth_, Real dt_, Real nmltratio_, 
-			       Real rhorime_c_, Real* th_, Real* qv_, Real* qitot_, Real* nitot_, Real* qirim_, 
+			       Real qrcol_,  Real nrcol_, Real qrheti_, Real nrheti_, Real nrshdr_,
+			       Real qimlt_, Real nimlt_, Real qisub_, Real qidep_, Real qinuc_, Real ninuc_,
+			       Real nislf_, Real nisub_, Real qiberg_, Real exner_, Real xxls_, Real xlf_,
+			       bool log_predictNc_, bool log_wetgrowth_, Real dt_, Real nmltratio_,
+			       Real rhorime_c_, Real* th_, Real* qv_, Real* qitot_, Real* nitot_, Real* qirim_,
 			       Real* birim_, Real* qc_, Real* nc_, Real* qr_, Real* nr_)
 {
   using P3F = Functions<Real, DefaultDevice>;
@@ -566,18 +566,18 @@ void  update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncc
   auto t_h = Kokkos::create_mirror_view(t_d);
 
   Real local_th    = *th_;
-  Real local_qv	   = *qv_;	  
-  Real local_qc	   = *qc_;	  
+  Real local_qv	   = *qv_;
+  Real local_qc	   = *qc_;
   Real local_nc	   = *nc_;
-  Real local_qr	   = *qr_;	  
-  Real local_nr	   = *nr_;	  
+  Real local_qr	   = *qr_;
+  Real local_nr	   = *nr_;
   Real local_qitot = *qitot_;
   Real local_nitot = *nitot_;
   Real local_qirim = *qirim_;
   Real local_birim = *birim_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
-      typename P3F::Spack qcheti(qcheti_), qccol(qccol_),qcshd(qcshd_),  nccol(nccol_),  
+      typename P3F::Spack qcheti(qcheti_), qccol(qccol_),qcshd(qcshd_),  nccol(nccol_),
 	ncheti(ncheti_),  ncshdc(ncshdc_),  qrcol(qrcol_),  nrcol(nrcol_),  qrheti(qrheti_),
 	nrheti(nrheti_),  nrshdr(nrshdr_),  qimlt(qimlt_),  nimlt(nimlt_),  qisub(qisub_),
 	qidep(qidep_),  qinuc(qinuc_),  ninuc(ninuc_),  nislf(nislf_),  nisub(nisub_),
@@ -586,18 +586,18 @@ void  update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncc
       bool log_predictNc(log_predictNc_), log_wetgrowth(log_wetgrowth_);
       typename P3F::Scalar dt(dt_);
 
-      typename P3F::Spack th(local_th), qv(local_qv), qc(local_qc), nc(local_nc), qr(local_qr), 
+      typename P3F::Spack th(local_th), qv(local_qv), qc(local_qc), nc(local_nc), qr(local_qr),
 	nr(local_nr), qitot(local_qitot), nitot(local_nitot), qirim(local_qirim), birim(local_birim);
 
       P3F::update_prognostic_ice(qcheti, qccol, qcshd, nccol, ncheti,ncshdc,
-				 qrcol,   nrcol,  qrheti,  nrheti,  nrshdr, 
-				 qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc, 
-				 nislf,  nisub,  qiberg,  exner,  xxls,  xlf, 
-				 log_predictNc, log_wetgrowth,  dt,  nmltratio, 
-				 rhorime_c, th, qv, qitot, nitot, qirim, 
+				 qrcol,   nrcol,  qrheti,  nrheti,  nrshdr,
+				 qimlt,  nimlt,  qisub,  qidep,  qinuc,  ninuc,
+				 nislf,  nisub,  qiberg,  exner,  xxls,  xlf,
+				 log_predictNc, log_wetgrowth,  dt,  nmltratio,
+				 rhorime_c, th, qv, qitot, nitot, qirim,
 				 birim, qc, nc, qr, nr);
 
-  
+
       t_d(0) = th[0];
       t_d(1) = qv[0];
       t_d(2) = qitot[0];
