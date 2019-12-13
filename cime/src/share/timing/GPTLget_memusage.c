@@ -149,7 +149,7 @@ int GPTLget_memusage (int *size, int *rss, int *share, int *text, int *datastack
   *share     = *share     * pg_sz;
   *text      = *text      * pg_sz;
   *datastack = *datastack * pg_sz;
-#ifdef PRINT_MEMUSAGE
+#if PRINT_MEMUSAGE
   fprintf (stderr, "get_memusage: size=%d KB, rss=%d KB, share=%d KB, text=%d KB, datastack=%d KB, page_size=%d KB\n",
            *size, *rss, *share, *text, *datastack, pg_sz);
 #endif
