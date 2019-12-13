@@ -398,47 +398,14 @@ void calc_bulk_rho_rime_f(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rim
 
 struct P3UpdatePrognosticIceData
 {
-  //inputs
-  Real qcheti;
-  Real qccol;
-  Real qcshd;
-  Real nccol;
-  Real ncheti;
-  Real ncshdc;
-  Real qrcol;
-  Real nrcol;
-  Real qrheti;
-  Real nrheti;
-  Real nrshdr;
-  Real qimlt;
-  Real nimlt;
-  Real qisub;
-  Real qidep;
-  Real qinuc;
-  Real ninuc;
-  Real nislf;
-  Real nisub;
-  Real qiberg;
-  Real exner;
-  Real xxls;
-  Real xlf;
-  bool log_predictNc;
-  bool log_wetgrowth;
-  Real dt;
-  Real nmltratio;
-  Real rhorime_c;
+  // Inputs
+  Real qcheti, qccol, qcshd, nccol, ncheti, ncshdc, qrcol, nrcol, qrheti, nrheti, nrshdr, qimlt, 
+    nimlt, qisub, qidep, qinuc, ninuc, nislf, nisub, qiberg, exner, xxls, xlf;
+  bool log_predictNc, log_wetgrowth;
+  Real dt, nmltratio, rhorime_c;
 
-  //output
-  Real th;
-  Real qv;
-  Real qitot;
-  Real nitot;
-  Real qirim;
-  Real birim;
-  Real qc;
-  Real nc;
-  Real qr;
-  Real nr;
+  // In/outs
+  Real th, qv, qitot, nitot, qirim, birim, qc, nc, qr, nr;
 };
 
 void update_prognostic_ice(P3UpdatePrognosticIceData& d);

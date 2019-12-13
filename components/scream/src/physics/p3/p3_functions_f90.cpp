@@ -565,18 +565,16 @@ void  update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncc
   typename P3F::view_1d<Real> t_d("t_h", 10);
   auto t_h = Kokkos::create_mirror_view(t_d);
 
-  Real local_th     = *th_;
-  Real local_qv	    = *qv_;	  
-  Real local_qc	    = *qc_;	  
-  Real local_nc	    = *nc_;
-  Real local_qr	    = *qr_;	  
-  Real local_nr	    = *nr_;	  
-  Real local_qitot  = *qitot_;
-  Real local_nitot  = *nitot_;
-  Real local_qirim  = *qirim_;
-  Real local_birim  = *birim_;
-
-
+  Real local_th    = *th_;
+  Real local_qv	   = *qv_;	  
+  Real local_qc	   = *qc_;	  
+  Real local_nc	   = *nc_;
+  Real local_qr	   = *qr_;	  
+  Real local_nr	   = *nr_;	  
+  Real local_qitot = *qitot_;
+  Real local_nitot = *nitot_;
+  Real local_qirim = *qirim_;
+  Real local_birim = *birim_;
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
       typename P3F::Spack qcheti(qcheti_), qccol(qccol_),qcshd(qcshd_),  nccol(nccol_),  
