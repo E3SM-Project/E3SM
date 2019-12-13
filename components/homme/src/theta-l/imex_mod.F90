@@ -253,7 +253,7 @@ contains
 
                 alpha = 0
                 do nsafe=1,8
-                   if (all(dphi(i,j,1:nlev) < 0 ))  exit
+                   if (all(dphi(i,j,1:nlev) < -g ))  exit
                    ! remove the last netwon increment, try reduced increment
                    alpha = 1.0_real_kind/(2**nsafe)
                    do k=1,nlev-1
