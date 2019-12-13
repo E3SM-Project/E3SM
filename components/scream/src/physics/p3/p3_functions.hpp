@@ -338,7 +338,10 @@ struct Functions
   static Spack calc_bulk_rho_rime(
     const Smask& qi_gt_small, const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim);
 
-  //BALLI- add comments here
+  //---------------------------------------------------------------------------------
+  // update prognostic microphysics and thermodynamics variables
+  //---------------------------------------------------------------------------------
+  //-- ice-phase dependent processes:
   KOKKOS_FUNCTION	    
   static void update_prognostic_ice(const Spack& qcheti, const Spack& qccol, 
     const Spack& qcshd,  const Spack& nccol,  const Spack& ncheti, const Spack& ncshdc, 
