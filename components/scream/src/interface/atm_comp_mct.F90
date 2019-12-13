@@ -22,6 +22,8 @@ contains
 !================================================================================
 
   subroutine atm_init_mct( EClock, cdata_a, x2a_a, a2x_a, NLFilename )
+    use iso_c_binding, only: c_int
+    use seq_cdata_mod, only: seq_cdata_setptrs
     !
     ! F90<->CXX interfaces
     !
@@ -58,7 +60,7 @@ contains
     call seq_timemgr_EClockGetData(EClock, start_ymd=start_ymd, start_tod=start_tod)
 
     ! Init scream
-    call scream_init (f_mpiocomm, INT(start_ycm, KIND=c_int), INT(start_tod, KIND=c_int))
+    call scream_init (f_mpicomm, INT(start_ymd, KIND=c_int), INT(start_tod, KIND=c_int))
  end subroutine atm_init_mct
 
 !================================================================================
@@ -86,7 +88,7 @@ contains
 
     print *, "Hello world, from scream run function"
 
-    call scream_run(dt)
+    ! call scream_run(dt)
 
   end subroutine atm_run_mct
 
