@@ -508,7 +508,7 @@ contains
 
           do i=1,np
              do j=1,np
-                x(1:nlev,i,j) = -Fn(i,j,1:nlev)  !+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
+                x(1:nlev,i,j) = -Fn(i,j,1:nlev)  
 #ifdef NEWTONCOND
                 ! nlev condition number: 500e3 with phi, 850e3 with dphi
                 anorm=DLANGT('1-norm', nlev, JacL(:,i,j),jacD(:,i,j),jacU(:,i,j))
@@ -534,7 +534,7 @@ contains
           call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk2')
           Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
-          reserr=maxval(abs(Fn))/(wmax*abs(dt2)) ! residual error in phi tendency, relative to source term gw
+          reserr=maxval(abs(Fn))/(wmax*abs(dt2)) 
           deltaerr=maxval(abs(x))/wmax
 
 
@@ -559,10 +559,6 @@ contains
 
        if (itercount >= maxiter) then
           write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',deltaerr,reserr
-          do k=1,nlev
-             i=1 ; j=1
-             !print *,k,( abs(Fn(i,j,k))/wgdtmax
-          enddo
        end if
     end do ! end do for the ie=nets,nete loop
 #ifdef NEWTONCOND
