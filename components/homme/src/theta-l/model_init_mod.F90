@@ -67,7 +67,7 @@ contains
       enddo
 
       ! initialize reference states used by hyberviscosity
-#define HV_REFSTATES_V1
+#define HV_REFSTATES_V2
 #ifdef HV_REFSTATES_V0
       elem(ie)%derived%dp_ref=0
       elem(ie)%derived%phi_ref=0
@@ -84,6 +84,19 @@ contains
       call phi_from_eos(hvcoord,elem(ie)%state%phis,&
            temp,elem(ie)%derived%dp_ref,elem(ie)%derived%phi_ref)
       elem(ie)%derived%theta_ref=0
+#endif
+#ifdef HV_REFSTATES_V2
+      ps_ref(:,:) = hvcoord%ps0 * exp ( -elem(ie)%state%phis(:,:)/(Rgas*TREF)) 
+      do k=1,nlev
+         elem(ie)%derived%dp_ref(:,:,k) = ( hvcoord%hyai(k+1) - hvcoord%hyai(k) )*hvcoord%ps0 + &
+              (hvcoord%hybi(k+1)-hvcoord%hybi(k))*ps_ref(:,:)
+      enddo
+      call set_theta_ref(hvcoord,elem(ie)%derived%dp_ref,elem(ie)%derived%theta_ref)
+      temp=elem(ie)%derived%theta_ref*elem(ie)%derived%dp_ref
+      call phi_from_eos(hvcoord,elem(ie)%state%phis,&
+           temp,elem(ie)%derived%dp_ref,elem(ie)%derived%phi_ref)
+      elem(ie)%derived%theta_ref=0
+      elem(ie)%derived%dp_ref=0
 #endif
     enddo 
 

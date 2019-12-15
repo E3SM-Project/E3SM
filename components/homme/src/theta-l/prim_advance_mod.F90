@@ -1950,6 +1950,7 @@ v      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG354)
   real (kind=real_kind) :: Qcol(nlev)
   real (kind=real_kind) :: mass,mass_new
   real (kind=real_kind) :: dp3d_thresh=.125
+  real (kind=real_kind) :: vtheta_thresh = 10  ! 10 Kelvin
   logical :: warn
   integer i,j,k
 
@@ -1996,6 +1997,33 @@ v      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG354)
   enddo
   vtheta_dp(:,:,:)=vtheta_dp(:,:,:)*dp3d(:,:,:)
   endif
+
+#if 1
+  ! check for theta < 10K                                                                                                       
+  warn=.false.
+  do k=1,nlev
+     if ( minval(vtheta_dp(:,:,k)-vtheta_thresh*dp3d(:,:,k))   <  0) then
+        write(iulog,*) 'WARNING:CAAR: theta<',vtheta_thresh,' applying limiter'
+        write(iulog,*) 'k,vtheta(k): ',k,minval(vtheta_dp(:,:,k)/dp3d(:,:,k))
+        warn=.true.
+     endif
+  enddo
+  if (warn) then
+  do k=1,nlev
+  do j = 1 , np
+     do i = 1 , np
+        if ( (vtheta_dp(i,j,k) - vtheta_thresh*dp3d(i,j,k)) < 0 ) then
+           vtheta_dp(i,j,k)=vtheta_thresh*dp3d(i,j,k)
+        endif
+     enddo
+  enddo
+  enddo
+  endif
+#endif
+
+
+
+
   end subroutine limiter_dp3d_k
 
 end module prim_advance_mod

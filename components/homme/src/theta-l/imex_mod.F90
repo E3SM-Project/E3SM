@@ -266,7 +266,7 @@ contains
                 enddo
                 if (nsafe>1) write(iulog,*) 'WARNING:IMEX reducing newton increment, nsafe=',nsafe
                 ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
-#define NOSCAN
+#undef NOSCAN
 #ifdef NOSCAN
                 phi_np1(i,j,1:nlev) = phi_np1(i,j,1:nlev) + alpha*x(1:nlev,i,j)
 #endif
@@ -389,8 +389,6 @@ contains
     ! local
     real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
     real (kind=real_kind), pointer, dimension(:,:,:)   :: w_np1
-    real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
-    real (kind=real_kind), pointer, dimension(:,:,:)   :: vtheta_dp
     real (kind=real_kind) :: JacD(nlev,np,np)  , JacL(nlev-1,np,np)
     real (kind=real_kind) :: JacU(nlev-1,np,np), JacU2(nlev-2,np,np)
     real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
@@ -427,9 +425,6 @@ contains
     ! dirk settings
     maxiter=20
     deltatol=1.0e-11_real_kind  ! exit if newton increment < deltatol
-    !deltatol=1e-8 ! good   imex residual .2e-9
-!    deltatol=1e-6 ! good   imex resedual .4e-6
-    !deltatol=1e-4 ! good   imex residual .3e-2
 
     !restol=1.0e-13_real_kind    ! exit if residual < restol  
     ! condition number and thus residual depends strongly on dt and min(dz)
@@ -437,13 +432,13 @@ contains
     min_rcond=1.0e20_real_kind
 
     do ie=nets,nete
+       phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)
        w_n0 = elem(ie)%state%w_i(:,:,:,np1)
        wmax=max(1d0,maxval(abs(w_n0)))
-       ! approximate the initial error of f(x) \approx 0
-       vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,np1)
+
        phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
        w_np1 => elem(ie)%state%w_i(:,:,:,np1)
-       phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)
+
 
        if (alphadt_n0.ne.0d0) then ! add dt*alpha*S(un0) to the rhs
           dt3=alphadt_n0
@@ -482,16 +477,48 @@ contains
             elem(ie)%derived%gradphis,hvcoord)
        phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) -  dt2*gwh_i(:,:,1:nlev)
 
-       dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
+#if 0
+       ! w(np1) as initial guess:
+       phi_np1(:,:,1:nlev) =  phi_n0(:,:,1:nlev) +  dt2*g*w_np1(:,:,1:nlev)
+#endif
+#if 1
+       ! phi_np1 as initial guess:
+       w_np1(:,:,1:nlev) = (phi_np1(:,:,1:nlev) -  phi_n0(:,:,1:nlev) )/(dt2*g)
+#endif
+#if 0
+       ! wh_i as initial guess:
+       w_np1(:,:,1:nlev)=gwh_i(:,:,1:nlev)/g  
+       phi_np1(:,:,1:nlev) =  phi_n0(:,:,1:nlev) +  dt2*g*w_np1(:,:,1:nlev)
+#endif
 
        ! initial residual
-       w_np1(:,:,1:nlev)=gwh_i(:,:,1:nlev)/g  ! safer initial guess then w(np1)
-       phi_np1(:,:,1:nlev) =  phi_n0(:,:,1:nlev) +  dt2*g*w_np1(:,:,1:nlev)
        do k=1,nlev
           dphi(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
           dphi_n0(:,:,k)=phi_n0(:,:,k+1)-phi_n0(:,:,k)
        enddo
-       call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk1')
+
+       nsafe=0
+       do k=1,nlev
+          do j=1,np
+             do i=1,np
+                if ( dphi(i,j,k)  > -g) then
+                   write(iulog,*) 'WARNING:IMEX limiting initial guess. ie,i,j,k=',ie,i,j,k
+                   write(iulog,*) 'dphi(i,j,k)=  ',dphi(i,j,k)
+                   dphi(i,j,k)=-g
+                   nsafe=1
+                endif
+             enddo
+          enddo
+       enddo
+       if (nsafe==1) then
+          ! in rare cases when limter was triggered, just recompute:
+          do k=nlev,1,-1  ! scan                                                                                                      
+             phi_np1(:,:,k) = phi_np1(:,:,k+1)-dphi(:,:,k)
+          enddo
+          w_np1(:,:,1:nlev) = (phi_np1(:,:,1:nlev) -  phi_n0(:,:,1:nlev) )/(dt2*g)
+       endif
+       call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),elem(ie)%state%dp3d(:,:,:,np1),&
+            dphi,pnh,exner,dpnh_dp_i,'dirk1')
        Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - &
             (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
@@ -502,9 +529,9 @@ contains
 
           info(:,:) = 0
           ! numerical J:
-          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
+          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
           ! analytic J:
-          call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,1) 
+          call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,1) 
 
           do i=1,np
              do j=1,np
@@ -529,9 +556,10 @@ contains
           do k=1,nlev-1
              dphi(:,:,k)=dphi_n0(:,:,k) + dt2*g*( w_np1(:,:,k+1)-w_np1(:,:,k) )
           enddo
-          dphi(:,:,nlev)=dphi_n0(:,:,nlev) + dt2*g*( 0-w_np1(:,:,k) )
+          dphi(:,:,nlev)=dphi_n0(:,:,nlev) + dt2*g*( 0-w_np1(:,:,nlev) )
 
-          call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk2')
+          call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),&
+               elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,exner,dpnh_dp_i,'dirk2')
           Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
           reserr=maxval(abs(Fn))/(wmax*abs(dt2)) 
