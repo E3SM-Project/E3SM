@@ -463,8 +463,8 @@ CONTAINS
 #ifdef MODEL_THETA_L
     if ( .not. theta_hydrostatic_mode ) then
        allocate(var3dp(s2d*nlevp))
+       var3dp = 0.0
     endif
-    var3dp = 0.0
 
     ldof => get_restart_decomp(elem, nlevp)
     call PIO_InitDecomp(pio_subsystem, pio_double, (/ncols,nlevp/),ldof , iodesc3dp)
