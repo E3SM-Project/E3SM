@@ -18,8 +18,6 @@ set(P3_SRCS
   scream_p3_interface.F90
 )
 
-list(APPEND P3_SRCS ${share_sources})
-
 # Add ETI source files if not on CUDA
 if (NOT CUDA_BUILD)
   list(APPEND P3_SRCS

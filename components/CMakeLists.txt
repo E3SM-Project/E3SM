@@ -21,12 +21,14 @@ project(E3SM C CXX Fortran)
 # Include function definitions
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_util.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_mpas_model.cmake)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_scream.cmake)
 include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/build_model.cmake)
 
 set(BUILDCONF ${CASEROOT}/Buildconf)
 
-# Do any MPAS builds first since they manage their own flags
+# Do any MPAS/scream builds first since they manage their own flags
 build_mpas_models()
+build_scream()
 
 # Set global cmake settings
 set(CMAKE_MODULE_PATH ${CIMEROOT}/src/CMake)
@@ -40,10 +42,10 @@ add_custom_target(genf90
 # Build E3SM components
 set(IDX 0)
 set(COMP_CLASSES cpl atm lnd ice ocn rof glc wav iac esp)
-set(MPAS_COMPS "mpaso" "mpassi" "mali")
+set(SKIP_COMPS "scream" "mpaso" "mpassi" "mali")
 foreach(COMP_NAME IN LISTS COMP_NAMES)
   list(GET COMP_CLASSES ${IDX} COMP_CLASS)
-  if (NOT COMP_CLASS STREQUAL "cpl" AND NOT COMP_NAME IN_LIST MPAS_COMPS)
+  if (NOT COMP_CLASS STREQUAL "cpl" AND NOT COMP_NAME IN_LIST SKIP_COMPS)
     message("Found component ${COMP_CLASS} model '${COMP_NAME}'")
     add_subdirectory(cmake/${COMP_CLASS})
   endif()
