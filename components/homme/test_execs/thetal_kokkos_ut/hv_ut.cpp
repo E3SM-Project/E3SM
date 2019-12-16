@@ -192,7 +192,6 @@ TEST_CASE("hvf", "biharmonic") {
   auto& state = c.create<ElementsState>();
   state.init(num_elems);
   const auto max_pressure = 1000.0 + hvcoord.ps0; // This ensures max_p > ps0
-  state.randomize(seed,max_pressure,hvcoord.ps0,geo.m_phis);
 
   auto& derived = c.create<ElementsDerivedState>();
   derived.init(num_elems);
@@ -440,6 +439,7 @@ TEST_CASE("hvf", "biharmonic") {
 
         // Generate random states
         state.randomize(seed);
+        state.m_ref_states.compute(hydrostatic,hvcoord,geo.m_phis);
 
         // The HV functor as a whole is more delicate than biharmonic_wk.
         // In particular, the EOS is used a couple of times. This means
@@ -449,7 +449,9 @@ TEST_CASE("hvf", "biharmonic") {
         // as "realistic" as possible, and perturb it.
         using PDF = std::uniform_real_distribution<Real>;
         ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> perturb("",num_elems);
-        genRandArray(perturb,engine,PDF(-0.05,0.05));
+
+        constexpr Real noise_lvl = 0.05;
+        genRandArray(perturb,engine,PDF(-noise_lvl,noise_lvl));
 
         EquationOfState eos;
         eos.init(hydrostatic,hvcoord);
@@ -457,8 +459,6 @@ TEST_CASE("hvf", "biharmonic") {
         ElementOps elem_ops;
         elem_ops.init(hvcoord);
 
-        auto s = state;
-        auto g = geo;
         ExecViewManaged<Scalar[NUM_LEV]> buf_m("");
         ExecViewManaged<Scalar[NUM_LEV_P]> buf_i("");
         Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
@@ -470,12 +470,12 @@ TEST_CASE("hvf", "biharmonic") {
             const int jgp = idx % NP;
 
             auto noise = Homme::subview(perturb,kv.ie,igp,jgp);
-            auto dp = Homme::subview(s.m_dp3d,kv.ie,np1,igp,jgp);
-            auto theta = Homme::subview(s.m_vtheta_dp,kv.ie,np1,igp,jgp);
-            auto phi = Homme::subview(s.m_phinh_i,kv.ie,np1,igp,jgp);
+            auto dp = Homme::subview(state.m_dp3d,kv.ie,np1,igp,jgp);
+            auto theta = Homme::subview(state.m_vtheta_dp,kv.ie,np1,igp,jgp);
+            auto phi = Homme::subview(state.m_phinh_i,kv.ie,np1,igp,jgp);
 
             // First, compute dp = dp_ref+noise
-            hvcoord.compute_dp_ref(kv,s.m_ps_v(kv.ie,np1,igp,jgp),dp);
+            hvcoord.compute_dp_ref(kv,state.m_ps_v(kv.ie,np1,igp,jgp),dp);
             Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                                  [&](const int ilev){
               dp(ilev) *= 1.0 + noise(ilev);
@@ -491,7 +491,7 @@ TEST_CASE("hvf", "biharmonic") {
             });
 
             // Compute phi
-            eos.compute_phi_i(kv,g.m_phis(kv.ie,igp,jgp),
+            eos.compute_phi_i(kv,geo.m_phis(kv.ie,igp,jgp),
                                  theta,buf_m,phi);
           });
         });

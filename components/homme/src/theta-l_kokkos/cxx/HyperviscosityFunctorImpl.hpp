@@ -75,10 +75,6 @@ class HyperviscosityFunctorImpl
     ExecViewManaged<Scalar * [2][NP][NP][NUM_BIHARMONIC_LEV]> lapl_v;
   };
 
-  static constexpr Real Rgas = PhysicalConstants::Rgas;
-  static constexpr Real Tref = PhysicalConstants::Tref;
-  static constexpr Real kappa = PhysicalConstants::kappa;
-
 public:
 
   struct TagFirstLaplaceHV {};

@@ -88,7 +88,10 @@ void HybridVCoord::random_init(int seed) {
   decltype(hybrid_bi)::HostMirror host_hybrid_bi("Host hybrid bi coefs");
   decltype(hybrid_am)::HostMirror host_hybrid_am("Host hybrid am coefs");
   decltype(hybrid_bm)::HostMirror host_hybrid_bm("Host hybrid bm coefs");
-  const Real eta_min = 0.001;
+
+  // This somewhat odd expression ensures that deta (below) is smaller
+  // than eta_min, so that eta_min + eps*deta is always positive
+  constexpr Real eta_min = (1.0/NUM_PHYSICAL_LEV)+0.001;
 
   // The proportionality constant between a and b.
   Real c;
@@ -185,7 +188,7 @@ void HybridVCoord::compute_deltas ()
   Kokkos::parallel_for("[HybridVCoord::compute_deltas]",policy,
                        KOKKOS_LAMBDA(const TeamMember& team) {
     KernelVariables kv(team);
-    Kokkos::single(Kokkos::PerTeam(kv.team),[&](){
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team,1),[&](int /*unused*/){
       ColumnOps::compute_midpoint_delta(kv,hyai,dhyai);
       ColumnOps::compute_midpoint_delta(kv,hybi,dhybi);
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
