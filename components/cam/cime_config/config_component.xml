@@ -116,13 +116,13 @@
       <value compset="_CAM%ADIAB"     >-phys adiabatic</value>              
 
       <!-- SCREAM configurations -->
-      <value compset="_CAM5%SCREAM">-phys cam5 -shoc_sgs -microphys p3 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -rad rrtmgp</value>
+      <value compset="_CAM5%SCREAM-LR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 72 -rad rrtmgp</value>
+      <value compset="_CAM5%SCREAM-HR">-phys cam5 -shoc_sgs -microphys p3 -chem none -nlev 128 -rad rrtmgp</value>
 
       <!-- Aquaplanet -->
       <value compset="_CAM5%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
 
       <value compset="_CLM45%[^_]*BC"     >-bc_dep_to_snow_updates</value>
-      <value compset="_SCREAM%AV1C-L">-phys cam5 -shoc_sgs -microphys mg2 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -rad rrtmgp</value>
     </values>
     <group>build_component_cam</group>
     <file>env_build.xml</file>
@@ -254,7 +254,6 @@
       <value compset="2000_CAM5.*SCREAM-HR" >2000_scream_hr_av1c-04p2</value>
       <!-- Aqua planet -->
       <value compset="_CAM5%AQUA"     >aquaplanet_EAMv1</value>
-      <value compset="2000_SCREAM.*AV1C-L" >2000_scream_av1c-04p2</value>
     </values>
     <group>run_component_cam</group>
     <file>env_run.xml</file>
@@ -359,7 +358,7 @@
     <desc compset="_CAM5%UNI"    >UNICON (modified mg1.0):</desc>
     <desc compset="CAM[45].*_BGC%B">CAM prognostic CO2 cycle turned on.</desc>
     <desc compset="_CAM5.*SCREAM-LR"   >Low Resolution Fortran version of SCREAM with SHOC, P3, and RRTMG.  All other aspects of this run are identical to E3SMv1</desc>
-    <desc compset="_CAM5.*SCREAM-HR"   >Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, and no deep convection scheme called.  Everything else is same as E3SMv1.</desc> 
+    <desc compset="_CAM5.*SCREAM-HR"   >Fortran version of SCREAM with NH dycore, SHOC, P3, RRTMGP, and no deep convection scheme called.</desc> 
   </description>
 
   <!-- Aqua planet uses this for setting orbital parameters -->
