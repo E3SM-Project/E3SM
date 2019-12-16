@@ -185,6 +185,7 @@ contains
     use element_state, only: deallocate_element_arrays
 
     call deallocate_element_arrays()
+    deallocate(elem)
   end subroutine cleanup_f90
 
 end module forcing_interface

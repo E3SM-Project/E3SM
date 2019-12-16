@@ -19,6 +19,8 @@
 #include "KernelVariables.hpp"
 #include "profiling.hpp"
 
+#include "utilities/BfbUtils.hpp"
+
 namespace Homme {
 
 class ForcingFunctor
@@ -379,7 +381,12 @@ public:
         
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                              [&](const int ilev) {
-          exner(ilev) = pow(pnh(ilev)/PhysicalConstants::p0,PhysicalConstants::kappa);
+          using namespace PhysicalConstants;
+#ifdef HOMMEXX_BFB_TESTING
+          exner(ilev) = bfb_pow(pnh(ilev)/p0,kappa);
+#else
+          exner(ilev) = pow(pnh(ilev)/p0,kappa);
+#endif
         });
       }
 
