@@ -200,8 +200,7 @@ def _archive_log_files(dout_s_root, rundir, archive_incomplete, archive_file_fn)
         logger.info("moving {} to {}".format(srcfile, destfile))
 
 ###############################################################################
-def _archive_history_files(archive, archive_entry,
-                           compclass, compname, histfiles_savein_rundir,
+def _archive_history_files(archive, compclass, compname, histfiles_savein_rundir,
                            last_date, archive_file_fn, dout_s_root, casename, rundir):
 ###############################################################################
     """
@@ -617,12 +616,12 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
 
     # archive history files
 
-    for (archive_entry, compname, compclass) in _get_component_archive_entries(components, archive):
+    for (_, compname, compclass) in _get_component_archive_entries(components, archive):
         if compclass:
             logger.info('Archiving history files for {} ({})'.format(compname, compclass))
             histfiles_savein_rundir = histfiles_savein_rundir_by_compname.get(compname, [])
             logger.debug("_archive_process: histfiles_savein_rundir {} ".format(histfiles_savein_rundir))
-            _archive_history_files(archive, archive_entry,
+            _archive_history_files(archive,
                                    compclass, compname, histfiles_savein_rundir,
                                    last_date, archive_file_fn,
                                    dout_s_root, casename, rundir)

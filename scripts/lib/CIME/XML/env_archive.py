@@ -43,9 +43,9 @@ class EnvArchive(ArchiveBase,EnvBase):
         for ext in extensions:
             if 'initial' in ext:
                 continue
-            if extension.endswith('$'):
-                extension = extension[:-1]
-            string = model+r'\d?_?(\d{4})?\.'+extension+suffix+'$'
+            if ext.endswith('$'):
+                ext = ext[:-1]
+            string = model+r'\d?_?(\d{4})?\.'+ext+suffix+'$'
             logger.debug ("Regex is {}".format(string))
             pfile = re.compile(string)
             hist_files.extend([f for f in os.listdir(from_dir) if pfile.search(f)])
@@ -68,9 +68,9 @@ class EnvArchive(ArchiveBase,EnvBase):
         for ext in extensions:
             if 'initial' in ext:
                 continue
-            if extension.endswith('$'):
-                extension = extension[:-1]
-            string = model+r'\d?_?(\d{4})?\.'+extension+suffix+'$'
+            if ext.endswith('$'):
+                ext = ext[:-1]
+            string = model+r'\d?_?(\d{4})?\.'+ext+suffix+'$'
             logger.debug ("Regex is {}".format(string))
             pfile = re.compile(string)
             rest_files.extend([f for f in os.listdir(from_dir) if pfile.search(f)])
