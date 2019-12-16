@@ -124,6 +124,8 @@ TEST_CASE("caar", "caar_testing") {
   auto sph2c    = Kokkos::create_mirror_view(geo.m_vec_sph2cart);
   auto mdet     = Kokkos::create_mirror_view(geo.m_metdet);
   auto minv     = Kokkos::create_mirror_view(geo.m_metinv);
+  Kokkos::deep_copy(phis,geo.m_phis);
+  Kokkos::deep_copy(gradphis,geo.m_gradphis);
 
   Real* d_ptr        = d.data();
   Real* dinv_ptr     = dinv.data();
@@ -150,8 +152,6 @@ TEST_CASE("caar", "caar_testing") {
   Kokkos::deep_copy(geo.m_vec_sph2cart,sph2c);
   Kokkos::deep_copy(geo.m_metdet,mdet);
   Kokkos::deep_copy(geo.m_metinv,minv);
-  Kokkos::deep_copy(geo.m_phis,phis);
-  Kokkos::deep_copy(geo.m_gradphis,gradphis);
   Kokkos::deep_copy(geo.m_fcor,fcor);
 
   // Get or create and init other structures needed by HVF

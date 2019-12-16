@@ -705,7 +705,7 @@ struct CaarFunctorImpl {
     auto eta_dot_dpdn = viewAsReal(Homme::subview(m_buffers.eta_dot_dpdn,kv.team_idx,igp,jgp));
 
     // Integrate -vdp
-    Kokkos::parallel_scan(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
+    Dispatch<ExecSpace>::parallel_scan(kv.team,NUM_PHYSICAL_LEV,
                           [&](const int ilev, Real& accumulator, const bool last) {
       accumulator += div_vdp(ilev);
       if (last) {
