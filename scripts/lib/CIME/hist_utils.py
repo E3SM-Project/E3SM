@@ -5,7 +5,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.test_status import TEST_NO_BASELINES_COMMENT, TEST_STATUS_FILENAME
 from CIME.utils import get_current_commit, get_timestamp, get_model, safe_copy, SharedArea, parse_test_name
 
-import logging, os, re, filecmp, glob
+import logging, os, re, filecmp
 logger = logging.getLogger(__name__)
 
 BLESS_LOG_NAME = "bless_log"
@@ -57,10 +57,6 @@ def copy(case, suffix):
     num_copied = 0
     for model in _iter_model_file_substrs(case):
         comments += "  Copying hist files for model '{}'\n".format(model)
-#        if model == 'cpl':
-#            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
-#        else:
-#            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
         test_hists = archive.get_latest_hist_files(model, rundir, ref_case=ref_case)
         num_copied += len(test_hists)
         for test_hist in test_hists:
@@ -222,10 +218,6 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
         if model == 'cpl' and suffix2 == 'multiinst':
             multiinst_driver_compare = True
         comments += "  comparing model '{}'\n".format(model)
-#        if model == 'cpl':
-#            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
-#        else:
-#            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
         hists1 = archive.get_latest_hist_files(model, from_dir1, suffix=suffix1, ref_case=ref_case)
         hists2 = archive.get_latest_hist_files(model, from_dir2, suffix=suffix2, ref_case=ref_case)
         if len(hists1) == 0 and len(hists2) == 0:
