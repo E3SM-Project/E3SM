@@ -258,7 +258,6 @@ def _archive_history_files(archive, archive_entry,
     # archive history files - the only history files that kept in the
     # run directory are those that are needed for restarts
     histfiles = archive.get_all_hist_files(compname, rundir)
-    print "HERE histfiles {}".format(histfiles)
 
     if histfiles:
         for histfile in histfiles:
