@@ -391,6 +391,7 @@ public:
     constexpr int LOOP_LAST_PACK_END = ColInfo<LOOP_RAW_SIZE>::LastPackEnd;
     constexpr int LOOP_SIZE          = ColInfo<LOOP_RAW_SIZE>::NumPacks;
     constexpr int LAST_PACK          = ColInfo<LENGTH>::LastPack;
+    constexpr int LAST_PACK_END      = ColInfo<LENGTH>::LastPackEnd;
 
     // It is easier to write two loops for Forward true/false. There's no runtime penalty,
     // since the if is evaluated at compile time, so no big deal.
@@ -416,24 +417,22 @@ public:
         integration = sum_val[vec_end] + (Inclusive ? 0.0 : input[vec_end]);;
       }
 
-      // In an exclusive sum, where the last level it's on a different pack,
-      // the procedure above failed to update the last level
-      if (!Inclusive && LOOP_SIZE!=ColInfo<LENGTH>::NumPacks) {
-        sum(LAST_PACK)[0] = integration;
+      // In an exclusive sum, the procedure above failed to update the last level
+      if (!Inclusive) {
+        sum(LAST_PACK)[LAST_PACK_END] = integration;
       }
     } else {
       // Running integral
       Real integration = s0;
 
-      // In an exclusive sum, where the last level it's on a different pack,
-      // the procedure below would fail to add the input's last level value
-      // to the output's second-to-last level value
-      if (!Inclusive && LOOP_SIZE!=ColInfo<LENGTH>::NumPacks) {
-        integration += input_provider(LAST_PACK)[0];
+      // In an exclusive sum, the procedure below would fail to add 
+      // the input's last level to the output's second-to-last level
+      if (!Inclusive) {
+        integration += input_provider(LAST_PACK)[LAST_PACK_END];
       }
 
       for (int ipack=0; ipack<LOOP_SIZE; ++ipack) {
-        const int ilev = LAST_PACK-ipack-OFFSET;
+        const int ilev = LOOP_LAST_PACK-ipack;
 
         // In all but the last level pack, the loop is over the whole vector
         const int vec_start = (ilev == LOOP_LAST_PACK ? LOOP_LAST_PACK_END : VECTOR_END);
