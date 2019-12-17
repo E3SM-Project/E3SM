@@ -67,7 +67,8 @@ class FakeCase(object):
         # PIO_VERSION is needed to parse config_machines.xml but isn't otherwise used
         # by FakeCase
         self._vals = {"COMPILER":compiler, "MPILIB":mpilib, "DEBUG":debug,
-                      "COMP_INTERFACE":comp_interface, "PIO_VERSION":2}
+                      "COMP_INTERFACE":comp_interface, "PIO_VERSION":2,
+                      "SMP_PRESENT":False}
 
     def get_value(self, attrib):
         expect(attrib in self._vals, "FakeCase does not support getting value of '%s'" % attrib)
