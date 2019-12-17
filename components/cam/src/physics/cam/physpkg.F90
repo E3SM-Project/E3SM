@@ -1437,7 +1437,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8) :: tmp_q     (pcols,pver) ! tmp space
     real(r8) :: tmp_cldliq(pcols,pver) ! tmp space
     real(r8) :: tmp_cldice(pcols,pver) ! tmp space
-    real(r8) :: tmp_t     (pcols,pver) ! tmp space
     real(r8) :: ftem      (pcols,pver) ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
@@ -1746,15 +1745,6 @@ if (l_ac_energy_chk) then
 
     end if
 
-!!!Tend bug
-!state%t is recomputed here again, now from tend%dtdt
-!is this the last call before dycore?/ then does order of params matter? 
-
-    !*** BAB's FV heating kludge *** apply the heating as temperature tendency.
-    !*** BAB's FV heating kludge *** modify the temperature in the state structure
-    tmp_t(:ncol,:pver) = state%t(:ncol,:pver)
-    !state%t(:ncol,:pver) = tini(:ncol,:pver) + ztodt*tend%dtdt(:ncol,:pver)
-
     ! store dse after tphysac in buffer
     do k = 1,pver
        dtcore(:ncol,k) = state%t(:ncol,k)
@@ -1801,7 +1791,7 @@ end if ! l_ac_energy_chk
     endif
 
     call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
-         tmp_t, qini, cldliqini, cldiceini)
+         state%t(:ncol,:pver), qini, cldliqini, cldiceini)
 
     ! DCAPE-ULL: record current state of T and q for computing dynamical tendencies
     !            the calculation follows the same format as in diag_phys_tend_writeout
