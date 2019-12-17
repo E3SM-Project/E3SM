@@ -509,10 +509,7 @@ def _generate_baseline_impl(case, baseline_dir=None, allow_baseline_overwrite=Fa
     num_gen = 0
     for model in _iter_model_file_substrs(case):
         comments += "  generating for model '{}'\n".format(model)
-#        if model == 'cpl':
-#            file_extensions = archive.get_hist_file_extensions(archive.get_entry('drv'))
-#        else:
-#            file_extensions = archive.get_hist_file_extensions(archive.get_entry(model))
+
         hists =  archive.get_latest_hist_files(model, rundir, ref_case=ref_case)
         logger.debug("latest_files: {}".format(hists))
         num_gen += len(hists)
