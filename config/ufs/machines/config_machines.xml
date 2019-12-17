@@ -119,7 +119,7 @@ This allows using a different mpirun command to launch unit tests
     <MPILIBS compiler="pgi" >openmpi,mpt</MPILIBS>
     <MPILIBS compiler="gnu" >openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/ufs_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/glade/p/cgd/tss/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
@@ -260,9 +260,6 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-      <env name="UGCSINPUTPATH">/glade/work/turuncu/FV3GFS/fv3_gfs_v15_repro_ccpp/</env>
-      <env name="UGCSFIXEDFILEPATH">/glade/work/turuncu/FV3GFS/fix_am</env>
-      <env name="UGCSADDONPATH">/glade/work/turuncu/FV3GFS/addon</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="NCEP_LIBS">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install</env>
