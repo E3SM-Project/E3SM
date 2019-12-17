@@ -262,14 +262,22 @@ contains
                 call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
                 ! update approximate solution of w
                 w_np1(i,j,1:nlev) = w_np1(i,j,1:nlev) + x(1:nlev,i,j)
+                do nsafe = 1,8
+                   do k=1,nlev-1
+                      dphi(i,j,k)=dphi_n0(i,j,k) + dt2*g*( w_np1(i,j,k+1)-w_np1(i,j,k) )
+                   enddo
+                   dphi(i,j,nlev)=dphi_n0(i,j,nlev) + dt2*g*( 0-w_np1(i,j,nlev) )
 
+                   if (maxval(dphi(i,j,1:nlev)) < 0) exit
+
+                   alpha = 1.0/2**nsafe
+                   w_np1(i,j,1:nlev) = w_np1(i,j,1:nlev) - alpha*x(1:nlev,i,j)
+                end do
+                if (nsafe > 1) then
+                   write(iulog,*) 'WARNING:IMEX is reducing step length; nsafe',nsafe
+                end if
              end do
           end do
-
-          do k=1,nlev-1
-             dphi(:,:,k)=dphi_n0(:,:,k) + dt2*g*( w_np1(:,:,k+1)-w_np1(:,:,k) )
-          enddo
-          dphi(:,:,nlev)=dphi_n0(:,:,nlev) + dt2*g*( 0-w_np1(:,:,nlev) )
 
           call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),&
                elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,exner,dpnh_dp_i,'dirk2')

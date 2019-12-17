@@ -306,7 +306,7 @@ contains
             deriv,nets,nete,maxiter,itertol)
 
 
-       ! u5 = u0 + dt 3/4 RHS(u4)
+       ! u5 = u1 + dt 3/4 RHS(u4)
        call compute_andor_apply_rhs(np1,nm1,np1,qn0,3*dt/4,elem,hvcoord,hybrid,&
             deriv,nets,nete,.false.,3*eta_ave_w/4,1.d0,0.d0,1.d0)
        ! u(np1) = [u1 + 3dt/4 RHS(u4)] +  1/4 (u1 - u0)    STABLE
@@ -321,6 +321,8 @@ contains
               (elem(ie)%state%w_i(:,:,1:nlevp,nm1)-elem(ie)%state%w_i(:,:,1:nlevp,n0))/4
           elem(ie)%state%phinh_i(:,:,1:nlev,np1)=elem(ie)%state%phinh_i(:,:,1:nlev,np1)+&
                (elem(ie)%state%phinh_i(:,:,1:nlev,nm1)-elem(ie)%state%phinh_i(:,:,1:nlev,n0))/4
+          call limiter_dp3d_k(elem(ie)%state%dp3d(:,:,:,np1),elem(ie)%state%vtheta_dp(:,:,:,np1),&
+               elem(ie)%spheremp,hvcoord%dp0)
        enddo
 
        !  n0          nm1       np1 
