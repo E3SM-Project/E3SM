@@ -54,9 +54,15 @@ mkdir -p builds
 cd builds
 ${cime_root}/tools/configure --macros-format Makefile --mpilib mpi-serial >> ${test_log} 2>&1
 if [ ! -f .env_mach_specific.sh ]; then
+    # try without mpi-serial flag
     echo "ERROR running ${cime_root}/tools/configure" >&2
-    echo "cat ${test_log} for more info" >&2
-    exit 1
+    echo "It's possible mpi-serial doesn't work on this machine. Trying again with default" >&2
+    ${cime_root}/tools/configure --clean --macros-format Makefile >> ${test_log} 2>&1
+    if [ ! -f .env_mach_specific.sh ]; then
+        echo "ERROR running ${cime_root}/tools/configure" >&2
+        echo "cat ${test_log} for more info" >&2
+        exit 1
+    fi
 fi
 
 cp ${cime_root}/tools/mapping/gen_domain_files/src/* .
