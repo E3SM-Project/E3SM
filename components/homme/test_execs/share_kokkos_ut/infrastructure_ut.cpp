@@ -248,15 +248,16 @@ TEST_CASE("zeroulpn", "Test zero'ing n ulp.") {
     deep_copy(b, bm);
     deep_copy(x, xm);
     const int n = 17;
-    const auto f = KOKKOS_LAMBDA(const int i) {
+    const auto eps = std::numeric_limits<Real>::epsilon();
+    const auto t0 = std::pow((i+1)*0.1442, 1.7);
+    const auto f = KOKKOS_LAMBDA(const int /*idx*/) {
       zero_ulp_n(a(), n, 0*a());
       // Show zero_ulp_n returns exactly a in this case.
       zero_ulp_n(b(), n, b());
       // Show z is sensitive to a perturbation far smaller than the zeroed
       // amount.
-      const auto t0 = std::pow((i+1)*0.1442, 1.7);
       z() = bfb_pow((i+1)*x(), t0);
-      zp() = bfb_pow((i+1)*x()*(1 + 1e-15), t0);
+      zp() = bfb_pow((i+1)*x()*(1 + 1e-14), t0);
       zt() = pow((i+1)*x(), t0);
     };
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,1), f); Kokkos::fence();
@@ -273,9 +274,9 @@ TEST_CASE("zeroulpn", "Test zero'ing n ulp.") {
       // If replace=a in zeroulpn(a,n,replace), then a should be recovered
       // exactly.
       REQUIRE(bm()[s] == b0s);
+#ifdef CUDA_BUILD
       // A small perturbation to the input to bfb_pow resulted in a difference.
       REQUIRE(zm()[s] != zpm()[s]);
-#ifdef CUDA_BUILD
       // bfb_pow made a large change ...
       REQUIRE(std::abs(zm()[s] - ztm()[s]) >= 1e-12*std::abs(ztm()[s]));
       // ... but not too large.
