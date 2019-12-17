@@ -112,6 +112,7 @@ implicit none
   integer :: i,j,k,k2
   logical :: ierr
 
+
   ! check for bad state that will crash exponential function below
   if (theta_hydrostatic_mode) then
     ierr= any(dp3d(:,:,:) < 0 )
