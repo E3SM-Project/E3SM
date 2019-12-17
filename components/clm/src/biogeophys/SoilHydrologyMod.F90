@@ -1514,7 +1514,7 @@ contains
              endif
 
 #if (defined HUM_HOL)
-          deep_seep = 100.0_r8 / 365._r8 / 86400._r8  !rate per second
+          deep_seep = 0._r8 !100.0_r8 / 365._r8 / 86400._r8  !rate per second
           !changes for hummock hollow topography
           if (c .eq. 1) then !hummock
             if (zwt(c) < (0.7_r8 + 3.0_r8 * humhol_ht/2.0_r8)) then

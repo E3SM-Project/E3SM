@@ -520,6 +520,7 @@ contains
          end if
 
          ! Soil water stress applied to Ball-Berry parameters
+#if (defined HUM_HOL)
          if (veg_pp%itype(p) == 12) then
              bbb(p) = (-0.195 + 0.134*(h2o_moss_wc(p)+1._r8) - &
                      0.0256*(h2o_moss_wc(p) + 1.0_r8)**2  &
@@ -533,6 +534,10 @@ contains
            bbb(p) = max (bbbopt(p)*btran(p), 1._r8)
            mbb(p) = mbbopt(p)
          end if
+#else
+         bbb(p) = max (bbbopt(p)*btran(p), 1._r8)
+         mbb(p) = mbbopt(p)
+#endif
 
          ! kc, ko, cp, from: Bernacchi et al (2001) Plant, Cell and Environment 24:253-259
          !
@@ -754,7 +759,11 @@ contains
 
             lmr25 = lmr25top * nscaler
             if (c3flag(p)) then
+#if (defined HUM_HOL)
+               lmr_z(p,iv) = lmr25 * ParamsShareInst%Q10_mr**((t_veg(p)-(tfrz+25._r8))/10._r8)
+#else
                lmr_z(p,iv) = lmr25 * ft(t_veg(p), lmrha) * fth(t_veg(p), lmrhd, lmrse, lmrc)
+#endif
             else
                lmr_z(p,iv) = lmr25 * 2._r8**((t_veg(p)-(tfrz+25._r8))/10._r8)
                lmr_z(p,iv) = lmr_z(p,iv) / (1._r8 + exp( 1.3_r8*(t_veg(p)-(tfrz+55._r8)) ))
@@ -894,18 +903,19 @@ contains
                ! End of ci iteration.  Check for an < 0, in which case gs_mol = bbb
 
                if (an(p,iv) < 0._r8) gs_mol(p,iv) = bbb(p)
+#if (defined HUM_HOL)
                if (veg_pp%itype(p) == 12) gs_mol(p,iv) = bbb(p)
-
+#endif
                ! Final estimates for cs and ci (needed for early exit of ci iteration when an < 0)
 
                cs = cair(p) - 1.4_r8/gb_mol(p) * an(p,iv) * forc_pbot(t)
                cs = max(cs,1.e-06_r8)
                ci_z(p,iv) = cair(p) - an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol(p,iv)+1.6_r8*gb_mol(p)) / (gb_mol(p)*gs_mol(p,iv))
-
+#if (defined HUM_HOL)
                if (veg_pp%itype(p) == 12) then
                   ci_z(p,iv) = cair(p)-an(p,iv) * forc_pbot(c)/gs_mol(p,iv)
                endif
-
+#endif
                ! Convert gs_mol (umol H2O/m**2/s) to gs (m/s) and then to rs (s/m)
 
                gs = gs_mol(p,iv) / cf
@@ -974,12 +984,15 @@ contains
             psncan_wj = psncan_wj + psn_wj_z(p,iv) * lai_z(p,iv)
             psncan_wp = psncan_wp + psn_wp_z(p,iv) * lai_z(p,iv)
             lmrcan = lmrcan + lmr_z(p,iv) * lai_z(p,iv)
+#if (defined HUM_HOL)
             if (veg_pp%itype(p) == 12) then
                gscan = gscan + lai_z(p,iv) / rs_z(p,iv)
             else
                gscan = gscan + lai_z(p,iv) / (rb(p)+rs_z(p,iv))
             endif
+#else
             gscan = gscan + lai_z(p,iv) / (rb(p)+rs_z(p,iv))
+#endif
             laican = laican + lai_z(p,iv)
          end do
          if (laican > 0._r8) then
@@ -1612,12 +1625,15 @@ contains
       cquad = -gb_mol*(cs*bbb(p) + mbb(p)*an(p,iv)*forc_pbot(t)*rh_can)
       call quadratic (aquad, bquad, cquad, r1, r2)
       gs_mol = max(r1,r2)
+#if (defined HUM_HOL)
       if (veg_pp%itype(p) == 12) gs_mol = bbb(p)
+#endif
       ! Derive new estimate for ci
 
       fval =ci - cair + an(p,iv) * forc_pbot(t) * (1.4_r8*gs_mol+1.6_r8*gb_mol) / (gb_mol*gs_mol)
+#if (defined HUM_HOL)
       if (veg_pp%itype(p) == 12) fval = ci - cair + an(p,iv) *forc_pbot(c)/gs_mol
-
+#endif
     end associate
 
   end subroutine ci_func
@@ -1629,7 +1645,6 @@ contains
        atm2lnd_inst, temperature_inst, soilstate_inst, waterstate_inst, &
        surfalb_inst, solarabs_inst, canopystate_inst, &
        photosyns_inst, waterflux_inst, nitrogenstate_vars,phosphorusstate_vars)
-
     !
     ! !DESCRIPTION:
     ! Leaf photosynthesis and stomatal conductance calculation as described by

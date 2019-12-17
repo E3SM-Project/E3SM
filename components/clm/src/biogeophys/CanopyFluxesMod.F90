@@ -844,6 +844,7 @@ contains
             ! XShi 11/20/15 - Calculate the internal water (tissue water
             ! content) content
             ! for moss
+#if (defined HUM_HOL)
             if (veg_pp%itype(p) == 12) then
                 !DMRicciuto 12/4/2015 - changed to use average of layer 3 and 4 
                 h2o_moss_inter(p) = -18032 * ((h2osoi_vol(c,3)+h2osoi_vol(c,4))/2._r8)**4 +  &
@@ -862,7 +863,7 @@ contains
                    h2o_moss_wc(p) = 0._r8
                 endif
             end if
-
+#endif
          end do
 
          ! Modification for shrubs proposed by X.D.Z 
