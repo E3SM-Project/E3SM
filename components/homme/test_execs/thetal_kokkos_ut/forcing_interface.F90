@@ -110,6 +110,10 @@ contains
       elem(ie)%derived%FT      = ft(:,:,:,ie)
       elem(ie)%derived%FVTheta = fvtheta(:,:,:,ie)
       elem(ie)%derived%FPHI    = fphi(:,:,:,ie)
+      elem(ie)%state%v         = v(:,:,:,:,:,ie)
+      elem(ie)%state%w_i       = w(:,:,:,:,ie)
+      elem(ie)%state%vtheta_dp = vtheta(:,:,:,:,ie)
+      elem(ie)%state%phinh_i   = phinh(:,:,:,:,ie)
     enddo
 
     call applyCAMforcing_dynamics(elem,hvcoord,np1,dt,1,nelemd)
