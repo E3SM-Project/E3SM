@@ -4,7 +4,6 @@ Interface to the env_archive.xml file.  This class inherits from EnvBase
 from CIME.XML.standard_module_setup import *
 from CIME.XML.archive_base import ArchiveBase
 from CIME.XML.env_base import EnvBase
-from CIME.hist_utils import get_extension
 
 logger = logging.getLogger(__name__)
 # pylint: disable=super-init-not-called
