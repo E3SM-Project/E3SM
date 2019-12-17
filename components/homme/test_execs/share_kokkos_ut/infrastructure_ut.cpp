@@ -248,7 +248,6 @@ TEST_CASE("zeroulpn", "Test zero'ing n ulp.") {
     deep_copy(b, bm);
     deep_copy(x, xm);
     const int n = 17;
-    const auto eps = std::numeric_limits<Real>::epsilon();
     const auto t0 = std::pow((i+1)*0.1442, 1.7);
     const auto f = KOKKOS_LAMBDA(const int /*idx*/) {
       zero_ulp_n(a(), n, 0*a());
@@ -280,7 +279,7 @@ TEST_CASE("zeroulpn", "Test zero'ing n ulp.") {
       // bfb_pow made a large change ...
       REQUIRE(std::abs(zm()[s] - ztm()[s]) >= 1e-12*std::abs(ztm()[s]));
       // ... but not too large.
-      REQUIRE(std::abs(zm()[s] - ztm()[s]) <= 1e-9*std::abs(ztm()[s]));
+      REQUIRE(std::abs(zm()[s] - ztm()[s]) <= 1e-7*std::abs(ztm()[s]));
 #else
       // bfb_pow made no change
       REQUIRE(zm()[s] == ztm()[s]);
