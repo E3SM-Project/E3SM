@@ -75,7 +75,7 @@ class ArchiveBase(GenericXML):
                 ext = ext[:-1]
             string = model+r'\d?_?(\d{4})?\.'+ext
             if suffix and len(suffix)>0:
-                string += suffix+'$'
+                string += '.'+suffix+'$'
 
             logger.debug ("Regex is {}".format(string))
 
