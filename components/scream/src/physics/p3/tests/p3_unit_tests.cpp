@@ -199,7 +199,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   template <typename D>
   struct UnitWrap::UnitTest<D>::TestP3UpdatePrognosticIce
   {
-    KOKKOS_FUNCTION static void  update_prognostic_ice_unit_bfb_tests(){
+    static void  update_prognostic_ice_unit_bfb_tests(){
 
       static constexpr Int max_pack_size = 16;
 
