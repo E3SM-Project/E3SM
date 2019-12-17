@@ -761,7 +761,7 @@ end function shoc_implements_cnst
        vm(i,k) = state1%v(i,k)
        
        thlm(i,k) = state1%t(i,k)*exner(i,k)-(latvap/cpair)*state1%q(i,k,ixcldliq)
-       thv(i,k) = state1%t(i,k)*exner(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)) 
+       thv(i,k) = state1%t(i,k)*exner(i,k)*(1.0_r8+zvir*state1%q(i,k,ixq)-state1%q(i,k,ixcldliq)) 
  
        tke(i,k) = max(tke_tol,state1%q(i,k,ixtke))
      

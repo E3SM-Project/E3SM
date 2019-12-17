@@ -48,7 +48,7 @@ public:
 
   // These are the three main interfaces:
   void initialize (const util::TimeStamp& t0);
-  void run        (const double dt);
+  void run        (const Real dt);
   void finalize   (/* what inputs? */);
 
   // Register all fields in the given repo

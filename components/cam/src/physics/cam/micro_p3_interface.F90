@@ -752,34 +752,46 @@ end subroutine micro_p3_readnl
              cldm(i,k)  = max(ast(i,k), mincld)
              icldm(i,k) = max(ast(i,k), mincld)
              lcldm(i,k) = max(ast(i,k), mincld)
+             rcldm(i,k) = cldm(i,k)
           end do
        end do
 
-       DO k = ktop,kbot,-kdir  !AaronDonahue TODO: Check to make sure this is correct.  Are we going the correct direction?
-          DO i=its,ite
        !! 
        !! precipitation fraction 
        !! 
-          rcldm(i,k) = cldm(i,k)
-          IF (trim(method) == 'in_cloud') THEN
-             IF (k /= ktop) THEN
+       IF (trim(method) == 'in_cloud') THEN
+          DO k = ktop-kdir,kbot,-kdir 
+             DO i=its,ite
+                ! in_cloud means that precip_frac (rcldm) = cloud (cldm) frac when cloud mass
+                ! is present. Below cloud, precip frac is equal to the cloud
+                ! fraction from the last layer that had cloud. Since presence or
+                ! absence of cloud is defined as mass > qsmall, sub-cloud precip
+                ! frac for the in_cloud method tends to be very small and is
+                ! very sensitive to tiny changes in condensate near cloud base.
                 IF (qc(i,k) .lt. qsmall .and. qitot(i,k) .lt. qsmall) THEN
-                   rcldm(i,k) = rcldm(i,k+kdir)
+                   ! max(rcldm above and rcldm for this layer) is taken here
+                   ! because code is incapable of handling rcldm<cldm for a
+                   ! given grid cell
+                   rcldm(i,k) = max(rcldm(i,k+kdir),rcldm(i,k))
                 END IF
-             END IF
-          ELSE IF (trim(method) == 'max_overlap') THEN
-          ! calculate precip fraction based on maximum overlap assumption
+             END DO !i
+          END DO !k
+       ELSE IF (trim(method) == 'max_overlap') THEN
+       ! max overlap is the max cloud fraction in all layers above which are
+       ! connected to this one by a continuous band of precip mass. If
+       ! there's no precip mass falling into a cell, it's precip frac is equal
+       ! to the cloud frac, which is probably ~zero.
 
-          ! IF rain or snow mix ratios are smaller than threshold,
-          ! then leave rcldm as cloud fraction at current level
-             IF (k /= ktop) THEN
+       ! IF rain or ice mix ratios are smaller than threshold,
+       ! then leave rcldm as cloud fraction at current level
+          DO k = ktop-kdir,kbot,-kdir 
+             DO i=its,ite
                 IF (qr(i,k+kdir) .ge. qsmall .or. qitot(i,k+kdir) .ge. qsmall) THEN
-                   rcldm(i,k) = max(cldm(i,k+kdir),rcldm(i,k))
+                   rcldm(i,k) = max(rcldm(i,k+kdir),rcldm(i,k))
                 END IF
-             END IF
-          END IF
-          END DO ! i
-       END DO    ! k
+             END DO ! i
+          END DO ! k
+       END IF
 
 
        call t_stopf('micro_p3_get_cloud_fraction')
@@ -1120,20 +1132,6 @@ end subroutine micro_p3_readnl
                 icldm(its:ite,kts:kte),lcldm(its:ite,kts:kte),rcldm(its:ite,kts:kte))
     call t_stopf('micro_p3_tend_init')
 
-    ! Write inputs from SCM for p3-stand-alone:
-    open(unit=981,file='p3_universal_constants.inp',status='replace',action='write')
-    write(981,'(A100)') 'Universal constants for p3-stand-alone test case'
-    write(981,'(2I8)') state%ncol, pver
-    write(981,'(12E16.8)') cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice,cpliq,tmelt,pi
-    !do icol = 1,state%ncol
-    !  do k = 1,pver
-    !     write(981,'(16E16.8)') ast(icol,k), naai(icol,k), npccn(icol,k), state%pmid(icol,k), state%zi(icol,k), state%T(icol,k), &
-    !                     qv(icol,k), cldliq(icol,k), ice(icol,k), numliq(icol,k), numice(icol,k), rain(icol,k), &
-    !                     numrain(icol,k), qirim(icol,k), rimvol(icol,k), state%pdel(icol,k)
-    !  end do
-    !  write(981,'(E16.8)') state%zi(icol,pver+1)
-    !end do
-    close(981)
     p3_main_inputs(:,:,:) = -999._rtype
     do k = 1,pver
       p3_main_inputs(1,k,1)  = ast(1,k)

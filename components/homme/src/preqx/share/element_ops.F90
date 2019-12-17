@@ -78,6 +78,20 @@ contains
   end subroutine
 
   !_____________________________________________________________________
+  subroutine get_field_i(elem,name,field,hvcoord,nt)
+  implicit none
+
+  type (element_t),       intent(in) :: elem
+  character(len=*),       intent(in) :: name
+  real (kind=real_kind),  intent(out):: field(np,np,nlev)
+  type (hvcoord_t),       intent(in) :: hvcoord
+  integer,                intent(in) :: nt
+
+  call abortmp('ERROR: call to get_field_i() not supported in preqx')
+
+  end subroutine get_field_i
+
+  !_____________________________________________________________________
   subroutine get_phi(elem,phi,hvcoord,nt,ntQ)
   implicit none
     

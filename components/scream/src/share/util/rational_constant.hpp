@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "share/scream_assert.hpp"
+#include "share/scream_types.hpp"
 
 namespace scream
 {
@@ -23,11 +24,11 @@ inline constexpr Format operator&& (const Format fmt1, const Format fmt2) {
                     : (fmt1==Format::Auto ? fmt2 : fmt1);
 }
 
-constexpr long abs (const long a) {
+constexpr long long abs (const long long a) {
   return a>=0 ? a : -a;
 }
 
-constexpr long gcd (const long a, const long b) {
+constexpr long long gcd (const long long a, const long long b) {
   return b==0
           ? a
           : gcd(b, a % b);
@@ -46,8 +47,8 @@ public:
   // No default
   RationalConstant () = delete;
 
-  // No construction from double
-  RationalConstant (const double x) = delete;
+  // No construction from Real
+  RationalConstant (const Real x) = delete;
 
   // Construction from long, means long/1
   template<typename IntType>
@@ -161,7 +162,7 @@ inline std::string to_string (const RationalConstant& rat, const Format fmt = Fo
   std::stringstream ss;
   switch (fmt) {
     case Format::Float:
-      ss << static_cast<double>(rat.num())/rat.den();
+      ss << static_cast<Real>(rat.num())/rat.den();
       break;
     case Format::Rat:
       ss << rat.num();

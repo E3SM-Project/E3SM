@@ -48,7 +48,7 @@ public:
 
   // The three main interfaces for the subcomponent
   void initialize (const util::TimeStamp& t0);
-  void run        (const double dt);
+  void run        (const Real dt);
   void finalize   ();
 
   // Register all fields in the given repo
@@ -69,6 +69,12 @@ protected:
 
   std::map<std::string,const_field_type>  m_p3_fields_in;
   std::map<std::string,field_type>        m_p3_fields_out;
+
+  std::map<std::string,const_field_type::view_type::HostMirror>  m_p3_host_views_in;
+  std::map<std::string,field_type::view_type::HostMirror>        m_p3_host_views_out;
+
+  std::map<std::string,const Real*>  m_raw_ptrs_in;
+  std::map<std::string,Real*>        m_raw_ptrs_out;
 
   util::TimeStamp   m_current_ts;
   Comm              m_p3_comm;

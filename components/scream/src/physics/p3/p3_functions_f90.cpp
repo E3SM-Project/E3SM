@@ -2,7 +2,11 @@
 
 #include "share/scream_assert.hpp"
 #include "share/util/scream_utils.hpp"
+#include "share/util/scream_kokkos_utils.hpp"
+#include "share/scream_pack_kokkos.hpp"
 #include "p3_f90.hpp"
+
+#include <random>
 
 using scream::Real;
 using scream::Int;
@@ -41,10 +45,55 @@ void get_cloud_dsd2_c(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 void get_rain_dsd2_c(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
+void cloud_water_autoconversion_c(Real rho, Real qc_incld, Real nc_incld, Real* qcaut, Real* ncautc, Real* ncautr);
+
+void calc_first_order_upwind_step_c(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho, Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
+
+void generalized_sedimentation_c(Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
+                                 Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
+                                 Int num_arrays, Real** vs, Real** fluxes, Real** qnx);
+void cloud_sedimentation_c(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
+  Real dt, Real odt, bool log_predictNc,
+  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
+
+void ice_sedimentation_c(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* icldm, Real* inv_dzq,
+  Real dt, Real odt,
+  Real* qitot, Real* qitot_incld, Real* nitot, Real* qirim, Real* qirim_incld, Real* birim, Real* birim_incld,
+  Real* nitot_incld, Real* prt_sol, Real* qi_tend, Real* ni_tend);
+
+void calc_bulk_rho_rime_c(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rime);
+
 }
 
 namespace scream {
 namespace p3 {
+
+// helper functions
+namespace {
+
+template <size_t N>
+void gen_random_data(const std::array<std::pair<Real, Real>, N>& ranges,
+                     const std::array<Real**, N>& ptrs,
+                     Real* data, Int nk)
+{
+  Int offset = 0;
+  std::default_random_engine generator;
+
+  for (size_t i = 0; i < N; ++i) {
+    std::uniform_real_distribution<Real> data_dist(ranges[i].first, ranges[i].second);
+    *ptrs[i] = data + offset;
+    offset += nk;
+    for(Int k = 0; k < nk; ++k) {
+      (*ptrs[i])[k] = data_dist(generator);
+    }
+  }
+}
+
+}
 
 //
 // In all C++ -> Fortran bridge functions you should see p3_init(true). P3 needs
@@ -104,6 +153,9 @@ void ice_water_conservation(IceWaterConservationData& d){
   p3_init(true);
   ice_water_conservation_c(d.qitot, d.qidep, d.qinuc, d.qiberg, d.qrcol, d.qccol, d.qrheti,
     d.qcheti, d.dt, &d.qisub, &d.qimlt);
+void cloud_water_autoconversion(CloudWaterAutoconversionData & d){
+  p3_init(true);
+  cloud_water_autoconversion_c(d.rho, d.qc_incld, d.nc_incld, &d.qcaut, &d.ncautc, &d.ncautr);
 }
 
 void get_cloud_dsd2(GetCloudDsd2Data& d)
@@ -120,6 +172,197 @@ void get_rain_dsd2(GetRainDsd2Data& d)
   Real nr_in = d.nr_in;
   get_rain_dsd2_c(d.qr, &nr_in, &d.mu_r, &d.lamr, &d.cdistr, &d.logn0r, d.rcldm);
   d.nr_out = nr_in;
+}
+
+CalcUpwindData::CalcUpwindData(
+  Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
+  std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
+  std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range) :
+  kts(kts_), kte(kte_), kdir(kdir_), kbot(kbot_), k_qxtop(k_qxtop_), num_arrays(num_arrays_), dt_sub(dt_sub_),
+  m_nk((kte_ - kts_) + 1),
+  m_data( (3 + num_arrays_*3) * m_nk, 0.0),
+  m_ptr_data(num_arrays_*3)
+{
+  Int offset = 0;
+
+  rho     = m_data.data();
+  inv_rho = rho + (offset+=m_nk);
+  inv_dzq = rho + (offset+=m_nk);
+
+  fluxes = m_ptr_data.data();
+  vs     = fluxes + num_arrays;
+  qnx    = vs + num_arrays;
+
+  for (Int i = 0; i < num_arrays; ++i) {
+    fluxes[i]  = rho + (offset+=m_nk);
+    vs[i]      = rho + (offset+=m_nk);
+    qnx[i]     = rho + (offset+=m_nk);
+  }
+
+  std::default_random_engine generator;
+  std::uniform_real_distribution<Real>
+    rho_dist(rho_range.first, rho_range.second),
+    inv_dzq_dist(inv_dzq_range.first, inv_dzq_range.second),
+    vs_dist(vs_range.first, vs_range.second),
+    qnx_dist(qnx_range.first, qnx_range.second);
+
+  for (Int k = 0; k < m_nk; ++k) {
+    rho[k]     = rho_dist(generator);
+    inv_rho[k] = 1 / rho[k];
+    inv_dzq[k] = inv_dzq_dist(generator);
+
+    for (Int i = 0; i < num_arrays; ++i) {
+      vs    [i][k] = vs_dist(generator);
+      qnx   [i][k] = qnx_dist(generator);
+    }
+  }
+}
+
+CalcUpwindData::CalcUpwindData(const CalcUpwindData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), kdir(rhs.kdir), kbot(rhs.kbot), k_qxtop(rhs.k_qxtop), num_arrays(rhs.num_arrays), dt_sub(rhs.dt_sub),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data),
+  m_ptr_data(rhs.m_ptr_data.size())
+{
+  Int offset = 0;
+
+  rho     = m_data.data();
+  inv_rho = rho + (offset+=m_nk);
+  inv_dzq = rho + (offset+=m_nk);
+
+  fluxes = m_ptr_data.data();
+  vs     = fluxes + num_arrays;
+  qnx    = vs + num_arrays;
+
+  for (Int i = 0; i < num_arrays; ++i) {
+    fluxes[i] = rho + (offset+=m_nk);
+    vs[i]     = rho + (offset+=m_nk);
+    qnx[i]    = rho + (offset+=m_nk);
+  }
+}
+
+void calc_first_order_upwind_step(CalcUpwindData& d)
+{
+  p3_init(true);
+  calc_first_order_upwind_step_c(d.kts, d.kte, d.kdir, d.kbot, d.k_qxtop, d.dt_sub, d.rho, d.inv_rho, d.inv_dzq, d.num_arrays, d.fluxes, d.vs, d.qnx);
+}
+
+GenSedData::GenSedData(
+  Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
+  Real prt_accum_, Int num_arrays_,
+  std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
+  std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range) :
+  CalcUpwindData(kts_, kte_, kdir_, kbot_, k_qxtop_, num_arrays_, 0.0, rho_range, inv_dzq_range, vs_range, qnx_range),
+  Co_max(Co_max_), k_qxbot(k_qxbot_), dt_left(dt_left_), prt_accum(prt_accum_)
+{ }
+
+void generalized_sedimentation(GenSedData& d)
+{
+  p3_init(true);
+  generalized_sedimentation_c(d.kts, d.kte, d.kdir, d.k_qxtop, &d.k_qxbot, d.kbot, d.Co_max,
+                              &d.dt_left, &d.prt_accum, d.inv_dzq, d.inv_rho, d.rho,
+                              d.num_arrays, d.vs, d.fluxes, d.qnx);
+}
+
+CloudSedData::CloudSedData(
+  Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+  Real dt_, Real odt_, bool log_predictNc_, Real prt_liq_,
+  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
+  dt(dt_), odt(odt_), log_predictNc(log_predictNc_), prt_liq(prt_liq_),
+  m_nk((kte_ - kts_) + 1),
+  m_data( NUM_ARRAYS * m_nk, 0.0)
+{
+  std::array<Real**, NUM_ARRAYS> ptrs =
+    {&qc_incld, &rho, &inv_rho, &lcldm, &acn, &inv_dzq, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend};
+  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
+
+  // overwrite inv_rho
+  for (Int k = 0; k < m_nk; ++k) {
+    inv_rho[k] = 1 / rho[k];
+  }
+}
+
+CloudSedData::CloudSedData(const CloudSedData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), ktop(rhs.ktop), kbot(rhs.kbot), kdir(rhs.kdir),
+  dt(rhs.dt), odt(rhs.odt), log_predictNc(rhs.log_predictNc), prt_liq(rhs.prt_liq),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  Real** ptrs[NUM_ARRAYS] =
+    {&qc_incld, &rho, &inv_rho, &lcldm, &acn, &inv_dzq, &qc, &nc, &nc_incld, &mu_c, &lamc, &qc_tend, &nc_tend};
+
+  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_nk;
+  }
+}
+
+void cloud_sedimentation(CloudSedData& d)
+{
+  p3_init(true);
+  cloud_sedimentation_c(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+                        d.qc_incld, d.rho, d.inv_rho, d.lcldm, d.acn, d.inv_dzq,
+                        d.dt, d.odt, d.log_predictNc,
+                        d.qc, d.nc, d.nc_incld, d.mu_c, d.lamc, &d.prt_liq, d.qc_tend, d.nc_tend);
+}
+
+IceSedData::IceSedData(
+  Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+  Real dt_, Real odt_, Real prt_sol_,
+  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
+  dt(dt_), odt(odt_), prt_sol(prt_sol_),
+  m_nk((kte_ - kts_) + 1),
+  m_data( NUM_ARRAYS * m_nk, 0.0)
+{
+  std::array<Real**, NUM_ARRAYS> ptrs =
+    {&rho, &inv_rho, &rhofaci, &icldm, &inv_dzq, &qitot, &qitot_incld, &nitot, &nitot_incld, &qirim, &qirim_incld,
+     &birim, &birim_incld, &qi_tend, &ni_tend};
+  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
+
+  // overwrite inv_rho
+  for (Int k = 0; k < m_nk; ++k) {
+    inv_rho[k] = 1 / rho[k];
+  }
+}
+
+IceSedData::IceSedData(const IceSedData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), ktop(rhs.ktop), kbot(rhs.kbot), kdir(rhs.kdir),
+  dt(rhs.dt), odt(rhs.odt), prt_sol(rhs.prt_sol),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  Real** ptrs[NUM_ARRAYS] =
+    {&rho, &inv_rho, &rhofaci, &icldm, &inv_dzq, &qitot, &qitot_incld, &nitot, &nitot_incld, &qirim, &qirim_incld,
+     &birim, &birim_incld, &qi_tend, &ni_tend};
+
+  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_nk;
+  }
+}
+
+void ice_sedimentation(IceSedData& d)
+{
+  p3_init(true);
+  ice_sedimentation_c(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+                      d.rho, d.inv_rho, d.rhofaci, d.icldm, d.inv_dzq, d.dt, d.odt,
+                      d.qitot, d.qitot_incld, d.nitot, d.qirim, d.qirim_incld, d.birim, d.birim_incld, d.nitot_incld,
+                      &d.prt_sol, d.qi_tend, d.ni_tend);
+}
+
+
+void calc_bulk_rho_rime(CalcBulkRhoRimeData& d)
+{
+  p3_init(true);
+  calc_bulk_rho_rime_c(d.qi_tot, &d.qi_rim, &d.bi_rim, &d.rho_rime);
 }
 
 std::shared_ptr<P3GlobalForFortran::Views> P3GlobalForFortran::s_views;
@@ -257,11 +500,11 @@ void get_cloud_dsd2_f(Real qc_, Real* nc_, Real* mu_c_, Real rho_, Real* nu_, Re
   using P3F = Functions<Real, DefaultDevice>;
 
   typename P3F::Smask qc_gt_small(qc_ > P3F::C::QSMALL);
-  typename P3F::view_1d<Real> t_d("t_h", 6);
+  typename P3F::view_1d<Real> t_d("t_d", 6);
   auto t_h = Kokkos::create_mirror_view(t_d);
 
   Real local_nc = *nc_;
-  auto dnu = P3GlobalForFortran::dnu();
+  const auto dnu = P3GlobalForFortran::dnu();
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     typename P3F::Spack qc(qc_), nc(local_nc), rho(rho_), lcldm(lcldm_);
     typename P3F::Spack mu_c, nu, lamc, cdist, cdist1;
@@ -290,7 +533,7 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   using P3F = Functions<Real, DefaultDevice>;
 
   typename P3F::Smask qr_gt_small(qr_ > P3F::C::QSMALL);
-  typename P3F::view_1d<Real> t_d("t_h", 5);
+  typename P3F::view_1d<Real> t_d("t_d", 5);
   auto t_h = Kokkos::create_mirror_view(t_d);
   Real local_nr = *nr_;
 
@@ -315,6 +558,419 @@ void get_rain_dsd2_f(Real qr_, Real* nr_, Real* mu_r_, Real* lamr_, Real* cdistr
   *logn0r_ = t_h(4);
 }
 
+
+template <int N, typename T>
+Kokkos::Array<T*, N> ptr_to_arr(T** data)
+{
+  Kokkos::Array<T*, N> result;
+  for (int i = 0; i < N; ++i) result[i] = data[i];
+
+  return result;
+}
+
+template <int N>
+void calc_first_order_upwind_step_f_impl(
+  Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub,
+  Real* rho, Real* inv_rho, Real* inv_dzq,
+  Real** fluxes, Real** vs, Real** qnx)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Spack>;
+  using KT = typename P3F::KT;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Spack, N>;
+  using uview_1d = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts -= 1;
+  kte -= 1;
+  kbot -= 1;
+  k_qxtop -= 1;
+
+  const Int nk = (kte - kts) + 1;
+
+  // Setup views
+  Kokkos::Array<view_1d, 3> temp_d;
+  Kokkos::Array<view_1d, N> fluxes_d, vs_d, qnx_d;
+
+  pack::host_to_device({rho, inv_rho, inv_dzq}, nk, temp_d);
+
+  view_1d rho_d(temp_d[0]), inv_rho_d(temp_d[1]), inv_dzq_d(temp_d[2]);
+
+  pack::host_to_device(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
+  pack::host_to_device(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
+  pack::host_to_device(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
+
+  // Call core function from kernel
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;
+    for (int i = 0; i < N; ++i) {
+      fluxes_ptr[i] = (uview_1d*)(&fluxes_d[i]);
+      vs_ptr[i]     = (uview_1d*)(&vs_d[i]);
+      qnx_ptr[i]    = (uview_1d*)(&qnx_d[i]);
+    }
+    uview_1d urho_d(rho_d), uinv_rho_d(inv_rho_d), uinv_dzq_d(inv_dzq_d);
+    P3F::calc_first_order_upwind_step<N>(urho_d, uinv_rho_d, uinv_dzq_d, team, nk, kbot, k_qxtop, kdir, dt_sub, fluxes_ptr, vs_ptr, qnx_ptr);
+  });
+
+  // Sync back to host
+  pack::device_to_host(ptr_to_arr<N>(fluxes), nk, fluxes_d);
+  pack::device_to_host(ptr_to_arr<N>(qnx), nk, qnx_d);
+}
+
+template <int N>
+void generalized_sedimentation_f_impl(
+  Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
+  Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
+  Real** vs, Real** fluxes, Real** qnx)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack = typename P3F::Spack;
+  using Singlep = typename pack::Pack<Real, 1>;
+  using view_1d = typename P3F::view_1d<Spack>;
+  using view_1ds = typename P3F::view_1d<Singlep>;
+  using KT = typename P3F::KT;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using view_1d_ptr_array = typename P3F::view_1d_ptr_array<Spack, N>;
+  using uview_1d = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts -= 1;
+  kte -= 1;
+  kbot -= 1;
+  k_qxtop -= 1;
+  *k_qxbot -= 1;
+
+  const Int nk = (kte - kts) + 1;
+
+  // Set up views
+  Kokkos::Array<view_1d, 3> temp_d;
+  Kokkos::Array<view_1d, N> fluxes_d, vs_d, qnx_d;
+  Kokkos::Array<view_1ds, 1> scalar_temp;
+  std::vector<Real> scalars = {*prt_accum, *dt_left, static_cast<Real>(*k_qxbot)};
+
+  pack::host_to_device({rho, inv_rho, inv_dzq}, nk, temp_d);
+  pack::host_to_device({scalars.data()}, scalars.size(), scalar_temp);
+
+  view_1d rho_d(temp_d[0]), inv_rho_d(temp_d[1]), inv_dzq_d(temp_d[2]);
+  view_1ds scalars_d(scalar_temp[0]);
+
+  pack::host_to_device(ptr_to_arr<N>((const Real**)fluxes), nk, fluxes_d);
+  pack::host_to_device(ptr_to_arr<N>((const Real**)vs)    , nk, vs_d);
+  pack::host_to_device(ptr_to_arr<N>((const Real**)qnx)   , nk, qnx_d);
+
+  // Call core function from kernel
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const MemberType& team) {
+    view_1d_ptr_array fluxes_ptr, vs_ptr, qnx_ptr;
+    for (int i = 0; i < N; ++i) {
+      fluxes_ptr[i] = (uview_1d*)(&fluxes_d[i]);
+      vs_ptr[i]     = (uview_1d*)(&vs_d[i]);
+      qnx_ptr[i]    = (uview_1d*)(&qnx_d[i]);
+    }
+    uview_1d urho_d(rho_d), uinv_rho_d(inv_rho_d), uinv_dzq_d(inv_dzq_d);
+
+    // Each thread needs their own copy, like we expect in the main program, or else we will hit
+    // data race issues
+    Real prt_accum_k = scalars_d(0)[0];
+    Real dt_left_k   = scalars_d(1)[0];
+    Int k_qxbot_k    = static_cast<int>(scalars_d(2)[0]);
+
+    P3F::generalized_sedimentation<N>(urho_d, uinv_rho_d, uinv_dzq_d, team, nk, k_qxtop, k_qxbot_k, kbot, kdir, Co_max, dt_left_k, prt_accum_k, fluxes_ptr, vs_ptr, qnx_ptr);
+
+    scalars_d(0)[0] = prt_accum_k;
+    scalars_d(1)[0] = dt_left_k;
+    scalars_d(2)[0] = k_qxbot_k;
+  });
+
+  // Sync back to host
+  pack::device_to_host(ptr_to_arr<N>(fluxes), nk, fluxes_d);
+  pack::device_to_host(ptr_to_arr<N>(qnx), nk, qnx_d);
+  pack::device_to_host({scalars.data()}, scalars.size(), scalar_temp);
+
+  // Set scalars
+  *prt_accum = scalars[0];
+  *dt_left   = scalars[1];
+  *k_qxbot   = scalars[2] + 1;
+}
+
+void calc_first_order_upwind_step_f(
+  Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub,
+  Real* rho, Real* inv_rho, Real* inv_dzq,
+  Int num_arrays, Real** fluxes, Real** vs, Real** qnx)
+{
+  if (num_arrays == 1) {
+    calc_first_order_upwind_step_f_impl<1>(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, fluxes, vs, qnx);
+  }
+  else if (num_arrays == 2) {
+    calc_first_order_upwind_step_f_impl<2>(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, fluxes, vs, qnx);
+  }
+  else if (num_arrays == 4) {
+    calc_first_order_upwind_step_f_impl<4>(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, fluxes, vs, qnx);
+  }
+  else {
+    scream_require_msg(false, "Unsupported num arrays in bridge calc_first_order_upwind_step_f: " << num_arrays);
+  }
+}
+
+void generalized_sedimentation_f(
+  Int kts, Int kte, Int kdir, Int k_qxtop, Int* k_qxbot, Int kbot, Real Co_max,
+  Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
+  Int num_arrays, Real** vs, Real** fluxes, Real** qnx)
+{
+  if (num_arrays == 1) {
+    generalized_sedimentation_f_impl<1>(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum,
+                                        inv_dzq, inv_rho, rho, vs, fluxes, qnx);
+  }
+  else if (num_arrays == 2) {
+    generalized_sedimentation_f_impl<2>(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum,
+                                        inv_dzq, inv_rho, rho, vs, fluxes, qnx);
+  }
+  else if (num_arrays == 4) {
+    generalized_sedimentation_f_impl<4>(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum,
+                                        inv_dzq, inv_rho, rho, vs, fluxes, qnx);
+  }
+  else {
+    scream_require_msg(false, "Unsupported num arrays in bridge calc_first_order_upwind_step_f: " << num_arrays);
+  }
+}
+
+void cloud_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
+  Real dt, Real odt, bool log_predictNc,
+  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack = typename P3F::Spack;
+  using view_1d = typename P3F::view_1d<Spack>;
+  using KT = typename P3F::KT;
+  using ExeSpace = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using uview_1d = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts -= 1;
+  kte -= 1;
+  ktop -= 1;
+  kbot -= 1;
+
+  const Int nk = (kte - kts) + 1;
+
+  // Set up views
+  const auto dnu = P3GlobalForFortran::dnu();
+
+  Kokkos::Array<view_1d, 13> temp_d;
+
+  pack::host_to_device({qc_incld, rho, inv_rho, lcldm, acn, inv_dzq, qc, nc, nc_incld, mu_c, lamc, qc_tend, nc_tend},
+                       nk, temp_d);
+
+  view_1d
+    qc_incld_d(temp_d[0]),
+    rho_d     (temp_d[1]),
+    inv_rho_d (temp_d[2]),
+    lcldm_d   (temp_d[3]),
+    acn_d     (temp_d[4]),
+    inv_dzq_d (temp_d[5]),
+    qc_d      (temp_d[6]),
+    nc_d      (temp_d[7]),
+    nc_incld_d(temp_d[8]),
+    mu_c_d    (temp_d[9]),
+    lamc_d    (temp_d[10]),
+    qc_tend_d (temp_d[11]),
+    nc_tend_d (temp_d[12]);
+
+  // Call core function from kernel
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
+  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_liq_k) {
+
+    uview_1d
+      uqc_incld_d(temp_d[0]),
+      urho_d     (temp_d[1]),
+      uinv_rho_d (temp_d[2]),
+      ulcldm_d   (temp_d[3]),
+      uacn_d     (temp_d[4]),
+      uinv_dzq_d (temp_d[5]),
+      uqc_d      (temp_d[6]),
+      unc_d      (temp_d[7]),
+      unc_incld_d(temp_d[8]),
+      umu_c_d    (temp_d[9]),
+      ulamc_d    (temp_d[10]),
+      uqc_tend_d (temp_d[11]),
+      unc_tend_d (temp_d[12]);
+
+    P3F::cloud_sedimentation(
+      uqc_incld_d, urho_d, uinv_rho_d, ulcldm_d, uacn_d, uinv_dzq_d, dnu,
+      team, wsm.get_workspace(team),
+      nk, ktop, kbot, kdir, dt, odt, log_predictNc,
+      uqc_d, unc_d, unc_incld_d, umu_c_d, ulamc_d, uqc_tend_d, unc_tend_d,
+      prt_liq_k);
+
+  }, *prt_liq);
+
+  // Sync back to host
+  Kokkos::Array<view_1d, 7> inout_views = {qc_d, nc_d, nc_incld_d, mu_c_d, lamc_d, qc_tend_d, nc_tend_d};
+  pack::device_to_host({qc, nc, nc_incld, mu_c, lamc, qc_tend, nc_tend}, nk, inout_views);
+}
+
+void ice_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* icldm, Real* inv_dzq,
+  Real dt, Real odt,
+  Real* qitot, Real* qitot_incld, Real* nitot, Real* qirim, Real* qirim_incld, Real* birim, Real* birim_incld,
+  Real* nitot_incld, Real* prt_sol, Real* qi_tend, Real* ni_tend)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename P3F::Spack;
+  using view_1d    = typename P3F::view_1d<Spack>;
+  using KT         = typename P3F::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using uview_1d   = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts  -= 1;
+  kte  -= 1;
+  ktop -= 1;
+  kbot -= 1;
+
+  const Int nk = (kte - kts) + 1;
+
+  // Set up views
+  Kokkos::Array<view_1d, 15> temp_d;
+
+  pack::host_to_device({rho, inv_rho, rhofaci, icldm, inv_dzq, qitot, qitot_incld, nitot, qirim, qirim_incld, birim, birim_incld, nitot_incld, qi_tend, ni_tend},
+                       nk, temp_d);
+
+  view_1d
+    rho_d        (temp_d[0]),
+    inv_rho_d    (temp_d[1]),
+    rhofaci_d    (temp_d[2]),
+    icldm_d      (temp_d[3]),
+    inv_dzq_d    (temp_d[4]),
+    qitot_d      (temp_d[5]),
+    qitot_incld_d(temp_d[6]),
+    nitot_d      (temp_d[7]),
+    qirim_d      (temp_d[8]),
+    qirim_incld_d(temp_d[9]),
+    birim_d      (temp_d[10]),
+    birim_incld_d(temp_d[11]),
+    nitot_incld_d(temp_d[12]),
+    qi_tend_d    (temp_d[13]),
+    ni_tend_d    (temp_d[14]);
+
+  // Call core function from kernel
+  auto itab = P3GlobalForFortran::itab();
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  WorkspaceManager<Spack> wsm(rho_d.extent(0), 6, policy);
+  Real my_prt_sol = 0;
+  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_sol_k) {
+
+    uview_1d
+      urho_d        (temp_d[0]),
+      uinv_rho_d    (temp_d[1]),
+      urhofaci_d    (temp_d[2]),
+      uicldm_d      (temp_d[3]),
+      uinv_dzq_d    (temp_d[4]),
+      uqitot_d      (temp_d[5]),
+      uqitot_incld_d(temp_d[6]),
+      unitot_d      (temp_d[7]),
+      uqirim_d      (temp_d[8]),
+      uqirim_incld_d(temp_d[9]),
+      ubirim_d      (temp_d[10]),
+      ubirim_incld_d(temp_d[11]),
+      unitot_incld_d(temp_d[12]),
+      uqi_tend_d    (temp_d[13]),
+      uni_tend_d    (temp_d[14]);
+
+    P3F::ice_sedimentation(
+      urho_d, uinv_rho_d, urhofaci_d, uicldm_d, uinv_dzq_d,
+      team, wsm.get_workspace(team),
+      nk, ktop, kbot, kdir, dt, odt,
+      uqitot_d, uqitot_incld_d, unitot_d, unitot_incld_d, uqirim_d, uqirim_incld_d, ubirim_d, ubirim_incld_d,
+      uqi_tend_d, uni_tend_d, itab,
+      prt_sol_k);
+
+  }, my_prt_sol);
+  *prt_sol += my_prt_sol;
+
+  // Sync back to host
+  Kokkos::Array<view_1d, 10> inout_views = {qitot_d, qitot_incld_d, nitot_d, nitot_incld_d, qirim_d, qirim_incld_d,
+                                            birim_d, birim_incld_d, qi_tend_d, ni_tend_d};
+  pack::device_to_host({qitot, qitot_incld, nitot, nitot_incld, qirim, qirim_incld, birim, birim_incld, qi_tend, ni_tend}, nk, inout_views);
+}
+
+void cloud_water_autoconversion_f(Real rho_, Real qc_incld_, Real nc_incld_, Real* qcaut_, Real* ncautc_, Real* ncautr_){
+
+    using P3F = Functions<Real, DefaultDevice>;
+
+    typename P3F::view_1d<Real> t_d("t_h", 3);
+    auto t_h = Kokkos::create_mirror_view(t_d);
+    Real local_qcaut = *qcaut_;
+    Real local_ncautc = *ncautc_;
+    Real local_ncautr = *ncautr_;
+
+    Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack rho(rho_), qc_incld(qc_incld_), nc_incld(nc_incld_), qcaut(local_qcaut), ncautc(local_ncautc), ncautr(local_ncautr);
+      P3F::cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr);
+
+      t_d(0) = qcaut[0];
+      t_d(1) = ncautc[0];
+      t_d(2) = ncautr[0];
+
+    });
+    Kokkos::deep_copy(t_h, t_d);
+
+    *qcaut_ = t_h(0);
+    *ncautc_ = t_h(1);
+    *ncautr_ = t_h(2);
+}
+
+void calc_bulk_rho_rime_f(Real qi_tot_, Real* qi_rim_, Real* bi_rim_, Real* rho_rime_)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack   = typename P3F::Spack;
+  using Smask   = typename P3F::Smask;
+  using view_1d = typename P3F::view_1d<Real>;
+
+  Real local_qi_rim = *qi_rim_, local_bi_rim = *bi_rim_;
+  view_1d t_d("t_d", 3);
+  const auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+    Smask qi_gt_small(qi_tot_ > P3F::C::QSMALL);
+    Spack qi_tot(qi_tot_), qi_rim(local_qi_rim), bi_rim(local_bi_rim);
+
+    const auto result = P3F::calc_bulk_rho_rime(qi_gt_small, qi_tot, qi_rim, bi_rim);
+    t_d(0) = qi_rim[0];
+    t_d(1) = bi_rim[0];
+    t_d(2) = result[0];
+  });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *qi_rim_   = t_h(0);
+  *bi_rim_   = t_h(1);
+  *rho_rime_ = t_h(2);
+}
+
 // Cuda implementations of std math routines are not necessarily BFB
 // with the host.
 template <typename ScalarT, typename DeviceT>
@@ -325,7 +981,7 @@ struct CudaWrap
   static Scalar cxx_pow(Scalar base, Scalar exp)
   {
     Scalar result;
-    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) {
+    Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Scalar& value) {
         value = std::pow(base, exp);
     }, result);
 
@@ -335,7 +991,7 @@ struct CudaWrap
 #define cuda_wrap_single_arg(wrap_name, func_call)      \
 static Scalar wrap_name(Scalar input) {                 \
   Scalar result;                                        \
-  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Real& value) { \
+  Kokkos::parallel_reduce(1, KOKKOS_LAMBDA(const Int&, Scalar& value) { \
     value = func_call(input);                                         \
   }, result);                                                         \
   return result;                                                      \

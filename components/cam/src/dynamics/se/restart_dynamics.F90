@@ -115,7 +115,7 @@ CONTAINS
     type(element_t), pointer :: elem(:)
     real(kind=r8) :: time
     integer :: ndcur, nscur
-    integer, pointer :: ldof(:)
+    integer(kind=pio_offset_kind), pointer :: ldof(:)
 
     call write_restart_hycoef(File)
 
@@ -347,8 +347,9 @@ CONTAINS
   function get_restart_decomp(elem, lev) result(ldof)
     use element_mod, only : element_t
     use dimensions_mod, only : np, nelemd, nelem
+    use pio, only: pio_offset_kind
     type(element_t), intent(in) :: elem(:)
-    integer, pointer :: ldof(:)
+    integer(kind=pio_offset_kind), pointer :: ldof(:)
     integer, intent(in) :: lev
 
     integer ::  i, j, k, ie
@@ -359,12 +360,12 @@ CONTAINS
     do k=1,lev
        do ie=1,nelemd
           do i=1,np*np
-             ldof(j) = (elem(ie)%GlobalID-1)*np*np+(k-1)*nelem*np*np+i
+             ldof(j) = int(elem(ie)%GlobalID-1, pio_offset_kind)*np*np &
+                     + int(k-1, pio_offset_kind)*nelem*np*np + i
              j=j+1
           end do
        end do
     end do
-
 
   end function get_restart_decomp
 
@@ -400,7 +401,7 @@ CONTAINS
     real(r8), allocatable :: var3d(:), var3dp(:), var2d(:)
     integer :: ie, ierr, fne, fnp, fnlev
     integer :: ncols
-    integer, pointer :: ldof(:)
+    integer(kind=pio_offset_kind), pointer :: ldof(:)
     type(element_t), pointer :: elem(:)               ! pointer to dyn_in element array
     integer(kind=pio_offset_kind), parameter :: t = 1
     integer :: i, k, cnt, st, en, tl, tlQdp, ii, jj, s2d, q, j
@@ -462,8 +463,8 @@ CONTAINS
 #ifdef MODEL_THETA_L
     if ( .not. theta_hydrostatic_mode ) then
        allocate(var3dp(s2d*nlevp))
+       var3dp = 0.0
     endif
-    var3dp = 0.0
 
     ldof => get_restart_decomp(elem, nlevp)
     call PIO_InitDecomp(pio_subsystem, pio_double, (/ncols,nlevp/),ldof , iodesc3dp)

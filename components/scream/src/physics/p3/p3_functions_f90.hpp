@@ -6,6 +6,9 @@
 
 #include "p3_functions.hpp"
 
+#include <array>
+#include <utility>
+
 //
 // Bridge functions to call fortran version of p3 functions from C++
 //
@@ -56,6 +59,8 @@ struct P3GlobalForFortran
   static std::shared_ptr<Views> s_views;
 };
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct P3InitAFortranData
 {
   // Must use Host as device, f90 code might not be able to use Device memory
@@ -76,6 +81,8 @@ struct P3InitAFortranData
 };
 void p3_init_a(P3InitAFortranData& d);
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct LookupIceData
 {
   // Inputs
@@ -95,6 +102,8 @@ void find_lookuptable_indices_1a_f(Int* dumi, Int* dumjj, Int* dumii, Int* dumzz
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct LookupIceDataB
 {
   // Inputs
@@ -111,6 +120,8 @@ extern "C" {
 void find_lookuptable_indices_1b_f(Int* dumj, Real* dum3, Real qr, Real nr);
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct AccessLookupTableData
 {
@@ -129,6 +140,8 @@ void access_lookup_table_f(Int dumjj, Int dumii, Int dumi, Int index,
                            Real dum1, Real dum4, Real dum5, Real* proc);
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct AccessLookupTableCollData
 {
@@ -222,6 +235,29 @@ extern "C"{
   void ice_water_conservation_f(Real qitot, Real qidep, Real qinuc, Real qiberg, Real qrcol, Real qccol,
   Real qrheti, Real qcheti, Real dt, Real* qisub, Real* qimlt);
 }
+///////////////////////////////////////////////////////////////////////////////
+
+struct CloudWaterAutoconversionData
+{
+  // inputs
+  Real rho;
+  Real qc_incld;
+  Real nc_incld;
+
+  // output
+  Real qcaut;
+  Real ncautc;
+  Real ncautr;
+};
+
+void cloud_water_autoconversion(CloudWaterAutoconversionData& d);
+extern "C"{
+
+  void cloud_water_autoconversion_f(Real rho, Real qc_incld, Real nc_incld, 
+    Real* qcaut, Real* ncautc, Real* ncautr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 struct GetCloudDsd2Data
 {
@@ -240,6 +276,8 @@ void get_cloud_dsd2_f(Real qc, Real* nc, Real* mu_c, Real rho, Real* nu, Real* l
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
 struct GetRainDsd2Data
 {
   // Inputs
@@ -255,6 +293,183 @@ extern "C" {
 void get_rain_dsd2_f(Real qr, Real* nr, Real* mu_r, Real* lamr, Real* cdistr, Real* logn0r, Real rcldm);
 
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CalcUpwindData
+{
+  // Inputs
+  Int kts, kte, kdir, kbot, k_qxtop, num_arrays;
+  Real dt_sub;
+  Real* rho, *inv_rho, *inv_dzq;
+  Real **vs;
+
+  // In/out
+  Real **qnx;
+
+  // Outputs
+  Real** fluxes;
+
+  CalcUpwindData(Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
+                 std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
+                 std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
+
+  // deep copy
+  CalcUpwindData(const CalcUpwindData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+  std::vector<Real*> m_ptr_data;
+};
+void calc_first_order_upwind_step(CalcUpwindData& d);
+
+extern "C" {
+
+void calc_first_order_upwind_step_f(Int kts, Int kte, Int kdir, Int kbot, Int k_qxtop, Real dt_sub, Real* rho,
+                                    Real* inv_rho, Real* inv_dzq, Int num_arrays, Real** fluxes, Real** vs, Real** qnx);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct GenSedData : public CalcUpwindData
+{
+  // Inputs
+  Real Co_max;
+
+  // In/out
+  Int k_qxbot;
+  Real dt_left, prt_accum;
+
+  GenSedData(Int kts_, Int kte_, Int kdir_, Int k_qxtop_, Int k_qxbot_, Int kbot_, Real Co_max_, Real dt_left_,
+             Real prt_accum_, Int num_arrays_,
+             std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
+             std::pair<Real, Real> vs_range, std::pair<Real, Real> qnx_range);
+
+};
+void generalized_sedimentation(GenSedData& d);
+
+extern "C" {
+
+void generalized_sedimentation_f(Int kts, Int kte, Int kdir, Int k_qxtop, Int *k_qxbot, Int kbot, Real Co_max,
+                                 Real* dt_left, Real* prt_accum, Real* inv_dzq, Real* inv_rho, Real* rho,
+                                 Int num_arrays, Real** vs, Real** fluxes, Real** qnx);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CloudSedData
+{
+  static constexpr size_t NUM_ARRAYS = 13;
+
+  // Inputs
+  Int kts, kte, ktop, kbot, kdir;
+  Real *qc_incld, *rho, *inv_rho, *lcldm, *acn, *inv_dzq;
+  Real dt, odt;
+  bool log_predictNc;
+
+  // In/out
+  Real *qc, *nc, *nc_incld, *mu_c, *lamc, *qc_tend, *nc_tend;
+  Real prt_liq;
+
+  CloudSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+               Real dt_, Real odt_, bool log_predictNc_, Real prt_liq_,
+               const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  CloudSedData(const CloudSedData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+void cloud_sedimentation(CloudSedData& d);
+
+extern "C" {
+
+void cloud_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qc_incld, Real* rho, Real* inv_rho, Real* lcldm, Real* acn, Real* inv_dzq,
+  Real dt, Real odt, bool log_predictNc,
+  Real* qc, Real* nc, Real* nc_incld, Real* mu_c, Real* lamc, Real* prt_liq, Real* qc_tend, Real* nc_tend);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct IceSedData
+{
+  static constexpr size_t NUM_ARRAYS = 15;
+
+  // Inputs
+  Int kts, kte, ktop, kbot, kdir;
+  Real *rho, *inv_rho, *rhofaci, *icldm, *inv_dzq;
+  Real dt, odt;
+
+  // In/out
+  Real *qitot, *qitot_incld, *nitot, *nitot_incld, *qirim, *qirim_incld, *birim, *birim_incld, *qi_tend, *ni_tend;
+  Real prt_sol;
+
+  IceSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+             Real dt_, Real odt_, Real prt_sol_,
+             const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  IceSedData(const IceSedData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+
+void ice_sedimentation(IceSedData& d);
+
+extern "C" {
+
+void ice_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* rho, Real* inv_rho, Real* rhofaci, Real* icldm, Real* inv_dzq,
+  Real dt, Real odt,
+  Real* qitot, Real* qitot_incld, Real* nitot, Real* qirim, Real* qirim_incld, Real* birim, Real* birim_incld,
+  Real* nitot_incld, Real* prt_sol, Real* qi_tend, Real* ni_tend);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+struct CalcBulkRhoRimeData
+{
+  // Inputs
+  Real qi_tot;
+
+  // In/out
+  Real qi_rim, bi_rim;
+
+  // Outputs
+  Real rho_rime;
+};
+void calc_bulk_rho_rime(CalcBulkRhoRimeData& d);
+
+extern "C" {
+
+void calc_bulk_rho_rime_f(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rime);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// BFB math stuff
+///////////////////////////////////////////////////////////////////////////////
 
 extern "C" {
 

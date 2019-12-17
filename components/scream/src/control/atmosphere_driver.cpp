@@ -82,7 +82,7 @@ void AtmosphereDriver::initialize (const Comm& atm_comm,
 #endif
 }
 
-void AtmosphereDriver::run (const double dt) {
+void AtmosphereDriver::run (const Real dt) {
   // Make sure the end of the time step is after the current start_time
   scream_require_msg (dt>0, "Error! Input time step must be positive.\n");
 

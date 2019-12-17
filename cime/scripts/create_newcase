@@ -94,7 +94,7 @@ def parse_command_line(args, cimeroot, description):
     else:
         workflow_default = "default"
 
-    parser.add_argument("--workflow-case",default=workflow_default,
+    parser.add_argument("--workflow",default=workflow_default,
                         help="A workflow from config_workflow.xml to apply to this case. ")
 
 
@@ -180,7 +180,7 @@ def parse_command_line(args, cimeroot, description):
         args.user_mods_dir, args.pesfile, \
         args.gridfile, args.srcroot, args.test, args.multi_driver, \
         args.ninst, args.walltime, args.queue, args.output_root, args.script_root, \
-        run_unsupported, args.answer, args.input_dir, args.driver, args.workflow_case, args.non_local
+        run_unsupported, args.answer, args.input_dir, args.driver, args.workflow, args.non_local
 
 ###############################################################################
 def _main_func(description):
@@ -219,7 +219,7 @@ def _main_func(description):
                     multi_driver=multi_driver, ninst=ninst, test=test,
                     walltime=walltime, queue=queue, output_root=output_root,
                     run_unsupported=run_unsupported, answer=answer,
-                    input_dir=input_dir, driver=driver, workflow_case=workflow, non_local=non_local)
+                    input_dir=input_dir, driver=driver, workflowid=workflow, non_local=non_local)
 
 ###############################################################################
 

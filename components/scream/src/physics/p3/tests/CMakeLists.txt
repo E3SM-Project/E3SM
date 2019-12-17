@@ -8,6 +8,8 @@ set(P3_TESTS_SRCS
   p3_table3_unit_tests.cpp
   p3_find_unit_tests.cpp
   p3_upwind_unit_tests.cpp
+  p3_cloud_sed_unit_tests.cpp
+  p3_ice_sed_unit_tests.cpp
   p3_dsd2_unit_tests.cpp
 )
 CreateUnitTest(p3_tests "${P3_TESTS_SRCS}" "${NEED_LIBS}" THREADS 1 ${SCREAM_TEST_MAX_THREADS} ${SCREAM_TEST_THREAD_INC} DEP p3_tests_ut_np1_omp1)

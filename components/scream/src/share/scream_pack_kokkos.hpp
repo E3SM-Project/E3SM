@@ -254,6 +254,52 @@ smallize (const Kokkos::View<BigPack<T>*, Parms...>& vp) {
   return repack<SCREAM_SMALL_PACK_SIZE>(vp);
 }
 
+//
+// Take an array of Host scalar pointers and turn them into device pack views
+//
+template <size_t N, typename ViewT>
+void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const*, N>& data,
+                    const size_t size,
+                    Kokkos::Array<ViewT, N>& views)
+{
+  using PackT = typename ViewT::value_type;
+
+  for (size_t i = 0; i < N; ++i) {
+    const size_t npack = (size + PackT::n - 1) / PackT::n;
+    views[i] = ViewT("", npack);
+    auto host_view = Kokkos::create_mirror_view(views[i]);
+    for (size_t k = 0; k < npack; ++k) {
+      const size_t scalar_offset = k*PackT::n;
+      for (size_t s = 0; s < PackT::n && scalar_offset+s < size; ++s) {
+        host_view(k)[s] = data[i][scalar_offset + s];
+      }
+    }
+    Kokkos::deep_copy(views[i], host_view);
+  }
+}
+
+//
+// Take an array of device pack views and sync them to host scalar pointers
+//
+template <size_t N, typename ViewT>
+void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>& data,
+                    const size_t size,
+                    Kokkos::Array<ViewT, N>& views)
+{
+  using PackT = typename ViewT::value_type;
+
+  for (size_t i = 0; i < N; ++i) {
+    const auto host_view = Kokkos::create_mirror_view(views[i]);
+    Kokkos::deep_copy(host_view, views[i]);
+    for (size_t k = 0; k < views[i].extent(0); ++k) {
+      const size_t scalar_offset = k*PackT::n;
+      for (size_t s = 0; s < PackT::n && scalar_offset+s < size; ++s) {
+        data[i][scalar_offset + s] = host_view(k)[s];
+      }
+    }
+  }
+}
+
 } // namespace pack
 } // namespace scream
 

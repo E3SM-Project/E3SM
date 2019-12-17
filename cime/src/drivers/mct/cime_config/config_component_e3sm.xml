@@ -328,6 +328,7 @@
       <value compset=".+" grid="a%ne240np4">144</value>
       <value compset=".+" grid="a%ne0np4_arm_x8v3" >144</value>
       <value compset=".+" grid="a%ne0np4_conus_x4v1" >96</value>
+      <value compset=".+" grid="a%ne0np4_northamericax4v1" >96</value>
       <value compset=".+" grid="a%ne0np4_svalbard_x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_sooberingoa_x4x8v1" >144</value>
       <value compset=".+" grid="a%ne0np4_enax4v1" >96</value>

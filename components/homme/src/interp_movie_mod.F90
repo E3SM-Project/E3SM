@@ -1,3 +1,5 @@
+! Sept 2019 O. Guba Add w_i, mu_i, geo_i to interp output 
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -5,7 +7,7 @@
 module interp_movie_mod
 #ifndef HOMME_WITHOUT_PIOLIBRARY
   use kinds, only : real_kind
-  use dimensions_mod, only :  nlev, nelemd, np, ne, qsize
+  use dimensions_mod, only :  nlev, nlevp, nelemd, np, ne, qsize
   use interpolate_mod, only : interpolate_t, setup_latlon_interp, interpdata_t, &
        get_interp_parameter, get_interp_lat, get_interp_lon, interpolate_scalar, interpolate_vector, &
        set_interp_parameter
@@ -49,7 +51,7 @@ module interp_movie_mod
 #undef V_IS_LATLON
 #if defined(_PRIM)
 #define V_IS_LATLON
-  integer, parameter :: varcnt = 42 !45
+  integer, parameter :: varcnt = 45
   integer, parameter :: maxdims =  5
   character*(*), parameter :: varnames(varcnt)=(/'ps       ', &
                                                  'geos     ', &
@@ -65,6 +67,9 @@ module interp_movie_mod
                                                  'u        ', &
                                                  'v        ', &
                                                  'w        ', &
+                                                 'w_i      ', &
+                                                 'mu_i     ', &
+                                                 'geo_i    ', &
                                                  'ke       ', &
                                                  'Q        ', &
                                                  'Q2       ', &
@@ -99,20 +104,21 @@ module interp_movie_mod
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
-                                          PIO_double,&
-                                          PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,PIO_double,&
+                                          PIO_double,PIO_double,PIO_double,&
                                           PIO_double,&
                                           PIO_double,PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,PIO_double,&
                                           PIO_double,PIO_double,&
                                           PIO_double,PIO_double,&
                                           PIO_double/)
-  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,.false.,&
-                                              .false.,.false.,.false., .false., .false., &
+  logical, parameter :: varrequired(varcnt)=(/.false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
                                               .false.,.false.,.false.,.false.,.false.,&
+                                              .false.,.false.,.false.,.false.,.false.,&
+                                              .false.,.false.,.false.,.false.,&
                                               .false.,.true. ,.true. ,&
                                               .true.,.true. ,.true. ,&   ! gw,lev,ilev
                                               .true. ,.true. ,&   ! hy arrays
@@ -133,6 +139,9 @@ module interp_movie_mod
        1,2,3,5,0,  &   ! u
        1,2,3,5,0,  &   ! v
        1,2,3,5,0,  &   ! w
+       1,2,4,5,0,  &   ! w_i
+       1,2,4,5,0,  &   ! mu_i
+       1,2,4,5,0,  &   ! geo_i
        1,2,3,5,0,  &   ! ke
        1,2,3,5,0,  &   ! Q
        1,2,3,5,0,  &   ! Q2
@@ -208,7 +217,7 @@ module interp_movie_mod
   type(interpolate_t) :: interp
   type(interpdata_t), allocatable :: interpdata(:)
 
-  integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), count3d(4)
+  integer(kind=nfsizekind) :: start2d(3), count2d(3), start3d(4), start3dp1(4), count3d(4), count3dp1(4)
   type(nf_handle), save :: ncdf(max_output_streams)
 
 #endif
@@ -237,7 +246,7 @@ contains
 #endif
 #ifndef HOMME_WITHOUT_PIOLIBRARY
     integer :: dimsize(maxdims)   
-    integer, pointer :: ldof2d(:),ldof3d(:), iodof2d(:), iodof3d(:)
+    integer, pointer :: ldof2d(:),ldof3d(:),ldof3dp1(:), iodof2d(:), iodof3d(:), iodof3dp1(:)
     integer, pointer :: latdof(:), londof(:), iodoflon(:), iodoflat(:)
 
     integer :: icnt, i, j, k, lcount, iorank, nlat, nlon, tdof(1), tiodof(1), ios, ie
@@ -284,6 +293,11 @@ contains
     ! Create the DOF arrays
     allocate(ldof2d(lcount))
     allocate(ldof3d(lcount*nlev))
+#if defined(_PRIM)
+!nlevp dimension is not in dimsize in SW
+    allocate(ldof3dp1(lcount*nlevp))
+#endif
+
     icnt=0
     do ie=1,nelemd
        do i=1,interpdata(ie)%n_interp
@@ -300,15 +314,33 @@ contains
           end do
        end do
     end do
-    call getiodof(2, (/nlon,nlat/), iorank, iodof2d, start2d(1:2), count2d(1:2))
+#if defined(_PRIM)
+    icnt=0
+    do k=1,nlevp
+       do ie=1,nelemd
+          do i=1,interpdata(ie)%n_interp
+             icnt=icnt+1
+             ldof3dp1(icnt)=interpdata(ie)%ilon(i)+(interpdata(ie)%ilat(i)-1)*nlon+(k-1)*nlat*nlon
+          end do
+       end do
+    end do
+#endif
 
-    call nf_init_decomp(ncdf, (/1,2/), ldof2d, iodof2d,start2d(1:2),count2d(1:2))
+    call getiodof(2, (/nlon,nlat/),       iorank,   iodof2d,   start2d(1:2),   count2d(1:2))
+    call nf_init_decomp(ncdf, (/1,2/),    ldof2d,   iodof2d,   start2d(1:2),   count2d(1:2))
 
-    call getiodof(3, (/nlon,nlat,nlev/), iorank, iodof3d, start3d(1:3), count3d(1:3))
+    call getiodof(3, (/nlon,nlat,nlev/),  iorank,   iodof3d,   start3d(1:3),   count3d(1:3))
+    call nf_init_decomp(ncdf, (/1,2,3/),  ldof3d,   iodof3d,   start3d(1:3),   count3d(1:3))
 
-    call nf_init_decomp(ncdf, (/1,2,3/), ldof3d, iodof3d,start3d(1:3),count3d(1:3))
+#if defined(_PRIM)
+    call getiodof(3, (/nlon,nlat,nlevp/), iorank,   iodof3dp1, start3dp1(1:3), count3dp1(1:3))
+    call nf_init_decomp(ncdf, (/1,2,4/),  ldof3dp1, iodof3dp1, start3dp1(1:3), count3dp1(1:3))
+#endif
 
-    deallocate(iodof2d, iodof3d, ldof2d,ldof3d)
+    deallocate(iodof2d, iodof3d, ldof2d, ldof3d)
+#if defined(_PRIM)
+    deallocate(iodof3dp1, ldof3dp1)
+#endif
 
     call nf_output_register_variables(ncdf,varcnt,varnames,vardims,vartype,varrequired)
     do ios = 1, max_output_streams
@@ -331,7 +363,6 @@ contains
     call nf_variable_attributes(ncdf, 'T',    'Temperature','degrees kelvin')
     call nf_variable_attributes(ncdf, 'dp3d', 'delta p','Pa')
     call nf_variable_attributes(ncdf, 'p',    'hydrostatic pressure','Pa')
-    call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
     call nf_variable_attributes(ncdf, 'rho',  'dry air density','kg/m^3')
     call nf_variable_attributes(ncdf, 'Q',    'concentration','kg/kg')
     call nf_variable_attributes(ncdf, 'Q2',   'concentration','kg/kg')
@@ -344,6 +375,11 @@ contains
     call nf_variable_attributes(ncdf, 'hybm', 'hybrid B coefficiet at layer midpoints' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'hyai', 'hybrid A coefficiet at layer interfaces' ,'dimensionless')
     call nf_variable_attributes(ncdf, 'hybi', 'hybrid B coefficiet at layer interfaces' ,'dimensionless')
+    call nf_variable_attributes(ncdf, 'Th',   'potential temperature \theta','degrees kelvin')
+    call nf_variable_attributes(ncdf, 'w_i',  'vertical wind component on interfaces','meters/second')
+    call nf_variable_attributes(ncdf, 'mu_i', 'mu=dp/d\pi on interfaces','dimensionless')
+    call nf_variable_attributes(ncdf, 'geo_i','geopotential on interfaces','meters')
+    call nf_variable_attributes(ncdf, 'pnh',  'total pressure','Pa')
 #endif
     call nf_variable_attributes(ncdf, 'gw',   'gauss weights','dimensionless')
     call nf_variable_attributes(ncdf, 'lat',  'column latitude','degrees_north')
@@ -427,7 +463,7 @@ contains
     use time_mod, only : Timelevel_t, tstep, ndays, time_at, secpday, nendstep,nmax, Timelevel_Qdp
     use parallel_mod, only : parallel_t, abortmp
 #if defined(_PRIM) 
-    use element_ops, only : get_field
+    use element_ops, only : get_field, get_field_i
     use hybvcoord_mod, only :  hvcoord_t 
     use dcmip16_wrapper, only: precl
 #endif
@@ -456,7 +492,7 @@ contains
     integer :: ie,ios, i, j, k
     real (kind=real_kind) :: pfull, pr0
     real(kind=real_kind),parameter :: dayspersec=1d0/(3600.*24.)
-    real(kind=real_kind), allocatable :: datall(:,:), var3d(:,:,:,:)
+    real(kind=real_kind), allocatable :: datall(:,:), var3d(:,:,:,:), var3dp1(:,:,:,:)
     real(kind=real_kind), allocatable :: varvtmp(:,:,:,:), ulatlon(:,:,:,:,:)
     real(kind=real_kind)  :: temp3d(np,np,nlev)    
     integer :: st, en
@@ -492,6 +528,9 @@ contains
              count2d(3)=1
              start3d(4)=nf_get_frame(ncdf(ios))
              count3d(4)=1
+
+             start3dp1(4)=nf_get_frame(ncdf(ios))
+             count3dp1(4)=1
 
 
              if(nf_selectedvar('ps', output_varnames)) then
@@ -867,7 +906,7 @@ contains
                 do ie=1,nelemd
                    do k=1,nlev 
                       ke(:,:,k) = (elem(ie)%state%v(:,:,1,k,n0)**2 + &
-        	       elem(ie)%state%v(:,:,2,k,n0)**2 )/2
+                        elem(ie)%state%v(:,:,2,k,n0)**2 )/2
                    enddo
                    en=st+interpdata(ie)%n_interp-1
                    call interpolate_scalar(interpdata(ie), ke, &
@@ -933,6 +972,24 @@ contains
                 deallocate(datall)
              end if
 
+
+             if(nf_selectedvar('geo_i', output_varnames)) then
+                if (par%masterproc) print *,'writing geo_i...'
+                allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
+                do ie=1,nelemd
+                   call get_field_i(elem(ie),'geo_i',var3dp1(:,:,:,ie),hvcoord,n0)
+                end do
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3dp1(:,:,:,ie), &
+                        np, nlevp, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='geo_i')
+                deallocate(datall,var3dp1)
+             end if
+
              if(nf_selectedvar('w', output_varnames)) then
                 if (par%masterproc) print *,'writing w...'
                 allocate(datall(ncnt,nlev), var3d(np,np,nlev,nelemd))
@@ -949,6 +1006,40 @@ contains
                 enddo
                 call nf_put_var(ncdf(ios),datall,start3d, count3d, name='w')
                 deallocate(datall,var3d)
+             end if
+
+             if(nf_selectedvar('w_i', output_varnames)) then
+                if (par%masterproc) print *,'writing w_i...'
+                allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
+                do ie=1,nelemd
+                   call get_field_i(elem(ie),'w_i',var3dp1(:,:,:,ie),hvcoord,n0)
+                end do
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3dp1(:,:,:,ie), &
+                        np, nlevp, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3dp1,count3dp1,name='w_i')
+                deallocate(datall,var3dp1)
+             end if
+
+             if(nf_selectedvar('mu_i', output_varnames)) then
+                if (par%masterproc) print *,'writing mu_i...'
+                allocate(datall(ncnt,nlevp), var3dp1(np,np,nlevp,nelemd))
+                do ie=1,nelemd
+                   call get_field_i(elem(ie),'mu_i',var3dp1(:,:,:,ie),hvcoord,n0)
+                end do
+                st=1
+                do ie=1,nelemd
+                   en=st+interpdata(ie)%n_interp-1
+                   call interpolate_scalar(interpdata(ie), var3dp1(:,:,:,ie), &
+                        np, nlevp, datall(st:en,:))
+                   st=st+interpdata(ie)%n_interp
+                enddo
+                call nf_put_var(ncdf(ios),datall,start3dp1, count3dp1,name='mu_i')
+                deallocate(datall,var3dp1)
              end if
 
              if(nf_selectedvar('omega', output_varnames)) then

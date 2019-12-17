@@ -53,21 +53,23 @@ module dlnd_comp_mod
   !--------------------------------------------------------------------------
   !--- names of fields ---
   integer(IN),parameter :: fld_len = 12       ! max character length of fields in avofld & avifld
-  integer(IN),parameter :: nflds_nosnow = 22
+  integer(IN),parameter :: nflds_nosnow = 28
 
   ! fields other than snow fields:
   character(fld_len),parameter  :: avofld_nosnow(1:nflds_nosnow) = &
        (/ "Sl_t        ","Sl_tref     ","Sl_qref     ","Sl_avsdr    ","Sl_anidr    ", &
        "Sl_avsdf    ","Sl_anidf    ","Sl_snowh    ","Fall_taux   ","Fall_tauy   ", &
        "Fall_lat    ","Fall_sen    ","Fall_lwup   ","Fall_evap   ","Fall_swnet  ", &
-       "Sl_landfrac ","Sl_fv       ","Sl_ram1     ",                               &
+       "Sl_landfrac ","Sl_fv       ","Sl_ram1     ","Flrl_demand ",                &
+        "Flrl_rofsur ","Flrl_rofgwl ","Flrl_rofsub ","Flrl_rofdto ","Flrl_rofi", &
        "Fall_flxdst1","Fall_flxdst2","Fall_flxdst3","Fall_flxdst4"                 /)
 
   character(fld_len),parameter  :: avifld_nosnow(1:nflds_nosnow) = &
        (/ "t           ","tref        ","qref        ","avsdr       ","anidr       ", &
        "avsdf       ","anidf       ","snowh       ","taux        ","tauy        ", &
        "lat         ","sen         ","lwup        ","evap        ","swnet       ", &
-       "lfrac       ","fv          ","ram1        ",                               &
+       "lfrac       ","fv          ","ram1        ","demand      ",                &
+        "rofsur      ","rofgwl      ","rofsub      ","rofdto      ","rofi        ", &
        "flddst1     ","flxdst2     ","flxdst3     ","flxdst4     "                 /)
 
   integer(IN), parameter :: nflds_snow  = 3   ! number of snow fields in each elevation class

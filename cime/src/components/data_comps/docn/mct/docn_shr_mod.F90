@@ -34,6 +34,7 @@ module docn_shr_mod
   character(CL) , public :: rest_file_strm        ! restart filename for streams
   character(CL) , public :: datamode              ! mode
   integer(IN)   , public :: aquap_option
+  real(R8)      , public :: sst_constant_value
   character(len=*), public, parameter :: nullstr = 'undefined'
   !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 CONTAINS
@@ -76,7 +77,7 @@ CONTAINS
 
     !----- define namelist -----
     namelist / docn_nml / &
-         decomp, restfilm, restfils, force_prognostic_true
+         decomp, restfilm, restfils, force_prognostic_true, sst_constant_value
 
     !----------------------------------------------------------------------------
     ! Determine input filenamname
@@ -93,6 +94,7 @@ CONTAINS
     restfilm   = trim(nullstr)
     restfils   = trim(nullstr)
     force_prognostic_true = .false.
+
     if (my_task == master_task) then
        nunit = shr_file_getUnit() ! get unused unit number
        open (nunit,file=trim(filename),status="old",action="read")
@@ -107,11 +109,13 @@ CONTAINS
        write(logunit,F00)' restfilm   = ',trim(restfilm)
        write(logunit,F00)' restfils   = ',trim(restfils)
        write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
+       write(logunit,*)  ' sst_constant_value    = ',sst_constant_value
     endif
     call shr_mpi_bcast(decomp  ,mpicom,'decomp')
     call shr_mpi_bcast(restfilm,mpicom,'restfilm')
     call shr_mpi_bcast(restfils,mpicom,'restfils')
     call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
+    call shr_mpi_bcast(sst_constant_value   ,mpicom,'sst_constant_value')
 
     rest_file = trim(restfilm)
     rest_file_strm = trim(restfils)
@@ -126,7 +130,8 @@ CONTAINS
 
     ! Special logic for prescribed aquaplanet
 
-    if (datamode(1:9) == 'SST_AQUAP' .and. trim(datamode) /= 'SST_AQUAPFILE') then
+    if (datamode(1:9) == 'SST_AQUAP' .and. trim(datamode) /= 'SST_AQUAPFILE'     &
+                                     .and. trim(datamode) /= 'SST_AQUAP_CONSTANT') then
        ! First determine the prescribed aquaplanet option
        if (len_trim(datamode) == 10) then
           read(datamode(10:10),'(i1)') aquap_option
@@ -140,14 +145,15 @@ CONTAINS
 
     ! Validate mode
 
-    if (trim(datamode) == 'NULL'          .or. &
-         trim(datamode) == 'SSTDATA'       .or. &
-         trim(datamode) == 'SST_AQUAPANAL' .or. &
-         trim(datamode) == 'SST_AQUAPFILE' .or. &
-         trim(datamode) == 'COPYALL'       .or. &
-         trim(datamode) == 'IAF'           .or. &
-         trim(datamode) == 'SOM'           .or. &
-         trim(datamode) == 'SOM_AQUAP') then
+    if (trim(datamode) == 'NULL'                .or. &
+        trim(datamode) == 'SSTDATA'             .or. &
+        trim(datamode) == 'SST_AQUAPANAL'       .or. &
+        trim(datamode) == 'SST_AQUAPFILE'       .or. &
+        trim(datamode) == 'SST_AQUAP_CONSTANT'  .or. &
+        trim(datamode) == 'COPYALL'             .or. &
+        trim(datamode) == 'IAF'                 .or. &
+        trim(datamode) == 'SOM'                 .or. &
+        trim(datamode) == 'SOM_AQUAP') then
        if (my_task == master_task) then
           write(logunit,F00) ' docn datamode = ',trim(datamode)
        end if

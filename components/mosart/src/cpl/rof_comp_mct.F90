@@ -21,10 +21,10 @@ module rof_comp_mct
                                 seq_infodata_start_type_start, seq_infodata_start_type_cont,   &
                                 seq_infodata_start_type_brnch
   use seq_comm_mct     , only : seq_comm_suffix, seq_comm_inst, seq_comm_name
-  use RunoffMod        , only : rtmCTL, TRunoff
+  use RunoffMod        , only : rtmCTL, TRunoff, THeat
   use RtmVar           , only : rtmlon, rtmlat, ice_runoff, iulog, &
                                 nsrStartup, nsrContinue, nsrBranch, & 
-                                inst_index, inst_suffix, inst_name, RtmVarSet, wrmflag
+                                inst_index, inst_suffix, inst_name, RtmVarSet, wrmflag, heatflag
   use RtmSpmd          , only : masterproc, mpicom_rof, npes, iam, RtmSpmdInit, ROFID
   use RtmMod           , only : Rtmini, Rtmrun
   use RtmTimeManager   , only : timemgr_setup, get_curr_date, get_step_size
@@ -35,10 +35,18 @@ module rof_comp_mct
   use rof_cpl_indices  , only : rof_cpl_indices_set, nt_rtm, rtm_tracers, &
                                 index_x2r_Flrl_rofsur, index_x2r_Flrl_rofi, &
                                 index_x2r_Flrl_rofgwl, index_x2r_Flrl_rofsub, &
-                                index_x2r_Flrl_rofdto, &
+                                index_x2r_Flrl_rofdto, index_x2r_Flrl_demand, &
+                                index_x2r_Flrl_Tqsur, index_x2r_Flrl_Tqsub, &
+                                index_x2r_Sa_tbot, index_x2r_Sa_pbot, &
+                                index_x2r_Sa_u   , index_x2r_Sa_v   , &
+                                index_x2r_Sa_shum, &
+                                index_x2r_Faxa_lwdn , &
+                                index_x2r_Faxa_swvdr, index_x2r_Faxa_swvdf, &
+                                index_x2r_Faxa_swndr, index_x2r_Faxa_swndf, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
-                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch
+                                index_r2x_Flrr_volr, index_r2x_Flrr_volrmch, &
+                                index_r2x_Flrr_supply
 
   use mct_mod
   use ESMF
@@ -252,11 +260,11 @@ contains
        lsize = mct_gsMap_lsize(gsMap_rof, mpicom_rof)
        call rof_domain_mct( lsize, gsMap_rof, dom_r )
        
-       ! Initialize lnd -> mosart attribute vector		
+       ! Initialize lnd -> mosart attribute vector
        call mct_aVect_init(x2r_r, rList=seq_flds_x2r_fields, lsize=lsize)
        call mct_aVect_zero(x2r_r)
-       
-       ! Initialize mosart -> ocn attribute vector		
+
+       ! Initialize mosart -> ocn attribute vector        
        call mct_aVect_init(r2x_r, rList=seq_flds_r2x_fields, lsize=lsize)
        call mct_aVect_zero(r2x_r) 
        
@@ -561,6 +569,7 @@ contains
     !
     ! LOCAL VARIABLES
     integer :: n2, n, nt, begr, endr, nliq, nfrz
+    real(R8) :: tmp1, tmp2
     character(len=32), parameter :: sub = 'rof_import_mct'
     !---------------------------------------------------------------------------
     
@@ -594,12 +603,28 @@ contains
        else
           rtmCTL%qdto(n,nliq) = 0.0_r8
        endif
-
+      rtmCTL%qdem(n,nliq) = x2r_r%rAttr(index_x2r_Flrl_demand,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsur(n,nfrz) = x2r_r%rAttr(index_x2r_Flrl_rofi,n2) * (rtmCTL%area(n)*0.001_r8)
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
+       rtmCTL%qdem(n,nfrz) = 0.0_r8
 
+       if(heatflag) then
+          rtmCTL%Tqsur(n) = x2r_r%rAttr(index_x2r_Flrl_Tqsur,n2)
+          rtmCTL%Tqsub(n) = x2r_r%rAttr(index_x2r_Flrl_Tqsub,n2)
+          THeat%Tqsur(n) = rtmCTL%Tqsur(n)
+          THeat%Tqsub(n) = rtmCTL%Tqsub(n)
+       
+          THeat%forc_t(n) = x2r_r%rAttr(index_x2r_Sa_tbot,n2)
+          THeat%forc_pbot(n) = x2r_r%rAttr(index_x2r_Sa_pbot,n2)
+          tmp1 = x2r_r%rAttr(index_x2r_Sa_u   ,n2)
+          tmp2 = x2r_r%rAttr(index_x2r_Sa_v   ,n2)
+          THeat%forc_wind(n) = sqrt(tmp1*tmp1 + tmp2*tmp2)
+          THeat%forc_lwrad(n)= x2r_r%rAttr(index_x2r_Faxa_lwdn ,n2)
+          THeat%forc_solar(n)= x2r_r%rAttr(index_x2r_Faxa_swvdr,n2) + x2r_r%rAttr(index_x2r_Faxa_swvdf,n2) + &
+                               x2r_r%rAttr(index_x2r_Faxa_swndr,n2) + x2r_r%rAttr(index_x2r_Faxa_swndf,n2)
+       end if
     enddo
 
   end subroutine rof_import_mct
@@ -695,6 +720,10 @@ contains
        r2x_r%rattr(index_r2x_Flrr_flood,ni)   = -rtmCTL%flood(n) / (rtmCTL%area(n)*0.001_r8)
        r2x_r%rattr(index_r2x_Flrr_volr,ni)    = (Trunoff%wr(n,nliq) + Trunoff%wt(n,nliq)) / rtmCTL%area(n)
        r2x_r%rattr(index_r2x_Flrr_volrmch,ni) = Trunoff%wr(n,nliq) / rtmCTL%area(n)
+       r2x_r%rattr(index_r2x_Flrr_supply,ni)  = 0._r8 
+       if (wrmflag) then
+          r2x_r%rattr(index_r2x_Flrr_supply,ni)  = StorWater%Supply(n) / (rtmCTL%area(n)*0.001_r8)   !converted to mm/s (Tian)
+       endif
     end do
 
   end subroutine rof_export_mct

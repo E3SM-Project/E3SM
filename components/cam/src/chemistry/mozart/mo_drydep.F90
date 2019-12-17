@@ -2718,6 +2718,7 @@ contains
     !
     ! compute rsmx = 1/(rs+rm) : multiply by 3 if surface is wet
     !-------------------------------------------------------------------------------------
+    rlux = 0._r8
     species_loop1 :  do ispec = 1,gas_pcnst
        if( has_dvel(ispec) ) then
           m = map_dvel(ispec)

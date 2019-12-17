@@ -1,3 +1,5 @@
+! July 2019 O. Guba Added extrema locations in output
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -17,8 +19,8 @@ module prim_state_mod
   use hybvcoord_mod,    only: hvcoord_t
   use global_norms_mod, only: global_integral, linf_snorm, l1_snorm, l2_snorm
   use element_mod,      only: element_t
-  use element_ops,      only: get_field, get_phi
-  use element_state,    only: max_itercnt_perstep,max_itererr_perstep,avg_itercnt,diagtimes
+  use element_ops,      only: get_field, get_phi, get_field_i
+  use element_state,    only: max_itercnt,max_deltaerr,max_reserr,diagtimes
   use eos,              only: pnh_and_exner_from_eos
   use viscosity_mod,    only: compute_zeta_C0
   use reduction_mod,    only: parallelmax,parallelmin,parallelmaxwithindex,parallelminwithindex
@@ -105,7 +107,7 @@ contains
     real (kind=real_kind)  :: phi_i(np,np,nlevp)
     real (kind=real_kind)  :: dphi(np,np,nlev)
     real (kind=real_kind)  :: w_over_dz(np,np,nlev),w_over_dz_p
-    real (kind=real_kind)  :: tdiag(np,np,nlev), tempext
+    real (kind=real_kind)  :: tdiag(np,np,nlev), muvalue(np,np,nlevp), tempext
     !    real (kind=real_kind)  :: E(np,np)
     integer                :: location(3)
 
@@ -149,6 +151,8 @@ contains
     real (kind=real_kind) :: ddt_tot,ddt_diss, ddt_diss_adj
     integer               :: n0, n0q
     integer               :: npts,n,q
+    integer :: max_itercnt_g
+    real (kind=real_kind) :: max_deltaerr_g, max_reserr_g
 
     call t_startf('prim_printstate')
     if (hybrid%masterthread) then 
@@ -215,7 +219,7 @@ contains
           call get_field(elem(ie),'temperature',tdiag,hvcoord,n0,n0q)
        else
           ! show min/max/num of dpnh / dp as a diagnostic
-          call get_field(elem(ie),'dpnh_dp',tdiag,hvcoord,n0,n0q)
+          call get_field_i(elem(ie),'mu_i',muvalue,hvcoord,n0)
        endif
 
        ! layer thickness
@@ -228,14 +232,17 @@ contains
        enddo
 
        ! surface pressure
-       !tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0)
        tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
 
        !======================================================  
 
        psmax_local(ie) = MAXVAL(tmp(:,:,ie))
 
-       call extremumLevelHelper(tmax_local,tdiag,'max',logical(ie == nets))
+       if (theta_hydrostatic_mode) then
+          call extremumLevelHelper(tmax_local,tdiag,'max',logical(ie == nets))
+       else
+          call extremumLevelHelper_i(tmax_local,muvalue,'max',logical(ie == nets))
+       endif
        call extremumLevelHelper(phimax_local,dphi,'max',logical(ie == nets))
        call extremumLevelHelper(w_over_dz_max_local,w_over_dz,'max',logical(ie == nets))
 
@@ -243,7 +250,11 @@ contains
 
        psmin_local(ie) = MINVAL(tmp(:,:,ie))
 
-       call extremumLevelHelper(tmin_local,tdiag,'min',logical(ie == nets))
+       if (theta_hydrostatic_mode) then
+          call extremumLevelHelper(tmin_local,tdiag,'min',logical(ie == nets))
+       else
+          call extremumLevelHelper_i(tmin_local,muvalue,'min',logical(ie == nets))
+       endif
        call extremumLevelHelper(phimin_local,dphi,'min',logical(ie == nets))
 
        !======================================================
@@ -255,7 +266,11 @@ contains
        phisum_local(ie)  = SUM(dphi)
        Fusum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,1,:))
        Fvsum_local(ie)   = SUM(elem(ie)%derived%FM(:,:,2,:))
-       tsum_local(ie)    = SUM(tdiag)
+       if (theta_hydrostatic_mode) then
+          tsum_local(ie)    = SUM(tdiag)
+       else
+          tsum_local(ie)    = SUM(muvalue)
+       endif
 
        dpsum_local(ie)    = SUM(elem(ie)%state%dp3d(:,:,:,n0))
 
@@ -350,19 +365,16 @@ contains
     ! so rate of changes are W/m**2
 
 
-    !   mass = integral( ps-p(top) )
+    !   mass = integral( ps-p(top) ) = sum(dp3d)
     do ie=nets,nete
-       !tmp(:,:,ie)=elem(ie)%state%ps_v(:,:,n0) 
-       tmp(:,:,ie)=hvcoord%hyai(1)*hvcoord%ps0 + sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
+       tmp(:,:,ie)=sum(elem(ie)%state%dp3d(:,:,:,n0),3) 
+#ifdef CAM
+       ! CAM neglicts the small, constant p(top) term.  Add this
+       ! term in to be consistent
+       tmp(:,:,ie)=tmp(:,:,ie) + hvcoord%hyai(1)*hvcoord%ps0 
+#endif
     enddo
     Mass2 = global_integral(elem, tmp(:,:,nets:nete),hybrid,npts,nets,nete)
-
-    !
-    !   ptop =  hvcoord%hyai(1)*hvcoord%ps0)  + hvcoord%hybi(1)*ps(i,j)
-    !   but we assume hybi(1) is zero at top of atmosphere (pure pressure coordinates)
-    !    Mass = (Mass2-(hvcoord%hyai(1)*hvcoord%ps0) )*scale  ! this correction is a constant,
-    !                                                         ! ~20 kg/m^2 (effects 4th digit of Mass)
-    !   BUT: CAM EUL defines mass as integral( ps ), so to be consistent, ignore ptop contribution; 
     Mass = Mass2*scale
 
     if(hybrid%masterthread) then
@@ -400,7 +412,7 @@ contains
                                  fqmax_local(1)," (",nint(fqmax_local(2)),")",fqsum_p
 
        if (.not.theta_hydrostatic_mode) then
-          write(iulog,110) "   min .5*dz/w (CFL condition) = ",.5/w_over_dz_max_local(1)," (",nint(w_over_dz_max_local(2)),")"
+          write(iulog,110) "   min dz/w (CFL condition) = ",1/w_over_dz_max_local(1)," (",nint(w_over_dz_max_local(2)),")"
        endif
 
        do q=1,qsize
@@ -663,6 +675,13 @@ contains
     IEvert1=0; PEhorz1=0; PEhorz2=0; PEvert1=0; PEvert2=0; 
     KEH1=0; KEH2=0;  KEV1=0; KEV2=0;  KEwH1=0; KEwH2=0; KEwH3=0;  KEwV1=0; KEwV2=0; 
 #endif
+    max_itercnt_g=parallelmax(max_itercnt,hybrid)
+    max_deltaerr_g=parallelmax(max_deltaerr,hybrid)
+    max_reserr_g=parallelmax(max_reserr,hybrid)
+    max_itercnt=0 ; max_deltaerr=0; max_reserr=0 ! reset max counters each statefreq output
+
+
+
 
     if(hybrid%masterthread) then 
        if(use_moisture)then
@@ -769,10 +788,7 @@ contains
        endif
 
       ! IMEX diagnostics
-      write(iulog,'(a)')        'IMEX diagnostics:                  '
-      write(iulog,'(a,I2)')     'Max iterations in last time-step   :', max_itercnt_perstep
-      write(iulog,'(a,F8.2)')   'Running average of max iterations  :', avg_itercnt
-      write(iulog,'(a,E23.15)') 'Max error in last time-step        :', max_itererr_perstep
+      write(iulog,'(a,I3,2E23.15)') 'IMEX max iterations, error:',max_itercnt_g,max_deltaerr_g,max_reserr_g
     endif
     
     
@@ -1029,6 +1045,55 @@ subroutine extremumLevelHelper(res,field,operation,first)
       endif
    endif
 end subroutine extremumLevelHelper
+
+
+
+!helper routine to compute min/max for derived quantities
+subroutine extremumLevelHelper_i(res,field,operation,first)
+   use kinds, only : real_kind
+   use dimensions_mod, only : np, np, nlev
+   implicit none
+   real (kind=real_kind), intent(inout) :: res(1:2) ! extremum and level where it happened
+   character(len=*),      intent(in)    :: operation
+   logical,               intent(in)    :: first
+   real (kind=real_kind), intent(in)    :: field(np,np,nlevp)
+
+   real (kind=real_kind)                :: val
+   integer                              :: location(3)
+
+   if((operation /= 'max').and.(operation /= 'min')) call abortmp('unknown operation in extremumLevelHelper_i()')
+
+   if ( first ) then
+      if( operation == 'max' ) then
+         res(1) = MAXVAL(field)
+         location = MAXLOC(field)
+         res(2) = location(3)
+      else
+         res(1) = MINVAL(field)
+         location = MINLOC(field)
+         res(2) = location(3)
+      endif
+   else
+      if( operation == 'max' ) then
+         val = MAXVAL(field)
+         if ( val > res(1) ) then
+            res(1) = val
+            location = MAXLOC(field)
+            res(2) = location(3)
+         endif
+      else
+         val = MINVAL(field)
+         if ( val < res(1) ) then
+            res(1) = val
+            location = MINLOC(field)
+            res(2) = location(3)
+         endif
+      endif
+   endif
+end subroutine extremumLevelHelper_i
+
+
+
 
 
 

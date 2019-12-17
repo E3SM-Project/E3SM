@@ -115,7 +115,7 @@ function(CreateUnitTest target_name target_srcs scream_libs)
       set(FULL_TEST_NAME ${target_name}_ut_np${CURR_RANKS}_omp${CURR_THREADS})
       if (${CURR_RANKS} GREATER 1)
         add_test(NAME ${FULL_TEST_NAME}
-                 COMMAND sh -c "mpiexec -np ${CURR_RANKS} ${SCREAM_MPI_EXTRA_ARGS} ${invokeExec}")
+                 COMMAND sh -c "${SCREAM_MPIRUN_EXE} -np ${CURR_RANKS} ${SCREAM_MPI_EXTRA_ARGS} ${invokeExec}")
       else()
         add_test(NAME ${FULL_TEST_NAME}
                  COMMAND sh -c "${invokeExec}")

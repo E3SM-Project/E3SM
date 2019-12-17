@@ -5,7 +5,7 @@ Interface to the env_batch.xml file.  This class inherits from EnvBase
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_base import EnvBase
 from CIME.utils import transform_vars, get_cime_root, convert_to_seconds, get_cime_config, get_batch_script_for_job, get_logging_options
-
+from CIME.locked_files import lock_file, unlock_file
 from collections import OrderedDict
 import stat, re, math
 
@@ -161,7 +161,11 @@ class EnvBatch(EnvBase):
             self.add_child(self.copy(batchobj.batch_system_node))
         if batchobj.machine_node is not None:
             self.add_child(self.copy(batchobj.machine_node))
+        if os.path.exists(os.path.join(self._caseroot, "LockedFiles", "env_batch.xml")):
+            unlock_file(os.path.basename(batchobj.filename), caseroot=self._caseroot)
         self.set_value("BATCH_SYSTEM", batch_system_type)
+        if os.path.exists(os.path.join(self._caseroot, "LockedFiles")):
+            lock_file(os.path.basename(batchobj.filename), caseroot=self._caseroot)
 
     def get_job_overrides(self, job, case):
         env_workflow = case.get_env('workflow')
@@ -410,8 +414,15 @@ class EnvBatch(EnvBase):
                             rval = val
                     else:
                         rval = val
+
+                    # We don't want floating-point data
+                    try:
+                        rval = int(round(float(rval)))
+                    except ValueError:
+                        pass
+
                     # need a correction for tasks per node
-                    if flag == "-n" and rval<= 0:
+                    if flag == "-n" and rval <= 0:
                         rval = 1
 
                     if flag == "-q" and rval == "batch" and case.get_value("MACH") == "blues":
@@ -428,12 +439,23 @@ class EnvBatch(EnvBase):
 
     def submit_jobs(self, case, no_batch=False, job=None, user_prereq=None, skip_pnl=False,
                     allow_fail=False, resubmit_immediate=False, mail_user=None, mail_type=None,
-                    batch_args=None, dry_run=False):
+                    batch_args=None, dry_run=False, workflow=True):
+        """
+          no_batch indicates that the jobs should be run directly rather that submitted to a queueing system
+          job is the first job in the workflow sequence to start
+          user_prereq is a batch system prerequisite as requested by the user
+          skip_pnl indicates that the preview_namelist should not be run by this job
+          allow_fail indicates that the prereq job need only complete not nessasarily successfully to start the next job
+          resubmit_immediate indicates that all jobs indicated by the RESUBMIT option should be submitted at the same time instead of
+                waiting to resubmit at the end of the first sequence
+          workflow is a logical indicating whether only "job" is submitted or the workflow sequence starting with "job" is submitted
+        """
         env_workflow = case.get_env('workflow')
         external_workflow = case.get_value("EXTERNAL_WORKFLOW")
         alljobs = env_workflow.get_jobs()
         alljobs = [j for j in alljobs
                    if os.path.isfile(os.path.join(self._caseroot,get_batch_script_for_job(j)))]
+
         startindex = 0
         jobs = []
         firstjob = job
@@ -458,10 +480,11 @@ class EnvBatch(EnvBase):
 
             if self._batchtype == "cobalt":
                 break
+
         depid = OrderedDict()
         jobcmds = []
 
-        if resubmit_immediate:
+        if workflow and resubmit_immediate:
             num_submit = case.get_value("RESUBMIT") + 1
             case.set_value("RESUBMIT", 0)
             if num_submit <= 0:
@@ -496,12 +519,13 @@ class EnvBatch(EnvBase):
                                                  mail_user=mail_user,
                                                  mail_type=mail_type,
                                                  batch_args=batch_args,
-                                                 dry_run=dry_run)
+                                                 dry_run=dry_run,
+                                                 workflow=workflow)
                 batch_job_id = str(alljobs.index(job)) if dry_run else result
                 depid[job] = batch_job_id
                 jobcmds.append( (job, result) )
 
-                if self._batchtype == "cobalt" or external_workflow:
+                if self._batchtype == "cobalt" or external_workflow or not workflow:
                     break
 
             if not external_workflow and not no_batch:
@@ -582,7 +606,7 @@ class EnvBatch(EnvBase):
 
     def _submit_single_job(self, case, job, dep_jobs=None, allow_fail=False,
                            no_batch=False, skip_pnl=False, mail_user=None, mail_type=None,
-                           batch_args=None, dry_run=False, resubmit_immediate=False):
+                           batch_args=None, dry_run=False, resubmit_immediate=False, workflow=True):
 
         if not dry_run:
             logger.warning("Submit job {}".format(job))
@@ -593,7 +617,7 @@ class EnvBatch(EnvBase):
             job_name = "."+job
             if not dry_run:
                 args = self._build_run_args(job, True, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
-                                            submit_resubmits=not resubmit_immediate)
+                                            submit_resubmits=workflow and not resubmit_immediate)
                 try:
                     if hasattr(case, function_name):
                         getattr(case, function_name)(**{k: v for k, (v, _) in args.items()})
@@ -676,7 +700,7 @@ class EnvBatch(EnvBase):
         batchredirect = self.get_value("batch_redirect", subgroup=None)
         batch_env_flag = self.get_value("batch_env", subgroup=None)
         run_args = self._build_run_args_str(job, False, skip_pnl=skip_pnl, set_continue_run=resubmit_immediate,
-                                            submit_resubmits=not resubmit_immediate)
+                                            submit_resubmits=workflow and not resubmit_immediate)
         if batch_system == 'lsf' and not batch_env_flag:
             sequence = (run_args, batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job))
         elif batch_env_flag:

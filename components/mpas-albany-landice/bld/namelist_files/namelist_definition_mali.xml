@@ -70,7 +70,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_flowParamA_calculation" type="char*1024"
 	category="velocity_solver" group="velocity_solver">
-Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field.
+Selection of the method for calculating the flow law parameter A.  If 'constant' is selected, the value is set to config_default_flowParamA.  The other options are calculated from the temperature field.  This calculation only applies if config_velocity_solver is set to 'sia'.  For the 'FO' velocity solver, this is set in the albany_input.yaml file.
 
 Valid values: 'constant', 'PB1982', 'CP2010'
 Default: Defined in namelist_defaults.xml
@@ -86,7 +86,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_simple_velocity_type" type="char*1024"
 	category="velocity_solver" group="velocity_solver">
-Selection of the type of simple velocity field computed at initialization when config_velocity_solver = 'simple'
+Selection of the type of simple velocity field computed at initialization when config_velocity_solver = 'simple'.  See mode_forward/mpas_li_velocity_simple.F for details of what the options do.
 
 Valid values: 'uniform', 'radial'
 Default: Defined in namelist_defaults.xml
@@ -108,12 +108,20 @@ Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_unrealistic_velocity" type="real"
+	category="velocity_solver" group="velocity_solver">
+Ice is removed at any locations with surface speed faster than this value and sent to the calving flux. The presence of icebergs can lead to unrealistically large velocities.  A simple method to remove icebergs is to remove ice where the velocity is faster than an arbitrarily large value.
+
+Valid values: Any positive, real number.
+Default: Defined in namelist_defaults.xml
+</entry>
+
 
 <!-- advection -->
 
 <entry id="config_thickness_advection" type="char*1024"
 	category="advection" group="advection">
-Selection of the method for advecting thickness.
+Selection of the method for advecting thickness ('fo' = first-order upwinding).
 
 Valid values: 'fo', 'none'
 Default: Defined in namelist_defaults.xml
@@ -132,7 +140,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_calving" type="char*1024"
 	category="calving" group="calving">
-Selection of the method for calving ice.
+Selection of the method for calving ice (as defined further below).
 
 Valid values: 'none', 'floating', 'topographic_threshold', 'thickness_threshold', 'eigencalving' 
 Default: Defined in namelist_defaults.xml
@@ -164,7 +172,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_calving_eigencalving_parameter_scalar_value" type="real"
 	category="calving" group="calving">
-Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 ma converted to units used here.)
+Value of eigencalving parameter if taken as a scalar by option config_calving_eigencalving_parameter_source. (Default value is 1.0e9 m a converted to units used here.)
 
 Valid values: any positive real number
 Default: Defined in namelist_defaults.xml
@@ -180,7 +188,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_calving_timescale" type="real"
 	category="calving" group="calving">
-Defines the timescale for calving. The fraction of eligible ice that calves is max(dt/calving_timescale, 1.0). A value of 0 means that all eligible ice calves.
+Defines the timescale for calving. The fraction of eligible ice that calves is min(dt/calving_timescale, 1.0). A value of 0 means that all eligible ice calves.
 
 Valid values: Any non-negative real value
 Default: Defined in namelist_defaults.xml
@@ -188,7 +196,23 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_restore_calving_front" type="logical"
 	category="calving" group="calving">
-If true, then restort the calving front to its initial position
+If true, then restore the calving front to its initial position.  If ice grows beyond the initial extent, it is removed.  If ice shrinks to an extent behind the initial extent, those locations are filled with thin ice (defined as 1/10th the value of config_dynamic_thickness).  Note that this violates conservation of mass and energy.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_remove_icebergs" type="logical"
+	category="calving" group="calving">
+If true, then a flood fill will be applied to remove icebergs.  The ice removed is added to the calvingThickness field.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_remove_small_islands" type="logical"
+	category="calving" group="calving">
+If true, then ice from small grounded islands is removed.  Specifically, this finds one- and two-cell masses of ice that are surrounded by open ocean and eliminates them by sending them to the calving flux.  Grounded such ice masses would be islands, floating would be icebergs.  The ice removed is added to the calvingThickness field.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -199,7 +223,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_thermal_solver" type="char*1024"
 	category="thermal_solver" group="thermal_solver">
-Selection of the method for the vertical thermal solver.
+Selection of the method for the vertical thermal solver (possible values are described further below).
 
 Valid values: 'none', 'temperature', 'enthalpy'
 Default: Defined in namelist_defaults.xml
@@ -207,7 +231,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_thermal_calculate_bmb" type="logical"
 	category="thermal_solver" group="thermal_solver">
-Determines if basal and internal melting calculated by the thermal solver should contribute to basal mass balance.
+Determines if basal and internal melting calculated by the thermal solver should contribute to basal mass balance or be ignored.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -215,7 +239,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_temperature_init" type="char*1024"
 	category="thermal_solver" group="thermal_solver">
-Selection of the method for initializing the ice temperature.
+Selection of the method for initializing the ice temperature (as described further below).
 
 Valid values: 'sfc_air_temperature', 'linear', 'file'
 Default: Defined in namelist_defaults.xml
@@ -223,7 +247,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_thermal_thickness" type="real"
 	category="thermal_solver" group="thermal_solver">
-Defines the minimum thickness for thermal calculations
+Defines the minimum ice thickness for conducting thermal calculations. Ice thinner than this value is ignored by the thermal solver.
 
 Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
@@ -269,40 +293,35 @@ Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_temp_diffusive_factor" type="real"
+	category="thermal_solver" group="thermal_solver">
+the factor to estimate diffusivity (kt) in temperate ice from that in cold ice (kc), kt = f * kc
+
+Valid values: any positive number within a likely range of [1e-6, 1e-2]
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_max_water_fraction" type="real"
+	category="thermal_solver" group="thermal_solver">
+the maximum water fraction allowed
+
+Valid values: theoretically the range is (0, 1), but more realistically about 0.01
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- iceshelf_melt -->
+
 <entry id="config_basal_mass_bal_float" type="char*1024"
-	category="thermal_solver" group="thermal_solver">
-Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code.
+	category="iceshelf_melt" group="iceshelf_melt">
+Selection of the method for computing the basal mass balance of floating ice.  'none' sets the basalMassBal field to 0 everywhere.  'file' uses without modification whatever value was read in through an input or forcing file or the value set by an ESM coupler.  'constant', 'mismip', 'seroussi' use hardcoded fields defined in the code applicable to Thwaites Glacier. 'temperature_profile' generates a depth-melt relation based on an ocean temperature profile and sill depth.
 
-Valid values: 'none', 'file', 'constant', 'mismip', 'seroussi'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_basal_mass_bal_seroussi_amplitude" type="real"
-	category="thermal_solver" group="thermal_solver">
-amplitude on the depth adjustment applied to the Seroussi subglacial melt param.
-
-Valid values: any positive real value
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_basal_mass_bal_seroussi_period" type="real"
-	category="thermal_solver" group="thermal_solver">
-period of the periodic depth adjustment applied to the Seroussi subglacial melt param.
-
-Valid values: any positive real value
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_basal_mass_bal_seroussi_phase" type="real"
-	category="thermal_solver" group="thermal_solver">
-phase of the periodic depth adjustment applied to the Seroussi subglacial melt param. Units are cycles, i.e., 0-1
-
-Valid values: any positive real value
+Valid values: 'none', 'file', 'constant', 'mismip', 'seroussi', 'temperature_profile'
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_bmlt_float_flux" type="real"
-	category="thermal_solver" group="thermal_solver">
+	category="iceshelf_melt" group="iceshelf_melt">
 Value of the constant heat flux applied to the base of floating ice (positive upward).
 
 Valid values: Any positive real value
@@ -310,10 +329,130 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_bmlt_float_xlimit" type="real"
-	category="thermal_solver" group="thermal_solver">
-x value defining region where bmlt_float_flux is applied; melt only where abs(x) > xlimit.
+	category="iceshelf_melt" group="iceshelf_melt">
+x value defining region where bmlt_float_flux is applied; melt only where abs(x) is greater than xlimit.
 
 Valid values: Any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_basal_mass_bal_seroussi_amplitude" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+amplitude on the depth adjustment applied to the Seroussi subglacial melt parameterization
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_basal_mass_bal_seroussi_period" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+period of the periodic depth adjustment applied to the Seroussi subglacial melt parameterization
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_basal_mass_bal_seroussi_phase" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+phase of the periodic depth adjustment applied to the Seroussi subglacial melt parameterization. Units are cycles, i.e., 0-1
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_melt_scale_factor" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+The scale factor in the 'temperature_profile' melt parameterization that converts a product of two ocean temperatures to a melt rate.  Called kappa in code.
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_sill_elevation" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+The sill elevation used by the 'temperature_profile' melt parameterization.  Positive is above sea level.
+
+Valid values: any real value, but only negative values make sense
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_plume_thickness" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+The plume thickness parameter used by the 'temperature_profile' melt parameterization.
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_draft_slope" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+The parameter defining the slope of the ice sheld draft that is used by the 'temperature_profile' melt parameterization.
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_thermocline_upper_depth" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+The parameter defining depth of the top of the ocean thermocline used by the 'temperature_profile' melt parameterization.
+
+Valid values: any real value, but only negative values makes sense
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_thermocline_upper_temp" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+The parameter defining the ocean temperature at the top of the thermocline used by the 'temperature_profile' melt parameterization.
+
+Valid values: any real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_thermocline_lower_depth" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+The parameter defining depth of the bottom of the ocean thermocline used by the 'temperature_profile' melt parameterization.
+
+Valid values: any real value, but only negative values makes sense
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_thermocline_lower_temp" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+The parameter defining the ocean temperature at the bottom of the thermocline used by the 'temperature_profile' melt parameterization.
+
+Valid values: any real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_variability_amplitude" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+amplitude on the depth adjustment applied to the 'temperature_profile' melt parameterization
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_variability_period" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+period of the periodic depth adjustment applied to the 'temperature_profile' melt parameterization
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_variability_phase" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+phase of the periodic depth adjustment applied to the 'temperature_profile' melt parameterization. Units are cycles, i.e., 0-1
+
+Valid values: any positive real value
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_temperature_profile_GL_depth_fraction" type="real"
+	category="iceshelf_melt" group="iceshelf_melt">
+The fraction of the deepest grounding line depths over which the grounding line depth is averaged to obtain a reference grounding line depth for the 'temperature_profile' melt parameterization.
+
+Valid values: any positive real value
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -322,7 +461,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ice_density" type="real"
 	category="physical_parameters" group="physical_parameters">
-ice density to use
+ice density to use (assumed constant and uniform)
 
 Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
@@ -330,7 +469,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_ocean_density" type="real"
 	category="physical_parameters" group="physical_parameters">
-ocean density to use for calculating floatation
+ocean density to use for calculating floatation (assumed constant and uniform)
 
 Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
@@ -338,7 +477,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_sea_level" type="real"
 	category="physical_parameters" group="physical_parameters">
-sea level to use for calculating floatation
+sea level to use for calculating floatation (assumed constant and uniform)
 
 Valid values: Any real value
 Default: Defined in namelist_defaults.xml
@@ -346,15 +485,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_default_flowParamA" type="real"
 	category="physical_parameters" group="physical_parameters">
-Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  Defaults to the SI representation of 1.0e-16 yr^{-1} Pa^{-3}.
-
-Valid values: Any positive real value
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_enhancementFactor" type="real"
-	category="physical_parameters" group="physical_parameters">
-multiplier on the flow parameter A
+Defines the default value of the flow law parameter A to be used if it is not being calculated from ice temperature.  This value will be used by either the sia or FO velocity solver if they are respectively configured to use a scalar A value.  Defaults to the SI representation of 1.0e-16 yr$^{-1}$ Pa$^{-3}$.
 
 Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
@@ -362,7 +493,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_flowLawExponent" type="real"
 	category="physical_parameters" group="physical_parameters">
-Defines the value of the Glen flow law exponent, n.
+Defines the value of the Glen flow law exponent, n. This value will be used by either the sia or FO velocity solver.  A value other than 3.0 is untested.
 
 Valid values: Any real value
 Default: Defined in namelist_defaults.xml
@@ -370,7 +501,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_dynamic_thickness" type="real"
 	category="physical_parameters" group="physical_parameters">
-Defines the ice thickness below which dynamics are not calculated.
+Defines the ice thickness below which dynamics are not calculated (and hence ice velocity is set to 0).
 
 Valid values: Any positive real value
 Default: Defined in namelist_defaults.xml
@@ -383,13 +514,13 @@ Default: Defined in namelist_defaults.xml
 	category="time_integration" group="time_integration">
 Length of model time step defined as a time interval.
 
-Valid values: Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)
+Valid values: Any time interval of the format 'YYYY-MM-DD_HH:MM:SS', but limited by CFL condition.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_time_integration" type="char*1024"
 	category="time_integration" group="time_integration">
-Time integration method.
+Time integration method (currently, only forward Euler is supported).
 
 Valid values: 'forward_euler'
 Default: Defined in namelist_defaults.xml
@@ -413,7 +544,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_max_adaptive_timestep" type="real"
 	category="time_integration" group="time_integration">
-The maximum allowable time step in seconds.  If the CFL condition allows the time step to be longer than this, then the model uses this value instead.  Defaults to 100 years (in seconds).
+The maximum allowable time step in seconds. If the allowable time step determined by the adaptive CFL calculation is longer than this, then the model will specify config_max_adaptive_timestep as the time step instead. Defaults to 100 years (in seconds).
 
 Valid values: Any non-negative real value.
 Default: Defined in namelist_defaults.xml
@@ -429,7 +560,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_adaptive_timestep_include_DCFL" type="logical"
 	category="time_integration" group="time_integration">
-Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep.
+Option of whether to include the diffusive CFL condition in the determination of the maximum allowable timestep. The diffusive CFL condition at any location is estimated based on the local ice flux and surface slope.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -437,7 +568,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_adaptive_timestep_force_interval" type="char*1024"
 	category="time_integration" group="time_integration">
-If adaptive timestep is enabled, the model will ensure a timestep ends at multiples of this interval.  This is useful for ensuring you get output at a specific desired interval (rather than the closest time after) or for running coupled to earth system models that expect a certain interval.
+If adaptive timestep is enabled, the model will ensure a timestep ends at multiples of this interval.  This is useful for ensuring that model output is written at a specific desired interval (rather than the closest time after) or when running coupled to an earth system model that expects a certain interval.
 
 Valid values: Any time interval of the format 'YYYY-MM-DD_HH:MM:SS'. (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)
 Default: Defined in namelist_defaults.xml
@@ -448,7 +579,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_do_restart" type="logical"
 	category="time_management" group="time_management">
-Determines if the initial conditions should be read from a restart file, or an input file.  To perform a restart, simply set this to true in the namelist.input file and modify the start time to be the time you want restart from.  A restart will read the grid information from the input field, and the restart state from the restart file.  It will perform a run normally, except velocity will not be solved on a restart.
+Determines if the initial conditions should be read from a restart file, or an input file.  To perform a restart, set this to true in the namelist.input file.  The restart time will be read from config_start_time (which can be set to 'file' to have the restart time read automatically from the file defined by config_restart_timestamp_name). A restart will read everything from the restart file - no information is read from the 'input' stream.  It will perform a run normally, except velocity will not be solved on a restart.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -464,7 +595,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_start_time" type="char*1024"
 	category="time_management" group="time_management">
-Timestamp describing the initial time of the simulation.  If it is set to 'file', the initial time is read from restart_timestamp
+Timestamp describing the initial time of the simulation.  If it is set to 'file', the initial time is read from the filename specified by config_restart_timestamp_name (defaults to 'restart_timestamp').
 
 Valid values: 'YYYY-MM-DD_HH:MM:SS' (items in the format string may be dropped from the left if not needed, and the components on either side of the underscore may be replaced with a single integer representing the rightmost unit)
 Default: Defined in namelist_defaults.xml
@@ -499,7 +630,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_stats_interval" type="integer"
 	category="io" group="io">
-Integer specifying interval (number of timesteps) for writing global/local statistics. If set to 0, then statistics are not written (except perhaps at startup, as determined by 'config_write_stats_on_startup').
+Integer specifying interval (number of timesteps) for writing global/local statistics. If set to 0, then statistics are not written (except perhaps at startup, as determined by 'config_write_stats_on_startup'). Applies to statistics written to log file and not analysis member output written to netCDF files.
 
 Valid values: Any positive integer value greater than or equal to 0.
 Default: Defined in namelist_defaults.xml
@@ -507,7 +638,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_write_stats_on_startup" type="logical"
 	category="io" group="io">
-Logical flag determining if statistics should be written prior to the first time step.
+Logical flag determining if statistics should be written prior to the first time step. Applies to statistics written to log file and not analysis member output written to netCDF files.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -515,7 +646,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_stats_cell_ID" type="integer"
 	category="io" group="io">
-global ID for the cell selected for local statistics/diagnostics
+global ID for the cell selected for local statistics/diagnostics. Applies to statistics written to log file and not analysis member output written to netCDF files.
 
 Valid values: Any positive integer value greater than or equal to 0.
 Default: Defined in namelist_defaults.xml
@@ -531,7 +662,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_pio_num_iotasks" type="integer"
 	category="io" group="io">
-Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are required to write contiguous blocks of data to a file.
+Integer specifying how many IO tasks should be used within the PIO library. A value of 0 causes all MPI tasks to also be IO tasks. IO tasks are required to write contiguous blocks of data to a file.  Optimal performance is typically found by having 1-2 tasks per node performing I/O.  To do so, config_pio_num_iotasks must be manually set in conjunction with config_pio_stride as appropriate for the processor layout used. For example, running on 240 processors on a machine with 24 processors per node, setting config_pio_num_iotasks=20 and config_pio_stride=12 would configure two I/O tasks per node.
 
 Valid values: Any positive integer value greater than or equal to 0.
 Default: Defined in namelist_defaults.xml
@@ -539,7 +670,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_pio_stride" type="integer"
 	category="io" group="io">
-Integer specifying the stride of each IO task.
+Integer specifying the stride of each IO task. See config_pio_num_iotasks for details.
 
 Valid values: Any positive integer value greater than 0.
 Default: Defined in namelist_defaults.xml
@@ -563,7 +694,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_write_albany_ascii_mesh" type="logical"
 	category="io" group="io">
-Logical flag determining if Albany ascii mesh files will be written.  If .true., model initializes, writes the mesh files, and then terminates.
+Logical flag determining if ascii mesh files will be created.  These files are written in a format that can be used by the standalone Albany velocity solver for optimization.  If .true., the model initializes, writes the mesh files, and then terminates.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -574,7 +705,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_num_halos" type="integer"
 	category="decomposition" group="decomposition">
-Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). Default FO advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection, neither of which is currently fully supported.
+Determines the number of halo cells extending from a blocks owned cells (Called the 0-Halo). The default first-order upwinding advection requires a minimum of 2.  Note that a minimum of 3 is required for incremental remapping advection on a quad mesh or for FCT advection (neither of which is currently supported for land ice).
 
 Valid values: Any positive interger value.
 Default: Defined in namelist_defaults.xml
@@ -625,7 +756,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_print_calving_info" type="logical"
 	category="debug" group="debug">
-Prints additional information about calving.
+Prints additional information about calving physics (if enabled).
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -633,7 +764,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_print_thermal_info" type="logical"
 	category="debug" group="debug">
-Prints additional information about thermal calculations.
+Prints additional information about thermal calculations (if enabled).
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -641,7 +772,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_always_compute_fem_grid" type="logical"
 	category="debug" group="debug">
-Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes.
+Always compute finite-element grid information for external dycores rather than only doing so when the ice extent changes.  As of June 2019 (and earlier) there is a bug which requires this to be set to true if there are ice shelves in the model domain.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -668,7 +799,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_adaptive_timestep_fraction" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-fraction of limiting timestep to use
+fraction of adaptive CFL timestep to use
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml
@@ -676,7 +807,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_max_adaptive_timestep" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-The maximum allowable time step in seconds for the subglacial hydrology model.  If the CFL condition allows the time step to be longer than this, then the model uses this value instead.  Defaults to 100 years (in seconds).
+The maximum allowable time step in seconds. If the allowable time step determined by the adaptive CFL calculation is longer than this, then the model will specify config_SGH_max_adaptive_timestep as the time step instead.  Defaults to 100 years (in seconds).
 
 Valid values: Any non-negative real value.
 Default: Defined in namelist_defaults.xml
@@ -700,7 +831,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_alpha" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-power in flux formula
+power of alpha parameter in subglacial water flux formula
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml
@@ -708,7 +839,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_beta" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-power in flux formula
+power of beta parameter in subglacial water flux formula
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml
@@ -716,7 +847,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_conduc_coeff" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-conductivity coefficient
+conductivity coefficient for subglacial water flux
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml
@@ -724,15 +855,15 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_till_drainage" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-background till drainage rate
+background subglacial till drainage rate
 
-Valid values: positive real number.  Default value is 0.001 m/yr
+Valid values: positive real number.  Default value is 0.001 m/yr in SI units.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_SGH_advection" type="char*1024"
 	category="subglacial_hydro" group="subglacial_hydro">
-Advection method for SGH.  'fo'=First order upwind; 'fct'=Flux corrected transport.  FCT currently not enabled.
+Advection method for SGH. 'fo'=first-order upwind; 'fct'=flux-corrected transport. FCT currently not enabled.
 
 Valid values: 'fo','fct'
 Default: Defined in namelist_defaults.xml
@@ -772,7 +903,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_till_max" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-maximum water thickness in till
+maximum water thickness in subglacial till
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml
@@ -788,7 +919,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_chnl_alpha" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-power in flux formula
+power of alpha parameter in subglacial water flux formula (in channels)
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml
@@ -796,7 +927,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_chnl_beta" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-power in flux formula
+power of beta parameter in subglacial water flux formula (in channels)
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml
@@ -804,7 +935,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_chnl_conduc_coeff" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-conductivity coefficient
+conductivity coefficient (in channels)
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml
@@ -812,7 +943,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_chnl_creep_coefficient" type="real"
 	category="subglacial_hydro" group="subglacial_hydro">
-creep closure coefficient
+creep closure coefficient (in channels)
 
 Valid values: positive real number
 Default: Defined in namelist_defaults.xml
@@ -828,7 +959,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_SGH_include_pressure_melt" type="logical"
 	category="subglacial_hydro" group="subglacial_hydro">
-whether to include the pressure melt term in the channel opening
+whether to include the pressure melt term in the rate of channel opening
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -863,7 +994,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_globalStats_compute_interval" type="char*1024"
 	category="AM_globalStats" group="AM_globalStats">
-Timestamp determining how often analysis member computation should be performed.
+Timestamp determining how often analysis member computations should be performed.
 
 Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
@@ -879,7 +1010,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_globalStats_compute_on_startup" type="logical"
 	category="AM_globalStats" group="AM_globalStats">
-Logical flag determining if an analysis member computation occurs on start-up.
+Logical flag determining if analysis member computations occur on start-up.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -906,7 +1037,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_regionalStats_compute_interval" type="char*1024"
 	category="AM_regionalStats" group="AM_regionalStats">
-Timestamp determining how often analysis member computation should be performed.
+Timestamp determining how often analysis member computations should be performed.
 
 Valid values: Any valid time stamp, 'dt', or 'output_interval'
 Default: Defined in namelist_defaults.xml
@@ -922,7 +1053,7 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_AM_regionalStats_compute_on_startup" type="logical"
 	category="AM_regionalStats" group="AM_regionalStats">
-Logical flag determining if an analysis member computation occurs on start-up.
+Logical flag determining if analysis member computations occur on start-up.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml

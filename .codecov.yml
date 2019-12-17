@@ -1,4 +1,0 @@
-ignore:
-- "components/scream/extern/catch2"
-- "components/[a-rt-z]*"
-- "cime"

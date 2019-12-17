@@ -7,8 +7,6 @@
 // Put everything into a scream namespace
 namespace scream {
 
-using scream::Real;
-using scream::Int;
 extern "C"
 {
 

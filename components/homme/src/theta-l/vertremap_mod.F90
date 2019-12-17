@@ -12,7 +12,6 @@ module vertremap_mod
   use perf_mod, only               : t_startf, t_stopf  ! _EXTERNAL
   use parallel_mod, only           : abortmp, parallel_t
   use control_mod, only : vert_remap_q_alg
-  use element_ops, only : set_theta_ref
   use eos, only : phi_from_eos
   implicit none
   private
@@ -50,7 +49,6 @@ contains
   integer :: q
 
   real (kind=real_kind), dimension(np,np,nlev)  :: dp,dp_star
-  real (kind=real_kind), dimension(np,np,nlev)  :: theta_ref
   real (kind=real_kind), dimension(np,np,nlevp) :: phi_ref
   real (kind=real_kind), dimension(np,np,nlev,5)  :: ttmp
 
@@ -106,9 +104,6 @@ contains
      endif
 
      if (rsplit>0) then
-        !removing theta_ref does not help much and will not conserve theta*dp
-        !call set_theta_ref(hvcoord,dp_star,theta_ref)
-
         ! remove hydrostatic phi befor remap
         call phi_from_eos(hvcoord,elem(ie)%state%phis,elem(ie)%state%vtheta_dp(:,:,:,np1),dp_star,phi_ref)
         elem(ie)%state%phinh_i(:,:,:,np1)=&
@@ -117,7 +112,7 @@ contains
         !  REMAP u,v,T from levels in dp3d() to REF levels
         ttmp(:,:,:,1)=elem(ie)%state%v(:,:,1,:,np1)*dp_star
         ttmp(:,:,:,2)=elem(ie)%state%v(:,:,2,:,np1)*dp_star
-        ttmp(:,:,:,3)=elem(ie)%state%vtheta_dp(:,:,:,np1)   ! - theta_ref*dp_star*Cp
+        ttmp(:,:,:,3)=elem(ie)%state%vtheta_dp(:,:,:,np1)
         do k=1,nlev
            ttmp(:,:,k,4)=elem(ie)%state%phinh_i(:,:,k+1,np1)-&
                 elem(ie)%state%phinh_i(:,:,k,np1) 
@@ -131,10 +126,9 @@ contains
         call remap1(ttmp,np,5,dp_star,dp)
         call t_stopf('vertical_remap1_1')
 
-        !call set_theta_ref(hvcoord,dp,theta_ref)
         elem(ie)%state%v(:,:,1,:,np1)=ttmp(:,:,:,1)/dp
         elem(ie)%state%v(:,:,2,:,np1)=ttmp(:,:,:,2)/dp
-        elem(ie)%state%vtheta_dp(:,:,:,np1)=ttmp(:,:,:,3) ! + theta_ref*dp*Cp
+        elem(ie)%state%vtheta_dp(:,:,:,np1)=ttmp(:,:,:,3)
       
         
         do k=nlev,1,-1
@@ -157,7 +151,7 @@ contains
      endif
 
      ! remap the gll tracers from lagrangian levels (dp_star)  to REF levels dp
-     if (qsize>0) then
+     if (qsize>0 .and. np1_qdp > 0) then
 
        call t_startf('vertical_remap1_3')
        call remap1(elem(ie)%state%Qdp(:,:,:,:,np1_qdp),np,qsize,dp_star,dp)
@@ -170,9 +164,7 @@ contains
      endif
 
      ! reinitialize dp3d after remap
-     do k=1,nlev    
-        elem(ie)%state%dp3d(:,:,:,np1)=dp(:,:,:)
-     enddo
+     elem(ie)%state%dp3d(:,:,:,np1)=dp(:,:,:)
 
   enddo
   call t_stopf('vertical_remap')

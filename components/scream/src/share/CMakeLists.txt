@@ -13,6 +13,8 @@ set(SHARE_SRC
   util/array_io.cpp
   util/array_io_mod.f90
   util/time_stamp.cpp
+  util/scream_tridiag_bfb.cpp
+  util/scream_tridiag_bfb_mod.F90
 )
 
 # So far this is pointless, since we are not installing the library

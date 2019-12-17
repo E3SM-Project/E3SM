@@ -2,6 +2,13 @@
 
 #include "tridiag_tests.hpp"
 
+extern "C" {
+  void tridiag_diagdom_bfb_a1x1(int n, scream::Real* dl, scream::Real* d,
+                                scream::Real* du, scream::Real* x);
+  void tridiag_diagdom_bfb_a1xm(int n, int nrhs, scream::Real* dl, scream::Real* d,
+                                scream::Real* du, scream::Real* x);
+}
+
 namespace scream {
 namespace tridiag {
 namespace test {
@@ -10,7 +17,7 @@ namespace correct {
 struct Solver {
   enum Enum { thomas_team_scalar, thomas_team_pack,
               thomas_scalar, thomas_pack,
-              cr_scalar,
+              cr_scalar, bfb, bfbf90,
               error };
 
   static std::string convert (Enum e) {
@@ -20,6 +27,8 @@ struct Solver {
     case thomas_scalar: return "thomas_scalar";
     case thomas_pack: return "thomas_pack";
     case cr_scalar: return "cr_scalar";
+    case bfb: return "bfb";
+    case bfbf90: return "bfbf90";
     default: scream_require_msg(false, "Not a valid solver: " << e);
     }
   }
@@ -30,6 +39,8 @@ struct Solver {
     if (s == "thomas_scalar") return thomas_scalar;
     if (s == "thomas_pack") return thomas_pack;
     if (s == "cr_scalar") return cr_scalar;
+    if (s == "bfb") return bfb;
+    if (s == "bfbf90") return bfbf90;
     return error;
   }
 
@@ -38,7 +49,7 @@ struct Solver {
 
 Solver::Enum Solver::all[] = { thomas_team_scalar, thomas_team_pack,
                                thomas_scalar, thomas_pack,
-                               cr_scalar };
+                               cr_scalar, bfb, bfbf90 };
 
 struct TestConfig {
   using TeamLayout = Kokkos::LayoutRight;
@@ -208,8 +219,8 @@ struct Solve<true, APack, DataPack> {
             const auto d  = get_diag(As, 1);
             const auto du = get_diag(As, 2);
             scream::tridiag::cr(team, dl, d, du, Xs);
-          };
-          Kokkos::parallel_for(policy, f);
+          }; 
+         Kokkos::parallel_for(policy, f);
         }
       } else {
         const auto As = scalarize(A);
@@ -222,6 +233,40 @@ struct Solve<true, APack, DataPack> {
         };
         Kokkos::parallel_for(policy, f);
       }
+    } break;
+    case Solver::bfb: {
+      const auto f = KOKKOS_LAMBDA (const MT& team) {
+        const auto dl = get_diags(A, 0);
+        const auto d  = get_diags(A, 1);
+        const auto du = get_diags(A, 2);
+        scream::tridiag::bfb(team, dl, d, du, X);
+      };
+      Kokkos::parallel_for(policy, f);
+    } break;
+    case Solver::bfbf90: {
+      const auto Am = create_mirror_view(A);
+      const auto Xm = create_mirror_view(X);
+      deep_copy(Am, A);
+      deep_copy(Xm, X);
+      const auto As = scalarize(Am);
+      const auto Xs = scalarize(Xm);
+      const auto dl = get_diag(As, 0);
+      const auto d  = get_diag(As, 1);
+      const auto du = get_diag(As, 2);
+      if (nprob == 1) {
+        if (nrhs == 1) {
+          const auto x  = get_x(Xs);
+          tridiag_diagdom_bfb_a1x1(d.extent_int(0), dl.data(), d.data(),
+                                   du.data(), x.data());
+        } else {
+          tridiag_diagdom_bfb_a1xm(d.extent_int(0), Xs.extent_int(1),
+                                   dl.data(), d.data(), du.data(), Xs.data());
+        }
+      } else {
+        scream_require_msg(false, "bfbf90 does not support nprob > 1");
+      }
+      deep_copy(A, Am);
+      deep_copy(X, Xm);
     } break;
     default:
       scream_require_msg(false, "Same pack size: " << Solver::convert(tc.solver));
@@ -273,23 +318,122 @@ struct Solve<false, APack, DataPack> {
       };
       Kokkos::parallel_for(policy, f);
     } break;
+    case Solver::bfb: {
+      const auto As = scalarize(A);
+      const auto f = KOKKOS_LAMBDA (const MT& team) {
+        const auto dl = get_diags(As, 0);
+        const auto d  = get_diags(As, 1);
+        const auto du = get_diags(As, 2);
+        scream::tridiag::bfb(team, dl, d, du, X);
+      };
+      Kokkos::parallel_for(policy, f);
+    } break;
     default:
       scream_require_msg(false, "Different pack size: " << Solver::convert(tc.solver));
     }
   }
 };
 
-template <int A_pack_size, int data_pack_size>
-void run_test (const TestConfig& tc) {
-  using namespace scream::tridiag::test;
+template <typename APack, typename DataPack>
+struct Data {
+  const int nprob, nrhs;
+  TridiagArray<APack> A, Acopy;
+  DataArray<DataPack> B, X, Y;
 
+  Data (const int nrow, const int nprob_, const int nrhs_)
+    : nprob(nprob_), nrhs(nrhs_),
+      A("A", 3, nrow, scream::pack::npack<APack>(nprob)),
+      Acopy("A", A.extent(0), A.extent(1), A.extent(2)),
+      B("B", nrow, scream::pack::npack<DataPack>(nrhs)),
+      X("X", B.extent(0), B.extent(1)),
+      Y("Y", X.extent(0), X.extent(1))
+  {}
+};
+
+template <typename APack, typename DataPack>
+void fill (Data<APack, DataPack>& dt) {
   using Kokkos::create_mirror_view;
   using Kokkos::deep_copy;
   using Kokkos::subview;
   using Kokkos::ALL;
+
+  const auto Am = create_mirror_view(dt.A);
+  const auto Bm = create_mirror_view(dt.B);
+  {
+    const auto As = scalarize(Am);
+    const auto dl = subview(As, 0, ALL(), ALL());
+    const auto d  = subview(As, 1, ALL(), ALL());
+    const auto du = subview(As, 2, ALL(), ALL());
+    fill_tridiag_matrix(dl, d, du, dt.nprob, dt.nrhs /* seed */);
+  }
+  fill_data_matrix(scalarize(Bm), dt.nrhs);
+  deep_copy(dt.A, Am);
+  deep_copy(dt.B, Bm);
+  deep_copy(dt.Acopy, dt.A);
+  deep_copy(dt.X, dt.B);
+}
+
+template <typename APack, typename DataPack>
+Real relerr (Data<APack, DataPack>& dt) {
+  using Kokkos::create_mirror_view;
+  using Kokkos::deep_copy;
+  using Kokkos::subview;
+  using Kokkos::ALL;
+
+  const auto Acopym = create_mirror_view(dt.Acopy);
+  const auto As = scalarize(Acopym);
+  const auto dl = subview(As, 0, ALL(), ALL());
+  const auto d  = subview(As, 1, ALL(), ALL());
+  const auto du = subview(As, 2, ALL(), ALL());
+  const auto Xm = create_mirror_view(dt.X);
+  const auto Ym = create_mirror_view(dt.Y);
+  deep_copy(Acopym, dt.Acopy);
+  deep_copy(Xm, dt.X);
+  matvec(dl, d, du, scalarize(Xm), scalarize(Ym), dt.nprob, dt.nrhs);
+  const auto Bm = create_mirror_view(dt.B);
+  deep_copy(Bm, dt.B);
+  const auto re = reldif(scalarize(Bm), scalarize(Ym), dt.nrhs);
+  return re;
+}
+
+template <typename Fn>
+void run_test_configs (Fn& fn) {
+  for (const auto solver : Solver::all) {
+    TestConfig tc;
+    tc.solver = solver;
+    if (scream::util::OnGpu<Kokkos::DefaultExecutionSpace>::value) {
+      tc.n_kokkos_vec = 1;
+      for (const int n_kokkos_thread : {128, 256, 512}) {
+        tc.n_kokkos_thread = n_kokkos_thread;
+        fn(tc);
+      }
+      tc.n_kokkos_vec = 32;
+      for (const int n_kokkos_thread : {4}) {
+        tc.n_kokkos_thread = n_kokkos_thread;
+        fn(tc);
+      }
+      tc.n_kokkos_vec = 8;
+      for (const int n_kokkos_thread : {16}) {
+        tc.n_kokkos_thread = n_kokkos_thread;
+        fn(tc);
+      }
+    } else {
+      const int concurrency = Kokkos::DefaultExecutionSpace::concurrency();
+      const int n_kokkos_thread = concurrency;
+      for (const int n_kokkos_vec : {1, 2}) {
+        tc.n_kokkos_thread = n_kokkos_thread;
+        tc.n_kokkos_vec = n_kokkos_vec;
+        fn(tc);
+      }
+    }
+  }
+}
+
+template <int A_pack_size, int data_pack_size>
+void run_property_test_on_config (const TestConfig& tc) {
+  using namespace scream::tridiag::test;
+
   using scream::Real;
-  using scream::pack::npack;
-  using scream::pack::scalarize;
   using APack = scream::pack::Pack<Real, A_pack_size>;
   using DataPack = scream::pack::Pack<Real, data_pack_size>;
 
@@ -322,52 +466,22 @@ void run_test (const TestConfig& tc) {
           continue;
         if ((tc.solver == Solver::thomas_team_scalar ||
              tc.solver == Solver::thomas_scalar ||
-             tc.solver == Solver::cr_scalar) &&
+             tc.solver == Solver::cr_scalar ||
+             tc.solver == Solver::bfbf90) &&
             data_pack_size > 1)
+          continue;
+        if (tc.solver == Solver::bfbf90 && nprob > 1)
           continue;
         if (static_cast<int>(APack::n) != static_cast<int>(DataPack::n) && nprob > 1)
           continue;
 
-        const int prob_npack = npack<APack>(nprob);
-        const int rhs_npack = npack<DataPack>(nrhs);
-
-        TridiagArray<APack>
-          A("A", 3, nrow, prob_npack),
-          Acopy("A", A.extent(0), A.extent(1), A.extent(2));
-        DataArray<DataPack>
-          B("B", nrow, rhs_npack), X("X", B.extent(0), B.extent(1)),
-          Y("Y", X.extent(0), X.extent(1));
-        const auto Am = create_mirror_view(A);
-        const auto Bm = create_mirror_view(B);
-        {
-          const auto As = scalarize(Am);
-          const auto dl = subview(As, 0, ALL(), ALL());
-          const auto d  = subview(As, 1, ALL(), ALL());
-          const auto du = subview(As, 2, ALL(), ALL());
-          fill_tridiag_matrix(dl, d, du, nprob, nrhs /* seed */);
-        }
-        fill_data_matrix(scalarize(Bm), nrhs);
-        deep_copy(A, Am);
-        deep_copy(B, Bm);
-        deep_copy(Acopy, A);
-        deep_copy(X, B);
+        Data<APack, DataPack> dt(nrow, nprob, nrhs);
+        fill(dt);
 
         Solve<A_pack_size == data_pack_size, APack, DataPack>
-          ::run(tc, A, X, nprob, nrhs);
+          ::run(tc, dt.A, dt.X, nprob, nrhs);
 
-        Real re; {
-          const auto Acopym = create_mirror_view(Acopy);
-          const auto As = scalarize(Acopym);
-          const auto dl = subview(As, 0, ALL(), ALL());
-          const auto d  = subview(As, 1, ALL(), ALL());
-          const auto du = subview(As, 2, ALL(), ALL());
-          const auto Xm = create_mirror_view(X);
-          const auto Ym = create_mirror_view(Y);
-          deep_copy(Acopym, Acopy);
-          deep_copy(Xm, X);
-          matvec(dl, d, du, scalarize(Xm), scalarize(Ym), nprob, nrhs);
-          re = reldif(scalarize(Bm), scalarize(Ym), nrhs);
-        }
+        const auto re = relerr(dt);
         const bool pass = re <= 50*std::numeric_limits<Real>::epsilon();
         if ( ! pass) {
           std::stringstream ss;
@@ -377,43 +491,72 @@ void run_test (const TestConfig& tc) {
           std::cout << "FAIL: " << ss.str() << "\n";
         }
         REQUIRE(pass);
-        //std::cout << "PASS: " << ss.str() << "\n";
       }
     }
   }
 }
 
 template <int A_pack_size, int data_pack_size>
-void run_test () {
-  for (const auto solver : Solver::all) {
-    TestConfig tc;
-    tc.solver = solver;
-    if (scream::util::OnGpu<Kokkos::DefaultExecutionSpace>::value) {
-      tc.n_kokkos_vec = 1;
-      for (const int n_kokkos_thread : {128, 256, 512}) {
-        tc.n_kokkos_thread = n_kokkos_thread;
-        run_test<A_pack_size, data_pack_size>(tc);
-      }
-      tc.n_kokkos_vec = 32;
-      for (const int n_kokkos_thread : {4}) {
-        tc.n_kokkos_thread = n_kokkos_thread;
-        run_test<A_pack_size, data_pack_size>(tc);
-      }
-      tc.n_kokkos_vec = 8;
-      for (const int n_kokkos_thread : {16}) {
-        tc.n_kokkos_thread = n_kokkos_thread;
-        run_test<A_pack_size, data_pack_size>(tc);
-      }
-    } else {
-      const int concurrency = Kokkos::DefaultExecutionSpace::concurrency();
-      const int n_kokkos_thread = concurrency;
-      for (const int n_kokkos_vec : {1, 2}) {
-        tc.n_kokkos_thread = n_kokkos_thread;
-        tc.n_kokkos_vec = n_kokkos_vec;
-        run_test<A_pack_size, data_pack_size>(tc);
+void run_property_test () {
+  run_test_configs(run_property_test_on_config<A_pack_size, data_pack_size>);
+}
+
+template <int A_pack_size, int data_pack_size>
+void run_bfb_test_on_config (TestConfig& tc) {
+  using namespace scream::tridiag::test;
+
+  using scream::Real;
+  using APack = scream::pack::Pack<Real, A_pack_size>;
+  using DataPack = scream::pack::Pack<Real, data_pack_size>;
+
+  if (tc.solver != Solver::bfb) return;
+
+  const int nrows[] = {1,2,3,4,5, 8,10,16, 32,43, 63,64,65, 111,128,129, 2048};
+  const int nrhs_max = 60;
+  const int nrhs_inc = 11;
+
+  for (const int nrow : nrows) {
+    for (int nrhs = 1; nrhs <= nrhs_max; nrhs += nrhs_inc) {
+      for (const bool A_many : {false}) {
+        if (nrhs == 1 && A_many) continue;
+        const int nprob = A_many ? nrhs : 1;
+
+        if ((nrhs  == 1 && data_pack_size > 1) ||
+            (nprob == 1 && A_pack_size    > 1))
+          continue;
+
+        Data<APack, DataPack> dt1(nrow, nprob, nrhs);
+        fill(dt1);
+        tc.solver = Solver::bfb;
+        Solve<A_pack_size == data_pack_size, APack, DataPack>
+          ::run(tc, dt1.A, dt1.X, nprob, nrhs);
+
+        Data<APack, DataPack> dt2(nrow, nprob, nrhs);
+        fill(dt2);
+        tc.solver = Solver::bfbf90;
+        Solve<A_pack_size == data_pack_size, APack, DataPack>
+          ::run(tc, dt2.A, dt2.X, nprob, nrhs);
+
+        const auto X1s = scalarize(dt1.X);
+        const auto X2s = scalarize(dt2.X);
+        const auto X1 = create_mirror_view(X1s);
+        const auto X2 = create_mirror_view(X2s);
+        deep_copy(X1, X1s);
+        deep_copy(X2, X2s);
+
+        int nerr = 0; // don't blow up the assertion count
+        for (int i = 0; i < X1.extent_int(0); ++i)
+          for (int j = 0; j < X1.extent_int(1); ++j)
+            if (X1(i,j) != X2(i,j)) ++nerr;
+        REQUIRE(nerr == 0);
       }
     }
   }
+}
+
+template <int A_pack_size, int data_pack_size>
+void run_bfb_test () {
+  run_test_configs(run_bfb_test_on_config<A_pack_size, data_pack_size>);
 }
 
 } // namespace correct
@@ -421,10 +564,16 @@ void run_test () {
 } // namespace tridiag
 } // namespace scream
 
-TEST_CASE("tridiag", "correctness") {
-  scream::tridiag::test::correct::run_test<1,1>();
+TEST_CASE("property", "tridiag") {
+  scream::tridiag::test::correct::run_property_test<1,1>();
   if (SCREAM_PACK_SIZE > 1) {
-    scream::tridiag::test::correct::run_test<1, SCREAM_PACK_SIZE>();
-    scream::tridiag::test::correct::run_test<SCREAM_PACK_SIZE, SCREAM_PACK_SIZE>();
+    scream::tridiag::test::correct::run_property_test<1, SCREAM_PACK_SIZE>();
+    scream::tridiag::test::correct::run_property_test<SCREAM_PACK_SIZE, SCREAM_PACK_SIZE>();
   }
+}
+
+TEST_CASE("bfb", "tridiag") {
+  scream::tridiag::test::correct::run_bfb_test<1,1>();
+  if (SCREAM_PACK_SIZE > 1)
+    scream::tridiag::test::correct::run_bfb_test<SCREAM_PACK_SIZE, SCREAM_PACK_SIZE>();
 }

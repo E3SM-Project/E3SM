@@ -47,7 +47,10 @@ module controlMod
   use clm_varctl              , only: ECA_Pconst_RGspin
   use clm_varctl              , only: NFIX_PTASE_plant
   use clm_varctl              , only : use_pheno_flux_limiter
-  !
+  use clm_varctl              , only: startdate_add_temperature, startdate_add_co2
+  use clm_varctl              , only: add_temperature, add_co2
+  use clm_varctl              , only: const_climate_hist
+ !
   ! !PUBLIC TYPES:
   implicit none
   save
@@ -174,6 +177,16 @@ contains
     namelist /clm_inparm/ &
          NFIX_PTASE_plant
 
+    ! For experimental manipulations
+    namelist /clm_inparm/ &
+         startdate_add_temperature
+    namelist /clm_inparm/ &
+         startdate_add_co2
+    namelist /clm_inparm/ &
+         add_temperature
+    namelist /clm_inparm/ &
+         add_co2
+
     namelist /clm_inparm/ &
          use_pheno_flux_limiter
          
@@ -209,7 +222,7 @@ contains
     namelist /clm_inparm/  &
          clump_pproc, wrtdia, &
          create_crop_landunit, nsegspc, co2_ppmv, override_nsrest, &
-         albice, more_vertlayers, subgridflag, irrigate, all_active
+         albice, more_vertlayers, subgridflag, irrigate, tw_irr, all_active
     ! Urban options
 
     namelist /clm_inparm/  &
@@ -254,7 +267,7 @@ contains
 
     ! cpl_bypass variables
     namelist /clm_inparm/ metdata_type, metdata_bypass, metdata_biases, &
-         co2_file, aero_file
+         co2_file, aero_file,const_climate_hist
 
     ! bgc & pflotran interface
     namelist /clm_inparm/ use_clm_interface, use_clm_bgc, use_pflotran
@@ -266,6 +279,8 @@ contains
     namelist /clm_inparm / &
          use_vsfm, vsfm_satfunc_type, vsfm_use_dynamic_linesearch, &
          vsfm_lateral_model_type, vsfm_include_seepage_bc
+
+    namelist /clm_inparm/ use_hydrstress
 
     namelist /clm_inparm/ &
        lateral_connectivity, domain_decomp_type
@@ -619,6 +634,7 @@ contains
 
     ! Irrigation
     call mpi_bcast(irrigate, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast(tw_irr, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! Landunit generation
     call mpi_bcast(create_crop_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -647,6 +663,10 @@ contains
     call mpi_bcast (ECA_Pconst_RGspin, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (NFIX_PTASE_plant, 1, MPI_LOGICAL, 0, mpicom, ier)
     call mpi_bcast (use_pheno_flux_limiter, 1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (startdate_add_temperature, 1, MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (startdate_add_co2, 1, MPI_CHARACTER, 0, mpicom, ier)
+    call mpi_bcast (add_co2, 1, MPI_REAL8, 0, mpicom, ier)
+    call mpi_bcast (add_temperature, 1, MPI_REAL8, 0, mpicom, ier)
 
     ! isotopes
     call mpi_bcast (use_c13, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -716,6 +736,7 @@ contains
     call mpi_bcast (co2_ppmv, 1, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (albice, 2, MPI_REAL8,0, mpicom, ier)
     call mpi_bcast (more_vertlayers,1, MPI_LOGICAL, 0, mpicom, ier)
+    call mpi_bcast (const_climate_hist, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! glacier_mec variables
     call mpi_bcast (create_glacier_mec_landunit, 1, MPI_LOGICAL, 0, mpicom, ier)
@@ -776,6 +797,8 @@ contains
      call mpi_bcast (co2_file,       len(co2_file),       MPI_CHARACTER, 0, mpicom, ier)
      call mpi_bcast (aero_file,      len(aero_file),      MPI_CHARACTER, 0, mpicom, ier)
 
+    ! plant hydraulics
+    call mpi_bcast (use_hydrstress, 1, MPI_LOGICAL, 0, mpicom, ier)
 
     ! VSFM variable
 
@@ -977,6 +1000,8 @@ contains
     else
        write(iulog,*) '   CO2 volume mixing ratio                = ', co2_type
     end if
+
+    write(iulog,*) '   constant historical climate during transient simulation = ', const_climate_hist
 
     write(iulog,*) '   land-ice albedos      (unitless 0-1)   = ', albice
     write(iulog,*) '   urban air conditioning/heating and wasteheat   = ', urban_hac

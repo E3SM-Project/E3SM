@@ -2,6 +2,8 @@
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/atmosphere_microphysics.hpp"
 
+#include <array>
+
 namespace scream
 {
 
@@ -21,8 +23,8 @@ P3Microphysics::P3Microphysics (const Comm& comm,const ParameterList& params)
 // =========================================================================================
 void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
-
   using namespace units;
+
   // The units of mixing ratio Q are technically non-dimensional.
   // Nevertheless, for output reasons, we like to see 'kg/kg'.
   auto Q = kg/kg;
@@ -45,68 +47,73 @@ void P3Microphysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   FieldLayout vector3d_layout_mid{ {COL,CMP,VL}, {nc,QSZ,NVL} };
   FieldLayout tracers_layout { {COL,VAR,VL}, {nc,QSZ,NVL} };
 
-  // set requirements
-//  m_required_fields.emplace("P3_req_test",  scalar3d_layout,   units::one, grid_name);
-//  m_required_fields.emplace("ASD_req_test",  scalar3d_layout,   units::one, grid_name);
-  // Inputs from Dynamics
-  m_required_fields.emplace("dp", scalar3d_layout_mid,    Pa,             grid_name);
-  m_required_fields.emplace("qdp", tracers_layout,        Qdp,          grid_name);  
-  // Inputs from Physics  NOTE: Making them "computed" fields now because we will initialize them in P3 for testing purposes.
-  m_computed_fields.emplace("ast",    scalar3d_layout_mid,            A,             grid_name);
-  m_computed_fields.emplace("naai",   scalar3d_layout_mid,   pow(kg,-1),           grid_name);
-  m_computed_fields.emplace("npccn",  scalar3d_layout_mid,   pow(kg,-1)*pow(s,-1), grid_name);
-  // Inputs that are STATE variables
-  m_computed_fields.emplace("pmid",  scalar3d_layout_mid,    Pa,                   grid_name);
-  m_computed_fields.emplace("pdel",  scalar3d_layout_mid,    Pa,                   grid_name);
-  m_computed_fields.emplace("zi",    scalar3d_layout_int, m,                   grid_name);
+  // Inputs
+  auto nondim = m/m;
+  m_required_fields.emplace("qdp",    tracers_layout,           Qdp, grid_name);  
+  m_required_fields.emplace("ast",    scalar3d_layout_mid,   nondim, grid_name);
+  m_required_fields.emplace("naai",   scalar3d_layout_mid,     1/kg, grid_name);
+  m_required_fields.emplace("npccn",  scalar3d_layout_mid, 1/(kg*s), grid_name);
+  m_required_fields.emplace("pmid",   scalar3d_layout_mid,       Pa, grid_name);
+  m_required_fields.emplace("pdel",   scalar3d_layout_mid,       Pa, grid_name);
+  m_required_fields.emplace("zi",     scalar3d_layout_int,        m, grid_name);
 
-  // set computed
-//  m_computed_fields.emplace("P3_comq_test", scalar3d_layout, units::one, grid_name);
+  // Outputs
   m_computed_fields.emplace("FQ", tracers_layout,      Q, grid_name);
-  // INPUT/OUTPUT from STATE
   m_computed_fields.emplace("T",  scalar3d_layout_mid, K, grid_name);
   m_computed_fields.emplace("q",  vector3d_layout_mid, Q, grid_name);
-
 }
 // =========================================================================================
 void P3Microphysics::initialize (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
-  auto q_ptr = m_p3_fields_out.at("q").get_view().data();
-  auto ast_ptr = m_p3_fields_out.at("ast").get_view().data();
-  auto naai_ptr = m_p3_fields_out.at("naai").get_view().data();
-  auto npccn_ptr = m_p3_fields_out.at("npccn").get_view().data();
-  auto pmid_ptr = m_p3_fields_out.at("pmid").get_view().data();
-  auto pdel_ptr = m_p3_fields_out.at("pdel").get_view().data();
-  auto zi_ptr = m_p3_fields_out.at("zi").get_view().data();
-  auto T_ptr = m_p3_fields_out.at("T").get_view().data();
-  const std::string dimnames[2] = {"column", "level"};
-  const std::string filename = "p3_output";
-  // const int  dimrng[2]   = {218,72}; // TODO make this based on actual col,levels data
-  // const int  dimnum = 2;
 
-  p3_init_f90 (q_ptr,T_ptr,zi_ptr,pmid_ptr,pdel_ptr,
-     ast_ptr, naai_ptr, npccn_ptr);
+  // Copy inputs to host. Copy also outputs, cause we might "update" them, rather than overwrite them.
+  for (auto& it : m_p3_fields_in) {
+    Kokkos::deep_copy(m_p3_host_views_in.at(it.first),it.second.get_view());
+  }
+  for (auto& it : m_p3_fields_out) {
+    Kokkos::deep_copy(m_p3_host_views_out.at(it.first),it.second.get_view());
+  }
+
+  // Note: in order to init some fields for tests, we need to write them,
+  //       even if they are marked as inputs.
+  std::map<std::string,Real*> ptrs_in;
+  for (auto it : m_raw_ptrs_in) {
+    ptrs_in[it.first] = const_cast<Real*>(it.second);
+  }
+
+  // Call f90 routine
+  p3_init_f90 (m_raw_ptrs_out["q"], m_raw_ptrs_out["T"], ptrs_in["zi"], ptrs_in["pmid"], ptrs_in["pdel"], ptrs_in["ast"], ptrs_in["naai"], ptrs_in["npccn"]);
+
+  // Copy outputs back to device
+  for (auto& it : m_p3_fields_out) {
+    Kokkos::deep_copy(it.second.get_view(),m_p3_host_views_out.at(it.first));
+  }
 }
 
 // =========================================================================================
-void P3Microphysics::run (const double dt)
+void P3Microphysics::run (const Real dt)
 {
-  auto q_ptr = m_p3_fields_out.at("q").get_view().data();
-  auto FQ_ptr = m_p3_fields_out.at("FQ").get_view().data();
-  // auto dp_ptr = m_p3_fields_in.at("dp").get_view().data();
-  auto qdp_ptr = m_p3_fields_in.at("qdp").get_view().data();
-  auto ast_ptr = m_p3_fields_out.at("ast").get_view().data();
-  auto naai_ptr = m_p3_fields_out.at("naai").get_view().data();
-  auto npccn_ptr = m_p3_fields_out.at("npccn").get_view().data();
-  auto pmid_ptr = m_p3_fields_out.at("pmid").get_view().data();
-  auto pdel_ptr = m_p3_fields_out.at("pdel").get_view().data();
-  auto zi_ptr = m_p3_fields_out.at("zi").get_view().data();
-  auto T_ptr = m_p3_fields_out.at("T").get_view().data();
+  // std::array<const char*, num_views> view_names = {"q", "FQ", "qdp", "T", "zi", "pmid", "pdel", "ast", "naai", "npccn"};
 
-  p3_main_f90 (dt,q_ptr,FQ_ptr,qdp_ptr,T_ptr,zi_ptr,pmid_ptr,pdel_ptr,
-     ast_ptr, naai_ptr, npccn_ptr);
+  std::vector<const Real*> in;
+  std::vector<Real*> out;
 
+  // Copy inputs to host. Copy also outputs, cause we might "update" them, rather than overwrite them.
+  for (auto& it : m_p3_fields_in) {
+    Kokkos::deep_copy(m_p3_host_views_in.at(it.first),it.second.get_view());
+  }
+  for (auto& it : m_p3_fields_out) {
+    Kokkos::deep_copy(m_p3_host_views_out.at(it.first),it.second.get_view());
+  }
+
+  // Call f90 routine
+  p3_main_f90 (dt, m_raw_ptrs_in["qdp"], m_raw_ptrs_in["zi"], m_raw_ptrs_in["pmid"], m_raw_ptrs_in["pdel"], m_raw_ptrs_in["ast"], m_raw_ptrs_in["naai"], m_raw_ptrs_in["npccn"], m_raw_ptrs_out["q"], m_raw_ptrs_out["FQ"], m_raw_ptrs_out["T"]);
+
+  // Copy outputs back to device
+  for (auto& it : m_p3_fields_out) {
+    Kokkos::deep_copy(it.second.get_view(),m_p3_host_views_out.at(it.first));
+  }
   m_current_ts += dt;
   m_p3_fields_out.at("q").get_header().get_tracking().update_time_stamp(m_current_ts);
   m_p3_fields_out.at("FQ").get_header().get_tracking().update_time_stamp(m_current_ts);
@@ -133,7 +140,10 @@ void P3Microphysics::set_required_field_impl (const Field<const Real, device_typ
   // at the beginning of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr
   // in the Homme's view, and be done with it.
-  m_p3_fields_in.emplace(f.get_header().get_identifier().name(),f);
+  const auto& name = f.get_header().get_identifier().name();
+  m_p3_fields_in.emplace(name,f);
+  m_p3_host_views_in[name] = Kokkos::create_mirror_view(f.get_view());
+  m_raw_ptrs_in[name] = m_p3_host_views_in[name].data();
 
   // Add myself as customer to the field
   f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
@@ -144,7 +154,10 @@ void P3Microphysics::set_computed_field_impl (const Field<      Real, device_typ
   // at the end of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr
   // in the Homme's view, and be done with it.
-  m_p3_fields_out.emplace(f.get_header().get_identifier().name(),f);
+  const auto& name = f.get_header().get_identifier().name();
+  m_p3_fields_out.emplace(name,f);
+  m_p3_host_views_out[name] = Kokkos::create_mirror_view(f.get_view());
+  m_raw_ptrs_out[name] = m_p3_host_views_out[name].data();
 
   // Add myself as provider for the field
   f.get_header_ptr()->get_tracking().add_provider(weak_from_this());

@@ -2304,7 +2304,7 @@ module stats_clubb_utilities
       if ( ircm_in_cloud > 0 ) then
         where ( cloud_frac(:) > cloud_frac_min )
             rcm_in_cloud(:) = rcm / cloud_frac
-        else where
+        elsewhere
             rcm_in_cloud(:) = rcm
         end where
 

@@ -43,6 +43,8 @@ module namelist_mod
     cubed_sphere_map, &
     qsplit,        &
     rsplit,        &
+    dt_tracer_factor, &
+    dt_remap_factor, &
     rk_stage_user, &
     LFTfreq,       &
     prescribed_wind, &
@@ -85,7 +87,9 @@ module namelist_mod
     tol,           &
     debug_level,   &
     theta_advect_form,   &
-    vert_remap_q_alg
+    vert_remap_q_alg, &
+    se_fv_phys_remap_alg, &
+    timestep_make_subcycle_parameters_consistent
 
 #ifndef CAM
   use control_mod, only:              &
@@ -104,7 +108,7 @@ module namelist_mod
   use thread_mod,     only: nthreads, omp_set_num_threads, omp_get_max_threads, vthreads
   use dimensions_mod, only: ne, np, nnodes, nmpi_per_node, npart, qsize, qsize_d, set_mesh_dimensions
 #ifdef CAM
-  use time_mod,       only: nsplit, smooth, phys_tscale
+  use time_mod,       only: tstep, nsplit, smooth, phys_tscale
 #else
   use time_mod,       only: tstep, ndays,nmax, nendstep,secpday, smooth, secphr, nsplit, phys_tscale
 #endif
@@ -133,6 +137,7 @@ module namelist_mod
        io_stride,           &
        varname_len,         &
        infilenames,         &
+       tool,                &
        MAX_INFILES
   use physical_constants, only: omega
   use common_movie_mod,   only : setvarnames
@@ -178,7 +183,7 @@ module namelist_mod
     integer :: i, ii, j
     integer  :: ierr
     character(len=80) :: errstr, arg
-    real(kind=real_kind) :: dt_max
+    real(kind=real_kind) :: dt_max, se_tstep
 #ifdef CAM
     character(len=MAX_STRING_LEN) :: se_topology
     integer :: se_partmethod
@@ -228,6 +233,8 @@ module namelist_mod
       cubed_sphere_map, &
       qsplit,        &
       rsplit,        &
+      dt_tracer_factor, &
+      dt_remap_factor, &
       rk_stage_user, &
       LFTfreq,       &
       disable_diagnostics, &
@@ -260,12 +267,14 @@ module namelist_mod
       rotate_grid,   &
       mesh_file,     &               ! Name of mesh file
       theta_advect_form,     & 
-      vert_remap_q_alg
+      vert_remap_q_alg, &
+      se_fv_phys_remap_alg
 
 
 #ifdef CAM
     namelist  /ctl_nl/ SE_NSPLIT,  &                ! number of dynamics steps per physics timestep
-      se_phys_tscale
+      se_phys_tscale, &
+      se_tstep
 #else
     namelist /ctl_nl/test_case,       &             ! test case idenitfier
       sub_case,        &             ! generic test case parameter
@@ -275,7 +284,7 @@ module namelist_mod
       restartfile,     &             ! name of the restart file for INPUT
       restartdir,      &             ! name of the restart directory for OUTPUT
       runtype,         &
-      tstep,           &             ! tracer time step
+      tstep,           &             ! dynamics time step
       moisture
     ! control parameters for dcmip stand-alone tests
     namelist /ctl_nl/     &
@@ -318,7 +327,8 @@ module namelist_mod
       interp_lon0,         &
       interp_gridtype,     &
       interp_type,         &
-      interpolate_analysis
+      interpolate_analysis, &
+      tool
 #endif
 ! ^ ifndef CAM
 
@@ -359,6 +369,7 @@ module namelist_mod
     se_topology = 'none'
     se_phys_tscale=0
     se_nsplit = 1
+    se_tstep = -1
     qsize = qsize_d
 #else
     ndays         = 0
@@ -388,6 +399,7 @@ module namelist_mod
     semi_lagrange_hv_q = 0
     semi_lagrange_nearest_point_lev = 0
     disable_diagnostics = .false.
+    se_fv_phys_remap_alg = 1
 
     theta_hydrostatic_mode = .true.    ! for preqx, this must be .true.
 #if ( defined MODEL_THETA_C || defined MODEL_THETA_L ) 
@@ -541,6 +553,7 @@ module namelist_mod
        num_io_procs=0
        output_type = 'netcdf' ! Change by MNL
 !     output_type = 'pnetcdf'
+       tool = 'none'
 
 
 #ifndef HOMME_WITHOUT_PIOLIBRARY
@@ -613,6 +626,8 @@ module namelist_mod
 #endif
 #endif
 ! ^ ifndef CAM
+       ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
+            dt_remap_factor, dt_tracer_factor)
     end if
 
 #ifdef CAM
@@ -644,6 +659,16 @@ module namelist_mod
     phys_tscale     = se_phys_tscale
     limiter_option  = se_limiter_option
     nsplit          = se_nsplit
+    tstep           = se_tstep
+    if (se_tstep > 0) then
+       if (par%masterproc .and. se_nsplit > 0) then
+          write(iulog,'(a,i3,a)') &
+               'se_tstep and se_nsplit were specified; changing se_nsplit from ', &
+               se_nsplit, ' to -1.'
+       end if
+       se_nsplit = -1
+       nsplit = -1
+    end if
 #else
     if(test_case == "dcmip2012_test4") then
        rearth = rearth/dcmip4_X
@@ -651,7 +676,6 @@ module namelist_mod
     endif
 
     call MPI_bcast(pertlim,         1, MPIreal_t   , par%root,par%comm,ierr)
-    call MPI_bcast(tstep,           1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(nmax,            1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(NTHREADS,        1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(ndays,           1, MPIinteger_t, par%root,par%comm,ierr)
@@ -675,6 +699,7 @@ module namelist_mod
     call MPI_bcast(smooth,          1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(phys_tscale,     1, MPIreal_t,    par%root,par%comm,ierr)
     call MPI_bcast(NSPLIT,          1, MPIinteger_t, par%root,par%comm,ierr)
+    call MPI_bcast(tstep,           1, MPIreal_t   , par%root,par%comm,ierr)
     call MPI_bcast(limiter_option,  1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(se_ftype,        1, MPIinteger_t, par%root,par%comm,ierr)
     call MPI_bcast(theta_advect_form,1, MPIinteger_t, par%root,par%comm,ierr)
@@ -723,10 +748,13 @@ module namelist_mod
     call MPI_bcast(cubed_sphere_map,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(qsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rsplit,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(dt_tracer_factor,1,MPIinteger_t ,par%root,par%comm,ierr)
+    call MPI_bcast(dt_remap_factor,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(rk_stage_user,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(LFTfreq,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(prescribed_wind,1,MPIinteger_t ,par%root,par%comm,ierr)
     call MPI_bcast(moisture,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
+    call MPI_bcast(se_fv_phys_remap_alg,1,MPIinteger_t ,par%root,par%comm,ierr)
 
     call MPI_bcast(restartfile,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
     call MPI_bcast(restartdir,MAX_STRING_LEN,MPIChar_t ,par%root,par%comm,ierr)
@@ -763,6 +791,7 @@ module namelist_mod
     call MPI_bcast(num_io_procs , 1,MPIinteger_t,par%root,par%comm,ierr)
     call MPI_bcast(output_type , 9,MPIChar_t,par%root,par%comm,ierr)
     call MPI_bcast(infilenames ,160*MAX_INFILES ,MPIChar_t,par%root,par%comm,ierr)
+    call MPI_bcast(tool,MAX_STRING_LEN,MPIChar_t  ,par%root,par%comm,ierr)
 #endif
 
 #if (defined MODEL_THETA_L && defined ARKODE)
@@ -868,6 +897,9 @@ module namelist_mod
           call abortmp('limiter 8,84,9 require hypervis_subcycle_q=1')
        endif
     endif
+    if (transport_alg == 0 .and. dt_remap_factor > 0 .and. dt_remap_factor < dt_tracer_factor) then
+       call abortmp('Only SL transport supports vertical remap time step < tracer time step.')
+    end if
 #endif
 
 #ifndef CAM
@@ -882,11 +914,6 @@ module namelist_mod
     if((prescribed_wind/=0).and.(prescribed_wind/=1))then
           call abortmp('prescribed_wind should be either 0 or 1')
     endif
-
-    
-    if (transport_alg > 0 .and. rsplit == 0) then
-       call abortmp('The semi-Lagrange Transport option requires 0 < rsplit')
-    end if
 
 !=======================================================================================================!
 #ifdef CAM
@@ -987,6 +1014,7 @@ module namelist_mod
        write(iulog,*)"readnl: vert_remap_q_alg  = ",vert_remap_q_alg
 #ifdef CAM
        write(iulog,*)"readnl: se_nsplit         = ", NSPLIT
+       write(iulog,*)"readnl: se_tstep         = ", tstep
        write(iulog,*)"readnl: se_ftype          = ",ftype
        write(iulog,*)"readnl: se_limiter_option = ",limiter_option
 #else
@@ -994,10 +1022,13 @@ module namelist_mod
        write(iulog,*)"readnl: ftype          = ",ftype
        write(iulog,*)"readnl: limiter_option = ",limiter_option
 #endif
-       write(iulog,*)"readnl: qsplit        = ",qsplit
-       write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled): ",rsplit
+       write(iulog,*)"readnl: qsplit (deprecated) = ",qsplit
+       write(iulog,*)"readnl: vertical remap frequency rsplit (0=disabled) (deprecated): ",rsplit
+       write(iulog,*)"readnl: dt_tracer_factor = ",dt_tracer_factor
+       write(iulog,*)"readnl: vertical remap frequency dt_remap_factor (0=disabled): ",dt_remap_factor
 
        write(iulog,*)"readnl: runtype       = ",runtype
+       write(iulog,*)"readnl: se_fv_phys_remap_alg = ",se_fv_phys_remap_alg
 
        if (hypervis_power /= 0)then
           write(iulog,*)"Variable scalar hyperviscosity: hypervis_power=",hypervis_power

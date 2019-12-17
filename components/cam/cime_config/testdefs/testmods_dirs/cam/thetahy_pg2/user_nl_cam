@@ -1,0 +1,2 @@
+theta_hydrostatic_mode=.true.
+se_fv_phys_remap_alg=1

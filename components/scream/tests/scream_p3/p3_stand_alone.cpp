@@ -7,6 +7,7 @@
 
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/scream_p3_interface.hpp"
+#include "physics/p3/p3_functions_f90.hpp"
 
 namespace scream {
 
@@ -81,6 +82,7 @@ TEST_CASE("p3-stand-alone", "") {
   // Finalize 
   ad.finalize();
   upgm.clean_up();
+  p3::P3GlobalForFortran::deinit();
 
   // If we got here, we were able to run p3
   REQUIRE(true);

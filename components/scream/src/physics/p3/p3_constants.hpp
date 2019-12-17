@@ -10,6 +10,9 @@ namespace p3 {
 
 /*
  * Mathematical constants used by p3.
+ *
+ * Note that a potential optimization could be to change the type of
+ * Scalar constants that have integer values to int.
  */
 
 template <typename Scalar>
@@ -34,10 +37,14 @@ struct Constants
   static constexpr Scalar INV_RHOW    = 1.0/RHOW;
   static constexpr Scalar THIRD       = 1.0/3.0;
   static constexpr Scalar SXTH        = 1.0/6.0;
+  static constexpr Scalar PIOV3       = Pi*THIRD;
   static constexpr Scalar PIOV6       = Pi*SXTH;
   static constexpr Scalar CONS1       = PIOV6*RHOW;
+  static constexpr Scalar CONS2       = 4.*PIOV3*RHOW;
+  static constexpr Scalar CONS3       =  1.0/(CONS2*1.562500000000000e-14); // 1./(CONS2*pow(25.e-6,3.0));
   static constexpr Scalar QSMALL      = 1.e-14;
   static constexpr Scalar QTENDSMALL = 1e-20;
+  static constexpr Scalar BSMALL      = 1.e-15;
   static constexpr Scalar NSMALL      = 1.e-16;
   static constexpr Scalar P0          = 100000.0;        // reference pressure, Pa
   static constexpr Scalar RD          = 287.15;          // gas constant for dry air, J/kg/K
@@ -46,6 +53,10 @@ struct Constants
   static constexpr Scalar INV_CP      = 1.0/CP;
   static constexpr Scalar Tol         = std::numeric_limits<Scalar>::epsilon(); 
   static constexpr Scalar mu_r_const  = 1.0;
+  static constexpr Scalar dt_left_tol = 1.e-4;
+  static constexpr Scalar bcn         = 2.;
+  static constexpr Scalar rho_rimeMin = 50.;
+  static constexpr Scalar rho_rimeMax = 900.;
 };
 
 template <typename Scalar>

@@ -430,21 +430,21 @@ module TopounitDataType
             subgrid_type='topounit', numlev=1, init_value=0._r8)
     end if
     ! Accumulator variables for radiation fluxes
-    call init_accum_field (name='FSD24H', units='W/m2',                                             &
-         desc='24hr average of direct solar radiation',  accum_type='runmean', accum_period=-1,    &
-         subgrid_type='topounit', numlev=1, init_value=0._r8)
+    !call init_accum_field (name='FSD24H', units='W/m2',                                             &
+    !     desc='24hr average of direct solar radiation',  accum_type='runmean', accum_period=-1,    &
+    !     subgrid_type='topounit', numlev=1, init_value=0._r8)
 
-    call init_accum_field (name='FSD240H', units='W/m2',                                            &
-         desc='240hr average of direct solar radiation',  accum_type='runmean', accum_period=-10,  &
-         subgrid_type='topounit', numlev=1, init_value=0._r8)
+    !call init_accum_field (name='FSD240H', units='W/m2',                                            &
+    !     desc='240hr average of direct solar radiation',  accum_type='runmean', accum_period=-10,  &
+    !     subgrid_type='topounit', numlev=1, init_value=0._r8)
 
-    call init_accum_field (name='FSI24H', units='W/m2',                                             &
-         desc='24hr average of diffuse solar radiation',  accum_type='runmean', accum_period=-1,   &
-         subgrid_type='topounit', numlev=1, init_value=0._r8)
+    !call init_accum_field (name='FSI24H', units='W/m2',                                             &
+    !     desc='24hr average of diffuse solar radiation',  accum_type='runmean', accum_period=-1,   &
+    !     subgrid_type='topounit', numlev=1, init_value=0._r8)
 
-    call init_accum_field (name='FSI240H', units='W/m2',                                            &
-         desc='240hr average of diffuse solar radiation',  accum_type='runmean', accum_period=-10, &
-         subgrid_type='topounit', numlev=1, init_value=0._r8)
+    !call init_accum_field (name='FSI240H', units='W/m2',                                            &
+    !     desc='240hr average of diffuse solar radiation',  accum_type='runmean', accum_period=-10, &
+    !     subgrid_type='topounit', numlev=1, init_value=0._r8)
   end subroutine init_acc_buffer_top_af
   
   !-----------------------------------------------------------------------
@@ -483,17 +483,17 @@ module TopounitDataType
     ! Determine time step
     nstep = get_nstep()
 
-    call extract_accum_field ('FSD24H', rbufslt, nstep)
-    this%fsd24h(begt:endt) = rbufslt(begt:endt)
+    !call extract_accum_field ('FSD24H', rbufslt, nstep)
+    !this%fsd24h(begt:endt) = rbufslt(begt:endt)
 
-    call extract_accum_field ('FSD240H', rbufslt, nstep)
-    this%fsd240h(begt:endt) = rbufslt(begt:endt)
+    !call extract_accum_field ('FSD240H', rbufslt, nstep)
+    !this%fsd240h(begt:endt) = rbufslt(begt:endt)
 
-    call extract_accum_field ('FSI24H', rbufslt, nstep)
-    this%fsi24h(begt:endt) = rbufslt(begt:endt)
+    !call extract_accum_field ('FSI24H', rbufslt, nstep)
+    !this%fsi24h(begt:endt) = rbufslt(begt:endt)
 
-    call extract_accum_field ('FSI240H', rbufslt, nstep)
-    this%fsi240h(begt:endt) = rbufslt(begt:endt)
+    !call extract_accum_field ('FSI240H', rbufslt, nstep)
+    !this%fsi240h(begt:endt) = rbufslt(begt:endt)
 
     if (use_cn) then
        call extract_accum_field ('PREC10D', rbufslt, nstep)
@@ -547,19 +547,19 @@ module TopounitDataType
     do t = begt,endt
        rbufslt(t) = this%solad(t,1)
     end do
-    call update_accum_field  ('FSD240H', rbufslt              , nstep)
-    call extract_accum_field ('FSD240H', this%fsd240h         , nstep)
-    call update_accum_field  ('FSD24H' , rbufslt              , nstep)
-    call extract_accum_field ('FSD24H' , this%fsd24h          , nstep)
+    !call update_accum_field  ('FSD240H', rbufslt              , nstep)
+    !call extract_accum_field ('FSD240H', this%fsd240h         , nstep)
+    !call update_accum_field  ('FSD24H' , rbufslt              , nstep)
+    !call extract_accum_field ('FSD24H' , this%fsd24h          , nstep)
 
     ! Accumulate and extract forc_solai24 & forc_solai240 
     do t = begt,endt
        rbufslt(t) = this%solai(t,1)
     end do
-    call update_accum_field  ('FSI24H' , rbufslt              , nstep)
-    call extract_accum_field ('FSI24H' , this%fsi24h          , nstep)
-    call update_accum_field  ('FSI240H', rbufslt              , nstep)
-    call extract_accum_field ('FSI240H', this%fsi240h         , nstep)
+    !call update_accum_field  ('FSI24H' , rbufslt              , nstep)
+    !call extract_accum_field ('FSI24H' , this%fsi24h          , nstep)
+    !call update_accum_field  ('FSI240H', rbufslt              , nstep)
+    !call extract_accum_field ('FSI240H', this%fsi240h         , nstep)
 
     ! Accumulate and extract total precip
     do t = begt,endt

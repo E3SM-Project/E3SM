@@ -1795,6 +1795,14 @@ Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = re
 Default: Defined in namelist_defaults.xml
 </entry>
 
+<entry id="config_mobility_type_inorganic_carbon" type="real"
+	category="biogeochemistry" group="biogeochemistry">
+Transport type of dissolved inorganic carbon
+
+Valid values: -1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange
+Default: Defined in namelist_defaults.xml
+</entry>
+
 <entry id="config_mobility_type_proteins" type="real"
 	category="biogeochemistry" group="biogeochemistry">
 Transport type of proteins

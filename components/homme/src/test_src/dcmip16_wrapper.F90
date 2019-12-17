@@ -41,6 +41,14 @@ real(rl), parameter :: rh2o    = 461.5d0,            &                  ! Gas co
 
 real(rl) :: sample_period  = 60.0_rl
 real(rl) :: rad2dg = 180.0_rl/pi
+
+type :: PhysgridData_t
+   integer :: nphys
+   real(rl), allocatable :: ps(:,:), zs(:,:), T(:,:,:), uv(:,:,:,:), omega_p(:,:,:), q(:,:,:,:)
+end type PhysgridData_t
+
+type (PhysgridData_t) :: pg_data
+
 contains
 
 !---------------------------------------------------------------------
@@ -143,6 +151,30 @@ subroutine dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
 
 
 end subroutine
+
+subroutine dcmip2016_test1_pg(elem,hybrid,hvcoord,nets,nete,nphys)
+  use gllfvremap_mod, only: gfr_init
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(inout)         :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  integer,            intent(in)            :: nphys                    ! pgN, N parameter, for physgrid
+
+  integer :: ncol
+
+  if (hybrid%ithr == 0) then
+     ncol = nphys*nphys
+     pg_data%nphys = nphys
+     call gfr_init(hybrid%par, elem, nphys, boost_pg1=.true.)
+     allocate(pg_data%ps(ncol,nelemd), pg_data%zs(ncol,nelemd), pg_data%T(ncol,nlev,nelemd), &
+          pg_data%omega_p(ncol,nlev,nelemd), pg_data%uv(ncol,2,nlev,nelemd), &
+          pg_data%q(ncol,nlev,qsize,nelemd))
+  end if
+  !$omp barrier
+  call dcmip2016_test1(elem,hybrid,hvcoord,nets,nete)
+  sample_period = 3600*24
+end subroutine dcmip2016_test1_pg
 
 !_____________________________________________________________________
 subroutine dcmip2016_test2(elem,hybrid,hvcoord,nets,nete)
@@ -522,6 +554,256 @@ subroutine dcmip2016_test1_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
   call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
 
 end subroutine
+
+subroutine toy_init(rcd)
+  real(rl), intent(inout) :: rcd(6)
+  rcd(1) = 1; rcd(2) = -1; rcd(3) = 1; rcd(4) = -1; rcd(5) = 1; rcd(6) = -1
+end subroutine toy_init
+
+subroutine toy_rcd(q, rcd)
+  real(rl), intent(in) :: q(:,:,:,:)
+  real(rl), intent(inout) :: rcd(6)
+
+  rcd(1) = min(rcd(1), minval(q(:,:,:,1)))
+  rcd(2) = max(rcd(2), maxval(q(:,:,:,1)))
+  rcd(3) = min(rcd(3), minval(q(:,:,:,2)))
+  rcd(4) = max(rcd(4), maxval(q(:,:,:,2)))
+  rcd(5) = min(rcd(5), minval(q(:,:,:,1) + 2*q(:,:,:,2)))
+  rcd(6) = max(rcd(6), maxval(q(:,:,:,1) + 2*q(:,:,:,2)))
+end subroutine toy_rcd
+
+subroutine toy_print(hybrid, nstep, rcd)
+  use reduction_mod, only: ParallelMin, ParallelMax
+
+  type(hybrid_t), intent(in) :: hybrid
+  integer, intent(in) :: nstep
+  real(rl), intent(inout) :: rcd(6)
+
+  if (modulo(nstep,50) == 0) then
+     rcd(1) = ParallelMin(rcd(1), hybrid)
+     rcd(2) = ParallelMax(rcd(2), hybrid)
+     rcd(3) = ParallelMin(rcd(3), hybrid)
+     rcd(4) = ParallelMax(rcd(4), hybrid)
+     rcd(5) = ParallelMin(rcd(5), hybrid)
+     rcd(6) = ParallelMax(rcd(6), hybrid)
+     if (hybrid%masterthread) &
+          write(*,'(a,i5,es11.3,es11.3,es11.3,es11.3,es11.3,es11.3)') 'toy>', nstep, rcd
+  end if
+end subroutine toy_print
+
+subroutine dcmip2016_test1_pg_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl)
+  use element_ops, only: get_field
+  use gllfvremap_mod
+  use perf_mod, only: t_startf, t_stopf
+
+  ! to DSS precl
+  use edge_mod, only: edgevpack_nlyr, edgevunpack_nlyr, edge_g
+  use bndry_mod, only: bndry_exchangev
+
+  type(element_t),    intent(inout), target :: elem(:)                  ! element array
+  type(hybrid_t),     intent(in)            :: hybrid                   ! hybrid parallel structure
+  type(hvcoord_t),    intent(in)            :: hvcoord                  ! hybrid vertical coordinates
+  integer,            intent(in)            :: nets,nete                ! start, end element index
+  integer,            intent(in)            :: nt, ntQ                  ! time level index
+  real(rl),           intent(in)            :: dt                       ! time-step size
+  type(TimeLevel_t),  intent(in)            :: tl                       ! time level structure
+
+  integer, parameter :: iqv = 1
+  real(rl), parameter :: one = 1.0_rl
+
+  integer :: i,j,k,ie,qi
+  real(rl), dimension(np,np,nlev) :: u,v,w,T,p,dp,rho,rho_dry,z,exner_kess,theta_kess
+  real(rl), dimension(np,np,nlev) :: rho_new,p_pk
+  real(rl), dimension(nlev)       :: u_c,v_c,p_c,qv_c,qc_c,qr_c,rho_c,z_c, th_c
+  real(rl) :: max_w, max_precl, min_ps
+  real(rl) :: lat, lon, dz_top(np,np),zi(np,np,nlevp),zi_c(nlevp), ps(np,np), &
+       wrk(np,np), rd, wrk3(np,np,nlev), wrk4(np,np,nlev,2)
+
+  integer :: nf, ncol
+  real(rl), dimension(np,np,nlev) :: dp_fv, p_fv, u_fv, v_fv, T_fv, exner_kess_fv, &
+       theta_kess_fv, Rstar, rho_fv, rho_dry_fv, u0, v0, T0, z_fv, ddt_cl, ddt_cl2
+  real(rl), dimension(np,np,nlev,qsize) :: Q_fv, Q0_fv
+  real(rl), dimension(np,np,nlevp) :: phi_i, zi_fv
+  real(rl), dimension(np,np) :: zs_fv, ps_fv, delta_ps
+  real(rl) :: precl_fv(np,np,1), rcd(6)
+  real(rl), allocatable :: qmin(:,:,:), qmax(:,:,:)
+
+  integer :: pbl_type, prec_type
+  integer, parameter :: test = 1
+
+  nf = pg_data%nphys
+  ncol = nf*nf
+
+  prec_type = dcmip16_prec_type
+  pbl_type  = dcmip16_pbl_type
+
+  max_w     = -huge(rl)
+  max_precl = -huge(rl)
+  min_ps    = +huge(rl)
+
+  call t_startf('gfr_dyn_to_fv_phys')
+  call gfr_dyn_to_fv_phys(hybrid, nt, hvcoord, elem, nets, nete, &
+       pg_data%ps, pg_data%zs, pg_data%T, pg_data%uv, pg_data%omega_p, pg_data%q)
+  call t_stopf('gfr_dyn_to_fv_phys')
+
+  do ie = nets,nete
+     precl(:,:,ie) = -one
+     ! for max_w
+     call get_field(elem(ie), 'w', w, hvcoord, nt, ntQ)
+
+     T_fv(:nf,:nf,:) = reshape(pg_data%T(:,:,ie), (/nf,nf,nlev/))
+     u_fv(:nf,:nf,:) = reshape(pg_data%uv(:,1,:,ie), (/nf,nf,nlev/))
+     v_fv(:nf,:nf,:) = reshape(pg_data%uv(:,2,:,ie), (/nf,nf,nlev/))
+     Q_fv(:nf,:nf,:,:) = reshape(pg_data%q(:,:,:,ie), (/nf,nf,nlev,qsize/))
+     ps_fv(:nf,:nf) = reshape(pg_data%ps(:,ie), (/nf,nf/))
+     zs_fv(:nf,:nf) = reshape(pg_data%zs(:,ie), (/nf,nf/))
+     zs_fv(:nf,:nf) = zs_fv(:nf,:nf)/g
+     do k = 1,nlev
+        p_fv(:nf,:nf,k) = hvcoord%hyam(k)*hvcoord%ps0 + hvcoord%hybm(k)*ps_fv
+        dp_fv(:nf,:nf,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+             (hvcoord%hybi(k+1) - hvcoord%hybi(k))*ps_fv
+     end do
+
+     ! Rederive the remaining vars so they are self-consistent; use
+     ! hydrostatic assumption.
+     if (use_moisture) then
+        Rstar = Rgas + (Rwater_vapor - Rgas)*Q_fv(:nf,:nf,:,iqv)
+     else
+        Rstar = Rgas
+     end if
+     rho_fv = p_fv/(Rstar*T_fv)
+     phi_i(:nf,:nf,nlevp) = g*zs_fv
+     do k = nlev,1,-1
+        phi_i(:nf,:nf,k) = phi_i(:nf,:nf,k+1) + &
+             (Rstar(:nf,:nf,k)*(dp_fv(:nf,:nf,k)*T_fv(:nf,:nf,k)))/p_fv(:nf,:nf,k)
+     end do
+     do k=1,nlev
+        z_fv(:nf,:nf,k) = (phi_i(:nf,:nf,k)+phi_i(:nf,:nf,k+1))/(2*g)
+     end do
+     do k=1,nlevp
+        zi_fv(:nf,:nf,k) = phi_i(:nf,:nf,k)/g
+     end do
+
+     rho_dry_fv(:nf,:nf,:) = (1 - Q_fv(:nf,:nf,:,iqv))*rho_fv(:nf,:nf,:)
+
+     ! Compute form of exner pressure expected by Kessler physics.
+     exner_kess_fv = (p_fv/p0)**(Rgas/Cp)
+     theta_kess_fv = T_fv/exner_kess_fv
+
+     u0(:nf,:nf,:) = u_fv(:nf,:nf,:); v0(:nf,:nf,:) = v_fv(:nf,:nf,:); T0(:nf,:nf,:) = T_fv(:nf,:nf,:)
+     Q0_fv(:nf,:nf,:,:) = Q_fv(:nf,:nf,:,:);
+
+     ! Convert to dry mixing ratios.
+     do i = 1,3
+        Q_fv(:nf,:nf,:,i) = (rho_fv(:nf,:nf,:)/rho_dry_fv(:nf,:nf,:))*Q_fv(:nf,:nf,:,i)
+     end do
+
+     do j = 1,nf
+        do i = 1,nf
+           u_c  = u_fv(i,j,nlev:1:-1)
+           v_c  = v_fv(i,j,nlev:1:-1)
+           qv_c = Q_fv(i,j,nlev:1:-1,1)
+           qc_c = Q_fv(i,j,nlev:1:-1,2)
+           qr_c = Q_fv(i,j,nlev:1:-1,3)
+           p_c  = p_fv(i,j,nlev:1:-1)
+           rho_c= rho_dry_fv(i,j,nlev:1:-1)
+           z_c  = z_fv(i,j,nlev:1:-1)
+           zi_c = zi_fv(i,j,nlevp:1:-1)
+           th_c = theta_kess_fv(i,j,nlev:1:-1)
+
+           ! Get forced versions of u,v,p,qv,qc,qr. rho is constant.
+           call DCMIP2016_PHYSICS(test, u_c, v_c, p_c, th_c, qv_c, qc_c, qr_c, rho_c, dt, &
+                z_c, zi_c, lat, nlev, precl_fv(i,j,1), pbl_type, prec_type)
+
+           u_fv(i,j,:)   = u_c(nlev:1:-1)
+           v_fv(i,j,:)   = v_c(nlev:1:-1)
+           Q_fv(i,j,:,1) = qv_c(nlev:1:-1)
+           Q_fv(i,j,:,2) = qc_c(nlev:1:-1)
+           Q_fv(i,j,:,3) = qr_c(nlev:1:-1)
+           theta_kess_fv(i,j,:) = th_c(nlev:1:-1)
+
+           call gfr_f_get_latlon(ie, i, j, lat, lon)
+           do k=1,nlev
+              call tendency_terminator(lat*rad2dg, lon*rad2dg, Q_fv(i,j,k,4), Q_fv(i,j,k,5), &
+                   dt, ddt_cl(i,j,k), ddt_cl2(i,j,k))
+           enddo
+        enddo
+     enddo
+
+     do i = 1,3
+        Q_fv(:nf,:nf,:,i) = (rho_dry_fv(:nf,:nf,:)/rho_fv(:nf,:nf,:))*Q_fv(:nf,:nf,:,i)
+     end do
+     Q_fv(:nf,:nf,:,4) = Q_fv(:nf,:nf,:,4) + dt*ddt_cl
+     Q_fv(:nf,:nf,:,5) = Q_fv(:nf,:nf,:,5) + dt*ddt_cl2
+
+     ! Convert from theta to T w.r.t. new model state.
+     ! Assume hydrostatic pressure pi changed by qv forcing.
+     ! Assume NH pressure perturbation is unchanged.
+     delta_ps(:nf,:nf) = sum(dp_fv(:nf,:nf,:)*(Q_fv(:nf,:nf,:,iqv) - Q0_fv(:nf,:nf,:,iqv)), 3)
+     do k = 1,nlev
+        p_fv(:nf,:nf,k) = p_fv(:nf,:nf,k) + hvcoord%hybm(k)*delta_ps(:nf,:nf)
+     enddo
+     exner_kess_fv(:nf,:nf,:) = (p_fv(:nf,:nf,:)/p0)**(Rgas/Cp)
+     T_fv(:nf,:nf,:) = exner_kess_fv(:nf,:nf,:)*theta_kess_fv(:nf,:nf,:)
+
+     ! These gfr calls are special to this routine, to handle
+     ! DCMIP-specific precl.
+     call gfr_f2g_scalar(ie, elem(ie)%metdet, precl_fv, wrk3(:,:,:1))
+     call gfr_g_make_nonnegative(elem(ie)%metdet, wrk3(:,:,:1))
+     precl(:,:,ie) = wrk3(:,:,1)
+
+     pg_data%T(:,:,ie) = reshape((T_fv(:nf,:nf,:) - T0(:nf,:nf,:))/dt, (/ncol,nlev/))
+     pg_data%uv(:,1,:,ie) = reshape((u_fv(:nf,:nf,:) - u0(:nf,:nf,:))/dt, (/ncol,nlev/))
+     pg_data%uv(:,2,:,ie) = reshape((v_fv(:nf,:nf,:) - v0(:nf,:nf,:))/dt, (/ncol,nlev/))
+     ! ftype = 0, so q is Qdp tendency.
+     do i = 1,qsize
+        pg_data%q(:,:,i,ie) = reshape(dp_fv(:nf,:nf,:)*(Q_fv(:nf,:nf,:,i) - Q0_fv(:nf,:nf,:,i))/dt, &
+             (/ncol,nlev/))
+     end do
+     
+     ! Measure max w and max prect. w is not used in the physics, so
+     ! just look at the GLL values.
+     max_w     = max( max_w    , maxval(w    ) )
+     ! ps isn't updated by the physics, so just look at the GLL values.
+     min_ps    = min( min_ps,    minval(elem(ie)%state%ps_v(:,:,nt)) )
+  enddo
+
+  call t_startf('gfr_fv_phys_to_dyn')
+  call gfr_fv_phys_to_dyn(hybrid, nt, dt, hvcoord, elem, nets, nete, &
+       pg_data%T, pg_data%uv, pg_data%q)
+  call t_stopf('gfr_fv_phys_to_dyn')
+  ! dp_coupling doesn't do the DSS; stepon does. Thus, this DCMIP test
+  ! also needs to do its own DSS.
+  call gfr_f2g_dss(hybrid, elem, nets, nete)
+  call gfr_pg1_reconstruct(hybrid, nt, dt, hvcoord, elem, nets, nete)
+
+  call toy_init(rcd)
+  do ie = nets,nete
+     do k = 1,nlev
+        dp(:,:,k) = (hvcoord%hyai(k+1) - hvcoord%hyai(k))*hvcoord%ps0 + &
+             (hvcoord%hybi(k+1) - hvcoord%hybi(k))*elem(ie)%state%ps_v(:,:,nt)
+     end do
+     do i = 1,2
+        wrk4(:,:,:,i) = elem(ie)%state%Q(:,:,:,i+3) + dt*elem(ie)%derived%FQ(:,:,:,i+3)/dp
+     end do
+     call toy_rcd(wrk4, rcd)
+  end do
+  call toy_print(hybrid, tl%nstep, rcd)
+
+  ! DSS precl
+  do ie = nets,nete
+     precl(:,:,ie) = precl(:,:,ie)*elem(ie)%spheremp
+     call edgeVpack_nlyr(edge_g, elem(ie)%desc, precl(:,:,ie), 1, 0, 1)
+  end do
+  call bndry_exchangeV(hybrid, edge_g)
+  do ie = nets,nete
+     call edgeVunpack_nlyr(edge_g, elem(ie)%desc, precl(:,:,ie), 1, 0, 1)
+     precl(:,:,ie) = precl(:,:,ie)*elem(ie)%rspheremp
+     max_precl = max( max_precl, maxval(precl(:,:,ie)) )
+  end do
+
+  call dcmip2016_append_measurements(max_w,max_precl,min_ps,tl,hybrid)
+end subroutine dcmip2016_test1_pg_forcing
 
 !_______________________________________________________________________
 subroutine dcmip2016_test2_forcing(elem,hybrid,hvcoord,nets,nete,nt,ntQ,dt,tl, test)

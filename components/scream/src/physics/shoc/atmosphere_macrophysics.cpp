@@ -56,21 +56,38 @@ void SHOCMacrophysics::set_grids(const std::shared_ptr<const GridsManager> grids
 void SHOCMacrophysics::initialize (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
-  auto q_ptr = m_shoc_fields_out.at("q").get_view().data();
+
+  // TODO: create the host mirrors once.
+  auto q_dev = m_shoc_fields_out.at("q").get_view();
+  auto q_host = Kokkos::create_mirror_view(q_dev);
+  Kokkos::deep_copy(q_host,q_dev);
+  auto q_ptr = q_host.data();
 
   shoc_init_f90 (q_ptr);
 
+  Kokkos::deep_copy(q_dev,q_host);
 }
 
 // =========================================================================================
-void SHOCMacrophysics::run (const double dt)
+void SHOCMacrophysics::run (const Real dt)
 {
-  auto q_ptr = m_shoc_fields_out.at("q").get_view().data();
-  auto FQ_ptr = m_shoc_fields_out.at("FQ").get_view().data();
-  // auto dp_ptr = m_shoc_fields_in.at("dp").get_view().data();
-  auto qdp_ptr = m_shoc_fields_in.at("qdp").get_view().data();
+  // TODO: create the host mirrors once.
+  auto q_dev   = m_shoc_fields_out.at("q").get_view();
+  auto fq_dev  = m_shoc_fields_out.at("FQ").get_view();
+  auto qdp_dev = m_shoc_fields_in.at("qdp").get_view();
 
-  shoc_main_f90 (dt,q_ptr,FQ_ptr,qdp_ptr);
+  auto q_host   = Kokkos::create_mirror_view(q_dev);
+  auto fq_host  = Kokkos::create_mirror_view(fq_dev);
+  auto qdp_host = Kokkos::create_mirror_view(qdp_dev);
+
+  auto q_ptr   = q_host.data();
+  auto fq_ptr  = fq_host.data();
+  auto qdp_ptr = qdp_host.data();
+
+  shoc_main_f90 (dt,q_ptr,fq_ptr,qdp_ptr);
+
+  Kokkos::deep_copy(q_dev,q_host);
+  Kokkos::deep_copy(fq_dev,fq_host);
 
   m_current_ts += dt;
   m_shoc_fields_out.at("q").get_header().get_tracking().update_time_stamp(m_current_ts);

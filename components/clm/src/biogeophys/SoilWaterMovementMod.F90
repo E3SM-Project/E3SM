@@ -17,7 +17,8 @@ module SoilWaterMovementMod
   ! !PUBLIC MEMBER FUNCTIONS:
   public :: SoilWater            ! Calculate soil hydrology   
   public :: init_soilwater_movement
-  public :: Compute_EffecRootFrac_And_VertTranSink_Default
+  public :: Compute_EffecRootFrac_And_VertTranSink
+!  public :: Compute_EffecRootFrac_And_VertTranSink_HydStress
   !
   ! !PUBLIC DATA MEMBERS:
   logical, public :: zengdecker_2009_with_var_soil_thick
@@ -37,7 +38,7 @@ contains
     !DESCRIPTION
     !specify method for doing soil&root water interactions
     !
-    use clm_varctl, only : use_vsfm, use_var_soil_thick
+    use clm_varctl, only : use_vsfm, use_var_soil_thick, use_hydrstress
     use spmdMod,    only : mpicom, MPI_LOGICAL
     use shr_sys_mod,only : shr_sys_abort
     ! !ARGUMENTS:
@@ -1050,6 +1051,104 @@ contains
   end subroutine Prepare_Data_for_EM_VSFM_Driver
 
    ! ====================================================================================
+   
+   subroutine Compute_EffecRootFrac_And_VertTranSink(bounds, num_hydrologyc, &
+         filter_hydrologyc, soilstate_inst, canopystate_inst, waterflux_inst, energyflux_inst)
+      
+      ! ---------------------------------------------------------------------------------
+      ! This is a wrapper for calculating the effective root fraction and soil
+      ! water sink due to plant transpiration. 
+      ! Calculate Soil Water Sink to Roots over different types
+      ! of columns and for different process modules
+      ! The super-set of all columns that should have a root water sink
+      ! is filter_hydrologyc
+      ! There are three two of columns:
+      ! 1) impervious roads, 2) non-natural vegetation and  natural vegetation
+      ! There are several methods available.
+      ! 1) the default version, 2) hydstress version and 3) fates boundary conditions
+      !
+      ! There are only two quantities that are the result of this routine, and its
+      ! children:
+      !   waterflux_inst%qflx_rootsoi_col(c,j)
+      !   soilstate_inst%rootr_col(c,j)
+      !
+      !
+      ! ---------------------------------------------------------------------------------
+
+      use SoilStateType       , only : soilstate_type
+      use WaterFluxType       , only : waterflux_type
+      use CanopyStateType     , only : canopystate_type
+      use EnergyFluxType      , only : energyflux_type
+      use ColumnType          , only : col_pp 
+      use LandunitType        , only : lun_pp
+      use decompMod           , only : bounds_type   
+      use column_varcon       , only : icol_road_perv
+      use clm_varctl          , only : use_hydrstress, iulog
+      use shr_log_mod         , only : errMsg => shr_log_errMsg
+      use abortutils          , only : endrun
+
+      ! Arguments
+      type(bounds_type)       , intent(in)    :: bounds               ! bounds
+      integer                 , intent(in)    :: num_hydrologyc       ! number of column soil points in column filter
+      integer                 , intent(in)    :: filter_hydrologyc(num_hydrologyc) ! column filter for soil points
+      type(soilstate_type)    , intent(inout) :: soilstate_inst
+      type(waterflux_type)    , intent(inout) :: waterflux_inst
+      type(canopystate_type)  , intent(in)    :: canopystate_inst
+      type(energyflux_type)   , intent(in)    :: energyflux_inst
+
+      ! Local Variables
+      integer  :: filterc(bounds%endc-bounds%begc+1)           !column filter
+      integer  :: num_filterc
+      integer  :: num_filterc_tot
+      integer  :: fc
+      integer  :: c
+      integer  :: l
+
+      num_filterc_tot = 0
+
+      ! 1) pervious roads
+      num_filterc = 0
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+         if (col_pp%itype(c) == icol_road_perv) then
+            num_filterc = num_filterc + 1
+            filterc(num_filterc) = c
+         end if
+      end do
+      num_filterc_tot = num_filterc_tot+num_filterc
+      call Compute_EffecRootFrac_And_VertTranSink_Default(bounds, &
+               num_filterc,filterc, soilstate_inst, waterflux_inst)
+
+
+      num_filterc = 0
+      do fc = 1, num_hydrologyc
+         c = filter_hydrologyc(fc)
+         l = col_pp%landunit(c)
+         if ( (col_pp%itype(c) /= icol_road_perv) ) then
+            num_filterc = num_filterc + 1
+            filterc(num_filterc) = c
+         end if
+      end do
+      num_filterc_tot = num_filterc_tot+num_filterc
+      if(use_hydrstress) then
+         call Compute_EffecRootFrac_And_VertTranSink_HydStress(bounds, &
+               num_filterc, filterc, waterflux_inst, soilstate_inst, &
+               canopystate_inst, energyflux_inst)
+      else
+         call Compute_EffecRootFrac_And_VertTranSink_Default(bounds, &
+               num_filterc,filterc, soilstate_inst, waterflux_inst)
+      end if
+
+      if (num_hydrologyc /= num_filterc_tot) then
+          write(iulog,*) 'The total number of columns flagged to root water uptake'
+          write(iulog,*) 'did not match the total number calculated'
+          write(iulog,*) 'This is likely a problem with the interpretation of column/lu filters.'
+          call endrun(msg=errMsg(__FILE__, __LINE__))
+      end if
+
+
+      return
+   end subroutine Compute_EffecRootFrac_And_VertTranSink
 
    subroutine Compute_EffecRootFrac_And_VertTranSink_Default(bounds, num_filterc, &
          filterc, soilstate_vars, waterflux_vars)
@@ -1171,5 +1270,110 @@ contains
     end associate
     return
  end subroutine Compute_EffecRootFrac_And_VertTranSink_Default
+
+   ! ==================================================================================
+   
+   subroutine Compute_EffecRootFrac_And_VertTranSink_HydStress( bounds, &
+           num_filterc, filterc, waterflux_vars, soilstate_vars, &
+           canopystate_vars, energyflux_vars)
+
+
+        !
+        !USES:
+        use decompMod        , only : bounds_type
+        use clm_varpar       , only : nlevsoi
+        use clm_varpar       , only : max_patch_per_col
+        use SoilStateType    , only : soilstate_type
+        use WaterFluxType    , only : waterflux_type
+        use CanopyStateType  , only : canopystate_type
+        use VegetationType   , only : veg_pp
+        use ColumnType       , only : col_pp
+        use clm_varctl       , only : iulog
+        use PhotosynthesisMod, only : plc, params_inst
+        use column_varcon    , only : icol_road_perv
+        use shr_infnan_mod   , only : isnan => shr_infnan_isnan
+        use EnergyFluxType   , only : energyflux_type
+        use shr_kind_mod     , only : r8 => shr_kind_r8
+        !
+        ! !ARGUMENTS:
+        type(bounds_type)    , intent(in)    :: bounds          ! bounds
+        integer              , intent(in)    :: num_filterc     ! number of column soil points in column filter
+        integer              , intent(in)    :: filterc(:)      ! column filter for soil points
+        type(waterflux_type) , intent(inout) :: waterflux_vars
+        type(soilstate_type) , intent(inout) :: soilstate_vars
+        type(canopystate_type) , intent(in)  :: canopystate_vars
+        type(energyflux_type), intent(in)    :: energyflux_vars
+        !
+        ! !LOCAL VARIABLES:
+        integer  :: p,c,fc,j                                              ! do loop indices
+        integer  :: pi                                                    ! patch index
+        real(r8) :: temp(bounds%begc:bounds%endc)                         ! accumulator for rootr weighting
+        real(r8) :: grav2                 ! soil layer gravitational potential relative to surface (mm H2O)
+        integer , parameter :: soil=1,root=4  ! index values
+        !-----------------------------------------------------------------------   
+        
+        associate(&
+              k_soil_root         => soilstate_vars%k_soil_root_patch   , & ! Input:  [real(r8) (:,:) ]  
+                                                                            ! soil-root interface conductance (mm/s)
+              qflx_phs_neg_col    => waterflux_vars%qflx_phs_neg_col    , & ! Input:  [real(r8) (:)   ]  n
+                                                                            ! net neg hydraulic redistribution flux(mm H2O/s)
+              qflx_tran_veg_col   => col_wf%qflx_tran_veg   , & ! Input:  [real(r8) (:)   ]  
+                                                                            ! vegetation transpiration (mm H2O/s) (+ = to atm)
+              qflx_tran_veg_patch => veg_wf%qflx_tran_veg , & ! Input:  [real(r8) (:)   ]  
+                                                                            ! vegetation transpiration (mm H2O/s) (+ = to atm)
+              qflx_rootsoi_col    => col_wf%qflx_rootsoi    , & ! Output: [real(r8) (:)   ]
+                                                                            ! col root and soil water 
+                                                                            ! exchange [mm H2O/s] [+ into root]
+              rootr_col           => soilstate_vars%rootr_col           , & ! Input:  [real(r8) (:,:) ]
+                                                                            ! effective fraction of roots in each soil layer
+              rootr_patch         => soilstate_vars%rootr_patch         , & ! Input:  [real(r8) (:,:) ]  
+                                                                            ! effective fraction of roots in each soil layer
+              smp                 => soilstate_vars%smp_l_col           , & ! Input:  [real(r8) (:,:) ]  soil matrix pot. [mm]
+              frac_veg_nosno      => canopystate_vars%frac_veg_nosno_patch , & ! Input:  [integer  (:)  ] 
+                                                                            ! fraction of vegetation not 
+                                                                            ! covered by snow (0 OR 1) [-]  
+              z                   => col_pp%z                              , & ! Input: [real(r8) (:,:) ]  layer node depth (m)
+              vegwp               => canopystate_vars%vegwp_patch         & ! Input: [real(r8) (:,:) ]  vegetation water 
+                                                                            ! matric potential (mm)
+              )
+          
+          do fc = 1, num_filterc
+             c = filterc(fc)
+             qflx_phs_neg_col(c) = 0._r8
+             
+             do j = 1, nlevsoi
+                grav2 = z(c,j) * 1000._r8
+                temp(c) = 0._r8
+                do pi = 1,max_patch_per_col
+                   if (pi <= col_pp%npfts(c)) then
+                      p = col_pp%pfti(c) + pi - 1
+                      if (veg_pp%active(p).and.frac_veg_nosno(p)>0) then 
+                         if (veg_pp%wtcol(p) > 0._r8) then
+                            temp(c) = temp(c) + k_soil_root(p,j) &
+                                  * (smp(c,j) - vegwp(p,4) - grav2)* veg_pp%wtcol(p)
+                         endif
+                      end if
+                   end if
+                end do
+                qflx_rootsoi_col(c,j)= temp(c)
+                
+                if (temp(c) < 0._r8) qflx_phs_neg_col(c) = qflx_phs_neg_col(c) + temp(c)
+             end do
+             
+             ! Back out the effective root density
+             if( sum(qflx_rootsoi_col(c,1:nlevsoi))>0.0_r8 ) then
+                do j = 1, nlevsoi
+                   rootr_col(c,j) = qflx_rootsoi_col(c,j)/sum( qflx_rootsoi_col(c,1:nlevsoi))
+                end do
+             else
+                rootr_col(c,:) = 0.0_r8
+             end if
+          end do
+          
+        end associate
+
+        return
+     end subroutine Compute_EffecRootFrac_And_VertTranSink_HydStress
+
 
 end module SoilWaterMovementMod

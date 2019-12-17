@@ -12,10 +12,12 @@ template<typename DeviceType, int PackSize, bool forward>
 class DummyProcess : public scream::AtmosphereProcess {
 public:
   using device_type = DeviceType;
+  using exec_space  = typename device_type::execution_space;
 
   DummyProcess (const Comm& comm, const ParameterList& params)
    : m_comm(comm)
   {
+    m_iter = 0;
     m_params = params;
     m_id = comm.rank();
 
@@ -69,15 +71,24 @@ public:
     m_time_stamp = t0;
   }
 
-  void run (const double dt) {
+  void run (const Real dt) {
     auto in = m_input.get_view();
     auto out = m_output.get_view();
-    Kokkos::parallel_for(Kokkos::RangePolicy<>(0,in.size()),
+    auto iter = m_iter % 4;
+    Kokkos::parallel_for(Kokkos::RangePolicy<exec_space>(0,in.size()),
       KOKKOS_LAMBDA(const int i) {
-        out(i) = sin(in(i));
+        switch (iter) {
+          case 0: out(i) = in(i) + 2.0; break;
+          case 1: out(i) = in(i) * 2.0; break;
+          case 2: out(i) = in(i) - 2.0; break;
+          case 3: out(i) = in(i) / 2.0; break;
+          default:
+            scream_kassert(false);
+        }
     });
     Kokkos::fence();
 
+    ++m_iter;
     m_time_stamp += dt;
     m_output.get_header().get_tracking().update_time_stamp(m_time_stamp);
   }
@@ -105,6 +116,8 @@ protected:
   void set_computed_field_impl (const Field<      Real, device_type>& f) {
     m_output = f;
   }
+
+  int m_iter;
 
   util::TimeStamp           m_time_stamp;
 

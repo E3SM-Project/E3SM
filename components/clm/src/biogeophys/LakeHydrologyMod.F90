@@ -200,7 +200,7 @@ contains
          qflx_infl            =>  col_wf%qflx_infl          , & ! Output: [real(r8) (:)   ]  infiltration (mm H2O /s)                
          qflx_qrgwl           =>  col_wf%qflx_qrgwl         , & ! Output: [real(r8) (:)   ]  qflx_surf at glaciers, wetlands, lakes  
          qflx_runoff          =>  col_wf%qflx_runoff        , & ! Output: [real(r8) (:)   ]  total runoff (qflx_drain+qflx_surf+qflx_qrgwl) (mm H2O /s)
-         qflx_irrig           =>  veg_wf%qflx_irrig       , & ! Output: [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
+         qflx_irrig           =>  veg_wf%qflx_irrig_patch   , & ! Output: [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
          qflx_irrig_col       =>  col_wf%qflx_irrig         , & ! Output: [real(r8) (:)   ]  irrigation flux (mm H2O /s)             
          qflx_top_soil        =>  col_wf%qflx_top_soil      , & ! Output: [real(r8) (:)   ]  net water input into soil from top (mm/s)
          qflx_sl_top_soil     =>  col_wf%qflx_sl_top_soil   , & ! Output: [real(r8) (:)   ]  liquid water + ice from layer above soil to top soil layer or sent to qflx_qrgwl (mm H2O/s)

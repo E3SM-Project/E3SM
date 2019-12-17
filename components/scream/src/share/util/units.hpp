@@ -264,7 +264,7 @@ inline std::string to_string(const Units& x) {
   }
 
   // Prepend the scaling only if it's not one, or if this is a dimensionless unit
-  if (x.m_scaling!=RationalConstant::one() || num_non_trivial==0) {
+  if (x.m_scaling!=ScalingFactor::one() || num_non_trivial==0) {
     s = to_string(x.m_scaling,x.m_exp_format) + s;
   }
   return s;

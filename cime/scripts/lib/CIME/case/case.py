@@ -893,7 +893,7 @@ class Case(object):
                   multi_driver=False, ninst=1, test=False,
                   walltime=None, queue=None, output_root=None,
                   run_unsupported=False, answer=None,
-                  input_dir=None, driver=None, workflow_case="default",
+                  input_dir=None, driver=None, workflowid="default",
                   non_local=False):
 
         expect(check_name(compset_name, additional_chars='.'), "Invalid compset name {}".format(compset_name))
@@ -1082,7 +1082,7 @@ class Case(object):
         logger.info("Batch_system_type is {}".format(batch_system_type))
         batch = Batch(batch_system=batch_system_type, machine=machine_name, files=files)
         workflow = Workflow(files=files)
-        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflow_case=workflow_case)
+        bjobs = workflow.get_workflow_jobs(machine=machine_name, workflowid=workflowid)
         env_workflow = self.get_env("workflow")
 
         env_batch.set_batch_system(batch, batch_system_type=batch_system_type)
@@ -1339,13 +1339,13 @@ directory, NOT in this subdirectory."""
 
     def submit_jobs(self, no_batch=False, job=None, skip_pnl=None, prereq=None, allow_fail=False,
                     resubmit_immediate=False, mail_user=None, mail_type=None, batch_args=None,
-                    dry_run=False):
+                    dry_run=False, workflow=True):
         env_batch = self.get_env('batch')
         result =  env_batch.submit_jobs(self, no_batch=no_batch, skip_pnl=skip_pnl,
                                         job=job, user_prereq=prereq, allow_fail=allow_fail,
                                         resubmit_immediate=resubmit_immediate,
                                         mail_user=mail_user, mail_type=mail_type,
-                                        batch_args=batch_args, dry_run=dry_run)
+                                        batch_args=batch_args, dry_run=dry_run, workflow=workflow)
         return result
 
     def get_job_info(self):
@@ -1583,7 +1583,7 @@ directory, NOT in this subdirectory."""
                multi_driver=False, ninst=1, test=False,
                walltime=None, queue=None, output_root=None,
                run_unsupported=False, answer=None,
-               input_dir=None, driver=None, workflow_case="default", non_local=False):
+               input_dir=None, driver=None, workflowid="default", non_local=False):
         try:
             # Set values for env_case.xml
             self.set_lookup_value("CASE", os.path.basename(casename))
@@ -1600,7 +1600,7 @@ directory, NOT in this subdirectory."""
                            output_root=output_root,
                            run_unsupported=run_unsupported, answer=answer,
                            input_dir=input_dir, driver=driver,
-                           workflow_case=workflow_case, non_local=non_local)
+                           workflowid=workflowid, non_local=non_local)
 
             self.create_caseroot()
 
@@ -1639,3 +1639,8 @@ directory, NOT in this subdirectory."""
 
     def get_primary_job(self):
         return "case.test" if self.get_value("TEST") else "case.run"
+
+    def get_first_job(self):
+        env_workflow = self.get_env("workflow")
+        jobs = env_workflow.get_jobs()
+        return jobs[0]

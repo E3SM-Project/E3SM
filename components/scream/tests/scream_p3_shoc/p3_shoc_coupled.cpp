@@ -9,6 +9,7 @@
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/shoc/atmosphere_macrophysics.hpp"
 #include "physics/shoc/scream_shoc_interface.hpp"
+#include "physics/p3/p3_functions_f90.hpp"
 
 namespace scream {
 
@@ -86,6 +87,7 @@ TEST_CASE("p3-shoc-coupled", "") {
   // Finalize 
   ad.finalize();
   upgm.clean_up();
+  p3::P3GlobalForFortran::deinit();
 
   // If we got here, we were able to run p3+shoc
   REQUIRE(true);

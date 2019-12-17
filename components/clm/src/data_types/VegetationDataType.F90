@@ -372,8 +372,15 @@ module VegetationDataType
     real(r8), pointer :: qflx_ev_soil       (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
     real(r8), pointer :: qflx_ev_h2osfc     (:)   => null() ! evaporation heat flux from soil       (W/m**2) [+ to atm] ! NOTE: unit shall be mm H2O/s for water NOT heat
     real(r8), pointer :: qflx_rootsoi_frac  (:,:) => null() !  
-    real(r8), pointer :: qflx_irrig         (:)   => null() ! irrigation flux (mm H2O/s)
-    real(r8), pointer :: irrig_rate         (:)   => null() ! current irrigation rate [mm/s]
+   
+    real(r8), pointer :: irrig_rate               (:)   => null() ! current irrigation rate [mm/s]
+    real(r8), pointer :: qflx_irrig_patch         (:)   => null()   ! patch irrigation flux (mm H2O/s)
+    real(r8), pointer :: qflx_real_irrig_patch    (:)   => null()   ! patch real irrigation flux (mm H2O/s) 
+    real(r8), pointer :: qflx_grnd_irrig_patch    (:)   => null()   ! groundwater irrigation (mm H2O/s) 
+    real(r8), pointer :: qflx_surf_irrig_patch    (:)   => null()   ! surface water irrigation(mm H2O/s) 
+    real(r8), pointer :: qflx_supply_patch        (:)   => null()   ! patch supply flux (mm H2O/s) 
+
+    real(r8), pointer :: qflx_over_supply_patch   (:)   => null()   ! over supplied irrigation
     integer , pointer :: n_irrig_steps_left (:)   => null() ! number of time steps for which we still need to irrigate today (if 0, ignore)
 
   contains
@@ -5352,17 +5359,48 @@ module VegetationDataType
     allocate(this%qflx_ev_soil           (begp:endp))             ; this%qflx_ev_soil         (:)   = nan
     allocate(this%qflx_ev_h2osfc         (begp:endp))             ; this%qflx_ev_h2osfc       (:)   = nan
     allocate(this%qflx_rootsoi_frac      (begp:endp,1:nlevgrnd))  ; this%qflx_rootsoi_frac    (:,:) = nan
-    allocate(this%qflx_irrig             (begp:endp))             ; this%qflx_irrig           (:)   = nan
-    allocate(this%irrig_rate             (begp:endp))             ; this%irrig_rate           (:)   = nan
-    allocate(this%n_irrig_steps_left     (begp:endp))             ; this%n_irrig_steps_left   (:)   = 0
+    
+    allocate(this%irrig_rate               (begp:endp))              ; this%irrig_rate               (:)   = nan
+    allocate(this%qflx_irrig_patch         (begp:endp))              ; this%qflx_irrig_patch         (:)   = nan
+    allocate(this%qflx_real_irrig_patch    (begp:endp))              ; this%qflx_real_irrig_patch    (:)   = nan
+    allocate(this%qflx_grnd_irrig_patch    (begp:endp))              ; this%qflx_grnd_irrig_patch    (:)   = nan
+    allocate(this%qflx_surf_irrig_patch    (begp:endp))              ; this%qflx_surf_irrig_patch    (:)   = nan
+    allocate(this%qflx_supply_patch        (begp:endp))              ; this%qflx_supply_patch        (:)   = nan
+    allocate(this%qflx_over_supply_patch   (begp:endp))              ; this%qflx_over_supply_patch   (:)   = nan 
+    allocate(this%n_irrig_steps_left       (begp:endp))              ; this%n_irrig_steps_left       (:)   = 0
     
     !-----------------------------------------------------------------------
     ! initialize history fields for select members of veg_wf
     !-----------------------------------------------------------------------
-    this%qflx_irrig(begp:endp) = spval
-    call hist_addfld1d (fname='QIRRIG', units='mm/s', &
-         avgflag='A', long_name='water added through irrigation', &
-         ptr_patch=this%qflx_irrig)
+    this%qflx_irrig_patch(begp:endp) = spval
+    call hist_addfld1d (fname='QIRRIG_ORIG', units='mm/s', &
+         avgflag='A', long_name='Original total irrigation water demand (surface + ground)', &
+         ptr_patch=this%qflx_irrig_patch)
+		 
+    this%qflx_real_irrig_patch(begp:endp) = spval     ! real irrig
+    call hist_addfld1d (fname='QIRRIG_REAL', units='mm/s', &
+         avgflag='A', long_name='actual water added through irrigation (surface + ground)', &
+         ptr_patch=this%qflx_real_irrig_patch)
+    
+    this%qflx_supply_patch(begp:endp) = spval     
+    call hist_addfld1d (fname='QSUPPLY', units='mm/s', &
+         avgflag='A', long_name='irrigation supply from MOSART', &
+         ptr_patch=this%qflx_supply_patch)
+         
+    this%qflx_surf_irrig_patch(begp:endp) = spval    
+    call hist_addfld1d (fname='QSURF_IRRIG', units='mm/s', &
+         avgflag='A', long_name='Surface water irrigation', &
+         ptr_patch=this%qflx_surf_irrig_patch)
+    
+    this%qflx_grnd_irrig_patch(begp:endp) = spval   
+    call hist_addfld1d (fname='QGRND_IRRIG', units='mm/s', &
+         avgflag='A', long_name='Groundwater irrigation', &
+         ptr_patch=this%qflx_grnd_irrig_patch)
+		 
+    this%qflx_over_supply_patch(begp:endp) = spval   
+    call hist_addfld1d (fname='QOVER_SUPPLY', units='mm/s', &
+         avgflag='A', long_name='Over supplied irrigation due to remapping, added to irrigation to conserve mass', &
+         ptr_patch=this%qflx_over_supply_patch)
 
     this%qflx_prec_intr(begp:endp) = spval
     call hist_addfld1d (fname='QINTR', units='mm/s',  &
@@ -9786,11 +9824,17 @@ module VegetationDataType
            this%hrv_deadcrootn_to_litter(p)        + &
            this%hrv_deadcrootn_storage_to_litter(p)+ &
            this%hrv_deadcrootn_xfer_to_litter(p)
+      if (crop_prog) then
+         this%sen_nloss_litter(p) = &
+             this%livestemn_to_litter(p)            + &
+             this%leafn_to_litter(p)                + &
+             this%frootn_to_litter(p)
+      else
+         this%sen_nloss_litter(p) = &
+             this%leafn_to_litter(p)                + &
+             this%frootn_to_litter(p)
+      end if
 
-       this%sen_nloss_litter(p) = &
-           this%livestemn_to_litter(p)            + &
-           this%leafn_to_litter(p)                + &
-           this%frootn_to_litter(p)
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &
@@ -10886,10 +10930,16 @@ module VegetationDataType
            this%hrv_deadcrootp_storage_to_litter(p)+ &
            this%hrv_deadcrootp_xfer_to_litter(p)
 
-       this%sen_ploss_litter(p) = &
-           this%livestemp_to_litter(p)            + &
-           this%leafp_to_litter(p)                + &
-           this%frootp_to_litter(p)
+      if (crop_prog) then
+         this%sen_ploss_litter(p) = &
+             this%livestemp_to_litter(p)            + &
+             this%leafp_to_litter(p)                + &
+             this%frootp_to_litter(p)
+      else
+         this%sen_ploss_litter(p) = &
+             this%leafp_to_litter(p)                + &
+             this%frootp_to_litter(p)
+      end if
     end do
 
     call p2c(bounds, num_soilc, filter_soilc, &

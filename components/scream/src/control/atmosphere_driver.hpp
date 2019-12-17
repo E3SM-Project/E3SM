@@ -50,7 +50,7 @@ public:
   // The run method is responsible for advancing the atmosphere component by one atm time step
   // Inside here you should find calls to the run method of each subcomponent, including parametrizations
   // and dynamics (HOMME).
-  void run (const double dt);
+  void run (const Real dt);
 
   // Clean up the driver (includes cleaning up the parametrizations and the fm's);
   void finalize ( /* inputs */ );

@@ -91,6 +91,12 @@ Interpolate the soil layers on the surface dataset to the soil layers specified 
 If TRUE, irrigation will be active.
 </entry> 
 
+<entry id="tw_irr" type="logical" category="clm_physics"
+       group="clm_inparm"  >
+If TRUE, irrigation will be two-way coupled with MOSART.
+irrigation supply will be constrained by surface water availability from MOSART
+</entry>
+
 <entry id="maxpatch_glcmec" type="integer"  category="clm_physics"
        group="clm_inparm" valid_values="0,1,3,5,10,36" >
 Number of  multiple elevation classes over glacier points.
