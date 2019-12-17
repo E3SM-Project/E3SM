@@ -118,7 +118,7 @@ contains
     return
   end subroutine geopotential_dse
 
-!==============================================================================e
+!===============================================================================
   subroutine geopotential_t(                                 &
        piln   , pmln   , pint   , pmid   , pdel   , rpdel  , &
        t      , q      , rair   , gravit , zvir   ,          &
@@ -213,5 +213,4 @@ use ppgrid, only : pcols
 
     return
   end subroutine geopotential_t
-
 end module geopotential
