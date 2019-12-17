@@ -416,7 +416,7 @@ def get_extension(model, filepath, regex=None):
     '0002.h0'
     >>> get_extension("pop","PFS.f09_g16.B1850.cheyenne_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
     'h'
-    >>> get_extension("fv3gfs", "dynf000.tile1.nc", regex=[r'^physf\d\d\d.tile[1-6].nc$',r'^dynf\d\d\d.tile[1-6].nc$'])
+    >>> get_extension("fv3gfs", "dynf000.tile1.nc", regex=["^physf\d\d\d.tile[1-6].nc$","^dynf\d\d\d.tile[1-6].nc$"])
     '^dynf\\d\\d\\d.tile[1-6].nc$'
     >>> get_extension("mom", "ga0xnw.mom6.frc._0001_001.nc")
     'frc'
