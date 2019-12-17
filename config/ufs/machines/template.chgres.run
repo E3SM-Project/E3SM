@@ -11,10 +11,12 @@ ln -sf config.nml fort.41
 
 # Copy chgres executable to bld directory
 blddir="$rundir/../bld"
-# TODO: due to the problem in chgres shipped with NCEP_LIBS, use custom build
-# This needs to be fixed before release
-#cp $NCEP_LIBS/bin/chgres_cube.exe $blddir/.
-cp /glade/work/turuncu/UFS/UFS_UTILS/exec/chgres_cube.exe $blddir/.
+
+# Set environment variables
+export LD_LIBRARY_PATH=$NCEP_LIBS/lib:$NCEP_LIBS/lib64:$LD_LIBRARY_PATH
+
+# Copy executable to build directory
+cp $NCEP_LIBS/bin/chgres_cube.exe $blddir/.
 
 # Run chgres
 runcmd='{{ mpirun }}'
