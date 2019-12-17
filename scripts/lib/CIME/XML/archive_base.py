@@ -71,11 +71,12 @@ class ArchiveBase(GenericXML):
         for ext in extensions:
             if 'initial' in ext:
                 continue
-            if ext.endswith('$'):
+            if ext.endswith('$') and len(suffix)>0:
                 ext = ext[:-1]
             string = model+r'\d?_?(\d{4})?\.'+ext
-            if suffix:
+            if suffix and len(suffix)>0:
                 string += suffix+'$'
+
             logger.debug ("Regex is {}".format(string))
 
             pfile = re.compile(string)
