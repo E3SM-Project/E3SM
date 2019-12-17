@@ -152,6 +152,17 @@ class A_RunUnitTests(unittest.TestCase):
                         run_cmd_assert_result(self, 'PYTHONPATH={}:$PYTHONPATH python -m doctest {} 2>&1'.format(LIB_DIR, filepath), from_dir=LIB_DIR)
                     else:
                         print("{} has no doctests".format(filepath))
+###############################################################################
+class C_TestGridGeneration(unittest.TestCase):
+###############################################################################
+    def test_gen_domain(self):
+        inputdata = MACHINE.get_value("DIN_LOC_ROOT")
+        cime_root = get_cime_root()
+        testname = os.path.join(cime_root, "tools", "mapping", 
+                                "gen_domain_files", "test_gen_domain.sh")
+        temp_dir = tempfile.mkdtemp()
+        run_cmd_assert_result(self, "{} --inputdata_root={} --cime_root={}".format(testname, inputdata, cime_root), from_dir=temp_dir)
+        shutil.rmtree(temp_dir)
 
 ###############################################################################
 def make_fake_teststatus(path, testname, status, phase):
