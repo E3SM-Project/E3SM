@@ -270,7 +270,7 @@ contains
 #ifdef MOABDEBUGMCT
   subroutine expose_mct_grid_moab (comp)
     use shr_mpi_mod,       only: shr_mpi_commrank, shr_mpi_commsize
-    use shr_const_mod, only SHR_CONST_PI
+    use shr_const_mod, only: SHR_CONST_PI
     type(component_type), intent(in) :: comp
     integer                :: lsz
     type(mct_gGrid), pointer :: dom

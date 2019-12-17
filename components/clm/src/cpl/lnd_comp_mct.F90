@@ -268,7 +268,7 @@ contains
 
     call lnd_domain_mct( bounds, lsz, gsMap_lnd, dom_l )
 #ifdef HAVE_MOAB
-    call init_land_moab(dom_l, lsz)
+    call init_land_moab(bounds)
 #endif
     call mct_aVect_init(x2l_l, rList=seq_flds_x2l_fields, lsize=lsz)
     call mct_aVect_zero(x2l_l)
@@ -482,7 +482,7 @@ contains
        nstep = get_nstep()
        caldayp1 = get_curr_calday(offset=dtime)
        if (nstep == 0) then
-	  doalb = .false. 	
+	        doalb = .false.
        else if (nstep == 1) then 
           doalb = (abs(nextsw_cday- caldayp1) < 1.e-10_r8) 
        else
@@ -719,13 +719,19 @@ contains
   end subroutine lnd_domain_mct
 
 #ifdef HAVE_MOAB
-  subroutine init_land_moab(mct_ldom, lsz)
+  subroutine init_land_moab(bounds)
     use seq_comm_mct,      only: mlnid  ! id of moab land app
-    use m_GeneralGrid       , only:  mct_ggrid_indexIA      => indexIA
-    use m_GeneralGrid       , only : MCT_GGrid_indexRA      => indexRA
     use spmdMod     , only: iam  ! rank on the land communicator
-    type(mct_gGrid),        pointer :: mct_ldom                ! Land model domain data
-    integer        , intent(in)    :: lsz     ! land model domain data size
+    use domainMod   , only: ldomain ! ldomain is coming from module, not even passed
+    use clm_varcon  , only: re
+    use shr_const_mod, only: SHR_CONST_PI
+
+    type(bounds_type) , intent(in)  :: bounds
+
+    integer,allocatable :: gindex(:)  ! Number the local grid points; used for global ID
+    integer lsz !  keep local size
+    integer gsize ! global size, that we do not need, actually
+    integer n
     integer , external :: iMOAB_CreateVertices, iMOAB_WriteMesh, &
          iMOAB_DefineTagStorage, iMOAB_SetIntTagStorage, iMOAB_SetDoubleTagStorage, &
          iMOAB_ResolveSharedEntities
@@ -735,26 +741,29 @@ contains
     ! number of vertices is the size of land domain
     real(r8), dimension(:), allocatable :: moab_vert_coords  ! temporary
     real(r8)   :: latv, lonv
-    integer   dims, i, ilat, ilon, igdx, ierr, tagindex, ixarea, ixfrac
+    integer   dims, i, ilat, ilon, igdx, ierr, tagindex
     integer tagtype, numco, ent_type
     character*100 outfile, wopts, localmeshfile, tagname
-    real(R8),parameter :: SHR_CONST_PI      = 3.14159265358979323846_R8  ! pi
 
     dims  =3 ! store as 3d mesh
+
+    ! number the local grid
+    lsz = bounds%endg - bounds%begg + 1
     allocate(moab_vert_coords(lsz*dims))
     allocate(vgids(lsz))
-    ilat = MCT_GGrid_indexRA(mct_ldom,'lat')
-    ilon = MCT_GGrid_indexRA(mct_ldom,'lon')
-    igdx = MCT_GGrid_indexIA(mct_ldom,'GlobGridNum')
+
+    do n = 1, lsz
+       vgids(n) = ldecomp%gdc2glo(bounds%begg+n-1)
+    end do
+    gsize = ldomain%ni * ldomain%nj
     do i = 1, lsz
-      latv = mct_ldom%data%rAttr(ilat, i) *SHR_CONST_PI/180.
-      lonv = mct_ldom%data%rAttr(ilon, i) *SHR_CONST_PI/180.
+      n = i-1 + bounds%begg
+      lonv = ldomain%lonc(n) *SHR_CONST_PI/180.
+      latv = ldomain%latc(n) *SHR_CONST_PI/180.
       moab_vert_coords(3*i-2)=COS(latv)*COS(lonv)
       moab_vert_coords(3*i-1)=COS(latv)*SIN(lonv)
       moab_vert_coords(3*i  )=SIN(latv)
-      vgids(i) = mct_ldom%data%iAttr(igdx, i)
     enddo
-
     ierr = iMOAB_CreateVertices(mlnid, lsz*3, dims, moab_vert_coords)
     if (ierr > 0 )  &
       call endrun('Error: fail to create MOAB vertices in land model')
@@ -789,9 +798,6 @@ contains
 
     ! use moab_vert_coords as a data holder for a frac tag and area tag that we will create
     !   on the vertices; do not allocate other data array
-    !  do not be confused by this !
-    ixfrac = MCT_GGrid_indexRA(mct_ldom,'frac')
-    ixarea = MCT_GGrid_indexRA(mct_ldom,'area')
     tagname='frac'//CHAR(0)
     tagtype = 1 ! dense, double
     ierr = iMOAB_DefineTagStorage(mlnid, tagname, tagtype, numco,  tagindex )
@@ -799,7 +805,8 @@ contains
       call endrun('Error: fail to create frac tag ')
 
     do i = 1, lsz
-      moab_vert_coords(i) = mct_ldom%data%rAttr(ixfrac, i)
+      n = i-1 + bounds%begg
+      moab_vert_coords(i) = ldomain%frac(n)
     enddo
     ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords)
     if (ierr > 0 )  &
@@ -810,7 +817,8 @@ contains
     if (ierr > 0 )  &
       call endrun('Error: fail to create area tag ')
     do i = 1, lsz
-      moab_vert_coords(i) = mct_ldom%data%rAttr(ixarea, i) ! use the same doubles for second tag :)
+      n = i-1 + bounds%begg
+      moab_vert_coords(i) = ldomain%area(n)/(re*re) ! use the same doubles for second tag :)
     enddo
 
     ierr = iMOAB_SetDoubleTagStorage ( mlnid, tagname, lsz , ent_type, moab_vert_coords )
@@ -827,7 +835,6 @@ contains
     if (ierr > 0 )  &
       call endrun('Error: fail to write the land mesh file')
 #endif
-
   end subroutine init_land_moab
 #endif
 end module lnd_comp_mct
