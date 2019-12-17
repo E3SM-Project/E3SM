@@ -1,0 +1,28 @@
+#!/bin/bash
+{{ batchdirectives }}
+
+# Goto run directory
+rundir=`./xmlquery --value RUNDIR`
+echo "run dir is $rundir"
+cd $rundir
+
+# Run ncep_post
+runcmd='{{ mpirun }}'
+mpirun=`echo $runcmd | awk '{print $1}'`
+
+# Copy ncep_post executable to bld directory
+blddir="$rundir/../bld"
+cp $NCEP_LIBS/bin/ncep_post $blddir/.
+
+for f in 012 024 036
+do
+  export T1=$SECONDS
+  cp dynf$f.nemsio nemsfile
+  cp phyf$f.nemsio flxfile
+  cp itaga.$f itag
+  eval "time $mpirun $blddir/ncep_post >oi.$f 2>ei.$f"
+  export T2=$SECONDS
+  let dff=$T2'-'$T1
+  echo ran $DECOMP on `date` in $dff seconds >>TIMES
+  echo done >>DONEOUT
+done

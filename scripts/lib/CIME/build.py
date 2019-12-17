@@ -120,12 +120,12 @@ def _build_model(build_threaded, exeroot, incroot, complist,
 
         config_dir = os.path.join(cimeroot, "src", "drivers", comp_interface, "cime_config")
         if not os.path.isdir(config_dir):
-            if cime_model == "ufs":
-                return logs
-            expect(False, "Config directory not found {}".format(config_dir))
-        bldroot = os.path.join(exeroot, "cpl", "obj")
-        if not os.path.isdir(bldroot):
-            os.makedirs(bldroot)
+            config_dir = os.path.join(cimeroot,"..","src","model","NEMS","cime","cime_config")
+        expect(os.path.exists(config_dir), "Config directory not found {}".format(config_dir))
+        if "cpl" in complist:
+            bldroot = os.path.join(exeroot, "cpl", "obj")
+            if not os.path.isdir(bldroot):
+                os.makedirs(bldroot)
         logger.info("Building {} with output to {} ".format(cime_model, file_build))
 
         with open(file_build, "w") as fd:

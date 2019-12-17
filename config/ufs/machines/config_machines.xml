@@ -119,7 +119,7 @@ This allows using a different mpirun command to launch unit tests
     <MPILIBS compiler="pgi" >openmpi,mpt</MPILIBS>
     <MPILIBS compiler="gnu" >openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/ufs_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/glade/p/cgd/tss/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
@@ -190,6 +190,22 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
         <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
       </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
+      </modules>
+      <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
+      </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
       </modules>
@@ -203,9 +219,9 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
-	<!-- netcdf-mpi is broken with mpt -->
+	<!-- known failure in parallel netcdf with mpt, use serial -->
 	<command name="load">netcdf/4.7.1</command>
-	<command name="load">pnetcdf/1.11.0</command>
+	<command name="load">pnetcdf/1.11.1</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.19</command>
@@ -241,31 +257,15 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_IB_CONGESTED">1</env>
       <env name="MPI_USE_ARRAY"/>
     </environment_variables>
-    <environment_variables comp_interface="nuopc" mpilib="mpi-serial" DEBUG="FALSE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libO/Linux.intel.64.mpiuni.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" mpilib="mpi-serial" DEBUG="TRUE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libg/Linux.intel.64.mpiuni.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" DEBUG="FALSE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libO/Linux.intel.64.mpt.default/esmf.mk</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc" DEBUG="TRUE">
-      <env name="ESMFMKFILE">/glade/work/turuncu/ESMF/8.0.0b50/lib/libg/Linux.intel.64.mpt.default/esmf.mk</env>
-    </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-      <!--<env name="UGCSINPUTPATH">/glade/work/turuncu/FV3GFS/benchmark-inputs/2012010100/gfs/fcst</env>-->
-      <env name="UGCSINPUTPATH">/glade/scratch/turuncu/fv3gfs/fv3_gfdlmprad</env>
-      <env name="UGCSFIXEDFILEPATH">/glade/work/turuncu/FV3GFS/fix_am</env>
-      <env name="UGCSADDONPATH">/glade/work/turuncu/FV3GFS/addon</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="NCEP_LIBS">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install</env>
       <env name="NEMSIO_INC">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/include</env>
       <env name="NEMSIO_LIB">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libnemsio_v2.2.3.a</env>
-      <env name="BACIO_LIB4">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libbacio_v2.1.0_4.a</env> 
+      <env name="BACIO_LIB4">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libbacio_v2.1.0_4.a</env>
       <env name="SP_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libsp_v2.0.2_d.a</env>
       <env name="W3EMC_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libw3emc_v2.2.0_d.a</env>
       <env name="W3NCO_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libw3nco_v2.0.6_d.a</env>

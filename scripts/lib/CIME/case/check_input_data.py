@@ -19,6 +19,7 @@ def _download_checksum_file(rundir):
     """
     inputdata = Inputdata()
     protocol = "svn"
+    chksum_found = False
     # download and merge all available chksum files.
     while protocol is not None:
         protocol, address, user, passwd, chksum_file = inputdata.get_next_server()
@@ -37,7 +38,9 @@ def _download_checksum_file(rundir):
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
 
-        if not chksum_file:
+        if chksum_file:
+            chksum_found = True
+        else:
             continue
 
         success = False
@@ -67,7 +70,7 @@ def _download_checksum_file(rundir):
                 else:
                     logger.warning("Could not automatically download file {}".
                                    format(full_path))
-
+    return chksum_found
 
 def _reformat_chksum_file(chksum_file, server_file):
     """
@@ -156,13 +159,13 @@ def check_all_input_data(self, protocol=None, address=None, input_data_root=None
                                         input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
     else:
         if chksum:
-            _download_checksum_file(self.get_value("RUNDIR"))
+            chksum_found = _download_checksum_file(self.get_value("RUNDIR"))
 
         success = self.check_input_data(protocol=protocol, address=address, download=False,
-                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum)
+                                        input_data_root=input_data_root, data_list_dir=data_list_dir, chksum=chksum and chksum_found)
         if download and not success:
             if not chksum:
-                _download_checksum_file(self.get_value("RUNDIR"))
+                chksum_found = _download_checksum_file(self.get_value("RUNDIR"))
             success = _downloadfromserver(self, input_data_root, data_list_dir)
 
     expect(not download or (download and success), "Could not find all inputdata on any server")
@@ -276,7 +279,8 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     expect(os.path.isdir(data_list_dir), "Invalid data_list_dir directory: '{}'".format(data_list_dir))
 
     data_list_files = find_files(data_list_dir, "*.input_data_list")
-    expect(data_list_files, "No .input_data_list files found in dir '{}'".format(data_list_dir))
+    if not data_list_files:
+        logger.warning("WARNING: No .input_data_list files found in dir '{}'".format(data_list_dir))
 
     no_files_missing = True
     if download:
@@ -341,7 +345,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                                 no_files_missing = _download_if_in_repo(server,
                                                                         input_data_root, rel_path.strip(os.sep),
                                                                         isdirectory=isdirectory)
-                                if no_files_missing:
+                                if no_files_missing and chksum:
                                     verify_chksum(input_data_root, rundir, rel_path.strip(os.sep), isdirectory)
                         else:
                             if chksum:
