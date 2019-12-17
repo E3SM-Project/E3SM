@@ -658,7 +658,7 @@ contains
       call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG353)
 
     else if (tstep_type==41) then ! ARKode IMKG 3rd-order, 6 stage (4 implicit)
-v      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG354)
+      call set_Butcher_tables(arkode_parameters, arkode_tables%IMKG354)
 
     else 
        call abortmp('ERROR: bad choice of tstep_type')

@@ -112,30 +112,6 @@ implicit none
   integer :: i,j,k,k2
   logical :: ierr
 
-#if 0
-  do k=1,nlev
-     do j=1,np
-     do i=1,np
-        ! let y = 1/x    x=-dphi                                                                               
-        !                                                                                                      
-        ! for x > g:                                                                                           
-        !     y=1/x                                                                                            
-        !     dphi = -1/y                                                                                      
-        ! for x < 1/g:                                                                                         
-        !      y = -(1/g^2)*(x-g) + 1/g                                                                        
-        !      dphi = -1/y                                                                                     
-        ! check:  dphi=-100             dphi=-100  (unchanged)    -1/dphi =                                    
-        !         dphi=-g   then y=1/g, dphi=-g                                                                
-        !         dphi=0    then y=2/g, dphi=-g/2                                                              
-        !         dphi=g    then y=3/g, dphi=-g/3                                                              
-        if (dphi(i,j,k) > -g ) then
-           dphi(i,j,k)=-1/((dphi(i,j,k)+g)/g**2 + 1/g)
-        endif
-     enddo
-     enddo
-  enddo
-#endif
-
   ! check for bad state that will crash exponential function below
   if (theta_hydrostatic_mode) then
     ierr= any(dp3d(:,:,:) < 0 )
