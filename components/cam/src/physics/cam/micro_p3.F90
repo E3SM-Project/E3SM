@@ -3561,9 +3561,8 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             qr_notsmall_r1: if (qr_incld(k)>qsmall) then
 
-               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), &
-                  rhofacr(k), nr(k), nr_incld(k), &
-                  mu_r(k), lamr(k), V_qr(k), V_nr(k))
+               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), rhofacr(k), nr(k), nr_incld(k), &
+                    mu_r(k), lamr(k), V_qr(k), V_nr(k))
 
             endif qr_notsmall_r1
 
@@ -3595,9 +3594,11 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
 end subroutine rain_sedimentation
 
-subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
-   nr, nr_incld, &
-   mu_r, lamr, V_qr, V_nr)
+subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: compute_rain_fall_velocity_f
+#endif
 
    real(rtype), intent(in) :: qr_incld
    real(rtype), intent(in) :: rcldm
@@ -3611,6 +3612,13 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
 
    real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3, rdumii, rdumjj
    integer :: dumii, dumjj
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call compute_rain_fall_velocity_f(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+      return
+   endif
+#endif
 
    !Compute Vq, Vn:
 

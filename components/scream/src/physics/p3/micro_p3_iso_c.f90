@@ -376,4 +376,15 @@ contains
     call calc_bulkRhoRime(qi_tot, qi_rim, bi_rim, rho_rime)
   end subroutine calc_bulk_rho_rime_c
 
+  subroutine compute_rain_fall_velocity_c(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
+    use micro_p3, only: compute_rain_fall_velocity
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: qr_incld, rcldm, rhofacr
+    real(kind=c_real), intent(inout) :: nr, nr_incld
+    real(kind=c_real), intent(out) :: mu_r, lamr, V_qr, V_nr
+
+    call compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+  end subroutine compute_rain_fall_velocity_c
+
 end module micro_p3_iso_c
