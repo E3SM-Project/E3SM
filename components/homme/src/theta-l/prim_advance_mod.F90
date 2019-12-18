@@ -120,7 +120,7 @@ contains
 !                 (K&G 2nd order method has CFL=4. tiny CFL improvement not worth 2nd order)
 !   tstep_type=7  IMKG254a
 !   tstep_type=8  KG3+BE/CN  KG3 2nd order explicit, 1st order off-centering implicit
-!   tstep_type=9  KGU53+BE/CN  KGU53 3rd order explicit, 1st order off-centering implicit
+!   tstep_type=9  KGU53+BE/CN  KGU53 3rd order explicit, 2st order implicit
 !   tstep_type=10 KG5+BE/CN  KG5(2nd order, 4.0CFL) + BE/CN,  2nd order IMEX
 !
 

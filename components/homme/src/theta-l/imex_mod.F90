@@ -75,7 +75,7 @@ contains
     ! We then precompute:
     !  w_rhs = w_0 + alphadt_n0 * SW(n0)  + alphadt_nm1*SW(nm1) 
     !  phi_rhs = w_0 + alphad_n0 * SPHI(n0)  + alphadt1_nm1*SPHI(nm1) -  dt2*compute_gwphi(np1)
-    ! and solve, via Newton iteraiton:
+    ! and solve, via Newton iteration:
     !   w(np1) = w_rhs + dt2*SW(np1)
     !   phi(np1) = phi_rhs + dt2*g*w(np1)
     !
@@ -116,7 +116,7 @@ contains
 
     real (kind=real_kind) :: wmax
     integer :: maxiter
-    real*8 :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm,dt3,alpha
+    real (kind=real_kind) :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm,dt3,alpha
     real (kind=real_kind) :: dw,dx,alpha_k
     integer :: i,j,k,l,ie,info(np,np),nt
     integer :: nsafe
