@@ -993,7 +993,7 @@ void compute_rain_fall_velocity_f(Real qr_incld_, Real rcldm_, Real rhofacr_,
   *mu_r_     = t_h(2);
   *lamr_     = t_h(3);
   *V_qr_     = t_h(4);
-  *V_nr_     = t_d(5);
+  *V_nr_     = t_h(5);
 }
 
 // Cuda implementations of std math routines are not necessarily BFB
