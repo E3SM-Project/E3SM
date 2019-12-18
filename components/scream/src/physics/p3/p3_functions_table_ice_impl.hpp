@@ -1,7 +1,7 @@
 #ifndef P3_FUNCTIONS_TABLE_ICE_IMPL_HPP
 #define P3_FUNCTIONS_TABLE_ICE_IMPL_HPP
 
-#include "p3_function.hpp" // for ETI only but harmless for GPU
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
 #include <fstream>
 
