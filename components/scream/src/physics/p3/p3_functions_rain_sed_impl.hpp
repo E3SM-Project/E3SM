@@ -21,12 +21,10 @@ void Functions<S,D>
 {
   constexpr Scalar nsmall = C::NSMALL;
 
-  nr.set(qr_gt_small, pack::max(nr, nsmall));
-  nr.set(qr_gt_small, nr_incld*rcldm);
-
   Table3 table;
   Spack tmp1, tmp2; //ignore
-  get_rain_dsd2(qr_gt_small, qr_incld, nr, mu_r, lamr, tmp1, tmp2, rcldm);
+  get_rain_dsd2(qr_gt_small, qr_incld, nr_incld, mu_r, lamr, tmp1, tmp2, rcldm);
+  nr.set(qr_gt_small, nr_incld*rcldm);
 
   lookup(qr_gt_small, mu_r, lamr, table);
   // mass-weighted fall speed:
