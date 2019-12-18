@@ -20,15 +20,15 @@ void Functions<S,D>
 ::lookup (const Smask& qr_gt_small, const Spack& mu_r,
           const Spack& lamr, Table3& t) {
   // find location in scaled mean size space
-  const auto dum1 = (mu_r+1.) / lamr;
-  const auto dum1_lt = qr_gt_small && (dum1 <= 195.e-6);
+  const auto dum1 = (mu_r+1) / lamr;
+  const auto dum1_lt = qr_gt_small && (dum1 <= sp(195.e-6));
   t.dumii = 1;
   if (dum1_lt.any()) {
     scream_masked_loop(dum1_lt, s) {
-      const auto inv_dum3 = 0.1;
-      auto rdumii = (dum1[s]*1.e6+5.)*inv_dum3;
-      rdumii = util::max<Scalar>(rdumii,  1.);
-      rdumii = util::min<Scalar>(rdumii, 20.);
+      const auto inv_dum3 = sp(0.1);
+      auto rdumii = (dum1[s] * sp(1.e6) + 5) * inv_dum3;
+      rdumii = util::max<Scalar>(rdumii,  1);
+      rdumii = util::min<Scalar>(rdumii, 20);
       Int dumii = rdumii;
       dumii = util::max(dumii,  1);
       dumii = util::min(dumii, 20);
@@ -39,10 +39,10 @@ void Functions<S,D>
   const auto dum1_gte = qr_gt_small && ! dum1_lt;
   if (dum1_gte.any()) {
     scream_masked_loop(dum1_gte, s) {
-      const auto inv_dum3 = C::THIRD*0.1;
-      auto rdumii = (dum1[s]*1.e+6-195.)*inv_dum3 + 20.;
-      rdumii = util::max<Scalar>(rdumii, 20.);
-      rdumii = util::min<Scalar>(rdumii,300.);
+      const auto inv_dum3 = C::THIRD * sp(0.1);
+      auto rdumii = (dum1[s] * sp(1.e+6) - 195) * inv_dum3 + 20;
+      rdumii = util::max<Scalar>(rdumii, 20);
+      rdumii = util::min<Scalar>(rdumii,300);
       Int dumii = rdumii;
       dumii = util::max(dumii, 20);
       dumii = util::min(dumii,299);
@@ -53,12 +53,12 @@ void Functions<S,D>
 
   // find location in mu_r space
   {
-    auto rdumjj = mu_r+1.;
-    rdumjj = max(rdumjj,1.);
-    rdumjj = min(rdumjj,10.);
+    auto rdumjj = mu_r + 1;
+    rdumjj = max(rdumjj, 1);
+    rdumjj = min(rdumjj, 10);
     IntSmallPack dumjj(rdumjj);
-    dumjj  = max(dumjj,1);
-    dumjj  = min(dumjj,9);
+    dumjj  = max(dumjj, 1);
+    dumjj  = min(dumjj, 9);
     t.rdumjj.set(qr_gt_small, rdumjj);
     t.dumjj = 1;
     t.dumjj.set(qr_gt_small, dumjj);
