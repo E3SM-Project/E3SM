@@ -1,6 +1,8 @@
 #ifndef P3_FUNCTIONS_UPWIND_IMPL_HPP
 #define P3_FUNCTIONS_UPWIND_IMPL_HPP
 
+#include "p3_function.hpp" // for ETI only but harmless for GPU
+
 namespace scream {
 namespace p3 {
 
