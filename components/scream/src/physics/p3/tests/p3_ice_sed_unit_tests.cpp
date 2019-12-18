@@ -76,7 +76,7 @@ static void run_bfb_calc_bulk_rhime()
   Kokkos::deep_copy(cbrr_device, cbrr_host);
 
   // Get data from fortran
-  for (Int i = 0; i < max_pack_size; ++i) {
+  for (Int i = 0; i < Spack::n; ++i) {
     if (cbrr_fortran[i].qi_tot > qsmall) {
       calc_bulk_rho_rime(cbrr_fortran[i]);
     }
