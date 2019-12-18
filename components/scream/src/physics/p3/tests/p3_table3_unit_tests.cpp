@@ -122,13 +122,14 @@ struct UnitWrap::UnitTest<D>::TestTable3 {
     //   In detail, for a 10x mesh refinement, a good slope growth rate is right
     // around 1, and a bad one is is roughly 10. We set the threshold at 1.1.
     const auto check_growth = [&] (const std::string& label, const Scalar& growth) {
-      if (growth > 1.1) {
+      bool bad_growth = growth > 1.1;
+      if (bad_growth) {
         std::cout << "Table3 FAIL: Slopes in the " << label << " direction are "
         << slopes[0] << " and " << slopes[1]
         << ", which grows by factor " << growth
         << ". Near 1 is good; near 10 is bad.\n";
-        REQUIRE(false);
       }
+      REQUIRE(!bad_growth);
     };
     check_growth("mu_r", slopes[1]/slopes[0]);
 
