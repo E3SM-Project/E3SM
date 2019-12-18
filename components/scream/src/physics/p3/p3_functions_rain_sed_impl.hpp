@@ -1,7 +1,5 @@
-#ifndef P3_FUNCTIONS_ICE_SED_IMPL_HPP
-#define P3_FUNCTIONS_ICE_SED_IMPL_HPP
-
-#include "p3_functions.hpp"
+#ifndef P3_FUNCTIONS_RAIN_SED_IMPL_HPP
+#define P3_FUNCTIONS_RAIN_SED_IMPL_HPP
 
 namespace scream {
 namespace p3 {

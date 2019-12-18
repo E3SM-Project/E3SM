@@ -1,8 +1,6 @@
 #ifndef P3_FUNCTIONS_FIND_IMPL_HPP
 #define P3_FUNCTIONS_FIND_IMPL_HPP
 
-#include "p3_functions.hpp"
-
 namespace scream {
 namespace p3 {
 

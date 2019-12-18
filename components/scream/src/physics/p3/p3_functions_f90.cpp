@@ -974,7 +974,7 @@ void compute_rain_fall_velocity_f(Real qr_incld_, Real rcldm_, Real rhofacr_,
   const auto vm_table = P3GlobalForFortran::vm_table();
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
     Smask qr_gt_small(qr_incld_ > P3F::C::QSMALL);
-    Spack qr_incld(qr_incld_), rcldm(rcldm_), rhofacr(rhofacr_), nr(local_nr), nr_incld(local_nr_incld), 
+    Spack qr_incld(qr_incld_), rcldm(rcldm_), rhofacr(rhofacr_), nr(local_nr), nr_incld(local_nr_incld),
       mu_r, lamr, V_qr, V_nr;
 
     P3F::compute_rain_fall_velocity(qr_gt_small, vn_table, vm_table,

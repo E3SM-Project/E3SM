@@ -3,9 +3,6 @@
 
 #include <fstream>
 
-#include "p3_functions.hpp"
-#include "p3_constants.hpp"
-
 namespace scream {
 namespace p3 {
 
