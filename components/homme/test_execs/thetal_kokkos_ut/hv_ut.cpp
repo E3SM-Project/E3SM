@@ -292,7 +292,7 @@ TEST_CASE("hvf", "biharmonic") {
         }
 
         // Randomize inputs
-        state.randomize(seed,max_pressure,hvcoord.ps0,geo.m_phis);
+        state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
 
         // Set the hv scaling
         hvf.set_hv_data(hv_scaling,params.nu_ratio1,params.nu_ratio2);

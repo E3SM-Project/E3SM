@@ -46,9 +46,9 @@ public:
 
   void randomize(const int seed);
   void randomize(const int seed, const Real max_pressure);
-  void randomize(const int seed, const Real max_pressure, const Real ps0);
+  void randomize(const int seed, const Real max_pressure, const Real ps0, const Real hyai0);
 
-  void randomize(const int seed, const Real max_pressure, const Real ps0,
+  void randomize(const int seed, const Real max_pressure, const Real ps0, const Real hyai0,
                  const ExecViewUnmanaged<const Real*[NP][NP]>& phis);
 
   KOKKOS_INLINE_FUNCTION

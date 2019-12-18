@@ -129,10 +129,9 @@ TEST_CASE("remap", "remap_testing") {
   const Real* gradphis_ptr = gradphis.data();
 
   // For remap, we only need phis and gradphis. Copy from cxx to f90.
+  Kokkos::deep_copy(phis,geo.m_phis);
+  Kokkos::deep_copy(gradphis,geo.m_gradphis);
   init_phis_f90(phis_ptr,gradphis_ptr);
-
-  Kokkos::deep_copy(geo.m_phis,phis);
-  Kokkos::deep_copy(geo.m_gradphis,gradphis);
 
   using Scalar2dF90  = HostViewManaged<Real*[NUM_TIME_LEVELS][NP][NP]>;
   using ScalarF90    = HostViewManaged<Real*[NUM_PHYSICAL_LEV][NP][NP]>;
@@ -206,7 +205,7 @@ TEST_CASE("remap", "remap_testing") {
           const int  np1_qdp = IPDF(0,Q_NUM_TIME_LEVELS-1)(engine);
 
           // Randomize state/derived
-          elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,geo.m_phis);
+          elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
           elems.m_derived.randomize(seed,dp3d_min(elems.m_state.m_dp3d));
 
           // Note: to avoid errors in the equation of state, we need phi to be increasing.

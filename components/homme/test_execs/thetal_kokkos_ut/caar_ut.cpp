@@ -64,8 +64,8 @@ TEST_CASE("caar", "caar_testing") {
   // The random numbers generator
   std::random_device rd;
   using rngAlg = std::mt19937_64;
-  const int seed = 1; // Change to the following line after debugging
-  // const int seed = rd();
+  // const int seed = 1; // Change to the following line after debugging
+  const int seed = rd();
   rngAlg engine(seed);
   using RPDF = std::uniform_real_distribution<Real>;
   using IPDF = std::uniform_int_distribution<int>;
@@ -251,7 +251,7 @@ TEST_CASE("caar", "caar_testing") {
           RKStageData data (nm1, n0, np1, 0, dt, eta_ave_w, scale1, scale2, scale3);
 
           // Randomize state/derived
-          elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,geo.m_phis);
+          elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
           elems.m_derived.randomize(seed,dp3d_min(elems.m_state.m_dp3d));
 
           // Note: to avoid errors in the equation of state, we need phi to be increasing.

@@ -34,12 +34,17 @@ void ElementsState::randomize(const int seed) {
 }
 
 void ElementsState::randomize(const int seed, const Real max_pressure) {
-  randomize(seed,max_pressure,max_pressure/100);
+  randomize(seed,max_pressure,max_pressure/100, 0.0);
 }
 
-void ElementsState::randomize(const int seed, const Real max_pressure, const Real ps0) {
+void ElementsState::randomize(const int seed, const Real max_pressure, const Real ps0, const Real hyai0) {
   // Check state was inited
   assert (m_num_elems>0);
+
+  // Check data makes sense
+  assert (max_pressure>ps0);
+  assert (ps0>0);
+  assert (hyai0>=0);
 
   // arbitrary minimum value to generate and minimum determinant allowed
   constexpr const Real min_value = 0.015625;
@@ -48,10 +53,6 @@ void ElementsState::randomize(const int seed, const Real max_pressure, const Rea
 
   genRandArray(m_v, engine, random_dist);
   genRandArray(m_t, engine, random_dist);
-
-  // Generate ps_v so that it is >> ps0.
-  // Note: make sure you init hvcoord before calling this method!
-  genRandArray(m_ps_v, engine, std::uniform_real_distribution<Real>(100*ps0,1000*ps0));
 
   // This ensures the pressure in a single column is monotonically increasing
   // and has fixed upper and lower values
@@ -109,6 +110,22 @@ void ElementsState::randomize(const int seed, const Real max_pressure, const Rea
       }
     }
   }
+
+  // Generate ps_v so that it is equal to sum(dp3d).
+  HybridVCoord hvcoord;
+  hvcoord.ps0 = ps0;
+  hvcoord.hybrid_ai0 = hyai0;
+  hvcoord.m_inited = true;
+  auto dp = m_dp3d;
+  auto ps = m_ps_v;
+  Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(m_num_elems*NUM_TIME_LEVELS),
+                       KOKKOS_LAMBDA(const TeamMember team){
+    KernelVariables kv(team);
+    const int ie = kv.ie / NUM_TIME_LEVELS;
+    const int tl = kv.ie % NUM_TIME_LEVELS;
+    hvcoord.compute_ps_ref_from_dp(kv,Homme::subview(dp,ie,tl),
+                                      Homme::subview(ps,ie,tl));
+  });
 }
 
 void ElementsState::pull_from_f90_pointers (CF90Ptr& state_v,    CF90Ptr& state_t,

@@ -535,7 +535,7 @@ static void init_elems (int ne, int nelemd, Random& r, const HybridVCoord& hvcoo
   const auto max_pressure = 1000 + hvcoord.ps0;
   auto& geo = e.m_geometry;
   e.m_geometry.randomize(r.gen_seed());
-  e.m_state.randomize(r.gen_seed(), max_pressure, hvcoord.ps0, geo.m_phis);
+  e.m_state.randomize(r.gen_seed(), max_pressure, hvcoord.ps0, hvcoord.hybrid_ai0, geo.m_phis);
   e.m_derived.randomize(r.gen_seed(), 10);
 
   // We want mixed signs in w_i, v, and gradphis.

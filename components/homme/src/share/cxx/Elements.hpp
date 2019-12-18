@@ -43,7 +43,7 @@ public:
 
   void init (const int num_elems, const bool consthv, const bool alloc_gradphis);
   void randomize (const int seed, const Real max_pressure = 1.0);
-  void randomize (const int seed, const Real max_pressure, const Real ps0);
+  void randomize (const int seed, const Real max_pressure, const Real ps0, const Real hyai0);
 
   bool inited () const { return m_inited; }
 

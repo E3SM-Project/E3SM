@@ -27,15 +27,15 @@ void Elements::init(const int num_elems, const bool consthv, const bool alloc_gr
 }
 
 void Elements::randomize(const int seed, const Real max_pressure) {
-  randomize(seed,max_pressure,max_pressure/100);
+  randomize(seed,max_pressure,max_pressure/100,0.0);
 }
 
-void Elements::randomize(const int seed, const Real max_pressure, const Real ps0) {
+void Elements::randomize(const int seed, const Real max_pressure, const Real ps0, const Real hyai0) {
   // Check elements were inited
   assert(m_num_elems>0);
 
   m_geometry.randomize(seed);
-  m_state.randomize(seed,max_pressure,ps0,m_geometry.m_phis);
+  m_state.randomize(seed,max_pressure,ps0,hyai0,m_geometry.m_phis);
 
   Real dp3d_min = std::numeric_limits<Real>::max();
   for (int ie = 0; ie < m_num_elems; ++ie) {

@@ -159,7 +159,7 @@ TEST_CASE("forcing", "forcing") {
         std::cout << "   -> " << (moisture==MoistDry::MOIST ? "moist" : "dry") << "\n";
 
         // Reset state, tracers, and forcing to the original random values
-        state.randomize(seed, 10*hv.ps0, hv.ps0);
+        state.randomize(seed, 10*hv.ps0, hv.ps0, hv.hybrid_ai0);
         tracers.randomize(seed);
         forcing.randomize(seed);
 
@@ -266,7 +266,7 @@ TEST_CASE("forcing", "forcing") {
     // Reset state and forcing to the original random values
     std::cout << "Testing dynamics forcing.\n";
 
-    state.randomize(seed, 10*hv.ps0, hv.ps0);
+    state.randomize(seed, 10*hv.ps0, hv.ps0, hv.hybrid_ai0);
     forcing.randomize(seed);
 
     // Sync views
