@@ -23,6 +23,22 @@ contains
     write (string, '(a,i1,a1)') prefix, sizeof(s), C_NULL_CHAR
   end subroutine append_precision
 
+  subroutine init_tables_from_f90_c(vn_table_c, vm_table_c, mu_table_c) bind(C)
+    use micro_p3, only: p3_get_tables
+
+    real(kind=c_real), intent(inout), dimension(300,10) :: vn_table_c, vm_table_c
+    real(kind=c_real), intent(inout), dimension(150)    :: mu_table_c
+
+    real(kind=c_real), dimension(150), target :: mu_table_f
+    real(kind=c_real), dimension(300,10), target :: vn_table_f, vm_table_f, revap_table_f
+
+    call p3_get_tables(mu_table_f, revap_table_f, vn_table_f, vm_table_f)
+    vn_table_c(:,:) = vn_table_f(:,:)
+    vm_table_c(:,:) = vm_table_f(:,:)
+    mu_table_c(:)   = mu_table_f(:)
+
+  end subroutine init_tables_from_f90_c
+
   subroutine p3_init_c(lookup_file_dir_c, info) bind(c)
     use array_io_mod
     use micro_p3, only: p3_init_a, p3_init_b, p3_set_tables, p3_get_tables

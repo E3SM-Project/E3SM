@@ -6,6 +6,7 @@
 #include "share/scream_pack.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+#include "physics/p3/p3_f90.hpp"
 #include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
@@ -80,7 +81,7 @@ static void run_bfb_rain_vel()
   Kokkos::deep_copy(crfv_device, crfv_host);
 
   // Get data from fortran
-  for (Int i = 0; i < max_pack_size; ++i) {
+  for (Int i = 0; i < Spack::n; ++i) {
     if (crfv_fortran[i].qr_incld > qsmall) {
       compute_rain_fall_velocity(crfv_fortran[i]);
     }
@@ -99,7 +100,7 @@ static void run_bfb_rain_vel()
     }
 
     Smask gt_small(qr_incld > qsmall);
-    Spack mu_r, lamr, V_qr, V_nr;
+    Spack mu_r(0), lamr(0), V_qr(0), V_nr(0);
     Functions::compute_rain_fall_velocity(
       gt_small, vn_table, vm_table, qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr);
 
@@ -150,6 +151,8 @@ namespace {
 TEST_CASE("p3_rain_sed", "[p3_functions]")
 {
   using TRS = scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestRainSed;
+
+  scream::p3::p3_init(true); // need fortran table data
 
   TRS::run_phys();
   TRS::run_bfb();

@@ -101,21 +101,16 @@ void Functions<S,D>
   const auto mu_table_h  = Kokkos::create_mirror_view(mu_r_table_d);
   const auto dnu_table_h = Kokkos::create_mirror_view(dnu_table_d);
 
-  scream_require(G::VN_TABLE.size()    == vn_table_h.extent(0) && G::VN_TABLE.size() > 0);
-  scream_require(G::VN_TABLE[0].size() == vn_table_h.extent(1));
-  scream_require(G::VM_TABLE.size()    == vm_table_h.extent(0) && G::VM_TABLE.size() > 0);
-  scream_require(G::VM_TABLE[0].size() == vm_table_h.extent(1));
-  scream_require(G::MU_R_TABLE.size()  == mu_table_h.extent(0));
-
-  for (size_t i = 0; i < vn_table_h.extent(0); ++i) {
-    for (size_t k = 0; k < vn_table_h.extent(1); ++k) {
-      vn_table_h(i, k) = G::VN_TABLE[i][k];
-      vm_table_h(i, k) = G::VM_TABLE[i][k];
+  // Need 2d-tables with fortran-style layout
+  using P3F         = Functions<Real, HostDevice>;
+  using LHostTable2 = typename P3F::KT::template lview<Real[C::VTABLE_DIM0][C::VTABLE_DIM1]>;
+  LHostTable2 vn_table_lh("vn_table_lh"), vm_table_lh("vm_table_lh");
+  init_tables_from_f90_c(vn_table_lh.data(), vm_table_lh.data(), mu_table_h.data());
+  for (int i = 0; i < C::VTABLE_DIM0; ++i) {
+    for (int j = 0; j < C::VTABLE_DIM1; ++j) {
+      vn_table_h(i, j) = vn_table_lh(i, j);
+      vm_table_h(i, j) = vm_table_lh(i, j);
     }
-  }
-
-  for (size_t i = 0; i < mu_table_h.extent(0); ++i) {
-    mu_table_h(i) = G::MU_R_TABLE[i];
   }
 
   dnu_table_h(0)  =  0.000;

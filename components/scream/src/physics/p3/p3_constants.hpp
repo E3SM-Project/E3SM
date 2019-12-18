@@ -56,6 +56,11 @@ struct Constants
   static constexpr Scalar bcn         = 2.;
   static constexpr Scalar rho_rimeMin = 50.;
   static constexpr Scalar rho_rimeMax = 900.;
+
+  // Table dimension constants
+  static constexpr int VTABLE_DIM0    = 300;
+  static constexpr int VTABLE_DIM1    = 10;
+  static constexpr int MU_R_TABLE_DIM = 150;
 };
 
 template <typename Scalar>
@@ -66,29 +71,6 @@ constexpr Scalar Constants<Scalar>::QSMALL;
 
 template <typename Scalar>
 constexpr Scalar Constants<Scalar>::Tmelt;
-
-template <typename Scalar>
-using vector_2d_t = std::vector<std::vector<Scalar> >;
-
-template <typename Scalar>
-struct Globals
-{
-  static constexpr int VTABLE_DIM0 = 300;
-  static constexpr int VTABLE_DIM1 = 10;
-  static constexpr int MU_R_TABLE_DIM = 150;
-
-  static vector_2d_t<Scalar> VN_TABLE, VM_TABLE;
-  static std::vector<Scalar> MU_R_TABLE;
-};
-
-template <typename Scalar>
-vector_2d_t<Scalar> Globals<Scalar>::VN_TABLE(VTABLE_DIM0, std::vector<Scalar>(VTABLE_DIM1));
-
-template <typename Scalar>
-vector_2d_t<Scalar> Globals<Scalar>::VM_TABLE(VTABLE_DIM0, std::vector<Scalar>(VTABLE_DIM1));
-
-template <typename Scalar>
-std::vector<Scalar> Globals<Scalar>::MU_R_TABLE(MU_R_TABLE_DIM);
 
 } // namespace p3
 } // namespace scream
