@@ -5213,7 +5213,14 @@ contains
     call hist_addfld1d (fname='QDRAI',  units='mm/s',  &
          avgflag='A', long_name='sub-surface drainage', &
          ptr_col=this%qflx_drain, c2l_scale_type='urbanf')
-		 
+
+#if (defined HUM_HOL)
+    this%qflx_lat_aqu(begc:endc) = spval
+    call hist_addfld1d (fname='QFLX_LAT_AQU',  units='mm/s',  &
+         avgflag='A', long_name='Lateral flow between hummock and hollow', &
+         ptr_col=this%qflx_lat_aqu, c2l_scale_type='urbanf')
+#endif 
+
     this%qflx_irr_demand(begc:endc) = spval
     call hist_addfld1d (fname='QIRRIG_WM',  units='mm/s',  &
          avgflag='A', long_name='Surface water irrigation demand sent to MOSART/WM', &
