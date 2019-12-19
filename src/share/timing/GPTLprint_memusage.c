@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #ifdef __bgq__
 #include <spi/include/kernel/memory.h>
 #endif
@@ -51,21 +52,28 @@ int GPTLprint_memusage (const char *str)
   int share, share2;                      /* shared data segment size (returned from OS) */
   int text, text2;                        /* text segment size (returned from OS) */
   int datastack, datastack2;              /* data/stack size (returned from OS) */
-  static int bytesperblock = -1;          /* convert to bytes (init to invalid) */
-  static const int nbytes = 1024*1024*10; /* allocate 10 MB */
-  static double blockstomb;               /* convert blocks to MB */
+  static int kbytesperblock = -1;         /* convert to Kbytes (init to invalid) */
+  static const int nbytes =1024*1024*1024;/* allocate 1 GB */
   void *space;                            /* allocated space */
 
-  if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0)
+  setbuf(stdout, NULL); // don't buffer stdout, flush
+  if (GPTLget_memusage (&size, &rss, &share, &text, &datastack) < 0) {
+    printf ("GPTLprint_memusage: GPTLget_memusage failed.\n");
     return -1;
+  }
 
 #if (defined HAVE_SLASHPROC || defined __APPLE__)
+  if (kbytesperblock == -1) {
+    kbytesperblock = sysconf(_SC_PAGESIZE) / 1024;
+    printf ("GPTLprint_memusage: Using Kbytesperpage=%d\n", kbytesperblock);
+  }
+
   /*
   ** Determine size in bytes of memory usage info presented by the OS. Method: allocate a
   ** known amount of memory and see how much bigger the process becomes.
   */
 
-  if (convert_to_mb && bytesperblock == -1 && (space = malloc (nbytes))) {
+  if (convert_to_mb && kbytesperblock == -1 && (space = malloc (nbytes))) {
     memset (space, 0, nbytes);  /* ensure the space is really allocated */
     if (GPTLget_memusage (&size2, &rss2, &share2, &text2, &datastack2) == 0) {
       if (size2 > size) {
@@ -74,22 +82,25 @@ int GPTLprint_memusage (const char *str)
 	** The assumption is that the OS presents memory usage info in
 	** units that are a power of 2.
 	*/
-	bytesperblock = (int) ((nbytes / (double) (size2 - size)) + 0.5);
-	bytesperblock = nearest_powerof2 (bytesperblock);
-	blockstomb = bytesperblock / (1024.*1024.);
-	printf ("GPTLprint_memusage: Using bytesperblock=%d\n", bytesperblock);
+        kbytesperblock = (int) ((nbytes / (double) (size2 - size)) + 0.5);
+        kbytesperblock = nearest_powerof2 (kbytesperblock);
+        printf ("GPTLprint_memusage: Using Kbytesperblock=%d\n", kbytesperblock);
+      } else {
+        printf ("GPTLprint_memusage: highwater did not increase.\n");
       }
+    } else {
+      printf ("GPTLprint_memusage: call GPTLget_memusage failed.\n");
     }
     free (space);
   }
 
-  if (bytesperblock > 0)
-    printf ("%s size=%.1f MB rss=%.4f MB share=%.1f MB text=%.1f MB datastack=%.1f MB\n",
-	    str, size*blockstomb, rss*blockstomb, share*blockstomb,
-	    text*blockstomb, datastack*blockstomb);
-  else
-    printf ("%s size=%d rss=%d share=%d text=%d datastack=%d\n",
-	    str, size, rss, share, text, datastack);
+  if (kbytesperblock > 0) {
+    printf ("%s sysmem size=%.1f MB rss=%.1f MB share=%.1f MB text=%.1f MB datastack=%.1f MB\n",
+            str, size/1024., rss/1024., share/1024., text/1024., datastack/1024.);
+  } else {
+    printf ("%s sysmem size=%d rss=%d share=%d text=%d datastack=%d\n",
+            str, size, rss, share, text, datastack);
+  }
 
 #else
 
@@ -98,10 +109,8 @@ int GPTLprint_memusage (const char *str)
   ** get the process size under AIX please tell me.
   */
 
-  bytesperblock = 1024;
-  blockstomb = bytesperblock / (1024.*1024.);
   if (convert_to_mb)
-    printf ("%s max rss=%.1f MB\n", str, rss*blockstomb);
+    printf ("%s max rss=%.1f MB\n", str, rss*1024.);
   else
     printf ("%s max rss=%d\n", str, rss);
 #endif
