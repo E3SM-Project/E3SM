@@ -66,6 +66,9 @@ index (const Array5& a, const IdxPack& i0, const IdxPack& i1, const IdxPack& i2,
 // values, one with the indexes shifted by Shift. This is useful for implementing
 // functions like:
 //   y2(k2) = y1(k1) + y1(k1+1);
+// which becomes
+//   index_and_shift<1>(y1, kpk, y1k, y1k1);
+//   y2(k2) = y1k + y1k1
 template<int Shift, typename Array1, typename IdxPack> KOKKOS_INLINE_FUNCTION
 void
 index_and_shift (const Array1& a, const IdxPack& i0, Pack<typename Array1::non_const_value_type, IdxPack::n>& index, Pack<typename Array1::non_const_value_type, IdxPack::n>& index_shift,

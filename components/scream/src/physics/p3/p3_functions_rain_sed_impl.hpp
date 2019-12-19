@@ -68,6 +68,8 @@ void Functions<S,D>
     vs_ptr     = {&V_qr, &V_nr},
     qnr_ptr    = {&qr, &nr};
 
+  const auto sflux_qx = scalarize(flux_qx);
+
   // find top, determine qxpresent
   const auto sqr = scalarize(qr);
   constexpr Scalar qsmall = C::QSMALL;
@@ -88,9 +90,9 @@ void Functions<S,D>
       const Int kmax_scalar = ( kdir == 1 ? k_qxtop : k_qxbot);
 
       Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team, V_qr.extent(0)), [&] (Int k) {
-          V_qr(k) = 0;
-          V_nr(k) = 0;
+       Kokkos::TeamThreadRange(team, V_qr.extent(0)), [&] (Int k) {
+        V_qr(k) = 0;
+        V_nr(k) = 0;
       });
       team.team_barrier();
 
@@ -99,7 +101,7 @@ void Functions<S,D>
 
       // compute Vq, Vn (get values from lookup table)
       Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
+       Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_, Scalar& lmax) {
 
         const int pk = kmin + pk_;
         const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
@@ -119,23 +121,26 @@ void Functions<S,D>
       generalized_sedimentation<2>(rho, inv_rho, inv_dzq, team, nk, k_qxtop, k_qxbot, kbot, kdir, Co_max, dt_left, prt_accum, fluxes_ptr, vs_ptr, qnr_ptr);
 
       // AaronDonahue, rflx output
-      util::set_min_max(k_qxbot, k_qxtop, kmin, kmax, Spack::n);
+      util::set_min_max(k_qxbot+1, k_qxtop+1, kmin, kmax, Spack::n);
       Kokkos::parallel_for(
-        Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
-          const int pk = kmin + pk_;
-          rflx(pk) += flux_qx(pk); // rflx(k+1) = rflx(k+1) + flux_qx(k) ! AaronDonahue
-        });
+       Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
+        const int pk = kmin + pk_;
+        const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
+        const auto range_mask = range_pack >= kmin_scalar+1 && range_pack <= kmax_scalar+1;
+        const auto flux_qx_pk = index(sflux_qx, range_pack-1);
+        rflx(pk).set(range_mask, rflx(pk) + flux_qx_pk);
+      });
     }
     Kokkos::single(
-      Kokkos::PerTeam(team), [&] () {
-        prt_liq += prt_accum * C::INV_RHOW * odt;
+     Kokkos::PerTeam(team), [&] () {
+      prt_liq += prt_accum * C::INV_RHOW * odt;
     });
   }
 
   Kokkos::parallel_for(
-    Kokkos::TeamThreadRange(team, qr_tend.extent(0)), [&] (int pk) {
-      qr_tend(pk) = (qr(pk) - qr_tend(pk)) * odt; // Rain sedimentation tendency, measure
-      nr_tend(pk) = (qr(pk) - nr_tend(pk)) * odt; // Rain # sedimentation tendency, measure
+   Kokkos::TeamThreadRange(team, qr_tend.extent(0)), [&] (int pk) {
+    qr_tend(pk) = (qr(pk) - qr_tend(pk)) * odt; // Rain sedimentation tendency, measure
+    nr_tend(pk) = (qr(pk) - nr_tend(pk)) * odt; // Rain # sedimentation tendency, measure
   });
 
   workspace.template release_many_contiguous<4>(
