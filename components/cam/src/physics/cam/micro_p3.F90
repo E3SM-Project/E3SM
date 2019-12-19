@@ -3481,6 +3481,10 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
    qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
 
+! #ifdef SCREAM_CONFIG_IS_CMAKE
+!     use micro_p3_iso_f, only: rain_sedimentation_f
+! #endif
+
    implicit none
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
@@ -3518,6 +3522,15 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), dimension(kts:kte), target :: V_nr
    real(rtype), dimension(kts:kte), target :: flux_qx
    real(rtype), dimension(kts:kte), target :: flux_nx
+
+! #ifdef SCREAM_CONFIG_IS_CMAKE
+!    if (use_cxx) then
+!       call rain_sedimentation_f(kts,kte,ktop,kbot,kdir,   &
+!            qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+!            qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
+!       return
+!    endif
+! #endif
 
    vs(1)%p => V_qr
    vs(2)%p => V_nr
@@ -3571,16 +3584,10 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
          enddo kloop_sedi_r1
 
-         if (k_qxbot.eq.kbot) then
-            k_temp = k_qxbot
-         else
-            k_temp = k_qxbot-kdir
-         endif
-
          call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
 
          !-- AaronDonahue, rflx output
-         do k = k_temp,k_qxtop,kdir
+         do k = k_qxbot,k_qxtop,kdir
             rflx(k+1) = rflx(k+1) + flux_qx(k) ! AaronDonahue
          enddo
 
@@ -3621,8 +3628,6 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu
 #endif
 
    !Compute Vq, Vn:
-
-   nr  = max(nr,nsmall)
 
    call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,     &
    tmp1,tmp2,rcldm)
