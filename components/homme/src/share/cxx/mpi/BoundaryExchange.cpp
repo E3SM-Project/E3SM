@@ -452,7 +452,7 @@ void BoundaryExchange::pack_and_send ()
       const auto num_parallel_iterations = m_num_elems*num_fields;
       ThreadPreferences tp;
       tp.max_threads_usable = NUM_CONNECTIONS;
-      tp.max_vectors_usable = NUM_LEV;
+      tp.max_vectors_usable = NUM_LEV_P;
       const auto threads_vectors =
         DefaultThreadsDistribution<ExecSpace>::team_num_threads_vectors(
           num_parallel_iterations, tp);
