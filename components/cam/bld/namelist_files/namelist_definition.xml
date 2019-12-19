@@ -7311,4 +7311,10 @@ Used when turbulent mountain stress calc is turned on. See <varname>do_tms</varn
 set by build-namelist for WACCM, T31
 </entry>
 
+<entry id="omega" type="real" category="physconst"
+       group="physconst_nl" valid_values="" >
+Planetary rotation rate (radians/second). Value set here is ONLY used in the atmosphere.
+Default: set to shr_const value
+</entry>
+
 </namelist_definition>
