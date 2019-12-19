@@ -9,6 +9,7 @@
 
 #include "Types.hpp"
 #include "ElementsGeometry.hpp"
+#include "CombineOps.hpp"
 #include "ReferenceElement.hpp"
 #include "Dimensions.hpp"
 #include "KernelVariables.hpp"
@@ -423,11 +424,14 @@ public:
     kv.team_barrier();
   }
 
-  template<typename InputProvider, int NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT>
+  template<typename InputProvider,
+           int NUM_LEV_OUT, int NUM_LEV_REQUEST = NUM_LEV_OUT,
+           CombineMode CM = CombineMode::Replace>
   KOKKOS_INLINE_FUNCTION void
   divergence_sphere (const KernelVariables &kv,
                      const InputProvider& v,
-                     const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& div_v) const
+                     const ExecViewUnmanaged<Scalar [NP][NP][NUM_LEV_OUT]>& div_v,
+                     const Real alpha = 1.0, const Real beta = 0.0) const
   {
     static_assert(NUM_LEV_REQUEST>=0, "Error! Invalid value for NUM_LEV_REQUEST.\n");
     static_assert(NUM_LEV_REQUEST<=NUM_LEV_OUT, "Error! Output view does not have enough levels.\n");
@@ -464,8 +468,8 @@ public:
           dudx += dvv(jgp, kgp) * gv_buf(0, igp, kgp, ilev);
           dvdy += dvv(igp, kgp) * gv_buf(1, kgp, jgp, ilev);
         }
-        div_v(igp, jgp, ilev) =
-            (dudx + dvdy) * (1.0 / metdet(igp, jgp) * PhysicalConstants::rrearth);
+        combine<CM>((dudx + dvdy) * (1.0 / metdet(igp, jgp) * PhysicalConstants::rrearth),
+                     div_v(igp, jgp, ilev), alpha, beta);
       });
     });
     kv.team_barrier();
