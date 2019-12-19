@@ -1437,6 +1437,7 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8) :: tmp_q     (pcols,pver) ! tmp space
     real(r8) :: tmp_cldliq(pcols,pver) ! tmp space
     real(r8) :: tmp_cldice(pcols,pver) ! tmp space
+    real(r8) :: tmp_t     (pcols,pver) ! tmp space
     real(r8) :: ftem      (pcols,pver) ! tmp space
     real(r8), pointer, dimension(:) :: static_ener_ac_2d ! Vertically integrated static energy
     real(r8), pointer, dimension(:) :: water_vap_ac_2d   ! Vertically integrated water vapor
@@ -1745,6 +1746,8 @@ if (l_ac_energy_chk) then
 
     end if
 
+    tmp_t(:ncol,:pver) = state%t(:ncol,:pver)
+
     ! store dse after tphysac in buffer
     do k = 1,pver
        dtcore(:ncol,k) = state%t(:ncol,k)
@@ -1791,7 +1794,7 @@ end if ! l_ac_energy_chk
     endif
 
     call diag_phys_tend_writeout (state, pbuf,  tend, ztodt, tmp_q, tmp_cldliq, tmp_cldice, &
-         state%t(:ncol,:pver), qini, cldliqini, cldiceini)
+         tmp_t, qini, cldliqini, cldiceini)
 
     ! DCAPE-ULL: record current state of T and q for computing dynamical tendencies
     !            the calculation follows the same format as in diag_phys_tend_writeout
@@ -2264,7 +2267,6 @@ if (l_bc_energy_fix) then
 
     call t_startf('energy_fixer')
 
-    !*** BAB's FV heating kludge *** save the initial temperature
     tini(:ncol,:pver) = state%t(:ncol,:pver)
     if (dycore_is('LR') .or. dycore_is('SE'))  then
        call check_energy_fix(state, ptend, nstep, flx_heat)
