@@ -169,6 +169,9 @@
 <ncdata dyn="se" hgrid="ne16np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne16np4_L72_c190311.nc</ncdata>
 <ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" ic_ymd="101" >atm/cam/inic/homme/cami_aquaplanet_ne30np4_L72_c190215.nc</ncdata>
 
+<!-- E3SM RCE -->
+<ncdata dyn="se" hgrid="ne4np4"   nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne4np4_L72_c190919.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4"  nlev="72"  aquaplanet="1" rce="1" ic_ymd="101" >atm/cam/inic/homme/cami_rcemip_ne30np4_L72_c190919.nc</ncdata>
 
 <ncdata dyn="se" hgrid="ne240np4" nlev="30"              >atm/cam/inic/homme/cami-mam3_0000-01-ne240np4_L30_c111004.nc</ncdata>
 <ncdata dyn="se" hgrid="ne240np4" nlev="72"              >atm/cam/inic/homme/cami_mam4_Linoz_0001-01-ne240np4_L72_c170910.nc</ncdata>

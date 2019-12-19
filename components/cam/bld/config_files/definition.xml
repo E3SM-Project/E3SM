@@ -111,6 +111,11 @@ to use an analytic expression for SST.  To use aquaplanet with time varying
 SSTs read from a dataset, or with a slab ocean, the ocean component should
 be set to DOCN.
 </entry>
+<entry id="rce" valid_value="0,1" value="0">
+Switch for radiative-convective equilibrium mode. This switch sets the 
+initial condition file to a spun up case with homogenous SST of 300K.
+(see cam/bld/namelist_files/namelist_defaults_cam.xml)
+</entry>
 <entry id="ice" valid_values="cice,sice,none" value="">
 Use cice, stub ice model or no ice model in cam build: cice, sice, none
 </entry>

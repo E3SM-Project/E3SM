@@ -112,6 +112,7 @@ OPTIONS
 
      -[no]age_of_air_trcs Switch on [off] age of air tracers. Default: on for waccm_phys, otherwise off
      -aquaplanet        Switch on aqua-planet mode w/ SST controlled by data ocean component in CIME
+     -rce               Use homogenous conditions for radiative-convective equilibrium (RCE), normally used with aquaplanet 
      -carma <name>      Build CAM with specified CARMA microphysics model
                         [ none | bc_strat | cirrus | cirrus_dust | dust | meteor_impact | 
                           meteor_smoke | mixed_sulfate | pmc | pmc_sulfate | sea_salt | sulfate | tholin |
@@ -1101,6 +1102,23 @@ if (defined $opts{'aquaplanet'}) {
 $cfg_ref->set('aquaplanet', $aquaplanet);
 my $aqua_mode = $aquaplanet ? "ON" : "OFF";
 if ($print>=2) { print "Aqua-planet mode: $aqua_mode$eol"; }
+
+#-----------------------------------------------------------------------------------------------
+# RCE mode (radiative-convective equilibrium)
+# This provides a flag to indicate that we are running an RCE case. This is normally used 
+# along with the aquaplanet flag, but could be used with an idealized land surface. 
+# This flag is mainly used to set the initial condition files that matches the grid.
+# this flag is not sufficient to run an RCE case, as many namelist variables need to be set
+# by the use case file to use idleaized ozone, disable rotation, and homogenize 
+# radiation, albedo, SST, and solar zenith angle.
+my $rce = 0;
+# user override
+if (defined $opts{'rce'}) {
+    $rce = 1;
+}
+$cfg_ref->set('rce', $rce);
+my $rce_mode = $rce ? "ON" : "OFF";
+if ($print>=2) { print "Radiative-Convctive Equilibrium mode: $rce_mode$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Ocean model
