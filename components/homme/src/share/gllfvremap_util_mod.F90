@@ -300,8 +300,7 @@ contains
                 !  True omega on GLL and FV grids.
                 call get_field(elem(ie), 'omega', wr1, hvcoord, nt1, -1)
                 call gfr_g2f_scalar(ie, elem(ie)%metdet, wr1, wr2)
-                !  Convert omega_p on FV grid to omega. When omega_p
-                !  is removed, remove the pressure calculations here.
+                !  Convert omega_p on FV grid to omega for preqx
                 call get_field(elem(ie), 'p', pressure, hvcoord, nt1, -1)
                 call gfr_g2f_scalar(ie, elem(ie)%metdet, pressure, p_fv)
 #ifdef MODEL_THETA_L
