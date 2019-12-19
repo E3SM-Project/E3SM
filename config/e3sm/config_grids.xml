@@ -3032,6 +3032,11 @@
       <map name="ATM2ROF_SMAPNAME">lnd/clm2/mappingdata/maps/360x720/map_360x720_nomask_to_0.5x0.5_nomask_aave_da_c130103.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ne120np4" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne120np4/map_ne120np4_to_0.125_nomask_aave.160613.nc</map>
+      <map name="ATM2ROF_SMAPNAME">lnd/clm2/mappingdata/maps/ne120np4/map_ne120np4_to_0.125_nomask_aave.160613.nc</map>
+    </gridmap>
+
     <!--  QL, 150525, wav to ocn, atm, ice mapping files  -->
 
     <gridmap ocn_grid="gx3v7" wav_grid="ww3a">
