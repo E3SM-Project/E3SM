@@ -9,6 +9,7 @@
 
 #include "KernelVariables.hpp"
 #include "PhysicalConstants.hpp"
+#include "ColumnOps.hpp"
 #include "Types.hpp"
 #include "utilities/SubviewUtils.hpp"
 
@@ -101,34 +102,13 @@ public:
                          [&](const int idx) {
       const int igp = idx / NP;
       const int jgp = idx % NP;
-      Scalar tmp;
 
-      // To squeeze some perf out on CPU, do reduction at Scalar level,
-      // then reduce the sum at the end. Be CAREFUL: the last pack may
-      // contain some garbage if VECTOR_SIZE does not divide NUM_PHYSICAL_LEV
-      constexpr int NUM_SAFE_LEV = (NUM_PHYSICAL_LEV%VECTOR_SIZE)!=0 ?
-                                    NUM_LEV-1 : NUM_LEV;
+      auto dp_ij = Homme::subview(dp,igp,jgp);
 
-      Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,NUM_SAFE_LEV),
-                                  [&](const int ilev, Scalar& sum) {
-        sum += dp(igp,jgp,ilev);
-      },tmp);
+      ColumnOps::column_reduction<NUM_PHYSICAL_LEV>(kv,dp_ij,ps(igp,jgp));
+
       Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-        // Compile-time if
-        if (NUM_SAFE_LEV!=NUM_LEV) {
-          constexpr int LAST_PACK     = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
-          constexpr int LAST_PACK_END = ColInfo<NUM_PHYSICAL_LEV>::LastPackEnd;
-
-          for (int i=0; i<=LAST_PACK_END; ++i) {
-            tmp[i] += dp(igp,jgp,LAST_PACK)[i];
-          }
-        }
-        // Compile-time if
-        if (OnGpu<ExecSpace>::value) {
-          ps(igp,jgp) = hybrid_ai0*ps0 + tmp[0];
-        } else {
-          ps(igp,jgp) = hybrid_ai0*ps0 + tmp.reduce_add();
-        }
+        ps(igp,jgp) += hybrid_ai0*ps0;
       });
     });
     kv.team_barrier();

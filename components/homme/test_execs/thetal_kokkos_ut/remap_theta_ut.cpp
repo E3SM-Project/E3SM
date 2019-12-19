@@ -334,7 +334,8 @@ TEST_CASE("remap", "remap_testing") {
                   printf("phinh_i f90: %3.40f\n",phinh_i_f90(ie,np1,k,igp,jgp));
                 }
                 REQUIRE(phinh_i_cxx(igp,jgp,k)==phinh_i_f90(ie,np1,k,igp,jgp));
-            }}
+              }
+            }
           }
         }
       }

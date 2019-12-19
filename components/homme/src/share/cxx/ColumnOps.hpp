@@ -91,6 +91,7 @@ public:
     return CM==CombineMode::Update || CM==CombineMode::ScaleUpdate;
   }
 
+#ifndef NDEBUG
   template<CombineMode CM>
   KOKKOS_INLINE_FUNCTION
   static void sanity_check (const Real alpha, const Real beta) {
@@ -99,6 +100,7 @@ public:
     assert ((needsBeta<CM>() || beta==0.0) &&
             "Error! Input beta would be discarded by the requested combine mode.\n");
   }
+#endif
 
   template<CombineMode CM = CombineMode::Replace, typename InputProvider = DefaultIntProvider>
   KOKKOS_INLINE_FUNCTION
@@ -530,6 +532,50 @@ public:
       sum_cropped(LAST_MID_PACK)[LAST_MID_PACK_END] = s0;
       column_scan_impl<ExecSpace,false,true,NUM_PHYSICAL_LEV>(kv,input_provider,sum_cropped,s0);
     }
+  }
+
+  template<int LENGTH, typename InputProvider>
+  KOKKOS_INLINE_FUNCTION
+  static void column_reduction (const KernelVariables& kv,
+                                const InputProvider& input,
+                                Real& sum)
+  {
+#ifdef HOMMEXX_BFB_TESTING
+    Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,LENGTH),
+                                [&](const int k, Real& accumulator) {
+      if (!OnGpu<ExecSpace>::value) {
+        const int ilev = k / VECTOR_SIZE;
+        const int ivec = k % VECTOR_SIZE;
+        accumulator += input(ilev)[ivec];
+      } else {
+        accumulator += input(k)[0];
+      }
+    },sum);
+#else
+    // To squeeze some perf out on CPU, do reduction at Scalar level,
+    // then reduce the Scalar at the end. Be CAREFUL: the last pack may
+    // contain some garbage if VECTOR_SIZE does not divide LENGTH!
+
+    constexpr int  NUM_PACKS     = ColInfo<LENGTH>::NumPacks;
+    constexpr int  LAST_PACK     = ColInfo<LENGTH>::LAST_PACK;
+    constexpr int  LAST_PACK_LEN = ColInfo<LENGTH>::LAST_PACK_LEN;
+    constexpr bool HAS_GARBAGE   = LAST_PACK_LEN!=VECTOR_SIZE;
+    constexpr int  LOOP_LENGTH   = HAS_GARBAGE ? std::max(0,NUM_PACKS-1) : NUM_PACKS;
+
+    Scalar packed_sum;
+    Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,LOOP_LENGTH),
+                                [&](const int ilev, Scalar& accumulator){
+      accumulator += input(ilev);
+    },packed_sum);
+    if (HAS_GARBAGE) {
+      // Safety check: we assume on GPU VECTOR_SIZE=1.
+      assert (!OnGpu<ExecSpace>::value);
+      for (int k=0; k<LAST_PACK_LEN; ++k) {
+        packed_sum[k] += input(LAST_PACK)[k];
+      }
+    }
+    sum = packed_sum.reduce_add();
+#endif
   }
 };
 
