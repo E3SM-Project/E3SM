@@ -99,6 +99,29 @@ viewConst(const ViewT& v) {
   return reinterpret_cast<const typename ViewConst<ViewT>::type&>(v);
 }
 
+template<int NUM_LEVELS>
+KOKKOS_INLINE_FUNCTION
+void print_col (const char* prefix,
+                const ExecViewUnmanaged<const Scalar[ColInfo<NUM_LEVELS>::NumPacks]>& v) {
+  printf("%s:",prefix);
+  for (int k=0; k<NUM_LEVELS; ++k) {
+    const int ilev = k / VECTOR_SIZE;
+    const int ivec = k % VECTOR_SIZE;
+    printf(" %3.15f",v(ilev)[ivec]);
+  }
+  printf("\n");
+}
+
+template<int NUM_LEVELS>
+KOKKOS_INLINE_FUNCTION
+void print_col (const char* prefix, const ExecViewUnmanaged<const Real[NUM_LEVELS]>& v) {
+  printf("%s:",prefix);
+  for (int k=0; k<NUM_LEVELS; ++k) {
+    printf(" %3.15f",v(k));
+  }
+  printf("\n");
+}
+
 } // namespace Homme
 
 #endif // HOMMEXX_VIEW_UTILS_HPP
