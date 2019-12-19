@@ -2141,7 +2141,7 @@ end subroutine clubb_init_cnst
 !         clubb_s(k) = cpair*((thlm(i,k)+(latvap/cpair)*rcm(i,k))/exner_clubb(i,k))+ &
 !                      gravit*state1%zm(i,k)+state1%phis(i)
          clubb_s(k) = cpair*((thlm(i,k)+(latvap/cpair)*rcm(i,k))/exner_clubb(i,k))+ &
-                      +state1%phis(i)
+                      gravit*state1%zm(i,k)+state1%phis(i)
          se_a(i) = se_a(i) + clubb_s(k)*state1%pdel(i,k)*invrs_gravit
          ke_a(i) = ke_a(i) + 0.5_r8*(um(i,k)**2+vm(i,k)**2)*state1%pdel(i,k)*invrs_gravit
          wv_a(i) = wv_a(i) + (rtm(i,k)-rcm(i,k))*state1%pdel(i,k)*invrs_gravit
