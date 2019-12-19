@@ -58,7 +58,7 @@ contains
 
   subroutine run_remap_f90 (np1, np1_qdp, dt, rsplit_in, qsize_in, vr_alg,    &
                             dp_ptr, vtheta_dp_ptr, w_i_ptr, phi_i_ptr, v_ptr, &
-                            ps_ptr) bind(c)
+                            ps_ptr, eta_dot_dpdn_ptr) bind(c)
     use iso_c_binding,          only: c_ptr, c_f_pointer, c_int, c_bool
     use control_mod,            only: vert_remap_q_alg, rsplit
     use dimensions_mod,         only: nelemd, nlev, nlevp, np, qsize
@@ -72,7 +72,7 @@ contains
     real (kind=real_kind), intent(in) :: dt
     integer (kind=c_int),  intent(in) :: np1, np1_qdp, rsplit_in, vr_alg, qsize_in
     type (c_ptr),          intent(in) :: dp_ptr, vtheta_dp_ptr, w_i_ptr, phi_i_ptr, v_ptr
-    type (c_ptr),          intent(in) :: ps_ptr
+    type (c_ptr),          intent(in) :: ps_ptr, eta_dot_dpdn_ptr
     !
     ! Locals
     !
@@ -82,14 +82,16 @@ contains
     real (kind=real_kind), pointer :: phi_i        (:,:,:,:,:)
     real (kind=real_kind), pointer :: v            (:,:,:,:,:,:)
     real (kind=real_kind), pointer :: ps           (:,:,:,:)
+    real (kind=real_kind), pointer :: eta_dot_dpdn (:,:,:,:)
     integer :: ie
 
-    call c_f_pointer(dp_ptr,        dp,        [np,np,  nlev,  timelevels, nelemd])
-    call c_f_pointer(vtheta_dp_ptr, vtheta_dp, [np,np,  nlev,  timelevels, nelemd])
-    call c_f_pointer(w_i_ptr,       w_i,       [np,np,  nlevp, timelevels, nelemd])
-    call c_f_pointer(phi_i_ptr,     phi_i,     [np,np,  nlevp, timelevels, nelemd])
-    call c_f_pointer(v_ptr,         v,         [np,np,2,nlev,  timelevels, nelemd])
-    call c_f_pointer(ps_ptr,        ps,        [np,np,         timelevels, nelemd])
+    call c_f_pointer(dp_ptr,           dp,           [np,np,  nlev,  timelevels, nelemd])
+    call c_f_pointer(vtheta_dp_ptr,    vtheta_dp,    [np,np,  nlev,  timelevels, nelemd])
+    call c_f_pointer(w_i_ptr,          w_i,          [np,np,  nlevp, timelevels, nelemd])
+    call c_f_pointer(phi_i_ptr,        phi_i,        [np,np,  nlevp, timelevels, nelemd])
+    call c_f_pointer(v_ptr,            v,            [np,np,2,nlev,  timelevels, nelemd])
+    call c_f_pointer(ps_ptr,           ps,           [np,np,         timelevels, nelemd])
+    call c_f_pointer(eta_dot_dpdn_ptr, eta_dot_dpdn, [np,np,  nlevp,             nelemd])
 
     do ie=1,nelemd
       ! Copy inputs in the elem%state
@@ -99,6 +101,8 @@ contains
       elem(ie)%state%phinh_i(:,:,:,:) = phi_i(:,:,:,:,ie)
       elem(ie)%state%v(:,:,:,:,:) = v(:,:,:,:,:,ie)
       elem(ie)%state%ps_v(:,:,:) = ps(:,:,:,ie)
+
+      elem(ie)%derived%eta_dot_dpdn(:,:,:) = eta_dot_dpdn(:,:,:,ie)
     enddo
 
     ! set control variables

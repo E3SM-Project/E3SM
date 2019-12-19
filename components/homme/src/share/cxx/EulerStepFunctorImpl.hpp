@@ -168,17 +168,29 @@ public:
     assert(m_data.qsize >= 0); // after reset() called
 
     auto bm_exchange = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
+    DSSOption dss_vars[3] = {DSSOption::ETA, DSSOption::OMEGA, DSSOption::DIV_VDP_AVE};
     for (int np1_qdp = 0, k = 0; np1_qdp < Q_NUM_TIME_LEVELS; ++np1_qdp) {
-      for (int dssi = 0; dssi < 3; ++dssi, ++k) {
+      for (auto dssi : dss_vars) {
         m_bes[k] = std::make_shared<BoundaryExchange>();
         BoundaryExchange& be = *m_bes[k];
         be.set_buffers_manager(bm_exchange);
-        be.set_num_fields(0, 0, m_data.qsize+1);
+        int num_mid = dssi==DSSOption::ETA ? 0 : 1;
+        int num_int = 1 - num_mid;
+        be.set_num_fields(0, 0, m_data.qsize+num_mid,num_int);
         be.register_field(m_tracers.qdp, np1_qdp, m_data.qsize, 0);
-        be.register_field(dssi == 0 ? m_derived_state.m_eta_dot_dpdn :
-                          dssi == 1 ? m_derived_state.m_omega_p :
-                          m_derived_state.m_divdp_proj);
+        switch(dssi) {
+          case DSSOption::ETA:
+            be.register_field(m_derived_state.m_eta_dot_dpdn);
+            break;
+          case DSSOption::OMEGA:
+            be.register_field(m_derived_state.m_omega_p);
+            break;
+          case DSSOption::DIV_VDP_AVE:
+            be.register_field(m_derived_state.m_divdp_proj);
+            break;
+        }
         be.registration_completed();
+        ++k;
       }
     }
 
@@ -616,16 +628,21 @@ private:
       = EulerStepFunctor::is_quasi_monotone(c.limiter_option);
     const bool add_ps_diss = c.nu_p > 0 && c.rhs_viss != 0.0;
     const Real diss_fac = add_ps_diss ? -c.rhs_viss * c.dt * c.nu_q : 0;
-    const auto& f_dss = (c.DSSopt == DSSOption::ETA ?
-                         m_derived_state.m_eta_dot_dpdn :
-                         c.DSSopt == DSSOption::OMEGA ?
-                         m_derived_state.m_omega_p :
-                         m_derived_state.m_divdp_proj);
+
+    const auto& eta   = m_derived_state.m_eta_dot_dpdn;
+    const auto& omega = m_derived_state.m_omega_p;
+    const auto& divdp = m_derived_state.m_divdp_proj;
     Kokkos::parallel_for (
       Kokkos::TeamThreadRange(kv.team, NP*NP),
       [&] (const int loop_idx) {
         const int i = loop_idx / NP;
         const int j = loop_idx % NP;
+        auto f_dss_ptr = c.DSSopt==DSSOption::ETA
+                           ? &eta.impl_map().reference(kv.ie, i,j, 0)
+                           : (c.DSSopt==DSSOption::OMEGA
+                                 ? &omega.impl_map().reference(kv.ie,i,j,0)
+                                 : &divdp.impl_map().reference(kv.ie,i,j,0));
+        ExecViewUnmanaged<Scalar[NUM_LEV]> f_dss (f_dss_ptr);
         Kokkos::parallel_for(
           Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
           [&] (const int& k) {
@@ -647,7 +664,7 @@ private:
             //! also DSS extra field
             //! note: eta_dot_dpdn is actually dimension nlev+1, but nlev+1 data is
             //! all zero so we only have to DSS 1:nlev
-            f_dss(kv.ie,i,j,k) *= m_geometry.m_spheremp(kv.ie,i,j);
+            f_dss(k) *= m_geometry.m_spheremp(kv.ie,i,j);
           });
       });
   }

@@ -26,7 +26,7 @@ void ElementsDerivedState::init(const int num_elems) {
 
   m_vn0 = ExecViewManaged<Scalar * [2][NP][NP][NUM_LEV]>("Derived Lateral Velocities", m_num_elems);
 
-  m_eta_dot_dpdn = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("eta_dot_dpdn", m_num_elems);
+  m_eta_dot_dpdn = ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]>("eta_dot_dpdn", m_num_elems);
 
   m_dp                = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("derived_dp", m_num_elems);
   m_divdp             = ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>("derived_divdp", m_num_elems);
@@ -89,20 +89,18 @@ void ElementsDerivedState::randomize(const int seed, const Real dp3d_min) {
           }
         }
       });
-      kv.team_barrier();
 
+      // Compute delta_eta over the column
       ColumnOps::compute_midpoint_delta(kv,eta_dot_dpdn_ij,delta_eta_ij);
 
+      Real sum = 0;
       // Integrate delta_eta over the column, and subtract that value
       // to the first entry of eta_dot_dpdn
-      Real sum;
-      Dispatch<>::parallel_reduce(kv.team, Kokkos::ThreadVectorRange(kv.team,NUM_INTERFACE_LEV),
-        [&](const int k, Real& the_sum) {
-          const int ilev = k / VECTOR_SIZE;
-          const int ivec = k % VECTOR_SIZE;
-          the_sum += delta_eta_ij(ilev)[ivec];
-      }, sum);
-      eta_dot_dpdn_ij(0)[0] -= sum;
+      ColumnOps::column_reduction<NUM_PHYSICAL_LEV>(kv.team,delta_eta_ij,sum);
+
+      Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+        eta_dot_dpdn_ij(0)[0] -= sum;
+      });
     });
   });
 }

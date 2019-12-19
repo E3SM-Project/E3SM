@@ -20,14 +20,14 @@ public:
 
   // eta=$\eta$ is the vertical coordinate
   // eta_dot_dpdn = $\dot{eta}\frac{dp}{d\eta}$
-  //    (note there are NUM_PHYSICAL_LEV+1 of them, but the last is 0)
-  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>   m_eta_dot_dpdn;
+  // Note: the last level (surface) is always 0.
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV_P]>   m_eta_dot_dpdn;
 
-  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>   m_dp;                // for dp_tracers at physics timestep
-  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>   m_divdp;             // divergence of dp
-  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>   m_divdp_proj;        // DSSed divdp
-  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>   m_dpdiss_biharmonic; // mean dp dissipation tendency, if nu_p>0
-  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>   m_dpdiss_ave;        // mean dp used to compute psdiss_tens
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_dp;                // for dp_tracers at physics timestep
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_divdp;             // divergence of dp
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_divdp_proj;        // DSSed divdp
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_dpdiss_biharmonic; // mean dp dissipation tendency, if nu_p>0
+  ExecViewManaged<Scalar * [NP][NP][NUM_LEV]>     m_dpdiss_ave;        // mean dp used to compute psdiss_tens
 
   ElementsDerivedState() : m_num_elems(0) {}
 

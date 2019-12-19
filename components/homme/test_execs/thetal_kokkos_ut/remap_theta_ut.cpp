@@ -29,7 +29,8 @@ void init_phis_f90 (const Real*& phis_ptr, const Real*& gradphis_ptr);
 void run_remap_f90 (const int& np1, const int& np1_qdp, const Real& dt,
                     const int& rsplit, const int& qsize, const int& remap_alg,
                     Real*& dp_ptr, Real*& vtheta_dp_ptr, Real*& w_i_ptr,
-                    Real*& phi_i_ptr, Real*& v_ptr, Real*& ps_ptr);
+                    Real*& phi_i_ptr, Real*& v_ptr, Real*& ps_ptr,
+                    Real*& eta_dot_dpdn_ptr);
 void cleanup_f90();
 } // extern "C"
 
@@ -148,7 +149,6 @@ TEST_CASE("remap", "remap_testing") {
   ScalarStateIntF90 phinh_i_f90("",elems.num_elems());
   VectorStateF90    v_f90("",elems.num_elems());
 
-  ScalarF90    omega_p_f90("",elems.num_elems());
   ScalarIntF90 eta_dot_dpdn_f90("",elems.num_elems());
 
   // Lambda to compute min of dp3d, to give meaningful initial value to derived.m_eta_dot_dpdn
@@ -217,27 +217,26 @@ TEST_CASE("remap", "remap_testing") {
           sync_to_host(elems.m_state.m_w_i, w_i_f90);
           sync_to_host(elems.m_state.m_phinh_i, phinh_i_f90);
           sync_to_host(elems.m_state.m_v, v_f90);
-          // The view for ps_v has the same layout in memory, so use Kokkos::deep_copy
-          Kokkos::deep_copy(ps_f90,elems.m_state.m_ps_v);
-
-          sync_to_host_p2i(elems.m_derived.m_eta_dot_dpdn, eta_dot_dpdn_f90);
-          sync_to_host(elems.m_derived.m_omega_p, omega_p_f90);
+          Kokkos::deep_copy(ps_f90,elems.m_state.m_ps_v); // Same mem layout, use Kokkos::deep_copy
+          sync_to_host(elems.m_derived.m_eta_dot_dpdn, eta_dot_dpdn_f90);
 
           // Create the remap functor
           // Note: ALL the options must be set in params *before* creating the vrm.
           VerticalRemapManager vrm;
           vrm.run_remap(np1,np1_qdp,dt);
 
+          // Run f90 code
           auto dp3d_ptr = dp3d_f90.data();
           auto vtheta_dp_ptr = vtheta_dp_f90.data();
           auto w_i_ptr = w_i_f90.data();
           auto phinh_i_ptr = phinh_i_f90.data();
           auto v_ptr = v_f90.data();
           auto ps_ptr = ps_f90.data();
+          auto eta_dot_dpdn_ptr = eta_dot_dpdn_f90.data();
           run_remap_f90 (np1+1, np1_qdp+1, dt,
                          rsplit, params.qsize, remap_alg_f90(alg),
                          dp3d_ptr, vtheta_dp_ptr, w_i_ptr,
-                         phinh_i_ptr, v_ptr, ps_ptr);
+                         phinh_i_ptr, v_ptr, ps_ptr, eta_dot_dpdn_ptr);
 
           // Compare answers
           auto h_dp3d      = Kokkos::create_mirror_view(elems.m_state.m_dp3d);
@@ -246,17 +245,11 @@ TEST_CASE("remap", "remap_testing") {
           auto h_phinh_i   = Kokkos::create_mirror_view(elems.m_state.m_phinh_i);
           auto h_v         = Kokkos::create_mirror_view(elems.m_state.m_v);
 
-          auto h_eta_dot_dpdn = Kokkos::create_mirror_view(elems.m_derived.m_eta_dot_dpdn);
-          auto h_omega_p      = Kokkos::create_mirror_view(elems.m_derived.m_omega_p);
-
           Kokkos::deep_copy(h_dp3d     , elems.m_state.m_dp3d);
           Kokkos::deep_copy(h_vtheta_dp, elems.m_state.m_vtheta_dp);
           Kokkos::deep_copy(h_w_i      , elems.m_state.m_w_i);
           Kokkos::deep_copy(h_phinh_i  , elems.m_state.m_phinh_i);
           Kokkos::deep_copy(h_v        , elems.m_state.m_v);
-
-          Kokkos::deep_copy(h_eta_dot_dpdn, elems.m_derived.m_eta_dot_dpdn);
-          Kokkos::deep_copy(h_omega_p     , elems.m_derived.m_omega_p);
 
           for (int ie=0; ie<num_elems; ++ie) {
             auto dp3d_cxx      = viewAsReal(Homme::subview(h_dp3d,ie,np1));
@@ -264,9 +257,6 @@ TEST_CASE("remap", "remap_testing") {
             auto w_i_cxx       = viewAsReal(Homme::subview(h_w_i,ie,np1));
             auto phinh_i_cxx   = viewAsReal(Homme::subview(h_phinh_i,ie,np1));
             auto v_cxx         = viewAsReal(Homme::subview(h_v,ie,np1));
-
-            auto eta_dot_dpdn_cxx = viewAsReal(Homme::subview(h_eta_dot_dpdn,ie));
-            auto omega_p_cxx      = viewAsReal(Homme::subview(h_omega_p,ie));
 
             for (int igp=0; igp<NP; ++igp) {
               for (int jgp=0; jgp<NP; ++jgp) {

@@ -557,8 +557,8 @@ public:
     // contain some garbage if VECTOR_SIZE does not divide LENGTH!
 
     constexpr int  NUM_PACKS     = ColInfo<LENGTH>::NumPacks;
-    constexpr int  LAST_PACK     = ColInfo<LENGTH>::LAST_PACK;
-    constexpr int  LAST_PACK_LEN = ColInfo<LENGTH>::LAST_PACK_LEN;
+    constexpr int  LAST_PACK     = ColInfo<LENGTH>::LastPack;
+    constexpr int  LAST_PACK_LEN = ColInfo<LENGTH>::LastPackLen;
     constexpr bool HAS_GARBAGE   = LAST_PACK_LEN!=VECTOR_SIZE;
     constexpr int  LOOP_LENGTH   = HAS_GARBAGE ? std::max(0,NUM_PACKS-1) : NUM_PACKS;
 

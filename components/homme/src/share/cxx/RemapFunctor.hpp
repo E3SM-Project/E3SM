@@ -44,7 +44,7 @@ struct RemapStateAndThicknessProvider<false> {
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]> m_src_layer_thickness;
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV]> m_tgt_layer_thickness;
 
-  ExecViewUnmanaged<const Scalar * [NP][NP][NUM_LEV]> m_eta_dot_dpdn;
+  ExecViewUnmanaged<const Scalar * [NP][NP][NUM_LEV_P]> m_eta_dot_dpdn;
 
   explicit
   RemapStateAndThicknessProvider (const Elements& elements)
