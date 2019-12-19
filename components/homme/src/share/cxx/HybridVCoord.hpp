@@ -102,17 +102,34 @@ public:
       const int igp = idx / NP;
       const int jgp = idx % NP;
       Scalar tmp;
-      Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+
+      // To squeeze some perf out on CPU, do reduction at Scalar level,
+      // then reduce the sum at the end. Be CAREFUL: the last pack may
+      // contain some garbage if VECTOR_SIZE does not divide NUM_PHYSICAL_LEV
+      constexpr int NUM_SAFE_LEV = (NUM_PHYSICAL_LEV%VECTOR_SIZE)!=0 ?
+                                    NUM_LEV-1 : NUM_LEV;
+
+      Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,NUM_SAFE_LEV),
                                   [&](const int ilev, Scalar& sum) {
         sum += dp(igp,jgp,ilev);
       },tmp);
+      Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+        // Compile-time if
+        if (NUM_SAFE_LEV!=NUM_LEV) {
+          constexpr int LAST_PACK     = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
+          constexpr int LAST_PACK_END = ColInfo<NUM_PHYSICAL_LEV>::LastPackEnd;
 
-      // Compile-time if
-      if (OnGpu<ExecSpace>::value) {
-        ps(igp,jgp) = hybrid_ai(0)*ps0 + tmp[0];
-      } else {
-        ps(igp,jgp) = hybrid_ai(0)*ps0 + tmp.reduce_add();
-      }
+          for (int i=0; i<=LAST_PACK_END; ++i) {
+            tmp[i] += dp(igp,jgp,LAST_PACK)[i];
+          }
+        }
+        // Compile-time if
+        if (OnGpu<ExecSpace>::value) {
+          ps(igp,jgp) = hybrid_ai0*ps0 + tmp[0];
+        } else {
+          ps(igp,jgp) = hybrid_ai0*ps0 + tmp.reduce_add();
+        }
+      });
     });
     kv.team_barrier();
   }

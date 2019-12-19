@@ -16,6 +16,7 @@
 #include "Tracers.hpp"
 #include "HybridVCoord.hpp"
 #include "KernelVariables.hpp"
+#include "ColumnOps.hpp"
 #include "Types.hpp"
 #include "utilities/LoopsUtils.hpp"
 #include "utilities/MathUtils.hpp"
@@ -80,7 +81,7 @@ struct RemapStateAndThicknessProvider<false> {
   } 
 
   KOKKOS_INLINE_FUNCTION
-  ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]>
+  ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>
   get_source_thickness(const int ie, const int /* np1 */) const {
     return Homme::subview(m_src_layer_thickness, ie);
   }
@@ -98,21 +99,16 @@ struct RemapStateAndThicknessProvider<false> {
                          [&](const int &loop_idx) {
       const int igp = loop_idx / NP;
       const int jgp = loop_idx % NP;
-      auto eta_dot_dpdn = Homme::subview(m_eta_dot_dpdn,kv.ie,igp,jgp);
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_PHYSICAL_LEV),
-                           [&](const int &level) {
-        const int ilev = level / VECTOR_SIZE;
-        const int vlev = level % VECTOR_SIZE;
-        const int next_ilev = (level + 1) / VECTOR_SIZE;
-        const int next_vlev = (level + 1) % VECTOR_SIZE;
-        const auto eta_dot_dpdn_next =
-            (level + 1 < NUM_PHYSICAL_LEV
-                 ? eta_dot_dpdn(next_ilev)[next_vlev]
-                 : 0);
-        const Real delta_dpdn =
-            eta_dot_dpdn_next - eta_dot_dpdn(ilev)[vlev];
-        src_layer_thickness(igp, jgp, ilev)[vlev] =
-            tgt_layer_thickness(igp, jgp, ilev)[vlev] + dt * delta_dpdn;
+
+      auto eta_dot_dpdn     = Homme::subview(m_eta_dot_dpdn,kv.ie,igp,jgp);
+      auto src_thickness_ij = Homme::subview(src_layer_thickness,igp,jgp);
+
+      ColumnOps::compute_midpoint_delta<CombineMode::Scale>(kv,eta_dot_dpdn,src_thickness_ij,dt);
+
+      auto tgt_thickness_ij = Homme::subview(tgt_layer_thickness,igp,jgp);
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team, NUM_LEV),
+                           [&](const int ilev) {
+        src_thickness_ij(ilev) += tgt_thickness_ij(ilev);
       });
     });
     kv.team_barrier();
@@ -205,7 +201,7 @@ RemapStateAndThicknessProvider<true> {
   } 
 
   KOKKOS_INLINE_FUNCTION
-  ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]>
+  ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>
   get_source_thickness (const int ie, const int np1) const {
     return Homme::subview(m_dp3d, ie, np1);
   }
@@ -310,12 +306,11 @@ struct RemapFunctor : public Remapper {
   KOKKOS_INLINE_FUNCTION
   void operator()(ComputeThicknessTag, const TeamMember &team) const {
     KernelVariables kv(team);
-    compute_ps_v(kv, Homme::subview(m_state.m_dp3d, kv.ie, m_data.np1),
-                     Homme::subview(m_state.m_ps_v, kv.ie, m_data.np1));
+    m_hvcoord.compute_ps_ref_from_dp(kv, Homme::subview(m_state.m_dp3d, kv.ie, m_data.np1),
+                                         Homme::subview(m_state.m_ps_v, kv.ie, m_data.np1));
 
     auto tgt_layer_thickness = compute_target_thickness(kv);
     auto src_layer_thickness = m_fields_provider.compute_source_thickness(kv, m_data.np1, m_data.dt, tgt_layer_thickness);
-
     check_source_thickness(kv, src_layer_thickness);
   }
 
@@ -456,30 +451,6 @@ private:
     ExecSpace::fence();
     profiling_pause();
     GPTLstop(functor_name.c_str());
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void compute_ps_v(KernelVariables &kv,
-                    ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> dp3d,
-                    ExecViewUnmanaged<Real[NP][NP]> ps_v) const {
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
-                         [&](const int &loop_idx) {
-      const int igp = loop_idx / NP;
-      const int jgp = loop_idx % NP;
-      // Using parallel_reduce to calculate this doesn't seem to work,
-      // even when accumulating into a Scalar and computing the final sum in
-      // serial, and is likely a Kokkos bug since ivdep shouldn't matter.
-      Kokkos::single(Kokkos::PerThread(kv.team), [&]() {
-        ps_v(igp, jgp) = 0.0;
-        for (int level = 0; level < NUM_PHYSICAL_LEV; ++level) {
-          const int ilev = level / VECTOR_SIZE;
-          const int vlev = level % VECTOR_SIZE;
-          ps_v(igp, jgp) += dp3d(igp, jgp, ilev)[vlev];
-        }
-        ps_v(igp, jgp) += m_hvcoord.hybrid_ai0 * m_hvcoord.ps0;
-      });
-    });
-    kv.team_barrier();
   }
 
   KOKKOS_INLINE_FUNCTION

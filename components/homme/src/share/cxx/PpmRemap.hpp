@@ -512,7 +512,7 @@ struct PpmVertRemap : public VertRemapAlg {
 
       Dispatch<ExecSpace>::parallel_scan(
           kv.team, NUM_PHYSICAL_LEV,
-          [=](const int &level, Real &accumulator, const bool last) {
+          [&](const int &level, Real &accumulator, const bool last) {
             if (last) {
               pt_pio(level) = accumulator;
             }
@@ -522,7 +522,7 @@ struct PpmVertRemap : public VertRemapAlg {
           });
       Dispatch<ExecSpace>::parallel_scan(
           kv.team, NUM_PHYSICAL_LEV,
-          [=](const int &level, Real &accumulator, const bool last) {
+          [&](const int &level, Real &accumulator, const bool last) {
             if (last) {
               pt_pin(level) = accumulator;
             }
