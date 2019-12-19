@@ -3,49 +3,12 @@
 
 #include "KernelVariables.hpp"
 #include "ErrorDefs.hpp"
+#include "CombineOps.hpp"
 #include "HommexxEnums.hpp"
 #include "utilities/SubviewUtils.hpp"
 #include "utilities/VectorUtils.hpp"
 
 namespace Homme {
-
-// Small helper function to combine a new value with an old one.
-// The template argument help reducing the number of operations
-// performed (the if is resolved at compile time). In the most
-// complete form, the function performs
-//    result = beta*result + alpha*newVal
-// This routine should have no overhead compared to a manual
-// update (assuming you call it with the proper CM)
-template<CombineMode CM, typename Scalar1, typename Scalar2>
-KOKKOS_FORCEINLINE_FUNCTION
-void combine (const Scalar1& newVal, Scalar2& result,
-              const Real alpha = 1.0, const Real beta = 1.0){
-  switch (CM) {
-    case CombineMode::Replace:
-      result = newVal;
-      break;
-    case CombineMode::Scale:
-      result = alpha*newVal;
-      break;
-    case CombineMode::Update:
-      result *= beta;
-      result += newVal;
-      break;
-    case CombineMode::ScaleUpdate:
-      result *= beta;
-      result += alpha*newVal;
-      break;
-    case CombineMode::ScaleAdd:
-      result += alpha*newVal;
-      break;
-    case CombineMode::Add:
-      result += newVal;
-      break;
-    case CombineMode::ProdUpdate:
-      result *= newVal;
-      break;
-  }
-}
 
 /*
  *  ColumnOps: a series of utility kernels inside an element
@@ -79,29 +42,6 @@ public:
   using DefaultMidProvider = ExecViewUnmanaged<const Scalar [NUM_LEV]>;
   using DefaultIntProvider = ExecViewUnmanaged<const Scalar [NUM_LEV_P]>;
 
-  template<CombineMode CM>
-  KOKKOS_INLINE_FUNCTION
-  static constexpr bool needsAlpha () {
-    return CM==CombineMode::Scale || CM==CombineMode::ScaleAdd || CM==CombineMode::ScaleUpdate;
-  }
-
-  template<CombineMode CM>
-  KOKKOS_INLINE_FUNCTION
-  static constexpr bool needsBeta () {
-    return CM==CombineMode::Update || CM==CombineMode::ScaleUpdate;
-  }
-
-#ifndef NDEBUG
-  template<CombineMode CM>
-  KOKKOS_INLINE_FUNCTION
-  static void sanity_check (const Real alpha, const Real beta) {
-    assert ((needsAlpha<CM>() || alpha==1.0) &&
-            "Error! Input alpha would be discarded by the requested combine mode.\n");
-    assert ((needsBeta<CM>() || beta==0.0) &&
-            "Error! Input beta would be discarded by the requested combine mode.\n");
-  }
-#endif
-
   template<CombineMode CM = CombineMode::Replace, typename InputProvider = DefaultIntProvider>
   KOKKOS_INLINE_FUNCTION
   static void compute_midpoint_values (const KernelVariables& kv,
@@ -109,10 +49,6 @@ public:
                                 const ExecViewUnmanaged<Scalar [NUM_LEV]>& x_m,
                                 const Real alpha = 1.0, const Real beta = 0.0)
   {
-#ifndef NDEBUG
-    sanity_check<CM>(alpha,beta);
-#endif
-
     // Compute midpoint quanitiy. Note: the if statement is evaluated at compile time, so no penalization. Only requirement is both branches must compile.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
@@ -153,10 +89,6 @@ public:
                                  const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& x_i,
                                  const Real alpha = 1.0, const Real beta = 0.0)
   {
-#ifndef NDEBUG
-    sanity_check<CM>(alpha,beta);
-#endif
-
     // Compute interface quanitiy.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
@@ -212,10 +144,6 @@ public:
                                  const ExecViewUnmanaged<Scalar [NUM_LEV_P]>& x_i,
                                  const Real alpha = 1.0, const Real beta = 0.0)
   {
-#ifndef NDEBUG
-    sanity_check<CM>(alpha,beta);
-#endif
-
     // Compute interface quanitiy.
     if (OnGpu<ExecSpace>::value) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
@@ -274,9 +202,6 @@ public:
         combine<CM>(tmp,dx_m(ilev),alpha,beta);
       });
     } else {
-#ifndef NDEBUG
-      sanity_check<CM>(alpha,beta);
-#endif
       constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
       constexpr int LAST_MID_PACK_END = MIDPOINTS::LastPackEnd;
       constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
@@ -308,10 +233,6 @@ public:
                                 const Real bcVal = 0.0,
                                 const Real alpha = 1.0, const Real beta = 0.0)
   {
-#ifndef NDEBUG
-    sanity_check<CM>(alpha,beta);
-#endif
-
     static_assert (bcType==BCType::Zero || bcType==BCType::Value || bcType == BCType::DoNothing,
                    "Error! Invalid bcType for interface delta calculation.\n");
 
