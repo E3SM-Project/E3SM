@@ -304,7 +304,11 @@ contains
                 !  is removed, remove the pressure calculations here.
                 call get_field(elem(ie), 'p', pressure, hvcoord, nt1, -1)
                 call gfr_g2f_scalar(ie, elem(ie)%metdet, pressure, p_fv)
+#ifdef MODEL_THETA_L
+                wr1(:nf,:nf,:) = reshape(pg_data%omega_p(:,:,ie), (/nf,nf,nlev/))
+#else                
                 wr1(:nf,:nf,:) = reshape(pg_data%omega_p(:,:,ie), (/nf,nf,nlev/))*p_fv(:nf,:nf,:)
+#endif                
                 !  Compare.
                 global_shared_buf(ie,1) = sum((wr1(:nf,:nf,:) - wr2(:nf,:nf,:))**2)
                 global_shared_buf(ie,2) = sum(wr2(:nf,:nf,:)**2)
