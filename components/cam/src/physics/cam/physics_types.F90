@@ -427,25 +427,27 @@ contains
     !-------------------------------------------------------------------------------------------
     if(ptend%ls) then
        do k = ptend%top_level, ptend%bot_level
-          state%s(:ncol,k)   = state%s(:ncol,k)   + ptend%s(:ncol,k) * dt
           if (present(tend)) &
                tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
-! assuming c_p^star is c_p in eam, temperature adjust does not depend on vapor
-! dT = ds/c_p, so, state%t += ds/c_p
+! we first assume that dS is really dEn, En=enthalpy=c_p*T, then 
+! dT = dEn/c_p, so, state%t += ds/c_p.
           state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk) * dt
-
        end do
     end if
 
-    ! Derive new zi,zm if heating or water tendency not 0.
+    ! Derive new zi,zm,s if heating or water tendency not 0.
     if (ptend%ls .or. ptend%lq(1)) then
       call geopotential_t(state%lnpint, state%lnpmid  ,&
                           state%pint  , state%pmid    ,&
                           state%pdel  , state%rpdel   ,&
                           state%t     , state%q(:,:,1),&
-                          rairv_loc(:,:,state%lchnk)        , gravit, zvirv             ,&
+                          rairv_loc(:,:,state%lchnk)  , gravit, zvirv,&
                           state%zi    , state%zm      ,&
                           ncol)
+       do k = ptend%top_level, ptend%bot_level
+          state%s(:ncol,k) = state%t(:ncol,k  )*cpairv_loc(:ncol,k,state%lchnk)&
+                           + gravit*state%zm(:ncol,k) + state%phis(:ncol)
+       end do
     end if
 
     ! Good idea to do this regularly.
