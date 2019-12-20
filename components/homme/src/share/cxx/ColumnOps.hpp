@@ -481,7 +481,8 @@ public:
     constexpr int  LAST_PACK     = ColInfo<LENGTH>::LastPack;
     constexpr int  LAST_PACK_LEN = ColInfo<LENGTH>::LastPackLen;
     constexpr bool HAS_GARBAGE   = LAST_PACK_LEN!=VECTOR_SIZE;
-    constexpr int  LOOP_LENGTH   = HAS_GARBAGE ? std::max(0,NUM_PACKS-1) : NUM_PACKS;
+    constexpr int  NUM_PACKS_M1  = NUM_PACKS>0 ? NUM_PACKS-1 : 0;
+    constexpr int  LOOP_LENGTH   = HAS_GARBAGE ? NUM_PACKS_M1 : NUM_PACKS;
 
     Scalar packed_sum;
     Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,LOOP_LENGTH),
