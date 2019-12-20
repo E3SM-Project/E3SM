@@ -71,6 +71,12 @@ These should NOT be specified via <ADD_SLIBS USE_CXX="true"> or
 <ADD_LDFLAGS USE_CXX="true">, because those mess up the configure step
 for mct, etc.
 
+========================================================================
+ MPAS
+========================================================================
+
+MPAS has a semi-autonomous build from core E3SM. Component-specific (mali, mpassi)
+flags should be captured within MPAS CMake files.
 
 ===========================
 -->
@@ -78,12 +84,6 @@ for mct, etc.
      compilers -->
 <compiler>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
-  <CPPDEFS>
-    <!-- MPAS Components rely on this flag to use the newer PIO/Scorpio interfaces. These newer interfaces are available on both Scorpio and Scorpio classic -->
-    <append MODEL="ice"> -DUSE_PIO2 </append>
-    <append MODEL="ocn"> -DUSE_PIO2 </append>
-    <append MODEL="glc"> -DUSE_PIO2 </append>
-  </CPPDEFS>
 </compiler>
 
 <compiler COMPILER="cray">
@@ -93,7 +93,7 @@ for mct, etc.
   <CPPDEFS>
     <!--http://docs.cray.com/cgi-bin/craydoc.cgi?mode=View;id=S-3901-83;idx=books_search;this_sort=;q=;type=books;title=Cray%20Fortran%20Reference%20Manual -->
     <append> -DFORTRANUNDERSCORE -DNO_R16 -DCPRCRAY</append>
-    <append MODEL="moby"> -DDIR=NOOP </append>
+    <append COMP_NAME="moby"> -DDIR=NOOP </append>
   </CPPDEFS>
   <FC_AUTO_R8>
     <base> -s real64 </base>
@@ -119,10 +119,10 @@ for mct, etc.
     <append compile_threaded="TRUE"> -fopenmp </append>
     <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -fcheck=bounds -ffpe-trap=invalid,zero,overflow</append>
     <append DEBUG="FALSE"> -O </append>
-    <append MODEL="csm_share"> -std=c99 </append>
+    <append COMP_NAME="csm_share"> -std=c99 </append>
   </CFLAGS>
   <CMAKE_OPTS>
-    <append MODEL="cism"> -D CISM_GNU=ON </append>
+    <append COMP_NAME="cism"> -D CISM_GNU=ON </append>
   </CMAKE_OPTS>
   <CPPDEFS>
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
@@ -170,7 +170,7 @@ for mct, etc.
     <append DEBUG="FALSE"> -O </append>
   </CFLAGS>
   <CMAKE_OPTS>
-    <append MODEL="cism"> -D CISM_GNU=ON </append>
+    <append COMP_NAME="cism"> -D CISM_GNU=ON </append>
   </CMAKE_OPTS>
   <CPPDEFS>
     <!-- http://gcc.gnu.org/onlinedocs/gfortran/ -->
@@ -430,12 +430,12 @@ for mct, etc.
     <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
-    <append MODEL="datm"> -Mnovect </append>
-    <append MODEL="dlnd"> -Mnovect </append>
-    <append MODEL="drof"> -Mnovect </append>
-    <append MODEL="dwav"> -Mnovect </append>
-    <append MODEL="dice"> -Mnovect </append>
-    <append MODEL="docn"> -Mnovect </append>
+    <append COMP_NAME="datm"> -Mnovect </append>
+    <append COMP_NAME="dlnd"> -Mnovect </append>
+    <append COMP_NAME="drof"> -Mnovect </append>
+    <append COMP_NAME="dwav"> -Mnovect </append>
+    <append COMP_NAME="dice"> -Mnovect </append>
+    <append COMP_NAME="docn"> -Mnovect </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
@@ -506,14 +506,14 @@ for mct, etc.
     <base>  -i4 -time -Mstack_arrays -Mextend -byteswapio -Mflushz -Kieee  </base>
     <append compile_threaded="FALSE"> </append>
     <append compile_threaded="TRUE"> -mp </append>
-    <append MODEL="cam"> </append>
+    <append COMP_NAME="cam"> </append>
     <append DEBUG="TRUE"> -O0 -g -Ktrap=fp -Mbounds -Kieee </append>
-    <append MODEL="datm"> -Mnovect </append>
-    <append MODEL="dlnd"> -Mnovect </append>
-    <append MODEL="drof"> -Mnovect </append>
-    <append MODEL="dwav"> -Mnovect </append>
-    <append MODEL="dice"> -Mnovect </append>
-    <append MODEL="docn"> -Mnovect </append>
+    <append COMP_NAME="datm"> -Mnovect </append>
+    <append COMP_NAME="dlnd"> -Mnovect </append>
+    <append COMP_NAME="drof"> -Mnovect </append>
+    <append COMP_NAME="dwav"> -Mnovect </append>
+    <append COMP_NAME="dice"> -Mnovect </append>
+    <append COMP_NAME="docn"> -Mnovect </append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
@@ -550,7 +550,7 @@ for mct, etc.
   <CONFIG_SHELL> /usr/bin/bash </CONFIG_SHELL>
   <FFLAGS>
     <append> -qarch=auto -qtune=auto -qcache=auto -qsclk=micro </append>
-    <append MODEL="cam"> -qspill=6000 </append>
+    <append COMP_NAME="cam"> -qspill=6000 </append>
   </FFLAGS>
   <LDFLAGS>
     <append DEBUG="TRUE"> -qsigtrap=xl__trcedump </append>
@@ -644,7 +644,7 @@ for mct, etc.
   </CMAKE_OPTS>
   <CPPDEFS>
     <append> -DLINUX </append>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY  </append>
   </CPPDEFS>
   <MPICC> cc </MPICC>
   <MPICXX> CC </MPICXX>
@@ -664,7 +664,7 @@ for mct, etc.
     <append> -DSYSDARWIN </append>
   </CPPDEFS>
   <LDFLAGS>
-    <append MODEL="driver"> -all_load </append>
+    <append COMP_CLASS="cpl"> -all_load </append>
   </LDFLAGS>
 </compiler>
 
@@ -712,7 +712,7 @@ for mct, etc.
 
 <compiler MACH="anvil" COMPILER="gnu">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY  </append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY  </append>
   </CPPDEFS>
   <PIO_FILESYSTEM_HINTS>gpfs </PIO_FILESYSTEM_HINTS>
   <SLIBS>
@@ -733,7 +733,7 @@ for mct, etc.
     <append compile_threaded="TRUE" DEBUG="TRUE">-heap-arrays</append>
   </CFLAGS>
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align</append>
@@ -760,7 +760,7 @@ for mct, etc.
 
 <compiler MACH="anvil" COMPILER="intel18">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
@@ -830,7 +830,7 @@ for mct, etc.
 <compiler MACH="bebop" COMPILER="intel">
   <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/buildintel/install</ALBANY_PATH>
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -851,7 +851,7 @@ for mct, etc.
 
 <compiler MACH="bebop" COMPILER="gnu">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -868,7 +868,7 @@ for mct, etc.
 <compiler MACH="blues" COMPILER="gnu">
   <ALBANY_PATH>/soft/climate/AlbanyTrilinos_06262017/Albany/build/install</ALBANY_PATH>
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_SLASHPROC -DHAVE_GETTIMEOFDAY</append>
   </CPPDEFS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -953,12 +953,12 @@ for mct, etc.
     <append compile_threaded="TRUE"> -fopenmp </append>
   </CFLAGS>
   <CMAKE_OPTS>
-    <append MODEL="cism"> -D CISM_GNU=ON </append>
+    <append COMP_NAME="cism"> -D CISM_GNU=ON </append>
   </CMAKE_OPTS>
   <CPPDEFS>
     <append> -DFORTRANUNDERSCORE -DNO_R16</append>
-    <!-- <append MODEL="clm"> -DCLM_PFLOTRAN </append>
-         <append MODEL="clm"> -DCOLUMN_MODE </append> -->
+    <!-- <append COMP_NAME="clm"> -DCLM_PFLOTRAN </append>
+         <append COMP_NAME="clm"> -DCOLUMN_MODE </append> -->
   </CPPDEFS>
   <CXX_LINKER>FORTRAN</CXX_LINKER>
   <FC_AUTO_R8>
@@ -970,7 +970,7 @@ for mct, etc.
     <base> -O -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none -fno-range-check</base>
     <append compile_threaded="TRUE"> -fopenmp </append>
     <append DEBUG="TRUE"> -g -Wall </append>
-    <!-- <append MODEL="clm"> -I/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</append> -->
+    <!-- <append COMP_NAME="clm"> -I/lustre/or-hydra/cades-ccsi/$USER/models/pflotran-interface/src/clm-pflotran</append> -->
   </FFLAGS>
   <FIXEDFLAGS>
     <base>  -ffixed-form </base>
@@ -984,8 +984,8 @@ for mct, etc.
   <LAPACK_LIBDIR>/software/tools/compilers/intel_2017/mkl/lib/intel64</LAPACK_LIBDIR>
   <LDFLAGS>
     <append compile_threaded="TRUE"> -fopenmp </append>
-    <append MODEL="driver"> -L$NETCDF_PATH/lib -Wl,-rpath=$NETCDF_PATH/lib -lnetcdff -lnetcdf </append>
-    <!-- <append MODEL="driver"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran $ENV{PETSC_LIB} </append> -->
+    <append COMP_CLASS="cpl"> -L$NETCDF_PATH/lib -Wl,-rpath=$NETCDF_PATH/lib -lnetcdff -lnetcdf </append>
+    <!-- <append COMP_CLASS="cpl"> -L$ENV{CLM_PFLOTRAN_SOURCE_DIR} -lpflotran $ENV{PETSC_LIB} </append> -->
   </LDFLAGS>
   <MPICC>mpicc</MPICC>
   <MPICXX>mpic++</MPICXX>
@@ -1027,7 +1027,7 @@ for mct, etc.
       "-nan" is an important flag. currently, it doesn't work for pio, it is only used for "cam" model.
  -->
     <append DEBUG="TRUE">  -C=all  -g  -O0 -v  </append>
-    <append DEBUG="TRUE" MODEL="cam">  -C=all  -g  -nan -O0 -v  </append>
+    <append DEBUG="TRUE" COMP_NAME="cam">  -C=all  -g  -nan -O0 -v  </append>
   </FFLAGS>
   <LDFLAGS>
     <append compile_threaded="TRUE">  </append>
@@ -1138,7 +1138,7 @@ for mct, etc.
 <compiler MACH="compy" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
@@ -1164,7 +1164,7 @@ for mct, etc.
 <compiler MACH="compy" COMPILER="pgi">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+    <append COMP_NAME="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
   <CXX_LIBS>
     <base>-lstdc++</base>
@@ -1318,7 +1318,7 @@ for mct, etc.
 
 <compiler MACH="eddi" COMPILER="gnu">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
+    <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY -DHAVE_BACKTRACE </append>
   </CPPDEFS>
   <NETCDF_PATH>$ENV{NETCDF_HOME}</NETCDF_PATH>
   <SLIBS>
@@ -1334,7 +1334,7 @@ for mct, etc.
     <base> --host=Linux </base>
   </CONFIG_ARGS>
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_PAPI </append>
+    <append COMP_NAME="gptl"> -DHAVE_PAPI </append>
   </CPPDEFS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2  </append>
@@ -1419,7 +1419,7 @@ for mct, etc.
 
 <compiler MACH="lawrencium-lr2" COMPILER="intel">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
+    <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
   <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
@@ -1430,7 +1430,7 @@ for mct, etc.
 
 <compiler MACH="lawrencium-lr3" COMPILER="intel">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
+    <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
   <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
@@ -1441,7 +1441,7 @@ for mct, etc.
 
 <compiler MACH="lawrencium-lr6" COMPILER="intel">
   <CPPDEFS>
-    <append MODEL="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
+    <append COMP_NAME="gptl"> -DHAVE_VPRINTF -DHAVE_GETTIMEOFDAY </append>
   </CPPDEFS>
   <LAPACK_LIBDIR>/global/software/sl-6.x86_64/modules/intel/2016.1.150/lapack/3.6.0-intel/lib</LAPACK_LIBDIR>
   <NETCDF_PATH>$ENV{NETCDF_DIR}</NETCDF_PATH>
@@ -1574,7 +1574,7 @@ for mct, etc.
   <LDFLAGS>
     <base> -mkl -lstdc++ </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
-    <append MODEL="driver">-L$(NETCDF_FORTRAN_PATH)/lib64</append>
+    <append COMP_CLASS="cpl">-L$(NETCDF_FORTRAN_PATH)/lib64</append>
   </LDFLAGS>
   <FIXEDFLAGS>
     <base> -fixed -132 </base>
@@ -1803,7 +1803,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CONFIG_ARGS>
   <CPPDEFS>
     <append> -DLINUX </append>
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
+    <append COMP_NAME="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
     <append> -DARCH_MIC_KNL </append>
   </CPPDEFS>
   <FFLAGS>
@@ -1900,6 +1900,10 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
     <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
   </LDFLAGS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
   <!--
   Summit (backup in case defaults are not picking up):
   <CXX_LIBS>
@@ -1928,11 +1932,19 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 -DSUMMITDEV_PGI </append>
   </FFLAGS>
+  <CPPDEFS>
+    <append> -DGPU </append>
+  </CPPDEFS>
+  <KOKKOS_OPTIONS> --arch=Power9,Volta70 --with-cuda=$ENV{CUDA_DIR} --with-cuda-options=enable_lambda</KOKKOS_OPTIONS>
   <LDFLAGS>
     <append>-ta=tesla:cc70,pinned</append>
     <append>-L$ENV{NETCDF_C_PATH}/lib -lnetcdf -L$ENV{NETCDF_FORTRAN_PATH}/lib -lnetcdff -L$ENV{ESSL_PATH}/lib64 -lessl -L$ENV{NETLIB_LAPACK_PATH}/lib -llapack</append>
     <append MPILIB="!mpi-serial"> -L$ENV{PNETCDF_PATH}/lib -lpnetcdf -L$ENV{HDF5_PATH}/lib -lhdf5_hl -lhdf5 </append>
   </LDFLAGS>
+  <CXX_LINKER>FORTRAN</CXX_LINKER>
+  <CXX_LIBS>
+    <base>-lstdc++</base>
+  </CXX_LIBS>
   <MPICC> mpicc </MPICC>
   <MPICXX> mpiCC </MPICXX>
   <MPIFC> mpif90 </MPIFC>
@@ -2170,7 +2182,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   </CXX_LIBS>
   <FFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
-    <append MODEL="glc"> -target-cpu=istanbul </append>
+    <append COMP_NAME="glc"> -target-cpu=istanbul </append>
   </FFLAGS>
   <SLIBS>
     <append MPILIB="mpich">$SHELL{nf-config --flibs} </append>

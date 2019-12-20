@@ -2,9 +2,7 @@
 #include "config.h"
 #endif
 
-module gllfvremap_test_mod
-  ! Test gllfvremap's main API.
-
+module gllfvremap_util_mod
   use hybrid_mod, only: hybrid_t
   use kinds, only: real_kind
   use dimensions_mod, only: nelemd, np, nlev, nlevp, qsize
@@ -33,7 +31,11 @@ module gllfvremap_test_mod
 
   type (PhysgridData_t), private :: pg_data
 
-  public :: gfr_check_api
+  public :: &
+       ! Test gllfvremap's main API.
+       gfr_check_api, &
+       ! Convert a topography file from pure GLL to physgrid format.
+       gfr_convert_topo
 
 contains
   
@@ -555,4 +557,76 @@ contains
     !$omp barrier
     if (hybrid%ithr == 0) ftype = ftype_in
   end subroutine gfr_check_api
-end module gllfvremap_test_mod
+
+  subroutine gfr_convert_topo(par, elem, nphys, intopofn, outtopoprefix)
+    ! Read a pure-GLL topography file. Remap all fields to physgrid. Write a new
+    ! topography file that contains physgrid data, plus ncol_d and PHIS_d that
+    ! are the original GLL data.
+    !   The resulting file has physgrid PHIS data that are consistent with
+    ! PHIS_d in the sense that an integral of either one over a finite volume
+    ! subcell has the same value.
+
+#ifndef CAM
+    use common_io_mod, only: varname_len
+    use gllfvremap_mod, only: gfr_init, gfr_finish, gfr_dyn_to_fv_phys_topo_data, gfr_f_get_latlon
+    use interpolate_driver_mod, only: pio_read_gll_topo_file, pio_write_physgrid_topo_file
+    use physical_constants, only: dd_pi
+#endif
+    use parallel_mod, only: parallel_t
+
+    type (parallel_t), intent(in) :: par
+    type (element_t), intent(inout) :: elem(:)
+    integer, intent(in) :: nphys
+    character(*), intent(in) :: intopofn, outtopoprefix
+
+#ifndef CAM
+    real(real_kind), allocatable :: gll_fields(:,:,:,:), pg_fields(:,:,:), latlon(:,:,:)
+    integer :: unit, nf2, vari, phisidx, ie, i, j, k
+    logical :: square, augment
+    character(len=varname_len) :: fieldnames(5)
+
+    nf2 = nphys*nphys
+    call gfr_init(par, elem, nphys, check=.true.)
+
+    allocate(gll_fields(np,np,nelemd,5), pg_fields(nf2,nelemd,5), latlon(nf2,nelemd,2))
+
+    call pio_read_gll_topo_file(intopofn, elem, par, gll_fields, fieldnames)
+
+    do vari = 1,size(fieldnames)
+       if (trim(fieldnames(vari)) == 'PHIS') then
+          do ie = 1,nelemd
+             elem(ie)%state%phis = gll_fields(:,:,ie,vari)
+          end do
+          exit
+       end if
+    end do
+
+    do vari = 1,size(fieldnames)
+       square = fieldnames(vari)(1:3) == 'SGH'
+       augment = trim(fieldnames(vari)) == 'SGH'
+       call gfr_dyn_to_fv_phys_topo_data(par, elem, 1, nelemd, &
+            gll_fields(:,:,:,vari), np*np*nelemd, pg_fields(:,:,vari), nf2*nelemd, &
+            square, augment)
+    end do
+
+    do ie = 1,nelemd
+       do j = 1,nphys
+          do i = 1,nphys
+             k = nphys*(j-1) + i
+             call gfr_f_get_latlon(ie, i, j, latlon(k,ie,1), latlon(k,ie,2))
+          end do
+       end do
+    end do
+    ! Convert to degrees.
+    latlon = latlon*(180.0_real_kind/dd_pi)
+
+    call gfr_finish()
+
+    call pio_write_physgrid_topo_file(intopofn, outtopoprefix, elem, par, &
+         gll_fields, pg_fields, latlon, fieldnames, nphys, &
+         'Converted from '// trim(intopofn) // ' by HOMME gfr_convert_topo')
+
+    deallocate(gll_fields, pg_fields, latlon)
+#endif
+  end subroutine gfr_convert_topo
+end module gllfvremap_util_mod

@@ -5,7 +5,8 @@
 <cosp_lite>.true.</cosp_lite>
 
 <!-- Atmosphere initial condition -->
-<ncdata>atm/cam/inic/homme/20180716.DECKv1b_A3.ne30_oEC.edison.cam.i.2010-01-01-00000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne30np4" nlev="72" >atm/cam/inic/homme/20180716.DECKv1b_A3.ne30_oEC.edison.cam.i.2010-01-01-00000.nc</ncdata>
+<ncdata dyn="se" hgrid="ne0np4_northamericax4v1" nlev="72" >atm/cam/inic/homme/cami_0001-01-01_northamericax4v1_c190709.nc</ncdata>
 
 <!-- Solar constant from CMIP6 input4MIPS -->
 <solar_data_file>atm/cam/solar/Solar_2010control_input4MIPS_c20181017.nc</solar_data_file>
@@ -152,6 +153,9 @@
 <linoz_data_file            >linoz1850-2015_2010JPL_CMIP6_10deg_58km_c20171109.nc</linoz_data_file>
 <linoz_data_path            >atm/cam/chem/trop_mozart/ub</linoz_data_path>
 <linoz_data_type            >CYCLICAL</linoz_data_type>
+
+<!-- Turn off ozone dry deposition, as Linoz O3v2 and ozone are not separated for now. Need to turn on ozone dry deposition when interactive tropospheric chemistry is implemented -->
+<drydep_list            >'H2O2', 'H2SO4', 'SO2'</drydep_list>
 
 <!-- sim_year used for CLM datasets -->
 <sim_year>2015</sim_year>

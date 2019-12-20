@@ -117,6 +117,7 @@ module clm_driver
   use clm_instMod            , only : surfalb_vars
   use clm_instMod            , only : surfrad_vars
   use clm_instMod            , only : temperature_vars
+  use clm_instMod            , only : col_es
   use clm_instMod            , only : waterflux_vars
   use clm_instMod            , only : waterstate_vars
   use clm_instMod            , only : atm2lnd_vars
@@ -1341,10 +1342,10 @@ contains
 
     call t_startf('lnd2atm')
     call lnd2atm(bounds_proc,                                            &
-         atm2lnd_vars, surfalb_vars, temperature_vars, frictionvel_vars, &
+         atm2lnd_vars, surfalb_vars, frictionvel_vars, &
          waterstate_vars, waterflux_vars, energyflux_vars,               &
          solarabs_vars, carbonflux_vars, drydepvel_vars,                 &
-         vocemis_vars, dust_vars, ch4_vars, lnd2atm_vars) 
+         vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
     call t_stopf('lnd2atm')
 
     ! ============================================================================

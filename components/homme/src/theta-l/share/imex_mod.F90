@@ -54,8 +54,12 @@ contains
     enddo
   end subroutine compute_gwphis
 
-  subroutine compute_stage_value_dirk(n0,np1,alphadt,qn0,dt2,elem,hvcoord,hybrid,&
-       deriv,nets,nete,itercount,itererr,nm1)
+
+
+
+
+  subroutine compute_stage_value_dirk(nm1,alphadt_nm1,n0,alphadt_n0,np1,dt2,qn0,elem,hvcoord,hybrid,&
+       deriv,nets,nete,itercount,itererr)
     !===================================================================================
     ! this subroutine solves a stage value equation for a DIRK method which takes the form
     !
@@ -67,8 +71,8 @@ contains
     ! w_0 = w(np1)
     ! phi_0 = phi(np1)
     ! Then solve (ovewriting w(np1),phi(np1): 
-    ! w(np1) = w_0 + alphadt1 * SW(n0)  + alphadt1*SW(nm1) +  dt2*SW(np1)
-    ! phi(np1) = phi_0 + alphadt1 * SPHI(n0)  + alphadt1*SPHI(nm1) +  dt2*SPHI(np1)
+    ! w(np1) = w_0 + alphadt_n0 * SW(n0)  + alphadt_nm1*SW(nm1) +  dt2*SW(np1)
+    ! phi(np1) = phi_0 + alphadt_n0 * SPHI(n0)  + alphadt_nm1*SPHI(nm1) +  dt2*SPHI(np1)
     !
     ! SW(nt) = g*dpnh_dp_i(nt)-1
     ! SPHI(nt) = g*w(nt) -g*a(k) u(nt) dot grad_phis
@@ -77,31 +81,29 @@ contains
     ! compute_gwphis()            used to compute g*a(k) u(nt) dot grad_phis  in SPHI(nt)   
     !
     ! We then precompute:
-    !  w_rhs = w_0 + alphadt1 * SW(n0)  + alphadt1*SW(nm1) 
-    !  phi_rhs = w_0 + alphadt1 * SPHI(n0)  + alphadt1*SPHI(nm1) -  dt2*compute_gwphi(np1)
-    ! and solve, via Newton iteraiton:
+    !  w_rhs = w_0 + alphadt_n0 * SW(n0)  + alphadt_nm1*SW(nm1) 
+    !  phi_rhs = w_0 + alphad_n0 * SPHI(n0)  + alphadt1_nm1*SPHI(nm1) -  dt2*compute_gwphi(np1)
+    ! and solve, via Newton iteration:
     !   w(np1) = w_rhs + dt2*SW(np1)
     !   phi(np1) = phi_rhs + dt2*g*w(np1)
     !
     !===================================================================================
 
-    integer, intent(in) :: n0,np1,qn0,nets,nete
+    integer, intent(in) :: nm1,n0,np1,qn0,nets,nete
     real (kind=real_kind), intent(in) :: dt2
     integer :: itercount
     real (kind=real_kind) :: itererr
-    real (kind=real_kind), intent(in) :: alphadt
+    real (kind=real_kind), intent(in) :: alphadt_n0,alphadt_nm1
 
     type (hvcoord_t)     , intent(in) :: hvcoord
     type (hybrid_t)      , intent(in) :: hybrid
     type (element_t)     , intent(inout), target :: elem(:)
     type (derivative_t)  , intent(in) :: deriv
-    integer, optional :: nm1
 
 
     ! local
     real (kind=real_kind), pointer, dimension(:,:,:)   :: phi_np1
-    real (kind=real_kind), pointer, dimension(:,:,:)   :: dp3d
-    real (kind=real_kind), pointer, dimension(:,:,:)   :: vtheta_dp
+    real (kind=real_kind), pointer, dimension(:,:,:)   :: w_np1
     real (kind=real_kind) :: JacD(nlev,np,np)  , JacL(nlev-1,np,np)
     real (kind=real_kind) :: JacU(nlev-1,np,np), JacU2(nlev-2,np,np)
     real (kind=real_kind) :: pnh(np,np,nlev)     ! nh (nonydro) pressure
@@ -111,7 +113,6 @@ contains
     real (kind=real_kind) :: dphi(np,np,nlev)    
     real (kind=real_kind) :: dphi_n0(np,np,nlev)    
     real (kind=real_kind) :: phi_n0(np,np,nlevp)    
-    real (kind=real_kind) :: delta_phi(np,np,nlevp)    ! phi_np1-phi_n0
     real (kind=real_kind) :: Ipiv(nlev,np,np)
     real (kind=real_kind) :: Fn(np,np,nlev),x(nlev,np,np)
     real (kind=real_kind) :: gwh_i(np,np,nlevp)  ! w hydrostatic
@@ -121,12 +122,13 @@ contains
     real (kind=real_kind) :: Jac2U(nlev-1,np,np)
 
 
-    real (kind=real_kind) :: wgdtmax
+    real (kind=real_kind) :: wmax
     integer :: maxiter
-    real*8 :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm,dt3,alpha
-
+    real (kind=real_kind) :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm,dt3,alpha
+    real (kind=real_kind) :: dw,dx,alpha_k
     integer :: i,j,k,l,ie,info(np,np),nt
     integer :: nsafe
+
 #undef NEWTONCOND
 #ifdef NEWTONCOND
     real*8 :: DLANGT  ! external
@@ -138,30 +140,30 @@ contains
 
     ! dirk settings
     maxiter=20
-    deltatol=1.0e-13_real_kind  ! exit if newton increment < deltatol
+    deltatol=1.0e-11_real_kind  ! exit if newton increment < deltatol
+
     !restol=1.0e-13_real_kind    ! exit if residual < restol  
     ! condition number and thus residual depends strongly on dt and min(dz)
     ! more work needed to exit iteration early based on residual error
-    delta_phi(:,:,nlevp)=0
     min_rcond=1.0e20_real_kind
 
     do ie=nets,nete
+       phi_n0 = elem(ie)%state%phinh_i(:,:,:,np1)
        w_n0 = elem(ie)%state%w_i(:,:,:,np1)
-       wgdtmax=max(1d0,maxval(abs(w_n0)))*abs(dt2)*g
-       ! approximate the initial error of f(x) \approx 0
-       vtheta_dp  => elem(ie)%state%vtheta_dp(:,:,:,np1)
+       wmax=max(1d0,maxval(abs(w_n0)))
+
        phi_np1 => elem(ie)%state%phinh_i(:,:,:,np1)
+       w_np1 => elem(ie)%state%w_i(:,:,:,np1)
 
-       phi_n0 = phi_np1
 
-       if (alphadt.ne.0d0) then ! add dt*alpha*S(un0) to the rhs
-          dt3=alphadt
+       if (alphadt_n0.ne.0d0) then ! add dt*alpha*S(un0) to the rhs
+          dt3=alphadt_n0
           nt=n0
           call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt), &
                elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),pnh,   &
-               exner,dpnh_dp_i,caller='dirk0')
+               exner,dpnh_dp_i,caller='dirkn0')
           w_n0(:,:,1:nlev)     = w_n0(:,:,1:nlev) + &
-               dt3*g*(dpnh_dp_i(:,:,1:nlev)-1d0)
+               dt3*g*(dpnh_dp_i(:,:,1:nlev)-1)
 
           call compute_gwphis(gwh_i,elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%v(:,:,:,:,nt),&
                elem(ie)%derived%gradphis,hvcoord)
@@ -170,14 +172,14 @@ contains
        end if
 
 
-       if (present(nm1)) then ! add dt*alpha*S(unm1) to the rhs
-          dt3=alphadt
+       if (alphadt_nm1.ne.0d0) then ! add dt*alpha*S(unm1) to the rhs
+          dt3=alphadt_nm1
           nt=nm1
           call pnh_and_exner_from_eos(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,nt), &
                elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%phinh_i(:,:,:,nt),pnh,   &
-               exner,dpnh_dp_i,caller='dirk0')
+               exner,dpnh_dp_i,caller='dirknm1')
           w_n0(:,:,1:nlev)     = w_n0(:,:,1:nlev) + &
-               dt3*g*(dpnh_dp_i(:,:,1:nlev)-1d0)
+               dt3*g*(dpnh_dp_i(:,:,1:nlev)-1)
 
           call compute_gwphis(gwh_i,elem(ie)%state%dp3d(:,:,:,nt),elem(ie)%state%v(:,:,:,:,nt),&
                elem(ie)%derived%gradphis,hvcoord)
@@ -191,37 +193,57 @@ contains
             elem(ie)%derived%gradphis,hvcoord)
        phi_n0(:,:,1:nlev) = phi_n0(:,:,1:nlev) -  dt2*gwh_i(:,:,1:nlev)
 
-       dp3d  => elem(ie)%state%dp3d(:,:,:,np1)
 #if 0
+       ! w(np1) as initial guess:
+       phi_np1(:,:,1:nlev) =  phi_n0(:,:,1:nlev) +  dt2*g*w_np1(:,:,1:nlev)
+#endif
+#if 0
+       ! phi_np1 as initial guess:
+       w_np1(:,:,1:nlev) = (phi_np1(:,:,1:nlev) -  phi_n0(:,:,1:nlev) )/(dt2*g)
+#endif
+#if 0
+       ! wh_i as initial guess:
+       w_np1(:,:,1:nlev)=gwh_i(:,:,1:nlev)/g  
+       phi_np1(:,:,1:nlev) =  phi_n0(:,:,1:nlev) +  dt2*g*w_np1(:,:,1:nlev)
+#endif
+#if 1
        ! use hydrostatic for initial guess
-       call phi_from_eos(hvcoord,elem(ie)%state%phis,vtheta_dp,dp3d,phi_np1)
+       call phi_from_eos(hvcoord,elem(ie)%state%phis,elem(ie)%state%vtheta_dp(:,:,:,np1),&
+            elem(ie)%state%dp3d(:,:,:,np1),phi_np1)
+       w_np1(:,:,1:nlev) = (phi_np1(:,:,1:nlev) -  phi_n0(:,:,1:nlev) )/(dt2*g)
 #endif
 
-       ! newton iteration will iterate of d(phi)/deta.  initialize:
+       ! initial residual
        do k=1,nlev
-          dphi_n0(:,:,k)=phi_n0(:,:,k+1)-phi_n0(:,:,k)
           dphi(:,:,k)=phi_np1(:,:,k+1)-phi_np1(:,:,k)
+          dphi_n0(:,:,k)=phi_n0(:,:,k+1)-phi_n0(:,:,k)
        enddo
 
+       nsafe=0
        do k=1,nlev
           do j=1,np
              do i=1,np
                 if ( dphi(i,j,k)  > -g) then
-                   write(iulog,*) 'WARNING:IMEX inital PHI is bad, delta z < 1m. ie,i,j,k=',ie,i,j,k
+                   write(iulog,*) 'WARNING:IMEX limiting initial guess. ie,i,j,k=',ie,i,j,k
                    write(iulog,*) 'dphi(i,j,k)=  ',dphi(i,j,k)
                    dphi(i,j,k)=-g
+                   nsafe=1
                 endif
              enddo
           enddo
        enddo
+       if (nsafe==1) then
+          ! in rare cases when limter was triggered, just recompute:
+          do k=nlev,1,-1  ! scan                                                                                                      
+             phi_np1(:,:,k) = phi_np1(:,:,k+1)-dphi(:,:,k)
+          enddo
+          w_np1(:,:,1:nlev) = (phi_np1(:,:,1:nlev) -  phi_n0(:,:,1:nlev) )/(dt2*g)
+       endif
+       call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),elem(ie)%state%dp3d(:,:,:,np1),&
+            dphi,pnh,exner,dpnh_dp_i,'dirk1')
+       Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - &
+            (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
-       ! initial residual
-       call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk1')
-       elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
-            (1.0-dpnh_dp_i(:,:,1:nlev))
-       do k=1,nlev
-          Fn(:,:,k) = (phi_np1(:,:,k) - phi_n0(:,:,k)) - dt2*g*(elem(ie)%state%w_i(:,:,k,np1))
-       enddo
 
 
        itercount=0
@@ -229,13 +251,13 @@ contains
 
           info(:,:) = 0
           ! numerical J:
-          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
+          !call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,0,1d-4,hvcoord,dpnh_dp_i,vtheta_dp) 
           ! analytic J:
-          call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,1) 
+          call get_dirk_jacobian(JacL,JacD,JacU,dt2,elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,1) 
 
           do i=1,np
              do j=1,np
-                x(1:nlev,i,j) = -Fn(i,j,1:nlev)  !+Fn(i,j,nlev+1:2*nlev,1)/(g*dt2))
+                x(1:nlev,i,j) = -Fn(i,j,1:nlev)  
 #ifdef HOMMEXX_BFB_TESTING
                 ! Note: the C function is designed to accept both single and double precision,
                 !       so we need to pass also the size of a real (last argument)
@@ -253,56 +275,61 @@ contains
                 ! Tridiagonal solve
                 call DGTTRS( 'N', nlev,1, JacL(:,i,j), JacD(:,i,j), JacU(:,i,j), JacU2(:,i,j), Ipiv(:,i,j),x(:,i,j), nlev, info(i,j) )
 #endif
-                ! update approximate solution of phi
-                do k=1,nlev-1
-                   dphi(i,j,k)=dphi(i,j,k) + x(k+1,i,j)-x(k,i,j)
-                enddo
-                dphi(i,j,nlev)=dphi(i,j,nlev) + (0 - x(nlev,i,j) )
 
-                alpha = 0
-                do nsafe=1,8
-                   if (all(dphi(i,j,1:nlev) < 0 ))  exit
-                   ! remove the last netwon increment, try reduced increment
-                   alpha = 1.0_real_kind/(2**nsafe)
-                   do k=1,nlev-1
-                      dphi(i,j,k)=dphi(i,j,k) - (x(k+1,i,j)-x(k,i,j))*alpha
-                   enddo
-                   dphi(i,j,nlev)=dphi(i,j,nlev) - (0-x(nlev,i,j))*alpha
-                enddo
-                if (nsafe>1) write(iulog,*) 'WARNING:IMEX reducing newton increment, nsafe=',nsafe
-                ! if nsafe>8, code will crash in next call to pnh_and_exner_from_eos
+                alpha = 1
+                do nsafe = 1,2
+                   do k = 1,nlev-1
+                      dphi(i,j,k) = dphi_n0(i,j,k) + &
+                           dt2*g*((w_np1(i,j,k+1) - w_np1(i,j,k)) + &
+                                  alpha*(x(k+1,i,j) - x(k,i,j)))
+                   end do
+                   dphi(i,j,nlev) = dphi_n0(i,j,nlev) - dt2*g*(w_np1(i,j,nlev) + alpha*x(nlev,i,j))
 
-                phi_np1(i,j,:) = phi_np1(i,j,:) + (1 - alpha)*x(:,i,j)
+                   if (nsafe == 2 .or. maxval(dphi(i,j,1:nlev)) < 0) exit
+
+                   ! Step halfway to the distance at which at least one dphi is 0.
+                   do k = 1,nlev
+                      if (k < nlev) then
+                         dx = x(k+1,i,j) - x(k,i,j)
+                         dw = w_np1(i,j,k+1) - w_np1(i,j,k)
+                      else
+                         dx = -x(k,i,j)
+                         dw = -w_np1(i,j,k)
+                      end if
+                      if (dx /= 0) then
+                         alpha_k = -(dphi_n0(i,j,k) + dt2*g*dw)/(dt2*g*dx)
+                         if (alpha_k >= 0) alpha = min(alpha, alpha_k)
+                      end if
+                   end do
+                   alpha = alpha/2
+                end do
+                w_np1(i,j,1:nlev) = w_np1(i,j,1:nlev) + alpha*x(1:nlev,i,j)
+                if (nsafe > 1) then
+                   write(iulog,*) 'WARNING:IMEX is reducing step length from 1 to',alpha
+                end if
+
+
+
              end do
           end do
-          do k=1,nlev
-             dphi(:,:,k) = phi_np1(:,:,k+1) - phi_np1(:,:,k)
-          end do
-          call pnh_and_exner_from_eos2(hvcoord,vtheta_dp,dp3d,dphi,pnh,exner,dpnh_dp_i,'dirk2')
 
-          ! update approximate solution of w
-          elem(ie)%state%w_i(:,:,1:nlev,np1) = w_n0(:,:,1:nlev) - g*dt2 * &
-               (1.0-dpnh_dp_i(:,:,1:nlev))
-          do k=1,nlev
-             Fn(:,:,k) = (phi_np1(:,:,k) - phi_n0(:,:,k)) - dt2*g*(elem(ie)%state%w_i(:,:,k,np1))
-          enddo
-          reserr=maxval(abs(Fn))/wgdtmax   ! residual error in phi tendency, relative to source term gw
+          call pnh_and_exner_from_eos2(hvcoord,elem(ie)%state%vtheta_dp(:,:,:,np1),&
+               elem(ie)%state%dp3d(:,:,:,np1),dphi,pnh,exner,dpnh_dp_i,'dirk2')
+          Fn(:,:,1:nlev) = w_np1(:,:,1:nlev) - (w_n0(:,:,1:nlev) + g*dt2 * (dpnh_dp_i(:,:,1:nlev)-1))
 
-          deltaerr=0
-          do k=1,nlev
-             ! delta residual:
-             do i=1,np
-                do j=1,np
-                   deltaerr=max(deltaerr, abs(x(k,i,j))/max(g,abs(dphi_n0(i,j,k))) )
-                enddo
-             enddo
-          enddo
+          reserr=maxval(abs(Fn))/(wmax*abs(dt2)) 
+          deltaerr=maxval(abs(x))/wmax
+
 
           ! update iteration count and error measure
           itercount=itercount+1
           !if (reserr < restol) exit
           if (deltaerr<deltatol) exit
        end do ! end do for the do while loop
+
+       ! update phi:
+       phi_np1(:,:,1:nlev) =  phi_n0(:,:,1:nlev) +  dt2*g*w_np1(:,:,1:nlev)
+
 
        ! keep track of running  max iteraitons and max error (reset after each diagnostics output)
        max_itercnt=max(itercount,max_itercnt)
@@ -320,10 +347,6 @@ contains
 #if !(defined(HOMMEXX_BFB_TESTING) && defined(CUDA_BUILD))
        if (itercount >= maxiter) then
           write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',deltaerr,reserr
-          do k=1,nlev
-             i=1 ; j=1
-             !print *,k,( abs(Fn(i,j,k))/wgdtmax
-          enddo
        end if
 #endif
     end do ! end do for the ie=nets,nete loop
