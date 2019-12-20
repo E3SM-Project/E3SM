@@ -3481,9 +3481,9 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
    qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
 
-! #ifdef SCREAM_CONFIG_IS_CMAKE
-!     use micro_p3_iso_f, only: rain_sedimentation_f
-! #endif
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use micro_p3_iso_f, only: rain_sedimentation_f
+#endif
 
    implicit none
    integer, intent(in) :: kts, kte
@@ -3523,14 +3523,14 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), dimension(kts:kte), target :: flux_qx
    real(rtype), dimension(kts:kte), target :: flux_nx
 
-! #ifdef SCREAM_CONFIG_IS_CMAKE
-!    if (use_cxx) then
-!       call rain_sedimentation_f(kts,kte,ktop,kbot,kdir,   &
-!            qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
-!            qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
-!       return
-!    endif
-! #endif
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call rain_sedimentation_f(kts,kte,ktop,kbot,kdir,   &
+           qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+           qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
+      return
+   endif
+#endif
 
    vs(1)%p => V_qr
    vs(2)%p => V_nr

@@ -56,6 +56,12 @@ void ice_sedimentation_c(
   Real* qitot, Real* qitot_incld, Real* nitot, Real* qirim, Real* qirim_incld, Real* birim, Real* birim_incld,
   Real* nitot_incld, Real* prt_sol, Real* qi_tend, Real* ni_tend);
 
+void rain_sedimentation_c(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qr_incld, Real* rho, Real* inv_rho, Real* rhofacr, Real* rcldm, Real* inv_dzq,
+  Real dt, Real odt,
+  Real* qr, Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* prt_liq, Real* rflx, Real* qr_tend, Real* nr_tend);
+
 void calc_bulk_rho_rime_c(Real qi_tot, Real* qi_rim, Real* bi_rim, Real* rho_rime);
 
 void compute_rain_fall_velocity_c(Real qr_incld, Real rcldm, Real rhofacr,
@@ -337,6 +343,53 @@ void ice_sedimentation(IceSedData& d)
                       &d.prt_sol, d.qi_tend, d.ni_tend);
 }
 
+RainSedData::RainSedData(
+  Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+  Real dt_, Real odt_, Real prt_liq_,
+  const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges) :
+  kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
+  dt(dt_), odt(odt_), prt_liq(prt_liq_),
+  m_nk((kte_ - kts_) + 1),
+  m_data( NUM_ARRAYS * m_nk, 0.0)
+{
+  std::array<Real**, NUM_ARRAYS> ptrs =
+    {&rho, &inv_rho, &rhofacr, &rcldm, &inv_dzq, &qr_incld,
+     &qr, &nr, &nr_incld, &mu_r, &lamr, &rflx, &qr_tend, &nr_tend};
+  gen_random_data(ranges, ptrs, m_data.data(), m_nk);
+
+  // overwrite inv_rho
+  for (Int k = 0; k < m_nk; ++k) {
+    inv_rho[k] = 1 / rho[k];
+  }
+}
+
+RainSedData::RainSedData(const RainSedData& rhs) :
+  kts(rhs.kts), kte(rhs.kte), ktop(rhs.ktop), kbot(rhs.kbot), kdir(rhs.kdir),
+  dt(rhs.dt), odt(rhs.odt), prt_liq(rhs.prt_liq),
+  m_nk(rhs.m_nk),
+  m_data(rhs.m_data)
+{
+  Int offset = 0;
+  Real* data_begin = m_data.data();
+
+  Real** ptrs[NUM_ARRAYS] =
+    {&rho, &inv_rho, &rhofacr, &rcldm, &inv_dzq, &qr_incld,
+     &qr, &nr, &nr_incld, &mu_r, &lamr, &rflx, &qr_tend, &nr_tend};
+
+  for (size_t i = 0; i < NUM_ARRAYS; ++i) {
+    *ptrs[i] = data_begin + offset;
+    offset += m_nk;
+  }
+}
+
+void rain_sedimentation(RainSedData& d)
+{
+  p3_init(true);
+  rain_sedimentation_c(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+                       d.qr_incld, d.rho, d.inv_rho, d.rhofacr, d.rcldm, d.inv_dzq,
+                       d.dt, d.odt,
+                       d.qr, d.nr, d.nr_incld, d.mu_r, d.lamr, &d.prt_liq, d.rflx, d.qr_tend, d.nr_tend);
+}
 
 void calc_bulk_rho_rime(CalcBulkRhoRimeData& d)
 {
@@ -901,6 +954,92 @@ void ice_sedimentation_f(
   Kokkos::Array<view_1d, 10> inout_views = {qitot_d, qitot_incld_d, nitot_d, nitot_incld_d, qirim_d, qirim_incld_d,
                                             birim_d, birim_incld_d, qi_tend_d, ni_tend_d};
   pack::device_to_host({qitot, qitot_incld, nitot, nitot_incld, qirim, qirim_incld, birim, birim_incld, qi_tend, ni_tend}, nk, inout_views);
+}
+
+void rain_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qr_incld, Real* rho, Real* inv_rho, Real* rhofacr, Real* rcldm, Real* inv_dzq,
+  Real dt, Real odt,
+  Real* qr, Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* prt_liq, Real* rflx, Real* qr_tend, Real* nr_tend)
+{
+  using P3F  = Functions<Real, DefaultDevice>;
+
+  using Spack      = typename P3F::Spack;
+  using view_1d    = typename P3F::view_1d<Spack>;
+  using KT         = typename P3F::KT;
+  using ExeSpace   = typename KT::ExeSpace;
+  using MemberType = typename P3F::MemberType;
+  using uview_1d   = typename P3F::uview_1d<Spack>;
+
+  scream_require_msg(kts == 1, "kts must be 1, got " << kts);
+
+  // Adjust for 0-based indexing
+  kts  -= 1;
+  kte  -= 1;
+  ktop -= 1;
+  kbot -= 1;
+
+  const Int nk = (kte - kts) + 1;
+
+  // Set up views
+  Kokkos::Array<view_1d, 14> temp_d;
+
+  pack::host_to_device({qr_incld, rho, inv_rho, rhofacr, rcldm, inv_dzq, qr, nr, nr_incld, mu_r, lamr, rflx, qr_tend, nr_tend},
+                       nk, temp_d);
+
+  view_1d
+    qr_incld_d   (temp_d[0]),
+    rho_d        (temp_d[1]),
+    inv_rho_d    (temp_d[2]),
+    rhofacr_d    (temp_d[3]),
+    rcldm_d      (temp_d[4]),
+    inv_dzq_d    (temp_d[5]),
+    qr_d         (temp_d[6]),
+    nr_d         (temp_d[7]),
+    nr_incld_d   (temp_d[8]),
+    mu_r_d       (temp_d[9]),
+    lamr_d       (temp_d[10]),
+    rflx_d       (temp_d[11]), // TODO: rflx has extra size of 1
+    qr_tend_d    (temp_d[12]),
+    nr_tend_d    (temp_d[13]);
+
+  // Call core function from kernel
+  auto vn_table = P3GlobalForFortran::vn_table();
+  auto vm_table = P3GlobalForFortran::vm_table();
+  auto policy = util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  WorkspaceManager<Spack> wsm(rho_d.extent(0), 4, policy);
+  Real my_prt_liq = 0;
+  Kokkos::parallel_reduce(policy, KOKKOS_LAMBDA(const MemberType& team, Real& prt_liq_k) {
+
+    uview_1d
+      uqr_incld_d   (temp_d[0]),
+      urho_d        (temp_d[1]),
+      uinv_rho_d    (temp_d[2]),
+      urhofacr_d    (temp_d[3]),
+      urcldm_d      (temp_d[4]),
+      uinv_dzq_d    (temp_d[5]),
+      uqr_d         (temp_d[6]),
+      unr_d         (temp_d[7]),
+      unr_incld_d   (temp_d[8]),
+      umu_r_d       (temp_d[9]),
+      ulamr_d       (temp_d[10]),
+      urflx_d       (temp_d[11]), // TODO: rflx has extra size of 1
+      uqr_tend_d    (temp_d[12]),
+      unr_tend_d    (temp_d[13]);
+
+    P3F::rain_sedimentation(
+      urho_d, uinv_rho_d, urhofacr_d, urcldm_d, uinv_dzq_d, uqr_incld_d,
+      team, wsm.get_workspace(team), vn_table, vm_table,
+      nk, ktop, kbot, kdir, dt, odt,
+      uqr_d, unr_d, unr_incld_d, umu_r_d, ulamr_d, urflx_d, uqr_tend_d, unr_tend_d,
+      prt_liq_k);
+
+  }, my_prt_liq);
+  *prt_liq += my_prt_liq;
+
+  // Sync back to host
+  Kokkos::Array<view_1d, 8> inout_views = {qr_d, nr_d, nr_incld_d, mu_r_d, lamr_d, rflx_d, qr_tend_d, nr_tend_d};
+  pack::device_to_host({qr, nr, nr_incld, mu_r, lamr, rflx, qr_tend, nr_tend}, nk, inout_views);
 }
 
 void cloud_water_autoconversion_f(Real rho_, Real qc_incld_, Real nc_incld_, Real* qcaut_, Real* ncautc_, Real* ncautr_){
