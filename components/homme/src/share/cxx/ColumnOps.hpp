@@ -488,9 +488,15 @@ public:
                                 [&](const int ilev, Scalar& accumulator){
       accumulator += input(ilev);
     },packed_sum);
+
+    // If last pack has garbage, we did not include it in the previous reduction,
+    // so manually add the last pack (only the non-garbage part)
     if (HAS_GARBAGE) {
       // Safety check: we assume on GPU VECTOR_SIZE=1.
       assert (!OnGpu<ExecSpace>::value);
+
+      // Note: no need to put a Kokkos::single, since this chunk on code only runs
+      //       on host, and we already exausted all layers of thread-parallelism.
       for (int k=0; k<LAST_PACK_LEN; ++k) {
         packed_sum[k] += input(LAST_PACK)[k];
       }

@@ -421,6 +421,7 @@ struct CaarFunctorImpl {
 
     // TODO: make this less hard-coded maybe?
     constexpr Real dp3d_thresh = 0.125;
+    constexpr Real vtheta_thresh = 10; // Kelvin
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
@@ -446,34 +447,17 @@ struct CaarFunctorImpl {
         result = result<=diff_as_real(k) ? result : diff_as_real(k);
       }, reducer);
 
+      auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
       if (min_diff<0) {
         // Compute vtheta = vtheta_dp/dp
-        auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                              [&](const int ilev) {
           vtheta_dp(ilev) /= dp(ilev);
         });
 
         // Gotta apply vertical mixing, to prevent levels from getting too thin.
-        // Node: last pack may contain some garbage if VECTOR_SIZE does not divide NUM_PHYSICA_LEV
-        Scalar col_mass = 0.0;
-        constexpr int NUM_SAFE_LEV = (NUM_PHYSICAL_LEV%VECTOR_SIZE)!=0 ?
-                                      NUM_LEV-1 : NUM_LEV;
-        Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_SAFE_LEV),
-                                [&](const int ilev, Scalar& result) {
-          result += diff(ilev);
-        },col_mass);
-        if (NUM_SAFE_LEV!=NUM_LEV) {
-          Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-            constexpr int LAST_PACK     = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
-            constexpr int LAST_PACK_END = ColInfo<NUM_PHYSICAL_LEV>::LastPackEnd;
-
-            for (int i=0; i<=LAST_PACK_END; ++i) {
-              col_mass[i] += diff(LAST_PACK)[i];
-            }
-          });
-        }
-        Real mass = col_mass.reduce_add();
+        Real mass = 0.0;
+        ColumnOps::column_reduction<NUM_PHYSICAL_LEV>(kv.team,diff,mass);
 
         if (mass<0) {
           Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
@@ -507,6 +491,19 @@ struct CaarFunctorImpl {
           vtheta_dp(ilev) *= dp(ilev);
         });
       }
+
+#if 1
+      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                           [&](const int ilev) {
+        // Check if vtheta is too low
+        // Note: another place where scream's masks could help
+        for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
+          if ( (vtheta_dp(ilev)[ivec] - vtheta_thresh*dp(ilev)[ivec]) < 0) {
+             vtheta_dp(ilev)[ivec]=vtheta_thresh*dp(ilev)[ivec];
+          }
+        }
+      });
+#endif
     });
     kv.team_barrier();
   }
@@ -1032,8 +1029,6 @@ struct CaarFunctorImpl {
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-        Scalar temp;
-
         if (m_rsplit>0) {
           dp_tens(ilev) = 0.0;
         }
@@ -1044,10 +1039,13 @@ struct CaarFunctorImpl {
         // Compute theta_tens
         // NOTE: if the condition is false, then theta_tens already contains div(v*theta*dp) already
         if (m_theta_advection_form==AdvectionForm::NonConservative) {
-          // m_buffers.temp is already storing vtheta_dp/dp
+          // We need a temp, since, if rsplit=0, theta_tens is already storing theta_vadv
+          Scalar temp = m_rsplit>0 ? 0.0 : theta_tens(ilev);
+
           theta_tens(ilev)  = div_vdp(ilev)*m_buffers.temp(kv.team_idx,igp,jgp,ilev);
           theta_tens(ilev) += m_buffers.grad_tmp(kv.team_idx,0,igp,jgp,ilev)*m_buffers.vdp(kv.team_idx,0,igp,jgp,ilev);
           theta_tens(ilev) += m_buffers.grad_tmp(kv.team_idx,1,igp,jgp,ilev)*m_buffers.vdp(kv.team_idx,1,igp,jgp,ilev);
+          theta_tens(ilev) += temp;
         }
       });
     });

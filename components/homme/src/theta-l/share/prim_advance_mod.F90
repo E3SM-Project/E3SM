@@ -2066,21 +2066,25 @@ contains
   warn=.false.
   do k=1,nlev
      if ( minval(vtheta_dp(:,:,k)-vtheta_thresh*dp3d(:,:,k))   <  0) then
+#ifndef HOMMEXX_BFB_TESTING
+        ! In bfb unit tests, we use (semi-)random inputs, so we expect to hit this.
+        ! Still, we don't want to fill up the console output
         write(iulog,*) 'WARNING:CAAR: theta<',vtheta_thresh,' applying limiter'
         write(iulog,*) 'k,vtheta(k): ',k,minval(vtheta_dp(:,:,k)/dp3d(:,:,k))
+#endif
         warn=.true.
      endif
   enddo
   if (warn) then
-  do k=1,nlev
-  do j = 1 , np
-     do i = 1 , np
-        if ( (vtheta_dp(i,j,k) - vtheta_thresh*dp3d(i,j,k)) < 0 ) then
-           vtheta_dp(i,j,k)=vtheta_thresh*dp3d(i,j,k)
-        endif
-     enddo
-  enddo
-  enddo
+    do k=1,nlev
+      do j = 1 , np
+         do i = 1 , np
+            if ( (vtheta_dp(i,j,k) - vtheta_thresh*dp3d(i,j,k)) < 0 ) then
+               vtheta_dp(i,j,k)=vtheta_thresh*dp3d(i,j,k)
+            endif
+         enddo
+      enddo
+    enddo
   endif
 #endif
 
