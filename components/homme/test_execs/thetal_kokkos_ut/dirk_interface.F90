@@ -67,7 +67,7 @@ contains
     call get_dirk_jacobian(JacL,JacD,JacU,dt2,dp3d,dphi,pnh,1)
   end subroutine get_dirk_jacobian_f90
 
-  subroutine c2f_f90(n, cnlev, cnlevp, dp3d, w_i, v, vtheta_dp, phinh_i, gradphis) bind(c)
+  subroutine c2f_f90(n, cnlev, cnlevp, dp3d, w_i, v, vtheta_dp, phinh_i, gradphis, phis) bind(c)
     use iso_c_binding,         only: c_int
     use dimensions_mod,        only: nlev, nlevp, np
     use geometry_interface_mod,only: elem
@@ -77,7 +77,8 @@ contains
     integer (kind=c_int), value, intent(in) :: n, cnlev, cnlevp
     real (kind=real_kind), intent(in) :: &
          dp3d(cnlev,np,np,ntl,n), w_i(cnlevp,np,np,ntl,n), v(cnlev,np,np,2,ntl,n), &
-         vtheta_dp(cnlev,np,np,ntl,n), phinh_i(cnlevp,np,np,ntl,n), gradphis(np,np,2,n)
+         vtheta_dp(cnlev,np,np,ntl,n), phinh_i(cnlevp,np,np,ntl,n), gradphis(np,np,2,n), &
+         phis(np,np,n)
 
     integer :: ie, t, k, j, i
 
@@ -104,6 +105,7 @@ contains
        end do
        do j = 1,np
           do i = 1,np
+             elem(ie)%state%phis(i,j) = phis(j,i,ie)
              elem(ie)%derived%gradphis(i,j,1) = gradphis(j,i,1,ie)
              elem(ie)%derived%gradphis(i,j,2) = gradphis(j,i,2,ie)
           end do
@@ -155,7 +157,7 @@ contains
     end do
   end subroutine f2c_f90
 
-  subroutine compute_stage_value_dirk_f90(nm1,n0,np1,alphadt,dt2) bind(c)
+  subroutine compute_stage_value_dirk_f90(nm1,alphadt_nm1,n0,alphadt_n0,np1,dt2) bind(c)
     use iso_c_binding,         only: c_int
     use hybrid_mod,            only: hybrid_t
     use derivative_mod,        only: derivative_t
@@ -164,23 +166,19 @@ contains
     use imex_mod,              only: compute_stage_value_dirk
 
     integer (kind=c_int), value, intent(in)  :: nm1, n0, np1
-    real (kind=real_kind), value, intent(in) :: alphadt, dt2
+    real (kind=real_kind), value, intent(in) :: alphadt_nm1, alphadt_n0, dt2
 
     ! compute_stage_value_dirk doesn't actually use these.
     type (hybrid_t) :: hybrid
     type (derivative_t) :: deriv
     integer :: qn0, itercount, nets, nete
     real (kind=real_kind) :: itererr
-    
+
     nets = 1
     nete = size(elem)
-    if (nm1 > 0) then
-       ! call compute_stage_value_dirk(n0, np1, alphadt, qn0, dt2, elem, hvcoord, hybrid, deriv, &
-            ! nets, nete, itercount, itererr, nm1)
-    else
-       ! call compute_stage_value_dirk(n0, np1, alphadt, qn0, dt2, elem, hvcoord, hybrid, deriv, &
-            ! nets, nete, itercount, itererr)
-    end if
+    call compute_stage_value_dirk(nm1, alphadt_nm1, n0, alphadt_n0, np1, dt2, &
+         qn0, elem, hvcoord, hybrid, deriv, nets, nete, itercount, itererr, &
+         verbosity_in=0)
   end subroutine compute_stage_value_dirk_f90
 
 end module dirk_interface

@@ -26,9 +26,9 @@ DirkFunctor::DirkFunctor (int nelem) {
 //       it in the cpp file.
 DirkFunctor::~DirkFunctor () = default;
 
-void DirkFunctor::run (int n0, int nm1, int np1, Real alphadt, Real dt2,
+void DirkFunctor::run (int nm1, Real alphadt_nm1, int n0, Real alphadt_n0, int np1, Real dt2,
                        const Elements& elements, const HybridVCoord& hvcoord) {
-  m_dirk_impl->run(n0, nm1, np1, alphadt, dt2, elements, hvcoord);
+  m_dirk_impl->run(nm1, alphadt_nm1, n0, alphadt_n0, np1, dt2, elements, hvcoord);
 }
 
 } // Namespace Homme

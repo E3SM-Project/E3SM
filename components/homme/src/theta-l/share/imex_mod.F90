@@ -59,7 +59,7 @@ contains
 
 
   subroutine compute_stage_value_dirk(nm1,alphadt_nm1,n0,alphadt_n0,np1,dt2,qn0,elem,hvcoord,hybrid,&
-       deriv,nets,nete,itercount,itererr)
+       deriv,nets,nete,itercount,itererr,verbosity_in)
     !===================================================================================
     ! this subroutine solves a stage value equation for a DIRK method which takes the form
     !
@@ -94,6 +94,7 @@ contains
     integer :: itercount
     real (kind=real_kind) :: itererr
     real (kind=real_kind), intent(in) :: alphadt_n0,alphadt_nm1
+    integer, intent(in), optional :: verbosity_in
 
     type (hvcoord_t)     , intent(in) :: hvcoord
     type (hybrid_t)      , intent(in) :: hybrid
@@ -126,8 +127,11 @@ contains
     integer :: maxiter
     real (kind=real_kind) :: deltatol,restol,deltaerr,reserr,rcond,min_rcond,anorm,dt3,alpha
     real (kind=real_kind) :: dw,dx,alpha_k
-    integer :: i,j,k,l,ie,info(np,np),nt
+    integer :: i,j,k,l,ie,info(np,np),nt,verbosity
     integer :: nsafe
+
+    verbosity = 1
+    if (present(verbosity_in)) verbosity = verbosity_in
 
 #undef NEWTONCOND
 #ifdef NEWTONCOND
@@ -224,8 +228,10 @@ contains
           do j=1,np
              do i=1,np
                 if ( dphi(i,j,k)  > -g) then
+                   if (verbosity > 0) then
                    write(iulog,*) 'WARNING:IMEX limiting initial guess. ie,i,j,k=',ie,i,j,k
                    write(iulog,*) 'dphi(i,j,k)=  ',dphi(i,j,k)
+                   endif
                    dphi(i,j,k)=-g
                    nsafe=1
                 endif
@@ -305,7 +311,9 @@ contains
                 end do
                 w_np1(i,j,1:nlev) = w_np1(i,j,1:nlev) + alpha*x(1:nlev,i,j)
                 if (nsafe > 1) then
+                   if (verbosity > 0) then
                    write(iulog,*) 'WARNING:IMEX is reducing step length from 1 to',alpha
+                   end if
                 end if
 
 
@@ -341,14 +349,11 @@ contains
        itererr=min(max_reserr,max_deltaerr) ! passed back to ARKODE
 
 
-! For BFB testing on GPU, we zero out some bits in calls to pow functions,
-! to preserve bfb GPU vs F90, so we *expect* issues in convergence.
-! In any other build, this should be concerning though.
-#if !(defined(HOMMEXX_BFB_TESTING) && defined(CUDA_BUILD))
        if (itercount >= maxiter) then
+          if (verbosity > 0) then
           write(iulog,*) 'WARNING:IMEX solver failed b/c max iteration count was met',deltaerr,reserr
+          end if
        end if
-#endif
     end do ! end do for the ie=nets,nete loop
 #ifdef NEWTONCOND
     if (hybrid%masterthread) print *,'max J condition number (mpi task0): ',1/min_rcond

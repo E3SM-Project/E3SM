@@ -24,10 +24,8 @@ public:
 
   ~DirkFunctor();
 
-  // Top-level interface, equivalent to compute_stage_value_dirk_stripped.
-  //   Set alphadt = 0 if the alphadt-dependent term is not to be added to the RHS.
-  //   Set nm1 = -1 if the nm1-dependent term is not to be added to the RHS.
-  void run(int n0, int nm1, int np1, Real alphadt, Real dt2,
+  // Top-level interface, equivalent to compute_stage_value_dirk.
+  void run(int nm1, Real alphadt_nm1, int n0, Real alphadt_n0, int np1, Real dt2,
            const Elements& elements, const HybridVCoord& hvcoord);
 
 private:

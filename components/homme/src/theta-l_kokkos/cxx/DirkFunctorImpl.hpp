@@ -115,7 +115,7 @@ struct DirkFunctorImpl {
     m_ls = LinearSystem("DirkFunctorImpl::m_ls", nteam);
   }
 
-  void run (int nm1, int n0, int np1, Real alphadt, Real dt2,
+  void run (int nm1, Real alphadt_nm1, int n0, Real alphadt_n0, int np1, Real dt2,
             const Elements& e, const HybridVCoord& hvcoord,
             const bool bfb_solver = false) {
     using Kokkos::subview;
@@ -199,13 +199,14 @@ struct DirkFunctorImpl {
       transpose(kv, nlev+1, subview(e_phinh_i,ie,np1,a,a,a), phi_n0);
       transpose(kv, nlev+1, subview(e_w_i    ,ie,np1,a,a,a), w_n0  );
       // Computed only in some cases.
-      if (alphadt != 0) {
-        accum_n0(alphadt, n0);
+      if (alphadt_n0 != 0) {
+        accum_n0(alphadt_n0, n0);
         kv.team_barrier();
-        if (nm1 >= 0) {
-          accum_n0(alphadt, nm1);
-          kv.team_barrier();
-        }
+      }
+      if (alphadt_nm1 != 0) {
+        assert(nm1 >= 0);
+        accum_n0(alphadt_nm1, nm1);
+        kv.team_barrier();
       }
       // Always computed.
       transpose4(np1);
@@ -305,6 +306,7 @@ struct DirkFunctorImpl {
           gk = gk0 + s,
           gi = gk / NP,
           gj = gk % NP;
+          if (gk >= scaln) break;
           dst(k,i)[s] = src(gi,gj,pk)[sk];
         }
       };
@@ -382,6 +384,7 @@ struct DirkFunctorImpl {
           idx = packn*i + s,
           gi = idx / NP,
           gj = idx % NP;
+          if (idx >= scaln) break;
           dp3dkm1[s] = dp3d(gi,gj,pkm1)[skm1];
           dp3dk  [s] = dp3d(gi,gj,pk  )[sk];
           v1km1  [s] = v (0,gi,gj,pkm1)[skm1];

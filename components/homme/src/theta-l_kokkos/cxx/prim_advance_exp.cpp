@@ -276,33 +276,33 @@ void imex_KG255_timestep(const TimeLevel& tl,
   dt = dt_dyn/4.0;
 
   caar.run(RKStageData(n0, n0, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  dirk.run(n0, -1, np1, a1*dt, a2*dt, elements, hvcoord);
+  dirk.run(nm1, 0.0, n0, a1*dt, np1, a2*dt, elements, hvcoord);
 
   // Stage 2
   dt = dt_dyn/6.0;
 
   caar.run(RKStageData(n0, np1, nm1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  dirk.run(n0, -1, nm1, a1*dt, a2*dt, elements, hvcoord);
+  dirk.run(nm1, 0.0, n0, a1*dt, nm1, a2*dt, elements, hvcoord);
 
   // Stage 3
   dt = 3.0*dt_dyn/8.0;
 
   caar.run(RKStageData(n0, nm1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  dirk.run(n0, -1, np1, a1*dt, a2*dt, elements, hvcoord);
+  dirk.run(nm1, 0.0, n0, a1*dt, np1, a2*dt, elements, hvcoord);
 
   // Stage 4
   dt = dt_dyn/2.0;
 
   caar.run(RKStageData(n0, np1, np1, qn0, dt, 0.0, 1.0, 0.0, 1.0));
-  dirk.run(n0, -1, np1, a1*dt, a2*dt, elements, hvcoord);
+  dirk.run(nm1, 0.0, n0, a1*dt, np1, a2*dt, elements, hvcoord);
 
   // Stage 5
   a1 = 6.0/22.0;
   a2 = 10.0/22.0;
-  dt = dt_dyn/2.0;
+  dt = dt_dyn;
 
   caar.run(RKStageData(n0, np1, np1, qn0, dt, eta_ave_w, 1.0, 0.0, 1.0));
-  dirk.run(n0, nm1, np1, a1*dt, a2*dt, elements, hvcoord);
+  dirk.run(nm1, a1*dt, n0, a1*dt, np1, a2*dt, elements, hvcoord);
 
   GPTLstop("IMEX_KG255");
 }
