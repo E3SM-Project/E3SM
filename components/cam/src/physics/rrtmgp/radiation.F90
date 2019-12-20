@@ -94,6 +94,15 @@ module radiation
    ! TODO: How does this differ if value is .false.?
    logical :: use_rad_dt_cosz  = .false. 
 
+   ! Flag to indicate whether to do aerosol optical calculations. This 
+   ! zeroes out the aerosol optical properties if False
+   logical :: do_aerosol_rad = .true. 
+
+   ! Value for prescribing an invariant solar constant (i.e. total solar 
+   ! irradiance at TOA). Used for idealized experiments such as RCE.
+   ! Disabled when value is less than 0.
+   real(r8) :: fixed_total_solar_irradiance = -1
+
    ! Model data that is not controlled by namelist fields specifically follows
    ! below.
 
@@ -187,7 +196,8 @@ contains
       use units,           only: getunit, freeunit
       use spmd_utils,      only: mpicom, mstrid=>masterprocid, &
                                  mpi_integer, mpi_logical, &
-                                 mpi_character, masterproc
+                                 mpi_character, masterproc, &
+                                 mpi_real8
       use time_manager,    only: get_step_size
       use cam_logfile,     only: iulog
 
@@ -202,10 +212,11 @@ contains
       character(len=cl) :: rrtmgp_coefficients_file_lw, rrtmgp_coefficients_file_sw
 
       ! Variables defined in namelist
-      namelist /radiation_nl/ rrtmgp_coefficients_file_lw, &
-                              rrtmgp_coefficients_file_sw, &
-                              iradsw, iradlw, irad_always, &
-                              use_rad_dt_cosz, spectralflux
+      namelist /radiation_nl/ rrtmgp_coefficients_file_lw,     &
+                              rrtmgp_coefficients_file_sw,     &
+                              iradsw, iradlw, irad_always,     &
+                              use_rad_dt_cosz, spectralflux,   &
+                              do_aerosol_rad, fixed_total_solar_irradiance
 
       ! Read the namelist, only if called from master process
       ! TODO: better documentation and cleaner logic here?
@@ -232,6 +243,8 @@ contains
       call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(do_aerosol_rad, 1, mpi_logical, mstrid, mpicom, ierr)
+      call mpibcast(fixed_total_solar_irradiance, 1, mpi_real8, mstrid, mpicom, ierr)
 #endif
 
       ! Set module data
@@ -253,7 +266,8 @@ contains
          write(iulog,*) 'RRTMGP radiation scheme parameters:'
          write(iulog,10) trim(coefficients_file_lw), trim(coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
-                         use_rad_dt_cosz, spectralflux
+                         use_rad_dt_cosz, spectralflux, &
+                         do_aerosol_rad, fixed_total_solar_irradiance
       end if
    10 format('  LW coefficents file: ',                                a/, &
              '  SW coefficents file: ',                                a/, &
@@ -261,7 +275,9 @@ contains
              '  Frequency (timesteps) of Longwave Radiation calc:   ',i5/, &
              '  SW/LW calc done every timestep for first N steps. N=',i5/, &
              '  Use average zenith angle:                           ',l5/, &
-             '  Output spectrally resolved fluxes:                  ',l5/)
+             '  Output spectrally resolved fluxes:                  ',l5/, &
+             '  Do aerosol radiative calculations:                  ',l5/, &
+             '  Fixed solar consant (disabled with -1):             ',f10.4/ )
 
    end subroutine radiation_readnl
 
@@ -1258,8 +1274,9 @@ contains
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: calculate_heating_rate
+      use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
+      use cam_control_mod, only: aqua_planet
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1335,8 +1352,15 @@ contains
       ! Send values for this chunk to history buffer
       call outfld('COSZRS', coszrs(1:ncol), ncol, state%lchnk)
 
-      ! Get orbital eccentricity factor to scale total sky irradiance
-      tsi_scaling = get_eccentricity_factor()
+      if (fixed_total_solar_irradiance<0) then
+         ! Get orbital eccentricity factor to scale total sky irradiance
+         tsi_scaling = get_eccentricity_factor()
+      else
+         ! For fixed TSI we divide by the default solar constant of 1360.9
+         ! At some point we will want to replace this with a method that 
+         ! retrieves the solar constant
+         tsi_scaling = fixed_total_solar_irradiance / 1360.9_r8
+      end if
 
       ! If the swrad_off flag is set, meaning we should not do SW radiation, then 
       ! we just set coszrs to zero everywhere. TODO: why not just set dosw false 
@@ -1398,6 +1422,12 @@ contains
       call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_allsky_day, do_direct=.true.)
       call initialize_rrtmgp_fluxes(nday, nlev_rad+1, nswbands, fluxes_clrsky_day, do_direct=.true.)
 
+      ! Make sure temperatures are within range for aqua planets
+      if (aqua_planet) then
+         call clip_values(tmid(1:ncol,1:nlev_rad)  , k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tmid', warn=.true.)
+         call clip_values(tint(1:ncol,1:nlev_rad+1), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), varname='tint', warn=.true.)
+      end if
+
       ! Do shortwave cloud optics calculations
       ! TODO: refactor the set_cloud_optics codes to allow passing arrays
       ! rather than state/pbuf so that we can use this for superparameterized
@@ -1430,14 +1460,20 @@ contains
       do icall = N_DIAG,0,-1
          if (active_calls(icall)) then
 
-            ! Get shortwave aerosol optics
-            call t_startf('rad_aerosol_optics_sw')
-            call set_aerosol_optics_sw(icall, state, pbuf, &
-                                       day_indices(1:nday), &
-                                       night_indices(1:nnight), &
-                                       is_cmip6_volc, &
-                                       aerosol_optics_sw)
-            call t_stopf('rad_aerosol_optics_sw')
+            if (do_aerosol_rad) then
+               ! Get shortwave aerosol optics
+               call t_startf('rad_aerosol_optics_sw')
+               call set_aerosol_optics_sw(icall, state, pbuf, &
+                                          day_indices(1:nday), &
+                                          night_indices(1:nnight), &
+                                          is_cmip6_volc, &
+                                          aerosol_optics_sw)
+               call t_stopf('rad_aerosol_optics_sw')
+            else
+               aerosol_optics_sw%tau(:,:,:) = 0
+               aerosol_optics_sw%ssa(:,:,:) = 0
+               aerosol_optics_sw%g  (:,:,:) = 0
+            end if
 
             ! Set gas concentrations (I believe the gases may change for
             ! different values of icall, which is why we do this within the
@@ -1515,8 +1551,9 @@ contains
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: calculate_heating_rate
+      use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
+      use cam_control_mod, only: aqua_planet
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1570,6 +1607,12 @@ contains
       ! TODO: set this more intelligently?
       surface_emissivity(1:nlwbands,1:ncol) = 1.0_r8
 
+      ! Make sure temperatures are within range for aqua planets
+      if (aqua_planet) then
+         call clip_values(tmid(1:ncol,1:nlev_rad)  , k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tmid', warn=.true.)
+         call clip_values(tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), varname='tint', warn=.true.)
+      end if
+
       ! Do longwave cloud optics calculations
       call t_startf('longwave cloud optics')
       call handle_error(cloud_optics_lw%alloc_1scl(ncol, nlev_rad, k_dist_lw, name='longwave cloud optics'))
@@ -1598,10 +1641,14 @@ contains
             call set_gas_concentrations(icall, state, pbuf, gas_concentrations)
             call t_stopf('rad_gas_concentrations_lw')
 
-            ! Get longwave aerosol optics
-            call t_startf('rad_aerosol_optics_lw')
-            call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
-            call t_stopf('rad_aerosol_optics_lw')
+            if (do_aerosol_rad) then
+               ! Get longwave aerosol optics
+               call t_startf('rad_aerosol_optics_lw')
+               call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
+               call t_stopf('rad_aerosol_optics_lw')
+            else
+               aerosol_optics_lw%tau(:,:,:) = 0
+            end if
 
             ! Do longwave radiative transfer calculations
             call t_startf('rad_calculations_lw')
