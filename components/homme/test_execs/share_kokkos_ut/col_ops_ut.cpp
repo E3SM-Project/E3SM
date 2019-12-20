@@ -183,6 +183,115 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
   }
 }
 
+TEST_CASE("col_ops_reduction", "packed_reduction") {
+
+  if (!OnGpu<ExecSpace>::value) {
+    constexpr int num_elems = 10;
+
+    ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_in  ("",num_elems);
+    ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> d_interface_field_in  ("",num_elems);
+    ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_out ("",num_elems);
+    ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> d_interface_field_out ("",num_elems);
+
+    auto h_midpoints_field_in  = Kokkos::create_mirror_view(d_midpoints_field_in);
+    auto h_interface_field_in  = Kokkos::create_mirror_view(d_interface_field_in);
+    auto h_midpoints_field_out = Kokkos::create_mirror_view(d_midpoints_field_out);
+    auto h_interface_field_out = Kokkos::create_mirror_view(d_interface_field_out);
+
+    std::random_device rd;
+    using rngAlg = std::mt19937_64;
+    rngAlg engine(rd());
+    std::uniform_real_distribution<Real> pdf(0.01, 1.0);
+    genRandArray(h_midpoints_field_in, engine, pdf);
+    genRandArray(h_interface_field_in, engine, pdf);
+    Kokkos::deep_copy(d_midpoints_field_in,h_midpoints_field_in);
+    Kokkos::deep_copy(d_interface_field_in,h_interface_field_in);
+    
+    // To use with std library for checking results
+    std::vector<double> mid_data(NUM_PHYSICAL_LEV);
+    std::vector<double> int_data(NUM_INTERFACE_LEV);
+
+    // Forward and inclusive
+    SECTION("packed") {
+      using CO = ColumnOps;
+      constexpr int NPL = NUM_PHYSICAL_LEV;
+      constexpr int NIL = NUM_INTERFACE_LEV;
+      Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
+                           KOKKOS_LAMBDA(const TeamMember& team) {
+        KernelVariables kv(team);
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+                             [&](const int idx) {
+          const int igp = idx / NP;
+          const int jgp = idx % NP;
+
+          // Providers
+          auto provide_field_mid = [&] (const int ilev)->Scalar {
+            return d_midpoints_field_in(kv.ie,igp,jgp,ilev);
+          };
+
+          auto provide_field_int = [&] (const int ilev)->Scalar {
+            return d_interface_field_in(kv.ie,igp,jgp,ilev);
+          };
+
+          using pfm_type = decltype(provide_field_mid);
+          using pfi_type = decltype(provide_field_int);
+          Real& mid_sum = d_midpoints_field_out(kv.ie,igp,jgp,0)[0];
+          Real& int_sum = d_interface_field_out(kv.ie,igp,jgp,0)[0];
+          CO::column_reduction<NPL,pfm_type,false>(kv, provide_field_mid, mid_sum);
+          CO::column_reduction<NIL,pfi_type,false>(kv, provide_field_int, int_sum);
+        });
+      });
+
+      Kokkos::deep_copy(h_midpoints_field_out,d_midpoints_field_out);
+      Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
+
+      for (int ie=0; ie<num_elems; ++ie) {
+        for (int igp=0; igp<NP; ++igp) {
+          for (int jgp=0; jgp<NP; ++jgp) {
+            // Compute using std functions
+
+            // Copy from host view to std vector
+            auto mid_in = viewAsReal(Homme::subview(h_midpoints_field_in,ie,igp,jgp));
+            auto int_in = viewAsReal(Homme::subview(h_interface_field_in,ie,igp,jgp));
+            std::copy_n(mid_in.data(),NUM_PHYSICAL_LEV,mid_data.begin());
+            std::copy_n(int_in.data(),NUM_INTERFACE_LEV,int_data.begin());
+
+            // Manuallly do the reduction, in the right order
+            Real sum_mid = 0.0;
+            Real sum_int = 0.0;
+
+            Real tmp;
+            for (int ivec=0; ivec<VECTOR_SIZE; ++ivec) {
+              tmp = 0.0;
+              for (int ilev=0; ilev<NUM_LEV-1; ++ilev) {
+                tmp += mid_data[ilev*VECTOR_SIZE+ivec];
+              }
+              sum_mid += tmp; 
+              tmp = 0.0;
+              for (int ilev=0; ilev<NUM_LEV_P-1; ++ilev) {
+                tmp += int_data[ilev*VECTOR_SIZE+ivec];
+              }
+              sum_int += tmp;
+            }
+            for (int ivec=0; ivec<ColInfo<NUM_PHYSICAL_LEV>::LastPackLen; ++ivec) {
+              sum_mid += mid_data[(NUM_LEV-1)*VECTOR_SIZE+ivec];
+            }
+            for (int ivec=0; ivec<ColInfo<NUM_INTERFACE_LEV>::LastPackLen; ++ivec) {
+              sum_int += int_data[(NUM_LEV_P-1)*VECTOR_SIZE+ivec];
+            }
+
+            // Check answer
+            auto mid_out = viewAsReal(Homme::subview(h_midpoints_field_out,ie,igp,jgp));
+            auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
+            REQUIRE (mid_out(0) == sum_mid);
+            REQUIRE (int_out(0) == sum_int);
+          }
+        }
+      }
+    }
+  }
+}
+
 TEST_CASE("col_ops_scan_sum", "scan_sum") {
 
   constexpr int num_elems = 10;

@@ -455,55 +455,63 @@ public:
     }
   }
 
-  template<int LENGTH, typename InputProvider>
+  // Note: using the extra arg (rather than ifdef inside the function body)
+  //       allows one to test the packed reduction behavior in a bfb build.
+  template<int LENGTH, typename InputProvider, bool PackedReduction =
+#ifdef HOMMEXX_BFB_TESTING
+      false
+#else
+      true
+#endif
+>
   KOKKOS_INLINE_FUNCTION
   static void column_reduction (const KernelVariables& kv,
                                 const InputProvider& input,
                                 Real& sum)
   {
-#ifdef HOMMEXX_BFB_TESTING
-    Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,LENGTH),
-                                [&](const int k, Real& accumulator) {
-      if (!OnGpu<ExecSpace>::value) {
-        const int ilev = k / VECTOR_SIZE;
-        const int ivec = k % VECTOR_SIZE;
-        accumulator += input(ilev)[ivec];
-      } else {
-        accumulator += input(k)[0];
+    if (PackedReduction) {
+      // To squeeze some perf out on CPU, do reduction at Scalar level,
+      // then reduce the Scalar at the end. Be CAREFUL: the last pack may
+      // contain some garbage if VECTOR_SIZE does not divide LENGTH!
+
+      constexpr int  NUM_PACKS     = ColInfo<LENGTH>::NumPacks;
+      constexpr int  LAST_PACK     = ColInfo<LENGTH>::LastPack;
+      constexpr int  LAST_PACK_LEN = ColInfo<LENGTH>::LastPackLen;
+      constexpr bool HAS_GARBAGE   = LAST_PACK_LEN!=VECTOR_SIZE;
+      constexpr int  NUM_PACKS_M1  = NUM_PACKS>0 ? NUM_PACKS-1 : 0;
+      constexpr int  LOOP_LENGTH   = HAS_GARBAGE ? NUM_PACKS_M1 : NUM_PACKS;
+
+      Scalar packed_sum;
+      Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,LOOP_LENGTH),
+                                  [&](const int ilev, Scalar& accumulator){
+        accumulator += input(ilev);
+      },packed_sum);
+
+      // If last pack has garbage, we did not include it in the previous reduction,
+      // so manually add the last pack (only the non-garbage part)
+      if (HAS_GARBAGE) {
+        // Safety check: we assume on GPU VECTOR_SIZE=1.
+        assert (!OnGpu<ExecSpace>::value);
+
+        // Note: no need to put a Kokkos::single, since this chunk on code only runs
+        //       on host, and we already exausted all layers of thread-parallelism.
+        for (int k=0; k<LAST_PACK_LEN; ++k) {
+          packed_sum[k] += input(LAST_PACK)[k];
+        }
       }
-    },sum);
-#else
-    // To squeeze some perf out on CPU, do reduction at Scalar level,
-    // then reduce the Scalar at the end. Be CAREFUL: the last pack may
-    // contain some garbage if VECTOR_SIZE does not divide LENGTH!
-
-    constexpr int  NUM_PACKS     = ColInfo<LENGTH>::NumPacks;
-    constexpr int  LAST_PACK     = ColInfo<LENGTH>::LastPack;
-    constexpr int  LAST_PACK_LEN = ColInfo<LENGTH>::LastPackLen;
-    constexpr bool HAS_GARBAGE   = LAST_PACK_LEN!=VECTOR_SIZE;
-    constexpr int  NUM_PACKS_M1  = NUM_PACKS>0 ? NUM_PACKS-1 : 0;
-    constexpr int  LOOP_LENGTH   = HAS_GARBAGE ? NUM_PACKS_M1 : NUM_PACKS;
-
-    Scalar packed_sum;
-    Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,LOOP_LENGTH),
-                                [&](const int ilev, Scalar& accumulator){
-      accumulator += input(ilev);
-    },packed_sum);
-
-    // If last pack has garbage, we did not include it in the previous reduction,
-    // so manually add the last pack (only the non-garbage part)
-    if (HAS_GARBAGE) {
-      // Safety check: we assume on GPU VECTOR_SIZE=1.
-      assert (!OnGpu<ExecSpace>::value);
-
-      // Note: no need to put a Kokkos::single, since this chunk on code only runs
-      //       on host, and we already exausted all layers of thread-parallelism.
-      for (int k=0; k<LAST_PACK_LEN; ++k) {
-        packed_sum[k] += input(LAST_PACK)[k];
-      }
+      sum = packed_sum.reduce_add();
+    } else {
+      Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,LENGTH),
+                                  [&](const int k, Real& accumulator) {
+        if (!OnGpu<ExecSpace>::value) {
+          const int ilev = k / VECTOR_SIZE;
+          const int ivec = k % VECTOR_SIZE;
+          accumulator += input(ilev)[ivec];
+        } else {
+          accumulator += input(k)[0];
+        }
+      },sum);
     }
-    sum = packed_sum.reduce_add();
-#endif
   }
 };
 
