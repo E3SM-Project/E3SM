@@ -12,6 +12,7 @@
 
 namespace Homme {
 
+class FunctorsBuffersManager;
 class DirkFunctorImpl;
 class Elements;
 class HybridVCoord;
@@ -23,6 +24,9 @@ public:
   DirkFunctor &operator=(const DirkFunctor &) = delete;
 
   ~DirkFunctor();
+
+  int requested_buffer_size() const;
+  void init_buffers(const FunctorsBuffersManager& fbm);
 
   // Top-level interface, equivalent to compute_stage_value_dirk.
   void run(int nm1, Real alphadt_nm1, int n0, Real alphadt_n0, int np1, Real dt2,

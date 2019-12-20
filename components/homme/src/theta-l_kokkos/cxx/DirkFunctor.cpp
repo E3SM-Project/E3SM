@@ -26,6 +26,14 @@ DirkFunctor::DirkFunctor (int nelem) {
 //       it in the cpp file.
 DirkFunctor::~DirkFunctor () = default;
 
+int DirkFunctor::requested_buffer_size () const {
+  return m_dirk_impl->requested_buffer_size();
+}
+
+void DirkFunctor::init_buffers (const FunctorsBuffersManager& fbm) {
+  m_dirk_impl->init_buffers(fbm);
+}
+
 void DirkFunctor::run (int nm1, Real alphadt_nm1, int n0, Real alphadt_n0, int np1, Real dt2,
                        const Elements& elements, const HybridVCoord& hvcoord) {
   m_dirk_impl->run(nm1, alphadt_nm1, n0, alphadt_n0, np1, dt2, elements, hvcoord);

@@ -34,197 +34,199 @@ SET_TARGET_PROPERTIES(thetal_kokkos_ut_lib PROPERTIES Fortran_MODULE_DIRECTORY $
 # Setting this once and for all, good for all unit tests.
 SET (CONFIG_DEFINES HAVE_CONFIG_H)
 
-### Equation of state unit tests
+IF (HOMMEXX_BFB_TESTING)
+  ### Equation of state unit tests
 
-SET (EOS_UT_CXX_SRCS
-  ${THETA_UT_DIR}/eos_ut.cpp
-)
+  SET (EOS_UT_CXX_SRCS
+    ${THETA_UT_DIR}/eos_ut.cpp
+    )
 
-SET (EOS_UT_F90_SRCS
-  ${THETA_UT_DIR}/eos_interface.F90
-)
+  SET (EOS_UT_F90_SRCS
+    ${THETA_UT_DIR}/eos_interface.F90
+    )
 
-SET (EOS_UT_INCLUDE_DIRS
-  ${SRC_THETA_DIR}/cxx
-  ${SRC_SHARE_DIR}
-  ${SRC_SHARE_DIR}/cxx
-  ${THETA_UT_DIR}
-  ${THETA_LIB_MODULE_DIR}
-  ${UTILS_TIMING_SRC_DIR}
-  ${UTILS_TIMING_BIN_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/share/cxx
-)
+  SET (EOS_UT_INCLUDE_DIRS
+    ${SRC_THETA_DIR}/cxx
+    ${SRC_SHARE_DIR}
+    ${SRC_SHARE_DIR}/cxx
+    ${THETA_UT_DIR}
+    ${THETA_LIB_MODULE_DIR}
+    ${UTILS_TIMING_SRC_DIR}
+    ${UTILS_TIMING_BIN_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/src/share/cxx
+    )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
-cxx_unit_test (eos_ut "${EOS_UT_F90_SRCS}" "${EOS_UT_CXX_SRCS}" "${EOS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
-TARGET_LINK_LIBRARIES(eos_ut thetal_kokkos_ut_lib)
+  IF (USE_NUM_PROCS)
+    SET (NUM_CPUS ${USE_NUM_PROCS})
+  ELSE()
+    SET (NUM_CPUS 1)
+  ENDIF()
+  cxx_unit_test (eos_ut "${EOS_UT_F90_SRCS}" "${EOS_UT_CXX_SRCS}" "${EOS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+  TARGET_LINK_LIBRARIES(eos_ut thetal_kokkos_ut_lib)
 
-### Element ops unit tests
+  ### Element ops unit tests
 
-SET (ELEM_OPS_UT_CXX_SRCS
-  ${THETA_UT_DIR}/elem_ops_ut.cpp
-)
+  SET (ELEM_OPS_UT_CXX_SRCS
+    ${THETA_UT_DIR}/elem_ops_ut.cpp
+    )
 
-SET (ELEM_OPS_UT_F90_SRCS
-  ${THETA_UT_DIR}/elem_ops_interface.F90
-)
+  SET (ELEM_OPS_UT_F90_SRCS
+    ${THETA_UT_DIR}/elem_ops_interface.F90
+    )
 
-SET (ELEM_OPS_UT_INCLUDE_DIRS
-  ${SRC_THETA_DIR}/cxx
-  ${SRC_SHARE_DIR}
-  ${SRC_SHARE_DIR}/cxx
-  ${THETA_UT_DIR}
-  ${THETA_LIB_MODULE_DIR}
-  ${UTILS_TIMING_SRC_DIR}
-  ${UTILS_TIMING_BIN_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/share/cxx
-)
+  SET (ELEM_OPS_UT_INCLUDE_DIRS
+    ${SRC_THETA_DIR}/cxx
+    ${SRC_SHARE_DIR}
+    ${SRC_SHARE_DIR}/cxx
+    ${THETA_UT_DIR}
+    ${THETA_LIB_MODULE_DIR}
+    ${UTILS_TIMING_SRC_DIR}
+    ${UTILS_TIMING_BIN_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/src/share/cxx
+    )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
-cxx_unit_test (elem_ops_ut "${ELEM_OPS_UT_F90_SRCS}" "${ELEM_OPS_UT_CXX_SRCS}" "${ELEM_OPS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
-TARGET_LINK_LIBRARIES(elem_ops_ut thetal_kokkos_ut_lib)
+  IF (USE_NUM_PROCS)
+    SET (NUM_CPUS ${USE_NUM_PROCS})
+  ELSE()
+    SET (NUM_CPUS 1)
+  ENDIF()
+  cxx_unit_test (elem_ops_ut "${ELEM_OPS_UT_F90_SRCS}" "${ELEM_OPS_UT_CXX_SRCS}" "${ELEM_OPS_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+  TARGET_LINK_LIBRARIES(elem_ops_ut thetal_kokkos_ut_lib)
 
-# ### HyperViscosity unit tests
+  # ### HyperViscosity unit tests
 
-SET (HYPERVISCOSITY_UT_CXX_SRCS
-  ${THETA_UT_DIR}/hv_ut.cpp
-)
+  SET (HYPERVISCOSITY_UT_CXX_SRCS
+    ${THETA_UT_DIR}/hv_ut.cpp
+    )
 
-SET (HYPERVISCOSITY_UT_F90_SRCS
-  ${THETA_UT_DIR}/hv_interface.F90
-  ${THETA_UT_DIR}/thetal_test_interface.F90
-  ${SHARE_UT_DIR}/geometry_interface.F90
-)
+  SET (HYPERVISCOSITY_UT_F90_SRCS
+    ${THETA_UT_DIR}/hv_interface.F90
+    ${THETA_UT_DIR}/thetal_test_interface.F90
+    ${SHARE_UT_DIR}/geometry_interface.F90
+    )
 
-SET (HYPERVISCOSITY_UT_INCLUDE_DIRS
-  ${SRC_THETA_DIR}/cxx
-  ${SRC_SHARE_DIR}
-  ${SRC_SHARE_DIR}/cxx
-  ${THETA_UT_DIR}
-  ${THETA_LIB_MODULE_DIR}
-  ${UTILS_TIMING_SRC_DIR}
-  ${UTILS_TIMING_BIN_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/share/cxx
-)
+  SET (HYPERVISCOSITY_UT_INCLUDE_DIRS
+    ${SRC_THETA_DIR}/cxx
+    ${SRC_SHARE_DIR}
+    ${SRC_SHARE_DIR}/cxx
+    ${THETA_UT_DIR}
+    ${THETA_LIB_MODULE_DIR}
+    ${UTILS_TIMING_SRC_DIR}
+    ${UTILS_TIMING_BIN_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/src/share/cxx
+    )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
-cxx_unit_test (hv_ut "${HYPERVISCOSITY_UT_F90_SRCS}" "${HYPERVISCOSITY_UT_CXX_SRCS}" "${HYPERVISCOSITY_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
-TARGET_LINK_LIBRARIES(hv_ut thetal_kokkos_ut_lib)
+  IF (USE_NUM_PROCS)
+    SET (NUM_CPUS ${USE_NUM_PROCS})
+  ELSE()
+    SET (NUM_CPUS 1)
+  ENDIF()
+  cxx_unit_test (hv_ut "${HYPERVISCOSITY_UT_F90_SRCS}" "${HYPERVISCOSITY_UT_CXX_SRCS}" "${HYPERVISCOSITY_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+  TARGET_LINK_LIBRARIES(hv_ut thetal_kokkos_ut_lib)
 
-### Forcing unit tests
+  ### Forcing unit tests
 
-SET (FORCING_UT_CXX_SRCS
-  ${THETA_UT_DIR}/forcing_ut.cpp
-)
+  SET (FORCING_UT_CXX_SRCS
+    ${THETA_UT_DIR}/forcing_ut.cpp
+    )
 
-SET (FORCING_UT_F90_SRCS
-  ${THETA_UT_DIR}/forcing_interface.F90
-  ${SHARE_UT_DIR}/geometry_interface.F90
-)
+  SET (FORCING_UT_F90_SRCS
+    ${THETA_UT_DIR}/forcing_interface.F90
+    ${SHARE_UT_DIR}/geometry_interface.F90
+    )
 
-SET (FORCING_UT_INCLUDE_DIRS
-  ${SRC_THETA_DIR}/cxx
-  ${SRC_SHARE_DIR}
-  ${SRC_SHARE_DIR}/cxx
-  ${THETA_UT_DIR}
-  ${THETA_LIB_MODULE_DIR}
-  ${UTILS_TIMING_SRC_DIR}
-  ${UTILS_TIMING_BIN_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/share/cxx
-)
+  SET (FORCING_UT_INCLUDE_DIRS
+    ${SRC_THETA_DIR}/cxx
+    ${SRC_SHARE_DIR}
+    ${SRC_SHARE_DIR}/cxx
+    ${THETA_UT_DIR}
+    ${THETA_LIB_MODULE_DIR}
+    ${UTILS_TIMING_SRC_DIR}
+    ${UTILS_TIMING_BIN_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/src/share/cxx
+    )
 
-# Unfortunately, due to F90 dependencies, we end up including most of the f90
-# srcs, and one of them happens to include config.h explicitly
-# We already set all the config options by hand, so we can simply touch an empty config.h
-EXECUTE_PROCESS (COMMAND touch config.h WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  # Unfortunately, due to F90 dependencies, we end up including most of the f90
+  # srcs, and one of them happens to include config.h explicitly
+  # We already set all the config options by hand, so we can simply touch an empty config.h
+  EXECUTE_PROCESS (COMMAND touch config.h WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
-cxx_unit_test (forcing_ut "${FORCING_UT_F90_SRCS}" "${FORCING_UT_CXX_SRCS}" "${FORCING_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
-TARGET_LINK_LIBRARIES(forcing_ut thetal_kokkos_ut_lib)
+  IF (USE_NUM_PROCS)
+    SET (NUM_CPUS ${USE_NUM_PROCS})
+  ELSE()
+    SET (NUM_CPUS 1)
+  ENDIF()
+  cxx_unit_test (forcing_ut "${FORCING_UT_F90_SRCS}" "${FORCING_UT_CXX_SRCS}" "${FORCING_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+  TARGET_LINK_LIBRARIES(forcing_ut thetal_kokkos_ut_lib)
 
-# ### Caar functor unit test
+  # ### Caar functor unit test
 
-SET (CAAR_UT_CXX_SRCS
-  ${THETA_UT_DIR}/caar_ut.cpp
-)
+  SET (CAAR_UT_CXX_SRCS
+    ${THETA_UT_DIR}/caar_ut.cpp
+    )
 
-SET (CAAR_UT_F90_SRCS
-  ${THETA_UT_DIR}/caar_interface.F90
-  ${THETA_UT_DIR}/thetal_test_interface.F90
-  ${SHARE_UT_DIR}/geometry_interface.F90
-)
+  SET (CAAR_UT_F90_SRCS
+    ${THETA_UT_DIR}/caar_interface.F90
+    ${THETA_UT_DIR}/thetal_test_interface.F90
+    ${SHARE_UT_DIR}/geometry_interface.F90
+    )
 
-SET (CAAR_UT_INCLUDE_DIRS
-  ${SRC_THETA_DIR}/cxx
-  ${SRC_SHARE_DIR}
-  ${SRC_SHARE_DIR}/cxx
-  ${THETA_UT_DIR}
-  ${THETA_LIB_MODULE_DIR}
-  ${UTILS_TIMING_SRC_DIR}
-  ${UTILS_TIMING_BIN_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/share/cxx
-)
+  SET (CAAR_UT_INCLUDE_DIRS
+    ${SRC_THETA_DIR}/cxx
+    ${SRC_SHARE_DIR}
+    ${SRC_SHARE_DIR}/cxx
+    ${THETA_UT_DIR}
+    ${THETA_LIB_MODULE_DIR}
+    ${UTILS_TIMING_SRC_DIR}
+    ${UTILS_TIMING_BIN_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/src/share/cxx
+    )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
-cxx_unit_test (caar_ut "${CAAR_UT_F90_SRCS}" "${CAAR_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
-TARGET_LINK_LIBRARIES(caar_ut thetal_kokkos_ut_lib)
+  IF (USE_NUM_PROCS)
+    SET (NUM_CPUS ${USE_NUM_PROCS})
+  ELSE()
+    SET (NUM_CPUS 1)
+  ENDIF()
+  cxx_unit_test (caar_ut "${CAAR_UT_F90_SRCS}" "${CAAR_UT_CXX_SRCS}" "${CAAR_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+  TARGET_LINK_LIBRARIES(caar_ut thetal_kokkos_ut_lib)
 
-# ### Remap functor unit test
+  # ### Remap functor unit test
 
-SET (REMAP_THETA_UT_CXX_SRCS
-  ${THETA_UT_DIR}/remap_theta_ut.cpp
-)
+  SET (REMAP_THETA_UT_CXX_SRCS
+    ${THETA_UT_DIR}/remap_theta_ut.cpp
+    )
 
-SET (REMAP_THETA_UT_F90_SRCS
-  ${THETA_UT_DIR}/remap_theta_interface.F90
-  ${THETA_UT_DIR}/thetal_test_interface.F90
-  ${SHARE_UT_DIR}/geometry_interface.F90
-)
+  SET (REMAP_THETA_UT_F90_SRCS
+    ${THETA_UT_DIR}/remap_theta_interface.F90
+    ${THETA_UT_DIR}/thetal_test_interface.F90
+    ${SHARE_UT_DIR}/geometry_interface.F90
+    )
 
-SET (REMAP_THETA_UT_INCLUDE_DIRS
-  ${SRC_THETA_DIR}/cxx
-  ${SRC_SHARE_DIR}
-  ${SRC_SHARE_DIR}/cxx
-  ${THETA_UT_DIR}
-  ${THETA_LIB_MODULE_DIR}
-  ${UTILS_TIMING_SRC_DIR}
-  ${UTILS_TIMING_BIN_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/share/cxx
-)
+  SET (REMAP_THETA_UT_INCLUDE_DIRS
+    ${SRC_THETA_DIR}/cxx
+    ${SRC_SHARE_DIR}
+    ${SRC_SHARE_DIR}/cxx
+    ${THETA_UT_DIR}
+    ${THETA_LIB_MODULE_DIR}
+    ${UTILS_TIMING_SRC_DIR}
+    ${UTILS_TIMING_BIN_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/src/share/cxx
+    )
 
-IF (USE_NUM_PROCS)
-  SET (NUM_CPUS ${USE_NUM_PROCS})
-ELSE()
-  SET (NUM_CPUS 1)
-ENDIF()
-cxx_unit_test (remap_theta_ut "${REMAP_THETA_UT_F90_SRCS}" "${REMAP_THETA_UT_CXX_SRCS}" "${REMAP_THETA_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
-TARGET_LINK_LIBRARIES(remap_theta_ut thetal_kokkos_ut_lib)
+  IF (USE_NUM_PROCS)
+    SET (NUM_CPUS ${USE_NUM_PROCS})
+  ELSE()
+    SET (NUM_CPUS 1)
+  ENDIF()
+  cxx_unit_test (remap_theta_ut "${REMAP_THETA_UT_F90_SRCS}" "${REMAP_THETA_UT_CXX_SRCS}" "${REMAP_THETA_UT_INCLUDE_DIRS}" "${CONFIG_DEFINES}" ${NUM_CPUS})
+  TARGET_LINK_LIBRARIES(remap_theta_ut thetal_kokkos_ut_lib)
+ENDIF ()
 
 # ### DIRK functor unit test
 

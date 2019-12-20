@@ -40,6 +40,17 @@ contains
          'dirk_interface')
   end subroutine pnh_and_exner_from_eos_f90
 
+  subroutine phi_from_eos_f90(phis,vtheta_dp,dp,phi_i) bind(c)
+    use dimensions_mod,        only: nlev, nlevp, np
+    use thetal_test_interface, only: hvcoord
+    use eos,                   only: phi_from_eos
+
+    real (kind=real_kind), intent(in) :: phis(np,np), vtheta_dp(np,np,nlev), dp(np,np,nlev)
+    real (kind=real_kind), intent(out) :: phi_i(np,np,nlevp)
+
+    call phi_from_eos(hvcoord, phis, vtheta_dp, dp, phi_i)
+  end subroutine phi_from_eos_f90
+
   subroutine compute_gwphis_f90(gwh_i,dp3d,v,gradphis) bind(c)
     use dimensions_mod,        only: nlev, nlevp, np
     use thetal_test_interface, only: hvcoord

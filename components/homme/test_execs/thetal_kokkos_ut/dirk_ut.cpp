@@ -33,6 +33,7 @@ extern "C" {
                              const Real* dphi, const Real* pnh);
   void compute_stage_value_dirk_f90(int nm1, Real alphadt_nm1, int n0, Real alphadt_n0,
                                     int np1, Real dt2);
+  void phi_from_eos_f90(const Real* phis, const Real* vtheta_dp, const Real* dp, Real* phi_i);
 } // extern "C"
 
 using FA3 = Kokkos::View<Real*[NP][NP], Kokkos::LayoutRight, Kokkos::HostSpace>;
@@ -110,21 +111,26 @@ private:
 
 std::shared_ptr<Session> Session::s_session;
 
-static bool equal (const Real& a, const Real& b,
-                   // Used only if not defined HOMMEXX_BFB_TESTING.
-                   const Real tol = 0) {
-#ifdef HOMMEXX_BFB_TESTING_WIP // rm _WIP once the new w-formulation is impl'ed
-  if (a != b)
-    printf("equal: a,b = %23.16e %23.16e re = %23.16e\n",
-           a, b, std::abs((a-b)/a));
-  return a == b;
-#else
+static bool almost_equal (const Real& a, const Real& b,
+                          const Real tol = 0) {
   const auto re = std::abs(a-b)/(1 + std::abs(a));
   const bool good = re <= tol;
   if ( ! good)
     printf("equal: a,b = %23.16e %23.16e re = %23.16e tol %9.2e\n",
            a, b, re, tol);
   return good;
+}
+
+static bool equal (const Real& a, const Real& b,
+                   // Used only if not defined HOMMEXX_BFB_TESTING.
+                   const Real tol = 0) {
+#ifdef HOMMEXX_BFB_TESTING
+  if (a != b)
+    printf("equal: a,b = %23.16e %23.16e re = %23.16e\n",
+           a, b, std::abs((a-b)/a));
+  return a == b;
+#else
+  return almost_equal(a, b, tol);
 #endif
 }
 
@@ -205,7 +211,7 @@ void require_all_equal (const int nlev, const V& a, const V& b,
 }
 
 template <typename V>
-void c2f(const V& c, const FA3& f) {
+void c2f (const V& c, const FA3& f) {
   const auto cm = cmvdc(c);
   for (int i = 0; i < c.extent_int(0); ++i)
     for (int j = 0; j < c.extent_int(1); ++j) {
@@ -216,7 +222,19 @@ void c2f(const V& c, const FA3& f) {
 }
 
 template <typename V>
-void c2f(const V& c, const FA4& f) {
+void f2c (const FA3& f, const V& c) {
+  const auto cm = Kokkos::create_mirror_view(c);
+  for (int i = 0; i < c.extent_int(0); ++i)
+    for (int j = 0; j < c.extent_int(1); ++j) {
+      Real* const p = &cm(i,j,0)[0];
+      for (int k = 0; k < f.extent(0); ++k)
+        p[k] = f(k,i,j);
+    }
+  deep_copy(c, cm);
+}
+
+template <typename V>
+void c2f (const V& c, const FA4& f) {
   const auto cm = cmvdc(c);
   for (int d = 0; d < c.extent_int(0); ++d)
     for (int i = 0; i < c.extent_int(1); ++i)
@@ -225,6 +243,12 @@ void c2f(const V& c, const FA4& f) {
         for (int k = 0; k < f.extent(0); ++k)
           f(k,d,i,j) = p[k];
       }
+}
+
+static void init (dfi& d, FunctorsBuffersManager& fbm) {
+  fbm.request_size(d.requested_buffer_size());
+  fbm.allocate();
+  d.init_buffers(fbm);
 }
 
 TEST_CASE ("dirk_pieces_testing") {
@@ -236,15 +260,18 @@ TEST_CASE ("dirk_pieces_testing") {
   auto& r = s.r;
   const auto eps = std::numeric_limits<Real>::epsilon();
 
+  const int nelem = 1;
+  dfi d1(nelem);
+  FunctorsBuffersManager fbm;
+  init(d1, fbm);
+
   SECTION ("transpose") {
-    const int nelem = 1;
     ExecView<Scalar[NP][NP][NUM_LEV  ]> ham0("ham0"), ham1("ham1");
     ExecView<Scalar[NP][NP][NUM_LEV_P]> hai0("hai0"), hai1("hai1");
     const int nlev = NUM_LEV*VECTOR_SIZE - 2; // test with some remainder
     fill(r, ham0);
     fill(r, hai0);
-    dfi d(nelem);
-    const auto w = d.m_work;
+    const auto w = d1.m_work;
     const auto a = dfi::get_work_slot(w, 0, 0);
     const auto f1 = KOKKOS_LAMBDA(const dfi::MT& t) {
       KernelVariables kv(t);
@@ -252,7 +279,7 @@ TEST_CASE ("dirk_pieces_testing") {
       kv.team_barrier();
       dfi::transpose(kv, nlev, a, ham1);
     };
-    parallel_for(d.m_policy, f1); fence();
+    parallel_for(d1.m_policy, f1); fence();
     require_all_equal(nlev, ham0, ham1);
     const auto f2 = KOKKOS_LAMBDA(const dfi::MT& t) {
       KernelVariables kv(t);
@@ -260,7 +287,7 @@ TEST_CASE ("dirk_pieces_testing") {
       kv.team_barrier();
       dfi::transpose(kv, nlev+1, a, hai1);
     };
-    parallel_for(d.m_policy, f2); fence();
+    parallel_for(d1.m_policy, f2); fence();
     require_all_equal(nlev+1, hai0, hai1);
   }
 
@@ -273,7 +300,6 @@ TEST_CASE ("dirk_pieces_testing") {
     fill_mid(r, nlev, 5, 10000, pnh);
     fill_inc(r, nlev, 500000, 100, dphi);
 
-    dfi d1(1);
     const auto w = d1.m_work;
     const auto
       dp3dw = dfi::get_work_slot(w, 0, 0),
@@ -397,7 +423,6 @@ TEST_CASE ("dirk_pieces_testing") {
     fill_inc(r, nlev, 500000, 100, dphi);
     fill_inc(r, nlev, 5*300, 10000*300, vtheta_dp);
 
-    dfi d1(1);
     const auto w = d1.m_work;
     const auto
       dp3dw = dfi::get_work_slot(w, 0, 0),
@@ -455,7 +480,6 @@ TEST_CASE ("dirk_pieces_testing") {
     deep_copy(gradphis, gpm);
     const auto hybi = hvcoord.hybrid_bi;
     
-    dfi d1(1);
     const auto w = d1.m_work;
     const auto gwh_i = dfi::get_work_slot(w, 0, 0);
 
@@ -481,6 +505,65 @@ TEST_CASE ("dirk_pieces_testing") {
         for (int k = 0; k < nlev; ++k)
           REQUIRE(equal(gwh_im(k,pi)[si], gwh_if(k,i,j), 1e3*eps));
       }
+  }
+
+  SECTION ("threshold") {
+    const int nlev = dfi::num_phys_lev, nvec = dfi::npack, ilim = nvec*dfi::packn;
+    const auto w = d1.m_work;
+    const auto
+      a = dfi::get_work_slot(w, 0, 0),
+      b = dfi::get_work_slot(w, 0, 1),
+      wa = dfi::get_work_slot(w, 0, 2),
+      wb = dfi::get_work_slot(w, 0, 3);
+    const Real threshold = 0.42;
+
+    const auto am = create_mirror_view(a);
+    const auto bm = create_mirror_view(b);
+    for (int k = 0; k < nlev; ++k) {
+      Real* const ap = &am(k,0)[0];
+      Real* const bp = &bm(k,0)[0];
+      for (int i = 0; i < ilim; ++i)
+        ap[i] = bp[i] = r.urrng(-2,0);
+      if (k == 1) ap[2] = bp[2] = threshold;
+      if (k == 2) ap[3] = bp[3] = threshold + 1e-10;
+    }
+    deep_copy(a, am);
+    deep_copy(b, bm);
+
+    const auto f1 = KOKKOS_LAMBDA(const dfi::MT& t) {
+      KernelVariables kv(t);
+      dfi::calc_whether_gt_and_set(kv, nlev, nvec, threshold, a, wa);
+    };
+    parallel_for(d1.m_policy, f1); fence();
+
+    const auto f2 = KOKKOS_LAMBDA(const dfi::MT& t) {
+      KernelVariables kv(t);
+      dfi::calc_whether_ge(kv, nlev, nvec, threshold, b, wb);
+    };
+    parallel_for(d1.m_policy, f2); fence();
+
+    deep_copy(am, a);
+    deep_copy(bm, b);
+    const auto wam = cmvdc(wa);
+    const auto wbm = cmvdc(wb);
+    Real* wp = &wam(0,0)[0];
+    REQUIRE(wp[3] == 1);
+    for (int i = 0; i < ilim; ++i) REQUIRE((i == 3 || wp[i] == 0));
+    wp = &wbm(0,0)[0];
+    REQUIRE(wp[2] == 1);
+    REQUIRE(wp[3] == 1);
+    for (int i = 0; i < ilim; ++i) REQUIRE((i == 2 || i == 3 || wp[i] == 0));
+    int thr_cnt = 0;
+    for (int k = 0; k < nlev; ++k) {
+      Real* const ap = &am(k,0)[0];
+      Real* const bp = &bm(k,0)[0];
+      if (k == 2) REQUIRE(ap[3] == threshold);
+      for (int i = 0; i < ilim; ++i) {
+        if (ap[i] >= threshold) ++thr_cnt;
+        if (bp[i] >= threshold) ++thr_cnt;
+      }
+    }
+    REQUIRE(thr_cnt == 4);
   }
 }
 
@@ -582,15 +665,85 @@ TEST_CASE ("dirk_toplevel_testing") {
   using Kokkos::subview;
   using Kokkos::deep_copy;
 
-  const int nlev = NUM_PHYSICAL_LEV, np = NP, n0 = 1, np1 = 2, ne = 2;
+  const int np = NP, n0 = 1, np1 = 2, ne = 2;
+  const int nlev = dfi::num_phys_lev, nvec = dfi::npack;
   const auto eps = std::numeric_limits<Real>::epsilon();
-  Real dt2 = 0.05; // Until I do the w-formulation conversion, keep the problems easy.
+  Real dt2 = 0.15;
 
   auto& s = Session::singleton();
   const auto& hvcoord = s.h;
   auto& r = s.r;
   auto& e = s.e;
   const auto nelemd = s.nelemd;
+
+  DirkFunctorImpl d(nelemd);
+  FunctorsBuffersManager fbm;
+  init(d, fbm);
+
+  { // Test initial guess function.
+    init_elems(ne, nelemd, r, hvcoord, e);
+    { // C++ version with DIRK-newton-loop policy.
+      const auto e_phis = e.m_geometry.m_phis;
+      const auto e_vtheta_dp = e.m_state.m_vtheta_dp;
+      const auto e_dp3d = e.m_state.m_dp3d;
+      const auto e_phinh_i = e.m_state.m_phinh_i;
+      const auto w = d.m_work;
+      const auto f = KOKKOS_LAMBDA(const dfi::MT& t) {
+        KernelVariables kv(t);
+        const auto ie = kv.ie;
+        const auto a = Kokkos::ALL();
+        const auto
+        vtheta_dp = dfi::get_work_slot(w, kv.team_idx, 0),
+        dp3d = dfi::get_work_slot(w, kv.team_idx, 1),
+        phi_np1 = dfi::get_work_slot(w, kv.team_idx, 2);
+        dfi::transpose(kv, nlev, subview(e_vtheta_dp,ie,np1,a,a,a), vtheta_dp);
+        dfi::transpose(kv, nlev, subview(e_dp3d,ie,np1,a,a,a), dp3d);
+        kv.team_barrier();
+        dfi::phi_from_eos(kv, nlev, nvec, hvcoord, subview(e_phis,ie,a,a),
+                          vtheta_dp, dp3d, phi_np1);
+        kv.team_barrier();
+        dfi::transpose(kv, nlev, phi_np1, subview(e_phinh_i,ie,np1,a,a,a));
+      };
+      parallel_for(d.m_policy, f); fence();
+    }
+    const auto phic1_m = cmvdc(e.m_state.m_phinh_i);
+    decltype(phic1_m) phic1("phic1", phic1_m.extent_int(0));
+    deep_copy(phic1, phic1_m);
+    { // C++ version with separate dispatch and Hommexx patterns.
+      d.run_initial_guess(np1, e, hvcoord);
+    }
+    const auto phic2_m = cmvdc(e.m_derived.m_divdp_proj);
+    decltype(phic2_m) phic2("phic2", phic2_m.extent_int(0));
+    deep_copy(phic2, phic2_m);
+    { // F90 version.
+      const auto e_phis = cmvdc(e.m_geometry.m_phis);
+      const auto e_vtheta_dp = cmvdc(e.m_state.m_vtheta_dp);
+      const auto e_dp3d = cmvdc(e.m_state.m_dp3d);
+      const auto e_phinh_i = cmvdc(e.m_state.m_phinh_i);
+      const auto a = Kokkos::ALL();
+      for (int ie = 0; ie < nelemd; ++ie) {
+        const auto phis = subview(e_phis,ie,a,a);
+        const auto vtheta_dp = subview(e_vtheta_dp,ie,np1,a,a,a);
+        const auto dp3d = subview(e_dp3d,ie,np1,a,a,a);
+        const auto phi_i = subview(e_phinh_i,ie,np1,a,a,a);
+        FA3 vtheta_dpf("vtheta_dpf", nlev), dp3df("dp3df", nlev), phif("phif", nlev+1);
+        c2f(vtheta_dp, vtheta_dpf); c2f(dp3d, dp3df); c2f(phi_i, phif);
+        phi_from_eos_f90(phis.data(), vtheta_dpf.data(), dp3df.data(), phif.data());
+        f2c(phif, phi_i);
+      }
+      deep_copy(e.m_state.m_phinh_i, e_phinh_i);
+    }
+    const auto phif = cmvdc(e.m_state.m_phinh_i);
+    for (int ie = 0; ie < nelemd; ++ie)
+      for (int i = 0; i < np; ++i)
+        for (int j = 0; j < np; ++j) {
+          Real* pf = &phif(ie,np1,i,j,0)[0];
+          Real* pc1 = &phic1(ie,np1,i,j,0)[0];
+          Real* pc2 = &phic2(ie,i,j,0)[0];
+          for (int k = 0; k < nlev; ++k) REQUIRE(equal(pf[k], pc1[k], 1e6*eps));
+          for (int k = 0; k < nlev; ++k) REQUIRE(equal(pf[k], pc2[k], 1e6*eps));
+        }
+  }
 
   for (Real alphadtwt_nm1 : {0.0, 0.3}) {
     const int nm1 = alphadtwt_nm1 == 0.0 ? -1 : 0;
@@ -600,11 +753,9 @@ TEST_CASE ("dirk_toplevel_testing") {
       decltype(ElementsState::m_phinh_i) phinh_i("phinh_i", nelemd),
         phinh_i1("phinh_i1", nelemd), phinh_i2("phinh_i2", nelemd);
 
-      DirkFunctorImpl d(nelemd);
-
       bool good = false;
       for (int trial = 0; trial < 100 /* don't enter an inf loop */; ++trial) {
-        init_elems(ne, s.nelemd, r, hvcoord, e);
+        init_elems(ne, nelemd, r, hvcoord, e);
 
         deep_copy(w_i, e.m_state.m_w_i);
         deep_copy(phinh_i, e.m_state.m_phinh_i);
@@ -681,7 +832,7 @@ TEST_CASE ("dirk_toplevel_testing") {
               Real* p1 = f == 0 ? &w1m(ie,np1,i,j,0)[0] : &phinh1m(ie,np1,i,j,0)[0];
               Real* p2 = f == 0 ? &w2m(ie,np1,i,j,0)[0] : &phinh2m(ie,np1,i,j,0)[0];
               for (int k = 0; k < nlev+1; ++k)
-                REQUIRE(std::abs(p1[k] - p2[k]) <= 1e6*eps*(1 + std::abs(p1[k])));
+                REQUIRE(almost_equal(p1[k], p2[k], 1e6*eps));
             }
 
       // Run F90 with BFB solver.
@@ -695,7 +846,7 @@ TEST_CASE ("dirk_toplevel_testing") {
       const auto wif  = cmvdc(ef90.m_state.m_w_i);
 
       // Test that C++ and F90 with BFB solvers produce the same answer.
-      for (int ie = 0; ie < nelemd; ++ie)
+      for (int ie = 0; ie < 1/*nelemd*/; ++ie)
         for (int i = 0; i < np; ++i)
           for (int j = 0; j < np; ++j) {
             for (int f = 0; f < 2; ++f) {

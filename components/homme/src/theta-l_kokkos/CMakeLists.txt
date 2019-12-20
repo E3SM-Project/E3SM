@@ -173,16 +173,14 @@ SET(THETAL_DEPS_CXX
   ${SRC_SHARE_DIR}/cxx/mpi/mpi_cxx_f90_interface.cpp
 )
 
-IF (HOMMEXX_BFB_TESTING)
-  SET(THETAL_DEPS_F90
-      ${THETAL_DEPS_F90}
-      ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
+SET(THETAL_DEPS_F90
+  ${THETAL_DEPS_F90}
+  ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
   )
-  SET(THETAL_DEPS_CXX
-      ${THETAL_DEPS_CXX}
-      ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
+SET(THETAL_DEPS_CXX
+  ${THETAL_DEPS_CXX}
+  ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
   )
-ENDIF()
 
 IF (HOMME_USE_ARKODE)
   SET(THETAL_DEPS_F90

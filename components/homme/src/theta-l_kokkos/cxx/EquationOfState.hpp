@@ -125,12 +125,12 @@ public:
   //       otherwise it will be the non-hydrostatic. In particular, if the pressure
   //       p is computed using dp from pnh, this will be the discrete inverse of
   //       the compute_pnh_and_exner method.
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_INLINE_FUNCTION static
   void compute_phi_i (const KernelVariables& kv,
                       const ExecViewUnmanaged<const Real   [NP][NP]           >& phis,
                       const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& vtheta_dp,
                       const ExecViewUnmanaged<const Scalar [NP][NP][NUM_LEV]  >& p,
-                      const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV_P]>& phi_i) const {
+                      const ExecViewUnmanaged<      Scalar [NP][NP][NUM_LEV_P]>& phi_i) {
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                          [&](const int idx) {
       const int igp = idx / NP;
@@ -145,29 +145,35 @@ public:
   // VThetaProvider can be either a 1d view or a lambda,
   // as long as vtheta_dp(ilev) returns vtheta_dp at pack ilev
   template<typename VThetaProvider>
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_INLINE_FUNCTION static
   void compute_phi_i (const KernelVariables& kv, const Real phis,
                       const VThetaProvider& vtheta_dp,
                       const ExecViewUnmanaged<const Scalar [NUM_LEV]  >& p,
-                      const ExecViewUnmanaged<      Scalar [NUM_LEV_P]>& phi_i) const
+                      const ExecViewUnmanaged<      Scalar [NUM_LEV_P]>& phi_i)
   {
     // Init phi on surface with phis
     phi_i(LAST_INT_PACK)[LAST_INT_PACK_END] = phis;
 
     // Use ColumnOps to do the scan sum
     auto integrand_provider = [&](const int ilev)->Scalar {
-      constexpr Real p0    = PhysicalConstants::p0;
-      constexpr Real kappa = PhysicalConstants::kappa;
-      constexpr Real Rgas  = PhysicalConstants::Rgas;
-#ifdef HOMMEXX_BFB_TESTING
-      return (Rgas*vtheta_dp(ilev) * bfb_pow(p(ilev)/p0,kappa-1)) / p0;
-#else
-      // TODO: remove temporaries
-      return (Rgas*vtheta_dp(ilev) * pow(p(ilev)/p0,kappa-1)) / p0;
-#endif
+      return compute_dphi(vtheta_dp(ilev), p(ilev));
     };
 
     ColumnOps::column_scan_mid_to_int<false>(kv,integrand_provider,phi_i);
+  }
+
+  template<typename Scalar>
+  KOKKOS_INLINE_FUNCTION static
+  Scalar compute_dphi (const Scalar& vtheta_dp, const Scalar& p) {
+    constexpr Real p0    = PhysicalConstants::p0;
+    constexpr Real kappa = PhysicalConstants::kappa;
+    constexpr Real Rgas  = PhysicalConstants::Rgas;
+#ifdef HOMMEXX_BFB_TESTING
+    return (Rgas*vtheta_dp * bfb_pow(p/p0,kappa-1)) / p0;
+#else
+    // TODO: remove temporaries
+    return (Rgas*vtheta_dp * pow(p/p0,kappa-1)) / p0;
+#endif    
   }
 
   // If exner is available, then use exner/p instead of (p/p0)^(k-1)/p0, to avoid dealing with exponentials

@@ -331,10 +331,12 @@ void init_functors_c ()
   auto& diag = Context::singleton().create<Diagnostics> ();
   Context::singleton().create<VerticalRemapManager>();
 
-  if (params.time_step_type==TimeStepType::IMEX_KG243 ||   
-      params.time_step_type==TimeStepType::IMEX_KG254 ||
-      params.time_step_type==TimeStepType::IMEX_KG255 ||
-      params.time_step_type==TimeStepType::IMEX_KG355) {
+  const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||   
+                          params.time_step_type==TimeStepType::IMEX_KG254 ||
+                          params.time_step_type==TimeStepType::IMEX_KG255 ||
+                          params.time_step_type==TimeStepType::IMEX_KG355);
+
+  if (need_dirk) {
     // Create dirk functor only if needed
     Context::singleton().create<DirkFunctor>(elems.num_elems());
   }
@@ -346,6 +348,10 @@ void init_functors_c ()
   fbm.request_size(hvf.requested_buffer_size());
   fbm.request_size(diag.requested_buffer_size());
   fbm.request_size(ff.requested_buffer_size());
+  if (need_dirk) {
+    const auto& dirk = Context::singleton().get<DirkFunctor>();
+    fbm.request_size(dirk.requested_buffer_size());
+  }
 
   // Allocate the buffers in the FunctorsBuffersManager, then tell the functors to grab their buffers
   fbm.allocate();
@@ -355,6 +361,10 @@ void init_functors_c ()
   hvf.init_buffers(fbm);
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
+  if (need_dirk) {
+    auto& dirk = Context::singleton().get<DirkFunctor>();
+    dirk.init_buffers(fbm);
+  }
 }
 
 void init_elements_2d_c (const int& ie,
