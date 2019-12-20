@@ -224,7 +224,7 @@ contains
          cpvir       = cpwv/cpair - 1._r8
          epsilo      = mwh2o/mwdry      
 
-         if (.not. newomega) omega = 2.0_r8*pi/sday
+         if (.not.newomega) omega = 2.0_r8*pi/sday
          
          !  rair and rh2o have to be defined before any of the variables that use them
          
