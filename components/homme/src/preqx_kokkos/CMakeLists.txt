@@ -56,7 +56,7 @@ SET (SRC_SHARE_F90
   ${SRC_SHARE_DIR}/edgetype_mod.F90
   ${SRC_SHARE_DIR}/element_mod.F90
   ${SRC_SHARE_DIR}/gllfvremap_mod.F90
-  ${SRC_SHARE_DIR}/gllfvremap_test_mod.F90
+  ${SRC_SHARE_DIR}/gllfvremap_util_mod.F90
   ${SRC_SHARE_DIR}/global_norms_mod.F90
   ${SRC_SHARE_DIR}/gridgraph_mod.F90
   ${SRC_SHARE_DIR}/hybrid_mod.F90

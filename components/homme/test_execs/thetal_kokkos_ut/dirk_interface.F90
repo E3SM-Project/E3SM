@@ -175,11 +175,11 @@ contains
     nets = 1
     nete = size(elem)
     if (nm1 > 0) then
-       call compute_stage_value_dirk(n0, np1, alphadt, qn0, dt2, elem, hvcoord, hybrid, deriv, &
-            nets, nete, itercount, itererr, nm1)
+       ! call compute_stage_value_dirk(n0, np1, alphadt, qn0, dt2, elem, hvcoord, hybrid, deriv, &
+            ! nets, nete, itercount, itererr, nm1)
     else
-       call compute_stage_value_dirk(n0, np1, alphadt, qn0, dt2, elem, hvcoord, hybrid, deriv, &
-            nets, nete, itercount, itererr)
+       ! call compute_stage_value_dirk(n0, np1, alphadt, qn0, dt2, elem, hvcoord, hybrid, deriv, &
+            ! nets, nete, itercount, itererr)
     end if
   end subroutine compute_stage_value_dirk_f90
 
