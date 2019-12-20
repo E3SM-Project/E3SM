@@ -20,20 +20,17 @@
 <!-- Special settings for RCE mode -->
 <!-- ----------------------------------------------------------------------- -->
 
-<!-- Use constant solar zenith angle for homogenous SW radiation -->
-<constant_zenith_deg>42.05</constant_zenith_deg>
-
 <!-- Use reduced solar constant (i.e. TSI) - only works with RRTMGP -->
 <fixed_total_solar_irradiance>551.58</fixed_total_solar_irradiance>
-
-<!-- Use constant albedo -->
-<constant_albedo>0.07</constant_albedo>
 
 <!-- disable aerosol radiative calculations - only works with RRTMGP -->
 <do_aerosol_rad>.false.</do_aerosol_rad>
 
-<!-- Disable rotation -->
+<!-- Disable rotation effects -->
 <omega>0.0</omega>
+
+<!-- NOTE: solar zenith angle, sfc albedo, and min sfc wind are set via user mods -->
+<!-- see: cam/cime_config/usermods_dirs/rcemip/user_nl_cpl -->
 
 <!-- ----------------------------------------------------------------------- -->
 <!-- Constant hydrometeor number -->

@@ -363,6 +363,7 @@
     <values match="last">
     <value compset="DOCN%AQP">$SRCROOT/components/cam/cime_config/usermods_dirs/aquap</value>
     <value compset="DOCN%SOMAQP">$SRCROOT/components/cam/cime_config/usermods_dirs/aquap</value>
+    <value compset="CAM5%RCE">$SRCROOT/components/cam/cime_config/usermods_dirs/rcemip</value>
     </values>
     <group>run_component_cam</group>
     <file>env_case.xml</file>
