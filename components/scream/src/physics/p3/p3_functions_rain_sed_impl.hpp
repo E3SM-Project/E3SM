@@ -140,7 +140,7 @@ void Functions<S,D>
   Kokkos::parallel_for(
    Kokkos::TeamThreadRange(team, qr_tend.extent(0)), [&] (int pk) {
     qr_tend(pk) = (qr(pk) - qr_tend(pk)) * odt; // Rain sedimentation tendency, measure
-    nr_tend(pk) = (qr(pk) - nr_tend(pk)) * odt; // Rain # sedimentation tendency, measure
+    nr_tend(pk) = (nr(pk) - nr_tend(pk)) * odt; // Rain # sedimentation tendency, measure
   });
 
   workspace.template release_many_contiguous<4>(
