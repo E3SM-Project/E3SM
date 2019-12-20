@@ -106,7 +106,7 @@ void Functions<S,D>
         const int pk = kmin + pk_;
         const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
         const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
-        const auto qr_gt_small = range_mask && qr(pk) > qsmall;
+        const auto qr_gt_small = range_mask && qr_incld(pk) > qsmall;
         if (qr_gt_small.any()) {
           compute_rain_fall_velocity(qr_gt_small, vn_table, vm_table,
                                      qr_incld(pk), rcldm(pk), rhofacr(pk),
