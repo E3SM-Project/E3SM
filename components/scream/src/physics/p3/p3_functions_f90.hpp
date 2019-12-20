@@ -385,7 +385,8 @@ struct RainSedData
   Real dt, odt;
 
   // In/out
-  Real *qr, *nr, *nr_incld, *mu_r, *lamr, *rflx, *qr_tend, *nr_tend;
+  Real *qr, *nr, *nr_incld, *mu_r, *lamr, *qr_tend, *nr_tend;
+  Real *rflx; // has special size (nk+1)
   Real prt_liq;
 
   RainSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,

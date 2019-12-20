@@ -350,11 +350,12 @@ RainSedData::RainSedData(
   kts(kts_), kte(kte_), ktop(ktop_), kbot(kbot_), kdir(kdir_),
   dt(dt_), odt(odt_), prt_liq(prt_liq_),
   m_nk((kte_ - kts_) + 1),
-  m_data( NUM_ARRAYS * m_nk, 0.0)
+  m_data( NUM_ARRAYS * m_nk + 1 /*extra real at end for rflx*/, 0.0)
 {
+  // harmless to leave last rflx value set to 0.0
   std::array<Real**, NUM_ARRAYS> ptrs =
     {&rho, &inv_rho, &rhofacr, &rcldm, &inv_dzq, &qr_incld,
-     &qr, &nr, &nr_incld, &mu_r, &lamr, &rflx, &qr_tend, &nr_tend};
+     &qr, &nr, &nr_incld, &mu_r, &lamr, &qr_tend, &nr_tend, &rflx};
   gen_random_data(ranges, ptrs, m_data.data(), m_nk);
 
   // overwrite inv_rho
@@ -374,7 +375,7 @@ RainSedData::RainSedData(const RainSedData& rhs) :
 
   Real** ptrs[NUM_ARRAYS] =
     {&rho, &inv_rho, &rhofacr, &rcldm, &inv_dzq, &qr_incld,
-     &qr, &nr, &nr_incld, &mu_r, &lamr, &rflx, &qr_tend, &nr_tend};
+     &qr, &nr, &nr_incld, &mu_r, &lamr, &qr_tend, &nr_tend, &rflx};
 
   for (size_t i = 0; i < NUM_ARRAYS; ++i) {
     *ptrs[i] = data_begin + offset;
@@ -983,9 +984,12 @@ void rain_sedimentation_f(
 
   // Set up views
   Kokkos::Array<view_1d, 14> temp_d;
+  Kokkos::Array<size_t, 14> sizes;
+  for (int i = 0; i < 14; ++i) sizes[i] = nk;
+  sizes[13] = nk+1;
 
-  pack::host_to_device({qr_incld, rho, inv_rho, rhofacr, rcldm, inv_dzq, qr, nr, nr_incld, mu_r, lamr, rflx, qr_tend, nr_tend},
-                       nk, temp_d);
+  pack::host_to_device({qr_incld, rho, inv_rho, rhofacr, rcldm, inv_dzq, qr, nr, nr_incld, mu_r, lamr, qr_tend, nr_tend, rflx},
+                       sizes, temp_d);
 
   view_1d
     qr_incld_d   (temp_d[0]),
@@ -999,9 +1003,9 @@ void rain_sedimentation_f(
     nr_incld_d   (temp_d[8]),
     mu_r_d       (temp_d[9]),
     lamr_d       (temp_d[10]),
-    rflx_d       (temp_d[11]), // TODO: rflx has extra size of 1
-    qr_tend_d    (temp_d[12]),
-    nr_tend_d    (temp_d[13]);
+    qr_tend_d    (temp_d[11]),
+    nr_tend_d    (temp_d[12]),
+    rflx_d       (temp_d[13]);
 
   // Call core function from kernel
   auto vn_table = P3GlobalForFortran::vn_table();
@@ -1023,9 +1027,9 @@ void rain_sedimentation_f(
       unr_incld_d   (temp_d[8]),
       umu_r_d       (temp_d[9]),
       ulamr_d       (temp_d[10]),
-      urflx_d       (temp_d[11]), // TODO: rflx has extra size of 1
-      uqr_tend_d    (temp_d[12]),
-      unr_tend_d    (temp_d[13]);
+      uqr_tend_d    (temp_d[11]),
+      unr_tend_d    (temp_d[12]),
+      urflx_d       (temp_d[13]);
 
     P3F::rain_sedimentation(
       urho_d, uinv_rho_d, urhofacr_d, urcldm_d, uinv_dzq_d, uqr_incld_d,
@@ -1038,8 +1042,12 @@ void rain_sedimentation_f(
   *prt_liq += my_prt_liq;
 
   // Sync back to host
-  Kokkos::Array<view_1d, 8> inout_views = {qr_d, nr_d, nr_incld_d, mu_r_d, lamr_d, rflx_d, qr_tend_d, nr_tend_d};
-  pack::device_to_host({qr, nr, nr_incld, mu_r, lamr, rflx, qr_tend, nr_tend}, nk, inout_views);
+  Kokkos::Array<size_t, 8> sizes_out;
+  for (int i = 0; i < 8; ++i) sizes_out[i] = nk;
+  sizes_out[7] = nk+1;
+
+  Kokkos::Array<view_1d, 8> inout_views = {qr_d, nr_d, nr_incld_d, mu_r_d, lamr_d, qr_tend_d, nr_tend_d, rflx_d};
+  pack::device_to_host({qr, nr, nr_incld, mu_r, lamr, qr_tend, nr_tend, rflx}, sizes_out, inout_views);
 }
 
 void cloud_water_autoconversion_f(Real rho_, Real qc_incld_, Real nc_incld_, Real* qcaut_, Real* ncautc_, Real* ncautr_){

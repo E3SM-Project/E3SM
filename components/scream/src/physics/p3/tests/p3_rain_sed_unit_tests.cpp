@@ -131,7 +131,74 @@ static void run_bfb_rain_vel()
 
 static void run_bfb_rain_sed()
 {
-  // TODO
+  const std::array< std::pair<Real, Real>, RainSedData::NUM_ARRAYS > ranges = {
+    std::make_pair(4.056E-03, 1.153E+00), // rho_range
+    std::make_pair(0,         1.),        // inv_rho (ignored)
+    std::make_pair(8.852E-01, 1.069E+00), // rhofacr
+    std::make_pair(1.000E+00, 1.100E+00), // rcldm
+    std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
+    std::make_pair(1.221E-14, 2.708E-03), // qr_incld
+    std::make_pair(5.164E-10, 2.293E-03), // qr
+    std::make_pair(9.558E+04, 6.596E+05), // nr
+    std::make_pair(9.538E+04, 6.596E+05), // nr_incld
+    std::make_pair(6.774E-15, 2.293E-03), // mu_r
+    std::make_pair(7.075E-08, 2.418E-03), // lamr
+    std::make_pair(7.861E-11, 4.179E-06), // qr_tend
+    std::make_pair(5.164E-10, 2.733E-03), // nr_tend
+    std::make_pair(4.469E-14, 2.557E-03), // rflx
+  };
+
+  RainSedData rsds_fortran[] = {
+    //        kts, kte, ktop, kbot, kdir,        dt,       odt, prt_liq, ranges
+    RainSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
+    RainSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,     1.0, ranges),
+    RainSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,     0.0, ranges),
+    RainSedData(1,  72,   27,   27,    1, 1.800E+03, 5.556E-04,     2.0, ranges),
+  };
+
+  static constexpr Int num_runs = sizeof(rsds_fortran) / sizeof(RainSedData);
+
+  // Create copies of data for use by cxx. Needs to happen before fortran calls so that
+  // inout data is in original state
+  RainSedData rsds_cxx[num_runs] = {
+    RainSedData(rsds_fortran[0]),
+    RainSedData(rsds_fortran[1]),
+    RainSedData(rsds_fortran[2]),
+    RainSedData(rsds_fortran[3]),
+  };
+
+    // Get data from fortran
+  for (Int i = 0; i < num_runs; ++i) {
+    rain_sedimentation(rsds_fortran[i]);
+  }
+
+  // Get data from cxx
+  for (Int i = 0; i < num_runs; ++i) {
+    RainSedData& d = rsds_cxx[i];
+    rain_sedimentation_f(d.kts, d.kte, d.ktop, d.kbot, d.kdir,
+                         d.qr_incld, d.rho, d.inv_rho, d.rhofacr, d.rcldm, d.inv_dzq,
+                         d.dt, d.odt,
+                         d.qr, d.nr, d.nr_incld, d.mu_r, d.lamr, &d.prt_liq, d.rflx,
+                         d.qr_tend, d.nr_tend);
+  }
+
+  for (Int i = 0; i < num_runs; ++i) {
+    // Due to pack issues, we must restrict checks to the active k space
+    Int start = std::min(rsds_fortran[i].kbot, rsds_fortran[i].ktop) - 1; // 0-based indx
+    Int end   = std::max(rsds_fortran[i].kbot, rsds_fortran[i].ktop);     // 0-based indx
+    for (Int k = start; k < end; ++k) {
+      REQUIRE(rsds_fortran[i].qr[k]       == rsds_cxx[i].qr[k]);
+      REQUIRE(rsds_fortran[i].nr[k]       == rsds_cxx[i].nr[k]);
+      REQUIRE(rsds_fortran[i].nr_incld[k] == rsds_cxx[i].nr_incld[k]);
+      REQUIRE(rsds_fortran[i].mu_r[k]     == rsds_cxx[i].mu_r[k]);
+      REQUIRE(rsds_fortran[i].lamr[k]     == rsds_cxx[i].lamr[k]);
+      REQUIRE(rsds_fortran[i].rflx[k]     == rsds_cxx[i].rflx[k]);
+      REQUIRE(rsds_fortran[i].qr_tend[k]  == rsds_cxx[i].qr_tend[k]);
+      REQUIRE(rsds_fortran[i].nr_tend[k]  == rsds_cxx[i].nr_tend[k]);
+    }
+    REQUIRE(rsds_fortran[i].rflx[end]     == rsds_cxx[i].rflx[end]);
+    REQUIRE(rsds_fortran[i].prt_liq == rsds_cxx[i].prt_liq);
+  }
 }
 
 static void run_bfb()
