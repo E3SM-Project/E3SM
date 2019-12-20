@@ -122,7 +122,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
   Kokkos::deep_copy(cwadc_device, cwadc_host);
 
   // Get data from fortran
-  for (Int i = 0; i < max_pack_size; ++i) {
+  for (Int i = 0; i < Spack::n; ++i) {
     cloud_water_autoconversion(cwadc[i]);
   }
 

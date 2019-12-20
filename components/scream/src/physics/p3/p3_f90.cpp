@@ -169,7 +169,7 @@ int test_p3_init (bool use_fortran) {
 
 int test_p3_ic (bool use_fortran) {
   const auto d = ic::Factory::create(ic::Factory::mixed);
-  p3_init();
+  p3_init(use_fortran);
   p3_main(*d);
   P3GlobalForFortran::deinit();
   return 0;

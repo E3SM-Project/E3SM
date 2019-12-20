@@ -1,10 +1,9 @@
 #ifndef P3_FUNCTIONS_TABLE_ICE_IMPL_HPP
 #define P3_FUNCTIONS_TABLE_ICE_IMPL_HPP
 
-#include <fstream>
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
-#include "p3_functions.hpp"
-#include "p3_constants.hpp"
+#include <fstream>
 
 namespace scream {
 namespace p3 {

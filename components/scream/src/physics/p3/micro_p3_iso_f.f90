@@ -70,7 +70,7 @@ interface
   subroutine cloud_water_autoconversion_f(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr) bind(C)
     use iso_c_binding
 
-    !arguments: 
+    !arguments:
     real(kind=c_real), value, intent(in) :: rho, qc_incld, nc_incld
     real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
   end subroutine cloud_water_autoconversion_f
@@ -164,6 +164,15 @@ interface
     real(kind=c_real),   intent(inout) :: qi_rim, bi_rim
     real(kind=c_real),   intent(out) :: rho_rime
   end subroutine calc_bulk_rho_rime_f
+
+  subroutine compute_rain_fall_velocity_f(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: qr_incld, rcldm, rhofacr
+    real(kind=c_real), intent(inout) :: nr, nr_incld
+    real(kind=c_real), intent(out) :: mu_r, lamr, V_qr, V_nr
+  end subroutine compute_rain_fall_velocity_f
 
   !
   ! These are some routine math operations that are not BFB between
