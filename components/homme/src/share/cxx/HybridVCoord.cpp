@@ -37,6 +37,9 @@ void HybridVCoord::init(const Real ps0_in,
   hybrid_am = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid coordinates; coefficient A_midpoints");
   hybrid_bm = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid coordinates; coefficient B_midpoints");
 
+  hybrid_ai_packed = decltype(hybrid_ai_packed)(reinterpret_cast<Scalar*>(hybrid_ai.data()));
+  hybrid_bi_packed = decltype(hybrid_bi_packed)(reinterpret_cast<Scalar*>(hybrid_bi.data()));
+
   // Create views of input pointers
   HostViewUnmanaged<const Real[NUM_INTERFACE_LEV]> host_hybrid_ai(hybrid_ai_ptr);
   HostViewUnmanaged<const Real[NUM_INTERFACE_LEV]> host_hybrid_bi(hybrid_bi_ptr);
@@ -68,6 +71,8 @@ void HybridVCoord::random_init(int seed) {
   hybrid_bi = ExecViewManaged<Real[NUM_INTERFACE_LEV]>("Hybrid b_interface coefs");
   hybrid_am = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid a_interface coefs");
   hybrid_bm = ExecViewManaged<Scalar[NUM_LEV]>("Hybrid b_interface coefs");
+  hybrid_ai_packed = decltype(hybrid_ai_packed)(reinterpret_cast<Scalar*>(hybrid_ai.data()));
+  hybrid_bi_packed = decltype(hybrid_bi_packed)(reinterpret_cast<Scalar*>(hybrid_bi.data()));
 
   std::mt19937_64 engine(seed);
   ps0 = 1.0;

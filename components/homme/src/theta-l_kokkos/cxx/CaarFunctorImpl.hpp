@@ -903,7 +903,7 @@ struct CaarFunctorImpl {
            // could also use true hydrostatic pressure, but this requires extra DSS in dirk()
            phi_tens(ilev) +=  (m_data.scale1-m_data.scale2) *
                 (v_i(0,igp,jgp,ilev)*m_geometry.m_gradphis(kv.ie,0,igp,jgp) +
-                 v_i(1,igp,jgp,ilev)*m_geometry.m_gradphis(kv.ie,1,igp,jgp) ) * m_hvcoord.hybrid_bi(ilev);
+                 v_i(1,igp,jgp,ilev)*m_geometry.m_gradphis(kv.ie,1,igp,jgp) ) * m_hvcoord.hybrid_bi_packed(ilev);
         }
       });
     });

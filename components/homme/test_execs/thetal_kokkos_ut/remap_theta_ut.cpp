@@ -63,8 +63,8 @@ TEST_CASE("remap", "remap_testing") {
   // The random numbers generator
   std::random_device rd;
   using rngAlg = std::mt19937_64;
-  const int seed = 1; // Change to the following line after debugging
-  // const int seed = rd();
+  // const int seed = 1; // Change to the following line after debugging
+  const int seed = rd();
   rngAlg engine(seed);
   using RPDF = std::uniform_real_distribution<Real>;
   using IPDF = std::uniform_int_distribution<int>;
