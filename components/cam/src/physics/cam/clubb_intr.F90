@@ -754,6 +754,8 @@ end subroutine clubb_init_cnst
     call addfld ('DPDLFLIQ', (/ 'lev' /),  'A',        'kg/kg/s', 'Detrained liquid water from deep convection')
     call addfld ('DPDLFICE', (/ 'lev' /),  'A',        'kg/kg/s', 'Detrained ice from deep convection')  
     call addfld ('DPDLFT', (/ 'lev' /),  'A',        'K/s', 'T-tendency due to deep convective detrainment') 
+    call addfld ('DPDLFNUMLIQ', (/ 'lev' /),  'A',        'kg/kg/s', 'Detrained liquid water number concentration from deep convection')
+    call addfld ('DPDLFNUMICE', (/ 'lev' /),  'A',        'kg/kg/s', 'Detrained ice number concentration from deep convection')
     call addfld ('RELVAR', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance')
     call addfld ('RELVARC', (/ 'lev' /),  'A',        '-', 'Relative cloud water variance', flag_xyfill=.true.,fill_value=fillvalue)
     call addfld ('CONCLD', (/ 'lev' /),  'A',        'fraction', 'Convective cloud cover')
@@ -834,7 +836,9 @@ end subroutine clubb_init_cnst
     if (history_budget) then       
        call add_default('DPDLFLIQ',         history_budget_histfile_num, ' ')
        call add_default('DPDLFICE',         history_budget_histfile_num, ' ')
-       call add_default('DPDLFT',           history_budget_histfile_num, ' ') 
+       call add_default('DPDLFT',           history_budget_histfile_num, ' ')
+       call add_default('DPDLFNUMLIQ',      history_budget_histfile_num, ' ')
+       call add_default('DPDLFNUMICE',      history_budget_histfile_num, ' ') 
        call add_default('STEND_CLUBB',      history_budget_histfile_num, ' ')
        call add_default('RCMTEND_CLUBB',    history_budget_histfile_num, ' ')
        call add_default('RIMTEND_CLUBB',    history_budget_histfile_num, ' ')
@@ -2195,10 +2199,12 @@ end subroutine clubb_init_cnst
    det_ice(:ncol) = det_ice(:ncol)/1000._r8  ! divide by density of water
    call t_stopf('ice_cloud_detrain_diag')
 
-   call outfld( 'DPDLFLIQ', ptend_loc%q(:,:,ixcldliq), pcols, lchnk)
-   call outfld( 'DPDLFICE', ptend_loc%q(:,:,ixcldice), pcols, lchnk)
-   call outfld( 'DPDLFT',   ptend_loc%s(:,:)/cpair, pcols, lchnk)
-  
+   call outfld( 'DPDLFLIQ',    ptend_loc%q(:,:,ixcldliq), pcols, lchnk)
+   call outfld( 'DPDLFICE',    ptend_loc%q(:,:,ixcldice), pcols, lchnk)
+   call outfld( 'DPDLFT',      ptend_loc%s(:,:)/cpair   , pcols, lchnk)
+   call outfld( 'DPDLFNUMLIQ', ptend_loc%q(:,:,ixnumliq), pcols, lchnk)
+   call outfld( 'DPDLFNUMICE', ptend_loc%q(:,:,ixnumice), pcols, lchnk)
+
    call physics_ptend_sum(ptend_loc,ptend_all,ncol)
    call physics_update(state1,ptend_loc,hdtime)
 
