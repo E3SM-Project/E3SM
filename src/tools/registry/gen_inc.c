@@ -530,7 +530,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 
 	int in_subpool;
 
-	FILE *fd, *fd2;
+	FILE *fd, *fd2, *fcd, *fcg;
 
 	const_core = ezxml_attr(registry, "core_abbrev");
 
@@ -538,6 +538,8 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 
 	fd = fopen("namelist_defines.inc", "w+");
 	fd2 = fopen("namelist_call.inc", "w+");
+	fcd = fopen("config_declare.inc", "w+");
+	fcg = fopen("config_get.inc", "w+");
 
 	fortprintf(fd2, "   function %s_setup_namelists(configPool, namelistFilename, dminfo) result(iErr)\n", core_string);
 	fortprintf(fd2, "      use mpas_derived_types\n");
@@ -599,7 +601,7 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 		fortprintf(fd, "      integer :: ierr\n");
 		fortprintf(fd, "\n");
 
-		// Define variable defintions prior to reading the namelist in.
+		// Define variable definitions prior to reading the namelist in.
 		for (nmlopt_xml = ezxml_child(nmlrecs_xml, "nml_option"); nmlopt_xml; nmlopt_xml = nmlopt_xml->next){
 			nmloptname = ezxml_attr(nmlopt_xml, "name");
 			nmlopttype = ezxml_attr(nmlopt_xml, "type");
@@ -611,9 +613,12 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 
 			if(strncmp(nmlopttype, "real", 1024) == 0){
 				fortprintf(fd, "      real (kind=RKIND) :: %s = %lf\n", nmloptname, (double)atof(nmloptval));
+				fortprintf(fcd, "      real (kind=RKIND), pointer :: %s\n", nmloptname);
 			} else if(strncmp(nmlopttype, "integer", 1024) == 0){
 				fortprintf(fd, "      integer :: %s = %d\n", nmloptname, atoi(nmloptval));
+				fortprintf(fcd, "      integer, pointer :: %s\n", nmloptname);
 			} else if(strncmp(nmlopttype, "logical", 1024) == 0){
+				fortprintf(fcd, "      logical, pointer :: %s\n", nmloptname);
 				if(strncmp(nmloptval, "true", 1024) == 0 || strncmp(nmloptval, ".true.", 1024) == 0){
 					fortprintf(fd, "      logical :: %s = .true.\n", nmloptname);
 				} else {
@@ -621,9 +626,11 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 				}
 			} else if(strncmp(nmlopttype, "character", 1024) == 0){
 					fortprintf(fd, "      character (len=StrKIND) :: %s = '%s'\n", nmloptname, nmloptval);
+					fortprintf(fcd, "      character (len=StrKIND), pointer :: %s\n", nmloptname);
 			}
 		}
 		fortprintf(fd, "\n");
+		fortprintf(fcd, "\n");
 
 		// Define the namelist block, to read the namelist record in.
 		fortprintf(fd, "      namelist /%s/ &\n", nmlrecname);
@@ -704,8 +711,10 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 			nmloptname = ezxml_attr(nmlopt_xml, "name");
 
 			fortprintf(fd, "      call mpas_pool_add_config(%s, '%s', %s)\n", pool_name, nmloptname, nmloptname);
+			fortprintf(fcg, "      call mpas_pool_get_config(configPool, '%s', %s)\n", nmloptname, nmloptname);
 		}
 		fortprintf(fd, "\n");
+		fortprintf(fcg, "\n");
 
 		// End new subroutine for namelist record.
 		fortprintf(fd, "   end subroutine %s_setup_nmlrec_%s\n", core_string, nmlrecname);
@@ -715,6 +724,11 @@ int parse_namelist_records_from_registry(ezxml_t registry)/*{{{*/
 	fortprintf(fd2, "\n");
 	fortprintf(fd2, "      close(unitNumber)\n");
 	fortprintf(fd2, "   end function %s_setup_namelists\n", core_string);
+
+	fclose(fd);
+	fclose(fd2);
+	fclose(fcd);
+	fclose(fcg);
 
 	return 0;
 }/*}}}*/
