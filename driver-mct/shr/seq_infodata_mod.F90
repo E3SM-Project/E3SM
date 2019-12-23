@@ -2190,6 +2190,7 @@ CONTAINS
     call shr_mpi_bcast(infodata%glc_g2lupdate,           mpicom)
     call shr_mpi_bcast(infodata%glc_valid_input,         mpicom)
     call shr_mpi_bcast(infodata%model_doi_url,           mpicom)
+    call shr_mpi_bcast(infodata%constant_zenith_deg,     mpicom)
 
   end subroutine seq_infodata_bcast
 
