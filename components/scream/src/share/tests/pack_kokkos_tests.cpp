@@ -284,68 +284,112 @@ TEST_CASE("kokkos_packs", "scream::pack") {
 
 TEST_CASE("host_device_packs", "scream::pack")
 {
-  static constexpr int size = 59;
-  static constexpr int num_vecs = 3;
+  static constexpr int num_pksizes_to_test = 4;
+  static constexpr int num_views_per_pksize = 3;
+  static constexpr int fixed_view_size = 67;
 
   using KT = scream::KokkosTypes<scream::DefaultDevice>;
 
   using Pack1T = scream::pack::Pack<int, 1>;
   using Pack2T = scream::pack::Pack<int, 2>;
   using Pack4T = scream::pack::Pack<int, 4>;
+  using Pack8T = scream::pack::Pack<int, 8>; // we will use this to test fixed-sized view sugar
 
   using view_p1_t = typename KT::template view_1d<Pack1T>;
   using view_p2_t = typename KT::template view_1d<Pack2T>;
   using view_p4_t = typename KT::template view_1d<Pack4T>;
+  using view_p8_t = typename KT::template view_1d<Pack8T>;
 
-  std::vector<std::vector<int> > raw_data(num_vecs, std::vector<int>(size));
+  Kokkos::Array<size_t, num_views_per_pksize> sizes = {13, 37, 59}; // num scalars per view
+  std::vector<std::vector<int> > raw_data(num_pksizes_to_test, std::vector<int>());
 
-  for (int i = 0; i < num_vecs; ++i) {
-    for (int k = 0; k < size; ++k) {
-      raw_data[i][k] = k*(i+1);
+  int total_scalars = 0; // each pksize has total_scalars of data
+  for (int i = 0; i < num_views_per_pksize; ++i) {
+    total_scalars += sizes[i];
+  }
+
+  for (int i = 0; i < num_pksizes_to_test; ++i) {
+    const int mysize = i == num_pksizes_to_test-1 ? num_views_per_pksize*fixed_view_size : total_scalars;
+    raw_data[i].resize(mysize);
+  }
+
+  Kokkos::Array<int, num_pksizes_to_test> pk_sizes = {1, 2, 4, 8};
+  Kokkos::Array<view_p1_t, num_views_per_pksize> p1_d;
+  Kokkos::Array<view_p2_t, num_views_per_pksize> p2_d;
+  Kokkos::Array<view_p4_t, num_views_per_pksize> p4_d;
+  Kokkos::Array<view_p8_t, num_views_per_pksize> p8_d; // fixed-size
+
+  Kokkos::Array<Kokkos::Array<int*, num_views_per_pksize>, num_pksizes_to_test> ptr_data;
+  Kokkos::Array<Kokkos::Array<const int*, num_views_per_pksize>, num_pksizes_to_test> cptr_data;
+  for (int i = 0; i < num_pksizes_to_test; ++i) {
+    for (int j = 0; j < num_views_per_pksize; ++j) {
+      if (j == 0) {
+        ptr_data[i][j] = raw_data[i].data();
+      }
+      else {
+        const int last_size = i == num_pksizes_to_test-1 ? fixed_view_size : sizes[j-1];
+        ptr_data[i][j] = ptr_data[i][j-1] + last_size;
+      }
+
+      cptr_data[i][j] = ptr_data[i][j];
     }
   }
 
-  Kokkos::Array<int, num_vecs> pk_sizes = {1, 2, 4};
-  Kokkos::Array<view_p1_t, 1> p1_d;
-  Kokkos::Array<view_p2_t, 1> p2_d;
-  Kokkos::Array<view_p4_t, 1> p4_d;
+  for (int i = 0; i < num_pksizes_to_test; ++i) {
+    for (int j = 0; j < num_views_per_pksize; ++j) {
+      for (int k = 0; k < (i == num_pksizes_to_test - 1 ? fixed_view_size : sizes[j]); ++k) {
+        ptr_data[i][j][k] = k*(i+j+1);
+      }
+    }
+  }
 
-  scream::pack::host_to_device( {raw_data[0].data()}, size, p1_d);
-  scream::pack::host_to_device( {raw_data[1].data()}, size, p2_d);
-  scream::pack::host_to_device( {raw_data[2].data()}, size, p4_d);
+  scream::pack::host_to_device( cptr_data[0], sizes, p1_d);
+  scream::pack::host_to_device( cptr_data[1], sizes, p2_d);
+  scream::pack::host_to_device( cptr_data[2], sizes, p4_d);
+  scream::pack::host_to_device( cptr_data[3], fixed_view_size, p8_d); // fixed-size
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(const int&) {
-    for (int i = 0; i < num_vecs; ++i) {
-      for (int k = 0; k < size; ++k) {
-        const int view_idx = k / pk_sizes[i];
-        const int pk_idx = k % pk_sizes[i];
+    for (int i = 0; i < num_pksizes_to_test; ++i) {
+      for (int j = 0; j < num_views_per_pksize; ++j) {
+        for (int k = 0; k < (i == num_pksizes_to_test - 1 ? fixed_view_size : sizes[j]); ++k) {
 
-        if (i == 0) {
-          scream_krequire(p1_d[0](view_idx)[pk_idx] == k*(i+1));
-          p1_d[0](view_idx)[pk_idx] += i;
-        }
-        else if (i == 1) {
-          scream_krequire(p2_d[0](view_idx)[pk_idx] == k*(i+1));
-          p2_d[0](view_idx)[pk_idx] += i;
-        }
-        else if (i == 2) {
-          scream_krequire(p4_d[0](view_idx)[pk_idx] == k*(i+1));
-          p4_d[0](view_idx)[pk_idx] += i;
-        }
-        else {
-          scream_krequire_msg(false, "Unhandled i");
+          const int view_idx = k / pk_sizes[i];
+          const int pk_idx = k % pk_sizes[i];
+
+          if (i == 0) {
+            scream_krequire(p1_d[j](view_idx)[pk_idx] == k*(i+j+1));
+            p1_d[j](view_idx)[pk_idx] += i+j;
+          }
+          else if (i == 1) {
+            scream_krequire(p2_d[j](view_idx)[pk_idx] == k*(i+j+1));
+            p2_d[j](view_idx)[pk_idx] += i+j;
+          }
+          else if (i == 2) {
+            scream_krequire(p4_d[j](view_idx)[pk_idx] == k*(i+j+1));
+            p4_d[j](view_idx)[pk_idx] += i+j;
+          }
+          else if (i == 3) {
+            scream_krequire(p8_d[j](view_idx)[pk_idx] == k*(i+j+1));
+            p8_d[j](view_idx)[pk_idx] += i+j;
+          }
+          else {
+            scream_krequire_msg(false, "Unhandled i");
+          }
         }
       }
     }
   });
 
-  scream::pack::device_to_host( {raw_data[0].data()}, size, p1_d);
-  scream::pack::device_to_host( {raw_data[1].data()}, size, p2_d);
-  scream::pack::device_to_host( {raw_data[2].data()}, size, p4_d);
+  scream::pack::device_to_host( ptr_data[0], sizes, p1_d);
+  scream::pack::device_to_host( ptr_data[1], sizes, p2_d);
+  scream::pack::device_to_host( ptr_data[2], sizes, p4_d);
+  scream::pack::device_to_host( ptr_data[3], fixed_view_size, p8_d); // fixed-size
 
-  for (int i = 0; i < num_vecs; ++i) {
-    for (int k = 0; k < size; ++k) {
-      REQUIRE(raw_data[i][k] == k*(i+1) + i);
+  for (int i = 0; i < num_pksizes_to_test; ++i) {
+    for (int j = 0; j < num_views_per_pksize; ++j) {
+      for (int k = 0; k < (i == num_pksizes_to_test - 1 ? fixed_view_size : sizes[j]); ++k) {
+        REQUIRE(ptr_data[i][j][k] == k*(i+j+1) + i + j);
+      }
     }
   }
 }
