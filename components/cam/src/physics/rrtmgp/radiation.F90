@@ -2254,8 +2254,6 @@ contains
       ! Indices to model top on the RADIATION VERTICAL GRID
       integer :: k, k_cam
 
-      real(wp), allocatable, dimension(:,:,:) :: vmr
-
       character(len=32), allocatable :: gas_names(:)
 
       ! Number of columns in chunk
