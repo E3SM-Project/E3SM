@@ -86,8 +86,8 @@ void Functions<S,D>
     while (dt_left > C::dt_left_tol) {
       Scalar Co_max = 0.0;
       Int kmin, kmax;
-      const Int kmin_scalar = ( kdir == 1 ? k_qxbot : k_qxtop);
-      const Int kmax_scalar = ( kdir == 1 ? k_qxtop : k_qxbot);
+      Int kmin_scalar = ( kdir == 1 ? k_qxbot : k_qxtop);
+      Int kmax_scalar = ( kdir == 1 ? k_qxtop : k_qxbot);
 
       Kokkos::parallel_for(
        Kokkos::TeamThreadRange(team, V_qr.extent(0)), [&] (Int k) {
@@ -122,11 +122,13 @@ void Functions<S,D>
 
       // AaronDonahue, rflx output
       util::set_min_max(k_qxbot+1, k_qxtop+1, kmin, kmax, Spack::n);
+      kmin_scalar = ( kdir == 1 ? k_qxbot+1 : k_qxtop+1);
+      kmax_scalar = ( kdir == 1 ? k_qxtop+1 : k_qxbot+1);
       Kokkos::parallel_for(
        Kokkos::TeamThreadRange(team, kmax-kmin+1), [&] (int pk_) {
         const int pk = kmin + pk_;
         const auto range_pack = scream::pack::range<IntSmallPack>(pk*Spack::n);
-        const auto range_mask = range_pack >= kmin_scalar+1 && range_pack <= kmax_scalar+1;
+        const auto range_mask = range_pack >= kmin_scalar && range_pack <= kmax_scalar;
         const auto flux_qx_pk = index(sflux_qx, range_pack-1);
         rflx(pk).set(range_mask, rflx(pk) + flux_qx_pk);
       });
