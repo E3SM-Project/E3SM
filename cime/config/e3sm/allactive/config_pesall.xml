@@ -943,6 +943,35 @@
       </pes>
     </mach>
   </grid>
+  <grid name="a%ne30np4.pg2">
+    <mach name="cori-knl">
+      <pes compset="any" pesize="any">
+        <comment>cori-knl, generic ne30pg2, 43 nodes, 32x4</comment>
+        <MAX_MPITASKS_PER_NODE>32</MAX_MPITASKS_PER_NODE>
+        <MAX_TASKS_PER_NODE>128</MAX_TASKS_PER_NODE>
+        <ntasks>
+          <ntasks_atm>1350</ntasks_atm>
+          <ntasks_lnd>1350</ntasks_lnd>
+          <ntasks_rof>1350</ntasks_rof>
+          <ntasks_ice>1200</ntasks_ice>
+          <ntasks_ocn>1200</ntasks_ocn>
+          <ntasks_glc>32</ntasks_glc>
+          <ntasks_wav>32</ntasks_wav>
+          <ntasks_cpl>1350</ntasks_cpl>
+        </ntasks>
+        <nthrds>
+          <nthrds_atm>4</nthrds_atm>
+          <nthrds_lnd>4</nthrds_lnd>
+          <nthrds_rof>1</nthrds_rof>
+          <nthrds_ice>1</nthrds_ice>
+          <nthrds_ocn>1</nthrds_ocn>
+          <nthrds_glc>1</nthrds_glc>
+          <nthrds_wav>1</nthrds_wav>
+          <nthrds_cpl>4</nthrds_cpl>
+        </nthrds>
+      </pes>
+    </mach>
+  </grid>
   <grid name="a%ne30np4_">
     <mach name="eos">
       <pes compset="any" pesize="any">
