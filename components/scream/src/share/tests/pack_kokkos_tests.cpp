@@ -78,9 +78,6 @@ void do_index_test(const View& data)
 }
 
 TEST_CASE("index", "scream::pack") {
-  using scream::pack::scalarize;
-  using scream::pack::Pack;
-
   {
     Kokkos::View<double*> data("data", 100);
     do_index_test<16>(data);
@@ -392,6 +389,34 @@ TEST_CASE("host_device_packs", "scream::pack")
       }
     }
   }
+}
+
+TEST_CASE("index_and_shift", "scream::pack")
+{
+  static constexpr int pack_size = 8;
+  static constexpr int num_ints = 100;
+  static constexpr int shift = 2;
+  using IntPack = scream::pack::Pack<int, pack_size>;
+
+  Kokkos::View<int*> data("data", num_ints);
+
+  Kokkos::parallel_for(num_ints, KOKKOS_LAMBDA(const int i) {
+    data(i) = i + 1000;
+  });
+
+  int nerr = 0;
+  Kokkos::parallel_reduce(num_ints - shift - pack_size, KOKKOS_LAMBDA(const int i, int& errs) {
+    IntPack expected1, expected2, vals1, vals2, idx;
+    expected1 = scream::pack::range<IntPack>(i+1000);
+    expected2 = scream::pack::range<IntPack>(i+1000+shift);
+    idx = scream::pack::range<IntPack>(i);
+    scream::pack::index_and_shift<shift>(data, idx, vals1, vals2);
+    if ( (vals1 != expected1 || vals2 != expected2).any()) {
+      ++errs;
+    }
+  }, nerr);
+
+  REQUIRE(nerr == 0);
 }
 
 } // namespace
