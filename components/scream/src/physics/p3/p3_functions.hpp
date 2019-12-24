@@ -281,6 +281,29 @@ struct Functions
     const view_itab_table& itab,
     Scalar& prt_sol);
 
+  // TODO: comment
+  KOKKOS_FUNCTION
+  static void rain_sedimentation(
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& rhofacr,
+    const uview_1d<const Spack>& rcldm,
+    const uview_1d<const Spack>& inv_dzq,
+    const uview_1d<const Spack>& qr_incld,
+    const MemberType& team,
+    const Workspace& workspace,
+    const view_2d_table& vn_table, const view_2d_table& vm_table,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const uview_1d<Spack>& qr,
+    const uview_1d<Spack>& nr,
+    const uview_1d<Spack>& nr_incld,
+    const uview_1d<Spack>& mu_r,
+    const uview_1d<Spack>& lamr,
+    const uview_1d<Spack>& rflx,
+    const uview_1d<Spack>& qr_tend,
+    const uview_1d<Spack>& nr_tend,
+    Scalar& prt_liq);
+
   // -- Find layers
 
   // Find the bottom and top of the mixing ratio, e.g., qr. It's worth casing
@@ -337,6 +360,7 @@ struct Functions
   static Spack calc_bulk_rho_rime(
     const Smask& qi_gt_small, const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim);
 
+  // TODO - comment
   KOKKOS_FUNCTION
   static void compute_rain_fall_velocity(
     const Smask& qr_gt_small, const view_2d_table& vn_table, const view_2d_table& vm_table,

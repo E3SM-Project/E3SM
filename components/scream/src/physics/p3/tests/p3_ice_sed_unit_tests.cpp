@@ -142,7 +142,7 @@ static void run_bfb_ice_sed()
     IceSedData(1,  72,   27,   27,    1, 1.800E+03, 5.556E-04,     2.0, ranges),
   };
 
-  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(GenSedData);
+  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(IceSedData);
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state

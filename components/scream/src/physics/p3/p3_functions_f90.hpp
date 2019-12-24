@@ -375,6 +375,49 @@ void ice_sedimentation_f(
 
 ///////////////////////////////////////////////////////////////////////////////
 
+struct RainSedData
+{
+  static constexpr size_t NUM_ARRAYS = 14;
+
+  // Inputs
+  Int kts, kte, ktop, kbot, kdir;
+  Real *rho, *inv_rho, *rhofacr, *rcldm, *inv_dzq, *qr_incld;
+  Real dt, odt;
+
+  // In/out
+  Real *qr, *nr, *nr_incld, *mu_r, *lamr, *qr_tend, *nr_tend;
+  Real *rflx; // has special size (nk+1)
+  Real prt_liq;
+
+  RainSedData(Int kts_, Int kte_, Int ktop_, Int kbot_, Int kdir_,
+              Real dt_, Real odt_, Real prt_liq_,
+              const std::array< std::pair<Real, Real>, NUM_ARRAYS >& ranges);
+
+  // deep copy
+  RainSedData(const RainSedData& rhs);
+
+  Int nk() const { return m_nk; }
+
+ private:
+  // Internals
+  Int m_nk;
+  std::vector<Real> m_data;
+};
+
+void rain_sedimentation(RainSedData& d);
+
+extern "C" {
+
+void rain_sedimentation_f(
+  Int kts, Int kte, Int ktop, Int kbot, Int kdir,
+  Real* qr_incld, Real* rho, Real* inv_rho, Real* rhofacr, Real* rcldm, Real* inv_dzq,
+  Real dt, Real odt,
+  Real* qr, Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* prt_liq, Real* rflx, Real* qr_tend, Real* nr_tend);
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 struct CalcBulkRhoRimeData
 {
   // Inputs

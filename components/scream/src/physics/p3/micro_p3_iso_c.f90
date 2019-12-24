@@ -381,6 +381,38 @@ contains
 
   end subroutine ice_sedimentation_c
 
+  subroutine rain_sedimentation_c(kts,kte,ktop,kbot,kdir,   &
+       qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+       qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend) bind(C)
+    use micro_p3, only: rain_sedimentation
+
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+
+    real(kind=c_real), intent(in), dimension(kts:kte) :: qr_incld
+
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rhofacr
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rcldm
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dzq
+    real(kind=c_real), value, intent(in) :: dt, odt
+
+    real(kind=c_real), intent(inout), target, dimension(kts:kte) :: qr
+    real(kind=c_real), intent(inout), target, dimension(kts:kte) :: nr
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: mu_r
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: lamr
+    real(kind=c_real), intent(inout) :: prt_liq
+    real(kind=c_real), intent(inout), dimension(kts:kte+1) :: rflx
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qr_tend
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr_tend
+
+    call rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
+         qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+         qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
+
+  end subroutine rain_sedimentation_c
+
   subroutine calc_bulk_rho_rime_c(qi_tot, qi_rim, bi_rim, rho_rime) bind(C)
     use micro_p3, only: calc_bulkRhoRime
 
