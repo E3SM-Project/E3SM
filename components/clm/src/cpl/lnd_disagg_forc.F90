@@ -56,7 +56,8 @@ contains
     ! !USES:
     use clm_time_manager, only : get_nstep
     use clm_varcon      , only : rair, cpair, grav, lapse_glcmec
-    use clm_varcon      , only : glcmec_rain_snow_threshold
+    use clm_varcon      , only : glcmec_rain_snow_threshold, o2_molar_const
+    use shr_const_mod   , only : SHR_CONST_TKFRZ
     use landunit_varcon , only : istice_mec 
     use clm_varctl      , only : glcmec_downscale_rain_snow_convert
     use domainMod       , only : ldomain
@@ -67,20 +68,22 @@ contains
     integer                    , intent(in)    :: i
     real(r8)                         , intent(in)    :: x2l(:,:)
     type(lnd2atm_type)               , intent(in)    :: lnd2atm_vars
-	
+
     !
     ! !LOCAL VARIABLES:
     integer :: t, l, c, fc         ! indices
     integer :: clo, cc
-	integer :: numt_pg                ! Number of topounits per grid	
+    integer :: numt_pg                ! Number of topounits per grid	
 	
-
     ! temporaries for topo downscaling
-	real(r8) :: rain_g, snow_g
-	real(r8) :: mxElv              ! Maximum elevation value per grid
-	real(r8) :: uovern_t           ! Froude Number
-	real(r8) :: grdElv             ! Grid elevation
-	real(r8) :: topoElv            ! Topounit elevation
+    real(r8) :: rain_g, snow_g
+    real(r8) :: mxElv              ! Maximum elevation value per grid
+    real(r8) :: uovern_t           ! Froude Number
+    real(r8) :: grdElv             ! Grid elevation
+    real(r8) :: topoElv            ! Topounit elevation
+
+    real(r8) :: e
+    real(r8) :: qvsat
 
     real(r8) :: sum_qbot_g    ! weighted sum of column-level lwrad
     real(r8) :: sum_wtsq_g      ! sum of weights that contribute to sum_lwrad_g
@@ -88,88 +91,177 @@ contains
     real(r8) :: sum_lwrad_g    ! weighted sum of column-level lwrad
     real(r8) :: sum_wtslw_g      ! sum of weights that contribute to sum_lwrad_g
     real(r8) :: lwrad_norm_g   ! normalization factors
+    real(r8) :: esatw                ! saturation vapor pressure over water (Pa)
+    real(r8) :: esati                ! saturation vapor pressure over ice (Pa)
+    real(r8) :: a0,a1,a2,a3,a4,a5,a6 ! coefficients for esat over water
+    real(r8) :: b0,b1,b2,b3,b4,b5,b6 ! coefficients for esat over ice
+    real(r8) :: tdc, temp            ! Kelvins to Celcius function and its input
+    real(r8) :: vp                   ! water vapor pressure (Pa)
 
     integer :: uaflag = 0
 
     character(len=*), parameter :: subname = 'downscale_grd_to_topounit'
+
+    ! Constants to compute vapor pressure
+    parameter (a0=6.107799961_r8    , a1=4.436518521e-01_r8, &
+         a2=1.428945805e-02_r8, a3=2.650648471e-04_r8, &
+         a4=3.031240396e-06_r8, a5=2.034080948e-08_r8, &
+         a6=6.136820929e-11_r8)
+
+    parameter (b0=6.109177956_r8    , b1=5.034698970e-01_r8, &
+         b2=1.886013408e-02_r8, b3=4.176223716e-04_r8, &
+         b4=5.824720280e-06_r8, b5=4.838803174e-08_r8, &
+         b6=1.838826904e-10_r8)
+
+    !
+    ! function declarations
+    !
+    tdc(temp) = min( 50._r8, max(-50._r8,(temp-SHR_CONST_TKFRZ)) )
+    esatw(temp) = 100._r8*(a0+temp*(a1+temp*(a2+temp*(a3+temp*(a4+temp*(a5+temp*a6))))))
+    esati(temp) = 100._r8*(b0+temp*(b1+temp*(b2+temp*(b3+temp*(b4+temp*(b5+temp*b6))))))
     !-----------------------------------------------------------------------
-	! Get the number of topounits per grid
-	numt_pg     = grc_pp%ntopounits(g)	
-	mxElv       = grc_pp%MaxElevation(g)         ! Maximum src elevation per grid
-	uovern_t    = x2l(index_x2l_Sa_uovern,i)    ! Froude Number
-	grdElv      = grc_pp%MaxElevation(g)       ! Grid level sfc elevation
-	snow_g      = x2l(index_x2l_Faxa_snowc,i) + x2l(index_x2l_Faxa_snowl,i)
-	rain_g      = x2l(index_x2l_Faxa_rainc,i) + x2l(index_x2l_Faxa_rainl,i)
+    ! Get the number of topounits per grid
+    numt_pg     = grc_pp%ntopounits(g)	
+    mxElv       = grc_pp%MaxElevation(g)         ! Maximum src elevation per grid
+    uovern_t    = x2l(index_x2l_Sa_uovern,i)    ! Froude Number
+    grdElv      = grc_pp%MaxElevation(g)       ! Grid level sfc elevation
+    snow_g      = x2l(index_x2l_Faxa_snowc,i) + x2l(index_x2l_Faxa_snowl,i)
+    rain_g      = x2l(index_x2l_Faxa_rainc,i) + x2l(index_x2l_Faxa_rainl,i)
 	
-	sum_qbot_g = 0.
-	sum_wtsq_g = 0.
-	sum_lwrad_g = 0.
-	sum_wtslw_g = 0.
+    sum_qbot_g = 0.
+    sum_wtsq_g = 0.
+    sum_lwrad_g = 0.
+    sum_wtslw_g = 0.
 	
-	do t = grc_pp%topi(g), grc_pp%topf(g)
-	   if(numt_pg > 1) then                          !downscaling is done only if a grid has more than 1 topounits    
-	      topoElv  = top_pp%elevation(g)             ! Topounit sfc elevation
+    do t = grc_pp%topi(g), grc_pp%topf(g)
+       if (numt_pg > 1) then                          !downscaling is done only if a grid has more than 1 topounits    
+          topoElv  = top_pp%elevation(g)             ! Topounit sfc elevation
 		  
-		  call downscale_atmo_state_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)	  
-		  call downscale_longwave_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)  
-		  ! call precipitation downscaling 
-		  call downscale_precip_to_topounit(t,mxElv,uovern_t,grdElv,topoElv,rain_g, snow_g) 
+          call downscale_atmo_state_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)
+          call downscale_longwave_to_topounit(g, i, t, x2l, lnd2atm_vars, uaflag)  
+          ! call precipitation downscaling
+          call downscale_precip_to_topounit(t,mxElv,uovern_t,grdElv,topoElv,rain_g, snow_g) 
 	   
-	 if(uaflag == 1) then
-            sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
-            sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
-	 end if
+          if (uaflag == 1) then
+             sum_qbot_g = sum_qbot_g + top_pp%wtgcell(t)*top_as%qbot(t)
+             sum_wtsq_g = sum_wtsq_g + top_pp%wtgcell(t)
+	  end if
 
-            ! Keep track of the gridcell-level weighted sum for later normalization.
-            !
-            ! This gridcell-level weighted sum just includes points for which we do the
-            ! downscaling (e.g., glc_mec points). Thus the contributing weights
-            ! generally do not add to 1. So to do the normalization properly, we also
-            ! need to keep track of the weights that have contributed to this sum.
-            sum_lwrad_g = sum_lwrad_g + top_pp%wtgcell(t)*top_af%lwrad(t)
-            sum_wtslw_g = sum_wtslw_g + top_pp%wtgcell(t)
+          top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
+          top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
+          top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
+                
+          ! assign the state forcing fields derived from other inputs
+          ! Horizontal windspeed (m/s)
+          top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
+          ! partial pressure of oxygen (Pa)
+          top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
+          ! air density (kg/m**3) - uses a temporary calculation
+          ! of water vapor pressure (Pa)
+          vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
+          top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
 
-		  else !grid has a single topounit
-			  ! update top_af using grid level values
-			  top_af%rain(t) = rain_g 
-			  top_af%snow(t) = snow_g 
-			  top_af%lwrad(t) = x2l(index_x2l_faxa_lwdn,i)
+          top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
+          top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
+          top_af%solai(t,2) = x2l(index_x2l_Faxa_swndf,i)
+          top_af%solai(t,1) = x2l(index_x2l_Faxa_swvdf,i)
+          ! derived flux forcings
+          top_af%solar(t) = top_af%solad(t,2) + top_af%solad(t,1) + &
+              top_af%solai(t,2) + top_af%solai(t,1)
+
+          ! Keep track of the gridcell-level weighted sum for later normalization.
+          !
+          ! This gridcell-level weighted sum just includes points for which we do the
+          ! downscaling (e.g., glc_mec points). Thus the contributing weights
+          ! generally do not add to 1. So to do the normalization properly, we also
+          ! need to keep track of the weights that have contributed to this sum.
+          sum_lwrad_g = sum_lwrad_g + top_pp%wtgcell(t)*top_af%lwrad(t)
+          sum_wtslw_g = sum_wtslw_g + top_pp%wtgcell(t)
+
+    else !grid has a single topounit
+       ! update top_af using grid level values
+       top_af%rain(t) = rain_g 
+       top_af%snow(t) = snow_g 
+       top_af%lwrad(t) = x2l(index_x2l_faxa_lwdn,i)
 			  
-			  ! Update top_as
-			  top_as%tbot(t)    = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
-			  top_as%thbot(t)   = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
-			  top_as%pbot(t)    = x2l(index_x2l_Sa_pbot,i)      ! ptcmxy    Atm state Pa
-			  top_as%qbot(t)    = x2l(index_x2l_Sa_shum,i)      ! forc_qxy  Atm state kg/kg
-			  top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
-			  top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
-			  top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
+       ! Update top_as
+       top_as%tbot(t)    = x2l(index_x2l_Sa_tbot,i)      ! forc_txy  Atm state K
+       top_as%thbot(t)   = x2l(index_x2l_Sa_ptem,i)      ! forc_thxy Atm state K
+       top_as%pbot(t)    = x2l(index_x2l_Sa_pbot,i)      ! ptcmxy    Atm state Pa
+       top_as%qbot(t)    = x2l(index_x2l_Sa_shum,i)      ! forc_qxy  Atm state kg/kg
+       top_as%ubot(t)    = x2l(index_x2l_Sa_u,i)         ! forc_uxy  Atm state m/s
+       top_as%vbot(t)    = x2l(index_x2l_Sa_v,i)         ! forc_vxy  Atm state m/s
+       top_as%zbot(t)    = x2l(index_x2l_Sa_z,i)         ! zgcmxy    Atm state m
 		 
-		 end if
-	 end do
+       ! assign the state forcing fields derived from other inputs
+       ! Horizontal windspeed (m/s)
+       top_as%windbot(t) = sqrt(top_as%ubot(t)**2 + top_as%vbot(t)**2)
+       ! Relative humidity (percent)
+       if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
+          e = esatw(tdc(top_as%tbot(t)))
+       else
+          e = esati(tdc(top_as%tbot(t)))
+       end if
+       qvsat = 0.622_r8*e / (top_as%pbot(t) - 0.378_r8*e)
+       top_as%rhbot(t) = 100.0_r8*(top_as%qbot(t) / qvsat)
+       ! partial pressure of oxygen (Pa)
+       top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
+       ! air density (kg/m**3) - uses a temporary calculation
+       ! of water vapor pressure (Pa)
+       vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
+       top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
+
+       top_af%solad(t,2) = x2l(index_x2l_Faxa_swndr,i)
+       top_af%solad(t,1) = x2l(index_x2l_Faxa_swvdr,i)
+       top_af%solai(t,2) = x2l(index_x2l_Faxa_swndf,i)
+       top_af%solai(t,1) = x2l(index_x2l_Faxa_swvdf,i)
+       ! derived flux forcings
+       top_af%solar(t) = top_af%solad(t,2) + top_af%solad(t,1) + &
+       		       top_af%solai(t,2) + top_af%solai(t,1)
+ 
+       end if
+    end do
 		 
-	 if(numt_pg > 1) then
-	   if(uaflag == 1) then
+    if (numt_pg > 1) then
+       if (uaflag == 1) then
 
-            ! Normalize forc_lwrad_c(c) to conserve energy
+          ! Normalize forc_lwrad_c(c) to conserve energy
 
-            call build_normalization(orig_field=x2l(index_x2l_Sa_shum,i), &
+          call build_normalization(orig_field=x2l(index_x2l_Sa_shum,i), &
               sum_field=sum_qbot_g, sum_wts=sum_wtsq_g, norms=qbot_norm_g)
 
-	    do t = grc_pp%topi(g), grc_pp%topf(g)
-              top_as%qbot(t) = top_as%qbot(t) * qbot_norm_g
-            end do
-	   end if
+          do t = grc_pp%topi(g), grc_pp%topf(g)
+             top_as%qbot(t) = top_as%qbot(t) * qbot_norm_g
 
-         ! Normalize forc_lwrad_c(c) to conserve energy
+             ! Relative humidity (percent)
+             if (top_as%tbot(t) > SHR_CONST_TKFRZ) then
+                e = esatw(tdc(top_as%tbot(t)))
+             else
+                e = esati(tdc(top_as%tbot(t)))
+             end if
+             qvsat = 0.622_r8*e / (top_as%pbot(t) - 0.378_r8*e)
+             top_as%rhbot(t) = 100.0_r8*(top_as%qbot(t) / qvsat)
+             ! partial pressure of oxygen (Pa)
+             top_as%po2bot(t) = o2_molar_const * top_as%pbot(t)
+             ! air density (kg/m**3) - uses a temporary calculation
+             ! of water vapor pressure (Pa)
+             vp = top_as%qbot(t) * top_as%pbot(t)  / (0.622_r8 + 0.378_r8 * top_as%qbot(t))
+             top_as%rhobot(t) = (top_as%pbot(t) - 0.378_r8 * vp) / (rair * top_as%tbot(t))
 
-            call build_normalization(orig_field=x2l(index_x2l_faxa_lwdn,i), &
+          end do
+
+       end if
+
+       ! Normalize forc_lwrad_c(c) to conserve energy
+
+       call build_normalization(orig_field=x2l(index_x2l_faxa_lwdn,i), &
               sum_field=sum_lwrad_g, sum_wts=sum_wtslw_g, norms=lwrad_norm_g)
 
-	    do t = grc_pp%topi(g), grc_pp%topf(g)
-             top_af%lwrad(t) = top_af%lwrad(t) * lwrad_norm_g
-	    end do
+       do t = grc_pp%topi(g), grc_pp%topf(g)
+          top_af%lwrad(t) = top_af%lwrad(t) * lwrad_norm_g
+       end do
 
-	 end if
+    end if
 
   end subroutine downscale_grd_to_topounit
   
@@ -224,60 +316,59 @@ contains
          ! This is a simple downscaling procedure 
          ! Note that forc_hgt, forc_u, and forc_v are not downscaled.
 
-      hsurf_g = ldomain%topo(g)                       ! gridcell sfc elevation
+    hsurf_g = ldomain%topo(g)                       ! gridcell sfc elevation
 !         hsurf_t = top_pp%elevation(t)                  ! topounit sfc elevation
-      hsurf_t = ldomain%topo(g)                       ! topounit sfc elevation
-      tbot_g  = x2l(index_x2l_Sa_tbot,i)              ! atm sfc temp
-      thbot_g = x2l(index_x2l_Sa_ptem,i)              ! atm sfc pot temp
-      tsfc_g  = lnd2atm_vars%t_rad_grc(g)             ! sfc rad temp
-      qbot_g  = x2l(index_x2l_Sa_shum,i)              ! atm sfc spec humid
-      pbot_g  = x2l(index_x2l_Sa_pbot,i)              ! atm sfc pressure
-      zbot_g  = x2l(index_x2l_Sa_z,i)                 ! atm ref height
+    hsurf_t = ldomain%topo(g)                       ! topounit sfc elevation
+    tbot_g  = x2l(index_x2l_Sa_tbot,i)              ! atm sfc temp
+    thbot_g = x2l(index_x2l_Sa_ptem,i)              ! atm sfc pot temp
+    tsfc_g  = lnd2atm_vars%t_rad_grc(g)             ! sfc rad temp
+    qbot_g  = x2l(index_x2l_Sa_shum,i)              ! atm sfc spec humid
+    pbot_g  = x2l(index_x2l_Sa_pbot,i)              ! atm sfc pressure
+    zbot_g  = x2l(index_x2l_Sa_z,i)                 ! atm ref height
 
-         zbot_t  = zbot_g
-	 tsfc_t = top_es%t_rad(t)
-    if(method == 0 .or. (method == 1 .and. nstep == 0)) then
-         tbot_t  = tbot_g-lapse_glcmec*(hsurf_t-hsurf_g) ! sfc temp for column
+    zbot_t  = zbot_g
+    tsfc_t = top_es%t_rad(t)
+    if (method == 0 .or. (method == 1 .and. nstep == 0)) then
+       tbot_t  = tbot_g-lapse_glcmec*(hsurf_t-hsurf_g) ! sfc temp for column
     else
-      tbot_t = tsfc_t + tbot_g - tsfc_g ! tsfc is from previous time step
+       tbot_t = tsfc_t + tbot_g - tsfc_g ! tsfc is from previous time step
     end if
  
-         Hbot    = rair*0.5_r8*(tbot_g+tbot_t)/grav      ! scale ht at avg temp
-         pbot_t  = pbot_g*exp(-(hsurf_t-hsurf_g)/Hbot)   ! column sfc press
+    Hbot    = rair*0.5_r8*(tbot_g+tbot_t)/grav      ! scale ht at avg temp
+    pbot_t  = pbot_g*exp(-(hsurf_t-hsurf_g)/Hbot)   ! column sfc press
 
-         ! Derivation of potential temperature calculation:
-         ! 
-         ! The textbook definition would be:
-         ! thbot_c = tbot_c * (p0/pbot_c)^(rair/cpair)
-         ! 
-         ! Note that pressure is related to scale height as:
-         ! pbot_c = p0 * exp(-zbot_c/H)
-         !
-         ! Using Hbot in place of H, we get:
-         ! pbot_c = p0 * exp(-zbot_c/Hbot)
-         !
-         ! Plugging this in to the textbook definition, then manipulating, we get:
-         ! thbot_c = tbot_c * (p0/(p0*exp(-zbot_c/Hbot)))^(rair/cpair)
-         !         = tbot_c * (1/exp(-zbot_c/Hbot))^(rair/cpair)
-         !         = tbot_c * (exp(zbot_c/Hbot))^(rair/cpair)
-         !         = tbot_c * exp((zbot_c/Hbot) * (rair/cpair))
+    ! Derivation of potential temperature calculation:
+    ! 
+    ! The textbook definition would be:
+    ! thbot_c = tbot_c * (p0/pbot_c)^(rair/cpair)
+    ! 
+    ! Note that pressure is related to scale height as:
+    ! pbot_c = p0 * exp(-zbot_c/H)
+    !
+    ! Using Hbot in place of H, we get:
+    ! pbot_c = p0 * exp(-zbot_c/Hbot)
+    !
+    ! Plugging this in to the textbook definition, then manipulating, we get:
+    ! thbot_c = tbot_c * (p0/(p0*exp(-zbot_c/Hbot)))^(rair/cpair)
+    !         = tbot_c * (1/exp(-zbot_c/Hbot))^(rair/cpair)
+    !         = tbot_c * (exp(zbot_c/Hbot))^(rair/cpair)
+    !         = tbot_c * exp((zbot_c/Hbot) * (rair/cpair))
 
-         thbot_t= tbot_t*exp((zbot_t/Hbot)*(rair/cpair))  ! pot temp calc
-!	 thbot_t = tbot_t*(100000./pbot_t)**(rair/cpair)
+    thbot_t= tbot_t*exp((zbot_t/Hbot)*(rair/cpair))  ! pot temp calc
 
-         call Qsat(tbot_g,pbot_g,es_g,dum1,qs_g,dum2)
-         call Qsat(tbot_t,pbot_t,es_t,dum1,qs_t,dum2)
+    call Qsat(tbot_g,pbot_g,es_g,dum1,qs_g,dum2)
+    call Qsat(tbot_t,pbot_t,es_t,dum1,qs_t,dum2)
 
-         qbot_t = qbot_g*(qs_t/qs_g)
-         egcm_t = qbot_t*pbot_t/(0.622+0.378*qbot_t)
-         rhos_t = (pbot_t-0.378*egcm_t) / (rair*tbot_t)
+    qbot_t = qbot_g*(qs_t/qs_g)
+    egcm_t = qbot_t*pbot_t/(0.622+0.378*qbot_t)
+    rhos_t = (pbot_t-0.378*egcm_t) / (rair*tbot_t)
 
-       top_as%tbot(t) = tbot_t
-       top_as%thbot(t) = thbot_t
-       top_as%qbot(t) = qbot_t
-       top_as%pbot(t) = pbot_t
+    top_as%tbot(t) = tbot_t
+    top_as%thbot(t) = thbot_t
+    top_as%qbot(t) = qbot_t
+    top_as%pbot(t) = pbot_t
 
-!      call check_downscale_consistency(bounds, atm2lnd_vars)
+!    call check_downscale_consistency(bounds, atm2lnd_vars)
 
   end subroutine downscale_atmo_state_to_topounit
     
@@ -324,35 +415,34 @@ contains
 
     nstep = get_nstep()
     
-         ! Do the downscaling
-            hsurf_g = ldomain%topo(g)
-            hsurf_t = top_pp%elevation(t)
+    ! Do the downscaling
+    hsurf_g = ldomain%topo(g)
+    hsurf_t = top_pp%elevation(t)
 
-            ! Here we assume that deltaLW = (dLW/dT)*(dT/dz)*deltaz
-            ! We get dLW/dT = 4*eps*sigma*T^3 = 4*LW/T from the Stefan-Boltzmann law,
-            ! evaluated at the mean temp.
-            ! We assume the same temperature lapse rate as above.
+    ! Here we assume that deltaLW = (dLW/dT)*(dT/dz)*deltaz
+    ! We get dLW/dT = 4*eps*sigma*T^3 = 4*LW/T from the Stefan-Boltzmann law,
+    ! evaluated at the mean temp.
+    ! We assume the same temperature lapse rate as above.
 
-            tair_g = x2l(index_x2l_Sa_tbot,i)
-            tair_t = top_as%tbot(t)
-	 tsfc_g = lnd2atm_vars%t_rad_grc(g)
-            lwrad_g = x2l(index_x2l_Faxa_lwdn,i)
-    if(method == 0 .or. (method == 1 .and. nstep == 0)) then
-            lwrad_t = lwrad_g - &
-                 4.0_r8 * lwrad_g/(0.5_r8*(tair_t+tair_g)) * &
-                 lapse_glcmec * (hsurf_t - hsurf_g)
+    tair_g = x2l(index_x2l_Sa_tbot,i)
+    tair_t = top_as%tbot(t)
+    tsfc_g = lnd2atm_vars%t_rad_grc(g)
+    lwrad_g = x2l(index_x2l_Faxa_lwdn,i)
+    if (method == 0 .or. (method == 1 .and. nstep == 0)) then
+       lwrad_t = lwrad_g - &
+          4.0_r8 * lwrad_g/(0.5_r8*(tair_t+tair_g)) * &
+          lapse_glcmec * (hsurf_t - hsurf_g)
     else
-	lwrad_t = lwrad_g + lnd2atm_vars%eflx_lwrad_out_grc(g) * &
-	      		 4._r8 * (tair_t - tair_g) / tsfc_g
+       lwrad_t = lwrad_g + lnd2atm_vars%eflx_lwrad_out_grc(g) * &
+          4._r8 * (tair_t - tair_g) / tsfc_g
     end if
-            top_af%lwrad(t) = lwrad_t
+       top_af%lwrad(t) = lwrad_t
 
 !            newsum_lwrad_g = newsum_lwrad_g + top_pp%wtgcell(t)*lwrad_t
 
 
-         ! Make sure that, after normalization, the grid cell mean is conserved
-
-!            if (sum_wts_g > 0._r8) then
+       ! Make sure that, after normalization, the grid cell mean is conserved
+!           if (sum_wts_g > 0._r8) then
 !               if (abs((newsum_lwrad_g / sum_wts_g) - lwrad_g) > 1.e-8_r8) then
 !                  write(iulog,*) 'g, newsum_lwrad_g, sum_wts_g, forc_lwrad_g: ', &
 !                       g, newsum_lwrad_g, sum_wts_g, lwrad_g
@@ -369,42 +459,43 @@ contains
    
     ! !ARGUMENTS:
     real(r8) :: rain_g, snow_g
-	real(r8) :: mxElv              ! Maximum elevation value per grid
-	real(r8) :: uovern_t           ! Froude Number
-	real(r8) :: grdElv             ! Grid elevation
-	real(r8) :: topoElv            ! Topounit elevation
-	real(r8) :: h
-	real(r8) :: r
-	integer                    , intent(in)    :: t 
+    real(r8) :: mxElv              ! Maximum elevation value per grid
+    real(r8) :: uovern_t           ! Froude Number
+    real(r8) :: grdElv             ! Grid elevation
+    real(r8) :: topoElv            ! Topounit elevation
+    real(r8) :: h
+    real(r8) :: r
+    integer, intent(in)    :: t
+  
 
-	r = topoElv - grdElv
-	if (uovern_t < 0) then
-	   h = r 
-	else
-	    h = min(uovern_t,r)
-	end if
-	 
-	if(mxElv < 0) then
-		mxElv = abs(mxElv) ! avoid the situation where -ve r can force lower areas more rain than higher elevation areas.
-        end if	
+    r = topoElv - grdElv
+    if (uovern_t < 0) then
+       h = r
+    else
+       h = min(uovern_t,r)
+    end if
 
-	if(mxElv == 0) then  ! avoid dividing by 0
-		top_af%rain(t) = rain_g
-		top_af%snow(t) = snow_g	
-	else		
-		if(rain_g > 0) then
-			top_af%rain(t) = rain_g + (rain_g*(h/mxElv))
-		else
-			top_af%rain(t) = rain_g
-		end if
-		
-		if(snow_g > 0) then
-			top_af%snow(t) = snow_g + (snow_g*(h/mxElv))
-		else
-			top_af%snow(t) = snow_g
-		end if
+    if (mxElv < 0) then
+       mxElv = abs(mxElv) ! avoid the situation where -ve r can force lower areas more rain than higher elevation areas.
+    end if
 
-        end if
+    if (mxElv == 0) then  ! avoid dividing by 0
+       top_af%rain(t) = rain_g
+       top_af%snow(t) = snow_g
+    else
+       if (rain_g > 0) then
+          top_af%rain(t) = rain_g + (rain_g*(h/mxElv))
+       else
+          top_af%rain(t) = rain_g
+       end if
+
+       if (snow_g > 0) then
+          top_af%snow(t) = snow_g + (snow_g*(h/mxElv))
+       else
+          top_af%snow(t) = snow_g
+       end if
+
+    end if
 
   end subroutine downscale_precip_to_topounit  
   
