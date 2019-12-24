@@ -1,24 +1,43 @@
 #!/bin/bash
 {{ batchdirectives }}
 
-# Goto run directory
+# Query run directory 
 rundir=`./xmlquery --value RUNDIR`
 echo "run dir is $rundir"
 cd $rundir
 
-# Run ncep_post
+# Query build directory
+blddir="$rundir/../bld"
+
+# Set environment variables
+export LD_LIBRARY_PATH=$NCEP_LIBS/lib:$NCEP_LIBS/lib64:$LD_LIBRARY_PATH
+
+# Copy executable to build directory
+cp $NCEP_LIBS/bin/ncep_post $blddir/.
+
+# Query mpirun command 
 runcmd='{{ mpirun }}'
 mpirun=`echo $runcmd | awk '{print $1}'`
 
-# Copy ncep_post executable to bld directory
-blddir="$rundir/../bld"
-cp $NCEP_LIBS/bin/ncep_post $blddir/.
+# Query file prefixes
+dyn_prefix=`cat model_configure | grep filename_base | awk -F: '{print $2}' | awk '{print $1}'`
+phy_prefix=`cat model_configure | grep filename_base | awk -F: '{print $2}' | awk '{print $2}'`
 
+# Query output format
+file_ext=`cat model_configure | grep output_file | awk -F: '{print $2}' | tr -d " "`
+if [ "$file_ext" == 'netcdf' ];then
+   file_ext="nc"
+fi
+if [ "$file_ext" == 'netcdf_esmf' ];then
+   file_ext="nc"
+fi
+
+# Run ncep_post
 for f in 012 024 036
 do
   export T1=$SECONDS
-  cp dynf$f.nemsio nemsfile
-  cp phyf$f.nemsio flxfile
+  cp ${dyn_prefix}f${f}.nemsio nemsfile
+  cp ${phy_prefix}f${f}.nemsio flxfile
   cp itaga.$f itag
   eval "time $mpirun $blddir/ncep_post >oi.$f 2>ei.$f"
   export T2=$SECONDS
