@@ -262,7 +262,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
-      <env name="IC_DIR">$ENV{CESMDATAROOT}/IC/gfs.20190909</env>
+      <env name="IC_DIR">$ENV{CESMDATAROOT}/ufs_inputdata/IC/gfs.20190909/00</env>
       <env name="NCEP_LIBS">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install</env>
       <env name="NEMSIO_INC">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/include</env>
       <env name="NEMSIO_LIB">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libnemsio_v2.2.3.a</env>
