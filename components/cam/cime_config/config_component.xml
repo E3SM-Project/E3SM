@@ -116,7 +116,7 @@
       <value compset="_CAM5%AQUA"   >-phys cam5 -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
 
       <!-- Radiative-Convective Equilibrium (RCE) -->
-      <value compset="_CAM5%RCE"    >-phys cam5  -rad rrtmgp -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -rce -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -bc_dep_to_snow_updates </value>
+      <value compset="_CAM5%RCE"    >-phys cam5  -rad rrtmgp -nlev 72 -clubb_sgs -microphys mg2 -aquaplanet -rce -chem none </value>
 
 
     </values>

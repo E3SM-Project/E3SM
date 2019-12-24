@@ -20,6 +20,11 @@
 <!-- Special settings for RCE mode -->
 <!-- ----------------------------------------------------------------------- -->
 
+<!-- slightly different values of basic parameter -->
+<rearth> 6.37100e6 </rearth>   	<!-- Earth radius [m] -->
+<gravit> 9.79764   </gravit> 	<!-- gravity [m/s^2] -->
+<cpwv>   1.846e3   </cpwv> 		<!-- specific heat of water vap [J/kg/K] -->
+
 <!-- Use reduced solar constant (i.e. TSI) - only works with RRTMGP -->
 <fixed_total_solar_irradiance>551.58</fixed_total_solar_irradiance>
 
@@ -32,13 +37,17 @@
 <!-- NOTE: solar zenith angle, sfc albedo, and min sfc wind are set via user mods -->
 <!-- see: cam/cime_config/usermods_dirs/rcemip/user_nl_cpl -->
 
+<!-- Disable frontal and oro gravity wave schemes -->
+<use_gw_front>.false.</use_gw_front>
+<use_gw_oro>.false.</use_gw_oro>
+
 <!-- ----------------------------------------------------------------------- -->
 <!-- Constant hydrometeor number -->
 <!-- ----------------------------------------------------------------------- -->
 <micro_do_nccons > .true.     </micro_do_nccons>
 <micro_do_nicons > .true.     </micro_do_nicons>
-<micro_nccons    > 70.0D6     </micro_nccons>
-<micro_nicons    > 0.0001D6   </micro_nicons>
+<micro_nccons    > 100.0D6    </micro_nccons>
+<micro_nicons    >   0.1D6    </micro_nicons>
 
 <ext_frc_specifier    > '' </ext_frc_specifier>
 <srf_emis_specifier   > '' </srf_emis_specifier>
@@ -75,7 +84,7 @@
 <!-- ========================================================================================== -->
 
 <!-- Ice nucleation mods-->
-<use_hetfrz_classnuc       >.true.  </use_hetfrz_classnuc>
+<!-- <use_hetfrz_classnuc       >.true.  </use_hetfrz_classnuc> -->
 <use_preexisting_ice       >.false. </use_preexisting_ice>
 <hist_hetfrz_classnuc      >.false. </hist_hetfrz_classnuc>
 <micro_mg_dcs_tdep         >.true.  </micro_mg_dcs_tdep>
@@ -146,21 +155,12 @@
 <mg_prc_coeff_fix        >.true.    </mg_prc_coeff_fix>
 <rrtmg_temp_fix          >.true.    </rrtmg_temp_fix>
 
-<!-- External forcing for BAM or MAM -->
-<soag_ext_file ver="mam" >atm/cam/chem/trop_mozart_aero/emis/aces4bgc_nvsoa_soag_elev_2000_c160427.nc </soag_ext_file>
-
-<!-- Surface emissions for MAM4 -->
-<dms_emis_file          >atm/cam/chem/trop_mozart_aero/emis/DMSflux.2000.1deg_latlon_conserv.POPmonthlyClimFromACES4BGC_c20160226.nc </dms_emis_file>
-
-<!-- Marine organic aerosol namelist settings -->
-<mam_mom_mixing_state   >3          </mam_mom_mixing_state>
-<mam_mom_cycle_yr       >1          </mam_mom_cycle_yr>
-<mam_mom_fixed_tod      >0          </mam_mom_fixed_tod>
-<mam_mom_fixed_ymd      >0          </mam_mom_fixed_ymd>
-<mam_mom_datatype       >'CYCLICAL' </mam_mom_datatype>
-<mam_mom_datapath       >'atm/cam/chem/trop_mam/marine_BGC/' </mam_mom_datapath>
-<mam_mom_filename       >'monthly_macromolecules_0.1deg_bilinear_latlon_year01_merge_date.nc' </mam_mom_filename> 
-<mam_mom_specifier      >'chla:CHL1','mpoly:TRUEPOLYC','mprot:TRUEPROTC','mlip:TRUELIPC'      </mam_mom_specifier>
+<!-- Prescribed aerosols -->
+<prescribed_aero_datapath>atm/cam/chem/trop_mam/aero</prescribed_aero_datapath>
+<prescribed_aero_file>mam4_0.9x1.2_L72_2000clim_c170323.nc</prescribed_aero_file>
+<use_hetfrz_classnuc>.false.</use_hetfrz_classnuc>
+<prescribed_aero_type>CYCLICAL</prescribed_aero_type>
+<prescribed_aero_cycle_yr>01</prescribed_aero_cycle_yr>
 
 <!-- Stratospheric ozone (Linoz) -->
 <chlorine_loading_file      >atm/cam/chem/trop_mozart/ub/EESC_1850-2100_c090603.nc</chlorine_loading_file>
