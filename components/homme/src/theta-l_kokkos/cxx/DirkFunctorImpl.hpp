@@ -350,7 +350,6 @@ struct DirkFunctorImpl {
           calc_whether_ge(kv, nlev, nvec, 0, dphi, wrk);
           kv.team_barrier();
           if (wrk(1,0)[0] == 0) break;
-          //todo
           calc_step_size(kv, nlev, nvec, grav, dt2, dphi_n0, w_np1, x, wrk);
           kv.team_barrier();
         }
@@ -359,8 +358,7 @@ struct DirkFunctorImpl {
         loop_ki(kv, nlev, nvec, [&] (int k, int i) { w_np1(k,i) += wrk(2,i)*x(k,i); });
 
         Real deltaerr;
-        if (it == maxiter || exit_on_step(kv, nlev, nvec, wmax, deltatol, x, deltaerr))
-          break; // from Newton iteration
+        if (exit_on_step(kv, nlev, nvec, wmax, deltatol, x, deltaerr)) break;
       } // Newton iteration
       kv.team_barrier();
 
@@ -792,7 +790,7 @@ struct DirkFunctorImpl {
     // Find minimum alpha in each column. This calculation is performed rarely,
     // so we can use the following suboptimal reduction arising from the
     // Newton-loop team policy without essentially any performance loss. The
-    // code itself is fine, but the current policy has too many teams and too
+    // code itself is fine, but the current policy has too many threads and too
     // few vector lanes on GPU compared with the optimal policy.
     const auto f = [&] (int idx) {
       const int i = idx / packn, s = idx % packn;
