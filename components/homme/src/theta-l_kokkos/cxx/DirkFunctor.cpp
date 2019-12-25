@@ -36,7 +36,9 @@ void DirkFunctor::init_buffers (const FunctorsBuffersManager& fbm) {
 
 void DirkFunctor::run (int nm1, Real alphadt_nm1, int n0, Real alphadt_n0, int np1, Real dt2,
                        const Elements& elements, const HybridVCoord& hvcoord) {
+  GPTLstart("compute_stage_value_dirk");
   m_dirk_impl->run(nm1, alphadt_nm1, n0, alphadt_n0, np1, dt2, elements, hvcoord);
+  GPTLstop("compute_stage_value_dirk");
 }
 
 } // Namespace Homme

@@ -137,6 +137,7 @@ struct DirkFunctorImpl {
       Kokkos::fence();
     }
     run_newton(nm1, alphadt_nm1, n0, alphadt_n0, np1, dt2, e, hvcoord, bfb_solver);
+    Kokkos::fence();
   }
 
   // Optimal impl of phi_from_eos for the initial guess. See comments for the
