@@ -652,8 +652,9 @@ contains
              unit_basename = 'kg'  
           endif
 
-          call addfld( cnst_name_cw(n), (/ 'lev' /), 'A',                unit_basename//'/kg ', &
-               trim(cnst_name_cw(n))//' in cloud water')
+          !Guangxing Lin for cloud-borne aerosol 
+          !call addfld( cnst_name_cw(n), (/ 'lev' /), 'A',                unit_basename//'/kg ', &
+          !     trim(cnst_name_cw(n))//' in cloud water')
           call addfld (trim(cnst_name_cw(n))//'SFWET',horiz_only,  'A', unit_basename//'/m2/s ', &
                trim(cnst_name_cw(n))//' wet deposition flux at surface')
           call addfld (trim(cnst_name_cw(n))//'SFSIC',horiz_only,  'A', unit_basename//'/m2/s ', &
@@ -673,7 +674,8 @@ contains
 
           if ( history_aerosol ) then 
              if (history_verbose) then
-                call add_default( cnst_name_cw(n), 1, ' ' )
+                !Guangxing Lin
+                ! call add_default( cnst_name_cw(n), 1, ' ' )
                 call add_default (trim(cnst_name_cw(n))//'GVF', 1, ' ')
                 call add_default (trim(cnst_name_cw(n))//'TBF', 1, ' ')
                 call add_default (trim(cnst_name_cw(n))//'SFSBS', 1, ' ')      
@@ -681,6 +683,7 @@ contains
                 call add_default (trim(cnst_name_cw(n))//'SFSBC', 1, ' ')
                 call add_default (trim(cnst_name_cw(n))//'SFSIS', 1, ' ')
              endif
+                !Guangxing Lin
              call add_default (trim(cnst_name_cw(n))//'SFWET', 1, ' ') 
              call add_default (trim(cnst_name_cw(n))//'DDF', 1, ' ')
           endif
@@ -2166,6 +2169,7 @@ do_lphase2_conditional: &
                          sflx(i)=sflx(i)+dqdt_tmp(i,k)*state%pdel(i,k)/gravit
                       enddo
                    enddo
+                  !Guangxing Lin 
                    call outfld( trim(cnst_name_cw(mm))//'SFWET', sflx, pcols, lchnk)
                    aerdepwetcw(:ncol,mm) = sflx(:ncol)
                    

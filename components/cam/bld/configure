@@ -1535,6 +1535,8 @@ else {
 	$nadv += 4;
         if ($print>=2) { print "Advected constituents added by the age of air tracer package: 4$eol"; }
     }
+    ##Guangxing Lin add cloud-borne aerosols
+    #$nadv += 25;
 
     $cfg_ref->set('nadv', $nadv);
 }
