@@ -1119,6 +1119,18 @@
       <grid name="atm">C96</grid>
     </model_grid>
 
+    <model_grid alias="C192" not_compset="_POP">
+      <grid name="atm">C192</grid>
+    </model_grid>
+
+    <model_grid alias="C384" not_compset="_POP">
+      <grid name="atm">C384</grid>
+    </model_grid>
+
+    <model_grid alias="C768" not_compset="_POP">
+      <grid name="atm">C768</grid>
+    </model_grid>
+
     <model_grid alias="C384_t025" not_compset="_POP" >
       <grid name="atm">C384</grid>
       <grid name="lnd">C384</grid>
@@ -1713,10 +1725,21 @@
       <support>Experimental for fv3 dycore</support>
     </domain>
 
+    <domain name="C192">
+      <nx>221184</nx> <ny>1</ny>
+      <desc>C192 is a fvcubed 50 km resolution grid:</desc>
+      <support>Experimental for fv3 dycore</support>
+    </domain>
+
     <domain name="C384">
-      <!-- The following nx is incorrect -->
-      <nx>100000</nx> <ny>1</ny>
-      <desc>C384 is a fvcubed xx-deg grid:</desc>
+      <nx>884736</nx> <ny>1</ny>
+      <desc>C384 is a fvcubed 25 km resolution grid:</desc>
+      <support>Experimental for fv3 dycore</support>
+    </domain>
+
+    <domain name="C768">
+      <nx>3538944</nx> <ny>1</ny>
+      <desc>C768 is a fvcubed 13 km resolution grid:</desc>
       <support>Experimental for fv3 dycore</support>
     </domain>
 
