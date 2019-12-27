@@ -67,7 +67,7 @@ module scamMod
   logical, public ::  l_conv                ! use flux divergence terms for T and q?     
   logical, public ::  l_divtr               ! use flux divergence terms for constituents?
   logical, public ::  l_diag                ! do we want available diagnostics?
-  logical, public ::  iop_scream         ! do IOP-SCREAM configuration
+  logical, public ::  iop_scream            ! do IOP-SCREAM configuration
 
   integer, public ::  error_code            ! Error code from netCDF reads
   integer, public ::  initTimeIdx
@@ -241,7 +241,7 @@ subroutine scam_default_opts( scmlat_out,scmlon_out,iopfile_out, &
    if ( present(swrad_off_out))         swrad_off_out = .false.
    if ( present(lwrad_off_out))         lwrad_off_out = .false.
    if ( present(precip_off_out))        precip_off_out = .false.
-   if ( present(iop_scream_out))   iop_scream_out = .false.
+   if ( present(iop_scream_out))        iop_scream_out = .false.
    if ( present(scm_clubb_iop_name_out) ) scm_clubb_iop_name_out  = ' '
 
 end subroutine scam_default_opts
@@ -344,7 +344,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if( single_column) then
 
   if (masterproc) then     
-     if (plon /= 1 .or. plat /=1 ) then 
+     if (plon == 1 .and. plat == 1 .and. .not. iop_scream ) then 
         call endrun('SCAM_SETOPTS: must compile model for SCAM mode when namelist parameter single_column is .true.')
      endif
      
@@ -1132,7 +1132,7 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr .or. iop_scream ) then
        have_vertdivq = .false.
      else
-       have_vertdivq = .true.  !PAB
+       have_vertdivq = .true.
      endif
 
      status = nf90_inq_varid( ncid, 'vertdivqsrf', varid   )
@@ -1306,7 +1306,7 @@ endif !scm_observed_aero
      if ( status .ne. nf90_noerr .or. iop_scream ) then
        have_vertdivt = .false.
      else
-       have_vertdivt = .true.  ! PAB
+       have_vertdivt = .true.
      endif
 !
 !       read divt3d (combined vertical/horizontal advection)

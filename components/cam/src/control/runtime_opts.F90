@@ -420,8 +420,7 @@ contains
    call check_energy_setopts( &
       print_energy_errors_in = print_energy_errors )
 
-   ! Set runtime options for single column mode
-!   if (masterproc) then 
+   ! Set runtime options for single column mode 
    if (present(single_column_in) .and. present(scmlon_in) .and. present(scmlat_in)) then 
       if (single_column_in) then
          single_column = single_column_in
@@ -444,7 +443,6 @@ contains
                             scm_clubb_iop_name_in=scm_clubb_iop_name)
       end if
    endif
-!   endif
 
    ! Call subroutines for modules to read their own namelist.
    ! In some cases namelist default values may depend on settings from

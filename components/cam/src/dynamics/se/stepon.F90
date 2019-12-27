@@ -114,9 +114,6 @@ subroutine stepon_init(dyn_in, dyn_out )
   !
   ! Forcing from physics
   ! FU, FV, other dycores, doc, says "m/s" but I think that is m/s^2
-  call addfld ('divT3d',(/ 'lev' /), 'A','K','Dynamics Residual for T',gridname='GLL')
-  call add_default ('divT3d',1,' ')
-
   call addfld ('FU',  (/ 'lev' /), 'A', 'm/s2', 'Zonal wind forcing term',     gridname='GLL')
   call addfld ('FV',  (/ 'lev' /), 'A', 'm/s2', 'Meridional wind forcing term',gridname='GLL')
   call register_vector_field('FU', 'FV')
@@ -135,10 +132,8 @@ subroutine stepon_init(dyn_in, dyn_out )
   call addfld ('U&IC', (/'lev'/), 'I','m/s','Zonal wind',      gridname=grid_name)
   call addfld ('V&IC', (/'lev'/), 'I','m/s','Meridional wind', gridname=grid_name)
   call addfld ('T&IC', (/'lev'/), 'I','K',  'Temperature',     gridname=grid_name)
-  do m = 1,pcnst
-     call addfld (trim(cnst_name(m))//'_dten',(/ 'lev' /), 'A','kg/kg', &
-         trim(cnst_name(m))//' IOP Dynamics Residual for '//trim(cnst_name(m)),gridname='GLL')    
-     call addfld (trim(cnst_name(m))//'&IC',(/'lev'/),'I','kg/kg',cnst_longname(m),gridname=grid_name)
+  do m = 1,pcnst   
+    call addfld (trim(cnst_name(m))//'&IC',(/'lev'/),'I','kg/kg',cnst_longname(m),gridname=grid_name)
   end do
   
   call add_default ('U&IC',0, 'I')
@@ -146,8 +141,7 @@ subroutine stepon_init(dyn_in, dyn_out )
   call add_default ('PS&IC      ',0, 'I')
   call add_default ('T&IC       ',0, 'I')
   do m = 1,pcnst
-     call add_default(trim(cnst_name(m))//'&IC',0, 'I')
-     call add_default (trim(cnst_name(m))//'_dten',1,' ')
+    call add_default(trim(cnst_name(m))//'&IC',0, 'I')
   end do
 
   call addfld('DYN_T'    ,(/ 'lev' /), 'A', 'K',    'Temperature (dyn grid)', gridname='GLL')

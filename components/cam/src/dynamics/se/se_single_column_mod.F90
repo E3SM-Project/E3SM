@@ -29,8 +29,6 @@ subroutine scm_setinitial(elem)
 
   type(element_t), intent(inout) :: elem(:)
 
-!#ifndef MODEL_THETA_L
-
   integer i, j, k, ie, thelev
   integer inumliq, inumice, icldliq, icldice
 
@@ -101,8 +99,6 @@ subroutine scm_setinitial(elem)
     enddo
   endif
 
-!#endif
-
 end subroutine scm_setinitial
 
 subroutine scm_broadcast()
@@ -153,8 +149,6 @@ subroutine scm_setfield(elem,iop_update_phase1)
   logical, intent(in) :: iop_update_phase1
   type(element_t), intent(inout) :: elem(:)
 
-!#ifndef MODEL_THETA_L
-
   integer i, j, k, ie
 
   do ie=1,nelemd
@@ -163,8 +157,6 @@ subroutine scm_setfield(elem,iop_update_phase1)
       if (have_omega .and. iop_update_phase1) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
     end do
   end do
-
-!#endif
 
 end subroutine scm_setfield
 
@@ -189,9 +181,6 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
     type (TimeLevel_t), intent(in)       :: tl
     logical :: t_before_advance, do_column_scm
     real(kind=real_kind), parameter :: rad2deg = 180.0_real_kind / SHR_CONST_PI
-
-
-!#ifndef MODEL_THETA_L
 
     integer :: ie,k,i,j,t,nm_f
     integer :: nelemd_todo, np_todo
@@ -294,8 +283,6 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
       call outfld('QDIFF',qdiff_out,npsq,ie)
       
     enddo
-
-!#endif
 
     end subroutine apply_SC_forcing
 

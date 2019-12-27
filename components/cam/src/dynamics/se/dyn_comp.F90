@@ -377,9 +377,12 @@ CONTAINS
        hybrid = hybrid_create(par,ithr,hthreads)
 
        single_column_in = single_column
+       ! if IOP-SCREAM mode we want dycore to operate in non-SCM mode,
+       !   thus turn this switch to false for this block
        if (single_column .and. iop_scream) single_column_in = .false.
 
-!       if (.not. use_3dfrc) then
+       ! If SCM mode and 3d forcing prescribed, do NOT call dycore
+       if ((.not. single_column_in .and. .not. use_3dfrc) .or. iop_scream) then
          do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
            call t_startf("prim_run_sybcycle")
@@ -387,7 +390,7 @@ CONTAINS
                tstep, single_column_in, TimeLevel, hvcoord, n)
            call t_stopf("prim_run_sybcycle")
          end do
-!       endif
+       endif
 
        if (single_column) then
          call apply_SC_forcing(dyn_state%elem,hvcoord,TimeLevel,3,.false.,nets,nete)

@@ -833,7 +833,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
 !------------------------------Arguments--------------------------------
 
     use cam_history, only: outfld
-    use scamMod, only: heat_glob_scm, single_column, use_replay, iop_scream
+    use scamMod, only: heat_glob_scm, single_column, use_replay
 
     type(physics_state), intent(in   ) :: state
     type(physics_ptend), intent(out)   :: ptend
@@ -860,8 +860,6 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     if (single_column .and. use_replay) then
       heat_glob = heat_glob_scm(1)
     endif
-    
-    if (iop_scream) heat_glob = 0._r8
 
     ! In single column model we do NOT want to take into
     !   consideration the dynamics energy fixer.  Since only

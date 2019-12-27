@@ -236,7 +236,7 @@ contains
        call endrun( sub//' ERROR: unknown starttype' )
     end if
 
-    ! Temporarily force 
+    ! If IOP mode, force SCM to be false 
     if (iop_scream) single_column = .false. 
     call clm_varctl_set(caseid_in=caseid, ctitle_in=ctitle,                     &
                         brnch_retain_casename_in=brnch_retain_casename,         &

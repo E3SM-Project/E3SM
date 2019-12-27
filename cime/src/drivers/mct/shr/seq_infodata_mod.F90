@@ -624,7 +624,7 @@ CONTAINS
           infodata%restart_file       = restart_file
        end if
        infodata%single_column         = single_column
-       infodata%iop_scream         = iop_scream
+       infodata%iop_scream            = iop_scream
        infodata%scmlat                = scmlat
        infodata%scmlon                = scmlon
        infodata%logFilePostFix        = logFilePostFix
@@ -1201,7 +1201,7 @@ CONTAINS
     if ( present(restart_pfile)  ) restart_pfile  = infodata%restart_pfile
     if ( present(restart_file)   ) restart_file   = infodata%restart_file
     if ( present(single_column)  ) single_column  = infodata%single_column
-    if ( present(iop_scream)  ) iop_scream = infodata%iop_scream
+    if ( present(iop_scream)     ) iop_scream     = infodata%iop_scream
     if ( present(scmlat)         ) scmlat         = infodata%scmlat
     if ( present(scmlon)         ) scmlon         = infodata%scmlon
     if ( present(logFilePostFix) ) logFilePostFix = infodata%logFilePostFix
@@ -1734,7 +1734,7 @@ CONTAINS
     if ( present(restart_pfile)  ) infodata%restart_pfile  = restart_pfile
     if ( present(restart_file)   ) infodata%restart_file   = restart_file
     if ( present(single_column)  ) infodata%single_column  = single_column
-    if ( present(iop_scream)  ) infodata%iop_scream  = iop_scream
+    if ( present(iop_scream)     ) infodata%iop_scream     = iop_scream
     if ( present(scmlat)         ) infodata%scmlat         = scmlat
     if ( present(scmlon)         ) infodata%scmlon         = scmlon
     if ( present(logFilePostFix) ) infodata%logFilePostFix = logFilePostFix

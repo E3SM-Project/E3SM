@@ -119,7 +119,7 @@ CONTAINS
     integer(IN)            , intent(in)    :: logunit             ! logging unit number
     logical                , intent(in)    :: read_restart        ! start from restart
     logical                , intent(in)    :: scmMode             ! single column mode
-    logical                , intent(in)    :: iop_scream
+    logical                , intent(in)    :: iop_scream          ! IOP-SCREAM mode 
     real(R8)               , intent(in)    :: scmLat              ! single column lat
     real(R8)               , intent(in)    :: scmLon              ! single column lon
 

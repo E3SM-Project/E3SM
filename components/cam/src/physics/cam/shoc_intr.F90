@@ -1321,6 +1321,11 @@ end function shoc_implements_cnst
   
   subroutine grid_size_uniform(grid_dx, grid_dy)
   
+    ! Estimate grid box size at equator using
+    !  the earth radius set for this case.  This assumes
+    !  that all grid points are uniform, which is 
+    !  reasonable for IOP-SCREAM (not currently compatible with RRM) 
+  
     use physical_constants, only: rearth, dd_pi
     use dimensions_mod, only: np, ne
     

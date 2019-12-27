@@ -991,9 +991,8 @@
          minpoint,&
          testpoint
 
+      ! variables to be compatible with IOP or SCM modes
       real (dbl_kind), allocatable, dimension(:,:) :: &	 
-!      real (kind=dbl_kind), dimension(nx_global,ny_global) :: &
-!       real (kind=dbl_kind) :: &
          scm_var1, scm_var2, scm_var3, scm_var4, scm_var5
 
       logical :: se_grid      ! determine whether file format is for 
@@ -1119,19 +1118,19 @@
 
          call check_ret(nf90_inq_varid(ncid, 'xc' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         scm_var1(:,:) = scamdata
+         scm_var1(:,:) = scamdata ! TLON
          call check_ret(nf90_inq_varid(ncid, 'yc' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         scm_var2(:,:) = scamdata
+         scm_var2(:,:) = scamdata ! TLAT
          call check_ret(nf90_inq_varid(ncid, 'area' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         scm_var3(:,:) = scamdata
+         scm_var3(:,:) = scamdata ! tarea
          call check_ret(nf90_inq_varid(ncid, 'mask' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         scm_var4(:,:) = scamdata
+         scm_var4(:,:) = scamdata ! hm
          call check_ret(nf90_inq_varid(ncid, 'frac' , varid), subname)
          call check_ret(nf90_get_var(ncid, varid, scamdata, start), subname)
-         scm_var5(:,:) = scamdata
+         scm_var5(:,:) = scamdata ! ocn_gridcell_frac
 	 
         endif	 
       else

@@ -65,7 +65,7 @@ module physconst
    real(r8), public, parameter :: mwnh4       =  18._r8
 
 
-   ! modifiable physical constants for aquaplanet or SCREAM small planet
+   ! modifiable physical constants for aquaplanet or IOP-SCREAM
 
    real(r8), public           :: gravit       = shr_const_g     ! gravitational acceleration (m/s**2)
    real(r8), public           :: sday         = shr_const_sday  ! sec in siderial day ~ sec

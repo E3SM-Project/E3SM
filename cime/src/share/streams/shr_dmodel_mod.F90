@@ -504,6 +504,9 @@ CONTAINS
 
           if (liopmode) then 
 	  
+	    ! If IOP-SCREAM mode, then we want the surface to be 
+	    !   covered homogeneously, with the same lat and lon
+	    !   as close to the IOP
 	    i_scm = ni
 	  
             n=0

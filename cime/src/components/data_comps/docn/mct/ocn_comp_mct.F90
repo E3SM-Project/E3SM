@@ -74,7 +74,7 @@ CONTAINS
     integer(IN)       :: shrloglev                 ! original log level
     integer(IN)       :: ierr                      ! error code
     logical           :: scmMode = .false.         ! single column mode
-    logical           :: iop_scream = .false. 
+    logical           :: iop_scream = .false.      ! IOP-SCREAM mode
     real(R8)          :: scmLat  = shr_const_SPVAL ! single column lat
     real(R8)          :: scmLon  = shr_const_SPVAL ! single column lon
     character(*), parameter :: F00   = "('(docn_comp_init) ',8a)"

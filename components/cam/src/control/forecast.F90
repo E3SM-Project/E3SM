@@ -54,8 +54,8 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8), intent(inout) :: q3m2(plev,pcnst)   ! constituent conc(time n: h2o first)
    real(r8), intent(in) :: etamid(plev)       ! vertical coords at midpoints
    real(r8), intent(inout) :: qfcst(plon,plev,pcnst)
-   real(r8), intent(out) :: tdiff_ret(plev)
-   real(r8), intent(out) :: qdiff_ret(plev)
+   real(r8), intent(out) :: tdiff_ret(plev)  ! temperature difference compared to obs
+   real(r8), intent(out) :: qdiff_ret(plev)  ! q difference compared to obs
 
    real(r8), intent(in) :: ztodt                       ! twice time step unless nstep=0
    integer lat               ! latitude index for S->N storage
@@ -184,14 +184,35 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
    wfldint(plevp) = 0.0_r8
 
-!   if (use_3dfrc .and. use_iop) then
+   if (use_3dfrc .and. .not. use_iop) then
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
       i=1
       do k=1,plev
-!         tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+#ifdef MODEL_THETA_L
+        tfcst(k) = t3m2(k) + t2(k) + divt3d(k)
+#else
+        tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+#endif
+      end do
+      do m=1,pcnst
+         do k=1,plev
+            qfcst(1,k,m) = qminus(1,k,m) +  divq3d(k,m)*ztodt
+         end do
+      enddo
+
+      go to 1000
+
+   end if
+
+   if (use_iop) then
+   
+!  Complete a very simple forecast using supplied 2-dimensional forcing.
+!   In IOP-SCREAM the vertical transport is already computed by dynamics.
+      i=1
+      do k=1,plev
 #ifdef MODEL_THETA_L
         tfcst(k) = t3m2(i) + divt(k)
 #else
@@ -206,7 +227,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
       go to 1000
 
-!   end if
+   end if   
 
 !
 !  provide an eulerian forecast.  First check to ensure that 2d forcing
@@ -549,7 +570,7 @@ end if
             vfcst(k) = v3m2(k)
          enddo
 	 
-	 ! Relax winds for IOP_script
+	 ! Relax winds for IOP-SCREAM
 	 if (iop_scream) then
 	 
 	   do k=1,plev

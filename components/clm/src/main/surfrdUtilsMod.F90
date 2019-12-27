@@ -57,7 +57,6 @@ contains
 
     if (found) then
        write(iulog,*) trim(caller), ' ERROR: sum of ', trim(name), ' not 1.0 at nl=', nindx
-       write(iulog,*) 'MORE info: ', arr(nindx,:)
        write(iulog,*) 'sum is: ', sum(arr(nindx,:))
        call endrun(msg=errMsg(__FILE__, __LINE__))
     end if
