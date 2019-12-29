@@ -756,6 +756,9 @@ if (defined $opts{'dyn'}) {
     } else {
       $cfg_ref->set('dyn', lc($opts{'dyn'}) );
     }
+    if (defined $opts{'dyn_target'}) {                                                        
+        $cfg_ref->set('dyn_target', $opts{'dyn_target'});                                     
+    }                                                                                         
 }
 
 my $dyn_pkg = $cfg_ref->get('dyn');
@@ -1843,7 +1846,7 @@ if ($offline_dyn) { $cfg_cppdefs .= ' -DOFFLINE_DYN'; }
 # Spectral Element dycore
 if($dyn_pkg eq 'se'){
     if ($spmd eq 'ON'){	$cfg_cppdefs .=" -D_MPI"; }
-    $cfg_cppdefs .= " -DCAM  -D_WK_GRAD -D_PRIM ";
+    $cfg_cppdefs .= " -DCAM -D_PRIM ";
 }
 
 # -DSPMD only added for CESM build.  The CAM Makefile has a separate SPMD macro.
