@@ -14,7 +14,4 @@ rsplit=2
 hypervis_subcycle=3
 hypervis_subcycle_q=1
 hypervis_subcycle_tom=0
-
-
-
-
+theta_advect_form=0
