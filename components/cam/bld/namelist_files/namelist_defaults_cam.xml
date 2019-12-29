@@ -1455,16 +1455,24 @@
 <!-- viscosity  -->
 
 <nu_top> 2.5e5 </nu_top>
-<nu_top hgrid="ne240np4"> 1.0e5 </nu_top>
+<nu_top dyn_target="preqx" hgrid="ne240np4"> 1.0e5 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne120np4"> 1e5 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne240np4"> 4.3e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne256np4"> 4e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne512np4"> 2e4 </nu_top>
+<nu_top dyn_target="theta-l" hgrid="ne1024np4"> 1e4 </nu_top>
+
 
 <nu>                   1.0e15 </nu>
 <nu hgrid="ne4np4" >   5.0e17 </nu>
 <nu hgrid="ne11np4" >  2.0e16 </nu>
 <nu hgrid="ne16np4" >  7.0e15 </nu>
 <nu hgrid="ne30np4" >  1.0e15 </nu>
-<nu hgrid="ne60np4" >  1.0e14 </nu>
+<nu hgrid="ne60np4" >  1.25e14 </nu>
 <nu hgrid="ne120np4">  1.0e13 </nu>
-<nu hgrid="ne240np4">  1.1e12 </nu>
+<nu dyn_target="theta-l" hgrid="ne120np4">  1.5e13 </nu>
+<nu hgrid="ne240np4">  1.9e12 </nu>
+<nu hgrid="ne256np4">  1.6e12 </nu>
 <nu hgrid="ne512np4">  2.0e11 </nu>
 <nu hgrid="ne1024np4"> 2.5e10 </nu>
 <nu hgrid="ne0np4_arm_x8v3_lowcon"  > 8.0e-8</nu>
@@ -1481,22 +1489,23 @@
 <nu_p> -1.0 </nu_p>
 <nu_div> -1.0 </nu_div>
 
+<!-- theta-l dycore uses nu_div=-1, except for historical ne4 test cases -->
 <nu_div hgrid="ne4np4" >  1.25e18 </nu_div>
-<nu_div hgrid="ne11np4" >  5.0e16 </nu_div>
-<nu_div hgrid="ne16np4" > 15.5e15 </nu_div>
-<nu_div hgrid="ne30np4" >  2.5e15 </nu_div>
-<nu_div hgrid="ne60np4" >  2.5e14 </nu_div>
-<nu_div hgrid="ne120np4">  2.5e13 </nu_div>
-<nu_div hgrid="ne240np4">  2.5e12 </nu_div>
-<nu_div hgrid="ne512np4">  5.0e11 </nu_div>
-<nu_div hgrid="ne1024np4"> 6.25e10 </nu_div>
-<nu_div hgrid="ne0np4_arm_x8v3_lowcon"  > 20.0e-8</nu_div>
-<nu_div hgrid="ne0np4_conus_x4v1_lowcon"  > 20.0e-8</nu_div>
-<nu_div hgrid="ne0np4_northamericax4v1"  > 20.0e-8</nu_div>
-<nu_div hgrid="ne0np4_svalbard_x8v1_lowcon"  > 20.0e-8</nu_div>
-<nu_div hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 20.0e-8</nu_div>
-<nu_div hgrid="ne0np4_enax4v1">20.0e-8</nu_div>
-<nu_div hgrid="ne0np4_twpx4v1" >20.0e-8</nu_div>
+<nu_div dyn_target="preqx" hgrid="ne11np4" >  5.0e16 </nu_div>
+<nu_div dyn_target="preqx" hgrid="ne16np4" > 15.5e15 </nu_div>
+<nu_div dyn_target="preqx" hgrid="ne30np4" >  2.5e15 </nu_div>
+<nu_div dyn_target="preqx" hgrid="ne60np4" >  2.5e14 </nu_div>
+<nu_div dyn_target="preqx" hgrid="ne120np4">  2.5e13 </nu_div>
+<nu_div dyn_target="preqx" hgrid="ne240np4">  2.5e12 </nu_div>
+<nu_div dyn_target="preqx" hgrid="ne512np4">  5.0e11 </nu_div>
+<nu_div dyn_target="preqx" hgrid="ne1024np4"> 6.25e10 </nu_div>
+<nu_div dyn_target="preqx" hgrid="ne0np4_arm_x8v3_lowcon"  > 20.0e-8</nu_div>
+<nu_div dyn_target="preqx" hgrid="ne0np4_conus_x4v1_lowcon"  > 20.0e-8</nu_div>
+<nu_div dyn_target="preqx" hgrid="ne0np4_northamericax4v1"  > 20.0e-8</nu_div>
+<nu_div dyn_target="preqx" hgrid="ne0np4_svalbard_x8v1_lowcon"  > 20.0e-8</nu_div>
+<nu_div dyn_target="preqx" hgrid="ne0np4_sooberingoa_x4x8v1_lowcon"  > 20.0e-8</nu_div>
+<nu_div dyn_target="preqx" hgrid="ne0np4_enax4v1">20.0e-8</nu_div>
+<nu_div dyn_target="preqx" hgrid="ne0np4_twpx4v1" >20.0e-8</nu_div>
 
 <hypervis_order >     2 </hypervis_order>
 
