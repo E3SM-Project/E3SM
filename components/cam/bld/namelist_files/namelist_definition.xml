@@ -6081,20 +6081,20 @@ Constrained density reconstuctor (CDR) for property preservation:
 20: QLT with superlevels of 8 levels.
 21: QLT with superlevels of 8 levels; use local CAAS over sublevels.
 30: CAAS with superlevels of 8 levels.
-Default: 20 (set by dycore)
+Default: (set by dycore)
 </entry>
 
 <entry id="semi_lagrange_cdr_check" type="logical" category="se"
        group="ctl_nl" valid_values="">
 Correctness check the CDR.
-Default: False (set by dycore)
+Default: (set by dycore)
 </entry>
 
 <entry id="semi_lagrange_nearest_point_lev" type="integer" category="se"
        group="ctl_nl" valid_values="">
 Number of levels, counting from the top, that are allowed to use the
 nearest point in the halo to the departure point, when necessary.
-Default: 256 (set by dycore)
+Default: (set by dycore)
 </entry>
 
 <entry id="semi_lagrange_hv_q" type="integer" category="se"
@@ -6102,7 +6102,7 @@ Default: 256 (set by dycore)
 Number of tracers, starting from 1, to which to apply hyperviscosity. For
 example, to apply hyperviscosity to moisture, the first tracer, set the value to
 1. Hyperviscosity is applied using nu_q as the coefficient.
-Default: 1 (set by dycore)
+Default: (set by dycore)
 </entry>
 
 <!-- Physics grid -->
@@ -6112,7 +6112,7 @@ Default: 1 (set by dycore)
 Remap algorithm to use to map between FV physics grid and GLL dynamics
 grid. 0, default, provides the original algorithms; 1 provides
 high-order algorithms implemented in gllfvremap_mod.
-Default: 1.  
+Default: (set by dycore).  
 </entry>
 
 <entry id="se_fv_nphys" type="integer" category="se"
