@@ -4023,10 +4023,10 @@ if ($cfg->get('dyn') =~ /se/) {
     my @vars = qw(se_nsplit hypervis_order phys_loadbalance
                   hypervis_subcycle hypervis_subcycle_q hypervis_subcycle_tom
                   statefreq se_partmethod se_topology se_ftype
-                  integration nu nu_div nu_p nu_q nu_top
+                  integration nu nu_div nu_p nu_q nu_s nu_top
                   vert_remap_q_alg se_limiter_option qsplit rsplit tstep_type
                   hypervis_scaling mesh_file vthreads
-                  theta_hydrostatic_mode transport_alg
+                  theta_hydrostatic_mode transport_alg theta_advect_form
                   se_tstep dt_tracer_factor dt_remap_factor 
                   );
 

@@ -6014,6 +6014,13 @@ If < 0, uses nu.
 Default: -1.
 </entry>
 
+<entry id="nu_s" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Hyperviscosity applied to dynamics scalars [m^4/s].
+If < 0, uses nu.
+Default: -1.
+</entry>
+
 <entry id="nu_p" type="real" category="se"
        group="ctl_nl" valid_values="" >
 Hyperviscosity applied to dp3d (layer thickness when running

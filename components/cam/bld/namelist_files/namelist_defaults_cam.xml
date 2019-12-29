@@ -1419,6 +1419,7 @@
 
 
 <theta_hydrostatic_mode>.true.</theta_hydrostatic_mode>
+<theta_advect_form> 1 </theta_advect_form>
 
 <interpolate_analysis> .false. </interpolate_analysis>
 <interp_nlon> 0 </interp_nlon>
@@ -1484,9 +1485,10 @@
 <nu hgrid="ne0np4_twpx4v1" >8.0e-8</nu>
 
 
-<!-- This will set nu_q to nu internally. -->
+<!-- -1.0 indicates use the value for nu -->
 <nu_q> -1.0 </nu_q>
 <nu_p> -1.0 </nu_p>
+<nu_s> -1.0 </nu_s>
 <nu_div> -1.0 </nu_div>
 
 <!-- theta-l dycore uses nu_div=-1, except for historical ne4 test cases -->
@@ -1529,8 +1531,8 @@
 <!-- new interface used for E3SM v2 and later compsets  --> 
 <!-- enabed by setting se_tstep, dt_tracer_factor, dt_remap_factor   -->
 <!-- se_nsplit, rsplit, qsplit set to -1 -->
-<dt_tracer_factor > 2 </dt_tracer_factor>
-<dt_remap_factor dyn_target="theta-l">  6  </dt_remap_factor>
+<dt_tracer_factor > 6 </dt_tracer_factor>
+<dt_remap_factor dyn_target="theta-l">  2  </dt_remap_factor>
 <hypervis_subcycle_q dyn_target="theta-l"> 6 </hypervis_subcycle_q>
 <hypervis_subcycle_tom dyn_target="theta-l"> 1 </hypervis_subcycle_tom>
 <qsplit > -1 </qsplit>
@@ -1541,18 +1543,12 @@
 <se_tstep dyn_target="theta-l" hgrid="ne11np4" >  600 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne16np4" >  600 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne30np4" >  300 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne30pg2" >  300 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne60np4" >  150 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne120np4">  75 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne120pg2">  75 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne240np4">  40 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne240pg2">  40 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne256np4">  40 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne256pg2">  40 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne512np4">  20 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne512pg2">  20 </se_tstep>
 <se_tstep dyn_target="theta-l" hgrid="ne1024np4"> 10 </se_tstep>
-<se_tstep dyn_target="theta-l" hgrid="ne1024pg2"> 10 </se_tstep>
 
 
 <!-- old interface, used by preqx.  timesteps controlled by se_nsplit, rsplit, qsplit -->
