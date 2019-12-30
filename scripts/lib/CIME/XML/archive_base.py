@@ -67,11 +67,16 @@ class ArchiveBase(GenericXML):
         extensions = self.get_hist_file_extensions(self.get_entry(dmodel))
         regex = self.get_hist_file_regex(self.get_entry(dmodel))
 
+        if suffix and len(suffix) > 0:
+            has_suffix = True
+        else:
+            has_suffix = False
+        # Strip any trailing $ if suffix is present and add it back after the suffix
         for ext in extensions:
-            if ext.endswith('$') and len(suffix)>0:
+            if ext.endswith('$') and has_suffix:
                 ext = ext[:-1]
             string = model+r'\d?_?(\d{4})?\.'+ext
-            if suffix and len(suffix)>0:
+            if has_suffix:
                 string += '.'+suffix+'$'
 
             logger.debug ("Regex is {}".format(string))
