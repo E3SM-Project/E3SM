@@ -13,6 +13,11 @@ If `create_newcase  <../Tools_user/create_newcase.html>`_ fails on a relatively 
 
    > create_newcase --help
 
+Troubleshooting problems in cime scripts
+----------------------------------------
+
+If any of the python-based cime scripts are dying in a mysterious way, more information can be obtained by rerunning the script with the ``--debug`` option.
+
 Troubleshooting job submission
 -------------------------------
 
@@ -100,3 +105,22 @@ Compare the restart files against the sizes of a previous restart. If they don't
 See `Restarting a run <http://esmci.github.io/cime/users_guide/running-a-case.html#restarting-a-run>`_.
 
 It is not uncommon for nodes to fail on HPC systems or for access to large file systems to hang. Before you file a bug report, make sure a case fails consistently in the same place.
+
+**Rerunning with additional debugging information**
+
+There are a few changes you can make to your case to get additional information that aids in debugging:
+
+- Increase the value of the run-time xml variable ``INFO_DBUG``: ``./xmlchange INFO_DBUG=2``.
+  This adds more information to the cpl.log file that can be useful if you can't tell what component is aborting the run, or where bad coupling fields are originating.
+  (This does NOT require rebuilding.)
+
+- Try rebuilding and rerunning with the build-time xml variable ``DEBUG`` set to ``TRUE``: ``./xmlchange DEBUG=TRUE``.
+
+  - This adds various runtime checks that trap conditions such as out-of-bounds array indexing, divide by 0, and other floating point exceptions (the exact conditions checked depend on flags set in ``config_compilers.xml``).
+
+  - The best way to do this is often to create a new case and run ``./xmlchange DEBUG=TRUE`` before running ``./case.build``.
+    However, if it is hard for you to recreate your case, then you can run that xmlchange command from your existing case; then you must run ``./case.build --clean-all`` before rerunning ``./case.build``.
+
+  - Note that the model will run significantly slower in this mode, so this may not be feasible if the model has to run a long time before producing the error.
+    (Sometimes it works well to run the model until shortly before the error in non-debug mode, have it write restart files, then restart after rebuilding in debug mode.)
+    Also note that answers will change slightly, so if the error arises from a rare condition, then it may not show up in this mode.
