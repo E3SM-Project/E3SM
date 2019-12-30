@@ -12,7 +12,7 @@ class ArchiveBase(GenericXML):
         return self.scan_optional_child('comp_archive_spec',
                                         attributes={"compname":compname})
 
-    def get_file_node_text(self, attnames, archive_entry):
+    def _get_file_node_text(self, attnames, archive_entry):
         nodes = []
         textvals = []
         for attname in attnames:
@@ -22,16 +22,16 @@ class ArchiveBase(GenericXML):
         return textvals
 
     def get_rest_file_extensions(self, archive_entry):
-        return self.get_file_node_text(['rest_file_extension'],archive_entry)
+        return self._get_file_node_text(['rest_file_extension'],archive_entry)
 
     def get_rest_file_regex(self, archive_entry):
-        return self.get_file_node_text(['rest_file_regex'],archive_entry)
+        return self._get_file_node_text(['rest_file_regex'],archive_entry)
 
     def get_hist_file_extensions(self, archive_entry):
-        return self.get_file_node_text(['hist_file_extension'],archive_entry)
+        return self._get_file_node_text(['hist_file_extension'],archive_entry)
 
     def get_hist_file_regex(self, archive_entry):
-        return self.get_file_node_text(['hist_file_regex'],archive_entry)
+        return self._get_file_node_text(['hist_file_regex'],archive_entry)
 
     def get_entry_value(self, name, archive_entry):
         node = self.get_optional_child(name, root=archive_entry)
