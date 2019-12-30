@@ -68,8 +68,6 @@ class ArchiveBase(GenericXML):
         regex = self.get_hist_file_regex(self.get_entry(dmodel))
 
         for ext in extensions:
-            if 'initial' in ext:
-                continue
             if ext.endswith('$') and len(suffix)>0:
                 ext = ext[:-1]
             string = model+r'\d?_?(\d{4})?\.'+ext
