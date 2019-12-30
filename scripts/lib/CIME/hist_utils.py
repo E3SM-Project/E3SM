@@ -145,8 +145,9 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
 
     for hists, suffix, normalized, multi_normalized in [(hists1, suffix1, normalized1, multi_normalized1), (hists2, suffix2, normalized2, multi_normalized2)]:
         for hist in hists:
-            offset = max(0,hist.rfind(model))
-            normalized_name = os.path.basename(hist[offset:])
+            hist_basename = os.path.basename(hist)
+            offset = max(0,hist_basename.rfind(model))
+            normalized_name = os.path.basename(hist_basename[offset:])
             if suffix != "":
                 expect(normalized_name.endswith(suffix), "How did '{}' not have suffix '{}'".format(hist, suffix))
                 normalized_name = normalized_name[:len(normalized_name) - len(suffix) - 1]
@@ -394,74 +395,6 @@ def compare_baseline(case, baseline_dir=None, outfile_suffix=""):
                 comments += "\n  Most recent bless: {}".format(last_line)
 
     return success, comments
-
-def get_extension(model, filepath, regex=None):
-    r"""
-    For a hist file for the given model, return what we call the "extension"
-
-    model - The component model
-    filepath - The path of the hist file
-
-    >>> get_extension("cpl", "cpl.hi.nc")
-    'hi'
-    >>> get_extension("cpl", "cpl.h.nc")
-    'h'
-    >>> get_extension("cpl", "cpl.h1.nc.base")
-    'h1'
-    >>> get_extension("cpl", "TESTRUNDIFF.cpl.hi.0.nc.base")
-    'hi'
-    >>> get_extension("cpl", "TESTRUNDIFF_Mmpi-serial.f19_g16_rx1.A.melvin_gnu.C.fake_testing_only_20160816_164150-20160816_164240.cpl.h.nc")
-    'h'
-    >>> get_extension("clm","clm2_0002.h0.1850-01-06-00000.nc")
-    '0002.h0'
-    >>> get_extension("pop","PFS.f09_g16.B1850.cheyenne_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
-    'h'
-    >>> get_extension("fv3gfs", "dynf000.tile1.nc", regex=["^physf\d\d\d.tile[1-6].nc$","^dynf\d\d\d.tile[1-6].nc$"])
-    '^dynf\\d\\d\\d.tile[1-6].nc$'
-    >>> get_extension("mom", "ga0xnw.mom6.frc._0001_001.nc")
-    'frc'
-    >>> get_extension("mom", "ga0xnw.mom6.sfc.day._0001_001.nc")
-    'sfc.day'
-    >>> get_extension("mom", "bixmc5.mom6.prog._0001_01_05_84600.nc")
-    'prog'
-    >>> get_extension("mom", "bixmc5.mom6.hm._0001_01_03_42300.nc")
-    'hm'
-    >>> get_extension("mom", "bixmc5.mom6.hmz._0001_01_03_42300.nc")
-    'hmz'
-    """
-    basename = os.path.basename(filepath)
-    m = None
-    ext_regexes = []
-
-    # First add any model-specific extension regexes; these will be checked before the
-    # general regex
-    if model == "mom":
-        # Need to check 'sfc.day' specially: the embedded '.' messes up the
-        # general-purpose regex
-        ext_regexes.append(r'sfc\.day')
-
-    # Now add the general-purpose extension regex
-    ext_regexes.append(r'\w+')
-
-    for ext_regex in ext_regexes:
-        full_regex_str = model+r'\d?_?(\d{4})?\.('+ext_regex+r')[-\w\.]*\.nc\.?'
-        full_regex = re.compile(full_regex_str)
-        m = full_regex.search(basename)
-        if m is not None:
-            if m.group(1) is not None:
-                result = m.group(1)+'.'+m.group(2)
-            else:
-                result = m.group(2)
-            return result
-
-    if regex:
-        for result in regex:
-            m = re.search(result, basename)
-            if m:
-                break
-    expect(m, "Failed to get extension for file '{}'".format(filepath))
-
-    return result
 
 def generate_teststatus(testdir, baseline_dir):
     """
