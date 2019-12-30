@@ -5,7 +5,7 @@ from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
 from CIME.utils import append_testlog, get_model, safe_copy, get_timestamp, CIMEError
 from CIME.test_status import *
-from CIME.hist_utils import *
+from CIME.hist_utils import copy_histfiles, compare_test
 from CIME.provenance import save_test_time
 from CIME.locked_files import LOCKED_DIR, lock_file, is_locked
 import CIME.build as build
@@ -260,7 +260,7 @@ class SystemTestsCommon(object):
         return allgood==0
 
     def _component_compare_copy(self, suffix):
-        comments = copy(self._case, suffix)
+        comments = copy_histfiles(self._case, suffix)
         append_testlog(comments, self._orig_caseroot)
 
     def _component_compare_test(self, suffix1, suffix2,

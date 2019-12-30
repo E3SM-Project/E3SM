@@ -40,7 +40,7 @@ def _iter_model_file_substrs(case):
     for model in models:
         yield model
 
-def copy(case, suffix):
+def copy_histfiles(case, suffix):
     """Copy the most recent batch of hist files in a case, adding the given suffix.
 
     This can allow you to temporarily "save" these files so they won't be blown
@@ -80,7 +80,7 @@ def copy(case, suffix):
             # noted above.)
             safe_copy(test_hist, new_file)
 
-    expect(num_copied > 0, "copy failed: no hist files found in rundir '{}'".format(rundir))
+    expect(num_copied > 0, "copy_histfiles failed: no hist files found in rundir '{}'".format(rundir))
 
     return comments
 
@@ -227,10 +227,14 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
 
         one_not_two, two_not_one, match_ups = _hists_match(model, hists1, hists2, suffix1, suffix2)
         for item in one_not_two:
+            if 'initial' in item:
+                continue
             comments += "    File '{}' {} in '{}' with suffix '{}'\n".format(item, NO_COMPARE, from_dir2, suffix2)
             all_success = False
 
         for item in two_not_one:
+            if 'initial' in item:
+                continue
             comments += "    File '{}' {} in '{}' with suffix '{}'\n".format(item, NO_ORIGINAL, from_dir1, suffix1)
             all_success = False
 
