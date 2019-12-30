@@ -5,7 +5,8 @@ from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
 from CIME.utils import append_testlog, get_model, safe_copy, get_timestamp, CIMEError
 from CIME.test_status import *
-from CIME.hist_utils import copy_histfiles, compare_test
+from CIME.hist_utils import copy_histfiles, compare_test, generate_teststatus, compare_baseline
+from CIME.hist_utils import get_ts_synopsis, generate_baseline
 from CIME.provenance import save_test_time
 from CIME.locked_files import LOCKED_DIR, lock_file, is_locked
 import CIME.build as build
