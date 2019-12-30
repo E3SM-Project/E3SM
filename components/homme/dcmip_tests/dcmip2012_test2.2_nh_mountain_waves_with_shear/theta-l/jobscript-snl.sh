@@ -27,7 +27,7 @@ namelist=namelist-h.nl
 srun -K -c 1 -N $SLURM_NNODES  $EXEC < input.nl
 ncl plot_lon_vs_z.ncl
 \mv -f movies/dcmip2012_test2_21.nc  movies/hydro_dcmip2012_test2_21.nc
-\mv -f dcmip2012_test2_2_T_t10.pdf   hydro_T_t10.pdf
+\mv -f dcmip2012_test2_2_T_t10.pdf   hydro_test2_2_T_t10.pdf
 
 # nonhydrostatic theta
 namelist=namelist-nh.nl
@@ -35,6 +35,6 @@ namelist=namelist-nh.nl
 srun -K -c 1 -N $SLURM_NNODES   $EXEC < input.nl
 ncl plot_lon_vs_z.ncl
 \mv -f movies/dcmip2012_test2_21.nc  movies/nonhydro_dcmip2012_test2_21.nc
-\mv -f dcmip2012_test2_2_T_t10.pdf   nonhydro_T_t10.pdf
+\mv -f dcmip2012_test2_2_T_t10.pdf   nonhydro_test2_2_T_t10.pdf
 
 date
