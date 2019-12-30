@@ -219,9 +219,6 @@ def _archive_history_files(archive, compclass, compname, histfiles_savein_rundir
     if compname == 'drv':
         compname = 'cpl'
 
-    if compname == 'clm':
-        compname = r'clm2?'
-
     if compname == 'nemo':
         archive_rblddir = os.path.join(dout_s_root, compclass, 'rebuild')
         if not os.path.exists(archive_rblddir):
@@ -751,8 +748,8 @@ def case_st_archive(self, last_date_str=None, archive_incomplete_logs=True, copy
     return True
 
 def test_st_archive(self, testdir="st_archive_test"):
-    archive = Archive()
     files = Files()
+    archive = Archive(files=files)
     components = []
 #    expect(not self.get_value("MULTI_DRIVER"),"Test not configured for multi-driver cases")
 

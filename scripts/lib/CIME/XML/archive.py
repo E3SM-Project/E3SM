@@ -64,7 +64,8 @@ class Archive(ArchiveBase):
             if attr:
                 compval = files.get_value("ARCHIVE_SPEC_FILE", attribute={"component":attr})
             else:
-                compval = self.text(comp)
+                compval = self.get_resolved_value(self.text(comp))
+
             if os.path.isfile(compval):
                 config_archive_files.append(compval)
 
