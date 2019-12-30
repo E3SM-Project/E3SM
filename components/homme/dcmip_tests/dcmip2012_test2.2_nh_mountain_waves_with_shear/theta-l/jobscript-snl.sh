@@ -6,7 +6,7 @@
 #SBATCH -p ec
 #anvil:
 #SBATCH --account=condo
-#SBATCH -p acme-centos6
+#SBATCH -p acme-medium
 #SBATCH -N 12
 #SBATCH --time=0:20:00
 
@@ -24,7 +24,7 @@ EXEC=../../../test_execs/theta-l-nlev60/theta-l-nlev60
 # hydrostatic theta
 namelist=namelist-h.nl
 \cp -f $namelist input.nl
-srun -c 1 -N $SLURM_NNODES  $EXEC < input.nl
+srun -K -c 1 -N $SLURM_NNODES  $EXEC < input.nl
 ncl plot_lon_vs_z.ncl
 \mv -f movies/dcmip2012_test2_21.nc  movies/hydro_dcmip2012_test2_21.nc
 \mv -f dcmip2012_test2_2_T_t10.pdf   hydro_T_t10.pdf
@@ -32,7 +32,7 @@ ncl plot_lon_vs_z.ncl
 # nonhydrostatic theta
 namelist=namelist-nh.nl
 \cp -f $namelist input.nl
-srun -c 1 -N $SLURM_NNODES   $EXEC < input.nl
+srun -K -c 1 -N $SLURM_NNODES   $EXEC < input.nl
 ncl plot_lon_vs_z.ncl
 \mv -f movies/dcmip2012_test2_21.nc  movies/nonhydro_dcmip2012_test2_21.nc
 \mv -f dcmip2012_test2_2_T_t10.pdf   nonhydro_T_t10.pdf

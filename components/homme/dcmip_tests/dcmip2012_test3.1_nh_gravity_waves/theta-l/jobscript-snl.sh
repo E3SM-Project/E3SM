@@ -3,27 +3,16 @@
 #   Jobscript for launching dcmip2012 test3-1 on SNL clusters
 #
 #SBATCH -J d31-theta          # job name
-#SBATCH -N 4                  # total number of mpi tasks requested
-#SBATCH -p ec                 # queue (partition) -- normal, development, etc.
-#SBATCH -t 00:10:00           # run time (hh:mm:ss)
+#SNL:
 #SBATCH --account=FY150001
-#PBS -q acme
-#PBS -l walltime=10:00                                                                                           
-#PBS -l nodes=4    
+#SBATCH -p ec
+#anvil:
+#SBATCH --account=condo
+#SBATCH -p acme-small
+#SBATCH -N 4                  # total number of mpi tasks requested
+#SBATCH -t 00:10:00           # run time (hh:mm:ss)
 
 set OMP_NUM_THREADS = 1
-set NCPU = 40
-
-if ( ${?PBS_ENVIRONMENT} ) then   # anvil
-  set NCPU = $PBS_NNODES
-  if ( $PBS_ENVIRONMENT == PBS_BATCH ) cd $PBS_O_WORKDIR     
-endif
-if ( ${?SLURM_NNODES} ) then   # skybridge
-    set NCPU = $SLURM_NNODES
-    @ NCPU *= 16
-    @ NCPU /= $OMP_NUM_THREADS
-endif
-
 set EXEC = ../../../test_execs/theta-l-nlev20/theta-l-nlev20
 
 #############################################################################
@@ -31,7 +20,7 @@ set EXEC = ../../../test_execs/theta-l-nlev20/theta-l-nlev20
 #############################################################################
 set namelist = ./namelist-h.nl
 \cp -f $namelist input.nl
-mpirun -np $NCPU $EXEC < input.nl
+srun -K -c 1 -N $SLURM_NNODES  $EXEC < input.nl
 
 ncl plot_omega.ncl
 ncl plot_theta.ncl
@@ -45,7 +34,7 @@ ncl plot_theta.ncl
 #############################################################################
 set namelist = ./namelist-nh.nl
 \cp -f $namelist input.nl
-mpirun -np $NCPU $EXEC < input.nl
+srun -K -c 1 -N $SLURM_NNODES  $EXEC < input.nl
 
 ncl plot_omega.ncl
 ncl plot_theta.ncl

@@ -6,7 +6,7 @@
 #SBATCH -p ec
 #anvil:
 #SBATCH --account=condo
-#SBATCH -p acme-centos6
+#SBATCH -p acme-medium
 #SBATCH -N 12
 #SBATCH --time=0:20:00
 
