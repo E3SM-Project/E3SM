@@ -27,6 +27,7 @@ ncl plot_theta.ncl
 
 \mv -f test31_omega.pdf                 hydro_test31_omega.pdf
 \mv -f dcmip2012_test3_theta_diff.pdf   hydro_test3_theta_diff.pdf
+\mv -f dcmip2012_test3_theta_diff_last.pdf   hydro_test3_theta_diff_last.pdf
 \mv -f movies/dcmip2012_test31.nc       movies/hydro_dcmip2012_test31.nc
 
 #############################################################################
@@ -41,4 +42,5 @@ ncl plot_theta.ncl
 
 \mv -f test31_omega.pdf                 nonhydro_test31_omega.pdf
 \mv -f dcmip2012_test3_theta_diff.pdf   nonhydro_test3_theta_diff.pdf  
+\mv -f dcmip2012_test3_theta_diff_last.pdf   nonhydro_test3_theta_diff_last.pdf  
 \mv -f movies/dcmip2012_test31.nc        movies/nonhydro_dcmip2012_test31.nc 

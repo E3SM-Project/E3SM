@@ -24,6 +24,7 @@ ncl plot_ps.ncl  'fname="movies/hydro-X1-dcmip2012_test41.nc"'
 ncl plot_zeta.ncl 'fname="movies/hydro-X1-dcmip2012_test41.nc"'
 \mv -f zeta.pdf hydro-X1-zeta.pdf
 \mv -f ps.pdf hydro-X1-ps.pdf
+\mv -f ps-8.pdf hydro-X1-ps-8.pdf
 
 # nonhydro X1000
 date
@@ -35,6 +36,7 @@ ncl plot_ps.ncl  'fname="movies/nonhydro-X1000-dcmip2012_test41.nc"'
 ncl plot_zeta.ncl 'fname="movies/nonhydro-X1000-dcmip2012_test41.nc"'
 \mv -f zeta.pdf nonhydro-X1000-zeta.pdf
 \mv -f ps.pdf nonhydro-X1000-ps.pdf
+\mv -f ps-8.pdf nonhydro-X1000-ps-8.pdf
 
 # nonhydro X100
 date
@@ -46,6 +48,7 @@ ncl plot_ps.ncl  'fname="movies/nonhydro-X100-dcmip2012_test41.nc"'
 ncl plot_zeta.ncl 'fname="movies/nonhydro-X100-dcmip2012_test41.nc"'
 \mv -f zeta.pdf nonhydro-X100-zeta.pdf
 \mv -f ps.pdf nonhydro-X100-ps.pdf
+\mv -f ps-8.pdf nonhydro-X100-ps-8.pdf
 
 
 # nonhydro X10
@@ -58,6 +61,7 @@ ncl plot_ps.ncl  'fname="movies/nonhydro-X10-dcmip2012_test41.nc"'
 ncl plot_zeta.ncl 'fname="movies/nonhydro-X10-dcmip2012_test41.nc"'
 \mv -f zeta.pdf nonhydro-X10-zeta.pdf
 \mv -f ps.pdf nonhydro-X10-ps.pdf
+\mv -f ps-8.pdf nonhydro-X10-ps-8.pdf
 
 # nonhydro X1
 date
@@ -69,6 +73,7 @@ ncl plot_ps.ncl  'fname="movies/nonhydro-X1-dcmip2012_test41.nc"'
 ncl plot_zeta.ncl 'fname="movies/nonhydro-X1-dcmip2012_test41.nc"'
 \mv -f zeta.pdf nonhydro-X1-zeta.pdf
 \mv -f ps.pdf nonhydro-X1-ps.pdf
+\mv -f ps-8.pdf nonhydro-X1-ps-8.pdf
 
 
 date
