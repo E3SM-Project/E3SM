@@ -217,18 +217,6 @@ ERROR env_build HAS CHANGED
     ./case.build --clean-all
 """)
 
-
-#     expect(mpilib != "mpi-serial" or not use_esmf_lib,
-#            """
-# ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
-#   MPILIB can only be used with an ESMF library built with mpiuni on
-#   Set USE_ESMF_LIB to FALSE with
-#     ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val FALSE
-#   ---- OR ----
-#   Make sure the ESMF_LIBDIR used was built with mipuni (or change it to one that was)
-#   And comment out this if block in Tools/models_buildexe
-# """)
-
     case.set_value("BUILD_COMPLETE", False)
 
     # User may have rm -rf their build directory
