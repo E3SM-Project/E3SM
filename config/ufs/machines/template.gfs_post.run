@@ -36,8 +36,10 @@ fi
 for f in 012 024 036
 do
   export T1=$SECONDS
-  cp ${dyn_prefix}f${f}.nemsio nemsfile
-  cp ${phy_prefix}f${f}.nemsio flxfile
+  cp ${dyn_prefix}f${f}.${file_ext} nemsfile
+  echo "cp ${dyn_prefix}f${f}.${file_ext} nemsfile"
+  cp ${phy_prefix}f${f}.${file_ext} flxfile
+  echo "cp ${phy_prefix}f${f}.${file_ext} flxfile"
   cp itaga.$f itag
   eval "time $mpirun $blddir/ncep_post >oi.$f 2>ei.$f"
   export T2=$SECONDS
