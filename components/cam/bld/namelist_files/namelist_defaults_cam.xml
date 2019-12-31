@@ -1433,6 +1433,10 @@
 
 <se_fv_phys_remap_alg> 1 </se_fv_phys_remap_alg>
 
+<cubed_sphere_map> 2 </cubed_sphere_map>
+<cubed_sphere_map npg="0"> 0 </cubed_sphere_map>
+
+
 <!-- RRM grids  -->
 
 <se_ne hgrid="ne0np4_arm_x8v3_lowcon"  > 0 </se_ne>

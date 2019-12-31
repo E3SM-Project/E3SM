@@ -849,11 +849,8 @@ module namelist_mod
 #else
        cubed_sphere_map=0  ! default is equi-angle gnomonic
 #endif
-       if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
-#ifdef CAM
-       if (fv_nphys.gt.0) cubed_sphere_map=2  ! must use element_local for FV physics grid
-#endif
     endif
+    if (ne.eq.0) cubed_sphere_map=2  ! must use element_local for var-res grids
     if (par%masterproc) write (iulog,*) "Reference element projection: cubed_sphere_map=",cubed_sphere_map
 
 !logic around different hyperviscosity options

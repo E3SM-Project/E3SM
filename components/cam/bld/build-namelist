@@ -4028,6 +4028,7 @@ if ($cfg->get('dyn') =~ /se/) {
                   hypervis_scaling mesh_file vthreads
                   theta_hydrostatic_mode transport_alg theta_advect_form
                   se_tstep dt_tracer_factor dt_remap_factor 
+                  cubed_sphere_map
                   );
 
     foreach my $var (@vars) {
