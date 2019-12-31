@@ -29,8 +29,14 @@ def _submit(case, job=None, no_batch=False, prereq=None, allow_fail=False, resub
     if job is None:
         job = case.get_first_job()
 
+    # Check mediator
+    hasMediator = True
+    comp_classes = case.get_values("COMP_CLASSES")
+    if 'CPL' not in comp_classes:
+        hasMediator = False
+
     # Check if CONTINUE_RUN value makes sense
-    if job != "case.test" and case.get_value("CONTINUE_RUN"):
+    if job != "case.test" and case.get_value("CONTINUE_RUN") and hasMediator:
         rundir = case.get_value("RUNDIR")
         expect(os.path.isdir(rundir),
                "CONTINUE_RUN is true but RUNDIR {} does not exist".format(rundir))
