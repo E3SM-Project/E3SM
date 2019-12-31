@@ -2,28 +2,26 @@
 #
 #SBATCH --job-name d16-2-theta-l
 #SBATCH --account=FY150001
+#SBATCH -p ec
+#SBATCH --account=condo
+#SBATCH -p acme-medium
 #SBATCH -N 12
 #SBATCH --time=0:20:00
-#SBATCH -p ec
-#PBS -q acme
-#PBS -l walltime=20:00
-#PBS -l nodes=12
 #
 #  r100 (ne30) 12 nodes, needs 5 min?
 #  
 
 
 OMP_NUM_THREADS=1
-NCPU=40
-if [ -n "$PBS_ENVIRONMENT" ]; then
-#  NCPU=$PBS_NNODES
-  [ "$PBS_ENVIRONMENT" = "PBS_BATCH" ] && cd $PBS_O_WORKDIR 
-  NCPU=$PBS_NNODES
-fi
+NCPU=8
 if [ -n "$SLURM_NNODES" ]; then
-    NCPU=$SLURM_NNODES
-    let NCPU*=16
-    let NCPU/=$OMP_NUM_THREADS
+   patt='([[:digit:]]+)'
+   if [[ $SLURM_TASKS_PER_NODE =~ $patt ]]; then
+     PER_NODE=${BASH_REMATCH[1]}
+   else
+     PER_NODE=16
+   fi
+   NCPU=$(( $SLURM_NNODES * $PER_NODE ))
 fi
 
 # theta model
@@ -36,7 +34,7 @@ echo "NCPU = $NCPU"
 namelist=namelist-$prefix.nl
 \cp -f $namelist input.nl
 date
-mpirun -np $NCPU $EXEC < input.nl
+srun -K -c 1 -n $NCPU -N $SLURM_NNODES  $EXEC < input.nl
 date
 
 ncl plot-tropical-cyclone-init.ncl  # u,t,th,q,pnh,geo,ps, time=0
