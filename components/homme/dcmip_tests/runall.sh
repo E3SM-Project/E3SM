@@ -15,12 +15,12 @@
 #   status:    see if PDF files for all tests are present
 #   latex:     collect all PDF files, create PDF of results
 #
-# Currenting running in Anvil
+# Currently running in Anvil
 #
-# Requriements:
+# Requirements:
 #    standalone HOMME supported platform
 #    jobscript for each CASE that runs all tests and produces plots
-#    jobscript needs to produce plotsx with the exact names given below
+#    jobscript needs to produce plots with the exact names given below
 #    NCL, pdflatex 
 #
 MACH=anvil.cmake            # HOMME's machine file for the given machine
