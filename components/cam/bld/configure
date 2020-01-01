@@ -757,8 +757,20 @@ if (defined $opts{'dyn'}) {
       $cfg_ref->set('dyn', lc($opts{'dyn'}) );
     }
     if (defined $opts{'dyn_target'}) {                                                        
-        $cfg_ref->set('dyn_target', $opts{'dyn_target'});                                     
-    }                                                                                         
+        #$cfg_ref->set('dyn_target', $opts{'dyn_target'});
+        if (substr($opts{'dyn_target'},0,5) eq 'preqx') {
+            # preqx, preqx_acc, preqx_kokkos use 'preqx' namelist defaults
+            $cfg_ref->set('dyn_target', 'preqx');
+        }
+        if (substr($opts{'dyn_target'},0,5) eq 'theta') {
+            # theta_* uses 'theta-l' namelist defaults
+            $cfg_ref->set('dyn_target', 'theta-l');
+        }
+        print  "SE dycore target options:\n";
+        print  "  build target:    $opts{'dyn_target'}\n";
+        my $temp = $cfg_ref->get('dyn_target');
+        print  "  namelist target: $temp\n";
+    }
 }
 
 my $dyn_pkg = $cfg_ref->get('dyn');

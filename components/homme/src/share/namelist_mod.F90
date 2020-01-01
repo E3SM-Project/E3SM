@@ -611,25 +611,26 @@ module namelist_mod
 ! ^ ifndef CAM
        ierr = timestep_make_subcycle_parameters_consistent(par, rsplit, qsplit, &
             dt_remap_factor, dt_tracer_factor)
-    end if
 
 #ifdef CAM
-    partmethod = se_partmethod
-    ne = se_ne
-    topology = se_topology
-    qsize=qsize_d
-    limiter_option=se_limiter_option
-    nsplit=se_nsplit
-    tstep           = se_tstep
-    if (tstep > 0) then
-       if (par%masterproc .and. nsplit > 0) then
-          write(iulog,'(a,i3,a)') &
-               'se_tstep and se_nsplit were specified; changing se_nsplit from ', &
-               nsplit, ' to -1.'
+       limiter_option=se_limiter_option
+       partmethod = se_partmethod
+       ne         = se_ne
+       topology   = se_topology
+       qsize      = qsize_d
+       nsplit     = se_nsplit
+       tstep      = se_tstep
+       if (tstep > 0) then
+          if (par%masterproc .and. nsplit > 0) then
+             write(iulog,'(a,i3,a)') &
+                  'se_tstep and se_nsplit were specified; changing se_nsplit from ', &
+                  nsplit, ' to -1.'
+          end if
+          nsplit = -1
        end if
-       nsplit = -1
-    end if
 #endif
+    end if
+
 
     call MPI_barrier(par%comm,ierr)
 
