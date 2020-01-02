@@ -1118,9 +1118,9 @@ end subroutine micro_p3_readnl
     kte     = pver
     pres    = state%pmid(:,:)
     ! Initialize the raidation dependent variables.
-    mu      = mucon
-    lambdac = (mucon + 1._rtype)/dcon
-    dei     = deicon
+    mu      = 0.0_rtype !mucon
+    lambdac = 0.0_rtype !(mucon + 1._rtype)/dcon
+    dei     = 50.0_rtype !deicon
     ! Determine the cloud fraction and precip cover
     icldm(:,:) = 1.0_rtype
     lcldm(:,:) = 1.0_rtype
