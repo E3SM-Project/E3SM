@@ -9,7 +9,7 @@ use constituents, only: cnst_get_ind
 use dimensions_mod, only: nelemd, np
 use time_manager, only: get_nstep, dtime
 use ppgrid, only: begchunk
-use pmgrid, only: plev
+use pmgrid, only: plev, plon
 use parallel_mod,            only: par
 
 implicit none
@@ -279,9 +279,14 @@ subroutine apply_SC_forcing(elem,hvcoord,tl,n,t_before_advance,nets,nete)
 	enddo
       enddo
       
-      call outfld('TDIFF',tdiff_out,npsq,ie)
-      call outfld('QDIFF',qdiff_out,npsq,ie)
-      
+      if (iop_scream) then
+        call outfld('TDIFF',tdiff_out,npsq,ie)
+        call outfld('QDIFF',qdiff_out,npsq,ie)
+      else
+        call outfld('TDIFF',tdiff_dyn,plon,begchunk)
+	call outfld('QDIFF',tdiff_dyn,plon,begchunk)
+      endif
+	    
     enddo
 
     end subroutine apply_SC_forcing

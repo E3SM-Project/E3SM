@@ -344,7 +344,7 @@ subroutine scam_setopts( scmlat_in, scmlon_in,iopfile_in,single_column_in, &
   if( single_column) then
 
   if (masterproc) then     
-     if (plon == 1 .and. plat == 1 .and. .not. iop_scream ) then 
+     if (plon /= 1 .and. plat /= 1 .and. .not. iop_scream ) then 
         call endrun('SCAM_SETOPTS: must compile model for SCAM mode when namelist parameter single_column is .true.')
      endif
      
