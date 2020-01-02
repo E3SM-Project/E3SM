@@ -669,6 +669,8 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   ! local override option for constituents cnst_type
   character(len=3), dimension(pcnst) :: cnst_type_loc
 
+  logical :: do_latitude_taper
+
   !------------------------------------------------------------------------
 
   ! Make local copy of input state.
@@ -748,8 +750,10 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
              zm, src_level, tend_level, tau, ubm, ubi, xv, yv, c, &
              hdepth, maxq0, gw_convect_hcf)
 
+        do_latitude_taper = .false.
+
         ! Solve for the drag profile with Beres source spectrum.
-        call gw_drag_prof(ncol, pgwv, src_level, tend_level, .false., dt, &
+        call gw_drag_prof(ncol, pgwv, src_level, tend_level, do_latitude_taper, dt, &
              state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
              piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
              effgw_beres, c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
@@ -805,8 +809,10 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         call gw_cm_src(ncol, pgwv, kbotbg, u, v, frontgf, &
              src_level, tend_level, tau, ubm, ubi, xv, yv, c)
 
+        do_latitude_taper = .true.
+
         ! Solve for the drag profile with C&M source spectrum.
-        call gw_drag_prof(ncol, pgwv, src_level, tend_level, .true., dt, &
+        call gw_drag_prof(ncol, pgwv, src_level, tend_level, do_latitude_taper, dt, &
              state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
              piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
              effgw_cm,    c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
@@ -858,8 +864,10 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
           u, v, t, sgh(:ncol), pmid, pint, dpm, zm, nm, &
           src_level, tend_level, tau, ubm, ubi, xv, yv, c)
 
+     do_latitude_taper = .false.
+
      ! Solve for the drag profile with orographic sources.
-     call gw_drag_prof(ncol, 0, src_level, tend_level, .false., dt, &
+     call gw_drag_prof(ncol, 0, src_level, tend_level, do_latitude_taper, dt, &
           state1%lat(:ncol), t,    ti, pmid, pint, dpm,   rdpm, &
           piln, rhoi,       nm,   ni, ubm,  ubi,  xv,    yv,   &
           effgw_oro,   c,   kvtt, q,  dse,  tau,  utgw,  vtgw, &
