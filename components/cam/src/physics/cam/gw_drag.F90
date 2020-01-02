@@ -574,6 +574,7 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
   use gw_oro,     only: gw_oro_src
   use gw_front,   only: gw_cm_src
   use gw_convect, only: gw_beres_src
+  use dycore,     only: dycore_is
   !------------------------------Arguments--------------------------------
   type(physics_state), intent(in) :: state      ! physics state structure
   ! Standard deviation of orography.
@@ -809,7 +810,11 @@ subroutine gw_tend(state, sgh, pbuf, dt, ptend, cam_in)
         call gw_cm_src(ncol, pgwv, kbotbg, u, v, frontgf, &
              src_level, tend_level, tau, ubm, ubi, xv, yv, c)
 
-        do_latitude_taper = .true.
+        if (dycore_is('UNSTRUCTURED')) then
+          do_latitude_taper = .false.
+        else
+          do_latitude_taper = .true.
+        end if
 
         ! Solve for the drag profile with C&M source spectrum.
         call gw_drag_prof(ncol, pgwv, src_level, tend_level, do_latitude_taper, dt, &
