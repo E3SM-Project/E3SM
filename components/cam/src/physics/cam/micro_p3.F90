@@ -604,6 +604,9 @@ contains
     inv_icldm = 1.0_rtype/icldm
     inv_lcldm = 1.0_rtype/lcldm
     inv_rcldm = 1.0_rtype/rcldm
+
+    mu_c = 0.0_rtype
+    lamc = 0.0_rtype
     ! AaronDonahue added exner term to replace all instances of th(i,k)/t(i,k), since th(i,k) is updated but t(i,k) is not, and this was
     ! causing energy conservation errors.
     inv_exner = 1._rtype/exner        !inverse of Exner expression, used when converting potential temp to temp
