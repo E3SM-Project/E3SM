@@ -253,7 +253,7 @@ def _archive_history_files(archive, compclass, compname, histfiles_savein_rundir
 
     # archive history files - the only history files that kept in the
     # run directory are those that are needed for restarts
-    histfiles = archive.get_all_hist_files(compname, rundir)
+    histfiles = archive.get_all_hist_files(casename, compname, rundir)
 
     if histfiles:
         for histfile in histfiles:
