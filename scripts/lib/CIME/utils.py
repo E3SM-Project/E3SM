@@ -283,7 +283,7 @@ def set_model(model):
     expect(model in ['cesm','e3sm','ufs'],"model {} not recognized".format(model))
     cime_config.set('main','CIME_MODEL',model)
 
-def get_model(case=None):
+def get_model():
     """
     Get the currently configured model value
     The CIME_MODEL env variable may or may not be set
@@ -303,9 +303,6 @@ def get_model(case=None):
     'e3sm'
     >>> reset_cime_config()
     """
-    if case:
-        return case.get_value("MODEL")
-
     model = os.environ.get("CIME_MODEL")
     if model in ['cesm', 'e3sm', 'ufs']:
         logger.debug("Setting CIME_MODEL={} from environment".format(model))

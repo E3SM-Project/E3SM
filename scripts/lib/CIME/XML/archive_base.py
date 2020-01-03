@@ -24,14 +24,8 @@ class ArchiveBase(GenericXML):
     def get_rest_file_extensions(self, archive_entry):
         return self._get_file_node_text(['rest_file_extension'],archive_entry)
 
-    def get_rest_file_regex(self, archive_entry):
-        return self._get_file_node_text(['rest_file_regex'],archive_entry)
-
     def get_hist_file_extensions(self, archive_entry):
         return self._get_file_node_text(['hist_file_extension'],archive_entry)
-
-    def get_hist_file_regex(self, archive_entry):
-        return self._get_file_node_text(['hist_file_regex'],archive_entry)
 
     def get_entry_value(self, name, archive_entry):
         node = self.get_optional_child(name, root=archive_entry)
@@ -44,19 +38,12 @@ class ArchiveBase(GenericXML):
         test_hists = self.get_all_hist_files(model, from_dir, suffix=suffix, ref_case=ref_case)
         latest_files = {}
         histlist = []
-        regex = self.get_hist_file_regex(self.get_entry(model))
         for hist in test_hists:
-            ext = _get_extension(model, hist, regex=regex)
+            ext = _get_extension(model, hist)
             latest_files[ext] = hist
 
         for key in latest_files.keys():
             histlist.append(os.path.join(from_dir,latest_files[key]))
-            # Special case for fv3gfs which outputs in cubed sphere tiles
-            if "tile[1-6].nc" in key:
-                for i in range(1,5):
-                    new_file = latest_files[key].replace("tile6.nc","tile{}.nc".format(i))
-                    histlist.append(os.path.join(from_dir, new_file))
-
         return histlist
 
     def get_all_hist_files(self, model, from_dir, suffix="", ref_case=None):
@@ -65,12 +52,12 @@ class ArchiveBase(GenericXML):
             dmodel = "drv"
         hist_files = []
         extensions = self.get_hist_file_extensions(self.get_entry(dmodel))
-        regex = self.get_hist_file_regex(self.get_entry(dmodel))
 
         if suffix and len(suffix) > 0:
             has_suffix = True
         else:
             has_suffix = False
+
         # Strip any trailing $ if suffix is present and add it back after the suffix
         for ext in extensions:
             if ext.endswith('$') and has_suffix:
@@ -84,9 +71,6 @@ class ArchiveBase(GenericXML):
             pfile = re.compile(string)
             hist_files.extend([f for f in os.listdir(from_dir) if pfile.search(f)])
 
-        for match in regex:
-            pfile = re.compile(match)
-            hist_files.extend([f for f in os.listdir(from_dir) if pfile.search(f)])
 
         if ref_case:
             hist_files = [h for h in hist_files if not (ref_case in os.path.basename(h))]
@@ -96,15 +80,12 @@ class ArchiveBase(GenericXML):
         logger.debug("get_all_hist_files returns {} for model {}".format(hist_files, model))
         return hist_files
 
-def _get_extension(model, filepath, regex=None):
+def _get_extension(model, filepath):
     r"""
     For a hist file for the given model, return what we call the "extension"
 
     model - The component model
     filepath - The path of the hist file
-    regex - if provided is a list of regex patterns to match for filenames.  This allows for
-            filename patterns that do not match the original filenaming convention.
-            If None (or []) only filename patterns are matched.
     >>> _get_extension("cpl", "cpl.hi.nc")
     'hi'
     >>> _get_extension("cpl", "cpl.h.nc")
@@ -119,8 +100,6 @@ def _get_extension(model, filepath, regex=None):
     '0002.h0'
     >>> _get_extension("pop","PFS.f09_g16.B1850.cheyenne_intel.allactive-default.GC.c2_0_b1f2_int.pop.h.ecosys.nday1.0001-01-02.nc")
     'h'
-    >>> _get_extension("fv3gfs", "dynf000.tile1.nc", regex=["^physf\d\d\d.tile[1-6].nc$","^dynf\d\d\d.tile[1-6].nc$"])
-    '^dynf\\d\\d\\d.tile[1-6].nc$'
     >>> _get_extension("mom", "ga0xnw.mom6.frc._0001_001.nc")
     'frc'
     >>> _get_extension("mom", "ga0xnw.mom6.sfc.day._0001_001.nc")
@@ -157,11 +136,6 @@ def _get_extension(model, filepath, regex=None):
                 result = m.group(2)
             return result
 
-    if regex:
-        for result in regex:
-            m = re.search(result, basename)
-            if m:
-                break
     expect(m, "Failed to get extension for file '{}'".format(filepath))
 
     return result
