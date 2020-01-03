@@ -594,7 +594,7 @@ using a fortran linker.
     <append MPILIB="mpi-serial"> -mcmodel medium </append>
   </FFLAGS>
   <LDFLAGS>
-    <append>-L$ENV{TACC_HDF5_LIB} -lhdf5 $(MKL) -zmuldefs -xCOMMON-AVX512</append>
+    <append>-L$ENV{TACC_HDF5_LIB} -lhdf5 -zmuldefs -xCOMMON-AVX512</append>
   </LDFLAGS>
   <SLIBS>
     <append>$SHELL{${NETCDF_PATH}/bin/nf-config --flibs} -L$ENV{TACC_HDF5_LIB} -lhdf5</append>
