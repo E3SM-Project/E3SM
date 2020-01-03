@@ -2244,17 +2244,16 @@ contains
       real(r8), parameter :: n2_vol_mix_ratio = 0.7906_r8
 
       ! Loop indices
-      integer :: igas, iday, icol
+      integer :: igas
 
       ! Number of columns and daytime columns
       integer :: ncol, nday
 
-      character(len=32) :: subname = 'set_gas_concentrations'
-
-      ! Indices to model top on the RADIATION VERTICAL GRID
-      integer :: k, k_cam
-
+      ! Character array to hold lowercase gas names
       character(len=32), allocatable :: gas_names(:)
+
+      ! Name of subroutine for error messages
+      character(len=32) :: subname = 'set_gas_concentrations'
 
       ! Number of columns in chunk
       ncol = state%ncol
