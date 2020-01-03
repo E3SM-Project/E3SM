@@ -33,9 +33,9 @@ class ArchiveBase(GenericXML):
             return self.text(node)
         return None
 
-    def get_latest_hist_files(self, model, from_dir, suffix="", ref_case=None):
+    def get_latest_hist_files(self, casename, model, from_dir, suffix="", ref_case=None):
 
-        test_hists = self.get_all_hist_files("casename", model, from_dir, suffix=suffix, ref_case=ref_case)
+        test_hists = self.get_all_hist_files(casename, model, from_dir, suffix=suffix, ref_case=ref_case)
         latest_files = {}
         histlist = []
         for hist in test_hists:
@@ -55,7 +55,6 @@ class ArchiveBase(GenericXML):
             dmodel = "fv3"
         hist_files = []
         extensions = self.get_hist_file_extensions(self.get_entry(dmodel))
-
         if suffix and len(suffix) > 0:
             has_suffix = True
         else:
@@ -70,7 +69,6 @@ class ArchiveBase(GenericXML):
                 string += '.'+suffix+'$'
 
             logger.debug ("Regex is {}".format(string))
-
             pfile = re.compile(string)
             hist_files.extend([f for f in os.listdir(from_dir) if pfile.search(f) and (f.startswith(casename) or f.startswith(dmodel))])
 
@@ -81,7 +79,7 @@ class ArchiveBase(GenericXML):
         hist_files = list(set(hist_files))
         hist_files.sort()
         logger.debug("get_all_hist_files returns {} for model {}".format(hist_files, model))
-        print("all hist {}".format(hist_files))
+
         return hist_files
 
 def _get_extension(model, filepath):

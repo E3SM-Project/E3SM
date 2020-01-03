@@ -51,13 +51,14 @@ def copy_histfiles(case, suffix):
     """
     rundir   = case.get_value("RUNDIR")
     ref_case = case.get_value("RUN_REFCASE")
+    casename = case.get_value("CASE")
     # Loop over models
     archive = case.get_env("archive")
     comments = "Copying hist files to suffix '{}'\n".format(suffix)
     num_copied = 0
     for model in _iter_model_file_substrs(case):
         comments += "  Copying hist files for model '{}'\n".format(model)
-        test_hists = archive.get_latest_hist_files(model, rundir, ref_case=ref_case)
+        test_hists = archive.get_latest_hist_files(casename, model, rundir, ref_case=ref_case)
         num_copied += len(test_hists)
         for test_hist in test_hists:
             new_file = "{}.{}".format(test_hist, suffix)
@@ -78,7 +79,7 @@ def copy_histfiles(case, suffix):
             # because the test system will think that run1's files were output
             # by run2. But we live with that downside for the sake of the reason
             # noted above.)
-            safe_copy(test_hist, new_file)
+            safe_copy(os.path.join(rundir,test_hist), os.path.join(rundir,new_file))
 
     expect(num_copied > 0, "copy_histfiles failed: no hist files found in rundir '{}'".format(rundir))
 
@@ -219,8 +220,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
         if model == 'cpl' and suffix2 == 'multiinst':
             multiinst_driver_compare = True
         comments += "  comparing model '{}'\n".format(model)
-        hists1 = archive.get_latest_hist_files(model, from_dir1, suffix=suffix1, ref_case=ref_case)
-        hists2 = archive.get_latest_hist_files(model, from_dir2, suffix=suffix2, ref_case=ref_case)
+        hists1 = archive.get_latest_hist_files(casename, model, from_dir1, suffix=suffix1, ref_case=ref_case)
+        hists2 = archive.get_latest_hist_files(casename, model, from_dir2, suffix=suffix2, ref_case=ref_case)
         if len(hists1) == 0 and len(hists2) == 0:
             comments += "    no hist files found for model {}\n".format(model)
             continue
@@ -241,7 +242,8 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
         num_compared += len(match_ups)
 
         for hist1, hist2 in match_ups:
-            success, cprnc_log_file, cprnc_comment = cprnc(model, hist1, hist2, case, from_dir1,
+            success, cprnc_log_file, cprnc_comment = cprnc(model, os.path.join(from_dir1,hist1),
+                                                           os.path.join(from_dir2,hist2), case, from_dir1,
                                                            multiinst_driver_compare=multiinst_driver_compare,
                                                            outfile_suffix=outfile_suffix,
                                                            ignore_fieldlist_diffs=ignore_fieldlist_diffs)
@@ -447,17 +449,16 @@ def _generate_baseline_impl(case, baseline_dir=None, allow_baseline_overwrite=Fa
     for model in _iter_model_file_substrs(case):
         comments += "  generating for model '{}'\n".format(model)
 
-        hists =  archive.get_latest_hist_files(model, rundir, ref_case=ref_case)
+        hists =  archive.get_latest_hist_files(testcase, model, rundir, ref_case=ref_case)
         logger.debug("latest_files: {}".format(hists))
         num_gen += len(hists)
         for hist in hists:
             offset = max(0,hist.rfind(model))
-            basename = os.path.basename(hist[offset:])
-            baseline = os.path.join(basegen_dir, basename)
+            baseline = os.path.join(basegen_dir, hist[offset:])
             if os.path.exists(baseline):
                 os.remove(baseline)
 
-            safe_copy(hist, baseline, preserve_meta=False)
+            safe_copy(os.path.join(rundir,hist), baseline, preserve_meta=False)
             comments += "    generating baseline '{}' from file {}\n".format(baseline, hist)
 
     # copy latest cpl log to baseline
