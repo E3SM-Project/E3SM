@@ -67,6 +67,7 @@ module common_io_mod
      logical :: required
      logical :: timedependent
      integer :: dimsid
+     integer :: vtype
      type(Var_desc_t) :: Vardesc   
   end type nf_variable
 
