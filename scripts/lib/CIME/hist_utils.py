@@ -222,6 +222,7 @@ def _compare_hists(case, from_dir1, from_dir2, suffix1="", suffix2="", outfile_s
         comments += "  comparing model '{}'\n".format(model)
         hists1 = archive.get_latest_hist_files(casename, model, from_dir1, suffix=suffix1, ref_case=ref_case)
         hists2 = archive.get_latest_hist_files(casename, model, from_dir2, suffix=suffix2, ref_case=ref_case)
+
         if len(hists1) == 0 and len(hists2) == 0:
             comments += "    no hist files found for model {}\n".format(model)
             continue

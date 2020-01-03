@@ -70,7 +70,7 @@ class ArchiveBase(GenericXML):
 
             logger.debug ("Regex is {}".format(string))
             pfile = re.compile(string)
-            hist_files.extend([f for f in os.listdir(from_dir) if pfile.search(f) and (f.startswith(casename) or f.startswith(dmodel))])
+            hist_files.extend([f for f in os.listdir(from_dir) if pfile.search(f) and (f.startswith(casename) or f.startswith(model))])
 
         if ref_case:
             expect(ref_case not in casename,"ERROR: ref_case name {} conflicts with casename {}".format(ref_case,casename))
@@ -78,7 +78,7 @@ class ArchiveBase(GenericXML):
 
         hist_files = list(set(hist_files))
         hist_files.sort()
-        logger.debug("get_all_hist_files returns {} for model {}".format(hist_files, model))
+        logger.info("get_all_hist_files returns {} for model {}".format(hist_files, model))
 
         return hist_files
 
