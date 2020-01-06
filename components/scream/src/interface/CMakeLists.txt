@@ -1,6 +1,9 @@
 set(ATM_SRC
   scream_cxx_f90_interface.cpp
   atm_comp_mct.F90
+  dead_mct_mod.F90
+  dead_data_mod.F90
+  dead_mod.F90
 )
 
 if (USE_ESMF_LIB)
