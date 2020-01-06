@@ -227,8 +227,7 @@ contains
 
        call fld_list_add(fldsToGlc_num, fldsToGlc, trim(flds_scalar_name))
        call fld_list_add(fldsToGlc_num, fldsToGlc, 'Sl_tsrf')
-       call fld_list_add(fldsToGlc_num, fldsToGlc, 'Sl_topo')
-       call fld_list_add(fldsToGlc_num, fldsToGlc, 'Flgg_hflx')
+       call fld_list_add(fldsToGlc_num, fldsToGlc, 'Flgl_qice')
 
        do n = 1,fldsFrGlc_num
           if (mastertask) write(logunit,*)'Advertising From Xglc ',trim(fldsFrGlc(n)%stdname)
@@ -266,7 +265,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR) :: convCIM, purpComp
     type(ESMF_Mesh)        :: Emesh
     integer                :: shrlogunit                ! original log unit
     integer                :: n
@@ -342,19 +340,6 @@ contains
        call state_diagnose(exportState,subname//':ES',rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
-
-#ifdef USE_ESMF_METADATA
-    convCIM  = "CIM"
-    purpComp = "Model Component Simulation Description"
-    call ESMF_AttributeAdd(comp,  convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ShortName", "XGLC", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "LongName", "Land-Ice Dead Model", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "Description", &
-         "The dead models stand in as test model for active components." // &
-         "Coupling data is artificially generated ", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ReleaseDate", "2017", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ModelType", "Land-Ice", convention=convCIM, purpose=purpComp, rc=rc)
-#endif
 
     call shr_file_setLogUnit (shrlogunit)
 
