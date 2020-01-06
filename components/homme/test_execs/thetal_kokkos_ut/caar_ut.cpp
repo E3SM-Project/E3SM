@@ -255,9 +255,6 @@ TEST_CASE("caar", "caar_testing") {
           elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
           elems.m_derived.randomize(seed,dp3d_min(elems.m_state.m_dp3d));
 
-          // Note: to avoid errors in the equation of state, we need phi to be increasing.
-          //       Moreover, f90 caar 'assumes' phi already stores phis, while cxx caar uses phis.
-
           // Copy initial values to f90
           sync_to_host(elems.m_state.m_dp3d, dp3d_f90);
           sync_to_host(elems.m_state.m_vtheta_dp, vtheta_dp_f90);

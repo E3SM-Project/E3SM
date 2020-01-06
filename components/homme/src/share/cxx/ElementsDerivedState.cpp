@@ -55,10 +55,12 @@ void ElementsDerivedState::randomize(const int seed, const Real dp3d_min) {
 
   // During remap, in the case of rsplit=0, the target thickness is computed as
   //   dp_star(k) = dp(k) + dt*(eta_dot_dpdn(k+1)-eta_dot_dpdn(k))
-  // Such dp_start should verify sum(dp_star) = sum(dp). One way to enforce this
-  // is to modify one entry of eta_dot_dpdn, so that the two are "close enough"
-  // to not raise errors during unit tests (inside unit tests we check the constraint
-  // with a somewhat loose tolerance).
+  // Such dp_star should verify sum(dp_star) = sum(dp). Real runs should always
+  // verify this (up to roundoff errors), so we need our "random" eta_dot_dpdn
+  // to also verify this. In the unit tests, we check this with a somewhat
+  // loose tolerance, so it is enough to ensure this up to roundoff errors.
+  // One way to enforce this is to compute the sum of delta(eta_dot_dpdn),
+  // and add the sum to the first entry of eta_dot_dpdn.
   auto eta_dot_dpdn = m_eta_dot_dpdn;
   auto policy = Homme::get_default_team_policy<ExecSpace>(m_num_elems);
   const int nteams = Homme::get_num_concurrent_teams(policy);
@@ -90,16 +92,16 @@ void ElementsDerivedState::randomize(const int seed, const Real dp3d_min) {
         }
       });
 
+      Real sum;
       // Compute delta_eta over the column
       ColumnOps::compute_midpoint_delta(kv,eta_dot_dpdn_ij,delta_eta_ij);
 
-      Real sum = 0;
       // Integrate delta_eta over the column, and subtract that value
       // to the first entry of eta_dot_dpdn
       ColumnOps::column_reduction<NUM_PHYSICAL_LEV>(kv.team,delta_eta_ij,sum);
 
       Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-        eta_dot_dpdn_ij(0)[0] -= sum;
+        eta_dot_dpdn_ij(0)[0] += sum;
       });
     });
   });
