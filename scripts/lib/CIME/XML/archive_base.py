@@ -78,7 +78,7 @@ class ArchiveBase(GenericXML):
 
         hist_files = list(set(hist_files))
         hist_files.sort()
-        logger.info("get_all_hist_files returns {} for model {}".format(hist_files, model))
+        logger.debug("get_all_hist_files returns {} for model {}".format(hist_files, model))
 
         return hist_files
 
@@ -113,6 +113,9 @@ def _get_extension(model, filepath):
     >>> _get_extension("mom", "bixmc5.mom6.hmz._0001_01_03_42300.nc")
     'hmz'
     """
+    # Remove with component namechange
+    if model == "fv3gfs":
+        model = "fv3"
     basename = os.path.basename(filepath)
     m = None
     ext_regexes = []
