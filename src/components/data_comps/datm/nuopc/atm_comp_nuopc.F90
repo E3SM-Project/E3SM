@@ -22,9 +22,12 @@ module atm_comp_nuopc
   use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
   use dshr_methods_mod , only : set_component_logging, get_component_instance, log_clock_advance
   use datm_shr_mod     , only : datm_shr_read_namelists, iradsw, datm_shr_getNextRadCDay
-  use datm_comp_mod    , only : datm_comp_advertise, datm_comp_init, datm_comp_run 
+  use datm_comp_mod    , only : datm_comp_advertise, datm_comp_init, datm_comp_run
   use datm_comp_mod    , only : datm_comp_import, datm_comp_export
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
+  use netcdf           , only : nf90_open, nf90_nowrite, nf90_noerr, nf90_close, nf90_strerror
+  use netcdf           , only : nf90_inq_dimid, nf90_inq_varid, nf90_get_var
+  use netcdf           , only : nf90_inquire_dimension, nf90_inquire_variable
 
   implicit none
   private ! except
@@ -314,6 +317,15 @@ contains
     real(R8)                :: orbLambm0                 ! orb mean long of perhelion (radians)
     real(R8)                :: orbObliqr                 ! orb obliquity (radians)
     integer                 :: nxg, nyg
+    integer                 :: ncid, ierr
+    integer                 :: dimid_ni, dimid_nj, dimid_nv
+    integer                 :: ni, nj, nv
+    integer                 :: varid_xv, varid_yv
+    real(r8), allocatable   :: xv(:,:,:), yv(:,:,:)
+    integer                 :: maxIndex(2)
+    real(r8)                :: mincornerCoord(2)
+    real(r8)                :: maxcornerCoord(2)
+    type(ESMF_Grid)         :: lgrid
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 
@@ -409,8 +421,62 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name='mesh_atm', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (cvalue == 'create_mesh') then
+       ! get the datm grid from the domain file
+       call NUOPC_CompAttributeGet(gcomp, name='domain_atm', value=cvalue, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       ! open file
+       ierr = nf90_open(cvalue, NF90_NOWRITE, ncid)
+       call nc_check_err(ierr, 'nf90_open', trim(cvalue))
+       ! get dimension ids
+       ierr = nf90_inq_dimid(ncid, 'ni', dimid_ni)
+       call nc_check_err(ierr, 'nf90_inq_dimid for ni', trim(cvalue))
+       ierr = nf90_inq_dimid(ncid, 'nj', dimid_nj)
+       call nc_check_err(ierr, 'nf90_inq_dimid for nj', trim(cvalue))
+       ierr = nf90_inq_dimid(ncid, 'nv', dimid_nv)
+       call nc_check_err(ierr, 'nf90_inq_dimid for nv', trim(cvalue))
+       ! get dimension values
+       ierr = nf90_inquire_dimension(ncid, dimid_ni, len=ni)
+       call nc_check_err(ierr, 'nf90_inq_dimension for ni', trim(cvalue))
+       ierr = nf90_inquire_dimension(ncid, dimid_nj, len=nj)
+       call nc_check_err(ierr, 'nf90_inq_dimension for nj', trim(cvalue))
+       ierr = nf90_inquire_dimension(ncid, dimid_nv, len=nv)
+       call nc_check_err(ierr, 'nf90_inq_dimension for nv', trim(cvalue))
+       ! get variable ids
+       ierr = nf90_inq_varid(ncid, 'xv', varid_xv)
+       call nc_check_err(ierr, 'nf90_inq_varid for xv', trim(cvalue))
+       ierr = nf90_inq_varid(ncid, 'yv', varid_yv)
+       call nc_check_err(ierr, 'nf90_inq_varid for yv', trim(cvalue))
+       ! allocate memory for variables and get variable values
+       allocate(xv(nv,ni,nj), yv(nv,ni,nj))
+       ierr = nf90_get_var(ncid, varid_xv, xv)
+       call nc_check_err(ierr, 'nf90_get_var for xv', trim(cvalue))
+       ierr = nf90_get_var(ncid, varid_yv, yv)
+       call nc_check_err(ierr, 'nf90_get_var for yv', trim(cvalue))
+       ! close file
+       ierr = nf90_close(ncid)
+       call nc_check_err(ierr, 'nf90_close', trim(cvalue))
+       ! create the grid
+       maxIndex(1)       = ni          ! number of lons
+       maxIndex(2)       = nj          ! number of lats
+       mincornerCoord(1) = xv(1,1,1)   ! min lon
+       mincornerCoord(2) = yv(1,1,1)   ! min lat
+       maxcornerCoord(1) = xv(3,ni,nj) ! max lon
+       maxcornerCoord(2) = yv(3,ni,nj) ! max lat
+       deallocate(xv,yv)
+       write(6,*)'DEBUG: maxcornerCoord = ',maxcornerCoord
+       lgrid = ESMF_GridCreateNoPeriDimUfrm (maxindex=maxindex, &
+            mincornercoord=mincornercoord, maxcornercoord= maxcornercoord, &
+            staggerloclist=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+       ! create the mesh from the grid
+       Emesh =  ESMF_MeshCreate(lgrid, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    else
+       Emesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     if (my_task == master_task) then
        write(logunit,*) " (datm_comp_nuopc): obtaining datm mesh from " // trim(cvalue)
@@ -468,7 +534,7 @@ contains
     call State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    
+
     call State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, &
          flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -686,5 +752,19 @@ contains
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine ModelFinalize
+
+  !===============================================================================
+
+  subroutine nc_check_err(ierror, description, filename)
+    integer     , intent(in) :: ierror
+    character(*), intent(in) :: description
+    character(*), intent(in) :: filename
+
+    if (ierror /= nf90_noerr) then
+       write (*,'(6a)') 'ERROR ', trim(description),'. NetCDF file : "', trim(filename),&
+            '". Error message:', trim(nf90_strerror(ierror))
+       call shr_sys_abort()
+    endif
+  end subroutine nc_check_err
 
 end module atm_comp_nuopc

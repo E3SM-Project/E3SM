@@ -733,7 +733,9 @@ contains
 #endif
       perf_timing_ovhd = perf_timing_ovhd - ovhd_start
    endif
+#ifndef NUOPC_INTERFACE
 !$OMP END MASTER
+#endif
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
       write(cdetail,'(i2.2)') cur_timing_detail
       str_length = min(SHR_KIND_CM-3,len_trim(event))
@@ -742,7 +744,9 @@ contains
       str_length = min(SHR_KIND_CM,len_trim(event))
       TIMERSTART(event(1:str_length))
    endif
+#ifndef NUOPC_INTERFACE
 !$OMP MASTER
+#endif
    if (perf_ovhd_measurement) then
 #ifdef HAVE_MPI
       ovhd_stop = mpi_wtime()
@@ -797,12 +801,12 @@ contains
 #endif
       perf_timing_ovhd = perf_timing_ovhd - ovhd_start
    endif
-!$OMP END MASTER
 #ifdef NUOPC_INTERFACE
    cur_timing_depth = cur_timing_depth - 1
    if(cur_timing_depth >= timer_depth_limit) return
+#else
+!$OMP END MASTER
 #endif
-
    if ((perf_add_detail) .AND. (cur_timing_detail < 100)) then
       write(cdetail,'(i2.2)') cur_timing_detail
       str_length = min(SHR_KIND_CM-3,len_trim(event))
@@ -811,8 +815,9 @@ contains
       str_length = min(SHR_KIND_CM,len_trim(event))
       TIMERSTOP(event(1:str_length))
    endif
-
+#ifndef NUOPC_INTERFACE
 !$OMP MASTER
+#endif
    if (perf_ovhd_measurement) then
 #ifdef HAVE_MPI
       ovhd_stop = mpi_wtime()
