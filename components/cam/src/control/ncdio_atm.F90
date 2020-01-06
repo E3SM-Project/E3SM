@@ -117,7 +117,7 @@ contains
     ! For SCAM
     real(r8)                  :: closelat, closelon
     integer                   :: lonidx, latidx
-    
+   
     real(r8), allocatable :: field_iop(:,:)
 
     nullify(iodesc)
@@ -161,7 +161,7 @@ contains
     ! Check if field is on file; get netCDF variable id
     !
     call cam_pio_check_var(ncid, varname, varid, ndims, dimids, dimlens, readvar_tmp)
-    write(*,*) 'varnameTEST1d ', varname
+    
     !
     ! If field is on file:
     !
@@ -213,6 +213,7 @@ contains
         call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
         strt(1) = lonidx
         ierr = pio_get_var(ncid, varid, strt, cnt, field)
+	if (iop_scream) field(:,:) = field(dim1b,dim2b)
 
       else if (iop_scream) then
       

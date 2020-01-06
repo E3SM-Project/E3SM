@@ -389,25 +389,17 @@ subroutine phys_inidat( cam_out, pbuf2d )
     end if
     call cam_grid_get_dim_names(grid_id, dim1name, dim2name)
 
-!    if(masterproc) then 
-
-    if(aqua_planet.or. single_column) then
+    if(aqua_planet) then
        sgh = 0._r8
        sgh30 = 0._r8
        landm = 0._r8
        if (masterproc) write(iulog,*) 'AQUA_PLANET simulation, sgh, sgh30, landm initialized to 0.'
     else
        if (masterproc) write(iulog,*) 'NOT AN AQUA_PLANET simulation, initialize &
-                                       sgh, sgh30, land m using data from file.'
-!       if (masterproc) then
+                                      &sgh, sgh30, land m using data from file.'
        fh_topo=>topo_file_get_id()
-
-!       call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
-!            sgh, found, gridname='physgrid')
        call infld('SGH', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
-            tptr(:,:), found, gridname='physgrid')
-!       sgh(:,:) = tptr(1,1)
-       sgh = 0._r8
+            sgh, found, gridname='physgrid')
        if(.not. found) call endrun('ERROR: SGH not found on topo file')
 
        call infld('SGH30', fh_topo, dim1name, dim2name, 1, pcols, begchunk, endchunk, &
@@ -422,8 +414,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
             landm, found, gridname='physgrid')
 
        if(.not.found) call endrun(' ERROR: LANDM_COSLAT not found on topo dataset.')
-
-!       endif
     end if
 
     allocate(tptr(1:pcols,begchunk:endchunk))
@@ -674,7 +664,6 @@ subroutine phys_inidat( cam_out, pbuf2d )
     deallocate (tptr3d)
 
     call initialize_short_lived_species(fh_ini, pbuf2d)
-!    endif
 end subroutine phys_inidat
 
 
@@ -1032,6 +1021,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        !-----------------------------------------------------------------------
        ! Advance time information
        !-----------------------------------------------------------------------
+
        call phys_timestep_init( phys_state, cam_out, pbuf2d)
 
        call t_stopf ('physpkg_st1')
@@ -2886,8 +2876,7 @@ subroutine phys_timestep_init(phys_state, cam_out, pbuf2d)
 
   ! Time interpolate for chemistry.
   call chem_timestep_init(phys_state, pbuf2d)
-  
-  
+
   ! Prescribed tracers
   call prescribed_ozone_adv(phys_state, pbuf2d)
   call prescribed_ghg_adv(phys_state, pbuf2d)
