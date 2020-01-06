@@ -52,7 +52,7 @@ class ArchiveBase(GenericXML):
             dmodel = "drv"
         # remove when component name is changed
         if model == "fv3gfs":
-            dmodel = "fv3"
+            model = "fv3"
         hist_files = []
         extensions = self.get_hist_file_extensions(self.get_entry(dmodel))
         if suffix and len(suffix) > 0:
