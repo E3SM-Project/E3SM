@@ -447,7 +447,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     compiler            = case.get_value("COMPILER")
     mpilib              = case.get_value("MPILIB")
-    use_esmf_lib        = case.get_value("USE_ESMF_LIB")
     debug               = case.get_value("DEBUG")
     ninst_build         = case.get_value("NINST_BUILD")
     smp_value           = case.get_value("SMP_VALUE")
