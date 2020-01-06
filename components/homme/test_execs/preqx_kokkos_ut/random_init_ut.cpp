@@ -20,7 +20,9 @@ TEST_CASE("dp3d_intervals", "Testing Elements::random_init") {
   ElementsState state;
 
   std::random_device rd;
-  const int seed = rd();
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
   state.init(num_elems);
   state.randomize(seed, max_pressure);
   HostViewManaged<Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV]> dp3d("host dp3d",
@@ -51,7 +53,9 @@ TEST_CASE("d_dinv_check", "Testing Elements::random_init") {
   constexpr int num_elems = 5;
   constexpr Real rel_threshold = 1e-10;
   std::random_device rd;
-  const int seed = rd();
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
 
   ElementsGeometry geometry;
   geometry.init(num_elems, false, /*alloc_gradphis = */ false);

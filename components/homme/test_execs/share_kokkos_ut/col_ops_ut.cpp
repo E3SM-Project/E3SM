@@ -200,7 +200,10 @@ TEST_CASE("col_ops_reduction", "packed_reduction") {
 
     std::random_device rd;
     using rngAlg = std::mt19937_64;
-    rngAlg engine(rd());
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+    rngAlg engine(seed);
     std::uniform_real_distribution<Real> pdf(0.01, 1.0);
     genRandArray(h_midpoints_field_in, engine, pdf);
     genRandArray(h_interface_field_in, engine, pdf);
@@ -308,7 +311,10 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
 
   std::random_device rd;
   using rngAlg = std::mt19937_64;
-  rngAlg engine(rd());
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  rngAlg engine(seed);
   std::uniform_real_distribution<Real> pdf(0.01, 1.0);
   genRandArray(h_midpoints_field_in, engine, pdf);
   genRandArray(h_interface_field_in, engine, pdf);

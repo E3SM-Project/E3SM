@@ -73,7 +73,10 @@ public:
 
   void test_grid() {
     std::random_device rd;
-    rngAlg engine(rd());
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+    rngAlg engine(seed);
     genRandArray(remap.m_dpo, engine,
                  std::uniform_real_distribution<Real>(0.125, 1000),
                  nan_boundaries);
@@ -142,7 +145,10 @@ public:
         "parabola coeffs", num_remap * ne);
 
     std::random_device rd;
-    rngAlg engine(rd());
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+    rngAlg engine(seed);
     genRandArray(remap.m_ppmdx, engine,
                  std::uniform_real_distribution<Real>(0.125, 1000));
     for (int i = 0; i < num_remap; ++i) {
@@ -282,7 +288,10 @@ public:
 
   void test_remap() {
     std::random_device rd;
-    rngAlg engine(rd());
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+    rngAlg engine(seed);
     std::uniform_real_distribution<Real> dist(0.125, 1000.0);
     genRandArray(remap_vals, engine, dist);
 
@@ -406,7 +415,10 @@ TEST_CASE("binary_search","binary_search")
   constexpr int num_tests = 5;
 
   std::random_device rd;
-  std::mt19937_64 engine(rd());
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  rngAlg engine(seed);
   std::uniform_real_distribution<Real> pdf(0.01, 10);
 
   // Testing the binary search utility

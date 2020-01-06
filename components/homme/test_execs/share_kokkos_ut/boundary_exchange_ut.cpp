@@ -39,7 +39,10 @@ TEST_CASE ("Boundary Exchange", "Testing the boundary exchange framework")
   //std::random_device rd;
   std::random_device rd;
   using rngAlg = std::mt19937_64;
-  rngAlg engine(rd());
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  rngAlg engine(seed);
   std::uniform_real_distribution<Real> dreal(-1.0, 1.0);
   // neighbor_minmax imposes a hard positivity cutoff, so we can't test the bdy
   // exchange alone (for min) with numbers < 0.

@@ -51,7 +51,9 @@ TEST_CASE("forcing", "forcing") {
 
   std::random_device rd;
   constexpr int num_elems = 10;
-  const int seed = rd();
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
   rngAlg engine(seed);
 
   // Init everything through singleton, which is what happens in normal runs

@@ -56,7 +56,7 @@ class Random {
   unsigned int seed;
   rngalg engine;
 public:
-  Random (int seed_ = -1) : seed(seed_ == -1 ? rd() : seed_), engine(seed) {}
+  Random (unsigned int seed_ = Catch::rngSeed()) : seed(seed_ == 0 ? rd() : seed_), engine(seed) {}
   unsigned int gen_seed () { return seed; }
   Real urrng (const Real lo = 0, const Real hi = 1) { return rpdf(lo, hi)(engine); }
   int  uirng (const int lo, const int hi) { return ipdf(lo, hi)(engine); }

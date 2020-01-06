@@ -59,7 +59,10 @@ class compute_sphere_operator_test {
     // init randonly
 
     std::random_device rd;
-    rngAlg engine(rd());
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+    rngAlg engine(seed);
 
     // check singularities? divergence_wk uses both D and
     // Dinv, does it matter if they are not inverses of

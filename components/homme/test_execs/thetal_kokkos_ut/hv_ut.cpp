@@ -124,8 +124,9 @@ TEST_CASE("hvf", "biharmonic") {
   // The random numbers generator
   std::random_device rd;
   using rngAlg = std::mt19937_64;
-  // const int seed = 1; // Change to the following line after debugging
-  const int seed = rd();
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
   rngAlg engine(seed);
   using RPDF = std::uniform_real_distribution<Real>;
   using IPDF = std::uniform_int_distribution<int>;

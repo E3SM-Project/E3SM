@@ -131,7 +131,10 @@ class compute_sphere_operator_test_ml {
             Kokkos::create_mirror_view(vector_output_d))
   {
     std::random_device rd;
-    rngAlg engine(rd());
+    const unsigned int catchRngSeed = Catch::rngSeed();
+    const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+    std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+    rngAlg engine(seed);
 
     // Although scalar_output_d is an output, it can be used as input by divergence_sphere_update
     genRandArray(

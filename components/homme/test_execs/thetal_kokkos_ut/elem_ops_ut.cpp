@@ -32,9 +32,11 @@ TEST_CASE("elem_ops", "elem_ops") {
   auto policy = Homme::get_default_team_policy<ExecSpace>(num_elems);
 
   std::random_device rd;
-  const int seed = rd();
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
   using rngAlg = std::mt19937_64;
-  rngAlg engine(rd());
+  rngAlg engine(seed);
   std::uniform_real_distribution<Real> pdf(0.01, 1.0);
 
   HybridVCoord hvcoord;

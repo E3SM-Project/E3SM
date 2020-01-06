@@ -66,13 +66,15 @@ TEST_CASE("eos", "eos") {
   auto h_dpnh_dp_i = Kokkos::create_mirror_view(dpnh_dp_i_cxx);
 
   std::random_device rd;
-  const int seed = rd();
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
   using rngAlg = std::mt19937_64;
   rngAlg engine(seed);
   std::uniform_real_distribution<Real> pdf(0.01, 1.0);
 
   HybridVCoord hvcoord;
-  hvcoord.random_init(rd());
+  hvcoord.random_init(seed);
 
   // Init f90
   decltype(hvcoord.hybrid_ai)::HostMirror hyai = Kokkos::create_mirror_view(hvcoord.hybrid_ai);
