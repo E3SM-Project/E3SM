@@ -97,7 +97,8 @@ class ArchiveBase(GenericXML):
                 ext = ext[:-1]
             string = model+r'\d?_?(\d{4})?\.'+ext
             if has_suffix:
-                string += '.'+suffix+'$'
+                string += '.'+suffix
+            string += '$'
 
             logger.debug ("Regex is {}".format(string))
             pfile = re.compile(string)

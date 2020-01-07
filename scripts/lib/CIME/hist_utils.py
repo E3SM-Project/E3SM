@@ -149,7 +149,8 @@ def _hists_match(model, hists1, hists2, suffix1="", suffix2=""):
     for hists, suffix, normalized, multi_normalized in [(hists1, suffix1, normalized1, multi_normalized1), (hists2, suffix2, normalized2, multi_normalized2)]:
         for hist in hists:
             hist_basename = os.path.basename(hist)
-            offset = max(0,hist_basename.rfind(model))
+            offset = hist_basename.rfind(model)
+            expect(offset >= 0,"ERROR: cant find model name {} in {}".format(model, hist_basename))
             normalized_name = os.path.basename(hist_basename[offset:])
             if suffix != "":
                 expect(normalized_name.endswith(suffix), "How did '{}' not have suffix '{}'".format(hist, suffix))
@@ -456,7 +457,8 @@ def _generate_baseline_impl(case, baseline_dir=None, allow_baseline_overwrite=Fa
         logger.debug("latest_files: {}".format(hists))
         num_gen += len(hists)
         for hist in hists:
-            offset = max(0,hist.rfind(model))
+            offset = hist.rfind(model)
+            expect(offset >= 0,"ERROR: cant find model name {} in {}".format(model, hist))
             baseline = os.path.join(basegen_dir, hist[offset:])
             if os.path.exists(baseline):
                 os.remove(baseline)
