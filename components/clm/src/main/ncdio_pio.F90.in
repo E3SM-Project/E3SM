@@ -1706,7 +1706,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer           :: lb1,lb2
     integer           :: ub1,ub2
     integer           :: offset
-    integer           :: datsize
     type(iodesc_plus_type) , pointer  :: iodesc_plus
     type(var_desc_t)                  :: vardesc
     character(len=*),parameter :: subname='ncd_io_2d_{TYPE}' ! subroutine name
@@ -1773,7 +1772,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 		    allocate(iop_data2d(count_iop2d(1),count_iop2d(2)))
 		
                     status = pio_get_var(ncid, vardesc, start_iop2d, count_iop2d, iop_data2d)
-		    datsize=size(data,dim=1)
 		  
 		    offset=0
 		    if (lb2 .eq. 0) offset=1
@@ -1790,7 +1788,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 		    allocate(iop_data3d(count_iop3d(1),count_iop3d(2),count_iop3d(3)))
 		
                     status = pio_get_var(ncid, vardesc, start_iop3d, count_iop3d, iop_data3d)
-		    datsize=size(data,dim=1)
 
 		    offset=0
 		    if (lb2 .eq. 0) offset=1		     
@@ -1971,7 +1968,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: count_iop3d(3)   ! netcdf count index
     integer                          :: start_iop4d(4)   ! netcdf start index
     integer                          :: count_iop4d(4)   ! netcdf count index        
-    integer                          :: datsize
     logical                          :: varpresent ! if true, variable is on tape
     type(iodesc_plus_type) , pointer :: iodesc_plus
     type(var_desc_t)                 :: vardesc
@@ -2011,9 +2007,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 	     
 	         allocate(iop_data3d(count_iop3d(1),count_iop3d(2),count_iop3d(3)))
 	     
-                 !status = pio_get_var(ncid, vardesc, start, count, data)
 	         status = pio_get_var(ncid, vardesc, start_iop3d, count_iop3d, iop_data3d)
-	         datsize=size(data,dim=1)
 	     
 	         do i=1,count_iop3d(2)
 	           do j=1,count_iop3d(3)
@@ -2030,9 +2024,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 	     
 	         allocate(iop_data4d(count_iop4d(1),count_iop4d(2),count_iop4d(3),count_iop4d(4)))
 	     
-                 !status = pio_get_var(ncid, vardesc, start, count, data)
 	         status = pio_get_var(ncid, vardesc, start_iop4d, count_iop4d, iop_data4d)
-	         datsize=size(data,dim=1)
 	     
 	         do i=1,count_iop4d(2)
 	           do j=1,count_iop4d(3)
