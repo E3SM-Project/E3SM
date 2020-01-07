@@ -203,6 +203,7 @@ class TSC(SystemTestsCommon):
             model = 'cam'
             env_archive = self._case.get_env("archive")
             hists = env_archive.get_all_hist_files(self._case.get_value("CASE"), model, rundir, [r'h\d*.*\.nc\.DT\d*'], ref_case=ref_case)
+            hists = [os.path.join(rundir,hist) for hist in hists]
             logger.debug("TSC additional baseline files: {}".format(hists))
             for hist in hists:
                 basename = hist[hist.rfind(model):]

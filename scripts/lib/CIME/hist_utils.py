@@ -61,6 +61,7 @@ def copy_histfiles(case, suffix):
         test_hists = archive.get_latest_hist_files(casename, model, rundir, ref_case=ref_case)
         num_copied += len(test_hists)
         for test_hist in test_hists:
+            test_hist = os.path.join(rundir,test_hist)
             new_file = "{}.{}".format(test_hist, suffix)
             if os.path.exists(new_file):
                 os.remove(new_file)
@@ -79,7 +80,7 @@ def copy_histfiles(case, suffix):
             # because the test system will think that run1's files were output
             # by run2. But we live with that downside for the sake of the reason
             # noted above.)
-            safe_copy(os.path.join(rundir,test_hist), os.path.join(rundir,new_file))
+            safe_copy(test_hist, new_file)
 
     expect(num_copied > 0, "copy_histfiles failed: no hist files found in rundir '{}'".format(rundir))
 
@@ -107,6 +108,7 @@ def rename_all_hist_files(case, suffix):
         test_hists = archive.get_all_hist_files(mname, rundir, ref_case=ref_case)
         num_renamed += len(test_hists)
         for test_hist in test_hists:
+            test_hist = os.path.join(rundir, test_hist)
             new_file = "{}.{}".format(test_hist, suffix)
             if os.path.exists(new_file):
                 os.remove(new_file)

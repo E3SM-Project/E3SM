@@ -641,17 +641,17 @@ def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None):
         rest_root = os.path.join(dout_s_root, "rest")
         if os.path.exists(rest_root):
             rest_dir = os.path.join(rest_root, ls_sorted_by_mtime(os.path.join(dout_s_root, "rest"))[-1])
-    if rest_dir:
-        logger.info("Restoring restart from {}".format(rest_dir))
+    expect(os.path.exists(rest_dir),"ERROR: No directory {} found".format(rest_dir))
+    logger.info("Restoring restart from {}".format(rest_dir))
 
-        for item in glob.glob("{}/*".format(rest_dir)):
-            base = os.path.basename(item)
-            dst = os.path.join(rundir, base)
-            if os.path.exists(dst):
-                os.remove(dst)
-            logger.info("Restoring {} from {} to {}".format(item, rest_dir, rundir))
+    for item in glob.glob("{}/*".format(rest_dir)):
+        base = os.path.basename(item)
+        dst = os.path.join(rundir, base)
+        if os.path.exists(dst):
+            os.remove(dst)
+        logger.info("Restoring {} from {} to {}".format(item, rest_dir, rundir))
 
-            safe_copy(item, rundir)
+        safe_copy(item, rundir)
 
 ###############################################################################
 def archive_last_restarts(self, archive_restdir, rundir, last_date=None, link_to_restart_files=False):

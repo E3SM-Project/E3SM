@@ -9,10 +9,19 @@ logger = logging.getLogger(__name__)
 class ArchiveBase(GenericXML):
 
     def get_entry(self, compname):
+        """
+        Returns an xml node corresponding to compname in comp_archive_spec
+        """
         return self.scan_optional_child('comp_archive_spec',
                                         attributes={"compname":compname})
 
     def _get_file_node_text(self, attnames, archive_entry):
+        """
+        get the xml text associated with each of the attnames
+        based at root archive_entry
+        returns a list of text entries or
+        an empty list if no entries are found
+        """
         nodes = []
         textvals = []
         for attname in attnames:
@@ -22,19 +31,37 @@ class ArchiveBase(GenericXML):
         return textvals
 
     def get_rest_file_extensions(self, archive_entry):
+        """
+        get the xml text associated with each of the rest_file_extensions
+        based at root archive_entry (root is based on component name)
+        returns a list of text entries or
+        an empty list if no entries are found
+        """
         return self._get_file_node_text(['rest_file_extension'],archive_entry)
 
     def get_hist_file_extensions(self, archive_entry):
+        """
+        get the xml text associated with each of the hist_file_extensions
+        based at root archive_entry (root is based on component name)
+        returns a list of text entries or
+        an empty list if no entries are found
+        """
         return self._get_file_node_text(['hist_file_extension'],archive_entry)
 
     def get_entry_value(self, name, archive_entry):
+        """
+        get the xml text associated with name under root archive_entry
+        returns None if no entry is found, expects only one entry
+        """
         node = self.get_optional_child(name, root=archive_entry)
         if node is not None:
             return self.text(node)
         return None
 
     def get_latest_hist_files(self, casename, model, from_dir, suffix="", ref_case=None):
-
+        """
+        get the most recent history files in directory from_dir with suffix if provided
+        """
         test_hists = self.get_all_hist_files(casename, model, from_dir, suffix=suffix, ref_case=ref_case)
         latest_files = {}
         histlist = []
@@ -47,6 +74,10 @@ class ArchiveBase(GenericXML):
         return histlist
 
     def get_all_hist_files(self, casename, model, from_dir, suffix="", ref_case=None):
+        """
+        gets all history files in directory from_dir with suffix (if provided)
+        ignores files with ref_case in the name if ref_case is provided
+        """
         dmodel = model
         if model == "cpl":
             dmodel = "drv"
