@@ -1468,8 +1468,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     !
     ! Local Variables
     
-    {VTYPE}, allocatable :: scm_field2d(:,:)
-    {VTYPE}, allocatable :: scm_field1d(:)   
+    {VTYPE}, allocatable :: iop_field2d(:,:)
+    {VTYPE}, allocatable :: iop_field1d(:)   
  
     character(len=8)                 :: clmlevel   ! clmlevel
     character(len=32)                :: dimname    ! temporary
@@ -1482,10 +1482,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: dids(4)    ! dim ids
     integer                          :: start(3)   ! netcdf start index
     integer                          :: count(3)   ! netcdf count index
-    integer                          :: start_scm2d(2)   ! netcdf start index
-    integer                          :: count_scm2d(2)   ! netcdf count index 
-    integer                          :: start_scm1d(1)   ! netcdf start index
-    integer                          :: count_scm1d(1)   ! netcdf count index        
+    integer                          :: start_iop2d(2)   ! netcdf start index
+    integer                          :: count_iop2d(2)   ! netcdf count index 
+    integer                          :: start_iop1d(1)   ! netcdf start index
+    integer                          :: count_iop1d(1)   ! netcdf count index        
     integer                          :: status     ! error code  
     logical                          :: varpresent ! if true, variable is on tape
     integer                , pointer :: idata(:)   ! Temporary integer data to send to file
@@ -1526,8 +1526,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                if (start(3) .eq. 0) n=2
                start(n) = nt ; count(n) = 1
              endif
-	     
-!	     if (single_column) status=pio_get_var(ncid,varid,start,count,data)
 
 #if ({ITYPE}==TYPELOGICAL)
              allocate(idata(size(data))) 
@@ -1539,28 +1537,33 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              deallocate( idata )
 #else
 
-             if (count(2) .gt. 0) then 	     
-	       start_scm2d(:) = start(1:2)
-	       count_scm2d(:) = count(1:2)
-	     
-               ! This block of code "works"
-               allocate(scm_field2d(count(1),count(2)))
-	       status = pio_get_var(ncid, varid, start_scm2d, count_scm2d, scm_field2d)
-	       data(:) = scm_field2d(1,1)
-	       deallocate(scm_field2d)	
+	     if (single_column) status=pio_get_var(ncid,varid,start,count,data)
+
+             if (iop_scream) then 
+             
+	       if (count(2) .gt. 0) then 	  
 	       
-	     else
+	         start_iop2d(:) = start(1:2)
+	         count_iop2d(:) = count(1:2)
 	     
-	       start_scm1d(:) = start(1)
-	       count_scm1d(:) = count(1)
-	     
-               ! This block of code "works"
-               allocate(scm_field1d(count(1)))
-	       status = pio_get_var(ncid, varid, start_scm1d, count_scm1d, scm_field1d)
-	       data(:) = scm_field1d(1)
-	       deallocate(scm_field1d)	
+                 allocate(iop_field2d(count(1),count(2)))
+	         status = pio_get_var(ncid, varid, start_iop2d, count_iop2d, iop_field2d)
+	         data(:) = iop_field2d(1,1)
+	         deallocate(iop_field2d)	
 	       
-	     endif	            
+	       else
+	     
+	         start_iop1d(:) = start(1)
+	         count_iop1d(:) = count(1)
+	     
+                 allocate(iop_field1d(count(1)))
+	         status = pio_get_var(ncid, varid, start_iop1d, count_iop1d, iop_field1d)
+	         data(:) = iop_field1d(1)
+	         deallocate(iop_field1d)	
+	       
+	       endif
+	       
+	     endif ! iop_scream	            
 	     
 #endif
           else
@@ -1679,8 +1682,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     real(r8), pointer :: temp(:,:)
 #endif
 
-    {VTYPE}, allocatable :: scm_data3(:,:,:)
-    {VTYPE}, allocatable :: scm_data2(:,:)
+    {VTYPE}, allocatable :: iop_data3(:,:,:)
+    {VTYPE}, allocatable :: iop_data2(:,:)
 
     integer           :: ndim1,ndim2       
     character(len=8)  :: clmlevel   ! clmlevel
@@ -1700,7 +1703,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer           :: start3(3)   ! netcdf start index
     integer           :: count3(3)   ! netcdf count index
     logical           :: varpresent ! if true, variable is on tape
-    logical           :: iop_scream_test
     integer           :: lb1,lb2
     integer           :: ub1,ub2
     integer           :: offset
@@ -1712,7 +1714,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
     start(:)=0
     count(:)=0
-    iop_scream_test = .true.
 
     clmlevel = dim1name      
 
@@ -1745,10 +1746,9 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
 !          if (single_column) then
-          if (iop_scream) then
+          if (iop_scream .or. single_column) then
              start(:) = 1 ; count(:) = 1
-             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)t
-	     
+             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
              if (present(nt)) then
                    n=4
                    if (start(4) .eq. 0) n=3
@@ -1762,44 +1762,49 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                    end do
                 end do
              else
-!                status = pio_get_var(ncid, vardesc, start, count, data)
+                if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
                 
-		if (start(3) .eq. 0) then
-		  start2(1:2) = start(1:2)
-		  count2(1:2) = count(1:2)
+		if (iop_scream) then
 		
-		  allocate(scm_data2(count2(1),count2(2)))
+		  if (start(3) .eq. 0) then
+		    start2(1:2) = start(1:2)
+		    count2(1:2) = count(1:2)
 		
-                  status = pio_get_var(ncid, vardesc, start2, count2, scm_data2)
-		  datsize=size(data,dim=1)
+		    allocate(iop_data2(count2(1),count2(2)))
+		
+                    status = pio_get_var(ncid, vardesc, start2, count2, iop_data2)
+		    datsize=size(data,dim=1)
 		  
-		  offset=0
-		  if (lb2 .eq. 0) offset=1
-		  do i = lb1, ub1
-		    do j = lb2, ub2
-		      data(i,j) = scm_data2(1,j+offset)
-                    enddo 
-		  enddo
-		  deallocate(scm_data2)
-		else
-	          start3(1:3) = start(1:3)
-		  count3(1:3) = count(1:3)
-		
-		  allocate(scm_data3(count3(1),count3(2),count3(3)))
-		
-                  status = pio_get_var(ncid, vardesc, start3, count3, scm_data3)
-		  datsize=size(data,dim=1)
-
-		  offset=0
-		  if (lb2 .eq. 0) offset=1		     
-		  do i = lb1, ub1
-		    do j = lb2, ub2 
-		      data(i,j) = scm_data3(1,j+offset,1)
+		    offset=0
+		    if (lb2 .eq. 0) offset=1
+		    do i = lb1, ub1
+		      do j = lb2, ub2
+		        data(i,j) = iop_data2(1,j+offset)
+                      enddo 
 		    enddo
-                  enddo 
-		  deallocate(scm_data3)
-		endif
-             endif
+		    deallocate(iop_data2)
+		  else
+	            start3(1:3) = start(1:3)
+		    count3(1:3) = count(1:3)
+		
+		    allocate(iop_data3(count3(1),count3(2),count3(3)))
+		
+                    status = pio_get_var(ncid, vardesc, start3, count3, iop_data3)
+		    datsize=size(data,dim=1)
+
+		    offset=0
+		    if (lb2 .eq. 0) offset=1		     
+		    do i = lb1, ub1
+		      do j = lb2, ub2 
+		        data(i,j) = iop_data3(1,j+offset,1)
+		      enddo
+                    enddo 
+		    deallocate(iop_data3)
+		  endif
+		
+		endif ! if iop_scream
+		
+             endif ! if iop_scream or single_column
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
              status = pio_inq_vardimid(ncid,vardesc, dids)
@@ -1944,8 +1949,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     logical, optional, intent(out) :: readvar         ! true => variable is on initial dataset (read only)
     !
 
-    {VTYPE}, allocatable :: scm_data4(:,:,:,:)
-    {VTYPE}, allocatable :: scm_data3(:,:,:)
+    {VTYPE}, allocatable :: iop_data4(:,:,:,:)
+    {VTYPE}, allocatable :: iop_data3(:,:,:)
 
     ! !LOCAL VARIABLES:
     integer                          :: i, j
@@ -1968,14 +1973,12 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
     integer                          :: count4(4)   ! netcdf count index        
     integer                          :: datsize
     logical                          :: varpresent ! if true, variable is on tape
-    logical                          :: iop_scream_test
     type(iodesc_plus_type) , pointer :: iodesc_plus
     type(var_desc_t)                 :: vardesc
     character(len=*),parameter :: subname='ncd_io_3d_{TYPE}' ! subroutine name
     !-----------------------------------------------------------------------
 
-    clmlevel = dim1name  
-    iop_scream_test = .true.    
+    clmlevel = dim1name      
 
     if (masterproc .and. debug > 1) then
        write(iulog,*) trim(subname),' ',trim(flag),' ',trim(varname),' ',trim(clmlevel)
@@ -1985,8 +1988,8 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-!          if (single_column) then
-          if (iop_scream) then
+       
+          if (iop_scream .or. single_column) then
              start(:) = 1 
              count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
@@ -1997,45 +2000,51 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
                start(n) = nt ; count(n) = 1
              endif
 	     
-	     if (start(4) .eq. 0) then
+	     if (single_column) status = pio_get_var(ncid, vardesc, start, count, data)
+	     
+	     if (iop_scream) then
+	     
+	       if (start(4) .eq. 0) then
 	       
-	       count3(1:3) = count(1:3)
-	       start3(1:3) = start(1:3)
+	         count3(1:3) = count(1:3)
+	         start3(1:3) = start(1:3)
 	     
-	       allocate(scm_data3(count3(1),count3(2),count3(3)))
+	         allocate(iop_data3(count3(1),count3(2),count3(3)))
 	     
-               !status = pio_get_var(ncid, vardesc, start, count, data)
-	       status = pio_get_var(ncid, vardesc, start3, count3, scm_data3)
-	       datsize=size(data,dim=1)
+                 !status = pio_get_var(ncid, vardesc, start, count, data)
+	         status = pio_get_var(ncid, vardesc, start3, count3, iop_data3)
+	         datsize=size(data,dim=1)
 	     
-	       do i=1,count3(2)
-	         do j=1,count3(3)
-	           data(:,i,j) = scm_data3(1,i,j)
+	         do i=1,count3(2)
+	           do j=1,count3(3)
+	             data(:,i,j) = iop_data3(1,i,j)
+	           enddo
 	         enddo
-	       enddo
 	     
-	       deallocate(scm_data3)	     
+	         deallocate(iop_data3)	     
              
-	     else
+	       else
 	     
-	       count4(1:4) = count(1:4)
-	       start4(1:4) = start(1:4)
+	         count4(1:4) = count(1:4)
+	         start4(1:4) = start(1:4)
 	     
-	       allocate(scm_data4(count4(1),count4(2),count4(3),count4(4)))
+	         allocate(iop_data4(count4(1),count4(2),count4(3),count4(4)))
 	     
-               !status = pio_get_var(ncid, vardesc, start, count, data)
-	       status = pio_get_var(ncid, vardesc, start4, count4, scm_data4)
-	       datsize=size(data,dim=1)
+                 !status = pio_get_var(ncid, vardesc, start, count, data)
+	         status = pio_get_var(ncid, vardesc, start4, count4, iop_data4)
+	         datsize=size(data,dim=1)
 	     
-	       do i=1,count4(2)
-	         do j=1,count4(3)
-	           data(:,i,j) = scm_data4(1,i,j,1)
+	         do i=1,count4(2)
+	           do j=1,count4(3)
+	             data(:,i,j) = iop_data4(1,i,j,1)
+	           enddo
 	         enddo
-	       enddo
 	     
-	       deallocate(scm_data4)
+	         deallocate(iop_data4)
 	     
-	     endif
+	       endif
+	     
+	     endif ! iop_scream
 	     
           else
              status = pio_inq_varndims(ncid, vardesc, ndims)
