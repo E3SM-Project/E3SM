@@ -1,7 +1,7 @@
 
 # build_options.mk stuff handled here
 list(APPEND CPPDEFS "-DCORE_OCEAN")
-list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/BGC" "${CMAKE_BINARY_DIR}/core_ocean/shared" "${CMAKE_BINARY_DIR}/core_ocean/analysis_members" "${CMAKE_BINARY_DIR}/core_ocean/cvmix" "${CMAKE_BINARY_DIR}/core_ocean/mode_forward" "${CMAKE_BINARY_DIR}/core_ocean/mode_analysis" "${CMAKE_BINARY_DIR}/core_ocean/mode_init")
+list(APPEND INCLUDES "${CMAKE_BINARY_DIR}/core_ocean/shared") # Only need this for '#include "../inc/core_variables.inc"' to work
 
 # driver (files live in E3SM)
 list(APPEND RAW_SOURCES
@@ -117,37 +117,35 @@ set(OCEAN_DRIVER
 list(APPEND RAW_SOURCES ${OCEAN_DRIVER})
 list(APPEND DISABLE_QSMP ${OCEAN_DRIVER})
 
-# Get CVMix
-execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/get_cvmix.sh
-  WORKING_DIRECTORY ${CORE_BLDDIR})
-
-# Get BGC
-execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/core_ocean/get_BGC.sh
-  WORKING_DIRECTORY ${CORE_BLDDIR})
-
 # Add CVMix
+if (NOT EXISTS core_ocean/cvmix/.git)
+  message(FATAL "Missing core_ocean/cvmix/.git, did you forget to 'git submodule update --init --recursive' ?")
+endif()
 set(CVMIX_FILES
-  ${CORE_BLDDIR}/cvmix/cvmix_kinds_and_types.F90
-  ${CORE_BLDDIR}/cvmix/cvmix_background.F90
-  ${CORE_BLDDIR}/cvmix/cvmix_convection.F90
-  ${CORE_BLDDIR}/cvmix/cvmix_ddiff.F90
-  ${CORE_BLDDIR}/cvmix/cvmix_kpp.F90
-  ${CORE_BLDDIR}/cvmix/cvmix_math.F90
-  ${CORE_BLDDIR}/cvmix/cvmix_put_get.F90
-  ${CORE_BLDDIR}/cvmix/cvmix_shear.F90
-  ${CORE_BLDDIR}/cvmix/cvmix_tidal.F90
-  ${CORE_BLDDIR}/cvmix/cvmix_utils.F90
+  core_ocean/cvmix/src/shared/cvmix_kinds_and_types.F90
+  core_ocean/cvmix/src/shared/cvmix_background.F90
+  core_ocean/cvmix/src/shared/cvmix_convection.F90
+  core_ocean/cvmix/src/shared/cvmix_ddiff.F90
+  core_ocean/cvmix/src/shared/cvmix_kpp.F90
+  core_ocean/cvmix/src/shared/cvmix_math.F90
+  core_ocean/cvmix/src/shared/cvmix_put_get.F90
+  core_ocean/cvmix/src/shared/cvmix_shear.F90
+  core_ocean/cvmix/src/shared/cvmix_tidal.F90
+  core_ocean/cvmix/src/shared/cvmix_utils.F90
 )
 
 # Add BGC
+if (NOT EXISTS core_ocean/BGC/.git)
+  message(FATAL "Missing core_ocean/BGC/.git, did you forget to 'git submodule update --init --recursive' ?")
+endif()
 set(BGC_FILES
-  ${CORE_BLDDIR}/BGC/BGC_mod.F90
-  ${CORE_BLDDIR}/BGC/BGC_parms.F90
-  ${CORE_BLDDIR}/BGC/DMS_mod.F90
-  ${CORE_BLDDIR}/BGC/DMS_parms.F90
-  ${CORE_BLDDIR}/BGC/MACROS_mod.F90
-  ${CORE_BLDDIR}/BGC/MACROS_parms.F90
-  ${CORE_BLDDIR}/BGC/co2calc.F90
+  core_ocean/BGC/BGC_mod.F90
+  core_ocean/BGC/BGC_parms.F90
+  core_ocean/BGC/DMS_mod.F90
+  core_ocean/BGC/DMS_parms.F90
+  core_ocean/BGC/MACROS_mod.F90
+  core_ocean/BGC/MACROS_parms.F90
+  core_ocean/BGC/co2calc.F90
 )
 
 list(APPEND RAW_SOURCES ${CVMIX_FILES} ${BGC_FILES})
