@@ -111,7 +111,7 @@
       <value component="satm"      >$CIMEROOT/src/components/stub_comps/satm</value>
       <value component="xatm"      >$CIMEROOT/src/components/xcpl_comps/xatm</value>
       <value component="cam"       >$SRCROOT/components/cam/</value>
-      <value component="fv3gfs"    >$SRCROOT/src/model/FV3</value>
+      <value component="ufsatm"    >$SRCROOT/src/model/FV3</value>
     </values>
     <group>case_comps</group>
     <file>env_case.xml</file>
@@ -256,7 +256,7 @@
       <value component="allactive">$SRCROOT/cime_config/config_compsets.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime/cime_config/config_compsets.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_compsets.xml</value>
-      <value component="fv3gfs"   >$COMP_ROOT_DIR_ATM/cime/cime_config/config_compsets.xml</value>
+      <value component="ufsatm"   >$COMP_ROOT_DIR_ATM/cime/cime_config/config_compsets.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/config_compsets.xml</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/config_compsets.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_compsets.xml</value>
@@ -277,7 +277,7 @@
       <value component="allactive">$SRCROOT/cime_config/config_pes.xml</value>
       <value component="drv"      >$COMP_ROOT_DIR_CPL/cime/cime_config/config_pes.xml</value>
       <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/config_pes.xml</value>
-      <value component="fv3gfs"   >$COMP_ROOT_DIR_ATM/cime/cime_config/config_pes.xml</value>
+      <value component="ufsatm"   >$COMP_ROOT_DIR_ATM/cime/cime_config/config_pes.xml</value>
       <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/config_pes.xml</value>
       <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/config_pes.xml</value>
       <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/config_pes.xml</value>
