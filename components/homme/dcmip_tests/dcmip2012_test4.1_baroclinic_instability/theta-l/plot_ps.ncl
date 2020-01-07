@@ -67,6 +67,11 @@ end if
 
 
 do n=firsttime,lasttime,timeinc
+   if (n .gt. firsttime) then
+     ; make new workstation, so each frame is in seperate file
+     destroy(wks)
+     wks = gsn_open_wks(output_format,field+"-"+n)
+   end if
 do kf = 0,fcnt-1
    time = f[kf]->time
 

@@ -2257,10 +2257,8 @@
       <ny>1440</ny>
       <file grid="atm" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
       <file grid="lnd" mask="oEC60to30v3">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oEC60to30v3.190812.nc</file>
-      <file grid="atm" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191022.nc</file>
-      <file grid="lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191022.nc</file>
-      <!--file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191017.nc</file-->
-      <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191113.nc</file>
+      <file grid="lnd" mask="oRRS15to5">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_oRRS15to5.191122.nc</file>
+      <file grid="lnd" mask="gx1v6">$DIN_LOC_ROOT/share/domains/domain.lnd.r0125_gx1v6.191017.nc</file>
       <desc>r0125 is 1/8 degree river routing grid:</desc>
     </domain>
 
@@ -2763,6 +2761,11 @@
       <map name="LND2ATM_SMAPNAME">cpl/gridmaps/r0125/map_r0125_to_northamericax4v1_mono.20191022.nc</map>
     </gridmap>
 
+    <gridmap atm_grid="ne0np4_northamericax4v1" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1_to_r0125_mono.20191022.nc</map>
+      <map name="ATM2ROF_SMAPNAME">cpl/gridmaps/northamericax4v1np4/map_northamericax4v1_to_r0125_mono.20191022.nc</map>
+    </gridmap>
+
     <gridmap atm_grid="T62" ocn_grid="gx3v7">
       <map name="ATM2OCN_FMAPNAME">cpl/gridmaps/T62/map_T62_TO_gx3v7_aave.130322.nc</map>
       <map name="ATM2OCN_SMAPNAME">cpl/gridmaps/T62/map_T62_TO_gx3v7_blin.130322.nc</map>
@@ -3032,6 +3035,11 @@
     <gridmap atm_grid="360x720cru" rof_grid="r05">
       <map name="ATM2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/360x720/map_360x720_nomask_to_0.5x0.5_nomask_aave_da_c130103.nc</map>
       <map name="ATM2ROF_SMAPNAME">lnd/clm2/mappingdata/maps/360x720/map_360x720_nomask_to_0.5x0.5_nomask_aave_da_c130103.nc</map>
+    </gridmap>
+
+    <gridmap atm_grid="ne120np4" rof_grid="r0125">
+      <map name="ATM2ROF_FMAPNAME">lnd/clm2/mappingdata/maps/ne120np4/map_ne120np4_to_0.125_nomask_aave.160613.nc</map>
+      <map name="ATM2ROF_SMAPNAME">lnd/clm2/mappingdata/maps/ne120np4/map_ne120np4_to_0.125_nomask_aave.160613.nc</map>
     </gridmap>
 
     <!--  QL, 150525, wav to ocn, atm, ice mapping files  -->

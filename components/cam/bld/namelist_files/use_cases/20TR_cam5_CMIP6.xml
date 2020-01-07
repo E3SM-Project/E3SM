@@ -83,6 +83,7 @@
 <zmconv_mx_bot_lyr_adj>2</zmconv_mx_bot_lyr_adj>
 <taubgnd>2.5D-3</taubgnd>
 <clubb_C1>1.335</clubb_C1>
+<clubb_C1b>1.335</clubb_C1b>
 <raytau0>5.0D0</raytau0>
 <prc_coef1>30500.0D0</prc_coef1>
 <prc_exp>3.19D0</prc_exp>
