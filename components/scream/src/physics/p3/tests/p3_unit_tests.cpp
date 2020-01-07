@@ -370,7 +370,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
    // REQUIRE(nerr==0);
   }
 
-  KOKKOS_FUNCTION static void cloud_water_conservation_unit_bfb_tests(){
+  static void cloud_water_conservation_unit_bfb_tests(){
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -466,7 +466,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
   }
 
-  KOKKOS_FUNCTION static void ice_water_conservation_unit_bfb_tests()
+  static void ice_water_conservation_unit_bfb_tests()
   {
     using KTH = KokkosTypes<HostDevice>;
 
@@ -565,7 +565,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
   }
 
-  KOKKOS_FUNCTION static void rain_water_conservation_unit_bfb_tests(){
+  static void rain_water_conservation_unit_bfb_tests(){
 
     using KTH = KokkosTypes<HostDevice>;
 
