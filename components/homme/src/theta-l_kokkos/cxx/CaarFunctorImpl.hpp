@@ -275,6 +275,7 @@ struct CaarFunctorImpl {
     start_timer("caar_bexchV");
     m_bes[data.np1]->exchange(m_geometry.m_rspheremp);
     stop_timer("caar_bexchV");
+    ExecSpace::fence();
 
     if (!m_theta_hydrostatic_mode) {
       GPTLstart("caar compute");
@@ -441,11 +442,11 @@ struct CaarFunctorImpl {
 
       Real min_diff = Kokkos::reduction_identity<Real>::max();
       auto diff_as_real = Homme::viewAsReal(diff);
-      Kokkos::Min<Real,ExecSpace> reducer(min_diff);
-      Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
-                              [&](const int k,Real& result) {
+      Dispatch<ExecSpace>::parallel_reduce(kv.team,
+                                  Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
+                                  [&](const int k,Real& result) {
         result = result<=diff_as_real(k) ? result : diff_as_real(k);
-      }, reducer);
+      }, min_diff);
 
       auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
       if (min_diff<0) {
