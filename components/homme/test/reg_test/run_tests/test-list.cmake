@@ -60,7 +60,7 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
   #Note: we run both a cprnc on the output nc files AND
   #      a comparison of the values of diagnostic quantities
   #      on the raw output files
-  IF (${ENABLE_PREQX_KOKKOS_BFB_TESTS})
+  IF (${HOMMEXX_BFB_TESTING})
     SET (PREQX_COMPARE_F_C_TEST
     preqx-nlev26-dry-r0-samenu-consthv-lim8-q1
     preqx-nlev72-dry-r3-diffnu-consthv-lim9-q6
