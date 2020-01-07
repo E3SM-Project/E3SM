@@ -468,7 +468,6 @@ contains
     character(len=32) :: subname = 'ncd_inqfdims' ! subroutine name
     !-----------------------------------------------------------------------
 
-    write(*,*) 'CLM_SINGLE_COLUMN', single_column
     if (single_column) then
        ni = 1
        nj = 1
@@ -1285,7 +1284,7 @@ contains
     {VTYPE} :: temp(1)
     character(len=*),parameter :: subname='ncd_io_{DIMS}d_{TYPE}_glob'
     
-    {VTYPE}, allocatable :: field_scm(:,:)
+    {VTYPE}, allocatable :: field_iop(:,:)
     !-----------------------------------------------------------------------
 
     start(:) = 0
@@ -1314,11 +1313,11 @@ contains
              if ( found )then
                 if (single_column) status = pio_get_var(ncid, varid, start, count, data)
 		if (iop_scream) then
-		  allocate(field_scm(1:count(1),1:count(2)))
-		  status = pio_get_var(ncid, varid, start(1:2), count(1:2), field_scm)
+		  allocate(field_iop(1:count(1),1:count(2)))
+		  status = pio_get_var(ncid, varid, start(1:2), count(1:2), field_iop)
 #if ({DIMS}==1)
-                  data(:) = field_scm(1,1)
-		  deallocate(field_scm)
+                  data(:) = field_iop(1,1) ! Use data at IOP lat/lon for whole globe
+		  deallocate(field_iop)
 #endif
 		endif
              else
@@ -1539,10 +1538,6 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
              end if
              deallocate( idata )
 #else
-             write(*,*) 'CLM_SCM_VARNAME1d', varname
-	     write(*,*) 'START ', start
-	     write(*,*) 'COUNT ', count
-	     write(*,*) 'SIZEDATA ', size(data)
 
              if (count(2) .gt. 0) then 	     
 	       start_scm2d(:) = start(1:2)
@@ -1749,14 +1744,10 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-          write(*,*) 'CLM_SCM_VARNAME2dpre', varname
 !          if (single_column) then
           if (iop_scream) then
              start(:) = 1 ; count(:) = 1
-             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
-	     write(*,*) 'CLM_SCM_VARNAME2d', varname
-	     write(*,*) 'START', start
-	     write(*,*) 'COUNT', count
+             call scam_field_offsets(ncid, clmlevel, vardesc, start, count)t
 	     
              if (present(nt)) then
                    n=4
@@ -1781,11 +1772,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 		
                   status = pio_get_var(ncid, vardesc, start2, count2, scm_data2)
 		  datsize=size(data,dim=1)
-		  write(*,*) 'DATSIZES ', size(data,dim=1), size(data,dim=2)
-		  write(*,*) 'SCMDATSIZE ', size(scm_data2,dim=1), size(scm_data2,dim=2)
-		  write(*,*) 'DATINDS ', lb1, ub1, lb2, ub2
-		  write(*,*) 'SCMINDS ', lbound(scm_data2, dim=1), ubound(scm_data2, dim=1),&
-		     lbound(scm_data2, dim=2), ubound(scm_data2, dim=2)
+		  
 		  offset=0
 		  if (lb2 .eq. 0) offset=1
 		  do i = lb1, ub1
@@ -1802,11 +1789,7 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 		
                   status = pio_get_var(ncid, vardesc, start3, count3, scm_data3)
 		  datsize=size(data,dim=1)
-		  write(*,*) 'DATSIZES ', size(data,dim=1), size(data,dim=2)
-		  write(*,*) 'SCMDATSIZE ', size(scm_data3,dim=1), size(scm_data3,dim=2)
-		  write(*,*) 'DATINDS ', lb1, ub1, lb2, ub2
-		  write(*,*) 'SCMINDS ', lbound(scm_data3, dim=1), ubound(scm_data3, dim=1),&
-		     lbound(scm_data3, dim=2), ubound(scm_data3, dim=2)
+
 		  offset=0
 		  if (lb2 .eq. 0) offset=1		     
 		  do i = lb1, ub1
@@ -2002,16 +1985,12 @@ end subroutine ncd_io_{DIMS}d_{TYPE}_glob
 
        call ncd_inqvid(ncid, varname, varid, vardesc, readvar=varpresent)
        if (varpresent) then
-         write(*,*) 'CLM_SCM_VARNAME3dpre', varname
 !          if (single_column) then
           if (iop_scream) then
              start(:) = 1 
              count(:) = 1
              call scam_field_offsets(ncid, clmlevel, vardesc, start, count)
 	     
-	     write(*,*) 'CLM_SCM_VARNAME3d', varname
-	     write(*,*) 'START', start
-	     write(*,*) 'COUNT', count
              if (present(nt)) then
                n=5
                if (start(5) .eq. 0) n=4
