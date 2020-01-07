@@ -352,6 +352,15 @@ NODEFAIL          Tests restart upon detected node failure. Generates fake failu
     <DOUT_S>FALSE</DOUT_S>
   </test>
 
+  <test NAME="HOMMEBFB">
+    <DESC>Run homme tests. Only works with the ACME version of the atmosphere component.</DESC>
+    <INFO_DBUG>1</INFO_DBUG>
+    <STOP_OPTION>ndays</STOP_OPTION>
+    <STOP_N>11</STOP_N>
+    <CHECK_TIMING>FALSE</CHECK_TIMING>
+    <DOUT_S>FALSE</DOUT_S>
+  </test>
+
   <test NAME="FUNIT">
     <DESC>Run fortran unit tests. Grid and compset (and most case settings) are ignored.</DESC>
     <INFO_DBUG>1</INFO_DBUG>

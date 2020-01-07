@@ -541,6 +541,8 @@ end subroutine clubb_init_cnst
     use constituents,           only: cnst_get_ind
     use phys_control,           only: phys_getopts
 
+    use parameters_tunable, only: params_list
+
 #endif
 
     use physics_buffer,         only: pbuf_get_index, pbuf_set_field, physics_buffer_desc
@@ -696,10 +698,21 @@ end subroutine clubb_init_cnst
     ! Setup CLUBB core
     ! ----------------------------------------------------------------- !
     
-    !  Read in parameters for CLUBB.  Just read in default values 
+    !  Read in parameters for CLUBB.  Pack the default and updated (via nml) 
+    !  tunable parameters into clubb_params
 !$OMP PARALLEL
     call read_parameters_api( -99, "", clubb_params )
 !$OMP END PARALLEL
+
+    ! Print the list of CLUBB parameters, if multi-threaded, it may print by each thread
+    if (masterproc) then
+       write(iulog,*)'CLUBB tunable parameters: total ',nparams
+       write(iulog,*)'--------------------------------------------------'
+       do i = 1, nparams
+          write(iulog,*) params_list(i), " = ", clubb_params(i)
+       enddo
+    endif
+ 
       
     !  Fill in dummy arrays for height.  Note that these are overwrote
     !  at every CLUBB step to physical values.    
@@ -784,7 +797,7 @@ end subroutine clubb_init_cnst
     call addfld ('CLOUDCOVER_CLUBB', (/ 'ilev' /), 'A', 'fraction', 'Cloud Cover') 
     call addfld ('WPTHVP_CLUBB',     (/ 'lev' /),  'A',     'W/m2', 'Buoyancy Flux')
     call addfld ('RVMTEND_CLUBB',  (/ 'lev' /),  'A',    'g/kg /s', 'Water vapor tendency')
-    call addfld ('STEND_CLUBB',      (/ 'lev' /),  'A',      'k/s', 'Temperature tendency')
+    call addfld ('TTEND_CLUBB',      (/ 'lev' /),  'A',      'k/s', 'Temperature tendency')
     call addfld ('RCMTEND_CLUBB',  (/ 'lev' /),  'A',    'g/kg /s', 'Cloud Liquid Water Tendency')
     call addfld ('RIMTEND_CLUBB',  (/ 'lev' /),  'A',    'g/kg /s', 'Cloud Ice Tendency')
     call addfld ('UTEND_CLUBB',   (/ 'lev' /),  'A',      'm/s /s', 'U-wind Tendency')
@@ -867,7 +880,7 @@ end subroutine clubb_init_cnst
        call add_default('CLOUDCOVER_CLUBB', 1, ' ')
        call add_default('WPTHVP_CLUBB',     1, ' ')
        call add_default('RVMTEND_CLUBB',    1, ' ')
-       call add_default('STEND_CLUBB',      1, ' ')
+       call add_default('TTEND_CLUBB',      1, ' ')
        call add_default('RCMTEND_CLUBB',    1, ' ')
        call add_default('RIMTEND_CLUBB',    1, ' ')
        call add_default('UTEND_CLUBB',      1, ' ')
@@ -892,7 +905,7 @@ end subroutine clubb_init_cnst
        call add_default('DPDLFLIQ',         history_budget_histfile_num, ' ')
        call add_default('DPDLFICE',         history_budget_histfile_num, ' ')
        call add_default('DPDLFT',           history_budget_histfile_num, ' ') 
-       call add_default('STEND_CLUBB',      history_budget_histfile_num, ' ')
+       call add_default('TTEND_CLUBB',      history_budget_histfile_num, ' ')
        call add_default('RCMTEND_CLUBB',    history_budget_histfile_num, ' ')
        call add_default('RIMTEND_CLUBB',    history_budget_histfile_num, ' ')
        call add_default('RVMTEND_CLUBB',    history_budget_histfile_num, ' ')
@@ -1818,9 +1831,10 @@ end subroutine clubb_init_cnst
       !  Heights need to be set at each timestep.  Therefore, recall 
       !  setup_grid and setup_parameters for this.  
      
-      !  Read in parameters for CLUBB.  Just read in default values 
+      !  Read in parameters for CLUBB.  Pack the default and updated (via nml) 
+      !  tunable parameters into clubb_params
       call read_parameters_api( -99, "", clubb_params )
- 
+
       !  Set-up CLUBB core at each CLUBB call because heights can change 
       call setup_grid_heights_api(l_implemented, grid_type, zi_g(2), &
          zi_g(1), zi_g, zt_g)
@@ -2259,7 +2273,7 @@ end subroutine clubb_init_cnst
    call outfld( 'RVMTEND_CLUBB', ptend_loc%q(:,:,ixq), pcols, lchnk)
    call outfld( 'RCMTEND_CLUBB', ptend_loc%q(:,:,ixcldliq), pcols, lchnk)
    call outfld( 'RIMTEND_CLUBB', ptend_loc%q(:,:,ixcldice), pcols, lchnk)
-   call outfld( 'STEND_CLUBB',   ptend_loc%s,pcols, lchnk)
+   call outfld( 'TTEND_CLUBB',   ptend_loc%s/cpair,pcols, lchnk)
    call outfld( 'UTEND_CLUBB',   ptend_loc%u,pcols, lchnk)
    call outfld( 'VTEND_CLUBB',   ptend_loc%v,pcols, lchnk)     
 
