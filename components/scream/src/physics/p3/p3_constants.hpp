@@ -57,6 +57,11 @@ struct Constants
   static constexpr Scalar bcn         = 2.;
   static constexpr Scalar rho_rimeMin = 50.;
   static constexpr Scalar rho_rimeMax = 900.;
+
+  // Table dimension constants
+  static constexpr int VTABLE_DIM0    = 300;
+  static constexpr int VTABLE_DIM1    = 10;
+  static constexpr int MU_R_TABLE_DIM = 150;
 };
 
 template <typename Scalar>

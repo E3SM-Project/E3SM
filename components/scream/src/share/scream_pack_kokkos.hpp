@@ -66,6 +66,9 @@ index (const Array5& a, const IdxPack& i0, const IdxPack& i1, const IdxPack& i2,
 // values, one with the indexes shifted by Shift. This is useful for implementing
 // functions like:
 //   y2(k2) = y1(k1) + y1(k1+1);
+// which becomes
+//   index_and_shift<1>(y1, kpk, y1k, y1k1);
+//   y2(k2) = y1k + y1k1
 template<int Shift, typename Array1, typename IdxPack> KOKKOS_INLINE_FUNCTION
 void
 index_and_shift (const Array1& a, const IdxPack& i0, Pack<typename Array1::non_const_value_type, IdxPack::n>& index, Pack<typename Array1::non_const_value_type, IdxPack::n>& index_shift,
@@ -259,12 +262,13 @@ smallize (const Kokkos::View<BigPack<T>*, Parms...>& vp) {
 //
 template <size_t N, typename ViewT>
 void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const*, N>& data,
-                    const size_t size,
+                    const Kokkos::Array<size_t, N>& sizes,
                     Kokkos::Array<ViewT, N>& views)
 {
   using PackT = typename ViewT::value_type;
 
   for (size_t i = 0; i < N; ++i) {
+    const size_t size = sizes[i];
     const size_t npack = (size + PackT::n - 1) / PackT::n;
     views[i] = ViewT("", npack);
     auto host_view = Kokkos::create_mirror_view(views[i]);
@@ -278,17 +282,31 @@ void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const
   }
 }
 
+// Sugar for when size is uniform
+template <size_t N, typename ViewT>
+void host_to_device(const Kokkos::Array<typename ViewT::value_type::scalar const*, N>& data,
+                    const size_t size,
+                    Kokkos::Array<ViewT, N>& views)
+{
+  Kokkos::Array<size_t, N> sizes;
+  for (size_t i = 0; i < N; ++i) {
+    sizes[i] = size;
+  }
+  host_to_device(data, sizes, views);
+}
+
 //
 // Take an array of device pack views and sync them to host scalar pointers
 //
 template <size_t N, typename ViewT>
 void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>& data,
-                    const size_t size,
+                    const Kokkos::Array<size_t, N>& sizes,
                     Kokkos::Array<ViewT, N>& views)
 {
   using PackT = typename ViewT::value_type;
 
   for (size_t i = 0; i < N; ++i) {
+    const size_t size = sizes[i];
     const auto host_view = Kokkos::create_mirror_view(views[i]);
     Kokkos::deep_copy(host_view, views[i]);
     for (size_t k = 0; k < views[i].extent(0); ++k) {
@@ -298,6 +316,19 @@ void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>&
       }
     }
   }
+}
+
+// Sugar for when size is uniform
+template <size_t N, typename ViewT>
+void device_to_host(const Kokkos::Array<typename ViewT::value_type::scalar*, N>& data,
+                    const size_t size,
+                    Kokkos::Array<ViewT, N>& views)
+{
+  Kokkos::Array<size_t, N> sizes;
+  for (size_t i = 0; i < N; ++i) {
+    sizes[i] = size;
+  }
+  device_to_host(data, sizes, views);
 }
 
 } // namespace pack

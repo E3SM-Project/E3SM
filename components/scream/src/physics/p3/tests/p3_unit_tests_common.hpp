@@ -69,6 +69,7 @@ struct UnitWrap {
     struct TestP3CloudWaterAutoconversion;
     struct TestCloudSed;
     struct TestIceSed;
+    struct TestRainSed;
   };
 
 };

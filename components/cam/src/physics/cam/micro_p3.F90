@@ -604,6 +604,9 @@ contains
     inv_icldm = 1.0_rtype/icldm
     inv_lcldm = 1.0_rtype/lcldm
     inv_rcldm = 1.0_rtype/rcldm
+
+    mu_c = 0.0_rtype
+    lamc = 0.0_rtype
     ! AaronDonahue added exner term to replace all instances of th(i,k)/t(i,k), since th(i,k) is updated but t(i,k) is not, and this was
     ! causing energy conservation errors.
     inv_exner = 1._rtype/exner        !inverse of Exner expression, used when converting potential temp to temp
@@ -3515,6 +3518,10 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
    qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use micro_p3_iso_f, only: rain_sedimentation_f
+#endif
+
    implicit none
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
@@ -3552,6 +3559,15 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), dimension(kts:kte), target :: V_nr
    real(rtype), dimension(kts:kte), target :: flux_qx
    real(rtype), dimension(kts:kte), target :: flux_nx
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call rain_sedimentation_f(kts,kte,ktop,kbot,kdir,   &
+           qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+           qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
+      return
+   endif
+#endif
 
    vs(1)%p => V_qr
    vs(2)%p => V_nr
@@ -3595,9 +3611,8 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             qr_notsmall_r1: if (qr_incld(k)>qsmall) then
 
-               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), &
-                  rhofacr(k), nr(k), nr_incld(k), &
-                  mu_r(k), lamr(k), V_qr(k), V_nr(k))
+               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), rhofacr(k), nr(k), nr_incld(k), &
+                    mu_r(k), lamr(k), V_qr(k), V_nr(k))
 
             endif qr_notsmall_r1
 
@@ -3606,16 +3621,10 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
          enddo kloop_sedi_r1
 
-         if (k_qxbot.eq.kbot) then
-            k_temp = k_qxbot
-         else
-            k_temp = k_qxbot-kdir
-         endif
-
          call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
 
          !-- AaronDonahue, rflx output
-         do k = k_temp,k_qxtop,kdir
+         do k = k_qxbot,k_qxtop,kdir
             rflx(k+1) = rflx(k+1) + flux_qx(k) ! AaronDonahue
          enddo
 
@@ -3629,9 +3638,11 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
 end subroutine rain_sedimentation
 
-subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
-   nr, nr_incld, &
-   mu_r, lamr, V_qr, V_nr)
+subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: compute_rain_fall_velocity_f
+#endif
 
    real(rtype), intent(in) :: qr_incld
    real(rtype), intent(in) :: rcldm
@@ -3646,9 +3657,14 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
    real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3, rdumii, rdumjj
    integer :: dumii, dumjj
 
-   !Compute Vq, Vn:
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call compute_rain_fall_velocity_f(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+      return
+   endif
+#endif
 
-   nr  = max(nr,nsmall)
+   !Compute Vq, Vn:
 
    call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,     &
    tmp1,tmp2,rcldm)

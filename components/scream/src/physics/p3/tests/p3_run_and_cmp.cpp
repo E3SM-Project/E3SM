@@ -59,8 +59,8 @@ Int compare (const std::string& label, const double& tol,
 struct Baseline {
   Baseline () {
     for (const bool log_predictNc : {true, false})
-      for (const int it : {1, 2})
-        params_.push_back({ic::Factory::mixed, 1800, it, log_predictNc});
+      for (const int it : {1, 6})
+        params_.push_back({ic::Factory::mixed, 300, it, log_predictNc});
   }
 
   Int generate_baseline (const std::string& filename, bool use_fortran) {
@@ -72,9 +72,11 @@ struct Baseline {
       const auto d = ic::Factory::create(ps.ic, ic_ncol);
       set_params(ps, *d);
       p3_init(use_fortran);
-      p3_main(*d);
+      for (int it=0; it<ps.it; it++) {
+        p3_main(*d);
+        write(fid, d);
+      }
       // Save the fields to the baseline file.
-      write(fid, d);
     }
     return nerr;
   }
@@ -83,21 +85,26 @@ struct Baseline {
     auto fid = FILEPtr(fopen(filename.c_str(), "r"));
     scream_require_msg( fid, "generate_baseline can't read " << filename);
     Int nerr = 0, ne;
+    int case_num = 0;
     for (auto ps : params_) {
+      case_num++;
       // Read the reference impl's data from the baseline file.
       const auto d_ref = ic::Factory::create(ps.ic, ic_ncol);
       set_params(ps, *d_ref);
-      read(fid, d_ref);
       // Now run a sequence of other impls. This includes the reference
       // implementation b/c it's likely we'll want to change it as we go.
       {
         const auto d = ic::Factory::create(ps.ic, ic_ncol);
         set_params(ps, *d);
         p3_init(use_fortran);
-        p3_main(*d);
-        ne = compare("ref", tol, d_ref, d);
-        if (ne) std::cout << "Ref impl failed.\n";
-        nerr += ne;
+        for (int it=0; it<ps.it; it++) {
+          std::cout << "--- checking case # " << case_num << ", it = " << it+1 << "/" << ps.it << " ---\n" << std::flush;
+          read(fid, d_ref);
+          p3_main(*d);
+          ne = compare("ref", tol, d_ref, d);
+          if (ne) std::cout << "Ref impl failed.\n";
+          nerr += ne;
+        }
       }
     }
     return nerr;
