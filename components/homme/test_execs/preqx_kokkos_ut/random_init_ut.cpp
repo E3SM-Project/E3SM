@@ -16,6 +16,8 @@ using namespace Homme;
 TEST_CASE("dp3d_intervals", "Testing Elements::random_init") {
   constexpr int num_elems = 5;
   constexpr Real max_pressure = 32.0;
+  constexpr Real ps0 = 32.0/1000.0;
+  constexpr Real hyai0 = 0.001;
   constexpr Real rel_threshold = 128.0 * std::numeric_limits<Real>::epsilon();
   ElementsState state;
 
@@ -24,7 +26,7 @@ TEST_CASE("dp3d_intervals", "Testing Elements::random_init") {
   const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
   std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
   state.init(num_elems);
-  state.randomize(seed, max_pressure);
+  state.randomize(seed, max_pressure, ps0, hyai0);
   HostViewManaged<Scalar * [NUM_TIME_LEVELS][NP][NP][NUM_LEV]> dp3d("host dp3d",
                                                                     num_elems);
   Kokkos::deep_copy(dp3d, state.m_dp3d);
@@ -41,7 +43,7 @@ TEST_CASE("dp3d_intervals", "Testing Elements::random_init") {
             sum += dp3d_col(ilev)[vec_lev];
             REQUIRE(dp3d_col(ilev)[vec_lev] > 0.0);
           }
-          Real rel_error = compare_answers(max_pressure, sum);
+          Real rel_error = compare_answers(max_pressure, sum+ps0);
           REQUIRE(rel_threshold >= rel_error);
         }
       }
