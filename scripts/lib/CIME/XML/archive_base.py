@@ -97,10 +97,10 @@ class ArchiveBase(GenericXML):
                 ext = ext[:-1]
             string = model+r'\d?_?(\d{4})?\.'+ext
             if has_suffix:
-                string += '.'+suffix
-            string += '$'
+                string += '.'+suffix+'$'
 
-            logger.debug ("Regex is {}".format(string))
+
+            logger.info ("Regex is {}".format(string))
             pfile = re.compile(string)
             hist_files.extend([f for f in os.listdir(from_dir) if pfile.search(f) and (f.startswith(casename) or f.startswith(model))])
 
