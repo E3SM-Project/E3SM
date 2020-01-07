@@ -109,8 +109,13 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
         model_log("e3sm", logger, "{} SAVE_PRERUN_PROVENANCE HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
         model_log("e3sm", logger, "{} MODEL EXECUTION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-        run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
-        stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
+        run_func = lambda: run_cmd_no_fail(cmd, from_dir=rundir)[0]
+        try:
+            run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
+            cmd_success = True
+        except BaseException:
+            cmd_success = False
+            
         model_log("e3sm", logger, "{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
         model_logfile = os.path.join(rundir, model + ".log." + lid)
@@ -146,7 +151,7 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
                     lid = new_lid()
                     case.create_namelists()
 
-        if stat != 0 and not loop:
+        if not cmd_success and not loop:
             # We failed and we're not restarting
             expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
 

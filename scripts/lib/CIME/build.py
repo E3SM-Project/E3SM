@@ -563,7 +563,12 @@ def case_build(caseroot, case, sharedlib_only=False, model_only=False, buildlist
 ###############################################################################
     functor = lambda: _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
                                        save_build_provenance)
-    return run_and_log_case_status(functor, "case.build", caseroot=caseroot)
+    cb = "case.build"
+    if (sharedlib_only == True):
+        cb = cb + " (SHAREDLIB_BUILD)"
+    if (model_only == True):
+        cb = cb + " (MODEL_BUILD)"
+    return run_and_log_case_status(functor, cb, caseroot=caseroot)
 
 ###############################################################################
 def clean(case, cleanlist=None, clean_all=False, clean_depends=None):
