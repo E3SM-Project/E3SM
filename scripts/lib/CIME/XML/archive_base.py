@@ -100,7 +100,7 @@ class ArchiveBase(GenericXML):
                 string += '.'+suffix+'$'
 
 
-            logger.info ("Regex is {}".format(string))
+            logger.debug ("Regex is {}".format(string))
             pfile = re.compile(string)
             hist_files.extend([f for f in os.listdir(from_dir) if pfile.search(f) and (f.startswith(casename) or f.startswith(model))])
 
