@@ -450,11 +450,6 @@ struct CaarFunctorImpl {
       Kokkos::Min<Real,ExecSpace> reducer(min_diff);
       Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                               [&](const int k,Real& result) {
-        if (diff_as_real(k)<result) {
-          if (diff_as_real(k)<0) {
-            printf("dp(%d) = %3.15f < %3.15f\n",k,diff_as_real(k),result);
-          }
-        }
         result = result<=diff_as_real(k) ? result : diff_as_real(k);
       }, reducer);
 

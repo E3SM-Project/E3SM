@@ -139,15 +139,7 @@ contains
     call c_f_pointer(vtheta_dp_ptr, vtheta_dp, [np,np,  nlev,  timelevels, nelemd])
 
     do ie=1,nelemd
-      ! Copy inputs in the elem%state
-      elem(ie)%state%dp3d(:,:,:,:) = dp(:,:,:,:,ie)
-      elem(ie)%state%vtheta_dp(:,:,:,:) = vtheta_dp(:,:,:,:,ie)
-
-      call limiter_dp3d_k(dp,vtheta_dp,elem(ie)%spheremp,hvcoord%dp0)
-
-      ! Copy elem%state into outputs
-      dp(:,:,:,:,ie)        = elem(ie)%state%dp3d(:,:,:,:)
-      vtheta_dp(:,:,:,:,ie) = elem(ie)%state%vtheta_dp(:,:,:,:)
+      call limiter_dp3d_k(dp(:,:,:,np1,ie),vtheta_dp(:,:,:,np1,ie),elem(ie)%spheremp,hvcoord%dp0)
     enddo
 
   end subroutine run_limiter_f90
