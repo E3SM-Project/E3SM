@@ -32,10 +32,10 @@ vert_remap_q_alg  = 1
 hypervis_scaling  = ${HOMME_TEST_HVSCALING}
 hypervis_order    = 2
 hypervis_subcycle = 3
-hypervis_subcycle_tom = ${HOMME_TEST_HVS_TOM}
+hypervis_subcycle_tom  = ${HOMME_TEST_HVS_TOM}
 theta_hydrostatic_mode = ${HOMME_THETA_HY_MODE}
-theta_advect_form
-tstep_type
+theta_advect_form = ${HOMME_THETA_FORM}
+tstep_type        = ${HOMME_TTYPE}
 /
 &solver_nl
 precon_method = "identity"

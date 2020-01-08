@@ -1,0 +1,6 @@
+
+name=${AANAME}
+ttype=${AATTYPE}
+
+
+
