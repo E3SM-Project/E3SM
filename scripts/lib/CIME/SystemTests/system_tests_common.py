@@ -189,7 +189,7 @@ class SystemTestsCommon(object):
                     if worked_before:
                         if last_pass is not None:
                             # commits between last_pass and now broke things
-                            stat, out, err = run_cmd("git rev-list --first-parent {} {}".format(last_pass, "HEAD"), from_dir=srcroot)
+                            stat, out, err = run_cmd("git rev-list --first-parent {}..{}".format(last_pass, "HEAD"), from_dir=srcroot)
                             if stat == 0:
                                 append_testlog("NEW FAIL: Potentially broken merges:\n{}".format(out), self._orig_caseroot)
                             else:
@@ -197,7 +197,7 @@ class SystemTestsCommon(object):
                     else:
                         if last_pass is not None and last_fail is not None:
                             # commits between last_pass and last_fail broke things
-                            stat, out, err = run_cmd("git rev-list --first-parent {} {}".format(last_pass, last_fail), from_dir=srcroot)
+                            stat, out, err = run_cmd("git rev-list --first-parent {}..{}".format(last_pass, last_fail), from_dir=srcroot)
                             if stat == 0:
                                 append_testlog("OLD FAIL: Potentially broken merges:\n{}".format(out), self._orig_caseroot)
                             else:
