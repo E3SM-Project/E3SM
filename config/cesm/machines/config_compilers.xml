@@ -72,14 +72,14 @@ using a fortran linker.
     <!-- This should be removed AFTER MOM6 cap is fully unified -->
     <append> -DCESMCOUPLED </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
-    <append MODEL="fv3gfs"> -DSPMD </append>
+    <append MODEL="ufsatm"> -DSPMD </append>
   </CPPDEFS>
 
   <INCLDIR>
-        <append MODEL="fv3gfs"> -I$(EXEROOT)/atm/obj/FMS </append>
+        <append MODEL="ufsatm"> -I$(EXEROOT)/atm/obj/FMS </append>
   </INCLDIR>
   <FFLAGS>
-    <append MODEL="fv3gfs"> $(FC_AUTO_R8) </append>
+    <append MODEL="ufsatm"> $(FC_AUTO_R8) </append>
     <append MODEL="mom"> $(FC_AUTO_R8) -Duse_LARGEFILE</append>
   </FFLAGS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
