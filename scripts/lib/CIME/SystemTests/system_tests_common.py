@@ -190,7 +190,7 @@ class SystemTestsCommon(object):
                             # commits between last_pass and now broke things
                             stat, out, err = run_cmd("git rev-list --first-parent {} {}".format(last_pass, "HEAD"))
                             if stat == 0:
-                                append_testlog("NEW FAIL: Potentially broken merges:\n{}".format(out), self._orig_caseroot)
+                                append_testlog("NEW FAIL: Potentially broken merges:\n{}\n{}".format(out, err), self._orig_caseroot)
                             else:
                                 logger.warning("Unable to list potentially broken merges: {}\n{}".format(out, err))
                     else:
@@ -198,7 +198,7 @@ class SystemTestsCommon(object):
                             # commits between last_pass and last_fail broke things
                             stat, out, err = run_cmd("git rev-list --first-parent {} {}".format(last_pass, last_fail))
                             if stat == 0:
-                                append_testlog("OLD FAIL: Potentially broken merges:\n{}".format(out), self._orig_caseroot)
+                                append_testlog("OLD FAIL: Potentially broken merges:\n{}\n{}".format(out, err), self._orig_caseroot)
                             else:
                                 logger.warning("Unable to list potentially broken merges: {}\n{}".format(out, err))
 
