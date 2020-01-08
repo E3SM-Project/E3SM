@@ -77,15 +77,15 @@ module datm_comp_mod
   integer                    :: kz,ktopo,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
   integer                    :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet
   integer                    :: kanidr,kanidf,kavsdr,kavsdf
+  integer                    :: kco2p, kco2d
   integer                    :: kshum_16O, kshum_18O, kshum_HDO
   integer                    :: krc_16O, krc_18O, krc_HDO
   integer                    :: krl_16O, krl_18O, krl_HDO
   integer                    :: ksc_16O, ksc_18O, ksc_HDO
   integer                    :: ksl_16O, ksl_18O, ksl_HDO
   integer                    :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
-  integer                    :: sprecc,sprecl,sprecn,sco2p,sco2d,sswup,sprec,starcf
+  integer                    :: sprecsf, sprecc,sprecl,sprecn,sswup,sprec,starcf
   integer                    :: srh_16O, srh_18O, srh_HDO, sprecn_16O, sprecn_18O, sprecn_HDO
-  integer                    :: sprecsf
   integer                    :: sprec_af,su_af,sv_af,stbot_af,sshum_af,spbot_af,slwdn_af,sswdn_af
   integer                    :: kbcphidry, kbcphodry, kbcphiwet
   integer                    :: kocphidry, kocphodry, kocphiwet
@@ -99,7 +99,7 @@ module datm_comp_mod
   character(len=CS), pointer :: stofld(:)      ! character array for field intermediate avs for calculations
   character(len=CL), pointer :: ilist_av(:)    ! input  character array for translation (avifld->avofld)
   character(len=CL), pointer :: olist_av(:)    ! output character array for translation (avifld->avofld)
-  integer    ,       pointer :: count_av(:)    ! number of fields in translation (avifld->avofld)
+  integer          , pointer :: count_av(:)    ! number of fields in translation (avifld->avofld)
   character(len=CL), pointer :: ilist_st(:)    ! input  character array for translation (stifld->strmofld)
   character(len=CL), pointer :: olist_st(:)    ! output character array for translation (stifld->strmofld)
   integer      ,     pointer :: count_st(:)    ! number of fields in translation (stifld->strmofld)
@@ -147,7 +147,7 @@ contains
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
-    character(len=*)     , intent(in)    :: flds_scalar_name 
+    character(len=*)     , intent(in)    :: flds_scalar_name
     logical              , intent(in)    :: atm_prognostic
     logical              , intent(in)    :: flds_wiso_in   ! use case
     logical              , intent(in)    :: flds_co2a_in   ! use case
@@ -170,6 +170,9 @@ contains
     flds_co2b = flds_co2b_in
     flds_co2c = flds_co2c_in
 
+    ! NOTE: the following calls to dshr_fld_add returns the
+    ! model_fld_index value if it is an argument
+
     !-------------------
     ! export fields
     !-------------------
@@ -179,133 +182,235 @@ contains
     fldsFrAtm_num=1
     fldsFrAtm(1)%stdname = trim(flds_scalar_name)
 
-    ! export fields that have a corresponding stream field
+    ! Advertise export fields
 
-    call dshr_fld_add(data_fld="topo", data_fld_array=avifld, model_fld="Sa_topo", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=ktopo, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+    call dshr_fld_add('Sa_topo'    , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Sa_z'       , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Sa_u'       , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Sa_v'       , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Sa_ptem'    , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Sa_dens'    , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Sa_pslv'    , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Faxa_rainc' , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Faxa_rainl' , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Faxa_snowc' , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Faxa_snowl' , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Faxa_swndr' , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Faxa_swvdr' , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Faxa_swndf' , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Faxa_swvdf' , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Faxa_swnet' , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Sa_tbot'    , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Sa_pbot'    , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Sa_shum'    , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    call dshr_fld_add('Faxa_lwdn'  , fldlist_num=fldsFrAtm_num , fldlist=fldsFrAtm)
+    if (flds_co2a .or. flds_co2b .or. flds_co2c) then
+       call dshr_fld_add('Sa_co2prog', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+       call dshr_fld_add('Sa_co2diag', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+    end if
+    if (presaero) then
+       call dshr_fld_add('Faxa_bcph', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm,   &
+            ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_ocph', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm,   &
+            ungridded_lbound=1, ungridded_ubound=3)
 
-    call dshr_fld_add(data_fld="z", data_fld_array=avifld, model_fld="Sa_z", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kz, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+       call dshr_fld_add('Faxa_dstwet', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
+            ungridded_lbound=1, ungridded_ubound=4)
+       call dshr_fld_add('Faxa_dstdry', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
+            ungridded_lbound=1, ungridded_ubound=4)
+    end if
+    if (flds_wiso) then
+       call dshr_fld_add('Faxa_rainc_wiso', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
+            ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_rainl_wiso', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
+            ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_snowc_wiso', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
+            ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_snowl_wiso', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
+            ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_shum_wiso', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm,  &
+            ungridded_lbound=1, ungridded_ubound=3)
+    end if
 
-    call dshr_fld_add(data_fld="u", data_fld_array=avifld, model_fld="Sa_u", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=ku, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+    do n = 1,fldsFrAtm_num
+       call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    enddo
 
-    call dshr_fld_add(data_fld="v", data_fld_array=avifld, model_fld="Sa_v", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kv, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+    ! Set attribute vector values for export fields that have a corresponding stream field
 
-    call dshr_fld_add(data_fld="ptem", data_fld_array=avifld, model_fld="Sa_ptem", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kptem, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+    call dshr_fld_add(                                       &
+         data_fld="topo"           , data_fld_array=avifld,  &
+         model_fld="Sa_topo"       , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=ktopo)
+    call dshr_fld_add(                                       &
+         data_fld="z"              , data_fld_array=avifld,  &
+         model_fld="Sa_z"          , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kz)
+    call dshr_fld_add(                                       &
+         data_fld="u"              , data_fld_array=avifld,  &
+         model_fld="Sa_u"          , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=ku)
+    call dshr_fld_add(                                       &
+         data_fld="v"              , data_fld_array=avifld,  &
+         model_fld="Sa_v"          , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kv)
+    call dshr_fld_add(                                       &
+         data_fld="ptem"           , data_fld_array=avifld,  &
+         model_fld="Sa_ptem"       , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kptem)
+    call dshr_fld_add(                                       &
+         data_fld="dens"           , data_fld_array=avifld,  &
+         model_fld="Sa_dens"       , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kdens)
+    call dshr_fld_add(                                       &
+         data_fld="pslv"           , data_fld_array=avifld,  &
+         model_fld="Sa_pslv"       , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kpslv)
+    call dshr_fld_add(                                       &
+         data_fld="rainc"          , data_fld_array=avifld,  &
+         model_fld="Faxa_rainc"    , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=krc)
+    call dshr_fld_add(                                       &
+         data_fld="rainl"          , data_fld_array=avifld,  &
+         model_fld="Faxa_rainl"    , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=krl)
+    call dshr_fld_add(                                       &
+         data_fld="snowc"          , data_fld_array=avifld,  &
+         model_fld="Faxa_snowc"    , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=ksc)
+    call dshr_fld_add(                                       &
+         data_fld="snowl"          , data_fld_array=avifld,  &
+         model_fld="Faxa_snowl"    , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=ksl)
+    call dshr_fld_add(                                       &
+         data_fld="swndr"          , data_fld_array=avifld,  &
+         model_fld="Faxa_swndr"    , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kswndr)
+    call dshr_fld_add(                                       &
+         data_fld="swvdr"          , data_fld_array=avifld,  &
+         model_fld="Faxa_swvdr"    , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kswvdr)
+    call dshr_fld_add(                                       &
+         data_fld="swndf"          , data_fld_array=avifld,  &
+         model_fld="Faxa_swndf"    , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kswndf)
+    call dshr_fld_add(                                       &
+         data_fld="swvdf"          , data_fld_array=avifld,  &
+         model_fld="Faxa_swvdf"    , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kswvdf)
+    call dshr_fld_add(                                       &
+         data_fld="swnet"          , data_fld_array=avifld,  &
+         model_fld="Faxa_swnet"    , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kswnet)
 
-    call dshr_fld_add(data_fld="dens", data_fld_array=avifld, model_fld="Sa_dens", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kdens, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+    ! Set attribute vector values for export fields that have a
+    ! corresponding stream field AND that have a corresponding internal field
 
-    call dshr_fld_add(data_fld="pslv", data_fld_array=avifld, model_fld="Sa_pslv", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kpslv, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-
-    call dshr_fld_add(data_fld="rainc", data_fld_array=avifld, model_fld="Faxa_rainc", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=krc, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-    call dshr_fld_add(data_fld="rainl", data_fld_array=avifld, model_fld="Faxa_rainl", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=krl, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-
-    call dshr_fld_add(data_fld="snowc", data_fld_array=avifld, model_fld="Faxa_snowc", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=ksc, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-    call dshr_fld_add(data_fld="snowl", data_fld_array=avifld, model_fld="Faxa_snowl", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=ksl, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-
-    call dshr_fld_add(data_fld="swndr", data_fld_array=avifld, model_fld="Faxa_swndr", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kswndr, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-    call dshr_fld_add(data_fld="swvdr", data_fld_array=avifld, model_fld="Faxa_swvdr", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kswvdr, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-    call dshr_fld_add(data_fld="swndf", data_fld_array=avifld, model_fld="Faxa_swndf", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kswndf, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-    call dshr_fld_add(data_fld="swvdf", data_fld_array=avifld, model_fld="Faxa_swvdf", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kswvdf, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-    call dshr_fld_add(data_fld="swnet", data_fld_array=avifld, model_fld="Faxa_swnet", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kswnet, fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-
-    ! export fields that have a corresponding stream field AND that have a corresponding internal field
-
-    call dshr_fld_add(data_fld="tbot", data_fld_array=avifld, model_fld="Sa_tbot", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=ktbot , fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-
-    call dshr_fld_add(data_fld="pbot", data_fld_array=avifld, model_fld="Sa_pbot", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kpbot , fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-
-    call dshr_fld_add(data_fld="shum", data_fld_array=avifld, model_fld="Sa_shum", model_fld_array=avofld, &
-         model_fld_concat=flds_a2x, model_fld_index=kshum , fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-
-    call dshr_fld_add(data_fld="lwdn", data_fld_array=avifld, &
-         model_fld="Faxa_lwdn", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=klwdn, &
-         fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+    call dshr_fld_add(                                       &
+         data_fld="tbot"           , data_fld_array=avifld,  &
+         model_fld="Sa_tbot"       , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=ktbot)
+    call dshr_fld_add(                                       &
+         data_fld="pbot"           , data_fld_array=avifld,  &
+         model_fld="Sa_pbot"       , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kpbot)
+    call dshr_fld_add(                                       &
+         data_fld="shum"           , data_fld_array=avifld,  &
+         model_fld="Sa_shum"       , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=kshum)
+    call dshr_fld_add(                                       &
+         data_fld="lwdn"           , data_fld_array=avifld,  &
+         model_fld="Faxa_lwdn"     , model_fld_array=avofld, &
+         model_fld_concat=flds_a2x , model_fld_index=klwdn)
 
     if (flds_co2a .or. flds_co2b .or. flds_co2c) then
-       call dshr_fld_add(data_fld="co2prog", data_fld_array=avifld, &
-            model_fld="Sa_co2prog", model_fld_array=avofld, model_fld_concat=flds_x2a, &
-            fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
-
-       call dshr_fld_add(data_fld="co2diag", data_fld_array=avifld, &
-            model_fld="Sa_co2diag", model_fld_array=avofld,  model_fld_concat=flds_x2a, &
-            fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm)
+       call dshr_fld_add(                                       &
+            data_fld="co2prog"        , data_fld_array=avifld,  &
+            model_fld="Sa_co2prog"    , model_fld_array=avofld, &
+            model_fld_concat=flds_a2x , model_fld_index=kco2p)
+       call dshr_fld_add(                                       &
+            data_fld="co2diag"        , data_fld_array=avifld,  &
+            model_fld="Sa_co2diag"    , model_fld_array=avofld, &
+            model_fld_concat=flds_a2x , model_fld_index=kco2d)
     end if
 
     if (presaero) then
+       call dshr_fld_add(                                       &
+            data_fld="bcphidry"       , data_fld_array=avifld,  &
+            model_fld="Faxa_bcphidry" , model_fld_array=avofld, &
+            model_fld_concat=flds_a2x , model_fld_index=kbcphidry)
+       call dshr_fld_add(                                       &
+            data_fld="bcphodry"       , data_fld_array=avifld,  &
+            model_fld="Faxa_bcphodry" , model_fld_array=avofld, &
+            model_fld_concat=flds_a2x , model_fld_index=kbcphodry)
+       call dshr_fld_add(                                       &
+            data_fld="bcphiwet"       , data_fld_array=avifld,  &
+            model_fld="Faxa_bcphiwet" , model_fld_array=avofld, &
+            model_fld_concat=flds_a2x , model_fld_index=kbcphiwet)
 
-       call dshr_fld_add(data_fld="bcphidry", data_fld_array=avifld, &
-            model_fld="Faxa_bcphidry", model_fld_array=avofld, model_fld_index=kbcphidry, model_fld_concat=flds_a2x)
-       call dshr_fld_add(data_fld="bcphodry", data_fld_array=avifld, &
-            model_fld="Faxa_bcphodry", model_fld_array=avofld, model_fld_index=kbcphodry, model_fld_concat=flds_a2x)
-       call dshr_fld_add(data_fld="bcphiwet", data_fld_array=avifld, &
-            model_fld="Faxa_bcphiwet", model_fld_array=avofld, model_fld_index=kbcphiwet, model_fld_concat=flds_a2x)
+       call dshr_fld_add(                                       &
+            data_fld="ocphidry"       , data_fld_array=avifld,  &
+            model_fld="Faxa_ocphidry" , model_fld_array=avofld, &
+            model_fld_index=kocphidry , model_fld_concat=flds_a2x)
+       call dshr_fld_add(                                       &
+            data_fld="ocphodry"       , data_fld_array=avifld,  &
+            model_fld="Faxa_ocphodry" , model_fld_array=avofld, &
+            model_fld_index=kocphodry , model_fld_concat=flds_a2x)
+       call dshr_fld_add(                                       &
+            data_fld="ocphiwet"       , data_fld_array=avifld,  &
+            model_fld="Faxa_ocphiwet" , model_fld_array=avofld, &
+            model_fld_index=kocphiwet , model_fld_concat=flds_a2x)
 
-       call dshr_fld_add(med_fld='Faxa_bcph', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
-            ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add(                                      &
+            data_fld="dstwet1"       , data_fld_array=avifld,  &
+            model_fld="Faxa_dstwet1" , model_fld_array=avofld, &
+            model_fld_index=kdstwet1 , model_fld_concat=flds_a2x)
+       call dshr_fld_add(                                      &
+            data_fld="dstwet2"       , data_fld_array=avifld,  &
+            model_fld="Faxa_dstwet2" , model_fld_array=avofld, &
+            model_fld_index=kdstwet2 , model_fld_concat=flds_a2x)
+       call dshr_fld_add(                                      &
+            data_fld="dstwet3"       , data_fld_array=avifld,  &
+            model_fld="Faxa_dstwet3" , model_fld_array=avofld, &
+            model_fld_index=kdstwet3 , model_fld_concat=flds_a2x)
+       call dshr_fld_add(                                      &
+            data_fld="dstwet4"       , data_fld_array=avifld,  &
+            model_fld="Faxa_dstwet4" , model_fld_array=avofld, &
+            model_fld_index=kdstwet4 , model_fld_concat=flds_a2x)
 
-       call dshr_fld_add(data_fld="ocphidry", data_fld_array=avifld, &
-            model_fld="Faxa_ocphidry", model_fld_array=avofld, model_fld_index=kocphidry, model_fld_concat=flds_a2x)
-       call dshr_fld_add(data_fld="ocphodry", data_fld_array=avifld, &
-            model_fld="Faxa_ocphodry", model_fld_array=avofld, model_fld_index=kocphodry, model_fld_concat=flds_a2x)
-       call dshr_fld_add(data_fld="ocphiwet", data_fld_array=avifld, &
-            model_fld="Faxa_ocphiwet", model_fld_array=avofld, model_fld_index=kocphiwet, model_fld_concat=flds_a2x)
-
-       call dshr_fld_add(med_fld='Faxa_ocph', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
-            ungridded_lbound=1, ungridded_ubound=3)
-
-       call dshr_fld_add(data_fld="dstwet1", data_fld_array=avifld, &
-            model_fld="Faxa_dstwet1", model_fld_array=avofld, model_fld_index=kdstwet1, model_fld_concat=flds_a2x)
-       call dshr_fld_add(data_fld="dstwet2", data_fld_array=avifld, &
-            model_fld="Faxa_dstwet2", model_fld_array=avofld, model_fld_index=kdstwet2, model_fld_concat=flds_a2x)
-       call dshr_fld_add(data_fld="dstwet3", data_fld_array=avifld, &
-            model_fld="Faxa_dstwet3", model_fld_array=avofld, model_fld_index=kdstwet3, model_fld_concat=flds_a2x)
-       call dshr_fld_add(data_fld="dstwet4", data_fld_array=avifld, &
-            model_fld="Faxa_dstwet4", model_fld_array=avofld, model_fld_index=kdstwet4, model_fld_concat=flds_a2x)
-
-       call dshr_fld_add(med_fld='Faxa_dstwet', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
-            ungridded_lbound=1, ungridded_ubound=4)
-
-       call dshr_fld_add(data_fld="dstdry1", data_fld_array=avifld, &
-            model_fld="Faxa_dstdry1", model_fld_array=avofld, model_fld_index=kdstdry1, model_fld_concat=flds_a2x)
-       call dshr_fld_add(data_fld="dstdry2", data_fld_array=avifld, &
-            model_fld="Faxa_dstdry2", model_fld_array=avofld, model_fld_index=kdstdry2, model_fld_concat=flds_a2x)
-       call dshr_fld_add(data_fld="dstdry3", data_fld_array=avifld, &
-            model_fld="Faxa_dstdry3", model_fld_array=avofld, model_fld_index=kdstdry3, model_fld_concat=flds_a2x)
-       call dshr_fld_add(data_fld="dstdry4", data_fld_array=avifld, &
-            model_fld="Faxa_dstdry4", model_fld_array=avofld, model_fld_index=kdstdry4, model_fld_concat=flds_a2x)
-
-       call dshr_fld_add(med_fld='Faxa_dstdry', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
-            ungridded_lbound=1, ungridded_ubound=4)
-
+       call dshr_fld_add(                                             &
+            data_fld="dstdry1"              , data_fld_array=avifld,  &
+            model_fld="Faxa_dstdry1"        , model_fld_array=avofld, &
+            model_fld_index=kdstdry1        , model_fld_concat=flds_a2x)
+       call dshr_fld_add(                                             &
+            data_fld="dstdry2"              , data_fld_array=avifld,  &
+            model_fld="Faxa_dstdry2"        , model_fld_array=avofld, &
+            model_fld_index=kdstdry2        , model_fld_concat=flds_a2x)
+       call dshr_fld_add(                                             &
+            data_fld="dstdry3"              , data_fld_array=avifld,  &
+            model_fld="Faxa_dstdry3"        , model_fld_array=avofld, &
+            model_fld_index=kdstdry3        , model_fld_concat=flds_a2x)
+       call dshr_fld_add(                                             &
+            data_fld="dstdry4"              , data_fld_array=avifld,  &
+            model_fld="Faxa_dstdry4"        , model_fld_array=avofld, &
+            model_fld_index=kdstdry4        , model_fld_concat=flds_a2x)
     end if
 
     ! isopic forcing
     if (flds_wiso) then
-       call dshr_fld_add(data_fld="rainc_16O", data_fld_array=avifld,&
-            model_fld="Faxa_rainc_18O", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=krc_16O)
-       call dshr_fld_add(data_fld="rainc_18O", data_fld_array=avifld,&
-            model_fld="Faxa_rainc_18O", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=krc_18O)
-       call dshr_fld_add(data_fld="rainc_HDO", data_fld_array=avifld, &
-            model_fld="Faxa_rainc_HDO", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=krc_HDO)
-       call dshr_fld_add(med_fld='Faxa_rainc_wiso', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
-            ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add(                                        &
+            data_fld="rainc_16O"       , data_fld_array=avifld,  &
+            model_fld="Faxa_rainc_18O" , model_fld_array=avofld, &
+            model_fld_concat=flds_a2x  , model_fld_index=krc_16O)
+       call dshr_fld_add(                                        &
+            data_fld="rainc_18O"       , data_fld_array=avifld,  &
+            model_fld="Faxa_rainc_18O" , model_fld_array=avofld, &
+            model_fld_concat=flds_a2x  , model_fld_index=krc_18O)
+       call dshr_fld_add(                                        &
+            data_fld="rainc_HDO"       , data_fld_array=avifld,  &
+            model_fld="Faxa_rainc_HDO" , model_fld_array=avofld, &
+            model_fld_concat=flds_a2x  , model_fld_index=krc_HDO)
 
        call dshr_fld_add(data_fld="rainl_16O", data_fld_array=avifld, &
             model_fld="Faxa_rainl_16O", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=krl_16O)
@@ -313,8 +418,6 @@ contains
             model_fld="Faxa_rainl_18O", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=krl_18O)
        call dshr_fld_add(data_fld="rainl_HDO", data_fld_array=avifld, &
             model_fld="Faxa_rainl_HDO", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=krl_HDO)
-       call dshr_fld_add(med_fld='Faxa_rainl_wiso', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
-            ungridded_lbound=1, ungridded_ubound=3)
 
        call dshr_fld_add(data_fld="snowc_16O", data_fld_array=avifld, &
             model_fld="Faxa_snowc_16O", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=ksc_18O)
@@ -322,8 +425,6 @@ contains
             model_fld="Faxa_snowc_18O", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=ksc_18O)
        call dshr_fld_add(data_fld="snowc_HDO", data_fld_array=avifld, &
             model_fld="Faxa_snowc_HDO", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=ksc_HDO)
-       call dshr_fld_add(med_fld='Faxa_snowc_wiso', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
-            ungridded_lbound=1, ungridded_ubound=3)
 
        call dshr_fld_add(data_fld="snowl_16O", data_fld_array=avifld, &
             model_fld="Faxa_snowl_16O", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=ksl_18O)
@@ -331,8 +432,6 @@ contains
             model_fld="Faxa_snowl_18O", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=ksl_18O)
        call dshr_fld_add(data_fld="snowl_HDO", data_fld_array=avifld, &
             model_fld="Faxa_snowl_HDO", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=ksl_HDO)
-       call dshr_fld_add(med_fld='Faxa_snowl_wiso', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
-            ungridded_lbound=1, ungridded_ubound=3)
 
        call dshr_fld_add(data_fld="shum_16O", data_fld_array=avifld, &
             model_fld="Sa_shum_16O", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=kshum_16O)
@@ -340,12 +439,10 @@ contains
             model_fld="Sa_shum_18O", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=kshum_18O)
        call dshr_fld_add(data_fld="shum_HDO", data_fld_array=avifld, &
             model_fld="Sa_shum_HDO", model_fld_array=avofld, model_fld_concat=flds_a2x, model_fld_index=kshum_HDO)
-       call dshr_fld_add(med_fld='Faxa_shum_wiso', fldlist_num=fldsFrAtm_num, fldlist=fldsFrAtm, &
-            ungridded_lbound=1, ungridded_ubound=3)
     end if
 
     !-------------------
-    ! import fields (have no corresponding stream fields)
+    ! advertise import fields
     !-------------------
 
     if (atm_prognostic) then
@@ -353,49 +450,52 @@ contains
        fldsToAtm_num=1
        fldsToAtm(1)%stdname = trim(flds_scalar_name)
 
-       ! The module indices set by the model_fld_index argument are used in the run phase
-       call dshr_fld_add(model_fld="Sx_avsdr", model_fld_concat=flds_x2a, model_fld_index=kavsdr, &
-            fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Sx_anidr", model_fld_concat=flds_x2a, model_fld_index=kanidr, &
-            fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Sx_avsdf", model_fld_concat=flds_x2a, model_fld_index=kavsdf, &
-            fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Sx_anidf", model_fld_concat=flds_x2a, model_fld_index=kanidf, &
-            fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Sx_tref"       , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Sx_qref"       , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Sx_t"          , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("So_t"          , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Sl_snowh"      , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Sl_lfrac"      , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Si_ifrac"      , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("So_ofrac"      , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Faxx_taux"     , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Faxx_tauy"     , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Faxx_lat"      , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Faxx_sen"      , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Faxx_lwup"     , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+       call dshr_fld_add("Faxx_evap"     , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+     ! call dshr_fld_add("Fall_fco2_lnd" , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
+     ! call dshr_fld_add("Faoo_fco2_ocn" , fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
 
-       call dshr_fld_add(model_fld="Sx_tref"       , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Sx_qref"       , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Sx_t"          , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="So_t"          , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Sl_snowh"      , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Sl_lfrac"      , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Si_ifrac"      , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="So_ofrac"      , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Faxx_taux"     , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Faxx_tauy"     , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Faxx_lat"      , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Faxx_sen"      , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Faxx_lwup"     , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-       call dshr_fld_add(model_fld="Faxx_evap"     , model_fld_concat=flds_x2a, fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-     ! call dshr_fld_add(model_fld="Fall_fco2_lnd" , model_fld_concat=flds_x2a ,fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-     ! call dshr_fld_add(model_fld="Faoo_fco2_ocn" , model_fld_concat=flds_x2a ,fldlist_num=fldsToAtm_num, fldlist=fldsToAtm)
-
-    end if
-
-    !-------------------
-    ! advertise fields for import and export states
-    !-------------------
-
-    do n = 1,fldsFrAtm_num
-       call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    enddo
-
-    if (atm_prognostic) then
        do n = 1,fldsToAtm_num
           call NUOPC_Advertise(importState, standardName=fldsToAtm(n)%stdname, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end do
+
+       ! set import fields attribute vector properties (have no corresponding stream fields)
+       ! The module indices set by the model_fld_index argument are used in the run phase
+
+       call dshr_fld_add(model_fld="Sx_avsdr"      , model_fld_concat=flds_x2a, model_fld_index=kavsdr)
+       call dshr_fld_add(model_fld="Sx_anidr"      , model_fld_concat=flds_x2a, model_fld_index=kanidr)
+       call dshr_fld_add(model_fld="Sx_avsdf"      , model_fld_concat=flds_x2a, model_fld_index=kavsdf)
+       call dshr_fld_add(model_fld="Sx_anidf"      , model_fld_concat=flds_x2a, model_fld_index=kanidf)
+       call dshr_fld_add(model_fld="Sx_tref"       , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Sx_qref"       , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Sx_t"          , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="So_t"          , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Sl_snowh"      , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Sl_lfrac"      , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Si_ifrac"      , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="So_ofrac"      , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Faxx_taux"     , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Faxx_tauy"     , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Faxx_lat"      , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Faxx_sen"      , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Faxx_lwup"     , model_fld_concat=flds_x2a)
+       call dshr_fld_add(model_fld="Faxx_evap"     , model_fld_concat=flds_x2a)
+     ! call dshr_fld_add(model_fld="Fall_fco2_lnd" , model_fld_concat=flds_x2a)
+     ! call dshr_fld_add(model_fld="Faoo_fco2_ocn" , model_fld_concat=flds_x2a)
+
     end if
 
     !-------------------
@@ -445,10 +545,10 @@ contains
     call dshr_fld_add(data_fld="swdn_af"   , data_fld_array=stifld, model_fld="strm_swdn_af"   , model_fld_array=stofld)
     call dshr_fld_add(data_fld="lwdn_af"   , data_fld_array=stifld, model_fld="strm_lwdn_af"   , model_fld_array=stofld)
 
-    if (flds_co2a .or. flds_co2b .or. flds_co2c) then
-       call dshr_fld_add(data_fld="co2prog", data_fld_array=stifld, model_fld="strm_co2prog"   , model_fld_array=stofld)
-       call dshr_fld_add(data_fld="co2diag", data_fld_array=stifld, model_fld="strm_co2diag"   , model_fld_array=stofld)
-    end if
+    !if (flds_co2a .or. flds_co2b .or. flds_co2c) then
+       !call dshr_fld_add(data_fld="co2prog", data_fld_array=stifld, model_fld="strm_co2prog"   , model_fld_array=stofld)
+       !call dshr_fld_add(data_fld="co2diag", data_fld_array=stifld, model_fld="strm_co2diag"   , model_fld_array=stofld)
+    !end if
 
   end subroutine datm_comp_advertise
 
@@ -461,11 +561,11 @@ contains
        calendar, modeldt, current_ymd, current_tod, current_mon, &
        atm_prognostic, mesh, nxg, nyg)
 
-    use dshr_nuopc_mod, only : dshr_fld_add
+    ! -----------------------------------
+    ! Initialize data atm model
+    ! -----------------------------------
 
-    ! !DESCRIPTION: initialize data atm model
-
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output variables
     integer                , intent(in)    :: mpicom         ! mpi communicator
     integer                , intent(in)    :: compid         ! mct comp id
     integer                , intent(in)    :: my_task        ! my task in mpi communicator mpicom
@@ -526,7 +626,7 @@ contains
     call shr_strdata_pioinit(SDATM, COMPID)
 
     !----------------------------------------------------------------------------
-    ! Create a data model global seqmap
+    ! Create a data model global segmap for the model domain
     !----------------------------------------------------------------------------
 
     call t_startf('datm_strdata_init')
@@ -564,11 +664,8 @@ contains
     deallocate(gindex)
 
     !----------------------------------------------------------------------------
-    ! Initialize SDATM
+    ! Initialize SDATM - using the gsmap for the model domain created above
     !----------------------------------------------------------------------------
-
-    ! The call to shr_strdata_init_model_domain creates the SDATM%gsmap which
-    ! is a '2d1d' decommp (1d decomp of 2d grid) and also create SDATM%grid
 
     SDATM%calendar = trim(shr_cal_calendarName(trim(calendar)))
 
@@ -580,11 +677,7 @@ contains
        call shr_strdata_init_model_domain(SDATM, mpicom, compid, my_task, gsmap=SDATM%gsmap)
     end if
 
-    if (my_task == master_task) then
-       call shr_strdata_print(SDATM,'SDATM data')
-    endif
-
-    ! obtain mesh lats and lons
+    ! obtain  mesh lats and lons for model mesh
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     allocate(ownedElemCoords(spatialDim*numOwnedElements))
@@ -650,7 +743,7 @@ contains
     call t_stopf('datm_strdata_init')
 
     !----------------------------------------------------------------------------
-    ! Initialize attribute vectors
+    ! Initialize import/export attribute vectors
     !----------------------------------------------------------------------------
 
     call t_startf('datm_initmctavs')
@@ -661,7 +754,10 @@ contains
     call mct_aVect_init(x2a, rList=flds_x2a, lsize=lsize)
     call mct_aVect_zero(x2a)
 
+    !----------------------------------------------------------------------------
     ! Initialize internal attribute vectors for optional streams
+    !----------------------------------------------------------------------------
+
     ! Create the colon deliminted list flds_strm based on mapping the
     ! input stream fields from SDATM%avs(n) to with the names in stifld to stofld
 
@@ -707,8 +803,6 @@ contains
     sprecc = mct_aVect_indexRA(avstrm,'strm_precc'  ,perrWith='quiet')
     sprecl = mct_aVect_indexRA(avstrm,'strm_precl'  ,perrWith='quiet')
     sprecn = mct_aVect_indexRA(avstrm,'strm_precn'  ,perrWith='quiet')
-    sco2p  = mct_aVect_indexRA(avstrm,'strm_co2p'   ,perrWith='quiet')
-    sco2d  = mct_aVect_indexRA(avstrm,'strm_co2d'   ,perrWith='quiet')
     sswup  = mct_aVect_indexRA(avstrm,'strm_swup'   ,perrWith='quiet')
     sprec  = mct_aVect_indexRA(avstrm,'strm_prec'   ,perrWith='quiet')
     starcf = mct_aVect_indexRA(avstrm,'strm_tarcf'  ,perrWith='quiet')
@@ -857,7 +951,8 @@ contains
     real(R8)                :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
     logical                 :: firstcall = .true.    ! first call logical
     character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
-    character(*), parameter :: F04   = "('(datm_comp_run) ',2a,2i8,'s')"
+    character(*), parameter :: F01   = "('(datm_comp_run) ', a,2i8,'s')"
+    character(*), parameter :: F02   = "('(datm_comp_run) ',2a,2i8,'s')"
     character(*), parameter :: F0D   = "('(datm_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
     character(*), parameter :: subName = "(datm_comp_run) "
     !-------------------------------------------------------------------------------
@@ -1405,10 +1500,18 @@ contains
           call shr_file_freeUnit(nu)
        endif
 
-       if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
+       if (my_task == master_task) write(logunit,F02) ' writing ',trim(rest_file_strm),target_ymd,target_tod
        call shr_strdata_restWrite(trim(rest_file_strm),SDATM,mpicom,trim(case_name),'SDATM strdata')
        call t_stopf('datm_restart')
     endif
+
+    !----------------------------------------------------------------------------
+    ! Log output for model date
+    !----------------------------------------------------------------------------
+
+    if (my_task == master_task) then
+       write(logunit,F01) 'atm : model date ', target_ymd, target_tod
+    end if
 
     firstcall = .false.
 
@@ -1512,7 +1615,7 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    integer :: k
+    integer :: k,n
     !----------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -1561,9 +1664,9 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (flds_co2a .or. flds_co2b .or. flds_co2c) then
-       call dshr_export(avstrm%rattr(sco2p,:), exportState, 'Sa_co2prog' , rc=rc)
+       call dshr_export(a2x%rattr(kco2p,:), exportState, 'Sa_co2prog' , rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(avstrm%rattr(sco2d,:), exportState, 'Sa_co2diag' , rc=rc)
+       call dshr_export(a2x%rattr(kco2d,:), exportState, 'Sa_co2diag' , rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 

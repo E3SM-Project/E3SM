@@ -145,7 +145,7 @@ def _build_model(build_threaded, exeroot, incroot, complist,
     return logs
 
 ###############################################################################
-def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
+def _build_checks(case, build_threaded, comp_interface, 
                   debug, compiler, mpilib, complist, ninst_build, smp_value,
                   model_only, buildlist):
 ###############################################################################
@@ -215,18 +215,6 @@ ERROR env_build HAS CHANGED
   A manual clean of your obj directories is required
   You should execute the following:
     ./case.build --clean-all
-""")
-
-
-    expect(mpilib != "mpi-serial" or not use_esmf_lib,
-           """
-ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
-  MPILIB can only be used with an ESMF library built with mpiuni on
-  Set USE_ESMF_LIB to FALSE with
-    ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val FALSE
-  ---- OR ----
-  Make sure the ESMF_LIBDIR used was built with mipuni (or change it to one that was)
-  And comment out this if block in Tools/models_buildexe
 """)
 
     case.set_value("BUILD_COMPLETE", False)
@@ -459,7 +447,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     compiler            = case.get_value("COMPILER")
     mpilib              = case.get_value("MPILIB")
-    use_esmf_lib        = case.get_value("USE_ESMF_LIB")
     debug               = case.get_value("DEBUG")
     ninst_build         = case.get_value("NINST_BUILD")
     smp_value           = case.get_value("SMP_VALUE")
@@ -512,8 +499,8 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     case.load_env()
 
     sharedpath = _build_checks(case, build_threaded, comp_interface,
-                               use_esmf_lib, debug, compiler, mpilib,
-                               complist, ninst_build, smp_value, model_only, buildlist)
+                               debug, compiler, mpilib, complist, ninst_build, smp_value, 
+                               model_only, buildlist)
 
     t2 = time.time()
     logs = []

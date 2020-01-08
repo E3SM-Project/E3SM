@@ -10,7 +10,7 @@ from CIME.XML.standard_module_setup import *
 #pylint: disable=import-error,redefined-builtin
 from six.moves import input
 from CIME.utils                     import expect, get_cime_root, append_status
-from CIME.utils                     import convert_to_type, get_model
+from CIME.utils                     import convert_to_type, get_model, set_model
 from CIME.utils                     import get_project, get_charge_account, check_name
 from CIME.utils                     import get_current_commit, safe_copy, get_cime_default_driver
 from CIME.locked_files              import LOCKED_DIR, lock_file
@@ -144,6 +144,7 @@ class Case(object):
         These are derived variables which can be used in the config_* files
         for variable substitution using the {{ var }} syntax
         """
+        set_model(self.get_value("MODEL"))
         env_mach_pes  = self.get_env("mach_pes")
         env_mach_spec = self.get_env('mach_specific')
         comp_classes  = self.get_values("COMP_CLASSES")
