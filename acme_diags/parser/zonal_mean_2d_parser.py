@@ -20,6 +20,21 @@ class ZonalMean2dParser(CoreParser):
             type=float,
             nargs='+',
             dest='plevs',
-            help='Selected pressure level.',
+            help='Selected pressure level.[take list as input]',
             required=False)
 
+        self.add_argument(
+            '--plot_plevs',
+            dest='plot_plevs',
+            help='plot specified plevs',
+            action='store_const',
+            const=True,
+            required=False)
+
+        self.add_argument(
+            '--plot_log_plevs',
+            dest='plot_log_plevs',
+            help='plot plevs on log-scale',
+            action='store_const',
+            const=True,
+            required=False)
