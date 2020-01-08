@@ -87,9 +87,11 @@ def plot_panel(n, fig, proj, var, clevels, cmap,
     ax.tick_params(labelsize=8.0, direction='out', width=1)
     ax.xaxis.set_ticks_position('bottom')
     ax.yaxis.set_ticks_position('left')
-    if parameters.zonal_mean_2d_plevs != []:
-        plev_ticks = parameters.zonal_mean_2d_plevs
-        plev_ticks = plev_ticks[::-1]
+    if parameters.plot_log_plevs:
+        ax.set_yscale('log')
+    if parameters.plot_plevs: 
+        plev_ticks = parameters.plevs
+        #plev_ticks = plev_ticks[::-1]
         plt.yticks(plev_ticks,plev_ticks)
     plt.ylabel('pressure (mb)')
     #ax.set_yscale('log')

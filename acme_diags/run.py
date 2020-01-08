@@ -199,7 +199,7 @@ class Run():
                 continue
             
             if hasattr(new_instance, attr) and \
-                getattr(new_instance, attr) != getattr(param, attr):
+                getattr(new_instance, attr) != getattr(param, attr):   # This is only valid when the attr values are lists not numpy array
                 nondefault_attr.append(attr)
         return nondefault_attr
 
