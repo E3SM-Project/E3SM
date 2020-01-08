@@ -260,6 +260,8 @@ module pftvarcon
   real(r8)              :: jmax_np2            !jmax~np relationship coefficient
   real(r8)              :: jmax_np3            !jmax~np relationship coefficient
   real(r8)              :: laimax
+  real(r8)              :: fpi_max             !maxium fraction of precipitation intercepted
+
   ! Hydrology
   real(r8)              :: rsub_top_globalmax
   ! Soil erosion ground cover
@@ -860,6 +862,8 @@ contains
         call ncd_io('laimax',laimax, 'read', ncid, readvar=readv, posNOTonfile=.true.)
         if ( .not. readv ) call endrun(msg=' ERROR: error in reading in laimax data'//errMsg(__FILE__, __LINE__))
     end if
+    call ncd_io('fpi_max', fpi_max, 'read', ncid, readvar=readv, posNOTonfile=.true.)
+    if (.not. readv) fpi_max = 0.25_r8    
     call ncd_io('rsub_top_globalmax', rsub_top_globalmax, 'read', ncid, readvar=readv, posNOTonfile=.true.)
     if (.not. readv) rsub_top_globalmax = 10._r8
     !if ( .not. readv) call endrun(msg='ERROR:  error in reading in pft data'//errMsg(__FILE__,__LINE__))
