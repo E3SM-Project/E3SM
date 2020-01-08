@@ -113,6 +113,11 @@ struct CaarFunctorImpl {
     return m_policy_post;
   }
 
+  Kokkos::TeamPolicy<ExecSpace, TagDp3dLimiter>
+  get_policy_limiter () const {
+    return m_policy_dp3d_lim;
+  }
+
   Kokkos::Array<std::shared_ptr<BoundaryExchange>, NUM_TIME_LEVELS> m_bes;
 
   CaarFunctorImpl(const Elements &elements, const Tracers &/* tracers */,
@@ -440,13 +445,18 @@ struct CaarFunctorImpl {
         diff(ilev) = (dp(ilev) - dp3d_thresh*dp0(ilev))*spheremp;
       });
 
-      Real min_diff = Kokkos::reduction_identity<Real>::max();
+      Real min_diff = Kokkos::reduction_identity<Real>::min();
       auto diff_as_real = Homme::viewAsReal(diff);
-      Dispatch<ExecSpace>::parallel_reduce(kv.team,
-                                  Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
-                                  [&](const int k,Real& result) {
+      Kokkos::Min<Real,ExecSpace> reducer(min_diff);
+      Kokkos::parallel_reduce(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
+                              [&](const int k,Real& result) {
+        if (diff_as_real(k)<result) {
+          if (diff_as_real(k)<0) {
+            printf("dp(%d) = %3.15f < %3.15f\n",k,diff_as_real(k),result);
+          }
+        }
         result = result<=diff_as_real(k) ? result : diff_as_real(k);
-      }, min_diff);
+      }, reducer);
 
       auto vtheta_dp = Homme::subview(m_state.m_vtheta_dp,kv.ie,m_data.np1,igp,jgp);
       if (min_diff<0) {
@@ -470,14 +480,13 @@ struct CaarFunctorImpl {
         // This loop must be done over physical levels, unless we implement
         // masks, like it has been done in the E3SM/scream project
         Real mass_new = 0.0;
-        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
-                             [&](const int k) {
-          if (diff_as_real(k)<0) {
-            diff_as_real(k) = 0;
-          } else {
-            mass_new += diff_as_real(k);
-          }
-        });
+        Dispatch<>::parallel_reduce(kv.team,
+                                    Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
+                                    [&](const int k, Real& accum) {
+          auto& val = diff_as_real(k);
+          val = (val<0 ? 0.0 : val);
+          accum += val;
+        }, mass_new);
 
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                              [&](const int ilev) {

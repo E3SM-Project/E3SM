@@ -33,6 +33,8 @@ void run_caar_f90 (const int& nm1, const int& n0, const int& np1,
                    Real*& dp_ptr, Real*& vtheta_dp_ptr, Real*& w_i_ptr,
                    Real*& phi_i_ptr, Real*& v_ptr,
                    Real*& vn0_ptr, Real*& etadot_dpdn_ptr, Real*& omega_p_ptr);
+
+void run_limiter_f90 (const int& np1, Real*& dp_ptr, Real*& vtheta_dp_ptr);
 void cleanup_f90();
 } // extern "C"
 
@@ -422,6 +424,68 @@ TEST_CASE("caar", "caar_testing") {
                 }
                 REQUIRE(phinh_i_cxx(igp,jgp,k)==phinh_i_f90(ie,np1,k,igp,jgp));
             }}
+          }
+        }
+      }
+    }
+  }
+
+  SECTION ("limiter_dp3d") {
+    // Randomize state and sync to f90 dp and vtheta
+    elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
+
+    sync_to_host(elems.m_state.m_dp3d, dp3d_f90);
+    sync_to_host(elems.m_state.m_vtheta_dp, vtheta_dp_f90);
+
+    auto dp3d_ptr = dp3d_f90.data();
+    auto vtheta_dp_ptr = vtheta_dp_f90.data();
+
+    // Create caar functor
+    CaarFunctorImpl caar(elems,tracers,ref_FE,hvcoord,sphop,params);
+    FunctorsBuffersManager fbm;
+    fbm.request_size( caar.requested_buffer_size() );
+    fbm.allocate();
+    caar.init_buffers(fbm);
+
+    int  np1 = IPDF(0,2)(engine);
+    RKStageData data;
+    data.np1 = np1;
+    caar.set_rk_stage_data(data);
+
+    // Run cxx limiter
+    Kokkos::parallel_for("limiter_dp3d", caar.get_policy_limiter(), caar);
+
+    // Run f90 limiter
+    run_limiter_f90(np1+1, dp3d_ptr, vtheta_dp_ptr);
+
+    // Compare answers
+    auto h_dp3d      = Kokkos::create_mirror_view(elems.m_state.m_dp3d);
+    auto h_vtheta_dp = Kokkos::create_mirror_view(elems.m_state.m_vtheta_dp);
+
+    Kokkos::deep_copy(h_dp3d     , elems.m_state.m_dp3d);
+    Kokkos::deep_copy(h_vtheta_dp, elems.m_state.m_vtheta_dp);
+    for (int ie=0; ie<num_elems; ++ie) {
+      auto dp3d_cxx      = viewAsReal(Homme::subview(h_dp3d,ie,np1));
+      auto vtheta_dp_cxx = viewAsReal(Homme::subview(h_vtheta_dp,ie,np1));
+
+      for (int igp=0; igp<NP; ++igp) {
+        for (int jgp=0; jgp<NP; ++jgp) {
+          for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+            // dp3d
+            if(dp3d_cxx(igp,jgp,k)!=dp3d_f90(ie,np1,k,igp,jgp)) {
+              printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+              printf("dp3d cxx: %3.40f\n",dp3d_cxx(igp,jgp,k));
+              printf("dp3d f90: %3.40f\n",dp3d_f90(ie,np1,k,igp,jgp));
+            }
+            REQUIRE(dp3d_cxx(igp,jgp,k)==dp3d_f90(ie,np1,k,igp,jgp));
+
+            // vtheta_dp
+            if(vtheta_dp_cxx(igp,jgp,k)!=vtheta_dp_f90(ie,np1,k,igp,jgp)) {
+              printf("rank,ie,k,igp,jgp: %d, %d, %d, %d, %d\n",rank,ie,k,igp,jgp);
+              printf("vtheta_dp cxx: %3.40f\n",vtheta_dp_cxx(igp,jgp,k));
+              printf("vtheta_dp f90: %3.40f\n",vtheta_dp_f90(ie,np1,k,igp,jgp));
+            }
+            REQUIRE(vtheta_dp_cxx(igp,jgp,k)==vtheta_dp_f90(ie,np1,k,igp,jgp));
           }
         }
       }

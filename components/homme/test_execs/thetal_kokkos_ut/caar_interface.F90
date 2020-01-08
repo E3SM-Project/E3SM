@@ -115,4 +115,41 @@ contains
 
   end subroutine run_caar_f90
 
+  subroutine run_limiter_f90 (np1, dp_ptr, vtheta_dp_ptr) bind(c)
+    use iso_c_binding,          only: c_ptr, c_f_pointer, c_int, c_bool
+    use control_mod,            only: theta_hydrostatic_mode, theta_advect_form, rsplit
+    use dimensions_mod,         only: nelemd, nlev, np
+    use prim_advance_mod,       only: limiter_dp3d_k
+    use element_state,          only: timelevels
+    use geometry_interface_mod, only: elem
+    use thetal_test_interface,  only: hvcoord
+    !
+    ! Input(s)
+    !
+    integer (kind=c_int),  intent(in) :: np1
+    type (c_ptr),          intent(in) :: dp_ptr, vtheta_dp_ptr
+    !
+    ! Locals
+    !
+    real (kind=real_kind), pointer :: dp           (:,:,:,:,:)
+    real (kind=real_kind), pointer :: vtheta_dp    (:,:,:,:,:)
+    integer :: ie
+
+    call c_f_pointer(dp_ptr,        dp,        [np,np,  nlev,  timelevels, nelemd])
+    call c_f_pointer(vtheta_dp_ptr, vtheta_dp, [np,np,  nlev,  timelevels, nelemd])
+
+    do ie=1,nelemd
+      ! Copy inputs in the elem%state
+      elem(ie)%state%dp3d(:,:,:,:) = dp(:,:,:,:,ie)
+      elem(ie)%state%vtheta_dp(:,:,:,:) = vtheta_dp(:,:,:,:,ie)
+
+      call limiter_dp3d_k(dp,vtheta_dp,elem(ie)%spheremp,hvcoord%dp0)
+
+      ! Copy elem%state into outputs
+      dp(:,:,:,:,ie)        = elem(ie)%state%dp3d(:,:,:,:)
+      vtheta_dp(:,:,:,:,ie) = elem(ie)%state%vtheta_dp(:,:,:,:)
+    enddo
+
+  end subroutine run_limiter_f90
+
 end module caar_interface
