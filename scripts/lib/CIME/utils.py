@@ -325,7 +325,7 @@ def get_model():
             model = 'cesm'
             with open(os.path.join(srcroot, "Externals.cfg")) as fd:
                 for line in fd:
-                    if re.search('ufsatm', line):
+                    if re.search('fv3gfs', line):
                         model = 'ufs'
         else:
             model = 'e3sm'
