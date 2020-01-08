@@ -9,7 +9,7 @@ cd $rundir
 # Link namelist file
 ln -sf config.nml fort.41
 
-# Copy chgres executable to bld directory
+# Query build directory
 blddir="$rundir/../bld"
 
 # Set environment variables
