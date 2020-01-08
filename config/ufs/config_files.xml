@@ -313,7 +313,7 @@
       <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/config_archive.xml</value>
       <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
       <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/config_archive.xml</value>
-      <value component="fv3gfs"   >$COMP_ROOT_DIR_ATM/cime/cime_config/config_archive.xml</value>
+      <value component="ufsatm"   >$COMP_ROOT_DIR_ATM/cime/cime_config/config_archive.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
@@ -467,7 +467,7 @@
     <default_value>unset</default_value>
     <values>
       <value>$COMP_ROOT_DIR_ATM/cime_config/config_component.xml</value>
-      <value component="fv3gfs">$COMP_ROOT_DIR_ATM/cime/cime_config/config_component.xml</value>
+      <value component="ufsatm">$COMP_ROOT_DIR_ATM/cime/cime_config/config_component.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>
