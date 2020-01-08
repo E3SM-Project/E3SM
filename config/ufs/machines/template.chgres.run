@@ -3,37 +3,46 @@
 
 # Query run directory 
 rundir=`./xmlquery --value RUNDIR`
-echo "run dir is $rundir"
-cd $rundir
+echo "Run directory is $rundir"
 
-# Link namelist file
-ln -sf config.nml fort.41
+# Query it is a restart or not
+isrestart=`./xmlquery --value CONTINUE_RUN`
+echo "Is this run restart? $isrestart"
 
-# Query build directory
-blddir="$rundir/../bld"
+# Run it only if it is not restart
+if [ "$isrestart" != "TRUE" ]; then
+  # Goto run directory
+  cd $rundir
 
-# Set environment variables
-export LD_LIBRARY_PATH=$NCEP_LIBS/lib:$NCEP_LIBS/lib64:$LD_LIBRARY_PATH
+  # Link namelist file
+  ln -sf config.nml fort.41
 
-# Copy executable to build directory
-cp $NCEP_LIBS/bin/chgres_cube.exe $blddir/.
+  # Query build directory
+  blddir="$rundir/../bld"
 
-# Run chgres
-runcmd='{{ mpirun }}'
-mpirun=`echo $runcmd | awk '{print $1}'`
-eval "$mpirun $blddir/chgres_cube.exe"
+  # Set environment variables
+  export LD_LIBRARY_PATH=$NCEP_LIBS/lib:$NCEP_LIBS/lib64:$LD_LIBRARY_PATH
 
-# Move output files to input directory
-mv -f gfs_ctrl.nc INPUT/.
-mv -f out.atm.tile1.nc INPUT/gfs_data.tile1.nc
-mv -f out.atm.tile2.nc INPUT/gfs_data.tile2.nc
-mv -f out.atm.tile3.nc INPUT/gfs_data.tile3.nc
-mv -f out.atm.tile4.nc INPUT/gfs_data.tile4.nc
-mv -f out.atm.tile5.nc INPUT/gfs_data.tile5.nc
-mv -f out.atm.tile6.nc INPUT/gfs_data.tile6.nc
-mv -f out.sfc.tile1.nc INPUT/sfc_data.tile1.nc
-mv -f out.sfc.tile2.nc INPUT/sfc_data.tile2.nc
-mv -f out.sfc.tile3.nc INPUT/sfc_data.tile3.nc
-mv -f out.sfc.tile4.nc INPUT/sfc_data.tile4.nc
-mv -f out.sfc.tile5.nc INPUT/sfc_data.tile5.nc
-mv -f out.sfc.tile6.nc INPUT/sfc_data.tile6.nc
+  # Copy executable to build directory
+  cp $NCEP_LIBS/bin/chgres_cube.exe $blddir/.
+
+  # Run chgres
+  runcmd='{{ mpirun }}'
+  mpirun=`echo $runcmd | awk '{print $1}'`
+  eval "$mpirun $blddir/chgres_cube.exe"
+
+  # Move output files to input directory
+  mv -f gfs_ctrl.nc INPUT/.
+  mv -f out.atm.tile1.nc INPUT/gfs_data.tile1.nc
+  mv -f out.atm.tile2.nc INPUT/gfs_data.tile2.nc
+  mv -f out.atm.tile3.nc INPUT/gfs_data.tile3.nc
+  mv -f out.atm.tile4.nc INPUT/gfs_data.tile4.nc
+  mv -f out.atm.tile5.nc INPUT/gfs_data.tile5.nc
+  mv -f out.atm.tile6.nc INPUT/gfs_data.tile6.nc
+  mv -f out.sfc.tile1.nc INPUT/sfc_data.tile1.nc
+  mv -f out.sfc.tile2.nc INPUT/sfc_data.tile2.nc
+  mv -f out.sfc.tile3.nc INPUT/sfc_data.tile3.nc
+  mv -f out.sfc.tile4.nc INPUT/sfc_data.tile4.nc
+  mv -f out.sfc.tile5.nc INPUT/sfc_data.tile5.nc
+  mv -f out.sfc.tile6.nc INPUT/sfc_data.tile6.nc
+fi
