@@ -860,7 +860,7 @@ subroutine qflx_gmean(state, tend, cam_in, dtime, nstep)
     if (single_column .and. use_replay) then
       heat_glob = heat_glob_scm(1)
     endif
-
+    
     ! In single column model we do NOT want to take into
     !   consideration the dynamics energy fixer.  Since only
     !   one column of dynamics is active, this data will 

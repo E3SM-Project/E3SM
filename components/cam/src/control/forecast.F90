@@ -184,7 +184,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
    wfldint(plevp) = 0.0_r8
 
-   if (use_3dfrc .and. .not. use_iop) then
+   if (use_3dfrc .and. use_iop .and. .not. iop_scream) then
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 
@@ -207,7 +207,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
    end if
 
-   if (use_iop) then
+   if (iop_scream) then
    
 !  Complete a very simple forecast using supplied 2-dimensional forcing.
 !   In IOP-SCREAM the vertical transport is already computed by dynamics.
