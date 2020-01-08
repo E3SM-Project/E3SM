@@ -23,7 +23,7 @@ module SoilStateType
   use CH4varcon       , only : allowlakeprod
   use LandunitType    , only : lun_pp                
   use ColumnType      , only : col_pp                
-  use VegetationType  , only : veg_pp                
+  use VegetationType  , only : veg_pp    
   !
   implicit none
   save
@@ -44,6 +44,8 @@ module SoilStateType
      real(r8), pointer :: bd_col               (:,:) ! col bulk density of dry soil material [kg/m^3] (CN)
 
      ! hydraulic properties
+     real(r8), pointer :: hksat_adj_col        (:)   ! col adjusting factor for hydraulic conductivity at saturation (>1 higher than original, <1.0 smaller)
+     real(r8), pointer :: hksat_obs_col        (:,:) ! col hydraulic conductivity at saturation (mm H2O /s) observed profile
      real(r8), pointer :: hksat_col            (:,:) ! col hydraulic conductivity at saturation (mm H2O /s) 
      real(r8), pointer :: hksat_min_col        (:,:) ! col mineral hydraulic conductivity at saturation (hksat) (mm/s)
      real(r8), pointer :: hk_l_col             (:,:) ! col hydraulic conductivity (mm/s)
@@ -140,6 +142,8 @@ contains
     allocate(this%cellgrvl_col         (begc:endc,nlevgrnd))            ; this%cellgrvl_col         (:,:) = nan 
     allocate(this%bd_col               (begc:endc,nlevgrnd))            ; this%bd_col               (:,:) = nan
 
+    allocate(this%hksat_adj_col        (begc:endc))                     ; this%hksat_adj_col        (:)   = nan
+    allocate(this%hksat_obs_col        (begc_all:endc_all,nlevgrnd))    ; this%hksat_obs_col        (:,:) = nan
     allocate(this%hksat_col            (begc_all:endc_all,nlevgrnd))    ; this%hksat_col            (:,:) = spval
     allocate(this%hksat_min_col        (begc:endc,nlevgrnd))            ; this%hksat_min_col        (:,:) = spval
     allocate(this%hk_l_col             (begc:endc,nlevgrnd))            ; this%hk_l_col             (:,:) = nan   
@@ -311,7 +315,7 @@ contains
     use pftvarcon           , only : noveg, roota_par, rootb_par
     use fileutils           , only : getfil
     use organicFileMod      , only : organicrd 
-    use SharedParamsMod   , only : ParamsShareInst
+    use SharedParamsMod     , only : ParamsShareInst
     use FuncPedotransferMod , only : pedotransf, get_ipedof
     use RootBiophysMod      , only : init_vegrootfr
     !
@@ -354,6 +358,8 @@ contains
     real(r8) ,pointer  :: zisoifl (:)                   ! Output: [real(r8) (:)]  original soil interface depth 
     real(r8) ,pointer  :: dzsoifl (:)                   ! Output: [real(r8) (:)]  original soil thickness 
     real(r8) ,pointer  :: gti (:)                       ! read in - fmax 
+    real(r8) ,pointer  :: hai(:)                        ! read in - hksat_adj: saturated hydraulic conductivity ajust factor (>1 higher than original, <1.0 smaller)
+    real(r8) ,pointer  :: hksat3d(:,:)                  ! read in - hksat obs: saturated hydraulic conductivity observed profile
     real(r8) ,pointer  :: sand3d (:,:)                  ! read in - soil texture: percent sand (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: clay3d (:,:)                  ! read in - soil texture: percent clay (needs to be a pointer for use in ncdio)
     real(r8) ,pointer  :: grvl3d (:,:)                  ! read in - soil texture: percent gravel (needs to be a pointer for use in ncdio)
@@ -364,7 +370,7 @@ contains
     integer            :: begc, endc
     integer            :: begg, endg
     real(r8), parameter :: min_liquid_pressure = -10132500._r8 ! Minimum soil liquid water pressure [mm]
-    real(r8), parameter :: hksat_adj  = 2.0_r8          !saturated hydraulic conductivity ajust factor (>1 higher than original, <1.0 smaller)
+    !real(r8), parameter :: hksat_adj  = 2.0_r8          !saturated hydraulic conductivity adjust factor (>1 higher than original, <1.0 smaller)
     !-----------------------------------------------------------------------
 
     begc = bounds%begc; endc= bounds%endc
@@ -498,6 +504,38 @@ contains
     end do
     deallocate(gti)
 
+    ! Read hksat_adj
+
+    allocate(hai(bounds%begg:bounds%endg))
+    call ncd_io(ncid=ncid, varname='HKSAT_ADJ', flag='read', data=hai, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: HKSAT_ADJ NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+    end if
+    do c = bounds%begc, bounds%endc
+       g = col_pp%gridcell(c)
+       this%hksat_adj_col(c) = hai(g)
+    end do
+    deallocate(hai)
+
+    ! Read hksat data
+
+    allocate(hksat3d(bounds%begg:bounds%endg,nlevsoifl))
+    call ncd_io(ncid=ncid, varname='HKSAT', flag='read', data=hksat3d, dim1name=grlnd, readvar=readvar)
+    if (.not. readvar) then
+       call endrun(msg=' ERROR: HKSAT NOT on surfdata file'//errMsg(__FILE__, __LINE__))
+    end if
+    do c = bounds%begc, bounds%endc
+       g = col_pp%gridcell(c)
+       do lev = 1,nlevgrnd
+	 if (lev <= nlevsoi) then
+	   this%hksat_obs_col(c,lev) = hksat3d(g, lev)
+         else
+           this%hksat_obs_col(c,lev) = hksat3d(g, nlevsoifl)
+         end if
+       end do
+    end do
+    deallocate(hksat3d)
+
     ! Close file
 
     call ncd_pio_closefile(ncid)
@@ -610,14 +648,14 @@ contains
                    clay = clay3d(g,1)
                    sand = sand3d(g,1)
                    gravel = grvl3d(g,1)
-                   om_frac = organic3d(g,1)/organic_max 
+                   om_frac = organic3d(g,1)/organic_max
                 else if (lev <= nlevsoi) then
                    do j = 1,nlevsoifl-1
                       if (zisoi(lev) >= zisoifl(j) .AND. zisoi(lev) < zisoifl(j+1)) then
                          clay = clay3d(g,j+1)
                          sand = sand3d(g,j+1)
                          gravel = grvl3d(g,j+1)
-                         om_frac = organic3d(g,j+1)/organic_max    
+                         om_frac = organic3d(g,j+1)/organic_max
                       endif
                    end do
                 else
@@ -680,12 +718,12 @@ contains
 
                 this%bd_col(c,lev)        = (1._r8 - this%watsat_col(c,lev))*2.7e3_r8 
                 !this%watsat_col(c,lev)    = (1._r8 - om_frac) * this%watsat_col(c,lev) + om_watsat*om_frac
-		this%watsat_col(c,lev)    = 0.49_r8
+		this%watsat_col(c,lev)    = 0.51_r8
                 tkm                       = (1._r8-om_frac) * (8.80_r8*sand+2.92_r8*clay)/(sand+clay)+om_tkm*om_frac ! W/(m K)
                 !this%bsw_col(c,lev)       = (1._r8-om_frac) * (2.91_r8 + 0.159_r8*clay) + om_frac*om_b
-		this%bsw_col(c,lev)       = 9_r8
+		this%bsw_col(c,lev)       = 10_r8
                 !this%sucsat_col(c,lev)    = (1._r8-om_frac) * this%sucsat_col(c,lev) + om_sucsat*om_frac
-		this%sucsat_col(c,lev)    = 600.0_r8
+		this%sucsat_col(c,lev)    = 200.0_r8
                 this%hksat_min_col(c,lev) = xksat
 
                 ! perc_frac is zero unless perf_frac greater than percolation threshold
@@ -706,7 +744,8 @@ contains
                 else
                    uncon_hksat = 0._r8
                 end if
-                this%hksat_col(c,lev)  = hksat_adj * (uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat)
+                !this%hksat_col(c,lev)  = uncon_frac*uncon_hksat + (perc_frac*om_frac)*om_hksat
+		this%hksat_col(c,lev)  = this%hksat_adj_col(c) * this%hksat_obs_col(c,lev)
 
                 this%tkmg_col(c,lev)   = tkm ** (1._r8- this%watsat_col(c,lev))           
 
