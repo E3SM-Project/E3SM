@@ -13,11 +13,12 @@ void Functions<S,D>
 ::cloud_water_conservation(const Spack& qc, const Spack& qcnuc,const Scalar dt,
    Spack& qcaut, Spack& qcacc, Spack &qccol, Spack& qcheti, Spack& qcshd, Spack& qiberg, Spack& qisub, Spack& qidep)
 {
+  constexpr Scalar qtendsmall = scream::p3::Constants<Scalar>::QTENDSMALL;
   const auto sinks = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt; // Sinks of cloud water
   const auto sources = qc + (qcnuc)*dt; // Source of cloud water
   Spack ratio;
 
-  Smask enforce_conservation  = sinks > sources && sinks >= C::QTENDSMALL;  // determine if  conservation corrction is necessary
+  Smask enforce_conservation  = sinks > sources && sinks >= qtendsmall;  // determine if  conservation corrction is necessary
   Smask nothing_todo = !enforce_conservation;
 
   if (enforce_conservation.any()){
