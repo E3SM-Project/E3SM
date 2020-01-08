@@ -182,23 +182,24 @@ class SystemTestsCommon(object):
                 # If overall things did not pass, offer the user some insight into what might have broken things
                 overall_status = self._test_status.get_overall_test_status(ignore_namelists=True)
                 if overall_status != TEST_PASS_STATUS:
+                    srcroot = self._case.get_value("CIMEROOT")
                     worked_before, last_pass, last_fail = \
-                        get_test_success(baseline_root, self._case.get_value("CIMEROOT"), self._casebaseid)
+                        get_test_success(baseline_root, srcroot, self._casebaseid)
 
                     if worked_before:
                         if last_pass is not None:
                             # commits between last_pass and now broke things
-                            stat, out, err = run_cmd("git rev-list --first-parent {} {}".format(last_pass, "HEAD"))
+                            stat, out, err = run_cmd("git rev-list --first-parent {} {}".format(last_pass, "HEAD"), from_dir=srcroot)
                             if stat == 0:
-                                append_testlog("NEW FAIL: Potentially broken merges:\n{}\n{}".format(out, err), self._orig_caseroot)
+                                append_testlog("NEW FAIL: Potentially broken merges:\n{}".format(out), self._orig_caseroot)
                             else:
                                 logger.warning("Unable to list potentially broken merges: {}\n{}".format(out, err))
                     else:
                         if last_pass is not None and last_fail is not None:
                             # commits between last_pass and last_fail broke things
-                            stat, out, err = run_cmd("git rev-list --first-parent {} {}".format(last_pass, last_fail))
+                            stat, out, err = run_cmd("git rev-list --first-parent {} {}".format(last_pass, last_fail), from_dir=srcroot)
                             if stat == 0:
-                                append_testlog("OLD FAIL: Potentially broken merges:\n{}\n{}".format(out, err), self._orig_caseroot)
+                                append_testlog("OLD FAIL: Potentially broken merges:\n{}".format(out), self._orig_caseroot)
                             else:
                                 logger.warning("Unable to list potentially broken merges: {}\n{}".format(out, err))
 
