@@ -139,6 +139,7 @@ module VegetationPropertiesType
      real(r8), allocatable :: nstor(:)            !Nitrogen storage pool timescale 
      real(r8), allocatable :: br_xr(:)            !Base rate for excess respiration
      real(r8)              :: tc_stress           !Critial temperature for moisture stress
+     real(r8)              :: fpi_max           !maximum fraction of precipitation intercepted
 
 
    contains
@@ -177,6 +178,7 @@ contains
     use pftvarcon , only : fnr, act25, kcha, koha, cpha, vcmaxha, jmaxha, tpuha
     use pftvarcon , only : lmrha, vcmaxhd, jmaxhd, tpuhd, lmrse, qe, theta_cj
     use pftvarcon , only : bbbopt, mbbopt, nstor, br_xr, tc_stress, lmrhd 
+    use pftvarcon , only : fpi_max
     !
     
     class (vegetation_properties_type) :: this
@@ -421,7 +423,8 @@ contains
     this%lamda_ptase   = lamda_ptase
 
     this%tc_stress     = tc_stress
-     
+    this%fpi_max       = fpi_max
+       
   end subroutine veg_vp_init
 
 end module VegetationPropertiesType
