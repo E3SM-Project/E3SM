@@ -6,7 +6,7 @@ from CIME.XML.env_run import EnvRun
 from CIME.utils import append_testlog, get_model, safe_copy, get_timestamp, CIMEError
 from CIME.test_status import *
 from CIME.hist_utils import *
-from CIME.provenance import save_test_time
+from CIME.provenance import save_test_time, get_test_success
 from CIME.locked_files import LOCKED_DIR, lock_file, is_locked
 import CIME.build as build
 
@@ -173,14 +173,40 @@ class SystemTestsCommon(object):
             with self._test_status:
                 self._test_status.set_status(RUN_PHASE, status, comments=("time={:d}".format(int(time_taken))))
 
-            if success and get_model() == "e3sm":
-                save_test_time(self._case.get_value("BASELINE_ROOT"), self._casebaseid, time_taken)
+            if get_model() == "e3sm":
+                # If run phase worked, remember the time it took in order to improve later walltime ests
+                baseline_root = self._case.get_value("BASELINE_ROOT")
+                if success:
+                    save_test_time(baseline_root, self._casebaseid, time_taken)
+
+                # If overall things did not pass, offer the user some insight into what might have broken things
+                overall_status = self._test_status.get_overall_test_status(ignore_namelists=True)
+                if overall_status != TEST_PASS_STATUS:
+                    worked_before, last_pass, last_fail = \
+                        get_test_success(baseline_root, self._case.get_value("CIMEROOT"), self._casebaseid)
+
+                    if worked_before:
+                        if last_pass is not None:
+                            # commits between last_pass and now broke things
+                            stat, out, err = run_cmd("git rev-list --first-parent {} {}".format(last_pass, "HEAD"))
+                            if stat == 0:
+                                append_testlog("NEW FAIL: Potentially broken merges:\n{}".format(out), self._orig_caseroot)
+                            else:
+                                logger.warning("Unable to list potentially broken merges: {}\n{}".format(out, err))
+                    else:
+                        if last_pass is not None and last_fail is not None:
+                            # commits between last_pass and last_fail broke things
+                            stat, out, err = run_cmd("git rev-list --first-parent {} {}".format(last_pass, last_fail))
+                            if stat == 0:
+                                append_testlog("OLD FAIL: Potentially broken merges:\n{}".format(out), self._orig_caseroot)
+                            else:
+                                logger.warning("Unable to list potentially broken merges: {}\n{}".format(out, err))
 
             if get_model() == "cesm" and self._case.get_value("GENERATE_BASELINE"):
                 baseline_dir = os.path.join(self._case.get_value("BASELINE_ROOT"), self._case.get_value("BASEGEN_CASE"))
                 generate_teststatus(self._caseroot, baseline_dir)
 
-        # We return success if the run phase worked; memleaks, diffs will not be taken into account
+        # We return success if the run phase worked; memleaks, diffs will NOT be taken into account
         # with this return value.
         return success
 
