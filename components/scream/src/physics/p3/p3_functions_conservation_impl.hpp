@@ -13,11 +13,11 @@ void Functions<S,D>
 ::cloud_water_conservation(const Spack& qc, const Spack& qcnuc,const Scalar dt,
    Spack& qcaut, Spack& qcacc, Spack &qccol, Spack& qcheti, Spack& qcshd, Spack& qiberg, Spack& qisub, Spack& qidep)
 {
-  constexpr Scalar qtendsmall = scream::p3::Constants<Scalar>::QTENDSMALL;
   const auto sinks = (qcaut+qcacc+qccol+qcheti+qcshd+qiberg)*dt; // Sinks of cloud water
   const auto sources = qc + (qcnuc)*dt; // Source of cloud water
   Spack ratio;
 
+  constexpr Scalar qtendsmall = scream::p3::Constants<Scalar>::QTENDSMALL;
   Smask enforce_conservation  = sinks > sources && sinks >= qtendsmall;  // determine if  conservation corrction is necessary
   Smask nothing_todo = !enforce_conservation;
 
@@ -57,7 +57,8 @@ void Functions<S,D>
   const auto sources = qr + (qcaut+qcacc+qimlt+qcshd)*dt; // Sources of rain water
   Spack ratio;
 
-  Smask enforce_conservation  = sinks > sources && sinks >= C::QTENDSMALL;  // determine if  conservation corrction is necessary
+  constexpr Scalar qtendsmall = scream::p3::Constants<Scalar>::QTENDSMALL;
+  Smask enforce_conservation  = sinks > sources && sinks >= qtendsmall;  // determine if  conservation corrction is necessary
 
   if (enforce_conservation.any()){
     ratio.set(enforce_conservation, sources/sinks);
@@ -76,8 +77,8 @@ void Functions<S,D>
   const auto sinks = (qisub+qimlt)*dt; // Sinks of ice water
   const auto sources = qitot + (qidep+qinuc+qrcol+qccol+qrheti+qcheti+qiberg)*dt; // Sources of ice water
   Spack ratio;
-
-  Smask enforce_conservation  = sinks > sources && sinks >= C::QTENDSMALL;  // determine if  conservation corrction is necessary
+  constexpr Scalar qtendsmall = scream::p3::Constants<Scalar>::QTENDSMALL;
+  Smask enforce_conservation  = sinks > sources && sinks >= qtendsmall;  // determine if  conservation corrction is necessary
   if(enforce_conservation.any()){
     ratio.set(enforce_conservation, sources/sinks);
     qisub.set(enforce_conservation, qisub*ratio);
