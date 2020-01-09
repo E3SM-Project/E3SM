@@ -1268,6 +1268,20 @@
 					possible_values=".true. or .false."
 		/>
 	</nml_record>
+        <nml_record name="semi_implicit_ts" mode="forward">
+                <nml_option name="config_btr_si_preconditioner" type="character" default_value="ras" units="unitless"
+                                        description="Type of preconditioner for the barotropic mode solver"
+                                        possible_values="ras, block_jacobi, jacobi, none"
+                />
+                <nml_option name="config_btr_si_tolerance" type="real" default_value="1.0e-9" units="unitless"
+                                        description="Tolerance for the barotropic mode solver"
+                                        possible_values="any positive real, but typically less than 1.0e-9"
+                />
+                <nml_option name="config_n_btr_si_outer_iter" type="integer" default_value="2" units="unitless"
+                                        description="number of outer iterations"
+                                        possible_values="any positive integer, but typically 2"
+                />
+        </nml_record>
 	<nml_record name="testing" mode="forward">
 		<nml_option name="config_conduct_tests" type="logical" default_value=".false." units="unitless"
 					description="If true, run testing suite. This is the overarching control on the test suite. Individual flags must be set to true below to conduct each test."
