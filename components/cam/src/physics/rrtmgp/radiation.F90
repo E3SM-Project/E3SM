@@ -1162,6 +1162,9 @@ contains
       ! for columns beyond ncol or nday
       qrsc(:,:) = 0
       qrlc(:,:) = 0
+
+      ! Before we do anything, check temperature range
+      call check_range(state, state%t(1:ncol,1:pver), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), 'state%t')
      
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
@@ -1241,6 +1244,29 @@ contains
       end if
 
    end subroutine radiation_tend
+
+   subroutine check_range(state, v, vmin, vmax, vname)
+      use physconst, only: pi
+      use physics_types, only: physics_state
+      use cam_abortutils, only: endrun
+      type(physics_state), intent(in) :: state
+      real(r8), intent(in) :: v(:,:), vmin, vmax
+      character(len=*), intent(in) :: vname
+      real(r8) :: lat, lon
+      integer :: ix, iz
+      do iz = 1,size(v, 2)
+         do ix = 1,size(v, 1)
+            if (v(ix,iz) < vmin .or. v(ix,iz) > vmax) then
+               lat = state%lat(ix) * 180._r8 / pi
+               lon = state%lon(ix) * 180._r8 / pi
+               print *, 'Variable ' // trim(vname) // &
+                        ' out of range; value = ', v(ix,iz), &
+                        '; lat/lon = ', lat, lon
+               call endrun('check_range failed for ' // trim(vname))
+            end if
+         end do
+      end do
+   end subroutine check_range
 
    !----------------------------------------------------------------------------
 
@@ -1372,6 +1398,8 @@ contains
                          pmid(1:nday,1:nlev_rad), &
                          pint(1:nday,1:nlev_rad+1), &
                          col_indices=day_indices(1:nday))
+
+      call check_range(state, tmid(1:nday,1:nlev_rad), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), 'tmid')
 
       ! Get albedo. This uses CAM routines internally and just provides a
       ! wrapper to improve readability of the code here.
@@ -1562,6 +1590,8 @@ contains
                          pmid(1:ncol,1:nlev_rad), &
                          pint(1:ncol,1:nlev_rad+1))
        
+      call check_range(state, tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), 'tmid')
+
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
       ! RRTMG implementation also sets this to 1. This probably does not make
