@@ -364,6 +364,15 @@ OnlyPack<PackType> pow (const PackType& a, const ScalarType/*&*/ b) {
   return s;
 }
 
+template <typename ScalarType, typename PackType>
+KOKKOS_INLINE_FUNCTION
+OnlyPack<PackType> pow (const ScalarType& a, const PackType/*&*/ b) {
+  PackType s;
+  vector_simd for (int i = 0; i < PackType::n; ++i)
+    s[i] = std::pow<typename PackType::scalar>(a, b[i]);
+  return s;
+}
+
 template <typename PackType>
 KOKKOS_INLINE_FUNCTION
 OnlyPack<PackType> shift_right (const PackType& pm1, const PackType& p) {
