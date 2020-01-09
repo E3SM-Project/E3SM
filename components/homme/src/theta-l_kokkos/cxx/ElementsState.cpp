@@ -218,7 +218,7 @@ void ElementsState::randomize(const int seed,
     for (int i=0; i<NUM_PHYSICAL_LEV; ++i) {
       p[i+1] = data[i];
     }
-    p[0] = ps0;
+    p[0] = ps0*hyai0;
     p[NUM_INTERFACE_LEV-1] = max_pressure;
 
     // Put in monotonic order
@@ -286,6 +286,7 @@ void ElementsState::randomize(const int seed,
     hvcoord.compute_ps_ref_from_dp(kv,Homme::subview(dp,ie,tl),
                                       Homme::subview(ps,ie,tl));
   });
+  ExecSpace::fence();
 }
 
 void ElementsState::pull_from_f90_pointers (CF90Ptr& state_v,         CF90Ptr& state_w_i,
