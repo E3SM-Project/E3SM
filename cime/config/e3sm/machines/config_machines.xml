@@ -535,13 +535,13 @@
     <GMAKE_J>4</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <BATCH_SYSTEM>none</BATCH_SYSTEM>
-    <SUPPORTED_BY>jayesh at mcs dot anl dot gov</SUPPORTED_BY>
+    <SUPPORTED_BY>dfmartin at lbl dot gov</SUPPORTED_BY>
     <MAX_TASKS_PER_NODE>4</MAX_TASKS_PER_NODE>
     <MAX_MPITASKS_PER_NODE>2</MAX_MPITASKS_PER_NODE>
     <mpirun mpilib="default">
       <executable>mpirun</executable>
       <arguments>
-        <arg name="num_tasks"> -np {{ total_tasks }}</arg>
+        <arg name="num_tasks"> -hostfile ~/hostfile.e3sm -np {{ total_tasks }}</arg>
       </arguments>
     </mpirun>
     <module_system type="none"/>

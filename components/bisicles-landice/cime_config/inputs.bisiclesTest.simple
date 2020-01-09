@@ -119,4 +119,4 @@ JFNKSolver.switchRate = 2.0
 #JFNKSolver.repartition_petsc = 1
 
 #input file for solver benchmark
-main.filename = stream.L1L2.0032.r2.l0.000000.2d.hdf5
+#main.filename = stream.L1L2.0032.r2.l0.000000.2d.hdf5

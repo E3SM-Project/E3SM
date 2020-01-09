@@ -249,7 +249,7 @@ contains
     c_inputFilename = "inputs.bisiclesTest"
 
     cur_time = 0.0
-    call bike_driver_init(mpicom_g,c_inputFilename)
+    call bike_driver_init(mpicom_g, currTime, c_inputFilename)
 
 #if 1
 #if (defined _MEMTRACE)

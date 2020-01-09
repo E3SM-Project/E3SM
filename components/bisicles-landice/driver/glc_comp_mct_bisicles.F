@@ -242,8 +242,9 @@ contains
 !!!
     call MPI_comm_rank(mpicom_g,iam,ierr)
 
-    call bike_driver_init(mpicom_g)
+    call bike_driver_init(mpicom_g, currTime)
 
+    print
 
 !!!#if (defined _MEMTRACE)
 !!!     if(iam == 0) then

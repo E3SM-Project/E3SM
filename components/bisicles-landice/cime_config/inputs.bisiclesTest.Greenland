@@ -1,0 +1,256 @@
+#temporary directory for pout. files
+main.poutBaseName = GreenlandOut
+
+#domain details
+main.domain_size = 1536.0e+3 2764.8e+3 1.0e+3
+#amr.num_cells = 10240 18432 10 #full data resolution
+amr.num_cells = 160 288 10 #1/64 res
+main.max_box_size = 1024
+amr.is_periodic = 0 0 0
+
+#bulk constitutive relation and parameters
+main.constitutiveRelation = L1L2
+main.rateFactor = patersonRate
+PatersonRate.epsSqr0 = 1.0e-12
+
+#geometry,temperarture & basal friction input data
+geometry.problem_type = LevelData
+geometry.beta_type = LevelData
+muCoefficient.type = LevelData
+temperature.type = LevelData
+
+amr.sigma = 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
+
+inputLevelData.geometryFile = ../../../cesm-inputdata/glc/bisiclesli/GIS/bedmachine2015withfjord.hdf5
+#inputLevelData.geometryFile = ../../../cesm-inputdata/glc/bisiclesli/GIS/greenland-morlighem-150m-gauss-adjust.hdf5
+inputLevelData.frictionFile = ../../../cesm-inputdata/glc/bisiclesli/GIS/Greenland-betaGrown-300m.hdf5
+inputLevelData.muCoefFile = ../../../cesm-inputdata/glc/bisiclesli/GIS/greenland-fric300m-bvel.hdf5
+inputLevelData.temperatureFile = ../../../cesm-inputdata/glc/bisiclesli/GIS/greenland-temperature-4.8km-morl.hdf5
+inputLevelData.thicknessName = thk
+inputLevelData.topographyName = topg
+inputLevelData.frictionName = beta
+#inputLevelData.frictionName = Cwshelf
+inputLevelData.muCoefName = muCoef
+inputLevelData.temperatureName = temp000000
+
+#basal friction relation parameters
+main.basalFrictionRelation = powerLaw
+#main.basalFrictionRelation = pressureLimitedLaw
+#BasalFrictionPressureLimitedLaw.coefficient = 0.5
+#BasalFrictionPressureLimitedLaw.basalFrictionRelation = powerLaw
+BasalFrictionPowerLaw.m = 1.0
+
+#physical constants
+constants.ice_density=917.0
+constants.sea_water_density=1023.0
+
+#surface fluxes
+#surfaceFlux.type = constantFlux
+#surfaceFlux.flux_value = 0.3
+
+surfaceFlux.type = LevelData
+surfaceFlux.n = 1
+surfaceFlux.timeStep = 1.0e+10
+surfaceFlux.startTime = 0.0
+surfaceFlux.fileFormat = ../../../cesm-inputdata/glc/bisiclesli/GIS/greenland-HIRHAM-1997-2006-4.8km-morl.hdf5
+surfaceFlux.name = smb
+
+basalFlux.type =  maskedFlux
+basalFlux.grounded.type = zeroFlux
+
+basalFlux.floating.type = compositeFlux
+basalFlux.floating.nElements = 3
+
+basalFlux.floating.element0.type = boxBoundedFlux
+basalFlux.floating.element0.hi = 1.025e6 2.76e6
+basalFlux.floating.element0.lo = 0.0 1.175e6 
+basalFlux.floating.element0.flux.type = piecewiseLinearFlux 
+basalFlux.floating.element0.flux.n = 2 
+basalFlux.floating.element0.flux.abscissae = 60.0 450.0 
+basalFlux.floating.element0.flux.ordinates = 0.0 -25.0 
+
+basalFlux.floating.element1.type = boxBoundedFlux
+basalFlux.floating.element1.hi = 1.53e6 2.76e6
+basalFlux.floating.element1.lo = 1.025e6 1.175e6 
+basalFlux.floating.element1.flux.type = piecewiseLinearFlux 
+basalFlux.floating.element1.flux.n = 2 
+basalFlux.floating.element1.flux.abscissae = 200.0 450.0 
+basalFlux.floating.element1.flux.ordinates = 0.0 -25.0 
+
+basalFlux.floating.element2.type = boxBoundedFlux
+basalFlux.floating.element2.hi = 1.53e6 1.175e6
+basalFlux.floating.element2.lo = 0.0 0.0 
+basalFlux.floating.element2.flux.type = piecewiseLinearFlux 
+basalFlux.floating.element2.flux.n = 3 
+basalFlux.floating.element2.flux.abscissae = 200.0 600.0 2000.0 
+basalFlux.floating.element2.flux.ordinates = 0.0 -182.0 -952.0 
+
+basalFlux.openLand.type = zeroFlux
+
+#calving model
+CalvingModel.type = FixedFrontCalvingModel
+CalvingModel.min_thickness = 0.0
+#CalvingModel.type = DomainEdgeCalvingModel
+#CalvingModel.front_lo = 1 1 
+#CalvingModel.front_hi = 1 1
+#CalvingModel.preserveSea = true
+#CalvingModel.preserveLand = false 
+
+# Remove icebergs
+amr.eliminate_remote_ice = true
+# Hold ice shelf thickness to calculate melt rates
+#amr.floating_ice_stable = true
+# Write out thickness equation terms, ie melt
+
+#velocity solve type -- 0 = Picard, 1 = JFNK
+amr.velocity_solver_type = 1
+#amr.velocity_solve_interval = 4
+
+#initial guess 
+amr.do_initial_velocity_guess = 1
+amr.do_initial_velocity_solve = 1
+amr.initial_velocity_guess_type = 1 # linear PDE
+amr.initial_velocity_guess_const_mu = 1.0e+6
+amr.initial_velocity_guess_solver_type = 1 # use JFNK solver's linear mode
+
+#JFNK parameters
+JFNKSolver.vtopSafety = 0.95
+JFNKSolver.minPicardIterations = 3
+JFNKSolver.maxIter = 15
+JFNKSolver.absTol = 1.0e-1
+JFNKSolver.relTol = 1.0e-4
+#JFNKSolver.solverType = 0 #Relax solver
+JFNKSolver.RelaxRelTol = 1.0e-3
+JFNKSolver.RelaxHang = 0.9
+JFNKSolver.maxRelaxIter = 25
+JFNKSolver.normType = 0
+JFNKSolver.verbosity = 5
+JFNKSolver.vtopRelaxTol = 0.005
+JFNKSolver.vtopRelaxMinIter = 4
+JFNKSolver.numMGSmooth = 8
+JFNKSolver.numMGIter = 1
+JFNKSolver.h = 0.025
+JFNKSolver.switchRate = 2.0
+#JFNKSolver.writeResiduals = true
+#JFNKSolver.muMin = 1.0e+4
+#JFNKSolver.uMaxAbs = 1.0e+6
+JFNKSolver.bottom_solver_type = 1
+JFNKSolver.solverType = 4
+
+
+amr.restart_file = ../../../cesm-inputdata/glc/bisiclesli/GIS/chk.GrIS.150m.l1l2.4lev.004974.2d.hdf5
+
+#time stepping
+#main.maxTime = 120  # maximum time to run to
+main.maxTime = 220  # maximum time to run to
+main.maxStep = 10000   # maximum number of steps to runx
+#main.maxStep = 10   # maximum number of steps to runx
+amr.temporal_accuracy = 1
+amr.cfl = 0.25  
+amr.initial_cfl = 0.25  
+amr.max_dt_grow_factor = 1.1 
+#amr.time_step_ticks = 1
+
+#plotting options
+amr.plot_interval = 1
+#amr.plot_time_interval = 1.0
+amr.plot_prefix = plot.GrIS.1.2km.relax.
+#amr.write_preSolve_plotfiles = true
+amr.plot_style_amr = true
+
+# Write specific fields
+#amr.write_thickness_sources = true
+#amr.write_mask = true
+#amr.write_solver_rhs = 1
+amr.write_ismip6 = true
+amr.write_flux_velocities = false
+amr.write_dHDt = true
+
+#check points
+amr.check_interval = 5000
+amr.check_prefix = chk.GrIS.150m.relax.
+amr.check_overwrite = 0
+amr.verbosity = 5
+
+amr.report_sum_grounded_ice = true
+amr.report_ice_area = true
+amr.report_total_flux = true
+amr.report_discharge = true
+amr.report_calving = true
+
+#AMR mesh options
+amr.maxLevel = 10 # finest level allowed in simulation
+amr.ref_ratio = 2 2 2 2 2 2 2 2 2 2 2
+amr.regrid_interval = 8  # number of timesteps between regridding
+amr.blockFactor = 32      # block factor used in grid generation
+amr.fill_ratio = 0.8    # how efficient are the grids
+amr.nestingRadius = 1    # proper nesting radius required
+amr.tags_grow =  4        # amount to buffer tags
+amr.max_vel_dx = 5.0e5
+
+amr.tag_vel_dx = 1
+amr.vel_dx_tagging_val = 5.0e5
+amr.vel_dx_finest_level_grounded = 6
+amr.vel_dx_finest_level_floating = 6
+
+#amr.tagSubsetBoxesFile = tag_subset.GrIS
+amr.tagCap = 2
+
+#amr.interpolate_zb = 0 #go back to the IBC to regrid geometry
+amr.max_box_size = 64 # largest box length allowed
+
+#AMR tagging
+amr.tag_on_grad_velocity = 0
+
+amr.tag_on_grounded_laplacian_velocity = 1 
+amr.lap_vel_tagging_val = 50
+amr.lap_vel_tagging_max_basal_friction_coef = 500
+
+amr.tag_grounding_line = 1
+amr.grounding_line_tagging_min_vel = 20
+amr.grounding_line_tagging_max_basal_friction_coef = 500
+
+amr.tag_ice_margin = 1
+amr.margin_finest_level = 3
+amr.grounding_line_subdivision = 4
+
+#misc options
+amr.verbosity = 5
+
+l1l2.solverTolerance = 1.0e-5 # Nonlinear solver tolerance. Default value is 1e-6. 
+
+amr.wallDrag = true
+amr.wallDragExtra = 0.0
+
+#amr.output_file_numbering = time_yyyymmdd_360
+amr.output_file_numbering = time_step
+#amr.restart_set_time = true
+#amr.restart_time = 2000
+
+amr.plot_style_cf = true # cf comptible output with time averaging
+
+#CFIO.land_ice_surface_velocity = true
+#CFIO.surface_altitude = true
+#CFIO.bedrock_altitude = true
+#CFIO.land_ice_basal_velocity = true
+#CFIO.land_ice_surface_velocity = true
+#CFIO.land_ice_area_fraction = true
+#CFIO.grounded_ice_sheet_area_fraction = true
+#CFIO.floating_ice_sheet_area_fraction = true
+#CFIO.temperature_at_top_of_ice_sheet_model = true
+#CFIO.temperature_at_base_of_ice_sheet_model = false
+#CFIO.temperature_at_base_of_grounded_ice_sheet_model = true
+#CFIO.temperature_at_base_of_floating_ice_sheet_model = true
+#CFIO.land_ice_specific_mass_flux_due_to_calving = true
+#CFIO.land_ice_specific_mass_balance_flux = true
+#CFIO.land_ice_basal_specific_mass_balance_flux = false
+#CFIO.land_ice_basal_specific_mass_balance_flux_grounded_ice = true
+#CFIO.land_ice_basal_specific_mass_balance_flux_floating_ice = true
+#CFIO.magnitude_of_basal_drag_at_land_ice_base = true
+#CFIO.upward_geothermal_heat_flux_at_ground_level_in_land_ice = false
+
+CFIO.whole_domain_diagnostics = true
+CFIO.level = 3
+CRS.EPSG = 3413 # EPSG is the only system supported for now
+CRS.origin_x = 654650.0
+CRS.origin_y = 3385950.0
