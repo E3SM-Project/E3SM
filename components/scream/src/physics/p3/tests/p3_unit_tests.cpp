@@ -311,6 +311,49 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 
   }
 
+  
+  static void ice_water_conservation_tests_device(){
+    using KTH = KokkosTypes<HostDevice>;
+
+    IceWaterConservationData iwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0}};
+
+    // Sync to device
+    KTH::view_1d<IceWaterConservationData> iwdc_host("iwdc_host", 1);
+    view_1d<IceWaterConservationData> iwdc_device("iwdc_host", 1);
+
+    // This copy only copies the input variables.
+    std::copy(&iwdc[0], &iwdc[0] + 1, iwdc_host.data());
+    Kokkos::deep_copy(iwdc_device, iwdc_host);
+
+    // Run the lookup from a kernel and copy results back to host
+    Kokkos::parallel_for(RangePolicy(0, 1), KOKKOS_LAMBDA(const Int& i) {
+      Spack qitot(iwdc_device(0).qitot);
+      Spack qidep(iwdc_device(0).qidep);
+      Spack qinuc(iwdc_device(0).qinuc);
+      Spack qrcol(iwdc_device(0).qrcol);
+      Spack qccol(iwdc_device(0).qccol);
+      Spack qrheti(iwdc_device(0).qrheti);
+      Spack qcheti(iwdc_device(0).qcheti);
+      Spack qiberg(iwdc_device(0).qiberg);
+      Spack qisub(iwdc_device(0).qisub);
+      Spack qimlt(iwdc_device(0).qimlt);
+
+      Functions::ice_water_conservation(qitot, qidep, qinuc, qrcol, qccol, qrheti, qcheti, qiberg, iwdc_device(0).dt, qisub, qimlt);
+
+      iwdc_device(0).qitot = qitot[0];
+      iwdc_device(0).qidep = qidep[0];
+      iwdc_device(0).qinuc = qinuc[0];
+      iwdc_device(0).qrcol = qrcol[0];
+      iwdc_device(0).qccol = qccol[0];
+      iwdc_device(0).qrheti = qrheti[0];
+      iwdc_device(0).qcheti = qcheti[0];
+      iwdc_device(0).qiberg = qiberg[0];
+      iwdc_device(0).qisub = qisub[0];
+      iwdc_device(0).qimlt = qimlt[0];
+    });
+
+  }
+
   KOKKOS_FUNCTION static void ice_water_conservation_tests(int& errors){
 
     Spack qitot(1e-5);
@@ -350,6 +393,8 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     cloud_water_conservation_tests_device();
 
     rain_water_conservation_tests_device();
+
+    ice_water_conservation_tests_device();
     //int nerr = 0;
 
     //TeamPolicy policy(util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, 1));
