@@ -360,7 +360,7 @@ contains
     tl%n0    = n0_c  + 1
     tl%np1   = np1_c + 1
 
-    if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep) then
+    if (MODULO(tl%nstep,statefreq)==0 .or. tl%nstep >= nextOutputStep .or. compute_diagnostics) then
       ! Set pointers to states
       elem_state_v_ptr         = c_loc(elem_state_v)
       elem_state_w_i_ptr       = c_loc(elem_state_w_i)
