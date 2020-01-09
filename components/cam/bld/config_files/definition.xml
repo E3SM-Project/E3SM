@@ -26,6 +26,9 @@ Component interfaces: mct or esmf.  Default: mct.
 <entry id="dyn" valid_values="eul,sld,fv,homme,se" value="">
 Dynamics package: eul, sld, fv, or se.
 </entry>
+<entry id="dyn_target" valid_values="preqx,theta-l,preqx_acc,preqx_kokkos" value="">          
+SE dynamical core option.
+</entry>        
 <entry id="waccm_phys" valid_values="0,1" value="0">
 Switch to turn on waccm physics: 0 => no, 1 => yes.
 </entry>
