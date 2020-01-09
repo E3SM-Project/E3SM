@@ -40,7 +40,7 @@ void Functions<S,D>
   //"ratio" of timestep and vapor deposition and sublimation  for the
   //remaining frac of the timestep.  Only limit if there will be cloud
   // water to begin with.
-  enforce_conservation = sources > C::QTENDSMALL;
+  enforce_conservation = sources > qtendsmall;
   if (enforce_conservation.any()){
     qidep.set(enforce_conservation, qidep*(1.0-ratio));
     qisub.set(enforce_conservation, qisub*(1.0-ratio));

@@ -84,7 +84,7 @@ struct UnitWrap::UnitTest<D>::TestP3Func
       if (abs(sat_ice_p[s] - correct_sat_ice_p) >  cond_ice_p*C::Tol * abs(correct_sat_ice_p)){errors++;}
       if (abs(sat_liq_p[s] - correct_sat_liq_p) >  cond_liq_p*C::Tol * abs(correct_sat_liq_p)){errors++;}
       //Test mixing-ratios
-      if (abs(mix_ice_r[s] -  correct_mix_ice_r) >   cond_ice_r[s] * C::Tol * abs(correct_mix_ice_r)) {errors++; std::cout << mix_ice_r[s] -  correct_mix_ice_r <<  "\t" << C::Tol * abs(correct_mix_ice_r) << "\n";}
+      if (abs(mix_ice_r[s] -  correct_mix_ice_r) >   cond_ice_r[s] * C::Tol * abs(correct_mix_ice_r)) {errors++;}
       if (abs(mix_liq_r[s] -  correct_mix_liq_r) >   cond_liq_r[s] * C::Tol * abs(correct_mix_liq_r)) {errors++;}
     }
   }
@@ -121,7 +121,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
 {
 
 
-  KOKKOS_FUNCTION static void cloud_water_conservation_tests_device(){
+   static void cloud_water_conservation_tests_device(){
 
     using KTH = KokkosTypes<HostDevice>;
 
@@ -226,7 +226,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
   }
 
 
-  KOKKOS_FUNCTION static void rain_water_conservation_tests_device(){
+  static void rain_water_conservation_tests_device(){
      using KTH = KokkosTypes<HostDevice>;
 
      RainWaterConservationData rwdc[1] = {{sp(1e-5), 0.0, 0.0, 0.0, 0.0, sp(1.1), sp(1e-4), 0.0, 0.0 }};
