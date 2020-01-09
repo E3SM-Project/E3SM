@@ -2,11 +2,16 @@
 #include "control/atmosphere_driver.hpp"
 #include "share/mpi/scream_comm.hpp"
 #include "share/parameter_list.hpp"
+#include "share/scream_session.hpp"
 
 extern "C"
 {
 
 void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start_tod) {
+
+  // First of all, initialize the scream session
+  scream::initialize_scream_session();
+
   // // Get the context
   // auto& c = scream::ScreamContext::singleton();
 
