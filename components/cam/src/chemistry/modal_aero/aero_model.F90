@@ -2437,8 +2437,12 @@ do_lphase2_conditional: &
 !
 ! Aerosol processes ...
 !
-    call qqcw2vmr( lchnk, vmrcw, mbar, ncol, loffset, pbuf )
 
+   !Guangxing Lin  
+   ! call qqcw2vmr( lchnk, vmrcw, mbar, ncol, loffset, pbuf )
+   
+    vmrcw(:ncol,:,:) = vmr(:ncol, :,:) 
+    !Guangxing Lin End 
     dvmrdt(:ncol,:,:) = vmr(:ncol,:,:)
     dvmrcwdt(:ncol,:,:) = vmrcw(:ncol,:,:)
 
@@ -2584,16 +2588,17 @@ do_lphase2_conditional: &
 
     endif ! (mam_amicphys_optaa <= 0 OR > 0)
 
-
-    call vmr2qqcw( lchnk, vmrcw, mbar, ncol, loffset, pbuf )
+    !Guangxing Lin
+    !call vmr2qqcw( lchnk, vmrcw, mbar, ncol, loffset, pbuf )
 
     ! diagnostics for cloud-borne aerosols... 
-    do n = 1,pcnst
-       fldcw => qqcw_get_field(pbuf,n,lchnk,errorhandle=.true.)
-       if(associated(fldcw)) then
-          call outfld( cnst_name_cw(n), fldcw(:,:), pcols, lchnk )
-       endif
-    end do
+    !do n = 1,pcnst
+    !   fldcw => qqcw_get_field(pbuf,n,lchnk,errorhandle=.true.)
+    !   if(associated(fldcw)) then
+    !      call outfld( cnst_name_cw(n), fldcw(:,:), pcols, lchnk )
+    !   endif
+    !end do
+    !Guangxing Lin End
 
   end subroutine aero_model_gasaerexch
 

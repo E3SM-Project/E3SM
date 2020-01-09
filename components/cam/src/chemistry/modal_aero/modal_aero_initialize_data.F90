@@ -265,7 +265,12 @@ contains
        species_class(numptr_amode(m)) = spec_class_aerosol
 
 
-       numptrcw_amode(m) = numptr_amode(m)  !use the same index for Q and QQCW arrays
+       !Guangxing Lin
+       !numptrcw_amode(m) = numptr_amode(m)  !use the same index for Q and QQCW arrays
+       call search_list_of_names(                                      &
+            xname_numptrcw(m), numptrcw_amode(m), cnst_name, pcnst )
+       !Guangxing Lin
+
        if (numptrcw_amode(m) .le. 0) then
           write(iulog,9061) 'xname_numptrcw', xname_numptrcw(m), m
           call endrun()
@@ -308,7 +313,12 @@ contains
           end if
           species_class(lmassptr_amode(l,m)) = spec_class_aerosol
 
-          lmassptrcw_amode(l,m) = lmassptr_amode(l,m)  !use the same index for Q and QQCW arrays
+          !Guangxing Lin
+          call search_list_of_names(                                  &
+               xname_massptrcw(l,m), lmassptrcw_amode(l,m), cnst_name, pcnst )
+          !lmassptrcw_amode(l,m) = lmassptr_amode(l,m)  !use the same index for Q and QQCW arrays
+          !Guangxing Lin
+
           if (lmassptrcw_amode(l,m) .le. 0) then
              write(iulog,9062) 'xname_massptrcw', xname_massptrcw(l,m), l, m
              call endrun()

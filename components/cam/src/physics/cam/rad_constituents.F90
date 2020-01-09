@@ -1958,6 +1958,54 @@ end subroutine rad_cnst_get_mam_mmr_idx
 
 !================================================================================================
 
+subroutine rad_cnst_get_mam_mmr_cw_idx(mode_idx, spec_idx, idx)
+
+   !Guangxing Lin     
+   ! Return constituent index of cloud-borne mam specie mass mixing ratio for aerosol modes in
+   ! the climate list.
+
+   ! This is a special routine to allow direct access to information in the 
+   ! constituent array inside physics parameterizations that have been passed,
+   ! and are operating over the entire constituent array.  The interstitial phase
+   ! is assumed since that's what is contained in the constituent array.
+
+   ! Arguments
+   integer, intent(in)  :: mode_idx    ! mode index
+   integer, intent(in)  :: spec_idx    ! index of specie in the mode
+   integer, intent(out) :: idx         ! index of specie in the constituent array
+
+   ! Local variables
+   integer :: m_idx
+   type(modelist_t), pointer :: mlist
+   character(len=*), parameter :: subname = 'rad_cnst_get_mam_mmr_cw_idx'
+   !-----------------------------------------------------------------------------
+
+   ! assume climate list (i.e., species are in the constituent array)
+   mlist => ma_list(0)
+
+   ! Check for valid mode index
+   if (mode_idx < 1  .or.  mode_idx > mlist%nmodes) then
+      write(iulog,*) subname//': mode_idx= ', mode_idx, '  nmodes= ', mlist%nmodes
+      call endrun(subname//': mode list index out of range')
+   end if
+
+   ! Get the index for the corresponding mode in the mode definition object
+   m_idx = mlist%idx(mode_idx)
+
+   ! Check for valid specie index
+   if (spec_idx < 1  .or.  spec_idx > modes%comps(m_idx)%nspec) then
+      write(iulog,*) subname//': spec_idx= ', spec_idx, '  nspec= ', modes%comps(m_idx)%nspec
+      call endrun(subname//': specie list index out of range')
+   end if
+
+   ! data source is cloud-borne aerosol 
+   idx    = modes%comps(m_idx)%idx_mmr_c(spec_idx)
+
+end subroutine rad_cnst_get_mam_mmr_cw_idx
+!Guangxing Lin, end     
+
+!================================================================================================
+
 subroutine rad_cnst_get_mode_num(list_idx, mode_idx, phase, state, pbuf, num)
 
    ! Return pointer to number mixing ratio for the aerosol mode from the specified
@@ -2067,6 +2115,54 @@ subroutine rad_cnst_get_mode_num_idx(mode_idx, cnst_idx)
    cnst_idx = modes%comps(m_idx)%idx_num_a
 
 end subroutine rad_cnst_get_mode_num_idx
+
+!================================================================================================
+!Guangxing Lin
+subroutine rad_cnst_get_mode_num_cw_idx(mode_idx, cnst_idx)
+
+   ! Return constituent index of mode number mixing ratio for the aerosol mode in
+   ! the climate list.
+
+   ! This is a special routine to allow direct access to information in the 
+   ! constituent array inside physics parameterizations that have been passed,
+   ! and are operating over the entire constituent array.  The interstitial phase
+   ! is assumed since that's what is contained in the constituent array.
+
+   ! Arguments
+   integer,  intent(in)  :: mode_idx    ! mode index
+   integer,  intent(out) :: cnst_idx    ! constituent index
+
+   ! Local variables
+   integer :: m_idx
+   character(len=1) :: source
+   type(modelist_t), pointer :: mlist
+   character(len=*), parameter :: subname = 'rad_cnst_get_mode_num_cw_idx'
+   !-----------------------------------------------------------------------------
+
+   ! assume climate list
+   mlist => ma_list(0)
+
+   ! Check for valid mode index
+   if (mode_idx < 1  .or.  mode_idx > mlist%nmodes) then
+      write(iulog,*) subname//': mode_idx= ', mode_idx, '  nmodes= ', mlist%nmodes
+      call endrun(subname//': mode list index out of range')
+   end if
+
+   ! Get the index for the corresponding mode in the mode definition object
+   m_idx = mlist%idx(mode_idx)
+
+   ! Check that source is 'A' which means the index is for the constituent array
+   source = modes%comps(m_idx)%source_num_c
+   if (source /= 'A') then
+      write(iulog,*) subname//': source= ', source
+      call endrun(subname//': requested mode number index not in constituent array')
+   end if
+
+   ! Return index in constituent array
+   cnst_idx = modes%comps(m_idx)%idx_num_c
+
+end subroutine rad_cnst_get_mode_num_cw_idx
+!Guangxing Lin, end
 
 !================================================================================================
 

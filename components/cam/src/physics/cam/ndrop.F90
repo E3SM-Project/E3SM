@@ -1077,8 +1077,19 @@ subroutine dropmixnuc( &
 
                ptend%q(i,:,lptr) = 0.0_r8
                ptend%q(i,top_lev:pver,lptr) = raertend(top_lev:pver)           ! set tendencies for interstitial aerosol
-               qqcw(mm)%fld(i,:) = 0.0_r8
-               qqcw(mm)%fld(i,top_lev:pver) = max(raercol_cw(top_lev:pver,mm,nnew),0.0_r8) ! update cloud-borne aerosol; HW: ensure non-negative
+               
+               !Guangxing Lin
+               if (l == 0) then   ! number
+                  call rad_cnst_get_mode_num_cw_idx(m, lptr)
+               else
+                  call rad_cnst_get_mam_mmr_cw_idx(m, l, lptr)
+               
+               ptend%q(i,:,lptr) = 0.0_r8
+               ptend%q(i,top_lev:pver,lptr) = max(raercol_cw(top_lev:pver,mm,nnew),0.0_r8)  ! set tendencies for cloud-borne aerosol
+
+               !qqcw(mm)%fld(i,:) = 0.0_r8
+               !qqcw(mm)%fld(i,top_lev:pver) = max(raercol_cw(top_lev:pver,mm,nnew),0.0_r8) ! update cloud-borne aerosol; HW: ensure non-negative
+               !Guangxing Lin, end
             end do
          end do
 
