@@ -2784,6 +2784,123 @@
 		<var name="pressureAdjustedSSH" type="real" dimensions="nCells Time" units="m"
 			 description="sea surface height adjusted by sea surface pressure"
 		/>
+                <!-- FIELD semi_implicit time stepping -->
+                <var name="barotropicCoriolisTerm" type="real" dimensions="nEdges Time" nits="m s^{-2}"
+                         description="f * uPerp for the semi-implicit time stepping"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_r0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_r1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_rh0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_rh1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_r00" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_ph0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_ph1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_v0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_v1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_s0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_s1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_sh0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_sh1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_w0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_w1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_wh0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_wh1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_q0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_q1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_qh0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_qh1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_z0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_z1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_zh0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_zh1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_t0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_t1" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
+                <var name="CGvec_y0" type="real" dimensions="nCells Time" nits="unitless"
+                         description="A vector used in the semi-implicit barotropic mode solver"
+                         packages="forwardMode;analysisMode"
+                />
 	</var_struct>
 	<var_struct name="shortwave" time_levs="1">
 		<!-- **********************************************************************

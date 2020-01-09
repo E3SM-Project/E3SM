@@ -36,6 +36,7 @@ module ocn_forward_mode
 
    use ocn_time_integration
    use ocn_time_integration_split
+   use ocn_time_integration_si
    use ocn_tendency
    use ocn_diagnostics
    use ocn_test
@@ -262,7 +263,13 @@ module ocn_forward_mode
 
       call ocn_init_routines_compute_max_level(domain)
 
-      call ocn_time_integration_split_init(domain)
+      call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
+
+      if (trim(config_time_integrator) == 'semi_implicit' ) then
+        call ocn_time_integration_si_init(domain)
+      else
+        call ocn_time_integration_split_init(domain)
+      endif
 
       call mpas_log_write(' Vertical coordinate movement is: ' // trim(config_vert_coord_movement))
 
@@ -378,6 +385,18 @@ module ocn_forward_mode
                 alarmTimeInterval=alarmTimeStep, ierr=err_tmp)
       call mpas_reset_clock_alarm(domain % clock, 'salinityDataReadAlarm', ierr=err_tmp)
 
+      endif
+
+      ! Preconditioner for the semi-implicit barotropic mode solver
+      if (config_time_integrator == 'semi_implicit' ) then
+
+         call mpas_log_write(' Building a preconditioning matrix: ')
+         call mpas_timer_start("preconditioning matrix build")
+
+         ! Building a preconditioning matrix
+         call ocn_time_integrator_si_preconditioner(domain, dt)
+
+         call mpas_timer_stop("preconditioning matrix build")
       endif
 
       call mpas_dmpar_exch_group_create(domain, 'subcycleFields')
