@@ -1578,8 +1578,8 @@ contains
     dum1 = (bfb_log10(qitot/nitot)+18._rtype)*lookup_table_1a_dum1_c-10._rtype ! For computational efficiency
     dumi = int(dum1)
     ! set limits (to make sure the calculated index doesn't exceed range of lookup table)
-    dum1 = min(dum1,real(isize))
-    dum1 = max(dum1,1.)
+    dum1 = min(dum1,real(isize,rtype))
+    dum1 = max(dum1,1._rtype)
     dumi = max(1,dumi)
     dumi = min(isize-1,dumi)
 
@@ -1587,7 +1587,7 @@ contains
     dum4  = (qirim/qitot)*3._rtype + 1._rtype
     dumii = int(dum4)
     ! set limits
-    dum4  = min(dum4,real(rimsize))
+    dum4  = min(dum4,real(rimsize,rtype))
     dum4  = max(dum4,1._rtype)
     dumii = max(1,dumii)
     dumii = min(rimsize-1,dumii)
@@ -1601,7 +1601,7 @@ contains
     endif
     dumjj = int(dum5)
     ! set limits
-    dum5  = min(dum5,real(densize))
+    dum5  = min(dum5,real(densize,rtype))
     dum5  = max(dum5,1._rtype)
     dumjj = max(1,dumjj)
     dumjj = min(densize-1,dumjj)
@@ -2243,7 +2243,7 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
       zerodegc)*kap-rho*xxlv*dv*(qsat0-qv))*2._rtype*pi/xlf)*nitot_incld
 
 
-      qimlt = max(qimlt,0.)
+      qimlt = max(qimlt,0._rtype)
       nimlt = qimlt*(nitot_incld/qitot_incld)
 
    endif
@@ -2466,7 +2466,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
          V_impact  = abs(vtrmi1-Vt_qc)
          Ri        = -(0.5e+6_rtype*D_c)*V_impact*iTc
          !               Ri        = max(1.,min(Ri,8.))
-         Ri        = max(1.,min(Ri,12._rtype))
+         Ri        = max(1._rtype,min(Ri,12._rtype))
          if (Ri.le.8.) then
             rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*Ri**2)*1000._rtype
          else
