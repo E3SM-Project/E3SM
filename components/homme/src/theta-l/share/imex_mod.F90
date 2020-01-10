@@ -144,7 +144,11 @@ contains
 
     ! dirk settings
     maxiter=20
+#ifdef HOMMEXX_BFB_TESTING
+    deltatol=1.0e-6_real_kind ! In BFB testing we can't converge due to calls of zeroulp
+#else
     deltatol=1.0e-11_real_kind  ! exit if newton increment < deltatol
+#endif
 
     !restol=1.0e-13_real_kind    ! exit if residual < restol  
     ! condition number and thus residual depends strongly on dt and min(dz)
