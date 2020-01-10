@@ -22,7 +22,7 @@ def _get_plot_fcn(backend, set_name):
         module = importlib.import_module(mod_str)
         return module.plot
 
-    except ImportError:
+    except ModuleNotFoundError:
         print(
             'Plotting for set {} with {} is not supported'.format(
                 set_name, backend))
@@ -39,13 +39,14 @@ def plot(set_name, ref, test, diff, metrics_dict, parameter):
                 'Invalid backend, choose either "vcs" or "matplotlib"/"mpl"/"cartopy"')
 
         plot_fcn = _get_plot_fcn(parameter.backend, set_name)
-        try:
-            plot_fcn(ref, test, diff, metrics_dict, parameter)
-        except Exception as e:
-            print('Error while plotting {} with backend {}'.format(set_name, parameter.backend))
-            traceback.print_exc()
-            if parameter.debug:
-                sys.exit()
+        if plot_fcn:
+            try:
+                plot_fcn(ref, test, diff, metrics_dict, parameter)
+            except Exception as e:
+                print('Error while plotting {} with backend {}'.format(set_name, parameter.backend))
+                traceback.print_exc()
+                if parameter.debug:
+                    sys.exit()
 
 def get_colormap(colormap, parameters):
     """Get the colormap (string, list for vcs, or mpl colormap obj), which can be

@@ -6,6 +6,7 @@ import cdutil
 import cdms2
 import MV2
 import acme_diags
+from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
 from acme_diags.plot import plot
 from acme_diags.derivations import acme
 from acme_diags.metrics import rmse, corr, min_cdms, max_cdms, mean

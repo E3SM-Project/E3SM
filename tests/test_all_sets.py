@@ -1,86 +1,63 @@
 import unittest
-import subprocess
-import shlex
 import os
+import re
+import shlex
 import shutil
+import subprocess
 
+def count_images(directory, file_type='png'):
+    """Count the number of images of type file_type in directory"""
+    count = 0
+    for _, __, files in os.walk(directory):
+        for f in files:
+            if f.endswith(file_type):
+                count += 1
+    return count
 
 class TestAllSets(unittest.TestCase):
 
-    def get_viewer_dir(self, output):
-        """Given output from acme_diags_driver,
-        extract the path to results_dir."""
-        for line in output.splitlines():
-            if 'viewer' in line.lower() and 'html' in line.lower():
-                viewer_dir = line
-                # get the /path/to/results_dir/viewer/index.html
-                viewer_dir = viewer_dir.split()[-1]
-                # get the /path/to/results_dir/
-                viewer_dir = viewer_dir.split('viewer')[0]
-                return viewer_dir
-        raise RuntimeError('Could not find the viewer directory from: {}'.format(output))
+    def get_results_dir(self, output):
+        """Given output from acme_diags_driver, extract the path to results_dir."""
+        for line in output:
+            match = re.search('Viewer HTML generated at (.*)viewer.*.html', line)
+            if match:
+                results_dir = match.group(1)
+                return results_dir
+        self.fail('No viewer directory listed in output: {}'.format(output))
 
-    def count_images(self, directory, file_type='png'):
-        """Count the number of images of type file_type in directory"""
-        count = 0
-        for _, __, files in os.walk(directory):
-            for f in files:
-                if f.endswith(file_type):
-                    count += 1
-        return count
+    def run_test(self, backend):
+        pth = os.path.dirname(__file__)
+        pth = os.path.join(pth, 'system')
+        cfg_pth = os.path.join(pth, 'all_sets.cfg')
+        cfg_pth = os.path.abspath(cfg_pth)
 
-    def setUp(self):
-        # The number of diag runs in all_sets.cfg
-        self.NUM_OF_DIAGS = 5
+        if backend == 'mpl':
+            backend_option = ''
+            expected_num_diags = 8
+        elif backend == 'vcs':
+            backend_option = ' --backend vcs'
+            expected_num_diags = 7
+        else:
+            raise RuntimeError('Invalid backend: {}'.format(backend))
+        # *_data_path needs to be added b/c the tests runs the diags from a different location
+        cmd = 'acme_diags_driver.py -d {}{} --reference_data_path {} --test_data_path {}'
+        cmd = cmd.format(cfg_pth, backend_option, pth, pth)
+        # This raises a CalledProcessError if cmd has a non-zero return code.
+        out = subprocess.check_output(cmd.split()).decode('utf-8').splitlines()
+
+        # count the number of pngs in viewer_dir
+        results_dir = self.get_results_dir(out)
+        count = count_images(results_dir)
+        # -1 is needed because of the E3SM logo in the viewer html
+        self.assertEqual(count - 1, expected_num_diags)
+
+        shutil.rmtree(results_dir) # remove all generated results from the diags
 
     def test_all_sets_mpl(self):
-        pth = os.path.dirname(__file__)
-        cfg_pth = os.path.join(pth, 'all_sets.cfg')
-        cfg_pth = os.path.abspath(cfg_pth)
-
-        # *_data_path needs to be added b/c the tests runs the diags from a different location
-        cmd = 'acme_diags_driver.py -d {} --reference_data_path {} --test_data_path {}'
-        cmd = cmd.format(cfg_pth, pth, pth)
-        process = subprocess.Popen(shlex.split(cmd),
-                                   stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-
-        process.wait()
-        out = process.stdout.read()
-
-        # count the number of pngs in viewer_dir
-        viewer_dir = self.get_viewer_dir(out)
-        count = self.count_images(viewer_dir)
-        # -1 is needed because of the E3SM logo in the viewer html
-        self.assertEqual(count - 1, self.NUM_OF_DIAGS)
-
-        shutil.rmtree(viewer_dir)  # remove all generated results from the diags
+        self.run_test('mpl')
 
     def test_all_sets_vcs(self):
-        pth = os.path.dirname(__file__)
-        cfg_pth = os.path.join(pth, 'all_sets.cfg')
-        cfg_pth = os.path.abspath(cfg_pth)
-
-        # *_data_path needs to be added b/c the tests runs the diags from a different location
-        cmd = 'acme_diags_driver.py -d {} --backend vcs --reference_data_path {} --test_data_path {}'
-        cmd = cmd.format(cfg_pth, pth, pth)
-        process = subprocess.Popen(shlex.split(cmd),
-                                   stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-
-        process.wait()
-        out = process.stdout.read()
-
-        # count the number of pngs in viewer_dir
-        viewer_dir = self.get_viewer_dir(out)
-        count = self.count_images(viewer_dir)
-        # -1 is needed because of the E3SM logo in the viewer html
-        self.assertEqual(count - 1, self.NUM_OF_DIAGS)
-
-        shutil.rmtree(viewer_dir)  # remove all generated results from the diags
-
+        self.run_test('vcs')
 
 if __name__ == '__main__':
     unittest.main()

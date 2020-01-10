@@ -2,6 +2,7 @@ import unittest
 import collections
 from acme_diags.run import Run
 from acme_diags.parameter.core_parameter import CoreParameter
+from acme_diags.parameter.area_mean_time_series_parameter import AreaMeanTimeSeriesParameter
 from acme_diags.parameter.zonal_mean_2d_parameter import ZonalMean2dParameter
 
 
@@ -36,7 +37,10 @@ class TestRun(unittest.TestCase):
                     self.fail(msg.format(season))
 
     def test_all_sets_and_all_seasons(self):
-        parameters = self.runner.get_final_parameters([self.core_param])
+        ts_param = AreaMeanTimeSeriesParameter()
+        ts_param.start_yr = '2000'
+        ts_param.end_yr = '2004'
+        parameters = self.runner.get_final_parameters([self.core_param, ts_param])
         # Counts the number of each set and each seasons to run the diags on.
         set_counter, season_counter = collections.Counter(), collections.Counter()
         for param in parameters:
@@ -86,3 +90,6 @@ class TestRun(unittest.TestCase):
         if len1 == 0 or not(len1 == len2 == len3):
             msg = 'The lengths are either 0 or not equal: {} {} {}'
             self.fail(msg.format(len1, len2, len3))
+
+if __name__ == '__main__':
+    unittest.main()
