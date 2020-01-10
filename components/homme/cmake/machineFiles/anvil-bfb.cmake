@@ -62,6 +62,7 @@
    SET (HOMME_FIND_BLASLAPACK TRUE CACHE BOOL "")
 
  #HOMMEBFB settings are not done yet for anvil gnu
+   MESSAGE (FATAL_ERROR "Do not use this file with GNU complier")
 
  endif()
 
