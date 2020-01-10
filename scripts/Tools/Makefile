@@ -598,11 +598,11 @@ endif
 
 
 # System libraries (netcdf, mpi, pnetcdf, esmf, trilinos, etc.)
-ifndef SLIBS
+ifeq (,$(findstring netcdf,$(SLIBS)))
   ifeq ($(NETCDF_SEPARATE), FALSE)
-    SLIBS := -L$(LIB_NETCDF) -lnetcdff -lnetcdf
+    SLIBS += -L$(LIB_NETCDF) -lnetcdff -lnetcdf
   else ifeq ($(NETCDF_SEPARATE), TRUE)
-    SLIBS := -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
+    SLIBS += -L$(LIB_NETCDF_FORTRAN) -L$(LIB_NETCDF_C) -lnetcdff -lnetcdf
   endif
 endif
 
