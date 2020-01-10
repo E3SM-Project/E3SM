@@ -12,6 +12,283 @@
 
 
 
+      module mo_setrxt
+
+      use shr_kind_mod, only : r8 => shr_kind_r8
+
+      private
+      public :: setrxt
+      public :: setrxt_hrates
+
+      contains
+
+      subroutine setrxt( rate, temp, m, ncol )
+
+      use ppgrid,       only : pver, pcols
+      use shr_kind_mod, only : r8 => shr_kind_r8
+      use chem_mods, only : rxntot
+      use mo_jpl,    only : jpl
+
+      implicit none
+
+!-------------------------------------------------------
+!       ... dummy arguments
+!-------------------------------------------------------
+      integer, intent(in) :: ncol
+      real(r8), intent(in)    :: temp(pcols,pver)
+      real(r8), intent(in)    :: m(ncol,pver)
+      real(r8), intent(inout) :: rate(ncol,pver,rxntot)
+
+!-------------------------------------------------------
+!       ... local variables
+!-------------------------------------------------------
+      integer  ::  n
+      real(r8)  ::  itemp(ncol,pver)
+      real(r8)  ::  exp_fac(ncol,pver)
+
+      itemp(:ncol,:) = 1._r8 / temp(:ncol,:)
+      n = ncol*pver
+      rate(:,:,3) = 2.9e-12_r8 * exp( -160._r8 * itemp(:,:) )
+      rate(:,:,5) = 9.6e-12_r8 * exp( -234._r8 * itemp(:,:) )
+      rate(:,:,7) = 1.9e-13_r8 * exp( 520._r8 * itemp(:,:) )
+
+      end subroutine setrxt
+
+
+      subroutine setrxt_hrates( rate, temp, m, ncol, kbot )
+
+      use ppgrid,       only : pver, pcols
+      use shr_kind_mod, only : r8 => shr_kind_r8
+      use chem_mods, only : rxntot
+      use mo_jpl,    only : jpl
+
+      implicit none
+
+!-------------------------------------------------------
+!       ... dummy arguments
+!-------------------------------------------------------
+      integer, intent(in) :: ncol
+      integer, intent(in) :: kbot
+      real(r8), intent(in)    :: temp(pcols,pver)
+      real(r8), intent(in)    :: m(ncol,pver)
+      real(r8), intent(inout) :: rate(ncol,pver,rxntot)
+
+!-------------------------------------------------------
+!       ... local variables
+!-------------------------------------------------------
+      integer  ::  n
+      real(r8)  ::  itemp(ncol,kbot)
+      real(r8)  ::  exp_fac(ncol,kbot)
+
+
+      end subroutine setrxt_hrates
+
+      end module mo_setrxt
+
+      module mo_adjrxt
+
+      private
+      public :: adjrxt
+
+      contains
+
+      subroutine adjrxt( rate, inv, m, ncol )
+
+      use ppgrid, only : pver
+      use shr_kind_mod, only : r8 => shr_kind_r8
+      use chem_mods, only : nfs, rxntot
+
+      implicit none
+
+!--------------------------------------------------------------------
+!       ... dummy arguments
+!--------------------------------------------------------------------
+      integer, intent(in) :: ncol
+      real(r8), intent(in)    :: inv(ncol,pver,nfs)
+      real(r8), intent(in)    :: m(ncol,pver)
+      real(r8), intent(inout) :: rate(ncol,pver,rxntot)
+
+!--------------------------------------------------------------------
+!       ... local variables
+!--------------------------------------------------------------------
+      real(r8) :: im(ncol,pver)
+
+
+         rate(:,:,  3) = rate(:,:,  3) * inv(:,:, 5)
+         rate(:,:,  4) = rate(:,:,  4) * inv(:,:, 5)
+         rate(:,:,  5) = rate(:,:,  5) * inv(:,:, 5)
+         rate(:,:,  6) = rate(:,:,  6) * inv(:,:, 5)
+         rate(:,:,  7) = rate(:,:,  7) * inv(:,:, 6)
+         im(:,:) = 1._r8 / m(:,:)
+         rate(:,:,  2) = rate(:,:,  2) * inv(:,:, 7) * inv(:,:, 7) * im(:,:)
+
+      end subroutine adjrxt
+
+      end module mo_adjrxt
+
+      module mo_phtadj
+
+      private
+      public :: phtadj
+
+      contains
+
+      subroutine phtadj( p_rate, inv, m, ncol )
+
+      use chem_mods,    only : nfs, phtcnt
+      use shr_kind_mod, only : r8 => shr_kind_r8
+      use ppgrid,       only : pver
+
+      implicit none
+
+!--------------------------------------------------------------------
+!       ... dummy arguments
+!--------------------------------------------------------------------
+      integer, intent(in)     :: ncol
+      real(r8), intent(in)    :: inv(:,:,:)
+      real(r8), intent(in)    :: m(:,:)
+      real(r8), intent(inout) :: p_rate(:,:,:)
+
+!--------------------------------------------------------------------
+!       ... local variables
+!--------------------------------------------------------------------
+      integer  ::  k
+      real(r8) ::  im(ncol)
+
+      do k = 1,pver
+      end do
+
+      end subroutine phtadj
+
+      end module mo_phtadj
+
+      module mo_sim_dat
+
+      private
+      public :: set_sim_dat
+
+      contains
+
+      subroutine set_sim_dat
+
+      use chem_mods,   only : clscnt, cls_rxt_cnt, clsmap, permute, adv_mass, fix_mass, crb_mass
+      use chem_mods,   only : diag_map
+      use chem_mods,   only : phtcnt, rxt_tag_cnt, rxt_tag_lst, rxt_tag_map
+      use chem_mods,   only : pht_alias_lst, pht_alias_mult
+      use chem_mods,   only : extfrc_lst, inv_lst, slvd_lst
+      use cam_abortutils,  only : endrun
+      use mo_tracname, only : solsym
+      use chem_mods,   only : frc_from_dataset
+      use shr_kind_mod,only : r8 => shr_kind_r8
+      use cam_logfile, only : iulog
+
+      implicit none
+
+!--------------------------------------------------------------
+!      ... local variables
+!--------------------------------------------------------------
+      integer :: ios
+
+      clscnt(:) = (/      1,     0,     0,    33,     0 /)
+
+      cls_rxt_cnt(:,1) = (/      0,     0,     0,     1 /)
+      cls_rxt_cnt(:,4) = (/      1,     6,     0,    33 /)
+
+      solsym(: 34) = (/ 'O3              ','H2O2            ','H2SO4           ','SO2             ','DMS             ', &
+                        'SOAG            ','so4_a1          ','pom_a1          ','soa_a1          ','bc_a1           ', &
+                        'soaBB_a1        ','dst_a1          ','ncl_a1          ','mom_a1          ','num_a1          ', &
+                        'so4_a2          ','soa_a2          ','ncl_a2          ','soaBB_a2        ','mom_a2          ', &
+                        'num_a2          ','dst_a3          ','ncl_a3          ','so4_a3          ','bc_a3           ', &
+                        'pom_a3          ','soa_a3          ','soaBB_a3        ','mom_a3          ','num_a3          ', &
+                        'pom_a4          ','bc_a4           ','mom_a4          ','num_a4          ' /)
+
+      adv_mass(: 34) = (/      47.998200_r8,      34.013600_r8,      98.078400_r8,      64.064800_r8,      62.132400_r8, &
+                               12.011000_r8,     115.107340_r8,      12.011000_r8,      12.011000_r8,      12.011000_r8, &
+                               12.011000_r8,     135.064039_r8,      58.442468_r8,  250092.672000_r8,       1.007400_r8, &
+                              115.107340_r8,      12.011000_r8,      58.442468_r8,      12.011000_r8,  250092.672000_r8, &
+                                1.007400_r8,     135.064039_r8,      58.442468_r8,     115.107340_r8,      12.011000_r8, &
+                               12.011000_r8,      12.011000_r8,      12.011000_r8,  250092.672000_r8,       1.007400_r8, &
+                               12.011000_r8,      12.011000_r8,  250092.672000_r8,       1.007400_r8 /)
+
+      crb_mass(: 34) = (/       0.000000_r8,       0.000000_r8,       0.000000_r8,       0.000000_r8,      24.022000_r8, &
+                               12.011000_r8,       0.000000_r8,      12.011000_r8,      12.011000_r8,      12.011000_r8, &
+                               12.011000_r8,       0.000000_r8,       0.000000_r8,  102333.720000_r8,       0.000000_r8, &
+                                0.000000_r8,      12.011000_r8,       0.000000_r8,      12.011000_r8,  102333.720000_r8, &
+                                0.000000_r8,       0.000000_r8,       0.000000_r8,       0.000000_r8,      12.011000_r8, &
+                               12.011000_r8,      12.011000_r8,      12.011000_r8,  102333.720000_r8,       0.000000_r8, &
+                               12.011000_r8,      12.011000_r8,  102333.720000_r8,       0.000000_r8 /)
+
+      fix_mass(:  8) = (/ 0.00000000_r8, 28.0134800_r8, 31.9988000_r8, 18.0142000_r8, 17.0068000_r8, &
+                          62.0049400_r8, 33.0062000_r8, 47.9982000_r8 /)
+
+      clsmap(:  1,1) = (/    1 /)
+      clsmap(: 33,4) = (/    2,   3,   4,   5,   6,   7,   8,   9,  10,  12, &
+                            13,  11,  14,  15,  16,  17,  18,  20,  21,  19, &
+                            22,  23,  24,  25,  26,  27,  29,  30,  28,  31, &
+                            32,  33,  34 /)
+
+      permute(: 33,4) = (/    1,   2,   3,   4,   5,   6,   7,   8,   9,  10, &
+                             11,  12,  13,  14,  15,  16,  17,  18,  19,  20, &
+                             21,  22,  23,  24,  25,  26,  27,  28,  29,  30, &
+                             31,  32,  33 /)
+
+      diag_map(: 33) = (/    1,   2,   4,   6,   7,   8,   9,  10,  11,  12, &
+                            13,  14,  15,  16,  17,  18,  19,  20,  21,  22, &
+                            23,  24,  25,  26,  27,  28,  29,  30,  31,  32, &
+                            33,  34,  35 /)
+
+      extfrc_lst(:  9) = (/ 'SO2             ','so4_a1          ','so4_a2          ','pom_a4          ','bc_a4           ', &
+                            'num_a1          ','num_a2          ','num_a4          ','SOAG            ' /)
+
+      frc_from_dataset(:  9) = (/ .true., .true., .true., .true., .true., &
+                                  .true., .true., .true., .true. /)
+
+      inv_lst(:  8) = (/ 'M               ', 'N2              ', 'O2              ', 'H2O             ', 'OH              ', &
+                         'NO3             ', 'HO2             ', 'cnst_O3         ' /)
+
+      if( allocated( rxt_tag_lst ) ) then
+         deallocate( rxt_tag_lst )
+      end if
+      allocate( rxt_tag_lst(rxt_tag_cnt),stat=ios )
+      if( ios /= 0 ) then
+         write(iulog,*) 'set_sim_dat: failed to allocate rxt_tag_lst; error = ',ios
+         call endrun
+      end if
+      if( allocated( rxt_tag_map ) ) then
+         deallocate( rxt_tag_map )
+      end if
+      allocate( rxt_tag_map(rxt_tag_cnt),stat=ios )
+      if( ios /= 0 ) then
+         write(iulog,*) 'set_sim_dat: failed to allocate rxt_tag_map; error = ',ios
+         call endrun
+      end if
+      rxt_tag_lst(:rxt_tag_cnt) = (/ 'jh2o2           ', 'usr_HO2_HO2     ', 'usr_SO2_OH      ', 'usr_DMS_OH      ' /)
+      rxt_tag_map(:rxt_tag_cnt) = (/    1,   2,   4,   6 /)
+      if( allocated( pht_alias_lst ) ) then
+         deallocate( pht_alias_lst )
+      end if
+      allocate( pht_alias_lst(phtcnt,2),stat=ios )
+      if( ios /= 0 ) then
+         write(iulog,*) 'set_sim_dat: failed to allocate pht_alias_lst; error = ',ios
+         call endrun
+      end if
+      if( allocated( pht_alias_mult ) ) then
+         deallocate( pht_alias_mult )
+      end if
+      allocate( pht_alias_mult(phtcnt,2),stat=ios )
+      if( ios /= 0 ) then
+         write(iulog,*) 'set_sim_dat: failed to allocate pht_alias_mult; error = ',ios
+         call endrun
+      end if
+      pht_alias_lst(:,1) = (/ '                ' /)
+      pht_alias_lst(:,2) = (/ '                ' /)
+      pht_alias_mult(:,1) = (/ 1._r8 /)
+      pht_alias_mult(:,2) = (/ 1._r8 /)
+
+      end subroutine set_sim_dat
+
+      end module mo_sim_dat
+
 
 module mo_imp_sol
   use shr_kind_mod, only : r8 => shr_kind_r8

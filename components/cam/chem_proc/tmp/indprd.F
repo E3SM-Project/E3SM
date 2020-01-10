@@ -1,17 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
-
-
-
       module mo_indprd
 
       use shr_kind_mod, only : r8 => shr_kind_r8
