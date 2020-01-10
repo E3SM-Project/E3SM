@@ -3,7 +3,7 @@
 
 #add a list of tests in test-list.cmake into theta HOMME_THETA_TESTS_WITH_PROFILE_1 list 
 #example of a test name:
-#theta-form0-ttype5-hvs1-hvst0-r3-q1-nutopon-nudivon
+#theta-f0-tt5-hvs1-hvst0-r3-qz1-nutopon
 #the list will be used to generate corresponding ${test}-kokkos.cmake and ${test}.cmake
 #run 'source create-theta-tests-MAIN.sh ' to generate these *cmake files
 #then config homme
@@ -21,8 +21,9 @@ foreach(jj ${HOMME_THETA_TESTS_WITH_PROFILE_1})
   #parse jj
   string(REPLACE "-" ";" jjlist ${jj})
   #message("${jjlist}")
-  #now we can access jj encoded stuff, samenu and nutop a exceptions
-  #theta;form0;ttype5;hvs1;hvst0;r3;q1;nutop0;samenu
+
+#most values are assumend to be integers <10, only ttype can be bigger
+#see below to parse bigger ints
 
   #form:
   list(GET jjlist 1 aa)
@@ -34,7 +35,7 @@ foreach(jj ${HOMME_THETA_TESTS_WITH_PROFILE_1})
   #ttype:
   list(GET jjlist 2 aa)
   #now get a value from aa
-  string(REGEX MATCH "[0-9]" bb "${aa}")
+  string(REGEX MATCH "[0-9]+" bb "${aa}")
   message("ttype is ${bb}")
   set(AATTYPE "${bb}")
   #sett hy mode based on ttype
@@ -86,15 +87,22 @@ foreach(jj ${HOMME_THETA_TESTS_WITH_PROFILE_1})
     message(FATAL_ERROR "only allowed are nutopon/nutopoff")
   endif()
 
-  #nudiv:
-  list(GET jjlist 8 aa)
-  if("${aa}" STREQUAL "nudivon")
-    set(AANDIV 1e15)
-  elseif("${aa}" STREQUAL "nudivoff")
-    set(AANDIV 0)
-  else()
-    message(FATAL_ERROR "only allowed are nudivon/nudivoff")
-  endif()
+#since we are moving to change nu based on profile IN THETA tests only
+#(cause profiles set NE) we would need to change nudiv based on profile
+#easiest way to do it is to introduce a nu_div factor,
+#factor = nu/nu_div, and then carry math for nudiv when configure_file(namelist)
+#is called. 
+#instead, we drop nudiv testing in theta because it is a velocity HV op that
+#is tested in preqx. 
+#  #nudiv:
+#  list(GET jjlist 8 aa)
+#  if("${aa}" STREQUAL "nudivon")
+#    set(AANDIV 1e15)
+#  elseif("${aa}" STREQUAL "nudivoff")
+#    set(AANDIV 0)
+#  else()
+#    message(FATAL_ERROR "only allowed are nudivon/nudivoff")
+#  endif()
 
   #two iterations, with kokkos suffix and without
   #cannot make a list with empty string, doing repetition
