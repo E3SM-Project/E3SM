@@ -69,7 +69,9 @@ module topounit_varcon
     call ncd_inqdid(ncid, 'topounit', dimid, dimexist=has_topounit)
     if (.not. has_topounit) then
          max_topounits = 1
-         write(iulog,*)'Surface dataset has no topounit dimention; max_topounits is set to 1'
+         if (masterproc) then
+             write(iulog,*)'Surface dataset has no topounit dimention; max_topounits is set to 1'
+         end if
     else
         call ncd_inqdlen(ncid, dimid, topounits_size)  ! Get the dimension size of topounit from file
         max_topounits = topounits_size

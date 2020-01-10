@@ -2177,6 +2177,11 @@ contains
                 call ncd_io(varname=trim(varnames(ifld)), dim1name=grlnd, &
                      data=histo, ncid=nfid(t), flag='write')
              else
+			    if (masterproc) then
+                   write(iulog,*)' ******* TKT *******'
+                   write(iulog,*) trim(varnames(ifld)),' : Field name = ',trim(varnames(ifld)) ! TKT debuging
+                   write(iulog,*) trim(varnames(ifld)),' : Size of histo = ',shape(histo) ! TKT debuging                   
+				end if                   
                 call ncd_io(varname=trim(varnames(ifld)), dim1name=grlnd, &
                      data=histo, ncid=nfid(t), flag='write')
              end if
@@ -3229,7 +3234,12 @@ contains
           call htape_timeconst(t, mode='write')
 
           ! Write 3D time constant history variables only to first primary tape
-          if ( do_3Dtconst .and. t == 1 .and. tape(t)%ntimes == 1 )then
+          if ( do_3Dtconst .and. t == 1 .and. tape(t)%ntimes == 1 )then             
+             if (masterproc) then
+                   write(iulog,*)' ******* TKT *******'
+                   write(iulog,*) ' : Shape of watsat_col = ',shape(watsat_col) ! TKT debuging
+                   write(iulog,*) ' : Size of watsat_col = ',size(watsat_col) ! TKT debuging                   
+             end if 
              call htape_timeconst3D(t, &
                   bounds, watsat_col, sucsat_col, bsw_col, hksat_col, mode='write')
              do_3Dtconst = .false.
