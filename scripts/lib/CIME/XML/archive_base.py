@@ -144,6 +144,8 @@ def _get_extension(model, filepath):
     'hm'
     >>> _get_extension("mom", "bixmc5.mom6.hmz._0001_01_03_42300.nc")
     'hmz'
+    >>> _get_extension("pop", "casename.pop.dd.0001-01-02-00000")
+    'dd'
     """
     # Remove with component namechange
     if model == "fv3gfs":
@@ -166,6 +168,11 @@ def _get_extension(model, filepath):
         full_regex_str = model+r'\d?_?(\d{4})?\.('+ext_regex+r')[-\w\.]*\.nc\.?'
         full_regex = re.compile(full_regex_str)
         m = full_regex.search(basename)
+        if m is None:
+            # try without .nc part
+            full_regex_str = model+r'\d?_?(\d{4})?\.('+ext_regex+r')[-\w\.]*'
+            full_regex = re.compile(full_regex_str)
+            m = full_regex.search(basename)
         if m is not None:
             if m.group(1) is not None:
                 result = m.group(1)+'.'+m.group(2)
