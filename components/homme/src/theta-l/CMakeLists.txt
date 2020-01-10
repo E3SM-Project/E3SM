@@ -2,6 +2,8 @@
 
 macro(thetal_setup)
 
+SET (KOKKOS_TARGET FALSE)
+
 SET(TARGET_DIR        ${HOMME_SOURCE_DIR}/src/theta-l)
 SET(UTILS_SHARE_DIR   ${HOMME_SOURCE_DIR}/utils/csm_share)
 SET(SRC_DIR           ${HOMME_SOURCE_DIR}/src)
@@ -60,6 +62,7 @@ IF (HOMME_USE_ARKODE)
 ENDIF ()
 
 IF (HOMMEXX_BFB_TESTING)
+  # We need a couple more files/includes to correctly hook-up C routines
   SET(THETAL_SRCS_F90
       ${THETAL_SRCS_F90}
       ${SRC_SHARE_DIR}/cxx/utilities/bfb_mod.F90
@@ -68,11 +71,13 @@ IF (HOMMEXX_BFB_TESTING)
   SET(THETAL_SRCS_C
       ${THETAL_SRCS_C}
       ${SRC_SHARE_DIR}/cxx/utilities/BfbUtils.cpp
+      ${SRC_SHARE_DIR}/cxx/ExecSpaceDefs.cpp
   )
 
   SET (EXEC_INCLUDE_DIRS
       ${EXEC_INCLUDE_DIRS}
       ${SRC_SHARE_DIR}/cxx
+      ${HOMME_BINARY_DIR}/src/share/cxx/
   )
 ENDIF()
 
