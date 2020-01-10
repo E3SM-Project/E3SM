@@ -33,6 +33,14 @@ struct DirkFunctorImpl {
   enum : int { num_work = 12 };
   enum : bool { calc_initial_guess_in_newton_kernel = false };
 
+  enum : int {
+#ifdef HOMMEXX_BFB_TESTING
+    default_bfb_solver = true
+#else
+    default_bfb_solver = false
+#endif
+  };
+
   static_assert(num_lev_aligned >= 3,
                 "We use wrk(0:2,:) and so need num_lev_aligned >= 3");
 
@@ -131,11 +139,12 @@ struct DirkFunctorImpl {
 
   void run (int nm1, Real alphadt_nm1, int n0, Real alphadt_n0, int np1, Real dt2,
             const Elements& e, const HybridVCoord& hvcoord,
-            const bool bfb_solver = false) {
+            const bool bfb_solver = default_bfb_solver) {
     if ( ! calc_initial_guess_in_newton_kernel) {
       run_initial_guess(np1, e, hvcoord);
       Kokkos::fence();
     }
+
     run_newton(nm1, alphadt_nm1, n0, alphadt_n0, np1, dt2, e, hvcoord, bfb_solver);
     Kokkos::fence();
   }
