@@ -3,7 +3,7 @@
 
 thetal_setup()
 #              name                 target NP NC PLEV USE_PIO WITH_ENERGY QSIZE_D
-createTestExec(theta-l-nlev40         theta-l  4  4  72   FALSE   TRUE       6)
+createTestExec(theta-nlev72         theta-l  4  4  72   FALSE   TRUE       6)
 
 # Setting HOMME_TESTS_* variables, so the namelist.nl file in the exec 
 # directory is usable. Since that namelist should be used for development
