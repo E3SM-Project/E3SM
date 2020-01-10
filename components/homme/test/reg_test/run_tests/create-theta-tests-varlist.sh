@@ -10,4 +10,5 @@ rsplit=${AARSPLIT}
 qsize=${AAQSIZE}
 nutop=${AANTOP}
 nudiv=${AANDIV}
+hymode=${AAHYMODE}
 

@@ -71,7 +71,10 @@ ENDIF()
 
 IF (BUILD_HOMME_THETA_KOKKOS)
   SET(HOMME_THETA_TESTS_WITH_PROFILE_1
-     theta-form0-ttype5-hvs1-hvst0-r3-q1-nutop0-samenu
+     theta-form0-ttype5-hvs1-hvst0-r3-q1-nutopon-nudivon
+     theta-form0-ttype5-hvs1-hvst0-r3-q1-nutopoff-nudivoff
+     theta-form1-ttype9-hvs2-hvst0-r0-q1-nutopon-nudivoff
+     theta-form1-ttype9-hvs1-hvst0-r3-q1-nutopon-nudivon
   )
   FOREACH(JJ ${HOMME_THETA_TESTS_WITH_PROFILE_1})
     LIST(APPEND HOMME_PREQX_TESTS_WITH_PROFILE

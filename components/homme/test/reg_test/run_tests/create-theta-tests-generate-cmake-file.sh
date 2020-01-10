@@ -11,6 +11,7 @@ sed -e s/BBNAME/${name}/ \
     -e s/BBQSIZE/${qsize}/  \
     -e s/BBNTOP/${nutop}/  \
     -e s/BBNDIV/${nudiv}/  \
+    -e s/BBHYMODE/${hymode}/  \
      create-theta-template.cmake > ${name}.cmake
 
 

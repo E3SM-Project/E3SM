@@ -101,6 +101,7 @@ OPTION(BUILD_HOMME_THETA_KOKKOS"SB81 NH model with theta and Exner pressure, Kok
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
 OPTION(ENABLE_PREQX_KOKKOS_BFB_TESTS "Turn on unit tests for XX and bfb for F vs XX" OFF)
+OPTION(ENABLE_THETA_KOKKOS_BFB_TESTS "Turn on unit tests for XX and bfb for F vs XX" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 OPTION(BUILD_HOMME_TOOL  "Offline tool" ON)
@@ -147,6 +148,10 @@ ENDIF ()
 IF (NOT ${BUILD_HOMME_PREQX_KOKKOS})
   SET (ENABLE_PREQX_KOKKOS_BFB_TESTS FALSE)
 ENDIF ()
+IF (NOT ${BUILD_HOMME_THETA_KOKKOS})
+  SET (ENABLE_THETA_KOKKOS_BFB_TESTS FALSE)
+ENDIF ()
+
 
 IF (HOMME_USE_CXX)
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
@@ -364,6 +369,7 @@ IF (${HOMME_USE_KOKKOS})
   INCLUDE(Kokkos)
 ENDIF ()
 
+#??? sort this out
 IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS} AND ${ENABLE_PREQX_KOKKOS_BFB_TESTS})
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
