@@ -110,8 +110,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 
   if (compute_diagnostics) {
     auto& diags = context.get<Diagnostics>();
-    diags.prim_energy_halftimes(false,4);
-    diags.prim_diag_scalars(false,4);
+    diags.run_diagnostics(false,4);
   }
 
   if (params.hypervis_order==2 && params.nu>0) {
@@ -128,8 +127,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
 
   if (compute_diagnostics) {
     auto& diags = context.get<Diagnostics>();
-    diags.prim_energy_halftimes(false,5);
-    diags.prim_diag_scalars(false,5);
+    diags.run_diagnostics(false,5);
   }
 
   GPTLstop("tl-ae prim_advance_exp");

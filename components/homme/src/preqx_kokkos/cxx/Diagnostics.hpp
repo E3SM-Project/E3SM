@@ -13,6 +13,8 @@ public:
              F90Ptr& elem_accum_q1mass_ptr, F90Ptr& elem_accum_iener_ptr, F90Ptr& elem_accum_iener_wet_ptr,
              F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr);
 
+  void run_diagnostics (const bool before_advance, const int ivar);
+
   void prim_diag_scalars (const bool before_advance, const int ivar);
   void prim_energy_halftimes (const bool before_advance, const int ivar);
 

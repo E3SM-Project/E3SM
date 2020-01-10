@@ -61,8 +61,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
   if (compute_diagnostics) {
     Diagnostics& diags = context.get<Diagnostics>();
-    diags.prim_diag_scalars(true,2);
-    diags.prim_energy_halftimes(true,2);
+    diags.run_diagnostics(true,2);
   }
 
   tl.update_tracers_levels(params.qsplit);
@@ -85,8 +84,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
   if (compute_diagnostics) {
     Diagnostics& diags = context.get<Diagnostics>();
-    diags.prim_energy_halftimes(true,0);
-    diags.prim_diag_scalars(true,0);
+    diags.run_diagnostics(true,0);
   }
 
   // Initialize dp3d from ps
@@ -123,10 +121,11 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   }
   GPTLstop("tl-sc prim_step-loop");
 
+  tl.update_tracers_levels(params.qsplit);
+
   if (compute_diagnostics) {
     Diagnostics& diags = context.get<Diagnostics>();
-    diags.prim_diag_scalars(true,3);
-    diags.prim_energy_halftimes(true,3);
+    diags.run_diagnostics(true,3);
   }
 
   ////////////////////////////////////////////////////////////////////////
@@ -134,7 +133,6 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   // always for tracers
   // if rsplit>0:  also remap dynamics and compute reference level ps_v
   ////////////////////////////////////////////////////////////////////////
-  tl.update_tracers_levels(params.qsplit);
   GPTLstart("tl-sc vertical_remap");
   vertical_remap(dt_remap);
   GPTLstop("tl-sc vertical_remap");
@@ -147,8 +145,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
   if (compute_diagnostics) {
     Diagnostics& diags = context.get<Diagnostics>();
-    diags.prim_diag_scalars(false,1);
-    diags.prim_energy_halftimes(false,1);
+    diags.run_diagnostics(false,1);
   }
 
   // Update dynamics time levels
