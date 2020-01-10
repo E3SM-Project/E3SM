@@ -3767,7 +3767,6 @@ module ocn_time_integration_si
          nCells   = nCellsArray(1)
          nEdges   = nEdgesArray(1)
          nCellsA2 = nCellsArray(2)
-         nCellsA3 = nCellsArray(2)
  
          call mpas_log_write('   config_btr_si_preconditioner: ' // trim(config_btr_si_preconditioner))
  
@@ -3778,8 +3777,7 @@ module ocn_time_integration_si
          ! Restricted Additive Schwarz preconditioner ---------------------------------------------!
          if ( trim(config_btr_si_preconditioner) == 'ras' ) then
  
-!           nPrecVec = nCellsA2
-            nPrecVec = nCellsA3
+            nPrecVec = nCellsA2
   
             allocate(prec_ivmat(1:nPrecVec,1:nPrecVec))
                      prec_ivmat(:,:) = 0.0_RKIND
