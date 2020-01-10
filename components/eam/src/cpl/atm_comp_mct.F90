@@ -1143,11 +1143,6 @@ CONTAINS
     deallocate(areavals)
     deallocate(chunk_index)
 
-    ! similar logic to get lat, lon, area, frac, for each local cam point
-!! start copy
-    !
-    ! Fill in correct values for domain components
-
   end subroutine initialize_moab_atm_phys
 #endif
 
