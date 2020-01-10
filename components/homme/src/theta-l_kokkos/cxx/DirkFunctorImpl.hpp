@@ -199,7 +199,11 @@ struct DirkFunctorImpl {
     const auto grav = PhysicalConstants::g;
     const int nvec = npack;
     const int maxiter = 20;
+#ifdef HOMMEXX_BFB_TESTING
+    const Real deltatol = 1e-6; // In bfb testing, use coarse tolerance, due to zeroulp calls
+#else
     const Real deltatol = 1e-11; // exit if newton increment < deltatol
+#endif
 
     const auto work = m_work;
     const auto ls = m_ls;
