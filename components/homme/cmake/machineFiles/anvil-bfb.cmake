@@ -37,14 +37,19 @@
  )
  IF ("${CPR_OUTPUT}" MATCHES "ifort.*")
    SET (HOMME_USE_MKL "TRUE" CACHE FILEPATH "") # for Intel
+
    #turn on preqxx target and thus strict fpmodel for F vs CXX comparison
    SET (ADD_Fortran_FLAGS "-traceback -fp-model strict -qopenmp -O1" CACHE STRING "")
    SET (ADD_C_FLAGS "-traceback -fp-model strict -qopenmp -O3" CACHE STRING "")
    SET (ADD_CXX_FLAGS "-traceback -fp-model strict -qopenmp -O3" CACHE STRING "")
+
    SET (BUILD_HOMME_PREQX_KOKKOS TRUE CACHE BOOL "")
    SET (BUILD_HOMME_THETA_KOKKOS TRUE CACHE BOOL "")
+
    SET (ENABLE_PREQX_KOKKOS_BFB_TESTS TRUE CACHE BOOL "")
    SET (ENABLE_THETA_KOKKOS_BFB_TESTS TRUE CACHE BOOL "")
+   SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")
+
    SET (HOMME_TESTING_PROFILE "short" CACHE STRING "")
 
  #or just these? was used before
