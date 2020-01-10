@@ -39,7 +39,7 @@ class TestDataset(unittest.TestCase):
         # ('PRECT', 'A_NEW_VAR', etc) is an OrderedDict.
         # We must check that what the user inserted is
         # first, so it's used first.
-        self.assertTrue(data.derived_vars['PRECT'].keys()[0] == ('MY_PRECT',))
+        self.assertTrue(list(data.derived_vars['PRECT'].keys())[0] == ('MY_PRECT',))
 
     def test_is_timeseries(self):
         self.parameter.ref_timeseries_input = True
