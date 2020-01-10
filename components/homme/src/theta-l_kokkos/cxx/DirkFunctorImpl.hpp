@@ -238,9 +238,9 @@ struct DirkFunctorImpl {
       du = get_ls_slot(ls, kv.team_idx, 2);
 
       // View of xfull for use in the solver. We want xfull so that we
-      // can use the nlevp-1 entry, which is 0, when convenient.
+      // can use the nlevp-1 entry, which we make sure is 0, when convenient.
       LinearSystemSlot x = subview(xfull, Kokkos::pair<int,int>(0,nlev), a);
-      assert(xfull(nlev,0)[0] == 0);
+      xfull(nlev,0)[0] = 0.0;
 
       const auto transpose4 = [&] (const int nt, const bool transpose_phi_np1 = true) {
         transpose(kv, nlev+1, subview(e_w_i      ,ie,nt,a,a,a), w_np1    );
