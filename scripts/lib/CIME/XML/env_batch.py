@@ -280,10 +280,10 @@ class EnvBatch(EnvBase):
                 if walltime_format is not None:
                     components=walltime.split(":")
                     if len(components) > len(walltime_format.split(":")):
-                        walltime = components[0] + ":" + components[1]
+                        walltime = ':'.join(components[:len(walltime_format.split(":"))])
                         logger.info(" Changing USER_REQUESTED_WALLTIME to {} to match walltime_format {}".format(walltime,walltime_format))
                     if len(components) < len(walltime_format.split(":")):
-                        walltime=walltime + ":00"
+                        walltime = walltime + ':' + ':'.join(["00"]*(len(walltime_format.split(":")) - len(components)))
                         logger.info(" Changing USER_REQUESTED_WALLTIME to {} to match walltime_format {}".format(walltime,walltime_format))
 
             env_workflow.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
