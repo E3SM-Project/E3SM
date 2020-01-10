@@ -230,6 +230,20 @@ struct TestPack {
     compare_masks(mc, m);                           \
   } while (0)
 
+#define test_pack_gen_pow_fn(op, impl) do {         \
+    Pack a, b, d, dc;                               \
+    scalar c;                                       \
+    setup(a, b, c);                                 \
+    d = op(a, c);                                   \
+    vector_novec for (int i = 0; i < Pack::n; ++i)  \
+      dc[i] = impl(a[i], c);                        \
+    compare_packs(dc, d);                           \
+    d = op(c, b);                                   \
+    vector_novec for (int i = 0; i < Pack::n; ++i)  \
+      dc[i] = impl(c, b[i]);                        \
+    compare_packs(dc, d);                           \
+  } while (0)
+
   static void run () {
     test_pack_gen_assign_op_all(=);
     test_pack_gen_assign_op_all(+=);
@@ -244,6 +258,7 @@ struct TestPack {
 
     test_pack_gen_bin_fn_all(min, scream::util::min);
     test_pack_gen_bin_fn_all(max, scream::util::max);
+    test_pack_gen_pow_fn(pow, std::pow);
 
     test_pack_gen_unary_stdfn(abs);
     test_pack_gen_unary_stdfn(exp);
