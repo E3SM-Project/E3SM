@@ -328,7 +328,7 @@ void init_functors_c ()
   auto& hvf  = Context::singleton().create<HyperviscosityFunctor>();
   auto& fbm  = Context::singleton().create<FunctorsBuffersManager>();
   auto& ff   = Context::singleton().create<ForcingFunctor>();
-  auto& diag = Context::singleton().create<Diagnostics> ();
+  auto& diag = Context::singleton().create<Diagnostics> (elems.num_elems());
   Context::singleton().create<VerticalRemapManager>();
 
   const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||   
@@ -412,8 +412,8 @@ void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr, 
   auto& hvcoord = Context::singleton().get<HybridVCoord>();
   
   diags.init(state, geometry, hvcoord, params.theta_hydrostatic_mode,
-                   elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
-                   elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
+             elem_state_q_ptr, elem_accum_qvar_ptr, elem_accum_qmass_ptr, elem_accum_q1mass_ptr,
+             elem_accum_iener_ptr, elem_accum_kener_ptr, elem_accum_pener_ptr);
 }
 
 void init_boundary_exchanges_c ()
