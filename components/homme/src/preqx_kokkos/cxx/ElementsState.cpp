@@ -56,44 +56,57 @@ void ElementsState::randomize(const int seed, const Real max_pressure, const Rea
 
   // This ensures the pressure in a single column is monotonically increasing
   // and has fixed upper and lower values
-  const auto make_pressure_partition = [=](ExecViewUnmanaged<Scalar[NUM_LEV]> d_pt_dp) {
-    const auto eps = std::numeric_limits<Real>::epsilon();
-    const auto nan = std::numeric_limits<Real>::quiet_NaN();
-    auto h_pt_dp = Kokkos::create_mirror_view(d_pt_dp);
-    Kokkos::deep_copy(h_pt_dp,d_pt_dp);
+  const auto make_pressure_partition = [=](
+      ExecViewUnmanaged<Scalar[NUM_LEV]> pt_dp) {
+
+    auto h_pt_dp = Kokkos::create_mirror_view(pt_dp);
+    Kokkos::deep_copy(h_pt_dp,pt_dp);
+    Real* data     = reinterpret_cast<Real*>(h_pt_dp.data());
+    Real* data_end = data + NUM_PHYSICAL_LEV;
+
+    Real p[NUM_INTERFACE_LEV];
+    Real* p_start = &p[0];
+    Real* p_end   = p_start+NUM_INTERFACE_LEV;
+
+    for (int i=0; i<NUM_PHYSICAL_LEV; ++i) {
+      p[i+1] = data[i];
+    }
+    p[0] = ps0;
+    p[NUM_INTERFACE_LEV-1] = max_pressure;
+
     // Put in monotonic order
-    auto data = reinterpret_cast<Real*>(h_pt_dp.data());
-    constexpr auto data_size = NUM_PHYSICAL_LEV;
-    std::sort(data,data+data_size);
-    // Ensure none of the values are repeated
-    for (int level = NUM_PHYSICAL_LEV - 1; level > 0; --level) {
-      // Need to try again if these are the same or if the thickness is too small
-      if (data[level] <= (data[level-1] + min_value * eps))  {
+    std::sort(p_start, p_end);
+
+    // Check for no repetitions
+    if (std::unique(p_start,p_end)!=p_end) {
+      return false;
+    }
+
+    // Compute dp from p (we assume p(last interface)=max_pressure)
+    for (int i=0; i<NUM_PHYSICAL_LEV; ++i) {
+      data[i] = p[i+1]-p[i];
+    }
+
+    // Check that dp>=dp_min
+    const Real min_dp = std::numeric_limits<Real>::epsilon()*1000;
+    for (auto it=data; it!=data_end; ++it) {
+      if (*it < min_dp) {
         return false;
       }
     }
 
-    // We know the minimum thickness of a layer is min_value * epsilon
-    // (due to floating point), so set the bottom layer thickness to that,
-    // and subtract that from the top layer
-    // This ensures that the total sum is max_pressure
-    data[0] = min_value * std::numeric_limits<Real>::epsilon();
-    const int top_lev = NUM_PHYSICAL_LEV - 1;
-    // Note that this may not actually change the top level pressure
-    // This is okay, because we only need to approximately sum to max_pressure
-    data[top_lev] = max_pressure - data[0];
-    for (int extra_lev = top_lev + 1; extra_lev < NUM_LEV*VECTOR_SIZE; ++extra_lev) {
-      data[extra_lev] = nan;
+    // Fill remainder of last vector pack with quiet nan's
+    Real* alloc_end = data+NUM_LEV*VECTOR_SIZE;
+    for (auto it=data_end; it!=alloc_end; ++it) {
+      *it = std::numeric_limits<Real>::quiet_NaN();
     }
 
-    // Now compute the interval thicknesses
-    for (int level = NUM_PHYSICAL_LEV - 1; level > 0; --level) {
-      data[level] -= data[level-1];
-    }
+    Kokkos::deep_copy(pt_dp,h_pt_dp);
+
     return true;
   };
 
-  std::uniform_real_distribution<Real> pressure_pdf(min_value, max_pressure);
+  std::uniform_real_distribution<Real> pressure_pdf(ps0, max_pressure);
 
   for (int ie = 0; ie < m_num_elems; ++ie) {
     // Because this constraint is difficult to satisfy for all of the tensors,

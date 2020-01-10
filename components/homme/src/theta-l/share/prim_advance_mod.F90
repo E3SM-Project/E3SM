@@ -53,7 +53,7 @@ module prim_advance_mod
   private
   save
   public :: prim_advance_exp, prim_advance_init1, advance_hypervis, &
-            applycamforcing_dynamics, compute_andor_apply_rhs
+            applycamforcing_dynamics, compute_andor_apply_rhs, limiter_dp3d_k
 
 contains
 
@@ -2032,10 +2032,15 @@ contains
   enddo
 
   if (warn) then
+#ifndef HOMMEXX_BFB_TESTING
     vtheta_dp(:,:,:)=vtheta_dp(:,:,:)/dp3d(:,:,:)
+#endif
     do j = 1 , np
        do i = 1 , np
           if ( minval(dp3d(i,j,:) - dp3d_thresh*dp0(:)) < 0 ) then
+#ifdef HOMMEXX_BFB_TESTING
+             vtheta_dp(i,j,:)=vtheta_dp(i,j,:)/dp3d(i,j,:)
+#endif
              ! subtract min, multiply in by weights
              Qcol(:) = (dp3d(i,j,:) - dp3d_thresh*dp0(:))*spheremp(i,j)
              mass = 0
@@ -2059,10 +2064,15 @@ contains
              if ( mass     < 0 ) Qcol(:) = -Qcol(:)
              !
              dp3d(i,j,:) = Qcol(:)/spheremp(i,j) + dp3d_thresh*dp0(:)
+#ifdef HOMMEXX_BFB_TESTING
+             vtheta_dp(i,j,:)=vtheta_dp(i,j,:)*dp3d(i,j,:)
+#endif
           endif
        enddo
     enddo
+#ifndef HOMMEXX_BFB_TESTING
     vtheta_dp(:,:,:)=vtheta_dp(:,:,:)*dp3d(:,:,:)
+#endif
   endif
 
 #if 1

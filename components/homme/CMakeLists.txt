@@ -249,7 +249,13 @@ IF (${HOMME_USE_KOKKOS})
   # Note: If you ask for bfb testing, you should also ask for a strict fp model on cpu.
   OPTION (HOMMEXX_BFB_TESTING "Whether we want bfb comparison cpu-vs-gpu and f90-vs-cxx" OFF)
 
-  SET (HOMMEXX_VECTOR_SIZE 8 CACHE STRING
+  IF (CUDA_BUILD)
+    SET (DEFAULT_VECTOR_SIZE 1)
+  ELSE ()
+    SET (DEFAULT_VECTOR_SIZE 8)
+  ENDIF()
+
+  SET (HOMMEXX_VECTOR_SIZE ${DEFAULT_VECTOR_SIZE} CACHE STRING
     "If AVX or Cuda don't take priority, use this software vector size.")
 
   IF (CMAKE_BUILD_TYPE_UPPER MATCHES "DEBUG" OR CMAKE_BUILD_TYPE_UPPER MATCHES "RELWITHDEBINFO")

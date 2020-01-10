@@ -410,7 +410,7 @@ TEST_CASE("hvf", "biharmonic") {
 
   SECTION ("hypervis") {
     std::cout << "Hypervis test:\n";
-    for (const bool hydrostatic : {true}) {
+    for (const bool hydrostatic : {true, false}) {
       std::cout << " -> " << (hydrostatic ? "hydrostatic" : "non-hydrostatic") << "\n";
 
       // Compute ref states, given the choice for hydrostatic mode
@@ -428,7 +428,7 @@ TEST_CASE("hvf", "biharmonic") {
       const Real* theta_ref_ptr = theta_ref_f90.data();
       const Real* phi_ref_ptr   = phi_ref_f90.data();
 
-      for (Real hv_scaling : {0.0}) {
+      for (Real hv_scaling : {0.0, 1.2345}) {
         std::cout << "   -> hypervis scaling = " << hv_scaling << "\n";
         params.theta_hydrostatic_mode = hydrostatic;
 

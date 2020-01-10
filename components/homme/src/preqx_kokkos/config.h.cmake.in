@@ -48,6 +48,9 @@
 /* Zoltan partitioning library */
 #cmakedefine01 HAVE_ZOLTAN
 
+/* Identifies whether this is a cuda build */
+#cmakedefine CUDA_BUILD
+
 /* TRILINOS  library */
 #cmakedefine01 HAVE_TRILINOS
 

@@ -290,7 +290,7 @@ VECTOR_SIMD_LOOP
     const typename Kokkos::TeamPolicy<ExeSpace>::member_type& team,
     const Lambda& lambda, ValueType& result)
   {
-    result = ValueType();
+    result = Kokkos::reduction_identity<ValueType>::sum();
     for (int k = 0; k < NP*NP; ++k)
       lambda(k, result);
   }
@@ -323,16 +323,25 @@ struct Dispatch<Kokkos::Cuda> {
     // serialize parallel reductions.
 
     // All threads init result.
-    result = ValueType();
+    // NOTE: we *need* an automatic temporary, since we do not know
+    //       where 'result' comes from. If result itself is an automatic
+    //       variable, using it would be fine (only one vector lane would
+    //       actually have a nonzero value after the single). But if
+    //       result is taken from a view, then all vector lanes would
+    //       see the updated value before the vector_reduce call,
+    //       which will cause the final answer to be multiplied by the
+    //       size of the warp.
+    auto local_tmp = Kokkos::reduction_identity<ValueType>::sum();
     // One thread sums.
     Kokkos::single(Kokkos::PerThread(team), [&] () {
         for (auto i = loop_boundaries.start; i < loop_boundaries.end; ++i)
-          lambda(i, result);
+          lambda(i, local_tmp);
       });
     // Broadcast result to all threads by doing sum of one thread's
     // non-0 value and the rest of the 0s.
     Kokkos::Impl::CudaTeamMember::vector_reduce(
-      Kokkos::Sum<ValueType>(result));
+      Kokkos::Sum<ValueType>(local_tmp));
+    result = local_tmp;
 #else
     Kokkos::parallel_reduce(loop_boundaries, lambda, result);
 #endif
@@ -377,7 +386,7 @@ struct Dispatch<Kokkos::Cuda> {
         , Lambda >::value_type ;
 
     // All threads init result.
-    value_type accumulator = value_type();
+    value_type accumulator = Kokkos::reduction_identity<value_type>::sum();
     // Only one thread does the work, i.e., only one sweeps (so last arg to lambda is true)
     Kokkos::single(Kokkos::PerThread(team), [&] () {
       for (int i = 0; i < num_iters; ++i) {

@@ -34,6 +34,9 @@ private:
   };
 
 public:
+
+  Diagnostics (const int num_elems) : m_num_elems(num_elems) {}
+
   void init (const ElementsState& state, const ElementsGeometry& geometry,
              const HybridVCoord& hvcoord, const bool theta_hydrostatic_mode,
              F90Ptr& elem_state_q_ptr,
@@ -55,6 +58,12 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const EnergyHalfTimesTag&, const TeamMember& team) const {
+    // This checks that the buffers were init-ed (debug only)
+    assert (m_buffers.phi.size()>0);
+    assert (m_buffers.exner.size()>0);
+    assert (m_buffers.pnh.size()>0);
+    assert (m_buffers.dpnh_dp_i.size()>0);
+
     KernelVariables kv(team);
 
     // Subview inputs/outputs

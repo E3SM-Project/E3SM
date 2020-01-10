@@ -208,25 +208,31 @@ void ElementsState::randomize(const int seed,
 
     auto h_pt_dp = Kokkos::create_mirror_view(pt_dp);
     Kokkos::deep_copy(h_pt_dp,pt_dp);
-    Real* data = reinterpret_cast<Real*>(h_pt_dp.data());
-    Real* data_end = data+NUM_PHYSICAL_LEV;
+    Real* data     = reinterpret_cast<Real*>(h_pt_dp.data());
+    Real* data_end = data + NUM_PHYSICAL_LEV;
+
+    Real p[NUM_INTERFACE_LEV];
+    Real* p_start = &p[0];
+    Real* p_end   = p_start+NUM_INTERFACE_LEV;
+
+    for (int i=0; i<NUM_PHYSICAL_LEV; ++i) {
+      p[i+1] = data[i];
+    }
+    p[0] = ps0*hyai0;
+    p[NUM_INTERFACE_LEV-1] = max_pressure;
 
     // Put in monotonic order
-    std::sort(data, data_end);
+    std::sort(p_start, p_end);
 
     // Check for no repetitions
-    if (std::unique(data,data_end)!=data_end) {
+    if (std::unique(p_start,p_end)!=p_end) {
       return false;
     }
 
-    // Fix minimum pressure
-    data[0] = min_value;
-
     // Compute dp from p (we assume p(last interface)=max_pressure)
-    for (int i=0; i<NUM_PHYSICAL_LEV-1; ++i) {
-      data[i] = data[i+1]-data[i];
+    for (int i=0; i<NUM_PHYSICAL_LEV; ++i) {
+      data[i] = p[i+1]-p[i];
     }
-    data[NUM_PHYSICAL_LEV-1] = max_pressure-data[NUM_PHYSICAL_LEV-1];
 
     // Check that dp>=dp_min
     const Real min_dp = std::numeric_limits<Real>::epsilon()*1000;
@@ -241,6 +247,8 @@ void ElementsState::randomize(const int seed,
     for (auto it=data_end; it!=alloc_end; ++it) {
       *it = std::numeric_limits<Real>::quiet_NaN();
     }
+
+    Kokkos::deep_copy(pt_dp,h_pt_dp);
 
     return true;
   };
@@ -278,6 +286,7 @@ void ElementsState::randomize(const int seed,
     hvcoord.compute_ps_ref_from_dp(kv,Homme::subview(dp,ie,tl),
                                       Homme::subview(ps,ie,tl));
   });
+  ExecSpace::fence();
 }
 
 void ElementsState::pull_from_f90_pointers (CF90Ptr& state_v,         CF90Ptr& state_w_i,

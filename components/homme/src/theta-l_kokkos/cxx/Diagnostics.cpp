@@ -21,11 +21,18 @@ void Diagnostics::init (const ElementsState& state, const ElementsGeometry& geom
                              F90Ptr& elem_accum_q1mass_ptr,F90Ptr& elem_accum_iener_ptr,
                              F90Ptr& elem_accum_kener_ptr, F90Ptr& elem_accum_pener_ptr)
 {
+  // Check state/geometry/hvcoord were inited
+  assert (state.num_elems()>0);
+  assert (geometry.num_elems()>0);
+  assert (hvcoord.m_inited);
+
+  // Check initialization was done right
+  assert (m_num_elems==state.num_elems());
+
   m_state    = state;
   m_geometry = geometry;
   m_hvcoord  = hvcoord;
   m_theta_hydrostatic_mode = theta_hydrostatic_mode;
-  m_num_elems = state.num_elems();
 
   m_eos.init(m_theta_hydrostatic_mode,m_hvcoord);
   m_elem_ops.init(m_hvcoord);
@@ -59,6 +66,9 @@ void Diagnostics::init_buffers (const FunctorsBuffersManager& fbm) {
   Scalar* mem = reinterpret_cast<Scalar*>(fbm.get_memory());
 
   const int nteams = get_num_concurrent_teams(Homme::get_default_team_policy<ExecSpace,EnergyHalfTimesTag>(m_num_elems));
+
+  // If nteams is 0, something is wrong
+  assert (nteams>0);
 
   m_buffers.pnh    = decltype(m_buffers.pnh)(mem,nteams);
   mem += nteams*NP*NP*NUM_LEV;

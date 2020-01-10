@@ -201,9 +201,16 @@ struct Real2 {
   }
 };
 
+template<>
+struct reduction_identity<Homme::Scalar> {
+  KOKKOS_FORCEINLINE_FUNCTION
+  static Homme::Scalar sum()  {return Homme::Scalar(reduction_identity<Homme::Real>::sum());}
+};
+
 // Specialization of a Kokkos structure, needed in the initialization of reduction operations.
 template<> struct reduction_identity<Real2> {
-  KOKKOS_FORCEINLINE_FUNCTION static Real2 sum() { return Real2(); }
+  KOKKOS_FORCEINLINE_FUNCTION
+  static Real2 sum() { return Real2(); }
 };
 
 } // namespace Kokkos

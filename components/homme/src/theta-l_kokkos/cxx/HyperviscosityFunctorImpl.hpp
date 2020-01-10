@@ -112,17 +112,13 @@ public:
       auto phi_i = Homme::subview(m_state.m_phinh_i,kv.ie,m_data.np1,igp,jgp);
       auto dp    = Homme::subview(m_state.m_dp3d,kv.ie,m_data.np1,igp,jgp);
 
-#if HV_USE_THETA_REF
       auto theta_ref = Homme::subview(m_state.m_ref_states.theta_ref,kv.ie,igp,jgp);
-#endif
       auto phi_i_ref = Homme::subview(m_state.m_ref_states.phi_i_ref,kv.ie,igp,jgp);
       auto dp_ref    = Homme::subview(m_state.m_ref_states.dp_ref,kv.ie,igp,jgp);
 
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                            [&](const int ilev) {
-#ifdef HV_USE_THETA_REF
         vtheta(ilev) -= theta_ref(ilev);
-#endif
         phi_i(ilev)  -= phi_i_ref(ilev);
         dp(ilev)     -= dp_ref(ilev);
       });
@@ -310,9 +306,7 @@ public:
       const auto dp3d = Homme::subview(m_state.m_dp3d,kv.ie, m_data.np1, igp, jgp);
       const auto dp_ref = Homme::subview(m_state.m_ref_states.dp_ref,kv.ie, igp, jgp);
       const auto theta = Homme::subview(m_state.m_vtheta_dp,kv.ie, m_data.np1, igp, jgp);
-#ifdef HV_USE_THETA_REF
       const auto theta_ref = Homme::subview(m_state.m_ref_states.theta_ref,kv.ie, igp, jgp);
-#endif
       const auto phi = Homme::subview(m_state.m_phinh_i,kv.ie, m_data.np1, igp, jgp);
       const auto phi_ref = Homme::subview(m_state.m_ref_states.phi_i_ref,kv.ie, igp, jgp);
       const auto dptens = Homme::subview(m_buffers.dptens,kv.ie, igp, jgp);
@@ -321,9 +315,7 @@ public:
                            [&](const int &ilev) {
 
         dp3d(ilev) += dp_ref(ilev);
-#ifdef HV_USE_THETA_REF
         theta(ilev) += theta_ref(ilev);
-#endif
         phi(ilev) += phi_ref(ilev);
         if (m_data.nu_p>0) {
           dpdiss_ave(ilev) += m_data.eta_ave_w*dp3d(ilev) / m_data.hypervis_subcycle;

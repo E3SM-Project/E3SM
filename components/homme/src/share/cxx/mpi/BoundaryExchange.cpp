@@ -430,7 +430,7 @@ void BoundaryExchange::pack_and_send ()
         Kokkos::RangePolicy<ExecSpace>(0, m_num_elems*num_fields*NUM_CONNECTIONS*NUM_LEV_P),
         KOKKOS_LAMBDA(const int it) {
           const int ie = it / (num_fields*NUM_CONNECTIONS*NUM_LEV_P);
-          const int ifield = (it / (NUM_CONNECTIONS*NUM_LEV)) % num_fields;
+          const int ifield = (it / (NUM_CONNECTIONS*NUM_LEV_P)) % num_fields;
           const int iconn = (it / NUM_LEV_P) % NUM_CONNECTIONS;
           const int ilev = it % NUM_LEV_P;
           const ConnectionInfo& info = connections(ie, iconn);

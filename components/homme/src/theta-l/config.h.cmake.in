@@ -74,3 +74,6 @@
 
 /* When doing BFB testing, we occasionally must modify bits. Use this flag to protect such code. */
 #cmakedefine HOMMEXX_BFB_TESTING
+
+/* Detect whether this is a kokkos target */
+#cmakedefine01 KOKKOS_TARGET
