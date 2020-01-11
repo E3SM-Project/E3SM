@@ -21,7 +21,7 @@ module dlnd_comp_mod
   use shr_cal_mod           , only : shr_cal_calendarname
   use shr_cal_mod           , only : shr_cal_datetod2string
   use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_import, dshr_export
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_dmodel_add, dshr_import, dshr_export
   use glc_elevclass_mod     , only : glc_elevclass_as_string, glc_elevclass_init
   use dlnd_shr_mod          , only : datamode        ! namelist input
   use dlnd_shr_mod          , only : rest_file       ! namelist input
@@ -104,47 +104,50 @@ contains
     ! export fields
     !-------------------
 
-    ! scalar fields that need to be advertised
+    ! Advertise export fields
 
     fldsFrLnd_num=1
     fldsFrLnd(1)%stdname = trim(flds_scalar_name)
 
-    call dshr_fld_add(model_fld="Sl_lfrin", model_fld_concat=flds_l2x, model_fld_index=kf)
+    call dshr_fld_add("Sl_lfrin", fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
 
-    ! The actual snow field names will have the elevation class index at the end (e.g., Sl_tsrf01, tsrf01)
     if (glc_nec > 0) then
-       do n = 0, glc_nec
-          nec_str = glc_elevclass_as_string(n)
-
-          data_fld_name  = "tsrf" // nec_str
-          model_fld_name = "Sl_tsrf" // nec_str
-          call dshr_fld_add(data_fld=trim(data_fld_name), data_fld_array=avifld, &
-               model_fld=trim(model_fld_name), model_fld_array=avofld, model_fld_concat=flds_l2x)
-
-          data_fld_name  = "topo" // nec_str
-          model_fld_name = "Sl_topo" // nec_str
-          call dshr_fld_add(data_fld=trim(data_fld_name), data_fld_array=avifld, &
-               model_fld=trim(model_fld_name), model_fld_array=avofld, model_fld_concat=flds_l2x)
-
-          data_fld_name  = "qice" // nec_str
-          model_fld_name = "Flgl_qice" // nec_str
-          call dshr_fld_add(data_fld=trim(data_fld_name), data_fld_array=avifld, &
-               model_fld=trim(model_fld_name), model_fld_array=avofld, model_fld_concat=flds_l2x)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       end do
-
        ! The following puts all of the elevation class fields as an
        ! undidstributed dimension in the export state field - index1 is bare land - and the total number of 
        ! elevation classes not equal to bare land go from index2 -> glc_nec+1 
 
-       call dshr_fld_add(med_fld="Sl_lfrin", fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
-       call dshr_fld_add(med_fld='Sl_tsrf_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
+       call dshr_fld_add('Sl_tsrf_elev'  , fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
             ungridded_lbound=1, ungridded_ubound=glc_nec+1)
-       call dshr_fld_add(med_fld='Sl_topo_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
+       call dshr_fld_add('Sl_topo_elev'  , fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
             ungridded_lbound=1, ungridded_ubound=glc_nec+1)
-       call dshr_fld_add(med_fld='Flgl_qice_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
+       call dshr_fld_add('Flgl_qice_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
             ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+    end if
 
+    do n = 1,fldsFrLnd_num
+       call NUOPC_Advertise(exportState, standardName=fldsFrLnd(n)%stdname, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    enddo
+
+    ! set data model export fields that have a corresponding stream field
+    ! the actual snow field names will have the elevation class index at the end (e.g., Sl_tsrf01, tsrf01)
+
+    if (glc_nec > 0) then
+       do n = 0, glc_nec
+          nec_str = glc_elevclass_as_string(n)
+          call dshr_dmodel_add(&
+               data_fld=trim("tsrf" // nec_str)     , data_fld_array=avifld, &
+               model_fld=trim("Sl_tsrf" // nec_str) , model_fld_array=avofld, model_fld_concat=flds_l2x)
+
+          call dshr_dmodel_add(&
+               data_fld=trim("topo" // nec_str)     , data_fld_array=avifld, &
+               model_fld=trim("Sl_topo" // nec_str) , model_fld_array=avofld, model_fld_concat=flds_l2x)
+
+          call dshr_dmodel_add(&
+               data_fld=trim("qice" // nec_str)       , data_fld_array=avifld, &
+               model_fld=trim("Flgl_qice" // nec_str) , model_fld_array=avofld, model_fld_concat=flds_l2x)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       end do
     end if
 
     ! Non snow fields that nead to be added if dlnd is in cplhist mode
@@ -155,11 +158,6 @@ contains
     ! "Sl_fv       " "Sl_ram1     " 
     ! "Fall_flxdst1" "Fall_flxdst2" "Fall_flxdst3" "Fall_flxdst4"
 
-    do n = 1,fldsFrLnd_num
-       call NUOPC_Advertise(exportState, standardName=fldsFrLnd(n)%stdname, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    enddo
-
   end subroutine dlnd_comp_advertise
 
   !===============================================================================
@@ -168,7 +166,9 @@ contains
        inst_suffix, logunit, read_restart, &
        scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, mesh, nxg, nyg)
 
-    ! !DESCRIPTION: initialize dlnd model
+    ! --------------------------
+    ! initialize dlnd model
+    ! --------------------------
 
     ! input/output variables
     integer                , intent(in)    :: mpicom       ! mpi communicator
@@ -413,7 +413,9 @@ contains
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, case_name)
 
-    ! !DESCRIPTION:  run method for dlnd model
+    ! --------------------------
+    ! run the dlnd model
+    ! --------------------------
 
     ! input/output variables:
     integer                , intent(in)    :: mpicom           ! mpi communicator

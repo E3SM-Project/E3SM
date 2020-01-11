@@ -21,7 +21,7 @@ module dwav_comp_mod
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use shr_cal_mod           , only : shr_cal_calendarname, shr_cal_datetod2string
   use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_export
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_dmodel_add, dshr_export
   use dwav_shr_mod          , only : datamode       ! namelist input
   use dwav_shr_mod          , only : rest_file      ! namelist input
   use dwav_shr_mod          , only : rest_file_strm ! namelist input
@@ -90,30 +90,34 @@ contains
     ! export fields
     !-------------------
 
-    ! scalar fields that need to be advertised
+    ! advertise export fields
 
     fldsFrWav_num=1
     fldsFrWav(1)%stdname = trim(flds_scalar_name)
 
-    ! export fields that have a corresponding stream field
-
-    call dshr_fld_add(data_fld="lamult", data_fld_array=avifld, model_fld="Sw_lamult", model_fld_array=avofld, &
-         model_fld_concat=flds_w2x, fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
-
-    call dshr_fld_add(data_fld="ustokes", data_fld_array=avifld, model_fld="Sw_ustokes", model_fld_array=avofld, &
-         model_fld_concat=flds_w2x, fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
-
-    call dshr_fld_add(data_fld="vstokes", data_fld_array=avifld, model_fld="Sw_vstokes", model_fld_array=avofld, &
-         model_fld_concat=flds_w2x, fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
-
-    !-------------------
-    ! advertise export state
-    !-------------------
+    call dshr_fld_add('Sw_lamult' , fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
+    call dshr_fld_add('Sw_ustokes', fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
+    call dshr_fld_add('Sw_vstokes', fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
 
     do n = 1,fldsFrWav_num
        call NUOPC_Advertise(exportState, standardName=fldsFrWav(n)%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
+
+    ! export fields that have a corresponding stream field
+
+    call dshr_dmodel_add(                               &
+         data_fld="lamult"    , data_fld_array=avifld,  &
+         model_fld="Sw_lamult", model_fld_array=avofld, model_fld_concat=flds_w2x) 
+
+    call dshr_dmodel_add(                               &
+         data_fld="ustokes"    , data_fld_array=avifld, &
+         model_fld="Sw_ustokes", model_fld_array=avofld, model_fld_concat=flds_w2x)
+
+    call dshr_dmodel_add(                               &
+         data_fld="vstokes", data_fld_array=avifld,     &
+         model_fld="Sw_vstokes", model_fld_array=avofld, model_fld_concat=flds_w2x)
+
 
   end subroutine dwav_comp_advertise
 
@@ -123,9 +127,11 @@ contains
        inst_suffix, logunit, read_restart, &
        target_ymd, target_tod, calendar, mesh, nxg, nyg)
 
-    ! !DESCRIPTION: initialize dwav model
+    ! ---------------------------------------
+    ! initialize dwav model
+    ! ---------------------------------------
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output parameters
     integer                , intent(in)    :: mpicom       ! mpi communicator
     integer                , intent(in)    :: compid       ! mct comp id
     integer                , intent(in)    :: my_task      ! my task in mpi communicator mpicom

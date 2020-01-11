@@ -21,7 +21,7 @@ module drof_comp_mod
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_export
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_dmodel_add, dshr_export
   use drof_shr_mod          , only : datamode       ! namelist input
   use drof_shr_mod          , only : rest_file      ! namelist input
   use drof_shr_mod          , only : rest_file_strm ! namelist input
@@ -93,27 +93,29 @@ contains
     ! export fields
     !-------------------
 
-    ! scalar fields that need to be advertised
+    ! advertise export fields
 
     fldsFrRof_num=1
     fldsFrRof(1)%stdname = trim(flds_scalar_name)
 
-    ! export fields that have a corresponding stream field
 
-    call dshr_fld_add(data_fld="rofl", data_fld_array=avifld, model_fld="Forr_rofl", model_fld_array=avofld, &
-         model_fld_concat=flds_r2x, fldlist_num=fldsFrRof_num, fldlist=fldsFrRof)
-
-    call dshr_fld_add(data_fld="rofi", data_fld_array=avifld, model_fld="Forr_rofi", model_fld_array=avofld, &
-         model_fld_concat=flds_r2x, fldlist_num=fldsFrRof_num, fldlist=fldsFrRof)
-
-    !-------------------
-    ! advertise export state
-    !-------------------
+    call dshr_fld_add("Forr_rofl", fldlist_num=fldsFrRof_num, fldlist=fldsFrRof)
+    call dshr_fld_add("Forr_rofi", fldlist_num=fldsFrRof_num, fldlist=fldsFrRof)
 
     do n = 1,fldsFrRof_num
        call NUOPC_Advertise(exportState, standardName=fldsFrRof(n)%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
+
+    ! set data model export fields that have a corresponding stream field
+
+    call dshr_dmodel_add(                                &
+         data_fld="rofl"       , data_fld_array=avifld,  &
+         model_fld="Forr_rofl" , model_fld_array=avofld, model_fld_concat=flds_r2x) 
+
+    call dshr_dmodel_add(                                &
+         data_fld="rofi"       , data_fld_array=avifld,  &
+         model_fld="Forr_rofi" , model_fld_array=avofld, model_fld_concat=flds_r2x)
 
   end subroutine drof_comp_advertise
 

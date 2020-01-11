@@ -265,9 +265,9 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    type(ESMF_Mesh)        :: Emesh
-    integer                :: shrlogunit                ! original log unit
-    integer                :: n
+    type(ESMF_Mesh) :: Emesh
+    integer         :: shrlogunit                ! original log unit
+    integer         :: n
     character(len=*),parameter :: subname=trim(modName)//':(InitializeRealize) '
     !-------------------------------------------------------------------------------
 

@@ -12,6 +12,7 @@ module dshr_nuopc_mod
   public
 
   public :: dshr_fld_add
+  public :: dshr_dmodel_add
   public :: dshr_import
   public :: dshr_export
   public :: dshr_realize
@@ -25,11 +26,10 @@ module dshr_nuopc_mod
     integer :: ungridded_ubound = 0
   end type fld_list_type
 
-  interface dshr_fld_add ; module procedure &
-       dshr_fld_add, &
-       dshr_fld_add_model, &
-       dshr_fld_add_model_and_data
-  end interface dshr_fld_add
+  interface dshr_dmodel_add ; module procedure &
+       dshr_dmodel_add1, &
+       dshr_dmodel_add2
+  end interface dshr_dmodel_add
 
   integer                 :: gridTofieldMap = 2 ! ungridded dimension is innermost
   integer     , parameter :: fldsMax = 100
@@ -42,10 +42,10 @@ module dshr_nuopc_mod
 contains
 !===============================================================================
 
-  subroutine dshr_fld_add(med_fld, fldlist_num, fldlist, ungridded_lbound, ungridded_ubound)
+  subroutine dshr_fld_add(fldname, fldlist_num, fldlist, ungridded_lbound, ungridded_ubound)
 
     ! input/output variables
-    character(len=*)               , intent(in)    :: med_fld
+    character(len=*)               , intent(in)    :: fldname
     integer                        , intent(inout) :: fldlist_num
     type(fld_list_type)            , intent(inout) :: fldlist(:)
     integer             , optional , intent(in)    :: ungridded_lbound
@@ -56,27 +56,35 @@ contains
     character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_fld_add)'
     ! ----------------------------------------------
 
-    call dshr_fld_list_add(fldlist_num, fldlist, med_fld, ungridded_lbound, ungridded_ubound)
+    ! Set up a list of field information
+
+    fldlist_num = fldlist_num + 1
+    if (fldlist_num > fldsMax) then
+      call ESMF_LogWrite(trim(subname)//": ERROR num > fldsMax "//trim(fldname), ESMF_LOGMSG_INFO)
+      rc = ESMF_FAILURE
+      return
+    endif
+    fldlist(fldlist_num)%stdname = trim(fldname)
+
+    if (present(ungridded_lbound) .and. present(ungridded_ubound)) then
+       fldlist(fldlist_num)%ungridded_lbound = ungridded_lbound
+       fldlist(fldlist_num)%ungridded_ubound = ungridded_ubound
+    end if
 
   end subroutine dshr_fld_add
 
 !===============================================================================
 
-  subroutine dshr_fld_add_model(model_fld, model_fld_concat, model_fld_index, &
-       fldlist_num, fldlist, ungridded_lbound, ungridded_ubound)
+  subroutine dshr_dmodel_add1(model_fld, model_fld_concat, model_fld_index)
 
     ! input/output variables
     character(len=*)               , intent(in)    :: model_fld
     character(len=*)               , intent(inout) :: model_fld_concat
     integer             , optional , intent(out)   :: model_fld_index
-    integer             , optional , intent(inout) :: fldlist_num
-    type(fld_list_type) , optional , intent(inout) :: fldlist(:)
-    integer             , optional , intent(in)    :: ungridded_lbound
-    integer             , optional , intent(in)    :: ungridded_ubound
 
     ! local variables
     integer :: rc
-    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_fld_add_model)'
+    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_dmodel_add1)'
     ! ----------------------------------------------
 
     if (len_trim(model_fld_concat) + len_trim(model_fld) + 1 >= len(model_fld_concat)) then
@@ -95,21 +103,12 @@ contains
        call shr_string_listGetIndex(trim(model_fld_concat), trim(model_fld),  model_fld_index)
     end if
 
-    !----------------------------------
-    ! Update fldlist array if appropriate
-    !----------------------------------
-
-    if (present(fldlist_num) .and. present(fldlist)) then
-       call dshr_fld_list_add(fldlist_num, fldlist, model_fld, ungridded_lbound, ungridded_ubound)
-    end if
-
-  end subroutine dshr_fld_add_model
+  end subroutine dshr_dmodel_add1
 
   !===============================================================================
 
-  subroutine dshr_fld_add_model_and_data( data_fld, data_fld_array, &
-       model_fld, model_fld_array, model_fld_concat, model_fld_index, &
-       fldlist_num, fldlist, ungridded_lbound, ungridded_ubound)
+  subroutine dshr_dmodel_add2( data_fld, data_fld_array, model_fld, model_fld_array, &
+       model_fld_concat, model_fld_index)
 
     ! input/output variables
     character(len=*)               , intent(in)    :: data_fld
@@ -118,17 +117,13 @@ contains
     character(len=*)               , pointer       :: model_fld_array(:)
     character(len=*)    , optional , intent(inout) :: model_fld_concat
     integer             , optional , intent(out)   :: model_fld_index
-    integer             , optional , intent(inout) :: fldlist_num
-    type(fld_list_type) , optional , intent(inout) :: fldlist(:)
-    integer             , optional , intent(in)    :: ungridded_lbound
-    integer             , optional , intent(in)    :: ungridded_ubound
 
     ! local variables
     integer                     :: rc
     integer                     :: n, oldsize, id
     character(len=CS), pointer  :: new_data_fld_array(:)
     character(len=CS), pointer  :: new_model_fld_array(:)
-    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_fld_add_model_and_data) '
+    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_dmodel_add2) '
     ! ----------------------------------------------
 
     !----------------------------------
@@ -191,47 +186,7 @@ contains
        end if
     end if
 
-    !----------------------------------
-    ! Update fldlist array if appropriate
-    !----------------------------------
-    if (present(fldlist_num) .and. present(fldlist)) then
-       call dshr_fld_list_add(fldlist_num, fldlist, model_fld, ungridded_lbound, ungridded_ubound)
-    end if
-
-  end subroutine dshr_fld_add_model_and_data
-
-  !===============================================================================
-
-  subroutine dshr_fld_list_add(num, fldlist, stdname, ungridded_lbound, ungridded_ubound)
-
-    ! input/output variables
-    integer,                    intent(inout) :: num
-    type(fld_list_type),        intent(inout) :: fldlist(:)
-    character(len=*),           intent(in)    :: stdname
-    integer,          optional, intent(in)    :: ungridded_lbound
-    integer,          optional, intent(in)    :: ungridded_ubound
-
-    ! local variables
-    integer :: rc
-    character(len=*), parameter :: subname='(dshr_nuopc_mod:fld_list_add)'
-    !----------------------------------------------------------------------
-
-    ! Set up a list of field information
-
-    num = num + 1
-    if (num > fldsMax) then
-      call ESMF_LogWrite(trim(subname)//": ERROR num > fldsMax "//trim(stdname), ESMF_LOGMSG_INFO)
-      rc = ESMF_FAILURE
-      return
-    endif
-    fldlist(num)%stdname = trim(stdname)
-
-    if (present(ungridded_lbound) .and. present(ungridded_ubound)) then
-       fldlist(num)%ungridded_lbound = ungridded_lbound
-       fldlist(num)%ungridded_ubound = ungridded_ubound
-    end if
-
-  end subroutine dshr_fld_list_add
+  end subroutine dshr_dmodel_add2
 
   !===============================================================================
 

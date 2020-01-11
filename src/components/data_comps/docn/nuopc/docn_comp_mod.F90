@@ -28,7 +28,7 @@ module docn_comp_mod
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use shr_pcdf_mod          , only : shr_pcdf_readwrite
   use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_import, dshr_export
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_dmodel_add, dshr_import, dshr_export
   use docn_shr_mod          , only : datamode       ! namelist input
   use docn_shr_mod          , only : aquap_option   ! derived from datamode namelist input
   use docn_shr_mod          , only : rest_file      ! namelist input
@@ -123,68 +123,19 @@ contains
     ! export fields
     !--------------------------------
 
+    ! Advertise export fields
+
     fldsFrOcn_num=1
     fldsFrOcn(1)%stdname = trim(flds_scalar_name)
 
-    ! export fields that have no corresponding stream field (computed internally)
-
-    call dshr_fld_add(model_fld='So_omask', model_fld_concat=flds_o2x, model_fld_index=ksomask, &
-         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add(model_fld='Fioo_q', model_fld_concat=flds_o2x, model_fld_index=kq, &
-         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    ! export fields that have a corresponding stream field
-
-    call dshr_fld_add(data_fld='t', data_fld_array=avifld, &
-         model_fld='So_t', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kt, &
-         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add(data_fld='s', data_fld_array=avifld, &
-         model_fld='So_s', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=ks, &
-         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add(data_fld='u', data_fld_array=avifld, &
-         model_fld='So_u', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=ku, &
-         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add(data_fld='v', data_fld_array=avifld, &
-         model_fld='So_v', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kv, &
-         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add(data_fld='dhdx', data_fld_array=avifld, &
-         model_fld='So_dhdx', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kdhdx, &
-         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add(data_fld='dhdy', data_fld_array=avifld, &
-         model_fld='So_dhdy', model_fld_array=avofld, model_fld_concat=flds_o2x, model_fld_index=kdhdy, &
-         fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-
-    !-------------------
-    ! import fields (have no corresponding stream fields)
-    !-------------------
-
-    if (ocn_prognostic) then
-
-       fldsToOcn_num=1
-       fldsToOcn(1)%stdname = trim(flds_scalar_name)
-
-       call dshr_fld_add(model_fld='Foxx_swnet', model_fld_concat=flds_x2o, model_fld_index=kswnet, &
-            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add(model_fld='Foxx_lwup',  model_fld_concat=flds_x2o, model_fld_index=klwup, &
-            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add(model_fld='Foxx_sen',   model_fld_concat=flds_x2o, model_fld_index=ksen, &
-            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add(model_fld='Foxx_lat',   model_fld_concat=flds_x2o, model_fld_index=klat, &
-            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add(model_fld='Faxa_lwdn',  model_fld_concat=flds_x2o, model_fld_index=klwdn, &
-            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add(model_fld='Faxa_snow',  model_fld_concat=flds_x2o, model_fld_index=ksnow, &
-            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add(model_fld='Fioi_melth', model_fld_concat=flds_x2o, model_fld_index=kmelth, &
-            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add(model_fld='Foxx_rofi', model_fld_concat=flds_x2o, model_fld_index=krofi, &
-            fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-
-    end if
-
-    !-------------------
-    ! Advertise fields for import and export states
-    !-------------------
+    call dshr_fld_add('So_omask' , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add('So_t'     , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add('So_s'     , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add('So_u'     , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add('So_v'     , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add('So_dhdx'  , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add('So_dhdy'  , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add('Fioo_q'   , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
 
     do n = 1,fldsFrOcn_num
        call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
@@ -193,13 +144,69 @@ contains
             ESMF_LOGMSG_INFO)
     enddo
 
+    ! set data model export fields that have no corresponding stream field (computed internally)
+
+    call dshr_dmodel_add(model_fld='So_omask', model_fld_concat=flds_o2x, model_fld_index=ksomask )
+    call dshr_dmodel_add(model_fld='Fioo_q'  , model_fld_concat=flds_o2x, model_fld_index=kq      )
+
+    ! set data modelexport fields that have a corresponding stream field
+
+    call dshr_dmodel_add(                                    &
+         data_fld='t'        , data_fld_array=avifld,  &
+         model_fld='So_t'    , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=kt    )
+    call dshr_dmodel_add(                                    &
+         data_fld='s'        , data_fld_array=avifld,  &
+         model_fld='So_s'    , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=ks    )
+    call dshr_dmodel_add(                                    &
+         data_fld='u'        , data_fld_array=avifld,  &
+         model_fld='So_u'    , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=ku    )
+    call dshr_dmodel_add(                                    &
+         data_fld='v'        , data_fld_array=avifld,  &
+         model_fld='So_v'    , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=kv    )
+    call dshr_dmodel_add(                                    &
+         data_fld='dhdx'     , data_fld_array=avifld,  &
+         model_fld='So_dhdx' , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=kdhdx )
+    call dshr_dmodel_add(                                    &
+         data_fld='dhdy'     , data_fld_array=avifld,  &
+         model_fld='So_dhdy' , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=kdhdy )
+
+    !-------------------
+    ! import fields (have no corresponding stream fields)
+    !-------------------
+
     if (ocn_prognostic) then
+
+       ! advertise import fields
+
+       fldsToOcn_num=1
+       fldsToOcn(1)%stdname = trim(flds_scalar_name)
+
+       call dshr_fld_add('Foxx_swnet' , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add('Foxx_lwup'  , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add('Foxx_sen'   , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add('Foxx_lat'   , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add('Faxa_lwdn'  , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add('Faxa_snow'  , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add('Fioi_melth' , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add('Foxx_rofi'  , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+
        do n = 1,fldsToOcn_num
           call NUOPC_Advertise(importState, standardName=fldsToOcn(n)%stdname, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
           call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):To_ocn'//trim(fldsToOcn(n)%stdname), &
                ESMF_LOGMSG_INFO)
        end do
+
+       ! set data model import fieldsfields
+       call dshr_dmodel_add(model_fld='Foxx_swnet', model_fld_concat=flds_x2o, model_fld_index=kswnet )
+       call dshr_dmodel_add(model_fld='Foxx_lwup',  model_fld_concat=flds_x2o, model_fld_index=klwup  )
+       call dshr_dmodel_add(model_fld='Foxx_sen',   model_fld_concat=flds_x2o, model_fld_index=ksen   )
+       call dshr_dmodel_add(model_fld='Foxx_lat',   model_fld_concat=flds_x2o, model_fld_index=klat   )
+       call dshr_dmodel_add(model_fld='Faxa_lwdn',  model_fld_concat=flds_x2o, model_fld_index=klwdn  )
+       call dshr_dmodel_add(model_fld='Faxa_snow',  model_fld_concat=flds_x2o, model_fld_index=ksnow  )
+       call dshr_dmodel_add(model_fld='Fioi_melth', model_fld_concat=flds_x2o, model_fld_index=kmelth )
+       call dshr_dmodel_add(model_fld='Foxx_rofi',  model_fld_concat=flds_x2o, model_fld_index=krofi  )
+
     end if
 
     !-------------------
@@ -219,8 +226,8 @@ contains
     ! - avstrm is an attribute vector created from flds_strm
 
     if (ocn_prognostic_mod) then
-       call dshr_fld_add(data_fld="h"   , data_fld_array=stifld, model_fld="strm_h"   , model_fld_array=stofld)
-       call dshr_fld_add(data_fld="qbot", data_fld_array=stifld, model_fld="strm_qbot", model_fld_array=stofld)
+       call dshr_dmodel_add(data_fld="h"   , data_fld_array=stifld, model_fld="strm_h"   , model_fld_array=stofld)
+       call dshr_dmodel_add(data_fld="qbot", data_fld_array=stifld, model_fld="strm_qbot", model_fld_array=stofld)
     end if
 
   end subroutine docn_comp_advertise
@@ -231,7 +238,10 @@ contains
        inst_suffix, logunit, read_restart, &
        scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, mesh, nxg, nyg)
 
-    ! !DESCRIPTION: initialize docn model
+    ! ----------------------------
+    ! initialize docn model
+    ! ----------------------------
+
     use pio        , only : iosystem_desc_t
     use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
 
@@ -549,9 +559,11 @@ contains
        inst_suffix, logunit, read_restart, write_restart, &
        target_ymd, target_tod, modeldt, case_name)
 
-    ! !DESCRIPTION:  run method for docn model
+    ! ----------------------------
+    ! run docn model
+    ! ----------------------------
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output variables
     integer                , intent(in)    :: mpicom        ! mpi communicator
     integer                , intent(in)    :: compid        ! mct comp id
     integer                , intent(in)    :: my_task       ! my task in mpi communicator mpicom
@@ -565,7 +577,7 @@ contains
     integer                , intent(in)    :: modeldt
     character(len=*)       , intent(in), optional :: case_name ! case name
 
-    !--- local ---
+    ! local variables
     integer                 :: n,nfld ! indices
     integer                 :: lsize  ! size of attr vect
     real(R8)                :: dt     ! timestep
