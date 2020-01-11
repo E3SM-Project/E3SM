@@ -439,19 +439,19 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.1.0b05-ncdfio-mpt-g</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.1.0b05-ncdfio-mpt-O</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.1.0b05-ncdfio-mpiuni-g</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.1.0b05-ncdfio-mpiuni-O</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
@@ -467,8 +467,8 @@ This allows using a different mpirun command to launch unit tests
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
 	<!-- known failure in parallel netcdf with mpt, use serial -->
-	<command name="load">netcdf/4.7.3</command>
-	<command name="load">pnetcdf/1.11.1</command>
+	<command name="load">netcdf/4.7.1</command>
+	<command name="load">pnetcdf/1.11.0</command>
       </modules>
       <modules mpilib="mpt" compiler="pgi">
 	<command name="load">mpt/2.19</command>
@@ -490,7 +490,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf/4.7.1</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial">
-	<command name="load">netcdf/4.7.3</command>
+	<command name="load">netcdf/4.7.1</command>
       </modules>
       <modules compiler="pgi" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
