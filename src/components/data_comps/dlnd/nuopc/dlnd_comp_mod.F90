@@ -132,6 +132,8 @@ contains
     ! set data model export fields that have a corresponding stream field
     ! the actual snow field names will have the elevation class index at the end (e.g., Sl_tsrf01, tsrf01)
 
+    call dshr_dmodel_add(model_fld="Sl_lfrin", model_fld_concat=flds_l2x, model_fld_index=kf)
+
     if (glc_nec > 0) then
        do n = 0, glc_nec
           nec_str = glc_elevclass_as_string(n)
