@@ -21,7 +21,8 @@ module dwav_comp_mod
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use shr_cal_mod           , only : shr_cal_calendarname, shr_cal_datetod2string
   use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_dmodel_add, dshr_export
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_avect_add, dshr_translate_add
+  use dshr_nuopc_mod        , only : dshr_export, dshr_import
   use dwav_shr_mod          , only : datamode       ! namelist input
   use dwav_shr_mod          , only : rest_file      ! namelist input
   use dwav_shr_mod          , only : rest_file_strm ! namelist input
@@ -87,37 +88,36 @@ contains
     if (.not. wav_present) return
 
     !-------------------
-    ! export fields
+    ! Advertise export fields
     !-------------------
-
-    ! advertise export fields
 
     fldsFrWav_num=1
     fldsFrWav(1)%stdname = trim(flds_scalar_name)
 
-    call dshr_fld_add('Sw_lamult' , fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
-    call dshr_fld_add('Sw_ustokes', fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
-    call dshr_fld_add('Sw_vstokes', fldlist_num=fldsFrWav_num, fldlist=fldsFrWav)
+    call dshr_fld_add('Sw_lamult' , fldsFrWav_num, fldsFrWav)
+    call dshr_fld_add('Sw_ustokes', fldsFrWav_num, fldsFrWav)
+    call dshr_fld_add('Sw_vstokes', fldsFrWav_num, fldsFrWav)
 
     do n = 1,fldsFrWav_num
        call NUOPC_Advertise(exportState, standardName=fldsFrWav(n)%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
 
-    ! export fields that have a corresponding stream field
+    !-------------------
+    ! Create colon deliminted string and optional indices for export attribute vectors
+    !-------------------
 
-    call dshr_dmodel_add(                               &
-         data_fld="lamult"    , data_fld_array=avifld,  &
-         model_fld="Sw_lamult", model_fld_array=avofld, model_fld_concat=flds_w2x) 
+    call dshr_avect_add("Sw_lamult" , flds_w2x)
+    call dshr_avect_add("Sw_ustokes", flds_w2x)
+    call dshr_avect_add("Sw_vstokes", flds_w2x)
 
-    call dshr_dmodel_add(                               &
-         data_fld="ustokes"    , data_fld_array=avifld, &
-         model_fld="Sw_ustokes", model_fld_array=avofld, model_fld_concat=flds_w2x)
+    !-------------------
+    ! Create module level translation list character arrays
+    !-------------------
 
-    call dshr_dmodel_add(                               &
-         data_fld="vstokes", data_fld_array=avifld,     &
-         model_fld="Sw_vstokes", model_fld_array=avofld, model_fld_concat=flds_w2x)
-
+    call dshr_translate_add('lamult'  , 'Sw_lamult'  , avifld, avofld)
+    call dshr_translate_add('ustokes' , 'Sw_ustokes' , avifld, avofld)
+    call dshr_translate_add('vstokes' , 'Sw_vstokes' , avifld, avofld)
 
   end subroutine dwav_comp_advertise
 

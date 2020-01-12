@@ -28,7 +28,8 @@ module docn_comp_mod
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use shr_pcdf_mod          , only : shr_pcdf_readwrite
   use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_dmodel_add, dshr_import, dshr_export
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_avect_add, dshr_translate_add
+  use dshr_nuopc_mod        , only : dshr_export, dshr_import
   use docn_shr_mod          , only : datamode       ! namelist input
   use docn_shr_mod          , only : aquap_option   ! derived from datamode namelist input
   use docn_shr_mod          , only : rest_file      ! namelist input
@@ -104,10 +105,16 @@ contains
   subroutine docn_comp_advertise(importState, exportState, flds_scalar_name, &
        ocn_prognostic, fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
 
+    ! --------------------------------------------------------------
+    ! 1. determine export and import fields to advertise to mediator
+    ! 2. determine colon delimited chacter string to initialize import and export attribute vectors
+    ! 3. determine module level translation character arrays  (avifld/avofld and stifld/stofld)
+    ! --------------------------------------------------------------
+
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
-    character(len=*)     , intent(in)    :: flds_scalar_name 
+    character(len=*)     , intent(in)    :: flds_scalar_name
     logical              , intent(in)    :: ocn_prognostic
     integer              , intent(out)   :: fldsToOcn_num
     integer              , intent(out)   :: fldsFrOcn_num
@@ -119,23 +126,22 @@ contains
     integer         :: n
     !-------------------------------------------------------------------------------
 
-    !--------------------------------
-    ! export fields
-    !--------------------------------
 
+    !--------------------------------
     ! Advertise export fields
+    !--------------------------------
 
     fldsFrOcn_num=1
     fldsFrOcn(1)%stdname = trim(flds_scalar_name)
 
-    call dshr_fld_add('So_omask' , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add('So_t'     , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add('So_s'     , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add('So_u'     , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add('So_v'     , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add('So_dhdx'  , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add('So_dhdy'  , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
-    call dshr_fld_add('Fioo_q'   , fldlist_num=fldsFrOcn_num, fldlist=fldsFrOcn)
+    call dshr_fld_add('So_omask' , fldsFrOcn_num, fldsFrOcn)
+    call dshr_fld_add('So_t'     , fldsFrOcn_num, fldsFrOcn)
+    call dshr_fld_add('So_s'     , fldsFrOcn_num, fldsFrOcn)
+    call dshr_fld_add('So_u'     , fldsFrOcn_num, fldsFrOcn)
+    call dshr_fld_add('So_v'     , fldsFrOcn_num, fldsFrOcn)
+    call dshr_fld_add('So_dhdx'  , fldsFrOcn_num, fldsFrOcn)
+    call dshr_fld_add('So_dhdy'  , fldsFrOcn_num, fldsFrOcn)
+    call dshr_fld_add('Fioo_q'   , fldsFrOcn_num, fldsFrOcn)
 
     do n = 1,fldsFrOcn_num
        call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
@@ -144,40 +150,11 @@ contains
             ESMF_LOGMSG_INFO)
     enddo
 
-    ! set data model export fields that have no corresponding stream field (computed internally)
-
-    call dshr_dmodel_add(model_fld='So_omask', model_fld_concat=flds_o2x, model_fld_index=ksomask )
-    call dshr_dmodel_add(model_fld='Fioo_q'  , model_fld_concat=flds_o2x, model_fld_index=kq      )
-
-    ! set data modelexport fields that have a corresponding stream field
-
-    call dshr_dmodel_add(                                    &
-         data_fld='t'        , data_fld_array=avifld,  &
-         model_fld='So_t'    , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=kt    )
-    call dshr_dmodel_add(                                    &
-         data_fld='s'        , data_fld_array=avifld,  &
-         model_fld='So_s'    , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=ks    )
-    call dshr_dmodel_add(                                    &
-         data_fld='u'        , data_fld_array=avifld,  &
-         model_fld='So_u'    , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=ku    )
-    call dshr_dmodel_add(                                    &
-         data_fld='v'        , data_fld_array=avifld,  &
-         model_fld='So_v'    , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=kv    )
-    call dshr_dmodel_add(                                    &
-         data_fld='dhdx'     , data_fld_array=avifld,  &
-         model_fld='So_dhdx' , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=kdhdx )
-    call dshr_dmodel_add(                                    &
-         data_fld='dhdy'     , data_fld_array=avifld,  &
-         model_fld='So_dhdy' , model_fld_array=avofld, model_fld_concat=flds_o2x , model_fld_index=kdhdy )
-
     !-------------------
-    ! import fields (have no corresponding stream fields)
+    ! Advertise import fields
     !-------------------
 
     if (ocn_prognostic) then
-
-       ! advertise import fields
-
        fldsToOcn_num=1
        fldsToOcn(1)%stdname = trim(flds_scalar_name)
 
@@ -196,28 +173,42 @@ contains
           call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):To_ocn'//trim(fldsToOcn(n)%stdname), &
                ESMF_LOGMSG_INFO)
        end do
-
-       ! set data model import fieldsfields
-       call dshr_dmodel_add(model_fld='Foxx_swnet', model_fld_concat=flds_x2o, model_fld_index=kswnet )
-       call dshr_dmodel_add(model_fld='Foxx_lwup',  model_fld_concat=flds_x2o, model_fld_index=klwup  )
-       call dshr_dmodel_add(model_fld='Foxx_sen',   model_fld_concat=flds_x2o, model_fld_index=ksen   )
-       call dshr_dmodel_add(model_fld='Foxx_lat',   model_fld_concat=flds_x2o, model_fld_index=klat   )
-       call dshr_dmodel_add(model_fld='Faxa_lwdn',  model_fld_concat=flds_x2o, model_fld_index=klwdn  )
-       call dshr_dmodel_add(model_fld='Faxa_snow',  model_fld_concat=flds_x2o, model_fld_index=ksnow  )
-       call dshr_dmodel_add(model_fld='Fioi_melth', model_fld_concat=flds_x2o, model_fld_index=kmelth )
-       call dshr_dmodel_add(model_fld='Foxx_rofi',  model_fld_concat=flds_x2o, model_fld_index=krofi  )
-
     end if
 
     !-------------------
-    ! Save as module variables for use in debugging
+    ! Create colon deliminted string and optional indices for import and export attribute vectors
     !-------------------
 
-    ocn_prognostic_mod = ocn_prognostic
+    call dshr_avect_add('So_t'     , flds_o2x, av_index=kt)
+    call dshr_avect_add('So_s'     , flds_o2x, av_index=ks)
+    call dshr_avect_add('So_u'     , flds_o2x, av_index=ku)
+    call dshr_avect_add('So_v'     , flds_o2x, av_index=kv)
+    call dshr_avect_add('So_dhdx'  , flds_o2x, av_index=kdhdx)
+    call dshr_avect_add('So_dhdy'  , flds_o2x, av_index=kdhdy)
+    call dshr_avect_add('So_omask' , flds_o2x, av_index=ksomask)
+    call dshr_avect_add('Fioo_q'   , flds_o2x, av_index=kq)
+
+    if (ocn_prognostic) then
+       call dshr_avect_add('Foxx_swnet', flds_x2o, av_index=kswnet)
+       call dshr_avect_add('Foxx_lwup',  flds_x2o, av_index=klwup)
+       call dshr_avect_add('Foxx_sen',   flds_x2o, av_index=ksen)
+       call dshr_avect_add('Foxx_lat',   flds_x2o, av_index=klat)
+       call dshr_avect_add('Faxa_lwdn',  flds_x2o, av_index=klwdn)
+       call dshr_avect_add('Faxa_snow',  flds_x2o, av_index=ksnow)
+       call dshr_avect_add('Fioi_melth', flds_x2o, av_index=kmelth)
+       call dshr_avect_add('Foxx_rofi',  flds_x2o, av_index=krofi)
+    end if
 
     !-------------------
-    ! module character arrays stifld and stofld
+    ! Create module level translation list character arrays
     !-------------------
+
+    call dshr_translate_add('t'    , 'So_t'    , avifld, avofld)
+    call dshr_translate_add('s'    , 'So_s'    , avifld, avofld)
+    call dshr_translate_add('u'    , 'So_u'    , avifld, avofld)
+    call dshr_translate_add('v'    , 'So_v'    , avifld, avofld)
+    call dshr_translate_add('dhdx' , 'So_dhdx' , avifld, avofld)
+    call dshr_translate_add('dhdy' , 'So_dhdy' , avifld, avofld)
 
     ! - stifld is a character array of stream field names
     ! - stofld is a character array of data model field names that have a one-to-one correspondence with names in stifld
@@ -225,10 +216,16 @@ contains
     !   those field names that are available in the data streams present in SDOCN%sdatm
     ! - avstrm is an attribute vector created from flds_strm
 
-    if (ocn_prognostic_mod) then
-       call dshr_dmodel_add(data_fld="h"   , data_fld_array=stifld, model_fld="strm_h"   , model_fld_array=stofld)
-       call dshr_dmodel_add(data_fld="qbot", data_fld_array=stifld, model_fld="strm_qbot", model_fld_array=stofld)
+    if (ocn_prognostic) then
+       call dshr_translate_add("h"   , "strm_h"   , stifld, stofld)
+       call dshr_translate_add("qbot", "strm_qbot", stifld, stofld)
     end if
+
+    !-------------------
+    ! Save as module variables for use in debugging
+    !-------------------
+
+    ocn_prognostic_mod = ocn_prognostic
 
   end subroutine docn_comp_advertise
 
@@ -797,14 +794,13 @@ contains
              !--- compute new temp ---
              o2x%rAttr(kt,n) = somtp(n) + &
                   (x2o%rAttr(kswnet,n) + &  ! shortwave
-                  x2o%rAttr(klwup ,n) + &  ! longwave
-                  x2o%rAttr(klwdn ,n) + &  ! longwave
-                  x2o%rAttr(ksen  ,n) + &  ! sensible
-                  x2o%rAttr(klat  ,n) + &  ! latent
-                  x2o%rAttr(kmelth,n) - &  ! ice melt
-                  avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
-                  (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
-                  dt/(cpsw*rhosw*avstrm%rAttr(kh,n))
+                   x2o%rAttr(klwup ,n) + &  ! longwave
+                   x2o%rAttr(klwdn ,n) + &  ! longwave
+                   x2o%rAttr(ksen  ,n) + &  ! sensible
+                   x2o%rAttr(klat  ,n) + &  ! latent
+                   x2o%rAttr(kmelth,n) - &  ! ice melt
+                   avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
+                   (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * dt/(cpsw*rhosw*avstrm%rAttr(kh,n)) ! latent by prec and roff
              !--- compute ice formed or melt potential ---
              o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*avstrm%rAttr(kh,n))/dt  ! ice formed q>0
              somtp(n) = o2x%rAttr(kt,n)                                        ! save temp

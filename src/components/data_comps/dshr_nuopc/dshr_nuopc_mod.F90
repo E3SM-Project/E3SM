@@ -12,7 +12,8 @@ module dshr_nuopc_mod
   public
 
   public :: dshr_fld_add
-  public :: dshr_dmodel_add
+  public :: dshr_avect_add
+  public :: dshr_translate_add
   public :: dshr_import
   public :: dshr_export
   public :: dshr_realize
@@ -25,11 +26,6 @@ module dshr_nuopc_mod
     integer :: ungridded_lbound = 0
     integer :: ungridded_ubound = 0
   end type fld_list_type
-
-  interface dshr_dmodel_add ; module procedure &
-       dshr_dmodel_add1, &
-       dshr_dmodel_add2
-  end interface dshr_dmodel_add
 
   integer                 :: gridTofieldMap = 2 ! ungridded dimension is innermost
   integer     , parameter :: fldsMax = 100
@@ -75,12 +71,12 @@ contains
 
 !===============================================================================
 
-  subroutine dshr_dmodel_add1(model_fld, model_fld_concat, model_fld_index)
+  subroutine dshr_avect_add(model_fld, model_fld_concat, av_index)
 
     ! input/output variables
     character(len=*)               , intent(in)    :: model_fld
     character(len=*)               , intent(inout) :: model_fld_concat
-    integer             , optional , intent(out)   :: model_fld_index
+    integer             , optional , intent(out)   :: av_index
 
     ! local variables
     integer :: rc
@@ -99,94 +95,67 @@ contains
        model_fld_concat = trim(model_fld_concat)//':'//trim(model_fld)
     end if
 
-    if (present(model_fld_index)) then
-       call shr_string_listGetIndex(trim(model_fld_concat), trim(model_fld),  model_fld_index)
+    if (present(av_index)) then
+       call shr_string_listGetIndex(trim(model_fld_concat), trim(model_fld),  av_index)
     end if
 
-  end subroutine dshr_dmodel_add1
+  end subroutine dshr_avect_add
 
   !===============================================================================
 
-  subroutine dshr_dmodel_add2( data_fld, data_fld_array, model_fld, model_fld_array, &
-       model_fld_concat, model_fld_index)
+  subroutine dshr_translate_add( fldname1, fldname2, fldnames1, fldnames2)
+
+    !----------------------------------
+    ! Create new character arrays fldnames1 and fldnames2
+    !----------------------------------
 
     ! input/output variables
-    character(len=*)               , intent(in)    :: data_fld
-    character(len=*)               , pointer       :: data_fld_array(:)
-    character(len=*)               , intent(in)    :: model_fld
-    character(len=*)               , pointer       :: model_fld_array(:)
-    character(len=*)    , optional , intent(inout) :: model_fld_concat
-    integer             , optional , intent(out)   :: model_fld_index
+    character(len=*) , intent(in)    :: fldname1
+    character(len=*) , intent(in)    :: fldname2
+    character(len=*) , pointer       :: fldnames1(:)
+    character(len=*) , pointer       :: fldnames2(:)
 
     ! local variables
     integer                     :: rc
     integer                     :: n, oldsize, id
-    character(len=CS), pointer  :: new_data_fld_array(:)
-    character(len=CS), pointer  :: new_model_fld_array(:)
-    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_dmodel_add2) '
+    character(len=CS), pointer  :: new_fldnames1(:)
+    character(len=CS), pointer  :: new_fldnames2(:)
+    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_translate_add) '
     ! ----------------------------------------------
 
-    !----------------------------------
-    ! Create new data_fld_array and model_fld_array
-    ! Model is what the data model sends and receives from the mediator
-    ! Data is what the data model obtains from the various streams
-    !----------------------------------
-
     ! 1) determine new index
-    if (associated(data_fld_array)) then
-       oldsize = size(data_fld_array)
+    if (associated(fldnames1)) then
+       oldsize = size(fldnames1)
     else
        oldsize = 0
     end if
     id = oldsize + 1
 
-    ! 2) allocate new_data_fld_array and oldavi to one element larger than input
-    allocate(new_data_fld_array(id))
-    allocate(new_model_fld_array(id))
+    ! 2) allocate new_fldnames1 and new_fldnames2 to one element larger than input
+    allocate(new_fldnames1(id))
+    allocate(new_fldnames2(id))
 
-    ! 3) copy data_fld_array and model_fld_array into first N-1 elements of data_fld_arrays and model_fld_array
+    ! 3) copy fldnames1 and fldnames2 into first N-1 elements offldnames1 and fldnames2
     do n = 1,oldsize
-       new_data_fld_array(n)  = data_fld_array(n)
-       new_model_fld_array(n) = model_fld_array(n)
+       new_fldnames1(n) = fldnames1(n)
+       new_fldnames2(n) = fldnames2(n)
     end do
 
-    ! 4) deallocate / nullify data_fld_array and model_fld_array
+    ! 4) deallocate / nullify stream_fldnames and model_fldnames
     if (oldsize >  0) then
-       deallocate(data_fld_array)
-       deallocate(model_fld_array)
-       nullify(data_fld_array)
-       nullify(model_fld_array)
+       deallocate(fldnames1)
+       deallocate(fldnames2)
+       nullify(fldnames1)
+       nullify(fldnames2)
     end if
 
-    ! 5) point data_fld_array => new_data_fld_array and
-    ! model_fld_array => new_model_fld_array and update info for new entry
-    data_fld_array  => new_data_fld_array
-    model_fld_array => new_model_fld_array
-    data_fld_array(id)  = trim(data_fld)
-    model_fld_array(id) = trim(model_fld)
+    ! 5) point fldnames1 => new_fldnames1 and fldnames2 => new_fldnames2 and update info for new entry
+    fldnames1  => new_fldnames1
+    fldnames2  => new_fldnames2
+    fldnames1(id) = trim(fldname1)
+    fldnames2(id) = trim(fldname2)
 
-    !----------------------------------
-    ! Update flds_concat colon delimited string if appropriate
-    !----------------------------------
-
-    if (present(model_fld_concat)) then
-       if (len_trim(model_fld_concat) + len_trim(model_fld) + 1 >= cxx) then
-          call ESMF_LogWrite(subname//': ERROR: max len of model_fld_concat has been exceeded', ESMF_LOGMSG_INFO)
-          call shr_sys_abort()
-       end if
-       if (trim(model_fld_concat) == '') then
-          model_fld_concat = trim(model_fld)
-       else
-          model_fld_concat = trim(model_fld_concat)//':'//trim(model_fld)
-       end if
-
-       ! Get model field index if appropriated
-       if (present(model_fld_index)) then
-          call shr_string_listGetIndex(trim(model_fld_concat), trim(model_fld),  model_fld_index)
-       end if
-    end if
-
-  end subroutine dshr_dmodel_add2
+  end subroutine dshr_translate_add
 
   !===============================================================================
 

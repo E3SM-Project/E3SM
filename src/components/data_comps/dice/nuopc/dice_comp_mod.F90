@@ -24,7 +24,8 @@ module dice_comp_mod
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_dmodel_add, dshr_import, dshr_export
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_avect_add, dshr_translate_add
+  use dshr_nuopc_mod        , only : dshr_export, dshr_import
   use dice_shr_mod          , only : datamode       ! namelist input
   use dice_shr_mod          , only : rest_file      ! namelist input
   use dice_shr_mod          , only : rest_file_strm ! namelist input
@@ -121,6 +122,12 @@ contains
        ice_present, ice_prognostic, flds_i2o_per_cat, &
        fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
 
+    ! --------------------------------------------------------------
+    ! 1. determine export and import fields to advertise to mediator
+    ! 2. determine colon delimited chacter string to initialize import and export attribute vectors
+    ! 3. determine module level translation character arrays  (avifld, avofld)
+    ! --------------------------------------------------------------
+
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
@@ -141,44 +148,40 @@ contains
     if (.not. ice_present) return
 
     !--------------------------------
-    ! export fields
-    !--------------------------------
-
     ! Advertise export fields
+    !--------------------------------
 
     fldsFrIce_num=1
     fldsFrIce(1)%stdname = trim(flds_scalar_name)
 
-    call dshr_fld_add('Si_ifrac'    , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Si_imask'    , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Si_t'        , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Si_tref'     , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Si_qref'     , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Si_avsdr'    , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Si_anidr'    , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Si_avsdf'    , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Si_anidf'    , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Faii_swnet'  , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Faii_sen'    , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Faii_lat'    , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Faii_lwup'   , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Faii_evap'   , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Faii_taux'   , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Faii_tauy'   , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Fioi_melth'  , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Fioi_meltw'  , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Fioi_swpen'  , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Fioi_taux'   , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Fioi_tauy'   , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Fioi_salt'   , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Fioi_bcpho'  , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Fioi_bcphi'  , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
-    call dshr_fld_add('Fioi_flxdst' , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce)
+    call dshr_fld_add('Si_ifrac'    , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Si_imask'    , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Si_t'        , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Si_tref'     , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Si_qref'     , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Si_avsdr'    , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Si_anidr'    , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Si_avsdf'    , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Si_anidf'    , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Faii_swnet'  , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Faii_sen'    , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Faii_lat'    , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Faii_lwup'   , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Faii_evap'   , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Faii_taux'   , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Faii_tauy'   , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Fioi_melth'  , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Fioi_meltw'  , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Fioi_swpen'  , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Fioi_taux'   , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Fioi_tauy'   , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Fioi_salt'   , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Fioi_bcpho'  , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Fioi_bcphi'  , fldsFrIce_num, fldsFrIce)
+    call dshr_fld_add('Fioi_flxdst' , fldsFrIce_num, fldsFrIce)
     if (flds_i2o_per_cat) then
-       call dshr_fld_add('Si_ifrac_n'         , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce, &
-            ungridded_lbound=1, ungridded_ubound=1)
-       call dshr_fld_add('Fioi_swpen_ifrac_n' , fldlist_num=fldsFrIce_num, fldlist=fldsFrIce, &
-            ungridded_lbound=1, ungridded_ubound=1)
+       call dshr_fld_add('Si_ifrac_n'        , fldsFrIce_num, fldsFrIce, ungridded_lbound=1, ungridded_ubound=1)
+       call dshr_fld_add('Fioi_swpen_ifrac_n', fldsFrIce_num, fldsFrIce, ungridded_lbound=1, ungridded_ubound=1)
     end if
 
     do n = 1,fldsFrIce_num
@@ -186,54 +189,11 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
 
-    ! Set export fields that have no corresponding stream field (computed internally)
-    ! -  model_fld_index sets the module variables kiFrac
-    ! -  model_fld_concat variable sets the output variable flds_i2x
-    ! -  model_fld_array sets the module character array avofld
-    ! -  data_fld_array  sets the module character array avifld
-
-    call dshr_dmodel_add(&
-         data_fld='ifrac'          , data_fld_array=avifld,  &
-         model_fld='Si_ifrac'      , model_fld_array=avofld, &
-         model_fld_concat=flds_i2x , model_fld_index=kiFrac)
-
-    call dshr_dmodel_add(model_fld='Si_imask'    , model_fld_concat=flds_i2x, model_fld_index=km     )
-    call dshr_dmodel_add(model_fld='Si_t'        , model_fld_concat=flds_i2x, model_fld_index=kt     )
-    call dshr_dmodel_add(model_fld='Si_tref'     , model_fld_concat=flds_i2x, model_fld_index=ktref  )
-    call dshr_dmodel_add(model_fld='Si_qref'     , model_fld_concat=flds_i2x, model_fld_index=kqref  )
-    call dshr_dmodel_add(model_fld='Si_avsdr'    , model_fld_concat=flds_i2x, model_fld_index=kavsdr )
-    call dshr_dmodel_add(model_fld='Si_anidr'    , model_fld_concat=flds_i2x, model_fld_index=kanidr )
-    call dshr_dmodel_add(model_fld='Si_avsdf'    , model_fld_concat=flds_i2x, model_fld_index=kavsdf )
-    call dshr_dmodel_add(model_fld='Si_anidf'    , model_fld_concat=flds_i2x, model_fld_index=kanidf )
-    call dshr_dmodel_add(model_fld='Faii_swnet'  , model_fld_concat=flds_i2x, model_fld_index=kswnet )
-    call dshr_dmodel_add(model_fld='Faii_sen'    , model_fld_concat=flds_i2x, model_fld_index=ksen   )
-    call dshr_dmodel_add(model_fld='Faii_lat'    , model_fld_concat=flds_i2x, model_fld_index=klat   )
-    call dshr_dmodel_add(model_fld='Faii_lwup'   , model_fld_concat=flds_i2x, model_fld_index=klwup  )
-    call dshr_dmodel_add(model_fld='Faii_evap'   , model_fld_concat=flds_i2x, model_fld_index=kevap  )
-    call dshr_dmodel_add(model_fld='Faii_taux'   , model_fld_concat=flds_i2x, model_fld_index=ktauxa )
-    call dshr_dmodel_add(model_fld='Faii_tauy'   , model_fld_concat=flds_i2x, model_fld_index=ktauya )
-    call dshr_dmodel_add(model_fld='Fioi_melth'  , model_fld_concat=flds_i2x, model_fld_index=kmelth )
-    call dshr_dmodel_add(model_fld='Fioi_meltw'  , model_fld_concat=flds_i2x, model_fld_index=kmeltw )
-    call dshr_dmodel_add(model_fld='Fioi_swpen'  , model_fld_concat=flds_i2x, model_fld_index=kswpen )
-    call dshr_dmodel_add(model_fld='Fioi_taux'   , model_fld_concat=flds_i2x, model_fld_index=ktauxo )
-    call dshr_dmodel_add(model_fld='Fioi_tauy'   , model_fld_concat=flds_i2x, model_fld_index=ktauyo )
-    call dshr_dmodel_add(model_fld='Fioi_salt'   , model_fld_concat=flds_i2x, model_fld_index=ksalt  )
-    call dshr_dmodel_add(model_fld='Fioi_bcpho'  , model_fld_concat=flds_i2x, model_fld_index=kbcpho )
-    call dshr_dmodel_add(model_fld='Fioi_bcphi'  , model_fld_concat=flds_i2x, model_fld_index=kbcphi )
-    call dshr_dmodel_add(model_fld='Fioi_flxdst' , model_fld_concat=flds_i2x, model_fld_index=kflxdst)
-    if (flds_i2o_per_cat) then
-       call dshr_dmodel_add(model_fld='Si_ifrac_01'        , model_fld_concat=flds_i2x, model_fld_index=kiFrac_01      )
-       call dshr_dmodel_add(model_fld='Fioi_swpen_ifrac_01', model_fld_concat=flds_i2x, model_fld_index=kswpen_iFrac_01)
-    end if
-
     !-------------------
-    ! import fields (have no corresponding stream fields)
+    ! Advertise import fields
     !-------------------
 
     if (ice_prognostic) then
-
-       ! Advertise import fields
-
        fldsToIce_num=1
        fldsToIce(1)%stdname = trim(flds_scalar_name)
 
@@ -259,37 +219,81 @@ contains
           call NUOPC_Advertise(importState, standardName=fldsToIce(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        enddo
-
-       ! Set import fields that have no corresponding stream field (computed internally)
-
-       call dshr_dmodel_add(model_fld='Faxa_swvdr'    , model_fld_concat=flds_x2i, model_fld_index=kswvdr    )
-       call dshr_dmodel_add(model_fld='Faxa_swvdf'    , model_fld_concat=flds_x2i, model_fld_index=kswvdf    )
-       call dshr_dmodel_add(model_fld='Faxa_swndr'    , model_fld_concat=flds_x2i, model_fld_index=kswndr    )
-       call dshr_dmodel_add(model_fld='Faxa_swndf'    , model_fld_concat=flds_x2i, model_fld_index=kswndf    )
-       call dshr_dmodel_add(model_fld='Fioo_q'        , model_fld_concat=flds_x2i, model_fld_index=kq        )
-       call dshr_dmodel_add(model_fld='Sa_z'          , model_fld_concat=flds_x2i, model_fld_index=kz        )
-       call dshr_dmodel_add(model_fld='Sa_u'          , model_fld_concat=flds_x2i, model_fld_index=kua       )
-       call dshr_dmodel_add(model_fld='Sa_v'          , model_fld_concat=flds_x2i, model_fld_index=kva       )
-       call dshr_dmodel_add(model_fld='Sa_ptem'       , model_fld_concat=flds_x2i, model_fld_index=kptem     )
-       call dshr_dmodel_add(model_fld='Sa_shum'       , model_fld_concat=flds_x2i, model_fld_index=kshum     )
-       call dshr_dmodel_add(model_fld='Sa_dens'       , model_fld_concat=flds_x2i, model_fld_index=kdens     )
-       call dshr_dmodel_add(model_fld='Sa_tbot'       , model_fld_concat=flds_x2i, model_fld_index=ktbot     )
-       call dshr_dmodel_add(model_fld='So_s'          , model_fld_concat=flds_x2i, model_fld_index=ksalinity )
-       call dshr_dmodel_add(model_fld='Faxa_bcphidry' , model_fld_concat=flds_x2i, model_fld_index=kbcphidry )
-       call dshr_dmodel_add(model_fld='Faxa_bcphodry' , model_fld_concat=flds_x2i, model_fld_index=kbcphodry )
-       call dshr_dmodel_add(model_fld='Faxa_bcphiwet' , model_fld_concat=flds_x2i, model_fld_index=kbcphiwet )
-       call dshr_dmodel_add(model_fld='Faxa_ocphidry' , model_fld_concat=flds_x2i, model_fld_index=kocphidry )
-       call dshr_dmodel_add(model_fld='Faxa_ocphodry' , model_fld_concat=flds_x2i, model_fld_index=kocphodry )
-       call dshr_dmodel_add(model_fld='Faxa_ocphiwet' , model_fld_concat=flds_x2i, model_fld_index=kocphiwet )
-       call dshr_dmodel_add(model_fld='Faxa_dstdry1'  , model_fld_concat=flds_x2i, model_fld_index=kdstdry1  )
-       call dshr_dmodel_add(model_fld='Faxa_dstdry2'  , model_fld_concat=flds_x2i, model_fld_index=kdstdry2  )
-       call dshr_dmodel_add(model_fld='Faxa_dstdry3'  , model_fld_concat=flds_x2i, model_fld_index=kdstdry3  )
-       call dshr_dmodel_add(model_fld='Faxa_dstdry4'  , model_fld_concat=flds_x2i, model_fld_index=kdstdry4  )
-       call dshr_dmodel_add(model_fld='Faxa_dstwet1'  , model_fld_concat=flds_x2i, model_fld_index=kdstwet1  )
-       call dshr_dmodel_add(model_fld='Faxa_dstwet2'  , model_fld_concat=flds_x2i, model_fld_index=kdstwet2  )
-       call dshr_dmodel_add(model_fld='Faxa_dstwet3'  , model_fld_concat=flds_x2i, model_fld_index=kdstwet3  )
-       call dshr_dmodel_add(model_fld='Faxa_dstwet4'  , model_fld_concat=flds_x2i, model_fld_index=kdstwet4  )
     end if
+
+    !-------------------
+    ! Create colon deliminted string and optional indices for export attribute vector
+    !-------------------
+
+    call dshr_avect_add('Si_ifrac'    , flds_i2x, av_index = kiFrac )
+    call dshr_avect_add('Si_imask'    , flds_i2x, av_index = km     )
+    call dshr_avect_add('Si_t'        , flds_i2x, av_index = kt     )
+    call dshr_avect_add('Si_tref'     , flds_i2x, av_index = ktref  )
+    call dshr_avect_add('Si_qref'     , flds_i2x, av_index = kqref  )
+    call dshr_avect_add('Si_avsdr'    , flds_i2x, av_index = kavsdr )
+    call dshr_avect_add('Si_anidr'    , flds_i2x, av_index = kanidr )
+    call dshr_avect_add('Si_avsdf'    , flds_i2x, av_index = kavsdf )
+    call dshr_avect_add('Si_anidf'    , flds_i2x, av_index = kanidf )
+    call dshr_avect_add('Faii_swnet'  , flds_i2x, av_index = kswnet )
+    call dshr_avect_add('Faii_sen'    , flds_i2x, av_index = ksen   )
+    call dshr_avect_add('Faii_lat'    , flds_i2x, av_index = klat   )
+    call dshr_avect_add('Faii_lwup'   , flds_i2x, av_index = klwup  )
+    call dshr_avect_add('Faii_evap'   , flds_i2x, av_index = kevap  )
+    call dshr_avect_add('Faii_taux'   , flds_i2x, av_index = ktauxa )
+    call dshr_avect_add('Faii_tauy'   , flds_i2x, av_index = ktauya )
+    call dshr_avect_add('Fioi_melth'  , flds_i2x, av_index = kmelth )
+    call dshr_avect_add('Fioi_meltw'  , flds_i2x, av_index = kmeltw )
+    call dshr_avect_add('Fioi_swpen'  , flds_i2x, av_index = kswpen )
+    call dshr_avect_add('Fioi_taux'   , flds_i2x, av_index = ktauxo )
+    call dshr_avect_add('Fioi_tauy'   , flds_i2x, av_index = ktauyo )
+    call dshr_avect_add('Fioi_salt'   , flds_i2x, av_index = ksalt  )
+    call dshr_avect_add('Fioi_bcpho'  , flds_i2x, av_index = kbcpho )
+    call dshr_avect_add('Fioi_bcphi'  , flds_i2x, av_index = kbcphi )
+    call dshr_avect_add('Fioi_flxdst' , flds_i2x, av_index = kflxdst)
+    if (flds_i2o_per_cat) then
+       call dshr_avect_add('Si_ifrac_01'        , flds_i2x, av_index = kiFrac_01      )
+       call dshr_avect_add('Fioi_swpen_ifrac_01', flds_i2x, av_index = kswpen_iFrac_01)
+    end if
+
+    !-------------------
+    ! Create colon deliminted string and optional indices for import attribute vector
+    !-------------------
+
+    if (ice_prognostic) then
+       call dshr_avect_add('Faxa_swvdr'    , flds_x2i, av_index = kswvdr    )
+       call dshr_avect_add('Faxa_swvdf'    , flds_x2i, av_index = kswvdf    )
+       call dshr_avect_add('Faxa_swndr'    , flds_x2i, av_index = kswndr    )
+       call dshr_avect_add('Faxa_swndf'    , flds_x2i, av_index = kswndf    )
+       call dshr_avect_add('Fioo_q'        , flds_x2i, av_index = kq        )
+       call dshr_avect_add('Sa_z'          , flds_x2i, av_index = kz        )
+       call dshr_avect_add('Sa_u'          , flds_x2i, av_index = kua       )
+       call dshr_avect_add('Sa_v'          , flds_x2i, av_index = kva       )
+       call dshr_avect_add('Sa_ptem'       , flds_x2i, av_index = kptem     )
+       call dshr_avect_add('Sa_shum'       , flds_x2i, av_index = kshum     )
+       call dshr_avect_add('Sa_dens'       , flds_x2i, av_index = kdens     )
+       call dshr_avect_add('Sa_tbot'       , flds_x2i, av_index = ktbot     )
+       call dshr_avect_add('So_s'          , flds_x2i, av_index = ksalinity )
+       call dshr_avect_add('Faxa_bcphidry' , flds_x2i, av_index = kbcphidry )
+       call dshr_avect_add('Faxa_bcphodry' , flds_x2i, av_index = kbcphodry )
+       call dshr_avect_add('Faxa_bcphiwet' , flds_x2i, av_index = kbcphiwet )
+       call dshr_avect_add('Faxa_ocphidry' , flds_x2i, av_index = kocphidry )
+       call dshr_avect_add('Faxa_ocphodry' , flds_x2i, av_index = kocphodry )
+       call dshr_avect_add('Faxa_ocphiwet' , flds_x2i, av_index = kocphiwet )
+       call dshr_avect_add('Faxa_dstdry1'  , flds_x2i, av_index = kdstdry1  )
+       call dshr_avect_add('Faxa_dstdry2'  , flds_x2i, av_index = kdstdry2  )
+       call dshr_avect_add('Faxa_dstdry3'  , flds_x2i, av_index = kdstdry3  )
+       call dshr_avect_add('Faxa_dstdry4'  , flds_x2i, av_index = kdstdry4  )
+       call dshr_avect_add('Faxa_dstwet1'  , flds_x2i, av_index = kdstwet1  )
+       call dshr_avect_add('Faxa_dstwet2'  , flds_x2i, av_index = kdstwet2  )
+       call dshr_avect_add('Faxa_dstwet3'  , flds_x2i, av_index = kdstwet3  )
+       call dshr_avect_add('Faxa_dstwet4'  , flds_x2i, av_index = kdstwet4  )
+    end if
+
+    !-------------------
+    ! Create module level translation list character arrays
+    !-------------------
+
+    call dshr_translate_add('ifrac', 'Si_ifrac', avifld, avofld)
 
   end subroutine dice_comp_advertise
 

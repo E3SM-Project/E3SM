@@ -21,7 +21,8 @@ module drof_comp_mod
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
   use shr_dmodel_mod        , only : shr_dmodel_translateAV
   use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_dmodel_add, dshr_export
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_avect_add, dshr_translate_add
+  use dshr_nuopc_mod        , only : dshr_export, dshr_import
   use drof_shr_mod          , only : datamode       ! namelist input
   use drof_shr_mod          , only : rest_file      ! namelist input
   use drof_shr_mod          , only : rest_file_strm ! namelist input
@@ -65,9 +66,11 @@ contains
        rof_present, rof_prognostic, &
        fldsFrRof_num, fldsFrRof, fldsToRof_num, fldsToRof, rc)
 
-
+    ! --------------------------------------------------------------
     ! 1. determine export and import fields to advertise to mediator
-    ! 2. determine translation of fields from streams to export/import fields
+    ! 2. determine colon delimited chacter string to initialize import and export attribute vectors
+    ! 3. determine module level translation character arrays  (avifld, avofld)
+    ! --------------------------------------------------------------
 
     ! input/output arguments
     type(ESMF_State)                   :: importState
@@ -90,32 +93,33 @@ contains
     if (.not. rof_present) return
 
     !-------------------
-    ! export fields
+    ! Advrtise export fields
     !-------------------
-
-    ! advertise export fields
 
     fldsFrRof_num=1
     fldsFrRof(1)%stdname = trim(flds_scalar_name)
 
-
-    call dshr_fld_add("Forr_rofl", fldlist_num=fldsFrRof_num, fldlist=fldsFrRof)
-    call dshr_fld_add("Forr_rofi", fldlist_num=fldsFrRof_num, fldlist=fldsFrRof)
+    call dshr_fld_add("Forr_rofl", fldsFrRof_num, fldsFrRof)
+    call dshr_fld_add("Forr_rofi", fldsFrRof_num, fldsFrRof)
 
     do n = 1,fldsFrRof_num
        call NUOPC_Advertise(exportState, standardName=fldsFrRof(n)%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
 
-    ! set data model export fields that have a corresponding stream field
+    !-------------------
+    ! Create colon deliminted string and optional indices for export attribute vector
+    !-------------------
 
-    call dshr_dmodel_add(                                &
-         data_fld="rofl"       , data_fld_array=avifld,  &
-         model_fld="Forr_rofl" , model_fld_array=avofld, model_fld_concat=flds_r2x) 
+    call dshr_avect_add('Forr_rofl', flds_r2x)
+    call dshr_avect_add('Forr_rofi', flds_r2x)
 
-    call dshr_dmodel_add(                                &
-         data_fld="rofi"       , data_fld_array=avifld,  &
-         model_fld="Forr_rofi" , model_fld_array=avofld, model_fld_concat=flds_r2x)
+    !-------------------
+    ! Create module level translation list character arrays
+    !-------------------
+
+    call dshr_translate_add("rofl", "Forr_rofl", avifld, avofld)
+    call dshr_translate_add("rofi", "Forr_rofi", avifld, avofld)
 
   end subroutine drof_comp_advertise
 

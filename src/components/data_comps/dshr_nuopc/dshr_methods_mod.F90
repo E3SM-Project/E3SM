@@ -34,6 +34,7 @@ module dshr_methods_mod
   public  :: state_getscalar
   public  :: state_setscalar
   public  :: state_diagnose
+  public  :: state_getfldptr
   public  :: alarmInit  
   public  :: chkerr
 
@@ -354,6 +355,38 @@ contains
 
 !===============================================================================
 
+  subroutine State_GetFldPtr(State, fldname, fldptr1, fldptr2, rc)
+
+    ! ----------------------------------------------
+    ! Get pointer to a state field
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_State, ESMF_Field, ESMF_StateGet
+
+    ! input/output variables
+    type(ESMF_State) ,          intent(in)              :: State
+    character(len=*) ,          intent(in)              :: fldname
+    real(R8)         , pointer, intent(inout), optional :: fldptr1(:)
+    real(R8)         , pointer, intent(inout), optional :: fldptr2(:,:)
+    integer          ,          intent(out)             :: rc
+
+    ! local variables
+    type(ESMF_Field)           :: lfield
+    character(len=*), parameter :: subname='(med_methods_State_GetFldPtr)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call ESMF_StateGet(State, itemName=trim(fldname), field=lfield, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    call Field_GetFldPtr(lfield, fldptr1=fldptr1, fldptr2=fldptr2, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine State_GetFldPtr
+
+!===============================================================================
+
   subroutine field_getfldptr(field, fldptr1, fldptr2, rank, abort, rc)
 
     ! ----------------------------------------------
@@ -368,7 +401,7 @@ contains
     real(r8), pointer , intent(inout), optional :: fldptr2(:,:)
     integer           , intent(out)  , optional :: rank
     logical           , intent(in)   , optional :: abort
-    integer           , intent(out)  , optional :: rc
+    integer           , intent(out)             :: rc
 
     ! local variables
     type(ESMF_GeomType_Flag)    :: geomtype
@@ -378,13 +411,6 @@ contains
     logical                     :: labort
     character(len=*), parameter :: subname='(field_getfldptr)'
     ! ----------------------------------------------
-
-    if (.not.present(rc)) then
-       call ESMF_LogWrite(trim(subname)//": ERROR rc not present ", &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
-       rc = ESMF_FAILURE
-       return
-    endif
 
     rc = ESMF_SUCCESS
 
@@ -398,6 +424,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (status /= ESMF_FIELDSTATUS_COMPLETE) then
+
        lrank = 0
        if (labort) then
           call ESMF_LogWrite(trim(subname)//": ERROR data not allocated ", ESMF_LOGMSG_INFO, rc=rc)
@@ -406,6 +433,7 @@ contains
        else
           call ESMF_LogWrite(trim(subname)//": WARNING data not allocated ", ESMF_LOGMSG_INFO, rc=rc)
        endif
+
     else
 
        call ESMF_FieldGet(field, geomtype=geomtype, rc=rc)

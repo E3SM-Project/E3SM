@@ -21,7 +21,8 @@ module dlnd_comp_mod
   use shr_cal_mod           , only : shr_cal_calendarname
   use shr_cal_mod           , only : shr_cal_datetod2string
   use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_dmodel_add, dshr_import, dshr_export
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_avect_add, dshr_translate_add
+  use dshr_nuopc_mod        , only : dshr_export
   use glc_elevclass_mod     , only : glc_elevclass_as_string, glc_elevclass_init
   use dlnd_shr_mod          , only : datamode        ! namelist input
   use dlnd_shr_mod          , only : rest_file       ! namelist input
@@ -54,7 +55,7 @@ module dlnd_comp_mod
   character(len=CS), pointer  :: avifld(:)           ! char array field names coming from streams
   character(len=CS), pointer  :: avofld(:)           ! char array field names to be sent/recd from med
   integer                     :: kf                  ! index for frac in AV
-  integer                     :: glc_nec 
+  integer                     :: glc_nec
   real(R8), pointer           :: lfrac(:)            ! land frac
   character(len=*), parameter :: rpfile = 'rpointer.lnd'
   integer         , parameter :: nec_len = 2         ! length of elevation class index in field names
@@ -75,7 +76,7 @@ contains
     ! input/output arguments
     type(ESMF_State)                     :: importState
     type(ESMF_State)                     :: exportState
-    character(len=*)     , intent(in)    :: flds_scalar_name 
+    character(len=*)     , intent(in)    :: flds_scalar_name
     integer              , intent(in)    :: glc_nec_in
     logical              , intent(in)    :: lnd_present
     logical              , intent(in)    :: lnd_prognostic
@@ -101,27 +102,21 @@ contains
     call glc_elevclass_init(glc_nec)
 
     !-------------------
-    ! export fields
-    !-------------------
-
     ! Advertise export fields
+    !-------------------
 
     fldsFrLnd_num=1
     fldsFrLnd(1)%stdname = trim(flds_scalar_name)
 
     call dshr_fld_add("Sl_lfrin", fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
-
     if (glc_nec > 0) then
        ! The following puts all of the elevation class fields as an
-       ! undidstributed dimension in the export state field - index1 is bare land - and the total number of 
-       ! elevation classes not equal to bare land go from index2 -> glc_nec+1 
+       ! undidstributed dimension in the export state field - index1 is bare land - and the total number of
+       ! elevation classes not equal to bare land go from index2 -> glc_nec+1
 
-       call dshr_fld_add('Sl_tsrf_elev'  , fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
-            ungridded_lbound=1, ungridded_ubound=glc_nec+1)
-       call dshr_fld_add('Sl_topo_elev'  , fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
-            ungridded_lbound=1, ungridded_ubound=glc_nec+1)
-       call dshr_fld_add('Flgl_qice_elev', fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd, &
-            ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+       call dshr_fld_add('Sl_tsrf_elev'  , fldsFrLnd_num, fldlist=fldsFrLnd, ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+       call dshr_fld_add('Sl_topo_elev'  , fldsFrLnd_num, fldlist=fldsFrLnd, ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+       call dshr_fld_add('Flgl_qice_elev', fldsFrLnd_num, fldlist=fldsFrLnd, ungridded_lbound=1, ungridded_ubound=glc_nec+1)
     end if
 
     do n = 1,fldsFrLnd_num
@@ -132,23 +127,30 @@ contains
     ! set data model export fields that have a corresponding stream field
     ! the actual snow field names will have the elevation class index at the end (e.g., Sl_tsrf01, tsrf01)
 
-    call dshr_dmodel_add(model_fld="Sl_lfrin", model_fld_concat=flds_l2x, model_fld_index=kf)
+    !-------------------
+    ! Create colon deliminted string and optional indices for export attribute vectors
+    !-------------------
+
+    call dshr_avect_add("Sl_lfrin", flds_l2x, av_index=kf)
+    if (glc_nec > 0) then
+       do n = 0, glc_nec
+          nec_str = glc_elevclass_as_string(n)
+          call dshr_avect_add(trim("Sl_tsrf"//nec_str)   , flds_l2x)
+          call dshr_avect_add(trim("Sl_topo"//nec_str)   , flds_l2x)
+          call dshr_avect_add(trim("Flgl_qice"//nec_str) , flds_l2x)
+       end do
+    end if
+
+    !-------------------
+    ! Create module level translation list character arrays
+    !-------------------
 
     if (glc_nec > 0) then
        do n = 0, glc_nec
           nec_str = glc_elevclass_as_string(n)
-          call dshr_dmodel_add(&
-               data_fld=trim("tsrf" // nec_str)     , data_fld_array=avifld, &
-               model_fld=trim("Sl_tsrf" // nec_str) , model_fld_array=avofld, model_fld_concat=flds_l2x)
-
-          call dshr_dmodel_add(&
-               data_fld=trim("topo" // nec_str)     , data_fld_array=avifld, &
-               model_fld=trim("Sl_topo" // nec_str) , model_fld_array=avofld, model_fld_concat=flds_l2x)
-
-          call dshr_dmodel_add(&
-               data_fld=trim("qice" // nec_str)       , data_fld_array=avifld, &
-               model_fld=trim("Flgl_qice" // nec_str) , model_fld_array=avofld, model_fld_concat=flds_l2x)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          call dshr_translate_add(trim("tsrf"//nec_str), trim("Sl_tsrf"//nec_str)   , avifld, avofld)
+          call dshr_translate_add(trim("topo"//nec_str), trim("Sl_topo"//nec_str)   , avifld, avofld)
+          call dshr_translate_add(trim("qice"//nec_str), trim("Flgl_qice"//nec_str) , avifld, avofld)
        end do
     end if
 
@@ -157,7 +159,7 @@ contains
     ! "Sl_anidr    " "Sl_avsdf    " "Sl_anidf    " "Sl_snowh    "
     ! "Fall_taux   " "Fall_tauy   " "Fall_lat    " "Fall_sen    "
     ! "Fall_lwup   " "Fall_evap   " "Fall_swnet  " "Sl_landfrac "
-    ! "Sl_fv       " "Sl_ram1     " 
+    ! "Sl_fv       " "Sl_ram1     "
     ! "Fall_flxdst1" "Fall_flxdst2" "Fall_flxdst3" "Fall_flxdst4"
 
   end subroutine dlnd_comp_advertise
