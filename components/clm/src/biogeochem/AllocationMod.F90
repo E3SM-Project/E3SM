@@ -909,14 +909,14 @@ contains
                   if (ivt(p) /= nsoybean .or. astem(p) == astemf(ivt(p)) .or. peaklai(p) == 1._r8) then
                      if (grain_flag(p) == 0._r8) then
                         t1 = 1 / dt
-                        leafn_to_retransn(p) = 0._r8 !t1 * ((leafc(p) / leafcn(ivt(p))) - (leafc(p) / &
-                             !fleafcn(ivt(p))))
-                        livestemn_to_retransn(p) = 0._r8 !t1 * ((livestemc(p) / livewdcn(ivt(p))) - (livestemc(p) / &
-                             !fstemcn(ivt(p))))
+                        leafn_to_retransn(p) = t1 * ((leafc(p) / leafcn(ivt(p))) - (leafc(p) / &
+                             fleafcn(ivt(p))))
+                        livestemn_to_retransn(p) = t1 * ((livestemc(p) / livewdcn(ivt(p))) - (livestemc(p) / &
+                             fstemcn(ivt(p))))
                         frootn_to_retransn(p) = 0._r8
                         if (ffrootcn(ivt(p)) > 0._r8) then
-                           frootn_to_retransn(p) = 0._r8 !t1 * ((frootc(p) / frootcn(ivt(p))) - (frootc(p) / &
-                                !ffrootcn(ivt(p))))
+                           frootn_to_retransn(p) = t1 * ((frootc(p) / frootcn(ivt(p))) - (frootc(p) / &
+                                ffrootcn(ivt(p))))
                         end if
                         grain_flag(p) = 1._r8
                      end if
