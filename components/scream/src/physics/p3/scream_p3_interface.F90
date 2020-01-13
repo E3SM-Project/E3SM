@@ -46,7 +46,18 @@ module scream_p3_interface_mod
 contains
 
   !====================================================================!
-  subroutine p3_init_f90 (q,T,zi,pmid,pdel,ast,naai,npccn) bind(c)
+  subroutine p3_init_f90 () bind(c)
+    use micro_p3,       only: p3_init
+    use micro_p3_utils, only: micro_p3_utils_init
+
+    call p3_init(micro_p3_lookup_dir,micro_p3_tableversion)
+
+    test = 0.0
+    print '(a15,f16.8,4i8)', 'P3 init = ', test, pcols, pver, ncol, nlev
+
+  end subroutine p3_init_f90
+  !====================================================================!
+  subroutine p3_standalone_init_f90 (q,T,zi,pmid,pdel,ast,naai,npccn) bind(c)
     use micro_p3,       only: p3_init
     use micro_p3_utils, only: micro_p3_utils_init
 
@@ -97,13 +108,7 @@ contains
     masterproc = .false.
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,0,masterproc)
-    call p3_init(micro_p3_lookup_dir,micro_p3_tableversion)
-
-
-    test = 0.0
-    print '(a15,f16.8,e16.8,4i8)', 'P3 init = ', test, sum(q(1,:,1)), pcols, pver, ncol, nlev
-
-  end subroutine p3_init_f90
+  end subroutine p3_standalone_init_f90
   !====================================================================!
   subroutine p3_main_f90 (dtime,qdp,zi,pmid,pdel,ast,naai,npccn,q,FQ,T) bind(c)
     use micro_p3,       only: p3_main
