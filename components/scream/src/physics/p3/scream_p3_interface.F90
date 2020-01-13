@@ -64,6 +64,32 @@ contains
     integer(kind=c_int) :: i, k
     logical(kind=c_bool) :: masterproc
 
+    call p3_init(micro_p3_lookup_dir,micro_p3_tableversion)
+
+
+    test = 0.0
+    print '(a15,f16.8,e16.8,4i8)', 'P3 init = ', test, sum(q(1,:,1)), pcols, pver, ncol, nlev
+
+  end subroutine p3_init_f90
+  !====================================================================!
+  subroutine sa_init_f90 (q,T,zi,pmid,pdel,ast,naai,npccn) bind(c)
+    use micro_p3,       only: p3_init
+    use micro_p3_utils, only: micro_p3_utils_init
+
+    real(kind=c_real), intent(inout) :: q(pcols,pver,9)      ! State array  kg/kg
+    real(kind=c_real), intent(inout) :: T(pcols,pver)        ! 
+    real(kind=c_real), intent(inout) :: zi(pcols,pver+1)     ! 
+    real(kind=c_real), intent(inout) :: pmid(pcols,pver)     ! 
+    real(kind=c_real), intent(inout) :: pdel(pcols,pver)     ! 
+    real(kind=c_real), intent(inout) :: ast(pcols,pver)      ! 
+    real(kind=c_real), intent(inout) :: naai(pcols,pver)     ! ice nucleation number
+    real(kind=c_real), intent(inout) :: npccn(pcols,pver)    ! liquid activation number tendency
+
+    character(len=100) :: case_title
+
+    integer(kind=c_int) :: i, k
+    logical(kind=c_bool) :: masterproc
+
     ! READ inputs from SCM for p3-stand-alone:
     q(:,:,:) = 0.0_rtype
     open(unit=981,file='./data/p3_universal_constants.inp',status='old',action='read')
@@ -97,13 +123,7 @@ contains
     masterproc = .false.
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,0,masterproc)
-    call p3_init(micro_p3_lookup_dir,micro_p3_tableversion)
-
-
-    test = 0.0
-    print '(a15,f16.8,e16.8,4i8)', 'P3 init = ', test, sum(q(1,:,1)), pcols, pver, ncol, nlev
-
-  end subroutine p3_init_f90
+  end subroutine sa_init_f90
   !====================================================================!
   subroutine p3_main_f90 (dtime,qdp,zi,pmid,pdel,ast,naai,npccn,q,FQ,T) bind(c)
     use micro_p3,       only: p3_main
