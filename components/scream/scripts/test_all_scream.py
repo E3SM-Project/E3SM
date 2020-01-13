@@ -1,49 +1,119 @@
-from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit
+from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit, expect
 check_minimum_python_version(3, 4)
 
 import os, shutil
+import concurrent.futures as threading3
 
 ###############################################################################
 class TestAllScream(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, cxx, kokkos, submit, fast_fail, baseline, machine, custom_cmake_opts, tests):
+    def __init__(self, cxx, kokkos, submit, parallel, fast_fail, baseline_ref, baseline_dir, machine, no_tests, custom_cmake_opts, tests):
     ###########################################################################
+
         self._cxx               = cxx
         self._kokkos            = kokkos
         self._submit            = submit
+        self._parallel          = parallel
         self._fast_fail         = fast_fail
-        self._baseline          = baseline
+        self._baseline_ref      = baseline_ref
         self._machine           = machine
+        self._perform_tests     = not no_tests
+        self._baseline_dir      = baseline_dir
         self._custom_cmake_opts = custom_cmake_opts
         self._tests             = tests
+        self._src_dir           = os.getcwd()
+
+        self._tests_cmake_args = {"dbg" : [("CMAKE_BUILD_TYPE", "Debug")],
+                                  "sp"  : [("CMAKE_BUILD_TYPE", "Debug"),
+                                           ("SCREAM_DOUBLE_PRECISION", "False")],
+                                  "fpe" : [("CMAKE_BUILD_TYPE", "Debug"),
+                                           ("SCREAM_PACK_SIZE", "1"),
+                                           ("SCREAM_SMALL_PACK_SIZE", "1")]}
+
+        self._test_full_names = { "dbg" : "full_debug",
+                                  "sp"  : "full_sp_debug",
+                                  "fpe" : "debug_nopack_fpe"}
+
+        if not self._tests:
+            self._tests = ["dbg", "sp", "fpe"]
+        else:
+            for t in self._tests:
+                expect(t in self._test_full_names,
+                       "Requested test '{}' is not supported by test-all-scream, please choose from: {}".\
+                           format(t, ", ".join(self._test_full_names.keys())))
+
+        if not self._baseline_dir == "NONE":
+            print ("Ignoring baseline ref {}, and using baselines in directory {} instead".format(self._baseline_ref, self._baseline_dir))
+            print ("NOTE: baselines for each build type BT must be in '{}/BT/data'. We don't check this, but there will be errors if the baselines are not found.".format(self._baseline_dir))
+
+        # Deduce how many resources per test
+        self._proc_count = 4 # default
+        proc_set = False
+        if "CTEST_PARALLEL_LEVEL" in os.environ:
+            try:
+                self._proc_count = int(os.environ["CTEST_PARALLEL_LEVEL"])
+                proc_set = True
+            except ValueError:
+                pass
+
+        if not proc_set:
+            print("WARNING: env var CTEST_PARALLEL_LEVEL unset, defaulting to {} which probably underutilizes your machine".\
+                      format(self._proc_count))
+
+        if self._parallel:
+            # We need to be aware that other builds may be running too.
+            # (Do not oversubscribe the machine)
+            self._proc_count = self._proc_count // len(self._tests)
+
+            # In case we have more tests than cores (unlikely)
+            if self._proc_count == 0:
+                self._proc_count = 1
 
     ###############################################################################
-    def generate_cmake_config(self, extra_configs):
+    def generate_cmake_config(self, extra_configs, for_ctest=False):
     ###############################################################################
         if self._kokkos:
             kokkos_cmake = "-DKokkos_DIR={}".format(self._kokkos)
         else:
-            kokkos_cmake = "-C ../cmake/machine-files/{}.cmake".format(self._machine)
+            kokkos_cmake = "-C {}/cmake/machine-files/{}.cmake".format(self._src_dir, self._machine)
 
-        result = "cmake -DCMAKE_CXX_COMPILER={} {}".format(self._cxx, kokkos_cmake)
+        result = "{}-DCMAKE_CXX_COMPILER={} {}".format("" if for_ctest else "cmake ", self._cxx, kokkos_cmake)
         for key, value in extra_configs:
             result += " -D{}={}".format(key, value)
 
-        if self._custom_cmake_opts:
-            result += " {}".format(self._custom_cmake_opts)
+        for custom_opt in self._custom_cmake_opts:
+            if "=" in custom_opt:
+                name, value = custom_opt.split("=", 1)
+                # Some effort is needed to ensure quotes are perserved
+                result += " -D{}='{}'".format(name, value)
+            else:
+                result += " -D{}".format(custom_opt)
 
         return result
 
     ###############################################################################
-    def generate_ctest_config(self, cmake_config, extra_configs, build_name):
+    def get_taskset_id(self, test):
     ###############################################################################
+        myid = self._tests.index(test)
+        start = myid * self._proc_count
+        end   = (myid+1) * self._proc_count - 1
+
+        return start, end
+
+    ###############################################################################
+    def generate_ctest_config(self, cmake_config, extra_configs, test):
+    ###############################################################################
+        name = self._test_full_names[test]
         result = ""
         if self._submit:
             result += "CIME_MACHINE={} ".format(self._machine)
 
-        result += "ctest -V --output-on-failure "
+        result += "CTEST_PARALLEL_LEVEL={} ctest -V --output-on-failure ".format(self._proc_count)
+
+        if not self._baseline_dir == "NONE":
+            cmake_config += " -DSCREAM_TEST_DATA_DIR={}/{}/data".format(self._baseline_dir,name)
 
         if not self._submit:
             result += "-DNO_SUBMIT=True "
@@ -51,118 +121,169 @@ class TestAllScream(object):
         for key, value in extra_configs:
             result += "-D{}={} ".format(key, value)
 
-        result += "-DBUILD_NAME_MOD=_{} ".format(build_name)
+        result += "-DBUILD_NAME_MOD={} ".format(name)
+        result += '-S {}/cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(self._src_dir, cmake_config)
 
-        result += '-S ../cmake/ctest_script.cmake -DCMAKE_COMMAND="{}" '.format(cmake_config)
+        # Ctest can only competently manage test pinning across a single instance of ctest. For
+        # multiple concurrent instances of ctest, we have to help it.
+        if self._parallel:
+            start, end = self.get_taskset_id(test)
+            result = "taskset -c {}-{} sh -c '{}'".format(start,end,result)
 
         return result
 
     ###############################################################################
-    def generate_baselines(self, cmake_config, git_head):
+    def generate_baselines(self, test, cleanup):
     ###############################################################################
-        print("Generating baseline for {} with config '{}'".format("HEAD" if self._baseline is None else self._baseline, cmake_config))
+        name = self._test_full_names[test]
+        test_dir = "ctest-build/{}".format(name)
 
-        if self._baseline is not None:
-            run_cmd_no_fail("git checkout {}".format(self._baseline))
-            print("  Switched to {}".format(get_current_commit()))
+        cmake_config = self.generate_cmake_config(self._tests_cmake_args[test])
+
+        print("Generating baseline for build type {} with config '{}'".format(name, cmake_config))
 
         # We cannot just crash if we fail to generate baselines, since we would
         # not get a dashboard report if we did that. Instead, just ensure there is
         # no baseline file to compare against if there's a problem.
-        stat, _, err = run_cmd("{} ..".format(cmake_config), verbose=True)
-        if stat == 0:
-            proc_count = None
-            if "CTEST_PARALLEL_LEVEL" in os.environ:
-                try:
-                    proc_count = int(os.environ["CTEST_PARALLEL_LEVEL"])
-                except ValueError:
-                    pass
+        stat, _, err = run_cmd("{} {}".format(cmake_config, self._src_dir), from_dir=test_dir, verbose=True)
+        if stat!= 0:
+            print ("WARNING: Failed to configure baselines:\n{}".format(err))
+            return False
 
-            if not proc_count:
-                proc_count = 8 # Default
+        cmd = "make -j{} && make baseline".format(self._proc_count);
+        if self._parallel:
+            start, end = self.get_taskset_id(test)
+            cmd = "taskset -c {}-{} sh -c '{}'".format(start,end,cmd)
 
-            stat, _, err = run_cmd("make -j{} && make baseline".format(proc_count), verbose=True)
+        stat, _, err = run_cmd(cmd, from_dir=test_dir, verbose=True)
 
         if stat != 0:
             print("WARNING: Failed to create baselines:\n{}".format(err))
+            return False
 
-        baseline_files = run_cmd_no_fail('find . -name "*baseline*" -type f').split()
-        datas = []
-        for baseline_file in baseline_files:
-            if stat == 0:
-                with open(baseline_file, "rb") as fd:
-                    datas.append(fd.read())
-            else:
-                os.remove(baseline_file)
+        if cleanup:        
+            run_cmd_no_fail("ls | grep -v data | xargs rm -rf ", from_dir=test_dir)
 
-        if self._baseline is not None:
+        return True
+
+    ###############################################################################
+    def generate_all_baselines(self, git_baseline_head, git_head):
+    ###############################################################################
+        print("Generating baselines for ref {}".format(git_baseline_head))
+
+        if git_baseline_head != "HEAD":
+            run_cmd_no_fail("git checkout {}".format(git_baseline_head))
+            print("  Switched to {} ({})".format(git_baseline_head, get_current_commit()))
+
+
+        cleanup = git_baseline_head != "HEAD"
+        success = True
+        num_workers = len(self._tests) if self._parallel else 1
+        with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
+
+            future_to_test = {
+                executor.submit(self.generate_baselines, test, cleanup) : test
+                for test in self._tests}
+
+            for future in threading3.as_completed(future_to_test):
+                test = future_to_test[future]
+                success &= future.result()
+
+                if not success and self._fast_fail:
+                    print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
+                    return False
+
+        if git_baseline_head != "HEAD":
             run_cmd_no_fail("git checkout {}".format(git_head))
-            print("  Switched back to {}".format(get_current_commit()))
+            print("  Switched back to {} ({})".format(git_head, get_current_commit()))
 
-        return baseline_files, datas
+        return success
 
     ###############################################################################
-    def run_test(self, extra_cmake_configs, extra_ctest_configs, build_name, git_head):
+    def run_test(self, test):
     ###############################################################################
-        cmake_config = self.generate_cmake_config(extra_cmake_configs)
+        name = self._test_full_names[test]
+        git_head = get_current_head()
+        print("Testing '{}' for build type '{}'".format(git_head,name))
 
-        # Clean out whatever might have been left in the build area from
-        # previous tests. This command can sometimes fail due to .nfs files
-        run_cmd("/bin/rm -rf *")
+        test_dir = "ctest-build/{}".format(name)
+        cmake_config = self.generate_cmake_config(self._tests_cmake_args[test], for_ctest=True)
+        ctest_config = self.generate_ctest_config(cmake_config, [], test)
 
-        if ("BUILD_ONLY", "True") not in extra_ctest_configs:
-            filepaths, datas = self.generate_baselines(cmake_config, git_head)
-            run_cmd("/bin/rm -rf *") # Clean out baseline build
-            for filepath, data in zip(filepaths, datas):
-                if not os.path.isdir(os.path.dirname(filepath)):
-                    os.makedirs(os.path.dirname(filepath))
-                with open(filepath, "wb") as fd:
-                    fd.write(data)
+        success = run_cmd(ctest_config, from_dir=test_dir, arg_stdout=None, arg_stderr=None, verbose=True)[0] == 0
 
-        ctest_config = self.generate_ctest_config(cmake_config, extra_ctest_configs, build_name)
+        return success
 
-        return run_cmd(ctest_config, arg_stdout=None, arg_stderr=None, verbose=True)[0] == 0
+    ###############################################################################
+    def run_all_tests(self):
+    ###############################################################################
+        success = True
+        tests_success = {
+            test : False
+            for test in self._tests}
+
+        num_workers = len(self._tests) if self._parallel else 1
+        with threading3.ProcessPoolExecutor(max_workers=num_workers) as executor:
+            future_to_test = {
+                executor.submit(self.run_test,test) : test
+                for test in self._tests}
+
+            for future in threading3.as_completed(future_to_test):
+                test = future_to_test[future]
+                tests_success[test] = future.result()
+                success &= tests_success[test]
+                # If failed, and fast fail is requested, return immediately
+                # Note: this is effective only if num_worksers=1
+                if not success and self._fast_fail:
+                    break
+
+        for t,s in tests_success.items():
+            if not s:
+                name = self._test_full_names[t]
+                print("Build type {} failed. Here's a list of failed tests:".format(name))
+                out = run_cmd("cat ctest-build/{}/Testing/Temporary/LastTestsFailed*".format(name))[1]
+                print(out)
+
+        return success
 
     ###############################################################################
     def test_all_scream(self):
     ###############################################################################
         git_head_commit = get_current_commit()
-        git_baseline_commit = get_current_commit(commit=self._baseline)
         git_head = get_current_head()
-        print("Testing {} ({})".format(git_head, git_head_commit))
-        if git_baseline_commit == git_head_commit:
-            self._baseline = None
-            print("WARNING: baseline commit is same as current HEAD")
+
+        print("Testing git ref {} ({})".format(git_head, git_head_commit))
 
         success = True
-        try:
-            if os.path.exists("ctest-build"):
-                shutil.rmtree("ctest-build")
+        # First, create build directories (one per test)
+        for test in self._tests:
+            # Get this test's build dir name and cmake args
+            full_name = self._test_full_names[test]
+            test_dir = "./ctest-build/{}".format(full_name)
 
-            os.mkdir("ctest-build")
-            os.chdir("ctest-build")
+            # Create this test's build dir
+            if os.path.exists(test_dir):
+                shutil.rmtree(test_dir)
 
-            # A full debug test
-            if not self._tests or "dbg" in self._tests:
-                success &= self.run_test([("CMAKE_BUILD_TYPE", "Debug")],
-                                         [], "full_debug", git_head)
-                if not success and self._fast_fail: return success
+            os.makedirs(test_dir)
 
-            # A full debug single precision
-            if not self._tests or "sp" in self._tests:
-                success &= self.run_test([("CMAKE_BUILD_TYPE", "Debug"), ("SCREAM_DOUBLE_PRECISION", "False")],
-                                         [], "full_sp_debug", git_head)
-                if not success and self._fast_fail: return success
+        if self._baseline_dir=="NONE":
+            # Second, generate baselines
+            git_baseline_commit = get_current_commit(commit=self._baseline_ref)
+            if git_baseline_commit == git_head_commit:
+                self._baseline_ref = None
+                print("WARNING: baseline commit is same as current HEAD")
 
-            # A full debug test with packsize=1 and FPE on non-gpu machines
-            if not self._tests or "fpe" in self._tests:
-                is_cuda_machine = "OMPI_CXX" in os.environ
-                if not is_cuda_machine:
-                    success &= self.run_test([("CMAKE_BUILD_TYPE", "Debug"), ("SCREAM_PACK_SIZE", "1"), ("SCREAM_SMALL_PACK_SIZE", "1")],
-                                             [], "debug_nopack_fpe", git_head)
+            git_baseline_head = "HEAD" if self._baseline_ref is None else self._baseline_ref
+            success = self.generate_all_baselines(git_baseline_head,git_head)
+            if not success:
+                print ("Error(s) occurred during baselines generation phase")
+                return success
 
-        finally:
-            if self._baseline is not None:
-                run_cmd_no_fail("git checkout {}".format(git_head))
+        if self._perform_tests:
+            # Finally, run the tests
+            success &= self.run_all_tests()
+            if not success:
+                print ("Error(s) occurred during test phase")
 
         return success

@@ -70,7 +70,7 @@ class Grids(GenericXML):
         gridinfo.update(domains)
 
         # determine gridmaps given component_grids
-        gridmaps = self._get_gridmaps(component_grids, driver)
+        gridmaps = self._get_gridmaps(component_grids, driver, compset)
         gridinfo.update(gridmaps)
 
         return gridinfo
@@ -276,7 +276,7 @@ class Grids(GenericXML):
 
         return domains
 
-    def _get_gridmaps(self, component_grids, driver):
+    def _get_gridmaps(self, component_grids, driver, compset):
         """
         set all mapping files for config_grids.xml v2 schema
         """
@@ -287,8 +287,18 @@ class Grids(GenericXML):
         # (1) set all possibly required gridmaps to idmap
         required_gridmaps_node = self.get_child("required_gridmaps")
         required_gridmap_nodes = self.get_children("required_gridmap", root=required_gridmaps_node)
-        for node in required_gridmap_nodes:
+
+        tmp_gridmap_nodes = self.get_children("required_gridmap", root=required_gridmaps_node)
+        required_gridmap_nodes = []
+        for node in tmp_gridmap_nodes:
+            compset_att = self.get(node,"compset")
+            not_compset_att = self.get(node,"not_compset")
+            if compset_att and not compset_att in compset or \
+               not_compset_att and not_compset_att in compset:
+                continue
+            required_gridmap_nodes.append(node)
             gridmaps[self.text(node)] = "idmap"
+
 
         # (2) determine values gridmaps for target grid
         for idx, grid in enumerate(grids):

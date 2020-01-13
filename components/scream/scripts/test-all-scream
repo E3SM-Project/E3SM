@@ -26,6 +26,10 @@ OR
     \033[1;32m# Run all tests on current machine \033[0m
     > cd $scream_repo/components/scream
     > ./scripts/test-all-scream $(which mpicxx) -m melvin
+
+    \033[1;32m# Run all tests on current machine with custom flags\033[0m
+    > cd $scream_repo/components/scream
+    > ./scripts/test-all-scream $(which mpicxx) -m melvin -c "CMAKE_CXX_FLAGS=-O1 -O2"
 """.format(os.path.basename(args[0])),
         description=description,
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
@@ -37,16 +41,23 @@ OR
 
     parser.add_argument("-s", "--submit", action="store_true", help="Submit results to dashboad, requires machine")
 
+    parser.add_argument("-p", "--parallel", action="store_true", help="Launch the different build types stacks in parallel")
+
     parser.add_argument("-f", "--fast-fail", action="store_true", help="Stop testing when the first failure is detected")
 
-    default_baseline = "HEAD" if "JENKINS_HOME" in os.environ else "origin/master"
-    parser.add_argument("-b", "--baseline", default=default_baseline,
+    default_baseline_ref = "HEAD" if "JENKINS_HOME" in os.environ else "origin/master"
+    parser.add_argument("-b", "--baseline-ref", default=default_baseline_ref,
                         help="What commit to use to generate baselines")
+    default_baseline_dir = "NONE"
+    parser.add_argument("--baseline-dir",default=default_baseline_dir,
+                        help="Use baselines from the given directory, skip baseline creation. Ignores -b/--baseline options")
 
     parser.add_argument("-m", "--machine", help="Provide machine name. This is required for internal kokkos builds and dashboard submission")
 
-    parser.add_argument("-c", "--custom-cmake-opts",
-                        help="Extra custom options to pass to cmake")
+    parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
+
+    parser.add_argument("-c", "--custom-cmake-opts", action="append", default=[],
+                        help="Extra custom options to pass to cmake. Can use multiple times for multiple cmake options. The -D is added for you")
 
     parser.add_argument("-t", "--test", dest="tests", action="append", default=[],
                         help="Only run specific test configurations, choices='dbg' (debug), 'sp' (single-prec), 'fpe' (floating-point exceptions)")

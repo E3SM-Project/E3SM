@@ -469,7 +469,11 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
       call outfld('DYN_U'     ,dyn_in%elem(ie)%state%V(:,:,1,:,tl_f)  ,npsq,ie)
       call outfld('DYN_V'     ,dyn_in%elem(ie)%state%V(:,:,2,:,tl_f)  ,npsq,ie)
       call outfld('DYN_PS'    ,dyn_in%elem(ie)%state%ps_v(:,:,tl_f)   ,npsq,ie)
-      ! Multiply omega_p by pressure t get omega for output
+#ifdef MODEL_THETA_L
+      ! omega_p is just omega when using the theta dycore
+      call outfld('DYN_OMEGA',dyn_in%elem(ie)%derived%omega_p(:,:,:)  ,npsq,ie)
+#else
+      ! Multiply omega_p by pressure to get omega for output
       p_i(:,:,1) = hvcoord%hyai(1)*hvcoord%ps0
       do k = 1,nlev
          p_i(:,:,k+1) = p_i(:,:,k) + dyn_in%elem(ie)%state%dp3d(:,:,k,tl_f)
@@ -477,6 +481,7 @@ subroutine stepon_run2(phys_state, phys_tend, dyn_in, dyn_out )
          omega(:,:,k) = dyn_in%elem(ie)%derived%omega_p(:,:,k) * p_m(:,:,k)
       enddo
       call outfld('DYN_OMEGA',omega(:,:,:),npsq,ie)
+#endif
    end do
    
    

@@ -73,7 +73,6 @@ struct Functions
 
   using KT = KokkosTypes<Device>;
 
-  using G = Globals<Scalar>;
   using C = Constants<Scalar>;
 
   template <typename S>
@@ -109,10 +108,10 @@ struct Functions
   };
 
   // lookup table values for rain shape parameter mu_r
-  using view_1d_table = typename KT::template view_1d_table<Scalar, G::MU_R_TABLE_DIM>;
+  using view_1d_table = typename KT::template view_1d_table<Scalar, C::MU_R_TABLE_DIM>;
 
   // lookup table values for rain number- and mass-weighted fallspeeds and ventilation parameters
-  using view_2d_table = typename KT::template view_2d_table<Scalar, G::VTABLE_DIM0, G::VTABLE_DIM1>;
+  using view_2d_table = typename KT::template view_2d_table<Scalar, C::VTABLE_DIM0, C::VTABLE_DIM1>;
 
   // ice lookup table values
   using view_itab_table    = typename KT::template view<const Scalar[P3C::densize][P3C::rimsize][P3C::isize][P3C::tabsize]>;
@@ -258,6 +257,53 @@ struct Functions
     const uview_1d<Spack>& nc_tend,
     Scalar& prt_liq);
 
+  // TODO: comment
+  KOKKOS_FUNCTION
+  static void ice_sedimentation(
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& rhofaci,
+    const uview_1d<const Spack>& icldm,
+    const uview_1d<const Spack>& inv_dzq,
+    const MemberType& team,
+    const Workspace& workspace,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const uview_1d<Spack>& qitot,
+    const uview_1d<Spack>& qitot_incld,
+    const uview_1d<Spack>& nitot,
+    const uview_1d<Spack>& nitot_incld,
+    const uview_1d<Spack>& qirim,
+    const uview_1d<Spack>& qirim_incld,
+    const uview_1d<Spack>& birim,
+    const uview_1d<Spack>& birim_incld,
+    const uview_1d<Spack>& qi_tend,
+    const uview_1d<Spack>& ni_tend,
+    const view_itab_table& itab,
+    Scalar& prt_sol);
+
+  // TODO: comment
+  KOKKOS_FUNCTION
+  static void rain_sedimentation(
+    const uview_1d<const Spack>& rho,
+    const uview_1d<const Spack>& inv_rho,
+    const uview_1d<const Spack>& rhofacr,
+    const uview_1d<const Spack>& rcldm,
+    const uview_1d<const Spack>& inv_dzq,
+    const uview_1d<const Spack>& qr_incld,
+    const MemberType& team,
+    const Workspace& workspace,
+    const view_2d_table& vn_table, const view_2d_table& vm_table,
+    const Int& nk, const Int& ktop, const Int& kbot, const Int& kdir, const Scalar& dt, const Scalar& odt,
+    const uview_1d<Spack>& qr,
+    const uview_1d<Spack>& nr,
+    const uview_1d<Spack>& nr_incld,
+    const uview_1d<Spack>& mu_r,
+    const uview_1d<Spack>& lamr,
+    const uview_1d<Spack>& rflx,
+    const uview_1d<Spack>& qr_tend,
+    const uview_1d<Spack>& nr_tend,
+    Scalar& prt_liq);
+
   // -- Find layers
 
   // Find the bottom and top of the mixing ratio, e.g., qr. It's worth casing
@@ -286,7 +332,7 @@ struct Functions
   // Calls polysvp1 to obtain the saturation vapor pressure, and then computes
   // and returns the saturation mixing ratio, with respect to either liquid or ice,
   // depending on value of 'ice'
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_FUNCTION
   static Spack qv_sat(const Spack& t_atm, const Spack& p_atm, const bool ice);
 
   // TODO: comment
@@ -297,10 +343,14 @@ struct Functions
     const view_dnu_table& dnu, Spack& lamc, Spack& cdist, Spack& cdist1, const Spack& lcldm);
 
   // Computes and returns rain size distribution parameters
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_FUNCTION
   static void get_rain_dsd2 (
     const Smask& qr_gt_small, const Spack& qr, Spack& nr, Spack& mu_r,
     Spack& lamr, Spack& cdistr, Spack& logn0r, const Spack& rcldm);
+
+  KOKKOS_FUNCTION
+  static void cloud_water_autoconversion(const Spack& rho,  const Spack& qc_incld, const Spack& nc_incld,
+    Spack& qcaut, Spack& ncautc, Spack& ncautr);
 
   //--------------------------------------------------------------------------------
   //  Calculates and returns the bulk rime density from the prognostic ice variables
@@ -309,10 +359,23 @@ struct Functions
   KOKKOS_FUNCTION
   static Spack calc_bulk_rho_rime(
     const Smask& qi_gt_small, const Spack& qi_tot, Spack& qi_rim, Spack& bi_rim);
+
+  // TODO - comment
+  KOKKOS_FUNCTION
+  static void compute_rain_fall_velocity(
+    const Smask& qr_gt_small, const view_2d_table& vn_table, const view_2d_table& vm_table,
+    const Spack& qr_incld, const Spack& rcldm, const Spack& rhofacr, Spack& nr,
+    Spack& nr_incld, Spack& mu_r, Spack& lamr, Spack& V_qr, Spack& V_nr);
 };
 
 template <typename ScalarT, typename DeviceT>
 constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
+
+extern "C" {
+// decl of fortran function for loading tables from fortran p3. This will
+// continue to be a bit awkward until we have fully ported all of p3.
+void init_tables_from_f90_c(Real* vn_table_data, Real* vm_table_data, Real* mu_table_data);
+}
 
 } // namespace p3
 } // namespace scream
@@ -326,8 +389,10 @@ constexpr ScalarT Functions<ScalarT, DeviceT>::P3C::lookup_table_1a_dum1_c;
 # include "p3_functions_dsd2_impl.hpp"
 # include "p3_functions_upwind_impl.hpp"
 # include "p3_functions_find_impl.hpp"
+# include "p3_functions_autoconversion_impl.hpp"
 # include "p3_functions_cloud_sed_impl.hpp"
 # include "p3_functions_ice_sed_impl.hpp"
+# include "p3_functions_rain_sed_impl.hpp"
 #endif
 
 #endif

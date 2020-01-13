@@ -99,8 +99,10 @@ OPTION(BUILD_HOMME_PREQX "Primitive equations FEM" ON)
 OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
+OPTION(ENABLE_PREQX_KOKKOS_BFB_TESTS "Turn on unit tests for XX and bfb for F vs XX" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
+OPTION(BUILD_HOMME_TOOL  "Offline tool" ON)
 OPTION(HOMME_ENABLE_COMPOSE "Build COMPOSE semi-Lagrangian tracer transport code" ON)
 
 #by default we don't need cxx
@@ -131,6 +133,10 @@ ENDIF ()
 IF (${HOMME_ENABLE_COMPOSE})
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_KOKKOS TRUE)
+ENDIF ()
+#if not kokkos, then no bfb tests
+IF (NOT ${BUILD_HOMME_PREQX_KOKKOS})
+  SET (ENABLE_PREQX_KOKKOS_BFB_TESTS FALSE)
 ENDIF ()
 
 IF (${HOMME_USE_CXX})
@@ -351,7 +357,7 @@ IF (${HOMME_USE_KOKKOS})
   INCLUDE(Kokkos)
 ENDIF ()
 
-IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS})
+IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS} AND ${ENABLE_PREQX_KOKKOS_BFB_TESTS})
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
 ENDIF ()
@@ -393,6 +399,10 @@ ENDIF()
 
 IF(${BUILD_HOMME_PRIM})
   ADD_SUBDIRECTORY(src/prim)
+ENDIF()
+
+IF(${BUILD_HOMME_TOOL})
+  ADD_SUBDIRECTORY(src/tool)
 ENDIF()
 
 # Tests and execs only if this is a standalone build

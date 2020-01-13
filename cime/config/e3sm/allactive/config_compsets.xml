@@ -14,7 +14,7 @@
     TIME_ATM[%phys]_LND[%phys]_ICE[%phys]_OCN[%phys]_ROF[%phys]_GLC[%phys]_WAV[%phys][_ESP%phys][_BGC%phys]
     Where for the CAM specific compsets below the following is supported
     TIME = Time period (e.g. 2000, HIST, RCP8...)
-    ATM  = [CAM4, CAM5, SATM]
+    ATM  = [CAM4, CAM5, SATM, SCREAM]
     LND  = [CLM45,  SLND]
     ICE  = [MPASSI, CICE, DICE, SICE]
     OCN  = [MPASO, DOCN, SOCN]

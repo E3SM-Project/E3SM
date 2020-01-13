@@ -195,7 +195,7 @@ real(rtype), parameter :: precip_limit  = 1.0E-2
 
     cons1 = piov6*rhow
     cons2 = 4._rtype*piov3*rhow
-    cons3 = 1._rtype/(cons2*(25.e-6_rtype)**3)
+    cons3 = 1._rtype/(cons2*1.562500000000000d-14)  ! 1._rtype/(cons2*bfb_pow(25.e-6_rtype,3.0_rtype))
     cons4 = 1._rtype/(dbrk**3*pi*rhow)
     cons5 = piov6*bimm
     cons6 = piov6**2*rhow*bimm

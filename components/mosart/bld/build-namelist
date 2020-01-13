@@ -301,7 +301,7 @@ if ($ROF_GRID eq "null") {
 
 if ($MOSART_MODE eq "NULL") {
     add_default($nl, 'rtm_mode', 'val'=>"$MOSART_MODE");
-	add_default($nl, 'do_rtm', 'val'=>".false.");
+    add_default($nl, 'do_rtm', 'val'=>".false.");
 }
 else {
     # Set Initial conditions if there is a file for this grid and sim-yr

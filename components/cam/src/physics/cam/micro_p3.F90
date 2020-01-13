@@ -604,6 +604,9 @@ contains
     inv_icldm = 1.0_rtype/icldm
     inv_lcldm = 1.0_rtype/lcldm
     inv_rcldm = 1.0_rtype/rcldm
+
+    mu_c = 0.0_rtype
+    lamc = 0.0_rtype
     ! AaronDonahue added exner term to replace all instances of th(i,k)/t(i,k), since th(i,k) is updated but t(i,k) is not, and this was
     ! causing energy conservation errors.
     inv_exner = 1._rtype/exner        !inverse of Exner expression, used when converting potential temp to temp
@@ -938,8 +941,7 @@ contains
           !................
           ! cloud water autoconversion
           ! NOTE: cloud_water_autoconversion must be called before droplet_self_collection
-          call cloud_water_autoconversion(rho(i,k), inv_rho(i,k),qc_incld(i,k),&
-            nc_incld(i,k),qr_incld(i,k),mu_c(i,k),nu(i,k),&
+          call cloud_water_autoconversion(rho(i,k),qc_incld(i,k),nc_incld(i,k),&
             qcaut,ncautc,ncautr)
 
           !............................
@@ -1576,8 +1578,8 @@ contains
     dum1 = (bfb_log10(qitot/nitot)+18._rtype)*lookup_table_1a_dum1_c-10._rtype ! For computational efficiency
     dumi = int(dum1)
     ! set limits (to make sure the calculated index doesn't exceed range of lookup table)
-    dum1 = min(dum1,real(isize))
-    dum1 = max(dum1,1.)
+    dum1 = min(dum1,real(isize,rtype))
+    dum1 = max(dum1,1._rtype)
     dumi = max(1,dumi)
     dumi = min(isize-1,dumi)
 
@@ -1585,7 +1587,7 @@ contains
     dum4  = (qirim/qitot)*3._rtype + 1._rtype
     dumii = int(dum4)
     ! set limits
-    dum4  = min(dum4,real(rimsize))
+    dum4  = min(dum4,real(rimsize,rtype))
     dum4  = max(dum4,1._rtype)
     dumii = max(1,dumii)
     dumii = min(rimsize-1,dumii)
@@ -1599,7 +1601,7 @@ contains
     endif
     dumjj = int(dum5)
     ! set limits
-    dum5  = min(dum5,real(densize))
+    dum5  = min(dum5,real(densize,rtype))
     dum5  = max(dum5,1._rtype)
     dumjj = max(1,dumjj)
     dumjj = min(densize-1,dumjj)
@@ -2241,7 +2243,7 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
       zerodegc)*kap-rho*xxlv*dv*(qsat0-qv))*2._rtype*pi/xlf)*nitot_incld
 
 
-      qimlt = max(qimlt,0.)
+      qimlt = max(qimlt,0._rtype)
       nimlt = qimlt*(nitot_incld/qitot_incld)
 
    endif
@@ -2464,7 +2466,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
          V_impact  = abs(vtrmi1-Vt_qc)
          Ri        = -(0.5e+6_rtype*D_c)*V_impact*iTc
          !               Ri        = max(1.,min(Ri,8.))
-         Ri        = max(1.,min(Ri,12._rtype))
+         Ri        = max(1._rtype,min(Ri,12._rtype))
          if (Ri.le.8.) then
             rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*Ri**2)*1000._rtype
          else
@@ -2776,63 +2778,41 @@ subroutine rain_self_collection(rho,qr_incld,nr_incld,    &
 end subroutine rain_self_collection
 
 
-subroutine cloud_water_autoconversion(rho,inv_rho,qc_incld,nc_incld,qr_incld,mu_c,nu,    &
+subroutine cloud_water_autoconversion(rho,qc_incld,nc_incld,    &
    qcaut,ncautc,ncautr)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: cloud_water_autoconversion_f, cxx_pow
+#endif
 
    implicit none
 
    real(rtype), intent(in) :: rho
-   real(rtype), intent(in) :: inv_rho
    real(rtype), intent(in) :: qc_incld
    real(rtype), intent(in) :: nc_incld
-   real(rtype), intent(in) :: qr_incld
-   real(rtype), intent(in) :: mu_c
-   real(rtype), intent(in) :: nu
 
    real(rtype), intent(out) :: qcaut
    real(rtype), intent(out) :: ncautc
    real(rtype), intent(out) :: ncautr
 
-   real(rtype) :: dum, dum1
+   real(rtype) :: dum
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  cloud_water_autoconversion_f(rho,qc_incld,nc_incld,    &
+         qcaut,ncautc,ncautr)
+      return
+   endif
+#endif
 
    qc_not_small: if (qc_incld.ge.1.e-8_rtype) then
 
-      if (iparam.eq.1) then
-
-         !Seifert and Beheng (2001)
-         dum   = 1._rtype-qc_incld/(qc_incld+qr_incld)
-         dum1  = 600._rtype*dum**0.68_rtype*(1.-dum**0.68_rtype)**3
-         qcaut =  kc*1.9230769e-5_rtype*(nu+2._rtype)*(nu+4._rtype)/(nu+1.)**2*        &
-              (rho*qc_incld*1.e-3_rtype)**4/(rho*nc_incld*1.e-6_rtype)**2*(1._rtype+      &
-              dum1/(1._rtype-dum)**2)*1000._rtype*inv_rho
-         ncautc = qcaut*7.6923076e+9_rtype
-
-      elseif (iparam.eq.2) then
-
-         !Beheng (1994)
-         if (nc_incld*rho*1.e-6_rtype .lt. 100._rtype) then
-            qcaut = 6.e+28_rtype*inv_rho*mu_c**(-1.7_rtype)*(1.e-6_rtype*rho*          &
-               nc_incld)**(-3.3_rtype)*(1.e-3_rtype*rho*qc_incld)**4.7_rtype
-         else
-            !2D interpolation of tabled logarithmic values
-            dum   = 41.46_rtype + (nc_incld*1.e-6_rtype*rho-100._rtype)*(37.53_rtype-41.46_rtype)*5.e-3_rtype
-            dum1  = 39.36_rtype + (nc_incld*1.e-6_rtype*rho-100._rtype)*(30.72_rtype-39.36_rtype)*5.e-3_rtype
-            qcaut = dum+(mu_c-5._rtype)*(dum1-dum)*0.1_rtype
-            ! 1000/rho is for conversion from g cm-3/s to kg/kg
-            qcaut = exp(qcaut)*(1.e-3_rtype*rho*qc_incld)**4.7_rtype*1000._rtype*inv_rho
-         endif
-         ncautc = 7.7e+9_rtype*qcaut
-
-      elseif (iparam.eq.3) then
-
-         !Khroutdinov and Kogan (2000)
-         dum   = qc_incld
-         qcaut = 1350._rtype*dum**2.47_rtype*(nc_incld*1.e-6_rtype*rho)**(-1.79_rtype)
-         ! note: ncautr is change in Nr; ncautc is change in Nc
-         ncautr = qcaut*cons3
-         ncautc = qcaut*nc_incld/qc_incld
-
-      endif
+      !Khroutdinov and Kogan (2000)
+      dum   = qc_incld
+      qcaut = 1350._rtype*bfb_pow(dum,2.47_rtype)*bfb_pow(nc_incld*1.e-6_rtype*rho,-1.79_rtype)
+      ! note: ncautr is change in Nr; ncautc is change in Ncs
+      ncautr = qcaut*cons3
+      ncautc = qcaut*nc_incld/qc_incld
 
       if (qcaut .eq.0._rtype) ncautc = 0._rtype
       if (ncautc.eq.0._rtype) qcaut  = 0._rtype
@@ -3490,6 +3470,7 @@ subroutine cloud_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
       endif two_moment
 
+      ! JGF: Is prt_liq intended to be inout or just out? Inconsistent with rain and ice sed.
       prt_liq = prt_accum*inv_rhow*odt  !note, contribution from rain is added below
 
    endif qc_present
@@ -3502,6 +3483,10 @@ end subroutine cloud_sedimentation
 subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
    qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use micro_p3_iso_f, only: rain_sedimentation_f
+#endif
 
    implicit none
    integer, intent(in) :: kts, kte
@@ -3540,6 +3525,15 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), dimension(kts:kte), target :: V_nr
    real(rtype), dimension(kts:kte), target :: flux_qx
    real(rtype), dimension(kts:kte), target :: flux_nx
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call rain_sedimentation_f(kts,kte,ktop,kbot,kdir,   &
+           qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+           qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
+      return
+   endif
+#endif
 
    vs(1)%p => V_qr
    vs(2)%p => V_nr
@@ -3583,9 +3577,8 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             qr_notsmall_r1: if (qr_incld(k)>qsmall) then
 
-               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), &
-                  rhofacr(k), nr(k), nr_incld(k), &
-                  mu_r(k), lamr(k), V_qr(k), V_nr(k))
+               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), rhofacr(k), nr(k), nr_incld(k), &
+                    mu_r(k), lamr(k), V_qr(k), V_nr(k))
 
             endif qr_notsmall_r1
 
@@ -3594,16 +3587,10 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
          enddo kloop_sedi_r1
 
-         if (k_qxbot.eq.kbot) then
-            k_temp = k_qxbot
-         else
-            k_temp = k_qxbot-kdir
-         endif
-
          call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
 
          !-- AaronDonahue, rflx output
-         do k = k_temp,k_qxtop,kdir
+         do k = k_qxbot,k_qxtop,kdir
             rflx(k+1) = rflx(k+1) + flux_qx(k) ! AaronDonahue
          enddo
 
@@ -3617,9 +3604,11 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
 end subroutine rain_sedimentation
 
-subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
-   nr, nr_incld, &
-   mu_r, lamr, V_qr, V_nr)
+subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: compute_rain_fall_velocity_f
+#endif
 
    real(rtype), intent(in) :: qr_incld
    real(rtype), intent(in) :: rcldm
@@ -3634,9 +3623,14 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
    real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3, rdumii, rdumjj
    integer :: dumii, dumjj
 
-   !Compute Vq, Vn:
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call compute_rain_fall_velocity_f(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+      return
+   endif
+#endif
 
-   nr  = max(nr,nsmall)
+   !Compute Vq, Vn:
 
    call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,     &
    tmp1,tmp2,rcldm)
@@ -3670,6 +3664,10 @@ end subroutine compute_rain_fall_velocity
 subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
    rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
    qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: ice_sedimentation_f
+#endif
 
    implicit none
    integer, intent(in) :: kts, kte
@@ -3721,6 +3719,15 @@ subroutine ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
 
    real(rtype) :: dum1, dum4, dum5, dum6
    integer dumi, dumii, dumjj, dumzz
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call ice_sedimentation_f(kts,kte,ktop,kbot,kdir,    &
+           rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
+           qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend)
+      return
+   endif
+#endif
 
    log_qxpresent = .false.  !note: this applies to ice category 'iice' only
    k_qxtop       = kbot

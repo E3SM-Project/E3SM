@@ -152,15 +152,19 @@ static void unittest_workspace()
 
       team.team_barrier();
 
-      if (r % 4 == 2) {
-        // let take_and_reset do the reset
-      }
-      else if (r % 2 == 0) {
+      if (r % 4 == 0) {
         ws.reset();
       }
-      else {
+      else if (r % 4 == 1) {
+        Kokkos::Array<ko::Unmanaged<view_1d<int> >*, num_ws> ptrs = { {&wssub[0], &wssub[1], &wssub[2], &wssub[3]} };
+        ws.release_many_contiguous(ptrs);
+      }
+      else if (r % 4 == 2) {
+        // let take_and_reset next loop do the reset
+      }
+      else { // % 4 == 3
         for (int w = num_ws - 1; w >= 0; --w) {
-          ws.release(wssub[w]);
+          ws.release(wssub[w]); // release individually
         }
       }
 

@@ -23,6 +23,22 @@ contains
     write (string, '(a,i1,a1)') prefix, sizeof(s), C_NULL_CHAR
   end subroutine append_precision
 
+  subroutine init_tables_from_f90_c(vn_table_c, vm_table_c, mu_table_c) bind(C)
+    use micro_p3, only: p3_get_tables
+
+    real(kind=c_real), intent(inout), dimension(300,10) :: vn_table_c, vm_table_c
+    real(kind=c_real), intent(inout), dimension(150)    :: mu_table_c
+
+    real(kind=c_real), dimension(150), target :: mu_table_f
+    real(kind=c_real), dimension(300,10), target :: vn_table_f, vm_table_f, revap_table_f
+
+    call p3_get_tables(mu_table_f, revap_table_f, vn_table_f, vm_table_f)
+    vn_table_c(:,:) = vn_table_f(:,:)
+    vm_table_c(:,:) = vm_table_f(:,:)
+    mu_table_c(:)   = mu_table_f(:)
+
+  end subroutine init_tables_from_f90_c
+
   subroutine p3_init_c(lookup_file_dir_c, info) bind(c)
     use array_io_mod
     use micro_p3, only: p3_init_a, p3_init_b, p3_set_tables, p3_get_tables
@@ -240,6 +256,15 @@ contains
     call get_rain_dsd2(qr,nr,mu_r,lamr,cdistr,logn0r,rcldm)
   end subroutine get_rain_dsd2_c
 
+  subroutine cloud_water_autoconversion_c(rho,qc_incld,nc_incld,qcaut,ncautc,ncautr) bind(C)
+
+      use micro_p3, only: cloud_water_autoconversion
+      real(kind=c_real), value, intent(in) :: rho, qc_incld, nc_incld
+      real(kind=c_real), intent(inout) :: qcaut, ncautc, ncautr
+
+      call cloud_water_autoconversion(rho, qc_incld, nc_incld, qcaut, ncautc, ncautr)
+  end subroutine cloud_water_autoconversion_c
+
   subroutine calc_first_order_upwind_step_c(kts, kte, kdir, kbot, k_qxtop, dt_sub, rho, inv_rho, inv_dzq, num_arrays, fluxes, vs, qnx) bind(C)
     use micro_p3, only: calc_first_order_upwind_step, realptr
 
@@ -322,6 +347,72 @@ contains
 
   end subroutine cloud_sedimentation_c
 
+  subroutine ice_sedimentation_c(kts,kte,ktop,kbot,kdir,    &
+       rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
+       qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend) bind(C)
+    use micro_p3, only: ice_sedimentation
+
+    ! arguments
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rhofaci
+    real(kind=c_real), intent(in), dimension(kts:kte) :: icldm
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dzq
+    real(kind=c_real), value, intent(in) :: dt, odt
+
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: qitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qitot_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: nitot
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nitot_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: qirim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qirim_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte), target :: birim
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: birim_incld
+
+    real(kind=c_real), intent(inout) :: prt_sol
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qi_tend
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: ni_tend
+
+    call ice_sedimentation(kts,kte,ktop,kbot,kdir,    &
+         rho,inv_rho,rhofaci,icldm,inv_dzq,dt,odt,  &
+         qitot,qitot_incld,nitot,qirim,qirim_incld,birim,birim_incld,nitot_incld,prt_sol,qi_tend,ni_tend)
+
+  end subroutine ice_sedimentation_c
+
+  subroutine rain_sedimentation_c(kts,kte,ktop,kbot,kdir,   &
+       qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+       qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend) bind(C)
+    use micro_p3, only: rain_sedimentation
+
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+
+    real(kind=c_real), intent(in), dimension(kts:kte) :: qr_incld
+
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rhofacr
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rcldm
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dzq
+    real(kind=c_real), value, intent(in) :: dt, odt
+
+    real(kind=c_real), intent(inout), target, dimension(kts:kte) :: qr
+    real(kind=c_real), intent(inout), target, dimension(kts:kte) :: nr
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: mu_r
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: lamr
+    real(kind=c_real), intent(inout) :: prt_liq
+    real(kind=c_real), intent(inout), dimension(kts:kte+1) :: rflx
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qr_tend
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr_tend
+
+    call rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
+         qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+         qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
+
+  end subroutine rain_sedimentation_c
+
   subroutine calc_bulk_rho_rime_c(qi_tot, qi_rim, bi_rim, rho_rime) bind(C)
     use micro_p3, only: calc_bulkRhoRime
 
@@ -332,5 +423,16 @@ contains
 
     call calc_bulkRhoRime(qi_tot, qi_rim, bi_rim, rho_rime)
   end subroutine calc_bulk_rho_rime_c
+
+  subroutine compute_rain_fall_velocity_c(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
+    use micro_p3, only: compute_rain_fall_velocity
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: qr_incld, rcldm, rhofacr
+    real(kind=c_real), intent(inout) :: nr, nr_incld
+    real(kind=c_real), intent(out) :: mu_r, lamr, V_qr, V_nr
+
+    call compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+  end subroutine compute_rain_fall_velocity_c
 
 end module micro_p3_iso_c

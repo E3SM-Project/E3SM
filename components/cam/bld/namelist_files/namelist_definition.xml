@@ -5932,6 +5932,23 @@ If rsplit=0, vertically lagrangian code is off.
 Default: Set by build-namelist.
 </entry>
 
+<entry id="se_tstep" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Dynamics timestep.
+</entry>
+
+<entry id="dt_tracer_factor" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Tracer advection is done every dt_tracer_factor dynamics timesteps.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="dt_remap_factor" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Vertically lagrangian code updates every dt_remap_factor dynamics timesteps.
+If dt_remap_factor=0, vertically lagrangian code is off.
+</entry>
+
 <entry id="tstep_type" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 Time stepping method for SE dycore
@@ -6088,11 +6105,12 @@ Tracer transport algorithm:
 </entry>
 
 <entry id="semi_lagrange_cdr_alg" type="integer" category="se"
-       group="ctl_nl" valid_values="2,3,20,30" >
+       group="ctl_nl" valid_values="2,3,20,21,30" >
 Constrained density reconstuctor (CDR) for property preservation:
 2: QLT
 3: CAAS
 20: QLT with superlevels of 8 levels.
+21: QLT with superlevels of 8 levels; use local CAAS over sublevels.
 30: CAAS with superlevels of 8 levels.
 Default: 20
 </entry>

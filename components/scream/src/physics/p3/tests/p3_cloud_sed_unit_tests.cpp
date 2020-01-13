@@ -29,84 +29,32 @@ static void run_phys()
 
 static void run_bfb()
 {
-  CloudSedData csds_fortran[] = {
-    //         kts, kte, ktop, kbot, kdir,        dt,       odt, log_predictNc, prt_liq,
-    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,         false,     0.0,
-                 std::make_pair(5.100E-03, 9.952E-07), // qc_incld_range
-                 std::make_pair(4.056E-03, 1.153E+00), // rho_range
-                 std::make_pair(0.9, 1.1),             // lcldm_range
-                 std::make_pair(2.959E+07, 5.348E+07), // acn_range
-                 std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
-                 std::make_pair(7.701E-16, 2.119E-04), // qc_range
-                 std::make_pair(7.701E-16, 2.119E-04), // nc_range
-                 std::make_pair(9.952E+05, 1.734E+08), // nc_incld_range
-                 std::make_pair(5.722E+00, 1.253E+01), // mu_c_range
-                 std::make_pair(3.381E+05, 2.519E+06), // lamc_range
-                 std::make_pair(9.952E-07, 9.982E-07), // qc_tend_range
-                 std::make_pair(9.952E+05, 1.743E+08)),// nc_tend_range
-
-    //         kts, kte, ktop, kbot, kdir,        dt,       odt, log_predictNc, prt_liq,
-    CloudSedData(1,  72,  72,   27,     1, 1.800E+03, 5.556E-04,         false,     0.0,
-                 std::make_pair(5.100E-03, 9.952E-07), // qc_incld_range
-                 std::make_pair(4.056E-03, 1.153E+00), // rho_range
-                 std::make_pair(0.9, 1.1),             // lcldm_range
-                 std::make_pair(2.959E+07, 5.348E+07), // acn_range
-                 std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
-                 std::make_pair(7.701E-16, 2.119E-04), // qc_range
-                 std::make_pair(7.701E-16, 2.119E-04), // nc_range
-                 std::make_pair(9.952E+05, 1.734E+08), // nc_incld_range
-                 std::make_pair(5.722E+00, 1.253E+01), // mu_c_range
-                 std::make_pair(3.381E+05, 2.519E+06), // lamc_range
-                 std::make_pair(9.952E-07, 9.982E-07), // qc_tend_range
-                 std::make_pair(9.952E+05, 1.743E+08)),// nc_tend_range
-
-    //         kts, kte, ktop, kbot, kdir,        dt,       odt, log_predictNc, prt_liq,
-    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,          true,     0.0,
-                 std::make_pair(5.100E-03, 9.952E-07), // qc_incld_range
-                 std::make_pair(4.056E-03, 1.153E+00), // rho_range
-                 std::make_pair(0.9, 1.1),             // lcldm_range
-                 std::make_pair(2.959E+07, 5.348E+07), // acn_range
-                 std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
-                 std::make_pair(7.701E-16, 2.119E-04), // qc_range
-                 std::make_pair(7.701E-16, 2.119E-04), // nc_range
-                 std::make_pair(9.952E+05, 1.734E+08), // nc_incld_range
-                 std::make_pair(5.722E+00, 1.253E+01), // mu_c_range
-                 std::make_pair(3.381E+05, 2.519E+06), // lamc_range
-                 std::make_pair(9.952E-07, 9.982E-07), // qc_tend_range
-                 std::make_pair(9.952E+05, 1.743E+08)),// nc_tend_range
-
-    //         kts, kte, ktop, kbot, kdir,        dt,       odt, log_predictNc, prt_liq,
-    CloudSedData(1,  72,  72,   27,     1, 1.800E+03, 5.556E-04,          true,     0.0,
-                 std::make_pair(5.100E-03, 9.952E-07), // qc_incld_range
-                 std::make_pair(4.056E-03, 1.153E+00), // rho_range
-                 std::make_pair(0.9, 1.1),             // lcldm_range
-                 std::make_pair(2.959E+07, 5.348E+07), // acn_range
-                 std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
-                 std::make_pair(7.701E-16, 2.119E-04), // qc_range
-                 std::make_pair(7.701E-16, 2.119E-04), // nc_range
-                 std::make_pair(9.952E+05, 1.734E+08), // nc_incld_range
-                 std::make_pair(5.722E+00, 1.253E+01), // mu_c_range
-                 std::make_pair(3.381E+05, 2.519E+06), // lamc_range
-                 std::make_pair(9.952E-07, 9.982E-07), // qc_tend_range
-                 std::make_pair(9.952E+05, 1.743E+08)),// nc_tend_range
-
-    //         kts, kte, ktop, kbot, kdir,        dt,       odt, log_predictNc, prt_liq,
-    CloudSedData(1,  72,  27,   27,    -1, 1.800E+03, 5.556E-04,          true,     0.0,
-                 std::make_pair(5.100E-03, 9.952E-07), // qc_incld_range
-                 std::make_pair(4.056E-03, 1.153E+00), // rho_range
-                 std::make_pair(0.9, 1.1),             // lcldm_range
-                 std::make_pair(2.959E+07, 5.348E+07), // acn_range
-                 std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
-                 std::make_pair(7.701E-16, 2.119E-04), // qc_range
-                 std::make_pair(7.701E-16, 2.119E-04), // nc_range
-                 std::make_pair(9.952E+05, 1.734E+08), // nc_incld_range
-                 std::make_pair(5.722E+00, 1.253E+01), // mu_c_range
-                 std::make_pair(3.381E+05, 2.519E+06), // lamc_range
-                 std::make_pair(9.952E-07, 9.982E-07), // qc_tend_range
-                 std::make_pair(9.952E+05, 1.743E+08)),// nc_tend_range
+  const std::array< std::pair<Real, Real>, CloudSedData::NUM_ARRAYS > ranges = {
+    std::make_pair(5.100E-03, 9.952E-07), // qc_incld_range
+    std::make_pair(4.056E-03, 1.153E+00), // rho_range
+    std::make_pair(0,         1.),        // inv_rho (ignored)
+    std::make_pair(0.9, 1.1),             // lcldm_range
+    std::make_pair(2.959E+07, 5.348E+07), // acn_range
+    std::make_pair(2.863E-05, 8.141E-03), // inv_dzq_range
+    std::make_pair(7.701E-16, 2.119E-04), // qc_range
+    std::make_pair(7.701E-16, 2.119E-04), // nc_range
+    std::make_pair(9.952E+05, 1.734E+08), // nc_incld_range
+    std::make_pair(5.722E+00, 1.253E+01), // mu_c_range
+    std::make_pair(3.381E+05, 2.519E+06), // lamc_range
+    std::make_pair(9.952E-07, 9.982E-07), // qc_tend_range
+    std::make_pair(9.952E+05, 1.743E+08), // nc_tend_range
   };
 
-  static constexpr Int num_runs = sizeof(csds_fortran) / sizeof(GenSedData);
+  CloudSedData csds_fortran[] = {
+    //         kts, kte, ktop, kbot, kdir,        dt,       odt, log_predictNc, prt_liq, ranges
+    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,         false,     0.0, ranges),
+    CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,         false,     0.0, ranges),
+    CloudSedData(1,  72,   27,   72,   -1, 1.800E+03, 5.556E-04,          true,     0.0, ranges),
+    CloudSedData(1,  72,   72,   27,    1, 1.800E+03, 5.556E-04,          true,     0.0, ranges),
+    CloudSedData(1,  72,   27,   27,   -1, 1.800E+03, 5.556E-04,          true,     0.0, ranges),
+  };
+
+  static constexpr Int num_runs = sizeof(csds_fortran) / sizeof(CloudSedData);
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state

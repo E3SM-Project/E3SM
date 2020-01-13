@@ -1,7 +1,7 @@
 #ifndef P3_FUNCTIONS_CLOUD_SED_IMPL_HPP
 #define P3_FUNCTIONS_CLOUD_SED_IMPL_HPP
 
-#include "p3_functions.hpp"
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace p3 {
@@ -36,7 +36,7 @@ void Functions<S,D>
 {
   // Get temporary workspaces needed for the cloud-sed calculation
   uview_1d<Spack> V_qc, V_nc, flux_qx, flux_nx;
-  workspace.template take_many<4>(
+  workspace.template take_many_contiguous_unsafe<4>(
     {"V_qc", "V_nc", "flux_qx", "flux_nx"},
     {&V_qc, &V_nc, &flux_qx, &flux_nx});
 
@@ -127,10 +127,8 @@ void Functions<S,D>
       nc_tend(pk) = (nc(pk) - nc_tend(pk)) * odt; // Liq. # sedimentation tendency, measure
   });
 
-  workspace.release(V_qc);
-  workspace.release(V_nc);
-  workspace.release(flux_qx);
-  workspace.release(flux_nx);
+  workspace.template release_many_contiguous<4>(
+    {&V_qc, &V_nc, &flux_qx, &flux_nx});
 }
 
 } // namespace p3

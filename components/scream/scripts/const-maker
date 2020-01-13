@@ -42,7 +42,10 @@ def const_maker(varname, expr):
     # them double-precision. The assignment to real(rtype) will truncate if
     # necessary.
     print("Fortran:")
-    print("real(rtype), public, parameter :: {} = {:22.15d} ! {}".format(varname, val, expr))
+    s = "real(rtype), public, parameter :: {} = {:22.15e} ! {}".format(varname, val, expr)
+    s = s.replace('e+','d+')
+    s = s.replace('e-','d-')
+    print s
 
     print("C++:")
     print("static constexpr Scalar {} = {:22.15e}; // {}".format(varname, val, expr))

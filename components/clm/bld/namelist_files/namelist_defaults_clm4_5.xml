@@ -213,6 +213,8 @@ lnd/clm2/surfdata_map/surfdata_360x720cru_simyr2000_c180216.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_48x96_simyr2000_c130927.nc</fsurdat>
 <fsurdat hgrid="64x128"    sim_year="2000">
 lnd/clm2/surfdata_map/surfdata_64x128_simyr2000_c170111.nc</fsurdat>
+<fsurdat hgrid="NLDAS"    sim_year="2000" irrig=".false." use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_nldas2_simyr2000_c181207.nc</fsurdat>
 
 <fsurdat hgrid="0.125x0.125"  sim_year="2000" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_0.125x0.125_simyr2000_c190730.nc</fsurdat>
@@ -287,6 +289,8 @@ lnd/clm2/surfdata_map/surfdata_0.9x1.25_simyr1850_c180306.nc</fsurdat>
 lnd/clm2/surfdata_map/surfdata_1.9x2.5_simyr1850_c180306.nc</fsurdat>
 <fsurdat hgrid="10x15"        sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_10x15_simyr1850_c130927.nc</fsurdat>
+<fsurdat hgrid="NLDAS"        sim_year="1850" irrig=".false." use_crop=".false." >
+lnd/clm2/surfdata_map/surfdata_nldas2_simyr2000_c181207.nc</fsurdat>
 
 <fsurdat hgrid="1x1_tropicAtl" sim_year="1850" use_crop=".false." >
 lnd/clm2/surfdata_map/surfdata_1x1_tropicAtl_simyr1850_c130927.nc</fsurdat>

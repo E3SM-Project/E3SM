@@ -204,7 +204,7 @@ struct UnitWrap::UnitTest<D>::TestTableIce {
     };
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       find_lookuptable_indices_1a(lid[i]);
       find_lookuptable_indices_1b(lidb[i]);
       access_lookup_table(altd[i]);
