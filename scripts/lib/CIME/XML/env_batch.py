@@ -221,7 +221,8 @@ class EnvBatch(EnvBase):
 
             walltime    = case.get_value("USER_REQUESTED_WALLTIME", subgroup=job) if case.get_value("USER_REQUESTED_WALLTIME", subgroup=job) else None
             force_queue = case.get_value("USER_REQUESTED_QUEUE", subgroup=job) if case.get_value("USER_REQUESTED_QUEUE", subgroup=job) else None
-            logger.info("job is {} USER_REQUESTED_WALLTIME {} USER_REQUESTED_QUEUE {}".format(job, walltime, force_queue))
+            walltime_format = case.get_value("walltime_format", subgroup=job) if case.get_value("walltime_format", subgroup=job) else None
+            logger.info("job is {} USER_REQUESTED_WALLTIME {} USER_REQUESTED_QUEUE {} WALLTIME_FORMAT {}".format(job, walltime, force_queue, walltime_format))
             task_count = int(jsect["task_count"]) if "task_count" in jsect else case.total_tasks
             walltime = jsect["walltime"] if ("walltime" in jsect and walltime is None) else walltime
             if "task_count" in jsect:
@@ -273,6 +274,18 @@ class EnvBatch(EnvBase):
                     walltime = specs[3]
 
                 walltime = self._default_walltime if walltime is None else walltime # last-chance fallback
+            else:
+                # Set the walltime to the correct walltime_format, if set.
+                # Assuming correct format is #H:#M or %H:%M:%S.
+                if walltime_format is not None:
+                    components=walltime.split(":")
+                    if len(components) > len(walltime_format.split(":")):
+                        walltime = ':'.join(components[:len(walltime_format.split(":"))])
+                        logger.info(" Changing USER_REQUESTED_WALLTIME to {} to match walltime_format {}".format(walltime,walltime_format))
+                    if len(components) < len(walltime_format.split(":")):
+                        walltime = walltime + ':' + ':'.join(["00"]*(len(walltime_format.split(":")) - len(components)))
+                        logger.info(" Changing USER_REQUESTED_WALLTIME to {} to match walltime_format {}".format(walltime,walltime_format))
+
             env_workflow.set_value("JOB_QUEUE", queue, subgroup=job, ignore_type=specs is None)
             env_workflow.set_value("JOB_WALLCLOCK_TIME", walltime, subgroup=job)
             logger.debug("Job {} queue {} walltime {}".format(job, queue, walltime))
