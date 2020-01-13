@@ -7,7 +7,7 @@ module assertions
    private
 
    ! This module provides the following public routines
-   public :: assert_valid, assert_range, assert
+   public :: assert_valid, assert_range, assert, check_range
 
    ! Interface blocks to allow overloading procedures
    interface assert_valid
@@ -21,6 +21,13 @@ module assertions
                        assert_range_integer_1d, &
                        assert_range_integer_2d
    end interface
+
+   ! Procedure to check range, with extra arguments to get lat/lon location
+   ! where errors occur
+   interface check_range
+      module procedure check_range_2d, check_range_3d
+   end interface
+
 
 contains
 
@@ -190,6 +197,56 @@ contains
          call endrun('Assertion failed: ' // message)
       end if
    end subroutine
+   !-------------------------------------------------------------------------------
+
+   !-------------------------------------------------------------------------------
+   subroutine check_range_2d(state, v, vmin, vmax, vname)
+      use physconst, only: pi
+      use physics_types, only: physics_state
+      use cam_abortutils, only: endrun
+      type(physics_state), intent(in) :: state
+      real(r8), intent(in) :: v(:,:), vmin, vmax
+      character(len=*), intent(in) :: vname
+      real(r8) :: lat, lon
+      integer :: ix, iz
+      do iz = 1,size(v, 2)
+         do ix = 1,size(v, 1)
+            if (v(ix,iz) < vmin .or. v(ix,iz) > vmax) then
+               lat = state%lat(ix) * 180._r8 / pi
+               lon = state%lon(ix) * 180._r8 / pi
+               print *, 'Variable ' // trim(vname) // &
+                        ' out of range; value = ', v(ix,iz), &
+                        '; lat/lon = ', lat, lon
+               call endrun('check_range failed for ' // trim(vname))
+            end if
+         end do
+      end do
+   end subroutine check_range_2d
+   !-------------------------------------------------------------------------------
+   subroutine check_range_3d(state, v, vmin, vmax, vname)
+      use physconst, only: pi
+      use physics_types, only: physics_state
+      use cam_abortutils, only: endrun
+      type(physics_state), intent(in) :: state
+      real(r8), intent(in) :: v(:,:,:), vmin, vmax
+      character(len=*), intent(in) :: vname
+      real(r8) :: lat, lon
+      integer :: ix, iy, iz
+      do iz = 1,size(v, 3)
+         do iy = 1,size(v,2)
+            do ix = 1,size(v, 1)
+               if (v(ix,iy,iz) < vmin .or. v(ix,iy,iz) > vmax) then
+                  lat = state%lat(ix) * 180._r8 / pi
+                  lon = state%lon(ix) * 180._r8 / pi
+                  print *, 'Variable ' // trim(vname) // &
+                           ' out of range; value = ', v(ix,iy,iz), &
+                           '; lat/lon = ', lat, lon
+                  call endrun('check_range failed for ' // trim(vname))
+               end if
+            end do
+         end do
+      end do
+   end subroutine check_range_3d
    !-------------------------------------------------------------------------------
 
 end module assertions
