@@ -2,7 +2,6 @@
 {{ batchdirectives }}
 
 # Query run directory
-
 rundir=`./xmlquery --value RUNDIR`
 echo "run dir is $rundir"
 cd $rundir

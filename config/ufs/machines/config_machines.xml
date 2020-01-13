@@ -545,7 +545,7 @@ This allows using a different mpirun command to launch unit tests
     <MPILIBS>impi,mvapich2</MPILIBS>
     <PROJECT>TG-ATM190009</PROJECT>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT>/work/01118/tg803972/stampede2/UFS/ufs_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
@@ -608,7 +608,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
     </environment_variables>
-    <environment_variables>
+    <environment_variables comp_interface="nuopc">
       <env name="NCEP_LIBS">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install</env>
       <env name="NEMSIO_INC">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/include</env>
       <env name="NEMSIO_LIB">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libnemsio_v2.2.3.a</env>

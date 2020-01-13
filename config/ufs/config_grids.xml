@@ -1736,13 +1736,6 @@
       <desc>C384 is a fvcubed 25 km resolution grid:</desc>
       <support>Experimental for fv3 dycore</support>
     </domain>
-
-    <domain name="C768">
-      <nx>3538944</nx> <ny>1</ny>
-      <desc>C768 is a fvcubed 13 km resolution grid:</desc>
-      <support>Experimental for fv3 dycore</support>
-    </domain>
-
     <domain name="C768">
       <nx>3538944</nx> <ny>1</ny>
       <desc>C768 is a fvcubed 13 km resolution grid:</desc>
