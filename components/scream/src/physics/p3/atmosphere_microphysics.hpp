@@ -91,20 +91,20 @@ protected:
  * TODO: Switch to a general stand-alone class for initialization of any stand-alone
  * test.
 */
-class SAMicrophysics : public scream::AtmosphereProcess
+class P3StandAloneInit : public scream::AtmosphereProcess
 {
 public:
   using field_type       = Field<      Real,device_type>;
   using const_field_type = Field<const Real,device_type>;
 
   // Constructors
-  SAMicrophysics (const Comm& comm, const ParameterList& params);
+  P3StandAloneInit (const Comm& comm, const ParameterList& params);
 
   // The type of subcomponent
   AtmosphereProcessType type () const { return AtmosphereProcessType::Physics; }
 
   // The name of the subcomponent
-  std::string name () const { return "Stand-Alone"; }
+  std::string name () const { return "P3StandAloneInit"; }
   
   // The communicator used by subcomponent
   const Comm& get_comm () const { return m_sa_comm; }
@@ -154,7 +154,7 @@ protected:
 
   ParameterList     m_sa_params;
 
-}; // class SAMicrophysics
+}; // class P3StandAloneInit
 
 } // namespace scream
 

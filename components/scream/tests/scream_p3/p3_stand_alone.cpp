@@ -53,8 +53,8 @@ TEST_CASE("p3-stand-alone", "") {
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("sa",&create_atmosphere_process<SAMicrophysics>);
-  proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
+  proc_factory.register_product("SA",&create_atmosphere_process<P3StandAloneInit>);
+  proc_factory.register_product("P3",&create_atmosphere_process<P3Microphysics>);
 
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();

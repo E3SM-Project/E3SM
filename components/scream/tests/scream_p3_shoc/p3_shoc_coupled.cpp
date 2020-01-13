@@ -60,7 +60,7 @@ TEST_CASE("p3-shoc-coupled", "") {
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
   auto& proc_factory = AtmosphereProcessFactory::instance();
-  proc_factory.register_product("SA",&create_atmosphere_process<SAMicrophysics>);
+  proc_factory.register_product("SA",&create_atmosphere_process<P3StandAloneInit>);
   proc_factory.register_product("P3",&create_atmosphere_process<P3Microphysics>);
   proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
 

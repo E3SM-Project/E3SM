@@ -70,28 +70,8 @@ void P3Microphysics::initialize (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
 
-  // Copy inputs to host. Copy also outputs, cause we might "update" them, rather than overwrite them.
-  for (auto& it : m_p3_fields_in) {
-    Kokkos::deep_copy(m_p3_host_views_in.at(it.first),it.second.get_view());
-  }
-  for (auto& it : m_p3_fields_out) {
-    Kokkos::deep_copy(m_p3_host_views_out.at(it.first),it.second.get_view());
-  }
-
-  // Note: in order to init some fields for tests, we need to write them,
-  //       even if they are marked as inputs.
-  std::map<std::string,Real*> ptrs_in;
-  for (auto it : m_raw_ptrs_in) {
-    ptrs_in[it.first] = const_cast<Real*>(it.second);
-  }
-
   // Call f90 routine
-  p3_init_f90 (m_raw_ptrs_out["q"], m_raw_ptrs_out["T"], ptrs_in["zi"], ptrs_in["pmid"], ptrs_in["pdel"], ptrs_in["ast"], ptrs_in["naai"], ptrs_in["npccn"]);
-
-  // Copy outputs back to device
-  for (auto& it : m_p3_fields_out) {
-    Kokkos::deep_copy(it.second.get_view(),m_p3_host_views_out.at(it.first));
-  }
+  p3_init_f90 ();
 }
 
 // =========================================================================================
@@ -167,11 +147,11 @@ void P3Microphysics::set_computed_field_impl (const Field<      Real, device_typ
 }
 
 /* 
- * Stand-alone Microphysics stub routines
+ * P3 Microphysics initialization for stand-alone testing.
 */
 
 // =========================================================================================
-SAMicrophysics::SAMicrophysics (const Comm& comm,const ParameterList& params)
+P3StandAloneInit::P3StandAloneInit (const Comm& comm,const ParameterList& params)
  : m_sa_comm (comm)
  , m_sa_params (params)
 {
@@ -184,7 +164,7 @@ SAMicrophysics::SAMicrophysics (const Comm& comm,const ParameterList& params)
 }
 
 // =========================================================================================
-void SAMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
+void P3StandAloneInit::set_grids(const std::shared_ptr<const GridsManager> grids_manager)
 {
   using namespace units;
 
@@ -226,7 +206,7 @@ void SAMicrophysics::set_grids(const std::shared_ptr<const GridsManager> grids_m
   m_computed_fields.emplace("q",  vector3d_layout_mid, Q, grid_name);
 }
 // =========================================================================================
-void SAMicrophysics::initialize (const util::TimeStamp& t0)
+void P3StandAloneInit::initialize (const util::TimeStamp& t0)
 {
   m_current_ts = t0;
 
@@ -239,7 +219,7 @@ void SAMicrophysics::initialize (const util::TimeStamp& t0)
   }
 
   // Call f90 routine
-  sa_init_f90 (m_raw_ptrs_out["q"], m_raw_ptrs_out["T"], m_raw_ptrs_out["zi"], m_raw_ptrs_out["pmid"], m_raw_ptrs_out["pdel"], m_raw_ptrs_out["ast"], m_raw_ptrs_out["naai"], m_raw_ptrs_out["npccn"]);
+  p3_standalone_init_f90 (m_raw_ptrs_out["q"], m_raw_ptrs_out["T"], m_raw_ptrs_out["zi"], m_raw_ptrs_out["pmid"], m_raw_ptrs_out["pdel"], m_raw_ptrs_out["ast"], m_raw_ptrs_out["naai"], m_raw_ptrs_out["npccn"]);
 
   // Copy outputs back to device
   for (auto& it : m_sa_fields_out) {
@@ -248,18 +228,18 @@ void SAMicrophysics::initialize (const util::TimeStamp& t0)
 }
 
 // =========================================================================================
-void SAMicrophysics::run (const Real dt)
+void P3StandAloneInit::run (const Real dt)
 {
   // Since it's just for initialization ,do nothing here 
 }
 // =========================================================================================
-void SAMicrophysics::finalize()
+void P3StandAloneInit::finalize()
 {
   // Since it's just for initialization ,do nothing here 
 }
 // =========================================================================================
 
-void SAMicrophysics::register_fields (FieldRepository<Real, device_type>& field_repo) const {
+void P3StandAloneInit::register_fields (FieldRepository<Real, device_type>& field_repo) const {
   for (auto& fid : m_required_fields) {
     field_repo.register_field(fid);
   }
@@ -268,7 +248,7 @@ void SAMicrophysics::register_fields (FieldRepository<Real, device_type>& field_
   }
 }
 
-void SAMicrophysics::set_required_field_impl (const Field<const Real, device_type>& f) {
+void P3StandAloneInit::set_required_field_impl (const Field<const Real, device_type>& f) {
   // Store a copy of the field. We need this in order to do some tracking checks
   // at the beginning of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr
@@ -282,7 +262,7 @@ void SAMicrophysics::set_required_field_impl (const Field<const Real, device_typ
   f.get_header_ptr()->get_tracking().add_customer(weak_from_this());
 }
 
-void SAMicrophysics::set_computed_field_impl (const Field<      Real, device_type>& f) {
+void P3StandAloneInit::set_computed_field_impl (const Field<      Real, device_type>& f) {
   // Store a copy of the field. We need this in order to do some tracking updates
   // at the end of the run call. Other than that, there would be really
   // no need to store a scream field here; we could simply set the view ptr
