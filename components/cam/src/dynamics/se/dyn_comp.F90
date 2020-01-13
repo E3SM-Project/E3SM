@@ -357,7 +357,7 @@ CONTAINS
     integer ::  n
     integer :: nets, nete, ithr
     integer :: ie
-    logical :: single_column_in
+    logical :: single_column_in, do_prim_run
 
     ! !DESCRIPTION:
     !
@@ -376,13 +376,24 @@ CONTAINS
        nete=dom_mt(ithr)%end
        hybrid = hybrid_create(par,ithr,hthreads)
 
+       do_prim_run = .true. ! Always do prim_run_subcycle
+                            ! Unless turned off SCM for specific cases
+
        single_column_in = single_column
+       
        ! if IOP-SCREAM mode we want dycore to operate in non-SCM mode,
        !   thus turn this switch to false for this block
-       if (single_column .and. iop_scream) single_column_in = .false.
-
-       ! If SCM mode and 3d forcing prescribed, do NOT call dycore
-       if ((single_column_in .and. .not. use_3dfrc) .or. iop_scream) then
+       if (iop_scream) then
+         single_column_in = .false.
+       endif
+       
+       ! if true SCM mode (not IOP-SCREAM) do not call 
+       !   dynamical core if 3D forcing is prescribed
+       if (single_column .and. .not. iop_scream) then
+         if (use_3dfrc) do_prim_run = .false.
+       endif
+       
+       if (do_prim_run) then
          do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
            call t_startf("prim_run_sybcycle")

@@ -1164,14 +1164,15 @@
         call scatter_global(hm,scm_var4,master_task,distrb_info, &
 	  field_loc_noupdate,field_type_noupdate)
         call scatter_global(ocn_gridcell_frac,scm_var5,master_task,distrb_info, &
-	  field_loc_noupdate,field_type_noupdate)	  
+	  field_loc_noupdate,field_type_noupdate)
+	  
+	deallocate(scm_var1)
+        deallocate(scm_var2)
+        deallocate(scm_var3)
+        deallocate(scm_var4)
+        deallocate(scm_var5)  
+	  	  
       endif
-      
-      deallocate(scm_var1)
-      deallocate(scm_var2)
-      deallocate(scm_var3)
-      deallocate(scm_var4)
-      deallocate(scm_var5)
 
      !$OMP PARALLEL DO PRIVATE(iblk,this_block,ilo,ihi,jlo,jhi,i,j)
       do iblk = 1,nblocks
