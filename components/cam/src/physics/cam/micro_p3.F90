@@ -935,7 +935,7 @@ contains
           !.................................................................
           ! droplet activation
           call droplet_activation(t(i,k),pres(i,k),qv(i,k),qc(i,k),inv_rho(i,k),&
-             sup(i,k),xxlv(i,k),npccn(i,k),log_predictNc,odt,it,&
+             sup(i,k),xxlv(i,k),npccn(i,k),log_predictNc,odt,&
              qcnuc,ncnuc)
 
           !................
@@ -2600,7 +2600,7 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
 end subroutine
 
 
-subroutine droplet_activation(t,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt,it,    &
+subroutine droplet_activation(t,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt,    &
    qcnuc,ncnuc)
 
 
@@ -2617,7 +2617,6 @@ real(rtype), intent(in) :: npccn
 
 logical(btype), intent(in) :: log_predictNc
 real(rtype), intent(in)  :: odt
-integer, intent(in) :: it
 
 real(rtype), intent(inout) :: qcnuc
 real(rtype), intent(inout) :: ncnuc
@@ -2632,14 +2631,10 @@ real(rtype) :: dum, dumqvs, dqsdt, ab
       ! note that this is also applied at the first time step
       if (sup.gt.1.e-6) then
          ncnuc = npccn
-         if (it.eq.1) then
-            qcnuc = 0._rtype
-         else
-            !TODO Limit qcnuc so that conditions never become sub-saturated
-            qcnuc = ncnuc*cons7
-         endif
+         !TODO Limit qcnuc so that conditions never become sub-saturated
+         qcnuc = ncnuc*cons7
       endif
-   else if (sup.gt.1.e-6.and.it.gt.1) then
+   else if (sup.gt.1.e-6) then
      ! for specified Nc, make sure droplets are present if conditions are supersaturated
      ! this is not applied at the first time step, since saturation adjustment is applied at the first step
       dum   = nccnst*inv_rho*cons7-qc
