@@ -526,6 +526,7 @@ CONTAINS
 	    
 	  else	  
 	  
+	    i = ni
 	    n = 1
 
             gGridRoot%data%rAttr(nlat ,n) = lat(i,j)

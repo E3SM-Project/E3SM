@@ -382,7 +382,7 @@ CONTAINS
        if (single_column .and. iop_scream) single_column_in = .false.
 
        ! If SCM mode and 3d forcing prescribed, do NOT call dycore
-       if ((.not. single_column_in .and. .not. use_3dfrc) .or. iop_scream) then
+       if ((single_column_in .and. .not. use_3dfrc) .or. iop_scream) then
          do n=1,se_nsplit
            ! forward-in-time RK, with subcycling
            call t_startf("prim_run_sybcycle")
