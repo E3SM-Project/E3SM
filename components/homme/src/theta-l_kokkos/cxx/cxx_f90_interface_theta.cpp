@@ -398,6 +398,12 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
                                elem_state_phinh_i_ptr,elem_state_dp3d_ptr,elem_state_ps_v_ptr);
   Tracers &tracers = Context::singleton().get<Tracers>();
   tracers.pull_qdp(elem_state_Qdp_ptr);
+
+  // Init ref states
+  auto& params = Context::singleton().get<SimulationParams>();
+  auto& hvcoord = Context::singleton().get<HybridVCoord>();
+  auto  phis = Context::singleton().get<ElementsGeometry>().m_phis;
+  state.m_ref_states.compute(params.theta_hydrostatic_mode,hvcoord,phis);
 }
 
 void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,

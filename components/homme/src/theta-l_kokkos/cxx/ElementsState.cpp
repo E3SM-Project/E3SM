@@ -86,6 +86,8 @@ void RefStates::compute(const bool hydrostatic,
     });
   });
   Kokkos::fence();
+  Kokkos::deep_copy(theta_ref,0.0);
+  Kokkos::deep_copy(dp_ref,0.0);
 }
 
 void ElementsState::init(const int num_elems) {
