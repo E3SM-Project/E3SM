@@ -624,7 +624,7 @@ def _archive_process(case, archive, last_date, archive_incomplete_logs, copy_onl
                                    dout_s_root, casename, rundir)
 
 ###############################################################################
-def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None):
+def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None, test=False):
 ###############################################################################
     """
     Take archived restart files and load them into current case.  Use rest_dir if provided otherwise use most recent
@@ -639,8 +639,13 @@ def restore_from_archive(self, rest_dir=None, dout_s_root=None, rundir=None):
             rest_dir = os.path.join(dout_s_root, "rest", rest_dir)
     else:
         rest_root = os.path.join(dout_s_root, "rest")
+
         if os.path.exists(rest_root):
             rest_dir = os.path.join(rest_root, ls_sorted_by_mtime(os.path.join(dout_s_root, "rest"))[-1])
+
+    if rest_dir is None and  test:
+        logger.warning("No rest_dir found for test - is this expected? DOUT_S_ROOT={}".format(dout_s_root))
+        return
     expect(os.path.exists(rest_dir),"ERROR: No directory {} found".format(rest_dir))
     logger.info("Restoring restart from {}".format(rest_dir))
 
@@ -791,7 +796,7 @@ def test_st_archive(self, testdir="st_archive_test"):
     testdir2 = os.path.join(testdir,"run2")
     os.makedirs(testdir2)
 
-    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root)
+    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root, test=True)
 
     restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
     for _file in restfiles:
@@ -865,7 +870,7 @@ def test_env_archive(self, testdir="env_archive_test"):
     testdir2 = os.path.join(testdir,"run2")
     os.makedirs(testdir2)
     restfiles = []
-    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root)
+    restore_from_archive(self, rundir=testdir2, dout_s_root=dout_s_root, test=True)
     if os.path.exists(os.path.join(testdir,"archive","rest")):
         restfiles = [f for f in os.listdir(os.path.join(testdir,"archive","rest","1976-01-01-00000"))]
     for _file in restfiles:

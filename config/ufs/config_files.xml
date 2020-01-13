@@ -344,17 +344,7 @@
     <type>char</type>
     <default_value>unset</default_value>
     <values>
-      <value component="allactive">$SRCROOT/cime_config/testlist_allactive.xml</value>
-      <value component="drv"      >$COMP_ROOT_DIR_CPL/cime/cime_config/testdefs/testlist_drv.xml</value>
-      <value component="cam"      >$COMP_ROOT_DIR_ATM/cime_config/testdefs/testlist_cam.xml</value>
-      <value component="cism"     >$COMP_ROOT_DIR_GLC/cime_config/testdefs/testlist_cism.xml</value>
-      <value component="clm"      >$COMP_ROOT_DIR_LND/cime_config/testdefs/testlist_clm.xml</value>
-      <value component="cice"     >$COMP_ROOT_DIR_ICE/cime_config/testdefs/testlist_cice.xml</value>
-      <value component="pop"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testlist_pop.xml</value>
-      <value component="mom"      >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testlist_mom.xml</value>
-      <value component="nemo"   >$COMP_ROOT_DIR_OCN/cime_config/testdefs/testlist_nemo.xml</value>
-      <value component="rtm"      >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testlist_rtm.xml</value>
-      <value component="mosart"   >$COMP_ROOT_DIR_ROF/cime_config/testdefs/testlist_mosart.xml</value>
+      <value component="ufsatm"   >$COMP_ROOT_DIR_ATM/cime/cime_config/testlist.xml</value>
     </values>
     <group>case_last</group>
     <file>env_case.xml</file>

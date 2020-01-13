@@ -539,6 +539,9 @@ class TestScheduler(object):
                 if test in self._test_data and "options" in self._test_data[test] and \
                         "wallclock" in self._test_data[test]['options']:
                     create_newcase_cmd += " --walltime {}".format(self._test_data[test]['options']['wallclock'])
+        if test in self._test_data and "options" in self._test_data[test] and \
+                        "workflow" in self._test_data[test]['options']:
+            create_newcase_cmd += " --workflow {}".format(self._test_data[test]['options']['workflow'])
 
         logger.debug("Calling create_newcase: " + create_newcase_cmd)
         return self._shell_cmd_for_phase(test, create_newcase_cmd, CREATE_NEWCASE_PHASE)

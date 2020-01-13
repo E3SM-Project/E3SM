@@ -2,6 +2,7 @@
 {{ batchdirectives }}
 
 # Query run directory
+
 rundir=`./xmlquery --value RUNDIR`
 echo "run dir is $rundir"
 cd $rundir
@@ -16,6 +17,7 @@ export LD_LIBRARY_PATH=$NCEP_LIBS/lib:$NCEP_LIBS/lib64:$LD_LIBRARY_PATH
 cp $NCEP_LIBS/bin/ncep_post $blddir/.
 
 # Query mpirun command
+
 runcmd='{{ mpirun }}'
 mpirun=`echo $runcmd | awk '{print $1}'`
 
