@@ -14,6 +14,7 @@ module ocn_gm
    use mpas_threading
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -42,18 +43,11 @@ module ocn_gm
    private :: tridiagonal_solve
 
    ! Config options
-   real (kind=RKIND), pointer :: config_gravWaveSpeed_trunc
-   real (kind=RKIND), pointer :: config_max_relative_slope
-   logical, pointer :: config_use_GM
-   logical, pointer :: config_use_Redi
-   logical, pointer :: config_disable_redi_k33
-   integer, pointer :: config_Redi_surface_taper_layers
-   real (kind=RKIND), pointer :: config_Redi_bottom_taper_height
-   logical, pointer :: config_GM_lat_variable_c2
-   logical, pointer :: config_GM_kappa_lat_depth_variable
-   real (kind=RKIND), pointer :: config_GM_min_stratification_ratio
-   real (kind=RKIND), pointer :: config_GM_min_phase_speed
    real (kind=RKIND), parameter :: epsGM = 1.0e-12_RKIND
+
+   logical :: local_config_GM_lat_variable_c2
+   logical :: local_config_GM_kappa_lat_depth_variable
+   real (kind=RKIND), parameter :: local_config_GM_min_phase_speed = 0.1_RKIND
 
 !***********************************************************************
 
@@ -116,7 +110,7 @@ contains
       real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
       integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp, stmp, maxSlopeK33
       real(kind=RKIND)                 :: bottomAv, sumN2, countN2, maxN, kappaSum, ltSum
@@ -181,6 +175,7 @@ contains
       call mpas_pool_get_array(meshPool, 'dvEdge',  dvEdge)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell',  nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell',  edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -500,10 +495,10 @@ contains
 ! mrp uncomment later, this is for testing
                slopeTriadUp(k,iCellSelf,iEdge) = &
                   slopeTaper(k) * &
-                  max( min( slopeTriadUp(k,iCellSelf,iEdge), config_max_relative_slope), -config_max_relative_slope)
+                  max( min( slopeTriadUp(k,iCellSelf,iEdge), config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
                slopeTriadDown(k,iCellSelf,iEdge) = &
                   slopeTaper(k) * &
-                  max( min( slopeTriadDown(k,iCellSelf,iEdge), config_max_relative_slope), -config_max_relative_slope)
+                  max( min( slopeTriadDown(k,iCellSelf,iEdge), config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
 
                ! Griffies 1998 eqn 34
                ! mrp need to add triad averaged coefficient A (Redi diffusion) here.
@@ -563,7 +558,7 @@ endif
       !
       !--------------------------------------------------------------------
 
-      if (config_GM_lat_variable_c2) then
+      if (local_config_GM_lat_variable_c2) then
          !$omp do schedule(runtime) private(cell1, cell2, sumN2, ltSum, countN2, BruntVaisalaFreqTopEdge)
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
@@ -583,7 +578,7 @@ endif
 
             enddo
 
-            if(countN2 > 0) cGMphaseSpeed(iEdge) = max(config_GM_min_phase_speed ,sqrt(sumN2/ltSum)*ltSum / 3.141592_RKIND)
+            if(countN2 > 0) cGMphaseSpeed(iEdge) = max(local_config_GM_min_phase_speed ,sqrt(sumN2/ltSum)*ltSum / 3.141592_RKIND)
 
          enddo
          !$omp end do
@@ -591,7 +586,7 @@ endif
       else
          !$omp do schedule(runtime)
          do iEdge = 1, nEdges
-            cGMphaseSpeed(iEdge) = config_gravWaveSpeed_trunc
+            cGMphaseSpeed(iEdge) = config_GM_constant_gravWaveSpeed
          enddo
          !$omp end do
       endif
@@ -602,7 +597,7 @@ endif
       enddo 
       !$omp end do
 
-      if (config_GM_kappa_lat_depth_variable) then
+      if (local_config_GM_kappa_lat_depth_variable) then
 
          !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
          do iEdge = 1,nEdges
@@ -822,42 +817,16 @@ endif
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      character (len=StrKIND), pointer :: config_GM_kappa_function
-      real (kind=RKIND), pointer :: config_GM_tracer_kappa
-      real (kind=RKIND), pointer :: config_GM_kappa_min
-      real (kind=RKIND), pointer :: config_GM_kappa_max
-      real (kind=RKIND), pointer :: config_GM_cell_size_min
-      real (kind=RKIND), pointer :: config_GM_cell_size_max
       real (kind=RKIND), dimension(:), pointer :: areaCell
 
       integer :: iEdge
       integer, pointer :: nEdges
       real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOncell, edgeSignOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOncell
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_GM',config_use_GM)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_Redi',config_use_Redi)
-
       if ((.not.config_use_GM).and.(.not.config_use_Redi)) return
-      call mpas_pool_get_config(ocnConfigs, 'config_Redi_surface_taper_layers',config_Redi_surface_taper_layers)
-      call mpas_pool_get_config(ocnConfigs, 'config_Redi_bottom_taper_height',config_Redi_bottom_taper_height)
-      call mpas_pool_get_config(ocnConfigs, 'config_gravWaveSpeed_trunc',config_gravWaveSpeed_trunc)
-      call mpas_pool_get_config(ocnConfigs, 'config_max_relative_slope',config_max_relative_slope)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_redi_k33',config_disable_redi_k33)
-
-
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_tracer_kappa',config_GM_tracer_kappa)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_kappa_function',config_GM_kappa_function)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_kappa_min',config_GM_kappa_min)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_kappa_max',config_GM_kappa_max)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_cell_size_min',config_GM_cell_size_min)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_cell_size_max',config_GM_cell_size_max)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_lat_variable_c2',config_GM_lat_variable_c2)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_kappa_lat_depth_variable', config_GM_kappa_lat_depth_variable)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_min_stratification_ratio', config_GM_min_stratification_ratio)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_min_phase_speed', config_GM_min_phase_speed)
 
       block => domain % blocklist
       do while (associated(block))
@@ -868,32 +837,49 @@ endif
          call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-         ! initialize Bolus kappa array
-         if (config_GM_kappa_function == 'constant') then
+         if (config_GM_closure == 'constant') then
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               gmBolusKappa(iEdge) = config_GM_tracer_kappa
+               gmBolusKappa(iEdge) = config_GM_kappa
             end do
             !$omp end do
-         else if (config_GM_kappa_function == 'ramp') then
+         else if (config_GM_closure == 'N2_dependent') then
+            local_config_GM_lat_variable_c2 = .true.
+            local_config_GM_kappa_lat_depth_variable = .true.
+ 
+            ! for N2 dependence, we still assign Kappa as a constant.
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               gmBolusKappa(iEdge) = config_GM_kappa
+            end do
+            !$omp end do
+         else
+            call mpas_log_write( 'Invalid choice of config_GM_closure.', MPAS_LOG_CRIT)
+            err = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         end if
+
+         ! Add resolution taper
+         if (config_eddying_resolution_taper == 'none') then
+            ! Nothing to do, as we just keep the same assignment as above.
+         else if (config_eddying_resolution_taper == 'ramp') then
             sqrtPiInv = 1.0_RKIND / sqrt(pii)
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
                avgCellDiameter = sqrtPiInv*(sqrt(areaCell(cellsOnEdge(1,iEdge))) + sqrt(areaCell(cellsOnEdge(2,iEdge))))
-               if (avgCellDiameter <= config_GM_cell_size_min) then
-                  gmBolusKappa(iEdge) = config_GM_kappa_min
-               else if (avgCellDiameter >= config_GM_cell_size_max) then
-                  gmBolusKappa(iEdge) = config_GM_kappa_max
+               if (avgCellDiameter <= config_eddying_resolution_ramp_min) then
+                  gmBolusKappa(iEdge) = 0.0_RKIND
+               else if (avgCellDiameter >= config_eddying_resolution_ramp_max) then
+                  ! do nothing, i.e. gmBolusKappa(iEdge) remains unchanged.
                else
-                  gmBolusKappa(iEdge) = config_GM_kappa_min + &
-                      (config_GM_kappa_max - config_GM_kappa_min) &
-                     /(config_GM_cell_size_max - config_GM_cell_size_min) &
-                     *(avgCellDiameter - config_GM_cell_size_min)
+                  gmBolusKappa(iEdge) = gmBolusKappa(iEdge) &
+                     /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min) &
+                     *(avgCellDiameter - config_eddying_resolution_ramp_min)
                end if
             end do
             !$omp end do
          else
-            call mpas_log_write( 'Invalid choice of config_GM_kappa_function.', MPAS_LOG_CRIT)
+            call mpas_log_write( 'Invalid choice of config_eddying_resolution_taper.', MPAS_LOG_CRIT)
             err = 1
             call mpas_dmpar_finalize(domain % dminfo)
          end if
