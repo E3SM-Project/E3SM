@@ -575,149 +575,123 @@ Default: Defined in namelist_defaults.xml
 </entry>
 
 
-<!-- mesoscale_eddy_parameterization -->
+<!-- Redi_isopycnal_mixing -->
 
-<entry id="config_use_standardGM" type="logical"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-If true, the standard GM for the tracer advection and mixing is turned on. This includes the redi portion which is captured in hmix.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_gm_lat_variable_c2" type="logical"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-If true, spatially variable phase speed is used Following Ferrari et al (2010)
+<entry id="config_use_Redi" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+If true, Redi isopycnal mixing is turned on
 
 Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_gm_kappa_lat_depth_variable" type="logical"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-If true, spatitally and deph varying Bolus Kappa is used, following Danabasoglu et al (2007)
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_gm_min_stratification_ratio" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-minimum value for N2/Nmax2 ratio
-
-Valid values: small positive reals
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_gm_min_phase_speed" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-minimum allowed phase speed for spatially variable computation
-
-Valid values: small positive reals
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_Redi_surface_layer_tapering" type="logical"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_surface_layer_tapering_extent" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Vertical component of Redi mixing limited in top config_Redi_surface_layer_tapering_extent*boundaryLayerDepth
-
-Valid values: Any positive real value, typically between 1 and 2.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_use_Redi_bottom_layer_tapering" type="logical"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-If true, the Redi K33 vertical mixing is limited in bottom boundary layer.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_Redi_bottom_layer_tapering_depth" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Vertical component of Redi mixing limited in bottom config_Redi_surface_layer_tapering_depth
-
-Valid values: Any positive real value, typically between 100 and 500 m.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_Bolus_kappa_function" type="char*1024"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Control what type of function is used for GM Bolus $\kappa$
-
-Valid values: 'constant' and 'ramp'
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_standardGM_tracer_kappa" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_Bolus_kappa_function is set to constant.
-
-Valid values: MISSING POSSIBLE VALUES
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_Bolus_kappa_min" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_Bolus_kappa_max" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_Bolus_cell_size_min" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp.
-
-Valid values: Any positive real value.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_GM_Bolus_cell_size_max" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge
-
-Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
 <entry id="config_Redi_kappa" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
 The Redi diffusion coefficient
 
 Valid values: Positive real numbers
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_gravWaveSpeed_trunc" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Gravity wave speed truncation threshold for the vertical stream function boundary value problem, $c$
+<entry id="config_Redi_closure" type="char*1024"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported.
 
-Valid values: Positive real numbers that represents the gravity wave speed of the first, second, etc., baroclinic modes
+Valid values: 'constant', 'data', 'match_GM'
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_max_relative_slope" type="real"
-	category="mesoscale_eddy_parameterization" group="mesoscale_eddy_parameterization">
-Tapering parameter for Redi diffusion coeffient.  Tapering occurs when relativeSlopeTopOfEdge is greater than config_max_relative_slope
+<entry id="config_Redi_surface_taper_layers" type="integer"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Number of layers below boundary layer depth where surface tapering ends.
+
+Valid values: Any positive real value, typically between 1 and 2.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_bottom_taper_height" type="real"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Height above bottom of water column where bottom tapering ends.
+
+Valid values: Any positive real value, typically between 100 and 500 m.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- GM_eddy_parameterization -->
+
+<entry id="config_use_GM" type="logical"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+If true, the standard GM for the tracer advection and mixing is turned on.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_kappa" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_kappa_function is set to constant.
+
+Valid values: MISSING POSSIBLE VALUES
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_closure" type="char*1024"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependant' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependant' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006).
+
+Valid values: 'N2_dependant', 'constant'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_min_stratification_ratio" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+When using config_GM_closure='N2_dependant', the minimum value for N2/Nmax2 ratio.
+
+Valid values: small positive reals
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_GM_constant_gravWaveSpeed" type="real"
+	category="GM_eddy_parameterization" group="GM_eddy_parameterization">
+Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004).
 
 Valid values: Positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+
+<!-- mesoscale_eddy_parameterizations -->
+
+<entry id="config_mesoscale_eddy_isopycnal_slope_limit" type="real"
+	category="mesoscale_eddy_parameterizations" group="mesoscale_eddy_parameterizations">
+Maximum value of isopycnal slope allowed for Redi and GM schemes. Slopes greater than this value (positive or negative) are capped at this value.
+
+Valid values: Positive real numbers
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddying_resolution_taper" type="char*1024"
+	category="mesoscale_eddy_parameterizations" group="mesoscale_eddy_parameterizations">
+Control how the Redi and GM Bolus $\kappa$ value varies as a function of horizontal resolution
+
+Valid values: 'constant' and 'ramp'
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddying_resolution_ramp_min" type="real"
+	category="mesoscale_eddy_parameterizations" group="mesoscale_eddy_parameterizations">
+Minimum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp.
+
+Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_eddying_resolution_ramp_max" type="real"
+	category="mesoscale_eddy_parameterizations" group="mesoscale_eddy_parameterizations">
+Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp.
+
+Valid values: Any positive real value.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -775,6 +749,14 @@ Default: Defined in namelist_defaults.xml
 Inverse-time coefficient for the Rayleigh damping term, $c_R$, applied at every depth level.
 
 Valid values: Any positive real value.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Rayleigh_damping_depth_variable" type="logical"
+	category="Rayleigh_damping" group="Rayleigh_damping">
+If true applies r h^-1 instead of just r.
+
+Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1654,9 +1636,9 @@ Default: Defined in namelist_defaults.xml
 
 <entry id="config_pressure_gradient_type" type="char*1024"
 	category="pressure_gradient" group="pressure_gradient">
-Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.
+Form of pressure gradient terms in momentum equation. For most applications, the gradient of pressure and layer mid-depth are appropriate.  For isopycnal coordinates, one may use the gradient of the Montgomery potential.  The sea surface height gradient (ssh_gradient) option is for barotropic, depth-averaged pressure.
 
-Valid values: 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'
+Valid values: 'ssh_gradient', 'pressure_and_zmid' or 'Jacobian_from_density' or 'Jacobian_from_TS' or 'MontgomeryPotential'
 Default: Defined in namelist_defaults.xml
 </entry>
 
@@ -1931,38 +1913,6 @@ Default: Defined in namelist_defaults.xml
 
 <!-- debug -->
 
-<entry id="config_disable_redi_k33" type="logical"
-	category="debug" group="debug">
-If true, disables k33 portion of Redi neutral surface mixing.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_disable_redi_horizontal_term1" type="logical"
-	category="debug" group="debug">
-If true, disables first term in horizonal mixing of Redi neutral surface mixing.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_disable_redi_horizontal_term2" type="logical"
-	category="debug" group="debug">
-If true, disables first term in horizonal mixing of Redi neutral surface mixing.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
-<entry id="config_disable_redi_horizontal_term3" type="logical"
-	category="debug" group="debug">
-If true, disables first term in horizonal mixing of Redi neutral surface mixing.
-
-Valid values: .true. or .false.
-Default: Defined in namelist_defaults.xml
-</entry>
-
 <entry id="config_check_zlevel_consistency" type="logical"
 	category="debug" group="debug">
 Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean.
@@ -2166,6 +2116,14 @@ Default: Defined in namelist_defaults.xml
 <entry id="config_disable_tr_nonlocalflux" type="logical"
 	category="debug" group="debug">
 Disables tendencies on the tracer fields from CVMix/KPP nonlocal fluxes.
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_disable_redi_k33" type="logical"
+	category="debug" group="debug">
+If true, disables k33 portion of Redi neutral surface mixing.
 
 Valid values: .true. or .false.
 Default: Defined in namelist_defaults.xml
@@ -2385,6 +2343,22 @@ Default: Defined in namelist_defaults.xml
 if true, the 'debugTracers' category is enabled for the run
 
 Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_reset_debugTracers_near_surface" type="logical"
+	category="tracer_forcing_debugTracers" group="tracer_forcing_debugTracers">
+if true, the reset 'debugTracers' in the top n layers, where n is set by config_reset_debugTracers_top_nLayers
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_reset_debugTracers_top_nLayers" type="integer"
+	category="tracer_forcing_debugTracers" group="tracer_forcing_debugTracers">
+Integer specifying number of layers at top to reset from 0 to 1 at end of each timestep. Default is 20, chosen to be near a typical mixed layer depth of 200m.
+
+Valid values: Any positive integer value greater than or equal to 0.
 Default: Defined in namelist_defaults.xml
 </entry>
 
