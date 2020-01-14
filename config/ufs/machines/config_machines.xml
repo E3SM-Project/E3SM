@@ -262,6 +262,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
+      <env name="IC_DIR">$ENV{CESMDATAROOT}/ufs_inputdata/IC/gfs.20190909/00</env>
       <env name="NCEP_LIBS">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install</env>
       <env name="NEMSIO_INC">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/include</env>
       <env name="NEMSIO_LIB">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libnemsio_v2.2.3.a</env>
@@ -542,9 +543,9 @@ This allows using a different mpirun command to launch unit tests
     <OS>LINUX</OS>
     <COMPILERS>intel</COMPILERS>
     <MPILIBS>impi,mvapich2</MPILIBS>
-    <PROJECT>TG-ATM180016</PROJECT>
+    <PROJECT>TG-ATM190009</PROJECT>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT>/work/01118/tg803972/stampede2/UFS/ufs_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
@@ -578,7 +579,7 @@ This allows using a different mpirun command to launch unit tests
       <modules>
         <command name="purge"></command>
         <command name="load">TACC</command>
-        <command name="load">python/2.7.13</command>
+        <command name="load">python/2.7.15</command>
         <command name="load">intel/18.0.2</command>
         <command name="load">cmake/3.10.2</command>
       </modules>
@@ -601,17 +602,22 @@ This allows using a different mpirun command to launch unit tests
       <env name="OMP_STACKSIZE">256M</env>
      </environment_variables>
     <environment_variables comp_interface="nuopc" mpilib="impi">
-      <env name="ESMFMKFILE">/work/01118/tg803972/stampede2/ESMF-INSTALL/8.0.0bs38/lib/libO/Linux.intel.64.intelmpi.default/esmf.mk</env>
+      <env name="ESMFMKFILE">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib64/esmf.mk</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-      <env name="UGCSINPUTPATH">/work/06242/tg855414/stampede2/FV3GFS/benchmark-inputs/2012010100/gfs/fcst</env>
-      <env name="UGCSFIXEDFILEPATH">/work/06242/tg855414/stampede2/FV3GFS/fix_am</env>
-      <env name="UGCSADDONPATH">/work/06242/tg855414/stampede2/FV3GFS/addon</env>
+    </environment_variables>
+    <environment_variables comp_interface="nuopc">
+      <env name="NCEP_LIBS">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install</env>
+      <env name="NEMSIO_INC">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/include</env>
+      <env name="NEMSIO_LIB">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libnemsio_v2.2.3.a</env>
+      <env name="BACIO_LIB4">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libbacio_v2.1.0_4.a</env>
+      <env name="SP_LIBd">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libsp_v2.0.2_d.a</env>
+      <env name="W3EMC_LIBd">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libw3emc_v2.2.0_d.a</env>
+      <env name="W3NCO_LIBd">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libw3nco_v2.0.6_d.a</env>
     </environment_variables>
   </machine>
-
 
   <machine MACH="stampede2-knl">
     <DESC>Intel Xeon Phi 7250 ("Knights Landing") , batch system is SLURM</DESC>

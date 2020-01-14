@@ -275,7 +275,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
     rundir = case.get_value("RUNDIR")
     # Fill in defaults as needed
     input_data_root = case.get_value("DIN_LOC_ROOT") if input_data_root is None else input_data_root
-
+    input_ic_root = case.get_value("DIN_LOC_IC")
     expect(os.path.isdir(data_list_dir), "Invalid data_list_dir directory: '{}'".format(data_list_dir))
 
     data_list_files = find_files(data_list_dir, "*.input_data_list")
@@ -306,6 +306,7 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
 
         for line in lines:
             line = line.strip()
+            use_ic_path = False
             if (line and not line.startswith("#")):
                 tokens = line.split('=')
                 description, full_path = tokens[0].strip(), tokens[1].strip()
@@ -314,7 +315,12 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                 if(full_path):
                     # expand xml variables
                     full_path = case.get_resolved_value(full_path)
-                    rel_path  = full_path.replace(input_data_root, "")
+                    if input_data_root in full_path:
+                        rel_path  = full_path.replace(input_data_root, "")
+                    elif input_ic_root not in input_data_root and input_ic_root in full_path:
+                        rel_path  = full_path.replace(input_ic_root, "prod")
+                        use_ic_path = True
+
                     model = os.path.basename(data_list_file).split('.')[0]
 
                     if ("/" in rel_path and rel_path == full_path):
@@ -340,11 +346,15 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                         if ("/" in rel_path and not os.path.exists(full_path)):
                             logger.warning("  Model {} missing file {} = '{}'".format(model, description, full_path))
                             no_files_missing = False
-
                             if (download):
-                                no_files_missing = _download_if_in_repo(server,
-                                                                        input_data_root, rel_path.strip(os.sep),
-                                                                        isdirectory=isdirectory)
+                                if use_ic_path:
+                                    no_files_missing = _download_if_in_repo(server,
+                                                                            input_ic_root[:-4], rel_path.strip(os.sep),
+                                                                            isdirectory=isdirectory)
+                                else:
+                                    no_files_missing = _download_if_in_repo(server,
+                                                                            input_data_root, rel_path.strip(os.sep),
+                                                                            isdirectory=isdirectory)
                                 if no_files_missing and chksum:
                                     verify_chksum(input_data_root, rundir, rel_path.strip(os.sep), isdirectory)
                         else:
