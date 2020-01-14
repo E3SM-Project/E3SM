@@ -22,6 +22,8 @@ void RefStates::init(const int num_elems) {
   dp_ref = decltype(dp_ref)("dp_ref",num_elems);
   phi_i_ref = decltype(phi_i_ref)("phi_i_ref",num_elems);
   theta_ref = decltype(theta_ref)("theta_ref",num_elems);
+
+  m_num_elems = num_elems;
 }
 
 void RefStates::compute(const bool hydrostatic,
@@ -34,7 +36,7 @@ void RefStates::compute(const bool hydrostatic,
   elem_ops.init(hvcoord);
 
   const int num_elems = dp_ref.extent_int(0);
-  assert(num_elems>0);
+  assert(num_elems==m_num_elems);
 
   // Local copies, to avoid cuda issues with *this
   auto l_dp_ref = dp_ref;

@@ -19,9 +19,15 @@ struct RefStates {
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV  ]> theta_ref;
   ExecViewManaged<Scalar * [NP][NP][NUM_LEV  ]> dp_ref;
 
+  RefStates () : m_num_elems(0) {}
+
   void init (const int num_elems);
   void compute (const bool hydrostatic,const HybridVCoord& hvcoord,
                 const ExecViewUnmanaged<Real *[NP][NP]>& phis);
+
+  int num_elems () const { return m_num_elems; }
+private:
+  int m_num_elems;
 };
 
 /* Per element data - specific velocity, temperature, pressure, etc. */

@@ -25,7 +25,7 @@ module eos
   use physical_constants, only : p0, kappa, g, Rgas
   use control_mod,    only: theta_hydrostatic_mode
 #ifdef HOMMEXX_BFB_TESTING
-  use bfb_mod,        only: czeroulpn, cbfb_pow
+  use bfb_mod,        only: cbfb_pow
 #endif
   implicit none
 
