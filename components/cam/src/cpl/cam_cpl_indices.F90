@@ -45,7 +45,12 @@ module cam_cpl_indices
   integer :: index_a2x_Faxa_dstdry4    ! flux: Size 4 dust -- dry deposition
   integer :: index_a2x_Sa_co2prog      ! bottom atm level prognostic co2
   integer :: index_a2x_Sa_co2diag      ! bottom atm level diagnostic co2
-
+  !!!!!!!!!!!!!!! Added by UM team on Dec.15, 2019
+  integer :: index_a2x_Faxa_lwdn_spec(16) = 0      ! downward lw heat spectral flux
+  integer :: index_a2x_Faxa_emis_spec(16) = 0   ! surface spectral emissiviy 
+  integer :: index_a2x_Do_emis            = 0   ! A switch for turing on surface spectral emissivity
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
   integer :: index_x2a_Sx_t            ! surface temperature             
   integer :: index_x2a_So_t            ! sea surface temperature         
   integer :: index_x2a_Sf_lfrac        ! surface land fraction           
@@ -81,13 +86,22 @@ module cam_cpl_indices
   integer :: index_x2a_So_ssq          ! surface saturation specific humidity in ocean 
   integer :: index_x2a_Sl_ddvel        ! dry deposition velocities from land
   integer :: index_x2a_Sx_u10          ! 10m wind
-
+  !!!!!!!!!!!!!!! Added by UM team on Dec.15, 2019
+  integer :: index_x2a_Sl_tlai         ! leaf area index  
+  integer :: index_x2a_Sl_ts_atm         ! ts_atm   
+  integer :: index_x2a_Sl_srf_emis_spec(16)  ! surface spectral emissivity 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  
 contains
 
   subroutine cam_cpl_indices_set( )
 
     type(mct_aVect) :: a2x      ! temporary
     type(mct_aVect) :: x2a      ! temporary
+    !!!!!!!!!!!!!!!!! Added by UM team on Dec.15, 2019
+    character(len= 2) :: cnum   
+    integer :: j
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     ! Determine attribute vector indices
 
@@ -135,6 +149,15 @@ contains
     index_x2a_Fall_fco2_lnd = mct_avect_indexra(x2a,'Fall_fco2_lnd',perrWith='quiet')
     index_x2a_Faoo_fco2_ocn = mct_avect_indexra(x2a,'Faoo_fco2_ocn',perrWith='quiet')
     index_x2a_Faoo_fdms_ocn = mct_avect_indexra(x2a,'Faoo_fdms_ocn',perrWith='quiet')
+    !!!!!!!!!!!!!1 Added by UM team on Dec.15, 2019
+    index_x2a_Sl_ts_atm         = mct_avect_indexra(x2a,'Sl_ts_atm')  
+    do j=1,16
+        write(cnum,'(i2.2)') j
+    index_x2a_Sl_srf_emis_spec(j) = mct_avect_indexra(x2a,'Sl_srf_emis_spec'//cnum) 
+    enddo
+    index_x2a_Sl_tlai         = mct_avect_indexra(x2a,'Sl_tlai')      
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
     if (shr_megan_mechcomps_n>0) then
        index_x2a_Fall_flxvoc = mct_avect_indexra(x2a,trim(shr_megan_fields_token))
@@ -183,6 +206,16 @@ contains
     index_a2x_Faxa_dstwet4  = mct_avect_indexra(a2x,'Faxa_dstwet4')
     index_a2x_Sa_co2prog    = mct_avect_indexra(a2x,'Sa_co2prog',perrWith='quiet')
     index_a2x_Sa_co2diag    = mct_avect_indexra(a2x,'Sa_co2diag',perrWith='quiet')
+    
+    !!!!!!!!!!!!!1 Added by UM team on Dec.15, 2019
+    index_a2x_Do_emis       = mct_avect_indexra(a2x,'Do_emis')
+    do j=1,16
+        write(cnum,'(i2.2)') j
+        index_a2x_Faxa_lwdn_spec(j)     = mct_avect_indexra(a2x,trim('Faxa_lwdn_spec'//cnum)) 
+        index_a2x_Faxa_emis_spec(j)     = mct_avect_indexra(a2x,trim('Faxa_emis_spec'//cnum)) 
+    enddo
+     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
     call mct_aVect_clean(x2a)
     call mct_aVect_clean(a2x)

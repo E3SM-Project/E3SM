@@ -446,6 +446,8 @@ CONTAINS
     use pmgrid,          only: plev, plevp
     use constituents,    only: pcnst
     use shr_sys_mod,     only: shr_sys_flush
+    use parrrtm,        only: nbndlw  ! Added by UM team on Dec.15, 2019
+    use shr_const_mod,  only: shr_const_stebol ! Added by UM team on Dec.15, 2019
 
     ! 
     ! Arguments
@@ -488,6 +490,39 @@ CONTAINS
     character(len=*), parameter :: subname="atm_run_mct"
     !-----------------------------------------------------------------------
 
+    !!!!!!!!!!!!  Added by UM team on Dec.15, 2019
+    ! This change is to define and initialize new variables    
+    integer :: i,j,c,ncols,sizebuf
+
+    real(r8) :: Ts_LW              ! surface temperature derived from longwave upward flux
+    real(r8) :: v1_rrtmg_lw(16 + 1)   ! RRTMG_LW band edges
+    !integer ::ilats(pcols),ilons(pcols)
+    real(r8) :: lats(pcols)           ! array of chunk latitudes
+    real(r8) :: lons(pcols)           ! array of chunk longitude
+    real  :: pi
+    real :: emis0(pcols*(endchunk-begchunk+1),nbndlw)
+    real ::  desert_emis(nbndlw), water_emis(nbndlw),ice_emis(nbndlw),grass_emis(nbndlw), snow_emis(nbndlw)
+!    integer ::ilats2(pcols*(endchunk-begchunk+1)),ilons2(pcols*(endchunk-begchunk+1))
+    real(r8) :: lats2(pcols*(endchunk-begchunk+1)),lons2(pcols*(endchunk-begchunk+1))
+    data v1_rrtmg_lw /10. , 350., 500., 630., 700., 820., 980., 1080., 1180.,1390., 1480., 1800., 2080., 2250., 2390., 2600., 3250/
+    data water_emis / 0.8524,  0.9080,  0.9098,  0.9223,  0.9451,  0.9780,0.9752, 0.9705, &
+            0.9662, 0.9626, 0.9624,  0.9638,  0.9623, 0.9623,  0.9623, 0.9623 /
+    data desert_emis /0.9085,  0.9178,  0.8747,  0.9458,  0.9488,  0.9452,0.8912, &
+              0.6858, 0.8513, 0.9700, 0.9504,  0.9396,  0.9373, 0.9373,  0.9373,0.9373 /
+!     data snow_emis / 0.9963, 0.9875, 0.9859, 0.9809, 0.9759,  0.9871,  0.9926,    0.9892, &
+!     0.9862, 0.9842, 0.9838, 0.9751, 0.9720, 0.9720, 0.9720, 0.9720/  ! fine     snow
+    ! data snow_emis /0.9933, 0.9905, 0.9799,  0.9717, 0.9643, 0.9819,0.9910,&
+    ! 0.9863,  0.9812,  0.9776, 0.9771,  0.9721, 0.9695,  0.9695, 0.9695,
+    ! 0.9695/ !median snow
+    data snow_emis / 0.9917, 0.9887, 0.9771, 0.9680, 0.9597,  0.9796,  0.9898,0.9845,  &
+       0.9787, 0.9747, 0.9742, 0.9682, 0.9654, 0.9654, 0.9654, 0.9654/ ! coarse snow
+    data ice_emis / 0.8819, 0.9517,  0.9308,  0.9197, 0.9107, 0.9534,  0.9768, 0.9690, &
+       0.9636, 0.9614, 0.9639, 0.9625, 0.9609, 0.9609, 0.9609, 0.9609/ ! ice
+    data grass_emis / 0.9872, 0.9872, 0.9872, 0.9872, 0.9864, 0.9825,  0.9827,&
+         0.9808,  0.9886, 0.9887, 0.9888, 0.9865, 0.9863, 0.9863, 0.9863,0.9863/
+!!!!!!!!!!!!
+
+
 #if (defined _MEMTRACE)
     if(masterproc) then
       lbnum=1
@@ -519,8 +554,72 @@ CONTAINS
     call t_startf ('CAM_import')
     call atm_import( x2a_a%rattr, cam_in )
     call t_stopf  ('CAM_import')
+     
+    !!!!!! Added by UM team on Dec.15, 2019 !!!!!!!!!!!!!!!!
+    !!!! This change is to compute surface skin temperature and pass it to cam_in
+    call get_curr_date(yr, mon, day, tod)
+    pi = 4.*atan(1.)
+     sizebuf=0
+     do c=begchunk, endchunk
+             ncols = get_ncols_p(c)
+              call get_rlat_all_p(c, ncols, lats)
+              call get_rlon_all_p(c, ncols, lons)
+             do i=1,ncols
+                sizebuf = sizebuf+1
+                 lats2(sizebuf) = lats(i)*180/pi
+                 if (lons(i).lt.0) then
+                    lons2(sizebuf) = lons(i)*180/pi + 180
+                 else
+                    lons2(sizebuf) = lons(i)*180/pi
+                 endif
+             enddo
+     enddo
+
+    if (cam_out(begchunk)%do_emis(1) .eq. 1) then
+    call read_surface_emis(sizebuf,lats2,lons2,mon,emis0(1:sizebuf,:))
+         sizebuf=0
+         do c=begchunk, endchunk
+             ncols = get_ncols_p(c)
+             do i=1,ncols
+                  sizebuf = sizebuf + 1
+                 if (cam_in(c)%landfrac(i).gt. 0.99 .and. cam_in(c)%icefrac(i) .lt. 0.01 .and. (cam_in(c)%snowhland(i) + cam_in(c)%snowhice(i)).lt. 0.001) then
+                     ! if original emissivity over band 1080-1180 cm-1, ie.
+                     ! cam_in%srf_emis_spec(i,8) is
+                     ! smaller than 0.8, then the original surface type
+                     ! of this grid is desert, otherwise is non-desert
+                      cam_in(c)%srf_emis_spec(i,:)= emis0(sizebuf,:)
+
+                     ! if the original surface type is non-desert but LAI is
+                     ! smaller than 0.001, change to desert type
+                      if (cam_in(c)%tlai(i).lt. 0.001 .and. emis0(sizebuf,8)>0.8) then
+                        cam_in(c)%srf_emis_spec(i,:)  = desert_emis
+                      endif
+                     ! if the orignal surface type is desert but LAI larger than
+                     ! 2, change to grass type
+                      if (cam_in(c)%tlai(i).gt. 2 .and. emis0(sizebuf,8)<0.8) then
+                        cam_in(c)%srf_emis_spec(i,:)  = grass_emis
+                      endif
+
+           else
     
-    ! Cycle over all time steps in the atm coupling interval
+                     cam_in(c)%srf_emis_spec(i,:)  =  emis0(sizebuf,:) * cam_in(c)%landfrac(i) + ice_emis * cam_in(c)%icefrac(i) + water_emis * cam_in(c)%ocnfrac(i)
+                 endif
+ 
+     
+                call  get_Ts_from_LW_emis(v1_rrtmg_lw, real(cam_in(c)%srf_emis_spec(i,:)), cam_in(c)%lwup(i),cam_out(c)%flwds_spec(i,:), 16 + 1, 3, Ts_LW)
+                cam_in(c)%ts_atm(i) =Ts_LW
+
+               cam_in(c)%ts(i) =  cam_in(c)%ts_atm(i)
+            enddo
+    enddo
+    else
+  !      cam_in(c)%ts(i) =    sqrt(sqrt((cam_in(c)%lwup(i)/shr_const_stebol)))  
+         cam_in(c)%ts_atm(i) =   sqrt(sqrt((cam_in(c)%lwup(i)/shr_const_stebol)))
+ endif
+ !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of add!!!!!!!!!!!!!!!
+
+          
+     ! Cycle over all time steps in the atm coupling interval
     
     dosend = .false.
     do while (.not. dosend)
@@ -955,5 +1054,273 @@ CONTAINS
 
 
   end subroutine atm_write_srfrest_mct
+
+  subroutine read_surface_emis(ncols,lats2,lons2,mn,surface_emis)
+  !  This subroutine is made by UM team on Dec.15, 2019
+  !  This subroutine is to read surface emissivity from dataset
+
+      use netcdf
+  
+      use time_manager, only: get_curr_date
+      use ppgrid
+
+      use error_messages, only : handle_ncerr
+      use parrrtm,        only: nbndlw
+      use cam_logfile,     only: iulog
+
+      implicit none
+      integer :: ncid, status, latid,lonid,bandid,timeid
+      character(256) filename
+
+      integer :: ntime, nlat, nlon, nband,i,mn
+      real, allocatable :: band_emissivity(:)
+      character(len = nf90_max_name) :: RecordDimName
+      integer :: lat_varID,emis_varID, lon_varID
+      real, allocatable:: lat(:), lon(:)
+      integer ::start(4),count(4)
+      integer :: ncols,j
+      integer ::ilats, ilons
+      real(r8) :: lats2(ncols)           ! array of chunk latitudes
+      real(r8) :: lons2(ncols)           ! array of chunk longitude
+      real :: surface_emis(ncols, nbndlw), minvalue
+
+      filename = "/global/cscratch1/sd/xianwen/data/surface_emissivity_1x1_RRTMG_53deg.nc"
+      status = nf90_open(trim(filename), nf90_nowrite, ncid)
+      status = nf90_inq_dimid(ncid, "time", timeID)
+      status = nf90_inq_dimid(ncid, "lat", latID)
+      status = nf90_inq_dimid(ncid, "lon", lonID)
+      status = nf90_inq_dimid(ncid, "band", bandID)
+
+      status =  nf90_inquire_dimension( ncid, timeID,len=ntime )
+      status =  nf90_inquire_dimension( ncid, latID,len=nlat )
+      status =  nf90_inquire_dimension( ncid, lonID,len=nlon )
+      status =  nf90_inquire_dimension( ncid, bandID,len=nband )
+
+
+      allocate(band_emissivity(nband))
+      allocate(lat(nlat))
+      allocate(lon(nlon))
+       
+      status = nf90_inq_varid (ncid, 'lat', lat_varID )
+      status = nf90_get_var (ncid, lat_varID, lat)
+
+      status = nf90_inq_varid (ncid, 'lon', lon_varID )
+      status = nf90_get_var (ncid, lon_varID, lon)
+
+
+      count =(/nbndlw,1,1,1/)
+      do i = 1, ncols
+         minvalue= 10000.0
+         do j=1, nlat
+           if (abs(lat(j) - lats2(i)) .le. minvalue)  then
+             ilats = j
+             minvalue = abs(lat(j) - lats2(i))
+           endif
+         enddo
+         minvalue= 10000.0
+         do j=1, nlon
+           if (abs(lon(j) - lons2(i)) .le. minvalue)  then
+             ilons = j
+             minvalue = abs(lon(j) - lons2(i))
+           endif
+         enddo
+       !  ilons = minloc(lon, MASK=(lon .ge. (lons2(i)-0.7031/2)))
+         start =(/1,ilons,ilats,mn/)
+         status = nf90_inq_varid (ncid, 'band_emissivity', emis_varID )
+         status = nf90_get_var (ncid, emis_varID, band_emissivity,start = start,count = count)
+
+       surface_emis(i,:) = band_emissivity
+
+      enddo
+       
+      status = NF90_CLOSE( ncid )
+
+  end subroutine read_surface_emis
+
+  subroutine get_Ts_from_LW_emis(v1, emis, LW, LWdown, v1_num, nguass_point, Ts)
+  !  This subroutine is made by UM team on Dec.15, 2019
+  !  This subroutine is to obtain the Ts that can give the right upward LW
+  ! flux with given band-averaged surface emissivity
+  ! Input variables:
+  ! v1, band ranges.e.g. [v11, v12, v13] will indicates 2bands, with
+  ! band1 from [v11, v12] and band2 from [v12, v13];
+  ! emis, the band-average surface emissivity, its size should be len(v1)-1
+  ! LW, the upward LW flux in Wm^{-2}
+
+   use cam_logfile,     only: iulog
+
+   integer   i, j, Count, v1_num, nguass_point
+   real(8)   v1(v1_num)
+   real      emis(v1_num-1)
+   real(8)   LW, LW2, LW3
+   real(8)    LWdown(v1_num-1)
+   real      T1, T2, T3, F1, F2, F3, A1, A2, A3
+   real(8)   x(nguass_point), w(nguass_point)
+   real      rad1, rad2, rad3, pi
+   real(8)   Ts
+   
+   
+   pi = 4.*atan(1.)
+
+! T1 and T2 should be two values encompassing all possible Ts
+   T1 = 150;
+   T2 = 400;
+
+   F1 = 0;
+   F2 = 0;
+   F3 = 0;
+
+   LW3 = LW
+   do i = 1, v1_num - 1
+        if (emis(i).eq.0) then
+            emis(i) = 1.0
+        endif
+        LW3 = LW3 - (1 - emis(i)) * LWdown(i)
+   enddo
+
+   LW2 = int(LW3*10)/10.0_r8
+
+   Count = 0
+   do while (abs(F3-LW2)>0.001)
+
+!       for count how many iteration needed
+
+        Count = Count + 1
+        T3 = (T1 + T2)/2
+
+        do i = 1,v1_num - 1
+
+              call gaulegf(v1(i), v1(i+1), nguass_point, x, w)
+
+               A1 = 0
+               A2 = 0
+               A3 = 0
+
+               do j = 1,nguass_point
+
+                  A1 = A1 + planck(x(j), T1) * w(j)
+                  A2 = A2 + planck(x(j), T2) * w(j)
+                  A3 = A3 + planck(x(j), T3) * w(j)
+
+                enddo
+
+!              don't mix up i and j subscripts
+
+               F1 = F1 + emis(i) * A1;
+               F2 = F2 + emis(i) * A2;
+               F3 = F3 + emis(i) * A3;
+        enddo
+
+! covert to Wm-2
+        F1 = F1 * pi * 1e-3
+        F2 = F2 * pi * 1e-3
+        F3 = F3 * pi * 1e-3
+
+
+        if (Count .eq.1 .and. (LW2 .lt. F1 .or. LW2 .gt. F2)) then
+               !write(iulog,*) 'CCC',LW2,LW, LWdown(1),emis(1),LWdown(6),emis(6),Count
+               !write(iulog, *)'the LW2 is too low or too high so it is beyond the reasonable range'
+               !return
+               write(iulog,*) 'CCC_1, LW=',LW,', LW2=',LW2,', LW3=',LW3
+               write(iulog,*) 'CCC_2, LWdown: ', LWdown
+               write(iulog,*) 'CCC_3, emis: ', emis
+               write(iulog, *)'the LW2 is too low or too high so it is beyond the reasonable range. This is likely due to incorrect emissivity values'
+               call endrun('STOP: subroutin get_Ts_from_LW_emis: LW2 is too low or too high')
+        elseif (LW2 .lt. F1) then !the case due to numerical error
+                T1 = T1 - 2
+        elseif (LW2 .gt. F2) then ! the case due to numberical error
+                T2 = T2 + 2
+        elseif (LW2 .ge. F3) then
+                T1 = T3
+        elseif (LW2 .lt. F3) then
+                T2 = T3
+        endif
+   enddo
+
+!   Ts = T3
+!   To correct the bias
+
+    if (T3.lt.270) then
+         Ts = T3 + (T3-160)*0.0008 + 0.13
+    elseif (T3.lt.300) then
+         Ts = T3 + (T3-270)*0.0006 + 0.2171
+    elseif (T3.lt.320) then
+         Ts = T3 + (T3-300)*0.0002 + 0.2342
+    elseif (T3.lt.340) then
+         Ts = T3 - (T3-320)*0.0004 + 0.2386
+    else
+         Ts = T3 - (T3-340)*0.0013+0.2316
+    endif
+
+  end subroutine get_Ts_from_LW_emis
+
+
+  subroutine gaulegf(x1, x2, n, x, w)
+  !  This subroutine is added by UM team on Dec.15, 2019
+  !  This subroutine is for Gauss Legendre integration
+ 
+  ! gauleg.f90     P145 Numerical Recipes in Fortran
+  ! compute x(i) and w(i)  i=1,n  Legendre ordinates and weights
+  ! on interval -1.0 to 1.0 (length is 2.0)
+  ! use ordinates and weights for Gauss Legendre integration
+  implicit none
+  integer, intent(in) :: n
+  double precision, intent(in) :: x1, x2
+  double precision, dimension(n), intent(out) :: x, w
+  integer :: i, j, m
+  double precision :: p1, p2, p3, pp, xl, xm, z, z1
+  double precision, parameter :: eps=3.d-14
+
+  m = (n+1)/2
+  xm = 0.5d0*(x2+x1)
+  xl = 0.5d0*(x2-x1)
+
+  do i=1,m
+    z = cos(3.141592654d0*(i-0.25d0)/(n+0.5d0))
+    z1 = 0.0
+    do while(abs(z-z1) .gt. eps)
+      p1 = 1.0d0
+      p2 = 0.0d0
+      do j=1,n
+        p3 = p2
+        p2 = p1
+        p1 = ((2.0d0*j-1.0d0)*z*p2-(j-1.0d0)*p3)/j
+      end do
+      pp = n*(z*p1-p2)/(z*z-1.0d0)
+      z1 = z
+      z = z1 - p1/pp
+    end do
+    x(i) = xm - xl*z
+    x(n+1-i) = xm + xl*z
+    w(i) = (2.0d0*xl)/((1.0d0-z*z)*pp*pp)
+     w(n+1-i) = w(i)
+  end do
+ end subroutine gaulegf
+
+ function  planck(freq,temp)
+ !  This function is added by UM team on Dec.15, 2019
+ !  This function is to compute blackbody thermal emission based on a temperature
+ ! freq in wavenumber, temp in Kelvin degree and
+ ! radiance in 1e-3 W per square meter per sr per wavenumber
+
+      real(8):: freq
+      real ::  temp, ca, cb, cof, arg, zeroind
+      real ::  planck
+
+!      ca    = 3.741832e-05 / 3.14159
+      ca = 1.191043934e-05
+
+!      cb    = 1.438837896
+      cb = 1.438769911
+
+      cof   = ca * (freq **3)
+
+      arg   = cb * freq
+
+      planck    = cof / ( exp( (arg/ temp)) - 1.0 )
+
+ end function planck
+
+
 
 end module atm_comp_mct

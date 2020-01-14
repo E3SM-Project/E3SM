@@ -35,12 +35,21 @@ logical :: pergro_mods = .false.
 CONTAINS
 !===============================================================================
 
+! yihsuan comment subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
+! yihsuan comment                         pmid    ,aer_lw_abs,cld       ,tauc_lw,       &
+! yihsuan comment                         qrl     ,qrlc      ,                          &
+! yihsuan comment                         flns    ,flnt      ,flnsc     ,flntc  ,flwds, &
+! yihsuan comment                         flut    ,flutc     ,fnl       ,fcnl   ,fldsc,clm_rand_seed, &
+! yihsuan comment                         lu      ,ld        )
+
+!>>> yihsuan modify the inputs/outputs of rad_rrtmg_lw >>>
 subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
                         pmid    ,aer_lw_abs,cld       ,tauc_lw,       &
                         qrl     ,qrlc      ,                          &
                         flns    ,flnt      ,flnsc     ,flntc  ,flwds, &
                         flut    ,flutc     ,fnl       ,fcnl   ,fldsc,clm_rand_seed, &
-                        lu      ,ld        )
+                        lu,           ld, rtr2_flag, ssac_lw, xmomc_lw, surface_emis, ful, fsul, fdl, fsdl, spec_lwdn )  ! yihsuan@UMich add 
+!<<< yihsuan modify the inputs/outputs of rad_rrtmg_lw <<<
 
 !-----------------------------------------------------------------------
    use cam_history,         only: outfld
@@ -93,10 +102,10 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
 !
    integer :: i, k, kk, nbnd         ! indices
 
-   real(r8) :: ful(pcols,pverp)     ! Total upwards longwave flux
-   real(r8) :: fsul(pcols,pverp)    ! Clear sky upwards longwave flux
-   real(r8) :: fdl(pcols,pverp)     ! Total downwards longwave flux
-   real(r8) :: fsdl(pcols,pverp)    ! Clear sky downwards longwv flux
+!yihsuan comment,   real(r8) :: ful(pcols,pverp)     ! Total upwards longwave flux
+!yihsuan comment,   real(r8) :: fsul(pcols,pverp)    ! Clear sky upwards longwave flux
+!yihsuan comment,   real(r8) :: fdl(pcols,pverp)     ! Total downwards longwave flux
+!yihsuan comment,   real(r8) :: fsdl(pcols,pverp)    ! Clear sky downwards longwv flux
 
    integer :: inflglw               ! Flag for cloud parameterization method
    integer :: iceflglw              ! Flag for ice cloud param method
@@ -136,6 +145,29 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    real(r8) :: hrc(pcols,rrtmg_levs)     ! Clear sky longwave heating rate (K/d)
    real(r8) lwuflxs(nbndlw,pcols,pverp+1)  ! Longwave spectral flux up
    real(r8) lwdflxs(nbndlw,pcols,pverp+1)  ! Longwave spectral flux down
+
+   !>>> yihsuan add 2017-07-04 >>>
+   logical, intent(in)       :: rtr2_flag       ! flag to control cloud LW scattering
+                                                ! .True.   : use TAMU scheme, rtr2function
+                                                ! .False.  : use default RRTMG scheme, rtrnmc
+   real(r8), intent(in) :: ssac_lw (nbndlw,pcols,pver)   ! Cloud single scattering albedo
+   !real(r8), intent(in) :: xmomc_lw(0:16,nbndlw,pcols,pver)   ! Cloud phase function expansion coefficient
+   real(r8), intent(in) :: xmomc_lw(0:1,nbndlw,pcols,pver)   ! Cloud phase function expansion coefficient, use (0:16) edison will have segmentation fault
+   real(r8), intent(in) :: surface_emis(pcols,nbndlw)  ! surface emissivity
+
+   real(r8), intent(out) :: ful(pcols,pverp)     ! Total upwards longwave flux
+   real(r8), intent(out) :: fsul(pcols,pverp)    ! Clear sky upwards longwave flux
+   real(r8), intent(out) :: fdl(pcols,pverp)     ! Total downwards longwave flux
+   real(r8), intent(out) :: fsdl(pcols,pverp)    ! Clear sky downwards longwv flux
+   real(r8), intent(out) :: spec_lwdn(nbndlw,pcols) ! downward LW spectral flux at the surface
+
+   real(r8) :: ssac_stolw(nsubclw, pcols, rrtmg_levs-1)    ! Cloud single scattering albedo (mcica - optional)
+   !real(r8) :: xmomc_stolw(0:16,nsubclw, pcols, rrtmg_levs-1)   ! Cloud phase function expansion coefficient (mcica - optional)
+   real(r8) :: xmomc_stolw(0:1,nsubclw, pcols, rrtmg_levs-1)   ! Cloud phase function expansion coefficient (mcica - optional), use (0:16) edison will have segmentation fault
+
+   !<<< yihsuan add 2017-07-04 <<<
+
+
    !-----------------------------------------------------------------------
 
    ! mji/rrtmg
@@ -169,9 +201,15 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    rei = 0.0_r8
    rel = 0.0_r8
 
+!yihsuan comment   call mcica_subcol_lw(lchnk, ncol, rrtmg_levs-1, icld, permuteseed, pmid(:, pverp-rrtmg_levs+1:pverp-1), &
+!yihsuan comment      cld(:, pverp-rrtmg_levs+1:pverp-1), cicewp, cliqwp, rei, rel, tauc_lw(:, :ncol, pverp-rrtmg_levs+1:pverp-1), &
+!yihsuan comment      cld_stolw, cicewp_stolw, cliqwp_stolw, rei_stolw, rel_stolw, tauc_stolw, clm_rand_seed, pergro_mods)
+
+   !>>> yihsuan add 2017-07-04 >>>
    call mcica_subcol_lw(lchnk, ncol, rrtmg_levs-1, icld, permuteseed, pmid(:, pverp-rrtmg_levs+1:pverp-1), &
       cld(:, pverp-rrtmg_levs+1:pverp-1), cicewp, cliqwp, rei, rel, tauc_lw(:, :ncol, pverp-rrtmg_levs+1:pverp-1), &
-      cld_stolw, cicewp_stolw, cliqwp_stolw, rei_stolw, rel_stolw, tauc_stolw, clm_rand_seed, pergro_mods)
+      cld_stolw, cicewp_stolw, cliqwp_stolw, rei_stolw, rel_stolw, tauc_stolw, clm_rand_seed, pergro_mods, ssac_lw(:, :ncol, pverp-rrtmg_levs+1:pverp-1), xmomc_lw(:, :, :ncol,pverp-rrtmg_levs+1:pverp-1), ssac_stolw, xmomc_stolw)
+   !<<< yihsuan add 2017-07-04 <<<
 
    call t_stopf('mcica_subcol_lw')
 
@@ -212,21 +250,37 @@ subroutine rad_rrtmg_lw(lchnk   ,ncol      ,rrtmg_levs,r_state,       &
    ! Set surface temperature
    ! Set aerosol optical depth to zero for now
 
-   emis(:ncol,:nbndlw) = 1._r8
+   !yihsuan comment, emis(:ncol,:nbndlw) = 1._r8
+   emis(:ncol,1:nbndlw) = 1._r8*surface_emis(:ncol,1:nbndlw)  ! yihsuan add emissivity
+
    tsfc(:ncol) = r_state%tlev(:ncol,rrtmg_levs+1)
    taua_lw(:ncol, 1:rrtmg_levs-1, :nbndlw) = aer_lw_abs(:ncol,pverp-rrtmg_levs+1:pverp-1,:nbndlw)
 
    if (associated(lu)) lu(1:ncol,:,:) = 0.0_r8
    if (associated(ld)) ld(1:ncol,:,:) = 0.0_r8
 
-   call rrtmg_lw(lchnk  ,ncol ,rrtmg_levs    ,icld    ,                 &
-        r_state%pmidmb  ,r_state%pintmb  ,r_state%tlay    ,r_state%tlev    ,tsfc    ,r_state%h2ovmr, &
-        r_state%o3vmr   ,r_state%co2vmr  ,r_state%ch4vmr  ,r_state%o2vmr   ,r_state%n2ovmr  ,r_state%cfc11vmr,r_state%cfc12vmr, &
-        r_state%cfc22vmr,r_state%ccl4vmr ,emis    ,inflglw ,iceflglw,liqflglw, &
-        cld_stolw,tauc_stolw,cicewp_stolw,cliqwp_stolw ,rei, rel, &
-        taua_lw, &
-        uflx    ,dflx    ,hr      ,uflxc   ,dflxc   ,hrc, &
-        lwuflxs, lwdflxs)
+! yihsuan comment call rrtmg_lw(lchnk  ,ncol ,rrtmg_levs    ,icld    ,                 &
+! yihsuan comment      r_state%pmidmb  ,r_state%pintmb  ,r_state%tlay    ,r_state%tlev    ,tsfc    ,r_state%h2ovmr, &
+! yihsuan comment      r_state%o3vmr   ,r_state%co2vmr  ,r_state%ch4vmr  ,r_state%o2vmr   ,r_state%n2ovmr  ,r_state%cfc11vmr,r_state%cfc12vmr, &
+! yihsuan comment      r_state%cfc22vmr,r_state%ccl4vmr ,emis    ,inflglw ,iceflglw,liqflglw, &
+! yihsuan comment      cld_stolw,tauc_stolw,cicewp_stolw,cliqwp_stolw ,rei, rel, &
+! yihsuan comment      taua_lw, &
+! yihsuan comment      uflx    ,dflx    ,hr      ,uflxc   ,dflxc   ,hrc, &
+! yihsuan comment      lwuflxs, lwdflxs)
+
+   !>>> yishaun 2017-10-16 add modified rrtmg_lw >>>
+   call rrtmg_lw(lchnk  ,ncol ,rrtmg_levs    ,icld, rtr2_flag    ,                 &
+                 r_state%pmidmb  ,r_state%pintmb  ,r_state%tlay    ,r_state%tlev    ,tsfc    ,r_state%h2ovmr, &
+                 r_state%o3vmr   ,r_state%co2vmr  ,r_state%ch4vmr  ,r_state%o2vmr   ,r_state%n2ovmr  ,r_state%cfc11vmr,r_state%cfc12vmr, &
+                 r_state%cfc22vmr,r_state%ccl4vmr ,emis    ,inflglw ,iceflglw,liqflglw, &
+                 cld_stolw, tauc_stolw, ssac_stolw, xmomc_stolw, cicewp_stolw,cliqwp_stolw ,rei, rel, &
+                 taua_lw, &
+                 uflx    ,dflx    ,hr      ,uflxc   ,dflxc   ,hrc, &
+                 lwuflxs, lwdflxs)
+
+   spec_lwdn      = 0._r8
+   spec_lwdn(:,:) = lwdflxs(:,:ncol,1) ! yihsuan add
+   !<<< yishaun 2017-10-16 add downwad LW spectral flux at the surface <<<
 
    !
    !----------------------------------------------------------------------

@@ -11,15 +11,16 @@ contains
     use cam_cpl_indices
     use camsrfexch,     only: cam_in_t
     use phys_grid ,     only: get_ncols_p
-    use ppgrid    ,     only: begchunk, endchunk       
+    use ppgrid    ,     only: begchunk, endchunk , pcols ! pcols is added by UM team on Dec.15, 2019      
     use shr_const_mod,  only: shr_const_stebol
     use seq_drydep_mod, only: n_drydep
     use co2_cycle     , only: c_i, co2_readFlux_ocn, co2_readFlux_fuel
     use co2_cycle     , only: co2_transport, co2_time_interp_ocn, co2_time_interp_fuel
     use co2_cycle     , only: data_flux_ocn, data_flux_fuel
     use physconst     , only: mwco2
-    use time_manager  , only: is_first_step
-    !
+    use time_manager  , only: is_first_step,  get_curr_date  ! get_curr_date is added by UM team on Dec.15, 2019
+    use parrrtm,        only: nbndlw  ! added by UM team on Dec.15, 2019
+    
     ! Arguments
     !
     real(r8)      , intent(in)    :: x2a(:,:)
@@ -28,7 +29,7 @@ contains
     !
     ! Local variables
     !		
-    integer            :: i,lat,n,c,ig  ! indices
+    integer            :: i,lat,n,c,ig 
     integer            :: ncols         ! number of columns
     logical, save      :: first_time = .true.
     integer, parameter :: ndst = 2
@@ -37,7 +38,14 @@ contains
     integer, pointer   :: dst_a1_ndx, dst_a3_ndx
     logical :: overwrite_flds
     !-----------------------------------------------------------------------
-    overwrite_flds = .true.
+ 
+    !!!!!  Added by UM team on Dec.15, 2019
+    integer ::ilats(pcols),ilons(pcols),yr,mon,day,tod,j
+    real :: emis0(pcols*(endchunk-begchunk+1),nbndlw)
+    integer ::ilats2(pcols*(endchunk-begchunk+1)),ilons2(pcols*(endchunk-begchunk+1))
+    !!!!!!!!!!!!!!!!!!!!
+
+   overwrite_flds = .true.
     ! don't overwrite fields if invoked during the initialization phase 
     ! of a 'continue' or 'branch' run type with data from .rs file
     if (present(restart_init)) overwrite_flds = .not. restart_init
@@ -84,6 +92,15 @@ contains
           cam_in(c)%icefrac(i)   =  x2a(index_x2a_Sf_ifrac, ig)  
           cam_in(c)%ocnfrac(i)   =  x2a(index_x2a_Sf_ofrac, ig)
 	  cam_in(c)%landfrac(i)  =  x2a(index_x2a_Sf_lfrac, ig)
+
+          !  Added by UM team on Dec.15, 2018
+          cam_in(c)%tlai(i)      =  x2a(index_x2a_Sl_tlai, ig)
+          cam_in(c)%ts_atm(i)        = sqrt(sqrt((cam_in(c)%lwup(i)/shr_const_stebol))) 
+          do j=1,16
+             cam_in(c)%srf_emis_spec(i,j) =1.0 
+          enddo
+          !!!!!!!!!! end !!!!!!!!!!!!!!!!!!!!
+
           if ( associated(cam_in(c)%ram1) ) &
                cam_in(c)%ram1(i) =  x2a(index_x2a_Sl_ram1 , ig)
           if ( associated(cam_in(c)%fv) ) &
@@ -192,7 +209,13 @@ contains
              ncols = get_ncols_p(c)
              do i=1,ncols
                 cam_in(c)%lwup(i) = shr_const_stebol*(cam_in(c)%ts(i)**4)
-             end do
+                  
+                !!!!! added by UM team on Dec.15, 2019       
+                cam_in(c)%ts_atm(i)      = sqrt(sqrt((cam_in(c)%lwup(i)/shr_const_stebol)))  
+                cam_in(c)%srf_emis_spec(i,1:16) = 1.0
+                !!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+
+                end do
           end do
        end if
        first_time = .false.
@@ -218,7 +241,7 @@ contains
     ! Local variables
     !
     integer :: avsize, avnat
-    integer :: i,m,c,n,ig       ! indices
+    integer :: i,j,m,c,n,ig     ! indices ! is added by UM team on Dec.15, 2019
     integer :: ncols            ! Number of columns
     !-----------------------------------------------------------------------
 
@@ -229,7 +252,7 @@ contains
     ig=1
     do c=begchunk, endchunk
        ncols = get_ncols_p(c)
-       do i=1,ncols
+      do i=1,ncols
           a2x(index_a2x_Sa_pslv   ,ig) = cam_out(c)%psl(i)
           a2x(index_a2x_Sa_z      ,ig) = cam_out(c)%zbot(i)   
           a2x(index_a2x_Sa_u      ,ig) = cam_out(c)%ubot(i)   
@@ -240,7 +263,15 @@ contains
           a2x(index_a2x_Sa_shum   ,ig) = cam_out(c)%qbot(i,1) 
 	  a2x(index_a2x_Sa_dens   ,ig) = cam_out(c)%rho(i)
           a2x(index_a2x_Faxa_swnet,ig) = cam_out(c)%netsw(i)      
-          a2x(index_a2x_Faxa_lwdn ,ig) = cam_out(c)%flwds(i)  
+          a2x(index_a2x_Faxa_lwdn ,ig) = cam_out(c)%flwds(i) 
+          a2x(index_a2x_Do_emis ,ig) = cam_out(c)%do_emis(i)  ! added by UM team on Dec. 15, 2019
+ 
+          !!!!! added by UM team on Dec. 15, 2019
+          do j=1,16
+           a2x(index_a2x_Faxa_lwdn_spec(j) ,ig) = cam_out(c)%flwds_spec(i,j) 
+           a2x(index_a2x_Faxa_emis_spec(j) ,ig) = cam_out(c)%emis_spec(i,j)
+          enddo
+
           a2x(index_a2x_Faxa_rainc,ig) = (cam_out(c)%precc(i)-cam_out(c)%precsc(i))*1000._r8
           a2x(index_a2x_Faxa_rainl,ig) = (cam_out(c)%precl(i)-cam_out(c)%precsl(i))*1000._r8
           a2x(index_a2x_Faxa_snowc,ig) = cam_out(c)%precsc(i)*1000._r8

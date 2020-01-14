@@ -28,6 +28,7 @@ public :: &
    cloud_rad_props_get_lw,        & ! return LW optical props of total bulk aerosols
    get_ice_optics_sw,             & ! return Mitchell SW ice radiative properties
    ice_cloud_get_rad_props_lw,    & ! Mitchell LW ice rad props
+   mc6_ice_get_rad_props_lw,      & ! MC6 ice optics scheme, yihsuan@UMich 2018-08-28
    get_liquid_optics_sw,          & ! return Conley SW rad props
    liquid_cloud_get_rad_props_lw, & ! return Conley LW rad props
    snow_cloud_get_rad_props_lw,   &
@@ -52,6 +53,7 @@ real(r8), allocatable :: abs_lw_ice(:,:)
 ! indexes into pbuf for optical parameters of MG clouds
 ! 
    integer :: i_dei, i_mu, i_lambda, i_iciwp, i_iclwp, i_des, i_icswp
+   integer :: i_rei, i_cld ! yihsuan@Umich 2018-08-28
 
 ! indexes into constituents for old optics
    integer :: &
@@ -106,6 +108,8 @@ subroutine cloud_rad_props_init()
    i_iclwp  = pbuf_get_index('ICLWP',errcode=err)
    i_des    = pbuf_get_index('DES',errcode=err)
    i_icswp  = pbuf_get_index('ICSWP',errcode=err)
+   i_rei    = pbuf_get_index('REI',errcode=err)  ! yihsuan@UMich 
+   i_cld    = pbuf_get_index('CLD',errcode=err)  ! yihsuan@UMich 
 
    ! old optics
    call cnst_get_ind('CLDICE', ixcldice)
@@ -771,6 +775,284 @@ subroutine get_mu_lambda_weights(lamc, pgam, mu_wgts, lambda_wgts)
        extrap_method_bndry, lambda_wgts)
 
 end subroutine get_mu_lambda_weights
+
+!============================
+subroutine mc6_ice_get_rad_props_lw(state, pbuf, ext_od, abs_od, ssa_od, xmomc_od, oldicewp)
+   use physconst,      only: gravit
+
+!-----------------------------------------------------
+! yihsuan@UMich
+!
+! Description:
+!   TAMU ice cloud optics scheme
+!
+! History:
+!   2016/05/20  ver 1.0 , ADD
+!   2017/08/03  ver 1.1 , ADD extinction optical depth and absorption optical depth
+!   2017/09/07  ver 2.1 , DEBUG use REI, ice effective radius, directly from CESM becasue it's already times a factor of 1.5 
+!   2017/09/19  ver 2.2 , DEBUG iciwp, previous version use inconsistent iciwp with the Mitchell one, and the unit is also wrong
+!
+! Author:
+!   Yi-Hsuan Chen
+!   yihsuan@umich.edu
+!-----------------------------------------------------
+
+   use rrlw_cld, only: abscld1, absliq0, absliq1, &
+                       absice0, absice1, absice2, absice3, &
+                       absice4, extice4, ssaice4, asyice4 ! CPKuo@TAMU
+
+!--- Input arguments ---!
+   type(physics_state), intent(in)     :: state
+   type(physics_buffer_desc), pointer  :: pbuf(:)
+   logical , intent(in) :: oldicewp
+
+   real(r8), pointer, dimension(:,:) :: rei     ! CAM ice effective radius from mg scheme (microns)
+   real(r8), pointer, dimension(:,:) :: iciwpth ! CAM in-cloud ice water path (kg/m2)
+   real(r8), pointer, dimension(:,:) :: cldn    ! CAM cloud fraction
+
+!--- Output arguments ---!
+   real(r8), intent(out) :: ext_od  (nlwbands,pcols,pver)        ! cloud ice extinction optical depth, i.e. including absorption and scattering
+   real(r8), intent(out) :: abs_od  (nlwbands,pcols,pver)        ! cloud ice absorption optical depth
+   real(r8), intent(out) :: ssa_od  (nlwbands,pcols,pver)        ! single scattering albedo
+   !real(r8), intent(out) :: xmomc_od(0:16,nlwbands,pcols,pver)   ! phase function
+   real(r8), intent(out) :: xmomc_od(0:1,nlwbands,pcols,pver)   ! phase function, use (0:16) edison will have segmentation fault
+
+!--- Local ---!
+   real(r8) :: diaice                        ! cloud ice effective diameter (microns)
+   real(r8) :: invrad 
+   real(r8) :: extcoice(nlwbands)            ! ice mass-extinction coefficients of TAMU scheme (m2/g)
+   real(r8) :: ssacoice(nlwbands)            ! ice single scattering albedo of TAMU scheme (unitless)
+   real(r8) :: asycoice(nlwbands)            ! ice asymmetric factor of TAMU scheme (unitless)
+   real(r8) :: ext_tamu(nlwbands,pcols,pver) ! ice cloud extinction optical thickness (unitless)
+   real(r8) :: abs_tamu(nlwbands,pcols,pver) ! ice cloud absorption optical thickness (unitless)
+   real(r8) :: ssa_tamu(nlwbands,pcols,pver) ! ice cloud single scattering albedo (unitless)
+   real(r8) :: xmomc_tamu(0:1,nlwbands,pcols,pver) ! ice cloud asymmetric factor (unitless), use (0:16) edison will have segmentation fault
+   real(r8) :: iciwp(pcols,pver)             ! work array of in-cloud ice water path (kg/m2)
+   real(r8) :: taucloud, ssacloud, asycloud, xmomcloud(0:1), fpeak
+
+   real(r8) :: gicewp(pcols,pver)            ! work array of grid-box ice water path (kg/m2)
+   real(r8) :: cicewp(pcols,pver)            ! work array of in-cloud ice water path (kg/m2)    
+
+   integer  :: icb(nlwbands,0:2)
+   data icb /1,1,1,1,1,1,1,1,1, 1, 1, 1, 1, 1, 1, 1, &
+             1,2,3,3,3,4,4,4,5, 5, 5, 5, 5, 5, 5, 5, &
+             1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16/
+
+   logical :: option_pbuf
+
+   !integer :: rei_idx, iciwp_idx, cld_idx, err, itim
+   integer :: rei_idx, iciwp_idx, err, itim
+   integer :: ib,i,k,ncol,lchnk,iceind
+
+!----------------------------
+! initialize return arrays
+!----------------------------
+   ext_tamu   = 0._r8
+   abs_tamu   = 0._r8
+   ssa_tamu   = 0._r8
+   xmomc_tamu = 0._r8
+
+   ext_od   = 0._r8
+   abs_od   = 0._r8
+   ssa_od   = 0._r8
+   xmomc_od = 0._r8
+
+   ncol = state%ncol
+   lchnk = state%lchnk
+
+!-----------------
+! get CAM fields
+!-----------------
+
+!*** ice water path ***
+!
+!note - yihsuan@UMich 2016-05-24
+! if ICIWP is not in cam buffer. So, pbuf_get_field(pbuf,iciwp_idx, iciwpth) would fail. 
+! the error message is 
+!   ENDRUN:index out of range
+!   /home/yihsuan/model/cesm1_1_1/models/atm/cam/src/physics/cam/physics_buffer.F90
+!            1171           -1
+!  
+   if(oldicewp) then   ! if use ebertcurry, ICIWP was not found in pbuf. So, ICIWP is calculated here.
+     itim = pbuf_old_tim_idx()
+     call pbuf_get_field(pbuf, i_cld,   cldn, start=(/1,1,itim/),kount=(/pcols,pver,1/))
+
+     do k=1,pver
+         do i = 1,ncol
+            gicewp(i,k) = state%q(i,k,ixcldice)*state%pdel(i,k)/gravit ! Grid box ice water path.
+            cicewp(i,k) = gicewp(i,k) / max(0.01_r8,cldn(i,k))         ! In-cloud ice water path.
+         end do
+     end do
+
+     iciwp(:,:) = cicewp(:,:)
+
+     call pbuf_get_field(pbuf, i_rei, rei)
+
+   else
+
+     ! in-cloud ice water path (kg/m2)
+     call pbuf_get_field(pbuf, i_iciwp, iciwpth)
+     iciwp(:,:) = iciwpth(:,:)
+
+     !*** ice effective radius ***
+     rei_idx    = pbuf_get_index('REI',errcode=err)  ! yihsuan@UMich 2016-05-23
+     call pbuf_get_field(pbuf, rei_idx  , rei)
+
+   end if
+
+!--------------------------------------------------------
+! compute absorption coefficient and cloud optical depth
+!--------------------------------------------------------
+   do i = 1,ncol
+      do k = 1,pver
+        diaice = 2._r8*rei(i,k)  ! effective diameter is defined by that particle-volume divided by particle-projected-area (i.e. effective diameter) times 1.5.
+                                 ! Chia-Pang Kuo @ TAMU, personal communication
+                                 ! because the REI in CESM is already times 1.5, so don't need to times 1.5 here.
+                                 ! (ref: eq. 4.154 in CAM5 scientific description)
+        extcoice(:) = 0._r8
+        ssacoice(:) = 0._r8
+        asycoice(:) = 0._r8
+
+        !*** if there is no ice cloud ***
+        if( iciwp(i,k) < 1.e-80_r8 .or. diaice .eq. 0._r8) then
+          ext_tamu (:,i,k) = 0._r8
+          abs_tamu (:,i,k) = 0._r8
+          ssa_tamu (:,i,k) = 0._r8
+          xmomc_tamu (:,:,i,k) = 0._r8
+          iceind = 0
+
+        !*** if there is an ice cloud layer ***
+        else
+
+          diaice = min(diaice, 370._r8)  ! upper bound of ice effective diameter of TAMU scheme is 370 microns
+                                         ! because mass absorption coefficient larger than 370um vary slightly with diameter,
+                                         ! apply mass absorption coefficient of 370um to those larger ones is not a bad approximation
+                                         ! Chia-Pang Kuo @ TAMU, personal communication
+
+          ! if ice effective diameter in approciate range (3-370 microns)
+          if (diaice .ge. 3.0_r8 .and. diaice .le. 370.0_r8) then
+             invrad = 1.0/diaice - 0.04_r8
+  
+             do ib=1,nlwbands           
+               if (diaice .ge. 25.0_r8) then
+                  extcoice(ib) = ((extice4(1,1,ib) * invrad + &
+                                   extice4(1,2,ib)) * invrad + &
+                                   extice4(1,3,ib)) * invrad + &
+                                   extice4(1,4,ib)
+                  ssacoice(ib) = ((ssaice4(1,1,ib) * invrad + &
+                                   ssaice4(1,2,ib)) * invrad + &
+                                   ssaice4(1,3,ib)) * invrad + &
+                                   ssaice4(1,4,ib)
+                  asycoice(ib) = ((asyice4(1,1,ib) * invrad + &
+                                   asyice4(1,2,ib)) * invrad + &
+                                   asyice4(1,3,ib)) * invrad + &
+                                   asyice4(1,4,ib)
+
+               else
+                  extcoice(ib) = ((((((extice4(2,1,ib) * invrad + &
+                                       extice4(2,2,ib)) * invrad + &
+                                       extice4(2,3,ib)) * invrad + &
+                                       extice4(2,4,ib)) * invrad + &
+                                       extice4(2,5,ib)) * invrad + &
+                                       extice4(2,6,ib)) * invrad + &
+                                       extice4(2,7,ib)) * invrad + &
+                                       extice4(2,8,ib)
+                  ssacoice(ib) = ((((((ssaice4(2,1,ib) * invrad + &
+                                       ssaice4(2,2,ib)) * invrad + &
+                                       ssaice4(2,3,ib)) * invrad + &
+                                       ssaice4(2,4,ib)) * invrad + &
+                                       ssaice4(2,5,ib)) * invrad + &
+                                       ssaice4(2,6,ib)) * invrad + &
+                                       ssaice4(2,7,ib)) * invrad + &
+                                       ssaice4(2,8,ib)
+                  asycoice(ib) = ((((((asyice4(2,1,ib) * invrad + &
+                                       asyice4(2,2,ib)) * invrad + &
+                                       asyice4(2,3,ib)) * invrad + &
+                                       asyice4(2,4,ib)) * invrad + &
+                                       asyice4(2,5,ib)) * invrad + &
+                                       asyice4(2,6,ib)) * invrad + &
+                                       asyice4(2,7,ib)) * invrad + &
+                                       asyice4(2,8,ib)
+               endif  ! end if of diaice .ge. 25.
+             enddo    ! end do of lwbands for cloud radiative coefficients
+             iceind = 2
+
+             do ib=1,nlwbands
+                taucloud = iciwp(i,k) * 1000._r8 * extcoice(icb(ib,iceind))  ! change iwp from kg/m2 to g/m2 then compute ice cloud optical thickness
+                ssacloud = ssacoice(icb(ib,iceind))
+                ! delta-scaling (Liou, 2002, 313p)
+                asycloud = asycoice(icb(ib,iceind))
+                fpeak = asycloud * asycloud
+
+                abs_tamu  (ib,i,k)    = taucloud * (1._r8-ssacloud)  ! absorption optical depth
+
+                taucloud = (1._r8-ssacloud*fpeak) * taucloud   ! delta-scaling technique, ref: Joseph, Wiscombe and Weinman (1976, JAS)
+                ssacloud = (1._r8-fpeak)*ssacloud / &
+                                   (1._r8-ssacloud*fpeak)
+                asycloud = (asycloud-fpeak) / (1.0_r8-fpeak)
+                xmomcloud(0) = 1._r8
+                xmomcloud(1) = asycloud
+
+                ext_tamu  (ib,i,k)    = taucloud       ! cloud extinction optical depth, i.e. including absorption and scattering
+                ssa_tamu  (ib,i,k)    = ssacloud       ! single scattering albedo
+                xmomc_tamu(0:,ib,i,k) = xmomcloud(0:)  ! asymmetric factor
+             enddo    ! end do of lwbands for cloud radiative coefficients
+  
+          ! if ice effective diameter is less than 3 microns
+          else
+            call endrun('ice effective diameter is less than lower boundl 3 microns) in TAMU cloud ice optics')
+  
+          endif ! end if of ice effective diameter range
+        endif   ! end if of ice cloud layer
+      enddo     ! end do of k
+   enddo        ! end do of i
+
+
+!---------
+! return
+!---------
+   ext_od  (:,:,:) = ext_tamu  (:,:,:) 
+   abs_od  (:,:,:) = abs_tamu  (:,:,:) ! return abs_tamu to return variable, abs_od
+   ssa_od  (:,:,:) = ssa_tamu  (:,:,:)
+   xmomc_od(:,:,:,:) = xmomc_tamu(:,:,:,:)
+
+!  open(11,file="/scratch/climate_flux/yihsuan/b0-E2000_rrtmg_emis-step5/SourceMods/src.cam/xx.tamu_mc6",form="formatted",position="append")
+!    write(11,*) 'yaya tamu'
+!    write(11,*) 'i,k,ib,iciwp(i,k),abs_od(ib,i,k)'
+!    do i=1,ncol
+!    do ib=1,nlwbands
+!        !write(11,*) k,ib,abs_od(ib,i,k),abs_tamu(ib,i,k)
+!        write(11,*) 'aaa ext_od,ncol,ib',i,ib
+!        write(11,*) ext_od(ib,i,:)
+!        write(11,*) 'aaa abs_od,ncol,ib',i,ib
+!        write(11,*) abs_od(ib,i,:)
+!        write(11,*) 'aaa ssa_od,ncol,ib',i,ib
+!        write(11,*) ssa_od(ib,i,:)
+!        write(11,*) 'aaa xmomc_od(0),ncol,ib',i,ib
+!        write(11,*) xmomc_od(0,ib,i,:)
+!        write(11,*) 'aaa xmomc_od(1),ncol,ib',i,ib
+!        write(11,*) xmomc_od(1,ib,i,:)
+!    enddo
+!    enddo
+!  close(11)
+
+!open(11,file='/scratch/climate_flux/yihsuan/b0-E2000_rrtmg_emis-step5/SourceMods/src.cam/xx.lwice.mc6', &
+!        form='formatted',position='append')
+!  write(11,*) 'bbb mc6, abs_od',i_cld
+!  do i=1,ncol
+!    !write(11,*) 'ncol,iciwp(kg/m2)',i
+!    !write(11,*) iciwp(i,:)
+!    !write(11,*) 'ncol,cldn(kg/m2)',i
+!    !write(11,*) cldn(i,:)
+!  do k=1,nlwbands
+!    write(11,*) 'ncol=',i,', nlwband=',k
+!    write(11,*) abs_od(k,i,:)
+!  enddo
+!  enddo
+!close(11)
+
+  return
+end subroutine mc6_ice_get_rad_props_lw
 
 !==============================================================================
 

@@ -71,8 +71,12 @@ contains
 !--------------------------------------------------------------------------------
 ! creates (alloacates) an rrtmg_state object
 !--------------------------------------------------------------------------------
+   !  Changed by UM team on Dec.15, 2019
+   !  This change is to add Ts_LW which will replace the original surface skin temperature
+   !  function rrtmg_state_create( pstate, cam_in) result( rstate )
+   function rrtmg_state_create( pstate, cam_in, Ts_LW) result( rstate )
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  function rrtmg_state_create( pstate, cam_in ) result( rstate )
     use physics_types,    only: physics_state
     use camsrfexch,       only: cam_in_t
     use physconst,        only: stebol
@@ -87,6 +91,10 @@ contains
     real(r8) dy                   ! Temporary layer pressure thickness
     real(r8) :: tint(pcols,pverp)    ! Model interface temperature
     integer  :: ncol, i, kk, k
+    
+    !!!!!!!!!!  Added by UM team on Dec.15, 2019
+    real(8)  :: Ts_LW(pcols)  ! surface temperautre from lwup at surface
+    !!!!!!!!!!!!!!!
 
     allocate( rstate )
 
@@ -113,7 +121,12 @@ contains
     ! stebol constant in mks units
     do i = 1,ncol
        tint(i,1) = pstate%t(i,1)
-       tint(i,pverp) = sqrt(sqrt(cam_in%lwup(i)/stebol))
+       !!!!!!!!!  Changed by UM team on Dec.15, 2019
+       ! This change is to replace original surface skin temperature with new one
+       !    tint(i,pverp) = sqrt(sqrt(cam_in%lwup(i)/stebol))
+       tint(i,pverp) = Ts_LW(i)
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
        do k = 2,pver
           dy = (pstate%lnpint(i,k) - pstate%lnpmid(i,k)) / (pstate%lnpmid(i,k-1) - pstate%lnpmid(i,k))
           tint(i,k) = pstate%t(i,k) - dy * (pstate%t(i,k) - pstate%t(i,k-1))

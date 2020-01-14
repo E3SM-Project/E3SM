@@ -78,6 +78,13 @@ module camsrfexch
      real(r8) :: dstdry3(pcols)      ! dry deposition of dust (bin3)
      real(r8) :: dstwet4(pcols)      ! wet deposition of dust (bin4)
      real(r8) :: dstdry4(pcols)      ! dry deposition of dust (bin4)
+     !!!!!!!!!!!! Added by UM team on Dec.15, 2019     
+     real(r8)::flwds_spec(pcols,16)  !spectral downward flux at surface  
+     real(r8)::emis_spec(pcols,16)   ! spectral surface emissivity
+     integer :: do_emis(pcols)       ! A switch for turning on spectral surface emissivity 
+     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
   end type cam_out_t 
 
 !---------------------------------------------------------------------------
@@ -119,6 +126,13 @@ module camsrfexch
      real(r8), pointer, dimension(:,:) :: depvel ! deposition velocities
      real(r8), pointer, dimension(:,:) :: dstflx ! dust fluxes
      real(r8), pointer, dimension(:,:) :: meganflx ! MEGAN fluxes
+
+     !!!!!!!!!!!!!!!! Added by UM team on Dec.15, 2019 
+     real(r8) :: tlai(pcols)             ! leaf area index   
+     real(r8) :: ts_atm(pcols)           ! surface radiative temperature from t_rad 
+     real(r8) :: srf_emis_spec(pcols,16) ! surface spectral emissivity  
+     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     
   end type cam_in_t    
 
 !===============================================================================
@@ -249,7 +263,15 @@ CONTAINS
        if (lnd_drydep .and. n_drydep>0) then
           cam_in(c)%depvel (:,:) = 0._r8
        endif
-    end do
+
+      !!!!!!!!! Added by UM team on Dec.15,2019
+       cam_in(c)%tlai     (:) = posinf    
+       cam_in(c)%ts_atm     (:) = posinf    
+       cam_in(c)%srf_emis_spec(:,:) = 1.0 
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  
+     end do
 
   end subroutine hub2atm_alloc
 
@@ -332,6 +354,12 @@ CONTAINS
        cam_out(c)%dstwet3(:)  = 0._r8
        cam_out(c)%dstdry4(:)  = 0._r8
        cam_out(c)%dstwet4(:)  = 0._r8
+       !!!!!!!!!! Added by UM team on Dec.15, 2019
+       cam_out(c)%flwds_spec(:,:) = 0._r8 
+       cam_out(c)%emis_spec(:,:) = 0._r8  
+       cam_out(c)%do_emis(:) = 0
+       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     end do
 
   end subroutine atm2hub_alloc

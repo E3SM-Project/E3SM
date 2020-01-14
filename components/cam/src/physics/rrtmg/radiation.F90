@@ -19,7 +19,8 @@ use spmd_utils,      only: masterproc, iam, npes
 use ppgrid,          only: pcols, pver, pverp, begchunk, endchunk
 use physics_types,   only: physics_state, physics_ptend
 use physconst,       only: cappa
-use time_manager,    only: get_nstep, is_first_restart_step
+!yihsuan comment use time_manager,    only: get_nstep, is_first_restart_step
+use time_manager,    only: get_nstep, is_first_restart_step, is_first_step  !yihsuan added is_first_step
 use cam_abortutils,      only: endrun
 use error_messages,  only: handle_err
 use cam_control_mod, only: lambm0, obliqr, mvelpp, eccen
@@ -91,6 +92,21 @@ real(r8) :: dt_avg=0.0_r8  ! time step to use for the shr_orb_cosz calculation, 
 logical :: pergro_mods = .false. ! for activating pergro mods
 integer :: firstblock, lastblock      ! global block indices
 
+!!!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
+logical :: flag_emis  = .true.  ! flag to control surface emissivit. true: ON, false: OFF
+!logical :: flag_emis  = .false.
+
+logical :: flag_rtr2 = .true.   ! flag to control cloud LW radiation transfer solver. 2/4-stream solver. true: ON, false: OFF
+!logical :: flag_rtr2 = .false.
+
+logical :: flag_mc6  = .true.   ! flag to turn on/off MC6 (MODIS Collection 6) ice optical parameterization. true: ON, false: OFF
+!logical :: flag_mc6  = .false. 
+
+logical :: flag_scat_mc6  = .true.  ! flag to turn on/off MC6 (MODIS Collection 6) ice optical parameterization with scattering. true: ON, false: OFF
+!logical :: flag_scat_mc6  = .false. 
+!!!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
+
+
 !===============================================================================
 contains
 !===============================================================================
@@ -160,7 +176,6 @@ subroutine radiation_readnl(nlfile, dtime_in)
    end if
 
 end subroutine radiation_readnl
-
 
   subroutine radiation_register
 !-----------------------------------------------------------------------
@@ -424,7 +439,7 @@ end function radiation_nextsw_cday
     integer, allocatable, dimension(:,:,:) :: clm_id_mstr
     integer, allocatable, dimension(:,:) :: clm_id
     integer :: id, lchnk, ncol, ilchnk, astat, iseed, ipes, ipes_tmp
-    integer :: igcol, chunkid, icol, iown, tot_cols, ierr, max_chnks_in_blk 
+    integer :: igcol, chunkid, icol, iown, tot_cols, ierr, max_chnks_in_blk
     !-----------------------------------------------------------------------
     
     call rrtmg_state_init()
@@ -516,7 +531,7 @@ end function radiation_nextsw_cday
        !compute all clm ids on masterproc and then scatter it ....
        if(masterproc) then
           do igcol = 1, ngcols
-             if (dyn_to_latlon_gcol_map(igcol) .ne. -1) then                
+             if (dyn_to_latlon_gcol_map(igcol) .ne. -1) then
                 chunkid  = knuhcs(igcol)%chunkid
                 icol = knuhcs(igcol)%col
                 iown  = chunks(chunkid)%owner
@@ -712,6 +727,25 @@ end function radiation_nextsw_cday
           call addfld('FULC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky upward flux')
           call addfld('FDLC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky downward flux')
 
+          !>>> yihsuan 2018-12-07 add other fields >>>
+          call addfld('EMIS01'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 01 - 10-350 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS02'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 02 - 350-500 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS03'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 03 - 500-630 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS04'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 04 - 630-700 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS05'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 05 - 700-820 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS06'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 06 - 820-980 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS07'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 07 - 980-1080 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS08'//diag(icall),  horiz_only,'A', 'unitless', 'surface emissivity - band 08 - 1080-1180 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS09'//diag(icall),  horiz_only,'A', 'unitless', 'surface emissivity - band 09 - 1180-1390 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS10'//diag(icall),  horiz_only,'A', 'unitless', 'surface emissivity - band 10 - 1390-1480 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS11'//diag(icall),  horiz_only,'A', 'unitless', 'surface emissivity - band 11 - 1480-1800 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS12'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 12 - 1800-2080 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS13'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 13 - 2080-2250 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS14'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 14 - 2250-2380 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS15'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 15-  2380-2600 cm-1', sampling_seq='rad_lwsw')
+          call addfld('EMIS16'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 16 - 2600-3250 cm-1', sampling_seq='rad_lwsw')        
+          !<<< yihsuan 2018-12-07 add other fields <<<
+
           if (history_amwg) then
              call add_default('QRL'//diag(icall),   1, ' ')
              call add_default('FLNS'//diag(icall),  1, ' ')
@@ -839,7 +873,8 @@ end function radiation_nextsw_cday
     use aer_rad_props,    only: aer_rad_props_sw, aer_rad_props_lw
     use interpolate_data, only: vertinterp
     use cloud_rad_props,  only: get_ice_optics_sw, get_liquid_optics_sw, liquid_cloud_get_rad_props_lw, &
-               ice_cloud_get_rad_props_lw, cloud_rad_props_get_lw, snow_cloud_get_rad_props_lw, get_snow_optics_sw
+               ice_cloud_get_rad_props_lw, cloud_rad_props_get_lw, snow_cloud_get_rad_props_lw, get_snow_optics_sw, mc6_ice_get_rad_props_lw
+               ! yihsuan comment ice_cloud_get_rad_props_lw, cloud_rad_props_get_lw, snow_cloud_get_rad_props_lw, get_snow_optics_sw
     use slingo,           only: slingo_liq_get_rad_props_lw, slingo_liq_optics_sw
     use ebert_curry,      only: ec_ice_optics_sw, ec_ice_get_rad_props_lw
     use rad_solar_var,    only: get_variability
@@ -1032,9 +1067,83 @@ end function radiation_nextsw_cday
 
 
     character(*), parameter :: name = 'radiation_tend'
+
+!-----------------------------------------------
+    !>>> yihsuan 2017-07-04 >>>
+
+    real(r8) :: ice_lw_ext (nbndlw,pcols,pver)     ! ice cloud extinction optical thickness, i.e. including absorption and scattering
+    real(r8) :: ice_lw_ssa (nbndlw,pcols,pver)     ! Cloud ice single scattering albedo
+    !real(r8) :: ice_lw_xmomc(0:16,nbndlw,pcols,pver)   ! Cloud ice phase function expansion coefficient
+    real(r8) :: ice_lw_xmomc(0:1,nbndlw,pcols,pver)   ! Cloud ice phase function expansion coefficient, use (0:16) edison will have segmentation fault
+
+    real(r8) :: cld_lw_ext (nbndlw,pcols,pver) ! cloud (liquid+ice) extinction optics depth (LW)
+    real(r8) :: cld_lw_ssa (nbndlw,pcols,pver) ! cloud (liquid+ice) effecitve single scattering albedo (LW)
+    !real(r8) :: cld_lw_xmomc (0:16,nbndlw,pcols,pver) ! cloud (liquid+ice) phase function expansion coefficient
+    real(r8) :: cld_lw_xmomc (0:1,nbndlw,pcols,pver) ! cloud (liquid+ice) phase function expansion coefficient, use (0:16) edison will have segmentation fault
+
+    real(r8) :: c_cld_lw_ext (nbndlw,pcols,pver) ! cloud (liquid+ice) extinction optics depth (LW) passed to RRTMG_LW
+    real(r8) :: c_cld_lw_ssa (nbndlw,pcols,pver) ! cloud (liquid+ice) effecitve single scattering albedo (LW) passed to RRTMG_LW
+    !real(r8) :: c_cld_lw_xmomc (0:16,nbndlw,pcols,pver) ! cloud (liquid+ice) phase function expansion coefficient passed to RRTMG_LW
+    real(r8) :: c_cld_lw_xmomc (0:1,nbndlw,pcols,pver) ! cloud (liquid+ice) phase function expansion coefficient passed to RRTMG_LW, use (0:16) edison will have segmentation fault
+
+    real(r8) :: cld_lw_abs_mitchell (nbndlw,pcols,pver)
+    real(r8) :: cld_lw_abs_mc6      (nbndlw,pcols,pver)
+
+    real(r8) :: ice_lw_abs_mitchell (nbndlw,pcols,pver)
+    real(r8) :: ice_lw_abs_mc6      (nbndlw,pcols,pver)
+
+    integer :: j,jcol, jlev, jband
+
+    real(r8) :: ful(pcols,pverp)     ! Total upwards longwave flux
+    real(r8) :: fsul(pcols,pverp)    ! Clear sky upwards longwave flux
+    real(r8) :: fdl(pcols,pverp)     ! Total downwards longwave flux
+    real(r8) :: fsdl(pcols,pverp)    ! Clear sky downwards longwv flux
+
+     integer :: ilats(pcols),ilons(pcols)
+     real(r8) :: surface_emis(pcols,nbndlw)  ! surface band-by-band emissivity
+     real(r8) :: lwdn_spec(nbndlw, pcols)    ! spectral download LW flux
+     real(r8) :: Ts_LW(pcols)                ! surface temperature derived from longwave upward flux using realistic emissivity values
+     real(r8) :: Ts_black(pcols)             ! surface temperature derived from longwave upward flux using blackbody assumption
+     real ::  desert_emis(nbndlw), water_emis(nbndlw),ice_emis(nbndlw),grass_emis(nbndlw), snow_emis(nbndlw) !
+     data water_emis / 0.8524,  0.9080,  0.9098,  0.9223,  0.9451,0.9780,0.9752, 0.9705, &
+            0.9662, 0.9626, 0.9624,  0.9638,  0.9623, 0.9623,  0.9623, 0.9623 /
+     data desert_emis /0.9085,  0.9178,  0.8747,  0.9458,  0.9488,  0.9452,0.8912, &
+              0.6858, 0.8513, 0.9700, 0.9504,  0.9396,  0.9373, 0.9373,  0.9373, 0.9373 /
+!     data snow_emis / 0.9963, 0.9875, 0.9859, 0.9809, 0.9759,  0.9871,  0.9926,    0.9892, &
+!     0.9862, 0.9842, 0.9838, 0.9751, 0.9720, 0.9720, 0.9720, 0.9720/  ! fine     snow
+    ! data snow_emis /0.9933, 0.9905, 0.9799,  0.9717, 0.9643, 0.9819,0.9910,&
+    ! 0.9863,  0.9812,  0.9776, 0.9771,  0.9721, 0.9695,  0.9695, 0.9695,
+    ! 0.9695/ !median snow
+    data snow_emis / 0.9917, 0.9887, 0.9771, 0.9680, 0.9597,  0.9796,  0.9898, 0.9845,  &
+       0.9787, 0.9747, 0.9742, 0.9682, 0.9654, 0.9654, 0.9654, 0.9654/ ! coarse snow
+     data ice_emis / 0.8819, 0.9517,  0.9308,  0.9197, 0.9107, 0.9534,  0.9768, 0.9690, &
+       0.9636, 0.9614, 0.9639, 0.9625, 0.9609, 0.9609, 0.9609, 0.9609/ ! ice
+     data grass_emis / 0.9872, 0.9872, 0.9872, 0.9872, 0.9864, 0.9825,  0.9827,&
+         0.9808,  0.9886, 0.9887, 0.9888, 0.9865, 0.9863, 0.9863, 0.9863, 0.9863/
+    !<<< yihsuan 2017-07-04 <<<
+
 !----------------------------------------------------------------------
 
     call t_startf ('radiation_tend_init')
+
+    !>>> yihsuan 2017-08-03 initialization >>>
+    ice_lw_ext   = 0._r8
+    ice_lw_ssa   = 0._r8
+    ice_lw_xmomc = 0._r8
+    cld_lw_abs_mitchell = 0._r8
+    cld_lw_abs_mc6 = 0._r8
+
+    cld_lw_ext   = 0._r8
+    cld_lw_ssa   = 0._r8
+    cld_lw_xmomc = 0._r8
+
+    c_cld_lw_ext   = 0._r8
+    c_cld_lw_ssa   = 0._r8
+    c_cld_lw_xmomc = 0._r8
+
+    surface_emis = 1._r8
+    lwdn_spec    = 0._r8
+    !<<< yihsuan 2017-08-03 <<<
 
     lchnk = state%lchnk
     ncol = state%ncol
@@ -1113,8 +1222,77 @@ end function radiation_nextsw_cday
 
     if (dosw .or. dolw) then
 
+      !!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
+      !!!!!! This part sets surface emissivity !!!!!!
+      do i = 1,ncol
+          if (flag_emis) then
+               cam_out%do_emis(i) = 1
+          else
+               cam_out%do_emis(i) = 0
+          endif
+      enddo
+  
+      ! This change is to replace blackbody-derived Tskin with real-emissivity-derived Tskin
+      do i = 1,ncol
+        ! use realistic emissivity 
+        if (flag_emis) then   
+          Ts_LW(i) = cam_in%ts_atm(i)
+          cam_out%emis_spec(i,:) = cam_in%srf_emis_spec(i,:)
+
+        ! use blackbody surface
+        else
+          Ts_LW(i) = sqrt(sqrt(cam_in%lwup(i)/stebol))
+          cam_out%emis_spec(i,:) = 1.0
+        endif
+      end do
+
+      ! first step uses blackbody surface
+      if (is_first_step ()) then
+        Ts_LW(i) = sqrt(sqrt(cam_in%lwup(i)/stebol))
+        cam_out%emis_spec(i,:) = 1.0
+      end if
+
+      ! import surface spectral emissivity
+      do i=1,ncol
+        do j=1,nbndlw
+          surface_emis(i,j) = cam_out%emis_spec(i,j)
+        end do
+      end do
+      !!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
+
+! DELETE LATER, yihsuan       if (emis_flag) then  ! use surface emissivity
+! DELETE LATER, yihsuan
+! DELETE LATER, yihsuan         ! read emissivity values and surface radiative temperature
+! DELETE LATER, yihsuan         if (is_first_step ()) then ! the first step always use blackbody surface 
+! DELETE LATER, yihsuan           do i=1,ncol
+! DELETE LATER, yihsuan             Ts_LW(i)               = sqrt(sqrt(cam_in%lwup(i)/stebol))
+! DELETE LATER, yihsuan             cam_out%emis_spec(i,:) = 1.0
+! DELETE LATER, yihsuan           end do
+! DELETE LATER, yihsuan         else                       ! other steps read emissivity values 
+! DELETE LATER, yihsuan           do i = 1,ncol
+! DELETE LATER, yihsuan             Ts_LW(i)               = cam_in%ts_atm(i)
+! DELETE LATER, yihsuan             cam_out%emis_spec(i,:) = cam_in%srf_emis_spec(i,:)
+! DELETE LATER, yihsuan           end do
+! DELETE LATER, yihsuan         endif  ! end if of is_first_step
+! DELETE LATER, yihsuan
+! DELETE LATER, yihsuan       else ! do not use surface emissivity 
+! DELETE LATER, yihsuan
+! DELETE LATER, yihsuan         do i=1,ncol
+! DELETE LATER, yihsuan           Ts_LW(i)                = sqrt(sqrt(cam_in%lwup(i)/stebol))
+! DELETE LATER, yihsuan           cam_out%emis_spec(i,:)  = 1._r8 
+! DELETE LATER, yihsuan         end do
+! DELETE LATER, yihsuan
+! DELETE LATER, yihsuan       end if ! end if of emis_flag
+! DELETE LATER, yihsuan
+! DELETE LATER, yihsuan       ! set surface emissivity values
+! DELETE LATER, yihsuan       surface_emis(:,:) = cam_out%emis_spec(:,:)
+! DELETE LATER, yihsuan       !<<< yihsuan 2018-12-07 surface emissivity <<<
+
        ! construct an RRTMG state object
-       r_state => rrtmg_state_create( state, cam_in )
+       !>>> yihsuan 2018-12-07 modify inputs of rrtmg_state_create >>>
+       !r_state => rrtmg_state_create( state, cam_in )
+       r_state => rrtmg_state_create( state, cam_in, Ts_LW )
+       !<<< yihsuan 2018-12-07 modify inputs of rrtmg_state_create <<<
 
        ! For CRM, make cloud liquid water path equal to input observations
        if(single_column.and.scm_crm_mode.and.have_clwp)then
@@ -1213,6 +1391,7 @@ end function radiation_nextsw_cday
              end select
              cld_lw_abs(:,1:ncol,:) = liq_lw_abs(:,1:ncol,:) + ice_lw_abs(:,1:ncol,:)
           endif
+
           !call cloud_rad_props_get_lw(state,  pbuf, cld_lw_abs, oldliq=.true., oldice=.true.)
           !call cloud_rad_props_get_lw(state,  pbuf, cld_lw_abs, oldcloud=.true.)
           !call cloud_rad_props_get_lw(state,  pbuf, cld_lw_abs, oldliq=.true., oldice=.true.)
@@ -1240,6 +1419,103 @@ end function radiation_nextsw_cday
           cldfprime(1:ncol,:)=cld(1:ncol,:)
        endif
 
+       !>>> yihsuan 2018-09-04 add MC6 ice optics >>>
+       if (.not.flag_mc6) then  ! use standard ice optics scheme with either rtr2 or rtrnmc
+         c_cld_lw_ext(1:nbndlw,1:ncol,:) = c_cld_lw_abs(1:nbndlw,1:ncol,:)
+         c_cld_lw_ssa                    = 0._r8
+         c_cld_lw_xmomc                  = 0._r8
+
+       else ! use MC6
+
+         ! initialize
+         cld_lw_abs   = 0._r8
+         c_cld_lw_abs = 0._r8
+
+         ! computue MC6 ice optics 
+         if (icecldoptics .eq. "ebertcurry") then
+           call mc6_ice_get_rad_props_lw(state, pbuf, ice_lw_ext, ice_lw_abs_mc6, ice_lw_ssa, ice_lw_xmomc, oldicewp=.true.)
+         else
+           call mc6_ice_get_rad_props_lw(state, pbuf, ice_lw_ext, ice_lw_abs_mc6, ice_lw_ssa, ice_lw_xmomc, oldicewp=.false.)
+         end if
+
+         ! snow cloud optics
+         if (cldfsnow_idx > 0) then
+           call snow_cloud_get_rad_props_lw(state, pbuf, snow_lw_abs)
+           do i=1,ncol
+             do k=1,pver
+               cldfprime(i,k)=max(cld(i,k),cldfsnow(i,k))
+             enddo
+           enddo
+         else
+           snow_lw_abs = 0._r8
+           cldfprime(1:ncol,:)=cld(1:ncol,:)
+         end if
+
+         ! calculate cloud optics including liquid, ice, and snow clouds
+         cld_lw_abs_mc6(:,1:ncol,:) = liq_lw_abs(:,1:ncol,:) + ice_lw_abs_mc6(:,1:ncol,:)
+         cld_lw_ext    (:,1:ncol,:) = liq_lw_abs(:,1:ncol,:) + ice_lw_ext    (:,1:ncol,:)
+         do i=1,ncol
+           do k=1,pver
+             if(cldfprime(i,k) > 0.)then
+                 cld_lw_abs(1:nbndlw,i,k)= &
+                      (cldfsnow(i,k)*snow_lw_abs(1:nbndlw,i,k) + cld(i,k)*cld_lw_abs_mc6(1:nbndlw,i,k))/cldfprime(i,k)
+                 cld_lw_ext(1:nbndlw,i,k)= &
+                      (cldfsnow(i,k)*snow_lw_abs(1:nbndlw,i,k) + cld(i,k)*cld_lw_ext(1:nbndlw,i,k))/cldfprime(i,k)
+              else
+                 cld_lw_abs(1:nbndlw,i,k)= 0._r8
+                 cld_lw_ext(1:nbndlw,i,k)= 0._r8
+              endif
+           enddo
+         enddo
+
+         ! compute effective single scattering albedo considering liquid and ice clouds
+         do jcol  = 1,ncol
+         do jlev  = 1,pver
+         do jband = 1,nbndlw
+           if (cldfprime(i,k) > 0. .and. cld_lw_ext(jband,jcol,jlev) .gt. 0._r8) then
+             cld_lw_ssa (jband,jcol,jlev) = ice_lw_ssa(jband,jcol,jlev)*ice_lw_ext(jband,jcol,jlev) / cld_lw_ext(jband,jcol,jlev)
+             cld_lw_ssa (jband,jcol,jlev) = min(max(cld_lw_ssa(jband,jcol,jlev),0._r8) , 1._r8)
+           else
+             cld_lw_ssa (jband,jcol,jlev) = 0._r8
+           endif
+         enddo
+         enddo
+         enddo
+  
+         ! compute effective Cloud phase function expansion coefficient
+         cld_lw_xmomc(:,:,:,:) = ice_lw_xmomc(:,:,:,:)
+         j=1
+         do jcol  = 1,ncol
+         do jlev  = 1,pver
+         do jband = 1,nbndlw
+           if (cldfprime(i,k) > 0. .and. cld_lw_ext(jband,jcol,jlev) .gt. 0._r8 .and. cld_lw_ssa(jband,jcol,jlev) .gt. 0._r8 ) then
+             cld_lw_xmomc(j,jband,jcol,jlev) = ice_lw_xmomc(j,jband,jcol,jlev)*ice_lw_ssa(jband,jcol,jlev)*ice_lw_ext(jband,jcol,jlev) &
+                                               / cld_lw_ext(jband,jcol,jlev) / cld_lw_ssa(jband,jcol,jlev)
+             cld_lw_xmomc(j,jband,jcol,jlev) = min( 1._r8, max(cld_lw_xmomc(j,jband,jcol,jlev),-1._r8) )
+           else
+             cld_lw_xmomc(j,jband,jcol,jlev) = 0._r8
+           endif
+         enddo
+         enddo
+         enddo
+
+         ! return variable
+         if (flag_rtr2 .and. flag_scat_mc6) then   ! use rtr2 with MC6 absorption+scattering
+           c_cld_lw_abs  (1:nbndlw,1:ncol,:)  =cld_lw_abs(:,1:ncol,:)
+           c_cld_lw_ext  (1:nbndlw,1:ncol,:)  =cld_lw_ext(:,1:ncol,:)
+           c_cld_lw_ssa  (1:nbndlw,1:ncol,:)  =cld_lw_ssa(:,1:ncol,:)
+           c_cld_lw_xmomc(:,1:nbndlw,1:ncol,:)=cld_lw_xmomc(:,1:nbndlw,1:ncol,:)
+
+         else    ! use MC6 absorption with either rtr2 or rtrnmc
+           c_cld_lw_abs  (1:nbndlw,1:ncol,:)  =cld_lw_abs(:,1:ncol,:)
+           c_cld_lw_ext  (1:nbndlw,1:ncol,:)  =c_cld_lw_abs(:,1:ncol,:)
+           c_cld_lw_ssa  (1:nbndlw,1:ncol,:)  =0._r8
+           c_cld_lw_xmomc(:,1:nbndlw,1:ncol,:)=0._r8
+         end if
+
+       end if  ! end if of MC6
+       !<<< yihsuan 2017-08-03 add MC6 ice optics <<<
+
        call t_stopf('cldoptics')
 
        ! construct cgs unit reps of pmid and pint and get "eccf" - earthsundistancefactor
@@ -1248,14 +1524,15 @@ end function radiation_nextsw_cday
        ! Calculate interface temperatures (following method
        ! used in radtpl for the longwave), using surface upward flux and
        ! stebol constant in mks units
-       do i = 1,ncol
-          tint(i,1) = state%t(i,1)
-          tint(i,pverp) = sqrt(sqrt(cam_in%lwup(i)/stebol))
-          do k = 2,pver
-             dy = (state%lnpint(i,k) - state%lnpmid(i,k)) / (state%lnpmid(i,k-1) - state%lnpmid(i,k))
-             tint(i,k) = state%t(i,k) - dy * (state%t(i,k) - state%t(i,k-1))
-          end do
-       end do
+
+       !yihsuan comment,no any effect do i = 1,ncol
+       !yihsuan comment,no any effect   tint(i,1) = state%t(i,1)
+       !yihsuan comment,no any effect   tint(i,pverp) = sqrt(sqrt(cam_in%lwup(i)/stebol))
+       !yihsuan comment,no any effect   do k = 2,pver
+       !yihsuan comment,no any effect      dy = (state%lnpint(i,k) - state%lnpmid(i,k)) / (state%lnpmid(i,k-1) - state%lnpmid(i,k))
+       !yihsuan comment,no any effect      tint(i,k) = state%t(i,k) - dy * (state%t(i,k) - state%t(i,k-1))
+       !yihsuan comment,no any effect   end do
+       !yihsuan comment,no any effect end do
 
        ! Solar radiation computation
 
@@ -1432,13 +1709,32 @@ end function radiation_nextsw_cday
                   call aer_rad_props_lw(is_cmip6_volc, icall, state, pbuf,  aer_lw_abs)
                   
                   call t_startf ('rad_rrtmg_lw')
+
+! yihsuan comment                  call rad_rrtmg_lw( &
+! yihsuan comment                       lchnk,        ncol,         num_rrtmg_levs,  r_state,                     &
+! yihsuan comment                       state%pmid,   aer_lw_abs,   cldfprime,       c_cld_lw_abs,                &
+! yihsuan comment                       qrl,          qrlc,                                                       &
+! yihsuan comment                       flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
+! yihsuan comment                       flut,         flutc,        fnl,             fcnl,         fldsc,         &
+! yihsuan comment                       clm_seed,     lu,           ld                                            )
+
+                  !>>> yihsuan modify rad_rrtmg_lw inputs/outputs >>>
                   call rad_rrtmg_lw( &
                        lchnk,        ncol,         num_rrtmg_levs,  r_state,                     &
-                       state%pmid,   aer_lw_abs,   cldfprime,       c_cld_lw_abs,                &
+                       !state%pmid,   aer_lw_abs,   cldfprime,       c_cld_lw_abs,                &
+                       state%pmid,   aer_lw_abs,   cldfprime,       c_cld_lw_ext,                &  ! yihsuan change from c_cld_lw_abs to c_cld_lw_ext
                        qrl,          qrlc,                                                       &
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
                        flut,         flutc,        fnl,             fcnl,         fldsc,         &
-                       clm_seed,     lu,           ld                                            )
+                       clm_seed,     lu,           ld, flag_rtr2, c_cld_lw_ssa, c_cld_lw_xmomc, surface_emis, ful, fsul, fdl, fsdl, lwdn_spec ) ! yihsuan add new inputs/outputs
+                  ! save spectral downward LW flux at the surface for emissivty calculation of next step 
+                  do i=1,ncol
+                    do j=1,nbndlw
+                      cam_out%flwds_spec(i,j) = lwdn_spec(j, i)
+                    end do
+                  end do
+                  !<<< yihsuan modify rad_rrtmg_lw inputs/outputs <<<
+
                   call t_stopf ('rad_rrtmg_lw')
 
                   if (lwrad_off) then

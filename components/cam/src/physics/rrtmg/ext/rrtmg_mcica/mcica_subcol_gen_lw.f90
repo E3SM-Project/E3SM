@@ -49,9 +49,15 @@
 ! Public subroutines
 !------------------------------------------------------------------
 
+! yihsuan comment       subroutine mcica_subcol_lw(lchnk, ncol, nlay, icld, permuteseed, play, &
+! yihsuan comment                        cldfrac, ciwp, clwp, rei, rel, tauc, cldfmcl, &
+! yihsuan comment                        ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, clm_rand_seed, pergro_mods)
+
+      !>>> yihsuan modify inputs/outputs >>>
       subroutine mcica_subcol_lw(lchnk, ncol, nlay, icld, permuteseed, play, &
-                       cldfrac, ciwp, clwp, rei, rel, tauc, cldfmcl, &
-                       ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, clm_rand_seed, pergro_mods)
+                        cldfrac, ciwp, clwp, rei, rel, tauc, cldfmcl, &
+                        ciwpmcl, clwpmcl, reicmcl, relqmcl, taucmcl, clm_rand_seed, pergro_mods, ssac, xmomc, ssacmcl, xmomcmcl) ! yihsuan add ssac, xmomc
+      !<<< yihsuan modify inputs/outputs <<<
 
 ! ----- Input -----
 ! Control
@@ -118,6 +124,19 @@
 !      real(kind=r8) :: qi(ncol, nlay)                ! ice water (specific humidity)
 !      real(kind=r8) :: ql(ncol, nlay)                ! liq water (specific humidity)
 
+     !>>> yihsuan add 2017-07-04 >>>
+     ! add new variables
+     real(kind=r8), intent(in) :: ssac (:,:,:)   ! Cloud single scattering albedo
+                                                 !    Dimensions: (nbndlw,ncol,nlay)
+     real(kind=r8), intent(in) :: xmomc(:,:,:,:) ! Cloud phase function expansion coefficient
+                                                 !    Dimensions: (moment,nbndlw,ncol,nlay)
+     real(kind=r8), intent(out) :: ssacmcl (:,:,:)   ! Cloud single scattering albedo [mcica]
+                                                     !    Dimensions: (ngptlw,ncol,nlay)
+     real(kind=r8), intent(out) :: xmomcmcl (:,:,:,:) ! Cloud phase function expansion coefficient [mcica]
+                                                       !    Dimensions: (moment,ngptlw,ncol,nlay)
+     !<<< yihsuan add 2017-07-04 <<<
+
+
 
 ! Return if clear sky; or stop if icld out of range
       if (icld.eq.0) return
@@ -151,15 +170,25 @@
 !      enddo
 
 !  Generate the stochastic subcolumns of cloud optical properties for the longwave;
+! yihsuan comment       call generate_stochastic_clouds (ncol, nlay, nsubclw, icld, pmid, cldfrac, clwp, ciwp, tauc, &
+! yihsuan comment                                cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, clm_rand_seed, pergro_mods)!BSINGH
+
+      !>>> yihsuan modify inputs/outputs >>>
       call generate_stochastic_clouds (ncol, nlay, nsubclw, icld, pmid, cldfrac, clwp, ciwp, tauc, &
-                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, clm_rand_seed, pergro_mods)!BSINGH
+                               cldfmcl, clwpmcl, ciwpmcl, taucmcl, permuteseed, clm_rand_seed, pergro_mods, ssac, xmomc, ssacmcl, xmomcmcl) ! yihsuan add ssac, xmomc
+      !<<< yihsuan modify inputs/outputs <<<
 
       end subroutine mcica_subcol_lw
 
 
 !-------------------------------------------------------------------------------------------------
+! yihsuan comment      subroutine generate_stochastic_clouds(ncol, nlay, nsubcol, icld, pmid, cld, clwp, ciwp, tauc, &
+! yihsuan comment                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed, clm_rand_seed, pergro_mods)!BSINGH  
+
+      !>>> yihsuan modify the inputs/outputs >>>
       subroutine generate_stochastic_clouds(ncol, nlay, nsubcol, icld, pmid, cld, clwp, ciwp, tauc, &
-                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed, clm_rand_seed, pergro_mods)!BSINGH  
+                                   cld_stoch, clwp_stoch, ciwp_stoch, tauc_stoch, changeSeed, clm_rand_seed, pergro_mods, ssac, xmomc, ssac_stoch, xmomc_stoch) ! yihsuan add ssac, xmomc
+      !<<< yihsuan modify the inputs/outputs <<<
 !-------------------------------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------------------------------------------
@@ -304,6 +333,18 @@
 
 ! Indices
       integer :: ilev, isubcol, i, n         ! indices
+
+!>>> yihsuan 2017-07-05 >>>
+     ! add new variables
+     real(kind=r8), intent(in) :: ssac (:,:,:)   ! Cloud single scattering albedo
+                                                 !    Dimensions: (nbndlw,ncol,nlay)
+     real(kind=r8), intent(in) :: xmomc(:,:,:,:) ! Cloud phase function expansion coefficient
+                                                 !    Dimensions: (moment,nbndlw,ncol,nlay)
+     real(kind=r8), intent(out) :: ssac_stoch (:,:,:)   ! Cloud single scattering albedo [mcica]
+                                                     !    Dimensions: (ngptlw,ncol,nlay)
+     real(kind=r8), intent(out) :: xmomc_stoch (:,:,:,:) ! Cloud phase function expansion coefficient [mcica]
+                                                       !    Dimensions: (moment,ngptlw,ncol,nlay)
+!<<< yihsuan 2017-07-05 <<<
 
 !------------------------------------------------------------------------------------------ 
 
@@ -518,12 +559,24 @@
                if ( iscloudy(isubcol,i,ilev) .and. (cldf(i,ilev) > 0._r8) ) then
                   n = ngb(isubcol)
                   tauc_stoch(isubcol,i,ilev) = tauc(n,i,ilev)
+
+                  !>>> yihsuan 2017-07-05 >>>
+                  ssac_stoch(isubcol,i,ilev) = ssac(n,i,ilev)
+                  xmomc_stoch(:,isubcol,i,ilev) = xmomc(:,n,i,ilev)
+                  !<<< yihsuan 2017-07-05 <<<
+
 !                  ssac_stoch(isubcol,i,ilev) = ssac(n,i,ilev)
 !                  asmc_stoch(isubcol,i,ilev) = asmc(n,i,ilev)
                else
                   tauc_stoch(isubcol,i,ilev) = 0._r8
 !                  ssac_stoch(isubcol,i,ilev) = 1._r8
 !                  asmc_stoch(isubcol,i,ilev) = 0._r8
+
+                  !>>> yihsuan 2017-07-05 >>>
+                  ssac_stoch(isubcol,i,ilev) = 0._r8
+                  xmomc_stoch(:,isubcol,i,ilev) = 0._r8
+                  !<<< yihsuan 2017-07-05 <<<
+
                endif
             enddo
          enddo

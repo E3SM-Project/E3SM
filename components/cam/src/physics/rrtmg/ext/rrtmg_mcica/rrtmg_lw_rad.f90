@@ -64,7 +64,8 @@
 ! Move call to rrtmg_lw_ini and following use association to 
 ! GCM initialization area
 !      use rrtmg_lw_init, only: rrtmg_lw_ini
-      use rrtmg_lw_rtrnmc, only: rtrnmc
+! yihsuan comment      use rrtmg_lw_rtrnmc, only: rtrnmc
+      use rrtmg_lw_rtrnmc, only: rtrnmc, rtr2function  ! yihsuan add, TAMU LW scattering subroutine, rtr2function
       use rrtmg_lw_setcoef, only: setcoef
       use rrtmg_lw_taumol, only: taumol
 
@@ -81,15 +82,28 @@
 ! Public subroutines
 !------------------------------------------------------------------
 
+! yihsuan comment      subroutine rrtmg_lw &
+! yihsuan comment            (lchnk   ,ncol    ,nlay    ,icld    ,                   &
+! yihsuan comment             play    ,plev    ,tlay    ,tlev    ,tsfc    ,h2ovmr  , &
+! yihsuan comment             o3vmr   ,co2vmr  ,ch4vmr  ,o2vmr   ,n2ovmr  ,&
+! yihsuan comment             cfc11vmr,cfc12vmr, &
+! yihsuan comment             cfc22vmr,ccl4vmr ,emis    ,inflglw ,iceflglw,liqflglw, &
+! yihsuan comment             cldfmcl ,taucmcl ,ciwpmcl ,clwpmcl ,reicmcl ,relqmcl , &
+! yihsuan comment             tauaer  , &
+! yihsuan comment             uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc, uflxs, dflxs )
+
+!>>> yihsuan add rrtmg_lw subroutine >>>
       subroutine rrtmg_lw &
-            (lchnk   ,ncol    ,nlay    ,icld    ,                   &
+            (lchnk   ,ncol    ,nlay    ,icld    ,  flag_rtr2,                 &  ! yihsuan add input logical, flag_rtr2
              play    ,plev    ,tlay    ,tlev    ,tsfc    ,h2ovmr  , &
              o3vmr   ,co2vmr  ,ch4vmr  ,o2vmr   ,n2ovmr  ,&
              cfc11vmr,cfc12vmr, &
              cfc22vmr,ccl4vmr ,emis    ,inflglw ,iceflglw,liqflglw, &
-             cldfmcl ,taucmcl ,ciwpmcl ,clwpmcl ,reicmcl ,relqmcl , &
+             cldfmcl ,taucmcl , ssacmcl, xmomcmcl, ciwpmcl ,clwpmcl ,reicmcl ,relqmcl , &  ! yihsuan add two more inputs, ssamcl & xmomcmcl
              tauaer  , &
              uflx    ,dflx    ,hr      ,uflxc   ,dflxc,  hrc, uflxs, dflxs )
+!<<< yihsuan add rrtmg_lw subroutine <<<
+
 
 ! -------- Description --------
 
@@ -383,6 +397,23 @@
       real(kind=r8) :: fnetc(0:nlay)            ! clear sky net longwave flux (w/m2)
       real(kind=r8) :: htrc(0:nlay)             ! clear sky longwave heating rate (k/day)
 
+!>>> yihsuan 2016-01-10 >>>
+! New variables in TAMU Ice Optics/Scattering scheme
+      logical, intent(in)       :: flag_rtr2       ! flag to control cloud LW scattering
+                                                       ! .True.   : use TAMU scheme, rtr2function
+                                                       ! .False.  : use default RRTMG scheme, rtrnmc
+
+      real(kind=r8), intent(in) :: ssacmcl(:,:,:)      ! Cloud single scattering albedo
+                                                       !    Dimensions: (ngptlw,ncol,nlay)
+      real(kind=r8), intent(in) :: xmomcmcl(0:,:,:,:)  ! Cloud phase function expansion coefficient
+                                                       !    Dimensions: (moments,ngptlw,ncol,nlay)
+
+      real(kind=r8) :: ssacmc(ngptlw,nlay)     ! LOCAL, cloud singlescattering albedo
+                                               !    Dimensions: (ngptlw,nlayers)
+      real(kind=r8) :: xmomcmc(0:16,ngptlw,nlay)  ! LOCAL, cloud phase function expansion coefficient
+                                               !    Dimensions: (moments,ngptlw,nlayers)
+!<<< yihsuan 2016-01-10 <<<
+
 ! Initializations
 
       oneminus = 1._r8 - 1.e-6_r8
@@ -425,14 +456,25 @@
 !  Prepare atmospheric profile from GCM for use in RRTMG, and define
 !  other input parameters.  
 
+! yihsuan comment         call inatm (iplon, nlay, icld, iaer, &
+! yihsuan comment              play, plev, tlay, tlev, tsfc, h2ovmr, &
+! yihsuan comment              o3vmr, co2vmr, ch4vmr, o2vmr, n2ovmr, cfc11vmr, cfc12vmr, &
+! yihsuan comment              cfc22vmr, ccl4vmr, emis, inflglw, iceflglw, liqflglw, &
+! yihsuan comment              cldfmcl, taucmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, tauaer, &
+! yihsuan comment              pavel, pz, tavel, tz, tbound, semiss, coldry, &
+! yihsuan comment              wkl, wbrodl, wx, pwvcm, inflag, iceflag, liqflag, &
+! yihsuan comment              cldfmc, taucmc, ciwpmc, clwpmc, reicmc, dgesmc, relqmc, taua)
+
+!>>> yihsuan modify the inputs/outputs of inatm >>>
          call inatm (iplon, nlay, icld, iaer, &
               play, plev, tlay, tlev, tsfc, h2ovmr, &
               o3vmr, co2vmr, ch4vmr, o2vmr, n2ovmr, cfc11vmr, cfc12vmr, &
               cfc22vmr, ccl4vmr, emis, inflglw, iceflglw, liqflglw, &
-              cldfmcl, taucmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, tauaer, &
+              cldfmcl, taucmcl, ssacmcl, xmomcmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, tauaer, &  ! yihsuan add two inputs: ssacmcl, xmomncl
               pavel, pz, tavel, tz, tbound, semiss, coldry, &
               wkl, wbrodl, wx, pwvcm, inflag, iceflag, liqflag, &
-              cldfmc, taucmc, ciwpmc, clwpmc, reicmc, dgesmc, relqmc, taua)
+              cldfmc, taucmc, ssacmc, xmomcmc, ciwpmc, clwpmc, reicmc, dgesmc, relqmc, taua)  ! yihsuan add two outputs: ssamc, xmommc
+!<<< yihsuan modify the inputs/outputs of inatm <<<
 
 !  For cloudy atmosphere, use cldprop to set cloud optical properties based on
 !  input cloud physical properties.  Select method based on choices described
@@ -496,11 +538,32 @@
 ! to be used.  Clear sky calculation is done simultaneously.
 ! For McICA, RTRNMC is called for clear and cloudy calculations.
 
-         call rtrnmc(nlay, istart, iend, iout, pz, semiss, ncbands, &
-                     cldfmc, taucmc, planklay, planklev, plankbnd, &
-                     pwvcm, fracs, taut, &
-                     totuflux, totdflux, fnet, htr, &
-                     totuclfl, totdclfl, fnetc, htrc, totufluxs, totdfluxs )
+! yihsuan comment         call rtrnmc(nlay, istart, iend, iout, pz, semiss, ncbands, &
+! yihsuan comment                     cldfmc, taucmc, planklay, planklev, plankbnd, &
+! yihsuan comment                     pwvcm, fracs, taut, &
+! yihsuan comment                     totuflux, totdflux, fnet, htr, &
+! yihsuan comment                     totuclfl, totdclfl, fnetc, htrc, totufluxs, totdfluxs )
+
+         !>>> yihsuan 2017-03-03 add TAMU cloud LW scattering subroutine >>>
+         if (flag_rtr2) then
+
+           call rtr2function(nlay, istart, iend, iout, pz, semiss, ncbands, &
+                             cldfmc, taucmc, ssacmc, xmomcmc, &
+                             planklay, planklev, plankbnd, &
+                             pwvcm, fracs, taut, &
+                             totuflux, totdflux, fnet, htr, &
+                             totuclfl, totdclfl, fnetc, htrc, totufluxs, totdfluxs)
+         else
+
+           call rtrnmc(nlay, istart, iend, iout, pz, semiss, ncbands, &
+                       cldfmc, taucmc, planklay, planklev, plankbnd, &
+                       pwvcm, fracs, taut, &
+                       totuflux, totdflux, fnet, htr, &
+                       totuclfl, totdclfl, fnetc, htrc, totufluxs, totdfluxs )
+         endif
+         !<<< yihsuan 2017-03-03 add TAMU cloud LW scattering subroutine <<<
+
+
 
 !  Transfer up and down fluxes and heating rate to output arrays.
 !  Vertical indexing goes from bottom to top
@@ -523,14 +586,26 @@
       end subroutine rrtmg_lw
 
 !***************************************************************************
+
+!>>> yihsuan modify the inputs/outputs of inatm >>>
       subroutine inatm (iplon, nlay, icld, iaer, &
               play, plev, tlay, tlev, tsfc, h2ovmr, &
               o3vmr, co2vmr, ch4vmr, o2vmr, n2ovmr, cfc11vmr, cfc12vmr, &
               cfc22vmr, ccl4vmr, emis, inflglw, iceflglw, liqflglw, &
-              cldfmcl, taucmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, tauaer, &
+              cldfmcl, taucmcl, ssacmcl, xmomcmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, tauaer, &  ! yihsuan add two inputs: ssacmcl, xmomncl
               pavel, pz, tavel, tz, tbound, semiss, coldry, &
               wkl, wbrodl, wx, pwvcm, inflag, iceflag, liqflag, &
-              cldfmc, taucmc, ciwpmc, clwpmc, reicmc, dgesmc, relqmc, taua)
+              cldfmc, taucmc, ssacmc, xmomcmc, ciwpmc, clwpmc, reicmc, dgesmc, relqmc, taua)  ! yihsuan add two outputs: ssacmc, xmomnc
+!<<< yihsuan modify the inputs/outputs of inatm <<<
+
+! yihsuan comment      subroutine inatm (iplon, nlay, icld, iaer, &
+! yihsuan comment              play, plev, tlay, tlev, tsfc, h2ovmr, &
+! yihsuan comment              o3vmr, co2vmr, ch4vmr, o2vmr, n2ovmr, cfc11vmr, cfc12vmr, &
+! yihsuan comment              cfc22vmr, ccl4vmr, emis, inflglw, iceflglw, liqflglw, &
+! yihsuan comment              cldfmcl, taucmcl, ciwpmcl, clwpmcl, reicmcl, relqmcl, tauaer, &
+! yihsuan comment              pavel, pz, tavel, tz, tbound, semiss, coldry, &
+! yihsuan comment              wkl, wbrodl, wx, pwvcm, inflag, iceflag, liqflag, &
+! yihsuan comment              cldfmc, taucmc, ciwpmc, clwpmc, reicmc, dgesmc, relqmc, taua)
 !***************************************************************************
 !
 !  Input atmospheric profile from GCM, and prepare it for use in RRTMG_LW.
@@ -604,6 +679,13 @@
       real(kind=r8), intent(in) :: tauaer(:,:,:)        ! Aerosol optical depth
                                                         !    Dimensions: (ncol,nlay,nbndlw)
 
+      !>>> yihsuan add 2017-02-28 >>>
+      real(kind=r8), intent(in) :: ssacmcl(:,:,:)      ! Cloud single scattering albedo
+                                                        !    Dimensions: (ngptlw,ncol,nlay)
+      real(kind=r8), intent(in) :: xmomcmcl(0:,:,:,:)    ! cloud phase  function expansion coefficient
+                                                        !    Dimensions: (moments,ngptlw,ncol,nlay)
+      !<<< yihsuan add 2017-02-28 <<<
+
 ! ----- Output -----
 ! Atmosphere
       real(kind=r8), intent(out) :: pavel(:)            ! layer pressures (mb) 
@@ -649,6 +731,12 @@
       real(kind=r8), intent(out) :: taua(:,:)           ! Aerosol optical depth
                                                         ! Dimensions: (nlay,nbndlw)
 
+      !>>> yihsuan add 2017-02-28 >>>
+      real(kind=r8), intent(out) :: ssacmc(:,:)      ! Cloud single scattering albedo
+                                                     !    Dimensions: (ngptlw,nlay)
+      real(kind=r8), intent(out) :: xmomcmc(0:,:,:)     ! Cloud phase  function expansion coefficient
+                                                     !    Dimensions: (moments,ngptlw,nlay)
+      !<<< yihsuan add 2017-02-28 <<<
 
 ! ----- Local -----
       real(kind=r8), parameter :: amd = 28.9660_r8      ! Effective molecular weight of dry air (g/mol)
@@ -693,6 +781,11 @@
       taua(:,:) = 0.0_r8
       amttl = 0.0_r8
       wvttl = 0.0_r8
+
+      !>>> yihsuan add 2017-02-28 >>>
+      ssacmc (:,:) = 0.0_r8
+      xmomcmc(:,:,:) = 0.0_r8
+      !<<< yihsuan add 2017-02-28 <<<
  
 !  Set surface temperature.
       tbound = tsfc(iplon)
@@ -807,6 +900,12 @@
                taucmc(ig,l) = taucmcl(ig,iplon,nlay-l)
                ciwpmc(ig,l) = ciwpmcl(ig,iplon,nlay-l)
                clwpmc(ig,l) = clwpmcl(ig,iplon,nlay-l)
+
+               !>>> yihsuan add 2017-02-28 >>>
+               ssacmc (ig,l)   = ssacmcl (ig,iplon,nlay-l)
+               xmomcmc(:,ig,l) = xmomcmcl(:,ig,iplon,nlay-l)
+               !<<< yihsuan add 2017-02-28 <<<
+
             enddo
             reicmc(l) = reicmcl(iplon,nlay-l)
             if (iceflag .eq. 3) then
@@ -825,6 +924,12 @@
          dgesmc(nlay) = 0.0_r8
          relqmc(nlay) = 0.0_r8
          taua(nlay,:) = 0.0_r8
+
+         !>>> yihsuan add 2017-02-28 >>>
+         ssacmc (:,nlay)   = 0.0_r8
+         xmomcmc(:,:,nlay) = 0.0_r8
+         !<<< yihsuan add 2017-02-28 <<<
+
 
       endif
       

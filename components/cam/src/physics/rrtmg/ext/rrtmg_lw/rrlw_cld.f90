@@ -32,5 +32,10 @@
       real(kind=r8) :: absliq0
       real(kind=r8) , dimension(58,16) :: absliq1
 
+      real(kind=r8) , dimension(2,8,16) :: absice4 ! yihsuan@UMich 2018-08-28
+      real(kind=r8) , dimension(2,8,16) :: extice4 ! yihsuan@UMich 2018-08-28  
+      real(kind=r8) , dimension(2,8,16) :: ssaice4 ! yihsuan@UMich 2018-08-28  
+      real(kind=r8) , dimension(2,8,16) :: asyice4 ! yihsuan@UMich 2018-08-28  
+
       end module rrlw_cld
 
