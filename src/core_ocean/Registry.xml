@@ -391,19 +391,19 @@
 					description="If true, Redi isopycnal mixing is turned on"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_Redi_kappa_function" type="character" default_value="constant" units="unitless"
-					description="Control what type of function is used for Redi $\kappa$"
-					possible_values="'constant', 'data', 'match_GM'"
-		/>
 		<nml_option name="config_Redi_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="The Redi diffusion coefficient"
 					possible_values="Positive real numbers"
+		/>
+		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
+					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
+					possible_values="'constant', 'data', 'match_GM'"
 		/>
 		<nml_option name="config_Redi_surface_taper_layers" type="integer" default_value="10" units="non-dimensional"
 					description="Number of layers below boundary layer depth where surface tapering ends."
 					possible_values="Any positive real value, typically between 1 and 2."
 		/>
-		<nml_option name="config_Redi_bottom_taper_height" type="real" default_value="500.0" units="m"
+		<nml_option name="config_Redi_bottom_taper_height" type="real" default_value="200.0" units="m"
 					description="Height above bottom of water column where bottom tapering ends."
 					possible_values="Any positive real value, typically between 100 and 500 m."
 		/>
@@ -413,52 +413,38 @@
 					description="If true, the standard GM for the tracer advection and mixing is turned on."
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_GM_kappa_function" type="character" default_value="constant" units="unitless"
-					description="Control what type of function is used for GM Bolus $\kappa$"
-					possible_values="'constant' and 'ramp'"
-		/>
-		<nml_option name="config_GM_tracer_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
+		<nml_option name="config_GM_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_kappa_function is set to constant."
 		/>
-		<nml_option name="config_GM_kappa_min" type="real" default_value="0.0" units="m^2 s^{-1}"
-					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_kappa_function is set to ramp."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_GM_kappa_max" type="real" default_value="600.0" units="m^2 s^{-1}"
-					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_kappa_function is set to ramp."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_GM_lat_variable_c2" type="logical" default_value=".false." units="NA"
-					description="If true, spatially variable phase speed is used Following Ferrari et al (2010)"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_GM_kappa_lat_depth_variable" type="logical" default_value=".false." units="NA"
-					description="If true, spatitally and deph varying Bolus Kappa is used, following Danabasoglu et al (2007)"
-					possible_values=".true. or .false."
+		<nml_option name="config_GM_closure" type="character" default_value="N2_dependent" units="unitless"
+					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006)."
+					possible_values="'N2_dependent', 'constant'"
 		/>
 		<nml_option name="config_GM_min_stratification_ratio" type="real" default_value="0.1" units="NA"
-					description="minimum value for N2/Nmax2 ratio"
+					description="When using config_GM_closure='N2_dependent', the minimum value for N2/Nmax2 ratio."
 					possible_values="small positive reals"
 		/>
-		<nml_option name="config_GM_min_phase_speed" type="real" default_value="0.1" units="m s^{-1}"
-					description="minimum allowed phase speed for spatially variable computation"
-					possible_values="small positive reals"
-		/>
-		<nml_option name="config_GM_cell_size_min" type="real" default_value="20e3" units="m"
-					description="Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_kappa_function is set to ramp."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_GM_cell_size_max" type="real" default_value="30e3" units="m"
-					description="Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge"
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_gravWaveSpeed_trunc" type="real" default_value="0.3" units="m/s"
-					description="Gravity wave speed truncation threshold for the vertical stream function boundary value problem, $c$"
-					possible_values="Positive real numbers that represents the gravity wave speed of the first, second, etc., baroclinic modes"
-		/>
-		<nml_option name="config_max_relative_slope" type="real" default_value="0.01" units="non-dimensional"
-					description="Maximum value of slope allowed for GM and Redi schemes. Slopes great than this value (positive or negative) are capped at this value."
+		<nml_option name="config_GM_constant_gravWaveSpeed" type="real" default_value="0.3" units="m/s"
+					description="Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
 					possible_values="Positive real numbers"
+		/>
+	</nml_record>
+	<nml_record name="mesoscale_eddy_parameterizations" mode="forward">
+		<nml_option name="config_mesoscale_eddy_isopycnal_slope_limit" type="real" default_value="0.01" units="non-dimensional"
+					description="Maximum value of isopycnal slope allowed for Redi and GM schemes. Slopes greater than this value (positive or negative) are capped at this value."
+					possible_values="Positive real numbers"
+		/>
+		<nml_option name="config_eddying_resolution_taper" type="character" default_value="ramp" units="unitless"
+					description="Control how the Redi and GM Bolus $\kappa$ value varies as a function of horizontal resolution"
+					possible_values="'none' and 'ramp'"
+		/>
+		<nml_option name="config_eddying_resolution_ramp_min" type="real" default_value="20e3" units="m"
+					description="Minimum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_eddying_resolution_ramp_max" type="real" default_value="30e3" units="m"
+					description="Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
+					possible_values="Any positive real value."
 		/>
 	</nml_record>
 	<nml_record name="hmix_del2_tensor" mode="forward">
@@ -2794,7 +2780,7 @@
 			 description="GM Bolus Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
 			 packages="gm"
 		/>
-		<var name="RediKappa" type="real" dimensions="nVertLevels nCells" units="m^2 s^{-1}"
+		<var name="RediKappa" type="real" dimensions="nCells" units="m^2 s^{-1}"
 			 description="Redi isopycnal mixing Kappa value.  This is constant in time, and set at init."
 			 packages="gm"
 		/>
@@ -3241,6 +3227,10 @@
 		<var name="sshSubcycleNewWithTides" type="real" dimensions="nCells Time" units="m"
 			description="SSH - tidal potential in split explicit "
 			packages="tidalPotentialForcingPKG"
+		/>
+		<var name="RediKappaData" type="real" dimensions="nCells" units="m^2 s^{-1}"
+			 description="Redi isopycnal mixing Kappa value. This is the data field specified at init."
+			 packages="gm"
 		/>
 	</var_struct>
 	<var_struct name="timeVaryingForcing" time_levs="1">

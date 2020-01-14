@@ -1,9 +1,5 @@
 <template>
 	<namelist>
-		<option name="config_disable_redi_k33">.false.</option>
-		<option name="config_disable_redi_horizontal_term1">.false.</option>
-		<option name="config_disable_redi_horizontal_term2">.false.</option>
-		<option name="config_disable_redi_horizontal_term3">.false.</option>
 		<option name="config_check_zlevel_consistency">.false.</option>
 		<option name="config_check_ssh_consistency">.true.</option>
 		<option name="config_filter_btr_mode">.false.</option>

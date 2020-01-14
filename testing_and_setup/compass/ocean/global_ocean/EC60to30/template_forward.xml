@@ -7,6 +7,5 @@
 		<option name="config_mom_del4">1.2e11</option>
 		<option name="config_hmix_scaleWithMesh">.true.</option>
 		<option name="config_use_GM">.true.</option>
-		<option name="config_GM_tracer_kappa">600.0</option>
 	</namelist>
 </template>

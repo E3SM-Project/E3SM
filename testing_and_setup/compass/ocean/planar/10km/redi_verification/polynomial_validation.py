@@ -30,11 +30,11 @@ def rhoDef(x,y,z):
 
 # isopycnal slope in the x direction
 def SxDef(x,y,z):
-    return rho.diff(x)/rho.diff(z)
+    return -rho.diff(x)/rho.diff(z)
 
 # isopycnal slope in the y direction
 def SyDef(x,y,z):
-    return rho.diff(y)/rho.diff(z)
+    return -rho.diff(y)/rho.diff(z)
 
 # Term 1 div(grad(P))
 def term1Def(x,y,z):

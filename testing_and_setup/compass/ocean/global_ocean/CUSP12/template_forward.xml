@@ -9,7 +9,5 @@
 		<option name="config_mom_del2">400</option>
 		<option name="config_mom_del4">7.7e9</option>
 		<option name="config_use_GM">.true.</option>
-		<option name="config_GM_tracer_kappa">600.0</option>
-		<option name="config_GM_kappa_function">'ramp'</option>
 	</namelist>
 </template>
