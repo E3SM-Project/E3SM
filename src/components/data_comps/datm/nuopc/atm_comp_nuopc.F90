@@ -464,7 +464,6 @@ contains
        maxcornerCoord(1) = xv(3,ni,nj) ! max lon
        maxcornerCoord(2) = yv(3,ni,nj) ! max lat
        deallocate(xv,yv)
-       write(6,*)'DEBUG: maxcornerCoord = ',maxcornerCoord
        lgrid = ESMF_GridCreateNoPeriDimUfrm (maxindex=maxindex, &
             mincornercoord=mincornercoord, maxcornercoord= maxcornercoord, &
             staggerloclist=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), rc=rc)
@@ -791,9 +790,6 @@ contains
     call NUOPC_CompAttributeGet(gcomp, name="orb_mvelp", value=cvalue, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) orb_mvelp
-
-    write(6,*)'DEBUG: orb_mode  = ',orb_mode
-    write(6,*)'DEBUG: orb_iyear = ',orb_iyear
 
     ! Error checks
     if (trim(orb_mode) == trim(orb_fixed_year)) then
