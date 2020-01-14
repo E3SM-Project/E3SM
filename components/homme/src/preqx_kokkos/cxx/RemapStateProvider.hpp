@@ -16,6 +16,9 @@
 namespace Homme {
 namespace Remap {
 
+
+class FunctorsBuffersManager;
+
 struct RemapStateProvider {
 
   ElementsState m_state;
@@ -23,8 +26,13 @@ struct RemapStateProvider {
   explicit RemapStateProvider(const Elements& elements)
    : m_state(elements.m_state) {}
 
-  template<typename Tag>
-  void allocate_buffers(const Kokkos::TeamPolicy<ExecSpace,Tag>& /* policy */) {
+  int requested_buffer_size (int /* num_teams */) const {
+    // preqx does not do anything during states pre/post processing,
+    // so no need to create any buffer
+    return 0;
+  }
+
+  void init_buffers(const FunctorsBuffersManager& /* fbm */, int /* num_teams */) {
     // preqx does not do anything during states pre/post processing,
     // so no need to create any buffer
   }

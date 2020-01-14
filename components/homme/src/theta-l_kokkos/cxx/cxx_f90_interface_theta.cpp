@@ -324,7 +324,7 @@ void init_functors_c ()
   auto& fbm  = Context::singleton().create<FunctorsBuffersManager>();
   auto& ff   = Context::singleton().create<ForcingFunctor>();
   auto& diag = Context::singleton().create<Diagnostics> (elems.num_elems());
-  Context::singleton().create<VerticalRemapManager>();
+  auto& vrm  = Context::singleton().create<VerticalRemapManager>();
 
   const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||   
                           params.time_step_type==TimeStepType::IMEX_KG254 ||
@@ -343,6 +343,7 @@ void init_functors_c ()
   fbm.request_size(hvf.requested_buffer_size());
   fbm.request_size(diag.requested_buffer_size());
   fbm.request_size(ff.requested_buffer_size());
+  fbm.request_size(vrm.requested_buffer_size());
   if (need_dirk) {
     const auto& dirk = Context::singleton().get<DirkFunctor>();
     fbm.request_size(dirk.requested_buffer_size());
@@ -356,6 +357,7 @@ void init_functors_c ()
   hvf.init_buffers(fbm);
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
+  vrm.init_buffers(fbm);
   if (need_dirk) {
     auto& dirk = Context::singleton().get<DirkFunctor>();
     dirk.init_buffers(fbm);
