@@ -100,8 +100,6 @@ OPTION(BUILD_HOMME_THETA "SB81 NH model with theta and Exner pressure" ON)
 OPTION(BUILD_HOMME_THETA_KOKKOS"SB81 NH model with theta and Exner pressure, Kokkos target" OFF)
 OPTION(BUILD_HOMME_PREQX_ACC "Primitive equations FEM with OpenACC" ON)
 OPTION(BUILD_HOMME_PREQX_KOKKOS "Primitive equations FEM with Kokkos" OFF)
-OPTION(ENABLE_PREQX_KOKKOS_BFB_TESTS "Turn on unit tests for XX and bfb for F vs XX" OFF)
-OPTION(ENABLE_THETA_KOKKOS_BFB_TESTS "Turn on unit tests for XX and bfb for F vs XX" OFF)
 OPTION(BUILD_HOMME_SWIM  "Shallow water equations implicit" OFF)
 OPTION(BUILD_HOMME_PRIM  "Primitive equations implicit" OFF)
 OPTION(BUILD_HOMME_TOOL  "Offline tool" ON)
@@ -145,13 +143,6 @@ ENDIF ()
 IF (HOMME_ENABLE_COMPOSE)
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_KOKKOS TRUE)
-ENDIF ()
-#if not kokkos, then no bfb tests
-IF (NOT ${BUILD_HOMME_PREQX_KOKKOS})
-  SET (ENABLE_PREQX_KOKKOS_BFB_TESTS FALSE)
-ENDIF ()
-IF (NOT ${BUILD_HOMME_THETA_KOKKOS})
-  SET (ENABLE_THETA_KOKKOS_BFB_TESTS FALSE)
 ENDIF ()
 
 
@@ -246,7 +237,8 @@ MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 IF (${HOMME_USE_KOKKOS})
-  # Note: If you ask for bfb testing, you should also ask for a strict fp model on cpu.
+  # This option will only help propagate tests, it won't make bfb builds.
+  # Compiler flags should be set separately in *.cmake file.
   OPTION (HOMMEXX_BFB_TESTING "Whether we want bfb comparison cpu-vs-gpu and f90-vs-cxx" OFF)
 
   IF (CUDA_BUILD)
@@ -378,7 +370,7 @@ IF (${HOMME_USE_KOKKOS})
 ENDIF ()
 
 #??? sort this out
-IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS} AND ${ENABLE_PREQX_KOKKOS_BFB_TESTS})
+IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS})
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)
 ENDIF ()
