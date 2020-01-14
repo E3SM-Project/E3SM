@@ -109,7 +109,9 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:), pointer :: &
-        vertDiffTopOfCell, k33, RediKappa
+        vertDiffTopOfCell, k33
+      real (kind=RKIND), dimension(:), pointer :: &
+        RediKappa
 
       !-----------------------------------------------------------------
       !
@@ -171,9 +173,11 @@ contains
       !
       !-----------------------------------------------------------------
 
-      real (kind=RKIND), dimension(:,:), intent(in) :: &
-         k33, &
+      real (kind=RKIND), dimension(:), intent(in) :: &
          RediKappa
+
+      real (kind=RKIND), dimension(:,:), intent(in) :: &
+         k33
 
       integer :: iCell, nCells
       integer, pointer :: nCellsSolve
@@ -198,7 +202,7 @@ contains
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + RediKappa(:, iCell) * k33(:, iCell)
+         vertDiffTopOfCell(:, iCell) = vertDiffTopOfCell(:, iCell) + RediKappa(iCell) * k33(:, iCell)
       end do
       !$omp end do
 

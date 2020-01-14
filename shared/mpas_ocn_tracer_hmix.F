@@ -91,8 +91,10 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch information
 
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         RediKappa
+
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         RediKappa, &
          layerThicknessEdge, &!< Input: thickness at edge
          zMid                 !< Input: Z coordinate at the center of a cell
 

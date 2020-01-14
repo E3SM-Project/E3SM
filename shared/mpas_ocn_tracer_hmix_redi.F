@@ -24,7 +24,9 @@ module ocn_tracer_hmix_Redi
    use mpas_derived_types
    use mpas_pool_routines
    use mpas_threading
+   use mpas_constants
 
+   use ocn_config
    use ocn_constants
 
    implicit none
@@ -51,8 +53,6 @@ module ocn_tracer_hmix_Redi
    ! Private module variables
    !
    !--------------------------------------------------------------------
-
-   logical, pointer :: config_use_Redi
 
 !***********************************************************************
 
@@ -81,8 +81,10 @@ contains
       type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
       type (mpas_pool_type), intent(in) :: scratchPool !< Input: Scratch information
 
+      real (kind=RKIND), dimension(:), intent(in) :: &
+         RediKappa
+
       real (kind=RKIND), dimension(:,:), intent(in) :: &
-         RediKappa, &
          layerThicknessEdge, &!< Input: thickness at edge
          zMid                 !< Input: Z coordinate at the center of a cell
 
@@ -185,7 +187,7 @@ contains
                      tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
 
                      ! div(h \kappa_2 \nabla \phi) at cell center
-                     flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * RediKappa(k,iCell) * r_tmp
+                     flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * RediKappa(iCell) * r_tmp
 
                      tend(iTr,k,iCell) = tend(iTr,k,iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
 
@@ -223,7 +225,7 @@ contains
                   do iTr = 1, nTracers
 
                      ! For top layer, only use triads pointing down:
-                     flux_term2 = coef * RediKappa(k,iCell) * layerThicknessEdge(k, iEdge) * &
+                     flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
                         0.5_RKIND * &
                         (  slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
                                         / (zMid(k,cell1) - zMid(k+1,cell1)) &
@@ -231,13 +233,13 @@ contains
                                         / (zMid(k,cell2) - zMid(k+1,cell2)) ) 
 
                      ! Add tendency for Term 2: div( h S dphi/dz) at top layer
-                     tend(iTr,k,iCell) = tend(iTr,k,iCell) + flux_term2
+                     tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
                   end do
 
                   do k = 2, maxLevelEdgeTop(iEdge)-1
                      do iTr = 1, nTracers
                         ! There are four triads associated with each edge:
-                        flux_term2 = coef * RediKappa(k,iCell) * layerThicknessEdge(k, iEdge) * &
+                        flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
                            0.25_RKIND * &
                            (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
                                            / (zMid(k-1,cell1) - zMid(k,cell1)) &
@@ -249,14 +251,14 @@ contains
                                            / (zMid(k,cell2) - zMid(k+1,cell2))  ) 
 
                         ! Add tendency for Term 2: div( h S dphi/dz) at mid layers
-                        tend(iTr,k,iCell) = tend(iTr,k,iCell) + flux_term2
+                        tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
                      end do
                   end do
 
                   k=maxLevelEdgeTop(iEdge)
                   do iTr = 1, nTracers
                      ! For bottom layer, only use triads pointing up:
-                     flux_term2 = coef * RediKappa(k,iCell) * layerThicknessEdge(k, iEdge) * &
+                     flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
                         0.5_RKIND * &
                         (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
                                         / (zMid(k-1,cell1) - zMid(k,cell1)) &
@@ -264,7 +266,7 @@ contains
                                         / (zMid(k-1,cell2) - zMid(k,cell2)) ) 
 
                      ! Add tendency for Term 2: div( h S dphi/dz) at bottom layer
-                     tend(iTr,k,iCell) = tend(iTr,k,iCell) + flux_term2
+                     tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
                   end do
                end do
             end do
@@ -326,8 +328,9 @@ contains
                do k = 1, maxLevelCell(iCell)
                   do iTr = 1, nTracers
                      ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
-                     ! mrp double check neg sign and 0.5 on next line.
-                     flux_term3 = - RediKappa(k,iCell) * 0.5_RKIND * &
+                     ! 0.5 in next line is because a dot product on a C-grid
+                     ! requires a factor of 1/2 to average to the cell center.
+                     flux_term3 = RediKappa(iCell) * 0.5_RKIND * &
                          (fluxRediZTop(iTr,k)/areaSum(k) - fluxRediZTop(iTr,k+1)/areaSum(k+1))
 !mrp temp
 !if (abs(flux_term3)>1.0e4) then
@@ -373,19 +376,16 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: diagnosticsPool
+      type (mpas_pool_type), pointer :: forcingPool
 
-      real (kind=RKIND), dimension(:,:), pointer :: RediKappa
+      real (kind=RKIND), dimension(:), pointer :: RediKappa, RediKappaData
+      real (kind=RKIND), dimension(:), pointer :: areaCell
 
-      character (len=StrKIND), pointer :: config_Redi_kappa_function
-      real (kind=RKIND), pointer :: config_Redi_kappa
       integer :: k, iCell
       integer, pointer :: nVertLevels, nCells
+      real (kind=RKIND) :: sqrtPiInv2, avgCellDiameter
 
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_Redi', config_use_Redi)
-      call mpas_pool_get_config(ocnConfigs, 'config_Redi_kappa_function',config_Redi_kappa_function)
-      call mpas_pool_get_config(ocnConfigs, 'config_Redi_kappa',config_Redi_kappa)
 
       if (.not.config_use_Redi) return
 
@@ -393,31 +393,54 @@ contains
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_subpool(block % structs, 'forcing', forcingPool)
          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+         call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
          call mpas_pool_get_array(diagnosticsPool, 'RediKappa', RediKappa)
+         call mpas_pool_get_array(forcingPool, 'RediKappaData', RediKappaData)
 
-         ! initialize Bolus kappa array
-         if (config_Redi_kappa_function == 'constant') then
+         ! initialize Redi kappa array
+         if (config_Redi_closure == 'constant') then
             !$omp do schedule(runtime)
             do iCell = 1, nCells
-               do k = 1, nVertLevels
-                  RediKappa(k, iCell) = config_Redi_kappa
-               end do
+               RediKappa(iCell) = config_Redi_kappa
             end do
             !$omp end do
-         else if (config_Redi_kappa_function == 'data') then
+         else if (config_Redi_closure == 'data') then
              ! read RediKappa in from input
-         else if (config_Redi_kappa_function == 'match_GM') then
-            call mpas_log_write( 'config_Redi_kappa_function = "match_GM" not functional yet.', MPAS_LOG_CRIT)
+            call mpas_log_write( "config_Redi_closure = 'data'. "// &
+               "Make sure that the variable RediKappa is read in from an input file.")
          else
-            ! This is not ready yet
-            call mpas_log_write( 'Invalid choice of config_Redi_kappa_function.', MPAS_LOG_CRIT)
+            call mpas_log_write( 'Invalid choice of config_Redi_closure.', MPAS_LOG_CRIT)
             err = 1
             call mpas_dmpar_finalize(domain % dminfo)
          end if
 
-
+         ! Add resolution taper
+         if (config_eddying_resolution_taper == 'none') then
+            ! Nothing to do, as we just keep the same assignment as above.
+         else if (config_eddying_resolution_taper == 'ramp') then
+            sqrtPiInv2 = 2.0_RKIND / sqrt(pii)
+            !$omp do schedule(runtime)
+            do iCell = 1, nCells
+               avgCellDiameter = sqrtPiInv2*sqrt(areaCell(iCell))
+               if (avgCellDiameter <= config_eddying_resolution_ramp_min) then
+                  RediKappa(iCell) = 0.0_RKIND
+               else if (avgCellDiameter >= config_eddying_resolution_ramp_max) then
+                  ! nothing to do, i.e. RediKappa(iCell) = RediKappa(iCell)
+               else
+                  RediKappa(iCell) = RediKappa(iCell) &
+                     *(avgCellDiameter - config_eddying_resolution_ramp_min) & 
+                     /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min)
+               end if
+            end do
+            !$omp end do
+         else
+            call mpas_log_write( 'Invalid choice of config_eddying_resolution_taper.', MPAS_LOG_CRIT)
+            err = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         end if
          block => block % next
       end do
 

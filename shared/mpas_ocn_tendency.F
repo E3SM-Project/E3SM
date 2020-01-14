@@ -475,6 +475,7 @@ contains
       !
       real (kind=RKIND), dimension(:), pointer :: penetrativeTemperatureFlux, penetrativeTemperatureFluxOBL
       real (kind=RKIND), dimension(:), pointer :: tracerGroupExponentialDecayRate, latCell
+      real (kind=RKIND), dimension(:), pointer :: RediKappa
       integer, dimension(:), pointer :: maxLevelCell
 
       !
@@ -487,7 +488,7 @@ contains
         normalTransportVelocity, layerThickness,vertAleTransportTop, layerThicknessEdge, vertDiffTopOfCell, &
         normalThicknessFlux, tracerGroupSurfaceFlux, fractionAbsorbed, zMid, &
         fractionAbsorbedRunoff, tracerGroupSurfaceFluxRunoff, &
-        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux, RediKappa
+        tracerGroupSurfaceFluxRemoved, nonLocalSurfaceTracerFlux
 
       !
       ! three dimensional pointers
