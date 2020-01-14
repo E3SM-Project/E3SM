@@ -4,6 +4,7 @@
 
 #include "Types.hpp"
 #include "Context.hpp"
+#include "FunctorsBuffersManager.hpp"
 #include "VerticalRemapManager.hpp"
 #include "SimulationParams.hpp"
 #include "Elements.hpp"
@@ -221,6 +222,11 @@ TEST_CASE("remap", "remap_testing") {
           // Create the remap functor
           // Note: ALL the options must be set in params *before* creating the vrm.
           VerticalRemapManager vrm;
+          FunctorsBuffersManager fbm;
+          fbm.request_size(vrm.requested_buffer_size());
+          fbm.allocate();
+          vrm.init_buffers(fbm);
+
           vrm.run_remap(np1,np1_qdp,dt);
 
           // Run f90 code
