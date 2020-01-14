@@ -26,6 +26,7 @@ contains
     use element_state,    only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,   &
                                  elem_state_phinh_i, elem_state_dp3d, elem_state_ps_v, &
                                  elem_state_Q, elem_state_Qdp,                         &
+                                 elem_theta_ref, elem_dp_ref, elem_phi_ref,            &
                                  elem_accum_kener, elem_accum_pener, elem_accum_iener, &
                                  elem_accum_qvar, elem_accum_qmass, elem_accum_q1mass
     use hybrid_mod,       only : hybrid_t
@@ -108,6 +109,13 @@ contains
         type (c_ptr) :: elem_state_phinh_i, elem_state_dp3d_ptr
         type (c_ptr) :: elem_state_Qdp_ptr, elem_state_ps_v_ptr
       end subroutine init_elements_states_c
+      subroutine init_reference_states_c (elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr) bind(c)
+        use iso_c_binding, only : c_ptr
+        !
+        ! Inputs
+        !
+        type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
+      end subroutine init_reference_states_c
       subroutine init_boundary_exchanges_c () bind(c)
       end subroutine init_boundary_exchanges_c
       subroutine init_hvcoord_c (ps0,hybrid_am_ptr,hybrid_ai_ptr,hybrid_bm_ptr,hybrid_bi_ptr) bind(c)
@@ -153,6 +161,7 @@ contains
     type (c_ptr) :: hybrid_am_ptr, hybrid_ai_ptr, hybrid_bm_ptr, hybrid_bi_ptr
     type (c_ptr) :: elem_D_ptr, elem_Dinv_ptr, elem_fcor_ptr
     type (c_ptr) :: elem_spheremp_ptr, elem_rspheremp_ptr
+    type (c_ptr) :: elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr
     type (c_ptr) :: elem_metdet_ptr, elem_metinv_ptr, elem_state_phis_ptr, elem_gradphis_ptr
     type (c_ptr) :: elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr
     type (c_ptr) :: elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr
@@ -242,6 +251,12 @@ contains
     call init_elements_states_c (elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
                                  elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
                                  elem_state_Qdp_ptr)
+
+    ! Initialize the reference states in C++
+    elem_theta_ref_ptr         = c_loc(elem_theta_ref)
+    elem_dp_ref_ptr            = c_loc(elem_dp_ref)
+    elem_phi_ref_ptr           = c_loc(elem_phi_ref)
+    call init_reference_states_c (elem_theta_ref_ptr, elem_dp_ref_ptr, elem_phi_ref_ptr)
 
     ! Initialize the C++ functors in the C++ context
     call init_functors_c ()

@@ -259,11 +259,6 @@ void init_elements_c (const int& num_elems)
   const bool consthv = (params.hypervis_scaling==0.0);
   e.init (num_elems, consthv, /* alloc_gradphis = */ true);
 
-  // Compute reference states, since we have all we need
-  e.m_state.m_ref_states.compute(params.theta_hydrostatic_mode,
-                                 c.get<HybridVCoord>(),
-                                 e.m_geometry.m_phis);
-
   // Init also the tracers structure
   Tracers& t = c.create<Tracers> ();
   t.init(num_elems,params.qsize);
@@ -329,7 +324,7 @@ void init_functors_c ()
   auto& fbm  = Context::singleton().create<FunctorsBuffersManager>();
   auto& ff   = Context::singleton().create<ForcingFunctor>();
   auto& diag = Context::singleton().create<Diagnostics> (elems.num_elems());
-  Context::singleton().create<VerticalRemapManager>();
+  auto& vrm  = Context::singleton().create<VerticalRemapManager>();
 
   const bool need_dirk = (params.time_step_type==TimeStepType::IMEX_KG243 ||   
                           params.time_step_type==TimeStepType::IMEX_KG254 ||
@@ -348,6 +343,7 @@ void init_functors_c ()
   fbm.request_size(hvf.requested_buffer_size());
   fbm.request_size(diag.requested_buffer_size());
   fbm.request_size(ff.requested_buffer_size());
+  fbm.request_size(vrm.requested_buffer_size());
   if (need_dirk) {
     const auto& dirk = Context::singleton().get<DirkFunctor>();
     fbm.request_size(dirk.requested_buffer_size());
@@ -361,6 +357,7 @@ void init_functors_c ()
   hvf.init_buffers(fbm);
   diag.init_buffers(fbm);
   ff.init_buffers(fbm);
+  vrm.init_buffers(fbm);
   if (need_dirk) {
     auto& dirk = Context::singleton().get<DirkFunctor>();
     dirk.init_buffers(fbm);
@@ -398,6 +395,25 @@ void init_elements_states_c (CF90Ptr& elem_state_v_ptr,       CF90Ptr& elem_stat
                                elem_state_phinh_i_ptr,elem_state_dp3d_ptr,elem_state_ps_v_ptr);
   Tracers &tracers = Context::singleton().get<Tracers>();
   tracers.pull_qdp(elem_state_Qdp_ptr);
+}
+
+void init_reference_states_c (CF90Ptr& elem_theta_ref_ptr, 
+                              CF90Ptr& elem_dp_ref_ptr,
+                              CF90Ptr& elem_phi_ref_ptr)
+{
+  auto& state = Context::singleton().get<ElementsState> ();
+  auto& ref_states = state.m_ref_states;
+
+  const int num_elems = state.m_ref_states.num_elems();
+  assert(num_elems>0);
+
+  HostViewUnmanaged<const Real*[NUM_PHYSICAL_LEV][NP][NP]>  theta_ref(elem_theta_ref_ptr,num_elems);
+  HostViewUnmanaged<const Real*[NUM_PHYSICAL_LEV][NP][NP]>  dp_ref(elem_dp_ref_ptr,num_elems);
+  HostViewUnmanaged<const Real*[NUM_INTERFACE_LEV][NP][NP]> phi_ref(elem_phi_ref_ptr,num_elems);
+
+  sync_to_device(theta_ref, ref_states.theta_ref);
+  sync_to_device(dp_ref,    ref_states.dp_ref);
+  sync_to_device(phi_ref,   ref_states.phi_i_ref);
 }
 
 void init_diagnostics_c (F90Ptr& elem_state_q_ptr, F90Ptr& elem_accum_qvar_ptr,  F90Ptr& elem_accum_qmass_ptr,

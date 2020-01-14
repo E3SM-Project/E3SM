@@ -58,6 +58,11 @@ module element_state
   real (kind=real_kind), allocatable, target, public :: elem_derived_FPHI(:,:,:,:)              ! PHI (NH) forcing
   real (kind=real_kind), allocatable, target, public :: elem_derived_FQps(:,:,:)                ! forcing of FQ on ps_v
 
+  ! Reference states (computed from phis)
+  real (kind=real_kind), allocatable, target, public :: elem_theta_ref(:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: elem_dp_ref(:,:,:,:)
+  real (kind=real_kind), allocatable, target, public :: elem_phi_ref(:,:,:,:)
+
 ! =========== PRIMITIVE-EQUATION DATA-STRUCTURES =====================
 
   type, public :: elem_state_t
@@ -109,9 +114,9 @@ module element_state
     real (kind=real_kind), pointer :: FQps(:,:)                       ! forcing of FQ on ps_v
 
     real (kind=real_kind) :: gradphis(np,np,2)   ! grad phi at the surface, computed once in model initialization
-    real (kind=real_kind) :: dp_ref(np,np,nlev)    ! ref states based on PHIS
-    real (kind=real_kind) :: theta_ref(np,np,nlev)
-    real (kind=real_kind) :: phi_ref(np,np,nlevp)  
+    real (kind=real_kind), pointer :: dp_ref(:,:,:)         ! ref states based on PHIS
+    real (kind=real_kind), pointer :: theta_ref(:,:,:)
+    real (kind=real_kind), pointer :: phi_ref(:,:,:)
 
   end type derived_state_t
   
@@ -203,6 +208,11 @@ contains
     allocate(elem_derived_FQ      (np,np,nlev,qsize_d,nelemd) )
     allocate(elem_derived_FQps    (np,np,nelemd) )
 
+    ! Reference states
+    allocate(elem_theta_ref (np,np,nlev,nelemd) )
+    allocate(elem_dp_ref    (np,np,nlev,nelemd) )
+    allocate(elem_phi_ref   (np,np,nlevp,nelemd) )
+
   end subroutine allocate_element_arrays
 
   subroutine deallocate_element_arrays ()
@@ -247,6 +257,11 @@ contains
     deallocate(elem_derived_FPHI    )
     deallocate(elem_derived_FQ      )
     deallocate(elem_derived_FQps    )
+
+    ! Reference states
+    deallocate(elem_theta_ref       )
+    deallocate(elem_dp_ref          )
+    deallocate(elem_phi_ref         )
   end subroutine deallocate_element_arrays
 
   subroutine setup_element_pointers_ie (ie, state, derived, accum)
@@ -287,5 +302,10 @@ contains
     derived%FPHI    => elem_derived_FPHI(:,:,:,ie)
     derived%FQ      => elem_derived_FQ(:,:,:,:,ie)
     derived%FQps    => elem_derived_FQps(:,:,ie)
+
+    ! Reference states
+    derived%theta_ref => elem_theta_ref(:,:,:,ie)
+    derived%dp_ref    => elem_dp_ref(:,:,:,ie)
+    derived%phi_ref   => elem_phi_ref(:,:,:,ie)
   end subroutine setup_element_pointers_ie
 end module 

@@ -91,6 +91,12 @@ void Diagnostics::sync_diags_to_host () {
   Kokkos::deep_copy(h_KEner,m_KEner);
 }
 
+void Diagnostics::run_diagnostics (const bool before_advance, const int ivar)
+{
+  prim_diag_scalars(before_advance, ivar);
+  prim_energy_halftimes(before_advance, ivar);
+}
+
 void Diagnostics::prim_diag_scalars (const bool before_advance, const int ivar)
 {
   // Get simulation params

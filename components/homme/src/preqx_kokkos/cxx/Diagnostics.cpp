@@ -36,6 +36,12 @@ void Diagnostics::init (const int num_elems,
   h_PEner     = decltype(h_PEner)(elem_accum_pener_ptr, m_num_elems);
 }
 
+void Diagnostics::run_diagnostics (const bool before_advance, const int ivar)
+{
+  prim_diag_scalars(before_advance, ivar);
+  prim_energy_halftimes(before_advance, ivar);
+}
+
 void Diagnostics::prim_diag_scalars (const bool before_advance, const int ivar)
 {
   // Get simulation params

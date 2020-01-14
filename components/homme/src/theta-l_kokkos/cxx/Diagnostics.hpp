@@ -49,6 +49,8 @@ public:
 
   void sync_diags_to_host ();
 
+  void run_diagnostics (const bool before_advance, const int ivar);
+
   void prim_diag_scalars (const bool before_advance, const int ivar);
   void prim_energy_halftimes (const bool before_advance, const int ivar);
 

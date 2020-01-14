@@ -76,4 +76,18 @@ void VerticalRemapManager::run_remap(int np1, int np1_qdp, double dt) const {
   p_->remapper->run_remap(np1, np1_qdp, dt);
 }
 
+int VerticalRemapManager::requested_buffer_size () const {
+  assert (p_);
+  assert (p_->remapper);
+
+  return p_->remapper->requested_buffer_size();
+}
+
+void VerticalRemapManager::init_buffers(const FunctorsBuffersManager& fbm) {
+  assert (p_);
+  assert (p_->remapper);
+
+  p_->remapper->init_buffers(fbm);
+}
+
 } // namespace Homme

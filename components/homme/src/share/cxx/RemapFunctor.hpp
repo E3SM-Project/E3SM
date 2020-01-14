@@ -56,6 +56,14 @@ struct RemapStateAndThicknessProvider<false> {
   KOKKOS_INLINE_FUNCTION
   int num_states_remap () const { return 0; }
 
+  int requested_buffer_size () const {
+    return 0;
+  }
+
+  void init_buffers(const FunctorsBuffersManager& /* fbm */) {
+    // Do nothing
+  }
+
   KOKKOS_INLINE_FUNCTION
   bool is_intrinsic_state (const int /* istate */) const {
     // We should never reach this part
@@ -148,12 +156,18 @@ RemapStateAndThicknessProvider<true> {
     const int num_elems = elements.m_state.num_elems();
     m_policy_pre = Homme::get_default_team_policy<ExecSpace,TagPreProcess>(iters_pre*num_elems);
     m_policy_post = Homme::get_default_team_policy<ExecSpace,TagPostProcess>(iters_post*num_elems);
-
-    m_state_provider.allocate_buffers(m_policy_pre);
   }
 
   KOKKOS_INLINE_FUNCTION
   int num_states_remap () const { return m_state_provider.num_states_remap(); }
+
+  int requested_buffer_size () const {
+    return m_state_provider.requested_buffer_size(Homme::get_num_concurrent_teams(m_policy_pre));
+  }
+
+  void init_buffers(const FunctorsBuffersManager& fbm) {
+    m_state_provider.init_buffers(fbm, Homme::get_num_concurrent_teams(m_policy_pre));
+  }
 
   KOKKOS_INLINE_FUNCTION
   bool is_intrinsic_state (const int istate) const {
@@ -164,6 +178,7 @@ RemapStateAndThicknessProvider<true> {
     if (m_state_provider.num_states_preprocess()>0) {
       m_np1 = np1;
       Kokkos::parallel_for("Pre-process states",m_policy_pre,*this);
+      ExecSpace::fence();
     }
   }
 
@@ -181,6 +196,7 @@ RemapStateAndThicknessProvider<true> {
     if (m_state_provider.num_states_postprocess()>0) {
       m_np1 = np1;
       Kokkos::parallel_for("Post-process states",m_policy_post,*this);
+      ExecSpace::fence();
     }
   }
 
@@ -192,6 +208,7 @@ RemapStateAndThicknessProvider<true> {
     kv.ie /= m_state_provider.num_states_preprocess();
     auto dp = Homme::subview(m_tgt_layer_thickness,kv.ie);
     m_state_provider.postprocess_state(kv,istate,m_np1,dp);
+    team.team_barrier();
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -219,6 +236,8 @@ RemapStateAndThicknessProvider<true> {
 struct Remapper {
   virtual ~Remapper() {}
   virtual void run_remap(int np1, int np1_qdp, double dt) = 0;
+  virtual int requested_buffer_size () const = 0;
+  virtual void init_buffers(const FunctorsBuffersManager& fbm) = 0;
 };
 
 // The Remap functor
@@ -421,6 +440,14 @@ struct RemapFunctor : public Remapper {
 
     auto update_dp_policy = Kokkos::RangePolicy<ExecSpace,UpdateThicknessTag>(0,m_state.num_elems()*NP*NP*NUM_LEV);
     Kokkos::parallel_for(update_dp_policy, *this);
+  }
+
+  int requested_buffer_size () const {
+    return m_fields_provider.requested_buffer_size();
+  }
+
+  void init_buffers(const FunctorsBuffersManager& fbm) {
+    m_fields_provider.init_buffers(fbm);
   }
 
 private:

@@ -8,10 +8,11 @@ module bfb_mod
   implicit none
   
   interface
-     subroutine czeroulpn(a_len, a, nbit) bind(c)
+     subroutine czeroulpn(a_len, a, nbit, replace) bind(c)
        use iso_c_binding, only: c_int, c_double
        integer(c_int), value, intent(in) :: a_len, nbit
        real(c_double), intent(inout) :: a(a_len)
+       real(c_double), intent(inout) :: replace(a_len)
      end subroutine czeroulpn
 
      subroutine cbfb_pow(a_len, a, e) bind(c)
