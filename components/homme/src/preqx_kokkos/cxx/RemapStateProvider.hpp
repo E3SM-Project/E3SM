@@ -14,10 +14,10 @@
 #include "utilities/SubviewUtils.hpp"
 
 namespace Homme {
-namespace Remap {
-
 
 class FunctorsBuffersManager;
+
+namespace Remap {
 
 struct RemapStateProvider {
 
