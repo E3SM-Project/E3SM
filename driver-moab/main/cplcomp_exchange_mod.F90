@@ -996,8 +996,8 @@ contains
     integer                  :: mpigrp_old   !  component group pes
     integer, external        :: iMOAB_RegisterFortranApplication, iMOAB_ReceiveMesh, iMOAB_SendMesh
     integer, external        :: iMOAB_WriteMesh, iMOAB_DefineTagStorage, iMOAB_GetMeshInfo
-    integer, external        :: iMOAB_SetIntTagStorage
-    integer                  :: ierr
+    integer, external        :: iMOAB_SetIntTagStorage, iMOAB_FreeSenderBuffers
+    integer                  :: ierr, context_id
     character*32             :: appname, outfile, wopts, tagnameProj
     integer                  :: maxMH, maxMPO, maxMLID ! max pids for moab apps atm, ocn, lnd
     integer                  :: tagtype, numco,  tagindex, partMethod
@@ -1021,6 +1021,8 @@ contains
     mpicom_join = comp%mpicom_cplcompid
 
     partMethod = 0 ! trivial partitioning
+    context_id = -1 ! original sends/receives, so the context is -1
+                    ! needed only to free send buffers
 #ifdef MOAB_HAVE_ZOLTAN
     partMethod = 2 ! it is better to use RCB for atmosphere and ocean too
 #endif
@@ -1058,6 +1060,13 @@ contains
         ierr = iMOAB_WriteMesh(mbaxid, trim(outfile), trim(wopts))
 #endif
       endif
+      !  iMOAB_FreeSenderBuffers needs to be called after receiving
+      if (mhid .ge. 0) then  ! we are on component atm pes
+         ierr = iMOAB_FreeSenderBuffers(mhid, context_id)
+      endif
+      ! now we have the spectral atm on coupler pes, and we want to send some data from
+      ! atm physics mesh to atm spectral on coupler side; compute a par comm graph
+
     endif
     ! ocean
     if (comp%oneletterid == 'o'  .and. maxMPO /= -1) then
@@ -1106,6 +1115,9 @@ contains
 !      write out the mesh file to disk
         ierr = iMOAB_WriteMesh(mboxid, trim(outfile), trim(wopts))
 #endif
+      endif
+      if (mpoid .ge. 0) then  ! we are on component ocn pes
+         ierr = iMOAB_FreeSenderBuffers(mpoid, context_id)
       endif
     endif
 
@@ -1157,6 +1169,9 @@ contains
 !       write out the mesh file to disk
         ierr = iMOAB_WriteMesh(mblxid, trim(outfile), trim(wopts))
 #endif
+      endif
+      if (mlnid .ge. 0) then  ! we are on component land pes
+         ierr = iMOAB_FreeSenderBuffers(mlnid, context_id)
       endif
     endif
 
