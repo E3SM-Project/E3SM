@@ -9816,7 +9816,6 @@ module VegetationDataType
            this%hrv_deadcrootn_to_litter(p)        + &
            this%hrv_deadcrootn_storage_to_litter(p)+ &
            this%hrv_deadcrootn_xfer_to_litter(p)
-
       if (crop_prog) then
          this%sen_nloss_litter(p) = &
              this%livestemn_to_litter(p)            + &
