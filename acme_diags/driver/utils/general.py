@@ -227,6 +227,34 @@ def mask_by(input_var, maskvar, low_limit=None, high_limit=None):
     return var
 
 
+def save_transient_variables_to_netcdf(set_num, variables_dict, label, parameter):
+    """
+    Save the transient variables to nc file.
+    """
+    if parameter.save_netcdf:
+        for (variable_name, variable) in variables_dict.items():
+            # Set cdms preferences - no compression, no shuffling, no complaining
+            cdms2.setNetcdfDeflateFlag(1)
+            # 1-9, min to max - Comes at heavy IO (read/write time cost)
+            cdms2.setNetcdfDeflateLevelFlag(0)
+            cdms2.setNetcdfShuffleFlag(0)
+            cdms2.setCompressionWarnings(0)  # Turn off warning messages
+
+            path = get_output_dir(set_num, parameter)
+            # Save variable
+            try:
+                variable.id = parameter.var_id
+            except AttributeError:
+                print('Could not save variable.id for {}'.format(variable_name))
+            file_name = '{}_{}_{}.nc'.format(parameter.output_file, variable_name, label)
+            test_pth = os.path.join(path, file_name)
+            with cdms2.open(test_pth, 'w+') as file_test:
+                try:
+                    file_test.write(variable)
+                except AttributeError:
+                    print('Could not write variable {}'.format(variable_name))
+
+
 def save_ncfiles(set_num, test, ref, diff, parameter):
     """
     Saves the test, reference, and difference

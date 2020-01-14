@@ -9,6 +9,7 @@ regions_specs = {
     '90S50S': {'domain': cdutil.region.domain(latitude=(-90., -50, 'ccb'))},
     '50S20S': {'domain': cdutil.region.domain(latitude=(-50., -20, 'ccb'))},
     '20S20N': {'domain': cdutil.region.domain(latitude=(-20., 20, 'ccb'))},
+    '5S5N': {'domain': cdutil.region.domain(latitude=(-5., 5, 'ccb'))},
     '20N50N': {'domain': cdutil.region.domain(latitude=(20., 50, 'ccb'))},
     '50N90N': {'domain': cdutil.region.domain(latitude=(50., 90, 'ccb'))},
     '60S90N': {'domain': cdutil.region.domain(latitude=(-60., 90, 'ccb'))},

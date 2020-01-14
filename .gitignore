@@ -99,4 +99,4 @@ ENV/
 *~
 
 # NetCDF files
-*.nc
+#*.nc

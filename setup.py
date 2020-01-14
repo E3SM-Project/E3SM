@@ -35,6 +35,7 @@ cosp_histogram_files = get_all_files_in_dir('acme_diags/driver/default_diags', '
 cosp_histogram_files += get_all_files_in_dir('acme_diags/driver/default_diags/legacy_diags', 'cosp_histogram*')
 
 area_mean_time_series = get_all_files_in_dir('acme_diags/driver/default_diags', 'area_mean_time_series*')
+qbo = get_all_files_in_dir('acme_diags/driver/default_diags', 'qbo*')
 
 enso_diags_files = get_all_files_in_dir('acme_diags/driver/default_diags', 'enso_*')
 
@@ -70,7 +71,10 @@ data_files = [
      ),
     (os.path.join(INSTALL_PATH, 'enso_diags'),
      enso_diags_files
-    ),
+     ),
+    (os.path.join(INSTALL_PATH, 'qbo'),
+     qbo
+     ),
     (INSTALL_PATH,
      ['acme_diags/driver/acme_ne30_ocean_land_mask.nc',
       'misc/e3sm_logo.png'
