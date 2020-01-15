@@ -582,11 +582,13 @@ module seaice_core_interface
 
      logical, pointer :: &
           config_use_forcing, &
-          config_testing_system_test
+          config_testing_system_test, &
+          config_use_prescribed_ice
 
      logical, pointer :: &
           pkgForcingActive, &
-          pkgTestingSystemTestActive
+          pkgTestingSystemTestActive, &
+          pkgPrescribedActive
 
      ierr = 0
 
@@ -613,6 +615,19 @@ module seaice_core_interface
      if (config_testing_system_test) then
 
         pkgTestingSystemTestActive = .true.
+
+     endif
+
+     ! pkgPrescribed
+
+     call MPAS_pool_get_config(configPool, "config_use_prescribed_ice", config_use_prescribed_ice)
+
+     call MPAS_pool_get_package(packagePool, "pkgPrescribedActive", pkgPrescribedActive)
+
+     ! see if we are testing the testing system
+     if (config_use_prescribed_ice) then
+
+        pkgPrescribedActive = .true.
 
      endif
 

@@ -58,6 +58,8 @@ contains
     use seaice_forcing, only: seaice_forcing_init, seaice_reset_coupler_fluxes
     use seaice_diagnostics, only: &
          seaice_set_testing_system_test_arrays
+    use seaice_prescribed, only: &
+         seaice_init_prescribed_ice
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -78,6 +80,9 @@ contains
 
     ! initialize junk values
     call init_junk_values(domain)
+
+    ! initialize prescribed ice
+    call seaice_init_prescribed_ice(domain)
 
     ! initialize landice mask if needed for testing
     call init_test_ice_shelf_mask(domain)

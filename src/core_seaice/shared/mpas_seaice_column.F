@@ -1093,7 +1093,8 @@ contains
          config_dt
 
     logical, pointer :: &
-         config_use_aerosols
+         config_use_aerosols, &
+         config_use_prescribed_ice
 
     ! dimensions
     integer, pointer :: &
@@ -1280,6 +1281,7 @@ contains
 
        call MPAS_pool_get_config(block % configs, "config_dt", config_dt)
        call MPAS_pool_get_config(block % configs, "config_use_aerosols", config_use_aerosols)
+       call MPAS_pool_get_config(block % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
 
        call MPAS_pool_get_dimension(mesh, "nCellsSolve", nCellsSolve)
        call MPAS_pool_get_dimension(mesh, "nCategories", nCategories)
@@ -1607,7 +1609,8 @@ contains
                freezeOnset(iCell), &
                dayOfYear, &
                abortFlag, &
-               abortMessage)
+               abortMessage, &
+               config_use_prescribed_ice)
           call colpkg_get_warnings(warnings)
           call column_write_warnings(warnings, abortFlag)
 

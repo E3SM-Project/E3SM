@@ -32,7 +32,7 @@ module seaice_forcing
        post_atmospheric_forcing,   &
        post_oceanic_coupling
 
-  type (MPAS_forcing_group_type), pointer :: seaiceForcingGroups
+  type (MPAS_forcing_group_type), pointer, public :: seaiceForcingGroups
 
   ! forcing parameters
   real (kind=RKIND), parameter :: &
@@ -2071,11 +2071,13 @@ contains
     type(domain_type) :: domain
 
     logical, pointer :: &
-         config_use_forcing
+         config_use_forcing, &
+         config_use_prescribed_ice
 
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
+    call MPAS_pool_get_config(domain % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
 
-    if (config_use_forcing) then
+    if (config_use_forcing .or. config_use_prescribed_ice) then
 
        call MPAS_forcing_write_restart_times(seaiceForcingGroups)
 
