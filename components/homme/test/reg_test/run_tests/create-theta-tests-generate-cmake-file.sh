@@ -9,6 +9,7 @@ sed -e s/BBNAME/${name}/ \
     -e s/BBTOM/${hvst}/  \
     -e s/BBRSPLIT/${rsplit}/  \
     -e s/BBQSIZE/${qsize}/  \
+    -e s/BBQSPLIT/${qsplit}/  \
     -e s/BBNTOP/${nutop}/  \
     -e s/BBNDIV/${nudiv}/  \
     -e s/BBHYMODE/${hymode}/  \

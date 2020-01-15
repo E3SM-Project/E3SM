@@ -73,7 +73,7 @@ foreach(jj ${HOMME_THETA_TESTS_WITH_PROFILE_1})
   #qsize:
   list(GET jjlist 6 aa)
   #now get a value from aa
-  string(REGEX MATCH "[0-9]" bb "${aa}")
+  string(REGEX MATCH "[0-9]+" bb "${aa}")
   message("qsize is ${bb}")
   set(AAQSIZE "${bb}")
 
@@ -86,6 +86,16 @@ foreach(jj ${HOMME_THETA_TESTS_WITH_PROFILE_1})
   else()
     message(FATAL_ERROR "only allowed are nutopon/nutopoff")
   endif()
+
+  #marker:
+  list(LENGTH jjlist jjl)
+  if( jjl GREATER 8)
+    list(GET jjlist 8 aa)
+    set(AAMARKER "${aa}")
+  else()
+    set(AAMARKER "")
+  endif()
+  message(" AAMARKER is ${AAMARKER}")
 
 #since we are moving to change nu based on profile IN THETA tests only
 #(cause profiles set NE) we would need to change nudiv based on profile
