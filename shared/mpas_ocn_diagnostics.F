@@ -1859,6 +1859,7 @@ contains
          transportVelocityMeridional, normalGMBolusVelocity, GMBolusVelocityX, GMBolusVelocityY, GMBolusVelocityZ, &
          GMBolusVelocityZonal, GMBolusVelocityMeridional, &
          gmStreamFuncTopOfEdge, GMStreamFuncX, GMStreamFuncY, GMStreamFuncZ, GMStreamFuncZonal, GMStreamFuncMeridional
+      real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
 
       call mpas_timer_start('reconstruct gm vecs')
 
@@ -1883,7 +1884,12 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncZonal', GMStreamFuncZonal)
       call mpas_pool_get_array(diagnosticsPool, 'GMStreamFuncMeridional', GMStreamFuncMeridional)
 
-      call mpas_reconstruct(meshPool, normalTransportVelocity,          &
+      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
+      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
+
+      ! mrp temporary change to see slope
+      !call mpas_reconstruct(meshPool, normalTransportVelocity,          &
+      call mpas_reconstruct(meshPool, slopeTriadUp(:,1,:),          &
                        transportVelocityX,            &
                        transportVelocityY,            &
                        transportVelocityZ,            &
@@ -1891,7 +1897,9 @@ contains
                        transportVelocityMeridional    &
                       )
 
-      call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
+      ! mrp temporary change to see slope
+      !call mpas_reconstruct(meshPool, normalGMBolusVelocity,          &
+      call mpas_reconstruct(meshPool, slopeTriadUp(:,2,:),          &
                        GMBolusVelocityX,            &
                        GMBolusVelocityY,            &
                        GMBolusVelocityZ,            &
@@ -1899,7 +1907,9 @@ contains
                        GMBolusVelocityMeridional    &
                       )
 
-      call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &
+      ! mrp temporary change to see slope
+      !call mpas_reconstruct(meshPool, gmStreamFuncTopOfEdge,          &
+      call mpas_reconstruct(meshPool, slopeTriadUp(:,1,:),          &
                       GMStreamFuncX,            &
                       GMStreamFuncY,            &
                       GMStreamFuncZ,            &

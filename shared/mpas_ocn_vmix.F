@@ -774,7 +774,7 @@ contains
                           tracerGroupSurfaceFlux)
                endif
 
-! mrp TEMP               
+! MRP TEMP               
 !if ( trim(groupItr % memberName) .eq. 'debugTracers' ) then ! mrp for testing only
                call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
                         vertNonLocalFlux, tracerGroupSurfaceFlux,  &

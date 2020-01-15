@@ -866,7 +866,7 @@ contains
                !
                ! tracer tendency: del2 horizontal tracer diffusion, div(h \kappa_2 \nabla \phi)
                !
-! mrp TEMP               
+! MRP TEMP               
 !if ( trim(groupItr % memberName) .eq. 'debugTracers' ) then ! mrp for testing only
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracerGroup, &
                                          RediKappa, slopeTriadUp, slopeTriadDown, &
