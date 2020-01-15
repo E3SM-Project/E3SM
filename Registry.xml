@@ -399,13 +399,21 @@
 					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
 					possible_values="'constant', 'data', 'match_GM'"
 		/>
-		<nml_option name="config_Redi_surface_taper_layers" type="integer" default_value="10" units="non-dimensional"
-					description="Number of layers below boundary layer depth where surface tapering ends."
-					possible_values="Any positive real value, typically between 1 and 2."
+		<nml_option name="config_Redi_surface_taper_layers" type="integer" default_value="3" units="non-dimensional"
+					description="Number of layers below surface over which Redi coefficient is tapered."
+					possible_values="Integer between 1 and nVertLevels. Use 1 for no tapering, and Redi will be 0 at k=1 and full at k=2."
 		/>
-		<nml_option name="config_Redi_bottom_taper_height" type="real" default_value="200.0" units="m"
-					description="Height above bottom of water column where bottom tapering ends."
-					possible_values="Any positive real value, typically between 100 and 500 m."
+		<nml_option name="config_Redi_bottom_taper_layers" type="integer" default_value="3" units="non-dimensional"
+					description="Number of layers above bottom over which Redi coefficient is tapered."
+					possible_values="Integer between 1 and nVertLevels. Use 1 for no tapering, and Redi will be 0 at bottom and full one layer up."
+		/>
+		<nml_option name="config_Redi_zero_in_boundary_layer" type="logical" default_value=".true." units="unitless"
+					description="If true, Redi kappa is set to zero above the boundary layer depth"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_BLD_taper_layers" type="integer" default_value="3" units="non-dimensional"
+					description="Number of layers below boundary layer depth, over which Redi coefficient is tapered." 
+					possible_values="Integer between 1 and nVertLevels. Use 1 for no tapering."
 		/>
 	</nml_record>
 	<nml_record name="GM_eddy_parameterization" mode="forward">
@@ -430,10 +438,6 @@
 		/>
 	</nml_record>
 	<nml_record name="mesoscale_eddy_parameterizations" mode="forward">
-		<nml_option name="config_mesoscale_eddy_isopycnal_slope_limit" type="real" default_value="0.01" units="non-dimensional"
-					description="Maximum value of isopycnal slope allowed for Redi and GM schemes. Slopes greater than this value (positive or negative) are capped at this value."
-					possible_values="Positive real numbers"
-		/>
 		<nml_option name="config_eddying_resolution_taper" type="character" default_value="ramp" units="unitless"
 					description="Control how the Redi and GM Bolus $\kappa$ value varies as a function of horizontal resolution"
 					possible_values="'none' and 'ramp'"
@@ -445,6 +449,10 @@
 		<nml_option name="config_eddying_resolution_ramp_max" type="real" default_value="30e3" units="m"
 					description="Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
 					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_mesoscale_eddy_isopycnal_slope_limit" type="real" default_value="0.01" units="non-dimensional"
+					description="Maximum value of isopycnal slope allowed for Redi and GM schemes. Slopes greater than this value (positive or negative) are capped at this value."
+					possible_values="Positive real numbers"
 		/>
 	</nml_record>
 	<nml_record name="hmix_del2_tensor" mode="forward">
@@ -1682,6 +1690,7 @@
 			<var name="xtime"/>
 			<var name="simulationStartTime"/>
 			<var name="boundaryLayerDepth"/>
+			<var name="indexBoundaryLayerDepth"/>
 			<var name="landIcePressure"/>
 			<var name="landIceDraft"/>
 			<var name="landIceFraction"/>

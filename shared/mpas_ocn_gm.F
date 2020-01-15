@@ -115,9 +115,9 @@ contains
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp, stmp, maxSlopeK33
       real(kind=RKIND)                 :: bottomAv, sumN2, countN2, maxN, kappaSum, ltSum
       real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
-      real(kind=RKIND) :: surfaceTaper, bottomTaper, surfaceTaperCoef, bottomTaperCoef
+      real(kind=RKIND) :: surfaceTaperCoef, bottomTaperCoef
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
-      real(kind=RKIND), dimension(:), allocatable :: slopeTaper
+      real(kind=RKIND), dimension(:), allocatable :: slopeTaper, slopeTaperSurface
 
       ! Dimensions
       integer :: nCells, nEdges
@@ -131,6 +131,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       integer, pointer :: indexTemperature, indexSalinity
       integer :: timeLevel
+      integer :: iBLD
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -389,9 +390,16 @@ contains
       allocate(dSdzTop(nVertLevels+1))
       allocate(k33Norm(nVertLevels+1))
       allocate(slopeTaper(nVertLevels))
-      slopeTaper(1) = 0.0_RKIND
+      allocate(slopeTaperSurface(nVertLevels))
       ! Prepare tapering for this cell. This is the slope of the bottom taper line.
-      bottomTaperCoef = 1.0_RKIND/config_Redi_bottom_taper_height
+      surfaceTaperCoef = 1.0_RKIND/config_Redi_surface_taper_layers
+      bottomTaperCoef = 1.0_RKIND/config_Redi_bottom_taper_layers
+      slopeTaperSurface(:) = 1.0_RKIND
+      slopeTaperSurface(1) = 0.0_RKIND
+      do k = 2, config_Redi_surface_taper_layers
+          slopeTaperSurface(k) = slopeTaperSurface(k)*(k-1)*surfaceTaperCoef
+      end do
+
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          ! prep dz, dTdz and dSdz for this column
@@ -412,37 +420,30 @@ contains
          dTdzTop(maxLevelCell(iCell)+1) = -1e34_RKIND
          dSdzTop(maxLevelCell(iCell)+1) = -1e34_RKIND
 
-         ! Prepare tapering for this cell. This is the slope of the surface taper line.
-         k = int(indexBoundaryLayerDepth(iCell)) + config_Redi_surface_taper_layers
-         surfaceTaperCoef = 1.0_RKIND/( zMid(k,iCell) - zMid(1,iCell) )
-         do k = 2, maxLevelCell(iCell) - 1
-            ! Surface taper function: linear fit between 0 at surface and 1 at boundary layer depth.
-            surfaceTaper = surfaceTaperCoef * zMid(k,iCell) 
-
-            ! Bottom taper function: linear fit between 0 at bottom and 1 at fixed distance above that.
-            bottomTaper = bottomTaperCoef * ( zMid(k,iCell) + bottomDepth(iCell) ) 
-
-            ! Put these together, with 1 in between, like this: /---\
-            ! Here I offset the two taper functions down by one, clip the top at
-            ! zero, then move them back up by one again.
-            slopeTaper(k) = &
-               min( surfaceTaper - 1.0_RKIND, 0.0_RKIND) &
-               + min( bottomTaper - 1.0_RKIND, 0.0_RKIND) &
-               + 1.0_RKIND
-            ! need to cap at lower end with zero, or not necessary?
+         ! Add bottom taper slope for this column.
+         ! Top taper slope is computed before the cell loop, because it is the same
+         ! for all cells.
+         slopeTaper(:) = slopeTaperSurface(:)
+         do k = max(maxLevelCell(iCell) - config_Redi_bottom_taper_layers, 2), maxLevelCell(iCell)
+            slopeTaper(k) = slopeTaper(k) &
+                * (maxLevelCell(iCell)-k)*bottomTaperCoef
          end do
-         slopeTaper(maxLevelCell(iCell)) = 0.0_RKIND
-!!!!!!!!!!!!!!!
-! mrp TEMP set slopeTaper=1 for testing
-!!!!!!!!!!!!!!!
-!slopeTaper=1.0_RKIND
-!!!!!!!!!!!!!!!
-! mrp TEMP set slopeTaper=1 for testing
-!!!!!!!!!!!!!!!
 
-                !print '(a,3i5,10f16.10)', 'var list 1: iCell:',iCell, maxLevelCell(iCell), config_Redi_surface_taper_layers, &
-                ! surfaceTaperCoef, bottomTaperCoef, indexBoundaryLayerDepth(iCell)
-                !print '(a,100f8.2)', 'slopeTaper: ',slopeTaper(1:maxLevelCell(iCell))
+         ! Add taper for boundary layer
+         if (config_Redi_zero_in_boundary_layer) then
+            iBLD = int(indexBoundaryLayerDepth(iCell))
+            do k = 2, iBLD
+               slopeTaper(k) = 0.0_RKIND
+            end do
+            do k = iBLD + 1, &
+                   min(iBLD + config_Redi_BLD_taper_layers, maxLevelCell(iCell))
+               slopeTaper(k) = slopeTaper(k)*(k-iBLD) / config_Redi_BLD_taper_layers
+            end do
+         end if
+!mrp temp
+!print *, 'slopeTaper, maxLevelCell, iBLD',maxLevelCell(iCell), iBLD
+!print '(10f7.3)', slopeTaper(1:maxLevelCell(iCell))
+!mrp temp
 
          k33(1:maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
          k33Norm(1:maxLevelCell(iCell)+1) = epsGM
@@ -475,7 +476,6 @@ contains
                ! Always compute *Up on the top cell and *Down on the bottom
                ! cell, even though they are never used. This avoids an if
                ! statement or separate computation for top and bottom.
-! may need to ensure no divide by zero here.               
                slopeTriadUp(k,iCellSelf,iEdge) = &
                   - drhoDx / &
                   (  drhoDT * dTdzTop(k) &
@@ -484,24 +484,19 @@ contains
                   - drhoDx / &
                   (  drhoDT * dTdzTop(k+1) &
                    + drhoDS * dSdzTop(k+1) )
-!!!!!!!! mrp temp, idealized.
-!slopeTriadUp(k,iCellSelf,iEdge) = dTdx
-!slopeTriadDown(k,iCellSelf,iEdge) = dTdx
-!!!!!!!! temp
 
-               ! Slope can be unbounded in regions of neutral stability, reset
-               ! to the large, but bounded, value. The  value is hardwired to
-               ! 1.0. This is equivalent to a slope of 45 degrees.
-! mrp uncomment later, this is for testing
+               ! Slope can be unbounded in regions of neutral stability.
+               ! Reset slope to maximum slope limit.
                slopeTriadUp(k,iCellSelf,iEdge) = &
                   slopeTaper(k) * &
-                  max( min( slopeTriadUp(k,iCellSelf,iEdge), config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
+                  max( min( slopeTriadUp(k,iCellSelf,iEdge), &
+                  config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
                slopeTriadDown(k,iCellSelf,iEdge) = &
                   slopeTaper(k) * &
-                  max( min( slopeTriadDown(k,iCellSelf,iEdge), config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
+                  max( min( slopeTriadDown(k,iCellSelf,iEdge), &
+                  config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
 
                ! Griffies 1998 eqn 34
-               ! mrp need to add triad averaged coefficient A (Redi diffusion) here.
                k33(k  ,iCell) = k33(k  ,iCell) + areaEdge*dzTop(k  )*slopeTriadUp(k,iCellSelf,iEdge)**2
                k33(k+1,iCell) = k33(k+1,iCell) + areaEdge*dzTop(k+1)*slopeTriadDown(k,iCellSelf,iEdge)**2
                k33Norm(k  ) = k33Norm(k  ) + areaEdge*dzTop(k  )
@@ -541,6 +536,7 @@ endif
       deallocate(dSdzTop)
       deallocate(k33Norm)
       deallocate(slopeTaper)
+      deallocate(slopeTaperSurface)
 
       ! allow disabling of K33 for testing
       if(config_disable_redi_k33) then
@@ -821,6 +817,7 @@ endif
 
       integer :: iEdge
       integer, pointer :: nEdges
+      integer, pointer :: nVertLevels
       real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOncell
 
@@ -832,10 +829,25 @@ endif
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
+
+         if ((config_Redi_surface_taper_layers <= 0).or. &
+             (config_Redi_surface_taper_layers > nVertLevels )) then
+            call mpas_log_write( 'config_Redi_surface_taper_layers must be between 1 and nVertLevels. ', MPAS_LOG_CRIT)
+            err = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         end if
+
+         if ((config_Redi_bottom_taper_layers <= 0).or. &
+             (config_Redi_bottom_taper_layers > nVertLevels )) then
+            call mpas_log_write( 'config_Redi_bottom_taper_layers must be between 1 and nVertLevels. ', MPAS_LOG_CRIT)
+            err = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         end if
 
          if (config_GM_closure == 'constant') then
             !$omp do schedule(runtime)
