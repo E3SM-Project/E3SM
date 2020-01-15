@@ -455,6 +455,10 @@
 		/>
 	</nml_record>
 	<nml_record name="use_sections" in_defaults="true">
+		<nml_option name="config_use_dynamics" type="logical" default_value="true" units="unitless"
+			description="If true calculate dynamics."
+			possible_values="true or .false"
+		/>
 		<nml_option name="config_use_velocity_solver" type="logical" default_value="true" units="unitless"
 			description="If true calculate the sea ice velocity."
 			possible_values="true or .false"
@@ -469,6 +473,10 @@
 		/>
 		<nml_option name="config_use_column_package" type="logical" default_value="true" units="unitless"
 			description="If true perform calculations from the column physics package."
+			possible_values="true or .false"
+		/>
+		<nml_option name="config_use_prescribed_ice" type="logical" default_value="false" units="unitless"
+			description="If true use prescribed ice mode."
 			possible_values="true or .false"
 		/>
 	</nml_record>
@@ -1885,6 +1893,14 @@
 				runtime_format="single_file">
 			<var name="bergFreshwaterFluxData"/>
 		</stream>
+		<stream name="prescribedIceForcing"
+				type="input"
+				filename_template="forcing/ice_coverage.nc"
+				filename_interval="none"
+				input_interval="none"
+				immutable="true">
+			<var name="iceCoverage"/>
+		</stream>
 
 		<!-- Aerosols input -->
 		<stream name="StandardAerosolsInput"
@@ -2181,6 +2197,9 @@
 
 		<!-- forcing -->
 		<package name="pkgForcing" description="On if the framework forcing is being used"/>
+
+		<!-- prescribed -->
+		<package name="pkgPrescribed" description=""/>
 
 	</packages>
 
@@ -3735,6 +3754,11 @@
 		<var name="verticalShortwaveGrid"		type="real"	dimensions="nIceLayersP1"				name_in_code="verticalShortwaveGrid"		packages="pkgColumnBiogeochemistry;pkgColumnPackage"/>
 		<var name="carbonToNitrogenRatioAlgae"		type="real"	dimensions="maxAlgaeType"				name_in_code="carbonToNitrogenRatioAlgae"/>
 		<var name="carbonToNitrogenRatioDON"		type="real"	dimensions="maxDONType"				name_in_code="carbonToNitrogenRatioDON"/>
+	</var_struct>
+
+	<!-- prescribed ice mode -->
+	<var_struct name="prescribed_ice" time_levs="1" packages="pkgPrescribed">
+		<var name="iceCoverage"		type="real"	dimensions="nCells Time"		name_in_code="iceCoverage"/>
 	</var_struct>
 
 	<!-- initial profiles -->
