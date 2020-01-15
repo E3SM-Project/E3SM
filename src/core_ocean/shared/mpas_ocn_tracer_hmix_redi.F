@@ -164,190 +164,198 @@ contains
       nCells = nCellsArray( size(nCellsArray) )
       nEdges = nEdgesArray( size(nEdgesArray) )
 
-         ! mrp this is in original del2. Apparently we don't do halo cells for del2.
-         nCells = nCellsArray(1)
+      ! mrp this is in original del2. Apparently we don't do halo cells for del2.
+      nCells = nCellsArray(1)
 
-         ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
-         ! \kappa_2 \nabla \phi on edge
-         ! mrp performance: merge term 1 into main cell loop later
-         !$omp do schedule(runtime)
-         do iCell = 1, nCells
-            invAreaCell = 1.0_RKIND / areaCell(iCell)
-            do i = 1, nEdgesOnCell(iCell)
-               iEdge = edgesOnCell(i, iCell)
-               cell1 = cellsOnEdge(1,iEdge)
-               cell2 = cellsOnEdge(2,iEdge)
+      ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
+      ! \kappa_2 \nabla \phi on edge
+      ! mrp performance: merge term 1 into main cell loop later
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
 
-               r_tmp = dvEdge(iEdge) / dcEdge(iEdge)
+            r_tmp = dvEdge(iEdge) / dcEdge(iEdge)
 
-               do k = 1, maxLevelEdgeTop(iEdge)
+            do k = 1, maxLevelEdgeTop(iEdge)
 
-                  do iTr = 1, nTracers
-                     ! \kappa_2 \nabla \phi on edge
-                     tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
+               do iTr = 1, nTracers
+                  ! \kappa_2 \nabla \phi on edge
+                  tracer_turb_flux = tracers(iTr, k, cell2) - tracers(iTr, k, cell1)
 
-                     ! div(h \kappa_2 \nabla \phi) at cell center
-                     flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * RediKappa(iCell) * r_tmp
+                  ! div(h \kappa_2 \nabla \phi) at cell center
+                  flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * RediKappa(iCell) * r_tmp
 
-                     tend(iTr,k,iCell) = tend(iTr,k,iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
+                  tend(iTr,k,iCell) = tend(iTr,k,iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
 
-                  end do
                end do
+            end do
 
+         end do
+      end do
+      !$omp end do
+!!!!!!! mrp delete later. Used to print out tendencies on first step.
+!do iTr = 1, nTracers
+!  print '(a,i2,a,2es14.5)', 'tend term1 iTr',iTr,' min/max ',minval(tend(iTr,3,1:nCells))/zMid(3,1),maxval(tend(iTr,3,1:nCells))/zMid(3,1)
+!  print '(10es15.7)', tend(iTr,5,1:nCells )/xCell(1:nCells )
+!end do
+
+      !mrp performance note: can try to reduce halo width later
+      nCells = nCellsArray( size(nCellsArray) )
+      nCellsP1 = nCellsArray( size(nCellsArray) ) + 1
+
+      ! Term 2: div( h S dphi/dz)
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         invAreaCell = 1.0_RKIND / areaCell(iCell)
+
+         do i = 1, nEdgesOnCell(iCell)
+            ! Check if neighboring cell exists
+            if  (cellsOnCell(i,iCell).eq.nCellsP1) cycle
+            iEdge = edgesOnCell(i, iCell)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+
+            coef = edgeSignOnCell(i, iCell) * dvEdge(iEdge) * invAreaCell
+
+            k=1
+            do iTr = 1, nTracers
+
+               ! For top layer, only use triads pointing down:
+               flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
+                  0.5_RKIND * &
+                  (  slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
+                                  / (zMid(k,cell1) - zMid(k+1,cell1)) &
+                   + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
+                                  / (zMid(k,cell2) - zMid(k+1,cell2)) ) 
+
+               ! Add tendency for Term 2: div( h S dphi/dz) at top layer
+               tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
+            end do
+
+            do k = 2, maxLevelEdgeTop(iEdge)-1
+               do iTr = 1, nTracers
+                  ! There are four triads associated with each edge:
+                  flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
+                     0.25_RKIND * &
+                     (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
+                                     / (zMid(k-1,cell1) - zMid(k,cell1)) &
+                      + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
+                                     / (zMid(k-1,cell2) - zMid(k,cell2)) &
+                      + slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
+                                     / (zMid(k,cell1) - zMid(k+1,cell1)) &
+                      + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
+                                     / (zMid(k,cell2) - zMid(k+1,cell2))  ) 
+
+                  ! Add tendency for Term 2: div( h S dphi/dz) at mid layers
+                  tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
+               end do
+            end do
+
+            k=maxLevelEdgeTop(iEdge)
+            do iTr = 1, nTracers
+               ! For bottom layer, only use triads pointing up:
+               flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
+                  0.5_RKIND * &
+                  (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
+                                  / (zMid(k-1,cell1) - zMid(k,cell1)) &
+                   + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
+                                  / (zMid(k-1,cell2) - zMid(k,cell2)) ) 
+
+               ! Add tendency for Term 2: div( h S dphi/dz) at bottom layer
+               tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
             end do
          end do
-         !$omp end do
+      end do
+      !$omp end do
+
 !!!!!!! mrp delete later. Used to print out tendencies on first step.
 !do iTr = 1, nTracers
-!print '(a,i2,a,2es14.5)', 'tend term1 iTr',iTr,' min/max ',minval(tend(iTr,3,1:nCells))/zMid(3,1),maxval(tend(iTr,3,1:nCells))/zMid(3,1)
-!print '(10es15.7)', tend(iTr,5,1:nCells)/zMid(5,:)
+!  print '(a,i2,a,2es14.5)', 'tend term2 iTr',iTr,' min/max ',minval(tend(iTr,3,1:nCells)),maxval(tend(iTr,3,1:nCells))
+!  print '(10es15.7)', tend(iTr,5,1:nCells )/xCell(1:nCells )
 !end do
+!print '(a,10es15.7)', 'RediKappa'
+!print '(10es15.7)', RediKappa(1:nCells)
+!print '(a,10es15.7)', 'slopeTriadUp'
+!print '(10es15.7)', slopeTriadUp(5,1,:)
+!print '(a,10es15.7)', 'slopeTriadDown'
+!print '(10es15.7)', slopeTriadDown(5,1,:)
+      ! Term 3: d/dz ( h S grad phi) 
+      ! note that dz and h cancel, so this is (S grad phi)
 
-            !mrp performance note: can try to reduce halo width later
-            nCells = nCellsArray( size(nCellsArray) )
-            nCellsP1 = nCellsArray( size(nCellsArray) ) + 1
+      allocate(fluxRediZTop(nTracers,nVertLevels+1))
+      allocate(areaSum(nVertLevels+1))
+      !mrp performance note: can try to reduce halo width later
+      !nCells = nCellsArray(1)
+      nCells = nCellsArray( size(nCellsArray) )
 
-            ! Term 2: div( h S dphi/dz)
-            !$omp do schedule(runtime)
-            do iCell = 1, nCells
-               invAreaCell = 1.0_RKIND / areaCell(iCell)
+      !$omp do schedule(runtime)
+      do iCell = 1, nCells
+         areaSum(:) = 1.0e-34_RKIND
+         fluxRediZTop(:,:) = 0.0_RKIND
 
-               do i = 1, nEdgesOnCell(iCell)
-                  ! Check if neighboring cell exists
-                  if  (cellsOnCell(i,iCell).eq.nCellsP1) cycle
-                  iEdge = edgesOnCell(i, iCell)
-                  cell1 = cellsOnEdge(1,iEdge)
-                  cell2 = cellsOnEdge(2,iEdge)
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            areaEdge = dcEdge(iEdge) * dvEdge(iEdge)
+            ! mrp performance note: Replace with a logical array on init later
+            if (cell1==iCell) then
+                iCellSelf = 1
+            elseif (cell2==iCell) then
+                iCellSelf = 2
+            else
+                print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
+            endif
 
-                  coef = edgeSignOnCell(i, iCell) * dvEdge(iEdge) * invAreaCell
+            do k = 1, maxLevelEdgeTop(iEdge)
+               areaSum(k) = areaSum(k) + areaEdge
+               areaSum(k+1) = areaSum(k+1) + areaEdge
 
-                  k=1
-                  do iTr = 1, nTracers
-
-                     ! For top layer, only use triads pointing down:
-                     flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
-                        0.5_RKIND * &
-                        (  slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
-                                        / (zMid(k,cell1) - zMid(k+1,cell1)) &
-                         + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
-                                        / (zMid(k,cell2) - zMid(k+1,cell2)) ) 
-
-                     ! Add tendency for Term 2: div( h S dphi/dz) at top layer
-                     tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
-                  end do
-
-                  do k = 2, maxLevelEdgeTop(iEdge)-1
-                     do iTr = 1, nTracers
-                        ! There are four triads associated with each edge:
-                        flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
-                           0.25_RKIND * &
-                           (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
-                                           / (zMid(k-1,cell1) - zMid(k,cell1)) &
-                            + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
-                                           / (zMid(k-1,cell2) - zMid(k,cell2)) &
-                            + slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
-                                           / (zMid(k,cell1) - zMid(k+1,cell1)) &
-                            + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
-                                           / (zMid(k,cell2) - zMid(k+1,cell2))  ) 
-
-                        ! Add tendency for Term 2: div( h S dphi/dz) at mid layers
-                        tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
-                     end do
-                  end do
-
-                  k=maxLevelEdgeTop(iEdge)
-                  do iTr = 1, nTracers
-                     ! For bottom layer, only use triads pointing up:
-                     flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
-                        0.5_RKIND * &
-                        (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
-                                        / (zMid(k-1,cell1) - zMid(k,cell1)) &
-                         + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
-                                        / (zMid(k-1,cell2) - zMid(k,cell2)) ) 
-
-                     ! Add tendency for Term 2: div( h S dphi/dz) at bottom layer
-                     tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
-                  end do
+               do iTr = 1, nTracers
+                  ! Gradient of tracer at edge.
+                  ! mrp performance note: can substitute areaEdge/dcEdge
+                  ! with dvEdge
+                  dTracerDx = (tracers(iTr,k,cell2) - tracers(iTr,k,cell1)) / dcEdge(iEdge)
+                  fluxRediZTop(iTr,k) = fluxRediZTop(iTr,k) + &
+                     slopeTriadUp(k,iCellSelf,iEdge) * dTracerDx * areaEdge
+                  fluxRediZTop(iTr,k+1) = fluxRediZTop(iTr,k+1) + &
+                     slopeTriadDown(k,iCellSelf,iEdge) * dTracerDx * areaEdge
                end do
             end do
-            !$omp end do
+         end do
 
-!!!!!!! mrp delete later. Used to print out tendencies on first step.
-!do iTr = 1, nTracers
-!print '(a,i2,a,2es14.5)', 'tend term2 iTr',iTr,' min/max ',minval(tend(iTr,3,1:nCells)),maxval(tend(iTr,3,1:nCells))
-!print '(10es15.7)', tend(iTr,5,1:nCells)/xCell(1:nCells)**2
-!end do
-         ! Term 3: d/dz ( h S grad phi) 
-         ! note that dz and h cancel, so this is (S grad phi)
-
-            allocate(fluxRediZTop(nTracers,nVertLevels+1))
-            allocate(areaSum(nVertLevels+1))
-            !mrp performance note: can try to reduce halo width later
-            !nCells = nCellsArray(1)
-            nCells = nCellsArray( size(nCellsArray) )
-
-            !$omp do schedule(runtime)
-            do iCell = 1, nCells
-               areaSum(:) = 1.0e-34_RKIND
-               fluxRediZTop(:,:) = 0.0_RKIND
-
-               do i = 1, nEdgesOnCell(iCell)
-                  iEdge = edgesOnCell(i, iCell)
-                  cell1 = cellsOnEdge(1,iEdge)
-                  cell2 = cellsOnEdge(2,iEdge)
-                  areaEdge = dcEdge(iEdge) * dvEdge(iEdge)
-                  ! mrp performance note: Replace with a logical array on init later
-                  if (cell1==iCell) then
-                      iCellSelf = 1
-                  elseif (cell2==iCell) then
-                      iCellSelf = 2
-                  else
-                      print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
-                  endif
-
-                  do k = 1, maxLevelEdgeTop(iEdge)
-                     areaSum(k) = areaSum(k) + areaEdge
-                     areaSum(k+1) = areaSum(k+1) + areaEdge
-
-                     do iTr = 1, nTracers
-                        ! Gradient of tracer at edge.
-                        ! mrp performance note: can substitute areaEdge/dcEdge
-                        ! with dvEdge
-                        dTracerDx = (tracers(iTr,k,cell2) - tracers(iTr,k,cell1)) / dcEdge(iEdge)
-                        fluxRediZTop(iTr,k) = fluxRediZTop(iTr,k) + &
-                           slopeTriadUp(k,iCellSelf,iEdge) * dTracerDx * areaEdge
-                        fluxRediZTop(iTr,k+1) = fluxRediZTop(iTr,k+1) + &
-                           slopeTriadDown(k,iCellSelf,iEdge) * dTracerDx * areaEdge
-                     end do
-                  end do
-               end do
-
-               ! impose no-flux boundary conditions at top and bottom of column
-               fluxRediZTop(:,1) = 0.0_RKIND
-               fluxRediZTop(:,maxLevelCell(iCell)+1) = 0.0_RKIND
-               do k = 1, maxLevelCell(iCell)
-                  do iTr = 1, nTracers
-                     ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
-                     ! 0.5 in next line is because a dot product on a C-grid
-                     ! requires a factor of 1/2 to average to the cell center.
-                     flux_term3 = RediKappa(iCell) * 0.5_RKIND * &
-                         (fluxRediZTop(iTr,k)/areaSum(k) - fluxRediZTop(iTr,k+1)/areaSum(k+1))
+         ! impose no-flux boundary conditions at top and bottom of column
+         fluxRediZTop(:,1) = 0.0_RKIND
+         fluxRediZTop(:,maxLevelCell(iCell)+1) = 0.0_RKIND
+         do k = 1, maxLevelCell(iCell)
+            do iTr = 1, nTracers
+               ! Add tendency for Term 3: d/dz ( h S grad phi) = ( S grad phi) fluxes
+               ! 2.0 in next line is because a dot product on a C-grid
+               ! requires a factor of 1/2 to average to the cell center.
+               flux_term3 = RediKappa(iCell) * 2.0_RKIND * &
+                   (fluxRediZTop(iTr,k)/areaSum(k) - fluxRediZTop(iTr,k+1)/areaSum(k+1))
 !mrp temp
 !if (abs(flux_term3)>1.0e4) then
 !    print *, 'BIG iCell, k,nmaxLevelCell(iCell), fluxRediZTop',iCell,    k,maxLevelCell(iCell)
 !    print *, 'BIG flux, area,f,a',   fluxRediZTop(iTr,k),areaSum(k), fluxRediZTop(iTr,k+1),areaSum(k+1)
 !endif
-                     !MRPtend(iTr,k,iCell) = tend(iTr,k,iCell) + flux_term3
-                  end do
-               end do
+               tend(iTr,k,iCell) = tend(iTr,k,iCell) + flux_term3
             end do
-            !$omp end do
-            deallocate(fluxRediZTop)
-            deallocate(areaSum)
+         end do
+      end do
+      !$omp end do
+      deallocate(fluxRediZTop)
+      deallocate(areaSum)
 !!!!!!! mrp delete later. Used to print out tendencies on first step.
 !do iTr = 1, nTracers
-!print '(a,i2,a,2es14.5)', 'tend term3 iTr',iTr,' min/max ',minval(tend(iTr,3,1:nCells)),maxval(tend(iTr,3,1:nCells))
-!print '(10es15.7)', tend(iTr,5,1:nCells)/xCell(1:nCells)**2
+!  print '(a,i2,a,2es14.5)', 'tend term3 iTr',iTr,' min/max ',minval(tend(iTr,3,1:nCells)),maxval(tend(iTr,3,1:nCells))
+!  !print '(10es15.7)', tend(iTr,5,1:nCells )/xCell(1:nCells )
+!  print *, 'tend at end of Redi'
+!  print '(10es15.7)', tend(iTr,5,1:nCells )
 !end do
 
       call mpas_timer_stop("tracer redi")

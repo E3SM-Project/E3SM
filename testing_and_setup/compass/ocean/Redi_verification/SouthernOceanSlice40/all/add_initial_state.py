@@ -8,6 +8,9 @@ import numpy as np
 import netCDF4 as nc
 from netCDF4 import Dataset
 
+Ly = 3000.0e3
+Lz = 4800.0
+
 def main(): 
 # {{{
 
@@ -24,12 +27,10 @@ def main():
 # }}}
 
 def vertical_init(ds):
+    thicknessAllLayers = 100.0 # [m] for evenly spaced layers
+    nVertLevels = int(Lz/thicknessAllLayers)
+    minLayers = 3
 # {{{
-
-    # config settings
-    nVertLevels = 10
-    thicknessAllLayers = 2 # [m] for evenly spaced layers
-
     # create new variables # {{{
     ds.createDimension('nVertLevels', nVertLevels)
     refLayerThickness = ds.createVariable('refLayerThickness', np.float64, ('nVertLevels',))
@@ -41,6 +42,12 @@ def vertical_init(ds):
     layerThickness = ds.createVariable('layerThickness', np.float64, ('Time','nCells','nVertLevels',))
     restingThickness = ds.createVariable('restingThickness', np.float64, ('nCells','nVertLevels',))
     vertCoordMovementWeights = ds.createVariable('vertCoordMovementWeights', np.float64, ('nVertLevels',))
+    # }}}
+
+    # obtain dimensions and mesh variables # {{{
+    nCells = len(ds.dimensions['nCells'])
+    xCell = ds.variables['xCell']
+    yCell = ds.variables['yCell']
     # }}}
 
     # evenly spaced vertical grid
@@ -55,46 +62,62 @@ def vertical_init(ds):
     vertCoordMovementWeights[:] = 1.0
 
     # flat bottom, no bathymetry
+    #maxLevelCell[:] = nVertLevels
+    #bottomDepth[:] = refBottomDepth[nVertLevels-1]
+    #bottomDepthObserved[:] = refBottomDepth[nVertLevels-1]
+    #for k in range(nVertLevels):
+    #    layerThickness[0,:,k] = refLayerThickness[k]
+    #    restingThickness[:,k] = refLayerThickness[k]
+
+    # Define bottom depth: parabola
+    for iCell in range(0,nCells):
+        x = xCell[iCell]
+        y = yCell[iCell]
+        bottomDepthObserved[iCell] \
+            = 1.1*Lz*( 1.0 - ((y - Ly/2)/(Ly/2))**2 ) - 100
+
+    # full cells, not partial
+    # initialize to very bottom:
     maxLevelCell[:] = nVertLevels
     bottomDepth[:] = refBottomDepth[nVertLevels-1]
-    bottomDepthObserved[:] = refBottomDepth[nVertLevels-1]
     for k in range(nVertLevels):
         layerThickness[0,:,k] = refLayerThickness[k]
         restingThickness[:,k] = refLayerThickness[k]
+    for iCell in range(0,nCells):
+        x = xCell[iCell]
+        y = yCell[iCell]
+        for k in range(nVertLevels):
+            if bottomDepthObserved[iCell] < refBottomDepth[k]:
+                maxLevelCell[iCell] = max(k,minLayers)
+                bottomDepth[iCell] = refBottomDepth[maxLevelCell[iCell]-1]
+                break
 # }}}
-# define the passive debug tracer
-def PDef(x,y,z):
-    return P0*(x**px * z**pz)
-    #return P0*(y**px * z**pz)
-
-# define the passive debug tracer
-def TDef(x,y,z):
-    return Tx*x**pTx + Tz*z**pTz
-    #return Tx*y**pTx + Tz*z**pTz
 
 def tracer_init(ds):
+    slope = 0.001
+    # temperature: linear, match slope
+    Tmin = 5.0
+    Tx = 0.0
+    Ty = 15.0/Ly
+    Tz = Ty/slope
+
+    # salinity: linear, match slope
+    Smin = 15.0
+    Sx = 0.0
+    Sy = 15.0/Ly
+    Sz = Sy/slope
+
+    # tracer1: Gaussian
+    y0 = Ly/2
+    yr = Ly/4
+    z0 = -Lz/3
+    zr =  Lz/4
 # {{{
-
-    px=2;py=0;pz=2;pTx=2;pTy=0;pTz=2;
-    # config settings
-    h = 2 # thickness of all layers
-    Kappa = 600.0 # kappa for Redi
-    # tracer1
-    P0 = 10000
-
-    # temperature
-    T0 = 20
-    Tx = 5/1000
-    Ty = 0
-    Tz = 10.0/1000
-
-    S0 = 35
 
     # create new variables # {{{
     tracer1 = ds.createVariable('tracer1', np.float64, ('Time','nCells','nVertLevels',))
-    term1 = ds.createVariable('term1', np.float64, ('Time','nCells','nVertLevels',))
-    term2 = ds.createVariable('term2', np.float64, ('Time','nCells','nVertLevels',))
-    term3 = ds.createVariable('term3', np.float64, ('Time','nCells','nVertLevels',))
+    tracer2 = ds.createVariable('tracer2', np.float64, ('Time','nCells','nVertLevels',))
+    tracer3 = ds.createVariable('tracer3', np.float64, ('Time','nCells','nVertLevels',))
     temperature = ds.createVariable('temperature', np.float64, ('Time','nCells','nVertLevels',))
     salinity = ds.createVariable('salinity', np.float64, ('Time','nCells','nVertLevels',))
     layerThickness = ds.variables['layerThickness']
@@ -105,39 +128,36 @@ def tracer_init(ds):
     nCells = len(ds.dimensions['nCells'])
     xCell = ds.variables['xCell']
     yCell = ds.variables['yCell']
-    # For periodic domains, the max cell coordinate is also the domain width
-    Lx = max(xCell) 
-    Ly = max(yCell)
     refZMid = ds.variables['refZMid']
     refBottomDepth = ds.variables['refBottomDepth']
-    H = max(refBottomDepth)
     # }}}
-
     for iCell in range(0,nCells):
         x = xCell[iCell]
         y = yCell[iCell]
         for k in range(0,nVertLevels):
             z = refZMid[k]
 
-            tracer1[0,iCell,k] \
-                = P0*(x**px * y**py * z**pz)
-                #= P0*(y**px * z**pz)
             temperature[0,iCell,k] \
-                = Tx*x**pTx + Ty*y**pTy + Tz*z**pTz
-                #= Tx*y**pTx  + Tz*z**pTz
+                = Tx*x + Ty*y + Tz*z
+            salinity[0,iCell,k] \
+                = Sx*x + Sy*y + Sz*z
+            tracer1[0,iCell,k] \
+                = 1.0 + np.exp( \
+                    -((y-y0)/yr)**2 \
+                    -((z-z0)/zr)**2 )
+            tracer2[0,iCell,k] = 1.0
+            tracer3[0,iCell,k] = 1.0
 
-            salinity[0,iCell,k] = S0
-            #2*P0*z     6*P0*Tx*x**2/Tz      4*P0*Tx*x**2/Tz
-            term1[0,iCell,k] = h*Kappa* \
-                0
-            term2[0,iCell,k] = h*Kappa* \
-                6*P0*Tx/Tz
-            term3[0,iCell,k] = h*Kappa* \
-                2*P0*Tx/Tz
-    print('term1  min/max: %12.5E %12.5E'%(np.min(term1[0,:,:]),np.max(term1[0,:,:])))
-    print('term2  min/max: %12.5E %12.5E'%(np.min(term2[0,:,:]),np.max(term2[0,:,:])))
-    print('term3  min/max: %12.5E %12.5E'%(np.min(term3[0,:,:]),np.max(term3[0,:,:])))
-    print('sum123 min/max: %12.5E %12.5E'%(np.min(term1[0,:,:]+term2[0,:,:]+term3[0,:,:]),np.max(term1[0,:,:]+term2[0,:,:]+term3[0,:,:])))
+        tracer2[0,iCell,10:20] = int(2+np.cos(y*4*2*np.pi/Ly))
+
+        if ((y>Ly/4) & (y<Ly/2)) | (y>3*Ly/4):
+            tracer3[0,iCell,0:20] = 2.0
+
+    #Normalize T&S:
+    temperature[:] += Tmin - np.min(temperature[:])
+    salinity[:] += Smin - np.min(salinity[:])
+    print('Temperature ranges from ',np.min(temperature[:]),' to ',np.max(temperature[:]))
+    print('Salinity ranges from ',np.min(salinity[:]),' to ',np.max(salinity[:]))
 # }}}
 
 def velocity_init(ds):

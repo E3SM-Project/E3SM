@@ -7,11 +7,11 @@ import numpy.ma as ma
 
 varNames = ['temperature','salinity','tracer1','tracer2','tracer3']
 nRow = len(varNames)
-iTime=[0,11]
+iTime=[0,6,12]
 nCol = len(iTime)
 
 fig = plt.gcf()
-fig.set_size_inches(8.0,10.0)
+fig.set_size_inches(12.0,10.0)
 
 #ncfileMesh = Dataset('../base_mesh/planar_hex_mesh.nc','r')
 #nx=ncfileMesh.getncattr('nx')
@@ -32,7 +32,7 @@ xtime = ncfile.variables['xtime']
 #Only Redi diffusion is on. All other tendencies are off. Nonlinear EOS.
 #slope: 0.01
 
-titleTxt = [', initial',', 1 year']
+titleTxt = [', initial',', 6 months',', 1 year']
 for iRow in range(nRow):
     var = ncfile.variables[varNames[iRow]]
     for iCol in range(nCol):

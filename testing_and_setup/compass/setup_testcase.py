@@ -1242,6 +1242,74 @@ def add_links(config_file, configs):  # {{{
             os.chdir(old_cwd)
             del source
             del dest
+        # Process an <copy_file> tag
+        if child.tag == 'copy_file':
+            try:
+                source = child.attrib['source']
+            except KeyError:
+                print(" copy_file tag missing a 'source' attribute.")
+                print(" Exiting...")
+                sys.exit(1)
+
+            try:
+                source_path_name = child.attrib['source_path']
+
+                keyword_path = False
+                if source_path_name.find('work_') >= 0:
+                    keyword_path = True
+                elif source_path_name.find('script_') >= 0:
+                    keyword_path = True
+
+                if not keyword_path:
+                    if configs.has_option('paths', source_path_name):
+                        source_path = configs.get('paths', source_path_name)
+                    else:
+                        source_path = 'NONE'
+
+                    if source_path == 'NONE':
+                        if configs.has_option('script_paths',
+                                              source_path_name):
+                            source_path = configs.get('script_paths',
+                                                      source_path_name)
+                        else:
+                            source_path = 'NONE'
+
+                    if source_path == 'NONE':
+                        print("ERROR: source_path on <copy_file> tag is '{}' "
+                              "which is not defined".format(source_path_name))
+                        print("Exiting...")
+                        sys.exit(1)
+
+                else:
+                    source_arr = source_path_name.split('_')
+                    base_name = source_arr[0]
+                    subname = '{}_{}'.format(source_arr[1], source_arr[2])
+
+                    if base_name == 'work':
+                        file_base_path = 'work_dir'
+                    elif base_name == 'script':
+                        file_base_path = 'script_path'
+
+                    if subname in {'core_dir', 'configuration_dir',
+                                   'resolution_dir', 'test_dir', 'case_dir'}:
+                        source_path = '{}/{}'.format(
+                                configs.get('script_paths', file_base_path),
+                                configs.get('script_paths', subname))
+
+                source_file = '{}/{}'.format(source_path, source)
+            except KeyError:
+                source_file = '{}'.format(source)
+
+            dest = child.attrib['dest']
+            old_cwd = os.getcwd()
+            os.chdir(base_path)
+
+            subprocess.check_call(['cp', '-n', '{}'.format(source_file),
+                                   '{}'.format(dest)],
+                                  stdout=dev_null, stderr=dev_null)
+            os.chdir(old_cwd)
+            del source
+            del dest
         # Process an <add_executable> tag
         elif child.tag == 'add_executable':
             source_attr = child.attrib['source']

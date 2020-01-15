@@ -17,6 +17,7 @@
 		<option name="config_use_bulk_wind_stress">.true.</option>
 		<option name="config_use_bulk_thickness_flux">.true.</option>
 		<option name="config_use_activeTracers_surface_restoring">.true.</option>
+		<option name="config_use_Redi">.true.</option>
 		<option name="config_use_GM">.true.</option>
 	</namelist>
 </template>
