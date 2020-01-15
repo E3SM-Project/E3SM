@@ -317,7 +317,8 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
                     full_path = case.get_resolved_value(full_path)
                     if input_data_root in full_path:
                         rel_path  = full_path.replace(input_data_root, "")
-                    elif input_ic_root not in input_data_root and input_ic_root in full_path:
+                    elif input_ic_root and \
+                         (input_ic_root not in input_data_root and input_ic_root in full_path):
                         rel_path  = full_path.replace(input_ic_root, "prod")
                         use_ic_path = True
 
