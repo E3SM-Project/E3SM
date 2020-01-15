@@ -829,8 +829,8 @@ module ocn_time_integration_si
                endif
    
                do iCell = 1, nCells
-                          sshCur(iCell) = sshNew(iCell)
-                  sshSubcycleCur(iCell) = sshNew(iCell)
+                          sshCur(iCell) = 0.5*sshNew(iCell) + 0.5*sshCur(iCell)
+                  sshSubcycleCur(iCell) = sshCur(iCell)
                end do
 
                do iEdge = 1, nEdges
@@ -2793,6 +2793,7 @@ module ocn_time_integration_si
                                                             + 0.5*normalBarotropicVelocityCur(iEdge)
             end do ! iEdge
 
+
             do iEdge = 1, nEdges
                cell1 = cellsOnEdge(1,iEdge)
                cell2 = cellsOnEdge(2,iEdge)
@@ -2809,6 +2810,11 @@ module ocn_time_integration_si
                normalBarotropicVelocityNew(iEdge) = normalBarotropicVelocitySubcycleCur(iEdge)
             end do ! iEdge
 
+
+            do iCell = 1,nCells
+               sshNew(iCell) = sshSubcycleCur(iCell) 
+            end do
+
             ! #Iteration  check
 !           if ( split_implicit_step == 2 ) then
 !           call mpas_log_write( 'Iteration $i', intArgs=(/ iter /) )
@@ -2822,6 +2828,7 @@ module ocn_time_integration_si
          call mpas_dmpar_exch_group_create(domain, finalBtrGroupName)
          call mpas_dmpar_exch_group_add_field(domain, finalBtrGroupName, 'barotropicThicknessFlux')
          call mpas_dmpar_exch_group_add_field(domain, finalBtrGroupName, 'normalBarotropicVelocity',2)
+         call mpas_dmpar_exch_group_add_field(domain, finalBtrGroupName, 'ssh',2)
          call mpas_threading_barrier()
          call mpas_dmpar_exch_group_full_halo_exch(domain, finalBtrGroupName)
          call mpas_dmpar_exch_group_destroy(domain, finalBtrGroupName)
