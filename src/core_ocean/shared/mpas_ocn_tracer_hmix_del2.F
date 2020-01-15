@@ -28,6 +28,7 @@ module ocn_tracer_hmix_del2
    use mpas_threading
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -209,13 +210,7 @@ contains
 
       integer, intent(out) :: err !< Output: error flag
 
-      logical, pointer :: config_use_tracer_del2
-      real (kind=RKIND), pointer :: config_tracer_del2
-
       err = 0
-
-      call mpas_pool_get_config(ocnConfigs, 'config_use_tracer_del2', config_use_tracer_del2)
-      call mpas_pool_get_config(ocnConfigs, 'config_tracer_del2', config_tracer_del2)
 
       del2on = .false.
 
