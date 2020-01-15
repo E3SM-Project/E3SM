@@ -3,7 +3,7 @@ Base class for CIME system tests
 """
 from CIME.XML.standard_module_setup import *
 from CIME.XML.env_run import EnvRun
-from CIME.utils import append_testlog, get_model, safe_copy, get_timestamp, CIMEError, run_and_log_case_status
+from CIME.utils import append_testlog, get_model, safe_copy, get_timestamp, CIMEError
 from CIME.test_status import *
 from CIME.hist_utils import *
 from CIME.provenance import save_test_time
@@ -528,9 +528,9 @@ class FakeTest(SystemTestsCommon):
     """
     def _set_script(self, script):
         self._script = script # pylint: disable=attribute-defined-outside-init
-    
-    def _fake_case_build_impl(self, sharedlib_only=False, model_only=False):
-          if (not sharedlib_only):
+
+    def build_phase(self, sharedlib_only=False, model_only=False):
+        if (not sharedlib_only):
             exeroot = self._case.get_value("EXEROOT")
             cime_model = self._case.get_value("MODEL")
             modelexe = os.path.join(exeroot, "{}.exe".format(cime_model))
@@ -542,15 +542,6 @@ class FakeTest(SystemTestsCommon):
             os.chmod(modelexe, 0o755)
 
             build.post_build(self._case, [], build_complete=True)
-   
-    def build_phase(self, sharedlib_only=False, model_only=False):
-        functor = lambda: self._fake_case_build_impl(sharedlib_only=False, model_only=False)
-        cb = "case.build"
-        if (sharedlib_only == True):
-            cb = cb + " (SHAREDLIB_BUILD)"
-        if (model_only == True):
-            cb = cb + " (MODEL_BUILD)"
-        return run_and_log_case_status(functor, cb, caseroot=self._case.get_value("CASEROOT"))
 
     def run_indv(self, suffix="base", st_archive=False):
         mpilib = self._case.get_value("MPILIB")
@@ -656,7 +647,7 @@ class TESTRUNSTARCFAIL(TESTRUNPASS):
 
 class TESTBUILDFAIL(TESTRUNPASS):
 
-    def _fake_case_build_impl(self, sharedlib_only=False, model_only=False):
+    def build_phase(self, sharedlib_only=False, model_only=False):
         if "TESTBUILDFAIL_PASS" in os.environ:
             TESTRUNPASS.build_phase(self, sharedlib_only, model_only)
         else:
@@ -667,10 +658,6 @@ class TESTBUILDFAIL(TESTRUNPASS):
                     fd.write("BUILD FAIL: Intentional fail for testing infrastructure")
 
                 expect(False, "BUILD FAIL: Intentional fail for testing infrastructure")
-
-    def build_phase(self, sharedlib_only=False, model_only=False):
-        functor    = lambda: self._fake_case_build_impl(sharedlib_only=False, model_only=False)
-        return run_and_log_case_status(functor, "case.build", caseroot=self._case.get_value("CASEROOT"))
 
 class TESTBUILDFAILEXC(FakeTest):
 
