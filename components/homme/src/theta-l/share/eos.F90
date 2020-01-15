@@ -177,7 +177,7 @@ implicit none
 #ifndef HOMMEXX_BFB_TESTING
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
 #else
-     pnh(:,:,k) = p0 * bfb_pow(p_over_exner(:,:,k)/p0,1/(1-kapp))
+     pnh(:,:,k) = p0 * bfb_pow(p_over_exner(:,:,k)/p0,1/(1-kappa))
 #endif
      exner(:,:,k) =  pnh(:,:,k)/ p_over_exner(:,:,k)
   enddo
