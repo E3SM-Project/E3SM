@@ -124,7 +124,7 @@ _TESTS = {
             )
         },
 
-    "e3sm_homme" : {
+    "homme_integration" : {
         "time"    : "0:45:00",
         "tests"   : (
             "HOMME_P24.f19_g16_rx1.A",
