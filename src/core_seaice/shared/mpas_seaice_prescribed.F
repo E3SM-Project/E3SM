@@ -47,6 +47,7 @@ contains
 
     logical, pointer :: &
          config_use_prescribed_ice, &
+         config_use_prescribed_ice_forcing, &
          config_use_dynamics, &
          config_use_column_itd_thermodynamics, &
          config_do_restart
@@ -69,39 +70,44 @@ contains
           call mpas_log_write("Prescribed ice mode: ITD thermodynamics must be off (config_use_column_itd_thermodynamics = false)", MPAS_LOG_CRIT)
        endif
 
-       call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
+       call mpas_pool_get_config(domain % configs, "config_use_prescribed_ice_forcing", config_use_prescribed_ice_forcing)
+       if (config_use_prescribed_ice_forcing) then
 
-       ! create the monthly forcing group
-       call MPAS_forcing_init_group(&
-            seaiceForcingGroups, &
-            "seaice_prescribed_ice_coverage", &
-            domain, &
-            '0000-01-01_00:00:00', &
-            '0000-01-01_00:00:00', &
-            '0001-00-00_00:00:00', &
-            config_do_restart)
+          call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
-       forcingIntervalMonthly = "00-01-00_00:00:00"
-       forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
+          ! create the monthly forcing group
+          call MPAS_forcing_init_group(&
+               seaiceForcingGroups, &
+               "seaice_prescribed_ice_coverage", &
+               domain, &
+               '0000-01-01_00:00:00', &
+               '0000-01-01_00:00:00', &
+               '0001-00-00_00:00:00', &
+               config_do_restart)
 
-       call MPAS_forcing_init_field(&
-            domain % streamManager, &
-            seaiceForcingGroups, &
-            "seaice_prescribed_ice_coverage", &
-            "iceCoverage", &
-            "prescribedIceForcing", &
-            "prescribed_ice", &
-            "iceCoverage", &
-            "linear", &
-            forcingReferenceTimeMonthly, &
-            forcingIntervalMonthly)
+          forcingIntervalMonthly = "00-01-00_00:00:00"
+          forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
 
-       call MPAS_forcing_init_field_data(&
-            seaiceForcingGroups, &
-            "seaice_prescribed_ice_coverage", &
-            domain % streamManager, &
-            config_do_restart, &
-            .false.)
+          call MPAS_forcing_init_field(&
+               domain % streamManager, &
+               seaiceForcingGroups, &
+               "seaice_prescribed_ice_coverage", &
+               "iceCoverage", &
+               "prescribedIceForcing", &
+               "prescribed_ice", &
+               "iceCoverage", &
+               "linear", &
+               forcingReferenceTimeMonthly, &
+               forcingIntervalMonthly)
+
+          call MPAS_forcing_init_field_data(&
+               seaiceForcingGroups, &
+               "seaice_prescribed_ice_coverage", &
+               domain % streamManager, &
+               config_do_restart, &
+               .false.)
+
+       endif ! config_use_prescribed_ice_forcing
 
     endif ! config_use_prescribed_ice
 
@@ -137,7 +143,8 @@ contains
          domain !< Input/Output:
 
     logical, pointer :: &
-         config_use_prescribed_ice
+         config_use_prescribed_ice, &
+         config_use_prescribed_ice_forcing
 
     type(block_type), pointer :: &
          blockPtr
@@ -196,13 +203,18 @@ contains
     if (config_use_prescribed_ice) then
 
        ! get ice coverage
-       call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+       call mpas_pool_get_config(domain % configs, "config_use_prescribed_ice_forcing", config_use_prescribed_ice_forcing)
+       if (config_use_prescribed_ice_forcing) then
 
-       call MPAS_forcing_get_forcing(&
-            seaiceForcingGroups, &
-            "seaice_prescribed_ice_coverage", &
-            domain % streamManager, &
-            config_dt)
+          call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
+
+          call MPAS_forcing_get_forcing(&
+               seaiceForcingGroups, &
+               "seaice_prescribed_ice_coverage", &
+               domain % streamManager, &
+               config_dt)
+
+       endif ! config_use_prescribed_ice_forcing
 
        blockPtr => domain % blocklist
        do while (associated(blockPtr))

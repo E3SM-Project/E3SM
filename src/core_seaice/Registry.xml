@@ -510,6 +510,10 @@
 			description="If true use prescribed ice mode."
 			possible_values="true or .false"
 		/>
+		<nml_option name="config_use_prescribed_ice_forcing" type="logical" default_value="false" units="unitless"
+			description="If true use prescribed ice mode forcing through the MPAS streams system."
+			possible_values="true or .false"
+		/>
 	</nml_record>
 	<nml_record name="forcing" in_defaults="true">
 		<nml_option name="config_atmospheric_forcing_type" type="character" default_value="CORE" units="unitless"
