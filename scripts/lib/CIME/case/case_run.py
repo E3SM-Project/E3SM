@@ -3,7 +3,7 @@ case_run is a member of Class Case
 '"""
 from CIME.XML.standard_module_setup import *
 from CIME.utils                     import gzip_existing_file, new_lid, run_and_log_case_status
-from CIME.utils                     import run_sub_or_cmd, append_status, safe_copy, model_log
+from CIME.utils                     import run_sub_or_cmd, append_status, safe_copy, model_log, CIMEError
 from CIME.utils                     import get_model
 from CIME.get_timing                import get_timing
 from CIME.provenance                import save_prerun_provenance, save_postrun_provenance
@@ -110,8 +110,13 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
         model_log("e3sm", logger, "{} SAVE_PRERUN_PROVENANCE HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
         model_log("e3sm", logger, "{} MODEL EXECUTION BEGINS HERE".format(time.strftime("%Y-%m-%d %H:%M:%S")))
-        run_func = lambda: run_cmd(cmd, from_dir=rundir)[0]
-        stat = run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
+        run_func = lambda: run_cmd_no_fail(cmd, from_dir=rundir)
+        try:
+            run_and_log_case_status(run_func, "model execution", caseroot=case.get_value("CASEROOT"))
+            cmd_success = True
+        except CIMEError:
+            cmd_success = False
+
         model_log("e3sm", logger, "{} MODEL EXECUTION HAS FINISHED".format(time.strftime("%Y-%m-%d %H:%M:%S")))
 
         model_logfile = os.path.join(rundir, model + ".log." + lid)
@@ -147,7 +152,7 @@ def _run_model_impl(case, lid, skip_pnl=False, da_cycle=0):
                     lid = new_lid()
                     case.create_namelists()
 
-        if stat != 0 and not loop:
+        if not cmd_success and not loop:
             # We failed and we're not restarting
             expect(False, "RUN FAIL: Command '{}' failed\nSee log file for details: {}".format(cmd, model_logfile))
 
