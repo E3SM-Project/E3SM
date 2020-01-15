@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_itd.F90 1182 2017-03-16 19:29:26Z njeffery $
+!  SVN:$Id: ice_therm_itd.F90 1196 2017-04-18 13:32:23Z eclare $
 !=======================================================================
 !
 ! Thermo calculations after call to coupler, related to ITD:
@@ -23,7 +23,7 @@
       use ice_kinds_mod
       use ice_constants_colpkg, only: c0, c1, c2, c3, c4, c6, c10, &
           p001, p1, p333, p5, p666, puny, bignum, &
-          rhos, rhoi, Lfresh, ice_ref_salinity
+          rhos, rhoi, Lfresh, ice_ref_salinity, rhosmin
       use ice_warnings, only: add_warning
       
       
@@ -81,7 +81,8 @@
       use ice_itd, only: aggregate_area, shift_ice, & 
                          column_sum, column_conservation_check
       use ice_colpkg_tracers, only: nt_qice, nt_qsno, nt_fbri, nt_sice, &
-                             tr_pond_topo, nt_apnd, nt_hpnd, tr_brine
+                             tr_pond_topo, nt_apnd, nt_hpnd, tr_brine, &
+                             nt_rhos, tr_snow
       use ice_therm_shared, only: hi_min
 
       integer (kind=int_kind), intent(in) :: &
@@ -90,7 +91,7 @@
          nslyr   , & ! number of snow layers
          ntrcr       ! number of tracers in use
 
-      real (kind=dbl_kind), dimension(0:ncat), intent(inout) :: &
+      real (kind=dbl_kind), dimension(0:ncat), intent(in) :: &
          hin_max      ! category boundaries (m)
 
       integer (kind=int_kind), dimension (:), intent(in) :: &
@@ -196,8 +197,6 @@
       !-----------------------------------------------------------------
 
       l_stop = .false.
-
-      hin_max(ncat) = 999.9_dbl_kind ! arbitrary big number
 
       do n = 1, ncat
          donor(n) = 0
@@ -542,7 +541,16 @@
                trcrn(k,n) = trcrn(k,n) + rhos*Lfresh
             enddo
          enddo
- 
+         ! maintain rhos_cmp positive definiteness
+         if (tr_snow) then
+         do n = 1, ncat
+            do k = nt_rhos, nt_rhos+nslyr-1
+               trcrn(k,n) = max(trcrn(k,n)-rhosmin, c0)
+!               trcrn(k,n) = trcrn(k,n) - rhosmin
+            enddo
+         enddo
+         endif
+  
          call shift_ice (ntrcr,    ncat,        &
                          trcr_depend,           &
                          trcr_base,             &
@@ -561,6 +569,14 @@
                trcrn(k,n) = trcrn(k,n) - rhos*Lfresh
             enddo
          enddo
+         ! maintain rhos_cmp positive definiteness
+         if (tr_snow) then
+         do n = 1, ncat
+            do k = nt_rhos, nt_rhos+nslyr-1
+               trcrn(k,n) = trcrn(k,n) + rhosmin
+            enddo
+         enddo
+         endif
 
       !-----------------------------------------------------------------
       ! Make sure hice(1) >= minimum ice thickness hi_min.

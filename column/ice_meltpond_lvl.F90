@@ -41,7 +41,8 @@
                                    aicen,  vicen, vsnon, &
                                    qicen,  sicen,        &
                                    Tsfcn,  alvl,         &
-                                   apnd,   hpnd,  ipnd)
+                                   apnd,   hpnd,  ipnd,  &
+                                   meltsliqn, use_smliq_pnd)
 
       integer (kind=int_kind), intent(in) :: &
          nilyr, &    ! number of ice layers
@@ -68,7 +69,8 @@
          fsurfn,&    ! atm-ice surface heat flux  (W/m2)
          aicen, &    ! ice area fraction
          vicen, &    ! ice volume (m)
-         vsnon       ! snow volume (m)
+         vsnon, &    ! snow volume (m)
+         meltsliqn   ! liquid contribution to meltponds in dt (kg/m^2)
 
       real (kind=dbl_kind), &
          intent(inout) :: &
@@ -85,6 +87,9 @@
       real (kind=dbl_kind), &
          intent(out) :: &
          ffrac     ! fraction of fsurfn over pond used to melt ipond
+
+      logical (kind=log_kind), intent(in) :: &
+         use_smliq_pnd ! use snow liquid and ice tracers
 
       ! local temporary variables
 
@@ -151,9 +156,14 @@
             ! update pond volume
             !-----------------------------------------------------------
             ! add melt water
-            dvn = rfrac/rhofresh*(meltt*rhoi &
+            if (use_smliq_pnd) then
+               dvn = rfrac/rhofresh*(meltt*rhoi &
+                +                    meltsliqn)*aicen
+            else
+               dvn = rfrac/rhofresh*(meltt*rhoi &
                 +                 melts*rhos &
                 +                 frain*  dt)*aicen
+            endif
 
             ! shrink pond volume under freezing conditions
             if (trim(frzpnd) == 'cesm') then

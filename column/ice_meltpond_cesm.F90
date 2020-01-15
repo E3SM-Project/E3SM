@@ -35,7 +35,8 @@
                                     rfrac, meltt,        &
                                     melts, frain,        &
                                     aicen, vicen, vsnon, &
-                                    Tsfcn, apnd,  hpnd)
+                                    Tsfcn, apnd,  hpnd,  &
+                                    meltsliqn, use_smliq_pnd)
 
       real (kind=dbl_kind), intent(in) :: &
          dt,       & ! time step (s)
@@ -43,6 +44,7 @@
          pndaspect   ! ratio of pond depth to pond fraction
 
       real (kind=dbl_kind), intent(in) :: &
+         meltsliqn, & ! liquid input from snow liquid tracer
          rfrac, &    ! water fraction retained for melt ponds
          meltt, &
          melts, &
@@ -57,6 +59,9 @@
       real (kind=dbl_kind), intent(inout) :: &
          apnd, &
          hpnd
+
+      logical (kind=log_kind), intent(in) :: &
+         use_smliq_pnd ! use snow liquid and ice tracers
 
 !     local temporary variables
 
@@ -104,11 +109,18 @@
             !-----------------------------------------------------------
             ! Update pond volume
             !-----------------------------------------------------------
-            volpn = volpn &
+            if (use_smliq_pnd) then
+                  volpn = volpn &
+                  +  rfrac/rhofresh*(meltt*rhoi &
+                  +                  meltsliqn) &
+                  * aicen 
+            else
+                  volpn = volpn &
                   + rfrac/rhofresh*(meltt*rhoi &
                   +                 melts*rhos &
                   +                 frain*  dt)&
                   * aicen
+            endif
 
             !-----------------------------------------------------------
             ! Shrink pond volume under freezing conditions

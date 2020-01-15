@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<registry model="mpas" core="seaice" core_abbrev="seaice" version="6.0">
+<registry model="mpas" core="seaice" core_abbrev="seaice" version="7.0">
 
 	<dims>
 		<dim name="nCells"
@@ -91,6 +91,18 @@
 		<dim name="nSpectralIntervals"
 			definition="3"
 			description="Number of spectral intervals in the radiation calculation"
+		/>
+		<dim name="nGrainAgingTemperature"
+			definition="11"
+			description="Number of temperature dependent factors in snow grain aging"
+		/>
+		<dim name="nGrainAgingTempGradient"
+			definition="31"
+			description="Number of temperature gradient dependent factors in snow grain aging"
+		/>
+		<dim name="nGrainAgingSnowDensity"
+			definition="8"
+			description="Number of snow density dependent factors in snow grain aging"
 		/>
 		<dim name="nBioLayers"
 			definition="7"
@@ -288,6 +300,17 @@
 			definition="5"
 			description="The maximum number of forcing groups defined in the core."
 		/>
+		<dim name="nSpectralIntervalsSNICAR"
+			definition="5"
+			units="unitless"
+			description="The number of shortwave spectral bands used in snow SNICAR model (1 visible band and 4 near-IR bands) for radiative transfer calculation"
+		/>
+		<dim name="nSnowGrainRadiusSNICAR"
+			definition="1471"
+			units="unitless"
+			description="The number of snow grain radius used in SNICAR model, radius are ranging from 30 to 150 microns with 1 micron interval"
+		/>
+
 	</dims>
 
 	<nml_record name="seaice_model" in_defaults="true">
@@ -395,6 +418,14 @@
 		/>
 		<nml_option name="config_do_restart_bgc" type="logical" default_value="false" units="unitless"
 			description="Restart the ice biogeochemistry"
+			possible_values="true or false"
+		/>
+		<nml_option name="config_do_restart_snow_density" type="logical" default_value="false" units="unitless"
+			description="Restart the snow density tracers"
+			possible_values="true or false"
+		/>
+		<nml_option name="config_do_restart_snow_grain_radius" type="logical" default_value="false" units="unitless"
+			description="Restart the snow grain radius tracer"
 			possible_values="true or false"
 		/>
 	</nml_record>
@@ -636,6 +667,10 @@
 			description="Run the ridging column physics calculation."
 			possible_values="true or false"
 		/>
+		<nml_option name="config_use_column_snow_tracers" type="logical" default_value="false" units="unitless"
+			description="Allow snow modifications plus additional snow tracers"
+			possible_values="true or false"
+		/>
 	</nml_record>
 
 	<nml_record name="column_tracers" in_defaults="true">
@@ -673,6 +708,16 @@
 			description="Carry aerosols in the ice (NCAR scheme)"
 			possible_values="true or false"
 			icepack_name="tr_aero"
+		/>
+		<nml_option name="config_use_effective_snow_density" type="logical" default_value="false" units="unitless"
+			description="Use effective snow density"
+			possible_values="true or false"
+			icepack_name="tr_snow"
+		/>
+		<nml_option name="config_use_snow_grain_radius" type="logical" default_value="false" units="unitless"
+			description="Use prognosed snow grain radius aging"
+			possible_values="true or false"
+			icepack_name="tr_rsnw"
 		/>
 	</nml_record>
 
@@ -1127,17 +1172,17 @@
 			possible_values="positive real"
 			icepack_name="kn_bac_protein"
 		/>
-		<nml_option name="config_fraction_DON_ammonium" type="real" default_value="0.25" units="unitless"
+		<nml_option name="config_fraction_DON_ammonium" type="real" default_value="1.0" units="unitless"
 			description="Fraction of remineralized DON converted to ammonium"
 			possible_values="zero or positive real less than or equal to 1"
 			icepack_name="f_don_Am_protein"
 		/>
-		<nml_option name="config_fraction_loss_to_saccharids" type="real" default_value="0.4" units="unitless"
+		<nml_option name="config_fraction_loss_to_saccharids" type="real" default_value="0.5" units="unitless"
 			description="Fraction of mortality to poly/saccharids"
 			possible_values="zero or positive real less than 1"
 			icepack_name="f_doc_s"
 		/>
-		<nml_option name="config_fraction_loss_to_lipids" type="real" default_value="0.4" units="unitless"
+		<nml_option name="config_fraction_loss_to_lipids" type="real" default_value="0.5" units="unitless"
 			description="Fraction of mortality to lipids"
 			possible_values="zero or positive real less than 1"
 			icepack_name="f_doc_l"
@@ -1292,6 +1337,11 @@
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
 			icepack_name="doctype_l"
 		/>
+		<nml_option name="config_mobility_type_inorganic_carbon" type="real" default_value="-1.0" units="unitless"
+			description="Transport type of dissolved inorganic carbon"
+			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
+			icepack_name="dictype_1"
+		/>
 		<nml_option name="config_mobility_type_proteins" type="real" default_value="0.0" units="unitless"
 			description="Transport type of proteins"
 			possible_values="-1 = entirely in the mobile phase; 0 = retention dominated; 1 = release dominated; 0.5 = equal but rapid exchange; 2 = equal but slow exchange"
@@ -1382,7 +1432,7 @@
 			possible_values="positive real"
 			icepack_name="F_abs_chl_phaeo"
 		/>
-		<nml_option name="config_ratio_C_to_N_proteins" type="real" default_value="7.0" units="mol carbon/mol nitrogen"
+		<nml_option name="config_ratio_C_to_N_proteins" type="real" default_value="5.0" units="mol carbon/mol nitrogen"
 			description="Ratio of carbon to nitrogen in proteins"
 			possible_values="positive real"
 			icepack_name="ratio_C2N_proteins"
@@ -1399,6 +1449,10 @@
 			description="Albedo parameterization type."
 			possible_values="'ccsm3' or 'constant'"
 			icepack_name="albedo_type"
+		/>
+		 <nml_option name="config_use_snicar_ad" type="logical" default_value="false" units="unitless"
+			description="If true turn on snicar_ad 5-band snow system"
+			possible_values="true or false"
 		/>
 		<nml_option name="config_visible_ice_albedo" type="real" default_value="0.78" units="unitless"
 			description="Visible ice albedo for ice thickness greater than config_variable_albedo_thickness_limit."
@@ -1454,6 +1508,49 @@
 			description="Algae absorption coefficient for 0.5 m thick layer."
 			possible_values=""
 			icepack_name="kalg"
+		/>
+	</nml_record>
+
+	<nml_record name="snow" in_defaults="true">
+	  	<nml_option name="config_snow_redistribution_scheme" type="character" default_value="none" units="none"
+			description="Use a snow redistribution scheme"
+			possible_values="'30percent (30% rule, precip only)','30percentsw (30% rulewith shortwave)','ITDsd (Lecomte PhD, 2014)','ITDrdg (like ITDsd but use level/ridged ice)','default or none (none)'"
+			icepack_name="snwredist"
+		/>
+		<nml_option name="config_fallen_snow_radius" type="real" default_value="54.4" units="um"
+			description="fallen snow grain radius"
+			possible_values="positive real"
+			icepack_name="rsnw_fall"
+		/>
+		<nml_option name="config_use_snow_liquid_ponds" type="logical" default_value="false" units="none"
+			description="use snow liquid tracer for ponds"
+			possible_values="true or false"
+			icepack_name="use_smliq_pnd"
+		/>
+		<nml_option name="config_new_snow_density" type="real" default_value="100.0" units="kg/m^3"
+			description="new snow density"
+			possible_values="positive real"
+			icepack_name="rhosnew"
+		/>
+		<nml_option name="config_max_snow_density" type="real" default_value="450.0" units="kg/m^3"
+			description="maximum snow density"
+			possible_values="positive real"
+			icepack_name="rhosmax"
+		/>
+		<nml_option name="config_minimum_wind_compaction" type="real" default_value="10.0" units="m/s"
+			description="minimum wind speed to compact snow"
+			possible_values="positive real"
+			icepack_name="windmin"
+		/>
+		<nml_option name="config_wind_compaction_factor" type="real" default_value="27.3" units="kg s/m^4"
+			description="wind compaction factor"
+			possible_values="positive real"
+			icepack_name="drhosdwind"
+		/>
+		<nml_option name="config_max_dry_snow_radius" type="real" default_value="2800.0" units="um"
+			description="maximum dry metamorphism snow grain radius"
+			possible_values="positive real"
+			icepack_name="rsnw_tmax"
 		/>
 	</nml_record>
 
@@ -1731,6 +1828,10 @@
 			<var name="iceEnthalpy"/>
 			<var name="iceSalinity"/>
 			<var name="snowEnthalpy"/>
+			<var name="snowIceMass"/>
+			<var name="snowLiquidMass"/>
+			<var name="snowGrainRadius"/>
+			<var name="snowDensity"/>
 			<var name="iceAge"/>
 			<var name="firstYearIceArea"/>
 			<var name="levelIceArea"/>
@@ -1924,6 +2025,38 @@
 			<var name="modalBCabsorptionParameter"/>
 			<var name="modalMassExtinctionCrossSection"/>
 			<var name="modalSingleScatterAlbedo"/>
+		</stream>
+
+		<stream name="SnicarInput"
+			type="input"
+				filename_template="snicar_optics_5bnd_snow_and_aerosols.nc"
+				filename_interval="none"
+				input_interval="initial_only"
+				immutable="true">
+			<var name="iceAsymmetryParameterDirect"/>
+			<var name="iceAsymmetryParameterDiffuse"/>
+			<var name="iceSingleScatterAlbedoDirect"/>
+			<var name="iceSingleScatterAlbedoDiffuse"/>
+			<var name="iceMassExtinctionCrossSectionDirect"/>
+			<var name="iceMassExtinctionCrossSectionDiffuse"/>
+			<var name="modalAsymmetryParameter5band"/>
+			<var name="modalBCabsorptionParameter5band"/>
+			<var name="modalMassExtinctionCrossSection5band"/>
+			<var name="modalSingleScatterAlbedo5band"/>
+			<var name="aerosolAsymmetryParameter5band"/>
+			<var name="aerosolMassExtinctionCrossSection5band"/>
+			<var name="aerosolSingleScatterAlbedo5band"/>
+		</stream>
+
+		<stream name="SnowAgingPropertiesInput"
+				type="input"
+				filename_template="snicar_drdt_bst_fit_60_c04182019.nc"
+				filename_interval="none"
+				input_interval="initial_only"
+				immutable="true">
+			<var name="snowEmpiricalGrowthParameterTau"/>
+			<var name="snowEmpiricalGrowthParameterKappa"/>
+			<var name="snowPropertyRate"/>
 		</stream>
 
 		<stream name="pointLocationsInput"
@@ -2161,6 +2294,8 @@
 		<package name="pkgColumnTracerPonds" description=""/>
 		<package name="pkgColumnTracerLidThickness" description=""/>
 		<package name="pkgColumnTracerAerosols" description=""/>
+		<package name="pkgColumnTracerEffectiveSnowDensity" description="Computes effective snow density based on liquid and ice snow content and snow compaction"/>
+		<package name="pkgColumnTracerSnowGrainRadius" description="Evolves snow grain radius for radiative transfer based on dry and wet metamorphism"/>
 		<package name="pkgTracerBrine" description=""/>
 		<package name="pkgTracerMobileFraction" description=""/>
 		<package name="pkgTracerSkeletalAlgae" description=""/>
@@ -2198,6 +2333,12 @@
 		<!-- forcing -->
 		<package name="pkgForcing" description="On if the framework forcing is being used"/>
 
+		<!-- Snicar -->
+		<package name="pkgSnicar" description="add snicar 5 bands snow SSP in CICE"/>
+
+		<!-- Unit tests -->
+		<package name="pkgUnitTests" description="variables for unit tests"/>
+
 		<!-- prescribed -->
 		<package name="pkgPrescribed" description=""/>
 
@@ -2213,6 +2354,10 @@
 		<var name="iceEnthalpy"			type="real"	dimensions="nIceLayers nCategories nCells Time"		name_in_code="iceEnthalpy"/>
 		<var name="iceSalinity"			type="real"	dimensions="nIceLayers nCategories nCells Time"		name_in_code="iceSalinity"/>
 		<var name="snowEnthalpy"			type="real"	dimensions="nSnowLayers nCategories nCells Time"		name_in_code="snowEnthalpy"/>
+		<var name="snowIceMass"			type="real"	dimensions="nSnowLayers nCategories nCells Time"	units="kg/m^3"	name_in_code="snowIceMass"	packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMass"			type="real"	dimensions="nSnowLayers nCategories nCells Time"	units="kg/m^3"	name_in_code="snowLiquidMass"	packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowGrainRadius"			type="real"	dimensions="nSnowLayers nCategories nCells Time"	units="um"	name_in_code="snowGrainRadius"	packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensity"			type="real"	dimensions="nSnowLayers nCategories nCells Time"	units="kg/m^3"	name_in_code="snowDensity"	packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="iceAge"				type="real"	dimensions="ONE nCategories nCells Time"			name_in_code="iceAge"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceArea"			type="real"	dimensions="ONE nCategories nCells Time"			name_in_code="firstYearIceArea"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceArea"			type="real"	dimensions="ONE nCategories nCells Time"			name_in_code="levelIceArea"			packages="pkgColumnTracerLevelIce"/>
@@ -2295,6 +2440,26 @@
 		<var name="iceEnthalpyCell"			type="real"	dimensions="nIceLayers nCells Time"		name_in_code="iceEnthalpyCell"/>
 		<var name="iceSalinityCell"			type="real"	dimensions="nIceLayers nCells Time"		name_in_code="iceSalinityCell"/>
 		<var name="snowEnthalpyCell"			type="real"	dimensions="nSnowLayers nCells Time"		name_in_code="snowEnthalpyCell"/>
+		<var name="snowIceMassCell"			type="real"	dimensions="nSnowLayers nCells Time"		name_in_code="snowIceMassCell"
+			units="kg/m^3"
+			description="Mass of ice in snow layer"
+			packages="pkgColumnTracerEffectiveSnowDensity"
+		/>
+		<var name="snowLiquidMassCell"			type="real"	dimensions="nSnowLayers nCells Time"		name_in_code="snowLiquidMassCell"
+			units="kg/m^3"
+			description="Mass of liquid in snow layer"
+			packages="pkgColumnTracerEffectiveSnowDensity"
+		/>
+		<var name="snowGrainRadiusCell"		type="real"	dimensions="nSnowLayers nCells Time"		name_in_code="snowGrainRadiusCell"
+			units="um"
+			description="Effective snow grain radius"
+			packages="pkgColumnTracerSnowGrainRadius"
+		/>
+		<var name="snowDensityCell"			type="real"	dimensions="nSnowLayers nCells Time"		name_in_code="snowDensityCell"
+			units="kg/m^3"
+			description="Prognostic snow density"
+			packages="pkgColumnTracerEffectiveSnowDensity"
+		/>
 		<var name="iceAgeCell"				type="real"	dimensions="nCells Time"			name_in_code="iceAgeCell"			packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaCell"		type="real"	dimensions="nCells Time"			name_in_code="firstYearIceAreaCell"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaCell"			type="real"	dimensions="nCells Time"			name_in_code="levelIceAreaCell"		packages="pkgColumnTracerLevelIce"/>
@@ -2466,6 +2631,10 @@
 		<var name="iceEnthalpyMask"			type="integer"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceEnthalpyMask"/>
 		<var name="iceSalinityMask"			type="integer"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityMask"/>
 		<var name="snowEnthalpyMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyMask"/>
+		<var name="snowIceMassMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassMask"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassMask"		packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowGrainRadiusMask"		type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusMask"		packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityMask"			type="integer"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityMask"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="iceAgeMask"				type="integer"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeMask"			packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaMask"		type="integer"	dimensions="ONE nCategories nCells"			name_in_code="firstYearIceAreaMask"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaMask"			type="integer"	dimensions="ONE nCategories nCells"			name_in_code="levelIceAreaMask"		packages="pkgColumnTracerLevelIce"/>
@@ -2534,6 +2703,10 @@
 		<var name="iceEnthalpyEdgeFlux"			type="real"	dimensions="nIceLayers nCategories nEdges"		name_in_code="iceEnthalpyEdgeFlux"/>
 		<var name="iceSalinityEdgeFlux"			type="real"	dimensions="nIceLayers nCategories nEdges"		name_in_code="iceSalinityEdgeFlux"/>
 		<var name="snowEnthalpyEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowEnthalpyEdgeFlux"/>
+		<var name="snowIceMassEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowIceMassEdgeFlux"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowLiquidMassEdgeFlux"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowGrainRadiusEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowGrainRadiusEdgeFlux"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityEdgeFlux"			type="real"	dimensions="nSnowLayers nCategories nEdges"		name_in_code="snowDensityEdgeFlux"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="iceAgeEdgeFlux"				type="real"	dimensions="ONE nCategories nEdges"			name_in_code="iceAgeEdgeFlux"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaEdgeFlux"			type="real"	dimensions="ONE nCategories nEdges"			name_in_code="firstYearIceAreaEdgeFlux"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaEdgeFlux"			type="real"	dimensions="ONE nCategories nEdges"			name_in_code="levelIceAreaEdgeFlux"			packages="pkgColumnTracerLevelIce"/>
@@ -2602,6 +2775,10 @@
 		<var name="iceEnthalpyProduct"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceEnthalpyProduct"/>
 		<var name="iceSalinityProduct"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityProduct"/>
 		<var name="snowEnthalpyProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyProduct"/>
+		<var name="snowIceMassProduct"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassProduct"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassProduct"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowGrainRadiusProduct"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusProduct"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityProduct"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityProduct"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="iceAgeProduct"			type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeProduct"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaProduct"		type="real"	dimensions="ONE nCategories nCells"			name_in_code="firstYearIceAreaProduct"			packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaProduct"		type="real"	dimensions="ONE nCategories nCells"			name_in_code="levelIceAreaProduct"			packages="pkgColumnTracerLevelIce"/>
@@ -2669,6 +2846,10 @@
 		<var name="iceEnthalpyTriangle"			type="real"	dimensions="nIceLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="iceEnthalpyTriangle"/>
 		<var name="iceSalinityTriangle"			type="real"	dimensions="nIceLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="iceSalinityTriangle"/>
 		<var name="snowEnthalpyTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowEnthalpyTriangle"/>
+		<var name="snowIceMassTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowIceMassTriangle"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowLiquidMassTriangle"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowGrainRadiusTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowGrainRadiusTriangle"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityTriangle"			type="real"	dimensions="nSnowLayers nCategories nQuadPoints nTriPerEdgeRemap nEdges"		name_in_code="snowDensityTriangle"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="iceAgeTriangle"				type="real"	dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"			name_in_code="iceAgeTriangle"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaTriangle"			type="real"	dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"			name_in_code="firstYearIceAreaTriangle"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaTriangle"			type="real"	dimensions="ONE nCategories nQuadPoints nTriPerEdgeRemap nEdges"			name_in_code="levelIceAreaTriangle"			packages="pkgColumnTracerLevelIce"/>
@@ -2743,6 +2924,14 @@
 		<var name="iceSalinityBarycentery"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityBarycentery"/>
 		<var name="snowEnthalpyBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyBarycenterx"/>
 		<var name="snowEnthalpyBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyBarycentery"/>
+		<var name="snowIceMassBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassBarycenterx"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowIceMassBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassBarycentery"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassBarycenterx"		packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassBarycentery"		packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowGrainRadiusBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusBarycenterx"		packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowGrainRadiusBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusBarycentery"		packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityBarycenterx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityBarycenterx"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowDensityBarycentery"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityBarycentery"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="iceAgeBarycenterx"				type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeBarycenterx"			packages="pkgColumnTracerIceAge"/>
 		<var name="iceAgeBarycentery"				type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeBarycentery"			packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaBarycenterx"		type="real"	dimensions="ONE nCategories nCells"			name_in_code="firstYearIceAreaBarycenterx"		packages="pkgColumnTracerFirstYearIce"/>
@@ -2882,6 +3071,18 @@
 		<var name="snowEnthalpyCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyCenter"/>
 		<var name="snowEnthalpyGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyGradx"/>
 		<var name="snowEnthalpyGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyGrady"/>
+		<var name="snowIceMassCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassCenter"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowIceMassGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassGradx"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowIceMassGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassGrady"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassCenter"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassCenter"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassGradx"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassGradx"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassGrady"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassGrady"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowGrainRadiusCenter"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusCenter"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowGrainRadiusGradx"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusGradx"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowGrainRadiusGrady"		type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusGrady"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityCenter"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityCenter"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowDensityGradx"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityGradx"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowDensityGrady"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityGrady"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="iceAgeCenter"			type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeCenter"				packages="pkgColumnTracerIceAge"/>
 		<var name="iceAgeGradx"			type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeGradx"				packages="pkgColumnTracerIceAge"/>
 		<var name="iceAgeGrady"			type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeGrady"				packages="pkgColumnTracerIceAge"/>
@@ -3065,6 +3266,10 @@
 		<var name="iceEnthalpyCons"			type="real"	dimensions="nIceLayers nCategories"			name_in_code="iceEnthalpyCons"/>
 		<var name="iceSalinityCons"			type="real"	dimensions="nIceLayers nCategories"			name_in_code="iceSalinityCons"/>
 		<var name="snowEnthalpyCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowEnthalpyCons"/>
+		<var name="snowIceMassCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowIceMassCons"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowLiquidMassCons"		packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowGrainRadiusCons"		type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowGrainRadiusCons"		packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityCons"			type="real"	dimensions="nSnowLayers nCategories"			name_in_code="snowDensityCons"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="iceAgeCons"				type="real"	dimensions="ONE nCategories"				name_in_code="iceAgeCons"			packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaCons"		type="real"	dimensions="ONE nCategories"				name_in_code="firstYearIceAreaCons"		packages="pkgColumnTracerFirstYearIce"/>
 		<var name="levelIceAreaCons"			type="real"	dimensions="ONE nCategories"				name_in_code="levelIceAreaCons"		packages="pkgColumnTracerLevelIce"/>
@@ -3139,6 +3344,14 @@
 		<var name="iceSalinityLocalMax"			type="real"	dimensions="nIceLayers nCategories nCells"		name_in_code="iceSalinityLocalMax"/>
 		<var name="snowEnthalpyLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyLocalMin"/>
 		<var name="snowEnthalpyLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowEnthalpyLocalMax"/>
+		<var name="snowIceMassLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassLocalMin"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowIceMassLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowIceMassLocalMax"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassLocalMin"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowLiquidMassLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowLiquidMassLocalMax"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowGrainRadiusLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusLocalMin"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowGrainRadiusLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowGrainRadiusLocalMax"			packages="pkgColumnTracerSnowGrainRadius"/>
+		<var name="snowDensityLocalMin"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityLocalMin"			packages="pkgColumnTracerEffectiveSnowDensity"/>
+		<var name="snowDensityLocalMax"			type="real"	dimensions="nSnowLayers nCategories nCells"		name_in_code="snowDensityLocalMax"			packages="pkgColumnTracerEffectiveSnowDensity"/>
 		<var name="iceAgeLocalMin"				type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeLocalMin"				packages="pkgColumnTracerIceAge"/>
 		<var name="iceAgeLocalMax"				type="real"	dimensions="ONE nCategories nCells"			name_in_code="iceAgeLocalMax"				packages="pkgColumnTracerIceAge"/>
 		<var name="firstYearIceAreaLocalMin"			type="real"	dimensions="ONE nCategories nCells"			name_in_code="firstYearIceAreaLocalMin"		packages="pkgColumnTracerFirstYearIce"/>
@@ -3616,6 +3829,20 @@
 		<var name="pondLidMeltFluxFraction"		type="real"	dimensions="nCategories nCells Time"		name_in_code="pondLidMeltFluxFraction"/>
 	</var_struct>
 
+	<!-- snow -->
+	<var_struct name="snow" time_levs="1" packages="pkgColumnPackage">
+		<var name="snowDensityViaContent"		type="real"	dimensions="nCells Time"			name_in_code="snowDensityViaContent"		units="kg/m^3"/>
+		<var name="snowDensityViaCompaction"		type="real"	dimensions="nCells Time"			name_in_code="snowDensityViaCompaction"	units="kg/m^3"/>
+		<var name="snowLossToLeads"			type="real"	dimensions="nCells Time"			name_in_code="snowLossToLeads"			units="kg/m^2/s"/>
+		<var name="snowMeltMassCell"			type="real"	dimensions="nCells Time"			name_in_code="snowMeltMassCell"		units="kg/m^2/d"/>
+		<var name="snowMeltMassCategory"		type="real"	dimensions="nCategories nCells Time"		name_in_code="snowMeltMassCategory"		units="kg/m^2"/>
+		<var name="snowRadiusInStandardRadiationSchemeCategory"	type="real"	dimensions="nCategories nCells Time"	name_in_code="snowRadiusInStandardRadiationSchemeCategory"	units="um"/>
+		<var name="snowRadiusInStandardRadiationScheme"		type="real"	dimensions="nCells Time"		name_in_code="snowRadiusInStandardRadiationScheme"		units="um"/>
+		<var name="snowEmpiricalGrowthParameterTau"			type="real"	dimensions="nGrainAgingSnowDensity nGrainAgingTempGradient nGrainAgingTemperature"	name_in_code="snowEmpiricalGrowthParameterTau"		units="um"/>
+		<var name="snowEmpiricalGrowthParameterKappa"			type="real"	dimensions="nGrainAgingSnowDensity nGrainAgingTempGradient nGrainAgingTemperature"	name_in_code="snowEmpiricalGrowthParameterKappa"	units="none"/>
+		<var name="snowPropertyRate"					type="real"	dimensions="nGrainAgingSnowDensity nGrainAgingTempGradient nGrainAgingTemperature"	name_in_code="snowPropertyRate"			units="um/hr"/>
+	</var_struct>
+
 	<!-- aerosols -->
 	<var_struct name="aerosols" time_levs="1" packages="pkgColumnPackage">
 		<var name="atmosAerosolFlux"			type="real"	dimensions="nAerosols nCells Time"		name_in_code="atmosAerosolFlux"/>
@@ -3734,7 +3961,6 @@
 		<var name="totalChlorophyll"			type="real"	dimensions="nCells Time"				name_in_code="totalChlorophyll"
 			units="mg/m^2"
 			description="Ice integrated chlorophyll concentration per cell"
-			packages="pkgTracerVerticalAlgae;pkgTracerSkeletalAlgae"
 		/>
 		<var name="totalNitrate"			type="real"	dimensions="nCells Time"				name_in_code="totalNitrate"
 			units="mmol/m^3"
@@ -3799,6 +4025,23 @@
 		<var name="testArrayRestartability"		type="real"	dimensions="nCells Time"/>
 	</var_struct>
 
+	<!-- Snicar 5-band optical property varables -->
+	<var_struct name="snicar" time_levs="1" packages="pkgSnicar">
+		<var name="iceAsymmetryParameterDirect"	type="real"	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR" 	name_in_code="iceAsymmetryParameterDirect"/>
+		<var name="iceAsymmetryParameterDiffuse"	type="real"	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceAsymmetryParameterDiffuse"/>
+		<var name="iceSingleScatterAlbedoDirect"	type="real"	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceSingleScatterAlbedoDirect"/>
+		<var name="iceSingleScatterAlbedoDiffuse"	type="real"	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceSingleScatterAlbedoDiffuse"/>
+		<var name="iceMassExtinctionCrossSectionDirect"	type="real"	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceMassExtinctionCrossSectionDirect"/>
+		<var name="iceMassExtinctionCrossSectionDiffuse"	type="real"	dimensions="nSpectralIntervalsSNICAR nSnowGrainRadiusSNICAR"	name_in_code="iceMassExtinctionCrossSectionDiffuse"/>
+		<var name="aerosolMassExtinctionCrossSection5band"	type="real"	dimensions="nSpectralIntervalsSNICAR maxAerosolType"	name_in_code="aerosolMassExtinctionCrossSection5band"/>
+		<var name="aerosolSingleScatterAlbedo5band"	type="real"	dimensions="nSpectralIntervalsSNICAR maxAerosolType"	name_in_code="aerosolSingleScatterAlbedo5band"/>
+		<var name="aerosolAsymmetryParameter5band"	type="real"	dimensions="nSpectralIntervalsSNICAR maxAerosolType"	name_in_code="aerosolAsymmetryParameter5band"/>
+		<var name="modalMassExtinctionCrossSection5band"	type="real"	dimensions="nSpectralIntervalsSNICAR nModal1"	name_in_code="modalMassExtinctionCrossSection5band"/>
+		<var name="modalSingleScatterAlbedo5band"	type="real"	dimensions="nSpectralIntervalsSNICAR nModal1"	name_in_code="modalSingleScatterAlbedo5band"/>
+		<var name="modalAsymmetryParameter5band"	type="real"	dimensions="nSpectralIntervalsSNICAR nModal1"	name_in_code="modalAsymmetryParameter5band"/>
+		<var name="modalBCabsorptionParameter5band"	type="real"	dimensions="nSpectralIntervalsSNICAR nModal1 nModal2"	name_in_code="modalBCabsorptionParameter5band"/>
+	</var_struct>
+
 	<!-- Point diagnostics -->
 	<var_struct name="pointLocations" time_levs="1">
 		<var name="pointCellGlobalID" type="integer" dimensions="nPoints" units="unitless"
@@ -3846,6 +4089,15 @@
 		<var name="lonPoint" type="real" dimensions="nPoints" units="radians"
 			 description="Longitude of point locations."
 		/>
+	</var_struct>
+
+	<!-- Strain and stress divergence unit test -->
+	<var_struct name="strain_stress_divergence_unit_tests" time_levs="1" packages="pkgUnitTests">
+	        <var name="stressDivergenceUAnalytical" type="real" dimensions="nVertices Time"/>
+	        <var name="stressDivergenceVAnalytical" type="real" dimensions="nVertices Time"/>
+		<var name="strain11Analytical" type="real" dimensions="nVertices Time"/>
+		<var name="strain22Analytical" type="real" dimensions="nVertices Time"/>
+		<var name="strain12Analytical" type="real" dimensions="nVertices Time"/>
 	</var_struct>
 
 #include "analysis_members/Registry_seaice_analysis_members.xml"

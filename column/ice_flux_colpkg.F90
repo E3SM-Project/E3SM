@@ -47,10 +47,12 @@
                                Tref,     Qref,       &
                                fresh,    fsalt,      & 
                                fhocn,    fswthru,    &
-                               melttn, meltsn, meltbn, congeln, snoicen, &
-                               meltt,  melts,        &
-                               meltb,                &
-                               congel,  snoice,      &
+                               melttn,   meltsn,     &
+                               meltbn,   congeln,    &
+                               snoicen,  meltsliqn,  &
+                               meltt,    melts,      &
+                               meltb,    congel,     &
+                               snoice,   meltsliq,   &
                                Uref,     Urefn       )
 
       ! single category fluxes
@@ -77,6 +79,7 @@
           melttn  , & ! top ice melt                    (m)
           meltbn  , & ! bottom ice melt                 (m)
           meltsn  , & ! snow melt                       (m)
+          meltsliqn,& ! snow liquid contribution to meltpond (kg/m^2)
           congeln , & ! congelation ice growth          (m)
           snoicen     ! snow-ice growth                 (m)
            
@@ -104,6 +107,7 @@
           meltt   , & ! top ice melt                    (m)
           meltb   , & ! bottom ice melt                 (m)
           melts   , & ! snow melt                       (m)
+          meltsliq, & ! snow liquid contribution to meltponds (kg/m^2)
           congel  , & ! congelation ice growth          (m)
           snoice      ! snow-ice growth                 (m)
 
@@ -151,6 +155,7 @@
       melts     = melts     + meltsn    * aicen
       congel    = congel    + congeln   * aicen
       snoice    = snoice    + snoicen   * aicen
+      meltsliq  = meltsliq  + meltsliqn * aicen
       
       end subroutine merge_fluxes
 

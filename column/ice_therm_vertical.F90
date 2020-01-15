@@ -1,4 +1,4 @@
-!  SVN:$Id: ice_therm_vertical.F90 1182 2017-03-16 19:29:26Z njeffery $
+!  SVN:$Id: ice_therm_vertical.F90 1196 2017-04-18 13:32:23Z eclare $
 !=========================================================================
 !
 ! Update ice and snow internal temperatures and compute
@@ -24,7 +24,8 @@
       use ice_constants_colpkg, only: c0, c1, c3, p001, p5, puny, &
           pi, depressT, Lvap, hs_min, cp_ice, &
           cp_ocn, rhow, rhoi, rhos, Lfresh, rhofresh, ice_ref_salinity
-      use ice_colpkg_shared, only: ktherm, heat_capacity, calc_Tsfc, min_salin
+      use ice_colpkg_shared, only: ktherm, heat_capacity, calc_Tsfc, &
+          min_salin, rsnw_fall, rsnw_tmax
       use ice_therm_shared, only: ferrmax, l_brine, &
                                   calculate_tin_from_qin, Tmin
       use ice_therm_bl99, only: temperature_changes
@@ -35,7 +36,7 @@
       save
 
       private
-      public :: frzmlt_bottom_lateral, thermo_vertical
+      public :: frzmlt_bottom_lateral, thermo_vertical, adjust_enthalpy
 
 !=======================================================================
 
@@ -54,13 +55,15 @@
                                   vicen,       vsnon,     &
                                   Tsf,         zSin,      &
                                   zqin,        zqsn,      &
-                                  apond,       hpond,     &
-                                  iage,        tr_pond_topo,&
+                                  smice,       smliq,     &
+                                  tr_snow,     apond,     &
+                                  hpond,       iage,      &
+                                  tr_pond_topo,           &
                                   flw,         potT,      &
                                   Qa,          rhoa,      &
                                   fsnow,       fpond,     &
                                   fbot,        Tbot,      &
-                                  sss,                    &
+                                  sss,         rsnw,      &
                                   lhcoef,      shcoef,    &
                                   fswsfc,      fswint,    &
                                   Sswabs,      Iswabs,    &
@@ -68,11 +71,14 @@
                                   fsensn,      flatn,     &
                                   flwoutn,     evapn,     &
                                   freshn,      fsaltn,    &
-                                  fhocnn,      meltt,     &
+                                  fhocnn,      frain,     &
+                                  meltt,                  &
                                   melts,       meltb,     &
+                                  meltsliq,               &
                                   congel,      snoice,    &
                                   mlt_onset,   frz_onset, &
                                   yday,        dsnow,     &
+                                  tr_rsnw,                &
                                   l_stop,      stop_label,&
                                   prescribed_ice)
 
@@ -83,7 +89,8 @@
          nslyr       ! number of snow layers
 
       real (kind=dbl_kind), intent(in) :: &
-         dt          ! time step
+         dt      , & ! time step
+         frain       ! rainfall rate (kg/m2/s)
 
       ! ice state variables
       real (kind=dbl_kind), intent(inout) :: &
@@ -107,7 +114,10 @@
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          zqsn    , & ! snow layer enthalpy, zqsn < 0 (J m-3)
          zqin    , & ! ice layer enthalpy, zqin < 0 (J m-3)
-         zSin        ! internal ice layer salinities
+         zSin    , & ! internal ice layer salinities
+         rsnw    , & ! snow grain radius (10^-6 m)
+         smice   , & ! ice mass tracer in snow (kg/m^3)
+         smliq       ! liquid water mass tracer in snow (kg/m^3)
 
       ! input from atmosphere
       real (kind=dbl_kind), &
@@ -159,6 +169,7 @@
          intent(inout):: &
          meltt    , & ! top ice melt             (m/step-->cm/day) 
          melts    , & ! snow melt                (m/step-->cm/day) 
+         meltsliq , & ! snow melt mass           (kg/m^2/step-->kg/m^2/day)
          meltb    , & ! basal ice melt           (m/step-->cm/day) 
          congel   , & ! basal ice growth         (m/step-->cm/day) 
          snoice   , & ! snow-ice formation       (m/step-->cm/day) 
@@ -168,6 +179,10 @@
 
       real (kind=dbl_kind), intent(in) :: &
          yday         ! day of year
+
+      logical (kind=log_kind), intent(in) :: &
+         tr_snow ,    &  ! if .true., use snow tracers
+         tr_rsnw         ! if .true., use dynamic snow grain radius
 
       logical (kind=log_kind), intent(out) :: &
          l_stop       ! if true, print diagnostics and abort on return
@@ -231,6 +246,7 @@
       congel  = c0
       snoice  = c0
       dsnow   = c0
+      meltsliq= c0
 
       if (calc_Tsfc) then
          fsensn  = c0
@@ -288,6 +304,8 @@
                                               fcondtopn, fcondbot,  &
                                               fadvocn,   snoice,    &
                                               einit,                &
+                                              smice,     smliq,     &
+                                              tr_snow,              &
                                               l_stop,    stop_label)
                
             if (l_stop) return
@@ -372,17 +390,20 @@
                              hin,         hilyr,     &
                              hsn,         hslyr,     &
                              zqin,        zqsn,      &
+                             smice,       smliq,     &
                              fbot,        Tbot,      &
                              flatn,       fsurfn,    &
                              fcondtopn,   fcondbot,  &
                              fsnow,       hsn_new,   &
                              fhocnn,      evapn,     &
                              meltt,       melts,     &
+                             meltsliq,    frain,     &
                              meltb,       iage,      &
                              congel,      snoice,    &
                              mlt_onset,   frz_onset, &
                              zSin,        sss,       &
-                             dsnow)
+                             dsnow,       tr_snow,   &
+                             rsnw,        tr_rsnw)
 
       !-----------------------------------------------------------------
       ! Check for energy conservation by comparing the change in energy
@@ -675,8 +696,11 @@
         
       real (kind=dbl_kind), dimension (:), &
          intent(out) :: &
-         zqsn        , & ! snow enthalpy
          zTsn            ! snow temperature
+      
+      real (kind=dbl_kind), dimension (:), &
+         intent(inout) :: &
+         zqsn            ! snow enthalpy
 
       logical (kind=log_kind), intent(inout) :: &
          l_stop          ! if true, print diagnostics and abort model
@@ -785,7 +809,7 @@
             if (zTsn(k) > Tmax) then
                write(warning,*) ' '
                call add_warning(warning)
-               write(warning,*) 'Starting thermo, zTsn > Tmax'
+               write(warning,*) 'Starting thermo, zTsn > Tmax, k = ', k
                call add_warning(warning)
                write(warning,*) 'zTsn=',zTsn(k)
                call add_warning(warning)
@@ -807,7 +831,7 @@
             if (zTsn(k) < Tmin) then ! allowing for roundoff error
                write(warning,*) ' '
                call add_warning(warning)
-               write(warning,*) 'Starting thermo, zTsn < Tmin'
+               write(warning,*) 'Starting thermo, zTsn < Tmin, k = ',k
                call add_warning(warning)
                write(warning,*) 'zTsn=', zTsn(k)
                call add_warning(warning)
@@ -815,9 +839,9 @@
                call add_warning(warning)
                write(warning,*) 'zqsn', zqsn(k)
                call add_warning(warning)
-               write(warning,*) hin
+               write(warning,*) 'hin', hin
                call add_warning(warning)
-               write(warning,*) hsn
+               write(warning,*) 'hsn', hsn
                call add_warning(warning)
                l_stop = .true.
                stop_label = "init_vertical_profile: Starting thermo, zTsn < Tmin"
@@ -904,16 +928,9 @@
 
          if (tice_high .and. heat_capacity) then
 
-            if (l_brine) then
-               Tmax = Tmlts(k)
-            else             ! fresh ice
-               Tmax = -zqin(k)*puny/(rhos*cp_ice*vicen)
-            endif
-
-            if (zTin(k) > Tmax) then
                write(warning,*) ' '
                call add_warning(warning)
-               write(warning,*) 'Starting thermo, T > Tmax, layer', k
+               write(warning,*) 'Starting thermo, zTin > Tmax, layer', k
                call add_warning(warning)
                write(warning,*) 'k:', k
                call add_warning(warning)
@@ -941,15 +958,12 @@
                   call add_warning(warning)
                else
                   l_stop = .true.
-                  stop_label = "init_vertical_profile: Starting thermo, T > Tmax, layer"
+                  stop_label = "init_vertical_profile: Starting thermo, zTin > Tmax, layer"
                   return
                endif
-            endif
          endif                  ! tice_high
 
          if (tice_low .and. heat_capacity) then
-
-            if (zTin(k) < Tmin) then
                write(warning,*) ' '
                call add_warning(warning)
                write(warning,*) 'Starting thermo T < Tmin, layer', k
@@ -959,9 +973,8 @@
                write(warning,*) 'Tmin =', Tmin
                call add_warning(warning)
                l_stop = .true.
-               stop_label = "init_vertical_profile: Starting thermo, T < Tmin, layer"
+               stop_label = "init_vertical_profile: Starting thermo, zTin < Tmin, layer"
                return
-            endif
          endif                  ! tice_low
 
       !-----------------------------------------------------------------
@@ -1009,17 +1022,20 @@
                                     hin,       hilyr,    &
                                     hsn,       hslyr,    &
                                     zqin,      zqsn,     &
+                                    smice,     smliq,    &
                                     fbot,      Tbot,     &
                                     flatn,     fsurfn,   &
                                     fcondtopn, fcondbot, &
                                     fsnow,     hsn_new,  &
                                     fhocnn,    evapn,    &
                                     meltt,     melts,    &
+                                    meltsliq,  frain,    &
                                     meltb,     iage,     &
                                     congel,    snoice,   &  
                                     mlt_onset, frz_onset,&
                                     zSin,      sss,      &
-                                    dsnow)
+                                    dsnow,     tr_snow,  &
+                                    rsnw,      tr_rsnw)
 
       use ice_colpkg_shared, only: phi_i_mushy
       use ice_mushy_physics, only: enthalpy_mush, enthalpy_of_melting, &
@@ -1040,14 +1056,18 @@
          fsnow       , & ! snowfall rate (kg m-2 s-1)
          flatn       , & ! surface downward latent heat (W m-2)
          fsurfn      , & ! net flux to top surface, excluding fcondtopn
-         fcondtopn       ! downward cond flux at top surface (W m-2)
+         fcondtopn   , & ! downward cond flux at top surface (W m-2)
+         frain           ! rainfall rate (kg/m2/s)
 
       real (kind=dbl_kind), intent(inout) :: &
          fcondbot        ! downward cond flux at bottom surface (W m-2)
 
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          zqin        , & ! ice layer enthalpy (J m-3)
-         zqsn            ! snow layer enthalpy (J m-3)
+         zqsn        , & ! snow layer enthalpy (J m-3)
+         rsnw        , & ! snow grain radius (10^-6 m)
+         smice       , & ! ice mass tracer in snow (kg/m^3)
+         smliq           ! liquid water mass tracer in snow (kg/m^3)
 
       real (kind=dbl_kind), intent(inout) :: &
          hilyr       , & ! ice layer thickness (m)
@@ -1056,6 +1076,7 @@
       real (kind=dbl_kind), intent(inout) :: &
          meltt       , & ! top ice melt             (m/step-->cm/day)
          melts       , & ! snow melt                (m/step-->cm/day)
+         meltsliq    , & ! snow melt mass           (kg/m^2/step-->kg/m^2/day)
          meltb       , & ! basal ice melt           (m/step-->cm/day)
          congel      , & ! basal ice growth         (m/step-->cm/day)
          snoice      , & ! snow-ice formation       (m/step-->cm/day)
@@ -1086,6 +1107,10 @@
       real (kind=dbl_kind), intent(in) :: &
          sss             ! ocean salinity (PSU) 
 
+      logical (kind=log_kind), intent(in) :: &
+         tr_snow    , &  ! if .true., use snow tracers
+         tr_rsnw         ! if .true., use snow dynamic snow grain radius
+
       ! local variables
 
       real (kind=dbl_kind), parameter :: &
@@ -1114,7 +1139,9 @@
          wk1         , & ! temporary variable
          zqsnew      , & ! enthalpy of new snow (J m-3)
          hstot       , & ! snow thickness including new snow (m)
-         Tmlts           ! melting temperature
+         Tmlts       , & ! melting temperature
+         smtot       , & ! total ice + liquid mass of snow
+         smice_precs     ! ice mass added to snow due to snowfall (kg/m^2)
 
       real (kind=dbl_kind), dimension (nilyr+1) :: &
          zi1         , & ! depth of ice layer boundaries (m)
@@ -1128,7 +1155,9 @@
          dzi             ! ice layer thickness after growth/melting
 
       real (kind=dbl_kind), dimension (nslyr) :: &
-         dzs             ! snow layer thickness after growth/melting
+         dzs         , & ! snow layer thickness after growth/melting
+         smicetot    , & ! total ice mass of snow in each layer (kg/m^2)
+         smliqtot        ! total liquid mass of snow in each layer (kg/m^2)
 
       real (kind=dbl_kind), dimension (nilyr) :: &
          qm          , & ! energy of melting (J m-3) = zqin in BL99 formulation
@@ -1151,6 +1180,12 @@
 
       do k = 1, nslyr
          dzs(k) = hslyr
+         smicetot(k) = c0
+         smliqtot(k) = c0
+         if (tr_snow) then
+           smicetot(k) = dzs(k) * smice(k)
+           smliqtot(k) = dzs(k) * smliq(k)
+         endif
       enddo
 
       do k = 1, nilyr
@@ -1175,8 +1210,12 @@
          do k = 1, nslyr
             Ts = (Lfresh + zqsn(k)/rhos) / cp_ice
             if (Ts > c0) then
-               dhs = cp_ice*Ts*dzs(k) / Lfresh
-               dzs(k) = dzs(k) - dhs
+               dhs = cp_ice*Ts*dzs(k) / Lfresh  ! melt
+               smice_precs = c0
+               if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
+               smicetot(k) = max(c0,smicetot(k) - smice_precs) ! dhs << dzs
+               smliqtot(k) = max(c0,smliqtot(k) + smice_precs)
+               dzs (k) = dzs(k) - dhs
                zqsn(k) = -rhos*Lfresh
             endif
          enddo
@@ -1219,6 +1258,7 @@
 
       if (hsn > puny) then    ! add snow with enthalpy zqsn(1)
          dhs = econ / (zqsn(1) - rhos*Lvap) ! econ < 0, dhs > 0
+         smicetot(1) = dhs*rhos + smicetot(1)   ! new snow ice
          dzs(1) = dzs(1) + dhs
          evapn = evapn + dhs*rhos
       else                        ! add ice with enthalpy zqin(1)
@@ -1299,8 +1339,12 @@
          if (ktherm == 2 .and. zqsn(k) > -rhos * Lfresh) then
 
             dhs = max(-dzs(k), &
-                -((zqsn(k) + rhos*Lfresh) / (rhos*Lfresh)) * dzs(k))
-            dzs(k) = dzs(k) + dhs
+                -((zqsn(k) + rhos*Lfresh) / (rhos*Lfresh)) * dzs(k)) ! dhs < 0 
+            smice_precs = c0
+            if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
+            smicetot(k) = max(c0,smicetot(k) + smice_precs) ! -dhs <= dzs
+            smliqtot(k) = max(c0,smliqtot(k) - smice_precs)
+            dzs (k) = dzs(k) + dhs
             zqsn(k) = -rhos * Lfresh
             melts = melts - dhs
             ! delta E = zqsn(k) + rhos * Lfresh
@@ -1313,6 +1357,9 @@
 
          qsub = zqsn(k) - rhos*Lvap ! qsub < 0
          dhs  = max (-dzs(k), esub/qsub)  ! esub > 0, dhs < 0
+         smice_precs = c0
+         if (abs(dzs(k)) > puny) smice_precs = dhs * smicetot(k)/dzs(k)
+         smicetot(k) = max(c0,smicetot(k) + smice_precs)
          dzs(k) = dzs(k) + dhs
          esub = esub - dhs*qsub
          esub = max(esub, c0)   ! in case of roundoff error
@@ -1323,6 +1370,10 @@
          !--------------------------------------------------------------
 
          dhs = max(-dzs(k), etop_mlt/zqsn(k))
+         smice_precs = c0
+         if (abs(dzs(k)) > puny) smice_precs = smicetot(k)/dzs(k) * dhs
+         smicetot(k) = max(c0,smicetot(k) + smice_precs)
+         smliqtot(k) = max(c0,smliqtot(k) - smice_precs)
          dzs(k) = dzs(k) + dhs         ! zqsn < 0, dhs < 0
          etop_mlt = etop_mlt - dhs*zqsn(k)
          etop_mlt = max(etop_mlt, c0) ! in case of roundoff error
@@ -1435,9 +1486,43 @@
             ! avoid roundoff errors
             zqsn(1) = min(zqsn(1), -rhos*Lfresh)
 
+            if (tr_snow) then
+
+              smtot = c0
+              if (abs(dzs(1)) > c0) smtot = smicetot(1)/dzs(1) !smice(1) ! save for now
+         
+               ! ice mass in snow due to snowfall (precs)
+               ! new snow density = rhos for now
+              smice_precs = hsn_new * rhos ! kg/m^2
+
+               ! update ice mass tracer due to snowfall
+              smicetot(1) = smicetot(1) + smice_precs
+               ! smice(1) = (dzs(1)*smice(1) + smice_precs) / hstot
+
+               ! mass fraction of ice due to snowfall
+               smtot = c0
+               do k = 1, nslyr
+               !   smtot = smtot + smice(k) + smliq(k)
+                 smtot = smtot + smicetot(k) + smliqtot(k)
+               enddo
+               if (smtot > c0) then
+                  smice_precs = smice_precs / smtot
+               else
+                  smice_precs = c1
+               endif
+
+            endif
+
             dzs(1) = hstot
+
          endif
       endif
+
+!---!-----------------------------------------------------------------
+!---! Add rain  at top surface (only to liquid tracer)
+!---!-----------------------------------------------------------------
+
+     smliqtot(1) = smliqtot(1) + frain*dt
 
     !-----------------------------------------------------------------
     ! Find the new ice and snow thicknesses.
@@ -1456,6 +1541,14 @@
       enddo                     ! k
 
     !-------------------------------------------------------------------
+    ! Incorporate new snow for snow grain radius
+    !-------------------------------------------------------------------
+     if (tr_rsnw .and. hsn_new > c0) &
+           call add_new_snow_radius (nslyr,     dzs(1),  &
+                                     hsn_new,   rsnw(1), &
+                                     rsnw_fall, rsnw_tmax)
+
+    !-------------------------------------------------------------------
     ! Convert snow to ice if snow lies below freeboard.
     !-------------------------------------------------------------------
 
@@ -1465,8 +1558,26 @@
                            hin,      hsn,      &
                            zqin,     zqsn,     &
                            dzi,      dzs,      &
-                           dsnow)
+                           dsnow,              &
+                           smicetot(:),        &
+                           smliqtot(:))
 
+    !-------------------------------------------------------------------
+    ! Update snow mass tracers, smice and smliq, for uneven layers
+    !-------------------------------------------------------------------
+       if (tr_snow) then
+         do k = 1, nslyr
+            meltsliq = meltsliq + smliqtot(k)  ! total liquid (in case all snow melted)
+            if (dzs(k) > c0) then
+               smice(k) = smicetot(k) / dzs(k)
+               smliq(k) = smliqtot(k) / dzs(k)
+            else
+               smice(k) = c0
+               smliq(k) = c0
+            endif
+         enddo
+       endif
+     
 !---!-------------------------------------------------------------------
 !---! Repartition the ice and snow into equal-thickness layers,
 !---! conserving energy.
@@ -1556,6 +1667,23 @@
                                hslyr,    hsn,      &
                                zqsn)   
 
+         if (tr_rsnw) &
+               call adjust_enthalpy (nslyr,              &
+                                     zs1(:),   zs2(:),   &
+                                     hslyr,    hsn,      &
+                                     rsnw(:))
+
+        if (tr_snow) then
+              call adjust_enthalpy (nslyr,              &
+                                    zs1(:),   zs2(:),   &
+                                    hslyr,    hsn,      &
+                                    smice(:))
+              call adjust_enthalpy (nslyr,              &
+                                    zs1(:),   zs2(:),   &
+                                    hslyr,    hsn,      &
+                                    smliq(:))
+        endif
+
       endif   ! nslyr > 1
 
       !-----------------------------------------------------------------
@@ -1568,6 +1696,11 @@
                fhocnn = fhocnn &
                       + zqsn(k)*hsn/(real(nslyr,kind=dbl_kind)*dt)
                zqsn(k) = -rhos*Lfresh
+               if (tr_snow) then
+                 meltsliq = meltsliq + smicetot(k)  ! add to meltponds
+                 smice(k) = c0
+                 smliq(k) = c0
+               endif
                hslyr = c0
             endif
          enddo
@@ -1615,7 +1748,8 @@
                             hin,      hsn,      &
                             zqin,     zqsn,     &
                             dzi,      dzs,      &
-                            dsnow)
+                            dsnow,    smicetot, &
+                            smliqtot)
 
       integer (kind=int_kind), intent(in) :: &
          nslyr     ! number of snow layers
@@ -1640,7 +1774,9 @@
       real (kind=dbl_kind), dimension (:), intent(inout) :: &
          zqin    , & ! ice layer enthalpy (J m-3)
          dzi     , & ! ice layer thicknesses (m)
-         dzs         ! snow layer thicknesses (m)
+         dzs     , & ! snow layer thicknesses (m)
+         smicetot, & ! snow ice mass per layer (kg/m^2)
+         smliqtot    ! snow liquid mass per layer (kg/m^2)
 
       ! local variables
 
@@ -1664,7 +1800,7 @@
       dhsn = c0
       hqs  = c0
 
-      wk1 = hsn - hin*(rhow-rhoi)/rhos
+      wk1 = hsn - hin*(rhow-rhoi)/rhos  ! not yet consistent with smice/smliq
 
       if (wk1 > puny .and. hsn > puny) then  ! snow below freeboard
          dhsn = min(wk1*rhoi/rhow, hsn) ! snow to remove
@@ -1679,6 +1815,8 @@
       do k = nslyr, 1, -1
          if (dhin > puny) then
             dhs = min(dhsn, dzs(k)) ! snow to remove from layer
+            smicetot(k) = max(c0,smicetot(k) - dhs * smicetot(k) / dzs(k)) !smice(k)
+            smliqtot(k) = max(c0,smliqtot(k) - dhs * smliqtot(k) / dzs(k)) !smliq(k)
             hsn = hsn - dhs
             dsnow = dsnow -dhs   !new snow addition term 
             dzs(k) = dzs(k) - dhs
@@ -1837,7 +1975,8 @@
 
       real (kind=dbl_kind) :: &
          einp        , & ! energy input during timestep (J m-2)
-         ferr            ! energy conservation error (W m-2)
+         ferr        , & ! energy conservation error (W m-2)
+         ftop            ! surface flux error: fcondtopn-fsurfn
 
       character(len=char_len_long) :: &
          warning ! warning message
@@ -1883,6 +2022,10 @@
          call add_warning(warning)
          write(warning,*) fbot,fcondbot
          call add_warning(warning)
+         write(warning,*) 'fsurfn,fcondtopn:'
+         call add_warning(warning)
+         write(warning,*) fsurfn,fcondtopn
+         call add_warning(warning)
 
          !         if (ktherm == 2) then
          write(warning,*) 'Intermediate energy =', einter
@@ -1893,11 +2036,15 @@
          write(warning,*) 'einter - einit  =', &
               einter-einit
          call add_warning(warning)
+         ftop = c0
+         if (ktherm == 2) then
+            if (fcondtopn > fsurfn) ftop = (fcondtopn-fsurfn)
+         end if
          write(warning,*) 'Conduction Error =', (einter-einit) &
-              - (fcondtopn*dt - fcondbot*dt + fswint*dt)
+              - (fcondtopn*dt - fcondbot*dt + fswint*dt) + ftop*dt
          call add_warning(warning)
          write(warning,*) 'Melt/Growth Error =', (einter-einit) &
-              + ferr*dt - (fcondtopn*dt - fcondbot*dt + fswint*dt)
+              + ferr*dt - (fcondtopn*dt - fcondbot*dt + fswint*dt)-ftop*dt
          call add_warning(warning)
          write(warning,*) 'Advection Error =', fadvocn*dt
          call add_warning(warning)
@@ -1987,6 +2134,35 @@
       endif
       
       end subroutine update_state_vthermo
+
+!=======================================================================
+
+!  Modify snow grain radius in upper layer due to fallen snow
+
+      subroutine add_new_snow_radius (nslyr, dzs, hsn_new, rsnw, &
+                                      rsnw_fall, rsnw_tmax)
+
+      use ice_constants_colpkg, only: c0, puny
+
+      integer (kind=int_kind), intent(in) :: &
+         nslyr     ! number of snow layers
+
+      real (kind=dbl_kind), intent(in) :: &
+         dzs                , &    ! upper snow layer thickness (m)
+         hsn_new            , &    ! new snow fall thickness (m)
+         rsnw_fall          , &    ! radius of new snow (10^-6 m)
+         rsnw_tmax                 ! maximum radius (10^-6 m)
+
+      real (kind=dbl_kind), &
+         intent(inout) :: &
+         rsnw                      ! upper layer snow radius (10^-6 m)
+
+         rsnw = (hsn_new * rsnw_fall + max(c0,dzs-hsn_new) * rsnw)/ &
+                (max(hsn_new + max(c0,dzs-hsn_new),puny))
+
+         rsnw = max(rsnw_fall,min(rsnw_tmax, rsnw))
+
+      end subroutine add_new_snow_radius
 
 !=======================================================================
 

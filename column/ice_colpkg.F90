@@ -36,6 +36,7 @@
 
       ! time stepping
       public :: &
+           colpkg_step_snow, &
            colpkg_step_therm1, &
            colpkg_biogeochemistry, &
            colpkg_step_therm2, &
@@ -261,6 +262,10 @@
 
       endif ! kcatbound
 
+      if (kitd == 1) then
+         hin_max(ncat) = 999.9_dbl_kind ! arbitrary big number
+      endif
+
       end subroutine colpkg_init_itd
 
 !=======================================================================
@@ -415,9 +420,12 @@
       use ice_constants_colpkg, only: iyear_AD, eccen, obliqr, lambm0, &
          mvelpp, obliq, mvelp, decln, eccf, log_print
 
-#ifndef CCSMCOUPLED
+#ifdef CCSMCOUPLED
+      use shr_orb_mod, only: shr_orb_params
+#else
       use ice_orbital, only: shr_orb_params
 #endif
+
 
       logical (kind=log_kind), intent(out) :: &
          l_stop          ! if true, abort the model
@@ -429,7 +437,10 @@
       iyear_AD  = 1950
       log_print = .false.   ! if true, write out orbital parameters
 
-#ifndef CCSMCOUPLED
+#ifdef CCSMCOUPLED
+      call shr_orb_params( iyear_AD, eccen , obliq , mvelp    , &
+                           obliqr  , lambm0, mvelpp, log_print)
+#else
       call shr_orb_params( iyear_AD, eccen , obliq , mvelp    , &
                            obliqr  , lambm0, mvelpp, log_print, &
                            l_stop, stop_label)
@@ -767,7 +778,7 @@
                  f_don_Am_protein ,f_doc_s, f_doc_l, &
                  f_exude_s, f_exude_l, k_bac_s,  k_bac_l, &
                  algaltype_diatoms, algaltype_sp, algaltype_phaeo, &
-                 doctype_s, doctype_l, dontype_protein, &
+                 doctype_s, doctype_l, dictype_1, dontype_protein, &
                  fedtype_1, feptype_1, zaerotype_bc1, zaerotype_bc2, &
                  zaerotype_dust1, zaerotype_dust2, zaerotype_dust3, &
                  zaerotype_dust4, &
@@ -994,6 +1005,7 @@
         humtype           , & !
         doctype_s         , & !
         doctype_l         , & !
+        dictype_1         , & !
         dontype_protein    , & !
         fedtype_1         , & !
         feptype_1         , & !
@@ -1144,7 +1156,7 @@
       F_abs_chl(3) = F_abs_chl_phaeo
 
       R_Fe2DON(1) = ratio_Fe2DON
-      R_C2N(1) = ratio_C2N_proteins
+      R_C2N_DON(1) = ratio_C2N_proteins
      
       R_Fe2DOC(1) = ratio_Fe2DOC_s
       R_Fe2DOC(2) = ratio_Fe2DOC_l
@@ -1202,6 +1214,9 @@
       K_Fe(2) = K_Fe_sp
       K_Fe(3) = K_Fe_phaeo
 
+      f_doc(1) = f_doc_s
+      f_doc(2) = f_doc_l
+
       f_don(1) = f_don_protein
       kn_bac(1) = kn_bac_protein
       f_don_Am(1) = f_don_Am_protein
@@ -1218,6 +1233,8 @@
       doctype(1) = doctype_s
       doctype(2) = doctype_l
  
+      dictype(1) = dictype_1
+
       dontype(1) = dontype_protein
 
       fedtype(1) = fedtype_1
@@ -1770,6 +1787,7 @@
 !          Elizabeth C. Hunke, LANL
 
       subroutine colpkg_step_therm1(dt, ncat, nilyr, nslyr, n_aero, &
+                                    aice0       ,               &
                                     aicen_init  ,               &
                                     vicen_init  , vsnon_init  , &
                                     aice        , aicen       , &
@@ -1778,10 +1796,12 @@
                                     uvel        , vvel        , &
                                     Tsfc        , zqsn        , &
                                     zqin        , zSin        , &
+                                    smice       , smliq       , &
                                     alvl        , vlvl        , &
                                     apnd        , hpnd        , &
                                     ipnd        ,               &
                                     iage        , FY          , &
+                                    rsnw        , use_smliq_pnd,&
                                     aerosno     , aeroice     , &
                                     uatm        , vatm        , &
                                     wind        , zlvl        , &
@@ -1806,7 +1826,7 @@
                                     fbot        ,               &
                                     frzmlt      , rside       , &
                                     fsnow       , frain       , &
-                                    fpond       ,               &
+                                    fpond       , fsloss      , &
                                     fsurf       , fsurfn      , &
                                     fcondtop    , fcondtopn   , &
                                     fswsfcn     , fswintn     , &
@@ -1827,6 +1847,7 @@
                                     meltb       , meltbn      , &
                                     meltl       ,               &
                                     melts       , meltsn      , &
+                                    meltsliq    , meltsliqn   , &
                                     congel      , congeln     , &
                                     snoice      , snoicen     , &
                                     dsnown      , frazil      , &
@@ -1838,16 +1859,18 @@
       use ice_aerosol, only: update_aerosol
       use ice_atmo, only: neutral_drag_coeffs
       use ice_age, only: increment_age
-      use ice_constants_colpkg, only: rhofresh, rhoi, rhos, c0, c1, puny
+      use ice_constants_colpkg, only: rhofresh, rhoi, rhos, c0, c1, puny, &
+          snwlvlfac
       use ice_firstyear, only: update_FYarea
       use ice_flux_colpkg, only: set_sfcflux, merge_fluxes
       use ice_meltpond_cesm, only: compute_ponds_cesm
       use ice_meltpond_lvl, only: compute_ponds_lvl
       use ice_meltpond_topo, only: compute_ponds_topo
+      use ice_snow, only: drain_snow
       use ice_therm_shared, only: hi_min
       use ice_therm_vertical, only: frzmlt_bottom_lateral, thermo_vertical
       use ice_colpkg_tracers, only: tr_iage, tr_FY, tr_aero, tr_pond, &
-          tr_pond_cesm, tr_pond_lvl, tr_pond_topo
+          tr_pond_cesm, tr_pond_lvl, tr_pond_topo, tr_snow, tr_rsnw
 
       integer (kind=int_kind), intent(in) :: &
          ncat    , & ! number of thickness categories
@@ -1865,12 +1888,14 @@
 
       logical (kind=log_kind), intent(in) :: &
          lmask_n     , & ! northern hemisphere mask
-         lmask_s         ! southern hemisphere mask
+         lmask_s     , & ! southern hemisphere mask
+         use_smliq_pnd   ! if true, use snow liquid tracer for ponds
 
       logical (kind=log_kind), intent(in), optional :: &
          prescribed_ice  ! if .true., use prescribed ice instead of computed
 
       real (kind=dbl_kind), intent(inout) :: &
+         aice0       , & ! open water fraction
          aice        , & ! sea ice concentration
          vice        , & ! volume per unit area of ice          (m)
          vsno        , & ! volume per unit area of snow         (m)
@@ -1884,6 +1909,7 @@
          rhoa        , & ! air density (kg/m^3)
          frain       , & ! rainfall rate (kg/m^2 s)
          fsnow       , & ! snowfall rate (kg/m^2 s)
+         fsloss      , & ! blowing snow loss to leads (kg/m^2/s)
          fpond       , & ! fresh water flux to ponds (kg/m^2/s)
          fresh       , & ! fresh water flux to ocean (kg/m^2/s)
          fsalt       , & ! salt flux to ocean (kg/m^2/s)
@@ -1934,6 +1960,7 @@
          sss         , & ! sea surface salinity (ppt)
          meltt       , & ! top ice melt             (m/step-->cm/day)
          melts       , & ! snow melt                (m/step-->cm/day)
+         meltsliq    , & ! snow melt mass           (kg/m^2/step-->kg/m^2/day)
          meltb       , & ! basal ice melt           (m/step-->cm/day)
          meltl       , & ! lateral ice melt         (m/step-->cm/day)
          mlt_onset   , & ! day of year that sfc melting begins
@@ -1970,6 +1997,7 @@
          dhsn        , & ! depth difference for snow on sea ice and pond ice
          ffracn      , & ! fraction of fsurfn used to melt ipond
          meltsn      , & ! snow melt                       (m)
+         meltsliqn   , & ! snow melt mass                  (kg/m^2)
          melttn      , & ! top ice melt                    (m)
          meltbn      , & ! bottom ice melt                 (m)
          congeln     , & ! congelation ice growth          (m)
@@ -1980,8 +2008,11 @@
          zqsn        , & ! snow layer enthalpy (J m-3)
          zqin        , & ! ice layer enthalpy (J m-3)
          zSin        , & ! internal ice layer salinities
+         smice       , & ! ice mass tracer in snow (kg/m^3)
+         smliq       , & ! liquid water mass tracer in snow (kg/m^3)
          Sswabsn     , & ! SW radiation absorbed in snow layers (W m-2)
-         Iswabsn         ! SW radiation absorbed in ice layers (W m-2)
+         Iswabsn     , & ! SW radiation absorbed in ice layers (W m-2)
+         rsnw            ! snow grain radius (10^-6 m) in snow layers 
 
       real (kind=dbl_kind), dimension(:,:,:), intent(inout) :: &
          aerosno    , &  ! snow aerosol tracer (kg/m^2)
@@ -2023,6 +2054,26 @@
       real (kind=dbl_kind) :: &
          raice       , & ! 1/aice
          pond            ! water retained in ponds (m)
+
+      !---------------------------------------------------------------
+      ! Initialize rate of snow loss to leads
+      !---------------------------------------------------------------
+
+      fsloss = fsnow*aice0
+
+      !---------------------------------------------------------------
+      ! 30% rule for snow redistribution: precip factor
+      !---------------------------------------------------------------
+
+      if (trim(snwredist) == '30percent') then
+         worka = c0      
+         do n = 1, ncat
+            worka = worka + alvl(n)
+         enddo
+         worka  = worka * snwlvlfac/(c1+snwlvlfac)
+         fsloss = fsloss + fsnow*(c1-worka)
+         fsnow  =          fsnow*    worka
+      endif ! snwredist
 
       !-----------------------------------------------------------------
       ! Adjust frzmlt to account for ice-ocean heat fluxes since last
@@ -2068,6 +2119,7 @@
       do n = 1, ncat
 
          meltsn (n) = c0
+         meltsliqn(n) = c0
          melttn (n) = c0
          meltbn (n) = c0
          congeln(n) = c0
@@ -2161,13 +2213,15 @@
                                  vicen    (n), vsnon    (n), &
                                  Tsfc     (n), zSin   (:,n), &
                                  zqin   (:,n), zqsn   (:,n), &
-                                 apnd     (n), hpnd     (n), &
-                                 iage     (n), tr_pond_topo, &
+                                 smice  (:,n), smliq  (:,n), &
+                                 tr_snow,      apnd     (n), &
+                                 hpnd     (n), iage     (n), &
+                                 tr_pond_topo,               &
                                  flw,          potT,         &
                                  Qa,           rhoa,         &
                                  fsnow,        fpond,        &
                                  fbot,         Tbot,         &
-                                 sss,                        &
+                                 sss,          rsnw   (:,n), &
                                  lhcoef,       shcoef,       &
                                  fswsfcn  (n), fswintn  (n), &
                                  Sswabsn(:,n), Iswabsn(:,n), &
@@ -2175,12 +2229,13 @@
                                  fsensn   (n), flatn    (n), &
                                  flwoutn,      evapn,        &
                                  freshn,       fsaltn,       &
-                                 fhocnn,                     &
+                                 fhocnn,       frain,        &
                                  melttn   (n), meltsn   (n), &
-                                 meltbn   (n),               &
+                                 meltbn   (n), meltsliqn(n), &
                                  congeln  (n), snoicen  (n), &
                                  mlt_onset,    frz_onset,    &
                                  yday,         dsnown   (n), &
+                                 tr_rsnw,                    &
                                  l_stop,       stop_label,   &
                                  prescribed_ice)
                
@@ -2216,6 +2271,18 @@
          endif   ! aicen_init
 
       !-----------------------------------------------------------------
+      ! Transport liquid water in snow between layers and 
+      ! compute the meltpond contribution
+      !-----------------------------------------------------------------
+
+       if (use_smliq_pnd) then
+         call drain_snow (dt,            nslyr,        &
+                          vsnon   (n) ,  aicen    (n), &
+                          smice  (:,n),  smliq  (:,n), &
+                          meltsliqn(n))
+       endif
+
+      !-----------------------------------------------------------------
       ! Melt ponds
       ! If using tr_pond_cesm, the full calculation is performed here.
       ! If using tr_pond_topo, the rest of the calculation is done after
@@ -2224,7 +2291,6 @@
 
          !call ice_timer_start(timer_ponds)
          if (tr_pond) then
-               
             if (tr_pond_cesm) then
                rfrac = rfracmin + (rfracmax-rfracmin) * aicen(n) 
                call compute_ponds_cesm(dt,        hi_min,    &
@@ -2233,7 +2299,9 @@
                                        frain,                &
                                        aicen (n), vicen (n), &
                                        vsnon (n), Tsfc  (n), &
-                                       apnd  (n), hpnd  (n))
+                                       apnd  (n), hpnd  (n), &
+                                       meltsliqn(n),         &
+                                       use_smliq_pnd)
                   
             elseif (tr_pond_lvl) then
                rfrac = rfracmin + (rfracmax-rfracmin) * aicen(n)
@@ -2251,7 +2319,9 @@
                                       zqin(:,n), zSin(:,n), &
                                       Tsfc  (n), alvl  (n), &
                                       apnd  (n), hpnd  (n), &
-                                      ipnd  (n))
+                                      ipnd  (n),            &
+                                      meltsliqn(n),         &
+                                      use_smliq_pnd)
                   
             elseif (tr_pond_topo) then
                if (aicen_init(n) > puny) then
@@ -2259,10 +2329,14 @@
                   ! collect liquid water in ponds
                   ! assume salt still runs off
                   rfrac = rfracmin + (rfracmax-rfracmin) * aicen(n)
-                  pond = rfrac/rhofresh * (melttn(n)*rhoi &
-                       +                   meltsn(n)*rhos &
-                       +                   frain *dt)
-
+                  if (use_smliq_pnd) then
+                    pond = rfrac/rhofresh * (melttn(n)*rhoi &
+                         +                   meltsliqn(n))
+                  else
+                    pond = rfrac/rhofresh * (melttn(n)*rhoi &
+                         +                   meltsn(n)*rhos &
+                         +                   frain *dt)
+                  endif
                   ! if pond does not exist, create new pond over full ice area
                   ! otherwise increase pond depth without changing pond area
                   if (apnd(n) < puny) then
@@ -2304,10 +2378,10 @@
                                fhocn,      fswthru,      &
                                melttn (n), meltsn(n),    &
                                meltbn (n), congeln(n),   &
-                               snoicen(n),               &
+                               snoicen(n), meltsliqn(n), &
                                meltt,      melts,        &
                                meltb,      congel,       &
-                               snoice,                   &
+                               snoice,     meltsliq,     &
                                Uref,       Urefn)
 
       enddo                  ! ncat
@@ -2382,7 +2456,7 @@
       logical (kind=log_kind), intent(in) :: &
          update_ocn_f     ! if true, update fresh water and salt fluxes
 
-      real (kind=dbl_kind), dimension(0:ncat), intent(inout) :: &
+      real (kind=dbl_kind), dimension(0:ncat), intent(in) :: &
          hin_max      ! category boundaries (m)
 
       real (kind=dbl_kind), intent(in) :: &
@@ -2700,7 +2774,7 @@
 !          Elizabeth C. Hunke, LANL
 
       subroutine colpkg_step_radiation (dt,       ncat,      & 
-                                        n_algae,  tr_zaero,  &
+                                        n_algae,             &
                                         nblyr,    ntrcr,     &
                                         nbtrcr,   nbtrcr_sw, &
                                         nilyr,    nslyr,     &
@@ -2714,6 +2788,8 @@
                                         vsnon,    Tsfcn,     &
                                         alvln,    apndn,     &
                                         hpndn,    ipndn,     &
+                                        snwredist,           &
+                                        rsnow,               &
                                         aeron,               &
                                         zbion,               &
                                         trcrn,               &
@@ -2741,13 +2817,28 @@
                                         albpndn,  apeffn,    &
                                         snowfracn,           &
                                         dhsn,     ffracn,    &
-                                        l_print_point, &
-                                        initonly)
+                                        l_print_point,       &
+                                        initonly,           &
+                                        asm_prm_ice_drc,     &
+                                        asm_prm_ice_dfs,     &
+                                        ss_alb_ice_drc,      &
+                                        ss_alb_ice_dfs,      &
+                                        ext_cff_mss_ice_drc, &
+                                        ext_cff_mss_ice_dfs, &
+                                        kaer_tab_5bd,          &
+                                        waer_tab_5bd,          &
+                                        gaer_tab_5bd,          &
+                                        kaer_bc_tab_5bd,       &
+                                        waer_bc_tab_5bd,       &
+                                        gaer_bc_tab_5bd,       &
+                                        bcenh_5bd,             &
+                                        rsnw_dEddn)
 
       use ice_constants_colpkg, only: c0, puny
       use ice_shortwave, only: run_dEdd, shortwave_ccsm3, compute_shortwave_trcr
       use ice_colpkg_tracers, only: tr_pond_cesm, tr_pond_lvl, tr_pond_topo, &
-                                    tr_bgc_N, tr_aero
+                                    tr_bgc_N, tr_aero, tr_rsnw, tr_zaero
+
       use ice_colpkg_shared, only:  z_tracers, skl_bgc
 
       integer (kind=int_kind), intent(in) :: &
@@ -2798,7 +2889,8 @@
       real (kind=dbl_kind), dimension(:,:), intent(in) :: & 
          kaer_tab, & ! aerosol mass extinction cross section (m2/kg)
          waer_tab, & ! aerosol single scatter albedo (fraction)
-         gaer_tab    ! aerosol asymmetry parameter (cos(theta))
+         gaer_tab, & ! aerosol asymmetry parameter (cos(theta))
+         rsnow       ! snow grain radius tracer (10^-6 m)
 
       real (kind=dbl_kind), dimension(:,:), intent(in) :: & 
          kaer_bc_tab, & ! aerosol mass extinction cross section (m2/kg)
@@ -2818,6 +2910,9 @@
          hpndn     , & ! pond depth (m)
          ipndn     , & ! pond refrozen lid thickness (m)
          fbri           ! brine fraction 
+
+      character(len=char_len), intent(in) :: & 
+         snwredist                ! type of snow redistribution
 
       real(kind=dbl_kind), dimension(:,:), intent(in) :: &
          aeron     , & ! aerosols (kg/m^3)
@@ -2841,6 +2936,7 @@
          albicen   , & ! bare ice 
          albsnon   , & ! snow 
          albpndn   , & ! pond 
+         rsnw_dEddn, & ! snow grain radius (um)
          apeffn        ! effective pond area used for radiation calculation
 
       real (kind=dbl_kind), dimension(:,:), intent(inout) :: &
@@ -2851,11 +2947,34 @@
       logical (kind=log_kind), intent(in) :: &
          l_print_point, & ! flag for printing diagnostics
          dEdd_algae   , & ! .true. use prognostic chla in dEdd
-         modal_aero   , & ! .true. use modal aerosol optical treatment
-         tr_zaero
+         modal_aero       ! .true. use modal aerosol optical treatment
 
       logical (kind=log_kind), optional :: &
          initonly         ! flag to indicate init only, default is false
+
+
+      ! snow grain single-scattering properties for
+      ! direct (drc) and diffuse (dfs) shortwave incidents
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: & ! Model SNICAR snow SSP
+        asm_prm_ice_drc,     & ! snow asymmetry factor (cos(theta))
+        asm_prm_ice_dfs,     & ! snow asymmetry factor (cos(theta))
+        ss_alb_ice_drc,      & ! snow single scatter albedo (fraction)
+        ss_alb_ice_dfs,      & ! snow single scatter albedo (fraction)
+        ext_cff_mss_ice_drc, & ! snow mass extinction cross section (m2/kg)
+        ext_cff_mss_ice_dfs    ! snow mass extinction cross section (m2/kg)
+
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: &
+        kaer_tab_5bd, & ! aerosol mass extinction cross section (m2/kg)
+        waer_tab_5bd, & ! aerosol single scatter albedo (fraction)
+        gaer_tab_5bd    ! aerosol asymmetry parameter (cos(theta))
+
+      real (kind=dbl_kind), dimension(:,:), intent(in) :: & ! Modal aerosol treatment
+        kaer_bc_tab_5bd, & ! aerosol mass extinction cross section (m2/kg)
+        waer_bc_tab_5bd, & ! aerosol single scatter albedo (fraction)
+        gaer_bc_tab_5bd    ! aerosol asymmetry parameter (cos(theta))
+
+      real (kind=dbl_kind), dimension(:,:,:), intent(in) :: & ! Modal aerosol treatment
+        bcenh_5bd         ! BC absorption enhancement factor
 
       ! local variables
 
@@ -2930,6 +3049,8 @@
                           vsnon,        Tsfcn,          &
                           alvln,        apndn,          &
                           hpndn,        ipndn,          &
+                          snwredist,                    &
+                          rsnow,        tr_rsnw,        &
                           aeron,        kalg,           &
                           zbion,                        &
                           heat_capacity,                &
@@ -2960,8 +3081,23 @@
                           albpndn,      apeffn,         &
                           snowfracn,                    &
                           dhsn,         ffracn,         &
+                          rsnw_dEddn,                   &
                           l_print_point,                &
-                          linitonly)
+                          linitonly,                    &
+                          use_snicar,                   &
+                          asm_prm_ice_drc,              &
+                          asm_prm_ice_dfs,              &
+                          ss_alb_ice_drc,               &
+                          ss_alb_ice_dfs,               &
+                          ext_cff_mss_ice_drc,          &
+                          ext_cff_mss_ice_dfs,          &
+                          kaer_tab_5bd,                 &
+                          waer_tab_5bd,                 &
+                          gaer_tab_5bd,                 &
+                          kaer_bc_tab_5bd,              &
+                          waer_bc_tab_5bd,              &
+                          gaer_bc_tab_5bd,              &
+                          bcenh_5bd)
  
          else  ! .not. dEdd
 
@@ -3527,6 +3663,7 @@
       if (present(uvel)) then
          worku = uvel
       endif
+      ! should this be for vvel,workv?
       if (present(uvel)) then
          worku = uvel
       endif
@@ -3664,6 +3801,208 @@
       end subroutine colpkg_ocn_mixed_layer
 
 !=======================================================================
+!
+! Updates snow tracers
+!
+! authors: Elizabeth C. Hunke, LANL
+!          Nicole Jeffery, LANL
+
+      subroutine colpkg_step_snow (dt,        wind,     &
+                                   nilyr,               &
+                                   nslyr,     ncat,     &
+                                   aice,      aicen,    &
+                                   vicen,     vsnon,    &
+                                   alvl,      vlvl,     &
+                                   smice,     smliq,    &
+                                   rhos_effn, rhos_eff, &
+                                   rhos_cmpn, rhos_cmp, &
+                                   rsnw,      zqin1,    &
+                                   zSin1,     Tsfc,     &
+                                   zqsn,                &
+                                   fresh,     fhocn,    &
+                                   fsloss,    fsnow,    &
+                                   rhosnew,   rhosmax,  &
+                                   windmin,   drhosdwind, &
+                                   snowage_tau, &
+                                   snowage_kappa, &
+                                   snowage_drdt0, &
+                                   idx_T_max, &
+                                   idx_Tgrd_max, &
+                                   idx_rhos_max, &
+                                   l_stop, &
+                                   stop_label)
+
+      use ice_colpkg_tracers, only: tr_snow, tr_rsnw
+      use ice_constants_colpkg, only: c0, puny, rhos
+      use ice_snow, only: snow_effective_density, update_snow_radius, &
+                          snow_redist
+
+      integer (kind=int_kind), intent(in) :: & 
+         nslyr, & ! number of snow layers
+         nilyr, & ! number of ice  layers
+         ncat, &  ! number of thickness categories
+         idx_T_max, & ! dimensions of snow parameter matrix
+         idx_Tgrd_max, &
+         idx_rhos_max
+
+      real (kind=dbl_kind), intent(in) :: &
+         dt     , & ! time step
+         wind   , & ! wind speed (m/s)
+         fsnow  , & ! snowfall rate (kg m-2 s-1)
+         aice   , & ! ice area fraction
+         rhosnew, & ! new snow density (kg/m^3)
+         rhosmax, & ! maximum snow density (kg/m^3)
+         windmin, & ! minimum wind speed to compact snow (m/s)
+         drhosdwind ! wind compaction factor (kg s/m^4)
+
+      real (kind=dbl_kind), dimension(:), intent(in) :: &
+         aicen, & ! ice area fraction
+         vicen, & ! ice volume (m)
+         Tsfc , & ! surface temperature (C)
+         zqin1, & ! ice upper layer enthalpy
+         zSin1, & ! ice upper layer salinity
+         alvl,  & ! level ice area tracer
+         vlvl     ! level ice volume tracer
+
+      real (kind=dbl_kind), intent(inout) :: &
+         fresh    , & ! fresh water flux to ocean (kg/m^2/s)
+         fhocn    , & ! net heat flux to ocean (W/m^2)
+         fsloss       ! snow loss to leads (kg/m^2/s)
+
+      real (kind=dbl_kind), dimension(:), intent(inout) :: &
+         vsnon    ! snow volume (m)
+
+      real (kind=dbl_kind), dimension(:,:), intent(inout) :: &
+         zqsn     , & ! snow enthalpy (J/m^3)
+         smice    , & ! mass of ice in snow (kg/m^3)
+         smliq    , & ! mass of liquid in snow (kg/m^3)
+         rsnw     , & ! snow grain radius (10^-6 m)
+         rhos_effn, & ! effective snow density: content (kg/m^3)
+         rhos_cmpn    ! effective snow density: compaction (kg/m^3)
+
+      real (kind=dbl_kind), intent(inout) :: &
+         rhos_eff , & ! mean effective snow density: content (kg/m^3)
+         rhos_cmp     ! mean effective snow density: compaction (kg/m^3)
+
+      ! dry snow aging parameters
+      real (kind=dbl_kind), dimension(idx_rhos_max,idx_Tgrd_max,idx_T_max), intent(in) :: &  
+         snowage_tau,   & ! (10^-6 m)
+         snowage_kappa, & ! 
+         snowage_drdt0    ! (10^-6 m/hr)
+
+      logical (kind=log_kind), intent(inout) :: &
+         l_stop          ! if true, print diagnostics and abort model
+
+      character (len=*), intent(out) :: &
+         stop_label   ! abort error message
+
+      ! local temporary variables
+
+      integer (kind=int_kind) :: n
+
+      real (kind=dbl_kind), dimension(ncat) :: &
+         zTin,  & ! ice upper layer temperature (oC)
+         hsn ,  & ! snow thickness (m)
+         hin      ! ice thickness
+
+      real (kind=dbl_kind) :: &
+         vsno,  & ! snow volume (m)
+         tmp1, tmp2
+
+      character(len=char_len_long) :: &
+           warning ! warning message
+
+      l_stop = .false.
+      stop_label = ''
+
+      if (tr_snow) then
+
+      !-----------------------------------------------------------------
+      ! Compute effective density of snow
+      !-----------------------------------------------------------------
+
+      vsno = c0
+      do n = 1, ncat
+         vsno = vsno + vsnon(n)
+      enddo
+
+      call snow_effective_density(nslyr,     ncat,     &
+                                  vsnon,     vsno,     &
+                                  smice,     smliq,    &
+                                  rhosnew,             &
+                                  rhos_effn, rhos_eff, &
+                                  rhos_cmpn, rhos_cmp)
+
+      !-----------------------------------------------------------------
+      ! Redistribute snow based on wind
+      !-----------------------------------------------------------------
+
+      tmp1 = rhos*vsno + fresh*dt
+
+      if (snwredist(1:3) == 'ITD' .and. aice > puny) then
+         call snow_redist(dt,                  &
+                          nslyr,    ncat,      &
+                          wind,     aicen(:),  &
+                          vicen(:), vsnon(:),  &
+                          zqsn(:,:),snwredist, &
+                          alvl(:),  vlvl(:),   &
+                          fresh,    fhocn,     &
+                          fsloss,   rhos_cmpn, &
+                          fsnow,    rhosmax,   &
+                          windmin,  drhosdwind, &
+                          l_stop,   stop_label)
+      endif
+
+      vsno = c0
+      do n = 1, ncat
+         vsno = vsno + vsnon(n)
+      enddo
+      tmp2 = rhos*vsno + fresh*dt
+      if (abs(tmp1-tmp2)>puny) then
+        write(warning,*) ' '
+        call add_warning(warning)
+        write(warning,*)'tmp1 ne tmp2',tmp1, tmp2
+        call add_warning(warning)
+        stop_label ='snow redistribution error' 
+        l_stop = .true.
+      endif
+
+      endif ! tr_snow
+
+      !-----------------------------------------------------------------
+      ! Adjust snow grain radius
+      !-----------------------------------------------------------------
+
+      if (tr_rsnw) then
+       do n = 1, ncat
+          zTin(n)= c0
+          hsn(n) = c0
+          hin(n) = c0
+          if (aicen(n) > puny) then
+              zTin(n)  = colpkg_ice_temperature(zqin1(n),zSin1(n))
+              hsn(n)   = vsnon(n)/aicen(n)
+              hin(n)   = vicen(n)/aicen(n)
+          endif
+       enddo
+
+       call update_snow_radius       (dt,         ncat,  &
+                                      nslyr,      nilyr, &
+                                      rsnw,       hin,   &
+                                      Tsfc,       zTin,  &
+                                      hsn,        zqsn,  &
+                                      smice,      smliq, &
+                                      rsnw_fall,  rsnw_tmax, &
+                                      snowage_tau, &
+                                      snowage_kappa, &
+                                      snowage_drdt0, &
+                                      idx_T_max, &
+                                      idx_Tgrd_max, &
+                                      idx_rhos_max)
+      endif
+
+      end subroutine colpkg_step_snow
+
+!=======================================================================
 ! subroutine to set the column package internal parameters
 
       subroutine colpkg_init_parameters(&
@@ -3679,6 +4018,7 @@
            phi_c_slow_mode_in, &
            phi_i_mushy_in, &
            shortwave_in, &
+           use_snicar_in, &
            albedo_type_in, &
            albicev_in, &
            albicei_in, &
@@ -3827,7 +4167,8 @@
            dmspdtype_in, &          
            humtype_in, &            
            doctype_s_in, &          
-           doctype_l_in, &          
+           doctype_l_in, &
+           dictype_1_in, &
            dontype_protein_in, &     
            fedtype_1_in, &           
            feptype_1_in, &           
@@ -3846,7 +4187,15 @@
            F_abs_chl_diatoms_in, &   
            F_abs_chl_sp_in, &        
            F_abs_chl_phaeo_in, &
-           ratio_C2N_proteins_in)
+           ratio_C2N_proteins_in, &
+           snwredist_in, &
+           use_smliq_pnd_in, &
+           rsnw_fall_in, &
+           rsnw_tmax_in, &
+           rhosnew_in, &
+           rhosmax_in, &
+           windmin_in, &
+           drhosdwind_in)
            !restore_bgc_in)
 
         use ice_colpkg_shared, only: &
@@ -3862,6 +4211,7 @@
              phi_c_slow_mode, &
              phi_i_mushy, &
              shortwave, &
+             use_snicar, &
              albedo_type, &
              albicev, &
              albicei, &
@@ -4011,6 +4361,7 @@
              humtype            , &
              doctype_s          , &
              doctype_l          , &
+             dictype_1          , &
              dontype_protein    , & 
              fedtype_1          , & 
              feptype_1          , & 
@@ -4029,7 +4380,15 @@
              F_abs_chl_diatoms  , & 
              F_abs_chl_sp       , & 
              F_abs_chl_phaeo    , & 
-             ratio_C2N_proteins
+             ratio_C2N_proteins , &
+             snwredist, &
+             use_smliq_pnd, &
+             rsnw_fall, &
+             rsnw_tmax, &
+             rhosnew, &
+             rhosmax, &
+             windmin, &
+             drhosdwind
             !restore_bgc
 
 !-----------------------------------------------------------------------
@@ -4089,6 +4448,12 @@
                              ! radius change (C)
              rsnw_mlt_in , & ! maximum melting snow grain radius (10^-6 m)
              kalg_in         ! algae absorption coefficient for 0.5 m thick layer
+
+        ! snicar 5 band system, set in namelist
+        logical (kind=log_kind), intent(in) :: &
+             use_snicar_in ! if true, use 5-band snicar IOPs for
+                              ! shortwave radiative calculation of
+                              ! snow-coverd sea ice
 
 !-----------------------------------------------------------------------
 ! Parameters for ridging and strength
@@ -4282,6 +4647,7 @@
          humtype_in            , & !
          doctype_s_in          , & !
          doctype_l_in          , & !
+         dictype_1_in          , & !
          dontype_protein_in    , & !
          fedtype_1_in          , & !
          feptype_1_in          , & !
@@ -4327,6 +4693,32 @@
         real (kind=dbl_kind), intent(in) :: &
              hp1_in             ! critical parameter for pond ice thickness
         
+!-----------------------------------------------------------------------
+! Parameters for snow
+!-----------------------------------------------------------------------
+
+      ! snow metamorphism parameters, set in namelist
+      real (kind=dbl_kind), intent(in) :: &
+         rsnw_fall_in , & ! fallen snow grain radius (10^-6 m))  54.5 um CLM **
+                       ! 30 um is minimum for defined mie properties 
+         rsnw_tmax_in , & ! maximum dry metamorphism snow grain radius (10^-6 m)
+                       ! 1500 um is maximum for defined mie properties
+         rhosnew_in   , & ! new snow density (kg/m^3)
+         rhosmax_in   , & ! maximum snow density (kg/m^3)
+         windmin_in   , & ! minimum wind speed to compact snow (m/s)
+         drhosdwind_in    ! wind compaction factor (kg s/m^4)
+
+      character(len=char_len), intent(in) :: & 
+         snwredist_in     ! type of snow redistribution
+                       ! '30percent' = 30% rule, precip only
+                       ! '30percentsw' = 30% rule with shortwave
+                       ! 'ITDsd' = Lecomte PhD, 2014
+                       ! 'ITDrdg' = like ITDsd but use level/ridged ice
+                       ! 'default' or 'none' = none
+
+      logical (kind=log_kind), intent(in) :: &
+         use_smliq_pnd_in ! if true, use snow liquid tracer for ponds
+
         ktherm = ktherm_in
         conduct = conduct_in
         fbot_xfer_type = fbot_xfer_type_in
@@ -4339,6 +4731,7 @@
         phi_c_slow_mode = phi_c_slow_mode_in
         phi_i_mushy = phi_i_mushy_in
         shortwave = shortwave_in
+        use_snicar = use_snicar_in
         albedo_type = albedo_type_in
         albicev = albicev_in
         albicei = albicei_in
@@ -4487,6 +4880,7 @@
         humtype            = humtype_in
         doctype_s          = doctype_s_in
         doctype_l          = doctype_l_in
+        dictype_1          = dictype_1_in
         dontype_protein    = dontype_protein_in
         fedtype_1          = fedtype_1_in
         feptype_1          = feptype_1_in
@@ -4506,6 +4900,14 @@
         F_abs_chl_sp       = F_abs_chl_sp_in
         F_abs_chl_phaeo    = F_abs_chl_phaeo_in
         ratio_C2N_proteins = ratio_C2N_proteins_in
+        snwredist = snwredist_in
+        use_smliq_pnd = use_smliq_pnd_in
+        rsnw_fall = rsnw_fall_in
+        rsnw_tmax = rsnw_tmax_in
+        rhosnew = rhosnew_in
+        rhosmax = rhosmax_in
+        windmin = windmin_in
+        drhosdwind = drhosdwind_in
 
       end subroutine colpkg_init_parameters
 
@@ -4520,6 +4922,8 @@
            tr_pond_cesm_in , & ! if .true., use cesm pond tracer
            tr_pond_lvl_in  , & ! if .true., use level-ice pond tracer
            tr_pond_topo_in , & ! if .true., use explicit topography-based ponds
+           tr_snow_in      , & ! if .true., use snow trcrs (smice, smliq, rhos_cmp)
+           tr_rsnw_in      , & ! if .true., use snow grain radius tracer
            tr_aero_in      , & ! if .true., use aerosol tracers
            tr_brine_in     , & ! if .true., brine height differs from ice thickness
            tr_bgc_S_in     , & ! if .true., use zsalinity
@@ -4545,6 +4949,8 @@
              tr_pond_cesm , & ! if .true., use cesm pond tracer
              tr_pond_lvl  , & ! if .true., use level-ice pond tracer
              tr_pond_topo , & ! if .true., use explicit topography-based ponds
+             tr_snow      , & ! if .true., use snow trcrs (smice, smliq, rhos_cmp)
+             tr_rsnw      , & ! if .true., use snow grain radius tracer
              tr_aero      , & ! if .true., use aerosol tracers
              tr_brine     , & ! if .true., brine height differs from ice thickness
              tr_bgc_S     , & ! if .true., use zsalinity
@@ -4570,6 +4976,8 @@
              tr_pond_cesm_in , & ! if .true., use cesm pond tracer
              tr_pond_lvl_in  , & ! if .true., use level-ice pond tracer
              tr_pond_topo_in , & ! if .true., use explicit topography-based ponds
+             tr_snow_in      , & ! if .true., use snow trcrs (smice, smliq, rhos_cmp)
+             tr_rsnw_in      , & ! if .true., use snow grain radius tracer
              tr_aero_in      , & ! if .true., use aerosol tracers
              tr_brine_in     , & ! if .true., brine height differs from ice thickness
              tr_bgc_S_in     , & ! if .true., use zsalinity
@@ -4593,6 +5001,8 @@
         tr_pond_cesm = tr_pond_cesm_in
         tr_pond_lvl  = tr_pond_lvl_in
         tr_pond_topo = tr_pond_topo_in
+        tr_snow      = tr_snow_in
+        tr_rsnw      = tr_rsnw_in
         tr_aero      = tr_aero_in
         tr_brine     = tr_brine_in
         tr_bgc_S     = tr_bgc_S_in
@@ -4627,6 +5037,10 @@
            nt_hpnd_in, & ! melt pond depth
            nt_ipnd_in, & ! melt pond refrozen lid thickness
            nt_aero_in, & ! starting index for aerosols in ice 
+           nt_smice_in, & ! snow ice mass
+           nt_smliq_in, & ! snow liquid mass
+           nt_rsnw_in, & ! snow grain radius
+           nt_rhos_in, & ! snow density
            nt_zaero_in,   & !  black carbon and other aerosols
            nt_bgc_N_in ,  & ! diatoms, phaeocystis, pico/small   
            nt_bgc_C_in ,  & ! diatoms, phaeocystis, pico/small   
@@ -4688,6 +5102,10 @@
              nt_hpnd, & ! melt pond depth
              nt_ipnd, & ! melt pond refrozen lid thickness
              nt_aero, & ! starting index for aerosols in ice
+             nt_smice, & ! snow ice mass
+             nt_smliq, & ! snow liquid mass
+             nt_rsnw, & ! snow grain radius
+             nt_rhos, & ! snow density
              nt_zaero,   & !  black carbon and other aerosols
              nt_bgc_N ,  & ! diatoms, phaeocystis, pico/small   
              nt_bgc_C ,  & ! diatoms, phaeocystis, pico/small   
@@ -4743,6 +5161,10 @@
              nt_hpnd_in, & ! melt pond depth
              nt_ipnd_in, & ! melt pond refrozen lid thickness
              nt_aero_in, & ! starting index for aerosols in ice
+             nt_smice_in, & ! snow ice mass
+             nt_smliq_in, & ! snow liquid mass
+             nt_rsnw_in, & ! snow grain radius
+             nt_rhos_in, & ! snow density
              nt_bgc_Nit_in, & ! nutrients  
              nt_bgc_Am_in,  & ! 
              nt_bgc_Sil_in, & !
@@ -4826,6 +5248,10 @@
         nt_hpnd = nt_hpnd_in
         nt_ipnd = nt_ipnd_in
         nt_aero = nt_aero_in
+        nt_smice = nt_smice_in
+        nt_smliq = nt_smliq_in
+        nt_rsnw = nt_rsnw_in
+        nt_rhos = nt_rhos_in
         nt_bgc_Nit = nt_bgc_Nit_in
         nt_bgc_Am  = nt_bgc_Am_in
         nt_bgc_Sil = nt_bgc_Sil_in
@@ -5469,7 +5895,7 @@
        doc(2) = 9.0_dbl_kind  ! lipids
        doc(3) = c1 ! 
        do k = 1, max_dic
-            dic(k) = c1
+            dic(k) = 1950.0_dbl_kind  ! 1950-2260 mmol C/m3 (Tynan et al. 2015)
        enddo  
        do k = 1, max_don
             don(k) = 12.9_dbl_kind              
