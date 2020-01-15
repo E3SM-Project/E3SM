@@ -50,8 +50,9 @@ module soundings
     !-----------------------------------------------------------------------
     subroutine soundings_setup(configs, all_pools, simulation_clock, dminfo)
 
-        use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type, dm_info
-        use mpas_pool_routines, only : mpas_pool_get_subpool, mpas_pool_get_dimension, mpas_pool_get_array, mpas_pool_get_config
+        use mpas_derived_types, only : MPAS_pool_type, MPAS_clock_type, dm_info, MPAS_POOL_SILENT
+        use mpas_pool_routines, only : mpas_pool_get_subpool, mpas_pool_get_dimension, mpas_pool_get_array, mpas_pool_get_config, &
+                                       mpas_pool_get_error_level, mpas_pool_set_error_level
         use mpas_io_units, only :  mpas_new_unit, mpas_release_unit
         use mpas_timekeeping, only : MPAS_timeInterval_type, MPAS_time_type, MPAS_set_timeInterval, &
                                      MPAS_get_clock_time, MPAS_add_clock_alarm, MPAS_NOW
@@ -67,6 +68,7 @@ module soundings
         character(len=StrKIND), pointer :: soundingInterval
 
         integer :: i, ierr
+        integer :: err_level
         integer :: sndUnit
         real (kind=RKIND) :: station_lat, station_lon
         character (len=StrKIND) :: tempstr
@@ -87,8 +89,30 @@ module soundings
         call mpas_pool_get_subpool(all_pools, 'state', state)
         call mpas_pool_get_subpool(all_pools, 'diag', diag)
 
+        !
+        ! Query the config_sounding_interval namelist option without triggering
+        ! warning messages if no such option exists
+        !
+        nullify(soundingInterval)
+        err_level = mpas_pool_get_error_level()
+        call mpas_pool_set_error_level(MPAS_POOL_SILENT)
         call mpas_pool_get_config(configs, 'config_sounding_interval', soundingInterval)
+        call mpas_pool_set_error_level(err_level)
 
+        !
+        ! If the config_sounding_interval namelist option was not found, just return
+        ! This may happen if MPAS-A is built within another system where, e.g., only
+        ! dynamics namelist options are available
+        !
+        if (.not. associated(soundingInterval)) then
+            call mpas_log_write('config_sounding_interval is not a namelist option...')
+            return
+        end if
+
+        !
+        ! If the config_sounding_interval namelist option is 'none', no soundings
+        ! will to be produced
+        !
         if (trim(soundingInterval) == 'none') then
             return
         end if
@@ -402,20 +426,20 @@ module soundings
 ! THIS FUNCTION CALCULATES THE LIQUID SATURATION VAPOR MIXING RATIO AS
 ! A FUNCTION OF TEMPERATURE AND PRESSURE
 !
-      REAL FUNCTION RSLF(P,T)
+      REAL(KIND=RKIND) FUNCTION RSLF(P,T)
 
       IMPLICIT NONE
-      REAL, INTENT(IN):: P, T
-      REAL:: ESL,X
-      REAL, PARAMETER:: C0= .611583699E03
-      REAL, PARAMETER:: C1= .444606896E02
-      REAL, PARAMETER:: C2= .143177157E01
-      REAL, PARAMETER:: C3= .264224321E-1
-      REAL, PARAMETER:: C4= .299291081E-3
-      REAL, PARAMETER:: C5= .203154182E-5
-      REAL, PARAMETER:: C6= .702620698E-8
-      REAL, PARAMETER:: C7= .379534310E-11
-      REAL, PARAMETER:: C8=-.321582393E-13
+      REAL(KIND=RKIND), INTENT(IN):: P, T
+      REAL(KIND=RKIND):: ESL,X
+      REAL(KIND=RKIND), PARAMETER:: C0= .611583699E03
+      REAL(KIND=RKIND), PARAMETER:: C1= .444606896E02
+      REAL(KIND=RKIND), PARAMETER:: C2= .143177157E01
+      REAL(KIND=RKIND), PARAMETER:: C3= .264224321E-1
+      REAL(KIND=RKIND), PARAMETER:: C4= .299291081E-3
+      REAL(KIND=RKIND), PARAMETER:: C5= .203154182E-5
+      REAL(KIND=RKIND), PARAMETER:: C6= .702620698E-8
+      REAL(KIND=RKIND), PARAMETER:: C7= .379534310E-11
+      REAL(KIND=RKIND), PARAMETER:: C8=-.321582393E-13
 
       X=MAX(-80.,T-273.16)
 
@@ -436,20 +460,20 @@ module soundings
 ! THIS FUNCTION CALCULATES THE ICE SATURATION VAPOR MIXING RATIO AS A
 ! FUNCTION OF TEMPERATURE AND PRESSURE
 !
-      REAL FUNCTION RSIF(P,T)
+      REAL(KIND=RKIND) FUNCTION RSIF(P,T)
 
       IMPLICIT NONE
-      REAL, INTENT(IN):: P, T
-      REAL:: ESI,X
-      REAL, PARAMETER:: C0= .609868993E03
-      REAL, PARAMETER:: C1= .499320233E02
-      REAL, PARAMETER:: C2= .184672631E01
-      REAL, PARAMETER:: C3= .402737184E-1
-      REAL, PARAMETER:: C4= .565392987E-3
-      REAL, PARAMETER:: C5= .521693933E-5
-      REAL, PARAMETER:: C6= .307839583E-7
-      REAL, PARAMETER:: C7= .105785160E-9
-      REAL, PARAMETER:: C8= .161444444E-12
+      REAL(KIND=RKIND), INTENT(IN):: P, T
+      REAL(KIND=RKIND):: ESI,X
+      REAL(KIND=RKIND), PARAMETER:: C0= .609868993E03
+      REAL(KIND=RKIND), PARAMETER:: C1= .499320233E02
+      REAL(KIND=RKIND), PARAMETER:: C2= .184672631E01
+      REAL(KIND=RKIND), PARAMETER:: C3= .402737184E-1
+      REAL(KIND=RKIND), PARAMETER:: C4= .565392987E-3
+      REAL(KIND=RKIND), PARAMETER:: C5= .521693933E-5
+      REAL(KIND=RKIND), PARAMETER:: C6= .307839583E-7
+      REAL(KIND=RKIND), PARAMETER:: C7= .105785160E-9
+      REAL(KIND=RKIND), PARAMETER:: C8= .161444444E-12
 
       X=MAX(-80.,T-273.16)
       ESI=C0+X*(C1+X*(C2+X*(C3+X*(C4+X*(C5+X*(C6+X*(C7+X*C8)))))))

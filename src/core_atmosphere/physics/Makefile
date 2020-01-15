@@ -48,7 +48,7 @@ OBJS = \
 lookup_tables:
 	./checkout_data_files.sh
 
-core_physics_wrf:
+core_physics_wrf: core_physics_init
 	(cd physics_wrf; $(MAKE) all COREDEF="$(COREDEF)")
 
 core_physics_init: $(OBJS_init)
@@ -185,7 +185,6 @@ mpas_atmphys_todynamics.o: \
 mpas_atmphys_update_surface.o: \
 	mpas_atmphys_date_time.o \
 	mpas_atmphys_constants.o \
-	mpas_atmphys_landuse.o \
 	mpas_atmphys_vars.o
 
 mpas_atmphys_update.o: \

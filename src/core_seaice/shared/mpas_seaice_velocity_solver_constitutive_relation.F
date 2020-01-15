@@ -24,7 +24,8 @@ module seaice_velocity_solver_constitutive_relation
   public :: &
        seaice_init_evp, &
        seaice_evp_constitutive_relation, &
-       seaice_evp_constitutive_relation_revised
+       seaice_evp_constitutive_relation_revised, &
+       seaice_linear_constitutive_relation
 
   ! general EVP parameters
   real(kind=RKIND), parameter, private :: &
@@ -158,6 +159,9 @@ contains
        replacementPressure, &
        areaCell, &
        dtElastic)
+#if !defined(__GFORTRAN__) && !defined(CPRGNU)
+!$omp declare simd(seaice_evp_constitutive_relation)
+#endif
 
     real(kind=RKIND), intent(inout) :: &
          stress11, & !< Input/Output:
@@ -237,6 +241,9 @@ contains
        icePressure, &
        replacementPressure, &
        areaCell)
+#if !defined(__GFORTRAN__) && !defined(CPRGNU)
+!$omp declare simd(seaice_evp_constitutive_relation_revised)
+#endif
 
     real(kind=RKIND), intent(inout) :: &
          stress11, & !< Input/Output:
@@ -312,6 +319,9 @@ contains
        strain11, &
        strain22, &
        strain12)
+#if !defined(__GFORTRAN__) && !defined(CPRGNU)
+!$omp declare simd(seaice_linear_constitutive_relation)
+#endif
 
     real(kind=RKIND), intent(out) :: &
          stress11, & !< Output:

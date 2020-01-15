@@ -5,6 +5,37 @@ module mpas_c_interfacing
 
 
     !-----------------------------------------------------------------------
+    !  routine mpas_sanitize_string
+    !
+    !> \brief Converts C null characters in a Fortran string to spaces
+    !> \author Michael Duda
+    !> \date   19 February 2019
+    !> \details
+    !>  Converts all C null characters in a Fortran string to spaces.
+    !>  This may be useful for strings that were provided by C code through other
+    !>  Fortran code external to MPAS.
+    !
+    !-----------------------------------------------------------------------
+    subroutine mpas_sanitize_string(str)
+    
+        use iso_c_binding, only : c_null_char
+    
+        implicit none
+    
+        character(len=*), intent(inout) :: str
+    
+        integer :: i
+    
+        do i=1,len(str)
+            if (str(i:i) == c_null_char) then
+                str(i:i) = ' '
+            end if
+        end do
+    
+    end subroutine mpas_sanitize_string
+
+
+    !-----------------------------------------------------------------------
     !  routine mpas_c_to_f_string
     !
     !> \brief Converts a C null-terminated string to a Fortran string

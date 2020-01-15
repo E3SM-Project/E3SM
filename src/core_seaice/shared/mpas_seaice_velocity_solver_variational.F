@@ -26,6 +26,7 @@ module seaice_velocity_solver_variational
        seaice_strain_tensor_variational, &
        seaice_stress_divergence_variational, &
        seaice_internal_stress_variational, &
+       seaice_internal_stress_variational_linear, &
        seaice_final_divergence_shear_variational
 
 contains
@@ -120,7 +121,8 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_internal_stress_variational(domain)!{{{
+  subroutine seaice_internal_stress_variational(&
+       domain)!{{{
 
     type(domain_type), intent(inout) :: &
          domain
@@ -258,6 +260,138 @@ contains
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
+!  seaice_internal_stress_variational_linear
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 3rd October 2019
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_internal_stress_variational_linear(&
+       domain)!{{{
+
+    type(domain_type), intent(inout) :: &
+         domain
+
+    type(block_type), pointer :: &
+         block
+
+    type (MPAS_pool_type), pointer :: &
+         meshPool, &
+         velocityVariationalPool, &
+         velocitySolverPool
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         uVelocity, &
+         vVelocity, &
+         stressDivergenceU, &
+         stressDivergenceV
+
+    integer, dimension(:), pointer :: &
+         solveStress, &
+         solveVelocity
+
+    integer, dimension(:,:), pointer :: &
+         cellVerticesAtVertex
+
+    real(kind=RKIND), dimension(:), pointer :: &
+         tanLatVertexRotatedOverRadius
+
+    real(kind=RKIND), dimension(:,:), pointer :: &
+         strain11, &
+         strain22, &
+         strain12, &
+         stress11, &
+         stress22, &
+         stress12
+
+    real(kind=RKIND), dimension(:,:,:), pointer :: &
+         basisGradientU, &
+         basisGradientV, &
+         basisIntegralsU, &
+         basisIntegralsV, &
+         basisIntegralsMetric
+
+    block => domain % blocklist
+    do while (associated(block))
+
+       call MPAS_pool_get_subpool(block % structs, "mesh", meshPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_variational", velocityVariationalPool)
+       call MPAS_pool_get_subpool(block % structs, "velocity_solver", velocitySolverPool)
+
+       call MPAS_pool_get_array(velocitySolverPool, "solveStress", solveStress)
+       call MPAS_pool_get_array(velocitySolverPool, "solveVelocity", solveVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "uVelocity", uVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "vVelocity", vVelocity)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceU", stressDivergenceU)
+       call MPAS_pool_get_array(velocitySolverPool, "stressDivergenceV", stressDivergenceV)
+
+       call MPAS_pool_get_array(velocityVariationalPool, "strain11", strain11)
+       call MPAS_pool_get_array(velocityVariationalPool, "strain22", strain22)
+       call MPAS_pool_get_array(velocityVariationalPool, "strain12", strain12)
+       call MPAS_pool_get_array(velocityVariationalPool, "stress11", stress11)
+       call MPAS_pool_get_array(velocityVariationalPool, "stress22", stress22)
+       call MPAS_pool_get_array(velocityVariationalPool, "stress12", stress12)
+       call MPAS_pool_get_array(velocityVariationalPool, "cellVerticesAtVertex", cellVerticesAtVertex)
+       call MPAS_pool_get_array(velocityVariationalPool, "tanLatVertexRotatedOverRadius", tanLatVertexRotatedOverRadius)
+       call MPAS_pool_get_array(velocityVariationalPool, "basisGradientU", basisGradientU)
+       call MPAS_pool_get_array(velocityVariationalPool, "basisGradientV", basisGradientV)
+       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsU", basisIntegralsU)
+       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsV", basisIntegralsV)
+       call MPAS_pool_get_array(velocityVariationalPool, "basisIntegralsMetric", basisIntegralsMetric)
+
+       call mpas_timer_start("Velocity solver strain tensor")
+       call seaice_strain_tensor_variational(&
+            meshPool, &
+            strain11, &
+            strain22, &
+            strain12, &
+            uVelocity, &
+            vVelocity, &
+            basisGradientU, &
+            basisGradientV, &
+            tanLatVertexRotatedOverRadius, &
+            solveStress)
+       call mpas_timer_stop("Velocity solver strain tensor")
+
+       call mpas_timer_start("Velocity solver stress tensor")
+       call seaice_stress_tensor_variational_linear(&
+            meshPool, &
+            stress11, &
+            stress22, &
+            stress12, &
+            strain11, &
+            strain22, &
+            strain12, &
+            solveStress)
+       call mpas_timer_stop("Velocity solver stress tensor")
+
+       call mpas_timer_start("Velocity solver stress divergence")
+       call seaice_stress_divergence_variational(&
+            meshPool, &
+            stressDivergenceU, &
+            stressDivergenceV, &
+            stress11, &
+            stress22, &
+            stress12, &
+            basisIntegralsU, &
+            basisIntegralsV, &
+            basisIntegralsMetric, &
+            tanLatVertexRotatedOverRadius, &
+            cellVerticesAtVertex, &
+            solveVelocity)
+       call mpas_timer_stop("Velocity solver stress divergence")
+
+       block => block % next
+    end do
+
+  end subroutine seaice_internal_stress_variational_linear!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
 !  seaice_strain_tensor_variational
 !
 !> \brief
@@ -293,7 +427,7 @@ contains
          vVelocity, & !< Input:
          tanLatVertexRotatedOverRadius !< Input:
 
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+    real(kind=RKIND), dimension(:,:,:), contiguous, intent(in) :: &
          basisGradientU, & !< Input:
          basisGradientV    !< Input:
 
@@ -307,13 +441,18 @@ contains
          iVertex, &
          jVertex
 
+    real(kind=RKIND) :: &
+         strain11Tmp, &
+         strain22Tmp, &
+         strain12Tmp
+
     integer, pointer :: &
          nCells
 
     integer, dimension(:), pointer :: &
          nEdgesOnCell
 
-    integer, dimension(:,:), pointer :: &
+    integer, dimension(:,:), contiguous, pointer :: &
          verticesOnCell
 
     ! init variables
@@ -323,43 +462,38 @@ contains
     call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
 
     ! loop over cells
-    !$omp parallel do default(shared) private(iCell, iGradientVertex, iBasisVertex, iVertex, jVertex)
+    !$omp parallel do default(shared) private(iCell, iGradientVertex, iBasisVertex, iVertex, jVertex,&
+    !$omp&                                    strain11Tmp, strain22Tmp, strain12Tmp)
     do iCell = 1, nCells
 
        if (solveStress(iCell) == 1) then
 
-          strain11(:,iCell) = 0.0_RKIND
-          strain22(:,iCell) = 0.0_RKIND
-          strain12(:,iCell) = 0.0_RKIND
-
           ! loop over velocity points surrounding cell - location of stress and derivative
           do iGradientVertex = 1, nEdgesOnCell(iCell)
+
+             strain11Tmp = 0.0_RKIND
+             strain22Tmp = 0.0_RKIND
+             strain12Tmp = 0.0_RKIND
 
              ! loop over basis functions
              do iBasisVertex = 1, nEdgesOnCell(iCell)
 
                 iVertex = verticesOnCell(iBasisVertex,iCell)
 
-                strain11(iGradientVertex,iCell) = strain11(iGradientVertex,iCell) + &
-                     uVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell)
-
-                strain22(iGradientVertex,iCell) = strain22(iGradientVertex,iCell) + &
-                     vVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell)
-
-                strain12(iGradientVertex,iCell) = strain12(iGradientVertex,iCell) + 0.5_RKIND * (&
-                     uVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell) + &
-                     vVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell))
+                strain11Tmp = strain11Tmp + uVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell)
+                strain22Tmp = strain22Tmp + vVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell)
+                strain12Tmp = strain12Tmp + 0.5_RKIND * (&
+                            uVelocity(iVertex) * basisGradientV(iBasisVertex,iGradientVertex,iCell) + &
+                            vVelocity(iVertex) * basisGradientU(iBasisVertex,iGradientVertex,iCell))
 
              enddo ! iVertexOnCell
 
              ! metric terms
              jVertex = verticesOnCell(iGradientVertex,iCell)
 
-             strain11(iGradientVertex,iCell) = strain11(iGradientVertex,iCell) - &
-                  vVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex)
-
-             strain12(iGradientVertex,iCell) = strain12(iGradientVertex,iCell) + &
-                  uVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex) * 0.5_RKIND
+             strain11(iGradientVertex,iCell) = strain11Tmp - vVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex)
+             strain12(iGradientVertex,iCell) = strain12Tmp + uVelocity(jVertex) * tanLatVertexRotatedOverRadius(jVertex) * 0.5_RKIND
+             strain22(iGradientVertex,iCell) = strain22Tmp
 
           enddo ! jVertexOnCell
 
@@ -402,15 +536,15 @@ contains
     type(MPAS_pool_type), pointer, intent(in) :: &
          mesh !< Input:
 
-    real(kind=RKIND), dimension(:,:), intent(inout) :: &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(inout) :: &
          stress11, & !< Input/Output:
          stress22, & !< Input/Output:
          stress12    !< Input/Output:
 
-    real(kind=RKIND), dimension(:,:), intent(out) :: &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(out) :: &
          replacementPressure !< Output:
 
-    real(kind=RKIND), dimension(:,:), intent(in) :: &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(in) :: &
          strain11, & !< Input:
          strain22, & !< Input:
          strain12    !< Input:
@@ -432,8 +566,7 @@ contains
          iVertexOnCell
 
     integer, pointer :: &
-         nCells, &
-         maxEdges
+         nCells
 
     integer, dimension(:), pointer :: &
          nEdgesOnCell
@@ -443,7 +576,6 @@ contains
 
     ! init variables
     call MPAS_pool_get_dimension(mesh, "nCells", nCells)
-    call MPAS_pool_get_dimension(mesh, "maxEdges", maxEdges)
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "areaCell", areaCell)
@@ -457,6 +589,7 @@ contains
 
           if (solveStress(iCell) == 1) then
 
+             !$omp simd
              do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
                 call seaice_evp_constitutive_relation(&
@@ -479,10 +612,12 @@ contains
 
     else
 
+       !$omp parallel do default(shared) private(iCell, iVertexOnCell)
        do iCell = 1, nCells
 
           if (solveStress(iCell) == 1) then
 
+             !$omp simd
              do iVertexOnCell = 1, nEdgesOnCell(iCell)
 
                 call seaice_evp_constitutive_relation_revised(&
@@ -505,6 +640,86 @@ contains
     endif
 
   end subroutine seaice_stress_tensor_variational!}}}
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_stress_tensor_variational_linear
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 3rd October 2019
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_stress_tensor_variational_linear(&
+       mesh, &
+       stress11, &
+       stress22, &
+       stress12, &
+       strain11, &
+       strain22, &
+       strain12, &
+       solveStress)!{{{
+
+    use seaice_velocity_solver_constitutive_relation, only: &
+         seaice_linear_constitutive_relation
+
+    type(MPAS_pool_type), pointer, intent(in) :: &
+         mesh !< Input:
+
+    real(kind=RKIND), dimension(:,:), contiguous, intent(out) :: &
+         stress11, & !< Input/Output:
+         stress22, & !< Input/Output:
+         stress12    !< Input/Output:
+
+    real(kind=RKIND), dimension(:,:), contiguous, intent(in) :: &
+         strain11, & !< Input:
+         strain22, & !< Input:
+         strain12    !< Input:
+
+    integer, dimension(:), intent(in) :: &
+         solveStress !< Input:
+
+    integer :: &
+         iCell, &
+         iVertexOnCell
+
+    integer, pointer :: &
+         nCells
+
+    integer, dimension(:), pointer :: &
+         nEdgesOnCell
+
+    ! init variables
+    call MPAS_pool_get_dimension(mesh, "nCells", nCells)
+
+    call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
+
+    !$omp parallel do default(shared) private(iCell, iVertexOnCell)
+    do iCell = 1, nCells
+
+       if (solveStress(iCell) == 1) then
+
+          !$omp simd
+          do iVertexOnCell = 1, nEdgesOnCell(iCell)
+
+             call seaice_linear_constitutive_relation(&
+                  stress11(iVertexOnCell,iCell), &
+                  stress22(iVertexOnCell,iCell), &
+                  stress12(iVertexOnCell,iCell), &
+                  strain11(iVertexOnCell,iCell), &
+                  strain22(iVertexOnCell,iCell), &
+                  strain12(iVertexOnCell,iCell))
+
+          enddo ! iVertexOnCell
+
+       endif ! solveStress
+
+    enddo ! iCell
+
+  end subroutine seaice_stress_tensor_variational_linear!}}}
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -539,12 +754,12 @@ contains
          stressDivergenceU, & !< Output:
          stressDivergenceV    !< Output:
 
-    real(kind=RKIND), dimension(:,:), intent(in) :: &
+    real(kind=RKIND), dimension(:,:), contiguous, intent(in) :: &
          stress11, & !< Input:
          stress22, & !< Input:
          stress12    !< Input:
 
-    real(kind=RKIND), dimension(:,:,:), intent(in) :: &
+    real(kind=RKIND), dimension(:,:,:), contiguous, intent(in) :: &
          basisIntegralsU, &   !< Input:
          basisIntegralsV, &   !< Input:
          basisIntegralsMetric !< Input:
@@ -577,8 +792,7 @@ contains
          nEdgesOnCell
 
     integer, dimension(:,:), pointer :: &
-         cellsOnVertex, &
-         verticesOnCell
+         cellsOnVertex
 
     real(kind=RKIND), dimension(:), pointer :: &
          areaTriangle
@@ -589,7 +803,6 @@ contains
 
     call MPAS_pool_get_array(mesh, "nEdgesOnCell", nEdgesOnCell)
     call MPAS_pool_get_array(mesh, "cellsOnVertex", cellsOnVertex)
-    call MPAS_pool_get_array(mesh, "verticesOnCell", verticesOnCell)
     call MPAS_pool_get_array(mesh, "areaTriangle", areaTriangle)
 
     ! loop over velocity positions
@@ -616,21 +829,16 @@ contains
              ! loop over the vertices of the surrounding cell
              do iStressVertex = 1, nEdgesOnCell(iCell)
 
-                ! normal terms
+                ! normal & metric terms
                 stressDivergenceUCell = stressDivergenceUCell - &
                      stress11(iStressVertex,iCell) * basisIntegralsU(iStressVertex,iVelocityVertex,iCell) - &
-                     stress12(iStressVertex,iCell) * basisIntegralsV(iStressVertex,iVelocityVertex,iCell)
-
-                stressDivergenceVCell = stressDivergenceVCell - &
-                     stress22(iStressVertex,iCell) * basisIntegralsV(iStressVertex,iVelocityVertex,iCell) - &
-                     stress12(iStressVertex,iCell) * basisIntegralsU(iStressVertex,iVelocityVertex,iCell)
-
-                ! metric terms
-                stressDivergenceUCell = stressDivergenceUCell - &
+                     stress12(iStressVertex,iCell) * basisIntegralsV(iStressVertex,iVelocityVertex,iCell) - &
                      stress12(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * &
                      tanLatVertexRotatedOverRadius(iVertex)
 
-                stressDivergenceVCell = stressDivergenceVCell + &
+                stressDivergenceVCell = stressDivergenceVCell - &
+                     stress22(iStressVertex,iCell) * basisIntegralsV(iStressVertex,iVelocityVertex,iCell) - &
+                     stress12(iStressVertex,iCell) * basisIntegralsU(iStressVertex,iVelocityVertex,iCell) + &
                      stress11(iStressVertex,iCell) * basisIntegralsMetric(iStressVertex,iVelocityVertex,iCell) * &
                      tanLatVertexRotatedOverRadius(iVertex)
 

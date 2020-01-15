@@ -1,10 +1,14 @@
 .SUFFIXES: .F .o
 
-OBJS = mpas_atm_time_integration.o
+OBJS = mpas_atm_time_integration.o \
+       mpas_atm_boundaries.o
 
 all: $(OBJS)
 
-mpas_atm_time_integration.o: mpas_atm_iau.o
+mpas_atm_time_integration.o: mpas_atm_boundaries.o mpas_atm_iau.o
+
+mpas_atm_boundaries.o:
+
 
 clean:
 	$(RM) *.o *.mod *.f90

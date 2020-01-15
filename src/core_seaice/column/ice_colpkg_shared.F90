@@ -91,6 +91,12 @@
          hi_ssl = 0.050_dbl_kind, & ! ice surface scattering layer thickness (m)
          hs_ssl = 0.040_dbl_kind    ! snow surface scattering layer thickness (m)
 
+      ! snicar 5 band system, set in namelist
+      logical (kind=log_kind), public :: &
+         use_snicar    ! if true, use 5-band snicar IOPs for
+                          ! shortwave radiative calculation of
+                          ! snow-coverd sea ice
+
 !-----------------------------------------------------------------------
 ! Parameters for ridging and strength
 !-----------------------------------------------------------------------
@@ -170,6 +176,47 @@
       ! topo ponds
       real (kind=dbl_kind), public :: &
          hp1             ! critical parameter for pond ice thickness
+
+!-----------------------------------------------------------------------
+! Parameters for snow
+!-----------------------------------------------------------------------
+
+      ! snow metamorphism parameters, set in namelist
+      real (kind=dbl_kind), public :: &
+         rsnw_fall , & ! fallen snow grain radius (10^-6 m))  54.5 um CLM **
+                       ! 30 um is minimum for defined mie properties 
+         rsnw_tmax , & ! maximum dry metamorphism snow grain radius (10^-6 m)
+                       ! 1500 um is maximum for defined mie properties
+         rhosnew   , & ! new snow density (kg/m^3)
+         rhosmax   , & ! maximum snow density (kg/m^3)
+         windmin   , & ! minimum wind speed to compact snow (m/s)
+         drhosdwind    ! wind compaction factor (kg s/m^4)
+
+      character(len=char_len), public :: & 
+         snwredist     ! type of snow redistribution
+                       ! '30percent' = 30% rule, precip only
+                       ! '30percentsw' = 30% rule with shortwave
+                       ! 'ITDsd' = Lecomte PhD, 2014
+                       ! 'ITDrdg' = like ITDsd but use level/ridged ice
+                       ! 'default' or 'none' = none
+
+      logical (kind=log_kind), public :: &
+         use_smliq_pnd ! if true, use snow liquid tracer for ponds
+
+      ! indices for aging lookup table [idx]
+      integer(kind=int_kind),  parameter, public :: &
+         idx_T_max      = 11  , & ! maxiumum temperature index
+         idx_T_min      = 1   , & ! minimum temperature index
+         idx_Tgrd_max   = 31  , & ! maxiumum temperature gradient index
+         idx_Tgrd_min   = 1   , & ! minimum temperature gradient index
+         idx_rhos_max   = 8   , & ! maxiumum snow density index
+         idx_rhos_min   = 1       ! minimum snow density index
+
+      ! dry snow aging parameters
+      real (kind=dbl_kind), dimension(8,31,11), public :: &  
+         snowage_tau,   & ! (10^-6 m)
+         snowage_kappa, & ! 
+         snowage_drdt0    ! (10^-6 m/hr)
 
 !-----------------------------------------------------------------------
 ! Parameters for biogeochemistry
@@ -345,6 +392,7 @@
          humtype            , & !
          doctype_s          , & !
          doctype_l          , & !
+         dictype_1          , & !
          dontype_protein    , & !
          fedtype_1          , & !
          feptype_1          , & !
@@ -374,8 +422,8 @@
       ! Algal types: Diatoms, flagellates, Phaeocycstis
       ! DOC        : Proteins, EPS, Lipids
       !-----------------------------------------------------------------
-      real (kind=dbl_kind), parameter, dimension(max_dic), public :: &
-         dictype   = (/-c1/)  ! not in namelist
+      real (kind=dbl_kind), dimension(max_dic), public :: &
+         dictype     ! added to namelist
 
       real (kind=dbl_kind), dimension(max_algae), public :: &
          algaltype   ! tau_min for both retention and release

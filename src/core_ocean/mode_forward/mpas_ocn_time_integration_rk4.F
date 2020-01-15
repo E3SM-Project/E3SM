@@ -124,6 +124,9 @@ module ocn_time_integration_rk4
       logical, pointer :: config_use_standardGM
       logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
+      logical, pointer :: config_disable_thick_all_tend
+      logical, pointer :: config_disable_vel_all_tend
+      logical, pointer :: config_disable_tr_all_tend
       real (kind=RKIND), pointer :: config_mom_del4
       character (len=StrKIND), pointer :: config_land_ice_flux_mode
 
@@ -191,6 +194,9 @@ module ocn_time_integration_rk4
       call mpas_pool_get_config(domain % configs, 'config_use_standardGM', config_use_standardGM)
       call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
       call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
+      call mpas_pool_get_config(domain % configs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
+      call mpas_pool_get_config(domain % configs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
+      call mpas_pool_get_config(domain % configs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
 
       !
       ! Initialize time_levs(2) with state at current time
@@ -353,6 +359,11 @@ module ocn_time_integration_rk4
       ! BEGIN RK loop
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       do rk_step = 1, 4
+
+        if (config_disable_thick_all_tend .and. config_disable_vel_all_tend .and. config_disable_tr_all_tend) then
+          exit ! don't compute in loop meant to update velocity, thickness, and tracers
+        end if
+
         call mpas_pool_get_subpool(domain % blocklist % structs, 'diagnostics', diagnosticsPool)
 
         ! Update halos for diagnostic variables.

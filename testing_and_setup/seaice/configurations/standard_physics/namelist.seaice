@@ -30,6 +30,8 @@
     config_do_restart_hbrine = false
     config_do_restart_zsalinity = false
     config_do_restart_bgc = false
+    config_do_restart_snow_density = false
+    config_do_restart_snow_grain_radius = false
 /
 &dimensions
     config_nCategories = 5
@@ -99,6 +101,7 @@
     config_use_column_biogeochemistry = false
     config_use_column_itd_thermodynamics = true
     config_use_column_ridging = true
+    config_use_column_snow_tracers = false
 /
 &column_tracers
     config_use_ice_age = true
@@ -108,6 +111,8 @@
     config_use_level_meltponds = true
     config_use_topo_meltponds = false
     config_use_aerosols = false
+    config_use_effective_snow_density = false
+    config_use_snow_grain_radius = false
 /
 &biogeochemistry
     config_use_brine = false
@@ -233,6 +238,7 @@
     config_mobility_type_humics = 1.0
     config_mobility_type_saccharids = 0.5
     config_mobility_type_lipids = 0.5
+    config_mobility_type_inorganic_carbon = -1.0
     config_mobility_type_proteins = 0.5
     config_mobility_type_dissolved_iron = 0.5
     config_mobility_type_particulate_iron = 0.5
@@ -256,6 +262,7 @@
 &shortwave
     config_shortwave_type = 'dEdd'
     config_albedo_type = 'ccsm3'
+    config_use_snicar_ad = false
     config_visible_ice_albedo = 0.78
     config_infrared_ice_albedo = 0.36
     config_visible_snow_albedo = 0.98
@@ -267,6 +274,16 @@
     config_temp_change_snow_grain_radius_change = 1.5
     config_max_melting_snow_grain_radius = 1500.0
     config_algae_absorption_coefficient = 0.6
+/
+&snow
+    config_snow_redistribution_scheme = 'none'
+    config_fallen_snow_radius = 54.526
+    config_use_snow_liquid_ponds = false
+    config_new_snow_density = 100.0
+    config_max_snow_density = 450.0
+    config_minimum_wind_compaction = 10.0
+    config_wind_compaction_factor = 27.3
+    config_max_dry_snow_radius = 1800.0
 /
 &meltponds
     config_snow_to_ice_transition_depth = 0.0

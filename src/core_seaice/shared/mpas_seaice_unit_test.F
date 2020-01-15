@@ -20,9 +20,56 @@ module seaice_unit_test
   save
 
   public :: &
+       seaice_init_unit_test, &
        seaice_perform_unit_test
 
 contains
+
+!|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+!
+!  seaice_init_unit_test
+!
+!> \brief
+!> \author Adrian K. Turner, LANL
+!> \date 30th September 2019
+!> \details
+!>
+!
+!-----------------------------------------------------------------------
+
+  subroutine seaice_init_unit_test(&
+       domain)!{{{
+
+    use seaice_velocity_solver_unit_tests, only: &
+         seaice_strain_and_stress_divergence_unit_test_init
+
+    type(domain_type), intent(inout) :: &
+         domain !< Input/Output:
+
+    character(len=strKIND), pointer :: &
+         config_unit_test_type, &
+         config_unit_test_subtype
+
+    call MPAS_pool_get_config(domain % configs, "config_unit_test_type", config_unit_test_type)
+    call MPAS_pool_get_config(domain % configs, "config_unit_test_subtype", config_unit_test_subtype)
+
+    select case (trim(config_unit_test_type))
+    case ("strain rate operator")
+       continue
+    case ("stress divergence operator")
+       continue
+    case ("constitutive relationship")
+       continue
+    case ("strain stress divergence")
+       call mpas_log_write("Unit test init: "//trim(config_unit_test_type)//" "//trim(config_unit_test_subtype))
+       call seaice_strain_and_stress_divergence_unit_test_init(domain, trim(config_unit_test_subtype))
+    case ("", "None", "NONE", "none")
+       continue
+    case default
+       call mpas_log_write("seaice_init_unit_test: config_unit_test_type unknown: "//trim(config_unit_test_type))
+    end select
+
+  end subroutine seaice_init_unit_test
 
 !|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !
@@ -42,7 +89,8 @@ contains
     use seaice_velocity_solver_unit_tests, only: &
          seaice_strain_rate_operator_unit_test, &
          seaice_stress_divergence_operator_unit_test, &
-         seaice_constitutive_relationship_unit_test
+         seaice_constitutive_relationship_unit_test, &
+         seaice_strain_and_stress_divergence_unit_test
 
     type(domain_type), intent(inout) :: &
          domain !< Input/Output:
@@ -54,15 +102,21 @@ contains
     call MPAS_pool_get_config(domain % configs, "config_unit_test_type", config_unit_test_type)
     call MPAS_pool_get_config(domain % configs, "config_unit_test_subtype", config_unit_test_subtype)
 
-    call mpas_log_write("Unit test: "//trim(config_unit_test_type)//" "//trim(config_unit_test_subtype))
-
     select case (trim(config_unit_test_type))
     case ("strain rate operator")
+       call mpas_log_write("Unit test: "//trim(config_unit_test_type)//" "//trim(config_unit_test_subtype))
        call seaice_strain_rate_operator_unit_test(domain, trim(config_unit_test_subtype))
     case ("stress divergence operator")
+       call mpas_log_write("Unit test: "//trim(config_unit_test_type)//" "//trim(config_unit_test_subtype))
        call seaice_stress_divergence_operator_unit_test(domain, trim(config_unit_test_subtype))
     case ("constitutive relationship")
+       call mpas_log_write("Unit test: "//trim(config_unit_test_type)//" "//trim(config_unit_test_subtype))
        call seaice_constitutive_relationship_unit_test(domain)
+    case ("strain stress divergence")
+       call mpas_log_write("Unit test: "//trim(config_unit_test_type)//" "//trim(config_unit_test_subtype))
+       call seaice_strain_and_stress_divergence_unit_test(domain, trim(config_unit_test_subtype))
+    case ("", "None", "NONE", "none")
+       continue
     case default
        call mpas_log_write("seaice_perform_unit_test: config_unit_test_type unknown: "//trim(config_unit_test_type))
     end select

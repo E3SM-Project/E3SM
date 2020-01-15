@@ -13,6 +13,8 @@
 
 module seaice_forcing
 
+  use mpas_kind_types
+  use mpas_timer
   use mpas_derived_types
   use mpas_pool_routines
   use mpas_timekeeping
@@ -63,9 +65,11 @@ contains
 !
 !-----------------------------------------------------------------------
 
-  subroutine seaice_forcing_init(domain)
+  subroutine seaice_forcing_init(domain, clock)
 
     type (domain_type) :: domain
+
+    type (MPAS_Clock_type) :: clock
 
     logical, pointer :: &
          config_use_forcing, &
@@ -85,7 +89,7 @@ contains
     endif
 
     ! init the data iceberg forcing
-    if (config_use_data_icebergs) call init_data_iceberg_forcing(domain)
+    if (config_use_data_icebergs) call init_data_iceberg_forcing(domain, clock)
 
   end subroutine seaice_forcing_init
 
@@ -341,8 +345,7 @@ contains
 
        call data_iceberg_forcing(&
             streamManager, &
-            domain, &
-            simulationClock)
+            domain)
 
     endif
 
@@ -1622,9 +1625,11 @@ contains
 !>
 !-----------------------------------------------------------------------
 
-  subroutine init_data_iceberg_forcing(domain)
+  subroutine init_data_iceberg_forcing(domain, clock)
 
     type (domain_type) :: domain
+
+    type (MPAS_Clock_type) :: clock
 
     logical, pointer :: &
          config_do_restart
@@ -1633,18 +1638,26 @@ contains
          forcingIntervalMonthly, &
          forcingReferenceTimeMonthly
 
+    type (MPAS_Time_Type) :: currTime
+    character(len=strKIND) :: timeStamp
+    integer :: ierr
+
     ! get configuration options
     call MPAS_pool_get_config(domain % configs, "config_do_restart", config_do_restart)
 
     forcingIntervalMonthly = "00-01-00_00:00:00"
     forcingReferenceTimeMonthly = "0001-01-15_00:00:00"
 
+    currTime = mpas_get_clock_time(clock, MPAS_NOW, ierr)
+    call mpas_get_time(curr_time=currTime, dateTimeString=timeStamp, ierr=ierr)
+    timeStamp = '0000'//trim(timeStamp(5:))
+
     ! create own data iceberg forcing group
     call MPAS_forcing_init_group(&
          seaiceForcingGroups, &
          "seaice_data_iceberg_forcing_monthly", &
          domain, &
-         '0000-01-01_00:00:00', &
+         timeStamp, &
          '0000-01-01_00:00:00', &
          '0001-00-00_00:00:00', &
          config_do_restart)
@@ -1685,21 +1698,34 @@ contains
 
   subroutine data_iceberg_forcing(&
        streamManager, &
-       domain, &
-       simulationClock)
+       domain)
 
     type (MPAS_streamManager_type), intent(inout) :: streamManager
 
     type (domain_type) :: domain
 
-    type (MPAS_clock_type) :: simulationClock ! dc is this being used?
+    ! Arguments for verbose debugging
+    ! type (MPAS_time_type) :: currentForcingTime
+    ! character(len=strKIND) :: currentForcingTimeStr
 
     real(kind=RKIND), pointer :: &
          config_dt
 
     call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
-    ! use the forcing layer to get data
+    ! For verbose debugging.
+    ! Uncomment the lines below and the arguments above to print the forcing time
+    ! to the log file, to ensure the forcing times match the simulation times.
+
+    ! call MPAS_forcing_get_forcing_time(&
+    !    seaiceForcingGroups, &
+    !    "seaice_data_iceberg_forcing_monthly", &
+    !    currentForcingTime)
+
+    ! call MPAS_get_time(currentForcingTime, dateTimeString=currentForcingTimeStr)
+    ! call MPAS_log_write('Get Data icebergs at: '//trim(currentForcingTimeStr))
+
+    ! use the forcing layer to get
     call MPAS_forcing_get_forcing(&
        seaiceForcingGroups, &
        "seaice_data_iceberg_forcing_monthly", &
@@ -2072,12 +2098,14 @@ contains
 
     logical, pointer :: &
          config_use_forcing, &
-         config_use_prescribed_ice
+         config_use_prescribed_ice, &
+         config_use_data_icebergs
 
     call MPAS_pool_get_config(domain % configs, "config_use_forcing", config_use_forcing)
     call MPAS_pool_get_config(domain % configs, "config_use_prescribed_ice", config_use_prescribed_ice)
+    call MPAS_pool_get_config(domain % configs, "config_use_data_icebergs", config_use_data_icebergs)
 
-    if (config_use_forcing .or. config_use_prescribed_ice) then
+    if (config_use_forcing .or. config_use_prescribed_ice .or. config_use_data_icebergs) then
 
        call MPAS_forcing_write_restart_times(seaiceForcingGroups)
 

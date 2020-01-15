@@ -9,7 +9,7 @@
  module mpas_atmphys_driver_gwdo
  use mpas_kind_types
  use mpas_pool_routines
- use mpas_timer, only : mpas_timer_start, mpas_timer_stop
+ use mpas_timer,only: mpas_timer_start,mpas_timer_stop
 
  use mpas_atmphys_constants
  use mpas_atmphys_vars
@@ -57,6 +57,9 @@
 !   Laura D. Fowler (laura@ucar.edu) / 2016-03-25. 
 ! * change the definition of dx_p to match that used in other physics parameterizations.
 !   Laura D. Fowler (laura@ucar.edu) / 2016-10-18.
+! * modified the call to subroutine gwdo following the update of module_gwdo.F to that
+!   of WRF version 4.0.2.
+!   Laura D. Fowler (laura@ucar.edu) / 2019-01-30.
 
 
  contains
@@ -65,6 +68,9 @@
 !=================================================================================================================
  subroutine allocate_gwdo
 !=================================================================================================================
+
+ if(.not.allocated(cosa_p)  ) allocate(cosa_p(ims:ime,jms:jme)  )
+ if(.not.allocated(sina_p)  ) allocate(sina_p(ims:ime,jms:jme)  )
 
  if(.not.allocated(dx_p)    ) allocate(dx_p(ims:ime,jms:jme)    )
  if(.not.allocated(var2d_p) ) allocate(var2d_p(ims:ime,jms:jme) )
@@ -91,6 +97,9 @@
 !=================================================================================================================
  subroutine deallocate_gwdo
 !=================================================================================================================
+
+ if(allocated(cosa_p)  ) deallocate(cosa_p  )
+ if(allocated(sina_p)  ) deallocate(sina_p  )
 
  if(allocated(dx_p)    ) deallocate(dx_p    )
  if(allocated(var2d_p) ) deallocate(var2d_p )
@@ -164,6 +173,10 @@
 
  do j = jts,jte
  do i = its,ite
+
+    sina_p(i,j)  = 0._RKIND
+    cosa_p(i,j)  = 1._RKIND
+
     var2d_p(i,j) = var2d(i)
     con_p(i,j)   = con(i)
     oa1_p(i,j)   = oa1(i)
@@ -284,7 +297,7 @@
  gwdo_select: select case (trim(gwdo_scheme))
 
     case("bl_ysu_gwdo")
-       call mpas_timer_start('GWDO_YSU')
+       call mpas_timer_start('bl_ysu_gwdo')
        call gwdo ( &
                   p3d       = pres_hydd_p , p3di      = pres2_hydd_p , pi3d    = pi_p      , &
                   u3d       = u_p         , v3d       = v_p          , t3d     = t_p       , & 
@@ -297,12 +310,12 @@
                   var2d     = var2d_p     , oc12d     = con_p        , oa2d1   = oa1_p     , & 
                   oa2d2     = oa2_p       , oa2d3     = oa3_p        , oa2d4   = oa4_p     , &
                   ol2d1     = ol1_p       , ol2d2     = ol2_p        , ol2d3   = ol3_p     , & 
-                  ol2d4     = ol4_p       ,                                                  &
+                  ol2d4     = ol4_p       , sina      = sina_p       , cosa    = cosa_p    , &
                   ids = ids , ide = ide , jds = jds , jde = jde , kds = kds , kde = kde ,    &
                   ims = ims , ime = ime , jms = jms , jme = jme , kms = kms , kme = kme ,    &
                   its = its , ite = ite , jts = jts , jte = jte , kts = kts , kte = kte      &
                  )
-       call mpas_timer_stop('GWDO_YSU')
+       call mpas_timer_stop('bl_ysu_gwdo')
 
      case default
 
