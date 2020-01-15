@@ -274,14 +274,10 @@
       </queues>
     </batch_system>
 
-    <!-- anvil is PBS -->
-    <batch_system MACH="anvil" type="pbs" >
-      <directives>
-        <directive>-A {{ PROJECT }}</directive>
-        <directive>-l nodes={{ num_nodes }}:ppn={{ tasks_per_node }}</directive>
-      </directives>
+    <!-- anvil is slurm -->
+    <batch_system MACH="anvil" type="slurm" >
       <queues>
-	<queue walltimemax="01:00:00" default="true">acme</queue>
+	<queue walltimemax="01:00:00" default="true">acme-centos6</queue>
       </queues>
     </batch_system>
 
@@ -356,12 +352,12 @@
 
     <batch_system MACH="theta" type="cobalt_theta">
       <queues>
-        <queue walltimemax="01:00:00" nodemax="8" strict="true">debug-cache-quad</queue>
-        <queue walltimemin="00:30:00" walltimemax="02:00:00" nodemin="8" nodemax="15" strict="true">default</queue>
-        <queue walltimemin="00:30:00" walltimemax="04:00:00" nodemin="16" nodemax="127" strict="true">default</queue>
-        <queue walltimemin="00:30:00" walltimemax="06:00:00" nodemin="128" nodemax="383" strict="true">default</queue>
-        <queue walltimemin="00:30:00" walltimemax="12:00:00" nodemin="384" nodemax="647" strict="true">default</queue>
-        <queue walltimemin="00:30:00" walltimemax="24:00:00" nodemin="648" strict="true" default="true">default</queue>
+        <queue walltimemax="01:00:00" nodemin="1" nodemax="8" strict="true">debug-cache-quad</queue>
+        <queue walltimemin="00:30:00" walltimemax="03:00:00" nodemin="128" nodemax="255"  strict="true">default</queue>
+        <queue walltimemin="00:30:00" walltimemax="06:00:00" nodemin="256" nodemax="383"  strict="true">default</queue>
+        <queue walltimemin="00:30:00" walltimemax="09:00:00" nodemin="384" nodemax="639"  strict="true">default</queue>
+        <queue walltimemin="00:30:00" walltimemax="12:00:00" nodemin="640" nodemax="801"  strict="true">default</queue>
+        <queue walltimemin="00:30:00" walltimemax="24:00:00" nodemin="802" strict="true" default="true">default</queue>
       </queues>
     </batch_system>
 

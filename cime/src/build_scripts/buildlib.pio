@@ -44,7 +44,22 @@ formatter_class=argparse.ArgumentDefaultsHelpFormatter
 def buildlib(bldroot, installpath, caseroot):
 ###############################################################################
     with Case(caseroot, read_only=False) as case:
+        cime_model = case.get_value("MODEL")
         pio_version = case.get_value("PIO_VERSION")
+        if cime_model == "e3sm":
+            srcroot = case.get_value("SRCROOT")
+            scorpio_src_root_dir = os.path.join(srcroot, "externals")
+            # Scorpio classic is derived from PIO1
+            scorpio_classic_dir = "scorpio_classic"
+            # Scorpio is derived from PIO2
+            scorpio_dir = "scorpio"
+            scorpio_classic_src_dir = os.path.join(scorpio_src_root_dir,
+                                        scorpio_classic_dir)
+            scorpio_src_dir = os.path.join(scorpio_src_root_dir, scorpio_dir)
+            if (not os.path.isdir(scorpio_src_root_dir) or
+                not os.path.isdir(scorpio_classic_src_dir) or
+                not os.path.isdir(scorpio_src_dir)):
+                scorpio_src_root_dir = None
         mpilib = case.get_value("MPILIB")
         exeroot = case.get_value("EXEROOT")
         pio_model = "pio{}".format(pio_version)
@@ -55,13 +70,32 @@ def buildlib(bldroot, installpath, caseroot):
             os.makedirs(pio_dir)
         casetools = case.get_value("CASETOOLS")
         cmake_opts = "\"-D GENF90_PATH=$CIMEROOT/src/externals/genf90 \""
-        gmake_opts = "{}/Makefile -C {} CASEROOT={} MODEL={} USER_CMAKE_OPTS={} "\
-            "PIO_LIBDIR={} CASETOOLS={} PIO_VERSION={} MPILIB={} "\
-            "SHAREDLIBROOT={} EXEROOT={} COMPILER={} BUILD_THREADED={} "\
-            "USER_CPPDEFS=-DTIMING -f {}/Makefile"\
-            .format(pio_dir,pio_dir,caseroot,pio_model, cmake_opts, pio_dir, casetools,
-              pio_version, mpilib, bldroot, exeroot, compiler, build_threaded,
-              casetools)
+        gmake_vars =  "CASEROOT={caseroot} MODEL={pio_model} "\
+                      "USER_CMAKE_OPTS={cmake_opts} "\
+                      "PIO_LIBDIR={pio_dir} CASETOOLS={casetools} "\
+                      "PIO_VERSION={pio_version} MPILIB={mpilib} "\
+                      "SHAREDLIBROOT={sharedlibroot} EXEROOT={exeroot} "\
+                      "COMPILER={compiler} BUILD_THREADED={build_threaded} "\
+                      "USER_CPPDEFS=-DTIMING"\
+                      .format(caseroot=caseroot, pio_model=pio_model,
+                              cmake_opts=cmake_opts, pio_dir=pio_dir,
+                              casetools=casetools,
+                              pio_version=pio_version, mpilib=mpilib,
+                              sharedlibroot=bldroot, exeroot=exeroot,
+                              compiler=compiler, build_threaded=build_threaded)
+
+        if scorpio_src_root_dir is not None:
+            gmake_vars += " IO_LIB_SRCROOT={scorpio_src_root_dir} "\
+                          " IO_LIB_v1_SRCDIR={scorpio_classic_dir} "\
+                          " IO_LIB_v2_SRCDIR={scorpio_dir} "\
+                          .format(scorpio_src_root_dir=scorpio_src_root_dir,
+                                  scorpio_classic_dir=scorpio_classic_dir,
+                                  scorpio_dir=scorpio_dir)
+
+        gmake_opts =  "{pio_dir}/Makefile -C {pio_dir} "\
+                      " {gmake_vars} -f {casetools}/Makefile"\
+                      .format(pio_dir=pio_dir, gmake_vars=gmake_vars,
+                              casetools=casetools)
 
         gmake_cmd = case.get_value("GMAKE")
 

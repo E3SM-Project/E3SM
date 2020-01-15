@@ -78,6 +78,12 @@ for mct, etc.
      compilers -->
 <compiler>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
+  <CPPDEFS>
+    <!-- MPAS Components rely on this flag to use the newer PIO/Scorpio interfaces. These newer interfaces are available on both Scorpio and Scorpio classic -->
+    <append MODEL="ice"> -DUSE_PIO2 </append>
+    <append MODEL="ocn"> -DUSE_PIO2 </append>
+    <append MODEL="glc"> -DUSE_PIO2 </append>
+  </CPPDEFS>
 </compiler>
 
 <compiler COMPILER="cray">
@@ -855,46 +861,6 @@ for mct, etc.
   </SLIBS>
 </compiler>
 
-<compiler MACH="cab" COMPILER="intel">
-  <CFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-  </CFLAGS>
-  <CONFIG_ARGS>
-    <base> --host=Linux </base>
-  </CONFIG_ARGS>
-  <CPPDEFS>
-    <append> -DNO_SHR_VMATH -DCNL </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append DEBUG="FALSE"> -O2 </append>
-    <append DEBUG="TRUE"> -g -traceback  -O0 -fpe0 -check  all -check noarg_temp_created -ftrapuv </append>
-  </FFLAGS>
-  <LDFLAGS>
-    <append> -llapack -lblas</append>
-  </LDFLAGS>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/local/tools/mvapich2-intel-2.1/</MPI_PATH>
-  <NETCDF_PATH>/usr/local/tools/netcdf-intel-4.1.3</NETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{/usr/local/tools/netcdf-intel-4.1.3/bin/nc-config --flibs}</append>
-  </SLIBS>
-</compiler>
-
-<compiler MACH="cab" COMPILER="pgi">
-  <CPPDEFS>
-    <append> -DNO_SHR_VMATH -DCNL </append>
-  </CPPDEFS>
-  <LDFLAGS>
-    <append> -Wl,-rpath /usr/local/tools/netcdf-pgi-4.1.3/lib -llapack -lblas</append>
-  </LDFLAGS>
-  <MPI_LIB_NAME> mpich</MPI_LIB_NAME>
-  <MPI_PATH>/usr/local/tools/mvapich2-pgi-1.7/</MPI_PATH>
-  <NETCDF_PATH>/usr/local/tools/netcdf-pgi-4.1.3</NETCDF_PATH>
-  <SLIBS>
-    <append>$SHELL{/usr/local/tools/netcdf-pgi-4.1.3/bin/nc-config --flibs}</append>
-  </SLIBS>
-</compiler>
-
 <compiler MACH="cades" COMPILER="gnu">
   <CFLAGS>
     <append compile_threaded="true"> -fopenmp </append>
@@ -1618,6 +1584,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
 <compiler MACH="compy" COMPILER="intel">
   <CFLAGS>
     <append DEBUG="FALSE"> -O2 </append>
+    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
   </CFLAGS>
   <CONFIG_ARGS>
     <base> --host=Linux </base>
@@ -1639,6 +1606,33 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <MPICC  MPILIB="impi">mpiicc</MPICC>
   <MPICXX MPILIB="impi">mpiicpc</MPICXX>
   <MPIFC  MPILIB="impi">mpiifort</MPIFC>
+</compiler>
+
+<compiler MACH="compy" COMPILER="pgi">
+  <CFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append MODEL="gptl"> -DHAVE_SLASHPROC </append>
+  </CFLAGS>
+  <CONFIG_ARGS>
+    <base> --host=Linux </base>
+  </CONFIG_ARGS>
+  <CPPDEFS>
+    <append> -DLINUX </append>
+  </CPPDEFS>
+  <FFLAGS>
+    <append DEBUG="FALSE"> -O2 </append>
+    <append DEBUG="TRUE">-C -Mbounds -traceback -Mchkfpstk -Mchkstk -Mdalign  -Mdepchk  -Mextend -Miomutex -Mrecursive  -Ktrap=fp -O0 -g -byteswapio -Meh_frame</append>
+  </FFLAGS>
+  <NETCDF_PATH> $ENV{NETCDF_HOME}</NETCDF_PATH>
+  <PIO_FILESYSTEM_HINTS>lustre</PIO_FILESYSTEM_HINTS>
+  <PNETCDF_PATH>$ENV{PNETCDF_HOME}</PNETCDF_PATH>
+  <LDFLAGS>
+    <append> -lpmi -L$NETCDF_PATH/lib -lnetcdf -lnetcdff -L$ENV{MKL_PATH}/lib/intel64/ -lmkl_rt $ENV{PNETCDF_LIBRARIES} </append>
+  </LDFLAGS>
+  <MPICC  MPILIB="impi">mpipgcc</MPICC>
+  <MPICXX MPILIB="impi">mpipgcxx</MPICXX>
+  <MPIFC  MPILIB="impi">mpipgf90</MPIFC>
+  <SUPPORTS_CXX>TRUE</SUPPORTS_CXX>
 </compiler>
 
 <compiler MACH="sooty" COMPILER="intel">
@@ -1941,6 +1935,7 @@ ntel/x86_64/2013/composer_xe_2013/composer_xe_2013_sp1.3.174/mkl/include </base>
   <FFLAGS>
     <base>-convert big_endian -assume byterecl -ftz -traceback -assume realloc_lhs -fp-model consistent</base>
     <append DEBUG="FALSE"> -O2 -debug minimal -qno-opt-dynamic-align -fp-speculation=off</append>
+    <append> -DHAVE_ERF_INTRINSICS </append>
   </FFLAGS>
   <SCC> icc </SCC>
   <SCXX> icpc </SCXX>

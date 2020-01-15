@@ -51,6 +51,9 @@ _CIME_TESTS = {
                     "TESTMEMLEAKPASS_P1.f09_g16.X")
                    ),
 
+    "cime_test_all" : ("cime_test_only", "0:10:00",
+                       ("TESTRUNDIFF_P1.f19_g16_rx1.A", )),
+
     "cime_developer" : (None, "0:15:00",
                             ("NCK_Ld3.f45_g37_rx1.A",
                              "ERI.f09_g16.X",

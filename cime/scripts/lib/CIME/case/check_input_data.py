@@ -109,7 +109,7 @@ def stage_refcase(self, input_data_root=None, data_list_dir=None):
         # copy the refcases' rpointer files to the run directory
         for rpointerfile in glob.iglob(os.path.join("{}","*rpointer*").format(refdir)):
             logger.info("Copy rpointer {}".format(rpointerfile))
-            safe_copy(rpointerfile, rundir)
+            shutil.copy2(rpointerfile, rundir)
 
         # link everything else
 

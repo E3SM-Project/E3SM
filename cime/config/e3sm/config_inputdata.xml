@@ -7,11 +7,7 @@
     <address>https://web.lcrc.anl.gov/public/e3sm/inputdata/</address>
   </server>
   <server>
-    <protocol>svn</protocol>
-    <address>https://acme-svn2.ornl.gov/acme-repo/acme/inputdata</address>
-  </server>
-  <server>
-    <protocol>svn</protocol>
+    <protocal>svn</protocal>
     <address>https://svn-ccsm-inputdata.cgd.ucar.edu/trunk/inputdata</address>
   </server>
 

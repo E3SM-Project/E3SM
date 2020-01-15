@@ -393,7 +393,7 @@ contains
           strt(1) = dim1b
           strt(2) = dim2b
           cnt = arraydimsize
-          call shr_scam_getCloseLatLon(ncid%fh,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+          call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
           if (trim(field_dnames(1)) == 'lon') then
             strt(1) = lonidx ! First dim always lon for Eulerian dycore
           else
@@ -807,7 +807,7 @@ contains
           strt(2) = dim2b
           strt(3) = dim3b
           cnt = arraydimsize
-          call shr_scam_getCloseLatLon(ncid%fh,scmlat,scmlon,closelat,closelon,latidx,lonidx)
+          call shr_scam_getCloseLatLon(ncid,scmlat,scmlon,closelat,closelon,latidx,lonidx)
           if (trim(field_dnames(1)) == 'lon') then
             strt(1) = lonidx ! First dim always lon for Eulerian dycore
           else
