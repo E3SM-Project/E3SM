@@ -72,14 +72,14 @@ using a fortran linker.
     <!-- This should be removed AFTER MOM6 cap is fully unified -->
     <append> -DCESMCOUPLED </append>
     <append MODEL="pop"> -D_USE_FLOW_CONTROL </append>
-    <append MODEL="fv3gfs"> -DSPMD </append>
+    <append MODEL="ufsatm"> -DSPMD </append>
   </CPPDEFS>
 
   <INCLDIR>
-        <append MODEL="fv3gfs"> -I$(EXEROOT)/atm/obj/FMS </append>
+        <append MODEL="ufsatm"> -I$(EXEROOT)/atm/obj/FMS </append>
   </INCLDIR>
   <FFLAGS>
-    <append MODEL="fv3gfs"> $(FC_AUTO_R8) </append>
+    <append MODEL="ufsatm"> $(FC_AUTO_R8) </append>
     <append MODEL="mom"> $(FC_AUTO_R8) -Duse_LARGEFILE</append>
   </FFLAGS>
   <SUPPORTS_CXX>FALSE</SUPPORTS_CXX>
@@ -469,38 +469,6 @@ using a fortran linker.
   <FFLAGS>
     <append compile_threaded="FALSE"> -heap-arrays </append>
   </FFLAGS>
-</compiler>
-
-<compiler MACH="athena">
-  <CPPDEFS>
-    <!-- these flags enable nano timers -->
-    <append MODEL="gptl"> -DHAVE_NANOTIME -DBIT64 -DHAVE_VPRINTF -DHAVE_BACKTRACE -DHAVE_SLASHPROC -DHAVE_COMM_F2C -DHAVE_TIMES -DHAVE_GETTIMEOFDAY </append>
-  </CPPDEFS>
-  <NETCDF_PATH>$ENV{NETCDF}</NETCDF_PATH>
-  <PIO_FILESYSTEM_HINTS>gpfs</PIO_FILESYSTEM_HINTS>
-  <PNETCDF_PATH>$ENV{PNETCDF}</PNETCDF_PATH>
-  <AR>xiar</AR>
-  <ARFLAGS>
-    <base>cru</base>
-  </ARFLAGS>
-</compiler>
-
-<compiler MACH="athena" COMPILER="intel">
-  <CFLAGS>
-    <append>  -xHost </append>
-  </CFLAGS>
-  <CPPDEFS>
-    <append> -DINTEL_MKL -DHAVE_SSE2 </append>
-  </CPPDEFS>
-  <FFLAGS>
-    <append>  -xHost </append>
-  </FFLAGS>
-  <MPICXX MPILIB="mpich2">mpiicpc</MPICXX>
-  <MPICC MPILIB="mpich2">mpiicc</MPICC>
-  <MPIFC MPILIB="mpich2">mpiifort</MPIFC>
-  <SCC>icc</SCC>
-  <SFC>ifort</SFC>
-  <TRILINOS_PATH MPILIB="mpich2">$ENV{TRILINOS_PATH}</TRILINOS_PATH>
 </compiler>
 
 <compiler MACH="aleph" COMPILER="intel">

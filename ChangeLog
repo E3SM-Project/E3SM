@@ -1,5 +1,74 @@
 ======================================================================
 
+Originator: Bill Sacks
+Date: 11-26-2019
+Tag: cime5.8.15
+Answer Changes: None
+Tests: scripts_regression_tests, aux_clm
+Dependencies: none
+
+Brief Summary:
+    - Modifications for UFS Global Mid-range Weather application
+    - Changes for nuopc mediator updates
+    - Fix clean build for CLM
+    - Fix dlnd for gnu
+    - Documentation updates for building pFUnit
+
+User interface changes: none
+
+PR summary: git log --oneline --first-parent [previous_tag]..master
+67a54f588 Merge pull request #3315 from billsacks/pass_comp_lnd_to_build
+8884a9e2f config_compilers had a duplicate entry for athena
+4e556447e Merge pull request #3311 from billsacks/doc_pfunit_build
+3c00449df Merge pull request #3312 from ESMCI/mvertens/update_nuopc_externals
+7365a820b Merge pull request #3309 from ESMCI/fischer/T1850G1_fix
+e67646129 Merge pull request #3306 from ESMCI/ufs-release
+1c04f4453 Update location for obtaining pFUnit (#3300)
+
+Modified files: git diff --name-status [previous_tag]
+M	config/cesm/config_grids.xml
+M	config/cesm/machines/config_compilers.xml
+A	config/ufs/config_archive.xml
+A	config/ufs/config_files.xml
+A	config/ufs/config_grids.xml
+A	config/ufs/config_grids_common.xml
+A	config/ufs/config_grids_mct.xml
+A	config/ufs/config_grids_nuopc.xml
+A	config/ufs/config_inputdata.xml
+A	config/ufs/machines/Depends.cray
+A	config/ufs/machines/Depends.gnu
+A	config/ufs/machines/Depends.intel
+A	config/ufs/machines/README
+A	config/ufs/machines/config_batch.xml
+A	config/ufs/machines/config_compilers.xml
+A	config/ufs/machines/config_machines.xml
+A	config/ufs/machines/config_pio.xml
+A	config/ufs/machines/config_workflow.xml
+A	config/ufs/machines/cylc_suite.rc.template
+A	config/ufs/machines/template.case.run
+A	config/ufs/machines/template.case.test
+A	config/ufs/machines/template.st_archive
+A	config/ufs/machines/userdefined_laptop_template/README.md
+A	config/ufs/machines/userdefined_laptop_template/config_compilers.xml
+A	config/ufs/machines/userdefined_laptop_template/config_machines.xml
+A	config/ufs/machines/userdefined_laptop_template/config_pes.xml
+M	doc/source/users_guide/unit_testing.rst
+M	scripts/Tools/Makefile
+M	scripts/create_test
+M	scripts/lib/CIME/build.py
+M	scripts/lib/CIME/utils.py
+M	scripts/tests/CTestConfig.cmake
+M	src/components/data_comps/dlnd/mct/dlnd_comp_mod.F90
+M	src/share/nuopc/seq_drydep_mod.F90
+M	src/share/nuopc/shr_carma_mod.F90
+M	src/share/nuopc/shr_fire_emis_mod.F90
+M	src/share/nuopc/shr_megan_mod.F90
+M	src/share/nuopc/shr_ndep_mod.F90
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer 
 Date: 11-11-2019
 Tag: cime5.8.14

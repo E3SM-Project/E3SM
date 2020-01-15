@@ -181,7 +181,7 @@ def _read_cime_config_file():
     """
     READ the config file in ~/.cime, this file may contain
     [main]
-    CIME_MODEL=e3sm,cesm
+    CIME_MODEL=e3sm,cesm,ufs
     PROJECT=someprojectnumber
     """
     allowed_sections = ("main", "create_test")
@@ -265,7 +265,11 @@ def get_cime_default_driver():
             if driver:
                 logger.debug("Setting CIME_driver={} from ~/.cime/config".format(driver))
     if not driver:
-        driver = "mct"
+        model = get_model()
+        if model == "ufs":
+            driver = "nuopc"
+        else:
+            driver = "mct"
     expect(driver in ("mct", "nuopc", "moab"),"Attempt to set invalid driver {}".format(driver))
     return driver
 
@@ -276,7 +280,7 @@ def set_model(model):
     cime_config = get_cime_config()
     if not cime_config.has_section('main'):
         cime_config.add_section('main')
-    expect(model == 'cesm' or model == 'e3sm',"model {} not recognized".format(model))
+    expect(model in ['cesm','e3sm','ufs'],"model {} not recognized".format(model))
     cime_config.set('main','CIME_MODEL',model)
 
 def get_model():
@@ -300,7 +304,7 @@ def get_model():
     >>> reset_cime_config()
     """
     model = os.environ.get("CIME_MODEL")
-    if (model == 'cesm' or model == 'e3sm'):
+    if model in ['cesm', 'e3sm', 'ufs']:
         logger.debug("Setting CIME_MODEL={} from environment".format(model))
     else:
         expect(model is None,"model {} not recognized".format(model))
@@ -317,9 +321,12 @@ def get_model():
             srcroot = cime_config.get('main','SRCROOT')
         if srcroot is None:
             srcroot = os.path.dirname(os.path.abspath(get_cime_root()))
-        if os.path.isfile(os.path.join(srcroot, "SVN_EXTERNAL_DIRECTORIES")) \
-           or os.path.isdir(os.path.join(srcroot, "manage_externals")):
+        if os.path.isfile(os.path.join(srcroot, "Externals.cfg")):
             model = 'cesm'
+            with open(os.path.join(srcroot, "Externals.cfg")) as fd:
+                for line in fd:
+                    if re.search('fv3gfs', line):
+                        model = 'ufs'
         else:
             model = 'e3sm'
         # This message interfers with the correct operation of xmlquery

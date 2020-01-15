@@ -14,7 +14,7 @@ _CMD_ARGS_FOR_BUILD = \
      "COMPILER", "DEBUG", "EXEROOT", "INCROOT", "LIBROOT",
      "MACH", "MPILIB", "NINST_VALUE", "OS", "PIO_VERSION",
      "SHAREDLIBROOT", "SMP_PRESENT", "USE_ESMF_LIB", "USE_MOAB",
-     "CAM_CONFIG_OPTS", "COMPARE_TO_NUOPC", "HOMME_TARGET",
+     "CAM_CONFIG_OPTS", "COMP_LND", "COMPARE_TO_NUOPC", "HOMME_TARGET",
      "OCN_SUBMODEL", "CISM_USE_TRILINOS", "USE_ALBANY", "USE_PETSC")
 
 def get_standard_makefile_args(case, shared_lib=False):
@@ -119,9 +119,13 @@ def _build_model(build_threaded, exeroot, incroot, complist,
         file_build = os.path.join(exeroot, "{}.bldlog.{}".format(cime_model, lid))
 
         config_dir = os.path.join(cimeroot, "src", "drivers", comp_interface, "cime_config")
-        bldroot = os.path.join(exeroot, "cpl", "obj")
-        if not os.path.isdir(bldroot):
-            os.makedirs(bldroot)
+        if not os.path.isdir(config_dir):
+            config_dir = os.path.join(cimeroot,"..","src","model","NEMS","cime","cime_config")
+        expect(os.path.exists(config_dir), "Config directory not found {}".format(config_dir))
+        if "cpl" in complist:
+            bldroot = os.path.join(exeroot, "cpl", "obj")
+            if not os.path.isdir(bldroot):
+                os.makedirs(bldroot)
         logger.info("Building {} with output to {} ".format(cime_model, file_build))
 
         with open(file_build, "w") as fd:
@@ -141,7 +145,7 @@ def _build_model(build_threaded, exeroot, incroot, complist,
     return logs
 
 ###############################################################################
-def _build_checks(case, build_threaded, comp_interface, use_esmf_lib,
+def _build_checks(case, build_threaded, comp_interface, 
                   debug, compiler, mpilib, complist, ninst_build, smp_value,
                   model_only, buildlist):
 ###############################################################################
@@ -211,18 +215,6 @@ ERROR env_build HAS CHANGED
   A manual clean of your obj directories is required
   You should execute the following:
     ./case.build --clean-all
-""")
-
-
-    expect(mpilib != "mpi-serial" or not use_esmf_lib,
-           """
-ERROR MPILIB is mpi-serial and USE_ESMF_LIB IS TRUE
-  MPILIB can only be used with an ESMF library built with mpiuni on
-  Set USE_ESMF_LIB to FALSE with
-    ./xmlchange -file env_build.xml -id USE_ESMF_LIB -val FALSE
-  ---- OR ----
-  Make sure the ESMF_LIBDIR used was built with mipuni (or change it to one that was)
-  And comment out this if block in Tools/models_buildexe
 """)
 
     case.set_value("BUILD_COMPLETE", False)
@@ -328,9 +320,12 @@ def _build_model_thread(config_dir, compclass, compname, caseroot, libroot, bldr
         cmd = os.path.join(config_dir, "buildlib")
         expect(os.path.isfile(cmd), "Could not find buildlib for {}".format(compname))
 
+    compile_cmd = "MODEL={} {} {} {} {} ".format(compclass, cmd, caseroot, libroot, bldroot)
+    if get_model() != "ufs":
+        compile_cmd = "SMP={} ".format(stringify_bool(smp))+compile_cmd
+
     with open(file_build, "w") as fd:
-        stat = run_cmd("MODEL={} SMP={} {} {} {} {} "
-                       .format(compclass, stringify_bool(smp), cmd, caseroot, libroot, bldroot),
+        stat = run_cmd(compile_cmd,
                        from_dir=bldroot,  arg_stdout=fd,
                        arg_stderr=subprocess.STDOUT)[0]
 
@@ -452,7 +447,6 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     compiler            = case.get_value("COMPILER")
     mpilib              = case.get_value("MPILIB")
-    use_esmf_lib        = case.get_value("USE_ESMF_LIB")
     debug               = case.get_value("DEBUG")
     ninst_build         = case.get_value("NINST_BUILD")
     smp_value           = case.get_value("SMP_VALUE")
@@ -463,8 +457,9 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
 
     # Load some params into env
     os.environ["BUILD_THREADED"]       = stringify_bool(build_threaded)
+    cime_model = get_model()
 
-    if get_model() == "e3sm" and mach == "titan" and compiler == "pgiacc":
+    if cime_model == "e3sm" and mach == "titan" and compiler == "pgiacc":
         case.set_value("CAM_TARGET", "preqx_acc")
 
     # This is a timestamp for the build , not the same as the testid,
@@ -504,13 +499,13 @@ def _case_build_impl(caseroot, case, sharedlib_only, model_only, buildlist,
     case.load_env()
 
     sharedpath = _build_checks(case, build_threaded, comp_interface,
-                               use_esmf_lib, debug, compiler, mpilib,
-                               complist, ninst_build, smp_value, model_only, buildlist)
+                               debug, compiler, mpilib, complist, ninst_build, smp_value, 
+                               model_only, buildlist)
 
     t2 = time.time()
     logs = []
 
-    if not model_only:
+    if not model_only and cime_model != "ufs":
         logs = _build_libraries(case, exeroot, sharedpath, caseroot,
                                 cimeroot, libroot, lid, compiler, buildlist, comp_interface)
 
