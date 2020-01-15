@@ -95,6 +95,7 @@ list(APPEND RAW_SOURCES
   core_ocean/shared/mpas_ocn_tracer_surface_flux_to_tend.F
   core_ocean/shared/mpas_ocn_test.F
   core_ocean/shared/mpas_ocn_constants.F
+  core_ocean/shared/mpas_ocn_config.F
   core_ocean/shared/mpas_ocn_forcing.F
   core_ocean/shared/mpas_ocn_surface_bulk_forcing.F
   core_ocean/shared/mpas_ocn_surface_land_ice_fluxes.F
