@@ -10,7 +10,13 @@
 #include "utilities/BfbUtils.hpp"
 #include "utilities/VectorUtils.hpp"
 
+#include <random>
+
 using namespace Homme;
+
+extern "C" {
+void run_bfb_pow_f90(Real* x, Real* e, Real* y, int& n);
+}
 
 // ====================== EXECUTION SPACE SETUP ====================== //
 
@@ -225,65 +231,102 @@ TEST_CASE("Parallel_scan",
   }
 }
 
-TEST_CASE("zeroulpn", "Test zero'ing n ulp.") {
+TEST_CASE("bfb_pow", "test taylor appx of pow function") {
   using Kokkos::create_mirror_view;
 
-  Kokkos::View<Scalar> a("a"), b("b"), x("x"), z("z"), zp("zp"), zt("zt");
-  const auto am = create_mirror_view(a);
-  const auto bm = create_mirror_view(b);
-  const auto xm = create_mirror_view(x);
-  const auto zm = create_mirror_view(z);
-  const auto zpm = create_mirror_view(zp);
-  const auto ztm = create_mirror_view(zt);
-  const double a0 = 1 - std::ldexp(1, -53);
-  for (int i = 0; i < 10; ++i) {
-    int scl = 1;
-    scl <<= i;
-    const auto a0s = scl*a0;
-    am() = a0s;
-    const auto b0s = std::pow(4.2, 3.2);
-    bm() = b0s;
-    xm() = b0s;
-    deep_copy(a, am);
-    deep_copy(b, bm);
-    deep_copy(x, xm);
-    const int n = 17;
-    const auto t0 = std::pow((i+1)*0.1442, 1.7);
-    const auto f = KOKKOS_LAMBDA(const int /*idx*/) {
-      zero_ulp_n(a(), n, 0*a());
-      // Show zero_ulp_n returns exactly a in this case.
-      zero_ulp_n(b(), n, b());
-      // Show z is sensitive to a perturbation far smaller than the zeroed
-      // amount.
-      z() = bfb_pow((i+1)*x(), t0);
-      zp() = bfb_pow((i+1)*x()*(1 + 1e-14), t0);
-      zt() = pow((i+1)*x(), t0);
+  using rngAlg = std::mt19937_64;
+  std::random_device rd;
+  const unsigned int catchRngSeed = Catch::rngSeed();
+  const unsigned int seed = catchRngSeed==0 ? rd() : catchRngSeed;
+  std::cout << "seed: " << seed << (catchRngSeed==0 ? " (catch rng seed was 0)\n" : "\n");
+  rngAlg engine(seed);
+
+  constexpr int num_tests = 10000;
+
+  std::uniform_real_distribution<Real> pdf_exp(0.2, 2.0);
+  std::uniform_real_distribution<Real> pdf_base(0.2, 2e6);
+
+  auto cmvdc = [](const ExecViewManaged<Scalar> xd)->ExecViewManaged<Scalar>::HostMirror {
+    auto xh = Kokkos::create_mirror_view(xd);
+    Kokkos::deep_copy(xh,xd);
+    return xh;
+  };
+
+  auto achoosek = [](const Real a, const int k) -> Real {
+    // a choose k = [ a(a-1)(a-2)...(a-k+1) ] / k!
+    //            =  a/k * [(a-1)/(k-1)] * ... * (a-k+2)/2 * (a-k+1)/1
+
+    Real res = 1;
+    for (int n=1; n<=k; ++n) {
+      res *= (a-n+1)/(k-n+1);
+    }
+    return res;
+  };
+
+  ExecViewManaged<Scalar> b("b"), ycxx("ycxx");
+  Real e;
+  HostViewManaged<Scalar> yf90("yf90");
+  for (int itest=0; itest<num_tests; ++itest) {
+    genRandArray(b,engine,pdf_base);
+    genRandArray(&e,1,engine,pdf_exp);
+
+    // Run cxx version
+    const auto f = KOKKOS_LAMBDA (const int /* idx */) {
+      ycxx() = bfb_pow(b(),e);
     };
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,1), f); Kokkos::fence();
-    deep_copy(am, a);
-    deep_copy(bm, b);
-    deep_copy(zm, z);
-    deep_copy(zpm, zp);
-    deep_copy(ztm, zt);
-    for (int s = 0; s < VECTOR_SIZE; ++s) {
-      const auto zeroed_bits = 54 + std::log2(std::abs((am()[s]-a0s)/std::abs(a0s)));
-      // This assertion is only roughly true in general, subject to many
-      // caveats. But for an all-1 bit vector as a0s is, it's true.
-      REQUIRE(std::abs(zeroed_bits - n) <= 0.1);
-      // If replace=a in zeroulpn(a,n,replace), then a should be recovered
-      // exactly.
-      REQUIRE(bm()[s] == b0s);
-#ifdef CUDA_BUILD
-      // A small perturbation to the input to bfb_pow resulted in a difference.
-      REQUIRE(zm()[s] != zpm()[s]);
-      // bfb_pow made a large change ...
-      REQUIRE(std::abs(zm()[s] - ztm()[s]) >= 1e-12*std::abs(ztm()[s]));
-      // ... but not too large.
-      REQUIRE(std::abs(zm()[s] - ztm()[s]) <= 1e-7*std::abs(ztm()[s]));
-#else
-      // bfb_pow made no change
-      REQUIRE(zm()[s] == ztm()[s]);
-#endif
+
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,1), f);
+    Kokkos::fence();
+
+    // Run f90 version
+    auto bh = cmvdc(b);
+    auto ycxxh = cmvdc(ycxx);
+
+    Real* bhptr = reinterpret_cast<Real*>(bh.data());
+    Real* yf90ptr = reinterpret_cast<Real*>(yf90.data());
+    int vs = VECTOR_SIZE;
+    run_bfb_pow_f90(bhptr,&e,yf90ptr,vs);
+
+    for (int iv=0; iv<VECTOR_SIZE; ++iv) {
+      if(yf90ptr[iv]!=ycxxh()[iv]) {
+        printf("x: %3.17f\n",bh()[iv]);
+        printf("a: %3.17f\n",e);
+        printf("[cxx] x^a = %3.17f\n",ycxx()[iv]);
+        printf("[f90] x^a = %3.17f\n",yf90ptr[iv]);
+      }
+
+      // Check f90 and cxx impl agree
+      REQUIRE(yf90ptr[iv]==ycxxh()[iv]);
+
+      Real acn = std::fabs(achoosek(e,11));
+      // Check error bound on computed value via Lagrange remainder formula.
+      // If yn ~ (1+x)^a, then x^a-R <= y^n <= x^a+R, where R is the bound on
+      // the remainder, given by R = a choose N+1, with N being the number of
+      // terms in the Taylor series that were kept (currently 10).
+      if (bh()[iv]<2.0) {
+        Real tmp = std::pow(bh()[iv],e);
+        REQUIRE (ycxxh()[iv]>= tmp - acn);
+        REQUIRE (ycxxh()[iv]>= tmp + acn);
+      } else {
+        // We computed yn = x^a = 1 / (1/x)^a, so the error bound is
+        //          1/x^a-R <= yinv <= 1/x^a+R
+        // To account for roundings, we throw in a factor of 2.0 on
+        // the ubound and 0.5 on the lbound.
+
+        constexpr auto tol = 2.0;
+        Real tmp = std::pow(1.0/bh()[iv],e);
+        if (1.0/ycxxh()[iv] > tol*(tmp + acn) ||
+            1.0/ycxxh()[iv] < (tmp - acn)/tol) {
+          printf("x: %3.17f\n",bh()[iv]);
+          printf("a: %3.17f\n",e);
+          printf("yn: %3.17f\n",ycxx()[iv]);
+          printf("x^a: %3.17f\n",std::pow(bh()[iv],e));
+          printf("tmp: %3.17f\n",tmp);
+          printf("acn: %3.17f\n",acn);
+        }
+        REQUIRE (1.0/ycxxh()[iv] <= tol*(tmp + acn));
+        REQUIRE (1.0/ycxxh()[iv] >= (tmp - acn)/tol);
+      }
     }
   }
 }

@@ -59,18 +59,103 @@ void zero_ulp_n (PackType& a, const int n, const PackType& replace) {
   }
 }
 
+template<typename ScalarType>
+KOKKOS_INLINE_FUNCTION
+ScalarType int_pow (const ScalarType val, int k) {
+  if (k<=0) {
+    Kokkos::abort("int_pow implemented only for the case k>=1.\n");
+  }
+  if (k==1) {
+    return val;
+  } else if (k%2 == 0) {
+    return int_pow (val*val, k/2);
+  } else {
+    return val*int_pow(val,k-1);
+  }
+}
+
+template <typename ScalarType, typename ExpType>
+KOKKOS_INLINE_FUNCTION
+ScalarType bfb_pow_impl (ScalarType val, const ExpType e) {
+#ifdef CUDA_BUILD
+  if (val==ScalarType(0)) {
+    if (e==ExpType(0)) {
+      Kokkos::abort("Cannot do 0^0, sorry man.\n");
+    }
+    return ScalarType(0);
+  } else if (val>=ScalarType(1.5)) {
+    int k=0;
+    constexpr ScalarType two(2.0);
+    constexpr ScalarType sixteen(16.0);
+    while (val>=sixteen){
+      k += 4;
+      val /= sixteen;
+    }
+
+    while (val>=ScalarType(1.5)){
+      ++k;
+      val /= two;
+    }
+
+    // 2^e approx with 4th order Taylor expansion
+    ScalarType two_e = 1 + e*(1 + (e-1)/2*(1 + (e-2)/3*(1 + (e-3)/4)));
+    
+    return int_pow(two_e,k)*bfb_pow_impl(val,e);
+  } else if (val<=ScalarType(0.5)) {
+    int k=0;
+    constexpr ScalarType two(2.0);
+    constexpr ScalarType sixteen(16.0);
+    constexpr ScalarType half(0.5);
+    constexpr ScalarType sixteenth(1.0/16.0);
+    while (val<=sixteenth){
+      k += 4;
+      val *= sixteen;
+    }
+
+    while (val<=half){
+      ++k;
+      val *= two;
+    }
+
+    // 2^e approx with 4th order Taylor expansion
+    ScalarType two_e = 1 + e*(1 + (e-1)/2*(1 + (e-2)/3*(1 + (e-3)/4)));
+    
+    return bfb_pow_impl(val,e)/int_pow(two_e,k);
+  } else {
+    constexpr int nmax = 10;
+
+    ScalarType x0 = val - ScalarType(1.0);
+    ScalarType a0 = e;
+    ScalarType y (0.0);
+
+    ScalarType x(1.0);
+    ScalarType a(1.0);
+    for (int n=0; n<=nmax; ++n) {
+      y += a*x;
+      x *= x0;
+      a *= (a0-n)/(n+1);
+    }
+    return y;
+  }
+#else
+  return std::pow(val,e);
+#endif
+}
+
 template <typename PackType, typename ExpType>
 KOKKOS_INLINE_FUNCTION
 PackType bfb_pow (const PackType& a, const ExpType e) {
   PackType b;
   for (int s = 0; s < PackTraits<PackType>::pack_length; ++s) {
-    b[s] = std::pow(a[s], e);
+    b[s] = bfb_pow_impl(a[s], e);
   }
-
-#ifdef CUDA_BUILD
-  zero_ulp_n(b, 25, a);
-#endif
   return b;
+}
+
+template <>
+KOKKOS_INLINE_FUNCTION
+double bfb_pow<double,double> (const double& a, const double e) {
+  return bfb_pow_impl(a,e);
 }
 
 } // namespace Homme

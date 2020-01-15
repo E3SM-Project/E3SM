@@ -25,7 +25,7 @@ module eos
   use physical_constants, only : p0, kappa, g, Rgas
   use control_mod,    only: theta_hydrostatic_mode
 #ifdef HOMMEXX_BFB_TESTING
-  use bfb_mod,        only: cbfb_pow
+  use bfb_mod,        only: bfb_pow
 #endif
   implicit none
 
@@ -154,8 +154,7 @@ implicit none
      do k=1,nlev
         pi(:,:,k) = (pi_i(:,:,k+1)+pi_i(:,:,k))/2
      enddo
-     exner  = (pi/p0)
-     call cbfb_pow(np*np*nlev,exner,kappa)
+     exner  = bfb_pow(pi/p0,kappa)
 #else
      do k=1,nlev
         pi(:,:,k)=pi_i(:,:,k) + dp3d(:,:,k)/2
@@ -178,9 +177,7 @@ implicit none
 #ifndef HOMMEXX_BFB_TESTING
      pnh(:,:,k) = p0 * (p_over_exner(:,:,k)/p0)**(1/(1-kappa))
 #else
-     pnh(:,:,k) = p_over_exner(:,:,k)/p0
-     call cbfb_pow(np*np, pnh(:,:,k), (1/(1-kappa)))
-     pnh(:,:,k) = p0 * pnh(:,:,k)
+     pnh(:,:,k) = p0 * bfb_pow(p_over_exner(:,:,k)/p0,1/(1-kapp))
 #endif
      exner(:,:,k) =  pnh(:,:,k)/ p_over_exner(:,:,k)
   enddo
@@ -271,9 +268,7 @@ implicit none
   phi_i(:,:,nlevp) = phis(:,:)
   do k=nlev,1,-1
 #ifdef HOMMEXX_BFB_TESTING
-     phi_i(:,:,k) = p(:,:,k)/p0
-     call cbfb_pow(np*np,phi_i(:,:,k),kappa-1)
-     phi_i(:,:,k) = (Rgas*vtheta_dp(:,:,k)*phi_i(:,:,k))/p0 + phi_i(:,:,k+1)
+     phi_i(:,:,k) = phi_i(:,:,k+1)+ (Rgas*vtheta_dp(:,:,k)*bfb_pow(p(:,:,k)/p0,(kappa-1)))/p0
 #else
      phi_i(:,:,k) = phi_i(:,:,k+1)+(Rgas*vtheta_dp(:,:,k)*(p(:,:,k)/p0)**(kappa-1))/p0
 #endif
