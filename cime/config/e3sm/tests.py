@@ -113,8 +113,6 @@ _TESTS = {
             "ERS.ne30_g16_rx1.A",
             "SEQ.f19_g16.X",
             "ERIO.ne30_g16_rx1.A",
-            "HOMME_P24.f19_g16_rx1.A",
-            "HOMMEBFB_P24.f19_g16_rx1.A",
             "NCK.f19_g16_rx1.A",
             "SMS.ne30_f19_g16_rx1.A",
             "ERS_Ld5.T62_oQU120.CMPASO-NYF",
@@ -126,6 +124,14 @@ _TESTS = {
             )
         },
 
+    "e3sm_homme" : {
+        "time"    : "0:45:00",
+        "tests"   : (
+            "HOMME_P24.f19_g16_rx1.A",
+            "HOMMEBFB_P24.f19_g16_rx1.A",
+            )
+        },    
+    
     "e3sm_integration" : {
         "inherit" : ("e3sm_developer", "e3sm_atm_integration"),
         "time"    : "03:00:00",
