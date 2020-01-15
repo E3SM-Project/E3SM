@@ -95,6 +95,7 @@ contains
       res = 0.0
     else if (val .ge. 2.0) then
       tmp = val
+      k = 0
       do while (tmp .ge. 16.0)
         k = k+4
         tmp = tmp/16.0
@@ -107,6 +108,7 @@ contains
       res = int_pow(two_a(e),k)*bfb_pow_0d(tmp,e)
     else if (val .le. 0.5) then
       tmp = val
+      k = 0
       do while(tmp .le. 0.0625)
         k = k+4
         tmp = tmp*16.0
