@@ -17,7 +17,6 @@ mesh_file         = '/dev/null'
 tstep             = ${HOMME_TEST_TIME_STEP}
 rsplit            = ${HOMME_TEST_RSPLIT}
 qsplit            = 1 
-tstep_type        = 5
 integration       = "explicit"
 smooth            = 0
 nu                = ${HOMME_TEST_NU}
