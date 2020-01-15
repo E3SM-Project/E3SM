@@ -36,6 +36,7 @@ module ocn_init_mode
    use ocn_equation_of_state
 
    use ocn_constants
+   use ocn_config
 
    use ocn_init_spherical_utils
 
@@ -114,8 +115,11 @@ module ocn_init_mode
       call mpas_get_time(startTime, dateTimeString=startTimeStamp)
       ierr = ior(ierr, err_tmp)
 
-      ! Setup ocean config pool
+      ! Set up ocean constants
       call ocn_constants_init(domain % configs, domain % packages)
+
+      ! Setup ocean config pool
+      call ocn_config_init(domain % configs)
 
       !
       ! Read input data for model
