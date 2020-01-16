@@ -420,7 +420,7 @@ struct CaarFunctorImpl {
     auto& phi_surf = m_state.m_phinh_i(ie,m_data.np1,igp,jgp,LAST_INT_PACK)[LAST_INT_PACK_END];
     phi_surf = m_geometry.m_phis(ie,igp,jgp);
 
-#ifndef NDEBUG
+#if defined(ENERGY_DIAGNOSTICS) && !defined(NDEBUG)
     // Check w bc
     if (fabs( (u*phis_x+v*phis_y)/g - w ) > 1e-10) {
       printf("[CAAR] WARNING! w b.c. not satisfied at (ie,igp,jgp) = (%d,%d,%d):\n"

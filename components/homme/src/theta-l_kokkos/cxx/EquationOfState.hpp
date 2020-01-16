@@ -64,6 +64,18 @@ public:
 
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                          [&](const int ilev) {
+#ifndef NDEBUG
+      // check inputs
+      const int vec_len = (ilev==(NUM_LEV-1)) ? ColInfo<NUM_PHYSICAL_LEV>::LastPackLen : VECTOR_SIZE;
+      for (int iv=0; iv<vec_len; ++iv) {
+        if (vtheta_dp(ilev)[iv]<0.0) {
+          Kokkos::abort("Error! vtheta_dp>0 detected.\n");
+        }
+        if (exner(ilev)[iv]>0.0) {
+          Kokkos::abort("Error! dphi>0 detected.\n");
+        }
+      }
+#endif
       compute_pnh_and_exner(vtheta_dp(ilev), exner(ilev), pnh(ilev), exner(ilev));
     });
   }
@@ -76,17 +88,6 @@ public:
   KOKKOS_INLINE_FUNCTION
   static void compute_pnh_and_exner (const Scalar& vtheta_dp, const Scalar& dphi,
                                      Scalar& pnh, Scalar& exner) {
-#ifndef NDEBUG
-      // check inputs
-      for (int iv=0; iv<VECTOR_SIZE; ++iv) {
-        if (vtheta_dp[iv]<0.0) {
-          Kokkos::abort("Error! vtheta_dp>0 detected.\n");
-        }
-        if (dphi[iv]>0.0) {
-          Kokkos::abort("Error! dphi>0 detected.\n");
-        }
-      }
-#endif
     exner = (-PhysicalConstants::Rgas)*vtheta_dp / dphi;
     pnh = exner/PhysicalConstants::p0;
 #ifndef HOMMEXX_BFB_TESTING
