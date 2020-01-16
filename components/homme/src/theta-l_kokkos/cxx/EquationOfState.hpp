@@ -76,6 +76,17 @@ public:
   KOKKOS_INLINE_FUNCTION
   static void compute_pnh_and_exner (const Scalar& vtheta_dp, const Scalar& dphi,
                                      Scalar& pnh, Scalar& exner) {
+#ifndef NDEBUG
+      // check inputs
+      for (int iv=0; iv<VECTOR_SIZE; ++iv) {
+        if (vtheta_dp[iv]<0.0) {
+          Kokkos::abort("Error! vtheta_dp>0 detected.\n");
+        }
+        if (dphi[iv]>0.0) {
+          Kokkos::abort("Error! dphi>0 detected.\n");
+        }
+      }
+#endif
     exner = (-PhysicalConstants::Rgas)*vtheta_dp / dphi;
     pnh = exner/PhysicalConstants::p0;
 #ifndef HOMMEXX_BFB_TESTING

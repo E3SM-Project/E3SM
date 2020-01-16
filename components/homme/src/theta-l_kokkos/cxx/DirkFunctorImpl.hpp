@@ -336,7 +336,9 @@ struct DirkFunctorImpl {
 
       loop_ki(kv, nlev, nvec, [&] (int k, int i) { dphi_n0(k,i) = phi_n0(k+1,i) - phi_n0(k,i); });
 
-      for (int it = 0; it < maxiter; ++it) { // Newton iteration
+      int it = 0;
+      Real deltaerr;
+      for (; it < maxiter; ++it) { // Newton iteration
         pnh_and_exner_from_eos(kv, hvcoord, vtheta_dp, dp3d, dphi, pnh, wrk, dpnh_dp_i);
         kv.team_barrier();
         loop_ki(kv, nlev, nvec, [&] (const int k, const int i) {
@@ -370,10 +372,13 @@ struct DirkFunctorImpl {
 
         loop_ki(kv, nlev, nvec, [&] (int k, int i) { w_np1(k,i) += wrk(2,i)*x(k,i); });
 
-        Real deltaerr;
         if (exit_on_step(kv, nlev, nvec, wmax, deltatol, x, deltaerr)) break;
       } // Newton iteration
       kv.team_barrier();
+
+      if (it>=maxiter) {
+        printf ("[DIRK] WARNING! Newton reached max iteration count, with deltaerr = %3.17f\n",deltaerr);
+      }
 
       // Update phi_np1.
       loop_ki(kv, nlev, nvec, [&] (int k, int i) { phi_np1(k,i) = phi_n0(k,i) + dt2*grav*w_np1(k,i); });

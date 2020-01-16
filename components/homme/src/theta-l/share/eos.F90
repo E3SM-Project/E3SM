@@ -256,6 +256,31 @@ implicit none
 
   integer :: k
 
+#ifndef NDEBUG
+  logical :: ierr
+  integer :: i,j,k2
+
+  ierr= any(vtheta_dp(:,:,:) < 0 )  .or. &
+          any(dp(:,:,:) < 0 )
+
+  if (ierr) then
+     print *,'bad state in phi_from_eos:'
+     do j=1,np
+     do i=1,np
+     do k=1,nlev
+        if ( (vtheta_dp(i,j,k) < 0) .or. (dp(i,j,k)<0) ) then
+           print *,'bad i,j,k=',i,j,k
+           print *,'vertical column: dp,vtheta_dp'
+           do k2=1,nlev
+              write(*,'(i3,4f14.4)') k2,dp(i,j,k2),vtheta_dp(i,j,k2)
+           enddo
+           call abortmp('EOS bad state: dp or vtheta_dp < 0')
+        endif
+     enddo
+     enddo
+     enddo
+  endif
+#endif
   ! compute pressure on interfaces                                                                                   
   p_i(:,:,1)=hvcoord%hyai(1)*hvcoord%ps0
   do k=1,nlev

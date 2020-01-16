@@ -78,12 +78,6 @@ public:
     auto pnh       = Homme::subview(m_buffers.pnh,       kv.team_idx);
     auto dpnh_dp_i = Homme::subview(m_buffers.dpnh_dp_i, kv.team_idx);
 
-    // ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV_P]> phi_i;
-    // if (m_theta_hydrostatic_mode) {
-      // phi_i = Homme::subview(m_buffers.dpnh_dp_i, kv.team_idx);
-    // } else {
-    // }
-
     Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team, NP * NP),
                          [&](const int &point_idx) {
       const int igp = point_idx / NP;

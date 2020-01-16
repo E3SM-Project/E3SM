@@ -417,8 +417,29 @@ struct CaarFunctorImpl {
     //       exchange the last level, since phi=phis at surface.
     //       So to make sure we're not messing up, set phi back to phis on last interface
     // Note: this is *independent* of whether NUM_LEV==NUM_LEV_P or not.
-    auto& phi = m_state.m_phinh_i(ie,m_data.np1,igp,jgp,LAST_INT_PACK)[LAST_INT_PACK_END];
-    phi = m_geometry.m_phis(ie,igp,jgp);
+    auto& phi_surf = m_state.m_phinh_i(ie,m_data.np1,igp,jgp,LAST_INT_PACK)[LAST_INT_PACK_END];
+    phi_surf = m_geometry.m_phis(ie,igp,jgp);
+
+#ifndef NDEBUG
+    // Check w bc
+    if (fabs( (u*phis_x+v*phis_y)/g - w ) > 1e-10) {
+      printf("[CAAR] WARNING! w b.c. not satisfied at (ie,igp,jgp) = (%d,%d,%d):\n"
+             "         w:              %3.15f\n"
+             "         v*grad(phis)/g: %3.15f\n"
+             "         diff:           %3.15f\n",
+             ie,igp,jgp,w,(u*phis_x+v*phis_y)/g,fabs( (u*phis_x+v*phis_y)/g - w ));
+    }
+
+    auto phi = Homme::viewAsReal(Homme::subview(m_state.m_phinh_i,ie,m_data.np1,igp,jgp));
+    for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
+      if ( (phi(k)-phi(k+1)) < g ) {
+        printf("[CAAR] WARNING! delta z < 1m, at (ie,igp,jgp,k) = (%d,%d,%d,%d):\n"
+               "         phi(k):   %3.15f\n"
+               "         phi(k+1): %3.15f\n",
+               ie,igp,jgp,k,phi(k),phi(k+1));
+      }
+    }
+#endif
   }
 
   KOKKOS_INLINE_FUNCTION
