@@ -647,6 +647,9 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
   call phi_from_eos(hvcoord,elem%state%phis,elem%state%vtheta_dp(:,:,:,tl),&
        elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl))
 
+  ! Disable the following check in CUDA bfb builds,
+  ! since the calls to pow are inexact
+#if !(defined(HOMMEXX_BFB_TESTING) && defined(CUDA_BUILD))
   ! verify discrete hydrostatic balance
   call pnh_and_exner_from_eos(hvcoord,elem%state%vtheta_dp(:,:,:,tl),&
        elem%state%dp3d(:,:,:,tl),elem%state%phinh_i(:,:,:,tl),pnh,exner,dpnh_dp_i)
@@ -658,6 +661,7 @@ recursive subroutine get_field(elem,name,field,hvcoord,nt,ntQ)
         write(iulog,*) 'pnh',pi(1,1,k),pnh(1,1,k)
      endif
   enddo
+#endif
   
   do tl = 2,timelevels
     call copy_state(elem,1,tl)
