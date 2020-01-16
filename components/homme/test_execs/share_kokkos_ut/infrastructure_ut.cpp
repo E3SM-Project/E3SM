@@ -15,7 +15,9 @@
 using namespace Homme;
 
 extern "C" {
-void run_bfb_pow_f90(Real* x, Real* e, Real* y, int& n);
+void power_of_two_f90(Real& e,  Real& y);
+void int_pow_f90(Real& x, int& e,  Real& y);
+void bfb_pow_f90(Real* x, Real* e, Real* y, int& n);
 }
 
 // ====================== EXECUTION SPACE SETUP ====================== //
@@ -231,6 +233,7 @@ TEST_CASE("Parallel_scan",
   }
 }
 
+
 TEST_CASE("bfb_pow", "test taylor appx of pow function") {
   using Kokkos::create_mirror_view;
 
@@ -243,90 +246,206 @@ TEST_CASE("bfb_pow", "test taylor appx of pow function") {
 
   constexpr int num_tests = 10000;
 
-  std::uniform_real_distribution<Real> pdf_exp(0.2, 2.0);
-  std::uniform_real_distribution<Real> pdf_base(0.2, 2e6);
+  std::uniform_int_distribution<int>   ipdf_exp(0,31);
+  std::uniform_real_distribution<Real> rpdf_exp(-1.0, 1.5);
+  std::uniform_real_distribution<Real> rpdf_base(0.001, 1e6);
 
-  auto cmvdc = [](const ExecViewManaged<Scalar> xd)->ExecViewManaged<Scalar>::HostMirror {
-    auto xh = Kokkos::create_mirror_view(xd);
-    Kokkos::deep_copy(xh,xd);
-    return xh;
-  };
+  SECTION ("int_pow") {
+    int iexp;
+    Real base, pow_cxx, pow_f90, pow_std;
+    for (int itest=0; itest<num_tests; ++itest) {
+      genRandArray(&iexp,1,engine,ipdf_exp);
+      genRandArray(&base,1,engine,rpdf_exp);
 
-  auto achoosek = [](const Real a, const int k) -> Real {
-    // a choose k = [ a(a-1)(a-2)...(a-k+1) ] / k!
-    //            =  a/k * [(a-1)/(k-1)] * ... * (a-k+2)/2 * (a-k+1)/1
+      pow_cxx = int_pow(base,iexp);
+      int_pow_f90(base,iexp,pow_f90);
+      pow_std = std::pow(base,iexp);
+      if (pow_cxx!=pow_f90) {
+        printf("CXX and F90 mismatch:\n"
+               "   b:   %3.16f\n"
+               "   e:   %d\n"
+               "   cxx: %3.16f\n"
+               "   f90: %3.16f\n",
+               base,iexp,pow_cxx,pow_f90);
+      }
 
-    Real res = 1;
-    for (int n=1; n<=k; ++n) {
-      res *= (a-n+1)/(k-n+1);
+      // f90 and cxx must agree.
+      REQUIRE (pow_cxx==pow_f90);
+
+      // I'm not sure what alg std uses, but we should get something "close"
+      REQUIRE (fabs(pow_cxx-pow_std)/pow_std < 1e-10);
     }
-    return res;
-  };
+  }
 
-  ExecViewManaged<Scalar> b("b"), ycxx("ycxx");
-  Real e;
-  HostViewManaged<Scalar> yf90("yf90");
-  for (int itest=0; itest<num_tests; ++itest) {
-    genRandArray(b,engine,pdf_base);
-    genRandArray(&e,1,engine,pdf_exp);
-
-    // Run cxx version
-    const auto f = KOKKOS_LAMBDA (const int /* idx */) {
-      ycxx() = bfb_pow(b(),e);
+  SECTION ("real_pow") {
+    auto cmvdc = [](const ExecViewManaged<Scalar> xd)->ExecViewManaged<Scalar>::HostMirror {
+      auto xh = Kokkos::create_mirror_view(xd);
+      Kokkos::deep_copy(xh,xd);
+      return xh;
     };
 
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,1), f);
-    Kokkos::fence();
+    ExecViewManaged<Scalar> b("b"), ycxx("ycxx");
+    Real e;
+    HostViewManaged<Scalar> yf90("yf90");
+    for (int itest=0; itest<num_tests; ++itest) {
+      genRandArray(b,engine,rpdf_base);
+      genRandArray(&e,1,engine,rpdf_exp);
+      auto bh = cmvdc(b);
 
-    // Run f90 version
-    auto bh = cmvdc(b);
-    auto ycxxh = cmvdc(ycxx);
+      // Run cxx version
+      const auto f = KOKKOS_LAMBDA (const int /* idx */) {
+        ycxx() = bfb_pow(b(),e);
+      };
 
-    Real* bhptr = reinterpret_cast<Real*>(bh.data());
-    Real* yf90ptr = reinterpret_cast<Real*>(yf90.data());
-    int vs = VECTOR_SIZE;
-    run_bfb_pow_f90(bhptr,&e,yf90ptr,vs);
+      Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,1), f);
+      Kokkos::fence();
 
-    for (int iv=0; iv<VECTOR_SIZE; ++iv) {
-      if(yf90ptr[iv]!=ycxxh()[iv]) {
-        printf("x: %3.17f\n",bh()[iv]);
-        printf("a: %3.17f\n",e);
-        printf("[cxx] x^a = %3.17f\n",ycxx()[iv]);
-        printf("[f90] x^a = %3.17f\n",yf90ptr[iv]);
-      }
+      // Run f90 version
+      auto ycxxh = cmvdc(ycxx);
 
-      // Check f90 and cxx impl agree
-      REQUIRE(yf90ptr[iv]==ycxxh()[iv]);
+      Real* bhptr = reinterpret_cast<Real*>(bh.data());
+      Real* yf90ptr = reinterpret_cast<Real*>(yf90.data());
+      int vs = VECTOR_SIZE;
+      bfb_pow_f90(bhptr,&e,yf90ptr,vs);
 
-      Real acn = std::fabs(achoosek(e,11));
-      // Check error bound on computed value via Lagrange remainder formula.
-      // If yn ~ (1+x)^a, then x^a-R <= y^n <= x^a+R, where R is the bound on
-      // the remainder, given by R = a choose N+1, with N being the number of
-      // terms in the Taylor series that were kept (currently 10).
-      if (bh()[iv]<2.0) {
-        Real tmp = std::pow(bh()[iv],e);
-        REQUIRE (ycxxh()[iv]>= tmp - acn);
-        REQUIRE (ycxxh()[iv]>= tmp + acn);
-      } else {
-        // We computed yn = x^a = 1 / (1/x)^a, so the error bound is
-        //          1/x^a-R <= yinv <= 1/x^a+R
-        // To account for roundings, we throw in a factor of 2.0 on
-        // the ubound and 0.5 on the lbound.
-
-        constexpr auto tol = 2.0;
-        Real tmp = std::pow(1.0/bh()[iv],e);
-        if (1.0/ycxxh()[iv] > tol*(tmp + acn) ||
-            1.0/ycxxh()[iv] < (tmp - acn)/tol) {
+      for (int iv=0; iv<VECTOR_SIZE; ++iv) {
+        if(yf90ptr[iv]!=ycxxh()[iv]) {
           printf("x: %3.17f\n",bh()[iv]);
           printf("a: %3.17f\n",e);
-          printf("yn: %3.17f\n",ycxx()[iv]);
-          printf("x^a: %3.17f\n",std::pow(bh()[iv],e));
-          printf("tmp: %3.17f\n",tmp);
-          printf("acn: %3.17f\n",acn);
+          printf("[cxx] x^a = %3.17f\n",ycxxh()[iv]);
+          printf("[f90] x^a = %3.17f\n",yf90ptr[iv]);
         }
-        REQUIRE (1.0/ycxxh()[iv] <= tol*(tmp + acn));
-        REQUIRE (1.0/ycxxh()[iv] >= (tmp - acn)/tol);
+
+        // Check f90 and cxx impl agree
+        REQUIRE(yf90ptr[iv]==ycxxh()[iv]);
       }
     }
+  }
+
+  SECTION ("check_worst_pow") {
+
+    auto hd = [](ExecViewManaged<Scalar>::HostMirror h,ExecViewManaged<Scalar> d) {
+      Kokkos::deep_copy(d,h);
+    };
+    auto dh = [](ExecViewManaged<Scalar> d,ExecViewManaged<Scalar>::HostMirror h) {
+      Kokkos::deep_copy(h,d);
+    };
+    auto cmv = [](const ExecViewManaged<Scalar> xd)->ExecViewManaged<Scalar>::HostMirror {
+      auto xh = Kokkos::create_mirror_view(xd);
+      return xh;
+    };
+
+    ExecViewManaged<Scalar> x("b"), y("ycxx");
+    // Real e;
+    auto xh = cmv(x);
+    auto yh = cmv(y);
+    Real aworst = -1.0;
+    Real rworst = -1.0;
+    Real wa, wan, wr, wrn, wae, wre, wab, wrb;
+    for (Real e=-1.0; e<=1.5; e+= 0.05) {
+      for (Real b=0.001; b<1e6; b*=1.05) {
+        xh() = b;
+        hd(xh,x);
+
+        // Run cxx version
+        const auto f = KOKKOS_LAMBDA (const int /* idx */) {
+          y()[0] = bfb_pow_impl(x()[0],e);
+        };
+
+        Kokkos::parallel_for(Kokkos::RangePolicy<ExecSpace>(0,1), f);
+        Kokkos::fence();
+        dh(y,yh);
+
+        Real yex = std::pow(b,e);
+        Real yn = yh()[0];
+
+        Real aerr = fabs(yn-yex);
+        Real rerr = aerr/yex;
+        if (aerr > aworst) {
+          aworst = aerr;
+          wa = yex;
+          wan = yn;
+          wae = e;
+          wab = b;
+        }
+        if (rerr > rworst) {
+          rworst = rerr;
+          wr = yex;
+          wrn = yn;
+          wre = e;
+          wrb = b;
+        }
+      }
+    }
+
+    if(aworst>=1e5) {
+      printf ("abs worst case:\n");
+      printf (" e:  %3.17f\n",wae);
+      printf (" b:  %3.17f\n",wab);
+      printf (" y : %3.17f\n",wa);
+      printf (" yn: %3.17f\n",wan);
+      printf (" d:  %3.17f\n",aworst);
+    }
+    REQUIRE(aworst<1e5);
+
+    if(rworst>=1e-3) {
+      printf ("rel worst case:\n");
+      printf (" e:  %3.17f\n",wre);
+      printf (" b:  %3.17f\n",wrb);
+      printf (" y : %3.17f\n",wr);
+      printf (" yn: %3.17f\n",wrn);
+      printf (" d:  %3.17f\n",rworst);
+    }
+    REQUIRE(rworst<1e-3);
+  }
+
+  SECTION ("check_worst_pow_of_two") {
+    Real aworst = -1.0;
+    Real rworst = -1.0;
+    Real wa, wan, wr, wrn, wae, wre;
+    Real ynf90;
+    for (Real e=-1.0; e<=2.0; e+= 0.01) {
+
+      // Run cxx version
+      Real y  = std::pow(2,e);
+      Real yn = power_of_two(e);
+
+      // Check f90 and cxx impl agree
+      power_of_two_f90(e,ynf90);
+      REQUIRE (yn==ynf90);
+
+      Real aerr = fabs(y-yn);
+      Real rerr = aerr/y;
+      if (aerr > aworst) {
+        aworst = aerr;
+        wa = y;
+        wan = yn;
+        wae = e;
+      }
+      if (rerr > rworst) {
+        rworst = rerr;
+        wr = y;
+        wrn = yn;
+        wre = e;
+      }
+    }
+
+    if(aworst>=1e-6) {
+      printf ("abs worst case:\n");
+      printf (" e:  %3.17f\n",wae);
+      printf (" y : %3.17f\n",wa);
+      printf (" yn: %3.17f\n",wan);
+      printf (" d:  %3.17f\n",aworst);
+    }
+    REQUIRE(aworst<1e-6);
+
+    if(rworst>=1e-6) {
+      printf ("rel worst case:\n");
+      printf (" e:  %3.17f\n",wre);
+      printf (" y : %3.17f\n",wr);
+      printf (" yn: %3.17f\n",wrn);
+      printf (" d:  %3.17f\n",rworst);
+    }
+    REQUIRE(rworst<1e-6);
   }
 }

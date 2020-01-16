@@ -61,82 +61,117 @@ void zero_ulp_n (PackType& a, const int n, const PackType& replace) {
 
 template<typename ScalarType>
 KOKKOS_INLINE_FUNCTION
-ScalarType int_pow (const ScalarType val, int k) {
-  if (k<=0) {
-    Kokkos::abort("int_pow implemented only for the case k>=1.\n");
+ScalarType int_pow (ScalarType val, int k) {
+  constexpr int max_shift = 30;
+  if (k<0) {
+    printf ("k = %d\n",k);
+    Kokkos::abort("int_pow implemented only for k>=0.\n");
   }
-  if (k==1) {
-    return val;
-  } else if (k%2 == 0) {
-    return int_pow (val*val, k/2);
-  } else {
-    return val*int_pow(val,k-1);
+
+  ScalarType y(1);
+  if (k==0) {
+    return y;
   }
+
+  for (int shift=0; shift<max_shift; ++shift) {
+    int pow2 = 1<<shift;
+    if (k & pow2) {
+      y *= val;
+    }
+    val *= val;
+  }
+  return y;
+}
+
+template <typename ScalarType>
+KOKKOS_INLINE_FUNCTION
+ScalarType power_of_two (const ScalarType e) {
+  // Note: this function is tailored (or taylored...eheh), for -1<e<1.5
+
+  constexpr ScalarType l2 = 0.693147180559945;
+
+  const ScalarType l2e = l2*e;
+
+  ScalarType y (1);
+
+  // Note: if order = 0, y=1, which is the initial value.
+  constexpr int order = 10;
+  for (int n=order; n>0; --n) {
+    y *= l2e/n;
+    y += 1.0;
+  }
+  return y;
 }
 
 template <typename ScalarType, typename ExpType>
 KOKKOS_INLINE_FUNCTION
-ScalarType bfb_pow_impl (ScalarType val, const ExpType e) {
+ScalarType bfb_pow_impl (const ScalarType val, const ExpType a) {
 #ifdef CUDA_BUILD
+  // Note: this function is tailored (or taylored...eheh)
+  // for -1<e<1.5 and 0.001 < b < 1e6
+  if (val<ScalarType(0)) {
+    Kokkos::abort("Cannot take powers of negative numbers.\n");
+  }
+  if (a<-2.0 || a>2.0) {
+    printf("Bad exponent: %3.15f\n",a);
+    Kokkos::abort("bfb_pow x^a impl-ed with only -2.0<a<2.0 in mind.\n");
+  }
   if (val==ScalarType(0)) {
-    if (e==ExpType(0)) {
+    if (a==ExpType(0)) {
       Kokkos::abort("Cannot do 0^0, sorry man.\n");
     }
     return ScalarType(0);
-  } else if (val>=ScalarType(1.5)) {
-    int k=0;
-    constexpr ScalarType two(2.0);
-    constexpr ScalarType sixteen(16.0);
-    while (val>=sixteen){
-      k += 4;
-      val /= sixteen;
-    }
-
-    while (val>=ScalarType(1.5)){
-      ++k;
-      val /= two;
-    }
-
-    // 2^e approx with 4th order Taylor expansion
-    ScalarType two_e = 1 + e*(1 + (e-1)/2*(1 + (e-2)/3*(1 + (e-3)/4)));
-    
-    return int_pow(two_e,k)*bfb_pow_impl(val,e);
-  } else if (val<=ScalarType(0.5)) {
-    int k=0;
-    constexpr ScalarType two(2.0);
-    constexpr ScalarType sixteen(16.0);
-    constexpr ScalarType half(0.5);
-    constexpr ScalarType sixteenth(1.0/16.0);
-    while (val<=sixteenth){
-      k += 4;
-      val *= sixteen;
-    }
-
-    while (val<=half){
-      ++k;
-      val *= two;
-    }
-
-    // 2^e approx with 4th order Taylor expansion
-    ScalarType two_e = 1 + e*(1 + (e-1)/2*(1 + (e-2)/3*(1 + (e-3)/4)));
-    
-    return bfb_pow_impl(val,e)/int_pow(two_e,k);
-  } else {
-    constexpr int nmax = 10;
-
-    ScalarType x0 = val - ScalarType(1.0);
-    ScalarType a0 = e;
-    ScalarType y (0.0);
-
-    ScalarType x(1.0);
-    ScalarType a(1.0);
-    for (int n=0; n<=nmax; ++n) {
-      y += a*x;
-      x *= x0;
-      a *= (a0-n)/(n+1);
-    }
-    return y;
   }
+
+  ScalarType tmp(val);
+  ExpType e(a);
+  if (e<0) {
+    e = -e;
+    tmp = 1/val;
+  }
+
+  ScalarType factor = 1.0;
+  if (tmp>=ScalarType(1.5)) {
+    int k=0;
+    while (tmp>=16.0){
+      k += 4;
+      tmp /= 16.0;
+    }
+
+    while (tmp>=1.5){
+      ++k;
+      tmp /= 2.0;
+    }
+
+    factor = int_pow(power_of_two(e),k);
+  } else if (tmp<=0.5) {
+    int k=0;
+    while (tmp<=(1.0/16)){
+      k += 4;
+      tmp *= 16.0;
+    }
+
+    while (tmp<=0.5){
+      ++k;
+      tmp *= 2.0;
+    }
+
+    factor = 1.0/int_pow(power_of_two(e),k);
+  }
+
+  ScalarType x = tmp - ScalarType(1.0);
+  ScalarType y (1.0);
+
+  // (1+x)^a = 1+ax+a*(a-1)/2 x^2 + a*(a-1)*(a-2)/6 x^3 +...
+  //         = 1+ax*(1+(a-1)/2 x *( 1+(a-2)/3 x * (1+...)))
+  // Note: if order = 0, y=1, which is the initial value.
+  constexpr int order = 5;
+  for (int n=order; n>=1; --n) {
+    y *= ((e-(n-1))/n) * x;
+    y += 1.0;
+  }
+
+  return y*factor;
 #else
   return std::pow(val,e);
 #endif

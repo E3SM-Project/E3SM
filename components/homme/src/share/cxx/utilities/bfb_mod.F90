@@ -36,8 +36,7 @@ module bfb_mod
     module procedure bfb_pow_3d
   end interface bfb_pow
 
-  public :: bfb_pow
-  integer, public, parameter :: nmax = 10
+  public :: bfb_pow, int_pow, power_of_two
 
 contains
 
@@ -45,39 +44,60 @@ contains
     real (kind=real_kind), intent(in) :: a
     integer, intent(in) :: k
 
-    real (kind=real_kind) :: y
+    real (kind=real_kind) :: y,x
+    integer :: i,e,pow2
+    integer, parameter :: imax = 30
 
-    if (k<=0) then
+    if (k<0) then
       print *, "ERROR! Cannot handle non-positive exponents"
     endif
 
-    if (k==1) then
-      y = a
-    else if (mod(k,2) .eq. 0) then
-      y = int_pow(a*a,k/2)
-    else
-      y = a*int_pow(a,k-1)
+    y = 1
+    if (k /= 0) then
+      e = k
+      x = a
+      pow2=1
+      do i=0,imax
+        if (mod(e,pow2*2) /= 0) then
+          y = y * x
+          e = e-pow2
+        endif
+        pow2 = pow2*2
+        x = x*x
+      enddo
     endif
   end function int_pow
 
-  recursive function two_a (a) result(y)
+  function power_of_two (a) result(y)
     real (kind=real_kind), intent(in) :: a
 
-    real (kind=real_kind) :: y
+    ! 2^e approx with n-th order Taylor expansion of 2^x
+    ! around x=1, where derivs are 2*[ln(2)]^k
+    real (kind=real_kind) :: y,l2a
+    real(kind=real_kind), parameter :: l2 = 0.693147180559945D0
+    integer, parameter :: order = 10
+    integer :: n
 
-    y = 1 + a*(1 + (a-1)/2*(1 + (a-2)/3*(1 + (a-3)/4)));
+    l2a = l2*a
+    ! Note: if order = 0, y=1, which is the initial value.
+    y = 1.0
+    do n=order,1,-1
+      y = y * (l2a/n)
+      y = y + 1.0D0
+    enddo
 
-  end function two_a
+  end function power_of_two
 
-  recursive function bfb_pow_0d (val, e) result(res)
+  recursive function bfb_pow_0d (val, a) result(y)
 
     real (kind=real_kind), intent(in)  :: val
-    real (kind=real_kind), intent(in)  :: e
+    real (kind=real_kind), intent(in)  :: a
 
-    real (kind=real_kind) :: res
+    real (kind=real_kind) :: y,e
 #ifdef CUDA_BUILD
-    real (kind=real_kind) :: x,x0,a,a0,tmp
+    real (kind=real_kind) :: x,tmp,factor
     integer :: i,n,k
+    integer, parameter :: order = 5
 
     if (val<0) then
       print *, "Negative base not allowed in bfb_pow!"
@@ -89,54 +109,61 @@ contains
     ! Note: all of this is tailored (or, if you wish, taylored...eheh) for 0<e<2
 
     if (val .eq. 0) then
-      if (e .eq. 0) then
+      if (a .eq. 0) then
         print *, "Cannot do 0^0, sorry."
       endif
-      res = 0.0
-    else if (val .ge. 2.0) then
-      tmp = val
-      k = 0
-      do while (tmp .ge. 16.0)
-        k = k+4
-        tmp = tmp/16.0
-      enddo
-      do while (tmp .ge. 1.5)
-        k = k+1
-        tmp = tmp/2.0
-      enddo
-
-      res = int_pow(two_a(e),k)*bfb_pow_0d(tmp,e)
-    else if (val .le. 0.5) then
-      tmp = val
-      k = 0
-      do while(tmp .le. 0.0625)
-        k = k+4
-        tmp = tmp*16.0
-      enddo
-      do while (tmp .le. 0.5)
-        k = k+1
-        tmp = tmp*2.0
-      enddo
-
-      ! Taylor formula [ (1+x)^a = sum (a choose k) x^k ] holds for -1<x<1, so 0<(1+x)<2
-      res = bfb_pow_0d(tmp,e)/int_pow(two_a(e),k)
+      y = 0.0
     else
+      factor = 1.0
+      ! Taylor formula [ (1+x)^a = sum (a choose k) x^k ] holds for -1<x<1, so 0<(1+x)<2
+      ! To converge faster, we enforce 0.5<1+x<1.5. We set x = 2^k * tmp, with tmp in
+      ! the [0.5,1.5] bound. Then raise the two separately to the power e.
+      tmp = val
+      e = a
 
-      x0 = val-1.0
-      a0 = e
+      if (e < 0) then
+        e = -e
+        tmp = 1.0D0 / tmp
+      endif
 
-      ! For our uses of bfb_pow (0.2<e<1.5), 10 terms should yield a max error of about 1e-3
-      res=0
-      x = 1.0
-      a = 1.0
-      do n=0,nmax
-        res = res + a*x
-        x = x*x0
-        a = a*((a0-n)/(n+1))
+      if (tmp .ge. 1.5) then
+        k = 0
+        do while (tmp .ge. 16.0)
+          k = k+4
+          tmp = tmp/16.0
+        enddo
+        do while (tmp .ge. 1.5)
+          k = k+1
+          tmp = tmp/2.0
+        enddo
+
+        factor = int_pow(power_of_two(e),k)
+      else if (tmp .le. 0.5) then
+        k = 0
+        do while(tmp .le. 0.0625)
+          k = k+4
+          tmp = tmp*16.0
+        enddo
+        do while (tmp .le. 0.5)
+          k = k+1
+          tmp = tmp*2.0
+        enddo
+
+        factor = 1.0/int_pow(power_of_two(e),k)
+      endif
+
+      ! Note: if order = 0, y=1, which is the initial value.
+      x = tmp - 1
+      y = 1.0D0
+      do n=order,1,-1
+        y = y * (( (e-(n-1))/n ) * x)
+        y = y + 1.0D0
       enddo
+
+      y = factor*y
     endif
 #else
-    res = val**e
+    y = val**e
 #endif
   end function bfb_pow_0d
 
