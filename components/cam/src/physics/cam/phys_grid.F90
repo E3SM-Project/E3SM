@@ -405,6 +405,14 @@ contains
     real(r8) :: clat_p_tmp
     real(r8) :: clon_p_tmp
 
+    ! for calculation and output of physics decomposition statistics
+    integer :: chunk_ncols                ! number of columns assigned to a chunk
+    integer :: min_chunk_ncols            ! min number of columns assigned to a chunk
+    integer :: max_chunk_ncols            ! max number of columns assigned to a chunk
+    integer :: min_process_ncols          ! min number of columns assigned to a process
+    integer :: max_process_ncols          ! max number of columns assigned to a process
+    integer, dimension(:), allocatable :: process_ncols ! number of columns per process
+
     ! Maps and values for physics grid
     real(r8),                   pointer :: lonvals(:)
     real(r8),                   pointer :: latvals(:)
@@ -1150,11 +1158,42 @@ contains
     physgrid_set = .true.   ! Set flag indicating physics grid is now set
     !
     if (masterproc) then
-       write(iulog,*) 'PHYS_GRID_INIT:  Using PCOLS=',pcols,     &
-            '  phys_loadbalance=',lbal_opt,            &
-            '  phys_twin_algorithm=',twin_alg,         &
-            '  phys_alltoall=',phys_alltoall,          &
-            '  chunks_per_thread=',chunks_per_thread
+      allocate( process_ncols(0:npes-1) )
+      process_ncols(:) = 0
+
+      min_chunk_ncols = ngcols_p
+      max_chunk_ncols = 0
+      do cid = 1,nchunks
+        chunk_ncols = chunks(cid)%ncols
+        if (chunk_ncols < min_chunk_ncols) min_chunk_ncols = chunk_ncols
+        if (chunk_ncols > max_chunk_ncols) max_chunk_ncols = chunk_ncols
+        owner_p = chunks(cid)%owner
+        process_ncols(owner_p) = process_ncols(owner_p) + chunk_ncols
+      enddo
+
+      min_process_ncols = process_ncols(0)
+      max_process_ncols = process_ncols(0)
+      do p=1,npes-1
+        if (process_ncols(p) < min_process_ncols) &
+          min_process_ncols = process_ncols(p)
+        if (process_ncols(p) > max_process_ncols) &
+          max_process_ncols = process_ncols(p)
+      enddo
+      deallocate(process_ncols)
+
+      write(iulog,*) 'PHYS_GRID_INIT:  Using'
+      write(iulog,*) '  PCOLS=              ',pcols
+      write(iulog,*) '  phys_loadbalance=   ',lbal_opt
+      write(iulog,*) '  phys_twin_algorithm=',twin_alg
+      write(iulog,*) '  phys_alltoall=      ',phys_alltoall
+      write(iulog,*) '  chunks_per_thread=  ',chunks_per_thread
+      write(iulog,*) 'PHYS_GRID_INIT:  Decomposition Statistics:'
+      write(iulog,*) '  ngcols_p=',ngcols_p
+      write(iulog,*) '  nchunks= ',nchunks
+      write(iulog,*) '  (min,max) columns per chunk:   (',        &
+                        min_chunk_ncols,',',max_chunk_ncols,')'
+      write(iulog,*) '  (min,max) columns per process: (',        &
+                        min_process_ncols,',',max_process_ncols,')'
     endif
     !
 
