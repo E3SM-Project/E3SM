@@ -1030,7 +1030,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
        call t_startf ('bc_physics')
        !call t_adj_detailf(+1)
 
-!$OMP PARALLEL DO PRIVATE (C, beg_count, phys_buffer_chunk, end_count, chunk_cost)
+!$OMP PARALLEL DO PRIVATE (C, irtc_rate, beg_count, phys_buffer_chunk, end_count, chunk_cost)
        do c=begchunk, endchunk
 
 !$OMP critical(sys_irtc)
@@ -1126,7 +1126,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        first_exec_of_phys_run1_adiabatic_or_ideal  = .FALSE.
     endif
 
-!$OMP PARALLEL DO PRIVATE (C, beg_count, FLX_HEAT, end_count, chunk_cost)
+!$OMP PARALLEL DO PRIVATE (C, irtc_rate, beg_count, FLX_HEAT, end_count, chunk_cost)
     do c=begchunk, endchunk
 
 !$OMP critical(sys_irtc)
@@ -1255,7 +1255,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
        call ieflx_gmean(phys_state, phys_tend, pbuf2d, cam_in, cam_out, nstep)
     end if
 
-!$OMP PARALLEL DO PRIVATE (C, beg_count, NCOL, phys_buffer_chunk, end_count, chunk_cost)
+!$OMP PARALLEL DO PRIVATE (C, irtc_rate, beg_count, NCOL, phys_buffer_chunk, end_count, chunk_cost)
     do c=begchunk,endchunk
 
 !$OMP critical(sys_irtc)
