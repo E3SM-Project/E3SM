@@ -93,9 +93,9 @@ contains
     real (kind=real_kind), intent(in)  :: val
     real (kind=real_kind), intent(in)  :: a
 
-    real (kind=real_kind) :: y,e
+    real (kind=real_kind) :: y
 #ifdef CUDA_BUILD
-    real (kind=real_kind) :: x,tmp,factor
+    real (kind=real_kind) :: x,tmp,factor,e
     integer :: i,n,k
     integer, parameter :: order = 5
 
@@ -163,7 +163,7 @@ contains
       y = factor*y
     endif
 #else
-    y = val**e
+    y = val**a
 #endif
   end function bfb_pow_0d
 

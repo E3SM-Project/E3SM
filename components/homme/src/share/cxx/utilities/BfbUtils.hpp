@@ -103,63 +103,66 @@ ScalarType power_of_two (const ScalarType e) {
   return y;
 }
 
+// Note: force type to not be reference, so we can
+//       recycle inputs during calculations.
 template <typename ScalarType, typename ExpType>
 KOKKOS_INLINE_FUNCTION
-ScalarType bfb_pow_impl (const ScalarType val, const ExpType a) {
+typename
+std::enable_if<!std::is_reference<ScalarType>::value &&
+               !std::is_reference<ExpType>::value, ScalarType>::type
+bfb_pow_impl (ScalarType val, ExpType e) {
 #ifdef CUDA_BUILD
   // Note: this function is tailored (or taylored...eheh)
   // for -1<e<1.5 and 0.001 < b < 1e6
   if (val<ScalarType(0)) {
     Kokkos::abort("Cannot take powers of negative numbers.\n");
   }
-  if (a<-2.0 || a>2.0) {
-    printf("Bad exponent: %3.15f\n",a);
-    Kokkos::abort("bfb_pow x^a impl-ed with only -2.0<a<2.0 in mind.\n");
+  if (e<-1.0 || e>1.5) {
+    printf("Bad exponent: %3.15f\n",1);
+    Kokkos::abort("bfb_pow x^a impl-ed with only -1.0<a<1.5 in mind.\n");
   }
   if (val==ScalarType(0)) {
-    if (a==ExpType(0)) {
+    if (e==ExpType(0)) {
       Kokkos::abort("Cannot do 0^0, sorry man.\n");
     }
     return ScalarType(0);
   }
 
-  ScalarType tmp(val);
-  ExpType e(a);
   if (e<0) {
     e = -e;
-    tmp = 1/val;
+    val = 1/val;
   }
 
   ScalarType factor = 1.0;
-  if (tmp>=ScalarType(1.5)) {
+  if (val>=ScalarType(1.5)) {
     int k=0;
-    while (tmp>=16.0){
+    while (val>=16.0){
       k += 4;
-      tmp /= 16.0;
+      val /= 16.0;
     }
 
-    while (tmp>=1.5){
+    while (val>=1.5){
       ++k;
-      tmp /= 2.0;
+      val /= 2.0;
     }
 
     factor = int_pow(power_of_two(e),k);
-  } else if (tmp<=0.5) {
+  } else if (val<=0.5) {
     int k=0;
-    while (tmp<=(1.0/16)){
+    while (val<=(1.0/16)){
       k += 4;
-      tmp *= 16.0;
+      val *= 16.0;
     }
 
-    while (tmp<=0.5){
+    while (val<=0.5){
       ++k;
-      tmp *= 2.0;
+      val *= 2.0;
     }
 
     factor = 1.0/int_pow(power_of_two(e),k);
   }
 
-  ScalarType x = tmp - ScalarType(1.0);
+  ScalarType x = val - ScalarType(1.0);
   ScalarType y (1.0);
 
   // (1+x)^a = 1+ax+a*(a-1)/2 x^2 + a*(a-1)*(a-2)/6 x^3 +...
