@@ -1,0 +1,33 @@
+For Benchmark A, we don't have to change the code, but for Benchmark B, we need to do the following revisions:
+
+1) in mpas_li_thermal.F, in the subroutine enthalpy_matrix_elements,
+
+change
+
+subd(2:nVertLevels+1) = -factor * diffusivity(1:nVertLevels) * dsigmaTerm(1:nVertLevels,1)
+
+to
+
+subd(2:nVertLevels+1) = -factor * (diffusivity(1:nVertLevels) * dsigmaTerm(1:nVertLevels,1)+0.2/scyr*sqrt(dsigmaTerm(1:nVertLevels,1))*thickness)
+
+
+and change
+
+rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice
+
+to
+
+rhs(2:nVertLevels+1)  = enthalpy(1:nVertLevels) + 0*heatDissipation(1:nVertLevels) * deltat * rhoi * cp_ice + 2.0_RKIND*5.3e-24_RKIND*((910.0_RKIND*9.81_RKIND*sin(4.0_RKIND*pii/180.0_RKIND))**4)*((thickness*layerCenterSigma(1:nVertLevels))**4)*deltat
+
+2) in mpas_li_constants.F
+
+change
+
+iceMeltingPointPressureDependence = 9.7456e-8_RKIND
+
+to 
+
+iceMeltingPointPressureDependence = 0.0_RKIND
+
+
+and recompile the code before testing Benchmark B
