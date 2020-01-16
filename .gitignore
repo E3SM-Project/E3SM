@@ -25,3 +25,4 @@ buildlibc
 
 # Ignore emacs backup files
 *~
+buildlib_cmakec
