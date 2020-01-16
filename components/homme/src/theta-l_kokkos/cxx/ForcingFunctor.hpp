@@ -199,7 +199,7 @@ public:
     Scalar fqdt = m_dt * fq(ilev);
     const Scalar& qdp_s = qdp(ilev);
     // NOTE: here is where masks for simd operations would be handy
-    VECTOR_SIMD_LOOP
+    VECTOR_IVDEP_LOOP
     for (int iv=0; iv<VECTOR_SIZE; ++iv) {
       if (qdp_s[iv] + fqdt[iv] < 0.0 && fqdt[iv] < 0.0) {
         if (qdp_s[iv] < 0.0) {

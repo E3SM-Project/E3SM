@@ -71,20 +71,20 @@ private:
 
 public:
   KOKKOS_INLINE_FUNCTION Vector() {
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
     for (int i = 0; i < vector_length; i++) {
       _data[i] = 0;
     }
   }
   template <typename ArgValueType>
   KOKKOS_INLINE_FUNCTION Vector(const ArgValueType val) {
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
     for (int i = 0; i < vector_length; i++) {
       _data[i] = val;
     }
   }
   KOKKOS_INLINE_FUNCTION Vector(const type &b) {
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
     for (int i = 0; i < vector_length; i++) {
       _data[i] = b._data[i];
     }
@@ -92,7 +92,7 @@ VECTOR_SIMD_LOOP
 
   KOKKOS_INLINE_FUNCTION
   type &loadAligned(value_type const *p) {
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
     for (int i = 0; i < vector_length; i++) {
       _data[i] = p[i];
     }
@@ -101,7 +101,7 @@ VECTOR_SIMD_LOOP
 
   KOKKOS_INLINE_FUNCTION
   type &loadUnaligned(value_type const *p) {
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
     for (int i = 0; i < vector_length; i++) {
       _data[i] = p[i];
     }
@@ -114,7 +114,7 @@ VECTOR_SIMD_LOOP
 
   KOKKOS_INLINE_FUNCTION
   void storeAligned(value_type *p) const {
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
     for (int i = 0; i < vector_length; i++) {
       p[i] = _data[i];
     }
@@ -122,7 +122,7 @@ VECTOR_SIMD_LOOP
 
   KOKKOS_INLINE_FUNCTION
   void storeUnaligned(value_type *p) const {
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
     for (int i = 0; i < vector_length; i++) {
       p[i] = _data[i];
     }
@@ -177,7 +177,7 @@ KOKKOS_INLINE_FUNCTION static Vector<VectorTag<SIMD<T, SpT>, l> >
 operator+(Vector<VectorTag<SIMD<T, SpT>, l> > const &a,
           Vector<VectorTag<SIMD<T, SpT>, l> > const &b) {
   Vector<VectorTag<SIMD<T, SpT>, l> > r_val;
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
   for (int i = 0; i < Vector<VectorTag<SIMD<T, SpT>, l> >::vector_length; i++) {
     r_val[i] = a[i] + b[i];
   }
@@ -234,7 +234,7 @@ KOKKOS_INLINE_FUNCTION static Vector<VectorTag<SIMD<T, SpT>, l> >
 operator-(Vector<VectorTag<SIMD<T, SpT>, l> > const &a,
           Vector<VectorTag<SIMD<T, SpT>, l> > const &b) {
   Vector<VectorTag<SIMD<T, SpT>, l> > r_val;
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
   for (int i = 0; i < Vector<VectorTag<SIMD<T, SpT>, l> >::vector_length; i++) {
     r_val[i] = a[i] - b[i];
   }
@@ -258,7 +258,7 @@ operator-(const typename VectorTag<SIMD<T, SpT>, l>::value_type a,
 template <typename T, typename SpT, int l>
 KOKKOS_INLINE_FUNCTION static Vector<VectorTag<SIMD<T, SpT>, l> >
 operator-(Vector<VectorTag<SIMD<T, SpT>, l> > a) {
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
   for (int i = 0; i < Vector<VectorTag<SIMD<T, SpT>, l> >::vector_length; i++) {
     a[i] = -a[i];
   }
@@ -301,7 +301,7 @@ KOKKOS_INLINE_FUNCTION static Vector<VectorTag<SIMD<T, SpT>, l> >
 operator*(Vector<VectorTag<SIMD<T, SpT>, l> > const &a,
           Vector<VectorTag<SIMD<T, SpT>, l> > const &b) {
   Vector<VectorTag<SIMD<T, SpT>, l> > r_val;
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
   for (int i = 0; i < Vector<VectorTag<SIMD<T, SpT>, l> >::vector_length; i++) {
     r_val[i] = a[i] * b[i];
   }
@@ -343,7 +343,7 @@ KOKKOS_INLINE_FUNCTION static Vector<VectorTag<SIMD<T, SpT>, l> >
 operator/(Vector<VectorTag<SIMD<T, SpT>, l> > const &a,
           Vector<VectorTag<SIMD<T, SpT>, l> > const &b) {
   Vector<VectorTag<SIMD<T, SpT>, l> > r_val;
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
   for (int i = 0; i < Vector<VectorTag<SIMD<T, SpT>, l> >::vector_length; i++) {
     r_val[i] = a[i] / b[i];
   }

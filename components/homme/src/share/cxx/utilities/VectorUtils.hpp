@@ -58,7 +58,7 @@ max (const Vector<VectorTag<SIMD<double, SpT>, l> >& a,
      const Vector<VectorTag<SIMD<double, SpT>, l> >& b)
 {
   Vector<VectorTag<SIMD<double, SpT>, l> > r_val;
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
   for (int i = 0; i < Vector<VectorTag<SIMD<double, SpT>, l>>::vector_length; i++) {
     r_val[i] = Homme::max(a[i],b[i]);
   }
@@ -73,7 +73,7 @@ min (const Vector<VectorTag<SIMD<double, SpT>, l> >& a,
      const Vector<VectorTag<SIMD<double, SpT>, l> >& b)
 {
   Vector<VectorTag<SIMD<double, SpT>, l> > r_val;
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
   for (int i = 0; i < Vector<VectorTag<SIMD<double, SpT>, l>>::vector_length; i++) {
     r_val[i] = Homme::min(a[i],b[i]);
   }
@@ -90,7 +90,7 @@ VectorType
 pow (const VectorType& v, const ExpType p)
 {
   VectorType vp;
-VECTOR_SIMD_LOOP
+VECTOR_IVDEP_LOOP
   for (int i = 0; i < VectorType::vector_length; ++i) {
     vp[i] = std::pow(v[i],p);
   }
