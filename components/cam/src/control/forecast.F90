@@ -214,14 +214,14 @@ subroutine forecast(lat, psm1, psm2,ps, &
       i=1
       do k=1,plev
 #ifdef MODEL_THETA_L
-        tfcst(k) = t3m2(i) + divt(k)
+        tfcst(k) = t3m2(i) + divt3d(k)
 #else
         tfcst(k) = t3m2(k) + ztodt*divt(k)
 #endif
       end do
       do m=1,pcnst
          do k=1,plev
-            qfcst(1,k,m) = qminus(1,k,m) +  divq(k,m)*ztodt
+            qfcst(1,k,m) = qminus(1,k,m) +  divq3d(k,m)*ztodt
          end do
       enddo
 
@@ -670,8 +670,6 @@ end if
 
    call outfld('TOBS',tobs,plon,lat)
    call outfld('QOBS',qobs,plon,lat)
-!   call outfld('TDIFF',tdiff,plon,lat)
-!   call outfld('QDIFF',qdiff,plon,lat)
    if( use_iop ) then
       call outfld('DIVQ',divq,plon,lat)
       call outfld('DIVT',divt,plon,lat)

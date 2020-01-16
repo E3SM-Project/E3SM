@@ -172,7 +172,7 @@ OPTIONS
                         This switch only works with the Spectral Element dycore.		
      -scam              Compiles model in single column mode.  Only works with SE dycore.
      
-  Options relevent to SCREAM small planet mode:
+  Options relevent to IOP-SCREAM mode:
   
      -iop_scream        
 
@@ -1256,7 +1256,7 @@ EOF
 if ($print>=2) { print "CAM single column mode (SCAM): $scam$eol"; }
 
 #-----------------------------------------------------------------------------------------------
-# Small Planet Mode
+# IOP-SCREAM Mode
 if (defined $opts{'iop_scream'}) {
     $cfg_ref->set('iop_scream', 1);
 }

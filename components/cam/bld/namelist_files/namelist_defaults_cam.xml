@@ -1408,7 +1408,7 @@
 <!-- iop dataset for SCAM mode -->
 <iopfile dyn="eul">atm/cam/scam/iop/ARM95_4scam.nc</iopfile>
 
-<!-- SCREAM Small Planet -->
+<!-- IOP-SCREAM -->
 <omega iop_scream="1">0.D0</omega> 
 
 <!-- physics loadbalance -->
