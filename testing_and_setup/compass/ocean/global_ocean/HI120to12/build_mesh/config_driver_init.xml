@@ -1,0 +1,5 @@
+<driver_script name="run.py">
+	<case name="base_mesh">
+		<step executable="./run.py" quiet="true" pre_message=" * Creating 2D global base mesh with jigsaw..." post_message="     complete!  Created file:  base_mesh/base_mesh.nc"/>
+	</case>
+</driver_script>
