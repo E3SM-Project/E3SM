@@ -1466,7 +1466,7 @@ contains
 
     outll = .false.
     if (present(output_latlon)) outll = output_latlon
-    if (size(gll_fields,4) < 3 .or. size(pg_fields,3) < 3) then
+    if (outll .and. (size(gll_fields,4) < 3 .or. size(pg_fields,3) < 3)) then
        if (par%masterproc) then
           print *, 'write_physgrid_smoothed_phis_file: gll_fields and pg_fields must&
                & have 3 fields if output_latlon=true; setting output_latlon=false'

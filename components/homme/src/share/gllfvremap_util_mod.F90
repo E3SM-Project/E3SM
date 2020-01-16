@@ -684,14 +684,14 @@ contains
     do ie = 1,nelemd
        call edgeVunpack_nlyr(edge_g, elem(ie)%desc, elem(ie)%state%phis, 1, 0, 1)
     end do
-    do ie = 1,nelemd
-       gll_fields(:,:,ie,1) = elem(ie)%state%phis
-    end do
     call gfr_finish()
 
     ! Smooth on the GLL grid.
     hybrid = hybrid_create(par, 0, 1)
     call smooth_topo_datasets(elem, hybrid, 1, nelemd)
+    do ie = 1,nelemd
+       gll_fields(:,:,ie,1) = elem(ie)%state%phis
+    end do
 
     ! Map the GLL data to the target physgrid, e.g., pg2.
     call gfr_init(par, elem, output_nphys)
@@ -727,7 +727,7 @@ contains
     call write_physgrid_smoothed_phis_file(outtopoprefix, elem, par, &
          gll_fields, pg_fields, output_nphys, &
          'Created from '// trim(intopofn) // ' by HOMME gfr_pgn_to_smoothed_topo', &
-         .true.)
+         .false.)
 
     deallocate(gll_fields, pg_fields)
     stat = 0
