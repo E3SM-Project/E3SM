@@ -70,6 +70,7 @@ MODULE MOSART_physics_mod
     myTINYVALUE = 1.e-6
 
     call get_curr_date(yr, mon, day, tod)
+
     !------------------
     ! WRM prep
     !------------------
@@ -159,6 +160,7 @@ MODULE MOSART_physics_mod
        THeat%Tt_avg = 0._r8
        THeat%Tr_avg = 0._r8
     endif
+
     negchan = 9999.0_r8
 
     do m=1,Tctl%DLevelH2R
@@ -451,10 +453,11 @@ MODULE MOSART_physics_mod
                     end if
                     temp_erout = temp_erout + TRunoff%erout(iunit,nt) ! erout here might be inflow to some downstream subbasin, so treat it differently than erlateral
                  end do
-             end if            
+             end if
+             
              temp_erout = temp_erout / numSubSteps
-
              TRunoff%erout(iunit,nt) = temp_erout
+
              if (heatflag) then
                  do k=1,TUnit%numDT_r(iunit)                
                     if(TUnit%rlen(iunit) > myTINYVALUE) then

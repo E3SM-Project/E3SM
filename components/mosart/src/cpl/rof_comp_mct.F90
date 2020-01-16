@@ -43,6 +43,7 @@ module rof_comp_mct
                                 index_x2r_Faxa_lwdn , &
                                 index_x2r_Faxa_swvdr, index_x2r_Faxa_swvdf, &
                                 index_x2r_Faxa_swndr, index_x2r_Faxa_swndf, &
+                                index_x2r_Flrl_rofdto, &
                                 index_x2r_Flrl_rofmud, &
                                 index_r2x_Forr_rofl, index_r2x_Forr_rofi, &
                                 index_r2x_Flrr_flood, &
@@ -569,7 +570,6 @@ contains
     type(mct_aVect), intent(inout) :: x2r_r         
     !
     ! LOCAL VARIABLES
-
     integer :: n2, n, nt, begr, endr, nliq, nfrz, nmud, nsan
     real(R8) :: tmp1, tmp2
 

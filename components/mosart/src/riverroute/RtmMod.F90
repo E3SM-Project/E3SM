@@ -1267,7 +1267,7 @@ contains
             end if
         end do
     enddo
-    
+
     deallocate(gmask)
     deallocate(rglo2gdc)
     deallocate(rgdc2glo)
@@ -1942,6 +1942,15 @@ contains
     integer,parameter :: bv_r_al_i = 75 ! initial sediment storge in the active layer of main channel
     integer,parameter :: bv_r_al_f = 76 ! final sediment storge in the active layer of main channel
 
+    ! Sediment TERMS (rates kg/s or storage kg)
+    integer,parameter :: br_ehexch = 70 ! exchanging fluxes between channel and enviroments
+    integer,parameter :: br_etexch = 71 ! exchanging fluxes between channel and enviroments
+    integer,parameter :: br_erexch = 72 ! exchanging fluxes between channel and enviroments
+    integer,parameter :: bv_t_al_i = 73 ! initial sediment storge in the active layer of sub-network channel
+    integer,parameter :: bv_t_al_f = 74 ! final sediment storge in the active layer of sub-network channel
+    integer,parameter :: bv_r_al_i = 75 ! initial sediment storge in the active layer of main channel
+    integer,parameter :: bv_r_al_f = 76 ! final sediment storge in the active layer of main channel
+
     ! Other Diagnostic TERMS (rates, m3/s)
     integer,parameter :: br_erolpo = 60 ! erout lag ocn previous
     integer,parameter :: br_erolco = 61 ! erout lag ocn current
@@ -2216,6 +2225,7 @@ contains
              if ( rtmCTL%mask(nr) .eq. 1 .or. rtmCTL%mask(nr) .eq. 3 ) then   ! 1--Land; 3--Basin outlet (downstream is ocean).
 
              else
+
                 avsrc_direct%rAttr(nt,cnt) = avsrc_direct%rAttr(nt,cnt) + &
                      TRunoff%qsub(nr,nt) + &
                      TRunoff%qsur(nr,nt) + &
@@ -2224,7 +2234,6 @@ contains
                 TRunoff%qsur(nr,nt) = 0._r8
                 TRunoff%qgwl(nr,nt) = 0._r8
              end if
-
           else
              if (TUnit%mask(nr) > 0) then
                 ! mosart euler
@@ -3621,7 +3630,7 @@ if (inundflag) then
 
      allocate(TUnit%indexDown(begr:endr))
      TUnit%indexDown = 0
-   
+
      if (inundflag) then
        if ( Tctl%RoutingMethod == 4 ) then       ! Use diffusion wave method in channel routing computation.
           allocate (TUnit%rlen_dstrm(begr:endr))

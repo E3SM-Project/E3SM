@@ -717,7 +717,7 @@ contains
        rtmCTL%qsub(n,nfrz) = 0.0_r8
        rtmCTL%qgwl(n,nfrz) = 0.0_r8
        rtmCTL%qdto(n,nfrz) = 0.0_r8
-       rtmCTL%qsur(n,nmud) =  0.0_r8
+       rtmCTL%qsur(n,nmud) = 0.0_r8
        rtmCTL%qsur(n,nsan) = 0.0_r8       
        rtmCTL%qdem(n,nfrz) = 0.0_r8
        

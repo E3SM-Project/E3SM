@@ -117,6 +117,7 @@ contains
        waterstate_vars, waterflux_vars, energyflux_vars, &
        solarabs_vars, carbonflux_vars, drydepvel_vars, &
        vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, sedflux_vars, lnd2atm_vars) 
+
     !
     ! !DESCRIPTION:
     ! Compute lnd2atm_vars component of gridcell derived type
@@ -368,11 +369,9 @@ contains
        end if
        lnd2atm_vars%Tqsur_grc(g) = avg_tsoil_surf(lnd2atm_vars%t_soisno_grc(g,-nlevsno+1:nlevgrnd))
        lnd2atm_vars%Tqsub_grc(g) = avg_tsoil(lnd2atm_vars%zwt_grc(g),lnd2atm_vars%t_soisno_grc(g,-nlevsno+1:nlevgrnd))
-
     end do
 
   end subroutine lnd2atm
-
 
     function avg_tsoil_surf(Tsoil_) result(avgT_)
     ! Function for estimating average soil temperature within the top few layers (which closely interacts with surface runoff)

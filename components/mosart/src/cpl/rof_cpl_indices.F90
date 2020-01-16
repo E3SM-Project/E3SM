@@ -115,7 +115,6 @@ contains
     index_x2r_Faxa_swndr  = mct_avect_indexra(avtmp,'Faxa_swndr')
     index_x2r_Faxa_swndf  = mct_avect_indexra(avtmp,'Faxa_swndf')
     index_x2r_Flrl_rofmud = mct_avect_indexra(avtmp,'Flrl_rofmud')
-    
     nflds_x2r = mct_avect_nRattr(avtmp)
 
     call mct_aVect_clean(avtmp)

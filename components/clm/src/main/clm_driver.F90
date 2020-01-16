@@ -1346,6 +1346,7 @@ contains
          waterstate_vars, waterflux_vars, energyflux_vars,               &
          solarabs_vars, carbonflux_vars, drydepvel_vars,                 &
          vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, sedflux_vars, lnd2atm_vars)
+
     call t_stopf('lnd2atm')
 
     ! ============================================================================
