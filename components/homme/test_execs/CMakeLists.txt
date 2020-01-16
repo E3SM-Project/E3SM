@@ -195,8 +195,13 @@ ENDIF()
 IF (${BUILD_HOMME_THETA_KOKKOS})
   ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
 
-  ADD_SUBDIRECTORY(theta-nlev72-kokkos)
-  ADD_SUBDIRECTORY(theta-nlev72)
+  #for future
+  #ADD_SUBDIRECTORY(theta-nlev72-kokkos)
+  #ADD_SUBDIRECTORY(theta-nlev72)
+
+  #for now
+  ADD_SUBDIRECTORY(theta-nlev128-kokkos)
+  ADD_SUBDIRECTORY(theta-nlev128)
 
   ADD_SUBDIRECTORY(thetal_kokkos_ut)
 ENDIF()

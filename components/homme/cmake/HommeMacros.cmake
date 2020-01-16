@@ -439,19 +439,22 @@ macro (set_homme_tests_parameters testFile profile)
 #  if ("${testFile}" MATCHES ".*-moist.*")
 
 #theta tests for kokkos targets
+#HV scaled at 3.0 rate: 
+#ne30 1e15, ne2 3.4e18, ne4 4.2e17
+#ne6 1.25e17, ne13 1.23e16, ne1024 2.5e10
   if ("${testFile}" MATCHES "theta-f")
     if ("${profile}" STREQUAL "dev")
       set (HOMME_TEST_NE 2)
       set (HOMME_TEST_NDAYS 1)
       set (HOMME_TEST_NU 3.4e18)
     elseif ("${profile}" STREQUAL "short")
-      set (HOMME_TEST_NE 4)
-      set (HOMME_TEST_NDAYS 9)
-      set (HOMME_TEST_NU 4.2e17)
+      set (HOMME_TEST_NE 6)
+      set (HOMME_TEST_NDAYS 1) #should be 9 but for GB reduce
+      set (HOMME_TEST_NU 1.25e17)
     else ()
-      set (HOMME_TEST_NE 12)
-      set (HOMME_TEST_NDAYS 9)
-      set (HOMME_TEST_NU 1.6e16)
+      set (HOMME_TEST_NE 13)
+      set (HOMME_TEST_NDAYS 1) #should be 9 but for GB reduce
+      set (HOMME_TEST_NU 1.2e16)
     endif ()
 #preqx tests for kokkos targets
   elseif ("${testFile}" MATCHES "preqx-nlev")

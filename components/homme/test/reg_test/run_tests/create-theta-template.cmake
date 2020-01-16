@@ -5,12 +5,12 @@
 
 SET(TEST_NAME BBNAME)
 # The specifically compiled executable that this test uses
-SET(EXEC_NAME theta-nlev72BBIFKOKKOS)
+SET(EXEC_NAME theta-nlev128BBIFKOKKOS)
 
 SET(NUM_CPUS 16)
 
 SET(NAMELIST_FILES ${HOMME_ROOT}/test/reg_test/namelists/theta.nl)
-SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/acme-72*.ascii)
+SET(VCOORD_FILES ${HOMME_ROOT}/test/vcoord/sab*-128.ascii)
 
 # compare all of these files against baselines:
 SET(NC_OUTPUT_FILES
@@ -36,5 +36,5 @@ SET (HOMME_THETA_HY_MODE BBHYMODE)
 
 #DO NOT MOD
 SET (HOMME_TEST_TIME_STEP 600)
-SET (HOMME_TEST_VCOORD_INT_FILE acme-72i.ascii)
-SET (HOMME_TEST_VCOORD_MID_FILE acme-72m.ascii)
+SET (HOMME_TEST_VCOORD_INT_FILE sabi-128.ascii)
+SET (HOMME_TEST_VCOORD_MID_FILE sabm-128.ascii)

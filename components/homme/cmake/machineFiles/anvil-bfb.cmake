@@ -48,7 +48,7 @@
 
    SET (HOMMEXX_BFB_TESTING TRUE CACHE BOOL "")
 
-   SET (HOMME_TESTING_PROFILE "short" CACHE STRING "")
+   SET (HOMME_TESTING_PROFILE "nightly" CACHE STRING "")
 
  #or just these? was used before
  #SET (ADD_Fortran_FLAGS "-fp-model strict -diag-disable 10411" CACHE STRING "")
