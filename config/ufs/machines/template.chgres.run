@@ -57,24 +57,24 @@ if [ "$isrestart" != "TRUE" -a ! -f "$rundir/INPUT/${prefix}.gfs_ctrl.nc" ]; the
   mv -f out.sfc.tile4.nc INPUT/${prefix}.sfc_data.tile4.nc
   mv -f out.sfc.tile5.nc INPUT/${prefix}.sfc_data.tile5.nc
   mv -f out.sfc.tile6.nc INPUT/${prefix}.sfc_data.tile6.nc
-
-  # Link files as different name that FV3 expects
-  cd INPUT/
-  ln -sf ${prefix}.gfs_ctrl.nc gfs_ctrl.nc
-  ln -sf ${prefix}.gfs_data.tile1.nc gfs_data.tile1.nc 
-  ln -sf ${prefix}.gfs_data.tile2.nc gfs_data.tile2.nc 
-  ln -sf ${prefix}.gfs_data.tile3.nc gfs_data.tile3.nc 
-  ln -sf ${prefix}.gfs_data.tile4.nc gfs_data.tile4.nc 
-  ln -sf ${prefix}.gfs_data.tile5.nc gfs_data.tile5.nc 
-  ln -sf ${prefix}.gfs_data.tile6.nc gfs_data.tile6.nc 
-  ln -sf ${prefix}.sfc_data.tile1.nc sfc_data.tile1.nc
-  ln -sf ${prefix}.sfc_data.tile2.nc sfc_data.tile2.nc
-  ln -sf ${prefix}.sfc_data.tile3.nc sfc_data.tile3.nc
-  ln -sf ${prefix}.sfc_data.tile4.nc sfc_data.tile4.nc
-  ln -sf ${prefix}.sfc_data.tile5.nc sfc_data.tile5.nc
-  ln -sf ${prefix}.sfc_data.tile6.nc sfc_data.tile6.nc
 else
   echo "Skip running CHGRES!"
   echo "Restarted? - $isrestart"
   echo "Input already exists or processed? - $rundir/INPUT/${prefix}.gfs_ctrl.nc"
 fi
+
+# Link files as different name that FV3 expects
+cd INPUT/
+ln -sf ${prefix}.gfs_ctrl.nc gfs_ctrl.nc
+ln -sf ${prefix}.gfs_data.tile1.nc gfs_data.tile1.nc
+ln -sf ${prefix}.gfs_data.tile2.nc gfs_data.tile2.nc
+ln -sf ${prefix}.gfs_data.tile3.nc gfs_data.tile3.nc
+ln -sf ${prefix}.gfs_data.tile4.nc gfs_data.tile4.nc
+ln -sf ${prefix}.gfs_data.tile5.nc gfs_data.tile5.nc
+ln -sf ${prefix}.gfs_data.tile6.nc gfs_data.tile6.nc
+ln -sf ${prefix}.sfc_data.tile1.nc sfc_data.tile1.nc
+ln -sf ${prefix}.sfc_data.tile2.nc sfc_data.tile2.nc
+ln -sf ${prefix}.sfc_data.tile3.nc sfc_data.tile3.nc
+ln -sf ${prefix}.sfc_data.tile4.nc sfc_data.tile4.nc
+ln -sf ${prefix}.sfc_data.tile5.nc sfc_data.tile5.nc
+ln -sf ${prefix}.sfc_data.tile6.nc sfc_data.tile6.nc
