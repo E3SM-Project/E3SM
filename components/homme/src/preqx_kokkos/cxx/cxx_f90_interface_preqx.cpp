@@ -228,25 +228,32 @@ void init_time_level_c (const int& nm1, const int& n0, const int& np1,
 
 void init_elements_c (const int& num_elems)
 {
-  Elements& e = Context::singleton().create<Elements> ();
-  const SimulationParams& params = Context::singleton().get<SimulationParams>();
+  auto& c = Context::singleton();
+  Elements& e = c.create<Elements> ();
+  const SimulationParams& params = c.get<SimulationParams>();
 
   const bool consthv = (params.hypervis_scaling==0.0);
   e.init (num_elems, consthv, /* alloc_gradphis = */ false);
 
   // Init also the tracers structure
-  Tracers& t = Context::singleton().create<Tracers> ();
+  Tracers& t = c.create<Tracers> ();
   t.init(num_elems,params.qsize);
 
-  // In the context, we register also ElementsGeometry, ElementsDerivedState, and ElementsBuffers,
+  // In the context, we register also Elements[Geometry|State|DerivedState|Forcing],
   // making sure they store the same views as in the subobjects of Elements.
   // This allows objects that need only a piece of Elements, to grab it from the Context,
   // while still knowing that what they grab contains the same views as the object stored in the
   // Elements inside the Context
-  ElementsGeometry& geometry = Context::singleton().create<ElementsGeometry>();
-  geometry = e.m_geometry;
-  ElementsDerivedState& derived = Context::singleton().create<ElementsDerivedState>();
-  derived = e.m_derived;
+  // WARNING: after this point, you should NOT do things like
+  //             e.m_geometry.m_phis = ...
+  //          since they would NOT be reflected into the ElementsGeometry stored in the Context.
+  //          In other words, you cannot reset the views. If you *really* need to do it,
+  //          you must reset the view in both c.get<Elements>().m_geometry AND
+  //          c.get<ElementsGeometry>()
+  c.create_ref<ElementsGeometry>(e.m_geometry);
+  c.create_ref<ElementsState>(e.m_state);
+  c.create_ref<ElementsDerivedState>(e.m_derived);
+  c.create_ref<ElementsForcing>(e.m_forcing);
 }
 
 void init_functors_c ()
