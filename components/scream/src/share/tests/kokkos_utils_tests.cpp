@@ -157,9 +157,9 @@ TEST_CASE("team_utils_cuda", "[kokkos_utils]")
   TeamUtils<ExeSpace> tu_temp(ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk));
   const int num_conc = tu_temp.get_num_concurrent_teams();
 
-  const int saturation_multiplier=1;
+  const int saturation_multiplier=10;
   const int ni = num_conc*saturation_multiplier;
-  //const int ni = 1000;
+  //const int ni = 128;
   const auto p = ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
   TeamUtils<ExeSpace> tu(p);
 
@@ -168,8 +168,6 @@ TEST_CASE("team_utils_cuda", "[kokkos_utils]")
   REQUIRE(p.team_size() == nk);
   std::cout << "Concurrency: " << max_threads << std::endl;
   std::cout << "Concurrent teams: " << num_conc << std::endl;
-
-  // Each team gets team-size contiguous tokens somewhere between 0 - concurrency
 
   int max_workspace_idx = 0;
   typename KokkosTypes<Device>::template view_1d<int> test_data("test_data", num_conc);

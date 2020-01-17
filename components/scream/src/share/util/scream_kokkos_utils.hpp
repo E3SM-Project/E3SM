@@ -127,10 +127,12 @@ class TeamUtils
   int _team_size, _num_teams, _max_threads;
 #ifdef KOKKOS_ENABLE_CUDA
   using Device = Kokkos::Device<ExeSpace, typename ExeSpace::memory_space>;
-  using flag_type = bool;
+  using flag_type = int;
   using view_1d = typename KokkosTypes<Device>::view_1d<flag_type>;
+  using view_1d_slot = typename KokkosTypes<Device>::view_1d<int>;
 
   view_1d _open_ws_slots;
+  view_1d_slot _ws_idxs;
 #endif
 
  public:
@@ -144,6 +146,7 @@ class TeamUtils
 
 #ifdef KOKKOS_ENABLE_CUDA
     _open_ws_slots = view_1d("open_ws_slots", _num_teams);
+    _ws_idxs       = view_1d_slot("ws_slots", policy.league_size());
 #endif
   }
 
@@ -169,20 +172,17 @@ class TeamUtils
       return team_member.league_rank();
     }
     else {
-      int ws_idx =  0;
-      Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team_member, 1), [&] (int, int& ws_idx_max) {
-        Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
-          //int my_ws_idx = team_member.league_rank() % _num_teams;
-          int my_ws_idx = 0;
-          while (!Kokkos::atomic_compare_exchange_strong(&_open_ws_slots(my_ws_idx), (flag_type) 0/*false*/, (flag_type)1/*true*/)) {
-            // or random?
-            my_ws_idx = (my_ws_idx+1) % _num_teams;
-          }
-          ws_idx_max = my_ws_idx;
-        });
-      }, Kokkos::Max<int>(ws_idx));
+      Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
+        //int my_ws_idx = team_member.league_rank() % _num_teams;
+        int ws_idx = 0;
+        while (!Kokkos::atomic_compare_exchange_strong(&_open_ws_slots(ws_idx), (flag_type) 0/*false*/, (flag_type)1/*true*/)) {
+          // or random?
+          ws_idx = (ws_idx+1) % _num_teams;
+        }
+        _ws_idxs(team_member.league_rank()) = ws_idx;
+      });
       team_member.team_barrier();
-      return ws_idx;
+      return _ws_idxs(team_member.league_rank());
     }
 #else
     return 0;
@@ -195,12 +195,15 @@ class TeamUtils
   {
 #ifdef KOKKOS_ENABLE_CUDA
     //if (team_member.league_size() > _num_teams) {
+    if (true) {
+      team_member.team_barrier();
       Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
-          //Kokkos::atomic_store(&_open_ws_slots(ws_idx), false);
-          flag_type volatile* const e = &_open_ws_slots(ws_idx);
-          *e = (flag_type)0;
+        Kokkos::atomic_exchange(&_open_ws_slots(ws_idx), (flag_type) 0);
+          // flag_type volatile* const e = &_open_ws_slots(ws_idx);
+          // *e = (flag_type)0;
       });
-      //}
+      team_member.team_barrier();
+    }
 #endif
   }
 };
