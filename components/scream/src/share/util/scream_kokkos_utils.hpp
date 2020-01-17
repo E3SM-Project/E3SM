@@ -4,6 +4,8 @@
 #include "share/scream_kokkos_meta.hpp"
 #include "share/scream_types.hpp"
 #include "share/util/scream_std_meta.hpp"
+#include "share/util/scream_utils.hpp"
+#include "share/util/scream_arch.hpp"
 
 #include <Kokkos_Core.hpp>
 
@@ -122,20 +124,34 @@ struct ExeSpaceUtils<Kokkos::Cuda> {
 template <typename ExeSpace = Kokkos::DefaultExecutionSpace>
 class TeamUtils
 {
-  int _team_size, _num_teams;
+  int _team_size, _num_teams, _max_threads;
+#ifdef KOKKOS_ENABLE_CUDA
+  using Device = Kokkos::Device<ExeSpace, typename ExeSpace::memory_space>;
+  using flag_type = bool;
+  using view_1d = typename KokkosTypes<Device>::view_1d<flag_type>;
 
-public:
+  view_1d _open_ws_slots;
+#endif
+
+ public:
   template <typename TeamPolicy>
   TeamUtils(const TeamPolicy& policy) : _team_size(0)
   {
-    const int max_threads = ExeSpace::concurrency();
+    _max_threads = ExeSpace::concurrency() / ( (!is_single_precision<Real>::value && OnGpu<ExeSpace>::value) ? 2 : 1);
     const int team_size = policy.team_size();
-    _num_teams = max_threads / team_size;
-    _team_size = max_threads / _num_teams;
+    _num_teams = _max_threads / team_size;
+    _team_size = _max_threads / _num_teams;
+
+#ifdef KOKKOS_ENABLE_CUDA
+    _open_ws_slots = view_1d("open_ws_slots", _num_teams);
+#endif
   }
 
   // How many thread teams can run concurrently
   int get_num_concurrent_teams() const { return _num_teams; }
+
+  // How many threads can run concurrently
+  int get_max_concurrent_threads() const { return _max_threads; }
 
   /*
    * Of the C concurrently running teams, which "slot" is open
@@ -143,37 +159,51 @@ public:
    */
   template <typename MemberType>
   KOKKOS_INLINE_FUNCTION
-  int get_workspace_idx(const MemberType& /* team_member */) const
+  int get_workspace_idx(const MemberType& team_member) const
   {
 #ifdef KOKKOS_ENABLE_OPENMP
     return omp_get_thread_num() / _team_size;
+#elif defined(KOKKOS_ENABLE_CUDA)
+    // if (team_member.league_size() <= _num_teams) {
+    if (false) {
+      return team_member.league_rank();
+    }
+    else {
+      int ws_idx =  0;
+      Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team_member, 1), [&] (int, int& ws_idx_max) {
+        Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
+          //int my_ws_idx = team_member.league_rank() % _num_teams;
+          int my_ws_idx = 0;
+          while (!Kokkos::atomic_compare_exchange_strong(&_open_ws_slots(my_ws_idx), (flag_type) 0/*false*/, (flag_type)1/*true*/)) {
+            // or random?
+            my_ws_idx = (my_ws_idx+1) % _num_teams;
+          }
+          ws_idx_max = my_ws_idx;
+        });
+      }, Kokkos::Max<int>(ws_idx));
+      team_member.team_barrier();
+      return ws_idx;
+    }
 #else
     return 0;
 #endif
   }
-};
-
-/*
- * Specialization for Cuda execution space. On GPU, we expect all teams to run
- * at once.
- */
-#ifdef KOKKOS_ENABLE_CUDA
-template <>
-class TeamUtils<Kokkos::Cuda>
-{
-  int _num_teams;
-
-public:
-  template <typename TeamPolicy>
-  TeamUtils(const TeamPolicy& policy) { _num_teams = policy.league_size(); }
-
-  int get_num_concurrent_teams() const { return _num_teams; }
 
   template <typename MemberType>
   KOKKOS_INLINE_FUNCTION
-  int get_workspace_idx(const MemberType& team_member) const { return team_member.league_rank(); }
-};
+  void release_workspace_idx(const MemberType& team_member, int ws_idx) const
+  {
+#ifdef KOKKOS_ENABLE_CUDA
+    //if (team_member.league_size() > _num_teams) {
+      Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
+          //Kokkos::atomic_store(&_open_ws_slots(ws_idx), false);
+          flag_type volatile* const e = &_open_ws_slots(ws_idx);
+          *e = (flag_type)0;
+      });
+      //}
 #endif
+  }
+};
 
 // Get a 1d subview of the i-th dimension of a 2d view
 template <typename T, typename ...Parms> KOKKOS_FORCEINLINE_FUNCTION

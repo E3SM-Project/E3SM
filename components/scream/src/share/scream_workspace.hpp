@@ -92,6 +92,12 @@ class WorkspaceManager
   KOKKOS_INLINE_FUNCTION
   Workspace get_workspace(const MemberType& team) const;
 
+  // call from device
+  //
+  // Releases a Workspace object, should normally be
+  KOKKOS_INLINE_FUNCTION
+  void release_workspace(const MemberType& team, const Workspace& ws) const;
+
   class Workspace {
    public:
 
@@ -152,6 +158,10 @@ class WorkspaceManager
     //
     // ---------- Private --------------
     //
+
+    // Not technically private, but not part of the API since the user won't call it directly
+    KOKKOS_INLINE_FUNCTION
+    ~Workspace();
 
 #ifndef KOKKOS_ENABLE_CUDA
    private:

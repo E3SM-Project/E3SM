@@ -58,8 +58,8 @@ TEST_CASE("team_policy", "[kokkos_utils]") {
   }
 }
 
-TEST_CASE("team_utils", "[kokkos_utils]") {
-
+TEST_CASE("team_utils_omp", "[kokkos_utils]")
+{
 #ifdef KOKKOS_ENABLE_OPENMP
   using namespace scream::util;
   using namespace scream;
@@ -140,6 +140,64 @@ TEST_CASE("team_utils", "[kokkos_utils]") {
       }
     }
   }
+#endif
+}
+
+TEST_CASE("team_utils_cuda", "[kokkos_utils]")
+{
+#ifdef KOKKOS_ENABLE_CUDA
+  using namespace scream::util;
+  using namespace scream;
+
+  using Device = DefaultDevice;
+  using ExeSpace = typename KokkosTypes<Device>::ExeSpace;
+  using MemberType = typename KokkosTypes<Device>::MemberType;
+
+  const int nk = 128;
+  TeamUtils<ExeSpace> tu_temp(ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk));
+  const int num_conc = tu_temp.get_num_concurrent_teams();
+
+  const int saturation_multiplier=1;
+  const int ni = num_conc*saturation_multiplier;
+  //const int ni = 1000;
+  const auto p = ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
+  TeamUtils<ExeSpace> tu(p);
+
+  const int max_threads = tu.get_max_concurrent_threads();
+  REQUIRE(p.league_size() == ni);
+  REQUIRE(p.team_size() == nk);
+  std::cout << "Concurrency: " << max_threads << std::endl;
+  std::cout << "Concurrent teams: " << num_conc << std::endl;
+
+  // Each team gets team-size contiguous tokens somewhere between 0 - concurrency
+
+  int max_workspace_idx = 0;
+  typename KokkosTypes<Device>::template view_1d<int> test_data("test_data", num_conc);
+  Kokkos::parallel_reduce("unique_token_check", p, KOKKOS_LAMBDA(MemberType team_member, int& max_ws_idx) {
+    const int i  = team_member.league_rank();
+    const int wi = tu.get_workspace_idx(team_member);
+
+    if (wi > max_ws_idx) { max_ws_idx = wi; }
+
+    Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
+        //printf("Team %d got ws idx %d\n", i, wi);
+      test_data(wi) += 1;
+    });
+
+    tu.release_workspace_idx(team_member, wi);
+  }, Kokkos::Max<int>(max_workspace_idx));
+
+  const auto test_data_h = Kokkos::create_mirror_view(test_data);
+  Kokkos::deep_copy(test_data_h, test_data);
+
+  std::cout << "Max ws idx: " << max_workspace_idx << std::endl;
+
+  int sum = 0;
+  for(int i = 0; i < num_conc; ++i) {
+    sum += test_data_h(i);
+  }
+
+  REQUIRE(sum == ni);
 #endif
 }
 
