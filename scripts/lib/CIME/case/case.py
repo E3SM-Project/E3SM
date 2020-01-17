@@ -1611,6 +1611,16 @@ directory, NOT in this subdirectory."""
             self.set_lookup_value("CASE", os.path.basename(casename))
             self.set_lookup_value("CASEROOT", self._caseroot)
             self.set_lookup_value("SRCROOT", srcroot)
+            # if the top level user_mods_dir contains a config_grids.xml file and
+            # gridfile was not set on the command line, use it.
+            if user_mods_dir:
+                um_config_grids = os.path.join(user_mods_dir,"config_grids.xml")
+                if os.path.exists(um_config_grids):
+                    if gridfile:
+                        logger.WARNING("A config_grids file was found in {} but also provided on the command line {}, command line takes precident".format(um_config_grids, gridfile))
+                    else:
+                        gridfile = um_config_grids
+
 
             # Configure the Case
             self.configure(compset_name, grid_name, machine_name=machine_name,
