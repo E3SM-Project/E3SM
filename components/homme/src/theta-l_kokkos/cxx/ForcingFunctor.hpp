@@ -417,10 +417,13 @@ public:
         fphi(ilev) = (fphi(ilev) - phi_i(ilev)) / m_dt;
       });
 
-      // Last level
-      Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-        fphi(LAST_INT_PACK)[LAST_INT_PACK_END] = (fphi(LAST_INT_PACK)[LAST_INT_PACK_END] - phi_i(LAST_INT_PACK)[LAST_INT_PACK_END]) / m_dt;
-      });
+      // If NUM_LEV=NUM_LEV_P, the code above already took care of the last level
+      if (NUM_LEV!=NUM_LEV_P) {
+        // Last level
+        Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+          fphi(LAST_INT_PACK)[LAST_INT_PACK_END] = (fphi(LAST_INT_PACK)[LAST_INT_PACK_END] - phi_i(LAST_INT_PACK)[LAST_INT_PACK_END]) / m_dt;
+        });
+      }
     });
   }
 
