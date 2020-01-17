@@ -58,6 +58,15 @@ do
   echo $date_str_cycle >> itaga.$time_step
   tail -n $((nlines-4)) itag.tmp >> itaga.$time_step
 
+  # Update used flat file based on time step
+  if [ "$time_step_num" -eq "0" ]; then
+     sed 's/postxconfig-NT.txt/postxconfig-NT-GFS-F00.txt/' itaga.$time_step > .itaga.$time_step
+     mv .itaga.$time_step itaga.$time_step
+  else
+     sed 's/postxconfig-NT.txt/postxconfig-NT-GFS.txt/' itaga.$time_step > .itaga.$time_step
+     mv .itaga.$time_step itaga.$time_step
+  fi
+
   # Copy files with common name
   cp ${dyn_prefix}f${time_step}.${file_ext} nemsfile
   echo "cp ${dyn_prefix}f${f}.${file_ext} nemsfile"
