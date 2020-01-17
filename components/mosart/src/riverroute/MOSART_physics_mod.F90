@@ -974,8 +974,6 @@ MODULE MOSART_physics_mod
     temp_gwl = TRunoff%qgwl(iunit,nt) * TUnit%area(iunit) * TUnit%frac(iunit)
     temp_gwl0 = temp_gwl
     if(abs(temp_gwl) <= TINYVALUE) then
-!       write(iulog,*) 'mosart: ERROR dropping temp_gwl too small'
-!       call shr_sys_abort('mosart: ERROR temp_gwl too small')
        temp_gwl = 0._r8
     end if 
     if(temp_gwl < -TINYVALUE) then 

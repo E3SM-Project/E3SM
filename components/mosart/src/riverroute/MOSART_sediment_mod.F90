@@ -65,10 +65,6 @@ MODULE MOSART_sediment_mod
 
         real(r8) :: Achannel  ! effective channel area
         
-            ! sand-sediment
-            !ses = CRSES(iunit,TRunoff%yt(iunit,nt_nliq),TUnit%tslp(iunit),TRunoff%conc_t(iunit,nt_nsan))
-            !ers = CRERS(TRunoff%yt(iunit,nt_nliq),TUnit%tslp(iunit))
-            !seout = -TRunoff%etout(iunit,nt_nliq)*TRunoff%conc_t(iunit,nt_nsan)
             ! mud-sediment
             sem = 0._r8 !CRSEM(TRunoff%yt(iunit,nt_nliq),TUnit%tslp(iunit),TRunoff%conc_t(iunit,nt_nmud))
             erm = 0._r8 !CRERM(TRunoff%yt(iunit,nt_nliq),TUnit%tslp(iunit),TRunoff%conc_t(iunit,nt_nmud))
