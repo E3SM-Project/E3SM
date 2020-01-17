@@ -194,6 +194,7 @@ ENDIF()
 
 IF (${BUILD_HOMME_THETA_KOKKOS})
   ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
+  ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
 
   ADD_SUBDIRECTORY(thetal_kokkos_ut)
 ENDIF()
