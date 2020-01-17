@@ -213,8 +213,10 @@ integer(SHR_KIND_I8) FUNCTION shr_sys_irtc( rate )
    integer(SHR_KIND_IN)      :: count
    integer(SHR_KIND_IN)      :: count_rate
    integer(SHR_KIND_IN)      :: count_max
+
    integer(SHR_KIND_IN),save :: last_count   = -1
    integer(SHR_KIND_I8),save :: count_offset =  0
+!$OMP THREADPRIVATE (last_count, count_offset)
 
    !----- formats -----
    character(*),parameter :: subName =   '(shr_sys_irtc) '
