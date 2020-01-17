@@ -281,7 +281,6 @@ module RunoffMod
      real(r8), pointer :: rlen_dstrm(:)  ! Length of downstream channel (m).
      real(r8), pointer :: rslp_dstrm(:)  ! Bed slope of downstream channel (dimensionless).
    
-!#ifdef INCLUDE_INUND   
      !real(r8), pointer :: rlen_dstrm(:)  ! Length of downstream channel (m).
      !real(r8), pointer :: rslp_dstrm(:)  ! Bed slope of downstream channel (dimensionless).
      real(r8), pointer :: wr_bf(:)       ! Water volume in the bankfull channel (i.e., channel storage capacity) (m^3).

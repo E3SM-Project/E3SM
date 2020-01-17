@@ -97,19 +97,12 @@ MODULE MOSART_sediment_mod
             TRunoff%etout(iunit,nt_nmud) = -meout
 
             TSedi%Ssal_t(iunit) = 0._r8 ! TSedi%Ssal_t(iunit) + (TSedi%ses_t(iunit) - TSedi%ersal_t(iunit)) * theDeltaT
-            !TSedi%Smal_t(iunit) = 0._r8 ! TSedi%Smal_t(iunit) + (TSedi%sem_t(iunit) - TSedi%ermal_t(iunit)) * theDeltaT
 
             TRunoff%dwt(iunit,nt_nsan) = 0._r8 !TRunoff%etin(iunit,nt_nsan) + TRunoff%etout(iunit,nt_nsan) + TSedi%ersal_t(iunit) - TSedi%ses_t(iunit) + TSedi%ersb_t(iunit)
             TRunoff%dwt(iunit,nt_nmud) = TRunoff%etin(iunit,nt_nmud) + TRunoff%etout(iunit,nt_nmud) + TSedi%ermal_t(iunit) - TSedi%sem_t(iunit) + TSedi%ermb_t(iunit)
 
-            !TRunoff%wt(iunit,nt_nsan) = TRunoff%wt(iunit,nt_nsan) + TRunoff%dwt(iunit,nt_nsan)*theDeltaT
-            !TRunoff%wt(iunit,nt_nmud) = TRunoff%wt(iunit,nt_nmud) + TRunoff%dwt(iunit,nt_nmud)*theDeltaT
-
             !! for budget calculation
             TRunoff%wt_al(iunit,nt_nsan) = 0._r8 ! TSedi%Ssal_t(iunit)
-            !TRunoff%wt_al(iunit,nt_nmud) = TSedi%Smal_t(iunit)
-            !TRunoff%etexchange(iunit,nt_nsan) = TSedi%ersb_t(iunit)
-            !TRunoff%etexchange(iunit,nt_nmud) = TSedi%ermb_t(iunit)
             
                 if(TRunoff%wt(iunit,nt_nmud) < -1.e-10) then
                    write(iulog,*) 'Negative mud storage in t-zone! ', iunit, TRunoff%wt(iunit, nt_nmud) , TRunoff%etin(iunit,nt_nmud), TRunoff%etout(iunit,nt_nmud), TSedi%ermal_t(iunit), TSedi%sem_t(iunit), TSedi%ermb_t(iunit)
@@ -264,9 +257,6 @@ MODULE MOSART_sediment_mod
 
         TRunoff%dwr_al(iunit,nt_nsan) = TSedi%ses_r(iunit) - TSedi%ersal_r(iunit)
         TRunoff%dwr_al(iunit,nt_nmud) = 0._r8 !TSedi%sem_r(iunit) - TSedi%ermal_r(iunit)
-        
-        !TSedi%Ssal_r(iunit) = TSedi%Ssal_r(iunit) + TRunoff%dwr_al(iunit,nt_nsan) * theDeltaT
-        !TSedi%Smal_r(iunit) = TSedi%Smal_r(iunit) + (TSedi%sem_r(iunit) - TSedi%ermal_r(iunit)) * theDeltaT
 
         TRunoff%dwr(iunit,nt_nsan) = TRunoff%erlateral(iunit,nt_nsan) + TRunoff%erin(iunit,nt_nsan) + TRunoff%erout(iunit,nt_nsan) + TSedi%ersal_r(iunit) - TSedi%ses_r(iunit) + TSedi%ersb_r(iunit)
         TRunoff%dwr(iunit,nt_nmud) = TRunoff%erlateral(iunit,nt_nmud) + TRunoff%erin(iunit,nt_nmud) + TRunoff%erout(iunit,nt_nmud) + TSedi%ermal_r(iunit) - TSedi%sem_r(iunit) + TSedi%ermb_r(iunit)
@@ -289,14 +279,6 @@ MODULE MOSART_sediment_mod
            write(iulog,*) 'Negative storage of sand active layer  in r-zone ! ', iunit, TSedi%Ssal_r(iunit), s_conc_equi, TRunoff%wr(iunit,nt_nliq), TRunoff%wr(iunit,nt_nsan)
            call shr_sys_abort('mosart: negative sand r-zone active layer storage')
         end if
-
-            !if((TRunoff%yr(iunit,nt_nliq).gt.TINYVALUE_s) .and. (s_wr_equi.gt.TINYVALUE_s)) then
-            !    write(unit=1110,fmt="(i10, 6(e12.3))") iunit, ers, ses, seout, TRunoff%wr(iunit,nt_nsan), TRunoff%vr(iunit,nt_nliq), CRQs(TRunoff%yr(iunit,nt_nliq), TRunoff%vr(iunit,nt_nliq), TUnit%rwidth(iunit), TUnit%rslp(iunit), TUnit%nr(iunit))
-            !end if
-
-            !if((TRunoff%yr(iunit,nt_nliq).gt.TINYVALUE_s) .and. (TRunoff%wr(iunit,nt_nsan).gt.TINYVALUE_s)) then
-            !    write(unit=1111,fmt="(i10, 6(e12.3))") iunit, ers, ses, seout, TRunoff%wr(iunit,nt_nsan), TRunoff%vr(iunit,nt_nliq), CRQs(TRunoff%yr(iunit,nt_nliq), TRunoff%vr(iunit,nt_nliq), TUnit%rwidth(iunit), TUnit%rslp(iunit), TUnit%nr(iunit))
-            !end if
 
     end subroutine mainchannelSediment
 

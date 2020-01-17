@@ -2012,21 +2012,21 @@ contains
        units    = 'kg m-2 s-1'
        attname  = 'Flrl_demand'
        call metadata_set(attname, longname, stdname, units)
-    call seq_flds_add(l2x_fluxes,'Flrl_Tqsur')
-    call seq_flds_add(x2r_fluxes,'Flrl_Tqsur')
-    longname = 'Temperature of surface runoff'
-    stdname  = 'Temperature_of_surface_runoff'
-    units    = 'Kelvin'
-    attname  = 'Flrl_Tqsur'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(l2x_fluxes,'Flrl_Tqsur')
+       call seq_flds_add(x2r_fluxes,'Flrl_Tqsur')
+       longname = 'Temperature of surface runoff'
+       stdname  = 'Temperature_of_surface_runoff'
+       units    = 'Kelvin'
+       attname  = 'Flrl_Tqsur'
+       call metadata_set(attname, longname, stdname, units)
 
-    call seq_flds_add(l2x_fluxes,'Flrl_Tqsub')
-    call seq_flds_add(x2r_fluxes,'Flrl_Tqsub')
-    longname = 'Temperature of subsurface runoff'
-    stdname  = 'Temperature_of_subsurface_runoff'
-    units    = 'Kelvin'
-    attname  = 'Flrl_Tqsub'
-    call metadata_set(attname, longname, stdname, units)
+       call seq_flds_add(l2x_fluxes,'Flrl_Tqsub')
+       call seq_flds_add(x2r_fluxes,'Flrl_Tqsub')
+       longname = 'Temperature of subsurface runoff'
+       stdname  = 'Temperature_of_subsurface_runoff'
+       units    = 'Kelvin'
+       attname  = 'Flrl_Tqsub'
+       call metadata_set(attname, longname, stdname, units)
     endif
     
     call seq_flds_add(l2x_fluxes,'Flrl_rofmud')
