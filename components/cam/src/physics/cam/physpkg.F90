@@ -1033,9 +1033,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
 !$OMP PARALLEL DO PRIVATE (C, irtc_rate, beg_count, phys_buffer_chunk, end_count, chunk_cost)
        do c=begchunk, endchunk
 
-!$OMP critical(sys_irtc)
           beg_count = shr_sys_irtc(irtc_rate)
-!$OMP end critical(sys_irtc)
 
           !
           ! Output physics terms to IC file
@@ -1050,9 +1048,7 @@ subroutine phys_run1(phys_state, ztodt, phys_tend, pbuf2d,  cam_in, cam_out)
                        phys_tend(c), phys_buffer_chunk,  fsds(1,c), landm(1,c),          &
                        sgh(1,c), sgh30(1,c), cam_out(c), cam_in(c) )
 
-!$OMP critical(sys_irtc)
           end_count = shr_sys_irtc(irtc_rate)
-!$OMP end critical(sys_irtc)
           chunk_cost = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
           call update_cost_p(c, chunk_cost)
 
@@ -1129,9 +1125,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
 !$OMP PARALLEL DO PRIVATE (C, irtc_rate, beg_count, FLX_HEAT, end_count, chunk_cost)
     do c=begchunk, endchunk
 
-!$OMP critical(sys_irtc)
        beg_count = shr_sys_irtc(irtc_rate)
-!$OMP end critical(sys_irtc)
 
        ! Initialize the physics tendencies to zero.
        call physics_tend_init(phys_tend(c))
@@ -1156,9 +1150,7 @@ subroutine phys_run1_adiabatic_or_ideal(ztodt, phys_state, phys_tend,  pbuf2d)
        ! Save total enery after physics for energy conservation checks
        call pbuf_set_field(pbuf_get_chunk(pbuf2d, c), teout_idx, phys_state(c)%te_cur)
 
-!$OMP critical(sys_irtc)
        end_count = shr_sys_irtc(irtc_rate)
-!$OMP end critical(sys_irtc)
        chunk_cost = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
        call update_cost_p(c, chunk_cost)
 
@@ -1258,9 +1250,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
 !$OMP PARALLEL DO PRIVATE (C, irtc_rate, beg_count, NCOL, phys_buffer_chunk, end_count, chunk_cost)
     do c=begchunk,endchunk
 
-!$OMP critical(sys_irtc)
        beg_count = shr_sys_irtc(irtc_rate)
-!$OMP end critical(sys_irtc)
 
        ncol = get_ncols_p(c)
        phys_buffer_chunk => pbuf_get_chunk(pbuf2d, c)
@@ -1285,9 +1275,7 @@ subroutine phys_run2(phys_state, ztodt, phys_tend, pbuf2d,  cam_out, &
             phys_state(c), phys_tend(c), phys_buffer_chunk,&
             fsds(1,c))
 
-!$OMP critical(sys_irtc)
        end_count = shr_sys_irtc(irtc_rate)
-!$OMP end critical(sys_irtc)
        chunk_cost = real( (end_count-beg_count), r8)/real(irtc_rate, r8)
        call update_cost_p(c, chunk_cost)
 
