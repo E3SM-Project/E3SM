@@ -131,9 +131,7 @@ using a fortran linker.
     <base> -fdefault-real-8 </base>
   </FC_AUTO_R8>
   <FFLAGS>
-    <!-- -ffree-line-length-none and -ffixed-line-length-none need to be in FFLAGS rather than in FIXEDFLAGS/FREEFLAGS
-       so that these are passed to cmake builds (cmake builds don't use FIXEDFLAGS and FREEFLAGS). -->
-    <base>  -fconvert=big-endian -ffree-line-length-none -ffixed-line-length-none </base>
+    <base>  -fconvert=big-endian -ffree-line-length-none  -fcray-pointer -fno-range-check -fbacktrace</base>
     <append compile_threaded="TRUE"> -fopenmp </append>
     <!-- Ideally, we would also have 'invalid' in the ffpe-trap list. But at
          least with some versions of gfortran (confirmed with 5.4.0, 6.3.0 and
@@ -143,6 +141,12 @@ using a fortran linker.
     <append DEBUG="TRUE"> -g -Wall -Og -fbacktrace -ffpe-trap=zero,overflow -fcheck=bounds </append>
     <append DEBUG="FALSE"> -O </append>
   </FFLAGS>
+  <FC_32BIT>
+    <base> -DOVERLOAD_R4 -DOVERLOAD_R8 </base>
+  </FC_32BIT>
+  <FC_64BIT>
+    <base> -fdefault-real-8 -fdefault-double-8 </base>
+  </FC_64BIT>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
   </FFLAGS_NOOPT>

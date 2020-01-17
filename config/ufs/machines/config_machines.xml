@@ -117,12 +117,12 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>intel,gnu,pgi</COMPILERS>
     <MPILIBS compiler="intel" >mpt,openmpi</MPILIBS>
     <MPILIBS compiler="pgi" >openmpi,mpt</MPILIBS>
-    <MPILIBS compiler="gnu" >openmpi</MPILIBS>
+    <MPILIBS compiler="gnu" >mpt,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/ufs_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/glade/p/cgd/tss/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
+    <BASELINE_ROOT>$ENV{CESMDATAROOT}/ufs_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
@@ -190,6 +190,7 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
         <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
       </modules>
+
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
         <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
@@ -206,16 +207,34 @@ This allows using a different mpirun command to launch unit tests
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
         <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
       </modules>
+
+      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
+      </modules>
+
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gnu/8.3.0</command>
+        <command name="load">gnu/9.1.0</command>
         <command name="load">openblas/0.3.6</command>
       </modules>
       <modules mpilib="mpt" compiler="gnu">
 	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.7.1</command>
+	<command name="load">netcdf/4.7.3</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
@@ -238,6 +257,10 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules>
 	<command name="load">ncarcompilers/0.5.0</command>
+      </modules>
+      <modules mpilib="mpt" compiler="gnu" comp_interface="nuopc">
+	<command name="use">/glade/work/jedwards/modulefiles/NCEPLIBS/mpt/2.19/gnu/9.1.0/</command>
+	<command name="load">NCEPLIBS/1.0.0</command>
       </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
@@ -263,6 +286,8 @@ This allows using a different mpirun command to launch unit tests
     </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="IC_DIR">$ENV{CESMDATAROOT}/ufs_inputdata/IC/gfs.20190909/00</env>
+    </environment_variables>
+    <environment_variables compiler="intel" comp_interface="nuopc">
       <env name="NCEP_LIBS">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install</env>
       <env name="NEMSIO_INC">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/include</env>
       <env name="NEMSIO_LIB">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libnemsio_v2.2.3.a</env>
