@@ -171,7 +171,8 @@ This allows using a different mpirun command to launch unit tests
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-	<command name="load">ncarenv/1.2</command>
+	<command name="load">ncarenv/1.3</command>
+	<command name="load">cmake</command>
       </modules>
       <modules compiler="intel">
 	<command name="load">intel/19.0.2</command>
