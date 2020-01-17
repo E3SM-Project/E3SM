@@ -2229,16 +2229,19 @@ contains
        ! Does the driver need to pause?
        drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)
 
-       if (glc_prognostic) then
+       if (glc_prognostic .or. do_hist_l2x1yrg) then
           ! Is it time to average fields to pass to glc?
           !
           ! Note that the glcrun_avg_alarm just controls what is passed to glc in terms
           ! of averaged fields - it does NOT control when glc is called currently -
           ! glc will be called on the glcrun_alarm setting - but it might not be passed relevant
           ! info if the time averaging period to accumulate information passed to glc is greater
-          ! than the glcrun interval
+          ! than the glcrun interval.
+          !
+          ! Note also that we need to set glcrun_avg_alarm even if glc_prognostic is
+          ! false, if do_hist_l2x1yrg is set, so that we have valid cpl hist fields
           glcrun_avg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_glcrun_avg)
-          if (glcrun_avg_alarm .and. .not. glcrun_alarm) then
+          if (glc_prognostic .and. glcrun_avg_alarm .and. .not. glcrun_alarm) then
              write(logunit,*) 'ERROR: glcrun_avg_alarm is true, but glcrun_alarm is false'
              write(logunit,*) 'Make sure that NCPL_BASE_PERIOD, GLC_NCPL and GLC_AVG_PERIOD'
              write(logunit,*) 'are set so that glc averaging only happens at glc coupling times.'
@@ -2969,7 +2972,7 @@ contains
              if (lnd_c2_rof) then
                 call prep_rof_accum(timer='CPL:lndpost_accl2r')
              endif
-             if (lnd_c2_glc) then
+             if (lnd_c2_glc .or. do_hist_l2x1yrg) then
                 call prep_glc_accum(timer='CPL:lndpost_accl2g' )
              endif
 
@@ -3039,6 +3042,27 @@ contains
           endif
 
        endif
+
+       ! ------------------------------------------------------------------------
+       ! Also average lnd2glc fields if needed for requested l2x1yrg auxiliary history
+       ! files, even if running with a stub glc model.
+       ! ------------------------------------------------------------------------
+
+       if (do_hist_l2x1yrg .and. iamin_CPLID .and. glcrun_avg_alarm .and. &
+            .not. lnd2glc_averaged_now) then
+          ! Checking .not. lnd2glc_averaged_now ensures that we don't do this averaging a
+          ! second time if we already did it above (because we're running with a
+          ! prognostic glc model).
+          call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:AVG_L2X1YRG_BARRIER')
+          call t_drvstartf ('CPL:AVG_L2X1YRG',cplrun=.true.,barrier=mpicom_CPLID)
+          if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+          call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+          lnd2glc_averaged_now = .true.
+
+          if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+          call t_drvstopf  ('CPL:AVG_L2X1YRG',cplrun=.true.)
+       end if
 
        !----------------------------------------------------------
        !| ROF RECV-POST
@@ -3798,8 +3822,6 @@ contains
              if (t1yr_alarm .and. .not. lnd2glc_averaged_now) then
                 write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
                 write(logunit,*) 'it is the year boundary, but lnd2glc fields were not averaged this time step.'
-                write(logunit,*) 'One possible reason is that you are running with a stub glc model.'
-                write(logunit,*) '(It only works to request histaux_l2x1yrg if running with a prognostic glc model.)'
                 call shr_sys_abort(subname// &
                      ' do_hist_l2x1yrg and t1yr_alarm are true, but lnd2glc_averaged_now is false')
              end if
