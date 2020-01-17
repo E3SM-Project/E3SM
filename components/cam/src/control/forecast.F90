@@ -81,7 +81,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
    real(r8) pdelm1f(plev)  ! pdel(k)   = pint  (k+1)-pint  (k)
    real(r8) pdelb(plon,plev)  ! pressure diff bet intfcs (press defined using the "B" part 
    real(r8) pdela(plon,plev)
-   real(r8) weight,fac
+   real(r8) weight,fac,fac_t
    real(r8) psfcst
    real(r8) tfcst(plev)
    real(r8) ufcst(plev)
@@ -184,7 +184,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
    wfldint(plevp) = 0.0_r8
 
-   if (use_3dfrc .and. use_iop .and. .not. iop_scream) then
+   if (use_3dfrc .and. use_iop) then
 
 !  Complete a very simple forecast using supplied 3-dimensional forcing
 !  by the large scale.  Obviates the need for any kind of vertical 
@@ -192,9 +192,17 @@ subroutine forecast(lat, psm1, psm2,ps, &
       i=1
       do k=1,plev
 #ifdef MODEL_THETA_L
-        tfcst(k) = t3m2(k) + t2(k) + divt3d(k)
+        if (iop_scream) then 
+	  tfcst(k) = t3m2(k) + divt3d(k)
+	else
+	  tfcst(k) = t3m2(k) + t2(k) + divt3d(k)
+	endif
 #else
-        tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+        if (iop_scream) then
+	  tfcst(k) = t3m2(k) + ztodt*div3dt(k)
+	else
+	  tfcst(k) = t3m2(k) + ztodt*t2(k) + ztodt*divt3d(k)
+	endif
 #endif
       end do
       do m=1,pcnst
@@ -205,29 +213,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
       go to 1000
 
-   end if
-
-   if (iop_scream) then
-   
-!  Complete a very simple forecast using supplied 2-dimensional forcing.
-!   In IOP-SCREAM the vertical transport is already computed by dynamics.
-      i=1
-      do k=1,plev
-#ifdef MODEL_THETA_L
-        tfcst(k) = t3m2(i) + divt3d(k)
-#else
-        tfcst(k) = t3m2(k) + ztodt*divt(k)
-#endif
-      end do
-      do m=1,pcnst
-         do k=1,plev
-            qfcst(1,k,m) = qminus(1,k,m) +  divq3d(k,m)*ztodt
-         end do
-      enddo
-
-      go to 1000
-
-   end if   
+   end if 
 
 !
 !  provide an eulerian forecast.  First check to ensure that 2d forcing
@@ -285,22 +271,35 @@ subroutine forecast(lat, psm1, psm2,ps, &
 ! TIME FOR VERTICAL ADVECTION STEP
 !
 !
-!  Eularian forecast for u,v and t
+!  Eularian forecast for u,v,t, and q
 !
 
-   if (dycore_is('EUL')) then 
+   if (iop_scream) then 
 
      do k=2,plev-1
        fac = ztodt/(2.0_r8*pdelm1(k))
+#ifdef MODEL_THETA_L  
+       fac_t = 1.0_r8/(2.0_r8*pdelm1(k))
+       tfcst(k) = t3m2(k) &
+           - fac_t*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)) &
+           + wfldint(k)*(t3m1(k) - t3m1(k-1)))
+#else
        tfcst(k) = t3m2(k) &
            - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)) &
            + wfldint(k)*(t3m1(k) - t3m1(k-1)))
+#endif
        vfcst(k) = v3m2(k) &
            - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)) &
            + wfldint(k)*(v3m1(k) - v3m1(k-1)))
        ufcst(k) = u3m2(k) &
            - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)) &
            + wfldint(k)*(u3m1(k) - u3m1(k-1)))
+	   
+       do m=1,pcnst
+         qfcst(1,k,m) = qminus(1,k,m) & 
+	   - fac*(wfldint(k+1) * (qminus(1,k+1,m) - qminus(1,k,m)) &
+	   + wfldint(k)*(qminus(1,k,m) - qminus(1,k-1,m)))
+       enddo 
 
      end do
 
@@ -310,15 +309,33 @@ subroutine forecast(lat, psm1, psm2,ps, &
 
      k = 1
      fac = ztodt/(2.0_r8*pdelm1(k))
+#ifdef MODEL_THETA_L
+     fac_t = 1.0_r8/(2.0_r8*pdelm1(k))
+     tfcst(k) = t3m2(k) - fac_t*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
+#else
      tfcst(k) = t3m2(k) - fac*(wfldint(k+1)*(t3m1(k+1) - t3m1(k)))
+#endif
      vfcst(k) = v3m2(k) - fac*(wfldint(k+1)*(v3m1(k+1) - v3m1(k)))
      ufcst(k) = u3m2(k) - fac*(wfldint(k+1)*(u3m1(k+1) - u3m1(k)))
+     do m=1,pcnst
+       qfcst(1,k,m) = qminus(1,k,m) - fac * (wfldint(k+1) * &
+         (qminus(1,k+1,m) - qminus(1,k,m)))
+     enddo
 
      k = plev
      fac = ztodt/(2.0_r8*pdelm1(plev))
+#ifdef MODEL_THETA_L
+     fac_t = 1.0_r8/(2.0_r8*pdelm1(plev))
+     tfcst(k) = t3m2(k) - fac_t*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
+#else
      tfcst(k) = t3m2(k) - fac*(wfldint(k)*(t3m1(k) - t3m1(k-1)))
+#endif
      vfcst(k) = v3m2(k) - fac*(wfldint(k)*(v3m1(k) - v3m1(k-1)))
      ufcst(k) = u3m2(k) - fac*(wfldint(k)*(u3m1(k) - u3m1(k-1)))
+     do m=1,pcnst
+       qfcst(1,k,m) = qminus(1,k,m) - fac * (wfldint(k) * &
+         (qminus(1,k,m) - qminus(1,k-1,m)))
+     enddo
 
 !
 !  SLT is used for constituents only
@@ -334,7 +351,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
        end do
      end do
    
-   else if (dycore_is('SE')) then
+   else
    
      tfcst(:) = t3m2(:)
      qfcst(1,:,:) = q3m2(:,:)
@@ -494,8 +511,22 @@ end if
 !
 
    do k=1,plev
-     tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+#ifdef MODEL_THETA_L
+     if (iop_scream) then
+       tfcst(k) = tfcst(k) + wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) + divt(k)     
+     else
+       tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
          + ztodt*(t2(k) + divt(k))
+     endif
+#else
+     if (iop_scream) then
+       tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+         + ztodt*(divt(k))     
+     else
+       tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+         + ztodt*(t2(k) + divt(k))
+     endif
+#endif
      do m=1,pcnst
        qfcst(1,k,m) = qfcst(1,k,m) + ztodt*divq(k,m)
      end do
