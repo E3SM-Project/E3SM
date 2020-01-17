@@ -69,9 +69,9 @@ do
 
   # Copy files with common name
   cp ${dyn_prefix}f${time_step}.${file_ext} nemsfile
-  echo "cp ${dyn_prefix}f${f}.${file_ext} nemsfile"
+  echo "cp ${dyn_prefix}f${time_step}.${file_ext} nemsfile"
   cp ${phy_prefix}f${time_step}.${file_ext} flxfile
-  echo "cp ${phy_prefix}f${f}.${file_ext} flxfile"
+  echo "cp ${phy_prefix}f${time_step}.${file_ext} flxfile"
 
   # Copy cycle namelist with common name
   cp itaga.$time_step itag
