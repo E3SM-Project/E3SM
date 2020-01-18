@@ -159,15 +159,12 @@ TEST_CASE("team_utils_cuda", "[kokkos_utils]")
 
   const int saturation_multiplier=10;
   const int ni = num_conc*saturation_multiplier;
-  //const int ni = 128;
   const auto p = ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
   TeamUtils<ExeSpace> tu(p);
 
   const int max_threads = tu.get_max_concurrent_threads();
   REQUIRE(p.league_size() == ni);
   REQUIRE(p.team_size() == nk);
-  std::cout << "Concurrency: " << max_threads << std::endl;
-  std::cout << "Concurrent teams: " << num_conc << std::endl;
 
   int max_workspace_idx = 0;
   typename KokkosTypes<Device>::template view_1d<int> test_data("test_data", num_conc);
@@ -178,8 +175,8 @@ TEST_CASE("team_utils_cuda", "[kokkos_utils]")
     if (wi > max_ws_idx) { max_ws_idx = wi; }
 
     Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
-        //printf("Team %d got ws idx %d\n", i, wi);
-      test_data(wi) += 1;
+        int volatile* const data = &test_data(wi);
+        *data += 1;
     });
 
     tu.release_workspace_idx(team_member, wi);
@@ -187,8 +184,6 @@ TEST_CASE("team_utils_cuda", "[kokkos_utils]")
 
   const auto test_data_h = Kokkos::create_mirror_view(test_data);
   Kokkos::deep_copy(test_data_h, test_data);
-
-  std::cout << "Max ws idx: " << max_workspace_idx << std::endl;
 
   int sum = 0;
   for(int i = 0; i < num_conc; ++i) {

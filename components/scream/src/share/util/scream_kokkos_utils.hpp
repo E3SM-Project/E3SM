@@ -127,7 +127,7 @@ class TeamUtils
   int _team_size, _num_teams, _max_threads;
 #ifdef KOKKOS_ENABLE_CUDA
   using Device = Kokkos::Device<ExeSpace, typename ExeSpace::memory_space>;
-  using flag_type = int;
+  using flag_type = int; // this appears to be the smallest type that correctly handles atomic operations
   using view_1d = typename KokkosTypes<Device>::view_1d<flag_type>;
   using view_1d_slot = typename KokkosTypes<Device>::view_1d<int>;
 
@@ -167,15 +167,13 @@ class TeamUtils
 #ifdef KOKKOS_ENABLE_OPENMP
     return omp_get_thread_num() / _team_size;
 #elif defined(KOKKOS_ENABLE_CUDA)
-    // if (team_member.league_size() <= _num_teams) {
-    if (false) {
+    if (team_member.league_size() <= _num_teams) {
       return team_member.league_rank();
     }
     else {
       Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
-        //int my_ws_idx = team_member.league_rank() % _num_teams;
-        int ws_idx = 0;
-        while (!Kokkos::atomic_compare_exchange_strong(&_open_ws_slots(ws_idx), (flag_type) 0/*false*/, (flag_type)1/*true*/)) {
+        int ws_idx = team_member.league_rank() % _num_teams;
+        while (!Kokkos::atomic_compare_exchange_strong(&_open_ws_slots(ws_idx), (flag_type) 0, (flag_type)1)) {
           // or random?
           ws_idx = (ws_idx+1) % _num_teams;
         }
@@ -194,13 +192,11 @@ class TeamUtils
   void release_workspace_idx(const MemberType& team_member, int ws_idx) const
   {
 #ifdef KOKKOS_ENABLE_CUDA
-    //if (team_member.league_size() > _num_teams) {
-    if (true) {
+    if (team_member.league_size() > _num_teams) {
       team_member.team_barrier();
       Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
-        Kokkos::atomic_exchange(&_open_ws_slots(ws_idx), (flag_type) 0);
-          // flag_type volatile* const e = &_open_ws_slots(ws_idx);
-          // *e = (flag_type)0;
+        flag_type volatile* const e = &_open_ws_slots(ws_idx);
+        *e = (flag_type)0;
       });
       team_member.team_barrier();
     }
