@@ -244,6 +244,7 @@ struct TestPack {
 
     test_pack_gen_bin_fn_all(min, scream::util::min);
     test_pack_gen_bin_fn_all(max, scream::util::max);
+    test_pack_gen_bin_fn_all(pow, std::pow);
 
     test_pack_gen_unary_stdfn(abs);
     test_pack_gen_unary_stdfn(exp);
