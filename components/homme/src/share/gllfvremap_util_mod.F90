@@ -727,7 +727,7 @@ contains
     call write_physgrid_smoothed_phis_file(outtopoprefix, elem, par, &
          gll_fields, pg_fields, output_nphys, &
          'Created from '// trim(intopofn) // ' by HOMME gfr_pgn_to_smoothed_topo', &
-         .false.)
+         write_latlon)
 
     deallocate(gll_fields, pg_fields)
     stat = 0
