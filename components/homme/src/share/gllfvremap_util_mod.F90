@@ -652,10 +652,11 @@ contains
     type (element_t), intent(inout) :: elem(:)
     integer, intent(in) :: output_nphys
     character(*), intent(in) :: intopofn, outtopoprefix
+    integer :: stat
 
 #ifndef CAM
     real(real_kind), allocatable :: gll_fields(:,:,:,:), pg_fields(:,:,:)
-    integer :: intopo_nphys, ie, i, j, k, stat, nvar, nf2
+    integer :: intopo_nphys, ie, i, j, k, nvar, nf2
     character(len=varname_len) :: fieldnames(1)
     real(real_kind) :: rad2deg
     logical :: write_latlon
