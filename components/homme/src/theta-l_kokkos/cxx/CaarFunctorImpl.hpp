@@ -344,8 +344,10 @@ struct CaarFunctorImpl {
       kv.team_barrier();
     }
 
-    compute_interface_quantities(kv);
-    kv.team_barrier();
+    if (m_rsplit==0 || !m_theta_hydrostatic_mode) {
+      compute_interface_quantities(kv);
+      kv.team_barrier();
+    }
 
     if (m_rsplit==0) {
       compute_vertical_advection(kv);
@@ -635,17 +637,19 @@ struct CaarFunctorImpl {
 
       auto u    = Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp);
       auto v    = Homme::subview(m_state.m_v,kv.ie,m_data.n0,1,igp,jgp);
-      auto u_i  = Homme::subview(m_buffers.v_i,kv.team_idx,0,igp,jgp);
-      auto v_i  = Homme::subview(m_buffers.v_i,kv.team_idx,1,igp,jgp);
       auto dp   = Homme::subview(m_state.m_dp3d,kv.ie,m_data.n0,igp,jgp);
       auto dp_i = Homme::subview(m_buffers.dp_i,kv.team_idx,igp,jgp);
 
       // Compute interface dp
       ColumnOps::compute_interface_values(kv.team,dp,dp_i);
 
-      // Compute interface horiz velocity
-      ColumnOps::compute_interface_values(kv.team,dp,dp_i,u,u_i);
-      ColumnOps::compute_interface_values(kv.team,dp,dp_i,v,v_i);
+      if (!m_theta_hydrostatic_mode) {
+        // Compute interface horiz velocity
+        auto u_i  = Homme::subview(m_buffers.v_i,kv.team_idx,0,igp,jgp);
+        auto v_i  = Homme::subview(m_buffers.v_i,kv.team_idx,1,igp,jgp);
+        ColumnOps::compute_interface_values(kv.team,dp,dp_i,u,u_i);
+        ColumnOps::compute_interface_values(kv.team,dp,dp_i,v,v_i);
+      }
 
       // Compute interface vtheta_i, with an energy preserving scheme
 
@@ -660,17 +664,19 @@ struct CaarFunctorImpl {
                                  dp_i,
                                  dpnh_dp_i);
 
-      // vtheta_i(k) = -dpnh_dp_i(k)*(phi(k)-phi(k-1)) / (exner(k)-exner(k-1)) / Cp
-      ColumnOps::compute_interface_delta(kv,phi,vtheta_i);
-      // Set dexner_i to 1 at top/bottom, to avoid 0/0
-      // Note: to specify bctype, you must specify combinemode too.
-      ColumnOps::compute_interface_delta<CombineMode::Replace,BCType::Value>(kv,exner,dexner_i,1.0);
-      Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
-                           [&](const int ilev) {
-        vtheta_i(ilev) *= -dpnh_dp_i(ilev);
-        vtheta_i(ilev) /= dexner_i(ilev);
-        vtheta_i(ilev) /= PhysicalConstants::cp;
-      });
+      if (m_rsplit==0) {
+        // vtheta_i(k) = -dpnh_dp_i(k)*(phi(k)-phi(k-1)) / (exner(k)-exner(k-1)) / Cp
+        ColumnOps::compute_interface_delta(kv,phi,vtheta_i);
+        // Set dexner_i to 1 at top/bottom, to avoid 0/0
+        // Note: to specify bctype, you must specify combinemode too.
+        ColumnOps::compute_interface_delta<CombineMode::Replace,BCType::Value>(kv,exner,dexner_i,1.0);
+        Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
+                             [&](const int ilev) {
+          vtheta_i(ilev) *= -dpnh_dp_i(ilev);
+          vtheta_i(ilev) /= dexner_i(ilev);
+          vtheta_i(ilev) /= PhysicalConstants::cp;
+        });
+      }
     });
   }
 
@@ -1196,16 +1202,21 @@ struct CaarFunctorImpl {
       // Compute average(dpnh_dp_i*grad(phinh_i)), and add to wvor
       const auto phinh_i_x = Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,0,igp,jgp);
       const auto phinh_i_y = Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,1,igp,jgp);
-      const auto dpnh_dp_i = Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp);
-      const auto prod_x = [&phinh_i_x,&dpnh_dp_i](const int ilev)->Scalar {
-        return phinh_i_x(ilev)*dpnh_dp_i(ilev);
-      };
-      const auto prod_y = [&phinh_i_y,&dpnh_dp_i](const int ilev)->Scalar {
-        return phinh_i_y(ilev)*dpnh_dp_i(ilev);
-      };
+      if (m_theta_hydrostatic_mode) {
+        ColumnOps::compute_midpoint_values<CombineMode::Add>(kv,phinh_i_x,wvor_x);
+        ColumnOps::compute_midpoint_values<CombineMode::Add>(kv,phinh_i_y,wvor_y);
+      } else {
+        const auto dpnh_dp_i = Homme::subview(m_buffers.dpnh_dp_i,kv.team_idx,igp,jgp);
+        const auto prod_x = [&phinh_i_x,&dpnh_dp_i](const int ilev)->Scalar {
+          return phinh_i_x(ilev)*dpnh_dp_i(ilev);
+        };
+        const auto prod_y = [&phinh_i_y,&dpnh_dp_i](const int ilev)->Scalar {
+          return phinh_i_y(ilev)*dpnh_dp_i(ilev);
+        };
 
-      ColumnOps::compute_midpoint_values<CombineMode::Add>(kv,prod_x,wvor_x);
-      ColumnOps::compute_midpoint_values<CombineMode::Add>(kv,prod_y,wvor_y);
+        ColumnOps::compute_midpoint_values<CombineMode::Add>(kv,prod_x,wvor_x);
+        ColumnOps::compute_midpoint_values<CombineMode::Add>(kv,prod_y,wvor_y);
+      }
 
       // Compute KE. Also, add fcor to vort
       auto u  = Homme::subview(m_state.m_v,kv.ie,m_data.n0,0,igp,jgp);
