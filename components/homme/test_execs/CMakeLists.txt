@@ -196,6 +196,14 @@ IF (${BUILD_HOMME_THETA_KOKKOS})
   ADD_SUBDIRECTORY(theta-l-nlev30-kokkos)
   ADD_SUBDIRECTORY(theta-l-nlev72-kokkos)
 
+  #for future
+  #ADD_SUBDIRECTORY(theta-nlev72-kokkos)
+  #ADD_SUBDIRECTORY(theta-nlev72)
+
+  #for now
+  ADD_SUBDIRECTORY(theta-nlev128-kokkos)
+  ADD_SUBDIRECTORY(theta-nlev128)
+
   ADD_SUBDIRECTORY(thetal_kokkos_ut)
 ENDIF()
 
@@ -230,7 +238,7 @@ SET(TEST_DIR_LIST "")
 createTests(HOMME_TESTS)
 
 IF (${BUILD_HOMME_PREQX_KOKKOS})
-  MESSAGE("-- Generating tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
+  MESSAGE("-- Generating preqx tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
     "   Example ctest lines:\n"
     "     ctest -LE \"nightly\": All tests except nightly.\n"
     "     ctest -L \"dev|unit\": Tests label dev or unit.")
@@ -239,6 +247,18 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
     MESSAGE("-- For profile ${p}:")
     createTestsWithProfile(HOMME_PREQX_TESTS_WITH_PROFILE ${p})
     CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(PREQX_COMPARE_F_C_TEST ${p})
+  ENDFOREACH ()
+ENDIF()
+IF (${BUILD_HOMME_THETA_KOKKOS})
+  MESSAGE("-- Generating theta tests no more intensive than profile ${HOMME_TESTING_PROFILE}.\n"
+    "   Example ctest lines:\n"
+    "     ctest -LE \"nightly\": All tests except nightly.\n"
+    "     ctest -L \"dev|unit\": Tests label dev or unit.")
+  make_profiles_up_to(${HOMME_TESTING_PROFILE} profiles)
+  FOREACH (p ${profiles})
+    MESSAGE("-- For profile ${p}:")
+    createTestsWithProfile(HOMME_THETA_TESTS_WITH_PROFILE ${p})
+    CREATE_CXX_VS_F90_TESTS_WITH_PROFILE(THETA_COMPARE_F_C_TEST ${p})
   ENDFOREACH ()
 ENDIF()
 

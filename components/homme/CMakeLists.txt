@@ -138,10 +138,13 @@ IF (BUILD_HOMME_PREQX_KOKKOS OR BUILD_HOMME_THETA_KOKKOS)
     SET (BUILD_HOMME_THETA TRUE)
   ENDIF ()
 ENDIF ()
+
+
 IF (HOMME_ENABLE_COMPOSE)
   SET (HOMME_USE_CXX TRUE)
   SET (HOMME_USE_KOKKOS TRUE)
 ENDIF ()
+
 
 IF (HOMME_USE_CXX)
   MESSAGE(STATUS "This configuration of HOMME requires a C++ compiler")
@@ -234,7 +237,8 @@ MESSAGE(STATUS "CXX Flags = ${CMAKE_CXX_FLAGS}")
 MESSAGE(STATUS "Linker Flags = ${CMAKE_EXE_LINKER_FLAGS}")
 
 IF (${HOMME_USE_KOKKOS})
-  # Note: If you ask for bfb testing, you should also ask for a strict fp model on cpu.
+  # This option will only help propagate tests, it won't make bfb builds.
+  # Compiler flags should be set separately in *.cmake file.
   OPTION (HOMMEXX_BFB_TESTING "Whether we want bfb comparison cpu-vs-gpu and f90-vs-cxx" OFF)
 
   IF (CUDA_BUILD)
@@ -365,6 +369,7 @@ IF (${HOMME_USE_KOKKOS})
   INCLUDE(Kokkos)
 ENDIF ()
 
+#??? sort this out
 IF (${HOMME_USE_KOKKOS} AND ${HOMME_BUILD_EXECS})
   # Add unit tests for C++ code
   ADD_SUBDIRECTORY(test/unit_tests)

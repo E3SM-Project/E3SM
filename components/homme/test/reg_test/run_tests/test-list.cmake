@@ -68,3 +68,22 @@ IF (${BUILD_HOMME_PREQX_KOKKOS})
     )
   ENDIF ()
 ENDIF()
+
+IF (BUILD_HOMME_THETA_KOKKOS)
+  SET(HOMME_THETA_TESTS_WITH_PROFILE_1
+     theta-f0-tt5-hvs1-hvst0-r3-qz1-nutopoff
+     theta-f1-tt5-hvs1-hvst0-r3-qz1-nutopoff
+     theta-f1-tt5-hvs1-hvst0-r0-qz1-nutopoff
+     theta-f1-tt10-hvs1-hvst0-r3-qz1-nutopoff
+     theta-f1-tt10-hvs1-hvst0-r2-qz10-nutopoff-GB
+  )
+  FOREACH(JJ ${HOMME_THETA_TESTS_WITH_PROFILE_1})
+    LIST(APPEND HOMME_PREQX_TESTS_WITH_PROFILE
+        ${JJ}.cmake
+        ${JJ}-kokkos.cmake
+    )
+  ENDFOREACH()
+  IF (HOMMEXX_BFB_TESTING)
+    SET (THETA_COMPARE_F_C_TEST ${HOMME_THETA_TESTS_WITH_PROFILE_1})
+  ENDIF ()
+ENDIF()
