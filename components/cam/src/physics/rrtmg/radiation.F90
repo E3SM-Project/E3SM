@@ -93,17 +93,21 @@ logical :: pergro_mods = .false. ! for activating pergro mods
 integer :: firstblock, lastblock      ! global block indices
 
 !!!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
-logical :: flag_emis  = .true.  ! flag to control surface emissivit. true: ON, false: OFF
-!logical :: flag_emis  = .false.
+! flag to control surface emissivit. true: ON, false: OFF
+logical :: umich_flag_emis  = .false.  
 
-logical :: flag_rtr2 = .true.   ! flag to control cloud LW radiation transfer solver. 2/4-stream solver. true: ON, false: OFF
-!logical :: flag_rtr2 = .false.
+! flag to control cloud LW radiation transfer solver. 2/4-stream solver. true: ON, false: OFF
+logical :: umich_flag_rtr2 = .false.   
 
-logical :: flag_mc6  = .true.   ! flag to turn on/off MC6 (MODIS Collection 6) ice optical parameterization. true: ON, false: OFF
-!logical :: flag_mc6  = .false. 
+! flag to turn on/off MC6 (MODIS Collection 6) ice optical parameterization. true: ON, false: OFF
+logical :: umich_flag_mc6  = .false.   
 
-logical :: flag_scat_mc6  = .true.  ! flag to turn on/off MC6 (MODIS Collection 6) ice optical parameterization with scattering. true: ON, false: OFF
-!logical :: flag_scat_mc6  = .false. 
+! flag to turn on/off MC6 (MODIS Collection 6) ice optical parameterization with scattering. true: ON, false: OFF
+logical :: umich_flag_scat_mc6  = .false.  
+
+integer, parameter  :: nlen = 256     ! Length of character strings
+character(len=nlen) :: umich_surf_emis_file    !surface emissivity filename
+
 !!!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
 
 
@@ -133,7 +137,10 @@ subroutine radiation_readnl(nlfile, dtime_in)
 
    ! Variables defined in namelist
    namelist /radiation_nl/ iradsw, iradlw, irad_always, &
-                           use_rad_dt_cosz, spectralflux
+                           use_rad_dt_cosz, spectralflux, &
+                           umich_flag_emis, umich_flag_rtr2, umich_flag_mc6, &
+                           umich_flag_scat_mc6, umich_surf_emis_file
+
 
    ! Read the namelist, only if called from master process
    ! TODO: better documentation and cleaner logic here?
@@ -158,6 +165,11 @@ subroutine radiation_readnl(nlfile, dtime_in)
    call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
    call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
    call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
+   call mpibcast(umich_flag_emis, 1, mpi_logical, mstrid, mpicom, ierr)
+   call mpibcast(umich_flag_rtr2, 1, mpi_logical, mstrid, mpicom, ierr)
+   call mpibcast(umich_flag_mc6, 1, mpi_logical, mstrid, mpicom, ierr)
+   call mpibcast(umich_flag_scat_mc6, 1, mpi_logical, mstrid, mpicom, ierr)
+   call mpibcast(umich_surf_emis_file, len(umich_surf_emis_file), mpichar, mstrid, mpicom, ierr)
 #endif
 
    ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
@@ -306,6 +318,13 @@ subroutine radiation_printopts
 10 format(' Execute SW/LW radiation continuously for the first ',i5, ' timestep(s) of this run')
 20 format(' Frequency of Shortwave Radiation calc. (IRADSW)     ',i5/, &
           ' Frequency of Longwave Radiation calc. (IRADLW)      ',i5)
+
+   write(iulog,*)'--- umich_flag_emis = ',umich_flag_emis
+   write(iulog,*)'--- umich_flag_rtr2 = ',umich_flag_rtr2
+   write(iulog,*)'--- umich_flag_mc6 = ',umich_flag_mc6
+   write(iulog,*)'--- umich_flag_scat_mc6 = ',umich_flag_scat_mc6
+   if (umich_flag_emis) &
+     write(iulog,*)'--- umich_surf_emis_file = ',umich_surf_emis_file
 
 end subroutine radiation_printopts
 
@@ -1225,7 +1244,7 @@ end function radiation_nextsw_cday
       !!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
       !!!!!! This part sets surface emissivity !!!!!!
       do i = 1,ncol
-          if (flag_emis) then
+          if (umich_flag_emis) then
                cam_out%do_emis(i) = 1
           else
                cam_out%do_emis(i) = 0
@@ -1235,7 +1254,7 @@ end function radiation_nextsw_cday
       ! This change is to replace blackbody-derived Tskin with real-emissivity-derived Tskin
       do i = 1,ncol
         ! use realistic emissivity 
-        if (flag_emis) then   
+        if (umich_flag_emis) then   
           Ts_LW(i) = cam_in%ts_atm(i)
           cam_out%emis_spec(i,:) = cam_in%srf_emis_spec(i,:)
 
@@ -1420,7 +1439,7 @@ end function radiation_nextsw_cday
        endif
 
        !>>> yihsuan 2018-09-04 add MC6 ice optics >>>
-       if (.not.flag_mc6) then  ! use standard ice optics scheme with either rtr2 or rtrnmc
+       if (.not.umich_flag_mc6) then  ! use standard ice optics scheme with either rtr2 or rtrnmc
          c_cld_lw_ext(1:nbndlw,1:ncol,:) = c_cld_lw_abs(1:nbndlw,1:ncol,:)
          c_cld_lw_ssa                    = 0._r8
          c_cld_lw_xmomc                  = 0._r8
@@ -1500,7 +1519,7 @@ end function radiation_nextsw_cday
          enddo
 
          ! return variable
-         if (flag_rtr2 .and. flag_scat_mc6) then   ! use rtr2 with MC6 absorption+scattering
+         if (umich_flag_rtr2 .and. umich_flag_scat_mc6) then   ! use rtr2 with MC6 absorption+scattering
            c_cld_lw_abs  (1:nbndlw,1:ncol,:)  =cld_lw_abs(:,1:ncol,:)
            c_cld_lw_ext  (1:nbndlw,1:ncol,:)  =cld_lw_ext(:,1:ncol,:)
            c_cld_lw_ssa  (1:nbndlw,1:ncol,:)  =cld_lw_ssa(:,1:ncol,:)
@@ -1726,7 +1745,9 @@ end function radiation_nextsw_cday
                        qrl,          qrlc,                                                       &
                        flns,         flnt,         flnsc,           flntc,        cam_out%flwds, &
                        flut,         flutc,        fnl,             fcnl,         fldsc,         &
-                       clm_seed,     lu,           ld, flag_rtr2, c_cld_lw_ssa, c_cld_lw_xmomc, surface_emis, ful, fsul, fdl, fsdl, lwdn_spec ) ! yihsuan add new inputs/outputs
+                       clm_seed,     lu,           ld,   umich_flag_rtr2,   c_cld_lw_ssa,        &
+                       c_cld_lw_xmomc, surface_emis, ful, fsul, fdl, fsdl, lwdn_spec ) 
+                  ! yihsuan add new inputs/outputs
                   ! save spectral downward LW flux at the surface for emissivty calculation of next step 
                   do i=1,ncol
                     do j=1,nbndlw

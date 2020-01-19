@@ -53,6 +53,8 @@ module atm_comp_mct
   use runtime_opts     , only: read_namelist
   use scamMod          , only: single_column,scmlat,scmlon
 
+  use radiation        , only: umich_surf_emis_file 
+
 !
 ! !PUBLIC TYPES:
   implicit none
@@ -1070,7 +1072,6 @@ CONTAINS
 
       implicit none
       integer :: ncid, status, latid,lonid,bandid,timeid
-      character(256) filename
 
       integer :: ntime, nlat, nlon, nband,i,mn
       real, allocatable :: band_emissivity(:)
@@ -1084,8 +1085,7 @@ CONTAINS
       real(r8) :: lons2(ncols)           ! array of chunk longitude
       real :: surface_emis(ncols, nbndlw), minvalue
 
-      filename = "/global/cscratch1/sd/xianwen/data/surface_emissivity_1x1_RRTMG_53deg.nc"
-      status = nf90_open(trim(filename), nf90_nowrite, ncid)
+      status = nf90_open(trim(umich_surf_emis_file), nf90_nowrite, ncid)
       status = nf90_inq_dimid(ncid, "time", timeID)
       status = nf90_inq_dimid(ncid, "lat", latID)
       status = nf90_inq_dimid(ncid, "lon", lonID)

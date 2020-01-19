@@ -4086,6 +4086,41 @@ to make this functionality default
 Default: FALSE
 </entry>
 
+<entry id="umich_flag_emis" type="logical"  category="radiation"
+       group="radiation_nl" valid_values="" >
+If true, turn on surface spectral emissivity which is part of
+the Univ. of Michigan LW radiation transfer treatment package
+Default: FALSE
+</entry>
+
+<entry id="umich_flag_rtr2" type="logical"  category="radiation"
+       group="radiation_nl" valid_values="" >
+If true, turn on 2/4-stream cloud LW radiation transfer solver which is part of
+the Univ. of Michigan LW radiation transfer treatment package
+Default: FALSE
+</entry>
+
+<entry id="umich_flag_mc6" type="logical"  category="radiation"
+       group="radiation_nl" valid_values="" >
+If true, use MC6  (MODIS Collection 6) ice optical parameterization, which is part of
+the Univ. of Michigan LW radiation transfer treatment package
+Default: FALSE
+</entry>
+
+<entry id="umich_flag_scat_mc6" type="logical"  category="radiation"
+       group="radiation_nl" valid_values="" >
+If true, use MC6  (MODIS Collection 6) ice optical parameterization with scattering, which is part of
+the Univ. of Michigan LW radiation transfer treatment package
+Default: FALSE
+</entry>
+
+<entry id="umich_surf_emis_file" type="char*256"  category="radiation"
+       group="radiation_nl" valid_values="" >
+Surface emissivity data file name required when surface spectral emissivity is used.
+This is part of the Univ. of Michigan LW radiation transfer treatment package
+Default: share/rad/surface_emissivity_1x1_RRTMG_53deg.nc
+</entry>
+
 <entry id="raytau0" type="real"  category="physc_test"
        group="cam_inparm" valid_values="" >
 Approximate value of decay time at model top (days);
