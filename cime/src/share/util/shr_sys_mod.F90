@@ -224,6 +224,14 @@ integer(SHR_KIND_I8) FUNCTION shr_sys_irtc( rate )
 
 !-------------------------------------------------------------------------------
 ! emulates Cray/SGI irtc function (returns clock tick since last reboot)
+!
+! This function is not intended to measure elapsed time between
+! multi-threaded regions with different numbers of threads. However,
+! use of the threadprivate declaration does guarantee accurate
+! measurement per thread within a single multi-threaded region as
+! long as the number of threads is not changed dynamically during
+! execution within the multi-threaded region.
+!
 !-------------------------------------------------------------------------------
 
    call system_clock(count=count,count_rate=count_rate, count_max=count_max)
