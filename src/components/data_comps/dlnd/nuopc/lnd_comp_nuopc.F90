@@ -43,7 +43,7 @@ module lnd_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type(shr_strdata_type) :: sdlnd
+  type(shr_strdata_type) :: sdat
 
   character(len=CS)      :: flds_scalar_name = ''
   integer                :: flds_scalar_num = 0
@@ -134,12 +134,17 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(len=CL)  :: cvalue
-    integer            :: shrlogunit     ! original log unit
-    integer            :: glc_nec        ! number of elevation classes
-    character(len=CL)  :: filename       ! generic file name
+    character(len=CL) :: cvalue
+    integer           :: shrlogunit ! original log unit
+    character(len=CL) :: filename   ! generic file name
+    integer           :: glc_nec    ! number of elevation classes
+    integer           :: nu         ! unit number
+    integer           :: ierr       ! error code
+    character(CL)     :: decomp     ! decomp strategy - not used for NUOPC - but still needed in namelist for now
     character(len=*), parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
+
+    namelist / dlnd_nml / decomp, restfilm, restfils, force_prognostic_true, domain_fracname
 
     rc = ESMF_SUCCESS
 
@@ -151,23 +156,44 @@ contains
     call set_component_logging(gcomp, my_task==master_task, logunit, shrlogunit, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Read input namelists and set present and prognostic flags
+    ! set input namelist filename
     filename = "dlnd_in"//trim(inst_suffix)
-    call dlnd_read_namelists(filename)
 
+    ! Read dlnd_nml from filename
+    if (my_task == master_task) then
+       open (newunit=nu, file=trim(filename), status="old", action="read")
+       read (nu,nml=dlnd_nml,iostat=ierr)
+       close(nu)
+       if (ierr > 0) then
+          write(logunit,*) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
+          call shr_sys_abort(subName//': namelist read error '//trim(filename))
+       end if
+       write(logunit,*)' restfilm   = ',trim(restfilm)
+       write(logunit,*)' restfils   = ',trim(restfils)
+       write(logunit,*)' force_prognostic_true = ',force_prognostic_true
+       write(logunit,*)' domain_fracname = ',trim(domain_fracname)
+    endif
+    call shr_mpi_bcast(restfilm,mpicom,'restfilm')
+    call shr_mpi_bcast(restfils,mpicom,'restfils')
+    call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
+    call shr_mpi_bcast(domain_fracname,mpicom,'domain_fracname')
+    rest_file      = trim(restfilm)
+    rest_file_strm = trim(restfils)
+
+    ! Read shr_strdata_nml from filename
     ! Read sdat namelist (need to do this here in order to get the datamode value - which
     ! is needed or order to do the advertise phase
-    call shr_strdata_readnml(sdlnd, trim(filename), mpicom=mpicom)
+    call shr_strdata_readnml(sdat, trim(filename), mpicom=mpicom)
 
-    ! Determine and validate sdlnd datamode
-    if (trim(sdlnd%dataMode) == 'NULL' .or. trim(sdlnd%dataMode) == 'COPYALL') then
-       if (my_task == master_task) write(logunit,*) 'dlnd datamode = ',trim(sdlnd%dataMode)
+    ! Validate sdat datamode
+    if (trim(sdat%dataMode) == 'NULL' .or. trim(sdat%dataMode) == 'COPYALL') then
+       if (my_task == master_task) write(logunit,*) 'dlnd datamode = ',trim(sdat%dataMode)
     else
-       call shr_sys_abort(' ERROR illegal dlnd datamode = '//trim(sdlnd%dataMode))
+       call shr_sys_abort(' ERROR illegal dlnd datamode = '//trim(sdat%dataMode))
     end if
 
     ! Advertise the export fields
-    if (trim(sdlnd%datamode) /= 'NULL') then
+    if (trim(sdat%datamode) /= 'NULL') then
        call NUOPC_CompAttributeGet(gcomp, name='glc_nec', value=cvalue, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) glc_nec
@@ -237,7 +263,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------------------------------------------------
-    ! Initialize sdlnd 
+    ! Initialize sdat 
     !----------------------------------------------------------------------------
 
     call t_startf('dlnd_strdata_init')
@@ -252,18 +278,18 @@ contains
     filename = "dlnd_in"//trim(inst_suffix)
 
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh,  model_name, sdlnd, &
-         domain_fracname=domain_fracname, rc=rc)
+         scmmode, scmlon, scmlat, clock, mesh,  model_name, sdat, &
+         dmodel_domain_fracname_from_stream=domain_fracname, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (my_task == master_task) write(logunit,*) ' initialized SDLND'
+    if (my_task == master_task) write(logunit,*) ' initialized dlnd sdat'
     call t_stopf('dlnd_strdata_init')
 
     !----------------------------------------------------------------------------
     ! Check that mesh lats and lons correspond to those on the input domain file
     !----------------------------------------------------------------------------
 
-    call dshr_check_mesh(mesh, sdlnd, 'dlnd', rc=rc)
+    call dshr_check_mesh(mesh, sdat, 'dlnd', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -281,7 +307,7 @@ contains
     ! Initialize dfields data type (to map streams to export state fields)
     !--------------------------------
 
-    call dlnd_comp_dfields_init(sdlnd, exportState, rc)
+    call dlnd_comp_dfields_init(sdat, exportState, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -293,7 +319,7 @@ contains
     read(cvalue,*) read_restart
     if (read_restart) then
        call dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
-            logunit, my_task, master_task, mpicom, sdlnd)
+            logunit, my_task, master_task, mpicom, sdat)
     end if
 
     !--------------------------------
@@ -308,13 +334,13 @@ contains
     call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
     ! run dlnd
-    call dlnd_comp_run(mpicom, my_task, master_task, logunit, current_ymd, current_tod, sdlnd, rc=rc)
+    call dlnd_comp_run(mpicom, my_task, master_task, logunit, current_ymd, current_tod, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! add scalars to export state
-    call State_SetScalar(dble(sdlnd%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call State_SetScalar(dble(sdat%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call State_SetScalar(dble(sdlnd%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
+    call State_SetScalar(dble(sdat%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! diagnostics
@@ -387,7 +413,7 @@ contains
     call shr_cal_ymd2date(yr, mon, day, next_ymd)
 
     ! run dlnd
-    call dlnd_comp_run(mpicom, my_task, master_task, logunit, next_ymd, next_tod, sdlnd, rc=rc)
+    call dlnd_comp_run(mpicom, my_task, master_task, logunit, next_ymd, next_tod, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! write_restart if alarm is ringing
@@ -403,7 +429,7 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_restart_write(rpfile, case_name, 'dlnd', inst_suffix, next_ymd, next_tod, &
-            logunit, mpicom, my_task, master_task, sdlnd)
+            logunit, mpicom, my_task, master_task, sdat)
        call t_stopf('dlnd_restart')
     endif
 
@@ -444,47 +470,5 @@ contains
   end subroutine ModelFinalize
 
   !===============================================================================
-
-  subroutine dlnd_read_namelists(filename) 
-
-    ! Read in dlnd namelists
-
-    ! input/output variables
-    character(len=*)       , intent(in)    :: filename          ! input namelist filename
-
-    ! local variables
-    integer       :: nu          ! unit number
-    integer       :: ierr        ! error code
-    character(CL) :: decomp      ! decomp strategy - not used for NUOPC - but still needed in namelist for now
-    character(*), parameter :: F00   = "('(dlnd_comp_init) ',8a)"
-    character(*), parameter :: F0L   = "('(dlnd_comp_init) ',a, l2)"
-    character(*), parameter :: F01   = "('(dlnd_comp_init) ',a,5i8)"
-    character(*), parameter :: subName = "(shr_dlnd_read_namelists) "
-    !-------------------------------------------------------------------------------
-
-    namelist / dlnd_nml / decomp, restfilm, restfils, force_prognostic_true, domain_fracname
-
-    ! Read dlnd_in
-    if (my_task == master_task) then
-       open (newunit=nu, file=trim(filename), status="old", action="read")
-       read (nu,nml=dlnd_nml,iostat=ierr)
-       close(nu)
-       if (ierr > 0) then
-          write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
-          call shr_sys_abort(subName//': namelist read error '//trim(filename))
-       end if
-       write(logunit,F00)' restfilm   = ',trim(restfilm)
-       write(logunit,F00)' restfils   = ',trim(restfils)
-       write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
-       write(logunit,F00)' domain_fracname = ',trim(domain_fracname)
-    endif
-    call shr_mpi_bcast(restfilm,mpicom,'restfilm')
-    call shr_mpi_bcast(restfils,mpicom,'restfils')
-    call shr_mpi_bcast(force_prognostic_true,mpicom,'force_prognostic_true')
-    call shr_mpi_bcast(domain_fracname,mpicom,'domain_fracname')
-    rest_file      = trim(restfilm)
-    rest_file_strm = trim(restfils)
-
-  end subroutine dlnd_read_namelists
 
 end module lnd_comp_nuopc

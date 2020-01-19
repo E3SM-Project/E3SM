@@ -11,7 +11,6 @@ module drof_comp_mod
   use dshr_methods_mod      , only : chkerr, state_getfldptr
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add 
   use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy
-  use glc_elevclass_mod     , only : glc_elevclass_as_string, glc_elevclass_init
 
   ! !PUBLIC TYPES:
   implicit none
@@ -26,9 +25,8 @@ module drof_comp_mod
   public :: drof_comp_run
 
   !--------------------------------------------------------------------------
-  ! Private data
+  ! Module data
   !--------------------------------------------------------------------------
-
 
   integer             , public :: fldsToRof_num = 0
   integer             , public :: fldsFrRof_num = 0
@@ -38,7 +36,6 @@ module drof_comp_mod
   type(dfield_type) :: dfields(fldsMax)
   integer           :: dfields_num
 
-  character(len=*), parameter :: rpfile = 'rpointer.rof'
   character(*)    , parameter :: u_FILE_u = &
        __FILE__
 
@@ -82,7 +79,7 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
 
-    ! currently there is no import state to runoff
+    ! currently there is no import state to drof
 
   end subroutine drof_comp_advertise
 
@@ -96,24 +93,18 @@ contains
     integer                , intent(out)    :: rc
 
     ! local variables
-    integer :: n, kf
-    integer :: lsize 
-    character(len=2) :: nec_str
     character(CS), allocatable :: strm_flds(:)
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
+    ! Note that all pointers are initialized to zero
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Forr_rofl', strm_fld='rofl', &
          state_ptr=Forr_rofl, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Forr_rofi', strm_fld='rofi', &
          state_ptr=Forr_rofi, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Initialize pointers to 0
-    Forr_rofl(:) = 0._r8 
-    Forr_rofi(:) = 0._r8 
 
   end subroutine drof_comp_dfields_init
 

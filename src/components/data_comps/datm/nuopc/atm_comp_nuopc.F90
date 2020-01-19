@@ -19,7 +19,7 @@ module atm_comp_nuopc
   use shr_sys_mod      , only : shr_sys_abort
   use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
   use dshr_nuopc_mod   , only : fld_list_type, fldsMax, dshr_realize
-  use dshr_nuopc_mod   , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
+  use dshr_nuopc_mod   , only : ModelInitPhase, ModelSetRunClock
   use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
   use dshr_methods_mod , only : set_component_logging, get_component_instance, log_clock_advance
   use datm_shr_mod     , only : datm_shr_read_namelists, iradsw, datm_shr_getNextRadCDay
@@ -68,7 +68,6 @@ module atm_comp_nuopc
   character(len=CL)      :: case_name                 ! case name
   character(len=CS)      :: calendar                  ! calendar name
   logical                :: atm_prognostic            ! data is sent back to datm
-  logical                :: use_esmf_metadata = .false.
   character(*),parameter :: modName =  "(atm_comp_nuopc)"
   integer, parameter     :: debug = 0                 ! if > 0 will diagnose export fields
   character(*),parameter :: u_FILE_u = &
@@ -558,11 +557,6 @@ contains
     !----------------------------------------------------------------------------
 
     call shr_file_setLogUnit (shrlogunit)
-
-    if (use_esmf_metadata) then
-       call ModelSetMetaData(gcomp, name='DATM', rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
 
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 

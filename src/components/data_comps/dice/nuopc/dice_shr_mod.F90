@@ -44,8 +44,7 @@ module dice_shr_mod
 CONTAINS
 !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-  subroutine dice_shr_read_namelists(filename, mpicom, my_task, master_task, &
-       logunit, ice_present, ice_prognostic)
+  subroutine dice_shr_read_namelists(filename, mpicom, my_task, master_task, logunit)
 
     ! !DESCRIPTION: Read in dice namelists
     implicit none
@@ -56,8 +55,6 @@ CONTAINS
     integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
     integer(IN)            , intent(in)    :: master_task    ! task number of master task
     integer(IN)            , intent(in)    :: logunit        ! logging unit number
-    logical                , intent(out)   :: ice_present    ! flag
-    logical                , intent(out)   :: ice_prognostic ! flag
 
     !--- local variables ---
     integer(IN)   :: nunit       ! unit number
@@ -134,18 +131,6 @@ CONTAINS
        write(logunit,F00) ' ERROR illegal dice datamode = ',trim(datamode)
        call shr_sys_abort()
     endif
-
-    !----------------------------------------------------------------------------
-    ! Determine present and prognostic flag
-    !----------------------------------------------------------------------------
-
-    if (trim(datamode) == 'NULL') then
-       ice_present = .false.
-       ice_prognostic = .false.
-    else
-       ice_present = .true.
-       ice_prognostic = .true.
-    end if
 
   end subroutine dice_shr_read_namelists
 

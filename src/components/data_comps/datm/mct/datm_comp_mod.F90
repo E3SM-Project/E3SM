@@ -733,10 +733,8 @@ CONTAINS
           !--- correction to NCEP winds based on QSCAT ---
           uprime    = a2x%rAttr(ku,n)*windFactor(n)
           vprime    = a2x%rAttr(kv,n)*windFactor(n)
-          a2x%rAttr(ku,n) = uprime*cos(winddFactor(n)*degtorad)- &
-               vprime*sin(winddFactor(n)*degtorad)
-          a2x%rAttr(kv,n) = uprime*sin(winddFactor(n)*degtorad)+ &
-               vprime*cos(winddFactor(n)*degtorad)
+          a2x%rAttr(ku,n) = uprime*cos(winddFactor(n)*degtorad) - vprime*sin(winddFactor(n)*degtorad)
+          a2x%rAttr(kv,n) = uprime*sin(winddFactor(n)*degtorad) + vprime*cos(winddFactor(n)*degtorad)
 
           !--- density, tbot, & pslv taken directly from input stream, set pbot ---
           a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
@@ -1054,7 +1052,7 @@ CONTAINS
     ! (via anomaly_forcing namelist option)
 
     ! wind
-    if (su_af > 0 .and. sv_af > 0) then
+    if (allocate(strm%u_af) .and. allocate(su_af > 0 .and. sv_af > 0) then
        do n = 1,lsize
           a2x%rAttr(ku,n) = a2x%rAttr(ku,n) + avstrm%rAttr(su_af,n)
           a2x%rAttr(kv,n) = a2x%rAttr(kv,n) + avstrm%rAttr(sv_af,n)

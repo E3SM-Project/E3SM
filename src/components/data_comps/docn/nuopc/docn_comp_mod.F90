@@ -1,42 +1,22 @@
 module docn_comp_mod
 
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
-  use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
-  use ESMF                  , only : ESMF_State, ESMF_LOGMSG_INFO, ESMF_LogWrite
+  use ESMF                  , only : ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_LogWrite
+  use ESMF                  , only : ESMF_State, ESMF_StateGet, ESMF_StateItem_Flag, ESMF_STATEITEM_NOTFOUND 
+  use ESMF                  , only : ESMF_Mesh, ESMF_MeshGet
+  use ESMF                  , only : operator(/=), operator(==)
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize
-  use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
-  use mct_mod               , only : mct_avect_init, mct_avect_lsize, mct_avect_clean
+  use mct_mod               , only : mct_avect_lsize, mct_avect_indexRA
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
+  use shr_sys_mod           , only : shr_sys_abort
   use shr_const_mod         , only : shr_const_cpsw, shr_const_rhosw, shr_const_TkFrz
   use shr_const_mod         , only : shr_const_TkFrzSw, shr_const_latice, shr_const_ocn_ref_sal
   use shr_const_mod         , only : shr_const_zsrflyr, shr_const_pi
-  use shr_string_mod        , only : shr_string_listGetName
-  use shr_sys_mod           , only : shr_sys_abort
-  use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
-  use shr_mpi_mod           , only : shr_mpi_bcast
   use shr_frz_mod           , only : shr_frz_freezetemp
-  use shr_cal_mod           , only : shr_cal_calendarname
-  use shr_cal_mod           , only : shr_cal_datetod2string
-  use shr_strdata_mod       , only : shr_strdata_init_model_domain
-  use shr_strdata_mod       , only : shr_strdata_init_streams
-  use shr_strdata_mod       , only : shr_strdata_init_mapping
-  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
-  use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
-  use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod        , only : shr_dmodel_translateAV
-  use shr_pcdf_mod          , only : shr_pcdf_readwrite
-  use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_avect_add, dshr_translate_add
-  use dshr_nuopc_mod        , only : dshr_export, dshr_import
-  use docn_shr_mod          , only : datamode       ! namelist input
-  use docn_shr_mod          , only : aquap_option   ! derived from datamode namelist input
-  use docn_shr_mod          , only : rest_file      ! namelist input
-  use docn_shr_mod          , only : rest_file_strm ! namelist input
-  use docn_shr_mod          , only : nullstr
-  use docn_shr_mod          , only : sst_constant_value ! namelist input
-  use docn_shr_mod          , only : SDOCN
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance
+  use dshr_methods_mod      , only : chkerr, state_getfldptr
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add
+  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy
 
   ! !PUBLIC TYPES:
   implicit none
@@ -47,68 +27,70 @@ module docn_comp_mod
   !--------------------------------------------------------------------------
 
   public :: docn_comp_advertise
-  public :: docn_comp_init
+  public :: docn_comp_dfields_init
   public :: docn_comp_run
-  public :: docn_comp_import
-  public :: docn_comp_export
-
-  private :: prescribed_sst
 
   !--------------------------------------------------------------------------
-  ! Private data
+  ! Module data
   !--------------------------------------------------------------------------
 
-  type(mct_aVect)            :: x2o
-  type(mct_aVect)            :: o2x
-  character(CXX)             :: flds_o2x = ''
-  character(CXX)             :: flds_x2o = ''
+  integer             , public :: fldsToOcn_num = 0
+  integer             , public :: fldsFrOcn_num = 0
+  type(fld_list_type) , public :: fldsToOcn(fldsMax)
+  type(fld_list_type) , public :: fldsFrOcn(fldsMax)
 
-  integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
-  integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
+  type(dfield_type) :: dfields(fldsMax)
+  integer           :: dfields_num
 
-  real(R8),parameter         :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ J/kg/K
-  real(R8),parameter         :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
-  real(R8),parameter         :: TkFrz   = shr_const_TkFrz       ! freezing point, fresh water (Kelvin)
-  real(R8),parameter         :: TkFrzSw = shr_const_TkFrzSw     ! freezing point, sea   water (Kelvin)
-  real(R8),parameter         :: latice  = shr_const_latice      ! latent heat of fusion
-  real(R8),parameter         :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
-
-  integer                    :: kt,ks,ku,kv,kdhdx,kdhdy,kq,kswp ! field indices
-  integer                    :: kswnet,klwup,klwdn
-  integer                    :: ksen,klat,kmelth,ksnow,krofi
-  integer                    :: kh,kqbot
-  integer                    :: kmask, kfrac                    ! frac and mask field indices of docn domain
-  integer                    :: ksomask                         ! So_omask field index
-
-  type(mct_avect)            :: avstrm                          ! av of data created from all stream input
-  character(len=CS), pointer :: avifld(:)                       ! names of fields in input streams
-  character(len=CS), pointer :: avofld(:)                       ! local names of fields in input streams for import/export
-  character(len=CS), pointer :: stifld(:)                       ! names of fields in input streams
-  character(len=CS), pointer :: stofld(:)                       ! local names of fields in input streams for calculations
-  character(CXX)             :: flds_strm = ''                  ! set in docn_comp_init
-  logical                    :: ocn_prognostic_mod              ! set in docn_comp_advertise
-
-  integer , pointer          :: imask(:)                        ! integer ocean mask
-  real(R8), pointer          :: xc(:), yc(:)                    ! arrays of model latitudes and longitudes
-  real(R8), pointer          :: somtp(:)                        ! SOM ocean temperature
-  real(R8), pointer          :: tfreeze(:)                      ! SOM ocean freezing temperature
-
-  logical                    :: firstcall = .true.              ! first call logical
-  character(len=*),parameter :: rpfile = 'rpointer.ocn'         ! name of ocean ropinter file
-  character(*),parameter     :: u_FILE_u = &
+  real(r8)     , parameter :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ j/kg/k
+  real(r8)     , parameter :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
+  real(r8)     , parameter :: tkfrz   = shr_const_tkfrz       ! freezing point, fresh water (kelvin)
+  real(r8)     , parameter :: tkfrzsw = shr_const_tkfrzsw     ! freezing point, sea   water (kelvin)
+  real(r8)     , parameter :: latice  = shr_const_latice      ! latent heat of fusion
+  real(r8)     , parameter :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
+  character(*) , parameter :: u_FILE_u = &
        __FILE__
+
+  logical :: ocn_prognostic_mod     ! set in docn_comp_advertise
+
+  ! internal fields 
+  real(r8),         pointer :: xc(:), yc(:) ! mesh lats and lons - needed for aquaplanet analytical
+  real(R8), public, pointer :: somtp(:)     ! SOM ocean temperature needed for restart
+
+  ! export fields
+  integer , pointer :: imask(:)     ! integer ocean mask
+  real(r8), pointer :: So_omask(:)
+  real(r8), pointer :: So_t(:)
+  real(r8), pointer :: So_s(:)
+  real(r8), pointer :: So_u(:)
+  real(r8), pointer :: So_v(:)
+  real(r8), pointer :: So_dhdx(:)
+  real(r8), pointer :: So_dhdy(:)
+  real(r8), pointer :: So_fswpen(:)
+  real(r8), pointer :: Fioo_q(:)
+
+  ! import  fields
+  real(r8), pointer :: Foxx_swnet(:)
+  real(r8), pointer :: Foxx_lwup(:)
+  real(r8), pointer :: Foxx_sen(:)
+  real(r8), pointer :: Foxx_lat(:)
+  real(r8), pointer :: Faxa_lwdn(:)
+  real(r8), pointer :: Faxa_snow(:)
+  real(r8), pointer :: Fioi_melth(:)
+  real(r8), pointer :: Foxx_rofi(:)
+
+  ! internal stream type
+  real(r8), pointer :: strm_h(:)
+  real(r8), pointer :: strm_qbot(:)
 
 !===============================================================================
 contains
 !===============================================================================
 
-  subroutine docn_comp_advertise(importState, exportState, flds_scalar_name, &
-       ocn_prognostic, fldsFrOcn_num, fldsFrOcn, fldsToOcn_num, fldsToOcn, rc)
+  subroutine docn_comp_advertise(importState, exportState, flds_scalar_name, ocn_prognostic, rc)
 
     ! --------------------------------------------------------------
-    ! 1. determine export and import fields to advertise to mediator
-    ! 2. determine colon delimited chacter string to initialize import and export attribute vectors
-    ! 3. determine module level translation character arrays  (avifld/avofld and stifld/stofld)
+    ! determine export and import fields to advertise to mediator
     ! --------------------------------------------------------------
 
     ! input/output arguments
@@ -116,20 +98,13 @@ contains
     type(ESMF_State)     , intent(inout) :: exportState
     character(len=*)     , intent(in)    :: flds_scalar_name
     logical              , intent(in)    :: ocn_prognostic
-    integer              , intent(out)   :: fldsToOcn_num
-    integer              , intent(out)   :: fldsFrOcn_num
-    type (fld_list_type) , intent(out)   :: fldsToOcn(:)
-    type (fld_list_type) , intent(out)   :: fldsFrOcn(:)
     integer              , intent(out)   :: rc
 
     ! local variables
     integer         :: n
     !-------------------------------------------------------------------------------
 
-
-    !--------------------------------
     ! Advertise export fields
-    !--------------------------------
 
     fldsFrOcn_num=1
     fldsFrOcn(1)%stdname = trim(flds_scalar_name)
@@ -142,6 +117,7 @@ contains
     call dshr_fld_add('So_dhdx'  , fldsFrOcn_num, fldsFrOcn)
     call dshr_fld_add('So_dhdy'  , fldsFrOcn_num, fldsFrOcn)
     call dshr_fld_add('Fioo_q'   , fldsFrOcn_num, fldsFrOcn)
+    call dshr_fld_add('So_fswpen', fldsFrOcn_num, fldsFrOcn)
 
     do n = 1,fldsFrOcn_num
        call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
@@ -150,9 +126,7 @@ contains
             ESMF_LOGMSG_INFO)
     enddo
 
-    !-------------------
     ! Advertise import fields
-    !-------------------
 
     if (ocn_prognostic) then
        fldsToOcn_num=1
@@ -175,780 +149,305 @@ contains
        end do
     end if
 
-    !-------------------
-    ! Create colon deliminted string and optional indices for import and export attribute vectors
-    !-------------------
-
-    call dshr_avect_add('So_t'     , flds_o2x, av_index=kt)
-    call dshr_avect_add('So_s'     , flds_o2x, av_index=ks)
-    call dshr_avect_add('So_u'     , flds_o2x, av_index=ku)
-    call dshr_avect_add('So_v'     , flds_o2x, av_index=kv)
-    call dshr_avect_add('So_dhdx'  , flds_o2x, av_index=kdhdx)
-    call dshr_avect_add('So_dhdy'  , flds_o2x, av_index=kdhdy)
-    call dshr_avect_add('So_omask' , flds_o2x, av_index=ksomask)
-    call dshr_avect_add('Fioo_q'   , flds_o2x, av_index=kq)
-
-    if (ocn_prognostic) then
-       call dshr_avect_add('Foxx_swnet', flds_x2o, av_index=kswnet)
-       call dshr_avect_add('Foxx_lwup',  flds_x2o, av_index=klwup)
-       call dshr_avect_add('Foxx_sen',   flds_x2o, av_index=ksen)
-       call dshr_avect_add('Foxx_lat',   flds_x2o, av_index=klat)
-       call dshr_avect_add('Faxa_lwdn',  flds_x2o, av_index=klwdn)
-       call dshr_avect_add('Faxa_snow',  flds_x2o, av_index=ksnow)
-       call dshr_avect_add('Fioi_melth', flds_x2o, av_index=kmelth)
-       call dshr_avect_add('Foxx_rofi',  flds_x2o, av_index=krofi)
-    end if
-
-    !-------------------
-    ! Create module level translation list character arrays
-    !-------------------
-
-    call dshr_translate_add('t'    , 'So_t'    , avifld, avofld)
-    call dshr_translate_add('s'    , 'So_s'    , avifld, avofld)
-    call dshr_translate_add('u'    , 'So_u'    , avifld, avofld)
-    call dshr_translate_add('v'    , 'So_v'    , avifld, avofld)
-    call dshr_translate_add('dhdx' , 'So_dhdx' , avifld, avofld)
-    call dshr_translate_add('dhdy' , 'So_dhdy' , avifld, avofld)
-
-    ! - stifld is a character array of stream field names
-    ! - stofld is a character array of data model field names that have a one-to-one correspondence with names in stifld
-    ! - flds_strm is a colon delimited string of field names that is created from the field names in stofld for ONLY
-    !   those field names that are available in the data streams present in SDOCN%sdatm
-    ! - avstrm is an attribute vector created from flds_strm
-
-    if (ocn_prognostic) then
-       call dshr_translate_add("h"   , "strm_h"   , stifld, stofld)
-       call dshr_translate_add("qbot", "strm_qbot", stifld, stofld)
-    end if
-
-    !-------------------
     ! Save as module variables for use in debugging
-    !-------------------
-
     ocn_prognostic_mod = ocn_prognostic
 
   end subroutine docn_comp_advertise
 
-  !===============================================================================
+!===============================================================================
 
-  subroutine docn_comp_init(mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, &
-       scmMode, scmlat, scmlon, calendar, current_ymd, current_tod, modeldt, mesh, nxg, nyg)
+  subroutine docn_comp_dfields_init(sdat, importState, exportState, rc)
 
-    ! ----------------------------
-    ! initialize docn model
-    ! ----------------------------
-
-    use pio        , only : iosystem_desc_t
-    use shr_pio_mod, only : shr_pio_getiosys, shr_pio_getiotype
-
-    ! --- input/output arguments ---
-    integer                , intent(in)    :: mpicom         ! mpi communicator
-    integer                , intent(in)    :: compid         ! mct comp id
-    integer                , intent(in)    :: my_task        ! my task in mpi communicator mpicom
-    integer                , intent(in)    :: master_task    ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix    ! char string associated with instance
-    integer                , intent(in)    :: logunit        ! logging unit number
-    logical                , intent(in)    :: read_restart   ! start from restart
-    logical                , intent(in)    :: scmMode        ! single column mode
-    real(R8)               , intent(in)    :: scmLat         ! single column lat
-    real(R8)               , intent(in)    :: scmLon         ! single column lon
-    character(len=*)       , intent(in)    :: calendar       ! model calendar type
-    integer                , intent(in)    :: current_ymd    ! model date
-    integer                , intent(in)    :: current_tod    ! model sec into model date
-    integer                , intent(in)    :: modeldt        ! model time step
-    type(ESMF_Mesh)        , intent(in)    :: mesh           ! ESMF docn mesh
-    integer                , intent(out)   :: nxg, nyg
-
-    !--- local variables ---
-    integer                        :: n,k      ! generic counters
-    integer                        :: lsize    ! local size
-    integer                        :: kfld     ! fld index
-    integer                        :: cnt      ! counter
-    logical                        :: exists   ! file existance
-    logical                        :: exists1  ! file existance
-    integer                        :: nu       ! unit number
-    type(ESMF_DistGrid)            :: distGrid
-    integer, allocatable, target   :: gindex(:)
-    integer                        :: rc
-    type(iosystem_desc_t), pointer :: ocn_pio_subsystem
-    integer                        :: dimCount
-    integer                        :: tileCount
-    integer                        :: deCount
-    integer                        :: gsize
-    integer, allocatable           :: elementCountPTile(:)
-    integer, allocatable           :: indexCountPDE(:,:)
-    integer                        :: spatialDim
-    integer                        :: numOwnedElements
-    real(R8), pointer              :: ownedElemCoords(:)
-    integer                        :: klat, klon
-    character(*), parameter        :: F00   = "('(docn_comp_init) ',8a)"
-    character(*), parameter        :: F05   = "('(docn_comp_init) ',a,2f10.4)"
-    character(*), parameter        :: F06   = "('(docn_comp_init) ',a,f10.4)"
-    character(*), parameter        :: subName = "(docn_comp_init) "
-    !-------------------------------------------------------------------------------
-
-    call t_startf('DOCN_INIT')
-
-    !----------------------------------------------------------------------------
-    ! Initialize pio
-    !----------------------------------------------------------------------------
-
-    call shr_strdata_pioinit(SDOCN, COMPID)
-
-    !----------------------------------------------------------------------------
-    ! Create a data model global seqmap
-    !----------------------------------------------------------------------------
-
-    call t_startf('docn_strdata_init')
-
-    if (my_task == master_task) write(logunit,F00) ' initialize DOCN gsmap'
-
-    ! obtain the distgrid from the mesh that was read in
-    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determin local size on my processor
-    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine global index space for my processor
-    allocate(gindex(lsize))
-    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine global size of distgrid
-    call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    allocate(elementCountPTile(tileCount))
-    call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    gsize = 0
-    do n = 1,size(elementCountPTile)
-       gsize = gsize + elementCountPTile(n)
-    end do
-    deallocate(elementCountPTile)
-
-    ! create the data model gsmap given the local size, global size and gindex
-    call mct_gsMap_init( SDOCN%gsmap, gindex, mpicom, compid, lsize, gsize)
-    deallocate(gindex)
-
-    !----------------------------------------------------------------------------
-    ! Initialize SDOCN model domain attributes
-    !----------------------------------------------------------------------------
-
-    ! The call to shr_strdata_init_model_domain creates the SDOCN%gsmap which
-    ! is a '2d1d' decommp (1d decomp of 2d grid) and also create SDOCN%grid
-
-    SDOCN%calendar = trim(shr_cal_calendarName(trim(calendar)))
-
-    if (scmmode) then
-       if (my_task == master_task) write(logunit,F05) ' scm lon lat = ',scmlon,scmlat
-       call shr_strdata_init_model_domain(SDOCN, mpicom, compid, my_task, &
-            scmmode=scmmode, scmlon=scmlon, scmlat=scmlat, gsmap=SDOCN%gsmap)
-    else if (datamode == 'SST_AQUAPANAL' .or. datamode == 'SST_AQUAPFILE' .or. datamode == 'SOM_AQUAP') then
-       call shr_strdata_init_model_domain(SDOCN, mpicom, compid, my_task, &
-            reset_domain_mask=.true., gsmap=SDOCN%gsmap)
-    else
-       call shr_strdata_init_model_domain(SDOCN, mpicom, compid, my_task, gsmap=SDOCN%gsmap)
-    end if
-
-    if (my_task == master_task) then
-       call shr_strdata_print(SDOCN,'SDOCN data')
-    endif
-
-    ! obtain mesh lats and lons
-    call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    allocate(ownedElemCoords(spatialDim*numOwnedElements))
-    allocate(xc(numOwnedElements), yc(numOwnedElements))
-    call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (numOwnedElements /= lsize) then
-       call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
-    end if
-    do n = 1,lsize
-       xc(n) = ownedElemCoords(2*n-1)
-       yc(n) = ownedElemCoords(2*n)
-    end do
-
-    ! error check that mesh lats and lons correspond to those on the input domain file
-    klon = mct_aVect_indexRA(SDOCN%grid%data,'lon')
-    do n = 1, lsize
-       if (abs( SDOCN%grid%data%rattr(klon,n) - xc(n)) > 1.e-4) then
-          write(6,*)'ERROR: DOCN lon diff = ',abs(SDOCN%grid%data%rattr(klon,n) -  xc(n)),' too large'
-          call shr_sys_abort()
-       end if
-       !SDOCN%grid%data%rattr(klon,n) = xc(n) ! overwrite ggrid with mesh data
-       xc(n) = SDOCN%grid%data%rattr(klon,n)  ! overwrite mesh data with ggrid data
-    end do
-    klat = mct_aVect_indexRA(SDOCN%grid%data,'lat')
-    do n = 1, lsize
-       if (abs( SDOCN%grid%data%rattr(klat,n) -  yc(n)) > 1.e-4) then
-          write(6,*)'ERROR: DOCN lat diff = ',abs(SDOCN%grid%data%rattr(klat,n) -  yc(n)),' too large'
-          call shr_sys_abort()
-       end if
-       !SDOCN%grid%data%rattr(klat,n) = yc(n)
-       yc(n) = SDOCN%grid%data%rattr(klat,n)
-    end do
-
-    ! determine module mask array (imask)
-    allocate(imask(lsize))
-    kmask = mct_aVect_indexRA(SDOCN%grid%data,'mask')
-    imask(:) = nint(SDOCN%grid%data%rAttr(kmask,:))
-
-    !----------------------------------------------------------------------------
-    ! Initialize the SDOCN streams and mapping of streams to model domain
-    !----------------------------------------------------------------------------
-
-    call shr_strdata_init_streams(SDOCN, compid, mpicom, my_task)
-    call shr_strdata_init_mapping(SDOCN, compid, mpicom, my_task)
-
-    !----------------------------------------------------------------------------
-    ! Allocate module arrays
-    !----------------------------------------------------------------------------
-
-    allocate(somtp(lsize))
-    allocate(tfreeze(lsize))
-
-    call t_stopf('docn_strdata_init')
-
-    !----------------------------------------------------------------------------
-    ! Initialize attribute vectors
-    !----------------------------------------------------------------------------
-
-    call t_startf('docn_initavs')
-    if (my_task == master_task) write(logunit,F00) 'allocate AVs'
-
-    call mct_aVect_init(o2x, rList=flds_o2x, lsize=lsize)
-    call mct_aVect_zero(o2x)
-
-    kfrac = mct_aVect_indexRA(SDOCN%grid%data,'frac')
-    o2x%rAttr(ksomask,:) = SDOCN%grid%data%rAttr(kfrac,:)
-
-    if (ocn_prognostic_mod) then
-       call mct_aVect_init(x2o, rList=flds_x2o, lsize=lsize)
-       call mct_aVect_zero(x2o)
-
-       ! Initialize internal attribute vectors for optional streams
-       ! Create the colon deliminted list flds_strm based on mapping the
-       ! input stream fields from SDOCN%avs(n) with names in stifld to flds_strm with the names in stofld
-
-       cnt = 0
-       flds_strm = ''
-       do n = 1,SDOCN%nstreams
-          ! Loop over the field names in stifld
-          do k = 1,size(stifld)
-             ! Search input stream n for the field name stifld(k)
-             kfld = mct_aVect_indexRA(SDOCN%avs(n), trim(stifld(k)), perrWith='quiet')
-             if (kfld > 0) then
-                cnt = cnt + 1
-                ! Append the colon deliminted flds_strm with the mapped field name stofld(k)
-                if (cnt == 1) then
-                   flds_strm = trim(stofld(k))
-                else
-                   flds_strm = trim(flds_strm)//':'//trim(stofld(k))
-                endif
-             endif
-          enddo
-       enddo
-
-       ! Initialize avstrm based on the active streams determined above
-       if (my_task == master_task) write(logunit,F00) ' flds_strm = ',trim(flds_strm)
-       call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
-       call mct_aVect_zero(avstrm)
-
-       ! Note: because the following needs to occur AFTER we determine the fields in
-       ! flds_strm - the indices below CANNOT be set in the docn_comp_advertise phase
-
-       ! Now set indices into these active streams
-       kh    = mct_aVect_indexRA(avstrm,'strm_h'   , perrWith='quiet')
-       kqbot = mct_aVect_indexRA(avstrm,'strm_qbot', perrWith='quiet')
-    end if
-
-    call t_stopf('docn_initavs')
-
-    nxg = SDOCN%nxg
-    nyg = SDOCN%nyg
-
-    !----------------------------------------------------------------------------
-    ! Read restart
-    !----------------------------------------------------------------------------
-
-    if (read_restart) then
-       exists = .false.
-       exists1 = .false.
-       if (trim(rest_file)      == trim(nullstr) .and. &
-           trim(rest_file_strm) == trim(nullstr)) then
-          if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
-             inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-             if (exists) then
-                nu = shr_file_getUnit()
-                open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-                read(nu,'(a)') rest_file
-                read(nu,'(a)') rest_file_strm
-                close(nu)
-                call shr_file_freeUnit(nu)
-                inquire(file=trim(rest_file_strm),exist=exists)
-                inquire(file=trim(rest_file),exist=exists1)
-             endif
-          endif
-          call shr_mpi_bcast(rest_file,mpicom,'rest_file')
-          call shr_mpi_bcast(rest_file_strm,mpicom,'rest_file_strm')
-       else
-          ! use namelist already read
-          if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from namelist '
-             inquire(file=trim(rest_file_strm),exist=exists)
-          endif
-       endif
-
-       call shr_mpi_bcast(exists,mpicom,'exists')
-       call shr_mpi_bcast(exists1,mpicom,'exists1')
-
-       if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
-          if (exists1) then
-             if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-             call shr_pcdf_readwrite('read',SDOCN%pio_subsystem, SDOCN%io_type, &
-                  trim(rest_file), mpicom, gsmap=SDOCN%gsmap, rf1=somtp, rf1n='somtp', &
-                  io_format=SDOCN%io_format)
-          else
-             if (my_task == master_task) then
-                write(logunit,F00) ' file not found, skipping ',trim(rest_file)
-             end if
-          endif
-       endif
-
-       if (exists) then
-          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
-          call shr_strdata_restRead(trim(rest_file_strm),SDOCN,mpicom)
-       else
-          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file_strm)
-       endif
-    endif
-
-    !----------------------------------------------------------------------------
-    ! Set initial ocn state
-    !----------------------------------------------------------------------------
-
-    call t_adj_detailf(+2)
-
-    call docn_comp_run(mpicom=mpicom, compid=compid,  my_task=my_task, &
-         master_task=master_task, inst_suffix=inst_suffix, logunit=logunit, &
-         read_restart=read_restart, write_restart=.false., &
-         target_ymd=current_ymd, target_tod=current_tod, modeldt=modeldt)
-
-    if (my_task == master_task) then
-       write(logunit,F00) 'docn_comp_init done'
-    end if
-
-    call t_adj_detailf(-2)
-
-    call t_stopf('DOCN_INIT')
-
-  end subroutine docn_comp_init
-
-  !===============================================================================
-
-  subroutine docn_comp_run(mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, read_restart, write_restart, &
-       target_ymd, target_tod, modeldt, case_name)
-
-    ! ----------------------------
-    ! run docn model
-    ! ----------------------------
-
-    ! input/output variables
-    integer                , intent(in)    :: mpicom        ! mpi communicator
-    integer                , intent(in)    :: compid        ! mct comp id
-    integer                , intent(in)    :: my_task       ! my task in mpi communicator mpicom
-    integer                , intent(in)    :: master_task   ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix   ! char string associated with instance
-    integer                , intent(in)    :: logunit       ! logging unit number
-    logical                , intent(in)    :: read_restart  ! start from restart
-    logical                , intent(in)    :: write_restart ! restart alarm is on
-    integer                , intent(in)    :: target_ymd    ! model date
-    integer                , intent(in)    :: target_tod    ! model sec into model date
-    integer                , intent(in)    :: modeldt
-    character(len=*)       , intent(in), optional :: case_name ! case name
+    ! input/output parameters
+    type(shr_strdata_type) , intent(inout) :: sdat   
+    type(ESMF_State)       , intent(inout) :: importState
+    type(ESMF_State)       , intent(inout) :: exportState
+    integer                , intent(out)   :: rc
 
     ! local variables
-    integer                 :: n,nfld ! indices
-    integer                 :: lsize  ! size of attr vect
-    real(R8)                :: dt     ! timestep
-    integer                 :: nu     ! unit number
-    character(len=18)       :: date_str
-    character(len=CS)       :: fldname
-    character(len=CL)       :: local_case_name
-    character(*), parameter :: F00   = "('(docn_comp_run) ',8a)"
-    character(*), parameter :: F01   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
-    character(*), parameter :: F04   = "('(docn_comp_run) ',2a,2i8,'s')"
-    character(*), parameter :: F0D   = "('(docn_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
-    character(*), parameter :: subName = "(docn_comp_run) "
+    type(ESMF_StateItem_Flag) :: itemFlag
+    integer                   :: n, lsize, kf
     real(R8), parameter :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
     !-------------------------------------------------------------------------------
 
-    !--------------------
-    ! Debug input
-    !--------------------
+    rc = ESMF_SUCCESS
 
-    if (debug_import > 0 .and. my_task == master_task .and. ocn_prognostic_mod) then
-       do nfld = 1, mct_aVect_nRAttr(x2o)
-          call shr_string_listGetName(trim(flds_x2o), nfld, fldname)
-          do n = 1, mct_aVect_lsize(x2o)
-             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, x2o%rattr(nfld,n)
-          end do
-       end do
+    ! -------------------------------------
+    ! Set pointers to exportState fields
+    ! -------------------------------------
+
+    ! Set pointers to exportState fields that have no corresponding stream field
+    call state_getfldptr(exportState, fldname='So_omask', fldptr1=So_omask, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    kf = mct_aVect_indexRA(sdat%grid%data, 'frac')
+    So_omask(:) = sdat%grid%data%rAttr(kf,:)
+
+    call state_getfldptr(exportState, fldname='Fioo_q', fldptr1=Fioo_q, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    Fioo_q(:) = 0._r8
+
+    ! Initialize dfields with export state data that has corresponding stream field
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_t', strm_fld='t', &
+         state_ptr=So_t, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_s', strm_fld='s', &
+         state_ptr=So_s, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_u', strm_fld='u', &
+         state_ptr=So_u, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_v', strm_fld='v', &
+         state_ptr=So_v, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_dhdx', strm_fld='dhdx', &
+         state_ptr=So_dhdx, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_dhdy', strm_fld='dhdy', &
+         state_ptr=So_dhdy, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    ! Initialize dfields stream fields that have no corresponding export fields
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='unset', strm_fld='qbot', &
+         strm_ptr=strm_qbot, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='unset', strm_fld='h', &
+         strm_ptr=strm_h, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    ! TODO: add this field to the esmFlds.F90 in CMEPS
+    call ESMF_StateGet(exportState, 'So_fswpen', itemFlag, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    if (itemFlag /= ESMF_STATEITEM_NOTFOUND) then
+       call state_getfldptr(exportState, fldname='So_fswpen', fldptr1=So_fswpen, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       So_fswpen(:) = swp
     end if
 
+    ! Initialize export state pointers to non-zero
+    So_t(:) = TkFrz
+    So_s(:) = ocnsalt
+
+    ! determine module mask array (imask)
+    lsize = size(So_omask)
+    allocate(imask(lsize))
+    kf = mct_aVect_indexRA(sdat%grid%data, 'mask')
+    imask(:) = nint(sdat%grid%data%rAttr(kf,:))
+
+    allocate(somtp(lsize))
+
+    ! -------------------------------------
+    ! Set pointers to importState fields
+    ! -------------------------------------
+
+    if (ocn_prognostic_mod) then
+       call state_getfldptr(importState, fldname='Foxx_swnet' , fldptr1=Foxx_swnet , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Foxx_lwup'  , fldptr1=Foxx_lwup  , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Foxx_lwup'  , fldptr1=Foxx_lwup  , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Foxx_sen'   , fldptr1=Foxx_sen   , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Foxx_lat'   , fldptr1=Foxx_lat   , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Faxa_lwdn'  , fldptr1=Faxa_lwdn  , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Faxa_snow'  , fldptr1=Faxa_snow  , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Fioi_melth' , fldptr1=Fioi_melth , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Foxx_rofi'  , fldptr1=Foxx_rofi  , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+  end subroutine docn_comp_dfields_init
+
+!===============================================================================
+
+  subroutine docn_comp_run(mpicom, my_task, master_task, logunit, target_ymd, target_tod, sdat, &
+       mesh, sst_constant_value, dt, aquap_option, read_restart, rc)
+
+    ! --------------------------
+    ! advance docn
+    ! --------------------------
+
+    ! input/output variables:
+    integer                , intent(in)    :: mpicom           ! mpi communicator
+    integer                , intent(in)    :: my_task
+    integer                , intent(in)    :: master_task
+    integer                , intent(in)    :: logunit
+    integer                , intent(in)    :: target_ymd       ! model date
+    integer                , intent(in)    :: target_tod       ! model sec into model date
+    type(shr_strdata_type) , intent(inout) :: sdat
+    type(ESMF_Mesh)        , intent(in)    :: mesh
+    real(r8)               , intent(in)    :: sst_constant_value
+    real(r8)               , intent(in)    :: dt 
+    integer                , intent(in)    :: aquap_option
+    logical                , intent(in)    :: read_restart
+    integer                , intent(out)   :: rc
+
+    ! local variables
+    integer               :: n, lsize
+    logical               :: first_time = .true. 
+    integer               :: spatialDim         ! number of dimension in mesh
+    integer               :: numOwnedElements   ! size of mesh
+    real(r8), pointer     :: ownedElemCoords(:) ! mesh lat and lons
+    real(r8), allocatable :: tfreeze(:)         ! SOM ocean freezing temperature
+    character(*), parameter :: subName = "(docn_comp_run) "
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
     call t_startf('DOCN_RUN')
+
+    !--------------------
+    ! advance docn streams
+    !--------------------
+
+    ! time and spatially interpolate to model time and grid
     call t_barrierf('docn_BARRIER',mpicom)
-    if(present(case_name)) then
-       local_case_name = case_name
-    else
-       local_case_name = " "
-    endif
-
-    !--------------------
-    ! ADVANCE OCN
-    !--------------------
-
-    call t_startf('docn')
-
-    !--- defaults, copy all fields from streams to o2x ---
-
-    lsize = mct_avect_lsize(o2x)
-    do n = 1,lsize
-       if (ksomask /= 0) then
-          o2x%rAttr(ksomask, n) = SDOCN%grid%data%rAttr(kfrac,n)
-       end if
-       o2x%rAttr(kt   ,n) = TkFrz
-       o2x%rAttr(ks   ,n) = ocnsalt
-       o2x%rAttr(ku   ,n) = 0.0_R8
-       o2x%rAttr(kv   ,n) = 0.0_R8
-       o2x%rAttr(kdhdx,n) = 0.0_R8
-       o2x%rAttr(kdhdy,n) = 0.0_R8
-       o2x%rAttr(kq   ,n) = 0.0_R8
-       if (kswp /= 0) then
-          o2x%rAttr(kswp ,n) = swp
-       end if
-    enddo
-
-    ! NOTE: for SST_AQUAPANAL, the docn buildnml sets the stream to "null"
-    ! and thereby shr_strdata_advance does nothing
-
     call t_startf('docn_strdata_advance')
-    call shr_strdata_advance(SDOCN, target_ymd, target_tod, mpicom, 'docn')
+    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, 'docn')
     call t_stopf('docn_strdata_advance')
 
-    !--- copy streams to o2x ---
-    call t_barrierf('docn_scatter_BARRIER', mpicom)
-    call t_startf('docn_scatter')
-    do n = 1, SDOCN%nstreams
-       call shr_dmodel_translateAV(SDOCN%avs(n), o2x, avifld, avofld)
-    enddo
-    call t_stopf('docn_scatter')
+    !--------------------
+    ! copy all fields from streams to export state as default
+    !--------------------
+
+    ! This automatically will update the fields in the export state
+    call t_barrierf('docn_comp_streams_copy_BARRIER', mpicom)
+    call t_startf('docn_streams_copy')
+    call dshr_streams_copy(dfields, dfields_num, sdat, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call t_stopf('docn_streams_copy')
 
     !-------------------------------------------------
-    ! Determine data model behavior based on the mode
+    ! Determine additional data model behavior based on the mode
     !-------------------------------------------------
+
+    lsize = size(So_t)
 
     call t_startf('docn_datamode')
-    select case (trim(datamode))
+    select case (trim(sdat%datamode))
 
     case('COPYALL')
        ! do nothing extra
 
     case('SSTDATA')
-       lsize = mct_avect_lsize(o2x)
-       do n = 1,lsize
-          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
-          o2x%rAttr(ks   ,n) = ocnsalt
-          o2x%rAttr(ku   ,n) = 0.0_R8
-          o2x%rAttr(kv   ,n) = 0.0_R8
-          o2x%rAttr(kdhdx,n) = 0.0_R8
-          o2x%rAttr(kdhdy,n) = 0.0_R8
-          o2x%rAttr(kq   ,n) = 0.0_R8
-          if (kswp /= 0) then
-             o2x%rAttr(kswp ,n) = swp
-          end if
-       enddo
+       So_t(:) = So_t(:) + TkFrz
 
     case('SST_AQUAPANAL')
-       lsize = mct_avect_lsize(o2x)
-       ! Zero out the attribute vector before calling the prescribed_sst
-       ! function - so this also zeroes out the So_omask if it is needed
-       ! so need to re-introduce it
-       do n = 1,lsize
-          o2x%rAttr(:,n) = 0.0_r8
-       end do
-       call prescribed_sst(xc, yc, lsize, aquap_option, o2x%rAttr(kt,:))
-       do n = 1,lsize
-          o2x%rAttr(kt,n) = o2x%rAttr(kt,n) + TkFrz
-          if (ksomask /= 0) then
-             o2x%rAttr(ksomask, n) = SDOCN%grid%data%rAttr(kfrac,n)
-          end if
-       enddo
+       So_s(:)      = 0.0_r8
+       So_fswpen(:) = 0.0_r8
+       if (first_time) then
+          call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          allocate(ownedElemCoords(spatialDim*numOwnedElements))
+          allocate(xc(numOwnedElements), yc(numOwnedElements))
+          call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+          if (ChkErr(rc,__LINE__,u_FILE_u)) return
+          do n = 1,numOwnedElements
+             xc(n) = ownedElemCoords(2*n-1)
+             yc(n) = ownedElemCoords(2*n)
+          end do
+       end if
+       call prescribed_sst(xc, yc, lsize, aquap_option, So_t)
+       So_t(:) = So_t(:) + TkFrz
 
     case('SST_AQUAPFILE')
-       lsize = mct_avect_lsize(o2x)
-       do n = 1,lsize
-          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
-          o2x%rAttr(ks   ,n) = ocnsalt
-          o2x%rAttr(ku   ,n) = 0.0_R8
-          o2x%rAttr(kv   ,n) = 0.0_R8
-          o2x%rAttr(kdhdx,n) = 0.0_R8
-          o2x%rAttr(kdhdy,n) = 0.0_R8
-          o2x%rAttr(kq   ,n) = 0.0_R8
-          if (kswp /= 0) then
-             o2x%rAttr(kswp ,n) = swp
-          end if
-       enddo
+       So_s(:)      = 0.0_r8
+       So_fswpen(:) = 0.0_r8
+       So_t(:) = So_t(:) + TkFrz
 
     case('SST_AQUAP_CONSTANT')
-       lsize = mct_avect_lsize(o2x)
-       ! Zero out the attribute vector except for temperature
-       do n = 1,lsize
-          o2x%rAttr(:,n) = 0.0_r8
-       end do
-       ! Set temperature and re-set omask
-       do n = 1,lsize
-          o2x%rAttr(kt,n) = sst_constant_value
-          if (ksomask /= 0) then
-             o2x%rAttr(ksomask, n) = SDOCN%grid%data%rAttr(kfrac,n)
-          end if
-       enddo
+       So_s(:)      = 0.0_r8
+       So_fswpen(:) = 0.0_r8
+       So_t(:) = sst_constant_value
 
     case('IAF')
-       lsize = mct_avect_lsize(o2x)
-       do n = 1,lsize
-          o2x%rAttr(kt   ,n) = o2x%rAttr(kt,n) + TkFrz
-          o2x%rAttr(ks   ,n) = ocnsalt
-          o2x%rAttr(ku   ,n) = 0.0_R8
-          o2x%rAttr(kv   ,n) = 0.0_R8
-          o2x%rAttr(kdhdx,n) = 0.0_R8
-          o2x%rAttr(kdhdy,n) = 0.0_R8
-          o2x%rAttr(kq   ,n) = 0.0_R8
-          if (kswp /= 0) then
-             o2x%rAttr(kswp ,n) = swp
-          end if
-       enddo
+       So_t(:) = So_t(:) + TkFrz
 
     case('SOM')
-       lsize = mct_avect_lsize(o2x)
-       do n = 1,SDOCN%nstreams
-          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,stifld,stofld)
-       enddo
-       if (firstcall) then
+       if (first_time) then
           do n = 1,lsize
              if (.not. read_restart) then
-                somtp(n) = o2x%rAttr(kt,n) + TkFrz
+                somtp(n) = So_t(n) + TkFrz
              endif
-             o2x%rAttr(kt,n) = somtp(n)
-             o2x%rAttr(kq,n) = 0.0_R8
+             So_t(n) = somtp(n)
+             Fioo_q(n) = 0.0_R8
           enddo
-       else   ! firstcall
-          tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
-          dt = modeldt * 1.0_R8
+       else
+          allocate(tfreeze(lsize))
+          tfreeze(:) = shr_frz_freezetemp(So_s(:)) + TkFrz
           do n = 1,lsize
              if (imask(n) /= 0) then
-                !--- compute new temp ---
-                o2x%rAttr(kt,n) = somtp(n) + &
-                     (x2o%rAttr(kswnet,n) + &  ! shortwave
-                      x2o%rAttr(klwup ,n) + &  ! longwave
-                      x2o%rAttr(klwdn ,n) + &  ! longwave
-                      x2o%rAttr(ksen  ,n) + &  ! sensible
-                      x2o%rAttr(klat  ,n) + &  ! latent
-                      x2o%rAttr(kmelth,n) - &  ! ice melt
-                      avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
-                     (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * &  ! latent by prec and roff
-                     dt/(cpsw*rhosw* avstrm%rAttr(kh,n))
-                !--- compute ice formed or melt potential ---
-                o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*avstrm%rAttr(kh,n))/dt  ! ice formed q>0
-                o2x%rAttr(kt,n) = max(tfreeze(n),o2x%rAttr(kt,n))                    ! reset temp
-                somtp(n) = o2x%rAttr(kt,n)                                           ! save temp
+                ! compute new temp (last term is latent by prec and roff)
+                So_t(n) = somtp(n) +  &
+                     ( Foxx_swnet(n) + Foxx_lwup(n) + Faxa_lwdn(n) + Foxx_sen(n) + Foxx_lat(n) + &
+                       Fioi_melth(n) - strm_qbot(n) - (Faxa_snow(n)+Foxx_rofi(n))*latice) * dt/(cpsw*rhosw* strm_h(n))
+
+                ! compute ice formed or melt potential
+                Fioo_q(n) = (tfreeze(n) - So_t(n))*(cpsw*rhosw*strm_h(n))/dt ! ice formed q>0
+
+                ! reset temp
+                So_t(n)  = max(tfreeze(n),So_t(n))
+
+                ! save somtp to restart file
+                somtp(n) = So_t(n)
              endif
           end do
-       endif   ! firstcall
+          deallocate(tfreeze)
+       endif   ! first_time
 
     case('SOM_AQUAP')
-       lsize = mct_avect_lsize(o2x)
-       do n = 1,SDOCN%nstreams
-          call shr_dmodel_translateAV(SDOCN%avs(n),avstrm,stifld,stofld)
-       enddo
-       if (firstcall) then
+       if (first_time) then
           do n = 1,lsize
              if (.not. read_restart) then
-                somtp(n) = o2x%rAttr(kt,n) + TkFrz
+                somtp(n) = So_t(n) + TkFrz
              endif
-             o2x%rAttr(kt,n) = somtp(n)
-             o2x%rAttr(kq,n) = 0.0_R8
+             So_t(n) = somtp(n)
+             Fioo_q(n) = 0.0_R8
           enddo
-       else   ! firstcall
-          tfreeze = shr_frz_freezetemp(o2x%rAttr(ks,:)) + TkFrz
+       else   
+          allocate(tfreeze(lsize))
+          tfreeze(:) = shr_frz_freezetemp(So_s(:)) + TkFrz
           do n = 1,lsize
-             !--- compute new temp ---
-             o2x%rAttr(kt,n) = somtp(n) + &
-                  (x2o%rAttr(kswnet,n) + &  ! shortwave
-                   x2o%rAttr(klwup ,n) + &  ! longwave
-                   x2o%rAttr(klwdn ,n) + &  ! longwave
-                   x2o%rAttr(ksen  ,n) + &  ! sensible
-                   x2o%rAttr(klat  ,n) + &  ! latent
-                   x2o%rAttr(kmelth,n) - &  ! ice melt
-                   avstrm%rAttr(kqbot ,n) - &  ! flux at bottom
-                   (x2o%rAttr(ksnow,n)+x2o%rAttr(krofi,n))*latice) * dt/(cpsw*rhosw*avstrm%rAttr(kh,n)) ! latent by prec and roff
-             !--- compute ice formed or melt potential ---
-             o2x%rAttr(kq,n) = (tfreeze(n) - o2x%rAttr(kt,n))*(cpsw*rhosw*avstrm%rAttr(kh,n))/dt  ! ice formed q>0
-             somtp(n) = o2x%rAttr(kt,n)                                        ! save temp
+             ! compute new temp (last term is latent by prec and roff)
+             So_t(n) = somtp(n) + &
+                  ( Foxx_swnet(n) + Foxx_lwup(n) + Faxa_lwdn(n) + Foxx_sen(n) + Foxx_lat(n) + &
+                    Fioi_melth(n) - strm_qbot(n) - (Faxa_snow(n)+Foxx_rofi(n))*latice) * dt/(cpsw*rhosw*strm_h(n))
+
+             ! compute ice formed or melt potential
+             Fioo_q(n) = (tfreeze(n) - So_t(n))*(cpsw*rhosw*strm_h(n))/dt  ! ice formed q>0
+
+             ! save somtp on restart file
+             somtp(n) = So_t(n)
           enddo
-       endif   ! firstcall
+          deallocate(tfreeze)
+       endif   ! first_time
 
     end select
 
+    first_time= .false.
+
     call t_stopf('docn_datamode')
-
-    !--------------------
-    ! Debug output
-    !--------------------
-
-    if (debug_export > 1 .and. my_task == master_task) then
-       do nfld = 1, mct_aVect_nRAttr(o2x)
-          call shr_string_listGetName(trim(flds_o2x), nfld, fldname)
-          do n = 1, mct_aVect_lsize(o2x)
-             write(logunit,F0D)'export: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, o2x%rattr(nfld,n)
-          end do
-       end do
-    end if
-
-    !--------------------
-    ! Write restart
-    !--------------------
-
-    if (write_restart) then
-       call t_startf('docn_restart')
-       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
-       write(rest_file,"(6a)") &
-            trim(case_name), '.docn',trim(inst_suffix),'.r.', &
-            trim(date_str),'.nc'
-       write(rest_file_strm,"(6a)") &
-            trim(case_name), '.docn',trim(inst_suffix),'.rs1.', &
-            trim(date_str),'.bin'
-       if (my_task == master_task) then
-          nu = shr_file_getUnit()
-          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-          write(nu,'(a)') rest_file
-          write(nu,'(a)') rest_file_strm
-          close(nu)
-          call shr_file_freeUnit(nu)
-       endif
-       if (trim(datamode) == 'SOM' .or. trim(datamode) == 'SOM_AQUAP') then
-          if (my_task == master_task) then
-             write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
-          end if
-          call shr_pcdf_readwrite('write', SDOCN%pio_subsystem, SDOCN%io_type,&
-               trim(rest_file), mpicom, SDOCN%gsmap, clobber=.true., rf1=somtp,rf1n='somtp')
-       endif
-       if (my_task == master_task) then
-          write(logunit,F04) ' writing ',trim(rest_file_strm),target_ymd,target_tod
-       end if
-       call shr_strdata_restWrite(trim(rest_file_strm), SDOCN, mpicom, trim(case_name), 'SDOCN strdata')
-       call t_stopf('docn_restart')
-    endif
-
-    firstcall = .false.
-
-    call t_stopf('docn')
     call t_stopf('DOCN_RUN')
 
   end subroutine docn_comp_run
 
-  !===============================================================================
-
-  subroutine docn_comp_import(importState, rc)
-
-    ! input/output variables
-    type(ESMF_State)     :: importState
-    integer, intent(out) :: rc
-    !----------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call dshr_import(importState, 'Foxx_swnet', x2o%rattr(kswnet,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Foxx_lwup', x2o%rattr(klwup,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Foxx_sen', x2o%rattr(ksen,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Foxx_lat', x2o%rattr(klat,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Faxa_lwdn', x2o%rattr(klwdn,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Faxa_snow', x2o%rattr(ksnow,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Fioi_melth', x2o%rattr(kmelth,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine docn_comp_import
-
-  !===============================================================================
-
-  subroutine docn_comp_export(exportState, rc)
-
-    ! input/output variables
-    type(ESMF_State)     :: exportState
-    integer, intent(out) :: rc
-    !----------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call dshr_export(o2x%rattr(ksomask,:), exportState, 'So_omask', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(o2x%rattr(kt,:), exportState, 'So_t', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(o2x%rattr(ks,:), exportState, 'So_s', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(o2x%rattr(ku,:), exportState, 'So_u', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(o2x%rattr(kv,:), exportState, 'So_v', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(o2x%rattr(kdhdx,:), exportState, 'So_dhdx', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(o2x%rattr(kdhdy,:), exportState, 'So_dhdy', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(o2x%rattr(kq,:), exportState, 'Fioo_q', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine docn_comp_export
-
-  !===============================================================================
+!===============================================================================
 
   subroutine prescribed_sst(xc, yc, lsize, sst_option, sst)
 
+    ! input/output variables
     real(R8)     , intent(in)    :: xc(:)  !degrees
     real(R8)     , intent(in)    :: yc(:)  !degrees
     integer      , intent(in)    :: lsize
     integer      , intent(in)    :: sst_option
     real(R8)     , intent(inout) :: sst(:)
 
-    ! local
+    ! local variables
     integer  :: i
     real(r8) :: tmp, tmp1, pi
     real(r8) :: rlon(lsize), rlat(lsize)
@@ -981,7 +480,6 @@ contains
     rlat(:) = yc(:) * pio180
 
     ! Control
-
     if (sst_option < 1 .or. sst_option > 10) then
        call shr_sys_abort ('prescribed_sst: ERROR: sst_option must be between 1 and 10')
     end if
@@ -997,10 +495,7 @@ contains
           end if
        end do
     end if
-
-    ! Flat
-
-    if (sst_option == 2) then
+    if (sst_option == 2) then ! Flat
        do i = 1,lsize
           if (abs(rlat(i)) > maxlat) then
              sst(i) = t0_min
@@ -1011,10 +506,7 @@ contains
           end if
        end do
     end if
-
-    ! Qobs
-
-    if (sst_option == 3) then
+    if (sst_option == 3) then ! Qobs
        do i = 1,lsize
           if (abs(rlat(i)) > maxlat) then
              sst(i) = t0_min
@@ -1025,10 +517,7 @@ contains
           end if
        end do
     end if
-
-    ! Peaked
-
-    if (sst_option == 4) then
+    if (sst_option == 4) then ! Peaked
        do i = 1,lsize
           if (abs(rlat(i)) > maxlat) then
              sst(i) = t0_min
@@ -1039,10 +528,7 @@ contains
           end if
        end do
     end if
-
-    ! Control-5N
-
-    if (sst_option == 5) then
+    if (sst_option == 5) then ! Control-5N
        do i = 1,lsize
           if (abs(rlat(i)) > maxlat) then
              sst(i) = t0_min
@@ -1057,10 +543,7 @@ contains
           end if
        end do
     end if
-
-    ! 1KEQ
-
-    if (sst_option == 6) then
+    if (sst_option == 6) then ! 1KEQ
        do i = 1,lsize
           if (abs(rlat(i)-latcen) <= latrad6) then
              tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad6)
@@ -1075,10 +558,7 @@ contains
           end if
        end do
     end if
-
-    ! 3KEQ
-
-    if (sst_option == 7) then
+    if (sst_option == 7) then ! 3KEQ
        do i = 1, lsize
           if (abs(rlat(i)-latcen) <= latrad6) then
              tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad6)
@@ -1093,10 +573,7 @@ contains
           end if
        end do
     end if
-
-    ! 3KW1
-
-    if (sst_option == 8) then
+    if (sst_option == 8) then ! 3KW1
        do i = 1, lsize
           if (abs(rlat(i)-latcen) <= latrad8) then
              tmp1 = cos((rlat(i)-latcen)*pi*0.5_r8/latrad8)
@@ -1106,10 +583,7 @@ contains
           end if
        end do
     end if
-
-    ! Control-10N
-
-    if (sst_option == 9) then
+    if (sst_option == 9) then ! Control-10N
        do i = 1, lsize
           if (abs(rlat(i)) > maxlat) then
              sst(i) = t0_min
@@ -1124,10 +598,7 @@ contains
           end if
        end do
     end if
-
-    ! Control-15N
-
-    if (sst_option == 10) then
+    if (sst_option == 10) then ! Control-15N
        do i = 1, lsize
           if (abs(rlat(i)) > maxlat) then
              sst(i) = t0_min

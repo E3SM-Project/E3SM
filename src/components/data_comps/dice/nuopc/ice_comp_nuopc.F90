@@ -19,12 +19,11 @@ module ice_comp_nuopc
   use shr_sys_mod      , only : shr_sys_abort
   use shr_const_mod    , only : shr_const_spval, shr_const_pi
   use dshr_nuopc_mod   , only : fld_list_type, fldsMax, dshr_realize
-  use dshr_nuopc_mod   , only : ModelInitPhase, ModelSetRunClock, ModelSetMetaData
+  use dshr_nuopc_mod   , only : ModelInitPhase, ModelSetRunClock
   use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
   use dshr_methods_mod , only : set_component_logging, get_component_instance, log_clock_advance
   use dice_shr_mod     , only : dice_shr_read_namelists
-  use dice_comp_mod    , only : dice_comp_init, dice_comp_run, dice_comp_advertise
-  use dice_comp_mod    , only : dice_comp_import, dice_comp_export
+  use dice_comp_mod    , only : dice_comp_init, dice_comp_run, dice_comp_advertise, dice_comp_setptrs
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
 
   implicit none
@@ -65,7 +64,6 @@ module ice_comp_nuopc
                                                       ! category fields are passed from ice to ocean
   character(len=80)      :: calendar                  ! calendar name
   integer                :: modeldt                   ! integer timestep
-  logical                :: use_esmf_metadata = .false.
   real(R8)    ,parameter :: pi  = shr_const_pi        ! pi
   character(*),parameter :: modName =  "(ice_comp_nuopc)"
   integer, parameter     :: debug_import = 0          ! if > 0 will diagnose import fields
@@ -134,8 +132,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    logical            :: ice_present    ! flag
-    logical            :: ice_prognostic ! flag
     type(ESMF_VM)      :: vm
     integer            :: lmpicom
     character(len=CL)  :: cvalue
@@ -184,12 +180,11 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------------------------------------------------
-    ! Read input namelists and set present and prognostic flags
+    ! Read input namelists
     !----------------------------------------------------------------------------
 
     filename = "dice_in"//trim(inst_suffix)
-    call dice_shr_read_namelists(filename, mpicom, my_task, master_task, &
-         logunit, ice_present, ice_prognostic)
+    call dice_shr_read_namelists(filename, mpicom, my_task, master_task, logunit)
 
     !--------------------------------
     ! Advertise import and export fields
@@ -235,8 +230,8 @@ contains
     read(cvalue,*) flds_i2o_per_cat 
 
     call dice_comp_advertise(importstate, exportState, flds_scalar_name, &
-         ice_present, ice_prognostic, flds_i2o_per_cat, &
-         fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
+         flds_i2o_per_cat, fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !----------------------------------------------------------------------------
     ! Reset shr logging to original values
@@ -356,14 +351,6 @@ contains
     end if
 
     !--------------------------------
-    ! Initialize model
-    !--------------------------------
-
-    call dice_comp_init(flds_i2o_per_cat, mpicom, compid, my_task, master_task, &
-         inst_suffix, inst_name, logunit, read_restart, &
-         scmMode, scmlat, scmlon, calendar, Emesh, nxg, nyg)
-
-    !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
     ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
     ! by replacing the advertised fields with the newly created fields of the same name.
@@ -389,9 +376,21 @@ contains
          mesh=Emesh, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !----------------------------------------------------------------------------
-    ! Set initial ice state and pack export state
-    !----------------------------------------------------------------------------
+    !--------------------------------
+    ! Set pointers into import/export states
+    !--------------------------------
+
+    call dice_comp_setptrs(importState, exportState, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    !--------------------------------
+    ! Initialize model
+    !--------------------------------
+
+    call dice_comp_init(mpicom, compid, my_task, master_task, &
+         inst_suffix, inst_name, logunit, read_restart, &
+         scmMode, scmlat, scmlon, calendar, Emesh, nxg, nyg, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -409,25 +408,16 @@ contains
     cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
     write_restart = .false.
-    call dice_comp_run(flds_i2o_per_cat, mpicom, my_task, master_task, &
+    call dice_comp_run(mpicom, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
-         calendar, modeldt, current_ymd, current_tod, cosArg)
-
-    ! Pack export state
-    call dice_comp_export(exportState, flds_i2o_per_cat, rc=rc)
+         calendar, modeldt, current_ymd, current_tod, cosArg, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, &
-         flds_scalar_name, flds_scalar_num, rc)
+    ! Set the coupling scalars
+    call State_SetScalar(dble(nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, &
-         flds_scalar_name, flds_scalar_num, rc)
+    call State_SetScalar(dble(nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! diagnostics
-    !--------------------------------
 
     if (debug_export > 0) then
        call State_diagnose(exportState,subname//':ES',rc=rc)
@@ -439,11 +429,6 @@ contains
     !----------------------------------------------------------------------------
 
     call shr_file_setLogUnit (shrlogunit)
-
-    if (use_esmf_metadata) then
-       call ModelSetMetaData(gcomp, name='DICE', rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
 
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
@@ -496,18 +481,14 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
-    ! Unpack import state
+    ! Advance the model
     !--------------------------------
 
-    call dice_comp_import(importState, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! Run model
-    !--------------------------------
+    ! Note that pointers into the import and export state have already been set
+    ! in dice_comp_setptrs - so the import and export states do not have to be provided as arguments 
+    ! to the run phase
 
     ! Determine if will write restart
-
     call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -519,10 +500,6 @@ contains
     else
        write_restart = .false.
     endif
-
-    ! For nuopc - the component clock is advanced at the end of the time interval
-    ! For these to match for now - need to advance nuopc one timestep ahead for
-    ! shr_strdata time interpolation
 
     call ESMF_ClockGet( clock, currTime=currTime, timeStep=timeStep, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -537,23 +514,17 @@ contains
     cosArg = 2.0_R8*pi*(jday - jday0)/365.0_R8
 
     ! Run dice
+    ! For nuopc - the component clock is advanced at the end of the time interval
+    ! For these to match for now - need to advance nuopc one timestep ahead for
+    ! shr_strdata time interpolation
 
     read_restart = .false.
-    call dice_comp_run(flds_i2o_per_cat, mpicom, my_task, master_task, &
+    call dice_comp_run(mpicom, my_task, master_task, &
          inst_suffix, logunit, read_restart, write_restart, &
-         calendar, modeldt, next_ymd, next_tod, cosArg, case_name)
-
-    !--------------------------------
-    ! Pack export state
-    !--------------------------------
-
-    call dice_comp_export(exportState, flds_i2o_per_cat, rc=rc)
+         calendar, modeldt, next_ymd, next_tod, cosArg, case_name=case_name, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
     ! diagnostics
-    !--------------------------------
-
     if (debug_export > 0) then
        call State_diagnose(exportState,subname//':ES',rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return

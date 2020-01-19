@@ -1,20 +1,17 @@
 module dice_comp_mod
 
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
-  use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
-  use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_gsmap_init
-  use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
-  use mct_mod               , only : mct_avect_init, mct_avect_lsize
+  use ESMF                  , only : ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_LogWrite
+  use ESMF                  , only : ESMF_Mesh, ESMF_MeshGet, ESMF_DistGrid, ESMF_DistGridGet
+  use ESMF                  , only : ESMF_State, ESMF_StateGet, ESMF_StateItem_Flag, ESMF_STATEITEM_NOTFOUND
+  use ESMF                  , only : operator(/=), operator(==)
+  use perf_mod              , only : t_startf, t_stopf, t_barrierf
+  use mct_mod               , only : mct_gsmap_init, mct_avect_indexRA 
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_const_mod         , only : shr_const_pi, shr_const_spval, shr_const_tkfrz, shr_const_latice
-  use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
   use shr_mpi_mod           , only : shr_mpi_bcast
   use shr_frz_mod           , only : shr_frz_freezetemp
-  use shr_cal_mod           , only : shr_cal_calendarname
-  use shr_cal_mod           , only : shr_cal_datetod2string
-  use shr_string_mod        , only : shr_string_listGetName
+  use shr_cal_mod           , only : shr_cal_calendarname, shr_cal_datetod2string
   use shr_sys_mod           , only : shr_sys_abort
   use shr_strdata_mod       , only : shr_strdata_init_model_domain
   use shr_strdata_mod       , only : shr_strdata_init_streams
@@ -22,10 +19,9 @@ module dice_comp_mod
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
   use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
   use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
-  use shr_dmodel_mod        , only : shr_dmodel_translateAV
-  use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_avect_add, dshr_translate_add
-  use dshr_nuopc_mod        , only : dshr_export, dshr_import
+  use dshr_methods_mod      , only : chkerr, state_getfldptr
+  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add
+  use dice_flux_atmice_mod  , only : dice_flux_atmice
   use dice_shr_mod          , only : datamode       ! namelist input
   use dice_shr_mod          , only : rest_file      ! namelist input
   use dice_shr_mod          , only : rest_file_strm ! namelist input
@@ -35,7 +31,6 @@ module dice_comp_mod
   use dice_shr_mod          , only : flux_Qacc0     ! namelist input -initial water accumulation value
   use dice_shr_mod          , only : nullstr
   use dice_shr_mod          , only : SDICE
-  use dice_flux_atmice_mod  , only : dice_flux_atmice
   use shr_pcdf_mod
 
   implicit none
@@ -48,17 +43,13 @@ module dice_comp_mod
   public :: dice_comp_advertise
   public :: dice_comp_init
   public :: dice_comp_run
-  public :: dice_comp_import
-  public :: dice_comp_export
+  public :: dice_comp_setptrs
+
+  public :: dice_comp_copy_streams
 
   !--------------------------------------------------------------------------
   ! Private data
   !--------------------------------------------------------------------------
-
-  type(mct_aVect)            :: x2i
-  type(mct_aVect)            :: i2x
-  character(CXX)             :: flds_i2x = ''
-  character(CXX)             :: flds_x2i = ''
 
   integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
   integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
@@ -84,56 +75,87 @@ module dice_comp_mod
   real(R8),parameter         :: ax_nidr = ai_nidr*(1.0_R8-snwfrac) + as_nidr*snwfrac
   real(R8),parameter         :: ax_vsdr = ai_vsdr*(1.0_R8-snwfrac) + as_vsdr*snwfrac
 
-  integer                    :: km
-  integer                    :: kswvdr,kswndr,kswvdf,kswndf,kq,kz,kua,kva,kptem,kshum,kdens,ktbot
-  integer                    :: kiFrac,kt,kavsdr,kanidr,kavsdf,kanidf,kswnet,kmelth,kmeltw
-  integer                    :: ksen,klat,klwup,kevap,ktauxa,ktauya,ktref,kqref,kswpen,ktauxo,ktauyo,ksalt
-  integer                    :: ksalinity
-  integer                    :: kbcpho, kbcphi, kflxdst
-  integer                    :: kbcphidry, kbcphodry, kbcphiwet
-  integer                    :: kocphidry, kocphodry, kocphiwet
-  integer                    :: kdstdry1, kdstdry2, kdstdry3, kdstdry4
-  integer                    :: kdstwet1, kdstwet2, kdstwet3, kdstwet4
-  integer                    :: kiFrac_01,kswpen_iFrac_01 ! optional per thickness category fields
   integer                    :: index_lat, index_lon
-
   integer     , pointer      :: imask(:)
   real(R8)    , pointer      :: xc(:), yc(:)       ! arrays of model latitudes and longitudes
   real(R8)    , pointer      :: water(:)
   real(R8)    , pointer      :: tfreeze(:)
   !real(R8)   , pointer      :: ifrac0(:)
 
-  character(len=CS), pointer :: avifld(:)
-  character(len=CS), pointer :: avofld(:)
-  character(len=CS), pointer :: strmifld(:)
-  character(len=CS), pointer :: strmofld(:)
-  character(len=CXX)         :: flds_strm = ''   ! colon deliminated string of field names
-
   logical                    :: firstcall = .true. ! first call logical
   character(len=*),parameter :: rpfile = 'rpointer.ice'
   character(*),parameter     :: u_FILE_u = &
        __FILE__
+
+  type i2x_type
+     real(r8), pointer ::  Si_imask(:)      => null()    
+     real(r8), pointer ::  Si_ifrac(:)      => null()    
+     real(r8), pointer ::  Si_t(:)          => null()        
+     real(r8), pointer ::  Si_tref(:)       => null()     
+     real(r8), pointer ::  Si_qref(:)       => null()     
+     real(r8), pointer ::  Si_avsdr(:)      => null()    
+     real(r8), pointer ::  Si_anidr(:)      => null()    
+     real(r8), pointer ::  Si_avsdf(:)      => null()    
+     real(r8), pointer ::  Si_anidf(:)      => null()    
+     real(r8), pointer ::  Faii_swnet(:)    => null()  
+     real(r8), pointer ::  Faii_sen(:)      => null()    
+     real(r8), pointer ::  Faii_lat(:)      => null()    
+     real(r8), pointer ::  Faii_lwup(:)     => null()   
+     real(r8), pointer ::  Faii_evap(:)     => null()   
+     real(r8), pointer ::  Faii_taux(:)     => null()   
+     real(r8), pointer ::  Faii_tauy(:)     => null()   
+     real(r8), pointer ::  Fioi_melth(:)    => null()  
+     real(r8), pointer ::  Fioi_meltw(:)    => null()  
+     real(r8), pointer ::  Fioi_swpen(:)    => null()  
+     real(r8), pointer ::  Fioi_taux(:)     => null()   
+     real(r8), pointer ::  Fioi_tauy(:)     => null()   
+     real(r8), pointer ::  Fioi_salt(:)     => null()   
+     real(r8), pointer ::  Fioi_bcpho(:)    => null()  
+     real(r8), pointer ::  Fioi_bcphi(:)    => null()  
+     real(r8), pointer ::  Fioi_flxdst(:)   => null() 
+     real(r8), pointer ::  Si_ifrac_01(:,:) => null()
+     real(r8), pointer ::  Fioi_swpen_ifrac_01(:,:) => null()  
+  end type i2x_type
+  type(i2x_type) :: i2x
+
+  type x2i_type
+     real(r8), pointer :: Faxa_swvdr(:)    => null()
+     real(r8), pointer :: Faxa_swvdf(:)    => null()
+     real(r8), pointer :: Faxa_swndr(:)    => null()
+     real(r8), pointer :: Faxa_swndf(:)    => null()
+     real(r8), pointer :: Fioo_q(:)        => null()
+     real(r8), pointer :: Sa_z(:)          => null()
+     real(r8), pointer :: Sa_u(:)          => null()
+     real(r8), pointer :: Sa_v(:)          => null()
+     real(r8), pointer :: Sa_ptem(:)       => null()
+     real(r8), pointer :: Sa_shum(:)       => null()
+     real(r8), pointer :: Sa_dens(:)       => null()
+     real(r8), pointer :: Sa_tbot(:)       => null()
+     real(r8), pointer :: So_s(:)          => null()
+     real(r8), pointer :: Faxa_bcph(:,:)   => null()
+     real(r8), pointer :: Faxa_ocph(:,:)   => null()
+     real(r8), pointer :: Faxa_dstdry(:,:) => null()
+     real(r8), pointer :: Faxa_dstwet(:,:) => null()
+  end type x2i_type
+  type(x2i_type) :: x2i
+
+  logical :: flds_i2o_per_cat_mod
 
 !===============================================================================
 contains
 !===============================================================================
 
   subroutine dice_comp_advertise(importState, exportState, flds_scalar_name, &
-       ice_present, ice_prognostic, flds_i2o_per_cat, &
-       fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
+       flds_i2o_per_cat, fldsFrIce_num, fldsFrIce, fldsToIce_num, fldsToIce, rc)
 
     ! --------------------------------------------------------------
-    ! 1. determine export and import fields to advertise to mediator
-    ! 2. determine colon delimited chacter string to initialize import and export attribute vectors
-    ! 3. determine module level translation character arrays  (avifld, avofld)
+    ! advertitse import and export fields to mediator
     ! --------------------------------------------------------------
 
-    ! input/output arguments
+    ! input/output variables
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
     character(len=*)     , intent(in)    :: flds_scalar_name
-    logical              , intent(in)    :: ice_present
-    logical              , intent(in)    :: ice_prognostic
     logical              , intent(in)    :: flds_i2o_per_cat
     integer              , intent(out)   :: fldsToIce_num
     integer              , intent(out)   :: fldsFrIce_num
@@ -145,11 +167,13 @@ contains
     integer         :: n
     !-------------------------------------------------------------------------------
 
-    if (.not. ice_present) return
+    rc = ESMF_SUCCESS
 
-    !--------------------------------
+    if (trim(datamode) == 'NULL') then
+       RETURN
+    end if
+
     ! Advertise export fields
-    !--------------------------------
 
     fldsFrIce_num=1
     fldsFrIce(1)%stdname = trim(flds_scalar_name)
@@ -189,11 +213,9 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
 
-    !-------------------
     ! Advertise import fields
-    !-------------------
 
-    if (ice_prognostic) then
+    if (trim(datamode) /= 'NULL') then
        fldsToIce_num=1
        fldsToIce(1)%stdname = trim(flds_scalar_name)
 
@@ -221,92 +243,185 @@ contains
        enddo
     end if
 
-    !-------------------
-    ! Create colon deliminted string and optional indices for export attribute vector
-    !-------------------
-
-    call dshr_avect_add('Si_ifrac'    , flds_i2x, av_index = kiFrac )
-    call dshr_avect_add('Si_imask'    , flds_i2x, av_index = km     )
-    call dshr_avect_add('Si_t'        , flds_i2x, av_index = kt     )
-    call dshr_avect_add('Si_tref'     , flds_i2x, av_index = ktref  )
-    call dshr_avect_add('Si_qref'     , flds_i2x, av_index = kqref  )
-    call dshr_avect_add('Si_avsdr'    , flds_i2x, av_index = kavsdr )
-    call dshr_avect_add('Si_anidr'    , flds_i2x, av_index = kanidr )
-    call dshr_avect_add('Si_avsdf'    , flds_i2x, av_index = kavsdf )
-    call dshr_avect_add('Si_anidf'    , flds_i2x, av_index = kanidf )
-    call dshr_avect_add('Faii_swnet'  , flds_i2x, av_index = kswnet )
-    call dshr_avect_add('Faii_sen'    , flds_i2x, av_index = ksen   )
-    call dshr_avect_add('Faii_lat'    , flds_i2x, av_index = klat   )
-    call dshr_avect_add('Faii_lwup'   , flds_i2x, av_index = klwup  )
-    call dshr_avect_add('Faii_evap'   , flds_i2x, av_index = kevap  )
-    call dshr_avect_add('Faii_taux'   , flds_i2x, av_index = ktauxa )
-    call dshr_avect_add('Faii_tauy'   , flds_i2x, av_index = ktauya )
-    call dshr_avect_add('Fioi_melth'  , flds_i2x, av_index = kmelth )
-    call dshr_avect_add('Fioi_meltw'  , flds_i2x, av_index = kmeltw )
-    call dshr_avect_add('Fioi_swpen'  , flds_i2x, av_index = kswpen )
-    call dshr_avect_add('Fioi_taux'   , flds_i2x, av_index = ktauxo )
-    call dshr_avect_add('Fioi_tauy'   , flds_i2x, av_index = ktauyo )
-    call dshr_avect_add('Fioi_salt'   , flds_i2x, av_index = ksalt  )
-    call dshr_avect_add('Fioi_bcpho'  , flds_i2x, av_index = kbcpho )
-    call dshr_avect_add('Fioi_bcphi'  , flds_i2x, av_index = kbcphi )
-    call dshr_avect_add('Fioi_flxdst' , flds_i2x, av_index = kflxdst)
-    if (flds_i2o_per_cat) then
-       call dshr_avect_add('Si_ifrac_01'        , flds_i2x, av_index = kiFrac_01      )
-       call dshr_avect_add('Fioi_swpen_ifrac_01', flds_i2x, av_index = kswpen_iFrac_01)
-    end if
-
-    !-------------------
-    ! Create colon deliminted string and optional indices for import attribute vector
-    !-------------------
-
-    if (ice_prognostic) then
-       call dshr_avect_add('Faxa_swvdr'    , flds_x2i, av_index = kswvdr    )
-       call dshr_avect_add('Faxa_swvdf'    , flds_x2i, av_index = kswvdf    )
-       call dshr_avect_add('Faxa_swndr'    , flds_x2i, av_index = kswndr    )
-       call dshr_avect_add('Faxa_swndf'    , flds_x2i, av_index = kswndf    )
-       call dshr_avect_add('Fioo_q'        , flds_x2i, av_index = kq        )
-       call dshr_avect_add('Sa_z'          , flds_x2i, av_index = kz        )
-       call dshr_avect_add('Sa_u'          , flds_x2i, av_index = kua       )
-       call dshr_avect_add('Sa_v'          , flds_x2i, av_index = kva       )
-       call dshr_avect_add('Sa_ptem'       , flds_x2i, av_index = kptem     )
-       call dshr_avect_add('Sa_shum'       , flds_x2i, av_index = kshum     )
-       call dshr_avect_add('Sa_dens'       , flds_x2i, av_index = kdens     )
-       call dshr_avect_add('Sa_tbot'       , flds_x2i, av_index = ktbot     )
-       call dshr_avect_add('So_s'          , flds_x2i, av_index = ksalinity )
-       call dshr_avect_add('Faxa_bcphidry' , flds_x2i, av_index = kbcphidry )
-       call dshr_avect_add('Faxa_bcphodry' , flds_x2i, av_index = kbcphodry )
-       call dshr_avect_add('Faxa_bcphiwet' , flds_x2i, av_index = kbcphiwet )
-       call dshr_avect_add('Faxa_ocphidry' , flds_x2i, av_index = kocphidry )
-       call dshr_avect_add('Faxa_ocphodry' , flds_x2i, av_index = kocphodry )
-       call dshr_avect_add('Faxa_ocphiwet' , flds_x2i, av_index = kocphiwet )
-       call dshr_avect_add('Faxa_dstdry1'  , flds_x2i, av_index = kdstdry1  )
-       call dshr_avect_add('Faxa_dstdry2'  , flds_x2i, av_index = kdstdry2  )
-       call dshr_avect_add('Faxa_dstdry3'  , flds_x2i, av_index = kdstdry3  )
-       call dshr_avect_add('Faxa_dstdry4'  , flds_x2i, av_index = kdstdry4  )
-       call dshr_avect_add('Faxa_dstwet1'  , flds_x2i, av_index = kdstwet1  )
-       call dshr_avect_add('Faxa_dstwet2'  , flds_x2i, av_index = kdstwet2  )
-       call dshr_avect_add('Faxa_dstwet3'  , flds_x2i, av_index = kdstwet3  )
-       call dshr_avect_add('Faxa_dstwet4'  , flds_x2i, av_index = kdstwet4  )
-    end if
-
-    !-------------------
-    ! Create module level translation list character arrays
-    !-------------------
-
-    call dshr_translate_add('ifrac', 'Si_ifrac', avifld, avofld)
+    flds_i2o_per_cat_mod = flds_i2o_per_cat
 
   end subroutine dice_comp_advertise
 
   !===============================================================================
 
-  subroutine dice_comp_init(flds_i2o_per_cat, mpicom, compid, my_task, master_task, &
-       inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon, calendar, mesh, nxg, nyg)
+  subroutine dice_comp_setptrs(importState, exportState, rc)
 
-    ! !DESCRIPTION: initialize dice model
+    !-------------------
+    ! Initialize contents of i2x and x2i
+    !-------------------
+
+    ! input/output parameters
+    type(ESMF_State)       , intent(inout) :: importState
+    type(ESMF_State)       , intent(inout) :: exportState
+    integer                , intent(out)   :: rc
+
+    ! local variables
+    type(ESMF_StateItem_Flag) :: itemFlag
+    integer                   :: n, lsize, kf
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! Set pointers to exportState fields
+    call state_getfldptr(exportState, fldname='Si_ifrac'    , fldptr1=i2x%Si_ifrac    , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Si_imask'    , fldptr1=i2x%Si_imask    , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Si_t'        , fldptr1=i2x%Si_t        , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Si_tref'     , fldptr1=i2x%Si_tref     , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Si_qref'     , fldptr1=i2x%Si_qref     , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Si_avsdr'    , fldptr1=i2x%Si_avsdr    , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Si_anidr'    , fldptr1=i2x%Si_anidr    , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Si_avsdf'    , fldptr1=i2x%Si_avsdf    , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Si_anidf'    , fldptr1=i2x%Si_anidf    , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Faii_swnet'  , fldptr1=i2x%Faii_swnet  , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Faii_sen'    , fldptr1=i2x%Faii_sen    , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Faii_lat'    , fldptr1=i2x%Faii_lat    , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Faii_lwup'   , fldptr1=i2x%Faii_lwup   , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Faii_evap'   , fldptr1=i2x%Faii_evap   , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Faii_taux'   , fldptr1=i2x%Faii_taux   , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Faii_tauy'   , fldptr1=i2x%Faii_tauy   , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Fioi_melth'  , fldptr1=i2x%Fioi_melth  , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Fioi_meltw'  , fldptr1=i2x%Fioi_meltw  , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Fioi_swpen'  , fldptr1=i2x%Fioi_swpen  , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Fioi_taux'   , fldptr1=i2x%Fioi_taux   , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Fioi_tauy'   , fldptr1=i2x%Fioi_tauy   , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Fioi_salt'   , fldptr1=i2x%Fioi_salt   , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Fioi_bcpho'  , fldptr1=i2x%Fioi_bcpho  , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Fioi_bcphi'  , fldptr1=i2x%Fioi_bcphi  , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call state_getfldptr(exportState, fldname='Fioi_flxdst' , fldptr1=i2x%Fioi_flxdst , rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    if (flds_i2o_per_cat_mod) then
+       call state_getfldptr(exportState, fldname='Si_ifrac_01'        , fldptr2=i2x%Si_ifrac_01, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(exportState, fldname='Fioi_swpen_ifrac_01', fldptr2=i2x%Fioi_swpen_ifrac_01, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    ! Set pointers to importState fields
+
+    if (trim(datamode) /= 'NULL') then
+       call state_getfldptr(importState, fldname='Faxa_swvdr'  , fldptr1=x2i%Faxa_swvdr  , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Faxa_swvdf'  , fldptr1=x2i%Faxa_swvdf  , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Faxa_swndr'  , fldptr1=x2i%Faxa_swndr  , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Faxa_swndf'  , fldptr1=x2i%Faxa_swndf  , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Faxa_bcph'   , fldptr2=x2i%Faxa_bcph   , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Faxa_ocph'   , fldptr2=x2i%Faxa_ocph   , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Faxa_dstdry' , fldptr2=x2i%Faxa_dstdry , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Faxa_dstwet' , fldptr2=x2i%Faxa_dstwet , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Fioo_q'      , fldptr1=x2i%Fioo_q      , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Sa_z'        , fldptr1=x2i%Sa_z        , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Sa_u'        , fldptr1=x2i%Sa_u        , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Sa_v'        , fldptr1=x2i%Sa_v        , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Sa_ptem'     , fldptr1=x2i%Sa_ptem     , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Sa_tbot'     , fldptr1=x2i%Sa_tbot     , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Sa_shum'     , fldptr1=x2i%Sa_shum     , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='Sa_dens'     , fldptr1=x2i%Sa_dens     , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call state_getfldptr(importState, fldname='So_s'        , fldptr1=x2i%So_s        , rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    end if
+
+    ! initialize x2i arrays
+    ! On initial call, x2i is unset, so set for the first use in generating the export state
+    ! These values should have no impact on the solution!!
+
+    x2i%Faxa_swvdr(:)    = 0._r8
+    x2i%Faxa_swvdf(:)    = 0._r8
+    x2i%Faxa_swndr(:)    = 0._r8
+    x2i%Faxa_swndf(:)    = 0._r8
+    x2i%Faxa_bcph(:,:)   = 0._r8
+    x2i%Faxa_ocph(:,:)   = 0._r8
+    x2i%Faxa_dstdry(:,:) = 0._r8
+    x2i%Faxa_dstwet(:,:) = 0._r8
+    x2i%Fioo_q(:)        = 0._r8
+    x2i%Sa_z(:)          = 10.0_r8
+    x2i%Sa_u(:)          = 5.0_r8
+    x2i%Sa_v(:)          = 5.0_r8
+    x2i%Sa_ptem(:)       = 260.0_r8
+    x2i%Sa_tbot(:)       = 260.0_r8
+    x2i%Sa_shum(:)       = 0.0014_r8
+    x2i%Sa_dens(:)       = 1.3_r8
+    x2i%So_s(:)          = 0._r8
+
+  end subroutine dice_comp_setptrs
+
+  !===============================================================================
+
+  subroutine dice_comp_copy_streams()
+
+    !-------------------
+    ! Loop over streams, and map the correct stream field to the appropriate field pointer
+    !-------------------
+
+    ! local variables
+    integer :: n, kf , nfld
+    !-------------------------------------------------------------------------------
+
+    do nfld = 1, SDICE%nstreams
+       kf = mct_aVect_indexRA(SDICE%avs(nfld), 'ifrac', perrWith='quiet')
+       if (kf /= 0) then
+          do n = 1,size(i2x%Si_ifrac)
+             i2x%Si_ifrac(n) = SDICE%avs(nfld)%rattr(kf,n)
+          end do
+       end if
+    end do
+
+  end subroutine dice_comp_copy_streams
+
+  !===============================================================================
+
+  subroutine dice_comp_init(mpicom, compid, my_task, master_task, &
+       inst_suffix, inst_name, logunit, read_restart, &
+       scmMode, scmlat, scmlon, calendar, mesh, nxg, nyg, rc)
+
+    ! ----------------------------
+    ! initialize dice model
+    ! ----------------------------
 
     ! input/output parameters:
-    logical                , intent(in)    :: flds_i2o_per_cat ! .true. if select per ice thickness fields from ice
     integer                , intent(in)    :: mpicom           ! mpi communicator
     integer                , intent(in)    :: compid           ! mct comp id
     integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
@@ -321,6 +436,7 @@ contains
     character(len=*)       , intent(in)    :: calendar         ! calendar type
     type(ESMF_Mesh)        , intent(in)    :: mesh             ! ESMF dice mesh
     integer                , intent(out)   :: nxg, nyg
+    integer                , intent(out)   :: rc
 
     !--- local variables ---
     integer                      :: n,k            ! generic counters
@@ -331,7 +447,6 @@ contains
     integer                      :: nu             ! unit number
     type(ESMF_DistGrid)          :: distGrid
     integer, allocatable, target :: gindex(:)
-    integer                      :: rc
     integer                      :: dimCount
     integer                      :: tileCount
     integer                      :: deCount
@@ -346,11 +461,13 @@ contains
     character(*), parameter      :: subName = "(dice_comp_init) "
     !-------------------------------------------------------------------------------
 
-    call t_startf('DICE_INIT')
+    rc = ESMF_SUCCESS
 
     !----------------------------------------------------------------------------
     ! Initialize PIO
     !----------------------------------------------------------------------------
+
+    call t_startf('DICE_INIT')
 
     call shr_strdata_pioinit(SDICE, compid)
 
@@ -447,8 +564,10 @@ contains
     end do
 
     ! Note that the module array, imask, does not change after initialization
-    allocate(imask(lsize))
     kfld = mct_aVect_indexRA(SDICE%grid%data,'mask')
+    i2x%Si_imask(:) = SDICE%grid%data%rAttr(kfld,:)
+
+    allocate(imask(lsize))
     imask(:) = nint(SDICE%grid%data%rAttr(kfld,:))
 
     if (my_task == master_task) then
@@ -471,25 +590,9 @@ contains
     call t_startf('dice_initmctavs')
     if (my_task == master_task) write(logunit,F00) 'allocate AVs'
 
-    call mct_aVect_init(i2x, rList=flds_i2x, lsize=lsize)
-    call mct_aVect_zero(i2x)
-
-    ! optional per thickness category fields
-    if (flds_i2o_per_cat) then
-       kiFrac_01       = mct_aVect_indexRA(i2x,'Si_ifrac_01')
-       kswpen_iFrac_01 = mct_aVect_indexRA(i2x,'Fioi_swpen_ifrac_01')
-    end if
-
-    call mct_aVect_init(x2i, rList=flds_x2i, lsize=lsize)
-    call mct_aVect_zero(x2i)
-
     allocate(water(lsize))
     allocate(tfreeze(lsize))
     ! allocate(iFrac0(lsize))
-
-    if (km /= 0) then
-       i2x%rAttr(km, :) = imask(:)
-    end if
 
     call t_stopf('dice_initmctavs')
 
@@ -509,12 +612,10 @@ contains
              write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
              inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
              if (exists) then
-                nu = shr_file_getUnit()
-                open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+                open(newunit=nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
                 read(nu,'(a)') rest_file
                 read(nu,'(a)') rest_file_strm
                 close(nu)
-                call shr_file_freeUnit(nu)
                 inquire(file=trim(rest_file_strm),exist=exists)
                 inquire(file=trim(rest_file),exist=exists1)
              endif
@@ -548,33 +649,21 @@ contains
        endif
     endif
 
-    !----------------------------------------------------------------------------
-    ! On initial call, x2i is unset, so set for use in run method
-    !  These values should have no impact on the solution!!
-    !----------------------------------------------------------------------------
-
-    x2i%rAttr(kz,:)    = 10.0_R8
-    x2i%rAttr(kua,:)   = 5.0_R8
-    x2i%rAttr(kva,:)   = 5.0_R8
-    x2i%rAttr(kptem,:) = 260.0_R8
-    x2i%rAttr(ktbot,:) = 260.0_R8
-    x2i%rAttr(kshum,:) = 0.0014_R8
-    x2i%rAttr(kdens,:) = 1.3_R8
-
     call t_stopf('DICE_INIT')
 
   end subroutine dice_comp_init
 
   !===============================================================================
 
-  subroutine dice_comp_run(flds_i2o_per_cat, mpicom, my_task, master_task, &
+  subroutine dice_comp_run(mpicom, my_task, master_task, &
        inst_suffix, logunit, read_restart, write_restart, &
-       calendar, modeldt, target_ymd, target_tod, cosArg, case_name )
+       calendar, modeldt, target_ymd, target_tod, cosArg, case_name, rc )
 
-    ! !DESCRIPTION: run method for dice model
+    ! --------------------------
+    ! run method for dice model
+    ! --------------------------
 
     ! input/output parameters:
-    logical                , intent(in)    :: flds_i2o_per_cat     ! .true. if select per ice thickness fields from ice
     integer                , intent(in)    :: mpicom               ! mpi communicator
     integer                , intent(in)    :: my_task              ! my task in mpi communicator mpicom
     integer                , intent(in)    :: master_task          ! task number of master task
@@ -588,14 +677,14 @@ contains
     integer                , intent(in)    :: target_tod
     real(R8)               , intent(in)    :: cosarg               ! for setting ice temp pattern
     character(len=*)       , intent(in), optional :: case_name     ! case name
+    integer                , intent(out)   :: rc
 
-    !--- local ---
+    ! local variables
     integer           :: n,nfld            ! indices
     integer           :: lsize             ! size of attr vect
     real(R8)          :: dt                ! timestep
     integer           :: nu                ! unit number
     real(R8)          :: qmeltall          ! q that would melt all accumulated water
-    character(len=CS) :: fldname
     character(len=18) :: date_str
 
     character(*), parameter :: F00   = "('(dice_comp_run) ',8a)"
@@ -604,19 +693,7 @@ contains
     character(*), parameter :: subName = "(dice_comp_run) "
     !-------------------------------------------------------------------------------
 
-    !--------------------
-    ! Debug output
-    !--------------------
-
-    if (debug_import > 1 .and. my_task == master_task) then
-       do nfld = 1, mct_aVect_nRAttr(x2i)
-          call shr_string_listGetName(trim(flds_x2i), nfld, fldname)
-          do n = 1, mct_aVect_lsize(x2i)
-             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, x2i%rattr(nfld,n)
-          end do
-       end do
-    end if
+    rc = ESMF_SUCCESS
 
     !--------------------
     ! ADVANCE ICE
@@ -628,25 +705,32 @@ contains
 
     dt = modeldt * 1.0_r8
 
-    !--- copy all stream fields to i2x as default (avifld in streams -> avofld in i2x)
+    !--------------------
+    ! Advance streams
+    !--------------------
 
     if (trim(datamode) /= 'NULL') then
        call t_startf('dice_strdata_advance')
-       call shr_strdata_advance(SDICE,target_ymd,target_tod,mpicom,'dice')
+       call shr_strdata_advance(SDICE, target_ymd, target_tod, mpicom, 'dice')
        call t_stopf('dice_strdata_advance')
-       call t_barrierf('dice_scatter_BARRIER',mpicom)
-       call t_startf('dice_scatter')
-       do n = 1,SDICE%nstreams
-          call shr_dmodel_translateAV(SDICE%avs(n),i2x,avifld,avofld)
-       enddo
-       call t_stopf('dice_scatter')
-    else
-       call mct_aVect_zero(i2x)
+    end if
+
+    !--------------------
+    ! Copy all fields from streams to i2x
+    !--------------------
+
+    if (trim(datamode) /= 'NULL') then
+       call t_barrierf('dice_comp_copy_streams_BARRIER', mpicom)
+       call t_startf('dice_comp_copy_streams')
+       call dice_comp_copy_streams()
+       call t_stopf('dice_comp_copy_streams')
     endif
 
     !-------------------------------------------------
     ! Determine data model behavior based on the mode
     !-------------------------------------------------
+
+    lsize = size(i2x%Si_ifrac)
 
     call t_startf('dice_datamode')
     select case (trim(datamode))
@@ -657,45 +741,43 @@ contains
     case('SSTDATA')
        if (firstcall .and. .not. read_restart) then
           ! iFrac0 = iFrac  ! previous step's ice fraction
-          water  = 0.0_R8 ! previous step's water accumulation
-          where (i2x%rAttr(kiFrac,:) > 0.0_R8) water(:) = flux_Qacc0
+          water(:) = 0.0_R8 ! previous step's water accumulation
+          where (i2x%Si_ifrac(:) > 0.0_R8) water(:) = flux_Qacc0
        endif
 
-       lsize = mct_avect_lsize(i2x)
-
-       tfreeze = shr_frz_freezetemp(x2i%rAttr(ksalinity,:)) + tFrz ! convert to Kelvin
+       tfreeze(:) = shr_frz_freezetemp(x2i%So_s(:)) + tFrz ! convert to Kelvin
 
        do n = 1,lsize
 
           !--- fix erroneous iFrac ---
-          i2x%rAttr(kiFrac,n) = min(1.0_R8,max(0.0_R8,i2x%rAttr(kiFrac,n)))
+          i2x%Si_ifrac(n) = min(1.0_R8,max(0.0_R8,i2x%Si_ifrac(n)))
 
           !--- fabricate ice surface T, fix erroneous iFrac ---
           if ( yc(n) > 0.0_R8) then
-             i2x%rAttr(kt,n) = 260.0_R8 + 10.0_R8*cos(cosArg)
+             i2x%Si_t(n) = 260.0_R8 + 10.0_R8*cos(cosArg)
           else
-             i2x%rAttr(kt,n) = 260.0_R8 - 10.0_R8*cos(cosArg)
+             i2x%Si_t(n) = 260.0_R8 - 10.0_R8*cos(cosArg)
           end if
 
           !--- set albedos (constant) ---
-          i2x%rAttr(kavsdr,n) = ax_vsdr
-          i2x%rAttr(kanidr,n) = ax_nidr
-          i2x%rAttr(kavsdf,n) = ax_vsdf
-          i2x%rAttr(kanidf,n) = ax_nidf
+          i2x%Si_avsdr(n) = ax_vsdr
+          i2x%Si_anidr(n) = ax_nidr
+          i2x%Si_avsdf(n) = ax_vsdf
+          i2x%Si_anidf(n) = ax_nidf
 
           !--- swnet is sent to cpl as a diagnostic quantity only ---
           !--- newly recv'd swdn goes with previously sent albedo ---
           !--- but albedos are (currently) time invariant         ---
-          i2x%rAttr(kswnet,n) = (1.0_R8 - i2x%rAttr(kavsdr,n))*x2i%rAttr(kswvdr,n) &
-                              + (1.0_R8 - i2x%rAttr(kanidr,n))*x2i%rAttr(kswndr,n) &
-                              + (1.0_R8 - i2x%rAttr(kavsdf,n))*x2i%rAttr(kswvdf,n) &
-                              + (1.0_R8 - i2x%rAttr(kanidf,n))*x2i%rAttr(kswndf,n)
+          i2x%Faii_swnet(n)   = (1.0_R8 - i2x%Si_avsdr(n))*x2i%Faxa_swvdr(n) &
+                              + (1.0_R8 - i2x%Si_anidr(n))*x2i%Faxa_swndr(n) &
+                              + (1.0_R8 - i2x%Si_avsdf(n))*x2i%Faxa_swvdf(n) &
+                              + (1.0_R8 - i2x%Si_anidf(n))*x2i%Faxa_swndf(n)
 
           !--- compute melt/freeze water balance, adjust iFrac  -------------
           if ( .not. flux_Qacc ) then ! Q accumulation option is OFF
-             i2x%rAttr(kmelth,n) = min(x2i%rAttr(kq,n),0.0_R8 ) ! q<0 => melt potential
-             i2x%rAttr(kmelth,n) = max(i2x%rAttr(kmelth,n),Flux_Qmin   ) ! limit the melt rate
-             i2x%rAttr(kmeltw,n) =    -i2x%rAttr(kmelth,n)/latice   ! corresponding water flux
+             i2x%Fioi_melth(n) = min(x2i%Fioo_q(n),0.0_R8 )          ! q<0 => melt potential
+             i2x%Fioi_melth(n) = max(i2x%Fioi_melth(n),Flux_Qmin   ) ! limit the melt rate
+             i2x%Fioi_meltw(n) =    -i2x%Fioi_melth(n)/latice        ! corresponding water flux
 
           else                                 ! Q accumulation option is ON
              !--------------------------------------------------------------
@@ -704,98 +786,95 @@ contains
              ! 2a) Q>0 & iFrac > 0  =>  zero-out accumulated water
              ! 2b) Q>0 & iFrac = 0  =>  accumulated water
              !--------------------------------------------------------------
-             if ( x2i%rAttr(kq,n) <  0.0_R8 ) then ! Q<0 => melt
-                if (i2x%rAttr(kiFrac,n) > 0.0_R8 ) then
-                   i2x%rAttr(kmelth,n) = i2x%rAttr(kiFrac,n)*max(x2i%rAttr(kq,n),Flux_Qmin)
-                   i2x%rAttr(kmeltw,n) =    -i2x%rAttr(kmelth,n)/latice
+
+             if ( x2i%Fioo_q(n) <  0.0_R8 ) then ! Q<0 => melt
+                if (i2x%Si_ifrac(n) > 0.0_R8 ) then
+                   i2x%Fioi_melth(n) = i2x%Si_ifrac(n)*max(x2i%Fioo_q(n),Flux_Qmin)
+                   i2x%Fioi_meltw(n) =    -i2x%Fioi_melth(n)/latice
                    !  water(n) = < don't change this value >
                 else
                    Qmeltall   = -water(n)*latice/dt
-                   i2x%rAttr(kmelth,n) = max(x2i%rAttr(kq,n), Qmeltall, Flux_Qmin )
-                   i2x%rAttr(kmeltw,n) = -i2x%rAttr(kmelth,n)/latice
-                   water(n) =  water(n) - i2x%rAttr(kmeltw,n)*dt
+                   i2x%Fioi_melth(n) = max(x2i%Fioo_q(n), Qmeltall, Flux_Qmin )
+                   i2x%Fioi_meltw(n) = -i2x%Fioi_melth(n)/latice
+                   water(n) =  water(n) - i2x%Fioi_meltw(n)*dt
                 end if
              else                       ! Q>0 => freeze
-                if (i2x%rAttr(kiFrac,n) > 0.0_R8 ) then
-                   i2x%rAttr(kmelth,n) = 0.0_R8
-                   i2x%rAttr(kmeltw,n) = 0.0_R8
+                if (i2x%Si_ifrac(n) > 0.0_R8 ) then
+                   i2x%Fioi_melth(n) = 0.0_R8
+                   i2x%Fioi_meltw(n) = 0.0_R8
                    water(n) = 0.0_R8
                 else
-                   i2x%rAttr(kmelth,n) = 0.0_R8
-                   i2x%rAttr(kmeltw,n) = 0.0_R8
-                   water(n) = water(n) + dt*x2i%rAttr(kq,n)/latice
+                   i2x%Fioi_melth(n) = 0.0_R8
+                   i2x%Fioi_meltw(n) = 0.0_R8
+                   water(n) = water(n) + dt*x2i%Fioo_q(n)/latice
                 end if
              end if
 
              if (water(n) < 1.0e-16_R8 ) water(n) = 0.0_R8
 
              !--- non-zero water => non-zero iFrac ---
-             if (i2x%rAttr(kiFrac,n) <= 0.0_R8  .and.  water(n) > 0.0_R8) then
-                i2x%rAttr(kiFrac,n) = min(1.0_R8,water(n)/waterMax)
-                ! i2x%rAttr(kT,n) = tfreeze(n)     ! T can be above freezing?!?
+             if (i2x%Si_ifrac(n) <= 0.0_R8  .and.  water(n) > 0.0_R8) then
+                i2x%Si_ifrac(n) = min(1.0_R8,water(n)/waterMax)
+                ! i2x%Si_t(n) = tfreeze(n)     ! T can be above freezing?!?
              end if
 
-             !--- cpl multiplies melth & meltw by iFrac ---
+             !--- cpl multiplies Fioi_melth & Fioi_meltw by iFrac ---
              !--- divide by iFrac here => fixed quantity flux (not per area) ---
-             if (i2x%rAttr(kiFrac,n) > 0.0_R8) then
-                i2x%rAttr(kiFrac,n) = max( 0.01_R8, i2x%rAttr(kiFrac,n)) ! min iFrac
-                i2x%rAttr(kmelth,n) = i2x%rAttr(kmelth,n)/i2x%rAttr(kiFrac,n)
-                i2x%rAttr(kmeltw,n) = i2x%rAttr(kmeltw,n)/i2x%rAttr(kiFrac,n)
+             if (i2x%Si_ifrac(n) > 0.0_R8) then
+                i2x%Si_ifrac(n) = max( 0.01_R8, i2x%Si_ifrac(n)) ! min iFrac
+                i2x%Fioi_melth(n) = i2x%Fioi_melth(n)/i2x%Si_ifrac(n)
+                i2x%Fioi_meltw(n) = i2x%Fioi_meltw(n)/i2x%Si_ifrac(n)
              else
-                i2x%rAttr(kmelth,n) = 0.0_R8
-                i2x%rAttr(kmeltw,n) = 0.0_R8
+                i2x%Fioi_melth(n) = 0.0_R8
+                i2x%Fioi_meltw(n) = 0.0_R8
              end if
           end if
 
           !--- modify T wrt iFrac: (iFrac -> 0) => (T -> tfreeze) ---
-          i2x%rAttr(kt,n) = tfreeze(n) + i2x%rAttr(kiFrac,n)*(i2x%rAttr(kt,n)-tfreeze(n))
-
+          i2x%Si_t(n) = tfreeze(n) + i2x%Si_ifrac(n)*(i2x%Si_t(n)-tfreeze(n))
        end do
 
        ! compute ice/ice surface fluxes
        call dice_flux_atmice( &
-            iMask              ,x2i%rAttr(kz,:)     ,x2i%rAttr(kua,:)    ,x2i%rAttr(kva,:)  , &
-            x2i%rAttr(kptem,:) ,x2i%rAttr(kshum,:)  ,x2i%rAttr(kdens,:)  ,x2i%rAttr(ktbot,:), &
-            i2x%rAttr(kt,:)    ,i2x%rAttr(ksen,:)   ,i2x%rAttr(klat,:)   ,i2x%rAttr(klwup,:), &
-            i2x%rAttr(kevap,:) ,i2x%rAttr(ktauxa,:) ,i2x%rAttr(ktauya,:) ,i2x%rAttr(ktref,:), &
-            i2x%rAttr(kqref,:) ,logunit )
+            imask         ,x2i%Sa_z      ,x2i%Sa_u      ,x2i%Sa_v     , &
+            x2i%Sa_ptem   ,x2i%Sa_shum   ,x2i%Sa_dens   ,x2i%Sa_tbot  , &
+            i2x%Si_t      ,i2x%Faii_sen  ,i2x%Faii_lat  ,i2x%Faii_lwup, &
+            i2x%Faii_evap ,i2x%Faii_taux ,i2x%Faii_tauy ,i2x%Si_tref  , &
+            i2x%Si_qref   ,logunit )
 
        ! compute ice/oce surface fluxes (except melth & meltw, see above)
        do n=1,lsize
-          if (iMask(n) == 0) then
-             i2x%rAttr(kswpen,n) = spval
-             i2x%rAttr(kmelth,n) = spval
-             i2x%rAttr(kmeltw,n) = spval
-             i2x%rAttr(ksalt ,n) = spval
-             i2x%rAttr(ktauxo,n) = spval
-             i2x%rAttr(ktauyo,n) = spval
-             i2x%rAttr(kiFrac,n) = 0.0_R8
+          if (imask(n) == 0) then
+             i2x%Fioi_swpen(n) = spval
+             i2x%Fioi_melth(n) = spval
+             i2x%Fioi_meltw(n) = spval
+             i2x%Fioi_salt (n) = spval
+             i2x%Fioi_taux(n)  = spval
+             i2x%Fioi_tauy(n)  = spval
+             i2x%Si_ifrac(n)   = 0.0_R8
           else
              !--- penetrating short wave ---
-             i2x%rAttr(kswpen,n) = max(0.0_R8, flux_swpf*i2x%rAttr(kswnet,n) ) ! must be non-negative
+             i2x%Fioi_swpen(n) = max(0.0_R8, flux_swpf*i2x%Faii_swnet(n) ) ! must be non-negative
 
              !--- i/o surface stress ( = atm/ice stress) ---
-             i2x%rAttr(ktauxo,n) = i2x%rAttr(ktauxa,n)
-             i2x%rAttr(ktauyo,n) = i2x%rAttr(ktauya,n)
+             i2x%Fioi_taux(n) = i2x%Faii_taux(n)
+             i2x%Fioi_tauy(n) = i2x%Faii_tauy(n)
 
              !--- salt flux ---
-             i2x%rAttr(ksalt ,n) = 0.0_R8
-          end if
-          if (km /= 0) then
-             i2x%rAttr(km, n) = imask(n)
+             i2x%Fioi_salt(n) = 0.0_R8
           end if
           ! !--- save ifrac for next timestep
-          ! iFrac0(n) = i2x%rAttr(kiFrac,n)
+          ! iFrac0(n) = i2x%Si_ifrac(n)
        end do
 
        ! Compute outgoing aerosol fluxes
        do n = 1,lsize
-          i2x%rAttr(kbcpho ,n) = x2i%rAttr(kbcphodry,n)
-          i2x%rAttr(kbcphi ,n) = x2i%rAttr(kbcphidry,n) + x2i%rAttr(kbcphiwet,n)
-          i2x%rAttr(kflxdst,n) = x2i%rAttr(kdstdry1,n) + x2i%rAttr(kdstwet1,n) &
-                               + x2i%rAttr(kdstdry2,n) + x2i%rAttr(kdstwet2,n) &
-                               + x2i%rAttr(kdstdry3,n) + x2i%rAttr(kdstwet3,n) &
-                               + x2i%rAttr(kdstdry4,n) + x2i%rAttr(kdstwet4,n)
+          i2x%Fioi_bcpho(n) = x2i%Faxa_bcph(2,n)
+          i2x%Fioi_bcphi(n) = x2i%Faxa_bcph(1,n) + x2i%Faxa_bcph(3,n)
+          i2x%Fioi_flxdst(n) =  x2i%Faxa_dstdry(1,n) + x2i%Faxa_dstwet(1,n) &
+                              + x2i%Faxa_dstdry(2,n) + x2i%Faxa_dstwet(2,n) &
+                              + x2i%Faxa_dstdry(3,n) + x2i%Faxa_dstwet(3,n) &
+                              + x2i%Faxa_dstdry(4,n) + x2i%Faxa_dstwet(4,n)
        end do
 
     end select
@@ -804,28 +883,14 @@ contains
     ! optional per thickness category fields
     !-------------------------------------------------
 
-    if (flds_i2o_per_cat) then
+    if (flds_i2o_per_cat_mod) then
        do n=1,lsize
-          i2x%rAttr(kiFrac_01,n)       = i2x%rAttr(kiFrac,n)
-          i2x%rAttr(kswpen_iFrac_01,n) = i2x%rAttr(kswpen,n) * i2x%rAttr(kiFrac,n)
+          i2x%Si_iFrac_01(1,n)         = i2x%Si_ifrac(n)
+          i2x%Fioi_swpen_iFrac_01(1,n) = i2x%Fioi_swpen(n) * i2x%Si_ifrac(n)
        end do
     end if
 
     call t_stopf('dice_datamode')
-
-    !--------------------
-    ! Debug output
-    !--------------------
-
-    if (debug_export > 1 .and. my_task == master_task) then
-       do nfld = 1, mct_aVect_nRAttr(i2x)
-          call shr_string_listGetName(trim(flds_i2x), nfld, fldname)
-          do n = 1, mct_aVect_lsize(i2x)
-             write(logunit,F0D)'export: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, i2x%rattr(nfld,n)
-          end do
-       end do
-    end if
 
     !--------------------
     ! Write restart
@@ -841,12 +906,10 @@ contains
             trim(case_name), '.dice',trim(inst_suffix),'.rs1.', &
             trim(date_str),'.bin'
        if (my_task == master_task) then
-          nu = shr_file_getUnit()
-          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
+          open(newunit=nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
           write(nu,'(a)') rest_file
           write(nu,'(a)') rest_file_strm
           close(nu)
-          call shr_file_freeUnit(nu)
        endif
        if (my_task == master_task) write(logunit,F04) ' writing ',trim(rest_file),target_ymd,target_tod
        call shr_pcdf_readwrite('write',SDICE%pio_subsystem, SDICE%io_type, &
@@ -863,169 +926,5 @@ contains
     call t_stopf('DICE_RUN')
 
   end subroutine dice_comp_run
-
-  !===============================================================================
-
-  subroutine dice_comp_import(importState, rc)
-
-    ! input/output variables
-    type(ESMF_State)     :: importState
-    integer, intent(out) :: rc
-
-    ! local variables
-    integer :: k
-    !----------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call dshr_import(importState, 'Sa_z', x2i%rattr(kz,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Sa_u', x2i%rattr(kua,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Sa_v', x2i%rattr(kva,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Sa_ptem', x2i%rattr(kptem,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Sa_dens', x2i%rattr(kdens,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Sa_tbot', x2i%rattr(ktbot,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Sa_shum', x2i%rattr(kshum,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Faxa_swndr' , x2i%rattr(kswndr,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_swndf' , x2i%rattr(kswndf,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_swvdr' , x2i%rattr(kswvdr,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_swvdf' , x2i%rattr(kswvdf,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Faxa_bcph', x2i%rattr(kbcphidry,:), ungridded_index=1, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_bcph', x2i%rattr(kbcphodry,:), ungridded_index=2, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_bcph', x2i%rattr(kbcphiwet,:), ungridded_index=3, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Faxa_ocph', x2i%rattr(kocphidry,:), ungridded_index=1, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_ocph', x2i%rattr(kocphodry,:), ungridded_index=2, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_ocph', x2i%rattr(kocphiwet,:), ungridded_index=3, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Faxa_dstwet', x2i%rattr(kdstwet1,:), ungridded_index=1, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_dstwet', x2i%rattr(kdstwet2,:), ungridded_index=2, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_dstwet', x2i%rattr(kdstwet3,:), ungridded_index=3, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_dstwet', x2i%rattr(kdstwet4,:), ungridded_index=4, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Faxa_dstdry', x2i%rattr(kdstdry1,:), ungridded_index=1, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_dstdry', x2i%rattr(kdstdry2,:), ungridded_index=2, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_dstdry', x2i%rattr(kdstdry3,:), ungridded_index=3, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'Faxa_dstdry', x2i%rattr(kdstdry4,:), ungridded_index=4, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_import(importState, 'Fioo_q' , x2i%rattr(kq,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_import(importState, 'So_s' , x2i%rattr(ksalinity,:), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine dice_comp_import
-
-  !===============================================================================
-
-  subroutine dice_comp_export(exportState, flds_i2o_per_cat, rc)
-
-    ! input/output variables
-    type(ESMF_State)     :: exportState
-    logical, intent(in)  :: flds_i2o_per_cat
-    integer, intent(out) :: rc
-
-    ! local variables
-    integer :: k
-    !----------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call dshr_export(i2x%rattr(kiFrac,:) , exportState, 'Si_ifrac', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (flds_i2o_per_cat) then
-       call dshr_export(i2x%rattr(kiFrac_01,:), exportState, 'Si_ifrac_n', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(i2x%rattr(kswpen_iFrac_01,:), exportState, 'Fioi_swpen_ifrac_n', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
-    call dshr_export(i2x%rattr(km,:) , exportState, 'Si_imask', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(kt,:), exportState, 'Si_t', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(ktref,:), exportState, 'Si_tref' , rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(kqref,:), exportState, 'Si_qref', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(kavsdr,:), exportState, 'Si_avsdr', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(kanidr,:), exportState, 'Si_anidr', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(kavsdf,:), exportState, 'Si_avsdf', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(kanidf,:), exportState, 'Si_anidf', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(kswnet,:), exportState, 'Faii_swnet', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(ksen,:), exportState, 'Faii_sen', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(klat,:), exportState, 'Faii_lat', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(klwup,:), exportState, 'Faii_lwup', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(kevap,:), exportState, 'Faii_evap', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(ktauxa,:), exportState, 'Faii_taux', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(ktauya,:), exportState, 'Faii_tauy', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(kmelth,:), exportState, 'Fioi_melth', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(kmeltw,:), exportState, 'Fioi_meltw', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(kswpen,:), exportState, 'Fioi_swpen', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(ktauxo,:), exportState, 'Fioi_taux', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(ktauyo,:), exportState, 'Fioi_tauy', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(ksalt,:), exportState, 'Fioi_salt', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(kbcpho,:), exportState, 'Fioi_bcpho', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(i2x%rattr(kbcphi,:), exportState, 'Fioi_bcphi',  rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(i2x%rattr(kflxdst,:), exportState, 'Fioi_flxdst', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine dice_comp_export
 
 end module dice_comp_mod
