@@ -513,10 +513,9 @@ contains
     if (trim(state_fld) /= 'unset') then
 
        ! Set export state array pointer
-       !allocate(dfields(num)%state_data2d(nflds,lsize))
-       dfields(num)%state_data2d(nflds,lsize) = 0._r8       
        call state_getfldptr(State, fldname=trim(state_fld), fldptr2=dfields(num)%state_data2d, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
+       dfields(num)%state_data2d(nflds,lsize) = 0._r8       
 
        ! Return array pointer if argument is present
        if (present(state_ptr)) then

@@ -22,7 +22,7 @@ module dlnd_comp_mod
   !--------------------------------------------------------------------------
 
   public :: dlnd_comp_advertise
-  public :: dlnd_comp_dfields_init
+  public :: dlnd_comp_init
   public :: dlnd_comp_run
 
   !--------------------------------------------------------------------------
@@ -106,7 +106,7 @@ contains
 
   !===============================================================================
 
-  subroutine dlnd_comp_dfields_init(sdat, exportState, rc)
+  subroutine dlnd_comp_init(sdat, exportState, rc)
 
     !input/output variables
     type(shr_strdata_type) , intent(in)     :: sdat
@@ -154,7 +154,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
 
-  end subroutine dlnd_comp_dfields_init
+  end subroutine dlnd_comp_init
 
   !===============================================================================
 

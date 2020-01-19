@@ -14,7 +14,6 @@ module ocn_comp_nuopc
   use NUOPC_Model      , only : NUOPC_ModelGet
   use shr_file_mod     , only : shr_file_getlogunit, shr_file_setlogunit
   use shr_kind_mod     , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cl=>shr_kind_cl, cs=>shr_kind_cs
-  use shr_const_mod    , only : SHR_CONST_SPVAL
   use shr_sys_mod      , only : shr_sys_abort
   use shr_cal_mod      , only : shr_cal_ymd2date
   use shr_strdata_mod  , only : shr_strdata_type, shr_strdata_readnml
@@ -25,8 +24,8 @@ module ocn_comp_nuopc
   use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
   use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
-  use docn_comp_mod    , only : docn_comp_advertise, docn_comp_dfields_init, docn_comp_run 
-  use docn_comp_mod    , only : fldsfrOcn, fldsFrOcn_num
+  use docn_comp_mod    , only : docn_comp_advertise, docn_comp_init, docn_comp_run 
+  use docn_comp_mod    , only : fldsExport, fldsExport_num, fldsImport, fldsImport_num
   use docn_comp_mod    , only : somtp  ! for restart
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
 
@@ -44,38 +43,36 @@ module ocn_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type(shr_strdata_type) :: sdat
+  type(shr_strdata_type)   :: sdat
 
-  character(len=CS)      :: flds_scalar_name = ''
-  integer                :: flds_scalar_num = 0
-  integer                :: flds_scalar_index_nx = 0
-  integer                :: flds_scalar_index_ny = 0
+  character(len=CS)        :: flds_scalar_name = ''
+  integer                  :: flds_scalar_num = 0
+  integer                  :: flds_scalar_index_nx = 0
+  integer                  :: flds_scalar_index_ny = 0
 
-  type(ESMF_Mesh)        :: mesh                      ! model mesh
-  integer                :: compid                    ! mct comp id
-  integer                :: mpicom                    ! mpi communicator
-  integer                :: my_task                   ! my task in mpi communicator mpicom
-  character(len=16)      :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
-  integer                :: logunit                   ! logging unit number
-  logical                :: read_restart              ! start from restart
+  type(ESMF_Mesh)          :: mesh                            ! model mesh
+  integer                  :: compid                          ! mct comp id
+  integer                  :: mpicom                          ! mpi communicator
+  integer                  :: my_task                         ! my task in mpi communicator mpicom
+  character(len=16)        :: inst_suffix = ""                ! char string associated with instance (ie. "_0001" or "")
+  integer                  :: logunit                         ! logging unit number
+  logical                  :: read_restart                    ! start from restart
 
   character(*) , parameter :: nullstr = 'undefined'
-  integer      , parameter :: master_task=0             ! task number of master task
+  integer      , parameter :: master_task=0                   ! task number of master task
   character(*) , parameter :: rpfile = 'rpointer.ocn'
   character(*) , parameter :: modName =  "(ocn_comp_nuopc)"
   character(*) , parameter :: u_FILE_u = &
        __FILE__
 
-  real(R8)      :: sst_constant_value
-  integer       :: aquap_option
-  logical       :: force_prognostic_true = .false. ! if true set prognostic true
-  character(CL) :: restfilm = nullstr              ! model restart file namelist
-  character(CL) :: restfils = nullstr              ! stream restart file namelist
-  character(CL) :: rest_file                       ! restart filename
-  character(CL) :: rest_file_strm                  ! restart filename for streams
-
-  integer      , parameter :: debug_import = 0          ! if > 0 will diagnose import fields
-  integer      , parameter :: debug_export = 0          ! if > 0 will diagnose export fields
+  ! docn_in namelist input
+  real(R8)                 :: sst_constant_value
+  integer                  :: aquap_option
+  logical                  :: force_prognostic_true = .false. ! if true set prognostic true
+  character(CL)            :: restfilm = nullstr              ! model restart file namelist
+  character(CL)            :: restfils = nullstr              ! stream restart file namelist
+  character(CL)            :: rest_file                       ! restart filename
+  character(CL)            :: rest_file_strm                  ! restart filename for streams
 
 !===============================================================================
 contains
@@ -335,16 +332,20 @@ contains
 
     ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
     ! by replacing the advertised fields with the newly created fields of the same name.
-    call dshr_realize( state=ExportState, fldList=fldsFrOcn, numflds=fldsFrOcn_num, &
-         flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
-         tag=subname//':docnExport', mesh=mesh, rc=rc)
+
+    call dshr_realize( exportState, fldsExport, fldsExport_num, &
+         flds_scalar_name, flds_scalar_num, mesh, tag=subname//':docnExport', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_realize( importState, fldsImport, fldsImport_num, &
+         flds_scalar_name, flds_scalar_num, mesh, tag=subname//':docnImport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
     ! Initialize dfields data type (to map streams to export state fields)
     !--------------------------------
 
-    call docn_comp_dfields_init(sdat, importState, exportState, rc=rc)
+    call docn_comp_init(sdat, importState, exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -411,7 +412,6 @@ contains
     type(ESMF_TimeInterval) :: timeStep
     type(ESMF_Time)         :: currTime, nextTime
     integer                 :: shrlogunit    ! original log unit
-    logical                 :: write_restart ! write restart
     integer                 :: next_ymd      ! model date
     integer                 :: next_tod      ! model sec into model date
     integer                 :: yr            ! year
@@ -434,19 +434,6 @@ contains
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Determine if need to write restarts
-    call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (ESMF_AlarmIsRinging(alarm, rc=rc)) then
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       write_restart = .true.
-       call ESMF_AlarmRingerOff( alarm, rc=rc )
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       write_restart = .false.
-    endif
 
     ! For nuopc - the component clock is advanced at the end of the time interval
     ! For these to match for now - need to advance nuopc one timestep ahead for

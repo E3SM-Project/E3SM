@@ -357,7 +357,6 @@ contains
     type(ESMF_TimeInterval) :: timeStep
     type(ESMF_State)        :: importState, exportState
     integer                 :: shrlogunit    ! original log unit
-    logical                 :: write_restart ! write a restart
     integer                 :: yr            ! year
     integer                 :: mon           ! month
     integer                 :: day           ! day in month
@@ -378,19 +377,6 @@ contains
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Determine if need to write restarts
-    call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (ESMF_AlarmIsRinging(alarm, rc=rc)) then
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       write_restart = .true.
-       call ESMF_AlarmRingerOff( alarm, rc=rc )
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       write_restart = .false.
-    endif
 
     ! For nuopc - the component clock is advanced at the end of the time interval
     ! For these to match for now - need to advance nuopc one timestep ahead for

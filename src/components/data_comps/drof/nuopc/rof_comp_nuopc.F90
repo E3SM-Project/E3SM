@@ -26,7 +26,7 @@ module rof_comp_nuopc
   use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
   use drof_comp_mod    , only : drof_comp_advertise, drof_comp_dfields_init, drof_comp_run 
-  use drof_comp_mod    , only : fldsfrRof, fldsFrRof_num
+  use drof_comp_mod    , only : fldsfrRof, fldsFrRof_num, fldsToRof, fldsToRof_num
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
 
   implicit none
@@ -284,9 +284,13 @@ contains
 
     ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
     ! by replacing the advertised fields with the newly created fields of the same name.
-    call dshr_realize( state=ExportState, fldList=fldsFrRof, numflds=fldsFrRof_num, &
-         flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
-         tag=subname//':drofExport', mesh=mesh, rc=rc)
+
+    call dshr_realize( exportState, fldsFrRof, fldsFrRof_num, &
+         flds_scalar_name, flds_scalar_num, mesh, tag=subname//':drofExport', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    call dshr_realize( importState, fldsToRof, fldsToRof_num, &
+         flds_scalar_name, flds_scalar_num, mesh, tag=subname//':drofImport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -352,7 +356,6 @@ contains
     type(ESMF_TimeInterval) :: timeStep
     type(ESMF_Time)         :: currTime, nextTime
     integer                 :: shrlogunit    ! original log unit
-    logical                 :: write_restart ! write restart
     integer                 :: next_ymd      ! model date
     integer                 :: next_tod      ! model sec into model date
     integer                 :: yr            ! year
@@ -373,19 +376,6 @@ contains
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Determine if need to write restarts
-    call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (ESMF_AlarmIsRinging(alarm, rc=rc)) then
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       write_restart = .true.
-       call ESMF_AlarmRingerOff( alarm, rc=rc )
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       write_restart = .false.
-    endif
 
     ! For nuopc - the component clock is advanced at the end of the time interval
     ! For these to match for now - need to advance nuopc one timestep ahead for

@@ -2,7 +2,7 @@ module docn_comp_mod
 
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_LogWrite
-  use ESMF                  , only : ESMF_State, ESMF_StateGet, ESMF_StateItem_Flag, ESMF_STATEITEM_NOTFOUND 
+  use ESMF                  , only : ESMF_State, ESMF_StateGet, ESMF_StateItem_Flag, ESMF_STATEITEM_NOTFOUND
   use ESMF                  , only : ESMF_Mesh, ESMF_MeshGet
   use ESMF                  , only : operator(/=), operator(==)
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
@@ -27,17 +27,17 @@ module docn_comp_mod
   !--------------------------------------------------------------------------
 
   public :: docn_comp_advertise
-  public :: docn_comp_dfields_init
+  public :: docn_comp_init
   public :: docn_comp_run
 
   !--------------------------------------------------------------------------
   ! Module data
   !--------------------------------------------------------------------------
 
-  integer             , public :: fldsToOcn_num = 0
-  integer             , public :: fldsFrOcn_num = 0
-  type(fld_list_type) , public :: fldsToOcn(fldsMax)
-  type(fld_list_type) , public :: fldsFrOcn(fldsMax)
+  integer             , public :: fldsImport_num = 0
+  integer             , public :: fldsExport_num = 0
+  type(fld_list_type) , public :: fldsImport(fldsMax)
+  type(fld_list_type) , public :: fldsExport(fldsMax)
 
   type(dfield_type) :: dfields(fldsMax)
   integer           :: dfields_num
@@ -51,9 +51,10 @@ module docn_comp_mod
   character(*) , parameter :: u_FILE_u = &
        __FILE__
 
-  logical :: ocn_prognostic_mod     ! set in docn_comp_advertise
+  ! prognostic flag set in docn_comp_advertise
+  logical :: ocn_prognostic
 
-  ! internal fields 
+  ! internal fields
   real(r8),         pointer :: xc(:), yc(:) ! mesh lats and lons - needed for aquaplanet analytical
   real(R8), public, pointer :: somtp(:)     ! SOM ocean temperature needed for restart
 
@@ -87,7 +88,7 @@ module docn_comp_mod
 contains
 !===============================================================================
 
-  subroutine docn_comp_advertise(importState, exportState, flds_scalar_name, ocn_prognostic, rc)
+  subroutine docn_comp_advertise(importState, exportState, flds_scalar_name, ocn_prognostic_in, rc)
 
     ! --------------------------------------------------------------
     ! determine export and import fields to advertise to mediator
@@ -97,69 +98,69 @@ contains
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
     character(len=*)     , intent(in)    :: flds_scalar_name
-    logical              , intent(in)    :: ocn_prognostic
+    logical              , intent(in)    :: ocn_prognostic_in
     integer              , intent(out)   :: rc
 
     ! local variables
     integer         :: n
     !-------------------------------------------------------------------------------
 
+    ! Save as module variables for use in debugging
+    ocn_prognostic = ocn_prognostic_in
+
     ! Advertise export fields
 
-    fldsFrOcn_num=1
-    fldsFrOcn(1)%stdname = trim(flds_scalar_name)
+    fldsExport_num=1
+    fldsExport(1)%stdname = trim(flds_scalar_name)
 
-    call dshr_fld_add('So_omask' , fldsFrOcn_num, fldsFrOcn)
-    call dshr_fld_add('So_t'     , fldsFrOcn_num, fldsFrOcn)
-    call dshr_fld_add('So_s'     , fldsFrOcn_num, fldsFrOcn)
-    call dshr_fld_add('So_u'     , fldsFrOcn_num, fldsFrOcn)
-    call dshr_fld_add('So_v'     , fldsFrOcn_num, fldsFrOcn)
-    call dshr_fld_add('So_dhdx'  , fldsFrOcn_num, fldsFrOcn)
-    call dshr_fld_add('So_dhdy'  , fldsFrOcn_num, fldsFrOcn)
-    call dshr_fld_add('Fioo_q'   , fldsFrOcn_num, fldsFrOcn)
-    call dshr_fld_add('So_fswpen', fldsFrOcn_num, fldsFrOcn)
+    call dshr_fld_add('So_omask' , fldsExport_num, fldsExport)
+    call dshr_fld_add('So_t'     , fldsExport_num, fldsExport)
+    call dshr_fld_add('So_s'     , fldsExport_num, fldsExport)
+    call dshr_fld_add('So_u'     , fldsExport_num, fldsExport)
+    call dshr_fld_add('So_v'     , fldsExport_num, fldsExport)
+    call dshr_fld_add('So_dhdx'  , fldsExport_num, fldsExport)
+    call dshr_fld_add('So_dhdy'  , fldsExport_num, fldsExport)
+    call dshr_fld_add('Fioo_q'   , fldsExport_num, fldsExport)
+    call dshr_fld_add('So_fswpen', fldsExport_num, fldsExport)
 
-    do n = 1,fldsFrOcn_num
-       call NUOPC_Advertise(exportState, standardName=fldsFrOcn(n)%stdname, rc=rc)
+    do n = 1,fldsExport_num
+       call NUOPC_Advertise(exportState, standardName=fldsExport(n)%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):Fr_ocn'//trim(fldsFrOcn(n)%stdname), &
+       call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):Fr_ocn'//trim(fldsExport(n)%stdname), &
             ESMF_LOGMSG_INFO)
     enddo
 
     ! Advertise import fields
 
     if (ocn_prognostic) then
-       fldsToOcn_num=1
-       fldsToOcn(1)%stdname = trim(flds_scalar_name)
+       fldsImport_num=1
+       fldsImport(1)%stdname = trim(flds_scalar_name)
 
-       call dshr_fld_add('Foxx_swnet' , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add('Foxx_lwup'  , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add('Foxx_sen'   , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add('Foxx_lat'   , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add('Faxa_lwdn'  , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add('Faxa_snow'  , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add('Fioi_melth' , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
-       call dshr_fld_add('Foxx_rofi'  , fldlist_num=fldsToOcn_num, fldlist=fldsToOcn)
+       call dshr_fld_add('Foxx_swnet' , fldlist_num=fldsImport_num, fldlist=fldsImport)
+       call dshr_fld_add('Foxx_lwup'  , fldlist_num=fldsImport_num, fldlist=fldsImport)
+       call dshr_fld_add('Foxx_sen'   , fldlist_num=fldsImport_num, fldlist=fldsImport)
+       call dshr_fld_add('Foxx_lat'   , fldlist_num=fldsImport_num, fldlist=fldsImport)
+       call dshr_fld_add('Faxa_lwdn'  , fldlist_num=fldsImport_num, fldlist=fldsImport)
+       call dshr_fld_add('Faxa_snow'  , fldlist_num=fldsImport_num, fldlist=fldsImport)
+       call dshr_fld_add('Fioi_melth' , fldlist_num=fldsImport_num, fldlist=fldsImport)
+       call dshr_fld_add('Foxx_rofi'  , fldlist_num=fldsImport_num, fldlist=fldsImport)
 
-       do n = 1,fldsToOcn_num
-          call NUOPC_Advertise(importState, standardName=fldsToOcn(n)%stdname, rc=rc)
+       do n = 1,fldsImport_num
+          call NUOPC_Advertise(importState, standardName=fldsImport(n)%stdname, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):To_ocn'//trim(fldsToOcn(n)%stdname), &
+          call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):To_ocn'//trim(fldsImport(n)%stdname), &
                ESMF_LOGMSG_INFO)
        end do
     end if
-
-    ! Save as module variables for use in debugging
-    ocn_prognostic_mod = ocn_prognostic
 
   end subroutine docn_comp_advertise
 
 !===============================================================================
 
-  subroutine docn_comp_dfields_init(sdat, importState, exportState, rc)
+  subroutine docn_comp_init(sdat, importState, exportState, rc)
 
     ! input/output parameters
-    type(shr_strdata_type) , intent(inout) :: sdat   
+    type(shr_strdata_type) , intent(inout) :: sdat
     type(ESMF_State)       , intent(inout) :: importState
     type(ESMF_State)       , intent(inout) :: exportState
     integer                , intent(out)   :: rc
@@ -219,7 +220,7 @@ contains
     call ESMF_StateGet(exportState, 'So_fswpen', itemFlag, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     if (itemFlag /= ESMF_STATEITEM_NOTFOUND) then
-       call state_getfldptr(exportState, fldname='So_fswpen', fldptr1=So_fswpen, rc=rc)
+       call state_getfldptr(exportState, 'So_fswpen', fldptr1=So_fswpen, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
        So_fswpen(:) = swp
     end if
@@ -240,28 +241,28 @@ contains
     ! Set pointers to importState fields
     ! -------------------------------------
 
-    if (ocn_prognostic_mod) then
-       call state_getfldptr(importState, fldname='Foxx_swnet' , fldptr1=Foxx_swnet , rc=rc)
+    if (ocn_prognostic) then
+       call state_getfldptr(importState, 'Foxx_swnet' , fldptr1=Foxx_swnet , rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call state_getfldptr(importState, fldname='Foxx_lwup'  , fldptr1=Foxx_lwup  , rc=rc)
+       call state_getfldptr(importState, 'Foxx_lwup'  , fldptr1=Foxx_lwup  , rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call state_getfldptr(importState, fldname='Foxx_lwup'  , fldptr1=Foxx_lwup  , rc=rc)
+       call state_getfldptr(importState, 'Foxx_lwup'  , fldptr1=Foxx_lwup  , rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call state_getfldptr(importState, fldname='Foxx_sen'   , fldptr1=Foxx_sen   , rc=rc)
+       call state_getfldptr(importState, 'Foxx_sen'   , fldptr1=Foxx_sen   , rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call state_getfldptr(importState, fldname='Foxx_lat'   , fldptr1=Foxx_lat   , rc=rc)
+       call state_getfldptr(importState, 'Foxx_lat'   , fldptr1=Foxx_lat   , rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call state_getfldptr(importState, fldname='Faxa_lwdn'  , fldptr1=Faxa_lwdn  , rc=rc)
+       call state_getfldptr(importState, 'Faxa_lwdn'  , fldptr1=Faxa_lwdn  , rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call state_getfldptr(importState, fldname='Faxa_snow'  , fldptr1=Faxa_snow  , rc=rc)
+       call state_getfldptr(importState, 'Faxa_snow'  , fldptr1=Faxa_snow  , rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call state_getfldptr(importState, fldname='Fioi_melth' , fldptr1=Fioi_melth , rc=rc)
+       call state_getfldptr(importState, 'Fioi_melth' , fldptr1=Fioi_melth , rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call state_getfldptr(importState, fldname='Foxx_rofi'  , fldptr1=Foxx_rofi  , rc=rc)
+       call state_getfldptr(importState, 'Foxx_rofi'  , fldptr1=Foxx_rofi  , rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     end if
 
-  end subroutine docn_comp_dfields_init
+  end subroutine docn_comp_init
 
 !===============================================================================
 
@@ -282,14 +283,14 @@ contains
     type(shr_strdata_type) , intent(inout) :: sdat
     type(ESMF_Mesh)        , intent(in)    :: mesh
     real(r8)               , intent(in)    :: sst_constant_value
-    real(r8)               , intent(in)    :: dt 
+    real(r8)               , intent(in)    :: dt
     integer                , intent(in)    :: aquap_option
     logical                , intent(in)    :: read_restart
     integer                , intent(out)   :: rc
 
     ! local variables
     integer               :: n, lsize
-    logical               :: first_time = .true. 
+    logical               :: first_time = .true.
     integer               :: spatialDim         ! number of dimension in mesh
     integer               :: numOwnedElements   ! size of mesh
     real(r8), pointer     :: ownedElemCoords(:) ! mesh lat and lons
@@ -409,7 +410,7 @@ contains
              So_t(n) = somtp(n)
              Fioo_q(n) = 0.0_R8
           enddo
-       else   
+       else
           allocate(tfreeze(lsize))
           tfreeze(:) = shr_frz_freezetemp(So_s(:)) + TkFrz
           do n = 1,lsize

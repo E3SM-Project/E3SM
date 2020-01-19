@@ -25,7 +25,7 @@ module lnd_comp_nuopc
   use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
   use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
-  use dlnd_comp_mod    , only : dlnd_comp_advertise, dlnd_comp_dfields_init, dlnd_comp_run 
+  use dlnd_comp_mod    , only : dlnd_comp_advertise, dlnd_comp_init, dlnd_comp_run 
   use dlnd_comp_mod    , only : fldsfrLnd, fldsFrLnd_num
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
 
@@ -307,7 +307,7 @@ contains
     ! Initialize dfields data type (to map streams to export state fields)
     !--------------------------------
 
-    call dlnd_comp_dfields_init(sdat, exportState, rc)
+    call dlnd_comp_init(sdat, exportState, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------
@@ -368,7 +368,6 @@ contains
     type(ESMF_TimeInterval) :: timeStep
     type(ESMF_Time)         :: currTime, nextTime
     integer                 :: shrlogunit    ! original log unit
-    logical                 :: write_restart ! write restart
     integer                 :: next_ymd      ! model date
     integer                 :: next_tod      ! model sec into model date
     integer                 :: yr            ! year
@@ -388,19 +387,6 @@ contains
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(gcomp, modelClock=clock, importState=importState, exportState=exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Determine if need to write restarts
-    call ESMF_ClockGetAlarm(clock, alarmname='alarm_restart', alarm=alarm, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (ESMF_AlarmIsRinging(alarm, rc=rc)) then
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       write_restart = .true.
-       call ESMF_AlarmRingerOff( alarm, rc=rc )
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    else
-       write_restart = .false.
-    endif
 
     ! For nuopc - the component clock is advanced at the end of the time interval
     ! For these to match for now - need to advance nuopc one timestep ahead for

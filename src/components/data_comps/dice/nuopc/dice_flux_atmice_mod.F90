@@ -1,6 +1,6 @@
 module dice_flux_atmice_mod
 
-  use shr_kind_mod    , only: IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
+  use shr_kind_mod, only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_const_mod   ! shared constants
   use shr_sys_mod     ! shared system routines
 
@@ -43,7 +43,7 @@ contains
     !-------------------------------------------------------------------------------
 
     !--- input arguments --------------------------------
-    integer(IN),intent(in)  :: mask (:)    ! 0 <=> cell NOT in model domain
+    integer    ,intent(in)  :: mask (:)    ! 0 <=> cell NOT in model domain
     real(R8)   ,intent(in)  :: zbot (:)    ! atm level height  (m)
     real(R8)   ,intent(in)  :: ubot (:)    ! atm u wind     (m/s)
     real(R8)   ,intent(in)  :: vbot (:)    ! atm v wind     (m/s)
@@ -52,7 +52,7 @@ contains
     real(R8)   ,intent(in)  :: rbot (:)    ! atm air density   (kg/m^3)
     real(R8)   ,intent(in)  :: tbot (:)    ! atm T       (K)
     real(R8)   ,intent(in)  :: ts   (:)    ! surface temperature
-    integer(IN),intent(in)  :: logunit     ! logging unit number
+    integer    ,intent(in)  :: logunit     ! logging unit number
 
     !--- output arguments -------------------------------
     real(R8)   ,intent(out) :: sen  (:)    ! sensible      heat flux  (W/m^2)
@@ -72,8 +72,8 @@ contains
     real(R8),parameter :: zzsice = 0.0005_R8          ! ice surface roughness
 
     !--- local variables --------------------------------
-    integer(IN) :: lsize  ! array dimensions
-    integer(IN) :: n      ! array indicies
+    integer     :: lsize  ! array dimensions
+    integer     :: n      ! array indicies
     real(R8)    :: vmag   ! surface wind magnitude   (m/s)
     real(R8)    :: thvbot ! virtual temperature      (K)
     real(R8)    :: ssq    ! sea surface humidity     (kg/kg)
