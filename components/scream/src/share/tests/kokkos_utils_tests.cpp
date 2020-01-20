@@ -175,8 +175,8 @@ TEST_CASE("team_utils_cuda", "[kokkos_utils]")
     if (wi > max_ws_idx) { max_ws_idx = wi; }
 
     Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
-        int volatile* const data = &test_data(wi);
-        *data += 1;
+      int volatile* const data = &test_data(wi);
+      *data += 1;
     });
 
     tu.release_workspace_idx(team_member, wi);
