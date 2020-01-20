@@ -167,40 +167,40 @@ struct TestPack {
     compare_packs(ac, a);                           \
   } while (0)
 
-#define test_pack_gen_bin_op_all(op) do {         \
-  Pack a, b, d, dc;                               \
-  scalar c;                                       \
-  setup(a, b, c);                                 \
-  d = a op b;                                     \
-  vector_novec for (int i = 0; i < Pack::n; ++i)  \
-    dc[i] = a[i] op b[i];                         \
-  compare_packs(dc, d);                           \
-  d = a op c;                                     \
-  vector_novec for (int i = 0; i < Pack::n; ++i)  \
-    dc[i] = a[i] op c;                            \
-  compare_packs(dc, d);                           \
-  d = c op b;                                     \
-  vector_novec for (int i = 0; i < Pack::n; ++i)  \
-    dc[i] = c op b[i];                            \
-  compare_packs(dc, d);                           \
-} while (0)
-
-#define test_pack_gen_bin_fn_all(op, impl, setup_fn) do { \
+#define test_pack_gen_bin_op_all(op) do {           \
     Pack a, b, d, dc;                               \
     scalar c;                                       \
-    setup_fn(a, b, c);                              \
-    d = op(a, b);                                   \
+    setup(a, b, c);                                 \
+    d = a op b;                                     \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
-      dc[i] = impl(a[i], b[i]);                     \
+      dc[i] = a[i] op b[i];                         \
     compare_packs(dc, d);                           \
-    d = op(a, c);                                   \
+    d = a op c;                                     \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
-      dc[i] = impl(a[i], c);                        \
+      dc[i] = a[i] op c;                            \
     compare_packs(dc, d);                           \
-    d = op(c, b);                                   \
+    d = c op b;                                     \
     vector_novec for (int i = 0; i < Pack::n; ++i)  \
-      dc[i] = impl(c, b[i]);                        \
+      dc[i] = c op b[i];                            \
     compare_packs(dc, d);                           \
+  } while (0)
+
+#define test_pack_gen_bin_fn_all(op, impl, setup_fn) do { \
+    Pack a, b, d, dc;                                     \
+    scalar c;                                             \
+    setup_fn(a, b, c);                                    \
+    d = op(a, b);                                         \
+    vector_novec for (int i = 0; i < Pack::n; ++i)        \
+      dc[i] = impl(a[i], b[i]);                           \
+    compare_packs(dc, d);                                 \
+    d = op(a, c);                                         \
+    vector_novec for (int i = 0; i < Pack::n; ++i)        \
+      dc[i] = impl(a[i], c);                              \
+    compare_packs(dc, d);                                 \
+    d = op(c, b);                                         \
+    vector_novec for (int i = 0; i < Pack::n; ++i)        \
+      dc[i] = impl(c, b[i]);                              \
+    compare_packs(dc, d);                                 \
   } while (0)
 
 #define test_pack_gen_unary_fn(op, impl) do {     \
