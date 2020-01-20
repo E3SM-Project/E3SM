@@ -79,6 +79,8 @@ module atm_comp_nuopc
   character(len=*) , parameter :: orb_variable_year    = 'variable_year'
   character(len=*) , parameter :: orb_fixed_parameters = 'fixed_parameters'
 
+  logical :: diagnose_data = .false.
+
   character(*)     , parameter :: u_FILE_u = &
        __FILE__
 
@@ -336,7 +338,7 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
     if (my_task == master_task) then
-       write(logunit,*) " (datm_comp_nuopc): obtaining datm mesh from " // trim(cvalue)
+       write(logunit,*) trim(subname)// " obtaining datm mesh from " // trim(filename)
     end if
 
     ! Get compid (for mct)
@@ -434,8 +436,10 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Diagnostics
-    call State_diagnose(exportState, subname//':ES',rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (diagnose_data) then
+       call State_diagnose(exportState, subname//':ES',rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    end if
 
     ! Reset shr logging to original values
     call shr_file_setLogUnit (shrlogunit)
@@ -533,10 +537,8 @@ contains
     endif
 
     ! Diagnostics
-    call State_diagnose(exportState,subname//':ES',rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (my_task == master_task) then
-       call log_clock_advance(clock, 'DATM', logunit, rc)
+    if (diagnose_data) then
+       call State_diagnose(exportState,subname//':ES',rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 

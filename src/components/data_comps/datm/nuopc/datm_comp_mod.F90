@@ -305,53 +305,54 @@ contains
     !-----------------------------
 
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_topo'    , strm_fld='topo'  , &
-         state_ptr=Sa_topo    , rc=rc)
+         state_ptr=Sa_topo    , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_z'       , strm_fld='z'     , &
-         state_ptr=Sa_z       , rc=rc)
+         state_ptr=Sa_z       , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_u'       , strm_fld='u'     , &
-         state_ptr=Sa_u       , rc=rc)
+         state_ptr=Sa_u       , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_v'       , strm_fld='v'     , &
-         state_ptr=Sa_v       , rc=rc)
+         state_ptr=Sa_v       , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_ptem'    , strm_fld='ptem'  , &
-         state_ptr=Sa_ptem    , rc=rc)
+         state_ptr=Sa_ptem    , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_dens'    , strm_fld='dens'  , &
-         state_ptr=Sa_dens    , rc=rc)
+         state_ptr=Sa_dens    , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_pslv'    , strm_fld='pslv'  , &
-         state_ptr=Sa_pslv    , rc=rc)
+         state_ptr=Sa_pslv    , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_rainc' , strm_fld='rainc' , &
-         state_ptr=Faxa_rainc , rc=rc)
+         state_ptr=Faxa_rainc , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_rainl' , strm_fld='rainl' , &
-         state_ptr=Faxa_rainl , rc=rc)
+         state_ptr=Faxa_rainl , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_snowc' , strm_fld='snowc' , &
-         state_ptr=Faxa_snowc , rc=rc)
+         state_ptr=Faxa_snowc , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_snowl' , strm_fld='snowl' , &
-         state_ptr=Faxa_snowl , rc=rc)
+         state_ptr=Faxa_snowl , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_swndr' , strm_fld='swndr' , &
-         state_ptr=Faxa_swndr , rc=rc)
+         state_ptr=Faxa_swndr , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_swvdr' , strm_fld='swvdr' , &
-         state_ptr=Faxa_swvdr , rc=rc)
+         state_ptr=Faxa_swvdr , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_swndf' , strm_fld='swndf' , &
-         state_ptr=Faxa_swndf , rc=rc)
+         state_ptr=Faxa_swndf , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_swvdf' , strm_fld='swvdf' , &
-         state_ptr=Faxa_swvdf , rc=rc)
+         state_ptr=Faxa_swvdf , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_swnet' , strm_fld='swnet' , &
-         state_ptr=Faxa_swnet , rc=rc)
+         state_ptr=Faxa_swnet , logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
     if (flds_presaero) then
        allocate(strm_flds(3))
        strm_flds = (/'bcphidry', 'bcphodry', 'bcphiwet'/)
@@ -374,6 +375,7 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        deallocate(strm_flds)
     end if
+
     if (flds_wiso) then ! isopic forcing
        allocate(strm_flds(3))
        strm_flds = (/'rainc_16O', 'rainc_18O', 'rainc_HDO'/)
@@ -399,27 +401,27 @@ contains
     end if
 
     !-----------------------------
-    ! initialize dfields for export fields that have a corresponding stream field AND that have a corresponding internal field
+    ! initialize dfields for export fields that have a corresponding stream field AND that have a corresponding module field
     !-----------------------------
 
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_tbot'   , strm_fld='tbot', &
-         state_ptr=Sa_tbot, strm_ptr=strm_tbot, rc=rc)
+         state_ptr=Sa_tbot, strm_ptr=strm_tbot, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_pbot'   , strm_fld='pbot', &
-         state_ptr=Sa_pbot, strm_ptr=strm_pbot, rc=rc)
+         state_ptr=Sa_pbot, strm_ptr=strm_pbot, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_shum'   , strm_fld='shum', &
-         state_ptr=Sa_shum, strm_ptr=strm_shum, rc=rc)
+         state_ptr=Sa_shum, strm_ptr=strm_shum, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_lwdn' , strm_fld='lwdn', &
-         state_ptr=Faxa_lwdn, strm_ptr=strm_lwdn, rc=rc)
+         state_ptr=Faxa_lwdn, strm_ptr=strm_lwdn, logunit=logunit, masterproc=masterproc, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (flds_co2a .or. flds_co2b .or. flds_co2c) then
        call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_co2prog', strm_fld='co2prog', &
-            state_ptr=Sa_co2prog, rc=rc)
+            state_ptr=Sa_co2prog, logunit=logunit, masterproc=masterproc, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_co2diag', strm_fld='co2diag', &
-            state_ptr=Sa_co2diag, rc=rc)
+            state_ptr=Sa_co2diag, logunit=logunit, masterproc=masterproc, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 

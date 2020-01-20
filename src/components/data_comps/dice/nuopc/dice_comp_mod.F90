@@ -560,10 +560,6 @@ contains
           Si_t(n) = tfreeze(n) + Si_ifrac(n)*(Si_t(n)-tfreeze(n))
        end do
 
-       do n = 1,size(Sa_dens)
-          !write(6,*)'DEBUG: n, sa_dens= ',n,Sa_dens(n)
-       end do
-
        ! compute ice/ice surface fluxes
        call dice_flux_atmice( &
             imask     ,Sa_z      ,Sa_u      ,Sa_v     , &

@@ -40,7 +40,6 @@ module dshr_nuopc_mod
 
   type dfield_type
      ! state data
-     character(CS)              :: state_fldname
      real(r8), pointer          :: state_data1d(:) => null()
      real(r8), pointer          :: state_data2d(:,:) => null()
      ! stream data input (always assumed to be 1d for now)
@@ -334,7 +333,6 @@ contains
        call shr_sys_abort(subname//" ERROR bad ESMF calendar name "//trim(calendar))
     end if
     sdat%calendar = trim(shr_cal_calendarName(trim(calendar)))
-    write(6,*)'DEBUG: calendar is ',trim(sdat%calendar)
 
     ! initialize sdat domain (sdat%grid)
     if (my_task == master_task) then
@@ -467,7 +465,7 @@ contains
     integer                , intent(inout) :: dfields_num
     character(len=*)       , intent(in)    :: strm_fld
     real(r8)               , pointer       :: strm_ptr(:)
-    integer, optional      , intent(in)    :: logunit         
+    integer, optional      , intent(in)    :: logunit
     logical, optional      , intent(in)    :: masterproc
 
     ! local variables
@@ -484,9 +482,6 @@ contains
     endif
     num = dfields_num
 
-    ! the following values will not be set
-    dfields(num)%state_fldname = 'unset'
-
     ! determine local size
     lsize = mct_avect_lsize(sdat%avs(1))
 
@@ -501,8 +496,10 @@ contains
           allocate(dfields(num)%stream_data1d(lsize))
           strm_ptr => dfields(num)%stream_data1d
           found = .true.
-          if (masterproc) then
-             write(logunit,*)'(dshr_addfield_add_strmfld) allocating memory for field strm_'//trim(strm_fld)
+          if (present(logunit) .and. present(masterproc)) then
+             if (masterproc) then
+                write(logunit,*)'(dshr_addfield_add) allocating memory for stream field strm_'//trim(strm_fld)
+             end if
           end if
           exit
        end if
@@ -517,7 +514,8 @@ contains
 
 !===============================================================================
 
-  subroutine dshr_dfield_add_1d(sdat, state, dfields, dfields_num, state_fld, strm_fld, strm_ptr, state_ptr, rc)
+  subroutine dshr_dfield_add_1d(sdat, state, dfields, dfields_num, state_fld, strm_fld, strm_ptr, state_ptr, &
+       logunit, masterproc, rc)
 
     ! Set 1d dfield values
 
@@ -529,6 +527,8 @@ contains
     character(len=*)       , intent(in)    :: strm_fld
     real(r8), optional     , pointer       :: strm_ptr(:)
     real(r8), optional     , pointer       :: state_ptr(:)
+    integer , optional     , intent(in)    :: logunit
+    logical , optional     , intent(in)    :: masterproc
     integer                , intent(out)   :: rc
 
     ! local variables
@@ -547,9 +547,6 @@ contains
     endif
     num = dfields_num
 
-    ! set the import or export state field name
-    dfields(num)%state_fldname = trim(state_fld)
-
     ! Initialize strm_ptr and state_ptr if it is present
     ! These will be set to valid values if the relevant fields are found
     if (present(strm_ptr)) strm_ptr => null()
@@ -560,8 +557,6 @@ contains
 
     ! always allocate memory for stream_data and initialize it to 0
     ! note that if the attribute vector is not found in the streams
-    allocate(dfields(num)%stream_data1d(lsize))
-    dfields(num)%stream_data1d(:) = 0._r8
 
     ! loop over all input streams
     found = .false.
@@ -572,8 +567,17 @@ contains
           ! the field is in the attribute vector - so set the following values
           dfields(num)%sdat_stream_index = ns
           dfields(num)%sdat_avect_index = kf
+          allocate(dfields(num)%stream_data1d(lsize))
+          dfields(num)%stream_data1d(:) = 0._r8
           ! set strm_ptr if argument is present
-          if (present(strm_ptr)) strm_ptr => dfields(num)%stream_data1d
+          if (present(strm_ptr)) then
+             strm_ptr => dfields(num)%stream_data1d
+          end if
+          if (present(logunit) .and. present(masterproc)) then
+             if (masterproc) then
+                write(logunit,*)'(dshr_addfield_add) allocating memory for field '//trim(strm_fld)
+             end if
+          end if
           found = .true.
           exit
        end if
@@ -587,6 +591,11 @@ contains
     call state_getfldptr(State, fldname=trim(state_fld), fldptr1=dfields(num)%state_data1d, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     dfields(num)%state_data1d = 0.0_r8
+    if (present(logunit) .and. present(masterproc)) then
+       if (masterproc) then
+          write(logunit,*)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
+       end if
+    end if
 
     ! Return array pointer if argument is present
     if (present(state_ptr)) then
@@ -597,7 +606,8 @@ contains
 
   !===============================================================================
 
-  subroutine dshr_dfield_add_2d(sdat, state, dfields, dfields_num, state_fld, strm_flds, state_ptr, rc)
+  subroutine dshr_dfield_add_2d(sdat, state, dfields, dfields_num, state_fld, strm_flds, state_ptr, &
+       logunit, masterproc, rc)
 
     ! input/output variables
     type(shr_strdata_type) , intent(in)    :: sdat
@@ -607,6 +617,8 @@ contains
     character(len=*)       , intent(in)    :: state_fld
     character(len=*)       , intent(in)    :: strm_flds(:)
     real(r8), optional     , pointer       :: state_ptr(:,:)
+    integer , optional     , intent(in)    :: logunit
+    logical , optional     , intent(in)    :: masterproc
     integer                , intent(out)   :: rc
 
     ! local variables
@@ -624,9 +636,6 @@ contains
        call shr_sys_abort(trim(subname)//": ERROR num > fldsMax for "//trim(state_fld))
     endif
     num = dfields_num
-
-    ! assume only one only two-dimensional state field
-    dfields(num)%state_fldname = state_fld
 
     ! determine stream fldnames array
     nflds = size(strm_flds)
@@ -1011,11 +1020,9 @@ contains
      character(len=CL) :: rest_file_strm
      character(len=CS) :: date_str
      integer           :: nu
-     character(*), parameter  :: F00   = "('(dshr_restart_write) ',a,2f10.4)"
      !-------------------------------------------------------------------------------
 
-     call shr_cal_datetod2string(date_str, ymd, tod)
-     write(rest_file,"(7a)")      trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
+     write(rest_file     ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
      write(rest_file_strm,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
      if (my_task == master_task) then
         open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
@@ -1024,7 +1031,8 @@ contains
         close(nu)
      endif
      if (my_task == master_task) then
-        write(logunit,F00) ' writing ',trim(rest_file_strm), ymd, tod
+        call shr_cal_datetod2string(date_str, ymd, tod)
+        write(logunit,*)' (dshr_restart_write) writing ',trim(rest_file_strm), ymd, tod
      end if
      if (present(fld) .and. present(fldname)) then
         call shr_pcdf_readwrite('write', sdat%pio_subsystem, sdat%io_type,&
