@@ -106,6 +106,12 @@ module atm2lndType
      real(r8), pointer :: forc_rain_downscaled_col      (:)   => null() ! downscaled atm rain rate [mm/s]
      real(r8), pointer :: forc_snow_downscaled_col      (:)   => null() ! downscaled atm snow rate [mm/s]
      real(r8), pointer :: forc_lwrad_downscaled_col     (:)   => null() ! downscaled atm downwrd IR longwave radiation (W/m**2)
+     !!!!!!!!!!! Added by UM team on Dec.15, 2019 
+     real(r8),  pointer ::lwdn_spec(:,:)  => null() ! longwave downward spectral flux
+     real(r8),  pointer ::emis_spec(:,:)  => null() ! surface spectral emissivity
+     integer , pointer ::do_emis(:) => null() !   ! A switch for turning on surface spectral emissivity
+     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
      !  rof->lnd
      real(r8), pointer :: forc_flood_grc                (:)   => null() ! rof flood (mm/s)
@@ -250,6 +256,11 @@ contains
     allocate(this%forc_lwrad_not_downscaled_grc (begg:endg))        ; this%forc_lwrad_not_downscaled_grc (:)   = ival
     allocate(this%forc_rain_not_downscaled_grc  (begg:endg))        ; this%forc_rain_not_downscaled_grc  (:)   = ival
     allocate(this%forc_snow_not_downscaled_grc  (begg:endg))        ; this%forc_snow_not_downscaled_grc  (:)   = ival
+    !   Added by UM team on Dec.15, 2019
+    allocate(this%lwdn_spec(begg:endg,1:16))   ; this%lwdn_spec (:,:) = ival
+    allocate(this%emis_spec(begg:endg,1:16)) ; this%emis_spec (:,:)  = ival
+    allocate(this%do_emis(begg:endg)) ; this%do_emis(:) = ival
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     ! atm->lnd downscaled
     allocate(this%forc_t_downscaled_col         (begc:endc))        ; this%forc_t_downscaled_col         (:)   = ival

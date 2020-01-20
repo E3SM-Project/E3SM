@@ -36,6 +36,8 @@ module lnd2atmMod
   use ColumnDataType       , only : col_ws, col_wf, col_cf, col_es  
   use VegetationDataType   , only : veg_es, veg_ef, veg_ws, veg_wf
   use SoilHydrologyType    , only : soilhydrology_type 
+  use CanopyStateType      , only : canopystate_type  ! Added by UM team on Dec.15, 2019
+
   
   !
   ! !PUBLIC TYPES:
@@ -115,7 +117,7 @@ contains
        atm2lnd_vars, surfalb_vars, frictionvel_vars, &
        waterstate_vars, waterflux_vars, energyflux_vars, &
        solarabs_vars, carbonflux_vars, drydepvel_vars, &
-       vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars) 
+       vocemis_vars, dust_vars, ch4_vars, soilhydrology_vars, lnd2atm_vars, canopystate_vars) ! canopystate_vars is added by UM team on Dec.15, 2019 
     !
     ! !DESCRIPTION:
     ! Compute lnd2atm_vars component of gridcell derived type
@@ -138,7 +140,8 @@ contains
     type(dust_type)        , intent(in)     :: dust_vars
     type(ch4_type)         , intent(in)     :: ch4_vars
     type(soilhydrology_type), intent(in)    :: soilhydrology_vars
-    type(lnd2atm_type)     , intent(inout)  :: lnd2atm_vars 
+    type(lnd2atm_type)     , intent(inout)  :: lnd2atm_vars
+    type(canopystate_type) , intent(in)     :: canopystate_vars ! Added by UM team on Dec.15, 2019 
     !
     ! !LOCAL VARIABLES:
     integer :: g, lvl             ! index
@@ -161,6 +164,14 @@ contains
          veg_es%t_ref2m (bounds%begp:bounds%endp), &
          lnd2atm_vars%t_ref2m_grc       (bounds%begg:bounds%endg), &
          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+   !!!!!!!!!!!!!!!!!! Added by UM team on Dec.15, 2019 !
+     call p2g(bounds, &
+          canopystate_vars%tlai_patch(bounds%begp:bounds%endp), lnd2atm_vars%tlai(bounds%begg:bounds%endg),&
+          p2c_scale_type='unity', c2l_scale_type= 'unity', l2g_scale_type='unity')
+
+    !!!!!!!!!!!!!!!!!! added end!!!!!!!!!!!!!!!
+
 
     call p2g(bounds, &
          veg_ws%q_ref2m (bounds%begp:bounds%endp), &
