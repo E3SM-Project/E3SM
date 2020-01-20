@@ -18,7 +18,6 @@ module dice_comp_mod
   use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy
   use dice_flux_atmice_mod  , only : dice_flux_atmice
 
-  ! !PUBLIC TYPES:
   implicit none
   private ! except
 
@@ -42,9 +41,6 @@ module dice_comp_mod
   type(dfield_type) :: dfields(fldsMax)
   integer           :: dfields_num
 
-  character(*) , parameter :: u_FILE_u = &
-       __FILE__
-
   real(r8),parameter         :: pi     = shr_const_pi      ! pi
   real(r8),parameter         :: spval  = shr_const_spval   ! flags invalid data
   real(r8),parameter         :: tFrz   = shr_const_tkfrz   ! temp of freezing
@@ -66,6 +62,8 @@ module dice_comp_mod
   real(r8),parameter         :: ax_nidr = ai_nidr*(1.0_r8-snwfrac) + as_nidr*snwfrac
   real(r8),parameter         :: ax_vsdr = ai_vsdr*(1.0_r8-snwfrac) + as_vsdr*snwfrac
 
+  character(*) , parameter    :: u_FILE_u = &
+       __FILE__
 
   ! restart fields
   real(r8), pointer, public :: water(:) => null()
@@ -405,12 +403,12 @@ contains
 
     ! local variables
     integer           :: n, lsize
-    logical           :: first_time = .true.
     real(r8)          :: jday, jday0        ! elapsed day counters
     integer           :: spatialDim         ! number of dimension in mesh
     integer           :: numOwnedElements   ! size of mesh
     real(r8), pointer :: ownedElemCoords(:) ! mesh lat and lons
     real(r8)          :: qmeltall          ! q that would melt all accumulated water
+    logical           :: first_time = .true.
     character(*), parameter :: subName = "(dice_comp_run) "
     !-------------------------------------------------------------------------------
 

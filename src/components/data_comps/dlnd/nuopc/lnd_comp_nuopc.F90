@@ -59,7 +59,6 @@ module lnd_comp_nuopc
   integer                :: logunit               ! logging unit number
   character(CL)          :: case_name             ! case name
   logical                :: lnd_prognostic        ! data is sent back to dlnd
-  character(len=80)      :: calendar              ! calendar name
 
   character(*) , parameter :: nullstr = 'undefined'
   integer      , parameter :: master_task=0             ! task number of master task

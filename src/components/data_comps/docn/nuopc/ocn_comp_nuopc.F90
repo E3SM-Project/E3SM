@@ -44,12 +44,10 @@ module ocn_comp_nuopc
   !--------------------------------------------------------------------------
 
   type(shr_strdata_type)   :: sdat
-
   character(len=CS)        :: flds_scalar_name = ''
   integer                  :: flds_scalar_num = 0
   integer                  :: flds_scalar_index_nx = 0
   integer                  :: flds_scalar_index_ny = 0
-
   type(ESMF_Mesh)          :: mesh                            ! model mesh
   integer                  :: compid                          ! mct comp id
   integer                  :: mpicom                          ! mpi communicator
@@ -57,22 +55,19 @@ module ocn_comp_nuopc
   character(len=16)        :: inst_suffix = ""                ! char string associated with instance (ie. "_0001" or "")
   integer                  :: logunit                         ! logging unit number
   logical                  :: read_restart                    ! start from restart
-
   character(*) , parameter :: nullstr = 'undefined'
   integer      , parameter :: master_task=0                   ! task number of master task
   character(*) , parameter :: rpfile = 'rpointer.ocn'
-  character(*) , parameter :: modName =  "(ocn_comp_nuopc)"
-  character(*) , parameter :: u_FILE_u = &
-       __FILE__
+  character(*) , parameter :: modName = "(ocn_comp_nuopc)"
 
   ! docn_in namelist input
   real(R8)                 :: sst_constant_value
   integer                  :: aquap_option
-  logical                  :: force_prognostic_true = .false. ! if true set prognostic true
-  character(CL)            :: restfilm = nullstr              ! model restart file namelist
-  character(CL)            :: restfils = nullstr              ! stream restart file namelist
   character(CL)            :: rest_file                       ! restart filename
   character(CL)            :: rest_file_strm                  ! restart filename for streams
+
+  character(*) , parameter :: u_FILE_u = &
+       __FILE__
 
 !===============================================================================
 contains
@@ -133,14 +128,17 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    integer           :: inst_index ! number of current instance (ie. 1)
-    character(len=CL) :: cvalue     ! temporary
-    integer           :: shrlogunit ! original log unit
-    character(len=CL) :: fileName   ! generic file name
-    integer           :: nu         ! unit number
-    integer           :: ierr       ! error code
-    character(CL)     :: decomp     ! decomp strategy - not used for NUOPC - but still needed in namelist for now
-    logical           :: ocn_prognostic
+    integer           :: inst_index         ! number of current instance (ie. 1)
+    character(len=CL) :: cvalue             ! temporary
+    integer           :: shrlogunit         ! original log unit
+    character(len=CL) :: fileName           ! generic file name
+    integer           :: nu                 ! unit number
+    integer           :: ierr               ! error code
+    character(CL)     :: decomp             ! decomp strategy - not used for NUOPC - but still needed in namelist for now
+    character(CL)     :: restfilm = nullstr ! model restart file namelist
+    character(CL)     :: restfils = nullstr ! stream restart file namelist
+    logical           :: ocn_prognostic     ! true => ocn expects import data
+    logical           :: force_prognostic_true = .false. ! if true set prognostic true
     character(len=*),parameter  :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 

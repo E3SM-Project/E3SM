@@ -1,6 +1,5 @@
 module datm_shr_mod
 
-  ! !USES:
   use shr_kind_mod   , only : IN=>SHR_KIND_IN, R8=>SHR_KIND_R8, I8=>SHR_KIND_I8
   use shr_kind_mod   , only : CS=>SHR_KIND_CS, CL=>SHR_KIND_CL
   use shr_const_mod  , only : SHR_CONST_CDAY,SHR_CONST_TKFRZ,SHR_CONST_SPVAL
@@ -12,7 +11,6 @@ module datm_shr_mod
   use shr_strdata_mod, only : shr_strdata_readnml, shr_strdata_type
   use mct_mod
 
-  ! !PUBLIC TYPES:
   implicit none
   private ! except
 
@@ -27,146 +25,12 @@ module datm_shr_mod
 
   public :: datm_shr_getNextRadCDay
   public :: datm_shr_CORE2getFactors
-  public :: datm_shr_TN460getFactors
   public :: datm_shr_eSat
-  public :: datm_shr_read_namelists
 
-  !--------------------------------------------------------------------------
-  ! Public data
-  !--------------------------------------------------------------------------
+!===============================================================================
+contains
+!===============================================================================
 
-  ! Note that model decomp will now come from reading in the mesh directly
-
-  ! stream data type
-  type(shr_strdata_type), public :: SDATM
-
-  ! input namelist variables
-  character(CL) , public :: restfilm              ! model restart file namelist
-  character(CL) , public :: restfils              ! stream restart file namelist
-  character(CL) , public :: bias_correct          ! true => send bias correction fields to coupler
-  character(CL) , public :: anomaly_forcing(8)    ! true => send anomaly forcing fields to coupler
-  logical       , public :: force_prognostic_true ! if true set prognostic true
-  logical       , public :: wiso_datm = .false.   ! expect isotopic forcing from file?
-  integer(IN)   , public :: iradsw                ! radiation interval
-  character(CL) , public :: factorFn              ! file containing correction factors
-  logical       , public :: presaero              ! true => send valid prescribe aero fields to coupler
-
-  ! variables obtained from namelist read
-  character(CL) , public :: rest_file             ! restart filename
-  character(CL) , public :: rest_file_strm        ! restart filename for streams
-  character(CL) , public :: datamode              ! mode
-  character(len=*), public, parameter :: nullstr = 'undefined'
-
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-CONTAINS
-!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-  subroutine datm_shr_read_namelists(filename, mpicom, my_task, master_task, &
-       logunit, atm_prognostic)
-
-    ! !INPUT/OUTPUT PARAMETERS:
-    character(len=*)       , intent(in)    :: filename       ! input namelist filename
-    integer(IN)            , intent(in)    :: mpicom         ! mpi communicator
-    integer(IN)            , intent(in)    :: my_task        ! my task in mpi communicator mpicom
-    integer(IN)            , intent(in)    :: master_task    ! task number of master task
-    integer(IN)            , intent(in)    :: logunit        ! logging unit number
-    logical                , intent(out)   :: atm_prognostic ! flag
-
-    !--- local variables ---
-    integer(IN)   :: nunit       ! unit number
-    integer(IN)   :: ierr        ! error code
-    character(CL) :: decomp      ! decomp strategy - not used for NUOPC - but still needed in namelist for now
-
-    !--- formats ---
-    character(*), parameter :: F00   = "('(datm_comp_init) ',8a)"
-    character(*), parameter :: F0L   = "('(datm_comp_init) ',a, l2)"
-    character(*), parameter :: F01   = "('(datm_comp_init) ',a,5i8)"
-    character(*), parameter :: subName = "(shr_datm_read_namelists) "
-    !-------------------------------------------------------------------------------
-
-    !----- define namelist -----
-    namelist / datm_nml / decomp, &
-         iradsw, factorFn, restfilm, restfils, presaero, bias_correct, &
-         anomaly_forcing, force_prognostic_true, wiso_datm
-
-    !----------------------------------------------------------------------------
-    ! Read datm_in
-    !----------------------------------------------------------------------------
-
-    iradsw = 0
-    factorFn = 'null'
-    restfilm = trim(nullstr)
-    restfils = trim(nullstr)
-    presaero = .false.
-    force_prognostic_true = .false.
-
-    if (my_task == master_task) then
-       nunit = shr_file_getUnit() ! get unused unit number
-       open (nunit,file=trim(filename),status="old",action="read")
-       read (nunit,nml=datm_nml,iostat=ierr)
-       close(nunit)
-
-       call shr_file_freeUnit(nunit)
-       if (ierr > 0) then
-          write(logunit,F01) 'ERROR: reading input namelist, '//trim(filename)//' iostat=',ierr
-          call shr_sys_abort(subName//': namelist read error '//trim(filename))
-       end if
-       write(logunit,F01)' iradsw   = ',iradsw
-       write(logunit,F00)' factorFn = ',trim(factorFn)
-       write(logunit,F00)' restfilm = ',trim(restfilm)
-       write(logunit,F00)' restfils = ',trim(restfils)
-       write(logunit,F0L)' presaero = ',presaero
-       write(logunit,F0L)' force_prognostic_true = ',force_prognostic_true
-       write(logunit,F0L)' wiso_datm   = ',wiso_datm
-       call shr_sys_flush(logunit)
-    endif
-    call shr_mpi_bcast(iradsw                ,mpicom, 'iradsw')
-    call shr_mpi_bcast(factorFn              ,mpicom, 'factorFn')
-    call shr_mpi_bcast(restfilm              ,mpicom, 'restfilm')
-    call shr_mpi_bcast(restfils              ,mpicom, 'restfils')
-    call shr_mpi_bcast(presaero              ,mpicom, 'presaero')
-    call shr_mpi_bcast(force_prognostic_true ,mpicom, 'force_prognostic_true')
-    call shr_mpi_bcast(wiso_datm             ,mpicom, 'wiso_datm')
-
-    rest_file = trim(restfilm)
-    rest_file_strm = trim(restfils)
-
-    !----------------------------------------------------------------------------
-    ! Read dshr namelist
-    !----------------------------------------------------------------------------
-
-    call shr_strdata_readnml(SDATM, trim(filename), mpicom=mpicom)
-
-    ! Validate mode
-
-    datamode = trim(SDATM%dataMode)
-    if (trim(datamode) == 'NULL'      .or. &
-        trim(datamode) == 'CORE2_NYF' .or. &
-        trim(datamode) == 'CORE2_IAF' .or. &
-        trim(datamode) == 'CORE_IAF_JRA' .or. &
-        trim(datamode) == 'CLMNCEP'   .or. &
-        trim(datamode) == 'COPYALL'   ) then
-       if (my_task == master_task) then
-          write(logunit,F00) ' datm datamode = ',trim(datamode)
-          call shr_sys_flush(logunit)
-       end if
-    else
-       write(logunit,F00) ' ERROR illegal datm datamode = ',trim(datamode)
-       call shr_sys_abort()
-    endif
-
-    !----------------------------------------------------------------------------
-    ! Determine present and prognostic flag
-    !----------------------------------------------------------------------------
-
-    atm_prognostic = .false.
-    if (force_prognostic_true) then
-       atm_prognostic = .true.
-    endif
-
-  end subroutine datm_shr_read_namelists
-
-  !===============================================================================
   real(R8) function datm_shr_getNextRadCDay_i8( ymd, tod, stepno, dtime, iradsw, calendar )
 
     !  Return the calendar day of the next radiation time-step.
@@ -206,6 +70,7 @@ CONTAINS
 
   end function datm_shr_getNextRadCDay_i8
 
+!===============================================================================
   real(R8) function datm_shr_getNextRadCDay_i4( ymd, tod, stepno, dtime, iradsw, calendar )
 
     !  Return the calendar day of the next radiation time-step.
@@ -288,50 +153,6 @@ CONTAINS
          gsmap,ggrid,nxg,nyg)
 
   end subroutine datm_shr_CORE2getFactors
-
-  !===============================================================================
-
-  subroutine datm_shr_TN460getFactors(fileName,windF,qsatF,mpicom,compid, &
-       gsmap,ggrid,nxg,nyg)
-
-    !--- arguments ---
-    character(*)    ,intent(in)    :: fileName   ! file name string
-    real(R8)        ,intent(inout) :: windF(:)   ! wind adjustment factor
-    real(R8)        ,intent(inout) :: qsatF(:)   ! rel humidty adjustment factors
-    integer(IN)     ,intent(in)    :: mpicom     ! mpi comm
-    integer(IN)     ,intent(in)    :: compid     ! mct compid
-    type(mct_gsmap) ,intent(in)    :: gsmap      ! decomp of wind,windd,qsat
-    type(mct_ggrid) ,intent(in)    :: ggrid      ! ggrid of grid info
-    integer(IN)     ,intent(in)    :: nxg        ! size of input grid
-    integer(IN)     ,intent(in)    :: nyg        ! size of input grid
-
-    !--- local ---
-    integer(IN) :: my_task,logunit,ier
-    real(R8),pointer :: winddF(:)  ! wind adjustment factor
-    character(*),parameter :: subName =  '(datm_shr_TN460getFactors) '
-    character(*),parameter :: F00    = "('(datm_shr_TN460getFactors) ',4a) "
-    !-------------------------------------------------------------------------------
-
-    call MPI_COMM_RANK(mpicom,my_task,ier)
-    call shr_file_getLogUnit(logunit)
-
-    if (my_task == 0) then
-
-       !--- verify necessary data is in input file ---
-       if ( .not. shr_ncread_varExists(fileName,'lat'       )  &
-            .or. .not. shr_ncread_varExists(fileName,'lon'       )  &
-            .or. .not. shr_ncread_varExists(fileName,'mask'      )  &
-            .or. .not. shr_ncread_varExists(fileName,'windFactor')  &
-            .or. .not. shr_ncread_varExists(fileName,'qsatFactor')  ) then
-          write(logunit,F00) "ERROR: invalid correction factor data file"
-          call shr_sys_abort(subName//"invalid correction factor data file")
-       end if
-    endif
-
-    call datm_shr_getFactors(fileName,windF,winddF,qsatF,mpicom,compid, &
-         gsmap,ggrid,nxg,nyg)
-
-  end subroutine datm_shr_TN460getFactors
 
   !===============================================================================
 

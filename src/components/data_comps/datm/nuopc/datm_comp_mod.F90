@@ -1,49 +1,24 @@
 module datm_comp_mod
 
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_State
-  use ESMF                  , only : ESMF_Mesh, ESMF_DistGrid, ESMF_MeshGet, ESMF_DistGridGet
+  use ESMF                  , only : ESMF_SUCCESS, ESMF_LOGMSG_INFO, ESMF_LogWrite
+  use ESMF                  , only : ESMF_State, ESMF_StateGet, ESMF_StateItem_Flag, ESMF_STATEITEM_NOTFOUND
+  use ESMF                  , only : ESMF_Mesh, ESMF_MeshGet
+  use ESMF                  , only : operator(/=), operator(==)
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_gsmap_init
-  use mct_mod               , only : mct_avect, mct_avect_indexRA, mct_avect_zero, mct_aVect_nRattr
-  use mct_mod               , only : mct_avect_init, mct_avect_lsize
+  use mct_mod               , only : mct_avect_indexRA
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
-  use shr_const_mod         , only : SHR_CONST_SPVAL
-  use shr_const_mod         , only : SHR_CONST_TKFRZ
-  use shr_const_mod         , only : SHR_CONST_PI
-  use shr_const_mod         , only : SHR_CONST_PSTD
-  use shr_const_mod         , only : SHR_CONST_STEBOL
-  use shr_const_mod         , only : SHR_CONST_RDAIR
-  use shr_string_mod        , only : shr_string_listGetName
   use shr_sys_mod           , only : shr_sys_abort
-  use shr_file_mod          , only : shr_file_getunit, shr_file_freeunit
-  use shr_cal_mod           , only : shr_cal_calendarname
-  use shr_cal_mod           , only : shr_cal_date2julian, shr_cal_datetod2string
   use shr_mpi_mod           , only : shr_mpi_bcast, shr_mpi_max
+  use shr_cal_mod           , only : shr_cal_date2julian
   use shr_precip_mod        , only : shr_precip_partition_rain_snow_ramp
-  use shr_strdata_mod       , only : shr_strdata_init_model_domain
-  use shr_strdata_mod       , only : shr_strdata_init_streams
-  use shr_strdata_mod       , only : shr_strdata_init_mapping
-  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_pioinit
-  use shr_strdata_mod       , only : shr_strdata_print, shr_strdata_restRead
-  use shr_strdata_mod       , only : shr_strdata_advance, shr_strdata_restWrite
-  use shr_strdata_mod       , only : shr_strdata_setorbs
-  use shr_dmodel_mod        , only : shr_dmodel_translate_list, shr_dmodel_translateAV_list
-  use dshr_methods_mod      , only : ChkErr
-  use dshr_nuopc_mod        , only : fld_list_type, dshr_fld_add, dshr_avect_add, dshr_translate_add
-  use dshr_nuopc_mod        , only : dshr_export, dshr_import
+  use shr_const_mod         , only : shr_const_spval, shr_const_tkfrz, shr_const_pi
+  use shr_const_mod         , only : shr_const_pstd, shr_const_stebol, shr_const_rdair
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance
+  use dshr_methods_mod      , only : chkerr, state_getfldptr
+  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add
+  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy
   use datm_shr_mod          , only : datm_shr_esat, datm_shr_CORE2getFactors
-  use datm_shr_mod          , only : datamode       ! namelist input
-  use datm_shr_mod          , only : wiso_datm      ! namelist input
-  use datm_shr_mod          , only : rest_file      ! namelist input
-  use datm_shr_mod          , only : rest_file_strm ! namelist input
-  use datm_shr_mod          , only : factorfn       ! namelist input
-  use datm_shr_mod          , only : iradsw         ! namelist input
-  use datm_shr_mod          , only : nullstr
-  use datm_shr_mod          , only : presaero
-  use datm_shr_mod          , only : SDATM
-
-  ! !PUBLIC TYPES:
 
   implicit none
   private ! except
@@ -55,82 +30,129 @@ module datm_comp_mod
   public :: datm_comp_advertise
   public :: datm_comp_init
   public :: datm_comp_run
-  public :: datm_comp_import
-  public :: datm_comp_export
 
   !--------------------------------------------------------------------------
-  ! Private data
+  ! Module data
   !--------------------------------------------------------------------------
 
-  type(mct_aVect)            :: x2a
-  type(mct_aVect)            :: a2x
-  character(CXX)             :: flds_a2x = ''
-  character(CXX)             :: flds_x2a = ''
+  integer             , public :: fldsImport_num = 0
+  integer             , public :: fldsExport_num = 0
+  type(fld_list_type) , public :: fldsImport(fldsMax)
+  type(fld_list_type) , public :: fldsExport(fldsMax)
 
-  integer                    :: debug_import = 0      ! debug level (if > 0 will print all import fields)
-  integer                    :: debug_export = 0      ! debug level (if > 0 will print all export fields)
+  type(dfield_type)            :: dfields(fldsMax)
+  integer                      :: dfields_num
 
-  real(R8)                   :: tbotmax               ! units detector
-  real(R8)                   :: tdewmax               ! units detector
-  real(R8)                   :: anidrmax              ! existance detector
+  logical                      :: get_importdata
+  logical                      :: flds_co2a
+  logical                      :: flds_co2b
+  logical                      :: flds_co2c
+  logical                      :: flds_wiso
+  logical                      :: flds_presaero
+  character(CL)                :: factorFn              ! file containing correction factors
+  real(R8)                     :: tbotmax               ! units detector
+  real(R8)                     :: tdewmax               ! units detector
+  real(R8)                     :: anidrmax              ! existance detector
+  real(R8), pointer            :: yc(:)                 ! array of model latitudes
+  real(R8), pointer            :: windFactor(:)
+  real(R8), pointer            :: winddFactor(:)
+  real(R8), pointer            :: qsatFactor(:)
 
-  ! Attribute vectors field indices
-  integer                    :: kz,ktopo,ku,kv,ktbot,kptem,kshum,kdens,kpbot,kpslv,klwdn
-  integer                    :: krc,krl,ksc,ksl,kswndr,kswndf,kswvdr,kswvdf,kswnet
-  integer                    :: kanidr,kanidf,kavsdr,kavsdf
-  integer                    :: kco2p, kco2d
-  integer                    :: kshum_16O, kshum_18O, kshum_HDO
-  integer                    :: krc_16O, krc_18O, krc_HDO
-  integer                    :: krl_16O, krl_18O, krl_HDO
-  integer                    :: ksc_16O, ksc_18O, ksc_HDO
-  integer                    :: ksl_16O, ksl_18O, ksl_HDO
-  integer                    :: stbot,swind,sz,spbot,sshum,stdew,srh,slwdn,sswdn,sswdndf,sswdndr
-  integer                    :: sprecsf, sprecc,sprecl,sprecn,sswup,sprec,starcf
-  integer                    :: srh_16O, srh_18O, srh_HDO, sprecn_16O, sprecn_18O, sprecn_HDO
-  integer                    :: sprec_af,su_af,sv_af,stbot_af,sshum_af,spbot_af,slwdn_af,sswdn_af
-  integer                    :: kbcphidry, kbcphodry, kbcphiwet
-  integer                    :: kocphidry, kocphodry, kocphiwet
-  integer                    :: kdstdry1, kdstdry2, kdstdry3, kdstdry4
-  integer                    :: kdstwet1, kdstwet2, kdstwet3, kdstwet4
+  ! constants
+  real(R8),parameter           :: tKFrz    = SHR_CONST_TKFRZ
+  real(R8),parameter           :: degtorad = SHR_CONST_PI/180.0_R8
+  real(R8),parameter           :: pstd     = SHR_CONST_PSTD     ! standard pressure ~ Pa
+  real(R8),parameter           :: stebol   = SHR_CONST_STEBOL   ! Stefan-Boltzmann constant ~ W/m^2/K^4
+  real(R8),parameter           :: rdair    = SHR_CONST_RDAIR    ! dry air gas constant   ~ J/K/kg
+  real(R8),parameter           :: avg_c0 =  61.846_R8
+  real(R8),parameter           :: avg_c1 =   1.107_R8
+  real(R8),parameter           :: amp_c0 = -21.841_R8
+  real(R8),parameter           :: amp_c1 =  -0.447_R8
+  real(R8),parameter           :: phs_c0 =   0.298_R8
+  real(R8),parameter           :: dLWarc =  -5.000_R8
 
-  type(mct_avect)            :: avstrm         ! av of data from stream
-  character(len=CS), pointer :: avifld(:)      ! character array for field names coming from streams
-  character(len=CS), pointer :: avofld(:)      ! character array for field names to be sent/received from mediator
-  character(len=CS), pointer :: stifld(:)      ! character array for field names coming from streams
-  character(len=CS), pointer :: stofld(:)      ! character array for field intermediate avs for calculations
-  character(len=CL), pointer :: ilist_av(:)    ! input  character array for translation (avifld->avofld)
-  character(len=CL), pointer :: olist_av(:)    ! output character array for translation (avifld->avofld)
-  integer          , pointer :: count_av(:)    ! number of fields in translation (avifld->avofld)
-  character(len=CL), pointer :: ilist_st(:)    ! input  character array for translation (stifld->strmofld)
-  character(len=CL), pointer :: olist_st(:)    ! output character array for translation (stifld->strmofld)
-  integer      ,     pointer :: count_st(:)    ! number of fields in translation (stifld->strmofld)
-  character(len=CXX)         :: flds_strm = '' ! colon deliminated string of field names
-
-  real(R8), pointer          :: xc(:), yc(:)   ! arrays of model latitudes and longitudes
-  real(R8), pointer          :: windFactor(:)
-  real(R8), pointer          :: winddFactor(:)
-  real(R8), pointer          :: qsatFactor(:)
-
-  real(R8),parameter         :: tKFrz  = SHR_CONST_TKFRZ
-  real(R8),parameter         :: degtorad = SHR_CONST_PI/180.0_R8
-  real(R8),parameter         :: pstd   = SHR_CONST_PSTD     ! standard pressure ~ Pa
-  real(R8),parameter         :: stebol = SHR_CONST_STEBOL   ! Stefan-Boltzmann constant ~ W/m^2/K^4
-  real(R8),parameter         :: rdair  = SHR_CONST_RDAIR    ! dry air gas constant   ~ J/K/kg
-  real(R8),parameter         :: avg_c0 =  61.846_R8
-  real(R8),parameter         :: avg_c1 =   1.107_R8
-  real(R8),parameter         :: amp_c0 = -21.841_R8
-  real(R8),parameter         :: amp_c1 =  -0.447_R8
-  real(R8),parameter         :: phs_c0 =   0.298_R8
-  real(R8),parameter         :: dLWarc =  -5.000_R8
-
-  real(R8)           :: dTarc(12)
+  real(R8) :: dTarc(12)
   data   dTarc      / 0.49_R8, 0.06_R8,-0.73_R8,  -0.89_R8,-0.77_R8,-1.02_R8, &
                      -1.99_R8,-0.91_R8, 1.72_R8,   2.30_R8, 1.81_R8, 1.06_R8/
 
-  logical :: flds_co2a, flds_co2b, flds_co2c, flds_wiso
+  ! export state data
+  real(r8), pointer :: Sa_topo(:)           => null()
+  real(r8), pointer :: Sa_z(:)              => null()
+  real(r8), pointer :: Sa_u(:)              => null()
+  real(r8), pointer :: Sa_v(:)              => null()
+  real(r8), pointer :: Sa_tbot(:)           => null()
+  real(r8), pointer :: Sa_ptem(:)           => null()
+  real(r8), pointer :: Sa_shum(:)           => null()
+  real(r8), pointer :: Sa_dens(:)           => null()
+  real(r8), pointer :: Sa_pbot(:)           => null()
+  real(r8), pointer :: Sa_pslv(:)           => null()
+  real(r8), pointer :: Faxa_lwdn(:)         => null()
+  real(r8), pointer :: Faxa_rainc(:)        => null()
+  real(r8), pointer :: Faxa_rainl(:)        => null()
+  real(r8), pointer :: Faxa_snowc(:)        => null()
+  real(r8), pointer :: Faxa_snowl(:)        => null()
+  real(r8), pointer :: Faxa_swndr(:)        => null()
+  real(r8), pointer :: Faxa_swndf(:)        => null()
+  real(r8), pointer :: Faxa_swvdr(:)        => null()
+  real(r8), pointer :: Faxa_swvdf(:)        => null()
+  real(r8), pointer :: Faxa_swnet(:)        => null()
+  real(r8), pointer :: Sa_co2prog(:)        => null() ! co2
+  real(r8), pointer :: Sa_co2diag(:)        => null() ! co2
+  real(r8), pointer :: Faxa_bcph(:,:)       => null() ! prescribed aerosols
+  real(r8), pointer :: Faxa_ocph(:,:)       => null() ! prescribed aerosols
+  real(r8), pointer :: Faxa_dstwet(:,:)     => null() ! prescribed aerosols
+  real(r8), pointer :: Faxa_dstdry(:,:)     => null() ! prescribed aerosols
+  real(r8), pointer :: Faxa_rainc_wiso(:,:) => null() ! water isotopes
+  real(r8), pointer :: Faxa_rainl_wiso(:,:) => null() ! water isotopes
+  real(r8), pointer :: Faxa_snowc_wiso(:,:) => null() ! water isotopes
+  real(r8), pointer :: Faxa_snowl_wiso(:,:) => null() ! water isotopes
+  real(r8), pointer :: Sa_shum_wiso(:,:)    => null() ! water isotopes
+  real(r8), pointer :: So_t(:)              => null() ! ocean temperature
 
-  character(len=*),parameter :: rpfile = 'rpointer.atm'
-  character(*),parameter :: u_FILE_u = &
+  ! import state data
+  ! Note - do not need to allocate memory for fields that are advertised if
+  ! they are not used - this will permit IAF compsets to work and be written
+  ! out to coupler history files and sent to datm - but not actually used
+  real(r8), pointer :: Sx_avsdr(:) => null()
+  real(r8), pointer :: Sx_anidr(:) => null()
+  real(r8), pointer :: Sx_avsdf(:) => null()
+  real(r8), pointer :: Sx_anidf(:) => null()
+
+  ! stream internal data
+  real(r8), pointer :: strm_z(:)         => null()
+  real(r8), pointer :: strm_wind(:)      => null()
+  real(r8), pointer :: strm_tdew(:)      => null()
+  real(r8), pointer :: strm_tbot(:)      => null()
+  real(r8), pointer :: strm_pbot(:)      => null()
+  real(r8), pointer :: strm_shum(:)      => null()
+  real(r8), pointer :: strm_lwdn(:)      => null()
+  real(r8), pointer :: strm_rh(:)        => null()
+  real(r8), pointer :: strm_swdn(:)      => null()
+  real(r8), pointer :: strm_swdndf(:)    => null()
+  real(r8), pointer :: strm_swdndr(:)    => null()
+  real(r8), pointer :: strm_prec(:)      => null()
+  real(r8), pointer :: strm_precc(:)     => null()
+  real(r8), pointer :: strm_precl(:)     => null()
+  real(r8), pointer :: strm_precn(:)     => null()
+  real(r8), pointer :: strm_swup(:)      => null()
+  real(r8), pointer :: strm_tarcf(:)     => null()
+  real(r8), pointer :: strm_precsf(:)    => null()
+  real(r8), pointer :: strm_rh_16O(:)    => null() ! water isoptopes
+  real(r8), pointer :: strm_rh_18O(:)    => null() ! water isoptopes
+  real(r8), pointer :: strm_rh_HDO(:)    => null() ! water isoptopes
+  real(r8), pointer :: strm_precn_16O(:) => null() ! water isoptopes
+  real(r8), pointer :: strm_precn_18O(:) => null() ! water isoptopes
+  real(r8), pointer :: strm_precn_HDO(:) => null() ! water isoptopes
+  real(r8), pointer :: strm_u_af(:)      => null() ! anomoly forcing
+  real(r8), pointer :: strm_v_af(:)      => null() ! anomoly forcing
+  real(r8), pointer :: strm_prec_af(:)   => null() ! anomoly forcing
+  real(r8), pointer :: strm_tbot_af(:)   => null() ! anomoly forcing
+  real(r8), pointer :: strm_pbot_af(:)   => null() ! anomoly forcing
+  real(r8), pointer :: strm_shum_af(:)   => null() ! anomoly forcing
+  real(r8), pointer :: strm_swdn_af(:)   => null() ! anomoly forcing
+  real(r8), pointer :: strm_lwdn_af(:)   => null() ! anomoly forcing
+
+  character(*),parameter       :: u_FILE_u = &
        __FILE__
 
 !===============================================================================
@@ -138,28 +160,24 @@ contains
 !===============================================================================
 
   subroutine datm_comp_advertise(importState, exportState, flds_scalar_name, &
-       atm_prognostic, flds_wiso_in, flds_co2a_in, flds_co2b_in, flds_co2c_in, &
-       fldsFrAtm_num, fldsFrAtm, fldsToAtm_num, fldsToAtm, rc)
+       get_importdata_in, flds_presaero_in, flds_wiso_in, &
+       flds_co2a_in, flds_co2b_in, flds_co2c_in, factorfn_in, rc)
 
     ! --------------------------------------------------------------
-    ! 1. determine export and import fields to advertise to mediator
-    ! 2. determine colon delimited chacter string to initialize import and export attribute vectors
-    ! 3. determine module level translation character arrays  (avifld/avofld and stifld/stofld)
+    ! determine export and import fields to advertise to mediator
     ! --------------------------------------------------------------
 
     ! input/output arguments
     type(ESMF_State)     , intent(inout) :: importState
     type(ESMF_State)     , intent(inout) :: exportState
     character(len=*)     , intent(in)    :: flds_scalar_name
-    logical              , intent(in)    :: atm_prognostic
-    logical              , intent(in)    :: flds_wiso_in   ! use case
-    logical              , intent(in)    :: flds_co2a_in   ! use case
-    logical              , intent(in)    :: flds_co2b_in   ! use case
-    logical              , intent(in)    :: flds_co2c_in   ! use case
-    integer              , intent(out)   :: fldsFrAtm_num
-    type (fld_list_type) , intent(out)   :: fldsFrAtm(:)
-    integer              , intent(out)   :: fldsToAtm_num
-    type (fld_list_type) , intent(out)   :: fldsToAtm(:)
+    logical              , intent(in)    :: get_importdata_in
+    logical              , intent(in)    :: flds_presaero_in
+    logical              , intent(in)    :: flds_wiso_in
+    logical              , intent(in)    :: flds_co2a_in
+    logical              , intent(in)    :: flds_co2b_in
+    logical              , intent(in)    :: flds_co2c_in
+    character(len=*)     , intent(in)    :: factorfn_in
     integer              , intent(out)   :: rc
 
     ! local variables
@@ -168,61 +186,61 @@ contains
 
     rc = ESMF_SUCCESS
 
-    flds_wiso = flds_wiso_in
-    flds_co2a = flds_co2a_in
-    flds_co2b = flds_co2b_in
-    flds_co2c = flds_co2c_in
-
-    ! NOTE: the following calls to dshr_fld_add returns the
-    ! model_fld_index value if it is an argument
+    get_importdata = get_importdata_in
+    flds_presaero  = flds_presaero_in
+    flds_wiso      = flds_wiso_in
+    flds_co2a      = flds_co2a_in
+    flds_co2b      = flds_co2b_in
+    flds_co2c      = flds_co2c_in
+    factorfn       = factorfn_in
 
     !-------------------
     ! Advertise export fields
     !-------------------
 
-    fldsFrAtm_num=1
-    fldsFrAtm(1)%stdname = trim(flds_scalar_name)
+    fldsExport_num=1
+    fldsExport(1)%stdname = trim(flds_scalar_name)
 
-    call dshr_fld_add('Sa_topo'    , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Sa_z'       , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Sa_u'       , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Sa_v'       , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Sa_ptem'    , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Sa_dens'    , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Sa_pslv'    , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Faxa_rainc' , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Faxa_rainl' , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Faxa_snowc' , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Faxa_snowl' , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Faxa_swndr' , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Faxa_swvdr' , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Faxa_swndf' , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Faxa_swvdf' , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Faxa_swnet' , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Sa_tbot'    , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Sa_pbot'    , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Sa_shum'    , fldsFrAtm_num , fldsFrAtm)
-    call dshr_fld_add('Faxa_lwdn'  , fldsFrAtm_num , fldsFrAtm)
+    call dshr_fld_add('Sa_topo'    , fldsExport_num , fldsExport)
+    call dshr_fld_add('Sa_z'       , fldsExport_num , fldsExport)
+    call dshr_fld_add('Sa_u'       , fldsExport_num , fldsExport)
+    call dshr_fld_add('Sa_v'       , fldsExport_num , fldsExport)
+    call dshr_fld_add('Sa_ptem'    , fldsExport_num , fldsExport)
+    call dshr_fld_add('Sa_dens'    , fldsExport_num , fldsExport)
+    call dshr_fld_add('Sa_pslv'    , fldsExport_num , fldsExport)
+    call dshr_fld_add('Faxa_rainc' , fldsExport_num , fldsExport)
+    call dshr_fld_add('Faxa_rainl' , fldsExport_num , fldsExport)
+    call dshr_fld_add('Faxa_snowc' , fldsExport_num , fldsExport)
+    call dshr_fld_add('Faxa_snowl' , fldsExport_num , fldsExport)
+    call dshr_fld_add('Faxa_swndr' , fldsExport_num , fldsExport)
+    call dshr_fld_add('Faxa_swvdr' , fldsExport_num , fldsExport)
+    call dshr_fld_add('Faxa_swndf' , fldsExport_num , fldsExport)
+    call dshr_fld_add('Faxa_swvdf' , fldsExport_num , fldsExport)
+    call dshr_fld_add('Faxa_swnet' , fldsExport_num , fldsExport)
+    call dshr_fld_add('Sa_tbot'    , fldsExport_num , fldsExport)
+    call dshr_fld_add('Sa_pbot'    , fldsExport_num , fldsExport)
+    call dshr_fld_add('Sa_shum'    , fldsExport_num , fldsExport)
+    call dshr_fld_add('Faxa_lwdn'  , fldsExport_num , fldsExport)
     if (flds_co2a .or. flds_co2b .or. flds_co2c) then
-       call dshr_fld_add('Sa_co2prog', fldsFrAtm_num, fldsFrAtm)
-       call dshr_fld_add('Sa_co2diag', fldsFrAtm_num, fldsFrAtm)
+       call dshr_fld_add('Sa_co2prog', fldsExport_num, fldsExport)
+       call dshr_fld_add('Sa_co2diag', fldsExport_num, fldsExport)
     end if
-    if (presaero) then
-       call dshr_fld_add('Faxa_bcph'   , fldsFrAtm_num, fldsFrAtm, ungridded_lbound=1, ungridded_ubound=3)
-       call dshr_fld_add('Faxa_ocph'   , fldsFrAtm_num, fldsFrAtm, ungridded_lbound=1, ungridded_ubound=3)
-       call dshr_fld_add('Faxa_dstwet' , fldsFrAtm_num, fldsFrAtm, ungridded_lbound=1, ungridded_ubound=4)
-       call dshr_fld_add('Faxa_dstdry' , fldsFrAtm_num, fldsFrAtm, ungridded_lbound=1, ungridded_ubound=4)
+    if (flds_presaero) then
+       call dshr_fld_add('Faxa_bcph'   , fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_ocph'   , fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_dstwet' , fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=4)
+       call dshr_fld_add('Faxa_dstdry' , fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=4)
     end if
     if (flds_wiso) then
-       call dshr_fld_add('Faxa_rainc_wiso', fldsFrAtm_num, fldsFrAtm, ungridded_lbound=1, ungridded_ubound=3)
-       call dshr_fld_add('Faxa_rainl_wiso', fldsFrAtm_num, fldsFrAtm, ungridded_lbound=1, ungridded_ubound=3)
-       call dshr_fld_add('Faxa_snowc_wiso', fldsFrAtm_num, fldsFrAtm, ungridded_lbound=1, ungridded_ubound=3)
-       call dshr_fld_add('Faxa_snowl_wiso', fldsFrAtm_num, fldsFrAtm, ungridded_lbound=1, ungridded_ubound=3)
-       call dshr_fld_add('Faxa_shum_wiso' , fldsFrAtm_num, fldsFrAtm, ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_rainc_wiso', fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_rainl_wiso', fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_snowc_wiso', fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_snowl_wiso', fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=3)
+       call dshr_fld_add('Faxa_shum_wiso' , fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=3)
     end if
 
-    do n = 1,fldsFrAtm_num
-       call NUOPC_Advertise(exportState, standardName=fldsFrAtm(n)%stdname, rc=rc)
+    do n = 1,fldsExport_num
+       call NUOPC_Advertise(exportState, standardName=fldsExport(n)%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     enddo
 
@@ -230,827 +248,405 @@ contains
     ! advertise import fields
     !-------------------
 
-    if (atm_prognostic) then
+    if (get_importdata) then
+       fldsImport_num=1
+       fldsImport(1)%stdname = trim(flds_scalar_name)
 
-       fldsToAtm_num=1
-       fldsToAtm(1)%stdname = trim(flds_scalar_name)
+       call dshr_fld_add("Sx_tref"       , fldsImport_num, fldsImport)
+       call dshr_fld_add("Sx_qref"       , fldsImport_num, fldsImport)
+       call dshr_fld_add("Sx_t"          , fldsImport_num, fldsImport)
+       call dshr_fld_add("So_t"          , fldsImport_num, fldsImport)
+       call dshr_fld_add("Sl_snowh"      , fldsImport_num, fldsImport)
+       call dshr_fld_add("Sl_lfrac"      , fldsImport_num, fldsImport)
+       call dshr_fld_add("Si_ifrac"      , fldsImport_num, fldsImport)
+       call dshr_fld_add("So_ofrac"      , fldsImport_num, fldsImport)
+       call dshr_fld_add("Faxx_taux"     , fldsImport_num, fldsImport)
+       call dshr_fld_add("Faxx_tauy"     , fldsImport_num, fldsImport)
+       call dshr_fld_add("Faxx_lat"      , fldsImport_num, fldsImport)
+       call dshr_fld_add("Faxx_sen"      , fldsImport_num, fldsImport)
+       call dshr_fld_add("Faxx_lwup"     , fldsImport_num, fldsImport)
+       call dshr_fld_add("Faxx_evap"     , fldsImport_num, fldsImport)
+     ! call dshr_fld_add("Fall_fco2_lnd" , fldsImport_num, fldsImport)
+     ! call dshr_fld_add("Faoo_fco2_ocn" , fldsImport_num, fldsImport)
 
-       call dshr_fld_add("Sx_tref"       , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Sx_qref"       , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Sx_t"          , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("So_t"          , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Sl_snowh"      , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Sl_lfrac"      , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Si_ifrac"      , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("So_ofrac"      , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Faxx_taux"     , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Faxx_tauy"     , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Faxx_lat"      , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Faxx_sen"      , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Faxx_lwup"     , fldsToAtm_num, fldsToAtm)
-       call dshr_fld_add("Faxx_evap"     , fldsToAtm_num, fldsToAtm)
-     ! call dshr_fld_add("Fall_fco2_lnd" , fldsToAtm_num, fldsToAtm)
-     ! call dshr_fld_add("Faoo_fco2_ocn" , fldsToAtm_num, fldsToAtm)
-
-       do n = 1,fldsToAtm_num
-          call NUOPC_Advertise(importState, standardName=fldsToAtm(n)%stdname, rc=rc)
+       do n = 1,fldsImport_num
+          call NUOPC_Advertise(importState, standardName=fldsImport(n)%stdname, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
        end do
     end if
-
-    !-------------------
-    ! Create colon deliminted string and optional indices for export attribute vector
-    !-------------------
-
-    call dshr_avect_add("Sa_topo"    , flds_a2x , av_index=ktopo)
-    call dshr_avect_add("Sa_z"       , flds_a2x , av_index=kz)
-    call dshr_avect_add("Sa_u"       , flds_a2x , av_index=ku)
-    call dshr_avect_add("Sa_v"       , flds_a2x , av_index=kv)
-    call dshr_avect_add("Sa_ptem"    , flds_a2x , av_index=kptem)
-    call dshr_avect_add("Sa_dens"    , flds_a2x , av_index=kdens)
-    call dshr_avect_add("Sa_pslv"    , flds_a2x , av_index=kpslv)
-    call dshr_avect_add("Faxa_rainc" , flds_a2x , av_index=krc)
-    call dshr_avect_add("Faxa_rainl" , flds_a2x , av_index=krl)
-    call dshr_avect_add("Faxa_snowc" , flds_a2x , av_index=ksc)
-    call dshr_avect_add("Faxa_snowl" , flds_a2x , av_index=ksl)
-    call dshr_avect_add("Faxa_swndr" , flds_a2x , av_index=kswndr)
-    call dshr_avect_add("Faxa_swvdr" , flds_a2x , av_index=kswvdr)
-    call dshr_avect_add("Faxa_swndf" , flds_a2x , av_index=kswndf)
-    call dshr_avect_add("Faxa_swvdf" , flds_a2x , av_index=kswvdf)
-    call dshr_avect_add("Faxa_swnet" , flds_a2x , av_index=kswnet)
-    call dshr_avect_add("Sa_tbot"    , flds_a2x , av_index=ktbot)
-    call dshr_avect_add("Sa_pbot"    , flds_a2x , av_index=kpbot)
-    call dshr_avect_add("Sa_shum"    , flds_a2x , av_index=kshum)
-    call dshr_avect_add("Faxa_lwdn"  , flds_a2x , av_index=klwdn)
-    if (flds_co2a .or. flds_co2b .or. flds_co2c) then
-       call dshr_avect_add("Sa_co2prog" , flds_a2x , av_index=kco2p)
-       call dshr_avect_add("Sa_co2diag" , flds_a2x , av_index=kco2d)
-    end if
-    if (presaero) then
-       call dshr_avect_add("Faxa_bcphidry" , flds_a2x , av_index=kbcphidry)
-       call dshr_avect_add("Faxa_bcphodry" , flds_a2x , av_index=kbcphodry)
-       call dshr_avect_add("Faxa_bcphiwet" , flds_a2x , av_index=kbcphiwet)
-
-       call dshr_avect_add("Faxa_ocphidry" , flds_a2x , av_index=kocphidry)
-       call dshr_avect_add("Faxa_ocphodry" , flds_a2x , av_index=kocphodry)
-       call dshr_avect_add("Faxa_ocphiwet" , flds_a2x , av_index=kocphiwet)
-
-       call dshr_avect_add("Faxa_dstwet1"  , flds_a2x , av_index=kdstwet1 )
-       call dshr_avect_add("Faxa_dstwet2"  , flds_a2x , av_index=kdstwet2 )
-       call dshr_avect_add("Faxa_dstwet3"  , flds_a2x , av_index=kdstwet3 )
-       call dshr_avect_add("Faxa_dstwet4"  , flds_a2x , av_index=kdstwet4 )
-
-       call dshr_avect_add("Faxa_dstdry1"  , flds_a2x , av_index=kdstdry1 )
-       call dshr_avect_add("Faxa_dstdry2"  , flds_a2x , av_index=kdstdry2 )
-       call dshr_avect_add("Faxa_dstdry3"  , flds_a2x , av_index=kdstdry3 )
-       call dshr_avect_add("Faxa_dstdry4"  , flds_a2x , av_index=kdstdry4 )
-    end if
-    if (flds_wiso) then
-       call dshr_avect_add("Faxa_rainc_18O" , flds_a2x, av_index=krc_16O)
-       call dshr_avect_add("Faxa_rainc_18O" , flds_a2x, av_index=krc_18O)
-       call dshr_avect_add("Faxa_rainc_HDO" , flds_a2x, av_index=krc_HDO)
-       call dshr_avect_add("Faxa_rainl_16O" , flds_a2x, av_index=krl_16O)
-       call dshr_avect_add("Faxa_rainl_18O" , flds_a2x, av_index=krl_18O)
-       call dshr_avect_add("Faxa_rainl_HDO" , flds_a2x, av_index=krl_HDO)
-       call dshr_avect_add("Faxa_snowc_16O" , flds_a2x, av_index=ksc_18O)
-       call dshr_avect_add("Faxa_snowc_18O" , flds_a2x, av_index=ksc_18O)
-       call dshr_avect_add("Faxa_snowc_HDO" , flds_a2x, av_index=ksc_HDO)
-       call dshr_avect_add("Faxa_snowl_16O" , flds_a2x, av_index=ksl_18O)
-       call dshr_avect_add("Faxa_snowl_18O" , flds_a2x, av_index=ksl_18O)
-       call dshr_avect_add("Faxa_snowl_HDO" , flds_a2x, av_index=ksl_HDO)
-       call dshr_avect_add("Sa_shum_16O"    , flds_a2x, av_index=kshum_16O)
-       call dshr_avect_add("Sa_shum_18O"    , flds_a2x, av_index=kshum_18O)
-       call dshr_avect_add("Sa_shum_HDO"    , flds_a2x, av_index=kshum_HDO)
-    end if
-
-    !-------------------
-    ! Create colon deliminted string and optional indices for import attribute vector
-    !-------------------
-
-    if (atm_prognostic) then
-       call dshr_avect_add("Sx_avsdr"      , flds_x2a, av_index=kavsdr)
-       call dshr_avect_add("Sx_anidr"      , flds_x2a, av_index=kanidr)
-       call dshr_avect_add("Sx_avsdf"      , flds_x2a, av_index=kavsdf)
-       call dshr_avect_add("Sx_anidf"      , flds_x2a, av_index=kanidf)
-       call dshr_avect_add("Sx_tref"       , flds_x2a)
-       call dshr_avect_add("Sx_qref"       , flds_x2a)
-       call dshr_avect_add("Sx_t"          , flds_x2a)
-       call dshr_avect_add("So_t"          , flds_x2a)
-       call dshr_avect_add("Sl_snowh"      , flds_x2a)
-       call dshr_avect_add("Sl_lfrac"      , flds_x2a)
-       call dshr_avect_add("Si_ifrac"      , flds_x2a)
-       call dshr_avect_add("So_ofrac"      , flds_x2a)
-       call dshr_avect_add("Faxx_taux"     , flds_x2a)
-       call dshr_avect_add("Faxx_tauy"     , flds_x2a)
-       call dshr_avect_add("Faxx_lat"      , flds_x2a)
-       call dshr_avect_add("Faxx_sen"      , flds_x2a)
-       call dshr_avect_add("Faxx_lwup"     , flds_x2a)
-       call dshr_avect_add("Faxx_evap"     , flds_x2a)
-     ! call dshr_avect_add("Fall_fco2_lnd" , flds_x2a)
-     ! call dshr_avect_add("Faoo_fco2_ocn" , flds_x2a)
-    end if
-
-    !-------------------
-    ! Create module level translation list character arrays
-    !-------------------
-
-    call dshr_translate_add("topo"  , "Sa_topo"    ,  avifld, avofld)
-    call dshr_translate_add("z"     , "Sa_z"       ,  avifld, avofld)
-    call dshr_translate_add("u"     , "Sa_u"       ,  avifld, avofld)
-    call dshr_translate_add("v"     , "Sa_v"       ,  avifld, avofld)
-    call dshr_translate_add("ptem"  , "Sa_ptem"    ,  avifld, avofld)
-    call dshr_translate_add("dens"  , "Sa_dens"    ,  avifld, avofld)
-    call dshr_translate_add("pslv"  , "Sa_pslv"    ,  avifld, avofld)
-    call dshr_translate_add("rainc" , "Faxa_rainc" ,  avifld, avofld)
-    call dshr_translate_add("rainl" , "Faxa_rainl" ,  avifld, avofld)
-    call dshr_translate_add("snowc" , "Faxa_snowc" ,  avifld, avofld)
-    call dshr_translate_add("snowl" , "Faxa_snowl" ,  avifld, avofld)
-    call dshr_translate_add("swndr" , "Faxa_swndr" ,  avifld, avofld)
-    call dshr_translate_add("swvdr" , "Faxa_swvdr" ,  avifld, avofld)
-    call dshr_translate_add("swndf" , "Faxa_swndf" ,  avifld, avofld)
-    call dshr_translate_add("swvdf" , "Faxa_swvdf" ,  avifld, avofld)
-    call dshr_translate_add("swnet" , "Faxa_swnet" ,  avifld, avofld)
-    call dshr_translate_add("tbot"  , "Sa_tbot"    ,  avifld, avofld)
-    call dshr_translate_add("pbot"  , "Sa_pbot"    ,  avifld, avofld)
-    call dshr_translate_add("shum"  , "Sa_shum"    ,  avifld, avofld)
-    call dshr_translate_add("lwdn"  , "Faxa_lwdn"  ,  avifld, avofld)
-    if (flds_co2a .or. flds_co2b .or. flds_co2c) then
-       call dshr_translate_add("co2prog" , "Sa_co2prog" , avifld, avofld)
-       call dshr_translate_add("co2diag" , "Sa_co2diag" , avifld, avofld)
-    end if
-    if (presaero) then
-       call dshr_translate_add("bcphidry" , "Faxa_bcphidry" , avifld, avofld)
-       call dshr_translate_add("bcphodry" , "Faxa_bcphodry" , avifld, avofld)
-       call dshr_translate_add("bcphiwet" , "Faxa_bcphiwet" , avifld, avofld)
-       call dshr_translate_add("ocphidry" , "Faxa_ocphidry" , avifld, avofld)
-       call dshr_translate_add("ocphodry" , "Faxa_ocphodry" , avifld, avofld)
-       call dshr_translate_add("ocphiwet" , "Faxa_ocphiwet" , avifld, avofld)
-       call dshr_translate_add("dstwet1"  , "Faxa_dstwet1"  , avifld, avofld)
-       call dshr_translate_add("dstwet2"  , "Faxa_dstwet2"  , avifld, avofld)
-       call dshr_translate_add("dstwet3"  , "Faxa_dstwet3"  , avifld, avofld)
-       call dshr_translate_add("dstwet4"  , "Faxa_dstwet4"  , avifld, avofld)
-       call dshr_translate_add("dstdry1"  , "Faxa_dstdry1"  , avifld, avofld)
-       call dshr_translate_add("dstdry2"  , "Faxa_dstdry2"  , avifld, avofld)
-       call dshr_translate_add("dstdry3"  , "Faxa_dstdry3"  , avifld, avofld)
-       call dshr_translate_add("dstdry4"  , "Faxa_dstdry4"  , avifld, avofld)
-    end if
-    if (flds_wiso) then
-       call dshr_translate_add("rainc_16O" , "Faxa_rainc_18O", avifld, avofld)
-       call dshr_translate_add("rainc_18O" , "Faxa_rainc_18O", avifld, avofld)
-       call dshr_translate_add("rainc_HDO" , "Faxa_rainc_HDO", avifld, avofld)       
-       call dshr_translate_add("rainl_18O" , "Faxa_rainl_18O", avifld, avofld)
-       call dshr_translate_add("rainl_16O" , "Faxa_rainl_16O", avifld, avofld)
-       call dshr_translate_add("rainl_HDO" , "Faxa_rainl_HDO", avifld, avofld)
-       call dshr_translate_add("snowc_16O" , "Faxa_snowc_16O", avifld, avofld)
-       call dshr_translate_add("snowc_18O" , "Faxa_snowc_18O", avifld, avofld)
-       call dshr_translate_add("snowc_HDO" , "Faxa_snowc_HDO", avifld, avofld)
-       call dshr_translate_add("snowl_16O" , "Faxa_snowl_16O", avifld, avofld)
-       call dshr_translate_add("snowl_18O" , "Faxa_snowl_18O", avifld, avofld)
-       call dshr_translate_add("snowl_HDO" , "Faxa_snowl_HDO", avifld, avofld)
-       call dshr_translate_add("shum_16O"  , "Sa_shum_16O"   , avifld, avofld)
-       call dshr_translate_add("shum_18O"  , "Sa_shum_18O"   , avifld, avofld)
-       call dshr_translate_add("shum_HDO"  , "Sa_shum_HDO"   , avifld, avofld)
-    end if
-
-    ! - stifld is a character array of stream field names
-    ! - stofld is a character array of data model field names that have a one-to-one correspondence with names in stifld
-    ! - flds_strm is a colon delimited string of field names that is created from the field names in stofld for ONLY
-    !   those field names that are available in the data streams present in SDATM%sdatm
-    ! - avstrm is an attribute vector created from flds_strm
-
-    call dshr_translate_add("wind"      , "strm_wind"      , stifld, stofld)
-    call dshr_translate_add("tdew"      , "strm_tdew"      , stifld, stofld)
-    call dshr_translate_add("tbot"      , "strm_tbot"      , stifld, stofld)
-    call dshr_translate_add("pbot"      , "strm_pbot"      , stifld, stofld)
-    call dshr_translate_add("shum"      , "strm_shum"      , stifld, stofld)
-    call dshr_translate_add("lwdn"      , "strm_lwdn"      , stifld, stofld)
-    call dshr_translate_add("wind"      , "strm_wind"      , stifld, stofld)
-    call dshr_translate_add("rh"        , "strm_rh"        , stifld, stofld)
-    call dshr_translate_add("swdn"      , "strm_swdn"      , stifld, stofld)
-    call dshr_translate_add("swdndf"    , "strm_swdndf"    , stifld, stofld)
-    call dshr_translate_add("swdndr"    , "strm_swdndr"    , stifld, stofld)
-    call dshr_translate_add("prec"      , "strm_prec"      , stifld, stofld)
-    call dshr_translate_add("precc"     , "strm_precc"     , stifld, stofld)
-    call dshr_translate_add("precl"     , "strm_precl"     , stifld, stofld)
-    call dshr_translate_add("precn"     , "strm_precn"     , stifld, stofld)
-    call dshr_translate_add("swup"      , "strm_swup"      , stifld, stofld)
-    call dshr_translate_add("tarcf"     , "strm_tarcf"     , stifld, stofld)
-                                                                   
-    call dshr_translate_add("rh_16O"    , "strm_rh_16O"    , stifld, stofld)
-    call dshr_translate_add("rh_18O"    , "strm_rh_18O"    , stifld, stofld)
-    call dshr_translate_add("rh_HDO"    , "strm_rh_HDO"    , stifld, stofld)
-    call dshr_translate_add("precn_16O" , "strm_precn_16O" , stifld, stofld)
-    call dshr_translate_add("precn_18O" , "strm_precn_18O" , stifld, stofld)
-    call dshr_translate_add("precn_HDO" , "strm_precn_HDO" , stifld, stofld)
-
-    ! values for optional bias correction / anomaly forcing (add Sa_precsf for precip scale factor)
-    call dshr_translate_add("precsf"    , "strm_precsf"    , stifld, stofld)
-    call dshr_translate_add("prec_af"   , "strm_prec_af"   , stifld, stofld)
-    call dshr_translate_add("u_af"      , "strm_u_af"      , stifld, stofld)
-    call dshr_translate_add("v_af"      , "strm_v_af"      , stifld, stofld)
-    call dshr_translate_add("tbot_af"   , "strm_tbot_af"   , stifld, stofld)
-    call dshr_translate_add("pbot_af"   , "strm_pbot_af"   , stifld, stofld)
-    call dshr_translate_add("shum_af"   , "strm_shum_af"   , stifld, stofld)
-    call dshr_translate_add("swdn_af"   , "strm_swdn_af"   , stifld, stofld)
-    call dshr_translate_add("lwdn_af"   , "strm_lwdn_af"   , stifld, stofld)
-
-    !if (flds_co2a .or. flds_co2b .or. flds_co2c) then
-       !call dshr_translate_add("co2prog", "strm_co2prog", stifld, stofld)
-       !call dshr_translate_add("co2diag", "strm_co2diag", stifld, stofld)
-    !end if
 
   end subroutine datm_comp_advertise
 
   !===============================================================================
 
-  subroutine datm_comp_init(mpicom, compid, my_task, master_task, &
-       inst_suffix, inst_name, logunit, read_restart, &
-       scmMode, scmlat, scmlon, &
-       orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-       calendar, modeldt, current_ymd, current_tod, current_mon, &
-       atm_prognostic, mesh, nxg, nyg)
+  subroutine datm_comp_init(sdat, importState, exportState, logunit, masterproc, rc)
 
-    ! -----------------------------------
-    ! Initialize data atm model
-    ! -----------------------------------
+    ! -----------------------------
+    ! Initialize dfields arrays
+    ! -----------------------------
 
-    ! input/output variables
-    integer                , intent(in)    :: mpicom         ! mpi communicator
-    integer                , intent(in)    :: compid         ! mct comp id
-    integer                , intent(in)    :: my_task        ! my task in mpi communicator mpicom
-    integer                , intent(in)    :: master_task    ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix    ! char string associated with instance
-    character(len=*)       , intent(in)    :: inst_name      ! fullname of current instance (ie."lnd_0001")
-    integer                , intent(in)    :: logunit        ! logging unit number
-    logical                , intent(in)    :: read_restart   ! start from restart
-    logical                , intent(in)    :: scmMode        ! single column mode
-    real(R8)               , intent(in)    :: scmLat         ! single column lat
-    real(R8)               , intent(in)    :: scmLon         ! single column lon
-    real(R8)               , intent(in)    :: orbEccen       ! orb eccentricity (unit-less)
-    real(R8)               , intent(in)    :: orbMvelpp      ! orb moving vernal eq (radians)
-    real(R8)               , intent(in)    :: orbLambm0      ! orb mean long of perhelion (radians)
-    real(R8)               , intent(in)    :: orbObliqr      ! orb obliquity (radians)
-    character(len=*)       , intent(in)    :: calendar       ! calendar type
-    integer                , intent(in)    :: modeldt        ! model time step
-    integer                , intent(in)    :: current_ymd    ! model date
-    integer                , intent(in)    :: current_tod    ! model sec into model date
-    integer                , intent(in)    :: current_mon    ! model month
-    logical                , intent(in)    :: atm_prognostic ! if true, need x2a data
-    type(ESMF_Mesh)        , intent(inout) :: mesh
-    integer                , intent(out)   :: nxg, nyg
+    ! input/output parameters
+    type(shr_strdata_type) , intent(inout) :: sdat
+    type(ESMF_State)       , intent(inout) :: importState
+    type(ESMF_State)       , intent(inout) :: exportState
+    integer                , intent(in)    :: logunit
+    logical                , intent(in)    :: masterproc
+    integer                , intent(out)   :: rc
 
-    !--- local variables ---
-    integer                      :: n,k            ! generic counters
-    integer                      :: lsize          ! local size
-    integer                      :: kmask          ! field reference
-    integer                      :: klon,klat      ! field reference
-    integer                      :: kfld           ! fld index
-    integer                      :: cnt            ! counter
-    logical                      :: exists,exists1 ! filename existance
-    integer                      :: nu             ! unit number
-    integer                      :: stepno         ! step number
-    type(ESMF_DistGrid)          :: distGrid
-    integer, allocatable, target :: gindex(:)
-    integer                      :: rc
-    integer                      :: dimCount
-    integer                      :: tileCount
-    integer                      :: deCount
-    integer                      :: gsize
-    integer, allocatable         :: elementCountPTile(:)
-    integer, allocatable         :: indexCountPDE(:,:)
-    integer                      :: spatialDim
-    integer                      :: numOwnedElements
-    real(R8), pointer            :: ownedElemCoords(:)
-    character(*), parameter      :: F00   ="('(datm_comp_init) ',8a)"
-    character(*), parameter      :: F01   ="('(datm_comp_init) ',a,2f10.4)"
-    character(*), parameter      :: subName ="(datm_comp_init)"
+    ! local variables
+    integer  :: n, lsize, kf
+    character(CS), allocatable :: strm_flds(:)
     !-------------------------------------------------------------------------------
 
-    call t_startf('DATM_INIT')
+    rc = ESMF_SUCCESS
 
-    !----------------------------------------------------------------------------
-    ! Initialize PIO
-    !----------------------------------------------------------------------------
+    !-----------------------------
+    ! initialize dfields for export fields that have a corresponding stream field
+    !-----------------------------
 
-    call shr_strdata_pioinit(SDATM, COMPID)
-
-    !----------------------------------------------------------------------------
-    ! Create a data model global segmap for the model domain
-    !----------------------------------------------------------------------------
-
-    call t_startf('datm_strdata_init')
-
-    if (my_task == master_task) write(logunit,F00) ' initialize SDATM gsmap'
-
-    ! obtain the distgrid from the mesh that was read in
-    call ESMF_MeshGet(Mesh, elementdistGrid=distGrid, rc=rc)
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_topo'    , strm_fld='topo'  , &
+         state_ptr=Sa_topo    , rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determin local size on my processor
-    call ESMF_distGridGet(distGrid, localDe=0, elementCount=lsize, rc=rc)
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_z'       , strm_fld='z'     , &
+         state_ptr=Sa_z       , rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine global index space for my processor
-    allocate(gindex(lsize))
-    call ESMF_distGridGet(distGrid, localDe=0, seqIndexList=gindex, rc=rc)
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_u'       , strm_fld='u'     , &
+         state_ptr=Sa_u       , rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! determine global size of distgrid
-    call ESMF_distGridGet(distGrid, dimCount=dimCount, deCount=deCount, tileCount=tileCount, rc=rc)
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_v'       , strm_fld='v'     , &
+         state_ptr=Sa_v       , rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    allocate(elementCountPTile(tileCount))
-    call ESMF_distGridGet(distGrid, elementCountPTile=elementCountPTile, rc=rc)
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_ptem'    , strm_fld='ptem'  , &
+         state_ptr=Sa_ptem    , rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    gsize = 0
-    do n = 1,size(elementCountPTile)
-       gsize = gsize + elementCountPTile(n)
-    end do
-    deallocate(elementCountPTile)
-
-    ! create the data model gsmap given the local size, global size and gindex
-    call mct_gsMap_init( SDATM%gsmap, gindex, mpicom, compid, lsize, gsize)
-    deallocate(gindex)
-
-    !----------------------------------------------------------------------------
-    ! Initialize SDATM - using the gsmap for the model domain created above
-    !----------------------------------------------------------------------------
-
-    SDATM%calendar = trim(shr_cal_calendarName(trim(calendar)))
-
-    if (scmmode) then
-       if (my_task == master_task) write(logunit,F01) ' scm lon lat = ',scmlon,scmlat
-       call shr_strdata_init_model_domain(SDATM, mpicom, compid, my_task, &
-            scmmode=scmmode, scmlon=scmlon, scmlat=scmlat, gsmap=SDATM%gsmap)
-    else
-       call shr_strdata_init_model_domain(SDATM, mpicom, compid, my_task, gsmap=SDATM%gsmap)
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_dens'    , strm_fld='dens'  , &
+         state_ptr=Sa_dens    , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_pslv'    , strm_fld='pslv'  , &
+         state_ptr=Sa_pslv    , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_rainc' , strm_fld='rainc' , &
+         state_ptr=Faxa_rainc , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_rainl' , strm_fld='rainl' , &
+         state_ptr=Faxa_rainl , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_snowc' , strm_fld='snowc' , &
+         state_ptr=Faxa_snowc , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_snowl' , strm_fld='snowl' , &
+         state_ptr=Faxa_snowl , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_swndr' , strm_fld='swndr' , &
+         state_ptr=Faxa_swndr , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_swvdr' , strm_fld='swvdr' , &
+         state_ptr=Faxa_swvdr , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_swndf' , strm_fld='swndf' , &
+         state_ptr=Faxa_swndf , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_swvdf' , strm_fld='swvdf' , &
+         state_ptr=Faxa_swvdf , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_swnet' , strm_fld='swnet' , &
+         state_ptr=Faxa_swnet , rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (flds_presaero) then
+       allocate(strm_flds(3))
+       strm_flds = (/'bcphidry', 'bcphodry', 'bcphiwet'/)
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_bcph', strm_flds=strm_flds, &
+            state_ptr=Faxa_bcph, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       strm_flds = (/'ocphidry', 'ocphodry', 'ocphiwet'/)
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_ocph', strm_flds=strm_flds, &
+            state_ptr=Faxa_ocph, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       deallocate(strm_flds)
+       allocate(strm_flds(4))
+       strm_flds = (/'dstwet1', 'dstwet2', 'dstwet3', 'dstwet4'/)
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_dstwet', strm_flds=strm_flds, &
+            state_ptr=Faxa_dstwet, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       strm_flds = (/'dstdry1', 'dstdry2', 'dstdry3', 'dstdry4'/)
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_dstdry', strm_flds=strm_flds, &
+            state_ptr=Faxa_dstdry, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       deallocate(strm_flds)
+    end if
+    if (flds_wiso) then ! isopic forcing
+       allocate(strm_flds(3))
+       strm_flds = (/'rainc_16O', 'rainc_18O', 'rainc_HDO'/)
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_rainc_wiso', strm_flds=strm_flds, &
+            state_ptr=Faxa_rainc_wiso, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       strm_flds = (/'rainl_16O', 'rainl_18O', 'rainl_HDO'/)
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_rainl_wiso', strm_flds=strm_flds, &
+            state_ptr=Faxa_rainl_wiso, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       strm_flds = (/'snowc_16O', 'snowc_18O', 'snowc_HDO'/)
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_snowc_wiso', strm_flds=strm_flds, &
+            state_ptr=Faxa_snowc_wiso, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       strm_flds = (/'snowl_16O', 'snowl_18O', 'snowl_HDO'/)
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_snowl_wiso', strm_flds=strm_flds, &
+            state_ptr=Faxa_snowl_wiso, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       strm_flds = (/'shum_16O', 'shum_18O', 'shum_HDO'/)
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_shum_wiso', strm_flds=strm_flds, &
+            state_ptr=Sa_shum_wiso, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    ! obtain  mesh lats and lons for model mesh
-    call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+    !-----------------------------
+    ! initialize dfields for export fields that have a corresponding stream field AND that have a corresponding internal field
+    !-----------------------------
+
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_tbot'   , strm_fld='tbot', &
+         state_ptr=Sa_tbot, strm_ptr=strm_tbot, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    allocate(ownedElemCoords(spatialDim*numOwnedElements))
-    allocate(xc(numOwnedElements), yc(numOwnedElements))
-    call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_pbot'   , strm_fld='pbot', &
+         state_ptr=Sa_pbot, strm_ptr=strm_pbot, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (numOwnedElements /= lsize) then
-       call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
-    end if
-    do n = 1,lsize
-       xc(n) = ownedElemCoords(2*n-1)
-       yc(n) = ownedElemCoords(2*n)
-    end do
-
-    ! error check that mesh lats and lons correspond to those on the input domain file
-    klon = mct_aVect_indexRA(SDATM%grid%data,'lon')
-    do n = 1, lsize
-       if (abs(mod(SDATM%grid%data%rattr(klon,n) - xc(n),360.0_R8)) > 1.e-5) then
-          write(6,*)'ERROR: DATM n, lon(domain), lon(mesh) = ',n, SDATM%grid%data%rattr(klon,n),xc(n)
-          write(6,*)'ERROR: DATM lon diff = ',abs(SDATM%grid%data%rattr(klon,n) -  xc(n)),' too large'
-          call shr_sys_abort()
-       end if
-       !SDATM%grid%data%rattr(klon,n) = xc(n) ! overwrite ggrid with mesh data
-       xc(n) = SDATM%grid%data%rattr(klon,n)
-    end do
-    klat = mct_aVect_indexRA(SDATM%grid%data,'lat')
-    do n = 1, lsize
-       if (abs( SDATM%grid%data%rattr(klat,n) -  yc(n)) > 1.e-5) then
-          write(6,*)'ERROR: DATM n, lat(domain), lat(mesh) = ',n,SDATM%grid%data%rattr(klat,n),yc(n)
-          write(6,*)'ERROR: DATM lat diff = ',abs(SDATM%grid%data%rattr(klat,n) -  yc(n)),' too large'
-          call shr_sys_abort()
-       end if
-       !SDATM%grid%data%rattr(klat,n) = yc(n) ! overwrite ggrid with mesh data
-       yc(n) = SDATM%grid%data%rattr(klat,n)
-    end do
-
-    ! overwrite mask and frac
-    k = mct_aVect_indexRA(SDATM%grid%data,'mask')
-    SDATM%grid%data%rAttr(k,:) = 1.0_R8
-
-    k = mct_aVect_indexRA(SDATM%grid%data,'frac')
-    SDATM%grid%data%rAttr(k,:) = 1.0_R8
-
-    if (my_task == master_task) then
-       call shr_strdata_print(SDATM,'ATM data')
-    endif
-
-    !----------------------------------------------------------------------------
-    ! Initialize SDATM attributes for streams and mapping of streams to model domain
-    !----------------------------------------------------------------------------
-
-    call shr_strdata_init_streams(SDATM, compid, mpicom, my_task)
-    call shr_strdata_init_mapping(SDATM, compid, mpicom, my_task)
-
-    !----------------------------------------------------------------------------
-    ! allocate module arrays
-    !----------------------------------------------------------------------------
-
-    allocate(windFactor(lsize))
-    allocate(winddFactor(lsize))
-    allocate(qsatFactor(lsize))
-
-    call t_stopf('datm_strdata_init')
-
-    !----------------------------------------------------------------------------
-    ! Initialize import/export attribute vectors
-    !----------------------------------------------------------------------------
-
-    call t_startf('datm_initmctavs')
-    if (my_task == master_task) write(logunit,F00) 'allocate AVs'
-
-    call mct_aVect_init(a2x, rList=flds_a2x, lsize=lsize)
-    call mct_aVect_zero(a2x)
-    call mct_aVect_init(x2a, rList=flds_x2a, lsize=lsize)
-    call mct_aVect_zero(x2a)
-
-    !----------------------------------------------------------------------------
-    ! Initialize internal attribute vectors for optional streams
-    !----------------------------------------------------------------------------
-
-    ! Create the colon deliminted list flds_strm based on mapping the
-    ! input stream fields from SDATM%avs(n) to with the names in stifld to stofld
-
-    cnt = 0
-    flds_strm = ''
-    do n = 1,SDATM%nstreams
-       ! Loop over the field names in stifld
-       do k = 1,size(stifld)
-          ! Search the streams for the field name stifld(k)
-          kfld = mct_aVect_indexRA(SDATM%avs(n), trim(stifld(k)), perrWith='quiet')
-          if (kfld > 0) then
-             cnt = cnt + 1
-             ! Append the colon deliminted flds_strm with the mapped field name stofld(k)
-             if (cnt == 1) then
-                flds_strm = trim(stofld(k))
-             else
-                flds_strm = trim(flds_strm)//':'//trim(stofld(k))
-             endif
-          endif
-       enddo
-    enddo
-
-    ! Initialize avstrm based on the active streams determined above
-    if (my_task == master_task) write(logunit,F00) ' flds_strm = ',trim(flds_strm)
-    call mct_aVect_init(avstrm, rList=flds_strm, lsize=lsize)
-    call mct_aVect_zero(avstrm)
-
-    ! Note: because the following needs to occur AFTER we determine the fields in
-    ! flds_strm - the indices below CANNOT be set in the datm_comp_advertise phase
-
-    ! Now set indices into these active streams
-    stbot  = mct_aVect_indexRA(avstrm,'strm_tbot'   ,perrWith='quiet')
-    swind  = mct_aVect_indexRA(avstrm,'strm_wind'   ,perrWith='quiet')
-    sz     = mct_aVect_indexRA(avstrm,'strm_z'      ,perrWith='quiet')
-    spbot  = mct_aVect_indexRA(avstrm,'strm_pbot'   ,perrWith='quiet')
-    sshum  = mct_aVect_indexRA(avstrm,'strm_shum'   ,perrWith='quiet')
-    stdew  = mct_aVect_indexRA(avstrm,'strm_tdew'   ,perrWith='quiet')
-    srh    = mct_aVect_indexRA(avstrm,'strm_rh'     ,perrWith='quiet')
-    slwdn  = mct_aVect_indexRA(avstrm,'strm_lwdn'   ,perrWith='quiet')
-    sswdn  = mct_aVect_indexRA(avstrm,'strm_swdn'   ,perrWith='quiet')
-    sswdndf= mct_aVect_indexRA(avstrm,'strm_swdndf' ,perrWith='quiet')
-    sswdndr= mct_aVect_indexRA(avstrm,'strm_swdndr' ,perrWith='quiet')
-    sprecc = mct_aVect_indexRA(avstrm,'strm_precc'  ,perrWith='quiet')
-    sprecl = mct_aVect_indexRA(avstrm,'strm_precl'  ,perrWith='quiet')
-    sprecn = mct_aVect_indexRA(avstrm,'strm_precn'  ,perrWith='quiet')
-    sswup  = mct_aVect_indexRA(avstrm,'strm_swup'   ,perrWith='quiet')
-    sprec  = mct_aVect_indexRA(avstrm,'strm_prec'   ,perrWith='quiet')
-    starcf = mct_aVect_indexRA(avstrm,'strm_tarcf'  ,perrWith='quiet')
-
-    ! anomaly forcing
-    sprecsf  = mct_aVect_indexRA(avstrm,'strm_precsf'  ,perrWith='quiet')
-    sprec_af = mct_aVect_indexRA(avstrm,'strm_prec_af' ,perrWith='quiet')
-    su_af    = mct_aVect_indexRA(avstrm,'strm_u_af'    ,perrWith='quiet')
-    sv_af    = mct_aVect_indexRA(avstrm,'strm_v_af'    ,perrWith='quiet')
-    stbot_af = mct_aVect_indexRA(avstrm,'strm_tbot_af' ,perrWith='quiet')
-    spbot_af = mct_aVect_indexRA(avstrm,'strm_pbot_af' ,perrWith='quiet')
-    sshum_af = mct_aVect_indexRA(avstrm,'strm_shum_af' ,perrWith='quiet')
-    sswdn_af = mct_aVect_indexRA(avstrm,'strm_swdn_af' ,perrWith='quiet')
-    slwdn_af = mct_aVect_indexRA(avstrm,'strm_lwdn_af' ,perrWith='quiet')
-
-    ! isotopic forcing
-    if (wiso_datm) then
-       sprecn_16O = mct_aVect_indexRA(avstrm,'strm_precn_16O',perrWith='quiet')
-       sprecn_18O = mct_aVect_indexRA(avstrm,'strm_precn_18O',perrWith='quiet')
-       sprecn_HDO = mct_aVect_indexRA(avstrm,'strm_precn_HDO',perrWith='quiet')
-       ! Okay here to just use srh_18O and srh_HDO, because the forcing is (should)
-       ! just be deltas, applied in CTSM to the base tracer
-       srh_16O    = mct_aVect_indexRA(avstrm,'strm_rh_16O',perrWith='quiet')
-       srh_18O    = mct_aVect_indexRA(avstrm,'strm_rh_18O',perrWith='quiet')
-       srh_HDO    = mct_aVect_indexRA(avstrm,'strm_rh_HDO',perrWith='quiet')
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_shum'   , strm_fld='shum', &
+         state_ptr=Sa_shum, strm_ptr=strm_shum, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Faxa_lwdn' , strm_fld='lwdn', &
+         state_ptr=Faxa_lwdn, strm_ptr=strm_lwdn, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    if (flds_co2a .or. flds_co2b .or. flds_co2c) then
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_co2prog', strm_fld='co2prog', &
+            state_ptr=Sa_co2prog, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sa_co2diag', strm_fld='co2diag', &
+            state_ptr=Sa_co2diag, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
     end if
 
-    call t_stopf('datm_initmctavs')
+    !-----------------------------
+    ! initialize dfields for stream fields that have no corresponding import or export fields
+    !-----------------------------
 
-    nxg = SDATM%nxg
-    nyg = SDATM%nyg
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'wind'  , strm_wind   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'tdew'  , strm_tdew   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'tbot'  , strm_tbot   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'pbot'  , strm_pbot   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'shum'  , strm_shum   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'lwdn'  , strm_lwdn   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'rh'    , strm_rh     , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'swdn'  , strm_swdn   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'swdndf', strm_swdndf , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'swdndr', strm_swdndr , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'prec'  , strm_prec   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'precc' , strm_precc  , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'precl' , strm_precl  , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'precn' , strm_precn  , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'swup'  , strm_swup   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'tarcf' , strm_tarcf  , logunit=logunit, masterproc=masterproc)
 
-    !----------------------------------------------------------------------------
-    ! Read restart
-    !----------------------------------------------------------------------------
+    ! water isotopes
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'rh_16O'   , strm_rh_16O    , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'rh_18O'   , strm_rh_18O    , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'rh_HDO'   , strm_rh_HDO    , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'precn_16O', strm_precn_16O , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'precn_18O', strm_precn_18O , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'precn_HDO', strm_precn_HDO , logunit=logunit, masterproc=masterproc)
 
-    if (read_restart) then
-       exists = .false.
-       exists1 = .false.
-       if (trim(rest_file)      == trim(nullstr) .and. &
-           trim(rest_file_strm) == trim(nullstr)) then
-          if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from rpointer = ',trim(rpfile)
-             inquire(file=trim(rpfile)//trim(inst_suffix),exist=exists)
-             if (exists) then
-                nu = shr_file_getUnit()
-                open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-                read(nu,'(a)') rest_file
-                read(nu,'(a)') rest_file_strm
-                close(nu)
-                call shr_file_freeUnit(nu)
-                inquire(file=trim(rest_file_strm),exist=exists)
-                inquire(file=trim(rest_file),exist=exists1)
-             endif
-          endif
-          call shr_mpi_bcast(rest_file,mpicom,'rest_file')
-          call shr_mpi_bcast(rest_file_strm,mpicom,'rest_file_strm')
-       else
-          ! use namelist already read
-          if (my_task == master_task) then
-             write(logunit,F00) ' restart filenames from namelist '
-             inquire(file=trim(rest_file_strm),exist=exists)
-          endif
-       endif
-
-       call shr_mpi_bcast(exists,mpicom,'exists')
-       call shr_mpi_bcast(exists1,mpicom,'exists1')
-
-       ! if (exists1) then
-       !    if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file)
-       !    call shr_pcdf_readwrite('read',SDATM%pio_subsystem, SDATM%io_type, &
-       !         trim(rest_file),mpicom,gsmap=SDATM%gsmap,rf1=water,rf1n='water',io_format=SDATM%io_format)
-       ! else
-       !    if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file)
-       ! endif
-
-       if (exists) then
-          if (my_task == master_task) write(logunit,F00) ' reading ',trim(rest_file_strm)
-          call shr_strdata_restRead(trim(rest_file_strm),SDATM,mpicom)
-       else
-          if (my_task == master_task) write(logunit,F00) ' file not found, skipping ',trim(rest_file_strm)
-       endif
-    endif
-
-    !----------------------------------------------------------------------------
-    ! Set initial atm state
-    !----------------------------------------------------------------------------
-
-    call t_adj_detailf(+2)
-    call datm_comp_run(mpicom=mpicom, compid=compid, my_task=my_task, &
-         master_task=master_task, inst_suffix=inst_suffix, logunit=logunit, &
-         orbEccen=orbEccen, orbMvelpp=orbMvelpp, orbLambm0=orbLambm0, orbObliqr=orbObliqr, &
-         write_restart=.false., target_ymd=current_ymd, target_tod=current_tod, target_mon=current_mon, &
-         calendar=calendar, modeldt=modeldt, atm_prognostic=atm_prognostic)
-    call t_adj_detailf(-2)
-
-    call t_stopf('DATM_INIT')
+    ! values for optional bias correction / anomaly forcing (add Sa_precsf for precip scale factor)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'precsf'   , strm_precsf    , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'prec_af'  , strm_prec_af   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'u_af'     , strm_u_af      , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'v_af'     , strm_v_af      , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'tbot_af'  , strm_tbot_af   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'pbot_af'  , strm_pbot_af   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'shum_af'  , strm_shum_af   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'swdn_af'  , strm_swdn_af   , logunit=logunit, masterproc=masterproc)
+    call dshr_dfield_add(sdat, dfields, dfields_num, 'lwdn_af'  , strm_lwdn_af   , logunit=logunit, masterproc=masterproc)
 
   end subroutine datm_comp_init
 
   !===============================================================================
 
-  subroutine datm_comp_run(mpicom, compid, my_task, master_task, &
-       inst_suffix, logunit, &
-       orbEccen, orbMvelpp, orbLambm0, orbObliqr, &
-       write_restart, target_ymd, target_tod, target_mon, modeldt, calendar, &
-       atm_prognostic, case_name)
+  subroutine datm_comp_run(mpicom, compid, my_task, master_task, logunit, target_ymd, target_tod, sdat, &
+       mesh, target_mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, rc)
 
-    ! !DESCRIPTION: run method for datm model
+    ! ----------------------------------
+    ! run method for datm model
+    ! ----------------------------------
 
-    ! !INPUT/OUTPUT PARAMETERS:
+    ! input/output variables
     integer                , intent(in)    :: mpicom           ! mpi communicator
-    integer                , intent(in)    :: compid           ! mct comp id
     integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
     integer                , intent(in)    :: master_task      ! task number of master task
-    character(len=*)       , intent(in)    :: inst_suffix      ! char string associated with instance
     integer                , intent(in)    :: logunit          ! logging unit number
     real(R8)               , intent(in)    :: orbEccen         ! orb eccentricity (unit-less)
     real(R8)               , intent(in)    :: orbMvelpp        ! orb moving vernal eq (radians)
     real(R8)               , intent(in)    :: orbLambm0        ! orb mean long of perhelion (radians)
     real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
-    logical                , intent(in)    :: write_restart    ! restart alarm is on
     integer                , intent(in)    :: target_ymd       ! model date
     integer                , intent(in)    :: target_tod       ! model sec into model date
+    type(shr_strdata_type) , intent(inout) :: sdat
+    type(ESMF_Mesh)        , intent(in)    :: mesh
     integer                , intent(in)    :: target_mon       ! model month
-    character(len=*)       , intent(in)    :: calendar         ! calendar type
-    Integer                , intent(in)    :: modeldt          ! model time step
-    logical                , intent(in)    :: atm_prognostic
-    character(len=*)       , intent(in), optional :: case_name ! case name
+    integer                , intent(in)    :: compid           ! mct comp id
+    integer                , intent(out)   :: rc
 
-    !--- local ---
-    integer                 :: n,nfld            ! indices
-    integer                 :: lsize             ! size of attr vect
-    character(CL)           :: rest_file         ! restart_file
-    character(CL)           :: rest_file_strm    ! restart_file
-    integer                 :: nu                ! unit number
-    integer                 :: eday              ! elapsed day
-    real(R8)                :: rday              ! elapsed day
-    real(R8)                :: cosFactor         ! cosine factor
-    real(R8)                :: factor            ! generic/temporary correction factor
-    real(R8)                :: avg_alb           ! average albedo
-    real(R8)                :: tMin              ! minimum temperature
-    character(len=18)       :: date_str
-    character(len=CS)       :: fldname
-    real(R8)                :: uprime,vprime,swndr,swndf,swvdr,swvdf,ratio_rvrf
+    ! local variables
+    integer                 :: n,kf                ! indices
+    integer                 :: lsize               ! size of attr vect
+    integer                 :: eday                ! elapsed day
+    real(R8)                :: rday                ! elapsed day
+    real(R8)                :: cosFactor           ! cosine factor
+    real(R8)                :: factor              ! generic/temporary correction factor
+    real(R8)                :: avg_alb             ! average albedo
+    real(R8)                :: tMin                ! minimum temperature
+    integer                 :: spatialDim          ! number of dimension in mesh
+    integer                 :: numOwnedElements    ! size of mesh
+    real(r8), pointer       :: ownedElemCoords(:)  ! mesh lat and lons
+    real(R8)                :: uprime,vprime
+    real(r8)                :: swndr,swndf,swvdr,swvdf,ratio_rvrf
     real(R8)                :: tbot,pbot,rtmp,vp,ea,e,qsat,frac,qsatT
-    logical                 :: firstcall = .true.    ! first call logical
-    character(*), parameter :: F00   = "('(datm_comp_run) ',8a)"
-    character(*), parameter :: F01   = "('(datm_comp_run) ', a,2i8,'s')"
-    character(*), parameter :: F02   = "('(datm_comp_run) ',2a,2i8,'s')"
-    character(*), parameter :: F0D   = "('(datm_comp_run) ',a, i7,2x,i5,2x,i5,2x,d21.14)"
-    character(*), parameter :: subName = "(datm_comp_run) "
+    logical                 :: first_time = .true. ! first call logical
+    character(*), parameter :: subName = '(datm_comp_run) '
     !-------------------------------------------------------------------------------
 
-    !--------------------
-    ! Debug output
-    !--------------------
-
-    if (debug_import > 0 .and. my_task == master_task .and. atm_prognostic) then
-       do nfld = 1, mct_aVect_nRAttr(x2a)
-          call shr_string_listGetName(trim(flds_x2a), nfld, fldname)
-          do n = 1, mct_aVect_lsize(x2a)
-             write(logunit,F0D)'import: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, x2a%rattr(nfld,n)
-          end do
-       end do
-    end if
+    rc = ESMF_SUCCESS
 
     !--------------------
-    ! ADVANCE ATM
+    ! Advance datm streams
     !--------------------
 
-    call t_startf('DATM_RUN')
+    ! time and spatially interpolate to model time and grid
     call t_barrierf('datm_BARRIER',mpicom)
-    call t_startf('datm')
-
-    !--- set data needed for cosz t-interp method ---
-    call shr_strdata_setOrbs(SDATM,orbEccen,orbMvelpp,orbLambm0,orbObliqr,modeldt)
-
-    !--- copy all fields from streams to a2x as default ---
     call t_startf('datm_strdata_advance')
-    call shr_strdata_advance(SDATM,target_ymd,target_tod,mpicom,'datm')
+    call shr_strdata_advance(sdat, target_ymd, target_tod, mpicom, 'datm')
     call t_stopf('datm_strdata_advance')
 
-    call t_barrierf('datm_scatter_BARRIER',mpicom)
+    !--------------------
+    ! copy all fields from streams to export state as default
+    !--------------------
 
-    call t_startf('datm_scatter')
-    if (firstcall) then
-       allocate(ilist_av(SDATM%nstreams))
-       allocate(olist_av(SDATM%nstreams))
-       allocate(ilist_st(SDATM%nstreams))
-       allocate(olist_st(SDATM%nstreams))
-       allocate(count_av(SDATM%nstreams))
-       allocate(count_st(SDATM%nstreams))
-       do n = 1,SDATM%nstreams
-          ! Obtain a smaller list for translate given the actual fields present in the streams
-          ! This can only be done once the SDATM has been initialized
-          call shr_dmodel_translate_list( &
-               avi=SDATM%avs(n),          & ! input  av
-               avo=a2x,                   & ! output av
-               avifld=avifld,             & ! input  stream field names for translation
-               avofld=avofld ,            & ! output model field names for translation
-               ilist=ilist_av(n),         & ! per-stream colon deliminted list for translation
-               olist=olist_av(n),         & ! per-stream colon deliminted list for translation
-               cnt=count_av(n))             ! indices
-       end do
-       do n = 1,SDATM%nstreams
-          call shr_dmodel_translate_list(   &
-               avi=SDATM%avs(n),            & ! input av
-               avo=avstrm,                  & ! output av
-               avifld=stifld,               & ! input  field names for translation
-               avofld=stofld,               & ! output field names for translation
-               ilist=ilist_st(n),           & ! input  list for translation
-               olist=olist_st(n),           & ! output list for translation
-               cnt=count_st(n))               ! indices
-       end do
-    end if
-
-    ! At this point DATM%avs(n) has been interpolated to the model grid and the model time
-
-    ! Fill in a2x from ALL the streams in SDATM%avs(:)
-    do n = 1,SDATM%nstreams
-       if (count_av(n) > 0) then
-          call shr_dmodel_translateAV_list( avi=SDATM%avs(n), avo=a2x, ilist=ilist_av(n), olist=olist_av(n))
-       end if
-    enddo
-
-    ! Fill in avstrm from ALL the streams in SDATM%avs(:)
-    do n = 1,SDATM%nstreams
-       if (count_st(n) > 0) then
-          call shr_dmodel_translateAV_list( avi=SDATM%avs(n), avo=avstrm, ilist=ilist_st(n), olist=olist_st(n))
-       end if
-    enddo
-    call t_stopf('datm_scatter')
+    ! This automatically will update the fields in the export state
+    call t_barrierf('datm_comp_streams_copy_BARRIER', mpicom)
+    call t_startf('datm_streams_copy')
+    call dshr_streams_copy(dfields, dfields_num, sdat, rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call t_stopf('datm_streams_copy')
 
     !-------------------------------------------------
     ! Determine data model behavior based on the mode
     !-------------------------------------------------
 
+    lsize = size(Sa_z)
+
+    if (first_time) then
+       ! overwrite mask and frac
+       kf = mct_aVect_indexRA(sdat%grid%data,'mask')
+       sdat%grid%data%rAttr(kf,:) = 1.0_R8
+       kf = mct_aVect_indexRA(sdat%grid%data,'frac')
+       sdat%grid%data%rAttr(kf,:) = 1.0_R8
+
+       ! allocate module arrays
+       allocate(windFactor(lsize))
+       allocate(winddFactor(lsize))
+       allocate(qsatFactor(lsize))
+
+       call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       allocate(ownedElemCoords(spatialDim*numOwnedElements))
+       allocate(yc(numOwnedElements))
+       call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
+       if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       do n = 1,numOwnedElements
+          yc(n) = ownedElemCoords(2*n)
+       end do
+    end if
+
     call t_startf('datm_datamode')
-    select case (trim(datamode))
+    select case (trim(sdat%datamode))
 
     case('COPYALL')
        ! do nothing extra
 
     case('CORE2_NYF','CORE2_IAF')
-       if (firstcall) then
-          if (sprec < 1 .or. sswdn < 1) then
-             write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE2'
+       if (first_time) then
+          if (.not. associated(strm_prec) .or. .not. associated(strm_swdn)) then
              call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE2')
           endif
-          if (trim(datamode) == 'CORE2_IAF' ) then
-             if (starcf < 1 ) then
-                write(logunit,F00) 'ERROR: tarcf must be in an input stream for CORE2_IAF'
+          if (trim(sdat%datamode) == 'CORE2_IAF' ) then
+             if (.not. associated(strm_tarcf)) then
                 call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE2_IAF')
              endif
           endif
-          call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
-               mpicom,compid, SDATM%gsmap, SDATM%grid, SDATM%nxg, SDATM%nyg)
+          call datm_shr_CORE2getFactors(factorFn, windFactor, winddFactor, qsatFactor,  &
+               mpicom, compid, sdat%gsmap, sdat%grid, sdat%nxg, sdat%nyg)
        endif
-       call shr_cal_date2julian(target_ymd,target_tod,rday,calendar)
+       call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
        cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
 
-       lsize = mct_avect_lsize(a2x)
        do n = 1,lsize
-          a2x%rAttr(kz,n) = 10.0_R8
+          Sa_z(n) = 10.0_R8
 
           !--- correction to NCEP winds based on QSCAT ---
-          uprime    = a2x%rAttr(ku,n)*windFactor(n)
-          vprime    = a2x%rAttr(kv,n)*windFactor(n)
-          a2x%rAttr(ku,n) = uprime*cos(winddFactor(n)*degtorad)- &
-                            vprime*sin(winddFactor(n)*degtorad)
-          a2x%rAttr(kv,n) = uprime*sin(winddFactor(n)*degtorad)+ &
-                            vprime*cos(winddFactor(n)*degtorad)
+          uprime = Sa_u(n)*windFactor(n)
+          vprime = Sa_v(n)*windFactor(n)
+          Sa_u(n) = uprime*cos(winddFactor(n)*degtorad) - vprime*sin(winddFactor(n)*degtorad)
+          Sa_v(n) = uprime*sin(winddFactor(n)*degtorad) + vprime*cos(winddFactor(n)*degtorad)
 
           !--- density, tbot, & pslv taken directly from input stream, set pbot ---
-          a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
+          Sa_pbot(n) = Sa_pslv(n)
 
           !--- correction to NCEP Arctic & Antarctic air T & potential T ---
           if      ( yc(n) < -60.0_R8 ) then
              tMin = (avg_c0 + avg_c1*yc(n)) + (amp_c0 + amp_c1*yc(n))*cosFactor + tKFrz
-             a2x%rAttr(ktbot,n) = max(a2x%rAttr(ktbot,n), tMin)
+             Sa_tbot(n) = max(Sa_tbot(n), tMin)
           else if ( yc(n) > 60.0_R8 ) then
              factor = MIN(1.0_R8, 0.1_R8*(yc(n)-60.0_R8) )
-             a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + factor * dTarc(target_mon)
+             Sa_tbot(n) = Sa_tbot(n) + factor * dTarc(target_mon)
           endif
-          a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
+          Sa_ptem(n) = Sa_tbot(n)
 
           !---  correction to NCEP relative humidity for heat budget balance ---
-          a2x%rAttr(kshum,n) = a2x%rAttr(kshum,n) + qsatFactor(n)
+          Sa_shum(n) = Sa_shum(n) + qsatFactor(n)
 
           !--- Dupont correction to NCEP Arctic air T  ---
           !--- don't correct during summer months (July-September)
           !--- ONLY correct when forcing year is 1997->2004
-          if (trim(datamode) == 'CORE2_IAF' ) then
-             a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) +  avstrm%rAttr(starcf,n)
-             a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
+          if (trim(sdat%datamode) == 'CORE2_IAF' ) then
+             Sa_tbot(n) = Sa_tbot(n) +  strm_tarcf(n)
+             Sa_ptem(n) = Sa_tbot(n)
           end if
 
-          !-------------------------------------------------------------------------
           ! PRECIPITATION DATA
-          !-------------------------------------------------------------------------
-
-          avstrm%rAttr(sprec,n) = avstrm%rAttr(sprec,n)/86400.0_R8        ! convert mm/day to kg/m^2/s
-
+          strm_prec(n) = strm_prec(n)/86400.0_R8        ! convert mm/day to kg/m^2/s
           !  only correct satellite products, do not correct Serreze Arctic data
           if ( yc(n) < 58. ) then
-             avstrm%rAttr(sprec,n) = avstrm%rAttr(sprec,n)*1.14168_R8
+             strm_prec(n) = strm_prec(n)*1.14168_R8
           endif
           if ( yc(n) >= 58. .and. yc(n) < 68. ) then
              factor = MAX(0.0_R8, 1.0_R8 - 0.1_R8*(yc(n)-58.0_R8) )
-             avstrm%rAttr(sprec,n) = avstrm%rAttr(sprec,n)*(factor*(1.14168_R8 - 1.0_R8) + 1.0_R8)
+             strm_prec(n) = strm_prec(n)*(factor*(1.14168_R8 - 1.0_R8) + 1.0_R8)
           endif
-
-          a2x%rAttr(krc,n) = 0.0_R8                    ! default zero
-          a2x%rAttr(ksc,n) = 0.0_R8
-          if (a2x%rAttr(ktbot,n) < tKFrz ) then        ! assign precip to rain/snow components
-             a2x%rAttr(krl,n) = 0.0_R8
-             a2x%rAttr(ksl,n) = avstrm%rAttr(sprec,n)
+          Faxa_rainc(n) = 0.0_R8               ! default zero
+          Faxa_snowc(n) = 0.0_R8
+          if (Sa_tbot(n) < tKFrz ) then        ! assign precip to rain/snow components
+             Faxa_rainl(n) = 0.0_R8
+             Faxa_snowl(n) = strm_prec(n)
           else
-             a2x%rAttr(krl,n) = avstrm%rAttr(sprec,n)
-             a2x%rAttr(ksl,n) = 0.0_R8
+             Faxa_rainl(n) = strm_prec(n)
+             Faxa_snowl(n) = 0.0_R8
           endif
 
-          !-------------------------------------------------------------------------
           ! RADIATION DATA
-          !-------------------------------------------------------------------------
-
           !--- fabricate required swdn components from net swdn ---
-          a2x%rAttr(kswvdr,n) = avstrm%rAttr(sswdn,n)*(0.28_R8)
-          a2x%rAttr(kswndr,n) = avstrm%rAttr(sswdn,n)*(0.31_R8)
-          a2x%rAttr(kswvdf,n) = avstrm%rAttr(sswdn,n)*(0.24_R8)
-          a2x%rAttr(kswndf,n) = avstrm%rAttr(sswdn,n)*(0.17_R8)
-
+          Faxa_swvdr(n) = strm_swdn(n)*(0.28_R8)
+          Faxa_swndr(n) = strm_swdn(n)*(0.31_R8)
+          Faxa_swvdf(n) = strm_swdn(n)*(0.24_R8)
+          Faxa_swndf(n) = strm_swdn(n)*(0.17_R8)
           !--- compute net short-wave based on LY08 latitudinally-varying albedo ---
           avg_alb = ( 0.069 - 0.011*cos(2.0_R8*yc(n)*degtorad ) )
-          a2x%rAttr(kswnet,n) = avstrm%rAttr(sswdn,n)*(1.0_R8 - avg_alb)
-
+          Faxa_swnet(n) = strm_swdn(n)*(1.0_R8 - avg_alb)
           !--- corrections to GISS sswdn for heat budget balancing ---
           factor = 1.0_R8
           if      ( -60.0_R8 < yc(n) .and. yc(n) < -50.0_R8 ) then
@@ -1060,593 +656,288 @@ contains
           else if (  30.0_R8 < yc(n) .and. yc(n) <  40._R8 ) then
              factor = 1.0_R8 - (40.0_R8 - yc(n))*(0.05_R8/10.0_R8)
           endif
-          a2x%rAttr(kswnet,n) = a2x%rAttr(kswnet,n)*factor
-          a2x%rAttr(kswvdr,n) = a2x%rAttr(kswvdr,n)*factor
-          a2x%rAttr(kswndr,n) = a2x%rAttr(kswndr,n)*factor
-          a2x%rAttr(kswvdf,n) = a2x%rAttr(kswvdf,n)*factor
-          a2x%rAttr(kswndf,n) = a2x%rAttr(kswndf,n)*factor
-
+          Faxa_swnet(n) = Faxa_swnet(n)*factor
+          Faxa_swvdr(n) = Faxa_swvdr(n)*factor
+          Faxa_swndr(n) = Faxa_swndr(n)*factor
+          Faxa_swvdf(n) = Faxa_swvdf(n)*factor
+          Faxa_swndf(n) = Faxa_swndf(n)*factor
           !--- correction to GISS lwdn in Arctic ---
           if ( yc(n) > 60._R8 ) then
              factor = MIN(1.0_R8, 0.1_R8*(yc(n)-60.0_R8) )
-             a2x%rAttr(klwdn,n) = a2x%rAttr(klwdn,n) + factor * dLWarc
+             Faxa_lwdn(n) = Faxa_lwdn(n) + factor * dLWarc
           endif
 
        enddo   ! lsize
 
     case('CORE_IAF_JRA')
-       if (firstcall) then
-          if (sprec < 1 .or. sswdn < 1) then
-             write(logunit,F00) 'ERROR: prec and swdn must be in streams for CORE_IAF_JRA'
+       if (first_time) then
+          if (.not. associated(strm_prec) .or. .not. associated(strm_swdn)) then
              call shr_sys_abort(trim(subname)//'ERROR: prec and swdn must be in streams for CORE_IAF_JRA')
           endif
-          if (trim(datamode) == 'CORE_IAF_JRA' ) then
-             if (starcf < 1 ) then
-                write(logunit,F00) 'ERROR: tarcf must be in an input stream for CORE_IAF_JRA'
-                call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE_IAF_JRA')
+          if (trim(sdat%datamode) == 'CORE_IAF_JRA' ) then
+             if (.not. associated(strm_tarcf)) then
+                call shr_sys_abort(trim(subname)//'ERROR: tarcf must be in an input stream for CORE_IAF_JRA')
              endif
           endif
           if (trim(factorFn) == 'null') then
-            windFactor = 1.0_R8
+            windFactor  = 1.0_R8
             winddFactor = 1.0_R8
-            qsatFactor = 1.0_R8
+            qsatFactor  = 1.0_R8
           else
             call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
-                 mpicom, compid, SDATM%gsmap, SDATM%grid, SDATM%nxg, SDATM%nyg)
+                 mpicom, compid, sdat%gsmap, sdat%grid, sdat%nxg, sdat%nyg)
           endif
        endif
-       call shr_cal_date2julian(target_ymd,target_tod,rday,calendar)
+       call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
        cosfactor = cos((2.0_R8*SHR_CONST_PI*rday)/365 - phs_c0)
 
-       lsize = mct_avect_lsize(a2x)
        do n = 1,lsize
-          a2x%rAttr(kz,n) = 10.0_R8
-
-          !--- density, tbot, & pslv taken directly from input stream, set pbot ---
-          a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
-
-          a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
+          Sa_z(n) = 10.0_R8
+          Sa_pbot(n) = Sa_pslv(n)
+          Sa_ptem(n) = Sa_tbot(n)
 
           !--- density computation for JRA55 forcing ---
-          a2x%rAttr(kdens,n) = a2x%rAttr(kpbot,n)/(rdair*a2x%rAttr(ktbot,n) &
-                               *(1+0.608* a2x%rAttr(kshum,n)))
+          Sa_dens(n) = Sa_pbot(n)/(rdair*Sa_tbot(n)*(1+0.608* Sa_shum(n)))
 
-          !-------------------------------------------------------------------------
           ! PRECIPITATION DATA
-          !-------------------------------------------------------------------------
-
-          a2x%rAttr(krc,n) = 0.0_R8                    ! default zero
-          a2x%rAttr(ksc,n) = 0.0_R8
-          if (a2x%rAttr(ktbot,n) < tKFrz ) then        ! assign precip to rain/snow components
-             a2x%rAttr(krl,n) = 0.0_R8
-             a2x%rAttr(ksl,n) = avstrm%rAttr(sprec,n)
+          Faxa_rainc(n) = 0.0_R8               ! default zero
+          Faxa_snowc(n) = 0.0_R8
+          if (Sa_tbot(n) < tKFrz ) then        ! assign precip to rain/snow components
+             Faxa_rainl(n) = 0.0_R8
+             Faxa_snowl(n) = strm_prec(n)
           else
-             a2x%rAttr(krl,n) = avstrm%rAttr(sprec,n)
-             a2x%rAttr(ksl,n) = 0.0_R8
+             Faxa_rainl(n) = strm_prec(n)
+             Faxa_snowl(n) = 0.0_R8
           endif
 
-          !-------------------------------------------------------------------------
           ! RADIATION DATA
-          !-------------------------------------------------------------------------
-
           !--- fabricate required swdn components from net swdn ---
-          a2x%rAttr(kswvdr,n) = avstrm%rAttr(sswdn,n)*(0.28_R8)
-          a2x%rAttr(kswndr,n) = avstrm%rAttr(sswdn,n)*(0.31_R8)
-          a2x%rAttr(kswvdf,n) = avstrm%rAttr(sswdn,n)*(0.24_R8)
-          a2x%rAttr(kswndf,n) = avstrm%rAttr(sswdn,n)*(0.17_R8)
-
+          Faxa_swvdr(n) = strm_swdn(n)*(0.28_R8)
+          Faxa_swndr(n) = strm_swdn(n)*(0.31_R8)
+          Faxa_swvdf(n) = strm_swdn(n)*(0.24_R8)
+          Faxa_swndf(n) = strm_swdn(n)*(0.17_R8)
           !--- compute net short-wave based on LY08 latitudinally-varying albedo ---
           avg_alb = ( 0.069 - 0.011*cos(2.0_R8*yc(n)*degtorad ) )
-          a2x%rAttr(kswnet,n) = avstrm%rAttr(sswdn,n)*(1.0_R8 - avg_alb)
+          Faxa_swnet(n) = strm_swdn(n)*(1.0_R8 - avg_alb)
 
        enddo   ! lsize
 
     case('CLMNCEP')
-       if (firstcall) then
-          if (swind < 1 .or. stbot < 1) then
-             write(logunit,F00) ' ERROR: wind and tbot must be in streams for CLMNCEP'
+       if (first_time) then
+          if (.not. associated(strm_wind) .or. .not. associated(strm_tbot)) then
              call shr_sys_abort(trim(subname)//' ERROR: wind and tbot must be in streams for CLMNCEP')
           endif
-          rtmp = maxval(a2x%rAttr(ktbot,:))
+          rtmp = maxval(Sa_tbot(:))
           call shr_mpi_max(rtmp,tbotmax,mpicom,'datm_tbot',all=.true.)
-          if (atm_prognostic) then
-             rtmp = maxval(x2a%rAttr(kanidr,:))
+          if (get_importdata) then
+             rtmp = maxval(Sx_anidr(:))
              call shr_mpi_max(rtmp,anidrmax,mpicom,'datm_ani',all=.true.)
           else
              anidrmax = SHR_CONST_SPVAL ! see below for use
           end if
-          if (stdew > 0) then
-             rtmp = maxval(avstrm%rAttr(stdew,:))
+          if (associated(strm_tdew)) then
+             rtmp = maxval(strm_tdew(:))
              call shr_mpi_max(rtmp,tdewmax,mpicom,'datm_tdew',all=.true.)
           endif
           if (my_task == master_task) &
                write(logunit,*) trim(subname),' max values = ',tbotmax,tdewmax,anidrmax
        endif
-       lsize = mct_avect_lsize(a2x)
        do n = 1,lsize
           !--- bottom layer height ---
-          if (sz < 1) a2x%rAttr(kz,n) = 30.0_R8
+          if (.not. associated(strm_z)) Sa_z(n) = 30.0_R8
 
           !--- temperature ---
-          if (tbotmax < 50.0_R8) a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + tkFrz
+          if (tbotmax < 50.0_R8) Sa_tbot(n) = Sa_tbot(n) + tkFrz
           ! Limit very cold forcing to 180K
-          a2x%rAttr(ktbot,n) = max(180._r8, a2x%rAttr(ktbot,n))
-          a2x%rAttr(kptem,n) = a2x%rAttr(ktbot,n)
+          Sa_tbot(n) = max(180._r8, Sa_tbot(n))
+          Sa_ptem(n) = Sa_tbot(n)
 
           !--- pressure ---
-          if (spbot < 1) a2x%rAttr(kpbot,n) = pstd
-          a2x%rAttr(kpslv,n) = a2x%rAttr(kpbot,n)
+          if (.not. associated(strm_pbot)) Sa_pbot(n) = pstd
+          Sa_pslv(n) = Sa_pbot(n)
 
           !--- u, v wind velocity ---
-          a2x%rAttr(ku,n) = avstrm%rAttr(swind,n)/sqrt(2.0_R8)
-          a2x%rAttr(kv,n) = a2x%rAttr(ku,n)
+          Sa_u(n) = strm_wind(n)/sqrt(2.0_R8)
+          Sa_v(n) = Sa_u(n)
 
           !--- specific humidity ---
-          tbot = a2x%rAttr(ktbot,n)
-          pbot = a2x%rAttr(kpbot,n)
-          if (sshum > 0) then
+          tbot = Sa_tbot(n)
+          pbot = Sa_pbot(n)
+          if (associated(strm_shum)) then
              e = datm_shr_esat(tbot,tbot)
              qsat = (0.622_R8 * e)/(pbot - 0.378_R8 * e)
-             if (qsat < a2x%rAttr(kshum,n)) then
-                a2x%rAttr(kshum,n) = qsat
+             if (qsat < Sa_shum(n)) then
+                Sa_shum(n) = qsat
              endif
-          else if (srh > 0) then
-             e = avstrm%rAttr(srh,n) * 0.01_R8 * datm_shr_esat(tbot,tbot)
+          else if (associated(strm_rh)) then
+             e = strm_rh(n) * 0.01_R8 * datm_shr_esat(tbot,tbot)
              qsat = (0.622_R8 * e)/(pbot - 0.378_R8 * e)
-             a2x%rAttr(kshum,n) = qsat
-             if(wiso_datm) then
-                ! isotopic forcing
-                ! For tracer specific humidity, lnd_import_mct expects a delta, so
-                ! just keep the delta from the input file - TW
-                a2x%rAttr(kshum_16O,n) = avstrm%rAttr(srh_16O,n)
-                a2x%rAttr(kshum_18O,n) = avstrm%rAttr(srh_18O,n)
-                a2x%rAttr(kshum_HDO,n) = avstrm%rAttr(srh_HDO,n)
+             Sa_shum(n) = qsat
+             if (flds_wiso) then
+                ! for isotopic tracer specific humidity, lnd_import_mct expects a delta, so
+                ! just keep the delta from the input file
+                Sa_shum_wiso(1,n) = strm_rh_16O(n)
+                Sa_shum_wiso(2,n) = strm_rh_18O(n)
+                Sa_shum_wiso(3,n) = strm_rh_HDO(n)
              end if
-          else if (stdew > 0) then
-             if (tdewmax < 50.0_R8) avstrm%rAttr(stdew,n) = avstrm%rAttr(stdew,n) + tkFrz
-             e = datm_shr_esat(avstrm%rAttr(stdew,n),tbot)
+          else if (associated(strm_tdew)) then
+             if (tdewmax < 50.0_R8) strm_tdew(n) = strm_tdew(n) + tkFrz
+             e = datm_shr_esat(strm_tdew(n),tbot)
              qsat = (0.622_R8 * e)/(pbot - 0.378_R8 * e)
-             a2x%rAttr(kshum,n) = qsat
+             Sa_shum(n) = qsat
           else
              call shr_sys_abort(subname//'ERROR: cannot compute shum')
           endif
 
           !--- density ---
-          vp = (a2x%rAttr(kshum,n)*pbot) / (0.622_R8 + 0.378_R8 * a2x%rAttr(kshum,n))
-          a2x%rAttr(kdens,n) = (pbot - 0.378_R8 * vp) / (tbot*rdair)
+          vp = (Sa_shum(n)*pbot) / (0.622_R8 + 0.378_R8 * Sa_shum(n))
+          Sa_dens(n) = (pbot - 0.378_R8 * vp) / (tbot*rdair)
 
           !--- downward longwave ---
-          if (slwdn < 1) then
-             e  = a2x%rAttr(kpslv,n) * a2x%rAttr(kshum,n) / (0.622_R8 + 0.378_R8 * a2x%rAttr(kshum,n))
+          if (.not. associated(strm_lwdn)) then
+             e  = Sa_pslv(n) * Sa_shum(n) / (0.622_R8 + 0.378_R8 * Sa_shum(n))
              ea = 0.70_R8 + 5.95e-05_R8 * 0.01_R8 * e * exp(1500.0_R8/tbot)
-             a2x%rAttr(klwdn,n) = ea * stebol * tbot**4
+             Faxa_lwdn(n) = ea * stebol * tbot**4
           endif
 
           !--- shortwave radiation ---
-          if (sswdndf > 0 .and. sswdndr > 0) then
-             a2x%rAttr(kswndr,n) = avstrm%rAttr(sswdndr,n) * 0.50_R8
-             a2x%rAttr(kswvdr,n) = avstrm%rAttr(sswdndr,n) * 0.50_R8
-             a2x%rAttr(kswndf,n) = avstrm%rAttr(sswdndf,n) * 0.50_R8
-             a2x%rAttr(kswvdf,n) = avstrm%rAttr(sswdndf,n) * 0.50_R8
-          elseif (sswdn > 0) then
+          if (associated(strm_swdndf) .and. associated(strm_swdndr)) then
+             Faxa_swndr(n) = strm_swdndr(n) * 0.50_R8
+             Faxa_swvdr(n) = strm_swdndr(n) * 0.50_R8
+             Faxa_swndf(n) = strm_swdndf(n) * 0.50_R8
+             Faxa_swvdf(n) = strm_swdndf(n) * 0.50_R8
+          elseif (associated(strm_swdn)) then
              ! relationship between incoming NIR or VIS radiation and ratio of
              ! direct to diffuse radiation calculated based on one year's worth of
              ! hourly CAM output from CAM version cam3_5_55
-             swndr = avstrm%rAttr(sswdn,n) * 0.50_R8
-             ratio_rvrf =   min(0.99_R8,max(0.29548_R8 + 0.00504_R8*swndr  &
+             swndr = strm_swdn(n) * 0.50_R8
+             ratio_rvrf =  min(0.99_R8,max(0.29548_R8 + 0.00504_R8*swndr  &
                   -1.4957e-05_R8*swndr**2 + 1.4881e-08_R8*swndr**3,0.01_R8))
-             a2x%rAttr(kswndr,n) = ratio_rvrf*swndr
-             swndf = avstrm%rAttr(sswdn,n) * 0.50_R8
-             a2x%rAttr(kswndf,n) = (1._R8 - ratio_rvrf)*swndf
+             Faxa_swndr(n) = ratio_rvrf*swndr
+             swndf = strm_swdn(n) * 0.50_R8
+             Faxa_swndf(n) = (1._R8 - ratio_rvrf)*swndf
 
-             swvdr = avstrm%rAttr(sswdn,n) * 0.50_R8
+             swvdr = strm_swdn(n) * 0.50_R8
              ratio_rvrf =   min(0.99_R8,max(0.17639_R8 + 0.00380_R8*swvdr  &
                   -9.0039e-06_R8*swvdr**2 + 8.1351e-09_R8*swvdr**3,0.01_R8))
-             a2x%rAttr(kswvdr,n) = ratio_rvrf*swvdr
-             swvdf = avstrm%rAttr(sswdn,n) * 0.50_R8
-             a2x%rAttr(kswvdf,n) = (1._R8 - ratio_rvrf)*swvdf
+             Faxa_swvdr(n) = ratio_rvrf*swvdr
+             swvdf = strm_swdn(n) * 0.50_R8
+             Faxa_swvdf(n) = (1._R8 - ratio_rvrf)*swvdf
           else
              call shr_sys_abort(subName//'ERROR: cannot compute short-wave down')
           endif
 
           !--- swnet: a diagnostic quantity ---
           if (anidrmax < 1.0e-8 .or. anidrmax > SHR_CONST_SPVAL * 0.9_R8) then
-             a2x%rAttr(kswnet,n) = 0.0_R8
+             Faxa_swnet(n) = 0.0_R8
+          else if ( associated(Sx_anidr) .and. associated(Sx_anidf) .and. &
+                    associated(Sx_avsdr) .and. associated(Sx_avsdf)) then
+             Faxa_swnet(n) = (1.0_R8-Sx_anidr(n))*Faxa_swndr(n) + &
+                             (1.0_R8-Sx_avsdr(n))*Faxa_swvdr(n) + &
+                             (1.0_R8-Sx_anidf(n))*Faxa_swndf(n) + &
+                             (1.0_R8-Sx_avsdf(n))*Faxa_swvdf(n)
           else
-             a2x%rAttr(kswnet,n) = (1.0_R8-x2a%rAttr(kanidr,n))*a2x%rAttr(kswndr,n) + &
-                                   (1.0_R8-x2a%rAttr(kavsdr,n))*a2x%rAttr(kswvdr,n) + &
-                                   (1.0_R8-x2a%rAttr(kanidf,n))*a2x%rAttr(kswndf,n) + &
-                                   (1.0_R8-x2a%rAttr(kavsdf,n))*a2x%rAttr(kswvdf,n)
+             Faxa_swnet(n) = Faxa_swndr(n) + Faxa_swvdr(n) + Faxa_swndf(n) + Faxa_swvdf(n)
           endif
 
           !--- rain and snow ---
-          if (sprecc > 0 .and. sprecl > 0) then
-             a2x%rAttr(krc,n) = avstrm%rAttr(sprecc,n)
-             a2x%rAttr(krl,n) = avstrm%rAttr(sprecl,n)
-          elseif (sprecn > 0) then
-             a2x%rAttr(krc,n) = avstrm%rAttr(sprecn,n)*0.1_R8
-             a2x%rAttr(krl,n) = avstrm%rAttr(sprecn,n)*0.9_R8
+          if (associated(strm_precc) .and. associated(strm_precl)) then
+             Faxa_rainc(n) = strm_precc(n)
+             Faxa_rainl(n) = strm_precl(n)
+          else if (associated(strm_precn)) then
+             Faxa_rainc(n) = strm_precn(n)*0.1_R8
+             Faxa_rainl(n) = strm_precn(n)*0.9_R8
           else
              call shr_sys_abort(subName//'ERROR: cannot compute rain and snow')
           endif
 
           !--- split precip between rain & snow ---
           call shr_precip_partition_rain_snow_ramp(tbot, frac)
-          a2x%rAttr(ksc,n) = max(0.0_R8, a2x%rAttr(krc,n)*(1.0_R8 - frac) )
-          a2x%rAttr(ksl,n) = max(0.0_R8, a2x%rAttr(krl,n)*(1.0_R8 - frac) )
-          a2x%rAttr(krc,n) = max(0.0_R8, a2x%rAttr(krc,n)*(         frac) )
-          a2x%rAttr(krl,n) = max(0.0_R8, a2x%rAttr(krl,n)*(         frac) )
+          Faxa_snowc(n) = max(0.0_R8, Faxa_rainc(n)*(1.0_R8 - frac))
+          Faxa_snowl(n) = max(0.0_R8, Faxa_rainl(n)*(1.0_R8 - frac))
+          Faxa_rainc(n) = max(0.0_R8, Faxa_rainc(n)*(         frac))
+          Faxa_rainl(n) = max(0.0_R8, Faxa_rainl(n)*(         frac))
 
-       enddo
+       end do
 
     end select
 
     !----------------------------------------------------------
     ! bias correction / anomaly forcing ( start block )
-    !----------------------------------------------------------
-
     ! modify atmospheric input fields if streams exist
-    lsize = mct_avect_lsize(avstrm)
+    !----------------------------------------------------------
 
     ! bias correct precipitation relative to observed
     ! (via bias_correct nameslist option)
-    if (sprecsf > 0) then
-       do n = 1,lsize
-          a2x%rAttr(ksc,n) = a2x%rAttr(ksc,n) * min(1.e2_r8,avstrm%rAttr(sprecsf,n))
-          a2x%rAttr(ksl,n) = a2x%rAttr(ksl,n) * min(1.e2_r8,avstrm%rAttr(sprecsf,n))
-          a2x%rAttr(krc,n) = a2x%rAttr(krc,n) * min(1.e2_r8,avstrm%rAttr(sprecsf,n))
-          a2x%rAttr(krl,n) = a2x%rAttr(krl,n) * min(1.e2_r8,avstrm%rAttr(sprecsf,n))
-
-       end do
+    if (associated(strm_precsf)) then
+       Faxa_snowc(:) = Faxa_snowc(:) * min(1.e2_r8,strm_precsf(:))
+       Faxa_snowl(:) = Faxa_snowl(:) * min(1.e2_r8,strm_precsf(:))
+       Faxa_rainc(:) = Faxa_rainc(:) * min(1.e2_r8,strm_precsf(:))
+       Faxa_rainl(:) = Faxa_rainl(:) * min(1.e2_r8,strm_precsf(:))
     endif
 
     ! adjust atmospheric input fields if anomaly forcing streams exist
     ! (via anomaly_forcing namelist option)
 
     ! wind
-    if (su_af > 0 .and. sv_af > 0) then
-       do n = 1,lsize
-          a2x%rAttr(ku,n) = a2x%rAttr(ku,n) + avstrm%rAttr(su_af,n)
-          a2x%rAttr(kv,n) = a2x%rAttr(kv,n) + avstrm%rAttr(sv_af,n)
-       end do
+    if (associated(strm_u_af) .and. associated(strm_v_af)) then
+       Sa_u(:) = Sa_u(:) + strm_u_af(:)
+       Sa_v(:) = Sa_v(:) + strm_v_af(:)
     endif
 
     ! specific humidity
-    if (sshum_af > 0) then
-       do n = 1,lsize
-          a2x%rAttr(kshum,n) = a2x%rAttr(kshum,n) + avstrm%rAttr(sshum_af,n)
-
-          ! avoid possible negative q values
-          if(a2x%rAttr(kshum,n) < 0._r8) then
-             a2x%rAttr(kshum,n) = 1.e-6_r8
-          endif
-
-       end do
+    if (associated(strm_shum_af)) then
+       Sa_shum(:) = Sa_shum(:) + strm_shum_af(:)
+       ! avoid possible negative q values
+       where (Sa_shum < 0._r8)
+          Sa_shum = 1.e-6_r8
+       end where
     endif
 
     ! pressure
-    if (spbot_af > 0) then
-       do n = 1,lsize
-          a2x%rAttr(kpbot,n) = a2x%rAttr(kpbot,n) + avstrm%rAttr(spbot_af,n)
-       end do
+    if (associated(strm_pbot_af)) then
+       Sa_pbot(:) = Sa_pbot(:) + strm_pbot_af(:)
     endif
 
     ! temperature
-    if (stbot_af > 0) then
-       do n = 1,lsize
-          a2x%rAttr(ktbot,n) = a2x%rAttr(ktbot,n) + avstrm%rAttr(stbot_af,n)
-       end do
+    if (associated(strm_tbot_af)) then
+       Sa_tbot(:) = Sa_tbot(:) + strm_tbot_af(:)
     endif
 
     ! longwave
-    if (slwdn_af > 0) then
-       do n = 1,lsize
-          a2x%rAttr(klwdn,n) = a2x%rAttr(klwdn,n) * avstrm%rAttr(slwdn_af,n)
-       end do
+    if (associated(strm_lwdn_af)) then
+       Faxa_lwdn(:) = Faxa_lwdn(:) * strm_lwdn_af(:)
     endif
 
     ! precipitation
-    if (sprec_af > 0) then
-       do n = 1,lsize
-          a2x%rAttr(ksc,n) = a2x%rAttr(ksc,n) * avstrm%rAttr(sprec_af,n)
-          a2x%rAttr(ksl,n) = a2x%rAttr(ksl,n) * avstrm%rAttr(sprec_af,n)
-          a2x%rAttr(krc,n) = a2x%rAttr(krc,n) * avstrm%rAttr(sprec_af,n)
-          a2x%rAttr(krl,n) = a2x%rAttr(krl,n) * avstrm%rAttr(sprec_af,n)
-       enddo
-    endif
+    if (associated(strm_prec_af)) then
+       Faxa_snowc(:) = Faxa_snowc(:) * strm_prec_af(:)
+       Faxa_snowl(:) = Faxa_snowl(:) * strm_prec_af(:)
+       Faxa_rainc(:) = Faxa_rainc(:) * strm_prec_af(:)
+       Faxa_rainl(:) = Faxa_rainl(:) * strm_prec_af(:)
+    end if
 
     ! shortwave
-    if (sswdn_af > 0) then
-       do n = 1,lsize
-          a2x%rAttr(kswndr,n) = a2x%rAttr(kswndr,n) * avstrm%rAttr(sswdn_af,n)
-          a2x%rAttr(kswvdr,n) = a2x%rAttr(kswvdr,n) * avstrm%rAttr(sswdn_af,n)
-          a2x%rAttr(kswndf,n) = a2x%rAttr(kswndf,n) * avstrm%rAttr(sswdn_af,n)
-          a2x%rAttr(kswvdf,n) = a2x%rAttr(kswvdf,n) * avstrm%rAttr(sswdn_af,n)
-       enddo
+    if (associated(strm_swdn_af)) then
+       Faxa_swndr(:) = Faxa_swndr(:) * strm_swdn_af(:)
+       Faxa_swvdr(:) = Faxa_swvdr(:) * strm_swdn_af(:)
+       Faxa_swndf(:) = Faxa_swndf(:) * strm_swdn_af(:)
+       Faxa_swvdf(:) = Faxa_swvdf(:) * strm_swdn_af(:)
     endif
-    !--------------------
     ! bias correction / anomaly forcing ( end block )
-    !--------------------
 
     call t_stopf('datm_datamode')
 
-    !--------------------
-    ! Debug output
-    !--------------------
-
-    if (debug_export > 0 .and. my_task == master_task) then
-       do nfld = 1, mct_aVect_nRAttr(a2x)
-          call shr_string_listGetName(trim(flds_a2x), nfld, fldname)
-          do n = 1, mct_aVect_lsize(a2x)
-             write(logunit,F0D)'export: ymd,tod,n  = '// trim(fldname),target_ymd, target_tod, &
-                  n, a2x%rattr(nfld,n)
-          end do
-       end do
-    end if
-
-    !--------------------
-    ! Write restart
-    !--------------------
-
-    if (write_restart) then
-       call t_startf('datm_restart')
-       call shr_cal_datetod2string(date_str, target_ymd, target_tod)
-
-       write(rest_file,"(6a)") &
-            trim(case_name), '.datm',trim(inst_suffix),'.r.', trim(date_str), '.nc'
-       write(rest_file_strm,"(6a)") &
-            trim(case_name), '.datm',trim(inst_suffix),'.rs1.', trim(date_str), '.bin'
-       if (my_task == master_task) then
-          nu = shr_file_getUnit()
-          open(nu,file=trim(rpfile)//trim(inst_suffix),form='formatted')
-          write(nu,'(a)') rest_file
-          write(nu,'(a)') rest_file_strm
-          close(nu)
-          call shr_file_freeUnit(nu)
-       endif
-
-       if (my_task == master_task) write(logunit,F02) ' writing ',trim(rest_file_strm),target_ymd,target_tod
-       call shr_strdata_restWrite(trim(rest_file_strm),SDATM,mpicom,trim(case_name),'SDATM strdata')
-       call t_stopf('datm_restart')
-    endif
-
-    !----------------------------------------------------------------------------
     ! Log output for model date
-    !----------------------------------------------------------------------------
-
     if (my_task == master_task) then
-       write(logunit,F01) 'atm : model date ', target_ymd, target_tod
+       write(logunit,*) 'atm : model date ', target_ymd, target_tod
     end if
-
-    firstcall = .false.
+    first_time = .false.
 
     call t_stopf('datm')
     call t_stopf('DATM_RUN')
 
   end subroutine datm_comp_run
-
-  !===============================================================================
-
-  subroutine datm_comp_import(importState, rc)
-
-    ! input/output variables
-    type(ESMF_State)     :: importState
-    integer, intent(out) :: rc
-
-    ! local variables
-    integer :: k
-    !----------------------------------------------------------------
-
-    k = mct_aVect_indexRA(x2a, 'Sx_avsdr')
-    call dshr_import(importState, 'Sx_avsdr', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Sx_avsdf')
-    call dshr_import(importState, 'Sx_avsdf', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Sx_ansdr')
-    call dshr_import(importState, 'Sx_anidr', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Sx_anidf')
-    call dshr_import(importState, 'Sx_anidf', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Sx_tref')
-    call dshr_import(importState, 'Sx_tref', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Sx_qref')
-    call dshr_import(importState, 'Sx_qref', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Sx_t')
-    call dshr_import(importState, 'Sx_t', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'So_t')
-    call dshr_import(importState, 'So_t', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Sl_snowh')
-    call dshr_import(importState, 'Sl_snowh', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Sl_lfrac')
-    call dshr_import(importState, 'Sl_lfrac', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Si_lfrac')
-    call dshr_import(importState, 'Si_lfrac', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'So_ofrac')
-    call dshr_import(importState, 'So_ofrac', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Faxx_taux')
-    call dshr_import(importState, 'Faxx_taux', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Faxx_tauy')
-    call dshr_import(importState, 'Faxx_tauy', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Faxx_lat')
-    call dshr_import(importState, 'Faxx_lat', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Faxx_sen')
-    call dshr_import(importState, 'Faxx_sen', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Faxx_lwup')
-    call dshr_import(importState, 'Faxx_lwup', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    k = mct_aVect_indexRA(x2a, 'Faxx_evap')
-    call dshr_import(importState, 'Faxx_evap', x2a%rattr(:,k), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine datm_comp_import
-
-  !===============================================================================
-
-  subroutine datm_comp_export(exportState, rc)
-
-    ! input/output variables
-    type(ESMF_State)     :: exportState
-    integer, intent(out) :: rc
-
-    ! local variables
-    integer :: k,n
-    !----------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call dshr_export(a2x%rattr(ktopo,:) , exportState, 'Sa_topo', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kz,:)    , exportState, 'Sa_z', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(ku,:)    , exportState, 'Sa_u', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kv,:)    , exportState, 'Sa_v', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kptem,:) , exportState, 'Sa_ptem', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kdens,:) , exportState, 'Sa_dens', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kpslv,:) , exportState, 'Sa_pslv', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(ktbot,:) , exportState, 'Sa_tbot', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kpbot,:) , exportState, 'Sa_pbot', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kshum,:) , exportState, 'Sa_shum', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(a2x%rattr(krc,:)   , exportState, 'Faxa_rainc', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(krl,:)   , exportState, 'Faxa_rainl', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(ksc,:)   , exportState, 'Faxa_snowc', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(ksl,:)   , exportState, 'Faxa_snowl', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call dshr_export(a2x%rattr(kswndr,:), exportState, 'Faxa_swndr', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kswndf,:), exportState, 'Faxa_swndf', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kswvdr,:), exportState, 'Faxa_swvdr', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kswvdf,:), exportState, 'Faxa_swvdf', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(kswnet,:), exportState, 'Faxa_swnet', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_export(a2x%rattr(klwdn,:) , exportState, 'Faxa_lwdn', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (flds_co2a .or. flds_co2b .or. flds_co2c) then
-       call dshr_export(a2x%rattr(kco2p,:), exportState, 'Sa_co2prog' , rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kco2d,:), exportState, 'Sa_co2diag' , rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
-    if (presaero) then
-       call dshr_export(a2x%rattr(kbcphidry,:), exportState, 'Faxa_bcph', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kbcphodry,:), exportState, 'Faxa_bcph', ungridded_index=2, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kbcphiwet,:), exportState, 'Faxa_bcph', ungridded_index=3, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call dshr_export(a2x%rattr(kocphidry,:), exportState, 'Faxa_ocph', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kocphodry,:), exportState, 'Faxa_ocph', ungridded_index=2, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kocphiwet,:), exportState, 'Faxa_ocph', ungridded_index=3, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call dshr_export(a2x%rattr(kdstwet1,:), exportState, 'Faxa_dstwet', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kdstwet2,:), exportState, 'Faxa_dstwet', ungridded_index=2, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kdstwet3,:), exportState, 'Faxa_dstwet', ungridded_index=3, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kdstwet4,:), exportState, 'Faxa_dstwet', ungridded_index=4, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call dshr_export(a2x%rattr(kdstdry1,:), exportState, 'Faxa_dstdry', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kdstdry2,:), exportState, 'Faxa_dstdry', ungridded_index=2, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kdstdry3,:), exportState, 'Faxa_dstdry', ungridded_index=3, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kdstdry4,:), exportState, 'Faxa_dstdry', ungridded_index=4, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
-    if (flds_wiso) then
-       call dshr_export(a2x%rattr(krc_16O,:), exportState, 'Faxa_rainc_wiso', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(krc_18O,:), exportState, 'Faxa_rainc_wiso', ungridded_index=2, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(krc_HDO,:), exportState, 'Faxa_rainc_wiso', ungridded_index=3, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call dshr_export(a2x%rattr(krl_16O,:), exportState, 'Faxa_rainl_wiso', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(krl_18O,:), exportState, 'Faxa_rainl_wiso', ungridded_index=2, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(krl_HDO,:), exportState, 'Faxa_rainl_wiso', ungridded_index=3, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call dshr_export(a2x%rattr(ksc_16O,:), exportState, 'Faxa_snowc_wiso', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(ksc_18O,:), exportState, 'Faxa_snowc_wiso', ungridded_index=2, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(ksc_HDO,:), exportState, 'Faxa_snowc_wiso', ungridded_index=3, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call dshr_export(a2x%rattr(ksl_16O,:), exportState, 'Faxa_snowl_wiso', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(ksl_18O,:), exportState, 'Faxa_snowl_wiso', ungridded_index=2, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(ksl_HDO,:), exportState, 'Faxa_snowl_wiso', ungridded_index=3, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call dshr_export(a2x%rattr(kshum_16O,:), exportState, 'Faxa_shum_wiso', ungridded_index=1, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kshum_18O,:), exportState, 'Faxa_shum_wiso', ungridded_index=2, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call dshr_export(a2x%rattr(kshum_HDO,:), exportState, 'Faxa_shum_wiso', ungridded_index=3, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    end if
-
-  end subroutine datm_comp_export
 
 end module datm_comp_mod

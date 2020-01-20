@@ -188,7 +188,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
     Fioo_q(:) = 0._r8
 
-    ! Initialize dfields with export state data that has corresponding stream field
+    ! Initialize export state data that has corresponding stream field
     call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_t', strm_fld='t', &
          state_ptr=So_t, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -209,12 +209,8 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize dfields stream fields that have no corresponding export fields
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='unset', strm_fld='qbot', &
-         strm_ptr=strm_qbot, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='unset', strm_fld='h', &
-         strm_ptr=strm_h, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(sdat, dfields, dfields_num, strm_fld='qbot', strm_ptr=strm_qbot)
+    call dshr_dfield_add(sdat, dfields, dfields_num, strm_fld='h'   , strm_ptr=strm_h)
 
     ! TODO: add this field to the esmFlds.F90 in CMEPS
     call ESMF_StateGet(exportState, 'So_fswpen', itemFlag, rc=rc)

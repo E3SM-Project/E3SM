@@ -67,7 +67,8 @@ module ice_comp_nuopc
        __FILE__
 
   ! constants
-  real(R8)    , parameter  :: pi  = shr_const_pi        ! pi
+  real(R8), parameter :: pi  = shr_const_pi ! pi
+  real(R8)            :: dt           ! real model timestep
 
   ! nuopc attributes
   logical       :: flds_i2o_per_cat   ! .true. if select per ice thickness
@@ -104,6 +105,7 @@ contains
     call ESMF_GridCompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
          userRoutine=dshr_model_initphase, phase=0, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
     ! set entry point for methods that require specific implementation
     call NUOPC_CompSetEntryPoint(gcomp, ESMF_METHOD_INITIALIZE, &
          phaseLabelList=(/"IPDv01p1"/), userRoutine=InitializeAdvertise, rc=rc)
@@ -200,6 +202,7 @@ contains
        call shr_sys_abort(' ERROR illegal dice datamode = '//trim(sdat%datamode))
     endif
 
+    ! Advertise import and export fields
     if (sdat%datamode /= 'NULL') then
        call NUOPC_CompAttributeGet(gcomp, name='flds_i2o_per_cat', value=cvalue, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -243,7 +246,6 @@ contains
     real(R8)                :: scmLat        ! single column lat
     real(R8)                :: scmLon        ! single column lon
     integer                 :: model_dt      ! integer model timestep
-    real(R8)                :: dt            ! real model timestep
     integer, allocatable, target :: gindex(:)
     character(len=*), parameter :: F00   = "('ice_comp_nuopc: ')',8a)"
     character(len=*), parameter :: subname=trim(modName)//':(InitializeRealize) '
@@ -253,36 +255,26 @@ contains
 
     rc = ESMF_SUCCESS
 
-    !--------------------------------
     ! Reset shr logging to my log file
-    !--------------------------------
-
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    !--------------------------------
     ! Create the data model mesh
-    !--------------------------------
-
     call NUOPC_CompAttributeGet(gcomp, name='mesh_ice', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (my_task == master_task) then
        write(logunit,*) ' obtaining mesh_ice from '//trim(cvalue)
     end if
-
     mesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
-    ! Initialize sdat
-    !--------------------------------
-
+    ! Get compid (for mct)
     call t_startf('dice_strdata_init')
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
 
-    ! set single column values
+    ! Set single column values
     call NUOPC_CompAttributeGet(gcomp, name='scmlon', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) scmlon
@@ -293,6 +285,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) scmMode
 
+    ! Initialize sdat
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
          scmmode, scmlon, scmlat, clock, mesh, 'dice', sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -300,39 +293,26 @@ contains
     if (my_task == master_task) write(logunit,*) ' initialized SDAT'
     call t_stopf('dice_strdata_init')
 
-    !--------------------------------
     ! Check that mesh lats and lons correspond to those on the input domain file
-    !--------------------------------
-
     call dshr_check_mesh(mesh, sdat, 'dice', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
     ! realize the actively coupled fields, now that a mesh is established
-    !--------------------------------
-
     ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
     ! by replacing the advertised fields with the newly created fields of the same name.
 
     call dshr_realize( exportState, fldsExport, fldsExport_num, &
          flds_scalar_name, flds_scalar_num, mesh, tag=trim(subname)//':diceExport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
     call dshr_realize( importState, fldsImport, fldsImport_num, &
          flds_scalar_name, flds_scalar_num, mesh, tag=trim(subname)//':diceImport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
     ! Initialize dfields data type (to map streams to export state fields)
-    !--------------------------------
-
     call dice_comp_init(sdat, importState, exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
     ! Read restart if necessary
-    !--------------------------------
-
     call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
@@ -341,20 +321,14 @@ contains
             logunit, my_task, master_task, mpicom, sdat, fld=water, fldname='water')
     end if
 
-    !--------------------------------
-    ! Run dice to create export state
-    !--------------------------------
-
     ! get the time to interpolate the stream data to
-    call ESMF_ClockGet(clock, currTime=currTime, rc=rc)
+    call ESMF_ClockGet(clock, currTime=currTime, timeStep=timeStep, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeGet(currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
     ! get model timestep
-    call ESMF_ClockGet( clock, timeStep=timeStep, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeIntervalGet( timeStep, s=model_dt, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     dt = model_dt * 1.0_r8
@@ -411,15 +385,12 @@ contains
     real(R8)                :: cosarg        ! for setting ice temp pattern
     real(R8)                :: jday, jday0   ! elapsed day counters
     integer                 :: shrlogunit    ! original log unit
-    logical                 :: write_restart ! write restart
     integer                 :: next_ymd      ! model date
     integer                 :: next_tod      ! model sec into model date
     integer                 :: yr            ! year
     integer                 :: mon           ! month
     integer                 :: day           ! day in month
     character(CL)           :: case_name     ! case name
-    integer                 :: model_dt      ! integer model timestep
-    real(R8)                :: dt            ! real model timestep
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -427,6 +398,7 @@ contains
 
     rc = ESMF_SUCCESS
 
+    call t_startf(subname)
     call memcheck(subname, 5, my_task == master_task)
 
     ! Reset shr logging to my log file
@@ -481,7 +453,9 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
     endif
 
+    ! Reset shr logging to original values
     call shr_file_setLogUnit (shrlogunit)
+    call t_stopf(subname)
 
   end subroutine ModelAdvance
 

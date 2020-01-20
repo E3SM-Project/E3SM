@@ -4,8 +4,7 @@ module dshr_nuopc_mod
   use NUOPC_Model
   use ESMF
   use mct_mod          , only : mct_gsmap_init, mct_avect_lsize, mct_avect_indexra
-  use dshr_methods_mod , only : alarmInit, chkerr, state_getfldptr
-  use dshr_methods_mod , only : get_component_instance
+  use dshr_methods_mod , only : alarmInit, chkerr, state_getfldptr, get_component_instance
   use shr_strdata_mod  , only : shr_strdata_type
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_string_mod   , only : shr_string_listGetIndex
@@ -14,18 +13,11 @@ module dshr_nuopc_mod
   implicit none
   public
 
-  ! remove the following when no longer eaded
-  public :: ModelInitPhase   
-  public :: ModelSetRunClock 
-  public :: dshr_avect_add
-  public :: dshr_translate_add
-  public :: dshr_import
-  public :: dshr_export
-  ! end remove
-
-  public :: dshr_set_runclock
-  public :: dshr_model_initphase
   public :: dshr_advertise
+  public :: dshr_model_initphase
+  public :: dshr_check_mesh
+  public :: dshr_create_mesh_from_grid
+  public :: dshr_set_runclock
   public :: dshr_fld_add
   public :: dshr_dfield_add
   public :: dshr_realize
@@ -33,11 +25,11 @@ module dshr_nuopc_mod
   public :: dshr_streams_copy
   public :: dshr_restart_read
   public :: dshr_restart_write
-  public :: dshr_check_mesh
 
   interface dshr_dfield_add
      module procedure dshr_dfield_add_1d
      module procedure dshr_dfield_add_2d
+     module procedure dshr_dfield_add_strmfld
   end interface dshr_dfield_add
 
   type fld_list_type
@@ -47,8 +39,8 @@ module dshr_nuopc_mod
   end type fld_list_type
 
   type dfield_type
-     character(CS)              :: state_fldname
      ! state data
+     character(CS)              :: state_fldname
      real(r8), pointer          :: state_data1d(:) => null()
      real(r8), pointer          :: state_data2d(:,:) => null()
      ! stream data input (always assumed to be 1d for now)
@@ -56,11 +48,10 @@ module dshr_nuopc_mod
      ! stream data pointers for 1d state data
      integer                    :: sdat_stream_index = 0
      integer                    :: sdat_avect_index = 0
-     character(CS)              :: stream_fldname = 'unset'
      ! stream data pointers for 2d state data
      integer, pointer           :: sdat_stream_indices(:) => null()
      integer, pointer           :: sdat_avect_indices(:) => null()
-     character(CS), pointer     :: stream_fldnames(:)  => null()
+     integer                    :: stream_nflds = 0 ! number of stream field names
   end type dfield_type
 
   ! Note that gridTofieldMap = 2, therefore the ungridded dimension is innermost
@@ -151,6 +142,104 @@ contains
 
 !===============================================================================
 
+  subroutine dshr_create_mesh_from_grid(filename, mesh, rc)
+
+    use netcdf , only : nf90_open, nf90_nowrite, nf90_noerr, nf90_close, nf90_strerror
+    use netcdf , only : nf90_inq_dimid, nf90_inq_varid, nf90_get_var
+    use netcdf , only : nf90_inquire_dimension, nf90_inquire_variable
+
+    ! input/output variables
+    character(len=*), intent(in)  :: filename
+    type(ESMF_Mesh) , intent(out) :: mesh
+    integer         , intent(out) :: rc
+
+    ! local variables
+    integer               :: ncid, ierr
+    integer               :: dimid_ni, dimid_nj, dimid_nv
+    integer               :: ni, nj, nv
+    integer               :: varid_xv, varid_yv
+    integer               :: maxIndex(2)
+    real(r8)              :: mincornerCoord(2)
+    real(r8)              :: maxcornerCoord(2)
+    type(ESMF_Grid)       :: lgrid
+    real(r8), allocatable :: xv(:,:,:), yv(:,:,:)
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! open file
+    ierr = nf90_open(filename, NF90_NOWRITE, ncid)
+    call nc_check_err(ierr, 'nf90_open', trim(filename))
+
+    ! get dimension ids
+    ierr = nf90_inq_dimid(ncid, 'ni', dimid_ni)
+    call nc_check_err(ierr, 'nf90_inq_dimid for ni', trim(filename))
+    ierr = nf90_inq_dimid(ncid, 'nj', dimid_nj)
+    call nc_check_err(ierr, 'nf90_inq_dimid for nj', trim(filename))
+    ierr = nf90_inq_dimid(ncid, 'nv', dimid_nv)
+    call nc_check_err(ierr, 'nf90_inq_dimid for nv', trim(filename))
+
+    ! get dimension values
+    ierr = nf90_inquire_dimension(ncid, dimid_ni, len=ni)
+    call nc_check_err(ierr, 'nf90_inq_dimension for ni', trim(filename))
+    ierr = nf90_inquire_dimension(ncid, dimid_nj, len=nj)
+    call nc_check_err(ierr, 'nf90_inq_dimension for nj', trim(filename))
+    ierr = nf90_inquire_dimension(ncid, dimid_nv, len=nv)
+    call nc_check_err(ierr, 'nf90_inq_dimension for nv', trim(filename))
+
+    ! get variable ids
+    ierr = nf90_inq_varid(ncid, 'xv', varid_xv)
+    call nc_check_err(ierr, 'nf90_inq_varid for xv', trim(filename))
+    ierr = nf90_inq_varid(ncid, 'yv', varid_yv)
+    call nc_check_err(ierr, 'nf90_inq_varid for yv', trim(filename))
+
+    ! allocate memory for variables and get variable values
+    allocate(xv(nv,ni,nj), yv(nv,ni,nj))
+    ierr = nf90_get_var(ncid, varid_xv, xv)
+    call nc_check_err(ierr, 'nf90_get_var for xv', trim(filename))
+    ierr = nf90_get_var(ncid, varid_yv, yv)
+    call nc_check_err(ierr, 'nf90_get_var for yv', trim(filename))
+
+    ! close file
+    ierr = nf90_close(ncid)
+    call nc_check_err(ierr, 'nf90_close', trim(filename))
+
+    ! create the grid
+    maxIndex(1)       = ni          ! number of lons
+    maxIndex(2)       = nj          ! number of lats
+    mincornerCoord(1) = xv(1,1,1)   ! min lon
+    mincornerCoord(2) = yv(1,1,1)   ! min lat
+    maxcornerCoord(1) = xv(3,ni,nj) ! max lon
+    maxcornerCoord(2) = yv(3,ni,nj) ! max lat
+    deallocate(xv,yv)
+    lgrid = ESMF_GridCreateNoPeriDimUfrm (maxindex=maxindex, &
+         mincornercoord=mincornercoord, maxcornercoord= maxcornercoord, &
+         staggerloclist=(/ESMF_STAGGERLOC_CENTER, ESMF_STAGGERLOC_CORNER/), rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+    ! create the mesh from the grid
+    mesh =  ESMF_MeshCreate(lgrid, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  contains
+
+    subroutine nc_check_err(ierror, description, filename)
+      integer     , intent(in) :: ierror
+      character(*), intent(in) :: description
+      character(*), intent(in) :: filename
+
+      if (ierror /= nf90_noerr) then
+         write (*,'(6a)') 'ERROR ', trim(description),'. NetCDF file : "', trim(filename),&
+              '". Error message:', trim(nf90_strerror(ierror))
+         call shr_sys_abort()
+      endif
+    end subroutine nc_check_err
+
+  end subroutine dshr_create_mesh_from_grid
+
+
+!===============================================================================
+
   subroutine dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
        scmmode, scmlon, scmlat, clock, mesh,  model_name, sdat, &
        dmodel_domain_fracname_from_stream, reset_domain_mask, rc)
@@ -174,7 +263,7 @@ contains
     integer                    , intent(in)    :: logunit
     logical                    , intent(in)    :: scmMode
     real(r8)                   , intent(in)    :: scmlat
-    real(r8)                   , intent(in)    :: scmlon 
+    real(r8)                   , intent(in)    :: scmlon
     type(ESMF_Clock)           , intent(in)    :: clock
     type(ESMF_Mesh)            , intent(in)    :: mesh
     character(len=*)           , intent(in)    :: model_name
@@ -182,7 +271,7 @@ contains
     character(len=*), optional , intent(in)    :: dmodel_domain_fracname_from_stream
     logical         , optional , intent(in)    :: reset_domain_mask
     integer                    , intent(out)   :: rc
-    
+
     ! local varaibles
     integer                      :: n,k          ! generic counters
     integer                      :: lsize        ! local size
@@ -245,6 +334,7 @@ contains
        call shr_sys_abort(subname//" ERROR bad ESMF calendar name "//trim(calendar))
     end if
     sdat%calendar = trim(shr_cal_calendarName(trim(calendar)))
+    write(6,*)'DEBUG: calendar is ',trim(sdat%calendar)
 
     ! initialize sdat domain (sdat%grid)
     if (my_task == master_task) then
@@ -368,6 +458,65 @@ contains
 
 !===============================================================================
 
+  subroutine dshr_dfield_add_strmfld(sdat, dfields, dfields_num, strm_fld, strm_ptr, &
+       logunit, masterproc)
+
+    ! input/output variables
+    type(shr_strdata_type) , intent(in)    :: sdat
+    type(dfield_type)      , intent(inout) :: dfields(:)
+    integer                , intent(inout) :: dfields_num
+    character(len=*)       , intent(in)    :: strm_fld
+    real(r8)               , pointer       :: strm_ptr(:)
+    integer, optional      , intent(in)    :: logunit         
+    logical, optional      , intent(in)    :: masterproc
+
+    ! local variables
+    integer :: ns, kf
+    integer :: lsize, num
+    logical :: found
+    character(len=*), parameter :: subname='(dfield_add_strmfld)'
+    ! ----------------------------------------------
+
+    ! error checks
+    dfields_num = dfields_num + 1
+    if (dfields_num > fldsMax) then
+       call shr_sys_abort(trim(subname)//": ERROR num > fldsMax for "//trim(strm_fld))
+    endif
+    num = dfields_num
+
+    ! the following values will not be set
+    dfields(num)%state_fldname = 'unset'
+
+    ! determine local size
+    lsize = mct_avect_lsize(sdat%avs(1))
+
+    ! loop over all input streams and ! determine if the strm_fld is in the attribute vector of stream ns
+    found = .false.
+    do ns = 1, sdat%nstreams
+       kf  = mct_aVect_indexRA(sdat%avs(ns), trim(strm_fld), perrWith='quiet')
+       if (kf > 0) then
+          ! the field is in the attribute vector - so set the following values
+          dfields(num)%sdat_stream_index = ns
+          dfields(num)%sdat_avect_index = kf
+          allocate(dfields(num)%stream_data1d(lsize))
+          strm_ptr => dfields(num)%stream_data1d
+          found = .true.
+          if (masterproc) then
+             write(logunit,*)'(dshr_addfield_add_strmfld) allocating memory for field strm_'//trim(strm_fld)
+          end if
+          exit
+       end if
+    end do
+    if (.not. found) then
+       dfields(num)%sdat_stream_index = iunset
+       dfields(num)%sdat_avect_index = iunset
+       dfields(num)%stream_data1d => null()
+    end if
+
+  end subroutine dshr_dfield_add_strmfld
+
+!===============================================================================
+
   subroutine dshr_dfield_add_1d(sdat, state, dfields, dfields_num, state_fld, strm_fld, strm_ptr, state_ptr, rc)
 
     ! Set 1d dfield values
@@ -400,7 +549,6 @@ contains
 
     ! set the import or export state field name
     dfields(num)%state_fldname = trim(state_fld)
-
 
     ! Initialize strm_ptr and state_ptr if it is present
     ! These will be set to valid values if the relevant fields are found
@@ -435,18 +583,14 @@ contains
        dfields(num)%sdat_avect_index = iunset
     end if
 
-    ! set export state pointer array values
-    if (trim(state_fld) /= 'unset') then
+    ! Set export state array pointer
+    call state_getfldptr(State, fldname=trim(state_fld), fldptr1=dfields(num)%state_data1d, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    dfields(num)%state_data1d = 0.0_r8
 
-       ! Set export state array pointer
-       call state_getfldptr(State, fldname=trim(state_fld), fldptr1=dfields(num)%state_data1d, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       dfields(num)%state_data1d = 0.0_r8
-
-       ! Return array pointer if argument is present
-       if (present(state_ptr)) then
-          state_ptr => dfields(num)%state_data1d
-       end if
+    ! Return array pointer if argument is present
+    if (present(state_ptr)) then
+       state_ptr => dfields(num)%state_data1d
     end if
 
   end subroutine dshr_dfield_add_1d
@@ -486,12 +630,9 @@ contains
 
     ! determine stream fldnames array
     nflds = size(strm_flds)
+    dfields(num)%stream_nflds = nflds
     allocate(dfields(num)%sdat_stream_indices(nflds))
     allocate(dfields(num)%sdat_avect_indices(nflds))
-    allocate(dfields(num)%stream_fldnames(nflds))
-    do n = 1, nflds
-       dfields(num)%stream_fldnames(n) = trim(strm_flds(n))
-    end do
 
     ! determine local size
     lsize = mct_avect_lsize(sdat%avs(1))
@@ -509,18 +650,14 @@ contains
        end do
     end do
 
-    ! set export state pointer array values
-    if (trim(state_fld) /= 'unset') then
+    ! Set export state array pointer
+    call state_getfldptr(State, fldname=trim(state_fld), fldptr2=dfields(num)%state_data2d, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    dfields(num)%state_data2d(nflds,lsize) = 0._r8
 
-       ! Set export state array pointer
-       call state_getfldptr(State, fldname=trim(state_fld), fldptr2=dfields(num)%state_data2d, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       dfields(num)%state_data2d(nflds,lsize) = 0._r8       
-
-       ! Return array pointer if argument is present
-       if (present(state_ptr)) then
-          state_ptr => dfields(num)%state_data2d
-       end if
+    ! Return array pointer if argument is present
+    if (present(state_ptr)) then
+       state_ptr => dfields(num)%state_data2d
     end if
 
   end subroutine dshr_dfield_add_2d
@@ -550,114 +687,29 @@ contains
 
        ! Map the stream data to the state data
        if (associated(dfields(n)%state_data1d)) then
-
           stream_index = dfields(n)%sdat_stream_index
           avect_index =  dfields(n)%sdat_avect_index
           if (stream_index /= iunset .and. avect_index /= iunset) then
              dfields(n)%stream_data1d(:) = sdat%avs(stream_index)%rattr(avect_index,:)
              dfields(n)%state_data1d(:) = dfields(n)%stream_data1d(:)
           end if
-
        else if (associated(dfields(n)%state_data2d)) then
-
-          do i = 1,size(dfields(n)%stream_fldnames)
+          do i = 1,dfields(n)%stream_nflds
              stream_index = dfields(n)%sdat_stream_indices(i)
              avect_index = dfields(n)%sdat_avect_indices(i)
              dfields(n)%state_data2d(i,:) = sdat%avs(stream_index)%rattr(avect_index,:)
           end do
-
+       else if (associated(dfields(n)%stream_data1d)) then
+          stream_index = dfields(n)%sdat_stream_index
+          avect_index =  dfields(n)%sdat_avect_index
+          if (stream_index /= iunset .and. avect_index /= iunset) then
+             dfields(n)%stream_data1d(:) = sdat%avs(stream_index)%rattr(avect_index,:)
+          end if
        end if
+
     end do
 
   end subroutine dshr_streams_copy
-
-!===============================================================================
-
-  subroutine dshr_avect_add(model_fld, model_fld_concat, av_index)
-
-    ! input/output variables
-    character(len=*)               , intent(in)    :: model_fld
-    character(len=*)               , intent(inout) :: model_fld_concat
-    integer             , optional , intent(out)   :: av_index
-
-    ! local variables
-    integer :: rc
-    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_dmodel_add1)'
-    ! ----------------------------------------------
-
-    if (len_trim(model_fld_concat) + len_trim(model_fld) + 1 >= len(model_fld_concat)) then
-       call ESMF_LogWrite(subname//': ERROR: max len of model_fld_concat has been exceeded', ESMF_LOGMSG_INFO)
-       rc = ESMF_FAILURE
-       return
-    end if
-
-    if (trim(model_fld_concat) == '') then
-       model_fld_concat = trim(model_fld)
-    else
-       model_fld_concat = trim(model_fld_concat)//':'//trim(model_fld)
-    end if
-
-    if (present(av_index)) then
-       call shr_string_listGetIndex(trim(model_fld_concat), trim(model_fld),  av_index)
-    end if
-
-  end subroutine dshr_avect_add
-
-  !===============================================================================
-
-  subroutine dshr_translate_add( fldname1, fldname2, fldnames1, fldnames2)
-
-    !----------------------------------
-    ! Create new character arrays fldnames1 and fldnames2
-    !----------------------------------
-
-    ! input/output variables
-    character(len=*) , intent(in)    :: fldname1
-    character(len=*) , intent(in)    :: fldname2
-    character(len=*) , pointer       :: fldnames1(:)
-    character(len=*) , pointer       :: fldnames2(:)
-
-    ! local variables
-    integer                     :: rc
-    integer                     :: n, oldsize, id
-    character(len=CS), pointer  :: new_fldnames1(:)
-    character(len=CS), pointer  :: new_fldnames2(:)
-    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_translate_add) '
-    ! ----------------------------------------------
-
-    ! 1) determine new index
-    if (associated(fldnames1)) then
-       oldsize = size(fldnames1)
-    else
-       oldsize = 0
-    end if
-    id = oldsize + 1
-
-    ! 2) allocate new_fldnames1 and new_fldnames2 to one element larger than input
-    allocate(new_fldnames1(id))
-    allocate(new_fldnames2(id))
-
-    ! 3) copy fldnames1 and fldnames2 into first N-1 elements offldnames1 and fldnames2
-    do n = 1,oldsize
-       new_fldnames1(n) = fldnames1(n)
-       new_fldnames2(n) = fldnames2(n)
-    end do
-
-    ! 4) deallocate / nullify stream_fldnames and model_fldnames
-    if (oldsize >  0) then
-       deallocate(fldnames1)
-       deallocate(fldnames2)
-       nullify(fldnames1)
-       nullify(fldnames2)
-    end if
-
-    ! 5) point fldnames1 => new_fldnames1 and fldnames2 => new_fldnames2 and update info for new entry
-    fldnames1  => new_fldnames1
-    fldnames2  => new_fldnames2
-    fldnames1(id) = trim(fldname1)
-    fldnames2(id) = trim(fldname2)
-
-  end subroutine dshr_translate_add
 
   !===============================================================================
 
@@ -775,27 +827,8 @@ contains
 
   !===============================================================================
 
-  subroutine ModelInitPhase(gcomp, importState, exportState, clock, rc)
-
-    ! input/output variables
-    type(ESMF_GridComp)   :: gcomp
-    type(ESMF_State)      :: importState, exportState
-    type(ESMF_Clock)      :: clock
-    integer, intent(out)  :: rc
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! Switch to IPDv01 by filtering all other phaseMap entries
-    call NUOPC_CompFilterPhaseMap(gcomp, ESMF_METHOD_INITIALIZE, acceptStringList=(/"IPDv01p"/), rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine ModelInitPhase
-
-  !===============================================================================
-
   subroutine dshr_set_runclock(gcomp, rc)
-  
+
     ! input/output variables
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
@@ -885,194 +918,6 @@ contains
 
   !===============================================================================
 
-  subroutine ModelSetRunClock(gcomp, rc)
-
-    ! input/output variables
-    type(ESMF_GridComp)  :: gcomp
-    integer, intent(out) :: rc
-
-    ! local variables
-    type(ESMF_Clock)         :: mclock, dclock
-    type(ESMF_Time)          :: mcurrtime, dcurrtime
-    type(ESMF_Time)          :: mstoptime
-    type(ESMF_TimeInterval)  :: mtimestep, dtimestep
-    character(len=256)       :: cvalue
-    character(len=256)       :: restart_option       ! Restart option units
-    integer                  :: restart_n            ! Number until restart interval
-    integer                  :: restart_ymd          ! Restart date (YYYYMMDD)
-    type(ESMF_ALARM)         :: restart_alarm
-    character(len=128)       :: name
-    integer                  :: alarmcount
-    character(len=*),parameter :: subname='dshr_nuopc_mod:(ModelSetRunClock) '
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-    if (dbug > 5) call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
-
-    ! query the Component for its clocks
-    call NUOPC_ModelGet(gcomp, driverClock=dclock, modelClock=mclock, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(dclock, currTime=dcurrtime, timeStep=dtimestep, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockGet(mclock, currTime=mcurrtime, timeStep=mtimestep, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! force model clock currtime and timestep to match driver and set stoptime
-    !--------------------------------
-
-    mstoptime = mcurrtime + dtimestep
-    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! set restart alarm
-    !--------------------------------
-
-    call ESMF_ClockGetAlarmList(mclock, alarmlistflag=ESMF_ALARMLIST_ALL, alarmCount=alarmCount, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (alarmCount == 0) then
-
-       call ESMF_GridCompGet(gcomp, name=name, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_LogWrite(subname//'setting alarms for' // trim(name), ESMF_LOGMSG_INFO)
-
-       call NUOPC_CompAttributeGet(gcomp, name="restart_option", value=restart_option, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call NUOPC_CompAttributeGet(gcomp, name="restart_n", value=cvalue, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) restart_n
-
-       call NUOPC_CompAttributeGet(gcomp, name="restart_ymd", value=cvalue, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       read(cvalue,*) restart_ymd
-
-       call alarmInit(mclock, restart_alarm, restart_option, &
-            opt_n   = restart_n,           &
-            opt_ymd = restart_ymd,         &
-            RefTime = mcurrTime,           &
-            alarmname = 'alarm_restart', rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-       call ESMF_AlarmSet(restart_alarm, clock=mclock, rc=rc)
-       if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    end if
-
-    !--------------------------------
-    ! Advance model clock to trigger alarms then reset model clock back to currtime
-    !--------------------------------
-
-    call ESMF_ClockAdvance(mclock,rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    call ESMF_ClockSet(mclock, currTime=dcurrtime, timeStep=dtimestep, stopTime=mstoptime, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    if (dbug > 5) call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
-
-  end subroutine ModelSetRunClock
-
-  !===============================================================================
-
-  subroutine dshr_export(array, state, fldname, ungridded_index, rc)
-
-    ! ----------------------------------
-    ! copy array data to state fields
-    ! ----------------------------------
-
-    ! input/otuput variables
-    real(r8)         , intent(inout) :: array(:)
-    type(ESMF_State) , intent(inout) :: state
-    character(len=*) , intent(in)    :: fldname
-    integer, optional, intent(in)    :: ungridded_index
-    integer          , intent(out)   :: rc
-
-    ! local variables
-    integer           :: lsize, n
-    type(ESMF_Field)  :: lfield
-    real(R8), pointer :: farray1d(:)
-    real(R8), pointer :: farray2d(:,:)
-    character(*),parameter :: subName = "(dshr_nuopc_mod: dshr_export)"
-    !----------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call ESMF_StateGet(state, itemName=trim(fldname), field=lfield, rc=rc)
-    if (.not. ChkErr(rc,__LINE__,u_FILE_u)) then
-       call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO)
-
-       lsize = size(array)
-       if (present(ungridded_index)) then
-          call ESMF_FieldGet(lfield, farrayPtr=farray2d, rc=rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          do n = 1,lsize
-             farray2d(ungridded_index,n) = array(n)
-          end do
-       else
-          call ESMF_FieldGet(lfield, farrayPtr=farray1d, rc=rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          do n = 1,lsize
-             farray1d(n) = array(n)
-          enddo
-       end if
-    end if
-
-  end subroutine dshr_export
-
-  !===============================================================================
-
-  subroutine dshr_import(state, fldname, array, ungridded_index, rc)
-
-    ! ----------------------------------
-    ! copy state field to array data
-    ! ----------------------------------
-
-    ! input/output variables
-    type(ESMF_State)  , intent(in)    :: state
-    character(len=*)  , intent(in)    :: fldname
-    real(r8)          , intent(inout) :: array(:)
-    integer, optional , intent(in)    :: ungridded_index
-    integer           , intent(out)   :: rc
-
-    ! local variables
-    integer           :: lsize, n
-    type(ESMF_Field)  :: lfield
-    real(R8), pointer :: farray1d(:)
-    real(R8), pointer :: farray2d(:,:)
-    character(*),parameter :: subName = "(dshr_nuopc_mod: dshr_import)"
-    !----------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    call ESMF_StateGet(state, itemName=trim(fldname), field=lfield, rc=rc)
-    if (.not. ChkErr(rc,__LINE__,u_FILE_u)) then
-       call ESMF_LogWrite(trim(subname)//": fldname = "//trim(fldname)//" copy", ESMF_LOGMSG_INFO)
-
-       lsize = size(array)
-       if (present(ungridded_index)) then
-          call ESMF_FieldGet(lfield, farrayPtr=farray2d, rc=rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          do n = 1,lsize
-             array(n) = farray2d(ungridded_index,n)
-          enddo
-       else
-          call ESMF_FieldGet(lfield, farrayPtr=farray1d,  rc=rc)
-          if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          do n = 1,lsize
-             array(n) = farray1d(n)
-          enddo
-       end if
-    end if
-
-   end subroutine dshr_import
-
-   !===============================================================================
-
    subroutine dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
         logunit, my_task, master_task, mpicom, sdat, fld, fldname)
 
@@ -1140,7 +985,7 @@ contains
    !===============================================================================
 
    subroutine dshr_restart_write(rpfile, case_name, model_name, inst_suffix, ymd, tod, &
-        logunit, mpicom, my_task, master_task, sdat, fld, fldname) 
+        logunit, mpicom, my_task, master_task, sdat, fld, fldname)
 
      use shr_pcdf_mod    , only : shr_pcdf_readwrite
      use shr_cal_mod     , only : shr_cal_datetod2string
