@@ -57,9 +57,13 @@ contains
     do ie=nets,nete
       elem(ie)%derived%gradphis(:,:,:) = gradtemp(:,:,:,ie)
       ! compute w_i(nlevp)
-      elem(ie)%state%w_i(:,:,nlevp,tl%n0) = (&
-         elem(ie)%state%v(:,:,1,nlev,tl%n0)*elem(ie)%derived%gradphis(:,:,1) + &
-         elem(ie)%state%v(:,:,2,nlev,tl%n0)*elem(ie)%derived%gradphis(:,:,2))/g
+      if (theta_hydrostatic_mode) then
+        elem(ie)%state%w_i = 0.0D0
+      else
+        elem(ie)%state%w_i(:,:,nlevp,tl%n0) = (&
+           elem(ie)%state%v(:,:,1,nlev,tl%n0)*elem(ie)%derived%gradphis(:,:,1) + &
+           elem(ie)%state%v(:,:,2,nlev,tl%n0)*elem(ie)%derived%gradphis(:,:,2))/g
+      endif
 
       ! assign phinh_i(nlevp) to be phis at all timelevels
       do t=1,timelevels

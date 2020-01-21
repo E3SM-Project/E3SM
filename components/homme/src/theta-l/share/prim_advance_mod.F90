@@ -1493,8 +1493,13 @@ contains
 #else
            ! E conserving average, but much more dissipative
            do k=2,nlev
+#ifdef HOMMEXX_BFB_TESTING
+              vtheta_i(:,:,k) = -dpnh_dp_i(:,:,k)* ((phi(:,:,k)-phi(:,:,k-1))/&
+                                                    (exner(:,:,k)-exner(:,:,k-1)) / Cp)
+#else
               vtheta_i(:,:,k) = -dpnh_dp_i(:,:,k)*(phi(:,:,k)-phi(:,:,k-1))/&
                    (exner(:,:,k)-exner(:,:,k-1)) / Cp
+#endif
            enddo
 #endif           
 

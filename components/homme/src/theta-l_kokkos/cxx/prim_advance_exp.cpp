@@ -50,7 +50,7 @@ void prim_advance_exp (TimeLevel& tl, const Real dt, const bool compute_diagnost
   Real eta_ave_w = 1.0/params.qsplit;
 
   // From f90 code: "this should not be needed, but in case physics update u without updating w b.c."
-  {
+  if (!params.theta_hydrostatic_mode) {
     auto e = context.get<Elements>();
     auto w_i = e.m_state.m_w_i;
     auto v = e.m_state.m_v;
@@ -156,6 +156,7 @@ void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w
   GPTLstart("tl-ae U3-5stage_timestep");
   // Get elements structure
   Elements& elements = Context::singleton().get<Elements>();
+  SimulationParams& params = Context::singleton().get<SimulationParams>();
 
   // Create the functor
   CaarFunctor& functor = Context::singleton().get<CaarFunctor>();
@@ -181,29 +182,31 @@ void u3_5stage_timestep(const TimeLevel& tl, const Real dt, const Real eta_ave_w
 
   // Compute (5u1-u0)/4 and store it in timelevel nm1
   {
-    // const auto t    = elements.m_state.m_t;
     const auto v         = elements.m_state.m_v;
     const auto w         = elements.m_state.m_w_i;
     const auto vtheta_dp = elements.m_state.m_vtheta_dp;
     const auto phinh     = elements.m_state.m_phinh_i;
     const auto dp3d      = elements.m_state.m_dp3d;
+    const auto hydrostatic_mode = params.theta_hydrostatic_mode;
 
     Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecSpace>(0, elements.num_elems()*NP*NP*NUM_LEV),
       KOKKOS_LAMBDA(const int it) {
-         const int ie = it / (NP*NP*NUM_LEV);
-         const int igp = (it / (NP*NUM_LEV)) % NP;
-         const int jgp = (it / NUM_LEV) % NP;
-         const int ilev = it % NUM_LEV;
-         v(ie,nm1,0,igp,jgp,ilev) = (5.0*v(ie,nm1,0,igp,jgp,ilev)-v(ie,n0,0,igp,jgp,ilev))/4.0;
-         v(ie,nm1,1,igp,jgp,ilev) = (5.0*v(ie,nm1,1,igp,jgp,ilev)-v(ie,n0,1,igp,jgp,ilev))/4.0;
-         w(ie,nm1,igp,jgp,ilev) = (5.0*w(ie,nm1,igp,jgp,ilev)-w(ie,n0,igp,jgp,ilev))/4.0;
-         vtheta_dp(ie,nm1,igp,jgp,ilev) = (5.0*vtheta_dp(ie,nm1,igp,jgp,ilev)-vtheta_dp(ie,n0,igp,jgp,ilev))/4.0;
-         phinh(ie,nm1,igp,jgp,ilev) = (5.0*phinh(ie,nm1,igp,jgp,ilev)-phinh(ie,n0,igp,jgp,ilev))/4.0;
-         dp3d(ie,nm1,igp,jgp,ilev) = (5.0*dp3d(ie,nm1,igp,jgp,ilev)-dp3d(ie,n0,igp,jgp,ilev))/4.0;
+        const int ie = it / (NP*NP*NUM_LEV);
+        const int igp = (it / (NP*NUM_LEV)) % NP;
+        const int jgp = (it / NUM_LEV) % NP;
+        const int ilev = it % NUM_LEV;
+        v(ie,nm1,0,igp,jgp,ilev) = (5.0*v(ie,nm1,0,igp,jgp,ilev)-v(ie,n0,0,igp,jgp,ilev))/4.0;
+        v(ie,nm1,1,igp,jgp,ilev) = (5.0*v(ie,nm1,1,igp,jgp,ilev)-v(ie,n0,1,igp,jgp,ilev))/4.0;
+        vtheta_dp(ie,nm1,igp,jgp,ilev) = (5.0*vtheta_dp(ie,nm1,igp,jgp,ilev)-vtheta_dp(ie,n0,igp,jgp,ilev))/4.0;
+        dp3d(ie,nm1,igp,jgp,ilev) = (5.0*dp3d(ie,nm1,igp,jgp,ilev)-dp3d(ie,n0,igp,jgp,ilev))/4.0;
+        if (!hydrostatic_mode) {
+          w(ie,nm1,igp,jgp,ilev) = (5.0*w(ie,nm1,igp,jgp,ilev)-w(ie,n0,igp,jgp,ilev))/4.0;
+          phinh(ie,nm1,igp,jgp,ilev) = (5.0*phinh(ie,nm1,igp,jgp,ilev)-phinh(ie,n0,igp,jgp,ilev))/4.0;
+        }
     });
     // If NUM_LEV==NUM_LEV_P, the code above will take care also of the last interface
-    if (NUM_LEV_P>NUM_LEV) {
+    if (NUM_LEV_P>NUM_LEV && !hydrostatic_mode) {
       const int LAST_INT = NUM_LEV_P-1;
       Kokkos::parallel_for(
         Kokkos::RangePolicy<ExecSpace>(0, elements.num_elems()*NP*NP),

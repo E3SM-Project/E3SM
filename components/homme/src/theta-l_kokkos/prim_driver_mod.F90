@@ -280,7 +280,7 @@ contains
 
   subroutine prim_run_subcycle(elem, hybrid, nets, nete, dt, single_column, tl, hvcoord,nsubstep)
     use iso_c_binding,  only : c_int, c_ptr, c_loc
-    use control_mod,    only : qsplit, rsplit, statefreq
+    use control_mod,    only : qsplit, rsplit, statefreq, disable_diagnostics
     use dimensions_mod, only : nelemd
     use element_mod,    only : element_t
     use element_state,  only : elem_state_v, elem_state_w_i, elem_state_vtheta_dp,     &
@@ -294,6 +294,7 @@ contains
     use time_mod,       only : timelevel_t, nextOutputStep, nsplit
     use control_mod,    only : statefreq
     use parallel_mod,   only : abortmp
+    use perf_mod,       only: t_startf, t_stopf
     use prim_state_mod, only: prim_printstate
     interface
 
@@ -363,9 +364,14 @@ contains
     if (MODULO(nstep_end,statefreq)==0 .or. (tl%nstep <= tl%nstep0+(nstep_end-tl%nstep) )) then
       compute_diagnostics = .true.
     endif
+    if (disable_diagnostics) then
+      compute_diagnostics = .false.
+    endif
 
+    call t_startf('push_to_cxx')
     call push_forcing_to_c(elem_derived_FM,   elem_derived_FVTheta, elem_derived_FT, &
                            elem_derived_FPHI, elem_derived_FQ)
+    call t_stopf('push_to_cxx')
 
     call prim_run_subcycle_c(dt,nstep_c,nm1_c,n0_c,np1_c,nextOutputStep)
 
@@ -388,9 +394,11 @@ contains
       elem_derived_omega_p_ptr = c_loc(elem_derived_omega_p)
 
       ! Copy cxx arrays back to f90 structures
+      call t_startf('push_to_f90')
       call cxx_push_results_to_f90(elem_state_v_ptr, elem_state_w_i_ptr, elem_state_vtheta_dp_ptr,   &
                                    elem_state_phinh_i_ptr, elem_state_dp3d_ptr, elem_state_ps_v_ptr, &
                                    elem_state_Qdp_ptr, elem_state_Q_ptr, elem_derived_omega_p_ptr)
+      call t_stopf('push_to_f90')
     endif
 
     ! Print some diagnostic information

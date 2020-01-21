@@ -431,6 +431,9 @@ TEST_CASE("caar", "caar_testing") {
   }
 
   SECTION ("limiter_dp3d") {
+    // rsplit is irrelevant for this test, so just pick something
+    params.rsplit = 1;
+
     // Randomize state and sync to f90 dp and vtheta
     elems.m_state.randomize(seed,max_pressure,hvcoord.ps0,hvcoord.hybrid_ai0,geo.m_phis);
 

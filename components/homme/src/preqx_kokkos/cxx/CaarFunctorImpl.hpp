@@ -198,8 +198,12 @@ struct CaarFunctorImpl {
     Kokkos::parallel_for("caar loop pre-boundary exchange", m_policy, *this);
     ExecSpace::fence();
     GPTLstop("caar compute");
-    start_timer("caar_bexchV");
+
+    GPTLstart("caar_bexchV");
     m_bes[data.np1]->exchange(m_geometry.m_rspheremp);
+    GPTLstop("caar_bexchV");
+
+    profiling_pause();
   }
 
   // Depends on PHI (after preq_hydrostatic), PECND

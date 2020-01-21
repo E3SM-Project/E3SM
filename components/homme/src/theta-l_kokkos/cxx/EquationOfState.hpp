@@ -112,6 +112,9 @@ public:
         dpnh_dp_i(ilev) = 1.0;
       });
     } else {
+      // dp_i CANNOT alias dpnh_dp_i
+      assert(dpnh_dp_i.data()!=dp_i.data());
+
       // Start with dpnh_dp_i = delta(pnh)/dp_i. Skip bc's, cause we do our own here
       ColumnOps::compute_interface_delta<CombineMode::Replace,BCType::DoNothing>(kv.team,pnh,dpnh_dp_i);
 
