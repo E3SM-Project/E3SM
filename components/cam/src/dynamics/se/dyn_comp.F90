@@ -375,12 +375,12 @@ CONTAINS
        hybrid = hybrid_create(par,ithr,hthreads)
 
        do_prim_run = .true. ! Always do prim_run_subcycle
-                            ! Unless turned off SCM for specific cases
+                            ! Unless turned off by SCM for specific cases
 
        single_column_in = single_column
        
        ! if IOP-SCREAM mode we want dycore to operate in non-SCM mode,
-       !   thus turn this switch to false for this block
+       !   thus turn this switch to false for dycore input
        if (iop_scream) then
          single_column_in = .false.
        endif

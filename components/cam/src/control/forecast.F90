@@ -191,7 +191,11 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !  advection calculation.  Skip to diagnostic estimates of vertical term.
       i=1
       do k=1,plev
+      ! If IOP_SCREAM, do not consider physics temperature tendency
+      !   since that will be redudant.  In pure SCM mode, that section 
+      !   of dycore is not called and thus needs to be added here.  
 #ifdef MODEL_THETA_L
+        ! theta_l model prog variable is temp tendency
         if (iop_scream) then 
 	  tfcst(k) = t3m2(k) + divt3d(k)
 	else
@@ -273,6 +277,10 @@ subroutine forecast(lat, psm1, psm2,ps, &
 !
 !  Eularian forecast for u,v,t, and q
 !
+!  If three-dimensional forcing is not provided in the IOP-forcing file
+!    then we need to add the effects of large-scale vertical advection for
+!    t, u, v, and q.  Use the prescribed large-scale vertical velocity and 
+!    an Eulerian calculation for this.
 
    if (iop_scream) then 
 
@@ -511,12 +519,16 @@ end if
 !
 
    do k=1,plev
+     ! If IOP_SCREAM, do not consider physics temperature tendency
+     !   since that will be redudant.  In pure SCM mode, that section 
+     !   of dycore is not called and thus needs to be added here.   
 #ifdef MODEL_THETA_L
+     ! in theta_l model, prog variable is temp tendency, not temp 
      if (iop_scream) then
        tfcst(k) = tfcst(k) + wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) + divt(k)     
      else
-       tfcst(k) = tfcst(k) + ztodt*wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
-         + ztodt*(t2(k) + divt(k))
+       tfcst(k) = tfcst(k) + wfld(k)*t3m1(k)*rair/(cpair*pmidm1(k)) &
+         + (t2(k) + divt(k))
      endif
 #else
      if (iop_scream) then

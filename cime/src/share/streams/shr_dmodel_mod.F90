@@ -281,10 +281,14 @@ CONTAINS
     master_task = 0
 
     lscmmode = .false.
-    liopmode = .false.
+    liopmode = .false. 
     if (present(scmmode)) then
        lscmmode = scmmode
        liopmode = iop_scream
+       if (liopmode .and. .not. lscmmode) then
+         write(logunit,*) subname, ' ERROR: IOP SCREAM mode must be run with SCM functionality'
+	 call shr_sys_abort(subname//' ERROR: IOP not in SCM mode')
+       endif       
        if (lscmmode) then
           if (.not.present(scmlon) .or. .not.present(scmlat)) then
              write(logunit,*) subname,' ERROR: scmmode must supply scmlon and scmlat'
@@ -506,7 +510,7 @@ CONTAINS
 	  
 	    ! If IOP-SCREAM mode, then we want the surface to be 
 	    !   covered homogeneously, with the same lat and lon
-	    !   as close to the IOP
+	    !   as close to the lat/lon in IOP forcing file as possible
 	    i_scm = ni
 	  
             n=0

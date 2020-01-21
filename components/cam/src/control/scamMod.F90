@@ -1129,7 +1129,7 @@ endif !scm_observed_aero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivq', &
         have_srf, srf(1), fill_ends, scm_crm_mode, &
         dplevs, nlev,psobs, hyam, hybm, vertdivq(:,1), status )
-     if ( status .ne. nf90_noerr) then
+     if ( status .ne. nf90_noerr ) then
        have_vertdivq = .false.
      else
        have_vertdivq = .true.
@@ -1303,7 +1303,7 @@ endif !scm_observed_aero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, 'vertdivT', &
        have_srf, srf(1), fill_ends, scm_crm_mode, &
        dplevs, nlev,psobs, hyam, hybm, vertdivt, status )
-     if ( status .ne. nf90_noerr) then
+     if ( status .ne. nf90_noerr ) then
        have_vertdivt = .false.
      else
        have_vertdivt = .true.
@@ -1497,7 +1497,7 @@ endif !scm_observed_aero
      call getinterpncdata( ncid, scmlat, scmlon, ioptimeidx, &
        'omega', .true., ptend, fill_ends, scm_crm_mode, &
         dplevs, nlev,psobs, hyam, hybm, wfld, status )
-     if ( status .ne. nf90_noerr) then
+     if ( status .ne. nf90_noerr ) then
         have_omega = .false.
         write(iulog,*)'Could not find variable omega'
         if ( .not. use_userdata ) then

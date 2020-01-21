@@ -1236,7 +1236,6 @@
 
             if (single_column) then
                ULAT  (i,j,iblk) = TLAT(i,j,iblk)+(pi/ni)  
-!                ULAT  (i,j,iblk) = TLAT(i,j,iblk)
             else
                if (ny_global == 1) then
                   ULAT  (i,j,iblk) = TLAT(i,j,iblk)

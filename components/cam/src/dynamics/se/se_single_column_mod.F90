@@ -89,6 +89,9 @@ subroutine scm_setinitial(elem)
               if (have_cldliq) elem(ie)%state%Q(i,j,k,icldliq) = cldliqobs(k)
               if (have_numice) elem(ie)%state%Q(i,j,k,inumice) = numiceobs(k)
               if (have_cldice) elem(ie)%state%Q(i,j,k,icldice) = cldiceobs(k)
+	      !  If IOP-SCREAM we do NOT want to write over the dy-core vertical 
+	      !    velocity with the large-scale one.  wfld is used in forecast.F90
+	      !    for the compuation of the large-scale subsidence.
               if (have_omega .and. .not. iop_scream) elem(ie)%derived%omega_p(i,j,k) = wfld(k)
             enddo
 
@@ -154,6 +157,7 @@ subroutine scm_setfield(elem,iop_update_phase1)
   do ie=1,nelemd
     if (have_ps .and. .not. iop_update_phase1) elem(ie)%state%ps_v(:,:,:) = psobs 
     do i=1, PLEV
+      ! If IOP-SCREAM do NOT write over dycore vertical velocity
       if ((have_omega .and. iop_update_phase1) .and. .not. iop_scream) elem(ie)%derived%omega_p(:,:,i)=wfld(i)  !     set t to tobs at first
     end do
   end do
