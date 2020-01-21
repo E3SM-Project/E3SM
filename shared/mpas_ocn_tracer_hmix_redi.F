@@ -296,13 +296,12 @@ contains
 
                do iTr = 1, nTracers
                   ! Gradient of tracer at edge.
-                  ! mrp performance note: can substitute areaEdge/dcEdge
-                  ! with dvEdge
-                  dTracerDx = (tracers(iTr,k,cell2) - tracers(iTr,k,cell1)) / dcEdge(iEdge)
+                  ! dvEdge on following line is equal to areaEdge/dcEdge
+                  dTracerDx = (tracers(iTr,k,cell2) - tracers(iTr,k,cell1)) * dvEdge(iEdge)
                   fluxRediZTop(iTr,k) = fluxRediZTop(iTr,k) + &
-                     slopeTriadUp(k,iCellSelf,iEdge) * dTracerDx * areaEdge
+                     slopeTriadUp(k,iCellSelf,iEdge) * dTracerDx
                   fluxRediZTop(iTr,k+1) = fluxRediZTop(iTr,k+1) + &
-                     slopeTriadDown(k,iCellSelf,iEdge) * dTracerDx * areaEdge
+                     slopeTriadDown(k,iCellSelf,iEdge) * dTracerDx
                end do
             end do
          end do
