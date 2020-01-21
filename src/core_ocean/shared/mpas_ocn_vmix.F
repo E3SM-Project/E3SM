@@ -774,13 +774,9 @@ contains
                           tracerGroupSurfaceFlux)
                endif
 
-! MRP TEMP               
-!if ( trim(groupItr % memberName) .eq. 'debugTracers' ) then ! mrp for testing only
                call ocn_tracer_vmix_tend_implicit(meshPool, dt, vertDiffTopOfCell, layerThickness, tracersGroup, &
                         vertNonLocalFlux, tracerGroupSurfaceFlux,  &
                         config_cvmix_kpp_nonlocal_with_implicit_mix, err)
-!end if
-! mrp TEMP               
             end if
 
             ! difference tracers to compute influence of vertical mixing and divide by dt
