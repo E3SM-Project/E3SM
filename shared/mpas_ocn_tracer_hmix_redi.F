@@ -129,7 +129,6 @@ contains
       real (kind=RKIND) :: flux, flux_term1, flux_term2, flux_term3, flux_terms12, sign_term1, dTracerDx, coef
       real (kind=RKIND) :: r_tmp, tracer_turb_flux
       real (kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
-      real (kind=RKIND), dimension(:), pointer :: xCell,yCell
       real (kind=RKIND), dimension(:), allocatable :: areaSum
 
       real (kind=RKIND), dimension(:,:), allocatable :: fluxRediZTop
@@ -156,10 +155,6 @@ contains
       call mpas_pool_get_array(meshPool, 'edgesOnCell', edgesOnCell)
       call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
       call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
-
-      ! temp for testing mrp:
-      call mpas_pool_get_array(meshPool, 'xCell', xCell)
-      call mpas_pool_get_array(meshPool, 'yCell', yCell)
 
       nCells = nCellsArray( size(nCellsArray) )
       nEdges = nEdgesArray( size(nEdgesArray) )
@@ -197,11 +192,6 @@ contains
          end do
       end do
       !$omp end do
-!!!!!!! mrp delete later. Used to print out tendencies on first step.
-!do iTr = 1, nTracers
-!  print '(a,i2,a,2es14.5)', 'tend term1 iTr',iTr,' min/max ',minval(tend(iTr,3,1:nCells))/zMid(3,1),maxval(tend(iTr,3,1:nCells))/zMid(3,1)
-!  print '(10es15.7)', tend(iTr,5,1:nCells )/xCell(1:nCells )
-!end do
 
       !mrp performance note: can try to reduce halo width later
       nCells = nCellsArray( size(nCellsArray) )
@@ -272,17 +262,6 @@ contains
       end do
       !$omp end do
 
-!!!!!!! mrp delete later. Used to print out tendencies on first step.
-!do iTr = 1, nTracers
-!  print '(a,i2,a,2es14.5)', 'tend term2 iTr',iTr,' min/max ',minval(tend(iTr,3,1:nCells)),maxval(tend(iTr,3,1:nCells))
-!  print '(10es15.7)', tend(iTr,5,1:nCells )/xCell(1:nCells )
-!end do
-!print '(a,10es15.7)', 'RediKappa'
-!print '(10es15.7)', RediKappa(1:nCells)
-!print '(a,10es15.7)', 'slopeTriadUp'
-!print '(10es15.7)', slopeTriadUp(5,1,:)
-!print '(a,10es15.7)', 'slopeTriadDown'
-!print '(10es15.7)', slopeTriadDown(5,1,:)
       ! Term 3: d/dz ( h S grad phi) 
       ! note that dz and h cancel, so this is (S grad phi)
 
@@ -338,11 +317,7 @@ contains
                ! requires a factor of 1/2 to average to the cell center.
                flux_term3 = RediKappa(iCell) * 2.0_RKIND * &
                    (fluxRediZTop(iTr,k)/areaSum(k) - fluxRediZTop(iTr,k+1)/areaSum(k+1))
-!mrp temp
-!if (abs(flux_term3)>1.0e4) then
-!    print *, 'BIG iCell, k,nmaxLevelCell(iCell), fluxRediZTop',iCell,    k,maxLevelCell(iCell)
-!    print *, 'BIG flux, area,f,a',   fluxRediZTop(iTr,k),areaSum(k), fluxRediZTop(iTr,k+1),areaSum(k+1)
-!endif
+
                tend(iTr,k,iCell) = tend(iTr,k,iCell) + flux_term3
             end do
          end do
@@ -350,13 +325,6 @@ contains
       !$omp end do
       deallocate(fluxRediZTop)
       deallocate(areaSum)
-!!!!!!! mrp delete later. Used to print out tendencies on first step.
-!do iTr = 1, nTracers
-!  print '(a,i2,a,2es14.5)', 'tend term3 iTr',iTr,' min/max ',minval(tend(iTr,3,1:nCells)),maxval(tend(iTr,3,1:nCells))
-!  !print '(10es15.7)', tend(iTr,5,1:nCells )/xCell(1:nCells )
-!  print *, 'tend at end of Redi'
-!  print '(10es15.7)', tend(iTr,5,1:nCells )
-!end do
 
       call mpas_timer_stop("tracer redi")
 

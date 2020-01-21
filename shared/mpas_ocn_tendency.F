@@ -866,13 +866,9 @@ contains
                !
                ! tracer tendency: del2 horizontal tracer diffusion, div(h \kappa_2 \nabla \phi)
                !
-! MRP TEMP               
-!if ( trim(groupItr % memberName) .eq. 'debugTracers' ) then ! mrp for testing only
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracerGroup, &
                                          RediKappa, slopeTriadUp, slopeTriadDown, &
                                          tracerGroupTend, err)
-!endif
-! mrp TEMP end
 
                !
                ! convert the surface tracer flux into a tracer tendency by distributing the flux across some number

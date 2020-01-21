@@ -440,10 +440,6 @@ contains
                slopeTaper(k) = slopeTaper(k)*(k-iBLD) / config_Redi_BLD_taper_layers
             end do
          end if
-!mrp temp
-!print *, 'slopeTaper, maxLevelCell, iBLD',maxLevelCell(iCell), iBLD
-!print '(10f7.3)', slopeTaper(1:maxLevelCell(iCell))
-!mrp temp
 
          k33(1:maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
          k33Norm(1:maxLevelCell(iCell)+1) = epsGM
