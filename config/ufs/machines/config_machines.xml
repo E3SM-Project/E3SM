@@ -263,6 +263,10 @@ This allows using a different mpirun command to launch unit tests
 	<command name="use">/glade/work/jedwards/modulefiles/NCEPLIBS/mpt/2.19/gnu/9.1.0/</command>
 	<command name="load">NCEPLIBS/1.0.0</command>
       </modules>
+      <modules mpilib="mpt" compiler="intel" comp_interface="nuopc">
+	<command name="use">/glade/work/jedwards/modulefiles/NCEPLIBS/mpt/2.19/intel/19.0.2/</command>
+	<command name="load">NCEPLIBS/1.0.0</command>
+      </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
       </modules>
@@ -284,18 +288,6 @@ This allows using a different mpirun command to launch unit tests
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-    </environment_variables>
-    <environment_variables comp_interface="nuopc">
-      <env name="IC_DIR">$ENV{CESMDATAROOT}/ufs_inputdata/IC/gfs.20190909/00</env>
-    </environment_variables>
-    <environment_variables compiler="intel" comp_interface="nuopc">
-      <env name="NCEP_LIBS">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install</env>
-      <env name="NEMSIO_INC">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/include</env>
-      <env name="NEMSIO_LIB">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libnemsio_v2.2.3.a</env>
-      <env name="BACIO_LIB4">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libbacio_v2.1.0_4.a</env>
-      <env name="SP_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libsp_v2.0.2_d.a</env>
-      <env name="W3EMC_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libw3emc_v2.2.0_d.a</env>
-      <env name="W3NCO_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libw3nco_v2.0.6_d.a</env>
     </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>
