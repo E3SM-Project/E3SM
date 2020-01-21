@@ -154,6 +154,7 @@ struct CaarFunctorImpl {
     if (m_theta_hydrostatic_mode) {
       --num_scalar_mid;
     }
+
     return num_scalar_mid*NP*NP*NUM_LEV*VECTOR_SIZE*nteams
          + Buffers::num_3d_scalar_int_buf*NP*NP*NUM_LEV_P*VECTOR_SIZE*nteams
          + Buffers::num_3d_vector_mid_buf*2*NP*NP*NUM_LEV*VECTOR_SIZE*nteams
@@ -568,8 +569,8 @@ struct CaarFunctorImpl {
       const int jgp = idx % NP;
 
       // At interfaces, pi_i(k+1) = pi_i(k)+dp(k), with pi_i(0)=hyai(0)*ps0;
-      // then, pi(k) = pi_i(k) + dp(k)/2. Hence, accumulate midpoints to interfaces,
-      // then do a parallel_for to add the dp(k)/2 contribution.
+      // then, pi(k) = (pi_i(k) + pi_i(k+1))/2. Hence, accumulate midpoints to interfaces,
+      // then do a interface->midpoints average.
       // For omega, we have omega_i(k+1) = omega_i(k)+div_vdp(k), with omega_i(0)=0;
       // then, omega(k) = v*grad(pi) - average(omega_i). You can see how we could
       // avoid computing omega_i, and set the accumulation step to be
@@ -670,6 +671,7 @@ struct CaarFunctorImpl {
         // Set dexner_i to 1 at top/bottom, to avoid 0/0
         // Note: to specify bctype, you must specify combinemode too.
         ColumnOps::compute_interface_delta<CombineMode::Replace,BCType::Value>(kv,exner,dexner_i,1.0);
+
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                              [&](const int ilev) {
           vtheta_i(ilev) *= -dpnh_dp_i(ilev);
@@ -811,7 +813,7 @@ struct CaarFunctorImpl {
     auto w_vadv = Homme::subview(m_buffers.w_tens,kv.team_idx,igp,jgp);
 
     ColumnOps::compute_midpoint_delta(kv,w_i,temp);
-    ColumnOps::compute_midpoint_values<CombineMode::ProdUpdate>(kv,eta_dot_dpdn,temp);
+    ColumnOps::compute_midpoint_values<CombineMode::Multiply>(kv,eta_dot_dpdn,temp);
     
     ColumnOps::compute_interface_values(kv,temp,w_vadv);
     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV_P),

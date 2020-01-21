@@ -55,8 +55,11 @@ void combine (const Scalar1& newVal, Scalar2& result,
     case CombineMode::Add:
       result += newVal;
       break;
-    case CombineMode::ProdUpdate:
+    case CombineMode::Multiply:
       result *= newVal;
+      break;
+    case CombineMode::Divide:
+      result /= newVal;
       break;
   }
 }

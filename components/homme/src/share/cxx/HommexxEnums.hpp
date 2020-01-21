@@ -132,7 +132,8 @@ enum class CombineMode {
   ScaleUpdate,    // out = beta*out + alpha*in
   ScaleAdd,       // out = out + alpha*in (special case of ScaleUpdate with beta=1)
   Add,            // out = out + in (special case of ScaleAdd/Update with alpha=1, beta=1.0)
-  ProdUpdate      // out = out*in
+  Multiply,       // out = out*in
+  Divide          // out = out/in
 };
 
 template<CombineMode CM>
@@ -144,7 +145,8 @@ inline std::string cm2str () {
     case CombineMode::ScaleUpdate:  return "ScaleUpdate";
     case CombineMode::ScaleAdd:     return "ScaleAdd";
     case CombineMode::Add:          return "Add";
-    case CombineMode::ProdUpdate:   return "ProdUpdate";
+    case CombineMode::Multiply:     return "Multiply";
+    case CombineMode::Divide:       return "Divide";
   }
   return "UNKNOWN";
 }
