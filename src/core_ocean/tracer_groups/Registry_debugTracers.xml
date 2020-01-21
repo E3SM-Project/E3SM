@@ -8,7 +8,7 @@
 			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_reset_debugTracers_top_nLayers" type="integer" default_value="20" units="unitless"
-					description="Integer specifying number of layers at top to reset from 0 to 1 at end of each timestep. Default is 20, chosen to be near a typical mixed layer depth of 200m."
+					description="Integer specifying number of layers at top to reset 2 at end of each timestep. Default is 20, chosen to be near a typical mixed layer depth of 200m."
 					possible_values="Any positive integer value greater than or equal to 0."
 		/>
 		<nml_option name="config_use_debugTracers_surface_bulk_forcing" type="logical" default_value=".false." units="unitless"

@@ -121,7 +121,7 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:), allocatable:: uTemp
       real (kind=RKIND), dimension(:), pointer :: btrvel_temp
       type (field1DReal), pointer :: btrvel_tempField
-      logical :: activeTracersOnly ! if true only compute tendencies for active tracers  
+      logical :: activeTracersOnly ! if true only compute tendencies for active tracers
       integer :: tsIter
       integer :: edgeHaloComputeCounter, cellHaloComputeCounter
       integer :: neededHalos
@@ -166,7 +166,7 @@ module ocn_time_integration_split
 
       real (kind=RKIND), dimension(:), pointer :: dcEdge, fEdge, bottomDepth, refBottomDepthTopOfCell
       real (kind=RKIND), dimension(:), pointer :: dvEdge, areaCell
-      real (kind=RKIND), dimension(:), pointer :: latCell, lonCell !mrp temp
+      real (kind=RKIND), dimension(:), pointer :: latCell, lonCell
       real (kind=RKIND), dimension(:,:), pointer :: weightsOnEdge
 
       ! State Array Pointers
@@ -199,7 +199,7 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:), pointer :: gradSSHX, gradSSHY, gradSSHZ
       real (kind=RKIND), dimension(:), pointer :: gradSSHZonal, gradSSHMeridional
       real (kind=RKIND), dimension(:,:), pointer :: surfaceVelocity, SSHGradient
-      real (kind=RKIND), dimension(:), pointer :: tidalPotentialEta 
+      real (kind=RKIND), dimension(:), pointer :: tidalPotentialEta
 
       ! Diagnostics Field Pointers
       type (field2DReal), pointer :: normalizedRelativeVorticityEdgeField, divergenceField, relativeVorticityField
@@ -1035,7 +1035,7 @@ module ocn_time_integration_split
 
                    ! Subtract tidal potential from ssh, if needed
                    !   Subtract the tidal potential from the current and new subcycle ssh and store and a work arrays.
-                   !   Then point sshSubcycleCur and  ssh SubcycleNew to the work arrays so the tidal potential terms 
+                   !   Then point sshSubcycleCur and  ssh SubcycleNew to the work arrays so the tidal potential terms
                    !   are included in the grad operator inside the edge loop.
                    if (config_use_tidal_potential_forcing) then
                      call mpas_pool_get_array(forcingPool,'sshSubcycleCurWithTides', sshSubcycleCurWithTides)
@@ -1404,8 +1404,8 @@ module ocn_time_integration_split
                      !                         + normalVelocityCorrection
                      ! This is u used in advective terms for layerThickness and tracers
                      ! in tendency calls in stage 3.
-!mrp note: in QC version, there is an if (config_use_GM) on adding normalGMBolusVelocity
-! I think it is not needed because normalGMBolusVelocity=0 when GM not on.
+                     !mrp note: in QC version, there is an if (config_use_GM) on adding normalGMBolusVelocity
+                     ! I think it is not needed because normalGMBolusVelocity=0 when GM not on.
                      normalTransportVelocity(k,iEdge) &
                            = edgeMask(k,iEdge) &
                            *( normalBarotropicVelocityNew(iEdge) + normalBaroclinicVelocityNew(k,iEdge) &
@@ -1747,7 +1747,6 @@ module ocn_time_integration_split
                            !$omp end do
                         end if
 
-!mrp temp
                         ! Reset debugTracers to fixed value at the surface
                         if ( trim(groupItr % memberName) == 'debugTracers' ) then
                            call mpas_pool_get_array(meshPool, 'latCell', latCell)
@@ -1755,6 +1754,14 @@ module ocn_time_integration_split
                            if (config_reset_debugTracers_near_surface) then
                               !$omp do schedule(runtime)
                               do iCell = 1, nCells
+
+                                ! Reset tracer1 to 2 in top n layers
+                                do k = 1, config_reset_debugTracers_top_nLayers
+                                   tracersGroupNew(1,k,iCell) = 2.0_RKIND
+                                end do
+
+                                ! Reset tracer2 to 2 in top n layers
+                                ! in zonal bands, and 1 outside
                                 lat = latCell(iCell)*180./3.1415
                                 if (     lat>-60.0.and.lat<-55.0 &
                                      .or.lat>-40.0.and.lat<-35.0 &
@@ -1762,27 +1769,35 @@ module ocn_time_integration_split
                                      .or.lat> 35.0.and.lat< 40.0 &
                                      .or.lat> 55.0.and.lat< 60.0 ) then
                                     do k = 1, config_reset_debugTracers_top_nLayers
-                                       ! Initialize tracer2 to 2 in top n layers
-                                       ! and zonal bands, and 1 outside those
-                                       ! bands.
                                        tracersGroupNew(2,k,iCell) = 2.0_RKIND
                                     end do
-                                end if 
-                                do k = 1, config_reset_debugTracers_top_nLayers
-                                   ! Initialize tracer1 to 2 in top n layers
-                                   tracersGroupNew(1,k,iCell) = 2.0_RKIND
-                                end do
-                                do k = 1, nVertLevels
-                                   ! Initialize tracer1 to 2 in top n layers
-                                   tracersGroupNew(3,k,iCell) = 2.0_RKIND &
-                                      + real(k-1)/real(nVertLevels-1) &
-                                        * sin(8.0*latCell(iCell))*sin(8.0*lonCell(iCell))
-                                end do
+                                else
+                                    do k = 1, config_reset_debugTracers_top_nLayers
+                                       tracersGroupNew(2,k,iCell) = 1.0_RKIND
+                                    end do
+                                end if
+
+                                ! Reset tracer3 to 2 in top n layers
+                                ! in zonal bands, and 1 outside
+                                lat = latCell(iCell)*180./3.1415
+                                if (     lat>-55.0.and.lat<-50.0 &
+                                     .or.lat>-35.0.and.lat<-30.0 &
+                                     .or.lat>-15.0.and.lat<-10.0 &
+                                     .or.lat> 10.0.and.lat< 15.0 &
+                                     .or.lat> 30.0.and.lat< 35.0 &
+                                     .or.lat> 50.0.and.lat< 55.0 ) then
+                                    do k = 1, config_reset_debugTracers_top_nLayers
+                                       tracersGroupNew(3,k,iCell) = 2.0_RKIND
+                                    end do
+                                else
+                                    do k = 1, config_reset_debugTracers_top_nLayers
+                                       tracersGroupNew(3,k,iCell) = 1.0_RKIND
+                                    end do
+                                end if
                               end do
                               !$omp end do
                            end if
                         end if
-!mrp temp end
 
                      end if
                   end if
