@@ -20,14 +20,33 @@
 
     Using the alias and the optional "compset" and "not_compset" attributes a grid longname is created
     Note that the mask is for information only - and is not an attribute of the grid
+    By default, if the mask is not specified below, it will be set to the ocnice grid
+    And if there is no ocnice grid (such as for single column, the mask is null since it does not mean anything)
   </help>
+
   <grids>
     <model_grid_defaults>
       <grid name="atm"    compset="SATM"  >null</grid>
       <grid name="lnd"    compset="SLND"  >null</grid>
       <grid name="ocnice" compset="SOCN"  >null</grid>
       <grid name="rof"    compset="SROF"  >null</grid>
+      <grid name="rof"    compset="DWAV"  >rx1</grid>
+      <grid name="rof"    compset="RTM"	  >r05</grid>
+      <grid name="rof"    compset="MOSART">r05</grid>
+      <grid name="rof"    compset="DROF"  >rx1</grid>
+      <grid name="rof"    compset="DROF%CPLHIST">r05</grid>
+      <grid name="rof"    compset="XROF"  >r05</grid>
+      <grid name="glc"	  compset="SGLC"  >null</grid>
+      <grid name="glc"	  compset="CISM1" >gland5UM</grid>
+      <grid name="glc"	  compset="CISM2" >gland4</grid>
+      <grid name="glc"    compset="XGLC"  >gland4</grid>
+      <grid name="wav"	  compset="SWAV"  >null</grid>
+      <grid name="wav"	  compset="DWAV"  >ww3a</grid>
+      <grid name="wav"	  compset="WW3"	  >ww3a</grid>
+      <grid name="wav"    compset="XWAV"  >ww3a</grid>
+      <grid name="iac"    compset="SIAC"  >null</grid>
     </model_grid_defaults>
+
 
     <model_grid alias="C96_C96_mg17" compset="_CISM" not_compset="_POP" >
       <grid name="atm">C96</grid>
@@ -79,6 +98,11 @@
       <grid name="lnd">C384</grid>
       <grid name="ocnice">tx0.25v1</grid>
       <mask>tx0.25v1</mask>
+    </model_grid>
+
+    <!-- The following grid is only used for ADWAV testing -->
+    <model_grid alias="ww3a" compset="_WW3|DWAV">
+      <grid name="wav">ww3a</grid>
     </model_grid>
 
   </grids>
