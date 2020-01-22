@@ -119,32 +119,24 @@ struct ExeSpaceUtils<Kokkos::Cuda> {
 
 /*
  * TeamUtils contains utilities for getting concurrency info for
- * thread teams.
+ * thread teams. Don't use _TeamUtilsCommonBase directly, use
+ * TeamUtils.
  */
-template <typename ExeSpace = Kokkos::DefaultExecutionSpace>
-class TeamUtils
-{
-  int _team_size, _num_teams, _max_threads;
-#ifdef KOKKOS_ENABLE_CUDA
-  using Device = Kokkos::Device<ExeSpace, typename ExeSpace::memory_space>;
-  using flag_type = int; // this appears to be the smallest type that correctly handles atomic operations
-  using view_1d = typename KokkosTypes<Device>::view_1d<flag_type>;
 
-  view_1d _open_ws_slots;
-#endif
+template <typename ExeSpace = Kokkos::DefaultExecutionSpace>
+class _TeamUtilsCommonBase
+{
+ protected:
+  int _team_size, _num_teams, _max_threads;
 
  public:
   template <typename TeamPolicy>
-  TeamUtils(const TeamPolicy& policy) : _team_size(0)
+  _TeamUtilsCommonBase(const TeamPolicy& policy) : _team_size(0)
   {
     _max_threads = ExeSpace::concurrency() / ( (!is_single_precision<Real>::value && OnGpu<ExeSpace>::value) ? 2 : 1);
     const int team_size = policy.team_size();
     _num_teams = _max_threads / team_size;
     _team_size = _max_threads / _num_teams;
-
-#ifdef KOKKOS_ENABLE_CUDA
-    _open_ws_slots = view_1d("open_ws_slots", _num_teams);
-#endif
   }
 
   // How many thread teams can run concurrently
@@ -160,10 +152,64 @@ class TeamUtils
   template <typename MemberType>
   KOKKOS_INLINE_FUNCTION
   int get_workspace_idx(const MemberType& team_member) const
-  {
+  { return 0; }
+
+  template <typename MemberType>
+  KOKKOS_INLINE_FUNCTION
+  void release_workspace_idx(const MemberType& team_member, int ws_idx) const
+  { }
+};
+
+template <typename ExeSpace = Kokkos::DefaultExecutionSpace>
+class TeamUtils : public _TeamUtilsCommonBase<ExeSpace>
+{
+ public:
+  template <typename TeamPolicy>
+  TeamUtils(const TeamPolicy& policy) : _TeamUtilsCommonBase(policy);
+};
+
+/*
+ * Specialization for OpenMP execution space
+ */
 #ifdef KOKKOS_ENABLE_OPENMP
-    return omp_get_thread_num() / _team_size;
-#elif defined(KOKKOS_ENABLE_CUDA)
+template <>
+class TeamUtils<Kokkos::OpenMP> : public _TeamUtilsCommonBase<Kokkos::OpenMP>
+{
+ public:
+  template <typename TeamPolicy>
+  TeamUtils(const TeamPolicy& policy) : _TeamUtilsCommonBase(policy);
+
+  template <typename MemberType>
+  KOKKOS_INLINE_FUNCTION
+  int get_workspace_idx(const MemberType& team_member) const
+  { return omp_get_thread_num() / _team_size; }
+};
+#endif
+
+/*
+ * Specialization for Cuda execution space.
+ */
+#ifdef KOKKOS_ENABLE_CUDA
+template <>
+class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
+{
+  using Device = Kokkos::Device<Kokkos::Cuda, typename Kokkos::Cuda::memory_space>;
+  using flag_type = int; // this appears to be the smallest type that correctly handles atomic operations
+  using view_1d = typename KokkosTypes<Device>::view_1d<flag_type>;
+
+  view_1d _open_ws_slots;
+
+ public:
+  template <typename TeamPolicy>
+  TeamUtils(const TeamPolicy& policy) :
+    _TeamUtilsCommonBase(policy),
+    _open_ws_slots("open_ws_slots", _num_teams)
+  { }
+
+  template <typename MemberType>
+  KOKKOS_INLINE_FUNCTION
+  int get_workspace_idx(const MemberType& team_member) const
+  {
     if (team_member.league_size() <= _num_teams) {
       return team_member.league_rank();
     }
@@ -185,16 +231,12 @@ class TeamUtils
       team_member.team_barrier();
       return ws_idx_max_reduce;
     }
-#else
-    return 0;
-#endif
   }
 
   template <typename MemberType>
   KOKKOS_INLINE_FUNCTION
   void release_workspace_idx(const MemberType& team_member, int ws_idx) const
   {
-#ifdef KOKKOS_ENABLE_CUDA
     if (team_member.league_size() > _num_teams) {
       team_member.team_barrier();
       Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
@@ -203,9 +245,9 @@ class TeamUtils
       });
       team_member.team_barrier();
     }
-#endif
   }
 };
+#endif
 
 // Get a 1d subview of the i-th dimension of a 2d view
 template <typename T, typename ...Parms> KOKKOS_FORCEINLINE_FUNCTION
