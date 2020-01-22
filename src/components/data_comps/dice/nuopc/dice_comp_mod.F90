@@ -6,7 +6,6 @@ module dice_comp_mod
   use ESMF                  , only : ESMF_Mesh, ESMF_MeshGet
   use ESMF                  , only : operator(/=), operator(==)
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_avect_lsize, mct_avect_indexRA
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod           , only : shr_sys_abort
   use shr_const_mod         , only : shr_const_pi, shr_const_spval, shr_const_tkfrz, shr_const_latice
@@ -15,7 +14,7 @@ module dice_comp_mod
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance
   use dshr_methods_mod      , only : chkerr, state_getfldptr
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add
-  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy
+  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy, dshr_get_griddata
   use dice_flux_atmice_mod  , only : dice_flux_atmice
 
   implicit none
@@ -297,8 +296,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Set Si_imask
-    kf = mct_aVect_indexRA(sdat%grid%data, 'mask')
-    Si_imask(:) = sdat%grid%data%rAttr(kf,:)
+    call dshr_get_griddata(sdat, 'mask', Si_imask)
 
     ! -------------------------------------
     ! Set pointers to importState fields

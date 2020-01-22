@@ -26,7 +26,6 @@ module atm_comp_nuopc
   use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
   use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
-  use datm_shr_mod     , only : datm_shr_getNextRadCDay
   use datm_comp_mod    , only : datm_comp_advertise, datm_comp_init, datm_comp_run
   use datm_comp_mod    , only : fldsExport, fldsExport_num, fldsImport, fldsImport_num
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
@@ -42,6 +41,11 @@ module atm_comp_nuopc
   private :: ModelFinalize
   private :: OrbitalInit
   private :: OrbitalUpdate
+
+  interface getNextRadCday  
+     module procedure getNextRadCDay_i8
+     module procedure getNextRadCDay_i4
+  end interface getNextRadCday
 
   !--------------------------------------------------------------------------
   ! Private module data
@@ -431,7 +435,7 @@ contains
     else
        call shr_sys_abort(subname//'Need to set attribute ScalarFieldIdxNextSwCday')
     endif
-    nextsw_cday = datm_shr_getNextRadCDay( current_ymd, current_tod, stepno, idt, iradsw, sdat%calendar )
+    nextsw_cday = getNextRadCDay( current_ymd, current_tod, stepno, idt, iradsw, sdat%calendar )
     call State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -515,7 +519,7 @@ contains
 
     ! Update nextsw_cday for scalar data
     ! Use nextYMD and nextTOD here since since the component - clock is advance at the END of the time interval
-    nextsw_cday = datm_shr_getNextRadCDay( next_ymd, next_tod, stepno, idt, iradsw, sdat%calendar )
+    nextsw_cday = getNextRadCDay( next_ymd, next_tod, stepno, idt, iradsw, sdat%calendar )
     call State_SetScalar(nextsw_cday, flds_scalar_index_nextsw_cday, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -721,5 +725,89 @@ contains
     endif
 
   end subroutine OrbitalUpdate
+
+  !===============================================================================
+  real(R8) function getNextRadCDay_i8( ymd, tod, stepno, dtime, iradsw, calendar )
+
+    !  Return the calendar day of the next radiation time-step.
+    !  General Usage: nextswday = getNextRadCDay(curr_date)
+
+    use shr_kind_mod   , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cs=>shr_kind_cs, cl=>shr_kind_cl
+    use shr_cal_mod    , only : shr_cal_date2julian
+    use shr_const_mod  , only : shr_const_cday
+
+    ! input/output variables
+    integer    , intent(in)    :: ymd
+    integer    , intent(in)    :: tod
+    integer(I8), intent(in)    :: stepno
+    integer    , intent(in)    :: dtime
+    integer    , intent(in)    :: iradsw
+    character(*),intent(in)    :: calendar
+
+    ! local variables
+    real(R8) :: nextsw_cday
+    real(R8) :: julday
+    integer  :: liradsw
+    integer  :: yy,mm,dd
+    character(*),parameter :: subName =  '(getNextRadCDay) '
+    !-------------------------------------------------------------------------------
+
+    liradsw = iradsw
+    if (liradsw < 0) liradsw  = nint((-liradsw *3600._r8)/dtime)
+    call shr_cal_date2julian(ymd,tod,julday,calendar)
+    if (liradsw > 1) then
+       if (mod(stepno+1,liradsw) == 0 .and. stepno > 0) then
+          nextsw_cday = julday + 2*dtime/shr_const_cday
+       else
+          nextsw_cday = -1._r8
+       end if
+    else
+       nextsw_cday = julday + dtime/shr_const_cday
+    end if
+    getNextRadCDay_i8 = nextsw_cday
+
+  end function getNextRadCDay_i8
+
+  !===============================================================================
+  real(R8) function getNextRadCDay_i4( ymd, tod, stepno, dtime, iradsw, calendar )
+
+    !  Return the calendar day of the next radiation time-step.
+    !  General Usage: nextswday = getNextRadCDay(curr_date)
+
+    use shr_kind_mod   , only : r8=>shr_kind_r8, i8=>shr_kind_i8, cs=>shr_kind_cs, cl=>shr_kind_cl
+    use shr_cal_mod    , only : shr_cal_date2julian
+    use shr_const_mod  , only : shr_const_cday
+
+    ! input/output variables
+    integer    , intent(in)    :: ymd
+    integer    , intent(in)    :: tod
+    integer    , intent(in)    :: stepno
+    integer    , intent(in)    :: dtime
+    integer    , intent(in)    :: iradsw
+    character(*),intent(in)    :: calendar
+
+    ! local variables
+    real(R8) :: nextsw_cday
+    real(R8) :: julday
+    integer  :: liradsw
+    integer  :: yy,mm,dd
+    character(*),parameter :: subName =  '(getNextRadCDay) '
+    !-------------------------------------------------------------------------------
+
+    liradsw = iradsw
+    if (liradsw < 0) liradsw  = nint((-liradsw *3600._r8)/dtime)
+    call shr_cal_date2julian(ymd,tod,julday,calendar)
+    if (liradsw > 1) then
+       if (mod(stepno+1,liradsw) == 0 .and. stepno > 0) then
+          nextsw_cday = julday + 2*dtime/shr_const_cday
+       else
+          nextsw_cday = -1._r8
+       end if
+    else
+       nextsw_cday = julday + dtime/shr_const_cday
+    end if
+    getNextRadCDay_i4 = nextsw_cday
+
+  end function getNextRadCDay_i4
 
 end module atm_comp_nuopc

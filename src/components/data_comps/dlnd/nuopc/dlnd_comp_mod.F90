@@ -3,14 +3,13 @@ module dlnd_comp_mod
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_avect_lsize, mct_avect_indexRA
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod           , only : shr_sys_abort
   use shr_strdata_mod       , only : shr_strdata_type  
   use shr_strdata_mod       , only : shr_strdata_advance
   use dshr_methods_mod      , only : chkerr, state_getfldptr
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add 
-  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy
+  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy, dshr_get_griddata
   use glc_elevclass_mod     , only : glc_elevclass_as_string, glc_elevclass_init
 
   ! !PUBLIC TYPES:
@@ -123,12 +122,11 @@ contains
     rc = ESMF_SUCCESS
 
     ! Set lfrac in export state - this is not dependent on any streams
-    lsize = mct_avect_lsize(SDAT%grid%data)
-    allocate(lfrac(lsize))
+
     call state_getfldptr(exportState, fldname='Sl_lfrin', fldptr1=lfrac, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    kf = mct_aVect_indexRA(SDAT%grid%data,'frac')
-    lfrac(:) = SDAT%grid%data%rAttr(kf,:)
+    lsize = size(lfrac)
+    call dshr_get_griddata(sdat, 'frac', lfrac)
 
     ! Create stream-> export state mapping (note that dfields_num is a module variable)
     dfields_num = 0

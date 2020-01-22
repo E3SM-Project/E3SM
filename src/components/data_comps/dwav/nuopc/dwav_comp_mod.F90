@@ -3,7 +3,6 @@ module dwav_comp_mod
   use NUOPC                 , only : NUOPC_Advertise
   use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_avect_lsize, mct_avect_indexRA
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod           , only : shr_sys_abort
   use shr_strdata_mod       , only : shr_strdata_type  

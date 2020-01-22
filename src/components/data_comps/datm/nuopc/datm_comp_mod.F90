@@ -6,7 +6,6 @@ module datm_comp_mod
   use ESMF                  , only : ESMF_Mesh, ESMF_MeshGet
   use ESMF                  , only : operator(/=), operator(==)
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_avect_indexRA
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod           , only : shr_sys_abort
   use shr_mpi_mod           , only : shr_mpi_bcast, shr_mpi_max
@@ -18,7 +17,7 @@ module datm_comp_mod
   use dshr_methods_mod      , only : chkerr, state_getfldptr
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add
   use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy
-  use datm_shr_mod          , only : datm_shr_esat, datm_shr_CORE2getFactors
+  use dshr_nuopc_mod        , only : dshr_get_atm_adjustment_factors, dshr_set_griddata
 
   implicit none
   private ! except
@@ -30,6 +29,8 @@ module datm_comp_mod
   public :: datm_comp_advertise
   public :: datm_comp_init
   public :: datm_comp_run
+
+  private :: datm_esat  ! determine saturation vapor pressure
 
   !--------------------------------------------------------------------------
   ! Module data
@@ -546,10 +547,8 @@ contains
 
     if (first_time) then
        ! overwrite mask and frac
-       kf = mct_aVect_indexRA(sdat%grid%data,'mask')
-       sdat%grid%data%rAttr(kf,:) = 1.0_R8
-       kf = mct_aVect_indexRA(sdat%grid%data,'frac')
-       sdat%grid%data%rAttr(kf,:) = 1.0_R8
+       call dshr_set_griddata(sdat, 'mask', rvalue=1.0_r8)
+       call dshr_set_griddata(sdat, 'frac', rvalue=1.0_r8)
 
        ! allocate module arrays
        allocate(windFactor(lsize))
@@ -583,8 +582,8 @@ contains
                 call shr_sys_abort(trim(subname)//'tarcf must be in an input stream for CORE2_IAF')
              endif
           endif
-          call datm_shr_CORE2getFactors(factorFn, windFactor, winddFactor, qsatFactor,  &
-               mpicom, compid, sdat%gsmap, sdat%grid, sdat%nxg, sdat%nyg)
+          call dshr_get_atm_adjustment_factors(factorFn, windFactor, winddFactor, qsatFactor,  &
+               mpicom, compid, masterproc, logunit, sdat)
        endif
        call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%calendar)
        rday = mod((rday - 1.0_R8),365.0_R8)
@@ -689,8 +688,8 @@ contains
             winddFactor = 1.0_R8
             qsatFactor  = 1.0_R8
           else
-            call datm_shr_CORE2getFactors(factorFn,windFactor,winddFactor,qsatFactor, &
-                 mpicom, compid, sdat%gsmap, sdat%grid, sdat%nxg, sdat%nyg)
+             call dshr_get_atm_adjustment_factors(factorFn, windFactor, winddFactor, qsatFactor,  &
+                  mpicom, compid, masterproc, logunit, sdat)
           endif
        endif
        call shr_cal_date2julian(target_ymd, target_tod, rday, sdat%calendar)
@@ -769,17 +768,17 @@ contains
           tbot = Sa_tbot(n)
           pbot = Sa_pbot(n)
           if (associated(strm_shum)) then
-             e = datm_shr_esat(tbot,tbot)
+             e = datm_esat(tbot,tbot)
              qsat = (0.622_R8 * e)/(pbot - 0.378_R8 * e)
              if (qsat < Sa_shum(n)) then
                 Sa_shum(n) = qsat
              endif
           else if (associated(strm_rh)) then
-             e = strm_rh(n) * 0.01_R8 * datm_shr_esat(tbot,tbot)
+             e = strm_rh(n) * 0.01_R8 * datm_esat(tbot,tbot)
              qsat = (0.622_R8 * e)/(pbot - 0.378_R8 * e)
              Sa_shum(n) = qsat
              if (flds_wiso) then
-                ! for isotopic tracer specific humidity, lnd_import_mct expects a delta, so
+                ! for isotopic tracer specific humidity, expect a delta, so
                 ! just keep the delta from the input file
                 Sa_shum_wiso(1,n) = strm_rh_16O(n)
                 Sa_shum_wiso(2,n) = strm_rh_18O(n)
@@ -787,7 +786,7 @@ contains
              end if
           else if (associated(strm_tdew)) then
              if (tdewmax < 50.0_R8) strm_tdew(n) = strm_tdew(n) + tkFrz
-             e = datm_shr_esat(strm_tdew(n),tbot)
+             e = datm_esat(strm_tdew(n),tbot)
              qsat = (0.622_R8 * e)/(pbot - 0.378_R8 * e)
              Sa_shum(n) = qsat
           else
@@ -941,5 +940,50 @@ contains
     call t_stopf('DATM_RUN')
 
   end subroutine datm_comp_run
+
+!===============================================================================
+
+  real(R8) function datm_eSat(tK,tKbot)
+
+    !----------------------------------------------------------------------------
+    ! use polynomials to calculate saturation vapor pressure and derivative with
+    ! respect to temperature: over water when t > 0 c and over ice when t <= 0 c
+    ! required to convert relative humidity to specific humidity
+    !----------------------------------------------------------------------------
+
+    ! input/output variables
+    real(R8),intent(in) :: tK    ! temp used in polynomial calculation
+    real(R8),intent(in) :: tKbot ! bottom atm temp
+
+    ! local variables
+    real(R8)           :: t     ! tK converted to Celcius
+    real(R8),parameter :: tkFrz = shr_const_tkfrz  ! freezing T of fresh water ~ K
+
+    !--- coefficients for esat over water ---
+    real(R8),parameter :: a0=6.107799961_R8
+    real(R8),parameter :: a1=4.436518521e-01_R8
+    real(R8),parameter :: a2=1.428945805e-02_R8
+    real(R8),parameter :: a3=2.650648471e-04_R8
+    real(R8),parameter :: a4=3.031240396e-06_R8
+    real(R8),parameter :: a5=2.034080948e-08_R8
+    real(R8),parameter :: a6=6.136820929e-11_R8
+
+    !--- coefficients for esat over ice ---
+    real(R8),parameter :: b0=6.109177956_R8
+    real(R8),parameter :: b1=5.034698970e-01_R8
+    real(R8),parameter :: b2=1.886013408e-02_R8
+    real(R8),parameter :: b3=4.176223716e-04_R8
+    real(R8),parameter :: b4=5.824720280e-06_R8
+    real(R8),parameter :: b5=4.838803174e-08_R8
+    real(R8),parameter :: b6=1.838826904e-10_R8
+
+    t = min( 50.0_R8, max(-50.0_R8,(tK-tKfrz)) )
+    if ( tKbot < tKfrz) then
+       datm_eSat = 100.0_R8*(b0+t*(b1+t*(b2+t*(b3+t*(b4+t*(b5+t*b6))))))
+    else
+       datm_eSat = 100.0_R8*(a0+t*(a1+t*(a2+t*(a3+t*(a4+t*(a5+t*a6))))))
+    end if
+
+  end function datm_eSat
 
 end module datm_comp_mod

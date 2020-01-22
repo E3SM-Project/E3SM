@@ -6,7 +6,6 @@ module docn_comp_mod
   use ESMF                  , only : ESMF_Mesh, ESMF_MeshGet
   use ESMF                  , only : operator(/=), operator(==)
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
-  use mct_mod               , only : mct_avect_lsize, mct_avect_indexRA
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod           , only : shr_sys_abort
   use shr_const_mod         , only : shr_const_cpsw, shr_const_rhosw, shr_const_TkFrz
@@ -16,7 +15,7 @@ module docn_comp_mod
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance
   use dshr_methods_mod      , only : chkerr, state_getfldptr
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add
-  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy
+  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy, dshr_get_griddata
 
   ! !PUBLIC TYPES:
   implicit none
@@ -181,8 +180,7 @@ contains
     ! Set pointers to exportState fields that have no corresponding stream field
     call state_getfldptr(exportState, fldname='So_omask', fldptr1=So_omask, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    kf = mct_aVect_indexRA(sdat%grid%data, 'frac')
-    So_omask(:) = sdat%grid%data%rAttr(kf,:)
+    call dshr_get_griddata(sdat, 'frac', So_omask)
 
     call state_getfldptr(exportState, fldname='Fioo_q', fldptr1=Fioo_q, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
@@ -228,8 +226,7 @@ contains
     ! determine module mask array (imask)
     lsize = size(So_omask)
     allocate(imask(lsize))
-    kf = mct_aVect_indexRA(sdat%grid%data, 'mask')
-    imask(:) = nint(sdat%grid%data%rAttr(kf,:))
+    call dshr_get_griddata(sdat, 'mask', imask)
 
     allocate(somtp(lsize))
 
