@@ -21,11 +21,14 @@ echo "FILE PREFIX = $prefix"
 isrestart=`./xmlquery --value CONTINUE_RUN`
 echo "Is this run restart? $isrestart"
 
+# make sure namelists are up to date
+./preview_namelists
+
+# Goto run directory
+cd $rundir
+
 # Run it only if it is not restart and INPUT/ directory has no input for the given date
 if [ "$isrestart" != "TRUE" -a ! -f "$rundir/INPUT/${prefix}.gfs_ctrl.nc" ]; then
-  # Goto run directory
-  cd $rundir
-
   # Link namelist file
   ln -sf config.nml fort.41
 
