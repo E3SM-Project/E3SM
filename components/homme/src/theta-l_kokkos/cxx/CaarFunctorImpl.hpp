@@ -76,9 +76,11 @@ struct CaarFunctorImpl {
   RKStageData                 m_data;
 
   // The 'm_data.scale2' coeff used for the calculation of w_tens and phi_tens must be replaced
-  // with 'm_data.scale1' on the surface (k=NUM_INTERFACE_LEV). To avoid if statements deep in
-  // the code, we store scale2 as a view, with the last entry modified
-  ExecViewManaged<Scalar[NUM_LEV_P]> m_scale2;
+  // with 'm_data.scale1' on the surface (k=NUM_INTERFACE_LEV). To allow pack-level operations
+  // in the code, we store a pack containing [[scale2 scale2 ...]  scale1 [garbage] ], to be used
+  // at pack NUM_LEV_P
+
+  Scalar                      m_scale2_last_int_pack;
 
   const int                   m_rsplit;
   const bool                  m_theta_hydrostatic_mode;
@@ -141,8 +143,6 @@ struct CaarFunctorImpl {
 
     // Make sure the buffers in sph op are large enough for this functor's needs
     m_sphere_ops.allocate_buffers(m_policy_pre);
-
-    m_scale2 = decltype(m_scale2)("");
   }
 
   int requested_buffer_size () const {
@@ -292,9 +292,8 @@ struct CaarFunctorImpl {
     // where we set it to m_data.scale1. While at it, we already multiply by g.
     constexpr auto g = PhysicalConstants::g;
 
-    auto scale2 = Homme::viewAsReal(m_scale2);
-    Kokkos::deep_copy(scale2,m_data.scale2*g);
-    Kokkos::deep_copy(Kokkos::subview(scale2,NUM_PHYSICAL_LEV),m_data.scale1*g);
+    m_scale2_last_int_pack = m_data.scale2;
+    m_scale2_last_int_pack[ColInfo<NUM_INTERFACE_LEV>::LastPackEnd] = m_data.scale1*g;
   }
 
   void run (const RKStageData& data)
@@ -315,8 +314,8 @@ struct CaarFunctorImpl {
 
     GPTLstart("caar_bexchV");
     m_bes[data.np1]->exchange(m_geometry.m_rspheremp);
-    GPTLstop("caar_bexchV");
     ExecSpace::fence();
+    GPTLstop("caar_bexchV");
 
     if (!m_theta_hydrostatic_mode) {
       GPTLstart("caar compute");
@@ -963,7 +962,8 @@ struct CaarFunctorImpl {
           w_tens(ilev)  = v_grad;
         }
         w_tens(ilev) *= -m_data.scale1;
-        w_tens(ilev) += m_scale2(ilev)*(m_buffers.dpnh_dp_i(kv.team_idx,igp,jgp,ilev)-1);
+        w_tens(ilev) += (m_buffers.dpnh_dp_i(kv.team_idx,igp,jgp,ilev)-1) *
+                        (ilev==NUM_LEV_P ? m_scale2_last_int_pack : m_data.scale2);
 
         // Compute phi_tens.
         v_grad = v_i(0,igp,jgp,ilev)*grad_phinh_i(0,igp,jgp,ilev)
@@ -974,7 +974,8 @@ struct CaarFunctorImpl {
           phi_tens(ilev) =  v_grad;
         }
         phi_tens(ilev) *= -m_data.scale1;
-        phi_tens(ilev) += m_scale2(ilev)*m_state.m_w_i(kv.ie,m_data.n0,igp,jgp,ilev);
+        phi_tens(ilev) += m_state.m_w_i(kv.ie,m_data.n0,igp,jgp,ilev) *
+                          (ilev==NUM_LEV_P ? m_scale2_last_int_pack : m_data.scale2);
 
         if (m_data.scale1!=m_data.scale2) {
            // add imex phi_h splitting 
