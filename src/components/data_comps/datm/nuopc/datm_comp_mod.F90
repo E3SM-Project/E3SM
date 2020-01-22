@@ -14,7 +14,7 @@ module datm_comp_mod
   use shr_precip_mod        , only : shr_precip_partition_rain_snow_ramp
   use shr_const_mod         , only : shr_const_spval, shr_const_tkfrz, shr_const_pi
   use shr_const_mod         , only : shr_const_pstd, shr_const_stebol, shr_const_rdair
-  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance, shr_strdata_setOrbs
   use dshr_methods_mod      , only : chkerr, state_getfldptr
   use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add
   use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy
@@ -469,8 +469,8 @@ contains
 
   !===============================================================================
 
-  subroutine datm_comp_run(mpicom, compid, my_task, master_task, logunit, target_ymd, target_tod, sdat, &
-       mesh, target_mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, rc)
+  subroutine datm_comp_run(mpicom, compid, masterproc, logunit, target_ymd, target_tod, sdat, &
+       mesh, target_mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, idt, rc)
 
     ! ----------------------------------
     ! run method for datm model
@@ -478,19 +478,19 @@ contains
 
     ! input/output variables
     integer                , intent(in)    :: mpicom           ! mpi communicator
-    integer                , intent(in)    :: my_task          ! my task in mpi communicator mpicom
-    integer                , intent(in)    :: master_task      ! task number of master task
+    integer                , intent(in)    :: compid           ! mct comp id
+    logical                , intent(in)    :: masterproc       ! true => master task
     integer                , intent(in)    :: logunit          ! logging unit number
-    real(R8)               , intent(in)    :: orbEccen         ! orb eccentricity (unit-less)
-    real(R8)               , intent(in)    :: orbMvelpp        ! orb moving vernal eq (radians)
-    real(R8)               , intent(in)    :: orbLambm0        ! orb mean long of perhelion (radians)
-    real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
     integer                , intent(in)    :: target_ymd       ! model date
     integer                , intent(in)    :: target_tod       ! model sec into model date
     type(shr_strdata_type) , intent(inout) :: sdat
     type(ESMF_Mesh)        , intent(in)    :: mesh
     integer                , intent(in)    :: target_mon       ! model month
-    integer                , intent(in)    :: compid           ! mct comp id
+    integer                , intent(in)    :: idt              ! integer model time step
+    real(R8)               , intent(in)    :: orbEccen         ! orb eccentricity (unit-less)
+    real(R8)               , intent(in)    :: orbMvelpp        ! orb moving vernal eq (radians)
+    real(R8)               , intent(in)    :: orbLambm0        ! orb mean long of perhelion (radians)
+    real(R8)               , intent(in)    :: orbObliqr        ! orb obliquity (radians)
     integer                , intent(out)   :: rc
 
     ! local variables
@@ -517,6 +517,9 @@ contains
     !--------------------
     ! Advance datm streams
     !--------------------
+
+    ! set data needed for cosz t-interp method 
+    call shr_strdata_setOrbs(sdat, orbEccen, orbMvelpp, orbLambm0, orbObliqr, idt)
 
     ! time and spatially interpolate to model time and grid
     call t_barrierf('datm_BARRIER',mpicom)
@@ -742,8 +745,7 @@ contains
              rtmp = maxval(strm_tdew(:))
              call shr_mpi_max(rtmp,tdewmax,mpicom,'datm_tdew',all=.true.)
           endif
-          if (my_task == master_task) &
-               write(logunit,*) trim(subname),' max values = ',tbotmax,tdewmax,anidrmax
+          if (masterproc) write(logunit,*) trim(subname),' max values = ',tbotmax,tdewmax,anidrmax
        endif
        do n = 1,lsize
           !--- bottom layer height ---
@@ -932,9 +934,7 @@ contains
     call t_stopf('datm_datamode')
 
     ! Log output for model date
-    if (my_task == master_task) then
-       write(logunit,*) 'atm : model date ', target_ymd, target_tod
-    end if
+    if (masterproc) write(logunit,*) 'atm : model date ', target_ymd, target_tod
     first_time = .false.
 
     call t_stopf('datm')

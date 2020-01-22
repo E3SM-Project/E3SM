@@ -362,27 +362,41 @@ contains
 
 !===============================================================================
 
-  subroutine dshr_check_mesh (mesh, sdat, model_name, rc)
+  subroutine dshr_check_mesh (mesh, sdat, model_name, tolerance, check_lon, rc)
 
     type(ESMF_MESH)        , intent(in)  :: mesh
     type(shr_strdata_type) , intent(in)  :: sdat
     character(len=*)       , intent(in)  :: model_name
+    real(r8), optional     , intent(in)  :: tolerance 
+    logical , optional     , intent(in)  :: check_lon
     integer                , intent(out) :: rc
 
     ! local variables
     integer           :: n,lsize
     integer           :: klat, klon, kfrac  ! AV indices
-    real(R8)          :: domlon,domlat      ! domain lats and lots
+    real(r8)          :: domlon,domlat      ! domain lats and lots
     integer           :: spatialDim         ! number of dimension in mesh
     integer           :: numOwnedElements   ! size of mesh
-    real(R8), pointer :: ownedElemCoords(:) ! mesh lat and lons
+    real(r8), pointer :: ownedElemCoords(:) ! mesh lat and lons
     real(r8), pointer :: xc(:), yc(:)       ! mesh lats and lons
+    real(r8)          :: ltolerance         ! tolerance of check
+    logical           :: lcheck_lon
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    ! get local size from first stream attribute vector of sdat
-    lsize = mct_avect_lsize(sdat%avs(1))
+    ! set tolerance of comparison
+    if (present(tolerance)) then
+       ltolerance = tolerance
+    else
+       ltolerance = 1.e-10
+    end if
+
+    if (present(check_lon)) then
+       lcheck_lon = check_lon
+    else
+       lcheck_lon = .false.
+    end if
 
     ! obtain mesh lats and lons
     call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
@@ -391,25 +405,33 @@ contains
     allocate(xc(numOwnedElements), yc(numOwnedElements))
     call ESMF_MeshGet(mesh, ownedElemCoords=ownedElemCoords)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    if (numOwnedElements /= lsize) then
-       call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
-    end if
-    do n = 1,lsize
+    do n = 1, numOwnedElements
        xc(n) = ownedElemCoords(2*n-1)
        yc(n) = ownedElemCoords(2*n)
+       write(6,*)
     end do
 
-    ! obtain sdat lat and lons
+    ! obtain sdat lat and lons and local size of grid attribute vectors
     klon = mct_aVect_indexRA(sdat%grid%data,'lon')
     klat = mct_aVect_indexRA(sdat%grid%data,'lat')
+    lsize = mct_avect_lsize(sdat%grid%data)
+
+    ! error check
+    if (numOwnedElements /= lsize) then
+       write(6,*)'lsize, numownedElements= ',lsize,numOwnedElements 
+       call shr_sys_abort('ERROR: numOwnedElements is not equal to lsize')
+    end if
+
     do n = 1, lsize
-       domlon = sdat%grid%data%rattr(klon,n)
        domlat = sdat%grid%data%rattr(klat,n)
-       if (abs( domlon - xc(n)) > 1.e-10 .and. domlon /= 0.0_r8) then
-          write(6,100) 'ERROR: '//trim(model_name)//' n, dom_lon, mesh_lon, diff_lon = ',n, domlon, xc(n), abs(xc(n)-domlon)
-          call shr_sys_abort()
+       if (lcheck_lon) then
+          domlon = sdat%grid%data%rattr(klon,n)
+          if (abs( domlon - xc(n)) > ltolerance .and. domlon /= 0.0_r8) then
+             write(6,100) 'ERROR: '//trim(model_name)//' n, dom_lon, mesh_lon, diff_lon = ',n, domlon, xc(n), abs(xc(n)-domlon)
+             call shr_sys_abort()
+          end if
        end if
-       if (abs( domlat - yc(n)) > 1.e-10 .and. domlat /= 0.0_r8) then
+       if (abs( domlat - yc(n)) > ltolerance .and. domlat /= 0.0_r8) then
           write(6,100) 'ERROR: '//trim(model_name)//' n, dom_lat, mesh_lat, diff_lat = ',n, domlat, yc(n), abs(yc(n)-domlat)
           call shr_sys_abort()
        end if

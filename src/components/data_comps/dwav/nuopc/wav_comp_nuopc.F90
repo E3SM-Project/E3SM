@@ -280,7 +280,7 @@ contains
     ! Check that mesh lats and lons correspond to those on the input domain file
     !--------------------------------
 
-    call dshr_check_mesh(mesh, sdat, 'dwav', rc=rc)
+    call dshr_check_mesh(mesh, sdat, 'dwav', tolerance=1.e-5_r8, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !--------------------------------

@@ -412,8 +412,8 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Run datm
-    call datm_comp_run(mpicom, compid, my_task, master_task, logunit, current_ymd, current_tod, sdat, &
-         mesh, current_mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, rc=rc)
+    call datm_comp_run(mpicom, compid, my_task==master_task, logunit, current_ymd, current_tod, sdat, &
+         mesh, current_mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, idt, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Add scalars to export state
@@ -509,8 +509,8 @@ contains
 
     ! Run datm
     call t_startf('datm_run')
-    call datm_comp_run(mpicom, compid, my_task, master_task, logunit, next_ymd, next_tod, sdat, &
-         mesh, mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr,  rc)
+    call datm_comp_run(mpicom, compid, my_task==master_task, logunit, next_ymd, next_tod, sdat, &
+         mesh, mon, orbEccen, orbMvelpp, orbLambm0, orbObliqr, idt, rc)
     call t_stopf('datm_run')
 
     ! Update nextsw_cday for scalar data
@@ -613,9 +613,6 @@ contains
 
     ! Error checks
     if (trim(orb_mode) == trim(orb_fixed_year)) then
-       orb_obliq = SHR_ORB_UNDEF_REAL
-       orb_eccen = SHR_ORB_UNDEF_REAL
-       orb_mvelp = SHR_ORB_UNDEF_REAL
        if (orb_iyear == SHR_ORB_UNDEF_INT) then
           if (mastertask) then
              write(logunit,*) trim(subname),' ERROR: invalid settings orb_mode =',trim(orb_mode)
@@ -624,11 +621,12 @@ contains
           end if
           call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
           return  ! bail out
+       else
+          orb_obliq = SHR_ORB_UNDEF_REAL
+          orb_eccen = SHR_ORB_UNDEF_REAL
+          orb_mvelp = SHR_ORB_UNDEF_REAL
        endif
     elseif (trim(orb_mode) == trim(orb_variable_year)) then
-       orb_obliq = SHR_ORB_UNDEF_REAL
-       orb_eccen = SHR_ORB_UNDEF_REAL
-       orb_mvelp = SHR_ORB_UNDEF_REAL
        if (orb_iyear == SHR_ORB_UNDEF_INT .or. orb_iyear_align == SHR_ORB_UNDEF_INT) then
           if (mastertask) then
              write(logunit,*) trim(subname),' ERROR: invalid settings orb_mode =',trim(orb_mode)
@@ -637,14 +635,14 @@ contains
           end if
           call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
           return  ! bail out
+       else
+          orb_obliq = SHR_ORB_UNDEF_REAL
+          orb_eccen = SHR_ORB_UNDEF_REAL
+          orb_mvelp = SHR_ORB_UNDEF_REAL
        endif
     elseif (trim(orb_mode) == trim(orb_fixed_parameters)) then
        !-- force orb_iyear to undef to make sure shr_orb_params works properly
-       orb_iyear = SHR_ORB_UNDEF_INT
-       orb_iyear_align = SHR_ORB_UNDEF_INT
-       if (orb_eccen == SHR_ORB_UNDEF_REAL .or. &
-           orb_obliq == SHR_ORB_UNDEF_REAL .or. &
-           orb_mvelp == SHR_ORB_UNDEF_REAL) then
+       if (orb_eccen == SHR_ORB_UNDEF_REAL .or. orb_obliq == SHR_ORB_UNDEF_REAL .or. orb_mvelp == SHR_ORB_UNDEF_REAL) then
           if (mastertask) then
              write(logunit,*) trim(subname),' ERROR: invalid settings orb_mode =',trim(orb_mode)
              write(logunit,*) trim(subname),' ERROR: orb_eccen = ',orb_eccen
@@ -654,6 +652,9 @@ contains
           end if
           call ESMF_LogSetError(ESMF_RC_NOT_VALID, msg=msgstr, line=__LINE__, file=__FILE__, rcToReturn=rc)
           return  ! bail out
+       else
+          orb_iyear       = SHR_ORB_UNDEF_INT
+          orb_iyear_align = SHR_ORB_UNDEF_INT
        endif
     else
        write (msgstr, *) subname//' ERROR: invalid orb_mode '//trim(orb_mode)

@@ -182,19 +182,6 @@ contains
     ! is needed or order to do the advertise phase
     call shr_strdata_readnml(sdat, trim(filename), mpicom=mpicom)
 
-    ! Validate sdat%datamode
-    if ( trim(sdat%datamode) == 'NULL'          .or. trim(sdat%datamode) == 'COPYALL' .or.&
-         trim(sdat%datamode) == 'SSTDATA'       .or. &
-         trim(sdat%datamode) == 'SST_AQUAPANAL' .or. trim(sdat%datamode) == 'SST_AQUAPFILE' .or. &
-         trim(sdat%datamode) == 'IAF'           .or. &
-         trim(sdat%datamode) == 'SOM'           .or. trim(sdat%datamode) == 'SOM_AQUAP') then
-       if (my_task == master_task) then
-          write(logunit,*) ' docn sdat%datamode = ',trim(sdat%datamode)
-       end if
-    else
-       call shr_sys_abort(' ERROR illegal docn datamode = '//trim(sdat%datamode))
-    endif
-
     if (trim(sdat%datamode) /= 'NULL') then
        ! determine if ocn will receive import data
        if ( force_prognostic_true .or. trim(sdat%datamode) == 'IAF' .or. &
@@ -215,6 +202,19 @@ contains
           ! Now remove the index from the sdat%datamode value, to have a generic setting for later use
           sdat%datamode = "SST_AQUAPANAL"
        end if
+
+       ! Validate sdat%datamode
+       if ( trim(sdat%datamode) == 'NULL'          .or. trim(sdat%datamode) == 'COPYALL' .or.&
+            trim(sdat%datamode) == 'SSTDATA'       .or. &
+            trim(sdat%datamode) == 'SST_AQUAPANAL' .or. trim(sdat%datamode) == 'SST_AQUAPFILE' .or. &
+            trim(sdat%datamode) == 'IAF'           .or. &
+            trim(sdat%datamode) == 'SOM'           .or. trim(sdat%datamode) == 'SOM_AQUAP') then
+          if (my_task == master_task) then
+             write(logunit,*) ' docn sdat%datamode = ',trim(sdat%datamode)
+          end if
+       else
+          call shr_sys_abort(' ERROR illegal docn datamode = '//trim(sdat%datamode))
+       endif
 
        call docn_comp_advertise(importState, exportState, flds_scalar_name, ocn_prognostic, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
