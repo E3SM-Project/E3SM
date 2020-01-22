@@ -143,9 +143,8 @@ TEST_CASE("team_utils_omp", "[kokkos_utils]")
 #endif
 }
 
-TEST_CASE("team_utils_cuda", "[kokkos_utils]")
+void test_utils_large_ni(const double saturation_multiplier)
 {
-#ifdef KOKKOS_ENABLE_CUDA
   using namespace scream::util;
   using namespace scream;
 
@@ -157,7 +156,6 @@ TEST_CASE("team_utils_cuda", "[kokkos_utils]")
   TeamUtils<ExeSpace> tu_temp(ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk));
   const int num_conc = tu_temp.get_num_concurrent_teams();
 
-  const int saturation_multiplier=10;
   const int ni = num_conc*saturation_multiplier;
   const auto p = ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
   TeamUtils<ExeSpace> tu(p);
@@ -191,7 +189,13 @@ TEST_CASE("team_utils_cuda", "[kokkos_utils]")
   }
 
   REQUIRE(sum == ni);
-#endif
+}
+
+TEST_CASE("team_utils_large_ni", "[kokkos_utils]")
+{
+  test_utils_large_ni(10);
+  test_utils_large_ni(1);
+  test_utils_large_ni(.5);
 }
 
 } // anonymous namespace

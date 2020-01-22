@@ -199,20 +199,22 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
   using flag_type = int; // this appears to be the smallest type that correctly handles atomic operations
   using view_1d = typename KokkosTypes<Device>::view_1d<flag_type>;
 
-  view_1d _open_ws_slots;
+  bool    _need_ws_sharing; // true if there are more teams in the policy than can be run concurrently
+  view_1d _open_ws_slots;   // indexed by ws-idx, true if in current use, else false
 
  public:
   template <typename TeamPolicy>
   TeamUtils(const TeamPolicy& policy) :
     _TeamUtilsCommonBase<Kokkos::Cuda>(policy),
-    _open_ws_slots("open_ws_slots", _num_teams)
+    _need_ws_sharing(policy.league_size() > _num_teams),
+    _open_ws_slots("open_ws_slots", _need_ws_sharing ? _num_teams : 0)
   { }
 
   template <typename MemberType>
   KOKKOS_INLINE_FUNCTION
   int get_workspace_idx(const MemberType& team_member) const
   {
-    if (team_member.league_size() <= _num_teams) {
+    if (!_need_ws_sharing) {
       return team_member.league_rank();
     }
     else {
@@ -239,13 +241,12 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
   KOKKOS_INLINE_FUNCTION
   void release_workspace_idx(const MemberType& team_member, int ws_idx) const
   {
-    if (team_member.league_size() > _num_teams) {
+    if (_need_ws_sharing) {
       team_member.team_barrier();
       Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
         flag_type volatile* const e = &_open_ws_slots(ws_idx);
         *e = (flag_type)0;
       });
-      team_member.team_barrier();
     }
   }
 };
