@@ -151,12 +151,12 @@ class _TeamUtilsCommonBase
    */
   template <typename MemberType>
   KOKKOS_INLINE_FUNCTION
-  int get_workspace_idx(const MemberType& team_member) const
+  int get_workspace_idx(const MemberType& /*team_member*/) const
   { return 0; }
 
   template <typename MemberType>
   KOKKOS_INLINE_FUNCTION
-  void release_workspace_idx(const MemberType& team_member, int ws_idx) const
+  void release_workspace_idx(const MemberType& /*team_member*/, int /*ws_idx*/) const
   { }
 };
 
@@ -183,7 +183,7 @@ class TeamUtils<Kokkos::OpenMP> : public _TeamUtilsCommonBase<Kokkos::OpenMP>
 
   template <typename MemberType>
   KOKKOS_INLINE_FUNCTION
-  int get_workspace_idx(const MemberType& team_member) const
+  int get_workspace_idx(const MemberType& /*team_member*/) const
   { return omp_get_thread_num() / _team_size; }
 };
 #endif

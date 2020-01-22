@@ -160,13 +160,11 @@ void test_utils_large_ni(const double saturation_multiplier)
   const auto p = ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
   TeamUtils<ExeSpace> tu(p);
 
-  const int max_threads = tu.get_max_concurrent_threads();
   REQUIRE(p.league_size() == ni);
 
   int max_workspace_idx = 0;
   typename KokkosTypes<Device>::template view_1d<int> test_data("test_data", num_conc);
   Kokkos::parallel_reduce("unique_token_check", p, KOKKOS_LAMBDA(MemberType team_member, int& max_ws_idx) {
-    const int i  = team_member.league_rank();
     const int wi = tu.get_workspace_idx(team_member);
 
     if (wi > max_ws_idx) { max_ws_idx = wi; }
