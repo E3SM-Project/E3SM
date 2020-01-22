@@ -1,5 +1,46 @@
 ======================================================================
 
+Originator: Chris Fischer 
+Date: 1-22-2020
+Tag: cime5.6.29
+Answer Changes: None
+Tests: examine namelist for GIAF_JRA..., scripts_regression_tests
+Dependencies:
+
+Brief Summary:
+    - Stampede2 module updates.
+    - Restore 2.1.1 behavior for JRA compsets.
+    - Allow writing T-forcing cplhist files even when running with SGLC.
+    - Updates for the cesm2 ensemble run on aleph.
+    - Convert user requested walltime to match walltime_format.
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+7489690af Merge pull request #3362 from ESMCI/fischer/stampede2
+be1255262 Merge pull request #3361 from klindsay28/cesm2_omip_take2
+123742d6e Merge pull request #3356 from billsacks/t_forcing_cplhist_with_sglc
+77e30d80d Merge pull request #3355 from jedwards4b/aleph_updates
+22afa61fe Merge pull request #3342 from ESMCI/fischer/walltime_format
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/config_grids.xml
+M       config/cesm/machines/config_batch.xml
+M       config/cesm/machines/config_machines.xml
+M       config/cesm/machines/config_workflow.xml
+M       config/cesm/machines/cylc_suite.rc.template
+M       scripts/lib/CIME/XML/env_batch.py
+M       src/components/data_comps/datm/cime_config/config_component.xml
+M       src/components/data_comps/datm/cime_config/namelist_definition_datm.xml
+M       src/components/data_comps/drof/cime_config/config_component.xml
+M       src/components/data_comps/drof/cime_config/namelist_definition_drof.xml
+M       src/drivers/mct/main/cime_comp_mod.F90
+M       src/drivers/mct/main/prep_glc_mod.F90
+
+======================================================================
+
+======================================================================
+
 Originator: Chris Fischer
 Date: 12-12-2019 
 Tag: cime5.6.28
