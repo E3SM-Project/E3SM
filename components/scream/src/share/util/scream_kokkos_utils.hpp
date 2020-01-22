@@ -165,7 +165,8 @@ class TeamUtils : public _TeamUtilsCommonBase<ExeSpace>
 {
  public:
   template <typename TeamPolicy>
-  TeamUtils(const TeamPolicy& policy) : _TeamUtilsCommonBase(policy);
+  TeamUtils(const TeamPolicy& policy) : _TeamUtilsCommonBase<ExeSpace>(policy)
+  { }
 };
 
 /*
@@ -177,7 +178,8 @@ class TeamUtils<Kokkos::OpenMP> : public _TeamUtilsCommonBase<Kokkos::OpenMP>
 {
  public:
   template <typename TeamPolicy>
-  TeamUtils(const TeamPolicy& policy) : _TeamUtilsCommonBase(policy);
+  TeamUtils(const TeamPolicy& policy) : _TeamUtilsCommonBase<Kokkos::OpenMP>(policy)
+  { }
 
   template <typename MemberType>
   KOKKOS_INLINE_FUNCTION
@@ -202,7 +204,7 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
  public:
   template <typename TeamPolicy>
   TeamUtils(const TeamPolicy& policy) :
-    _TeamUtilsCommonBase(policy),
+    _TeamUtilsCommonBase<Kokkos::Cuda>(policy),
     _open_ws_slots("open_ws_slots", _num_teams)
   { }
 
