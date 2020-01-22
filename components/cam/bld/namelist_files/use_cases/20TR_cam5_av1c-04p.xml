@@ -86,7 +86,6 @@
 <prc_coef1               >30500.0D0</prc_coef1>
 <prc_exp                 >3.19D0</prc_exp>
 <prc_exp1                >-1.2D0</prc_exp1>
-<se_ftype                >2</se_ftype>
 
 <!-- 1850 ozone data is from Jean-Francois Lamarque -->
 <!-- NOTE: I don't think this is used when rad_climate uses advected O3, but I don't think it does any harm either -->

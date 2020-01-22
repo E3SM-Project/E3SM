@@ -62,16 +62,16 @@
     <COMPILERS>intel,gnu</COMPILERS>
     <MPILIBS>mpt</MPILIBS>
     <PROJECT>acme</PROJECT>
-    <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/global/cfs/cdirs/acme</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-haswell</CIME_OUTPUT_ROOT>
-    <CIME_HTML_ROOT>/global/project/projectdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
+    <CIME_HTML_ROOT>/global/cfs/cdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
     <CIME_URL_ROOT>http://portal.nersc.gov/project/acme/$ENV{USER}</CIME_URL_ROOT>
-    <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/global/cfs/cdirs/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/global/cfs/cdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/global/cfs/cdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -126,6 +126,7 @@
         <command name="rm">esmf</command>
         <command name="rm">zlib</command>
         <command name="rm">craype-hugepages2M</command>
+        <command name="rm">darshan</command>
         
         <!-- first load basic defaults, then remove/swap/load as necessary -->
         <command name="load">craype</command>
@@ -196,8 +197,6 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-
-      <env name="PERL5LIB">/project/projectdirs/acme/perl5/lib/perl5/x86_64-linux-thread-multi</env>
     </environment_variables>
     <environment_variables compiler="intel">
       <env name="FORT_BUFFERED">yes</env>
@@ -212,16 +211,16 @@
     <COMPILERS>intel,gnu,intel19</COMPILERS>
     <MPILIBS>mpt,impi</MPILIBS>
     <PROJECT>acme</PROJECT>
-    <SAVE_TIMING_DIR>/project/projectdirs/acme</SAVE_TIMING_DIR>
+    <SAVE_TIMING_DIR>/global/cfs/cdirs/acme</SAVE_TIMING_DIR>
     <SAVE_TIMING_DIR_PROJECTS>acme,m3411,m3412</SAVE_TIMING_DIR_PROJECTS>
     <CIME_OUTPUT_ROOT>$ENV{SCRATCH}/acme_scratch/cori-knl</CIME_OUTPUT_ROOT>
-    <CIME_HTML_ROOT>/global/project/projectdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
+    <CIME_HTML_ROOT>/global/cfs/cdirs/acme/www/$ENV{USER}</CIME_HTML_ROOT>
     <CIME_URL_ROOT>http://portal.nersc.gov/project/acme/$ENV{USER}</CIME_URL_ROOT>
-    <DIN_LOC_ROOT>/project/projectdirs/acme/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/project/projectdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
+    <DIN_LOC_ROOT>/global/cfs/cdirs/acme/inputdata</DIN_LOC_ROOT>
+    <DIN_LOC_ROOT_CLMFORC>/global/cfs/cdirs/acme/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/project/projectdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
-    <CCSM_CPRNC>/project/projectdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
+    <BASELINE_ROOT>/global/cfs/cdirs/acme/baselines/$COMPILER</BASELINE_ROOT>
+    <CCSM_CPRNC>/global/cfs/cdirs/acme/tools/cprnc.cori/cprnc</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <TESTS>e3sm_developer</TESTS>
     <NTEST_PARALLEL_JOBS>4</NTEST_PARALLEL_JOBS>
@@ -275,7 +274,8 @@
         <command name="rm">esmf</command>
         <command name="rm">zlib</command>
         <command name="rm">craype-hugepages2M</command>
-
+        <command name="rm">darshan</command>
+        
         <!-- first load basic defaults, then remove/swap/load as necessary -->
         <command name="load">craype</command>
         <command name="load">PrgEnv-intel</command>
@@ -357,8 +357,6 @@
       <env name="OMP_PROC_BIND">spread</env>
       <env name="OMP_PLACES">threads</env>
       <env name="HDF5_USE_FILE_LOCKING">FALSE</env>
-
-      <env name="PERL5LIB">/project/projectdirs/acme/perl5/lib/perl5/x86_64-linux-thread-multi</env>
     </environment_variables>
 
     <environment_variables mpilib="mpt">
