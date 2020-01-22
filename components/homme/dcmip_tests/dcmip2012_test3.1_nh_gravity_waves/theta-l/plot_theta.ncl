@@ -191,5 +191,15 @@ do t_index = 0,nt-1
   draw(wks)
   frame(wks)
 end do
+
+; plot last frame in its own file:
+destroy(wks)
+filename ="./dcmip2012_test3_theta_diff_last"
+wks = gsn_open_wks(wks_type,filename)
+gsn_define_colormap(wks,"gui_default")  ; choose a colormap
+plot(0) = gsn_csm_contour(wks,theta_diff_slice,res1)
+draw(wks)
+frame(wks)
+
 end
 

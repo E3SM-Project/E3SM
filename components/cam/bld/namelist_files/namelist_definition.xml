@@ -5862,19 +5862,6 @@ Default: TRUE
 
 <!-- SE dycore -->
 
-<entry id="se_nsplit" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Number of dynamics steps per physics timestep.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="se_phys_tscale" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Physics timescale (in seconds) used to compute physics tendencies
-If 0, feature is disabled (use dtime).
-Default: Set by build-namelist. 
-</entry>
-
 <entry id="se_limiter_option" type="integer" category="se"
        group="ctl_nl" valid_values="0,4,8,9" >
 Limiter used for horizontal tracer advection:
@@ -5882,7 +5869,7 @@ Limiter used for horizontal tracer advection:
 4: Sign-preserving limiter.
 8: Monotone limiter.
 9: CAAS monotone limiter.
-Default: Set by build-namelist (probably 8).
+Default: 9
 </entry>
 
 <entry id="vert_remap_q_alg" type="integer" category="se"
@@ -5894,7 +5881,8 @@ CAM-SE vertical remap algorithm
 2: PPM vertical remap without mirroring at the boundaries
    (no bc's enforced, first-order at two cells bordering top and bottom
    boundaries)
-Default: Set by build-namelist.
+10: PPM with 2nd order boundary treatment
+Default: 10
 </entry>
 
 <entry id="se_ftype" type="integer" category="se"
@@ -5907,127 +5895,28 @@ Default: Set by build-namelist.
 </entry>
 
 <entry id="integration" type="char*80" category="se"
-       group="ctl_nl" valid_values="explicit,semi_implicit" >
+       group="ctl_nl" valid_values="explicit" >
 Time integration method.
-Default: Set by build-namelist ("explicit").
+Default: explicit.
 </entry>
 
 <entry id="se_ne" type="integer" category="se"
        group="ctl_nl" valid_values="" >
-Element width of resolution.
-Must match value of grid. Do NOT set this yourself.
+Use internally generated cubed sphere mesh of size 6 x se_ne x se_ne.                         
+If se_ne=0 (RRM grids), read mesh from Exodus file.          
 Default: Set by build-namelist.
 </entry>
 
-<entry id="qsplit" type="integer" category="se"
+<entry id="mesh_file" type="char*256" input_pathname="abs" category="se"
        group="ctl_nl" valid_values="" >
-Tracer advection is done every qsplit dynamics timesteps.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="rsplit" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Vertically lagrangian code updates every rsplit tracer timesteps.
-If rsplit=0, vertically lagrangian code is off.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="se_tstep" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Dynamics timestep.
-</entry>
-
-<entry id="dt_tracer_factor" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Tracer advection is done every dt_tracer_factor dynamics timesteps.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="dt_remap_factor" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Vertically lagrangian code updates every dt_remap_factor dynamics timesteps.
-If dt_remap_factor=0, vertically lagrangian code is off.
-</entry>
-
-<entry id="tstep_type" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Time stepping method for SE dycore
-tstep_type=0  pure Leapfrog except for very first timestep
-tstep_type=1  RK2 followed by qsplit-1 Leapfrog steps; second-order accurate in time (CESM1.2.0 setting)
-tstep_type=2  RK2-SSP 3 stage (as used by tracers)
-tstep_type=3  classic Runga-Kutta (RK) 3 stage
-tstep_type=4  Kinnmark&Gray Runga-Kutta (RK) 4 stage
-tstep_type=5  Kinnmark&Gray Runga-Kutta (RK) 5 stage (3rd order accurate in time)
-tstep_type=7  Kinnmark&Gray Runga-Kutta IMEX
-Default: Set by build-namelist.
-</entry>
-
-
-<entry id="hypervis_order" type="integer" category="se"
-       group="ctl_nl" valid_values="2" >
-Hyperviscosity operator is the Laplacian^hypervis_order.
-The only supported value in CAM is "2".
-Default: Set by build-namelist.
-</entry>
-
-<entry id="hypervis_subcycle" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Number of hyperviscosity subcycles per dynamics timestep.
-Default: Set by build-namelist (probably 2).
-</entry>
-
-<entry id="hypervis_subcycle_tom" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Number of viscosity subcycles per dynamics timestep.
-Default in homme: 0 (does not use time split wrt HV).
-</entry>
-
-<entry id="hypervis_subcycle_q" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Number of hyperviscosity subcycles done in tracer advection code.
-The only supported value in CAM is 1.
-Default: Set by build-namelist.
-</entry>
-
-
-<entry id="nu" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Dynamics hyperviscosity [m^4/s].
-Default: Set by build-namelist.
-</entry>
-
-<entry id="nu_div" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Weighting of divergence component when applying hyperviscosity.
-If < 0, uses nu.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="nu_p" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Hyperviscosity applied to dp3d (layer thickness when running
-vertically lagrangian dynamics) [m^4/s].
-Default: Set by build-namelist.
-</entry>
-
-<entry id="nu_q" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Hyperviscosity applied during tracer advection [m^4/s].
-If < 0, uses nu.
-Default: Set by build-namelist.
-</entry>
-
-<entry id="nu_top" type="real" category="se"
-       group="ctl_nl" valid_values="" >
-Second-order viscosity applied only near the model top [m^2/s].
+Exodus format grid file used when se_ne=0
 Default: Set by build-namelist.
 </entry>
 
 <entry id="se_partmethod" type="integer" category="se"
        group="ctl_nl" valid_values="4" >
-Mesh partitioning method (METIS).
-The only supported value in CAM is 4 (space-filling).
-Default: Set by build-namelist.
+Mesh partitioning method.  The only supported value in CAM is 4 (space-filling).
+Default: 4
 </entry>
 
 <entry id="statefreq" type="integer" category="se"
@@ -6044,16 +5933,163 @@ Only "cube" is supported in CAM.
 Default: Set by build-namelist.
 </entry>
 
+<entry id="vthreads" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of vertical threads.
+Default: 1.
+</entry>
+
+<entry id="theta_hydrostatic_mode" type="logical" category="se"
+       group="ctl_nl" valid_values="" >
+Run theta model in hydrostatic mode.
+Default: true. 
+</entry>
+
+<entry id="theta_advect_form" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Indicates form of eqn. for vtheta in theta model.
+0 is conservation form, 1 is expanded div form.
+Default: 1.
+</entry>
+	
+<entry id="cubed_sphere_map" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Defines which map is used for referene element in homme.
+Must be 2 for compsets using TempestRemap mapping files.          
+Default: 0
+</entry>
+
+
+<!-- timestep parameters -->
+
+<entry id="se_nsplit" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of dynamics steps per physics timestep.
+dt_remap = dtime/se_nsplit                                                                    
+dt_tracer = dt_remap / rsplit                                                                 
+dt_dyn = dt_tracer / qsplit                                                                   
+dt_dyn_vis = dt_dyn / hypervis_subcycle                                                       
+dt_tracer_vis = dt_tracer / hypervis_subcycle_q     
+Default: Set by build-namelist.
+</entry>
+
+<entry id="rsplit" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of tracer steps per remap step.   
+If rsplit=0, vertically lagrangian code is off.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="qsplit" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of dynamics steps per tracer step. 
+Default: Set by build-namelist.
+</entry>
+
+<entry id="se_tstep" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Dynamics timestep.  Replaces se_nsplit.  
+</entry>
+
+<entry id="dt_tracer_factor" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Tracer advection is done every dt_tracer_factor dynamics timesteps.
+Replaces qsplit, rsplit.
+Default: Set by build-namelist.
+</entry>
+
+<entry id="dt_remap_factor" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Vertically lagrangian code updates every dt_remap_factor dynamics timesteps.
+Replaces qsplit, rsplit.
+If dt_remap_factor=0, vertically lagrangian code is off.
+</entry>
+
+<entry id="tstep_type" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Time stepping method for SE dycore
+tstep_type=1  RK2 followed by qsplit-1 Leapfrog steps; second-order accurate in time (CESM1.2.0 setting)
+tstep_type=2  RK2-SSP 3 stage (as used by tracers)
+tstep_type=3  classic Runga-Kutta (RK) 3 stage
+tstep_type=5  Kinnmark&Gray Runga-Kutta (RK) 5 stage (3rd order accurate in time)
+tstep_type=9  Kinnmark&Gray Runga-Kutta IMEX
+Default: Set by build-namelist.
+</entry>
+
+
+<!-- viscosity parameters -->
+
+<entry id="hypervis_order" type="integer" category="se"
+       group="ctl_nl" valid_values="2" >
+Hyperviscosity operator is the Laplacian^hypervis_order.
+The only supported value in CAM is "2".
+Default: Set by build-namelist.
+</entry>
+
+<entry id="hypervis_subcycle" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of hyperviscosity subcycles per dynamics timestep.
+Default: Set by build-namelist (probably 2).
+</entry>
+
+<entry id="hypervis_subcycle_tom" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+If non-zero, subcycle TOM diffusion operator separately from hyperviscsoity                   
+with dt_vis_tom=dt_dyn/hypervis_subcycle_tom.               
+Default: 1
+</entry>
+
+<entry id="hypervis_subcycle_q" type="integer" category="se"
+       group="ctl_nl" valid_values="" >
+Number of hyperviscosity subcycles done in tracer advection code.
+Default: Set by build-namelist.
+</entry>
+
+
+<entry id="nu" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Dynamics hyperviscosity [m^4/s].
+Default: Set by build-namelist.
+</entry>
+
+<entry id="nu_div" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Weighting of divergence component when applying hyperviscosity.
+If < 0, uses nu.
+Default: -1.
+</entry>
+
+<entry id="nu_s" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Hyperviscosity applied to dynamics scalars [m^4/s].
+If < 0, uses nu.
+Default: -1.
+</entry>
+
+<entry id="nu_p" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Hyperviscosity applied to dp3d (layer thickness when running
+vertically lagrangian dynamics) [m^4/s].
+If < 0, uses nu.
+Default: -1.
+</entry>
+
+<entry id="nu_q" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Hyperviscosity applied during tracer advection [m^4/s].
+If < 0, uses nu.
+Default: -1.
+</entry>
+
+<entry id="nu_top" type="real" category="se"
+       group="ctl_nl" valid_values="" >
+Second-order viscosity applied only near the model top [m^2/s].
+Default: Set by build-namelist.
+</entry>
 
 <entry id="fine_ne" type="integer" category="se"
        group="ctl_nl" valid_values="" >
 baseline ne for scalar hypervis tuning
-Default: Set by build-namelist.
-</entry>
-
-<entry id="mesh_file" type="char*256" input_pathname="abs" category="se"
-       group="ctl_nl" valid_values="" >
-Exodus format grid file
 Default: Set by build-namelist.
 </entry>
 
@@ -6072,36 +6108,14 @@ Default: Set by build-namelist.
 Default: Set by build-namelist.
 </entry>
 
-<entry id="vthreads" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Number of vertical threads.
-Default: 1.
-</entry>
-
-<entry id="theta_hydrostatic_mode" type="logical" category="se"
-       group="ctl_nl" valid_values="" >
-Indicates hydrostatic regime for atm. theta-l model.
-Default: true. 
-</entry>
-
-<entry id="theta_advect_form" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Indicates form of eqn. for vtheta in theta-l model.
-0 is conservation form, 1 is expanded div form.
-Default: 0.
-</entry>
-	
-<entry id="cubed_sphere_map" type="integer" category="se"
-       group="ctl_nl" valid_values="" >
-Defines which map is used for ref. element in homme.
-Default for preqx target: 0.
-</entry>
+<!-- tracer transport options -->
 
 <entry id="transport_alg" type="integer" category="se"
        group="ctl_nl" valid_values="0,12" >
 Tracer transport algorithm:
 0: Eulerian flux-form.
 12: COMPOSE semi-Lagrangian.
+Default: 0 (preqx), 12 (theta)
 </entry>
 
 <entry id="semi_lagrange_cdr_alg" type="integer" category="se"
@@ -6112,20 +6126,20 @@ Constrained density reconstuctor (CDR) for property preservation:
 20: QLT with superlevels of 8 levels.
 21: QLT with superlevels of 8 levels; use local CAAS over sublevels.
 30: CAAS with superlevels of 8 levels.
-Default: 20
+Default: (set by dycore)
 </entry>
 
 <entry id="semi_lagrange_cdr_check" type="logical" category="se"
        group="ctl_nl" valid_values="">
 Correctness check the CDR.
-Default: False
+Default: (set by dycore)
 </entry>
 
 <entry id="semi_lagrange_nearest_point_lev" type="integer" category="se"
        group="ctl_nl" valid_values="">
 Number of levels, counting from the top, that are allowed to use the
 nearest point in the halo to the departure point, when necessary.
-Default: 0
+Default: (set by dycore)
 </entry>
 
 <entry id="semi_lagrange_hv_q" type="integer" category="se"
@@ -6133,6 +6147,7 @@ Default: 0
 Number of tracers, starting from 1, to which to apply hyperviscosity. For
 example, to apply hyperviscosity to moisture, the first tracer, set the value to
 1. Hyperviscosity is applied using nu_q as the coefficient.
+Default: (set by dycore)
 </entry>
 
 <!-- Physics grid -->
@@ -6142,6 +6157,7 @@ example, to apply hyperviscosity to moisture, the first tracer, set the value to
 Remap algorithm to use to map between FV physics grid and GLL dynamics
 grid. 0, default, provides the original algorithms; 1 provides
 high-order algorithms implemented in gllfvremap_mod.
+Default: (set by dycore).  
 </entry>
 
 <entry id="se_fv_nphys" type="integer" category="se"
@@ -6150,7 +6166,7 @@ Number of equally-spaced horizontal physics points per spectral
 element. A number greater than zero will define [se_fv_nphys] equally
 spaced physics points in each direction (e.g., se_fv_nphys = 2 will
 result in 4 equally-spaced physics points per element).
-Default: 0 = feature disabled, use dynamics GLL points.
+Default: set based on atmosphere grid
 </entry>
 
 <!-- CAM I/O  -->

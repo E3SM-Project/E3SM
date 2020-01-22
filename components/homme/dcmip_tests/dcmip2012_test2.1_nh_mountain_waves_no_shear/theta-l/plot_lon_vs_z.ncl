@@ -211,7 +211,7 @@ begin
   plot1 = ColorNegDashZeroPosContour(plot,"transparent","black","transparent")
 
   draw(plot1)
-  frame(wks)
+  ;frame(wks)
 
 end
 

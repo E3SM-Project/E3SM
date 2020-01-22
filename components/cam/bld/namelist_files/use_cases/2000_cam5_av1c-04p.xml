@@ -81,7 +81,6 @@
 <prc_coef1               >30500.0D0</prc_coef1>
 <prc_exp                 >3.19D0</prc_exp>
 <prc_exp1                >-1.2D0</prc_exp1>
-<se_ftype                >2</se_ftype>
 
 
 <!-- External forcing for BAM or MAM -->
