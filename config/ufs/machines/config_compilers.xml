@@ -223,7 +223,7 @@ using a fortran linker.
 
 <compiler COMPILER="intel">
   <CFLAGS>
-    <base> -fp-model source -sox -std=gnu99 </base>
+    <base> -fp-model consistent -sox -std=gnu99 </base>
     <append compile_threaded="TRUE"> -qopenmp </append>
     <append DEBUG="FALSE"> -O2 -debug minimal </append>
     <append DEBUG="TRUE"> -O0 -g </append>
@@ -246,10 +246,10 @@ using a fortran linker.
     <base> -i4 -real-size 64 </base>
   </FC_64BIT>
   <FC_REPRO>
-    <base> -qno-opt-dynamic-align </base>
+    <base> -qno-opt-dynamic-align -fp-model consistent </base>
   </FC_REPRO>
   <FC_FAST>
-    <base> -no-prec-dif -no-preq-sqrt </base>
+    <base>  -xCORE-AVX2 -no-prec-dif -no-preq-sqrt </base>
   </FC_FAST>
   <FFLAGS>
     <base> -fpp -fno-alias -auto -safe-cray-ptr -ftz -assume byterecl -nowarn -sox -align array64byte</base>
