@@ -154,8 +154,10 @@
 <config_use_Redi>.false.</config_use_Redi>
 <config_Redi_kappa>0.0</config_Redi_kappa>
 <config_Redi_closure>'constant'</config_Redi_closure>
-<config_Redi_surface_taper_layers>10</config_Redi_surface_taper_layers>
-<config_Redi_bottom_taper_height>200.0</config_Redi_bottom_taper_height>
+<config_Redi_surface_taper_layers>5</config_Redi_surface_taper_layers>
+<config_Redi_bottom_taper_layers>5</config_Redi_bottom_taper_layers>
+<config_Redi_zero_in_boundary_layer>.true.</config_Redi_zero_in_boundary_layer>
+<config_Redi_BLD_taper_layers>5</config_Redi_BLD_taper_layers>
 
 <!-- GM_eddy_parameterization -->
 <config_use_GM ocn_grid="oQU480">.true.</config_use_GM>
@@ -183,7 +185,7 @@
 
 <!-- mesoscale_eddy_parameterizations -->
 <config_mesoscale_eddy_isopycnal_slope_limit>0.01</config_mesoscale_eddy_isopycnal_slope_limit>
-<config_eddying_resolution_taper>'constant'</config_eddying_resolution_taper>
+<config_eddying_resolution_taper>'none'</config_eddying_resolution_taper>
 <config_eddying_resolution_ramp_min>20e3</config_eddying_resolution_ramp_min>
 <config_eddying_resolution_ramp_max>30e3</config_eddying_resolution_ramp_max>
 

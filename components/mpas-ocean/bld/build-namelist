@@ -606,7 +606,9 @@ add_default($nl, 'config_use_Redi');
 add_default($nl, 'config_Redi_kappa');
 add_default($nl, 'config_Redi_closure');
 add_default($nl, 'config_Redi_surface_taper_layers');
-add_default($nl, 'config_Redi_bottom_taper_height');
+add_default($nl, 'config_Redi_bottom_taper_layers');
+add_default($nl, 'config_Redi_zero_in_boundary_layer');
+add_default($nl, 'config_Redi_BLD_taper_layers');
 
 ############################################
 # Namelist group: GM_eddy_parameterization #

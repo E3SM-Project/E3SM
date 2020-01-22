@@ -609,11 +609,27 @@ Valid values: Any positive real value, typically between 1 and 2.
 Default: Defined in namelist_defaults.xml
 </entry>
 
-<entry id="config_Redi_bottom_taper_height" type="real"
+<entry id="config_Redi_bottom_taper_layers" type="integer"
 	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
-Height above bottom of water column where bottom tapering ends.
+Number of layers below boundary layer depth where surface tapering ends.
 
-Valid values: Any positive real value, typically between 100 and 500 m.
+Valid values: Any positive real value, typically between 1 and 2.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_zero_in_boundary_layer" type="logical"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+If true, Redi kappa is set to zero above the boundary layer depth
+
+Valid values: .true. or .false.
+Default: Defined in namelist_defaults.xml
+</entry>
+
+<entry id="config_Redi_BLD_taper_layers" type="integer"
+	category="Redi_isopycnal_mixing" group="Redi_isopycnal_mixing">
+Number of layers below boundary layer depth where surface tapering ends.
+
+Valid values: Any positive real value, typically between 1 and 2.
 Default: Defined in namelist_defaults.xml
 </entry>
 
