@@ -94,7 +94,8 @@ class WorkspaceManager
 
   // call from device
   //
-  // Releases a Workspace object, should normally be
+  // Releases a Workspace object, should normally be called via the
+  // Workspace destructor.
   KOKKOS_INLINE_FUNCTION
   void release_workspace(const MemberType& team, const Workspace& ws) const;
 
