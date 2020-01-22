@@ -30,6 +30,7 @@ struct RemapStateProvider {
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
   HybridVCoord      m_hvcoord;
+  bool              m_hydrostatic_mode;
 
   // These two morally are d(w_i)/ds and d(phinh_i)/ds.
   // However, since in the remap we need to multiply by ds
@@ -50,6 +51,8 @@ struct RemapStateProvider {
     // Fetch SimulationParams and HybridVCoord from the context
     const auto& params = Context::singleton().get<SimulationParams>();
     assert (params.params_set);
+
+    m_hydrostatic_mode = params.theta_hydrostatic_mode;
 
     m_hvcoord = Context::singleton().get<HybridVCoord>();
     assert (m_hvcoord.m_inited);
@@ -79,19 +82,25 @@ struct RemapStateProvider {
   }
 
   KOKKOS_INLINE_FUNCTION
-  int num_states_remap() const { return 5;}
+  int num_states_remap() const {
+    return (m_hydrostatic_mode ? 3 : 5);
+  }
 
   KOKKOS_INLINE_FUNCTION
-  int num_states_preprocess() const { return 2;}
+  int num_states_preprocess() const {
+    return (m_hydrostatic_mode ? 0 : 2);
+  }
 
   KOKKOS_INLINE_FUNCTION
-  int num_states_postprocess() const { return 2;}
+  int num_states_postprocess() const {
+    return (m_hydrostatic_mode ? 0 : 2);
+  }
 
   KOKKOS_INLINE_FUNCTION
   bool is_intrinsic_state (const int istate) const {
     assert (istate>=0 && istate<num_states_remap());
 
-    if (istate==3 || istate==4) {
+    if (istate==0 || istate==1) {
       // Horizontal velocity needs to be rescaled by dp
       return true;
     }
@@ -105,7 +114,7 @@ struct RemapStateProvider {
                          const int istate,
                          const int np1,
                          ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> dp) const {
-    if (istate==0) {
+    if (istate==3) {
       // Compute delta_w
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
@@ -116,7 +125,7 @@ struct RemapStateProvider {
 
         ColumnOps::compute_midpoint_delta(kv,w_i,delta_w);
       });
-    } else if (istate==1) {
+    } else if (istate==4) {
       // Compute delta_phinh
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
@@ -156,7 +165,7 @@ struct RemapStateProvider {
                           ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> dp) const {
     using InfoI = ColInfo<NUM_INTERFACE_LEV>;
     using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
-    if (istate==0) {
+    if (istate==3) {
       // Update w_i
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
@@ -164,25 +173,6 @@ struct RemapStateProvider {
         const int jgp = idx % NP;
         auto w_i = Homme::subview(m_state.m_w_i,kv.ie,np1,igp,jgp);
         auto delta_w = Homme::subview(m_delta_w,kv.ie,igp,jgp);
-
-        // w_i(k) = w_i(k+1) - delta_w(k), so do a backward scan sum of -delta_w
-        // Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-        //   for (int k=NUM_PHYSICAL_LEV-1; k>=0; --k) {
-        //     w_i(k)[0] = w_i(k+1)[0] - delta_w(k)[0];
-        //   }
-        //   constexpr int LAST_MID_PACK     = InfoM::LastPack;
-        //   constexpr int LAST_MID_PACK_END = InfoM::LastPackEnd;
-        //   constexpr int LAST_INT_PACK     = InfoI::LastPack;
-        //   constexpr int LAST_INT_PACK_END = InfoI::LastPackEnd;
-        //   constexpr auto g = PhysicalConstants::g;
-
-        //   const auto gradphis = Homme::subview(m_geometry.m_gradphis,kv.ie);
-        //   const auto v        = Homme::subview(m_state.m_v,kv.ie,np1);
-
-        //   w_i(LAST_INT_PACK)[LAST_INT_PACK_END] = 
-        //         (v(0,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END]*gradphis(0,igp,jgp) +
-        //          v(1,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END]*gradphis(1,igp,jgp)) / g;
-        // });
 
         auto minus_delta = [&](const int ilev)->Scalar { return -delta_w(ilev); };
         ColumnOps::column_scan_mid_to_int<false>(kv,minus_delta,w_i);
@@ -203,7 +193,7 @@ struct RemapStateProvider {
                  v(1,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END]*gradphis(1,igp,jgp)) / g;
         });
       });
-    } else if (istate==1) {
+    } else if (istate==4) {
       // Update phinh_i
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
@@ -225,12 +215,6 @@ struct RemapStateProvider {
                             p,
                             phi_ref);
 
-        // Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-        //   for (int k=NUM_PHYSICAL_LEV-1; k>=0; --k) {
-        //     phinh_i(k)[0] = phinh_i(k+1)[0] - delta_phinh(k)[0];
-        //   }
-        // });
-
         // // phinh_i(k) = phinh_i(k+1) - delta_phinh(k), so do a backward scan sum of -delta_phinh
         auto minus_delta = [&](const int ilev)->Scalar { return -delta_phinh(ilev); };
         ColumnOps::column_scan_mid_to_int<false>(kv,minus_delta,phinh_i);
@@ -250,15 +234,15 @@ struct RemapStateProvider {
     assert(var>=0 && var<=4);
     switch (var) {
     case 0:
-      return Homme::subview(m_delta_w, kv.ie);
+      return Homme::subview(m_state.m_v, kv.ie, np1, 0);
     case 1:
-      return Homme::subview(m_delta_phinh, kv.ie);
+      return Homme::subview(m_state.m_v, kv.ie, np1, 1);
     case 2:
       return Homme::subview(m_state.m_vtheta_dp, kv.ie, np1);
     case 3:
-      return Homme::subview(m_state.m_v, kv.ie, np1, 0);
+      return Homme::subview(m_delta_w, kv.ie);
     case 4:
-      return Homme::subview(m_state.m_v, kv.ie, np1, 1);
+      return Homme::subview(m_delta_phinh, kv.ie);
     default:
       Kokkos::abort("RemapStateProvider: invalid variable index.\n");
       return ExecViewUnmanaged<Scalar[NP][NP][NUM_LEV]>();
