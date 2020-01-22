@@ -733,8 +733,10 @@ CONTAINS
           !--- correction to NCEP winds based on QSCAT ---
           uprime    = a2x%rAttr(ku,n)*windFactor(n)
           vprime    = a2x%rAttr(kv,n)*windFactor(n)
-          a2x%rAttr(ku,n) = uprime*cos(winddFactor(n)*degtorad) - vprime*sin(winddFactor(n)*degtorad)
-          a2x%rAttr(kv,n) = uprime*sin(winddFactor(n)*degtorad) + vprime*cos(winddFactor(n)*degtorad)
+          a2x%rAttr(ku,n) = uprime*cos(winddFactor(n)*degtorad)- &
+               vprime*sin(winddFactor(n)*degtorad)
+          a2x%rAttr(kv,n) = uprime*sin(winddFactor(n)*degtorad)+ &
+               vprime*cos(winddFactor(n)*degtorad)
 
           !--- density, tbot, & pslv taken directly from input stream, set pbot ---
           a2x%rAttr(kpbot,n) = a2x%rAttr(kpslv,n)
