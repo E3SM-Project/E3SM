@@ -60,11 +60,13 @@ do
 
   # Update used flat file based on time step
   if [ "$time_step_num" -eq "0" ]; then
-     sed 's/postxconfig-NT.txt/postxconfig-NT-GFS-F00.txt/' itaga.$time_step > .itaga.$time_step
-     mv .itaga.$time_step itaga.$time_step
+     ln -sf postxconfig-NT-GFS-F00.txt postxconfig-NT.txt
+     #sed 's/postxconfig-NT.txt/postxconfig-NT-GFS-F00.txt/' itaga.$time_step > .itaga.$time_step
+     #mv .itaga.$time_step itaga.$time_step
   else
-     sed 's/postxconfig-NT.txt/postxconfig-NT-GFS.txt/' itaga.$time_step > .itaga.$time_step
-     mv .itaga.$time_step itaga.$time_step
+     ln -sf postxconfig-NT-GFS.txt postxconfig-NT.txt
+     #sed 's/postxconfig-NT.txt/postxconfig-NT-GFS.txt/' itaga.$time_step > .itaga.$time_step
+     #mv .itaga.$time_step itaga.$time_step
   fi
 
   # Copy files with common name
