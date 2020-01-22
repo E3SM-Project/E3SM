@@ -162,7 +162,6 @@ void test_utils_large_ni(const double saturation_multiplier)
 
   const int max_threads = tu.get_max_concurrent_threads();
   REQUIRE(p.league_size() == ni);
-  REQUIRE(p.team_size() == nk);
 
   int max_workspace_idx = 0;
   typename KokkosTypes<Device>::template view_1d<int> test_data("test_data", num_conc);
