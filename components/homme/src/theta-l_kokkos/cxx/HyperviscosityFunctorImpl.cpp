@@ -72,12 +72,12 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   const int nteams = get_num_concurrent_teams(m_policy_pre_exchange); 
 
   // Number of scalar/vector int/mid/bhm buffers needed, with size nteams/nelems
-  constexpr int mid_vectors_nelems = 1;
-  constexpr int int_scalars_nelems = 0;
-  constexpr int mid_scalars_nelems = 4;
+  const int mid_vectors_nelems = 1;
+  const int int_scalars_nelems = 0;
+  const int mid_scalars_nelems = 4 - (m_theta_hydrostatic_mode ? 2 : 0);
 
-  constexpr int bhm_scalars_nteams = 4;
-  constexpr int bhm_vectors_nteams = 1;
+  const int bhm_scalars_nteams = 4 - (m_theta_hydrostatic_mode ? 2 : 0);
+  const int bhm_vectors_nteams = 1;
 
   const int size = nelems*(mid_scalars_nelems*size_mid_scalar +
                            mid_vectors_nelems*size_mid_vector +
@@ -108,11 +108,13 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   m_buffers.ttens = decltype(m_buffers.ttens)(mem,nelems);
   mem += size_mid_scalar*nelems;
 
-  m_buffers.wtens = decltype(m_buffers.wtens)(mem,nelems);
-  mem += size_mid_scalar*nelems;
+  if (!m_theta_hydrostatic_mode) {
+    m_buffers.wtens = decltype(m_buffers.wtens)(mem,nelems);
+    mem += size_mid_scalar*nelems;
 
-  m_buffers.phitens = decltype(m_buffers.phitens)(mem,nelems);
-  mem += size_mid_scalar*nelems;
+    m_buffers.phitens = decltype(m_buffers.phitens)(mem,nelems);
+    mem += size_mid_scalar*nelems;
+  }
 
   m_buffers.vtens = decltype(m_buffers.vtens)(mem,nelems);
   mem += size_mid_vector*nelems;
@@ -121,11 +123,13 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   m_buffers.lapl_dp = decltype(m_buffers.lapl_dp)(mem,nteams);
   mem += size_bhm_scalar*nteams;
 
-  m_buffers.lapl_w = decltype(m_buffers.lapl_w)(mem,nteams);
-  mem += size_bhm_scalar*nteams;
+  if (!m_theta_hydrostatic_mode) {
+    m_buffers.lapl_w = decltype(m_buffers.lapl_w)(mem,nteams);
+    mem += size_bhm_scalar*nteams;
 
-  m_buffers.lapl_phi = decltype(m_buffers.lapl_phi)(mem,nteams);
-  mem += size_bhm_scalar*nteams;
+    m_buffers.lapl_phi = decltype(m_buffers.lapl_phi)(mem,nteams);
+    mem += size_bhm_scalar*nteams;
+  }
 
   m_buffers.lapl_theta = decltype(m_buffers.lapl_theta)(mem,nteams);
   mem += size_bhm_scalar*nteams;
@@ -232,24 +236,26 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
       // Fix w at surface:
       // Adjust w_i at the surface, since velocity has changed
-      Kokkos::single(Kokkos::PerThread(team),[&](){
-        using InfoI = ColInfo<NUM_INTERFACE_LEV>;
-        using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
-        constexpr int LAST_MID_PACK     = InfoM::LastPack;
-        constexpr int LAST_MID_PACK_END = InfoM::LastPackEnd;
-        constexpr int LAST_INT_PACK     = InfoI::LastPack;
-        constexpr int LAST_INT_PACK_END = InfoI::LastPackEnd;
-        constexpr Real g = PhysicalConstants::g;
+      if (!CAN_SKIP_NH_VARS_IN_HYDRO_MODE || !m_theta_hydrostatic_mode) {
+        Kokkos::single(Kokkos::PerThread(team),[&](){
+          using InfoI = ColInfo<NUM_INTERFACE_LEV>;
+          using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
+          constexpr int LAST_MID_PACK     = InfoM::LastPack;
+          constexpr int LAST_MID_PACK_END = InfoM::LastPackEnd;
+          constexpr int LAST_INT_PACK     = InfoI::LastPack;
+          constexpr int LAST_INT_PACK_END = InfoI::LastPackEnd;
+          constexpr Real g = PhysicalConstants::g;
 
-        const auto& grad_x = geo.m_gradphis(ie,0,igp,jgp);
-        const auto& grad_y = geo.m_gradphis(ie,1,igp,jgp);
-        const auto& u = state.m_v(ie,np1,0,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END];
-        const auto& v = state.m_v(ie,np1,1,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END];
+          const auto& grad_x = geo.m_gradphis(ie,0,igp,jgp);
+          const auto& grad_y = geo.m_gradphis(ie,1,igp,jgp);
+          const auto& u = state.m_v(ie,np1,0,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END];
+          const auto& v = state.m_v(ie,np1,1,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END];
 
-        auto& w = state.m_w_i(ie,np1,igp,jgp,LAST_INT_PACK)[LAST_INT_PACK_END];
+          auto& w = state.m_w_i(ie,np1,igp,jgp,LAST_INT_PACK)[LAST_INT_PACK_END];
 
-        w = (u*grad_x+v*grad_y) / g;
-      });
+          w = (u*grad_x+v*grad_y) / g;
+        });
+      }
     });
   });
 }
