@@ -11,7 +11,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
 from CIME.case import Case
-from CIME.utils import expect, run_cmd_no_fail, safe_copy
+from CIME.utils import expect, run_cmd_no_fail, safe_copy, safe_recursive_copy
 from CIME.buildnml import create_namelist_infile, parse_input
 
 logger = logging.getLogger(__name__)
@@ -20,6 +20,18 @@ logger = logging.getLogger(__name__)
 def buildnml(case, caseroot, compname):
 ###############################################################################
     expect(compname == "scream", compname)
+
+    # Copy data inputs to a place where they are convenient to find the run
+    # area.
+    rundir = case.get_value("RUNDIR")
+    target = os.path.join(rundir, "data")
+    src    = os.path.join(case.get_value("SRCROOT"), "components/scream/data")
+
+    if not os.path.isdir(target):
+        os.mkdir(target)
+
+    for item in os.listdir(src):
+        safe_copy(os.path.join(src, item), target)
 
 ###############################################################################
 def _main_func():
