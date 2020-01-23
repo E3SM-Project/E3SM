@@ -4,7 +4,7 @@
 # Query run directory
 rundir=`./xmlquery --value RUNDIR`
 echo "Run directory is $rundir"
-caseroot = `pwd`
+caseroot=`pwd`
 # Query resolution and date
 atm_grid=`./xmlquery --value ATM_GRID`
 start_date=`./xmlquery --value RUN_STARTDATE`
