@@ -23,7 +23,7 @@ echo "Is this run restart? $isrestart"
 
 # make sure namelists are up to date
 ./preview_namelists
-mv buildnml.ufsatm buildnml.ufsatm1
+
 # Goto run directory
 cd $rundir
 
