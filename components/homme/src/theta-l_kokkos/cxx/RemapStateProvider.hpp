@@ -30,7 +30,7 @@ struct RemapStateProvider {
   ElementsState     m_state;
   ElementsGeometry  m_geometry;
   HybridVCoord      m_hvcoord;
-  bool              m_hydrostatic_mode;
+  bool              m_process_nh_vars;
 
   // These two morally are d(w_i)/ds and d(phinh_i)/ds.
   // However, since in the remap we need to multiply by ds
@@ -45,14 +45,21 @@ struct RemapStateProvider {
   explicit RemapStateProvider(const Elements& elements)
    : m_state(elements.m_state)
    , m_geometry(elements.m_geometry)
-   , m_delta_w ("w_i increments",elements.num_elems())
-   , m_delta_phinh ("phinh_i increments",elements.num_elems())
   {
     // Fetch SimulationParams and HybridVCoord from the context
     const auto& params = Context::singleton().get<SimulationParams>();
     assert (params.params_set);
 
-    m_hydrostatic_mode = params.theta_hydrostatic_mode;
+#ifdef HOMMEXX_BFB_TESTING
+    m_process_nh_vars = true;
+#else
+    m_process_nh_vars = !params.theta_hydrostatic_mode;
+#endif
+
+    if (m_process_nh_vars) {
+      m_delta_w     = decltype(m_delta_w) ("w_i increments",elements.num_elems());
+      m_delta_phinh = decltype(m_delta_phinh) ("phinh_i increments",elements.num_elems());
+    }
 
     m_hvcoord = Context::singleton().get<HybridVCoord>();
     assert (m_hvcoord.m_inited);
@@ -62,6 +69,10 @@ struct RemapStateProvider {
   }
 
   int requested_buffer_size (int num_teams) const {
+    if (!m_process_nh_vars) {
+      return 0;
+    }
+
     using temp_type = decltype(m_temp);
     using phi_type = decltype(m_phi_ref);
     const int temp_size = temp_type::shmem_size(num_teams)/sizeof(Real);
@@ -70,6 +81,10 @@ struct RemapStateProvider {
   }
 
   void init_buffers(const FunctorsBuffersManager& fbm, int num_teams) {
+    if (!m_process_nh_vars) {
+      return;
+    }
+
     using temp_type = decltype(m_temp);
     const int temp_size = temp_type::shmem_size(num_teams)/sizeof(Real);
 
@@ -83,17 +98,17 @@ struct RemapStateProvider {
 
   KOKKOS_INLINE_FUNCTION
   int num_states_remap() const {
-    return (m_hydrostatic_mode ? 3 : 5);
+    return (m_process_nh_vars ? 5 : 3);
   }
 
   KOKKOS_INLINE_FUNCTION
   int num_states_preprocess() const {
-    return (m_hydrostatic_mode ? 0 : 2);
+    return (m_process_nh_vars ? 2 : 0);
   }
 
   KOKKOS_INLINE_FUNCTION
   int num_states_postprocess() const {
-    return (m_hydrostatic_mode ? 0 : 2);
+    return (m_process_nh_vars ? 2 : 0);
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -114,7 +129,9 @@ struct RemapStateProvider {
                          const int istate,
                          const int np1,
                          ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> dp) const {
-    if (istate==3) {
+    assert (m_process_nh_vars);
+    // Note: w/phi are the state 3/4, but when it comes to pre/post processing they are 0/1
+    if (istate==0) {
       // Compute delta_w
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
@@ -125,7 +142,7 @@ struct RemapStateProvider {
 
         ColumnOps::compute_midpoint_delta(kv,w_i,delta_w);
       });
-    } else if (istate==4) {
+    } else if (istate==1) {
       // Compute delta_phinh
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
@@ -163,9 +180,11 @@ struct RemapStateProvider {
                           const int istate,
                           const int np1,
                           ExecViewUnmanaged<const Scalar[NP][NP][NUM_LEV]> dp) const {
+    assert (m_process_nh_vars);
     using InfoI = ColInfo<NUM_INTERFACE_LEV>;
     using InfoM = ColInfo<NUM_PHYSICAL_LEV>;
-    if (istate==3) {
+    // Note: w/phi are the state 3/4, but when it comes to pre/post processing they are 0/1
+    if (istate==0) {
       // Update w_i
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
@@ -193,7 +212,7 @@ struct RemapStateProvider {
                  v(1,igp,jgp,LAST_MID_PACK)[LAST_MID_PACK_END]*gradphis(1,igp,jgp)) / g;
         });
       });
-    } else if (istate==4) {
+    } else if (istate==1) {
       // Update phinh_i
       Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
                            [&](const int idx) {
