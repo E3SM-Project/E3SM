@@ -11,7 +11,7 @@ sys.path.append(os.path.join(_CIMEROOT, "scripts", "Tools"))
 
 from standard_script_setup import *
 from CIME.case import Case
-from CIME.utils import expect, run_cmd_no_fail, safe_copy, safe_recursive_copy
+from CIME.utils import expect, run_cmd_no_fail, safe_copy
 from CIME.buildnml import create_namelist_infile, parse_input
 
 logger = logging.getLogger(__name__)
