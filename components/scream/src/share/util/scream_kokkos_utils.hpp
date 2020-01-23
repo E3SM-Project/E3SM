@@ -242,11 +242,10 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
 #endif
         ws_idx = team_member.league_rank() % _num_teams;
         while (!Kokkos::atomic_compare_exchange_strong(&_open_ws_slots(ws_idx), (flag_type) 0, (flag_type)1)) {
-          // or random?
 #ifdef WS_RANDOM
-          ws_idx = (ws_idx+1) % _num_teams;
-#else
           ws_idx = Kokkos::rand<rnd_type, int>::draw(rand_gen) % _num_teams;
+#else
+          ws_idx = (ws_idx+1) % _num_teams;
 #endif
         }
       });
