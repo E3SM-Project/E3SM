@@ -1160,7 +1160,7 @@
       </modules>
       <modules compiler="intel" mpilib="impi">
         <command name="load">intel-mpi/2017.3-dfphq6k</command>
-        <command name="load">parallel-netcdf/1.6.1</command>
+        <command name="load">parallel-netcdf/1.8.1</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich">
         <command name="load">mvapich2/2.2-n6lclff</command>
