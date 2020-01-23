@@ -60,6 +60,11 @@ real (kind=real_kind), dimension(np,np,2) :: v
 real (kind=real_kind) :: nu_ratio1, nu_ratio2
 logical var_coef1
 
+#ifdef HOMMEXX_BFB_TESTING
+   ! Exchange all vars even in hydro mode, for the sake of bfb comparison with xx code
+   ssize = 4*nlev
+   nlyr_tot=6*nlev  ! total amount of data for DSS
+#else
 if (theta_hydrostatic_mode) then
    nlyr_tot=4*nlev        ! dont bother to dss w_i and phinh_i
    ssize=2*nlev
@@ -67,6 +72,7 @@ else
    nlyr_tot=6*nlev  ! total amount of data for DSS
    ssize=4*nlev
 endif
+#endif
 
 
    !if tensor hyperviscosity with tensor V is used, then biharmonic operator is (\grad\cdot V\grad) (\grad \cdot \grad) 

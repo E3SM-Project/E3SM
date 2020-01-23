@@ -65,13 +65,11 @@ public:
 
   ~HVFTester () = default;
 
-  void set_timestep_data (const int np1, const Real dt, const Real eta_ave_w, const bool hydrostatic)
+  void set_timestep_data (const int np1, const Real dt, const Real eta_ave_w)
   {
     m_data.np1 = np1;
     m_data.dt = dt/m_data.hypervis_subcycle;
     m_data.eta_ave_w = eta_ave_w;
-    this->m_theta_hydrostatic_mode = hydrostatic;
-    this->m_eos.init(hydrostatic,this->m_hvcoord);
   }
 
   void set_hv_data (const Real hv_scaling, const Real nu_ratio1, const Real nu_ratio2)
@@ -94,6 +92,8 @@ public:
   ScalarTensInt get_wtens ()  const { return m_buffers.wtens; }
   ScalarTens get_phitens ()  const { return m_buffers.phitens; }
   VectorTens get_vtens ()  const { return m_buffers.vtens; }
+
+  bool process_nh_vars () const { return m_process_nh_vars; }
 };
 
 TEST_CASE("hvf", "biharmonic") {
@@ -242,18 +242,11 @@ TEST_CASE("hvf", "biharmonic") {
   // Get or create and init other structures needed by HVF
   auto& bmm = c.create<MpiBuffersManagerMap>();
   auto& sphop = c.create<SphereOperators>();
-  FunctorsBuffersManager fbm;
 
   sphop.setup(geo,ref_FE);
   if (!bmm.is_connectivity_set ()) {
     bmm.set_connectivity(c.get_ptr<Connectivity>());
   }
-
-  // Create the HVF tester
-  HVFTester hvf(params,geo,state,derived);
-  fbm.request_size( hvf.requested_buffer_size() );
-  fbm.allocate();
-  hvf.init_buffers(fbm);
 
   SECTION ("biharmonic_wk_theta") {
     std::cout << "Biharmonic wk theta test:\n";
@@ -271,7 +264,15 @@ TEST_CASE("hvf", "biharmonic") {
         // Sync np1 across ranks. If they are not synced, we may get stuck in an mpi wait
         MPI_Bcast(&np1,1,MPI_INT,0,c.get<Comm>().mpi_comm());
 
-        hvf.set_timestep_data(np1,dt,eta_ave_w, hydrostatic);
+        // Create the HVF tester
+        HVFTester hvf(params,geo,state,derived);
+
+        FunctorsBuffersManager fbm;
+        fbm.request_size( hvf.requested_buffer_size() );
+        fbm.allocate();
+        hvf.init_buffers(fbm);
+
+        hvf.set_timestep_data(np1,dt,eta_ave_w);
 
         // The be needs to be inited after the hydrostatic option has been set
         hvf.init_boundary_exchanges();
@@ -375,19 +376,6 @@ TEST_CASE("hvf", "biharmonic") {
                   printf("ttens f90: %3.17f\n",ttens_f90(ie,k,igp,jgp));
                 }
                 REQUIRE(ttens_cxx(igp,jgp,k)==ttens_f90(ie,k,igp,jgp));
-                if(wtens_cxx(igp,jgp,k)!=wtens_f90(ie,k,igp,jgp)) {
-                  printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("wtens cxx: %3.17f\n",wtens_cxx(igp,jgp,k));
-                  printf("wtens f90: %3.17f\n",wtens_f90(ie,k,igp,jgp));
-                }
-                REQUIRE(wtens_cxx(igp,jgp,k)==wtens_f90(ie,k,igp,jgp));
-                if(phitens_cxx(igp,jgp,k)!=phitens_f90(ie,k,igp,jgp)) {
-                  printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf("phitens cxx: %3.17f\n",phitens_cxx(igp,jgp,k));
-                  printf("phitens f90: %3.17f\n",phitens_f90(ie,k,igp,jgp));
-                }
-                REQUIRE(phitens_cxx(igp,jgp,k)==phitens_f90(ie,k,igp,jgp));
-
                 if(vtens_cxx(0,igp,jgp,k)!=vtens_f90(ie,k,0,igp,jgp)) {
                   printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
                   printf("vtens cxx: %3.17f\n",vtens_cxx(0,igp,jgp,k));
@@ -400,6 +388,21 @@ TEST_CASE("hvf", "biharmonic") {
                   printf("vtens f90: %3.17f\n",vtens_f90(ie,k,1,igp,jgp));
                 }
                 REQUIRE(vtens_cxx(1,igp,jgp,k)==vtens_f90(ie,k,1,igp,jgp));
+
+                if (hvf.process_nh_vars()) {
+                  if(wtens_cxx(igp,jgp,k)!=wtens_f90(ie,k,igp,jgp)) {
+                    printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
+                    printf("wtens cxx: %3.17f\n",wtens_cxx(igp,jgp,k));
+                    printf("wtens f90: %3.17f\n",wtens_f90(ie,k,igp,jgp));
+                  }
+                  REQUIRE(wtens_cxx(igp,jgp,k)==wtens_f90(ie,k,igp,jgp));
+                  if(phitens_cxx(igp,jgp,k)!=phitens_f90(ie,k,igp,jgp)) {
+                    printf("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
+                    printf("phitens cxx: %3.17f\n",phitens_cxx(igp,jgp,k));
+                    printf("phitens f90: %3.17f\n",phitens_f90(ie,k,igp,jgp));
+                  }
+                  REQUIRE(phitens_cxx(igp,jgp,k)==phitens_f90(ie,k,igp,jgp));
+                }
               }
             }
           }
@@ -436,7 +439,16 @@ TEST_CASE("hvf", "biharmonic") {
         const Real dt = RPDF(1e-5,1e-3)(engine);
         const Real eta_ave_w = 1.0;
         const int  np1 = IPDF(0,2)(engine);
-        hvf.set_timestep_data(np1,dt,eta_ave_w, hydrostatic);
+
+        // Create the HVF tester
+        HVFTester hvf(params,geo,state,derived);
+
+        FunctorsBuffersManager fbm;
+        fbm.request_size( hvf.requested_buffer_size() );
+        fbm.allocate();
+        hvf.init_buffers(fbm);
+
+        hvf.set_timestep_data(np1,dt,eta_ave_w);
 
         // Generate random states
         state.randomize(seed);
@@ -588,12 +600,35 @@ TEST_CASE("hvf", "biharmonic") {
                 }
                 REQUIRE (dp_cxx(ie,np1,igp,jgp,ilev)[ivec]==dp_f90(ie,np1,k,igp,jgp));
 
-                if (w_cxx(ie,np1,igp,jgp,ilev)[ivec]!=w_f90(ie,np1,k,igp,jgp)) {
+                if (vtheta_cxx(ie,np1,igp,jgp,ilev)[ivec]!=vtheta_f90(ie,np1,k,igp,jgp)) {
                   printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf ("w_cxx: %3.16f\n",w_cxx(ie,np1,igp,jgp,ilev)[ivec]);
-                  printf ("w_f90: %3.16f\n",w_f90(ie,np1,k,igp,jgp));
+                  printf ("vtheta_cxx: %3.16f\n",vtheta_cxx(ie,np1,igp,jgp,ilev)[ivec]);
+                  printf ("vtheta_f90: %3.16f\n",vtheta_f90(ie,np1,k,igp,jgp));
                 }
-                REQUIRE (w_cxx(ie,np1,igp,jgp,ilev)[ivec]==w_f90(ie,np1,k,igp,jgp));
+                REQUIRE (vtheta_cxx(ie,np1,igp,jgp,ilev)[ivec]==vtheta_f90(ie,np1,k,igp,jgp));
+
+                if (hvf.process_nh_vars()) {
+                  if (w_cxx(ie,np1,igp,jgp,ilev)[ivec]!=w_f90(ie,np1,k,igp,jgp)) {
+                    printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
+                    printf ("w_cxx: %3.16f\n",w_cxx(ie,np1,igp,jgp,ilev)[ivec]);
+                    printf ("w_f90: %3.16f\n",w_f90(ie,np1,k,igp,jgp));
+                  }
+                  REQUIRE (w_cxx(ie,np1,igp,jgp,ilev)[ivec]==w_f90(ie,np1,k,igp,jgp));
+
+                  if (phinh_cxx(ie,np1,igp,jgp,ilev)[ivec]!=phinh_f90(ie,np1,k,igp,jgp)) {
+                    printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
+                    printf ("phinh_cxx: %3.16f\n",phinh_cxx(ie,np1,igp,jgp,ilev)[ivec]);
+                    printf ("phinh_f90: %3.16f\n",phinh_f90(ie,np1,k,igp,jgp));
+                  }
+                  REQUIRE (phinh_cxx(ie,np1,igp,jgp,ilev)[ivec]==phinh_f90(ie,np1,k,igp,jgp));
+                }
+              }
+
+              if (hvf.process_nh_vars()) {
+                // Last interface
+                const int k = NUM_INTERFACE_LEV-1;
+                const int ilev = ColInfo<NUM_INTERFACE_LEV>::LastPack;
+                const int ivec = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
 
                 if (phinh_cxx(ie,np1,igp,jgp,ilev)[ivec]!=phinh_f90(ie,np1,k,igp,jgp)) {
                   printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
@@ -602,33 +637,13 @@ TEST_CASE("hvf", "biharmonic") {
                 }
                 REQUIRE (phinh_cxx(ie,np1,igp,jgp,ilev)[ivec]==phinh_f90(ie,np1,k,igp,jgp));
 
-                if (vtheta_cxx(ie,np1,igp,jgp,ilev)[ivec]!=vtheta_f90(ie,np1,k,igp,jgp)) {
+                if (w_cxx(ie,np1,igp,jgp,ilev)[ivec]!=w_f90(ie,np1,k,igp,jgp)) {
                   printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                  printf ("vtheta_cxx: %3.16f\n",vtheta_cxx(ie,np1,igp,jgp,ilev)[ivec]);
-                  printf ("vtheta_f90: %3.16f\n",vtheta_f90(ie,np1,k,igp,jgp));
+                  printf ("w_cxx: %3.16f\n",w_cxx(ie,np1,igp,jgp,ilev)[ivec]);
+                  printf ("w_f90: %3.16f\n",w_f90(ie,np1,k,igp,jgp));
                 }
-                REQUIRE (vtheta_cxx(ie,np1,igp,jgp,ilev)[ivec]==vtheta_f90(ie,np1,k,igp,jgp));
-
+                REQUIRE (w_cxx(ie,np1,igp,jgp,ilev)[ivec]==w_f90(ie,np1,k,igp,jgp));
               }
-
-              // Last interface
-              const int k = NUM_INTERFACE_LEV-1;
-              const int ilev = ColInfo<NUM_INTERFACE_LEV>::LastPack;
-              const int ivec = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
-
-              if (phinh_cxx(ie,np1,igp,jgp,ilev)[ivec]!=phinh_f90(ie,np1,k,igp,jgp)) {
-                printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                printf ("phinh_cxx: %3.16f\n",phinh_cxx(ie,np1,igp,jgp,ilev)[ivec]);
-                printf ("phinh_f90: %3.16f\n",phinh_f90(ie,np1,k,igp,jgp));
-              }
-              REQUIRE (phinh_cxx(ie,np1,igp,jgp,ilev)[ivec]==phinh_f90(ie,np1,k,igp,jgp));
-
-              if (w_cxx(ie,np1,igp,jgp,ilev)[ivec]!=w_f90(ie,np1,k,igp,jgp)) {
-                printf ("ie,k,igp,jgp: %d, %d, %d, %d\n",ie,k,igp,jgp);
-                printf ("w_cxx: %3.16f\n",w_cxx(ie,np1,igp,jgp,ilev)[ivec]);
-                printf ("w_f90: %3.16f\n",w_f90(ie,np1,k,igp,jgp));
-              }
-              REQUIRE (w_cxx(ie,np1,igp,jgp,ilev)[ivec]==w_f90(ie,np1,k,igp,jgp));
             }
           }
         }

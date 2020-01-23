@@ -54,8 +54,13 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
   m_elem_ops.init(m_hvcoord);
 
   // Init Equation of state
-  m_theta_hydrostatic_mode = params.theta_hydrostatic_mode;
-  m_eos.init(m_theta_hydrostatic_mode,m_hvcoord);
+  m_eos.init(params.theta_hydrostatic_mode,m_hvcoord);
+
+#ifdef HOMMEXX_BFB_TESTING
+  m_process_nh_vars = true;
+#else
+  m_process_nh_vars = params.theta_hydrostatic_mode;
+#endif
 
   // Make sure the sphere operators have buffers large enough to accommodate this functor's needs
   m_sphere_ops.allocate_buffers(Homme::get_default_team_policy<ExecSpace>(m_state.num_elems()));
@@ -74,9 +79,9 @@ int HyperviscosityFunctorImpl::requested_buffer_size () const {
   // Number of scalar/vector int/mid/bhm buffers needed, with size nteams/nelems
   const int mid_vectors_nelems = 1;
   const int int_scalars_nelems = 0;
-  const int mid_scalars_nelems = 4 - (m_theta_hydrostatic_mode ? 2 : 0);
+  const int mid_scalars_nelems = 2 + (m_process_nh_vars ? 2 : 0);
 
-  const int bhm_scalars_nteams = 4 - (m_theta_hydrostatic_mode ? 2 : 0);
+  const int bhm_scalars_nteams = 2 + (m_process_nh_vars ? 2 : 0);
   const int bhm_vectors_nteams = 1;
 
   const int size = nelems*(mid_scalars_nelems*size_mid_scalar +
@@ -108,7 +113,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   m_buffers.ttens = decltype(m_buffers.ttens)(mem,nelems);
   mem += size_mid_scalar*nelems;
 
-  if (!m_theta_hydrostatic_mode) {
+  if (m_process_nh_vars) {
     m_buffers.wtens = decltype(m_buffers.wtens)(mem,nelems);
     mem += size_mid_scalar*nelems;
 
@@ -123,7 +128,7 @@ void HyperviscosityFunctorImpl::init_buffers (const FunctorsBuffersManager& fbm)
   m_buffers.lapl_dp = decltype(m_buffers.lapl_dp)(mem,nteams);
   mem += size_bhm_scalar*nteams;
 
-  if (!m_theta_hydrostatic_mode) {
+  if (m_process_nh_vars) {
     m_buffers.lapl_w = decltype(m_buffers.lapl_w)(mem,nteams);
     mem += size_bhm_scalar*nteams;
 
@@ -154,14 +159,14 @@ void HyperviscosityFunctorImpl::init_boundary_exchanges () {
   auto bm_exchange = Context::singleton().get<MpiBuffersManagerMap>()[MPI_EXCHANGE];
 
   m_be->set_buffers_manager(bm_exchange);
-  if (m_theta_hydrostatic_mode) {
-    m_be->set_num_fields(0, 0, 4);
-  } else {
+  if (m_process_nh_vars) {
     m_be->set_num_fields(0, 0, 6);
+  } else {
+    m_be->set_num_fields(0, 0, 4);
   }
   m_be->register_field(m_buffers.dptens);
   m_be->register_field(m_buffers.ttens);
-  if (!m_theta_hydrostatic_mode) {
+  if (m_process_nh_vars) {
     m_be->register_field(m_buffers.wtens);
     m_be->register_field(m_buffers.phitens);
   }
@@ -236,7 +241,7 @@ void HyperviscosityFunctorImpl::run (const int np1, const Real dt, const Real et
 
       // Fix w at surface:
       // Adjust w_i at the surface, since velocity has changed
-      if (!CAN_SKIP_NH_VARS_IN_HYDRO_MODE || !m_theta_hydrostatic_mode) {
+      if (m_process_nh_vars) {
         Kokkos::single(Kokkos::PerThread(team),[&](){
           using InfoI = ColInfo<NUM_INTERFACE_LEV>;
           using InfoM = ColInfo<NUM_PHYSICAL_LEV>;

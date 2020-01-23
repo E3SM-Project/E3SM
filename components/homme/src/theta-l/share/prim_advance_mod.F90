@@ -807,6 +807,12 @@ contains
   integer :: l1p,l2p,l1n,l2n,l
   call t_startf('advance_hypervis')
 
+#ifdef HOMMEXX_BFB_TESTING
+  ! Exchange all vars even in hydro mode, for the sake of bfb comparison with xx code
+  nlyr_tot=6*nlev  ! total amount of data for DSS
+  nlyr_tom=6*nlev_tom
+  ssize=4*nlev
+#else
   if (theta_hydrostatic_mode) then
      nlyr_tot=4*nlev        ! dont bother to dss w_i and phinh_i
      nlyr_tom=4*nlev_tom
@@ -816,6 +822,7 @@ contains
      nlyr_tom=6*nlev_tom
      ssize=4*nlev
   endif
+#endif
   
   do k=1,nlev
      exner0(k) = (hvcoord%etam(k)*hvcoord%ps0/p0 )**kappa
