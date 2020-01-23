@@ -4,7 +4,7 @@
 # Query run directory
 rundir=`./xmlquery --value RUNDIR`
 echo "Run directory is $rundir"
-caseroot=`pwd`
+
 # Query resolution and date
 atm_grid=`./xmlquery --value ATM_GRID`
 start_date=`./xmlquery --value RUN_STARTDATE`
@@ -23,7 +23,7 @@ echo "Is this run restart? $isrestart"
 
 # make sure namelists are up to date
 ./preview_namelists
-
+mv buildnml.ufsatm buildnml.ufsatm1
 # Goto run directory
 cd $rundir
 
@@ -38,13 +38,10 @@ if [ "$isrestart" != "TRUE" -a ! -f "$rundir/INPUT/${prefix}.gfs_ctrl.nc" ]; the
   # Set environment variables
   export LD_LIBRARY_PATH=$NCEP_LIBS/lib:$NCEP_LIBS/lib64:$LD_LIBRARY_PATH
 
-  # Copy executable to build directory
-  cp $NCEP_LIBS/bin/chgres_cube.exe $blddir/.
-
   # Run chgres
   runcmd='{{ mpirun }}'
   mpirun=`echo $runcmd | awk '{print $1}'`
-  eval "$mpirun $blddir/chgres_cube.exe"
+  eval "$mpirun $NCEP_LIBS/bin/chgres_cube.exe"
 
   # Move output files to input directory
   mv -f gfs_ctrl.nc INPUT/${prefix}.gfs_ctrl.nc
@@ -60,9 +57,6 @@ if [ "$isrestart" != "TRUE" -a ! -f "$rundir/INPUT/${prefix}.gfs_ctrl.nc" ]; the
   mv -f out.sfc.tile4.nc INPUT/${prefix}.sfc_data.tile4.nc
   mv -f out.sfc.tile5.nc INPUT/${prefix}.sfc_data.tile5.nc
   mv -f out.sfc.tile6.nc INPUT/${prefix}.sfc_data.tile6.nc
-  # update namelists
-  cd $caseroot
-  ./preview_namelists
 else
   echo "Skip running CHGRES!"
   echo "Restarted? - $isrestart"
