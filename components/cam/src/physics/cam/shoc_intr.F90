@@ -812,18 +812,18 @@ end function shoc_implements_cnst
    enddo
    
    !  Define the SHOC thermodynamic grid (in units of m)
-   wm_zt(:,1) = 0._r8
+   wm_zt(:,pver) = 0._r8
    do k=1,pver
      do i=1,ncol
-       zt_g(i,k) = state1%zm(i,pver-k+1)-state1%zi(i,pver+1)
-       rrho(i,k)=(1._r8/gravit)*(state1%pdel(i,pver-k+1)/dz_g(i,pver-k+1))
-       wm_zt(i,k) = -1._r8*state1%omega(i,pver-k+1)/(rrho(i,k)*gravit)
+       zt_g(i,k) = state1%zm(i,k)-state1%zi(i,pver+1)
+       rrho(i,k)=(1._r8/gravit)*(state1%pdel(i,k)/dz_g(i,k))
+       wm_zt(i,k) = -1._r8*state1%omega(i,k)/(rrho(i,k)*gravit)
      enddo
    enddo
      
    do k=1,pverp
      do i=1,ncol
-       zi_g(i,k) = state1%zi(i,pverp-k+1)-state1%zi(i,pver+1)
+       zi_g(i,k) = state1%zi(i,k)-state1%zi(i,pver+1)
      enddo
    enddo
 
@@ -851,23 +851,23 @@ end function shoc_implements_cnst
      enddo 
    endif           
 
-   ! Need to flip arrays around for SHOC 
+   ! Transfer to SHOC input arrays
    do k=1,pver
      do i=1,ncol
-       um_in(i,k)      = um(i,pver-k+1)
-       vm_in(i,k)      = vm(i,pver-k+1)   
-       rvm_in(i,k)     = rvm(i,pver-k+1)
-       rcm_in(i,k)     = rcm(i,pver-k+1)
-       rtm_in(i,k)     = rtm(i,pver-k+1)
-       thlm_in(i,k)    = thlm(i,pver-k+1)
-       thv_in(i,k)     = thv(i,pver-k+1)
-       temp_in(i,k)    = state%t(i,pver-k+1)
-       tke_in(i,k)     = tke(i,pver-k+1)
-       wthv_in(i,k)    = wthv(i,pver-k+1)
-       tkh_in(i,k)     = tkh(i,pver-k+1)
-       tk_in(i,k)      = tk(i,pver-k+1)
-       pdel_in(i,k)    = state1%pdel(i,pver-k+1)
-       pres_in(i,k)    = state1%pmid(i,pver-k+1)
+       um_in(i,k)      = um(i,k)
+       vm_in(i,k)      = vm(i,k)   
+       rvm_in(i,k)     = rvm(i,k)
+       rcm_in(i,k)     = rcm(i,k)
+       rtm_in(i,k)     = rtm(i,k)
+       thlm_in(i,k)    = thlm(i,k)
+       thv_in(i,k)     = thv(i,k)
+       temp_in(i,k)    = state%t(i,k)
+       tke_in(i,k)     = tke(i,k)
+       wthv_in(i,k)    = wthv(i,k)
+       tkh_in(i,k)     = tkh(i,k)
+       tk_in(i,k)      = tk(i,k)
+       pdel_in(i,k)    = state1%pdel(i,k)
+       pres_in(i,k)    = state1%pmid(i,k)
      enddo  
    enddo   
    
@@ -878,7 +878,7 @@ end function shoc_implements_cnst
        icnt=icnt+1
        do k=1,pver
          do i=1,ncol
-           edsclr_in(i,k,icnt) = state1%q(i,pver-k+1,ixind)
+           edsclr_in(i,k,icnt) = state1%q(i,k,ixind)
          enddo
        enddo
      end if
@@ -910,30 +910,30 @@ end function shoc_implements_cnst
 
    enddo  ! end time loop
    
-   ! Arrays need to be "flipped" to E3SM grid
+   ! Transfer back to pbuf variables
    
    do k=1,pver
      do i=1,ncol 
-       um(i,k) = um_in(i,pver-k+1)
-       vm(i,k) = vm_in(i,pver-k+1)
-       thlm(i,k) = thlm_in(i,pver-k+1)
-       rtm(i,k) = rtm_in(i,pver-k+1)
-       rcm(i,k) = rcm_shoc(i,pver-k+1)
-       cloud_frac(i,k) = min(cloudfrac_shoc(i,pver-k+1),1._r8)
-       wthv(i,k) = wthv_in(i,pver-k+1)
-       tke(i,k) = tke_in(i,pver-k+1)
+       um(i,k) = um_in(i,k)
+       vm(i,k) = vm_in(i,k)
+       thlm(i,k) = thlm_in(i,k)
+       rtm(i,k) = rtm_in(i,k)
+       rcm(i,k) = rcm_shoc(i,k)
+       cloud_frac(i,k) = min(cloudfrac_shoc(i,k),1._r8)
+       wthv(i,k) = wthv_in(i,k)
+       tke(i,k) = tke_in(i,k)
        
        do ixind=1,edsclr_dim
-         edsclr_out(i,k,ixind) = edsclr_in(i,pver-k+1,ixind)
+         edsclr_out(i,k,ixind) = edsclr_in(i,k,ixind)
        enddo      
 
-       shoc_mix(i,k) = shoc_mix_out(i,pver-k+1)
-       tk(i,k) = tk_in(i,pver-k+1)
-       tkh(i,k) = tkh_in(i,pver-k+1)
-       isotropy(i,k) = isotropy_out(i,pver-k+1)
-       w_sec(i,k) = w_sec_out(i,pver-k+1)
-       wqls(i,k) = wqls_out(i,pver-k+1)
-       brunt(i,k) = brunt_out(i,pver-k+1)
+       shoc_mix(i,k) = shoc_mix_out(i,k)
+       tk(i,k) = tk_in(i,k)
+       tkh(i,k) = tkh_in(i,k)
+       isotropy(i,k) = isotropy_out(i,k)
+       w_sec(i,k) = w_sec_out(i,k)
+       wqls(i,k) = wqls_out(i,k)
+       brunt(i,k) = brunt_out(i,k)
  
      enddo
    enddo
@@ -941,15 +941,15 @@ end function shoc_implements_cnst
    do k=1,pverp
      do i=1,ncol
 
-       w3(i,k) = w3_out(i,pverp-k+1)
-       thl_sec(i,k) = thl_sec_out(i,pverp-k+1)
-       qw_sec(i,k) = qw_sec_out(i,pverp-k+1)
-       qwthl_sec(i,k) = qwthl_sec_out(i,pverp-k+1)
-       wthl_sec(i,k) = wthl_sec_out(i,pverp-k+1)
-       wqw_sec(i,k) = wqw_sec_out(i,pverp-k+1)
-       wtke_sec(i,k) = wtke_sec_out(i,pverp-k+1)
-       uw_sec(i,k) = uw_sec_out(i,pverp-k+1)
-       vw_sec(i,k) = vw_sec_out(i,pverp-k+1)
+       w3(i,k) = w3_out(i,k)
+       thl_sec(i,k) = thl_sec_out(i,k)
+       qw_sec(i,k) = qw_sec_out(i,k)
+       qwthl_sec(i,k) = qwthl_sec_out(i,k)
+       wthl_sec(i,k) = wthl_sec_out(i,k)
+       wqw_sec(i,k) = wqw_sec_out(i,k)
+       wtke_sec(i,k) = wtke_sec_out(i,k)
+       uw_sec(i,k) = uw_sec_out(i,k)
+       vw_sec(i,k) = vw_sec_out(i,k)
 
      enddo
    enddo
@@ -1243,15 +1243,15 @@ end function shoc_implements_cnst
 
     do k=1,pverp
       do i=1,ncol
-        wthl_output(i,k) = wthl_sec(i,k) * rrho_i(i,pverp-k+1) * cpair
-        wqw_output(i,k) = wqw_sec(i,k) * rrho_i(i,pverp-k+1) * latvap 
+        wthl_output(i,k) = wthl_sec(i,k) * rrho_i(i,k) * cpair
+        wqw_output(i,k) = wqw_sec(i,k) * rrho_i(i,k) * latvap 
       enddo
     enddo
 
     do k=1,pver
       do i=1,ncol
-        wthv_output(i,k) = wthv(i,k) * rrho(i,pver-k+1) * cpair
-        wql_output(i,k) = wqls(i,k) * rrho(i,pver-k+1) * latvap 
+        wthv_output(i,k) = wthv(i,k) * rrho(i,k) * cpair
+        wql_output(i,k) = wqls(i,k) * rrho(i,k) * latvap 
       enddo
     enddo
 
