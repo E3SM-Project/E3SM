@@ -60,6 +60,8 @@ if [ "$isrestart" != "TRUE" -a ! -f "$rundir/INPUT/${prefix}.gfs_ctrl.nc" ]; the
   mv -f out.sfc.tile4.nc INPUT/${prefix}.sfc_data.tile4.nc
   mv -f out.sfc.tile5.nc INPUT/${prefix}.sfc_data.tile5.nc
   mv -f out.sfc.tile6.nc INPUT/${prefix}.sfc_data.tile6.nc
+  # update namelists
+  ./preview_namelists
 else
   echo "Skip running CHGRES!"
   echo "Restarted? - $isrestart"
