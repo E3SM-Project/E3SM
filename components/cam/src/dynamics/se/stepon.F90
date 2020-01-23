@@ -592,7 +592,9 @@ end subroutine stepon_run3
 !
 ! !INTERFACE:
 subroutine stepon_final(dyn_in, dyn_out)
-   use dyn_grid,         only: fv_physgrid_final, fv_nphys
+  use dyn_grid,         only: fv_physgrid_final, fv_nphys
+  use cam_logfile, only: iulog
+  use prim_driver_base,only: prim_finalize
 ! !PARAMETERS:
   ! WARNING: intent(out) here means that pointers in dyn_in and dyn_out
   ! are nullified. Unless this memory is released in some other routine,
@@ -612,9 +614,12 @@ subroutine stepon_final(dyn_in, dyn_out)
 
    ! Deallocate variables needed for the FV physics grid
    if (fv_nphys > 0) then
-      call fv_physgrid_final()
+     if (par%masterproc)  write(iulog,*) "stepon: phygrid finalization..."
+     call fv_physgrid_final()
    end if ! fv_nphys > 0
-
+   if (par%masterproc)  write(iulog,*) "stepon: HOMME finalization..."
+   call prim_finalize
+   if (par%masterproc)  write(iulog,*) "stepon: End of finalization"
 !EOC
 end subroutine stepon_final
 
