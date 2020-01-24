@@ -5,8 +5,6 @@
 #include "share/scream_types.hpp"
 #include "share/util/scream_std_meta.hpp"
 
-#include <Kokkos_Core.hpp>
-
 #include <cassert>
 #include <type_traits>
 

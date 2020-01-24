@@ -1,11 +1,10 @@
 #include "share/scream_session.hpp"
+#include "share/scream_kokkos.hpp"
 #include "share/util/scream_arch.hpp"
 
 #ifdef SCREAM_FPE
 # include <xmmintrin.h>
 #endif
-
-#include <Kokkos_Core.hpp>
 
 namespace scream {
 
