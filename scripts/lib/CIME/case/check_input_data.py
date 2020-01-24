@@ -31,9 +31,9 @@ def _download_checksum_file(rundir):
         elif protocol == "gftp":
             server = CIME.Servers.GridFTP(address, user, passwd)
         elif protocol == "ftp":
-            server = CIME.Servers.FTP(address, user, passwd)
+            server = CIME.Servers.FTP.ftp_login(address, user, passwd)
         elif protocol == "wget":
-            server = CIME.Servers.WGET(address, user, passwd)
+            server = CIME.Servers.WGET.wget_login(address, user, passwd)
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
 
@@ -287,11 +287,13 @@ def check_input_data(case, protocol="svn", address=None, input_data_root=None, d
         elif protocol == "gftp":
             server = CIME.Servers.GridFTP(address, user, passwd)
         elif protocol == "ftp":
-            server = CIME.Servers.FTP(address, user, passwd)
+            server = CIME.Servers.FTP.ftp_login(address, user, passwd)
         elif protocol == "wget":
-            server = CIME.Servers.WGET(address, user, passwd)
+            server = CIME.Servers.WGET.wget_login(address, user, passwd)
         else:
             expect(False, "Unsupported inputdata protocol: {}".format(protocol))
+        if not server:
+            return False
 
     for data_list_file in data_list_files:
         logging.info("Loading input file list: '{}'".format(data_list_file))

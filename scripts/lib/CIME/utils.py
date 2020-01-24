@@ -319,7 +319,7 @@ def _convert_to_fd(filearg, from_dir, mode="a"):
 
 _hack=object()
 
-def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from_dir=None):
+def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from_dir=None, timeout=None):
     """
     This code will try to import and run each cmd as a subroutine
     if that fails it will run it as a program in a seperate shell
@@ -377,7 +377,8 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
     if logfile:
         fullcmd += " >& {} ".format(logfile)
 
-    stat, output, _ = run_cmd("{}".format(fullcmd), combine_output=True, from_dir=from_dir)
+    stat, output, _ = run_cmd("{}".format(fullcmd), combine_output=True,
+                              from_dir=from_dir, timeout=timeout)
     if output: # Will be empty if logfile
         logger.info(output)
 
@@ -392,7 +393,8 @@ def run_sub_or_cmd(cmd, cmdargs, subname, subargs, logfile=None, case=None, from
         case.read_xml()
 
 def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
-            arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
+            arg_stdout=_hack, arg_stderr=_hack, env=None,
+            combine_output=False, timeout=None):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands
 
@@ -419,16 +421,30 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
         stdin = subprocess.PIPE
     else:
         stdin = None
+    if timeout:
+        with Timeout(timeout):
+            proc = subprocess.Popen(cmd,
+                                    shell=True,
+                                    stdout=arg_stdout,
+                                    stderr=arg_stderr,
+                                    stdin=stdin,
+                                    cwd=from_dir,
+                                    env=env)
 
-    proc = subprocess.Popen(cmd,
-                            shell=True,
-                            stdout=arg_stdout,
-                            stderr=arg_stderr,
-                            stdin=stdin,
-                            cwd=from_dir,
-                            env=env)
+            output, errput = proc.communicate(input_str)
+    else:
+        proc = subprocess.Popen(cmd,
+                                shell=True,
+                                stdout=arg_stdout,
+                                stderr=arg_stderr,
+                                stdin=stdin,
+                                cwd=from_dir,
+                                env=env)
 
-    output, errput = proc.communicate(input_str)
+        output, errput = proc.communicate(input_str)
+
+
+
     if output is not None:
         try:
             output = output.decode('utf-8').strip()
@@ -464,7 +480,7 @@ def run_cmd(cmd, input_str=None, from_dir=None, verbose=None,
     return stat, output, errput
 
 def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
-                    arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False):
+                    arg_stdout=_hack, arg_stderr=_hack, env=None, combine_output=False, timeout=None):
     """
     Wrapper around subprocess to make it much more convenient to run shell commands.
     Expects command to work. Just returns output string.
@@ -481,7 +497,7 @@ def run_cmd_no_fail(cmd, input_str=None, from_dir=None, verbose=None,
     >>> run_cmd_no_fail('echo THE ERROR >&2', combine_output=True) == 'THE ERROR'
     True
     """
-    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr, env, combine_output)
+    stat, output, errput = run_cmd(cmd, input_str, from_dir, verbose, arg_stdout, arg_stderr, env, combine_output, timeout=timeout)
     if stat != 0:
         # If command produced no errput, put output in the exception since we
         # have nothing else to go on.
@@ -1751,9 +1767,9 @@ def filter_unicode(unistr):
     """
     return "".join([i if ord(i) < 128 else ' ' for i in unistr])
 
-def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None):
+def run_bld_cmd_ensure_logging(cmd, arg_logger, from_dir=None, timeout=None):
     arg_logger.info(cmd)
-    stat, output, errput = run_cmd(cmd, from_dir=from_dir)
+    stat, output, errput = run_cmd(cmd, from_dir=from_dir, timeout=timeout)
     arg_logger.info(output)
     arg_logger.info(errput)
     expect(stat == 0, filter_unicode(errput))
