@@ -829,10 +829,7 @@ class EnvBatch(EnvBase):
         return nodes
 
     def get_children(self, name=None, attributes=None, root=None):
-        if name == "PROJECT_REQUIRED":
-            nodes = super(EnvBatch, self).get_children("entry", attributes={"id":name}, root=root)
-        else:
-            nodes = super(EnvBatch, self).get_children(name, attributes=attributes, root=root)
+        nodes = super(EnvBatch, self).get_children(name, attributes=attributes, root=root)
 
         return nodes
 

@@ -133,7 +133,7 @@ class EnvWorkflow(EnvBase):
 
     def get_children(self, name=None, attributes=None, root=None):
         if name in ("JOB_WALLCLOCK_TIME", "PROJECT", "CHARGE_ACCOUNT",
-                    "JOB_QUEUE", "BATCH_COMMAND_FLAGS"):
+                    "JOB_QUEUE", "BATCH_COMMAND_FLAGS", "PROJECT_REQUIRED"):
             nodes = super(EnvWorkflow, self).get_children("entry", attributes={"id":name}, root=root)
         else:
             nodes = super(EnvWorkflow, self).get_children(name, attributes=attributes, root=root)
