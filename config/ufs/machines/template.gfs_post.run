@@ -58,11 +58,22 @@ do
   echo $date_str_cycle >> itaga.$time_step
   tail -n $((nlines-4)) itag.tmp >> itaga.$time_step
 
+  # Update used flat file based on time step
+  if [ "$time_step_num" -eq "0" ]; then
+     ln -sf postxconfig-NT-GFS-F00.txt postxconfig-NT.txt
+     #sed 's/postxconfig-NT.txt/postxconfig-NT-GFS-F00.txt/' itaga.$time_step > .itaga.$time_step
+     #mv .itaga.$time_step itaga.$time_step
+  else
+     ln -sf postxconfig-NT-GFS.txt postxconfig-NT.txt
+     #sed 's/postxconfig-NT.txt/postxconfig-NT-GFS.txt/' itaga.$time_step > .itaga.$time_step
+     #mv .itaga.$time_step itaga.$time_step
+  fi
+
   # Copy files with common name
   cp ${dyn_prefix}f${time_step}.${file_ext} nemsfile
-  echo "cp ${dyn_prefix}f${f}.${file_ext} nemsfile"
+  echo "cp ${dyn_prefix}f${time_step}.${file_ext} nemsfile"
   cp ${phy_prefix}f${time_step}.${file_ext} flxfile
-  echo "cp ${phy_prefix}f${f}.${file_ext} flxfile"
+  echo "cp ${phy_prefix}f${time_step}.${file_ext} flxfile"
 
   # Copy cycle namelist with common name
   cp itaga.$time_step itag

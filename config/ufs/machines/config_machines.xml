@@ -117,12 +117,12 @@ This allows using a different mpirun command to launch unit tests
     <COMPILERS>intel,gnu,pgi</COMPILERS>
     <MPILIBS compiler="intel" >mpt,openmpi</MPILIBS>
     <MPILIBS compiler="pgi" >openmpi,mpt</MPILIBS>
-    <MPILIBS compiler="gnu" >openmpi</MPILIBS>
+    <MPILIBS compiler="gnu" >mpt,openmpi</MPILIBS>
     <CIME_OUTPUT_ROOT>/glade/scratch/$USER</CIME_OUTPUT_ROOT>
     <DIN_LOC_ROOT>$ENV{CESMDATAROOT}/ufs_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/glade/p/cgd/tss/CTSM_datm_forcing_data</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>$ENV{CESMDATAROOT}/cesm_baselines</BASELINE_ROOT>
+    <BASELINE_ROOT>$ENV{CESMDATAROOT}/ufs_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>$ENV{CESMDATAROOT}/tools/cime/tools/cprnc/cprnc.cheyenne</CCSM_CPRNC>
     <GMAKE_J>8</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
@@ -171,7 +171,8 @@ This allows using a different mpirun command to launch unit tests
       <cmd_path lang="csh">module</cmd_path>
       <modules>
 	<command name="purge"/>
-	<command name="load">ncarenv/1.2</command>
+	<command name="load">ncarenv/1.3</command>
+	<command name="load">cmake</command>
       </modules>
       <modules compiler="intel">
 	<command name="load">intel/19.0.2</command>
@@ -190,6 +191,7 @@ This allows using a different mpirun command to launch unit tests
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="mct">
         <command name="load">esmf-7.1.0r-ncdfio-uni-O</command>
       </modules>
+
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
         <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
@@ -206,16 +208,34 @@ This allows using a different mpirun command to launch unit tests
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
         <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
       </modules>
+
+      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-g</command>
+      </modules>
+      <modules compiler="gnu" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpt-O</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-g</command>
+      </modules>
+      <modules compiler="gnu" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
+        <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/gnu/9.1.0</command>
+        <command name="load">esmf-8.0.0-ncdfio-mpiuni-O</command>
+      </modules>
+
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
       </modules>
       <modules compiler="gnu">
-        <command name="load">gnu/8.3.0</command>
+        <command name="load">gnu/9.1.0</command>
         <command name="load">openblas/0.3.6</command>
       </modules>
       <modules mpilib="mpt" compiler="gnu">
 	<command name="load">mpt/2.19</command>
-	<command name="load">netcdf-mpi/4.7.1</command>
+	<command name="load">netcdf/4.7.3</command>
       </modules>
       <modules mpilib="mpt" compiler="intel">
 	<command name="load">mpt/2.19</command>
@@ -239,6 +259,14 @@ This allows using a different mpirun command to launch unit tests
       <modules>
 	<command name="load">ncarcompilers/0.5.0</command>
       </modules>
+      <modules mpilib="mpt" compiler="gnu" comp_interface="nuopc">
+	<command name="use">/glade/work/jedwards/modulefiles/NCEPLIBS/mpt/2.19/gnu/9.1.0/</command>
+	<command name="load">NCEPLIBS/1.0.0</command>
+      </modules>
+      <modules mpilib="mpt" compiler="intel" comp_interface="nuopc">
+	<command name="use">/glade/work/jedwards/modulefiles/NCEPLIBS/mpt/2.19/intel/19.0.2/</command>
+	<command name="load">NCEPLIBS/1.0.0</command>
+      </modules>
       <modules compiler="gnu" mpilib="mpi-serial">
 	<command name="load">netcdf/4.7.1</command>
       </modules>
@@ -261,16 +289,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
     </environment_variables>
-    <environment_variables comp_interface="nuopc">
-      <env name="IC_DIR">$ENV{CESMDATAROOT}/ufs_inputdata/IC/gfs.20190909/00</env>
-      <env name="NCEP_LIBS">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install</env>
-      <env name="NEMSIO_INC">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/include</env>
-      <env name="NEMSIO_LIB">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libnemsio_v2.2.3.a</env>
-      <env name="BACIO_LIB4">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libbacio_v2.1.0_4.a</env>
-      <env name="SP_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libsp_v2.0.2_d.a</env>
-      <env name="W3EMC_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libw3emc_v2.2.0_d.a</env>
-      <env name="W3NCO_LIBd">/glade/work/turuncu/UFS/NCEP_LIBS_ALL/build-all/install/lib/libw3nco_v2.0.6_d.a</env>
-    </environment_variables>
     <environment_variables unit_testing="true">
       <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
@@ -281,70 +299,6 @@ This allows using a different mpirun command to launch unit tests
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>
     </resource_limits>
-  </machine>
-
-  <machine MACH="gaea">
-    <DESC>NOAA XE6, os is CNL, 24 pes/node, batch system is PBS</DESC>
-    <OS>CNL</OS>
-    <COMPILERS>pgi</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/lustre/fs/scratch/Julio.T.Bacmeister/inputdata</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/lustre/fs/scratch/Julio.T.Bacmeister/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>UNSET</BASELINE_ROOT>
-    <CCSM_CPRNC>UNSET</CCSM_CPRNC>
-    <GMAKE_J> 8</GMAKE_J>
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-    <SUPPORTED_BY>julio -at- ucar.edu</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
-    <mpirun mpilib="default">
-      <executable>aprun</executable>
-      <arguments>
-	<arg name="hyperthreading" default="2"> -j {{ hyperthreading }}</arg>
-	<arg name="num_tasks" > -n {{ total_tasks }}</arg>
-	<arg name="tasks_per_numa" > -S {{ tasks_per_numa }}</arg>
-	<arg name="tasks_per_node" > -N $MAX_MPITASKS_PER_NODE</arg>
-	<arg name="thread_count" > -d $ENV{OMP_NUM_THREADS}</arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
-      <init_path lang="csh">/opt/modules/default/init/csh</init_path>
-      <init_path lang="sh">/opt/modules/default/init/sh</init_path>
-      <cmd_path lang="perl">/opt/modules/default/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <modules>
-	<command name="rm">PrgEnv-pgi</command>
-	<command name="rm">PrgEnv-cray</command>
-	<command name="rm">PrgEnv-gnu</command>
-	<command name="rm">pgi</command>
-	<command name="rm">cray</command>
-      </modules>
-      <modules compiler="pgi">
-	<command name="load">PrgEnv-pgi</command>
-	<command name="switch">pgi pgi/12.5.0</command>
-      </modules>
-      <modules compiler="gnu">
-	<command name="load">PrgEnv-gnu</command>
-	<command name="load">torque</command>
-      </modules>
-      <modules compiler="cray">
-	<command name="load">PrgEnv-cray/4.0.36</command>
-	<command name="load">cce/8.0.2</command>
-      </modules>
-      <modules>
-	<command name="load">torque/4.1.3</command>
-	<command name="load">netcdf-hdf5parallel/4.2.0</command>
-	<command name="load">parallel-netcdf/1.2.0</command>
-      </modules>
-    </module_system>
-    <environment_variables>
-      <env name="OMP_STACKSIZE">64M</env>
-      <env name="MPICH_ENV_DISPLAY">1</env>
-    </environment_variables>
   </machine>
 
   <machine MACH="homebrew">
@@ -397,146 +351,6 @@ This allows using a different mpirun command to launch unit tests
     </environment_variables>
   </machine>
 
-  <machine MACH="izumi">
-    <DESC>NCAR CGD Linux Cluster 48 pes/node, batch system is PBS</DESC>
-    <NODENAME_REGEX>^i.*\.ucar\.edu</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <COMPILERS>intel,pgi,nag,gnu</COMPILERS>
-    <MPILIBS>mvapich2,openmpi</MPILIBS>
-    <CIME_OUTPUT_ROOT>/scratch/cluster/$USER</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/fs/cgd/csm/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>/scratch/cluster/$USER/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/fs/cgd/csm/ccsm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/fs/cgd/csm/tools/cime/tools/cprnc/cprnc.izumi</CCSM_CPRNC>
-    <GMAKE>gmake --output-sync</GMAKE>
-    <GMAKE_J>4</GMAKE_J>
-    <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
-    <SUPPORTED_BY> cseg </SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>48</MAX_MPITASKS_PER_NODE>
-    <mpirun mpilib="mvapich2">
-      <executable>mpiexec</executable>
-      <arguments>
-	<arg name="machine_file">--machinefile $ENV{PBS_NODEFILE}</arg>
-	<arg name="num_tasks"> -n {{ total_tasks }} </arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="openmpi">
-      <executable>mpiexec</executable>
-      <arguments>
-	<arg name="num_tasks"> -n {{ total_tasks }} </arg>
-      </arguments>
-    </mpirun>
-    <module_system type="module" allow_error="true">
-      <init_path lang="perl">/usr/share/Modules/init/perl.pm</init_path>
-      <init_path lang="python">/usr/share/Modules/init/python.py</init_path>
-      <init_path lang="csh">/usr/share/Modules/init/csh</init_path>
-      <init_path lang="sh">/usr/share/Modules/init/sh</init_path>
-      <cmd_path lang="perl">/usr/bin/modulecmd perl</cmd_path>
-      <cmd_path lang="python">/usr/bin/modulecmd python</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <modules>
-	<command name="purge"></command>
-      </modules>
-      <modules compiler="intel">
-	<command name="load">compiler/intel/19.0.1</command>
-	<command name="load">tool/netcdf/4.6.1/intel</command>
-      </modules>
-      <modules compiler="intel" mpilib="mvapich2">
-	<command name="load">mvapich2/2.3/intel-cluster-19.0.1</command>
-      </modules>
-      <modules compiler="pgi">
-	<command name="load">compiler/pgi/18.10</command>
-	<command name="load">tool/netcdf/4.6.1/pgi</command>
-      </modules>
-      <modules compiler="nag">
-	<command name="load">compiler/nag/6.2</command>
-	<command name="load">tool/netcdf/4.6.1/nag</command>
-      </modules>
-      <modules compiler="nag" mpilib="mvapich2">
-	<command name="load">mvapich2/2.3/nag-6.2</command>
-      </modules>
-      <modules compiler="nag" mpilib="openmpi">
-	<command name="load">openmpi/4.0.0/nag-6.2</command>
-      </modules>
-      <modules compiler="gnu">
-	<command name="load">compiler/gnu/8.2.0</command>
-	<command name="load">tool/netcdf/4.6.1/gcc</command>
-      </modules>
-      <modules compiler="gnu" mpilib="openmpi">
-	<command name="load">openmpi/4.0.0/gnu-8.2.0</command>
-      </modules>
-      <modules compiler="gnu" mpilib="mvapich2">
-	<command name="load">mvapich2/2.3/gnu-8.2.0</command>
-      </modules>
-    </module_system>
-    <environment_variables>
-      <env name="OMP_STACKSIZE">64M</env>
-      <!-- The following is needed in order to run qsub from the compute nodes -->
-      <env name="PATH">$ENV{PATH}:/cluster/torque/bin</env>
-    </environment_variables>
-    <resource_limits>
-      <resource name="RLIMIT_STACK">-1</resource>
-    </resource_limits>
-  </machine>
-
-  <machine MACH="lonestar5">
-    <DESC>Lonestar5 cluster at TACC, OS is Linux (intel), batch system is SLURM</DESC>
-    <NODENAME_REGEX>.*ls5\.tacc\.utexas\.edu</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
-    <MPILIBS>mpich</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/cesm_archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>4</GMAKE_J>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>cseg</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>48</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>FALSE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>srun</executable>
-      <arguments>
-	<arg name="num_tasks">--ntasks={{ total_tasks }}</arg>
-      </arguments>
-    </mpirun>
-    <!-- allow ls5 modules to write to stderr without cime error -->
-    <module_system type="module" allow_error="true">
-      <init_path lang="perl">/opt/apps/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/opt/apps/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="sh">/opt/apps/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/opt/apps/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="perl">/opt/apps/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/opt/apps/lmod/lmod/libexec/lmod python</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-
-      <modules>
-        <command name="reset"/>
-        <command name="load">cmake</command>
-      </modules>
-      <modules compiler="intel">
-        <command name="load">intel/18.0.2</command>
-      </modules>
-      <modules mpilib="mpi-serial">
-        <command name="load">netcdf/4.6.2</command>
-      </modules>
-      <modules mpilib="mpich">
-	<command name="load">cray_mpich</command>
-      </modules>
-      <modules mpilib="!mpi-serial">
-        <command name="load">pnetcdf/1.8.0</command>
-	<command name="load">parallel-netcdf/4.6.2</command>
-      </modules>
-    </module_system>
-  </machine>
-
   <machine MACH="stampede2-skx">
     <DESC>Intel Xeon Platinum 8160 ("Skylake"),48 cores on two sockets (24 cores/socket) , batch system is SLURM</DESC>
     <NODENAME_REGEX>.*stampede2</NODENAME_REGEX>
@@ -548,7 +362,7 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT>/work/01118/tg803972/stampede2/UFS/ufs_inputdata</DIN_LOC_ROOT>
     <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
+    <BASELINE_ROOT>/work/02503/edwardsj/UFS/ufs_baselines</BASELINE_ROOT>
     <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
@@ -581,7 +395,7 @@ This allows using a different mpirun command to launch unit tests
         <command name="load">TACC</command>
         <command name="load">python/2.7.15</command>
         <command name="load">intel/18.0.2</command>
-        <command name="load">cmake/3.10.2</command>
+        <command name="load">cmake</command>
       </modules>
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3b</command>
@@ -609,6 +423,7 @@ This allows using a different mpirun command to launch unit tests
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
     </environment_variables>
     <environment_variables comp_interface="nuopc">
+      <env name="NETCDF">$ENV{TACC_NETCDF_DIR}</env>
       <env name="NCEP_LIBS">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install</env>
       <env name="NEMSIO_INC">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/include</env>
       <env name="NEMSIO_LIB">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libnemsio_v2.2.3.a</env>
@@ -616,120 +431,6 @@ This allows using a different mpirun command to launch unit tests
       <env name="SP_LIBd">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libsp_v2.0.2_d.a</env>
       <env name="W3EMC_LIBd">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libw3emc_v2.2.0_d.a</env>
       <env name="W3NCO_LIBd">/work/01118/tg803972/stampede2/UFS/NCEPLIBS/build-all/install/lib/libw3nco_v2.0.6_d.a</env>
-    </environment_variables>
-  </machine>
-
-  <machine MACH="stampede2-knl">
-    <DESC>Intel Xeon Phi 7250 ("Knights Landing") , batch system is SLURM</DESC>
-    <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
-    <MPILIBS>impi,mvapich2</MPILIBS>
-    <CIME_OUTPUT_ROOT>$ENV{SCRATCH}</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/work/02503/edwardsj/CESM/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/work/02503/edwardsj/CESM/inputdata/lmwg</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$ENV{WORK}/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/work/02503/edwardsj/CESM/cesm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/work/02503/edwardsj/CESM/cime/tools/cprnc/cprnc</CCSM_CPRNC>
-    <GMAKE_J>4</GMAKE_J>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>cseg</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>256</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>64</MAX_MPITASKS_PER_NODE>
-    <mpirun mpilib="impi">
-      <executable>ibrun</executable>
-    </mpirun>
-    <mpirun mpilib="mvapich2">
-      <executable>ibrun</executable>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="perl">/opt/apps/lmod/lmod/init/perl</init_path>
-      <init_path lang="python">/opt/apps/lmod/lmod/init/env_modules_python.py</init_path>
-      <init_path lang="sh">/opt/apps/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/opt/apps/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="perl">/opt/apps/lmod/lmod/libexec/lmod perl</cmd_path>
-      <cmd_path lang="python">/opt/apps/lmod/lmod/libexec/lmod python</cmd_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <modules>
-        <command name="purge"></command>
-        <command name="load">TACC</command>
-        <command name="load">python/2.7.13</command>
-        <command name="load">intel/17.0.4</command>
-        <command name="load">cmake/3.10.2</command>
-      </modules>
-      <modules mpilib="mvapich2">
-        <command name="load">mvapich2/2.3b</command>
-        <command name="load">pnetcdf/1.11.0</command>
-        <command name="load">parallel-netcdf/4.3.3.1</command>
-      </modules>
-      <modules mpilib="impi">
-        <command name="rm">mvapich2</command>
-        <command name="load">impi/17.0.3</command>
-        <command name="load">pnetcdf/1.11.0</command>
-        <command name="load">parallel-netcdf/4.3.3.1</command>
-      </modules>
-      <modules mpilib="mpi-serial">
-        <command name="load">netcdf/4.3.3.1</command>
-      </modules>
-    </module_system>
-    <environment_variables>
-      <env name="OMP_STACKSIZE">256M</env>
-    </environment_variables>
-  </machine>
-
-  <machine MACH="theia">
-    <DESC>theia</DESC>
-    <NODENAME_REGEX>tfe</NODENAME_REGEX>
-    <OS>LINUX</OS>
-    <COMPILERS>intel</COMPILERS>
-    <MPILIBS>impi</MPILIBS>
-    <PROJECT>nems</PROJECT>
-    <SAVE_TIMING_DIR/>
-    <CIME_OUTPUT_ROOT>/scratch4/NCEPDEV/nems/noscrub/$USER/cimecases</CIME_OUTPUT_ROOT>
-    <DIN_LOC_ROOT>/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/cesmdataroot/inputdata</DIN_LOC_ROOT>
-    <DIN_LOC_ROOT_CLMFORC>/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/cesmdataroot/inputdata/atm/datm7</DIN_LOC_ROOT_CLMFORC>
-    <DOUT_S_ROOT>$CIME_OUTPUT_ROOT/archive/$CASE</DOUT_S_ROOT>
-    <BASELINE_ROOT>/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/BASELINES</BASELINE_ROOT>
-    <CCSM_CPRNC>/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/cesmdataroot/tools/cprnc</CCSM_CPRNC>
-    <GMAKE>make</GMAKE>
-    <GMAKE_J>8</GMAKE_J>
-    <BATCH_SYSTEM>slurm</BATCH_SYSTEM>
-    <SUPPORTED_BY>cseg</SUPPORTED_BY>
-    <MAX_TASKS_PER_NODE>24</MAX_TASKS_PER_NODE>
-    <MAX_MPITASKS_PER_NODE>24</MAX_MPITASKS_PER_NODE>
-    <PROJECT_REQUIRED>TRUE</PROJECT_REQUIRED>
-    <mpirun mpilib="default">
-      <executable>srun</executable>
-      <arguments>
-	<arg name="num_tasks">-n $TOTALPES</arg>
-      </arguments>
-    </mpirun>
-    <mpirun mpilib="mpi-serial">
-      <executable></executable>
-    </mpirun>
-    <module_system type="module">
-      <init_path lang="sh">/apps/lmod/lmod/init/sh</init_path>
-      <init_path lang="csh">/apps/lmod/lmod/init/csh</init_path>
-      <cmd_path lang="sh">module</cmd_path>
-      <cmd_path lang="csh">module</cmd_path>
-      <cmd_path lang="python">/apps/lmod/lmod/libexec/lmod python</cmd_path>
-      <modules compiler="intel">
-        <command name="purge"/>
-        <command name="load">intel/15.1.133</command>
-        <command name="load">impi/5.1.1.109</command>
-        <command name="load">netcdf/4.3.0</command>
-        <command name="load">pnetcdf</command>
-        <command name="use">/scratch4/NCEPDEV/nems/noscrub/emc.nemspara/soft/modulefiles</command>
-	<command name="load">yaml-cpp</command>
-        <command name="load">esmf/8.0.0bs29g</command>
-      </modules>
-    </module_system>
-    <environment_variables comp_interface="nuopc">
-      <env name="ESMF_RUNTIME_PROFILE">ON</env>
-      <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
-      <env name="UGCSINPUTPATH">/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/INPUTDATA/benchmark-inputs/2012010100/gfs/fcst</env>
-      <env name="UGCSFIXEDFILEPATH">/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/INPUTDATA/fix_am</env>
-      <env name="UGCSADDONPATH">/scratch4/NCEPDEV/nems/noscrub/Rocky.Dunlap/INPUTDATA/addon</env>
     </environment_variables>
   </machine>
 

@@ -56,9 +56,9 @@
       <template>template.chgres.run</template>
       <prereq>$BUILD_COMPLETE</prereq>
       <runtime_parameters>
-        <task_count>36</task_count>
+        <task_count>72</task_count>
         <tasks_per_node>36</tasks_per_node>
-        <walltime>0:20:00</walltime>
+        <walltime>1:00:00</walltime>
       </runtime_parameters>
     </job>
     <job name="case.run">
@@ -100,9 +100,9 @@
       <template>template.chgres.run</template>
       <prereq>$BUILD_COMPLETE</prereq>
       <runtime_parameters>
-        <task_count>36</task_count>
+        <task_count>72</task_count>
         <tasks_per_node>36</tasks_per_node>
-        <walltime>0:20:00</walltime>
+        <walltime>1:00:00</walltime>
       </runtime_parameters>
     </job>
     <job name="case.run">
