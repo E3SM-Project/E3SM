@@ -10,6 +10,8 @@
 #include "physics/p3/atmosphere_microphysics.hpp"
 #include "physics/p3/scream_p3_interface.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+#include "physics/shoc/atmosphere_macrophysics.hpp"
+#include "physics/shoc/scream_shoc_interface.hpp"
 
 #include "control/tests/dummy_grid.hpp"
 
@@ -38,7 +40,7 @@ void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start
   ParameterList ad_params("Atmosphere Driver");
   auto& proc_params = ad_params.sublist("Atmosphere Processes");
 
-  proc_params.set("Number of Entries",2);
+  proc_params.set("Number of Entries",3);
   proc_params.set<std::string>("Schedule Type","Sequential");
 
   auto& p0 = proc_params.sublist("Process 0");
@@ -47,6 +49,9 @@ void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start
   auto& p1 = proc_params.sublist("Process 1");
   p1.set<std::string>("Process Name", "P3");
   p1.set<std::string>("Grid","Physics");
+  auto& p2 = proc_params.sublist("Process 2");
+  p2.set<std::string>("Process Name", "SHOC");
+  p2.set<std::string>("Grid","Physics");
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","User Provided");
@@ -58,6 +63,7 @@ void scream_init (const MPI_Fint& f_comm, const int& start_ymd, const int& start
   auto& proc_factory = AtmosphereProcessFactory::instance();
   proc_factory.register_product("SA",&create_atmosphere_process<P3StandAloneInit>);
   proc_factory.register_product("p3",&create_atmosphere_process<P3Microphysics>);
+  proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
 
   // Need to register grids managers before we create the driver
   auto& gm_factory = GridsManagerFactory::instance();
