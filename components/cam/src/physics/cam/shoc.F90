@@ -392,10 +392,10 @@ subroutine shoc_grid( &
       dz_zt(i,k) = zi_grid(i,k) - zi_grid(i,k+1)
  
       ! define thickness of the interface grid points
-      if (k .eq. 1) then
+      if (k .eq. nlev) then
         dz_zi(i,k) = zt_grid(i,k)
       else
-        dz_zi(i,k) = zt_grid(i,k-1) - zt_grid(i,k)
+        dz_zi(i,k) = zt_grid(i,k) - zt_grid(i,k+1)
       endif
 
       ! Define the air density on the thermo grid
