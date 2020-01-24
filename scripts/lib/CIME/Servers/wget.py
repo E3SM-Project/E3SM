@@ -6,6 +6,24 @@ from CIME.XML.standard_module_setup import *
 from CIME.Servers.generic_server import GenericServer
 logger = logging.getLogger(__name__)
 
+import signal
+from contextlib import contextmanager
+
+class TimeoutException(Exception): pass
+
+@contextmanager
+def time_limit(seconds):
+    #pylint: disable=unused-argument
+    def signal_handler(signum, frame):
+        raise TimeoutException("Timed out!")
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+
+
 class WGET(GenericServer):
     def __init__(self, address, user='', passwd=''):
         self._args = ''
@@ -15,8 +33,22 @@ class WGET(GenericServer):
             self._args += "--password {} ".format(passwd)
         self._server_loc = address
 
-        err = run_cmd("wget {} --spider {}".format(self._args, address))[0]
-        expect(err == 0,"Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .")
+    @classmethod
+    def wget_login(cls, address, user='', passwd=''):
+        args = ''
+        if user:
+            args += "--user {} ".format(user)
+        if passwd:
+            args += "--password {} ".format(passwd)
+
+        try:
+            with time_limit(30):
+                err,_,_ = run_cmd("wget {} --spider {}".format(args, address), verbose=True)
+                expect(err == 0,"Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .")
+            return cls(address,user=user,passwd=passwd)
+        except TimeoutException as e:
+            logger.warning("wget login timeout! {}".format(e))
+            return None
 
 
     def fileexists(self, rel_path):
