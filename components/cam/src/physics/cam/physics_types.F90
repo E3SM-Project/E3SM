@@ -1267,11 +1267,11 @@ end subroutine physics_ptend_copy
 !!! OG with fix to total energy (removed geopotential term)
 !!! this call needs to be replaced. This code in not active, so, fixes are not
 !!! implemented.
-       call geopotential_dse(state%lnpint, state%lnpmid, state%pint,  &
-            state%pmid  , state%pdel    , state%rpdel,  &
-            state%s     , state%q(:,:,1), state%phis , rairv(:,:,state%lchnk), &
-	    gravit, cpairv(:,:,state%lchnk), zvirv, &
-            state%t     , state%zi      , state%zm   , ncol)
+!       call geopotential_dse(state%lnpint, state%lnpmid, state%pint,  &
+!            state%pmid  , state%pdel    , state%rpdel,  &
+!            state%s     , state%q(:,:,1), state%phis , rairv(:,:,state%lchnk), &
+!            gravit, cpairv(:,:,state%lchnk), zvirv, &
+!            state%t     , state%zi      , state%zm   , ncol)
     end if
 
   end subroutine physics_dme_adjust
