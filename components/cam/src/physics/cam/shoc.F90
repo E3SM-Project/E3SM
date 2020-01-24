@@ -389,13 +389,13 @@ subroutine shoc_grid( &
   do k=1,nlev
     do i=1,shcol
       ! define thickness of the thermodynamic gridpoints
-      dz_zt(i,k) = zi_grid(i,k+1) - zi_grid(i,k)
+      dz_zt(i,k) = zi_grid(i,k) - zi_grid(i,k+1)
  
       ! define thickness of the interface grid points
       if (k .eq. 1) then
         dz_zi(i,k) = zt_grid(i,k)
       else
-        dz_zi(i,k) = zt_grid(i,k) - zt_grid(i,k-1)
+        dz_zi(i,k) = zt_grid(i,k-1) - zt_grid(i,k)
       endif
 
       ! Define the air density on the thermo grid
@@ -484,35 +484,35 @@ subroutine update_prognostics( &
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._r8)
 
   do i=1,shcol
-    do k=1,nlev
-      kt=k+1 
+    do k=1,nlev 
+      kb=k+1
 
       ! define air densities on various levels for mass weighted 
       !  diffusion for conservation of mass
-      r1=rho_zi(i,kt)
-      r2=rho_zi(i,k)
+      r1=rho_zi(i,k)
+      r2=rho_zi(i,kb)
       r3=rho_zt(i,k)
 
       ! mass weighted 1/dz
       thedz=1._r8/(dz_zt(i,k)*r3)
 
       ! Update temperature via vertical diffusion
-      thetal(i,k)=thetal(i,k)-dtime*(r1*wthl_sec(i,kt)-r2*wthl_sec(i,k))*thedz
+      thetal(i,k)=thetal(i,k)-dtime*(r1*wthl_sec(i,k)-r2*wthl_sec(i,kb))*thedz
      
       ! Update total water mixing ratio via vertical diffusion
-      qw(i,k)=qw(i,k)-dtime*(r1*wqw_sec(i,kt)-r2*wqw_sec(i,k))*thedz
+      qw(i,k)=qw(i,k)-dtime*(r1*wqw_sec(i,k)-r2*wqw_sec(i,kb))*thedz
 
       ! Update turbulent kinetic energy via vertical diffusion
-      tke(i,k)=tke(i,k)-dtime*(r1*wtke_sec(i,kt)-r2*wtke_sec(i,k))*thedz
+      tke(i,k)=tke(i,k)-dtime*(r1*wtke_sec(i,k)-r2*wtke_sec(i,kb))*thedz
 
       ! Update tracers via vertical diffusion
       do p=1,num_tracer
-        tracer(i,k,p)=tracer(i,k,p)-dtime*(r1*wtracer_sec(i,kt,p)-r2*wtracer_sec(i,k,p))*thedz
+        tracer(i,k,p)=tracer(i,k,p)-dtime*(r1*wtracer_sec(i,k,p)-r2*wtracer_sec(i,kb,p))*thedz
       enddo
 
       ! Update the u and v wind components via vertical diffusion
-      u_wind(i,k)=u_wind(i,k)-dtime*(r1*uw_sec(i,kt)-r2*uw_sec(i,k))*thedz
-      v_wind(i,k)=v_wind(i,k)-dtime*(r1*vw_sec(i,kt)-r2*vw_sec(i,k))*thedz
+      u_wind(i,k)=u_wind(i,k)-dtime*(r1*uw_sec(i,k)-r2*uw_sec(i,kb))*thedz
+      v_wind(i,k)=v_wind(i,k)-dtime*(r1*vw_sec(i,k)-r2*vw_sec(i,kb))*thedz
 
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
@@ -635,10 +635,10 @@ subroutine update_prognostics_implicit( &
 
   ! define terms needed for the implicit surface stress
   do i=1,shcol
-    taux(i) = rho_zi(i,1)*uw_sfc(i) ! stress in N/m2
-    tauy(i) = rho_zi(i,1)*vw_sfc(i) ! stress in N/m2
+    taux(i) = rho_zi(i,nlevi)*uw_sfc(i) ! stress in N/m2
+    tauy(i) = rho_zi(i,nlevi)*vw_sfc(i) ! stress in N/m2
     ! compute the wind speed
-    ws(i) = max(sqrt(u_wind(i,1)**2._r8 + v_wind(i,1)**2._r8),wsmin)
+    ws(i) = max(sqrt(u_wind(i,nlev)**2._r8 + v_wind(i,nlev)**2._r8),wsmin)
     tau(i) = sqrt( taux(i)**2._r8 + tauy(i)**2._r8 )
     ksrf(i) = max(tau(i) / ws(i), ksrfmin)
     ustar=max(sqrt(sqrt(uw_sfc(i)**2 + vw_sfc(i)**2)),0.01_r8)
@@ -646,9 +646,9 @@ subroutine update_prognostics_implicit( &
   enddo
 
   ! Apply the surface fluxes explicitly for temperature and moisture
-  thetal(:,1) = thetal(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wthl_sfc(:)  
-  qw(:,1) = qw(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wqw_sfc(:)
-  tke(:,1) = tke(:,1) + dtime * (ggr * rho_zi(:,1) * rdp_zt(:,1)) * wtke_flux(:)
+  thetal(:,nlev) = thetal(:,nlev) + dtime * (ggr * rho_zi(:,nlev) * rdp_zt(:,nlev)) * wthl_sfc(:)  
+  qw(:,nlev) = qw(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wqw_sfc(:)
+  tke(:,nlev) = tke(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wtke_flux(:)
 
   ! Call decomp for momentum variables
   call vd_shoc_decomp(shcol,nlev,nlevi,tk_zi,tmpi,rdp_zt,dtime,&
@@ -820,20 +820,20 @@ subroutine diag_second_shoc_moments(&
     uf = max(ufmin,uf)
     
     ! Diagnose thermodynamics variances and covariances
-    thl_sec(i,1) = 0.4_r8 * a_const * (wthl_sfc(i)/uf)**2
-    qw_sec(i,1) = 0.4_r8 * a_const * (wqw_sfc(i)/uf)**2
-    qwthl_sec(i,1) = 0.2_r8 * a_const * (wthl_sfc(i)/uf) * &
+    thl_sec(i,nlevi) = 0.4_r8 * a_const * (wthl_sfc(i)/uf)**2
+    qw_sec(i,nlevi) = 0.4_r8 * a_const * (wqw_sfc(i)/uf)**2
+    qwthl_sec(i,nlevi) = 0.2_r8 * a_const * (wthl_sfc(i)/uf) * &
                      (wqw_sfc(i)/uf)
    
     ! Vertical fluxes of heat and moisture, simply 
     !  use the surface fluxes given by host model
-    wthl_sec(i,1) = wthl_sfc(i)
-    wqw_sec(i,1) = wqw_sfc(i)
-    uw_sec(i,1) = uw_sfc(i)
-    vw_sec(i,1) = vw_sfc(i)
-    wtke_sec(i,1) = max(sqrt(ustar2),0.01_r8)**3
+    wthl_sec(i,nlevi) = wthl_sfc(i)
+    wqw_sec(i,nlevi) = wqw_sfc(i)
+    uw_sec(i,nlevi) = uw_sfc(i)
+    vw_sec(i,nlevi) = vw_sfc(i)
+    wtke_sec(i,nlevi) = max(sqrt(ustar2),0.01_r8)**3
     do p=1,num_tracer
-      wtracer_sec(i,1,p) = wtracer_sfc(i,p)
+      wtracer_sec(i,nlevi,p) = wtracer_sfc(i,p)
     enddo
 
   enddo ! end i loop (column loop)
@@ -843,36 +843,36 @@ subroutine diag_second_shoc_moments(&
   do k=2,nlev
     do i=1,shcol
     
-      kb=k-1 ! define lower grid point indicee
+      kt=k-1 ! define upper grid point indicee
       grid_dz=1._r8/dz_zi(i,k) ! Define the vertical grid difference
       grid_dz2=(1._r8/dz_zi(i,k))**2 !squared
     
       sm=isotropy_zi(i,k)*tkh_zi(i,k) ! coefficient for variances
       
       ! Compute variance of thetal
-      thl_sec(i,k)=thl2tune*sm*grid_dz2*(thetal(i,k)-thetal(i,kb))**2
+      thl_sec(i,k)=thl2tune*sm*grid_dz2*(thetal(i,kt)-thetal(i,k))**2
       ! Compute variance of total water mixing ratio
-      qw_sec(i,k)=qw2tune*sm*grid_dz2*(qw(i,k)-qw(i,kb))**2
+      qw_sec(i,k)=qw2tune*sm*grid_dz2*(qw(i,kt)-qw(i,k))**2
       ! Compute correlation betwen total water and thetal
-      qwthl_sec(i,k)=qwthl2tune*sm*grid_dz2*((thetal(i,k)-thetal(i,kb))* &
-        (qw(i,k)-qw(i,kb)))
+      qwthl_sec(i,k)=qwthl2tune*sm*grid_dz2*((thetal(i,kt)-thetal(i,k))* &
+        (qw(i,kt)-qw(i,k)))
 	
       ! diagnose vertical heat flux
-      wthl_sec(i,k)=-1._r8*tkh_zi(i,k)*grid_dz*(thetal(i,k)-thetal(i,kb))
+      wthl_sec(i,k)=-1._r8*tkh_zi(i,k)*grid_dz*(thetal(i,kt)-thetal(i,k))
       ! diagnose vertical moisture flux
-      wqw_sec(i,k)=-1._r8*tkh_zi(i,k)*grid_dz*(qw(i,k)-qw(i,kb))
+      wqw_sec(i,k)=-1._r8*tkh_zi(i,k)*grid_dz*(qw(i,kt)-qw(i,k))
 
       ! The below fluxes are used for diagnostic purposes
       ! diagnose vertical TKE flux      
-      wtke_sec(i,k)=-1._r8*tkh_zi(i,k)*grid_dz*(tke(i,k)-tke(i,kb))
+      wtke_sec(i,k)=-1._r8*tkh_zi(i,k)*grid_dz*(tke(i,kt)-tke(i,k))
  
       ! diagnose vertical momentum transport
-      uw_sec(i,k)=-1._r8*tk_zi(i,k)*grid_dz*(u_wind(i,k)-u_wind(i,kb))
-      vw_sec(i,k)=-1._r8*tk_zi(i,k)*grid_dz*(v_wind(i,k)-v_wind(i,kb))
+      uw_sec(i,k)=-1._r8*tk_zi(i,k)*grid_dz*(u_wind(i,kt)-u_wind(i,k))
+      vw_sec(i,k)=-1._r8*tk_zi(i,k)*grid_dz*(v_wind(i,kt)-v_wind(i,k))
 
       ! diagnose vertical flux of tracers      
       do p=1,num_tracer
-        wtracer_sec(i,k,p)=-1._r8*tkh_zi(i,k)*grid_dz*(tracer(i,k,p)-tracer(i,kb,p))
+        wtracer_sec(i,k,p)=-1._r8*tkh_zi(i,k)*grid_dz*(tracer(i,kt,p)-tracer(i,k,p))
       enddo
     
     enddo ! end i loop (column loop)
@@ -880,16 +880,16 @@ subroutine diag_second_shoc_moments(&
 
   ! apply the upper boundary condition
   do i=1,shcol
-    wthl_sec(i,nlevi) = 0._r8
-    wqw_sec(i,nlevi) = 0._r8
-    uw_sec(i,nlevi) = 0._r8
-    vw_sec(i,nlevi) = 0._r8
-    wtracer_sec(i,nlevi,:) = 0._r8
-    wtke_sec(i,nlevi) = 0._r8
+    wthl_sec(i,1) = 0._r8
+    wqw_sec(i,1) = 0._r8
+    uw_sec(i,1) = 0._r8
+    vw_sec(i,1) = 0._r8
+    wtracer_sec(i,1,:) = 0._r8
+    wtke_sec(i,1) = 0._r8
     
-    thl_sec(i,nlevi) = 0._r8
-    qw_sec(i,nlevi) = 0._r8
-    qwthl_sec(i,nlevi) = 0._r8    
+    thl_sec(i,1) = 0._r8
+    qw_sec(i,1) = 0._r8
+    qwthl_sec(i,1) = 0._r8    
   enddo ! end i loop (column loop)
 
   return
@@ -993,16 +993,16 @@ subroutine diag_third_shoc_moments(&
   a5=0.6_r8/(c*(3._r8+5._r8*c))    
   
   ! set lower condition
-  w3(:,1) = 0._r8
+  w3(:,nlevi) = 0._r8
 
   do k=2,nlev  
     do i=1,shcol
 
-     kb=k-1
-     kc=k+1
+     kb=k+1
+     kc=k-1
     
      thedz=dz_zi(i,k)
-     thedz2=dz_zt(i,k)+dz_zt(i,kb)
+     thedz2=dz_zt(i,k)+dz_zt(i,kc)
      thedz=1._r8/thedz
      thedz2=1._r8/thedz2    
       
@@ -1019,17 +1019,17 @@ subroutine diag_third_shoc_moments(&
 	w_sec_zi(i,k)*(thl_sec(i,kc)-thl_sec(i,kb))) ! bug here
 	
       f2=thedz * bet2 * isosqrt * wthl_sec(i,k) * &
-        (w_sec(i,k)-w_sec(i,kb))+ 2._r8 * thedz2 * bet2 * &   
+        (w_sec(i,kc)-w_sec(i,k))+ 2._r8 * thedz2 * bet2 * &   
 	isosqrt * w_sec_zi(i,k) * (wthl_sec(i,kc) - wthl_sec(i,kb)) 
 	
       f3=thedz2 * bet2 * isosqrt * w_sec_zi(i,k) * &
         (wthl_sec(i,kc) - wthl_sec(i,kb)) + thedz * &
-	bet2 * isosqrt * (wthl_sec(i,k) * (tke(i,k) - tke(i,kb))) 
+	bet2 * isosqrt * (wthl_sec(i,k) * (tke(i,kc) - tke(i,k))) 
 	
-      f4=thedz * iso * w_sec_zi(i,k) * ((w_sec(i,k) - w_sec(i,kb) + &
-        (tke(i,k) - tke(i,kb))))
+      f4=thedz * iso * w_sec_zi(i,k) * ((w_sec(i,kc) - w_sec(i,k) + &
+        (tke(i,kc) - tke(i,k))))
 	
-      f5=thedz * iso * w_sec_zi(i,k) * (w_sec(i,k) - w_sec(i,kb))
+      f5=thedz * iso * w_sec_zi(i,k) * (w_sec(i,kc) - w_sec(i,k))
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       ! Compute the omega terms     
@@ -1062,7 +1062,7 @@ subroutine diag_third_shoc_moments(&
   enddo  ! end k loop (vertical loop)
   
   ! set upper condition
-  w3(:,nlevi) = 0._r8
+  w3(:,1) = 0._r8
 
   ! perform clipping to prevent unrealistically large values from occuring
   do k=1,nlevi
@@ -1595,7 +1595,7 @@ subroutine shoc_tke(&
   do k=2,nlev
     do i=1,shcol
     
-      kb=k-1     
+      kb=k+1     
       grid_dz = 1._r8/dz_zi(i,k)
   
       tk_in=tk_zi(i,k)
@@ -1782,7 +1782,7 @@ subroutine shoc_length(&
   ! Define the brunt vaisalia frequency 
   do k=1,nlev
     do i=1,shcol
-      brunt(i,k) = (ggr/thv(i,k)) * (thv_zi(i,k+1) - thv_zi(i,k))/dz_zt(i,k) 
+      brunt(i,k) = (ggr/thv(i,k)) * (thv_zi(i,k) - thv_zi(i,k+1))/dz_zt(i,k) 
     enddo
   enddo 
  
@@ -1814,8 +1814,7 @@ subroutine shoc_length(&
     
       tkes=sqrt(tke(i,k))
       
-      if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k)
-      
+      if (brunt(i,k) .ge. 0) brunt2(i,k) = brunt(i,k) 
 
       shoc_mix(i,k)=min(maxlen,(2.8284_r8*sqrt(1._r8/((1._r8/(tscale*tkes*vonk*zt_grid(i,k))) &
         +(1._r8/(tscale*tkes*l_inf(i)))+0.01_r8*(brunt2(i,k)/tke(i,k)))))/0.3_r8)     
@@ -1829,10 +1828,10 @@ subroutine shoc_length(&
   ! determine the convective velocity scale at
   !   the top of the cloud
   
-  conv_vel(:,1)=0._r8
-  do k=2,nlev
+  conv_vel(:,nlev)=0._r8
+  do k=nlev-1,1,-1
     do i=1,shcol
-      conv_vel(i,k) = conv_vel(i,k-1)+2.5_r8*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
+      conv_vel(i,k) = conv_vel(i,k+1)+2.5_r8*dz_zt(i,k)*(ggr/thv(i,k))*wthv_sec(i,k)
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
  
@@ -1845,21 +1844,21 @@ subroutine shoc_length(&
       kl=0
       ku=0
       
-      do k=2,nlev-2
+      do k=nlev-2,2,-1
         
-	! Look for cloud top in this column
+	! Look for cloud base in this column
 	if (cldin(i,k) .gt. cldthresh .and. kl .eq. 0) then
           kl=k
         endif
       
-        ! Look for cloud base in this column
-	if (cldin(i,k) .gt. cldthresh .and. cldin(i,k+1) .le. cldthresh) then 
+        ! Look for cloud top in this column
+	if (cldin(i,k) .gt. cldthresh .and. cldin(i,k-1) .le. cldthresh) then 
 	  ku=k
 	  conv_var=conv_vel(i,k)**(1._r8/3._r8)
 	endif
 	
 	! Compute the mixing length for the layer just determined
-	if (kl .gt. 0 .and. ku .gt. 0 .and. ku-kl .gt. 1) then
+	if (kl .gt. 0 .and. ku .gt. 0 .and. kl-ku .gt. 1) then
 	
 	  if (conv_var .gt. 0) then
 	    
@@ -1867,9 +1866,9 @@ subroutine shoc_length(&
 	    mmax=maxlen
 	    if (zt_grid(i,ku) .gt. maxlen) mmax=maxlen
 	    
-            shoc_mix(i,kl:ku)=min(mmax,sqrt(1._r8/(((conv_var)/ &
-              (depth*sqrt(tke(i,kl:ku))))**2+0.01_r8* &
-              (brunt2(i,kl:ku)/tke(i,kl:ku))))/0.3_r8)	
+            shoc_mix(i,ku:kl)=min(mmax,sqrt(1._r8/(((conv_var)/ &
+              (depth*sqrt(tke(i,ku:kl))))**2+0.01_r8* &
+              (brunt2(i,ku:kl)/tke(i,ku:kl))))/0.3_r8)	
 	      
 	  endif
 	    
@@ -1950,39 +1949,39 @@ subroutine vd_shoc_decomp( &
   ! tridiagonal diffusion matrix. The diagonal elements  (cb=1+ca+cc) are
   ! a combination of ca and cc; they are not required by the solver.  
   
-  do k=2,nlev
+  do k=nlev-1,1,-1
     do i=1,shcol
-      ca(i,k) = kv_term(i,k) * tmpi(i,k) * rdp_zt(i,k)
-      cc(i,k-1) = kv_term(i,k) * tmpi(i,k) * rdp_zt(i,k-1)
+      ca(i,k) = kv_term(i,k+1) * tmpi(i,k+1) * rdp_zt(i,k)
+      cc(i,k+1) = kv_term(i,k+1) * tmpi(i,k+1) * rdp_zt(i,k+1)
     enddo
   enddo 
  
   ! The bottom element of the upper diagonal (ca) is zero (not used).
   ! The subdiagonal (cc) is not needed in the solver.
   
-  ca(:,1) = 0._r8
+  ca(:,nlev) = 0._r8
   
   ! Calculate e(k). This term is required in the solution of the
   ! tridiagonal matrix as defined by the implicit diffusion equation.   
   
   do i=1,shcol
-    denom(i,1) = 1._r8/ &
-      (1._r8 + cc(i,1) + flux(i)*dtime*ggr*rdp_zt(i,1))
-    ze(i,1) = cc(i,1) * denom(i,1)
+    denom(i,nlev) = 1._r8/ &
+      (1._r8 + cc(i,nlev) + flux(i)*dtime*ggr*rdp_zt(i,nlev))
+    ze(i,nlev) = cc(i,nlev) * denom(i,nlev)
   enddo
   
-  do k=2,nlev-1
+  do k=nlev-1,2,-1
     do i=1,shcol
       denom(i,k) = 1._r8/ &
         (1._r8 + ca(i,k) + cc(i,k) - &
-	ca(i,k) * ze(i,k-1))
+	ca(i,k) * ze(i,k+1))
       ze(i,k) = cc(i,k) * denom(i,k)
     enddo 
   enddo
   
   do i=1,shcol
-    denom(i,nlev) = 1._r8/ &
-      (1._r8 + ca(i,nlev) - ca(i,nlev) * ze(i,nlev-1))
+    denom(i,1) = 1._r8/ &
+      (1._r8 + ca(i,1) - ca(i,1) * ze(i,2))
   enddo
   
   return
@@ -2053,24 +2052,24 @@ subroutine vd_shoc_solve(&
   ! Note that only levels ntop through nbot need be solved for.
  
   do i=1,shcol
-    zf(i,1) = var(i,1) * denom(i,1)
+    zf(i,nlev) = var(i,nlev) * denom(i,nlev)
   enddo
   
-  do k=2,nlev
+  do k=nlev-1,1,-1
     do i=1,shcol
-      zf(i,k) = (var(i,k) + ca(i,k) * zf(i,k-1)) * denom(i,k)
+      zf(i,k) = (var(i,k) + ca(i,k) * zf(i,k+1)) * denom(i,k)
     enddo
   enddo
 
   ! Perform back substitution 
   
   do i=1,shcol
-    var(i,nlev) = zf(i,nlev)
+    var(i,1) = zf(i,1)
   enddo
   
-  do k=nlev-1,1,-1
+  do k=2,nlev
     do i=1,shcol
-      var(i,k) = zf(i,k) + ze(i,k)*var(i,k+1)
+      var(i,k) = zf(i,k) + ze(i,k)*var(i,k-1)
     enddo
   enddo
 
