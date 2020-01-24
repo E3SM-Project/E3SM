@@ -1,6 +1,33 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 1-24-2020
+Tag: cime5.6.30
+Answer Changes: None
+Tests: scripts_regression_tests, hand testing of downloads
+Dependencies:
+
+Brief Summary:
+    - Add timeouts for ftp and wget logins.
+    - Fix chmod command in safe_copy
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+291fc8e41 Merge pull request #3367 from jedwards4b/server_timeouts
+3688f02bb Merge pull request #3364 from billsacks/fix_safe_copy
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/Servers/ftp.py
+M       scripts/lib/CIME/Servers/wget.py
+M       scripts/lib/CIME/case/check_input_data.py
+M       scripts/lib/CIME/utils.py
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 1-22-2020
 Tag: cime5.6.29
 Answer Changes: None
