@@ -30,7 +30,7 @@ module seasalt_model
   public :: init_ocean_data           ! initialize ocean data variables
   public :: ocean_data_readnl         ! read ocean data namelist
 
-#if  ( defined MODAL_AERO_9MODE )
+#if  ( defined MODAL_AERO_9MODE || defined MODAL_AERO_5MODE_MOM)
   integer, parameter :: nslt = 4
 #else
   integer, parameter :: nslt = max(3,ntot_amode-3)
@@ -52,6 +52,16 @@ module seasalt_model
        (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', &
           'num_a1', 'num_a2', 'num_a3'/)
   integer, parameter :: om_num_ind = 0
+#elif( defined MODAL_AERO_5MODE_MOM )
+  integer, parameter :: nslt_om = 3 !number of mom mass tracers
+  integer, parameter :: nnum_om = 1 ! # of num modes which have mom but not sea salt
+  integer, parameter :: om_num_modes = 3
+  character(len=6),parameter :: seasalt_names(nslt+nslt_om+nnum+nnum_om) = &
+       (/ 'ncl_a1', 'ncl_a2', 'ncl_a3', 'ncl_a5', &
+       'mom_a1', 'mom_a2', 'mom_a4', &
+       'num_a1', 'num_a2', 'num_a3', 'num_a4', 'num_a5'/)
+
+  integer, dimension(om_num_modes), parameter :: om_num_ind =  (/ 1, 2, 4 /)
 #elif( defined MODAL_AERO_4MODE_MOM )
   integer, parameter :: nslt_om = 3
   integer, parameter :: nnum_om = 1
@@ -184,6 +194,13 @@ module seasalt_model
             0.08e-6_r8,  0.02e-6_r8,  0.08e-6_r8 /) ! accu, aitken, POM accu
     real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = &
          (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8, &  ! accu, aitken, coarse
+            1.0e-6_r8,   0.08e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, POM accu
+#elif ( defined MODAL_AERO_5MODE_MOM )
+    real(r8), parameter :: sst_sz_range_lo (nslt+nslt_om) = &
+         (/ 0.08e-6_r8,  0.02e-6_r8,  1.0e-6_r8, 1.0e-6_r8, &  ! accu, aitken, coarse
+         0.08e-6_r8,  0.02e-6_r8,  0.08e-6_r8 /) ! accu, aitken, POM accu
+    real(r8), parameter :: sst_sz_range_hi (nslt+nslt_om) = &
+         (/ 1.0e-6_r8,   0.08e-6_r8, 10.0e-6_r8, 10.0e-6_r8, &  ! accu, aitken, coarse
             1.0e-6_r8,   0.08e-6_r8,  1.0e-6_r8 /)  ! accu, aitken, POM accu
 #endif
 

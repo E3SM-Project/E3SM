@@ -468,7 +468,7 @@ contains
           endif
        enddo
 
-#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM)
+#if (defined MODAL_AERO_9MODE || MODAL_AERO_4MODE_MOM || MODAL_AERO_5MODE_MOM )
        dummy = 'SSTSFMBL_OM'
        call addfld (dummy,horiz_only, 'A','kg/m2/s','Mobilization flux of marine organic matter at surface')
        if (history_aerosol) then
@@ -750,6 +750,50 @@ contains
     index_tot_mass(3,2) = get_spc_ndx('ncl_a3')
     index_tot_mass(3,3) = get_spc_ndx('so4_a3')
     index_chm_mass(3,1) = get_spc_ndx('so4_a3')
+    !
+
+#elif ( defined MODAL_AERO_5MODE_MOM )
+    !
+    ! accumulation mode #1
+    !
+    index_tot_mass(1,1) = get_spc_ndx('so4_a1')
+    index_tot_mass(1,2) = get_spc_ndx('pom_a1')
+    index_tot_mass(1,3) = get_spc_ndx('soa_a1')
+    index_tot_mass(1,4) = get_spc_ndx('bc_a1' )
+    index_tot_mass(1,5) = get_spc_ndx('dst_a1')
+    index_tot_mass(1,6) = get_spc_ndx('ncl_a1')
+    index_tot_mass(1,7) = get_spc_ndx('mom_a1')
+    index_chm_mass(1,1) = get_spc_ndx('so4_a1')
+    index_chm_mass(1,2) = get_spc_ndx('soa_a1')
+    index_chm_mass(1,3) = get_spc_ndx('bc_a1' )
+    !
+    ! aitken mode
+    !
+    index_tot_mass(2,1) = get_spc_ndx('so4_a2')
+    index_tot_mass(2,2) = get_spc_ndx('soa_a2')
+    index_tot_mass(2,3) = get_spc_ndx('ncl_a2')
+    index_tot_mass(2,4) = get_spc_ndx('mom_a2')
+    index_chm_mass(2,1) = get_spc_ndx('so4_a2')
+    index_chm_mass(2,2) = get_spc_ndx('soa_a2')
+    !
+    ! coarse mode
+    !
+    index_tot_mass(3,1) = get_spc_ndx('dst_a3')
+    index_tot_mass(3,2) = get_spc_ndx('ncl_a3')
+    index_tot_mass(3,3) = get_spc_ndx('so4_a3')
+    index_chm_mass(3,1) = get_spc_ndx('so4_a3')
+    !
+    ! POM mode
+    !
+    index_tot_mass(4,1) = get_spc_ndx('pom_a4')
+    index_tot_mass(4,2) = get_spc_ndx('bc_a4')
+    index_tot_mass(4,3) = get_spc_ndx('mom_a4')
+    index_chm_mass(4,1) = get_spc_ndx('bc_a1' )
+    !
+    ! giant mode
+    !
+    index_tot_mass(5,1) = get_spc_ndx('ncl_a5')
+    index_tot_mass(5,2) = get_spc_ndx('dst_a5')
     !
 #elif ( defined MODAL_AERO_4MODE_MOM )
     !
@@ -1289,7 +1333,7 @@ contains
 
     if ( mam_prevap_resusp_optaa == 30 ) then
 
-#if ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_3MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM )|| ( defined MODAL_AERO_5MODE_MOM )
        ntoo = modeptr_coarse
 #else
        call endrun( 'modal_aero_wetscav_init: new resuspension not implemented for 7-mode or 9-mode MAM.')

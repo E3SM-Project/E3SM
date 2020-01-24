@@ -62,7 +62,8 @@ ifeq ($(COMPILER),$(null))
 # Linux -- including pleiades
 #------------------------------------------------------------------------
 ifeq ($(UNAMES),Linux)
-  COMPILER := pgf95
+  COMPILER := ifort
+#pgf95
 endif
 #------------------------------------------------------------------------
 # Altix (columbia)

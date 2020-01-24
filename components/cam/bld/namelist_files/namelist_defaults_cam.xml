@@ -407,6 +407,12 @@
 <mam4_mode3_file rad="rrtmg">atm/cam/physprops/mam4_mode3_rrtmg_aeronetdust_c141106.nc</mam4_mode3_file>
 <mam4_mode4_file rad="rrtmg">atm/cam/physprops/mam4_mode4_rrtmg_c130628.nc</mam4_mode4_file>
 
+<mam5_mode1_file rad="rrtmg">atm/cam/physprops/mam4_mode1_rrtmg_aeronetdust_c141106.nc</mam5_mode1_file>
+<mam5_mode2_file rad="rrtmg">atm/cam/physprops/mam4_mode2_rrtmg_c130628.nc</mam5_mode2_file>
+<mam5_mode3_file rad="rrtmg">atm/cam/physprops/mam4_mode3_rrtmg_aeronetdust_c141106.nc</mam5_mode3_file>
+<mam5_mode4_file rad="rrtmg">atm/cam/physprops/mam4_mode4_rrtmg_c130628.nc</mam5_mode4_file>
+<mam5_mode5_file rad="rrtmg">atm/cam/physprops/mam4_mode4_rrtmg_c130628.nc</mam5_mode5_file>
+
 <mam7_mode1_file rad="rrtmg">atm/cam/physprops/mam7_mode1_rrtmg_c120904.nc</mam7_mode1_file>
 <mam7_mode2_file rad="rrtmg">atm/cam/physprops/mam7_mode2_rrtmg_c120904.nc</mam7_mode2_file>
 <mam7_mode3_file rad="rrtmg">atm/cam/physprops/mam7_mode3_rrtmg_c120904.nc</mam7_mode3_file>

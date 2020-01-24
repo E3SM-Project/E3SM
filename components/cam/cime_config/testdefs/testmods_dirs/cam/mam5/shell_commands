@@ -1,0 +1,2 @@
+#!/bin/bash
+./xmlchange CAM_CONFIG_OPTS='-phys cam5 -clubb_sgs -microphys mg2 -chem linoz_mam5_resus_mom -rain_evap_to_coarse_aero -nlev 72 -clubb_sgs -microphys mg2 -chem linoz_mam5_resus_mom_soag -rain_evap_to_coarse_aero -nlev 72 -bc_dep_to_snow_updates -usr_mech_infile /qfs/people/sing201/eagles/giant_mode/pp_linoz_mam5_resus_mom_soag.inp'
