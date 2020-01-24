@@ -1,4 +1,3 @@
-#include <catch2/catch.hpp>
 #include "share/scream_session.hpp"
 
 #include "share/atmosphere_process.hpp"

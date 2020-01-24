@@ -30,7 +30,6 @@ module scream_p3_interface_mod
 
   character(len=16)   :: micro_p3_tableversion = "4"
   character(len=100)  :: micro_p3_lookup_dir = "./data"
-  !character(len=100)  :: micro_p3_lookup_dir = "/usr/gdata/climdat/ccsm3data/inputdata/atm/cam/physprops" 
   real(kind=c_real) :: cpair  !=    1004.64000000000
   real(kind=c_real) :: rair   !=    287.042311365049
   real(kind=c_real) :: rh2o   !=    461.504639820160
@@ -79,7 +78,6 @@ contains
     ! READ inputs from SCM for p3-stand-alone:
     q(:,:,:) = 0.0_rtype
     open(unit=981,file='./data/p3_universal_constants.inp',status='old',action='read')
-    !open(unit=981,file='../build/cmake-bld/scream/tests/scream_p3/data/p3_universal_constants.inp',status='old',action='read')
     read(981,'(A)') case_title
     read(981,'(2I8)') ncol, nlev
     if (ncol.gt.pcols.or.nlev.gt.pver) then
