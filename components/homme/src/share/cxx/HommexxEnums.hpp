@@ -151,14 +151,6 @@ inline std::string cm2str () {
   return "UNKNOWN";
 }
 
-// ========================== BC Types ============================ //
-
-enum class BCType {
-  Zero = 0,
-  Value,
-  DoNothing
-};
-
 // =================== Euler Step DSS Option ====================== //
 
 enum class DSSOption {

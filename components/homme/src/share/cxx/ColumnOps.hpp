@@ -32,12 +32,26 @@ namespace Homme {
  *  
  *    auto prod = [&](const int ilev)->Scalar { return x(ilev)*y(ilev); }
  *    column_ops.compute_midpoint_values(kv,prod,output);
+ *
+ *  Note: all methods have a different impl, depending on whether VECTOR_SIZE>1.
+ *        The if statement is evaluated at compile-time, so there is no run-time
+ *        penalization. The only requirement is that both branches must compile.
+ *        Also, the impl for VECTOR_SIZE>1 is not thread safe (no ||for or single),
+ *        so it would *not* work on GPU. Hence, the whole class has a static_assert
+ *        to make sure we have VECTOR_SIZE=1 or that we are not in a GPU build.
  */
   
 class ColumnOps {
 public:
   using MIDPOINTS  = ColInfo<NUM_PHYSICAL_LEV>;
   using INTERFACES = ColInfo<NUM_INTERFACE_LEV>;
+
+  // Safety checks
+  static_assert(!OnGpu<ExecSpace>::value || VECTOR_SIZE==1,
+                "Error! ColumnOps impl would be buggy on gpu if VECTOR_SIZE>1.\n");
+
+  static_assert(MIDPOINTS::NumPacks>1,
+                "Error! Some logic may be wrong with only one column pack.\n");;
 
   using DefaultMidProvider = ExecViewUnmanaged<const Scalar [NUM_LEV]>;
   using DefaultIntProvider = ExecViewUnmanaged<const Scalar [NUM_LEV_P]>;
@@ -49,8 +63,8 @@ public:
                                 const ExecViewUnmanaged<Scalar [NUM_LEV]>& x_m,
                                 const Real alpha = 1.0, const Real beta = 0.0)
   {
-    // Compute midpoint quanitiy. Note: the if statement is evaluated at compile time, so no penalization. Only requirement is both branches must compile.
-    if (OnGpu<ExecSpace>::value) {
+    // Compute midpoint quanitiy.
+    if (VECTOR_SIZE==1) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_PHYSICAL_LEV),
                            [&](const int& ilev) {
         Scalar tmp = (x_i(ilev) + x_i(ilev+1))/2.0;
@@ -90,7 +104,7 @@ public:
                                  const Real alpha = 1.0, const Real beta = 0.0)
   {
     // Compute interface quanitiy.
-    if (OnGpu<ExecSpace>::value) {
+    if (VECTOR_SIZE==1) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
         Scalar tmp = (x_m(ilev) + x_m(ilev-1)) / 2.0;
@@ -145,7 +159,7 @@ public:
                                  const Real alpha = 1.0, const Real beta = 0.0)
   {
     // Compute interface quanitiy.
-    if (OnGpu<ExecSpace>::value) {
+    if (VECTOR_SIZE==1) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
         Scalar tmp = (x_m(ilev)*weights_m(ilev) + x_m(ilev-1)*weights_m(ilev-1)) / (2.0*weights_i(ilev));
@@ -195,7 +209,7 @@ public:
                                const Real alpha = 1.0, const Real beta = 0.0)
   {
     // Compute increment of interface values at midpoints.
-    if (OnGpu<ExecSpace>::value) {
+    if (VECTOR_SIZE==1) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,0,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
         Scalar tmp = x_i(ilev+1)-x_i(ilev);
@@ -224,63 +238,63 @@ public:
   }
 
   template<CombineMode CM = CombineMode::Replace,
-           BCType bcType = BCType::Zero,
            typename InputProvider = DefaultMidProvider>
   KOKKOS_INLINE_FUNCTION
   static void compute_interface_delta (const KernelVariables& kv,
                                 const InputProvider& x_m,
                                 const ExecViewUnmanaged<Scalar [NUM_LEV_P]> dx_i,
-                                const Real bcVal = 0.0,
-                                const Real alpha = 1.0, const Real beta = 0.0)
+                                const Real alpha = 1.0, const Real beta = 0.0,
+                                const Real bcVal = 0.0)
   {
-    static_assert (bcType==BCType::Zero || bcType==BCType::Value || bcType == BCType::DoNothing,
-                   "Error! Invalid bcType for interface delta calculation.\n");
-
-    // Compute increment of midpoint values at interfaces. Top and bottom interfaces are set to 0.
-    if (OnGpu<ExecSpace>::value) {
+    // Compute increment of midpoint values at interfaces.
+    // Top and bottom interfaces are set to bcVal.
+    if (VECTOR_SIZE==1) {
       Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,1,NUM_PHYSICAL_LEV),
                            [=](const int& ilev) {
         combine<CM>(x_m(ilev)-x_m(ilev-1),dx_i(ilev),alpha,beta);
       });
 
-      if (bcType==BCType::Zero) {
-        // Fix the top/bottom
-        Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-          combine<CM>(0.0, dx_i(0)[0], alpha, beta);
-          combine<CM>(0.0, dx_i(NUM_INTERFACE_LEV-1)[0], alpha, beta);
-        });
-      } else if (bcType==BCType::Value) {
-        // Fix the top/bottom
-        Kokkos::single(Kokkos::PerThread(kv.team),[&](){
-          combine<CM>(bcVal, dx_i(0)[0], alpha, beta);
-          combine<CM>(bcVal, dx_i(NUM_INTERFACE_LEV-1)[0], alpha, beta);
-        });
-      }
+      Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+        combine<CM>(bcVal, dx_i(0)[0], alpha, beta);
+        combine<CM>(bcVal, dx_i(NUM_INTERFACE_LEV-1)[0], alpha, beta);
+      });
     } else {
+      constexpr int LAST_MID_PACK     = MIDPOINTS::LastPack;
+      constexpr int LAST_INT_PACK     = INTERFACES::LastPack;
+      constexpr int LAST_INT_PACK_END = INTERFACES::LastPackEnd;
+
       // Try to use SIMD operations as much as possible
-      for (int ilev=1; ilev<NUM_LEV; ++ilev) {
+      // Note: resist the tempation to go all the way to LAST_MID_PACK.
+      //       If you do, and LAST_MID_PACK==LAST_INT_PACK, garbage may
+      //       be present in LAST_MID_PACK_END+1, which would pollute
+      //       values in the last pack of dx_i at LAST_INT_PACK_END
+      for (int ilev=1; ilev<LAST_MID_PACK; ++ilev) {
         Scalar tmp = x_m(ilev);
         tmp.shift_right(1);
         tmp[0] = x_m(ilev-1)[VECTOR_END];
         combine<CM>(x_m(ilev) - tmp, dx_i(ilev), alpha, beta);
       }
 
-      // First pack does not have a previous pack. Luckily, shift_right inserts leading 0's, so the formula is the same, without the tmp[0] modification
+      // First and last pack need to be treated separately, due the bc.
       Scalar tmp = x_m(0);
       tmp.shift_right(1);
-      combine<CM>(x_m(0) - tmp, dx_i(0), alpha, beta);
+      tmp = x_m(0)-tmp;
+      tmp[0] = bcVal;
+      combine<CM>(tmp, dx_i(0), alpha, beta);
 
-      constexpr int LAST_PACK     = ColInfo<NUM_INTERFACE_LEV>::LastPack;
-      constexpr int LAST_PACK_END = ColInfo<NUM_INTERFACE_LEV>::LastPackEnd;
+      tmp = x_m(LAST_MID_PACK);
+      tmp.shift_right(1);
+      tmp[0] = x_m(LAST_MID_PACK-1)[VECTOR_END];
+      tmp = x_m(LAST_MID_PACK)-tmp;
+      if (LAST_INT_PACK==LAST_MID_PACK) {
+        // Be careful not to pollute the last interface with garbage
+        tmp[LAST_INT_PACK_END] = bcVal;
+        combine<CM>(tmp, dx_i(LAST_INT_PACK), alpha, beta);
+      } else {
+        combine<CM>(tmp, dx_i(LAST_MID_PACK), alpha, beta);
 
-      if (bcType==BCType::Zero) {
-        // Fix the top/bottom levels
-        combine<CM>(0.0, dx_i(0)[0], alpha, beta);
-        combine<CM>(0.0, dx_i(LAST_PACK)[LAST_PACK_END], alpha, beta);
-      } else if (bcType==BCType::Value) {
-        // Fix the top/bottom levels
-        combine<CM>(bcVal, dx_i(0)[0], alpha, beta);
-        combine<CM>(bcVal, dx_i(LAST_PACK)[LAST_PACK_END], alpha, beta);
+        // Fix bc as a single Real op.
+        combine<CM>(bcVal,dx_i(LAST_INT_PACK)[LAST_INT_PACK_END], alpha, beta);
       }
     }
   }
@@ -297,12 +311,12 @@ public:
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
                     const Real s0 = 0.0)
   {
-    column_scan_impl<ExecSpace,Forward,Inclusive,LENGTH>(kv,input_provider,sum,s0);
+    column_scan_impl<VECTOR_SIZE,Forward,Inclusive,LENGTH>(kv,input_provider,sum,s0);
   }
 
-  template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename InputProvider>
+  template<int PackLength, bool Forward,bool Inclusive,int LENGTH,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
-  static typename std::enable_if<!OnGpu<ExecSpaceType>::value>::type
+  static typename std::enable_if<(PackLength>1)>::type
   column_scan_impl (const KernelVariables& /* kv */,
                     const InputProvider& input_provider,
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
@@ -374,17 +388,14 @@ public:
     }
   }
 
-  template<typename ExecSpaceType,bool Forward,bool Inclusive,int LENGTH,typename InputProvider>
+  template<int PackLength,bool Forward,bool Inclusive,int LENGTH,typename InputProvider>
   KOKKOS_INLINE_FUNCTION
-  static typename std::enable_if<OnGpu<ExecSpaceType>::value>::type
+  static typename std::enable_if<PackLength==1>::type
   column_scan_impl (const KernelVariables& kv,
                     const InputProvider& input_provider,
                     const ExecViewUnmanaged<Scalar [ColInfo<LENGTH>::NumPacks]>& sum,
                     const Real s0 = 0.0)
   {
-    // On GPU we rely on the fact that Scalar is basically double[1].
-    static_assert (!OnGpu<ExecSpaceType>::value || ColInfo<LENGTH>::NumPacks==LENGTH, "Error! In a GPU build we expect VECTOR_SIZE=1.\n");
-
     if (Forward) {
       // If exclusive, no need to go to access last input level
       constexpr int offset = Inclusive ? 0 : 1;
@@ -437,7 +448,7 @@ public:
   {
     if (Forward) {
       // It's safe to pass the output as it is, and claim is Exclusive over NUM_INTERFACE_LEV
-      column_scan_impl<ExecSpace,true,false,NUM_INTERFACE_LEV>(kv,input_provider,sum,sum(0)[0]);
+      column_scan_impl<VECTOR_SIZE,true,false,NUM_INTERFACE_LEV>(kv,input_provider,sum,sum(0)[0]);
     } else {
       // Tricky: likely, the provider does not provide input at NUM_INTEFACE_LEV-1. So we cast this scan sum
       //         into an inclusive sum over NUM_PHYSICAL_LEV, with output cropped to NUM_LEV packs.
@@ -450,8 +461,10 @@ public:
 
       ExecViewUnmanaged<Scalar[NUM_LEV]> sum_cropped(sum.data());
       const Real s0 = sum(LAST_INT_PACK)[LAST_INT_PACK_END];
-      sum_cropped(LAST_MID_PACK)[LAST_MID_PACK_END] = s0;
-      column_scan_impl<ExecSpace,false,true,NUM_PHYSICAL_LEV>(kv,input_provider,sum_cropped,s0);
+      Kokkos::single(Kokkos::PerThread(kv.team),[&](){
+        sum_cropped(LAST_MID_PACK)[LAST_MID_PACK_END] = s0;
+      });
+      column_scan_impl<VECTOR_SIZE,false,true,NUM_PHYSICAL_LEV>(kv,input_provider,sum_cropped,s0);
     }
   }
 
@@ -490,9 +503,6 @@ public:
       // If last pack has garbage, we did not include it in the previous reduction,
       // so manually add the last pack (only the non-garbage part)
       if (HAS_GARBAGE) {
-        // Safety check: we assume on GPU VECTOR_SIZE=1.
-        assert (!OnGpu<ExecSpace>::value);
-
         // Note: no need to put a Kokkos::single, since this chunk on code only runs
         //       on host, and we already exausted all layers of thread-parallelism.
         for (int k=0; k<LAST_PACK_LEN; ++k) {
@@ -503,7 +513,7 @@ public:
     } else {
       Dispatch<>::parallel_reduce(kv.team,Kokkos::ThreadVectorRange(kv.team,LENGTH),
                                   [&](const int k, Real& accumulator) {
-        if (!OnGpu<ExecSpace>::value) {
+        if (VECTOR_SIZE>1) {
           const int ilev = k / VECTOR_SIZE;
           const int ivec = k % VECTOR_SIZE;
           accumulator += input(ilev)[ivec];

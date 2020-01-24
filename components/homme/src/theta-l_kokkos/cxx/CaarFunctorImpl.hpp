@@ -80,7 +80,7 @@ struct CaarFunctorImpl {
   // in the code, we store a pack containing [[scale2 scale2 ...]  scale1 [garbage] ], to be used
   // at pack NUM_LEV_P
 
-  Scalar                      m_scale2_last_int_pack;
+  Scalar                      m_scale2g_last_int_pack;
 
   const int                   m_rsplit;
   const bool                  m_theta_hydrostatic_mode;
@@ -292,8 +292,8 @@ struct CaarFunctorImpl {
     // where we set it to m_data.scale1. While at it, we already multiply by g.
     constexpr auto g = PhysicalConstants::g;
 
-    m_scale2_last_int_pack = m_data.scale2;
-    m_scale2_last_int_pack[ColInfo<NUM_INTERFACE_LEV>::LastPackEnd] = m_data.scale1*g;
+    m_scale2g_last_int_pack = m_data.scale2*g;
+    m_scale2g_last_int_pack[ColInfo<NUM_INTERFACE_LEV>::LastPackEnd] = m_data.scale1*g;
   }
 
   void run (const RKStageData& data)
@@ -364,20 +364,6 @@ struct CaarFunctorImpl {
 
     compute_phi (kv);
     kv.team_barrier();
-
-    // if (m_theta_hydrostatic_mode) {
-    //   // Zero out w
-    //   Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
-    //                        [&](const int idx) {
-    //     const int igp = idx / NP;
-    //     const int jgp = idx % NP;
-    //     Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV_P),
-    //                        [&](const int ilev) {
-    //       m_state.m_w_i(kv.ie,m_data.n0,igp,jgp,ilev) = 0.0;
-    //     });
-    //   });
-    //   kv.team_barrier();
-    // }
 
     if (m_rsplit==0 || !m_theta_hydrostatic_mode) {
       compute_interface_quantities(kv);
@@ -695,6 +681,9 @@ struct CaarFunctorImpl {
       }
 
       if (m_rsplit==0) {
+        // Shorter names, to keep a call to ColumnOps a bit shorter
+        using CM = CombineMode;
+
         // Compute interface vtheta_i, with an energy preserving scheme
         auto vtheta_i = Homme::subview(m_buffers.vtheta_i,kv.team_idx,igp,jgp);
         auto dexner_i = Homme::subview(m_buffers.grad_phinh_i,kv.team_idx,0,igp,jgp);
@@ -714,7 +703,11 @@ struct CaarFunctorImpl {
         // vtheta_i(k) = -dpnh_dp_i(k)*(dphi(k) / dexner(k)) / Cp
         // with dX = X(k+1)-X(k)
         ColumnOps::compute_interface_delta(kv,phi,vtheta_i);
-        ColumnOps::compute_interface_delta<CombineMode::Divide,BCType::DoNothing>(kv,exner,vtheta_i);
+
+        // Since bcVal is the last input, if you need bcVal != 0.0,
+        // you also need to pass alpha and beta as well (1.0 and 0.0 resp.).
+        // Here, bcVal is 1.0 (to avoid nan/inf with division by 0)
+        ColumnOps::compute_interface_delta<CM::Divide>(kv,exner,vtheta_i,1.0,0.0,1.0);
         Kokkos::parallel_for(Kokkos::ThreadVectorRange(kv.team,NUM_LEV),
                              [&](const int ilev) {
           vtheta_i(ilev) *= -dpnh_dp_i(ilev);
@@ -925,6 +918,7 @@ struct CaarFunctorImpl {
 
   KOKKOS_INLINE_FUNCTION
   void compute_w_and_phi_tens (KernelVariables& kv) const {
+    using namespace PhysicalConstants;
     // Compute grad(phinh_i)
     // Compute v*grad(w_i)
     // Compute w_tens = scale1*(-w_vadv_i - v*grad(w_i)) - scale2*g*(1-dpnh_dp_i)
@@ -963,7 +957,7 @@ struct CaarFunctorImpl {
         }
         w_tens(ilev) *= -m_data.scale1;
         w_tens(ilev) += (m_buffers.dpnh_dp_i(kv.team_idx,igp,jgp,ilev)-1) *
-                        (ilev==NUM_LEV_P ? m_scale2_last_int_pack : m_data.scale2);
+                        (ilev==(NUM_LEV_P-1) ? m_scale2g_last_int_pack : m_data.scale2*g);
 
         // Compute phi_tens.
         v_grad = v_i(0,igp,jgp,ilev)*grad_phinh_i(0,igp,jgp,ilev)
@@ -975,7 +969,7 @@ struct CaarFunctorImpl {
         }
         phi_tens(ilev) *= -m_data.scale1;
         phi_tens(ilev) += m_state.m_w_i(kv.ie,m_data.n0,igp,jgp,ilev) *
-                          (ilev==NUM_LEV_P ? m_scale2_last_int_pack : m_data.scale2);
+                          (ilev==NUM_LEV_P ? m_scale2g_last_int_pack : m_data.scale2*g);
 
         if (m_data.scale1!=m_data.scale2) {
            // add imex phi_h splitting 
@@ -1064,9 +1058,10 @@ struct CaarFunctorImpl {
         
       };
       if (m_rsplit==0) {
+        using CM = CombineMode;
         // If you want a CombineMode different than Replace, unfortunately you have to specify
         // all the template args, since the CombineMode is the last one...
-        m_sphere_ops.divergence_sphere<decltype(v_times_vtheta),NUM_LEV,NUM_LEV,CombineMode::Add>(kv,v_times_vtheta,
+        m_sphere_ops.divergence_sphere<decltype(v_times_vtheta),NUM_LEV,NUM_LEV,CM::Add>(kv,v_times_vtheta,
                                           Homme::subview(m_buffers.theta_tens,kv.team_idx));
       } else {
         m_sphere_ops.divergence_sphere(kv,v_times_vtheta,

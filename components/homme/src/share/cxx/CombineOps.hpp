@@ -24,9 +24,9 @@ static constexpr bool needsBeta () {
 //    result = beta*result + alpha*newVal
 // This routine should have no overhead compared to a manual
 // update (assuming you call it with the proper CM)
-template<CombineMode CM, typename Scalar1, typename Scalar2, typename CoeffType>
+template<CombineMode CM, typename ScalarIn, typename ScalarOut, typename CoeffType>
 KOKKOS_FORCEINLINE_FUNCTION
-void combine (const Scalar1& newVal, Scalar2& result,
+void combine (const ScalarIn& newVal, ScalarOut& result,
               const CoeffType alpha, const CoeffType beta){
   // Sanity check
   assert ((needsAlpha<CM>() || alpha==CoeffType(1)) &&
