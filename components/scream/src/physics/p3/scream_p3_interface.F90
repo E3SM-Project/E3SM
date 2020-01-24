@@ -29,7 +29,7 @@ module scream_p3_interface_mod
   integer(kind=c_int) :: qsize = 9
 
   character(len=16)   :: micro_p3_tableversion = "4"
-  character(len=100)  :: micro_p3_lookup_dir = "./"
+  character(len=100)  :: micro_p3_lookup_dir = "./data"
   real(kind=c_real) :: cpair  !=    1004.64000000000
   real(kind=c_real) :: rair   !=    287.042311365049
   real(kind=c_real) :: rh2o   !=    461.504639820160
@@ -70,7 +70,7 @@ contains
     real(kind=c_real), intent(inout) :: naai(pcols,pver)     ! ice nucleation number
     real(kind=c_real), intent(inout) :: npccn(pcols,pver)    ! liquid activation number tendency
 
-    character(len=100) :: case_title
+    character(len=100) :: case_title, tmp_c1, tmp_c2
 
     integer(kind=c_int) :: i, k
     logical(kind=c_bool) :: masterproc
@@ -96,18 +96,19 @@ contains
     end do
     close(981)
 
-!    q(:,:,1) = 1.0e-5_rtype!state%q(:,:,1)
-!    q(:,:,2) = 1.0e-6_rtype!state%q(:,:,ixcldliq)
-!    q(:,:,3) = 1.0e-7_rtype!state%q(:,:,ixcldice)
-!    q(:,:,4) = 1.0e6_rtype!state%q(:,:,ixnumliq)
-!    q(:,:,5) = 1.0e5_rtype!state%q(:,:,ixnumice)
-!    q(:,:,6) = 1.0e-5_rtype!state%q(:,:,ixrain)
-!    q(:,:,7) = 1.0e5_rtype!state%q(:,:,ixnumrain)
-!    q(:,:,8) = 1.0e-8_rtype!state%q(:,:,ixcldrim) !Aaron, changed ixqirim to ixcldrim to match Kai's code
-!    q(:,:,9) = 1.0e4_rtype!state%q(:,:,ixrimvol)
+    !q(:,:,1) = 1.0e-5_rtype!state%q(:,:,1)
+    !q(:,:,2) = 1.0e-6_rtype!state%q(:,:,ixcldliq)
+    !q(:,:,3) = 1.0e-7_rtype!state%q(:,:,ixcldice)
+    !q(:,:,4) = 1.0e6_rtype!state%q(:,:,ixnumliq)
+    !q(:,:,5) = 1.0e5_rtype!state%q(:,:,ixnumice)
+    !q(:,:,6) = 1.0e-5_rtype!state%q(:,:,ixrain)
+    !q(:,:,7) = 1.0e5_rtype!state%q(:,:,ixnumrain)
+    !q(:,:,8) = 1.0e-8_rtype!state%q(:,:,ixcldrim) !Aaron, changed ixqirim to ixcldrim to match Kai's code
+    !q(:,:,9) = 1.0e4_rtype!state%q(:,:,ixrimvol)
     masterproc = .false.
     call micro_p3_utils_init(cpair,rair,rh2o,rhoh2o,mwh2o,mwdry,gravit,latvap,latice, &
              cpliq,tmelt,pi,0,masterproc)
+    print *, 'P3-Standalone-Init Finished'
   end subroutine p3_standalone_init_f90
   !====================================================================!
   subroutine p3_main_f90 (dtime,qdp,zi,pmid,pdel,ast,naai,npccn,q,FQ,T) bind(c)
@@ -308,7 +309,6 @@ contains
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
          vap_cld_exchange(its:ite,kts:kte) & ! OUT sum of vap-cld phase change tendencies
          )
-
     do i = its,ite
       do k = kts,kte
         FQ(i,k,1) = FQ(i,k,1) + (qv(i,k)     - q(i,k,1))/dtime
