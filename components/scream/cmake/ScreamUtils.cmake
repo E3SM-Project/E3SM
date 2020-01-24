@@ -16,10 +16,6 @@ function(CreateUnitTest target_name target_srcs scream_libs)
   set(multiValueArgs MPI_RANKS THREADS CONFIG_DEFS INCLUDE_DIRS)
   cmake_parse_arguments(CreateUnitTest "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN} )
 
-  if (SCREAM_LIB_ONLY)
-    return()
-  endif()
-
   # Set link directories (must be done BEFORE add_executable is called)
   link_directories(${SCREAM_TPL_LIBRARY_DIRS})
 
