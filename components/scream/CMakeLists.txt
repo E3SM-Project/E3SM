@@ -209,4 +209,6 @@ file(MAKE_DIRECTORY ${SCREAM_TEST_DATA_DIR})
 add_custom_target(baseline)
 
 add_subdirectory(src)
-add_subdirectory(tests)
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()
