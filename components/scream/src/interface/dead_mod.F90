@@ -53,27 +53,29 @@ contains
     !-------------------------------------------------------------------------------
 
     ! read the input parms (used to configure model)
-    nxg            =  -9999
-    nyg            =  -9999
-    nproc_x        =  -9999
-    seg_len        =  -9999
-    decomp_type    =  -9999
+    nxg            =  48602 !-9999
+    nyg            =  1     !-9999
+    nproc_x        =  0     !-9999
+    seg_len        =  0     !-9999
+    decomp_type    =  1     !-9999
+    ! TODO: when switching to a live component also reinstate the ability to
+    ! read in the namelist values, instead of the hard coded ones above.
 
-    if (my_task == master_task) then
-       unitn = shr_file_getUnit()
-       !open(unitn, file='x'//model//'_in'//trim(inst_suffix), status='old' )
-       open(unitn, file='scream'//'_in'//trim(inst_suffix), status='old' )
-       read(unitn,*) nxg
-       read(unitn,*) nyg
-       read(unitn,*) decomp_type
-       read(unitn,*) nproc_x
-       read(unitn,*) seg_len
-       if (model.eq.'rof') then
-          read(unitn,*) flood
-       end if
-       close (unitn)
-       call shr_file_freeunit(unitn)
-    endif
+!    if (my_task == master_task) then
+!       unitn = shr_file_getUnit()
+!       !open(unitn, file='x'//model//'_in'//trim(inst_suffix), status='old' )
+!       open(unitn, file='scream'//'_in'//trim(inst_suffix), status='old' )
+!       read(unitn,*) nxg
+!       read(unitn,*) nyg
+!       read(unitn,*) decomp_type
+!       read(unitn,*) nproc_x
+!       read(unitn,*) seg_len
+!       if (model.eq.'rof') then
+!          read(unitn,*) flood
+!       end if
+!       close (unitn)
+!       call shr_file_freeunit(unitn)
+!    endif
 
     call shr_mpi_bcast(nxg        , mpicom,'x'//model//' nxg')
     call shr_mpi_bcast(nyg        , mpicom,'x'//model//' nyg')
