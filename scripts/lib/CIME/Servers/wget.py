@@ -29,6 +29,11 @@ class WGET(GenericServer):
         except:
             logger.warning("Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .".format(address))
             return None
+        if err:
+            logger.warning("Could not connect to repo '{0}'\nThis is most likely either a proxy, or network issue .".format(address))
+            return None
+
+
         return cls(address, user=user, passwd=passwd)
 
     def fileexists(self, rel_path):
