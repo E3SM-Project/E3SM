@@ -1592,7 +1592,7 @@ subroutine shoc_tke(&
 
   ! Compute shear production term, which is on interface levels
   ! This follows the methods of Bretheron and Park (2010)
-  do k=2,nlev
+  do k=1,nlev-1
     do i=1,shcol
     
       kb=k+1     
