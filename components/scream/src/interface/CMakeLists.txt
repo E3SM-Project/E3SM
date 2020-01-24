@@ -12,6 +12,7 @@ endif()
 set(CSM_SHARE "${INSTALL_SHAREDPATH}/${COMP_INTERFACE}/${ESMFDIR}/${NINST_VALUE}/csm_share")
 
 add_library(atm ${ATM_SRC})
-target_include_directories(atm PUBLIC ${SCREAM_INCLUDE_DIRS} ${SCREAM_TPL_INCLUDE_DIRS} ${CSM_SHARE} ${INSTALL_SHAREDPATH}/include)
+target_include_directories(atm PUBLIC ${SCREAM_INCLUDE_DIRS})
+target_include_directories(atm SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CSM_SHARE} ${INSTALL_SHAREDPATH}/include)
 set_target_properties(atm PROPERTIES
   Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/cmake/atm)
