@@ -689,6 +689,7 @@ subroutine hetfrz_classnuc_cam_init(mincld_in)
       spec_idx(mom_pcarbon) = rad_cnst_get_spec_idx(0, mode_pcarbon_idx, 'm-organic')
       mode_idx(mom_pcarbon) = mode_pcarbon_idx
 #endif
+
    end if
 
    if (mode_giant_idx > 0) then
@@ -1552,7 +1553,7 @@ subroutine get_aer_num(ii, kk, ncnst, aer, aer_cb, rhoair,&
    do i = 1, 3
       total_aer_num(i)    = total_interstial_aer_num(i) + total_cloudborne_aer_num(i)
       coated_aer_num(i)   = total_interstial_aer_num(i)*dstcoat(i)
-      uncoated_aer_num(i) = total_interstial_aer_num(i)*(.1_r8-dstcoat(i))
+      uncoated_aer_num(i) = total_interstial_aer_num(i)*(1._r8-dstcoat(i))
    end do
 
    if (nmodes == MAM4_nmodes .or. nmodes == MAM5_nmodes .or. nmodes == MAM7_nmodes) then
