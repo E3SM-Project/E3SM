@@ -439,19 +439,19 @@ This allows using a different mpirun command to launch unit tests
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.1.0b08-ncdfio-mpt-g</command>
+        <command name="load">esmf-8.1.0b05-ncdfio-mpt-g</command>
       </modules>
       <modules compiler="intel" mpilib="!mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.1.0b08-ncdfio-mpt-O</command>
+        <command name="load">esmf-8.1.0b05-ncdfio-mpt-O</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="TRUE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.1.0b08-ncdfio-mpiuni-g</command>
+        <command name="load">esmf-8.1.0b05-ncdfio-mpiuni-g</command>
       </modules>
       <modules compiler="intel" mpilib="mpi-serial" DEBUG="FALSE" comp_interface="nuopc">
         <command name="use">/glade/work/turuncu/PROGS/modulefiles/esmfpkgs/intel/19.0.2</command>
-        <command name="load">esmf-8.1.0b08-ncdfio-mpiuni-O</command>
+        <command name="load">esmf-8.1.0b05-ncdfio-mpiuni-O</command>
       </modules>
       <modules compiler="pgi">
 	<command name="load">pgi/19.3</command>
