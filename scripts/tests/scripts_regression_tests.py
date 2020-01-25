@@ -1128,8 +1128,8 @@ class TestCreateTestCommon(unittest.TestCase):
     def _create_test(self, extra_args, test_id=None, pre_run_errors=False, run_errors=False, env_changes=""):
     ###########################################################################
         # All stub model not supported in nuopc driver
-        if test_id and test_id == "cime_developer" and CIME.utils.get_cime_default_driver() == 'nuopc':
-            extra_args += " ^SMS.T42_T42.S "
+        if "cime_developer" in extra_args and CIME.utils.get_cime_default_driver() == 'nuopc':
+            extra_args.append(" ^SMS_Ln3.T42_T42.S ^PRE.f19_f19.ADESP ^PRE.f19_f19.ADESP_TEST ")
         driver = CIME.utils.get_cime_default_driver()
 
         test_id = "{}-{}".format(self._baseline_name, CIME.utils.get_timestamp()) if test_id is None else test_id
@@ -1151,7 +1151,7 @@ class TestCreateTestCommon(unittest.TestCase):
             expected_stat = 0 if not pre_run_errors and not run_errors else CIME.utils.TESTS_FAILED_ERR_CODE
 
         run_cmd_assert_result(self, "{} {}/create_test {}".format(env_changes, SCRIPT_DIR, " ".join(extra_args)),
-                              expected_stat=expected_stat)
+                              expected_stat=expected_stat, verbose=True)
 
         if full_run:
             self._wait_for_tests(test_id, expect_works=(not pre_run_errors and not run_errors))
