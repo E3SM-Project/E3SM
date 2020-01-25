@@ -633,7 +633,7 @@ if ($scam) {
     }
 }
 
-# SMALL PLANET
+# IOP-SCREAM mode
 my $iop_scream = $cfg->get('iop_scream');
 if ($iop_scream) {
     add_default($nl, 'omega');

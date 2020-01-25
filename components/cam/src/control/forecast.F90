@@ -192,12 +192,12 @@ subroutine forecast(lat, psm1, psm2,ps, &
       i=1
       do k=1,plev
       ! If IOP_SCREAM, do not consider physics temperature tendency
-      !   since that will be redudant.  In pure SCM mode, that section 
+      !   since that will be redundant.  In pure SCM mode, that section 
       !   of dycore is not called and thus needs to be added here.  
 #ifdef MODEL_THETA_L
         ! theta_l model prog variable is temp tendency
         if (iop_scream) then 
-	  tfcst(k) = t3m2(k) + divt3d(k)
+          tfcst(k) = t3m2(k) + divt3d(k)
 	else
 	  tfcst(k) = t3m2(k) + t2(k) + divt3d(k)
 	endif
@@ -275,7 +275,7 @@ subroutine forecast(lat, psm1, psm2,ps, &
 ! TIME FOR VERTICAL ADVECTION STEP
 !
 !
-!  Eularian forecast for u,v,t, and q
+!  Eulerian forecast for u,v,t, and q
 !
 !  If three-dimensional forcing is not provided in the IOP-forcing file
 !    then we need to add the effects of large-scale vertical advection for
@@ -520,7 +520,7 @@ end if
 
    do k=1,plev
      ! If IOP_SCREAM, do not consider physics temperature tendency
-     !   since that will be redudant.  In pure SCM mode, that section 
+     !   since that will be redundant.  In pure SCM mode, that section 
      !   of dycore is not called and thus needs to be added here.   
 #ifdef MODEL_THETA_L
      ! in theta_l model, prog variable is temp tendency, not temp 
