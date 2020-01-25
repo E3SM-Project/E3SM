@@ -1,8 +1,11 @@
 <?xml version="1.0"?>
 <config case="mesh_metrics">
+	<get_file dest_path="bathymetry_database" file_name="SRTM15_plus_earth_relief_15s.nc">
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/bathymetry_database/"/>
+	</get_file>
 
 	<add_link source="../culled_mesh/culled_mesh.nc" dest="mesh.nc"/>
-	<add_link source_path="bathymetry_database" source="SRTM15_plus/earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
+	<add_link source_path="bathymetry_database" source="SRTM15_plus_earth_relief_15s.nc" dest="earth_relief_15s.nc"/>
 	<add_link source_path="mpas_model" source="testing_and_setup/compass/ocean/jigsaw_to_MPAS/inject_bathymetry.py" dest="inject_bathymetry.py"/>
 
 	<run_script name="run.py">

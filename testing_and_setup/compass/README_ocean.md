@@ -56,28 +56,17 @@ On LANL IC, a full checkout is already available at:
 geometric_data = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/geometric_data_v0.1
 ```
 
-### mesh_database and initial_condition_database
+### mesh_database, initial_condition_database and bathymetry_database
 
-These are directories for storing pre-generated mesh files and data sets for
-creating initial conditions. These can be empty directories, in which case
+These are directories for storing pre-generated mesh files, data sets for
+creating initial conditions, and bathymetry data. These can be empty directories, in which case
 meshes and other data sets will be downloaded as required during test-case
 setup.  (If a test case appears to hang during setup, it is most likely
-downloading mesh or initial-condition data.)
+downloading mesh, initial-condition or bathymetry data.)
 
 On LANL IC, the shared data bases can be found at:
 ```
 mesh_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/mesh_database
 initial_condition_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/initial_condition_database
-```
-
-### bathymetry_database
-
-This is a database for bathymetry data sets that can be used at various phases
-of mesh generation and test-case initialization.  Currently, only a few test
-cases require these data sets and they are not downloaded automatically.  Thus,
-there is not a good way for users to access these datasets.
-
-On LANL IC, the shared location of the bathymetry database is at:
-```
 bathymetry_database = /usr/projects/regionalclimate/COMMON_MPAS/ocean/grids/bathymetry_database
 ```
