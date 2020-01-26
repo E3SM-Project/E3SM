@@ -508,24 +508,9 @@ contains
          ! Normalize k33
          do k = 2, maxLevelCell(iCell)
             k33(k,iCell) = k33(k,iCell) / k33Norm(k)
-                !print '(a,2i5,1000e9.2)', 'iCell,k,Up',iCell,k,slopeTriadUp(k,:,iCell)
-                !print '(a,2i5,1000e9.2)', 'iCell,k,Dn',iCell,k,slopeTriadDown(k,:,iCell)
-if (k33Norm(k)<1e-15) then
-    print *, 'WARNING: k33Norm(k)<1e-15'
-                !print '(a,100i9)', 'k,iCell: ',k,iCell
-                !print '(a,100e9.2)', 'k33: ',k33(k,iCell)
-                !print '(a,100e9.2)', 'k33Norm: ',k33Norm(k)
-                !print '(a,100f5.2)', 'slopeTaper: ',slopeTaper(k)
-                !print '(a,1000e9.2)', 'slopeTriadUp: ',slopeTriadUp(k,:,iCell)
-                !print '(a,1000e9.2)', 'slopeTriadDown: ',slopeTriadDown(k,:,iCell)
-endif
          end do
       end do ! iCell
       !$omp end do
-
-!      print *, 'in gm: max/min, up/down',&
-!      maxval(slopeTriadUp),minval(slopeTriadUp), &
-!      maxval(slopeTriadDown),minval(slopeTriadDown)
 
       deallocate(dzTop)
       deallocate(dTdzTop)
