@@ -299,9 +299,6 @@ contains
 
       ! copy some intent(in) into local work space
 
-            ! mrp printing debug loop. Remove later
-            !print *, 'EOS. displacementType=',trim(displacementType)
-            !    print *, 'k,density(k,iCell),thermalExpansionCoeff(k,iCell),salineContractionCoeff(k,iCell)'
       !*** if surfaceDisplaced, then compute density at all levels
       !*** based on input surface values
       !*** return fixed values of expansion coefficients
@@ -320,18 +317,11 @@ contains
                                (tracersSurfaceLayerValue(indexS,iCell) - &
                                 ocnEqStateLinearSref)
 
-            !mrp replace this ********** temporary
-!            thermalExpansionCoeff(k,iCell) = ocnEqStateLinearAlpha/ &
-!                                             density(k,iCell)
-!
-!            salineContractionCoeff(k,iCell) = ocnEqStateLinearBeta/ &
-!                                              density(k,iCell)
-            thermalExpansionCoeff(k,iCell) = ocnEqStateLinearAlpha
-            salineContractionCoeff(k,iCell) = ocnEqStateLinearBeta
-            ! mrp printing debug loop. Remove later
-            !if (iCell==6) then
-            !    print *, k,density(k,iCell),thermalExpansionCoeff(k,iCell),salineContractionCoeff(k,iCell)
-            !endif
+            thermalExpansionCoeff(k,iCell) = ocnEqStateLinearAlpha/ &
+                                             density(k,iCell)
+
+            salineContractionCoeff(k,iCell) = ocnEqStateLinearBeta/ &
+                                              density(k,iCell)
          end do
          end do
          !$omp end do
@@ -350,24 +340,16 @@ contains
                                (tracers(indexS,k,iCell) - &
                                 ocnEqStateLinearSref)
 
-            !mrp replace this ********** temporary
-!            thermalExpansionCoeff(k,iCell) = ocnEqStateLinearAlpha/ &
-!                                             density(k,iCell)
-!
-!            salineContractionCoeff(k,iCell) = ocnEqStateLinearBeta/ &
-!                                              density(k,iCell)
-            thermalExpansionCoeff(k,iCell) = ocnEqStateLinearAlpha
-            salineContractionCoeff(k,iCell) = ocnEqStateLinearBeta
-            ! mrp printing debug loop. Remove later
-            !if (iCell==6) then
-            !    print *, k,density(k,iCell),thermalExpansionCoeff(k,iCell),salineContractionCoeff(k,iCell)
-            !endif
+            thermalExpansionCoeff(k,iCell) = ocnEqStateLinearAlpha/ &
+                                             density(k,iCell)
+
+            salineContractionCoeff(k,iCell) = ocnEqStateLinearBeta/ &
+                                              density(k,iCell)
          end do
          end do
          !$omp end do
 
       endif
-      
 
       !-----------------------------------------------------------------
 
