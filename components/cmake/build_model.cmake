@@ -56,7 +56,7 @@ function(build_model COMP_CLASS COMP_NAME)
     set(NOOPT_FILES "cam/src/physics/rrtmg/ext/rrtmg_lw/rrtmg_lw_k_g.f90;cam/src/physics/rrtmg/ext/rrtmg_sw/rrtmg_sw_k_g.f90")
 
     if (COSP_LIBDIR)
-      include(${PROJECT_SOURCE_DIR}/cam/src/physics/cosp/Cosp.cmake)
+      include(${PROJECT_SOURCE_DIR}/cam/src/physics/cosp2/Cosp.cmake)
     endif()
 
   endif()

@@ -1,0 +1,21 @@
+Overview:
+This directory contains version 2 of the Cloud Feedback Model Intercomparison Project
+Observational Simulator Package (COSP2).
+
+The code in this directory depends on
+two model-specific files in ../model-interface which may be edited for
+consistency with the host model.
+
+cosp.f90 contains
+ *) type(cosp_grid_inputs)  - COSP inputs directly from model state
+ *) type(cosp_inputs)       - COSP inputs derived from model state (optics)
+ *) type(cosp_outputs)      - COSP outputs
+ *) cosp_simulator          - Main cosp engine
+ *) cosp_init               - COSP Initialization
+ *) cosp_errorCheck         - Error checking for inputs
+cosp_config.F90 include configuration information needed by the host model and COSP
+                 (e.g. joint-histogram bin boundaries)
+cosp_stats.F90 contains statistical subroutines used by multiple simulators
+                 (e.g. Joint-histogram computation)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
