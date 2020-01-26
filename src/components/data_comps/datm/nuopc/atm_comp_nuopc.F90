@@ -20,14 +20,13 @@ module atm_comp_nuopc
   use shr_strdata_mod  , only : shr_strdata_type, shr_strdata_readnml
   use shr_mpi_mod      , only : shr_mpi_bcast
   use shr_orb_mod      , only : shr_orb_params, SHR_ORB_UNDEF_INT, SHR_ORB_UNDEF_REAL
-  use dshr_nuopc_mod   , only : fld_list_type, fldsMax, dshr_realize
-  use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh, dshr_create_mesh_from_grid
-  use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
-  use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
+  use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
+  use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
+  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh
+  use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
+  use dshr_nuopc_mod   , only : dshr_create_mesh_from_grid
   use datm_comp_mod    , only : datm_comp_advertise, datm_comp_init, datm_comp_run
-  use datm_comp_mod    , only : fldsExport, fldsExport_num, fldsImport, fldsImport_num
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
 
   implicit none
@@ -42,7 +41,7 @@ module atm_comp_nuopc
   private :: OrbitalInit
   private :: OrbitalUpdate
 
-  interface getNextRadCday  
+  interface getNextRadCday
      module procedure getNextRadCDay_i8
      module procedure getNextRadCDay_i4
   end interface getNextRadCday
@@ -290,7 +289,7 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(CL)           :: filename 
+    character(CL)           :: filename
     type(ESMF_TimeInterval) :: timeStep
     type(ESMF_TIME)         :: currTime
     type(ESMF_Calendar)     :: esmf_calendar ! esmf calendar
@@ -374,19 +373,10 @@ contains
     call dshr_check_mesh(mesh, sdat, 'datm', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! Realize the actively coupled fields, now that a mesh is established
-    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
-    ! by replacing the advertised fields with the newly created fields of the same name.
-
-    call dshr_realize( exportState, fldsExport, fldsExport_num, &
-         flds_scalar_name, flds_scalar_num, mesh, tag=trim(subname)//':datmExport', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_realize( importState, fldsImport, fldsImport_num, &
-         flds_scalar_name, flds_scalar_num, mesh, tag=trim(subname)//':datmImport', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Initialize dfields data type (to map streams to export state fields)
-    call datm_comp_init(sdat, importState, exportState, logunit, my_task==master_task, rc=rc)
+    ! Realize the actively coupled fields, now that a mesh is established and
+    ! initialize dfields data type (to map streams to export state fields)
+    call datm_comp_init(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+         logunit, my_task==master_task, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
@@ -557,19 +547,14 @@ contains
   subroutine ModelFinalize(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
-
-    ! local variables
-    character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
     if (my_task == master_task) then
        write(logunit,*)
        write(logunit,*) 'datm : end of main integration loop'
        write(logunit,*)
     end if
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine ModelFinalize
 
@@ -584,7 +569,7 @@ contains
     ! input/output variables
     type(ESMF_GridComp)                 :: gcomp
     integer             , intent(in)    :: logunit
-    logical             , intent(in)    :: mastertask 
+    logical             , intent(in)    :: mastertask
     integer             , intent(out)   :: rc              ! output error
 
     ! local variables
@@ -674,12 +659,12 @@ contains
   subroutine OrbitalUpdate(clock, logunit,  mastertask, eccen, obliqr, lambm0, mvelpp, rc)
 
     !----------------------------------------------------------
-    ! Update orbital settings 
+    ! Update orbital settings
     !----------------------------------------------------------
 
     ! input/output variables
     type(ESMF_Clock) , intent(in)    :: clock
-    integer          , intent(in)    :: logunit 
+    integer          , intent(in)    :: logunit
     logical          , intent(in)    :: mastertask
     real(R8)         , intent(inout) :: eccen  ! orbital eccentricity
     real(R8)         , intent(inout) :: obliqr ! Earths obliquity in rad
@@ -689,7 +674,7 @@ contains
 
     ! local variables
     type(ESMF_Time)   :: CurrTime ! current time
-    integer           :: year     ! model year at current time 
+    integer           :: year     ! model year at current time
     integer           :: orb_year ! orbital year for current orbital computation
     character(len=CL) :: msgstr   ! temporary
     logical           :: lprint
@@ -705,7 +690,7 @@ contains
        orb_year = orb_iyear + (year - orb_iyear_align)
        lprint = mastertask
     else
-       orb_year = orb_iyear 
+       orb_year = orb_iyear
        if (first_time) then
           lprint = mastertask
           first_time = .false.

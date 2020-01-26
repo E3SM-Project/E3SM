@@ -4,7 +4,7 @@ module dshr_nuopc_mod
   use NUOPC_Model
   use ESMF
   use mct_mod          , only : mct_avect_init, mct_avect_lsize, mct_avect_indexra
-  use dshr_methods_mod , only : alarmInit, chkerr, state_getfldptr, get_component_instance
+  use dshr_methods_mod , only : chkerr, state_getfldptr, get_component_instance
   use shr_strdata_mod  , only : shr_strdata_type
   use shr_kind_mod     , only : r8=>shr_kind_r8, cs=>shr_kind_cs, cl=>shr_kind_cl, cxx=>shr_kind_cxx
   use shr_string_mod   , only : shr_string_listGetIndex
@@ -18,48 +18,44 @@ module dshr_nuopc_mod
   public :: dshr_check_mesh
   public :: dshr_create_mesh_from_grid
   public :: dshr_set_runclock
-  public :: dshr_fld_add
-  public :: dshr_dfield_add
-  public :: dshr_realize
   public :: dshr_sdat_init
-  public :: dshr_streams_copy
   public :: dshr_restart_read
   public :: dshr_restart_write
   public :: dshr_get_atm_adjustment_factors
   public :: dshr_get_griddata
   public :: dshr_set_griddata
 
-  interface dshr_dfield_add
-     module procedure dshr_dfield_add_1d
-     module procedure dshr_dfield_add_2d
-     module procedure dshr_dfield_add_strmfld
-  end interface dshr_dfield_add
+  private :: dshr_alarm_init
+  private :: dshr_time_init
 
-  type fld_list_type
-    character(len=128) :: stdname
-    integer :: ungridded_lbound = 0
-    integer :: ungridded_ubound = 0
-  end type fld_list_type
+  ! Clock and alarm options
+  character(len=*), private, parameter :: &
+       optNONE           = "none"      , &
+       optNever          = "never"     , &
+       optNSteps         = "nsteps"    , &
+       optNStep          = "nstep"     , &
+       optNSeconds       = "nseconds"  , &
+       optNSecond        = "nsecond"   , &
+       optNMinutes       = "nminutes"  , &
+       optNMinute        = "nminute"   , &
+       optNHours         = "nhours"    , &
+       optNHour          = "nhour"     , &
+       optNDays          = "ndays"     , &
+       optNDay           = "nday"      , &
+       optNMonths        = "nmonths"   , &
+       optNMonth         = "nmonth"    , &
+       optNYears         = "nyears"    , &
+       optNYear          = "nyear"     , &
+       optMonthly        = "monthly"   , &
+       optYearly         = "yearly"    , &
+       optDate           = "date"      , &
+       optIfdays0        = "ifdays0"   
 
-  type dfield_type
-     ! state data
-     real(r8), pointer          :: state_data1d(:) => null()
-     real(r8), pointer          :: state_data2d(:,:) => null()
-     ! stream data input (always assumed to be 1d for now)
-     real(r8), pointer          :: stream_data1d(:) => null()
-     ! stream data pointers for 1d state data
-     integer                    :: sdat_stream_index = 0
-     integer                    :: sdat_avect_index = 0
-     ! stream data pointers for 2d state data
-     integer, pointer           :: sdat_stream_indices(:) => null()
-     integer, pointer           :: sdat_avect_indices(:) => null()
-     integer                    :: stream_nflds = 0 ! number of stream field names
-  end type dfield_type
 
   ! Note that gridTofieldMap = 2, therefore the ungridded dimension is innermost
 
   integer                 :: iunset = -999
-  integer     , parameter :: fldsMax = 100
+  integer     , parameter :: SecPerDay = 86400 ! Seconds per day
   integer     , parameter :: dbug = 10
   character(*), parameter :: modName =  "(dhsr_nuopc_mod)"
   character(*), parameter :: u_FILE_u = &
@@ -238,7 +234,6 @@ contains
     end subroutine nc_check_err
 
   end subroutine dshr_create_mesh_from_grid
-
 
 !===============================================================================
 
@@ -449,400 +444,6 @@ contains
 
 !===============================================================================
 
-  subroutine dshr_fld_add(fldname, fldlist_num, fldlist, ungridded_lbound, ungridded_ubound)
-
-    ! input/output variables
-    character(len=*)               , intent(in)    :: fldname
-    integer                        , intent(inout) :: fldlist_num
-    type(fld_list_type)            , intent(inout) :: fldlist(:)
-    integer             , optional , intent(in)    :: ungridded_lbound
-    integer             , optional , intent(in)    :: ungridded_ubound
-
-    ! local variables
-    integer :: rc
-    character(len=*), parameter :: subname='(dshr_nuopc_mod:dshr_fld_add)'
-    ! ----------------------------------------------
-
-    ! Set up a list of field information
-
-    fldlist_num = fldlist_num + 1
-    if (fldlist_num > fldsMax) then
-      call ESMF_LogWrite(trim(subname)//": ERROR num > fldsMax "//trim(fldname), ESMF_LOGMSG_INFO)
-      rc = ESMF_FAILURE
-      return
-    endif
-    fldlist(fldlist_num)%stdname = trim(fldname)
-
-    if (present(ungridded_lbound) .and. present(ungridded_ubound)) then
-       fldlist(fldlist_num)%ungridded_lbound = ungridded_lbound
-       fldlist(fldlist_num)%ungridded_ubound = ungridded_ubound
-    end if
-
-  end subroutine dshr_fld_add
-
-!===============================================================================
-
-  subroutine dshr_dfield_add_strmfld(sdat, dfields, dfields_num, strm_fld, strm_ptr, &
-       logunit, masterproc)
-
-    ! input/output variables
-    type(shr_strdata_type) , intent(in)    :: sdat
-    type(dfield_type)      , intent(inout) :: dfields(:)
-    integer                , intent(inout) :: dfields_num
-    character(len=*)       , intent(in)    :: strm_fld
-    real(r8)               , pointer       :: strm_ptr(:)
-    integer, optional      , intent(in)    :: logunit
-    logical, optional      , intent(in)    :: masterproc
-
-    ! local variables
-    integer :: ns, kf
-    integer :: lsize, num
-    logical :: found
-    character(len=*), parameter :: subname='(dfield_add_strmfld)'
-    ! ----------------------------------------------
-
-    ! error checks
-    dfields_num = dfields_num + 1
-    if (dfields_num > fldsMax) then
-       call shr_sys_abort(trim(subname)//": ERROR num > fldsMax for "//trim(strm_fld))
-    endif
-    num = dfields_num
-
-    ! determine local size
-    lsize = mct_avect_lsize(sdat%avs(1))
-
-    ! loop over all input streams and ! determine if the strm_fld is in the attribute vector of stream ns
-    found = .false.
-    do ns = 1, sdat%nstreams
-       kf  = mct_aVect_indexRA(sdat%avs(ns), trim(strm_fld), perrWith='quiet')
-       if (kf > 0) then
-          ! the field is in the attribute vector - so set the following values
-          dfields(num)%sdat_stream_index = ns
-          dfields(num)%sdat_avect_index = kf
-          allocate(dfields(num)%stream_data1d(lsize))
-          strm_ptr => dfields(num)%stream_data1d
-          found = .true.
-          if (present(logunit) .and. present(masterproc)) then
-             if (masterproc) then
-                write(logunit,*)'(dshr_addfield_add) allocating memory for stream field strm_'//trim(strm_fld)
-             end if
-          end if
-          exit
-       end if
-    end do
-    if (.not. found) then
-       dfields(num)%sdat_stream_index = iunset
-       dfields(num)%sdat_avect_index = iunset
-       dfields(num)%stream_data1d => null()
-    end if
-
-  end subroutine dshr_dfield_add_strmfld
-
-!===============================================================================
-
-  subroutine dshr_dfield_add_1d(sdat, state, dfields, dfields_num, state_fld, strm_fld, strm_ptr, state_ptr, &
-       logunit, masterproc, rc)
-
-    ! Set 1d dfield values
-
-    type(shr_strdata_type) , intent(in)    :: sdat
-    type(ESMF_State)       , intent(inout) :: state
-    type(dfield_type)      , intent(inout) :: dfields(:)
-    integer                , intent(inout) :: dfields_num
-    character(len=*)       , intent(in)    :: state_fld
-    character(len=*)       , intent(in)    :: strm_fld
-    real(r8), optional     , pointer       :: strm_ptr(:)
-    real(r8), optional     , pointer       :: state_ptr(:)
-    integer , optional     , intent(in)    :: logunit
-    logical , optional     , intent(in)    :: masterproc
-    integer                , intent(out)   :: rc
-
-    ! local variables
-    integer :: ns, kf
-    integer :: lsize, num
-    logical :: found
-    character(len=*), parameter :: subname='(dfield_add_1d)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! error checks
-    dfields_num = dfields_num + 1
-    if (dfields_num > fldsMax) then
-       call shr_sys_abort(trim(subname)//": ERROR num > fldsMax for "//trim(state_fld))
-    endif
-    num = dfields_num
-
-    ! Initialize strm_ptr and state_ptr if it is present
-    ! These will be set to valid values if the relevant fields are found
-    if (present(strm_ptr)) strm_ptr => null()
-    if (present(state_ptr)) state_ptr => null()
-
-    ! determine local size
-    lsize = mct_avect_lsize(sdat%avs(1))
-
-    ! always allocate memory for stream_data and initialize it to 0
-    ! note that if the attribute vector is not found in the streams
-
-    ! loop over all input streams
-    found = .false.
-    do ns = 1, sdat%nstreams
-       ! determine if the strm_fld is in the attribute vector of stream ns
-       kf  = mct_aVect_indexRA(sdat%avs(ns), trim(strm_fld), perrWith='quiet')
-       if (kf > 0) then
-          ! the field is in the attribute vector - so set the following values
-          dfields(num)%sdat_stream_index = ns
-          dfields(num)%sdat_avect_index = kf
-          allocate(dfields(num)%stream_data1d(lsize))
-          dfields(num)%stream_data1d(:) = 0._r8
-          ! set strm_ptr if argument is present
-          if (present(strm_ptr)) then
-             strm_ptr => dfields(num)%stream_data1d
-          end if
-          if (present(logunit) .and. present(masterproc)) then
-             if (masterproc) then
-                write(logunit,*)'(dshr_addfield_add) allocating memory for field '//trim(strm_fld)
-             end if
-          end if
-          found = .true.
-          exit
-       end if
-    end do
-    if (.not. found) then
-       dfields(num)%sdat_stream_index = iunset
-       dfields(num)%sdat_avect_index = iunset
-    end if
-
-    ! Set export state array pointer
-    call state_getfldptr(State, fldname=trim(state_fld), fldptr1=dfields(num)%state_data1d, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    dfields(num)%state_data1d = 0.0_r8
-    if (present(logunit) .and. present(masterproc)) then
-       if (masterproc) then
-          write(logunit,*)'(dshr_addfield_add) setting pointer for export state '//trim(state_fld)
-       end if
-    end if
-
-    ! Return array pointer if argument is present
-    if (present(state_ptr)) then
-       state_ptr => dfields(num)%state_data1d
-    end if
-
-  end subroutine dshr_dfield_add_1d
-
-  !===============================================================================
-
-  subroutine dshr_dfield_add_2d(sdat, state, dfields, dfields_num, state_fld, strm_flds, state_ptr, &
-       logunit, masterproc, rc)
-
-    ! input/output variables
-    type(shr_strdata_type) , intent(in)    :: sdat
-    type(ESMF_State)       , intent(inout) :: state
-    type(dfield_type)      , intent(inout) :: dfields(:)
-    integer                , intent(inout) :: dfields_num
-    character(len=*)       , intent(in)    :: state_fld
-    character(len=*)       , intent(in)    :: strm_flds(:)
-    real(r8), optional     , pointer       :: state_ptr(:,:)
-    integer , optional     , intent(in)    :: logunit
-    logical , optional     , intent(in)    :: masterproc
-    integer                , intent(out)   :: rc
-
-    ! local variables
-    integer :: n, i, kf, ns, nf
-    integer :: nflds, lsize, num
-    logical :: found
-    character(len=*), parameter :: subname='(dfield_add_2d)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! error checks
-    dfields_num = dfields_num + 1
-    if (dfields_num > fldsMax) then
-       call shr_sys_abort(trim(subname)//": ERROR num > fldsMax for "//trim(state_fld))
-    endif
-    num = dfields_num
-
-    ! determine stream fldnames array
-    nflds = size(strm_flds)
-    dfields(num)%stream_nflds = nflds
-    allocate(dfields(num)%sdat_stream_indices(nflds))
-    allocate(dfields(num)%sdat_avect_indices(nflds))
-
-    ! determine local size
-    lsize = mct_avect_lsize(sdat%avs(1))
-
-    ! loop through input array of stream field names
-    do nf = 1, nflds
-       ! loop through input streams
-       do ns = 1, sdat%nstreams
-          ! determine if the strm_flds(nf) is in the attribute vector of stream ns
-          kf = mct_aVect_indexRA(sdat%avs(ns), trim(strm_flds(nf)), perrWith='quiet')
-          if (kf > 0) then
-             dfields(num)%sdat_stream_indices(nf) = ns
-             dfields(num)%sdat_avect_indices(nf) = kf
-          end if
-       end do
-    end do
-
-    ! Set export state array pointer
-    call state_getfldptr(State, fldname=trim(state_fld), fldptr2=dfields(num)%state_data2d, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-    dfields(num)%state_data2d(nflds,lsize) = 0._r8
-
-    ! Return array pointer if argument is present
-    if (present(state_ptr)) then
-       state_ptr => dfields(num)%state_data2d
-    end if
-
-  end subroutine dshr_dfield_add_2d
-
-  !===============================================================================
-
-  subroutine dshr_streams_copy(dfields, dfields_num, sdat, rc)
-
-    ! Copy stream data into dfield data type for each element of dfields
-
-    ! input/output variables
-    type(dfield_type)      , intent(inout) :: dfields(:)
-    integer                , intent(in)    :: dfields_num
-    type(shr_strdata_type) , intent(in)    :: sdat
-    integer                , intent(out)   :: rc
-
-    ! local variables
-    integer :: n, i, k
-    integer :: avect_index
-    integer :: stream_index
-    !-------------------------------------------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    ! Loop over all dfield entries and fill in stream_data and state_data1d or state_data2d arrays
-    do n = 1,dfields_num
-
-       ! Map the stream data to the state data
-       if (associated(dfields(n)%state_data1d)) then
-          stream_index = dfields(n)%sdat_stream_index
-          avect_index =  dfields(n)%sdat_avect_index
-          if (stream_index /= iunset .and. avect_index /= iunset) then
-             dfields(n)%stream_data1d(:) = sdat%avs(stream_index)%rattr(avect_index,:)
-             dfields(n)%state_data1d(:) = dfields(n)%stream_data1d(:)
-          end if
-       else if (associated(dfields(n)%state_data2d)) then
-          do i = 1,dfields(n)%stream_nflds
-             stream_index = dfields(n)%sdat_stream_indices(i)
-             avect_index = dfields(n)%sdat_avect_indices(i)
-             dfields(n)%state_data2d(i,:) = sdat%avs(stream_index)%rattr(avect_index,:)
-          end do
-       else if (associated(dfields(n)%stream_data1d)) then
-          stream_index = dfields(n)%sdat_stream_index
-          avect_index =  dfields(n)%sdat_avect_index
-          if (stream_index /= iunset .and. avect_index /= iunset) then
-             dfields(n)%stream_data1d(:) = sdat%avs(stream_index)%rattr(avect_index,:)
-          end if
-       end if
-
-    end do
-
-  end subroutine dshr_streams_copy
-
-  !===============================================================================
-
-  subroutine dshr_realize(state, fldList, numflds, flds_scalar_name, flds_scalar_num, mesh, tag, rc)
-
-    ! input/output variables
-    type(ESMF_State)    , intent(inout) :: state
-    type(fld_list_type) , intent(in)    :: fldList(:)
-    integer             , intent(in)    :: numflds
-    character(len=*)    , intent(in)    :: flds_scalar_name
-    integer             , intent(in)    :: flds_scalar_num
-    character(len=*)    , intent(in)    :: tag
-    type(ESMF_Mesh)     , intent(in)    :: mesh
-    integer             , intent(inout) :: rc
-
-    ! local variables
-    integer                :: n
-    type(ESMF_Field)       :: field
-    character(len=80)      :: stdname
-    character(len=*),parameter  :: subname='(dshr_nuopc_mod:fld_list_realize)'
-    ! ----------------------------------------------
-
-    rc = ESMF_SUCCESS
-
-    do n = 1, numflds
-       stdname = fldList(n)%stdname
-       if (NUOPC_IsConnected(state, fieldName=stdname)) then
-          if (stdname == trim(flds_scalar_name)) then
-             call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected on root pe", &
-                  ESMF_LOGMSG_INFO)
-             ! Create the scalar field
-             call SetScalarField(field, flds_scalar_name, flds_scalar_num, rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-          else
-             ! Create the field
-             if (fldlist(n)%ungridded_lbound > 0 .and. fldlist(n)%ungridded_ubound > 0) then
-                field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=stdname, meshloc=ESMF_MESHLOC_ELEMENT, &
-                     ungriddedLbound=(/fldlist(n)%ungridded_lbound/), &
-                     ungriddedUbound=(/fldlist(n)%ungridded_ubound/), gridToFieldMap=(/2/), rc=rc)
-                if (ChkErr(rc,__LINE__,u_FILE_u)) return
-             else
-                field = ESMF_FieldCreate(mesh, ESMF_TYPEKIND_R8, name=stdname, meshloc=ESMF_MESHLOC_ELEMENT, rc=rc)
-                if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-             end if
-             call ESMF_LogWrite(trim(subname)//trim(tag)//" Field = "//trim(stdname)//" is connected using mesh", &
-                  ESMF_LOGMSG_INFO)
-          endif
-
-          ! NOW call NUOPC_Realize
-          call NUOPC_Realize(state, field=field, rc=rc)
-          if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-       else
-          if (stdname /= trim(flds_scalar_name)) then
-             call ESMF_LogWrite(subname // trim(tag) // " Field = "// trim(stdname) // " is not connected.", &
-                  ESMF_LOGMSG_INFO)
-             call ESMF_StateRemove(state, (/stdname/), rc=rc)
-             if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-          end if
-       end if
-    end do
-
-  contains  !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    subroutine SetScalarField(field, flds_scalar_name, flds_scalar_num, rc)
-      ! ----------------------------------------------
-      ! create a field with scalar data on the root pe
-      ! ----------------------------------------------
-
-      type(ESMF_Field) , intent(inout) :: field
-      character(len=*) , intent(in)    :: flds_scalar_name
-      integer          , intent(in)    :: flds_scalar_num
-      integer          , intent(inout) :: rc
-
-      ! local variables
-      type(ESMF_Distgrid) :: distgrid
-      type(ESMF_Grid)     :: grid
-      character(len=*), parameter :: subname='(dshr_nuopc_mod:SetScalarField)'
-      ! ----------------------------------------------
-
-      rc = ESMF_SUCCESS
-
-      ! create a DistGrid with a single index space element, which gets mapped onto DE 0.
-      distgrid = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/1/), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-
-      grid = ESMF_GridCreate(distgrid, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-
-      field = ESMF_FieldCreate(name=trim(flds_scalar_name), grid=grid, typekind=ESMF_TYPEKIND_R8, &
-           ungriddedLBound=(/1/), ungriddedUBound=(/flds_scalar_num/), gridToFieldMap=(/2/), rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=u_FILE_u)) return
-
-    end subroutine SetScalarField
-
-  end subroutine dshr_realize
-
-  !===============================================================================
-
   subroutine dshr_model_initphase(gcomp, importState, exportState, clock, rc)
 
     ! input/output variables
@@ -860,7 +461,7 @@ contains
 
   end subroutine dshr_model_initphase
 
-  !===============================================================================
+!===============================================================================
 
   subroutine dshr_set_runclock(gcomp, rc)
 
@@ -927,7 +528,7 @@ contains
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
        read(cvalue,*) restart_ymd
 
-       call alarmInit(mclock, restart_alarm, restart_option, &
+       call dshr_alarm_init(mclock, restart_alarm, restart_option, &
             opt_n   = restart_n,           &
             opt_ymd = restart_ymd,         &
             RefTime = mcurrTime,           &
@@ -951,139 +552,492 @@ contains
 
   end subroutine dshr_set_runclock
 
+!===============================================================================
+
+  subroutine dshr_alarm_init( clock, alarm, option, &
+       opt_n, opt_ymd, opt_tod, RefTime, alarmname, rc)
+
+    ! Setup an alarm in a clock
+    ! Notes: The ringtime sent to AlarmCreate MUST be the next alarm
+    ! time.  If you send an arbitrary but proper ringtime from the
+    ! past and the ring interval, the alarm will always go off on the
+    ! next clock advance and this will cause serious problems.  Even
+    ! if it makes sense to initialize an alarm with some reference
+    ! time and the alarm interval, that reference time has to be
+    ! advance forward to be >= the current time.  In the logic below
+    ! we set an appropriate "NextAlarm" and then we make sure to
+    ! advance it properly based on the ring interval.
+
+    ! input/output variables
+    type(ESMF_Clock)            , intent(inout) :: clock     ! clock
+    type(ESMF_Alarm)            , intent(inout) :: alarm     ! alarm
+    character(len=*)            , intent(in)    :: option    ! alarm option
+    integer          , optional , intent(in)    :: opt_n     ! alarm freq
+    integer          , optional , intent(in)    :: opt_ymd   ! alarm ymd
+    integer          , optional , intent(in)    :: opt_tod   ! alarm tod (sec)
+    type(ESMF_Time)  , optional , intent(in)    :: RefTime   ! ref time
+    character(len=*) , optional , intent(in)    :: alarmname ! alarm name
+    integer                     , intent(inout) :: rc        ! Return code
+
+    ! local variables
+    type(ESMF_Calendar)     :: cal                ! calendar
+    integer                 :: lymd             ! local ymd
+    integer                 :: ltod             ! local tod
+    integer                 :: cyy,cmm,cdd,csec ! time info
+    character(len=64)       :: lalarmname       ! local alarm name
+    logical                 :: update_nextalarm ! update next alarm
+    type(ESMF_Time)         :: CurrTime         ! Current Time
+    type(ESMF_Time)         :: NextAlarm        ! Next restart alarm time
+    type(ESMF_TimeInterval) :: AlarmInterval    ! Alarm interval
+    integer                 :: sec
+    character(len=*), parameter :: subname = '(dshr_alarm_init): '
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    lalarmname = 'alarm_unknown'
+    if (present(alarmname)) lalarmname = trim(alarmname)
+    ltod = 0
+    if (present(opt_tod)) ltod = opt_tod
+    lymd = -1
+    if (present(opt_ymd)) lymd = opt_ymd
+
+    call ESMF_ClockGet(clock, CurrTime=CurrTime, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_TimeGet(CurrTime, yy=cyy, mm=cmm, dd=cdd, s=csec, rc=rc )
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    ! initial guess of next alarm, this will be updated below
+    if (present(RefTime)) then
+       NextAlarm = RefTime
+    else
+       NextAlarm = CurrTime
+    endif
+
+    ! Determine calendar
+    call ESMF_ClockGet(clock, calendar=cal)
+
+    ! Determine inputs for call to create alarm
+    selectcase (trim(option))
+
+    case (optNONE)
+       call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_TimeSet( NextAlarm, yy=9999, mm=12, dd=1, s=0, calendar=cal, rc=rc )
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       update_nextalarm  = .false.
+
+    case (optNever)
+       call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_TimeSet( NextAlarm, yy=9999, mm=12, dd=1, s=0, calendar=cal, rc=rc )
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       update_nextalarm  = .false.
+
+    case (optDate)
+       if (.not. present(opt_ymd)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_ymd')
+       end if
+       if (lymd < 0 .or. ltod < 0) then
+          call shr_sys_abort(subname//trim(option)//'opt_ymd, opt_tod invalid')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call dshr_time_init(NextAlarm, lymd, cal, ltod, rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       update_nextalarm  = .false.
+
+    case (optIfdays0)
+       if (.not. present(opt_ymd)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_ymd')
+       end if
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0)  then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=cmm, dd=opt_n, s=0, calendar=cal, rc=rc )
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       update_nextalarm  = .true.
+
+   case (optNSteps)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_ClockGet(clock, TimeStep=AlarmInterval, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNStep)
+       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       call ESMF_ClockGet(clock, TimeStep=AlarmInterval, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNSeconds)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, s=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNSecond)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, s=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNMinutes)
+       call ESMF_TimeIntervalSet(AlarmInterval, s=60, rc=rc)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNMinute)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, s=60, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNHours)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, s=3600, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNHour)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, s=3600, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNDays)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, d=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNDay)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, d=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNMonths)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNMonth)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optMonthly)
+       call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=cmm, dd=1, s=0, calendar=cal, rc=rc )
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       update_nextalarm  = .true.
+
+    case (optNYears)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, yy=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optNYear)
+       if (.not.present(opt_n)) then
+          call shr_sys_abort(subname//trim(option)//' requires opt_n')
+       end if
+       if (opt_n <= 0) then
+          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
+       end if
+       call ESMF_TimeIntervalSet(AlarmInterval, yy=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       AlarmInterval = AlarmInterval * opt_n
+       update_nextalarm  = .true.
+
+    case (optYearly)
+       call ESMF_TimeIntervalSet(AlarmInterval, yy=1, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=1, dd=1, s=0, calendar=cal, rc=rc )
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       update_nextalarm  = .true.
+
+    case default
+       call shr_sys_abort(subname//'unknown option '//trim(option))
+
+    end select
+
+    ! --------------------------------------------------------------------------------
+    ! --- AlarmInterval and NextAlarm should be set ---
+    ! --------------------------------------------------------------------------------
+
+    ! --- advance Next Alarm so it won't ring on first timestep for
+    ! --- most options above. go back one alarminterval just to be careful
+
+    if (update_nextalarm) then
+       NextAlarm = NextAlarm - AlarmInterval
+       do while (NextAlarm <= CurrTime)
+          NextAlarm = NextAlarm + AlarmInterval
+       enddo
+    endif
+
+    alarm = ESMF_AlarmCreate( name=lalarmname, clock=clock, ringTime=NextAlarm, &
+         ringInterval=AlarmInterval, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dshr_alarm_init
+
+!===============================================================================
+
+  subroutine dshr_time_init( Time, ymd, cal, tod, rc)
+
+    ! Create the ESMF_Time object corresponding to the given input time, 
+    ! given in YMD (Year Month Day) and TOD (Time-of-day) format.
+    ! Set the time by an integer as YYYYMMDD and integer seconds in the day
+
+    ! input/output parameters:
+    type(ESMF_Time)     , intent(inout) :: Time ! ESMF time
+    integer             , intent(in)    :: ymd  ! year, month, day YYYYMMDD
+    type(ESMF_Calendar) , intent(in)    :: cal  ! ESMF calendar
+    integer             , intent(in)    :: tod  ! time of day in seconds
+    integer             , intent(out)   :: rc
+
+    ! local variables
+    integer :: year, mon, day ! year, month, day as integers
+    integer :: tdate          ! temporary date
+    integer :: date           ! coded-date (yyyymmdd)
+    character(len=*), parameter :: subname='(dshr_time_init)'
+    !-------------------------------------------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    if ( (ymd < 0) .or. (tod < 0) .or. (tod > SecPerDay) )then
+       call shr_sys_abort( subname//'ERROR yymmdd is a negative number or time-of-day out of bounds' )
+    end if
+
+    tdate = abs(date)
+    year = int(tdate/10000)
+    if (date < 0) year = -year
+    mon = int( mod(tdate,10000)/  100)
+    day = mod(tdate,  100)
+
+    call ESMF_TimeSet( Time, yy=year, mm=mon, dd=day, s=tod, calendar=cal, rc=rc )
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dshr_time_init
+
   !===============================================================================
 
-   subroutine dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
-        logunit, my_task, master_task, mpicom, sdat, fld, fldname)
+  subroutine dshr_restart_read(rest_file, rest_file_strm, rpfile, inst_suffix, nullstr, &
+       logunit, my_task, master_task, mpicom, sdat, fld, fldname)
 
-     use shr_pcdf_mod    , only : shr_pcdf_readwrite
-     use shr_strdata_mod , only : shr_strdata_restRead, shr_strdata_type
-     use shr_mpi_mod     , only : shr_mpi_bcast
+    use shr_pcdf_mod    , only : shr_pcdf_readwrite
+    use shr_strdata_mod , only : shr_strdata_restRead, shr_strdata_type
+    use shr_mpi_mod     , only : shr_mpi_bcast
 
-     ! input/output arguments
-     character(len=*)            , intent(inout) :: rest_file
-     character(len=*)            , intent(inout) :: rest_file_strm
-     character(len=*)            , intent(in)    :: rpfile
-     character(len=*)            , intent(in)    :: inst_suffix
-     character(len=*)            , intent(in)    :: nullstr
-     integer                     , intent(in)    :: logunit
-     integer                     , intent(in)    :: my_task
-     integer                     , intent(in)    :: master_task
-     integer                     , intent(in)    :: mpicom
-     type(shr_strdata_type)      , intent(inout) :: sdat
-     real(r8)         , optional , pointer       :: fld(:)
-     character(len=*) , optional , intent(in)    :: fldname
+    ! input/output arguments
+    character(len=*)            , intent(inout) :: rest_file
+    character(len=*)            , intent(inout) :: rest_file_strm
+    character(len=*)            , intent(in)    :: rpfile
+    character(len=*)            , intent(in)    :: inst_suffix
+    character(len=*)            , intent(in)    :: nullstr
+    integer                     , intent(in)    :: logunit
+    integer                     , intent(in)    :: my_task
+    integer                     , intent(in)    :: master_task
+    integer                     , intent(in)    :: mpicom
+    type(shr_strdata_type)      , intent(inout) :: sdat
+    real(r8)         , optional , pointer       :: fld(:)
+    character(len=*) , optional , intent(in)    :: fldname
 
-     ! local variables
-     integer :: nu
-     logical :: exists  ! file existance
-     character(*), parameter :: F00   = "('(dshr_restart_read) ',8a)"
-     character(*), parameter :: subName = "(dshr_restart_read) "
-     !-------------------------------------------------------------------------------
+    ! local variables
+    integer :: nu
+    logical :: exists  ! file existance
+    character(*), parameter :: F00   = "('(dshr_restart_read) ',8a)"
+    character(*), parameter :: subName = "(dshr_restart_read) "
+    !-------------------------------------------------------------------------------
 
-     if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
-        if (my_task == master_task) then
-           write(logunit,F00) ' restart filenames from rpointer'
-           inquire(file=trim(rpfile)//trim(inst_suffix), exist=exists)
-           if (.not.exists) then
-              write(logunit, F00) ' ERROR: rpointer file does not exist'
-              call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
-           endif
-           open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
-           read(nu, '(a)') rest_file
-           read(nu, '(a)') rest_file_strm
-           close(nu)
-           inquire(file=trim(rest_file_strm), exist=exists)
-        endif
-        call shr_mpi_bcast(rest_file, mpicom, 'rest_file')
-        call shr_mpi_bcast(rest_file_strm, mpicom, 'rest_file_strm')
-     else
-        ! use namelist already read
-        if (my_task == master_task) then
-           write(logunit, F00) ' restart filenames from namelist '
-           inquire(file=trim(rest_file_strm), exist=exists)
-        endif
-     endif
-     call shr_mpi_bcast(exists, mpicom, 'exists')
-     if (exists) then
-        if (my_task == master_task) write(logunit, F00) ' reading ', trim(rest_file_strm)
-        if (present(fld) .and. present(fldname)) then
-           call shr_pcdf_readwrite('read', sdat%pio_subsystem, sdat%io_type, trim(rest_file), &
-                mpicom, sdat%gsmap, clobber=.true., rf1=fld, rf1n=trim(fldname), io_format=sdat%io_format)
-        end if
-        call shr_strdata_restRead(trim(rest_file_strm), sdat, mpicom)
-     else
-        if (my_task == master_task) write(logunit, F00) ' file not found, skipping ',trim(rest_file_strm)
-     endif
-   end subroutine dshr_restart_read
+    if (trim(rest_file) == trim(nullstr) .and. trim(rest_file_strm) == trim(nullstr)) then
+       if (my_task == master_task) then
+          write(logunit,F00) ' restart filenames from rpointer'
+          inquire(file=trim(rpfile)//trim(inst_suffix), exist=exists)
+          if (.not.exists) then
+             write(logunit, F00) ' ERROR: rpointer file does not exist'
+             call shr_sys_abort(trim(subname)//' ERROR: rpointer file missing')
+          endif
+          open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
+          read(nu, '(a)') rest_file
+          read(nu, '(a)') rest_file_strm
+          close(nu)
+          inquire(file=trim(rest_file_strm), exist=exists)
+       endif
+       call shr_mpi_bcast(rest_file, mpicom, 'rest_file')
+       call shr_mpi_bcast(rest_file_strm, mpicom, 'rest_file_strm')
+    else
+       ! use namelist already read
+       if (my_task == master_task) then
+          write(logunit, F00) ' restart filenames from namelist '
+          inquire(file=trim(rest_file_strm), exist=exists)
+       endif
+    endif
+    call shr_mpi_bcast(exists, mpicom, 'exists')
+    if (exists) then
+       if (my_task == master_task) write(logunit, F00) ' reading ', trim(rest_file_strm)
+       if (present(fld) .and. present(fldname)) then
+          call shr_pcdf_readwrite('read', sdat%pio_subsystem, sdat%io_type, trim(rest_file), &
+               mpicom, sdat%gsmap, clobber=.true., rf1=fld, rf1n=trim(fldname), io_format=sdat%io_format)
+       end if
+       call shr_strdata_restRead(trim(rest_file_strm), sdat, mpicom)
+    else
+       if (my_task == master_task) write(logunit, F00) ' file not found, skipping ',trim(rest_file_strm)
+    endif
+  end subroutine dshr_restart_read
 
-   !===============================================================================
+  !===============================================================================
 
-   subroutine dshr_restart_write(rpfile, case_name, model_name, inst_suffix, ymd, tod, &
-        logunit, mpicom, my_task, master_task, sdat, fld, fldname)
+  subroutine dshr_restart_write(rpfile, case_name, model_name, inst_suffix, ymd, tod, &
+       logunit, mpicom, my_task, master_task, sdat, fld, fldname)
 
-     use shr_pcdf_mod    , only : shr_pcdf_readwrite
-     use shr_cal_mod     , only : shr_cal_datetod2string
-     use shr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_type
+    use shr_pcdf_mod    , only : shr_pcdf_readwrite
+    use shr_cal_mod     , only : shr_cal_datetod2string
+    use shr_strdata_mod , only : shr_strdata_restWrite, shr_strdata_type
 
-     ! input/output variables
-     character(len=*)            , intent(in)    :: rpfile
-     character(len=*)            , intent(in)    :: case_name
-     character(len=*)            , intent(in)    :: model_name
-     character(len=*)            , intent(in)    :: inst_suffix
-     integer                     , intent(in)    :: ymd       ! model date
-     integer                     , intent(in)    :: tod       ! model sec into model date
-     integer                     , intent(in)    :: logunit
-     integer                     , intent(in)    :: my_task
-     integer                     , intent(in)    :: master_task
-     integer                     , intent(in)    :: mpicom
-     type(shr_strdata_type)      , intent(inout) :: sdat
-     real(r8)         , optional , pointer       :: fld(:)
-     character(len=*) , optional , intent(in)    :: fldname
+    ! input/output variables
+    character(len=*)            , intent(in)    :: rpfile
+    character(len=*)            , intent(in)    :: case_name
+    character(len=*)            , intent(in)    :: model_name
+    character(len=*)            , intent(in)    :: inst_suffix
+    integer                     , intent(in)    :: ymd       ! model date
+    integer                     , intent(in)    :: tod       ! model sec into model date
+    integer                     , intent(in)    :: logunit
+    integer                     , intent(in)    :: my_task
+    integer                     , intent(in)    :: master_task
+    integer                     , intent(in)    :: mpicom
+    type(shr_strdata_type)      , intent(inout) :: sdat
+    real(r8)         , optional , pointer       :: fld(:)
+    character(len=*) , optional , intent(in)    :: fldname
 
-     ! local variables
-     character(len=CL) :: rest_file
-     character(len=CL) :: rest_file_strm
-     character(len=CS) :: date_str
-     integer           :: nu
-     !-------------------------------------------------------------------------------
+    ! local variables
+    character(len=CL) :: rest_file
+    character(len=CL) :: rest_file_strm
+    character(len=CS) :: date_str
+    integer           :: nu
+    !-------------------------------------------------------------------------------
 
-     write(rest_file     ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
-     write(rest_file_strm,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
-     if (my_task == master_task) then
-        open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
-        write(nu,'(a)') rest_file
-        write(nu,'(a)') rest_file_strm
-        close(nu)
-     endif
-     if (my_task == master_task) then
-        call shr_cal_datetod2string(date_str, ymd, tod)
-        write(logunit,*)' (dshr_restart_write) writing ',trim(rest_file_strm), ymd, tod
-     end if
-     if (present(fld) .and. present(fldname)) then
-        call shr_pcdf_readwrite('write', sdat%pio_subsystem, sdat%io_type,&
-             trim(rest_file), mpicom, sdat%gsmap, clobber=.true., rf1=fld, rf1n=trim(fldname))
-     end if
-     call shr_strdata_restWrite(trim(rest_file_strm), sdat, mpicom, trim(case_name), 'SDAT strdata from '//trim(model_name))
+    write(rest_file     ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
+    write(rest_file_strm,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
+    if (my_task == master_task) then
+       open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
+       write(nu,'(a)') rest_file
+       write(nu,'(a)') rest_file_strm
+       close(nu)
+    endif
+    if (my_task == master_task) then
+       call shr_cal_datetod2string(date_str, ymd, tod)
+       write(logunit,*)' (dshr_restart_write) writing ',trim(rest_file_strm), ymd, tod
+    end if
+    if (present(fld) .and. present(fldname)) then
+       call shr_pcdf_readwrite('write', sdat%pio_subsystem, sdat%io_type,&
+            trim(rest_file), mpicom, sdat%gsmap, clobber=.true., rf1=fld, rf1n=trim(fldname))
+    end if
+    call shr_strdata_restWrite(trim(rest_file_strm), sdat, mpicom, trim(case_name), 'SDAT strdata from '//trim(model_name))
 
-   end subroutine dshr_restart_write
+  end subroutine dshr_restart_write
 
-   !===============================================================================
+  !===============================================================================
 
-   subroutine dshr_get_atm_adjustment_factors(fileName, windF, winddF, qsatF, &
-        mpicom, compid, masterproc, logunit, sdat) 
+  subroutine dshr_get_atm_adjustment_factors(fileName, windF, winddF, qsatF, &
+       mpicom, compid, masterproc, logunit, sdat) 
 
-     use shr_dmodel_mod , only : shr_dmodel_mapset
-     use shr_map_mod    , only : shr_map_fs_remap, shr_map_fs_bilinear
-     use shr_map_mod    , only : shr_map_fs_srcmask, shr_map_fs_scalar
-     use shr_ncread_mod , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
-     use shr_strdata_mod, only : shr_strdata_type
-     use shr_const_mod  , only : shr_const_spval
-     use shr_mpi_mod    , only : shr_mpi_bcast
-     use mct_mod        , only : mct_avect, mct_avect_scatter, mct_smat_avmult, mct_smatp_clean, mct_smatp
-     use mct_mod        , only : mct_avect_importrattr, mct_avect_exportrattr, mct_avect_clean   
-     use mct_mod        , only : mct_ggrid, mct_ggrid_init,  mct_ggrid_importrattr, mct_ggrid_gather, mct_ggrid_clean   
-     use mct_mod        , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize, mct_gsmap_clean  
+    use shr_dmodel_mod , only : shr_dmodel_mapset
+    use shr_map_mod    , only : shr_map_fs_remap, shr_map_fs_bilinear
+    use shr_map_mod    , only : shr_map_fs_srcmask, shr_map_fs_scalar
+    use shr_ncread_mod , only : shr_ncread_varExists, shr_ncread_varDimSizes, shr_ncread_field4dG
+    use shr_strdata_mod, only : shr_strdata_type
+    use shr_const_mod  , only : shr_const_spval
+    use shr_mpi_mod    , only : shr_mpi_bcast
+    use mct_mod        , only : mct_avect, mct_avect_scatter, mct_smat_avmult, mct_smatp_clean, mct_smatp
+    use mct_mod        , only : mct_avect_importrattr, mct_avect_exportrattr, mct_avect_clean   
+    use mct_mod        , only : mct_ggrid, mct_ggrid_init,  mct_ggrid_importrattr, mct_ggrid_gather, mct_ggrid_clean   
+    use mct_mod        , only : mct_gsmap, mct_gsmap_init, mct_gsmap_lsize, mct_gsmap_clean  
 
     ! input/output variables
     character(*)           , intent(in)    :: fileName   ! file name string
@@ -1315,7 +1269,7 @@ contains
 
   end subroutine dshr_get_atm_adjustment_factors
 
-!===============================================================================
+  !===============================================================================
 
   subroutine dshr_set_griddata(sdat, fldname, rvalue) 
     ! input/output variables

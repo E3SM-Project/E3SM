@@ -19,14 +19,12 @@ module lnd_comp_nuopc
   use shr_cal_mod      , only : shr_cal_ymd2date
   use shr_mpi_mod      , only : shr_mpi_bcast
   use shr_strdata_mod  , only : shr_strdata_type, shr_strdata_readnml
-  use dshr_nuopc_mod   , only : fld_list_type, fldsMax, dshr_realize
-  use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh 
-  use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
-  use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
+  use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
-  use dlnd_comp_mod    , only : dlnd_comp_advertise, dlnd_comp_init, dlnd_comp_run 
-  use dlnd_comp_mod    , only : fldsfrLnd, fldsFrLnd_num
+  use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
+  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh
+  use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
+  use dlnd_comp_mod    , only : dlnd_comp_advertise, dlnd_comp_realize, dlnd_comp_run
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
 
   implicit none
@@ -43,36 +41,27 @@ module lnd_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type(shr_strdata_type) :: sdat
-
-  character(len=CS)      :: flds_scalar_name = ''
-  integer                :: flds_scalar_num = 0
-  integer                :: flds_scalar_index_nx = 0
-  integer                :: flds_scalar_index_ny = 0
-
-  integer                :: compid                ! mct comp id
-  integer                :: mpicom                ! mpi communicator
-  integer                :: my_task               ! my task in mpi communicator mpicom
-  integer                :: inst_index            ! number of current instance (ie. 1)
-  character(len=16)      :: inst_name             ! fullname of current instance (ie. "lnd_0001")
-  character(len=16)      :: inst_suffix = ""      ! char string associated with instance (ie. "_0001" or "")
-  integer                :: logunit               ! logging unit number
-  character(CL)          :: case_name             ! case name
-  logical                :: lnd_prognostic        ! data is sent back to dlnd
-
+  type(shr_strdata_type)   :: sdat
+  character(len=CS)        :: flds_scalar_name = ''
+  integer                  :: flds_scalar_num = 0
+  integer                  :: flds_scalar_index_nx = 0
+  integer                  :: flds_scalar_index_ny = 0
+  integer                  :: compid                    ! mct comp id
+  integer                  :: mpicom                    ! mpi communicator
+  integer                  :: my_task                   ! my task in mpi communicator mpicom
+  integer                  :: inst_index                ! number of current instance (ie. 1)
+  character(len=16)        :: inst_name                 ! fullname of current instance (ie. "lnd_0001")
+  character(len=16)        :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
+  integer                  :: logunit                   ! logging unit number
   character(*) , parameter :: nullstr = 'undefined'
   integer      , parameter :: master_task=0             ! task number of master task
   character(*) , parameter :: rpfile = 'rpointer.lnd'
   character(*) , parameter :: modName =  "(lnd_comp_nuopc)"
+  character(CL)            :: domain_fracname = nullstr ! name of fraction field on first stream file
+  character(CL)            :: rest_file                 ! restart filename
+  character(CL)            :: rest_file_strm            ! restart filename for streams
   character(*) , parameter :: u_FILE_u = &
        __FILE__
-
-  logical       :: force_prognostic_true = .false. ! if true set prognostic true
-  character(CL) :: domain_fracname = nullstr       ! name of fraction field on first stream file
-  character(CL) :: restfilm = nullstr              ! model restart file namelist
-  character(CL) :: restfils = nullstr              ! stream restart file namelist
-  character(CL) :: rest_file                       ! restart filename
-  character(CL) :: rest_file_strm                  ! restart filename for streams
 
 !===============================================================================
 contains
@@ -133,13 +122,16 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(len=CL) :: cvalue
-    integer           :: shrlogunit ! original log unit
-    character(len=CL) :: filename   ! generic file name
-    integer           :: glc_nec    ! number of elevation classes
-    integer           :: nu         ! unit number
-    integer           :: ierr       ! error code
-    character(CL)     :: decomp     ! decomp strategy - not used for NUOPC - but still needed in namelist for now
+    character(CL) :: cvalue
+    integer       :: shrlogunit                      ! original log unit
+    character(CL) :: filename                        ! generic file name
+    integer       :: glc_nec                         ! number of elevation classes
+    integer       :: nu                              ! unit number
+    integer       :: ierr                            ! error code
+    character(CL) :: decomp                          ! decomp strategy - (Remove)
+    logical       :: force_prognostic_true = .false. ! if true set prognostic true
+    character(CL) :: restfilm = nullstr              ! model restart file namelist
+    character(CL) :: restfils = nullstr              ! stream restart file namelist
     character(len=*), parameter :: subname=trim(modName)//':(InitializeAdvertise) '
     !-------------------------------------------------------------------------------
 
@@ -239,80 +231,54 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
 
-    !----------------------------------------------------------------------------
     ! Reset shr logging to my log file
-    !----------------------------------------------------------------------------
-
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    !----------------------------------------------------------------------------
     ! Create the data model mesh
-    !----------------------------------------------------------------------------
-
     call NUOPC_CompAttributeGet(gcomp, name='mesh_lnd', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (my_task == master_task) then
        write(logunit,*) ' obtaining mesh_lnd from '//trim(cvalue)
     end if
-
     mesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !----------------------------------------------------------------------------
-    ! Initialize sdat 
-    !----------------------------------------------------------------------------
-
+    ! get mct id
     call t_startf('dlnd_strdata_init')
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
 
+    ! set single column values
     scmmode = .false.
-    scmlon = shr_const_spval 
-    scmlat = shr_const_spval 
-    model_name = 'dlnd'
-    filename = "dlnd_in"//trim(inst_suffix)
+    scmlon = shr_const_spval
+    scmlat = shr_const_spval
 
+    ! determine the model name
+    model_name = 'dlnd'
+
+    ! Initialize sdat
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
-         scmmode, scmlon, scmlat, clock, mesh,  model_name, sdat, &
+         scmmode, scmlon, scmlat, clock, mesh, model_name, sdat, &
          dmodel_domain_fracname_from_stream=domain_fracname, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     if (my_task == master_task) write(logunit,*) ' initialized dlnd sdat'
     call t_stopf('dlnd_strdata_init')
 
-    !----------------------------------------------------------------------------
     ! Check that mesh lats and lons correspond to those on the input domain file
-    !----------------------------------------------------------------------------
-
     call dshr_check_mesh(mesh, sdat, 'dlnd', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
-    ! realize the actively coupled fields, now that a mesh is established
-    !--------------------------------
-
-    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
-    ! by replacing the advertised fields with the newly created fields of the same name.
-    call dshr_realize( state=ExportState, fldList=fldsFrLnd, numflds=fldsFrLnd_num, &
-         flds_scalar_name=flds_scalar_name, flds_scalar_num=flds_scalar_num, &
-         tag=subname//':dlndExport', mesh=mesh, rc=rc)
+    ! Realize the actively coupled fields, now that a mesh is established and
+    ! initialize dfields data type (to map streams to export state fields)
+    call dlnd_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+         logunit, my_task==master_task, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
-    ! Initialize dfields data type (to map streams to export state fields)
-    !--------------------------------
-
-    call dlnd_comp_init(sdat, exportState, rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
     ! Read restart if necessary
-    !--------------------------------
-
     call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
@@ -321,10 +287,6 @@ contains
             logunit, my_task, master_task, mpicom, sdat)
     end if
 
-    !--------------------------------
-    ! Run dlnd to create export state
-    !--------------------------------
-
     ! get the time to interpolate the stream data to
     call ESMF_ClockGet(clock, currTime=currTime, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -332,7 +294,7 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
-    ! run dlnd
+    ! Run dlnd to create export state
     call dlnd_comp_run(mpicom, my_task, master_task, logunit, current_ymd, current_tod, sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -346,9 +308,8 @@ contains
     call State_diagnose(exportState,subname//':ES',rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    ! Reset shr logging to original values
     call shr_file_setLogUnit (shrlogunit)
-
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine InitializeRealize
 
@@ -372,6 +333,7 @@ contains
     integer                 :: yr            ! year
     integer                 :: mon           ! month
     integer                 :: day           ! day in month
+    character(CL)           :: case_name     ! case name
     character(len=*),parameter :: subname=trim(modName)//':(ModelAdvance) '
     !-------------------------------------------------------------------------------
 
@@ -453,7 +415,5 @@ contains
     call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine ModelFinalize
-
-  !===============================================================================
 
 end module lnd_comp_nuopc

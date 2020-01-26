@@ -1,15 +1,16 @@
 module dwav_comp_mod
 
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE, ESMF_Mesh
+  use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod           , only : shr_sys_abort
-  use shr_strdata_mod       , only : shr_strdata_type  
-  use shr_strdata_mod       , only : shr_strdata_advance
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance
   use dshr_methods_mod      , only : chkerr, state_getfldptr
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add 
-  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy
+  use dshr_dfield_mod       , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
+  use dshr_fldlist_mod      , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
+  use dshr_nuopc_mod        , only : dshr_get_griddata
 
   ! !PUBLIC TYPES:
   implicit none
@@ -20,29 +21,21 @@ module dwav_comp_mod
   !--------------------------------------------------------------------------
 
   public :: dwav_comp_advertise
-  public :: dwav_comp_dfields_init
+  public :: dwav_comp_realize
   public :: dwav_comp_run
 
   !--------------------------------------------------------------------------
-  ! Private data
+  ! Module data
   !--------------------------------------------------------------------------
 
-  integer             , public :: fldsToWav_num = 0
-  integer             , public :: fldsFrWav_num = 0
-  type(fld_list_type) , public :: fldsToWav(fldsMax)
-  type(fld_list_type) , public :: fldsFrWav(fldsMax)
+  ! linked lists
+  type(fldList_type) , pointer :: fldsImport => null()
+  type(fldList_type) , pointer :: fldsExport => null()
+  type(dfield_type)  , pointer :: dfields    => null()
 
-  type(dfield_type) :: dfields(fldsMax)
-  integer           :: dfields_num
-
-  character(len=*), parameter :: rpfile = 'rpointer.wav'
+  ! module constants
   character(*)    , parameter :: u_FILE_u = &
        __FILE__
-
-  ! module pointer arrays
-  real(r8), pointer :: Sw_lamult(:)
-  real(r8), pointer :: Sw_ustokes(:)
-  real(r8), pointer :: Sw_vstokes(:)
 
 !===============================================================================
 contains
@@ -56,11 +49,11 @@ contains
     type(ESMF_State)               :: importState
     type(ESMF_State)               :: exportState
     character(len=*) , intent(in)  :: flds_scalar_name
-    logical          , intent(in)  :: wav_prognostic 
+    logical          , intent(in)  :: wav_prognostic
     integer          , intent(out) :: rc
 
     ! local variables
-    integer :: n
+    type(fldlist_type), pointer :: fldList
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -69,16 +62,17 @@ contains
     ! Advertise export fields
     !-------------------
 
-    fldsFrWav_num=1
-    fldsFrWav(1)%stdname = trim(flds_scalar_name)
+    call dshr_fldList_add(fldsExport, trim(flds_scalar_name))
+    call dshr_fldList_add(fldsExport, 'Sw_lamult' )
+    call dshr_fldList_add(fldsExport, 'Sw_ustokes')
+    call dshr_fldList_add(fldsExport, 'Sw_vstokes')
 
-    call dshr_fld_add('Sw_lamult' , fldsFrWav_num, fldsFrWav)
-    call dshr_fld_add('Sw_ustokes', fldsFrWav_num, fldsFrWav)
-    call dshr_fld_add('Sw_vstokes', fldsFrWav_num, fldsFrWav)
-
-    do n = 1,fldsFrWav_num
-       call NUOPC_Advertise(exportState, standardName=fldsFrWav(n)%stdname, rc=rc)
+    fldlist => fldsExport ! the head of the linked list
+    do while (associated(fldlist))
+       call NUOPC_Advertise(exportState, standardName=fldlist%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite('(dwav_comp_advertise): Fr_wav '//trim(fldList%stdname), ESMF_LOGMSG_INFO)
+       fldList => fldList%next
     enddo
 
     ! currently there is no import state to dwav
@@ -87,28 +81,46 @@ contains
 
   !===============================================================================
 
-  subroutine dwav_comp_dfields_init(sdat, exportState, rc)
+  subroutine dwav_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+       logunit, masterproc, rc)
 
-    !input/output variables
-    type(shr_strdata_type) , intent(in)     :: sdat
-    type(ESMF_State)       , intent(inout ) :: exportState
-    integer                , intent(out)    :: rc
+    ! input/output variables
+    type(shr_strdata_type) , intent(inout) :: sdat
+    type(ESMF_State)       , intent(inout) :: importState
+    type(ESMF_State)       , intent(inout) :: exportState
+    character(len=*)       , intent(in)    :: flds_scalar_name
+    integer                , intent(in)    :: flds_scalar_num
+    type(ESMF_Mesh)        , intent(in)    :: mesh
+    integer                , intent(in)    :: logunit
+    logical                , intent(in)    :: masterproc
+    integer                , intent(out)   :: rc
 
     ! local variables
     character(CS), allocatable :: strm_flds(:)
+    character(*), parameter    :: subName = "(dwav_comp_realize) "
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    ! Note that all pointers are initialized to zero
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sw_lamult', strm_fld='lamult', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sw_ustokes', strm_fld='ustokes', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sw_vstokes', strm_fld='vstokes', rc=rc)
+    ! -------------------------------------
+    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
+    ! by replacing the advertised fields with the newly created fields of the same name.
+    ! -------------------------------------
+
+    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num,  mesh, &
+         subname//':dwavExport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-  end subroutine dwav_comp_dfields_init
+    ! Create stream-> export state mapping
+
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_lamult', strm_fld='lamult', state=exportstate, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_ustokes', strm_fld='ustokes', state=exportstate, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_dfield_add(dfields, sdat, state_fld='Sw_vstokes', strm_fld='vstokes', state=exportstate, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine dwav_comp_realize
 
   !===============================================================================
 
@@ -126,17 +138,13 @@ contains
     integer                , intent(in)    :: target_ymd       ! model date
     integer                , intent(in)    :: target_tod       ! model sec into model date
     type(shr_strdata_type) , intent(inout) :: sdat
-    integer                , intent(out)   :: rc 
-
-    ! local variables
-    integer :: n
-    character(*), parameter :: subName = "(dwav_comp_run) "
+    integer                , intent(out)   :: rc
     !-------------------------------------------------------------------------------
 
     call t_startf('DWAV_RUN')
 
     !--------------------
-    ! advance dwav streams  
+    ! advance dwav streams
     !--------------------
 
     ! time and spatially interpolate to model time and grid
@@ -150,11 +158,11 @@ contains
     !--------------------
 
     ! This automatically will update the fields in the export state
-    call t_barrierf('dwav_comp_streams_copy_BARRIER', mpicom)
-    call t_startf('dwav_streams_copy')
-    call dshr_streams_copy(dfields, dfields_num, sdat, rc)
+    call t_barrierf('dwav_comp_strdata_copy_BARRIER', mpicom)
+    call t_startf('dwav_strdata_copy')
+    call dshr_dfield_copy(dfields, sdat, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call t_stopf('dwav_streams_copy')
+    call t_stopf('dwav_strdata_copy')
 
     !-------------------------------------------------
     ! determine data model behavior based on the mode

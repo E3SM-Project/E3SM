@@ -18,14 +18,12 @@ module ocn_comp_nuopc
   use shr_cal_mod      , only : shr_cal_ymd2date
   use shr_strdata_mod  , only : shr_strdata_type, shr_strdata_readnml
   use shr_mpi_mod      , only : shr_mpi_bcast
-  use dshr_nuopc_mod   , only : fld_list_type, fldsMax, dshr_realize
-  use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh 
-  use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
-  use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
+  use dshr_methods_mod , only : chkerr, state_setscalar, state_diagnose, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
-  use docn_comp_mod    , only : docn_comp_advertise, docn_comp_init, docn_comp_run 
-  use docn_comp_mod    , only : fldsExport, fldsExport_num, fldsImport, fldsImport_num
+  use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
+  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh
+  use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
+  use docn_comp_mod    , only : docn_comp_advertise, docn_comp_realize, docn_comp_run
   use docn_comp_mod    , only : somtp  ! for restart
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
 
@@ -260,30 +258,20 @@ contains
 
     rc = ESMF_SUCCESS
 
-    !--------------------------------
     ! Reset shr logging to my log file
-    !--------------------------------
-
     call shr_file_getLogUnit (shrlogunit)
     call shr_file_setLogUnit (logUnit)
 
-    !--------------------------------
     ! Create the data model mesh
-    !--------------------------------
-
     call NUOPC_CompAttributeGet(gcomp, name='mesh_ocn', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (my_task == master_task) then
        write(logunit,*) ' obtaining mesh_ocn from '//trim(cvalue)
     end if
-
     mesh = ESMF_MeshCreate(filename=trim(cvalue), fileformat=ESMF_FILEFORMAT_ESMFMESH, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
-    ! Initialize sdat
-    !--------------------------------
-
+    ! get mct id
     call t_startf('docn_strdata_init')
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -302,7 +290,7 @@ contains
 
     ! for aquaplanet mode - need to reset the domain
     if (sdat%datamode == 'SST_AQUAPANAL' .or. sdat%datamode == 'SST_AQUAPFILE' .or. sdat%datamode == 'SOM_AQUAP') then
-       reset_domain_mask = .true.       
+       reset_domain_mask = .true.
     else
        reset_domain_mask= .false.
     end if
@@ -310,46 +298,25 @@ contains
     ! determine the model name
     model_name = 'docn'
 
+    ! Initialize sdat
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
          scmmode, scmlon, scmlat, clock, mesh, model_name, sdat, reset_domain_mask=reset_domain_mask, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    if (my_task == master_task) write(logunit,*) ' initialized SDAT'
+    if (my_task == master_task) write(logunit,*) ' initialized sdat'
     call t_stopf('docn_strdata_init')
 
-    !--------------------------------
     ! Check that mesh lats and lons correspond to those on the input domain file
-    !--------------------------------
-
     call dshr_check_mesh(mesh, sdat, 'docn', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    !--------------------------------
-    ! realize the actively coupled fields, now that a mesh is established
-    !--------------------------------
-
-    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
-    ! by replacing the advertised fields with the newly created fields of the same name.
-
-    call dshr_realize( exportState, fldsExport, fldsExport_num, &
-         flds_scalar_name, flds_scalar_num, mesh, tag=subname//':docnExport', rc=rc)
+    ! Realize the actively coupled fields, now that a mesh is established and
+    ! initialize dfields data type (to map streams to export state fields)
+    call docn_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+         logunit, my_task==master_task, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    call dshr_realize( importState, fldsImport, fldsImport_num, &
-         flds_scalar_name, flds_scalar_num, mesh, tag=subname//':docnImport', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
-    ! Initialize dfields data type (to map streams to export state fields)
-    !--------------------------------
-
-    call docn_comp_init(sdat, importState, exportState, rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    !--------------------------------
     ! Read restart if necessary
-    !--------------------------------
-
     call NUOPC_CompAttributeGet(gcomp, name='read_restart', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) read_restart
@@ -358,39 +325,36 @@ contains
             logunit, my_task, master_task, mpicom, sdat, fld=somtp, fldname='somtp')
     end if
 
-    !--------------------------------
-    ! Run docn to create export state
-    !--------------------------------
-
-    ! get the time to interpolate the stream data to
+    ! Get the time to interpolate the stream data to
     call ESMF_ClockGet(clock, currTime=currTime, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeGet(currTime, yy=current_year, mm=current_mon, dd=current_day, s=current_tod, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_cal_ymd2date(current_year, current_mon, current_day, current_ymd)
 
-    ! get model timestep
+    ! Get model timestep
     call ESMF_ClockGet( clock, timeStep=timeStep, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call ESMF_TimeIntervalGet( timeStep, s=model_dt, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     dt = model_dt * 1.0_r8
 
-    ! run docn
+    ! Run docn
     call docn_comp_run(mpicom, my_task, master_task, logunit, current_ymd, current_tod, &
          sdat, mesh, sst_constant_value, dt, aquap_option, read_restart, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! add scalars to export state
+    ! Add scalars to export state
     call State_SetScalar(dble(sdat%nxg),flds_scalar_index_nx, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call State_SetScalar(dble(sdat%nyg),flds_scalar_index_ny, exportState, flds_scalar_name, flds_scalar_num, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! diagnostics
+    ! Diagnostics
     call State_diagnose(exportState,subname//':ES',rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
+    ! Reset shr logging to original values
     call shr_file_setLogUnit (shrlogunit)
 
    end subroutine InitializeRealize
@@ -482,23 +446,15 @@ contains
   subroutine ModelFinalize(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
-
-    ! local variables
-    character(*), parameter :: F00   = "('(docn_comp_final) ',8a)"
-    character(*), parameter :: F91   = "('(docn_comp_final) ',73('-'))"
-    character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
-    call ESMF_LogWrite(subname//' called', ESMF_LOGMSG_INFO)
     if (my_task == master_task) then
-       write(logunit,F91)
-       write(logunit,F00) 'docn : end of main integration loop'
-       write(logunit,F91)
+       write(logunit,*)
+       write(logunit,*) 'docn : end of main integration loop'
+       write(logunit,*)
     end if
-    call ESMF_LogWrite(subname//' done', ESMF_LOGMSG_INFO)
 
   end subroutine ModelFinalize
 
 end module ocn_comp_nuopc
-

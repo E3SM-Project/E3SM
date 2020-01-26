@@ -14,10 +14,10 @@ module docn_comp_mod
   use shr_frz_mod           , only : shr_frz_freezetemp
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance
   use dshr_methods_mod      , only : chkerr, state_getfldptr
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add
-  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy, dshr_get_griddata
+  use dshr_dfield_mod       , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
+  use dshr_fldlist_mod      , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
+  use dshr_nuopc_mod        , only : dshr_get_griddata
 
-  ! !PUBLIC TYPES:
   implicit none
   private ! except
 
@@ -26,20 +26,17 @@ module docn_comp_mod
   !--------------------------------------------------------------------------
 
   public :: docn_comp_advertise
-  public :: docn_comp_init
+  public :: docn_comp_realize
   public :: docn_comp_run
 
   !--------------------------------------------------------------------------
   ! Module data
   !--------------------------------------------------------------------------
 
-  integer             , public :: fldsImport_num = 0
-  integer             , public :: fldsExport_num = 0
-  type(fld_list_type) , public :: fldsImport(fldsMax)
-  type(fld_list_type) , public :: fldsExport(fldsMax)
-
-  type(dfield_type) :: dfields(fldsMax)
-  integer           :: dfields_num
+  ! linked lists
+  type(fldList_type) , pointer :: fldsImport => null()
+  type(fldList_type) , pointer :: fldsExport => null()
+  type(dfield_type)  , pointer :: dfields    => null()
 
   real(r8)     , parameter :: cpsw    = shr_const_cpsw        ! specific heat of sea h2o ~ j/kg/k
   real(r8)     , parameter :: rhosw   = shr_const_rhosw       ! density of sea water ~ kg/m^3
@@ -47,8 +44,6 @@ module docn_comp_mod
   real(r8)     , parameter :: tkfrzsw = shr_const_tkfrzsw     ! freezing point, sea   water (kelvin)
   real(r8)     , parameter :: latice  = shr_const_latice      ! latent heat of fusion
   real(r8)     , parameter :: ocnsalt = shr_const_ocn_ref_sal ! ocean reference salinity
-  character(*) , parameter :: u_FILE_u = &
-       __FILE__
 
   ! prognostic flag set in docn_comp_advertise
   logical :: ocn_prognostic
@@ -83,6 +78,9 @@ module docn_comp_mod
   real(r8), pointer :: strm_h(:)
   real(r8), pointer :: strm_qbot(:)
 
+  character(*) , parameter :: u_FILE_u = &
+       __FILE__
+
 !===============================================================================
 contains
 !===============================================================================
@@ -102,6 +100,7 @@ contains
 
     ! local variables
     integer         :: n
+    type(fldlist_type), pointer :: fldList
     !-------------------------------------------------------------------------------
 
     ! Save as module variables for use in debugging
@@ -109,69 +108,86 @@ contains
 
     ! Advertise export fields
 
-    fldsExport_num=1
-    fldsExport(1)%stdname = trim(flds_scalar_name)
+    call dshr_fldList_add(fldsExport, trim(flds_scalar_name))
+    call dshr_fldList_add(fldsExport, 'So_omask'            )
+    call dshr_fldList_add(fldsExport, 'So_t'                )
+    call dshr_fldList_add(fldsExport, 'So_s'                )
+    call dshr_fldList_add(fldsExport, 'So_u'                )
+    call dshr_fldList_add(fldsExport, 'So_v'                )
+    call dshr_fldList_add(fldsExport, 'So_dhdx'             )
+    call dshr_fldList_add(fldsExport, 'So_dhdy'             )
+    call dshr_fldList_add(fldsExport, 'Fioo_q'              )
+    call dshr_fldList_add(fldsExport, 'So_fswpen'           )
 
-    call dshr_fld_add('So_omask' , fldsExport_num, fldsExport)
-    call dshr_fld_add('So_t'     , fldsExport_num, fldsExport)
-    call dshr_fld_add('So_s'     , fldsExport_num, fldsExport)
-    call dshr_fld_add('So_u'     , fldsExport_num, fldsExport)
-    call dshr_fld_add('So_v'     , fldsExport_num, fldsExport)
-    call dshr_fld_add('So_dhdx'  , fldsExport_num, fldsExport)
-    call dshr_fld_add('So_dhdy'  , fldsExport_num, fldsExport)
-    call dshr_fld_add('Fioo_q'   , fldsExport_num, fldsExport)
-    call dshr_fld_add('So_fswpen', fldsExport_num, fldsExport)
-
-    do n = 1,fldsExport_num
-       call NUOPC_Advertise(exportState, standardName=fldsExport(n)%stdname, rc=rc)
+    fldlist => fldsExport ! the head of the linked list
+    do while (associated(fldlist))
+       call NUOPC_Advertise(exportState, standardName=fldlist%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):Fr_ocn'//trim(fldsExport(n)%stdname), &
-            ESMF_LOGMSG_INFO)
+       call ESMF_LogWrite('(docn_comp_advertise): Fr_ocn'//trim(fldList%stdname), ESMF_LOGMSG_INFO)
+       fldList => fldList%next
     enddo
 
     ! Advertise import fields
 
     if (ocn_prognostic) then
-       fldsImport_num=1
-       fldsImport(1)%stdname = trim(flds_scalar_name)
+       call dshr_fldList_add(fldsImport, trim(flds_scalar_name))
+       call dshr_fldList_add(fldsImport, 'Foxx_swnet'          )
+       call dshr_fldList_add(fldsImport, 'Foxx_lwup'           )
+       call dshr_fldList_add(fldsImport, 'Foxx_sen'            )
+       call dshr_fldList_add(fldsImport, 'Foxx_lat'            )
+       call dshr_fldList_add(fldsImport, 'Faxa_lwdn'           )
+       call dshr_fldList_add(fldsImport, 'Faxa_snow'           )
+       call dshr_fldList_add(fldsImport, 'Fioi_melth'          )
+       call dshr_fldList_add(fldsImport, 'Foxx_rofi'           )
 
-       call dshr_fld_add('Foxx_swnet' , fldlist_num=fldsImport_num, fldlist=fldsImport)
-       call dshr_fld_add('Foxx_lwup'  , fldlist_num=fldsImport_num, fldlist=fldsImport)
-       call dshr_fld_add('Foxx_sen'   , fldlist_num=fldsImport_num, fldlist=fldsImport)
-       call dshr_fld_add('Foxx_lat'   , fldlist_num=fldsImport_num, fldlist=fldsImport)
-       call dshr_fld_add('Faxa_lwdn'  , fldlist_num=fldsImport_num, fldlist=fldsImport)
-       call dshr_fld_add('Faxa_snow'  , fldlist_num=fldsImport_num, fldlist=fldsImport)
-       call dshr_fld_add('Fioi_melth' , fldlist_num=fldsImport_num, fldlist=fldsImport)
-       call dshr_fld_add('Foxx_rofi'  , fldlist_num=fldsImport_num, fldlist=fldsImport)
-
-       do n = 1,fldsImport_num
-          call NUOPC_Advertise(importState, standardName=fldsImport(n)%stdname, rc=rc)
+       fldlist => fldsImport ! the head of the linked list
+       do while (associated(fldlist))
+          call NUOPC_Advertise(importState, standardName=fldlist%stdname, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
-          call ESMF_LogWrite('(ocn_comp_nuopc):(InitializeAdvertise):To_ocn'//trim(fldsImport(n)%stdname), &
-               ESMF_LOGMSG_INFO)
-       end do
+          call ESMF_LogWrite('(docn_comp_advertise): Fr_ocn'//trim(fldList%stdname), ESMF_LOGMSG_INFO)
+          fldList => fldList%next
+       enddo
     end if
 
   end subroutine docn_comp_advertise
 
 !===============================================================================
 
-  subroutine docn_comp_init(sdat, importState, exportState, rc)
+  subroutine docn_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+       logunit, masterproc, rc)
 
     ! input/output parameters
     type(shr_strdata_type) , intent(inout) :: sdat
     type(ESMF_State)       , intent(inout) :: importState
     type(ESMF_State)       , intent(inout) :: exportState
+    character(len=*)       , intent(in)    :: flds_scalar_name
+    integer                , intent(in)    :: flds_scalar_num
+    type(ESMF_Mesh)        , intent(in)    :: mesh
+    integer                , intent(in)    :: logunit
+    logical                , intent(in)    :: masterproc
     integer                , intent(out)   :: rc
 
     ! local variables
     type(ESMF_StateItem_Flag) :: itemFlag
     integer                   :: n, lsize, kf
-    real(R8), parameter :: &
+    character(*), parameter   :: subName = "(docn_comp_realize) "
+    real(R8)    , parameter   :: &
          swp = 0.67_R8*(exp((-1._R8*shr_const_zsrflyr) /1.0_R8)) + 0.33_R8*exp((-1._R8*shr_const_zsrflyr)/17.0_R8)
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+
+    ! -------------------------------------
+    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
+    ! by replacing the advertised fields with the newly created fields of the same name.
+    ! -------------------------------------
+
+    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num, mesh, &
+         subname//':docnExport', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_fldlist_realize( importState, fldsImport, flds_scalar_name, flds_scalar_num, mesh, &
+         subname//':docnImport', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! -------------------------------------
     ! Set pointers to exportState fields
@@ -187,28 +203,28 @@ contains
     Fioo_q(:) = 0._r8
 
     ! Initialize export state data that has corresponding stream field
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_t', strm_fld='t', &
-         state_ptr=So_t, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='So_t', strm_fld='t', &
+         state=exportState, state_ptr=So_t, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_s', strm_fld='s', &
-         state_ptr=So_s, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='So_s', strm_fld='s', &
+         state=exportState, state_ptr=So_s, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_u', strm_fld='u', &
-         state_ptr=So_u, rc=rc)
+    call dshr_dfield_add(dfields, sdat,  state_fld='So_u', strm_fld='u', &
+         state=exportState, state_ptr=So_u, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_v', strm_fld='v', &
-         state_ptr=So_v, rc=rc)
+    call dshr_dfield_add(dfields, sdat,  state_fld='So_v', strm_fld='v', &
+         state=exportState, state_ptr=So_v, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_dhdx', strm_fld='dhdx', &
-         state_ptr=So_dhdx, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='So_dhdx', strm_fld='dhdx', &
+         state=exportState, state_ptr=So_dhdx, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='So_dhdy', strm_fld='dhdy', &
-         state_ptr=So_dhdy, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='So_dhdy', strm_fld='dhdy', &
+         state=exportState, state_ptr=So_dhdy, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Initialize dfields stream fields that have no corresponding export fields
-    call dshr_dfield_add(sdat, dfields, dfields_num, strm_fld='qbot', strm_ptr=strm_qbot)
-    call dshr_dfield_add(sdat, dfields, dfields_num, strm_fld='h'   , strm_ptr=strm_h)
+    call dshr_dfield_add(dfields, sdat,  strm_fld='qbot', strm_ptr=strm_qbot)
+    call dshr_dfield_add(dfields, sdat,  strm_fld='h'   , strm_ptr=strm_h)
 
     ! TODO: add this field to the esmFlds.F90 in CMEPS
     call ESMF_StateGet(exportState, 'So_fswpen', itemFlag, rc=rc)
@@ -226,8 +242,7 @@ contains
     ! determine module mask array (imask)
     lsize = size(So_omask)
     allocate(imask(lsize))
-    call dshr_get_griddata(sdat, 'mask', imask)
-
+    imask = nint(So_omask)
     allocate(somtp(lsize))
 
     ! -------------------------------------
@@ -255,7 +270,7 @@ contains
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     end if
 
-  end subroutine docn_comp_init
+  end subroutine docn_comp_realize
 
 !===============================================================================
 
@@ -310,11 +325,11 @@ contains
     !--------------------
 
     ! This automatically will update the fields in the export state
-    call t_barrierf('docn_comp_streams_copy_BARRIER', mpicom)
-    call t_startf('docn_streams_copy')
-    call dshr_streams_copy(dfields, dfields_num, sdat, rc)
+    call t_barrierf('docn_dfield_copy_BARRIER', mpicom)
+    call t_startf('docn_dfield_copy')
+    call dshr_dfield_copy(dfields, sdat, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call t_stopf('docn_streams_copy')
+    call t_stopf('docn_dfield_copy')
 
     !-------------------------------------------------
     ! Determine additional data model behavior based on the mode

@@ -19,14 +19,12 @@ module ice_comp_nuopc
   use shr_cal_mod      , only : shr_cal_noleap, shr_cal_gregorian, shr_cal_ymd2date, shr_cal_ymd2julian
   use shr_strdata_mod  , only : shr_strdata_type, shr_strdata_readnml
   use shr_mpi_mod      , only : shr_mpi_bcast
-  use dshr_nuopc_mod   , only : fld_list_type, fldsMax, dshr_realize
-  use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
-  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh 
-  use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
-  use dshr_methods_mod , only : chkerr, state_setscalar,  state_diagnose, alarmInit, memcheck
+  use dshr_methods_mod , only : chkerr, state_setscalar, state_diagnose, memcheck
   use dshr_methods_mod , only : set_component_logging, log_clock_advance
-  use dice_comp_mod    , only : dice_comp_advertise, dice_comp_init, dice_comp_run 
-  use dice_comp_mod    , only : fldsExport, fldsExport_num, fldsImport, fldsImport_num
+  use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
+  use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh
+  use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
+  use dice_comp_mod    , only : dice_comp_advertise, dice_comp_init, dice_comp_run
   use dice_comp_mod    , only : water  ! for restart
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
 
@@ -44,27 +42,22 @@ module ice_comp_nuopc
   ! Private module data
   !--------------------------------------------------------------------------
 
-  type(shr_strdata_type) :: sdat
-
-  character(len=CS)      :: flds_scalar_name = ''
-  integer                :: flds_scalar_num = 0
-  integer                :: flds_scalar_index_nx = 0
-  integer                :: flds_scalar_index_ny = 0
-
-  type(ESMF_Mesh)        :: mesh                      ! model mesh
-  integer                :: compid                    ! mct comp id
-  integer                :: mpicom                    ! mpi communicator
-  integer                :: my_task                   ! my task in mpi communicator mpicom
-  character(len=16)      :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
-  integer                :: logunit                   ! logging unit number
-  logical                :: read_restart              ! start from restart
-
+  type(shr_strdata_type)   :: sdat
+  character(len=CS)        :: flds_scalar_name = ''
+  integer                  :: flds_scalar_num = 0
+  integer                  :: flds_scalar_index_nx = 0
+  integer                  :: flds_scalar_index_ny = 0
+  type(ESMF_Mesh)          :: mesh                      ! model mesh
+  integer                  :: compid                    ! mct comp id
+  integer                  :: mpicom                    ! mpi communicator
+  integer                  :: my_task                   ! my task in mpi communicator mpicom
+  character(len=16)        :: inst_suffix = ""          ! char string associated with instance (ie. "_0001" or "")
+  integer                  :: logunit                   ! logging unit number
+  logical                  :: read_restart              ! start from restart
   character(*) , parameter :: nullstr = 'undefined'
   integer      , parameter :: master_task=0             ! task number of master task
   character(*) , parameter :: rpfile = 'rpointer.ice'
   character(*) , parameter :: modName =  "(ice_comp_nuopc)"
-  character(*) , parameter :: u_FILE_u = &
-       __FILE__
 
   ! constants
   real(R8), parameter :: pi  = shr_const_pi ! pi
@@ -83,6 +76,9 @@ module ice_comp_nuopc
   character(CL) :: restfils = nullstr ! stream restart file namelist
   character(CL) :: rest_file          ! restart filename
   character(CL) :: rest_file_strm     ! restart filename for streams
+
+  character(*) , parameter :: u_FILE_u = &
+       __FILE__
 
 !===============================================================================
 contains
@@ -298,19 +294,10 @@ contains
     call dshr_check_mesh(mesh, sdat, 'dice', tolerance=1.e-5_r8, check_lon=.false., rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-    ! realize the actively coupled fields, now that a mesh is established
-    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
-    ! by replacing the advertised fields with the newly created fields of the same name.
-
-    call dshr_realize( exportState, fldsExport, fldsExport_num, &
-         flds_scalar_name, flds_scalar_num, mesh, tag=trim(subname)//':diceExport', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call dshr_realize( importState, fldsImport, fldsImport_num, &
-         flds_scalar_name, flds_scalar_num, mesh, tag=trim(subname)//':diceImport', rc=rc)
-    if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
-    ! Initialize dfields data type (to map streams to export state fields)
-    call dice_comp_init(sdat, importState, exportState, rc=rc)
+    ! Realize the actively coupled fields, now that a mesh is established and
+    ! initialize dfields data type (to map streams to export state fields)
+    call dice_comp_init(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+         logunit, my_task==master_task, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Read restart if necessary
@@ -465,9 +452,6 @@ contains
   subroutine ModelFinalize(gcomp, rc)
     type(ESMF_GridComp)  :: gcomp
     integer, intent(out) :: rc
-
-    ! local variables
-    character(len=*),parameter  :: subname=trim(modName)//':(ModelFinalize) '
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -480,4 +464,3 @@ contains
   end subroutine ModelFinalize
 
 end module ice_comp_nuopc
-

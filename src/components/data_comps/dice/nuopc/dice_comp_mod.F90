@@ -13,8 +13,9 @@ module dice_comp_mod
   use shr_cal_mod           , only : shr_cal_ymd2julian
   use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance
   use dshr_methods_mod      , only : chkerr, state_getfldptr
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add
-  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy, dshr_get_griddata
+  use dshr_dfield_mod       , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
+  use dshr_fldlist_mod      , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
+  use dshr_nuopc_mod        , only : dshr_get_griddata
   use dice_flux_atmice_mod  , only : dice_flux_atmice
 
   implicit none
@@ -32,13 +33,10 @@ module dice_comp_mod
   ! Module data
   !--------------------------------------------------------------------------
 
-  integer             , public :: fldsImport_num = 0
-  integer             , public :: fldsExport_num = 0
-  type(fld_list_type) , public :: fldsImport(fldsMax)
-  type(fld_list_type) , public :: fldsExport(fldsMax)
-
-  type(dfield_type) :: dfields(fldsMax)
-  integer           :: dfields_num
+  ! linked lists
+  type(fldList_type) , pointer :: fldsImport => null()
+  type(fldList_type) , pointer :: fldsExport => null()
+  type(dfield_type)  , pointer :: dfields    => null()
 
   real(r8),parameter         :: pi     = shr_const_pi      ! pi
   real(r8),parameter         :: spval  = shr_const_spval   ! flags invalid data
@@ -60,9 +58,6 @@ module dice_comp_mod
   real(r8),parameter         :: ax_vsdf = ai_vsdf*(1.0_r8-snwfrac) + as_vsdf*snwfrac
   real(r8),parameter         :: ax_nidr = ai_nidr*(1.0_r8-snwfrac) + as_nidr*snwfrac
   real(r8),parameter         :: ax_vsdr = ai_vsdr*(1.0_r8-snwfrac) + as_vsdr*snwfrac
-
-  character(*) , parameter    :: u_FILE_u = &
-       __FILE__
 
   ! restart fields
   real(r8), pointer, public :: water(:) => null()
@@ -123,12 +118,14 @@ module dice_comp_mod
 
   logical :: flds_i2o_per_cat
 
+  character(*) , parameter    :: u_FILE_u = &
+       __FILE__
+
 !===============================================================================
 contains
 !===============================================================================
 
-  subroutine dice_comp_advertise(importState, exportState, flds_scalar_name, &
-       flds_i2o_per_cat_in, rc)
+  subroutine dice_comp_advertise(importState, exportState, flds_scalar_name, flds_i2o_per_cat_in, rc)
 
     ! --------------------------------------------------------------
     ! determine export and import fields to advertise to mediator
@@ -143,6 +140,7 @@ contains
 
     ! local variables
     integer         :: n
+    type(fldlist_type), pointer :: fldList
     !-------------------------------------------------------------------------------
 
     ! Save as module variables
@@ -150,99 +148,118 @@ contains
 
     ! Advertise export fields
 
-    fldsExport_num=1
-    fldsExport(1)%stdname = trim(flds_scalar_name)
-
-    call dshr_fld_add('Si_ifrac'    , fldsExport_num, fldsExport)
-    call dshr_fld_add('Si_imask'    , fldsExport_num, fldsExport)
-    call dshr_fld_add('Si_t'        , fldsExport_num, fldsExport)
-    call dshr_fld_add('Si_tref'     , fldsExport_num, fldsExport)
-    call dshr_fld_add('Si_qref'     , fldsExport_num, fldsExport)
-    call dshr_fld_add('Si_avsdr'    , fldsExport_num, fldsExport)
-    call dshr_fld_add('Si_anidr'    , fldsExport_num, fldsExport)
-    call dshr_fld_add('Si_avsdf'    , fldsExport_num, fldsExport)
-    call dshr_fld_add('Si_anidf'    , fldsExport_num, fldsExport)
-    call dshr_fld_add('Faii_swnet'  , fldsExport_num, fldsExport)
-    call dshr_fld_add('Faii_sen'    , fldsExport_num, fldsExport)
-    call dshr_fld_add('Faii_lat'    , fldsExport_num, fldsExport)
-    call dshr_fld_add('Faii_lwup'   , fldsExport_num, fldsExport)
-    call dshr_fld_add('Faii_evap'   , fldsExport_num, fldsExport)
-    call dshr_fld_add('Faii_taux'   , fldsExport_num, fldsExport)
-    call dshr_fld_add('Faii_tauy'   , fldsExport_num, fldsExport)
-    call dshr_fld_add('Fioi_melth'  , fldsExport_num, fldsExport)
-    call dshr_fld_add('Fioi_meltw'  , fldsExport_num, fldsExport)
-    call dshr_fld_add('Fioi_swpen'  , fldsExport_num, fldsExport)
-    call dshr_fld_add('Fioi_taux'   , fldsExport_num, fldsExport)
-    call dshr_fld_add('Fioi_tauy'   , fldsExport_num, fldsExport)
-    call dshr_fld_add('Fioi_salt'   , fldsExport_num, fldsExport)
-    call dshr_fld_add('Fioi_bcpho'  , fldsExport_num, fldsExport)
-    call dshr_fld_add('Fioi_bcphi'  , fldsExport_num, fldsExport)
-    call dshr_fld_add('Fioi_flxdst' , fldsExport_num, fldsExport)
+    call dshr_fldList_add(fldsExport , trim(flds_scalar_name))
+    call dshr_fldList_add(fldsExport ,'Si_ifrac'    )
+    call dshr_fldList_add(fldsExport ,'Si_imask'    )
+    call dshr_fldList_add(fldsExport ,'Si_t'        )
+    call dshr_fldList_add(fldsExport ,'Si_tref'     )
+    call dshr_fldList_add(fldsExport ,'Si_qref'     )
+    call dshr_fldList_add(fldsExport ,'Si_avsdr'    )
+    call dshr_fldList_add(fldsExport ,'Si_anidr'    )
+    call dshr_fldList_add(fldsExport ,'Si_avsdf'    )
+    call dshr_fldList_add(fldsExport ,'Si_anidf'    )
+    call dshr_fldList_add(fldsExport ,'Faii_swnet'  )
+    call dshr_fldList_add(fldsExport ,'Faii_sen'    )
+    call dshr_fldList_add(fldsExport ,'Faii_lat'    )
+    call dshr_fldList_add(fldsExport ,'Faii_lwup'   )
+    call dshr_fldList_add(fldsExport ,'Faii_evap'   )
+    call dshr_fldList_add(fldsExport ,'Faii_taux'   )
+    call dshr_fldList_add(fldsExport ,'Faii_tauy'   )
+    call dshr_fldList_add(fldsExport ,'Fioi_melth'  )
+    call dshr_fldList_add(fldsExport ,'Fioi_meltw'  )
+    call dshr_fldList_add(fldsExport ,'Fioi_swpen'  )
+    call dshr_fldList_add(fldsExport ,'Fioi_taux'   )
+    call dshr_fldList_add(fldsExport ,'Fioi_tauy'   )
+    call dshr_fldList_add(fldsExport ,'Fioi_salt'   )
+    call dshr_fldList_add(fldsExport ,'Fioi_bcpho'  )
+    call dshr_fldList_add(fldsExport ,'Fioi_bcphi'  )
+    call dshr_fldList_add(fldsExport ,'Fioi_flxdst' )
     if (flds_i2o_per_cat) then
-       call dshr_fld_add('Si_ifrac_n'        , fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=1)
-       call dshr_fld_add('Fioi_swpen_ifrac_n', fldsExport_num, fldsExport, ungridded_lbound=1, ungridded_ubound=1)
+       call dshr_fldList_add(fldsExport, 'Si_ifrac_n'        , ungridded_lbound=1, ungridded_ubound=1)
+       call dshr_fldList_add(fldsExport, 'Fioi_swpen_ifrac_n', ungridded_lbound=1, ungridded_ubound=1)
     end if
 
-    do n = 1,fldsExport_num
-       call NUOPC_Advertise(exportState, standardName=fldsExport(n)%stdname, rc=rc)
+    fldlist => fldsExport ! the head of the linked list
+    do while (associated(fldlist))
+       call NUOPC_Advertise(exportState, standardName=fldlist%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_LogWrite('(dice_comp_advertise):Fr_dice'//trim(fldsExport(n)%stdname), ESMF_LOGMSG_INFO)
+       call ESMF_LogWrite('(dice_comp_advertise): Fr_ice'//trim(fldList%stdname), ESMF_LOGMSG_INFO)
+       fldList => fldList%next
     enddo
 
     ! Advertise import fields
 
-    fldsImport_num=1
-    fldsImport(1)%stdname = trim(flds_scalar_name)
+    call dshr_fldList_add(fldsImport , trim(flds_scalar_name))
+    call dshr_fldList_add(fldsImport, 'Faxa_swvdr' )
+    call dshr_fldList_add(fldsImport, 'Faxa_swvdf' )
+    call dshr_fldList_add(fldsImport, 'Faxa_swndr' )
+    call dshr_fldList_add(fldsImport, 'Faxa_swndf' )
+    call dshr_fldList_add(fldsImport, 'Fioo_q'     )
+    call dshr_fldList_add(fldsImport, 'Sa_z'       )
+    call dshr_fldList_add(fldsImport, 'Sa_u'       )
+    call dshr_fldList_add(fldsImport, 'Sa_v'       )
+    call dshr_fldList_add(fldsImport, 'Sa_ptem'    )
+    call dshr_fldList_add(fldsImport, 'Sa_shum'    )
+    call dshr_fldList_add(fldsImport, 'Sa_dens'    )
+    call dshr_fldList_add(fldsImport, 'Sa_tbot'    )
+    call dshr_fldList_add(fldsImport, 'So_s'       )
+    call dshr_fldList_add(fldsImport, 'Faxa_bcph'  , ungridded_lbound=1, ungridded_ubound=3)
+    call dshr_fldList_add(fldsImport, 'Faxa_ocph'  , ungridded_lbound=1, ungridded_ubound=3)
+    call dshr_fldList_add(fldsImport, 'Faxa_dstdry', ungridded_lbound=1, ungridded_ubound=4)
+    call dshr_fldList_add(fldsImport, 'Faxa_dstwet', ungridded_lbound=1, ungridded_ubound=4)
 
-    call dshr_fld_add('Faxa_swvdr' , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Faxa_swvdf' , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Faxa_swndr' , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Faxa_swndf' , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Fioo_q'     , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Sa_z'       , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Sa_u'       , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Sa_v'       , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Sa_ptem'    , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Sa_shum'    , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Sa_dens'    , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Sa_tbot'    , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('So_s'       , fldlist_num=fldsImport_num, fldlist=fldsImport)
-    call dshr_fld_add('Faxa_bcph'  , fldlist_num=fldsImport_num, fldlist=fldsImport, ungridded_lbound=1, ungridded_ubound=3)
-    call dshr_fld_add('Faxa_ocph'  , fldlist_num=fldsImport_num, fldlist=fldsImport, ungridded_lbound=1, ungridded_ubound=3)
-    call dshr_fld_add('Faxa_dstdry', fldlist_num=fldsImport_num, fldlist=fldsImport, ungridded_lbound=1, ungridded_ubound=4)
-    call dshr_fld_add('Faxa_dstwet', fldlist_num=fldsImport_num, fldlist=fldsImport, ungridded_lbound=1, ungridded_ubound=4)
-
-    do n = 1,fldsImport_num
-       call NUOPC_Advertise(importState, standardName=fldsImport(n)%stdname, TransferOfferGeomObject='will provide', rc=rc)
+    fldlist => fldsImport ! the head of the linked list
+    do while (associated(fldlist))
+       call NUOPC_Advertise(importState, standardName=fldlist%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_LogWrite('(dice_comp_advertise):To_dice'//trim(fldsImport(n)%stdname), ESMF_LOGMSG_INFO)
+       call ESMF_LogWrite('(dice_comp_advertise): Fr_ice'//trim(fldList%stdname), ESMF_LOGMSG_INFO)
+       fldList => fldList%next
     enddo
 
   end subroutine dice_comp_advertise
 
 !===============================================================================
 
-  subroutine dice_comp_init(sdat, importState, exportState, rc)
+  subroutine dice_comp_init(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+       logunit, masterproc, rc)
 
     ! input/output parameters
     type(shr_strdata_type) , intent(inout) :: sdat
     type(ESMF_State)       , intent(inout) :: importState
     type(ESMF_State)       , intent(inout) :: exportState
+    character(len=*)       , intent(in)    :: flds_scalar_name
+    integer                , intent(in)    :: flds_scalar_num
+    type(ESMF_Mesh)        , intent(in)    :: mesh
+    integer                , intent(in)    :: logunit
+    logical                , intent(in)    :: masterproc
     integer                , intent(out)   :: rc
 
     ! local variables
     integer  :: n, lsize, kf
+    character(*), parameter   :: subName = "(dice_comp_init) "
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+
+    ! -------------------------------------
+    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
+    ! by replacing the advertised fields with the newly created fields of the same name.
+    ! -------------------------------------
+
+    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num, mesh, &
+         subname//':diceExport', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call dshr_fldlist_realize( importState, fldsImport, flds_scalar_name, flds_scalar_num, mesh, &
+         subname//':diceImport', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! -------------------------------------
     ! Set pointers to exportState fields
     ! -------------------------------------
 
     ! Initialize dfields with export state data that has corresponding stream field
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Si_ifrac', strm_fld='ifrac', &
-         state_ptr=Si_ifrac, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='Si_ifrac', strm_fld='ifrac', &
+         state=exportState, state_ptr=Si_ifrac, logunit=logunit, masterproc=masterproc, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     ! Set pointers to exportState fields that have no corresponding stream field
@@ -429,11 +446,11 @@ contains
     !--------------------
 
     ! This automatically will update the fields in the export state
-    call t_barrierf('dice_comp_streams_copy_BARRIER', mpicom)
-    call t_startf('dice_streams_copy')
-    call dshr_streams_copy(dfields, dfields_num, sdat, rc)
+    call t_barrierf('dice_comp_dfield_copy_BARRIER', mpicom)
+    call t_startf('dice_dfield_copy')
+    call dshr_dfield_copy(dfields, sdat, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call t_stopf('dice_streams_copy')
+    call t_stopf('dice_dfield_copy')
 
     !-------------------------------------------------
     ! Determine data model behavior based on the mode

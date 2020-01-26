@@ -1,15 +1,16 @@
 module dlnd_comp_mod
 
   use NUOPC                 , only : NUOPC_Advertise
-  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE
+  use ESMF                  , only : ESMF_State, ESMF_SUCCESS, ESMF_STATE, ESMF_Mesh
+  use ESMF                  , only : ESMF_LogWrite, ESMF_LOGMSG_INFO
   use perf_mod              , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
   use shr_kind_mod          , only : r8=>shr_kind_r8, cxx=>shr_kind_cxx, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod           , only : shr_sys_abort
-  use shr_strdata_mod       , only : shr_strdata_type  
-  use shr_strdata_mod       , only : shr_strdata_advance
+  use shr_strdata_mod       , only : shr_strdata_type, shr_strdata_advance
   use dshr_methods_mod      , only : chkerr, state_getfldptr
-  use dshr_nuopc_mod        , only : fld_list_type, fldsMax, dshr_fld_add 
-  use dshr_nuopc_mod        , only : dfield_type, dshr_dfield_add, dshr_streams_copy, dshr_get_griddata
+  use dshr_dfield_mod       , only : dfield_type, dshr_dfield_add, dshr_dfield_copy
+  use dshr_fldlist_mod      , only : fldlist_type, dshr_fldlist_add, dshr_fldlist_realize
+  use dshr_nuopc_mod        , only : dshr_get_griddata
   use glc_elevclass_mod     , only : glc_elevclass_as_string, glc_elevclass_init
 
   ! !PUBLIC TYPES:
@@ -21,24 +22,24 @@ module dlnd_comp_mod
   !--------------------------------------------------------------------------
 
   public :: dlnd_comp_advertise
-  public :: dlnd_comp_init
+  public :: dlnd_comp_realize
   public :: dlnd_comp_run
 
   !--------------------------------------------------------------------------
-  ! Private data
+  ! Module data
   !--------------------------------------------------------------------------
 
-  integer             , public :: fldsToLnd_num = 0
-  integer             , public :: fldsFrLnd_num = 0
-  type(fld_list_type) , public :: fldsToLnd(fldsMax)
-  type(fld_list_type) , public :: fldsFrLnd(fldsMax)
+  ! linked lists
+  type(fldList_type) , pointer :: fldsImport => null()
+  type(fldList_type) , pointer :: fldsExport => null()
+  type(dfield_type)  , pointer :: dfields    => null()
 
-  type(dfield_type)           :: dfields(fldsMax)
-  integer                     :: dfields_num
+  ! module pointer arrays
+  real(r8), pointer           :: lfrac(:)
 
+  ! module constants
   integer                     :: glc_nec
-  real(r8), pointer           :: lfrac(:)  
-  character(len=*), parameter :: rpfile = 'rpointer.lnd'
+
   character(*)    , parameter :: u_FILE_u = &
        __FILE__
 
@@ -58,9 +59,7 @@ contains
     integer          , intent(out) :: rc
 
     ! local variables
-    integer :: n
-    character(len=CS)  :: data_fld_name
-    character(len=CS)  :: model_fld_name
+    type(fldlist_type), pointer :: fldList
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -74,23 +73,24 @@ contains
     ! Advertise export fields
     !-------------------
 
-    fldsFrLnd_num=1
-    fldsFrLnd(1)%stdname = trim(flds_scalar_name)
-
-    call dshr_fld_add("Sl_lfrin", fldlist_num=fldsFrLnd_num, fldlist=fldsFrLnd)
+    call dshr_fldList_add(fldsExport, trim(flds_scalar_name))
+    call dshr_fldlist_add(fldsExport, "Sl_lfrin")
 
     ! The following puts all of the elevation class fields as an
     ! undidstributed dimension in the export state field - index1 is bare land - and the total number of
     ! elevation classes not equal to bare land go from index2 -> glc_nec+1
     if (glc_nec > 0) then
-       call dshr_fld_add('Sl_tsrf_elev'  , fldsFrLnd_num, fldlist=fldsFrLnd, ungridded_lbound=1, ungridded_ubound=glc_nec+1)
-       call dshr_fld_add('Sl_topo_elev'  , fldsFrLnd_num, fldlist=fldsFrLnd, ungridded_lbound=1, ungridded_ubound=glc_nec+1)
-       call dshr_fld_add('Flgl_qice_elev', fldsFrLnd_num, fldlist=fldsFrLnd, ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+       call dshr_fldList_add(fldsExport, 'Sl_tsrf_elev'  , ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+       call dshr_fldList_add(fldsExport, 'Sl_topo_elev'  , ungridded_lbound=1, ungridded_ubound=glc_nec+1)
+       call dshr_fldList_add(fldsExport, 'Flgl_qice_elev', ungridded_lbound=1, ungridded_ubound=glc_nec+1)
     end if
 
-    do n = 1,fldsFrLnd_num
-       call NUOPC_Advertise(exportState, standardName=fldsFrLnd(n)%stdname, rc=rc)
+    fldlist => fldsExport ! the head of the linked list
+    do while (associated(fldlist))
+       call NUOPC_Advertise(exportState, standardName=fldlist%stdname, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_LogWrite('(dlnd_comp_advertise): Fr_lnd '//trim(fldList%stdname), ESMF_LOGMSG_INFO)
+       fldList => fldList%next
     enddo
 
     ! TODO: Non snow fields that nead to be added if dlnd is in cplhist mode
@@ -105,21 +105,37 @@ contains
 
   !===============================================================================
 
-  subroutine dlnd_comp_init(sdat, exportState, rc)
+  subroutine dlnd_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+       logunit, masterproc, rc)
 
-    !input/output variables
-    type(shr_strdata_type) , intent(in)     :: sdat
-    type(ESMF_State)       , intent(inout ) :: exportState
-    integer                , intent(out)    :: rc
+    ! input/output variables
+    type(shr_strdata_type) , intent(inout) :: sdat
+    type(ESMF_State)       , intent(inout) :: importState
+    type(ESMF_State)       , intent(inout) :: exportState
+    character(len=*)       , intent(in)    :: flds_scalar_name
+    integer                , intent(in)    :: flds_scalar_num
+    type(ESMF_Mesh)        , intent(in)    :: mesh
+    integer                , intent(in)    :: logunit
+    logical                , intent(in)    :: masterproc
+    integer                , intent(out)   :: rc
 
     ! local variables
-    integer :: n, kf
-    integer :: lsize 
-    character(len=2) :: nec_str
+    integer                    :: n, lsize
+    character(len=2)           :: nec_str
     character(CS), allocatable :: strm_flds(:)
+    character(*), parameter    :: subName = "(drof_comp_realize) "
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
+
+    ! -------------------------------------
+    ! NUOPC_Realize "realizes" a previously advertised field in the importState and exportState
+    ! by replacing the advertised fields with the newly created fields of the same name.
+    ! -------------------------------------
+
+    call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num,  mesh, &
+         subname//':drofExport', rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Set lfrac in export state - this is not dependent on any streams
 
@@ -128,31 +144,29 @@ contains
     lsize = size(lfrac)
     call dshr_get_griddata(sdat, 'frac', lfrac)
 
-    ! Create stream-> export state mapping (note that dfields_num is a module variable)
-    dfields_num = 0
+    ! Create stream-> export state mapping
 
     allocate(strm_flds(0:glc_nec))
     do n = 0,glc_nec
        nec_str = glc_elevclass_as_string(n)
        strm_flds(n) = 'tsrf' // trim(nec_str)
     end do
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sl_tsrf_elev', strm_flds=strm_flds, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='Sl_tsrf_elev', strm_flds=strm_flds, state=exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     do n = 0,glc_nec
        nec_str = glc_elevclass_as_string(n)
        strm_flds(n) = 'topo' // trim(nec_str)
     end do
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Sl_topo_elev', strm_flds=strm_flds, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='Sl_topo_elev', strm_flds=strm_flds, state=exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     do n = 0,glc_nec
        nec_str = glc_elevclass_as_string(n)
        strm_flds(n) = 'qice' // trim(nec_str)
     end do
-    call dshr_dfield_add(sdat, exportState, dfields, dfields_num, state_fld='Flgl_qice_elev', strm_flds=strm_flds, rc=rc)
+    call dshr_dfield_add(dfields, sdat, state_fld='Flgl_qice_elev', strm_flds=strm_flds, state=exportState, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-
-  end subroutine dlnd_comp_init
+  end subroutine dlnd_comp_realize
 
   !===============================================================================
 
@@ -170,10 +184,7 @@ contains
     integer                , intent(in)    :: target_ymd       ! model date
     integer                , intent(in)    :: target_tod       ! model sec into model date
     type(shr_strdata_type) , intent(inout) :: sdat
-    integer                , intent(out)   :: rc 
-
-    ! local variables
-    character(*), parameter :: subName = "(dlnd_comp_run) "
+    integer                , intent(out)   :: rc
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -181,7 +192,7 @@ contains
     call t_startf('DLND_RUN')
 
     !--------------------
-    ! advance dlnd streams  
+    ! advance dlnd streams
     !--------------------
 
     ! time and spatially interpolate to model time and grid
@@ -195,11 +206,11 @@ contains
     !--------------------
 
     ! This automatically will update the fields in the export state
-    call t_barrierf('dlnd_comp_streams_copy_BARRIER', mpicom)
-    call t_startf('dlnd_streams_copy')
-    call dshr_streams_copy(dfields, dfields_num, sdat, rc)
+    call t_barrierf('dlnd_comp_strdata_copy_BARRIER', mpicom)
+    call t_startf('dlnd_strdata_copy')
+    call dshr_dfield_copy(dfields, sdat, rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-    call t_stopf('dlnd_streams_copy')
+    call t_stopf('dlnd_strdata_copy')
 
     !-------------------------------------------------
     ! determine data model behavior based on the mode
