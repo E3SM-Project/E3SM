@@ -386,76 +386,72 @@
 					possible_values="any positive real"
 		/>
 	</nml_record>
-	<nml_record name="mesoscale_eddy_parameterization" mode="forward">
-		<nml_option name="config_use_standardGM" type="logical" default_value=".false." units="NA"
-					description="If true, the standard GM for the tracer advection and mixing is turned on. This includes the redi portion which is captured in hmix."
+	<nml_record name="Redi_isopycnal_mixing" mode="forward">
+		<nml_option name="config_use_Redi" type="logical" default_value=".false." units="unitless"
+					description="If true, Redi isopycnal mixing is turned on"
 					possible_values=".true. or .false."
 		/>
-		<nml_option name="config_gm_lat_variable_c2" type="logical" default_value=".false." units="NA"
-					description="If true, spatially variable phase speed is used Following Ferrari et al (2010)"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_gm_kappa_lat_depth_variable" type="logical" default_value=".false." units="NA"
-					description="If true, spatitally and deph varying Bolus Kappa is used, following Danabasoglu et al (2007)"
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_gm_min_stratification_ratio" type="real" default_value="0.1" units="NA"
-					description="minimum value for N2/Nmax2 ratio"
-					possible_values="small positive reals"
-		/>
-		<nml_option name="config_gm_min_phase_speed" type="real" default_value="0.1" units="m s^{-1}"
-					description="minimum allowed phase speed for spatially variable computation"
-					possible_values="small positive reals"
-		/>
-		<nml_option name="config_use_Redi_surface_layer_tapering" type="logical" default_value=".false." units="NA"
-					description="If true, the Redi K33 vertical mixing is limited in and just below the ocean boundary layer."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Redi_surface_layer_tapering_extent" type="real" default_value="0.0" units="non-dimensional"
-					description="Vertical component of Redi mixing limited in top config_Redi_surface_layer_tapering_extent*boundaryLayerDepth"
-					possible_values="Any positive real value, typically between 1 and 2."
-		/>
-		<nml_option name="config_use_Redi_bottom_layer_tapering" type="logical" default_value=".false." units="NA"
-					description="If true, the Redi K33 vertical mixing is limited in bottom boundary layer."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_Redi_bottom_layer_tapering_depth" type="real" default_value="0.0" units="m"
-					description="Vertical component of Redi mixing limited in bottom config_Redi_surface_layer_tapering_depth"
-					possible_values="Any positive real value, typically between 100 and 500 m."
-		/>
-		<nml_option name="config_GM_Bolus_kappa_function" type="character" default_value="constant" units="unitless"
-					description="Control what type of function is used for GM Bolus $\kappa$"
-					possible_values="'constant' and 'ramp'"
-		/>
-		<nml_option name="config_standardGM_tracer_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
-					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_Bolus_kappa_function is set to constant."
-		/>
-		<nml_option name="config_GM_Bolus_kappa_min" type="real" default_value="0.0" units="m^2 s^{-1}"
-					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_GM_Bolus_kappa_max" type="real" default_value="600.0" units="m^2 s^{-1}"
-					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$, min value in ramp as a function of dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_GM_Bolus_cell_size_min" type="real" default_value="20e3" units="m"
-					description="Minimum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_GM_Bolus_kappa_function is set to ramp."
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_GM_Bolus_cell_size_max" type="real" default_value="30e3" units="m"
-					description="Maximum value in grid cell size for GM $\kappa$ ramp function.  Here cell size refers to dcEdge"
-					possible_values="Any positive real value."
-		/>
-		<nml_option name="config_Redi_kappa" type="real" default_value="0.0" units="m^2 s^{-1}"
+		<nml_option name="config_Redi_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="The Redi diffusion coefficient"
 					possible_values="Positive real numbers"
 		/>
-		<nml_option name="config_gravWaveSpeed_trunc" type="real" default_value="0.3" units="m/s"
-					description="Gravity wave speed truncation threshold for the vertical stream function boundary value problem, $c$"
-					possible_values="Positive real numbers that represents the gravity wave speed of the first, second, etc., baroclinic modes"
+		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
+					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
+					possible_values="'constant', 'data', 'match_GM'"
 		/>
-		<nml_option name="config_max_relative_slope" type="real" default_value="0.01" units="non-dimensional"
-					description="Tapering parameter for Redi diffusion coeffient.  Tapering occurs when relativeSlopeTopOfEdge is greater than config_max_relative_slope"
+		<nml_option name="config_Redi_surface_taper_layers" type="integer" default_value="3" units="non-dimensional"
+					description="Number of layers below surface over which Redi coefficient is tapered."
+					possible_values="Integer between 1 and nVertLevels. Use 1 for no tapering, and Redi will be 0 at k=1 and full at k=2."
+		/>
+		<nml_option name="config_Redi_bottom_taper_layers" type="integer" default_value="3" units="non-dimensional"
+					description="Number of layers above bottom over which Redi coefficient is tapered."
+					possible_values="Integer between 1 and nVertLevels. Use 1 for no tapering, and Redi will be 0 at bottom and full one layer up."
+		/>
+		<nml_option name="config_Redi_zero_in_boundary_layer" type="logical" default_value=".true." units="unitless"
+					description="If true, Redi kappa is set to zero above the boundary layer depth"
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_Redi_BLD_taper_layers" type="integer" default_value="3" units="non-dimensional"
+					description="Number of layers below boundary layer depth, over which Redi coefficient is tapered." 
+					possible_values="Integer between 1 and nVertLevels. Use 1 for no tapering."
+		/>
+	</nml_record>
+	<nml_record name="GM_eddy_parameterization" mode="forward">
+		<nml_option name="config_use_GM" type="logical" default_value=".false." units="NA"
+					description="If true, the standard GM for the tracer advection and mixing is turned on."
+					possible_values=".true. or .false."
+		/>
+		<nml_option name="config_GM_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
+					description="Coefficient of standard GM parametrization of eddy transport (Bolus component), $\kappa$. Used when config_GM_kappa_function is set to constant."
+		/>
+		<nml_option name="config_GM_closure" type="character" default_value="N2_dependent" units="unitless"
+					description="Control what method used to compute GM $\kappa$. Both 'constant' and 'N2_dependent' use the method in Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004). 'constant' uses a constant kappa in eqn 16a, while 'N2_dependent' varies kappa in the vertical according to Danabasoglu and Marshall 2007 (https://doi.org/10.1016/j.ocemod.2007.03.006)."
+					possible_values="'N2_dependent', 'constant'"
+		/>
+		<nml_option name="config_GM_min_stratification_ratio" type="real" default_value="0.1" units="NA"
+					description="When using config_GM_closure='N2_dependent', the minimum value for N2/Nmax2 ratio."
+					possible_values="small positive reals"
+		/>
+		<nml_option name="config_GM_constant_gravWaveSpeed" type="real" default_value="0.3" units="m/s"
+					description="Gravity wave speed for the vertical stream function boundary value problem. This appears as $c$ in eqn 16a of Ferrari et al. 2010 (https://doi.org/10.1016/j.ocemod.2010.01.004)."
+					possible_values="Positive real numbers"
+		/>
+	</nml_record>
+	<nml_record name="mesoscale_eddy_parameterizations" mode="forward">
+		<nml_option name="config_eddying_resolution_taper" type="character" default_value="ramp" units="unitless"
+					description="Control how the Redi and GM Bolus $\kappa$ value varies as a function of horizontal resolution"
+					possible_values="'none' and 'ramp'"
+		/>
+		<nml_option name="config_eddying_resolution_ramp_min" type="real" default_value="20e3" units="m"
+					description="Minimum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_eddying_resolution_ramp_max" type="real" default_value="30e3" units="m"
+					description="Maximum value in grid cell size for Redi and GM $\kappa$ ramp function.  Here cell size refers to dcEdge. Used when config_eddying_resolution_taper is set to ramp."
+					possible_values="Any positive real value."
+		/>
+		<nml_option name="config_mesoscale_eddy_isopycnal_slope_limit" type="real" default_value="0.01" units="non-dimensional"
+					description="Maximum value of isopycnal slope allowed for Redi and GM schemes. Slopes greater than this value (positive or negative) are capped at this value."
 					possible_values="Positive real numbers"
 		/>
 	</nml_record>
@@ -1247,22 +1243,6 @@
 		/>
 	</nml_record>
 	<nml_record name="debug" mode="forward;init">
-		<nml_option name="config_disable_redi_k33" type="logical" default_value=".false." units="unitless"
-					description="If true, disables k33 portion of Redi neutral surface mixing."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_disable_redi_horizontal_term1" type="logical" default_value=".false." units="unitless"
-					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_disable_redi_horizontal_term2" type="logical" default_value=".false." units="unitless"
-					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
-					possible_values=".true. or .false."
-		/>
-		<nml_option name="config_disable_redi_horizontal_term3" type="logical" default_value=".false." units="unitless"
-					description="If true, disables first term in horizonal mixing of Redi neutral surface mixing."
-					possible_values=".true. or .false."
-		/>
 		<nml_option name="config_check_zlevel_consistency" type="logical" default_value=".false." units="unitless"
 					description="Enables a run-time check for consistency for a zlevel grid. Ensures relevant variables correctly define the bottom of the ocean."
 					possible_values=".true. or .false."
@@ -1367,6 +1347,10 @@
 					description="Disables tendencies on the tracer fields from CVMix/KPP nonlocal fluxes."
 					possible_values=".true. or .false."
 		/>
+		<nml_option name="config_disable_redi_k33" type="logical" default_value=".false." units="unitless"
+					description="If true, disables k33 portion of Redi neutral surface mixing."
+					possible_values=".true. or .false."
+		/>
 		<nml_option name="config_read_nearest_restart" type="logical" default_value=".false." units="unitless"  mode="forward"
 					description="This flag is intended for the expert user.  If false, forward model will error out if time given by config_start_time (or Restart_timestamp file if config_start_time='file') does not match any xtime strings in the restart file.  If true, forward model will read in record with xtime nearest to config_start_time.  Note that the restart file name is still given by config_start_time (or Restart_timestamp file), regardless of the state of this flag."
 					possible_values=".true. or .false."
@@ -1436,7 +1420,6 @@
 		<package name="landIceCouplingPKG" description="This package includes varibles required for land ice coupling but not land ice fluxes in standalone mode."/>
 		<package name="frazilIce" description="This package includes variables required for frazil ice formation."/>
 		<package name="tidalForcing" description="This package includes variables required for tidal forcing on a boundary."/>
-		<package name="inSituEOS" description="This package includes variables required for to compute in situ equation of state derivatives, like thermal expansion and haline contraction."/>
 		<package name="forwardMode" description="This package controls variables that are intended to be used within the forward run mode of the ocean model."/>
 		<package name="analysisMode" description="This package controls variables that are intended to be used within the analysis run mode of the ocean model."/>
 		<package name="initMode" description="This package controls variables that are intended to be used within the init run mode of the ocean model."/>
@@ -1707,6 +1690,7 @@
 			<var name="xtime"/>
 			<var name="simulationStartTime"/>
 			<var name="boundaryLayerDepth"/>
+			<var name="indexBoundaryLayerDepth"/>
 			<var name="landIcePressure"/>
 			<var name="landIceDraft"/>
 			<var name="landIceFraction"/>
@@ -1978,10 +1962,6 @@
 				mode="forward">
 
 			<stream name="mesh"/>
-			<var name="relativeSlopeTopOfCell"/>
-			<var name="relativeSlopeTaperingCell"/>
-			<var name="relativeSlopeTopOfCellZonal"/>
-			<var name="relativeSlopeTopOfCellMeridional"/>
 			<var name="k33"/>
 			<var name="GMBolusVelocityZonal"/>
 			<var name="GMBolusVelocityMeridional"/>
@@ -2001,11 +1981,6 @@
 				mode="forward">
 
 			<stream name="mesh"/>
-			<var name="relativeSlopeTopOfCell"/>
-			<var name="relativeSlopeTaperingCell"/>
-			<var name="relativeSlopeTopOfCellX"/>
-			<var name="relativeSlopeTopOfCellY"/>
-			<var name="relativeSlopeTopOfCellZ"/>
 			<var name="k33"/>
 			<var name="GMBolusVelocityX"/>
 			<var name="GMBolusVelocityY"/>
@@ -2499,12 +2474,10 @@
 		<var name="inSituThermalExpansionCoeff"
 			 type="real" dimensions="nVertLevels nCells Time" units="C^{-1}"
 			 description="Thermal expansion coefficient (alpha), defined as $-1/\rho d\rho/dT$ (note negative sign).  This is in situ, i.e. not displaced to another depth."
-			 packages="inSituEOS"
 		/>
 		<var name="inSituSalineContractionCoeff"
 			 type="real" dimensions="nVertLevels nCells Time" units="PSU^{-1}"
 			 description="Saline contraction coefficient (beta), defined as $1/\rho d\rho/dS$.  This is also called the haline contraction coefficient.  This is in situ, i.e. not displaced to another depth."
-			 packages="inSituEOS"
 		/>
 
 		<var name="BruntVaisalaFreqTop" type="real" dimensions="nVertLevels nCells Time" units="s^{-2}"
@@ -2772,44 +2745,16 @@
 			 description="CVMix/KPP: diagnosed surface buoyancy flux due to heat, salt and freshwater fluxes. Positive flux increases buoyancy."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="relativeSlopeTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
-			 description="Slope of isopycnal surface relative to constant coordinate surface"
+		<var name="slopeTriadUp" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional"
+			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
 		/>
-		<var name="relativeSlopeTopOfCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
-			 description="Magnitude of slope of isopycnal surface relative to constant coordinate surface averaged to cell centers"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="relativeSlopeTapering" type="real" dimensions="nVertLevelsP1 nEdges Time" units="non-dimensional"
-			 description="scalar tapering function applied to limit magnitude of isopycnal mixing in regions where relativeSlopeTopOfCell is greater than config_gm_max_slope"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="relativeSlopeTaperingCell" type="real" dimensions="nVertLevelsP1 nCells Time" units="non-dimensional"
-			 description="averaging of relativeSlopeTapering function to cell centers"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="relativeSlopeTopOfCellX" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
-			 description="Slope of isopycnal surface relative to constant coordinate surface"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="relativeSlopeTopOfCellY" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
-			 description="Slope of isopycnal surface relative to constant coordinate surface"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="relativeSlopeTopOfCellZ" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
-			 description="Slope of isopycnal surface relative to constant coordinate surface"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="relativeSlopeTopOfCellZonal" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
-			 description="Slope of isopycnal surface relative to constant coordinate surface"
-			 packages="forwardMode;analysisMode"
-		/>
-		<var name="relativeSlopeTopOfCellMeridional" type="real" dimensions="nVertLevelsP1 nCells Time" units="unitless"
-			 description="Slope of isopycnal surface relative to constant coordinate surface"
+		<var name="slopeTriadDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional"
+			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="k33" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
-			 description="The (3,3) entry of the Redi diffusion tensor. Added to the model vertical diffusion."
+			 description="The (3,3) entry of the Redi diffusion tensor. Added to the model vertical diffusion. Defined at the top of cell k"
 			 packages="forwardMode;analysisMode"
 		/>
 		<var name="gmStreamFuncTopOfEdge" type="real" dimensions="nVertLevelsP1 nEdges Time" units="m^2 s^{-1}"
@@ -2842,6 +2787,10 @@
 		/>
 		<var name="gmBolusKappa" type="real" dimensions="nEdges" units="m^2 s^{-1}"
 			 description="GM Bolus Kappa value.  This is constant in time, and set at init based on the constant or ramp fuction."
+			 packages="gm"
+		/>
+		<var name="RediKappa" type="real" dimensions="nCells" units="m^2 s^{-1}"
+			 description="Redi isopycnal mixing Kappa value.  This is constant in time, and set at init."
 			 packages="gm"
 		/>
 		<var name="surfaceFluxAttenuationCoefficient" type="real" dimensions="nCells Time" units="m"
@@ -3288,6 +3237,10 @@
 			description="SSH - tidal potential in split explicit "
 			packages="tidalPotentialForcingPKG"
 		/>
+		<var name="RediKappaData" type="real" dimensions="nCells" units="m^2 s^{-1}"
+			 description="Redi isopycnal mixing Kappa value. This is the data field specified at init."
+			 packages="gm"
+		/>
 	</var_struct>
 	<var_struct name="timeVaryingForcing" time_levs="1">
 		<var name="windSpeedU" type="real" dimensions="nCells Time" units="m/s"
@@ -3488,15 +3441,6 @@
 		/>
 		<var name="gradDensityTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
 			 description="Normal gradient of density at layer interfaces"
-		/>
-		<var name="gradTracerEdge" persistence="scratch" type="real" dimensions="nVertLevels nEdges Time" units=""
-			 description="Normal gradient of tracer field at edges"
-		/>
-		<var name="gradTracerTopOfEdge" persistence="scratch" type="real" dimensions="nVertLevelsP1 nEdges Time" units=""
-			 description="Normal gradient of tracer field at layer interfaces"
-		/>
-		<var name="gradHTracerSlopedTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units="tracer m s^{-1}"
-			 description="Dot product of relative slope with gradient of tracer averaged to cell centers"
 		/>
 		<var name="dDensityDzTopOfCell" persistence="scratch" type="real" dimensions="nVertLevelsP1 nCells Time" units=""
 			 description="Vertical gradient of potential density"

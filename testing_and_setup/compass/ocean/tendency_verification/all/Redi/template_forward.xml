@@ -1,0 +1,21 @@
+<template>
+	<namelist>
+		<option name="config_use_Redi">.true.</option>
+		<option name="config_Redi_tracer_kappa">600.0</option>
+		<option name="config_mesoscale_eddy_isopycnal_slope_limit">1.0e10</option>
+		<option name="config_Redi_surface_taper_layers">1</option>
+		<option name="config_Redi_bottom_taper_layers">1</option>
+		<option name="config_Redi_zero_in_boundary_layer">.false.</option>
+		<option name="config_use_GM">.false.</option>
+		<option name="config_eddying_resolution_taper">'none'</option>
+		<option name="config_use_cvmix">.false.</option>
+		<option name="config_disable_thick_all_tend">.true.</option>
+		<option name="config_disable_vel_all_tend">.true.</option>
+		<option name="config_disable_tr_adv">.true.</option>
+		<option name="config_disable_tr_sflux">.true.</option>
+	</namelist>
+
+	<streams>
+	</streams>
+
+</template>
