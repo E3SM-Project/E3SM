@@ -59,10 +59,14 @@ contains
     type(dfield_type), pointer :: dfield_new
     integer :: ns, kf
     integer :: lsize, num
+    integer :: status
+    character(cl) :: msgstr
     character(len=*), parameter :: subname='(dfield_add_strmfld)'
     ! ----------------------------------------------
 
-    allocate(dfield_new)
+    allocate(dfield_new, stat=status)
+    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+    if (status /= 0) call shr_sys_abort(msgstr)
     dfield_new%next => dfields
     dfields => dfield_new
 
@@ -81,7 +85,9 @@ contains
        if (kf > 0) then
           dfield_new%sdat_stream_index = ns
           dfield_new%sdat_avect_index = kf
-          allocate(dfield_new%stream_data1d(lsize))
+          allocate(dfield_new%stream_data1d(lsize), stat=status)
+          write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+          if (status /= 0) call shr_sys_abort(msgstr)
           strm_ptr => dfield_new%stream_data1d
           if (present(logunit) .and. present(masterproc)) then
              if (masterproc) then
@@ -115,12 +121,16 @@ contains
     ! local variables
     type(dfield_type), pointer :: dfield_new
     integer :: ns, kf, lsize
+    integer :: status
+    character(cl) :: msgstr
     character(len=*), parameter :: subname='(dfield_add_1d)'
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    allocate(dfield_new)
+    allocate(dfield_new, stat=status)
+    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+    if (status /= 0) call shr_sys_abort(msgstr)
     dfield_new%next => dfields
     dfields => dfield_new
 
@@ -144,7 +154,9 @@ contains
        if (kf > 0) then
           dfield_new%sdat_stream_index = ns
           dfield_new%sdat_avect_index = kf
-          allocate(dfield_new%stream_data1d(lsize))
+          allocate(dfield_new%stream_data1d(lsize), stat=status)
+          write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+          if (status /= 0) call shr_sys_abort(msgstr)
           dfield_new%stream_data1d(:) = 0._r8
           if (present(strm_ptr)) then
              strm_ptr => dfield_new%stream_data1d
@@ -193,22 +205,30 @@ contains
 
     ! local variables
     type(dfield_type), pointer :: dfield_new
-    integer :: n, i, kf, ns, nf
-    integer :: nflds, lsize, num
+    integer       :: n, i, kf, ns, nf
+    integer       :: nflds, lsize, num
+    integer       :: status
+    character(cl) :: msgstr
     character(len=*), parameter :: subname='(dfield_add_2d)'
     ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    allocate(dfield_new)
+    allocate(dfield_new, stat=status)
+    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+    if (status /= 0) call shr_sys_abort(msgstr)
     dfield_new%next => dfields
     dfields => dfield_new
 
     ! determine stream fldnames array
     nflds = size(strm_flds)
     dfield_new%stream_nflds = nflds
-    allocate(dfield_new%sdat_stream_indices(nflds))
-    allocate(dfield_new%sdat_avect_indices(nflds))
+    allocate(dfield_new%sdat_stream_indices(nflds), stat=status)
+    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+    if (status /= 0) call shr_sys_abort(msgstr)
+    allocate(dfield_new%sdat_avect_indices(nflds), stat=status)
+    write(msgstr,*)'allocation error ',__LINE__,':',__FILE__
+    if (status /= 0) call shr_sys_abort(msgstr)
 
     ! determine local size
     lsize = mct_avect_lsize(sdat%avs(1))
