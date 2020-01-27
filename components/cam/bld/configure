@@ -224,7 +224,7 @@ OPTIONS
      -cosp              Enable the COSP simulator.
      -debug             Switch to turn on building CAM with debugging compiler options.
      -bc_dep_to_snow_updates  Switch on new treatment of BC/dust deposition to ice/snoe
-     -rain_evap_to_coarse_aero   Switch to turn on BC, POM and SOA in the MAM3m MAM4 and MAM5 coarse mode (mam mode 3)
+     -rain_evap_to_coarse_aero   Switch to turn on BC, POM and SOA in the MAM3, MAM4 and MAM5 coarse mode (mam mode 3)
      -defaults <file>   Specify a configuration file which will be used to supply defaults instead of
                         one of the config_files/defaults_*.xml files.  This file is used to specify model
                         configuration parameters only.  Parameters relating to the build which
@@ -1341,7 +1341,6 @@ if (($rain_evap_to_coarse_aero == 1) && ($chem_pkg eq 'trop_mam4')) {
 if ($rain_evap_to_coarse_aero == 1 && ($chem_pkg eq 'trop_mam4_mom')) {
     $chem_pkg = 'trop_mam4_resus_mom'
 }
-
 
 if (!$prog_species) {
   $chem_src_dir = "$cam_root/components/cam/src/chemistry/pp_$chem_pkg";

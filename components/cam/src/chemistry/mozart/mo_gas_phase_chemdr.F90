@@ -160,7 +160,8 @@ contains
      inv_ndx_m       = get_inv_ndx( 'M' )        ! airmass.  Elsewhere this variable is known as m_ndx
      
      if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-         .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag') then
+         .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' &
+         .or.chem_name == 'linoz_mam5_resus_mom_soag') then
        if ( inv_ndx_cnst_o3 < 1 ) then
           call endrun('ERROR: chem_name = '//trim(chem_name)//&
           ' requies cnst_O3 fixed oxidant field. Use cnst_O3:O3 in namelist tracer_cnst_specifier')
@@ -487,7 +488,8 @@ contains
     !        ... set tropospheric ozone for Linoz_MAM  (pjc, 2015)
     !-----------------------------------------------------------------------
 !    if ( chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-!       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) then
+!       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag'  &
+!       .or.chem_name == 'linoz_mam5_resus_mom_soag') then
 !     write(iulog,*) 'Set tropospheric ozone for linoz_mam: inv_ndx_cnst_o3 =',inv_ndx_cnst_o3
 !      do k = 1, pver                !Following loop logic from below.  However, reordering loops can get rid of IF statement.
 !         do i = 1, ncol
@@ -740,7 +742,8 @@ contains
 
     if ( has_linoz_data .and. .not. &
        (chem_name == 'linoz_mam3'.or.chem_name == 'linoz_mam4_resus'.or.chem_name == 'linoz_mam4_resus_mom' &
-       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag' ) ) then
+       .or.chem_name == 'linoz_mam4_resus_soag'.or.chem_name == 'linoz_mam4_resus_mom_soag'  &
+         .or.chem_name == 'linoz_mam5_resus_mom_soag') ) then
        ltrop_sol(:ncol) = troplev(:ncol)
     else
        ltrop_sol(:ncol) = 0 ! apply solver to all levels

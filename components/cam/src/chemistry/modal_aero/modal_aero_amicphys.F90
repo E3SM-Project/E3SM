@@ -96,11 +96,7 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +3 in max_aer are dst, ncl, so4
   integer, parameter :: max_aer = nsoa + npoa + nbc + 3
-#elif ( defined MODAL_AERO_4MODE_MOM )
-  integer, parameter :: max_gas = nsoa + 1
-  ! the +4 in max_aer are dst, ncl, so4, mom
-  integer, parameter :: max_aer = nsoa + npoa + nbc + 4
-#elif ( defined MODAL_AERO_5MODE_MOM )
+#elif ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_5MODE_MOM)
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4

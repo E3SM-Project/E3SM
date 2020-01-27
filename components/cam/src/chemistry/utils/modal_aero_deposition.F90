@@ -227,7 +227,7 @@ subroutine set_srf_wetdep(aerdepwetis, aerdepwetcw, cam_out)
 
 #endif
 
-#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
+#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_5MODE_MOM))
       ! MAM4
 
       ! in SNICAR+MAM, bcphiwet represents BC mixed internally within
@@ -441,7 +441,7 @@ subroutine set_srf_drydep(aerdepdryis, aerdepdrycw, cam_out)
 
 #endif
 
-#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) )
+#if( (defined MODAL_AERO_4MODE) || (defined MODAL_AERO_4MODE_MOM) || (defined MODAL_AERO_5MODE_MOM))
       ! MAM4
 
       ! in SNICAR+MAM, bcphodry represents BC mixed external to hydrometeors
