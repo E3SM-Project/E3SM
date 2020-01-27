@@ -690,9 +690,13 @@ class EnvBatch(EnvBase):
             sequence = (batchsubmit, submitargs, batchredirect, get_batch_script_for_job(job), run_args)
 
         submitcmd = " ".join(s.strip() for s in sequence if s is not None)
+        if submitcmd.startswith("ssh"):
+            # add ` before cd $CASEROOT and at end of command
+            submitcmd = submitcmd.replace("cd $CASEROOT","\'cd $CASEROOT") + "\'"
         if dry_run:
             return submitcmd
         else:
+            submitcmd = case.get_resolved_value(submitcmd)
             logger.info("Submitting job script {}".format(submitcmd))
             output = run_cmd_no_fail(submitcmd, combine_output=True)
             jobid = self.get_job_id(output)
