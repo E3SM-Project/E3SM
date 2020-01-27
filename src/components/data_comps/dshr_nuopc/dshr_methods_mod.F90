@@ -23,6 +23,7 @@ module dshr_methods_mod
   use shr_kind_mod , only : r8 => shr_kind_r8, cl=>shr_kind_cl, cs=>shr_kind_cs
   use shr_sys_mod  , only : shr_sys_abort
   use shr_file_mod , only : shr_file_setlogunit, shr_file_getLogUnit
+  use perf_mod     , only : t_startf, t_stopf 
 
   implicit none
   private
@@ -34,39 +35,25 @@ module dshr_methods_mod
   public  :: state_getscalar
   public  :: state_setscalar
   public  :: state_diagnose
-  public  :: alarmInit  
+  public  :: state_getfldptr
+  public  :: FB_Regrid
+  public  :: FB_getFieldN
+  public  :: FB_getNameN
+  public  :: FB_getFldPtr
+  public  :: FB_diagnose
+  public  :: FB_fldchk
   public  :: chkerr
 
-  private :: timeInit
   private :: field_getfldptr
 
-  ! Clock and alarm options
-  character(len=*), private, parameter :: &
-       optNONE           = "none"      , &
-       optNever          = "never"     , &
-       optNSteps         = "nsteps"    , &
-       optNStep          = "nstep"     , &
-       optNSeconds       = "nseconds"  , &
-       optNSecond        = "nsecond"   , &
-       optNMinutes       = "nminutes"  , &
-       optNMinute        = "nminute"   , &
-       optNHours         = "nhours"    , &
-       optNHour          = "nhour"     , &
-       optNDays          = "ndays"     , &
-       optNDay           = "nday"      , &
-       optNMonths        = "nmonths"   , &
-       optNMonth         = "nmonth"    , &
-       optNYears         = "nyears"    , &
-       optNYear          = "nyear"     , &
-       optMonthly        = "monthly"   , &
-       optYearly         = "yearly"    , &
-       optDate           = "date"      , &
-       optIfdays0        = "ifdays0"   
+
+  ! used/reused in module
+  logical                     :: isPresent
+  character(len=1024)         :: msgString
+  type(ESMF_FieldStatus_Flag) :: status
 
   ! Module data
-  integer, parameter :: SecPerDay = 86400 ! Seconds per day
-  integer, parameter :: memdebug_level=1
-  character(len=1024)                   :: msgString
+  integer, parameter          :: memdebug_level=1
   character(len=*), parameter :: u_FILE_u = &
        __FILE__
 
@@ -81,7 +68,7 @@ contains
     integer          , intent(in) :: level
     logical          , intent(in) :: mastertask
 
-    ! local variables
+    ! local vvariables
     integer :: ierr
     integer, external :: GPTLprint_memusage
     !-----------------------------------------------------------------------
@@ -354,6 +341,38 @@ contains
 
 !===============================================================================
 
+  subroutine State_GetFldPtr(State, fldname, fldptr1, fldptr2, rc)
+
+    ! ----------------------------------------------
+    ! Get pointer to a state field
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_State, ESMF_Field, ESMF_StateGet
+
+    ! input/output variables
+    type(ESMF_State) ,          intent(in)              :: State
+    character(len=*) ,          intent(in)              :: fldname
+    real(R8)         , pointer, intent(inout), optional :: fldptr1(:)
+    real(R8)         , pointer, intent(inout), optional :: fldptr2(:,:)
+    integer          ,          intent(out)             :: rc
+
+    ! local variables
+    type(ESMF_Field)           :: lfield
+    character(len=*), parameter :: subname='(med_methods_State_GetFldPtr)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call ESMF_StateGet(State, itemName=trim(fldname), field=lfield, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    call Field_GetFldPtr(lfield, fldptr1=fldptr1, fldptr2=fldptr2, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine State_GetFldPtr
+
+!===============================================================================
+
   subroutine field_getfldptr(field, fldptr1, fldptr2, rank, abort, rc)
 
     ! ----------------------------------------------
@@ -368,7 +387,7 @@ contains
     real(r8), pointer , intent(inout), optional :: fldptr2(:,:)
     integer           , intent(out)  , optional :: rank
     logical           , intent(in)   , optional :: abort
-    integer           , intent(out)  , optional :: rc
+    integer           , intent(out)             :: rc
 
     ! local variables
     type(ESMF_GeomType_Flag)    :: geomtype
@@ -378,13 +397,6 @@ contains
     logical                     :: labort
     character(len=*), parameter :: subname='(field_getfldptr)'
     ! ----------------------------------------------
-
-    if (.not.present(rc)) then
-       call ESMF_LogWrite(trim(subname)//": ERROR rc not present ", &
-            ESMF_LOGMSG_ERROR, line=__LINE__, file=u_FILE_u)
-       rc = ESMF_FAILURE
-       return
-    endif
 
     rc = ESMF_SUCCESS
 
@@ -398,6 +410,7 @@ contains
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
     if (status /= ESMF_FIELDSTATUS_COMPLETE) then
+
        lrank = 0
        if (labort) then
           call ESMF_LogWrite(trim(subname)//": ERROR data not allocated ", ESMF_LOGMSG_INFO, rc=rc)
@@ -406,6 +419,7 @@ contains
        else
           call ESMF_LogWrite(trim(subname)//": WARNING data not allocated ", ESMF_LOGMSG_INFO, rc=rc)
        endif
+
     else
 
        call ESMF_FieldGet(field, geomtype=geomtype, rc=rc)
@@ -467,356 +481,353 @@ contains
 
 !===============================================================================
 
-  subroutine alarmInit( clock, alarm, option, &
-       opt_n, opt_ymd, opt_tod, RefTime, alarmname, rc)
+  subroutine FB_diagnose(FB, string, rc)
+    ! ----------------------------------------------
+    ! Diagnose status of FB
+    ! ----------------------------------------------
 
-    ! Setup an alarm in a clock
-    ! Notes: The ringtime sent to AlarmCreate MUST be the next alarm
-    ! time.  If you send an arbitrary but proper ringtime from the
-    ! past and the ring interval, the alarm will always go off on the
-    ! next clock advance and this will cause serious problems.  Even
-    ! if it makes sense to initialize an alarm with some reference
-    ! time and the alarm interval, that reference time has to be
-    ! advance forward to be >= the current time.  In the logic below
-    ! we set an appropriate "NextAlarm" and then we make sure to
-    ! advance it properly based on the ring interval.
+    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
 
-    ! input/output variables
-    type(ESMF_Clock)            , intent(inout) :: clock     ! clock
-    type(ESMF_Alarm)            , intent(inout) :: alarm     ! alarm
-    character(len=*)            , intent(in)    :: option    ! alarm option
-    integer          , optional , intent(in)    :: opt_n     ! alarm freq
-    integer          , optional , intent(in)    :: opt_ymd   ! alarm ymd
-    integer          , optional , intent(in)    :: opt_tod   ! alarm tod (sec)
-    type(ESMF_Time)  , optional , intent(in)    :: RefTime   ! ref time
-    character(len=*) , optional , intent(in)    :: alarmname ! alarm name
-    integer                     , intent(inout) :: rc        ! Return code
+    type(ESMF_FieldBundle) , intent(inout)        :: FB
+    character(len=*)       , intent(in), optional :: string
+    integer                , intent(out)          :: rc
 
     ! local variables
-    type(ESMF_Calendar)     :: cal                ! calendar
-    integer                 :: lymd             ! local ymd
-    integer                 :: ltod             ! local tod
-    integer                 :: cyy,cmm,cdd,csec ! time info
-    character(len=64)       :: lalarmname       ! local alarm name
-    logical                 :: update_nextalarm ! update next alarm
-    type(ESMF_Time)         :: CurrTime         ! Current Time
-    type(ESMF_Time)         :: NextAlarm        ! Next restart alarm time
-    type(ESMF_TimeInterval) :: AlarmInterval    ! Alarm interval
-    integer                 :: sec
-    character(len=*), parameter :: subname = '(set_alarmInit): '
-    !-------------------------------------------------------------------------------
+    integer                         :: i,j,n
+    integer                         :: fieldCount, lrank
+    character(ESMF_MAXSTR), pointer :: lfieldnamelist(:)
+    character(len=CL)               :: lstring
+    real(R8), pointer               :: dataPtr1d(:)
+    real(R8), pointer               :: dataPtr2d(:,:)
+    character(len=*), parameter     :: subname='(FB_diagnose)'
+    ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    lalarmname = 'alarm_unknown'
-    if (present(alarmname)) lalarmname = trim(alarmname)
-    ltod = 0
-    if (present(opt_tod)) ltod = opt_tod
-    lymd = -1
-    if (present(opt_ymd)) lymd = opt_ymd
+    lstring = ''
+    if (present(string)) lstring = trim(string) // ' '
 
-    call ESMF_ClockGet(clock, CurrTime=CurrTime, rc=rc)
+    ! Determine number of fields in field bundle and allocate memory for lfieldnamelist
+    call ESMF_FieldBundleGet(FB, fieldCount=fieldCount, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    allocate(lfieldnamelist(fieldCount))
+
+    ! Get the fields in the field bundle
+    call ESMF_FieldBundleGet(FB, fieldNameList=lfieldnamelist, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-    call ESMF_TimeGet(CurrTime, yy=cyy, mm=cmm, dd=cdd, s=csec, rc=rc )
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-    ! initial guess of next alarm, this will be updated below
-    if (present(RefTime)) then
-       NextAlarm = RefTime
-    else
-       NextAlarm = CurrTime
-    endif
-
-    ! Determine calendar
-    call ESMF_ClockGet(clock, calendar=cal)
-
-    ! Determine inputs for call to create alarm
-    selectcase (trim(option))
-
-    case (optNONE)
-       call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
+    ! For each field in the bundle, get its memory location and print out the field
+    do n = 1, fieldCount
+       call FB_GetFldPtr(FB, lfieldnamelist(n), fldptr1=dataPtr1d, fldptr2=dataPtr2d, rank=lrank, rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_TimeSet( NextAlarm, yy=9999, mm=12, dd=1, s=0, calendar=cal, rc=rc )
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       update_nextalarm  = .false.
 
-    case (optNever)
-       call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_TimeSet( NextAlarm, yy=9999, mm=12, dd=1, s=0, calendar=cal, rc=rc )
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       update_nextalarm  = .false.
+       if (lrank == 0) then
+          ! no local data
 
-    case (optDate)
-       if (.not. present(opt_ymd)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_ymd')
-       end if
-       if (lymd < 0 .or. ltod < 0) then
-          call shr_sys_abort(subname//trim(option)//'opt_ymd, opt_tod invalid')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, yy=9999, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call timeInit(NextAlarm, lymd, cal, ltod, rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       update_nextalarm  = .false.
+       elseif (lrank == 1) then
+          if (size(dataPtr1d) > 0) then
+             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n))//' ', &
+                  minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
+          else
+             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), " no data"
+          endif
 
-    case (optIfdays0)
-       if (.not. present(opt_ymd)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_ymd')
-       end if
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0)  then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=cmm, dd=opt_n, s=0, calendar=cal, rc=rc )
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       update_nextalarm  = .true.
+       elseif (lrank == 2) then
+          if (size(dataPtr2d) > 0) then
+             write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n))//' ', &
+                  minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
+          else
+             write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(lfieldnamelist(n)), &
+                  " no data"
+          endif
 
-    case (optNSteps)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_ClockGet(clock, TimeStep=AlarmInterval, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
+       else
+          call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR)
+          rc = ESMF_FAILURE
+          return
+       endif
+       call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
+    enddo
 
-    case (optNStep)
-       if (.not.present(opt_n)) call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       if (opt_n <= 0)  call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       call ESMF_ClockGet(clock, TimeStep=AlarmInterval, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
+    ! Deallocate memory
+    deallocate(lfieldnamelist)
 
-    case (optNSeconds)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, s=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
+    call ESMF_LogWrite(trim(subname)//": done", ESMF_LOGMSG_INFO)
 
-    case (optNSecond)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, s=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optNMinutes)
-       call ESMF_TimeIntervalSet(AlarmInterval, s=60, rc=rc)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optNMinute)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, s=60, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optNHours)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, s=3600, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optNHour)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, s=3600, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optNDays)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, d=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optNDay)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, d=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optNMonths)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optNMonth)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optMonthly)
-       call ESMF_TimeIntervalSet(AlarmInterval, mm=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=cmm, dd=1, s=0, calendar=cal, rc=rc )
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       update_nextalarm  = .true.
-
-    case (optNYears)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, yy=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optNYear)
-       if (.not.present(opt_n)) then
-          call shr_sys_abort(subname//trim(option)//' requires opt_n')
-       end if
-       if (opt_n <= 0) then
-          call shr_sys_abort(subname//trim(option)//' invalid opt_n')
-       end if
-       call ESMF_TimeIntervalSet(AlarmInterval, yy=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       AlarmInterval = AlarmInterval * opt_n
-       update_nextalarm  = .true.
-
-    case (optYearly)
-       call ESMF_TimeIntervalSet(AlarmInterval, yy=1, rc=rc)
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       call ESMF_TimeSet( NextAlarm, yy=cyy, mm=1, dd=1, s=0, calendar=cal, rc=rc )
-       if (chkerr(rc,__LINE__,u_FILE_u)) return
-       update_nextalarm  = .true.
-
-    case default
-       call shr_sys_abort(subname//'unknown option '//trim(option))
-
-    end select
-
-    ! --------------------------------------------------------------------------------
-    ! --- AlarmInterval and NextAlarm should be set ---
-    ! --------------------------------------------------------------------------------
-
-    ! --- advance Next Alarm so it won't ring on first timestep for
-    ! --- most options above. go back one alarminterval just to be careful
-
-    if (update_nextalarm) then
-       NextAlarm = NextAlarm - AlarmInterval
-       do while (NextAlarm <= CurrTime)
-          NextAlarm = NextAlarm + AlarmInterval
-       enddo
-    endif
-
-    alarm = ESMF_AlarmCreate( name=lalarmname, clock=clock, ringTime=NextAlarm, &
-         ringInterval=AlarmInterval, rc=rc)
-    if (chkerr(rc,__LINE__,u_FILE_u)) return
-
-  end subroutine alarmInit
+  end subroutine FB_diagnose
 
 !===============================================================================
 
-  subroutine timeInit( Time, ymd, cal, tod, rc)
+  subroutine FB_GetFldPtr(FB, fldname, fldptr1, fldptr2, rank, field, rc)
 
-    ! Create the ESMF_Time object corresponding to the given input time, 
-    ! given in YMD (Year Month Day) and TOD (Time-of-day) format.
-    ! Set the time by an integer as YYYYMMDD and integer seconds in the day
+    ! ----------------------------------------------
+    ! Get pointer to a field bundle field
+    ! ----------------------------------------------
 
-    ! input/output parameters:
-    type(ESMF_Time)     , intent(inout) :: Time ! ESMF time
-    integer             , intent(in)    :: ymd  ! year, month, day YYYYMMDD
-    type(ESMF_Calendar) , intent(in)    :: cal  ! ESMF calendar
-    integer             , intent(in)    :: tod  ! time of day in seconds
-    integer             , intent(out)   :: rc
+    use ESMF , only : ESMF_FieldBundle, ESMF_FieldBundleGet, ESMF_Field
+
+    type(ESMF_FieldBundle) , intent(in)              :: FB
+    character(len=*)       , intent(in)              :: fldname
+    real(R8), pointer      , intent(inout), optional :: fldptr1(:)
+    real(R8), pointer      , intent(inout), optional :: fldptr2(:,:)
+    integer                , intent(out),   optional :: rank
+    type(ESMF_Field)       , intent(out),   optional :: field
+    integer                , intent(out)              :: rc
 
     ! local variables
-    integer :: year, mon, day ! year, month, day as integers
-    integer :: tdate          ! temporary date
-    integer :: date           ! coded-date (yyyymmdd)
-    character(len=*), parameter :: subname='(timeInit)'
-    !-------------------------------------------------------------------------------
+    type(ESMF_Field) :: lfield
+    integer          :: lrank
+    character(len=*), parameter :: subname='(FB_GetFldPtr)'
+    ! ----------------------------------------------
 
     rc = ESMF_SUCCESS
 
-    if ( (ymd < 0) .or. (tod < 0) .or. (tod > SecPerDay) )then
-       call shr_sys_abort( subname//'ERROR yymmdd is a negative number or time-of-day out of bounds' )
-    end if
+    if (.not. FB_FldChk(FB, trim(fldname), rc=rc)) then
+       call ESMF_LogWrite(trim(subname)//": ERROR field "//trim(fldname)//" not in FB ", ESMF_LOGMSG_ERROR)
+      rc = ESMF_FAILURE
+      return
+    endif
 
-    tdate = abs(date)
-    year = int(tdate/10000)
-    if (date < 0) year = -year
-    mon = int( mod(tdate,10000)/  100)
-    day = mod(tdate,  100)
-
-    call ESMF_TimeSet( Time, yy=year, mm=mon, dd=day, s=tod, calendar=cal, rc=rc )
+    call ESMF_FieldBundleGet(FB, fieldName=trim(fldname), field=lfield, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    call Field_GetFldPtr(lfield, fldptr1=fldptr1, fldptr2=fldptr2, rank=lrank, rc=rc)
     if (chkerr(rc,__LINE__,u_FILE_u)) return
 
-  end subroutine timeInit
+    if (present(rank)) rank = lrank
+    if (present(field)) field = lfield
+
+  end subroutine FB_GetFldPtr
+
+!===============================================================================
+
+  subroutine FB_Regrid(FBin, FBout, RH, zeroregion, rc)
+
+    ! ----------------------------------------------
+    ! Assumes that FBin and FBout contain fields with the same name
+    ! ----------------------------------------------
+
+    use ESMF , only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    use ESMF , only : ESMF_RouteHandle, ESMF_FieldRegrid, ESMF_Field
+    use ESMF , only : ESMF_TERMORDER_SRCSEQ, ESMF_FieldRegridStore, ESMF_SparseMatrixWrite
+    use ESMF , only : ESMF_Region_Flag, ESMF_REGION_TOTAL, ESMF_MAXSTR
+
+    ! input/output variables
+    type(ESMF_FieldBundle), intent(inout)        :: FBin
+    type(ESMF_FieldBundle), intent(inout)        :: FBout
+    type(ESMF_RouteHandle), intent(inout)        :: RH
+    type(ESMF_Region_Flag), intent(in), optional :: zeroregion
+    integer               , intent(out)          :: rc
+
+    ! local
+    type(ESMF_Field)           :: field_src
+    type(ESMF_Field)           :: field_dst
+    integer                    :: fieldcount
+    logical                    :: checkflag = .false.
+    character(len=8)           :: filename
+    type(ESMF_Region_Flag)     :: localzr
+    character(CS)              :: fldname
+    integer                    :: n
+    character(ESMF_MAXSTR), allocatable :: lfieldNameList(:)
+    character(len=*),parameter :: subname='(FB_FieldRegrid)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call t_startf(subname)
+
+    localzr = ESMF_REGION_TOTAL
+    if (present(zeroregion)) then
+       localzr = zeroregion
+    endif
+
+    call ESMF_FieldBundleGet(FBin, fieldCount=fieldCount, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    allocate(lfieldNameList(fieldCount))
+    call ESMF_FieldBundleGet(FBin, fieldNameList=lfieldNameList, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    do n = 1,fieldCount
+       fldname = trim(lfieldnamelist(n))
+       call ESMF_FieldBundleGet(FBin, fieldName=trim(fldname), field=field_src, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+       call ESMF_FieldBundleGet(FBout, fieldName=trim(fldname), field=field_dst, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+       call ESMF_FieldRegrid(field_src, field_dst, routehandle=RH, &
+            termorderflag=ESMF_TERMORDER_SRCSEQ, checkflag=.false., zeroregion=localzr, rc=rc)
+       if (chkerr(rc,__LINE__,u_FILE_u)) return
+    end do
+
+    call t_stopf(subname)
+
+  end subroutine FB_Regrid
+
+!===============================================================================
+
+  subroutine FB_getFieldN(FB, fieldnum, field, rc)
+
+    ! ----------------------------------------------
+    ! Get field with number fieldnum in input field bundle FB
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_Field, ESMF_FieldBundle, ESMF_FieldBundleGet
+
+    ! input/output variables
+    type(ESMF_FieldBundle), intent(in)    :: FB
+    integer               , intent(in)    :: fieldnum
+    type(ESMF_Field)      , intent(inout) :: field
+    integer               , intent(out)   :: rc
+
+    ! local variables
+    character(len=ESMF_MAXSTR) :: name
+    character(len=*),parameter :: subname='(FB_getFieldN)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    call FB_getNameN(FB, fieldnum, name, rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    call ESMF_FieldBundleGet(FB, fieldName=name, field=field, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+  end subroutine FB_getFieldN
+
+!===============================================================================
+
+  subroutine FB_getNameN(FB, fieldnum, fieldname, rc)
+
+    ! ----------------------------------------------
+    ! Get name of field number fieldnum in input field bundle FB
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+
+    ! input/output variables
+    type(ESMF_FieldBundle), intent(in)    :: FB
+    integer               , intent(in)    :: fieldnum
+    character(len=*)      , intent(out)   :: fieldname
+    integer               , intent(out)   :: rc
+
+    ! local variables
+    integer                         :: fieldCount
+    character(ESMF_MAXSTR) ,pointer :: lfieldnamelist(:)
+    character(len=*),parameter      :: subname='(FB_getNameN)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    fieldname = ' '
+    call ESMF_FieldBundleGet(FB, fieldCount=fieldCount, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+    if (fieldnum > fieldCount) then
+      call ESMF_LogWrite(trim(subname)//": ERROR fieldnum > fieldCount ", ESMF_LOGMSG_ERROR)
+      rc = ESMF_FAILURE
+      return
+    endif
+
+    allocate(lfieldnamelist(fieldCount))
+    call ESMF_FieldBundleGet(FB, fieldNameList=lfieldnamelist, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    fieldname = lfieldnamelist(fieldnum)
+    deallocate(lfieldnamelist)
+
+  end subroutine FB_getNameN
+
+!===============================================================================
+
+  logical function FB_FldChk(FB, fldname, rc)
+
+    ! ----------------------------------------------
+    ! Determine if field with fldname is in input field bundle
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_FieldBundle, ESMF_FieldBundleGet
+    use ESMF, only : ESMF_FieldBundleIsCreated
+
+    ! input/output variables
+    type(ESMF_FieldBundle), intent(in)  :: FB
+    character(len=*)      , intent(in)  :: fldname
+    integer               , intent(out) :: rc
+
+    ! local variables
+    character(len=*), parameter :: subname='(FB_FldChk)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    ! If field bundle is created determine if fldname is present in field bundle
+    FB_FldChk = .false.
+
+    call ESMF_FieldBundleGet(FB, fieldName=trim(fldname), isPresent=isPresent, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) then
+       call ESMF_LogWrite(trim(subname)//" Error checking field: "//trim(fldname), ESMF_LOGMSG_ERROR)
+       rc = ESMF_FAILURE
+       return
+    endif
+
+    if (isPresent) then
+       FB_FldChk = .true.
+    endif
+
+  end function FB_FldChk
+
+!===============================================================================
+
+  subroutine FB_Field_diagnose(FB, fieldname, string, rc)
+
+    ! ----------------------------------------------
+    ! Diagnose status of State
+    ! ----------------------------------------------
+
+    use ESMF, only : ESMF_FieldBundle
+
+    ! input/output variables
+    type(ESMF_FieldBundle), intent(inout)  :: FB
+    character(len=*), intent(in)           :: fieldname
+    character(len=*), intent(in), optional :: string
+    integer         , intent(out)          :: rc
+
+    ! local variables
+    integer           :: lrank
+    character(len=CS) :: lstring
+    real(R8), pointer :: dataPtr1d(:)
+    real(R8), pointer :: dataPtr2d(:,:)
+    character(len=*),parameter      :: subname='(FB_FieldDiagnose)'
+    ! ----------------------------------------------
+
+    rc = ESMF_SUCCESS
+
+    lstring = ''
+    if (present(string)) lstring = trim(string)
+
+    call FB_GetFldPtr(FB, fieldname, dataPtr1d, dataPtr2d, lrank, rc=rc)
+    if (chkerr(rc,__LINE__,u_FILE_u)) return
+
+    if (lrank == 0) then
+       ! no local data
+    elseif (lrank == 1) then
+       if (size(dataPtr1d) > 0) then
+          write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname), &
+               minval(dataPtr1d), maxval(dataPtr1d), sum(dataPtr1d), size(dataPtr1d)
+       else
+          write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname)," no data"
+       endif
+    elseif (lrank == 2) then
+       if (size(dataPtr2d) > 0) then
+          write(msgString,'(A,3g14.7,i8)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname), &
+               minval(dataPtr2d), maxval(dataPtr2d), sum(dataPtr2d), size(dataPtr2d)
+       else
+          write(msgString,'(A,a)') trim(subname)//' '//trim(lstring)//': '//trim(fieldname)," no data"
+       endif
+    else
+       call ESMF_LogWrite(trim(subname)//": ERROR rank not supported ", ESMF_LOGMSG_ERROR)
+       rc = ESMF_FAILURE
+       return
+    endif
+    call ESMF_LogWrite(trim(msgString), ESMF_LOGMSG_INFO)
+
+  end subroutine FB_Field_diagnose
 
 !===============================================================================
 
@@ -834,7 +845,5 @@ contains
        chkerr = .true.
     endif
   end function chkerr
-
-!===============================================================================
 
 end module dshr_methods_mod

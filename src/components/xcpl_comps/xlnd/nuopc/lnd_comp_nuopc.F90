@@ -318,7 +318,6 @@ contains
     integer, intent(out) :: rc
 
     ! local variables
-    character(ESMF_MAXSTR) :: convCIM, purpComp
     type(ESMF_Mesh)        :: Emesh
     integer                :: shrlogunit                ! original log unit
     type(ESMF_VM)          :: vm
@@ -393,19 +392,6 @@ contains
        call state_diagnose(exportState,subname//':ES',rc=rc)
        if (chkerr(rc,__LINE__,u_FILE_u)) return
     endif
-
-#ifdef USE_ESMF_METADATA
-    convCIM  = "CIM"
-    purpComp = "Model Component Simulation Description"
-    call ESMF_AttributeAdd(comp,  convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ShortName", "XLND", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "LongName", "Land Dead Model", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "Description", &
-         "The dead models stand in as test model for active components." // &
-         "Coupling data is artificially generated ", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ReleaseDate", "2017", convention=convCIM, purpose=purpComp, rc=rc)
-    call ESMF_AttributeSet(comp, "ModelType", "Land", convention=convCIM, purpose=purpComp, rc=rc)
-#endif
 
     call shr_file_setLogUnit (shrlogunit)
 
