@@ -14,6 +14,7 @@ module ocn_gm
    use mpas_threading
 
    use ocn_constants
+   use ocn_config
 
    implicit none
    private
@@ -31,8 +32,8 @@ module ocn_gm
    !
    !--------------------------------------------------------------------
 
-   public :: ocn_gm_compute_Bolus_velocity, &
-             ocn_gm_init
+   public :: ocn_GM_compute_Bolus_velocity, &
+             ocn_GM_init
 
    !--------------------------------------------------------------------
    !
@@ -42,20 +43,11 @@ module ocn_gm
    private :: tridiagonal_solve
 
    ! Config options
-   real (kind=RKIND), pointer :: config_gravWaveSpeed_trunc
-   real (kind=RKIND), pointer :: config_max_relative_slope
-   real (kind=RKIND), pointer :: config_Redi_kappa
-   logical, pointer :: config_use_standardGM
-   logical, pointer :: config_disable_redi_k33
-   logical, pointer :: config_use_Redi_surface_layer_tapering
-   logical, pointer :: config_use_Redi_bottom_layer_tapering
-   real (kind=RKIND), pointer :: config_Redi_surface_layer_tapering_extent
-   real (kind=RKIND), pointer :: config_Redi_bottom_layer_tapering_depth
-   logical, pointer :: config_gm_lat_variable_c2
-   logical, pointer :: config_gm_kappa_lat_depth_variable
-   real (kind=RKIND), pointer :: config_gm_min_stratification_ratio
-   real (kind=RKIND), pointer :: config_gm_min_phase_speed
    real (kind=RKIND), parameter :: epsGM = 1.0e-12_RKIND
+
+   logical :: local_config_GM_lat_variable_c2
+   logical :: local_config_GM_kappa_lat_depth_variable
+   real (kind=RKIND), parameter :: local_config_GM_min_phase_speed = 0.1_RKIND
 
 !***********************************************************************
 
@@ -63,11 +55,9 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_gm_compute_Bolus_velocity
+!  routine ocn_GM_compute_Bolus_velocity
 !
 !> \brief   Computes GM Bolus velocity
-!> \author  Qingshan Chen, Mark Petersen, Todd Ringler
-!> \date    January 2013
 !> \details
 !>  This routine is the main driver for the Gent-McWilliams (GM) parameterization.
 !>  It computes horizontal and vertical density gradients, the slope
@@ -76,7 +66,9 @@ contains
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_gm_compute_Bolus_velocity(diagnosticsPool, meshPool, scratchPool)!{{{
+   subroutine ocn_GM_compute_Bolus_velocity(statePool, diagnosticsPool, &
+      meshPool, scratchPool, timeLevelIn)
+      !{{{
 
       !-----------------------------------------------------------------
       !
@@ -84,7 +76,12 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), intent(in) :: meshPool !< Input: Mesh information
+      type (mpas_pool_type), intent(in) :: &
+         statePool,           &! pool containing state variables
+         meshPool              ! pool containing mesh quantities
+
+      integer, intent(in), optional :: &
+         timeLevelIn          ! time level for state variables
 
       !-----------------------------------------------------------------
       !
@@ -92,8 +89,9 @@ contains
       !
       !-----------------------------------------------------------------
 
-      type (mpas_pool_type), intent(inout) :: diagnosticsPool !< Input/Output: Diagnostics information
-      type (mpas_pool_type), intent(inout) :: scratchPool !< Input/Output: Scratch structure
+      type (mpas_pool_type), intent(inout) :: &
+         diagnosticsPool,     &! pool containing some diagnostics
+         scratchPool           ! pool containing some scratch space
 
       !-----------------------------------------------------------------
       !
@@ -103,18 +101,24 @@ contains
 
       real(kind=RKIND), dimension(:,:), pointer :: density, displacedDensity, zMid, normalGMBolusVelocity, &
          layerThicknessEdge, gradDensityEdge, gradDensityTopOfEdge, gradDensityConstZTopOfEdge, gradZMidEdge, &
-         gradZMidTopOfEdge, relativeSlopeTopOfEdge, relativeSlopeTopOfCell, k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, &
-         gmStreamFuncTopOfCell, dDensityDzTopOfEdge, dDensityDzTopOfCell, relativeSlopeTapering, relativeSlopeTaperingCell, &
-         areaCellSum, kappaGM3D
+         gradZMidTopOfEdge, k33, gmStreamFuncTopOfEdge, BruntVaisalaFreqTop, &
+         gmStreamFuncTopOfCell, dDensityDzTopOfEdge, dDensityDzTopOfCell, &
+         layerThickness, &
+         areaCellSum, inSituThermalExpansionCoeff, inSituSalineContractionCoeff, kappaGM3D
 
-      real(kind=RKIND), dimension(:), pointer   :: boundaryLayerDepth, gmBolusKappa,  cGMphaseSpeed, bottomDepth
+      real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa,  cGMphaseSpeed, bottomDepth, indexBoundaryLayerDepth
+      real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell
-      integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
+      integer                          :: i, k, iEdge, cell1, cell2, iCell, N, iter, iCellSelf
       real(kind=RKIND)                 :: h1, h2, areaEdge, c, BruntVaisalaFreqTopEdge, rtmp, stmp, maxSlopeK33
       real(kind=RKIND)                 :: bottomAv, sumN2, countN2, maxN, kappaSum, ltSum
-      
+      real(kind=RKIND) :: dcEdgeInv, drhoDx, drhoDT, drhoDS, dTdx, dSdx
+      real(kind=RKIND) :: surfaceTaperCoef, bottomTaperCoef
+      real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
+      real(kind=RKIND), dimension(:), allocatable :: slopeTaper, slopeTaperSurface
+
       ! Dimensions
       integer :: nCells, nEdges
       integer, pointer :: nVertLevels
@@ -123,19 +127,37 @@ contains
       type (field2DReal), pointer :: gradDensityEdgeField, gradDensityTopOfEdgeField, gradDensityConstZTopOfEdgeField, &
          gradZMidEdgeField, gradZMidTopOfEdgeField, dDensityDzTopOfCellField, dDensityDzTopOfEdgeField,areaCellSumField
 
+      type (mpas_pool_type), pointer :: tracersPool
+      real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
+      integer, pointer :: indexTemperature, indexSalinity
+      integer :: timeLevel
+      integer :: iBLD
+
+      if (present(timeLevelIn)) then
+         timeLevel = timeLevelIn
+      else
+         timeLevel = 1
+      end if
+
       call mpas_timer_start('gm bolus velocity')
+
+      call mpas_pool_get_array(statePool, 'layerThickness', layerThickness, timeLevel)
+      call mpas_pool_get_subpool(statePool,   'tracers', tracersPool)
+      call mpas_pool_get_array(tracersPool, 'activeTracers', activeTracers, timeLevel)
+      call mpas_pool_get_dimension(tracersPool, 'index_temperature', indexTemperature)
+      call mpas_pool_get_dimension(tracersPool, 'index_salinity', indexSalinity)
 
       call mpas_pool_get_array(diagnosticsPool, 'density', density)
       call mpas_pool_get_array(diagnosticsPool, 'displacedDensity', displacedDensity)
+      call mpas_pool_get_array(diagnosticsPool, 'inSituThermalExpansionCoeff',inSituThermalExpansionCoeff)
+      call mpas_pool_get_array(diagnosticsPool, 'inSituSalineContractionCoeff', inSituSalineContractionCoeff)
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
 
       call mpas_pool_get_array(diagnosticsPool, 'cGMphaseSpeed', cGMphaseSpeed)
       call mpas_pool_get_array(diagnosticsPool, 'kappaGM3D', kappaGM3D)
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
-      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfEdge', relativeSlopeTopOfEdge)
-      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTopOfCell', relativeSlopeTopOfCell)
-      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTapering', relativeSlopeTapering)
-      call mpas_pool_get_array(diagnosticsPool, 'relativeSlopeTaperingCell', relativeSlopeTaperingCell)
+      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
+      call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
       call mpas_pool_get_array(diagnosticsPool, 'k33', k33)
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
@@ -143,9 +165,7 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfEdge', gmStreamFuncTopOfEdge)
       call mpas_pool_get_array(diagnosticsPool, 'gmStreamFuncTopOfCell', gmStreamFuncTopOfCell)
       call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
-
-      if (config_use_Redi_surface_layer_tapering) call mpas_pool_get_array(diagnosticsPool, 'boundaryLayerDepth', &
-          boundaryLayerDepth)
+      call mpas_pool_get_array(diagnosticsPool, 'indexBoundaryLayerDepth', indexBoundaryLayerDepth)
 
       call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
       call mpas_pool_get_array(meshPool, 'maxLevelEdgeTop',  maxLevelEdgeTop)
@@ -156,6 +176,7 @@ contains
       call mpas_pool_get_array(meshPool, 'dvEdge',  dvEdge)
       call mpas_pool_get_array(meshPool, 'nEdgesOnCell',  nEdgesOnCell)
       call mpas_pool_get_array(meshPool, 'edgesOnCell',  edgesOnCell)
+      call mpas_pool_get_array(meshPool, 'edgeSignOnCell', edgeSignOnCell)
 
       call mpas_pool_get_dimension(meshPool, 'nEdgesArray', nEdgesArray)
       call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
@@ -196,6 +217,7 @@ contains
       nCells = nCellsArray( size(nCellsArray) )
       nEdges = nEdgesArray( size(nEdgesArray) )
 
+! mrp performance note: are these actually needed? check if they are re-initialized below
       ! Assign a huge value to the scratch variables which may manifest itself when
       ! there is a bug.
       !$omp do schedule(runtime) private(k)
@@ -214,8 +236,6 @@ contains
             gradDensityTopOfEdge(k, iEdge) = huge(0D0)
             dDensityDzTopOfEdge(k, iEdge) = huge(0D0)
             gradZMidTopOfEdge(k, iEdge) = huge(0D0)
-            relativeSlopeTopOfEdge(k, iEdge) = 0.0_RKIND
-            relativeSlopeTapering(k, iEdge) = 0.0_RKIND
          end do
       end do
       !$omp end do
@@ -225,8 +245,6 @@ contains
          do k = 1, nVertLevels
             dDensityDzTopOfCell(k,  iCell) = huge(0D0)
             k33(k, iCell) = 0.0_RKIND
-            relativeSlopeTopOfCell(k, iCell) = 0.0_RKIND
-            relativeSlopeTaperingCell(k, iCell) = 0.0_RKIND
          end do
       end do
       !$omp end do
@@ -282,6 +300,10 @@ contains
       ! Compute density gradient (gradDensityEdge) and gradient of zMid (gradZMidEdge)
       ! along the constant coordinate surface.
       ! The computed variables lives at edge and mid-layer depth
+! mrp performance note: are all these variables, like gradDensityEdge and gradZMidEdge actually
+! needed?
+! mrp performance note: we shouldn't have so many fine grained loops. Merge loops, if they are
+! kept.
       !$omp do schedule(runtime) private(cell1, cell2, k)
       do iEdge = 1, nEdges
          cell1 = cellsOnEdge(1,iEdge)
@@ -342,177 +364,160 @@ contains
       !--------------------------------------------------------------------
       !
       ! Compute relative slope and k33 for Redi part of GM.
-      ! These variables are used in del2 velocity tendency routines.
+      ! using triads and linear expansion of rho(T,S).
+      ! See Griffies et al. 1998 JPO eqn 31 and 32.
       !
       !--------------------------------------------------------------------
 
-      nEdges = nEdgesArray( 3 )
+      ! Slope calculation:
+      ! S = - drho/dx / drho/dz
+      ! Expand in T and S using equation of state:
+      ! S = -  ( drho/dT * dT/dx + drho/dS * dS/dx ) &
+      !      / ( drho/dT * dT/dz + drho/dS * dS/dz )
 
-      ! Compute relativeSlopeTopOfEdge at edge and layer interface
-      ! set relativeSlopeTopOfEdge to zero for horizontal land/water edges.
-      !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdges
-        relativeSlopeTopOfEdge(:, iEdge) = 0.0_RKIND
+      ! From Griffies 1998 P 820:
+      ! "Should any one of these subfluxes lie adjacent to a solid boundary, its
+      ! contribution to the average over the four triads is eliminated."
+      ! So we do not use the triad slope beside boundaries or sea surface.
 
-         ! Beside a full land cell (e.g. missing cell) maxLevelEdgeTop=0, so relativeSlopeTopOfEdge at that edge will remain zero.
-         do k = 2, maxLevelEdgeTop(iEdge)
-            relativeSlopeTopOfEdge(k,iEdge) = - gradDensityTopOfEdge(k,iEdge) / min(dDensityDzTopOfEdge(k,iEdge),-epsGM)
-         end do
-
-         ! Since dDensityDzTopOfEdge is guaranteed to be zero on the top surface, relativeSlopeTopOfEdge on the top
-         ! surface is identified with its value on the second interface.
-         relativeSlopeTopOfEdge(1,iEdge) = relativeSlopeTopOfEdge(2,iEdge)
-
-         ! dDensityDzTopOfEdge may or may not equal zero on the bottom surface, depending on whether
-         ! maxLevelEdgeTop(iEdge) = maxLevelEdgeBottom(iEdge). But here we
-         ! take a simplistic approach and identify relativeSlopeTopOfEdge on the bottom surface with its value on
-         ! the interface just above.
-         relativeSlopeTopOfEdge( maxLevelEdgeTop(iEdge)+1, iEdge ) = relativeSlopeTopOfEdge( max(1,maxLevelEdgeTop(iEdge)), iEdge )
-
-      end do
-      !$omp end do
-
-      nEdges = nEdgesArray( 3 )
-
-      ! slope can be unbounded in regions of neutral stability, reset to the large, but bounded, value
-      ! values is hardwrite to 1.0, this is equivalent to a slope of 45 degrees
-      !$omp do schedule(runtime) private(k)
-      do iEdge = 1, nEdges
-         do k = 1, nVertLevels
-            relativeSlopeTopOfEdge(k, iEdge) = max( min( relativeSlopeTopOfEdge(k, iEdge), 1.0_RKIND), -1.0_RKIND)
-         end do
-      end do
-      !$omp end do
-
-      ! average relative slope to cell centers
-      ! do this by computing (relative slope)^2, then taking sqrt
-
+      ! mrp note, we may want to take slope calculation out of this Bolus
+      ! routine.
+      ! mrp performance note: check which halo is needed here.
       nCells = nCellsArray( 2 )
 
-      !$omp do schedule(runtime) private(i, iEdge, areaEdge, rtmp, k)
-      do iCell = 1, nCells
-         areaCellSum(:, iCell) = 1.0e-34_RKIND
-         do i = 1, nEdgesOnCell(iCell)
-            iEdge = edgesOnCell(i, iCell)
-
-            !contribution of cell area from this edge * 2.0
-            areaEdge = 0.5_RKIND * dcEdge(iEdge) * dvEdge(iEdge)
-            do k = 1, maxLevelEdgeTop(iEdge)
-               rtmp = areaEdge * relativeSlopeTopOfEdge(k, iEdge)**2
-               relativeSlopeTopOfCell(k, iCell) = relativeSlopeTopOfCell(k, iCell) + rtmp
-               areaCellSum(k, iCell) = areaCellSum(k, iCell) + areaEdge
-            end do
-         end do
+      allocate(dzTop(nVertLevels+1))
+      allocate(dTdzTop(nVertLevels+1))
+      allocate(dSdzTop(nVertLevels+1))
+      allocate(k33Norm(nVertLevels+1))
+      allocate(slopeTaper(nVertLevels))
+      allocate(slopeTaperSurface(nVertLevels))
+      ! Prepare tapering for this cell. This is the slope of the bottom taper line.
+      surfaceTaperCoef = 1.0_RKIND/config_Redi_surface_taper_layers
+      bottomTaperCoef = 1.0_RKIND/config_Redi_bottom_taper_layers
+      slopeTaperSurface(:) = 1.0_RKIND
+      slopeTaperSurface(1) = 0.0_RKIND
+      do k = 2, config_Redi_surface_taper_layers
+          slopeTaperSurface(k) = slopeTaperSurface(k)*(k-1)*surfaceTaperCoef
       end do
-      !$omp end do
-
-      nCells = nCellsArray( 2 )
-
-      !$omp do schedule(runtime) private(k)
-      do iCell=1,nCells
-        do k = 1, maxLevelCell(iCell)
-           relativeSlopeTopOfCell(k,iCell) = sqrt( relativeSlopeTopOfCell(k,iCell)/areaCellSum(k,iCell) )
-        end do
-      end do
-      !$omp end do
-
-      ! Compute tapering function
-      ! Compute k33 at cell center and layer interface
-
-      nCells = nCellsArray( size(nCellsArray) )
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-         k33(:, iCell) = 0.0_RKIND
-      end do
-      !$omp end do
-
-      ! use relativeSlopeTaperingCell as a temporary space for smoothing of relativeSlopeTopOfCell
-      relativeSlopeTaperingCell = relativeSlopeTopOfCell
-      do iter = 1, 5
-
-         nCells = nCellsArray( 2 )
-
-         !$omp do schedule(runtime)
-         do iCell=1,nCells
-           relativeSlopeTaperingCell(1, iCell) = 0.0_RKIND
-           relativeSlopeTaperingCell(maxLevelCell(iCell):nVertLevels, iCell) = 0.0_RKIND
-           do k = 2, maxLevelCell(iCell)-1
-             rtmp = relativeSlopeTopOfCell(k-1,iCell) + relativeSlopeTopOfCell(k+1,iCell)
-             stmp = 2.0_RKIND*relativeSlopeTopOfCell(k,iCell)
-             relativeSlopeTaperingCell(k,iCell) = (rtmp+stmp)/4.0_RKIND
-           end do
-           relativeSlopeTopOfCell(:, iCell) = relativeSlopeTaperingCell(:, iCell)
+         ! prep dz, dTdz and dSdz for this column
+         do k = 2, maxLevelCell(iCell)
+            dzTop(k) = 0.5_RKIND * ( layerThickness(k-1,iCell) + layerThickness(k,iCell) )
+            dTdzTop(k) = (  activeTracers(indexTemperature,k-1,iCell) &
+                          - activeTracers(indexTemperature,k  ,iCell) ) &
+                         / dzTop(k)
+            dSdzTop(k) = (  activeTracers(indexSalinity,k-1,iCell) &
+                          - activeTracers(indexSalinity,k  ,iCell) ) &
+                         / dzTop(k)
          end do
-         !$omp end do
-      end do  ! iter
+         ! mrp performance: could move above cell loop later
+         dzTop(1) = -1e34_RKIND
+         dTdzTop(1) = -1e34_RKIND
+         dSdzTop(1) = -1e34_RKIND
+         dzTop(maxLevelCell(iCell)+1) = -1e34_RKIND
+         dTdzTop(maxLevelCell(iCell)+1) = -1e34_RKIND
+         dSdzTop(maxLevelCell(iCell)+1) = -1e34_RKIND
 
-      nCells = nCellsArray ( 2 )
-      ! first, compute tapering across full domain based on a maximum allowable slope
-      !$omp do schedule(runtime) private(k)
-      do iCell=1,nCells
-        do k = 1, maxLevelCell(iCell)
-          relativeSlopeTaperingCell(k,iCell) = min(1.0_RKIND, config_max_relative_slope / (relativeSlopeTopOfCell(k,iCell)+epsGM))
-        end do
-      end do
-      !$omp end do
-
-      ! now further taper in the boundary layer
-      ! vertical (k33) tapering starts at 2*OBL, increases linearly to OBL and is held uniform across OBL
-      ! rtmp = 1 @ zMid = -2.0*OBL, rtmp = 0 @ zMid = -OBL
-      if(config_use_Redi_surface_layer_tapering) then
-         nCells = nCellsArray ( 2 )
-         !$omp do schedule(runtime) private(k, rtmp)
-         do iCell=1,nCells
-           do k = 1, maxLevelCell(iCell)
-             rtmp = -zMid(k,iCell)/max(config_Redi_surface_layer_tapering_extent,boundaryLayerDepth(iCell)+epsGM)
-             rtmp = max(0.0_RKIND,rtmp)
-             rtmp = min(1.0_RKIND,rtmp)
-             relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
-           end do
+         ! Add bottom taper slope for this column.
+         ! Top taper slope is computed before the cell loop, because it is the same
+         ! for all cells.
+         slopeTaper(:) = slopeTaperSurface(:)
+         do k = max(maxLevelCell(iCell) - config_Redi_bottom_taper_layers, 2), maxLevelCell(iCell)
+            slopeTaper(k) = slopeTaper(k) &
+                * (maxLevelCell(iCell)-k)*bottomTaperCoef
          end do
-         !$omp end do
-      endif ! config_use_Redi_surface_layer_tapering
 
-      ! now further taper in the boundary layer
-      ! vertical (k33) tapering starts at 2*OBL, increases linearly to OBL and is held uniform across OBL
-      ! rtmp = 1 @ zMid = zMid(maxLevelCell) + config_Redi_bottom_layer_tapering_depth, rtmp = 0 @ zMid = zMid(maxLevelCell)
-      if(config_use_Redi_bottom_layer_tapering) then
-         nCells = nCellsArray ( 2 )
-         !$omp do schedule(runtime) private(k, rtmp)
-         do iCell=1,nCells
-           do k = 1, maxLevelCell(iCell)
-             rtmp = (zMid(k,iCell)-zMid(maxLevelCell(iCell),iCell))/(config_Redi_bottom_layer_tapering_depth+epsGM)
-             rtmp = max(0.0_RKIND,rtmp)
-             rtmp = min(1.0_RKIND,rtmp)
-             relativeSlopeTaperingCell(k,iCell) = rtmp*relativeSlopeTaperingCell(k,iCell)
-           end do
+         ! Add taper for boundary layer
+         if (config_Redi_zero_in_boundary_layer) then
+            iBLD = int(indexBoundaryLayerDepth(iCell))
+            do k = 2, iBLD
+               slopeTaper(k) = 0.0_RKIND
+            end do
+            do k = iBLD + 1, &
+                   min(iBLD + config_Redi_BLD_taper_layers, maxLevelCell(iCell))
+               slopeTaper(k) = slopeTaper(k)*(k-iBLD) / config_Redi_BLD_taper_layers
+            end do
+         end if
+
+         k33(1:maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
+         k33Norm(1:maxLevelCell(iCell)+1) = epsGM
+         do i = 1, nEdgesOnCell(iCell)
+            iEdge = edgesOnCell(i, iCell)
+            cell1 = cellsOnEdge(1,iEdge)
+            cell2 = cellsOnEdge(2,iEdge)
+            ! mrp Performance Note: Replace with a logical array on init later
+            if (cell1==iCell) then
+                iCellSelf = 1
+            elseif (cell2==iCell) then
+                iCellSelf = 2
+            else
+                print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
+            endif
+            dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
+            areaEdge = dcEdge(iEdge) * dvEdge(iEdge)
+
+            do k = 1, maxLevelEdgeTop(iEdge)
+               drhoDT = -inSituThermalExpansionCoeff(k,iCell)
+               drhoDS = inSituSalineContractionCoeff(k,iCell)
+               dTdx = (  activeTracers(indexTemperature,k,cell2) &
+                       - activeTracers(indexTemperature,k,cell1) ) &
+                      * dcEdgeInv
+               dSdx = (  activeTracers(indexSalinity,k,cell2) &
+                       - activeTracers(indexSalinity,k,cell1) ) &
+                      * dcEdgeInv
+               drhoDx = drhoDT * dTdx + drhoDS * dSdx
+
+               ! Always compute *Up on the top cell and *Down on the bottom
+               ! cell, even though they are never used. This avoids an if
+               ! statement or separate computation for top and bottom.
+               slopeTriadUp(k,iCellSelf,iEdge) = &
+                  - drhoDx / &
+                  (  drhoDT * dTdzTop(k) &
+                   + drhoDS * dSdzTop(k) )
+               slopeTriadDown(k,iCellSelf,iEdge) = &
+                  - drhoDx / &
+                  (  drhoDT * dTdzTop(k+1) &
+                   + drhoDS * dSdzTop(k+1) )
+
+               ! Slope can be unbounded in regions of neutral stability.
+               ! Reset slope to maximum slope limit.
+               slopeTriadUp(k,iCellSelf,iEdge) = &
+                  slopeTaper(k) * &
+                  max( min( slopeTriadUp(k,iCellSelf,iEdge), &
+                  config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
+               slopeTriadDown(k,iCellSelf,iEdge) = &
+                  slopeTaper(k) * &
+                  max( min( slopeTriadDown(k,iCellSelf,iEdge), &
+                  config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
+
+               ! Griffies 1998 eqn 34
+               k33(k  ,iCell) = k33(k  ,iCell) + areaEdge*dzTop(k  )*slopeTriadUp(k,iCellSelf,iEdge)**2
+               k33(k+1,iCell) = k33(k+1,iCell) + areaEdge*dzTop(k+1)*slopeTriadDown(k,iCellSelf,iEdge)**2
+               k33Norm(k  ) = k33Norm(k  ) + areaEdge*dzTop(k  )
+               k33Norm(k+1) = k33Norm(k+1) + areaEdge*dzTop(k+1)
+
+               ! Could put in vertical smoothing of slopes here if we wanted.
+               ! Oct 2019 mrp, we decided not to smooth the slope variables for
+               ! now.
+
+            end do
          end do
-         !$omp end do
-      endif ! config_use_Redi_bottom_layer_tapering
 
-      nCells = nCellsArray( 2 )
-      !$omp do schedule(runtime) private(k)
-      do iCell=1,nCells
-        k33(:, iCell) = 0.0_RKIND
-        do k = 2, maxLevelCell(iCell)
-          k33(k,iCell) = ( relativeSlopeTaperingCell(k,iCell) * relativeSlopeTopOfCell(k,iCell) )**2
-        end do
-      end do
+         ! Normalize k33
+         do k = 2, maxLevelCell(iCell)
+            k33(k,iCell) = k33(k,iCell) / k33Norm(k)
+         end do
+      end do ! iCell
       !$omp end do
 
-      nEdges = nEdgesArray( 3 )
-
-      ! average tapering function to layer edges
-      !$omp do schedule(runtime) private(cell1, cell2, k)
-      do iEdge = 1, nEdges
-        cell1 = cellsOnEdge(1,iEdge)
-        cell2 = cellsOnEdge(2,iEdge)
-        do k = 1, maxLevelEdgeTop(iEdge)
-          relativeSlopeTapering(k,iEdge) = 0.5_RKIND * (relativeSlopeTaperingCell(k,cell1) + relativeSlopeTaperingCell(k,cell2))
-        enddo
-      enddo
-      !$omp end do
+      deallocate(dzTop)
+      deallocate(dTdzTop)
+      deallocate(dSdzTop)
+      deallocate(k33Norm)
+      deallocate(slopeTaper)
+      deallocate(slopeTaperSurface)
 
       ! allow disabling of K33 for testing
       if(config_disable_redi_k33) then
@@ -530,7 +535,7 @@ contains
       !
       !--------------------------------------------------------------------
 
-      if (config_gm_lat_variable_c2) then
+      if (local_config_GM_lat_variable_c2) then
          !$omp do schedule(runtime) private(cell1, cell2, sumN2, ltSum, countN2, BruntVaisalaFreqTopEdge)
          do iEdge = 1, nEdges
             cell1 = cellsOnEdge(1,iEdge)
@@ -550,7 +555,7 @@ contains
 
             enddo
 
-            if(countN2 > 0) cGMphaseSpeed(iEdge) = max(config_gm_min_phase_speed ,sqrt(sumN2/ltSum)*ltSum / 3.141592_RKIND)
+            if(countN2 > 0) cGMphaseSpeed(iEdge) = max(local_config_GM_min_phase_speed ,sqrt(sumN2/ltSum)*ltSum / 3.141592_RKIND)
 
          enddo
          !$omp end do
@@ -558,7 +563,7 @@ contains
       else
          !$omp do schedule(runtime)
          do iEdge = 1, nEdges
-            cGMphaseSpeed(iEdge) = config_gravWaveSpeed_trunc
+            cGMphaseSpeed(iEdge) = config_GM_constant_gravWaveSpeed
          enddo
          !$omp end do
       endif
@@ -569,7 +574,7 @@ contains
       enddo 
       !$omp end do
 
-      if (config_gm_kappa_lat_depth_variable) then
+      if (local_config_GM_kappa_lat_depth_variable) then
 
          !$omp do schedule(runtime) private(cell1, cell2, k, BruntVaisalaFreqTopEdge, maxN)
          do iEdge = 1,nEdges
@@ -589,7 +594,7 @@ contains
                BruntVaisalaFreqTopEdge = 0.5_RKIND * (BruntVaisalaFreqTop(k,cell1) + BruntVaisalaFreqTop(k,cell2))
                BruntVaisalaFreqTopEdge = max(BruntVaisalaFreqTopEdge, 0.0_RKIND)
 
-               kappaGM3D(k,iEdge) = gmBolusKappa(iEdge)*max(config_gm_min_stratification_ratio, &
+               kappaGM3D(k,iEdge) = gmBolusKappa(iEdge)*max(config_GM_min_stratification_ratio, &
                        BruntVaisalaFreqTopEdge / (maxN + 1.0E-10_RKIND))
             enddo
          enddo
@@ -703,15 +708,13 @@ contains
 
       call mpas_timer_stop('gm bolus velocity')
 
-   end subroutine ocn_gm_compute_Bolus_velocity!}}}
+   end subroutine ocn_GM_compute_Bolus_velocity!}}}
 
 !***********************************************************************
 !
 !  routine tridiagonal_solve
 !
 !> \brief   Solve the matrix equation Ax=r for x, where A is tridiagonal.
-!> \author  Mark Petersen
-!> \date    September 2011
 !> \details
 !>  Solve the matrix equation Ax=r for x, where A is tridiagonal.
 !>  A is an nxn matrix, with:
@@ -771,18 +774,16 @@ contains
 
 !***********************************************************************
 !
-!  routine ocn_gm_init
+!  routine ocn_GM_init
 !
 !> \brief   Initializes ocean momentum horizontal pressure gradient
-!> \author  Mark Petersen
-!> \date    September 2011
 !> \details
 !>  This routine initializes parameters required for the computation of the
 !>  horizontal pressure gradient.
 !
 !-----------------------------------------------------------------------
 
-   subroutine ocn_gm_init(domain, err)!{{{
+   subroutine ocn_GM_init(domain, err)!{{{
 
       type (domain_type), intent(in) :: domain
 
@@ -793,78 +794,85 @@ contains
       type (block_type), pointer :: block
       type (mpas_pool_type), pointer :: meshPool
       type (mpas_pool_type), pointer :: diagnosticsPool
-      character (len=StrKIND), pointer :: config_GM_Bolus_kappa_function
-      real (kind=RKIND), pointer :: config_standardGM_tracer_kappa
-      real (kind=RKIND), pointer :: config_GM_Bolus_kappa_min
-      real (kind=RKIND), pointer :: config_GM_Bolus_kappa_max
-      real (kind=RKIND), pointer :: config_GM_Bolus_cell_size_min
-      real (kind=RKIND), pointer :: config_GM_Bolus_cell_size_max
       real (kind=RKIND), dimension(:), pointer :: areaCell
 
       integer :: iEdge
       integer, pointer :: nEdges
+      integer, pointer :: nVertLevels
       real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa
-      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOncell, edgeSignOnCell
+      integer, dimension(:,:), pointer :: cellsOnEdge, edgesOncell
 
       err = 0
 
-      call mpas_pool_get_config(ocnConfigs, 'config_use_standardGM',config_use_standardGM)
-      if (.not.config_use_standardGM) return
-
-      call mpas_pool_get_config(ocnConfigs, 'config_gravWaveSpeed_trunc',config_gravWaveSpeed_trunc)
-      call mpas_pool_get_config(ocnConfigs, 'config_standardGM_tracer_kappa',config_standardGM_tracer_kappa)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_kappa_function',config_GM_Bolus_kappa_function)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_kappa_min',config_GM_Bolus_kappa_min)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_kappa_max',config_GM_Bolus_kappa_max)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_cell_size_min',config_GM_Bolus_cell_size_min)
-      call mpas_pool_get_config(ocnConfigs, 'config_GM_Bolus_cell_size_max',config_GM_Bolus_cell_size_max)
-      call mpas_pool_get_config(ocnConfigs, 'config_max_relative_slope',config_max_relative_slope)
-      call mpas_pool_get_config(ocnConfigs, 'config_Redi_kappa', config_Redi_kappa)
-      call mpas_pool_get_config(ocnConfigs, 'config_disable_redi_k33',config_disable_redi_k33)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_Redi_surface_layer_tapering',config_use_Redi_surface_layer_tapering)
-      call mpas_pool_get_config(ocnConfigs, 'config_use_Redi_bottom_layer_tapering',config_use_Redi_bottom_layer_tapering)
-      call mpas_pool_get_config(ocnConfigs, 'config_Redi_surface_layer_tapering_extent',config_Redi_surface_layer_tapering_extent)
-      call mpas_pool_get_config(ocnConfigs, 'config_Redi_bottom_layer_tapering_depth',config_Redi_bottom_layer_tapering_depth)
-      call mpas_pool_get_config(ocnConfigs, 'config_gm_lat_variable_c2',config_gm_lat_variable_c2)
-      call mpas_pool_get_config(ocnConfigs, 'config_gm_kappa_lat_depth_variable', config_gm_kappa_lat_depth_variable)
-      call mpas_pool_get_config(ocnConfigs, 'config_gm_min_stratification_ratio', config_gm_min_stratification_ratio)
-      call mpas_pool_get_config(ocnConfigs, 'config_gm_min_phase_speed', config_gm_min_phase_speed)
+      if ((.not.config_use_GM).and.(.not.config_use_Redi)) return
 
       block => domain % blocklist
       do while (associated(block))
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
          call mpas_pool_get_subpool(block % structs, 'diagnostics', diagnosticsPool)
+         call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(meshPool, 'nEdges', nEdges)
          call mpas_pool_get_array(meshPool, 'cellsOnEdge', cellsOnEdge)
          call mpas_pool_get_array(diagnosticsPool, 'gmBolusKappa', gmBolusKappa)
          call mpas_pool_get_array(meshPool, 'areaCell', areaCell)
 
-         ! initialize Bolus kappa array
-         if (config_GM_Bolus_kappa_function == 'constant') then
+         if ((config_Redi_surface_taper_layers <= 0).or. &
+             (config_Redi_surface_taper_layers > nVertLevels )) then
+            call mpas_log_write( 'config_Redi_surface_taper_layers must be between 1 and nVertLevels. ', MPAS_LOG_CRIT)
+            err = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         end if
+
+         if ((config_Redi_bottom_taper_layers <= 0).or. &
+             (config_Redi_bottom_taper_layers > nVertLevels )) then
+            call mpas_log_write( 'config_Redi_bottom_taper_layers must be between 1 and nVertLevels. ', MPAS_LOG_CRIT)
+            err = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         end if
+
+         if (config_GM_closure == 'constant') then
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
-               gmBolusKappa(iEdge) = config_standardGM_tracer_kappa
+               gmBolusKappa(iEdge) = config_GM_kappa
             end do
             !$omp end do
-         else if (config_GM_Bolus_kappa_function == 'ramp') then
+         else if (config_GM_closure == 'N2_dependent') then
+            local_config_GM_lat_variable_c2 = .true.
+            local_config_GM_kappa_lat_depth_variable = .true.
+ 
+            ! for N2 dependence, we still assign Kappa as a constant.
+            !$omp do schedule(runtime)
+            do iEdge = 1, nEdges
+               gmBolusKappa(iEdge) = config_GM_kappa
+            end do
+            !$omp end do
+         else
+            call mpas_log_write( 'Invalid choice of config_GM_closure.', MPAS_LOG_CRIT)
+            err = 1
+            call mpas_dmpar_finalize(domain % dminfo)
+         end if
+
+         ! Add resolution taper
+         if (config_eddying_resolution_taper == 'none') then
+            ! Nothing to do, as we just keep the same assignment as above.
+         else if (config_eddying_resolution_taper == 'ramp') then
             sqrtPiInv = 1.0_RKIND / sqrt(pii)
             !$omp do schedule(runtime)
             do iEdge = 1, nEdges
                avgCellDiameter = sqrtPiInv*(sqrt(areaCell(cellsOnEdge(1,iEdge))) + sqrt(areaCell(cellsOnEdge(2,iEdge))))
-               if (avgCellDiameter <= config_GM_Bolus_cell_size_min) then
-                  gmBolusKappa(iEdge) = config_GM_Bolus_kappa_min
-               else if (avgCellDiameter >= config_GM_Bolus_cell_size_max) then
-                  gmBolusKappa(iEdge) = config_GM_Bolus_kappa_max
+               if (avgCellDiameter <= config_eddying_resolution_ramp_min) then
+                  gmBolusKappa(iEdge) = 0.0_RKIND
+               else if (avgCellDiameter >= config_eddying_resolution_ramp_max) then
+                  ! do nothing, i.e. gmBolusKappa(iEdge) remains unchanged.
                else
-                  gmBolusKappa(iEdge) = config_GM_Bolus_kappa_min + &
-                      (config_GM_Bolus_kappa_max - config_GM_Bolus_kappa_min) &
-                     /(config_GM_Bolus_cell_size_max - config_GM_Bolus_cell_size_min) &
-                     *(avgCellDiameter - config_GM_Bolus_cell_size_min)
+                  gmBolusKappa(iEdge) = gmBolusKappa(iEdge) &
+                     /(config_eddying_resolution_ramp_max - config_eddying_resolution_ramp_min) &
+                     *(avgCellDiameter - config_eddying_resolution_ramp_min)
                end if
             end do
             !$omp end do
          else
-            call mpas_log_write( 'Invalid choice of config_GM_Bolus_kappa_function.', MPAS_LOG_CRIT)
+            call mpas_log_write( 'Invalid choice of config_eddying_resolution_taper.', MPAS_LOG_CRIT)
             err = 1
             call mpas_dmpar_finalize(domain % dminfo)
          end if
@@ -872,7 +880,7 @@ contains
 
          block => block % next
       end do
-   end subroutine ocn_gm_init!}}}
+   end subroutine ocn_GM_init!}}}
 
 !***********************************************************************
 
