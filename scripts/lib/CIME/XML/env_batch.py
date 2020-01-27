@@ -169,7 +169,7 @@ class EnvBatch(EnvBase):
 
     def get_job_overrides(self, job, case):
         env_workflow = case.get_env('workflow')
-        total_tasks, num_nodes, tasks_per_node, thread_count = env_workflow.get_job_specs(job)
+        total_tasks, num_nodes, tasks_per_node, thread_count = env_workflow.get_job_specs(case, job)
         overrides = {}
 
         if total_tasks:
