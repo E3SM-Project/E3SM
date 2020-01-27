@@ -305,10 +305,12 @@ contains
 
        call get_field(elem(ie), 'omega', wr2, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, wr2, wr1)
-       ! When omega_p is switched to omega, remove the division by
-       ! p_fv.
+#ifdef MODEL_THETA_L
+       omega_p(:ncol,:,ie) = reshape(wr1(:nf,:nf,:), (/ncol,nlev/))
+#else
+       ! for preqx, omega_p = omega/p
        omega_p(:ncol,:,ie) = reshape(wr1(:nf,:nf,:)/p_fv(:nf,:nf,:), (/ncol,nlev/))
-
+#endif
        do qi = 1,qsize
           call gfr_g2f_mixing_ratio(gfr, ie, elem(ie)%metdet, dp, dp_fv, &
                dp*elem(ie)%state%Q(:,:,:,qi), wr1)
