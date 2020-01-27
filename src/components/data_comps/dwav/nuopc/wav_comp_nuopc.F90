@@ -237,7 +237,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Get mct id
-    call t_startf('drof_strdata_init')
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid

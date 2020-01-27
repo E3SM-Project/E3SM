@@ -421,7 +421,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     if (isPresent .and. isSet) then
        read (cvalue,*) flds_scalar_index_nextsw_cday
-       write(logunit,*) trim(subname)//' : flds_scalar_index_nextsw_cday = ', flds_scalar_index_nextsw_cday
     else
        call shr_sys_abort(subname//'Need to set attribute ScalarFieldIdxNextSwCday')
     endif

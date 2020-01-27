@@ -407,7 +407,6 @@ contains
     do n = 1, numOwnedElements
        xc(n) = ownedElemCoords(2*n-1)
        yc(n) = ownedElemCoords(2*n)
-       write(6,*)
     end do
 
     ! obtain sdat lat and lons and local size of grid attribute vectors
@@ -1002,23 +1001,21 @@ contains
     integer           :: nu
     !-------------------------------------------------------------------------------
 
-    write(rest_file     ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
-    write(rest_file_strm,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
-    if (my_task == master_task) then
-       open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
-       write(nu,'(a)') rest_file
-       write(nu,'(a)') rest_file_strm
-       close(nu)
-    endif
-    if (my_task == master_task) then
-       call shr_cal_datetod2string(date_str, ymd, tod)
-       write(logunit,*)' (dshr_restart_write) writing ',trim(rest_file_strm), ymd, tod
-    end if
-    if (present(fld) .and. present(fldname)) then
-       call shr_pcdf_readwrite('write', sdat%pio_subsystem, sdat%io_type,&
-            trim(rest_file), mpicom, sdat%gsmap, clobber=.true., rf1=fld, rf1n=trim(fldname))
-    end if
-    call shr_strdata_restWrite(trim(rest_file_strm), sdat, mpicom, trim(case_name), 'SDAT strdata from '//trim(model_name))
+     call shr_cal_datetod2string(date_str, ymd, tod)
+     write(rest_file     ,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.r.'  , trim(date_str),'.nc'
+     write(rest_file_strm,"(7a)") trim(case_name),'.', trim(model_name),trim(inst_suffix),'.rs1.', trim(date_str),'.bin'
+     if (my_task == master_task) then
+        open(newunit=nu, file=trim(rpfile)//trim(inst_suffix), form='formatted')
+        write(nu,'(a)') rest_file
+        write(nu,'(a)') rest_file_strm
+        close(nu)
+        write(logunit,*)' (dshr_restart_write) writing ',trim(rest_file_strm), ymd, tod
+     endif
+     if (present(fld) .and. present(fldname)) then
+        call shr_pcdf_readwrite('write', sdat%pio_subsystem, sdat%io_type,&
+             trim(rest_file), mpicom, sdat%gsmap, clobber=.true., rf1=fld, rf1n=trim(fldname))
+     end if
+     call shr_strdata_restWrite(trim(rest_file_strm), sdat, mpicom, trim(case_name), 'SDAT strdata from '//trim(model_name))
 
   end subroutine dshr_restart_write
 
