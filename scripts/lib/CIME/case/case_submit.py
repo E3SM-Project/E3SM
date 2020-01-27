@@ -219,7 +219,7 @@ def check_case(self):
     self.check_all_input_data()
 
     if self.get_value('COMP_WAV') == 'ww':
-        # the ww3 buildnml has dependancies on inputdata so we must run it again
+        # the ww3 buildnml has dependencies on inputdata so we must run it again
         self.create_namelists(component='WAV')
 
     expect(self.get_value("BUILD_COMPLETE"), "Build complete is "
