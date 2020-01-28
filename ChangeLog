@@ -1,6 +1,29 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 1-28-2020
+Tag: cime5.6.31
+Answer Changes: None
+Tests: scripts_regression_tests, f19_g17.I1850Clm50BgcCropCmip6waccm, T62_g16.GIAF
+Dependencies:
+
+Brief Summary:
+
+User interface changes: 
+    - Fixes domain filename in input_data_list.
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+    - c55bcd226 Merge pull request #3378 from ESMCI/fischer/domainfile
+
+Modified files: git diff --name-status [previous_tag]
+M       scripts/lib/CIME/nmlgen.py
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 1-24-2020
 Tag: cime5.6.30
 Answer Changes: None
