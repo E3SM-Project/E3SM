@@ -24,10 +24,11 @@ module radiation
    use mo_rte_kind, only: wp
 
    ! Use my assertion routines to perform sanity checks
-   use assertions, only: assert, assert_valid, assert_range, check_range
+   use assertions, only: assert, assert_valid, assert_range
 
    use radiation_state, only: ktop, kbot, nlev_rad
    use radiation_utils, only: compress_day_columns, expand_day_columns, &
+                              check_range,
                               handle_error
 
    implicit none
@@ -1080,7 +1081,7 @@ contains
       ! properties, and subroutines to get CAM aerosol and cloud optical properties
       ! via CAM parameterizations
       use cam_optics, only: cam_optics_type
-      use physconst, only: cpair, stebol
+      use physconst, only: cpair, stebol, pi
 
       ! ---------------------------------------------------------------------------
       ! Arguments
@@ -1134,6 +1135,10 @@ contains
       real(r8) :: qrsc(pcols,pver)
       real(r8) :: qrlc(pcols,pver)
 
+      ! Latitude and longitude arrays for extra debugging information when
+      ! things go wrong
+      real(r8), dimension(pcols) :: lat, lon
+
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
       logical :: conserve_energy = .true.
@@ -1163,8 +1168,14 @@ contains
       qrsc(:,:) = 0
       qrlc(:,:) = 0
 
-      ! Before we do anything, check temperature range
-      call check_range(state, state%t(1:ncol,1:pver), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), 'state%t')
+      ! Before we do anything, check temperature range, and abort if outside
+      ! bounds of absorption coefficient look-up tables
+      lat(1:ncol) = state%lat(1:ncol) * pi / 180._r8
+      lon(1:ncol) = state%lon(1:ncol) * pi / 180._r8
+      call check_range( &
+         state%t(1:ncol,1:pver), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), &
+         'state%t', lat, lon &
+      )
      
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
@@ -1377,8 +1388,6 @@ contains
                          pint(1:nday,1:nlev_rad+1), &
                          col_indices=day_indices(1:nday))
 
-      call check_range(state, tmid(1:nday,1:nlev_rad), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), 'tmid')
-
       ! Get albedo. This uses CAM routines internally and just provides a
       ! wrapper to improve readability of the code here.
       call set_albedo(cam_in, albedo_direct(1:nswbands,1:ncol), albedo_diffuse(1:nswbands,1:ncol))
@@ -1567,10 +1576,6 @@ contains
                          pmid(1:ncol,1:nlev_rad), &
                          pint(1:ncol,1:nlev_rad+1))
        
-      ! DEBUG: check values
-      call check_range(state, tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), 'tmid')
-      call check_range(state, tint(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), 'tint')
-
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
       ! RRTMG implementation also sets this to 1. This probably does not make
@@ -1611,10 +1616,6 @@ contains
             call t_startf('rad_aerosol_optics_lw')
             call set_aerosol_optics_lw(icall, state, pbuf, is_cmip6_volc, aerosol_optics_lw)
             call t_stopf('rad_aerosol_optics_lw')
-
-            ! DEBUG: check optical properties
-            call check_range(state, aerosol_optics_lw%tau, 0._r8, huge(aerosol_optics_lw%tau), 'aerosol_optics_lw%tau')
-            call check_range(state, cloud_optics_lw%tau  , 0._r8, huge(cloud_optics_lw%tau)  , 'cloud_optics_lw%tau'  )
 
             ! Do longwave radiative transfer calculations
             call t_startf('rad_calculations_lw')
@@ -2430,159 +2431,5 @@ end function string_in_list
       end do
 
    end subroutine expand_day_fluxes
-
-   ! --------------------------------------------------
-   !
-   ! Interfaces using clear (gas + aerosol) and all-sky categories, starting from
-   !   pressures, temperatures, and gas amounts for the gas contribution
-   !
-   ! --------------------------------------------------
-   function rte_lw(k_dist, gas_concs, p_lay, t_lay, p_lev,    &
-                      t_sfc, sfc_emis, cloud_props,           &
-                      allsky_fluxes, clrsky_fluxes,           &
-                      aer_props, col_dry, t_lev, inc_flux, n_gauss_angles) result(error_msg)
-
-     use mo_rte_kind,   only: wp
-     use mo_gas_optics, &
-                           only: ty_gas_optics
-     use mo_gas_concentrations, &
-                           only: ty_gas_concs
-     use mo_optical_props, only: ty_optical_props, &
-                                 ty_optical_props_arry, ty_optical_props_1scl, ty_optical_props_2str, ty_optical_props_nstr
-     use mo_source_functions, &
-                           only: ty_source_func_lw
-     use mo_fluxes,        only: ty_fluxes
-     use mo_rte_lw,        only: base_rte_lw => rte_lw
-
-     class(ty_gas_optics),              intent(in   ) :: k_dist       !< derived type with spectral information
-     type(ty_gas_concs),                intent(in   ) :: gas_concs    !< derived type encapsulating gas concentrations
-     real(wp), dimension(:,:),          intent(in   ) :: p_lay, t_lay !< pressure [Pa], temperature [K] at layer centers (ncol,nlay)
-     real(wp), dimension(:,:),          intent(in   ) :: p_lev        !< pressure at levels/interfaces [Pa] (ncol,nlay+1)
-     real(wp), dimension(:),            intent(in   ) :: t_sfc     !< surface temperature           [K]  (ncol)
-     real(wp), dimension(:,:),          intent(in   ) :: sfc_emis  !< emissivity at surface         []   (nband, ncol)
-     class(ty_optical_props_arry),      intent(in   ) :: cloud_props !< cloud optical properties (ncol,nlay,ngpt)
-     class(ty_fluxes),                  intent(inout) :: allsky_fluxes, clrsky_fluxes
-
-     ! Optional inputs
-     class(ty_optical_props_arry),  &
-               optional,       intent(in ) :: aer_props   !< aerosol optical properties
-     real(wp), dimension(:,:), &
-               optional,       intent(in ) :: col_dry !< Molecular number density (ncol, nlay)
-     real(wp), dimension(:,:), target, &
-               optional,       intent(in ) :: t_lev     !< temperature at levels [K] (ncol, nlay+1)
-     real(wp), dimension(:,:), target, &
-               optional,       intent(in ) :: inc_flux   !< incident flux at domain top [W/m2] (ncol, ngpts)
-     integer,  optional,       intent(in ) :: n_gauss_angles ! Number of angles used in Gaussian quadrature (no-scattering solution)
-     character(len=128)                    :: error_msg
-     ! --------------------------------
-     ! Local variables
-     !
-     class(ty_optical_props_arry), allocatable :: optical_props
-     type(ty_source_func_lw)                   :: sources
-
-     integer :: ncol, nlay, ngpt, nband, nstr
-     logical :: top_at_1
-     ! --------------------------------
-     ! Problem sizes
-     !
-     error_msg = ""
-
-     ncol  = size(p_lay, 1)
-     nlay  = size(p_lay, 2)
-     ngpt  = k_dist%get_ngpt()
-     nband = k_dist%get_nband()
-
-     top_at_1 = p_lay(1, 1) < p_lay(1, nlay)
-
-     ! ------------------------------------------------------------------------------------
-     !  Error checking
-     !
-     if(present(aer_props)) then
-       if(any([aer_props%get_ncol(), &
-               aer_props%get_nlay()] /= [ncol, nlay])) &
-         error_msg = "rrtmpg_lw: aerosol properties inconsistently sized"
-       if(.not. any(aer_props%get_ngpt() /= [ngpt, nband])) &
-         error_msg = "rrtmpg_lw: aerosol properties inconsistently sized"
-     end if
-
-     if(present(t_lev)) then
-       if(any([size(t_lev, 1), &
-               size(t_lev, 2)] /= [ncol, nlay+1])) &
-         error_msg = "rrtmpg_lw: t_lev inconsistently sized"
-     end if
-
-     if(present(inc_flux)) then
-       if(any([size(inc_flux, 1), &
-               size(inc_flux, 2)] /= [ncol, ngpt])) &
-         error_msg = "rrtmpg_lw: incident flux inconsistently sized"
-     end if
-     if(len_trim(error_msg) > 0) return
-
-     ! ------------------------------------------------------------------------------------
-     ! Optical properties arrays
-     !
-     select type(cloud_props)
-       class is (ty_optical_props_1scl) ! No scattering
-         allocate(ty_optical_props_1scl::optical_props)
-       class is (ty_optical_props_2str)
-         allocate(ty_optical_props_2str::optical_props)
-       class is (ty_optical_props_nstr)
-         allocate(ty_optical_props_nstr::optical_props)
-         nstr = size(cloud_props%tau,1)
-     end select
-
-     error_msg = optical_props%init(k_dist)
-     if(len_trim(error_msg) > 0) return
-     select type (optical_props)
-       class is (ty_optical_props_1scl) ! No scattering
-         error_msg = optical_props%alloc_1scl(ncol, nlay)
-       class is (ty_optical_props_2str)
-         error_msg = optical_props%alloc_2str(ncol, nlay)
-       class is (ty_optical_props_nstr)
-         error_msg = optical_props%alloc_nstr(nstr, ncol, nlay)
-     end select
-     if (error_msg /= '') return
-
-     !
-     ! Source function
-     !
-     error_msg = sources%init(k_dist)
-     error_msg = sources%alloc(ncol, nlay)
-     if (error_msg /= '') return
-     ! ------------------------------------------------------------------------------------
-     ! Clear skies
-     !
-     ! Gas optical depth -- pressure need to be expressed as Pa
-     !
-     error_msg = k_dist%gas_optics(p_lay, p_lev, t_lay, t_sfc, gas_concs, &
-                                   optical_props, sources,                &
-                                   col_dry, t_lev)
-     if (error_msg /= '') return
-     call assert_range(optical_props%tau, 0._wp, huge(optical_props%tau), 'rte_lw gas optical_props%tau')
-    
-     ! ----------------------------------------------------
-     ! Clear sky is gases + aerosols (if they're supplied)
-     !
-     if(present(aer_props)) error_msg = aer_props%increment(optical_props)
-     if(error_msg /= '') return
-     call assert_range(optical_props%tau, 0._wp, huge(optical_props%tau), 'rte_lw gas+aer optical_props%tau')
-
-     error_msg = base_rte_lw(optical_props, top_at_1, sources, &
-                             sfc_emis, clrsky_fluxes,          &
-                             inc_flux, n_gauss_angles)
-     if(error_msg /= '') return
-     ! ------------------------------------------------------------------------------------
-     ! All-sky fluxes = clear skies + clouds
-     !
-     error_msg = cloud_props%increment(optical_props)
-     if(error_msg /= '') return
-     call assert_range(optical_props%tau, 0._wp, huge(optical_props%tau), 'rte_lw gas+aer+cld optical_props%tau')
-
-     error_msg = base_rte_lw(optical_props, top_at_1, sources, &
-                             sfc_emis, allsky_fluxes,          &
-                             inc_flux, n_gauss_angles)
-
-     call sources%finalize()
-   end function rte_lw
 
 end module radiation

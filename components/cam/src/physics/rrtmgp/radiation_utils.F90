@@ -7,7 +7,7 @@ module radiation_utils
    private
 
    public :: compress_day_columns, expand_day_columns, &
-             calculate_heating_rate, clip_values, &
+             calculate_heating_rate, clip_values, check_range, &
              handle_error
 
    ! Interface blocks for overloaded procedures
@@ -22,6 +22,12 @@ module radiation_utils
    interface clip_values
       module procedure clip_values_1d, clip_values_2d
    end interface clip_values
+
+   ! Procedure to check range, with extra arguments to print lat/lon location
+   ! where errors occur
+   interface check_range
+      module procedure check_range_2d, check_range_3d
+   end interface
 
    ! Name of this module for error messages
    character(len=*), parameter :: module_name = 'radiation_utils'
@@ -281,6 +287,46 @@ contains
 
    end subroutine clip_values_2d
 
+   !-------------------------------------------------------------------------------
+   subroutine check_range_2d(v, vmin, vmax, vname, lat, lon)
+      use cam_abortutils, only: endrun
+      real(r8), intent(in) :: v(:,:), vmin, vmax
+      character(len=*), intent(in) :: vname
+      real(r8), intent(in) :: lat(:), lon(:)
+      integer :: ix, iz
+      do iz = 1,size(v, 2)
+         do ix = 1,size(v, 1)
+            if (v(ix,iz) < vmin .or. v(ix,iz) > vmax) then
+               print *, 'Variable ' // trim(vname) // &
+                        ' out of range; value = ', v(ix,iz), &
+                        '; lat/lon = ', lat(ix), lon(ix)
+               call endrun('check_range failed for ' // trim(vname))
+            end if
+         end do
+      end do
+   end subroutine check_range_2d
+   !-------------------------------------------------------------------------------
+   subroutine check_range_3d(v, vmin, vmax, vname, lat, lon)
+      use cam_abortutils, only: endrun
+      real(r8), intent(in) :: v(:,:,:), vmin, vmax
+      character(len=*), intent(in) :: vname
+      real(r8), intent(in) :: lat(:), lon(:)
+      integer :: ix, iy, iz
+      do iz = 1,size(v, 3)
+         do iy = 1,size(v,2)
+            do ix = 1,size(v, 1)
+               if (v(ix,iy,iz) < vmin .or. v(ix,iy,iz) > vmax) then
+                  print *, 'Variable ' // trim(vname) // &
+                           ' out of range; value = ', v(ix,iy,iz), &
+                           '; lat/lon = ', lat(ix), lon(ix)
+                  call endrun('check_range failed for ' // trim(vname))
+               end if
+            end do
+         end do
+      end do
+   end subroutine check_range_3d
+   !-------------------------------------------------------------------------------
+
    !----------------------------------------------------------------------------
 
    subroutine handle_error(error_message, stop_on_error)
@@ -303,10 +349,10 @@ contains
       ! nothing and return silently.
       if (len(trim(error_message)) > 0) then
          if (stop_on_error_local) then
-           call endrun(module_name // ': ' // error_message)
+            call endrun(module_name // ': ' // error_message)
          else
-	   write(iulog,*) 'WARNING: ', error_message
-	 end if
+            write(iulog,*) 'WARNING: ', error_message
+         end if
       end if
    end subroutine handle_error
 

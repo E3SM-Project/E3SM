@@ -16,7 +16,6 @@ use interpolate_data, only: interp_type, lininterp_init, lininterp, &
 
 use cam_logfile,      only: iulog
 use cam_abortutils,   only: endrun
-use assertions,       only: check_range
 
 implicit none
 private
@@ -302,11 +301,6 @@ subroutine get_ice_optics_lw(state, pbuf, abs_od)
    ! the lookup tables.
    call pbuf_get_field(pbuf, i_iciwp, iciwpth)
    call pbuf_get_field(pbuf, i_dei,   dei)
-
-   ! DEBUG, check values
-   call check_range(state, iciwpth(1:state%ncol,:), 0._r8, huge(iciwpth), 'iciwpth')
-   call check_range(state, dei(1:state%ncol,:), 0._r8, huge(dei), 'dei')
-
    call interpolate_ice_optics_lw(state%ncol,iciwpth, dei, abs_od)
 
 end subroutine get_ice_optics_lw
@@ -370,11 +364,6 @@ subroutine get_liquid_optics_lw(state, pbuf, abs_od)
    call pbuf_get_field(pbuf, i_mu,      pgam)
    call pbuf_get_field(pbuf, i_iclwp,   iclwpth)
 
-   ! DEBUG, check values
-   call check_range(state, iclwpth(1:state%ncol,:), 0._r8, huge(iclwpth), 'iclwpth')
-   call check_range(state, lamc(1:state%ncol,:), 0._r8, huge(lamc), 'lamc')
-   call check_range(state, pgam(1:state%ncol,:), 0._r8, huge(pgam), 'pgam')
-
    do k = 1,pver
       do i = 1,ncol
          if(lamc(i,k) > 0._r8) then ! This seems to be the clue for no cloud from microphysics formulation
@@ -423,11 +412,6 @@ subroutine get_snow_optics_lw(state, pbuf, abs_od)
    ! different water path and effective diameter.
    call pbuf_get_field(pbuf, i_icswp, icswpth)
    call pbuf_get_field(pbuf, i_des,   des)
-
-   ! DEBUG, check values
-   call check_range(state, icswpth(1:state%ncol,:), 0._r8, huge(icswpth), 'icswpth')
-   call check_range(state, des(1:state%ncol,:), 0._r8, huge(des), 'des')
-
    call interpolate_ice_optics_lw(state%ncol,icswpth, des, abs_od)
 
 end subroutine get_snow_optics_lw
