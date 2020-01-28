@@ -404,7 +404,7 @@ contains
 
       !compute the slope taper on edges
       !$omp do schedule(runtime)
-      do iEdge = 1, nEdge
+      do iEdge = 1, nEdges
   ! Add bottom taper slope for this column.
          ! Top taper slope is computed before the cell loop, because it is the same
          ! for all cells.
@@ -529,7 +529,6 @@ contains
       deallocate(dTdzTop)
       deallocate(dSdzTop)
       deallocate(k33Norm)
-      deallocate(slopeTaper)
       deallocate(slopeTaperSurface)
 
       ! allow disabling of K33 for testing
