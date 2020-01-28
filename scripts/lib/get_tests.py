@@ -136,6 +136,22 @@ _CIME_TESTS = {
             "LDSTA.f45_g37_rx1.A",
             )
         },
+    "nuopc_developer" : {
+        "time"  : "0:15:00",
+        "tests" : (
+            "NCK_Ld3.f19_g17_rx1.A",
+            "ERI_Ln9.f09_g16.X",
+            "SEQ_Ln9.f19_g16_rx1.A",
+            "IRT_Ln9.f19_g16_rx1.A",
+            "ERR_Ln9.f19_g17_rx1.A",
+            "ERP_Ln9.f19_g17_rx1.A",
+            "SMS_D_Ln9_Mmpi-serial.f19_g16_rx1.A",
+            "PET_Ln9_P4.f19_f19.A",
+            "PEM_Ln9_P4.f19_f19.A",
+            "MCC_P1.f19_g16_rx1.A",
+            "LDSTA.f19_g17_rx1.A",
+            )
+        },
 
 }
 
