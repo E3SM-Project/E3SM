@@ -703,7 +703,7 @@ contains
             do l = 1,ndecomp_pools
                 if (is_soil(l)) then
                    biochem_pmin_ppools_vr_col(c,j,l) = max(min(biochem_pmin_to_ecosysp_vr_col_pot(c,j) * sop_profile(l)&
-                        , decomp_ppools_vr_col(c,j,l)/dt),0._r8)
+                        , decomp_ppools_vr_col(c,j,l)/100.0_r8/dt),0._r8)
                 end if
             end do
         end do

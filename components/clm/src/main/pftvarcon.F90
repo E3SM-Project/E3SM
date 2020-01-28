@@ -259,9 +259,9 @@ module pftvarcon
   real(r8), allocatable :: vcmax_np2(:)        !vcmax~np relationship coefficient
   real(r8), allocatable :: vcmax_np3(:)        !vcmax~np relationship coefficient
   real(r8), allocatable :: vcmax_np4(:)        !vcmax~np relationship coefficient
-  real(r8)              :: jmax_np1            !jmax~np relationship coefficient
-  real(r8)              :: jmax_np2            !jmax~np relationship coefficient
-  real(r8)              :: jmax_np3            !jmax~np relationship coefficient
+  real(r8), allocatable :: jmax_np1(:)         !jmax~np relationship coefficient
+  real(r8), allocatable :: jmax_np2(:)         !jmax~np relationship coefficient
+  real(r8), allocatable :: jmax_np3(:)         !jmax~np relationship coefficient
   real(r8)              :: laimax
   ! Hydrology
   real(r8)              :: rsub_top_globalmax
@@ -502,6 +502,9 @@ contains
     allocate( vcmax_np2          (0:mxpft) )
     allocate( vcmax_np3          (0:mxpft) )
     allocate( vcmax_np4          (0:mxpft) )
+    allocate( jmax_np1          (0:mxpft) )
+    allocate( jmax_np2          (0:mxpft) )
+    allocate( jmax_np3          (0:mxpft) )
     ! Photosynthesis
     allocate( fnr                (0:mxpft) )
     allocate( act25              (0:mxpft) )

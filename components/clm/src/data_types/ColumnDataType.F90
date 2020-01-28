@@ -10042,13 +10042,14 @@ contains
        if (lun_pp%ifspecial(l)) then
           num_special_col = num_special_col + 1
           special_col(num_special_col) = c
+       else
+          this%col_plant_pdemand_vr (c,1:nlevdecomp) = 0._r8
        end if
     end do
 
     do fc = 1,num_special_col
        c = special_col(fc)
        this%dwt_ploss(c) = 0._r8
-       this%col_plant_pdemand_vr (c,1:nlevdecomp) = 0._r8
     end do
 
     call this%SetValues (num_column=num_special_col, filter_column=special_col, value_column=0._r8)
