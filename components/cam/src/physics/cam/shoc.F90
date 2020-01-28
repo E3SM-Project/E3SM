@@ -243,7 +243,7 @@ subroutine shoc_main ( &
   ! Grid difference centereted on thermo grid [m] 
   real(r8) :: dz_zt(shcol,nlev)
   ! Grid difference centereted on interface grid [m] 
-  real(r8) :: dz_zi(shcol,nlev) 
+  real(r8) :: dz_zi(shcol,nlevi) 
 
   ! Check TKE to make sure values lie within acceptable 
   !  bounds after host model performs horizontal advection
@@ -257,7 +257,7 @@ subroutine shoc_main ( &
          shcol,nlev,nlevi,&                   ! Input
 	 zt_grid,zi_grid,pdel,&               ! Input
          dz_zt,dz_zi,rho_zt)  		      ! Output
-
+  
   ! Update the turbulent length scale	 
   call shoc_length(&
          shcol,nlev,nlevi, tke,&              ! Input
@@ -265,6 +265,11 @@ subroutine shoc_main ( &
          zt_grid,zi_grid,dz_zt,dz_zi,&        ! Input
 	 thetal,wthv_sec,thv,&                ! Input
 	 brunt,shoc_mix)  		      ! Output
+
+  write(*,*) 'BRUNT ', brunt
+  write(*,*) 'SHOCMIX ', shoc_mix
+  
+  write(*,*) 'TKEbeforeTKE ', tke
 
   ! Advance the SGS TKE equation	 
   call shoc_tke(&
@@ -276,6 +281,11 @@ subroutine shoc_main ( &
 	 zt_grid,zi_grid,&                    ! Input
          tke,tk,tkh,&		              ! Input/Output
 	 isotropy)                            ! Output
+	 
+  write(*,*) 'TKEafterTKE ', tke
+  write(*,*) 'TKEafterTKE ', tke
+  write(*,*) 'TKHafterTKE ', tkh
+  write(*,*) 'ISOTROPY ', isotropy  
   
   ! If implicit diffusion solver is used, 
   !  update SHOC prognostic variables here
@@ -288,6 +298,9 @@ subroutine shoc_main ( &
            thetal,qw,qtracers,tke,&           ! Input/Output
 	   u_wind,v_wind)                     ! Input/Output
   endif	 
+
+  write(*,*) 'TKEafterDIFF ', tke
+  write(*,*) 'TafterDIFF ', thetal
 
   ! Diagnose the second order moments, needed
   !  for the PDF closure
@@ -303,6 +316,10 @@ subroutine shoc_main ( &
 	 wthl_sec,wqw_sec,&                   ! Output
 	 qwthl_sec,uw_sec,vw_sec,wtke_sec,&   ! Output
 	 wtracer_sec)
+	 
+  write(*,*) 'wthl_sec ', wthl_sec
+  write(*,*) 'wqw_sec ', wqw_sec
+  write(*,*) 'uw_sec ', uw_sec
 
   ! Diagnose the third moment of vertical velocity, 
   !  needed for the PDF closure	 
@@ -314,6 +331,8 @@ subroutine shoc_main ( &
 	 dz_zt,dz_zi,&                        ! Input
 	 zt_grid,zi_grid,&                    ! Input
 	 w3)                                  ! Output
+	 
+  write(*,*) 'w3 ', w3
   
   ! Update thetal, qw, tracers, and wind components
   !   based on SGS mixing, if explicit scheme is used
@@ -337,6 +356,11 @@ subroutine shoc_main ( &
 	 zt_grid,zi_grid,&                    ! Input
 	 shoc_cldfrac,shoc_ql,&               ! Output
          wqls_sec,wthv_sec)                   ! Output
+	 
+  write(*,*) 'shoc_cldfrac ', shoc_cldfrac
+  write(*,*) 'shoc_ql ', shoc_ql
+  write(*,*) 'wqls_sec ', wqls_sec
+  write(*,*) 'wthv_sec ', wthv_sec	 
 
   ! Check TKE to make sure values lie within acceptable 
   !  bounds after vertical advection, etc.
@@ -379,7 +403,7 @@ subroutine shoc_grid( &
   ! thickness (dz) on the thermo grid [m] 
   real(r8), intent(out) :: dz_zt(shcol,nlev)
   ! thickness (dz) on the interface grid [m] 
-  real(r8), intent(out) :: dz_zi(shcol,nlev)
+  real(r8), intent(out) :: dz_zi(shcol,nlevi)
   ! air density on the thermo grid [kg/m3] 
   real(r8), intent(out) :: rho_zt(shcol,nlev)  
 
@@ -392,10 +416,10 @@ subroutine shoc_grid( &
       dz_zt(i,k) = zi_grid(i,k) - zi_grid(i,k+1)
  
       ! define thickness of the interface grid points
-      if (k .eq. nlev) then
-        dz_zi(i,k) = zt_grid(i,k)
+      if (k .eq. 1) then
+        dz_zi(i,k) = 0._r8 ! never used
       else
-        dz_zi(i,k) = zt_grid(i,k) - zt_grid(i,k+1)
+        dz_zi(i,k) = zt_grid(i,k-1) - zt_grid(i,k)
       endif
 
       ! Define the air density on the thermo grid
@@ -403,6 +427,13 @@ subroutine shoc_grid( &
       
     enddo ! end i loop (column loop)
   enddo ! end k loop (vertical loop)
+  
+  ! Set lower condition for dz_zi
+  dz_zi(:shcol,nlevi) = zt_grid(:shcol,nlev) 
+ 
+  write(*,*) 'RHO_ZT ', rho_zt
+  write(*,*) 'PDEL ', pdel
+  write(*,*) 'DZ_ZT ', dz_zt  
   
   return
   
@@ -560,7 +591,7 @@ subroutine update_prognostics_implicit( &
   ! height thickness centered on thermo grid [m]
   real(r8), intent(in) :: dz_zt(shcol,nlev)
   ! height thickness centered on interface grid [m]
-  real(r8), intent(in) :: dz_zi(shcol,nlev)
+  real(r8), intent(in) :: dz_zi(shcol,nlevi)
   ! vertical zonal momentum flux at surface [m3/s3]
   real(r8), intent(in) :: uw_sfc(shcol)
   ! vertical meridional momentum flux at surface [m3/s3]
@@ -618,9 +649,14 @@ subroutine update_prognostics_implicit( &
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._r8)
  
+  write(*,*) 'RHO_ZI ', rho_zi
+  write(*,*) 'DZ_ZI ', dz_zi
+  write(*,*) 'RHO_ZI ', rho_zt 
+ 
+  tmpi(:,1) = 0._r8
   ! Define the tmpi variable, which is really dt*(g*rho)**2/dp 
   !  at interfaces. Sub dp = g*rho*dz
-  do k=1,nlev
+  do k=2,nlevi
     do i=1,shcol
        tmpi(i,k) = dtime * (ggr*rho_zi(i,k)) / dz_zi(i,k)
     enddo
@@ -742,7 +778,7 @@ subroutine diag_second_shoc_moments(&
   ! heights of interface grid [m]
   real(r8), intent(in) :: zi_grid(shcol,nlevi) 
   ! thickness centered on interface grid [m]
-  real(r8), intent(in) :: dz_zi(shcol,nlev) 
+  real(r8), intent(in) :: dz_zi(shcol,nlevi) 
   
   ! Surface sensible heat flux [K m/s]
   real(r8), intent(in) :: wthl_sfc(shcol)
@@ -800,6 +836,8 @@ subroutine diag_second_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,0._r8)
+ 
+  write(*,*) 'TKHzi ', tkh_zi
  
   ! Vertical velocity variance is assumed to be propotional
   !  to the TKE
@@ -948,7 +986,7 @@ subroutine diag_third_shoc_moments(&
   ! thickness centered on thermodynamic grid [m]
   real(r8), intent(in) :: dz_zt(shcol,nlev) 
   ! thickness centered on interface grid [m]
-  real(r8), intent(in) :: dz_zi(shcol,nlev) 	
+  real(r8), intent(in) :: dz_zi(shcol,nlevi) 	
   ! heights of thermodynamics points [m]
   real(r8), intent(in) :: zt_grid(shcol,nlev)
   ! heights of interface points [m]
@@ -1524,7 +1562,7 @@ subroutine shoc_tke(&
   ! Meridional momentum flux at sfc [m2/s2]
   real(r8), intent(in) :: vw_sfc(shcol) 
   ! thickness on interface grid [m]
-  real(r8), intent(in) :: dz_zi(shcol,nlev)
+  real(r8), intent(in) :: dz_zi(shcol,nlevi)
   ! thickness on thermodynamic grid [m]
   real(r8), intent(in) :: dz_zt(shcol,nlev)
   ! pressure [Pa]
@@ -1558,7 +1596,7 @@ subroutine shoc_tke(&
   real(r8) :: tscale1,lambda,buoy_sgs_save,grid_dzw,grw1,grid_dz
   real(r8) :: lambda_low,lambda_high,lambda_slope, brunt_low
   real(r8) :: brunt_int(shcol)
-  integer i,j,k,kc,kb	 
+  integer i,j,k,kc,kb,kt	 
   
   lambda_low=0.001_r8
   lambda_high=0.04_r8
@@ -1592,16 +1630,16 @@ subroutine shoc_tke(&
 
   ! Compute shear production term, which is on interface levels
   ! This follows the methods of Bretheron and Park (2010)
-  do k=1,nlev-1
+  do k=2,nlev
     do i=1,shcol
     
-      kb=k+1     
+      kt=k-1     
       grid_dz = 1._r8/dz_zi(i,k)
   
       tk_in=tk_zi(i,k)
       ! calculate vertical gradient of u&v wind
-      u_grad=grid_dz*(u_wind(i,k)-u_wind(i,kb))
-      v_grad=grid_dz*(v_wind(i,k)-v_wind(i,kb))  
+      u_grad=grid_dz*(u_wind(i,kt)-u_wind(i,k))
+      v_grad=grid_dz*(v_wind(i,kt)-v_wind(i,k))  
       shear_prod(i,k)=tk_in*(u_grad**2+v_grad**2) 
     enddo
   enddo
@@ -1612,6 +1650,11 @@ subroutine shoc_tke(&
   !  thus zero out here
   shear_prod(:,1) = 0._r8
   shear_prod(:,nlevi) = 0._r8
+  
+  write(*,*) 'TK_ZI_intke ', tk_zi
+  write(*,*) 'SHEAR_PROD ', shear_prod
+  write(*,*) 'UWIND ', u_wind
+  write(*,*) 'VWIND ', v_wind
   
   ! Interpolate shear production from interface to thermo grid
   call linear_interp(zi_grid,zt_grid,shear_prod,shear_prod_zt,nlevi,nlev,shcol,largeneg)
@@ -1735,7 +1778,7 @@ subroutine shoc_length(&
   ! dz on midpoint grid [m] 
   real(r8), intent(in) :: dz_zt(shcol,nlev) 
   ! dz on interface grid [m]
-  real(r8), intent(in) :: dz_zi(shcol,nlev) 
+  real(r8), intent(in) :: dz_zi(shcol,nlevi) 
   ! SGS buoyancy flux [K m/s]
   real(r8), intent(in) :: wthv_sec(shcol,nlev)
   ! liquid water potential temperature [K] 
@@ -1983,6 +2026,14 @@ subroutine vd_shoc_decomp( &
     denom(i,1) = 1._r8/ &
       (1._r8 + ca(i,1) - ca(i,1) * ze(i,2))
   enddo
+  
+  write(*,*) 'CC ', cc
+  write(*,*) 'CA ', ca
+  write(*,*) 'denom ', denom
+  write(*,*) 'ze ', ze
+  write(*,*) 'kv_term ', kv_term
+  write(*,*) 'tmpi ', tmpi
+  write(*,*) 'rdp_zt ', rdp_zt  
   
   return
   
