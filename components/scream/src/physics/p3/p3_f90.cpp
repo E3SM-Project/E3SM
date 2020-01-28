@@ -130,7 +130,7 @@ void p3_init (bool use_fortran) {
   static bool is_init = false;
   if (!is_init) {
     micro_p3_utils_init();
-    static const char* dir = ".";
+    static const char* dir = "./data";
     Int info;
     p3_init_c(&dir, &info);
     scream_require_msg(info == 0, "p3_init_c returned info " << info);
@@ -169,7 +169,7 @@ int test_p3_init (bool use_fortran) {
 
 int test_p3_ic (bool use_fortran) {
   const auto d = ic::Factory::create(ic::Factory::mixed);
-  p3_init();
+  p3_init(use_fortran);
   p3_main(*d);
   P3GlobalForFortran::deinit();
   return 0;

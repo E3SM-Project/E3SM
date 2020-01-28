@@ -604,6 +604,9 @@ contains
     inv_icldm = 1.0_rtype/icldm
     inv_lcldm = 1.0_rtype/lcldm
     inv_rcldm = 1.0_rtype/rcldm
+
+    mu_c = 0.0_rtype
+    lamc = 0.0_rtype
     ! AaronDonahue added exner term to replace all instances of th(i,k)/t(i,k), since th(i,k) is updated but t(i,k) is not, and this was
     ! causing energy conservation errors.
     inv_exner = 1._rtype/exner        !inverse of Exner expression, used when converting potential temp to temp
@@ -932,7 +935,7 @@ contains
           !.................................................................
           ! droplet activation
           call droplet_activation(t(i,k),pres(i,k),qv(i,k),qc(i,k),inv_rho(i,k),&
-             sup(i,k),xxlv(i,k),npccn(i,k),log_predictNc,odt,it,&
+             sup(i,k),xxlv(i,k),npccn(i,k),log_predictNc,odt,&
              qcnuc,ncnuc)
 
           !................
@@ -1575,8 +1578,8 @@ contains
     dum1 = (bfb_log10(qitot/nitot)+18._rtype)*lookup_table_1a_dum1_c-10._rtype ! For computational efficiency
     dumi = int(dum1)
     ! set limits (to make sure the calculated index doesn't exceed range of lookup table)
-    dum1 = min(dum1,real(isize))
-    dum1 = max(dum1,1.)
+    dum1 = min(dum1,real(isize,rtype))
+    dum1 = max(dum1,1._rtype)
     dumi = max(1,dumi)
     dumi = min(isize-1,dumi)
 
@@ -1584,7 +1587,7 @@ contains
     dum4  = (qirim/qitot)*3._rtype + 1._rtype
     dumii = int(dum4)
     ! set limits
-    dum4  = min(dum4,real(rimsize))
+    dum4  = min(dum4,real(rimsize,rtype))
     dum4  = max(dum4,1._rtype)
     dumii = max(1,dumii)
     dumii = min(rimsize-1,dumii)
@@ -1598,7 +1601,7 @@ contains
     endif
     dumjj = int(dum5)
     ! set limits
-    dum5  = min(dum5,real(densize))
+    dum5  = min(dum5,real(densize,rtype))
     dum5  = max(dum5,1._rtype)
     dumjj = max(1,dumjj)
     dumjj = min(densize-1,dumjj)
@@ -2240,7 +2243,7 @@ f1pr05,f1pr14,xxlv,xlf,dv,sc,mu,kap,qv,qitot_incld,nitot_incld,    &
       zerodegc)*kap-rho*xxlv*dv*(qsat0-qv))*2._rtype*pi/xlf)*nitot_incld
 
 
-      qimlt = max(qimlt,0.)
+      qimlt = max(qimlt,0._rtype)
       nimlt = qimlt*(nitot_incld/qitot_incld)
 
    endif
@@ -2463,7 +2466,7 @@ f1pr02,acn,lamc, mu_c,qc_incld,qccol,    &
          V_impact  = abs(vtrmi1-Vt_qc)
          Ri        = -(0.5e+6_rtype*D_c)*V_impact*iTc
          !               Ri        = max(1.,min(Ri,8.))
-         Ri        = max(1.,min(Ri,12._rtype))
+         Ri        = max(1._rtype,min(Ri,12._rtype))
          if (Ri.le.8.) then
             rhorime_c  = (0.051_rtype + 0.114_rtype*Ri - 0.0055_rtype*Ri**2)*1000._rtype
          else
@@ -2597,7 +2600,7 @@ subroutine ice_nucleation(t,inv_rho,nitot,naai,supi,odt,log_predictNc,    &
 end subroutine
 
 
-subroutine droplet_activation(t,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt,it,    &
+subroutine droplet_activation(t,pres,qv,qc,inv_rho,sup,xxlv,npccn,log_predictNc,odt,    &
    qcnuc,ncnuc)
 
 
@@ -2614,7 +2617,6 @@ real(rtype), intent(in) :: npccn
 
 logical(btype), intent(in) :: log_predictNc
 real(rtype), intent(in)  :: odt
-integer, intent(in) :: it
 
 real(rtype), intent(inout) :: qcnuc
 real(rtype), intent(inout) :: ncnuc
@@ -2629,14 +2631,10 @@ real(rtype) :: dum, dumqvs, dqsdt, ab
       ! note that this is also applied at the first time step
       if (sup.gt.1.e-6) then
          ncnuc = npccn
-         if (it.eq.1) then
-            qcnuc = 0._rtype
-         else
-            !TODO Limit qcnuc so that conditions never become sub-saturated
-            qcnuc = ncnuc*cons7
-         endif
+         !TODO Limit qcnuc so that conditions never become sub-saturated
+         qcnuc = ncnuc*cons7
       endif
-   else if (sup.gt.1.e-6.and.it.gt.1) then
+   else if (sup.gt.1.e-6) then
      ! for specified Nc, make sure droplets are present if conditions are supersaturated
      ! this is not applied at the first time step, since saturation adjustment is applied at the first step
       dum   = nccnst*inv_rho*cons7-qc
@@ -3499,6 +3497,10 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
    qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+  use micro_p3_iso_f, only: rain_sedimentation_f
+#endif
+
    implicit none
    integer, intent(in) :: kts, kte
    integer, intent(in) :: ktop, kbot, kdir
@@ -3536,6 +3538,15 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
    real(rtype), dimension(kts:kte), target :: V_nr
    real(rtype), dimension(kts:kte), target :: flux_qx
    real(rtype), dimension(kts:kte), target :: flux_nx
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call rain_sedimentation_f(kts,kte,ktop,kbot,kdir,   &
+           qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+           qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend)
+      return
+   endif
+#endif
 
    vs(1)%p => V_qr
    vs(2)%p => V_nr
@@ -3579,9 +3590,8 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
             qr_notsmall_r1: if (qr_incld(k)>qsmall) then
 
-               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), &
-                  rhofacr(k), nr(k), nr_incld(k), &
-                  mu_r(k), lamr(k), V_qr(k), V_nr(k))
+               call compute_rain_fall_velocity(qr_incld(k), rcldm(k), rhofacr(k), nr(k), nr_incld(k), &
+                    mu_r(k), lamr(k), V_qr(k), V_nr(k))
 
             endif qr_notsmall_r1
 
@@ -3590,16 +3600,10 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
          enddo kloop_sedi_r1
 
-         if (k_qxbot.eq.kbot) then
-            k_temp = k_qxbot
-         else
-            k_temp = k_qxbot-kdir
-         endif
-
          call generalized_sedimentation(kts, kte, kdir, k_qxtop, k_qxbot, kbot, Co_max, dt_left, prt_accum, inv_dzq, inv_rho, rho, num_arrays, vs, fluxes, qnr)
 
          !-- AaronDonahue, rflx output
-         do k = k_temp,k_qxtop,kdir
+         do k = k_qxbot,k_qxtop,kdir
             rflx(k+1) = rflx(k+1) + flux_qx(k) ! AaronDonahue
          enddo
 
@@ -3613,9 +3617,11 @@ subroutine rain_sedimentation(kts,kte,ktop,kbot,kdir,   &
 
 end subroutine rain_sedimentation
 
-subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
-   nr, nr_incld, &
-   mu_r, lamr, V_qr, V_nr)
+subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+    use micro_p3_iso_f, only: compute_rain_fall_velocity_f
+#endif
 
    real(rtype), intent(in) :: qr_incld
    real(rtype), intent(in) :: rcldm
@@ -3630,9 +3636,14 @@ subroutine compute_rain_fall_velocity(qr_incld, rcldm, rhofacr, &
    real(rtype) :: tmp1, tmp2, dum1, dum2, inv_dum3, rdumii, rdumjj
    integer :: dumii, dumjj
 
-   !Compute Vq, Vn:
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call compute_rain_fall_velocity_f(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr)
+      return
+   endif
+#endif
 
-   nr  = max(nr,nsmall)
+   !Compute Vq, Vn:
 
    call get_rain_dsd2(qr_incld,nr_incld,mu_r,lamr,     &
    tmp1,tmp2,rcldm)

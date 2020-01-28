@@ -1,8 +1,7 @@
 #ifndef P3_FUNCTIONS_AUTOCONVERSION_IMPL_HPP
 #define P3_FUNCTIONS_AUTOCONVERSION_IMPL_HPP
 
-#include "p3_functions.hpp"
-#include "p3_constants.hpp"
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace p3 {

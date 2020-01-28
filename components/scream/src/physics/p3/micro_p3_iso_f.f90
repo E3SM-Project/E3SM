@@ -156,6 +156,34 @@ interface
     real(kind=c_real), intent(inout), dimension(kts:kte) :: ni_tend
   end subroutine ice_sedimentation_f
 
+  subroutine rain_sedimentation_f(kts,kte,ktop,kbot,kdir,   &
+       qr_incld,rho,inv_rho,rhofacr,rcldm,inv_dzq,dt,odt,  &
+       qr,nr,nr_incld,mu_r,lamr,prt_liq,rflx,qr_tend,nr_tend) bind(C)
+    use iso_c_binding
+
+    integer(kind=c_int), value, intent(in) :: kts, kte, ktop, kbot, kdir
+
+    real(kind=c_real), intent(in), dimension(kts:kte) :: qr_incld
+
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_rho
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rhofacr
+    real(kind=c_real), intent(in), dimension(kts:kte) :: rcldm
+    real(kind=c_real), intent(in), dimension(kts:kte) :: inv_dzq
+    real(kind=c_real), value, intent(in) :: dt, odt
+
+    real(kind=c_real), intent(inout), target, dimension(kts:kte) :: qr
+    real(kind=c_real), intent(inout), target, dimension(kts:kte) :: nr
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr_incld
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: mu_r
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: lamr
+    real(kind=c_real), intent(inout) :: prt_liq
+    real(kind=c_real), intent(inout), dimension(kts:kte+1) :: rflx
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: qr_tend
+    real(kind=c_real), intent(inout), dimension(kts:kte) :: nr_tend
+
+  end subroutine rain_sedimentation_f
+
   subroutine calc_bulk_rho_rime_f(qi_tot, qi_rim, bi_rim, rho_rime) bind(C)
     use iso_c_binding
 
@@ -165,7 +193,16 @@ interface
     real(kind=c_real),   intent(out) :: rho_rime
   end subroutine calc_bulk_rho_rime_f
 
-  subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol,nrcol,qrheti,nrheti,nrshdr, &
+  subroutine compute_rain_fall_velocity_f(qr_incld, rcldm, rhofacr, nr, nr_incld, mu_r, lamr, V_qr, V_nr) bind(C)
+    use iso_c_binding
+
+    ! arguments:
+    real(kind=c_real), value, intent(in) :: qr_incld, rcldm, rhofacr
+    real(kind=c_real), intent(inout) :: nr, nr_incld
+    real(kind=c_real), intent(out) :: mu_r, lamr, V_qr, V_nr
+  end subroutine compute_rain_fall_velocity_f
+
+subroutine  update_prognostic_ice_f(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol,nrcol,qrheti,nrheti,nrshdr, &
        qimlt,nimlt,qisub,qidep,qinuc,ninuc,nislf,nisub,qiberg,exner,xxls,xlf,log_predictNc,log_wetgrowth, &
        dt,nmltratio,rhorime_c,th,qv,qitot,nitot,qirim,birim,qc,nc,qr,nr) bind(C)
     use iso_c_binding
@@ -181,8 +218,6 @@ interface
     real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr, qitot, nitot, qirim, birim
 
   end subroutine update_prognostic_ice_f
-
-
   !
   ! These are some routine math operations that are not BFB between
   ! fortran and C++ on all platforms, so fortran will need to use

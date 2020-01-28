@@ -53,13 +53,22 @@ def _copy_depends_files(machine_name, machines_dir, output_dir, compiler):
     Copy any system or compiler Depends files if they do not exist in the output directory
     If there is a match for Depends.machine_name.compiler copy that and ignore the others
     """
-    for suffix in [machine_name, compiler, "{}.{}".format(machine_name, compiler)]:
+    # Note, the cmake build system does not stop if Depends.mach.compiler.cmake is found
+    makefiles_done = False
+    both = "{}.{}".format(machine_name, compiler)
+    for suffix in [both, machine_name, compiler]:
         for extra_suffix in ["", ".cmake"]:
+            if extra_suffix == "" and makefiles_done:
+                continue
+
             basename = "Depends.{}{}".format(suffix, extra_suffix)
             dfile = os.path.join(machines_dir, basename)
             outputdfile = os.path.join(output_dir, basename)
-            if os.path.isfile(dfile) and not os.path.exists(outputdfile):
-                safe_copy(dfile, outputdfile)
+            if os.path.isfile(dfile):
+                if suffix == both and extra_suffix == "":
+                    makefiles_done = True
+                if not os.path.exists(outputdfile):
+                    safe_copy(dfile, outputdfile)
 
 class FakeCase(object):
 

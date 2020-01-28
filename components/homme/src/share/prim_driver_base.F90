@@ -689,16 +689,16 @@ contains
 
     use control_mod,          only: runtype, test_case, &
                                     debug_level, vfile_int, vform, vfile_mid, &
-                                    topology, dt_remap_factor, dt_tracer_factor, rk_stage_user,&
+                                    topology, dt_remap_factor, dt_tracer_factor,&
                                     sub_case, limiter_option, nu, nu_q, nu_div, tstep_type, hypervis_subcycle, &
-                                    hypervis_subcycle_q, moisture, use_moisture
+                                    hypervis_subcycle_q, moisture, use_moisture, hypervis_subcycle_tom
     use global_norms_mod,     only: test_global_integral, print_cfl
     use hybvcoord_mod,        only: hvcoord_t
     use parallel_mod,         only: parallel_t, haltmp, syncmp, abortmp
     use prim_state_mod,       only: prim_printstate, prim_diag_scalars
     use prim_advection_mod,   only: prim_advec_init2
     use model_init_mod,       only: model_init2
-    use time_mod,             only: timelevel_t, tstep, phys_tscale, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
+    use time_mod,             only: timelevel_t, tstep, timelevel_init, nendstep, smooth, nsplit, TimeLevel_Qdp
     use control_mod,          only: smooth_phis_numcycle
 
 #ifdef TRILINOS
@@ -955,17 +955,20 @@ contains
        write(iulog,'(a,2f9.2)') "dt_remap: (0=disabled)   ",tstep*dt_remap_factor
        if (qsize>0) then
           write(iulog,'(a,2f9.2)') "dt_tracer (SE), per RK stage: ", &
-               tstep*dt_tracer_factor,(tstep*dt_tracer_factor)/(rk_stage_user-1)
+               tstep*dt_tracer_factor,(tstep*dt_tracer_factor)/2
        end if
        write(iulog,'(a,2f9.2)')    "dt_dyn:                  ",tstep
        write(iulog,'(a,2f9.2)')    "dt_dyn (viscosity):      ",dt_dyn_vis
        write(iulog,'(a,2f9.2)')    "dt_tracer (viscosity):   ",dt_tracer_vis
+       if (hypervis_subcycle_tom==0) then                                                     
+          ! applied with hyperviscosity                                                       
+          write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",dt_dyn_vis                                 
+       else                                                                                   
+          write(iulog,'(a,2f9.2)') "dt_vis_TOM:  ",tstep/hypervis_subcycle_tom               
+       endif                                                                 
 
 
 #ifdef CAM
-       if (phys_tscale/=0) then
-          write(iulog,'(a,2f9.2)') "CAM physics timescale:       ",phys_tscale
-       endif
        write(iulog,'(a,2f9.2)') "CAM dtime (dt_phys):         ",tstep*nsplit*max(dt_remap_factor, dt_tracer_factor)
 #endif
     end if

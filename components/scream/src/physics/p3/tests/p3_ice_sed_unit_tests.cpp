@@ -76,7 +76,7 @@ static void run_bfb_calc_bulk_rhime()
   Kokkos::deep_copy(cbrr_device, cbrr_host);
 
   // Get data from fortran
-  for (Int i = 0; i < max_pack_size; ++i) {
+  for (Int i = 0; i < Spack::n; ++i) {
     if (cbrr_fortran[i].qi_tot > qsmall) {
       calc_bulk_rho_rime(cbrr_fortran[i]);
     }
@@ -142,7 +142,7 @@ static void run_bfb_ice_sed()
     IceSedData(1,  72,   27,   27,    1, 1.800E+03, 5.556E-04,     2.0, ranges),
   };
 
-  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(GenSedData);
+  static constexpr Int num_runs = sizeof(isds_fortran) / sizeof(IceSedData);
 
   // Create copies of data for use by cxx. Needs to happen before fortran calls so that
   // inout data is in original state

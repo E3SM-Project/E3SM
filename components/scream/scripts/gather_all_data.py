@@ -109,7 +109,8 @@ class GatherAllData(object):
             run_cmd_no_fail(cmd, arg_stdout=None, arg_stderr=None, verbose=True, exc_type=RuntimeError)
         else:
             try:
-                output = run_cmd_no_fail("ssh -o StrictHostKeyChecking=no {} '{}'".format(machine, cmd), exc_type=RuntimeError, combine_output=True)
+                ssh_cmd = "ssh -o StrictHostKeyChecking=no {} '{}'".format(machine, cmd)
+                output = run_cmd_no_fail(ssh_cmd, exc_type=RuntimeError, combine_output=True)
             except RuntimeError as e:
                 output = str(e)
                 raise
@@ -135,14 +136,23 @@ class GatherAllData(object):
 
         success = True
 
-        with threading3.ThreadPoolExecutor(max_workers=len(self._machines)) as executor:
-            future_to_machine = {executor.submit(self.run_on_machine, machine): machine for machine in self._machines}
-            for future in threading3.as_completed(future_to_machine):
-                machine = future_to_machine[future]
-                try:
-                    future.result()
-                except RuntimeError:
-                    print('{} failed'.format(machine))
-                    success = False
+        if len(self._machines) > 1:
+            with threading3.ThreadPoolExecutor(max_workers=len(self._machines)) as executor:
+                future_to_machine = {executor.submit(self.run_on_machine, machine): machine for machine in self._machines}
+                for future in threading3.as_completed(future_to_machine):
+                    machine = future_to_machine[future]
+                    try:
+                        future.result()
+                    except RuntimeError:
+                        print('{} failed'.format(machine))
+                        success = False
+
+        else:
+            machine = self._machines[0]
+            try:
+                self.run_on_machine(machine)
+            except RuntimeError:
+                print('{} failed'.format(machine))
+                success = False
 
         return success

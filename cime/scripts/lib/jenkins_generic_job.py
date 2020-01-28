@@ -2,7 +2,7 @@ import CIME.wait_for_tests
 from CIME.utils import expect, run_cmd_no_fail
 from CIME.case import Case
 
-import os, shutil, glob, signal, logging, threading, sys, re, tarfile
+import os, shutil, glob, signal, logging, threading, sys, re, tarfile, time
 
 ##############################################################################
 def cleanup_queue(test_root, test_id):
@@ -75,6 +75,7 @@ def archive_old_test_data(machine, mach_comp, test_id_root, scratch_root, test_r
 
             for the_dir, target_area in [(exeroot, "old_builds"), (rundir, "old_runs"), (archdir, "old_archives"), (old_case, "old_cases")]:
                 if os.path.exists(the_dir):
+                    start_time = time.time()
                     logging.info("TEST ARCHIVER:   archiving {} to {}".format(the_dir, os.path.join(old_test_archive, target_area)))
                     if not os.path.exists(os.path.join(old_test_archive, target_area)):
                         os.mkdir(os.path.join(old_test_archive, target_area))
@@ -89,6 +90,9 @@ def archive_old_test_data(machine, mach_comp, test_id_root, scratch_root, test_r
                     parent_dir = os.path.dirname(the_dir)
                     if not os.listdir(parent_dir) or os.listdir(parent_dir) == ["case2_output_root"]:
                         shutil.rmtree(parent_dir)
+
+                    end_time = time.time()
+                    logging.info("TEST ARCHIVER:   archiving {} took {} seconds".format(the_dir, int(end_time - start_time)))
 
     # Check size of archive
     bytes_of_old_test_data = int(run_cmd_no_fail("du -sb {}".format(old_test_archive)).split()[0])

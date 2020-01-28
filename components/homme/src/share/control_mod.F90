@@ -34,11 +34,11 @@ module control_mod
   ! rather than just those that couple to the dynamics at the dynamical time
   ! step. These latter are 'active' tracers, in contrast to 'passive' tracers
   ! that directly couple only to the physics.
-  integer, public  :: semi_lagrange_hv_q = 0
+  integer, public  :: semi_lagrange_hv_q = 1
   ! If >= 1, then the SL algorithm may choose a nearby point inside the element
   ! halo available to it if the actual point is outside the halo. This is done
   ! in levels <= this parameter.
-  integer, public :: semi_lagrange_nearest_point_lev = 0
+  integer, public :: semi_lagrange_nearest_point_lev = 256
 
 ! flag used by preqx, theta-l and theta-c models
 ! should be renamed to "hydrostatic_mode"
@@ -147,7 +147,7 @@ module control_mod
   real (kind=real_kind), public :: nu_div  = -1               ! viscsoity (momentum equ, div component)
   real (kind=real_kind), public :: nu_s    = -1               ! default = nu   T equ. viscosity
   real (kind=real_kind), public :: nu_q    = -1               ! default = nu   tracer viscosity
-  real (kind=real_kind), public :: nu_p    = 0.0D5            ! default = 0    ps equ. viscosity
+  real (kind=real_kind), public :: nu_p    = -1               ! default = nu   ps equ. viscosity
   real (kind=real_kind), public :: nu_top  = 0.0D5            ! top-of-the-model viscosity
 
   integer, public :: hypervis_subcycle=1                      ! number of subcycles for hyper viscsosity timestep

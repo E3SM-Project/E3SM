@@ -39,15 +39,18 @@ TEST_CASE("p3-shoc-coupled", "") {
   ParameterList ad_params("Atmosphere Driver");
   auto& proc_params = ad_params.sublist("Atmosphere Processes");
 
-  proc_params.set("Number of Entries",2);
+  proc_params.set("Number of Entries",3);
   proc_params.set<std::string>("Schedule Type","Sequential");
 
-  auto& p0 = proc_params.sublist("Process 1");
-  p0.set<std::string>("Process Name", "P3");
+  auto& p0 = proc_params.sublist("Process 0");
+  p0.set<std::string>("Process Name", "SA");
   p0.set<std::string>("Grid","Physics");
-  auto& p1 = proc_params.sublist("Process 0");
-  p1.set<std::string>("Process Name", "SHOC");
-  p0.set<std::string>("Grid","Physics");
+  auto& p1 = proc_params.sublist("Process 1");
+  p1.set<std::string>("Process Name", "P3");
+  p1.set<std::string>("Grid","Physics");
+  auto& p2 = proc_params.sublist("Process 2");
+  p2.set<std::string>("Process Name", "SHOC");
+  p2.set<std::string>("Grid","Physics");
 
   auto& gm_params = ad_params.sublist("Grids Manager");
   gm_params.set<std::string>("Type","User Provided");
@@ -57,6 +60,7 @@ TEST_CASE("p3-shoc-coupled", "") {
   // which rely on factory for process creation. The initialize method of the AD does that.
   // While we're at it, check that the case insensitive key of the factory works.
   auto& proc_factory = AtmosphereProcessFactory::instance();
+  proc_factory.register_product("SA",&create_atmosphere_process<P3StandAloneInit>);
   proc_factory.register_product("P3",&create_atmosphere_process<P3Microphysics>);
   proc_factory.register_product("SHOC",&create_atmosphere_process<SHOCMacrophysics>);
 

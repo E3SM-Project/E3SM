@@ -801,6 +801,7 @@ end subroutine micro_p3_readnl
   !================================================================================================
   subroutine micro_p3_tend(state, ptend, dtime, pbuf)
 
+    use time_manager,   only: get_nstep
     use cam_history,    only: outfld
     use physics_buffer, only: pbuf_col_type_index
     use micro_p3,       only: p3_main
@@ -1088,12 +1089,7 @@ end subroutine micro_p3_readnl
     !yet. E3SM has a handy function for deciding if this is the first step, so 
     !we hack "it" with "is_first_step()" for now. Eventually, we should replace
     !"it" with a logical.
-
-    if (is_first_step()) then
-       it=1
-    else
-       it=999 !integer
-    end if
+    it = get_nstep()
 
     ! MAKE LOCAL COPIES OF VARS MODIFIED BY P3
     !==============
@@ -1118,9 +1114,9 @@ end subroutine micro_p3_readnl
     kte     = pver
     pres    = state%pmid(:,:)
     ! Initialize the raidation dependent variables.
-    mu      = mucon
-    lambdac = (mucon + 1._rtype)/dcon
-    dei     = deicon
+    mu      = 0.0_rtype !mucon
+    lambdac = 0.0_rtype !(mucon + 1._rtype)/dcon
+    dei     = 50.0_rtype !deicon
     ! Determine the cloud fraction and precip cover
     icldm(:,:) = 1.0_rtype
     lcldm(:,:) = 1.0_rtype

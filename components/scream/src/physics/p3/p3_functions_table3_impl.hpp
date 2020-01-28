@@ -1,10 +1,7 @@
 #ifndef P3_FUNCTIONS_TABLE3_IMPL_HPP
 #define P3_FUNCTIONS_TABLE3_IMPL_HPP
 
-#include <fstream>
-
-#include "p3_functions.hpp"
-#include "p3_constants.hpp"
+#include "p3_functions.hpp" // for ETI only but harmless for GPU
 
 namespace scream {
 namespace p3 {
@@ -20,15 +17,15 @@ void Functions<S,D>
 ::lookup (const Smask& qr_gt_small, const Spack& mu_r,
           const Spack& lamr, Table3& t) {
   // find location in scaled mean size space
-  const auto dum1 = (mu_r+1.) / lamr;
-  const auto dum1_lt = qr_gt_small && (dum1 <= 195.e-6);
+  const auto dum1 = (mu_r+1) / lamr;
+  const auto dum1_lt = qr_gt_small && (dum1 <= sp(195.e-6));
   t.dumii = 1;
   if (dum1_lt.any()) {
     scream_masked_loop(dum1_lt, s) {
-      const auto inv_dum3 = 0.1;
-      auto rdumii = (dum1[s]*1.e6+5.)*inv_dum3;
-      rdumii = util::max<Scalar>(rdumii,  1.);
-      rdumii = util::min<Scalar>(rdumii, 20.);
+      const auto inv_dum3 = sp(0.1);
+      auto rdumii = (dum1[s] * sp(1.e6) + 5) * inv_dum3;
+      rdumii = util::max<Scalar>(rdumii,  1);
+      rdumii = util::min<Scalar>(rdumii, 20);
       Int dumii = rdumii;
       dumii = util::max(dumii,  1);
       dumii = util::min(dumii, 20);
@@ -39,10 +36,10 @@ void Functions<S,D>
   const auto dum1_gte = qr_gt_small && ! dum1_lt;
   if (dum1_gte.any()) {
     scream_masked_loop(dum1_gte, s) {
-      const auto inv_dum3 = C::THIRD*0.1;
-      auto rdumii = (dum1[s]*1.e+6-195.)*inv_dum3 + 20.;
-      rdumii = util::max<Scalar>(rdumii, 20.);
-      rdumii = util::min<Scalar>(rdumii,300.);
+      const auto inv_dum3 = C::THIRD * sp(0.1);
+      auto rdumii = (dum1[s] * sp(1.e+6) - 195) * inv_dum3 + 20;
+      rdumii = util::max<Scalar>(rdumii, 20);
+      rdumii = util::min<Scalar>(rdumii,300);
       Int dumii = rdumii;
       dumii = util::max(dumii, 20);
       dumii = util::min(dumii,299);
@@ -53,12 +50,12 @@ void Functions<S,D>
 
   // find location in mu_r space
   {
-    auto rdumjj = mu_r+1.;
-    rdumjj = max(rdumjj,1.);
-    rdumjj = min(rdumjj,10.);
+    auto rdumjj = mu_r + 1;
+    rdumjj = max(rdumjj, 1);
+    rdumjj = min(rdumjj, 10);
     IntSmallPack dumjj(rdumjj);
-    dumjj  = max(dumjj,1);
-    dumjj  = min(dumjj,9);
+    dumjj  = max(dumjj, 1);
+    dumjj  = min(dumjj, 9);
     t.rdumjj.set(qr_gt_small, rdumjj);
     t.dumjj = 1;
     t.dumjj.set(qr_gt_small, dumjj);
@@ -101,21 +98,16 @@ void Functions<S,D>
   const auto mu_table_h  = Kokkos::create_mirror_view(mu_r_table_d);
   const auto dnu_table_h = Kokkos::create_mirror_view(dnu_table_d);
 
-  scream_require(G::VN_TABLE.size()    == vn_table_h.extent(0) && G::VN_TABLE.size() > 0);
-  scream_require(G::VN_TABLE[0].size() == vn_table_h.extent(1));
-  scream_require(G::VM_TABLE.size()    == vm_table_h.extent(0) && G::VM_TABLE.size() > 0);
-  scream_require(G::VM_TABLE[0].size() == vm_table_h.extent(1));
-  scream_require(G::MU_R_TABLE.size()  == mu_table_h.extent(0));
-
-  for (size_t i = 0; i < vn_table_h.extent(0); ++i) {
-    for (size_t k = 0; k < vn_table_h.extent(1); ++k) {
-      vn_table_h(i, k) = G::VN_TABLE[i][k];
-      vm_table_h(i, k) = G::VM_TABLE[i][k];
+  // Need 2d-tables with fortran-style layout
+  using P3F         = Functions<Real, HostDevice>;
+  using LHostTable2 = typename P3F::KT::template lview<Real[C::VTABLE_DIM0][C::VTABLE_DIM1]>;
+  LHostTable2 vn_table_lh("vn_table_lh"), vm_table_lh("vm_table_lh");
+  init_tables_from_f90_c(vn_table_lh.data(), vm_table_lh.data(), mu_table_h.data());
+  for (int i = 0; i < C::VTABLE_DIM0; ++i) {
+    for (int j = 0; j < C::VTABLE_DIM1; ++j) {
+      vn_table_h(i, j) = vn_table_lh(i, j);
+      vm_table_h(i, j) = vm_table_lh(i, j);
     }
-  }
-
-  for (size_t i = 0; i < mu_table_h.extent(0); ++i) {
-    mu_table_h(i) = G::MU_R_TABLE[i];
   }
 
   dnu_table_h(0)  =  0.000;

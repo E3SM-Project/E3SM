@@ -6,6 +6,7 @@
 #include "share/scream_pack.hpp"
 #include "physics/p3/p3_functions.hpp"
 #include "physics/p3/p3_functions_f90.hpp"
+#include "physics/p3/p3_f90.hpp"
 #include "share/util/scream_kokkos_utils.hpp"
 
 #include "p3_unit_tests_common.hpp"
@@ -121,13 +122,14 @@ struct UnitWrap::UnitTest<D>::TestTable3 {
     //   In detail, for a 10x mesh refinement, a good slope growth rate is right
     // around 1, and a bad one is is roughly 10. We set the threshold at 1.1.
     const auto check_growth = [&] (const std::string& label, const Scalar& growth) {
-      if (growth > 1.1) {
+      bool bad_growth = growth > 1.1;
+      if (bad_growth) {
         std::cout << "Table3 FAIL: Slopes in the " << label << " direction are "
         << slopes[0] << " and " << slopes[1]
         << ", which grows by factor " << growth
         << ". Near 1 is good; near 10 is bad.\n";
-        REQUIRE(false);
       }
+      REQUIRE(!bad_growth);
     };
     check_growth("mu_r", slopes[1]/slopes[0]);
 
@@ -169,19 +171,8 @@ namespace {
 
 TEST_CASE("p3_tables", "[p3_functions]")
 {
-  // Populate tables with contrived values, don't need realistic values
-  // for unit testing
-  using Globals = scream::p3::Globals<scream::Real>;
-  for (size_t i = 0; i < Globals::VN_TABLE.size(); ++i) {
-    for (size_t j = 0; j < Globals::VN_TABLE[0].size(); ++j) {
-      Globals::VN_TABLE[i][j] = 1 + i + j;
-      Globals::VM_TABLE[i][j] = 1 + i * j;
-    }
-  }
+  scream::p3::p3_init(true); // need fortran table data
 
-  for (size_t i = 0; i < Globals::MU_R_TABLE.size(); ++i) {
-    Globals::MU_R_TABLE[i] = 1 + i;
-  }
   scream::p3::unit_test::UnitWrap::UnitTest<scream::DefaultDevice>::TestTable3::run();
 }
 

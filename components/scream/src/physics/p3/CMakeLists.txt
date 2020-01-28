@@ -18,14 +18,13 @@ set(P3_SRCS
   scream_p3_interface.F90
 )
 
-list(APPEND P3_SRCS ${share_sources})
-
 # Add ETI source files if not on CUDA
 if (NOT CUDA_BUILD)
   list(APPEND P3_SRCS
     p3_functions_upwind.cpp
     p3_functions_cloud_sed.cpp
     p3_functions_ice_sed.cpp
+    p3_functions_rain_sed.cpp
     p3_functions_table3.cpp
     p3_functions_table_ice.cpp
     p3_functions_dsd2.cpp
@@ -40,6 +39,8 @@ add_library(p3 ${P3_SRCS})
 target_include_directories(p3 PUBLIC ${SCREAM_INCLUDE_DIRS} ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
 set_target_properties(p3 PROPERTIES
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-# target_link_libraries(p3 scream_share ${SCREAM_TPL_LIBRARIES})
+target_link_libraries(p3 scream_share ${SCREAM_TPL_LIBRARIES})
 
-add_subdirectory(tests)
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()

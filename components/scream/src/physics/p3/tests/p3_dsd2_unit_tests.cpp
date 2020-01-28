@@ -60,7 +60,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     };
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       get_cloud_dsd2(gcdd[i]);
     }
 
@@ -146,7 +146,7 @@ struct UnitWrap::UnitTest<D>::TestDsd2 {
     };
 
     // Get data from fortran
-    for (Int i = 0; i < max_pack_size; ++i) {
+    for (Int i = 0; i < Spack::n; ++i) {
       get_rain_dsd2(grdd[i]);
     }
 
