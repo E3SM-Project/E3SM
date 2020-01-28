@@ -63,11 +63,11 @@ fcLandCoverage = fcLandCoverage.difference(fcSouthMask)
 # Add "land" coverage from either the full ice sheet or just the grounded
 # part
 if options.with_cavities:
-    fcAntarcticLand = gf.read(componentName='bedmap2', objectType='region',
+    fcAntarcticLand = gf.read(componentName='bedmachine', objectType='region',
                               featureNames=['AntarcticGroundedIceCoverage'])
 
 else:
-    fcAntarcticLand = gf.read(componentName='bedmap2', objectType='region',
+    fcAntarcticLand = gf.read(componentName='bedmachine', objectType='region',
                               featureNames=['AntarcticIceCoverage'])
 
 fcLandCoverage.merge(fcAntarcticLand)
