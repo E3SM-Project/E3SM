@@ -2702,7 +2702,11 @@
 		<var name="slopeTriadDown" type="real" dimensions="nVertLevels TWO nEdges Time" units="non-dimensional"
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
-		/>
+    />
+    <var name="slopeTaperEdge" type="real" dimensions="nVertLevels nEdges Time" units="non-dimensional"
+       description="tapering of Redi mixing at cell edges"
+       packages="forwardMode;analysisMode"
+    />
 		<var name="k33" type="real" dimensions="nVertLevelsP1 nCells Time" units="m^2 s^{-1}"
 			 description="The (3,3) entry of the Redi diffusion tensor. Added to the model vertical diffusion. Defined at the top of cell k"
 			 packages="forwardMode;analysisMode"
