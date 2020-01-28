@@ -100,6 +100,18 @@
   integer, parameter :: max_gas = nsoa + 1
   ! the +4 in max_aer are dst, ncl, so4, mom
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4
+!LXu@08/2018+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+  integer, parameter :: max_gas = nsoa + 1
+  ! the +4 in max_aer are dst, ncl, so4, mom(4), pbb(phosphorus from biomass burning) (+1)
+  integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 1
+!LXu@08/2018---
+!LXu@06/2019+++
+#elif ( defined MODAL_AERO_4MODE_MOM_BIOP )
+  integer, parameter :: max_gas = nsoa + 1
+  ! the +4 in max_aer are dst, ncl, so4, mom(4), biop + unbiop(phosphorus) (+2)
+  integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 2
+!LXu@06/2019---
 #elif ( ( defined MODAL_AERO_7MODE ) && ( defined MOSAIC_SPECIES ) )
   integer, parameter :: max_gas = nsoa + 4
   ! the +8 in max_aer are dst, ncl(=na), so4, no3, cl, nh4, ca, co3 
@@ -118,7 +130,9 @@
   integer, parameter :: max_aer = nsoa + npoa + nbc + 4 + 5
 #endif
 
-#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+!LXu@08/2018
+!#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ))
+#if (( defined MODAL_AERO_8MODE ) || ( defined MODAL_AERO_4MODE ) || ( defined MODAL_AERO_4MODE_MOM ) || ( defined MODAL_AERO_4MODE_MOM_PFIRE)  || ( defined MODAL_AERO_4MODE_MOM_BIOP))
   integer, parameter :: ntot_amode_extd = ntot_amode
 #else
   integer, parameter :: ntot_amode_extd = ntot_amode + 1
@@ -163,6 +177,12 @@
   integer :: iaer_bc, iaer_dst, iaer_ncl, iaer_nh4, iaer_pom, iaer_soa, iaer_so4, &
              iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc, iaer_mom, &
              iaer_no3, iaer_cl, iaer_ca, iaer_co3
+!LXu@08/2018+++
+  integer :: iaer_pbb
+!LXu@08/2018---
+!LXu@06/2019+++
+  integer :: iaer_sp, iaer_isp
+!LXu@06/2019---
   integer :: i_agepair_pca, i_agepair_macc, i_agepair_mait
   integer :: lmap_gas(max_gas)
   integer :: lmap_aer(max_aer,max_mode), lmapbb_aer(max_aer,max_mode), &
@@ -3009,7 +3029,6 @@ do_newnuc_if_block50: &
       end subroutine mosaic_gasaerexch_1subarea_intr
 #endif
 
-
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
       subroutine mam_gasaerexch_1subarea(                           &
@@ -5195,6 +5214,11 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       iaer_mpoly = 0 ; iaer_mprot = 0 
       iaer_mlip  = 0 ; iaer_mhum = 0 
       iaer_mproc = 0 ; iaer_mom = 0
+!LXu@08/2018
+      iaer_pbb = 0
+!LXu@06/2019
+      iaer_sp = 0
+      iaer_isp = 0
 
       if (nsoa == 1) then
          name_gas(1) = 'SOAG'
@@ -5293,11 +5317,29 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
       iaer_co3 = naer
 #endif
 
-#if ( defined MODAL_AERO_4MODE_MOM )
+#if ( defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
       naer = naer + 1
       name_aerpfx(naer) = 'mom'
       iaer_mom = naer
 #endif
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+      naer = naer + 1
+      name_aerpfx(naer) = 'pbb'
+      iaer_pbb = naer
+#endif
+
+!LXu@06/2019+++
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP )
+      naer = naer + 1
+      name_aerpfx(naer) = 'sp'
+      iaer_sp = naer
+
+      naer = naer + 1
+      name_aerpfx(naer) = 'isp'
+      iaer_isp = naer
+#endif
+!LXu@06/2019---
 
       if (ntot_amode==9) then
          naer = naer + 1
@@ -5638,6 +5680,18 @@ dr_so4_monolayers_pcage = n_so4_monolayers_pcage * 4.76e-10
          write(iulog,'(/a56,10i5)') &
            'iaer_mom, ...mpoly, ...mprot, ...mlip, ...mhum, ...mproc', &
             iaer_mom, iaer_mpoly, iaer_mprot, iaer_mlip, iaer_mhum, iaer_mproc
+!LXu@08/2018
+#if ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+         write(iulog,'(/a56,10i5)') &
+           'iaer_pbb', &
+            iaer_pbb
+#endif	    
+!LXu@06/2019
+#if ( defined MODAL_AERO_4MODE_MOM_BIOP)
+         write(iulog,'(/a56,10i5)') &
+           'iaer_sp, ...isp', &
+            iaer_sp, iaer_isp
+#endif
          write(iulog,'(/a)') &
            'fac_eqvso4hyg_aer(1:naer)'
          write(iulog,'(4(a,1pe10.3,3x))') &
@@ -6057,5 +6111,3 @@ implicit none
 !----------------------------------------------------------------------
 
 end module modal_aero_amicphys
-
-

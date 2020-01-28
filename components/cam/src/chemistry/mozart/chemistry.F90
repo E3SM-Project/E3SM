@@ -410,9 +410,13 @@ end function chem_is
     use tracer_srcs,      only: tracer_srcs_defaultopts, tracer_srcs_setopts
     use aero_model,       only: aero_model_readnl
     use dust_model,       only: dust_readnl
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+!LXu@08/2018+++
+!#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+!#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
     use seasalt_model,    only: ocean_data_readnl
 #endif
+!LXu@08/2018---
     use gas_wetdep_opts,  only: gas_wetdep_readnl
 
 #ifdef WACCM_MOZART
@@ -809,9 +813,13 @@ end function chem_is
 
    call aero_model_readnl(nlfile)
    call dust_readnl(nlfile)     
-#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+!LXu@08/2018+++
+!#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM)
+!#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE)
+#if (defined MODAL_AERO_9MODE || defined MODAL_AERO_4MODE_MOM || defined MODAL_AERO_4MODE_MOM_PFIRE || defined MODAL_AERO_4MODE_MOM_BIOP)
    call ocean_data_readnl(nlfile)
 #endif
+!LXu@08/2018---
 !
    call gas_wetdep_readnl(nlfile)
 

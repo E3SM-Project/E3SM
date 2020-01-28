@@ -12,14 +12,28 @@ module soil_erod_mod
   public :: soil_erod_init
   public :: soil_erodibility
   public :: soil_erod_fact
+!LXu@06/2019+++
+#if  ( defined MODAL_AERO_4MODE_MOM_BIOP)
+  public ::  frac_sol_p_dust
+  public ::  frac_insol_p_dust
+#endif
+!LXu@06/2019---
+
+!LXu@06/2019+++
+#if  ( defined MODAL_AERO_4MODE_MOM_BIOP)
+  real(r8), allocatable ::  frac_sol_p_dust (:,:)  ! fraction of soluble P in dust
+  real(r8), allocatable ::  frac_insol_p_dust (:,:)  ! fraction of insoluble P in dust
+#endif
+!LXu@06/2019---
 
   real(r8), allocatable ::  soil_erodibility(:,:)  ! soil erodibility factor
+
   real(r8) :: soil_erod_fact                       ! tuning parameter for dust emissions
 
 contains
 
-  !=============================================================================
-  !=============================================================================
+!=============================================================================
+!=============================================================================
   subroutine soil_erod_init( dust_emis_fact, soil_erod_file )
     use interpolate_data, only: lininterp_init, lininterp, lininterp_finish, interp_type
     use ppgrid,           only: begchunk, endchunk, pcols
@@ -35,6 +49,15 @@ contains
     real(r8), allocatable ::  soil_erodibility_in(:,:)  ! temporary input array
     real(r8), allocatable :: dst_lons(:)
     real(r8), allocatable :: dst_lats(:)
+
+!LXu@06/2019+++
+#if  ( defined MODAL_AERO_4MODE_MOM_BIOP)
+    real(r8), allocatable ::  frac_sol_p_dust_in(:,:)  ! temporary input array
+    real(r8), allocatable ::  frac_insol_p_dust_in(:,:)  ! temporary input array
+    logical :: read_mam_sp = .false.
+#endif
+!LXu@06/2019---
+
     character(len=cl)     :: infile
     integer :: did, vid, nlat, nlon
     type(file_desc_t) :: ncid
@@ -69,6 +92,16 @@ contains
     allocate(dst_lons(nlon))
     allocate(dst_lats(nlat))
     allocate(soil_erodibility_in(nlon,nlat))
+!LXu@06/2019+++
+!if ( phos_dust_active ) then
+#if  ( defined MODAL_AERO_4MODE_MOM_BIOP)
+!if (read_mam_sp) then
+    allocate(frac_sol_p_dust_in(nlon,nlat))
+    allocate(frac_insol_p_dust_in(nlon,nlat))
+!end if
+#endif
+!end if
+!LXu@06/2019---
 
     ierr = pio_inq_varid( ncid, 'lon', vid )
     ierr = pio_get_var( ncid, vid, dst_lons  )
@@ -78,7 +111,28 @@ contains
 
     ierr = pio_inq_varid( ncid, 'mbl_bsn_fct_geo', vid )
     ierr = pio_get_var( ncid, vid, soil_erodibility_in )
+    if (masterproc) then
+       write(iulog,*) 'soil_erodibility_in = ', soil_erodibility_in(50,33:63)
+    end if
+!    exit
+!LXu@06/2019+++
+!if ( phos_dust_active ) then
+#if  ( defined MODAL_AERO_4MODE_MOM_BIOP)
+!if (read_mam_sp) then
+! mineralogy...
+    ierr = pio_inq_varid( ncid, 'frac_sol_p', vid )            
+    ierr = pio_get_var( ncid, vid, frac_sol_p_dust_in )
 
+    ierr = pio_inq_varid( ncid, 'frac_insol_p', vid )            
+    ierr = pio_get_var( ncid, vid, frac_insol_p_dust_in )            
+    if (masterproc) then
+       write(iulog,*) 'frac_sol_p = ', frac_sol_p_dust_in(50,33:63)
+       write(iulog,*) 'frac_insol_p_dust_in = ', frac_insol_p_dust_in(50,33:63)
+    end if
+!end if    
+#endif
+!end if
+!LXu@06/2019---
     !-----------------------------------------------------------------------
     !     	... convert to radians and setup regridding
     !-----------------------------------------------------------------------
@@ -90,6 +144,29 @@ contains
        write(iulog,*) 'soil_erod_init: failed to allocate soil_erodibility_in, ierr = ',ierr
        call endrun('soil_erod_init: failed to allocate soil_erodibility_in')
     end if
+!    soil_erodibility(pcols, begchunk:endchunk) = 0.0_r8
+    
+!LXu@06/2019+++
+!if ( phos_dust_active ) then
+#if  ( defined MODAL_AERO_4MODE_MOM_BIOP)
+!if (read_mam_sp) then
+   allocate( frac_sol_p_dust(pcols,begchunk:endchunk), stat=ierr )
+    if( ierr /= 0 ) then
+       write(iulog,*) 'soil_erod_init: failed to allocate frac_sol_p_dust_in, ierr = ',ierr
+       call endrun('soil_erod_init: failed to allocate frac_sol_p_dust_in')
+    end if
+
+   allocate( frac_insol_p_dust(pcols,begchunk:endchunk), stat=ierr )
+    if( ierr /= 0 ) then
+       write(iulog,*) 'soil_erod_init: failed to allocate frac_insol_p_dust_in, ierr = ',ierr
+       call endrun('soil_erod_init: failed to allocate frac_insol_p_dust_in')
+    end if
+!      frac_sol_p_dust(pcols, begchunk:endchunk) = 0.0_r8
+!      frac_insol_p_dust(pcols,begchunk:endchunk ) = 0.0_r8
+!end if
+#endif
+!end if
+!LXu@06/2019---
 
     !-----------------------------------------------------------------------
     !     	... regrid ..
@@ -104,6 +181,16 @@ contains
 
        call lininterp(soil_erodibility_in(:,:), nlon,nlat , soil_erodibility(:,c), ncols, lon_wgts,lat_wgts)
 
+!LXu@06/2019+++
+#if  ( defined MODAL_AERO_4MODE_MOM_BIOP )
+!if (read_mam_sp) then
+       call lininterp(frac_sol_p_dust_in(:,:),    nlon, nlat, frac_sol_p_dust(:,c),    ncols, lon_wgts, lat_wgts)
+       call lininterp(frac_insol_p_dust_in(:,:),  nlon, nlat, frac_insol_p_dust(:,c),    ncols, lon_wgts, lat_wgts)
+!end if
+#endif
+!end if
+!LXu@06/2019---
+
        call lininterp_finish(lat_wgts)
        call lininterp_finish(lon_wgts)
     end do
@@ -112,7 +199,31 @@ contains
        write(iulog,*) 'soil_erod_init: failed to deallocate soil_erodibility_in, ierr = ',ierr
        call endrun('soil_erod_init: failed to deallocate soil_erodibility_in')
     end if
+    if (masterproc) then
+       write(iulog,*) 'soil_erodibility_col_data = ', soil_erodibility(:,begchunk)
+    end if
 
+!LXu@06/2019+++
+#if  ( defined MODAL_AERO_4MODE_MOM_BIOP)
+!if (read_mam_sp) then
+    deallocate( frac_sol_p_dust_in, stat=ierr )
+    if( ierr /= 0 ) then
+       write(iulog,*) 'dust_initialize: failed to deallocate frac_sol_p_dust_in, ierr = ',ierr
+       call endrun
+    end if
+
+    deallocate( frac_insol_p_dust_in, stat=ierr )
+    if( ierr /= 0 ) then
+       write(iulog,*) 'dust_initialize: failed to deallocate frac_insol_p_dust_in, ierr = ',ierr
+       call endrun
+    end if
+    if (masterproc) then
+       write(iulog,*) 'frac_sol_p_dust_col_data = ', frac_sol_p_dust(:,begchunk)
+       write(iulog,*) 'frac_insol_p_dust_col_data = ', frac_insol_p_dust(:,begchunk)
+    end if
+!end if
+#endif
+!LXu@06/2019---
     deallocate( dst_lats )
     deallocate( dst_lons )
 

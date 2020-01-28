@@ -335,6 +335,8 @@
 <seasalt_emis_scale chem="linoz_mam4_resus_soag"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus_mom"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="linoz_mam4_resus_mom_soag"> 1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="linoz_mam4_resus_mom_soag_pfire"> 1.35 </seasalt_emis_scale>
+<seasalt_emis_scale chem="linoz_mam4_resus_mom_soag_biop"> 1.35 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam7">         1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_strat_mam7">   1.62 </seasalt_emis_scale>
 <seasalt_emis_scale chem="trop_mam9">         1.62 </seasalt_emis_scale>
@@ -631,6 +633,7 @@
 <so4_vrt_emis_file >atm/cam/chem/trop_mozart_aero/emis/aerocom_SO4_vertical_2000.c080807.nc</so4_vrt_emis_file>
 
 <!-- modal aerosol emissions -->
+<!--pbb_a4_emis_file  ver="mam">atm/cam/chem/trop_mozart_aero/emis/PFireFlux_pbb_a4_surf_2000_c180810.nc</pbb_a4_emis_file-->
 <nh3_emis_file     ver="mam">atm/cam/chem/trop_mozart_aero/emis/emis_NH3_2000_c111014.nc</nh3_emis_file>
 <dms_emis_file	   ver="mam">atm/cam/chem/trop_mozart_aero/emis/aerocom_mam3_dms_surf_2000_c120315.nc</dms_emis_file>
 <so2_emis_file	   ver="mam">atm/cam/chem/trop_mozart_aero/emis/ar5_mam3_so2_surf_2000_c120315.nc</so2_emis_file>
@@ -704,6 +707,8 @@
 <drydep_method chem="linoz_mam4_resus_soag">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_mom">xactive_atm</drydep_method>
 <drydep_method chem="linoz_mam4_resus_mom_soag">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam4_resus_mom_soag_pfire">xactive_atm</drydep_method>
+<drydep_method chem="linoz_mam4_resus_mom_soag_biop">xactive_atm</drydep_method>
 <drydep_method chem="waccm_mozart_mam3">xactive_atm</drydep_method>
 
 <!-- Dry Dep surface data file needed by prognostic MAM on unstructured grid only. -->

@@ -36,7 +36,9 @@ integer,           parameter :: unset_int = huge(1)
 ! Namelist variables:
 character(len=16) :: cam_physpkg          = unset_str  ! CAM physics package [cam3 | cam4 | cam5 |
                                                        !   ideal | adiabatic].
-character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [waccm_mozart | 
+!LXu@08/2018
+!character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [waccm_mozart | 
+character(len=36) :: cam_chempkg          = unset_str  ! CAM chemistry package [waccm_mozart | 
                                                        !  waccm_ghg | trop_mozart | trop_ghg | 
                                                        !  trop_bam | trop_mam3 | trop_mam4 | 
                                                        !  trop_mam4_resus | trop_mam4_resus_soag |
@@ -46,6 +48,8 @@ character(len=32) :: cam_chempkg          = unset_str  ! CAM chemistry package [
                                                        !  linoz_mam3 | linoz_mam4_resus |
                                                        !  linoz_mam4_resus_mom |
                                                        !  linoz_mam4_resus_mom_soag |
+                                                       !  linoz_mam4_resus_mom_soag_pfire |
+                                                       !  linoz_mam4_resus_mom_soag_biop |
                                                        !  super_fast_llnl | super_fast_llnl_mam3 | 
                                                        !  waccm_mozart_mam3 | none
 character(len=16) :: waccmx_opt           = unset_str  ! WACCMX run option [ionosphere | neutral | off
@@ -346,6 +350,8 @@ subroutine phys_ctl_readnl(nlfile)
       end if
    end if
 
+!LXu@08/2018
+!LXu@06/2019
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
    prog_modal_aero = (     cam_chempkg_is('trop_mam3') &
                       .or. cam_chempkg_is('trop_mam4') &
@@ -360,6 +366,8 @@ subroutine phys_ctl_readnl(nlfile)
                       .or. cam_chempkg_is('linoz_mam4_resus_soag') &
                       .or. cam_chempkg_is('linoz_mam4_resus_mom') &
                       .or. cam_chempkg_is('linoz_mam4_resus_mom_soag') &
+                      .or. cam_chempkg_is('linoz_mam4_resus_mom_soag_pfire') &
+                      .or. cam_chempkg_is('linoz_mam4_resus_mom_soag_biop') &
                       .or. cam_chempkg_is('super_fast_llnl_mam3') &
                       .or. cam_chempkg_is('trop_mozart_mam3') &
                       .or. cam_chempkg_is('trop_strat_mam3') &

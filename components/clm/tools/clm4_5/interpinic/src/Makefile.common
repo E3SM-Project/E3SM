@@ -30,11 +30,13 @@ RM = rm
 
 # Check for the netcdf library and include directories 
 ifeq ($(LIB_NETCDF),$(null))
-  LIB_NETCDF := /usr/local/lib
+#  LIB_NETCDF := /usr/local/lib
+  LIB_NETCDF := /opt/cray/pe/netcdf/4.4.1.1.6/CRAY/8.6/lib
 endif
 
 ifeq ($(INC_NETCDF),$(null))
-  INC_NETCDF := /usr/local/include
+#  INC_NETCDF := /usr/local/include
+  INC_NETCDF := /opt/cray/pe/netcdf/4.4.1.1.6/CRAY/8.6/include
 endif
 
 ifeq ($(MOD_NETCDF),$(null))
@@ -43,6 +45,7 @@ endif
 
 # Set user specified Fortran compiler
 ifneq ($(USER_FC),$(null))
+  USER_FC := gfortran
   FC := $(USER_FC)
 endif
 
@@ -190,8 +193,8 @@ ifeq ($(FC),ifort)
      FFLAGS    += -O2
   endif
   ifeq ($(SMP),TRUE)
-    FFLAGS    += -openmp
-    LDFLAGS   += -openmp
+    FFLAGS    += -qopenmp
+    LDFLAGS   += -qopenmp
   endif
 endif
 
@@ -248,7 +251,8 @@ ifeq ($(UNAMES),Linux)
   endif
   CPPDEF += -DLINUX -DFORTRANUNDERSCORE
   CFLAGS := $(CPPDEF)
-  LDFLAGS := $(shell $(LIB_NETCDF)/../bin/nf-config --flibs)
+#  LDFLAGS := $(shell $(LIB_NETCDF)/../bin/nf-config --flibs)
+  LDFLAGS += -L$(LIB_NETCDF) -lnetcdf -lnetcdff -lnetcdf_c++4
   FFLAGS =
 
   ifeq ($(FCTYP),pgf90)
@@ -307,9 +311,9 @@ ifeq ($(UNAMES),Linux)
        FFLAGS    += -O2
     endif
     ifeq ($(SMP),TRUE)
-      FFLAGS    += -openmp
-      CFLAGS    += -openmp
-      LDFLAGS   += -openmp
+      FFLAGS    += -qopenmp
+      CFLAGS    += -qopenmp
+      LDFLAGS   += -qopenmp
     endif
   endif
   FFLAGS += -c -I$(INC_NETCDF) $(CPPDEF) $(cpp_path)

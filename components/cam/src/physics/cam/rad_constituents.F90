@@ -227,6 +227,30 @@ character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
    'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
    's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
    'm-organic' /)
+!LXu@08/2018+++
+#elif ( defined MODAL_AERO_4MODE_MOM_PFIRE )
+integer, parameter :: num_mode_types = 8
+integer, parameter :: num_spec_types = 10
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   '  /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
+   'm-organic', 'p-fire   ' /)
+!LXu@08/2018+++
+!LXu@06/2019+++
+#elif ( defined MODAL_AERO_4MODE_MOM_BIOP )
+integer, parameter :: num_mode_types = 8
+integer, parameter :: num_spec_types = 11
+character(len=14), parameter :: mode_type_names(num_mode_types) = (/ &
+   'accum         ', 'aitken        ', 'primary_carbon', 'fine_seasalt  ', &
+   'fine_dust     ', 'coarse        ', 'coarse_seasalt', 'coarse_dust   '  /)
+character(len=9), parameter :: spec_type_names(num_spec_types) = (/ &
+   'sulfate  ', 'ammonium ', 'nitrate  ', 'p-organic', &
+   's-organic', 'black-c  ', 'seasalt  ', 'dust     ', &
+   'm-organic', 'p-bio    ', 'p-unbio  '/)
+!LXu@06/2019+++
 #else
 integer, parameter :: num_mode_types = 8
 integer, parameter :: num_spec_types = 8
@@ -1663,7 +1687,10 @@ subroutine parse_mode_defs(nl_in, modes)
    
       integer :: i
 
+      write(iulog,*) 'num_spec_types = ',num_spec_types
+      write(iulog,*) 'spec_type_names: ',spec_type_names
       do i = 1, num_spec_types
+         write(iulog,*) 'i = ',i,' string = ',str(ib:ie),' spec_type_names = ',spec_type_names(i)
          if (str(ib:ie) == trim(spec_type_names(i))) return
       end do
 
@@ -1681,7 +1708,7 @@ subroutine parse_mode_defs(nl_in, modes)
       integer :: i
 
       do i = 1, num_mode_types
-         if (str(ib:ie) == trim(mode_type_names(i))) return
+          if (str(ib:ie) == trim(mode_type_names(i))) return
       end do
 
       call parse_error('mode type not valid', str(ib:ie))
