@@ -173,6 +173,23 @@ class CoreParser(cdp.cdp_parser.CDPParser):
             required=False)
 
         self.add_argument(
+            '--plot_plevs',
+            dest='plot_plevs',
+            help='plot specified plevs',
+            action='store_const',
+            const=True,
+            required=False)
+
+        self.add_argument(
+            '--plot_log_plevs',
+            dest='plot_log_plevs',
+            help='plot plevs on log-scale',
+            action='store_const',
+            const=True,
+            required=False)
+
+
+        self.add_argument(
             '-s', '--seasons',
             nargs='+',
             dest='seasons',
