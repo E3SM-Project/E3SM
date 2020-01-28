@@ -213,6 +213,7 @@ module cime_comp_mod
   private :: cime_run_lnd_setup_send
   private :: cime_run_lnd_recv_post
   private :: cime_run_glc_setup_send
+  private :: cime_run_glc_accum_avg
   private :: cime_run_glc_recv_post
   private :: cime_run_rof_setup_send
   private :: cime_run_rof_recv_post
@@ -2331,6 +2332,7 @@ contains
     type(ESMF_Time)       :: etime_curr           ! Current model time
     real(r8)              :: tbnds1_offset        ! Time offset for call to seq_hist_writeaux
     logical               :: lnd2glc_averaged_now ! Whether lnd2glc averages were taken this timestep
+    logical               :: prep_glc_accum_avg_called ! Whether prep_glc_accum_avg has been called this timestep
 
 101 format( A, i10.8, i8, 12A, A, F8.2, A, F8.2 )
 102 format( A, i10.8, i8, A, 8L3 )
@@ -2415,16 +2417,19 @@ contains
        ! Does the driver need to pause?
        drv_pause = pause_alarm .and. seq_timemgr_pause_component_active(drv_index)
 
-       if (glc_prognostic) then
+       if (glc_prognostic .or. do_hist_l2x1yrg) then
           ! Is it time to average fields to pass to glc?
           !
           ! Note that the glcrun_avg_alarm just controls what is passed to glc in terms
           ! of averaged fields - it does NOT control when glc is called currently -
           ! glc will be called on the glcrun_alarm setting - but it might not be passed relevant
           ! info if the time averaging period to accumulate information passed to glc is greater
-          ! than the glcrun interval
+          ! than the glcrun interval.
+          !
+          ! Note also that we need to set glcrun_avg_alarm even if glc_prognostic is
+          ! false, if do_hist_l2x1yrg is set, so that we have valid cpl hist fields
           glcrun_avg_alarm = seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_glcrun_avg)
-          if (glcrun_avg_alarm .and. .not. glcrun_alarm) then
+          if (glc_prognostic .and. glcrun_avg_alarm .and. .not. glcrun_alarm) then
              write(logunit,*) 'ERROR: glcrun_avg_alarm is true, but glcrun_alarm is false'
              write(logunit,*) 'Make sure that NCPL_BASE_PERIOD, GLC_NCPL and GLC_AVG_PERIOD'
              write(logunit,*) 'are set so that glc averaging only happens at glc coupling times.'
@@ -2454,6 +2459,7 @@ contains
        if (month==1 .and. day==1 .and. tod==0) t1yr_alarm = .true.
 
        lnd2glc_averaged_now = .false.
+       prep_glc_accum_avg_called = .false.
 
        if (seq_timemgr_alarmIsOn(EClock_d,seq_timemgr_alarm_datestop)) then
           if (iamroot_CPLID) then
@@ -2693,8 +2699,21 @@ contains
        !| GLC SETUP-SEND
        !----------------------------------------------------------
        if (glc_present .and. glcrun_alarm) then
-          call cime_run_glc_setup_send(lnd2glc_averaged_now)
+          call cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
        endif
+
+       ! ------------------------------------------------------------------------
+       ! Also average lnd2glc fields if needed for requested l2x1yrg auxiliary history
+       ! files, even if running with a stub glc model.
+       ! ------------------------------------------------------------------------
+
+       if (do_hist_l2x1yrg .and. iamin_CPLID .and. glcrun_avg_alarm .and. &
+            .not. prep_glc_accum_avg_called) then
+          ! Checking .not. prep_glc_accum_avg_called ensures that we don't do this
+          ! averaging a second time if we already did it above (because we're running with
+          ! a prognostic glc model).
+          call cime_run_glc_accum_avg(lnd2glc_averaged_now, prep_glc_accum_avg_called)
+       end if
 
        !----------------------------------------------------------
        !| ROF RECV-POST
@@ -2991,8 +3010,6 @@ contains
              if (t1yr_alarm .and. .not. lnd2glc_averaged_now) then
                 write(logunit,*) 'ERROR: histaux_l2x1yrg requested;'
                 write(logunit,*) 'it is the year boundary, but lnd2glc fields were not averaged this time step.'
-                write(logunit,*) 'One possible reason is that you are running with a stub glc model.'
-                write(logunit,*) '(It only works to request histaux_l2x1yrg if running with a prognostic glc model.)'
                 call shr_sys_abort(subname// &
                      ' do_hist_l2x1yrg and t1yr_alarm are true, but lnd2glc_averaged_now is false')
              end if
@@ -4028,7 +4045,7 @@ contains
 
        ! Accumulate rof and glc inputs (module variables in prep_rof_mod and prep_glc_mod)
        if (lnd_c2_rof) call prep_rof_accum(timer='CPL:lndpost_accl2r')
-       if (lnd_c2_glc) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
+       if (lnd_c2_glc .or. do_hist_l2x1yrg) call prep_glc_accum_lnd(timer='CPL:lndpost_accl2g' )
        if (lnd_c2_iac) call prep_iac_accum(timer='CPL:lndpost_accl2z')
 
        if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
@@ -4039,9 +4056,10 @@ contains
 
 !----------------------------------------------------------------------------------
 
-  subroutine cime_run_glc_setup_send(lnd2glc_averaged_now)
+  subroutine cime_run_glc_setup_send(lnd2glc_averaged_now, prep_glc_accum_avg_called)
 
-    logical, intent(inout) :: lnd2glc_averaged_now ! Set to .true. if lnd2glc averages were taken this timestep (otherwise left unchanged)
+    logical, intent(inout) :: lnd2glc_averaged_now ! Set to .true. if lnd2glc averages are taken this timestep (otherwise left unchanged)
+    logical, intent(inout) :: prep_glc_accum_avg_called ! Set to .true. if prep_glc_accum_avg is called here (otherwise left unchanged)
 
     !----------------------------------------------------
     !| glc prep-merge
@@ -4054,10 +4072,11 @@ contains
        ! NOTE - only create appropriate input to glc if the avg_alarm is on
        if (lnd_c2_glc .or. ocn_c2_glcshelf) then
           if (glcrun_avg_alarm) then
-             call prep_glc_accum_avg(timer='CPL:glcprep_avg')
+             call prep_glc_accum_avg(timer='CPL:glcprep_avg', &
+                  lnd2glc_averaged_now=lnd2glc_averaged_now)
+             prep_glc_accum_avg_called = .true.
 
              if (lnd_c2_glc) then
-                lnd2glc_averaged_now = .true.
                 ! Note that l2x_gx is obtained from mapping the module variable l2gacc_lx
                 call prep_glc_calc_l2x_gx(fractions_lx, timer='CPL:glcprep_lnd2glc')
 
@@ -4098,6 +4117,26 @@ contains
     endif
 
   end subroutine cime_run_glc_setup_send
+
+!----------------------------------------------------------------------------------
+
+  subroutine cime_run_glc_accum_avg(lnd2glc_averaged_now, prep_glc_accum_avg_called)
+    ! Calls glc_accum_avg in case it's needed but hasn't already been called
+
+    logical, intent(inout) :: lnd2glc_averaged_now ! Set to .true. if lnd2glc averages were taken this timestep (otherwise left unchanged)
+    logical, intent(inout) :: prep_glc_accum_avg_called ! Set to .true. if prep_glc_accum_avg is called here (otherwise left unchanged)
+
+    call cime_comp_barriers(mpicom=mpicom_CPLID, timer='CPL:AVG_L2X1YRG_BARRIER')
+    call t_drvstartf ('CPL:AVG_L2X1YRG',cplrun=.true.,barrier=mpicom_CPLID)
+    if (drv_threading) call seq_comm_setnthreads(nthreads_CPLID)
+
+    call prep_glc_accum_avg(timer='CPL:glcprep_avg', &
+         lnd2glc_averaged_now=lnd2glc_averaged_now)
+    prep_glc_accum_avg_called = .true.
+
+    if (drv_threading) call seq_comm_setnthreads(nthreads_GLOID)
+    call t_drvstopf  ('CPL:AVG_L2X1YRG',cplrun=.true.)
+  end subroutine cime_run_glc_accum_avg
 
 !----------------------------------------------------------------------------------
 
