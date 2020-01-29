@@ -171,7 +171,9 @@ contains
     real(kind=c_real) :: vap_ice_exchange(pcols,pver) ! sum of vap-ice phase change tendenices
     real(kind=c_real) :: vap_cld_exchange(pcols,pver) ! sum of vap-cld phase change tendenices
 
-    real(kind=c_real) :: inv_cp 
+    real(kind=c_real) :: inv_cp
+
+    real(kind=c_real) :: col_location(pcols,3) 
 
     ! For rrtmg optics. specified distribution.
     real(kind=c_real), parameter :: dcon   = 25.e-6_rtype      ! Convective size distribution effective radius (um)
@@ -227,6 +229,7 @@ contains
         qirim(:,k)   = q(i,k,8) !1.0e-8_rtype!state%q(:,:,ixcldrim) !Aaron, changed ixqirim to ixcldrim to match Kai's code
         rimvol(:,k)  = q(i,k,9) !1.0e4_rtype!state%q(:,:,ixrimvol)
       end do
+      col_location(i,:) = real(i)
     end do 
 
 !    do k = kte,kts,-1 
@@ -307,7 +310,8 @@ contains
          liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices   
          vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
-         vap_cld_exchange(its:ite,kts:kte) & ! OUT sum of vap-cld phase change tendencies
+         vap_cld_exchange(its:ite,kts:kte),& ! OUT sum of vap-cld phase change tendencies
+         col_location(its:ite,3)           & ! IN location of columns
          )
     do i = its,ite
       do k = kts,kte

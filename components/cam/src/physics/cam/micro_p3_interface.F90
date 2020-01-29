@@ -801,8 +801,10 @@ end subroutine micro_p3_readnl
   !================================================================================================
   subroutine micro_p3_tend(state, ptend, dtime, pbuf)
 
+    use phys_grid,      only: get_rlat_all_p, get_rlon_all_p, get_gcol_all_p
     use time_manager,   only: get_nstep
     use cam_history,    only: outfld
+    use time_manager,   only: get_nstep
     use physics_buffer, only: pbuf_col_type_index
     use micro_p3,       only: p3_main
     use micro_p3_utils, only: avg_diameter, &
@@ -920,6 +922,8 @@ end subroutine micro_p3_readnl
     real(rtype) :: nc(pcols,pver)
     real(rtype) :: drout2(pcols,pver)
     real(rtype) :: reff_rain(pcols,pver)
+    real(rtype) :: col_location(pcols,3),tmp_loc(pcols)  ! Array of column lon (index 1) and lat (index 2)
+    integer     :: tmpi_loc(pcols) ! Global column index temp array
 
     ! Variables used for microphysics output
     real(rtype) :: aqrain(pcols,pver)
@@ -1082,7 +1086,7 @@ end subroutine micro_p3_readnl
     kts=top_lev
     kte=pver 
 
-    ! HANDLE TIMESTEP COUNTER
+    ! HANDLE TIMESTEP COUNTER, GET LON/LAT values (used by error warning code)
     !==============
     !p3 wants to know the timestep number (which it calls "it") because it
     !handles things differently on the first step, where it doesn't have values
@@ -1090,6 +1094,13 @@ end subroutine micro_p3_readnl
     !we hack "it" with "is_first_step()" for now. Eventually, we should replace
     !"it" with a logical.
     it = get_nstep()
+    tmp_loc =-999.0_rtype
+    call get_rlon_all_p(lchnk,ncol,tmp_loc)
+    col_location(:ncol,2) = tmp_loc(:ncol)*180.0_rtype/pi
+    call get_rlat_all_p(lchnk,ncol,tmp_loc)
+    col_location(:ncol,3) = tmp_loc(:ncol)*180.0_rtype/pi
+    call get_gcol_all_p(lchnk,ncol,tmpi_loc)
+    col_location(:ncol,1) = real(tmpi_loc(:ncol))
 
     ! MAKE LOCAL COPIES OF VARS MODIFIED BY P3
     !==============
@@ -1203,7 +1214,8 @@ end subroutine micro_p3_readnl
          liq_ice_exchange(its:ite,kts:kte),& ! OUT sum of liq-ice phase change tendenices   
          vap_liq_exchange(its:ite,kts:kte),& ! OUT sun of vap-liq phase change tendencies
          vap_ice_exchange(its:ite,kts:kte),& ! OUT sum of vap-ice phase change tendencies
-         vap_cld_exchange(its:ite,kts:kte) & ! OUT sum of vap-cld phase change tendencies
+         vap_cld_exchange(its:ite,kts:kte),& ! OUT sum of vap-cld phase change tendencies
+         col_location(its:ite,:3)          & ! IN column locations 
          )
 
     p3_main_outputs(:,:,:) = -999._rtype
