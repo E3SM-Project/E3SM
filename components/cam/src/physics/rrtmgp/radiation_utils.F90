@@ -288,30 +288,44 @@ contains
    end subroutine clip_values_2d
 
    !-------------------------------------------------------------------------------
-   subroutine check_range_2d(v, vmin, vmax, vname, lat, lon)
+   subroutine check_range_2d(v, vmin, vmax, vname, lat, lon, abort_on_error)
       use cam_abortutils, only: endrun
       real(r8), intent(in) :: v(:,:), vmin, vmax
       character(len=*), intent(in) :: vname
       real(r8), intent(in) :: lat(:), lon(:)
+      logical, intent(in), optional :: abort_on_error
+      logical :: abort_on_error_local
       integer :: ix, iz
+      if (present(abort_on_error)) then
+         abort_on_error_local = abort_on_error
+      else
+         abort_on_error_local = .true.
+      end if
       do iz = 1,size(v, 2)
          do ix = 1,size(v, 1)
             if (v(ix,iz) < vmin .or. v(ix,iz) > vmax) then
                print *, 'Variable ' // trim(vname) // &
                         ' out of range; value = ', v(ix,iz), &
                         '; lat/lon = ', lat(ix), lon(ix)
-               call endrun('check_range failed for ' // trim(vname))
+               if (abort_on_error_local) call endrun('check_range failed for ' // trim(vname))
             end if
          end do
       end do
    end subroutine check_range_2d
    !-------------------------------------------------------------------------------
-   subroutine check_range_3d(v, vmin, vmax, vname, lat, lon)
+   subroutine check_range_3d(v, vmin, vmax, vname, lat, lon, abort_on_error)
       use cam_abortutils, only: endrun
       real(r8), intent(in) :: v(:,:,:), vmin, vmax
       character(len=*), intent(in) :: vname
       real(r8), intent(in) :: lat(:), lon(:)
+      logical, intent(in), optional :: abort_on_error
+      logical :: abort_on_error_local
       integer :: ix, iy, iz
+      if (present(abort_on_error)) then
+         abort_on_error_local = abort_on_error
+      else
+         abort_on_error_local = .true.
+      end if
       do iz = 1,size(v, 3)
          do iy = 1,size(v,2)
             do ix = 1,size(v, 1)
@@ -319,7 +333,7 @@ contains
                   print *, 'Variable ' // trim(vname) // &
                            ' out of range; value = ', v(ix,iy,iz), &
                            '; lat/lon = ', lat(ix), lon(ix)
-                  call endrun('check_range failed for ' // trim(vname))
+                  if (abort_on_error_local) call endrun('check_range failed for ' // trim(vname))
                end if
             end do
          end do
