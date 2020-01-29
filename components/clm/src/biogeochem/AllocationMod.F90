@@ -1628,7 +1628,7 @@ contains
                        ((km_minsurf_p_vr(isoilorder(c),j)+max(solutionp_vr(c,j),0._r8))**2._r8 ) * dsolutionp_dt(c,j)
                   ! sign convention: if adsorb_to_labilep_vr(c,j) < 0, then it's
                   ! desorption
-                  if (adsorb_to_labilep_vr(c,j) >= 0) then
+                  if (adsorb_to_labilep_vr(c,j) >= 0._r8) then
                      adsorb_to_labilep_vr(c,j) = max(min(adsorb_to_labilep_vr(c,j), &
                           (vmax_minsurf_p_vr(isoilorder(c),j) - labilep_vr(c,j))/dt),0.0_r8)
                      desorb_to_solutionp_vr(c,j) = 0.0_r8
