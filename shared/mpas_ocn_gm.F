@@ -108,7 +108,7 @@ contains
 
       real(kind=RKIND), dimension(:), pointer   :: gmBolusKappa,  cGMphaseSpeed, bottomDepth, indexBoundaryLayerDepth
       real(kind=RKIND), dimension(:,:,:), pointer :: slopeTriadUp, slopeTriadDown
-      real(kind=RKIND), dimension(:,:), pointer :: slopeTaperEdge
+      real(kind=RKIND), dimension(:,:), pointer :: slopeTaperEdgeUp, slopeTaperEdgeDown
       real(kind=RKIND), dimension(:), pointer   :: areaCell, dcEdge, dvEdge, tridiagA, tridiagB, tridiagC, rightHandSide
       integer, dimension(:), pointer   :: maxLevelEdgeTop, maxLevelCell, nEdgesOnCell
       integer, dimension(:,:), pointer :: cellsOnEdge, edgesOnCell, edgeSignOnCell
@@ -119,7 +119,7 @@ contains
       real(kind=RKIND) :: surfaceTaperCoef, bottomTaperCoef, bldEdge
       real(kind=RKIND), dimension(:), allocatable :: dzTop, dTdzTop, dSdzTop, k33Norm
       real(kind=RKIND), dimension(:), allocatable :: slopeTaper, slopeTaperSurface
-
+      
       ! Dimensions
       integer :: nCells, nEdges
       integer, pointer :: nVertLevels
@@ -159,7 +159,8 @@ contains
       call mpas_pool_get_array(diagnosticsPool, 'normalGMBolusVelocity', normalGMBolusVelocity)
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadUp', slopeTriadUp)
       call mpas_pool_get_array(diagnosticsPool, 'slopeTriadDown', slopeTriadDown)
-      call mpas_pool_get_array(diagnosticsPool, 'slopeTaperEdge', slopeTaperEdge)
+      call mpas_pool_get_array(diagnosticsPool, 'slopeTaperEdgeUp', slopeTaperEdgeUp)
+      call mpas_pool_get_array(diagnosticsPool, 'slopeTaperEdgeDown', slopeTaperEdgeDown)
       call mpas_pool_get_array(diagnosticsPool, 'k33', k33)
       call mpas_pool_get_array(diagnosticsPool, 'layerThicknessEdge', layerThicknessEdge)
       call mpas_pool_get_array(diagnosticsPool, 'zMid', zMid)
@@ -397,42 +398,43 @@ contains
       bottomTaperCoef = 1.0_RKIND/config_Redi_bottom_taper_layers
       slopeTaperSurface(:) = 1.0_RKIND
       slopeTaperSurface(1) = 0.0_RKIND
-      slopeTaperEdge(:,:) = 0.0_RKIND
+      slopeTaperEdgeUp(:,:) = 0.0_RKIND
+      slopeTaperEdgeDown(:,:) = 0.0_RKIND
       do k = 2, config_Redi_surface_taper_layers
           slopeTaperSurface(k) = slopeTaperSurface(k)*(k-1)*surfaceTaperCoef
       end do
 
       !compute the slope taper on edges
-      !$omp do schedule(runtime)
-      do iEdge = 1, nEdges
-  ! Add bottom taper slope for this column.
-         ! Top taper slope is computed before the cell loop, because it is the same
-         ! for all cells.
-         slopeTaperEdge(iEdge,:maxLevelEdgeTop(iEdge)) = slopeTaperSurface(:maxLevelEdgeTop(iEdge))
-         do k = max(maxLevelEdgeTop(iEdge) - config_Redi_bottom_taper_layers, 2), maxLevelEdgeTop(iEdge)
-            slopeTaperEdge(k,iEdge) = slopeTaperEdge(k,iEdge) &
-                * (maxLevelEdgeTop(iEdge)-k)*bottomTaperCoef
-         end do
-
-         ! Add taper for boundary layer
-         if (config_Redi_zero_in_boundary_layer) then
-            cell1 = cellsOnEdge(1,iEdge)
-            cell2 = cellsOnEdge(2,iEdge)
-
-            !Take maximum boundary layer dpeth for surface
-            bldEdge = max(indexBoundaryLayerDepth(cell1),indexBoundaryLayerDepth(cell2))
-            iBLD = int(bldEdge)
-            do k = 2, iBLD
-               slopeTaperEdge(k,iEdge) = 0.0_RKIND
-            end do
-            do k = iBLD + 1, &
-                   min(iBLD + config_Redi_BLD_taper_layers, maxLevelEdgeTop(iEdge))
-               slopeTaperEdge(k,iEdge) = slopeTaperEdge(k,iEdge)*(k-iBLD) / config_Redi_BLD_taper_layers
-            end do
-         end if
-
-      enddo !iEdge loop for slopeTaper
-      !$omp end do
+ !     !$omp do schedule(runtime)
+ !     do iEdge = 1, nEdges
+ ! ! Add bottom taper slope for this column.
+ !        ! Top taper slope is computed before the cell loop, because it is the same
+ !        ! for all cells.
+ !        slopeTaperEdge(iEdge,:maxLevelEdgeTop(iEdge)) = slopeTaperSurface(:maxLevelEdgeTop(iEdge))
+ !        do k = max(maxLevelEdgeTop(iEdge) - config_Redi_bottom_taper_layers, 2), maxLevelEdgeTop(iEdge)
+ !           slopeTaperEdge(k,iEdge) = slopeTaperEdge(k,iEdge) &
+ !               * (maxLevelEdgeTop(iEdge)-k)*bottomTaperCoef
+ !        end do
+!
+!         ! Add taper for boundary layer
+!         if (config_Redi_zero_in_boundary_layer) then
+!            cell1 = cellsOnEdge(1,iEdge)
+!            cell2 = cellsOnEdge(2,iEdge)
+!
+!            !Take maximum boundary layer dpeth for surface
+!            bldEdge = max(indexBoundaryLayerDepth(cell1),indexBoundaryLayerDepth(cell2))
+!            iBLD = int(bldEdge)
+!            do k = 2, iBLD
+!               slopeTaperEdge(k,iEdge) = 0.0_RKIND
+!            end do
+!            do k = iBLD + 1, &
+!                   min(iBLD + config_Redi_BLD_taper_layers, maxLevelEdgeTop(iEdge))
+!               slopeTaperEdge(k,iEdge) = slopeTaperEdge(k,iEdge)*(k-iBLD) / config_Redi_BLD_taper_layers
+!            end do
+!         end if
+!
+!      enddo !iEdge loop for slopeTaper
+!      !$omp end do
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
@@ -494,16 +496,22 @@ contains
                   (  drhoDT * dTdzTop(k+1) &
                    + drhoDS * dSdzTop(k+1) )
 
+               ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
+               slopeTaperEdgeUp(k,iEdge) = 0.5_RKIND*(1.0 - tanh((-abs(slopeTriadUp(k,iCellSelf,iEdge)) + &
+                  config_REDI_half_slope)/config_REDI_half_width))
+               slopeTaperEdgeDown(k,iEdge) = 0.5_RKIND*(1.0 - tanh((-abs(slopeTriadDown(k,iCellSelf,iEdge)) + &
+                  config_REDI_half_slope)/config_REDI_half_width))
+
                ! Slope can be unbounded in regions of neutral stability.
                ! Reset slope to maximum slope limit.
                slopeTriadUp(k,iCellSelf,iEdge) = &
-                  slopeTaperEdge(k,iEdge) * &
-                  max( min( slopeTriadUp(k,iCellSelf,iEdge), &
-                  config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
+                  slopeTaperEdgeUp(k,iEdge) * slopeTriadUp(k,iCellSelf,iEdge) !&
+!                  max( min( slopeTriadUp(k,iCellSelf,iEdge), &
+!                  config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
                slopeTriadDown(k,iCellSelf,iEdge) = &
-                  slopeTaperEdge(k,iEdge) * &
-                  max( min( slopeTriadDown(k,iCellSelf,iEdge), &
-                  config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
+                  slopeTaperEdgeDown(k,iEdge) * slopeTriadDown(k,iCellSelf,iEdge) !&
+!                  max( min( slopeTriadDown(k,iCellSelf,iEdge), &
+!                  config_mesoscale_eddy_isopycnal_slope_limit), -config_mesoscale_eddy_isopycnal_slope_limit)
 
                ! Griffies 1998 eqn 34
                k33(k  ,iCell) = k33(k  ,iCell) + areaEdge*dzTop(k  )*slopeTriadUp(k,iCellSelf,iEdge)**2
