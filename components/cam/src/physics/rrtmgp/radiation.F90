@@ -28,8 +28,7 @@ module radiation
 
    use radiation_state, only: ktop, kbot, nlev_rad
    use radiation_utils, only: compress_day_columns, expand_day_columns, &
-                              check_range,
-                              handle_error
+                              check_range, handle_error
 
    implicit none
    private
@@ -1067,7 +1066,6 @@ contains
       use radconstants, only: idx_sw_diag
 
       ! RRTMGP radiation drivers and derived types
-      use mo_rrtmgp_clr_all_sky, only: rte_lw
       use mo_gas_concentrations, only: ty_gas_concs
       use mo_optical_props, only: ty_optical_props, &
                                   ty_optical_props_1scl
@@ -1135,10 +1133,6 @@ contains
       real(r8) :: qrsc(pcols,pver)
       real(r8) :: qrlc(pcols,pver)
 
-      ! Latitude and longitude arrays for extra debugging information when
-      ! things go wrong
-      real(r8), dimension(pcols) :: lat, lon
-
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
       logical :: conserve_energy = .true.
@@ -1168,15 +1162,6 @@ contains
       qrsc(:,:) = 0
       qrlc(:,:) = 0
 
-      ! Before we do anything, check temperature range, and abort if outside
-      ! bounds of absorption coefficient look-up tables
-      lat(1:ncol) = state%lat(1:ncol) * pi / 180._r8
-      lon(1:ncol) = state%lon(1:ncol) * pi / 180._r8
-      call check_range( &
-         state%t(1:ncol,1:pver), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), &
-         'state%t', lat, lon &
-      )
-     
       ! Do shortwave stuff...
       if (radiation_do('sw')) then
 
@@ -1275,6 +1260,7 @@ contains
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
+      use physconst, only: pi
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1324,7 +1310,7 @@ contains
       integer :: ncol
 
       ! Loop indices
-      integer :: iband
+      integer :: iband, iday, icol
 
       ! For loops over diagnostic calls
       logical :: active_calls(0:N_DIAG)
@@ -1335,6 +1321,10 @@ contains
       ! temperatures to make sure they are within the valid range.
       real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
       real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
+
+      ! Latitude and longitude arrays for extra debugging information when
+      ! things go wrong
+      real(r8), dimension(pcols) :: lat, lon
 
       ! Everybody needs a name
       character(*), parameter :: subroutine_name = 'radiation_driver_sw'
@@ -1387,6 +1377,18 @@ contains
                          pmid(1:nday,1:nlev_rad), &
                          pint(1:nday,1:nlev_rad+1), &
                          col_indices=day_indices(1:nday))
+
+      ! Check temperatures to make sure they are within the bounds of the
+      ! absorption coefficient look-up tables
+      do iday = 1,nday
+         icol = day_indices(iday)
+         lat(iday) = state%lat(icol) * pi / 180._r8
+         lon(iday) = state%lon(icol) * pi / 180._r8
+      end do
+      call check_range( &
+         tmid(1:nday,1:nlev_rad), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), &
+         trim(subroutine_name) // 'tmid', lat, lon &
+      )
 
       ! Get albedo. This uses CAM routines internally and just provides a
       ! wrapper to improve readability of the code here.
@@ -1525,12 +1527,14 @@ contains
       use physics_types, only: physics_state
       use physics_buffer, only: physics_buffer_desc
       use camsrfexch, only: cam_in_t
+      use mo_rrtmgp_clr_all_sky, only: rte_lw
       use mo_fluxes_byband, only: ty_fluxes_byband
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
       use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
+      use physconst, only: pi
 
       ! Inputs
       type(physics_state), intent(in) :: state
@@ -1552,6 +1556,10 @@ contains
       real(r8), dimension(pcols,nlev_rad) :: tmid, pmid
       real(r8), dimension(pcols,nlev_rad+1) :: pint, tint
 
+      ! Latitude and longitude arrays for extra debugging information when
+      ! things go wrong
+      real(r8), dimension(pcols) :: lat, lon
+
       ! Surface emissivity needed for longwave
       real(r8) :: surface_emissivity(nlwbands,pcols)
 
@@ -1563,7 +1571,7 @@ contains
       type(ty_optical_props_1scl) :: aerosol_optics_lw
       type(ty_optical_props_1scl) :: cloud_optics_lw
 
-      integer :: ncol, icall
+      integer :: ncol, icol, icall
 
       ! Number of physics columns in this "chunk"; used in multiple places
       ! throughout this subroutine, so set once for convenience
@@ -1575,7 +1583,18 @@ contains
                          tint(1:ncol,1:nlev_rad+1), &
                          pmid(1:ncol,1:nlev_rad), &
                          pint(1:ncol,1:nlev_rad+1))
-       
+
+      ! Check temperatures to make sure they are within the bounds of the
+      ! absorption coefficient look-up tables
+      do icol = 1,ncol
+         lat(icol) = state%lat(icol) * pi / 180._r8
+         lon(icol) = state%lon(icol) * pi / 180._r8
+      end do
+      call check_range( &
+         tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+         trim(subroutine_name) // 'tmid', lat, lon &
+      )
+
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old
       ! RRTMG implementation also sets this to 1. This probably does not make
