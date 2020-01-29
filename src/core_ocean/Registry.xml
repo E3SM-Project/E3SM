@@ -344,7 +344,15 @@
 		<nml_option name="config_Redi_kappa" type="real" default_value="600.0" units="m^2 s^{-1}"
 					description="The Redi diffusion coefficient"
 					possible_values="Positive real numbers"
-		/>
+    />
+    <nml_option name="config_REDI_half_slope" type="real" default_value="0.004" units="non-dimensional"
+        description="value of slope where set to half max"
+        possible_values="positive real numbers less than slope max"
+    />
+    <nml_option name="config_REDI_half_width" type="real" default_value="0.001" units="non-dimensional"
+        description="value of half width of tanh function limiter"
+        possible_values="very small positive real numbers"
+    />
 		<nml_option name="config_Redi_closure" type="character" default_value="constant" units="unitless"
 					description="Control what type of function is used for Redi $\kappa$. Only 'constant' is currently supported."
 					possible_values="'constant', 'data', 'match_GM'"
@@ -2703,7 +2711,11 @@
 			 description="Magnitude of slope of isopycnal surface, using triad through this cell and edge, angled up. Uses expansion of equation of state."
 			 packages="forwardMode;analysisMode"
     />
-    <var name="slopeTaperEdge" type="real" dimensions="nVertLevels nEdges Time" units="non-dimensional"
+    <var name="slopeTaperEdgeUp" type="real" dimensions="nVertLevels nEdges Time" units="non-dimensional"
+       description="tapering of Redi mixing at cell edges"
+       packages="forwardMode;analysisMode"
+    />
+   <var name="slopeTaperEdgeDown" type="real" dimensions="nVertLevels nEdges Time" units="non-dimensional"
        description="tapering of Redi mixing at cell edges"
        packages="forwardMode;analysisMode"
     />
