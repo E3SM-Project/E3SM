@@ -168,7 +168,7 @@ subroutine radiation_readnl(nlfile, dtime_in)
    call mpibcast(umich_flag_rtr2, 1, mpi_logical, mstrid, mpicom, ierr)
    call mpibcast(umich_flag_mc6, 1, mpi_logical, mstrid, mpicom, ierr)
    call mpibcast(umich_flag_scat_mc6, 1, mpi_logical, mstrid, mpicom, ierr)
-   call mpibcast(umich_surf_emis_file, len(umich_surf_emis_file), mpichar, mstrid, mpicom, ierr)
+   call mpibcast(umich_surf_emis_file, len(umich_surf_emis_file), mpi_character, mstrid, mpicom, ierr)
 #endif
 
    ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
