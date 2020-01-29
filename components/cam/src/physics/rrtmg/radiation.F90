@@ -105,7 +105,7 @@ logical :: umich_flag_mc6  = .false.
 logical :: umich_flag_scat_mc6  = .false.  
 
 integer, parameter  :: nlen = 256     ! Length of character strings
-character(len=nlen) :: umich_surf_emis_file    !surface emissivity filename
+character(len=nlen), public :: umich_surf_emis_file    !surface emissivity filename
 
 !!!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
 
