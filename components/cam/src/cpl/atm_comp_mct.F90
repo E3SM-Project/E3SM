@@ -578,46 +578,46 @@ CONTAINS
      enddo
 
     if (cam_out(begchunk)%do_emis(1) .eq. 1) then
-    call read_surface_emis(sizebuf,lats2,lons2,mon,emis0(1:sizebuf,:))
+         call read_surface_emis(sizebuf,lats2,lons2,mon,emis0(1:sizebuf,:))
          sizebuf=0
          do c=begchunk, endchunk
-             ncols = get_ncols_p(c)
-             do i=1,ncols
-                  sizebuf = sizebuf + 1
-                 if (cam_in(c)%landfrac(i).gt. 0.99 .and. cam_in(c)%icefrac(i) .lt. 0.01 .and. (cam_in(c)%snowhland(i) + cam_in(c)%snowhice(i)).lt. 0.001) then
-                     ! if original emissivity over band 1080-1180 cm-1, ie.
-                     ! cam_in%srf_emis_spec(i,8) is
-                     ! smaller than 0.8, then the original surface type
-                     ! of this grid is desert, otherwise is non-desert
-                      cam_in(c)%srf_emis_spec(i,:)= emis0(sizebuf,:)
+            ncols = get_ncols_p(c)
+            do i=1,ncols
+               sizebuf = sizebuf + 1
+               if (cam_in(c)%landfrac(i).gt. 0.99 .and. cam_in(c)%icefrac(i) .lt. 0.01 .and. (cam_in(c)%snowhland(i) + cam_in(c)%snowhice(i)).lt. 0.001) then
+                  ! if original emissivity over band 1080-1180 cm-1, ie.
+                  ! cam_in%srf_emis_spec(i,8) is
+                  ! smaller than 0.8, then the original surface type
+                  ! of this grid is desert, otherwise is non-desert
+                   cam_in(c)%srf_emis_spec(i,:)= emis0(sizebuf,:)
 
-                     ! if the original surface type is non-desert but LAI is
-                     ! smaller than 0.001, change to desert type
-                      if (cam_in(c)%tlai(i).lt. 0.001 .and. emis0(sizebuf,8)>0.8) then
-                        cam_in(c)%srf_emis_spec(i,:)  = desert_emis
-                      endif
-                     ! if the orignal surface type is desert but LAI larger than
-                     ! 2, change to grass type
-                      if (cam_in(c)%tlai(i).gt. 2 .and. emis0(sizebuf,8)<0.8) then
-                        cam_in(c)%srf_emis_spec(i,:)  = grass_emis
-                      endif
+                  ! if the original surface type is non-desert but LAI is
+                  ! smaller than 0.001, change to desert type
+                   if (cam_in(c)%tlai(i).lt. 0.001 .and. emis0(sizebuf,8)>0.8) then
+                     cam_in(c)%srf_emis_spec(i,:)  = desert_emis
+                   endif
+                  ! if the orignal surface type is desert but LAI larger than
+                  ! 2, change to grass type
+                   if (cam_in(c)%tlai(i).gt. 2 .and. emis0(sizebuf,8)<0.8) then
+                     cam_in(c)%srf_emis_spec(i,:)  = grass_emis
+                   endif
 
-           else
-    
-                     cam_in(c)%srf_emis_spec(i,:)  =  emis0(sizebuf,:) * cam_in(c)%landfrac(i) + ice_emis * cam_in(c)%icefrac(i) + water_emis * cam_in(c)%ocnfrac(i)
-                 endif
- 
+               else
+                   cam_in(c)%srf_emis_spec(i,:)  =  emis0(sizebuf,:) * cam_in(c)%landfrac(i) + ice_emis * cam_in(c)%icefrac(i) + water_emis * cam_in(c)%ocnfrac(i)
+               endif
      
-                call  get_Ts_from_LW_emis(v1_rrtmg_lw, real(cam_in(c)%srf_emis_spec(i,:)), cam_in(c)%lwup(i),cam_out(c)%flwds_spec(i,:), 16 + 1, 3, Ts_LW)
-                cam_in(c)%ts_atm(i) =Ts_LW
+               call  get_Ts_from_LW_emis(v1_rrtmg_lw, real(cam_in(c)%srf_emis_spec(i,:)), cam_in(c)%lwup(i),cam_out(c)%flwds_spec(i,:), 16 + 1, 3, Ts_LW)
+               cam_in(c)%ts_atm(i) =Ts_LW
 
                cam_in(c)%ts(i) =  cam_in(c)%ts_atm(i)
             enddo
-    enddo
-    else
+         enddo
+  ! else
+  !  *** using blackbody ***       
+  ! if setting cam_in(c)%ts_atm & cam_in(c)%ts here, the ouput TS is NOT bit-by-bit the same to those when emissivity flag is turned off.
   !      cam_in(c)%ts(i) =    sqrt(sqrt((cam_in(c)%lwup(i)/shr_const_stebol)))  
-         cam_in(c)%ts_atm(i) =   sqrt(sqrt((cam_in(c)%lwup(i)/shr_const_stebol)))
- endif
+  !      cam_in(c)%ts_atm(i) =   sqrt(sqrt((cam_in(c)%lwup(i)/shr_const_stebol)))
+    endif
  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!end of add!!!!!!!!!!!!!!!
 
           

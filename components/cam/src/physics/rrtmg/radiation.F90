@@ -19,8 +19,7 @@ use spmd_utils,      only: masterproc, iam, npes
 use ppgrid,          only: pcols, pver, pverp, begchunk, endchunk
 use physics_types,   only: physics_state, physics_ptend
 use physconst,       only: cappa
-!yihsuan comment use time_manager,    only: get_nstep, is_first_restart_step
-use time_manager,    only: get_nstep, is_first_restart_step, is_first_step  !yihsuan added is_first_step
+use time_manager,    only: get_nstep, is_first_restart_step, is_first_step  !UMich team added is_first_step
 use cam_abortutils,      only: endrun
 use error_messages,  only: handle_err
 use cam_control_mod, only: lambm0, obliqr, mvelpp, eccen
@@ -106,7 +105,7 @@ logical :: umich_flag_mc6  = .false.
 logical :: umich_flag_scat_mc6  = .false.  
 
 integer, parameter  :: nlen = 256     ! Length of character strings
-character(len=nlen), public :: umich_surf_emis_file    !surface emissivity filename
+character(len=nlen) :: umich_surf_emis_file    !surface emissivity filename
 
 !!!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
 
@@ -169,7 +168,7 @@ subroutine radiation_readnl(nlfile, dtime_in)
    call mpibcast(umich_flag_rtr2, 1, mpi_logical, mstrid, mpicom, ierr)
    call mpibcast(umich_flag_mc6, 1, mpi_logical, mstrid, mpicom, ierr)
    call mpibcast(umich_flag_scat_mc6, 1, mpi_logical, mstrid, mpicom, ierr)
-   call mpibcast(umich_surf_emis_file, len(umich_surf_emis_file), mpi_character, mstrid, mpicom, ierr)
+   call mpibcast(umich_surf_emis_file, len(umich_surf_emis_file), mpichar, mstrid, mpicom, ierr)
 #endif
 
    ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
@@ -746,7 +745,7 @@ end function radiation_nextsw_cday
           call addfld('FULC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky upward flux')
           call addfld('FDLC'//diag(icall), (/ 'ilev' /),'I',    'W/m2', 'Longwave clear-sky downward flux')
 
-          !>>> yihsuan 2018-12-07 add other fields >>>
+          !>>> UMich Team  added fields >>>
           call addfld('EMIS01'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 01 - 10-350 cm-1', sampling_seq='rad_lwsw')
           call addfld('EMIS02'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 02 - 350-500 cm-1', sampling_seq='rad_lwsw')
           call addfld('EMIS03'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 03 - 500-630 cm-1', sampling_seq='rad_lwsw')
@@ -763,7 +762,7 @@ end function radiation_nextsw_cday
           call addfld('EMIS14'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 14 - 2250-2380 cm-1', sampling_seq='rad_lwsw')
           call addfld('EMIS15'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 15-  2380-2600 cm-1', sampling_seq='rad_lwsw')
           call addfld('EMIS16'//diag(icall),   horiz_only,'A', 'unitless', 'surface emissivity - band 16 - 2600-3250 cm-1', sampling_seq='rad_lwsw')        
-          !<<< yihsuan 2018-12-07 add other fields <<<
+          !<<< UMich Team added fields <<<
 
           if (history_amwg) then
              call add_default('QRL'//diag(icall),   1, ' ')
@@ -893,7 +892,7 @@ end function radiation_nextsw_cday
     use interpolate_data, only: vertinterp
     use cloud_rad_props,  only: get_ice_optics_sw, get_liquid_optics_sw, liquid_cloud_get_rad_props_lw, &
                ice_cloud_get_rad_props_lw, cloud_rad_props_get_lw, snow_cloud_get_rad_props_lw, get_snow_optics_sw, mc6_ice_get_rad_props_lw
-               ! yihsuan comment ice_cloud_get_rad_props_lw, cloud_rad_props_get_lw, snow_cloud_get_rad_props_lw, get_snow_optics_sw
+               !UMich team added mc6_ice_get_rad_props_lw
     use slingo,           only: slingo_liq_get_rad_props_lw, slingo_liq_optics_sw
     use ebert_curry,      only: ec_ice_optics_sw, ec_ice_get_rad_props_lw
     use rad_solar_var,    only: get_variability
@@ -1253,29 +1252,29 @@ end function radiation_nextsw_cday
   
       ! This change is to replace blackbody-derived Tskin with real-emissivity-derived Tskin
       do i = 1,ncol
-        ! use realistic emissivity 
         if (umich_flag_emis) then   
+        ! use realistic emissivity 
           Ts_LW(i) = cam_in%ts_atm(i)
           cam_out%emis_spec(i,:) = cam_in%srf_emis_spec(i,:)
 
-        ! use blackbody surface
         else
+        ! use blackbody surface
           Ts_LW(i) = sqrt(sqrt(cam_in%lwup(i)/stebol))
-          cam_out%emis_spec(i,:) = 1.0
+          cam_out%emis_spec(i,:) = 1.0_r8
         endif
       end do
 
       ! first step uses blackbody surface
       if (is_first_step ()) then
-        Ts_LW(i) = sqrt(sqrt(cam_in%lwup(i)/stebol))
-        cam_out%emis_spec(i,:) = 1.0
+         Ts_LW(i) = sqrt(sqrt(cam_in%lwup(i)/stebol))
+         cam_out%emis_spec(i,:) = 1.0_r8
       end if
 
       ! import surface spectral emissivity
       do i=1,ncol
-        do j=1,nbndlw
-          surface_emis(i,j) = cam_out%emis_spec(i,j)
-        end do
+         do j=1,nbndlw
+            surface_emis(i,j) = cam_out%emis_spec(i,j)
+         end do
       end do
       !!!!!! Added by UM team on Dec.15, 2019 !!!!!!!
 
