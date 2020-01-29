@@ -400,8 +400,8 @@ public:
       // If exclusive, no need to go to access last input level
       constexpr int offset = Inclusive ? 0 : 1;
       constexpr int loop_size = LENGTH - offset;
-      Dispatch<ExecSpaceType>::parallel_scan(kv.team, loop_size,
-                                            [&](const int k, Real& accumulator, const bool last) {
+      Dispatch<>::parallel_scan(kv.team, loop_size,
+                                         [&](const int k, Real& accumulator, const bool last) {
         accumulator += input_provider(k)[0];
         if (k==0) {
           // First entry from the bottom: add initial value
@@ -416,7 +416,7 @@ public:
       // If exclusive, no need to go to access first input level
       constexpr int offset = Inclusive ? 0 : 1;
       constexpr int loop_size = LENGTH - offset;
-      Dispatch<ExecSpaceType>::parallel_scan(kv.team, loop_size,
+      Dispatch<>::parallel_scan(kv.team, loop_size,
                                             [&](const int k, Real& accumulator, const bool last) {
         // level must range in (LENGTH,0], while k ranges in [0, LENGTH).
         const int k_bwd = LENGTH - k - 1;
