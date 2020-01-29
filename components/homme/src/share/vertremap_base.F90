@@ -622,8 +622,8 @@ subroutine remap_Q_ppm(Qdp,nx,qsize,dp1,dp2)
               endif
             enddo
          elseif (vert_remap_q_alg == 10) then
-            ext(1) = minval(ao)
-            ext(2) = maxval(ao)
+            ext(1) = minval(ao(1:nlev))
+            ext(2) = maxval(ao(1:nlev))
             call linextrap(dpo(2), dpo(1), dpo(0), dpo(-1), ao(2), ao(1), ao(0), ao(-1), ext(1), ext(2))
             call linextrap(dpo(nlev-1), dpo(nlev), dpo(nlev+1), dpo(nlev+2),&
                  ao(nlev-1), ao(nlev), ao(nlev+1), ao(nlev+2), ext(1), ext(2))

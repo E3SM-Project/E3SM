@@ -6,7 +6,7 @@ module physics_types
   use shr_kind_mod, only: r8 => shr_kind_r8
   use ppgrid,       only: pcols, pver, psubcols
   use constituents, only: pcnst, qmin, cnst_name
-  use geopotential, only: geopotential_dse
+  use geopotential, only: geopotential_t
   use physconst,    only: zvir, gravit, cpair, rair, cpairv, rairv
   use dycore,       only: dycore_is
   use phys_grid,    only: get_ncols_p, get_rlon_all_p, get_rlat_all_p, get_gcol_all_p
@@ -205,7 +205,6 @@ contains
 ! Update the state and or tendency structure with the parameterization tendencies
 !-----------------------------------------------------------------------
     use shr_sys_mod,  only: shr_sys_flush
-    use geopotential, only: geopotential_dse
     use constituents, only: cnst_get_ind, cnst_mw
     use scamMod,      only: scm_crm_mode, single_column
     use phys_control, only: phys_getopts
@@ -413,9 +412,9 @@ contains
       call cnst_get_ind('N', ixn)             
 
       call physconst_update(state%q, state%t, &
-	         cnst_mw(ixo), cnst_mw(ixo2), cnst_mw(ixh), cnst_mw(ixn), &
-	                              ixo, ixo2, ixh, pcnst, state%lchnk, ncol)
-    endif	  
+              cnst_mw(ixo), cnst_mw(ixo2), cnst_mw(ixh), cnst_mw(ixn), &
+              ixo, ixo2, ixh, pcnst, state%lchnk, ncol)
+    endif
    
     if ( waccmx_is('ionosphere') .or. waccmx_is('neutral') ) then 
       zvirv(:,:) = shr_const_rwv / rairv_loc(:,:,state%lchnk) - 1._r8
@@ -428,18 +427,27 @@ contains
     !-------------------------------------------------------------------------------------------
     if(ptend%ls) then
        do k = ptend%top_level, ptend%bot_level
-          state%s(:ncol,k)   = state%s(:ncol,k)   + ptend%s(:ncol,k) * dt
           if (present(tend)) &
                tend%dtdt(:ncol,k) = tend%dtdt(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk)
+! we first assume that dS is really dEn, En=enthalpy=c_p*T, then 
+! dT = dEn/c_p, so, state%t += ds/c_p.
+          state%t(:ncol,k) = state%t(:ncol,k) + ptend%s(:ncol,k)/cpairv_loc(:ncol,k,state%lchnk) * dt
        end do
     end if
 
-    ! Derive new temperature and geopotential fields if heating or water tendency not 0.
+    ! Derive new zi,zm,s if heating or water tendency not 0.
     if (ptend%ls .or. ptend%lq(1)) then
-       call geopotential_dse(  &
-            state%lnpint, state%lnpmid, state%pint  , state%pmid  , state%pdel  , state%rpdel  , &
-            state%s     , state%q(:,:,1),state%phis , rairv_loc(:,:,state%lchnk), gravit  , cpairv_loc(:,:,state%lchnk), &
-            zvirv    , state%t     , state%zi    , state%zm    , ncol         )
+      call geopotential_t(state%lnpint, state%lnpmid  ,&
+                          state%pint  , state%pmid    ,&
+                          state%pdel  , state%rpdel   ,&
+                          state%t     , state%q(:,:,1),&
+                          rairv_loc(:,:,state%lchnk)  , gravit, zvirv,&
+                          state%zi    , state%zm      ,&
+                          ncol)
+       do k = ptend%top_level, ptend%bot_level
+          state%s(:ncol,k) = state%t(:ncol,k  )*cpairv_loc(:ncol,k,state%lchnk)&
+                           + gravit*state%zm(:ncol,k) + state%phis(:ncol)
+       end do
     end if
 
     ! Good idea to do this regularly.
@@ -1256,11 +1264,14 @@ end subroutine physics_ptend_copy
 
 ! compute new T,z from new s,q,dp
     if (adjust_te) then
-       call geopotential_dse(state%lnpint, state%lnpmid, state%pint,  &
-            state%pmid  , state%pdel    , state%rpdel,  &
-            state%s     , state%q(:,:,1), state%phis , rairv(:,:,state%lchnk), &
-	    gravit, cpairv(:,:,state%lchnk), zvirv, &
-            state%t     , state%zi      , state%zm   , ncol)
+!!! OG with fix to total energy (removed geopotential term)
+!!! this call needs to be replaced. This code in not active, so, fixes are not
+!!! implemented.
+!       call geopotential_dse(state%lnpint, state%lnpmid, state%pint,  &
+!            state%pmid  , state%pdel    , state%rpdel,  &
+!            state%s     , state%q(:,:,1), state%phis , rairv(:,:,state%lchnk), &
+!            gravit, cpairv(:,:,state%lchnk), zvirv, &
+!            state%t     , state%zi      , state%zm   , ncol)
     end if
 
   end subroutine physics_dme_adjust

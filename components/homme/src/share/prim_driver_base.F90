@@ -599,7 +599,6 @@ contains
 
     if (transport_alg > 0) then
 #ifdef HOMME_ENABLE_COMPOSE
-       call kokkos_init()
        call compose_init(par, elem, GridVertex)
        do ie = 1, nelemd
           call cedr_set_ie2gci(ie, elem(ie)%vertex%number)
@@ -1753,18 +1752,26 @@ contains
 
 
   subroutine prim_finalize()
-
-    implicit none
-
 #ifdef TRILINOS
   interface
     subroutine noxfinish() bind(C,name='noxfinish')
     use ,intrinsic :: iso_c_binding
     end subroutine noxfinish
   end interface
+#endif
 
-  call noxfinish()
+#ifdef HOMME_ENABLE_COMPOSE
+    use compose_mod, only: compose_finalize
+    use control_mod, only: transport_alg
+#endif
+    implicit none
 
+#ifdef TRILINOS
+    call noxfinish()
+#endif
+
+#ifdef HOMME_ENABLE_COMPOSE
+    if (transport_alg > 0) call compose_finalize()
 #endif
 
     ! ==========================
