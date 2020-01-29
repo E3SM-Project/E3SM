@@ -3977,4 +3977,9 @@ void slmm_csl (
     *info = -1;
   }
 }
+
+void slmm_finalize () {
+  g_csl_mpi = nullptr;
+  homme::g_advecter = nullptr;
+}
 } // extern "C"

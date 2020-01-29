@@ -194,7 +194,7 @@ contains
     integer :: nsteps, n0_qdp, np1_qdp, ie, i, j
     real (kind=real_kind) :: dt, tprev, t
 
-    if (se_fv_phys_remap_alg == 1) then
+    if (se_fv_phys_remap_alg == -1) then
        call gfr_test(hybrid, dom_mt, hvcoord, deriv, elem)
        call gfr_check_api(hybrid, nets, nete, hvcoord, elem)
        return
