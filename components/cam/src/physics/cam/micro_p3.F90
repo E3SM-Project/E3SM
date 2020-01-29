@@ -3004,6 +3004,10 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
    log_predictNc,log_wetgrowth,dt,nmltratio,rhorime_c,    &
    th,qv,qitot,nitot,qirim,birim,qc,nc,qr,nr)
 
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   use micro_p3_iso_f, only: update_prognostic_ice_f
+#endif
+
    !-- ice-phase dependent processes:
    implicit none
 
@@ -3051,6 +3055,20 @@ subroutine update_prognostic_ice(qcheti,qccol,qcshd,    &
    real(rtype), intent(inout) :: birim
 
    real(rtype) :: dum
+
+#ifdef SCREAM_CONFIG_IS_CMAKE
+   if (use_cxx) then
+      call  update_prognostic_ice_f(qcheti,qccol,qcshd,    &
+           nccol,ncheti,ncshdc,    &
+           qrcol,nrcol,qrheti,nrheti,nrshdr,    &
+           qimlt,nimlt,qisub,qidep,qinuc,ninuc,nislf,nisub,qiberg,    &
+           exner,xxls,xlf,    &
+           log_predictNc,log_wetgrowth,dt,nmltratio,rhorime_c,    &
+           th,qv,qitot,nitot,qirim,birim,qc,nc,qr,nr)
+      return
+   endif
+#endif
+
 
    qc = qc + (-qcheti-qccol-qcshd-qiberg)*dt
    if (log_predictNc) then
