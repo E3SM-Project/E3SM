@@ -2718,7 +2718,7 @@ sub write_cppdefs
     print $fh "$make_cppdefs";
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "theta-l") {
-        print $fh " -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE "
+        print $fh " -DMODEL_THETA_L -DHOMME_ENABLE_COMPOSE -DNOALLOC"
     }
 
     if ($dyn eq "se" and $opts{"dyn_target"} eq "preqx_kokkos") {

@@ -660,11 +660,7 @@ subroutine phys_inidat( cam_out, pbuf2d )
     call initialize_short_lived_species(fh_ini, pbuf2d)
 end subroutine phys_inidat
 
-#ifndef NOALLOC
 subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
-#else
-subroutine phys_init( phys_state, phys_tend, phys_ptend, pbuf2d, cam_out )
-#endif
     !----------------------------------------------------------------------- 
     ! 
     ! Initialization of physics package.
@@ -736,9 +732,6 @@ subroutine phys_init( phys_state, phys_tend, phys_ptend, pbuf2d, cam_out )
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
     type(physics_tend ), pointer       :: phys_tend(:)
-#ifdef NOALLOC
-    type(physics_tend ), pointer       :: phys_ptend(:)
-#endif
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
     type(cam_out_t),intent(inout)      :: cam_out(begchunk:endchunk)
@@ -749,11 +742,7 @@ subroutine phys_init( phys_state, phys_tend, phys_ptend, pbuf2d, cam_out )
 
     !-----------------------------------------------------------------------
 
-#ifndef NOALLOC
     call physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, pcols)
-#else
-    call physics_type_alloc(phys_state, phys_tend, phys_ptend, begchunk, endchunk, pcols)
-#endif
 
     do lchnk = begchunk, endchunk
        call physics_state_set_grid(lchnk, phys_state(lchnk))
@@ -2090,6 +2079,8 @@ subroutine tphysbc (ztodt,               &
 #endif
 
 #ifdef NOALLOC
+#if 0
+!all this done in ptend_reset
     ptend%psetcols = psetcols
     !should i init ptend arrays to nans instead?
     pts(:psetcols,:pver)=0.0
@@ -2107,6 +2098,7 @@ subroutine tphysbc (ztodt,               &
     ptq(:psetcols,:pver,:pcnst)=0.0
     ptcflx_srf(:psetcols,:pcnst)=0.0
     ptcflx_top(:psetcols,:pcnst)=0.0
+#endif
 
     ptend%s => pts
     ptend%u => ptu
