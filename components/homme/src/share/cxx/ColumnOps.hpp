@@ -333,7 +333,6 @@ public:
     // It is easier to write two loops for Forward true/false. There's no runtime penalty,
     // since the if is evaluated at compile time, so no big deal.
     if (Forward) {
-
       // Running integral
       Real integration = s0;
 
@@ -400,35 +399,37 @@ public:
       // If exclusive, no need to go to access last input level
       constexpr int offset = Inclusive ? 0 : 1;
       constexpr int loop_size = LENGTH - offset;
-      Dispatch<>::parallel_scan(kv.team, loop_size,
-                                         [&](const int k, Real& accumulator, const bool last) {
-        accumulator += input_provider(k)[0];
-        if (k==0) {
-          // First entry from the bottom: add initial value
-          accumulator += s0;
-        }
 
-        if (last && k<loop_size) {
-          sum(k+offset) = accumulator;
+      Dispatch<>::parallel_scan(kv.team, loop_size,
+                                [&](const int k, Real& accumulator, const bool last) {
+        if (k==0) {
+          // First entry from the bottom: set initial value
+          accumulator = s0;
+        }
+        accumulator += input_provider(k)[0];
+
+        if (last) {
+          sum(k+offset)[0] = accumulator;
         }
       });
     } else {
       // If exclusive, no need to go to access first input level
       constexpr int offset = Inclusive ? 0 : 1;
       constexpr int loop_size = LENGTH - offset;
+
       Dispatch<>::parallel_scan(kv.team, loop_size,
-                                            [&](const int k, Real& accumulator, const bool last) {
-        // level must range in (LENGTH,0], while k ranges in [0, LENGTH).
+                                [&](const int k, Real& accumulator, const bool last) {
+        // k_bwd must range in (loop_size,0], while k ranges in [0, loop_size).
         const int k_bwd = LENGTH - k - 1;
 
-        accumulator += input_provider(k_bwd)[0];
         if (k==0) {
-          // First entry from the top: add initial value
-          accumulator += s0;
+          // First entry from the top: set initial value
+          accumulator = s0;
         }
+        accumulator += input_provider(k_bwd)[0];
 
         if (last) {
-          sum(k_bwd-offset) = accumulator;
+          sum(k_bwd-offset)[0] = accumulator;
         }
       });
     }
