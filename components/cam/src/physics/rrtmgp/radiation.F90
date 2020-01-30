@@ -124,7 +124,11 @@ module radiation
 
    ! k-distribution coefficients files to read from. These are set via namelist
    ! variables.
-   character(len=cl) :: coefficients_file_sw, coefficients_file_lw
+   character(len=cl) :: rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw
+
+   ! Should we clip temperatures when out of bounds of absorption coefficient
+   ! look-up table data?
+   logical :: rrtmgp_clip_temperatures
 
    ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
    ! This information will be stored in the k_dist_sw and k_dist_lw objects and may
@@ -199,11 +203,14 @@ contains
       integer :: unitn, ierr
       integer :: dtime  ! timestep size
       character(len=*), parameter :: subroutine_name = 'radiation_readnl'
-      character(len=cl) :: rrtmgp_coefficients_file_lw, rrtmgp_coefficients_file_sw
+
+      ! Set default for rrtmgp_clip_temperatures
+      rrtmgp_clip_temperatures = .false.
 
       ! Variables defined in namelist
       namelist /radiation_nl/ rrtmgp_coefficients_file_lw, &
                               rrtmgp_coefficients_file_sw, &
+                              rrtmgp_clip_temperatures   , &
                               iradsw, iradlw, irad_always, &
                               use_rad_dt_cosz, spectralflux
 
@@ -227,16 +234,13 @@ contains
       ! Broadcast namelist variables
       call mpibcast(rrtmgp_coefficients_file_lw, cl, mpi_character, mstrid, mpicom, ierr)
       call mpibcast(rrtmgp_coefficients_file_sw, cl, mpi_character, mstrid, mpicom, ierr)
+      call mpibcast(rrtmgp_clip_temperatures, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(iradsw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(iradlw, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(irad_always, 1, mpi_integer, mstrid, mpicom, ierr)
       call mpibcast(use_rad_dt_cosz, 1, mpi_logical, mstrid, mpicom, ierr)
       call mpibcast(spectralflux, 1, mpi_logical, mstrid, mpicom, ierr)
 #endif
-
-      ! Set module data
-      coefficients_file_lw = rrtmgp_coefficients_file_lw
-      coefficients_file_sw = rrtmgp_coefficients_file_sw
 
       ! Convert iradsw, iradlw and irad_always from hours to timesteps if necessary
       if (present(dtime_in)) then
@@ -251,7 +255,7 @@ contains
       ! Print runtime options to log.
       if (masterproc) then
          write(iulog,*) 'RRTMGP radiation scheme parameters:'
-         write(iulog,10) trim(coefficients_file_lw), trim(coefficients_file_sw), &
+         write(iulog,10) trim(rrtmgp_coefficients_file_lw), trim(rrtmgp_coefficients_file_sw), &
                          iradsw, iradlw, irad_always, &
                          use_rad_dt_cosz, spectralflux
       end if
@@ -477,8 +481,8 @@ contains
       ! the other tasks!
       ! TODO: This needs to be fixed to ONLY read in the data if masterproc, and then broadcast to
       call set_available_gases(active_gases, available_gases)
-      call rrtmgp_load_coefficients(k_dist_sw, coefficients_file_sw, available_gases)
-      call rrtmgp_load_coefficients(k_dist_lw, coefficients_file_lw, available_gases)
+      call rrtmgp_load_coefficients(k_dist_sw, rrtmgp_coefficients_file_sw, available_gases)
+      call rrtmgp_load_coefficients(k_dist_lw, rrtmgp_coefficients_file_lw, available_gases)
 
       ! Get number of bands used in shortwave and longwave and set module data
       ! appropriately so that these sizes can be used to allocate array sizes.
@@ -1258,7 +1262,7 @@ contains
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: calculate_heating_rate
+      use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
       use physconst, only: pi
 
@@ -1377,6 +1381,16 @@ contains
                          pmid(1:nday,1:nlev_rad), &
                          pint(1:nday,1:nlev_rad+1), &
                          col_indices=day_indices(1:nday))
+
+      ! Clip temperatures if out of bounds?
+      if (rrtmgp_clip_temperatures) call clip_values( &
+         tmid(1:nday,1:nlev_rad), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), &
+         varname='tmid', warn=.true. &
+      )
+      if (rrtmgp_clip_temperatures) call clip_values( &
+         tint(1:nday,1:nlev_rad+1), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), &
+         varname='tint', warn=.true. &
+      )
 
       ! Check temperatures to make sure they are within the bounds of the
       ! absorption coefficient look-up tables
@@ -1532,7 +1546,7 @@ contains
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: calculate_heating_rate
+      use radiation_utils, only: calculate_heating_rate, clip_values
       use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
       use physconst, only: pi
 
@@ -1583,6 +1597,16 @@ contains
                          tint(1:ncol,1:nlev_rad+1), &
                          pmid(1:ncol,1:nlev_rad), &
                          pint(1:ncol,1:nlev_rad+1))
+
+      ! Clip temperatures if out of bounds?
+      if (rrtmgp_clip_temperatures) call clip_values( &
+         tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+         varname='tmid', warn=.true. &
+      )
+      if (rrtmgp_clip_temperatures) call clip_values( &
+         tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+         varname='tint', warn=.true. &
+      )
 
       ! Check temperatures to make sure they are within the bounds of the
       ! absorption coefficient look-up tables
