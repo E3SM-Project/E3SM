@@ -277,14 +277,6 @@ This allows using a different mpirun command to launch unit tests
 	<command name="load">netcdf/4.7.1</command>
       </modules>
     </module_system>
-    <environment_variables>
-      <env name="OMP_NUM_THREADS">1</env>
-      <env name="OMP_STACKSIZE">1024M</env>
-      <env name="TMPDIR">/glade/scratch/$USER</env>
-      <env name="MPI_TYPE_DEPTH">16</env>
-      <env name="MPI_IB_CONGESTED">1</env>
-      <env name="MPI_USE_ARRAY"/>
-    </environment_variables>
     <environment_variables comp_interface="nuopc">
       <env name="ESMF_RUNTIME_PROFILE">ON</env>
       <env name="ESMF_RUNTIME_PROFILE_OUTPUT">SUMMARY</env>
@@ -293,8 +285,14 @@ This allows using a different mpirun command to launch unit tests
       <env name="MPI_USE_ARRAY">false</env>
     </environment_variables>
     <environment_variables queue="share">
-      <env name="TMPDIR">/glade/scratch/$USER</env>
       <env name="MPI_USE_ARRAY">false</env>
+    </environment_variables>
+    <environment_variables>
+      <env name="OMP_NUM_THREADS">1</env>
+      <env name="OMP_STACKSIZE">1024M</env>
+      <env name="MPI_TYPE_DEPTH">16</env>
+      <env name="MPI_IB_CONGESTED">1</env>
+      <env name="MPI_USE_ARRAY"/>
     </environment_variables>
     <resource_limits>
       <resource name="RLIMIT_STACK">-1</resource>

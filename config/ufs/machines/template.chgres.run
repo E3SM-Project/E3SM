@@ -1,7 +1,7 @@
-#!/bin/bash 
+#!/bin/bash
 {{ batchdirectives }}
 
-source .env_mach_specific.sh
+module list
 # Query run directory
 rundir=`./xmlquery --value RUNDIR`
 echo "Run directory is $rundir"

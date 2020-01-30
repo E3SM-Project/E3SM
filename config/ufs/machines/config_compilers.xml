@@ -255,8 +255,8 @@ using a fortran linker.
     <base> -fpp -fno-alias -auto -safe-cray-ptr -ftz -assume byterecl -nowarn -sox -align array64byte</base>
     <append compile_threaded="TRUE"> -qopenmp </append>
 
-    <append DEBUG="TRUE">  -g -O0 -check -check noarg_temp_created -check nopointer -warn -warn noerrors -fp-stack-check -fstack-protector-all -fpe0 -debug -traceback -ftrapuv </append>
-    <append DEBUG="FALSE"> -O2 -debug minimal </append>
+    <append DEBUG="TRUE">  -g -O0 -check -check noarg_temp_created -check nopointer -warn -warn noerrors -fp-stack-check -fstack-protector-all -debug -traceback -fpe0 -ftrapuv </append>
+    <append DEBUG="FALSE"> -O2 -debug minimal</append>
   </FFLAGS>
   <FFLAGS_NOOPT>
     <base> -O0 </base>
