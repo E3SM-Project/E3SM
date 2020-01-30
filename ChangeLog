@@ -1,6 +1,30 @@
 ======================================================================
 
 Originator: Chris Fischer 
+Date: 1-30-2020
+Tag: cime5.6.32
+Answer Changes: None
+Tests: Prealpha tests on izumi
+Dependencies:
+
+Brief Summary:
+    - Update intel and cprnc on izumi
+
+User interface changes: 
+
+PR summary: git log --oneline --first-parent [previous_tag]..master 
+7a0b1a48f Merge pull request #3382 from ESMCI/fischer/izumi
+
+
+Modified files: git diff --name-status [previous_tag]
+M       config/cesm/machines/config_machines.xml
+
+
+======================================================================
+
+======================================================================
+
+Originator: Chris Fischer 
 Date: 1-28-2020
 Tag: cime5.6.31
 Answer Changes: None
