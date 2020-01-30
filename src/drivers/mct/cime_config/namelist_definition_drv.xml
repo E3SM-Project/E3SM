@@ -4732,8 +4732,8 @@
        Surface albedo for direct radiation
     </desc>
     <values>
-      <value>0.06</value>
-      <value aqua_planet_sst_type="sst_aquap11">0.07</value>
+      <value>0.06D0</value>
+      <value aqua_planet_sst_type="sst_aquap11">0.07D0</value>
     </values>
   </entry>
 
@@ -4745,7 +4745,7 @@
        Surface albedo for diffuse radiation
     </desc>
     <values>
-      <value>0.07</value>
+      <value>0.07D0</value>
     </values>
   </entry>
 
@@ -4757,8 +4757,8 @@
        minimum wind speed for atmOcn flux calculations
     </desc>
     <values>
-      <value>0.5</value>
-      <value aqua_planet_sst_type="sst_aquap11">1.0</value>
+      <value>0.5D0</value>
+      <value aqua_planet_sst_type="sst_aquap11">1.0D0</value>
     </values>
   </entry>
 
