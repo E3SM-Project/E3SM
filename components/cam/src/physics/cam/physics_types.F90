@@ -1,3 +1,5 @@
+#define NOALLOC
+
 !-------------------------------------------------------------------------------
 !physics data types module
 !-------------------------------------------------------------------------------
@@ -51,9 +53,11 @@ module physics_types
   public physics_state_dealloc ! deallocate individual components within state
   public physics_tend_alloc    ! allocate individual components within tend
   public physics_tend_dealloc  ! deallocate individual components within tend
-  public physics_ptend_alloc   ! allocate individual components within tend
-  public physics_ptend_dealloc ! deallocate individual components within tend
 
+  public physics_ptend_alloc   ! allocate individual components within tend
+#ifndef NOALLOC
+  public physics_ptend_dealloc ! deallocate individual components within tend
+#endif
 !-------------------------------------------------------------------------------
   type physics_state
      integer                                     :: &
@@ -142,22 +146,40 @@ module physics_types
           top_level,        &! top level index for which nonzero tendencies have been set
           bot_level          ! bottom level index for which nonzero tendencies have been set
 
+#ifdef NOALLOC
+     real(r8), dimension(:,:),pointer   :: &
+#else
      real(r8), dimension(:,:),allocatable   :: &
+#endif
           s,                &! heating rate (J/kg/s)
           u,                &! u momentum tendency (m/s/s)
           v                  ! v momentum tendency (m/s/s)
+#ifdef NOALLOC
+     real(r8), dimension(:,:,:),pointer   :: &
+#else
      real(r8), dimension(:,:,:),allocatable :: &
+#endif
           q                  ! consituent tendencies (kg/kg/s)
 
 ! boundary fluxes
+#ifdef NOALLOC
+     real(r8), dimension(:),pointer   :: &
+#else
      real(r8), dimension(:),allocatable     ::&
+#endif
           hflux_srf,     &! net heat flux at surface (W/m2)
           hflux_top,     &! net heat flux at top of model (W/m2)
           taux_srf,      &! net zonal stress at surface (Pa)
           taux_top,      &! net zonal stress at top of model (Pa)
           tauy_srf,      &! net meridional stress at surface (Pa)
           tauy_top        ! net meridional stress at top of model (Pa)
+
+!not allocated, are they in use?
+#ifdef NOALLOC
+     real(r8), dimension(:,:),pointer   :: &
+#else
      real(r8), dimension(:,:),allocatable   ::&
+#endif
           cflx_srf,      &! constituent flux at surface (kg/m2/s)
           cflx_top        ! constituent flux top of model (kg/m2/s)
 
@@ -167,6 +189,7 @@ module physics_types
 !===============================================================================
 contains
 !===============================================================================
+
   subroutine physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, psetcols)
     implicit none
     type(physics_state), pointer :: phys_state(:)
@@ -450,8 +473,10 @@ contains
 
     deallocate(cpairv_loc, rairv_loc)
 
+#ifndef NOALLOC
     ! Deallocate ptend
     call physics_ptend_dealloc(ptend)
+#endif
 
     ptend%name  = "default"
     ptend%lq(:) = .false.
@@ -962,7 +987,7 @@ end subroutine physics_ptend_copy
 !-----------------------------------------------------------------------
     integer :: m             ! Index for constiuent
 !-----------------------------------------------------------------------
-
+#ifndef NOALLOC
     if(ptend%ls) then
        ptend%s = 0._r8
        ptend%hflux_srf = 0._r8
@@ -983,6 +1008,20 @@ end subroutine physics_ptend_copy
        ptend%cflx_srf = 0._r8
        ptend%cflx_top = 0._r8
     end if
+#else
+       ptend%s = 0._r8
+       ptend%hflux_srf = 0._r8
+       ptend%hflux_top = 0._r8
+       ptend%u = 0._r8
+       ptend%taux_srf = 0._r8
+       ptend%taux_top = 0._r8
+       ptend%v = 0._r8
+       ptend%tauy_srf = 0._r8
+       ptend%tauy_top = 0._r8
+       ptend%q = 0._r8
+       ptend%cflx_srf = 0._r8
+       ptend%cflx_top = 0._r8
+#endif
 
     ptend%top_level = 1
     ptend%bot_level = pver
@@ -1008,9 +1047,11 @@ end subroutine physics_ptend_copy
     
 !-----------------------------------------------------------------------
 
+#ifndef NOALLOC
     if (allocated(ptend%s)) then 
        call endrun(' physics_ptend_init: ptend should not be allocated before calling this routine')
     end if
+#endif
 
     ptend%name     = name
     ptend%psetcols =  psetcols
@@ -1051,7 +1092,9 @@ end subroutine physics_ptend_copy
        ptend%lq(:) = .false.
     end if
 
+#ifndef NOALLOC
     call physics_ptend_alloc(ptend, psetcols)
+#endif
 
     call physics_ptend_reset(ptend)
 !pw call t_stopf('physics_ptend_init')
@@ -1858,6 +1901,7 @@ subroutine physics_ptend_alloc(ptend,psetcols)
 
   integer :: ierr = 0
 
+#ifndef NOALLOC
   ptend%psetcols = psetcols
 
   if (ptend%ls) then
@@ -1903,18 +1947,46 @@ subroutine physics_ptend_alloc(ptend,psetcols)
      allocate(ptend%cflx_top(psetcols,pcnst), stat=ierr)
      if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%cflx_top')
   end if
+#else
+#if 0
+     allocate(ptend%s(psetcols,pver), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%s')
+     allocate(ptend%hflux_srf(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%hflux_srf')
+     allocate(ptend%hflux_top(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%hflux_top')
+     allocate(ptend%u(psetcols,pver), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%u')
+     allocate(ptend%taux_srf(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%taux_srf')
+     allocate(ptend%taux_top(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%taux_top')
+     allocate(ptend%v(psetcols,pver), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%v')
+     allocate(ptend%tauy_srf(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%tauy_srf')
+     allocate(ptend%tauy_top(psetcols), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%tauy_top')
+     allocate(ptend%q(psetcols,pver,pcnst), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%q')
+     allocate(ptend%cflx_srf(psetcols,pcnst), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%cflx_srf')
+     allocate(ptend%cflx_top(psetcols,pcnst), stat=ierr)
+     if ( ierr /= 0 ) call endrun('physics_ptend_alloc error: allocation error for ptend%cflx_top')
+#endif
+#endif
 
 end subroutine physics_ptend_alloc
 
 !===============================================================================
 
+#ifndef NOALLOC
 subroutine physics_ptend_dealloc(ptend)
 
 ! deallocate the individual ptend components
 
   type(physics_ptend), intent(inout) :: ptend
   integer :: ierr = 0
-
   ptend%psetcols = 0
 
   if (allocated(ptend%s)) deallocate(ptend%s, stat=ierr)
@@ -1952,7 +2024,7 @@ subroutine physics_ptend_dealloc(ptend)
 
   if(allocated(ptend%cflx_top))   deallocate(ptend%cflx_top, stat=ierr)
   if ( ierr /= 0 ) call endrun('physics_ptend_dealloc error: deallocation error for ptend%cflx_top')
-
 end subroutine physics_ptend_dealloc
+#endif
 
 end module physics_types

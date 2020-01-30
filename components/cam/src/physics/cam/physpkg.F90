@@ -660,9 +660,11 @@ subroutine phys_inidat( cam_out, pbuf2d )
     call initialize_short_lived_species(fh_ini, pbuf2d)
 end subroutine phys_inidat
 
-
+#ifndef NOALLOC
 subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
-
+#else
+subroutine phys_init( phys_state, phys_tend, phys_ptend, pbuf2d, cam_out )
+#endif
     !----------------------------------------------------------------------- 
     ! 
     ! Initialization of physics package.
@@ -734,6 +736,9 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! Input/output arguments
     type(physics_state), pointer       :: phys_state(:)
     type(physics_tend ), pointer       :: phys_tend(:)
+#ifdef NOALLOC
+    type(physics_tend ), pointer       :: phys_ptend(:)
+#endif
     type(physics_buffer_desc), pointer :: pbuf2d(:,:)
 
     type(cam_out_t),intent(inout)      :: cam_out(begchunk:endchunk)
@@ -744,7 +749,11 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     !-----------------------------------------------------------------------
 
+#ifndef NOALLOC
     call physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, pcols)
+#else
+    call physics_type_alloc(phys_state, phys_tend, phys_ptend, begchunk, endchunk, pcols)
+#endif
 
     do lchnk = begchunk, endchunk
        call physics_state_set_grid(lchnk, phys_state(lchnk))
@@ -2073,6 +2082,51 @@ subroutine tphysbc (ztodt,               &
     logical :: l_rad
     !HuiWan (2014/15): added for a short-term time step convergence test ==
 
+#ifdef NOALLOC
+    real(r8),target :: pts(psetcols,pver), pthflux_srf(psetcols), pthflux_top(psetcols), &
+                ptu(psetcols,pver), ptv(psetcols,pver), pttaux_srf(psetcols), pttaux_top(psetcols), &
+                                                        pttauy_srf(psetcols), pttauy_top(psetcols), &
+                ptq(psetcols,pver,pcnst),  ptcflx_srf(psetcols,pcnst), ptcflx_top(psetcols,pcnst)    
+#endif
+
+#ifdef NOALLOC
+    ptend%psetcols = psetcols
+    !should i init ptend arrays to nans instead?
+    pts(:psetcols,:pver)=0.0
+    pthflux_srf(:psetcols)=0.0
+    pthflux_top(:psetcols)=0.0
+
+    ptu(:psetcols,:pver)=0.0
+    pttaux_srf(:psetcols)=0.0
+    pttaux_top(:psetcols)=0.0
+
+    ptv(:psetcols,:pver)=0.0
+    pttauy_srf(:psetcols)=0.0
+    pttauy_top(:psetcols)=0.0
+
+    ptq(:psetcols,:pver,:pcnst)=0.0
+    ptcflx_srf(:psetcols,:pcnst)=0.0
+    ptcflx_top(:psetcols,:pcnst)=0.0
+
+    ptend%s => pts
+    ptend%u => ptu
+    ptend%v => ptv
+    ptend%q => ptq
+
+    ptend%hflux_srf => pthflux_srf
+    ptend%hflux_top => pthflux_top
+
+    ptend%taux_srf => pthtaux_srf
+    ptend%taux_top => pthtaux_top
+
+    ptend%tauy_srf => pthtauy_srf
+    ptend%tauy_top => pthtauy_top
+
+    ptend%cflux_srf => ptcflux_srf
+    ptend%cflux_top => ptcflux_top
+#endif
+
+
 
     call phys_getopts( microp_scheme_out      = microp_scheme, &
                        macrop_scheme_out      = macrop_scheme, &
@@ -2591,6 +2645,7 @@ end if
           call t_startf('microp_tend')
 
 
+#if 0
           if (use_subcol_microp) then
              call microp_driver_tend(state_sc, ptend_sc, cld_macmic_ztodt, pbuf)
 
@@ -2615,13 +2670,20 @@ end if
              call physics_tend_dealloc(tend_sc)
              call physics_ptend_dealloc(ptend_sc)
           else
+#endif
              call microp_driver_tend(state, ptend, cld_macmic_ztodt, pbuf)
+#if 0
           end if
+#endif
+
+!aaron said not active
+#if 0
           ! combine aero and micro tendencies for the grid
           if (.not. micro_do_icesupersat) then
              call physics_ptend_sum(ptend_aero, ptend, ncol)
              call physics_ptend_dealloc(ptend_aero)
           endif
+#endif
 
           ! Have to scale and apply for full timestep to get tend right
           ! (see above note for macrophysics).
