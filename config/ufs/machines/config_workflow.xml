@@ -57,8 +57,8 @@
       <prereq>$BUILD_COMPLETE</prereq>
       <runtime_parameters>
         <task_count>72</task_count>
-        <tasks_per_node>36</tasks_per_node>
-        <walltime>1:00:00</walltime>
+        <tasks_per_node>$MAX_MPITASKS_PER_NODE</tasks_per_node>
+        <walltime>0:30:00</walltime>
       </runtime_parameters>
     </job>
     <job name="case.run">
@@ -76,9 +76,9 @@
       <dependency>case.run or case.test</dependency>
       <prereq>$BUILD_COMPLETE</prereq>
       <runtime_parameters>
-        <task_count>8</task_count>
-        <tasks_per_node>8</tasks_per_node>
-        <walltime>0:20:00</walltime>
+        <task_count>72</task_count>
+        <tasks_per_node>$MAX_MPITASKS_PER_NODE</tasks_per_node>
+        <walltime>0:30:00</walltime>
       </runtime_parameters>
     </job>
     <job name="case.st_archive">
@@ -101,8 +101,8 @@
       <prereq>$BUILD_COMPLETE</prereq>
       <runtime_parameters>
         <task_count>72</task_count>
-        <tasks_per_node>36</tasks_per_node>
-        <walltime>1:00:00</walltime>
+        <tasks_per_node>$MAX_MPITASKS_PER_NODE</tasks_per_node>
+        <walltime>0:30:00</walltime>
       </runtime_parameters>
     </job>
     <job name="case.run">
