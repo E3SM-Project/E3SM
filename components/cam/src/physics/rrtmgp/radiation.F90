@@ -1386,8 +1386,8 @@ contains
       ! absorption coefficient look-up tables
       do iday = 1,nday
          icol = day_indices(iday)
-         lat(iday) = state%lat(icol) * pi / 180._r8
-         lon(iday) = state%lon(icol) * pi / 180._r8
+         lat(iday) = state%lat(icol) * 180._r8 / pi
+         lon(iday) = state%lon(icol) * 180._r8 / pi
       end do
       call t_startf('rrtmgp_check_temperatures')
       call check_range( &
@@ -1600,8 +1600,8 @@ contains
       ! values to min/max specified (depending on value of
       ! rrtmgp_clip_temperatures)
       do icol = 1,ncol
-         lat(icol) = state%lat(icol) * pi / 180._r8
-         lon(icol) = state%lon(icol) * pi / 180._r8
+         lat(icol) = state%lat(icol) * 180._r8 / pi
+         lon(icol) = state%lon(icol) * 180._r8 / pi
       end do
       call t_startf('rrtmgp_check_temperatures')
       call check_range( &
