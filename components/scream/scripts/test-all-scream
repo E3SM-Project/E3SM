@@ -7,7 +7,7 @@ gold standard to determine if the code is working or not on the current platform
 Run from $scream-repo/components/scream
 """
 
-from utils import expect, check_minimum_python_version
+from utils import expect, check_minimum_python_version, is_repo_clean
 check_minimum_python_version(3, 4)
 
 import argparse, sys, os
@@ -80,6 +80,10 @@ def _main_func(description):
     success = tas.test_all_scream()
 
     print("OVERALL STATUS: {}".format("PASS" if success else "FAIL"))
+    if not is_repo_clean():
+        print("WARNING! You have uncommitted changes in your repo.",
+              "         The PASS/FAIL status may depend on these changes",
+              "         so if you want to keep them, don't forget to create a commit.",sep="\n")
     sys.exit(0 if success else 1)
 
 ###############################################################################
