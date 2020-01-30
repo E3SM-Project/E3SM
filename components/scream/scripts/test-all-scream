@@ -7,7 +7,7 @@ gold standard to determine if the code is working or not on the current platform
 Run from $scream-repo/components/scream
 """
 
-from utils import expect, check_minimum_python_version, is_repo_clean
+from utils import expect, check_minimum_python_version
 check_minimum_python_version(3, 4)
 
 import argparse, sys, os
@@ -65,7 +65,6 @@ OR
     args = parser.parse_args(args[1:])
 
     expect(os.getcwd().endswith("components/scream"), "Run from $scream_repo/components/scream")
-    expect(is_repo_clean(), "Repo must be clean before running")
     if not args.kokkos:
         expect(args.machine, "If no external kokkos provided, must provide machine name for internal kokkos build")
     if args.submit:

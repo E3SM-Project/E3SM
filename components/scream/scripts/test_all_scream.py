@@ -1,4 +1,4 @@
-from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit, expect
+from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit, expect, is_repo_clean
 check_minimum_python_version(3, 4)
 
 import os, shutil
@@ -172,6 +172,7 @@ class TestAllScream(object):
         print("Generating baselines for ref {}".format(git_baseline_head))
 
         if git_baseline_head != "HEAD":
+            expect(is_repo_clean(), "If baseline commit is not HEAD, then the repo must be clean before running")
             run_cmd_no_fail("git checkout {}".format(git_baseline_head))
             print("  Switched to {} ({})".format(git_baseline_head, get_current_commit()))
 
