@@ -117,13 +117,12 @@ module radiation
    real(r8) :: dt_avg = 0.0_r8  
 
    ! k-distribution coefficients. These will be populated by reading from the
-   ! RRTMGP coefficients files, specified by coefficients_file_sw and
-   ! coefficients_file_lw in the radiation namelist. They exist as module data
-   ! because we only want to load those files once.
+   ! RRTMGP coefficients files, specified by rrtmgp_coefficients_file_sw and
+   ! rrtmgp_coefficients_file_lw in the radiation namelist. They exist as module
+   ! data because we only want to load those files once.
    type(ty_gas_optics_rrtmgp) :: k_dist_sw, k_dist_lw
 
-   ! k-distribution coefficients files to read from. These are set via namelist
-   ! variables.
+   ! k-distribution coefficients files to read from. Set via namelist.
    character(len=cl) :: rrtmgp_coefficients_file_sw, rrtmgp_coefficients_file_lw
 
    ! Should we clip temperatures when out of bounds of absorption coefficient
