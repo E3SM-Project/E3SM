@@ -1108,7 +1108,7 @@ contains
       do fc = 1, num_filterc
          c = filterc(fc)
          nlevbed = nlev2bed(c)
-         do j = 1, nlevbed
+         do j = 1, nlevsoi
             rootr_col(c,j) = 0._r8
          end do
       end do
