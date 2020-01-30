@@ -480,6 +480,9 @@
 <rrtmgp_coefficients_file_lw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_lw_c181004.nc</rrtmgp_coefficients_file_lw>
 <rrtmgp_coefficients_file_sw rad="rrtmgp">atm/cam/rad/rrtmgp_coefficients_sw_c181004.nc</rrtmgp_coefficients_file_sw>
 
+<!-- flag for clipping temperatures -->
+<rrtmgp_clip_temperatures rad="rrtmgp">.false.</rrtmgp_clip_temperatures>
+
 <!-- CAM-RT absorptivity/emissivity lookup table -->
 <absems_data>atm/cam/rad/abs_ems_factors_fastvx.c030508.nc</absems_data>
 
