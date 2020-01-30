@@ -1461,7 +1461,7 @@ This allows using a different mpirun command to launch unit tests
     <DIN_LOC_ROOT_CLMFORC>/project/tss</DIN_LOC_ROOT_CLMFORC>
     <DOUT_S_ROOT>/scratch/cluster/$USER/archive/$CASE</DOUT_S_ROOT>
     <BASELINE_ROOT>/fs/cgd/csm/ccsm_baselines</BASELINE_ROOT>
-    <CCSM_CPRNC>/fs/cgd/csm/tools/cime/tools/cprnc/cprnc.izumi</CCSM_CPRNC>
+    <CCSM_CPRNC>/fs/cgd/csm/tools/cime/tools/cprnc/cprnc</CCSM_CPRNC>
     <GMAKE>gmake --output-sync</GMAKE>
     <GMAKE_J>4</GMAKE_J>
     <BATCH_SYSTEM>pbs</BATCH_SYSTEM>
@@ -1494,7 +1494,7 @@ This allows using a different mpirun command to launch unit tests
 	<command name="purge"></command>
       </modules>
       <modules compiler="intel">
-	<command name="load">compiler/intel/19.0.1</command>
+	<command name="load">compiler/intel/19.0.2</command>
 	<command name="load">tool/netcdf/4.6.1/intel</command>
       </modules>
       <modules compiler="intel" mpilib="mvapich2">
