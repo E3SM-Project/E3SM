@@ -1262,7 +1262,7 @@ contains
       use mo_optical_props, only: ty_optical_props_2str
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: calculate_heating_rate, clip_values
+      use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: set_cloud_optics_sw, set_aerosol_optics_sw
       use physconst, only: pi
 
@@ -1382,16 +1382,6 @@ contains
                          pint(1:nday,1:nlev_rad+1), &
                          col_indices=day_indices(1:nday))
 
-      ! Clip temperatures if out of bounds?
-      if (rrtmgp_clip_temperatures) call clip_values( &
-         tmid(1:nday,1:nlev_rad), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), &
-         varname='tmid', warn=.true. &
-      )
-      if (rrtmgp_clip_temperatures) call clip_values( &
-         tint(1:nday,1:nlev_rad+1), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), &
-         varname='tint', warn=.true. &
-      )
-
       ! Check temperatures to make sure they are within the bounds of the
       ! absorption coefficient look-up tables
       do iday = 1,nday
@@ -1399,10 +1389,17 @@ contains
          lat(iday) = state%lat(icol) * pi / 180._r8
          lon(iday) = state%lon(icol) * pi / 180._r8
       end do
+      call t_startf('rrtmgp_check_temperatures')
       call check_range( &
-         tmid(1:nday,1:nlev_rad), k_dist_sw%get_temp_min(), k_dist_sw%get_temp_max(), &
-         trim(subroutine_name) // 'tmid', lat, lon &
+         tmid(1:nday,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+         trim(subroutine_name) // ' tmid', lat, lon, clip_values=rrtmgp_clip_temperatures &
       )
+      call check_range( &
+         tint(1:nday,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+         trim(subroutine_name) // ' tint', lat, lon, clip_values=rrtmgp_clip_temperatures &
+      )
+      call t_stopf('rrtmgp_check_temperatures')
+
 
       ! Get albedo. This uses CAM routines internally and just provides a
       ! wrapper to improve readability of the code here.
@@ -1546,7 +1543,7 @@ contains
       use mo_optical_props, only: ty_optical_props_1scl
       use mo_gas_concentrations, only: ty_gas_concs
       use radiation_state, only: set_rad_state
-      use radiation_utils, only: calculate_heating_rate, clip_values
+      use radiation_utils, only: calculate_heating_rate
       use cam_optics, only: set_cloud_optics_lw, set_aerosol_optics_lw
       use physconst, only: pi
 
@@ -1598,26 +1595,24 @@ contains
                          pmid(1:ncol,1:nlev_rad), &
                          pint(1:ncol,1:nlev_rad+1))
 
-      ! Clip temperatures if out of bounds?
-      if (rrtmgp_clip_temperatures) call clip_values( &
-         tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-         varname='tmid', warn=.true. &
-      )
-      if (rrtmgp_clip_temperatures) call clip_values( &
-         tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-         varname='tint', warn=.true. &
-      )
-
       ! Check temperatures to make sure they are within the bounds of the
-      ! absorption coefficient look-up tables
+      ! absorption coefficient look-up tables. If out of bounds, optionally clip
+      ! values to min/max specified (depending on value of
+      ! rrtmgp_clip_temperatures)
       do icol = 1,ncol
          lat(icol) = state%lat(icol) * pi / 180._r8
          lon(icol) = state%lon(icol) * pi / 180._r8
       end do
+      call t_startf('rrtmgp_check_temperatures')
       call check_range( &
          tmid(1:ncol,1:nlev_rad), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
-         trim(subroutine_name) // 'tmid', lat, lon &
+         trim(subroutine_name) // ' tmid', lat, lon, clip_values=rrtmgp_clip_temperatures &
       )
+      call check_range( &
+         tint(1:ncol,1:nlev_rad+1), k_dist_lw%get_temp_min(), k_dist_lw%get_temp_max(), &
+         trim(subroutine_name) // ' tint', lat, lon, clip_values=rrtmgp_clip_temperatures &
+      )
+      call t_stopf('rrtmgp_check_temperatures')
 
       ! Set surface emissivity to 1 here. There is a note in the RRTMG
       ! implementation that this is treated in the land model, but the old

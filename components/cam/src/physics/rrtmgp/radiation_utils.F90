@@ -288,52 +288,74 @@ contains
    end subroutine clip_values_2d
 
    !-------------------------------------------------------------------------------
-   subroutine check_range_2d(v, vmin, vmax, vname, lat, lon, abort_on_error)
+   subroutine check_range_2d(v, vmin, vmax, vname, lat, lon, abort_on_error, clip_values)
       use cam_abortutils, only: endrun
-      real(r8), intent(in) :: v(:,:), vmin, vmax
+      real(r8), intent(inout) :: v(:,:)
+      real(r8), intent(in) :: vmin, vmax
       character(len=*), intent(in) :: vname
       real(r8), intent(in) :: lat(:), lon(:)
-      logical, intent(in), optional :: abort_on_error
-      logical :: abort_on_error_local
+      logical, intent(in), optional :: abort_on_error, clip_values
+      logical :: abort_on_error_local, clip_values_local
       integer :: ix, iz
       if (present(abort_on_error)) then
          abort_on_error_local = abort_on_error
       else
          abort_on_error_local = .true.
       end if
+      if (present(clip_values)) then
+         clip_values_local = clip_values
+      else
+         clip_values_local = .false.
+      end if
       do iz = 1,size(v, 2)
          do ix = 1,size(v, 1)
             if (v(ix,iz) < vmin .or. v(ix,iz) > vmax) then
-               print *, 'Variable ' // trim(vname) // &
+               print *, 'WARNING: ' // trim(vname) // &
                         ' out of range; value = ', v(ix,iz), &
-                        '; lat/lon = ', lat(ix), lon(ix)
-               if (abort_on_error_local) call endrun('check_range failed for ' // trim(vname))
+                        '; lat, lon, lev = ', lat(ix), lon(ix), iz
+               if (clip_values_local) then
+                  if (v(ix,iz) < vmin) v(ix,iz) = vmin
+                  if (v(ix,iz) > vmax) v(ix,iz) = vmax
+               else if (abort_on_error_local) then
+                  call endrun('check_range failed for ' // trim(vname))
+               end if
             end if
          end do
       end do
    end subroutine check_range_2d
    !-------------------------------------------------------------------------------
-   subroutine check_range_3d(v, vmin, vmax, vname, lat, lon, abort_on_error)
+   subroutine check_range_3d(v, vmin, vmax, vname, lat, lon, abort_on_error, clip_values)
       use cam_abortutils, only: endrun
-      real(r8), intent(in) :: v(:,:,:), vmin, vmax
+      real(r8), intent(inout) :: v(:,:,:)
+      real(r8), intent(in) :: vmin, vmax
       character(len=*), intent(in) :: vname
       real(r8), intent(in) :: lat(:), lon(:)
-      logical, intent(in), optional :: abort_on_error
-      logical :: abort_on_error_local
+      logical, intent(in), optional :: abort_on_error, clip_values
+      logical :: abort_on_error_local, clip_values_local
       integer :: ix, iy, iz
       if (present(abort_on_error)) then
          abort_on_error_local = abort_on_error
       else
          abort_on_error_local = .true.
       end if
+      if (present(clip_values)) then
+         clip_values_local = clip_values
+      else
+         clip_values_local = .false.
+      end if
       do iz = 1,size(v, 3)
          do iy = 1,size(v,2)
             do ix = 1,size(v, 1)
                if (v(ix,iy,iz) < vmin .or. v(ix,iy,iz) > vmax) then
-                  print *, 'Variable ' // trim(vname) // &
+                  print *, 'WARNING: ' // trim(vname) // &
                            ' out of range; value = ', v(ix,iy,iz), &
-                           '; lat/lon = ', lat(ix), lon(ix)
-                  if (abort_on_error_local) call endrun('check_range failed for ' // trim(vname))
+                           '; lat, lon, lev = ', lat(ix), lon(ix), iz
+                  if (clip_values_local) then
+                     if (v(ix,iy,iz) < vmin) v(ix,iy,iz) = vmin
+                     if (v(ix,iy,iz) > vmax) v(ix,iy,iz) = vmax
+                  else if (abort_on_error_local) then
+                     call endrun('check_range failed for ' // trim(vname))
+                  end if
                end if
             end do
          end do
