@@ -266,7 +266,7 @@
   </batch_system>
 
   <batch_system MACH="stampede2-skx" type="slurm" >
-    <batch_submit>ssh stampede2.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
+    <batch_submit>ssh login1.stampede2.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
     <submit_args>
       <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
       <arg flag="-p" name="$JOB_QUEUE"/>
@@ -279,7 +279,7 @@
   </batch_system>
 
   <batch_system MACH="stampede2-knl" type="slurm" >
-    <batch_submit>ssh stampede2.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
+    <batch_submit>ssh login1.stampede2.tacc.utexas.edu cd $CASEROOT ; sbatch</batch_submit>
     <submit_args>
       <arg flag="--time" name="$JOB_WALLCLOCK_TIME"/>
       <arg flag="-p" name="$JOB_QUEUE"/>
