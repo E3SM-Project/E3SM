@@ -59,7 +59,7 @@ HyperviscosityFunctorImpl (const SimulationParams&     params,
 #ifdef HOMMEXX_BFB_TESTING
   m_process_nh_vars = true;
 #else
-  m_process_nh_vars = params.theta_hydrostatic_mode;
+  m_process_nh_vars = !params.theta_hydrostatic_mode;
 #endif
 
   // Make sure the sphere operators have buffers large enough to accommodate this functor's needs
