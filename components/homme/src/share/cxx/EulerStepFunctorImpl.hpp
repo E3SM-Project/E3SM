@@ -547,8 +547,10 @@ public:
   }
 
   void exchange_qdp_dss_var () {
+    GPTLstart("eus_bexch");
     const int idx = 3*m_data.np1_qdp + static_cast<int>(m_data.DSSopt);
     m_bes[idx]->exchange(m_geometry.m_rspheremp);
+    GPTLstop("eus_bexch");
   }
 
   void euler_step(const int np1_qdp, const int n0_qdp, const Real dt,
