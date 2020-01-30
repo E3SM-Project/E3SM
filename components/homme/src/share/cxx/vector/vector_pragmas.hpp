@@ -11,18 +11,21 @@
 
 #define VECTOR_IVDEP_LOOP _Pragma("ivdep")
 #define ALWAYS_VECTORIZE_LOOP _Pragma("vector always")
+#define VECTOR_SIMD_LOOP _Pragma("omp simd")
 
 #elif defined(__GNUG__) && !defined(__NVCC__)
 #if(__GNUG__ == 4 && __GNUC_MINOR__ >= 9) || __GNUG__ > 4
 
 #define VECTOR_IVDEP_LOOP _Pragma("GCC ivdep")
 #define ALWAYS_VECTORIZE_LOOP _Pragma("GCC vector always")
+#define VECTOR_SIMD_LOOP _Pragma("GCC ivdep")
 
 #else // __GNUG__ ...
 #pragma message( \
     "G++ <4.9 Does not support vectorization pragmas")
 #define VECTOR_IVDEP_LOOP
 #define ALWAYS_VECTORIZE_LOOP
+#define VECTOR_SIMD_LOOP
 
 #define HOMMEXX_NO_VECTOR_PRAGMAS
 
@@ -33,6 +36,7 @@
 
 #define VECTOR_IVDEP_LOOP
 #define ALWAYS_VECTORIZE_LOOP
+#define VECTOR_SIMD_LOOP
 
 #define HOMMEXX_NO_VECTOR_PRAGMAS
 

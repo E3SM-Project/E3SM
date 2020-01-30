@@ -14,6 +14,8 @@ using namespace Homme;
 
 
 // ============= COLUMN OPS ================ //
+constexpr int NUM_PTS = 4;
+constexpr int num_elems = 10;
 
 TEST_CASE("col_ops_interpolation", "interpolation") {
 
@@ -21,12 +23,10 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
   constexpr auto LAST_LEV   = ColInfo<NUM_PHYSICAL_LEV>::LastPack;
   constexpr auto LAST_LEV_PACK_IDX  = ColInfo<NUM_PHYSICAL_LEV>::LastPackEnd;
 
-  constexpr int num_elems = 10;
-
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_in  ("",num_elems);
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> d_interface_field_in  ("",num_elems);
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_out ("",num_elems);
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> d_interface_field_out ("",num_elems);
+  ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV]>   d_midpoints_field_in  ("",num_elems);
+  ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV_P]> d_interface_field_in  ("",num_elems);
+  ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV]>   d_midpoints_field_out ("",num_elems);
+  ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV_P]> d_interface_field_out ("",num_elems);
 
   auto h_midpoints_field_in  = Kokkos::create_mirror_view(d_midpoints_field_in);
   auto h_interface_field_in  = Kokkos::create_mirror_view(d_interface_field_in);
@@ -35,8 +35,8 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
 
   // Fill input fields columns with 0,1,2,3,...
   for (int ie=0; ie<num_elems; ++ie) {
-    for (int igp=0; igp<NP; ++igp) {
-      for (int jgp=0; jgp<NP; ++jgp) {
+    for (int igp=0; igp<NUM_PTS; ++igp) {
+      for (int jgp=0; jgp<NUM_PTS; ++jgp) {
         for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
           const int ilev = k / VECTOR_SIZE;
           const int ivec = k % VECTOR_SIZE;
@@ -57,10 +57,10 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
 
         ColumnOps::compute_midpoint_delta(kv,Homme::subview(d_interface_field_in,kv.ie,igp,jgp),
                                            Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
@@ -73,8 +73,8 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
     Kokkos::deep_copy(h_midpoints_field_out,d_midpoints_field_out);
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           auto mid_out = viewAsReal(Homme::subview(h_midpoints_field_out,ie,igp,jgp));
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
 
@@ -100,10 +100,10 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
 
         ColumnOps::compute_midpoint_values(kv,Homme::subview(d_interface_field_in,kv.ie,igp,jgp),
                                             Homme::subview(d_midpoints_field_out,kv.ie,igp,jgp));
@@ -117,8 +117,8 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
     Kokkos::deep_copy(h_midpoints_field_out,d_midpoints_field_out);
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           auto mid_out = viewAsReal(Homme::subview(h_midpoints_field_out,ie,igp,jgp));
           auto int_out = viewAsReal(Homme::subview(h_interface_field_out,ie,igp,jgp));
           // First midpoint should be fine, but first interface should be equal to the first midpoint
@@ -149,10 +149,10 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
         auto int_in = Homme::subview(d_interface_field_in,kv.ie,igp,jgp);
 
         auto prod_provider = [&](const int ilev)->Scalar {
@@ -170,8 +170,8 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
     Kokkos::deep_copy(h_midpoints_field_out,d_midpoints_field_out);
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           auto mid_out = viewAsReal(Homme::subview(h_midpoints_field_out,ie,igp,jgp));
           for (int k=0; k<NUM_PHYSICAL_LEV; ++k) {
 
@@ -186,12 +186,10 @@ TEST_CASE("col_ops_interpolation", "interpolation") {
 TEST_CASE("col_ops_reduction", "packed_reduction") {
 
   if (!OnGpu<ExecSpace>::value) {
-    constexpr int num_elems = 10;
-
-    ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_in  ("",num_elems);
-    ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> d_interface_field_in  ("",num_elems);
-    ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_out ("",num_elems);
-    ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> d_interface_field_out ("",num_elems);
+    ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV]>   d_midpoints_field_in  ("",num_elems);
+    ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV_P]> d_interface_field_in  ("",num_elems);
+    ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV]>   d_midpoints_field_out ("",num_elems);
+    ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV_P]> d_interface_field_out ("",num_elems);
 
     auto h_midpoints_field_in  = Kokkos::create_mirror_view(d_midpoints_field_in);
     auto h_interface_field_in  = Kokkos::create_mirror_view(d_interface_field_in);
@@ -222,10 +220,10 @@ TEST_CASE("col_ops_reduction", "packed_reduction") {
       Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                            KOKKOS_LAMBDA(const TeamMember& team) {
         KernelVariables kv(team);
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                              [&](const int idx) {
-          const int igp = idx / NP;
-          const int jgp = idx % NP;
+          const int igp = idx / NUM_PTS;
+          const int jgp = idx % NUM_PTS;
 
           // Providers
           auto provide_field_mid = [&] (const int ilev)->Scalar {
@@ -240,8 +238,8 @@ TEST_CASE("col_ops_reduction", "packed_reduction") {
           using pfi_type = decltype(provide_field_int);
           Real& mid_sum = d_midpoints_field_out(kv.ie,igp,jgp,0)[0];
           Real& int_sum = d_interface_field_out(kv.ie,igp,jgp,0)[0];
-          CO::column_reduction<NPL,pfm_type,false>(kv, provide_field_mid, mid_sum);
-          CO::column_reduction<NIL,pfi_type,false>(kv, provide_field_int, int_sum);
+          CO::column_reduction<NPL,pfm_type,true>(kv, provide_field_mid, mid_sum);
+          CO::column_reduction<NIL,pfi_type,true>(kv, provide_field_int, int_sum);
         });
       });
 
@@ -249,15 +247,15 @@ TEST_CASE("col_ops_reduction", "packed_reduction") {
       Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
       for (int ie=0; ie<num_elems; ++ie) {
-        for (int igp=0; igp<NP; ++igp) {
-          for (int jgp=0; jgp<NP; ++jgp) {
+        for (int igp=0; igp<NUM_PTS; ++igp) {
+          for (int jgp=0; jgp<NUM_PTS; ++jgp) {
             // Compute using std functions
 
             // Copy from host view to std vector
             auto mid_in = viewAsReal(Homme::subview(h_midpoints_field_in,ie,igp,jgp));
             auto int_in = viewAsReal(Homme::subview(h_interface_field_in,ie,igp,jgp));
-            std::copy_n(mid_in.data(),NUM_PHYSICAL_LEV,mid_data.begin());
-            std::copy_n(int_in.data(),NUM_INTERFACE_LEV,int_data.begin());
+            std::copy_n(mid_in.data(),NPL,mid_data.begin());
+            std::copy_n(int_in.data(),NIL,int_data.begin());
 
             // Manuallly do the reduction, in the right order
             Real sum_mid = 0.0;
@@ -297,12 +295,10 @@ TEST_CASE("col_ops_reduction", "packed_reduction") {
 
 TEST_CASE("col_ops_scan_sum", "scan_sum") {
 
-  constexpr int num_elems = 10;
-
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_in  ("",num_elems);
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> d_interface_field_in  ("",num_elems);
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV]>   d_midpoints_field_out ("",num_elems);
-  ExecViewManaged<Scalar*[NP][NP][NUM_LEV_P]> d_interface_field_out ("",num_elems);
+  ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV]>   d_midpoints_field_in  ("",num_elems);
+  ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV_P]> d_interface_field_in  ("",num_elems);
+  ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV]>   d_midpoints_field_out ("",num_elems);
+  ExecViewManaged<Scalar*[NUM_PTS][NUM_PTS][NUM_LEV_P]> d_interface_field_out ("",num_elems);
 
   auto h_midpoints_field_in  = Kokkos::create_mirror_view(d_midpoints_field_in);
   auto h_interface_field_in  = Kokkos::create_mirror_view(d_interface_field_in);
@@ -332,10 +328,10 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
 
         // Providers
         auto provide_field_mid = [&] (const int ilev)->Scalar {
@@ -357,8 +353,8 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           // Compute using std functions
 
           // Copy from host view to std vector
@@ -391,10 +387,10 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
 
         // Providers
         auto provide_field_mid = [&] (const int ilev)->Scalar {
@@ -416,8 +412,8 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           // Compute using std functions
 
           // Copy from host view to std vector
@@ -450,10 +446,10 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
 
         // Providers
         auto provide_field_mid = [&] (const int ilev)->Scalar {
@@ -475,8 +471,8 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           // Compute using std functions
 
           // Copy from host view to std vector
@@ -510,10 +506,10 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
 
         // Providers
         auto provide_field_mid = [&] (const int ilev)->Scalar {
@@ -535,8 +531,8 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           // Compute using std functions
 
           // Copy from host view to std vector
@@ -571,10 +567,10 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
 
         auto in  = Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp);
         auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
@@ -587,8 +583,8 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           // Compute manually
 
           // Copy from host view to std vector
@@ -615,6 +611,7 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
   // Backward midpoints to interfaces
   SECTION("bwd_mid_to_int_field") {
     const Real s0 = pdf(engine);
+
     using Info = ColInfo<NUM_INTERFACE_LEV>;
     constexpr int LAST_PACK     = Info::LastPack;
     constexpr int LAST_PACK_END = Info::LastPackEnd;
@@ -622,10 +619,10 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
 
         auto in  = Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp);
         auto out = Homme::subview(d_interface_field_out,kv.ie,igp,jgp);
@@ -638,8 +635,8 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           // Compute manually
 
           // Copy from host view to std vector
@@ -669,10 +666,10 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
 
         auto in  = Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp);
         auto provider = [&](const int ilev) -> Scalar{
@@ -688,8 +685,8 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           // Compute manually
 
           // Copy from host view to std vector
@@ -721,10 +718,10 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::parallel_for(Homme::get_default_team_policy<ExecSpace>(num_elems),
                          KOKKOS_LAMBDA(const TeamMember& team) {
       KernelVariables kv(team);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NP*NP),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(kv.team,NUM_PTS*NUM_PTS),
                            [&](const int idx) {
-        const int igp = idx / NP;
-        const int jgp = idx % NP;
+        const int igp = idx / NUM_PTS;
+        const int jgp = idx % NUM_PTS;
 
         auto in  = Homme::subview(d_midpoints_field_in,kv.ie,igp,jgp);
         auto provider = [&](const int ilev) -> Scalar{
@@ -740,8 +737,8 @@ TEST_CASE("col_ops_scan_sum", "scan_sum") {
     Kokkos::deep_copy(h_interface_field_out,d_interface_field_out);
 
     for (int ie=0; ie<num_elems; ++ie) {
-      for (int igp=0; igp<NP; ++igp) {
-        for (int jgp=0; jgp<NP; ++jgp) {
+      for (int igp=0; igp<NUM_PTS; ++igp) {
+        for (int jgp=0; jgp<NUM_PTS; ++jgp) {
           // Compute manually
 
           // Copy from host view to std vector

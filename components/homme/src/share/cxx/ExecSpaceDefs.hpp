@@ -279,7 +279,7 @@ struct Dispatch {
     const typename Kokkos::TeamPolicy<ExeSpace>::member_type& team,
     const Lambda& lambda)
   {
-VECTOR_IVDEP_LOOP
+VECTOR_SIMD_LOOP
     for (int k = 0; k < NP*NP; ++k)
       lambda(k);
   }
