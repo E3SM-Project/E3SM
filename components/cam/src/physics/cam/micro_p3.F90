@@ -438,7 +438,7 @@ contains
     ! so that they can be written as ouput.  NOTE TO C++ PORT: This variable is entirely optional and doesn't need to be
     ! included in the port to C++, or can be changed if desired.
     real(rtype), intent(out),   dimension(its:ite,kts:kte,49)   :: p3_tend_out ! micro physics tendencies
-    real(rtype), intent(in),    dimension(its:ite,2)            :: col_location
+    real(rtype), intent(in),    dimension(its:ite,3)            :: col_location
     !----- Local variables and parameters:  -------------------------------------------------!
 
     real(rtype), dimension(its:ite,kts:kte) :: mu_r  ! shape parameter of rain
