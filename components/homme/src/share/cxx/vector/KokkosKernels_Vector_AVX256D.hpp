@@ -139,22 +139,12 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   value_type reduce_add() {
-    // Permute 0-1 and 2-3; Mask needed is 0101 = 0x05
-    _mm256d tmp1 = _mm256_permute_pd(ymm0, 0x05);
+    // Horizontal add: [0+1, 0+1, 2+3, 2+3].
+    __m256d tmp1 = _mm256_hadd_pd(_data.v, _data.v);
 
-    // Add original and permuted (this sums 0+1 and 2+3
-    tmp1 = _mm256_add_pd(_data.v, tmp1);
-
-    // Permute low and high part
-    _mm256d tmp2 = _mm256_permute2f128_pd(tmp1, tmp1, 0x01);
-
-    // Get the final sum (it will be repeated in all entries of the vector register)
-    _mm256d sum = _mm256_add_pd(tmp1, tmp2);
-
-    return _mm256_cvtsd_f64(sum);
+    // (0+1) + (2+3)
+    return tmp1[0]+tmp1[2];
   }
-
-
 
   inline value_type &operator[](int i) const { return _data.d[i]; }
 };
