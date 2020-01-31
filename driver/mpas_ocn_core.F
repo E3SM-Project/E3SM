@@ -32,6 +32,7 @@ module ocn_core
    use ocn_forward_mode
    use ocn_analysis_mode
    use ocn_init_mode
+   use ocn_config
 
    implicit none
    private
@@ -59,7 +60,6 @@ module ocn_core
       character(len=*), intent(out) :: startTimeStamp
       integer :: ierr
 
-      character (len=StrKIND), pointer :: config_ocean_run_mode
       integer :: numThreads
 
       ierr = 0
@@ -101,11 +101,7 @@ module ocn_core
 
       integer :: iErr
 
-      character(len=StrKIND), pointer :: config_ocean_run_mode
-
       iErr = 0
-
-      call mpas_pool_get_config(domain % configs, 'config_ocean_run_mode', config_ocean_run_mode)
 
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          ierr = ocn_forward_mode_run(domain)
@@ -134,11 +130,7 @@ module ocn_core
       type (domain_type), intent(inout) :: domain
       integer :: ierr
 
-      character(len=StrKIND), pointer :: config_ocean_run_mode
-
       ierr = 0
-
-      call mpas_pool_get_config(domain % configs, 'config_ocean_run_mode', config_ocean_run_mode)
 
       if ( trim(config_ocean_run_mode) == 'forward' ) then
          ierr = ocn_forward_mode_finalize(domain)
