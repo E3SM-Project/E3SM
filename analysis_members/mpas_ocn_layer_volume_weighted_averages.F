@@ -162,6 +162,7 @@ contains
       type (mpas_pool_type), pointer :: layerVolumeWeightedAverageAMPool
       type (mpas_pool_type), pointer :: statePool
       type (mpas_pool_type), pointer :: meshPool
+      type (mpas_pool_type), pointer :: scratchPool
       type (mpas_pool_type), pointer :: diagnosticsPool
       type (mpas_pool_type), pointer :: forcingPool
       type (mpas_pool_type), pointer :: tracersPool
@@ -256,6 +257,9 @@ contains
       block => domain % blocklist
       do while (associated(block))
 
+         ! get pointers to scratch variables
+         call mpas_pool_get_subpool(block % structs, 'layerVolumeWeightedAverageAMScratch', scratchPool)
+
          ! get pointers to pools
          call mpas_pool_get_subpool(block % structs, 'state', statePool)
          call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
@@ -284,8 +288,8 @@ contains
          endif
 
          !$omp master
-         allocate(workArray(nDefinedDataFields, size(areaCell)), &
-                  workMask(size(areaCell)), &
+         allocate(workArray(nDefinedDataFields, nCells), &
+                  workMask(nCells), &
                   workMin(nDefinedDataFields), &
                   workMax(nDefinedDataFields), &
                   workSum(nDefinedDataFields))
