@@ -154,15 +154,19 @@ void test_utils_large_ni(const double saturation_multiplier)
 
   const int nk = 128;
   const Real overprov_factor = 1.5;
-  TeamUtils<ExeSpace> tu_temp(ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk));
-  const int num_conc = tu_temp.get_max_concurrent_threads() / nk;
+  const auto temp_policy = ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  TeamUtils<ExeSpace> tu_temp(temp_policy);
+  const int num_conc = tu_temp.get_max_concurrent_threads() / temp_policy.team_size();
 
   const int ni = num_conc*saturation_multiplier;
   const auto p = ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
   TeamUtils<ExeSpace> tu(p, overprov_factor);
 
   REQUIRE(p.league_size() == ni);
-  if (!OnGpu<ExeSpace>::value || saturation_multiplier <= 1.0) {
+  if (saturation_multiplier <= 1.0) {
+    REQUIRE(tu.get_num_ws_slots() == ni);
+  }
+  else if (!OnGpu<ExeSpace>::value) {
     REQUIRE(tu.get_num_ws_slots() == num_conc);
   }
   else {
@@ -170,7 +174,7 @@ void test_utils_large_ni(const double saturation_multiplier)
   }
 
   int max_workspace_idx = 0;
-  typename KokkosTypes<Device>::template view_1d<int> test_data("test_data", num_conc);
+  typename KokkosTypes<Device>::template view_1d<int> test_data("test_data", tu.get_num_ws_slots());
   Kokkos::parallel_reduce("unique_token_check", p, KOKKOS_LAMBDA(MemberType team_member, int& max_ws_idx) {
     const int wi = tu.get_workspace_idx(team_member);
 
@@ -188,7 +192,7 @@ void test_utils_large_ni(const double saturation_multiplier)
   Kokkos::deep_copy(test_data_h, test_data);
 
   int sum = 0;
-  for(int i = 0; i < num_conc; ++i) {
+  for(int i = 0; i < tu.get_num_ws_slots(); ++i) {
     sum += test_data_h(i);
   }
 

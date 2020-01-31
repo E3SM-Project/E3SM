@@ -33,13 +33,14 @@ static void unittest_workspace_overprovision()
 
   const int nk = 128;
 
-  TeamUtils<ExeSpace> tu_temp(ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk));
-  const int num_conc = tu_temp.get_max_concurrent_threads() / nk;
+  const auto temp_policy = ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk);
+  TeamUtils<ExeSpace> tu_temp(temp_policy);
+  const int num_conc = tu_temp.get_max_concurrent_threads() / temp_policy.team_size();
 
   constexpr Real op_fact = WSM::GPU_DEFAULT_OVERPROVISION_FACTOR;
   constexpr Real explicit_op_fact = op_fact * 2.0;
 
-  const int ni_under   = num_conc / 2;
+  const int ni_under   = (num_conc / 2) + 1;
   const int ni_conc    = num_conc;
   const int ni_between = num_conc * ( (op_fact + 1.0) / 2.0 );
   const int ni_exact   = num_conc * op_fact;
@@ -49,8 +50,11 @@ static void unittest_workspace_overprovision()
     TeamPolicy policy(ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni_item, nk));
     WSM wsm(4, 4, policy);
 
-    if (!OnGpu<ExeSpace>::value || ni_item <= ni_exact) {
+    if (ni_item <= ni_exact) {
       REQUIRE(wsm.m_max_ws_idx == ni_item);
+    }
+    else if (!OnGpu<ExeSpace>::value) {
+      REQUIRE(wsm.m_max_ws_idx == num_conc);
     }
     else {
       REQUIRE(wsm.m_max_ws_idx == num_conc * op_fact);
@@ -61,8 +65,11 @@ static void unittest_workspace_overprovision()
     TeamPolicy policy(ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni_item, nk));
     WSM wsm(4, 4, policy, explicit_op_fact);
 
-    if (!OnGpu<ExeSpace>::value || ni_item <= ni_exact) {
+    if (ni_item <= ni_exact) {
       REQUIRE(wsm.m_max_ws_idx == ni_item);
+    }
+    else if (!OnGpu<ExeSpace>::value) {
+      REQUIRE(wsm.m_max_ws_idx == num_conc);
     }
     else {
       REQUIRE(wsm.m_max_ws_idx == num_conc * explicit_op_fact);

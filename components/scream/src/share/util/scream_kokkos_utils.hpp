@@ -129,7 +129,7 @@ template <typename ExeSpace = Kokkos::DefaultExecutionSpace>
 class _TeamUtilsCommonBase
 {
  protected:
-  int _team_size, _num_teams, _max_threads;
+  int _team_size, _num_teams, _max_threads, _league_size;
 
  public:
   template <typename TeamPolicy>
@@ -139,9 +139,12 @@ class _TeamUtilsCommonBase
     const int team_size = policy.team_size();
     _num_teams = _max_threads / team_size;
     _team_size = _max_threads / _num_teams;
+    _league_size = policy.league_size();
 
     // We will never run more teams than the policy needs
-    _num_teams = _num_teams > policy.league_size() ? policy.league_size() : _num_teams;
+    _num_teams = _num_teams > policy.league_size() ? _league_size : _num_teams;
+
+    scream_assert_msg(_num_teams > 0, "Should always be able to run at least 1 team");
   }
 
   // How many thread teams can run concurrently
@@ -220,8 +223,10 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
   template <typename TeamPolicy>
   TeamUtils(const TeamPolicy& policy, const Real& overprov_factor = 1.0) :
     _TeamUtilsCommonBase<Kokkos::Cuda>(policy),
-    _num_ws_slots(policy.league_size() > _num_teams ? overprov_factor * _num_teams : _num_teams),
-    _need_ws_sharing(policy.league_size() > _num_ws_slots),
+    _num_ws_slots(_league_size > _num_teams
+                  ? (overprov_factor * _num_teams > _league_size ? _league_size : overprov_factor * _num_teams)
+                  : _num_teams),
+    _need_ws_sharing(_league_size > _num_ws_slots),
     _open_ws_slots("open_ws_slots", _need_ws_sharing ? _num_ws_slots : 0),
     _rand_pool(std::chrono::high_resolution_clock::now().time_since_epoch().count())
   { }
