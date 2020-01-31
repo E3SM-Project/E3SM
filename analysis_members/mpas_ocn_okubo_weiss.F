@@ -1493,12 +1493,12 @@ contains
          call mpas_pool_get_array(okuboWeissAMPool, 'vorticity', om)
 
          !$omp master
-         allocate(velocityGradient(3, 3, nVertLevels, nCells), &
+         allocate(velocityGradient(2, 2, nVertLevels, nCells), &
                   OW_thresh(nVertLevels, nCells), &
-                  S(nVertLevels, nCells + 1), &
-                  Lam1(nVertLevels, nCells + 1), &
-                  Lam2(nVertLevels, nCells + 1), &
-                  Lam2_R3(nVertLevels, nCells + 1))
+                  S(nVertLevels, nCells), &
+                  Lam1(nVertLevels, nCells), &
+                  Lam2(nVertLevels, nCells), &
+                  Lam2_R3(nVertLevels, nCells))
          !$omp end master
          !$omp barrier
 

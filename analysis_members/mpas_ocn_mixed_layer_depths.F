@@ -163,6 +163,7 @@ contains
       type (mpas_pool_type), pointer :: tracersPool
       type (mpas_pool_type), pointer :: mixedLayerDepthsAM
       type (mpas_pool_type), pointer :: forcingPool
+      type (mpas_pool_type), pointer :: scratchPool
 
       ! Here are some example variables which may be needed for your analysis member
       integer, pointer :: nVertLevels
@@ -207,6 +208,8 @@ contains
          call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
 
          !Use work array for storing of pressure, potentially modified by landIce
+         call mpas_pool_get_subpool(block % structs, 'mixedLayerDepthAMScratch', scratchPool)
+
          call mpas_pool_get_dimension(block % dimensions, 'nVertLevels', nVertLevels)
          call mpas_pool_get_dimension(meshPool, 'nCellsArray', nCellsArray)
 
@@ -226,9 +229,8 @@ contains
          call mpas_pool_get_array(meshPool, 'latCell', latCell)
          call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
 
-         nCells = nCellsArray( size(nCellsArray) )
          !$omp master
-         allocate(pressureAdjustedForLandIce(nVertLevels, size(pressure,2)))
+         allocate(pressureAdjustedForLandIce(nVertLevels, nCellsSolve))
          !$omp end master
          !$omp barrier
 
