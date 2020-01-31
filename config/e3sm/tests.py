@@ -184,6 +184,30 @@ _TESTS = {
             )
         },
 
+    #e3sm tests for ECP development
+    "e3sm_ecp_sp" : {
+        "time" : "04:00:00",
+        "tests" : (
+            "ERP_Ld3_P96.ne4_ne4.FSP1V1-TEST",
+            "ERS_Ld3_P96.ne4_ne4.FSP1V1-TEST.cam-crmout",
+            "ERP_Ld3_P96.ne4_ne4.FSP2V1-TEST",
+            "ERP_Ld3_P96.ne4_ne4.FSP2V1-ECPP-TEST",
+            "SMS_D_Ln5_P96.ne4_ne4.FSP1V1-TEST",
+            "SMS_D_Ln5_P96.ne4_ne4.FSP2V1-TEST",
+            )
+        },
+    "e3sm_ecp_nonsp" : {
+        "tests" : (
+            "ERP_Ld11.ne4_oQU240.A_WCYCL2000",
+            "ERP_Ld5.ne4_ne4.FC5AV1C-L",
+            "ERP_Ld5.ne30_ne30.FC5AV1C-L",
+            "ERS_Ld5.ne30_ne30.FC5AV1C-L",
+            )
+        },
+    "e3sm_ecp" : {
+        "inherit" : ("e3sm_ecp_sp", "e3sm_ecp_nonsp")
+        },
+
     #e3sm tests to mimic production runs
     "e3sm_prod" : {
         "inherit" : "e3sm_atm_prod",
