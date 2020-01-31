@@ -4,14 +4,10 @@
 # Set environment variables
 if [ -z "${NCEP_LIBS}" ]; then
   echo "Set environment variables:"
-  echo "export `cat software_environment.txt | grep \"NCEP_LIBS\"`" > .env
-  echo "export `cat software_environment.txt | grep \"LD_LIBRARY_PATH\" | grep -v \"__LMOD\"`" >> .env
+  cat software_environment.txt | grep "=" | sed -e 's/^/export /' > .env
   source .env
-  cat .env
 else
   echo "Environment variables are already set:"
-  echo "NCEP_LIBS = $NCEP_LIBS"
-  echo "LD_LIBRARY_PATH = $LD_LIBRARY_PATH"
 fi
 
 # Query run directory
