@@ -1,0 +1,33 @@
+Changes (bloss, Apr 09):
+
+ + Modified scheme to use total water (vapor + cloud liquid) as a
+prognostic variable in place of separate vapor and cloud liquid
+variables.  This should reduce the cost associated with scalar
+advection.  With this scheme, saturation adjustment occurs before
+calling the microphysics, so that a consistent set of temperature,
+water vapor and cloud liquid values can be input to the microphysics.
+This saturation adjustment could be more expensive than the old one
+within the microphysics, since you do not have a reference value of
+cloud liquid to start from.
+
+ + The latent heating due to the microphysics is not readily
+accessible with the total water formulation, so that it is no longer
+output in the statistics.
+
+ + The EFFRQ* effective radius outputs in the past were susceptible to
+errors due to non-uniformity of hydrometeor fractions across
+processors or time steps.  As a result, these outputs have been
+eliminated.  In their place, a new output Q*OEFFR which represents a
+scaled version of the layer optical depth has been added.  This can be
+used to compute a consistent effective radius from the averaged
+optical depth and mixing ratio.  For example, the cloud liquid
+effective radius may be computed as:
+
+  EFFRC = QC / QCOEFFR
+
+where QC is in g/kg, QCOEFFR is in g/kg/micron and EFFRC is in
+microns.
+
+ + The default setting for dopredictNc was changed to .false.
+Now, by default, the cloud liquid droplet concentration will be set to
+Nc0 which itself has a default value of 100./cm3.
