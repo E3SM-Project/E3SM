@@ -173,6 +173,8 @@ contains
     !--------------------------------------------------------------------
     ! Use this section to set initial values
     !--------------------------------------------------------------------
+    call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+
     block_ptr => domain % blocklist
     do while(associated(block_ptr))
        call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)

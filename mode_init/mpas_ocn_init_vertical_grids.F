@@ -56,6 +56,18 @@ module ocn_init_vertical_grids
    !
    !--------------------------------------------------------------------
 
+   !--------------------------------------------------------------------
+   !
+   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
+   ! These variables were moved from the subroutines, but will be moved back once the
+   ! threading implementation is changed to more localized threading
+   !
+   !--------------------------------------------------------------------
+
+   ! smoothingMaskNew: a copy of the smoothing mask used to iteratively expand the field into
+   !                   a buffer region of open ocean around land ice
+   !            units: none
+   integer, dimension(:), pointer :: smoothingMaskNew
 !***********************************************************************
 
 contains
@@ -749,18 +761,9 @@ contains
 
       type (mpas_pool_type), pointer :: meshPool, statePool, diagnosticsPool, verticalMeshPool, scratchPool, forcingPool
 
-      integer, pointer :: config_rx1_outer_iter_count, config_rx1_inner_iter_count, &
-                          config_rx1_horiz_smooth_open_ocean_cells, config_rx1_min_levels
-      real (kind=RKIND), pointer :: config_rx1_max, config_rx1_horiz_smooth_weight, &
-                           config_rx1_vert_smooth_weight, config_rx1_slope_weight, &
-                           config_rx1_zstar_weight, config_rx1_init_inner_weight, &
-                           config_rx1_min_layer_thickness
-
-      type (field2DReal), pointer :: zInterfaceField, goalStretchField, goalWeightField, &
+      type (field2DReal), pointer :: zInterfaceField, &
                                      verticalStretchField
-      type (field1DReal), pointer :: zTopField, zBotField, zBotNewField
-      type (field1DInteger), pointer :: maxLevelCellField
-      type (field1DInteger), pointer :: smoothingMaskField, smoothingMaskNewField
+      type (field1DInteger), pointer :: smoothingMaskField
 
       real (kind=RKIND), dimension(:,:), pointer :: zMid, layerThickness, restingThickness, zInterface, &
                                                     verticalStretch, goalStretch, goalWeight, rx1Edge
@@ -770,8 +773,8 @@ contains
 
       real (kind=RKIND), pointer :: globalRx1Max, globalVerticalStretchMax, globalVerticalStretchMin
 
-      integer, pointer :: nCells, nVertLevels, nEdges, nCellsSolve
-      integer, dimension(:), pointer :: maxLevelCell, cullCell, nEdgesOnCell, smoothingMask, smoothingMaskNew
+      integer, pointer :: nCells, nVertLevels, nEdges
+      integer, dimension(:), pointer :: maxLevelCell, cullCell, nEdgesOnCell, smoothingMask
       integer, dimension(:,:), pointer :: cellsOnEdge, cellsOnCell, edgesOnCell
 
       integer :: iCell, iEdge, coc, c1, c2, k, maxLevelEdge, iSmooth, iterIndex, maxLevelNeighbors
@@ -785,19 +788,6 @@ contains
 
       iErr = 0
 
-      call mpas_pool_get_config(domain % configs, 'config_rx1_outer_iter_count', config_rx1_outer_iter_count)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_inner_iter_count', config_rx1_inner_iter_count)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_init_inner_weight', config_rx1_init_inner_weight)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_max', config_rx1_max)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_horiz_smooth_weight', config_rx1_horiz_smooth_weight)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_vert_smooth_weight', config_rx1_vert_smooth_weight)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_slope_weight', config_rx1_slope_weight)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_zstar_weight', config_rx1_zstar_weight)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_horiz_smooth_open_ocean_cells', &
-                                config_rx1_horiz_smooth_open_ocean_cells)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_min_levels', config_rx1_min_levels)
-      call mpas_pool_get_config(domain % configs, 'config_rx1_min_layer_thickness', config_rx1_min_layer_thickness)
-
       call mpas_pool_get_subpool(domain % blocklist % structs, 'mesh', meshPool)
       call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
@@ -810,12 +800,6 @@ contains
 
       ! allocate scratch variables that persist across blocks
       call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
-      call mpas_pool_get_field(scratchPool, 'zInterfaceScratch', zInterfaceField)
-      call mpas_pool_get_field(scratchPool, 'zTopScratch', zTopField)
-      call mpas_pool_get_field(scratchPool, 'zBotScratch', zBotField)
-      call mpas_allocate_scratch_field(zInterfaceField, .false.)
-      call mpas_allocate_scratch_field(zTopField, .false.)
-      call mpas_allocate_scratch_field(zBotField, .false.)
 
       block_ptr => domain % blocklist
       do while(associated(block_ptr))
@@ -865,9 +849,10 @@ contains
           call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
           call mpas_pool_get_array(diagnosticsPool, 'rx1InitSmoothingMask', smoothingMask, 1)
 
-          call mpas_pool_get_field(scratchPool, 'smoothingMaskNewScratch', smoothingMaskNewField)
-          call mpas_allocate_scratch_field(smoothingMaskNewField, .true.)
-          call mpas_pool_get_array(scratchPool, 'smoothingMaskNewScratch', smoothingMaskNew)
+          !$omp master
+          allocate(smoothingMaskNew(nCells))
+          !$omp end master
+          !$omp barrier
 
           smoothingMaskNew(:) = smoothingMask(:)
 
@@ -887,7 +872,10 @@ contains
           end do !iCell
 
           smoothingMask(:) = smoothingMaskNew(:)
-          call mpas_deallocate_scratch_field(smoothingMaskNewField, .true.)
+          !$omp barrier
+          !$omp master
+          deallocate(smoothingMaskNew)
+          !$omp end master
 
           block_ptr => block_ptr % next
         end do !block_ptr
@@ -975,12 +963,11 @@ contains
 
             call mpas_pool_get_array(verticalMeshPool, 'refLayerThickness', refLayerThickness)
 
-            call mpas_pool_get_field(scratchPool, 'goalStretchScratch', goalStretchField)
-            call mpas_allocate_scratch_field(goalStretchField, .true.)
-            call mpas_pool_get_array(scratchPool, 'goalStretchScratch', goalStretch)
-            call mpas_pool_get_field(scratchPool, 'goalWeightScratch', goalWeightField)
-            call mpas_allocate_scratch_field(goalWeightField, .true.)
-            call mpas_pool_get_array(scratchPool, 'goalWeightScratch', goalWeight)
+            !$omp master
+            allocate(goalStretch(nVertLevels, nCells), &
+                     goalWeight(nVertLevels, nCells))
+            !$omp end master
+            !$omp barrier
 
             goalStretch(:,:) = 0.0_RKIND
             goalWeight(:,:) = 0.0_RKIND
@@ -1039,8 +1026,11 @@ contains
               end if
             end do
 
-            call mpas_deallocate_scratch_field(goalStretchField, .true.)
-            call mpas_deallocate_scratch_field(goalWeightField, .true.)
+            !$omp barrier
+            !$omp master
+            deallocate(goalStretch, &
+                       goalWeight)
+            !$omp end master
 
             block_ptr => block_ptr % next
           end do !block_ptr
@@ -1345,10 +1335,6 @@ contains
 
         block_ptr => block_ptr % next
       end do !block_ptr
-
-      call mpas_deallocate_scratch_field(zInterfaceField, .false.)
-      call mpas_deallocate_scratch_field(zTopField, .false.)
-      call mpas_deallocate_scratch_field(zBotField, .false.)
 
     end subroutine ocn_init_vertical_grid_with_max_rx1
 
