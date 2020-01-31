@@ -398,16 +398,16 @@ This allows using a different mpirun command to launch unit tests
       <modules mpilib="mvapich2">
         <command name="load">mvapich2/2.3b</command>
         <command name="load">pnetcdf/1.11.0</command>
-        <command name="load">parallel-netcdf/4.3.3.1</command>
+        <command name="load">netcdf/4.6.2</command>
       </modules>
       <modules mpilib="impi">
         <command name="rm">mvapich2</command>
         <command name="load">impi/18.0.2</command>
         <command name="load">pnetcdf/1.11.0</command>
-        <command name="load">parallel-netcdf/4.3.3.1</command>
+        <command name="load">netcdf/4.6.2</command>
       </modules>
       <modules mpilib="mpi-serial">
-        <command name="load">netcdf/4.3.3.1</command>
+        <command name="load">netcdf/4.6.2</command>
       </modules>
     </module_system>
     <environment_variables>
