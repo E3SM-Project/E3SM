@@ -436,7 +436,6 @@ contains
                                                     landIceTracerTransferVelocities
       integer, pointer :: indexBLT, indexBLS, indexIT, indexIS, indexHeatTrans, indexSaltTrans
 
-      type (field1DReal), pointer :: boundaryLayerTemperatureField, boundaryLayerSalinityField
       err = 0
 
       if ( .not. standaloneOn ) return
