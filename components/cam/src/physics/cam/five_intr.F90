@@ -19,8 +19,9 @@ module five_intr
   ! This is the number of layers to add between E3SM levels
   !  NOTE: This must be an EVEN number, due to limitations
   !  in the tendency interpolation scheme
-  integer :: five_add_nlevels
-    
+  integer :: five_add_nlevels_0
+  integer :: five_add_nlevels_1
+
   ! Determine which layers you want to add levels to.  NOTE:
   !  this refers to the base or reference pressure profiles
   !  (as pressure levels can change from time step to time step
@@ -30,62 +31,76 @@ module five_intr
   !   to a very large value to add all the way to surface, though
   !   currently setting this value to surface results in model
   !   crashes in SCM, so need to investigate)
-  real(r8) :: five_bot_toadd 
+  
+  integer  :: five_num_patches
+  
+  real(r8) :: five_bot_toadd_0 
+  real(r8) :: five_bot_toadd_1 
   
   ! The top layer to which we will add layers to
-  real(r8) :: five_top_toadd 
-
+  real(r8) :: five_top_toadd_0 
+  real(r8) :: five_top_toadd_1
+ 
   ! Number of five levels.  These are computed on the fly
-  !  using five_bot_toadd, five_top_toadd, and five_add_nlevels
+  ! using five_bot_toadd_0, five_top_toadd_0, five_add_nlevels_0
+  ! using five_bot_toadd_1, five_top_toadd_1, five_add_nlevels_1
+
   integer :: pver_five, pverp_five
 
   ! Pressure values as initialized in hycoef.F90
   real(r8), allocatable :: alev_five(:) ! midpoint FIVE pressures (pascals)
-  real(r8), allocatable :: ailev_five(:) ! interface FIVE pressures (pascals)
+  real(r8), allocatable :: ailev_five(:)! interface FIVE pressures (pascals)
   real(r8), allocatable :: hyai_five(:)
   real(r8), allocatable :: hyam_five(:)
   real(r8), allocatable :: hybi_five(:)
   real(r8), allocatable :: hybm_five(:)  
   
+
   real(r8), parameter :: ps0 = 1.0e5_r8
   
   ! define physics buffer indicies here for the FIVE
   !  variables added to the PBUF
-  integer :: t_five_idx, &
-             q_five_idx, &
-	     u_five_idx, &
-	     v_five_idx, &
-	     pmid_five_idx, &
-	     pint_five_idx, &
-! add sharing FIVE variables
-             cld_five_idx,      &
-             concld_five_idx,   &
-             ast_five_idx,      &
-             dei_five_idx,      &
-             des_five_idx,      &
-             mu_five_idx,       &
-             lambdac_five_idx,  &
-             iciwp_five_idx,    &
-             iclwp_five_idx,    &
-             icswp_five_idx,    &
-             cldfsnow_five_idx, &
-	     wp2_five_idx, &
-	     radf_idx, &
-	     wp2_idx, &
-	     wp3_idx, &
-	     wpthlp_idx, &
-	     wprtp_idx, &
-	     rtpthlp_idx, &
-	     rtp2_idx, &
-	     thlp2_idx, &
-	     up2_idx, &
-	     vp2_idx, &
-	     upwp_idx, &
+  integer :: t_five_idx       ,&
+             q_five_idx       ,&
+	     u_five_idx       ,&
+	     v_five_idx       ,&
+	     pmid_five_idx    ,&
+	     pint_five_idx    
+
+ ! add sharing FIVE variables
+  integer :: cld_five_idx     ,&
+             concld_five_idx  ,&
+             ast_five_idx     ,&
+             dei_five_idx     ,&
+             des_five_idx     ,&
+             mu_five_idx      ,&
+             lambdac_five_idx ,&
+             iciwp_five_idx   ,&
+             iclwp_five_idx   ,&
+             icswp_five_idx   ,&
+             cldfsnow_five_idx,&
+	     wp2_five_idx     ,&
+	     radf_idx         ,&
+	     wp2_idx          ,&
+	     wp3_idx          ,&
+	     wpthlp_idx       ,&
+	     wprtp_idx        ,&
+	     rtpthlp_idx      ,&
+	     rtp2_idx         ,&
+	     thlp2_idx        ,&
+	     up2_idx          ,&
+	     vp2_idx          ,&
+	     upwp_idx         ,&
 	     vpwp_idx 
-     
-  integer :: five_bot_k, five_top_k ! indicees where
-                                    ! levels are added
   
+
+     
+  integer :: five_bot_k_0, five_top_k_0  ! indicees where
+                                         ! levels are added
+
+  integer :: five_bot_k_1, five_top_k_1  ! indicees where
+                                         ! levels are added
+
   contains 
   
   ! ======================================== !
@@ -93,11 +108,7 @@ module five_intr
   ! ======================================== !    
   
   subroutine five_readnl(nlfile)
-  
-    ! Currently this subroutine is not called,
-    !   here as a placeholder once a more flexible
-    !   framework is put in to define layers added
-    !   at the namelist level
+    
     use spmd_utils,    only: masterproc  
     use units,         only: getunit, freeunit
     use namelist_utils,  only: find_group_name
@@ -108,10 +119,10 @@ module five_intr
     
     integer :: iunit, read_status
     
-    namelist /five_nl/ five_add_nlevels, five_bot_toadd, five_top_toadd
+    namelist /five_nl/ five_num_patches, five_add_nlevels_0, five_add_nlevels_1, five_bot_toadd_0, five_bot_toadd_1, five_top_toadd_0, five_top_toadd_1
     
     !----- Begin Code -----
-    
+     write(*,*)"Entering function: five_readnl"
     !  Initialize some FIVE parameters
     !five_add_nlevels = 1 
     
@@ -131,18 +142,26 @@ module five_intr
       close(unit=iunit)
       call freeunit(iunit)
     end if
-    
+    write (*,*)"five_num_patches = ",five_num_patches
 #ifdef SPMD
 ! Broadcast namelist variables
-      call mpibcast(five_add_nlevels,            1,   mpiint,   0, mpicom)
-      call mpibcast(five_bot_toadd,              1,   mpir8,    0, mpicom)
-      call mpibcast(five_top_toadd,              1,   mpir8,    0, mpicom)
+      call mpibcast(five_num_patches  ,            1,   mpir8,    0, mpicom)
+      call mpibcast(five_add_nlevels_0,            1,   mpiint,   0, mpicom)
+
+      call mpibcast(five_bot_toadd_0  ,            1,   mpir8,    0, mpicom)
+      call mpibcast(five_top_toadd_0  ,            1,   mpir8,    0, mpicom)
+
+      call mpibcast(five_add_nlevels_1,            1,   mpiint,   0, mpicom)
+      call mpibcast(five_bot_toadd_1  ,            1,   mpir8,    0, mpicom)
+      call mpibcast(five_top_toadd_1  ,            1,   mpir8,    0, mpicom)
 #endif 
 
-    ! Now, based on five_add_nlevels, five_bot_toadd, and five_top_toadd
+    ! Now, based on five_add_nlevels_0, five_bot_toadd_0, and five_top_toadd_0
+    ! Now, based on five_add_nlevels_1, five_bot_toadd_1, and five_top_toadd_1
     !   we will determine the number of FIVE levels we will need
     !   for our simulation.            
-  
+  write(*,*)"Leaving function: five_readnl"
+  write(*,*)"  "
   end subroutine five_readnl
   
   ! ======================================== !
@@ -155,16 +174,18 @@ module five_intr
     use physics_buffer,  only: pbuf_add_field, dtype_r8, dyn_time_lvls
     use ppgrid,          only: pver, pverp, pcols
     
+      write(*,*)"Entering function: five_register_e3sm"
     ! Define PBUF for prognostics
-    call pbuf_add_field('T_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), t_five_idx)
+    call pbuf_add_field('T_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls      /), t_five_idx)
     call pbuf_add_field('Q_FIVE',       'global', dtype_r8, (/pcols,pver_five,pcnst,dyn_time_lvls/), q_five_idx) 
-    call pbuf_add_field('U_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), u_five_idx)
-    call pbuf_add_field('V_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), v_five_idx)
+    call pbuf_add_field('U_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls      /), u_five_idx)
+    call pbuf_add_field('V_FIVE',       'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls      /), v_five_idx)
     
     ! Define PBUF for non-prognostic variables
     ! Probably also need to save things like cloud fraction
     call pbuf_add_field('PMID_FIVE', 'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), pmid_five_idx)
     call pbuf_add_field('PINT_FIVE', 'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), pint_five_idx) 
+    
     ! sharing FIVE variables
     call pbuf_add_field('CLD_FIVE',     'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), cld_five_idx) 
     call pbuf_add_field('CONCLD_FIVE',  'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), concld_five_idx) 
@@ -178,27 +199,33 @@ module five_intr
     call pbuf_add_field('ICSWP_FIVE',   'global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), icswp_five_idx) 
     call pbuf_add_field('CLDFSNOW_FIVE','global', dtype_r8, (/pcols,pver_five,dyn_time_lvls/), cldfsnow_five_idx) 
     
-    call pbuf_add_field('RAD_CLUBB',  'global', dtype_r8, (/pcols,pver_five/),               radf_idx)    
-    call pbuf_add_field('WP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp2_idx)
-    call pbuf_add_field('WP3_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp3_idx)
-    call pbuf_add_field('WPTHLP_nadv',     'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wpthlp_idx)
-    call pbuf_add_field('WPRTP_nadv',      'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wprtp_idx)
-    call pbuf_add_field('RTPTHLP_nadv',    'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), rtpthlp_idx)
-    call pbuf_add_field('RTP2_nadv',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), rtp2_idx)
-    call pbuf_add_field('THLP2_nadv',      'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), thlp2_idx)
-    call pbuf_add_field('UP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), up2_idx)
-    call pbuf_add_field('VP2_nadv',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vp2_idx)    
-    call pbuf_add_field('UPWP',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), upwp_idx)
-    call pbuf_add_field('VPWP',       'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vpwp_idx)    
+    call pbuf_add_field('RAD_CLUBB',   'global', dtype_r8, (/pcols,pver_five               /), radf_idx)    
+    call pbuf_add_field('WP2_nadv',    'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp2_idx)
+    call pbuf_add_field('WP3_nadv',    'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wp3_idx)
+    call pbuf_add_field('WPTHLP_nadv', 'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wpthlp_idx)
+    call pbuf_add_field('WPRTP_nadv',  'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), wprtp_idx)
+    call pbuf_add_field('RTPTHLP_nadv','global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), rtpthlp_idx)
+    call pbuf_add_field('RTP2_nadv',   'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), rtp2_idx)
+    call pbuf_add_field('THLP2_nadv',  'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), thlp2_idx)
+    call pbuf_add_field('UP2_nadv',    'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), up2_idx)
+    call pbuf_add_field('VP2_nadv',    'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vp2_idx)    
+    call pbuf_add_field('UPWP',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), upwp_idx)
+    call pbuf_add_field('VPWP',        'global', dtype_r8, (/pcols,pverp_five,dyn_time_lvls/), vpwp_idx)    
   
+  write(*,*)"Leaving function: five_register_e3sm"
+  write(*,*)"  "
   end subroutine five_register_e3sm 
   
   ! ======================================== !
   !                                          !
   ! ======================================== !
 
-  subroutine init_five_heights(ailev,alev, &
-               hyai,hyam,hybi,hybm)
+  subroutine init_five_heights(ailev, &
+                               alev,  &
+                               hyai,  &
+                               hyam,  &
+                               hybi,  &
+                               hybm)
   
     ! Purpose is to initialize FIVE heights.  This is called 
     !   dyn_comp.F90.  We need to do this here to initialize
@@ -225,121 +252,187 @@ module five_intr
     real(r8), intent(in) :: hybm(pver)
     
     ! Local variables
+     real(r8),allocatable :: patchPressureLo(:)
+     real(r8),allocatable :: patchPressureHi(:)  
+     
+    integer,allocatable :: patchIndexLo(:)
+    integer,allocatable :: patchIndexHi(:)    
+    
+    integer ,allocatable :: fiveAddNLevels(:)  
+    integer :: iPatch 
+    
     integer :: low_ind, high_ind
+
     integer :: kh, ki, k, i
     real(r8) :: incr, incr2, incr3
+    write(*,*)"Entering function: init_five_heights"  
+    write(*,*)"five_num_patches = ",five_num_patches
+  
+    allocate(patchPressureLo (five_num_patches ))
+    allocate(patchPressureHi (five_num_patches ))
+
+    allocate(patchIndexLo    (five_num_patches ))
+    allocate(patchIndexHi    (five_num_patches ))
+      
+    allocate(fiveAddNLevels  (five_num_patches ))
     
-    low_ind = pver
-    high_ind = 1   
+    ! put five_bot_toadd_0 and five_bot_toadd_1 into patchPressureLo
+    patchPressureLo(1) = five_bot_toadd_0
+!    patchPressureLo(2) = five_bot_toadd_1
+
+    ! put five_top_toadd_0 and five_top_toadd_1 into patchPressureHi
+    patchPressureHi(1) = five_top_toadd_0
+ !   patchPressureHi(2) = five_top_toadd_1
+
+    !put  five_add_nlevels_0  and  five_add_nlevels_1 into fiveAddNLevels 
+    fiveAddNLevels(1) = five_add_nlevels_0 
+  !  fiveAddNLevels(2) = five_add_nlevels_1
+
+    write(*,*)  "patchPressureLo(1) =",patchPressureLo(1)
+    write(*,*)  "patchPressureHi(1) =",patchPressureHi(1)
+    write(*,*) ""
+   ! write(*,*)  "patchPressureLo(2) =",patchPressureLo(2)
+   ! write(*,*)  "patchPressureHi(2) =",patchPressureHi(2)
+    write(*,*) ""
+    write(*,*)  "fiveAddNLevels(1)  =",fiveAddNLevels(1)
+    !write(*,*)  "fiveAddNLevels(2)  =",fiveAddNLevels(2)
+
     
     ! First we need to determine how many pver_five and
     !   and pverp_five levels there are.  This may seem repetitive 
     !   with the code below it but is needed to appease E3SM 
     !   order of operations and to allow us to add levels
     !   on the fly
-    kh=0
-    do k=1,pverp
+
+   
+    kh = 0
+    !calculate pverp_five
+      do k=1,pverp 
+        kh=kh+1
+        
+        !if (ailev(k) .le. five_bot_toadd .and. ailev(k) .ge. five_top_toadd) then
+       do iPatch = 1, five_num_patches
+         if ((k .le. pverp) .and. ailev(k) .le. patchPressureLo(iPatch) .and. ailev(k) .ge. patchPressureHi(iPatch)) then
+	   kh = kh + fiveAddNLevels(iPatch) 
+	 endif
+       enddo 
+      enddo
     
-      kh=kh+1
-      if (k .eq. pverp) goto 50
-      ! Test to see if this is within the bounds of the grid
-      ! we want to add layers to
-      if (ailev(k) .le. five_bot_toadd .and. &
-        ailev(k) .ge. five_top_toadd) then
-	
-	do ki=1,five_add_nlevels
-	  kh=kh+1
-	enddo
-	
-      endif
-    enddo
-	
-50  continue
+    ! pverp_five = pverp + sum over patches( fiveAddNLevels(iPatch)*number tagged(iPatch))
+    pverp_five = kh
+    pver_five  = pverp_five-1
 
-    ! Set pver_five and pverp_five
-    pverp_five=kh
-    pver_five=pverp_five-1
-
-    allocate(alev_five(pver_five)) ! midpoint FIVE pressures (pascals)
+    Write(*,*) "pver        = ", pver
+    Write(*,*) "pverp       = ", pverp
+    Write(*,*) "kh          = ", kh
+    Write(*,*) "pver_five   = ", pver_five
+    Write(*,*) "pverp_five  = ", pverp_five
+    
+    allocate(alev_five (pver_five )) ! midpoint FIVE pressures (pascals)
     allocate(ailev_five(pverp_five)) ! interface FIVE pressures (pascals)
-    allocate(hyai_five(pverp_five))
-    allocate(hyam_five(pver_five))
-    allocate(hybi_five(pverp_five))
-    allocate(hybm_five(pver_five))               
+    allocate(hyai_five (pverp_five))
+    allocate(hyam_five (pver_five ))
+    allocate(hybi_five (pverp_five))
+    allocate(hybm_five (pver_five ))               
     
     ! Note that here we are actually adding "layers" to the
     !   hybrid coordinates.  The reason is that the 
     !   pressure levels of E3SM can change from time step
     !   to timestep based on the surface pressure.  
     !   The hybrid coordinates are the only thing related to
-    !   the height profile that remains constant.    
-    kh=1 ! kh is layer index on FIVE grid
-    do k=1,pverp ! k is layer index on E3SM grid
+    !   the height profile that remains constant. 
 
-      ! Copy preexisting points to FIVE grid
-      hyai_five(kh) = hyai(k)
-      hybi_five(kh) = hybi(k)
+     !kh is an index of the five grid
+     kh       = 1 
+     
+     !initialize integer counters for patch boundaries
+     do iPatch = 1,five_num_patches   
+       
+      ! these integers record the bottom and top of patches
+      patchIndexLo(iPatch) = pver
+      patchIndexHi(iPatch) = 1  
+     enddo
+
+     do k=1,pverp ! k is layer index on E3SM grid
+
+        ! Copy preexisting points to FIVE grid
+        hyai_five(kh) = hyai(k)
+        hybi_five(kh) = hybi(k)
+
+        write(*,*)"hyai_five(kh) hybi_five(kh) kh,ailev(k) = ",hyai_five(kh),hybi_five(kh),kh,ailev(k)
+        
       
-      kh=kh+1
-      if (k .eq. pverp) goto 100
-      ! Test to see if this is within the bounds of the grid
-      ! we want to add layers to
-      if (ailev(k) .le. five_bot_toadd .and. &
-        ailev(k) .ge. five_top_toadd) then
+        kh=kh+1
+       
+        !loop over patches 
+      do iPatch = 1,five_num_patches   
+       
+	if ((k .le. pverp) .and. ailev(k) .le.  patchPressureLo(iPatch) .and. ailev(k) .ge.  patchPressureHi(iPatch)) then
+
+     	 ! record the index 
+   	 if (patchIndexHi(iPatch) .eq. 1) patchIndexHi(iPatch)= k
+	 patchIndexLo(iPatch) = k
 	  
-	! save the indicee
-	if (high_ind .eq. 1) high_ind = k
-	low_ind = k
-	  
-	! If we are inside the portion of grid we want to add layers
-	! to then compute the pressure increment (resolution)
-	incr2=(hyai(k+1)-hyai(k))/(five_add_nlevels+1)
-	incr3=(hybi(k+1)-hybi(k))/(five_add_nlevels+1)
+	 ! If we are inside the portion of grid we want to add layers
+	 ! to then compute the pressure increment (resolution)
+	 incr2=(hyai(k+1)-hyai(k))/(fiveAddNlevels(iPatch)+1)
+	 incr3=(hybi(k+1)-hybi(k))/(fiveAddNlevels(iPatch)+1)
 	    
-	! Define the new layer
-	do ki=1,five_add_nlevels
+	 ! Define new data
+	 do ki=1,fiveAddNlevels(iPatch)
 	  hyai_five(kh) = hyai_five(kh-1)+incr2
 	  hybi_five(kh) = hybi_five(kh-1)+incr3
+         
+          write(*,*)"hyai_five(kh) hybi_five(kh) kh,ailev(k) = **",hyai_five(kh),hybi_five(kh),kh,ailev(k)
 	  kh=kh+1
-	enddo
+	 enddo
 	    
-      endif
-	  
-    enddo
+        endif
+         
+     ! write patch info
+     write(iulog,*) 'iPatch = :',iPatch
+     write(iulog,*) 'Number of FIVE levels in this patch: ', kh-1    
     
-100 continue
-	
-    ! Save the indicees of the layers
-    five_bot_k = low_ind
-    five_top_k = high_ind 
+     ! write bottom and top indices
+     write(iulog,*) 'Index of bottom of lower layer of this patch to add FIVE levels to:',patchIndexLo(iPatch)
+     write(iulog,*) 'Index of top    of lower layer of this patch to add FIVE levels to:',patchIndexHi(iPatch)
     
-    ! Now define five interface layers.  At this point
-    !  the reference and base pressure will be the same
-    !  i.e. ps0 = 1.0e5_r8
-    
+      enddo
+     enddo
+
+     !temporary work-around until global variables are arrays
+     five_bot_k_0 = patchIndexLo(1)
+     five_top_k_0 = patchIndexHi(1)
+
+!     five_bot_k_1 = patchIndexLo(2)
+ !    five_top_k_1 = patchIndexHi(2)
+         
+     write(*,*)"five_bot_k_0 = ",five_bot_k_0
+     write(*,*)"five_top_k_0 = ",five_top_k_0
+     write(*,*) ""
+     write(*,*)"five_bot_k_1 = ",five_bot_k_1
+     write(*,*)"five_top_k_1 = ",five_top_k_1
+
+    !  the reference  = base pressure: ps0 = 1.0e5_r8
     ailev_five(:pverp_five) = 0.01_r8*ps0*(hyai_five(:pverp_five) + hybi_five(:pverp_five)) 
     
-    ! Now define five_mid layers
+    ! Define five_mid layers
     do k=1,pver_five
       alev_five(k) = (ailev_five(k)+ailev_five(k+1))/2.0_r8
     enddo      
 	
-    ! write out some useful stuff
-    write(iulog,*) 'Number of FIVE levels: ', kh-1    
-    write(iulog,*) 'Index of bottom layer to add FIVE levels to: ', five_bot_k
-    write(iulog,*) 'Index of top layer to add FIVE levels to: ', five_top_k
-      
-    ! Now add vertical coordinate to the history output field
-    call add_vert_coord('lev_five', pver_five,                               &
-         'FIVE hybrid level at midpoints (1000*(A+B))', 'hPa', alev_five, &
-         positive='down',                                                    &
-         standard_name='atmosphere_hybrid_sigma_pressure_coordinate')    
- 
+    ! Add vertical coordinate to the history output field
+    call add_vert_coord('lev_five', pver_five,  'FIVE hybrid level at midpoints (1000*(A+B))' , 'hPa', alev_five, positive='down',&
+                         standard_name='atmosphere_hybrid_sigma_pressure_coordinate')
+
     call add_vert_coord('ilev_five', pverp_five,                               &
          'FIVE hybrid level at interfaces (1000*(A+B))', 'hPa', ailev_five, &
          positive='down',                                                    &
          standard_name='atmosphere_hybrid_sigma_pressure_coordinate')	
-    
+        
+   
+  write(*,*)"Leaving function: init_five_heights"
+  write(*,*)"  "  
   end subroutine init_five_heights 
   
   ! ======================================== !
@@ -409,6 +502,7 @@ module five_intr
     !   future with removing.  
     
     ! Loop over all the physics "chunks" in E3SM
+    write(*,*)"Entering function: init_five_profiles"  
     do lchnk = begchunk,endchunk
     
       ncol = phys_state(lchnk)%ncol ! number of columns in this chunk
@@ -426,7 +520,7 @@ module five_intr
       
       ! Now define five_mid layers
       do i=1,ncol
-        do k=1,pver_five
+        do k = 1,pver_five
 	  pmid_five(i,k) = (pint_five(i,k)+pint_five(i,k+1))/2.0_r8
 	enddo
       enddo      
@@ -494,7 +588,9 @@ module five_intr
       enddo
     
     enddo
-    
+  
+  write(*,*)"Leaving function: init_five_profiles" 
+  write(*,*)"  " 
   end subroutine init_five_profiles
   
   ! ======================================== !
@@ -564,7 +660,7 @@ module five_intr
     real(r8) :: psr
 ! HHLEE 20190117
     real(r8) :: five_water, e3sm_water, ratio, diff
-        
+    write(*,*)"Entering function: five_syncronize_e3sm"  
     ncol = state%ncol
     
     ! First update the FIVE pressure levels using
@@ -583,7 +679,7 @@ module five_intr
     enddo 
   
     ! Compute pressure differences on FIVE grid  
-    do k=1,pver_five
+    do k = 1,pver_five
       do i=1,ncol
         pdel_five(i,k) = pint_five(i,k+1)-pint_five(i,k)
       enddo
@@ -591,8 +687,10 @@ module five_intr
     
     ! Compute grid stuff needed for vertical averaging and tendencies
     do i=1,ncol
+      write(*,*)"First Call to compute_five_grids"   
       call compute_five_grids(state%t(i,:),state%pdel(i,:),state%pmid(i,:),pver,&
              dz_e3sm(i,:),rho_e3sm(i,:))
+      write(*,*)"Second Call to compute_five_grids"   
       call compute_five_grids(t_five(i,:),pdel_five(i,:),pmid_five(i,:),pver_five,&
              dz_five(i,:),rho_five(i,:))
     enddo
@@ -709,8 +807,11 @@ module five_intr
        end do
     end do
 
-    return
+  
 
+   write(*,*)"Leaving function: five_syncronize_e3sm"
+   write(*,*)"  "  
+   return
    end subroutine five_syncronize_e3sm
    
   ! ======================================== !
@@ -733,19 +834,28 @@ module five_intr
     real(r8), intent(out) :: dz(nlev)
     real(r8), intent(out) :: rho(nlev)
     integer :: k
-    
+     write(*,*)"Entering function: compute_five_grids"  	
     ! Compute density
-    do k=1,nlev
-      rho(k) = pmid(k)/(rair*temp(k))
+
+    write(*,*)"nlev = ",nlev
+    do k = 1,nlev
+     write(*,*)"temp(k) pmid(k) k = ",temp(k),pmid(k),k
+         
+     rho(k) = pmid(k)/(rair*temp(k))
     enddo          
 	      
     ! Compute dz	     
-    do k=1,nlev
-      dz(k) = pdel(k)/(rho(k)*gravit)	      
+    do k = 1,nlev
+     write(*,*)"rho(k) pmid(k) k = ",rho(k),pmid(k),k
+          
+     dz(k) = pdel(k)/(rho(k)*gravit)	      
     enddo	      
 	      
-    return
-	       
+   
+
+   write(*,*)"Leaving function: compute_five_grids"
+   write(*,*)"  "  	
+  return       
   end subroutine compute_five_grids	 
   
   ! ======================================== !
@@ -780,14 +890,14 @@ module five_intr
     real(r8) :: hkl, hkk
     
     integer :: i, k
-    
+    write(*,*)"Entering function: compute_five_heights"  
     ! Compute the Exner values using pressure
-    do k=1,nlev
+    do k = 1,nlev
       exner(k) = 1._r8/(pmid(k)/p0)**(rair/cpair)
     enddo   
     
     ! Define virtual temperature
-    do k=1,pver_five
+    do k = 1,pver_five
       tv(k) = t(k)*(1._r8+zvir*qv(k)-ql(k)) 
       thv(k) = exner(k)*tv(k)
     enddo 
@@ -806,8 +916,11 @@ module five_intr
       
     enddo 
   
-    return
   
+    write(*,*)"Leaving function: compute_five_heights" 
+    write(*,*)"  " 
+  
+    return
   end subroutine compute_five_heights
   
   ! ======================================== !
@@ -837,21 +950,20 @@ module five_intr
     integer :: i, k, kh
 
     real(r8) :: rho_host_avg(pver)
-    
+    write(*,*)"Entering function: masswgt_vert_avg"  
     ! Initialize host variable
     var_host(:) = 0._r8
     rho_host_avg(:) = 0._r8
     
     kh=1 ! Vertical index for FIVE 
-    do k=1,pver ! Vertical index for E3SM
+    do k = 1,pver ! Vertical index for E3SM
        
-      ! Check to see how many FIVE layers there are within
-      !   an E3SM layer 
-      do while ( pmid_high(kh) .lt. pint_host(k+1) .and. &
-                 pmid_high(kh) .gt. pint_host(k))
+     ! Check to see how many FIVE layers there are within
+     !   an E3SM layer 
+     do while ( pmid_high(kh) .lt. pint_host(k+1) .and. &
+                pmid_high(kh) .gt. pint_host(k))
       
-        var_host(k) = var_host(k) + rho_high(kh) * &
-	  var_high(kh) * dz_high(kh)
+       var_host(k) = var_host(k) + rho_high(kh) * var_high(kh) * dz_high(kh)
 	rho_host_avg(k) = rho_host_avg(k) + rho_high(kh) * &
 	  dz_high(kh)
 	  
@@ -867,8 +979,11 @@ module five_intr
       var_host(k) = var_host(k)/(rho_host_avg(k)*dz_host(k))
 
     enddo
-
+   
+    write(*,*)"Leaving function: masswgt_vert_avg"  
+    write(*,*)"  "
     return
+   
   
   end subroutine masswgt_vert_avg     
   
@@ -885,8 +1000,8 @@ module five_intr
     integer :: km1, km2, k1, k2
     real(KIND=8) :: x1(km1), y1(km1)
     real(KIND=8) :: x2(km2), y2(km2)
-
-    do k2=1,km2
+    write(*,*)"Entering function: linear_interp"  
+    do k2 = 1,km2
 
       if( x2(k2) <= x1(1) ) then
         y2(k2) = y1(1) + (y1(2)-y1(1))*(x2(k2)-x1(1))/(x1(2)-x1(1))
@@ -901,7 +1016,9 @@ module five_intr
       endif
      
     enddo
-
+  
+  write(*,*)"Leaving function: linear_interp"
+  write(*,*)"  "  
   end subroutine linear_interp  
   
   ! ======================================== !
@@ -971,48 +1088,76 @@ module five_intr
     integer :: i, i1, i2, i3, i4, i5
     integer :: k, km3, km2, km1, k00
     integer :: kp1, kp2, ierr
+
+    ! these variables are patch dependent
     integer :: zi1, zi2
+   
     integer :: i5zi1
+    integer :: iPatch, lastPatchIndexHi
     
+    integer,allocatable :: patchIndexLo(:)
+    integer,allocatable :: patchIndexHi(:)    
+    integer ,allocatable :: fiveAddNLevels(:)  
+    
+    write(*,*)"Entering function: tendency_low_to_high"  
     ! Construct tendency profile from E3SM grid to FIVE grid
     
+    allocate(patchIndexLo  (five_num_patches ))
+    allocate(patchIndexHi  (five_num_patches ))
+    allocate(fiveAddNLevels(five_num_patches ))
+    
+
+    !indices on the unrefined grid that mark the bottom and top of layers
+    patchIndexLo(1) = five_bot_k_0
+    !patchIndexLo(2) = five_bot_k_1
+
+    patchIndexHi(1) = five_top_k_0
+    !patchIndexHi(2) = five_top_k_1
+ 
+    write(*,*)" patchIndexLo(1) = ", patchIndexLo(1)
+    !write(*,*)" patchIndexLo(2) = ", patchIndexLo(2)
+
+    write(*,*)" patchIndexHi(1) = ", patchIndexHi(1)       
+    !write(*,*)" patchIndexHi(2) = ", patchIndexHi(2)
+    
+    !put  five_add_nlevels_0  and  five_add_nlevels_1 into fiveAddNLevels 
+    fiveAddNLevels(1) = five_add_nlevels_0 
+    !fiveAddNLevels(2) = five_add_nlevels_1
+
     ! The constructed tendency profile satisfies layer mean average
     
-    ! If no levels are added via FIVE just return a copy
-    if (five_add_nlevels .eq. 0) then
+    ! If no levels are added via FIVE just return a copy !!!!!change this
+    if (fiveAddNlevels(1) .eq. 0) then
       ten_high(1:pver) = ten_low(1:pver)
       return
     endif
     
     ! First let's "flip" things so lowest level index = 1
-    do k=1,pver
+    do k = 1,pver
       zm(k) = zm_in(pver-k+1)
       rho_low(k) = rho_low_in(pver-k+1)
       df_z(k) = ten_low(pver-k+1)
     enddo
     
-    do k=1,pverp
+    do k = 1,pverp
       zi(k) = zi_in(pverp-k+1)
     enddo
     
-    do k=1,pver_five
+    do k = 1,pver_five
       zm_five(k) = zm_five_in(pver_five-k+1)
       rho_zs(k) = rho_five_in(pver_five-k+1)
     enddo  
     
-    zi1 = pver-five_bot_k+1
-    zi2 = pver-five_top_k+1
-    
     dz=zi(2)
     
     ! define adz and adzw
-    do k=2,pver
+    do k = 2,pver
       adzw(k) = (zm(k)-zm(k-1))/dz
     enddo
     adzw(1) = 1._r8
     
     adz(1) = 1._r8
-    do k=2,pver-1
+    do k = 2,pver-1
       adz(k) = 0.5*(zm(k+1)-zm(k-1))/dz
     enddo
     adz(pver) = adzw(pver)
@@ -1025,11 +1170,11 @@ module five_intr
     ! Distance from the mid-layer level to the host model lower/upper interface value divided
     ! by dz. Here the mid-layer level is z(k).
     
-    do k=1,pver
+    do k = 1,pver
       adz_dn(k) = (zm(k) - zi(k))/dz
     enddo
     
-    do k=1,pver
+    do k = 1,pver
       adz_up(k) = (zi(k+1) - zm(k))/dz
     enddo
     
@@ -1039,31 +1184,25 @@ module five_intr
     ! Set up superdiagonal, diagonal, subdiagonal component of the matrix
     a(:,:) = 0._r8
     ! Superdiagonal 
-    do k=2,pver
+    do k = 2,pver
       a(2,k)=adz_up(k-1)**2/(adz(k)*adzw(k-1))*0.5_r8
     enddo
+
     ! Diagonal
-    k = 1
     a(3,1) = (adz_dn(1) + adzw(1) + adz_up(1) * adz_dn(2) / adz(2))/adzw(1) * 0.5_r8
-    do k=2,pver
+    do k = 2,pver
       kp1=min(k+1,pver)
       a(3,k) = (adz_up(k-1) * adz_dn(k) / adz(k) + adzw(k) & 
                + adz_up(k) * adz_dn(kp1) / adz(kp1) ) / adzw(k) * 0.5
 	       !+ adz_dn(kp1) used to be adz_dn(k)
     enddo
     ! Subdiagonal
-    do k=1, pver
+    do k = 1, pver
       a(4,k) = adz_dn(k)**2 / (adz(k) * adzw(k))*0.5
     enddo
     
     ! Factor the matrix with LAPACK, BLAS
     call dgbtrf( pver, pver, ml, mu, a, lda, ipiv, info )    
-    
-    ! For interpolation
-    i5=0
-    do k=1,zi1-1
-      i5 = i5 + 1
-    enddo
     
     c0(:) = 0._r8
     c1(:) = 0._r8
@@ -1075,27 +1214,44 @@ module five_intr
     
     weight(:) = 0._r8
     
-    i5zi1 = i5
-    do k = zi1, zi2
+    !loop over patches
+     do iPatch = 1,five_num_patches
+     
+     zi1 = pver - patchIndexLo(iPatch)+ 1
+     zi2 = pver - patchIndexHi(iPatch)+ 1
+  
+     write(*,*)"zi1,iPatch = ",zi1,iPatch
+     write(*,*)"zi2,iPatch = ",zi2,iPatch
+     
+     i5    = zi1 - 1
+     i5zi1 = i5
+
+     do k = zi1, zi2
       i1 = i5 + 1
-      i2 = i1 + five_add_nlevels / 2 - 1 
-      i3 = i1 + five_add_nlevels / 2
-      i4 = i1 + five_add_nlevels / 2 + 1
-      i5 = i1 + five_add_nlevels 
+      i2 = i1 + fiveAddNlevels(iPatch) / 2 - 1 
+      i3 = i1 + fiveAddNlevels(iPatch) / 2
+      i4 = i1 + fiveAddNlevels(iPatch) / 2 + 1
+      i5 = i1 + fiveAddNlevels(iPatch) 
+
       ! weight for linear interpolation
       weight(i1:i2) = ( zm_five(i1:i2) - zi(k) ) / ( zm(k) - zi(k) )
-      weight(i3) = 1.0_r8
+      weight(i3   ) = 1.0_r8
       weight(i4:i5) = ( zm_five(i4:i5) - zi(k+1) ) / ( zm(k) - zi(k+1) ) 
+
       ! c1, c2, c3
       c0(k) = 2.0_r8 * (zi(k+1) - zi(k))
       c1(k) = zi(k+1) - zi(k)
       c2(k) = zm_five(i3) - zi(k)
       c3(k) = zi(k+1) - zm_five(i3)
       
+      ! ic1, ic2, ic3
       ic1(k) = 1.0_r8 / c1(k)
       ic2(k) = 1.0_r8 / c2(k) 
       ic3(k) = 1.0_r8 / c3(k)            
+    
     enddo
+    
+   enddo
    
     ! add flag computed?
     
@@ -1112,9 +1268,9 @@ module five_intr
     ! Interface target value
     rdf_zm(1) = rdf_zs_ml(1)
     do k = 2, pver
-      rdf_zm(k) = adz_dn(k) / adz(k) * rdf_zs_ml(k-1) & 
-        + adz_up(k-1) / adz(k) * rdf_zs_ml(k)
+      rdf_zm(k) = adz_dn(k) / adz(k) * rdf_zs_ml(k-1) + adz_up(k-1) / adz(k) * rdf_zs_ml(k)
     enddo
+
     rdf_zm(pverp) = 0.0_r8 !domain top tendency
     
     do_limit = .true.
@@ -1154,13 +1310,16 @@ module five_intr
     !   and store it into either rdf_zm_up or rdf_zm_dn. That level will have two interface
     !   values for upper and lower layer.    
     spurious(:) = .FALSE.
+
     do k = 1, pver
       km1 = MAX( k-1, 1 )
       kp1 = MIN( k+1, pver )
+    
       rdf_zs_ml(k) = ic1(k) * ( c0(k)*rdf_z(k) - c2(k)*rdf_zm(k) - c3(k)*rdf_zm(k+1) ) !+PAB change
       cnd1 = ( rdf_z(k) - rdf_z(km1) ) * ( rdf_z(kp1) - rdf_z(k) ) >= 0.0_r8
       cnd2 = ( rdf_zs_ml(k) - rdf_zm(k) ) * ( rdf_zm(k+1) - rdf_zs_ml(k) ) < 0.0_r8 !+PAB change
-      if ( cnd1 .AND. cnd2 ) then
+  
+     if ( cnd1 .AND. cnd2 ) then
         ! Inflection within a monotonic layer
 	spurious(k) = .TRUE.
 	alpha = ABS( rdf_zs_ml(k) - rdf_zm(k) ) - ABS( rdf_zs_ml(k) - rdf_zm(k+1) ) !+PAB change
@@ -1217,34 +1376,55 @@ module five_intr
     
     endif
     
-    ! Construct the tendency profile
-    i5 = 0
-    ! Below zi1
-    do k=1,zi1-1
-      i5=i5+1
-      df_zs(i5) = df_z(k)
+    ! Construct the tendency profile 
+    
+    !loop over patches
+    lastPatchIndexHi = 0
+    do iPatch = 1,five_num_patches
+     
+     zi1 = pver - patchIndexLo(iPatch)+ 1
+     zi2 = pver - patchIndexHi(iPatch)+ 1
+  
+     write(*,*)"zi1,iPatch = **",zi1,iPatch
+     write(*,*)"zi2,iPatch = **",zi2,ipatch
+
+
+     i5 = zi1 - 1
+     do k = lastPatchIndexHi + 1,zi1 - 1
+       df_zs(k) = df_z(k)
+     enddo
+
+    ! between zi1_1 and zi2
+    do k = zi1, zi2
+   
+     i1 = i5 + 1
+     i2 = i1 + fiveAddNlevels(iPatch) / 2 - 1 ! i2 = i3-1 or i2 = i1
+     i3 = i1 + fiveAddNlevels(iPatch) / 2     ! zs(i3) = z(k)
+     i4 = i1 + fiveAddNlevels(iPatch) / 2 + 1 ! i4 = i3+1 or i4 = i5
+     i5 = i1 + fiveAddNlevels(iPatch)
+      
+     ! Compute df_zs for all zs levels
+     
+     ! zi(k) < zs(i1:i2) < z(k)
+     df_zs(i1:i2) = ( 1.0_r8 - weight(i1:i2) ) * rdf_zm_dn(k) + weight(i1:i2) * rdf_zs_ml(k)
+     
+     ! zs(i3)
+     df_zs(i3) = rdf_zs_ml(k)
+     
+     ! z(k) < zs(i4:i5) < zi(k+1)
+     df_zs(i4:i5) = ( 1.0_r8 - weight(i4:i5) ) * rdf_zm_up(k) + weight(i4:i5) * rdf_zs_ml(k)
+     
+     ! Non-mass weighted
+     df_zs(i1:i5) = df_zs(i1:i5) / rho_zs(i1:i5)
+
     enddo
 
-    ! between zi1 and zi2
-    do k = zi1, zi2
-      i1 = i5 + 1
-      i2 = i1 + five_add_nlevels / 2 - 1 ! i2 = i3-1 or i2 = i1
-      i3 = i1 + five_add_nlevels / 2     ! zs(i3) = z(k)
-      i4 = i1 + five_add_nlevels / 2 + 1 ! i4 = i3+1 or i4 = i5
-      i5 = i1 + five_add_nlevels
-      ! Compute df_zs for all zs levels
-      ! zi(k) < zs(i1:i2) < z(k)
-      df_zs(i1:i2) = ( 1.0_r8 - weight(i1:i2) ) * rdf_zm_dn(k) + weight(i1:i2) * rdf_zs_ml(k)
-      ! zs(i3)
-      df_zs(i3) = rdf_zs_ml(k)
-      ! z(k) < zs(i4:i5) < zi(k+1)
-      df_zs(i4:i5) = ( 1.0_r8 - weight(i4:i5) ) * rdf_zm_up(k) + weight(i4:i5) * rdf_zs_ml(k)
-      ! Non-mass weighted
-      df_zs(i1:i5) = df_zs(i1:i5) / rho_zs(i1:i5)
-    enddo
-    
-    ! Above zi2
-    do k = zi2+1,pver
+    lastPatchIndexHi = patchIndexHi(iPatch)
+    !end loop over patches
+   enddo 
+
+    ! Above last Patch
+    do k = lastPatchIndexHi + 1,pver
       i5 = i5 + 1
       df_zs(i5) = df_z(k)
     enddo    
@@ -1253,6 +1433,11 @@ module five_intr
     do k = 1,pver_five
       ten_high(k) = df_zs(pver_five-k+1)
     enddo
+  
+   write(*,*)"Leaving function: tendency_low_to_high"
+   write(*,*)"  "  
+   deallocate(patchIndexLo)
+   deallocate(patchIndexHi)
   
   end subroutine tendency_low_to_high 
   
@@ -1275,7 +1460,7 @@ module five_intr
     
     real(r8) :: pmid_target
     integer :: i, k
-    
+    write(*,*)"Entering function: find_level_match_index" 
     pmid_target = e3sm_pmid(top_lev_e3sm)
     
     do k=1,pver_five
@@ -1288,46 +1473,15 @@ module five_intr
 
       ! IF the best above didn't pass then see where
       !  the level lies between pressure interfaces      
-      if (five_pint(k) .lt. pmid_target .and. &
-          five_pint(k+1) .gt. pmid_target) then
+      if (five_pint(k) .lt. pmid_target .and. five_pint(k+1) .gt. pmid_target) then
         top_lev_five = k
 	return	  
       endif	      
     enddo
-    
-  return    
-  
+     
+  write(*,*)"Leaving function: find_level_match_index"
+  write(*,*)"  " 
+  return     
   end subroutine find_level_match_index
-  
-  ! ======================================== !
-  !                                          !
-  ! ======================================== !
-  
-  subroutine five_amr(&
-           pbuf) 
-  
-    use physics_buffer, only: pbuf_get_field, pbuf_old_tim_idx, &
-      pbuf_get_index
-    ! Purpose is to update FIVE levels based on AMR
-    implicit none
-  
-    ! declare input/out variables to subroutine 
-    type(physics_buffer_desc), pointer :: pbuf(:)
-    
-    ! declare local variables
-    real(r8), pointer, dimension(:,:) :: cld      ! cloud fraction [fraction]   
-    
-    integer :: cld_idx, itim_old
-    
-    ! Start routine 
-    cld_idx = pbuf_get_index('CLD')         ! Cloud fraction
-    itim_old = pbuf_old_tim_idx()
-    call pbuf_get_field(pbuf, cld_idx,     cld,     start=(/1,1,itim_old/), kount=(/pcols,pver,1/))
-    
-    ! "cld" array (pcols,pver) is now loaded with cloud fraction 
-    
-  return    
-  
-  end subroutine five_amr       
 
 end module five_intr
