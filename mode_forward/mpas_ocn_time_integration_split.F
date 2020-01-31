@@ -35,6 +35,7 @@ module ocn_time_integration_split
    use ocn_tendency
    use ocn_diagnostics
    use ocn_gm
+   use ocn_config
 
    use ocn_equation_of_state
    use ocn_vmix
@@ -63,6 +64,16 @@ module ocn_time_integration_split
    character (len=*), parameter :: subcycleGroupName = 'subcycleFields'
    character (len=*), parameter :: finalBtrGroupName = 'finalBtrFields'
    integer :: nBtrSubcycles
+
+   !--------------------------------------------------------------------
+   !
+   ! Replace calls to mpas_allocate_scratch_Field with straight allocates.
+   ! These variables were moved from the subroutines, but will be moved back once the
+   ! threading implementation is changed to more localized threading
+   !
+   !--------------------------------------------------------------------
+
+   real (kind=RKIND), dimension(:), pointer :: btrvel_temp
 
    contains
 
@@ -119,37 +130,13 @@ module ocn_time_integration_split
                  vertViscTopOfEdge, vertDiffTopOfCell
       real (kind=RKIND), dimension(:,:,:), pointer :: tracersGroup
       real (kind=RKIND), dimension(:), allocatable:: uTemp
-      real (kind=RKIND), dimension(:), pointer :: btrvel_temp
-      type (field1DReal), pointer :: btrvel_tempField
-      logical :: activeTracersOnly ! if true only compute tendencies for active tracers
+      logical :: activeTracersOnly ! if true only compute tendencies for active tracers  
       integer :: tsIter
       integer :: edgeHaloComputeCounter, cellHaloComputeCounter
       integer :: neededHalos
 
       ! Config options
-      character (len=StrKIND), pointer :: config_time_integrator
-      integer, pointer :: config_n_bcl_iter_mid, config_n_bcl_iter_beg, config_n_bcl_iter_end
-      integer, pointer :: config_n_ts_iter, config_btr_subcycle_loop_factor
-      integer, pointer :: config_n_btr_cor_iter, config_num_halos
-      logical, pointer :: config_use_GM,config_use_Redi
-      integer, pointer :: config_reset_debugTracers_top_nLayers
-
-      logical, pointer :: config_use_freq_filtered_thickness, config_btr_solve_SSH2, config_filter_btr_mode
-      logical, pointer :: config_vel_correction, config_prescribe_velocity, config_prescribe_thickness
-      logical, pointer :: config_disable_thick_all_tend
-      logical, pointer :: config_disable_vel_all_tend
-      logical, pointer :: config_disable_tr_all_tend
-      logical, pointer :: config_use_cvmix_kpp
       logical, pointer :: config_use_tracerGroup
-      logical, pointer :: config_compute_active_tracer_budgets
-      logical, pointer :: config_use_tidal_potential_forcing
-      logical, pointer :: config_reset_debugTracers_near_surface
-
-      character (len=StrKIND), pointer :: config_land_ice_flux_mode
-
-      real (kind=RKIND), pointer :: config_mom_del4, config_btr_gam1_velWt1, config_btr_gam2_SSHWt1
-      real (kind=RKIND), pointer :: config_btr_gam3_velWt2
-      real (kind=RKIND), pointer :: config_self_attraction_and_loading_beta
 
       ! Dimensions
       integer :: nCells, nEdges
@@ -233,44 +220,6 @@ module ocn_time_integration_split
 
       call mpas_timer_start("se timestep")
 
-      call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_beg', config_n_bcl_iter_beg)
-      call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_mid', config_n_bcl_iter_mid)
-      call mpas_pool_get_config(domain % configs, 'config_n_bcl_iter_end', config_n_bcl_iter_end)
-      call mpas_pool_get_config(domain % configs, 'config_n_ts_iter', config_n_ts_iter)
-      call mpas_pool_get_config(domain % configs, 'config_btr_subcycle_loop_factor', config_btr_subcycle_loop_factor)
-      call mpas_pool_get_config(domain % configs, 'config_btr_gam1_velWt1', config_btr_gam1_velWt1)
-      call mpas_pool_get_config(domain % configs, 'config_btr_gam3_velWt2', config_btr_gam3_velWt2)
-      call mpas_pool_get_config(domain % configs, 'config_btr_solve_SSH2', config_btr_solve_SSH2)
-      call mpas_pool_get_config(domain % configs, 'config_n_btr_cor_iter', config_n_btr_cor_iter)
-      call mpas_pool_get_config(domain % configs, 'config_btr_gam2_SSHWt1', config_btr_gam2_SSHWt1)
-      call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
-
-      call mpas_pool_get_config(domain % configs, 'config_mom_del4', config_mom_del4)
-      call mpas_pool_get_config(domain % configs, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
-      call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
-      call mpas_pool_get_config(domain % configs, 'config_vel_correction', config_vel_correction)
-      call mpas_pool_get_config(domain % configs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
-      call mpas_pool_get_config(domain % configs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
-      call mpas_pool_get_config(domain % configs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
-      call mpas_pool_get_config(domain % configs, 'config_use_tidal_potential_forcing', config_use_tidal_potential_forcing)
-      call mpas_pool_get_config(domain % configs, 'config_self_attraction_and_loading_beta',config_self_attraction_and_loading_beta)
-
-      call mpas_pool_get_config(domain % configs, 'config_prescribe_velocity', config_prescribe_velocity)
-      call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
-
-      call mpas_pool_get_config(domain % configs, 'config_prescribe_velocity', config_prescribe_velocity)
-      call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
-
-      call mpas_pool_get_config(domain % configs, 'config_use_GM', config_use_GM)
-      call mpas_pool_get_config(domain % configs, 'config_use_Redi', config_use_Redi)
-      call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-      call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-
-      call mpas_pool_get_config(domain % configs, 'config_num_halos', config_num_halos)
-
-      call mpas_pool_get_config(domain % configs, 'config_compute_active_tracer_budgets', config_compute_active_tracer_budgets)
-      call mpas_pool_get_config(domain % configs, 'config_reset_debugTracers_near_surface', config_reset_debugTracers_near_surface)
-      call mpas_pool_get_config(domain % configs, 'config_reset_debugTracers_top_nLayers', config_reset_debugTracers_top_nLayers)
       allocate(n_bcl_iter(config_n_ts_iter))
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -761,8 +710,10 @@ module ocn_time_integration_split
 
             ! Allocate subcycled scratch fields before starting subcycle loop
             call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
-            call mpas_pool_get_field(scratchPool, 'btrvel_temp', btrvel_tempField)
-            call mpas_allocate_scratch_field(btrvel_tempField, .false.)
+            !$omp master
+            allocate(btrvel_temp(nEdges + 1))
+            !$omp end master
+            !$omp barrier
 
             cellHaloComputeCounter = 0
             edgeHaloComputeCounter = 0
@@ -1031,9 +982,6 @@ module ocn_time_integration_split
 
                    call mpas_pool_get_array(diagnosticsPool, 'barotropicForcing', barotropicForcing)
 
-                   call mpas_pool_get_field(scratchPool, 'btrvel_temp', btrvel_tempField)
-                   btrvel_temp => btrvel_tempField % array
-
                    ! Subtract tidal potential from ssh, if needed
                    !   Subtract the tidal potential from the current and new subcycle ssh and store and a work arrays.
                    !   Then point sshSubcycleCur and  ssh SubcycleNew to the work arrays so the tidal potential terms
@@ -1279,9 +1227,10 @@ module ocn_time_integration_split
             end do ! j=1,nBtrSubcycles
             call mpas_timer_stop('btr se subcycle loop')
 
-            call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
-            call mpas_pool_get_field(scratchPool, 'btrvel_temp', btrvel_tempField)
-            call mpas_deallocate_scratch_field(btrvel_tempField, .false.)
+            !$omp barrier
+            !$omp master
+            deallocate(btrvel_temp)
+            !$omp end master
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             ! END Barotropic subcycle loop
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2071,21 +2020,12 @@ module ocn_time_integration_split
       real (kind=RKIND), dimension(:,:), pointer :: layerThickness
       real (kind=RKIND), dimension(:,:), pointer :: normalBaroclinicVelocity, normalVelocity
       integer, pointer :: nVertLevels, nCells, nEdges
-      character (len=StrKIND), pointer :: config_time_integrator, config_btr_dt, config_dt
-      logical, pointer :: config_filter_btr_mode, config_do_restart
 
       type (mpas_time_type) :: nowTime
       type (mpas_timeInterval_type) :: fullTimeStep, barotropicTimeStep, remainder, zeroInterval
 
       integer :: iErr
       integer (kind=I8KIND) :: nBtrSubcyclesI8
-
-      call mpas_pool_get_config(domain % configs, 'config_do_restart', config_do_restart)
-
-      ! Determine the number of barotropic subcycles based on the ratio of time steps
-      call mpas_pool_get_config(domain % configs, 'config_time_integrator', config_time_integrator)
-      call mpas_pool_get_config(domain % configs, 'config_btr_dt', config_btr_dt)
-      call mpas_pool_get_config(domain % configs, 'config_dt', config_dt)
 
       nowTime = mpas_get_clock_time(domain % clock, MPAS_NOW, ierr)
       call mpas_set_timeInterval( zeroInterval, S=0 )
@@ -2113,8 +2053,6 @@ module ocn_time_integration_split
          ! Initialize z-level mesh variables from h, read in from input file.
          block => domain % blocklist
          do while (associated(block))
-            call mpas_pool_get_config(block % configs, 'config_time_integrator', config_time_integrator)
-            call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
             call mpas_pool_get_subpool(block % structs, 'state', statePool)
             call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
             call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
