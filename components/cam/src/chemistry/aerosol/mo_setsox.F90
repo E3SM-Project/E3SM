@@ -286,6 +286,11 @@ contains
     real(r8) :: yph, yph_lo, yph_hi
     real(r8) :: ynetpos, ynetpos_lo, ynetpos_hi
 
+    logical :: use_SPCAM, use_ECPP
+
+    call phys_getopts (use_SPCAM_out = use_SPCAM)
+    call phys_getopts (use_ECPP_out  = use_ECPP)
+
     !-----------------------------------------------------------------
     !       ... NOTE: The press array is in pascals and must be
     !                 mutiplied by 10 to yield dynes/cm**2.
@@ -515,6 +520,11 @@ contains
                 end if
                 ! calc current [H+] from ph
                 xph(i,k) = 10.0_r8**(-yph)
+
+                if(use_SPCAM .and. use_ECPP) then
+                   ! in the MMF model w/ ECPP, ph value is fixed at 4.5
+                   xph(i,k) = 10.0_r8**(-4.5_r8)
+                end if
 
                 !-----------------------------------------------------------------
                 !        ... hno3

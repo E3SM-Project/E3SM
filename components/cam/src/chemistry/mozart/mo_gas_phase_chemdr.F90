@@ -382,6 +382,11 @@ contains
     real(r8) :: del_h2so4_gasprod(ncol,pver)
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
 
+    ! flags for MMF configuration
+    logical :: use_SPCAM, use_ECPP
+    call phys_getopts (use_SPCAM_out = use_SPCAM)
+    call phys_getopts (use_ECPP_out  = use_ECPP )
+
     call t_startf('chemdr_init')
 
     ! initialize to NaN to hopefully catch user defined rxts that go unset
@@ -726,9 +731,15 @@ contains
     if ( do_neu_wetdep ) then
       het_rates = 0._r8
     else
-      call sethet( het_rates, pmid, zmid, phis, tfld, &
-                   cmfdqr, prain, nevapr, delt, invariants(:,:,indexm), &
-                   vmr, ncol, lchnk )
+      if (use_SPCAM .and. use_ECPP) then
+        ! ECPP handles wet removal, so set to zero here
+        het_rates(:,:,:) = 0.0
+      else
+        call sethet( het_rates, pmid, zmid, phis, tfld, &
+                     cmfdqr, prain, nevapr, delt, invariants(:,:,indexm), &
+                     vmr, ncol, lchnk )
+      end if
+
        if(.not. convproc_do_aer) then 
           call het_diags( het_rates(:ncol,:,:), mmr(:ncol,:,:), pdel(:ncol,:), lchnk, ncol )
        endif

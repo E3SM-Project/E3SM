@@ -317,7 +317,9 @@ subroutine wetdepa_v2( ncol, deltat, &
       ! Sungsu Park. Mar.2010 : Impose consistencies with a few changes in physics.
       !-----------------------------------------------------------------------
 
-
+#ifdef CRM
+      use crmdims, only: crm_nz   ! to disable warnings above the CRM with MMF
+#endif
 
       implicit none
 
@@ -1064,6 +1066,17 @@ jstrcnv_loop_aa: &
                exit
             end if
          end do
+
+#ifdef CRM
+         ! the log files from MMF runs were getting really large with these warnings due 
+         ! to tiny negative values (~ -1e-300) at the top of the model, well above the CRM,
+         ! so this block avoids this problem when running the MMF
+         if ( found ) then
+            if ( k < (pver-crm_nz) ) then
+               found = .false.
+            end if
+         end if
+#endif
 
          if ( found ) then
             do i = 1,ncol

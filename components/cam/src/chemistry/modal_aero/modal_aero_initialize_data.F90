@@ -409,6 +409,10 @@ contains
        real(r8), pointer :: qqcw(:,:)
        real(r8), parameter :: huge_r8 = huge(1._r8)
        character(len=*), parameter :: routine='modal_aero_initialize'
+       ! variables for MMF configuration
+       logical :: use_SPCAM
+       integer :: icldphy ! index for cloud physic species (water vapor and cloud hydrometers)
+       character(len=16) :: microp_scheme  ! MMF microphysics scheme
        !-----------------------------------------------------------------------
 
        pi = 4._r8*atan(1._r8)    
@@ -529,6 +533,31 @@ contains
              end if
           end do
 
+       ! if using MMF, define cld physics and species_class for gas species
+       call phys_getopts(use_SPCAM_out     = use_SPCAM)
+       call phys_getopts(microp_scheme_out = microp_scheme)
+       if (use_SPCAM) then
+         if ( microp_scheme .eq. 'MG' ) then
+            icldphy = 5
+         else if ( microp_scheme .eq. 'RK' ) then
+            icldphy = 3
+         end if
+         species_class(1:icldphy) = spec_class_cldphysics
+loop:    do i = icldphy+1, pcnst
+            do m = 1,ntot_amode
+               if ( i == numptr_amode(m) ) cycle loop
+               if ( i == numptrcw_amode(m) ) cycle loop
+               do l = 1,nspec_amode(m)
+                  if ( i == lmassptr_amode(l,m) ) cycle loop
+                  if ( i == lmassptrcw_amode(l,m) ) cycle loop
+               end do
+            end do
+            ! No other species, all species except aerosol and cloud physics 
+            ! are gas species. This may need to chagne if additional nongas 
+            ! tracers are added in the future
+            species_class(i) = spec_class_gas
+         end do loop
+       end if ! use_SPCAM
 
        !   set cnst_name_cw
        call initaermodes_set_cnstnamecw()
