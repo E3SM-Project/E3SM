@@ -36,6 +36,14 @@ module aero_model
   public :: aero_model_emissions  ! aerosol emissions
   public :: aero_model_surfarea   ! aerosol surface area for chemistry
 
+  ! These are made public to be used by MMF w/ ECPP
+  public :: calc_1_impact_rate
+  public :: dlndg_nimptblgrow
+  public :: nimptblgrow_mind
+  public :: nimptblgrow_maxd
+  public :: scavimptblnum
+  public :: scavimptblvol
+
  ! Misc private data 
 
   ! number of modes
@@ -2407,6 +2415,10 @@ do_lphase2_conditional: &
 
     real(r8), pointer :: fldcw(:,:)
 
+    logical :: use_ECPP
+
+    call phys_getopts( use_ECPP_out  = use_ECPP ) 
+
     call pbuf_get_field(pbuf, dgnum_idx,      dgnum,  start=(/1,1,1/), kount=(/pcols,pver,ntot_amode/) )
     call pbuf_get_field(pbuf, dgnumwet_idx,   dgnumwet )
     call pbuf_get_field(pbuf, wetdens_ap_idx, wetdens )
@@ -2436,55 +2448,72 @@ do_lphase2_conditional: &
 !
     call qqcw2vmr( lchnk, vmrcw, mbar, ncol, loffset, pbuf )
 
-    dvmrdt(:ncol,:,:) = vmr(:ncol,:,:)
-    dvmrcwdt(:ncol,:,:) = vmrcw(:ncol,:,:)
+    !------------------------------------------------------
+    if (.not. use_ECPP) then  ! non-MMF Model
 
-  ! aqueous chemistry ...
+      dvmrdt(:ncol,:,:) = vmr(:ncol,:,:)
+      dvmrcwdt(:ncol,:,:) = vmrcw(:ncol,:,:)
 
-    if( has_sox ) then
-       call setsox(   &
-            ncol,     &
-            lchnk,    &
-            loffset,  &
-            delt,     &
-            pmid,     &
-            pdel,     &
-            tfld,     &
-            mbar,     &
-            cwat,     &
-            cldfr,    &
-            cldnum,   &
-            airdens,  &
-            invariants, &
-            vmrcw,    &
-            vmr       &
-            )
-    endif
+      ! aqueous chemistry ...
 
-!   Tendency due to aqueous chemistry 
-!   When mam_amicphys_optaa > 0, dvmrdt & dvmrcwdt to hold vmr & vmrcw 
-!      before aqueous chemistry, and cannot be used to hold aq. chem. tendencies
-!***Note - should calc & output tendencies for cloud-borne aerosol species 
-!          rather than interstitial here
-    if (mam_amicphys_optaa <= 0) then
-       dvmrdt   = (vmr - dvmrdt) / delt
-       dvmrcwdt = (vmrcw - dvmrcwdt) / delt
-    endif
-    do m = 1, gas_pcnst
-      wrk(:) = 0._r8
-      do k = 1,pver
-        if (mam_amicphys_optaa <= 0) then
-          ! here dvmrdt is (delta vmr from aqueous chemistry)/(delt)
-          wrk(:ncol) = wrk(:ncol) + dvmrdt(:ncol,k,m) * adv_mass(m)/mbar(:ncol,k)*pdel(:ncol,k)/gravit
-        else
-          ! here dvmrdt is vmr before aqueous chemistry, so need to calculate (delta vmr)/(delt)
-          wrk(:ncol) = wrk(:ncol) + ((vmr(:ncol,k,m)-dvmrdt(:ncol,k,m))/delt) &
-                                                      * adv_mass(m)/mbar(:ncol,k)*pdel(:ncol,k)/gravit
-        endif
-      end do
-      name = 'AQ_'//trim(solsym(m))
-      call outfld( name, wrk(:ncol), ncol, lchnk )
-    enddo
+      if( has_sox ) then
+         call setsox(   &
+              ncol,     &
+              lchnk,    &
+              loffset,  &
+              delt,     &
+              pmid,     &
+              pdel,     &
+              tfld,     &
+              mbar,     &
+              cwat,     &
+              cldfr,    &
+              cldnum,   &
+              airdens,  &
+              invariants, &
+              vmrcw,    &
+              vmr       &
+              )
+      endif
+
+      ! Tendency due to aqueous chemistry 
+      ! When mam_amicphys_optaa > 0, dvmrdt & dvmrcwdt to hold vmr & vmrcw 
+      ! before aqueous chemistry, and cannot be used to hold aq. chem. tendencies
+      ! ***Note - should calc & output tendencies for cloud-borne aerosol species 
+      !           rather than interstitial here
+      if (mam_amicphys_optaa <= 0) then
+         dvmrdt   = (vmr - dvmrdt) / delt
+         dvmrcwdt = (vmrcw - dvmrcwdt) / delt
+      endif
+      do m = 1, gas_pcnst
+        wrk(:) = 0._r8
+        do k = 1,pver
+          if (mam_amicphys_optaa <= 0) then
+            ! here dvmrdt is (delta vmr from aqueous chemistry)/(delt)
+            wrk(:ncol) = wrk(:ncol) + dvmrdt(:ncol,k,m) * adv_mass(m)/mbar(:ncol,k)*pdel(:ncol,k)/gravit
+          else
+            ! here dvmrdt is vmr before aqueous chemistry, so need to calculate (delta vmr)/(delt)
+            wrk(:ncol) = wrk(:ncol) + ((vmr(:ncol,k,m)-dvmrdt(:ncol,k,m))/delt) &
+                                                        * adv_mass(m)/mbar(:ncol,k)*pdel(:ncol,k)/gravit
+          endif
+        end do
+        name = 'AQ_'//trim(solsym(m))
+        call outfld( name, wrk(:ncol), ncol, lchnk )
+      enddo
+
+    !------------------------------------------------------
+    else if (use_ECPP) then  ! MMF w/ ECPP
+      ! when ECPP is used, aqueous chemistry is done in ECPP, and not updated here. 
+      ! Minghuai Wang, 2010-02 (Minghuai.Wang@pnl.gov)
+      if (mam_amicphys_optaa <= 0) then
+        dvmrdt = 0.0_r8  
+        dvmrcwdt = 0.0_r8
+      else  
+        dvmrdt(:ncol,:,:) = vmr(:ncol,:,:)
+        dvmrcwdt(:ncol,:,:) = vmrcw(:ncol,:,:)
+      end if
+   end if ! use_ECPP
+   !------------------------------------------------------
 
     if (mam_amicphys_optaa <= 0) then
     ! do gas-aerosol exchange, nucleation, and coagulation using old routines
