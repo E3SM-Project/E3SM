@@ -29,6 +29,7 @@ module ocn_time_integration_rk4
    use mpas_timer
 
    use ocn_constants
+   use ocn_config
    use ocn_tendency
    use ocn_diagnostics
    use ocn_gm
@@ -117,23 +118,6 @@ module ocn_time_integration_rk4
       ! Dimensions
       integer, pointer :: nCells, nEdges, nVertLevels, num_tracers
 
-      ! Config options
-      logical, pointer :: config_prescribe_velocity, config_prescribe_thickness
-      logical, pointer :: config_filter_btr_mode, config_use_freq_filtered_thickness
-      logical, pointer :: config_use_GM
-      logical, pointer :: config_use_cvmix_kpp
-      logical, pointer :: config_use_tracerGroup
-      logical, pointer :: config_disable_thick_all_tend
-      logical, pointer :: config_disable_vel_all_tend
-      logical, pointer :: config_disable_tr_all_tend
-      real (kind=RKIND), pointer :: config_mom_del4
-      real (kind=RKIND), pointer :: config_drying_min_cell_height
-      logical, pointer :: config_use_wetting_drying
-      logical, pointer :: config_verify_not_dry
-      logical, pointer :: config_prevent_drying
-      logical, pointer :: config_zero_drying_velocity
-      character (len=StrKIND), pointer :: config_land_ice_flux_mode
-
       ! State indices
       integer, pointer :: indexTemperature
       integer, pointer :: indexSalinity
@@ -197,26 +181,6 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:), pointer :: tidalInputMask, tidalBCValue
       real (kind=RKIND), dimension(:,:), pointer :: restingThickness
       real (kind=RKIND) :: totalDepth
-
-      ! Get config options
-      call mpas_pool_get_config(domain % configs, 'config_mom_del4', config_mom_del4)
-      call mpas_pool_get_config(domain % configs, 'config_filter_btr_mode', config_filter_btr_mode)
-      call mpas_pool_get_config(domain % configs, 'config_prescribe_velocity', config_prescribe_velocity)
-      call mpas_pool_get_config(domain % configs, 'config_prescribe_thickness', config_prescribe_thickness)
-      call mpas_pool_get_config(domain % configs, 'config_use_freq_filtered_thickness', config_use_freq_filtered_thickness)
-      call mpas_pool_get_config(domain % configs, 'config_use_GM', config_use_GM)
-      call mpas_pool_get_config(domain % configs, 'config_use_cvmix_kpp', config_use_cvmix_kpp)
-      call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_mode', config_land_ice_flux_mode)
-      call mpas_pool_get_config(domain % configs, 'config_disable_vel_all_tend', config_disable_vel_all_tend)
-      call mpas_pool_get_config(domain % configs, 'config_disable_thick_all_tend', config_disable_thick_all_tend)
-      call mpas_pool_get_config(domain % configs, 'config_disable_tr_all_tend', config_disable_tr_all_tend)
-      call mpas_pool_get_config(domain % configs, 'config_use_wetting_drying', config_use_wetting_drying)
-      call mpas_pool_get_config(domain % configs, 'config_prevent_drying', config_prevent_drying)
-      call mpas_pool_get_config(domain % configs, 'config_verify_not_dry', config_verify_not_dry)
-      call mpas_pool_get_config(domain % configs, 'config_drying_min_cell_height', config_drying_min_cell_height)
-      call mpas_pool_get_config(domain % configs, 'config_zero_drying_velocity', config_zero_drying_velocity)
-      call mpas_pool_get_config(domain % configs, 'config_use_tidal_forcing', config_use_tidal_forcing)
-      call mpas_pool_get_config(domain % configs, 'config_tidal_forcing_type', config_tidal_forcing_type)
 
       !
       ! Initialize time_levs(2) with state at current time
@@ -818,11 +782,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :), pointer :: normalTransportVelocity
       real (kind=RKIND), dimension(:, :), pointer ::  normalVelocityProvis, highFreqThicknessProvis
 
-      logical, pointer :: config_filter_btr_mode
-
       err = 0
-
-      call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
@@ -882,11 +842,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :), pointer :: normalTransportVelocity
       real (kind=RKIND), dimension(:, :), pointer ::  normalVelocityProvis, highFreqThicknessProvis
 
-      logical, pointer :: config_filter_btr_mode
-
       err = 0
-
-      call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
@@ -947,11 +903,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :), pointer :: normalTransportVelocity
       real (kind=RKIND), dimension(:, :), pointer ::  normalVelocityProvis, highFreqThicknessProvis
 
-      logical, pointer :: config_filter_btr_mode
-
       err = 0
-
-      call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
@@ -1018,11 +970,7 @@ module ocn_time_integration_rk4
       real (kind=RKIND), dimension(:, :), pointer :: normalTransportVelocity
       real (kind=RKIND), dimension(:, :), pointer ::  normalVelocityProvis, highFreqThicknessProvis
 
-      logical, pointer :: config_filter_btr_mode
-
       err = 0
-
-      call mpas_pool_get_config(block % configs, 'config_filter_btr_mode', config_filter_btr_mode)
 
       call mpas_pool_get_subpool(block % structs, 'mesh', meshPool)
       call mpas_pool_get_subpool(block % structs, 'verticalMesh', verticalMeshPool)
@@ -1096,8 +1044,6 @@ module ocn_time_integration_rk4
       real (kind=RKIND), intent(in) :: rkSubstepWeight
       integer, intent(out) :: err
 
-      logical, pointer :: config_prescribe_velocity, config_prescribe_thickness, config_use_GM
-
       integer, pointer :: nCells, nEdges
       integer :: iCell, iEdge, k
 
@@ -1121,10 +1067,6 @@ module ocn_time_integration_rk4
       character (len=StrKIND) :: configName
 
       err = 0
-
-      call mpas_pool_get_config(block % configs, 'config_prescribe_velocity', config_prescribe_velocity)
-      call mpas_pool_get_config(block % configs, 'config_prescribe_thickness', config_prescribe_thickness)
-      call mpas_pool_get_config(block % configs, 'config_use_GM', config_use_GM)
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
       call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
@@ -1408,11 +1350,7 @@ module ocn_time_integration_rk4
       character (len=StrKIND) :: modifiedGroupName
       character (len=StrKIND) :: configName
 
-      logical, pointer :: config_use_GM
-
       err = 0
-
-      call mpas_pool_get_config(block % configs, 'config_use_GM', config_use_GM)
 
       call mpas_pool_get_dimension(block % dimensions, 'nCells', nCells)
       call mpas_pool_get_dimension(block % dimensions, 'nEdges', nEdges)
