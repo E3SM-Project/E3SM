@@ -315,6 +315,9 @@ that setting to allow for cross-compilation, and for instances where the
 $OSNAME value is too generic.  For example, currently on both cray-xt and
 bluegene systems $OSNAME has the value "linux".
 </entry>
+<entry id="crm" valid_values="0,1" value="0">
+Switch to enable or disable superparameterization in CAM: 0=off, 1=on.
+</entry>
 <entry id="use_SPCAM" valid_values="0,1" value="0">
 Switch to enable or disable MMF/super-parameterization: 0=off, 1=on.
 </entry>
