@@ -784,6 +784,8 @@ contains
 
        iErr = 0
 
+       call mpas_pool_get_subpool(domain % blocklist % structs, 'scratch', scratchPool)
+
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
@@ -898,21 +900,21 @@ contains
              call ocn_init_setup_global_ocean_deepen_critical_passages(meshPool, criticalPassagesPool, iErr)
           end if
 
-          ! Alter cells for partial bottom cells before filling in bathymetry
-          ! holes.
-          do iCell = 1, nCells
-             call ocn_alter_bottomDepth_for_pbcs(bottomDepth(iCell), refBottomDepth, maxLevelCell(iCell), iErr)
-          end do
-
-          ! Fill bathymetry holes, i.e. single cells that are deeper than all neighbors.
-          ! These cells can collect tracer extrema and are not able to use
-          ! horizontal diffusion or advection to clear them out. Reduce pits to
-          ! make them level with the next deepest neighbor cell.
+          ! Fill holes. Enforce that no cell has maxLevelCell that is more than
+          ! 1 vertical level higher than its neighbors.
           if (config_global_ocean_fill_bathymetry_holes) then
+             call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
+
              call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
              call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
 
+             !$omp master
+             allocate(smoothedLevels(nCells+1))
+             !$omp end master
+             !$omp barrier
+
              maxLevelCell(nCells+1) = -1
+             smoothedLevels(:) = maxLevelCell(:)
 
              do iCell = 1, nCellsSolve
                 maxLevelNeighbors = 0
@@ -921,12 +923,18 @@ contains
                    maxLevelNeighbors = max(maxLevelNeighbors, maxLevelCell(coc))
                 end do
 
-                if (maxLevelCell(iCell) > maxLevelNeighbors) then
-                   maxLevelCell(iCell) = maxLevelNeighbors
-                   bottomDepth(iCell) = refBottomDepth(maxLevelNeighbors)
+                if (maxLevel < maxLevelCell(iCell) ) then
+                   smoothedLevels(iCell) = maxLevel + 1
+                   bottomDepth(iCell) = refBottomDepth(maxLevel + 1)
                 end if
              end do
 
+             maxLevelCell(:) = smoothedLevels(:)
+
+             !$omp barrier
+             !$omp master
+             deallocate(smoothedLevels)
+             !$omp end master
           end if
 
           block_ptr => block_ptr % next
