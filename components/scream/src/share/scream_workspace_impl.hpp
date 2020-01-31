@@ -14,28 +14,28 @@ namespace scream {
  */
 
 template <typename T, typename D>
-WorkspaceManager<T, D>::WorkspaceManager(int size, int max_used, TeamPolicy policy) :
-  m_tu(policy),
-  m_concurrent_teams(m_tu.get_num_concurrent_teams()),
+WorkspaceManager<T, D>::WorkspaceManager(int size, int max_used, TeamPolicy policy, const Real& overprov_factor) :
+  m_tu(policy, overprov_factor),
+  m_max_ws_idx(m_tu.get_num_ws_slots()),
   m_reserve( (sizeof(T) > 2*sizeof(int)) ? 1 :
              (2*sizeof(int) + sizeof(T) - 1)/sizeof(T) ),
   m_size(size),
   m_total(m_size + m_reserve),
   m_max_used(max_used),
 #ifndef NDEBUG
-  m_num_used("Workspace.m_num_used", m_concurrent_teams),
-  m_high_water("Workspace.m_high_water", m_concurrent_teams),
-  m_active("Workspace.m_active", m_concurrent_teams, m_max_used),
-  m_curr_names("Workspace.m_curr_names", m_concurrent_teams, m_max_used, m_max_name_len),
-  m_all_names("Workspace.m_all_names", m_concurrent_teams, m_max_names, m_max_name_len),
+  m_num_used("Workspace.m_num_used", m_max_ws_idx),
+  m_high_water("Workspace.m_high_water", m_max_ws_idx),
+  m_active("Workspace.m_active", m_max_ws_idx, m_max_used),
+  m_curr_names("Workspace.m_curr_names", m_max_ws_idx, m_max_used, m_max_name_len),
+  m_all_names("Workspace.m_all_names", m_max_ws_idx, m_max_names, m_max_name_len),
   // A name's index in m_all_names is used to index into m_counts
-  m_counts("Workspace.m_counts", m_concurrent_teams, m_max_names, 2),
+  m_counts("Workspace.m_counts", m_max_ws_idx, m_max_names, 2),
 #endif
-  m_next_slot("Workspace.m_next_slot", m_pad_factor*m_concurrent_teams),
+  m_next_slot("Workspace.m_next_slot", m_pad_factor*m_max_ws_idx),
   m_data(Kokkos::ViewAllocateWithoutInitializing("Workspace.m_data"),
-         m_concurrent_teams, m_total * m_max_used)
+         m_max_ws_idx, m_total * m_max_used)
 {
-  init(*this, m_data, m_concurrent_teams, m_max_used, m_total);
+  init(*this, m_data, m_max_ws_idx, m_max_used, m_total);
 }
 
 template <typename T, typename D>
@@ -48,7 +48,7 @@ void WorkspaceManager<T, D>::report() const
   auto host_counts     = Kokkos::create_mirror_view(m_counts);
 
   std::cout << "\nWS usage (capped at " << m_max_used << "): " << std::endl;
-  for (int t = 0; t < m_concurrent_teams; ++t) {
+  for (int t = 0; t < m_max_ws_idx; ++t) {
     std::cout << "WS " << t << " currently using " << host_num_used(t) << std::endl;
     std::cout << "WS " << t << " high-water " << host_high_water(t) << std::endl;
   }
@@ -59,7 +59,7 @@ void WorkspaceManager<T, D>::report() const
     Data (int u, int t, int r) : used(u), takes(t), releases(r) {}
   };
   std::map<std::string, Data> ws_usage_map;
-  for (int t = 0; t < m_concurrent_teams; ++t) {
+  for (int t = 0; t < m_max_ws_idx; ++t) {
     std::cout << "  For wsidx " << t << std::endl;
     for (int n = 0; n < m_max_names; ++n) {
       const char* name = &(host_all_names(t, n, 0));
@@ -111,11 +111,11 @@ void WorkspaceManager<T, D>::release_workspace(const MemberType& team, const Wor
 
 template <typename T, typename D>
 void WorkspaceManager<T, D>::init(const WorkspaceManager<T, D>& wm, const view_2d<T>& data,
-                                  const int concurrent_teams, const int max_used, const int total)
+                                  const int max_ws_idx, const int max_used, const int total)
 {
   Kokkos::parallel_for(
     "WorkspaceManager ctor",
-    util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(concurrent_teams, max_used),
+    util::ExeSpaceUtils<ExeSpace>::get_default_team_policy(max_ws_idx, max_used),
     KOKKOS_LAMBDA(const MemberType& team) {
       Kokkos::parallel_for(
         Kokkos::TeamThreadRange(team, max_used), [&] (int i) {

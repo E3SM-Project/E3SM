@@ -153,14 +153,21 @@ void test_utils_large_ni(const double saturation_multiplier)
   using MemberType = typename KokkosTypes<Device>::MemberType;
 
   const int nk = 128;
+  const Real overprov_factor = 1.5;
   TeamUtils<ExeSpace> tu_temp(ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk));
-  const int num_conc = tu_temp.get_num_concurrent_teams();
+  const int num_conc = tu_temp.get_max_concurrent_threads() / nk;
 
   const int ni = num_conc*saturation_multiplier;
   const auto p = ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
-  TeamUtils<ExeSpace> tu(p);
+  TeamUtils<ExeSpace> tu(p, overprov_factor);
 
   REQUIRE(p.league_size() == ni);
+  if (!OnGpu<ExeSpace>::value || saturation_multiplier <= 1.0) {
+    REQUIRE(tu.get_num_ws_slots() == num_conc);
+  }
+  else {
+    REQUIRE(tu.get_num_ws_slots() == num_conc*overprov_factor);
+  }
 
   int max_workspace_idx = 0;
   typename KokkosTypes<Device>::template view_1d<int> test_data("test_data", num_conc);

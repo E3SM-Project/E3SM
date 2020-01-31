@@ -24,9 +24,58 @@ using view_2d = typename KokkosTypes<Device>::template view_2d<S>;
 template <typename S>
 using view_3d = typename KokkosTypes<Device>::template view_3d<S>;
 
+static void unittest_workspace_overprovision()
+{
+  using namespace scream;
+  using namespace scream::util;
+
+  using WSM = WorkspaceManager<Real, Device>;
+
+  const int nk = 128;
+
+  TeamUtils<ExeSpace> tu_temp(ExeSpaceUtils<ExeSpace>::get_default_team_policy(1, nk));
+  const int num_conc = tu_temp.get_max_concurrent_threads() / nk;
+
+  constexpr Real op_fact = WSM::GPU_DEFAULT_OVERPROVISION_FACTOR;
+  constexpr Real explicit_op_fact = op_fact * 2.0;
+
+  const int ni_under   = num_conc / 2;
+  const int ni_conc    = num_conc;
+  const int ni_between = num_conc * ( (op_fact + 1.0) / 2.0 );
+  const int ni_exact   = num_conc * op_fact;
+  const int ni_over    = num_conc * (explicit_op_fact + .5);
+
+  for (const int ni_item : {ni_under, ni_conc, ni_between, ni_exact, ni_over}) {
+    TeamPolicy policy(ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni_item, nk));
+    WSM wsm(4, 4, policy);
+
+    if (!OnGpu<ExeSpace>::value || ni_item <= ni_exact) {
+      REQUIRE(wsm.m_max_ws_idx == ni_item);
+    }
+    else {
+      REQUIRE(wsm.m_max_ws_idx == num_conc * op_fact);
+    }
+  }
+
+  for (const int ni_item : {ni_under, ni_conc, ni_between, ni_exact, ni_over}) {
+    TeamPolicy policy(ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni_item, nk));
+    WSM wsm(4, 4, policy, explicit_op_fact);
+
+    if (!OnGpu<ExeSpace>::value || ni_item <= ni_exact) {
+      REQUIRE(wsm.m_max_ws_idx == ni_item);
+    }
+    else {
+      REQUIRE(wsm.m_max_ws_idx == num_conc * explicit_op_fact);
+    }
+  }
+
+}
+
 static void unittest_workspace()
 {
   using namespace scream;
+
+  unittest_workspace_overprovision();
 
   int nerr = 0;
   const int ints_per_ws = 37;
