@@ -1338,16 +1338,6 @@ EOF
 }
 
 my $crm = $cfg_ref->get('crm') ? "ON" : "OFF";
-
-# The only dycores supported in SPCAM mode are Semi-Lagrangian and Finite-Volume
-### mdb 8/2016: disable dycore check for spcam
-#if ($crm eq 'ON' and $dyn_pkg ne 'sld' and $dyn_pkg ne 'fv' and $dyn_pkg ne 'homme') {
-#    die <<"EOF";
-#**  ERROR: SPCAM mode only works with Semi-Lagrangian or Finite Volume dycores.
-#**         Requested dycore is: $dyn_pkg
-#EOF
-#}
-
 if ($print>=2) { print "Configure CAM for SPCAM (superparameterization) mode: $crm.$eol"; }
 
 #-----------------------------------------------------------------------------------------------
@@ -1900,7 +1890,7 @@ $cfg_cppdefs .= " -DMAXPATCH_PFT=numpft+1 -DLSMLAT=1 -DLSMLON=1";
 # Building for perturbation growth tests
 if ($pergro eq "ON") { $cfg_cppdefs .= " -DPERGRO"; }
 
-# Building for superparameterization
+# Building for MMF/superparameterization
 my $crm_nx = $cfg_ref->get('crm_nx');
 my $crm_ny = $cfg_ref->get('crm_ny');
 my $crm_nz = $cfg_ref->get('crm_nz');
@@ -1917,9 +1907,6 @@ $cfg_cppdefs .= " -D_$crm_adv -D$SPCAM_microp_scheme -DYES3DVAL=$yes3Dval -DCRM_
 if ($crm eq "ON") { $cfg_cppdefs .= " -DCRM " }
 if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
 if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
-
-# if (defined $opts{'crm_nx_rad'}) { $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad " }
-# if (defined $opts{'crm_ny_rad'}) { $cfg_cppdefs .= " -DCRM_NY_RAD=$crm_ny_rad " }
 
 if (defined $opts{'crm_nx_rad'}) { 
     $cfg_cppdefs .= " -DCRM_NX_RAD=$crm_nx_rad " 
