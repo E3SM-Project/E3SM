@@ -315,5 +315,44 @@ that setting to allow for cross-compilation, and for instances where the
 $OSNAME value is too generic.  For example, currently on both cray-xt and
 bluegene systems $OSNAME has the value "linux".
 </entry>
+<entry id="use_SPCAM" valid_values="0,1" value="0">
+Switch to enable or disable MMF/super-parameterization: 0=off, 1=on.
+</entry>
+<entry id="use_ECPP" valid_values="0,1" value="0">
+Switch to enable or disable ECPP in CAM: 0=off, 1=on.
+</entry>
+<entry id="use_MAML" valid_values="0,1" value="0">
+Switch to enable or disable MAML in CAM: 0=off, 1=on.
+</entry>
+<entry id="use_crm_cldfrac" valid_values="0,1" value="0">
+Switch to enable or disable fractional cloudiness in m2005 microphysics in CRM: 0=off, 1=on.
+</entry>
+<entry id="SPCAM_microp_scheme" valid_values="sam1mom,m2005" value="sam1mom">
+SPCAM Cloud microphysics type.
+</entry>
+<entry id="crm_adv" valid_values="MPDATA,UM5" value="MPDATA">
+SPCAM Cloud microphysics type.
+</entry>
+<entry id="crm_nx" value="1">
+CRM number of grid points in x
+</entry>
+<entry id="crm_ny" value="1">
+CRM number of grid points in y
+</entry>
+<entry id="crm_nz" value="2">
+CRM number of grid points in z
+</entry>
+<entry id="crm_dx" value="1">
+CRM horizontal grid spacing, m
+</entry>
+<entry id="crm_dt" value="1">
+CRM time step, s
+</entry>
+<entry id="crm_nx_rad" value="1">
+CRM number of averaged columns in x for radiation
+</entry>
+<entry id="crm_ny_rad" value="1">
+CRM number of averaged columns in y for radiation
+</entry>
 
 </config_definition>

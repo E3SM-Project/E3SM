@@ -4427,6 +4427,53 @@ Use spectral scaling in the radiation heating
 Default: false
 </entry>
 
+<!-- MMF -->
+<entry id="use_SPCAM" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on super parameterized CAM
+Default: false
+</entry>
+
+<entry id="use_ECPP" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on explicit cloud parameterized pollutants
+Default: false
+</entry>
+
+<entry id="use_MAML" type="logical"  category="conv"
+       group="phys_ctl_nl" valid_values="" >
+Turn on Multiple Atmosphere and Multiple Land option 
+Default: false
+</entry>
+
+<entry id="SPCAM_microp_scheme" type="char*16" category="conv"
+       group="phys_ctl_nl" valid_values="m2005, sam1mom" >
+Type of SPCAM microphysics scheme employed.
+Default: sam1mom
+</entry>
+
+<!-- MMF Mean State Acceleration(MSA) definitions -->
+<entry id="use_crm_accel" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Enables CRM mean-state acceleration when using SPCAM.
+Default: true
+</entry>
+
+<entry id="crm_accel_factor" type="real" category="conv"
+       group="phys_ctl_nl" valid_values="">
+CRM acceleration factor to apply if use_crm_accel is true
+Default: 2.0
+</entry>
+
+<entry id="crm_accel_uv" type="logical" category="conv"
+       group="phys_ctl_nl" valid_values="">
+Turn on CRM mean-state acceleration for u,v when use_crm_accel is true.
+If crm_accel_uv is false and use_crm_accel is true, then mean-state
+acceleration will only be applied to scalar fields (liquid/ice static 
+energy and non-precipitating total water mixing ratio). This has
+no effect when use_crm_accel is false.
+Default: true
+
 <!-- Test Tracers -->
 
 <entry id="tracers_flag" type="logical" category="test_tracers"

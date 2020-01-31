@@ -1623,10 +1623,21 @@ if ($nl->get_value('strat_aero_feedback') =~ /$TRUE/io) {
 
 add_default($nl, 'rad_climate', 'val'=>$radval);
 
-# Cloud optics
+# Cloud optics; for MMF be specific about which optics package to use
 if ($rad_pkg eq 'rrtmg' or $rad_pkg eq 'rrtmgp') {
-    add_default($nl, 'liqcldoptics');
-    add_default($nl, 'icecldoptics');
+    if ($cfg->get('use_SPCAM')) {
+        if ($cfg->get('SPCAM_microp_scheme') eq 'sam1mom') {
+            add_default($nl, 'oldcldoptics', 'val' => '.true.');
+            add_default($nl, 'liqcldoptics', 'val' => 'slingo');
+            add_default($nl, 'icecldoptics', 'val' => 'ebertcurry');
+        } else {
+            add_default($nl, 'liqcldoptics', 'val' => 'gammadist');
+            add_default($nl, 'icecldoptics', 'val' => 'mitchell');
+        }
+    } else {
+        add_default($nl, 'liqcldoptics');
+        add_default($nl, 'icecldoptics');
+    }
     add_default($nl, 'liqopticsfile');
     add_default($nl, 'iceopticsfile');
 }
@@ -3520,6 +3531,16 @@ if ($clubb_sgs  =~ /$TRUE/io) {
    add_default($nl, 'relvar_fix');
    add_default($nl, 'clubb_use_sgv');
 }
+
+# MMF Microphysics scheme
+add_default($nl, 'SPCAM_microp_scheme');
+add_default($nl, 'use_SPCAM');
+add_default($nl, 'use_ECPP');
+
+# MMF CRM mean-state acceleration
+add_default($nl, 'use_crm_accel');
+add_default($nl, 'crm_accel_uv');
+add_default($nl, 'crm_accel_factor');
 
 add_default($nl, 'do_aerocom_ind3');
 my $aerocom_ind3 = $nl->get_value('do_aerocom_ind3');
