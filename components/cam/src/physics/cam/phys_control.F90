@@ -1,4 +1,4 @@
-module use_crm_accel
+module phys_control
 !-----------------------------------------------------------------------
 ! Purpose:
 !
@@ -181,7 +181,7 @@ subroutine phys_ctl_readnl(nlfile)
 
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
-      SPCAM_microp_scheme, use_SPCAM, use_ECPP, use_MAML,&
+      SPCAM_microp_scheme, use_SPCAM, use_ECPP, use_MAML, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       history_aerosol, history_aero_optics, &
@@ -361,11 +361,12 @@ subroutine phys_ctl_readnl(nlfile)
    end if
 
    ! Check settings for SPCAM_microp_scheme
-   if ( .not. (SPCAM_microp_scheme .eq. 'm2005' .or. SPCAM_microp_scheme .eq. 'sam1mom' .or. &
-               SPCAM_microp_scheme .eq. unset_str )) then
+   if ( .not.(SPCAM_microp_scheme .eq. 'm2005'   .or. &
+              SPCAM_microp_scheme .eq. 'sam1mom' .or. &
+              SPCAM_microp_scheme .eq. unset_str )) then
       write(iulog,*)'phys_setopts: illegal value of SPCAM_microp_scheme:', SPCAM_microp_scheme
       call endrun('phys_setopts: illegal value of SPCAM_microp_scheme')
-   endif
+   end if
 
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
    prog_modal_aero = (     cam_chempkg_is('trop_mam3') &

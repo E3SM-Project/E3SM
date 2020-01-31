@@ -182,6 +182,7 @@ contains
     use cam_history,  only : outfld
     use sox_cldaero_mod, only : sox_cldaero_update, sox_cldaero_create_obj, sox_cldaero_destroy_obj
     use cldaero_mod,     only : cldaero_conc_t
+    use phys_control, only : phys_getopts
 
     !
     implicit none
@@ -288,8 +289,7 @@ contains
 
     logical :: use_SPCAM, use_ECPP
 
-    call phys_getopts (use_SPCAM_out = use_SPCAM)
-    call phys_getopts (use_ECPP_out  = use_ECPP)
+    call phys_getopts( use_SPCAM_out=use_SPCAM, use_ECPP_out=use_ECPP )
 
     !-----------------------------------------------------------------
     !       ... NOTE: The press array is in pascals and must be

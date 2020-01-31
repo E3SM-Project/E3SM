@@ -2359,6 +2359,7 @@ do_lphase2_conditional: &
     use modal_aero_newnuc,     only : modal_aero_newnuc_sub
     use mo_setsox,             only : setsox, has_sox
     use modal_aero_data,       only : cnst_name_cw, qqcw_get_field
+    use phys_control,          only : phys_getopts
 
     !-----------------------------------------------------------------------
     !      ... dummy arguments
