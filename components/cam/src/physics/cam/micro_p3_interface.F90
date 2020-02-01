@@ -494,8 +494,27 @@ end subroutine micro_p3_readnl
    ! Record of inputs/outputs from p3_main
    call add_hist_coord('P3_input_dim',  16, 'Input field dimension for p3_main subroutine',  'N/A', (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 /))
    call add_hist_coord('P3_output_dim', 32, 'Output field dimension for p3_main subroutine', 'N/A', (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32 /))
-   call addfld('P3_input', (/ 'ilev', 'P3_input_dim' /),  'I', 'N/A', 'Inputs for p3_main subroutine')
-   call addfld('P3_output', (/ 'ilev', 'P3_output_dim' /), 'I', 'N/A', 'Outputs for p3_main subroutine')
+   call addfld('P3_input',  (/ 'ilev         ', 'P3_input_dim ' /),  'I', 'N/A', 'Inputs for p3_main subroutine')
+   call addfld('P3_output', (/ 'ilev         ', 'P3_output_dim' /), 'I', 'N/A', 'Outputs for p3_main subroutine')
+   ! Record of microphysics tendencies
+   ! warm-phase process rates
+   call addfld('P3_qrcon',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain condensation   (Not in paper?)')
+   call addfld('P3_qcacc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet accretion by rain')
+   call addfld('P3_qcaut',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet autoconversion to rain')
+   call addfld('P3_ncacc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from accretion by rain')
+   call addfld('P3_ncautc', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from autoconversion')
+   call addfld('P3_ncslf',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from self-collection  (Not in paper?)')
+   call addfld('P3_nrslf',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from self-collection  (Not in paper?)')
+   call addfld('P3_ncnuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from activation of CCN')
+   call addfld('P3_qccon',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet condensation')
+   call addfld('P3_qcnuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for activation of cloud droplets from CCN')
+   call addfld('P3_qrevp',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain evaporation')
+   call addfld('P3_qcevp',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet evaporation')
+   call addfld('P3_nrevp',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from evaporation')
+   call addfld('P3_ncautr', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from autoconversion of cloud water')
+   ! ice-phase process rates
+   call addfld('P3_qccol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for collection of cloud water by ice')
+   call addfld('P3_qwgrth', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 wet growth rate')
    ! Record of microphysics tendencies
    ! warm-phase process rates
    call addfld('P3_qrcon',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain condensation   (Not in paper?)')
