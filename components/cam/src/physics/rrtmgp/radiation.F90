@@ -127,7 +127,7 @@ module radiation
 
    ! Should we clip temperatures when out of bounds of absorption coefficient
    ! look-up table data?
-   logical :: rrtmgp_clip_temperatures
+   logical :: rrtmgp_clip_temperatures = .false.
 
    ! Number of shortwave and longwave bands in use by the RRTMGP radiation code.
    ! This information will be stored in the k_dist_sw and k_dist_lw objects and may
@@ -202,9 +202,6 @@ contains
       integer :: unitn, ierr
       integer :: dtime  ! timestep size
       character(len=*), parameter :: subroutine_name = 'radiation_readnl'
-
-      ! Set default for rrtmgp_clip_temperatures
-      rrtmgp_clip_temperatures = .false.
 
       ! Variables defined in namelist
       namelist /radiation_nl/ rrtmgp_coefficients_file_lw, &
