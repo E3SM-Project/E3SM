@@ -158,7 +158,8 @@ void test_utils_large_ni(const double saturation_multiplier)
   TeamUtils<ExeSpace> tu_temp(temp_policy);
   const int num_conc = tu_temp.get_max_concurrent_threads() / temp_policy.team_size();
 
-  const int ni = num_conc*saturation_multiplier;
+  int ni = num_conc*saturation_multiplier;
+  if (ni == 0) ni = 1;
   const auto p = ExeSpaceUtils<ExeSpace>::get_default_team_policy(ni, nk);
   TeamUtils<ExeSpace> tu(p, overprov_factor);
 

@@ -142,9 +142,9 @@ class _TeamUtilsCommonBase
     _league_size = policy.league_size();
 
     // We will never run more teams than the policy needs
-    _num_teams = _num_teams > policy.league_size() ? _league_size : _num_teams;
+    _num_teams = _num_teams > _league_size ? _league_size : _num_teams;
 
-    scream_assert_msg(_num_teams > 0, "Should always be able to run at least 1 team");
+    scream_assert_msg(_num_teams > 0, "Should always be able to run at least 1 team. max_thrds=" << _max_threads << " team_size=" << team_size << " league_size=" << _league_size);
   }
 
   // How many thread teams can run concurrently
