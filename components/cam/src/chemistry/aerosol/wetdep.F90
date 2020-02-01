@@ -317,9 +317,7 @@ subroutine wetdepa_v2( ncol, deltat, &
       ! Sungsu Park. Mar.2010 : Impose consistencies with a few changes in physics.
       !-----------------------------------------------------------------------
 
-#ifdef CRM
-      use crmdims, only: crm_nz   ! to disable warnings above the CRM with MMF
-#endif
+      use phys_control, only: phys_getopts
 
       implicit none
 
@@ -484,6 +482,16 @@ subroutine wetdepa_v2( ncol, deltat, &
       real(r8) u_old, u_tmp
       real(r8) x_old, x_tmp, x_ratio
 
+      
+#ifdef CRM_NZ
+      ! crm_nz is used to disable warnings above the CRM with MMF
+      integer, parameter :: crm_nz = CRM_NZ   
+#else
+      ! if not MMF, CRM_NZ is not defined, so set to zero to avoid build error
+      integer, parameter :: crm_nz = 0
+#endif
+      logical use_SPCAM
+      call phys_getopts( use_SPCAM_out = use_SPCAM)
 
 ! ------------------------------------------------------------------------
 !      omsm = 1.-1.e-10          ! used to prevent roundoff errors below zero
@@ -1067,16 +1075,14 @@ jstrcnv_loop_aa: &
             end if
          end do
 
-#ifdef CRM
          ! the log files from MMF runs were getting really large with these warnings due 
          ! to tiny negative values (~ -1e-300) at the top of the model, well above the CRM,
          ! so this block avoids this problem when running the MMF
-         if ( found ) then
-            if ( k < (pver-crm_nz) ) then
-               found = .false.
+         if ( use_SPCAM ) then
+            if ( found ) then
+               if ( k < (pver-crm_nz) ) found = .false.
             end if
          end if
-#endif
 
          if ( found ) then
             do i = 1,ncol

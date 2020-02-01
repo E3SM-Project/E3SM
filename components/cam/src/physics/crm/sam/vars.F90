@@ -1,10 +1,8 @@
 module vars
   use grid
   use params, only: crm_rknd
-#ifdef CRM
 #ifdef MODAL_AERO
   use modal_aero_data,   only: ntot_amode
-#endif
 #endif
 
   implicit none

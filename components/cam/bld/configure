@@ -1337,8 +1337,7 @@ EOF
    # print "---> $opts{'crm_nx'} $opts{'crm_ny'} $opts{'crm_nz'} $opts{'crm_dx'} $opts{'crm_dt'} $opts{'SPCAM_microp_scheme'} $eol";
 }
 
-my $crm = $cfg_ref->get('crm') ? "ON" : "OFF";
-if ($print>=2) { print "Configure CAM for SPCAM (superparameterization) mode: $crm.$eol"; }
+if ($print>=2) { print "Configure CAM for SPCAM (superparameterization) mode: $use_SPCAM.$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Horizontal grid parameters
@@ -1904,7 +1903,6 @@ my $yes3Dval = 1;
 if ($crm_ny eq 1) {$yes3Dval = 0;}
 $cfg_cppdefs .= " -D_$crm_adv -D$SPCAM_microp_scheme -DYES3DVAL=$yes3Dval -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
 
-if ($crm eq "ON") { $cfg_cppdefs .= " -DCRM " }
 if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
 if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
 
@@ -2628,7 +2626,6 @@ sub write_filepath
     # Component interface specifier
     my $comp_intf = $cfg_ref->get('comp_intf');
 
-    my $crm         = $cfg_ref->get('crm');
     my $SPCAM_microp_scheme    = $cfg_ref->get('SPCAM_microp_scheme');
 
     # Start writing paths to the file.  *** Order is important ***  The
@@ -2663,7 +2660,7 @@ sub write_filepath
     # Superparameterization; this code section needs to appear before those
     # adding the physics and chemistry packages to override versions of files
     # that appear in both places
-    if ($crm) {
+    if ($use_SPCAM) {
 
         # interface and base model code
         print $fh "$camsrcdir/cam/src/physics/crm\n";

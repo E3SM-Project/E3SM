@@ -637,14 +637,8 @@ subroutine micro_proc(ncrms)
 
 use params, only: fac_cond, fac_sub, rgas
 use grid, only: z, zi
-
-#ifdef CRM
 use vars, only: t, gamaz, precsfc, precssfc, precflux, qpfall, tlat, prec_xy, &
-#else
-use vars, only: t, gamaz, precsfc, precflux, qpfall, tlat, prec_xy, &
-#endif /*CRM*/
-     nstep, nstatis, icycle, total_water_prec
-
+                nstep, nstatis, icycle, total_water_prec
 #ifdef ECPP
 use ecppvars, only: qlsink, qlsink_bf, prain, precr, precsolid, rh, qcloud_bf
 #endif

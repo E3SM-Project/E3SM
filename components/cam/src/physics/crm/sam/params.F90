@@ -6,13 +6,11 @@ module params
   Ls_clubb => Ls, Rv_clubb => Rv, Rd_clubb => Rd, pi_clubb => pi
 #else
 
-#ifdef CRM
   use shr_const_mod, only: shr_const_rdair, shr_const_cpdair, shr_const_latvap, &
   shr_const_latice, shr_const_latsub, shr_const_rgas, &
   shr_const_mwwv, shr_const_stebol, shr_const_tkfrz, &
   shr_const_mwdair, shr_const_g, shr_const_karman, &
   shr_const_rhofw
-#endif /*CRM*/
 
 #endif
 
@@ -21,7 +19,7 @@ module params
 #ifdef CRM_SINGLE_PRECISION
   integer, parameter :: crm_rknd = selected_real_kind( 6) ! 4 byte real
 #else
-  ! whannah - default precision of real - kind(1.d0)
+  ! default precision of real - kind(1.d0)
   integer, parameter :: crm_rknd = selected_real_kind(12) ! 8 byte real
 #endif
 
