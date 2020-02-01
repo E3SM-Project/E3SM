@@ -66,6 +66,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
 
   tl.update_tracers_levels(params.qsplit);
 
+#if 0
 #ifndef CAM
   apply_test_forcing ();
 #endif
@@ -81,6 +82,7 @@ void prim_run_subcycle_c (const Real& dt, int& nstep, int& nm1, int& n0, int& np
   else if(params.ftype == ForcingAlg::FORCING_2) {
     apply_cam_forcing_dynamics(dt_remap);
   }
+#endif
 
   if (compute_diagnostics) {
     Diagnostics& diags = context.get<Diagnostics>();
