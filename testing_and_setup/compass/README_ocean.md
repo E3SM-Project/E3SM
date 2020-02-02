@@ -7,7 +7,7 @@ environment.  First, install Miniconda3 (if miniconda is not already
 installed), then create a new conda environment as follows:
 ``` bash
 conda create -n compass_py3.7 -c conda-forge -c xylar python=3.7 \
-    geometric_features=0.1.4 mpas_tools=0.0.5 jigsaw=0.9.11 jigsawpy=0.0.2 \
+    geometric_features=0.1.4 mpas_tools=0.0.6 jigsaw=0.9.11 jigsawpy=0.0.2 \
     metis pyflann scikit-image basemap pyamg ffmpeg
 ```
 Each time you want to work with COMPASS, you will need to run:
