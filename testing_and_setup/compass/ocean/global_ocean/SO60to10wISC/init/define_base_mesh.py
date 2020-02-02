@@ -51,7 +51,7 @@ def cellWidthVsLatLon():
     #plt.grid(True)
     #plt.xlabel('latitude')
     #plt.ylabel('grid cell size')
-    #plt.title('SO60to10ISC, transition at 55S')
+    #plt.title('SO60to10wISC, transition at 55S')
     #plt.savefig('cellWidthVsLat.pdf')
     #plt.savefig('cellWidthVsLat.png')
 
