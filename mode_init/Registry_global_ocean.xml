@@ -175,8 +175,8 @@
 			description="Method to interpolate topography data to MPAS mesh."
 			possible_values="bilinear_interpolation, nearest_neighbor"
 		/>
-		<nml_option name="config_global_ocean_smooth_topography" type="logical" default_value=".true." units="unitless"
-			description="Logical flag that controls if topograhy should be smoothed after being interpolated."
+		<nml_option name="config_global_ocean_fill_bathymetry_holes" type="logical" default_value=".true." units="unitless"
+			description="Logical flag that controls if deep holes in the bathymetry should be filled after interpolation to the MPAS mesh."
 			possible_values=".true. or .false."
 		/>
 		<nml_option name="config_global_ocean_deepen_critical_passages" type="logical" default_value=".true." units="unitless"
