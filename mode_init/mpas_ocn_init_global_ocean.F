@@ -856,7 +856,7 @@ contains
        integer :: minimum_levels
 
        character (len=StrKIND), pointer :: config_global_ocean_topography_method
-       logical, pointer :: config_global_ocean_smooth_topography, config_global_ocean_topography_has_ocean_frac, &
+       logical, pointer :: config_global_ocean_fill_bathymetry_holes, config_global_ocean_topography_has_ocean_frac, &
                            config_global_ocean_deepen_critical_passages
        real (kind=RKIND), pointer :: config_global_ocean_minimum_depth
 
@@ -866,7 +866,7 @@ contains
 
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_method', config_global_ocean_topography_method)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_minimum_depth', config_global_ocean_minimum_depth)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_smooth_topography', config_global_ocean_smooth_topography)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_fill_bathymetry_holes', config_global_ocean_fill_bathymetry_holes)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_deepen_critical_passages', &
                                  config_global_ocean_deepen_critical_passages)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_has_ocean_frac', &
@@ -975,7 +975,7 @@ contains
 
           ! Smooth depth levels. Enforce different in maxLevelCell to only be a maximum
           ! of 1 vertical level between two neighboring cells.
-          if (config_global_ocean_smooth_topography) then
+          if (config_global_ocean_fill_bathymetry_holes) then
              call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
              call mpas_pool_get_field(scratchPool, 'smoothedLevels', smoothedLevelsField)
