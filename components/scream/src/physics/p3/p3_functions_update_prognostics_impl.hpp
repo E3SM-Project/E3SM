@@ -84,6 +84,40 @@ void Functions<S,D>
 
 }
 
+  template<typename S, typename D>
+  KOKKOS_FUNCTION
+  void Functions<S,D>
+  ::update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
+			     const Spack& qcaut,const Spack& ncautc, const Spack& qcnuc, const Spack& ncautr,
+			     const Spack& ncslf, const Spack& qrevp, const Spack& nrevp, const Spack& nrslf,
+			     const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
+			     const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr)
+  {
+
+    qc = qc + (qcnuc - qcacc - qcaut) * dt;
+    qr = qr + (qcacc + qcaut - qrevp) * dt;
+
+    if(log_predictNc) {
+      nc = nc + (ncslf -ncacc - ncautc) * dt;
+    }
+    else{
+      constexpr Scalar NCCNST = C::NCCNST;
+      nc = NCCNST * inv_rho;
+    }
+    constexpr int IPARAM = C::IPARAM;
+    if (IPARAM == 1 || IPARAM == 2){
+      nr = nr + (0.5 * ncautc - nrslf - nrevp) * dt;
+    }
+    else{
+      nr = nr + (ncautr - nrslf - nrevp) * dt;
+    }
+
+    qv = qv + (qrevp - qcnuc) * dt;
+
+    constexpr Scalar INV_CP = C::INV_CP;
+    th = th + exner*((qcnuc - qrevp) * xxlv * INV_CP) * dt;
+  }
+
 } // namespace p3
 } // namespace scream
 

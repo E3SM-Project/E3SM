@@ -72,6 +72,14 @@ void  update_prognostic_ice_c(
   Real rhorime_c, Real* th, Real* qv, Real* qitot, Real* nitot, Real* qirim,
   Real* birim, Real* qc, Real* nc, Real* qr, Real* nr);
 
+void update_prognostic_liquid_c(
+  Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
+  Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
+  Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
+  Real* qc, Real* nc, Real* qr, Real* nr);
+
+
+
 void compute_rain_fall_velocity_c(Real qr_incld, Real rcldm, Real rhofacr,
                                   Real* nr, Real* nr_incld, Real* mu_r, Real* lamr, Real* V_qr, Real* V_nr);
 
@@ -177,6 +185,16 @@ void get_rain_dsd2(GetRainDsd2Data& d)
 			    d.rhorime_c,      &d.th,    &d.qv,    &d.qitot, &d.nitot, &d.qirim,
 			    &d.birim,         &d.qc,    &d.nc,    &d.qr, &d.nr);
   }
+
+void  update_prognostic_liquid(P3UpdatePrognosticLiqData& d){
+  p3_init(true);
+  update_prognostic_liquid_c(d.qcacc, d.ncacc, d.qcaut, d.ncautc, d.qcnuc, d.ncautr,
+			      d.ncslf, d. qrevp, d.nrevp, d.nrslf , d.log_predictNc,
+			      d.inv_rho, d.exner, d.xxlv, d.dt, &d.th, &d.qv,
+			      &d.qc, &d.nc, &d.qr, &d.nr);
+  }
+
+
 CalcUpwindData::CalcUpwindData(
   Int kts_, Int kte_, Int kdir_, Int kbot_, Int k_qxtop_, Int num_arrays_, Real dt_sub_,
   std::pair<Real, Real> rho_range, std::pair<Real, Real> inv_dzq_range,
@@ -685,6 +703,57 @@ void  update_prognostic_ice_f( Real qcheti_, Real qccol_, Real qcshd_,  Real ncc
   *nc_    = t_h(7);
   *qr_    = t_h(8);
   *nr_    = t_h(9);
+}
+
+void update_prognostic_liquid_f(Real qcacc_, Real ncacc_, Real qcaut_, Real ncautc_, Real qcnuc_, Real ncautr_,
+				Real ncslf_, Real  qrevp_, Real nrevp_, Real nrslf_, bool log_predictNc_,
+				Real inv_rho_, Real exner_, Real xxlv_, Real dt_, Real* th_, Real* qv_,
+				Real* qc_, Real* nc_, Real* qr_, Real* nr_)
+
+{
+  using P3F = Functions<Real, DefaultDevice>;
+
+  typename P3F::view_1d<Real> t_d("t_h", 6);
+  auto t_h = Kokkos::create_mirror_view(t_d);
+
+  Real local_th = *th_;
+  Real local_qv = *qv_;
+  Real local_qc = *qc_;
+  Real local_nc = *nc_;
+  Real local_qr = *qr_;
+  Real local_nr = *nr_;
+
+  Kokkos::parallel_for(1, KOKKOS_LAMBDA(const Int&) {
+      typename P3F::Spack qcacc(qcacc_), ncacc(ncacc_), qcaut(qcaut_), ncautc(ncautc_), qcnuc(qcnuc_),
+	ncautr(ncautr_), ncslf(ncslf_),  qrevp( qrevp_), nrevp(nrevp_), nrslf(nrslf_), inv_rho(inv_rho_),
+	exner(exner_), xxlv(xxlv_);
+
+      bool log_predictNc(log_predictNc_);
+
+      typename P3F::Scalar dt(dt_);
+
+      typename P3F::Spack th(local_th), qv(local_qv), qc(local_qc), nc(local_nc), qr(local_qr), nr(local_nr);
+
+      P3F::update_prognostic_liquid(qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr,
+				    ncslf,  qrevp, nrevp, nrslf , log_predictNc,
+				    inv_rho, exner, xxlv, dt, th, qv,
+				    qc, nc, qr, nr);
+
+      t_d(0) = th[0];
+      t_d(1) = qv[0];
+      t_d(2) = qc[0];
+      t_d(3) = nc[0];
+      t_d(4) = qr[0];
+      t_d(5) = nr[0];
+    });
+  Kokkos::deep_copy(t_h, t_d);
+
+  *th_    = t_h(0);
+  *qv_    = t_h(1);
+  *qc_    = t_h(2);
+  *nc_    = t_h(3);
+  *qr_    = t_h(4);
+  *nr_    = t_h(5);
 }
 
 

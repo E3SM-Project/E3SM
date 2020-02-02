@@ -484,6 +484,30 @@ Real* qitot, Real* nitot, Real* qirim, Real* birim, Real* qc, Real* nc, Real* qr
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+struct P3UpdatePrognosticLiqData
+{
+  // Inputs
+  Real qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, qrevp, nrevp, nrslf;
+
+  bool log_predictNc;
+
+  Real inv_rho, exner, xxlv, dt;
+
+  // In/outs
+  Real th, qv, qc, nc, qr, nr;
+};
+
+  void update_prognostic_liquid(P3UpdatePrognosticLiqData& d);
+
+  extern "C"{
+
+    void update_prognostic_liquid_f( Real qcacc, Real ncacc, Real qcaut, Real ncautc, Real qcnuc, Real ncautr,
+				     Real ncslf, Real  qrevp, Real nrevp, Real nrslf , bool log_predictNc,
+				     Real inv_rho, Real exner, Real xxlv, Real dt, Real* th, Real* qv,
+				     Real* qc, Real* nc, Real* qr, Real* nr);
+  }
 
 ///////////////////////////////////////////////////////////////////////////////
 // BFB math stuff

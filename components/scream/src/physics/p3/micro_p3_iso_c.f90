@@ -455,4 +455,23 @@ subroutine  update_prognostic_ice_c(qcheti,qccol,qcshd,nccol,ncheti,ncshdc,qrcol
 
   end subroutine update_prognostic_ice_c
 
+  subroutine  update_prognostic_liquid_c(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
+       qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr) bind(C)
+    use micro_p3, only: update_prognostic_liquid
+
+    ! arguments
+    real(kind=c_real), value, intent(in) :: qcacc, ncacc, qcaut, ncautc, qcnuc, ncautr, ncslf, &
+         qrevp, nrevp, nrslf
+
+    logical(kind=c_bool), value, intent(in) :: log_predictNc
+
+    real(kind=c_real), value, intent(in) :: inv_rho, exner, xxlv, dt
+
+    real(kind=c_real), intent(inout) :: th, qv, qc, nc, qr, nr
+
+    call update_prognostic_liquid(qcacc, ncacc, qcaut,ncautc, qcnuc, ncautr, ncslf, &
+       qrevp, nrevp, nrslf, log_predictNc, inv_rho, exner, xxlv, dt, th, qv, qc, nc, qr, nr)
+
+  end subroutine update_prognostic_liquid_c
+
 end module micro_p3_iso_c

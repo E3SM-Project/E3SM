@@ -383,6 +383,15 @@ struct Functions
     const Spack& nmltratio, const Spack& rhorime_c, Spack& th, Spack& qv, Spack& qitot,
     Spack& nitot, Spack& qirim, Spack& birim, Spack& qc,  Spack& nc, Spack& qr,
     Spack& nr);
+
+  //liquid-phase dependent processes:
+  KOKKOS_FUNCTION
+  static void update_prognostic_liquid(const Spack& qcacc, const Spack& ncacc,
+    const Spack& qcaut,const Spack& ncautc, const Spack& qcnuc, const Spack& ncautr,
+    const Spack& ncslf, const Spack& qrevp, const Spack& nrevp, const Spack& nrslf,
+    const bool log_predictNc, const Spack& inv_rho, const Spack& exner, const Spack& xxlv,
+    const Scalar dt, Spack& th, Spack& qv, Spack& qc, Spack& nc, Spack& qr, Spack& nr);
+
 };
 
 template <typename ScalarT, typename DeviceT>
