@@ -29,8 +29,12 @@ def main():
                      initial_condition_seaice,
                      scrip,
                      transects_and_regions,
-                     mapping_Gcase,
-                     domain,
+                     mapping_CORE_Gcase,
+                     mapping_JRA_Gcase,
+                     mapping_ne30,
+                     domain_CORE_Gcase,
+                     domain_JRA_Gcase,
+                     domain_ne30,
                      mapping_runoff,
                      salinity_restoring]
 
@@ -262,18 +266,52 @@ def transects_and_regions(config, mesh_name, date_string, ice_shelf_cavities):
         'masks_SingleRegionAtlanticWTransportTransects.' + mesh_name + '.nc')
 # }}}
 
+def mapping_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
+# {{{
+    atm_scrip_tag = config.get('mapping_CORE_Gcase', 'atm_scrip_tag')
+    mapping(config, mesh_name, date_string, ice_shelf_cavities, atm_scrip_tag)
 
-def mapping_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
+    # make links in output directory
+    files = glob.glob('map_*')
+    os.chdir('../assembled_files_for_upload/inputdata/cpl/cpl6')
+    for file in files:
+        make_link('../../../../mapping_CORE_Gcase/' + file, './' + file)
+# }}}
+
+def mapping_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
+# {{{
+    atm_scrip_tag = config.get('mapping_JRA_Gcase', 'atm_scrip_tag')
+    mapping(config, mesh_name, date_string, ice_shelf_cavities, atm_scrip_tag)
+
+    # make links in output directory
+    files = glob.glob('map_*')
+    os.chdir('../assembled_files_for_upload/inputdata/cpl/cpl6')
+    for file in files:
+        make_link('../../../../mapping_JRA_Gcase/' + file, './' + file)
+# }}}
+
+def mapping_ne30(config, mesh_name, date_string, ice_shelf_cavities):
+# {{{
+    atm_scrip_tag = config.get('mapping_ne30', 'atm_scrip_tag')
+    mapping(config, mesh_name, date_string, ice_shelf_cavities, atm_scrip_tag)
+
+    # make links in output directory
+    files = glob.glob('map_*')
+    os.chdir('../assembled_files_for_upload/inputdata/cpl/cpl6')
+    for file in files:
+        make_link('../../../../mapping_CORE_Gcase/' + file, './' + file)
+# }}}
+
+def mapping(config, mesh_name, date_string, ice_shelf_cavities, atm_scrip_tag):
 # {{{
 
     # obtain configuration settings
-    nprocs = config.get('mapping_Gcase', 'nprocs')
+    nprocs = config.get('main', 'nprocs')
     if ice_shelf_cavities:
         nomaskStr='.nomask'
     else:
         nomaskStr=''
-    atm_scrip_tag = config.get('main', 'atm_scrip_tag')
-    atm_scrip_path = config.get('mapping_Gcase', 'atm_scrip_path')
+    atm_scrip_path = config.get('main', 'atm_scrip_path')
 
     # make links
     ocn_scrip_file = 'ocean.' + mesh_name + nomaskStr + '.scrip.' + date_string + '.nc'
@@ -306,7 +344,7 @@ def mapping_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
             run_command(args)
 
     except OSError:
-        print('mapping_Gcase must be run on one compute node')
+        print('mapping must be run on one compute node')
 
     if ice_shelf_cavities:
         print("\n Mapping files with masks for ice shelf cavities")
@@ -339,22 +377,15 @@ def mapping_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
                 run_command(args)
 
         except OSError:
-            print('mapping_Gcase must be run on one compute node')
-
-    # make links in output directory
-    files = glob.glob('map_*')
-    os.chdir('../assembled_files_for_upload/inputdata/cpl/cpl6')
-    for file in files:
-        make_link('../../../../mapping_Gcase/' + file, './' + file)
+            print('mapping_CORE_Gcase must be run on one compute node')
 # }}}
 
 
-def domain(config, mesh_name, date_string, ice_shelf_cavities):
+def domain_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
-
     # obtain configuration settings
-    domain_exe = config.get('domain', 'domain_exe')
-    atm_scrip_tag = config.get('main', 'atm_scrip_tag')
+    domain_exe = config.get('main', 'domain_exe')
+    atm_scrip_tag = config.get('mapping_CORE_Gcase', 'atm_scrip_tag')
     if ice_shelf_cavities:
         nomaskStr='.nomask'
     else:
@@ -364,7 +395,63 @@ def domain(config, mesh_name, date_string, ice_shelf_cavities):
     make_link(domain_exe, 'domain_exe')
     mapping_file = 'map_' + mesh_name + nomaskStr + '_TO_' + \
         atm_scrip_tag + '_aave.' + date_string + '.nc'
-    make_link('../mapping_Gcase/' + mapping_file, mapping_file)
+    make_link('../mapping_CORE_Gcase/' + mapping_file, mapping_file)
+
+    # execute commands
+    args = ['./domain_exe', '-m', mapping_file, '-o', mesh_name, '-l', 'T62']
+    run_command(args)
+
+    # make links in output directories
+    files = glob.glob('domain*.nc')
+    os.chdir('../assembled_files_for_upload/inputdata/share/domains')
+    for file in files:
+        make_link('../../../../domain/' + file, './' + file)
+# }}}
+
+
+def domain_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
+# {{{
+    # obtain configuration settings
+    domain_exe = config.get('main', 'domain_exe')
+    atm_scrip_tag = config.get('mapping_JRA_Gcase', 'atm_scrip_tag')
+    if ice_shelf_cavities:
+        nomaskStr='.nomask'
+    else:
+        nomaskStr=''
+
+    # make links
+    make_link(domain_exe, 'domain_exe')
+    mapping_file = 'map_' + mesh_name + nomaskStr + '_TO_' + \
+        atm_scrip_tag + '_aave.' + date_string + '.nc'
+    make_link('../mapping_JRA_Gcase/' + mapping_file, mapping_file)
+
+    # execute commands
+    args = ['./domain_exe', '-m', mapping_file, '-o', mesh_name, '-l', 'T62']
+    run_command(args)
+
+    # make links in output directories
+    files = glob.glob('domain*.nc')
+    os.chdir('../assembled_files_for_upload/inputdata/share/domains')
+    for file in files:
+        make_link('../../../../domain/' + file, './' + file)
+# }}}
+
+
+def domain_ne30(config, mesh_name, date_string, ice_shelf_cavities):
+# {{{
+    # obtain configuration settings
+    domain_exe = config.get('main', 'domain_exe')
+    atm_scrip_tag = config.get('mapping_ne30', 'atm_scrip_tag')
+    if ice_shelf_cavities:
+        nomaskStr='.nomask'
+    else:
+        nomaskStr=''
+
+    # make links
+    make_link(domain_exe, 'domain_exe')
+    mapping_file = 'map_' + mesh_name + nomaskStr + '_TO_' + \
+        atm_scrip_tag + '_aave.' + date_string + '.nc'
+    make_link('../mapping_ne30/' + mapping_file, mapping_file)
 
     # execute commands
     args = ['./domain_exe', '-m', mapping_file, '-o', mesh_name, '-l', 'T62']
@@ -438,7 +525,7 @@ def salinity_restoring(config, mesh_name, date_string, ice_shelf_cavities):
         'salinity_restoring', 'grid_Levitus_1x1_scrip_file')
     salinity_restoring_input_file = config.get(
         'salinity_restoring', 'salinity_restoring_input_file')
-    nprocs = config.get('salinity_restoring', 'nprocs')
+    nprocs = config.get('main', 'nprocs')
     if ice_shelf_cavities:
         nomaskStr='.nomask'
     else:
@@ -503,6 +590,7 @@ def salinity_restoring(config, mesh_name, date_string, ice_shelf_cavities):
     make_link(
         '../../../../../salinity_restoring/' + salinity_restoring_output_file,
         './' + salinity_restoring_output_file)
+# }}}
 
 
 def make_dir(dirName):
