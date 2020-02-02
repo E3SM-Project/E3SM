@@ -5,6 +5,7 @@
 	<add_link source="../initial_state/graph.info" dest="graph.info"/>
 	<add_link source="../no_ISC_culled_mesh/culled_mesh.nc" dest="no_ISC_culled_mesh.nc"/>
     <add_link source_path="script_configuration_dir" source="scripts/create_E3SM_coupling_files.py" dest="create_E3SM_coupling_files.py"/>
+    <add_link source_path="script_configuration_dir" source="scripts/copy_cell_indices_ISC.py" dest="copy_cell_indices_ISC.py"/>
     <copy_file source_path="script_configuration_dir" source="scripts/config_E3SM_coupling_files.ini" dest="config_E3SM_coupling_files.ini"/>
     <add_link source_path="script_configuration_dir" source="scripts/readme_E3SM_coupling_files" dest="readme"/>
 

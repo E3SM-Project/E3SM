@@ -4,8 +4,8 @@ This script creates coupling files needed to run an MPAS-Ocean and
 MPAS-seaice within E3SM.
 
 Load the lastest e3sm-unified conda package.
-
 """
+# import modules # {{{ 
 import os
 import shutil
 import subprocess
@@ -14,7 +14,7 @@ import argparse
 import numpy as np
 import glob
 from datetime import datetime
-
+# }}}
 
 def main():
 # {{{
@@ -136,7 +136,7 @@ def initial_condition_ocean(config, mesh_name, date_string, ice_shelf_cavities):
     make_link(
         '../../../../../initial_condition_ocean/' +
         mesh_name + '_no_xtime.nc',
-        mesh_name + '_no_xtime.nc')
+        uesh_name + '_no_xtime.nc')
 # }}}
 
 def graph_partition_ocean(config, mesh_name, date_string, ice_shelf_cavities):
@@ -173,7 +173,6 @@ def graph_partition_ocean(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../../graph_partition_ocean/' + file, './' + file)
 # }}}
 
-
 def initial_condition_seaice(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
 
@@ -201,7 +200,6 @@ def initial_condition_seaice(config, mesh_name, date_string, ice_shelf_cavities)
     make_link('../../../../../initial_condition_seaice/seaice.' +
               mesh_name + '.nc', 'seaice.' + mesh_name + '.nc')
 # }}}
-
 
 def scrip(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -236,7 +234,6 @@ def scrip(config, mesh_name, date_string, ice_shelf_cavities):
     if ice_shelf_cavities:
         make_link('../../../../../scrip/' + scrip_file_mask, scrip_file_mask)
 # }}}
-
 
 def transects_and_regions(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -380,7 +377,6 @@ def mapping(config, mesh_name, date_string, ice_shelf_cavities, atm_scrip_tag):
             print('mapping_CORE_Gcase must be run on one compute node')
 # }}}
 
-
 def domain_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
     # obtain configuration settings
@@ -407,7 +403,6 @@ def domain_CORE_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
     for file in files:
         make_link('../../../../domain/' + file, './' + file)
 # }}}
-
 
 def domain_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
@@ -436,7 +431,6 @@ def domain_JRA_Gcase(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../domain/' + file, './' + file)
 # }}}
 
-
 def domain_ne30(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
     # obtain configuration settings
@@ -464,7 +458,6 @@ def domain_ne30(config, mesh_name, date_string, ice_shelf_cavities):
         make_link('../../../../domain/' + file, './' + file)
 # }}}
 
-
 def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
 
@@ -476,11 +469,15 @@ def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
     # obtain configuration settings
     runoff_map_exe = config.get('mapping_runoff', 'runoff_map_exe')
     runoff_map_lnd_file = config.get('mapping_runoff', 'runoff_map_lnd_file')
+    if ice_shelf_cavities:
+        nomaskStr='.nomask'
+    else:
+        nomaskStr=''
 
     # make links
     make_link(runoff_map_exe, 'runoff_map_exe')
     make_link(runoff_map_lnd_file, 'runoff.daitren.annual.nc')
-    ocn_scrip_file = 'ocean.' + mesh_name + '.scrip.' + date_string + '.nc'
+    ocn_scrip_file = ('ocean.' + mesh_name + nomaskStr + '.scrip.' + date_string + '.nc')
     make_link('../scrip/' + ocn_scrip_file, ocn_scrip_file)
 
     # write namelist file
@@ -509,13 +506,28 @@ def mapping_runoff(config, mesh_name, date_string, ice_shelf_cavities):
     args = ['./runoff_map_exe']
     run_command(args)
 
+    # Alter runoff mapping so runoff does not go under ice shelves
+    # WARNING: this is not hooked up yet. I need to know which mapping files this applies to.
+    # Also, this is pointing to the correct -w and -n flags, but it only works if I 
+    # switch those files.
+    if ice_shelf_cavities:
+        make_link('../copy_cell_indices_ISC.py', 'copy_cell_indices_ISC.py')
+        make_link('../init.nc', 'init.nc')
+        make_link('../no_ISC_culled_mesh.nc', 'no_ISC_culled_mesh.nc.nc')
+        args = ['./copy_cell_indices_ISC.py',
+            '-i', 'map_oQU240wISC_coast_to_oQU240wISC_sm_e1000r300_200202.nc',
+            '-o', 'map_output.nc',
+            '-w', 'init.nc',
+            '-n', 'no_ISC_culled_mesh.nc.nc'
+            ]
+        run_command(args)
+   
     # make links in output directories
     files = glob.glob('map*.nc')
     os.chdir('../assembled_files_for_upload/inputdata/cpl/cpl6')
     for file in files:
         make_link('../../../../mapping_runoff/' + file, './' + file)
 # }}}
-
 
 def salinity_restoring(config, mesh_name, date_string, ice_shelf_cavities):
 # {{{
