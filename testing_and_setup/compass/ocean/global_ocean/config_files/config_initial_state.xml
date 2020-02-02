@@ -1,27 +1,27 @@
 <?xml version="1.0"?>
 <config case="initial_state">
 	<get_file dest_path="initial_condition_database" file_name="layer_depth.80Layer.180619.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
 
 	<get_file dest_path="initial_condition_database" file_name="PTemp.Jan_p3.filled.mpas100levs.160127.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
 
 	<get_file dest_path="initial_condition_database" file_name="Salt.Jan_p3.noBlackCaspian.filled.mpas100levs.160127.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
 
 	<get_file dest_path="initial_condition_database" file_name="windStress.ncep_1958-2000avg.interp3600x2431.151106.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
 
 	<get_file dest_path="initial_condition_database" file_name="ETOPO2v2c_f4_151106.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
 
 	<get_file dest_path="initial_condition_database" file_name="chlorophyllA_monthly_averages_1deg.151201.nc">
-		<mirror protocol="wget" url="http://oceans11.lanl.gov/mpas_data/initial_condition_database/"/>
+		<mirror protocol="wget" url="https://web.lcrc.anl.gov/public/e3sm/mpas_standalonedata/mpas-ocean/initial_condition_database/"/>
 	</get_file>
 
 
