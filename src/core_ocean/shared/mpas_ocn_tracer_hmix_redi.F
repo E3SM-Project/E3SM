@@ -216,7 +216,7 @@ contains
 
                ! For top layer, only use triads pointing down:
                flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
-                  0.5_RKIND * &
+                  0.25_RKIND * &
                   (  slopeTriadDown(k,1,iEdge) * (tracers(iTr,k,cell1) - tracers(iTr,k+1,cell1)) &
                                   / (zMid(k,cell1) - zMid(k+1,cell1)) &
                    + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
@@ -249,7 +249,7 @@ contains
             do iTr = 1, nTracers
                ! For bottom layer, only use triads pointing up:
                flux_term2 = coef * RediKappa(iCell) * layerThicknessEdge(k, iEdge) * &
-                  0.5_RKIND * &
+                  0.25_RKIND * &
                   (  slopeTriadUp(k,1,iEdge) * (tracers(iTr,k-1,cell1) - tracers(iTr,k,cell1)) &
                                   / (zMid(k-1,cell1) - zMid(k,cell1)) &
                    + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
