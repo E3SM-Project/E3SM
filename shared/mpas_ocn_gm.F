@@ -132,7 +132,7 @@ contains
       real (kind=RKIND), dimension(:,:,:), pointer :: activeTracers
       integer, pointer :: indexTemperature, indexSalinity
       integer :: timeLevel
-      integer :: iBLD
+      integer :: iBLD, sVal
 
       if (present(timeLevelIn)) then
          timeLevel = timeLevelIn
@@ -438,24 +438,6 @@ contains
 
       !$omp do schedule(runtime)
       do iCell = 1, nCells
-         ! prep dz, dTdz and dSdz for this column
-         do k = 2, maxLevelCell(iCell)
-            dzTop(k) = 0.5_RKIND * ( layerThickness(k-1,iCell) + layerThickness(k,iCell) )
-            dTdzTop(k) = (  activeTracers(indexTemperature,k-1,iCell) &
-                          - activeTracers(indexTemperature,k  ,iCell) ) &
-                         / dzTop(k)
-            dSdzTop(k) = (  activeTracers(indexSalinity,k-1,iCell) &
-                          - activeTracers(indexSalinity,k  ,iCell) ) &
-                         / dzTop(k)
-         end do
-         ! mrp performance: could move above cell loop later
-         dzTop(1) = -1e34_RKIND
-         dTdzTop(1) = -1e34_RKIND
-         dSdzTop(1) = -1e34_RKIND
-         dzTop(maxLevelCell(iCell)+1) = -1e34_RKIND
-         dTdzTop(maxLevelCell(iCell)+1) = -1e34_RKIND
-         dSdzTop(maxLevelCell(iCell)+1) = -1e34_RKIND
-
          k33(1:maxLevelCell(iCell)+1,iCell) = 0.0_RKIND
          k33Norm(1:maxLevelCell(iCell)+1) = epsGM
          do i = 1, nEdgesOnCell(iCell)
@@ -465,13 +447,33 @@ contains
             ! mrp Performance Note: Replace with a logical array on init later
             if (cell1==iCell) then
                 iCellSelf = 1
+                sVal = cell1
             elseif (cell2==iCell) then
                 iCellSelf = 2
+                sVal = cell2
             else
                 print *, 'iCellSelf, something went wrong',cell1,cell2,iCell,nCells
             endif
             dcEdgeInv = 1.0_RKIND / dcEdge(iEdge)
             areaEdge = dcEdge(iEdge) * dvEdge(iEdge)
+
+            ! prep dz, dTdz and dSdz for this column
+            do k = 2, maxLevelCell(sVal)
+              dzTop(k) = 0.5_RKIND * ( layerThickness(k-1,sVal) + layerThickness(k,sVal) )
+              dTdzTop(k) = (  activeTracers(indexTemperature,k-1,sVal) &
+                            - activeTracers(indexTemperature,k  ,sVal) ) &
+                          / dzTop(k)
+              dSdzTop(k) = (  activeTracers(indexSalinity,k-1,sVal) &
+                            - activeTracers(indexSalinity,k  ,sVal) ) &
+                          / dzTop(k)
+            end do
+            ! mrp performance: could move above cell loop later
+            dzTop(1) = -1e-15_RKIND
+            dTdzTop(1) = -1e-15_RKIND
+            dSdzTop(1) = -1e-15_RKIND
+            dzTop(maxLevelCell(sVal)+1) = -1e-15_RKIND
+            dTdzTop(maxLevelCell(sVal)+1) = -1e-15_RKIND
+            dSdzTop(maxLevelCell(sVal)+1) = -1e-15_RKIND
 
             do k = 1, maxLevelEdgeTop(iEdge)
                drhoDT = -inSituThermalExpansionCoeff(k,iCell)
@@ -497,9 +499,9 @@ contains
                    + drhoDS * dSdzTop(k+1) )
 
                ! set taper of slope ('F' function from Danabasoglu and McWilliams 95)
-               slopeTaperEdgeUp(k,iEdge) = 0.5_RKIND*(1.0 - tanh((-abs(slopeTriadUp(k,iCellSelf,iEdge)) + &
+               slopeTaperEdgeUp(k,iEdge) = 0.5_RKIND*(1.0 - tanh((abs(slopeTriadUp(k,iCellSelf,iEdge)) - &
                   config_REDI_half_slope)/config_REDI_half_width))
-               slopeTaperEdgeDown(k,iEdge) = 0.5_RKIND*(1.0 - tanh((-abs(slopeTriadDown(k,iCellSelf,iEdge)) + &
+               slopeTaperEdgeDown(k,iEdge) = 0.5_RKIND*(1.0 - tanh((abs(slopeTriadDown(k,iCellSelf,iEdge)) - &
                   config_REDI_half_slope)/config_REDI_half_width))
 
                ! Slope can be unbounded in regions of neutral stability.
