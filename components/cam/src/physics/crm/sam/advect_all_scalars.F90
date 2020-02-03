@@ -20,7 +20,7 @@ contains
     implicit none
     integer, intent(in) :: ncrms
     integer k,icrm, i, j, kk
-    real(crm_rknd), allocatable :: esmt_offset(:)    ! whannah - offset for advecting scalar momentum tracers
+    real(crm_rknd), allocatable :: esmt_offset(:)    ! offset for advecting scalar momentum tracers
     real(crm_rknd), allocatable :: dummy(:,:)
 
     allocate( esmt_offset(ncrms) )
@@ -72,7 +72,7 @@ contains
     !end if
 
 #if defined(SP_ESMT)
-    ! whannah - the esmt_offset simply ensures that the scalar momentum
+    ! the esmt_offset simply ensures that the scalar momentum
     ! tracers are positive definite during the advection calculation
     do icrm = 1 , ncrms
       esmt_offset(icrm) = abs( minval( (/ minval(u_esmt(icrm,:,:,:)), minval(v_esmt(icrm,:,:,:)) /) ) ) + 50.

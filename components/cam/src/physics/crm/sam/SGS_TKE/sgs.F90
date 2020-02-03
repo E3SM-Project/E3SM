@@ -48,7 +48,6 @@ module sgs
 
   logical:: dosmagor   ! if true, then use Smagorinsky closure
 
-  ! whannah
   ! logical:: doscalar   ! if true, transport a passive scalar in the place of prognostic SGS TKE only if dosmagor=.true.
 
   ! Local diagnostics:
@@ -139,7 +138,7 @@ CONTAINS
     NAMELIST /BNCUIODSBJCB/ place_holder
 
     dosmagor = .true.  ! default
-    ! doscalar = .false. ! default ! whannah
+    ! doscalar = .false. ! default
 
     !----------------------------------
     !  Read namelist for microphysics options from prm file:

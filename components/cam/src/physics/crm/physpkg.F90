@@ -956,10 +956,6 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     ! Initialize Nudging Parameters
     !--------------------------------
     if(Nudge_Model) call nudging_init
-    
-    ! whannah - output for deveeloping ZM PE mod
-    call addfld ('ZM_AERO_SUM',horiz_only,'A','#/m3','Vertically Averaged Aerosol Number')
-
 
     
    !BSINGH -  addfld and adddefault calls for perturb growth testing    
@@ -2044,7 +2040,7 @@ subroutine tphysbc (ztodt,               &
     type(physics_ptend)   :: ptend_aero       ! ptend for microp_aero
     type(physics_ptend)   :: ptend_aero_sc    ! ptend for microp_aero on sub-columns
     type(physics_tend)    :: tend_sc          ! tend for sub-columns
-    type(physics_state)   :: state_alt        ! alt state for CRM input - whannah
+    type(physics_state)   :: state_alt        ! alt state for CRM input
 
     integer :: nstep                          ! current timestep number
 

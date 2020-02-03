@@ -681,7 +681,7 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
     end if
 
     !--------------------------
-    ! whannah - sanity check for new method to calculate radiation
+    ! sanity check for method to calculate radiation
     ! over averaged groups of columns instead of each individually
     if ( mod(nx,crm_nx_rad)==0 .or. mod(nx,crm_nx_rad)==0  ) then
       crm_nx_rad_fac = real(crm_nx_rad,crm_rknd)/real(nx,crm_rknd)

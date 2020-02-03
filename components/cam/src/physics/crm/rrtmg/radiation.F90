@@ -1672,7 +1672,7 @@ end function radiation_nextsw_cday
                 rei_crm(:ncol,ii,jj,m)=rei(:ncol,k)
                 
                 dei(:ncol,k) = rei(:ncol,k) * 2.0_r8
-                ! whannah - calculation of dei below is taken from m2005_effradius()
+                ! calculation of dei below is taken from m2005_effradius()
                 ! dei(:ncol,k) = rei(:ncol,k) * 500._r8/917._r8 * 2._r8
                 dei_crm(:ncol,ii,jj,m) = dei(:ncol,k)
               end do ! m

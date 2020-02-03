@@ -1443,16 +1443,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       call outfld('SPQPFALL',crm_output%qp_fall        ,pcols ,lchnk )
       call outfld('SPQPSRC ',crm_output%qp_src         ,pcols ,lchnk )
       call outfld('SPTLS   ',crm_output%t_ls           ,pcols ,lchnk )
-
-      ! whannah - these fields don't seem to contain anything...?
-      ! These can probably go away, but leaving here for now to remind us to
-      ! revisit whether or not we want to keep them
-      ! call outfld('SPTVFLUX',tvwle          ,pcols ,lchnk )
-      ! call outfld('SPBUOY  ',buoy           ,pcols ,lchnk )
-      ! call outfld('SPBUOYSD',buoysd         ,pcols ,lchnk )
-      ! call outfld('SPMSEF  ',msef           ,pcols ,lchnk )
-      ! call outfld('SPQVFLUX',qvw            ,pcols ,lchnk )
-
+      
       ! NOTE: these should overwrite cloud outputs from CAM routines
       call outfld('CLOUD   ',crm_output%cld,  pcols,lchnk)
       call outfld('CLDTOT  ',crm_output%cltot  ,pcols,lchnk)

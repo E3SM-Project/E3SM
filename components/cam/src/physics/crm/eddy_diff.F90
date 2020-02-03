@@ -3624,10 +3624,10 @@
           extend_up = .true.
           if( kt .eq. ntop_turb ) then
               write(iulog,*) 'zisocl: Error: Tried to extend CL to the model top'
-              write(iulog,*) 'ncv = ',ncv  ! whannah
-              write(iulog,*) 'kt  = ',kt   ! whannah
-              write(iulog,*) 'kb  = ',kb   ! whannah
-              call shr_sys_flush(iulog)    ! whannah
+              write(iulog,*) 'ncv = ',ncv
+              write(iulog,*) 'kt  = ',kt 
+              write(iulog,*) 'kb  = ',kb 
+              call shr_sys_flush(iulog)  
               call endrun('zisocl: Error: Tried to extend CL to the model top')
           end if
 
