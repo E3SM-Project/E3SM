@@ -266,11 +266,6 @@ subroutine shoc_main ( &
 	 thetal,wthv_sec,thv,&                ! Input
 	 brunt,shoc_mix)  		      ! Output
 
-  write(*,*) 'BRUNT ', brunt
-  write(*,*) 'SHOCMIX ', shoc_mix
-  
-  write(*,*) 'TKEbeforeTKE ', tke
-
   ! Advance the SGS TKE equation	 
   call shoc_tke(&
          shcol,nlev,nlevi,dtime,&             ! Input
@@ -280,12 +275,7 @@ subroutine shoc_main ( &
 	 uw_sfc,vw_sfc,&                      ! Input
 	 zt_grid,zi_grid,&                    ! Input
          tke,tk,tkh,&		              ! Input/Output
-	 isotropy)                            ! Output
-	 
-  write(*,*) 'TKEafterTKE ', tke
-  write(*,*) 'TKEafterTKE ', tke
-  write(*,*) 'TKHafterTKE ', tkh
-  write(*,*) 'ISOTROPY ', isotropy  
+	 isotropy)                            ! Output 
   
   ! If implicit diffusion solver is used, 
   !  update SHOC prognostic variables here
@@ -298,9 +288,6 @@ subroutine shoc_main ( &
            thetal,qw,qtracers,tke,&           ! Input/Output
 	   u_wind,v_wind)                     ! Input/Output
   endif	 
-
-  write(*,*) 'TKEafterDIFF ', tke
-  write(*,*) 'TafterDIFF ', thetal
 
   ! Diagnose the second order moments, needed
   !  for the PDF closure
@@ -316,10 +303,6 @@ subroutine shoc_main ( &
 	 wthl_sec,wqw_sec,&                   ! Output
 	 qwthl_sec,uw_sec,vw_sec,wtke_sec,&   ! Output
 	 wtracer_sec)
-	 
-  write(*,*) 'wthl_sec ', wthl_sec
-  write(*,*) 'wqw_sec ', wqw_sec
-  write(*,*) 'uw_sec ', uw_sec
 
   ! Diagnose the third moment of vertical velocity, 
   !  needed for the PDF closure	 
@@ -331,8 +314,6 @@ subroutine shoc_main ( &
 	 dz_zt,dz_zi,&                        ! Input
 	 zt_grid,zi_grid,&                    ! Input
 	 w3)                                  ! Output
-	 
-  write(*,*) 'w3 ', w3
   
   ! Update thetal, qw, tracers, and wind components
   !   based on SGS mixing, if explicit scheme is used
@@ -355,12 +336,7 @@ subroutine shoc_main ( &
 	 wqw_sec,qwthl_sec,w3,pres,&          ! Input
 	 zt_grid,zi_grid,&                    ! Input
 	 shoc_cldfrac,shoc_ql,&               ! Output
-         wqls_sec,wthv_sec)                   ! Output
-	 
-  write(*,*) 'shoc_cldfrac ', shoc_cldfrac
-  write(*,*) 'shoc_ql ', shoc_ql
-  write(*,*) 'wqls_sec ', wqls_sec
-  write(*,*) 'wthv_sec ', wthv_sec	 
+         wqls_sec,wthv_sec)                   ! Output	 
 
   ! Check TKE to make sure values lie within acceptable 
   !  bounds after vertical advection, etc.
@@ -429,11 +405,7 @@ subroutine shoc_grid( &
   enddo ! end k loop (vertical loop)
   
   ! Set lower condition for dz_zi
-  dz_zi(:shcol,nlevi) = zt_grid(:shcol,nlev) 
- 
-  write(*,*) 'RHO_ZT ', rho_zt
-  write(*,*) 'PDEL ', pdel
-  write(*,*) 'DZ_ZT ', dz_zt  
+  dz_zi(:shcol,nlevi) = zt_grid(:shcol,nlev)  
   
   return
   
@@ -649,10 +621,6 @@ subroutine update_prognostics_implicit( &
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,rho_zt,rho_zi,nlev,nlevi,shcol,0._r8)
  
-  write(*,*) 'RHO_ZI ', rho_zi
-  write(*,*) 'DZ_ZI ', dz_zi
-  write(*,*) 'RHO_ZI ', rho_zt 
- 
   tmpi(:,1) = 0._r8
   ! Define the tmpi variable, which is really dt*(g*rho)**2/dp 
   !  at interfaces. Sub dp = g*rho*dz
@@ -682,7 +650,7 @@ subroutine update_prognostics_implicit( &
   enddo
 
   ! Apply the surface fluxes explicitly for temperature and moisture
-  thetal(:,nlev) = thetal(:,nlev) + dtime * (ggr * rho_zi(:,nlev) * rdp_zt(:,nlev)) * wthl_sfc(:)  
+  thetal(:,nlev) = thetal(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wthl_sfc(:)  
   qw(:,nlev) = qw(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wqw_sfc(:)
   tke(:,nlev) = tke(:,nlev) + dtime * (ggr * rho_zi(:,nlevi) * rdp_zt(:,nlev)) * wtke_flux(:)
 
@@ -836,8 +804,6 @@ subroutine diag_second_shoc_moments(&
   call linear_interp(zt_grid,zi_grid,tkh,tkh_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,tk,tk_zi,nlev,nlevi,shcol,0._r8)
   call linear_interp(zt_grid,zi_grid,shoc_mix,shoc_mix_zi,nlev,nlevi,shcol,0._r8)
- 
-  write(*,*) 'TKHzi ', tkh_zi
  
   ! Vertical velocity variance is assumed to be propotional
   !  to the TKE
@@ -1243,7 +1209,7 @@ subroutine shoc_assumed_pdf(&
   call linear_interp(zi_grid,zt_grid,qwthl_sec,qwthl_sec_zt,nlevi,nlev,shcol,largeneg)
   call linear_interp(zi_grid,zt_grid,wqw_sec,wqw_sec_zt,nlevi,nlev,shcol,largeneg) !Alert
   call linear_interp(zi_grid,zt_grid,qw_sec,qw_sec_zt,nlevi,nlev,shcol,0._r8)  
-  call linear_interp(zi_grid,zt_grid,w_field,w_field_zt,nlevi,nlev,shcol,largeneg)
+  call linear_interp(zi_grid,zt_grid,w_field,w_field_zt,nlevi,nlev,shcol,largeneg)  
   
   do k=1,nlev
     do i=1,shcol
@@ -1513,7 +1479,7 @@ subroutine shoc_assumed_pdf(&
       wqls(i,k)=a*((w1_1-w_first)*ql1)+(1._r8-a)*((w1_2-w_first)*ql2)
       ! Compute the SGS buoyancy flux
       wthv_sec(i,k)=wthlsec+((1._r8-epsterm)/epsterm)*basetemp*wqwsec &
-        +((lcond/cp)*(basepres/pval)**(rgas/cp)-(1._r8/epsterm)*basetemp)*wqls(i,k)  
+        +((lcond/cp)*(basepres/pval)**(rgas/cp)-(1._r8/epsterm)*basetemp)*wqls(i,k)       
      	
     enddo  ! end i loop here
   enddo	  ! end k loop here
@@ -1650,11 +1616,6 @@ subroutine shoc_tke(&
   !  thus zero out here
   shear_prod(:,1) = 0._r8
   shear_prod(:,nlevi) = 0._r8
-  
-  write(*,*) 'TK_ZI_intke ', tk_zi
-  write(*,*) 'SHEAR_PROD ', shear_prod
-  write(*,*) 'UWIND ', u_wind
-  write(*,*) 'VWIND ', v_wind
   
   ! Interpolate shear production from interface to thermo grid
   call linear_interp(zi_grid,zt_grid,shear_prod,shear_prod_zt,nlevi,nlev,shcol,largeneg)
@@ -2025,15 +1986,7 @@ subroutine vd_shoc_decomp( &
   do i=1,shcol
     denom(i,1) = 1._r8/ &
       (1._r8 + ca(i,1) - ca(i,1) * ze(i,2))
-  enddo
-  
-  write(*,*) 'CC ', cc
-  write(*,*) 'CA ', ca
-  write(*,*) 'denom ', denom
-  write(*,*) 'ze ', ze
-  write(*,*) 'kv_term ', kv_term
-  write(*,*) 'tmpi ', tmpi
-  write(*,*) 'rdp_zt ', rdp_zt  
+  enddo 
   
   return
   
