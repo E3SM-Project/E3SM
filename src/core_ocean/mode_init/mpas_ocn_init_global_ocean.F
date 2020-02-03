@@ -1159,6 +1159,9 @@ contains
        real (kind=RKIND), pointer :: config_land_ice_flux_rho_ice
        character (len=StrKIND), pointer :: config_global_ocean_topography_method, config_iterative_init_variable
 
+       real (kind=RKIND), pointer :: config_global_ocean_topography_smooth_weight
+       integer, pointer :: config_global_ocean_topography_smooth_iterations
+
        integer :: iCell
 
        iErr = 0
@@ -1167,30 +1170,24 @@ contains
                                  config_global_ocean_topography_method)
        call mpas_pool_get_config(domain % configs, 'config_land_ice_flux_rho_ice', config_land_ice_flux_rho_ice)
        call mpas_pool_get_config(domain % configs, 'config_iterative_init_variable', config_iterative_init_variable)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_smooth_iterations', &
+                                 config_global_ocean_topography_smooth_iterations)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_smooth_weight', &
+                                 config_global_ocean_topography_smooth_weight)
 
        block_ptr => domain % blocklist
        do while(associated(block_ptr))
 
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
           call mpas_pool_get_subpool(block_ptr % structs, 'landIceInit', landIceInitPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
-          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
 
           call mpas_pool_get_array(meshPool, 'latCell', latCell)
           call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
-          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
           call mpas_pool_get_array(landIceInitPool, 'landIceDraftObserved', landIceDraftObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceThkObserved', landIceThkObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
           call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
-          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
-          call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
-          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
-          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
-          call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
           if (config_global_ocean_topography_method .eq. "nearest_neighbor") then
 
@@ -1240,6 +1237,50 @@ contains
              iErr = 1
              call mpas_dmpar_finalize(domain % dminfo)
           endif
+
+          block_ptr => block_ptr % next
+       end do
+
+
+       ! Iteratively smooth landIceDraftObserved, landIceThkObserved, landIceFracObserved,
+       ! and landIceGroundedFracObserved before using them to adjust SSH, compute
+       ! land-ice pressure, etc.
+       call ocn_init_smooth_field(domain, 'landIceDraftObserved', 'landIceInit', &
+                                  config_global_ocean_topography_smooth_iterations, &
+                                  config_global_ocean_topography_smooth_weight)
+
+       call ocn_init_smooth_field(domain, 'landIceThkObserved', 'landIceInit', &
+                                  config_global_ocean_topography_smooth_iterations, &
+                                  config_global_ocean_topography_smooth_weight)
+
+       call ocn_init_smooth_field(domain, 'landIceFracObserved', 'landIceInit', &
+                                  config_global_ocean_topography_smooth_iterations, &
+                                  config_global_ocean_topography_smooth_weight)
+
+       call ocn_init_smooth_field(domain, 'landIceGroundedFracObserved', 'landIceInit', &
+                                  config_global_ocean_topography_smooth_iterations, &
+                                  config_global_ocean_topography_smooth_weight)
+
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'landIceInit', landIceInitPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'diagnostics', diagnosticsPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'forcing', forcingPool)
+          call mpas_pool_get_subpool(block_ptr % structs, 'state', statePool)
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+
+          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
+          call mpas_pool_get_array(landIceInitPool, 'landIceDraftObserved', landIceDraftObserved)
+          call mpas_pool_get_array(landIceInitPool, 'landIceThkObserved', landIceThkObserved)
+          call mpas_pool_get_array(landIceInitPool, 'landIceFracObserved', landIceFracObserved)
+          call mpas_pool_get_array(landIceInitPool, 'landIceGroundedFracObserved', landIceGroundedFracObserved)
+          call mpas_pool_get_array(statePool, 'ssh', ssh, 1)
+          call mpas_pool_get_array(diagnosticsPool, 'modifySSHMask', modifySSHMask)
+          call mpas_pool_get_array(forcingPool, 'landIceMask', landIceMask)
+          call mpas_pool_get_array(forcingPool, 'landIcePressure', landIcePressure)
+          call mpas_pool_get_array(forcingPool, 'landIceFraction', landIceFraction)
 
           ssh(:) = 0.0_RKIND
           landIceFraction(:) = 0.0_RKIND
