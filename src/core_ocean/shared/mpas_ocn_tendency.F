@@ -424,7 +424,7 @@ contains
 !>  This routine computes tracer tendencies for the ocean
 !
 !-----------------------------------------------------------------------
-   subroutine ocn_tend_tracer(tendPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, & !{{{
+   subroutine ocn_tend_tracer(tendPool, rediPool, statePool, forcingPool, diagnosticsPool, meshPool, swForcingPool, scratchPool, & !{{{
                               dt, activeTracersOnlyIn, timeLevelIn )
       implicit none
 
@@ -432,6 +432,7 @@ contains
       ! intent in/out
       !
       type (mpas_pool_type), intent(inout) :: tendPool        !< Input/Output: Tendency structure
+      type (mpas_pool_type), intent(inout) :: rediPool        !< Input/Output: Tendency structure
       type (mpas_pool_type), intent(in)    :: statePool       !< Input: State information
       type (mpas_pool_type), intent(inout) :: forcingPool     !< Input: Forcing information
       type (mpas_pool_type), intent(inout)    :: diagnosticsPool !< Input: Diagnostic information
@@ -446,6 +447,7 @@ contains
       ! additional pools
       !
       type (mpas_pool_type), pointer :: tracersPool, tracersTendPool            ! tracers and their tendency
+      type (mpas_pool_type), pointer :: redi1Pool, redi2Pool, redi3Pool
       type (mpas_pool_type), pointer :: tracersSurfaceFluxPool                  ! surface fluxes
       type (mpas_pool_type), pointer :: tracersSurfaceRestoringFieldsPool       ! surface restoring
       type (mpas_pool_type), pointer :: tracersInteriorRestoringFieldsPool      ! interior restoring
@@ -494,7 +496,7 @@ contains
       ! three dimensional pointers
       !
       real (kind=RKIND), dimension(:,:,:), pointer :: &
-        tracerGroup, tracerGroupTend, vertNonLocalFlux
+        tracerGroup, tracerGroupTend, redi_term1, redi_term2, redi_term3, vertNonLocalFlux
 
       real (kind=RKIND), dimension(:,:,:), pointer :: &
         activeTracers, &  !  need T, S for ecosys
@@ -541,6 +543,9 @@ contains
       !
       call mpas_pool_get_subpool(statePool, 'tracers', tracersPool)
       call mpas_pool_get_subpool(tendPool, 'tracersTend', tracersTendPool)
+      call mpas_pool_get_subpool(rediPool, 'tracers_redi_term1', redi1Pool)
+      call mpas_pool_get_subpool(rediPool, 'tracers_redi_term2', redi2Pool)
+      call mpas_pool_get_subpool(rediPool, 'tracers_redi_term3', redi3Pool)
       call mpas_pool_get_subpool(forcingPool, 'tracersSurfaceFlux', tracersSurfaceFluxPool)
 
       !
@@ -650,6 +655,15 @@ contains
                modifiedGroupName = trim(groupItr % memberName) // "Tend"
                call mpas_pool_get_array(tracersTendPool, trim(modifiedGroupName), tracerGroupTend)
 
+               modifiedGroupName = trim(groupItr % memberName) // "_redi_term1"
+               call mpas_pool_get_array(redi1Pool, trim(modifiedGroupName), redi_term1)
+
+               modifiedGroupName = trim(groupItr % memberName) // "_redi_term2"
+               call mpas_pool_get_array(redi2Pool, trim(modifiedGroupName), redi_term2)
+
+               modifiedGroupName = trim(groupItr % memberName) // "_redi_term3"
+               call mpas_pool_get_array(redi3Pool, trim(modifiedGroupName), redi_term3)
+
                ! Get surface flux array
                modifiedGroupName = trim(groupItr % memberName) // "SurfaceFlux"
                call mpas_pool_get_array(tracersSurfaceFluxPool, trim(modifiedGroupName), tracerGroupSurfaceFlux)
@@ -674,6 +688,9 @@ contains
                do iCell = 1, nCells
                  tracerGroupTend(:,:, iCell) = 0.0_RKIND
                  tracerGroupSurfaceFlux(:, iCell) = 0.0_RKIND
+                 redi_term1(:,:,iCell) = 0.0_RKIND
+                 redi_term2(:,:,iCell) = 0.0_RKIND
+                 redi_term3(:,:,iCell) = 0.0_RKIND
                end do
                !$omp end do
 
@@ -867,7 +884,7 @@ contains
                ! tracer tendency: del2 horizontal tracer diffusion, div(h \kappa_2 \nabla \phi)
                !
                call ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracerGroup, &
-                                         RediKappa, slopeTriadUp, slopeTriadDown, &
+                                         redi_term1, redi_term2, redi_term3, RediKappa, slopeTriadUp, slopeTriadDown, &
                                          tracerGroupTend, err)
 
                !

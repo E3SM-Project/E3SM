@@ -70,7 +70,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
-                    RediKappa, slopeTriadUp, slopeTriadDown, tend, err)!{{{
+                    redi_term1, redi_term2, redi_term3, RediKappa, slopeTriadUp, slopeTriadDown,  &
+                    tend, err)!{{{
 
       !-----------------------------------------------------------------
       !
@@ -99,7 +100,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         tend          !< Input/Output: velocity tendency
+         tend,redi_term1, redi_term2, redi_term3         !< Input/Output: velocity tendency
 
       !-----------------------------------------------------------------
       !
@@ -130,7 +131,6 @@ contains
       real (kind=RKIND) :: r_tmp, tracer_turb_flux
       real (kind=RKIND), dimension(:), pointer :: areaCell, dvEdge, dcEdge
       real (kind=RKIND), dimension(:), allocatable :: areaSum
-
       real (kind=RKIND), dimension(:,:), allocatable :: fluxRediZTop
 
       err = 0
@@ -184,6 +184,7 @@ contains
                   ! div(h \kappa_2 \nabla \phi) at cell center
                   flux = layerThicknessEdge(k, iEdge) * tracer_turb_flux * RediKappa(iCell) * r_tmp
 
+                  redi_term1(iTr,k,iCell) = redi_term1(iTr,k,iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
                   tend(iTr,k,iCell) = tend(iTr,k,iCell) - edgeSignOnCell(i, iCell) * flux * invAreaCell
 
                end do
@@ -222,6 +223,7 @@ contains
                    + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
                                   / (zMid(k,cell2) - zMid(k+1,cell2)) ) 
 
+               redi_term2(iTr,k,iCell) = redi_term3(iTr,k,iCell) - flux_term2
                ! Add tendency for Term 2: div( h S dphi/dz) at top layer
                tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
             end do
@@ -240,6 +242,7 @@ contains
                       + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
                                      / (zMid(k,cell2) - zMid(k+1,cell2))  ) 
 
+                  redi_term2(iTr,k,iCell) = redi_term3(iTr,k,iCell) - flux_term2
                   ! Add tendency for Term 2: div( h S dphi/dz) at mid layers
                   tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
                end do
@@ -255,6 +258,7 @@ contains
                    + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
                                   / (zMid(k-1,cell2) - zMid(k,cell2)) ) 
 
+               redi_term2(iTr,k,iCell) = redi_term3(iTr,k,iCell) - flux_term2
                ! Add tendency for Term 2: div( h S dphi/dz) at bottom layer
                tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
             end do
@@ -317,6 +321,7 @@ contains
                flux_term3 = RediKappa(iCell) * 2.0_RKIND * &
                    (fluxRediZTop(iTr,k)/areaSum(k) - fluxRediZTop(iTr,k+1)/areaSum(k+1))
 
+               redi_term3(iTr,k,iCell) = redi_term3(iTr,k,iCell) + flux_term3
                tend(iTr,k,iCell) = tend(iTr,k,iCell) + flux_term3
             end do
          end do
