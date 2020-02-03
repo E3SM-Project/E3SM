@@ -56,6 +56,8 @@ OR
 
     parser.add_argument("--no-tests", action="store_true", help="Only build baselines, skip testing phase")
 
+    parser.add_argument("--keep-tree", action="store_true", help="Allow to keep the current work tree when testing against HEAD (only valid with `-b HEAD`)")
+
     parser.add_argument("-c", "--custom-cmake-opts", action="append", default=[],
                         help="Extra custom options to pass to cmake. Can use multiple times for multiple cmake options. The -D is added for you")
 
