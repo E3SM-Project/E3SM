@@ -9315,11 +9315,6 @@ module VegetationDataType
          avgflag='A', long_name='total pft-level fire N loss', &
          ptr_patch=this%fire_nloss)
 
-    this%nfix_to_plantn(begp:endp) = spval
-    call hist_addfld1d (fname='NFIX_TO_PLANTN', units='gN/m^2/s', &
-         avgflag='A', long_name='N fixation to plant', &
-         ptr_patch=this%nfix_to_plantn,default='inactive')
-
     if (crop_prog) then
        this%fert(begp:endp) = spval
        call hist_addfld1d (fname='FERT', units='gN/m^2/s', &
