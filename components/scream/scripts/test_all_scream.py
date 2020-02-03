@@ -76,6 +76,8 @@ class TestAllScream(object):
             if self._baseline_dir=="NONE":
                 # Make sure the baseline ref is HEAD
                 expect(self._baseline_ref=="HEAD","The option --keep-tree is only available when testing against pre-built baselines (--baseline-dir) or HEAD (-b HEAD)")
+        else:
+            expect(is_repo_clean(),"Repo must be clean before running. If testing against HEAD or pre-built baselines, you can pass `--keep-tree` to allow non-clean repo.")
                 
 
     ###############################################################################
@@ -178,7 +180,7 @@ class TestAllScream(object):
     ###############################################################################
         print("Generating baselines for ref {}".format(git_baseline_head))
 
-        if git_baseline_head != "HEAD" and not self._keep_tree:
+        if git_baseline_head != "HEAD":
             expect(is_repo_clean(), "If baseline commit is not HEAD, then the repo must be clean before running")
             run_cmd_no_fail("git checkout {}".format(git_baseline_head))
             print("  Switched to {} ({})".format(git_baseline_head, get_current_commit()))
@@ -201,7 +203,7 @@ class TestAllScream(object):
                     print('Generation of baselines for build {} failed'.format(self._test_full_names[test]))
                     return False
 
-        if git_baseline_head != "HEAD" and not self._keep_tree:
+        if git_baseline_head != "HEAD":
             run_cmd_no_fail("git checkout {}".format(git_head))
             print("  Switched back to {} ({})".format(git_head, get_current_commit()))
 
