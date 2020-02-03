@@ -412,7 +412,7 @@
 					possible_values=".true. or .false."
 		/>
 		<nml_option name="config_Redi_BLD_taper_layers" type="integer" default_value="3" units="non-dimensional"
-					description="Number of layers below boundary layer depth, over which Redi coefficient is tapered." 
+					description="Number of layers below boundary layer depth, over which Redi coefficient is tapered."
 					possible_values="Integer between 1 and nVertLevels. Use 1 for no tapering."
 		/>
 	</nml_record>
@@ -3621,6 +3621,12 @@
 			persistence="scratch"
 			type="integer" dimensions="nCells" units="unitless"
 			description="reference maxLevelCell for vertical interpolation of tracers"
+		/>
+		<!-- FIELDS FOR HORIZONTAL SMOOTHING DURING INITIALIZATION -->
+		<var name="smoothedField"
+			persistence="scratch"
+			type="real" dimensions="nCells" units="various"
+			description="the smoothed version of a field on cells during iterative smoothing"
 		/>
 		<!-- FIELDS FOR RX1 INITIALIZATION -->
 		<var name="zInterfaceScratch"
