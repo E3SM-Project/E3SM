@@ -1337,6 +1337,7 @@ EOF
    # print "---> $opts{'crm_nx'} $opts{'crm_ny'} $opts{'crm_nz'} $opts{'crm_dx'} $opts{'crm_dt'} $opts{'SPCAM_microp_scheme'} $eol";
 }
 
+my $use_SPCAM = $cfg_ref->get('use_SPCAM') ? "ON" : "OFF";
 if ($print>=2) { print "Configure CAM for SPCAM (superparameterization) mode: $use_SPCAM.$eol"; }
 
 #-----------------------------------------------------------------------------------------------
