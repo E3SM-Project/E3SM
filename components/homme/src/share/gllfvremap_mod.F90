@@ -292,9 +292,9 @@ contains
        call get_temperature(elem(ie), wr2, hvcoord, nt)
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
-       wr2 = wr2*(p/p0)**kappa
+       wr2 = wr2*(p0/p)**kappa
        call gfr_g2f_scalar_dp(gfr, ie, elem(ie)%metdet, dp, dp_fv, wr2, wr1)
-       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)/(p_fv(:nf,:nf,:)/p0)**kappa
+       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p_fv(:nf,:nf,:)/p0)**kappa
        T(:ncol,:,ie) = reshape(wr1(:nf,:nf,:), (/ncol,nlev/))
 
        call gfr_g2f_vector(gfr, ie, elem, &
@@ -365,9 +365,9 @@ contains
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, p, p_fv)
        wr1(:nf,:nf,:) = reshape(T(:ncol,:,ie), (/nf,nf,nlev/))
-       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p_fv(:nf,:nf,:)/p0)**kappa
+       wr1(:nf,:nf,:) = wr1(:nf,:nf,:)*(p0/p_fv(:nf,:nf,:))**kappa
        call gfr_f2g_scalar_dp(gfr, ie, elem(ie)%metdet, dp_fv, dp, wr1, elem(ie)%derived%FT)
-       elem(ie)%derived%FT = elem(ie)%derived%FT/(p/p0)**kappa
+       elem(ie)%derived%FT = elem(ie)%derived%FT*(p/p0)**kappa
 
        do qi = 1,qsize
           if (q_adjustment) then
@@ -1756,7 +1756,7 @@ contains
        dp = elem(ie)%state%dp3d(:,:,:,nt)
 
        call get_field(elem(ie), 'p', p, hvcoord, nt, -1)
-       wr1 = (p/p0)**kappa
+       wr1 = (p0/p)**kappa
        elem(ie)%derived%FT = elem(ie)%derived%FT*wr1
        call gfr_pg1_g_reconstruct_scalar_dp(gfr, ie, elem(ie)%metdet, dp, &
             elem(ie)%derived%FT)
