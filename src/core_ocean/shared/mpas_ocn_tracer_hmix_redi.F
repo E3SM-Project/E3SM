@@ -323,8 +323,8 @@ contains
                flux_term3 = RediKappa(iCell) * 2.0_RKIND * &
                    (fluxRediZTop(iTr,k)/areaSum(k) - fluxRediZTop(iTr,k+1)/areaSum(k+1))
 
-               redi_term3(iTr,k,iCell) = redi_term3(iTr,k,iCell) + flux_term3
-               tend(iTr,k,iCell) = tend(iTr,k,iCell) + flux_term3
+               redi_term3(iTr,k,iCell) = redi_term3(iTr,k,iCell) - flux_term3
+               tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term3
             end do
          end do
       end do
