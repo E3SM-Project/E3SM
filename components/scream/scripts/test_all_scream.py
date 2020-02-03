@@ -1,4 +1,4 @@
-from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit, expect
+from utils import run_cmd, check_minimum_python_version, get_current_head, run_cmd_no_fail, get_current_commit, expect, is_repo_clean
 check_minimum_python_version(3, 4)
 
 import os, shutil
@@ -9,7 +9,7 @@ class TestAllScream(object):
 ###############################################################################
 
     ###########################################################################
-    def __init__(self, cxx, kokkos, submit, parallel, fast_fail, baseline_ref, baseline_dir, machine, no_tests, custom_cmake_opts, tests):
+    def __init__(self, cxx, kokkos, submit, parallel, fast_fail, baseline_ref, baseline_dir, machine, no_tests, keep_tree, custom_cmake_opts, tests):
     ###########################################################################
 
         self._cxx               = cxx
@@ -20,6 +20,7 @@ class TestAllScream(object):
         self._baseline_ref      = baseline_ref
         self._machine           = machine
         self._perform_tests     = not no_tests
+        self._keep_tree         = keep_tree
         self._baseline_dir      = baseline_dir
         self._custom_cmake_opts = custom_cmake_opts
         self._tests             = tests
@@ -70,6 +71,14 @@ class TestAllScream(object):
             # In case we have more tests than cores (unlikely)
             if self._proc_count == 0:
                 self._proc_count = 1
+
+        if self._keep_tree:
+            if self._baseline_dir=="NONE":
+                # Make sure the baseline ref is HEAD
+                expect(self._baseline_ref=="HEAD","The option --keep-tree is only available when testing against pre-built baselines (--baseline-dir) or HEAD (-b HEAD)")
+        else:
+            expect(is_repo_clean(),"Repo must be clean before running. If testing against HEAD or pre-built baselines, you can pass `--keep-tree` to allow non-clean repo.")
+                
 
     ###############################################################################
     def generate_cmake_config(self, extra_configs, for_ctest=False):
@@ -172,6 +181,7 @@ class TestAllScream(object):
         print("Generating baselines for ref {}".format(git_baseline_head))
 
         if git_baseline_head != "HEAD":
+            expect(is_repo_clean(), "If baseline commit is not HEAD, then the repo must be clean before running")
             run_cmd_no_fail("git checkout {}".format(git_baseline_head))
             print("  Switched to {} ({})".format(git_baseline_head, get_current_commit()))
 
