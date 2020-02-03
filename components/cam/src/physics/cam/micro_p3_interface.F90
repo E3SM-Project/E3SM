@@ -515,25 +515,6 @@ end subroutine micro_p3_readnl
    ! ice-phase process rates
    call addfld('P3_qccol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for collection of cloud water by ice')
    call addfld('P3_qwgrth', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 wet growth rate')
-   ! Record of microphysics tendencies
-   ! warm-phase process rates
-   call addfld('P3_qrcon',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain condensation   (Not in paper?)')
-   call addfld('P3_qcacc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet accretion by rain')
-   call addfld('P3_qcaut',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet autoconversion to rain')
-   call addfld('P3_ncacc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from accretion by rain')
-   call addfld('P3_ncautc', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from autoconversion')
-   call addfld('P3_ncslf',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from self-collection  (Not in paper?)')
-   call addfld('P3_nrslf',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from self-collection  (Not in paper?)')
-   call addfld('P3_ncnuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in cloud droplet number from activation of CCN')
-   call addfld('P3_qccon',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet condensation')
-   call addfld('P3_qcnuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for activation of cloud droplets from CCN')
-   call addfld('P3_qrevp',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for rain evaporation')
-   call addfld('P3_qcevp',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for cloud droplet evaporation')
-   call addfld('P3_nrevp',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from evaporation')
-   call addfld('P3_ncautr', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for change in rain number from autoconversion of cloud water')
-   ! ice-phase process rates
-   call addfld('P3_qccol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for collection of cloud water by ice')
-   call addfld('P3_qwgrth', (/ 'lev' /), 'A', 'kg/kg/s', 'P3 wet growth rate')
    call addfld('P3_qidep',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for vapor deposition')
    call addfld('P3_qrcol',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for collection rain mass by ice')
    call addfld('P3_qinuc',  (/ 'lev' /), 'A', 'kg/kg/s', 'P3 Tendency for deposition/condensation freezing nuc')
