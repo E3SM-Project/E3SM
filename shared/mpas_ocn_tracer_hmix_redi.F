@@ -162,6 +162,7 @@ contains
       ! mrp this is in original del2. Apparently we don't do halo cells for del2.
       nCells = nCellsArray(1)
 
+      redi_term1(:,:,:) = 0.0_RKIND
       ! Term 1: this is the "standard" horizontal del2 term, but with RediKappa coefficient.
       ! \kappa_2 \nabla \phi on edge
       ! mrp performance: merge term 1 into main cell loop later
@@ -197,7 +198,7 @@ contains
       !mrp performance note: can try to reduce halo width later
       nCells = nCellsArray( size(nCellsArray) )
       nCellsP1 = nCellsArray( size(nCellsArray) ) + 1
-
+      redi_term2(:,:,:) = 0.0_RKIND
       ! Term 2: div( h S dphi/dz)
       !$omp do schedule(runtime)
       do iCell = 1, nCells
@@ -223,7 +224,7 @@ contains
                    + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
                                   / (zMid(k,cell2) - zMid(k+1,cell2)) ) 
 
-               redi_term2(iTr,k,iCell) = redi_term3(iTr,k,iCell) - flux_term2
+               redi_term2(iTr,k,iCell) = redi_term2(iTr,k,iCell) - flux_term2
                ! Add tendency for Term 2: div( h S dphi/dz) at top layer
                tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
             end do
@@ -242,7 +243,7 @@ contains
                       + slopeTriadDown(k,2,iEdge)  * (tracers(iTr,k,cell2) - tracers(iTr,k+1,cell2)) &
                                      / (zMid(k,cell2) - zMid(k+1,cell2))  ) 
 
-                  redi_term2(iTr,k,iCell) = redi_term3(iTr,k,iCell) - flux_term2
+                  redi_term2(iTr,k,iCell) = redi_term2(iTr,k,iCell) - flux_term2
                   ! Add tendency for Term 2: div( h S dphi/dz) at mid layers
                   tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
                end do
@@ -258,7 +259,7 @@ contains
                    + slopeTriadUp(k,2,iEdge) * (tracers(iTr,k-1,cell2) - tracers(iTr,k,cell2)) &
                                   / (zMid(k-1,cell2) - zMid(k,cell2)) ) 
 
-               redi_term2(iTr,k,iCell) = redi_term3(iTr,k,iCell) - flux_term2
+               redi_term2(iTr,k,iCell) = redi_term2(iTr,k,iCell) - flux_term2
                ! Add tendency for Term 2: div( h S dphi/dz) at bottom layer
                tend(iTr,k,iCell) = tend(iTr,k,iCell) - flux_term2
             end do
@@ -275,6 +276,7 @@ contains
       !nCells = nCellsArray(1)
       nCells = nCellsArray( size(nCellsArray) )
 
+      redi_term3(:,:,:) = 0.0_RKIND
       !$omp do schedule(runtime)
       do iCell = 1, nCells
          areaSum(:) = 1.0e-34_RKIND
