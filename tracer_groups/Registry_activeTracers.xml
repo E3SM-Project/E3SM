@@ -85,6 +85,41 @@
 		</var_struct>
 	</var_struct>
 
+  <var_struct name="redi" time_levs="1">
+    <var_struct name="tracers_redi_term1" time_levs="1">
+      <var_array name="activeTracers_redi_term1" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersPKG">
+        <var name="temperature_redi_term1" array_group="activeGRP" units="^\circ C s^{-1}"
+          description="time tendency of redi term 1 (straight horizontal mixing)"
+        />
+      
+        <var name="salinity_redi_term1" array_group="activeGRP" units="PSU s^{-1}"
+          description="time tendency of redi term 1 (straight horizontal mixing)"
+          />
+        </var_array> 
+    </var_struct>
+    <var_struct name="tracers_redi_term2" time_levs="1">
+      <var_array name="activeTracers_redi_term2" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersPKG">
+        <var name="temperature_redi_term2" array_group="activeGRP" units="^\circ C s^{-1}"
+          description="time tendency of redi term 2 (cross term)"
+        />
+      
+        <var name="salinity_redi_term2" array_group="activeGRP" units="PSU s^{-1}"
+          description="time tendency of redi term 2 (cross term)"
+          />
+        </var_array> 
+    </var_struct>
+   <var_struct name="tracers_redi_term3" time_levs="1">
+      <var_array name="activeTracers_redi_term3" type="real" dimensions="nVertLevels nCells Time" packages="activeTracersPKG">
+        <var name="temperature_redi_term3" array_group="activeGRP" units="^\circ C s^{-1}"
+          description="time tendency of redi term 3 (cross term)"
+        />
+      
+        <var name="salinity_redi_term3" array_group="activeGRP" units="PSU s^{-1}"
+          description="time tendency of redi term 3 (cross term)"
+          />
+        </var_array> 
+    </var_struct>
+ </var_struct>
 	<var_struct name="forcing" time_levs="1">
 		<var_struct name="tracersSurfaceFlux" time_levs="1">
 			<var_array name="activeTracersSurfaceFlux" type="real" dimensions="nCells Time" packages="activeTracersPKG">

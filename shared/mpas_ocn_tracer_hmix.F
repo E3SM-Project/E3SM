@@ -80,7 +80,8 @@ contains
 !-----------------------------------------------------------------------
 
    subroutine ocn_tracer_hmix_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
-                                   RediKappa, slopeTriadUp, slopeTriadDown, tend, err)!{{{
+                                   redi_term1, redi_term2, redi_term3, RediKappa,           &
+                                   slopeTriadUp, slopeTriadDown, tend, err)!{{{
 
 
       !-----------------------------------------------------------------
@@ -109,7 +110,7 @@ contains
       !-----------------------------------------------------------------
 
       real (kind=RKIND), dimension(:,:,:), intent(inout) :: &
-         tend          !< Input/Output: velocity tendency
+         tend, redi_term1, redi_term2, redi_term3          !< Input/Output: velocity tendency
 
       !-----------------------------------------------------------------
       !
@@ -142,7 +143,8 @@ contains
       call ocn_tracer_hmix_del2_tend(meshPool, layerThicknessEdge, tracers, tend, err1)
       call ocn_tracer_hmix_del4_tend(meshPool, scratchPool, layerThicknessEdge, tracers, tend, err2)
       call ocn_tracer_hmix_Redi_tend(meshPool, scratchPool, layerThicknessEdge, zMid, tracers, &
-                                     RediKappa, slopeTriadUp, slopeTriadDown, tend, err1)
+                                     redi_term1, redi_term2, redi_term3, RediKappa,           &
+                                     slopeTriadUp, slopeTriadDown, tend, err1)
 
       err = ior(err1, err2)
       call mpas_timer_stop("tracer hmix")
