@@ -228,8 +228,12 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
                   : _num_teams),
     _need_ws_sharing(_league_size > _num_ws_slots),
     _open_ws_slots("open_ws_slots", _need_ws_sharing ? _num_ws_slots : 0),
-    _rand_pool(std::chrono::high_resolution_clock::now().time_since_epoch().count())
-  { }
+    _rand_pool()
+  {
+    if (_need_ws_sharing) {
+      _rand_pool = RandomGenerator(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    }
+  }
 
   // How many ws slots are there
   int get_num_ws_slots() const { return _num_ws_slots; }
@@ -244,10 +248,13 @@ class TeamUtils<Kokkos::Cuda> : public _TeamUtilsCommonBase<Kokkos::Cuda>
     else {
       int ws_idx = 0;
       Kokkos::single(Kokkos::PerTeam(team_member), [&] () {
-        rnd_type rand_gen = _rand_pool.get_state(team_member.league_rank());
         ws_idx = team_member.league_rank() % _num_ws_slots;
-        while (!Kokkos::atomic_compare_exchange_strong(&_open_ws_slots(ws_idx), (flag_type) 0, (flag_type)1)) {
+        if (!Kokkos::atomic_compare_exchange_strong(&_open_ws_slots(ws_idx), (flag_type) 0, (flag_type)1)) {
+          rnd_type rand_gen = _rand_pool.get_state(team_member.league_rank());
           ws_idx = Kokkos::rand<rnd_type, int>::draw(rand_gen) % _num_ws_slots;
+          while (!Kokkos::atomic_compare_exchange_strong(&_open_ws_slots(ws_idx), (flag_type) 0, (flag_type)1)) {
+            ws_idx = Kokkos::rand<rnd_type, int>::draw(rand_gen) % _num_ws_slots;
+          }
         }
       });
 
