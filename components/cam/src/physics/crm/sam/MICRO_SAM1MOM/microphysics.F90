@@ -182,13 +182,6 @@ CONTAINS
 
     if(nrestart.eq.0) then
 
-#ifndef CRM
-      micro_field(:,:,:,:,:) = 0.
-      do k=1,nzm
-        micro_field(:,:,:,k,1) = q0(:,k)
-      end do
-      qn(:,:,:,:) = 0.
-#endif
     !$acc parallel loop collapse(4) async(asyncid)
     do l=1,nmicro_fields
       do j=1,ny
@@ -205,9 +198,6 @@ CONTAINS
       if ( docloud .or. doclubb ) then
 #else
       if(docloud) then
-#endif
-#ifndef CRM
-        call cloud(ncrms,micro_field(:,:,:,:,1),micro_field(:,:,:,:,2),qn)
 #endif
         call micro_diagnose(ncrms)
       end if

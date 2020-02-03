@@ -53,23 +53,7 @@ contains
 
     end if ! nsubdomains.eq.1
 
-#ifndef CRM
-    do itasks=0,nsubdomains-1
-      call task_barrier()
-      if(itasks.eq.rank) then
-        open(8,file='./CaseName',status='old',form='formatted')
-        read(8,'(a)') case
-        close (8)
-      endif
-    end do
-#endif  /*CRM*/
-
     masterproc = rank.eq.0
-
-#ifndef CRM
-    if(masterproc) print *,'number of MPI tasks:',ntasks
-#endif /*CRM*/
-
 
   end
 

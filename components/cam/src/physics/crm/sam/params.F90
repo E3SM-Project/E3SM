@@ -35,15 +35,6 @@ module params
   real(crm_rknd), parameter :: rv    = real( Rv_clubb   ,crm_rknd)
   real(crm_rknd), parameter :: rgas  = real( Rd_clubb   ,crm_rknd)
 #else
-#ifndef CRM
-  real(crm_rknd), parameter :: cp    = 1004.          ! Specific heat of air, J/kg/K
-  real(crm_rknd), parameter :: ggr   = 9.81           ! Gravity acceleration, m/s2
-  real(crm_rknd), parameter :: lcond = 2.5104e+06     ! Latent heat of condensation, J/kg
-  real(crm_rknd), parameter :: lfus  = 0.3336e+06   ! Latent heat of fusion, J/kg
-  real(crm_rknd), parameter :: lsub  = 2.8440e+06     ! Latent heat of sublimation, J/kg
-  real(crm_rknd), parameter :: rv    = 461.           ! Gas constant for water vapor, J/kg/K
-  real(crm_rknd), parameter :: rgas  = 287.           ! Gas constant for dry air, J/kg/K
-#else
   real(crm_rknd), parameter :: cp    = real( shr_const_cpdair ,crm_rknd)
   real(crm_rknd), parameter :: ggr   = real( shr_const_g      ,crm_rknd)
   real(crm_rknd), parameter :: lcond = real( shr_const_latvap ,crm_rknd)
@@ -51,7 +42,6 @@ module params
   real(crm_rknd), parameter :: lsub  = real( lcond + lfus     ,crm_rknd)
   real(crm_rknd), parameter :: rgas  = real( shr_const_rdair  ,crm_rknd)
   real(crm_rknd), parameter :: rv    = real( shr_const_rgas/shr_const_mwwv ,crm_rknd)
-#endif
 #endif
   real(crm_rknd), parameter :: diffelq = 2.21e-05     ! Diffusivity of water vapor, m2/s
   real(crm_rknd), parameter :: therco = 2.40e-02      ! Thermal conductivity of air, J/m/s/K
