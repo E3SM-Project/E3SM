@@ -37,6 +37,7 @@ module ocn_init_global_ocean
    use ocn_init_vertical_grids
    use ocn_init_interpolation
    use ocn_init_ssh_and_landIcePressure
+   use ocn_init_smoothing
 
    implicit none
    private
@@ -849,6 +850,7 @@ contains
        integer, pointer :: nCells, nCellsSolve, nVertLevels
 
        type (field1DInteger), pointer :: maxLevelCellField, smoothedLevelsField
+       type (field1DReal), pointer :: bottomDepthObservedField
        integer, dimension(:), pointer :: maxLevelCell, nEdgesOnCell
        integer, dimension(:, :), pointer :: cellsOnCell
 
@@ -858,7 +860,8 @@ contains
        character (len=StrKIND), pointer :: config_global_ocean_topography_method
        logical, pointer :: config_global_ocean_fill_bathymetry_holes, config_global_ocean_topography_has_ocean_frac, &
                            config_global_ocean_deepen_critical_passages
-       real (kind=RKIND), pointer :: config_global_ocean_minimum_depth
+       real (kind=RKIND), pointer :: config_global_ocean_minimum_depth, config_global_ocean_topography_smooth_weight
+       integer, pointer :: config_global_ocean_topography_smooth_iterations
 
        logical :: isOcean
 
@@ -866,7 +869,12 @@ contains
 
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_method', config_global_ocean_topography_method)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_minimum_depth', config_global_ocean_minimum_depth)
-       call mpas_pool_get_config(domain % configs, 'config_global_ocean_fill_bathymetry_holes', config_global_ocean_fill_bathymetry_holes)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_fill_bathymetry_holes', &
+                                 config_global_ocean_fill_bathymetry_holes)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_smooth_iterations', &
+                                 config_global_ocean_topography_smooth_iterations)
+       call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_smooth_weight', &
+                                 config_global_ocean_topography_smooth_weight)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_deepen_critical_passages', &
                                  config_global_ocean_deepen_critical_passages)
        call mpas_pool_get_config(domain % configs, 'config_global_ocean_topography_has_ocean_frac', &
@@ -879,17 +887,13 @@ contains
           call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
 
           call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
-          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
           call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
 
           call mpas_pool_get_array(meshPool, 'latCell', latCell)
           call mpas_pool_get_array(meshPool, 'lonCell', lonCell)
-          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
           call mpas_pool_get_array(meshPool, 'bottomDepthObserved', bottomDepthObserved)
           call mpas_pool_get_array(meshPool, 'oceanFracObserved', oceanFracObserved)
           call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
-          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
-
 
           do k = 1, nVertLevels
              if (refBottomDepth(k).gt.config_global_ocean_minimum_depth) then
@@ -934,6 +938,27 @@ contains
              iErr = 1
              call mpas_dmpar_finalize(domain % dminfo)
           endif
+          block_ptr => block_ptr % next
+       end do
+
+       ! Iteratively smooth bottomDepthObserved before using it to construct the vertical grid
+       call ocn_init_smooth_field(domain, 'bottomDepthObserved', 'mesh', &
+                                  config_global_ocean_topography_smooth_iterations, &
+                                  config_global_ocean_topography_smooth_weight)
+
+       block_ptr => domain % blocklist
+       do while(associated(block_ptr))
+          call mpas_pool_get_subpool(block_ptr % structs, 'mesh', meshPool)
+
+          call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
+          call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
+          call mpas_pool_get_dimension(meshPool, 'nVertLevels', nVertLevels)
+
+          call mpas_pool_get_array(meshPool, 'bottomDepth', bottomDepth)
+          call mpas_pool_get_array(meshPool, 'bottomDepthObserved', bottomDepthObserved)
+          call mpas_pool_get_array(meshPool, 'oceanFracObserved', oceanFracObserved)
+          call mpas_pool_get_array(meshPool, 'refBottomDepth', refBottomDepth)
+          call mpas_pool_get_array(meshPool, 'maxLevelCell', maxLevelCell)
 
           do iCell = 1, nCells
              ! Record depth of the bottom of the ocean, before any alterations for modeling purposes.
@@ -973,8 +998,8 @@ contains
              call ocn_init_setup_global_ocean_deepen_critical_passages(meshPool, criticalPassagesPool, iErr)
           end if
 
-          ! Smooth depth levels. Enforce different in maxLevelCell to only be a maximum
-          ! of 1 vertical level between two neighboring cells.
+          ! Fill holes. Enforce that no cell has maxLevelCell that is more than
+          ! 1 vertical level higher than its neighbors.
           if (config_global_ocean_fill_bathymetry_holes) then
              call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
 
