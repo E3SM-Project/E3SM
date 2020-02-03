@@ -77,7 +77,7 @@ contains
 
        real (kind=RKIND), dimension(:), pointer :: array, smoothedArray
 
-       integer, pointer :: nCellsSolve
+       integer, pointer :: nCells, nCellsSolve
 
        type (field1DReal), pointer :: field, smoothedField
        integer, dimension(:), pointer :: nEdgesOnCell
@@ -94,6 +94,7 @@ contains
              call mpas_pool_get_subpool(block_ptr % structs, 'scratch', scratchPool)
              call mpas_pool_get_subpool(block_ptr % structs, fieldPoolName, fieldPool)
 
+             call mpas_pool_get_dimension(meshPool, 'nCells', nCells)
              call mpas_pool_get_dimension(meshPool, 'nCellsSolve', nCellsSolve)
              call mpas_pool_get_array(meshPool, 'nEdgesOnCell', nEdgesOnCell)
              call mpas_pool_get_array(meshPool, 'cellsOnCell', cellsOnCell)
@@ -105,17 +106,19 @@ contains
              call mpas_pool_get_array(scratchPool, 'smoothedField', smoothedArray)
 
              do iCell = 1, nCellsSolve
-                n = nEdgesOnCell(iCell)
-
-                coc_weight = (1.0_RKIND - weight)/n
-
-                smoothedArray(iCell) = weight * array(iCell)
-
-                do j = 1, n
+                smoothedArray(iCell) = 0.0_RKIND
+                n = 0
+                do j = 1, nEdgesOnCell(iCell)
                    coc = cellsOnCell(j, iCell)
-                   smoothedArray(iCell) = smoothedArray(iCell) + coc_weight * array(coc)
+                   if (coc < nCells+1) then
+                      smoothedArray(iCell) = smoothedArray(iCell) + array(coc)
+                      n = n + 1
+                   end if
                 end do
+                coc_weight = (1.0_RKIND - weight)/n
+                smoothedArray(iCell) = coc_weight * smoothedArray(iCell) + weight * array(iCell)
              end do
+
 
              do iCell = 1, nCellsSolve
                 array(iCell) = smoothedArray(iCell)
