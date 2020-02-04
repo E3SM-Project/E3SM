@@ -1699,11 +1699,17 @@ Default: 1
 </entry>
 
 <entry id="inithist" type="char*8"  category="history"
-       group="cam_history_nl" valid_values="NONE,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
+       group="cam_history_nl" valid_values="NONE,NSTEPS,HOURLY,6-HOURLY,DAILY,MONTHLY,YEARLY,CAMIOP,ENDOFRUN" >
 Frequency that initial files will be output: 6-hourly, daily, monthly,
-yearly, or never.  Valid values: 'NONE', '6-HOURLY', 'DAILY', 'MONTHLY',
+yearly, or never.  Valid values: 'NONE', 'NSTEPS','HOURLY', '6-HOURLY', 'DAILY', 'MONTHLY',
 'YEARLY', 'CAMIOP', 'ENDOFRUN'.
 Default: 'YEARLY'
+</entry>
+
+<entry id="inithist_nsteps" type="integer"  category="history"
+       group="cam_history_nl" valid_values="" >
+Number of physics steps that initial files will be output. Used only when inithist == 'NSTEPS'
+Default: 1
 </entry>
 
 <entry id="inithist_all" type="logical"  category="history"
