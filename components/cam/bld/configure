@@ -269,7 +269,7 @@ OPTIONS
 
   Options for MMF CAM:
 
-     -use_SPCAM         Build superparameterized CAM.
+     -use_MMF         Build superparameterized CAM.
      -crm_nx <n>        CRM's x-grid.
      -crm_ny <n>        CRM's y-grid.
      -crm_nz <n>        CRM's z-grid.
@@ -277,7 +277,7 @@ OPTIONS
      -crm_dt <n>        CRM's timestep.
      -crm_nx_rad <n>    number of averaged columns for CRM radiation calculation in x direction
      -crm_ny_rad <n>    number of averaged columns for CRM radiation calculation in y direction
-     -SPCAM_microp_scheme <string>   CRM microphysics package name [sam1mom | m2005 ].
+     -MMF_microphysics_scheme <string>   CRM microphysics package name [sam1mom | m2005 ].
      -clubb_crm         CRM with clubb treatment
      -use_ECPP          use CRM clouds for vertical transport, aqueous chemistry and wet removable of aerosols 
      -use_crm_cldfrac   use fractional cloudiness in CRM
@@ -343,7 +343,7 @@ GetOptions(
     "comp_intf=s"               => \$opts{'comp_intf'},
     "cosp"                      => \$opts{'cosp'},
     "cppdefs=s"                 => \$opts{'cppdefs'},
-    "use_SPCAM"                 => \$opts{'use_SPCAM'},
+    "use_MMF"                 => \$opts{'use_MMF'},
     "use_ECPP"                  => \$opts{'use_ECPP'},
     "use_MAML"                  => \$opts{'use_MAML'},
     "crm_nx=s"                  => \$opts{'crm_nx'},
@@ -353,7 +353,7 @@ GetOptions(
     "crm_dt=s"                  => \$opts{'crm_dt'},
     "crm_nx_rad=s"              => \$opts{'crm_nx_rad'},
     "crm_ny_rad=s"              => \$opts{'crm_ny_rad'},
-    "SPCAM_microp_scheme=s"     => \$opts{'SPCAM_microp_scheme'},
+    "MMF_microphysics_scheme=s"     => \$opts{'MMF_microphysics_scheme'},
     "clubb_crm"                 => \$opts{'clubb_crm'},
     "crm_adv=s"                 => \$opts{'crm_adv'},
     "debug"                     => \$opts{'debug'},
@@ -1311,10 +1311,10 @@ if ($print>=2) { print "Produce IOP file for SCAM: $e3smreplay$eol"; }
 #-----------------------------------------------------------------------------------------------
 # Superparameterization mode (SPCAM)
 
-if (defined $opts{'use_SPCAM'}) {
+if (defined $opts{'use_MMF'}) {
     if (defined $opts{'use_ECPP'})            { $cfg_ref->set('use_ECPP', 1); }
     if (defined $opts{'use_MAML'})            { $cfg_ref->set('use_MAML', 1); }
-    $cfg_ref->set('use_SPCAM', 1);
+    $cfg_ref->set('use_MMF', 1);
     $cfg_ref->set('crm', 1);
     $cfg_ref->set('crm_nx', $opts{'crm_nx'});
     $cfg_ref->set('crm_ny', $opts{'crm_ny'});
@@ -1323,7 +1323,7 @@ if (defined $opts{'use_SPCAM'}) {
     $cfg_ref->set('crm_dt', $opts{'crm_dt'});
     if (defined $opts{'crm_nx_rad'}) { $cfg_ref->set('crm_nx_rad', $opts{'crm_nx_rad'}); }
     if (defined $opts{'crm_ny_rad'}) { $cfg_ref->set('crm_ny_rad', $opts{'crm_ny_rad'}); }
-    $cfg_ref->set('SPCAM_microp_scheme', $opts{'SPCAM_microp_scheme'});
+    $cfg_ref->set('MMF_microphysics_scheme', $opts{'MMF_microphysics_scheme'});
     $cfg_ref->set('crm_adv', $opts{'crm_adv'});
 # Check that model is not using threading for SPCAM 
     if ($nthreads > 1) {
@@ -1334,11 +1334,11 @@ if (defined $opts{'use_SPCAM'}) {
 EOF
     }
 
-   # print "---> $opts{'crm_nx'} $opts{'crm_ny'} $opts{'crm_nz'} $opts{'crm_dx'} $opts{'crm_dt'} $opts{'SPCAM_microp_scheme'} $eol";
+   # print "---> $opts{'crm_nx'} $opts{'crm_ny'} $opts{'crm_nz'} $opts{'crm_dx'} $opts{'crm_dt'} $opts{'MMF_microphysics_scheme'} $eol";
 }
 
-my $use_SPCAM = $cfg_ref->get('use_SPCAM') ? "ON" : "OFF";
-if ($print>=2) { print "Configure CAM for SPCAM (superparameterization) mode: $use_SPCAM.$eol"; }
+my $use_MMF = $cfg_ref->get('use_MMF') ? "ON" : "OFF";
+if ($print>=2) { print "Configure CAM for SPCAM (superparameterization) mode: $use_MMF.$eol"; }
 
 #-----------------------------------------------------------------------------------------------
 # Horizontal grid parameters
@@ -1898,11 +1898,11 @@ my $crm_dx = $cfg_ref->get('crm_dx');
 my $crm_dt = $cfg_ref->get('crm_dt');
 my $crm_nx_rad = $cfg_ref->get('crm_nx_rad');
 my $crm_ny_rad = $cfg_ref->get('crm_ny_rad');
-my $SPCAM_microp_scheme = $cfg_ref->get('SPCAM_microp_scheme');
+my $MMF_microphysics_scheme = $cfg_ref->get('MMF_microphysics_scheme');
 my $crm_adv    = $cfg_ref->get('crm_adv');
 my $yes3Dval = 1;
 if ($crm_ny eq 1) {$yes3Dval = 0;}
-$cfg_cppdefs .= " -D_$crm_adv -D$SPCAM_microp_scheme -DYES3DVAL=$yes3Dval -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
+$cfg_cppdefs .= " -D_$crm_adv -D$MMF_microphysics_scheme -DYES3DVAL=$yes3Dval -DCRM_NX=$crm_nx -DCRM_NY=$crm_ny -DCRM_NZ=$crm_nz -DCRM_DX=$crm_dx -DCRM_DT=$crm_dt ";
 
 if (defined $opts{'use_ECPP'}) { $cfg_cppdefs .= " -DECPP " }
 if (defined $opts{'use_MAML'}) { $cfg_cppdefs .= " -DMAML " }
@@ -2627,7 +2627,7 @@ sub write_filepath
     # Component interface specifier
     my $comp_intf = $cfg_ref->get('comp_intf');
 
-    my $SPCAM_microp_scheme    = $cfg_ref->get('SPCAM_microp_scheme');
+    my $MMF_microphysics_scheme    = $cfg_ref->get('MMF_microphysics_scheme');
 
     # Start writing paths to the file.  *** Order is important ***  The
     # sequence of paths will be used to set the GNU Makefile's VPATH macro
@@ -2661,16 +2661,16 @@ sub write_filepath
     # Superparameterization; this code section needs to appear before those
     # adding the physics and chemistry packages to override versions of files
     # that appear in both places
-    if ($use_SPCAM) {
+    if ($use_MMF) {
 
         # interface and base model code
         print $fh "$camsrcdir/cam/src/physics/crm\n";
         print $fh "$camsrcdir/cam/src/physics/crm/sam\n";
 
         # microphysics
-        if ($SPCAM_microp_scheme eq 'sam1mom') {
+        if ($MMF_microphysics_scheme eq 'sam1mom') {
             print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_SAM1MOM\n";
-        } elsif ($SPCAM_microp_scheme eq 'm2005') {
+        } elsif ($MMF_microphysics_scheme eq 'm2005') {
             if(defined $opts{'use_crm_cldfrac'}) {
                 print $fh "$camsrcdir/cam/src/physics/crm/sam/MICRO_M2005FRAC\n";
             } else {

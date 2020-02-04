@@ -457,7 +457,7 @@ contains
       integer :: dtime  ! time step
       integer :: cldfsnow_idx = 0 
 
-      logical :: use_SPCAM  ! SPCAM flag
+      logical :: use_MMF  ! SPCAM flag
 
       character(len=128) :: error_message
 

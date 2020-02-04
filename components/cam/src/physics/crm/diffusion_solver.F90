@@ -300,7 +300,7 @@
     
     real(r8) :: mw_fac_loc(pcols,pver+1,ncnst)           ! Local sqrt(1/M_q + 1/M_d) for this constituent
 
-    logical  :: use_SPCAM
+    logical  :: use_MMF
 
     !--------------------------------
     ! Variables needed for WACCM-X
@@ -315,7 +315,7 @@
     ! ------------------------------------------------ !
 
 !-- mdb spcam
-    call phys_getopts(use_SPCAM_out = use_SPCAM)
+    call phys_getopts(use_MMF_out = use_MMF)
 !-- mdb spcam
 
     wsmin    = 1._r8                                     ! Minimum wind speed for ksrfturb computation        [ m/s ]
@@ -656,7 +656,7 @@
 #if defined( SP_USE_DIFF )
       if (.true.) then
 #else
-      if (.not. use_SPCAM) then
+      if (.not. use_MMF) then
 #endif
 
       ! Add counter-gradient to input static energy profiles
@@ -699,7 +699,7 @@
 #if defined( SP_USE_DIFF )
        if (.true.) then
 #else
-       if (.not. use_SPCAM) then
+       if (.not. use_MMF) then
 #endif
          call vd_lu_solve(  pcols , pver  , ncol  ,                         &
                             dse   , decomp, ntop  , nbot  , cd_top )
@@ -761,7 +761,7 @@
 #if defined( SP_USE_DIFF )
            if (.true.) then
 #else
-           if (.not. use_SPCAM) then
+           if (.not. use_MMF) then
 #endif
              ! Add the nonlocal transport terms to constituents in the PBL.
              ! Check for neg q's in each constituent and put the original vertical
@@ -831,7 +831,7 @@
 #if defined( SP_USE_DIFF )
            if (.true.) then
 #else
-           if (.not. use_SPCAM) then
+           if (.not. use_MMF) then
 #endif
              call vd_lu_solve(  pcols , pver , ncol  ,                         &
                                 q(1,1,m) , decomp    , ntop  , nbot  , cd_top )

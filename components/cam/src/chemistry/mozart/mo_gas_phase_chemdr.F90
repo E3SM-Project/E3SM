@@ -383,8 +383,8 @@ contains
     real(r8) :: vmr0(ncol,pver,gas_pcnst)
 
     ! flags for MMF configuration
-    logical :: use_SPCAM, use_ECPP
-    call phys_getopts (use_SPCAM_out = use_SPCAM)
+    logical :: use_MMF, use_ECPP
+    call phys_getopts (use_MMF_out = use_MMF)
     call phys_getopts (use_ECPP_out  = use_ECPP )
 
     call t_startf('chemdr_init')
@@ -731,7 +731,7 @@ contains
     if ( do_neu_wetdep ) then
       het_rates = 0._r8
     else
-      if (use_SPCAM .and. use_ECPP) then
+      if (use_MMF .and. use_ECPP) then
         ! ECPP handles wet removal, so set to zero here
         het_rates(:,:,:) = 0.0
       else

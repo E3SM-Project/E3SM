@@ -81,24 +81,24 @@ subroutine crm_physics_register()
 
   ! local variables
   integer idx
-  logical           :: use_ECPP, use_SPCAM
-  character(len=16) :: SPCAM_microp_scheme
+  logical           :: use_ECPP, use_MMF
+  character(len=16) :: MMF_microphysics_scheme
 
   call phys_getopts( use_ECPP_out            = use_ECPP)
-  call phys_getopts( SPCAM_microp_scheme_out = SPCAM_microp_scheme)
-  call phys_getopts( use_SPCAM_out           = use_SPCAM)
+  call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+  call phys_getopts( use_MMF_out           = use_MMF)
 
   if(masterproc) then
       print*,'_________________________________________'
       print*,'_ Super-parameterization run ____________'
       print*,'crm_nx=',crm_nx,'   crm_ny=',crm_ny,'   crm_nz=',crm_nz
       print*,'crm_dx=',crm_dx,'   crm_dy=',crm_dy,'   crm_dt=',crm_dt
-      if (SPCAM_microp_scheme .eq. 'sam1mom') print*,'Microphysics: SAM1MOM'
-      if (SPCAM_microp_scheme .eq. 'm2005') print*,'Microphysics: M2005'
+      if (MMF_microphysics_scheme .eq. 'sam1mom') print*,'Microphysics: SAM1MOM'
+      if (MMF_microphysics_scheme .eq. 'm2005') print*,'Microphysics: M2005'
       print*,'_________________________________________'
   end if
 
-  if (use_SPCAM) then
+  if (use_MMF) then
      call setparm()
   end if
 
@@ -129,7 +129,7 @@ subroutine crm_physics_register()
    cldo_idx = pbuf_get_index('CLDO')
    call pbuf_add_field('CLDO',      'global',  dtype_r8, (/pcols ,pver, dyn_time_lvls/),                  cldo_idx  )
 
-  if (SPCAM_microp_scheme .eq. 'm2005') then
+  if (MMF_microphysics_scheme .eq. 'm2005') then
     call pbuf_add_field('CRM_NC_RAD','physpkg', dtype_r8, (/pcols, crm_nx_rad, crm_ny_rad, crm_nz/), idx)
     call pbuf_add_field('CRM_NI_RAD','physpkg', dtype_r8, (/pcols, crm_nx_rad, crm_ny_rad, crm_nz/), idx)
     call pbuf_add_field('CRM_QS_RAD','physpkg', dtype_r8, (/pcols, crm_nx_rad, crm_ny_rad, crm_nz/), idx)
@@ -215,10 +215,10 @@ subroutine crm_physics_init(species_class)
    ! local variables
    integer :: m
    logical :: use_ECPP
-   character(len=16) :: SPCAM_microp_scheme
+   character(len=16) :: MMF_microphysics_scheme
 
    call phys_getopts(use_ECPP_out = use_ECPP)
-   call phys_getopts(SPCAM_microp_scheme_out = SPCAM_microp_scheme)
+   call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
 #ifdef ECPP
    if (use_ECPP) then
@@ -227,7 +227,7 @@ subroutine crm_physics_init(species_class)
    end if
 #endif
 
-   if (SPCAM_microp_scheme .eq. 'm2005') then
+   if (MMF_microphysics_scheme .eq. 'm2005') then
       call addfld ('SPNC    ',(/ 'lev' /), 'A', '/kg   ','Cloud water dropet number from CRM')
       call addfld ('SPNI    ',(/ 'lev' /), 'A', '/kg   ','Cloud ice crystal number from CRM')
       call addfld ('SPNS    ',(/ 'lev' /), 'A', '/kg   ','Snow particle number from CRM')
@@ -283,7 +283,7 @@ subroutine crm_physics_init(species_class)
                                                  'cloud scale slope of droplet distribution for radiation')
       call addfld ('CRM_TAU  ', (/'crm_nx','crm_ny','crm_nz'/), 'A', '1',           'cloud scale cloud optical depth'  )
       call addfld ('CRM_WVAR' , (/'crm_nx','crm_ny','crm_nz'/), 'A', 'm/s',         'vertical velocity variance from CRM')
-   end if  ! SPCAM_microp_scheme .eq. 'm2005'
+   end if  ! MMF_microphysics_scheme .eq. 'm2005'
 
    call addfld ('CRM_DEI  ', (/'crm_nx','crm_ny','crm_nz'/), 'A', 'micrometers', 'cloud scale Mitchell ice effective diameter')
    call addfld ('CRM_REL  ', (/'crm_nx','crm_ny','crm_nz'/), 'A', 'micrometers', 'cloud scale droplet effective radius')
@@ -719,8 +719,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    integer :: ixrain, ixsnow, ixnumrain, ixnumsnow
    integer :: i, k, m
    integer :: ifld, itim
-   logical :: use_ECPP, use_SPCAM
-   character(len=16) :: SPCAM_microp_scheme
+   logical :: use_ECPP, use_MMF
+   character(len=16) :: MMF_microphysics_scheme
 
    logical :: ls, lu, lv, lq(pcnst)
 
@@ -763,8 +763,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 
    
    call phys_getopts(use_ECPP_out            = use_ECPP)
-   call phys_getopts(use_SPCAM_out           = use_SPCAM)
-   call phys_getopts(SPCAM_microp_scheme_out = SPCAM_microp_scheme)
+   call phys_getopts(use_MMF_out           = use_MMF)
+   call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
    nstep = get_nstep()
    lchnk = state%lchnk
@@ -844,7 +844,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    !------------------------------------------------------------------------------------------------
    ! Retreive pbuf fields
    !------------------------------------------------------------------------------------------------
-   if (SPCAM_microp_scheme .eq. 'm2005') then
+   if (MMF_microphysics_scheme .eq. 'm2005') then
      call pbuf_get_field(pbuf, pbuf_get_index('CRM_NC_RAD'), crm_rad%nc, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
      call pbuf_get_field(pbuf, pbuf_get_index('CRM_NI_RAD'), crm_rad%ni, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
      call pbuf_get_field(pbuf, pbuf_get_index('CRM_QS_RAD'), crm_rad%qs, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
@@ -908,7 +908,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 
    ! Set pointers to microphysics fields in crm_state
    call pbuf_get_field(pbuf, pbuf_get_index('CRM_QT'), crm_state%qt)
-   if (SPCAM_microp_scheme .eq. 'sam1mom') then
+   if (MMF_microphysics_scheme .eq. 'sam1mom') then
       call pbuf_get_field(pbuf, pbuf_get_index('CRM_QP'), crm_state%qp)
       call pbuf_get_field(pbuf, pbuf_get_index('CRM_QN'), crm_state%qn)
    else
@@ -951,11 +951,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
             crm_state%temperature(i,:,:,k) = state%t(i,m)
 
             ! Initialize microphysics arrays
-            if (SPCAM_microp_scheme .eq. 'sam1mom') then
+            if (MMF_microphysics_scheme .eq. 'sam1mom') then
                crm_state%qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)+state%q(i,m,ixcldice)
                crm_state%qp(i,:,:,k) = 0.0_r8
                crm_state%qn(i,:,:,k) = state%q(i,m,ixcldliq)+state%q(i,m,ixcldice)
-            else if (SPCAM_microp_scheme .eq. 'm2005') then
+            else if (MMF_microphysics_scheme .eq. 'm2005') then
                crm_state%qt(i,:,:,k) = state%q(i,m,1)+state%q(i,m,ixcldliq)
                crm_state%nc(i,:,:,k) = 0.0_r8
                crm_state%qr(i,:,:,k) = 0.0_r8
@@ -982,7 +982,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
             crm_rad%qi           (i,:,:,k) = 0.
             crm_rad%cld          (i,:,:,k) = 0.
 #ifdef m2005
-            if (SPCAM_microp_scheme .eq. 'm2005') then
+            if (MMF_microphysics_scheme .eq. 'm2005') then
                crm_rad%nc(i,:,:,k) = 0.0
                crm_rad%ni(i,:,:,k) = 0.0       
                crm_rad%qs(i,:,:,k) = 0.0
@@ -1053,17 +1053,17 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
             dp_g = state%pdel(i,k)/gravit
             do jj = 1,crm_ny
                do ii = 1,crm_nx
-                  if (SPCAM_microp_scheme .eq. 'm2005') then
+                  if (MMF_microphysics_scheme .eq. 'm2005') then
                      qli_hydro_before(i) = qli_hydro_before(i)+(crm_state%qr(i,ii,jj,m)+ &
                                                                 crm_state%qs(i,ii,jj,m)+ &
                                                                 crm_state%qg(i,ii,jj,m)) * dp_g
                      qi_hydro_before(i)  =  qi_hydro_before(i)+(crm_state%qs(i,ii,jj,m)+ &
                                                                 crm_state%qg(i,ii,jj,m)) * dp_g
-                  else if (SPCAM_microp_scheme .eq. 'sam1mom') then
+                  else if (MMF_microphysics_scheme .eq. 'sam1mom') then
                      sfactor = max(0._r8,min(1._r8,(crm_state%temperature(i,ii,jj,m)-268.16)*1./(283.16-268.16)))
                      qli_hydro_before(i) = qli_hydro_before(i)+crm_state%qp(i,ii,jj,m) * dp_g
                      qi_hydro_before(i)  =  qi_hydro_before(i)+crm_state%qp(i,ii,jj,m) * (1-sfactor) * dp_g
-                  end if ! SPCAM_microp_scheme
+                  end if ! MMF_microphysics_scheme
                end do ! ii
             end do ! jj
          end do ! m
@@ -1237,9 +1237,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       call outfld('CRM_W   ',crm_state%w_wind,      pcols, lchnk)
       call outfld('CRM_T   ',crm_state%temperature, pcols, lchnk)
 
-      if (SPCAM_microp_scheme .eq. 'sam1mom') then
+      if (MMF_microphysics_scheme .eq. 'sam1mom') then
          call outfld('CRM_QV  ',(crm_state%qt-crm_output%qcl-crm_output%qci), pcols, lchnk)
-      else if (SPCAM_microp_scheme .eq. 'm2005') then 
+      else if (MMF_microphysics_scheme .eq. 'm2005') then 
          call outfld('CRM_QV  ',crm_state%qt-crm_output%qcl, pcols, lchnk)
       endif
       call outfld('CRM_QC  ',crm_output%qcl   ,pcols   ,lchnk   )
@@ -1257,7 +1257,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 #endif
 
 #ifdef m2005
-      if (SPCAM_microp_scheme .eq. 'm2005') then
+      if (MMF_microphysics_scheme .eq. 'm2005') then
          ! index is defined in ./crm/MICRO_M2005/microphysics.F90
          ! Be cautious to use them here. They are defined in crm codes, and these codes are called only 
          ! after the subroutine of crm is called. So they can only be used after the 'crm' subroutine. 
@@ -1352,7 +1352,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       call outfld('SPQR    ',crm_output%qr_mean   ,pcols ,lchnk )
 
 #ifdef m2005
-      if (SPCAM_microp_scheme .eq. 'm2005') then
+      if (MMF_microphysics_scheme .eq. 'm2005') then
          call outfld('SPNC    ',crm_output%nc_mean         ,pcols ,lchnk )
          call outfld('SPNI    ',crm_output%ni_mean         ,pcols ,lchnk )
          call outfld('SPNS    ',crm_output%ns_mean         ,pcols ,lchnk )
@@ -1530,7 +1530,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
        call phys_getopts(microp_scheme_out=microp_scheme)
        if(microp_scheme .eq. 'MG' ) then
 #ifdef m2005
-         if (SPCAM_microp_scheme .eq. 'm2005') then
+         if (MMF_microphysics_scheme .eq. 'm2005') then
             call cnst_get_ind('NUMLIQ', ixnumliq)
             call cnst_get_ind('NUMICE', ixnumice)
             call cnst_get_ind('RAINQM', ixrain)   
@@ -1593,17 +1593,17 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
             dp_g = state%pdel(i,k)/gravit
             do jj = 1,crm_ny
                do ii = 1,crm_nx
-                  if(SPCAM_microp_scheme .eq. 'm2005') then
+                  if(MMF_microphysics_scheme .eq. 'm2005') then
                      qli_hydro_after(i) = qli_hydro_after(i)+(crm_state%qr(i,ii,jj,m)+ &
                                                               crm_state%qs(i,ii,jj,m)+ &
                                                               crm_state%qg(i,ii,jj,m)) * dp_g
                      qi_hydro_after(i)  =  qi_hydro_after(i)+(crm_state%qs(i,ii,jj,m)+ &
                                                               crm_state%qg(i,ii,jj,m)) * dp_g
-                  else if(SPCAM_microp_scheme .eq. 'sam1mom') then 
+                  else if(MMF_microphysics_scheme .eq. 'sam1mom') then 
                      sfactor = max(0._r8,min(1._r8,(crm_state%temperature(i,ii,jj,m)-268.16)*1./(283.16-268.16)))
                      qli_hydro_after(i) = qli_hydro_after(i)+crm_state%qp(i,ii,jj,m) * dp_g
                      qi_hydro_after(i)  =  qi_hydro_after(i)+crm_state%qp(i,ii,jj,m) * (1-sfactor) * dp_g
-                  end if ! SPCAM_microp_scheme
+                  end if ! MMF_microphysics_scheme
                end do ! ii
             end do ! jj
          end do ! m = 1,crm_nz
@@ -1720,9 +1720,9 @@ subroutine crm_save_state_tend(state,tend,pbuf)
    integer itim, ifld, ncol, i, lchnk
    real(r8), pointer, dimension(:,:) :: cld        ! cloud fraction
    real(r8), pointer, dimension(:,:) :: qqcw
-   logical                           :: use_SPCAM, use_ECPP
+   logical                           :: use_MMF, use_ECPP
 
-   call phys_getopts( use_SPCAM_out = use_SPCAM )
+   call phys_getopts( use_MMF_out = use_MMF )
    call phys_getopts( use_ECPP_out  = use_ECPP  )
 
    lchnk = state%lchnk
@@ -1804,9 +1804,9 @@ subroutine crm_recall_state_tend(state,tend,pbuf)
    real(r8), pointer, dimension(:,:) :: cld                 ! cloud fraction
    real(r8), pointer, dimension(:,:) :: qqcw                ! 
    character(len=16)                 :: microp_scheme       ! host model microphysics scheme
-   logical                           :: use_SPCAM, use_ECPP
+   logical                           :: use_MMF, use_ECPP
    
-   call phys_getopts( use_SPCAM_out     = use_SPCAM )
+   call phys_getopts( use_MMF_out     = use_MMF )
    call phys_getopts( use_ECPP_out      = use_ECPP  )
    call phys_getopts( microp_scheme_out = microp_scheme )
 

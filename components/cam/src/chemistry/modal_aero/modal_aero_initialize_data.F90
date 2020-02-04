@@ -410,7 +410,7 @@ contains
        real(r8), parameter :: huge_r8 = huge(1._r8)
        character(len=*), parameter :: routine='modal_aero_initialize'
        ! variables for MMF configuration
-       logical :: use_SPCAM
+       logical :: use_MMF
        integer :: icldphy ! index for cloud physic species (water vapor and cloud hydrometers)
        character(len=16) :: microp_scheme  ! MMF microphysics scheme
        !-----------------------------------------------------------------------
@@ -534,9 +534,9 @@ contains
           end do
 
        ! if using MMF, define cld physics and species_class for gas species
-       call phys_getopts(use_SPCAM_out     = use_SPCAM)
+       call phys_getopts(use_MMF_out     = use_MMF)
        call phys_getopts(microp_scheme_out = microp_scheme)
-       if (use_SPCAM) then
+       if (use_MMF) then
          if ( microp_scheme .eq. 'MG' ) then
             icldphy = 5
          else if ( microp_scheme .eq. 'RK' ) then
@@ -557,7 +557,7 @@ loop:    do i = icldphy+1, pcnst
             ! tracers are added in the future
             species_class(i) = spec_class_gas
          end do loop
-       end if ! use_SPCAM
+       end if ! use_MMF
 
        !   set cnst_name_cw
        call initaermodes_set_cnstnamecw()

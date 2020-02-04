@@ -97,12 +97,12 @@
       <value compset="_CAM4%WCSF"     >-chem waccm_mozart_sulfur -carma sulfate</value>
       <value compset="_CAM[45]%WCMX"  >-waccmx</value>
       <!-- Super-Parameterization -->
-      <value compset="_CAM5%SP[12]V1"        >-use_SPCAM -crm_adv MPDATA -nlev 72 -crm_nz 58 -crm_dx 1000 -crm_dt 5 </value>
+      <value compset="_CAM5%SP[12]V1"        >-use_MMF -crm_adv MPDATA -nlev 72 -crm_nz 58 -crm_dx 1000 -crm_dt 5 </value>
       <value compset="_CAM5%SP[12]V1"        >-microphys mg2  </value>
       <value compset="_CAM5%SP[12]V1"        >-cppdefs ' -DSP_DIR_NS ' </value>
       <value compset="_CAM5%SP[12]V1"        >-rad rrtmg </value>
-      <value compset="_CAM5%SP1V1"           >-SPCAM_microp_scheme sam1mom -chem none </value>
-      <value compset="_CAM5%SP2V1"           >-SPCAM_microp_scheme m2005 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
+      <value compset="_CAM5%SP1V1"           >-MMF_microphysics_scheme sam1mom -chem none </value>
+      <value compset="_CAM5%SP2V1"           >-MMF_microphysics_scheme m2005 -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero </value>
       <value compset="_CAM5%SP[12]V1_"       >-crm_nx 64 -crm_ny 1 -crm_nx_rad 16 -crm_ny_rad 1 </value>
       <value compset="_CAM5%SP[12]V1-TEST_"  >-crm_nx  8 -crm_ny 1 -crm_nx_rad  1 -crm_ny_rad 1 </value>
       <value compset="_CAM5%SP1V1-MAML"      >-use_MAML -crm_ny 1 -crm_ny_rad 1 </value>
@@ -111,10 +111,10 @@
       <value compset="_CAM5%SP2V1-ECPP-TEST" >-crm_nx  8 -crm_ny 1 -crm_nx_rad  1 -crm_ny_rad 1 </value>
       <value compset="_CAM5%SP2V1-ECPP"      >-use_ECPP </value>
       <!-- Fast SP compset for development -->
-      <value compset="_CAM5%SP[12]FAST"      >-use_SPCAM -crm_adv MPDATA -nlev 30 -crm_nz 28 -crm_dx 4000 -crm_dt 20 </value>
+      <value compset="_CAM5%SP[12]FAST"      >-use_MMF -crm_adv MPDATA -nlev 30 -crm_nz 28 -crm_dx 4000 -crm_dt 20 </value>
       <value compset="_CAM5%SP[12]FAST"      >-microphys mg2 -cppdefs ' -DSP_DIR_NS ' -rad rrtmg      </value>
-      <value compset="_CAM5%SP1FAST"         >-crm_nx 4 -crm_ny 4 -crm_nx_rad 1 -crm_ny_rad 1 -SPCAM_microp_scheme sam1mom  -chem none </value>
-      <value compset="_CAM5%SP2FAST"         >-crm_nx 6 -crm_ny 1 -crm_nx_rad 1 -crm_ny_rad 1 -SPCAM_microp_scheme m2005    -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -use_ECPP </value>
+      <value compset="_CAM5%SP1FAST"         >-crm_nx 4 -crm_ny 4 -crm_nx_rad 1 -crm_ny_rad 1 -MMF_microphysics_scheme sam1mom  -chem none </value>
+      <value compset="_CAM5%SP2FAST"         >-crm_nx 6 -crm_ny 1 -crm_nx_rad 1 -crm_ny_rad 1 -MMF_microphysics_scheme m2005    -chem linoz_mam4_resus_mom_soag -rain_evap_to_coarse_aero -use_ECPP </value>
       <!--  -->
       <value compset="GEOS_CAM"       >-offline_dyn</value>
       <value compset="GEOS_CAM4"      >-nlev 56</value>

@@ -4428,7 +4428,7 @@ Default: false
 </entry>
 
 <!-- MMF -->
-<entry id="use_SPCAM" type="logical"  category="conv"
+<entry id="use_MMF" type="logical"  category="conv"
        group="phys_ctl_nl" valid_values="" >
 Turn on super parameterized CAM
 Default: false
@@ -4446,7 +4446,7 @@ Turn on Multiple Atmosphere and Multiple Land option
 Default: false
 </entry>
 
-<entry id="SPCAM_microp_scheme" type="char*16" category="conv"
+<entry id="MMF_microphysics_scheme" type="char*16" category="conv"
        group="phys_ctl_nl" valid_values="m2005, sam1mom" >
 Type of SPCAM microphysics scheme employed.
 Default: sam1mom

@@ -59,8 +59,8 @@ integer           :: srf_flux_avg         = unset_int  ! 1 => smooth surface flu
 integer           :: conv_water_in_rad    = unset_int  ! 0==> No; 1==> Yes-Arithmetic average;
                                                        ! 2==> Yes-Average in emissivity.
 
-character(len=16) :: SPCAM_microp_scheme  = unset_str  ! MMF microphysics package
-logical           :: use_SPCAM            = .false.    ! true => use MMF / super-parameterization
+character(len=16) :: MMF_microphysics_scheme  = unset_str  ! MMF microphysics package
+logical           :: use_MMF            = .false.    ! true => use MMF / super-parameterization
 logical           :: use_ECPP             = .false.    ! true => use explicit-cloud parameterized-pollutants
 logical           :: use_MAML             = .false.    ! true => use Multiple Atmosphere and Multiple Land
 logical           :: use_crm_accel        = .false.    ! true => use MMF CRM mean-state acceleration (MSA)
@@ -181,7 +181,7 @@ subroutine phys_ctl_readnl(nlfile)
 
    namelist /phys_ctl_nl/ cam_physpkg, cam_chempkg, waccmx_opt, deep_scheme, shallow_scheme, &
       eddy_scheme, microp_scheme,  macrop_scheme, radiation_scheme, srf_flux_avg, &
-      SPCAM_microp_scheme, use_SPCAM, use_ECPP, use_MAML, &
+      MMF_microphysics_scheme, use_MMF, use_ECPP, use_MAML, &
       use_crm_accel, crm_accel_factor, crm_accel_uv, &
       use_subcol_microp, atm_dep_flux, history_amwg, history_verbose, history_vdiag, &
       history_aerosol, history_aero_optics, &
@@ -227,8 +227,8 @@ subroutine phys_ctl_readnl(nlfile)
    call mpibcast(radiation_scheme, len(radiation_scheme) , mpichar, 0, mpicom)
    call mpibcast(macrop_scheme,    len(macrop_scheme)    , mpichar, 0, mpicom)
    call mpibcast(srf_flux_avg,                    1 , mpiint,  0, mpicom)
-   call mpibcast(SPCAM_microp_scheme, len(SPCAM_microp_scheme) , mpichar, 0, mpicom)
-   call mpibcast(use_SPCAM,                       1 , mpilog,  0, mpicom)
+   call mpibcast(MMF_microphysics_scheme, len(MMF_microphysics_scheme) , mpichar, 0, mpicom)
+   call mpibcast(use_MMF,                       1 , mpilog,  0, mpicom)
    call mpibcast(use_ECPP,                        1 , mpilog,  0, mpicom)
    call mpibcast(use_MAML,                        1 , mpilog,  0, mpicom)
    call mpibcast(use_crm_accel,                   1 , mpilog,  0, mpicom)
@@ -360,12 +360,12 @@ subroutine phys_ctl_readnl(nlfile)
       end if
    end if
 
-   ! Check settings for SPCAM_microp_scheme
-   if ( .not.(SPCAM_microp_scheme .eq. 'm2005'   .or. &
-              SPCAM_microp_scheme .eq. 'sam1mom' .or. &
-              SPCAM_microp_scheme .eq. unset_str )) then
-      write(iulog,*)'phys_setopts: illegal value of SPCAM_microp_scheme:', SPCAM_microp_scheme
-      call endrun('phys_setopts: illegal value of SPCAM_microp_scheme')
+   ! Check settings for MMF_microphysics_scheme
+   if ( .not.(MMF_microphysics_scheme .eq. 'm2005'   .or. &
+              MMF_microphysics_scheme .eq. 'sam1mom' .or. &
+              MMF_microphysics_scheme .eq. unset_str )) then
+      write(iulog,*)'phys_setopts: illegal value of MMF_microphysics_scheme:', MMF_microphysics_scheme
+      call endrun('phys_setopts: illegal value of MMF_microphysics_scheme')
    end if
 
    ! prog_modal_aero determines whether prognostic modal aerosols are present in the run.
@@ -432,7 +432,7 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
                         history_budget_out, history_budget_histfile_num_out, history_waccm_out, &
                         history_clubb_out, ieflx_opt_out, conv_water_in_rad_out, cam_chempkg_out, &
                         prog_modal_aero_out, macrop_scheme_out, &
-                        use_SPCAM_out, use_ECPP_out, SPCAM_microp_scheme_out, use_MAML_out, &
+                        use_MMF_out, use_ECPP_out, MMF_microphysics_scheme_out, use_MAML_out, &
                         use_crm_accel_out, crm_accel_factor_out, crm_accel_uv_out, &
                         do_clubb_sgs_out, do_tms_out, state_debug_checks_out, &
                         do_aerocom_ind3_out,  &
@@ -462,8 +462,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    character(len=16), intent(out), optional :: microp_scheme_out
    character(len=16), intent(out), optional :: radiation_scheme_out
    character(len=16), intent(out), optional :: macrop_scheme_out
-   character(len=16), intent(out), optional :: SPCAM_microp_scheme_out
-   logical,           intent(out), optional :: use_SPCAM_out
+   character(len=16), intent(out), optional :: MMF_microphysics_scheme_out
+   logical,           intent(out), optional :: use_MMF_out
    logical,           intent(out), optional :: use_ECPP_out
    logical,           intent(out), optional :: use_MAML_out
    logical,           intent(out), optional :: use_crm_accel_out
@@ -533,8 +533,8 @@ subroutine phys_getopts(deep_scheme_out, shallow_scheme_out, eddy_scheme_out, &
    if ( present(microp_scheme_out       ) ) microp_scheme_out        = microp_scheme
    if ( present(radiation_scheme_out    ) ) radiation_scheme_out     = radiation_scheme
 
-   if ( present(SPCAM_microp_scheme_out ) ) SPCAM_microp_scheme_out  = SPCAM_microp_scheme
-   if ( present(use_SPCAM_out           ) ) use_SPCAM_out            = use_SPCAM
+   if ( present(MMF_microphysics_scheme_out ) ) MMF_microphysics_scheme_out  = MMF_microphysics_scheme
+   if ( present(use_MMF_out           ) ) use_MMF_out            = use_MMF
    if ( present(use_ECPP_out            ) ) use_ECPP_out             = use_ECPP
    if ( present(use_MAML_out            ) ) use_MAML_out             = use_MAML
    if ( present(use_crm_accel_out       ) ) use_crm_accel_out        = use_crm_accel

@@ -287,9 +287,9 @@ contains
     real(r8) :: yph, yph_lo, yph_hi
     real(r8) :: ynetpos, ynetpos_lo, ynetpos_hi
 
-    logical :: use_SPCAM, use_ECPP
+    logical :: use_MMF, use_ECPP
 
-    call phys_getopts( use_SPCAM_out=use_SPCAM, use_ECPP_out=use_ECPP )
+    call phys_getopts( use_MMF_out=use_MMF, use_ECPP_out=use_ECPP )
 
     !-----------------------------------------------------------------
     !       ... NOTE: The press array is in pascals and must be
@@ -521,7 +521,7 @@ contains
                 ! calc current [H+] from ph
                 xph(i,k) = 10.0_r8**(-yph)
 
-                if(use_SPCAM .and. use_ECPP) then
+                if(use_MMF .and. use_ECPP) then
                    ! in the MMF model w/ ECPP, ph value is fixed at 4.5
                    xph(i,k) = 10.0_r8**(-4.5_r8)
                 end if

@@ -827,8 +827,8 @@ contains
       use cam_abortutils, only: endrun
       real(r8), pointer :: pbuf(:)
       integer :: err, idx
-      logical :: use_SPCAM
-      character(len=16) :: SPCAM_microp_scheme
+      logical :: use_MMF
+      character(len=16) :: MMF_microphysics_scheme
 
       idx = pbuf_get_index('CLDFSNOW', errcode=err)
       if (idx > 0) then
@@ -838,9 +838,9 @@ contains
       end if
 
       ! Reset to false if using SPCAM with 1-mom scheme
-      call phys_getopts(use_SPCAM_out           = use_SPCAM          )
-      call phys_getopts(SPCAM_microp_scheme_out = SPCAM_microp_scheme)
-      if (use_SPCAM .and. (trim(SPCAM_microp_scheme) == 'sam1mom')) then
+      call phys_getopts(use_MMF_out           = use_MMF          )
+      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      if (use_MMF .and. (trim(MMF_microphysics_scheme) == 'sam1mom')) then
          do_snow_optics = .false.
       end if
 

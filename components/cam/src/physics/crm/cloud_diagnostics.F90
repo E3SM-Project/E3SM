@@ -94,9 +94,9 @@ contains
     logical           :: history_verbose       ! produce verbose history output
 
 !-- mdb spcam
-    logical :: use_SPCAM
+    logical :: use_MMF
 
-    call phys_getopts(use_SPCAM_out=use_SPCAM)
+    call phys_getopts(use_MMF_out=use_MMF)
 !-- mdb spcam
 
     !-----------------------------------------------------------------------
@@ -144,7 +144,7 @@ contains
     call phys_getopts(conv_water_in_rad_out=conv_water_in_rad)
 
 !-- mdb spcam
-    if (use_SPCAM) then
+    if (use_MMF) then
           wpunits = 'kg/m2'
           sampling_seq=''
     else 
@@ -286,14 +286,14 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
 
     logical :: dosw,dolw
 !-- mdb spcam
-    logical :: use_SPCAM
+    logical :: use_MMF
 !-- mdb spcam
   
 !-----------------------------------------------------------------------
     if (.not.do_cld_diag) return
 
 !-- mdb spcam
-    call phys_getopts(use_SPCAM_out=use_SPCAM)
+    call phys_getopts(use_MMF_out=use_MMF)
 !-- mdb spcam
 
     if(rk_clouds) then
@@ -495,7 +495,7 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     endif
 
 !-- mdb spcam
-    if (.not. use_SPCAM) then 
+    if (.not. use_MMF) then 
        ! for SPCAM, these are diagnostics in crm_physics.F90
        call outfld('GCLDLWP' ,gwp    , pcols,lchnk)
        call outfld('TGCLDCWP',tgwp   , pcols,lchnk)

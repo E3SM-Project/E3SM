@@ -429,8 +429,8 @@ contains
       integer :: dtime  ! time step
       integer :: cldfsnow_idx = 0 
 
-      logical :: use_SPCAM  ! SPCAM flag
-      character(len=16) :: SPCAM_microp_scheme
+      logical :: use_MMF  ! SPCAM flag
+      character(len=16) :: MMF_microphysics_scheme
 
       character(len=128) :: error_message
 
@@ -449,9 +449,9 @@ contains
       ! Make sure we are using the correct optics for SPCAM. For sam1mom, we
       ! have to use the simpler cloud optics because we do not have information
       ! about particle size.
-      call phys_getopts(use_SPCAM_out           = use_SPCAM          )
-      call phys_getopts(SPCAM_microp_scheme_out = SPCAM_microp_scheme)
-      if (use_SPCAM .and. (trim(SPCAM_microp_scheme) == 'sam1mom')) then
+      call phys_getopts(use_MMF_out           = use_MMF          )
+      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
+      if (use_MMF .and. (trim(MMF_microphysics_scheme) == 'sam1mom')) then
          if (trim(liqcldoptics) /= 'slingo') then
             call endrun(subname // ': must use slingo liquid optics with sam1mom')
          end if
@@ -795,8 +795,8 @@ contains
       end do
 
       ! Add cloud-scale radiative quantities
-      call phys_getopts(use_SPCAM_out=use_SPCAM)
-      if (use_SPCAM) then
+      call phys_getopts(use_MMF_out=use_MMF)
+      if (use_MMF) then
          call addfld ('CRM_QRAD', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'A', 'K/s', &
                       'Radiative heating tendency')
          call addfld ('CRM_QRS ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', &
@@ -1170,8 +1170,8 @@ contains
       real(r8), pointer :: rel(:,:), rei(:,:)
 
       ! Options for MMF/SP
-      logical :: use_SPCAM
-      character(len=16) :: SPCAM_microp_scheme
+      logical :: use_MMF
+      character(len=16) :: MMF_microphysics_scheme
 
       ! Flag to carry (QRS,QRL)*dp across time steps. 
       ! TODO: what does this mean?
@@ -1287,8 +1287,8 @@ contains
       ncol_tot = ncol * crm_nx_rad * crm_ny_rad
 
       ! Set flags for MMF/SP
-      call phys_getopts(use_SPCAM_out           = use_SPCAM          )
-      call phys_getopts(SPCAM_microp_scheme_out = SPCAM_microp_scheme)
+      call phys_getopts(use_MMF_out           = use_MMF          )
+      call phys_getopts(MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 
       ! Set pointers to heating rates stored on physics buffer. These will be
       ! modified in this routine.
@@ -1315,8 +1315,8 @@ contains
 #endif
 
       ! CRM fields
-      call phys_getopts(use_SPCAM_out=use_SPCAM)
-      if (use_SPCAM) then
+      call phys_getopts(use_MMF_out=use_MMF)
+      if (use_MMF) then
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_T_RAD'  ), crm_t  )
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QV_RAD' ), crm_qv )
          call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD' ), crm_qc )
@@ -1369,7 +1369,7 @@ contains
             if (radiation_do('sw') .or. radiation_do('lw')) then
 
                ! Calculate effective radius for optics used with single-moment microphysics
-               if (use_SPCAM .and. (trim(SPCAM_microp_scheme) .eq. 'sam1mom')) then 
+               if (use_MMF .and. (trim(MMF_microphysics_scheme) .eq. 'sam1mom')) then 
                   call cldefr(state%lchnk, ncol, landfrac, state%t, rel, rei, state%ps, state%pmid, landm, icefrac, snowh)
                end if
 
@@ -1445,7 +1445,7 @@ contains
                   do ix = 1,crm_nx_rad
 
                      ! Overwrite state and pbuf with CRM
-                     if (use_SPCAM) then
+                     if (use_MMF) then
                         call t_startf('rad_overwrite_state')
                         do iz = 1,crm_nz
                            ilev = pver - iz + 1
@@ -1487,7 +1487,7 @@ contains
                            end do  ! ic = 1,ncol
                         end do  ! iz = 1,crm_nz
                         call t_stopf('rad_overwrite_state')
-                     end if  ! use_SPCAM
+                     end if  ! use_MMF
 
                      ! Setup state arrays, which may contain an extra level
                      ! above model top to handle heating above the model
@@ -1639,7 +1639,7 @@ contains
                call output_fluxes_sw(icall, state, fluxes_allsky, fluxes_clrsky, qrs,  qrsc)
 
                ! Map to CRM columns
-               if (use_SPCAM) then
+               if (use_MMF) then
                   j = 1
                   do iy = 1,crm_ny_rad
                      do ix = 1,crm_nx_rad
@@ -1736,7 +1736,7 @@ contains
                call output_fluxes_lw(icall, state, fluxes_allsky, fluxes_clrsky, qrl, qrlc)
 
                ! Map to CRM columns
-               if (use_SPCAM) then
+               if (use_MMF) then
                   j = 1
                   do iy = 1,crm_ny_rad
                      do ix = 1,crm_nx_rad
@@ -1810,7 +1810,7 @@ contains
       end if
 
       ! Update net CRM heating tendency, IF doing radiation this timestep
-      if (use_SPCAM) then
+      if (use_MMF) then
          call t_startf('rad_update_crm_heating')
          if (radiation_do('sw') .or. radiation_do('lw')) then
             call pbuf_get_field(pbuf, pbuf_get_index('CRM_QRAD'), crm_qrad)
@@ -1827,7 +1827,7 @@ contains
             call outfld('CRM_QRAD', crm_qrad(1:ncol,:,:,:), ncol, state%lchnk)
          end if
          call t_stopf('rad_update_crm_heating')
-      end if  ! use_SPCAM
+      end if  ! use_MMF
 
    end subroutine radiation_tend
 

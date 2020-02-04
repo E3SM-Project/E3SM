@@ -449,7 +449,7 @@ subroutine dropmixnuc( &
    character*200 fieldnamegas
 
    ! Logical flags for MMF
-   logical  :: use_SPCAM  ! is this an MMF model
+   logical  :: use_MMF  ! is this an MMF model
    logical  :: SPCAM_mmf  ! is this code called from GCM part of MMF model
 
    !-------------------------------------------------------------------------------
@@ -523,8 +523,8 @@ subroutine dropmixnuc( &
    ! If using SPCAM, determine if this module was called from the GCM or CRM
    ! interface
    SPCAM_mmf = .false.
-   call phys_getopts(use_SPCAM_out=use_SPCAM)
-   if (use_SPCAM) then
+   call phys_getopts(use_MMF_out=use_MMF)
+   if (use_MMF) then
       if (present(do_mmf)) then
          if (do_mmf) SPCAM_mmf = .true.
       end if
@@ -1188,7 +1188,7 @@ subroutine dropmixnuc( &
 
    call ccncalc(state, pbuf, cs, ccn)
    do l = 1, psat
-      if (SPCAM_mmf .or. .not. use_SPCAM) then ! called in the MMF part only or in the standard CAM
+      if (SPCAM_mmf .or. .not. use_MMF) then ! called in the MMF part only or in the standard CAM
         call outfld(ccn_name(l), ccn(1,1,l), pcols, lchnk)
       end if
    end do

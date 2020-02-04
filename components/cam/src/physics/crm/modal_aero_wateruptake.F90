@@ -219,7 +219,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    real(r8) :: es_crm_tmp, qs_crm_tmp 
    logical :: last_column
    integer :: ii, jj, mm
-   logical :: use_SPCAM
+   logical :: use_MMF
    !-----------------------------------------------------------------------
 
    lchnk = state%lchnk
@@ -228,9 +228,9 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    ! determine default variables
    call phys_getopts(history_aerosol_out = history_aerosol, &
                      history_verbose_out = history_verbose, &
-                     use_SPCAM_out = use_SPCAM)
+                     use_MMF_out = use_MMF)
    
-   if (use_SPCAM) then
+   if (use_MMF) then
       call pbuf_get_field(pbuf, pbuf_get_index('CRM_QV_RAD'), h2ommr_crm)
       call pbuf_get_field(pbuf, pbuf_get_index('CRM_T_RAD' ), t_crm     )
       call pbuf_get_field(pbuf, pbuf_get_index('CRM_QC_RAD'), qcl_crm   )
@@ -386,7 +386,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
    do jj = 1, crm_ny_rad
       do ii = 1, crm_nx_rad
        
-         if (use_SPCAM) then
+         if (use_MMF) then
             last_column = ii .eq. crm_nx_rad .and. jj .eq. crm_ny_rad
          end if
 
@@ -409,7 +409,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
                ! the CRM when using super-parameterization (NOTE: much of this looks like it could
                ! be combined with the above calculation of relative humidity so we are not
                ! duplicating code)
-               if(use_SPCAM) then
+               if(use_MMF) then
 
                   ! Calculate a temporary cloud fraction to check for overcast conditions. This is
                   ! done following how "CRM_CLD_RAD" used to be re-diagnosed in crm_physics for this
@@ -448,7 +448,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
                      ncount_clear(i,k,m) = ncount_clear(i,k,m) + (1._r8 - cldnt(i,k))
                   end do
 
-               end if  ! use_SPCAM
+               end if  ! use_MMF
 
             end do  ! i = 1,ncol
          end do  ! k = 1,pver
@@ -467,14 +467,14 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
 
                   !==Guangxing Lin
                   ! qaerwat(i,k,m)     = rhoh2o*naer(i,k,m)*wtrvol(i,k,m)
-                  if(use_SPCAM) then
+                  if(use_MMF) then
                      wtrvol_grid(i,k,m) = wtrvol_grid(i,k,m) + wtrvol(i,k,m)*(1.-cldnt(i,k))
                      wetvol_grid(i,k,m) = wetvol_grid(i,k,m) + wetvol(i,k,m)*(1.-cldnt(i,k))
                   end if
 
-                  if(.not.use_SPCAM) then
+                  if(.not.use_MMF) then
                      qaerwat(i,k,m)     = rhoh2o*naer(i,k,m)*wtrvol(i,k,m)
-                  else  ! use_SPCAM
+                  else  ! use_MMF
                      qaerwat(i,k,m) = qaerwat(i,k,m)+ rhoh2o*naer(i,k,m)*wtrvol(i,k,m) * (1-cldnt(i,k))
 #ifdef MODAL_AERO
                      if(k.ge.pver-crm_nz+1) then
@@ -496,7 +496,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
             end do ! k 
 
             !==Guangxing Lin
-            if (use_SPCAM) then
+            if (use_MMF) then
                if (last_column) then
                   do k = 1, pver
                      do i = 1, ncol
@@ -520,7 +520,7 @@ subroutine modal_aero_wateruptake_dr(state, pbuf, list_idx_in, dgnumdry_m, dgnum
                      end do ! pver
                   end do ! ncol
                endif ! last_column
-            endif ! use_SPCAM
+            endif ! use_MMF
             !==Guangxing Lin
 
          end do ! modes

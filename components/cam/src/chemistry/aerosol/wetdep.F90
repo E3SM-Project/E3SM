@@ -490,8 +490,8 @@ subroutine wetdepa_v2( ncol, deltat, &
       ! if not MMF, CRM_NZ is not defined, so set to zero to avoid build error
       integer, parameter :: crm_nz = 0
 #endif
-      logical use_SPCAM
-      call phys_getopts( use_SPCAM_out = use_SPCAM)
+      logical use_MMF
+      call phys_getopts( use_MMF_out = use_MMF)
 
 ! ------------------------------------------------------------------------
 !      omsm = 1.-1.e-10          ! used to prevent roundoff errors below zero
@@ -1078,7 +1078,7 @@ jstrcnv_loop_aa: &
          ! the log files from MMF runs were getting really large with these warnings due 
          ! to tiny negative values (~ -1e-300) at the top of the model, well above the CRM,
          ! so this block avoids this problem when running the MMF
-         if ( use_SPCAM ) then
+         if ( use_MMF ) then
             if ( found ) then
                if ( k < (pver-crm_nz) ) found = .false.
             end if

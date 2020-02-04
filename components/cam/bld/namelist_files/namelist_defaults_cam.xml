@@ -951,10 +951,10 @@
 <clubb_rad_history           > .false. </clubb_rad_history>
 
 <!-- MMF -->
-<SPCAM_microp_scheme SPCAM_microp_scheme="sam1mom">sam1mom</SPCAM_microp_scheme>
-<SPCAM_microp_scheme SPCAM_microp_scheme="m2005">m2005</SPCAM_microp_scheme>
-<use_SPCAM              > .false.</use_SPCAM>
-<use_SPCAM use_SPCAM="1"> .true. </use_SPCAM>
+<MMF_microphysics_scheme MMF_microphysics_scheme="sam1mom">sam1mom</MMF_microphysics_scheme>
+<MMF_microphysics_scheme MMF_microphysics_scheme="m2005">m2005</MMF_microphysics_scheme>
+<use_MMF              > .false.</use_MMF>
+<use_MMF use_MMF="1"> .true. </use_MMF>
 <use_ECPP               > .false.</use_ECPP>
 <use_ECPP  use_ECPP="1" > .true. </use_ECPP>
 <use_MAML               > .false.</use_MAML>
@@ -1165,18 +1165,18 @@
 <srf_flux_avg eddy_scheme="HBR"      >0</srf_flux_avg>
 <srf_flux_avg eddy_scheme="diag_TKE" >0</srf_flux_avg>
 <srf_flux_avg eddy_scheme="CLUBB_SGS">0</srf_flux_avg>
-<srf_flux_avg use_SPCAM="1"          >1</srf_flux_avg>
+<srf_flux_avg use_MMF="1"          >1</srf_flux_avg>
 
 <!-- MMF CRM mean state acceleration -->
-<use_crm_accel    use_SPCAM="0">.false.</use_crm_accel>
-<crm_accel_uv     use_SPCAM="0">.false.</crm_accel_uv>
-<crm_accel_factor use_SPCAM="0">0</crm_accel_factor>
-<use_crm_accel    use_SPCAM="1" SPCAM_microp_scheme="sam1mom">.true.</use_crm_accel>
-<crm_accel_uv     use_SPCAM="1" SPCAM_microp_scheme="sam1mom">.true.</crm_accel_uv>
+<use_crm_accel    use_MMF="0">.false.</use_crm_accel>
+<crm_accel_uv     use_MMF="0">.false.</crm_accel_uv>
+<crm_accel_factor use_MMF="0">0</crm_accel_factor>
+<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="sam1mom">.true.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="sam1mom">.true.</crm_accel_uv>
 <!-- Disable MMF MSA for 2-mom microphyics -->
-<use_crm_accel    use_SPCAM="1" SPCAM_microp_scheme="m2005">.false.</use_crm_accel>
-<crm_accel_uv     use_SPCAM="1" SPCAM_microp_scheme="m2005">.false.</crm_accel_uv>
-<crm_accel_factor use_SPCAM="1">2</crm_accel_factor>
+<use_crm_accel    use_MMF="1" MMF_microphysics_scheme="m2005">.false.</use_crm_accel>
+<crm_accel_uv     use_MMF="1" MMF_microphysics_scheme="m2005">.false.</crm_accel_uv>
+<crm_accel_factor use_MMF="1">2</crm_accel_factor>
 
 <!-- Cloud fraction -->
 <cldfrc_freeze_dry             >.true.</cldfrc_freeze_dry>

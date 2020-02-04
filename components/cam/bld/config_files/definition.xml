@@ -318,7 +318,7 @@ bluegene systems $OSNAME has the value "linux".
 <entry id="crm" valid_values="0,1" value="0">
 Switch to enable or disable superparameterization in CAM: 0=off, 1=on.
 </entry>
-<entry id="use_SPCAM" valid_values="0,1" value="0">
+<entry id="use_MMF" valid_values="0,1" value="0">
 Switch to enable or disable MMF/super-parameterization: 0=off, 1=on.
 </entry>
 <entry id="use_ECPP" valid_values="0,1" value="0">
@@ -330,7 +330,7 @@ Switch to enable or disable MAML in CAM: 0=off, 1=on.
 <entry id="use_crm_cldfrac" valid_values="0,1" value="0">
 Switch to enable or disable fractional cloudiness in m2005 microphysics in CRM: 0=off, 1=on.
 </entry>
-<entry id="SPCAM_microp_scheme" valid_values="sam1mom,m2005" value="sam1mom">
+<entry id="MMF_microphysics_scheme" valid_values="sam1mom,m2005" value="sam1mom">
 SPCAM Cloud microphysics type.
 </entry>
 <entry id="crm_adv" valid_values="MPDATA,UM5" value="MPDATA">

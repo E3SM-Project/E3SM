@@ -178,8 +178,8 @@ subroutine phys_register
 
     integer :: nmodes
 
-    logical           :: use_SPCAM
-    character(len=16) :: SPCAM_microp_scheme
+    logical           :: use_MMF
+    character(len=16) :: MMF_microphysics_scheme
 
     call phys_getopts(shallow_scheme_out       = shallow_scheme, &
                       macrop_scheme_out        = macrop_scheme,   &
@@ -193,8 +193,8 @@ subroutine phys_register
                       pergro_test_active_out   = pergro_test_active, &
                       pergro_mods_out          = pergro_mods)
 !-- mdb spcam
-    call phys_getopts( use_SPCAM_out = use_SPCAM )
-    call phys_getopts( SPCAM_microp_scheme_out = SPCAM_microp_scheme)
+    call phys_getopts( use_MMF_out = use_MMF )
+    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 !-- mdb spcam
 
     ! Initialize dyn_time_lvls
@@ -330,7 +330,7 @@ subroutine phys_register
        call convect_shallow_register
 
        ! Register MMF variables
-       if (use_SPCAM) call crm_physics_register
+       if (use_MMF) call crm_physics_register
 
        ! radiation
        call radiation_register
@@ -775,13 +775,13 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
 
     ! local variables
     integer :: lchnk
-    logical :: use_SPCAM
+    logical :: use_MMF
 
     real(r8) :: dp1 = huge(1.0_r8) !set in namelist, assigned in cloud_fraction.F90
 
     !-----------------------------------------------------------------------
 
-    call phys_getopts(use_SPCAM_out     = use_SPCAM)
+    call phys_getopts(use_MMF_out     = use_MMF)
 
     call physics_type_alloc(phys_state, phys_tend, begchunk, endchunk, pcols)
 
@@ -914,7 +914,7 @@ subroutine phys_init( phys_state, phys_tend, pbuf2d, cam_out )
     if (do_clubb_sgs) call clubb_ini_cam(pbuf2d,dp1)
 
     ! Initialize CRM physics for MMF
-    if (use_SPCAM) call crm_physics_init(species_class)
+    if (use_MMF) call crm_physics_init(species_class)
 
     call qbo_init
 
@@ -2179,9 +2179,9 @@ subroutine tphysbc (ztodt,               &
 
     real(r8) :: qexcess(pcols)
     
-    logical           :: use_SPCAM
+    logical           :: use_MMF
     logical           :: use_ECPP
-    character(len=16) :: SPCAM_microp_scheme
+    character(len=16) :: MMF_microphysics_scheme
     real(r8)          :: crm_run_time              ! length of CRM integration
     real(r8), dimension(pcols) :: sp_qchk_prec_dp  ! CRM precipitation diagostic (liq+ice)  used for check_energy_chng
     real(r8), dimension(pcols) :: sp_qchk_snow_dp  ! CRM precipitation diagostic (ice only) used for check_energy_chng
@@ -2197,9 +2197,9 @@ subroutine tphysbc (ztodt,               &
 #endif /* ECPP */
 
 
-    call phys_getopts( use_SPCAM_out           = use_SPCAM )
+    call phys_getopts( use_MMF_out           = use_MMF )
     call phys_getopts( use_ECPP_out            = use_ECPP)
-    call phys_getopts( SPCAM_microp_scheme_out = SPCAM_microp_scheme)
+    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
 !-- mdb spcam
 
 
@@ -2498,7 +2498,7 @@ end if
     !===================================================
     ! Save state to recall or CRM call
     !===================================================  
-    if (use_SPCAM) call crm_save_state_tend(state, tend, pbuf)
+    if (use_MMF) call crm_save_state_tend(state, tend, pbuf)
 
 #if defined( SP_PHYS_BYPASS )
     ! Do nothing...
@@ -2854,7 +2854,7 @@ end if
    !--------------------------------------------------------------------------------------
    !======================================================================================
 
-   if (use_SPCAM) then
+   if (use_MMF) then
       crm_run_time = ztodt
       !---------------------------------------------------------------------------
       ! Recall the state after dynamics
@@ -2972,7 +2972,7 @@ end if
 
       !---------------------------------------------------------------------------
       !---------------------------------------------------------------------------
-   end if ! use_SPCAM
+   end if ! use_MMF
 
    !======================================================================================
    !--------------------------------------------------------------------------------------
@@ -2991,7 +2991,7 @@ end if
          snow_sed(:ncol) = snow_sed(:ncol) + snow_sed_carma(:ncol)
       end if
 
-      if(use_SPCAM .and. use_ECPP .and. SPCAM_microp_scheme .eq. 'm2005') then
+      if(use_MMF .and. use_ECPP .and. MMF_microphysics_scheme .eq. 'm2005') then
         ! As ECPP is not linked with the sam1mom yet, conventional convective transport
         ! and wet savenging are still needed for sam1mom to drive the BAM aerosol treatment
       else if ( .not. deep_scheme_does_scav_trans() ) then
@@ -3103,14 +3103,14 @@ if (l_rad) then
     !-- mdb spcam
     ! don't add radiative tendency to GCM temperature in case of superparameterization
     ! as it was added above as part of crm tendency.
-    if (use_SPCAM) ptend%s = 0.
+    if (use_MMF) ptend%s = 0.
     !-- mdb spcam
 
     call physics_update(state, ptend, ztodt, tend)
     
     !-- mdb spcam
     !call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)
-    if (use_SPCAM) then
+    if (use_MMF) then
       call check_energy_chng(state, tend, "spradheat", nstep, ztodt, zero, zero, zero, zero) 
     else 
       call check_energy_chng(state, tend, "radheat", nstep, ztodt, zero, zero, zero, net_flx)

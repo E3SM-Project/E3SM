@@ -434,8 +434,8 @@ end function radiation_nextsw_cday
     integer :: err
     integer :: dtime                        ! time step
 
-    logical :: use_SPCAM                      ! SPCAM flag
-    character(len=16) :: SPCAM_microp_scheme  ! SPCAM microphysics scheme
+    logical :: use_MMF                      ! SPCAM flag
+    character(len=16) :: MMF_microphysics_scheme  ! SPCAM microphysics scheme
 
     !variables for pergro_mods
     character (len=250) :: errstr
@@ -449,8 +449,8 @@ end function radiation_nextsw_cday
 
     call init_rad_data() ! initialize output fields for offline driver
 
-    call phys_getopts( use_SPCAM_out           = use_SPCAM           )
-    call phys_getopts( SPCAM_microp_scheme_out = SPCAM_microp_scheme )
+    call phys_getopts( use_MMF_out           = use_MMF           )
+    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme )
     call phys_getopts( microp_scheme_out       = microp_scheme       )
 
     call radsw_init()
@@ -751,7 +751,7 @@ end function radiation_nextsw_cday
          endif
 
          ! Add cloud-scale radiative quantities
-         if (use_SPCAM) then
+         if (use_MMF) then
             call addfld ('CRM_QRAD', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'A', 'K/s', 'Radiative heating tendency')
             call addfld ('CRM_QRS ', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Shortwave radiative heating rate')
             call addfld ('CRM_QRSC', (/'crm_nx_rad','crm_ny_rad','crm_nz    '/), 'I', 'K/s', 'CRM Clearsky shortwave radiative heating rate')
@@ -835,7 +835,7 @@ end function radiation_nextsw_cday
     rei_idx      = pbuf_get_index('REI')
     dei_idx      = pbuf_get_index('DEI')
 
-    if (use_SPCAM .and. SPCAM_microp_scheme .eq. 'sam1mom') then
+    if (use_MMF .and. MMF_microphysics_scheme .eq. 'sam1mom') then
       cldfsnow_idx = 0
     end if
 
@@ -850,7 +850,7 @@ end function radiation_nextsw_cday
                 sampling_seq='rad_lwsw', flag_xyfill=.true.)
 
      ! Sanity check on cloud optics specified
-     if (use_SPCAM .and. SPCAM_microp_scheme == 'sam1mom') then
+     if (use_MMF .and. MMF_microphysics_scheme == 'sam1mom') then
         if (.not. oldcldoptics) then
            call endrun('radiation_init: must use oldcldoptics with sam1mom')
         end if
@@ -1264,7 +1264,7 @@ end function radiation_nextsw_cday
     integer :: dgnumwet_crm_idx, qaerwat_crm_idx
 
     logical :: active_calls(0:N_DIAG)
-    logical :: use_SPCAM
+    logical :: use_MMF
 
     type(rrtmg_state_t), pointer :: r_state ! contains the atm concentratiosn in layers needed for RRTMG
 
@@ -1277,18 +1277,18 @@ end function radiation_nextsw_cday
     integer aod400_idx, aod700_idx, cld_tau_idx
 
     character(*), parameter :: name = 'radiation_tend'
-    character(len=16)       :: SPCAM_microp_scheme  ! SPCAM_microphysics scheme
+    character(len=16)       :: MMF_microphysics_scheme  ! SPCAM_microphysics scheme
 !----------------------------------------------------------------------
   
-    call phys_getopts( use_SPCAM_out           = use_SPCAM )
-    call phys_getopts( SPCAM_microp_scheme_out = SPCAM_microp_scheme)
+    call phys_getopts( use_MMF_out           = use_MMF )
+    call phys_getopts( MMF_microphysics_scheme_out = MMF_microphysics_scheme)
     first_column = .false.
     last_column  = .false.
 
     ! In order to populate data structures with CRM state variables, we modify
     ! the physics_state object in-place and then restore the input physics_state
     ! at the end of the routine. So here we create a copy that we can restore.
-    if (use_SPCAM) then 
+    if (use_MMF) then 
       statein_copy = state
       call cnst_get_ind('CLDLIQ', ixcldliq)
       call cnst_get_ind('CLDICE', ixcldice)
@@ -1323,15 +1323,15 @@ end function radiation_nextsw_cday
       call pbuf_get_field(pbuf, sd_idx, sd)
       call pbuf_get_field(pbuf, lu_idx, lu)
       call pbuf_get_field(pbuf, ld_idx, ld)
-      if(use_SPCAM) then
+      if(use_MMF) then
          allocate(su_m(pcols,pverp,nswbands,0:N_DIAG))
          allocate(sd_m(pcols,pverp,nswbands,0:N_DIAG))
          allocate(lu_m(pcols,pverp,nswbands,0:N_DIAG))
          allocate(ld_m(pcols,pverp,nswbands,0:N_DIAG))
-      end if ! use_SPCAM
+      end if ! use_MMF
     end if
     
-    if (use_SPCAM) then 
+    if (use_MMF) then 
 #ifdef MODAL_AERO
        dgnumwet_crm_idx = pbuf_get_index('CRM_DGNUMWET')
        qaerwat_crm_idx  = pbuf_get_index('CRM_QAERWAT')
@@ -1339,7 +1339,7 @@ end function radiation_nextsw_cday
        call pbuf_get_field(pbuf, qaerwat_crm_idx,  qaerwat_crm)
 #endif
 
-       if (SPCAM_microp_scheme .eq. 'm2005') then
+       if (MMF_microphysics_scheme .eq. 'm2005') then
           ! ifld = pbuf_get_index('DEI')
           ! call pbuf_get_field(pbuf, ifld, dei)
           ifld = pbuf_get_index('MU')
@@ -1349,7 +1349,7 @@ end function radiation_nextsw_cday
           ifld = pbuf_get_index('DES')
           call pbuf_get_field(pbuf, ifld, des)
        endif
-    end if ! use_SPCAM
+    end if ! use_MMF
  
     if (do_aerocom_ind3) then
       cld_tau_idx = pbuf_get_index('cld_tau')
@@ -1403,10 +1403,10 @@ end function radiation_nextsw_cday
 
     ! Allocate "save" variables that will be used to restore fields that are
     ! modified in-place in pbuf to populate with each crm column one at a time
-    if (use_SPCAM) then
+    if (use_MMF) then
       allocate(dei_save(pcols, pver))
       allocate(dei_crm(pcols, crm_nx_rad, crm_ny_rad, crm_nz))
-      if (SPCAM_microp_scheme .eq. 'm2005') then 
+      if (MMF_microphysics_scheme .eq. 'm2005') then 
         allocate(mu_save      (pcols, pver))
         allocate(lambdac_save (pcols, pver))
         allocate(des_save     (pcols, pver))
@@ -1424,7 +1424,7 @@ end function radiation_nextsw_cday
 
     ! Initialize averages over CRM columns to zero. These are aggregated over
     ! the loop over CRM columns below.
-    if (use_SPCAM) then 
+    if (use_MMF) then 
 
        ! Get CRM radiative heating from the physics buffer; we need to do this regardless of whether
        ! or not we are going to do radiative calculations this timestep, because this is still
@@ -1483,7 +1483,7 @@ end function radiation_nextsw_cday
          cliqwp_save = cliqwp     ! save to restore later
          ! csnowp_save = csnowp     ! save to restore later
 
-         if (SPCAM_microp_scheme .eq. 'm2005') then 
+         if (MMF_microphysics_scheme .eq. 'm2005') then 
            call pbuf_get_field(pbuf, i_icswp, csnowp)
            csnowp_save = csnowp     ! save to restore later
          end if
@@ -1500,7 +1500,7 @@ end function radiation_nextsw_cday
          ! Zero out radiative heating
          crm_qrad=0.
 
-         if (SPCAM_microp_scheme .eq. 'm2005') then 
+         if (MMF_microphysics_scheme .eq. 'm2005') then 
            crm_nc_rad_idx  = pbuf_get_index('CRM_NC_RAD')
            call pbuf_get_field(pbuf, crm_nc_rad_idx, nc_rad, start=(/1,1,1,1/), kount=(/pcols,crm_nx_rad, crm_ny_rad, crm_nz/))
            crm_ni_rad_idx  = pbuf_get_index('CRM_NI_RAD')
@@ -1532,7 +1532,7 @@ end function radiation_nextsw_cday
            cldfsnow  = 0.0_r8
            cldfsnow_save = cldfsnow
          end if
-         if (SPCAM_microp_scheme .eq. 'm2005') then 
+         if (MMF_microphysics_scheme .eq. 'm2005') then 
            mu_save      = mu
            lambdac_save = lambdac
            des_save     = des
@@ -1566,7 +1566,7 @@ end function radiation_nextsw_cday
       endif
 
       ! calculate effective radius - moved outside of ii,jj loops for 1-moment microphysics
-      if (SPCAM_microp_scheme .eq. 'sam1mom') then 
+      if (MMF_microphysics_scheme .eq. 'sam1mom') then 
         call cldefr( lchnk, ncol, landfrac, state%t, rel, rei, state%ps, state%pmid, landm, icefrac, snowh )
       end if
 
@@ -1580,7 +1580,7 @@ end function radiation_nextsw_cday
       do jj=1,crm_ny_rad
         do ii=1,crm_nx_rad
 
-          if (use_SPCAM) then 
+          if (use_MMF) then 
             first_column = ii.eq.1.and.jj.eq.1
             last_column = ii.eq.crm_nx_rad.and.jj.eq.crm_ny_rad
 
@@ -1609,7 +1609,7 @@ end function radiation_nextsw_cday
                 ! snow water is an important component in m2005 microphysics, and is therefore taken
                 ! into account in the radiative calculation (snow water path is several times larger
                 ! than ice water path in m2005 globally). 
-                if (SPCAM_microp_scheme .eq. 'm2005') then 
+                if (MMF_microphysics_scheme .eq. 'm2005') then 
                   if( qs_rad(i, ii, jj, m).gt.1.0e-7) then
                     cldfsnow(i,k) = 0.99_r8   
                     csnowp(i,k) = qs_rad(i,ii,jj,m)*state%pdel(i,k)/gravit    &
@@ -1642,7 +1642,7 @@ end function radiation_nextsw_cday
             end do ! m
 
             ! update effective radius
-            if (SPCAM_microp_scheme .eq. 'm2005') then 
+            if (MMF_microphysics_scheme .eq. 'm2005') then 
               do m=1,crm_nz
                 k = pver-m+1
                 do i=1,ncol
@@ -1664,7 +1664,7 @@ end function radiation_nextsw_cday
                   rei_crm(i,ii,jj,m) = rei(i,k)
                 end do ! i
               end do ! m
-            else if (SPCAM_microp_scheme .eq. 'sam1mom') then 
+            else if (MMF_microphysics_scheme .eq. 'sam1mom') then 
               ! for sam1mom, rel and rei are calcualted above, and are the same for all CRM columns
               do m=1,crm_nz
                 k = pver-m+1
@@ -1677,7 +1677,7 @@ end function radiation_nextsw_cday
                 dei_crm(:ncol,ii,jj,m) = dei(:ncol,k)
               end do ! m
             end if ! sam1mom
-          endif ! use_SPCAM
+          endif ! use_MMF
 
           call t_startf('cldoptics')
           if (dosw) then
@@ -1730,7 +1730,7 @@ end function radiation_nextsw_cday
                   endif
                 enddo
               enddo
-              if (use_SPCAM) then 
+              if (use_MMF) then 
                 do m=1,crm_nz
                    k = pver-m+1
                    do i=1,ncol
@@ -1788,14 +1788,14 @@ end function radiation_nextsw_cday
                    endif
                 enddo
               enddo
-              if (use_SPCAM) then
+              if (use_MMF) then
                   do m=1,crm_nz
                      k = pver-m+1
                      do i=1,ncol
                         emis_crm(i,ii,jj,m)=1._r8 - exp(-cld_lw_abs(rrtmg_lw_cloudsim_band,i,k))
                      end do ! i
                   end do ! m
-              endif  ! use_SPCAM
+              endif  ! use_MMF
             else  ! cldfsnow_idx > 0
                c_cld_lw_abs(1:nbndlw,1:ncol,:)=cld_lw_abs(:,1:ncol,:)
             endif  ! cldfsnow_idx > 0
@@ -1889,7 +1889,7 @@ end function radiation_nextsw_cday
                 end do
 
                 ! Aggregate grid-mean averages from cloud-scale fluxes and heating rates 
-                if (use_SPCAM) then 
+                if (use_MMF) then 
                   do i = 1,ncol
                         qrs_m     (i,:pver, icall) =  qrs_m(i,:pver, icall) +  qrs(i,:pver)*factor_xy
                         qrsc_m    (i,:pver, icall) = qrsc_m(i,:pver, icall) + qrsc(i,:pver)*factor_xy
@@ -2011,10 +2011,10 @@ end function radiation_nextsw_cday
                         fsutoac(i) = solin(i) - fsntoac(i)
                       end do
                   end if  ! last_column
-                end if ! (use_SPCAM)
+                end if ! (use_MMF)
 
                 ! Dump shortwave radiation information to history tape buffer (diagnostics)
-                if ( (use_SPCAM .and. last_column) .or. .not. use_SPCAM) then
+                if ( (use_MMF .and. last_column) .or. .not. use_MMF) then
                   ftem(:ncol,:pver) = qrs(:ncol,:pver)/cpair
                   call outfld('QRS'//diag(icall),ftem  ,pcols,lchnk)
                   ftem(:ncol,:pver) = qrsc(:ncol,:pver)/cpair
@@ -2046,7 +2046,7 @@ end function radiation_nextsw_cday
                   call outfld('FSN200'//diag(icall),fsn200,pcols,lchnk)
                   call outfld('FSN200C'//diag(icall),fsn200c,pcols,lchnk)
                   call outfld('SWCF'//diag(icall),swcf  ,pcols,lchnk)
-                end if  ! (use_SPCAM .and. last_column) .or .not. use_SPCAM
+                end if  ! (use_MMF .and. last_column) .or .not. use_MMF
 
                 if(do_aerocom_ind3) then
                   aerindex = 0.0
@@ -2085,7 +2085,7 @@ end function radiation_nextsw_cday
               end if ! (active_calls(icall))
             end do ! icall
 
-            if(use_SPCAM .and. last_column) then
+            if(use_MMF .and. last_column) then
               do i = 1, nnite 
                 crm_aodvis(idxnite(i), :, :) = fillvalue
                 crm_aod400(idxnite(i), :, :) = fillvalue
@@ -2130,7 +2130,7 @@ end function radiation_nextsw_cday
                   end if
                 end do ! k
               end do ! i
-            else if (.not. use_SPCAM) then
+            else if (.not. use_MMF) then
               ! Output cloud optical depth fields for the visible band
               tot_icld_vistau(:ncol,:)  = c_cld_tau(idx_sw_diag,:ncol,:)
               liq_icld_vistau(:ncol,:)  = liq_tau(idx_sw_diag,:ncol,:)
@@ -2140,10 +2140,10 @@ end function radiation_nextsw_cday
               endif
               ! multiply by total cloud fraction to get gridbox value
               tot_cld_vistau(:ncol,:) = c_cld_tau(idx_sw_diag,:ncol,:)*cldfprime(:ncol,:)
-            endif  ! use_SPCAM .and. last_column
+            endif  ! use_MMF .and. last_column
 
             ! add fillvalue for night columns
-            if ( (use_SPCAM .and. last_column) .or. .not. use_SPCAM) then
+            if ( (use_MMF .and. last_column) .or. .not. use_MMF) then
               do i = 1, Nnite
                 tot_cld_vistau(IdxNite(i),:)   = fillvalue
                 tot_icld_vistau(IdxNite(i),:)  = fillvalue
@@ -2167,7 +2167,7 @@ end function radiation_nextsw_cday
 
           end if   ! dosw
 
-          if( (use_SPCAM .and. last_column) .or. .not. use_SPCAM)  then
+          if( (use_MMF .and. last_column) .or. .not. use_MMF)  then
               ! Output aerosol mmr
               call rad_cnst_out(0, state, pbuf)
           end if  
@@ -2245,7 +2245,7 @@ end function radiation_nextsw_cday
                 call vertinterp(ncol, pcols, pverp, state%pint, 20000._r8, fcnl, fln200c)
 
                 ! Aggregate grid-mean averages from cloud-scale fluxes and heating rates 
-                if (use_SPCAM) then
+                if (use_MMF) then
                   do i=1, ncol
                     qrl_m (i,:pver, icall) = qrl_m (i,:pver, icall) + qrl (i,:pver)*factor_xy
                     qrlc_m(i,:pver, icall) = qrlc_m(i,:pver, icall) + qrlc(i,:pver)*factor_xy
@@ -2319,7 +2319,7 @@ end function radiation_nextsw_cday
                 endif ! use_SPACM
 
                 ! Dump longwave radiation information to history tape buffer (diagnostics)
-                if ( (use_SPCAM .and. last_column ) .or. .not. use_SPCAM) then
+                if ( (use_MMF .and. last_column ) .or. .not. use_MMF) then
                   call outfld('QRL'//diag(icall),qrl (:ncol,:)/cpair,ncol,lchnk)
                   call outfld('QRLC'//diag(icall),qrlc(:ncol,:)/cpair,ncol,lchnk)
                   call outfld('FLNT'//diag(icall),flnt  ,pcols,lchnk)
@@ -2339,7 +2339,7 @@ end function radiation_nextsw_cday
                   call outfld('FLDS'//diag(icall),cam_out%flwds ,pcols,lchnk)
 #endif
                 end if
-                if (use_SPCAM .and. last_column ) then
+                if (use_MMF .and. last_column ) then
                   if(icall.eq.0) then  ! the climate call
                     call outfld('CRM_FLNT', crm_flnt, pcols, lchnk)
                     call outfld('CRM_FLNTC', crm_flntc, pcols, lchnk)
@@ -2359,7 +2359,7 @@ end function radiation_nextsw_cday
 
       ! Restore pbuf and state to values as input to this routine before we
       ! modified them in-place to populate with CRM column values
-      if (use_SPCAM) then 
+      if (use_MMF) then 
         cld    = cld_save
         cicewp = cicewp_save
         cliqwp = cliqwp_save
@@ -2372,7 +2372,7 @@ end function radiation_nextsw_cday
         state = statein_copy
         dei   = dei_save
         deallocate(dei_save)
-        if (SPCAM_microp_scheme .eq. 'm2005') then
+        if (MMF_microphysics_scheme .eq. 'm2005') then
            mu      = mu_save
            lambdac = lambdac_save
            des     = des_save
@@ -2382,16 +2382,16 @@ end function radiation_nextsw_cday
         qaerwat  = qaerwat_save
         dgnumwet = dgnumwet_save
 #endif
-      endif ! use_SPCAM
+      endif ! use_MMF
 
       ! Calculate net CRM heating rate from shortwave and longwave heating rates
-      if (use_SPCAM) then 
+      if (use_MMF) then 
         do m = 1,crm_nz
           do i = 1,ncol
             crm_qrad(i,:,:,m) = (qrs_crm(i,:,:,m) + qrl_crm(i,:,:,m))
           end do
         end do
-      endif ! use_SPCAM
+      endif ! use_MMF
 
       ! deconstruct the RRTMG state object
       call rrtmg_state_destroy(r_state)
@@ -2456,7 +2456,7 @@ end function radiation_nextsw_cday
       ! Run the CFMIP Observation Simulator Package (COSP)
       ! For the time being, the MMF stuff is not coupled with the COSP
       ! simulator, so bypass this code if we are using SP/MMF (for now)
-      if (.not. use_SPCAM) then 
+      if (.not. use_MMF) then 
           !! initialize and calculate emis
           emis(:,:) = 0._r8
           emis(:ncol,:) = 1._r8 - exp(-cld_lw_abs(rrtmg_lw_cloudsim_band,:ncol,:))
@@ -2495,9 +2495,9 @@ end function radiation_nextsw_cday
 
               end if
           end if
-      endif  ! use_SPCAM
+      endif  ! use_MMF
 
-      if (use_SPCAM .and. SPCAM_microp_scheme .eq. 'm2005') then
+      if (use_MMF .and. MMF_microphysics_scheme .eq. 'm2005') then
           call outfld('CRM_MU    ', mu_crm     , pcols, lchnk)
           call outfld('CRM_DES   ', des_crm    , pcols, lchnk)
           call outfld('CRM_LAMBDA', lambdac_crm, pcols, lchnk)
@@ -2505,7 +2505,7 @@ end function radiation_nextsw_cday
           deallocate(des_crm, mu_crm, lambdac_crm)
       endif
 
-      if (use_SPCAM) then 
+      if (use_MMF) then 
           call outfld('CRM_DEI  ', dei_crm, pcols, lchnk)
           deallocate(dei_crm)
           call outfld('CRM_REL  ', rel_crm, pcols, lchnk)
@@ -2530,7 +2530,7 @@ end function radiation_nextsw_cday
                 qrl(i,k) = qrl(i,k)/state%pdel(i,k)
              end do
           end do
-          if (use_SPCAM) then
+          if (use_MMF) then
              do m = 1,crm_nz
                 k = pver - m + 1
                 do i = 1,ncol
@@ -2564,7 +2564,7 @@ end function radiation_nextsw_cday
              qrl(i,k) = qrl(i,k)*state%pdel(i,k)
           end do
        end do
-       if (use_SPCAM) then
+       if (use_MMF) then
           do m = 1,crm_nz
              k = pver - m + 1
              do i = 1,ncol
