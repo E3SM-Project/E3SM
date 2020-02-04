@@ -12,7 +12,7 @@ use grid, only: nx,ny,nzm,nz, &  !grid dimensions; nzm = nz-1 # of scalar lvls
 
 use vars, only: pres, rho, dt, dtn, w, t, tlatqi
 use vars, only: tke2, tk2
-use params, only: doprecip, docloud, doclubb
+use params, only: doprecip, docloud
 use task_util_mod
 use utils
 
@@ -25,12 +25,6 @@ use module_mp_GRAUPEL, only: GRAUPEL_INIT, M2005MICRO_GRAUPEL, &
       aerosol_mode, &   ! specify two modes of (sulfate) aerosol
 #if (defined MODAL_AERO)
       domodal_aero,     &   ! use modal aerosol from the CAM
-#endif
-#ifdef CLUBB_CRM
-      doclubb_tb,       &   ! use CLUBB as turbulence scheme only, but not cloud scheme,
-                            ! so liquid water is diagnosed from saturation adjustment
-      doclubb_gridmean,  &  ! feed grid-mean CLUBB values into Morrision microphysics
-      doclubb_autoin,    &  ! use in-cloud values for autoconversion calculations
 #endif
       dosubgridw, &         ! input estimate of subgrid w to microphysics
       doarcticicenucl,&     ! use arctic parameter values for ice nucleation
@@ -287,17 +281,12 @@ end subroutine deallocate_micro
 !
 subroutine micro_setparm()
   use vars
-#ifdef CLUBB_CRM
-  use module_mp_graupel, only: NNUCCD_REDUCE_COEF, NNUCCC_REDUCE_COEF
-#endif
+
   implicit none
 
   integer ierr, ios, ios_missing_namelist, place_holder
 
    NAMELIST /MICRO_M2005/ &
-#ifdef CLUBB_CRM
-      NNUCCD_REDUCE_COEF, NNUCCC_REDUCE_COEF, &
-#endif
       doicemicro, &         ! use ice species (snow/cloud ice/graupel)
       dograupel, &          ! use graupel
       dohail, &             ! graupel species has qualities of hail
@@ -330,20 +319,10 @@ subroutine micro_setparm()
 #ifdef MODAL_AERO
    domodal_aero = .true.      ! use modal aerosol
 #endif
-#ifdef CLUBB_CRM
-     dosubgridw = .true.        ! Use clubb's w'^2 for sgs w
-     aerosol_mode = 2           ! use lognormal CCN relationship
-     doarcticicenucl = .false.  ! use mid-latitude parameters
-     docloudedgeactivation  = .false. ! activate droplets at cloud base, and edges
-     doclubb_tb = .false.
-     doclubb_gridmean = .true.
-     doclubb_autoin = .false.
-#else
-     aerosol_mode = 2
-     dosubgridw = .true.
-     doarcticicenucl = .false.  ! use mid-latitude parameters
-     docloudedgeactivation  = .true.
-#endif /*CLUBB_CRM*/
+   aerosol_mode = 2
+   dosubgridw = .true.
+   doarcticicenucl = .false.  ! use mid-latitude parameters
+   docloudedgeactivation  = .true.
    douse_reffc = .false.  ! use computed effective radius in rad computations?
    douse_reffi = .false.  ! use computed effective radius in rad computations?
 
@@ -417,11 +396,7 @@ subroutine micro_setparm()
    aer_n2 = 1.e6*aer_n2
 
   nmicro_fields = 1 ! start with water vapor and cloud water mass mixing ratio
-#ifdef CLUBB_CRM
-  if(docloud.or.doclubb) then
-#else
   if(docloud) then
-#endif
 !bloss/qt     nmicro_fields = nmicro_fields + 1 ! add cloud water mixing ratio
      if(dopredictNc) nmicro_fields = nmicro_fields + 1 ! add cloud water number concentration (if desired)
   end if
@@ -551,11 +526,7 @@ subroutine micro_init(ncrms)
 
   ! output all microphysical fields to 3D output files if using more than
   !   just docloud.  Otherwise, rely on basic SAM outputs
-#ifdef CLUBB_CRM
-  if((docloud.OR.doclubb).AND.(doprecip.OR.dopredictNc)) then
-#else
   if(docloud.AND.(doprecip.OR.dopredictNc)) then
-#endif
      flag_micro3Dout(:,icrm) = 1
   end if
 
@@ -577,12 +548,7 @@ subroutine micro_init(ncrms)
 
   if(nrestart.eq.0) then
 
-#ifdef CLUBB_CRM
-     if(docloud.or.doclubb)  call micro_diagnose(ncrms,icrm)   ! leave this line here
-#else
      if(docloud) call micro_diagnose(ncrms,icrm)   ! leave this here
-#endif
-
 
   end if
 
@@ -598,9 +564,6 @@ end subroutine micro_init
 
 subroutine micro_flux(ncrms)
   use vars, only: fluxbq, fluxtq
-#ifdef CLUBB_CRM
-  use params, only: doclubb, doclubb_sfc_fluxes, docam_sfc_fluxes
-#endif
   implicit none
   integer, intent(in) :: ncrms
   integer :: icrm
@@ -608,15 +571,7 @@ subroutine micro_flux(ncrms)
   do icrm = 1 , ncrms
     fluxbmk(icrm,:,:,:) = 0. ! initialize all fluxes at surface to zero
     fluxtmk(icrm,:,:,:) = 0. ! initialize all fluxes at top of domain to zero
-#ifdef CLUBB_CRM
-    if ( doclubb .and. (doclubb_sfc_fluxes.or.docam_sfc_fluxes) ) then
-      fluxbmk(icrm,:,:,index_water_vapor) = 0.0 ! surface qv(icrm,latent heat) flux
-    else
-      fluxbmk(icrm,:,:,index_water_vapor) = fluxbq(icrm,:,:) ! surface qv(icrm,latent heat) flux
-    end if
-#else
     fluxbmk(icrm,:,:,index_water_vapor) = fluxbq(icrm,:,:) ! surface qv(icrm,latent heat) flux
-#endif
     fluxtmk(icrm,:,:,index_water_vapor) = fluxtq(icrm,:,:) ! top of domain qv flux
   enddo
 end subroutine micro_flux
@@ -643,21 +598,6 @@ use vars, only: t, gamaz, precsfc, precssfc, precflux, qpfall, tlat, prec_xy, &
 use ecppvars, only: qlsink, qlsink_bf, prain, precr, precsolid, rh, qcloud_bf
 #endif
 
-#ifdef CLUBB_CRM
-use params, only: doclubb, docloud, dosmoke
-use grid, only: nz
-use error_code, only: clubb_at_least_debug_level
-use fill_holes, only: fill_holes_driver
-use clubbvars, only: wp2, cloud_frac, rho_ds_zt, rho_ds_zm, relvarg, accre_enhang ! are used, but not modified here
-use vars, only: qcl ! Used here and updated in micro_diagnose
-use vars, only: prespot ! exner^-1
-use module_mp_GRAUPEL, only: &
-  cloud_frac_thresh ! Threshold for using sgs cloud fraction to weight
-                    ! microphysical quantities [%]
-use clubb_precision, only: core_rknd
-use constants_clubb, only: T_freeze_K
-use vars, only: CF3D
-#endif
 implicit none
   integer, intent(in) :: ncrms
 
@@ -679,15 +619,6 @@ real(crm_rknd), dimension(nzm) :: &
 #ifdef ECPP
 real(crm_rknd), dimension(nzm) :: C2PREC,QSINK_TMP, CSED,ISED,SSED,GSED,RSED,RH3D   ! used for cloud chemistry and wet deposition in ECPP
 #endif
-
-#ifdef CLUBB_CRM
-real(kind=core_rknd), dimension(nz) :: &
-     qv_clip, qcl_clip
-real(crm_rknd), dimension(nzm) :: cloud_frac_in, ice_cldfrac
-real(crm_rknd), dimension(nzm) :: liq_cldfrac
-real(crm_rknd), dimension(nzm) :: relvar        ! relative cloud water variance
-real(crm_rknd), dimension(nzm) :: accre_enhan   ! optional accretion enhancement factor for MG
-#endif /*CLUBB_CRM*/
 
 real(crm_rknd), dimension(nzm,nmicro_fields) :: stend1d, mtend1d
 real(crm_rknd) :: tmpc, tmpr, tmpi, tmps, tmpg
@@ -760,37 +691,12 @@ do j = 1,ny
 !      tmpw = 0.5*(w(icrm,i,j,1:nzm) + w(icrm,i,j,2:nz))  ! MK: changed for stretched grids
       tmpw = ((zi(icrm,2:nz)-z(icrm,1:nzm))*w(icrm,i,j,1:nzm)+ &
              (z(icrm,1:nzm)-zi(icrm,1:nzm))*w(icrm,i,j,2:nz))/(zi(icrm,2:nz)-zi(icrm,1:nzm))
-#ifdef CLUBB_CRM
-      ! Added by dschanen on 4 Nov 2008 to account for w_sgs
-      if ( doclubb .and. dosubgridw ) then
-        ! Compute w_sgs.  Formula is consistent with that used with
-        ! TKE from MYJ pbl scheme in WRF (see module_mp_graupel.f90).
-        tmpwsub = sqrt( LIN_INT( real( wp2(i,j,2:nz) ,crm_rknd), real( wp2(i,j,1:nzm) ,crm_rknd), &
-                                  zi(icrm,2:nz), zi(icrm,1:nzm), z(icrm,1:nzm) ) )
-      else
-!        tmpwsub = 0.
-! diagnose tmpwsub from tke.
-! Notes: tke has to be already prognsotic or diagnostic.
-        tmpwsub = sqrt(tke2(icrm,i,j,:)/3.)  ! diagnosed tmpwsub from tke
-! diagnose tmpwsub from tk
-!        tmpwsub = sqrt(2*3.141593)*tk(icrm,i,j,:)/(dz(icrm)*adz(icrm,:))  ! from Ghan et al. (1997, JGR).
-      end if
-
-      if ( doclubb ) then
-        cloud_frac_in(1:nzm) = cloud_frac(i,j,2:nz)
-        liq_cldfrac(1:nzm) = cloud_frac(i,j,2:nz)
-      else
-        cloud_frac_in(1:nzm) = 0.0
-      end if
-
-#else /* Old code */
 !      tmpwsub = 0.
 ! diagnose tmpwsub from tke.
 ! Notes: tke has to be already prognsotic or diagnostic.
       tmpwsub = sqrt(tke2(icrm,i,j,:)/3.)  ! diagnosed tmpwsub from tke
 ! diagnose tmpwsub from tk
 !      tmpwsub = sqrt(2*3.141593)*tk(icrm,i,j,:)/(dz(icrm)*adz(icrm,:))  ! from Ghan et al. (1997, JGR).
-#endif
       wvar(icrm,i,j,:) = tmpwsub(:)
 
       tmppres(:) = 100.*pres(icrm,1:nzm)
@@ -800,48 +706,7 @@ do j = 1,ny
       !                tmptabs hold T-(L/Cp)*qcl on input, T on output.
       !                tmpqcl hold qcl on output.
       !                tmppres is unchanged on output, should be in Pa.
-#ifdef CLUBB_CRM
-      ! In the CLUBB case, we want to call the microphysics on sub-saturated grid
-      ! boxes and weight by cloud fraction, therefore we use the CLUBB value of
-      ! liquid water. -dschanen 23 Nov 2009
-      if ( .not. ( docloud .or. dosmoke ) ) then
-        if(.not.doclubb_tb) then
-         tmpqcl  = cloudliq(icrm,i,j,:) ! Liquid updated by CLUBB just prior to this
-         tmpqv   = tmpqv - tmpqcl ! Vapor
-         tmptabs = tmptabs + fac_cond * tmpqcl ! Update temperature
-         if(doclubb_gridmean) then
-           cloud_frac_in(1:nzm) = 0.0  ! to use grid mean for Morrison microphysics, just
-                                       ! simply set cloud_frac_in to be zero.
-           liq_cldfrac(1:nzm) = cloud_frac(i,j,2:nz)
-
-           cf3d(icrm,i, j, 1:nzm) = cloud_frac(i, j, 2:nz)
-           ice_cldfrac(:)= 0.0
-           if(doicemicro) then
-             do k=1, nzm
-               if(tmpqci(k).gt.1.0e-8) then
-                 ice_cldfrac(k) = 1.0
-               end if
-               if((tmpqcl(k) + tmpqci(k)).gt.1.0e-9) then
-                 cf3d(icrm,i,j,k) = (cf3d(icrm,i,j,k) * tmpqcl(k) + ice_cldfrac(k) * tmpqci(k))  &
-                           / (tmpqcl(k) + tmpqci(k))
-               else
-                 cf3d(icrm,i,j,k) = 0.0
-               end if
-               ice_cldfrac(k) = max(cf3d(icrm,i,j,k), liq_cldfrac(k))
-             end do
-           endif
-         end if
-        else
-          call satadj_liquid(nzm,tmptabs,tmpqv,tmpqcl,tmppres)
-          cloudliq(icrm,i,j,:) = tmpqcl
-          cloud_frac_in(1:nzm) = 0.0
-        end if
-      else
-        call satadj_liquid(nzm,tmptabs,tmpqv,tmpqcl,tmppres)
-      end if
-#else
       call satadj_liquid(nzm,tmptabs,tmpqv,tmpqcl,tmppres)
-#endif
 
 
 #ifdef ECPP
@@ -887,92 +752,6 @@ do j = 1,ny
       effc1d(:) = 10. ! default liquid and ice effective radii
       effi1d(:) = 75.
 
-#ifdef CLUBB_CRM
-      relvar(:) = 8.
-      accre_enhan(:) = 1.
-      if ( doclubb ) then
-        if ( any( tmpqv < 0. ) ) then
-          qv_clip(2:nz) = tmpqv(1:nzm)
-          qv_clip(1) = 0.0_core_rknd
-          if ( clubb_at_least_debug_level( 1 ) ) then
-            write(0,*) "M2005 has received a negative water vapor"
-          end if
-          call fill_holes_driver( 2, 0._core_rknd, "zt", rho_ds_zt, rho_ds_zm, qv_clip )
-          tmpqv = qv_clip(2:nz)
-        end if
-        if ( any( tmpqcl < 0. ) ) then
-          qcl_clip(2:nz) = tmpqcl(1:nzm)
-          qcl_clip(1) = 0.0_core_rknd
-          if ( clubb_at_least_debug_level( 1 ) ) then
-            write(0,*) "M2005 has received a negative liquid water"
-          end if
-          call fill_holes_driver( 2, 0._core_rknd, "zt", rho_ds_zt, rho_ds_zm, qcl_clip )
-          tmpqcl = qcl_clip(2:nz)
-        end if
-
-   ! ------------------------------------------------- !
-   ! Diagnose relative cloud water variance            !
-   ! ------------------------------------------------- !
-!        relvar(:) = 1.0  ! default
-!        where (tmpqcl(:) /= 0. .and. qclvar(i,j, :) /= 0.) &
-!          relvar(:) = min(8.0, max(0.35,tmpqcl(:)**2/qclvar(i,j,:)))
-!          relvar(:) = min(8.0, max(0.35,tmpqcl(:)**2/qclvar(i,j,:)))
-
-   ! ------------------------------------------------- !
-   ! Optional Accretion enhancement factor             !
-   ! ------------------------------------------------- !
-!        accre_enhan(:) = 1.+0.65*(1.0/relvar(:))
-        relvar(:) = relvarg(i,j,:)
-        accre_enhan(:) = accre_enhang(i,j,:)
-      end if ! doclubb
-
-      ! explanation of variable names:
-      !   mtend1d: array of 1d profiles of microphysical tendencies (w/o sed.)
-      !   stend1d: array of 1d profiles of sedimentation tendencies for q*
-      !   tmp**: on input, current value of **.  On output, new value of **.
-      !   eff*1d: one-dim. profile of effective raduis for *
-      call m2005micro_graupel(&
-           ncrms,icrm,mtendqcl,mtendqci,mtendqs,mtendqr, &
-           mtendncl,mtendnci,mtendns,mtendnr, &
-           tmpqcl,tmpqci,tmpqs,tmpqr, &
-           tmpncl,tmpnci,tmpns,tmpnr, &
-           tmtend1d,mtendqv, &
-           tmptabs,tmpqv,tmppres,rho(icrm,:),tmpdz,tmpw,tmpwsub, &
-! hm 7/26/11, new output
-           tmpacc,tmpaut,tmpevpc,tmpevpr,tmpmlt, &
-           tmpsub,tmpdep,tmpcon, &
-           sfcpcp, sfcicepcp, &
-           effc1d,effi1d,effs1d,effr1d, &
-           dtn, &
-           i1,i2, j1,j2, 1,nzm, i1,i2, j1,j2, 1,nzm, &
-           mtendqg,mtendng,tmpqg,tmpng,effg1d,stendqg, &
-          stendqr,stendqci,stendqs,stendqcl,cloud_frac_in, liq_cldfrac, ice_cldfrac, relvar, accre_enhan  & ! cloud_frac added by dschanen UWM
-#ifdef ECPP
-           ,C2PREC,QSINK_TMP,CSED,ISED,SSED,GSED,RSED,RH3D &        ! mhwang add, for ECPP
-#endif
-                                        )
-
-      if ( doclubb ) then
-        if ( any( tmpqv < 0. ) ) then
-          qv_clip(2:nz) = tmpqv(1:nzm)
-          qv_clip(1) = 0.0_core_rknd
-          if ( clubb_at_least_debug_level( 1 ) ) then
-            write(0,*) "M2005 has produced a negative water vapor"
-          end if
-          call fill_holes_driver( 2, 0._core_rknd, "zt", rho_ds_zt, rho_ds_zm, qv_clip )
-          tmpqv = qv_clip(2:nz)
-        end if
-        if ( any( tmpqcl < 0. ) ) then
-          qcl_clip(2:nz) = tmpqcl(1:nzm)
-          qcl_clip(1) = 0.0_core_rknd
-          if ( clubb_at_least_debug_level( 1 ) ) then
-            write(0,*) "M2005 has produced a negative liquid water"
-          end if
-          call fill_holes_driver( 2, 0._core_rknd, "zt", rho_ds_zt, rho_ds_zm, qcl_clip )
-          tmpqcl = qcl_clip(2:nz)
-        end if
-      end if ! doclubb
-#else
       ! explanation of variable names:
       !   mtend1d: array of 1d profiles of microphysical tendencies (w/o sed.)
       !   stend1d: array of 1d profiles of sedimentation tendencies for q*
@@ -998,7 +777,6 @@ do j = 1,ny
            ,C2PREC,QSINK_TMP,CSED,ISED,SSED,GSED,RSED,RH3D &        ! mhwang add, for ECPP
 #endif
                                         )
-#endif
 
 ! hm 7/26/11, new output
       aut1(icrm,i,j,:) = tmpaut(:)
@@ -1139,13 +917,7 @@ do j = 1,ny
 
                trtau(k,iqci,icrm) = trtau(k,iqci,icrm) + tmpi
                trtau(k,iqs,icrm) = trtau(k,iqs,icrm) + tmps
-#ifdef CLUBB_CRM /* Bug fix -dschanen 9 Mar 2012 */
-               if ( dograupel ) then
-                 trtau(k,iqg,icrm) = trtau(k,iqg,icrm) + tmpg
-               end if
-#else
                trtau(k,iqg,icrm) = trtau(k,iqg,icrm) + tmpg
-#endif /* CLUBB */
             end if
          end do
 
@@ -1219,70 +991,18 @@ if(doicemicro) then
       m = nz-k
       tmpi = tmpi + stend(m,iqci,icrm)*rho(icrm,m)*dz(icrm)*adz(icrm,m)
       tmps = tmps + stend(m,iqs,icrm)*rho(icrm,m)*dz(icrm)*adz(icrm,m)
-#ifdef CLUBB_CRM /* Bug fix -dschanen 9 Mar 2012 */
-      if ( dograupel ) then
-        tmpg = tmpg + stend(m,iqg,icrm)*rho(icrm,m)*dz(icrm)*adz(icrm,m)
-      else
-        tmpg = 0.
-      end if
-#else
       tmpg = tmpg + stend(m,iqg,icrm)*rho(icrm,m)*dz(icrm)*adz(icrm,m)
-#endif
       mksed(m,iqci,icrm) = tmpi
       mksed(m,iqs,icrm) = tmps
-#ifdef CLUBB_CRM /* Bug fix -dschanen 9 Mar 2012 */
-      if ( dograupel ) then
-        mksed(m,iqg,icrm) = tmpg
-      end if
-#else
       mksed(m,iqg,icrm) = tmpg
-#endif
    end do
-#ifdef CLUBB_CRM /* Bug fix -dschanen 9 Mar 2012 */
-   if ( dograupel ) then
-     precflux(icrm,1:nzm) = precflux(icrm,1:nzm) &
-          - (mksed(:,iqci,icrm) + mksed(:,iqs,icrm) + mksed(:,iqg,icrm))*dtn/dz(icrm)
-   else
-     precflux(icrm,1:nzm) = precflux(icrm,1:nzm) &
-          - (mksed(:,iqci,icrm) + mksed(:,iqs,icrm))*dtn/dz(icrm)
-   end if
-#else
    precflux(icrm,1:nzm) = precflux(icrm,1:nzm) &
         - (mksed(:,iqci,icrm) + mksed(:,iqs,icrm) + mksed(:,iqg,icrm))*dtn/dz(icrm)
-#endif
 end if
 
 !!$if(doprecip) total_water_prec = total_water_prec - total_water()
 
-#ifdef CLUBB_CRM
-if (docloud.or.doclubb)  call micro_diagnose(ncrms,icrm)   ! leave this line here
-if(doclubb) then
-   cf3d(icrm,1:nx, 1:ny, 1:nzm) = cloud_frac(1:nx, 1:ny, 2:nzm+1)
-   if(doicemicro) then
-     do i=1, nx
-       do j=1, ny
-          ice_cldfrac(:) = 0.0
-          do k=1, nzm
-! Ice cloud fraction: 0 at 0 C, and 100% at -35C.
-!           ice_cldfrac(k) = -(tmptabs(k)-T_freeze_K)/35.0
-!           ice_cldfrac(k) = min(1.0, max(ice_cldfrac(k), 0.0))
-           if(micro_field(icrm,i,j,k,iqci) .gt. 1.0e-8) then
-             ice_cldfrac(k) = 1.0
-           end if
-           if(cloudliq(icrm,i,j,k) + micro_field(icrm,i,j,k,iqci) .gt.1.0e-9) then
-             cf3d(icrm,i,j,k) = (cf3d(icrm,i,j,k)* cloudliq(icrm,i,j,k) + ice_cldfrac(k) * micro_field(icrm,i,j,k,iqci))  &
-                           / (cloudliq(icrm,i,j,k) + micro_field(icrm,i,j,k,iqci))
-           else
-             cf3d(icrm,i,j,k) = 0.0
-           end if
-          end do
-        end do
-     end do
-   endif
-endif
-#else
 if (docloud)  call micro_diagnose(ncrms,icrm)   ! leave this line here
-#endif
 
 ! call t_stopf ('micro_proc')
 
@@ -1299,10 +1019,7 @@ end subroutine micro_proc
 subroutine micro_diagnose(ncrms,icrm)
 
 use vars
-#ifdef CLUBB_CRM
-use error_code, only: clubb_at_least_debug_level ! Procedure
-use constants_clubb, only: fstderr, zero_threshold
-#endif
+
 implicit none
 integer, intent(in) :: ncrms,icrm
 
@@ -1313,28 +1030,6 @@ integer i,j,k
 qv(icrm,1:nx,1:ny,1:nzm) = micro_field(icrm,1:nx,1:ny,1:nzm,iqv) &
      - cloudliq(icrm,1:nx,1:ny,1:nzm)
 
-#ifdef CLUBB_CRM
-do i = 1, nx
-  do j = 1, ny
-    do k = 1, nzm
-      ! Apply local hole-filling to vapor by converting liquid to vapor. Moist
-      ! static energy should be conserved, so updating temperature is not
-      ! needed here. -dschanen 31 August 2011
-      if ( qv(icrm,i,j,k) < zero_threshold ) then
-        cloudliq(icrm,i,j,k) = cloudliq(icrm,i,j,k) + qv(icrm,i,j,k)
-        qv(icrm,i,j,k) = zero_threshold
-        if ( cloudliq(icrm,i,j,k) < zero_threshold ) then
-          if ( clubb_at_least_debug_level( 1 ) ) then
-            write(fstderr,*) "Total water at", "i =", i, "j =", j, "k =", k, "is negative.", &
-              "Applying non-conservative hard clipping."
-          end if
-          cloudliq(icrm,i,j,k) = zero_threshold
-        end if ! cloud_liq < 0
-      end if ! qv < 0
-    end do ! 1.. nzm
-  end do ! 1.. ny
-end do ! 1.. nx
-#endif /* CLUBB_CRM */
 ! cloud liquid water
 qcl(icrm,1:nx,1:ny,1:nzm) = cloudliq(icrm,1:nx,1:ny,1:nzm)
 
@@ -1354,55 +1049,6 @@ if(doicemicro) then
 end if
 
 end subroutine micro_diagnose
-
-#ifdef CLUBB_CRM
-!---------------------------------------------------------------------
-subroutine micro_update()
-
-! Description:
-! This subroutine essentially does what micro_proc does but does not
-! call any microphysics subroutines.  We need to do this for the
-! single-moment bulk microphysics (SAM1MOM) so that CLUBB gets a
-! properly updated value of ice fed in.
-!
-! -dschanen UWM
-!---------------------------------------------------------------------
-
-  ! Update the dynamical core variables (e.g. qv, qcl) with the value in
-  ! micro_field.  Diffusion, advection, and other processes are applied to
-  ! micro_field but not the variables in vars.f90
-  call micro_diagnose(ncrms,icrm)
-
-  return
-end subroutine micro_update
-
-!---------------------------------------------------------------------
-subroutine micro_adjust( new_qv, new_qc )
-! Description:
-!   Adjust total water in SAM based on values from CLUBB.
-! References:
-!   None
-!---------------------------------------------------------------------
-
-  use vars, only: qci
-
-  implicit none
-
-  real(crm_rknd), dimension(nx,ny,nzm), intent(in) :: &
-    new_qv, & ! Water vapor mixing ratio that has been adjusted by CLUBB [kg/kg]
-    new_qc    ! Cloud water mixing ratio that has been adjusted by CLUBB [kg/kg]
-
-  ! Total water mixing ratio
-  micro_field(icrm,1:nx,1:ny,1:nzm,iqv) = new_qv(1:nx,1:ny,1:nzm) &
-                                   + new_qc(1:nx,1:ny,1:nzm)
-
-  ! Cloud water mixing ratio
-  cloudliq(icrm,1:nx,1:ny,1:nzm) = new_qc(1:nx,1:ny,1:nzm)
-
-  return
-end subroutine micro_adjust
-
-#endif /*CLUBB_CRM*/
 
 !----------------------------------------------------------------------
 !!! functions to compute terminal velocity for precipitating variables:
@@ -1527,59 +1173,6 @@ real(8) function total_water(ncrms,icrm)
   end do
 
 end function total_water
-#ifdef CLUBB_CRM
-!-------------------------------------------------------------------------------
-ELEMENTAL REAL(crm_rknd) FUNCTION LIN_INT( var_high, var_low, height_high, height_low, height_int )
-
-! This function computes a linear interpolation of the value of variable.
-! Given two known values of a variable at two height values, the value
-! of that variable at a height between those two height levels (rather
-! than a height outside of those two height levels) is computed.
-!
-! Here is a diagram:
-!
-!  ################################ Height high, know variable value
-!
-!
-!
-!  -------------------------------- Height to be interpolated to; linear interpolation
-!
-!
-!
-!
-!
-!  ################################ Height low, know variable value
-!
-!
-! FORMULA:
-!
-! variable(@ Height interpolation) =
-!
-! [ (variable(@ Height high) - variable(@ Height low)) / (Height high - Height low) ]
-! * (Height interpolation - Height low)  +  variable(@ Height low)
-
-! Author: Brian Griffin, UW-Milwaukee
-! Modifications: Dave Schanen added the elemental attribute 4 Nov 2008
-! References: None
-
-IMPLICIT NONE
-
-! Input Variables
-REAL(crm_rknd), INTENT(IN):: var_high
-REAL(crm_rknd), INTENT(IN):: var_low
-REAL(crm_rknd), INTENT(IN):: height_high
-REAL(crm_rknd), INTENT(IN):: height_low
-REAL(crm_rknd), INTENT(IN):: height_int
-
-! Output Variable
-REAL(crm_rknd) :: LIN_INT
-
-LIN_INT = ( var_high - var_low ) / ( height_high - height_low ) &
-         * ( height_int - height_low ) + var_low
-
-
-END FUNCTION LIN_INT
-#endif /*CLUBB_CRM*/
 !------------------------------------------------------------------------------
 
 end module microphysics

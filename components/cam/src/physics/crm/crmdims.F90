@@ -3,7 +3,6 @@ module crmdims
     use params, only: crm_rknd
 
     implicit none
-    integer, parameter :: nclubbvars = 17
 
     integer, parameter ::  crm_nx=CRM_NX
     integer, parameter ::  crm_ny=CRM_NY

@@ -159,15 +159,7 @@ contains
     downthresh  = 1.    !Multiples of std. dev. to classify as downdraft
     upthresh2   = 0.5   ! ...ditto, except for weaker 2nd draft type when plumetype=2
     downthresh2 = 0.5
-
-#ifdef CLUBB_CRM
-    cloudthresh = 2e-7  !Cloud mixing ratio beyond which cell is "cloudy(liquid)" (kg/kg)
-    ! As now fractional cloudiness is used for classifying cloudy vs. clear,
-    ! reduce it from 1.0e-6 to 2.0e-7
-#else
     cloudthresh = 1e-6  !Cloud mixing ratio beyond which cell is "cloudy(liquid)" (kg/kg)
-#endif
-
     prcpthresh  = 1e-6  !Preciptation rate (precr) beyond which cell is raining (kg/m2/s)
     ! this is used to classify precipitating vs. nonprecipitating class for wet scavenging.
 
@@ -473,10 +465,7 @@ contains
     use sgs, only: tke, tk
     use microphysics, only: micro_field, iqv, iqci, iqr, iqs, iqg, cloudliq
     use module_mp_GRAUPEL, only: POLYSVP
-#ifdef CLUBB_CRM
-    use clubbvars, only: wp2
-    use sgs, only: tk_clubb
-#endif
+
     implicit none
     integer, intent(in) :: ncrms
     integer :: i, ierr, i_tidx, j, ncnt1, ncnt2, icrm
@@ -499,36 +488,27 @@ contains
 
     ! Get values from SAM cloud fields
     do icrm = 1 , ncrms
-    qcloud(1:nx,1:ny,1:nzm,icrm) = cloudliq(icrm,1:nx,1:ny,1:nzm)
-    qrain (1:nx,1:ny,1:nzm,icrm) = micro_field(icrm,1:nx,1:ny,1:nzm,iqr )
-    qice  (1:nx,1:ny,1:nzm,icrm) = micro_field(icrm,1:nx,1:ny,1:nzm,iqci)
-    qsnow (1:nx,1:ny,1:nzm,icrm) = micro_field(icrm,1:nx,1:ny,1:nzm,iqs )
-    qgraup(1:nx,1:ny,1:nzm,icrm) = micro_field(icrm,1:nx,1:ny,1:nzm,iqg )
+      qcloud(1:nx,1:ny,1:nzm,icrm) = cloudliq(icrm,1:nx,1:ny,1:nzm)
+      qrain (1:nx,1:ny,1:nzm,icrm) = micro_field(icrm,1:nx,1:ny,1:nzm,iqr )
+      qice  (1:nx,1:ny,1:nzm,icrm) = micro_field(icrm,1:nx,1:ny,1:nzm,iqci)
+      qsnow (1:nx,1:ny,1:nzm,icrm) = micro_field(icrm,1:nx,1:ny,1:nzm,iqs )
+      qgraup(1:nx,1:ny,1:nzm,icrm) = micro_field(icrm,1:nx,1:ny,1:nzm,iqg )
 
-    precall(:,:,:,icrm)= precr(:,:,:,icrm) + precsolid(:,:,:,icrm)
+      precall(:,:,:,icrm)= precr(:,:,:,icrm) + precsolid(:,:,:,icrm)
 
-    do ii=1, nx
-      do jj=1, ny
-        do kk=1, nzm
-          EVS = POLYSVP(tabs(icrm,ii,jj,kk),0)   ! saturation water vapor pressure (PA)
-          qvs(ii,jj,kk,icrm) = .622*EVS/(pres(icrm,kk)*100.-EVS)  ! pres(icrm,kk) with unit of hPa
-          alt(ii,jj,kk,icrm) =  287.*tabs(icrm,ii,jj,kk)/(100.*pres(icrm,kk))
+      do ii=1, nx
+        do jj=1, ny
+          do kk=1, nzm
+            EVS = POLYSVP(tabs(icrm,ii,jj,kk),0)   ! saturation water vapor pressure (PA)
+            qvs(ii,jj,kk,icrm) = .622*EVS/(pres(icrm,kk)*100.-EVS)  ! pres(icrm,kk) with unit of hPa
+            alt(ii,jj,kk,icrm) =  287.*tabs(icrm,ii,jj,kk)/(100.*pres(icrm,kk))
+          end do
         end do
       end do
-    end do
 
-    ww(:,:,:,icrm)     = w(icrm,1:nx,1:ny,1:nzstag)
-#ifdef CLUBB_CRM
-    wwsq(:,:,:,icrm)  = sqrt(wp2(1:nx, 1:ny, 1:nzstag))
-#else
-    wwsq(:,:,:,icrm)   = 0.  ! subgrid vertical velocity is not used in the current version of ECPP.
-#endif
-
-#ifdef CLUBB_CRM
-    xkhv(:,:,:,icrm)   = tk_clubb(1:nx,1:ny,1:nzm)  ! eddy viscosity m2/s
-#else
-    xkhv(:,:,:,icrm)   = tk(icrm,1:nx,1:ny,1:nzm)  ! eddy viscosity m2/s
-#endif
+      ww(:,:,:,icrm)     = w(icrm,1:nx,1:ny,1:nzstag)
+      wwsq(:,:,:,icrm)   = 0.  ! subgrid vertical velocity is not used in the current version of ECPP.
+      xkhv(:,:,:,icrm)   = tk(icrm,1:nx,1:ny,1:nzm)  ! eddy viscosity m2/s
     enddo
 
     ! Increment the 3-D running sums for averaging period 1.

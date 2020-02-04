@@ -44,12 +44,6 @@ contains
 
 subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
                 crm_input, crm_state, crm_rad,  &
-#ifdef CLUBB_CRM
-                clubb_buffer,           &
-                crm_cld, clubb_tk,      &
-                clubb_tkh, relvar,      &
-                accre_enhan, qclvar,    &
-#endif
 #ifdef MAML
                 crm_pcp,     crm_snw,              &
 #endif
@@ -67,19 +61,7 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
 #ifdef MODAL_AERO
     use modal_aero_data       , only: ntot_amode
 #endif
-    use crmdims               , only: nclubbvars, crm_nx_rad, crm_ny_rad
-#ifdef CLUBB_CRM
-    use clubb_sgs             , only: advance_clubb_sgs, clubb_sgs_setup, clubb_sgs_cleanup, apply_clubb_sgs_tndcy, apply_clubb_sgs_tndcy_scalars, &
-                                      apply_clubb_sgs_tndcy_mom, t2thetal, total_energy
-    use clubb_precision       , only: time_precision, core_rknd
-    use clubbvars             , only: up2, vp2, wprtp, wpthlp, wp2, wp3, rtp2, thlp2, rtpthlp, upwp, vpwp, cloud_frac, t_tndcy, qc_tndcy, qv_tndcy, &
-                                      u_tndcy, v_tndcy, lrestart_clubb, rho_ds_zt, rho_ds_zm, thv_ds_zt, thv_ds_zm, invrs_rho_ds_zt, invrs_rho_ds_zm, &
-                                      tracer_tndcy, sclrp2, sclrprtp, sclrpthlp, wpsclrp, relvarg, accre_enhang, qclvarg, edsclr_dim, sclr_dim, rho_ds_zt, &
-                                      rho_ds_zm, rtm_spurious_source, thlm_spurious_source
-    use fill_holes            , only: vertical_integral
-    use numerical_check       , only: calculate_spurious_source
-    use grid_class            , only: gr
-#endif
+    use crmdims               , only: crm_nx_rad, crm_ny_rad
 #ifdef ECPP
     use ecppvars              , only: qlsink, precr, precsolid, &
                                       area_bnd_final, area_bnd_sum, area_cen_final, area_cen_sum, &
@@ -107,15 +89,6 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
     type(crm_input_type),      intent(in   ) :: crm_input
     type(crm_state_type),      intent(inout) :: crm_state
     type(crm_rad_type), target,intent(inout) :: crm_rad
-#ifdef CLUBB_CRM
-    real(r8), intent(inout), target :: clubb_buffer(ncrms,crm_nx, crm_ny, crm_nz+1,1:nclubbvars)
-    real(r8), intent(  out) :: crm_cld             (ncrms,crm_nx, crm_ny, crm_nz+1)
-    real(r8), intent(  out) :: clubb_tk            (ncrms,crm_nx, crm_ny, crm_nz)
-    real(r8), intent(  out) :: clubb_tkh           (ncrms,crm_nx, crm_ny, crm_nz)
-    real(r8), intent(  out) :: relvar              (ncrms,crm_nx, crm_ny, crm_nz)
-    real(r8), intent(  out) :: accre_enhan         (ncrms,crm_nx, crm_ny, crm_nz)
-    real(r8), intent(  out) :: qclvar              (ncrms,crm_nx, crm_ny, crm_nz)
-#endif /* CLUBB_CRM */
 #ifdef MAML
     real(r8), intent(inout) :: crm_pcp(ncrms, crm_nx,crm_ny)  ! CRM precip rate (m/s)
     real(r8), intent(inout) :: crm_snw(ncrms,crm_nx,crm_ny) ! CRM snow rate (m/s)
@@ -782,15 +755,9 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
 
       !---------------------------------------------------------
       !   Ice fall-out
-#ifdef CLUBB_CRM
-      if ( docloud .or. doclubb ) then
-        call ice_fall(ncrms)
-      endif
-#else
       if(docloud) then
         call ice_fall(ncrms)
       endif
-#endif
 
       !----------------------------------------------------------
       !     Update scalar boundaries after large-scale processes:
@@ -861,11 +828,7 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
 
       !-----------------------------------------------------------
       !       Cloud condensation/evaporation and precipitation processes:
-#ifdef CLUBB_CRM
-      if(docloud.or.dosmoke.or.doclubb) call micro_proc(ncrms)
-#else
       if(docloud.or.dosmoke) call micro_proc(ncrms)
-#endif /*CLUBB_CRM*/
 
       !-----------------------------------------------------------
       !       Apply mean-state acceleration
@@ -1683,15 +1646,6 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
   deallocate( cmtemp)
   deallocate( chtemp)
   deallocate( cttemp)
-#ifdef CLUBB_CRM
-  deallocate( rtm_integral_before )
-  deallocate( rtm_integral_after )
-  deallocate( thlm_integral_before)
-  deallocate( thlm_integral_after)
-  deallocate( thlm_before)
-  deallocate( thlm_after)
-  deallocate( rtm_column)
-#endif /* CLUBB_CRM */
   deallocate( dd_crm  )
   deallocate( mui_crm )
   deallocate( mdi_crm )

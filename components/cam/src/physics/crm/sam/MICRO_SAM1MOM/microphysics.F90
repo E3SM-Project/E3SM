@@ -7,7 +7,7 @@ module microphysics
   ! Marat Khairoutdinov, 2006
 
   use grid, only: nx,ny,nzm,nz, dimx1_s,dimx2_s,dimy1_s,dimy2_s ! subdomain grid information
-  use params, only: doprecip, docloud, doclubb, crm_rknd, asyncid
+  use params, only: doprecip, docloud, crm_rknd, asyncid
   use micro_params
   implicit none
 
@@ -154,27 +154,12 @@ CONTAINS
 
   subroutine micro_init(ncrms)
 
-#ifdef CLUBB_CRM
-    use params, only: doclubb, doclubbnoninter ! dschanen UWM 21 May 2008
-    use params, only: nclubb
-#endif
     use grid, only: nrestart
     use vars
     use params, only: dosmoke
     implicit none
     integer, intent(in) :: ncrms
     integer k, n,icrm, i, j, l
-
-#ifdef CLUBB_CRM
-    !  if ( nclubb /= 1 ) then
-    !    write(0,*) "The namelist parameter nclubb is not equal to 1,",  &
-    !      " but SAM single moment microphysics is enabled."
-    !    write(0,*) "This will create unrealistic results in subsaturated grid boxes. ", &
-    !      "Exiting..."
-    !    call task_abort()
-    !  end if
-#endif
-
 
     a_bg = 1./(tbgmax-tbgmin)
     a_pr = 1./(tprmax-tprmin)
@@ -194,11 +179,7 @@ CONTAINS
       enddo
     enddo
 
-#ifdef CLUBB_CRM
-      if ( docloud .or. doclubb ) then
-#else
       if(docloud) then
-#endif
         call micro_diagnose(ncrms)
       end if
       if(dosmoke) then
@@ -245,18 +226,6 @@ CONTAINS
     integer, intent(in) :: ncrms
     integer :: icrm, i, j
 
-#ifdef CLUBB_CRM
-    ! Added by dschanen UWM
-    use params, only: doclubb, doclubb_sfc_fluxes, docam_sfc_fluxes
-    do icrm = 1 , ncrms
-      if ( doclubb .and. (doclubb_sfc_fluxes .or. docam_sfc_fluxes) ) then
-        ! Add this in later
-        fluxbmk(icrm,:,:,index_water_vapor) = 0.0
-      else
-        fluxbmk(icrm,:,:,index_water_vapor) = fluxbq(icrm,:,:)
-      end if
-    enddo
-#else
     !$acc parallel loop collapse(3) async(asyncid)
     do j = 1 , ny
       do i = 1 , nx
@@ -265,7 +234,7 @@ CONTAINS
         enddo
       enddo
     enddo
-#endif
+
     !$acc parallel loop collapse(3) async(asyncid)
     do j = 1 , ny
       do i = 1 , nx
@@ -285,12 +254,7 @@ CONTAINS
     use cloud_mod
     use precip_init_mod
     use precip_proc_mod
-#ifdef CLUBB_CRM
-    use params, only: doclubb, doclubbnoninter ! dschanen UWM 21 May 2008
-    use clubbvars, only: cloud_frac
-    use vars, only:  CF3D
-    use grid, only: nzm
-#endif
+
     implicit none
     integer, intent(in) :: ncrms
     integer :: icrm
@@ -306,16 +270,6 @@ CONTAINS
     if(dosmoke) then
       call micro_diagnose(ncrms)
     end if
-#ifdef CLUBB_CRM
-    if ( doclubb ) then ! -dschanen UWM 21 May 2008
-      do icrm = 1 , ncrms
-        cf3d(icrm,:,:, 1:nzm) = cloud_frac(:,:,2:nzm+1) ! CF3D is used in precip_proc_clubb,
-        ! so it is set here first  +++mhwang
-        if(doprecip) call precip_proc_clubb(ncrms,icrm)
-      enddo
-      call micro_diagnose(ncrms)
-    end if
-#endif /*CLUBB_CRM*/
   end subroutine micro_proc
 
   !----------------------------------------------------------------------
@@ -346,96 +300,6 @@ CONTAINS
     end do
   end subroutine micro_diagnose
 
-#ifdef CLUBB_CRM
-  !---------------------------------------------------------------------
-  subroutine micro_update()
-
-    ! Description:
-    ! This subroutine essentially does what micro_proc does but does not
-    ! call any microphysics subroutines.  We need this so that CLUBB gets a
-    ! properly updated value of ice fed in.
-    !
-    ! dschanen UWM 7 Jul 2008
-    !---------------------------------------------------------------------
-
-    !   call micro_diagnose()
-
-    call micro_diagnose_clubb()
-
-  end subroutine micro_update
-
-  !---------------------------------------------------------------------
-  subroutine micro_adjust( new_qv, new_qc )
-    ! Description:
-    ! Adjust vapor and liquid water.
-    ! Microphysical variables are stored separately in
-    !    SAM's dynamics + CLUBB ( e.g. qv, qcl, qci) and
-    !    SAM's microphysics. (e.g. q and qn).
-    ! This subroutine stores values of qv, qcl updated by CLUBB
-    !   in the single-moment microphysical variables q and qn.
-    !
-    ! dschanen UWM 20 May 2008
-    !---------------------------------------------------------------------
-
-    use vars, only: qci
-
-    implicit none
-
-    real(crm_rknd), dimension(nx,ny,nzm), intent(in) :: &
-    new_qv, & ! Water vapor mixing ratio that has been adjusted by CLUBB [kg/kg]
-    new_qc    ! Cloud water mixing ratio that has been adjusted by CLUBB [kg/kg].
-    ! For the single moment microphysics, it is liquid + ice
-
-    micro_field(icrm,1:nx,1:ny,1:nzm,1) = new_qv + new_qc ! Vapor + Liquid + Ice
-    qn(icrm,1:nx,1:ny,1:nzm) = new_qc ! Liquid + Ice
-
-    return
-  end subroutine micro_adjust
-
-  subroutine micro_diagnose_clubb()
-
-    use vars
-    use constants_clubb, only: fstderr, zero_threshold
-    use error_code, only: clubb_at_least_debug_level ! Procedur
-
-    real(crm_rknd) omn, omp
-    integer i,j,k
-
-    do k=1,nzm
-      do j=1,ny
-        do i=1,nx
-          ! For CLUBB,  water vapor and liquid water is used
-          ! so set qcl to qn while qci to zero. This also allows us to call CLUBB
-          ! every nclubb th time step  (see sgs_proc in sgs.F90)
-
-          qv(icrm,i,j,k) = micro_field(icrm,i,j,k,1) - qn(icrm,i,j,k)
-          ! Apply local hole-filling to vapor by converting liquid to vapor. Moist
-          ! static energy should be conserved, so updating temperature is not
-          ! needed here. -dschanen 31 August 2011
-          if ( qv(icrm,i,j,k) < zero_threshold ) then
-            qn(icrm,i,j,k) = qn(icrm,i,j,k) + qv(icrm,i,j,k)
-            qv(icrm,i,j,k) = zero_threshold
-            if ( qn(icrm,i,j,k) < zero_threshold ) then
-              if ( clubb_at_least_debug_level( 1 ) ) then
-                write(fstderr,*) "Total water at", "i =", i, "j =", j, "k =", k, "is negative.", &
-                "Applying non-conservative hard clipping."
-              end if
-              qn(icrm,i,j,k) = zero_threshold
-            end if ! cloud_liq < 0
-          end if ! qv < 0
-
-          qcl(icrm,i,j,k) = qn(icrm,i,j,k)
-          qci(icrm,i,j,k) = 0.0
-          omp = max(0.,min(1.,(tabs(icrm,i,j,k)-tprmin)*a_pr))
-          qpl(icrm,i,j,k) = micro_field(icrm,i,j,k,2)*omp
-          qpi(icrm,i,j,k) = micro_field(icrm,i,j,k,2)*(1.-omp)
-        end do
-      end do
-    end do
-
-  end subroutine micro_diagnose_clubb
-
-#endif /*CLUBB_CRM*/
   !----------------------------------------------------------------------
   !!! function to compute terminal velocity for precipitating variables:
   ! In this particular case there is only one precipitating variable.

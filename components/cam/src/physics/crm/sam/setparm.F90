@@ -25,24 +25,7 @@ contains
     dt    = CRM_DT
     dx    = CRM_DX
     dy    = CRM_DY
-#ifndef CLUBB_CRM
-    doclubb         = .false.   ! then docloud must be .true.
     docloud         = .true.
-#else
-    doclubb         = .true.    ! then docloud must be .false.
-    docloud         = .false.
-    doclubbnoninter = .false.
-    doclubb_sfc_fluxes = .false.
-    docam_sfc_fluxes = .true.   ! update variables in cam, neither in sam nor in clubb +++mhwang
-    nclubb          = 3
-
-#ifdef sam1mom
-    ! for sam1mom, nclubb needs to be 1.
-    ! see comments in ./MICRO_SAM1MOM/microphysics.F90
-    nclubb          = 3
-#endif
-
-#endif
     rank            = 0   ! in MMF model, rank = 0
     !------------------------------------
     !  Set parameters
@@ -63,13 +46,6 @@ contains
       print*,'Error: 3D run and YES3D is set to 0. Exitting...'
       call task_abort()
     endif
-#ifdef CLUBB_CRM
-    if ( dx >= 1000. .and. LES ) then
-      print*,'Error: Horizonatal grid spacing is >= 1000. meters'
-      print*,'but LES is true.  Use CEM mode for coarse resolutions.'
-      call task_abort()
-    end if
-#endif
 
     if(ny.eq.1) dy=dx
     dtn = dt

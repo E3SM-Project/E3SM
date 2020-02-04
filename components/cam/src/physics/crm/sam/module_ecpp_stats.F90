@@ -854,17 +854,9 @@ contains
               ! wwqui_bar_cen is used in for both all sky and cloudy sky.
               ! when wwqui_cloudy_bar_cen was used for cloudy sky, wwqui_cloudy_cen_sum will be smaller than wwqui_cen_sum.
               !
-#ifdef CLUBB_CRM
-              wwqui_cen_sum(k) = wwqui_cen_sum(k)+mask * ((ww(i,j,k)+ww(i,j,k+1))*0.5-wwqui_bar_cen(k))**2 + mask * (wwsq(i,j,k)+wwsq(i,j,k+1))**2/4.
-#else
               wwqui_cen_sum(k) = wwqui_cen_sum(k)+mask * ((ww(i,j,k)+ww(i,j,k+1))*0.5-wwqui_bar_cen(k))**2 + mask * tkesgs(i,j,k)/3.
-#endif
               if(icl.eq.CLD) then
-#ifdef CLUBB_CRM
-                wwqui_cloudy_cen_sum(k)=wwqui_cloudy_cen_sum(k)+mask * ((ww(i,j,k)+ww(i,j,k+1))*0.5-wwqui_bar_cen(k))**2 + mask * (wwsq(i,j,k)+wwsq(i,j,k+1))**2/4.
-#else
                 wwqui_cloudy_cen_sum(k)=wwqui_cloudy_cen_sum(k)+mask * ((ww(i,j,k)+ww(i,j,k+1))*0.5-wwqui_bar_cen(k))**2 + mask * tkesgs(i,j,k)/3.
-#endif
               end if
             end do !k
 
@@ -883,17 +875,9 @@ contains
               ! wwqui_bar_bnd is used in both all sky and cloudy sky.
               ! when wwqui_cloudy_bar_bnd was used for cloudy sky, wwqui_cloudy_bnd_sum will be smaller than wwqui_bnd_sum.
               !
-#ifdef CLUBB_CRM
-              wwqui_bnd_sum(k) = wwqui_bnd_sum(k)+mask * (ww(i,j,k)-wwqui_bar_bnd(k))**2 + mask * wwsq(i,j,k)**2
-#else
               wwqui_bnd_sum(k) = wwqui_bnd_sum(k)+mask * (ww(i,j,k)-wwqui_bar_bnd(k))**2 + mask * (tkesgs(i,j,km0)+tkesgs(i,j,km1)) * 0.5/3.
-#endif
               if(icl.eq.CLD) then
-#ifdef CLUBB_CRM
-                wwqui_cloudy_bnd_sum(k)=wwqui_cloudy_bnd_sum(k)+mask * (ww(i,j,k)-wwqui_bar_bnd(k))**2 + mask * wwsq(i,j,k)**2
-#else
                 wwqui_cloudy_bnd_sum(k)=wwqui_cloudy_bnd_sum(k)+mask * (ww(i,j,k)-wwqui_bar_bnd(k))**2 + mask * (tkesgs(i,j,km0)+tkesgs(i,j,km1)) * 0.5/3.
-#endif
               end if
 
             end do !k

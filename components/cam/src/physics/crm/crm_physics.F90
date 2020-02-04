@@ -42,12 +42,9 @@ module crm_physics
    integer :: prec_dp_idx, snow_dp_idx, prec_sh_idx, snow_sh_idx
    integer :: prec_sed_idx, snow_sed_idx, snow_str_idx, prec_pcw_idx, snow_pcw_idx
    integer :: cldo_idx
-
-   integer :: clubb_buffer_idx
 #ifdef MAML
    integer :: crm_pcp_idx,crm_snw_idx
 #endif
-   
    real(r8),pointer                        :: acldy_cen_tbeg(:,:)        ! cloud fraction
    real(r8), pointer, dimension(:,:)       :: cldo
 
@@ -78,12 +75,11 @@ subroutine crm_physics_register()
   use ppgrid,          only: pcols, pver, pverp
   use physics_buffer,  only: dyn_time_lvls, pbuf_add_field, dtype_r8, pbuf_get_index
   use phys_control,    only: phys_getopts
-  use crmdims,         only: crm_nx, crm_ny, crm_nz, crm_dx, crm_dy, crm_dt, nclubbvars, crm_nx_rad, crm_ny_rad
+  use crmdims,         only: crm_nx, crm_ny, crm_nz, crm_dx, crm_dy, crm_dt, crm_nx_rad, crm_ny_rad
   use setparm_mod,         only: setparm
   use cam_history_support, only: add_hist_coord
 
-
-   ! local variables
+  ! local variables
   integer idx
   logical           :: use_ECPP, use_SPCAM
   character(len=16) :: SPCAM_microp_scheme
@@ -101,10 +97,6 @@ subroutine crm_physics_register()
       if (SPCAM_microp_scheme .eq. 'm2005') print*,'Microphysics: M2005'
       print*,'_________________________________________'
   end if
-
-#ifdef CLUBB_CRM
-  call pbuf_add_field('CLUBB_BUFFER','global', dtype_r8, (/pcols,crm_nx,crm_ny,crm_nz+1,nclubbvars/), clubb_buffer_idx)
-#endif
 
   if (use_SPCAM) then
      call setparm()
@@ -209,8 +201,7 @@ subroutine crm_physics_init(species_class)
    use modal_aero_data, only: cnst_name_cw, &
                               lmassptr_amode, lmassptrcw_amode, &
                               nspec_amode, ntot_amode, numptr_amode, numptrcw_amode
-       
-
+                              
    integer :: l, lphase, lspec
    character(len=fieldname_len)   :: tmpname
    character(len=fieldname_len+3) :: fieldname
@@ -322,20 +313,6 @@ subroutine crm_physics_init(species_class)
    call add_default ('AOD400',  1, ' ')
    call add_default ('AOD700',  1, ' ')
     
-#ifdef CLUBB_CRM
-   call addfld ('UP2     ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'm^2/s^2',    'u prime ^2 from clubb')
-   call addfld ('VP2     ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'm^2/s^2',    'v prime ^2 from clubb')
-   call addfld ('WPRTP   ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'mkg/skg',    'w prime * rt prime from clubb')
-   call addfld ('WPTHLP  ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'mK/s',       'w prime * th_l prime from clubb')
-   call addfld ('WP2     ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'm^2/s^2',    'w prime ^2 from clubb')
-   call addfld ('WP3     ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'm^3/s^3',    'w prime ^3 from clubb')
-   call addfld ('RTP2    ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', '(kg/kg)2',   'r_t prime ^2 from clubb')
-   call addfld ('THLP2   ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'K^2',        'th_l_prime ^2 from clubb')
-   call addfld ('RTPTHLP ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'kgK/kg',     'r_t prime * th_l prime  from clubb')
-   call addfld ('UPWP    ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'm^2/s^2',    'u prime * w prime from clubb')
-   call addfld ('VPWP    ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'm^2/s^2',    'v prime * w prime from clubb')
-   call addfld ('CRM_CLD ',    (/'crm_nx','crm_ny','crm_z1'/), 'A', 'fraction',   'cloud fraction from clubb')
-#endif
    call addfld ('CRM_TK',  (/'crm_nx','crm_ny','crm_nz'/), 'A','m^2/s',   'Eddy viscosity from CRM')
    call addfld ('CRM_TKH', (/'crm_nx','crm_ny','crm_nz'/), 'A','m^2/s',   'Eddy viscosity from CRM')
 
@@ -699,16 +676,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    integer ncol                     ! number of atmospheric columns
    integer  nstep                   ! time steps
    real(r8) crm_run_time            ! length of CRM integration
-
-#ifdef CLUBB_CRM
-   real(r8), pointer ::  clubb_buffer  (:,:,:,:,:)
-   real(r8) crm_cld(pcols,crm_nx, crm_ny, crm_nz+1)
-   real(r8) clubb_tk   (pcols,crm_nx, crm_ny, crm_nz)
-   real(r8) clubb_tkh  (pcols,crm_nx, crm_ny, crm_nz)
-   real(r8) relvar     (pcols,crm_nx, crm_ny, crm_nz)
-   real(r8) accre_enhan(pcols,crm_nx, crm_ny, crm_nz)
-   real(r8) qclvar     (pcols,crm_nx, crm_ny, crm_nz)
-#endif
    
    character(len=16) :: microp_scheme  ! microphysics scheme
    real(r8) :: cwp      (pcols,pver)   ! in-cloud cloud (total) water path (kg/m2)
@@ -885,10 +852,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    endif
 
    call pbuf_get_field (pbuf, pbuf_get_index('CRM_QRAD'),    crm_rad%qrad)
-#ifdef CLUBB_CRM
-   call pbuf_get_field (pbuf, clubb_buffer_idx,  clubb_buffer)
-#endif
-
    call pbuf_get_field (pbuf, pbuf_get_index('CRM_T_RAD'),   crm_rad%temperature)
    call pbuf_get_field (pbuf, pbuf_get_index('CRM_QV_RAD'),  crm_rad%qv)
    call pbuf_get_field (pbuf, pbuf_get_index('CRM_QC_RAD'),  crm_rad%qc)
@@ -1006,9 +969,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
                crm_state%qc(i,:,:,k) = state%q(i,m,ixcldliq)
             endif
 
-#ifdef CLUBB_CRM
-            clubb_buffer(i,:,:,k,:) = 0.0  ! In the initial run, variables are set in clubb_sgs_setup at the first time step. 
-#endif
          end do
       end do
 
@@ -1211,12 +1171,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       call t_startf ('crm_call')
       call crm( lchnk, icol(:ncol), ncol, ztodt, pver,                    &
                 crm_input, crm_state, crm_rad,                            &
-#ifdef CLUBB_CRM
-                clubb_buffer(:ncol,:,:,:,:),                              &
-                crm_cld(:ncol,:, :, :),      clubb_tk(:ncol, :, :, :),    &
-                clubb_tkh(:ncol, :, :, :),   relvar(:ncol,:, :, :),       &
-                accre_enhan(:ncol, :, :, :), qclvar(:ncol, :, :, :),      &
-#endif /* CLUBB_CRM */
 #ifdef MAML
                 crm_pcp(:ncol,:,:),     crm_snw(:ncol,:,:),               &
 #endif
@@ -1344,26 +1298,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       endif ! m2005
 #endif /* m2005 */
 
-#ifdef CLUBB_CRM
-      call outfld('UP2     ', clubb_buffer(:, :, :, :, 1) ,pcols, lchnk )
-      call outfld('VP2     ', clubb_buffer(:, :, :, :, 2) ,pcols, lchnk )
-      call outfld('WPRTP   ', clubb_buffer(:, :, :, :, 3) ,pcols, lchnk )
-      call outfld('WPTHLP  ', clubb_buffer(:, :, :, :, 4) ,pcols, lchnk )
-      call outfld('WP2     ', clubb_buffer(:, :, :, :, 5) ,pcols, lchnk )
-      call outfld('WP3     ', clubb_buffer(:, :, :, :, 6) ,pcols, lchnk )
-      call outfld('RTP2    ', clubb_buffer(:, :, :, :, 7) ,pcols, lchnk )
-      call outfld('THLP2   ', clubb_buffer(:, :, :, :, 8) ,pcols, lchnk )
-      call outfld('RTPTHLP ', clubb_buffer(:, :, :, :, 9) ,pcols, lchnk )
-      call outfld('UPWP    ', clubb_buffer(:, :, :, :, 10),pcols, lchnk )
-      call outfld('VPWP    ', clubb_buffer(:, :, :, :, 11),pcols, lchnk )
-      call outfld('CRM_CLD ', clubb_buffer(:, :, :, :, 12),pcols, lchnk )
-      call outfld('CLUBB_TK '  , clubb_tk(:, :, :, :)     ,pcols, lchnk )
-      call outfld('CLUBB_TKH'  , clubb_tkh(:, :, :, :)    ,pcols, lchnk )
-      call outfld('RELVAR'     , relvar(:, :, :, :)       ,pcols, lchnk )
-      call outfld('ACCRE_ENHAN', accre_enhan(:, :, :, :)  ,pcols, lchnk )
-      call outfld('QCLVAR'     , qclvar(:, :, :, :)       ,pcols, lchnk )
-#endif /* CLUBB_CRM */
-
       !---------------------------------------------------------------------------------------------
       ! Add radiative heating tendency above CRM
       !---------------------------------------------------------------------------------------------
@@ -1443,7 +1377,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       call outfld('SPQPFALL',crm_output%qp_fall        ,pcols ,lchnk )
       call outfld('SPQPSRC ',crm_output%qp_src         ,pcols ,lchnk )
       call outfld('SPTLS   ',crm_output%t_ls           ,pcols ,lchnk )
-      
+
       ! NOTE: these should overwrite cloud outputs from CAM routines
       call outfld('CLOUD   ',crm_output%cld,  pcols,lchnk)
       call outfld('CLDTOT  ',crm_output%cltot  ,pcols,lchnk)

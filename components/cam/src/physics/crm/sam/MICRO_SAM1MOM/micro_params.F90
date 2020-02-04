@@ -35,17 +35,10 @@ module micro_params
   real(crm_rknd), parameter :: b_grau = 0.5  ! Fall speed exponent for graupel
 
   ! Autoconversion
-#ifdef CLUBB_CRM   /*microphysical tuning for CLUBB*/
-  real(crm_rknd), parameter :: qcw0 = 0.6e-3      ! Threshold for water autoconversion, g/g
-  real(crm_rknd), parameter :: qci0 = 1.e-4     ! Threshold for ice autoconversion, g/g
-  real(crm_rknd), parameter :: alphaelq = 10.e-3  ! autoconversion of cloud water rate coef
-  real(crm_rknd), parameter :: betaelq = 6.0e-3   ! autoconversion of cloud ice rate coef
-#else
   real(crm_rknd), parameter :: qcw0 = 1.e-3      ! Threshold for water autoconversion, g/g
   real(crm_rknd), parameter :: qci0 = 1.e-4     ! Threshold for ice autoconversion, g/g
   real(crm_rknd), parameter :: alphaelq = 1.e-3  ! autoconversion of cloud water rate coef
   real(crm_rknd), parameter :: betaelq = 1.e-3   ! autoconversion of cloud ice rate coef
-#endif /*CLUBB_CRM*/
 
   ! Accretion
 
