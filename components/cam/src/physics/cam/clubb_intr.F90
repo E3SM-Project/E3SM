@@ -938,6 +938,7 @@ end subroutine clubb_init_cnst
        call pbuf_set_field(pbuf2d, kvh_idx,     0.0_r8)
        call pbuf_set_field(pbuf2d, fice_idx,    0.0_r8)
        call pbuf_set_field(pbuf2d, radf_idx,    0.0_r8)
+       call pbuf_set_field(pbuf2d, qrl_idx,     0.0_r8)
 
        call pbuf_set_field(pbuf2d, vmag_gust_idx,    1.0_r8)
 
