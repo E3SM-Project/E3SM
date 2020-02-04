@@ -6,7 +6,7 @@ from CIME.utils import SharedArea, find_files, safe_copy, expect
 from CIME.XML.inputdata import Inputdata
 import CIME.Servers
 
-import glob
+import glob, shutil
 
 logger = logging.getLogger(__name__)
 
