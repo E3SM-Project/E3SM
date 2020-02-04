@@ -327,7 +327,7 @@ subroutine micro_setparm()
    dohail = .false.           ! graupel species has properties of graupel
    dosb_warm_rain = .false.   ! use KK (2000) warm rain scheme by default
    dopredictNc = .true.       ! prognostic cloud droplet number
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
    domodal_aero = .true.      ! use modal aerosol
 #endif
 #ifdef CLUBB_CRM

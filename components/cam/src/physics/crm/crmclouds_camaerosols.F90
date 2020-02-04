@@ -1,5 +1,4 @@
 module crmclouds_camaerosols
-#if (defined CRM)
 #if (defined MODAL_AERO) 
 !---------------------------------------------------------------------------------------------
 ! Purpose: 
@@ -465,6 +464,5 @@ end subroutine crmclouds_diag
 !======================================================================================================
 
 #endif
-#endif /*CRM*/
 
 end module crmclouds_camaerosols

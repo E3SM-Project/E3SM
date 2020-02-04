@@ -81,7 +81,7 @@ MODULE module_mp_GRAUPEL
    use params, only: lcond, lsub, cp, rgas, rv, crm_rknd
 #endif /*CLUBB_CRM*/
 
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
    use drop_activation, only: drop_activation_ghan
    !==Guangxing Lin
    !use abortutils, only: endrun
@@ -138,7 +138,7 @@ MODULE module_mp_GRAUPEL
                               ! 0 = no aerosol mode
                               ! 1 = power-law
                               ! 2 = lognormal
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
    logical, public :: domodal_aero    ! use modal aerosol from the CAM
 #endif
 
@@ -154,7 +154,7 @@ MODULE module_mp_GRAUPEL
 ! IACT = 1, USE POWER-LAW CCN SPECTRA, NCCN = CS^K
 ! IACT = 2, USE LOGNORMAL AEROSOL SIZE DIST TO DERIVE CCN SPECTRA
 ! There's no IACT = 3 in SAM / SAM-CLUBB as per WRF
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
 ! IACT = 3, USE MULTIMODE AEROSOL SIZE DIST to DERIVER CCN SPECTRA
 #endif
 
@@ -373,18 +373,18 @@ SUBROUTINE GRAUPEL_INIT
 ! IACT = 1, USE POWER-LAW CCN SPECTRA, NCCN = CS^K
 ! IACT = 2, USE LOGNORMAL AEROSOL SIZE DIST TO DERIVE CCN SPECTRA
 ! NOTE: ONLY USED FOR PREDICTED DROPLET CONCENTRATION (INUM = 0)
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
 ! IACT = 3, USE MULTIMODE AEROSOL SIZE DIST to DERIVER CCN SPECTRA
 #endif
 
       if( aerosol_mode == 2 ) then !bloss: specify using flag from prm file
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
         if(domodal_aero) then
           IACT = 3
         else
 #endif
          IACT = 2
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
         endif
 #endif
       else if( aerosol_mode == 1 ) then
@@ -1450,7 +1450,7 @@ END SUBROUTINE MP_GRAUPEL
 
         INTEGER IDROP
 
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
         INTEGER INES
 #endif
 
@@ -2619,7 +2619,7 @@ END SUBROUTINE MP_GRAUPEL
             DUM2 = (DUM2-NC3D(K))/DT
             DUM2 = MAX(real(0.,crm_rknd),DUM2)
             NC3DTEN(K) = NC3DTEN(K)+DUM2
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
             ELSE if (IACT.EQ.3) then
               INES = 0
               CALL DROP_ACTIVATION_GHAN(ncrms,icrm,DUM, T3D(k), RHO(k),  &
@@ -2744,7 +2744,7 @@ END SUBROUTINE MP_GRAUPEL
             DUM2 = (DUM2-NC3D(K))/DT
             DUM2 = MAX(real(0.,crm_rknd),DUM2)
             NC3DTEN(K) = NC3DTEN(K)+DUM2
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
             ELSE if (IACT.EQ.3) then
               INES =1
 ! GET SUPERSATURATION RATIO FROM ABSOLUTE SUPERSATURATION
@@ -2825,7 +2825,7 @@ END SUBROUTINE MP_GRAUPEL
             DUM2 = (DUM2-NC3D(K))/DT
             DUM2 = MAX(real(0.,crm_rknd),DUM2)
             NC3DTEN(K) = NC3DTEN(K)+DUM2
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
             ELSE if (IACT.EQ.3) then
               INES = 0
               CALL DROP_ACTIVATION_GHAN(ncrms,icrm,DUM, T3D(k), RHO(k),  &
@@ -4388,7 +4388,7 @@ END SUBROUTINE MP_GRAUPEL
             DUM2 = (DUM2-NC3D(K))/DT
             DUM2 = MAX(real(0.,crm_rknd),DUM2)
             NC3DTEN(K) = NC3DTEN(K)+DUM2
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
             ELSE if (IACT.EQ.3) then
               INES = 0
               CALL DROP_ACTIVATION_GHAN(ncrms,icrm,DUM, T3D(k), RHO(k),  &
@@ -4533,7 +4533,7 @@ END SUBROUTINE MP_GRAUPEL
             DUM2 = (DUM2-NC3D(K))/DT
             DUM2 = MAX(real(real(0.,crm_rknd),crm_rknd),DUM2)
             NC3DTEN(K) = NC3DTEN(K)+DUM2
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
             ELSE if (IACT.EQ.3) then
 ! GET SUPERSATURATION RATIO FROM ABSOLUTE SUPERSATURATION
               SMAX = DUM3/QVS(K)
@@ -4616,7 +4616,7 @@ END SUBROUTINE MP_GRAUPEL
             DUM2 = (DUM2-NC3D(K))/DT
             DUM2 = MAX(real(0.,crm_rknd),DUM2)
             NC3DTEN(K) = NC3DTEN(K)+DUM2
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
             ELSE if (IACT.EQ.3) then
               INES = 0
               CALL DROP_ACTIVATION_GHAN(ncrms,icrm,DUM, T3D(k), RHO(k),  &

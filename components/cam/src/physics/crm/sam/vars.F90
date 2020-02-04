@@ -152,7 +152,7 @@ module vars
 
   ! END UW ADDITIONS
   !===========================================================================
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
   real(crm_rknd), allocatable :: naer (:,:,:)     ! Aerosol number concentration [/m3]
   real(crm_rknd), allocatable :: vaer (:,:,:)     ! aerosol volume concentration [m3/m3]
   real(crm_rknd), allocatable :: hgaer(:,:,:)    ! hygroscopicity of aerosol mode
@@ -261,7 +261,7 @@ contains
     allocate( w_max(ncrms) )
     allocate( total_water_evap(ncrms) )
     allocate( total_water_prec(ncrms) )
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
     allocate( naer(ncrms,nzm, ntot_amode) )
     allocate( vaer(ncrms,nzm, ntot_amode) )
     allocate( hgaer(ncrms,nzm, ntot_amode) )
@@ -361,7 +361,7 @@ contains
     call prefetch( w_max )
     call prefetch( total_water_evap )
     call prefetch( total_water_prec )
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
     call prefetch( naer )
     call prefetch( vaer )
     call prefetch( hgaer  )
@@ -463,7 +463,7 @@ contains
     w_max = zero
     total_water_evap = zero
     total_water_prec = zero
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
     naer = zero
     vaer = zero
     hgaer = zero
@@ -567,7 +567,7 @@ contains
     deallocate( w_max )
     deallocate( total_water_evap )
     deallocate( total_water_prec )
-#if (defined CRM && defined MODAL_AERO)
+#ifdef MODAL_AERO
     deallocate( naer )
     deallocate( vaer )
     deallocate( hgaer  )
