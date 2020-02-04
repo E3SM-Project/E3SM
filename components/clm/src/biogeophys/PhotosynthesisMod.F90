@@ -518,7 +518,7 @@ contains
                      vcmax25top = exp(vcmax_np1(veg_pp%itype(p)) + vcmax_np2(veg_pp%itype(p))*log(lnc(p)) + &
                           vcmax_np3(veg_pp%itype(p))*log(lpc(p)) + vcmax_np4(veg_pp%itype(p))*log(lnc(p))*log(lpc(p)))&
                           * dayl_factor(p)
-                     jmax25top = exp(jmax_np1(veg_pp%itype(p)) + jmax_np2(veg_pp%itype(p))*log(vcmax25top) + jmax_np3(veg_pp%itype(p))*log(lpc(p))) * dayl_factor(p)
+                     jmax25top = exp(jmax_np1 + jmax_np2*log(vcmax25top) + jmax_np3*log(lpc(p))) * dayl_factor(p)
                      vcmax25top = min(max(vcmax25top, 10.0_r8), 150.0_r8)
                      jmax25top = min(max(jmax25top, 10.0_r8), 250.0_r8)
                   else
