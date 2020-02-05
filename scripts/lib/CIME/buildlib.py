@@ -45,20 +45,21 @@ def build_cime_component_lib(case, compname, libroot, bldroot):
     cimeroot  = case.get_value("CIMEROOT")
     compclass = compname[1:]
     comp_interface = case.get_value("COMP_INTERFACE")
+    print "DEBUG: comp_interface is ",comp_interface
 
     with open(os.path.join(bldroot,'Filepath'), 'w') as out:
         out.write(os.path.join(case.get_value('CASEROOT'), "SourceMods",
                                "src.{}\n".format(compname)) + "\n")
         if compname.startswith('d'):
             if (comp_interface == 'nuopc'):
-                out.write(os.path.join(cimeroot, "src", "components", "data_comps", "dshr_nuopc") + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "data_comps_" + comp_interface, compname, "src") + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "data_comps_" + comp_interface, compname) + "\n")
+                out.write(os.path.join(cimeroot, "src", "components", "data_comps_"+comp_interface, "dshr_nuopc") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "data_comps_"+comp_interface, compname, "src") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "data_comps_"+comp_interface, compname) + "\n")
         elif compname.startswith('x'):
-            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps_" + comp_interface, "xshare") + "\n")
-            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps_" + comp_interface, compname, "src") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps_"+comp_interface, "xshare") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "xcpl_comps_"+comp_interface, compname, "src") + "\n")
         elif compname.startswith('s'):
-            out.write(os.path.join(cimeroot, "src", "components", "stub_comps_" + comp_interface, compname, "src") + "\n")
+            out.write(os.path.join(cimeroot, "src", "components", "stub_comps_"+comp_interface, compname, "src") + "\n")
 
     # Build the component
     run_gmake(case, compclass, libroot, bldroot)
