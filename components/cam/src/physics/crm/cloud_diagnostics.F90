@@ -93,11 +93,8 @@ contains
     logical           :: history_amwg          ! output the variables used by the AMWG diag package
     logical           :: history_verbose       ! produce verbose history output
 
-!-- mdb spcam
     logical :: use_MMF
-
     call phys_getopts(use_MMF_out=use_MMF)
-!-- mdb spcam
 
     !-----------------------------------------------------------------------
 
@@ -143,7 +140,6 @@ contains
     
     call phys_getopts(conv_water_in_rad_out=conv_water_in_rad)
 
-!-- mdb spcam
     if (use_MMF) then
           wpunits = 'kg/m2'
           sampling_seq=''
@@ -156,7 +152,6 @@ contains
          sampling_seq=''
       endif
     endif
-!-- mdb spcam
     
     call addfld ('ICLDIWP', (/ 'lev' /), 'A', wpunits,'In-cloud ice water path'               , sampling_seq=sampling_seq)
     call addfld ('ICLDTWP', (/ 'lev' /), 'A',wpunits,'In-cloud cloud total water path (liquid and ice)', &
@@ -285,16 +280,12 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
     real(r8) :: effcld(pcols,pver)      ! effective cloud=cld*emis
 
     logical :: dosw,dolw
-!-- mdb spcam
     logical :: use_MMF
-!-- mdb spcam
   
 !-----------------------------------------------------------------------
     if (.not.do_cld_diag) return
 
-!-- mdb spcam
     call phys_getopts(use_MMF_out=use_MMF)
-!-- mdb spcam
 
     if(rk_clouds) then
        dosw     = radiation_do('sw')      ! do shortwave heating calc this timestep?
@@ -494,9 +485,8 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
 
     endif
 
-!-- mdb spcam
     if (.not. use_MMF) then 
-       ! for SPCAM, these are diagnostics in crm_physics.F90
+       ! for MMF, these are diagnostics in crm_physics.F90
        call outfld('GCLDLWP' ,gwp    , pcols,lchnk)
        call outfld('TGCLDCWP',tgwp   , pcols,lchnk)
        call outfld('TGCLDLWP',tgliqwp, pcols,lchnk)
@@ -504,7 +494,6 @@ subroutine cloud_diagnostics_calc(state,  pbuf)
        call outfld('ICLDTWP' ,cwp    , pcols,lchnk)
        call outfld('ICLDIWP' ,cicewp , pcols,lchnk)
     endif
-!-- mdb spcam
 
 ! Compute total preciptable water in column (in mm)
     tpw(:ncol) = 0.0_r8

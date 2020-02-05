@@ -537,7 +537,6 @@ subroutine dropmixnuc( &
       allocate(coltendgas(pcols))
    endif
 #endif
-!-- mdb spcam
 
    factnum = 0._r8
    wtke    = 0._r8
