@@ -1496,7 +1496,7 @@
       <env name="MPICH_VERSION_DISPLAY">1</env>
       <!--env name="MPICH_CPUMASK_DISPLAY">1</env-->
       <env name="MPAS_TOOL_DIR">/projects/ccsm/acme/tools/mpas</env>
-      <env name="labeling"> </env>
+      <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
       <env name="SMP_VARS"> </env>
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="intel">
@@ -1504,9 +1504,6 @@
     </environment_variables>
     <environment_variables SMP_PRESENT="TRUE" compiler="!intel">
       <env name="SMP_VARS">-e OMP_NUM_THREADS=$ENV{OMP_NUM_THREADS} -e OMP_STACKSIZE=128M -e OMP_PROC_BIND=spread -e OMP_PLACES=threads</env>
-    </environment_variables>
-    <environment_variables DEBUG="TRUE">
-      <env name="labeling">-e PMI_LABEL_ERROUT=1</env>
     </environment_variables>
     <module_system type="module">
       <init_path lang="perl">/opt/modules/default/init/perl.pm</init_path>
@@ -1534,6 +1531,7 @@
         <command name="rm">craype</command>
       </modules>
       <modules>
+        <command name="load">archive/0.0.1</command>
         <command name="load">craype/2.5.12</command>
       </modules>
       <modules compiler="intel">
