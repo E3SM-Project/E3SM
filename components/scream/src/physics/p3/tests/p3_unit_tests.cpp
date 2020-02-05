@@ -538,7 +538,7 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 
       // Get data from fortran
       for (Int i = 0; i < max_pack_size; ++i) {
-	update_prognostic_liquid(pupldc[i]);
+        update_prognostic_liquid(pupldc[i]);
       }
 
       // Run the lookup from a kernel and copy results back to host
@@ -615,12 +615,12 @@ static void  cloud_water_autoconversion_unit_bfb_tests(){
 
       // Validate results
       for (Int s = 0; s < Spack::n; ++s) {
-	REQUIRE(pupldc[s].th == pupldc_host(s).th);
-	REQUIRE(pupldc[s].qv == pupldc_host(s).qv);
-	REQUIRE(pupldc[s].qc == pupldc_host(s).qc);
-	REQUIRE(pupldc[s].nc == pupldc_host(s).nc);
-	REQUIRE(pupldc[s].qr == pupldc_host(s).qr);
-	REQUIRE(pupldc[s].nr == pupldc_host(s).nr);
+        REQUIRE(pupldc[s].th == pupldc_host(s).th);
+        REQUIRE(pupldc[s].qv == pupldc_host(s).qv);
+        REQUIRE(pupldc[s].qc == pupldc_host(s).qc);
+        REQUIRE(pupldc[s].nc == pupldc_host(s).nc);
+        REQUIRE(pupldc[s].qr == pupldc_host(s).qr);
+        REQUIRE(pupldc[s].nr == pupldc_host(s).nr);
 
       }
     }
