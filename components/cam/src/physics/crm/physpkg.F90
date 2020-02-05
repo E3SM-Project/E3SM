@@ -1504,7 +1504,6 @@ subroutine tphysac (ztodt,   cam_in,  &
     real(r8), pointer, dimension(:,:) :: cldiceini
     real(r8), pointer, dimension(:,:) :: dtcore
     real(r8), pointer, dimension(:,:) :: ast     ! relative humidity cloud fraction 
-    real(r8) :: qexcess (pcols)
     logical :: do_clubb_sgs 
 #ifdef MAML
     real(r8) :: factor_xy    ! for converting from CRM to GCM-level
@@ -1630,15 +1629,14 @@ end if ! l_tracer_aero
 #ifdef MAML
        call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
             num_inst_atm,state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf(:,:) ,         &
-            cam_in%lhf(:,:) , cam_in%cflx, qexcess )
+            cam_in%lhf(:,:) , cam_in%cflx )
 #else
        call qneg4('TPHYSAC '       ,lchnk               ,ncol  ,ztodt ,               &
             state%q(1,pver,1),state%rpdel(1,pver) ,cam_in%shf ,         &
-            cam_in%lhf , cam_in%cflx, qexcess )
+            cam_in%lhf , cam_in%cflx )
 #endif 
 
     end if 
-    call outfld('QEXCESS',qexcess,pcols,lchnk)
 #endif
 
     call check_qflx(state, tend, "PHYAC02", nstep, ztodt, cam_in%cflx(:,1))
