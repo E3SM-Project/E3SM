@@ -27,7 +27,7 @@ module datm_comp_mod
   !--------------------------------------------------------------------------
 
   public :: datm_comp_advertise
-  public :: datm_comp_init
+  public :: datm_comp_realize
   public :: datm_comp_run
 
   private :: datm_esat  ! determine saturation vapor pressure
@@ -280,7 +280,7 @@ contains
 
   !===============================================================================
 
-  subroutine datm_comp_init(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+  subroutine datm_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
        logunit, masterproc, rc)
 
     ! -----------------------------
@@ -301,7 +301,7 @@ contains
     ! local variables
     integer  :: n, lsize, kf
     character(CS), allocatable :: strm_flds(:)
-    character(*), parameter   :: subName = "(datm_comp_init) "
+    character(*), parameter   :: subName = "(datm_comp_realize) "
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -312,10 +312,10 @@ contains
     ! -------------------------------------
 
     call dshr_fldlist_realize( exportState, fldsExport, flds_scalar_name, flds_scalar_num, mesh, &
-         subname//':docnExport', rc=rc)
+         subname//':datmExport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call dshr_fldlist_realize( importState, fldsImport, flds_scalar_name, flds_scalar_num, mesh, &
-         subname//':docnImport', rc=rc)
+         subname//':datmImport', rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     !-----------------------------
@@ -483,7 +483,7 @@ contains
     call dshr_dfield_add(dfields, sdat, 'swdn_af'  , strm_swdn_af   , logunit=logunit, masterproc=masterproc)
     call dshr_dfield_add(dfields, sdat, 'lwdn_af'  , strm_lwdn_af   , logunit=logunit, masterproc=masterproc)
 
-  end subroutine datm_comp_init
+  end subroutine datm_comp_realize
 
   !===============================================================================
 
@@ -531,6 +531,8 @@ contains
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
+
+    call t_startf('DATM_RUN')
 
     !--------------------
     ! Advance datm streams
@@ -947,13 +949,12 @@ contains
     endif
     ! bias correction / anomaly forcing ( end block )
 
-    call t_stopf('datm_datamode')
 
     ! Log output for model date
     if (masterproc) write(logunit,*) 'atm : model date ', target_ymd, target_tod
     first_time = .false.
 
-    call t_stopf('datm')
+    call t_stopf('datm_datamode')
     call t_stopf('DATM_RUN')
 
   end subroutine datm_comp_run

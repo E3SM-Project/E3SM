@@ -26,7 +26,7 @@ module dice_comp_mod
   !--------------------------------------------------------------------------
 
   public :: dice_comp_advertise
-  public :: dice_comp_init
+  public :: dice_comp_realize
   public :: dice_comp_run
 
   !--------------------------------------------------------------------------
@@ -220,7 +220,7 @@ contains
 
 !===============================================================================
 
-  subroutine dice_comp_init(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+  subroutine dice_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
        logunit, masterproc, rc)
 
     ! input/output parameters
@@ -236,7 +236,7 @@ contains
 
     ! local variables
     integer  :: n, lsize, kf
-    character(*), parameter   :: subName = "(dice_comp_init) "
+    character(*), parameter   :: subName = "(dice_comp_realize) "
     !-------------------------------------------------------------------------------
 
     rc = ESMF_SUCCESS
@@ -387,7 +387,7 @@ contains
     allocate(imask(lsize))
     imask(:) = nint(Si_imask)
 
-  end subroutine dice_comp_init
+  end subroutine dice_comp_realize
 
 !===============================================================================
 
@@ -465,15 +465,17 @@ contains
        ! do nothing extra
 
     case('SSTDATA')
-       if (first_time .and. .not. read_restart) then
-          do n = 1,lsize
-             if (Si_ifrac(n) > 0.0_r8) then
-                water(n) = flux_Qacc0
-             else
-                water(n) = 0.0_r8
-             end if
-          end do
-          ! iFrac0 = iFrac  ! previous step's ice fraction
+       if (first_time) then
+          if (.not. read_restart) then
+             do n = 1,lsize
+                if (Si_ifrac(n) > 0.0_r8) then
+                   water(n) = flux_Qacc0
+                else
+                   water(n) = 0.0_r8
+                end if
+             end do
+             ! iFrac0 = iFrac  ! previous step's ice fraction
+          endif
 
           call ESMF_MeshGet(mesh, spatialDim=spatialDim, numOwnedElements=numOwnedElements, rc=rc)
           if (ChkErr(rc,__LINE__,u_FILE_u)) return
@@ -484,7 +486,7 @@ contains
              yc(n) = ownedElemCoords(2*n)
           end do
           deallocate(ownedElemCoords)
-       endif
+       end if
 
        tfreeze(:) = shr_frz_freezetemp(So_s(:)) + tFrz ! convert to Kelvin
 
@@ -629,10 +631,9 @@ contains
        end do
     end if
 
-    call t_stopf('dice_datamode')
-
     first_time = .false.
 
+    call t_stopf('dice_datamode')
     call t_stopf('DICE_RUN')
 
   end subroutine dice_comp_run

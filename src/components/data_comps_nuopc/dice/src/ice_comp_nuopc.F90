@@ -24,7 +24,7 @@ module ice_comp_nuopc
   use dshr_nuopc_mod   , only : dshr_advertise, dshr_model_initphase, dshr_set_runclock
   use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh
   use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
-  use dice_comp_mod    , only : dice_comp_advertise, dice_comp_init, dice_comp_run
+  use dice_comp_mod    , only : dice_comp_advertise, dice_comp_realize, dice_comp_run
   use dice_comp_mod    , only : water  ! for restart
   use perf_mod         , only : t_startf, t_stopf, t_adj_detailf, t_barrierf
 
@@ -265,7 +265,6 @@ contains
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Get compid (for mct)
-    call t_startf('dice_strdata_init')
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
@@ -282,10 +281,10 @@ contains
     read(cvalue,*) scmMode
 
     ! Initialize sdat
+    call t_startf('dice_strdata_init')
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
          scmmode, scmlon, scmlat, clock, mesh, 'dice', sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
     if (my_task == master_task) write(logunit,*) ' initialized SDAT'
     call t_stopf('dice_strdata_init')
 
@@ -296,7 +295,7 @@ contains
 
     ! Realize the actively coupled fields, now that a mesh is established and
     ! initialize dfields data type (to map streams to export state fields)
-    call dice_comp_init(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+    call dice_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
          logunit, my_task==master_task, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 

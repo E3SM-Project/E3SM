@@ -26,7 +26,7 @@ module atm_comp_nuopc
   use dshr_nuopc_mod   , only : dshr_sdat_init, dshr_check_mesh
   use dshr_nuopc_mod   , only : dshr_restart_read, dshr_restart_write
   use dshr_nuopc_mod   , only : dshr_create_mesh_from_grid
-  use datm_comp_mod    , only : datm_comp_advertise, datm_comp_init, datm_comp_run
+  use datm_comp_mod    , only : datm_comp_advertise, datm_comp_realize, datm_comp_run
   use perf_mod         , only : t_startf, t_stopf, t_barrierf
 
   implicit none
@@ -345,7 +345,6 @@ contains
     end if
 
     ! Get compid (for mct)
-    call t_startf('datm_strdata_init')
     call NUOPC_CompAttributeGet(gcomp, name='MCTID', value=cvalue, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     read(cvalue,*) compid
@@ -362,10 +361,10 @@ contains
     read(cvalue,*) scmMode
 
     ! Initialize sdat
+    call t_startf('datm_strdata_init')
     call dshr_sdat_init(mpicom, compid, my_task, master_task, logunit, &
          scmmode, scmlon, scmlat, clock, mesh, 'datm', sdat, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
-
     if (my_task == master_task) write(logunit,*) ' initialized sdat'
     call t_stopf('datm_strdata_init')
 
@@ -375,7 +374,7 @@ contains
 
     ! Realize the actively coupled fields, now that a mesh is established and
     ! initialize dfields data type (to map streams to export state fields)
-    call datm_comp_init(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
+    call datm_comp_realize(sdat, importState, exportState, flds_scalar_name, flds_scalar_num, mesh, &
          logunit, my_task==master_task, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
@@ -520,13 +519,13 @@ contains
        call ESMF_AlarmRingerOff( alarm, rc=rc )
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
-       call t_startf('dice_restart')
+       call t_startf('datm_restart')
        call NUOPC_CompAttributeGet(gcomp, name='case_name', value=case_name, rc=rc)
        if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
        call dshr_restart_write(rpfile, case_name, 'datm', inst_suffix, next_ymd, next_tod, &
             logunit, mpicom, my_task, master_task, sdat)
-       call t_stopf('dice_restart')
+       call t_stopf('datm_restart')
     endif
 
     ! Diagnostics

@@ -307,7 +307,7 @@ contains
     call t_stopf('docn_strdata_init')
 
     ! Check that mesh lats and lons correspond to those on the input domain file
-    call dshr_check_mesh(mesh, sdat, 'docn', rc=rc)
+    call dshr_check_mesh(mesh, sdat, 'docn', tolerance=1.e-4_r8, rc=rc)
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
 
     ! Realize the actively coupled fields, now that a mesh is established and
@@ -406,6 +406,13 @@ contains
     call ESMF_TimeGet( nextTime, yy=yr, mm=mon, dd=day, s=next_tod, rc=rc )
     if (ChkErr(rc,__LINE__,u_FILE_u)) return
     call shr_cal_ymd2date(yr, mon, day, next_ymd)
+
+    ! Get model timestep
+    call ESMF_ClockGet( clock, timeStep=timeStep, rc=rc)
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    call ESMF_TimeIntervalGet( timeStep, s=model_dt, rc=rc )
+    if (ChkErr(rc,__LINE__,u_FILE_u)) return
+    dt = model_dt * 1.0_r8
 
     ! run docn
     call docn_comp_run(mpicom, my_task, master_task, logunit, next_ymd, next_tod, &
