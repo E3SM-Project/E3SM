@@ -533,7 +533,13 @@
     <values>
       <value>linear</value>
       <value stream="rof.diatren_ann_rx1">upper</value>
+      <value stream="rof.diatren_ann_ais00_rx1">upper</value>
+      <value stream="rof.diatren_ann_ais45_rx1">upper</value>
+      <value stream="rof.diatren_ann_ais55_rx1">upper</value>
       <value stream="rof.diatren_iaf_rx1">upper</value>
+      <value stream="rof.diatren_iaf_ais00_rx1">upper</value>
+      <value stream="rof.diatren_iaf_ais45_rx1">upper</value>
+      <value stream="rof.diatren_iaf_ais55_rx1">upper</value>
       <value stream="rof.iaf_jra">upper</value>
       <value stream="rof.cplhist">nearest</value>
     </values>
