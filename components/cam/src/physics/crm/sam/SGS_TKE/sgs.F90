@@ -438,7 +438,7 @@ CONTAINS
     !  total_water_evap(icrm) = total_water_evap(icrm) + total_water(ncrms,icrm)
     !enddo
 
-#if defined(SP_ESMT)
+#if defined(MMF_ESMT)
     ! diffusion of scalar momentum tracers
     call diffuse_scalar(ncrms,dimx1_d,dimx2_d,dimy1_d,dimy2_d,grdf_x,grdf_y,grdf_z,sgs_field_diag(:,:,:,:,2),&
                         u_esmt,fluxb_u_esmt,fluxt_u_esmt,u_esmt_diff,u_esmt_sgs)

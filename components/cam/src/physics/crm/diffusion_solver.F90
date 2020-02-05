@@ -137,7 +137,7 @@
                             u               , v                  , q             , dse          ,               &
                             tautmsx         , tautmsy            , dtk           , topflx       , errstring   , &
                             tauresx         , tauresy            , itaures       , cpairv       , rairi       , &
-                            do_molec_diff   , do_SP_bypass       , compute_molec_diff, vd_lu_qdecomp, kvt )
+                            do_molec_diff   , do_MMF_bypass      , compute_molec_diff, vd_lu_qdecomp, kvt )
 
     !-------------------------------------------------------------------------- !
     ! Driver routine to compute vertical diffusion of momentum, moisture, trace !
@@ -190,7 +190,7 @@
     real(r8), intent(in)    :: kvh(pcols,pver+1)         ! Eddy diffusivity for heat [ m2/s ]
 
     logical,  intent(in)    :: do_molec_diff             ! Flag indicating multiple constituent diffusivities
-    logical,  intent(in)    :: do_SP_bypass              ! whannah - Flag indicating whether to enforce SP_FLUX_BYPASS - needed for call in eddy_diff.F90
+    logical,  intent(in)    :: do_MMF_bypass              ! whannah - Flag indicating whether to enforce MMF_FLUX_BYPASS - needed for call in eddy_diff.F90
 
     integer,  external, optional :: compute_molec_diff   ! Constituent-independent moleculuar diffusivity routine
     integer,  external, optional :: vd_lu_qdecomp        ! Constituent-dependent moleculuar diffusivity routine
@@ -490,7 +490,7 @@
          ! 2. Do 'normal stress' explicitly
 
 ! whannah - bypass adding surface stress here when CRM handles subgrid momentum tendencies
-! #if defined(SPMOMTRANS) || defined(SP_USE_ESMT)
+! #if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_USE_ESMT)
 !       ! Do nothing...
 ! #else
            u(:ncol,pver) = u(:ncol,pver) + tmp1(:ncol)*taux(:ncol)
@@ -513,7 +513,7 @@
                           zero  , ntop , nbot  , decomp)
 
 ! whannah - bypass vertical diffusion of momentum when CRM handles subgrid momentum tendencies
-! #if defined(SPMOMTRANS) || defined(SP_USE_ESMT)
+! #if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_USE_ESMT)
 !       ! Do nothing...
 ! #else
        call vd_lu_solve(  pcols , pver  , ncol  ,                        &
@@ -653,7 +653,7 @@
   !                moist static energy,not the dry static energy.
 
     if( diffuse(fieldlist,'s') ) then
-#if defined( SP_USE_DIFF )
+#if defined( MMF_USE_DIFF )
       if (.true.) then
 #else
       if (.not. use_MMF) then
@@ -674,10 +674,10 @@
      ! addition of surface fluxes to be after the dynamical core. This modification 
      ! has been commented out because it did not improve the simulation, and would
      ! often lead to an error to be thrown in the energy balance check.
-     !   SP_FLUX_BYPASS - only sensible and latent heat fluxes are affected
+     !   MMF_FLUX_BYPASS - only sensible and latent heat fluxes are affected
 
-#if defined( SP_FLUX_BYPASS )
-      if (do_SP_bypass) then
+#if defined( MMF_FLUX_BYPASS )
+      if (do_MMF_bypass) then
         dse(:ncol,pver) = dse(:ncol,pver) - tmp1(:ncol) * shflx(:ncol)
       endif
 #endif
@@ -696,7 +696,7 @@
                           zero  , kvh  , tmpi2 , rpdel , ztodt , gravit, &
                           cc_top, ntop , nbot  , decomp )
 
-#if defined( SP_USE_DIFF )
+#if defined( MMF_USE_DIFF )
        if (.true.) then
 #else
        if (.not. use_MMF) then
@@ -758,7 +758,7 @@
 
        if( diffuse(fieldlist,'q',m) ) then
 
-#if defined( SP_USE_DIFF )
+#if defined( MMF_USE_DIFF )
            if (.true.) then
 #else
            if (.not. use_MMF) then
@@ -789,8 +789,8 @@
       q(:ncol,pver,m) = q(:ncol,pver,m) + tmp1(:ncol) * cflx(:ncol,m) 
         
 
-#if defined( SP_FLUX_BYPASS )
-        if (do_SP_bypass) then
+#if defined( MMF_FLUX_BYPASS )
+        if (do_MMF_bypass) then
           if ( m .eq. 1 ) q(:ncol,pver,m) = q(:ncol,pver,m) - tmp1(:ncol) * cflx(:ncol,m) 
         endif
 #endif  
@@ -828,7 +828,7 @@
                endif
            end if
 
-#if defined( SP_USE_DIFF )
+#if defined( MMF_USE_DIFF )
            if (.true.) then
 #else
            if (.not. use_MMF) then

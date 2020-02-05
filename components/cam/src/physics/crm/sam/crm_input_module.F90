@@ -37,7 +37,7 @@ module crm_input_module
       real(crm_rknd), allocatable :: hygro   (:,:,:)     ! hygroscopicity of aerosol mode 
 #endif
 
-#if defined( SP_ESMT )
+#if defined( MMF_ESMT )
       real(crm_rknd), allocatable :: ul_esmt(:,:)        ! input u for ESMT
       real(crm_rknd), allocatable :: vl_esmt(:,:)        ! input v for ESMT
 #endif
@@ -108,7 +108,7 @@ contains
       call prefetch(this%hygro)
 #endif
 
-#if defined(SP_ESMT)
+#if defined(MMF_ESMT)
       if (.not. allocated(this%ul_esmt))  allocate(this%ul_esmt(ncrms,nlev))
       if (.not. allocated(this%vl_esmt))  allocate(this%vl_esmt(ncrms,nlev))
 #endif
@@ -140,7 +140,7 @@ contains
       this%vaerosol = 0
       this%hygro    = 0
 #endif
-#if defined( SP_ESMT )
+#if defined( MMF_ESMT )
       this%ul_esmt = 0
       this%vl_esmt = 0
 #endif
@@ -179,7 +179,7 @@ contains
       deallocate(this%hygro)
 #endif
 
-#if defined(SP_ESMT)
+#if defined(MMF_ESMT)
       deallocate(this%ul_esmt)
       deallocate(this%vl_esmt)
 #endif

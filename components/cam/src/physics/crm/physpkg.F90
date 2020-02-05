@@ -1622,7 +1622,7 @@ end if ! l_tracer_aero
 
     call check_qflx(state, tend, "PHYAC01", nstep, ztodt, cam_in%cflx(:,1))
 
-#ifndef SP_FLUX_BYPASS
+#ifndef MMF_FLUX_BYPASS
     if(.not.use_qqflx_fixer) then 
 
        ! Check if latent heat flux exceeds the total moisture content of the
@@ -2329,7 +2329,7 @@ subroutine tphysbc (ztodt,               &
     call check_qflx (state, tend, "PHYBC01", nstep, ztodt, cam_in%cflx(:,1))
     call check_water(state, tend, "PHYBC01", nstep, ztodt)
 
-#if defined(SP_FLUX_BYPASS)
+#if defined(MMF_FLUX_BYPASS)
     if(.not.use_qqflx_fixer) then 
        ! Check if latent heat flux exceeds the total moisture content of the
        ! lowest model layer, thereby creating negative moisture.
@@ -2499,10 +2499,6 @@ end if
     ! Save state to recall or CRM call
     !===================================================  
     if (use_MMF) call crm_save_state_tend(state, tend, pbuf)
-
-#if defined( SP_PHYS_BYPASS )
-    ! Do nothing...
-#else
 
     !
     !===================================================
@@ -2845,9 +2841,6 @@ end if
 
      end if !microp_scheme
 
-#endif /* SP_PHYS_BYPASS */ 
-
-
    !======================================================================================
    !--------------------------------------------------------------------------------------
    ! CRM Physics
@@ -2862,9 +2855,9 @@ end if
       call crm_recall_state_tend(state, tend, pbuf)
 
       !---------------------------------------------------------------------------
-      ! Apply surface fluxes if using SP_FLUX_BYPASS
+      ! Apply surface fluxes if using MMF_FLUX_BYPASS
       !---------------------------------------------------------------------------
-#if defined( SP_FLUX_BYPASS )
+#if defined( MMF_FLUX_BYPASS )
       call crm_surface_flux_bypass_tend(state, cam_in, ptend)
       call physics_update(state, ptend, ztodt, tend)  
       call check_energy_chng(state, tend, "crm_tend", nstep, crm_run_time,  &
@@ -2978,11 +2971,6 @@ end if
    !--------------------------------------------------------------------------------------
    !======================================================================================
 
-
-! #if defined( SP_PHYS_BYPASS )
-!       ! Do nothing...
-! #else
-
     if (l_tracer_aero) then
 
       ! Add the precipitation from CARMA to the precipitation from stratiform.
@@ -3060,7 +3048,6 @@ end if ! l_tracer_aero
    endif
 !>songxl 2011-09-20---------------------------------
 
-! #endif /* SP_PHYS_BYPASS */ 
 
     !===================================================
     ! Moist physical parameteriztions complete: 

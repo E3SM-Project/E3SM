@@ -73,12 +73,12 @@ module crm_output_module
       real(crm_rknd), allocatable :: con_a (:,:)  ! cloud water condensation(1/s)
 #endif /* m2005 */
 
-#if defined( SPMOMTRANS )
+#if defined( MMF_MOMENTUM_FEEDBACK )
       real(crm_rknd), allocatable :: ultend(:,:)            ! tendency of ul
       real(crm_rknd), allocatable :: vltend(:,:)            ! tendency of vl
 #endif
 
-#if defined( SP_ESMT )
+#if defined( MMF_ESMT )
       real(crm_rknd), allocatable :: u_tend_esmt(:,:)       ! CRM scalar u-momentum tendency
       real(crm_rknd), allocatable :: v_tend_esmt(:,:)       ! CRM scalar v-momentum tendency
 #endif
@@ -238,12 +238,12 @@ contains
          if (.not. allocated(output%con_a )) allocate(output%con_a (ncol,nlev))
 #endif /* m2005 */
 
-#if defined( SPMOMTRANS )
+#if defined( MMF_MOMENTUM_FEEDBACK )
          if (.not. allocated(output%ultend )) allocate(output%ultend (ncol,nlev))
          if (.not. allocated(output%vltend )) allocate(output%vltend (ncol,nlev))
 #endif
 
-#if defined( SP_ESMT )
+#if defined( MMF_ESMT )
          if (.not. allocated(output%u_tend_esmt )) allocate(output%u_tend_esmt (ncol,nlev))
          if (.not. allocated(output%v_tend_esmt )) allocate(output%v_tend_esmt (ncol,nlev))
 #endif
@@ -398,12 +398,12 @@ contains
       output%con_a = 0
 #endif
 
-#if defined( SPMOMTRANS )
+#if defined( MMF_MOMENTUM_FEEDBACK )
       output%ultend = 0
       output%vltend = 0
 #endif
 
-#if defined( SP_ESMT )
+#if defined( MMF_ESMT )
       output%u_tend_esmt = 0
       output%v_tend_esmt = 0
 #endif
@@ -515,12 +515,12 @@ contains
       if (allocated(output%con_a)) deallocate(output%con_a)
 #endif
 
-#if defined( SPMOMTRANS )
+#if defined( MMF_MOMENTUM_FEEDBACK )
       if (allocated(output%ultend)) deallocate(output%ultend)
       if (allocated(output%vltend)) deallocate(output%vltend)
 #endif
 
-#if defined( SP_ESMT )
+#if defined( MMF_ESMT )
       if (allocated(output%u_tend_esmt)) deallocate(output%u_tend_esmt)
       if (allocated(output%v_tend_esmt)) deallocate(output%v_tend_esmt)
 #endif

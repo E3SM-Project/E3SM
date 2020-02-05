@@ -1,5 +1,5 @@
-#if defined( SP_ORIENT_RAND ) && defined( SP_DIR_NS )
-#undef SP_DIR_NS
+#if defined( MMF_ORIENT_RAND ) && defined( MMF_DIR_NS )
+#undef MMF_DIR_NS
 #endif
 
 module crm_physics
@@ -485,11 +485,11 @@ subroutine crm_physics_init(species_class)
    call addfld ('SPTLS   ',(/ 'lev' /), 'A', 'kg/kg/s ','L.S. LIWSE Tendency from CRM'            )
    call addfld ('TIMINGF ', horiz_only, 'A', '        ','CRM CPU usage efficiency: 1 - ideal'     )
    call addfld ('CLOUDTOP',(/ 'lev' /), 'A', '        ','Cloud Top PDF'                           )
-#if defined(SPMOMTRANS) || defined(SP_ESMT)
+#if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_ESMT)
    call addfld ('UCONVMOM',(/ 'lev' /), 'A', 'm/s2 ','U tendency due to CRM'            )
    call addfld ('VCONVMOM',(/ 'lev' /), 'A', 'm/s2 ','V tendency due to CRM'            )
 #endif
-#if defined(SP_ESMT)
+#if defined(MMF_ESMT)
    call addfld ('U_ESMT',(/ 'lev' /), 'A', 'm/s2 ','U tendency due to CRM (ESMT)'            )
    call addfld ('V_ESMT',(/ 'lev' /), 'A', 'm/s2 ','V tendency due to CRM (ESMT)'            )
 #endif
@@ -549,12 +549,12 @@ subroutine crm_physics_init(species_class)
    call add_default ('SPMSEF    ', 1, ' ')
    call add_default ('SPQVFLUX  ', 1, ' ')
 
-#if defined(SPMOMTRANS) || defined(SP_ESMT)
+#if defined(MMF_MOMENTUM_FEEDBACK) || defined(MMF_ESMT)
    call add_default ('UCONVMOM', 1, ' ')
    call add_default ('VCONVMOM', 1, ' ')
 #endif
 
-#if defined(SP_ESMT)
+#if defined(MMF_ESMT)
    call add_default ('U_ESMT', 1, ' ')
    call add_default ('V_ESMT', 1, ' ')
 #endif
@@ -629,8 +629,8 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    use phys_grid,       only: get_rlat_all_p, get_rlon_all_p, get_gcol_p
    !!!use aerosol_intr,    only: aerosol_wet_intr
 
-#if defined( SP_ORIENT_RAND )
-   use RNG_MT            ! random number generator for randomly rotating CRM orientation (SP_ORIENT_RAND)
+#if defined( MMF_ORIENT_RAND )
+   use RNG_MT            ! random number generator for randomly rotating CRM orientation (MMF_ORIENT_RAND)
 #endif
 
    use crm_state_module,       only: crm_state_type
@@ -747,7 +747,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    factor_xy = 1._r8/dble(crm_nx*crm_ny)
 #endif
 
-#if defined( SP_ORIENT_RAND )
+#if defined( MMF_ORIENT_RAND )
    real(crm_rknd) :: unif_rand1           ! uniform random number 
    real(crm_rknd) :: unif_rand2           ! uniform random number 
    real(crm_rknd) :: norm_rand            ! normally distributed random number using the Box-Muller (1958) method
@@ -793,7 +793,7 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
    ! Set CRM orientation angle
    !------------------------------------------------------------------------------------------------
 
-#if defined( SP_ORIENT_RAND )
+#if defined( MMF_ORIENT_RAND )
    !------------------------------------------------------------------------------------------------
    ! Rotate the CRM using a random walk
    !------------------------------------------------------------------------------------------------
@@ -825,11 +825,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       enddo
 
    endif
-#else /* SP_ORIENT_RAND */
+#else /* MMF_ORIENT_RAND */
    !------------------------------------------------------------------------------------------------
    ! use static CRM orientation (no rotation)
    !------------------------------------------------------------------------------------------------
-#if defined( SP_DIR_NS )
+#if defined( MMF_DIR_NS )
     if (crm_ny.eq.1) then
        crm_angle(:ncol) = pi/2.
     else 
@@ -837,9 +837,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
     endif
 #else
       crm_angle(:ncol) = 0.
-#endif /* SP_DIR_NS */
+#endif /* MMF_DIR_NS */
 
-#endif /* SP_ORIENT_RAND */
+#endif /* MMF_ORIENT_RAND */
 
    !------------------------------------------------------------------------------------------------
    ! Retreive pbuf fields
@@ -1148,11 +1148,11 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
          do k=1,pver
             crm_input%ul(i,k) = state%u(i,k) * cos( crm_angle(i) ) + state%v(i,k) * sin( crm_angle(i) )
             crm_input%vl(i,k) = state%v(i,k) * cos( crm_angle(i) ) - state%u(i,k) * sin( crm_angle(i) )
-#if defined( SP_ESMT )
+#if defined( MMF_ESMT )
             ! Set the input wind for ESMT
             crm_input%ul_esmt(i,k) = state%u(i,k)
             crm_input%vl_esmt(i,k) = state%v(i,k)
-#endif /* SP_ESMT */
+#endif /* MMF_ESMT */
          enddo ! k=1,pver
       enddo ! i=1,ncol
 
@@ -1499,19 +1499,19 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       ! Output CRM momentum tendencies
       !---------------------------------------------------------------------------------------------
 
-#if defined( SP_ESMT )
+#if defined( MMF_ESMT )
       call outfld('U_ESMT',crm_output%u_tend_esmt,pcols   ,lchnk   )
       call outfld('V_ESMT',crm_output%v_tend_esmt,pcols   ,lchnk   )
-#endif /* SP_ESMT */
+#endif /* MMF_ESMT */
 
-#if defined( SP_USE_ESMT )
+#if defined( MMF_USE_ESMT )
       ptend%lu = .TRUE.
       ptend%lv = .TRUE.
       ptend%u  = crm_output%u_tend_esmt
       ptend%v  = crm_output%v_tend_esmt
-#else /* SP_USE_ESMT not defined */  
+#else /* MMF_USE_ESMT not defined */  
 
-#if defined(SPMOMTRANS)
+#if defined(MMF_MOMENTUM_FEEDBACK)
       ptend%lu = .TRUE.
       ptend%lv = .TRUE.
       
@@ -1523,9 +1523,9 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
 
       call outfld('UCONVMOM',ptend%u,pcols   ,lchnk   )
       call outfld('VCONVMOM',ptend%v,pcols   ,lchnk   )
-#endif /* SPMOMTRANS */
+#endif /* MMF_MOMENTUM_FEEDBACK */
 
-#endif /* SP_USE_ESMT */
+#endif /* MMF_USE_ESMT */
 
 !---------------------------------------------------------------------------------------------------
 !---------------------------------------------------------------------------------------------------
@@ -1646,7 +1646,7 @@ end subroutine crm_physics_tend
 
 subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
    !------------------------------------------------------------------------------------------------
-   ! This subroutine is used to apply the fluxes when SP_FLUX_BYPASS is used.
+   ! This subroutine is used to apply the fluxes when MMF_FLUX_BYPASS is used.
    ! The surface flux bypass option was originally used by Mike Pritchard (UCI)
    ! Without this bypass the surface flux tendencies are applied to the lowest 
    ! layer of the GCM state without being diffused vertically by PBL turbulence. 
@@ -1679,7 +1679,7 @@ subroutine crm_surface_flux_bypass_tend(state, cam_in, ptend)
    !!! initialize ptend
    lq(:) = .false.
    lq(1) = .true.
-   call physics_ptend_init(ptend, state%psetcols, 'SP_FLUX_BYPASS', &
+   call physics_ptend_init(ptend, state%psetcols, 'MMF_FLUX_BYPASS', &
                            lu=.false., lv=.false., ls=.true., lq=lq)
 
    !!! apply fluxes to bottom layer

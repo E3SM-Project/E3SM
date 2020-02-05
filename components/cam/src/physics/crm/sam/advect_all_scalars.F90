@@ -62,7 +62,7 @@ contains
     !  end do
     !end if
 
-#if defined(SP_ESMT)
+#if defined(MMF_ESMT)
     ! the esmt_offset simply ensures that the scalar momentum
     ! tracers are positive definite during the advection calculation
     do icrm = 1 , ncrms

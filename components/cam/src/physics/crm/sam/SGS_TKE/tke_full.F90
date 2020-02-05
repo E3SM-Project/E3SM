@@ -270,12 +270,6 @@ subroutine tke_full(ncrms,dimx1_d, dimx2_d, dimy1_d, dimy2_d,   &
           Cee = Ce1+Ce2*ratio
           if(dosmagor) then
             tk(icrm,i,j,k) = sqrt(Ck**3/Cee*max(0._crm_rknd,def2(icrm,i,j,k)-Pr*buoy_sgs))*smix**2
-#if defined( SP_TK_LIM )
-              !!! put a hard lower limit on near-surface tk
-              if ( z(icrm,k).lt.tk_min_depth ) then
-                tk(icrm,i,j,k) = max( tk(icrm,i,j,k), tk_min_value )
-              end if
-#endif
             tke(icrm,i,j,k) = (tk(icrm,i,j,k)/(Ck*smix))**2
             a_prod_sh = (tk(icrm,i,j,k)+0.001)*def2(icrm,i,j,k)
             ! a_prod_bu=-(tk(icrm,i,j,k)+0.001)*Pr*buoy_sgs
