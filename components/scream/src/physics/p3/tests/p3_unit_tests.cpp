@@ -277,7 +277,7 @@ struct UnitWrap::UnitTest<D>::TestP3Conservation
     REQUIRE(abs(rwdc_host(0).qrevp- rwdc[0].qrevp*ratio)<= C::Tol);
 
     //Now test that conservation has actually been enforced
-    REQUIRE( rwdc_host(0).qr - rwdc_host(0).qrevp * rwdc_host(0).dt  ==  0.0);
+    REQUIRE( rwdc_host(0).qrevp * rwdc_host(0).dt  <= rwdc_host(0).qr);
 
   }
 
