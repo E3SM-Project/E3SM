@@ -1,0 +1,316 @@
+<?xml version="1.0"?>
+
+<entry_id version="3.0">
+  <!-- modifier_mode allowed values are
+       '*' 0 or more modifiers (default)
+       '1' exactly 1 modifier
+       '?' 0 or 1 modifiers
+       '+' 1 or more modifiers
+
+       This file may have atm desc entries.
+  -->
+  <description modifier_mode="1">
+    <desc atm="DATM[%QIA][%WISOQIA][%CRU][%CRUv7][%GSWP3v1][%NLDAS2][%CPLHIST][%1PT][%NYF][%IAF][%JRA]"> Data driven ATM </desc>
+    <desc option="QIA"> QIAN data set </desc>
+    <desc option="WISOQIA">QIAN with water isotopes</desc>
+    <desc option="CRU"> CRUNCEP data set </desc>
+    <desc option="CRUv7"> CLM CRU NCEP v7 data set </desc>
+    <desc option="GSWP3v1"> GSWP3v1 data set </desc>
+    <desc option="NLDAS2"> NLDAS2 regional 0.125 degree data set over the U.S. (25-53N, 235-293E). WARNING: Garbage data will be produced for runs extending beyond this regional domain. </desc>
+    <desc option="CPLHIST"> Coupler hist data set (in this mode, it is strongly recommended that the model domain and the coupler history forcing are on the same domain)</desc>
+    <desc option="1PT">single point tower site data set </desc>
+    <desc option="NYF">COREv2 normal year forcing</desc>
+    <desc option="IAF">COREv2 interannual forcing</desc>
+    <desc option="JRA">interannual JRA55 forcing</desc>
+  </description>
+
+  <entry id="COMP_ATM">
+    <type>char</type>
+    <valid_values>datm</valid_values>
+    <default_value>datm</default_value>
+    <group>case_comp</group>
+    <file>env_case.xml</file>
+    <desc>Name of atmospheric component</desc>
+  </entry>
+
+  <entry id="DATM_MODE">
+    <type>char</type>
+    <valid_values>CORE2_NYF,CORE2_IAF,CLM_QIAN,CLM_QIAN_WISO,CLM1PT,CLMCRUNCEP,CLMCRUNCEPv7,CLMGSWP3v1,CLMNLDAS2,CPLHIST,CORE_IAF_JRA</valid_values>
+    <default_value>CORE2_NYF</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>Mode for data atmosphere component.
+      CORE2_NYF (CORE2 normal year forcing) are modes used in forcing prognostic ocean/sea-ice components.
+      CLM_QIAN, CLMCRUNCEP, CLMCRUNCEPv7, CLMGSWP3v1, CLMNLDAS2 and CLM1PT are modes using observational data for forcing prognostic land components.
+      WARNING for CLMNLDAS2: This is a regional forcing dataset over the U.S. (25-53N, 235-293E). Garbage data will be produced for runs extending beyond this regional domain. </desc>
+    <values match="last">
+      <value compset="%NYF">CORE2_NYF</value>
+      <value compset="%IAF">CORE2_IAF</value>
+      <value compset="%JRA">CORE_IAF_JRA</value>
+      <value compset="%QIA">CLM_QIAN</value>
+      <value compset="%WISOQIA">CLM_QIAN_WISO</value>
+      <value compset="%CRU">CLMCRUNCEP</value>
+      <value compset="%CRUv7">CLMCRUNCEPv7</value>
+      <value compset="%GSWP3v1">CLMGSWP3v1</value>
+      <value compset="%NLDAS2">CLMNLDAS2</value>
+      <value compset="%1PT">CLM1PT</value>
+      <value compset="%CPLHIST">CPLHIST</value>
+    </values>
+  </entry>
+
+  <entry id="DATM_PRESAERO">
+    <type>char</type>
+    <valid_values>none,clim_1850,clim_2000,clim_2010,trans_1850-2000,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,cplhist</valid_values>
+    <default_value>clim_2000</default_value>
+    <values match="last">
+      <value compset="^1850_"   >clim_1850</value>
+      <value compset="^2000_"   >clim_2000</value>
+      <value compset="^2010_"   >clim_2010</value>
+      <value compset="^SSP119_" >SSP1-1.9</value>
+      <value compset="^SSP126_" >SSP1-2.6</value>
+      <value compset="^SSP245_" >SSP2-4.5</value>
+      <value compset="^SSP370_" >SSP3-7.0</value>
+      <value compset="^SSP434_" >SSP4-3.4</value>
+      <value compset="^SSP460_" >SSP4-6.0</value>
+      <value compset="^SSP534_" >SSP5-3.4</value>
+      <value compset="^SSP585_" >SSP5-8.5</value>
+      <value compset="^HIST_"   >trans_1850-2000</value>
+      <value compset="^20TR_"   >trans_1850-2000</value>
+      <value compset="_DATM%CPLHIST">cplhist</value>
+      <value compset="_DATM.*_DICE.*_DOCN.*_DROF">none</value>
+    </values>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>DATM prescribed aerosol forcing</desc>
+  </entry>
+
+  <entry id="DATM_TOPO">
+    <type>char</type>
+    <valid_values>none,observed,cplhist</valid_values>
+    <default_value>observed</default_value>
+    <values match="last">
+      <!-- Only needed for compsets with active land; for other compsets, turn it off -->
+      <value compset="_SLND">none</value>
+      <value compset="_DLND">none</value>
+      <value compset="_DATM%CPLHIST">cplhist</value>
+    </values>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>DATM surface topography forcing</desc>
+  </entry>
+
+  <entry id="DATM_CO2_TSERIES">
+    <type>char</type>
+    <valid_values>none,20tr,20tr.latbnd,SSP1-1.9,SSP1-2.6,SSP2-4.5,SSP3-7.0,SSP4-3.4,SSP4-6.0,SSP5-3.4,SSP5-8.5,SSP1-1.9.latbnd,SSP1-2.6.latbnd,SSP2-4.5.latbnd,SSP3-7.0.latbnd,SSP4-3.4.latbnd,SSP4-6.0.latbnd,SSP5-3.4.latbnd,SSP5-8.5.latbnd</valid_values>
+    <default_value>none</default_value>
+    <values match="last">
+      <value compset="^SSP119_">SSP1-1.9</value>
+      <value compset="^SSP126_">SSP1-2.6</value>
+      <value compset="^SSP245_">SSP2-4.5</value>
+      <value compset="^SSP370_">SSP3-7.0</value>
+      <value compset="^SSP434_">SSP4-3.4</value>
+      <value compset="^SSP460_">SSP4-6.0</value>
+      <value compset="^SSP534_">SSP5-3.4</value>
+      <value compset="^SSP585_">SSP5-8.5</value>
+      <value compset="^HIST"   >20tr</value>
+      <value compset="^20TR"   >20tr</value>
+    </values>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>DATM CO2 time series</desc>
+  </entry>
+
+  <entry id="DATM_CPLHIST_DOMAIN_FILE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>null</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>
+      Full pathname for domain file for datm when DATM_MODE is
+      CPLHIST, NOTE: if this is set to 'null' (the default), then
+      domain information is read in from the first coupler history
+      file in the target stream and it is assumed that the first
+      coupler stream file that is pointed to contains the domain
+      information for that stream.
+    </desc>
+  </entry>
+
+  <entry id="DATM_CPLHIST_DIR">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>directory for coupler history data mode (only used for when DATM_MODE is CPLHIST)</desc>
+  </entry>
+
+  <entry id="DATM_CPLHIST_CASE">
+    <type>char</type>
+    <valid_values></valid_values>
+    <default_value>UNSET</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>case name used to determine stream filenames when DATM_MODE is CPLHIST</desc>
+  </entry>
+
+  <entry id="DATM_CPLHIST_YR_ALIGN">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>
+      Simulation year corresponding to DATM_CPLHIST_YR_START (only used
+      when DATM_MODE is CPLHIST). A common usage is to set this to
+      RUN_STARTDATE. With this setting, the forcing in the first year of
+      the run will be the forcing of year DATM_CPLHIST_YR_START. Another
+      use case is to align the calendar of transient forcing with the
+      model calendar. For example, setting
+      DATM_CPLHIST_YR_ALIGN=DATM_CPLHIST_YR_START will lead to the
+      forcing calendar being the same as the model calendar. The forcing
+      for a given model year would be the forcing of the same year. This
+      would be appropriate in transient runs where the model calendar is
+      setup to span the same year range as the forcing data.
+    </desc>
+  </entry>
+
+  <entry id="DATM_CPLHIST_YR_START">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>starting year to loop data over (only used when DATM_MODE is CPLHIST)</desc>
+  </entry>
+
+  <entry id="DATM_CPLHIST_YR_END">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>-999</default_value>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>ending year to loop data over (only used when DATM_MODE is CPLHIST)</desc>
+  </entry>
+
+  <entry id="DATM_CLMNCEP_YR_ALIGN">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>1</default_value>
+    <values match="last">
+      <value compset="1850.*_DATM%QIA">1</value>
+      <value compset="1850.*_DATM%CRU">1</value>
+      <value compset="1850.*_DATM%GSW">1</value>
+      <value compset="HIST.*_DATM%QIA">1895</value>
+      <value compset="HIST.*_DATM%CRU">1901</value>
+      <value compset="HIST.*_DATM%GSW">1901</value>
+      <value compset="HIST.*_DATM%NLDAS2">$DATM_CLMNCEP_YR_START</value>
+      <value compset="20TR.*_DATM%QIA">1895</value>
+      <value compset="20TR.*_DATM%CRU">1901</value>
+      <value compset="20TR.*_DATM%GSW">1901</value>
+      <value compset="SSP.*_DATM%QIA">$DATM_CLMNCEP_YR_START</value>
+      <value compset="SSP.*_DATM%CRU">$DATM_CLMNCEP_YR_START</value>
+      <value compset="SSP.*_DATM%GSW">$DATM_CLMNCEP_YR_START</value>
+      <value compset="1850.*_DATM%CRU">1</value>
+      <value compset="1850.*_DATM%GSW">1</value>
+      <value compset="2000.*_DATM">$DATM_CLMNCEP_YR_START</value>
+      <value compset="2003.*_DATM">$DATM_CLMNCEP_YR_START</value>
+      <value compset="2010.*_DATM">$DATM_CLMNCEP_YR_START</value>
+      <value compset="4804.*_DATM">$DATM_CLMNCEP_YR_START</value>
+    </values>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>year align</desc>
+  </entry>
+
+  <entry id="DATM_CLMNCEP_YR_START">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>2004</default_value>
+    <values match="last">
+      <value compset="2000.*_DATM%1PT">1972</value>
+      <value compset="1850.*_DATM%QIA">1948</value>
+      <value compset="1850.*_DATM%CRU">1901</value>
+      <value compset="1850.*_DATM%GSW">1901</value>
+      <value compset="1850.*_DATM%NLDAS2">0</value>  <!-- Unsupported -->
+      <value compset="2000.*_DATM%WISOQIA">2000</value>
+      <value compset="2000.*_DATM%QIA">1972</value>
+      <value compset="HIST.*_DATM%QIA">1948</value>
+      <value compset="HIST.*_DATM%CRU">1901</value>
+      <value compset="HIST.*_DATM%GSW">1901</value>
+      <value compset="HIST.*_DATM%NLDAS2">0</value>  <!-- Unsupported -->
+      <value compset="20TR.*_DATM%QIA">1948</value>
+      <value compset="20TR.*_DATM%CRU">1901</value>
+      <value compset="20TR.*_DATM%GSW">1901</value>
+      <value compset="20TR.*_DATM%NLDAS2">0</value>  <!-- Unsupported -->
+      <value compset="4804.*_DATM%QIA">1948</value>
+      <value compset="SSP.*_DATM%QIA" >1995</value>
+      <value compset="SSP.*_DATM%CRU" >2001</value>
+      <value compset="SSP.*_DATM%GSW" >2001</value>
+      <value compset="2003.*_DATM%QIA.*_TEST">2002</value>
+      <value compset="1850.*_DATM%CRU">1901</value>
+      <value compset="2000.*_DATM%CRU">1991</value>
+      <value compset="2003.*_DATM%CRU">2002</value>
+      <value compset="2010.*_DATM%CRU">2005</value>
+      <value compset="1850.*_DATM%GSW">1901</value>
+      <value compset="2000.*_DATM%GSW">1991</value>
+      <value compset="2010.*_DATM%GSW">2005</value>
+      <value compset="2003.*_DATM%GSW">2002</value>
+      <value compset="2000.*_DATM%NLDAS2">1980</value>
+      <value compset="2010.*_DATM%NLDAS2">2005</value>
+      <value compset="2003.*_DATM%NLDAS2">2002</value>
+    </values>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>starting year to loop data over</desc>
+  </entry>
+
+  <entry id="DATM_CLMNCEP_YR_END">
+    <type>integer</type>
+    <valid_values></valid_values>
+    <default_value>2004</default_value>
+    <values match="last">
+      <value   compset="2000.*_DATM%1PT">2004</value>
+      <value   compset="1850.*_DATM%QIA">1972</value>
+      <value   compset="1850.*_DATM%CRU">1920</value>
+      <value   compset="1850.*_DATM%GSW">1920</value>
+      <value   compset="1850.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
+      <value   compset="2000.*_DATM%WISOQIA">2004</value>
+      <value   compset="2000.*_DATM%QIA">2004</value>
+      <value   compset="HIST.*_DATM%QIA">1972</value>
+      <value   compset="HIST.*_DATM%CRU">1920</value>
+      <value   compset="HIST.*_DATM%GSW">1920</value>
+      <value   compset="HIST.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
+      <value   compset="20TR.*_DATM%QIA">1972</value>
+      <value   compset="20TR.*_DATM%CRU">1920</value>
+      <value   compset="20TR.*_DATM%GSW">1920</value>
+      <value   compset="20TR.*_DATM%NLDAS2">-1</value>  <!-- Unsupported -->
+      <value   compset="4804.*_DATM%QIA">2004</value>
+      <value   compset="SSP.*_DATM%QIA">2004</value>
+      <value   compset="SSP.*_DATM%CRU">2016</value>
+      <value   compset="SSP.*_DATM%GSW">2014</value>
+      <value   compset="2003.*_DATM%QIA.*_TEST">2003</value>
+      <value   compset="1850.*_DATM%CRU">1920</value>
+      <value   compset="2000.*_DATM%CRU">2010</value>
+      <value   compset="2003.*_DATM%CRU">2003</value>
+      <value   compset="2010.*_DATM%CRU">2014</value>
+      <value   compset="1850.*_DATM%GSW">1920</value>
+      <value   compset="2000.*_DATM%GSW">2010</value>
+      <value   compset="2010.*_DATM%GSW">2014</value>
+      <value   compset="2003.*_DATM%GSW">2003</value>
+      <value   compset="2000.*_DATM%NLDAS2">2018</value>
+      <value   compset="2010.*_DATM%NLDAS2">2014</value>
+      <value   compset="2003.*_DATM%NLDAS2">2003</value>
+    </values>
+    <group>run_component_datm</group>
+    <file>env_run.xml</file>
+    <desc>ending year to loop data over</desc>
+  </entry>
+
+  <help>
+    =========================================
+    DATM naming conventions in compset name
+    =========================================
+  </help>
+
+</entry_id>
