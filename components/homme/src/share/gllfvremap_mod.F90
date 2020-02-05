@@ -132,11 +132,13 @@ module gllfvremap_mod
   interface gfr_dyn_to_fv_phys_topo
      module procedure gfr_dyn_to_fv_phys_topo_hybrid
      module procedure gfr_dyn_to_fv_phys_topo_dom_mt
+     module procedure gfr_dyn_to_fv_phys_topo_mpi_only
   end interface gfr_dyn_to_fv_phys_topo
 
   interface gfr_fv_phys_to_dyn_topo
      module procedure gfr_fv_phys_to_dyn_topo_hybrid
      module procedure gfr_fv_phys_to_dyn_topo_dom_mt
+     module procedure gfr_fv_phys_to_dyn_topo_mpi_only
   end interface gfr_fv_phys_to_dyn_topo
 
   interface gfr_pg1_reconstruct
@@ -303,10 +305,12 @@ contains
 
        call get_field(elem(ie), 'omega', wr2, hvcoord, nt, -1)
        call gfr_g2f_scalar(ie, elem(ie)%metdet, wr2, wr1)
-       ! When omega_p is switched to omega, remove the division by
-       ! p_fv.
+#ifdef MODEL_THETA_L
+       omega_p(:ncol,:,ie) = reshape(wr1(:nf,:nf,:), (/ncol,nlev/))
+#else
+       ! for preqx, omega_p = omega/p
        omega_p(:ncol,:,ie) = reshape(wr1(:nf,:nf,:)/p_fv(:nf,:nf,:), (/ncol,nlev/))
-
+#endif
        do qi = 1,qsize
           call gfr_g2f_mixing_ratio(gfr, ie, elem(ie)%metdet, dp, dp_fv, &
                dp*elem(ie)%state%Q(:,:,:,qi), wr1)
@@ -490,7 +494,6 @@ contains
     type (hybrid_t) :: hybrid
     integer :: ie, ncol
     logical :: augment_in
-    real(real_kind), allocatable :: phis_gll(:,:,:), phis_pg(:,:)
 
     augment_in = .false.
     if (present(augment)) augment_in = augment
@@ -703,6 +706,25 @@ contains
 #endif
   end subroutine gfr_dyn_to_fv_phys_topo_dom_mt
 
+  subroutine gfr_dyn_to_fv_phys_topo_mpi_only(par, elem, phis)
+    ! Wrapper to the hybrid-threading main routine.
+
+    use parallel_mod, only: parallel_t
+    use domain_mod, only: domain1d_t
+    use hybrid_mod, only: hybrid_create
+
+    type (parallel_t), intent(in) :: par
+    type (element_t), intent(in) :: elem(:)
+    real(kind=real_kind), intent(out) :: phis(:,:)
+
+    type (hybrid_t) :: hybrid
+    integer :: nets, nete
+
+    if (.not. par%dynproc) return
+    hybrid = hybrid_create(par, 0, 1)
+    call gfr_dyn_to_fv_phys_topo_hybrid(hybrid, elem, 1, nelemd, phis)
+  end subroutine gfr_dyn_to_fv_phys_topo_mpi_only
+
   subroutine gfr_fv_phys_to_dyn_topo_dom_mt(par, dom_mt, elem, phis)
     ! Wrapper to the hybrid-threading main routine.
 
@@ -728,6 +750,25 @@ contains
     !$omp end parallel
 #endif
   end subroutine gfr_fv_phys_to_dyn_topo_dom_mt
+
+  subroutine gfr_fv_phys_to_dyn_topo_mpi_only(par, elem, phis)
+    ! Wrapper to the hybrid-threading main routine.
+
+    use parallel_mod, only: parallel_t
+    use domain_mod, only: domain1d_t
+    use hybrid_mod, only: hybrid_create
+
+    type (parallel_t), intent(in) :: par
+    type (element_t), intent(inout) :: elem(:)
+    real(kind=real_kind), intent(in) :: phis(:,:)
+
+    type (hybrid_t) :: hybrid
+    integer :: nets, nete
+
+    if (.not. par%dynproc) return
+    hybrid = hybrid_create(par, 0, 1)
+    call gfr_fv_phys_to_dyn_topo_hybrid(hybrid, elem, 1, nelemd, phis)
+  end subroutine gfr_fv_phys_to_dyn_topo_mpi_only
 
   ! ----------------------------------------------------------------------
   ! Internal initialization routines.
@@ -1886,7 +1927,7 @@ contains
 
     use parallel_mod, only: parallel_t
     use domain_mod, only: domain1d_t
-    use hybrid_mod, only: hybrid_t, hybrid_create
+    use hybrid_mod, only: hybrid_create
     use thread_mod, only: omp_get_thread_num, hthreads
 
     type (parallel_t), intent(in) :: par

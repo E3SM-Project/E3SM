@@ -9,4 +9,6 @@ set(RRTMGP_HEADERS
 
 add_library(rrtmgp ${RRTMGP_SRCS})
 
-add_subdirectory(tests)
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()

@@ -18,4 +18,7 @@ target_include_directories(shoc SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS})
 set_target_properties(shoc PROPERTIES
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
 
-add_subdirectory(tests)
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()
+

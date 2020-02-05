@@ -23,10 +23,10 @@ OR
 
 \033[1mEXAMPLES:\033[0m
     \033[1;32m# Run p3 ref with 1 horizontal and 111 vertical columns over 300s with 30s timesteps and 10 internal repitions \033[0m
-    > {0} ni:1 nk:111 dt:30 ts:10 repeat:10 --kokkos=/home/jgfouca/kokkos-install/install --test=micro-sed/p3_ref
+    > {0} ni:1 nk:111 dt:30 ts:10 kdir:1 repeat:10 --kokkos=/home/jgfouca/kokkos-install/install --test=micro-sed/p3_ref
 
     \033[1;32m# Run p3 ref comparing against p3 vanilla with same params as above except scaling ni to 1024  \033[0m
-    > {0} ni:1 nk:111 dt:30 ts:10 repeat:10 --kokkos=/home/jgfouca/kokkos-install/install --test=micro-sed/p3_ref --test=micro-sed/p3_vanilla -s ni:2:1024
+    > {0} ni:1 nk:111 dt:30 ts:10 kdir:1 repeat:10 --kokkos=/home/jgfouca/kokkos-install/install --test=micro-sed/p3_ref --test=micro-sed/p3_vanilla -s ni:2:1024
 
     \033[1;32m# Run lin-interp ref comparing against lin-interp vanilla scaling from ncol=1000 to 128,000 \033[0m
     > {0} ncol:1000 km1:128 km2:256 minthresh:0.001 repeat:10 --kokkos=/home/jgfouca/kokkos-install/install --test=lin-interp/li_ref --test=lin-interp/li_vanilla -s ncol:2:128000
@@ -39,12 +39,12 @@ OR
 
     parser.add_argument("--kokkos", help="Kokkos location")
 
-    parser.add_argument("--cxx", default=os.getenv("CXX"), help="c++ compiler")
+    parser.add_argument("--cxx", default=os.getenv("MPICXX"), help="c++ compiler")
 
     parser.add_argument("-n", "--num-runs", type=int, default=1, help="Number of times to repeat run")
 
     parser.add_argument("-t", "--test", dest="tests", action="append",
-                        help="Select which tests to run, default is all. First one will be used as reference point")
+                        help="Select which tests/exes to run. First one will be used as reference point")
 
     parser.add_argument("-c", "--cmake-options", default="",
                         help="Extra options to pass to cmake")
@@ -60,7 +60,7 @@ OR
 
     parser.add_argument("-T", "--force-threads", type=int, help="Override the machine default for threads.")
 
-    parser.add_argument("-m", "--machine", default=socket.gethostname(), help="Manually set machine. Defaults to hostname.")
+    parser.add_argument("-m", "--machine", default=socket.gethostname().rstrip("0123456789"), help="Manually set machine. Defaults to hostname.")
 
     args = parser.parse_args(args[1:])
 
@@ -71,6 +71,7 @@ OR
         args.cmake_options += " -DCMAKE_CXX_COMPILER={}".format(args.cxx)
 
     expect(not args.plot_friendly or args.scaling, "Doesn't make sense to have plot friendly output without a scaling experiment")
+    expect(args.tests, "Need at least one test/exe")
 
     argmap = OrderedDict()
     for argdef in args.argmap:

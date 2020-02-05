@@ -3,6 +3,7 @@
 
 namespace scream {
 
+void initialize_scream_session();
 void initialize_scream_session(int argc, char **argv);
 void finalize_scream_session();
 

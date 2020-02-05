@@ -23,6 +23,6 @@ add_custom_target(p3_baseline
 
 add_dependencies(baseline p3_baseline)
 
-configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4 p3_lookup_table_1.dat-v4 COPYONLY)
+configure_file(${SCREAM_DATA_DIR}/p3_lookup_table_1.dat-v4 data/p3_lookup_table_1.dat-v4 COPYONLY)
 
 

@@ -30,7 +30,8 @@ if (NOT CUDA_BUILD)
     p3_functions_dsd2.cpp
     p3_functions_find.cpp
     p3_functions_math.cpp
-    p3_functions_autoconversion.cpp)
+    p3_functions_autoconversion.cpp
+    p3_functions_update_prognostics.cpp)
 endif()
 
 # link_directories(${SCREAM_TPL_LIBRARY_DIRS} ${SCREAM_LIBRARY_DIRS})
@@ -39,6 +40,8 @@ target_include_directories(p3 PUBLIC ${SCREAM_INCLUDE_DIRS})
 target_include_directories(p3 SYSTEM PUBLIC ${SCREAM_TPL_INCLUDE_DIRS} ${CIMEROOT}/src/share/include)
 set_target_properties(p3 PROPERTIES
   Fortran_MODULE_DIRECTORY ${SCREAM_F90_MODULES})
-# target_link_libraries(p3 scream_share ${SCREAM_TPL_LIBRARIES})
+target_link_libraries(p3 scream_share ${SCREAM_TPL_LIBRARIES})
 
-add_subdirectory(tests)
+if (NOT SCREAM_LIB_ONLY)
+  add_subdirectory(tests)
+endif()

@@ -1136,7 +1136,7 @@ contains
     nerr = nerr + test_lagrange()
     nerr = nerr + test_reconstruct_and_limit_dp()
 
-    if (nerr > 0 .and. par%masterproc) write(iulog,'(a,i3)'), 'sl_unittest FAIL', nerr
+    if (nerr > 0 .and. par%masterproc) write(iulog,'(a,i3)') 'sl_unittest FAIL', nerr
   end subroutine sl_unittest
 
 end module sl_advection

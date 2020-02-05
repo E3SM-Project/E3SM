@@ -1757,11 +1757,7 @@ if (l_ac_energy_chk) then
 
     end if
 
-
-    !*** BAB's FV heating kludge *** apply the heating as temperature tendency.
-    !*** BAB's FV heating kludge *** modify the temperature in the state structure
     tmp_t(:ncol,:pver) = state%t(:ncol,:pver)
-    state%t(:ncol,:pver) = tini(:ncol,:pver) + ztodt*tend%dtdt(:ncol,:pver)
 
     ! store dse after tphysac in buffer
     do k = 1,pver
@@ -2283,7 +2279,6 @@ if (l_bc_energy_fix) then
 
     call t_startf('energy_fixer')
 
-    !*** BAB's FV heating kludge *** save the initial temperature
     tini(:ncol,:pver) = state%t(:ncol,:pver)
     if (dycore_is('LR') .or. dycore_is('SE'))  then
        call check_energy_fix(state, ptend, nstep, flx_heat)
