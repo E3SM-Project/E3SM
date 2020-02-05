@@ -130,6 +130,13 @@ module crm_output_module
       real(crm_rknd), allocatable :: tauy     (:)    ! merid CRM surface stress perturbation      [N/m2]
       real(crm_rknd), allocatable :: z0m          (:)    ! surface stress                             [N/m2]
       real(crm_rknd), allocatable :: timing_factor(:)    ! crm cpu efficiency
+
+#ifdef MAML
+      ! MAML variables
+      real(crm_rknd), allocatable :: crm_pcp(ncrms,crm_nx,crm_ny) ! CRM precip rate for MAML (m/s)
+      real(crm_rknd), allocatable :: crm_snw(ncrms,crm_nx,crm_ny) ! CRM snow rate for MAML (m/s)
+#endif
+
    end type crm_output_type
 
 contains
@@ -239,6 +246,13 @@ contains
 #if defined( SP_ESMT )
          if (.not. allocated(output%u_tend_esmt )) allocate(output%u_tend_esmt (ncol,nlev))
          if (.not. allocated(output%v_tend_esmt )) allocate(output%v_tend_esmt (ncol,nlev))
+#endif
+
+#ifdef MAML
+         if (.not. allocated(output%crm_pcp)) allocate(output%crm_pcp(ncol,crm_nx,crm_ny))
+         if (.not. allocated(output%crm_snw)) allocate(output%crm_snw(ncol,crm_nx,crm_ny))
+         call prefetch(output%crm_pcp)
+         call prefetch(output%crm_snw)
 #endif
          
          if (.not. allocated(output%sltend ))  allocate(output%sltend (ncol,nlev))
@@ -394,6 +408,11 @@ contains
       output%v_tend_esmt = 0
 #endif
 
+#ifdef MAML
+      output%crm_pcp = 0
+      output%crm_snw = 0
+#endif
+
       output%sltend  = 0
       output%qltend  = 0
       output%qcltend = 0
@@ -504,6 +523,11 @@ contains
 #if defined( SP_ESMT )
       if (allocated(output%u_tend_esmt)) deallocate(output%u_tend_esmt)
       if (allocated(output%v_tend_esmt)) deallocate(output%v_tend_esmt)
+#endif
+
+#ifdef MAML
+      if (allocated(output%crm_pcp)) deallocate(output%crm_pcp)
+      if (allocated(output%crm_snw)) deallocate(output%crm_snw)
 #endif
 
       if (allocated(output%sltend)) deallocate(output%sltend)

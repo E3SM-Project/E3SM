@@ -168,8 +168,8 @@ subroutine crm_physics_register()
   call pbuf_add_field('ACLDY_CEN','global', dtype_r8, (/pcols,pver/), idx) ! total (all sub-classes) cloudy fractional area in previous time step 
 #ifdef MAML
   !adding new variables for passing CRM-scale precipition/snow into CLM. Added new variables
-  call pbuf_add_field('CRM_PCP',     'physpkg', dtype_r8, (/pcols,crm_nx, crm_ny/),                crm_pcp_idx)
-  call pbuf_add_field('CRM_SNW',     'physpkg', dtype_r8, (/pcols,crm_nx, crm_ny/),                crm_snw_idx)
+  call pbuf_add_field('CRM_PCP',   'physpkg', dtype_r8, (/pcols,crm_nx,crm_ny/), crm_pcp_idx)
+  call pbuf_add_field('CRM_SNW',   'physpkg', dtype_r8, (/pcols,crm_nx,crm_ny/), crm_snw_idx)
 #endif
 
 end subroutine crm_physics_register
@@ -387,10 +387,10 @@ subroutine crm_physics_init(species_class)
    call addfld ('SPWTKE   ', (/ 'lev' /), 'A', 'm/s',      'Standard deviation of updraft velocity')
    call addfld ('SPLCLOUD  ',(/ 'lev' /), 'A', '        ', 'Liquid cloud fraction')
 #ifdef MAML
-   call addfld ('CRM_SHF ',(/'crm_nx','crm_ny'/),           'I', 'W/m2    ', 'CRM Sfc sensible heat flux'          )
-   call addfld ('CRM_LHF ',(/'crm_nx','crm_ny'/),           'I', 'W/m2    ', 'CRM Sfc latent heat flux'            )
-   call addfld ('CRM_SNOW',(/'crm_nx','crm_ny'/),           'I', 'm/s     ', 'CRM Snow Rate'                       )
-   call addfld ('CRM_PCP ',(/'crm_nx','crm_ny'/),           'I', 'm/s     ', 'CRM Precipitation Rate'              )
+   call addfld ('CRM_SHF ',(/'crm_nx','crm_ny'/), 'I', 'W/m2    ', 'CRM Sfc sensible heat flux')
+   call addfld ('CRM_LHF ',(/'crm_nx','crm_ny'/), 'I', 'W/m2    ', 'CRM Sfc latent heat flux'  )
+   call addfld ('CRM_SNOW',(/'crm_nx','crm_ny'/), 'I', 'm/s     ', 'CRM Snow Rate'             )
+   call addfld ('CRM_PCP ',(/'crm_nx','crm_ny'/), 'I', 'm/s     ', 'CRM Precipitation Rate'    )
 #endif
 
    call addfld ('SPNDROPMIX',(/ 'lev' /),'A','#/kg/s  ','Droplet number mixing')
@@ -1171,9 +1171,6 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       call t_startf ('crm_call')
       call crm( lchnk, icol(:ncol), ncol, ztodt, pver,                    &
                 crm_input, crm_state, crm_rad,                            &
-#ifdef MAML
-                crm_pcp(:ncol,:,:),     crm_snw(:ncol,:,:),               &
-#endif
                 crm_ecpp_output, crm_output )
       call t_stopf('crm_call')
 
@@ -1201,6 +1198,12 @@ subroutine crm_physics_tend(ztodt, state, tend, ptend, pbuf, cam_in, cam_out,   
       ! call pbuf_set_field(pbuf,ifld, crm_output%qp_src(:ncol,:pver),start=(/1,1/), kount=(/pcols,pver/) )
       ! ifld = pbuf_get_index('NEVAPR')
       ! call pbuf_set_field(pbuf,ifld, crm_output%qp_evp(:ncol,:pver),start=(/1,1/), kount=(/pcols,pver/) )
+
+#ifdef MAML
+      ! Set pbuf variables needed for MAML
+      crm_pcp(:ncol,:,:) = crm_output%crm_pcp(:ncol,:,:)
+      crm_snw(:ncol,:,:) = crm_output%crm_snw(:ncol,:,:)
+#endif
 
       ! Set cloud field to output from CRM. We need to do this here because we
       ! did not set crm_output%cld as a pointer to the pbuf field, so we need to

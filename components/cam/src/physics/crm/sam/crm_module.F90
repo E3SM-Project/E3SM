@@ -44,9 +44,6 @@ contains
 
 subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
                 crm_input, crm_state, crm_rad,  &
-#ifdef MAML
-                crm_pcp,     crm_snw,              &
-#endif
                 crm_ecpp_output, crm_output )
     !-----------------------------------------------------------------------------------------------
     !-----------------------------------------------------------------------------------------------
@@ -89,10 +86,6 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
     type(crm_input_type),      intent(in   ) :: crm_input
     type(crm_state_type),      intent(inout) :: crm_state
     type(crm_rad_type), target,intent(inout) :: crm_rad
-#ifdef MAML
-    real(r8), intent(inout) :: crm_pcp(ncrms, crm_nx,crm_ny)  ! CRM precip rate (m/s)
-    real(r8), intent(inout) :: crm_snw(ncrms,crm_nx,crm_ny) ! CRM snow rate (m/s)
-#endif
     type(crm_ecpp_output_type),intent(inout) :: crm_ecpp_output
     type(crm_output_type), target,     intent(inout) :: crm_output
 
@@ -1397,12 +1390,13 @@ subroutine crm(lchnk, icol, ncrms, dt_gl, plev, &
         precsfc(icrm,i,j) = precsfc(icrm,i,j)*dz(icrm)/dt/dble(nstop)     !mm/s/dz --> mm/s
         precssfc(icrm,i,j) = precssfc(icrm,i,j)*dz(icrm)/dt/dble(nstop)   !mm/s/dz --> mm/s
 #endif /* m2005 */
+
 #ifdef MAML
-        !  output CRM level precip  so that individual CRM precip values are passed down
-        !  to CLM.
-        crm_pcp(icrm,i,j) = precsfc(icrm,i,j)/1000.      ! mm/s --> m/s
-        crm_snw(icrm,i,j) = precssfc(icrm,i,j)/1000.     ! mm/s --> m/s
+        ! output CRM precip and snow to pass down individual CLM instances
+        crm_output%crm_pcp(icrm,i,j) = precsfc(icrm,i,j)/1000.      ! mm/s --> m/s
+        crm_output%crm_snw(icrm,i,j) = precssfc(icrm,i,j)/1000.     ! mm/s --> m/s
 #endif
+
         if(precsfc(icrm,i,j).gt.10./86400.) then
            !$acc atomic update
            crm_output%precc (icrm) = crm_output%precc (icrm) + precsfc(icrm,i,j)
