@@ -7,7 +7,6 @@
 #include "share/util/scream_utils.hpp"
 #include "share/util/scream_arch.hpp"
 
-#include <Kokkos_Core.hpp>
 #include "../../algorithms/src/Kokkos_Random.hpp"
 
 #include <chrono>
