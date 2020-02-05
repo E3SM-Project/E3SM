@@ -18,6 +18,7 @@ Code modifications
 --------------------------------------------------------------------------------
 Code modifications can be viewed at: 
 
+https://github.com/E3SM-Project/E3SM/commit/1317ef4b411bf2c1c4363382ac0ac2c0ec5a5000
 https://github.com/E3SM-Project/E3SM/commit/c41728fdce93692e1480441dc4673a64f3f0ff72
 
 The modifications mainly include:
